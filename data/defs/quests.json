@@ -1,7 +1,7 @@
 // Where adventuring parties can be sent (Expeditions/ExpeditionSystem). A round rolls three, with
 // a true danger and reward from these ranges that nobody is told. Danger is against a party's
 // strength: an ordinary, well-kept adventurer is about 1, so a party of three is about 3. The
-// Quest Broker starts with a guess at each; rumours over a cup ("rumours", {0} the teller's sense
+// Innkeeper (who brokers quests) starts with a guess at each; rumours over a cup ("rumours", {0} the teller's sense
 // of the danger) and parties coming back sharpen it. Our own places; keep tabletop terms out.
 {
   "quests": [

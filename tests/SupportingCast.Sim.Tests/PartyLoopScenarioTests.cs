@@ -11,13 +11,13 @@ using Xunit.Abstractions;
 namespace SupportingCast.Sim.Tests;
 
 /// <summary>
-/// M2's exit, played from the players' side of the line: four bots take the four trades, parties
+/// M2's exit, played from the players' side of the line: three bots take the three trades, parties
 /// arrive, are served (drink, mending, healing), are sent on a quest, and come back changed. Bots
 /// play only through commands and Perception, so this proves the loop is playable by people.
 /// </summary>
 public class PartyLoopScenarioTests(ITestOutputHelper output)
 {
-    private static readonly string[] Trades = ["Blacksmith", "Innkeeper", "Healer", "QuestBroker"];
+    private static readonly string[] Trades = ["Blacksmith", "Innkeeper", "Healer"];
 
     [Theory]
     [InlineData(1234UL)]

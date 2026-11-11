@@ -10,7 +10,7 @@ using static SupportingCast.Sim.Tests.TestWorld;
 
 namespace SupportingCast.Sim.Tests;
 
-/// <summary>The Quest Broker and the off-map expedition (Stage 6 of M2).</summary>
+/// <summary>The Innkeeper's quest brokering and the off-map expedition (Stage 6 of M2).</summary>
 public class ExpeditionTests
 {
     private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
@@ -45,7 +45,7 @@ public class ExpeditionTests
     [Fact]
     public void ARoundRollsQuestsAndOnlyTheBrokerStartsWithAGuess()
     {
-        var (sim, me, _) = Round("QuestBroker");
+        var (sim, me, _) = Round("Innkeeper");
         Assert.Equal(ExpeditionSystem.QuestsPerRound, sim.Expeditions.Quests.Count);
         var known = Perception.For(sim, me).Quests().ToList();
         Assert.Equal(ExpeditionSystem.QuestsPerRound, known.Count);
@@ -58,7 +58,7 @@ public class ExpeditionTests
     [Fact]
     public void APartyTurnsDownAQuestThatSoundsWrongForThem()
     {
-        var (sim, me, party) = Round("QuestBroker");
+        var (sim, me, party) = Round("Innkeeper");
         var q = sim.Expeditions.Quests[0];
         var strength = ExpeditionSystem.PartyStrength(sim, PartyOf(sim, party[0]));
         sim.Expeditions.Hear(me, q.Id, strength * 3f, null, 1f);
@@ -94,7 +94,7 @@ public class ExpeditionTests
     [Fact]
     public void ASentPartyComesBackChangedAndTellsItAsItWas()
     {
-        var (sim, me, party) = Round("QuestBroker");
+        var (sim, me, party) = Round("Innkeeper");
         var gone = party.ToList();
         var id = PartyOf(sim, party[0]);
         var (q, names) = SendAndWait(sim, me, party);
@@ -109,10 +109,14 @@ public class ExpeditionTests
         Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("return from"));
 
         // The one with the tale tells it at the tavern; whoever hears it clearly knows the truth.
-        var teller = back.Single(e => sim.World.Has<ReportPending>(e) || sim.Speech.Kept.Any(u => u.Speaker == e && u.Text.Contains(q.Def.Label)));
-        for (var t = 0; t < 24 && sim.World.Has<ReportPending>(teller); t++)
-            sim.TickMany(SimClock.TicksPerHour / 2);
-        var tale = sim.Speech.Kept.Last(u => u.Speaker == teller && u.Text.Contains(q.Def.Label));
+        var teller = back.Single(e => sim.World.Has<ReportPending>(e) || sim.Speech.Kept.Any(u => u.Speaker == e && u.Text.Contains(q.Def.Label, StringComparison.OrdinalIgnoreCase)));
+        // The innkeeper goes to meet them: an audience is all the tale wants.
+        for (var t = 0; t < 600 && sim.World.Has<ReportPending>(teller); t++)
+        {
+            sim.World.Get<Position>(me) = Position.At(sim.World.Get<Position>(teller).Cell);
+            sim.TickMany(SimClock.TicksPerSecond);
+        }
+        var tale = sim.Speech.Kept.Last(u => u.Speaker == teller && u.Text.Contains(q.Def.Label, StringComparison.OrdinalIgnoreCase));
         var heard = tale.Listeners.Where(h => h.Clarity == Speech.Clarity.Clear && h.Listener != teller).ToList();
         Assert.NotEmpty(heard);
         Assert.All(heard, h =>
@@ -127,7 +131,7 @@ public class ExpeditionTests
     public void RumoursAtTheTavernReachThoseWhoListen()
     {
         // A player broker, so no AI one sends the party off before they've talked.
-        var (sim, me, party) = Round("QuestBroker");
+        var (sim, me, party) = Round("Innkeeper");
         var haunt = Adventurers.PartySystem.HauntOf(sim, sim.Defs.Party("IronLantern"))!.Anchor;
         // Beyond the broker's rough first guess (0.2): only rumour gets them past it. (Starting the
         // round in the longhouse, they may well have heard some already.)

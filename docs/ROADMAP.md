@@ -34,7 +34,8 @@ Milestones toward a playable prototype, then beyond. Design intent is in [DESIGN
   neutral, wait where their errands are served, and move on.
 - `Errands/`: every demand is an errand asked aloud, so only those who hear it know of it. Coin is
   real silver that changes hands. Players post, take, finish and call off errands for each other.
-- The four trades, each with its own hands-on game and an AI fallback:
+- The trades, each with its own hands-on game and an AI fallback (the Quest Broker started as a
+  fourth and was folded into the Innkeeper: the keeper hears the rumours anyway):
   - **Innkeeper:** pour ale at the cask (head and tilt); customers taste the pour.
   - **Blacksmith:** weapons dull and chip. Sharpen on a whetstone, hammer chips out at the forge
     (which flattens the edge), and judge which a blade needs.
@@ -42,12 +43,12 @@ Milestones toward a playable prototype, then beyond. Design intent is in [DESIGN
     feel. They cast the mending that fits and meditate their mana back. They work from a shrine
     (it replaced the clinic) with pallets for the wounded, a meditation stone that steadies the
     breath and gathers more mana, and a chest of bandages for when the mana runs dry.
-  - **Quest Broker:** matches parties to quests on intel built from a rough guess, tavern rumours
-    and returning parties' reports.
+  - **Innkeeper as quest broker:** matches parties to quests on intel built from a rough guess,
+    rumours over the bar and returning parties' reports.
 - `Expeditions/`: parties go off the map as records. Their strength (gear upkeep, wounds, food,
   mood) against a quest's hidden danger decides deaths, wounds, wear and loot, and survivors
   come back changed.
-- `Bots/BotPlayer` plays all four trades. `PartyLoopScenarioTests` is the exit: bots serve a
+- `Bots/BotPlayer` plays all three trades. `PartyLoopScenarioTests` is the exit: bots serve a
   party, send it out, and it comes back.
 - Fixed on the way: AI packs dropped their coin at every job's end, and an item in your own pack
   hid its condition from you.

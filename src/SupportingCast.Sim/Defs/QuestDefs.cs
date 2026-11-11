@@ -4,7 +4,7 @@ namespace SupportingCast.Sim.Defs;
 
 /// <summary>
 /// Somewhere a party can be sent (<c>Expeditions.ExpeditionSystem</c>). A round rolls its true
-/// danger and reward from these ranges and tells nobody: the Quest Broker works from estimates,
+/// danger and reward from these ranges and tells nobody: the Innkeeper, who brokers quests, works from estimates,
 /// rumour and what parties come back saying. Danger is measured against a party's strength (an
 /// ordinary, well-kept adventurer is about 1).
 /// </summary>

@@ -52,10 +52,9 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 
 | Trade | The game it plays | Built from | Betrayal it enables |
 | --- | --- | --- | --- |
-| Innkeeper | Order juggling, drink mixing, hearing gossip | Larder, cooking, Social | Spiked drinks, selling secrets |
+| Innkeeper | Order juggling, drink mixing, hearing gossip; matching parties to quests on partial intel | Larder, cooking, Social, `Expeditions/` | Spiked drinks, selling secrets, sending a party to its death |
 | Blacksmith | Heat, hammer and quench timing | Forge, bellows, tiers, `Crafted` quality | A hidden flaw in a blade |
 | Healer | Take a patient's wounds into yourself with focus, cast the right mending on yourself, meditate back your mana | Health, `Work/`, new mana | Taking only part of a wound, or handing one back |
-| Quest Broker | Match parties to quests on partial intel | New `Expedition` | Sending a party to its death |
 | Constable | Patrol, evidence, arrests, jail | `Prisoners`, locks | Framing, abuse of authority |
 | Apothecary | Discover reagent reactions, reshuffled each round | New `Reagents` | Poisons, explosives |
 | Merchant | Haggling, appraisal, spotting cursed loot | Inventory, `HoardValue` | Fencing, forged goods |
@@ -83,7 +82,8 @@ Ideas for depth, to build when each trade's milestone comes round.
 - M2 pours ale at the cask. Hold to pour; the tilt controls the head. Customers taste the quality.
 - Later: brewing, and refilling casks from kegs.
 - Mixed drinks: a press-on-cue sequence.
-- Adventurers trading rumours over their cups, which the Quest Broker's intel will feed on.
+- Brokering quests (since M2, when the Quest Broker folded into the Innkeeper): the keeper hears
+  every rumour over the bar and points parties at work on whatever it's worth.
 
 **Healer (empathic).** Magical in flavour rather than clinical, but grounded in the health
 model: wounds sit on body parts, have a kind, and bleed, hurt and fester.

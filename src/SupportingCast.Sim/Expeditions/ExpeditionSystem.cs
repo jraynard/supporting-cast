@@ -87,7 +87,7 @@ public sealed class Expedition
 
 /// <summary>
 /// Quests and the parties sent on them (docs/DESIGN.md, "The loop"). The round rolls a few quests
-/// whose true danger and reward nobody knows. The Quest Broker starts with a guess at each;
+/// whose true danger and reward nobody knows. The Innkeeper, who brokers quests, starts with a guess at each;
 /// adventurers trade rumours in the tavern that sharpen what listeners believe; a party that
 /// comes back says how it really was. Sending a party off is <see cref="Offer"/>: they go if the
 /// danger the broker states seems right for them. Off the map, how it goes comes down to what the
@@ -527,15 +527,17 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         return item;
     }
 
-    /// <summary>A returned party's tale, told once they're back at the tavern: whoever hears it knows how it really was.</summary>
+    /// <summary>
+    /// A returned party's tale, told the first time anyone outside the party is near enough to
+    /// catch it clearly (the news comes back with them, wherever they go first): whoever hears it
+    /// knows how it really was.
+    /// </summary>
     private void Report(Simulation sim)
     {
         var w = sim.World;
         foreach (var e in w.Query<ReportPending>())
         {
             if (!w.IsAlive(e) || !w.TryGet<Adventurer>(e, out var a) || !SpeechSystem.CanAct(sim, e))
-                continue;
-            if (Adventurers.PartySystem.HauntOf(sim, a.PartyDef) is { } haunt && Maps.Map.Distance(w.Get<Position>(e).Cell, haunt.Anchor) > 6)
                 continue;
             // A tale wants an audience: they hold it until someone outside the party would hear it clearly.
             if (!Audience(sim, e, a.Party))

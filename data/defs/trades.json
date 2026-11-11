@@ -4,8 +4,8 @@
 // have; kit: what they start with. Labourer is unlimited: it's what's left when the named trades run out.
 {
   "trades": [
-    { "name": "Innkeeper", "label": "innkeeper", "description": "Keeps the longhouse fed and watered, and hears everything said over the bar.",
-      "workplace": "Longhouse", "workPriorities": { "Cook": 1 } },
+    { "name": "Innkeeper", "label": "innkeeper", "description": "Keeps the longhouse fed and watered, hears everything said over the bar, and points adventuring parties at work, on whatever that's worth.",
+      "workplace": "Longhouse", "workPriorities": { "Cook": 1 }, "brokers": true },
     { "name": "Blacksmith", "label": "blacksmith", "description": "Works the forge: blades, tools and repairs.",
       "workplace": "Smithy", "workPriorities": { "Craft": 1 },
       "knows": [ "Forge" ], "skills": { "Crafting": 6 },
@@ -13,8 +13,6 @@
     { "name": "Healer", "label": "healer", "description": "An empath: lays on hands to take others' wounds into themselves, then mends them with the gift.",
       "workplace": "Shrine", "workPriorities": { "Doctor": 1 }, "skills": { "Medicine": 6 }, "mana": 100,
       "kit": [ { "def": "Bandage", "count": 4 } ] },
-    { "name": "QuestBroker", "label": "quest broker", "description": "Matches parties to work from a corner of the longhouse, on whatever intelligence can be had.",
-      "workplace": "Longhouse", "brokers": true },
     { "name": "Labourer", "label": "labourer", "description": "Hauls, chops and digs for anyone who'll pay.", "unlimited": true }
   ]
 }

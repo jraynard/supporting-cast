@@ -301,7 +301,7 @@ public class RoundTests
             Assert.Equal(workplace, w.Get<PresetBuilding>(inside).Def);
             placed++;
         }
-        Assert.True(placed >= 4, $"only {placed} placed"); // the four named trades, players and AI alike
+        Assert.True(placed >= 3, $"only {placed} placed"); // the three named trades, players and AI alike
         Assert.Equal("Shrine", w.Get<PresetBuilding>(Buildings.At(sim, w.Get<Position>(Players.CharacterOf(sim, Ana)).Cell)).Def.Name);
     }
 

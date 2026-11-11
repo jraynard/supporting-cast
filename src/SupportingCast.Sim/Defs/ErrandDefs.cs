@@ -17,7 +17,7 @@ public enum ErrandKind
     /// <summary>Their wounds seen to (the Healer's).</summary>
     Healing,
 
-    /// <summary>Somewhere to go and something to kill (the Quest Broker's).</summary>
+    /// <summary>Somewhere to go and something to kill (the Innkeeper's, who brokers quests).</summary>
     Quest,
 
     /// <summary>Anything a player asks of another, in their own words; the poster says when it's done.</summary>

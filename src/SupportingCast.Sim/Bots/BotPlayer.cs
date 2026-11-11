@@ -15,8 +15,8 @@ namespace SupportingCast.Sim.Bots;
 /// knows only what <see cref="PerceptionView"/> tells it, exactly as a person at the keyboard
 /// would, so a test driven by bots proves the game is playable from the player's side of the line.
 /// It plays its trade: the smith takes repairs and judges hammer or stone by what the blade looks
-/// like, the innkeeper pours for orders, the healer draws wounds and casts the mending whose feel
-/// it knows, the broker matches parties to the quests it believes fit. Every mini-game is played
+/// like, the innkeeper pours for orders and matches parties to the quests it believes fit, the
+/// healer draws wounds and casts the mending whose feel it knows. Every mini-game is played
 /// by hand, through the same predictor as the game's.
 /// </summary>
 /// <param name="world">The current sim: a resync replaces it.</param>
@@ -150,28 +150,27 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             Chat(view, me, now);
     }
 
-    /// <summary>The errand kind this character's trade answers, if any.</summary>
-    private static ErrandKind? KindFor(TradeDef trade) => trade.Name switch
+    /// <summary>The errand kinds this character's trade answers.</summary>
+    private static ErrandKind[] KindsFor(TradeDef trade) => trade.Name switch
     {
-        "Blacksmith" => ErrandKind.Repair,
-        "Innkeeper" => ErrandKind.Drink,
-        "Healer" => ErrandKind.Healing,
-        "QuestBroker" => ErrandKind.Quest,
-        _ => null,
+        "Blacksmith" => [ErrandKind.Repair],
+        "Innkeeper" => [ErrandKind.Drink, ErrandKind.Quest], // the bar and the quest board both
+        "Healer" => [ErrandKind.Healing],
+        _ => trade.Brokers ? [ErrandKind.Quest] : [],
     };
 
     /// <summary>Take on the oldest open errand of the trade's kind it knows of.</summary>
     private void TakeOn(Simulation sim, Entity me, PerceptionView view, long now)
     {
-        if (!sim.World.TryGet<Trade>(me, out var trade) || KindFor(trade.Def) is not { } kind)
+        if (!sim.World.TryGet<Trade>(me, out var trade) || KindsFor(trade.Def) is not { Length: > 0 } kinds)
             return;
         foreach (var e in view.Errands().OrderBy(e => e.PostedTick))
         {
-            if (e.Status != ErrandStatus.Open || e.Mine || e.Kind != kind || (e.AssigneeName.Length > 0 && !e.MineToDo))
+            if (e.Status != ErrandStatus.Open || e.Mine || !kinds.Contains(e.Kind) || (e.AssigneeName.Length > 0 && !e.MineToDo))
                 continue;
-            if (kind == ErrandKind.Quest && !QuestFor(sim, view, e.Poster).HasValue)
+            if (e.Kind == ErrandKind.Quest && !QuestFor(sim, view, e.Poster).HasValue)
                 continue;
-            if (kind != ErrandKind.Quest && !e.MineToDo)
+            if (e.Kind != ErrandKind.Quest && !e.MineToDo)
                 send(new AcceptErrandCommand(me, e.Id));
             _task = e.Id;
             _taskSince = now;

@@ -100,7 +100,7 @@ public class SaveLoadTests
     [Fact]
     public void APartyAwayOnAQuestSurvives()
     {
-        var (live, me, party) = ExpeditionTests.Round("QuestBroker");
+        var (live, me, party) = ExpeditionTests.Round("Innkeeper");
         var q = live.Expeditions.Quests[0];
         var strength = Expeditions.ExpeditionSystem.PartyStrength(live, live.World.Get<Adventurer>(party[0]).Party);
         live.Expeditions.Hear(me, q.Id, strength * 0.9f, null, 1f);
