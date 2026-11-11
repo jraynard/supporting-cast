@@ -47,6 +47,8 @@ public sealed partial class VillageGame
                 TextC(left < 0.5f ? Theme.Bad : Theme.Dim, e.AssigneeName.Length > 0
                     ? $"{(e.MineToDo ? "You're" : e.AssigneeName + " is")} on it. {left:F1}h left."
                     : $"Nobody's taken it. {left:F1}h left.");
+                if (e.MineToDo && e.Kind == Sim.Defs.ErrandKind.Repair)
+                    TextC(Theme.Dim, $"Mended, give it back from {e.PosterName}'s inspector, in reach.");
                 if (!e.Mine && e.AssigneeName.Length == 0)
                 {
                     if (ImGui.Button("I'll do it"u8, in _autoSize))
@@ -108,8 +110,20 @@ public sealed partial class VillageGame
             return;
         ImGui.Separator();
         var w = _sim.World;
+        // What they handed you to see to, wherever you've put it: give it back.
+        foreach (var item in OnMe())
+        {
+            if (!w.TryGet<Entrusted>(item, out var trust) || trust.Owner != other)
+                continue;
+            ImGui.PushID(item.Index);
+            if (ImGui.Button($"Give back their {_sim.LabelOf(item)}", in _autoSize))
+                Issue(new GiveCommand(_avatar, other, item, 1));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip(View.Condition(item) is { } c ? $"It's {c}. They'll look it over: mended, they pay; if not, they'll say what's wrong." : "They'll look it over before they pay.");
+            ImGui.PopID();
+        }
         var held = w.Get<Carrying>(_avatar).Item;
-        if (!held.IsNull && w.Has<Stack>(held))
+        if (!held.IsNull && w.Has<Stack>(held) && !w.Has<Entrusted>(held))
         {
             var count = w.Get<Stack>(held).Count;
             if (ImGui.Button($"Hand over the {w.Get<Thing>(held).Label} ({count})", in _autoSize))
@@ -128,6 +142,19 @@ public sealed partial class VillageGame
                 ImGui.SameLine(0, 6);
             }
         ImGui.NewLine();
+    }
+
+    /// <summary>What's loose on your person: in hand, then in the pack.</summary>
+    private List<Entity> OnMe()
+    {
+        var list = new List<Entity>();
+        var held = _sim.World.Get<Carrying>(_avatar).Item;
+        if (!held.IsNull && _sim.World.IsAlive(held))
+            list.Add(held);
+        var pack = _sim.PackOf(_avatar);
+        if (!pack.IsNull)
+            list.AddRange(_sim.StoredIn(pack));
+        return list;
     }
 
     /// <summary>Hand coin over from the first silver stacks found (hands, then pack).</summary>

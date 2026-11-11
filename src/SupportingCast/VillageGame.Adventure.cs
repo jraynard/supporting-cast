@@ -384,8 +384,34 @@ public sealed partial class VillageGame
             if (action.Kind != AvatarActionKind.None)
                 return action;
         }
+        // Nothing where you're looking: a station, cask or chest anywhere beside you will do, so you
+        // needn't line up square in front of a forge in a cramped smithy.
+        if (tool == AvatarTool.Use)
+        {
+            AvatarAction best = AvatarAction.None;
+            for (var dy = -1; dy <= 1; dy++)
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                if (dx == 0 && dy == 0)
+                    continue;
+                var action = AvatarSystem.ActionAt(_sim, _avatar, new int3(at.X + dx, at.Y + dy, at.Z), tool);
+                if (FurnitureRank(action.Kind) > FurnitureRank(best.Kind))
+                    best = action;
+            }
+            return best;
+        }
         return AvatarAction.None;
     }
+
+    /// <summary>Which furniture use beside you F prefers when you aren't facing anything: working a craft first, then a station, a cask, a chest.</summary>
+    private static int FurnitureRank(AvatarActionKind kind) => kind switch
+    {
+        AvatarActionKind.Craft => 4,
+        AvatarActionKind.OpenStation => 3,
+        AvatarActionKind.Pour => 2,
+        AvatarActionKind.OpenStorage => 1,
+        _ => 0,
+    };
 
     /// <summary>The container whose window is open (the wagon), or null.</summary>
     private Entity _openStorage = Entity.Null;
