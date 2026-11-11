@@ -65,6 +65,9 @@ public sealed partial class Simulation
     /// <summary>The round's lobby and deal. <see cref="Round.RoundPhase.None"/> until something opens one.</summary>
     public Round.RoundSystem Round { get; }
 
+    /// <summary>Adventuring parties coming to town during a round.</summary>
+    public Adventurers.PartySystem Parties { get; }
+
     /// <summary>What's been said aloud, and who heard it.</summary>
     public Speech.SpeechSystem Speech { get; } = new();
 
@@ -172,6 +175,7 @@ public sealed partial class Simulation
         Wildlife = new WildlifeSystem(seed);
         Social = new SocialSystem(seed);
         Round = new Round.RoundSystem(seed);
+        Parties = new Adventurers.PartySystem(seed);
         Messages.Now = () => Clock.Tick;
 
         World.Destroying += OnEntityDestroying;
@@ -196,7 +200,7 @@ public sealed partial class Simulation
             .AddSystem(new RotSystem())
             .AddSystem(new FoodPoisoningSystem())
             .AddSystem(new FuelSystem())
-            .AddSystem(new VisitorSystem())
+            .AddSystem(sim.Parties)
             .AddSystem(new MoodSystem())
             .AddSystem(new PrisonBreakSystem())
             .AddSystem(sim.Social)

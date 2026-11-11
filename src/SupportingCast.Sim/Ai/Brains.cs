@@ -374,7 +374,7 @@ public sealed class HumanBrain : IBrain
         return missThere + 1f < missHere ? new SeekTemperatureJob(t, urgent ? 1200 : 600, warmer, urgent) : null;
     }
 
-    private static Job Sleep(Simulation sim, Entity pawn)
+    internal static Job Sleep(Simulation sim, Entity pawn)
     {
         var bed = AiQueries.FindFreeBed(sim, pawn);
         if (!bed.IsNull)

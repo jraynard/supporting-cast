@@ -104,7 +104,6 @@ public sealed class EatJob(Entity food) : Job
         var rot = FoodPoisoning.RotOf(Sim, eaten);
         Sim.World.Destroy(eaten);
         Nourish(Sim, Pawn, def, count, rot);
-        VisitorSystem.AteVillageFood(Sim, Pawn); // a wild dragon visiting, fed from the stores
     }
 
     /// <summary>Units of a food it takes to fill a creature up (at least one).</summary>
@@ -1005,11 +1004,11 @@ public sealed class AnimalAttackJob(Entity target) : Job
 }
 
 /// <summary>Run to the map edge and leave for good.</summary>
-public sealed class LeaveMapJob(int3 edge) : Job
+public sealed class LeaveMapJob(int3 edge, string report = "Fleeing") : Job
 {
     protected override IEnumerable<JobStatus> Run()
     {
-        Report = "Fleeing";
+        Report = report;
         foreach (var s in GoTo(edge, PathEnd.OnTile)) yield return s;
         if (HasFailed) yield break;
         Sim.Depart(Pawn);

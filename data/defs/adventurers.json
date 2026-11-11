@@ -1,0 +1,25 @@
+// Adventuring parties that come to town during a round (PartySystem). They're neutral: nobody
+// fights them, and they treat everyone as the help. "adventurerKinds" are the members: gear,
+// Melee/Shooting skill range and the silver coins they arrive with. "parties" are who travels
+// together, where they loiter ("haunt", a building def) and how many game hours they stay (±25%).
+// Names are our own; keep tabletop terms out.
+{
+  "adventurerKinds": [
+    { "name": "Sellsword", "label": "sellsword", "weapon": "ShortSword", "apparel": [ "LeatherJerkin", "IronHelm" ],
+      "outfit": "Shieldmaiden", "skillMin": 7, "skillMax": 12, "purseMin": 15, "purseMax": 35 },
+    { "name": "Bowman", "label": "bowman", "weapon": "Bow", "apparel": [ "LeatherCap" ],
+      "outfit": "Hunter", "skillMin": 6, "skillMax": 11, "purseMin": 10, "purseMax": 25 },
+    { "name": "Vanguard", "label": "vanguard", "weapon": "BronzeSpear", "apparel": [ "ChainShirt" ],
+      "outfit": "Wanderer", "skillMin": 8, "skillMax": 13, "purseMin": 20, "purseMax": 45 },
+    { "name": "Hedgewise", "label": "hedge-wise", "weapon": "Club", "apparel": [],
+      "outfit": "Seer", "skillMin": 3, "skillMax": 7, "purseMin": 25, "purseMax": 60 }
+  ],
+  "parties": [
+    { "name": "GildedSpurs", "label": "the Gilded Spurs", "members": [ "Sellsword", "Bowman", "Hedgewise" ],
+      "description": "Three cousins with a borrowed banner and a great deal of confidence.",
+      "stayHours": 14, "names": [ "Aldric", "Fenna", "Osric", "Merrow", "Tamsin" ] },
+    { "name": "IronLantern", "label": "the Iron Lantern Company", "members": [ "Vanguard", "Sellsword", "Bowman", "Hedgewise" ],
+      "description": "Professionals, or so their invoices say.",
+      "stayHours": 18, "names": [ "Brannagh", "Corvin", "Ilse", "Jory", "Petronel", "Wystan" ] }
+  ]
+}

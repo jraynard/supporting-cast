@@ -6,7 +6,7 @@ namespace SupportingCast.Sim.Defs;
 /// <summary>
 /// All loaded defs. Each JSON file under the defs directory is an object with any of the keys
 /// "blocks", "things", "creatures", "needs", "bodies", "materials", "difficulties", "raiderKinds", "wildlife", "thoughts", "interactions", "traits", "recipes", "tiers", "veins",
-/// "dragonInteractions", "trustLevels", "tricks", "outfits", "elements", "buildings", "kits",
+/// "dragonInteractions", "trustLevels", "tricks", "outfits", "elements", "buildings", "kits", "trades", "adventurerKinds", "parties",
 /// each an array of defs. Files are merged in name
 /// order so later files (mods) can add content.
 /// </summary>
@@ -31,6 +31,14 @@ public sealed class DefDatabase
     private readonly Dictionary<string, BuildingDef> _buildings = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, BuildingKitDef> _kits = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, TradeDef> _trades = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, AdventurerKindDef> _adventurerKinds = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, PartyDef> _parties = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Who adventuring parties are made of (data/defs/adventurers.json).</summary>
+    public List<AdventurerKindDef> AllAdventurerKinds { get; } = [];
+
+    /// <summary>Parties that can come to town during a round, in def order.</summary>
+    public List<PartyDef> AllParties { get; } = [];
 
     /// <summary>Trades a round deals out (data/defs/trades.json), in def order.</summary>
     public List<TradeDef> AllTrades { get; } = [];
@@ -103,6 +111,8 @@ public sealed class DefDatabase
         public List<BuildingDef> Buildings { get; set; } = [];
         public List<BuildingKitDef> Kits { get; set; } = [];
         public List<TradeDef> Trades { get; set; } = [];
+        public List<AdventurerKindDef> AdventurerKinds { get; set; } = [];
+        public List<PartyDef> Parties { get; set; } = [];
     }
 
     public static DefDatabase LoadDirectory(string directory)
@@ -158,6 +168,8 @@ public sealed class DefDatabase
         AddAll(file.Buildings, _buildings, AllBuildings, source);
         AddAll(file.Kits, _kits, AllKits, source);
         AddAll(file.Trades, _trades, AllTrades, source);
+        AddAll(file.AdventurerKinds, _adventurerKinds, AllAdventurerKinds, source);
+        AddAll(file.Parties, _parties, AllParties, source);
     }
 
     private static void AddAll<T>(List<T> defs, Dictionary<string, T> map, List<T> all, string source)
@@ -204,6 +216,8 @@ public sealed class DefDatabase
         foreach (var d in AllOutfits) d.Resolve(this);
         foreach (var d in AllBuildings) d.Resolve(this); // after things and thoughts: their parts, furniture, feasts
         foreach (var d in AllTrades) d.Resolve(this); // after buildings: their workplaces
+        foreach (var d in AllAdventurerKinds) d.Resolve(this);
+        foreach (var d in AllParties) d.Resolve(this); // after adventurer kinds and buildings
         GeneratePhaseDefs();
         // Every element a dragon can have needs its def (one each).
         Thoughts = KnownThoughts.Resolve(_thoughts);
@@ -342,6 +356,8 @@ public sealed class DefDatabase
     public MaterialDef Material(string name) => Lookup(_materials, name);
     public DifficultyDef Difficulty(string name) => Lookup(_difficulties, name);
     public RaiderKindDef RaiderKind(string name) => Lookup(_raiderKinds, name);
+    public AdventurerKindDef AdventurerKind(string name) => Lookup(_adventurerKinds, name);
+    public PartyDef Party(string name) => Lookup(_parties, name);
     public ThoughtDef Thought(string name) => Lookup(_thoughts, name);
     public InteractionDef Interaction(string name) => Lookup(_interactions, name);
     public TraitDef Trait(string name) => Lookup(_traits, name);

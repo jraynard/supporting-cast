@@ -68,6 +68,32 @@ public class SaveLoadTests
     }
 
     [Fact]
+    public void APartyInTownSurvives()
+    {
+        var live = Simulation.CreateStandard(TestWorld.LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
+        live.Presets.PresetMode = true;
+        VillageRound.Setup(live);
+        live.Round.OpenLobby();
+        live.ApplyNow(new Round.JoinLobbyCommand(Guid.Empty, "Arin", default, []));
+        live.ApplyNow(new Round.StartRoundCommand());
+        var party = live.Parties.Send(live, live.Defs.Party("IronLantern"));
+        Assert.NotEmpty(party);
+        live.TickMany(SimClock.HoursToTicks(1));
+
+        var loaded = RoundTrip(live);
+        Assert.Equal(live.Parties.NextArrivalTick, loaded.Parties.NextArrivalTick);
+        Assert.Equal(live.Parties.PartiesSent, loaded.Parties.PartiesSent);
+        Assert.Equal(party.Count, loaded.World.Query<Adventurer>().Count);
+        // Sent on their way in both: they walk off the map alike.
+        foreach (var e in party)
+        {
+            live.World.Get<Adventurer>(e).LeaveTick = live.Clock.Tick;
+            loaded.World.Get<Adventurer>(e).LeaveTick = loaded.Clock.Tick;
+        }
+        AssertSameFuture(live, loaded, hours: 4);
+    }
+
+    [Fact]
     public void WildlifeStateSurvives()
     {
         var (live, _) = Generated(5, size: 64);

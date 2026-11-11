@@ -194,6 +194,7 @@ public sealed class AiSystem : ISimSystem
     private readonly IBrain _prisoner = new PrisonerBrain();
     private readonly IBrain _animal = new AnimalBrain();
     private readonly IBrain _bedridden = new BedriddenBrain();
+    private readonly IBrain _adventurer = new Adventurers.AdventurerBrain();
 
     /// <summary>Most recent job failure per creature, for the inspector/debugging.</summary>
     public Dictionary<Entity, string> LastFailure { get; } = [];
@@ -220,7 +221,9 @@ public sealed class AiSystem : ISimSystem
             }
             var creature = w.Get<Creature>(e);
             // Raiders, and anyone else on their way out (released prisoners, herds moving on), think like raiders.
-            var brain = creature.Faction is Faction.Raider or Faction.Predator || w.Has<Combat.Leaving>(e) ? _raider
+            // Adventurers keep their own counsel, leaving included.
+            var brain = creature.Faction == Faction.Adventurer ? _adventurer
+                : creature.Faction is Faction.Raider or Faction.Predator || w.Has<Combat.Leaving>(e) ? _raider
                 : creature.Faction == Faction.Prisoner ? _prisoner
                 : creature.Def.Race == Race.Animal ? _animal
                 : _human;

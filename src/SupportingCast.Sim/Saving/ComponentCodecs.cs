@@ -236,11 +236,13 @@ internal static class ComponentCodecs
         Codec("Mind", WriteMind, ReadMind),
         Codec("Carrying", (w, c) => w.Entity(c.Item), r => new Carrying { Item = r.Entity() }),
         Codec("Migrating", (w, m) => w.Int3(m.To), r => new Migrating { To = r.Int3() }),
-        Codec("Visitor", (w, v) =>
+        Codec("Adventurer", (w, a) =>
         {
-            w.Long(v.LeaveTick);
-            w.Int(v.Meals);
-        }, r => new Visitor { LeaveTick = r.Long(), Meals = r.Int() }),
+            w.Int(a.Party);
+            w.Def(a.Kind);
+            w.Def(a.PartyDef);
+            w.Long(a.LeaveTick);
+        }, r => new Adventurer { Party = r.Int(), Kind = r.Def<AdventurerKindDef>(), PartyDef = r.Def<PartyDef>(), LeaveTick = r.Long() }),
         Tag<Locked>("Locked"),
         Codec("Stored", (w, s) => w.Entity(s.In), r => new Stored { In = r.Entity() }),
         Codec("Request", (w, q) =>

@@ -236,7 +236,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         var w = sim.World;
         return sim.Creatures()
             .Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Downed: false }
-                && !w.Has<PlayerCharacter>(e) && !w.Has<Avatar>(e) && !w.Has<Carried>(e) && !w.Has<Visitor>(e))
+                && !w.Has<PlayerCharacter>(e) && !w.Has<Avatar>(e) && !w.Has<Carried>(e))
             .ToList();
     }
 

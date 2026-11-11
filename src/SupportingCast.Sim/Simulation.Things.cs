@@ -1091,7 +1091,9 @@ public sealed partial class Simulation
             World.DestroyDeferred(item);
         foreach (var tool in Toolbelt.Of(this, e))
             World.DestroyDeferred(tool);
-        if (c.Faction != Faction.Wild)
+        if (c.Faction == Faction.Adventurer)
+            Messages.Add(MessageKind.Info, $"{c.Name} has taken the road out of town.", World.Get<Position>(e).Cell);
+        else if (c.Faction != Faction.Wild)
             Messages.Add(MessageKind.Info, $"{c.Name} has fled the area.", World.Get<Position>(e).Cell);
         World.DestroyDeferred(e);
     }

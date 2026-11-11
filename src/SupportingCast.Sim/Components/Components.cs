@@ -346,6 +346,9 @@ public enum Faction
 
     /// <summary>Wolves and bears the storyteller sends (<c>Systems.WildEvents</c>): the village's enemy, fought turn by turn like raiders.</summary>
     Predator,
+
+    /// <summary>Adventurers passing through (<see cref="Adventurer"/>): customers, not enemies, and nobody's to command.</summary>
+    Adventurer,
 }
 
 public enum PrisonerMode
@@ -1109,14 +1112,17 @@ public struct Migrating
 }
 
 /// <summary>
-/// A wild dragon passing through (<c>Systems.WildEvents</c>): it leaves at <see cref="LeaveTick"/>
-/// unless it has had <see cref="VisitorSystem.MealsToStay"/> meals of the village's food by then,
-/// when it stays and joins the village.
+/// A member of an adventuring party in town (<c>Adventurers.PartySystem</c>). Their party is just an
+/// id shared with the others: they arrive, stay and leave together.
 /// </summary>
-public struct Visitor
+public struct Adventurer
 {
+    public int Party;
+    public Defs.AdventurerKindDef Kind;
+    public Defs.PartyDef PartyDef;
+
+    /// <summary>When they move on.</summary>
     public long LeaveTick;
-    public int Meals;
 }
 
 /// <summary>
