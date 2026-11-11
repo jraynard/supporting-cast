@@ -105,6 +105,19 @@ public class HealerTests
     }
 
     [Fact]
+    public void APatientKeepsStillWhileTheirWoundIsDrawn()
+    {
+        var (sim, me, patient, arm) = AtTheBedside();
+        sim.World.Get<Mind>(patient).Drafted = false; // free to wander off, as an adventurer would
+        sim.ApplyNow(new LayOnHandsCommand(me, patient, CutKey(sim, patient, arm)));
+        var at = sim.World.Get<Position>(patient).Cell;
+        Draw(sim, me, steady: true);
+
+        Assert.Equal(at, sim.World.Get<Position>(patient).Cell);
+        Assert.DoesNotContain(sim.World.Get<Health>(patient).Injuries, i => i.Type == DamageType.Cut);
+    }
+
+    [Fact]
     public void LosingYourComposureSnapsTheLinkWithABacklash()
     {
         var (sim, me, patient, arm) = AtTheBedside(cut: 18f);

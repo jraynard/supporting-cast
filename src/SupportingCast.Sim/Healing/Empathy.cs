@@ -29,6 +29,15 @@ public static class Empathy
 
     public static bool Gifted(Simulation sim, Entity e) => sim.World.Has<Mana>(e);
 
+    /// <summary>Who's drawing a wound from this patient right now, Entity.Null if nobody.</summary>
+    public static Entity DrawnBy(Simulation sim, Entity patient)
+    {
+        foreach (var e in sim.World.Each<Work.WorkSession>())
+            if (sim.World.Get<Work.WorkSession>(e) is DrawSession d && d.Patient == patient)
+                return e;
+        return Entity.Null;
+    }
+
     public static int KeyOf(Injury inj) => inj.Part * 64 + (int)inj.Type;
 
     public static Injury? Find(Simulation sim, Entity who, int key) =>

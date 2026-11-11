@@ -238,6 +238,10 @@ public sealed class HumanBrain : IBrain
             if (SeekComfort(sim, pawn, tol, temp, urgent: true) is { } escape)
                 return escape;
 
+        // Under an empath's hands: keep still.
+        if (Healing.Empathy.DrawnBy(sim, pawn) is { IsNull: false } healer)
+            return new Healing.HoldStillJob(healer);
+
         // ...or a boar coming at them (hunters stand and shoot: see AiSystem.InDanger).
         if (AnimalBrain.Charger(sim, pawn) is { } charger && AnimalBrain.FleeSpot(sim, pawn, charger, 12) is { } away)
             return new FleeJob(away);

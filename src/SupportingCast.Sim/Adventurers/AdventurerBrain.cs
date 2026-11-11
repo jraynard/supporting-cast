@@ -20,6 +20,8 @@ public sealed class AdventurerBrain : IBrain
         var creature = w.Get<Creature>(pawn);
         var tile = w.Get<Position>(pawn).Cell;
 
+        if (Healing.Empathy.DrawnBy(sim, pawn) is { IsNull: false } healer)
+            return new Healing.HoldStillJob(healer);
         if (w.Has<Leaving>(pawn))
             return sim.NearestEdge(tile) is { } edge
                 ? new LeaveMapJob(edge, w.TryGet<Adventurer>(pawn, out var setting) && setting.Quest != 0

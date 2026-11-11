@@ -87,6 +87,10 @@ public sealed class DrawSession : WorkSession
             Patient = patient, Wound = wound, PatientName = sim.World.Get<Creature>(patient).Name,
             Gravity = Math.Clamp(inj.Damage / Math.Max(1f, h.PartMaxHp(inj.Part)), 0f, 1f),
         });
+        // Someone the AI runs keeps still for it; walking off would break the touch.
+        var w = sim.World;
+        if (!w.Has<Avatar>(patient) && w.Has<Mind>(patient) && w.Get<Creature>(patient).Able)
+            AiSystem.Order(sim, patient, new HoldStillJob(healer));
     }
 
     public override bool StillValid(Simulation sim) => Problem(sim, Worker, Patient, Wound) == null;
@@ -162,4 +166,25 @@ public sealed class DrawSession : WorkSession
         _push = r.Float();
         _steer = Math.Sign(r.Int());
     }
+}
+
+/// <summary>
+/// Held still under an empath's hands: a patient the AI runs stays where they are while someone is
+/// drawing one of their wounds, then gets on with their day. (A player's character is theirs to
+/// keep still.)
+/// </summary>
+public sealed class HoldStillJob(Entity healer) : Ai.Job
+{
+    /// <summary>The longest anyone waits, should the healer leave them hanging.</summary>
+    public const int MaxTicks = SimClock.TicksPerSecond * 120;
+
+    protected override IEnumerable<Ai.JobStatus> Run()
+    {
+        Report = $"Being healed by {Get<Creature>(healer).Name}";
+        for (var t = 0; t < MaxTicks && Drawing(); t++)
+            yield return Ai.JobStatus.Running;
+    }
+
+    private bool Drawing() =>
+        Alive(healer) && Sim.World.TryGet<WorkSession>(healer, out var s) && s is DrawSession d && d.Patient == Pawn;
 }
