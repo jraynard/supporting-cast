@@ -278,4 +278,48 @@ public class RoundTests
         Assert.Equal(0, sim.World.Count<PlayerCharacter>());
         Assert.True(Players.Join(sim, Ana, adoptLooseAvatar: true));
     }
+
+    [Fact]
+    public void ABlacksmithCanForgeFromTheFirstMorning()
+    {
+        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
+        sim.Presets.PresetMode = true;
+        VillageRound.Setup(sim);
+        sim.Round.OpenLobby();
+        Sit(sim, Guid.Empty, "Arin", "Blacksmith");
+        sim.ApplyNow(new StartRoundCommand());
+        var w = sim.World;
+        var me = w.Query<Avatar>().Single();
+        var forge = w.Query<Thing>().Single(e => w.Get<Thing>(e).Def.Name == "Forge");
+        var spear = sim.Defs.Recipe("ForgeIronSpear");
+
+        Assert.True(RecipeBooks.Knows(sim, me, spear), "a blacksmith knows the forge's recipes");
+        Assert.True(SkillRules.LevelOf(sim, me, Skill.Crafting) >= 6);
+        Assert.Null(Crafting.MissingTool(sim, me, forge, spear));
+        Assert.False(Crafting.HotEnough(sim, forge, spear));
+        Assert.True(Crafting.CanFireFor(sim, forge, spear), "a cold forge with fuel in it is ready to start: starting is what lights it");
+
+        var beside = sim.SpiralFrom(w.Get<Thing>(forge).Cell, 2).First(c => sim.Map.Passable(c) && Ai.Pathfinder.Touches(c, w.Get<Thing>(forge).Cell));
+        w.Get<Position>(me).Cell = beside;
+        w.Get<Position>(me).Pos = Position.CenterOf(beside);
+        sim.ApplyNow(new CraftCommand(me, forge, spear)); // brings the kit's bars and lights the forge
+        Assert.Contains("heating up", sim.Messages.Messages[^1].Text);
+        for (var t = 0; t < SimClock.TicksPerHour && !Crafting.HotEnough(sim, forge, spear); t++)
+            sim.Tick();
+        sim.ApplyNow(new CraftCommand(me, forge, spear));
+
+        Assert.True(w.Has<Work.WorkSession>(me), "once hot, the blacksmith is at the anvil");
+    }
+
+    [Fact]
+    public void AForgeWithNoFuelCantBeStarted()
+    {
+        var sim = TestWorld.Create();
+        var forge = sim.SpawnStructure(sim.Thing("Forge"), TestWorld.C(10, 10));
+        var spear = sim.Defs.Recipe("ForgeIronSpear");
+        sim.World.Get<Fueled>(forge).Fuel = 0;
+        Assert.False(Crafting.CanFireFor(sim, forge, spear));
+        sim.World.Get<Fueled>(forge).Fuel = 5;
+        Assert.True(Crafting.CanFireFor(sim, forge, spear));
+    }
 }

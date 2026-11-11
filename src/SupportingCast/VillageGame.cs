@@ -579,6 +579,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
                 break;
             case ToolKind.DevSpawn when _toolDef != null:
                 Issue(new DevSpawnCommand(_toolDef, _hoverCell));
+                Notify(MessageKind.Info, $"Spawned {_toolDef.Label} at {_hoverCell.X},{_hoverCell.Y},{_hoverCell.Z}. Right-click to put the spawn tool down.");
                 break;
             case ToolKind.PlaceBuilding when _toolPlan != null:
                 Issue(new PlaceBuildingCommand(_toolPlan, _hoverCell, _buildFacing, PlanVariant(_toolPlan)));

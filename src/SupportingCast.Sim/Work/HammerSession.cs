@@ -56,8 +56,12 @@ public sealed class HammerSession : WorkSession
     public static void TryStart(Simulation sim, Entity worker, Entity station, RecipeDef recipe)
     {
         var cell = sim.World.Get<Thing>(station).Cell;
+        var label = sim.World.Get<Thing>(station).Label;
         if (!Crafting.HotEnough(sim, station, recipe))
-            sim.Messages.Add(MessageKind.Info, $"The {sim.World.Get<Thing>(station).Label} isn't lit, or hot enough.", cell);
+            // A forge fires only for work, so the first try is usually what lights it.
+            sim.Messages.Add(MessageKind.Info, Crafting.CanGetHotEnough(sim, station, recipe) || sim.World.TryGet<Fueled>(station, out var f) && f.Fuel > 0
+                ? $"The {label} is heating up ({sim.TemperatureAt(cell):F0} of {recipe.MinTemp:F0}°C). Use it again once it's hot."
+                : $"The {label} has no fuel.", cell);
         else
             WorkSystem.Start(sim, worker, new HammerSession { Station = station, Recipe = recipe });
     }

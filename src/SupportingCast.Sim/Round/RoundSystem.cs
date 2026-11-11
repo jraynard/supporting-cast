@@ -252,6 +252,15 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         mind.WorkPriority = Mind.DefaultPriorities();
         foreach (var (work, priority) in trade.WorkPriorities)
             mind.WorkPriority[(int)work] = priority;
+
+        if (w.TryGet<Skills>(e, out var skills))
+            foreach (var (skill, least) in trade.Skills)
+                skills.Level[(int)skill] = Math.Max(skills.Level[(int)skill], least);
+        foreach (var station in trade.KnownStations)
+            foreach (var recipe in station.Recipes)
+                RecipeBooks.Learn(sim, e, recipe);
+        foreach (var item in trade.Kit)
+            Inventory.Stow(sim, e, sim.CreateItem(item.ThingDef, item.Count, Simulation.MaterialFor(item.ThingDef, null)));
     }
 
     public void Save(SaveWriter w, Simulation sim)

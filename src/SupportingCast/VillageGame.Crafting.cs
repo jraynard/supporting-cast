@@ -40,8 +40,9 @@ public sealed partial class VillageGame
             return $"the {_sim.World.Get<Thing>(station).Def.Label} needs its {UpgradeLabel(r)} first";
         if (Crafting.MissingTool(_sim, who, station, r) is { } tool)
             return $"needs {Crafting.ToolNeed(_sim, r, tool)} on you or beside the {_sim.World.Get<Thing>(station).Def.Label}";
-        if (!Crafting.HotEnough(_sim, station, r))
-            return r.MinTemp > 0 ? $"needs {r.MinTemp:F0}°C here, and the fire lit" : "the fire isn't lit";
+        // A forge lights for the work, so cold isn't a reason not to start: only no fuel is.
+        if (!Crafting.CanFireFor(_sim, station, r))
+            return r.MinTemp > 0 ? $"needs {r.MinTemp:F0}°C here, and fuel in it" : "the fire isn't lit";
         return null;
     }
 
@@ -208,8 +209,11 @@ public sealed partial class VillageGame
         var open = true;
         ImGui.Begin($"{Cap(thing.Label)}###station", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
         DrawCraftUnderWay(_openStation, bench);
+        var byHand = bench.Active is { } making && Sim.Work.HammerSession.Applies(_sim, _avatar, _openStation, making);
         if (bench.Active != null && bench.Stocked)
-            TextC(Good, "Everything's here: hold F at it to work.");
+            TextC(Good, byHand
+                ? "Everything's here. Press Start (or F at it) once it's hot, then strike with F as the marker crosses the mark."
+                : "Everything's here: hold F at it to work.");
         ImGui.Separator();
 
         // What the player has to hand, by def and material.
@@ -236,12 +240,14 @@ public sealed partial class VillageGame
             var enabled = blocker == null && (!busy || mine);
             if (!enabled)
                 ImGui.BeginDisabled(true);
-            if (ImGui.Button(mine ? "Bring more" : "Make", in _autoSize))
+            var start = mine && bench.Stocked && byHand;
+            if (ImGui.Button(start ? "Start" : mine ? "Bring more" : "Make", in _autoSize))
                 Issue(new CraftCommand(_avatar, _openStation, r));
             if (!enabled)
                 ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 Tip(blocker != null ? $"You can't yet: {blocker}."
+                    : start ? "Take up the hammer. If the fire's still coming up to heat, you'll be told how far it has to go."
                     : busy && !mine ? $"The {thing.Def.Label} is busy with {bench.Active!.Label}; call that off first."
                     : "Brings what you have of it from your hands, pack and any chest or wagon in reach; once it's all here, hold F to work.");
             ImGui.SameLine(0, 8);

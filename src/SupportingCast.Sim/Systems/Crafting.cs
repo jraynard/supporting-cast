@@ -65,6 +65,14 @@ public static class Crafting
         return fueled.Burn(props).Reach + bellows.Lift >= recipe.MinTemp;
     }
 
+    /// <summary>
+    /// Hot enough now, or will be once a craft is under way: a forge or kiln fires only for work
+    /// (<see cref="FuelProps.OnDemand"/>), so a cold one with fuel in it is ready to start.
+    /// </summary>
+    public static bool CanFireFor(Simulation sim, Entity station, RecipeDef recipe) =>
+        HotEnough(sim, station, recipe)
+        || (sim.World.Get<Thing>(station).Def.Building?.Fuel is { OnDemand: true } && sim.World.TryGet<Fueled>(station, out var fuel) && fuel.Fuel > 0);
+
     /// <summary>Work the bellows beside a station (if there are any): it stays blown a little while after.</summary>
     public static void Pump(Simulation sim, Entity station)
     {
