@@ -1,0 +1,174 @@
+using SupportingCast.Sim.Components;
+using SupportingCast.Sim.Defs;
+using SupportingCast.Sim.Errands;
+using SupportingCast.Sim.Maps;
+using SupportingCast.Sim.Round;
+using SupportingCast.Sim.Saving;
+using SupportingCast.Sim.Scenarios;
+using SupportingCast.Sim.Systems;
+using SupportingCast.Sim.Work;
+using static SupportingCast.Sim.Tests.TestWorld;
+
+namespace SupportingCast.Sim.Tests;
+
+/// <summary>The tavern: pouring at the cask, and serving drink and meal orders (Stage 4 of M2).</summary>
+public class InnkeeperTests
+{
+    private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
+
+    private static (Simulation Sim, Entity Me, Entity Cask) AtTheCask()
+    {
+        var sim = Create(40, 40);
+        var me = sim.SpawnCreature(sim.Defs.Creature("Human"), "Inna", C(10, 10), ageDays: 25 * 365);
+        sim.Round.OpenLobby();
+        sim.Round.Sit(Ana, "Inna", null, null, null);
+        sim.Round.Start(sim);
+        sim.GiveStartingPack(me);
+        var cask = sim.SpawnStructure(sim.Thing("AleCask"), C(11, 10));
+        sim.RebuildDerivedIfNeeded();
+        return (sim, me, cask);
+    }
+
+    /// <summary>Pour as a player would: tilted or not, and stopping early enough for the head to settle (or not stopping).</summary>
+    private static void Pour(Simulation sim, Entity me, bool tilted, bool stop = true, int maxTicks = 60 * 60)
+    {
+        var predictor = new WorkPredictor();
+        var stopped = false;
+        for (var t = 0; t < maxTicks && sim.World.Has<WorkSession>(me); t++)
+        {
+            sim.Tick();
+            var hold = false;
+            if (predictor.Session is PourSession p)
+            {
+                // Some of the head settles into drink and the rest goes: aim for where it'll end up.
+                stopped |= stop && p.Level + p.Foam * 0.73f >= p.Line;
+                hold = !stopped;
+            }
+            predictor.Update(sim, me, 1, false, hold, tilted ? 1 : 0, c => sim.ApplyNow(c));
+        }
+        sim.Tick();
+    }
+
+    [Fact]
+    public void ACarefulPourMakesAGoodAleAndDrawsOneServing()
+    {
+        var (sim, me, cask) = AtTheCask();
+        var full = PourSession.ServingsLeft(sim, cask);
+        PourSession.TryStart(sim, me, cask);
+        Assert.IsType<PourSession>(sim.World.Get<WorkSession>(me));
+        Pour(sim, me, tilted: true);
+
+        var ale = sim.World.Get<Carrying>(me).Item;
+        Assert.False(ale.IsNull, "the ale is in hand");
+        Assert.True(sim.World.Get<Thing>(ale).Def.Drink);
+        Assert.True(sim.World.Get<Crafted>(ale).Quality >= Quality.Fine, $"{sim.World.Get<Crafted>(ale).Quality}");
+        Assert.Equal(full - 1, PourSession.ServingsLeft(sim, cask));
+    }
+
+    [Fact]
+    public void PouringStraightAndNotStoppingSpillsIt()
+    {
+        var (sim, me, cask) = AtTheCask();
+        var full = PourSession.ServingsLeft(sim, cask);
+        PourSession.TryStart(sim, me, cask);
+        Pour(sim, me, tilted: false, stop: false);
+
+        Assert.True(sim.World.Get<Carrying>(me).Item.IsNull, "nothing to show for it");
+        Assert.Equal(full - 1, PourSession.ServingsLeft(sim, cask));
+    }
+
+    [Fact]
+    public void APourInProgressSurvivesASave()
+    {
+        var (sim, me, cask) = AtTheCask();
+        PourSession.TryStart(sim, me, cask);
+        var session = (PourSession)sim.World.Get<WorkSession>(me);
+        session.Advance([new WorkInput(0, WorkInputKind.Hold, 1), new WorkInput(0, WorkInputKind.Axis, 1)], 40);
+
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        var copy = (PourSession)loaded.World.Get<WorkSession>(me);
+        Assert.Equal((session.Level, session.Foam, session.Tilt, session.Line, session.StepsDone), (copy.Level, copy.Foam, copy.Tilt, copy.Line, copy.StepsDone));
+    }
+
+    // ---------------- Orders ----------------
+
+    private static (Simulation Sim, List<Entity> Party) Tavern(string playerTrade)
+    {
+        var sim = Simulation.CreateStandard(LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
+        sim.Presets.PresetMode = true;
+        VillageRound.Setup(sim);
+        sim.Round.OpenLobby();
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+        sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(playerTrade)], []));
+        sim.ApplyNow(new StartRoundCommand());
+        var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
+        Assert.NotEmpty(party);
+        return (sim, party);
+    }
+
+    private static void Thirsty(Simulation sim, Entity who) => sim.World.Get<Adventurer>(who).NextDrink = sim.Clock.Tick;
+
+    [Fact]
+    public void AnAleHandedToWhoeverOrderedOneIsPaidForAndTasted()
+    {
+        var (sim, party) = Tavern("Innkeeper");
+        var me = Players.CharacterOf(sim, Ana);
+        var drinker = party[0];
+        Thirsty(sim, drinker);
+        sim.TickMany(SimClock.TicksPerHour / 6);
+        var order = sim.Errands.All.Single(e => e.IsOpen && e.Poster == drinker && e.Kind.Kind == ErrandKind.Drink);
+        Assert.Contains(Perception.For(sim, me).Errands(), e => e.Id == order.Id); // word reaches the innkeeper
+
+        var at = sim.World.Get<Position>(drinker).Cell;
+        var cell = sim.SpiralFrom(at, 3).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z);
+        sim.World.Get<Position>(me).Cell = cell;
+        sim.World.Get<Position>(me).Pos = Position.CenterOf(cell);
+        var ale = sim.CreateItem(sim.Thing("Ale"), 1);
+        sim.World.Add(ale, new Crafted { Quality = Quality.Crude, Maker = me });
+        Inventory.Stow(sim, me, ale);
+        var purse = Coin.Count(sim, me);
+        var mood = sim.World.Get<Adventurer>(drinker).Satisfaction;
+
+        sim.ApplyNow(new GiveCommand(me, drinker, ale, 1));
+
+        Assert.Equal(ErrandStatus.Done, order.Status);
+        Assert.Equal(purse + order.Price, Coin.Count(sim, me));
+        Assert.False(sim.World.IsAlive(ale), "they drank it");
+        Assert.True(sim.World.Get<Adventurer>(drinker).Satisfaction - mood < 1f, "a crude pour pleases less");
+    }
+
+    [Fact]
+    public void AnAIInnkeeperPoursForOrders()
+    {
+        var (sim, party) = Tavern("Healer");
+        var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
+        foreach (var e in party)
+            Thirsty(sim, e);
+
+        for (var i = 0; i < 12 && !sim.Errands.All.Any(e => e.Kind.Kind == ErrandKind.Drink && e.Status == ErrandStatus.Done); i++)
+            sim.TickMany(SimClock.TicksPerHour / 4);
+
+        Assert.Contains(sim.Errands.All, e => e.Kind.Kind == ErrandKind.Drink && e.Status == ErrandStatus.Done && e.Assignee == keeper);
+    }
+
+    [Fact]
+    public void AnAIInnkeeperServesAMealFromTheStores()
+    {
+        var (sim, party) = Tavern("Healer");
+        var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
+        var tavern = PartyHaunt(sim);
+        sim.PlaceItemNear(sim.CreateItem(sim.Thing("Stew"), 10), tavern);
+        var diner = party[0];
+        sim.World.Get<Needs>(diner).Values[sim.Defs.Need("Food").Index] = 0.5f;
+
+        for (var i = 0; i < 12 && !sim.Errands.All.Any(e => e.Kind.Kind == ErrandKind.Meal && e.Status == ErrandStatus.Done); i++)
+            sim.TickMany(SimClock.TicksPerHour / 4);
+
+        var meal = sim.Errands.All.First(e => e.Kind.Kind == ErrandKind.Meal && e.Poster == diner);
+        Assert.Equal(ErrandStatus.Done, meal.Status);
+        Assert.Equal(keeper, meal.Assignee);
+    }
+
+    private static int3 PartyHaunt(Simulation sim) =>
+        Adventurers.PartySystem.HauntOf(sim, sim.Defs.Party("GildedSpurs"))!.Anchor;
+}

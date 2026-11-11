@@ -59,6 +59,7 @@
       "parts": { "foundation": "Sill", "wall": "LogWall", "door": "PlankDoor", "roof": "TurfRoofPart" },
       "furnish": [
         { "def": "Hearth", "at": [4, 2] },
+        { "def": "AleCask", "at": [7, 2] },
         { "def": "LongTable", "at": [2, 1] },
         { "def": "LongTable", "at": [6, 1] },
         { "def": "Stool", "at": [1, 1] }, { "def": "Stool", "at": [3, 1] },

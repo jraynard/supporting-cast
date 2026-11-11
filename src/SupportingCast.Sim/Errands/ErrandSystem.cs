@@ -32,6 +32,9 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// <summary>Game hours between an asker repeating an errand nobody has taken.</summary>
     public const float RepeatHours = 1.5f;
 
+    /// <summary>Game hours between one round and the next an adventurer orders (±25%).</summary>
+    public const float HoursBetweenDrinks = 3;
+
     /// <summary>Open requests one player may have at once.</summary>
     public const int MaxOpenRequests = 5;
 
@@ -92,6 +95,11 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
             }
             if (w.Get<Needs>(who).Get(food) < MealBelow)
                 PostFor(sim, who, ErrandKind.Meal, Entity.Null);
+            if (sim.Clock.Tick >= a.NextDrink && MayAsk(sim, who, ErrandKind.Drink))
+            {
+                PostFor(sim, who, ErrandKind.Drink, Entity.Null);
+                w.Get<Adventurer>(who).NextDrink = sim.Clock.Tick + SimClock.HoursToTicks(HoursBetweenDrinks * _rand.Range(0.75f, 1.25f));
+            }
             if (MostWorn(sim, who) is { IsNull: false } gear)
                 PostFor(sim, who, ErrandKind.Repair, gear);
             if (w.TryGet<Health>(who, out var h) && h.Injuries.Exists(i => !i.Tended))
@@ -234,6 +242,22 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         sim.Speech.Say(sim, e.Poster, $"And {(e.AssigneeName.Length > 0 ? e.AssigneeName : "this town")} keeps my {SubjectLabel(sim, e.Subject)}. Thieves, the lot of you.", Volume.Shout);
     }
 
+    /// <summary>They can taste how it was poured, and say so.</summary>
+    private static void Tasted(Simulation sim, Entity who, Quality quality)
+    {
+        var (mood, line) = quality switch
+        {
+            Quality.Crude => (-0.75f, "Flat and warm. Still, a drink's a drink."),
+            Quality.Fine => (0.25f, "That's a decent pour."),
+            Quality.Masterwork => (0.5f, "Now that's how you pour an ale!"),
+            _ => (0f, (string?)null),
+        };
+        if (sim.World.Has<Adventurer>(who))
+            sim.World.Get<Adventurer>(who).Satisfaction += mood;
+        if (line != null)
+            sim.Speech.Say(sim, who, line, Volume.Say);
+    }
+
     /// <summary>The asker calls it off (a player's own request).</summary>
     public bool Cancel(Simulation sim, Entity who, int id)
     {
@@ -272,6 +296,15 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (repair != null)
         {
             TakeBack(sim, repair, giver);
+            return;
+        }
+        var drink = _errands.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ErrandKind.Drink);
+        if (drink != null && def.Drink)
+        {
+            var quality = w.TryGet<Crafted>(item, out var made) ? made.Quality : Quality.Plain;
+            w.Destroy(item);
+            Tasted(sim, to, quality);
+            Complete(sim, drink, giver);
             return;
         }
         var meal = _errands.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ErrandKind.Meal);

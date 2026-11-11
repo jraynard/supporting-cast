@@ -35,6 +35,13 @@
       "description": "Tanned hide, for caps, jerkins and packs."
     },
     {
+      // Poured at the tavern's cask (Work.PourSession); the pour's quality is the drink's.
+      "name": "Ale", "label": "tankard of ale", "category": "Item", "mass": 0.8, "sprite": "items/ale", "stackLimit": 1,
+      "drink": true, "flammability": 0.1, "maxHp": 10,
+      "description": "Brown ale with a head on it. Adventurers drink it like water and complain about it like wine.",
+      "model": [ { "min": [0.35, 0.35, 0], "max": [0.65, 0.65, 0.35], "top": "props/linen", "side": "props/planks" } ]
+    },
+    {
       "name": "Stew", "label": "stew", "category": "Item", "mass": 0.5, "sprite": "items/meal", "stackLimit": 20,
       "nutrition": 0.35, "cooked": true, "rotDays": 2, "flammability": 0.2, "maxHp": 20,
       "description": "Meat and berries simmered over the hearth in its pot. Filling, and warming going down.",

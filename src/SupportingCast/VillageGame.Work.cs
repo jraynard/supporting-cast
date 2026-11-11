@@ -52,6 +52,11 @@ public sealed partial class VillageGame
             DrawSharpen(sharpen);
             return;
         }
+        if (_work.Session is PourSession pour)
+        {
+            DrawPour(pour);
+            return;
+        }
         if (_work.Session is not HammerSession hammer)
             return;
         var screen = ImGui.GetIO().DisplaySize;
@@ -109,6 +114,37 @@ public sealed partial class VillageGame
             _speechInput.SetValue("".AsSpan());
             ImGui.SetKeyboardFocusHere(-1); // keep typing
         }
+        ImGui.End();
+    }
+
+    /// <summary>The tankard from the side: the drink, the head on it, and the line to bring it to.</summary>
+    private void DrawPour(PourSession s)
+    {
+        var screen = ImGui.GetIO().DisplaySize;
+        var pos = new float2(screen.X * 0.5f, screen.Y * 0.62f);
+        float2? pivot = new float2(0.5f, 0.5f);
+        ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
+        ImGui.Begin("###work"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav);
+        TextC(Theme.Accent, s.Title);
+        TextC(Theme.Dim, "Hold F to pour, A/D to tilt (less foam, slower). Stop at the line and let it settle. Esc to stop.");
+        var dl = ImGui.GetWindowDrawList();
+        var size = new float2(90, 160);
+        var origin = ImGui.GetCursorScreenPos();
+        var min = new float2(origin.X + 160, origin.Y);
+        var max = min + size;
+        ImGui.Dummy(new float2(420, size.Y));
+        dl.AddRectFilled(in min, in max, new ImColor8(70, 48, 30, 255), 6f, ImDrawFlags.None);
+        float Y(float f) => max.Y - Math.Clamp(f, 0f, 1f) * size.Y;
+        var drinkMin = new float2(min.X + 6, Y(s.Level));
+        var drinkMax = new float2(max.X - 6, max.Y - 4);
+        dl.AddRectFilled(in drinkMin, in drinkMax, new ImColor8(184, 122, 40, 255), 2f, ImDrawFlags.None);
+        var foamMin = new float2(min.X + 6, Y(s.Top));
+        var foamMax = new float2(max.X - 6, Y(s.Level));
+        dl.AddRectFilled(in foamMin, in foamMax, new ImColor8(240, 232, 210, 255), 2f, ImDrawFlags.None);
+        var lineMin = new float2(min.X - 10, Y(s.Line) - 1);
+        var lineMax = new float2(max.X + 10, Y(s.Line) + 1);
+        dl.AddRectFilled(in lineMin, in lineMax, Theme.U8(Theme.Good), 0f, ImDrawFlags.None);
+        TextC(Theme.Dim, $"Tilt {s.Tilt * 100:F0}%   Head {s.Foam * 100:F0}%   {PourSession.ServingsLeft(_sim, s.Cask)} left in the cask");
         ImGui.End();
     }
 

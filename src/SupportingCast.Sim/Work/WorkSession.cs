@@ -180,6 +180,7 @@ public abstract class WorkSession
         {
             nameof(HammerSession) => new HammerSession(),
             nameof(SharpenSession) => new SharpenSession(),
+            nameof(PourSession) => new PourSession(),
             _ => throw new SaveException($"Corrupt save: unknown work session {name}"),
         };
         s.Worker = r.Entity();

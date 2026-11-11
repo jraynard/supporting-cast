@@ -61,10 +61,9 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 | Merchant | Haggling, appraisal, spotting cursed loot | Inventory, `HoardValue` | Fencing, forged goods |
 | Undertaker | Autopsy, burial before the dead rise | Health, `Scars`, carcasses, the pyre | Destroying evidence |
 | Forager, Miner | Risky trips beyond the walls | Harvest, Mining, Hunting, Fishing | Alone out there, in both directions |
-| Carpenter | Build, repair, fit locks | Construction, Rooms, doors | A spare key |
+| Carpenter | Build, repair, fit locks; pick the locks and disarm the traps on chests adventurers bring back | Construction, Rooms, doors, locks, `Work/`, expedition loot | A spare key, a chest opened early, a trap left armed |
 | Bard | Rhythm performance, morale, rumours | Mood, Social | Spreading lies |
 | Mayor | Treasury, laws, chairs town meetings | New | Corruption |
-| Locksmith (or the Carpenter's) | Pick the locks and disarm the traps on chests adventurers bring back | Locks, `Work/`, expedition loot | A chest opened early, a trap left armed |
 
 ### Trade notes
 
@@ -80,6 +79,12 @@ Ideas for depth, to build when each trade's milestone comes round.
   chipped blade is hammered first and then sharpened.
 - Commissions have details the buyer chooses: the hilt, runes engraved on it, the materials.
 
+**Innkeeper.**
+- M2 pours ale at the cask. Hold to pour; the tilt controls the head. Customers taste the quality.
+- Later: brewing, and refilling casks from kegs.
+- Mixed drinks: a press-on-cue sequence.
+- Adventurers trading rumours over their cups, which the Quest Broker's intel will feed on.
+
 **Healer (empathic).** Magical in flavour rather than clinical, but grounded.
 - Taking a wound means touching the patient and drawing it into your own body, which takes
   concentration and discipline. What's drawn across lands on the same part of the healer.
@@ -88,9 +93,9 @@ Ideas for depth, to build when each trade's milestone comes round.
 - Out of mana, they meditate to recover it. Meditating is harder the more unhealed wounds they're
   carrying, so a healer who overreaches can end up stuck in pain.
 
-**Locksmith.** Adventurers come back with locked and trapped chests. Picking the lock and finding
-and disarming the traps are each a hands-on game. This may be its own trade or part of the
-Carpenter's, who already fits locks.
+**Carpenter's locksmithing.** Adventurers come back with locked and trapped chests. Picking the
+lock and finding and disarming the traps are each a hands-on game. They're the Carpenter's for
+now; if the trade gets too crowded, the lock work splits off into a Locksmith trade of its own.
 
 ## Pressure and traitors
 
@@ -105,8 +110,8 @@ A traitor serves the Thing Below. They get secret objectives and buy tools from 
 Whisper) with favour earned by completing them. Everything leaves evidence: maker's marks, residue,
 wounds, witnesses. A limited town bell calls a meeting to accuse, vote and exile.
 
-**Death.** Ghosts watch and can be revived. After a delay a dead player may return as a new
-arrival, without their old knowledge being confirmed to anyone.
+**Death.** Ghosts watch and can be revived. They can only re-enter the round by being revived somehow,
+or perhaps by the traitor if they are a necromancer. they can come back in the next round as a new character.
 
 ## Technical decisions
 

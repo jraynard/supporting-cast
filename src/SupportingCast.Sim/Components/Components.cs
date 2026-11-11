@@ -430,6 +430,12 @@ public struct Entrusted
     public Entity Owner;
 }
 
+/// <summary>How many drinks have been drawn from a cask (<see cref="Defs.CaskProps"/>); none until the first.</summary>
+public struct CaskDrawn
+{
+    public int Drawn;
+}
+
 /// <summary>A forge kept burning for a mend in hand (<c>Work.HammerSession</c>) until this tick, with no recipe on it.</summary>
 public struct FiredForMending
 {
@@ -1147,6 +1153,9 @@ public struct Adventurer
 
     /// <summary>When they move on.</summary>
     public long LeaveTick;
+
+    /// <summary>When they next want a drink.</summary>
+    public long NextDrink;
 
     /// <summary>
     /// What they think of the town so far: up for each errand done (more if done quickly), down

@@ -89,11 +89,14 @@ public class PartyTests
         var villager = sim.Creatures().First(e => sim.World.Get<Creature>(e).Faction == Faction.Village && !sim.World.Has<Avatar>(e));
         sim.GiveStartingPack(villager);
         Inventory.Stow(sim, villager, sim.CreateItem(sim.Defs.Thing("SilverCoin"), 7));
-        var purses = party.Select(e => Coins(sim, e)).ToList();
+        int Held() => sim.Creatures().Sum(e => Coins(sim, e));
+        var held = Held();
 
+        // They'll spend some on drinks: but coin only ever changes hands, never hits the floor.
         sim.TickMany(SimClock.HoursToTicks(4));
 
-        Assert.Equal(purses, party.Select(e => Coins(sim, e)).ToList());
-        Assert.Equal(7, Coins(sim, villager));
+        Assert.Equal(held, Held());
+        Assert.DoesNotContain(sim.SpawnedItems(), e => sim.World.Get<Thing>(e).Def.Name == "SilverCoin");
+        Assert.True(Coins(sim, villager) >= 7);
     }
 }

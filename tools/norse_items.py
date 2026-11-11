@@ -103,6 +103,21 @@ def satchel():
     return selective_outline(img)
 
 
+def tankard(drink):
+    """A staved wooden tankard, iron-hooped, with a head on it (``drink``: the liquid's ramp at the lip)."""
+    img = Image.new("RGBA", SIZE, (0, 0, 0, 0))
+    wood = ramp((150, 104, 62), 5)
+    shape(img, lambda d: d.arc([18, 11, 29, 24], 270, 90, fill=255, width=3), wood[:4], radius=0.8)          # the handle
+    shape(img, lambda d: d.rounded_rectangle([6, 8, 22, 29], radius=2, fill=255), wood,
+          tex=lambda x, y: 0.12 if x % 4 == 0 else 0.0)                                                     # the staves
+    for y in (11, 25):                                                                                        # iron hoops
+        px(img, [(x, y) for x in range(6, 23)], IRON[1])
+        px(img, [(x, y + 1) for x in range(6, 23)], IRON[3])
+    shape(img, lambda d: d.ellipse([5, 3, 23, 11], fill=255), [(222, 210, 180, 255), (236, 226, 200, 255), (246, 240, 222, 255), (252, 250, 240, 255)], radius=1.0)  # foam
+    px(img, [(x, 9) for x in range(8, 21, 3)], drink[2])                                                      # the drink showing under the head
+    return selective_outline(img)
+
+
 # ---------------------------------------------------------------- clothes
 
 def dyes():
@@ -268,7 +283,8 @@ def clothes():
 
 def generate():
     clothes()
-    for name, make in (("leather_jerkin", jerkin), ("leather_cap", cap), ("iron_helm", helm), ("horned_helm", horned_helm), ("chain_shirt", byrnie), ("satchel", satchel)):
+    for name, make in (("leather_jerkin", jerkin), ("leather_cap", cap), ("iron_helm", helm), ("horned_helm", horned_helm), ("chain_shirt", byrnie), ("satchel", satchel),
+                       ("ale", lambda: tankard(ramp((176, 118, 40), 5)))):
         path = os.path.join(ROOT, "items", name + ".png")
         os.makedirs(os.path.dirname(path), exist_ok=True)
         make().save(path)

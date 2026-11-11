@@ -55,6 +55,21 @@
       ]
     },
     {
+      // The tavern's cask on its cradle: F at it pours a drink (Work.PourSession). It holds
+      // "servings" drinks; refilling it (and brewing) comes later.
+      "name": "AleCask", "label": "ale cask", "category": "Building", "sprite": "buildings/chest",
+      "description": "A great oak cask on a cradle, with a tap. F at it to pour.",
+      "maxHp": 120, "flammability": 0.8,
+      "building": { "work": 200, "surfaceHeight": 0.7, "cost": [ { "def": "Wood", "count": 14 } ], "cask": { "pours": "Ale", "servings": 60 } },
+      "model": [
+        { "min": [0.12, 0.2, 0], "max": [0.88, 0.8, 0.16], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.08, 0.14, 0.12], "max": [0.92, 0.86, 0.7], "top": "props/log_end", "side": "props/planks" },
+        { "min": [0.07, 0.3, 0.12], "max": [0.93, 0.36, 0.7], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.07, 0.64, 0.12], "max": [0.93, 0.7, 0.7], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.46, 0.86, 0.2], "max": [0.54, 0.95, 0.28], "top": "props/log_side", "side": "props/log_side" }
+      ]
+    },
+    {
       "name": "Stool", "category": "Building", "sprite": "buildings/stool",
       "description": "Somewhere to sit by the fire.",
       "maxHp": 60, "flammability": 1.0,

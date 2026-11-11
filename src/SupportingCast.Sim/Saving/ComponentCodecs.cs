@@ -243,10 +243,12 @@ internal static class ComponentCodecs
             w.Def(a.PartyDef);
             w.Long(a.LeaveTick);
             w.Float(a.Satisfaction);
-        }, r => new Adventurer { Party = r.Int(), Kind = r.Def<AdventurerKindDef>(), PartyDef = r.Def<PartyDef>(), LeaveTick = r.Long(), Satisfaction = r.Float() }),
+            w.Long(a.NextDrink);
+        }, r => new Adventurer { Party = r.Int(), Kind = r.Def<AdventurerKindDef>(), PartyDef = r.Def<PartyDef>(), LeaveTick = r.Long(), Satisfaction = r.Float(), NextDrink = r.Long() }),
         Tag<Locked>("Locked"),
         Codec("Edge", (w, e) => w.Float(e.Dullness), r => new Edge { Dullness = r.Float() }),
         Codec("Entrusted", (w, e) => w.Entity(e.Owner), r => new Entrusted { Owner = r.Entity() }),
+        Codec("CaskDrawn", (w, c) => w.Int(c.Drawn), r => new CaskDrawn { Drawn = r.Int() }),
         Codec("FiredForMending", (w, f) => w.Long(f.Until), r => new FiredForMending { Until = r.Long() }),
         Codec("Stored", (w, s) => w.Entity(s.In), r => new Stored { In = r.Entity() }),
         Codec("Request", (w, q) =>

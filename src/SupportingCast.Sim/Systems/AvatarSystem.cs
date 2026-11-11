@@ -51,6 +51,9 @@ public enum AvatarActionKind
     Butcher,
     /// <summary>Pick up a downed hatchling (or a carcass, for the butcher spot), or set down what's in your arms (<see cref="Rescues"/>), done at once.</summary>
     Carry,
+
+    /// <summary>Draw a drink from a cask (<see cref="Work.PourSession"/>), begun at once.</summary>
+    Pour,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -76,7 +79,7 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
     public bool Instant => Kind is AvatarActionKind.PutDown or AvatarActionKind.Deliver or AvatarActionKind.PickUp
         or AvatarActionKind.Store or AvatarActionKind.OpenStorage 
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
-        or AvatarActionKind.Carry;
+        or AvatarActionKind.Carry or AvatarActionKind.Pour;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
     public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation;
@@ -318,6 +321,10 @@ public sealed class AvatarSystem : ISimSystem
         }
         if (Crafting.IsStation(sim, site))
             return new(AvatarActionKind.OpenStation, $"Use the {w.Get<Thing>(site).Label}", cell, site);
+        if (!site.IsNull && w.Get<Thing>(site).Def.Building?.Cask is { } cask && w.Get<Carrying>(avatar).Item.IsNull
+            && !w.Has<Work.WorkSession>(avatar))
+            return new(AvatarActionKind.Pour, Work.PourSession.ServingsLeft(sim, site) > 0
+                ? $"Pour {sim.Defs.Thing(cask.Pours).Label}" : $"The {w.Get<Thing>(site).Label} is dry", cell, site);
         if (!held.IsNull && IsContainer(sim, site) && sim.HasRoomFor(site, w.Get<Thing>(held).Def, w.Get<Thing>(held).Material))
             return new(AvatarActionKind.Store, $"Put {w.Get<Thing>(held).Label} in the {w.Get<Thing>(site).Label}", cell, site);
         // A pack lying about opens like the wagon (you're already wearing one, or it'd go on).
@@ -594,6 +601,9 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.Extinguish:
                 AiSystem.Order(sim, avatar, new FightFireJob(action.Cell));
+                break;
+            case AvatarActionKind.Pour:
+                Work.PourSession.TryStart(sim, avatar, action.Target);
                 break;
             case AvatarActionKind.Craft:
                 if (w.Get<Workbench>(action.Target).Active is { } recipe)
