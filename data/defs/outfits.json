@@ -1,0 +1,165 @@
+// Clothes: the Tunic, Legs, Feet and Cloak apparel slots (docs/ART.md "People"). Cloth garments
+// come in a dye, which is their material (materials "of": "Cloth"); the game tints the garment's
+// dyed parts with the dye's colour. Armor (apparel.json, metalwork.json) is drawn over them.
+// Armor values here are small: clothes are for warmth and looks, not for stopping blades.
+//
+// "outfits" dress people: villagers ("villager": true, one picked per person from their own
+// stream, a dye from each piece's "dyes"), raiders (a raider kind's "outfit"), story people (by
+// name: Elder, Sorcerer, Captor) and the character creator's presets ("preset": true; "hair",
+// "beard", "eyes" and "hairColor" are the look the preset starts from).
+{
+  "things": [
+    {
+      "name": "Cloth", "label": "wool cloth", "category": "Item", "mass": 0.4, "sprite": "items/cloth", "stackLimit": 40, "flammability": 0.8, "maxHp": 30,
+      "description": "Woven wool, plain or dyed. Tailors will make clothes of it."
+    },
+
+    // ---- Tunic slot ----
+    {
+      "name": "Tunic", "label": "tunic", "category": "Item", "mass": 0.8, "sprite": "items/tunic", "materialsOf": "Cloth", "flammability": 0.8, "maxHp": 60,
+      "description": "A wool tunic to mid-thigh, its hem and cuffs bound with woven braid.",
+      "apparel": { "slot": "Tunic", "covers": [ "Torso", "LeftArm", "RightArm" ], "sharp": 0.03, "blunt": 0.03, "heat": 0.04, "worn": "apparel/tunic" }
+    },
+    {
+      "name": "Kaftan", "label": "kaftan", "category": "Item", "mass": 1.2, "sprite": "items/kaftan", "materialsOf": "Cloth", "flammability": 0.8, "maxHp": 70,
+      "description": "A long wrapped coat to the knee, trimmed down the front: a skald's or an elder's.",
+      "apparel": { "slot": "Tunic", "covers": [ "Torso", "LeftArm", "RightArm" ], "sharp": 0.04, "blunt": 0.04, "heat": 0.05, "worn": "apparel/kaftan" }
+    },
+    {
+      "name": "ApronDress", "label": "apron dress", "category": "Item", "mass": 0.9, "sprite": "items/apron_dress", "materialsOf": "Cloth", "flammability": 0.8, "maxHp": 60,
+      "description": "A wool hangerok over the linen shift, held by bronze brooches with a string of glass beads between.",
+      "apparel": { "slot": "Tunic", "covers": [ "Torso" ], "sharp": 0.03, "blunt": 0.03, "heat": 0.04, "worn": "apparel/apron_dress" }
+    },
+    {
+      "name": "LeatherVest", "label": "leather vest", "category": "Item", "mass": 1.0, "sprite": "items/leather_vest", "flammability": 0.5, "maxHp": 70,
+      "description": "Blackened leather laced up the front over a tunic, a fur collar against the wind, bracers to match. Light armor for someone who'd rather not be hit at all.",
+      "apparel": { "slot": "Body", "garment": true, "covers": [ "Torso", "LeftArm", "RightArm" ], "sharp": 0.1, "blunt": 0.05, "heat": 0.08, "worn": "apparel/vest" }
+    },
+
+    // ---- Legs ----
+    {
+      "name": "Trousers", "label": "trousers", "category": "Item", "mass": 0.7, "sprite": "items/trousers", "materialsOf": "Cloth", "flammability": 0.8, "maxHp": 60,
+      "description": "Wool trousers, the shins bound in leg wraps.",
+      "apparel": { "slot": "Legs", "covers": [ "LeftLeg", "RightLeg" ], "sharp": 0.03, "blunt": 0.03, "heat": 0.04, "worn": "apparel/trousers" }
+    },
+    {
+      "name": "Skirt", "label": "skirt", "category": "Item", "mass": 0.7, "sprite": "items/skirt", "materialsOf": "Cloth", "flammability": 0.8, "maxHp": 55,
+      "description": "A wool skirt to the ankle with a woven hem.",
+      "apparel": { "slot": "Legs", "covers": [ "LeftLeg", "RightLeg" ], "sharp": 0.02, "blunt": 0.02, "heat": 0.03, "worn": "apparel/skirt" }
+    },
+
+    // ---- Feet ----
+    {
+      "name": "Turnshoes", "label": "turnshoes", "category": "Item", "mass": 0.4, "sprite": "items/turnshoes", "flammability": 0.5, "maxHp": 40,
+      "description": "Soft leather shoes, sewn inside out and turned.",
+      "apparel": { "slot": "Feet", "covers": [], "worn": "apparel/turnshoes" }
+    },
+    {
+      "name": "FurBoots", "label": "fur-topped boots", "category": "Item", "mass": 0.9, "sprite": "items/fur_boots", "flammability": 0.5, "maxHp": 60,
+      "description": "Calf-high leather boots turned down at the top to show their fur lining.",
+      "apparel": { "slot": "Feet", "covers": [ "LeftLeg", "RightLeg" ], "sharp": 0.04, "blunt": 0.03, "heat": 0.06, "worn": "apparel/boots" }
+    },
+
+    // ---- Cloak ----
+    {
+      "name": "Cloak", "label": "cloak", "category": "Item", "mass": 1.4, "sprite": "items/cloak", "materialsOf": "Cloth", "flammability": 0.8, "maxHp": 70,
+      "description": "A wool cloak pinned at the right shoulder, leaving the sword arm free.",
+      "apparel": { "slot": "Cloak", "covers": [ "Torso" ], "sharp": 0.03, "blunt": 0.03, "heat": 0.06, "worn": "apparel/cloak" }
+    },
+    {
+      "name": "HoodedCloak", "label": "hooded cloak", "category": "Item", "mass": 1.6, "sprite": "items/hooded_cloak", "materialsOf": "Cloth", "flammability": 0.8, "maxHp": 75,
+      "description": "A cloak with a deep hood, worn down about the shoulders like a cowl.",
+      "apparel": { "slot": "Cloak", "covers": [ "Torso" ], "sharp": 0.03, "blunt": 0.03, "heat": 0.07, "worn": "apparel/hooded_cloak" }
+    },
+    {
+      "name": "Scarf", "label": "scarf", "category": "Item", "mass": 0.6, "sprite": "items/scarf", "materialsOf": "Cloth", "flammability": 0.8, "maxHp": 50,
+      "description": "A long wool scarf wound thick about the neck, its fringed tail loose behind: warm, and handy for hiding a face. Worn at the neck, over a cloak or mantle (so not with a torc).",
+      "apparel": { "slot": "Neck", "garment": true, "covers": [], "heat": 0.04, "worn": "apparel/scarf" }
+    },
+    {
+      "name": "Mantle", "label": "mantle", "category": "Item", "mass": 1.1, "sprite": "items/mantle", "materialsOf": "Cloth", "flammability": 0.8, "maxHp": 65,
+      "description": "A short wool mantle thrown over the shoulders: it covers the front on one side and leaves the other arm free.",
+      "apparel": { "slot": "Cloak", "covers": [ "Torso" ], "sharp": 0.03, "blunt": 0.03, "heat": 0.05, "worn": "apparel/mantle" }
+    },
+    {
+      "name": "FurMantle", "label": "fur mantle", "category": "Item", "mass": 1.2, "sprite": "items/fur_mantle", "flammability": 0.6, "maxHp": 70,
+      "description": "A short cape of pelts over the shoulders, fastened with a bronze clasp.",
+      "apparel": { "slot": "Cloak", "covers": [ "Torso" ], "sharp": 0.05, "blunt": 0.04, "heat": 0.08, "worn": "apparel/fur_mantle" }
+    },
+    {
+      "name": "HornedHelm", "label": "horned helm", "category": "Item", "mass": 1.8, "sprite": "items/horned_helm", "maxHp": 90,
+      "description": "An iron cap with a riveted brow band and a pair of ox horns: more for the songs than for the fighting.",
+      "apparel": { "slot": "Head", "garment": true, "covers": [ "Head" ], "sharp": 0.3, "blunt": 0.15, "heat": 0.06, "worn": "apparel/horned_helm" }
+    }
+  ],
+
+  // Dyes. "color" is the dye itself (RGB 0..1), tinting a garment's dyed cloth.
+  "materials": [
+    { "name": "Undyed", "label": "undyed", "of": "Cloth", "color": [0.780, 0.722, 0.604], "character": "the natural oat of the fleece" },
+    { "name": "Woad", "label": "woad", "of": "Cloth", "color": [0.243, 0.361, 0.596], "character": "a deep blue" },
+    { "name": "Madder", "label": "madder", "of": "Cloth", "color": [0.612, 0.235, 0.204], "character": "a warm red" },
+    { "name": "Weld", "label": "weld", "of": "Cloth", "color": [0.784, 0.659, 0.282], "character": "a golden yellow" },
+    { "name": "Walnut", "label": "walnut", "of": "Cloth", "color": [0.424, 0.314, 0.220], "character": "an earthy brown" },
+    { "name": "Lichen", "label": "lichen", "of": "Cloth", "color": [0.353, 0.431, 0.251], "character": "a mossy green" },
+    { "name": "Heather", "label": "heather", "of": "Cloth", "color": [0.604, 0.525, 0.722], "character": "a soft lavender" },
+    { "name": "Rose", "label": "rose", "of": "Cloth", "color": [0.722, 0.384, 0.565], "character": "a bright pinkish red, madder over lichen" },
+    { "name": "Orchil", "label": "orchil", "of": "Cloth", "color": [0.416, 0.290, 0.541], "character": "a rich violet, from rock lichen" },
+    { "name": "IronBlack", "label": "iron-black", "of": "Cloth", "color": [0.227, 0.212, 0.251], "character": "near black, dyed with iron and oak galls" },
+    { "name": "Ash", "label": "ash-grey", "of": "Cloth", "color": [0.600, 0.620, 0.670], "character": "the cool grey of woad over undyed wool" }
+  ],
+
+  "outfits": [
+    // ---- Villagers ----
+    { "name": "Farmhand", "label": "Farmhand", "villager": true, "preset": true, "hair": "Short",
+      "description": "Plain wool for plain work: the look of a hand on any farmstead.",
+      "pieces": [ { "def": "Tunic", "material": "Undyed", "dyes": [ "Walnut", "Weld", "Woad" ] }, { "def": "Trousers", "material": "Walnut", "dyes": [ "Undyed" ] },
+                  { "def": "Turnshoes" } ] },
+    { "name": "Weaver", "label": "Weaver", "villager": true, "preset": true, "body": "Female", "hair": "Bun",
+      "description": "An apron dress over the shift, brooches and beads: a woman of the household.",
+      "pieces": [ { "def": "ApronDress", "material": "Madder", "dyes": [ "Woad", "Weld", "Lichen" ] }, { "def": "Turnshoes" } ] },
+    { "name": "Woodsman", "label": "Woodsman", "villager": true,
+      "pieces": [ { "def": "Tunic", "dyes": [ "Lichen", "Walnut" ] }, { "def": "Trousers", "dyes": [ "Walnut", "Undyed" ] }, { "def": "FurBoots" } ] },
+    { "name": "Fisher", "label": "Fisher", "villager": true,
+      "pieces": [ { "def": "Tunic", "dyes": [ "Woad", "Undyed" ] }, { "def": "Trousers", "dyes": [ "Undyed", "Walnut" ] }, { "def": "Turnshoes" },
+                  { "def": "Cloak", "dyes": [ "Walnut", "Undyed" ] } ] },
+    { "name": "Goodwife", "label": "Goodwife", "villager": true, "body": "Female",
+      "pieces": [ { "def": "Tunic", "dyes": [ "Weld", "Woad", "Undyed" ] }, { "def": "Skirt", "dyes": [ "Walnut", "Madder", "Lichen" ] }, { "def": "Turnshoes" } ] },
+
+    // ---- Creator presets ----
+    { "name": "Shieldmaiden", "label": "Shieldmaiden", "preset": true, "body": "Female", "hair": "BraidedPonytail", "eyes": "Round", "stance": "Hip",
+      "hairColor": "D8A85A", "eyeColor": "6A4A2A",
+      "description": "Honey-gold waves pulled up into a warrior's braid and ponytail, laced leather over woad wool, a fur collar against the sea wind.",
+      "pieces": [ { "def": "Tunic", "material": "Woad" }, { "def": "LeatherVest" }, { "def": "Trousers", "material": "Walnut" }, { "def": "FurBoots" }, { "def": "FurMantle" } ] },
+    { "name": "Hunter", "label": "Hunter", "preset": true, "hair": "Ponytail", "eyes": "Narrow",
+      "description": "Greens and browns that vanish among the spruce.",
+      "pieces": [ { "def": "Tunic", "material": "Lichen" }, { "def": "Trousers", "material": "Walnut" }, { "def": "FurBoots" }, { "def": "HoodedCloak", "material": "Lichen" } ] },
+    { "name": "Skald", "label": "Skald", "preset": true, "hair": "Long", "beard": "Short",
+      "description": "A long red kaftan and a blue cloak: dressed to be noticed in a mead hall.",
+      "pieces": [ { "def": "Kaftan", "material": "Madder" }, { "def": "Trousers", "material": "Undyed" }, { "def": "Turnshoes" }, { "def": "Cloak", "material": "Woad" } ] },
+    { "name": "Apprentice", "label": "Smith's apprentice", "preset": true, "hair": "Topknot", "beard": "Stubble", "stance": "Crossed",
+      "description": "Leather over linen, sleeves free of the forge's sparks.",
+      "pieces": [ { "def": "LeatherVest" }, { "def": "Trousers", "material": "Walnut" }, { "def": "FurBoots" } ] },
+    { "name": "Wanderer", "label": "Wanderer", "preset": true, "hair": "Swept", "eyes": "Round", "hairColor": "3A56B0", "eyeColor": "4AA86A", "stance": "Coin",
+      "description": "A tousled blue mop over one eye, a heather poncho and a thick rose cowl, blackened leather and scuffed boots: someone who travels light, doesn't stay long, and is always flipping a coin.",
+      "pieces": [ { "def": "LeatherVest" }, { "def": "Trousers", "material": "IronBlack" }, { "def": "FurBoots" },
+                  { "def": "Mantle", "material": "Heather" }, { "def": "Scarf", "material": "Rose" } ] },
+    { "name": "Valkyrie", "label": "Valkyrie", "preset": true, "body": "Female", "hair": "Long", "eyes": "Round",
+      "hairColor": "D8A848", "eyeColor": "8A5AC8",
+      "description": "Golden hair under a horned helm, a fur collar and a grey tunic belted tight: small, stubborn and first through the door.",
+      "pieces": [ { "def": "Tunic", "material": "Ash" }, { "def": "Trousers", "material": "IronBlack" }, { "def": "FurBoots" },
+                  { "def": "FurMantle" }, { "def": "HornedHelm" } ] },
+    { "name": "Seer", "label": "Seer", "preset": true, "hair": "CrownBraid", "eyes": "Sleepy",
+      "description": "Dark blue and a long black hood: a völva who reads the runes.",
+      "pieces": [ { "def": "Kaftan", "material": "Woad" }, { "def": "Skirt", "material": "IronBlack" }, { "def": "Turnshoes" }, { "def": "HoodedCloak", "material": "IronBlack" } ] },
+
+    // ---- Story people and raiders ----
+    { "name": "Elder", "label": "Elder",
+      "pieces": [ { "def": "Kaftan", "material": "Woad" }, { "def": "Skirt", "material": "Undyed" }, { "def": "Turnshoes" }, { "def": "Cloak", "material": "Undyed" } ] },
+    { "name": "Sorcerer", "label": "Sorcerer",
+      "pieces": [ { "def": "Kaftan", "material": "Orchil" }, { "def": "Trousers", "material": "IronBlack" }, { "def": "Turnshoes" }, { "def": "HoodedCloak", "material": "IronBlack" } ] },
+    { "name": "Captor", "label": "Captor",
+      "pieces": [ { "def": "Tunic", "dyes": [ "Walnut", "IronBlack" ] }, { "def": "Trousers", "dyes": [ "IronBlack", "Walnut" ] }, { "def": "FurBoots" } ] },
+    { "name": "Raider", "label": "Raider",
+      "pieces": [ { "def": "Tunic", "dyes": [ "Walnut", "IronBlack", "Madder", "Undyed" ] }, { "def": "Trousers", "dyes": [ "Walnut", "IronBlack" ] }, { "def": "FurBoots" } ] }
+  ]
+}

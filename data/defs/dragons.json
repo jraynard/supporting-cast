@@ -1,0 +1,111 @@
+// Dragon care (docs/plans/dragon-interactions.md): the ways a keeper tends their dragon, the named
+// trust levels its affinity climbs through, and the tricks it can be taught.
+{
+  // Bond is the Bond need (0..1, short-term attention); affinity is the long-term trust behind
+  // obedience and riding. Both are scaled by novelty (repeat within noveltyHours: ½, then ¼),
+  // ×1.5 when it answers what the dragon asked for, ×2 affinity in its first day (imprinting),
+  // and the trust level's gainFactor. ticks are work ticks (60 = a second at 1x; 0 = at once).
+  "dragonInteractions": [
+    { "name": "Pet", "prompt": "Scratch {name}", "label": "pet", "doing": "Scratching", "kind": "Plain", "ticks": 0, "bond": 0.12, "affinity": 0.004,
+      "thought": "Petted", "noveltyHours": 2, "answers": "Scratch",
+      "description": "A scratch behind the horns. Small, and best when it's what it wants." },
+    { "name": "HandFeed", "prompt": "Feed {name} by hand", "label": "feed by hand", "doing": "Feeding", "kind": "Feed", "ticks": 0, "bond": 0.1, "affinity": 0.006,
+      "thought": "FedByKeeper", "noveltyHours": 3, "answers": "Food",
+      "favourites": [ "Meat", "RawFish", "DragonCake" ],
+      "description": "Food from your hand, not the trough. Its favourite counts double." },
+    { "name": "Play", "prompt": "Play with {name}", "label": "play", "doing": "Playing with", "kind": "Plain", "ticks": 600, "bond": 0.6, "affinity": 0.015,
+      "thought": "PlayedWithKeeper", "noveltyHours": 8, "answers": "Play",
+      "description": "Chase, tug and tumble. The best thing for a young dragon's trust." },
+    { "name": "Groom", "prompt": "Groom {name}", "label": "groom", "doing": "Grooming", "kind": "Groom", "ticks": 480, "bond": 0.3, "affinity": 0.015,
+      "stages": [ "Juvenile", "Adult" ], "tool": "Brush", "thought": "Groomed", "noveltyHours": 12, "answers": "Groom",
+      "description": "Brush out its scales with a scale brush. While it's shedding, loose scales come away." },
+    { "name": "Comfort", "prompt": "Comfort {name}", "label": "comfort", "doing": "Soothing", "kind": "Comfort", "ticks": 240, "bond": 0.2, "affinity": 0.01,
+      "thought": "SoothedByKeeper", "noveltyHours": 4, "answers": "Comfort",
+      "description": "Sit with it and talk it down when it's upset." },
+    { "name": "Train", "prompt": "Train {name}", "label": "train", "doing": "Training", "kind": "Train", "ticks": 720, "bond": 0.15, "affinity": 0.008,
+      "stages": [ "Juvenile", "Adult" ], "thought": "TrainedWithKeeper", "noveltyHours": 6,
+      "description": "A lesson on a trick. A few sessions on different days teach it." },
+    { "name": "RestTogether", "prompt": "Sleep beside {name}", "label": "rest together", "kind": "Rest", "bond": 0.3, "affinity": 0.01,
+      "thought": "SleptBesideKeeper", "noveltyHours": 10,
+      "description": "Sleep within two cells of it and it settles all night." },
+    { "name": "Gift", "prompt": "Give {name} treasure", "label": "give treasure", "kind": "Gift", "bond": 0.05, "affinity": 0.05,
+      "thought": "GivenTreasure", "noveltyHours": 12, "answers": "Treasure",
+      "description": "Treasure for its hoard; the richer the gift, the more it counts (up to this)." }
+  ],
+
+  // Affinity names. gainFactor slows care's affinity once there: devotion takes weeks.
+  "trustLevels": [
+    { "name": "Wary", "label": "wary", "minAffinity": 0, "gainFactor": 1, "unlocks": "" },
+    { "name": "Accepting", "label": "accepting", "minAffinity": 0.25, "gainFactor": 1, "unlocks": "Comes when you call it." },
+    { "name": "Trusting", "label": "trusting", "minAffinity": 0.5, "gainFactor": 0.5, "unlocks": "Lets you ride it, and takes your orders in a fight." },
+    { "name": "Devoted", "label": "devoted", "minAffinity": 0.9, "gainFactor": 0.25, "unlocks": "Brings you a share of its kills, and guards you in a fight: it strikes at anyone stepping in beside you." },
+    { "name": "Soulbound", "label": "soulbound", "minAffinity": 1.4, "gainFactor": 0.15, "unlocks": "Misses you half as fast, its fire never touches you, and it flies at whoever hurts you, whatever it has left." }
+  ],
+
+  "tricks": [
+    { "name": "Come", "label": "come", "effect": "Come", "sessions": 3, "description": "Comes when called from anywhere, and always does." },
+    { "name": "Stay", "label": "stay", "effect": "Stay", "sessions": 3, "description": "Can be told to stay where it is until you call it." },
+    { "name": "HoldFire", "label": "hold fire", "effect": "HoldFire", "sessions": 2, "description": "Sneezes a quarter as often." },
+    { "name": "Steady", "label": "steady", "effect": "Steady", "sessions": 3, "obedience": 0.1, "description": "Never shrugs you off, and listens better with you on its back." },
+    { "name": "FireOnCommand", "label": "breath on command", "effect": "Work", "work": [ "Burn", "Stoke", "Chill", "Quarry", "Blight", "Nurture" ], "sessions": 4, "obedience": 0.2,
+      "description": "Breathes where it's told more readily." },
+    { "name": "Fetch", "label": "fetch and carry", "effect": "Work", "work": [ "Haul", "Chop" ], "sessions": 4, "obedience": 0.2,
+      "description": "Hauls and fells more readily." },
+    { "name": "HuntWithMe", "label": "hunt with me", "effect": "Work", "work": [ "Hunt" ], "sessions": 4, "obedience": 0.25,
+      "description": "Gives chase when its rider points out game." }
+  ],
+
+  // What each element breathes (docs/plans/dragon-types.md; Environment/Breath.cs), one per
+  // DragonElement. range/cone/rays scale the life stage's breath (fire's are its own); damage is per
+  // ray that catches a creature, [min, max]; intensity is how fiercely it lights or does its effect;
+  // status ticks are sim ticks (a combat round is 300, a game hour 1500); venom perHour is damage per
+  // game hour; cool and coolFloor are °C; work lists the breath jobs it can be given; coldTolerance
+  // lowers its comfort and safe minimums by that many degrees.
+  "elements": [
+    { "name": "Fire", "label": "fire", "breath": "breathes fire", "color": "FF4A24", "damageType": "Burn", "damage": [ 1.5, 3.0 ],
+      "intensity": 0.9, "splash": 1.5, "effect": "Ignite", "work": [ "Burn", "Stoke" ],
+      "description": "Sets what it touches alight: clears land, and stokes a forge to iron heat." },
+    { "name": "Ice", "label": "frost", "breath": "breathes frost", "color": "5CC8FF", "damageType": "Frost", "damage": [ 1.2, 2.4 ],
+      "intensity": 0.9, "splash": 1.2, "effect": "Freeze", "cool": 30, "coolFloor": -8, "douse": 0.5,
+      "status": { "kind": "Chill", "ticks": 600, "strength": 0.4 }, "work": [ "Chill" ], "coldTolerance": 15,
+      "description": "Puts out fires and slows whoever it catches; keeps a store cold so food lasts. Shrugs off the cold." },
+    { "name": "Lightning", "label": "lightning", "noun": "lightning", "breath": "looses lightning", "color": "FFE838", "damageType": "Shock", "damage": [ 3.0, 5.0 ],
+      "intensity": 0.9, "splash": 0.5, "range": 1.3, "cone": 0.3, "rays": 0.3, "effect": "Shock", "igniteChance": 0.05,
+      "chain": { "radius": 3, "max": 2, "falloff": 0.6 }, "status": { "kind": "Stun", "ticks": 90, "tuShare": 0.35 }, "work": [ "Quarry" ],
+      "description": "A long bolt that leaps between foes and stuns them; shatters rock marked for digging." },
+    { "name": "Poison", "label": "poison", "breath": "breathes poison", "color": "B24CFF", "damageType": "Venom", "damage": [ 0.5, 1.0 ],
+      "intensity": 0.9, "splash": 1.5, "range": 0.9, "cone": 1.2, "effect": "Cloud", "wilt": 40,
+      "cloud": { "radius": 1.5, "hours": 1 }, "status": { "kind": "Venom", "ticks": 900, "perHour": 6 }, "work": [ "Blight" ],
+      "description": "Leaves a lingering cloud that sickens friend and foe alike and withers plants: clears land without fire." },
+    { "name": "Nature", "label": "thorns", "breath": "looses thorns", "color": "4CD864", "damageType": "Pierce", "damage": [ 1.0, 2.0 ],
+      "intensity": 0.9, "splash": 1.0, "effect": "Bloom",
+      "status": { "kind": "Root", "ticks": 330 }, "work": [ "Nurture" ],
+      "description": "Vines root its targets where they stand; harvested plants it breathes on grow back fast." }
+  ],
+
+  "things": [
+    {
+      "name": "ScaleBrush", "held": "brush", "label": "scale brush", "category": "Item", "mass": 0.3, "sprite": "items/scale_brush", "maxHp": 30,
+      "tool": { "kind": "Brush", "speed": 1, "tier": 0 },
+      "description": "Stiff fibre bound to a wooden back. Grooming a dragon takes one; while it sheds, the loose scales come away."
+    },
+    {
+      "name": "FeedingTrough", "label": "feeding trough", "category": "Building", "sprite": "buildings/feeding_trough",
+      "description": "Holds 2 stacks of food for a hatchling, which eats only from a hand or a trough. F at it to put food in.",
+      "maxHp": 80, "flammability": 1.0,
+      "building": { "outdoor": true, "work": 120, "storageStacks": 2, "dragonBowl": true, "surfaceHeight": 0.3, "cost": [ { "def": "Wood", "count": 8 } ] },
+      "model": [
+        { "min": [0.12, 0.28, 0], "max": [0.88, 0.72, 0.3], "top": "props/planks", "side": "props/planks" }
+      ]
+    }
+  ],
+
+  "recipes": [
+    {
+      "name": "MakeScaleBrush", "label": "scale brush", "skill": "Crafting", "work": 300,
+      "description": "By hand: a bundle of fibre bound to a wooden back.",
+      "ingredients": [ { "def": "Wood", "count": 1 }, { "def": "Fiber", "count": 3 } ],
+      "products": [ { "def": "ScaleBrush", "count": 1 } ]
+    }
+  ]
+}

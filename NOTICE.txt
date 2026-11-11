@@ -1,0 +1,8 @@
+BRUTAL game development framework is Copyright (c) 2024 Ahwoo Limited.
+
+This product is built with BRUTAL, a game development framework by Ahwoo Limited, used under the BRUTAL License v1.0.
+
+www.ahwoo.com/brutal
+
+The interface font is Fira Sans, Copyright (c) 2012-2018 The Mozilla Foundation, Telefonica S.A.,
+Carrois Corporate GbR and bBox Type GmbH, used under the SIL Open Font License 1.1 (licenses/FiraSans-OFL.txt).

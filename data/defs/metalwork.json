@@ -1,0 +1,293 @@
+// Gear up the ladder (docs/plans/mining-progression.md): stone, copper and bronze tools, weapons
+// and armor, and the iron pieces the forge didn't make yet. "tier" ranks weapons and armor for the
+// storyteller (tools rank by their tool tier). Weapons: damage, penetration and accuracy as in combat.json.
+{
+  "things": [
+    // ---- Stone: by hand ----
+    {
+      "name": "StoneKnife", "held": "knife", "label": "stone knife", "category": "Item", "mass": 0.5, "sprite": "items/stone_knife", "maxHp": 40, "tier": "Stone",
+      "weapon": { "verb": "stabs at", "accuracy": 0.82, "damageMin": 6, "damageMax": 10, "damageType": "Cut", "penetration": 0.1, "glance": 0.12 },
+      "description": "A flaked edge bound to a handle. Better than fists."
+    },
+    {
+      "name": "StoneSpear", "held": "spear", "label": "stone spear", "category": "Item", "mass": 2, "sprite": "items/stone_spear", "flammability": 0.5, "maxHp": 50, "tier": "Stone",
+      "weapon": { "verb": "thrusts at", "accuracy": 0.78, "damageMin": 8, "damageMax": 13, "damageType": "Pierce", "penetration": 0.15, "glance": 0.1 },
+      "description": "A long pole with a stone point: keeps a club at bay."
+    },
+
+    // ---- Copper: soft, but better than stone ----
+    {
+      "name": "CopperAxe", "held": "axe", "label": "copper axe", "category": "Item", "mass": 2, "sprite": "items/copper_axe", "maxHp": 70,
+      "tool": { "kind": "Axe", "speed": 1.0, "tier": "Copper" },
+      "weapon": { "verb": "hacks at", "accuracy": 0.75, "damageMin": 10, "damageMax": 16, "damageType": "Cut", "penetration": 0.18, "glance": 0.09 },
+      "description": "Holds an edge long enough to fell a tree, and bites harder than stone."
+    },
+    {
+      "name": "CopperPick", "held": "pick", "label": "copper pick", "category": "Item", "mass": 2.5, "sprite": "items/copper_pick", "maxHp": 70,
+      "tool": { "kind": "Pick", "speed": 1.0, "tier": "Copper" }, "description": "Hard enough for granite, slate and iron ore."
+    },
+    {
+      "name": "CopperHammer", "held": "hammer", "label": "copper hammer", "category": "Item", "mass": 1.5, "sprite": "items/copper_hammer", "maxHp": 70,
+      "tool": { "kind": "Hammer", "speed": 1.0, "tier": "Copper" }, "description": "A smith's first real hammer: enough for bronze."
+    },
+    {
+      "name": "CopperKnife", "held": "knife", "label": "copper knife", "category": "Item", "mass": 0.5, "sprite": "items/copper_knife", "maxHp": 60, "tier": "Copper",
+      "weapon": { "verb": "stabs at", "accuracy": 0.82, "damageMin": 7, "damageMax": 12, "damageType": "Cut", "penetration": 0.15, "glance": 0.1 }
+    },
+    {
+      "name": "CopperSpear", "held": "spear", "label": "copper spear", "category": "Item", "mass": 2, "sprite": "items/copper_spear", "maxHp": 70, "tier": "Copper",
+      "weapon": { "verb": "thrusts at", "accuracy": 0.78, "damageMin": 9, "damageMax": 15, "damageType": "Pierce", "penetration": 0.18, "glance": 0.09 }
+    },
+    {
+      "name": "StuddedJerkin", "label": "studded jerkin", "category": "Item", "mass": 4, "sprite": "items/studded_jerkin", "flammability": 0.4, "maxHp": 110, "tier": "Copper",
+      "apparel": { "slot": "Body", "covers": [ "Torso", "LeftArm", "RightArm" ], "sharp": 0.32, "blunt": 0.15, "heat": 0.12, "worn": "apparel/studded_jerkin" },
+      "description": "A leather jerkin set with copper studs."
+    },
+
+    // ---- Bronze: copper hardened with tin ----
+    {
+      "name": "BronzeAxe", "held": "axe", "label": "bronze axe", "category": "Item", "mass": 2, "sprite": "items/bronze_axe", "maxHp": 100,
+      "tool": { "kind": "Axe", "speed": 1.15, "tier": "Bronze" },
+      "weapon": { "verb": "hacks at", "accuracy": 0.76, "damageMin": 11, "damageMax": 18, "damageType": "Cut", "penetration": 0.22, "glance": 0.08 }
+    },
+    {
+      "name": "BronzePick", "held": "pick", "label": "bronze pick", "category": "Item", "mass": 2.5, "sprite": "items/bronze_pick", "maxHp": 100,
+      "tool": { "kind": "Pick", "speed": 1.15, "tier": "Bronze" }, "description": "Good for gold, and quick through anything softer."
+    },
+    {
+      "name": "BronzeHammer", "held": "hammer", "label": "bronze hammer", "category": "Item", "mass": 1.5, "sprite": "items/bronze_hammer", "maxHp": 100,
+      "tool": { "kind": "Hammer", "speed": 1.15, "tier": "Bronze" }, "description": "Rings true: bronze armor needs one."
+    },
+    {
+      "name": "BronzeSpear", "held": "spear", "label": "bronze spear", "category": "Item", "mass": 2, "sprite": "items/bronze_spear", "maxHp": 100, "tier": "Bronze",
+      "weapon": { "verb": "thrusts at", "accuracy": 0.79, "damageMin": 11, "damageMax": 17, "damageType": "Pierce", "penetration": 0.22, "glance": 0.08 }
+    },
+    {
+      "name": "BronzeSword", "held": "sword", "label": "bronze sword", "category": "Item", "mass": 1.5, "sprite": "items/bronze_sword", "maxHp": 110, "tier": "Bronze",
+      "weapon": { "verb": "slashes at", "accuracy": 0.78, "damageMin": 9, "damageMax": 15, "damageType": "Cut", "penetration": 0.18, "glance": 0.08 }
+    },
+    {
+      "name": "BronzeMace", "held": "mace", "label": "bronze mace", "category": "Item", "mass": 2, "sprite": "items/bronze_mace", "maxHp": 120, "tier": "Bronze",
+      "weapon": { "verb": "swings at", "accuracy": 0.77, "damageMin": 11, "damageMax": 17, "damageType": "Blunt", "penetration": 0.15, "glance": 0.08 }
+    },
+    {
+      "name": "BronzeHelm", "label": "bronze helm", "category": "Item", "mass": 2, "sprite": "items/bronze_helm", "maxHp": 110, "tier": "Bronze",
+      "apparel": { "slot": "Head", "covers": [ "Head" ], "sharp": 0.4, "blunt": 0.22, "heat": 0.1, "worn": "apparel/bronze_helm" }
+    },
+    {
+      "name": "BronzeCuirass", "label": "bronze scale cuirass", "category": "Item", "mass": 7, "sprite": "items/bronze_cuirass", "maxHp": 150, "tier": "Bronze",
+      "apparel": { "slot": "Body", "covers": [ "Torso", "LeftArm", "RightArm" ], "sharp": 0.45, "blunt": 0.22, "heat": 0.06, "worn": "apparel/bronze_cuirass" },
+      "description": "Bronze scales sewn on leather."
+    },
+
+    // ---- Bellows: beside a forge, the smith pumps them between blows. With coal they bring it to
+    // iron and steel heat without a dragon (Crafting.CanGetHotEnough). ----
+    {
+      "name": "Bellows", "label": "bellows", "category": "Building", "sprite": "buildings/bellows",
+      "description": "Leather lungs for a forge. Built beside one, the smith pumps them while working: on coal, hot enough for iron and steel.",
+      "maxHp": 120, "flammability": 0.6,
+      "building": { "work": 300, "cost": [ { "def": "Leather", "count": 4 }, { "def": "Wood", "count": 8 } ],
+                    "bellows": { "heat": 2000, "maxTempBonus": 140, "lift": 270 } }
+    },
+
+    // ---- Silver and gold: coin and jewelry (no armor, but treasure: hoardValue) ----
+    {
+      "name": "Mint", "label": "goldsmith's bench", "category": "Building", "sprite": "buildings/mint",
+      "description": "Dies and a heavy hammer: strikes silver and gold into coin, and makes rings and torcs.",
+      "maxHp": 150, "flammability": 0.6, "pathCost": 2,
+      "building": { "work": 250, "surfaceHeight": 0.5, "workbench": { "bills": 6 }, "cost": [ { "def": "Wood", "count": 6 }, { "def": "Stone", "count": 4 }, { "def": "CopperBar", "count": 2 } ] },
+      "model": [
+        { "min": [0.10, 0.20, 0.00], "max": [0.90, 0.80, 0.46], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.30, 0.34, 0.46], "max": [0.70, 0.66, 0.62], "top": "props/stone_block", "side": "props/stone_block" }
+      ]
+    },
+    {
+      "name": "SilverCoin", "label": "silver coins", "category": "Item", "mass": 0.01, "sprite": "items/silver_coin", "stackLimit": 500, "maxHp": 50, "hoardValue": 1,
+      "description": "Struck silver: what traders will want."
+    },
+    {
+      "name": "GoldCoin", "label": "gold coins", "category": "Item", "mass": 0.01, "sprite": "items/gold_coin", "stackLimit": 500, "maxHp": 50, "hoardValue": 5,
+      "description": "Struck gold: worth five of silver."
+    },
+    {
+      "name": "SilverRing", "label": "silver ring", "category": "Item", "mass": 0.05, "sprite": "items/silver_ring", "maxHp": 60, "hoardValue": 60, "tier": "Copper",
+      "apparel": { "slot": "Neck", "covers": [] }, "description": "Worn on a cord about the neck: a little finery."
+    },
+    {
+      "name": "GoldTorc", "label": "gold torc", "category": "Item", "mass": 0.3, "sprite": "items/gold_torc", "maxHp": 80, "hoardValue": 520, "tier": "Bronze",
+      "apparel": { "slot": "Neck", "covers": [] }, "description": "A twisted gold collar: a chieftain's, or a dragon's treasure."
+    },
+
+    // ---- Mortar: cut stone bound with lime, the toughest wall short of dragonfire ----
+    {
+      "name": "MortaredWall", "label": "mortared stone wall", "category": "Building", "sprite": "buildings/wall_mortared",
+      "description": "Cut stone set in lime mortar: warmer and tougher than cut stone laid dry.",
+      "maxHp": 700, "flammability": 0,
+      "building": { "isWall": true, "insulation": 0.98, "work": 320, "cost": [ { "def": "CutStone", "count": 4 }, { "def": "Lime", "count": 1 } ] }
+    },
+
+    // ---- Iron: the forge's other weapons ----
+    {
+      "name": "IronSpear", "held": "spear", "label": "iron spear", "category": "Item", "mass": 2, "sprite": "items/iron_spear", "maxHp": 120, "tier": "Iron",
+      "weapon": { "verb": "thrusts at", "accuracy": 0.8, "damageMin": 12, "damageMax": 19, "damageType": "Pierce", "penetration": 0.28, "glance": 0.07 }
+    },
+    {
+      "name": "IronMace", "held": "mace", "label": "iron mace", "category": "Item", "mass": 2.5, "sprite": "items/iron_mace", "maxHp": 150, "tier": "Iron",
+      "weapon": { "verb": "swings at", "accuracy": 0.77, "damageMin": 13, "damageMax": 20, "damageType": "Blunt", "penetration": 0.2, "glance": 0.07 }
+    },
+
+    // ---- Steel: iron and coal, at a heat only bellows or a dragon reach ----
+    {
+      "name": "SteelBar", "label": "steel bar", "category": "Item", "mass": 1.5, "sprite": "items/steel_bar", "stackLimit": 30, "maxHp": 200,
+      "description": "Iron carburised in a coal fire: harder, and it keeps its edge."
+    },
+    {
+      "name": "SteelAxe", "held": "axe", "label": "bearded axe", "category": "Item", "mass": 2, "sprite": "items/steel_axe", "maxHp": 160,
+      "tool": { "kind": "Axe", "speed": 1.5, "tier": "Steel" },
+      "weapon": { "verb": "hacks at", "accuracy": 0.77, "damageMin": 14, "damageMax": 22, "damageType": "Cut", "penetration": 0.32, "glance": 0.06 }
+    },
+    {
+      "name": "SteelPick", "held": "pick", "label": "steel pick", "category": "Item", "mass": 2.5, "sprite": "items/steel_pick", "maxHp": 160,
+      "tool": { "kind": "Pick", "speed": 1.5, "tier": "Steel" }, "description": "Breaks basalt, and reaches the ember crystal in it."
+    },
+    {
+      "name": "SteelHammer", "held": "hammer", "label": "steel hammer", "category": "Item", "mass": 1.5, "sprite": "items/steel_hammer", "maxHp": 160,
+      "tool": { "kind": "Hammer", "speed": 1.5, "tier": "Steel" }, "description": "Plate armor wants one."
+    },
+    {
+      "name": "Longsword", "held": "longsword", "label": "longsword", "category": "Item", "mass": 2, "sprite": "items/steel_sword", "maxHp": 180, "tier": "Steel",
+      "weapon": { "verb": "slashes at", "accuracy": 0.78, "damageMin": 13, "damageMax": 21, "damageType": "Cut", "penetration": 0.3, "glance": 0.06 }
+    },
+    {
+      "name": "SteelMace", "held": "mace", "label": "flanged mace", "category": "Item", "mass": 2.5, "sprite": "items/steel_mace", "maxHp": 200, "tier": "Steel",
+      "weapon": { "verb": "swings at", "accuracy": 0.77, "damageMin": 14, "damageMax": 21, "damageType": "Blunt", "penetration": 0.28, "glance": 0.06 }
+    },
+    {
+      "name": "SteelSallet", "label": "steel sallet", "category": "Item", "mass": 2.5, "sprite": "items/steel_sallet", "maxHp": 180, "tier": "Steel",
+      "apparel": { "slot": "Head", "covers": [ "Head" ], "sharp": 0.6, "blunt": 0.35, "heat": 0.1, "worn": "apparel/steel_sallet" }
+    },
+    {
+      "name": "SteelPlate", "label": "steel plate", "category": "Item", "mass": 12, "sprite": "items/steel_plate", "maxHp": 260, "tier": "Steel",
+      "apparel": { "slot": "Body", "covers": [ "Torso", "LeftArm", "RightArm" ], "sharp": 0.68, "blunt": 0.38, "heat": 0.06,
+                   "encumbrance": 0.15, "worn": "apparel/steel_plate" },
+      "description": "The best a smith can make without dragonfire. Heavy: every step in a fight costs more."
+    },
+    {
+      "name": "DragonBlade", "held": "longsword", "label": "dragon blade", "category": "Item", "mass": 2, "sprite": "items/dragon_blade", "maxHp": 260, "tier": "Dragonforged",
+      "weapon": { "verb": "cleaves", "accuracy": 0.8, "damageMin": 16, "damageMax": 26, "damageType": "Cut", "penetration": 0.38, "glance": 0.05 },
+      "description": "A longsword folded with shed scale and an ember crystal in dragonfire. It runs warm, and glows when swung."
+    }
+  ],
+
+  "recipes": [
+    {
+      "name": "MakeStoneKnife", "label": "stone knife", "skill": "Crafting", "work": 400,
+      "description": "By hand: a sharp flake of stone bound to a handle.",
+      "ingredients": [ { "def": "Stone", "count": 1 }, { "def": "Wood", "count": 1 } ],
+      "products": [ { "def": "StoneKnife", "count": 1 } ]
+    },
+    {
+      "name": "MakeStoneSpear", "label": "stone spear", "skill": "Crafting", "work": 700,
+      "description": "By hand: a straight pole and a knapped point.",
+      "ingredients": [ { "def": "Wood", "count": 2 }, { "def": "Stone", "count": 1 } ],
+      "products": [ { "def": "StoneSpear", "count": 1 } ]
+    },
+
+    { "name": "ForgeCopperAxe", "label": "copper axe", "station": "Forge", "skill": "Crafting", "minSkill": 2, "work": 900, "minTemp": 600,
+      "tools": [ "Hammer" ], "unlock": { "discover": "handle:CopperBar" },
+      "ingredients": [ { "def": "CopperBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "CopperAxe", "count": 1 } ] },
+    { "name": "ForgeCopperPick", "label": "copper pick", "station": "Forge", "skill": "Crafting", "minSkill": 2, "work": 900, "minTemp": 600,
+      "tools": [ "Hammer" ], "unlock": { "discover": "handle:CopperBar" },
+      "ingredients": [ { "def": "CopperBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "CopperPick", "count": 1 } ] },
+    { "name": "ForgeCopperHammer", "label": "copper hammer", "station": "Forge", "skill": "Crafting", "minSkill": 2, "work": 800, "minTemp": 600,
+      "tools": [ "Hammer" ], "unlock": { "discover": "handle:CopperBar" },
+      "ingredients": [ { "def": "CopperBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "CopperHammer", "count": 1 } ] },
+    { "name": "ForgeCopperKnife", "label": "copper knife", "station": "Forge", "skill": "Crafting", "minSkill": 2, "work": 600, "minTemp": 600,
+      "tools": [ "Hammer" ], "unlock": { "discover": "handle:CopperBar" },
+      "ingredients": [ { "def": "CopperBar", "count": 1 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "CopperKnife", "count": 1 } ] },
+    { "name": "ForgeCopperSpear", "label": "copper spear", "station": "Forge", "skill": "Crafting", "minSkill": 2, "work": 800, "minTemp": 600,
+      "tools": [ "Hammer" ], "unlock": { "discover": "handle:CopperBar" },
+      "ingredients": [ { "def": "CopperBar", "count": 1 }, { "def": "Wood", "count": 2 } ], "products": [ { "def": "CopperSpear", "count": 1 } ] },
+    { "name": "StudJerkin", "label": "studded jerkin", "station": "TanningRack", "skill": "Crafting", "minSkill": 3, "work": 900,
+      "tools": [ "Hammer" ], "unlock": { "discover": "handle:CopperBar" },
+      "description": "Set copper studs into a leather jerkin.",
+      "ingredients": [ { "def": "LeatherJerkin", "count": 1 }, { "def": "CopperBar", "count": 1 } ], "products": [ { "def": "StuddedJerkin", "count": 1 } ] },
+
+    { "name": "ForgeBronzeAxe", "label": "bronze axe", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 1000, "minTemp": 600,
+      "tools": [ "Hammer" ], "toolTier": "Copper", "unlock": { "discover": "handle:BronzeBar" },
+      "ingredients": [ { "def": "BronzeBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "BronzeAxe", "count": 1 } ] },
+    { "name": "ForgeBronzePick", "label": "bronze pick", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 1000, "minTemp": 600,
+      "tools": [ "Hammer" ], "toolTier": "Copper", "unlock": { "discover": "handle:BronzeBar" },
+      "ingredients": [ { "def": "BronzeBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "BronzePick", "count": 1 } ] },
+    { "name": "ForgeBronzeHammer", "label": "bronze hammer", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 900, "minTemp": 600,
+      "tools": [ "Hammer" ], "toolTier": "Copper", "unlock": { "discover": "handle:BronzeBar" },
+      "ingredients": [ { "def": "BronzeBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "BronzeHammer", "count": 1 } ] },
+    { "name": "ForgeBronzeSpear", "label": "bronze spear", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 900, "minTemp": 600,
+      "tools": [ "Hammer" ], "toolTier": "Copper", "unlock": { "discover": "handle:BronzeBar" },
+      "ingredients": [ { "def": "BronzeBar", "count": 1 }, { "def": "Wood", "count": 2 } ], "products": [ { "def": "BronzeSpear", "count": 1 } ] },
+    { "name": "ForgeBronzeSword", "label": "bronze sword", "station": "Forge", "skill": "Crafting", "minSkill": 4, "work": 1500, "minTemp": 600,
+      "tools": [ "Hammer" ], "toolTier": "Copper", "unlock": { "discover": "handle:BronzeBar" },
+      "ingredients": [ { "def": "BronzeBar", "count": 3 }, { "def": "Leather", "count": 1 } ], "products": [ { "def": "BronzeSword", "count": 1 } ] },
+    { "name": "ForgeBronzeMace", "label": "bronze mace", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 1100, "minTemp": 600,
+      "tools": [ "Hammer" ], "toolTier": "Copper", "unlock": { "discover": "handle:BronzeBar" },
+      "ingredients": [ { "def": "BronzeBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "BronzeMace", "count": 1 } ] },
+    { "name": "ForgeBronzeHelm", "label": "bronze helm", "station": "Forge", "skill": "Crafting", "minSkill": 4, "work": 1500, "minTemp": 600,
+      "tools": [ "Hammer" ], "toolTier": "Bronze", "unlock": { "discover": "handle:BronzeBar" },
+      "ingredients": [ { "def": "BronzeBar", "count": 3 } ], "products": [ { "def": "BronzeHelm", "count": 1 } ] },
+    { "name": "ForgeBronzeCuirass", "label": "bronze scale cuirass", "station": "Forge", "skill": "Crafting", "minSkill": 5, "work": 3000, "minTemp": 600,
+      "tools": [ "Hammer" ], "toolTier": "Bronze", "unlock": { "discover": "handle:BronzeBar" },
+      "ingredients": [ { "def": "BronzeBar", "count": 6 }, { "def": "Leather", "count": 2 } ], "products": [ { "def": "BronzeCuirass", "count": 1 } ] },
+
+    { "name": "ForgeIronSpear", "label": "iron spear", "station": "Forge", "skill": "Crafting", "minSkill": 4, "work": 1000, "minTemp": 800,
+      "tools": [ "Hammer" ], "toolTier": "Bronze", "unlock": { "discover": "handle:IronBar" },
+      "ingredients": [ { "def": "IronBar", "count": 1 }, { "def": "Wood", "count": 2 } ], "products": [ { "def": "IronSpear", "count": 1 } ] },
+    { "name": "ForgeIronMace", "label": "iron mace", "station": "Forge", "skill": "Crafting", "minSkill": 4, "work": 1300, "minTemp": 800,
+      "tools": [ "Hammer" ], "toolTier": "Bronze", "unlock": { "discover": "handle:IronBar" },
+      "ingredients": [ { "def": "IronBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "IronMace", "count": 1 } ] },
+
+    { "name": "MintSilver", "label": "silver coins", "station": "Mint", "skill": "Crafting", "minSkill": 3, "work": 600,
+      "tools": [ "Hammer" ], "toolTier": "Bronze", "unlock": { "discover": "handle:SilverBar" },
+      "ingredients": [ { "def": "SilverBar", "count": 1 } ], "products": [ { "def": "SilverCoin", "count": 50 } ] },
+    { "name": "MintGold", "label": "gold coins", "station": "Mint", "skill": "Crafting", "minSkill": 4, "work": 600,
+      "tools": [ "Hammer" ], "toolTier": "Bronze", "unlock": { "discover": "handle:GoldBar" },
+      "ingredients": [ { "def": "GoldBar", "count": 1 } ], "products": [ { "def": "GoldCoin", "count": 50 } ] },
+    { "name": "MakeSilverRing", "label": "silver ring", "station": "Mint", "skill": "Crafting", "minSkill": 4, "work": 900,
+      "tools": [ "Hammer" ], "toolTier": "Bronze", "unlock": { "discover": "handle:SilverBar" },
+      "ingredients": [ { "def": "SilverBar", "count": 1 } ], "products": [ { "def": "SilverRing", "count": 1 } ] },
+    { "name": "MakeGoldTorc", "label": "gold torc", "station": "Mint", "skill": "Crafting", "minSkill": 6, "work": 1800,
+      "tools": [ "Hammer" ], "toolTier": "Bronze", "unlock": { "discover": "handle:GoldBar" },
+      "ingredients": [ { "def": "GoldBar", "count": 2 } ], "products": [ { "def": "GoldTorc", "count": 1 } ] },
+
+    { "name": "ForgeDragonBlade", "label": "dragon blade", "station": "Forge", "skill": "Crafting", "minSkill": 8, "work": 3600, "minTemp": 1300,
+      "tools": [ "Hammer", "Tongs" ], "toolTier": "Iron", "unlock": { "discover": "handle:EmberCrystal" },
+      "description": "Fold a longsword with shed scale and an ember crystal, in a forge your dragon has stoked.",
+      "ingredients": [ { "def": "Longsword", "count": 1 }, { "def": "SteelBar", "count": 2 }, { "def": "DragonScale", "count": 2 }, { "def": "EmberCrystal", "count": 1 } ],
+      "products": [ { "def": "DragonBlade", "count": 1 } ] },
+
+    { "name": "SmeltSteel", "label": "steel bars", "station": "Forge", "skill": "Crafting", "minSkill": 5, "work": 1400, "minTemp": 1200,
+      "helpedBy": [ "Tongs" ], "unlock": { "discover": "built:Bellows" },
+      "description": "Fold iron with coal in a fire the bellows (or your dragon) keep white-hot.",
+      "ingredients": [ { "def": "IronBar", "count": 2 }, { "def": "Coal", "count": 2 } ], "products": [ { "def": "SteelBar", "count": 2 } ] },
+    { "name": "ForgeSteelAxe", "label": "bearded axe", "station": "Forge", "skill": "Crafting", "minSkill": 5, "work": 1400, "minTemp": 950,
+      "tools": [ "Hammer" ], "toolTier": "Iron", "unlock": { "discover": "handle:SteelBar" },
+      "ingredients": [ { "def": "SteelBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "SteelAxe", "count": 1 } ] },
+    { "name": "ForgeSteelPick", "label": "steel pick", "station": "Forge", "skill": "Crafting", "minSkill": 5, "work": 1400, "minTemp": 950,
+      "tools": [ "Hammer" ], "toolTier": "Iron", "unlock": { "discover": "handle:SteelBar" },
+      "ingredients": [ { "def": "SteelBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "SteelPick", "count": 1 } ] },
+    { "name": "ForgeSteelHammer", "label": "steel hammer", "station": "Forge", "skill": "Crafting", "minSkill": 5, "work": 1300, "minTemp": 950,
+      "tools": [ "Hammer" ], "toolTier": "Iron", "unlock": { "discover": "handle:SteelBar" },
+      "ingredients": [ { "def": "SteelBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "SteelHammer", "count": 1 } ] },
+    { "name": "ForgeLongsword", "label": "longsword", "station": "Forge", "skill": "Crafting", "minSkill": 7, "work": 2400, "minTemp": 950,
+      "tools": [ "Hammer", "Tongs" ], "toolTier": "Iron", "unlock": { "discover": "handle:SteelBar" },
+      "ingredients": [ { "def": "SteelBar", "count": 3 }, { "def": "Leather", "count": 1 } ], "products": [ { "def": "Longsword", "count": 1 } ] },
+    { "name": "ForgeSteelMace", "label": "flanged mace", "station": "Forge", "skill": "Crafting", "minSkill": 6, "work": 1800, "minTemp": 950,
+      "tools": [ "Hammer" ], "toolTier": "Iron", "unlock": { "discover": "handle:SteelBar" },
+      "ingredients": [ { "def": "SteelBar", "count": 2 }, { "def": "Wood", "count": 1 } ], "products": [ { "def": "SteelMace", "count": 1 } ] },
+    { "name": "ForgeSteelSallet", "label": "steel sallet", "station": "Forge", "skill": "Crafting", "minSkill": 7, "work": 2400, "minTemp": 950,
+      "tools": [ "Hammer" ], "toolTier": "Steel", "unlock": { "discover": "handle:SteelBar" },
+      "ingredients": [ { "def": "SteelBar", "count": 3 } ], "products": [ { "def": "SteelSallet", "count": 1 } ] },
+    { "name": "ForgeSteelPlate", "label": "steel plate", "station": "Forge", "skill": "Crafting", "minSkill": 8, "work": 4800, "minTemp": 950,
+      "tools": [ "Hammer", "Tongs" ], "toolTier": "Steel", "unlock": { "discover": "handle:SteelBar" },
+      "ingredients": [ { "def": "SteelBar", "count": 8 }, { "def": "Leather", "count": 2 } ], "products": [ { "def": "SteelPlate", "count": 1 } ] }
+  ]
+}

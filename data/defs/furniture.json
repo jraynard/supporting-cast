@@ -1,0 +1,81 @@
+// Furniture made of textured boxes ("model", see ModelBox in Defs.cs): 0..1 within the cell, z up,
+// the front is +Y (south) and R turns it while placing. Face sprites are tinted by the wood used.
+// "surfaceHeight" is where items dropped in its cell rest (the top of a table), for the look only.
+{
+  "things": [
+    {
+      // The poorest bed: a heap of straw and a rolled blanket. Quick to make, and still better than
+      // the bare ground (the Escape cage has one).
+      "name": "StrawPallet", "label": "straw pallet", "category": "Building", "sprite": "buildings/bed", "size": [1, 2],
+      "description": "A heap of straw and a rolled blanket, two cells long. Better than the bare ground.",
+      "model": [
+        { "min": [0.1, 0.06, 0], "max": [0.9, 1.94, 0.12], "top": "props/straw", "side": "props/straw" },
+        { "min": [0.2, 0.08, 0.12], "max": [0.8, 0.3, 0.2], "top": "props/linen", "side": "props/linen" }
+      ],
+      "maxHp": 40, "flammability": 1.0,
+      "building": { "isBed": true, "work": 40, "cost": [ { "def": "Wood", "count": 2 } ] }
+    },
+    {
+      "name": "Table", "category": "Building", "sprite": "buildings/table",
+      "description": "A sturdy plank table for one. Pick a longer or a square one from the table's shapes.",
+      "maxHp": 100, "flammability": 1.0, "pathCost": 2,
+      "building": { "work": 120, "surfaceHeight": 0.66, "cost": [ { "def": "Wood", "count": 8 } ] },
+      "model": [
+        { "min": [0.02, 0.02, 0.56], "max": [0.98, 0.98, 0.66], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.08, 0.08, 0], "max": [0.18, 0.18, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.82, 0.08, 0], "max": [0.92, 0.18, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.08, 0.82, 0], "max": [0.18, 0.92, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.82, 0.82, 0], "max": [0.92, 0.92, 0.56], "top": "props/planks", "side": "props/log_side" }
+      ]
+    },
+    {
+      "name": "LongTable", "label": "long table", "shapeOf": "Table", "size": [1, 2], "category": "Building", "sprite": "buildings/table",
+      "description": "A plank table two cells long: room for a meal and the bread.",
+      "maxHp": 140, "flammability": 1.0, "pathCost": 2,
+      "building": { "work": 180, "surfaceHeight": 0.66, "cost": [ { "def": "Wood", "count": 12 } ] },
+      "model": [
+        { "min": [0.02, 0.02, 0.56], "max": [0.98, 1.98, 0.66], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.08, 0.08, 0], "max": [0.18, 0.18, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.82, 0.08, 0], "max": [0.92, 0.18, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.08, 1.82, 0], "max": [0.18, 1.92, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.82, 1.82, 0], "max": [0.92, 1.92, 0.56], "top": "props/planks", "side": "props/log_side" }
+      ]
+    },
+    {
+      "name": "SquareTable", "label": "square table", "shapeOf": "Table", "size": [2, 2], "category": "Building", "sprite": "buildings/table",
+      "description": "A broad table two cells square, for the whole household.",
+      "maxHp": 180, "flammability": 1.0, "pathCost": 2,
+      "building": { "work": 240, "surfaceHeight": 0.66, "cost": [ { "def": "Wood", "count": 16 } ] },
+      "model": [
+        { "min": [0.02, 0.02, 0.56], "max": [1.98, 1.98, 0.66], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.10, 0.10, 0], "max": [0.20, 0.20, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [1.80, 0.10, 0], "max": [1.90, 0.20, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.10, 1.80, 0], "max": [0.20, 1.90, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [1.80, 1.80, 0], "max": [1.90, 1.90, 0.56], "top": "props/planks", "side": "props/log_side" }
+      ]
+    },
+    {
+      "name": "Stool", "category": "Building", "sprite": "buildings/stool",
+      "description": "Somewhere to sit by the fire.",
+      "maxHp": 60, "flammability": 1.0,
+      "building": { "work": 60, "surfaceHeight": 0.42, "cost": [ { "def": "Wood", "count": 3 } ] },
+      "model": [
+        { "min": [0.3, 0.3, 0.34], "max": [0.7, 0.7, 0.42], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.34, 0.34, 0], "max": [0.42, 0.42, 0.34], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.58, 0.34, 0], "max": [0.66, 0.42, 0.34], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.34, 0.58, 0], "max": [0.42, 0.66, 0.34], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.58, 0.58, 0], "max": [0.66, 0.66, 0.34], "top": "props/planks", "side": "props/log_side" }
+      ]
+    },
+    {
+      "name": "Chest", "category": "Building", "sprite": "buildings/chest",
+      "description": "Holds 8 stacks. F at it to store what you carry or to open it.",
+      "maxHp": 120, "flammability": 1.0,
+      // An ice dragon breathes into it to keep food from rotting (Chill work): °C an hour, down to minTemp.
+      "building": { "work": 150, "storageStacks": 8, "surfaceHeight": 0.46, "cost": [ { "def": "Wood", "count": 12 } ], "chill": { "cold": 900, "minTemp": -4 } },
+      "model": [
+        { "min": [0.14, 0.24, 0], "max": [0.86, 0.76, 0.46], "top": "props/chest_top", "side": "props/planks", "front": "props/chest_front" }
+      ]
+    }
+  ]
+}

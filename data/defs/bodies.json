@@ -1,0 +1,42 @@
+// Bodies: the parts creatures are hurt in. Part hp is for a creature with 100 max HP and scales
+// with CreatureDef.maxHp. Coverage weights where hits land; height skews that for attacks from
+// above or below. A creature collapses when blood, pain or consciousness fail, and dies when a
+// vital part is destroyed or it bleeds out.
+{
+  "bodies": [
+    {
+      "name": "Humanoid",
+      "parts": [
+        { "name": "Head", "label": "head", "coverage": 0.10, "hp": 25, "vital": true, "height": "High", "bleedFactor": 1.2, "capacities": [ "Consciousness", "Sight" ] },
+        { "name": "Torso", "label": "torso", "coverage": 0.38, "hp": 45, "vital": true, "height": "Mid", "bleedFactor": 1.4 },
+        { "name": "LeftArm", "label": "left arm", "coverage": 0.12, "hp": 22, "height": "Mid", "capacities": [ "Manipulation" ] },
+        { "name": "RightArm", "label": "right arm", "coverage": 0.12, "hp": 22, "height": "Mid", "capacities": [ "Manipulation" ] },
+        { "name": "LeftLeg", "label": "left leg", "coverage": 0.14, "hp": 26, "height": "Low", "capacities": [ "Moving" ] },
+        { "name": "RightLeg", "label": "right leg", "coverage": 0.14, "hp": 26, "height": "Low", "capacities": [ "Moving" ] }
+      ]
+    },
+    {
+      "name": "Dragon",
+      "parts": [
+        { "name": "Head", "label": "head", "coverage": 0.10, "hp": 30, "vital": true, "height": "High", "bleedFactor": 1.2, "capacities": [ "Consciousness", "Sight" ] },
+        { "name": "Neck", "label": "neck", "coverage": 0.08, "hp": 30, "height": "High", "bleedFactor": 1.5 },
+        { "name": "Torso", "label": "torso", "coverage": 0.30, "hp": 60, "vital": true, "height": "Mid", "bleedFactor": 1.2 },
+        { "name": "LeftWing", "label": "left wing", "coverage": 0.11, "hp": 25, "height": "High", "bleedFactor": 0.6, "capacities": [ "Flying" ] },
+        { "name": "RightWing", "label": "right wing", "coverage": 0.11, "hp": 25, "height": "High", "bleedFactor": 0.6, "capacities": [ "Flying" ] },
+        { "name": "Forelegs", "label": "forelegs", "coverage": 0.09, "hp": 30, "height": "Low", "capacities": [ "Moving", "Manipulation" ] },
+        { "name": "Hindlegs", "label": "hind legs", "coverage": 0.11, "hp": 35, "height": "Low", "capacities": [ "Moving" ] },
+        { "name": "Tail", "label": "tail", "coverage": 0.10, "hp": 25, "height": "Low", "bleedFactor": 0.8 }
+      ]
+    },
+    {
+      "name": "Quadruped",
+      "parts": [
+        { "name": "Head", "label": "head", "coverage": 0.12, "hp": 25, "vital": true, "height": "High", "bleedFactor": 1.2, "capacities": [ "Consciousness", "Sight" ] },
+        { "name": "Neck", "label": "neck", "coverage": 0.08, "hp": 22, "height": "High", "bleedFactor": 1.5 },
+        { "name": "Torso", "label": "torso", "coverage": 0.44, "hp": 50, "vital": true, "height": "Mid", "bleedFactor": 1.4 },
+        { "name": "Forelegs", "label": "forelegs", "coverage": 0.18, "hp": 25, "height": "Low", "capacities": [ "Moving" ] },
+        { "name": "Hindlegs", "label": "hind legs", "coverage": 0.18, "hp": 25, "height": "Low", "capacities": [ "Moving" ] }
+      ]
+    }
+  ]
+}

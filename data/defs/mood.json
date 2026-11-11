@@ -1,0 +1,138 @@
+// Mood: 50 plus the sum of a creature's thoughts, on a 0-100 scale. "mood" is in those points.
+// Situational thoughts ("when") hold while their condition does; the rest are memories that last
+// durationHours after the event (code adds them by name, see KnownThoughts). stackLimit copies of a
+// memory count at once, each further one stackFalloff times the one before. races limits who has it.
+// "opinion" is for memories about someone: it moves the opinion of them (-100..100) the same way
+// (stacks counted per person). Opinion is that sum plus a fixed per-pair compatibility of +-10.
+// Mood scales human work speed (x1 from 35 to 65, x0.85 at 0, x1.1 at 100) and dragon obedience (+-0.1).
+{
+  "thoughts": [
+    // ---- situational ----
+    // NeedBelow thoughts on the same need are bands: only the lowest that holds counts.
+    // Hungry starts where people drop work to eat; ravenous is where healing stops (0.1).
+    { "name": "Hungry", "label": "hungry", "mood": -4, "when": "NeedBelow", "need": "Food", "below": 0.25 },
+    { "name": "Ravenous", "label": "ravenous", "mood": -14, "when": "NeedBelow", "need": "Food", "below": 0.1 },
+    { "name": "Tired", "label": "tired", "mood": -3, "when": "NeedBelow", "need": "Rest", "below": 0.3 },
+    { "name": "Exhausted", "label": "exhausted", "mood": -10, "when": "NeedBelow", "need": "Rest", "below": 0.15 },
+    { "name": "Cold", "label": "cold", "description": "Colder than is comfortable.", "mood": -4, "when": "Cold" },
+    { "name": "Hot", "label": "too hot", "description": "Hotter than is comfortable.", "mood": -4, "when": "Hot" },
+    { "name": "InPain", "label": "in pain", "mood": -6, "when": "InPain" },
+    { "name": "SeverePain", "label": "in severe pain", "mood": -14, "when": "SeverePain" },
+    { "name": "DarkIndoors", "label": "sitting in the dark", "description": "Indoors with no fire to see by.", "mood": -3, "races": [ "Human" ], "when": "DarkIndoors" },
+    { "name": "Lonely", "label": "lonely", "description": "Wants attention from its keeper.", "mood": -8, "races": [ "Dragon" ], "when": "NeedBelow", "need": "Bond", "below": 0.3 },
+    { "name": "Neglected", "label": "neglected", "description": "Its keeper hasn't been near it in far too long.", "mood": -16, "races": [ "Dragon" ], "when": "NeedBelow", "need": "Bond", "below": 0.1 },
+    { "name": "WarmAndSnug", "label": "warm and snug", "description": "Sleeping somewhere properly warm.", "mood": 4, "races": [ "Dragon" ], "when": "WarmAndSnug" },
+    { "name": "CarryingKeeper", "label": "carrying my keeper", "mood": 6, "races": [ "Dragon" ], "when": "CarryingKeeper" },
+
+    // ---- memories ----
+    { "name": "AteRawMeat", "label": "ate raw meat", "mood": -4, "durationHours": 6, "races": [ "Human" ] },
+    { "name": "SleptOnGround", "label": "slept on the ground", "mood": -4, "durationHours": 12, "races": [ "Human" ] },
+    { "name": "SleptOutdoors", "label": "slept outdoors", "mood": -3, "durationHours": 12, "races": [ "Human" ] },
+    { "name": "SleptInBed", "label": "slept in a bed", "mood": 3, "durationHours": 12, "races": [ "Human" ] },
+    { "name": "SleptInNest", "label": "slept in the nest", "mood": 4, "durationHours": 12, "races": [ "Dragon" ] },
+    { "name": "VillagerDied", "label": "someone in the village died", "mood": -8, "durationHours": 72, "stackLimit": 5, "stackFalloff": 0.75 },
+    { "name": "MyDragonDied", "label": "my dragon died", "mood": -25, "durationHours": 240, "races": [ "Human" ] },
+    { "name": "KeeperDied", "label": "my keeper died", "mood": -30, "durationHours": 240, "races": [ "Dragon" ] },
+    { "name": "EggHatched", "label": "the egg hatched!", "mood": 10, "durationHours": 48, "races": [ "Human" ] },
+    { "name": "ImprintedOnMe", "label": "a dragon imprinted on me", "mood": 12, "opinion": 20, "durationHours": 240, "races": [ "Human" ] },
+    { "name": "WonFight", "label": "beat the raiders", "mood": 6, "durationHours": 24 },
+    { "name": "LostFight", "label": "lost to raiders", "mood": -8, "durationHours": 48 },
+    { "name": "FedByKeeper", "label": "fed by my keeper", "mood": 3, "opinion": 3, "durationHours": 8, "stackLimit": 3, "races": [ "Dragon" ] },
+    { "name": "PlayedWithKeeper", "label": "played with my keeper", "mood": 5, "opinion": 5, "durationHours": 12, "stackLimit": 2, "races": [ "Dragon" ] },
+    { "name": "FedMe", "label": "fed me", "mood": 1, "opinion": 3, "durationHours": 48, "stackLimit": 3, "races": [ "Dragon" ] },
+
+    // ---- about someone: deaths by how they were thought of, care, capture, fights ----
+    { "name": "FriendDied", "label": "my friend died", "mood": -14, "durationHours": 168 },
+    { "name": "RivalDied", "label": "my rival died", "mood": 3, "durationHours": 48, "races": [ "Human" ] },
+    { "name": "RescuedMe", "label": "rescued me", "opinion": 15, "durationHours": 240 },
+    { "name": "TendedMe", "label": "tended my wounds", "mood": 1, "opinion": 5, "durationHours": 120, "stackLimit": 3, "stackFalloff": 0.6 },
+    { "name": "CapturedMe", "label": "took me prisoner", "mood": -5, "opinion": -30, "durationHours": 480, "races": [ "Human" ] },
+    { "name": "RecruitedMe", "label": "talked me into joining", "opinion": 15, "durationHours": 240, "races": [ "Human" ] },
+    { "name": "FoughtBesideMe", "label": "fought beside me", "opinion": 8, "durationHours": 168, "stackLimit": 2 },
+
+    // ---- left by interactions (below) ----
+    { "name": "Chatted", "label": "chatted", "mood": 1, "opinion": 3, "durationHours": 72, "stackLimit": 5, "stackFalloff": 0.8, "races": [ "Human" ] },
+    { "name": "DeepTalk", "label": "had a deep talk", "mood": 3, "opinion": 8, "durationHours": 120, "stackLimit": 3, "stackFalloff": 0.6, "races": [ "Human" ] },
+    { "name": "Slighted", "label": "slighted me", "mood": -3, "opinion": -8, "durationHours": 96, "stackLimit": 4, "stackFalloff": 0.7, "races": [ "Human" ] },
+    { "name": "Comforted", "label": "comforted me", "mood": 5, "opinion": 6, "durationHours": 24, "stackLimit": 2, "races": [ "Human" ] },
+    { "name": "Petted", "label": "petted by my keeper", "mood": 2, "opinion": 3, "durationHours": 12, "stackLimit": 3, "races": [ "Dragon" ] },
+
+    // ---- requests (Adventure mode) ----
+    // Turning a request down: no feelings either way, but they won't be asked again for an hour.
+    { "name": "TurnedYouDown", "label": "turned down a request", "durationHours": 1, "races": [ "Human" ] },
+    { "name": "BossedAround", "label": "bossed me around", "mood": -1, "opinion": -4, "durationHours": 24, "stackLimit": 4, "stackFalloff": 0.8, "races": [ "Human" ] },
+
+    // ---- prisoners (kept last: def indexes feed the state hash) ----
+    // Below 35 mood a prisoner may try to break out (Prisoners.BreakChancePerHour).
+    { "name": "Imprisoned", "label": "imprisoned", "description": "Held captive in a strange village.", "mood": -8, "races": [ "Human" ], "when": "Imprisoned" },
+    { "name": "WardenTalkedWithMe", "label": "talked with me", "description": "A warden came to talk.", "mood": 2, "opinion": 6, "durationHours": 72, "stackLimit": 3, "stackFalloff": 0.7, "races": [ "Human" ] },
+    { "name": "FedByWarden", "label": "brought me a meal", "mood": 2, "opinion": 2, "durationHours": 12, "stackLimit": 2, "races": [ "Human" ] },
+    { "name": "PrisonerEscaped", "label": "a prisoner broke out", "mood": -3, "durationHours": 24, "races": [ "Human" ] },
+
+    // ---- crafting ----
+    { "name": "TaughtACraft", "label": "showed someone a craft", "mood": 2, "opinion": 4, "durationHours": 72, "stackLimit": 3, "stackFalloff": 0.7, "races": [ "Human" ] },
+    { "name": "LearnedACraft", "label": "taught me a craft", "mood": 3, "opinion": 8, "durationHours": 120, "stackLimit": 3, "stackFalloff": 0.7, "races": [ "Human" ] },
+    { "name": "AteCookedMeal", "label": "ate a cooked meal", "mood": 3, "durationHours": 8, "stackLimit": 2, "stackFalloff": 0.5, "races": [ "Human" ] },
+    { "name": "UsesTheirWork", "label": "made the gear I use", "mood": 1, "opinion": 10, "durationHours": 240, "stackLimit": 3, "stackFalloff": 0.6, "races": [ "Human" ] },
+    { "name": "WearingDragonScales", "label": "wearing my dragon's scales", "description": "Armor made from scales the dragons shed.", "mood": 4, "races": [ "Human" ], "when": "WearingDragonScales" },
+    // Treasure (mining.json, metalwork.json): finery for people, a hoard for dragons.
+    { "name": "WearingFinery", "label": "wearing finery", "description": "Silver or gold at the neck.", "mood": 3, "races": [ "Human" ], "when": "WearingFinery" },
+    { "name": "NearHoard", "label": "sleeping on my hoard", "description": "Treasure heaped where it sleeps.", "mood": 6, "races": [ "Dragon" ], "when": "NearHoard" },
+    { "name": "GivenTreasure", "label": "given treasure", "mood": 5, "opinion": 8, "durationHours": 24, "stackLimit": 3, "races": [ "Dragon" ] },
+    // Dragon care (dragons.json, docs/plans/dragon-interactions.md).
+    { "name": "CameWhenCalled", "label": "my keeper came when I asked", "mood": 4, "opinion": 6, "durationHours": 12, "stackLimit": 2, "races": [ "Dragon" ] },
+    { "name": "IgnoredMe", "label": "ignored me", "description": "It asked for something and nobody came.", "mood": -4, "opinion": -6, "durationHours": 12, "stackLimit": 3, "stackFalloff": 0.7, "races": [ "Dragon" ] },
+    { "name": "Groomed", "label": "groomed by my keeper", "mood": 4, "opinion": 4, "durationHours": 24, "races": [ "Dragon" ] },
+    { "name": "SoothedByKeeper", "label": "soothed by my keeper", "mood": 6, "opinion": 5, "durationHours": 8, "stackLimit": 2, "races": [ "Dragon" ] },
+    { "name": "TrainedWithKeeper", "label": "trained with my keeper", "mood": 2, "opinion": 4, "durationHours": 12, "stackLimit": 2, "races": [ "Dragon" ] },
+    { "name": "SleptBesideKeeper", "label": "slept beside my keeper", "mood": 4, "opinion": 5, "durationHours": 16, "races": [ "Dragon" ] },
+    { "name": "AteFavourite", "label": "fed my favourite", "mood": 4, "durationHours": 8, "races": [ "Dragon" ] },
+    { "name": "Sulking", "label": "sulking", "description": "Its keeper let it down; it wants winning back.", "mood": -6, "races": [ "Dragon" ], "when": "Sulking" },
+    { "name": "MyDragonLeft", "label": "my dragon left me", "mood": -20, "durationHours": 240, "races": [ "Human" ] },
+    // Spoiled food (rot past half, Systems/FoodPoisoning): a sour memory, or worse, an illness while it lasts.
+    { "name": "AteSpoiledFood", "label": "ate spoiled food", "mood": -3, "durationHours": 6, "races": [ "Human" ] },
+    { "name": "FoodPoisoned", "label": "food poisoning", "description": "Something it ate had turned.", "mood": -10, "when": "FoodPoisoned" },
+    // Two grown dragons courting (Systems/Breeding): fond of each other for a good while after.
+    { "name": "CourtedMe", "label": "courted me", "mood": 6, "opinion": 12, "durationHours": 120, "races": [ "Dragon" ] },
+    // Preset buildings (BuildingDef.EatThought): a meal eaten in the longhouse, among the village.
+    { "name": "FeastedInTheHall", "label": "ate in the longhouse", "mood": 4, "durationHours": 10, "races": [ "Human" ] }
+  ],
+
+  // Traits: humans get 0-2 (rolled from their own stream; the player picks the avatar's). "mood" is
+  // a constant offset; thoughtFactors scale a thought's mood and opinion for them (0 ignores it);
+  // interactionFactors scale how often they start an interaction.
+  "traits": [
+    { "name": "Optimist", "label": "optimist", "description": "Looks on the bright side.", "mood": 6, "conflictsWith": [ "Gloomy" ] },
+    { "name": "Gloomy", "label": "gloomy", "description": "Expects the worst, and usually finds it.", "mood": -6 },
+    { "name": "Hardy", "label": "hardy", "description": "Shrugs off cold, heat and a hard night.",
+      "thoughtFactors": { "Cold": 0.5, "Hot": 0.5, "SleptOnGround": 0.3, "SleptOutdoors": 0 } },
+    { "name": "DragonFriend", "label": "dragon friend", "description": "Has always loved dragons; the bond matters more to them.",
+      "thoughtFactors": { "EggHatched": 1.5, "ImprintedOnMe": 1.5, "MyDragonDied": 1.5 }, "interactionFactors": { "Pet": 2.5 } },
+    { "name": "Kind", "label": "kind", "description": "Quick with a kind word, slow to slight anyone.",
+      "interactionFactors": { "Slight": 0.2, "Comfort": 2 }, "conflictsWith": [ "Abrasive" ] },
+    { "name": "Abrasive", "label": "abrasive", "description": "Says what they think, and it often stings.",
+      "interactionFactors": { "Slight": 2.5, "DeepTalk": 0.5 } },
+    { "name": "ThickSkinned", "label": "thick-skinned", "description": "Insults roll off them.",
+      "thoughtFactors": { "Slighted": 0.3, "BossedAround": 0.3 } },
+    { "name": "Glutton", "label": "glutton", "description": "Lives for the next meal, and minds going without.",
+      "thoughtFactors": { "Hungry": 1.8, "Ravenous": 1.5, "AteRawMeat": 0 } },
+    { "name": "Loner", "label": "loner", "description": "Happy enough with their own company.", "commonness": 0.7,
+      "thoughtFactors": { "Chatted": 0.3, "DeepTalk": 0.5, "VillagerDied": 0.7 }, "interactionFactors": { "Chat": 0.4, "DeepTalk": 0.6 } }
+  ],
+
+  // People nearby (same room, or both outdoors, within a few cells) start one of these now and
+  // then (SocialSystem). The pick is weighted: weight x (1 + opinionFactor x opinion / 100, 0..3)
+  // x (1 + socialFactor x (Social - 6) / 6). minOpinion / targetMoodBelow (0-1) gate it.
+  "interactions": [
+    { "name": "Chat", "verb": "chatted with", "weight": 1, "opinionFactor": 0.5, "initiatorThought": "Chatted", "recipientThought": "Chatted" },
+    { "name": "DeepTalk", "verb": "had a deep talk with", "weight": 0.25, "opinionFactor": 1, "socialFactor": 0.6, "minOpinion": 15, "xp": 120,
+      "initiatorThought": "DeepTalk", "recipientThought": "DeepTalk" },
+    { "name": "Slight", "verb": "slighted", "weight": 0.08, "opinionFactor": -3, "socialFactor": -0.5, "xp": 10, "recipientThought": "Slighted" },
+    { "name": "Comfort", "verb": "comforted", "weight": 1.5, "opinionFactor": 0.5, "socialFactor": 0.5, "minOpinion": -10, "targetMoodBelow": 0.4, "xp": 80,
+      "recipientThought": "Comforted" },
+    { "name": "Pet", "verb": "petted", "with": "OwnDragon", "weight": 1, "xp": 10, "bond": 0.04, "recipientThought": "Petted" },
+    // Only when the initiator knows a recipe a player character doesn't (RecipeBooks.Teachable): it goes in their book.
+    { "name": "TeachCraft", "verb": "showed a craft to", "weight": 0.6, "opinionFactor": 1, "minOpinion": -15, "xp": 60, "teaches": true,
+      "initiatorThought": "TaughtACraft", "recipientThought": "LearnedACraft" }
+  ]
+}

@@ -1,0 +1,329 @@
+// Core content for the vertical slice. Units:
+//   temperatures in °C, rates per game day unless noted, work in work-ticks (1 per tick of labor),
+//   heat output in °C pushed into the source cell per game hour, item mass in kg per unit (required
+//   for every Item: packs carry by weight).
+{
+  "needs": [
+    { "name": "Food", "label": "food", "urgentBelow": 0.25, "seekBelow": 0.5, "damagePerDayAtZero": 0.35 },
+    { "name": "Rest", "label": "rest", "urgentBelow": 0.15, "seekBelow": 0.3 },
+    { "name": "Bond", "label": "bond", "description": "Attention from the dragon's keeper.", "urgentBelow": 0.3, "seekBelow": 0.6 }
+  ],
+
+  // Blocks fill map cells. Air is the only non-solid one; the rest are ground you stand on top of.
+  // digWork is in work-ticks; 0 means the block can't be dug.
+  // accent/accentFringe/accentAbove are cosmetic: a top texture shown in noise patches (wildflowers).
+  // Materials are kinds of an item: wood from an oak is oak wood. Any kind pays a cost for the item,
+  // and buildings take the look and name of what they were mostly built from. color tints art
+  // that has no material-specific sprite (sprite name + "_" + lowercase material name).
+  "materials": [
+    // Factors scale what's made of them (HP, flammability, work, weight; insulation is added).
+    // Birch is the baseline the heat tests were tuned on; mining.json adds the stones.
+    { "name": "Oak", "label": "oak", "of": "Wood", "color": [0.85, 0.68, 0.52],
+      "hpFactor": 1.2, "insulation": 0.01, "flammability": 0.85, "workFactor": 1.25, "massFactor": 1.15, "character": "sturdy, slow to work" },
+    { "name": "Pine", "label": "pine", "of": "Wood", "color": [1.0, 0.86, 0.62],
+      "hpFactor": 0.9, "flammability": 1.2, "workFactor": 0.85, "massFactor": 0.85, "character": "light and quick, but it burns" },
+    { "name": "Birch", "label": "birch", "of": "Wood", "color": [1.0, 0.97, 0.88], "character": "middling in everything" }
+  ],
+
+  "blocks": [
+    { "name": "Air", "solid": false, "moveCost": 0, "canBuildOn": false },
+    { "name": "Grass", "sprite": "terrain/grass", "spriteSide": "terrain/grass_side",
+      "accent": "terrain/grass_flowers", "accentFringe": "terrain/grass_flowers_light", "accentAbove": 0.66, "moveCost": 1.0, "flammability": 0.25, "burnsInto": "Dirt", "digWork": 200 },
+    { "name": "Dirt", "sprite": "terrain/dirt", "spriteSide": "terrain/dirt_side",
+      "accent": "terrain/dirt_tufts", "accentFringe": "terrain/dirt_tufts_light", "accentAbove": 0.68, "moveCost": 1.0, "digWork": 200 },
+    { "name": "Sand", "sprite": "terrain/sand", "spriteSide": "terrain/sand_side",
+      "accent": "terrain/sand_grass", "accentFringe": "terrain/sand_grass_light", "accentAbove": 0.68, "moveCost": 1.3, "digWork": 150,
+      // River sand hides a fleck of gold now and then (rolled from the place, mining.json).
+      "digBonus": [ { "def": "GoldOre", "count": 1, "chance": 0.03 } ] },
+    { "name": "Stone", "label": "rough stone", "sprite": "terrain/rock_floor", "spriteSide": "terrain/rock_side",
+      "accent": "terrain/rock_floor_moss", "accentFringe": "terrain/rock_floor_moss_light", "accentAbove": 0.66, "moveCost": 1.0,
+      "digWork": 600, "digYield": [ { "def": "Stone", "count": 8 } ], "digTool": "Pick" },
+    // Clay banks by the water and iron ore in the hills (MapGenerator places them away from the landing).
+    { "name": "Clay", "label": "clay bank", "sprite": "terrain/clay", "spriteSide": "terrain/clay_side", "moveCost": 1.3,
+      "digWork": 250, "digYield": [ { "def": "Clay", "count": 6 } ] },
+    { "name": "IronOre", "label": "iron ore", "sprite": "terrain/iron_ore", "spriteSide": "terrain/iron_ore_side", "moveCost": 1.0,
+      "digWork": 900, "digYield": [ { "def": "IronOre", "count": 4 }, { "def": "Stone", "count": 2 } ], "digTool": "Pick", "digTier": "Copper",
+      "ore": true, "stain": [1.0, 0.82, 0.74], "hostRock": "Limestone" },
+    { "name": "ShallowWater", "label": "shallow water", "sprite": "terrain/shallow_water", "spriteSide": "terrain/shallow_water_side", "moveCost": 3.0, "isWater": true, "canBuildOn": false },
+    { "name": "Water", "label": "deep water", "sprite": "terrain/water", "spriteSide": "terrain/water_side", "moveCost": 0, "isWater": true, "canBuildOn": false }
+  ],
+
+  "things": [
+    // ---- Items ----
+    // rotDays: days until food rots away at 10–30°C; half as fast at 5°C, not at all at 0°C or
+    // below, twice as fast at 60°C (RotSystem). Stacks mix their spoilage by count.
+    { "name": "Wood", "label": "wood", "category": "Item", "mass": 1, "sprite": "items/wood", "stackLimit": 50, "flammability": 1.0, "maxHp": 50,
+      "model": [
+        { "min": [0.12, 0.15, 0], "max": [0.37, 0.85, 0.125], "top": "props/woodpile_top", "side": "props/woodpile_side", "front": "props/woodpile_end", "minCount": 1 },
+        { "min": [0.375, 0.15, 0], "max": [0.625, 0.85, 0.125], "top": "props/woodpile_top", "side": "props/woodpile_side", "front": "props/woodpile_end", "minCount": 8 },
+        { "min": [0.63, 0.15, 0], "max": [0.88, 0.85, 0.125], "top": "props/woodpile_top", "side": "props/woodpile_side", "front": "props/woodpile_end", "minCount": 16 },
+        { "min": [0.2475, 0.15, 0.125], "max": [0.4975, 0.85, 0.25], "top": "props/woodpile_top", "side": "props/woodpile_side", "front": "props/woodpile_end", "minCount": 24 },
+        { "min": [0.5025, 0.15, 0.125], "max": [0.7525, 0.85, 0.25], "top": "props/woodpile_top", "side": "props/woodpile_side", "front": "props/woodpile_end", "minCount": 32 },
+        { "min": [0.375, 0.15, 0.25], "max": [0.625, 0.85, 0.375], "top": "props/woodpile_top", "side": "props/woodpile_side", "front": "props/woodpile_end", "minCount": 40 } ] },
+    { "name": "Stone", "label": "stone blocks", "category": "Item", "mass": 2, "sprite": "items/stone", "stackLimit": 50,
+      "model": [ { "min": [0.10, 0.10, 0.00], "max": [0.48, 0.48, 0.36], "top": "props/stone_block", "side": "props/stone_block", "minCount": 1 }, { "min": [0.52, 0.10, 0.00], "max": [0.90, 0.48, 0.36], "top": "props/stone_block", "side": "props/stone_block", "minCount": 10 }, { "min": [0.10, 0.52, 0.00], "max": [0.48, 0.90, 0.36], "top": "props/stone_block", "side": "props/stone_block", "minCount": 20 }, { "min": [0.52, 0.52, 0.00], "max": [0.90, 0.90, 0.36], "top": "props/stone_block", "side": "props/stone_block", "minCount": 30 }, { "min": [0.30, 0.30, 0.36], "max": [0.68, 0.68, 0.72], "top": "props/stone_block", "side": "props/stone_block", "minCount": 40 } ] },
+    { "name": "Berries", "category": "Item", "mass": 0.1, "sprite": "items/berries", "stackLimit": 30, "nutrition": 0.1, "rotDays": 8, "flammability": 0.4, "maxHp": 20,
+      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.28], "top": "props/berries_top", "side": "props/basket" } ] },
+    // Emberroot: a warm, peppery root dug from forest edges and hillsides. Not food on its own; baked
+    // with berries it makes the dragon cake (workshop.json), a dragon's food that isn't meat.
+    { "name": "Emberroot", "label": "emberroot", "category": "Item", "mass": 0.2, "sprite": "items/emberroot", "stackLimit": 30, "rotDays": 12, "flammability": 0.3, "maxHp": 20,
+      "description": "A knobbly red root that smells of smoke and pepper. Dragons go mad for it, baked with berries." },
+    // Bandages: the player binds wounds with them (Systems/Bandaging.cs), one a wound.
+    { "name": "Bandage", "label": "bandage", "category": "Item", "mass": 0.05, "sprite": "items/bandage", "stackLimit": 20, "flammability": 0.8, "maxHp": 10,
+      "description": "Clean strips of woven flax. One binds a wound: it stops the bleeding and heals faster." },
+    // Plant fiber: stripped from wild flax (below). Twisted and woven by hand into bandages (workshop.json).
+    { "name": "Fiber", "label": "plant fiber", "category": "Item", "mass": 0.05, "sprite": "items/fiber", "stackLimit": 50, "flammability": 0.9, "maxHp": 10,
+      "description": "Pale, tough strands stripped from wild flax. Twisted and woven, it makes bandages." },
+    { "name": "Meat", "label": "raw meat", "category": "Item", "mass": 0.4, "sprite": "items/meat", "stackLimit": 30, "nutrition": 0.15, "isMeat": true, "rotDays": 4, "flammability": 0.4, "maxHp": 20,
+      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.28], "top": "props/meat_top", "side": "props/basket" } ] },
+    { "name": "RawFish", "label": "raw fish", "category": "Item", "mass": 0.3, "sprite": "items/fish", "stackLimit": 30, "nutrition": 0.15, "isMeat": true, "rotDays": 2.5, "flammability": 0.3, "maxHp": 15,
+      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.28], "top": "props/fish_top", "side": "props/basket" } ] },
+    {
+      "name": "DragonEgg", "label": "dragon egg", "category": "Item", "mass": 5, "bulky": true, "sprite": "creatures/dragon_egg",
+      "description": "Warm to the touch. It needs fierce heat to hatch.",
+      "maxHp": 100, "flammability": 0,
+      "egg": { "hatchesInto": "Dragon", "incubationDays": 1.5, "idealTempMin": 28, "idealTempMax": 80, "damagePerDay": 0.35 }
+    },
+
+    // ---- Buildings ----
+    {
+      "name": "WoodWall", "label": "wooden wall", "category": "Building", "sprite": "buildings/wall_wood",
+      "maxHp": 150, "flammability": 1.0,
+      "building": { "isWall": true, "insulation": 0.92, "work": 120, "cost": [ { "def": "Wood", "count": 5 } ] }
+    },
+    {
+      "name": "StoneWall", "label": "stone wall", "category": "Building", "sprite": "buildings/wall_stone",
+      "maxHp": 400, "flammability": 0,
+      "building": { "isWall": true, "insulation": 0.96, "work": 250, "cost": [ { "def": "Stone", "count": 5 } ] }
+    },
+    {
+      "name": "Door", "label": "wooden door", "category": "Building", "sprite": "buildings/door",
+      "maxHp": 120, "flammability": 1.0,
+      "building": { "isDoor": true, "insulation": 0.85, "work": 100, "cost": [ { "def": "Wood", "count": 4 } ] }
+    },
+    {
+      "name": "Campfire", "category": "Building", "sprite": "buildings/campfire",
+      "model": [
+        { "min": [0.15, 0.15, 0], "max": [0.35, 0.35, 0.16], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.65, 0.15, 0], "max": [0.85, 0.35, 0.16], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.15, 0.65, 0], "max": [0.35, 0.85, 0.16], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.65, 0.65, 0], "max": [0.85, 0.85, 0.16], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.42, 0.22, 0], "max": [0.58, 0.78, 0.12], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" },
+        { "min": [0.22, 0.42, 0.06], "max": [0.78, 0.58, 0.18], "top": "props/log_side", "side": "props/log_side" }
+      ],
+      "description": "Burns wood for heat and light, and cooks while it's lit. Keep it fueled.",
+      "maxHp": 80, "flammability": 0,
+      "building": { "outdoor": true,
+        "work": 60, "cost": [ { "def": "Wood", "count": 10 } ], "workbench": { "bills": 4 },
+        "heatOutput": 900, "maxHeatTemp": 50, "lightRadius": 7,
+        // Felt by creatures beside it while lit, on top of the air: °C, a quarter less per tile, gone past 3.
+        "radiantWarmth": 8,
+        "fuel": { "def": "Wood", "capacity": 20, "burnPerDay": 16, "refuelAt": 0.5 }
+      }
+    },
+    {
+      "name": "Bed", "category": "Building", "sprite": "buildings/bed", "size": [1, 2],
+      // One cell wide, two long: the headboard in the cell it's placed in, the foot in front of it.
+      "description": "Somewhere warm and soft to sleep. Two cells long; R turns it while placing, and the headboard end is the head.",
+      "model": [
+        { "min": [0.08, 0.04, 0], "max": [0.92, 1.94, 0.22], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.12, 0.1, 0.22], "max": [0.88, 1.9, 0.34], "top": "props/blanket", "side": "props/linen" },
+        { "min": [0.2, 0.14, 0.34], "max": [0.8, 0.44, 0.42], "top": "props/pillow", "side": "props/pillow" },
+        { "min": [0.04, 0.0, 0], "max": [0.96, 0.1, 0.66], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.04, 1.9, 0], "max": [0.96, 2.0, 0.38], "top": "props/planks", "side": "props/planks" }
+      ],
+      "maxHp": 100, "flammability": 1.0,
+      "building": { "isBed": true, "work": 150, "cost": [ { "def": "Wood", "count": 10 } ] }
+    },
+    {
+      "name": "Nest", "label": "dragon nest", "category": "Building", "sprite": "buildings/nest", "footprint": 3,
+      // 3x3 cells round the cell it's placed in (a grown dragon is four cells long); the model reaches out over them.
+      "model": [
+        { "min": [-0.7, -0.7, 0],  "max": [1.7, 1.7, 0.06],  "top": "props/straw",  "side": "props/straw" },
+        { "min": [-0.15, -0.1, 0.06],  "max": [1.15, 1.1, 0.1],  "top": "props/straw",  "side": "props/straw" },
+        { "min": [1.49, 0.42, 0],  "max": [1.97, 0.9, 0.16],  "top": "props/stone_block",  "side": "props/stone_block" },
+        { "min": [1.27, 1.02, 0],  "max": [1.85, 1.6, 0.26],  "top": "props/stone_block",  "side": "props/stone_block" },
+        { "min": [0.64, 1.31, 0],  "max": [1.32, 1.98, 0.21],  "top": "props/stone_block",  "side": "props/stone_block" },
+        { "min": [0.09, 1.59, 0],  "max": [0.57, 1.98, 0.16],  "top": "props/stone_block",  "side": "props/stone_block" },
+        { "min": [-0.54, 1.19, 0],  "max": [0.04, 1.77, 0.26],  "top": "props/stone_block",  "side": "props/stone_block" },
+        { "min": [-0.98, 0.67, 0],  "max": [-0.4, 1.35, 0.21],  "top": "props/stone_block",  "side": "props/stone_block" },
+        { "min": [-0.97, 0.1, 0],  "max": [-0.49, 0.58, 0.16],  "top": "props/stone_block",  "side": "props/stone_block" },
+        { "min": [-0.85, -0.6, 0],  "max": [-0.27, -0.02, 0.26],  "top": "props/stone_block",  "side": "props/stone_block" },
+        { "min": [-0.32, -0.98, 0],  "max": [0.36, -0.31, 0.21],  "top": "props/stone_block",  "side": "props/stone_block" },
+        { "min": [0.43, -0.98, 0],  "max": [0.91, -0.59, 0.16],  "top": "props/stone_block",  "side": "props/stone_block" },
+        { "min": [0.96, -0.77, 0],  "max": [1.54, -0.19, 0.26],  "top": "props/stone_block",  "side": "props/stone_block" },
+        { "min": [1.4, -0.35, 0],  "max": [1.98, 0.33, 0.21],  "top": "props/stone_block",  "side": "props/stone_block" },
+        { "min": [1.02, 1.02, 0.04],  "max": [1.46, 1.46, 0.14],  "top": "props/log_side",  "side": "props/log_side",  "front": "props/log_end" },
+        { "min": [-0.46, 1.02, 0.04],  "max": [-0.02, 1.46, 0.14],  "top": "props/log_side",  "side": "props/log_side",  "front": "props/log_end" },
+        { "min": [-0.46, -0.46, 0.04],  "max": [-0.02, -0.02, 0.14],  "top": "props/log_side",  "side": "props/log_side",  "front": "props/log_end" },
+        { "min": [1.02, -0.46, 0.04],  "max": [1.46, -0.02, 0.14],  "top": "props/log_side",  "side": "props/log_side",  "front": "props/log_end" }
+      ],
+      "description": "A wide ring of stones and boughs round a bed of straw, big enough for a grown dragon to curl up in. Takes up 3x3 cells.",
+      "maxHp": 200, "flammability": 0,
+      "building": { "outdoor": true, "isNest": true, "isBed": true, "work": 100, "cost": [ { "def": "Stone", "count": 10 } ] }
+    },
+
+    {
+      "name": "WoodFloor", "label": "wooden floor", "category": "Building", "sprite": "buildings/floor_wood",
+      "description": "Planks to walk on: a platform, an upper storey or a bridge. Must be within two cells of ground or a wall below.",
+      "maxHp": 120, "flammability": 0.8,
+      "building": { "isFloor": true, "supportSpan": 2, "insulation": 0.92, "work": 60, "cost": [ { "def": "Wood", "count": 2 } ] }
+    },
+    {
+      // A roof sits in the floor layer on top of the walls (the build tool puts it a level above
+      // what you point at): shelter for a porch or lean-to off a wall. Enclosed rooms are roofed
+      // without one (Rooms.MaxRoofedRoomSize). Not walkable. \ shows or hides roofs.
+      "name": "ThatchRoof", "label": "thatched roof", "category": "Building", "sprite": "buildings/roof_thatch",
+      "description": "Poles and thatch over the tops of the walls: shelter from the weather for a porch or lean-to, out to three cells from a wall or door. Enclosed rooms are roofed without one. \\ shows or hides roofs.",
+      "maxHp": 60, "flammability": 1.0,
+      "building": { "isFloor": true, "isRoof": true, "supportSpan": 3, "insulation": 0.85, "work": 40, "cost": [ { "def": "Wood", "count": 1 } ] }
+    },
+    {
+      "name": "TurfRoof", "label": "turf roof", "category": "Building", "sprite": "buildings/roof_turf",
+      "description": "Sods of living grass laid over birch bark on poles: the old northern roof. Heavy and slow to lay, but warm, and it hardly burns. Out to three cells from a wall or door.",
+      "maxHp": 90, "flammability": 0.25,
+      "building": { "isFloor": true, "isRoof": true, "supportSpan": 3, "insulation": 0.92, "work": 90, "cost": [ { "def": "Wood", "count": 2 } ] }
+    },
+    {
+      "name": "Wagon", "category": "Building", "sprite": "buildings/wagon", "shape": "Billboard", "renderSize": 1.875,
+      "description": "Everything you own, under canvas. Holds up to 16 stacks; F to store what you hold or open it. Once it's empty at journey's end, F takes it apart for its wood.",
+      "maxHp": 200, "flammability": 0.8,
+      // Nobody builds one, but an emptied wagon breaks up into timber (salvage).
+      "building": { "buildable": false, "storageStacks": 16, "work": 200, "cost": [], "salvage": [ { "def": "Wood", "count": 30, "material": "Oak" } ] }
+    },
+    {
+      "name": "Ladder", "category": "Building", "sprite": "buildings/ladder", "shape": "Billboard", "renderSize": 3.0,
+      "description": "Climb straight up to the level above. The cell above the ladder can be stood on.",
+      "maxHp": 80, "flammability": 1.0, "pathCost": 2,
+      "building": { "outdoor": true, "climb": "Ladder", "work": 80, "cost": [ { "def": "Wood", "count": 3 } ] }
+    },
+    {
+      "name": "WoodStairs", "label": "wooden stairs", "category": "Building", "sprite": "buildings/stairs_wood",
+      "description": "Climb from here onto ground one level higher, in any of the four directions.",
+      "maxHp": 120, "flammability": 1.0, "pathCost": 1,
+      "building": { "outdoor": true, "climb": "Ramp", "work": 150, "cost": [ { "def": "Wood", "count": 6 } ] }
+    },
+
+    // ---- Plants & resources ----
+    {
+      "name": "Slope", "label": "slope", "category": "Building", "sprite": "terrain/slope",
+      "description": "A natural incline up to the next level.",
+      "maxHp": 1000, "flammability": 0, "pathCost": 0.5,
+      "building": { "climb": "Ramp", "buildable": false }
+    },
+    {
+      "name": "Oak", "label": "oak tree", "category": "Plant", "isTree": true, "sprite": "things/oak", "renderSize": 2.5,
+      "description": "A broad, spreading oak. Grows in damp lowland groves.",
+      "maxHp": 200, "flammability": 0.8, "pathCost": 2, "burnsInto": "DeadTree",
+      "harvest": { "workType": "Chop", "work": 180, "yield": [ { "def": "Wood", "count": 12, "material": "Oak" } ] }
+    },
+    {
+      "name": "Pine", "label": "pine tree", "category": "Plant", "isTree": true, "sprite": "things/pine", "renderSize": 3.0,
+      "description": "A tall evergreen pine, fond of drier ground.",
+      "maxHp": 200, "flammability": 0.8, "pathCost": 2, "burnsInto": "DeadTree",
+      "harvest": { "workType": "Chop", "work": 180, "yield": [ { "def": "Wood", "count": 12, "material": "Pine" } ] }
+    },
+    {
+      "name": "Birch", "label": "birch tree", "category": "Plant", "isTree": true, "sprite": "things/birch", "renderSize": 2.75,
+      "description": "A slender white-barked birch, quick to colonise open ground at forest edges.",
+      "maxHp": 200, "flammability": 0.8, "pathCost": 2, "burnsInto": "DeadTree",
+      "harvest": { "workType": "Chop", "work": 180, "yield": [ { "def": "Wood", "count": 12, "material": "Birch" } ] }
+    },
+    {
+      "name": "DeadTree", "label": "dead tree", "category": "Plant", "sprite": "things/dead_tree", "renderSize": 2.0, "maxHp": 120, "pathCost": 2,
+      "description": "A charred trunk. Too scorched to burn again, but there's still a little wood in it.",
+      "harvest": { "workType": "Chop", "work": 90, "yield": [ { "def": "Wood", "count": 5 } ] }
+    },
+    {
+      "name": "BerryBush", "label": "berry bush", "category": "Plant", "sprite": "things/berry_bush", "renderSize": 0.9, "maxHp": 60, "flammability": 0.6, "pathCost": 1,
+      "harvest": { "workType": "Harvest", "work": 60, "yield": [ { "def": "Berries", "count": 10 } ], "destroyOnHarvest": false, "regrowDays": 1.5 }
+    },
+    {
+      "name": "EmberrootPlant", "label": "emberroot", "category": "Plant", "sprite": "things/emberroot", "renderSize": 0.7, "maxHp": 30, "flammability": 0.2, "pathCost": 0,
+      "description": "Ragged red leaves over a root worth digging up. It grows back from what's left in the ground.",
+      "harvest": { "workType": "Harvest", "work": 90, "yield": [ { "def": "Emberroot", "count": 2 } ], "destroyOnHarvest": false, "regrowDays": 3 }
+    },
+    {
+      "name": "WildFlax", "label": "wild flax", "category": "Plant", "sprite": "things/wild_flax", "renderSize": 0.8, "maxHp": 30, "flammability": 0.7, "pathCost": 0,
+      "description": "Slender stems with little blue flowers. Their fiber makes bandages; cut, it grows back from the root.",
+      "harvest": { "workType": "Harvest", "work": 75, "yield": [ { "def": "Fiber", "count": 4 } ], "destroyOnHarvest": false, "regrowDays": 2 }
+    },
+    {
+      "name": "Boulder", "category": "Resource", "sprite": "things/boulder", "renderSize": 1.1, "maxHp": 500,
+      "harvest": { "workType": "Mine", "work": 240, "yield": [ { "def": "Stone", "count": 15 } ],
+        // Now and then a boulder breaks open on ore (mining.json): an early hint of what's in the hills.
+        "bonus": [ { "def": "CopperOre", "count": 2, "chance": 0.06 }, { "def": "TinOre", "count": 2, "chance": 0.03 },
+                   { "def": "IronOre", "count": 2, "chance": 0.04 }, { "def": "Coal", "count": 3, "chance": 0.05 },
+                   { "def": "SilverOre", "count": 2, "chance": 0.015 }, { "def": "GoldOre", "count": 1, "chance": 0.005 } ] }
+    }
+  ],
+
+  "creatures": [
+    {
+      "name": "Human", "race": "Human", "sprite": "creatures/human", "body": "Humanoid",
+      "moveSpeed": 4.5, "maxHp": 100,
+      "comfortTempMin": 12, "comfortTempMax": 30, "safeTempMin": -6, "safeTempMax": 50,
+      "needs": [ { "need": "Food", "decayPerDay": 0.9 }, { "need": "Rest", "decayPerDay": 1.1 } ],
+      "attacks": [ { "name": "Fists", "label": "fists", "verb": "punches", "accuracy": 0.7, "damageMin": 2, "damageMax": 5, "damageType": "Blunt", "glance": 0.3 } ]
+    },
+    {
+      "name": "Dragon", "race": "Dragon", "body": "Dragon",
+      // The breed (docs/plans/dragon-types.md): the lowest order is the default, which eggs hatch into.
+      "breed": { "label": "Hearth dragon", "order": 0, "description": "The vale's own: quick, nimble on the wing, an easy keeper." },
+      "moveSpeed": 3.5, "maxHp": 150, "eatsPlants": false, "foodPoisonFactor": 0.15,
+      // Work they'll take on (Work tab), by stage: juveniles breathe, adults also haul and fell trees.
+      // Breath work is filtered by element (elements in dragons.json): fire burns and stokes, ice chills...
+      "work": [],
+      "comfortTempMin": 25, "comfortTempMax": 90, "safeTempMin": 8, "safeTempMax": 400,
+      "needs": [ { "need": "Food", "decayPerDay": 1.4 }, { "need": "Rest", "decayPerDay": 1.0 }, { "need": "Bond", "decayPerDay": 0.8 } ],
+      "lifeStages": [
+        { "name": "Hatchling", "label": "hatchling", "minAgeDays": 0, "sprite": "creatures/dragon_hatchling", "size": 0.8, "speedFactor": 0.8, "hungerFactor": 1.0, "fireSneezePerHour": 0.06, "bodyHeat": 8, "armor": 0.1,
+          // Needs the most care (dragons.json): misses its keeper twice as fast, asks often, eats from a hand or a trough.
+          "bondDecayFactor": 2, "wantEveryHours": 3, "handFed": true,
+          "attacks": [ { "name": "Bite", "label": "bite", "verb": "nips", "accuracy": 0.7, "damageMin": 3, "damageMax": 6, "damageType": "Bite" } ] },
+        { "name": "Juvenile", "label": "juvenile", "minAgeDays": 4, "sprite": "creatures/dragon_juvenile", "size": 1.3, "speedFactor": 1.1, "hungerFactor": 1.5, "fireSneezePerHour": 0.02, "bodyHeat": 15, "armor": 0.25, "wantEveryHours": 5, "canFly": true, "flySpeedFactor": 2.2, "flyAltitude": 2,
+          "breathRange": 7, "breathCone": 22, "breathRays": 10, "work": [ "Burn", "Stoke", "Chill", "Quarry", "Blight", "Nurture" ],
+          "attacks": [
+            { "name": "Bite", "label": "bite", "verb": "bites", "accuracy": 0.75, "damageMin": 10, "damageMax": 16, "damageType": "Bite", "penetration": 0.3 },
+            { "name": "Claws", "label": "claws", "verb": "claws at", "accuracy": 0.8, "damageMin": 6, "damageMax": 11, "damageType": "Cut", "penetration": 0.15 }
+          ] },
+        { "name": "Adult", "label": "adult", "minAgeDays": 12, "sprite": "creatures/dragon_adult", "size": 2.2, "speedFactor": 1.3, "hungerFactor": 2.5, "bodyHeat": 25, "armor": 0.5, "wantEveryHours": 12,
+          // Hardier than the young: a night out in a nest a few tiles from a fire is cold, not dangerous.
+          "comfortTempMin": 15, "safeTempMin": 0, "canBeRidden": true, "canFly": true, "flySpeedFactor": 2.8, "flyAltitude": 3, "soarChance": 0.35, "huntsAlone": true,
+          "breathRange": 11, "breathCone": 26, "breathRays": 16, "work": [ "Burn", "Stoke", "Chill", "Quarry", "Blight", "Nurture", "Haul", "Chop" ], "carryStacks": 4,
+          "attacks": [
+            { "name": "Bite", "label": "bite", "verb": "bites", "accuracy": 0.8, "damageMin": 20, "damageMax": 30, "damageType": "Bite", "penetration": 0.5 },
+            { "name": "Claws", "label": "claws", "verb": "rakes", "accuracy": 0.85, "damageMin": 14, "damageMax": 22, "damageType": "Cut", "penetration": 0.35 }
+          ] }
+      ]
+    },
+    {
+      // The Norse breed: heavy-boned, long-necked and plated like a longship. Slower and hungrier
+      // than the Hearth dragon, but much harder to bring down (more blood, thicker scales).
+      "name": "NorseDragon", "label": "dragon", "race": "Dragon", "body": "Dragon",
+      "breed": { "label": "Norse dragon", "order": 1, "description": "Heavy-boned and long-necked: slower on the ground and in the air, hungrier, but very hard to bring down." },
+      "moveSpeed": 3.0, "maxHp": 200, "timeUnits": 54, "eatsPlants": false, "foodPoisonFactor": 0.15,
+      "work": [],
+      "comfortTempMin": 22, "comfortTempMax": 90, "safeTempMin": 5, "safeTempMax": 400,
+      "needs": [ { "need": "Food", "decayPerDay": 1.4 }, { "need": "Rest", "decayPerDay": 1.1 }, { "need": "Bond", "decayPerDay": 0.7 } ],
+      "lifeStages": [
+        { "name": "Hatchling", "label": "hatchling", "minAgeDays": 0, "sprite": "creatures/dragon_norse_hatchling", "size": 0.9, "speedFactor": 0.75, "hungerFactor": 1.1, "fireSneezePerHour": 0.05, "bodyHeat": 9, "armor": 0.15,
+          "bondDecayFactor": 2, "wantEveryHours": 3, "handFed": true,
+          "attacks": [ { "name": "Bite", "label": "bite", "verb": "nips", "accuracy": 0.7, "damageMin": 3, "damageMax": 7, "damageType": "Bite" } ] },
+        { "name": "Juvenile", "label": "juvenile", "minAgeDays": 5, "sprite": "creatures/dragon_norse_juvenile", "size": 1.5, "speedFactor": 1.0, "hungerFactor": 1.7, "fireSneezePerHour": 0.02, "bodyHeat": 17, "armor": 0.3, "wantEveryHours": 5, "canFly": true, "flySpeedFactor": 2.0, "flyAltitude": 2,
+          "breathRange": 7, "breathCone": 20, "breathRays": 10, "work": [ "Burn", "Stoke", "Chill", "Quarry", "Blight", "Nurture" ],
+          "attacks": [
+            { "name": "Bite", "label": "bite", "verb": "bites", "accuracy": 0.72, "damageMin": 12, "damageMax": 18, "damageType": "Bite", "penetration": 0.35 },
+            { "name": "Claws", "label": "claws", "verb": "claws at", "accuracy": 0.78, "damageMin": 7, "damageMax": 12, "damageType": "Cut", "penetration": 0.2 }
+          ] },
+        { "name": "Adult", "label": "adult", "minAgeDays": 14, "sprite": "creatures/dragon_norse_adult", "size": 2.6, "speedFactor": 1.2, "hungerFactor": 2.8, "bodyHeat": 28, "armor": 0.6, "wantEveryHours": 12,
+          "comfortTempMin": 12, "safeTempMin": -3, "canBeRidden": true, "canFly": true, "flySpeedFactor": 2.6, "flyAltitude": 3, "soarChance": 0.3, "huntsAlone": true,
+          "breathRange": 12, "breathCone": 22, "breathRays": 16, "work": [ "Burn", "Stoke", "Chill", "Quarry", "Blight", "Nurture", "Haul", "Chop" ], "carryStacks": 6,
+          "attacks": [
+            { "name": "Bite", "label": "bite", "verb": "bites", "accuracy": 0.78, "damageMin": 24, "damageMax": 34, "damageType": "Bite", "penetration": 0.55 },
+            { "name": "Claws", "label": "claws", "verb": "rakes", "accuracy": 0.82, "damageMin": 16, "damageMax": 25, "damageType": "Cut", "penetration": 0.4 }
+          ] }
+      ]
+    }
+  ]
+}

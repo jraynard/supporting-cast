@@ -1,0 +1,539 @@
+// Crafting: refined materials, the stations they're made at, and the recipes (RecipeDef in
+// Defs/CraftingDefs.cs). Units as in core.json: work in work-ticks (60 a game second at average
+// skill), mass in kg per unit.
+//
+// A recipe is made at its "station" (a building with "workbench"), or by hand when it has none
+// (the player only, from the inventory window's Craft tab). Tools ("tools" needed, "helpedBy"
+// optional) count when they're on the crafter, or within two cells of the station.
+// Products that come in materials ("materialsOf") take the main material of what went in: oak
+// wood makes oak planks, and oak planks make an oak plank wall. "minSkill" keeps novices off;
+// "unlock" (a skill level, or a "discover" trigger) keeps a recipe out of the book until then.
+{
+  "things": [
+    // ---- Refined materials ----
+    {
+      "name": "Planks", "label": "planks", "category": "Item", "mass": 0.5, "sprite": "items/planks", "stackLimit": 60,
+      "materialsOf": "Wood", "flammability": 1.0, "maxHp": 40,
+      "description": "Sawn boards: lighter than logs, and they make tighter walls and floors.",
+      "model": [
+        { "min": [0.10, 0.20, 0.00], "max": [0.90, 0.40, 0.06], "top": "props/planks", "side": "props/planks", "minCount": 1 },
+        { "min": [0.10, 0.45, 0.00], "max": [0.90, 0.65, 0.06], "top": "props/planks", "side": "props/planks", "minCount": 12 },
+        { "min": [0.12, 0.30, 0.06], "max": [0.88, 0.50, 0.12], "top": "props/planks", "side": "props/planks", "minCount": 24 },
+        { "min": [0.12, 0.55, 0.06], "max": [0.88, 0.75, 0.12], "top": "props/planks", "side": "props/planks", "minCount": 36 },
+        { "min": [0.14, 0.40, 0.12], "max": [0.86, 0.60, 0.18], "top": "props/planks", "side": "props/planks", "minCount": 48 }
+      ]
+    },
+
+    {
+      "name": "Hide", "label": "raw hide", "category": "Item", "mass": 2, "sprite": "items/hide", "stackLimit": 20, "rotDays": 6,
+      "flammability": 0.4, "maxHp": 30,
+      "description": "Skin from a butchered animal. Tan it into leather before it rots."
+    },
+    {
+      "name": "Leather", "label": "leather", "category": "Item", "mass": 0.5, "sprite": "items/leather", "stackLimit": 40,
+      "flammability": 0.5, "maxHp": 40,
+      "description": "Tanned hide, for caps, jerkins and packs."
+    },
+    {
+      "name": "Stew", "label": "stew", "category": "Item", "mass": 0.5, "sprite": "items/meal", "stackLimit": 20,
+      "nutrition": 0.35, "cooked": true, "rotDays": 2, "flammability": 0.2, "maxHp": 20,
+      "description": "Meat and berries simmered over the hearth in its pot. Filling, and warming going down.",
+      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.2], "top": "props/meal_top", "side": "props/stone_block" } ]
+    },
+    {
+      "name": "SimpleMeal", "label": "simple meal", "category": "Item", "mass": 0.4, "sprite": "items/meal", "stackLimit": 20,
+      "nutrition": 0.3, "cooked": true, "rotDays": 3, "flammability": 0.4, "maxHp": 20,
+      "description": "Something hot from the fire. Goes further than raw food, and people enjoy it.",
+      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.16], "top": "props/meal_top", "side": "props/basket" } ]
+    },
+    {
+      "name": "DragonCake", "label": "dragon cake", "category": "Item", "mass": 0.5, "sprite": "items/dragon_cake", "stackLimit": 20,
+      "nutrition": 0.75, "dragonFood": true, "rotDays": 10, "flammability": 0.4, "maxHp": 20,
+      "description": "Berries and emberroot baked hard in the embers. Only a dragon would eat it, and it will, gladly: a cake goes about as far as a dozen cuts of meat."
+    },
+    {
+      "name": "Charcoal", "label": "charcoal", "category": "Item", "mass": 0.3, "sprite": "items/charcoal", "stackLimit": 60, "flammability": 1.0, "maxHp": 20,
+      "description": "Wood baked black in a kiln. Burns far hotter than logs: what a forge runs on."
+    },
+    {
+      "name": "Clay", "label": "clay", "category": "Item", "mass": 1.5, "sprite": "items/clay", "stackLimit": 50, "maxHp": 40,
+      "description": "Wet clay dug from a bank by the water. A kiln fires it into bricks."
+    },
+    {
+      "name": "Bricks", "label": "bricks", "category": "Item", "mass": 2, "sprite": "items/bricks", "stackLimit": 50, "maxHp": 80,
+      "description": "Fired clay: walls of it don't burn, and a forge is built from them."
+    },
+    {
+      "name": "CutStone", "label": "cut stone", "category": "Item", "mass": 2.5, "sprite": "items/cut_stone", "stackLimit": 50, "maxHp": 100,
+      "materialsOf": "Stone",
+      "description": "Squared blocks from a mason's bench, for walls that fit tight."
+    },
+    {
+      "name": "IronOre", "label": "iron ore", "category": "Item", "mass": 3, "sprite": "items/iron_ore", "stackLimit": 40, "maxHp": 100,
+      "description": "Rust-red rock from the hills. Smelt it in a forge."
+    },
+    {
+      "name": "IronBar", "label": "iron bar", "category": "Item", "mass": 1.5, "sprite": "items/iron_bar", "stackLimit": 30, "maxHp": 150,
+      "description": "Smelted iron, ready for the smith."
+    },
+    {
+      "name": "DragonScale", "label": "dragon scale", "category": "Item", "mass": 0.3, "sprite": "items/dragon_scale", "stackLimit": 30, "maxHp": 200,
+      "description": "Shed by a growing dragon: hard as iron, and fire slides off it."
+    },
+
+    // ---- Tools: on your belt (Systems/Toolbelt.cs), in hand or pack, or within two cells of the
+    // station (a chest beside it is a tool rack). Tiers are named in mining.json: Stone (by hand),
+    // Copper and Bronze (the kiln's metals), Iron and Steel (the forge), Dragonforged (a forge a
+    // dragon has stoked past 1300°C). Chopping, mining, digging rock and fishing go at the tool's
+    // speed, and at 0.35 with none (Crafting.GatherFactor); a pick's tier decides which rock it breaks. ----
+    {
+      "name": "StoneAxe", "held": "axe", "label": "stone axe", "category": "Item", "mass": 1.5, "sprite": "items/stone_axe", "maxHp": 50,
+      "tool": { "kind": "Axe", "speed": 0.75, "tier": "Stone" }, "description": "A sharp stone lashed to a haft. Fells a tree, eventually.",
+      "weapon": { "verb": "hacks at", "accuracy": 0.74, "damageMin": 8, "damageMax": 13, "damageType": "Cut", "penetration": 0.12, "glance": 0.12 }
+    },
+    {
+      "name": "StonePick", "held": "pick", "label": "stone pick", "category": "Item", "mass": 2, "sprite": "items/stone_pick", "maxHp": 50,
+      "tool": { "kind": "Pick", "speed": 0.75, "tier": "Stone" }, "description": "A pointed stone on a stick. It cracks rock, slowly."
+    },
+    {
+      "name": "StoneHammer", "held": "hammer", "label": "stone hammer", "category": "Item", "mass": 1.5, "sprite": "items/stone_hammer", "maxHp": 50,
+      "tool": { "kind": "Hammer", "speed": 0.75, "tier": "Stone" }, "description": "Crude, but enough to beat out a first iron tool at the forge."
+    },
+    {
+      "name": "FishingRod", "held": "rod", "label": "fishing rod", "category": "Item", "mass": 0.5, "sprite": "items/fishing_rod", "maxHp": 30,
+      "tool": { "kind": "Rod", "speed": 1.0, "tier": "Stone" }, "description": "A springy pole and a line. Casting without one is mostly hoping."
+    },
+    {
+      "name": "Hammer", "held": "hammer", "label": "smith's hammer", "category": "Item", "mass": 1.5, "sprite": "items/hammer", "maxHp": 120,
+      "tool": { "kind": "Hammer", "speed": 1.25, "tier": "Iron" }, "description": "An iron hammer: fine work at the forge (blades, helms, mail) needs one."
+    },
+    {
+      "name": "Tongs", "held": "tongs", "label": "tongs", "category": "Item", "mass": 1, "sprite": "items/tongs", "maxHp": 120,
+      "tool": { "kind": "Tongs", "speed": 1.25, "tier": "Iron" }, "description": "For holding hot iron: needed for mail, and quicker smelting."
+    },
+    {
+      "name": "Saw", "held": "saw", "label": "saw", "category": "Item", "mass": 1, "sprite": "items/saw", "maxHp": 80,
+      "tool": { "kind": "Saw", "speed": 1.6, "tier": "Iron" }, "description": "Saws planks far faster than splitting them by axe and wedge."
+    },
+    {
+      "name": "Chisel", "held": "chisel", "label": "chisel", "category": "Item", "mass": 0.5, "sprite": "items/chisel", "maxHp": 80,
+      "tool": { "kind": "Chisel", "speed": 1.5, "tier": "Iron" }, "description": "Squares stone and carves wood quicker."
+    },
+    {
+      "name": "Pick", "held": "pick", "label": "iron pick", "category": "Item", "mass": 2.5, "sprite": "items/pick", "maxHp": 120,
+      "tool": { "kind": "Pick", "speed": 1.25, "tier": "Iron" }, "description": "Breaks rock and digs well over half again as fast as a stone pick."
+    },
+    {
+      "name": "DragonAxe", "held": "axe", "label": "dragonforged axe", "category": "Item", "mass": 2, "sprite": "items/dragon_axe", "maxHp": 200,
+      "tool": { "kind": "Axe", "speed": 1.75, "tier": "Dragonforged" },
+      "weapon": { "verb": "cleaves", "accuracy": 0.78, "damageMin": 15, "damageMax": 24, "damageType": "Cut", "penetration": 0.35, "glance": 0.06 },
+      "description": "Iron folded in dragonfire with shed scale. It bites into oak like it's pine."
+    },
+    {
+      "name": "DragonPick", "held": "pick", "label": "dragonforged pick", "category": "Item", "mass": 2.5, "sprite": "items/dragon_pick", "maxHp": 200,
+      "tool": { "kind": "Pick", "speed": 1.75, "tier": "Dragonforged" }, "description": "Dragonfire-tempered: rock flakes away under it."
+    },
+    {
+      "name": "DragonHammer", "held": "hammer", "label": "dragonforged hammer", "category": "Item", "mass": 1.5, "sprite": "items/dragon_hammer", "maxHp": 200,
+      "tool": { "kind": "Hammer", "speed": 1.75, "tier": "Dragonforged" }, "description": "Rings true on the anvil: the finest work, done quicker."
+    },
+
+    // ---- Dragon-scale armor ----
+    {
+      "name": "ScaleHelm", "label": "dragon-scale helm", "category": "Item", "mass": 1.2, "sprite": "items/scale_helm", "maxHp": 160, "tier": "Dragonforged", "dragonScale": true,
+      "description": "Shed scales sewn over leather. Turns blades, and flame hardly touches it.",
+      "apparel": { "slot": "Head", "covers": [ "Head" ], "sharp": 0.45, "blunt": 0.2, "heat": 0.6, "worn": "apparel/iron_helm" }
+    },
+    {
+      "name": "ScaleMail", "label": "dragon-scale mail", "category": "Item", "mass": 4, "sprite": "items/scale_mail", "maxHp": 220, "tier": "Dragonforged", "dragonScale": true,
+      "description": "A coat of shed dragon scales over leather: nearly as good as mail against blades, and a rider's best friend against fire.",
+      "apparel": { "slot": "Body", "covers": [ "Torso", "LeftArm", "RightArm" ], "sharp": 0.5, "blunt": 0.2, "heat": 0.65, "worn": "apparel/chain_shirt" }
+    },
+    {
+      "name": "LeatherPack", "label": "leather pack", "category": "Item", "mass": 2, "sprite": "items/leather_pack", "flammability": 0.5, "maxHp": 90,
+      "description": "A roomy pack of tanned leather. Carries 40 kg besides what's in your hands; swapping it for a satchel moves what's in it across.",
+      "apparel": { "slot": "Back", "covers": [], "worn": "apparel/satchel" },
+      "container": { "capacity": 40 }
+    },
+
+    {
+      // A rideable dragon wears it (Systems/Saddles): the rider aims better from a steady seat,
+      // it adds a little to the scales over the back, and its saddlebags carry 60 kg.
+      "name": "Saddle", "label": "dragon saddle", "category": "Item", "mass": 6, "sprite": "items/saddle", "stackLimit": 1,
+      "flammability": 0.5, "maxHp": 120,
+      "description": "A leather saddle cut for a grown dragon, with a high cantle, a girth strap round the chest and saddlebags. Riding is steadier with one: a rider's shots go truer.",
+      "saddle": { "mountedAim": 0.1, "armor": 0.05, "covers": [ "Torso" ], "worn": "saddle" },
+      "container": { "capacity": 60 }
+    },
+
+    // ---- Stations ----
+    {
+      "name": "Sawhorse", "category": "Building", "sprite": "buildings/sawhorse", "size": [2, 1],
+      // Workbenches are two cells wide (the sawyer works from the front, +Y).
+      "description": "Saws logs into planks. Two cells wide. Add bills in its window; F at it to saw some yourself.",
+      "maxHp": 80, "flammability": 1.0, "pathCost": 2,
+      "building": { "work": 90, "surfaceHeight": 0.54, "workbench": { "bills": 6 }, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "model": [
+        { "min": [0.10, 0.40, 0.42], "max": [1.90, 0.60, 0.54], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" },
+        { "min": [0.22, 0.30, 0.00], "max": [0.30, 0.38, 0.46], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.22, 0.62, 0.00], "max": [0.30, 0.70, 0.46], "top": "props/planks", "side": "props/planks" },
+        { "min": [1.70, 0.30, 0.00], "max": [1.78, 0.38, 0.46], "top": "props/planks", "side": "props/planks" },
+        { "min": [1.70, 0.62, 0.00], "max": [1.78, 0.70, 0.46], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.96, 0.36, 0.00], "max": [1.04, 0.64, 0.40], "top": "props/planks", "side": "props/planks" }
+      ]
+    },
+    {
+      "name": "CarpenterBench", "label": "carpenter's bench", "category": "Building", "sprite": "buildings/carpenter_bench", "size": [2, 1],
+      "description": "A planked workbench with a vise, two cells wide, for bows, clubs and finer woodwork.",
+      "maxHp": 120, "flammability": 1.0, "pathCost": 2,
+      "building": { "work": 200, "surfaceHeight": 0.68, "workbench": { "bills": 8 }, "cost": [ { "def": "Planks", "count": 14 }, { "def": "Wood", "count": 2 } ] },
+      "model": [
+        { "min": [0.02, 0.14, 0.56], "max": [1.98, 0.86, 0.68], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.06, 0.18, 0.00], "max": [0.16, 0.28, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [1.84, 0.18, 0.00], "max": [1.94, 0.28, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.06, 0.72, 0.00], "max": [0.16, 0.82, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [1.84, 0.72, 0.00], "max": [1.94, 0.82, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.08, 0.20, 0.16], "max": [1.92, 0.80, 0.22], "top": "props/planks", "side": "props/planks" },
+        { "min": [1.66, 0.76, 0.50], "max": [1.84, 0.90, 0.76], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.30, 0.30, 0.68], "max": [0.90, 0.46, 0.73], "top": "props/planks", "side": "props/planks" }
+      ]
+    },
+
+    {
+      // Hunters carry carcasses here (Systems/ButcherSpots): butchering goes 1.5x as fast, yields a
+      // tenth more, and the meat lands by the larder instead of out where the animal fell.
+      "name": "ButcherSpot", "label": "butcher spot", "category": "Building", "sprite": "buildings/butcher_spot", "size": [2, 1],
+      "description": "A chopping block on a plank board. Hunters carry their kills here to cut them up: faster, with less waste, and the meat ends up close to home.",
+      "maxHp": 60, "flammability": 1.0, "pathCost": 2,
+      "building": { "outdoor": true, "work": 80, "butcherSpot": { "speed": 1.5, "yield": 0.1 }, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "model": [
+        { "min": [0.04, 0.10, 0.00], "max": [1.96, 0.90, 0.08], "top": "props/planks", "side": "props/planks" },
+        { "min": [1.22, 0.26, 0.08], "max": [1.74, 0.74, 0.56], "top": "props/log_end", "side": "props/log_side" },
+        { "min": [0.16, 0.20, 0.08], "max": [1.04, 0.80, 0.11], "top": "props/hide", "side": "props/hide" }
+      ]
+    },
+
+    {
+      "name": "TanningRack", "label": "tanning rack", "category": "Building", "sprite": "buildings/tanning_rack", "size": [2, 1],
+      "description": "A frame two cells wide for stretching and tanning hides, and for cutting and stitching leather.",
+      "maxHp": 80, "flammability": 1.0, "pathCost": 2,
+      "building": { "outdoor": true, "work": 120, "workbench": { "bills": 6 }, "cost": [ { "def": "Wood", "count": 10 } ] },
+      "model": [
+        { "min": [0.08, 0.44, 0.00], "max": [0.16, 0.56, 0.90], "top": "props/log_side", "side": "props/log_side" },
+        { "min": [1.84, 0.44, 0.00], "max": [1.92, 0.56, 0.90], "top": "props/log_side", "side": "props/log_side" },
+        { "min": [0.96, 0.44, 0.00], "max": [1.04, 0.56, 0.86], "top": "props/log_side", "side": "props/log_side" },
+        { "min": [0.04, 0.44, 0.82], "max": [1.96, 0.56, 0.90], "top": "props/log_side", "side": "props/log_side" },
+        { "min": [0.20, 0.47, 0.18], "max": [0.90, 0.53, 0.78], "top": "props/hide", "side": "props/hide" },
+        { "min": [1.10, 0.47, 0.24], "max": [1.80, 0.53, 0.78], "top": "props/hide", "side": "props/hide" }
+      ]
+    },
+
+    {
+      "name": "MasonBench", "label": "mason's bench", "category": "Building", "sprite": "buildings/mason_bench", "size": [2, 1],
+      "description": "A heavy bench two cells wide for squaring stone into blocks.",
+      "maxHp": 200, "flammability": 0.3, "pathCost": 2,
+      "building": { "outdoor": true, "work": 220, "surfaceHeight": 0.66, "workbench": { "bills": 6 }, "cost": [ { "def": "Stone", "count": 10 }, { "def": "Wood", "count": 4 } ] },
+      "model": [
+        { "min": [0.04, 0.14, 0.48], "max": [1.96, 0.86, 0.66], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.10, 0.20, 0.00], "max": [0.30, 0.80, 0.48], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [1.70, 0.20, 0.00], "max": [1.90, 0.80, 0.48], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.40, 0.32, 0.66], "max": [0.66, 0.62, 0.82], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [1.20, 0.28, 0.66], "max": [1.56, 0.60, 0.76], "top": "props/stone_block", "side": "props/stone_block" }
+      ]
+    },
+    {
+      "name": "Kiln", "category": "Building", "sprite": "buildings/kiln",
+      "description": "A domed oven of stone. Fired only while there's work for it: bake charcoal from wood, and bricks from clay once it's hot.",
+      "maxHp": 300, "flammability": 0,
+      "building": { "outdoor": true,
+        "isWall": true, "insulation": 0.98, "work": 300, "workbench": { "bills": 6 },
+        "cost": [ { "def": "Stone", "count": 16 } ],
+        "heatOutput": 5000, "maxHeatTemp": 900, "lightRadius": 3, "stokeHeat": 4000, "stokedMaxTemp": 1100,
+        // "reach": the heat it holds on each fuel, standing in the open (OreTests checks these against
+        // the heat sim). Haulers bring the cheapest fuel that reaches the next craft's heat.
+        "fuel": { "def": "Wood", "capacity": 30, "burnPerDay": 60, "refuelAt": 0.4, "onDemand": true, "reach": 745,
+          "also": [ { "def": "Charcoal", "heatFactor": 1.2, "maxTempBonus": 80, "burnFactor": 0.8, "reach": 890 },
+                    { "def": "Coal", "heatFactor": 1.3, "maxTempBonus": 120, "burnFactor": 0.6, "reach": 960 } ] }
+      }
+    },
+    {
+      "name": "Forge", "category": "Building", "sprite": "buildings/forge",
+      "description": "A brick hearth with bellows. Charcoal brings it near iron's heat, slowly; a dragon breathing into it gets it there fast.",
+      "maxHp": 400, "flammability": 0,
+      "building": {
+        "isWall": true, "insulation": 0.98, "work": 400, "workbench": { "bills": 8 },
+        "cost": [ { "def": "Bricks", "count": 12 }, { "def": "Stone", "count": 6 } ],
+        "heatOutput": 5200, "maxHeatTemp": 1150, "lightRadius": 4, "stokeHeat": 9000, "stokedMaxTemp": 1450,
+        "fuel": { "def": "Charcoal", "capacity": 20, "burnPerDay": 40, "refuelAt": 0.4, "onDemand": true, "reach": 775,
+          "also": [ { "def": "Coal", "heatFactor": 1.3, "maxTempBonus": 120, "burnFactor": 0.7, "reach": 1000 } ] }
+      }
+    },
+
+    // ---- Better buildings, from planks ----
+    {
+      "name": "PlankWall", "label": "plank wall", "category": "Building", "sprite": "buildings/wall_planks",
+      "description": "Close-fitted boards: keeps heat in better than a log wall and takes more knocks.",
+      "maxHp": 220, "flammability": 0.9,
+      "building": { "isWall": true, "insulation": 0.95, "work": 140, "cost": [ { "def": "Planks", "count": 6 } ] }
+    },
+    {
+      "name": "CutStoneWall", "label": "cut stone wall", "category": "Building", "sprite": "buildings/wall_cut_stone",
+      "description": "Squared blocks laid tight: the warmest and toughest wall there is.",
+      "maxHp": 550, "flammability": 0,
+      "building": { "isWall": true, "insulation": 0.975, "work": 280, "cost": [ { "def": "CutStone", "count": 4 } ] }
+    },
+    {
+      "name": "BrickWall", "label": "brick wall", "category": "Building", "sprite": "buildings/wall_brick",
+      "description": "Fired brick: quick to lay, holds heat well, and no dragon's breath will set it alight.",
+      "maxHp": 450, "flammability": 0,
+      "building": { "isWall": true, "insulation": 0.965, "work": 180, "cost": [ { "def": "Bricks", "count": 5 } ] }
+    },
+    {
+      "name": "ShingleRoof", "label": "shingle roof", "category": "Building", "sprite": "buildings/roof_shingles",
+      "description": "Split wooden shingles over the tops of the walls: tighter than thatch and slower to catch. Out to three cells from a wall or door.",
+      "maxHp": 120, "flammability": 0.7,
+      "building": { "isFloor": true, "isRoof": true, "supportSpan": 3, "insulation": 0.9, "work": 60, "cost": [ { "def": "Planks", "count": 2 } ] }
+    },
+    {
+      "name": "PlankFloor", "label": "plank floor", "category": "Building", "sprite": "buildings/floor_planks",
+      "description": "Sawn boards to walk on: warmer than a log floor, and it can reach a cell further from support.",
+      "maxHp": 150, "flammability": 0.75,
+      "building": { "isFloor": true, "supportSpan": 3, "insulation": 0.94, "work": 70, "cost": [ { "def": "Planks", "count": 3 } ] }
+    }
+  ],
+
+  "recipes": [
+    {
+      "name": "SawPlanks", "label": "planks", "station": "Sawhorse", "skill": "Crafting", "work": 600, "helpedBy": [ "Saw" ],
+      "description": "Saw 6 logs into 10 planks.",
+      "ingredients": [ { "def": "Wood", "count": 6 } ],
+      "products": [ { "def": "Planks", "count": 10 } ]
+    },
+    {
+      "name": "TanHides", "label": "leather", "station": "TanningRack", "skill": "Crafting", "work": 900,
+      "description": "Scrape, stretch and tan 3 hides into 4 leather.",
+      "unlock": { "discover": "handle:Hide" },
+      "ingredients": [ { "def": "Hide", "count": 3 } ],
+      "products": [ { "def": "Leather", "count": 4 } ]
+    },
+    {
+      "name": "MakeLeatherCap", "label": "leather cap", "station": "TanningRack", "skill": "Crafting", "work": 700,
+      "unlock": { "discover": "handle:Hide" },
+      "ingredients": [ { "def": "Leather", "count": 3 } ],
+      "products": [ { "def": "LeatherCap", "count": 1 } ]
+    },
+    {
+      "name": "MakeLeatherJerkin", "label": "leather jerkin", "station": "TanningRack", "skill": "Crafting", "minSkill": 3, "work": 1400,
+      "unlock": { "discover": "handle:Hide" },
+      "ingredients": [ { "def": "Leather", "count": 6 } ],
+      "products": [ { "def": "LeatherJerkin", "count": 1 } ]
+    },
+    {
+      "name": "MakeSaddle", "label": "dragon saddle", "station": "TanningRack", "skill": "Crafting", "minSkill": 4, "work": 2400,
+      "description": "Cut and stitch a saddle for a grown dragon.",
+      "unlock": { "skill": "Crafting", "level": 4 },
+      "ingredients": [ { "def": "Leather", "count": 10 }, { "def": "Wood", "count": 3 } ],
+      "products": [ { "def": "Saddle", "count": 1 } ]
+    },
+    {
+      "name": "MakeLeatherPack", "label": "leather pack", "station": "TanningRack", "skill": "Crafting", "minSkill": 4, "work": 1600,
+      "unlock": { "skill": "Crafting", "level": 5 },
+      "ingredients": [ { "def": "Leather", "count": 8 } ],
+      "products": [ { "def": "LeatherPack", "count": 1 } ]
+    },
+    {
+      "name": "CookMeat", "label": "simple meal (meat)", "station": "Campfire", "skill": "Cooking", "work": 300,
+      "description": "Roast 3 raw meat into 2 meals.",
+      "ingredients": [ { "def": "Meat", "count": 3 } ],
+      "products": [ { "def": "SimpleMeal", "count": 2 } ]
+    },
+    {
+      "name": "CookFish", "label": "simple meal (fish)", "station": "Campfire", "skill": "Cooking", "work": 300,
+      "ingredients": [ { "def": "RawFish", "count": 3 } ],
+      "products": [ { "def": "SimpleMeal", "count": 2 } ]
+    },
+    {
+      "name": "CookBerries", "label": "simple meal (berries)", "station": "Campfire", "skill": "Cooking", "work": 240,
+      "ingredients": [ { "def": "Berries", "count": 5 } ],
+      "products": [ { "def": "SimpleMeal", "count": 2 } ]
+    },
+    {
+      // Only over a hearth fitted with its cooking pot (a preset building's upgrade).
+      "name": "CookStew", "label": "stew", "station": "Hearth", "upgrade": "CookingPot", "skill": "Cooking", "work": 360,
+      "description": "Simmer 2 meat and 2 berries into 3 bowls of stew: more meals from less than a roast.",
+      "ingredients": [ { "def": "Meat", "count": 2 }, { "def": "Berries", "count": 2 } ],
+      "products": [ { "def": "Stew", "count": 3 } ]
+    },
+    {
+      "name": "BakeDragonCake", "label": "dragon cake", "station": "Campfire", "skill": "Cooking", "work": 360,
+      "description": "Bake 6 berries and 2 emberroot into 2 cakes a dragon will eat instead of meat.",
+      "ingredients": [ { "def": "Berries", "count": 6 }, { "def": "Emberroot", "count": 2 } ],
+      "products": [ { "def": "DragonCake", "count": 2 } ]
+    },
+    {
+      "name": "SquareStone", "label": "cut stone", "station": "MasonBench", "skill": "Construction", "work": 700, "helpedBy": [ "Chisel" ],
+      "ingredients": [ { "def": "Stone", "count": 5 } ],
+      "products": [ { "def": "CutStone", "count": 4 } ]
+    },
+    {
+      "name": "BakeCharcoal", "label": "charcoal", "station": "Kiln", "skill": "Crafting", "work": 600, "minTemp": 300,
+      "description": "Bake 6 logs into 5 charcoal.",
+      "ingredients": [ { "def": "Wood", "count": 6 } ],
+      "products": [ { "def": "Charcoal", "count": 5 } ]
+    },
+    {
+      "name": "FireBricks", "label": "bricks", "station": "Kiln", "skill": "Crafting", "work": 800, "minTemp": 650,
+      "unlock": { "discover": "handle:Clay" },
+      "ingredients": [ { "def": "Clay", "count": 5 } ],
+      "products": [ { "def": "Bricks", "count": 5 } ]
+    },
+    {
+      "name": "SmeltIron", "label": "iron bars", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 900, "minTemp": 1100, "helpedBy": [ "Tongs" ],
+      "unlock": { "discover": "handle:IronOre" },
+      "ingredients": [ { "def": "IronOre", "count": 4 }, { "def": "Charcoal", "count": 2 } ],
+      "products": [ { "def": "IronBar", "count": 2 } ]
+    },
+    {
+      "name": "ForgeAxe", "label": "woodcutter's axe", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 1200, "minTemp": 800, "tools": [ "Hammer" ],
+      "unlock": { "discover": "handle:IronBar" },
+      "description": "Reforge a stone axe with an iron head.",
+      "ingredients": [ { "def": "IronBar", "count": 2 }, { "def": "Planks", "count": 2 }, { "def": "StoneAxe", "count": 1 } ],
+      "products": [ { "def": "Axe", "count": 1 } ]
+    },
+    {
+      "name": "ForgeSword", "label": "short sword", "station": "Forge", "skill": "Crafting", "minSkill": 5, "work": 1800, "minTemp": 800, "tools": [ "Hammer" ], "toolTier": "Iron",
+      "unlock": { "discover": "handle:IronBar" },
+      "ingredients": [ { "def": "IronBar", "count": 3 }, { "def": "Leather", "count": 1 } ],
+      "products": [ { "def": "ShortSword", "count": 1 } ]
+    },
+    {
+      "name": "ForgeHelm", "label": "iron helm", "station": "Forge", "skill": "Crafting", "minSkill": 5, "work": 1800, "minTemp": 800, "tools": [ "Hammer" ], "toolTier": "Iron",
+      "unlock": { "discover": "handle:IronBar" },
+      "ingredients": [ { "def": "IronBar", "count": 3 }, { "def": "Leather", "count": 1 } ],
+      "products": [ { "def": "IronHelm", "count": 1 } ]
+    },
+    {
+      "name": "ForgeChainShirt", "label": "chain shirt", "station": "Forge", "skill": "Crafting", "minSkill": 7, "work": 3600, "minTemp": 800, "tools": [ "Hammer", "Tongs" ], "toolTier": "Iron",
+      "unlock": { "skill": "Crafting", "level": 7 },
+      "ingredients": [ { "def": "IronBar", "count": 7 } ],
+      "products": [ { "def": "ChainShirt", "count": 1 } ]
+    },
+    {
+      "name": "ForgeHammer", "label": "smith's hammer", "station": "Forge", "skill": "Crafting", "minSkill": 2, "work": 900, "minTemp": 800,
+      "unlock": { "discover": "handle:IronBar" },
+      "description": "The first thing a smith makes: beat a stone hammer's head into iron. Blades, helms and mail need it.",
+      "ingredients": [ { "def": "IronBar", "count": 1 }, { "def": "Planks", "count": 1 }, { "def": "StoneHammer", "count": 1 } ],
+      "products": [ { "def": "Hammer", "count": 1 } ]
+    },
+    {
+      "name": "ForgeTongs", "label": "tongs", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 900, "minTemp": 800, "tools": [ "Hammer" ],
+      "unlock": { "discover": "handle:IronBar" },
+      "ingredients": [ { "def": "IronBar", "count": 2 } ],
+      "products": [ { "def": "Tongs", "count": 1 } ]
+    },
+    {
+      "name": "ForgeSaw", "label": "saw", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 1000, "minTemp": 800, "tools": [ "Hammer" ],
+      "unlock": { "discover": "handle:IronBar" },
+      "ingredients": [ { "def": "IronBar", "count": 1 }, { "def": "Planks", "count": 2 } ],
+      "products": [ { "def": "Saw", "count": 1 } ]
+    },
+    {
+      "name": "ForgeChisel", "label": "chisel", "station": "Forge", "skill": "Crafting", "minSkill": 2, "work": 600, "minTemp": 800, "tools": [ "Hammer" ],
+      "unlock": { "discover": "handle:IronBar" },
+      "ingredients": [ { "def": "IronBar", "count": 1 } ],
+      "products": [ { "def": "Chisel", "count": 1 } ]
+    },
+    {
+      "name": "ForgePick", "label": "pick", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 1200, "minTemp": 800, "tools": [ "Hammer" ],
+      "unlock": { "discover": "handle:IronBar" },
+      "description": "Reforge a stone pick with an iron head.",
+      "ingredients": [ { "def": "IronBar", "count": 2 }, { "def": "Planks", "count": 1 }, { "def": "StonePick", "count": 1 } ],
+      "products": [ { "def": "Pick", "count": 1 } ]
+    },
+    // Dragonforged: only a forge a dragon has breathed into (Stoke work) gets past 1300°C.
+    {
+      "name": "ForgeDragonAxe", "label": "dragonforged axe", "station": "Forge", "skill": "Crafting", "minSkill": 6, "work": 2400, "minTemp": 1300,
+      "tools": [ "Hammer", "Tongs" ], "toolTier": "Iron", "unlock": { "discover": "handle:DragonScale" },
+      "description": "Fold a steel axe with shed scale in a forge your dragon has stoked.",
+      "ingredients": [ { "def": "SteelAxe", "count": 1 }, { "def": "SteelBar", "count": 2 }, { "def": "DragonScale", "count": 2 } ],
+      "products": [ { "def": "DragonAxe", "count": 1 } ]
+    },
+    {
+      "name": "ForgeDragonPick", "label": "dragonforged pick", "station": "Forge", "skill": "Crafting", "minSkill": 6, "work": 2400, "minTemp": 1300,
+      "tools": [ "Hammer", "Tongs" ], "toolTier": "Iron", "unlock": { "discover": "handle:DragonScale" },
+      "description": "Fold a steel pick with shed scale in a forge your dragon has stoked.",
+      "ingredients": [ { "def": "SteelPick", "count": 1 }, { "def": "SteelBar", "count": 2 }, { "def": "DragonScale", "count": 2 } ],
+      "products": [ { "def": "DragonPick", "count": 1 } ]
+    },
+    {
+      "name": "ForgeDragonHammer", "label": "dragonforged hammer", "station": "Forge", "skill": "Crafting", "minSkill": 6, "work": 2400, "minTemp": 1300,
+      "tools": [ "Tongs" ], "toolTier": "Iron", "unlock": { "discover": "handle:DragonScale" },
+      "description": "Fold a steel hammer with shed scale in a forge your dragon has stoked.",
+      "ingredients": [ { "def": "SteelHammer", "count": 1 }, { "def": "SteelBar", "count": 1 }, { "def": "DragonScale", "count": 2 } ],
+      "products": [ { "def": "DragonHammer", "count": 1 } ]
+    },
+    {
+      "name": "MakeScaleHelm", "label": "dragon-scale helm", "station": "TanningRack", "skill": "Crafting", "minSkill": 5, "work": 1800,
+      "unlock": { "discover": "handle:DragonScale" },
+      "ingredients": [ { "def": "DragonScale", "count": 4 }, { "def": "Leather", "count": 2 } ],
+      "products": [ { "def": "ScaleHelm", "count": 1 } ]
+    },
+    {
+      "name": "MakeScaleMail", "label": "dragon-scale mail", "station": "TanningRack", "skill": "Crafting", "minSkill": 6, "work": 3000,
+      "unlock": { "discover": "handle:DragonScale" },
+      "ingredients": [ { "def": "DragonScale", "count": 10 }, { "def": "Leather", "count": 4 } ],
+      "products": [ { "def": "ScaleMail", "count": 1 } ]
+    },
+    // Bandages, by hand anywhere from the first hour: wild flax grows near every start (MapGenerator).
+    {
+      "name": "MakeBandages", "label": "bandages", "skill": "Medicine", "work": 300,
+      "description": "By hand: twist and weave 3 plant fiber into 2 bandages.",
+      "ingredients": [ { "def": "Fiber", "count": 3 } ],
+      "products": [ { "def": "Bandage", "count": 2 } ]
+    },
+    // Stone tools, by hand anywhere (the inventory's Craft tab).
+    {
+      "name": "MakeStoneAxe", "label": "stone axe", "skill": "Crafting", "work": 600,
+      "description": "By hand: a sharp stone lashed to a haft.",
+      "ingredients": [ { "def": "Wood", "count": 2 }, { "def": "Stone", "count": 2 } ],
+      "products": [ { "def": "StoneAxe", "count": 1 } ]
+    },
+    {
+      "name": "MakeStonePick", "label": "stone pick", "skill": "Crafting", "work": 600,
+      "description": "By hand: a pointed stone on a stick.",
+      "ingredients": [ { "def": "Wood", "count": 2 }, { "def": "Stone", "count": 3 } ],
+      "products": [ { "def": "StonePick", "count": 1 } ]
+    },
+    {
+      "name": "MakeStoneHammer", "label": "stone hammer", "skill": "Crafting", "work": 500,
+      "description": "By hand: a heavy stone bound to a handle. Enough to start a forge.",
+      "ingredients": [ { "def": "Wood", "count": 1 }, { "def": "Stone", "count": 2 } ],
+      "products": [ { "def": "StoneHammer", "count": 1 } ]
+    },
+    {
+      "name": "MakeFishingRod", "label": "fishing rod", "skill": "Crafting", "work": 400,
+      "description": "By hand: a springy pole, a line and a bent hook.",
+      "ingredients": [ { "def": "Wood", "count": 3 } ],
+      "products": [ { "def": "FishingRod", "count": 1 } ]
+    },
+    {
+      "name": "MakeClub", "label": "spiked club", "skill": "Crafting", "work": 900,
+      "description": "By hand, anywhere: a knotty branch and a few sharp stones.",
+      "ingredients": [ { "def": "Wood", "count": 3 }, { "def": "Stone", "count": 1 } ],
+      "products": [ { "def": "Club", "count": 1 } ]
+    },
+    {
+      "name": "MakeSatchel", "label": "satchel", "skill": "Crafting", "minSkill": 2, "work": 1200,
+      "description": "By hand, anywhere: a leather bag on a strap.",
+      "unlock": { "discover": "handle:Hide" },
+      "ingredients": [ { "def": "Leather", "count": 4 } ],
+      "products": [ { "def": "Satchel", "count": 1 } ]
+    },
+    {
+      "name": "MakeBow", "label": "hunting bow", "station": "CarpenterBench", "skill": "Crafting", "minSkill": 4, "work": 1800,
+      "unlock": { "skill": "Crafting", "level": 4 },
+      "ingredients": [ { "def": "Planks", "count": 4 } ],
+      "products": [ { "def": "Bow", "count": 1 } ]
+    }
+  ]
+}

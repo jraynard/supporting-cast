@@ -1,0 +1,66 @@
+using DragonWorld.Sim.Components;
+using DragonWorld.Sim.Core;
+using DragonWorld.Sim.Saving;
+using DragonWorld.Sim.Scenarios;
+using DragonWorld.Sim.Systems;
+using static DragonWorld.Sim.Tests.TestWorld;
+
+namespace DragonWorld.Sim.Tests;
+
+/// <summary><see cref="Appearance.Model"/>: a character drawn from a 3D model's sheets, by name.</summary>
+public class AppearanceTests
+{
+    [Theory]
+    [InlineData("wanderer3d", true)]
+    [InlineData("a_b_9", true)]
+    [InlineData("", false)]
+    [InlineData("Wanderer", false)]
+    [InlineData("../textures/x", false)]
+    [InlineData("a b", false)]
+    [InlineData("abcdefghijklmnopqrstuvwxyz0123456789", false)]
+    public void ModelNamesAreSafeToBuildSheetNamesFrom(string name, bool valid) =>
+        Assert.Equal(valid ? name : null, Appearance.ValidModel(name));
+
+    [Fact]
+    public void AModelSurvivesSavingAndTheWire()
+    {
+        var sim = Create(12, 12);
+        var e = sim.World.Create();
+        sim.World.Add(e, new Appearance { Hair = HairStyle.Swept, Model = "wanderer3d" });
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        Assert.Equal("wanderer3d", loaded.World.Get<Appearance>(e).Model);
+
+        var command = new CreateCharacterCommand(Guid.NewGuid(), "Bea", new Appearance { Model = "wanderer3d" }, []);
+        var round = (CreateCharacterCommand)CommandCodec.Decode(CommandCodec.Encode(command, sim.Defs), sim.Defs);
+        Assert.Equal("wanderer3d", round.Look.Model);
+    }
+
+    [Fact]
+    public void AJoinerKeepsTheirModelButNotABadName()
+    {
+        var sim = Simulation.CreateStandard(LoadDefs(), 96, 96, 51, Maps.MapGenerator.RecommendedDepth);
+        AdventureStart.PactSite(sim, new Hero("Arin", null, null, "Vesper", null));
+        var bea = Guid.NewGuid();
+        var cat = Guid.NewGuid();
+        sim.ApplyNow(new CreateCharacterCommand(bea, "Bea", new Appearance { Model = "wanderer3d" }, []));
+        sim.ApplyNow(new CreateCharacterCommand(cat, "Cat", new Appearance { Model = "../../secrets" }, []));
+        Assert.Equal("wanderer3d", sim.World.Get<Appearance>(Players.CharacterOf(sim, bea)).Model);
+        Assert.Null(sim.World.Get<Appearance>(Players.CharacterOf(sim, cat)).Model);
+    }
+
+    [Fact]
+    public void TheWandererIsDrawnNotAModelForNow() =>
+        Assert.Null(LoadDefs().Outfit("Wanderer").Model);   // the 3D try is parked (art/3d, docs/ART.md); presets are drawn
+
+    [Fact]
+    public void TheValkyrieIsAPresetInAHornedHelm()
+    {
+        var defs = LoadDefs();
+        var valkyrie = defs.Outfit("Valkyrie");
+        Assert.Null(valkyrie.Model);                       // drawn from the shared people sheets like everyone
+        var helm = Assert.Single(valkyrie.Pieces, p => p.Def == "HornedHelm").ThingDef;
+        Assert.True(Clothing.IsClothes(helm));
+        Assert.Contains(Defs.ApparelSlot.Head, Clothing.Slots);
+        Assert.Contains(valkyrie.Pieces, p => p.Def == "Tunic" && p.MaterialDefs[0].Name == "Ash");
+    }
+}

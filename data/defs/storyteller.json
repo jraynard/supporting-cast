@@ -1,0 +1,25 @@
+// The storyteller sends raids. Difficulties: the first raid comes after graceDays, later ones
+// meanDaysBetween apart (±40%). A raid is bought with points = pointsFactor × (40 + 10 per day
+// + 20 per villager + 15 per armed villager + 40 per dragon life stage past hatchling), spent on
+// raider kinds by cost, at most maxRaiders. "Off" (no def) sends nothing; tests and demos use it.
+{
+  "difficulties": [
+    { "name": "Peaceful", "label": "Peaceful", "description": "No raids. Build, explore and raise your dragon in peace.", "peaceful": true },
+    { "name": "Normal", "label": "Normal", "description": "Bandits come every few days once you're settled, growing bolder as the village does.",
+      "graceDays": 5, "meanDaysBetween": 4, "pointsFactor": 1.0, "maxRaiders": 5 },
+    { "name": "Hard", "label": "Hard", "description": "Earlier, more frequent and better-armed raids.",
+      "graceDays": 3, "meanDaysBetween": 2.5, "pointsFactor": 1.6, "maxRaiders": 8 }
+  ],
+  // Who a raid is made of. skill is the Melee/Shooting range they come with; tier is their gear's
+  // (mining.json): only kinds at most one tier past the village's best gear come.
+  "raiderKinds": [
+    { "name": "Scavenger", "label": "scavenger", "cost": 40, "weapon": "StoneKnife", "outfit": "Raider", "skillMin": 2, "skillMax": 6, "tier": "Stone" },
+    { "name": "Brawler", "label": "brawler", "cost": 35, "weapon": "Club", "apparel": [ "LeatherCap" ], "outfit": "Raider", "skillMin": 3, "skillMax": 7, "tier": "Stone" },
+    { "name": "Swordsman", "label": "swordsman", "cost": 50, "weapon": "ShortSword", "apparel": [ "LeatherJerkin" ], "outfit": "Raider", "skillMin": 4, "skillMax": 9, "tier": "Iron" },
+    { "name": "Archer", "label": "archer", "cost": 50, "weapon": "Bow", "apparel": [ "LeatherCap" ], "outfit": "Raider", "skillMin": 4, "skillMax": 9, "tier": "Stone" },
+    { "name": "Veteran", "label": "veteran", "cost": 90, "weapon": "ShortSword", "apparel": [ "IronHelm", "ChainShirt" ], "outfit": "Raider", "skillMin": 8, "skillMax": 13, "tier": "Iron" },
+    { "name": "BronzeSpearman", "label": "bronze spearman", "cost": 55, "weapon": "BronzeSpear", "apparel": [ "BronzeHelm" ], "outfit": "Raider", "skillMin": 4, "skillMax": 9, "tier": "Bronze" },
+    { "name": "BronzeGuard", "label": "bronze guard", "cost": 65, "weapon": "BronzeSword", "apparel": [ "StuddedJerkin" ], "outfit": "Raider", "skillMin": 5, "skillMax": 10, "tier": "Bronze" },
+    { "name": "SteelKnight", "label": "knight", "cost": 130, "weapon": "Longsword", "apparel": [ "SteelSallet", "SteelPlate" ], "outfit": "Raider", "skillMin": 9, "skillMax": 14, "tier": "Steel" }
+  ]
+}

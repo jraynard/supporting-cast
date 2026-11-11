@@ -1,0 +1,76 @@
+{
+  "//": "The Wanderer from 3D (docs/ART.md '3D to sprites'). Render: blender -b art/3d/wanderer.blend --python tools/blender/render_layers.py -- art/3d/wanderer.json, then python3 tools/sprites_from_renders.py art/3d/wanderer.json --aseprite",
+  "//model": "The game's name for this character (Appearance.Model, an outfit's \"model\"): its sheets are creatures/<model>, _skin, _eyes, _face, _hair and apparel/<item>_<model>, apart from the generated people's.",
+  "model": "wanderer3d",
+  "frame": [40, 60],
+  "pivot": [20, 58],
+  "pixels_per_meter": 28,
+  "supersample": 8,
+  "elevation": 25,
+  "root": "Armature",
+  "rig": "Armature",
+  "//pose": "VRoid figures are ~7 heads tall in a T-pose: a bigger head toward the game's ~3, and arms down until there's an Idle action. The Wanderer's proportions are set in VRoid now, so bone_scale is empty.",
+  "bone_scale": {},
+  "rest_pose": { "J_Bip_L_UpperArm": [0, 72, 0], "J_Bip_R_UpperArm": [0, -72, 0] },
+  "views": { "down": 0, "downside": 40, "upside": 140, "up": 180 },
+
+  "//layers": "Bottom to top, in the game's drawing order (Rendering/HumanLook.Layers). Roles: skin/hair/eyes/dye are tinted by the game (model them white or light grey); plain is drawn as is; base takes the outlines.",
+  "layers": [
+    { "collection": "Underclothes", "sheet": "creatures/wanderer3d", "role": "base", "colors": 8 },
+    { "collection": "Body", "sheet": "creatures/wanderer3d_skin", "role": "skin" },
+    { "collection": "Eyes", "sheet": "creatures/wanderer3d_eyes", "role": "eyes", "cover": 0.2 },
+    { "collection": "Face", "sheet": "creatures/wanderer3d_face", "role": "plain", "colors": 4, "cover": 0.25 },
+    { "collection": "Trousers", "sheet": "apparel/trousers_wanderer3d", "role": "plain", "colors": 8 },
+    { "collection": "Trousers cloth", "sheet": "apparel/trousers_dye_wanderer3d", "role": "dye", "outline_to": "apparel/trousers_wanderer3d" },
+    { "collection": "Shoes", "sheet": "apparel/turnshoes_wanderer3d", "role": "plain", "colors": 6 },
+    { "collection": "Vest", "sheet": "apparel/vest_wanderer3d", "role": "plain", "colors": 10 },
+    { "collection": "Poncho", "sheet": "apparel/mantle_wanderer3d", "role": "plain", "colors": 4 },
+    { "collection": "Poncho cloth", "sheet": "apparel/mantle_dye_wanderer3d", "role": "dye", "outline_to": "apparel/mantle_wanderer3d" },
+    { "collection": "Scarf", "sheet": "apparel/scarf_wanderer3d", "role": "plain", "colors": 4 },
+    { "collection": "Scarf cloth", "sheet": "apparel/scarf_dye_wanderer3d", "role": "dye", "outline_to": "apparel/scarf_wanderer3d" },
+    { "collection": "Hair", "sheet": "creatures/wanderer3d_hair", "role": "hair", "shade": "toon" }
+  ],
+
+  "//materials": "For tools/blender/setup_vrm.py: [part of a VRoid material name, collection], first match wins. Eye whites, lashes and brows are the untinted face detail; the iris is the tinted eyes layer.",
+  "materials": [
+    ["EyeIris", "Eyes"],
+    ["EyeWhite", "Face"], ["EyeHighlight", "Face"], ["FaceBrow", "Face"], ["FaceEyelash", "Face"],
+    ["FaceEyeline", "Face"], ["FaceMouth", "Face"],
+    ["_SKIN", "Body"],
+    ["_HAIR", "Hair"],
+    ["Bottoms", "Trousers cloth"],
+    ["Shoes", "Shoes"],
+    ["Tops", "Vest"], ["Onepiece", "Vest"]
+  ],
+
+  "//tints": "Only for the hidden reference layer of the .aseprite: what the game multiplies each tinted sheet by for this preset.",
+  "tints": {
+    "creatures/wanderer3d_skin": "E8BE96",
+    "creatures/wanderer3d_eyes": "4AA86A",
+    "creatures/wanderer3d_hair": "4B6FE5",
+    "apparel/trousers_dye_wanderer3d": "4A4550",
+    "apparel/mantle_dye_wanderer3d": "C4AAEB",
+    "apparel/scarf_dye_wanderer3d": "EB7DB8"
+  },
+
+  "//animations": "For tools/blender/retarget_mixamo.py: action name -> Mixamo FBX (Without Skin, 30 fps; the walk In Place), relative to this file.",
+  "animations": {
+    "Idle": "anims/Idle.fbx",
+    "Walk": "anims/Walk.fbx",
+    "IdleHip": "anims/handonhip.fbx",
+    "IdleCoin": "anims/Thinking.fbx",
+    "Sleep": "anims/sleeping.fbx"
+  },
+
+  "//tags": "Every animation the game asks a person for. '{view}' expands to each view; 'frames' are Blender frame numbers sampled from the action; 'event' marks a frame of the tag (the hammer strike). Sleep and downed are seen from above, once.",
+  "tags": [
+    { "name": "idle_{view}", "action": "Idle", "frames": [1, 63, 126, 188], "ms": 350 },
+    { "name": "walk_{view}", "action": "Walk", "frames": [1, 9, 17, 25], "ms": 140 },
+    { "name": "work_{view}", "action": "Work", "frames": [1, 8, 14, 20], "ms": 140, "event": 2 },
+    { "name": "idle_{view}_crossed", "action": "IdleCrossed", "frames": [1, 16, 31, 46], "ms": 380 },
+    { "name": "idle_{view}_hip", "action": "IdleHip", "frames": [1, 2], "ms": 600 },
+    { "name": "idle_{view}_coin", "action": "IdleCoin", "frames": [1, 16, 32, 48, 64, 80, 96, 112], "ms": 220 },
+    { "name": "sleep", "action": "Sleep", "frames": [1, 100], "ms": 1100, "views": false, "camera": "top" },
+    { "name": "downed", "action": "Sleep", "frames": [1], "ms": 1000, "loop": false, "views": false, "camera": "top" }
+  ]
+}

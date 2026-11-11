@@ -1,0 +1,166 @@
+{
+  // Mining and the tool ladder (docs/plans/mining-progression.md). A tool's tier is the best rock
+  // its pick breaks (blocks' "digTier") and the finest recipe it serves (recipes' "toolTier").
+  // Defs write tiers by name ("tier": "Bronze") or number.
+  "tiers": [
+    { "name": "Hands", "label": "bare-handed", "tier": 0 },
+    { "name": "Stone", "label": "stone", "tier": 1 },
+    { "name": "Copper", "label": "copper", "tier": 2 },
+    { "name": "Bronze", "label": "bronze", "tier": 3 },
+    { "name": "Iron", "label": "iron", "tier": 4 },
+    { "name": "Steel", "label": "steel", "tier": 5 },
+    { "name": "Dragonforged", "label": "dragonforged", "tier": 6 }
+  ],
+
+  // Kinds of stone: dug stone comes in the rock's material, and cut stone and stone walls and
+  // floors keep it ("granite wall"). Factors scale what's made of it (Defs.MaterialDef).
+  "materials": [
+    { "name": "Sandstone", "label": "sandstone", "of": "Stone", "color": [1.0, 0.86, 0.62],
+      "hpFactor": 0.8, "workFactor": 0.8, "massFactor": 0.9, "character": "soft and quick to work" },
+    { "name": "Limestone", "label": "limestone", "of": "Stone", "color": [1.0, 0.98, 0.9], "character": "the common stone" },
+    { "name": "Granite", "label": "granite", "of": "Stone", "color": [1.0, 0.86, 0.84],
+      "hpFactor": 1.5, "insulation": 0.01, "workFactor": 1.4, "massFactor": 1.2, "beauty": 1, "character": "the strongest walls, slow to dress" },
+    { "name": "Slate", "label": "slate", "of": "Stone", "color": [0.72, 0.78, 0.9],
+      "hpFactor": 1.1, "insulation": 0.02, "workFactor": 1.1, "massFactor": 0.9, "beauty": 1, "character": "splits flat: the warmest floors" },
+    { "name": "Basalt", "label": "basalt", "of": "Stone", "color": [0.55, 0.53, 0.58],
+      "hpFactor": 1.8, "insulation": 0.01, "workFactor": 1.6, "massFactor": 1.3, "character": "black and heavy, near unbreakable" }
+  ],
+
+  // Rock. "digTier": the pick it takes (tiers above). Rough stone (core.json) stays tier 0.
+  "blocks": [
+    { "name": "Sandstone", "label": "sandstone", "sprite": "terrain/sandstone", "spriteSide": "terrain/sandstone_side", "moveCost": 1.0,
+      "digWork": 450, "digYield": [ { "def": "Stone", "count": 8, "material": "Sandstone" } ], "digTool": "Pick" },
+    { "name": "Limestone", "label": "limestone", "sprite": "terrain/limestone", "spriteSide": "terrain/limestone_side", "moveCost": 1.0,
+      "digWork": 600, "digYield": [ { "def": "Stone", "count": 8, "material": "Limestone" } ], "digTool": "Pick", "digTier": "Stone" },
+    { "name": "Granite", "label": "granite", "sprite": "terrain/granite", "spriteSide": "terrain/granite_side", "moveCost": 1.0,
+      "digWork": 1000, "digYield": [ { "def": "Stone", "count": 8, "material": "Granite" } ], "digTool": "Pick", "digTier": "Copper" },
+    { "name": "Slate", "label": "slate", "sprite": "terrain/slate", "spriteSide": "terrain/slate_side", "moveCost": 1.0,
+      "digWork": 800, "digYield": [ { "def": "Stone", "count": 8, "material": "Slate" } ], "digTool": "Pick", "digTier": "Copper" },
+    { "name": "Basalt", "label": "basalt", "sprite": "terrain/basalt", "spriteSide": "terrain/basalt_side", "moveCost": 1.0,
+      "digWork": 1300, "digYield": [ { "def": "Stone", "count": 8, "material": "Basalt" } ], "digTool": "Pick", "digTier": "Iron" },
+
+    // Ore ("ore": true) is hidden, passing for the rock around it, until a face of it is opened.
+    { "name": "CopperOre", "label": "copper ore", "sprite": "terrain/copper_ore", "spriteSide": "terrain/copper_ore_side", "moveCost": 1.0,
+      "digWork": 700, "digYield": [ { "def": "CopperOre", "count": 4 }, { "def": "Stone", "count": 1, "material": "Limestone" } ],
+      "digTool": "Pick", "digTier": "Stone", "ore": true, "stain": [0.82, 1.0, 0.88], "hostRock": "Limestone" },
+    { "name": "TinOre", "label": "tin ore", "sprite": "terrain/tin_ore", "spriteSide": "terrain/tin_ore_side", "moveCost": 1.0,
+      "digWork": 800, "digYield": [ { "def": "TinOre", "count": 3 }, { "def": "Stone", "count": 1, "material": "Granite" } ],
+      "digTool": "Pick", "digTier": "Stone", "ore": true, "stain": [0.86, 0.86, 0.9], "hostRock": "Granite" },
+    { "name": "CoalSeam", "label": "coal seam", "sprite": "terrain/coal", "spriteSide": "terrain/coal_side", "moveCost": 1.0,
+      "digWork": 500, "digYield": [ { "def": "Coal", "count": 5 } ],
+      "digTool": "Pick", "digTier": "Stone", "ore": true, "stain": [0.8, 0.8, 0.8], "hostRock": "Sandstone" },
+    { "name": "SilverOre", "label": "silver ore", "sprite": "terrain/silver_ore", "spriteSide": "terrain/silver_ore_side", "moveCost": 1.0,
+      "digWork": 900, "digYield": [ { "def": "SilverOre", "count": 2 }, { "def": "Stone", "count": 2, "material": "Granite" } ],
+      "digTool": "Pick", "digTier": "Copper", "ore": true, "stain": [0.92, 0.96, 1.0], "hostRock": "Granite" },
+    { "name": "GoldOre", "label": "gold ore", "sprite": "terrain/gold_ore", "spriteSide": "terrain/gold_ore_side", "moveCost": 1.0,
+      "digWork": 1000, "digYield": [ { "def": "GoldOre", "count": 2 }, { "def": "Stone", "count": 2, "material": "Granite" } ],
+      "digTool": "Pick", "digTier": "Bronze", "ore": true, "stain": [1.0, 0.94, 0.76], "hostRock": "Granite" },
+    { "name": "EmberCrystal", "label": "ember crystal", "sprite": "terrain/ember_crystal", "spriteSide": "terrain/ember_crystal_side", "moveCost": 1.0,
+      "digWork": 1500, "digYield": [ { "def": "EmberCrystal", "count": 2 }, { "def": "Stone", "count": 2, "material": "Basalt" } ],
+      "digTool": "Pick", "digTier": "Steel", "ore": true, "stain": [1.0, 0.8, 0.68], "hostRock": "Basalt" }
+  ],
+
+  // Ores, fuel and the metals smelted from them (recipes below; iron's are in workshop.json).
+  "things": [
+    {
+      "name": "CopperOre", "label": "copper ore", "category": "Item", "mass": 3, "sprite": "items/copper_ore", "stackLimit": 40, "maxHp": 100,
+      "description": "Green-stained rock, shot with copper. Smelt it in a kiln."
+    },
+    {
+      "name": "TinOre", "label": "tin ore", "category": "Item", "mass": 3, "sprite": "items/tin_ore", "stackLimit": 40, "maxHp": 100,
+      "description": "Heavy black grains from the granite. A little of it turns copper into bronze."
+    },
+    {
+      "name": "Coal", "label": "coal", "category": "Item", "mass": 1, "sprite": "items/coal", "stackLimit": 60, "flammability": 1.0, "maxHp": 30,
+      "description": "Black stone that burns: hotter and longer than charcoal in a kiln or forge."
+    },
+    {
+      "name": "CopperBar", "label": "copper bar", "category": "Item", "mass": 1.5, "sprite": "items/copper_bar", "stackLimit": 30, "maxHp": 120,
+      "description": "Soft red metal: the first tools better than stone."
+    },
+    {
+      "name": "SilverOre", "label": "silver ore", "category": "Item", "mass": 3, "sprite": "items/silver_ore", "stackLimit": 40, "maxHp": 100,
+      "description": "Grey rock with bright threads in it. A kiln on charcoal draws the silver out."
+    },
+    {
+      "name": "GoldOre", "label": "gold ore", "category": "Item", "mass": 3, "sprite": "items/gold_ore", "stackLimit": 40, "maxHp": 100, "hoardValue": 10,
+      "description": "Gold in quartz, or a nugget from the river sand. A forge on coal melts it out."
+    },
+    {
+      "name": "SilverBar", "label": "silver bar", "category": "Item", "mass": 1.5, "sprite": "items/silver_bar", "stackLimit": 30, "maxHp": 150, "hoardValue": 50,
+      "description": "For minting coin and making rings. Dragons like the shine."
+    },
+    {
+      "name": "GoldBar", "label": "gold bar", "category": "Item", "mass": 2, "sprite": "items/gold_bar", "stackLimit": 30, "maxHp": 150, "hoardValue": 250,
+      "description": "The heart of any dragon's hoard."
+    },
+    {
+      "name": "EmberCrystal", "label": "ember crystal", "category": "Item", "mass": 0.5, "sprite": "items/ember_crystal", "stackLimit": 20, "maxHp": 300,
+      "hoardValue": 150,
+      "description": "Warm to the touch, glowing faintly from within, from the deepest rock. Dragons covet it; smiths fold it into dragonfire blades."
+    },
+    {
+      "name": "Lime", "label": "quicklime", "category": "Item", "mass": 1, "sprite": "items/lime", "stackLimit": 40, "maxHp": 40,
+      "description": "Limestone burned in a kiln. Mixed into mortar, it binds cut stone into the strongest walls."
+    },
+    {
+      "name": "BronzeBar", "label": "bronze bar", "category": "Item", "mass": 1.5, "sprite": "items/bronze_bar", "stackLimit": 30, "maxHp": 150,
+      "description": "Copper hardened with tin: tools and blades that hold an edge."
+    }
+  ],
+
+  "recipes": [
+    {
+      "name": "SmeltCopper", "label": "copper bars", "station": "Kiln", "skill": "Crafting", "minSkill": 1, "work": 700, "minTemp": 680,
+      "unlock": { "discover": "handle:CopperOre" },
+      "description": "Roast 4 copper ore with charcoal into 2 bars.",
+      "ingredients": [ { "def": "CopperOre", "count": 4 }, { "def": "Charcoal", "count": 1 } ],
+      "products": [ { "def": "CopperBar", "count": 2 } ]
+    },
+    {
+      "name": "AlloyBronze", "label": "bronze bars", "station": "Kiln", "skill": "Crafting", "minSkill": 2, "work": 900, "minTemp": 800,
+      "unlock": { "discover": "handle:TinOre" },
+      "description": "Melt 3 copper bars with 2 tin ore in a crucible: 4 bronze bars.",
+      "ingredients": [ { "def": "CopperBar", "count": 3 }, { "def": "TinOre", "count": 2 }, { "def": "Charcoal", "count": 1 } ],
+      "products": [ { "def": "BronzeBar", "count": 4 } ]
+    },
+    {
+      "name": "BurnLime", "label": "quicklime", "station": "Kiln", "skill": "Crafting", "work": 700, "minTemp": 700,
+      "unlock": { "discover": "built:Kiln" },
+      "description": "Burn 4 limestone into 3 quicklime.",
+      "ingredients": [ { "def": "Stone", "count": 4, "material": "Limestone" } ],
+      "products": [ { "def": "Lime", "count": 3 } ]
+    },
+    {
+      "name": "SmeltSilver", "label": "silver bars", "station": "Kiln", "skill": "Crafting", "minSkill": 3, "work": 900, "minTemp": 850,
+      "unlock": { "discover": "handle:SilverOre" },
+      "description": "Cupel 4 silver ore in a kiln on charcoal: 2 bars.",
+      "ingredients": [ { "def": "SilverOre", "count": 4 }, { "def": "Charcoal", "count": 1 } ],
+      "products": [ { "def": "SilverBar", "count": 2 } ]
+    },
+    {
+      "name": "SmeltGold", "label": "gold bars", "station": "Forge", "skill": "Crafting", "minSkill": 4, "work": 900, "minTemp": 950,
+      "unlock": { "discover": "handle:GoldOre" },
+      "description": "Melt 4 gold ore in a coal fire: 2 bars.",
+      "ingredients": [ { "def": "GoldOre", "count": 4 }, { "def": "Charcoal", "count": 1 } ],
+      "products": [ { "def": "GoldBar", "count": 2 } ]
+    }
+  ],
+
+  // Where ore and clay lie (MapGenerator.PlaceVeins): host rock, levels below the surface, noise
+  // size and threshold, and a salt so each vein's noise is its own.
+  "veins": [
+    { "name": "IronVein", "block": "IronOre", "hosts": [ "Stone", "Limestone", "Granite", "Slate" ],
+      "depthMin": 2, "depthMax": 6, "scale": 7, "threshold": 0.7, "salt": 9001 },
+    { "name": "ClayBank", "block": "Clay", "hosts": [ "Sand" ], "depthMin": 1, "depthMax": 1,
+      "scale": 6, "threshold": 0.5, "salt": 9103, "moistureMin": 0.45, "flat": true },
+    { "name": "CopperVein", "block": "CopperOre", "hosts": [ "Limestone", "Sandstone", "Stone" ],
+      "depthMin": 1, "depthMax": 4, "scale": 6, "threshold": 0.72, "salt": 9201 },
+    { "name": "TinPocket", "block": "TinOre", "hosts": [ "Granite" ], "depthMin": 1, "depthMax": 5, "scale": 4, "threshold": 0.74, "salt": 9211 },
+    { "name": "CoalSeam", "block": "CoalSeam", "hosts": [ "Sandstone", "Limestone", "Stone" ],
+      "depthMin": 3, "depthMax": 4, "scale": 9, "threshold": 0.7, "salt": 9221, "flat": true },
+    { "name": "SilverVein", "block": "SilverOre", "hosts": [ "Granite", "Slate" ], "depthMin": 2, "depthMax": 6, "scale": 4, "threshold": 0.76, "salt": 9231 },
+    { "name": "GoldPocket", "block": "GoldOre", "hosts": [ "Granite" ], "depthMin": 3, "depthMax": 7, "scale": 3, "threshold": 0.79, "salt": 9241 },
+    { "name": "EmberGeode", "block": "EmberCrystal", "hosts": [ "Basalt" ], "depthMin": 3, "depthMax": 12, "scale": 3, "threshold": 0.8, "salt": 9251 }
+  ]
+}

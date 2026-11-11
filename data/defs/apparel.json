@@ -1,0 +1,33 @@
+// Apparel: worn in a slot, protecting the body parts it covers. Armor values are 0..1 against
+// sharp (cut, pierce, bite), blunt and heat (burn) damage. A hit on a covered part is turned
+// with chance (armor - the weapon's penetration); otherwise its damage is cut by half that much.
+// Absorbing blows wears the item down (maxHp); it falls apart at 0.
+// "worn" is the layer sheet drawn over a person wearing it (presentation only; see docs/ART.md).
+// Packs go in the Back slot and carry items up to "container.capacity" kg (their own mass not
+// counted); they're always bulky (hands only, never in another pack). Bigger packs are just more defs.
+{
+  "things": [
+    {
+      "name": "LeatherJerkin", "label": "leather jerkin", "category": "Item", "mass": 2, "sprite": "items/leather_jerkin", "flammability": 0.5, "maxHp": 80, "tier": "Stone",
+      "apparel": { "slot": "Body", "covers": [ "Torso", "LeftArm", "RightArm" ], "sharp": 0.25, "blunt": 0.1, "heat": 0.15, "worn": "apparel/leather_jerkin" }
+    },
+    {
+      "name": "LeatherCap", "label": "leather cap", "category": "Item", "mass": 0.5, "sprite": "items/leather_cap", "flammability": 0.5, "maxHp": 50, "tier": "Stone",
+      "apparel": { "slot": "Head", "covers": [ "Head" ], "sharp": 0.25, "blunt": 0.1, "heat": 0.15, "worn": "apparel/leather_cap" }
+    },
+    {
+      "name": "IronHelm", "label": "iron helm", "category": "Item", "mass": 2, "sprite": "items/iron_helm", "maxHp": 120, "tier": "Iron",
+      "apparel": { "slot": "Head", "covers": [ "Head" ], "sharp": 0.5, "blunt": 0.3, "heat": 0.1, "worn": "apparel/iron_helm" }
+    },
+    {
+      "name": "ChainShirt", "label": "chain shirt", "category": "Item", "mass": 8, "sprite": "items/chain_shirt", "maxHp": 160, "tier": "Iron",
+      "apparel": { "slot": "Body", "covers": [ "Torso", "LeftArm", "RightArm" ], "sharp": 0.55, "blunt": 0.2, "heat": 0.05, "worn": "apparel/chain_shirt" }
+    },
+    {
+      "name": "Satchel", "label": "satchel", "category": "Item", "mass": 1, "sprite": "items/satchel", "flammability": 0.5, "maxHp": 50,
+      "description": "A leather bag on a strap. Carries 25 kg besides what's in your hands.",
+      "apparel": { "slot": "Back", "covers": [], "worn": "apparel/satchel" },
+      "container": { "capacity": 25 }
+    }
+  ]
+}

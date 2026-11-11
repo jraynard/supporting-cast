@@ -1,0 +1,25 @@
+// Weapons. accuracy is the base chance to hit; ranged weapons lose accuracyFalloff per cell past
+// optimalRange. A hit can still glance off (glance), or be turned by armor the weapon's
+// penetration doesn't cancel. Damage is rolled between damageMin and damageMax.
+{
+  "things": [
+    {
+      "name": "Bow", "held": "bow", "label": "hunting bow", "category": "Item", "mass": 1, "sprite": "items/bow", "flammability": 0.6, "maxHp": 60, "tier": "Stone",
+      "weapon": { "verb": "shoots at", "ranged": true, "range": 14, "optimalRange": 6, "accuracy": 0.8, "accuracyFalloff": 0.035,
+                  "damageMin": 8, "damageMax": 14, "damageType": "Pierce", "penetration": 0.15, "glance": 0.1 }
+    },
+    {
+      "name": "Axe", "held": "axe", "label": "woodcutter's axe", "category": "Item", "mass": 2, "sprite": "items/axe", "flammability": 0.3, "maxHp": 80,
+      "tool": { "kind": "Axe", "speed": 1.25, "tier": "Iron" },
+      "weapon": { "verb": "hacks at", "accuracy": 0.75, "damageMin": 12, "damageMax": 20, "damageType": "Cut", "penetration": 0.25, "glance": 0.08 }
+    },
+    {
+      "name": "Club", "held": "club", "label": "spiked club", "category": "Item", "mass": 1.5, "sprite": "items/club", "flammability": 0.6, "maxHp": 60, "tier": "Stone",
+      "weapon": { "verb": "swings at", "accuracy": 0.8, "damageMin": 9, "damageMax": 15, "damageType": "Blunt", "penetration": 0.1, "glance": 0.1 }
+    },
+    {
+      "name": "ShortSword", "held": "sword", "label": "short sword", "category": "Item", "mass": 1.5, "sprite": "items/sword", "maxHp": 120, "tier": "Iron",
+      "weapon": { "verb": "slashes at", "accuracy": 0.75, "damageMin": 10, "damageMax": 16, "damageType": "Cut", "penetration": 0.2, "glance": 0.08 }
+    }
+  ]
+}

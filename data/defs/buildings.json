@@ -1,0 +1,379 @@
+{
+  // Preset buildings (Systems/Buildings.cs, docs/plans/preset-buildings.md): a plan raised in
+  // phases (foundation, walls, roof, furniture), each phase laying its parts as blueprints once
+  // the one before is built. Layout rows run from the back (-Y) to the front (+Y, where R turns
+  // the front): W wall, D door, P post, . inside, space for nothing. Every plot cell gets the
+  // foundation, and the roof a level above it. Foundation, walls and roof each go up as one site
+  // (several villagers at once); "furnish" puts furniture in piece by piece at plan cells
+  // [column, row]. "slots" are the spots for extras once it's finished: each takes one of its
+  // defs, at its cell and facing (added to the building's). A variant swaps parts for another look.
+  "buildings": [
+    {
+      "name": "Dwelling", "label": "dwelling", "icon": "buildings/bed",
+      "description": "A small house of logs with a hearth and a bed. Spots inside for two more beds and two chests (or a stool): each bed brings a settler.",
+      "layout": [
+        "WWWWWW",
+        "W....W",
+        "W....W",
+        "W....W",
+        "WWDWWW"
+      ],
+      "parts": { "foundation": "Sill", "wall": "LogWall", "door": "PlankDoor", "roof": "TurfRoofPart" },
+      "furnish": [
+        { "def": "Bed", "at": [1, 1] },
+        { "def": "Hearth", "at": [3, 2] }
+      ],
+      "slots": [
+        { "defs": ["Bed", "StrawPallet"], "at": [2, 1] },
+        { "defs": ["Bed", "StrawPallet"], "at": [4, 1] },
+        { "defs": ["Chest"], "at": [1, 3], "facing": 2 },
+        { "defs": ["Chest", "Stool"], "at": [4, 3], "facing": 2 }
+      ],
+      "upgrades": [
+        {
+          "name": "CookingPot", "label": "cooking pot", "on": "Hearth", "work": 120,
+          "description": "An iron-banded pot hung over the hearth on a chain: stews go further than a roast.",
+          "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 6 } ],
+          "model": [
+            { "min": [0.47, 0.47, 0.18], "max": [0.53, 0.53, 0.95], "top": "props/log_side", "side": "props/log_side" },
+            { "min": [0.3, 0.3, 0.2], "max": [0.7, 0.7, 0.5], "top": "props/stone_block", "side": "props/stone_block" },
+            { "min": [0.34, 0.34, 0.5], "max": [0.66, 0.66, 0.54], "top": "props/meal_top", "side": "props/stone_block" }
+          ]
+        }
+      ],
+      "variants": [
+        { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
+        { "name": "Thatch", "label": "thatched", "kit": "stave_thatch", "parts": { "wall": "StaveWall", "roof": "ThatchRoofPart" } }
+      ]
+    },
+    {
+      "name": "Longhouse", "label": "longhouse", "icon": "buildings/table",
+      "description": "The village's great hall: a long fire down the middle, tables to feast at, and room along the walls to sleep many.",
+      "layout": [
+        "WWWWWWWWW",
+        "W.......W",
+        "D.......W",
+        "W.......W",
+        "WWWWDWWWW"
+      ],
+      "parts": { "foundation": "Sill", "wall": "LogWall", "door": "PlankDoor", "roof": "TurfRoofPart" },
+      "furnish": [
+        { "def": "Hearth", "at": [4, 2] },
+        { "def": "LongTable", "at": [2, 1] },
+        { "def": "LongTable", "at": [6, 1] },
+        { "def": "Stool", "at": [1, 1] }, { "def": "Stool", "at": [3, 1] },
+        { "def": "Stool", "at": [5, 1] }, { "def": "Stool", "at": [7, 1] }
+      ],
+      "slots": [
+        { "defs": ["Bed", "StrawPallet"], "at": [3, 3], "facing": 1 },
+        { "defs": ["Bed", "StrawPallet"], "at": [7, 3], "facing": 1 },
+        { "defs": ["Chest"], "at": [1, 3], "facing": 2 },
+        { "defs": ["Chest", "Stool"], "at": [5, 3], "facing": 2 }
+      ],
+      "upgrades": [
+        {
+          "name": "CookingPot", "label": "cooking pot", "on": "Hearth", "work": 120,
+          "description": "An iron-banded pot hung over the hearth on a chain: stews go further than a roast.",
+          "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 6 } ],
+          "model": [
+            { "min": [0.47, 0.47, 0.18], "max": [0.53, 0.53, 0.95], "top": "props/log_side", "side": "props/log_side" },
+            { "min": [0.3, 0.3, 0.2], "max": [0.7, 0.7, 0.5], "top": "props/stone_block", "side": "props/stone_block" },
+            { "min": [0.34, 0.34, 0.5], "max": [0.66, 0.66, 0.54], "top": "props/meal_top", "side": "props/stone_block" }
+          ]
+        }
+      ],
+      "eatThought": "FeastedInTheHall",
+      "variants": [
+        { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
+        { "name": "Thatch", "label": "thatched", "kit": "stave_thatch", "parts": { "wall": "StaveWall", "roof": "ThatchRoofPart" } }
+      ]
+    },
+    {
+      "name": "Smithy", "label": "smithy", "icon": "buildings/forge",
+      "description": "A forge under a roof, open at the front for the heat. Spots either side of the forge for bellows, which drive it hotter for iron and steel, and for a goldsmith's bench and chests.",
+      "layout": [
+        "WWWWW",
+        "W...W",
+        "W...W",
+        "P...P"
+      ],
+      "parts": { "foundation": "Plinth", "wall": "LogWall", "post": "CornerPost", "roof": "TurfRoofPart" },
+      "furnish": [
+        { "def": "Forge", "at": [2, 1] }
+      ],
+      "slots": [
+        { "defs": ["Bellows"], "at": [1, 1] },
+        { "defs": ["Bellows"], "at": [3, 1] },
+        { "defs": ["Mint", "Chest"], "at": [1, 2], "facing": 1 },
+        { "defs": ["Chest"], "at": [3, 2], "facing": 3 }
+      ],
+      "variants": [
+        { "name": "Timber", "label": "timber", "kit": "log_turf" },
+        { "name": "Stone", "label": "stone", "kit": "stone_turf", "parts": { "wall": "StoneWallPart" } }
+      ]
+    },
+    {
+      "name": "Hatchery", "label": "hatchery", "icon": "buildings/campfire",
+      "description": "A snug hut round a fire, kept hot for a dragon's egg (it needs 28°C, night and day) and the hatchling after it. Too warm for people to linger in.",
+      "layout": [
+        "WWWW",
+        "W..W",
+        "WDWW"
+      ],
+      "parts": { "foundation": "Sill", "wall": "LogWall", "door": "PlankDoor", "roof": "TurfRoofPart" },
+      "furnish": [
+        { "def": "Campfire", "at": [2, 1] }
+      ],
+      "variants": [
+        { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
+        { "name": "Thatch", "label": "thatched", "kit": "stave_thatch", "parts": { "wall": "StaveWall", "roof": "ThatchRoofPart" } }
+      ]
+    },
+    {
+      "name": "Woodshop", "label": "woodshop", "icon": "buildings/sawhorse",
+      "description": "An open-fronted shed for woodworking: it comes with a sawhorse for planks, and has a spot for a carpenter's bench and a chest. No foundation: it stands on the ground.",
+      "layout": [
+        "WWWWWW",
+        "W....W",
+        "W....W",
+        "P....P"
+      ],
+      "parts": { "wall": "LogWall", "post": "CornerPost", "roof": "TurfRoofPart" },
+      "furnish": [
+        { "def": "Sawhorse", "at": [1, 1] }
+      ],
+      "slots": [
+        { "defs": ["CarpenterBench"], "at": [3, 1] },
+        { "defs": ["Chest"], "at": [4, 3], "facing": 2 }
+      ],
+      "variants": [
+        { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
+        { "name": "Thatch", "label": "thatched", "kit": "stave_thatch", "parts": { "wall": "StaveWall", "roof": "ThatchRoofPart" } }
+      ]
+    },
+    {
+      "name": "DragonBarn", "label": "dragon barn", "icon": "buildings/nest",
+      "description": "A great barn round a nest, with wide doors a grown dragon can come and go by, and a trough for a hatchling.",
+      "layout": [
+        "WWWWWWW",
+        "W.....W",
+        "W.....W",
+        "W.....W",
+        "W.....W",
+        "W.....W",
+        "WWDDDWW"
+      ],
+      "parts": { "foundation": "Plinth", "wall": "LogWall", "door": "BarnDoor", "roof": "TurfRoofPart" },
+      "furnish": [
+        { "def": "Nest", "at": [3, 2] },
+        { "def": "FeedingTrough", "at": [5, 5] }
+      ],
+      "slots": [
+        { "defs": ["FeedingTrough"], "at": [1, 5] },
+        { "defs": ["StrawPallet"], "at": [5, 3] },
+        { "defs": ["Chest"], "at": [1, 1] }
+      ],
+      "variants": [
+        { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
+        { "name": "Thatch", "label": "thatched", "kit": "stave_thatch", "parts": { "wall": "StaveWall", "roof": "ThatchRoofPart" } }
+      ]
+    }
+  ],
+
+  // How the buildings look (presentation only; Rendering/BuildingKit.cs, docs/ART.md "Building
+  // kits"). Wall models are made for a wall running along X through the cell (y 0.5 is its
+  // middle) and turned as needed: "span" a straight run, "arm" half a wall from the middle to +X
+  // (one towards each neighbour where walls meet or end, round a "corner" post), "post" a P cell,
+  // "door" the frame round a door. The roof is pitched over the plot, the ridge along its long side.
+  "kits": [
+    {
+      "name": "log_turf",
+      "span": [
+        { "min": [0, 0.2, 0], "max": [1, 0.8, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0, 0.27, 0.1], "max": [1, 0.73, 1], "top": "props/log_side", "side": "buildings/wall_wood" }
+      ],
+      "arm": [
+        { "min": [0.5, 0.2, 0], "max": [1, 0.8, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.5, 0.27, 0.1], "max": [1, 0.73, 1], "top": "props/log_side", "side": "buildings/wall_wood" }
+      ],
+      "corner": [
+        { "min": [0.14, 0.14, 0], "max": [0.86, 0.86, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.2, 0.2, 0.1], "max": [0.8, 0.8, 1.06], "top": "buildings/post_top", "side": "props/log_side" }
+      ],
+      "post": [
+        { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.3, 0.3, 0.1], "max": [0.7, 0.7, 1.04], "top": "buildings/post_top", "side": "props/log_side" }
+      ],
+      "door": [
+        { "min": [0, 0.2, 0], "max": [1, 0.8, 0.04], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0, 0.22, 0], "max": [0.12, 0.78, 1], "top": "buildings/post_top", "side": "props/log_side" },
+        { "min": [0.88, 0.22, 0], "max": [1, 0.78, 1], "top": "buildings/post_top", "side": "props/log_side" },
+        { "min": [0, 0.24, 0.9], "max": [1, 0.76, 1], "top": "props/log_side", "side": "props/log_side" }
+      ],
+      "floor": "buildings/floor_planks",
+      "roof": {
+        "sprite": "buildings/roof_turf", "pitch": 0.36, "eave": 0.75, "overhang": 0.6, "thickness": 0.16,
+        "eaveTrim": "buildings/turf_edge", "lip": 0.1,
+        "gable": "buildings/gable_boards", "gableFill": "buildings/wall_planks", "trim": "buildings/trim_carved", "horns": 0.35,
+        "ridge": "props/log_side"
+      }
+    },
+    {
+      "name": "stave_thatch",
+      "span": [
+        { "min": [0, 0.22, 0], "max": [1, 0.78, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0, 0.3, 0.1], "max": [1, 0.7, 0.92], "top": "props/planks", "side": "buildings/wall_planks" },
+        { "min": [0, 0.25, 0.92], "max": [1, 0.75, 1], "top": "props/log_side", "side": "props/log_side" }
+      ],
+      "arm": [
+        { "min": [0.5, 0.22, 0], "max": [1, 0.78, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.5, 0.3, 0.1], "max": [1, 0.7, 0.92], "top": "props/planks", "side": "buildings/wall_planks" },
+        { "min": [0.5, 0.25, 0.92], "max": [1, 0.75, 1], "top": "props/log_side", "side": "props/log_side" }
+      ],
+      "corner": [
+        { "min": [0.18, 0.18, 0], "max": [0.82, 0.82, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.24, 0.24, 0.1], "max": [0.76, 0.76, 1.08], "top": "buildings/post_top", "side": "props/log_side" }
+      ],
+      "post": [
+        { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.3, 0.3, 0.1], "max": [0.7, 0.7, 1.04], "top": "buildings/post_top", "side": "props/log_side" }
+      ],
+      "door": [
+        { "min": [0, 0.22, 0], "max": [1, 0.78, 0.04], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0, 0.24, 0], "max": [0.12, 0.76, 1], "top": "buildings/post_top", "side": "props/log_side" },
+        { "min": [0.88, 0.24, 0], "max": [1, 0.76, 1], "top": "buildings/post_top", "side": "props/log_side" },
+        { "min": [0, 0.25, 0.9], "max": [1, 0.75, 1], "top": "props/log_side", "side": "props/log_side" }
+      ],
+      "floor": "buildings/floor_planks",
+      "roof": {
+        "sprite": "buildings/roof_thatch", "pitch": 0.42, "eave": 0.8, "overhang": 0.55, "thickness": 0.2,
+        "gable": "buildings/gable_boards", "gableFill": "buildings/wall_planks", "trim": "props/planks", "horns": 0.25,
+        "ridge": "buildings/roof_thatch"
+      }
+    },
+    {
+      "name": "stone_turf",
+      "span": [
+        { "min": [0, 0.2, 0], "max": [1, 0.8, 1], "top": "props/stone_block", "side": "buildings/wall_stone" }
+      ],
+      "arm": [
+        { "min": [0.5, 0.2, 0], "max": [1, 0.8, 1], "top": "props/stone_block", "side": "buildings/wall_stone" }
+      ],
+      "corner": [
+        { "min": [0.16, 0.16, 0], "max": [0.84, 0.84, 1.04], "top": "props/stone_block", "side": "buildings/wall_stone" }
+      ],
+      "post": [
+        { "min": [0.26, 0.26, 0], "max": [0.74, 0.74, 1.02], "top": "props/stone_block", "side": "buildings/wall_stone" }
+      ],
+      "door": [
+        { "min": [0, 0.2, 0], "max": [0.14, 0.8, 1], "top": "props/stone_block", "side": "buildings/wall_stone" },
+        { "min": [0.86, 0.2, 0], "max": [1, 0.8, 1], "top": "props/stone_block", "side": "buildings/wall_stone" },
+        { "min": [0, 0.22, 0.88], "max": [1, 0.78, 1], "top": "props/log_side", "side": "props/log_side" }
+      ],
+      "floor": "buildings/floor_planks",
+      "roof": {
+        "sprite": "buildings/roof_turf", "pitch": 0.36, "eave": 0.75, "overhang": 0.6, "thickness": 0.16,
+        "eaveTrim": "buildings/turf_edge", "lip": 0.1,
+        "gable": "buildings/gable_boards", "gableFill": "buildings/wall_planks", "trim": "buildings/trim_carved", "horns": 0.35,
+        "ridge": "props/log_side"
+      }
+    }
+  ],
+
+  "things": [
+    // ---- Parts: only ever laid by a preset building (partOnly), priced per cell ----
+    {
+      "name": "Plinth", "label": "stone plinth", "category": "Building", "sprite": "buildings/wall_stone",
+      "maxHp": 300, "flammability": 0,
+      "building": { "partOnly": true, "isFloor": true, "supportSpan": 1, "insulation": 0.92, "work": 30, "cost": [ { "def": "Stone", "count": 1 } ] }
+    },
+    {
+      // Rammed earth under a timber sill: what most houses stand on, and wood is all a new village has.
+      "name": "Sill", "label": "timber sill", "category": "Building", "sprite": "buildings/floor_planks",
+      "maxHp": 120, "flammability": 0.8,
+      "building": { "partOnly": true, "isFloor": true, "supportSpan": 1, "insulation": 0.92, "work": 25, "cost": [ { "def": "Wood", "count": 1 } ] }
+    },
+    {
+      "name": "LogWall", "label": "log wall", "category": "Building", "sprite": "buildings/wall_wood",
+      "maxHp": 160, "flammability": 1.0,
+      "building": { "partOnly": true, "isWall": true, "insulation": 0.93, "work": 100, "cost": [ { "def": "Wood", "count": 3 } ] }
+    },
+    {
+      "name": "StaveWall", "label": "stave wall", "category": "Building", "sprite": "buildings/wall_planks",
+      "maxHp": 140, "flammability": 1.0,
+      "building": { "partOnly": true, "isWall": true, "insulation": 0.92, "work": 90, "cost": [ { "def": "Wood", "count": 3 } ] }
+    },
+    {
+      "name": "StoneWallPart", "label": "stone wall", "category": "Building", "sprite": "buildings/wall_stone",
+      "maxHp": 400, "flammability": 0,
+      "building": { "partOnly": true, "isWall": true, "insulation": 0.96, "work": 200, "cost": [ { "def": "Stone", "count": 4 } ] }
+    },
+    {
+      "name": "CornerPost", "label": "corner post", "category": "Building", "sprite": "buildings/wall_wood",
+      "maxHp": 150, "flammability": 1.0,
+      "building": { "partOnly": true, "isWall": true, "insulation": 0.9, "work": 60, "cost": [ { "def": "Wood", "count": 2 } ] }
+    },
+    {
+      "name": "PlankDoor", "label": "plank door", "category": "Building", "sprite": "buildings/door_carved",
+      "maxHp": 120, "flammability": 1.0,
+      "building": { "partOnly": true, "isDoor": true, "insulation": 0.85, "work": 100, "cost": [ { "def": "Wood", "count": 4 } ] }
+    },
+    {
+      "name": "BarnDoor", "label": "barn door", "category": "Building", "sprite": "buildings/door_carved",
+      "maxHp": 140, "flammability": 1.0,
+      "building": { "partOnly": true, "isDoor": true, "insulation": 0.8, "work": 120, "cost": [ { "def": "Wood", "count": 5 } ] }
+    },
+    {
+      "name": "TurfRoofPart", "label": "turf roof", "category": "Building", "sprite": "buildings/roof_turf",
+      "maxHp": 90, "flammability": 0.25,
+      "building": { "partOnly": true, "isFloor": true, "isRoof": true, "supportSpan": 4, "insulation": 0.92, "work": 70, "cost": [ { "def": "Wood", "count": 1 } ] }
+    },
+    {
+      "name": "ThatchRoofPart", "label": "thatched roof", "category": "Building", "sprite": "buildings/roof_thatch",
+      "maxHp": 60, "flammability": 1.0,
+      "building": { "partOnly": true, "isFloor": true, "isRoof": true, "supportSpan": 4, "insulation": 0.85, "work": 40, "cost": [ { "def": "Wood", "count": 1 } ] }
+    },
+
+    {
+      // The fire a house is built round: cooks what a campfire does (a shape of it), but banked to
+      // keep a closed room comfortable rather than pushing it to a campfire's 50°C.
+      "name": "Hearth", "label": "hearth", "category": "Building", "sprite": "buildings/campfire", "shapeOf": "Campfire",
+      "model": [
+        { "min": [0.05, 0.05, 0], "max": [0.95, 0.25, 0.2], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.05, 0.75, 0], "max": [0.95, 0.95, 0.2], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.05, 0.25, 0], "max": [0.25, 0.75, 0.2], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.75, 0.25, 0], "max": [0.95, 0.75, 0.2], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.42, 0.28, 0], "max": [0.58, 0.72, 0.12], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" },
+        { "min": [0.28, 0.42, 0.06], "max": [0.72, 0.58, 0.18], "top": "props/log_side", "side": "props/log_side" }
+      ],
+      "description": "A stone-ringed fire in the middle of the floor: warms the house, lights it and cooks. Keep it fed with wood.",
+      "maxHp": 120, "flammability": 0,
+      "building": {
+        "partOnly": true, "work": 80, "cost": [ { "def": "Stone", "count": 6 }, { "def": "Wood", "count": 4 } ], "workbench": { "bills": 4 },
+        // Holds its cell at 22°C: a closed room settles a little under that, people beside it feel a few degrees more.
+        "heatOutput": 900, "maxHeatTemp": 22, "lightRadius": 6, "radiantWarmth": 5,
+        "fuel": { "def": "Wood", "capacity": 20, "burnPerDay": 12, "refuelAt": 0.5 }
+      }
+    },
+
+    // ---- Freeform: still dragged cell by cell, for yards and defences ----
+    {
+      "name": "Fence", "label": "fence", "category": "Building", "sprite": "buildings/wall_planks",
+      "description": "Split rails between posts: keeps animals in or out. It fences a yard but never makes a room.",
+      "maxHp": 80, "flammability": 1.0,
+      "building": { "outdoor": true, "fence": true, "isWall": true, "work": 40, "cost": [ { "def": "Wood", "count": 2 } ] }
+    },
+    {
+      "name": "Palisade", "label": "palisade", "category": "Building", "sprite": "buildings/wall_wood",
+      "description": "Sharpened logs set upright, side by side: a wall round the village. It never makes a room.",
+      "maxHp": 240, "flammability": 1.0,
+      "building": { "outdoor": true, "fence": true, "isWall": true, "work": 120, "cost": [ { "def": "Wood", "count": 5 } ] }
+    },
+    {
+      "name": "Gate", "label": "gate", "category": "Building", "sprite": "buildings/door",
+      "description": "A way through a fence or palisade, barred at need.",
+      "maxHp": 160, "flammability": 1.0,
+      "building": { "outdoor": true, "fence": true, "isDoor": true, "lockable": true, "work": 90, "cost": [ { "def": "Wood", "count": 4 } ] }
+    }
+  ]
+}

@@ -1,0 +1,212 @@
+using DragonWorld.Sim.Components;
+using DragonWorld.Sim.Core;
+using DragonWorld.Sim.Defs;
+using DragonWorld.Sim.Maps;
+
+namespace DragonWorld.Sim.Systems;
+
+/// <summary>
+/// Co-op players and their characters. A player is a stable id (from their machine); their
+/// character carries <see cref="PlayerCharacter"/> for good and <see cref="Avatar"/> only while
+/// they're connected, so leaving turns them into an ordinary villager and coming back hands
+/// control straight back. Everything here runs from lockstep turn events or commands, so every
+/// peer does it at the same tick.
+/// </summary>
+public static class Players
+{
+    /// <summary>Longest character name accepted from the network.</summary>
+    public const int MaxNameLength = 24;
+
+    /// <summary>The player's living character, or null.</summary>
+    public static Entity CharacterOf(Simulation sim, Guid player)
+    {
+        var w = sim.World;
+        foreach (var e in w.Each<PlayerCharacter>())
+            if (w.Get<PlayerCharacter>(e).PlayerId == player && w.TryGet<Creature>(e, out var c) && !c.Dead)
+                return e;
+        return Entity.Null;
+    }
+
+    /// <summary>The player a character belongs to, if any.</summary>
+    public static Guid? OwnerOf(Simulation sim, Entity e) =>
+        sim.World.IsAlive(e) && sim.World.TryGet<PlayerCharacter>(e, out var p) ? p.PlayerId : null;
+
+    /// <summary>
+    /// A player arrives. If they have a character, it becomes theirs to steer again (true);
+    /// otherwise they need to make one (<see cref="CreateCharacterCommand"/>).
+    /// <paramref name="adoptLooseAvatar"/>: the host claims a single-player save's avatar.
+    /// </summary>
+    public static bool Join(Simulation sim, Guid player, bool adoptLooseAvatar = false)
+    {
+        var w = sim.World;
+        var me = CharacterOf(sim, player);
+        if (me.IsNull && adoptLooseAvatar)
+        {
+            foreach (var e in w.Query<Avatar>())
+            {
+                if (w.Has<PlayerCharacter>(e) || w.Get<Creature>(e).Dead)
+                    continue;
+                w.Add(e, new PlayerCharacter { PlayerId = player });
+                me = e;
+                break;
+            }
+        }
+        if (me.IsNull)
+            return false;
+        if (!w.Has<Avatar>(me))
+        {
+            var mind = w.Get<Mind>(me);
+            // Whatever the brain was doing, the player decides now; keep what's in their hands.
+            AiSystem.EndJob(sim, me, mind, false);
+            mind.Drafted = false;
+            if (w.Has<Request>(me))
+                w.Remove<Request>(me);
+            w.Add(me, new Avatar());
+            sim.Messages.Add(MessageKind.Info, $"{w.Get<Creature>(me).Name} is back.", w.Get<Position>(me).Cell);
+        }
+        return true;
+    }
+
+    /// <summary>A player leaves: their character carries on as a villager until they return.</summary>
+    public static void Leave(Simulation sim, Guid player)
+    {
+        var w = sim.World;
+        var me = CharacterOf(sim, player);
+        if (me.IsNull || !w.Has<Avatar>(me))
+            return;
+        w.Remove<Avatar>(me);
+        // Ending the avatar's job as a villager also sets down what it carried (an egg included),
+        // where the village will tend it.
+        AiSystem.EndJob(sim, me, w.Get<Mind>(me), false);
+        sim.Messages.Add(MessageKind.Info, $"{w.Get<Creature>(me).Name} carries on with village life for now.", w.Get<Position>(me).Cell);
+    }
+
+    /// <summary>
+    /// A player's connection dropped (their seat is held while they reconnect): let go of every
+    /// held key, so their character stands still instead of walking or working on unattended.
+    /// </summary>
+    public static void Away(Simulation sim, Guid player)
+    {
+        var w = sim.World;
+        var me = CharacterOf(sim, player);
+        if (me.IsNull || !w.Has<Avatar>(me))
+            return;
+        ref var avatar = ref w.Get<Avatar>(me);
+        avatar.MoveDir = int2.Zero;
+        avatar.WorkHeld = false;
+        avatar.Chain = AvatarActionKind.None;
+        avatar.HasPending = false;
+    }
+
+    /// <summary>Hands every connected character except <paramref name="keep"/>'s back to the AI (a save hosted again).</summary>
+    public static void ReleaseAllBut(Simulation sim, Guid? keep)
+    {
+        var w = sim.World;
+        foreach (var e in w.Query<PlayerCharacter>())
+            if (w.Get<PlayerCharacter>(e).PlayerId != keep && w.Has<Avatar>(e))
+                Leave(sim, w.Get<PlayerCharacter>(e).PlayerId);
+    }
+
+    /// <summary>Where newcomers turn up: by the wagon or another player, else the middle of the map.</summary>
+    public static int3 Home(Simulation sim)
+    {
+        var w = sim.World;
+        foreach (var e in w.Each<Thing>())
+            if (w.Get<Thing>(e) is { Spawned: true, Def.Name: "Wagon" } wagon)
+                return wagon.Cell;
+        foreach (var e in w.Each<PlayerCharacter>())
+            if (w.TryGet<Creature>(e, out var c) && !c.Dead)
+                return w.Get<Position>(e).Cell;
+        foreach (var e in sim.Creatures())
+            if (w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Dead: false })
+                return w.Get<Position>(e).Cell;
+        var map = sim.Map;
+        return new int3(map.Width / 2, map.Height / 2, Math.Max(1, map.SurfaceZ(map.Width / 2, map.Height / 2)));
+    }
+
+    /// <summary>
+    /// Make a player's character: a young villager at <see cref="Home"/>, a dragon keeper. In a
+    /// Pact village they arrive with a grown dragon of their own (named and coloured in the
+    /// creator); otherwise with an egg in their arms that will imprint on them. Does nothing if
+    /// they already have one.
+    /// </summary>
+    public static Entity CreateCharacter(Simulation sim, Guid player, string name, Appearance? look, IReadOnlyList<string>? traits,
+        string? dragonName = null, DragonLook? dragonLook = null, IReadOnlyList<string>? clothes = null, Defs.CreatureDef? dragonBreed = null)
+    {
+        var w = sim.World;
+        if (!CharacterOf(sim, player).IsNull)
+            return Entity.Null;
+        name = Clean(name);
+        var home = Home(sim);
+        var cell = sim.SpiralFrom(home + new int3(1, 2, 0), 10)
+            .FirstOrDefault(c => sim.Map.Passable(c) && sim.Map.Item[sim.Map.Idx(c)].IsNull && sim.Map.Structure[sim.Map.Idx(c)].IsNull, home);
+
+        var me = sim.SpawnCreature(sim.Defs.Creature("Human"), name, cell, ageDays: 19 * 365f);
+        Array.Fill(w.Get<Needs>(me).Values, 0.85f);
+        w.Add(me, new PlayerCharacter { PlayerId = player });
+        w.Add(me, new Avatar());
+        w.Add(me, new Keeper { Dragon = Entity.Null });
+        sim.GiveStartingPack(me);
+        if (look is { } a)
+            w.Add(me, Valid(a));
+        if (traits != null)
+            TraitRules.Set(sim, me, traits.Take(TraitRules.MaxTraits * 2));
+
+        if (sim.Story.Start == Scenarios.StartKind.Pact)
+        {
+            var dragon = Scenarios.Companions.SpawnBondedDragon(sim, me, dragonName, dragonLook, cell + new int3(-2, 1, 0), breed: dragonBreed);
+            Clothing.DressHero(sim, me, clothes); // after the dragon, so its rolls don't move
+            sim.Messages.Add(MessageKind.Good,
+                $"{name} flies in on {w.Get<Creature>(dragon).Name}, come to help raise the sorcerer's tower.", cell);
+            return me;
+        }
+
+        var egg = sim.CreateItem(sim.Defs.Thing("DragonEgg"), 1);
+        w.Get<Egg>(egg).Keeper = me;
+        Dragons.ChooseEgg(sim, egg, dragonBreed, dragonLook?.Valid().Element ?? DragonElement.Fire); // the egg they picked
+        w.Get<Carrying>(me).Item = egg;
+        Clothing.DressHero(sim, me, clothes);
+
+        sim.Messages.Add(MessageKind.Good,
+            $"{name} arrives carrying a dragon egg of their own. Keep it warm and it will hatch to them.", cell);
+        return me;
+    }
+
+    private static string Clean(string name)
+    {
+        var s = new string((name ?? "").Where(ch => !char.IsControl(ch)).ToArray()).Trim();
+        if (s.Length > MaxNameLength)
+            s = s[..MaxNameLength].Trim();
+        return s.Length == 0 ? "Wanderer" : s;
+    }
+
+    // A look from the network: keep only values the renderer knows.
+    private static Appearance Valid(Appearance a) => a with
+    {
+        Body = Enum.IsDefined(a.Body) ? a.Body : default,
+        Hair = Enum.IsDefined(a.Hair) ? a.Hair : default,
+        Beard = Enum.IsDefined(a.Beard) ? a.Beard : default,
+        Eyes = Enum.IsDefined(a.Eyes) ? a.Eyes : default,
+        Stance = Enum.IsDefined(a.Stance) ? a.Stance : default,
+        HairColor = a.HairColor & 0xFFFFFF,
+        EyeColor = a.EyeColor & 0xFFFFFF,
+        SkinColor = a.SkinColor & 0xFFFFFF,
+        Model = Appearance.ValidModel(a.Model),
+    };
+}
+
+/// <summary>A newly joined player makes their character (from the character creator).</summary>
+/// <remarks>
+/// The dragon's name and look are used in a Pact village, where newcomers bring a grown dragon;
+/// its breed (and the look's element) also choose what their egg hatches into elsewhere.
+/// </remarks>
+public sealed record CreateCharacterCommand(Guid Player, string Name, Appearance Look, IReadOnlyList<string> Traits, string DragonName = "", DragonLook DragonLook = default,
+    IReadOnlyList<string>? Clothes = null, Defs.CreatureDef? DragonBreed = null)
+    : ISimCommand, IPlayerCommand
+{
+    public Guid? Owner => Player;
+
+    // An all-zero look means none was picked (an older client, or a test): keep the derived one.
+    public void Apply(Simulation sim) =>
+        Players.CreateCharacter(sim, Player, Name, Look, Traits, DragonName, DragonLook.Equals(default(DragonLook)) ? null : DragonLook, Clothes, DragonBreed);
+}

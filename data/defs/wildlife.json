@@ -1,0 +1,63 @@
+// Wild animals: herds wander in from the map edge, graze for a while and move on (WildlifeSystem).
+// They keep away from anyone who isn't wild. Units as in core.json; herd stays are in game hours.
+//   meatYield: raw meat from butchering the carcass. mass: kg, how hard it is to carry to a butcher spot. commonness: relative chance a herd is this kind.
+//   fleeRadius: cells; closer than this, a villager or dragon sends the animal running.
+{
+  "creatures": [
+    {
+      "name": "Deer", "label": "deer", "race": "Animal", "body": "Quadruped",
+      "moveSpeed": 6.0, "maxHp": 70,
+      "comfortTempMin": -10, "comfortTempMax": 30, "safeTempMin": -30, "safeTempMax": 45,
+      "work": [],
+      "lifeStages": [ { "name": "Adult", "label": "deer", "sprite": "creatures/deer", "size": 1.1 } ],
+      "attacks": [ { "name": "Hooves", "label": "hooves", "verb": "kicks", "accuracy": 0.6, "damageMin": 3, "damageMax": 7, "damageType": "Blunt" } ],
+      "animal": { "meatYield": 30, "mass": 60, "hideYield": 3, "butcherWork": 450, "herdMin": 2, "herdMax": 5, "commonness": 4, "fleeRadius": 12, "stayHours": [ 30, 60 ] }
+    },
+    {
+      "name": "Boar", "label": "boar", "race": "Animal", "body": "Quadruped",
+      "moveSpeed": 4.2, "maxHp": 90,
+      "comfortTempMin": -10, "comfortTempMax": 30, "safeTempMin": -30, "safeTempMax": 45,
+      "work": [],
+      "lifeStages": [ { "name": "Adult", "label": "boar", "sprite": "creatures/boar", "size": 1.0 } ],
+      "attacks": [ { "name": "Tusks", "label": "tusks", "verb": "gores", "accuracy": 0.7, "damageMin": 5, "damageMax": 10, "damageType": "Pierce", "penetration": 0.2 } ],
+      "animal": { "plural": "boars", "meatYield": 24, "mass": 70, "hideYield": 2, "butcherWork": 400, "herdMin": 1, "herdMax": 2, "commonness": 1.5, "fleeRadius": 7, "aggressive": true, "stayHours": [ 18, 36 ] }
+    },
+    {
+      "name": "Hare", "label": "hare", "race": "Animal", "body": "Quadruped",
+      "moveSpeed": 6.5, "maxHp": 20,
+      "comfortTempMin": -10, "comfortTempMax": 30, "safeTempMin": -30, "safeTempMax": 45,
+      "work": [],
+      "lifeStages": [ { "name": "Adult", "label": "hare", "sprite": "creatures/hare", "size": 0.6 } ],
+      "animal": { "plural": "hares", "meatYield": 4, "mass": 3, "hideYield": 1, "butcherWork": 120, "herdMin": 1, "herdMax": 3, "commonness": 3, "fleeRadius": 9, "stayHours": [ 18, 36 ] }
+    },
+    // Predators (predator: true) never wander in with the herds (commonness 0): the storyteller sends
+    // them as a pack that comes for the village and fights turn by turn (Systems/WildEvents), each
+    // animal costing "points" of the raid points, from "minDay". A pack runs once half of it is down.
+    {
+      "name": "Wolf", "label": "wolf", "race": "Animal", "body": "Quadruped",
+      "moveSpeed": 6.5, "maxHp": 55, "timeUnits": 64,
+      "comfortTempMin": -25, "comfortTempMax": 28, "safeTempMin": -40, "safeTempMax": 42,
+      "work": [],
+      "lifeStages": [ { "name": "Adult", "label": "wolf", "sprite": "creatures/wolf", "size": 1.0 } ],
+      "attacks": [ { "name": "Bite", "label": "bite", "verb": "bites", "accuracy": 0.75, "damageMin": 5, "damageMax": 9, "damageType": "Pierce", "penetration": 0.1 } ],
+      "animal": { "plural": "wolves", "meatYield": 10, "mass": 40, "hideYield": 2, "butcherWork": 300, "commonness": 0, "aggressive": true, "fleeRadius": 0,
+                  "predator": true, "packMin": 3, "packMax": 6, "points": 30, "minDay": 3 }
+    },
+    {
+      "name": "Bear", "label": "bear", "race": "Animal", "body": "Quadruped",
+      "moveSpeed": 4.5, "maxHp": 170, "timeUnits": 50,
+      "comfortTempMin": -25, "comfortTempMax": 28, "safeTempMin": -40, "safeTempMax": 42,
+      "work": [],
+      "lifeStages": [ { "name": "Adult", "label": "bear", "sprite": "creatures/bear", "size": 1.8, "armor": 0.15 } ],
+      "attacks": [ { "name": "Claws", "label": "claws", "verb": "mauls", "accuracy": 0.7, "damageMin": 9, "damageMax": 16, "damageType": "Cut", "penetration": 0.2 } ],
+      "animal": { "plural": "bears", "meatYield": 40, "mass": 220, "hideYield": 5, "butcherWork": 700, "commonness": 0, "aggressive": true, "fleeRadius": 0,
+                  "predator": true, "packMin": 1, "packMax": 1, "points": 110, "minDay": 6 }
+    }
+  ],
+  // How often herds arrive and how many animals the valley holds at once. An adult dragon hunting
+  // for itself eats about a deer a day; startingKind makes the first herd on a new map that kind,
+  // and below minAnimals herds arrive scarceArrivalFactor times as far apart, and are of that kind.
+  "wildlife": [
+    { "name": "Default", "firstArrivalHours": 6, "meanHoursBetween": 14, "maxAnimals": 18, "minAnimals": 6, "startingHerds": 4, "startingKind": "Deer" }
+  ]
+}

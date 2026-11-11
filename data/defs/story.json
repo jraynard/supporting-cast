@@ -1,0 +1,66 @@
+// Adventure's stories: what story characters say, what the sorcerer's tower must be, and the
+// handful of things only the openings use (the forest's moonpetal and stones, Escape's cage gate
+// and key). Placeholder writing (docs/plans/adventure-mode.md): change the words freely; dialogue
+// names are what the code looks up.
+{
+  "dialogues": [
+    {
+      "name": "OrlaHandover", "speaker": "Orla", "accept": "Take the egg",
+      "lines": [
+        "\"Come closer, child. My eyes are going, but I know your step.\"",
+        "\"Forty years I kept dragons for this village. This egg is the last of them, and Ashford can't keep it. Too many people know what's sleeping by my fire, and some of them would sell it.\"",
+        "\"So I'm giving it to you. Not to the elders. You.\"",
+        "\"My wagon's packed and waiting by the east door. Take the egg, and take the road. Go far enough that no one here can follow. Keep it warm, always.\"",
+        "\"Find a place and make it a home. Others will come, if there's room for them. And when it hatches... tell it about me.\""
+      ]
+    },
+    {
+      "name": "SorcererBargain", "speaker": "The sorcerer", "accept": "Accept the bargain",
+      "lines": [
+        "\"Moonpetal. Every bloom in this wood is mine, rider, and you've a satchel full of them.\"",
+        "\"Your village is sick, and moonpetal is the only cure. I know. I can hear it on you.\"",
+        "\"Keep your hands off your dragon's neck: I'm not here to fight. I'm here to trade.\"",
+        "\"Your village will have its cure tonight, more than these few blooms could make. In return, you'll build me a tower. Not here: far to the north, where the ley lines cross. I'll show you the place.\"",
+        "\"Stone, three storeys at least, with a bed, a table, a chest for my books and a fire to read by. Build it and we're square, and the land around it is yours to do with as you please. Until then, no raider will trouble you there.\""
+      ]
+    }
+  ],
+
+  // The sorcerer's tower: what TowerPact checks around the ley stone (hourly).
+  "towers": [
+    {
+      "name": "SorcerersTower", "label": "the sorcerer's tower",
+      "radius": 10, "levels": 3,
+      "walls": [ "StoneWall", "CutStoneWall", "BrickWall" ], "wallShare": 0.75,
+      "contains": [ "Bed", "Table", "Chest", "Campfire" ]
+    }
+  ],
+
+  "things": [
+    {
+      "name": "MoonpetalFlower", "label": "moonpetal", "category": "Plant", "sprite": "things/moonpetal", "renderSize": 0.8, "glow": true,
+      "description": "A pale, faintly glowing flower that grows only in the enchanted forest.",
+      "maxHp": 20, "flammability": 0.5, "pathCost": 0,
+      "harvest": { "workType": "Harvest", "work": 45, "yield": [ { "def": "Moonpetal", "count": 1 } ], "destroyOnHarvest": true }
+    },
+    { "name": "Moonpetal", "label": "moonpetal bloom", "category": "Item", "mass": 0.05, "sprite": "items/moonpetal", "stackLimit": 20,
+      "description": "Picked moonpetal. Said to cure the wasting sickness.", "flammability": 0.5, "maxHp": 10 },
+    {
+      "name": "StandingStone", "label": "standing stone", "category": "Resource", "sprite": "things/standing_stone", "renderSize": 1.2,
+      "description": "Old stones in a ring, older than any village.", "maxHp": 2000
+    },
+    {
+      "name": "CageGate", "label": "cage gate", "category": "Building", "sprite": "buildings/cage_gate",
+      "description": "Iron-bound bars, padlocked from outside. The jailer unlocks it at supper time.",
+      "maxHp": 400, "flammability": 0.3,
+      // A lockable door: impassable while locked (the Locked component), standing open when not.
+      "building": { "isDoor": true, "lockable": true, "buildable": false, "insulation": 0.3, "work": 400, "cost": [] }
+    },
+    { "name": "ChainKey", "label": "chain key", "category": "Item", "mass": 0.1, "sprite": "items/chain_key", "stackLimit": 1,
+      "description": "An iron key on a thong: it opens the chains on the captors' prize.", "maxHp": 100 },
+    {
+      "name": "LeyStone", "label": "ley stone", "category": "Resource", "sprite": "things/ley_stone", "renderSize": 1.3,
+      "description": "The sorcerer's mark: where the ley lines cross, and where his tower must rise.", "maxHp": 5000
+    }
+  ]
+}

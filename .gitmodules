@@ -1,0 +1,3 @@
+[submodule "external/narsil"]
+	path = external/narsil
+	url = git@github.com:jraynard/narsil.git
