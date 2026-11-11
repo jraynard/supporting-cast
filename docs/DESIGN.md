@@ -85,13 +85,24 @@ Ideas for depth, to build when each trade's milestone comes round.
 - Mixed drinks: a press-on-cue sequence.
 - Adventurers trading rumours over their cups, which the Quest Broker's intel will feed on.
 
-**Healer (empathic).** Magical in flavour rather than clinical, but grounded.
-- Taking a wound means touching the patient and drawing it into your own body, which takes
-  concentration and discipline. What's drawn across lands on the same part of the healer.
-- To mend themselves, the healer casts the spell that fits each wound they've taken. Casting the
-  wrong one wastes mana and leaves the wound as it was.
-- Out of mana, they meditate to recover it. Meditating is harder the more unhealed wounds they're
-  carrying, so a healer who overreaches can end up stuck in pain.
+**Healer (empathic).** Magical in flavour rather than clinical, but grounded in the health
+model: wounds sit on body parts, have a kind, and bleed, hurt and fester.
+- *Laying on hands.* Touching a patient, the healer feels their wounds, including the ones
+  that sight misses, like an infection under a dressing. That touch is the diagnosis. They draw
+  a wound across, holding their composure against its pain; lose it and the link snaps, with a
+  backlash. The wound lands on the same part of the healer, lighter the more skilled they are.
+  An infection comes with a fully drawn wound.
+- *Carrying it.* What the healer takes on is real. It bleeds and hurts, and a healer who takes
+  too much collapses.
+- *Mending.* They cast the mending that fits each wound they've taken. One heals cuts and bites,
+  another bruising, and so on, each cast by playing its runes on cue. Absorbed wounds read as
+  sensations, not labels: a clean bright line of pain, a deep swelling throb, skin tight and
+  stinging. Telling which mending is needed is a skill the player learns. The wrong one costs
+  its mana and heals nothing.
+- *Meditating.* Out of mana, they meditate it back with a breathing rhythm. Pain they still
+  carry makes the rhythm stutter and flinch, so a healer who couldn't mend themselves fully
+  struggles to recover.
+- Betrayal later (M4): drawing only part of a wound, or quietly pushing one back.
 
 **Carpenter's locksmithing.** Adventurers come back with locked and trapped chests. Picking the
 lock and finding and disarming the traps are each a hands-on game. They're the Carpenter's for
