@@ -15,12 +15,18 @@ public static class Inventory
     private static readonly ApparelSlot[] Slots = Enum.GetValues<ApparelSlot>();
 
     /// <summary>
-    /// The pack a companion hauls with: theirs, unless they're a player's character (whose pack is
-    /// their own, kept between jobs and never emptied by the AI). A work pack holds nothing but the
-    /// load of the job at hand: ending the job sets it down (<c>AiSystem.ReleasePawn</c>).
+    /// The pack a companion hauls with: theirs, unless they're a player's character or an
+    /// adventurer (whose packs are their own, kept between jobs and never emptied by the AI). A
+    /// work pack holds nothing but the load of the job at hand, its owner's coin and anything
+    /// entrusted to them: ending the job sets the load down (<c>AiSystem.ReleasePawn</c>).
     /// </summary>
     public static Entity WorkPack(Simulation sim, Entity creature) =>
-        sim.World.Has<Avatar>(creature) || sim.World.Has<PlayerCharacter>(creature) ? Entity.Null : sim.PackOf(creature);
+        sim.World.Has<Avatar>(creature) || sim.World.Has<PlayerCharacter>(creature) || sim.World.Has<Adventurer>(creature)
+            ? Entity.Null : sim.PackOf(creature);
+
+    /// <summary>Kept in a work pack when a job ends: coin, and what someone handed over to be seen to.</summary>
+    public static bool KeptBetweenJobs(Simulation sim, Entity item) =>
+        Errands.Coin.IsSilver(sim, item) || sim.World.Has<Entrusted>(item);
 
     /// <summary>Is this item a stack in the creature's own pack?</summary>
     public static bool InOwnPack(Simulation sim, Entity creature, Entity item) =>
@@ -100,6 +106,22 @@ public static class Inventory
                 sim.TransferContents(old, item);
             Stow(sim, avatar, old);
         }
+    }
+
+    /// <summary>
+    /// <paramref name="count"/> units of a stack a creature has in hand or in its pack, as an
+    /// unspawned item of its own (the whole stack itself if that's all of it).
+    /// </summary>
+    public static Entity TakeFromPerson(Simulation sim, Entity who, Entity stack, int count)
+    {
+        var w = sim.World;
+        ref var carrying = ref w.Get<Carrying>(who);
+        if (carrying.Item == stack && count >= w.Get<Stack>(stack).Count)
+        {
+            carrying.Item = Entity.Null;
+            return stack;
+        }
+        return sim.TakeFromStack(stack, count);
     }
 
     /// <summary>An unspawned item into the pack, else empty hands, else the ground at the avatar's feet.</summary>

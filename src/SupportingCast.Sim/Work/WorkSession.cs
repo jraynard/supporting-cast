@@ -179,6 +179,7 @@ public abstract class WorkSession
         WorkSession s = name switch
         {
             nameof(HammerSession) => new HammerSession(),
+            nameof(SharpenSession) => new SharpenSession(),
             _ => throw new SaveException($"Corrupt save: unknown work session {name}"),
         };
         s.Worker = r.Entity();

@@ -188,6 +188,17 @@ public sealed partial class VillageGame
             if (ImGui.MenuItem(def.Weapon != null ? "Wield"u8 : "Wear"u8))
                 Issue(new EquipCommand(_avatar, item));
         }
+        if ((held || packed) && Sim.Combat.WeaponWear.Edged(def))
+        {
+            any = true;
+            var why = Sim.Work.SharpenSession.Problem(_sim, _avatar, item);
+            ImGui.BeginDisabled(why != null);
+            if (ImGui.MenuItem("Sharpen"u8))
+                Issue(new Sim.Work.SharpenCommand(_avatar, item));
+            ImGui.EndDisabled();
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                Tip(why != null ? Cap(why) + "." : "Hold F to grind, A/D to keep the angle. Ease off before the steel overheats.");
+        }
         if ((held || packed) && def.Tool != null)
         {
             any = true;
@@ -300,6 +311,8 @@ public sealed partial class VillageGame
             if (w.TryGet<Equipment>(_avatar, out var eq) && w.IsAlive(eq.Weapon) && eq.Weapon != item)
                 lines.Add($"vs. your {w.Get<Thing>(eq.Weapon).Label}");
         }
+        if (View.Condition(item) is { } condition)
+            lines.Add($"Condition: {condition}");
         if (def.IsFood)
             lines.Add($"Food: {def.Nutrition * 100:F0}% a meal per unit");
         if (def.Bulky)
@@ -347,6 +360,14 @@ public sealed partial class VillageGame
                 ImGui.SameLine(0, 6);
                 if (ImGui.SmallButton($"{(slot == GearSlot.Weapon ? "Put away" : "Take off")}##{slot}"))
                     Issue(new UnequipCommand(_avatar, slot));
+                if (slot == GearSlot.Weapon && Sim.Work.SharpenSession.Problem(_sim, _avatar, item) == null)
+                {
+                    ImGui.SameLine(0, 6);
+                    if (ImGui.SmallButton("Sharpen##weapon"u8))
+                        Issue(new Sim.Work.SharpenCommand(_avatar, item));
+                    if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                        Tip($"It's {View.Condition(item)}. Hold F to grind, A/D to keep the angle.");
+                }
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                     Tip(slot == GearSlot.Back
                         ? "Take the pack off: it keeps what's in it, and goes into your hands if they're free."

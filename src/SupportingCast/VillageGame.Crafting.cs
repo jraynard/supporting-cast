@@ -291,10 +291,12 @@ public sealed partial class VillageGame
             if (ImGui.Button("Mend"u8, in _autoSize))
                 Issue(new RepairCommand(_avatar, _openStation, item));
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip("Hold F at the station to work; the material is used once it's done.");
+                Tip(Sim.Work.HammerSession.AppliesToRepair(_sim, _avatar, _openStation)
+                    ? "Hammer out the chips on the mark. It leaves a blade dull: sharpen it after."
+                    : "Hold F at the station to work; the material is used once it's done.");
             ImGui.SameLine(0, 8);
             var t = w.Get<Thing>(item);
-            ImGui.Text($"{Cap(_sim.LabelOf(item))} ({t.Hp / t.MaxHp * 100:F0}%): {cost.Count} {cost.Material.ThingDef.Label}");
+            ImGui.Text($"{Cap(_sim.LabelOf(item))} ({View.Condition(item) ?? $"{t.Hp / t.MaxHp * 100:F0}%"}): {cost.Count} {cost.Material.ThingDef.Label}");
             ImGui.PopID();
         }
     }

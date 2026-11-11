@@ -121,6 +121,20 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
     }
 
     /// <summary>
+    /// What state a weapon or piece of armor is in (<see cref="Combat.WeaponWear.Describe"/>): an
+    /// edge and its chips are seen only up close, in hand or within reach. Null if out of reach.
+    /// </summary>
+    public string? Condition(Entity item)
+    {
+        var w = sim.World;
+        if (!w.IsAlive(item) || !w.TryGet<Thing>(item, out var t) || (t.Def.Weapon == null && t.Def.Apparel == null))
+            return null;
+        if (!Omniscient && !Within(t.Spawned ? t.Cell : sim.LocationOf(item), 1))
+            return null;
+        return Combat.WeaponWear.Describe(sim, item);
+    }
+
+    /// <summary>
     /// The errands this character knows of, oldest first: those they heard asked, took on or asked
     /// for themselves. Open ones and those closed within the last day.
     /// </summary>

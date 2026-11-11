@@ -91,6 +91,12 @@
       "tool": { "kind": "Hammer", "speed": 0.75, "tier": "Stone" }, "description": "Crude, but enough to beat out a first iron tool at the forge."
     },
     {
+      // Art: borrows the stone block sprite and the chisel held shape until the M6 art pass.
+      "name": "Whetstone", "held": "chisel", "label": "whetstone", "category": "Item", "mass": 0.6, "sprite": "items/stone", "maxHp": 80,
+      "tool": { "kind": "Whetstone", "speed": 1.0, "tier": "Stone" },
+      "description": "A fine-grained stone for putting an edge back on a blade. Grind steady and don't let the steel heat."
+    },
+    {
       "name": "FishingRod", "held": "rod", "label": "fishing rod", "category": "Item", "mass": 0.5, "sprite": "items/fishing_rod", "maxHp": 30,
       "tool": { "kind": "Rod", "speed": 1.0, "tier": "Stone" }, "description": "A springy pole and a line. Casting without one is mostly hoping."
     },

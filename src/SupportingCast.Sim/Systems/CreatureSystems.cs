@@ -361,7 +361,8 @@ public sealed class AiSystem : ISimSystem
         var pack = Inventory.WorkPack(sim, e);
         if (!pack.IsNull)
             foreach (var item in sim.StoredIn(pack))
-                sim.PlaceItemNear(sim.TakeFromStack(item, w.Get<Stack>(item).Count), w.Get<Position>(e).Cell);
+                if (!Inventory.KeptBetweenJobs(sim, item))
+                    sim.PlaceItemNear(sim.TakeFromStack(item, w.Get<Stack>(item).Count), w.Get<Position>(e).Cell);
     }
 
     /// <summary>

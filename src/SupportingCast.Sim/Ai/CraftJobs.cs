@@ -190,29 +190,15 @@ public sealed class RepairJob(Entity station, Entity item) : Job
             yield return JobStatus.Running;
         }
         // Pay for it now, from what's to hand; short of it, nothing is mended.
-        var need = cost.Count;
-        var payWith = Core.CraftCommandRules.Sources(Sim, Pawn)
-            .Where(e => Alive(e) && Crafting.Accepts(cost.Material, null, Get<Thing>(e).Def, Get<Thing>(e).Material)).ToList();
-        if (payWith.Sum(e => Get<Stack>(e).Count) < need)
+        if (!Crafting.PayForRepair(Sim, Pawn, cost.Material, cost.Count))
         {
-            Fail($"needs {need} {cost.Material.ThingDef.Label}");
+            Fail($"needs {cost.Count} {cost.Material.ThingDef.Label}");
             yield break;
         }
-        foreach (var e in payWith)
-        {
-            var take = Math.Min(need, Get<Stack>(e).Count);
-            need -= take;
-            if ((Get<Stack>(e).Count -= take) <= 0)
-            {
-                if (Get<Carrying>(Pawn).Item == e)
-                    Get<Carrying>(Pawn).Item = Entity.Null;
-                Sim.DestroyThing(e);
-            }
-            if (need <= 0)
-                break;
-        }
+        // Done as a job, the mend is a whole one: chips out and the edge put back.
         ref var t = ref Get<Thing>(item);
         t.Hp = t.MaxHp;
+        Combat.WeaponWear.SetDullness(Sim, item, 0f);
         Sim.Messages.Add(MessageKind.Info, $"Mended the {Sim.LabelOf(item)}.", Get<Thing>(station).Cell);
     }
 }

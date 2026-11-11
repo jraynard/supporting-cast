@@ -412,6 +412,30 @@ public static class Factions
     public static bool Attacker(Faction f) => f is Faction.Raider or Faction.Predator;
 }
 
+/// <summary>
+/// How keen a bladed weapon's edge is (<see cref="Combat.WeaponWear"/>), 0 keen to 1 blunt. Chips
+/// and bends are its HP. Added the first time it dulls; a weapon without one is keen.
+/// </summary>
+public struct Edge
+{
+    public float Dullness;
+}
+
+/// <summary>
+/// Handed over to be seen to (a blade to mend, <c>Errands.ErrandSystem</c>): whoever holds it keeps
+/// it safe between jobs until it goes back to its owner.
+/// </summary>
+public struct Entrusted
+{
+    public Entity Owner;
+}
+
+/// <summary>A forge kept burning for a mend in hand (<c>Work.HammerSession</c>) until this tick, with no recipe on it.</summary>
+public struct FiredForMending
+{
+    public long Until;
+}
+
 /// <summary>What a creature fights with. The weapon is an unspawned Thing entity, like a carried item.</summary>
 public struct Equipment
 {

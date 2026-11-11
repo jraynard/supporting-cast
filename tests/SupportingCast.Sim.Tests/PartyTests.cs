@@ -6,6 +6,7 @@ using SupportingCast.Sim.Core;
 using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Round;
 using SupportingCast.Sim.Scenarios;
+using SupportingCast.Sim.Systems;
 
 namespace SupportingCast.Sim.Tests;
 
@@ -78,5 +79,21 @@ public class PartyTests
         sim.TickMany(SimClock.HoursToTicks(4));
         Assert.All(party, e => Assert.False(sim.World.IsAlive(e), "everyone should have walked off the map"));
         Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("moving on"));
+    }
+
+    [Fact]
+    public void AdventurersAndVillagersKeepTheirCoinBetweenJobs()
+    {
+        var (sim, _) = Town();
+        var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
+        var villager = sim.Creatures().First(e => sim.World.Get<Creature>(e).Faction == Faction.Village && !sim.World.Has<Avatar>(e));
+        sim.GiveStartingPack(villager);
+        Inventory.Stow(sim, villager, sim.CreateItem(sim.Defs.Thing("SilverCoin"), 7));
+        var purses = party.Select(e => Coins(sim, e)).ToList();
+
+        sim.TickMany(SimClock.HoursToTicks(4));
+
+        Assert.Equal(purses, party.Select(e => Coins(sim, e)).ToList());
+        Assert.Equal(7, Coins(sim, villager));
     }
 }

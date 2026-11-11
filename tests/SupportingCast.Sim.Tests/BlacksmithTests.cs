@@ -1,0 +1,229 @@
+using SupportingCast.Sim.Combat;
+using SupportingCast.Sim.Components;
+using SupportingCast.Sim.Core;
+using SupportingCast.Sim.Defs;
+using SupportingCast.Sim.Errands;
+using SupportingCast.Sim.Maps;
+using SupportingCast.Sim.Round;
+using SupportingCast.Sim.Scenarios;
+using SupportingCast.Sim.Systems;
+using SupportingCast.Sim.Work;
+using static SupportingCast.Sim.Tests.TestWorld;
+
+namespace SupportingCast.Sim.Tests;
+
+/// <summary>Weapon wear and the two ways of putting it right: the whetstone and the anvil (Stage 3 of M2).</summary>
+public class BlacksmithTests
+{
+    private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
+
+    /// <summary>A player in a round with a whetstone, a hot forge beside them and a short sword in their pack.</summary>
+    private static (Simulation Sim, Entity Me, Entity Forge, Entity Sword) AtTheBench(float hp = 1f, float dullness = 0f)
+    {
+        var sim = Create(40, 40);
+        var me = sim.SpawnCreature(sim.Defs.Creature("Human"), "Smith", C(10, 10), ageDays: 25 * 365);
+        sim.Round.OpenLobby();
+        sim.Round.Sit(Ana, "Smith", null, null, null);
+        sim.Round.Start(sim);
+        sim.GiveStartingPack(me);
+        var forge = sim.SpawnStructure(sim.Thing("Forge"), C(11, 10));
+        sim.RebuildDerivedIfNeeded();
+        sim.World.Get<Fueled>(forge).Fuel = 10;
+        sim.Map.Temperature[sim.Map.Idx(C(11, 10))] = 1200;
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Whetstone"), 1));
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("IronBar"), 4));
+        var sword = sim.CreateItem(sim.Thing("ShortSword"), 1);
+        sim.World.Get<Thing>(sword).Hp = sim.World.Get<Thing>(sword).MaxHp * hp;
+        WeaponWear.SetDullness(sim, sword, dullness);
+        Inventory.Stow(sim, me, sword);
+        return (sim, me, forge, sword);
+    }
+
+    /// <summary>Grind as a careful player would: steer for the middle of the band, ease off when it's hot.</summary>
+    private static void Grind(Simulation sim, Entity me, bool easeOff = true, int maxTicks = 60 * 120)
+    {
+        var predictor = new WorkPredictor();
+        var resting = false;
+        for (var t = 0; t < maxTicks && sim.World.Has<WorkSession>(me); t++)
+        {
+            sim.Tick();
+            var axis = 0;
+            var hold = false;
+            if (predictor.Session is SharpenSession s)
+            {
+                var off = s.Angle - 0.5f;
+                axis = MathF.Abs(off) > s.HalfWidth * 0.3f ? -Math.Sign(off) : 0;
+                resting = easeOff && (resting ? s.Heat > 0.3f : s.Heat > 0.8f);
+                hold = !resting && s.InBand;
+            }
+            predictor.Update(sim, me, 1, false, hold, axis, c => sim.ApplyNow(c));
+        }
+        sim.Tick();
+    }
+
+    private static void Hammer(Simulation sim, Entity me, int maxTicks = 60 * 60)
+    {
+        var predictor = new WorkPredictor();
+        for (var t = 0; t < maxTicks && sim.World.Has<WorkSession>(me); t++)
+        {
+            sim.Tick();
+            var strike = predictor.Session is HammerSession { Ready: true } h && MathF.Abs(h.Marker - h.Mark) <= h.HalfWidth * 0.5f;
+            predictor.Update(sim, me, 1, strike, false, 0, c => sim.ApplyNow(c));
+        }
+        sim.Tick();
+    }
+
+    [Fact]
+    public void BladesDullAndChipWithUseAndCutWorseForIt()
+    {
+        var (sim, me, _, sword) = AtTheBench();
+        Assert.Equal(1f, WeaponWear.DamageFactor(sim, sword));
+        for (var i = 0; i < 20; i++)
+            WeaponWear.Struck(sim, me, sword, turned: i % 2 == 0, damage: 6f);
+
+        Assert.True(WeaponWear.Dullness(sim, sword) > WeaponWear.WantsMendDullness);
+        Assert.True(WeaponWear.HpFraction(sim, sword) < 1f);
+        Assert.True(WeaponWear.DamageFactor(sim, sword) < 0.85f);
+        Assert.True(WeaponWear.NeedsMending(sim, sword));
+        Assert.DoesNotContain("keen", Perception.For(sim, me).Condition(sword));
+    }
+
+    [Fact]
+    public void ACarefulHandOnTheWhetstonePutsTheEdgeBack()
+    {
+        var (sim, me, _, sword) = AtTheBench(dullness: 0.8f);
+        sim.ApplyNow(new SharpenCommand(me, sword));
+        Assert.True(sim.World.Has<WorkSession>(me));
+        Grind(sim, me);
+
+        Assert.False(sim.World.Has<WorkSession>(me));
+        Assert.True(WeaponWear.Dullness(sim, sword) <= WeaponWear.MendedDullness, $"dullness {WeaponWear.Dullness(sim, sword)}");
+        Assert.True(WeaponWear.Mended(sim, sword));
+    }
+
+    [Fact]
+    public void GrindingWithoutEasingOffBurnsTheTemper()
+    {
+        var (sim, me, _, sword) = AtTheBench(dullness: 1f);
+        sim.World.Add(sword, new Crafted { Quality = Quality.Fine, Maker = me });
+        var hp = sim.World.Get<Thing>(sword).Hp;
+        sim.ApplyNow(new SharpenCommand(me, sword));
+        Grind(sim, me, easeOff: false);
+
+        Assert.Equal(Quality.Plain, sim.World.Get<Crafted>(sword).Quality);
+        Assert.True(sim.World.Get<Thing>(sword).Hp < hp);
+    }
+
+    [Fact]
+    public void AStoneCantTakeOutChips()
+    {
+        var (sim, me, _, sword) = AtTheBench(hp: 0.5f, dullness: 0.6f);
+        var hp = sim.World.Get<Thing>(sword).Hp;
+        sim.ApplyNow(new SharpenCommand(me, sword));
+        Grind(sim, me);
+
+        Assert.True(sim.World.Get<Thing>(sword).Hp < hp, "grinding at chips only wears the blade");
+        Assert.False(WeaponWear.Mended(sim, sword));
+    }
+
+    [Fact]
+    public void HammeringOutChipsAtTheForgeLeavesTheBladeToSharpen()
+    {
+        var (sim, me, forge, sword) = AtTheBench(hp: 0.4f);
+        var bars = Coinless(sim, me, "IronBar");
+        sim.ApplyNow(new RepairCommand(me, forge, sword));
+        Assert.IsType<HammerSession>(sim.World.Get<WorkSession>(me));
+        Hammer(sim, me);
+
+        Assert.True(WeaponWear.HpFraction(sim, sword) >= WeaponWear.MendedHp);
+        Assert.True(WeaponWear.Dullness(sim, sword) >= WeaponWear.DullAfterHammering, "the anvil flattens the edge");
+        Assert.True(Coinless(sim, me, "IronBar") < bars, "mending uses iron");
+
+        // Then the stone, and it's right.
+        sim.ApplyNow(new SharpenCommand(me, sword));
+        Grind(sim, me);
+        Assert.True(WeaponWear.Mended(sim, sword));
+    }
+
+    private static int Coinless(Simulation sim, Entity me, string def) =>
+        sim.StoredIn(sim.PackOf(me)).Where(i => sim.World.Get<Thing>(i).Def.Name == def).Sum(i => sim.World.Get<Stack>(i).Count);
+
+    // ---------------- Repair errands ----------------
+
+    private static (Simulation Sim, Entity Owner, Entity Sword) TownWithAWornSword(string playerTrade)
+    {
+        var sim = Simulation.CreateStandard(LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
+        sim.Presets.PresetMode = true;
+        VillageRound.Setup(sim);
+        sim.Round.OpenLobby();
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+        sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(playerTrade)], []));
+        sim.ApplyNow(new StartRoundCommand());
+        var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
+        var owner = party.First(e => sim.World.TryGet<Equipment>(e, out var eq) && WeaponWear.Edged(sim.World.Get<Thing>(eq.Weapon).Def));
+        var sword = sim.World.Get<Equipment>(owner).Weapon;
+        sim.World.Get<Thing>(sword).Hp = sim.World.Get<Thing>(sword).MaxHp * 0.5f;
+        WeaponWear.SetDullness(sim, sword, 0.7f);
+        return (sim, owner, sword);
+    }
+
+    private static Errand RepairOf(Simulation sim, Entity owner) =>
+        sim.Errands.All.Single(e => e.Poster == owner && e.Kind.Kind == ErrandKind.Repair);
+
+    [Fact]
+    public void AnAISmithSeesARepairThroughAndIsPaid()
+    {
+        var (sim, owner, sword) = TownWithAWornSword("Healer");
+        var smith = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Blacksmith");
+        Assert.False(sim.World.Has<Avatar>(smith));
+        var purse = Coin.Count(sim, smith);
+
+        for (var h = 0; h < 10 && sim.Errands.All.All(e => e.Kind.Kind != ErrandKind.Repair || e.IsOpen); h++)
+            sim.TickMany(SimClock.TicksPerHour);
+
+        var errand = RepairOf(sim, owner);
+        Assert.True(errand.Status == ErrandStatus.Done, $"{errand.Status}, assignee {errand.AssigneeName}, smith: {sim.Ai.LastFailure.GetValueOrDefault(smith)} / {sim.World.Get<Mind>(smith).Job?.Report}\n"
+            + string.Join("\n", sim.Speech.Kept.TakeLast(12).Select(u => $"{u.SpeakerName}: {u.Text}")));
+        Assert.Equal(smith, errand.Assignee);
+        Assert.Equal(sword, sim.World.Get<Equipment>(owner).Weapon);
+        Assert.True(WeaponWear.Mended(sim, sword));
+        Assert.True(Coin.Count(sim, smith) > purse, $"purse {purse} now {Coin.Count(sim, smith)}, held {sim.World.Get<Carrying>(smith).Item}, pack {sim.PackOf(smith)} "
+            + string.Join("\n", sim.Speech.Kept.TakeLast(6).Select(u => $"{u.SpeakerName}: {u.Text}")));
+    }
+
+    [Fact]
+    public void ABladeHandedBackUnmendedIsRefusedAndTheJobReopens()
+    {
+        var (sim, owner, sword) = TownWithAWornSword("Blacksmith");
+        var me = Players.CharacterOf(sim, Ana);
+        sim.TickMany(SimClock.TicksPerHour / 6);
+        var errand = RepairOf(sim, owner);
+        Assert.Contains(Perception.For(sim, me).Errands(), e => e.Id == errand.Id); // word reaches the smith
+
+        sim.ApplyNow(new AcceptErrandCommand(me, errand.Id));
+        Assert.Equal(me, errand.Assignee);
+        var at = sim.World.Get<Position>(owner).Cell;
+        var cell = sim.SpiralFrom(at, 3).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z);
+        sim.World.Get<Position>(me).Cell = cell;
+        sim.World.Get<Position>(me).Pos = Position.CenterOf(cell);
+        Assert.True(sim.Errands.TryHandOver(sim, errand));
+        Assert.True(Inventory.OnPerson(sim, me, sword));
+        Assert.False(sim.World.Has<Equipment>(owner));
+
+        sim.World.Get<Position>(owner).Cell = cell + new int3(1, 0, 0) == at ? at : sim.World.Get<Position>(owner).Cell;
+        sim.ApplyNow(new GiveCommand(me, owner, sword, 1));
+        Assert.True(errand.IsOpen);
+        Assert.True(errand.Assignee.IsNull, "refused: the job is open again");
+        Assert.Equal(sword, sim.World.Get<Equipment>(owner).Weapon);
+
+        // Done properly the second time, it's paid for.
+        sim.ApplyNow(new AcceptErrandCommand(me, errand.Id));
+        Assert.True(sim.Errands.TryHandOver(sim, errand));
+        sim.World.Get<Thing>(sword).Hp = sim.World.Get<Thing>(sword).MaxHp;
+        WeaponWear.SetDullness(sim, sword, 0f);
+        var purse = Coin.Count(sim, me);
+        sim.ApplyNow(new GiveCommand(me, owner, sword, 1));
+        Assert.Equal(ErrandStatus.Done, errand.Status);
+        Assert.Equal(purse + errand.Price, Coin.Count(sim, me));
+    }
+}

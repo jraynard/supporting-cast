@@ -8,7 +8,8 @@ namespace SupportingCast.Sim.Work;
 /// <summary>
 /// Beating out a piece at the forge: a marker sweeps back and forth and each blow lands where it
 /// is when you press. On the mark is a good blow; the piece's quality is the average of them all,
-/// so a smith's hands decide the blade in place of a skill roll.
+/// so a smith's hands decide the blade in place of a skill roll. With an <see cref="Item"/> it's a
+/// repair: the blows hammer out its chips and bends, and flatten its edge for the whetstone.
 /// </summary>
 public sealed class HammerSession : WorkSession
 {
@@ -29,6 +30,14 @@ public sealed class HammerSession : WorkSession
     public Entity Station { get; set; }
     public RecipeDef Recipe { get; set; } = null!;
 
+    /// <summary>The piece being mended; Entity.Null when making a new one.</summary>
+    public Entity Item { get; set; } = Entity.Null;
+
+    /// <summary>What's being mended, as named when work began (for the title).</summary>
+    public string ItemLabel { get; set; } = "";
+
+    public bool Repairing => !Item.IsNull;
+
     /// <summary>Where the next blow should land, 0..1.</summary>
     public float Mark { get; private set; }
 
@@ -44,7 +53,7 @@ public sealed class HammerSession : WorkSession
 
     public override Skill Skill => Recipe.Skill;
     public override float Xp => 60f;
-    public override string Title => $"Hammering out {Recipe.Label}";
+    public override string Title => Repairing ? $"Hammering out the {ItemLabel}" : $"Hammering out {Recipe.Label}";
 
     /// <summary>Should a player's work at this station be done by hand? Only in a round, and only for gear at a station that wants it.</summary>
     public static bool Applies(Simulation sim, Entity worker, Entity station, RecipeDef recipe) =>
@@ -66,11 +75,48 @@ public sealed class HammerSession : WorkSession
             WorkSystem.Start(sim, worker, new HammerSession { Station = station, Recipe = recipe });
     }
 
+    /// <summary>Begin mending a worn piece the worker has on them, if the forge is ready; otherwise say why not.</summary>
+    public static void TryStartRepair(Simulation sim, Entity worker, Entity station, Entity item)
+    {
+        var w = sim.World;
+        var cell = w.Get<Thing>(station).Cell;
+        if (Crafting.RepairRecipe(w.Get<Thing>(station).Def, w.Get<Thing>(item).Def) is not { } recipe)
+            return;
+        if (Combat.WeaponWear.HpFraction(sim, item) >= 0.99f)
+        {
+            sim.Messages.Add(MessageKind.Info, $"The {sim.LabelOf(item)} has no chips to hammer out.", cell);
+            return;
+        }
+        if (!Crafting.CanFireFor(sim, station, recipe))
+        {
+            sim.Messages.Add(MessageKind.Info, $"The {w.Get<Thing>(station).Label} has no fuel.", cell);
+            return;
+        }
+        // Asking to mend is what fires it, as making does: it burns for an hour on the strength of it.
+        var until = sim.Clock.Tick + SimClock.TicksPerHour;
+        if (w.Has<FiredForMending>(station))
+            w.Get<FiredForMending>(station).Until = until;
+        else
+            w.Add(station, new FiredForMending { Until = until });
+        if (!Crafting.HotEnough(sim, station, recipe))
+            sim.Messages.Add(MessageKind.Info, $"The {w.Get<Thing>(station).Label} is heating up for the mend ({sim.TemperatureAt(cell):F0} of {recipe.MinTemp:F0}°C). Use it again once it's hot.", cell);
+        else
+            WorkSystem.Start(sim, worker, new HammerSession { Station = station, Recipe = recipe, Item = item, ItemLabel = sim.LabelOf(item) });
+    }
+
+    /// <summary>Should a player's mend at this station be done by hand? As for making: in a round, at a station that wants it.</summary>
+    public static bool AppliesToRepair(Simulation sim, Entity worker, Entity station) =>
+        sim.Round.Phase == Round.RoundPhase.Playing && sim.World.Has<Avatar>(worker)
+        && sim.World.Get<Thing>(station).Def.Building?.Workbench is { HandWork: true };
+
     public override bool StillValid(Simulation sim)
     {
         var w = sim.World;
-        return Crafting.IsStation(sim, Station) && w.Get<Workbench>(Station).Active == Recipe
-            && AvatarSystem.InReach(sim, w.Get<Position>(Worker).Cell, Station);
+        if (!Crafting.IsStation(sim, Station) || !AvatarSystem.InReach(sim, w.Get<Position>(Worker).Cell, Station))
+            return false;
+        return Repairing
+            ? w.IsAlive(Item) && Inventory.OnPerson(sim, Worker, Item) && Crafting.HotEnough(sim, Station, Recipe)
+            : w.Get<Workbench>(Station).Active == Recipe;
     }
 
     protected internal override void Begin() => Mark = Rand.Range(0.15f, 0.85f);
@@ -98,6 +144,11 @@ public sealed class HammerSession : WorkSession
     public override void Finish(Simulation sim)
     {
         var cell = sim.World.Get<Thing>(Station).Cell;
+        if (Repairing)
+        {
+            Mend(sim, cell);
+            return;
+        }
         foreach (var item in Crafting.Finish(sim, Station, Worker, Crafting.QualityFrom(Quality)))
         {
             Inventory.Stow(sim, Worker, item);
@@ -105,10 +156,39 @@ public sealed class HammerSession : WorkSession
         }
     }
 
+    /// <summary>
+    /// The chips come out as well as the blows landed: a good hand restores nearly all of it, a
+    /// poor one only some. A blade comes off the anvil dull. Botched badly, the temper suffers.
+    /// </summary>
+    private void Mend(Simulation sim, int3 cell)
+    {
+        var w = sim.World;
+        if (Crafting.RepairCost(sim, w.Get<Thing>(Station).Def, Item) is not { } cost)
+            return;
+        if (!Crafting.PayForRepair(sim, Worker, cost.Material, cost.Count))
+        {
+            sim.Messages.Add(MessageKind.Info, $"Mending the {ItemLabel} needs {cost.Count} {cost.Material.ThingDef.Label}.", cell);
+            return;
+        }
+        ref var t = ref w.Get<Thing>(Item);
+        t.Hp += (t.MaxHp - t.Hp) * (0.4f + 0.6f * Quality);
+        if (Combat.WeaponWear.Edged(t.Def))
+            Combat.WeaponWear.SetDullness(sim, Item, Math.Max(Combat.WeaponWear.Dullness(sim, Item), Combat.WeaponWear.DullAfterHammering));
+        if (Quality < 0.3f && w.TryGet<Crafted>(Item, out var made) && made.Quality > Components.Quality.Crude)
+        {
+            w.Get<Crafted>(Item).Quality = made.Quality - 1;
+            sim.Messages.Add(MessageKind.Warning, $"Clumsy blows: the {ItemLabel} is the worse for its mending.", cell);
+        }
+        else
+            sim.Messages.Add(MessageKind.Info, $"Hammered the chips out of the {ItemLabel}.", cell);
+    }
+
     protected override void WriteState(SaveWriter w)
     {
         w.Entity(Station);
         w.Def(Recipe);
+        w.Entity(Item);
+        w.String(ItemLabel);
         w.Float(Mark);
         w.Int(Blows);
         w.Int(_recovery);
@@ -118,6 +198,8 @@ public sealed class HammerSession : WorkSession
     {
         Station = r.Entity();
         Recipe = r.Def<RecipeDef>();
+        Item = r.Entity();
+        ItemLabel = r.String();
         Mark = r.Float();
         Blows = r.Int();
         _recovery = r.Int();

@@ -40,11 +40,18 @@ public sealed partial class VillageGame
         var input = Host.Input;
         if (Working && input.WasKeyPressed(GlfwKey.Escape))
             Issue(new StopWorkCommand(_avatar));
-        _work.Update(_sim, _avatar, steps, speed > 0 && input.WasKeyPressed(GlfwKey.F), false, 0, Issue);
+        var live = speed > 0 && Working;
+        var axis = !live ? 0 : (input.IsKeyDown(GlfwKey.D) ? 1 : 0) - (input.IsKeyDown(GlfwKey.A) ? 1 : 0);
+        _work.Update(_sim, _avatar, steps, speed > 0 && input.WasKeyPressed(GlfwKey.F), live && input.IsKeyDown(GlfwKey.F), axis, Issue);
     }
 
     private void DrawWork()
     {
+        if (_work.Session is SharpenSession sharpen)
+        {
+            DrawSharpen(sharpen);
+            return;
+        }
         if (_work.Session is not HammerSession hammer)
             return;
         var screen = ImGui.GetIO().DisplaySize;
@@ -102,6 +109,34 @@ public sealed partial class VillageGame
             _speechInput.SetValue("".AsSpan());
             ImGui.SetKeyboardFocusHere(-1); // keep typing
         }
+        ImGui.End();
+    }
+
+    /// <summary>The whetstone: the blade's angle against the band, the steel's heat and the edge coming back.</summary>
+    private void DrawSharpen(SharpenSession s)
+    {
+        var screen = ImGui.GetIO().DisplaySize;
+        var pos = new float2(screen.X * 0.5f, screen.Y * 0.68f);
+        float2? pivot = new float2(0.5f, 0.5f);
+        ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
+        ImGui.Begin("###work"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav);
+        TextC(Theme.Accent, s.Title);
+        TextC(Theme.Dim, "Hold F to grind, A/D to keep the angle in the band. Ease off before it overheats. Esc to stop.");
+        var dl = ImGui.GetWindowDrawList();
+        var size = new float2(420, 30);
+        var min = ImGui.GetCursorScreenPos();
+        var max = min + size;
+        ImGui.Dummy(in size);
+        dl.AddRectFilled(in min, in max, new ImColor8(40, 30, 24, 255), 4f, ImDrawFlags.None);
+        var bandMin = new float2(min.X + (0.5f - s.HalfWidth) * size.X, min.Y);
+        var bandMax = new float2(min.X + (0.5f + s.HalfWidth) * size.X, max.Y);
+        dl.AddRectFilled(in bandMin, in bandMax, Theme.U8(Theme.Good, 0.7f), 2f, ImDrawFlags.None);
+        var x = min.X + s.Angle * size.X;
+        var needleMin = new float2(x - 2, min.Y - 3);
+        var needleMax = new float2(x + 2, max.Y + 3);
+        dl.AddRectFilled(in needleMin, in needleMax, Theme.U8(s.InBand ? Theme.Accent : Theme.Bad), 1f, ImDrawFlags.None);
+        Bar("Edge", s.Progress, Theme.Good);
+        Bar("Heat", s.Heat, s.Heat > 0.75f ? Theme.Bad : s.Heat > 0.5f ? Theme.Warn : Theme.Dim);
         ImGui.End();
     }
 

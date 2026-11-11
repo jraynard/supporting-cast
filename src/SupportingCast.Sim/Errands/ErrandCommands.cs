@@ -41,7 +41,7 @@ public sealed record GiveCommand(Entity Avatar, Entity To, Entity Item, int Coun
         // Only what's loose in hand or pack: gear has to come off first.
         if (w.Get<Carrying>(Avatar).Item != Item && !Systems.Inventory.InOwnPack(sim, Avatar, Item))
             return;
-        var taken = Coin.TakeFrom(sim, Avatar, Item, Math.Min(Count, w.Get<Stack>(Item).Count));
+        var taken = Systems.Inventory.TakeFromPerson(sim, Avatar, Item, Math.Min(Count, w.Get<Stack>(Item).Count));
         sim.Errands.Received(sim, Avatar, To, taken);
     }
 }

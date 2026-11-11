@@ -54,7 +54,7 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 | --- | --- | --- | --- |
 | Innkeeper | Order juggling, drink mixing, hearing gossip | Larder, cooking, Social | Spiked drinks, selling secrets |
 | Blacksmith | Heat, hammer and quench timing | Forge, bellows, tiers, `Crafted` quality | A hidden flaw in a blade |
-| Healer | Examine, diagnose, treat by hand | Lifeline's `Assessment` and `Work/` | Wrong treatment, "they didn't make it" |
+| Healer | Take a patient's wounds into yourself with focus, cast the right mending on yourself, meditate back your mana | Health, `Work/`, new mana | Taking only part of a wound, or handing one back |
 | Quest Broker | Match parties to quests on partial intel | New `Expedition` | Sending a party to its death |
 | Constable | Patrol, evidence, arrests, jail | `Prisoners`, locks | Framing, abuse of authority |
 | Apothecary | Discover reagent reactions, reshuffled each round | New `Reagents` | Poisons, explosives |
@@ -64,6 +64,33 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 | Carpenter | Build, repair, fit locks | Construction, Rooms, doors | A spare key |
 | Bard | Rhythm performance, morale, rumours | Mood, Social | Spreading lies |
 | Mayor | Treasury, laws, chairs town meetings | New | Corruption |
+| Locksmith (or the Carpenter's) | Pick the locks and disarm the traps on chests adventurers bring back | Locks, `Work/`, expedition loot | A chest opened early, a trap left armed |
+
+### Trade notes
+
+Ideas for depth, to build when each trade's milestone comes round.
+
+**Blacksmith.**
+- Running the forge is play in its own right: lighting it, stoking it and keeping it at heat.
+- Quenching is its own mini-game: hold the piece in for the right length of time.
+- Repair starts from what's actually wrong with the piece. A dull edge goes to the sharpening
+  wheel or stone; a chipped or bent blade goes on the anvil, and the worst may need reforging, or
+  other real techniques. The smith has to judge the right approach. M2 starts with an abstract
+  version: an edge (dull or keen) and chips (HP). Hammering out chips flattens the edge, so a
+  chipped blade is hammered first and then sharpened.
+- Commissions have details the buyer chooses: the hilt, runes engraved on it, the materials.
+
+**Healer (empathic).** Magical in flavour rather than clinical, but grounded.
+- Taking a wound means touching the patient and drawing it into your own body, which takes
+  concentration and discipline. What's drawn across lands on the same part of the healer.
+- To mend themselves, the healer casts the spell that fits each wound they've taken. Casting the
+  wrong one wastes mana and leaves the wound as it was.
+- Out of mana, they meditate to recover it. Meditating is harder the more unhealed wounds they're
+  carrying, so a healer who overreaches can end up stuck in pain.
+
+**Locksmith.** Adventurers come back with locked and trapped chests. Picking the lock and finding
+and disarming the traps are each a hands-on game. This may be its own trade or part of the
+Carpenter's, who already fits locks.
 
 ## Pressure and traitors
 

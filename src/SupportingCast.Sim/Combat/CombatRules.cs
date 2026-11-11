@@ -322,18 +322,23 @@ public static class CombatRules
         var part = health != null ? HealthSystem.PickPart(sim, health, bias) : -1;
         var damage = sim.Rand.Range(attack.DamageMin, attack.DamageMax);
         // A well-made weapon bites deeper (natural attacks and uncrafted weapons count as plain).
-        if (sim.World.TryGet<Equipment>(attacker, out var wielded) && sim.World.IsAlive(wielded.Weapon)
-            && sim.World.Get<Thing>(wielded.Weapon).Def.Weapon == attack)
-            damage *= Crafting.QualityFactorOf(sim, wielded.Weapon);
+        var weapon = sim.World.TryGet<Equipment>(attacker, out var wielded) && sim.World.IsAlive(wielded.Weapon)
+            && sim.World.Get<Thing>(wielded.Weapon).Def.Weapon == attack ? wielded.Weapon : Entity.Null;
+        if (!weapon.IsNull)
+            damage *= Crafting.QualityFactorOf(sim, weapon) * WeaponWear.DamageFactor(sim, weapon);
         var (armor, item) = ArmorAt(sim, target, part, attack.DamageType);
         var through = Through(armor, attack);
         if (through > 0 && sim.Rand.Chance(through))
         {
             WearDown(sim, target, item, damage);
+            if (!weapon.IsNull)
+                WeaponWear.Struck(sim, attacker, weapon, turned: true, damage);
             return Result(AttackOutcome.Deflected, item.IsNull ? "scales" : sim.World.Get<Thing>(item).Label);
         }
         var blunted = damage * 0.5f * through;
         WearDown(sim, target, item, blunted);
+        if (!weapon.IsNull)
+            WeaponWear.Struck(sim, attacker, weapon, turned: false, blunted);
         damage -= blunted;
         HealthSystem.Damage(sim, target, damage, attack.DamageType, part);
         var label = health != null && part >= 0 ? health.Body.Parts[part].Label : "body";

@@ -61,11 +61,16 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
             if (!e.IsOpen)
                 continue;
             if (!sim.World.IsAlive(e.Poster) || sim.World.Get<Creature>(e.Poster).Dead || sim.World.Has<Leaving>(e.Poster))
+            {
                 Close(sim, e, ErrandStatus.Cancelled);
+                LostTheirGear(sim, e);
+            }
             else if (now >= e.Deadline)
                 GiveUp(sim, e);
             else if (e.Assignee.IsNull && e.Kind.Kind != ErrandKind.Request && now - e.LastAsked >= SimClock.HoursToTicks(RepeatHours))
                 Announce(sim, e, Line(e.Kind, e.Price, SubjectLabel(sim, e.Subject)));
+            else
+                TryHandOver(sim, e);
         }
         _errands.RemoveAll(e => !e.IsOpen && now - e.ClosedTick > KeepClosedTicks);
         AskForWhatTheyWant(sim);
@@ -125,6 +130,11 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         };
         _errands.Add(errand);
         Learn(errand, poster);
+        // Word of work at a trade's building reaches whoever holds that trade.
+        if (kind.AtDef != null)
+            foreach (var e in sim.Creatures())
+                if (sim.World.TryGet<Trade>(e, out var trade) && trade.Def.WorkplaceDef == kind.AtDef)
+                    Learn(errand, e);
         Announce(sim, errand, text);
         return errand;
     }
@@ -186,6 +196,44 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         sim.Speech.Say(sim, e.Poster, thanks, Volume.Say);
     }
 
+    /// <summary>
+    /// An adventurer gives the piece to be mended to whoever took the job on, once they're in
+    /// reach. True if it changed hands (or already had).
+    /// </summary>
+    public bool TryHandOver(Simulation sim, Errand e)
+    {
+        var w = sim.World;
+        if (!e.IsOpen || e.Kind.Kind != ErrandKind.Repair || e.Assignee.IsNull || !w.IsAlive(e.Subject))
+            return false;
+        if (Inventory.OnPerson(sim, e.Assignee, e.Subject))
+            return true;
+        if (!Inventory.OnPerson(sim, e.Poster, e.Subject) || !Handing.InReach(sim, e.Poster, e.Assignee) || !SpeechSystem.CanAct(sim, e.Poster))
+            return false;
+        if (w.TryGet<Equipment>(e.Poster, out var eq) && eq.Weapon == e.Subject)
+            w.Remove<Equipment>(e.Poster);
+        else if (w.Get<Thing>(e.Subject).Def.Apparel is { } apparel && w.TryGet<Apparel>(e.Poster, out var worn) && worn[apparel.Slot] == e.Subject)
+            w.Get<Apparel>(e.Poster)[apparel.Slot] = Entity.Null;
+        else
+            return false;
+        w.Add(e.Subject, new Entrusted { Owner = e.Poster });
+        Inventory.Stow(sim, e.Assignee, e.Subject);
+        sim.Speech.Say(sim, e.Poster, $"Here. Mind you bring it back {(WeaponWear.Edged(w.Get<Thing>(e.Subject).Def) ? "sharp" : "whole")}.", Volume.Say);
+        return true;
+    }
+
+    /// <summary>Did the asker go without the thing they handed over (the errand closing with it still out)?</summary>
+    private static void LostTheirGear(Simulation sim, Errand e)
+    {
+        var w = sim.World;
+        if (e.Kind.Kind != ErrandKind.Repair || !w.IsAlive(e.Subject) || !w.IsAlive(e.Poster) || Inventory.OnPerson(sim, e.Poster, e.Subject))
+            return;
+        if (w.Has<Entrusted>(e.Subject))
+            w.Remove<Entrusted>(e.Subject); // theirs now, for better or worse
+        if (w.Has<Adventurer>(e.Poster))
+            w.Get<Adventurer>(e.Poster).Satisfaction -= 2f;
+        sim.Speech.Say(sim, e.Poster, $"And {(e.AssigneeName.Length > 0 ? e.AssigneeName : "this town")} keeps my {SubjectLabel(sim, e.Subject)}. Thieves, the lot of you.", Volume.Shout);
+    }
+
     /// <summary>The asker calls it off (a player's own request).</summary>
     public bool Cancel(Simulation sim, Entity who, int id)
     {
@@ -198,6 +246,7 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
     private static void GiveUp(Simulation sim, Errand e)
     {
         Close(sim, e, ErrandStatus.Expired);
+        LostTheirGear(sim, e);
         if (sim.World.Has<Adventurer>(e.Poster))
         {
             sim.World.Get<Adventurer>(e.Poster).Satisfaction -= 1f;
@@ -219,6 +268,12 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
     {
         var w = sim.World;
         var def = w.Get<Thing>(item).Def;
+        var repair = _errands.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ErrandKind.Repair && e.Subject == item);
+        if (repair != null)
+        {
+            TakeBack(sim, repair, giver);
+            return;
+        }
         var meal = _errands.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ErrandKind.Meal);
         if (meal != null && def.EdibleBy(w.Get<Creature>(to).Def))
         {
@@ -235,24 +290,44 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         Inventory.Stow(sim, to, item);
     }
 
-    /// <summary>The worn weapon or apparel most in need of mending, below <see cref="RepairBelow"/>; Entity.Null if none.</summary>
+    /// <summary>
+    /// The mended piece comes back: they take it up again and look it over. Done right, they pay;
+    /// otherwise they say what's still wrong and the job is open again for anyone.
+    /// </summary>
+    private void TakeBack(Simulation sim, Errand e, Entity giver)
+    {
+        var w = sim.World;
+        var item = e.Subject;
+        w.Remove<Entrusted>(item);
+        if (w.Get<Thing>(item).Def.Apparel != null)
+            sim.WearItem(e.Poster, item);
+        else
+            sim.EquipItem(e.Poster, item);
+        if (WeaponWear.Mended(sim, item))
+        {
+            Complete(sim, e, giver);
+            return;
+        }
+        e.Assignee = Entity.Null;
+        e.AssigneeName = "";
+        sim.Speech.Say(sim, e.Poster, $"It's still {WeaponWear.Faults(sim, item)}. I'm not paying for that.", Volume.Say);
+    }
+
+    /// <summary>The weapon or armor most in need of mending (<see cref="WeaponWear.NeedsMending"/>); Entity.Null if none.</summary>
     public static Entity MostWorn(Simulation sim, Entity who)
     {
         var w = sim.World;
         var worst = Entity.Null;
-        var worstFrac = RepairBelow;
+        var worstHp = 2f;
         void Consider(Entity item)
         {
-            if (!w.IsAlive(item) || sim.IsPack(item))
+            if (!w.IsAlive(item) || !WeaponWear.NeedsMending(sim, item))
                 return;
-            var t = w.Get<Thing>(item);
-            if (t.Def.Weapon == null && t.Def.Apparel is not { Sharp: > 0 } and not { Blunt: > 0 })
-                return;
-            var frac = t.MaxHp > 0 ? t.Hp / t.MaxHp : 1f;
-            if (frac < worstFrac)
+            var hp = WeaponWear.HpFraction(sim, item);
+            if (hp < worstHp)
             {
                 worst = item;
-                worstFrac = frac;
+                worstHp = hp;
             }
         }
         if (w.TryGet<Equipment>(who, out var eq))

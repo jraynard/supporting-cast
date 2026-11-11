@@ -33,27 +33,11 @@ public static class Coin
             if (paid >= amount)
                 break;
             var take = Math.Min(amount - paid, sim.World.Get<Stack>(stack).Count);
-            var coins = TakeFrom(sim, from, stack, take);
+            var coins = Inventory.TakeFromPerson(sim, from, stack, take);
             paid += take;
             Inventory.Stow(sim, to, coins);
         }
         return paid;
-    }
-
-    /// <summary>
-    /// <paramref name="count"/> units of a stack a creature has in hand or in its pack, as an
-    /// unspawned item of its own (the whole stack itself if that's all of it).
-    /// </summary>
-    public static Entity TakeFrom(Simulation sim, Entity who, Entity stack, int count)
-    {
-        var w = sim.World;
-        ref var carrying = ref w.Get<Carrying>(who);
-        if (carrying.Item == stack && count >= w.Get<Stack>(stack).Count)
-        {
-            carrying.Item = Entity.Null;
-            return stack;
-        }
-        return sim.TakeFromStack(stack, count);
     }
 
     private static List<Entity> Stacks(Simulation sim, Entity who)

@@ -380,6 +380,30 @@ public static class Crafting
 
     // ---------------- Repair ----------------
 
+    /// <summary>Use up a repair's material from what the worker has to hand. False (nothing used) if they're short.</summary>
+    public static bool PayForRepair(Simulation sim, Entity worker, ThingCount material, int count)
+    {
+        var w = sim.World;
+        var payWith = Core.CraftCommandRules.Sources(sim, worker)
+            .Where(e => w.IsAlive(e) && Accepts(material, null, w.Get<Thing>(e).Def, w.Get<Thing>(e).Material)).ToList();
+        if (payWith.Sum(e => w.Get<Stack>(e).Count) < count)
+            return false;
+        foreach (var e in payWith)
+        {
+            var take = Math.Min(count, w.Get<Stack>(e).Count);
+            count -= take;
+            if ((w.Get<Stack>(e).Count -= take) <= 0)
+            {
+                if (w.Get<Carrying>(worker).Item == e)
+                    w.Get<Carrying>(worker).Item = Entity.Null;
+                sim.DestroyThing(e);
+            }
+            if (count <= 0)
+                break;
+        }
+        return true;
+    }
+
     /// <summary>The recipe at a station that makes this kind of item (what mending it there is based on), or null.</summary>
     public static RecipeDef? RepairRecipe(ThingDef station, ThingDef item) =>
         station.Recipes.Find(r => r.Products.Exists(p => p.ThingDef == item));
@@ -520,6 +544,8 @@ public static class Crafting
         if (!sim.World.TryGet<Workbench>(station, out var bench) || sim.World.Has<Construction>(station))
             return false;
         if (bench.Active != null)
+            return true;
+        if (sim.World.TryGet<FiredForMending>(station, out var mend) && mend.Until > sim.Clock.Tick)
             return true;
         foreach (var bill in bench.Bills)
             if (WantsMore(sim, bill))
