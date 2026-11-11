@@ -436,6 +436,16 @@ public struct CaskDrawn
     public int Drawn;
 }
 
+/// <summary>
+/// The gift an empath heals with (<c>Healing/</c>): spent casting mendings, regained slowly on its
+/// own and quickly by meditating.
+/// </summary>
+public struct Mana
+{
+    public float Current;
+    public float Max;
+}
+
 /// <summary>A forge kept burning for a mend in hand (<c>Work.HammerSession</c>) until this tick, with no recipe on it.</summary>
 public struct FiredForMending
 {
@@ -640,6 +650,9 @@ public sealed class Injury
     public long TendedTick;
 
     public long Tick;
+
+    /// <summary>Drawn out of someone else by an empath (<c>Healing.Empathy</c>): they feel it rather than see it.</summary>
+    public bool Absorbed;
 
     /// <summary>Wounds get one chance to fester, half a day after they're made.</summary>
     public bool InfectionRolled;

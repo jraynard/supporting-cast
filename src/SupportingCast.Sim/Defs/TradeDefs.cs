@@ -27,6 +27,12 @@ public sealed class TradeDef : Def
     /// <summary>The least the holder has in a skill: a smith can smith.</summary>
     public Dictionary<Components.Skill, int> Skills { get; set; } = [];
 
+    /// <summary>
+    /// The holder's mana, for a trade with the gift (the Healer's empathy, <c>Healing/</c>); 0 for
+    /// none. Having it is what lets them lay on hands and cast.
+    /// </summary>
+    public float Mana { get; set; }
+
     /// <summary>What the holder starts the round with: the tools of the trade and a little stock.</summary>
     public List<ThingCount> Kit { get; set; } = [];
 

@@ -47,6 +47,9 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
     private readonly SimRandom _rand = new(seed ^ 0xE77A_4D5u);
     private readonly List<Errand> _errands = [];
     private readonly HashSet<int> _questAsked = [];
+
+    /// <summary>Who last saw to each patient's wounds (drawn or bandaged), to be paid for a Healing errand.</summary>
+    private readonly Dictionary<Entity, Entity> _treatedBy = [];
     private int _nextId = 1;
 
     /// <summary>Every errand still on the books, oldest first. Game code reads them through <c>Perception</c>.</summary>
@@ -68,6 +71,8 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 Close(sim, e, ErrandStatus.Cancelled);
                 LostTheirGear(sim, e);
             }
+            else if (e.Kind.Kind == ErrandKind.Healing && !Untended(sim, e.Poster))
+                Healed(sim, e);
             else if (now >= e.Deadline)
                 GiveUp(sim, e);
             else if (e.Assignee.IsNull && e.Kind.Kind != ErrandKind.Request && now - e.LastAsked >= SimClock.HoursToTicks(RepeatHours))
@@ -76,6 +81,8 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 TryHandOver(sim, e);
         }
         _errands.RemoveAll(e => !e.IsOpen && now - e.ClosedTick > KeepClosedTicks);
+        foreach (var gone in _treatedBy.Keys.Where(k => !sim.World.IsAlive(k)).ToList())
+            _treatedBy.Remove(gone);
         AskForWhatTheyWant(sim);
     }
 
@@ -240,6 +247,25 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (w.Has<Adventurer>(e.Poster))
             w.Get<Adventurer>(e.Poster).Satisfaction -= 2f;
         sim.Speech.Say(sim, e.Poster, $"And {(e.AssigneeName.Length > 0 ? e.AssigneeName : "this town")} keeps my {SubjectLabel(sim, e.Subject)}. Thieves, the lot of you.", Volume.Shout);
+    }
+
+    /// <summary>Someone saw to a patient's wounds (an empath drew one, a healer bandaged them): theirs to be paid for it.</summary>
+    public void Treated(Simulation sim, Entity patient, Entity by) => _treatedBy[patient] = by;
+
+    private static bool Untended(Simulation sim, Entity who) =>
+        sim.World.TryGet<Health>(who, out var h) && h.Injuries.Exists(i => i.NeedsTending(sim.Clock.Tick));
+
+    /// <summary>Nothing left untended: whoever took it on (or did the work) is paid; if nobody did, they mended on their own.</summary>
+    private void Healed(Simulation sim, Errand e)
+    {
+        var w = sim.World;
+        var by = !e.Assignee.IsNull && w.IsAlive(e.Assignee) ? e.Assignee
+            : _treatedBy.TryGetValue(e.Poster, out var t) && w.IsAlive(t) ? t : Entity.Null;
+        _treatedBy.Remove(e.Poster);
+        if (by.IsNull)
+            Close(sim, e, ErrandStatus.Cancelled);
+        else
+            Complete(sim, e, by);
     }
 
     /// <summary>They can taste how it was poured, and say so.</summary>
@@ -419,6 +445,13 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         w.Int(asked.Count);
         foreach (var p in asked)
             w.Int(p);
+        var treated = _treatedBy.OrderBy(kv => kv.Key.Index).ToList();
+        w.Int(treated.Count);
+        foreach (var (patient, by) in treated)
+        {
+            w.Entity(patient);
+            w.Entity(by);
+        }
         w.Int(_errands.Count);
         foreach (var e in _errands)
         {
@@ -450,6 +483,9 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         _questAsked.Clear();
         for (var n = r.Count(1 << 16); n > 0; n--)
             _questAsked.Add(r.Int());
+        _treatedBy.Clear();
+        for (var n = r.Count(1 << 16); n > 0; n--)
+            _treatedBy[r.Entity()] = r.Entity();
         _errands.Clear();
         for (var n = r.Count(1 << 16); n > 0; n--)
         {

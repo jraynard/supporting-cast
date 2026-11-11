@@ -206,6 +206,7 @@ public sealed partial class Simulation
             .AddSystem(new FuelSystem())
             .AddSystem(sim.Parties)
             .AddSystem(sim.Errands)
+            .AddSystem(new Healing.ManaSystem())
             .AddSystem(new MoodSystem())
             .AddSystem(new PrisonBreakSystem())
             .AddSystem(sim.Social)

@@ -1207,6 +1207,7 @@ public sealed class TendJob(Entity patient) : Job
             inj.TendedTick = Sim.Clock.Tick;
         }
         health.Changed();
+        Sim.Errands.Treated(Sim, patient, Pawn);
         MoodSystem.Remember(Sim, patient, Sim.Defs.Thoughts.TendedMe, Pawn);
         Sim.Messages.Add(MessageKind.Good, $"{Get<Creature>(Pawn).Name} bandaged {name}'s wounds.", Sim.LocationOf(patient));
     }

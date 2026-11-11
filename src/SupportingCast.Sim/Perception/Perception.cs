@@ -135,6 +135,31 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
     }
 
     /// <summary>
+    /// The wounds this character can feel on someone: their own always (the ones they drew into
+    /// themselves only as sensations), and a patient's while an empath has hands on them, as an
+    /// empath feels them. Null if they can't tell. Never the kind of a felt wound by name.
+    /// </summary>
+    public List<Healing.FeltWound>? FeltWounds(Entity who)
+    {
+        var w = sim.World;
+        if (blind || !w.IsAlive(who) || !w.TryGet<Health>(who, out var h))
+            return null;
+        var mine = who == viewer;
+        var empath = !viewer.IsNull && Healing.Empathy.Gifted(sim, viewer);
+        if (!Omniscient && !mine && !(empath && w.TryGet<Position>(who, out var p) && Ai.Pathfinder.Touches(w.Get<Position>(viewer).Cell, p.Cell)))
+            return null;
+        var felt = new List<Healing.FeltWound>();
+        foreach (var inj in h.Injuries)
+        {
+            var bySense = !Omniscient && (!mine || inj.Absorbed);
+            var feels = bySense ? Healing.Empathy.Feel(sim, inj.Type) : Defs.DamageTypes.Wound(inj.Type);
+            felt.Add(new Healing.FeltWound(Healing.Empathy.KeyOf(inj), h.Body.Parts[inj.Part].Label, feels,
+                Healing.Empathy.Severity(h, inj), inj.Infection != null, inj.Absorbed));
+        }
+        return felt;
+    }
+
+    /// <summary>
     /// The errands this character knows of, oldest first: those they heard asked, took on or asked
     /// for themselves. Open ones and those closed within the last day.
     /// </summary>

@@ -261,6 +261,10 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
                 RecipeBooks.Learn(sim, e, recipe);
         foreach (var item in trade.Kit)
             Inventory.Stow(sim, e, sim.CreateItem(item.ThingDef, item.Count, Simulation.MaterialFor(item.ThingDef, null)));
+        if (w.Has<Mana>(e))
+            w.Remove<Mana>(e);
+        if (trade.Mana > 0)
+            w.Add(e, new Mana { Current = trade.Mana, Max = trade.Mana });
     }
 
     public void Save(SaveWriter w, Simulation sim)

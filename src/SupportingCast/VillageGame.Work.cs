@@ -57,6 +57,18 @@ public sealed partial class VillageGame
             DrawPour(pour);
             return;
         }
+        switch (_work.Session)
+        {
+            case Sim.Healing.DrawSession draw:
+                DrawDraw(draw);
+                return;
+            case Sim.Healing.CastSession cast:
+                DrawCast(cast);
+                return;
+            case Sim.Healing.MeditateSession meditate:
+                DrawMeditate(meditate);
+                return;
+        }
         if (_work.Session is not HammerSession hammer)
             return;
         var screen = ImGui.GetIO().DisplaySize;

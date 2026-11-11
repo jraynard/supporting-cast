@@ -60,6 +60,7 @@ public sealed partial class VillageGame
         DrawCoop();
         DrawSpeech();
         DrawErrands();
+        DrawGift();
         DrawWork();
         _settings.Draw();
     }
@@ -260,6 +261,7 @@ public sealed partial class VillageGame
         InspectorHeader(PortraitOf(e), seen.Name, seen.Condition, e);
         if (seen.Holding is { } held)
             TextC(Dim, $"Holding: {held}");
+        DrawLayOnHands(e);
         DrawHandOver(e);
     }
 
@@ -738,7 +740,9 @@ public sealed partial class VillageGame
         {
             var part = h.Body.Parts[inj.Part];
             var state = inj.Tended ? $"bandaged, {TendQuality(inj.Quality)}" : h.BleedOf(inj) > 0 ? "bleeding" : "untended";
-            TextC(inj.Infection != null ? Bad : inj.Tended ? Dim : Warn, $"  {part.Label}: {DamageTypes.Wound(inj.Type)}, {inj.Damage:F0}/{h.PartMaxHp(inj.Part):F0} ({state})");
+            // A wound an empath drew into themselves is known by its feel, not its name.
+            var kind = inj.Absorbed && !View.Omniscient ? Sim.Healing.Empathy.Feel(_sim, inj.Type) : DamageTypes.Wound(inj.Type);
+            TextC(inj.Infection != null ? Bad : inj.Tended ? Dim : Warn, $"  {part.Label}: {kind}, {inj.Damage:F0}/{h.PartMaxHp(inj.Part):F0} ({state})");
             if (inj.Infection is { } infection)
             {
                 Bar("infection", infection.Severity, Bad);

@@ -30,7 +30,7 @@ public sealed class WorkGivers
                 var job = type switch
                 {
                     WorkType.Firefight => Firefight(sim, pawn),
-                    WorkType.Doctor => TendCritical(sim, pawn) ?? Rescue(sim, pawn) ?? TendWounds(sim, pawn) ?? FeedPatient(sim, pawn) ?? Capture(sim, pawn) ?? TendWounds(sim, pawn, enemies: true),
+                    WorkType.Doctor => TendCritical(sim, pawn) ?? Rescue(sim, pawn) ?? TendWounds(sim, pawn) ?? FeedPatient(sim, pawn) ?? Errands.HealErrands.For(sim, pawn) ?? Capture(sim, pawn) ?? TendWounds(sim, pawn, enemies: true),
                     WorkType.Warden => FeedPrisoner(sim, pawn) ?? VisitPrisoner(sim, pawn),
                     WorkType.Refuel => Refuel(sim, pawn),
                     WorkType.Construct => Construct(sim, pawn) ?? Deconstruct(sim, pawn),

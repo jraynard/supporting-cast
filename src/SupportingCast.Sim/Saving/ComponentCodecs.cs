@@ -248,6 +248,11 @@ internal static class ComponentCodecs
         Tag<Locked>("Locked"),
         Codec("Edge", (w, e) => w.Float(e.Dullness), r => new Edge { Dullness = r.Float() }),
         Codec("Entrusted", (w, e) => w.Entity(e.Owner), r => new Entrusted { Owner = r.Entity() }),
+        Codec("Mana", (w, m) =>
+        {
+            w.Float(m.Current);
+            w.Float(m.Max);
+        }, r => new Mana { Current = r.Float(), Max = r.Float() }),
         Codec("CaskDrawn", (w, c) => w.Int(c.Drawn), r => new CaskDrawn { Drawn = r.Int() }),
         Codec("FiredForMending", (w, f) => w.Long(f.Until), r => new FiredForMending { Until = r.Long() }),
         Codec("Stored", (w, s) => w.Entity(s.In), r => new Stored { In = r.Entity() }),
@@ -521,6 +526,7 @@ internal static class ComponentCodecs
             w.Long(inj.TendedTick);
             w.Long(inj.Tick);
             w.Bool(inj.InfectionRolled);
+            w.Bool(inj.Absorbed);
             w.Bool(inj.Infection != null);
             if (inj.Infection is { } inf)
             {
@@ -552,7 +558,7 @@ internal static class ComponentCodecs
             var inj = new Injury
             {
                 Part = r.Int(), Type = (DamageType)r.Int(), Damage = r.Float(), PeakDamage = r.Float(), Tended = r.Bool(),
-                Quality = r.Float(), TendedTick = r.Long(), Tick = r.Long(), InfectionRolled = r.Bool(),
+                Quality = r.Float(), TendedTick = r.Long(), Tick = r.Long(), InfectionRolled = r.Bool(), Absorbed = r.Bool(),
             };
             if (r.Bool())
                 inj.Infection = new Infection { Severity = r.Float(), Immunity = r.Float(), ImmunityRate = r.Float() };
