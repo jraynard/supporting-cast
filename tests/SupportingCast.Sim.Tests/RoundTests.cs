@@ -280,6 +280,32 @@ public class RoundTests
     }
 
     [Fact]
+    public void EveryoneStartsTheRoundInTheirTradesBuilding()
+    {
+        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
+        sim.Presets.PresetMode = true;
+        VillageRound.Setup(sim);
+        sim.Round.OpenLobby();
+        Sit(sim, Ana, "Ana", "Healer");
+        Sit(sim, Bea, "Bea", "Blacksmith");
+        sim.ApplyNow(new StartRoundCommand());
+
+        var w = sim.World;
+        var placed = 0;
+        foreach (var e in Humans(sim))
+        {
+            if (!w.TryGet<Trade>(e, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+                continue;
+            var inside = Buildings.At(sim, w.Get<Position>(e).Cell);
+            Assert.False(inside.IsNull, $"{w.Get<Creature>(e).Name} ({trade.Def.Name}) isn't in a building");
+            Assert.Equal(workplace, w.Get<PresetBuilding>(inside).Def);
+            placed++;
+        }
+        Assert.True(placed >= 4, $"only {placed} placed"); // the four named trades, players and AI alike
+        Assert.Equal("Shrine", w.Get<PresetBuilding>(Buildings.At(sim, w.Get<Position>(Players.CharacterOf(sim, Ana)).Cell)).Def.Name);
+    }
+
+    [Fact]
     public void ABlacksmithCanForgeFromTheFirstMorning()
     {
         var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);

@@ -180,6 +180,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             Players.Inhabit(sim, seat.Player, body);
             Players.TakeOnLook(sim, body, seat.Name, seat.Look, seat.Traits, seat.Clothes);
             Assign(sim, body, trade);
+            PlaceAtWork(sim, body, trade);
         }
 
         var open = sim.Defs.AllTrades.Where(t => !t.Unlimited && !dealt.Exists(d => d.Trade == t)).ToList();
@@ -190,6 +191,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             if (open.Count > 0)
                 open.RemoveAt(0);
             Assign(sim, villager, trade);
+            PlaceAtWork(sim, villager, trade);
         }
         _seats.Clear();
         Phase = RoundPhase.Playing;
@@ -238,6 +240,33 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             .Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Downed: false }
                 && !w.Has<PlayerCharacter>(e) && !w.Has<Avatar>(e) && !w.Has<Carried>(e))
             .ToList();
+    }
+
+    /// <summary>
+    /// The round opens with everyone at their trade's building, so each player sees at once where
+    /// they work (and the AI starts there too). On a free floor cell inside it, nearest its middle;
+    /// left where they are if the town has no such building.
+    /// </summary>
+    public static void PlaceAtWork(Simulation sim, Entity e, TradeDef? trade)
+    {
+        if (trade?.WorkplaceDef is not { } def)
+            return;
+        var w = sim.World;
+        foreach (var b in w.Query<PresetBuilding>())
+        {
+            var building = w.Get<PresetBuilding>(b);
+            if (building.Def != def || building.Phase != BuildPhase.Done || building.Demolishing)
+                continue;
+            foreach (var c in sim.SpiralFrom(building.Anchor, 6))
+            {
+                if (Buildings.At(sim, c) != b || !sim.Map.Passable(c) || !sim.Map.Standable(sim.Map.Idx(c))
+                    || sim.Creatures().Any(o => o != e && w.Get<Position>(o).Cell == c))
+                    continue;
+                AiSystem.EndJob(sim, e, w.Get<Mind>(e), false);
+                w.Get<Position>(e) = Position.At(c);
+                return;
+            }
+        }
     }
 
     private static void Assign(Simulation sim, Entity e, TradeDef? trade)

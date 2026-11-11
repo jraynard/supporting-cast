@@ -80,7 +80,8 @@ public sealed partial class VillageGame
         if (!HasAvatar || !_sim.World.TryGet<Trade>(_avatar, out var trade))
             return;
         _tradeRequested = false;
-        Notify(MessageKind.Good, $"You are {_sim.World.Get<Creature>(_avatar).Name}, the {trade.Def.Label}.");
+        var where = trade.Def.WorkplaceDef is { } work ? $" This is your {work.Label}." : "";
+        Notify(MessageKind.Good, $"You are {_sim.World.Get<Creature>(_avatar).Name}, the {trade.Def.Label}.{where}");
     }
 
     private void DrawLobby(CoopSession session)
