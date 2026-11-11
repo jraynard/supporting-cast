@@ -384,7 +384,7 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var worstHp = 2f;
         void Consider(Entity item)
         {
-            if (!w.IsAlive(item) || !WeaponWear.NeedsMending(sim, item))
+            if (!w.IsAlive(item) || !WeaponWear.NeedsMending(sim, item) || !WeaponWear.SmithCanMend(sim, item))
                 return;
             var hp = WeaponWear.HpFraction(sim, item);
             if (hp < worstHp)

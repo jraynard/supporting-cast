@@ -60,7 +60,10 @@ public sealed class Errand
     public bool IsOpen => Status == ErrandStatus.Open;
 }
 
-/// <summary>An errand as someone who knows of it sees it (<c>PerceptionView.Errands</c>).</summary>
+/// <summary>
+/// An errand as someone who knows of it sees it (<c>PerceptionView.Errands</c>). <see cref="Poster"/>
+/// is who asked: they heard the voice, so they know whom to go to.
+/// </summary>
 public readonly record struct KnownErrand(
     int Id, ErrandKind Kind, string KindLabel, string PosterName, string Text, int Price,
-    long PostedTick, long Deadline, string AssigneeName, ErrandStatus Status, bool Mine, bool MineToDo);
+    long PostedTick, long Deadline, string AssigneeName, ErrandStatus Status, bool Mine, bool MineToDo, Entity Poster);

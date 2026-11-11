@@ -129,7 +129,9 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         var w = sim.World;
         if (!w.IsAlive(item) || !w.TryGet<Thing>(item, out var t) || (t.Def.Weapon == null && t.Def.Apparel == null))
             return null;
-        if (!Omniscient && !Within(t.Spawned ? t.Cell : sim.LocationOf(item), 1))
+        // On your own person you can always look it over; anything else has to be within reach.
+        var onMe = !viewer.IsNull && Inventory.OnPerson(sim, viewer, item);
+        if (!Omniscient && !onMe && !Within(t.Spawned ? t.Cell : sim.LocationOf(item), 1))
             return null;
         return Combat.WeaponWear.Describe(sim, item);
     }
@@ -202,7 +204,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         foreach (var e in sim.Errands.All)
             if (Omniscient || e.KnownBy.Contains(viewer))
                 yield return new Errands.KnownErrand(e.Id, e.Kind.Kind, e.Kind.Label, e.PosterName, e.Text, e.Price,
-                    e.PostedTick, e.Deadline, e.AssigneeName, e.Status, e.Poster == viewer, e.Assignee == viewer);
+                    e.PostedTick, e.Deadline, e.AssigneeName, e.Status, e.Poster == viewer, e.Assignee == viewer, e.Poster);
     }
 
     /// <summary>Everything this character has heard that's still remembered, oldest first.</summary>

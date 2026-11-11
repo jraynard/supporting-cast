@@ -37,7 +37,7 @@ public sealed class CastSession : WorkSession
 
     public override Skill Skill => Skill.Medicine;
     public override float Xp => 25f;
-    public override string Title => $"{Mending.Label} the {Feels}";
+    public override string Title => $"{Mending.Label}: {Feels}";
 
     public static string? Problem(Simulation sim, Entity caster, int wound, MendingDef mending)
     {
@@ -103,8 +103,8 @@ public sealed class CastSession : WorkSession
         var at = sim.LocationOf(Worker);
         if (Empathy.Cast(sim, Worker, Wound, Mending, Quality))
             sim.Messages.Add(MessageKind.Good, Quality >= 0.75f
-                ? $"The {Mending.Label.ToLowerInvariant()} takes hold, and the {Feels} eases."
-                : $"The {Mending.Label.ToLowerInvariant()} takes hold, weakly. The {Feels} dulls a little.", at);
+                ? $"The {Mending.Label.ToLowerInvariant()} takes hold, and {Feels} eases."
+                : $"The {Mending.Label.ToLowerInvariant()} takes hold, weakly: {Feels}, dulled a little.", at);
         else
             sim.Messages.Add(MessageKind.Warning, $"The {Mending.Label.ToLowerInvariant()} finds nothing to take hold of. The mana's spent.", at);
     }

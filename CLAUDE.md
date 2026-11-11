@@ -46,7 +46,17 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art.
   - `Speech/`: who heard what, decided when spoken from positions and rooms, and saved.
   - `Work/`: mini-games. `WorkSession.Advance` is pure, so `WorkPredictor` can run it ahead of the
     sim; anything reading the world goes in `StillValid` or `Finish`. Inputs arrive in batches.
-  - `Bots/BotPlayer` plays only through commands and `Perception`.
+    New sessions go in the `WorkSession.Read` switch.
+  - `Adventurers/`: `PartySystem` brings parties in a round; `AdventurerBrain` lounges, waits where
+    their errand is served, and leaves.
+  - `Errands/`: every demand is an `Errand`, asked aloud (only those who hear know of it). Coin is
+    real `SilverCoin` items; paying moves them. AI trades answer errands (`MendJob`, `ServeJob`,
+    `HealErrands`). An AI work pack keeps coin and `Entrusted` items between jobs.
+  - `Healing/`: the empath. Wounds drawn in are `Injury.Absorbed` and known only by feel
+    (`PerceptionView.FeltWounds`); never show their kind by name.
+  - `Expeditions/`: quests with hidden truth, per-person `Intel`, parties off the map as
+    `MemberRecord`s, the resolver, the return.
+  - `Bots/BotPlayer` plays only through commands and `Perception`, a trade's whole game included.
   - Jobs (`Ai/Jobs.cs`) are iterator coroutines: use `GoTo`/`Reserve`, `Fail(reason)` then
     `yield break`, and check `Alive(target)` after every wait. `ReleasePawn` is everything ending a
     job does to the world. "Job" here is an AI task; a player's role is a **`Trade`**.

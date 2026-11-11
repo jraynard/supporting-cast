@@ -75,6 +75,26 @@ public static class WeaponWear
             $"{c.Name}'s {label} breaks.", sim.LocationOf(attacker));
     }
 
+    /// <summary>
+    /// Mended by hand at a forge: made at one (a station that wants hand work), so its chips can be
+    /// hammered out there. A club or a bow is a woodworker's, not the smith's.
+    /// </summary>
+    public static bool Forged(Simulation sim, ThingDef def)
+    {
+        foreach (var r in sim.Defs.AllRecipes)
+            if (r.Products.Exists(p => p.ThingDef == def) && r.Station.Length > 0
+                && sim.Defs.TryThing(r.Station, out var station) && station.Building?.Workbench is { HandWork: true })
+                return true;
+        return false;
+    }
+
+    /// <summary>Worn in a way the smith can put right: chips in forged gear, or a dull edge.</summary>
+    public static bool SmithCanMend(Simulation sim, Entity item)
+    {
+        var def = sim.World.Get<Thing>(item).Def;
+        return (Forged(sim, def) && HpFraction(sim, item) < WantsMendHp) || (Edged(def) && Dullness(sim, item) > WantsMendDullness);
+    }
+
     /// <summary>Worn enough that its owner wants it seen to.</summary>
     public static bool NeedsMending(Simulation sim, Entity item)
     {

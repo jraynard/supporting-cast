@@ -51,7 +51,8 @@ public class ExpeditionTests
         Assert.Equal(ExpeditionSystem.QuestsPerRound, known.Count);
         Assert.All(known, q => Assert.InRange(q.Confidence, 0.1f, 0.5f));
         var villager = sim.Creatures().First(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
-        Assert.All(sim.Expeditions.Quests, q => Assert.Null(sim.Expeditions.IntelOf(villager, q.Id)));
+        // Anything anyone else knows, they heard: no free guess like the broker's.
+        Assert.All(sim.Expeditions.Quests, q => Assert.True(sim.Expeditions.IntelOf(villager, q.Id) is null or { Confidence: >= 0.35f }));
     }
 
     [Fact]

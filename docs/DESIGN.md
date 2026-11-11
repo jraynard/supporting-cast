@@ -143,10 +143,11 @@ or perhaps by the traitor if they are a necromancer. they can come back in the n
   from the sim.
 - **Bots.** A `BotPlayer` plays through commands, for scenario tests and solo playtests.
 
-## Planned sim folders
+## Sim folders
 
-`Round/`, `Perception/`, `Speech/`, `Work/`, `Adventurers/`, `Errands/`, `Director/`, `Secrets/`
-and `Reagents/`, all in `src/SupportingCast.Sim`, driven only by commands and headless-testable.
+Built, all in `src/SupportingCast.Sim`, driven only by commands and headless-testable:
+`Round/`, `Perception/`, `Speech/`, `Work/`, `Adventurers/`, `Errands/`, `Healing/`, `Expeditions/`.
+Still to come: `Director/`, `Secrets/`, `Reagents/`.
 
 ## Reuse
 
@@ -163,4 +164,4 @@ Lifeline when its milestone starts:
 | Mood, gossip, traits | `MoodSystem`, `SocialSystem`, `TraitRules` |
 | Crises | `Storyteller`, `WildEvents`, `Raids`, `FireSystem`, `FoodPoisoning` |
 | Look, creator, rendering | `Ui/CharacterCreator`, `HumanLook`, `WorldRenderer`, `WorldMesher`, chibi tools |
-| Mini-games, diagnosis (to copy in M1 and M2) | Lifeline `Work/`, `People/Assessment.cs` |
+| Mini-games | Lifeline `Work/` (reworked to run ahead; the empath's touch replaced `Assessment`-style diagnosis) |

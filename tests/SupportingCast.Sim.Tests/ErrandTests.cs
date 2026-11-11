@@ -114,7 +114,8 @@ public class ErrandTests
         sim.TickMany(SimClock.HoursToTicks(meal.Kind.PatienceHours + 0.5f));
 
         Assert.Equal(ErrandStatus.Expired, meal.Status);
-        Assert.True(sim.World.Get<Adventurer>(diner).Satisfaction < 0);
+        // Others in town may have served them meanwhile; the meal they waited for counts against it.
+        Assert.Contains(sim.Speech.Kept, u => u.Speaker == diner && u.Text.Contains("So much for a meal"));
     }
 
     [Fact]

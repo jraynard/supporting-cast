@@ -241,9 +241,11 @@ public class HealerTests
         var cell = sim.SpiralFrom(at, 2).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z && Ai.Pathfinder.Touches(c, at));
         sim.World.Get<Position>(me).Cell = cell;
         sim.World.Get<Position>(me).Pos = Position.CenterOf(cell);
-        var wound = Perception.For(sim, me).FeltWounds(hurt)!.Single();
+        var wounds = Perception.For(sim, me).FeltWounds(hurt)!;
+        Assert.NotEmpty(wounds);
         var purse = Coin.Count(sim, me);
-        Empathy.Draw(sim, me, hurt, wound.Key, 1f, snapped: false);
+        foreach (var wound in wounds) // the cut, and any scrape from the road
+            Empathy.Draw(sim, me, hurt, wound.Key, 1f, snapped: false);
         sim.TickMany(SimClock.TicksPerHour / 6);
 
         Assert.Equal(ErrandStatus.Done, errand.Status);

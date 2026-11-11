@@ -29,20 +29,45 @@ Milestones toward a playable prototype, then beyond. Design intent is in [DESIGN
   `5984BD546BB34042`, full `4A0A22D943D107A0`. State hashes are M0's; the full hashes moved only
   because `Round` and `Speech` add saved system state.
 
-Known leftovers, each to be picked up by the milestone that needs it:
-- Build and zone tools are open to every player; the Carpenter should own them (M2 onward).
+### M2: The first party (2026-11-11)
+- `Adventurers/`: parties arrive during a round, road-worn, with silver in their packs. They're
+  neutral, wait where their errands are served, and move on.
+- `Errands/`: every demand is an errand asked aloud, so only those who hear it know of it. Coin is
+  real silver that changes hands. Players post, take, finish and call off errands for each other.
+- The four trades, each with its own hands-on game and an AI fallback:
+  - **Innkeeper:** pour ale at the cask (head and tilt); customers taste the pour.
+  - **Blacksmith:** weapons dull and chip. Sharpen on a whetstone, hammer chips out at the forge
+    (which flattens the edge), and judge which a blade needs.
+  - **Healer, an empath:** draws wounds into themselves against their pain and knows them only by
+    feel. They cast the mending that fits and meditate their mana back.
+  - **Quest Broker:** matches parties to quests on intel built from a rough guess, tavern rumours
+    and returning parties' reports.
+- `Expeditions/`: parties go off the map as records. Their strength (gear upkeep, wounds, food,
+  mood) against a quest's hidden danger decides deaths, wounds, wear and loot, and survivors
+  come back changed.
+- `Bots/BotPlayer` plays all four trades. `PartyLoopScenarioTests` is the exit: bots serve a
+  party, send it out, and it comes back.
+- Fixed on the way: AI packs dropped their coin at every job's end, and an item in your own pack
+  hid its condition from you.
+- Bench baselines:
+  - seed 1234: state `87B7818664D280DC`, full `8FB9DD781924A9CC`
+  - seed 99: state `88AEFA5A9CA8C509`, full `502EA042D1550E60`
+
+  The state hashes moved only for the cask added to the longhouse.
+
+Known leftovers:
+- Build and zone tools are open to every player; the Carpenter should own them.
 - Players can hunt animals but can't yet attack people (M4).
 - Villagers don't fight back against raiders, they only suffer them (M3).
 - The dragon creature has no brain or breath job of its own yet (M3's late-round crisis).
-- Some dragon-era art, tools and def fields are still in the tree. Prune with the M6 art pass.
+- Some dragon-era art, tools and def fields are still in the tree. Prune with the M6 art pass;
+  the whetstone and ale cask borrow art too.
+- AI healers only bandage. Casks don't refill and there's no brewing. Mixed drinks, forge
+  management, the quench and commission details are still to come (docs/DESIGN.md, "Trade notes").
+- `Adventurer.Satisfaction` and the expedition tallies are collected, waiting for M3's Renown and Dread.
+- The new mini-games haven't been tuned in play yet.
 
 ## Next
-
-### M2: The first party
-- Adventurers (`Party`, `AdventurerBrain`), `Errands`, coin, and the off-map `Expedition`.
-- Four deliberately different trades: Innkeeper, Blacksmith, Healer, Quest Broker.
-
-*Exit: a party arrives, is served, goes out and comes back changed by what the players did.*
 
 ### M3: A whole season
 - `Director`, Renown and Dread, crises including the late-round dragon, the festival, the

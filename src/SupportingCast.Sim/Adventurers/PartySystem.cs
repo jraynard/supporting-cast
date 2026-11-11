@@ -161,11 +161,43 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         skills.Level[(int)Skill.Melee] = _rand.Range(kind.SkillMin, kind.SkillMax + 1);
         skills.Level[(int)Skill.Shooting] = _rand.Range(kind.SkillMin, kind.SkillMax + 1);
         Array.Fill(sim.World.Get<Needs>(e).Values, 1f);
+        RoadWorn(sim, e);
         var coins = _rand.Range(kind.PurseMin, kind.PurseMax + 1);
         if (coins > 0)
             Inventory.Stow(sim, e, sim.CreateItem(sim.Defs.Thing("SilverCoin"), coins));
         return e;
     }
+
+    /// <summary>
+    /// They've come a long way: blades dulled and nicked, armor scuffed, and now and then a scrape
+    /// that wants seeing to. Work for the smith and the healer from the first hour.
+    /// </summary>
+    private void RoadWorn(Simulation sim, Entity e)
+    {
+        var w = sim.World;
+        if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon))
+        {
+            ref var t = ref w.Get<Thing>(eq.Weapon);
+            t.Hp = t.MaxHp * _rand.Range(0.55f, 1f);
+            if (WeaponWear.Edged(t.Def))
+                WeaponWear.SetDullness(sim, eq.Weapon, _rand.Range(0.15f, 0.7f));
+        }
+        foreach (var item in sim.Worn(e))
+            if (w.Get<Thing>(item).Def.Apparel is { } props && (props.Sharp > 0 || props.Blunt > 0))
+            {
+                ref var t = ref w.Get<Thing>(item);
+                t.Hp = t.MaxHp * _rand.Range(0.6f, 1f);
+            }
+        if (_rand.Chance(RoadWoundChance) && w.TryGet<Health>(e, out var h))
+        {
+            var limbs = Enumerable.Range(0, h.Body.Parts.Count).Where(p => !h.Body.Parts[p].Vital).ToList();
+            if (limbs.Count > 0)
+                HealthSystem.Damage(sim, e, _rand.Range(3f, 8f), _rand.Chance(0.5f) ? DamageType.Cut : DamageType.Blunt, limbs[_rand.NextInt(limbs.Count)]);
+        }
+    }
+
+    /// <summary>The chance an adventurer arrives with a scrape that wants tending.</summary>
+    public const float RoadWoundChance = 0.4f;
 
     /// <summary>The first standing building of the party's haunt, if the town has one.</summary>
     public static PresetBuilding? HauntOf(Simulation sim, PartyDef def)
