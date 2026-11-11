@@ -61,6 +61,7 @@ public sealed partial class VillageGame
         DrawSpeech();
         DrawErrands();
         DrawGift();
+        DrawQuestBoard();
         DrawWork();
         _settings.Draw();
     }

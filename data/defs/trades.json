@@ -14,7 +14,7 @@
       "workplace": "Clinic", "workPriorities": { "Doctor": 1 }, "skills": { "Medicine": 6 }, "mana": 100,
       "kit": [ { "def": "Bandage", "count": 4 } ] },
     { "name": "QuestBroker", "label": "quest broker", "description": "Matches parties to work from a corner of the longhouse, on whatever intelligence can be had.",
-      "workplace": "Longhouse" },
+      "workplace": "Longhouse", "brokers": true },
     { "name": "Labourer", "label": "labourer", "description": "Hauls, chops and digs for anyone who'll pay.", "unlimited": true }
   ]
 }

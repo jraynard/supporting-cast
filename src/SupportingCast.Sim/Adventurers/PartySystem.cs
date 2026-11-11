@@ -132,7 +132,7 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
             var e = Spawn(sim, kind, names[i], spots[i]);
             sim.World.Add(e, new Adventurer
             {
-                Party = id, Kind = kind, PartyDef = def, LeaveTick = sim.Clock.Tick + stay,
+                Party = id, Kind = kind, PartyDef = def, LeaveTick = sim.Clock.Tick + stay, Arrived = sim.Clock.Tick,
                 NextDrink = sim.Clock.Tick + SimClock.HoursToTicks(_rand.Range(0.3f, 1.2f)), // the road's thirsty work
             });
             members.Add(e);

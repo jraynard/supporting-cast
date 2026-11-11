@@ -159,6 +159,38 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         return felt;
     }
 
+    /// <summary>The quests this character has heard of, as they believe them to be (everything, truly, when omniscient).</summary>
+    public IEnumerable<Expeditions.KnownQuest> Quests()
+    {
+        if (blind)
+            yield break;
+        foreach (var q in sim.Expeditions.Quests)
+        {
+            if (Omniscient)
+                yield return new Expeditions.KnownQuest(q.Id, q.Def.Label, q.Def.Description, q.Danger, q.Reward, 1f, q.Status);
+            else if (sim.Expeditions.IntelOf(viewer, q.Id) is { } i)
+                yield return new Expeditions.KnownQuest(q.Id, q.Def.Label, q.Def.Description, i.Danger, i.Reward, i.Confidence, q.Status);
+        }
+    }
+
+    /// <summary>
+    /// How strong an adventurer's party looks to this character: their true strength, off by up to
+    /// a fifth either way (a fixed misjudgement per viewer and party, so it doesn't flicker).
+    /// Null if they can't see the adventurer.
+    /// </summary>
+    public float? PartyLooks(Entity member)
+    {
+        var w = sim.World;
+        if (!CanSee(member) || !w.TryGet<Adventurer>(member, out var a))
+            return null;
+        var strength = Expeditions.ExpeditionSystem.PartyStrength(sim, a.Party);
+        if (Omniscient)
+            return strength;
+        var h = (uint)(viewer.Index * 7919 + a.Party * 104729) * 2654435761u;
+        h ^= h >> 15;
+        return strength * (0.8f + 0.4f * (h % 1000) / 1000f);
+    }
+
     /// <summary>
     /// The errands this character knows of, oldest first: those they heard asked, took on or asked
     /// for themselves. Open ones and those closed within the last day.

@@ -21,6 +21,9 @@ public sealed class WorkGivers
         var mind = sim.World.Get<Mind>(pawn);
         var creature = sim.World.Get<Creature>(pawn);
         var stage = creature.Stage(sim.Clock.Tick);
+        // A broker's trade is its own work, before any other.
+        if (Expeditions.BrokerJob.For(sim, pawn) is { } brokering)
+            return brokering;
         for (var priority = 1; priority <= 4; priority++)
         {
             foreach (var type in Order)

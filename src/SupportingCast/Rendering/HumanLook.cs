@@ -105,7 +105,7 @@ public static class HumanLook
     }
 
     public static Appearance Of(Simulation sim, Entity e) =>
-        sim.World.TryGet<Appearance>(e, out var a) ? a : Derived(e.Index);
+        sim.World.TryGet<Appearance>(e, out var a) ? a : Derived(Sim.Systems.Clothing.LookId(sim, e));
 
     /// <summary>
     /// A look picked by hashing an id, so it never touches the sim's random stream. Villagers get natural

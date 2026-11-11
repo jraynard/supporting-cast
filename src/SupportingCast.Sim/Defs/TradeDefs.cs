@@ -33,6 +33,9 @@ public sealed class TradeDef : Def
     /// </summary>
     public float Mana { get; set; }
 
+    /// <summary>Matches parties to quests (<c>Expeditions/</c>): starts the round with a guess at every quest.</summary>
+    public bool Brokers { get; set; }
+
     /// <summary>What the holder starts the round with: the tools of the trade and a little stock.</summary>
     public List<ThingCount> Kit { get; set; } = [];
 

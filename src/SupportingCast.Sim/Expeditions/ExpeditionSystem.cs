@@ -1,0 +1,706 @@
+using SupportingCast.Sim.Combat;
+using SupportingCast.Sim.Components;
+using SupportingCast.Sim.Defs;
+using SupportingCast.Sim.Errands;
+using SupportingCast.Sim.Round;
+using SupportingCast.Sim.Saving;
+using SupportingCast.Sim.Speech;
+using SupportingCast.Sim.Systems;
+
+namespace SupportingCast.Sim.Expeditions;
+
+public enum QuestStatus : byte
+{
+    Open,
+
+    /// <summary>A party is out on it.</summary>
+    Taken,
+
+    /// <summary>Done: nothing left there to send anyone to.</summary>
+    Cleared,
+}
+
+/// <summary>One of the round's quests, with the truth about it that nobody is told.</summary>
+public sealed class Quest
+{
+    public int Id { get; init; }
+    public required QuestDef Def { get; init; }
+    public float Danger { get; init; }
+    public int Reward { get; init; }
+    public QuestStatus Status { get; set; }
+}
+
+/// <summary>What one person believes about a quest: their guess at its danger and reward, and how sure they are (0..1).</summary>
+public sealed class Intel
+{
+    public float Danger;
+    public float Reward;
+    public float Confidence;
+}
+
+/// <summary>A quest as someone who's heard of it sees it (<c>PerceptionView.Quests</c>).</summary>
+public readonly record struct KnownQuest(int Id, string Label, string Description, float Danger, float Reward, float Confidence, QuestStatus Status);
+
+/// <summary>A piece of gear as it went out, to be put back on its owner when they return.</summary>
+public sealed record GearRecord(ThingDef Def, MaterialDef? Material, Quality? Quality, float Hp, float Dullness);
+
+/// <summary>A wound as it went out.</summary>
+public sealed record WoundRecord(int Part, DamageType Type, float Damage, bool Tended, float TendQuality, bool Absorbed);
+
+/// <summary>
+/// One party member while they're off the map: who they are and what they carry, enough to put
+/// them back as they were (plus whatever the quest did to them). Kept rather than the entity, so
+/// no system has to learn to skip people who aren't there.
+/// </summary>
+public sealed class MemberRecord
+{
+    public string Name = "";
+    public required AdventurerKindDef Kind;
+    public required PartyDef PartyDef;
+    public int Party;
+    public int LookId;
+    public float AgeDays;
+    public int Melee, Shooting;
+    public int Coin;
+    public float Satisfaction;
+    public float Blood = 1f;
+    public float Pain;
+    public float Food = 1f;
+    public GearRecord? Weapon;
+    public List<GearRecord> Apparel = [];
+    public List<WoundRecord> Wounds = [];
+}
+
+/// <summary>A party out on a quest.</summary>
+public sealed class Expedition
+{
+    public int Quest;
+    public int Party;
+    public required PartyDef PartyDef;
+
+    /// <summary>The danger the broker said it was, and who sent them.</summary>
+    public float Stated;
+    public string BrokerName = "";
+    public long ReturnTick;
+    public List<MemberRecord> Members = [];
+}
+
+/// <summary>
+/// Quests and the parties sent on them (docs/DESIGN.md, "The loop"). The round rolls a few quests
+/// whose true danger and reward nobody knows. The Quest Broker starts with a guess at each;
+/// adventurers trade rumours in the tavern that sharpen what listeners believe; a party that
+/// comes back says how it really was. Sending a party off is <see cref="Offer"/>: they go if the
+/// danger the broker states seems right for them. Off the map, how it goes comes down to what the
+/// town gave them: their gear and its upkeep, their wounds, how well they were fed and served,
+/// against the quest's true danger (<see cref="Strength"/>). They come back changed by it, or don't.
+/// </summary>
+public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
+{
+    public string Name => "Expeditions";
+    public int Interval => SimClock.TicksPerHour / 12;
+
+    /// <summary>Quests a round has on offer.</summary>
+    public const int QuestsPerRound = 3;
+
+    /// <summary>Game hours of walking either way, on top of the quest's own.</summary>
+    public const float TravelHours = 1.5f;
+
+    /// <summary>Game hours between one rumour told in the tavern and the next.</summary>
+    public const float RumourHours = 1.25f;
+
+    /// <summary>A party turns down a quest stated as less than this share of its strength (beneath them), or more than this (madness).</summary>
+    public const float TooEasy = 0.5f, TooHard = 1.4f;
+
+    /// <summary>Game hours a returned party stays before moving on.</summary>
+    public const float StayAfterHours = 8;
+
+    private readonly SimRandom _rand = new(seed ^ 0xE4BED17u);
+    private readonly List<Quest> _quests = [];
+    private readonly Dictionary<(Entity Who, int Quest), Intel> _intel = [];
+    private readonly List<Expedition> _out = [];
+    private int _nextQuest = 1;
+    private long _nextRumour = -1;
+    private bool _rolled;
+
+    public IReadOnlyList<Quest> Quests => _quests;
+    public IReadOnlyList<Expedition> Out => _out;
+
+    /// <summary>Quests that came good or didn't, for the round's reckoning (M3's Renown and Dread).</summary>
+    public int Succeeded { get; private set; }
+    public int Failed { get; private set; }
+    public int Dead { get; private set; }
+
+    public Quest? Find(int id) => _quests.Find(q => q.Id == id);
+
+    public Intel? IntelOf(Entity who, int quest) => _intel.GetValueOrDefault((who, quest));
+
+    // ---------------- Danger in words, the same scale for quests and parties ----------------
+
+    public static string DangerWord(float danger) => danger switch
+    {
+        < 1.5f => "light work",
+        < 2.5f => "risky",
+        < 3.5f => "dangerous",
+        < 4.5f => "deadly",
+        _ => "certain death",
+    };
+
+    public static string StrengthWord(float strength) => strength switch
+    {
+        < 1.5f => "a sorry lot",
+        < 2.5f => "able enough",
+        < 3.5f => "a solid company",
+        < 4.5f => "formidable",
+        _ => "a warband",
+    };
+
+    public static string SureWord(float confidence) => confidence switch
+    {
+        < 0.3f => "a guess",
+        < 0.6f => "by rumour",
+        < 0.9f => "fairly sure",
+        _ => "certain",
+    };
+
+    // ---------------- The round ----------------
+
+    public void Update(Simulation sim)
+    {
+        if (sim.Round.Phase != RoundPhase.Playing)
+            return;
+        if (!_rolled)
+            Roll(sim);
+        BriefBrokers(sim);
+        var now = sim.Clock.Tick;
+        if (_nextRumour < 0)
+            _nextRumour = now + SimClock.HoursToTicks(RumourHours);
+        else if (now >= _nextRumour)
+        {
+            TellRumour(sim);
+            _nextRumour = now + SimClock.HoursToTicks(RumourHours * _rand.Range(0.7f, 1.3f));
+        }
+        Report(sim);
+        for (var i = 0; i < _out.Count; i++)
+            if (now >= _out[i].ReturnTick)
+            {
+                var ex = _out[i];
+                _out.RemoveAt(i--);
+                Resolve(sim, ex);
+            }
+    }
+
+    private void Roll(Simulation sim)
+    {
+        _rolled = true;
+        var pool = sim.Defs.AllQuests.ToList();
+        for (var n = 0; n < QuestsPerRound && pool.Count > 0; n++)
+        {
+            var def = pool[_rand.NextInt(pool.Count)];
+            pool.Remove(def);
+            _quests.Add(new Quest
+            {
+                Id = _nextQuest++, Def = def, Danger = _rand.Range(def.DangerMin, def.DangerMax),
+                Reward = _rand.Range(def.RewardMin, def.RewardMax + 1),
+            });
+        }
+    }
+
+    /// <summary>Whoever holds a broker's trade has a guess at every quest (a late joiner too).</summary>
+    private void BriefBrokers(Simulation sim)
+    {
+        foreach (var e in sim.Creatures())
+        {
+            if (!sim.World.TryGet<Trade>(e, out var trade) || !trade.Def.Brokers)
+                continue;
+            foreach (var q in _quests)
+                if (!_intel.ContainsKey((e, q.Id)))
+                    _intel[(e, q.Id)] = new Intel { Danger = q.Danger * _rand.Range(0.6f, 1.4f), Reward = q.Reward * _rand.Range(0.6f, 1.4f), Confidence = 0.2f };
+        }
+    }
+
+    /// <summary>
+    /// Hear something about a quest: a guess at its danger (and reward), believed as far as
+    /// <paramref name="weight"/>. Certain knowledge (weight 1) replaces what they had.
+    /// </summary>
+    public void Hear(Entity who, int quest, float danger, float? reward, float weight)
+    {
+        if (!_intel.TryGetValue((who, quest), out var intel) || weight >= 1f)
+        {
+            _intel[(who, quest)] = new Intel { Danger = danger, Reward = reward ?? intel?.Reward ?? 0f, Confidence = Math.Min(weight, 1f) };
+            return;
+        }
+        if (intel.Confidence >= 1f)
+            return; // they know better than hearsay
+        intel.Danger += (danger - intel.Danger) * weight;
+        if (reward is { } r)
+            intel.Reward += (r - intel.Reward) * weight;
+        intel.Confidence = Math.Min(0.9f, intel.Confidence + weight * 0.5f); // only seeing for yourself is certain
+    }
+
+    /// <summary>An adventurer lounging at the tavern tells what they've heard of a quest, rightly or not.</summary>
+    private void TellRumour(Simulation sim)
+    {
+        var open = _quests.Where(q => q.Status != QuestStatus.Cleared).ToList();
+        if (open.Count == 0)
+            return;
+        var tellers = new List<Entity>();
+        foreach (var e in sim.Creatures())
+            if (sim.World.TryGet<Adventurer>(e, out var a) && !sim.World.Has<Leaving>(e) && SpeechSystem.CanAct(sim, e)
+                && Adventurers.PartySystem.HauntOf(sim, a.PartyDef) is { } haunt
+                && Maps.Map.Distance(sim.World.Get<Position>(e).Cell, haunt.Anchor) <= 8)
+                tellers.Add(e);
+        if (tellers.Count == 0)
+            return;
+        var teller = tellers[_rand.NextInt(tellers.Count)];
+        var q = open[_rand.NextInt(open.Count)];
+        var told = q.Danger * _rand.Range(0.75f, 1.25f);
+        var line = q.Def.Rumours.Count > 0 ? q.Def.Rumours[_rand.NextInt(q.Def.Rumours.Count)] : $"They say {q.Def.Label} is {{0}}.";
+        if (sim.Speech.Say(sim, teller, string.Format(line, DangerWord(told)), Volume.Say) is not { } said)
+            return;
+        foreach (var h in said.Listeners)
+            if (h.Clarity == Clarity.Clear && h.Listener != teller)
+                Hear(h.Listener, q.Id, told, null, 0.35f);
+    }
+
+    // ---------------- Sending a party ----------------
+
+    /// <summary>How strong one person is for a quest: skill, gear and its upkeep, wounds, how fed and how pleased they are.</summary>
+    public static float Strength(MemberRecord m)
+    {
+        var skill = Math.Clamp(Math.Max(m.Melee, m.Shooting) / 9f, 0.3f, 2f);
+        var weapon = m.Weapon is not { } wpn ? 0.4f
+            : Crafting.QualityFactor(wpn.Quality ?? Quality.Plain) * (WeaponWear.Edged(wpn.Def) ? 1f - WeaponWear.DullDamageLoss * wpn.Dullness : 1f) * (0.6f + 0.4f * wpn.Hp);
+        var armor = 1f;
+        foreach (var a in m.Apparel)
+            if (a.Def.Apparel is { } props)
+                armor += (props.Sharp + props.Blunt) * 0.25f * Crafting.QualityFactor(a.Quality ?? Quality.Plain) * a.Hp;
+        var health = Math.Clamp(1f - 0.8f * m.Pain - (1f - m.Blood), 0.2f, 1f);
+        var morale = 1f + 0.08f * Math.Clamp(m.Satisfaction, -4f, 4f);
+        var fed = m.Food < 0.3f ? 0.85f : 1f;
+        return skill * weapon * armor * health * morale * fed;
+    }
+
+    /// <summary>Everyone in a party who's in town and not leaving.</summary>
+    public static List<Entity> PartyInTown(Simulation sim, int party)
+    {
+        var list = new List<Entity>();
+        foreach (var e in sim.Creatures())
+            if (sim.World.TryGet<Adventurer>(e, out var a) && a.Party == party && !sim.World.Has<Leaving>(e))
+                list.Add(e);
+        return list;
+    }
+
+    /// <summary>A party's true strength, as it stands now.</summary>
+    public static float PartyStrength(Simulation sim, int party) => PartyInTown(sim, party).Sum(e => Strength(Record(sim, e)));
+
+    /// <summary>The party's open request for a quest, if any.</summary>
+    public static Errand? QuestErrand(Simulation sim, int party) =>
+        sim.Errands.All.FirstOrDefault(e => e.IsOpen && e.Kind.Kind == ErrandKind.Quest
+            && sim.World.TryGet<Adventurer>(e.Poster, out var a) && a.Party == party);
+
+    /// <summary>
+    /// A broker in reach of a party member puts a quest to them, at the danger they believe it is.
+    /// The party takes it if that seems right for them, pays the broker and sets out; otherwise
+    /// they say no. Returns whether they took it.
+    /// </summary>
+    public bool Offer(Simulation sim, Entity broker, Entity member, int questId)
+    {
+        var w = sim.World;
+        if (Find(questId) is not { Status: QuestStatus.Open } quest || !_intel.TryGetValue((broker, questId), out var intel)
+            || !w.TryGet<Adventurer>(member, out var a) || w.Has<Leaving>(member) || !Handing.InReach(sim, broker, member)
+            || !SpeechSystem.CanAct(sim, member) || QuestErrand(sim, a.Party) is not { } errand)
+            return false;
+        var strength = PartyStrength(sim, a.Party);
+        var label = quest.Def.Label;
+        if (intel.Danger < TooEasy * strength)
+        {
+            sim.Speech.Say(sim, member, $"{Capital(label)}, {DangerWord(intel.Danger)}? That's work for farmhands, not us.", Volume.Say);
+            return false;
+        }
+        if (intel.Danger > TooHard * strength)
+        {
+            sim.Speech.Say(sim, member, $"{Capital(label)}, {DangerWord(intel.Danger)}? Do we look mad to you?", Volume.Say);
+            return false;
+        }
+        sim.Speech.Say(sim, member, $"{Capital(label)}. {Capital(DangerWord(intel.Danger))}, you say? We'll do it.", Volume.Say);
+        sim.Errands.Complete(sim, errand, broker);
+        quest.Status = QuestStatus.Taken;
+        var party = PartyInTown(sim, a.Party);
+        foreach (var e in party)
+        {
+            w.Get<Adventurer>(e).Quest = questId;
+            w.Add(e, new Leaving());
+            AiSystem.EndJob(sim, e, w.Get<Mind>(e), false);
+        }
+        _out.Add(new Expedition
+        {
+            Quest = questId, Party = a.Party, PartyDef = a.PartyDef, Stated = intel.Danger, BrokerName = w.Get<Creature>(broker).Name,
+            ReturnTick = sim.Clock.Tick + SimClock.HoursToTicks(quest.Def.Hours + 2 * TravelHours),
+        });
+        sim.Messages.Add(MessageKind.Info, $"{Capital(a.PartyDef.Label)} set out for {label}.", w.Get<Position>(member).Cell);
+        return true;
+    }
+
+    /// <summary>
+    /// A member reaching the map edge on their way to a quest (<see cref="Simulation.Depart"/>):
+    /// they're written down to be put back on return. False if their party isn't out any more.
+    /// </summary>
+    public bool Embark(Simulation sim, Entity e)
+    {
+        if (!sim.World.TryGet<Adventurer>(e, out var a) || a.Quest == 0
+            || _out.Find(x => x.Quest == a.Quest && x.Party == a.Party) is not { } ex)
+            return false;
+        ex.Members.Add(Record(sim, e));
+        return true;
+    }
+
+    /// <summary>Who someone is and what they carry, as a record.</summary>
+    public static MemberRecord Record(Simulation sim, Entity e)
+    {
+        var w = sim.World;
+        var a = w.Get<Adventurer>(e);
+        var skills = w.Get<Skills>(e);
+        var m = new MemberRecord
+        {
+            Name = w.Get<Creature>(e).Name, Kind = a.Kind, PartyDef = a.PartyDef, Party = a.Party, LookId = Clothing.LookId(sim, e),
+            AgeDays = w.Get<Creature>(e).AgeDays(sim.Clock.Tick), Melee = skills[Skill.Melee], Shooting = skills[Skill.Shooting],
+            Coin = Errands.Coin.Count(sim, e), Satisfaction = a.Satisfaction,
+            Food = w.TryGet<Needs>(e, out var needs) ? needs.Get(sim.Defs.Need("Food")) : 1f,
+        };
+        if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon))
+            m.Weapon = Gear(sim, eq.Weapon);
+        foreach (var item in sim.Worn(e))
+            if (!sim.IsPack(item))
+                m.Apparel.Add(Gear(sim, item));
+        if (w.TryGet<Health>(e, out var h))
+        {
+            m.Blood = h.Blood;
+            m.Pain = Math.Clamp(h.Pain, 0f, 1f);
+            foreach (var inj in h.Injuries)
+                m.Wounds.Add(new WoundRecord(inj.Part, inj.Type, inj.Damage, inj.Tended, inj.Quality, inj.Absorbed));
+        }
+        return m;
+    }
+
+    private static GearRecord Gear(Simulation sim, Entity item)
+    {
+        var t = sim.World.Get<Thing>(item);
+        return new GearRecord(t.Def, t.Material, sim.World.TryGet<Crafted>(item, out var c) ? c.Quality : null,
+            WeaponWear.HpFraction(sim, item), WeaponWear.Dullness(sim, item));
+    }
+
+    // ---------------- How it went ----------------
+
+    /// <summary>
+    /// The quest's true danger against what the party took with them. The stronger they were for
+    /// it, the fewer die, the lighter the wounds and the less their gear suffers; strong enough,
+    /// they bring back the reward.
+    /// </summary>
+    private void Resolve(Simulation sim, Expedition ex)
+    {
+        var quest = Find(ex.Quest)!;
+        if (ex.Members.Count == 0)
+        {
+            quest.Status = QuestStatus.Open;
+            return;
+        }
+        var strength = ex.Members.Sum(Strength);
+        var ratio = strength / quest.Danger * _rand.Range(0.85f, 1.15f);
+        var success = ratio >= 0.9f;
+        var hit = Math.Clamp(ratio, 0.5f, 2f);
+        var survivors = new List<MemberRecord>();
+        foreach (var m in ex.Members)
+        {
+            var frail = Math.Clamp(1f - 0.8f * m.Pain - (1f - m.Blood), 0.2f, 1f) < 0.5f;
+            var death = Math.Clamp(0.55f - 0.5f * ratio, 0f, 0.6f) * (frail ? 1.5f : 1f);
+            if (_rand.Chance(death))
+            {
+                Dead++;
+                continue;
+            }
+            var wounds = _rand.NextInt(2) + (ratio < 1f ? 2 : ratio < 1.5f ? 1 : 0);
+            for (var i = 0; i < wounds; i++)
+                m.Wounds.Add(new WoundRecord(-1, quest.Def.Threats[_rand.NextInt(quest.Def.Threats.Count)], _rand.Range(4f, 12f) / hit, false, 0f, false));
+            if (m.Weapon is { } wpn)
+                m.Weapon = wpn with { Hp = Math.Max(0.05f, wpn.Hp - _rand.Range(0.1f, 0.3f) / hit), Dullness = WeaponWear.Edged(wpn.Def) ? Math.Min(1f, wpn.Dullness + _rand.Range(0.2f, 0.5f)) : 0f };
+            m.Apparel = m.Apparel.Select(a => a with { Hp = Math.Max(0.05f, a.Hp - _rand.Range(0.05f, 0.25f) / hit) }).ToList();
+            m.Food = 0.35f;
+            survivors.Add(m);
+        }
+        if (success)
+        {
+            Succeeded++;
+            quest.Status = QuestStatus.Cleared;
+            foreach (var m in survivors)
+                m.Coin += quest.Reward / Math.Max(1, survivors.Count);
+        }
+        else
+        {
+            Failed++;
+            quest.Status = QuestStatus.Open;
+        }
+        if (survivors.Count == 0)
+        {
+            sim.Messages.Add(MessageKind.Warning, $"No one comes back from {quest.Def.Label}.", null);
+            return;
+        }
+        Return(sim, ex, quest, survivors, success);
+    }
+
+    /// <summary>The survivors walk back in from an edge, worn and wounded and maybe richer, with a tale to tell at the tavern.</summary>
+    private void Return(Simulation sim, Expedition ex, Quest quest, List<MemberRecord> survivors, bool success)
+    {
+        var w = sim.World;
+        var toward = Adventurers.PartySystem.HauntOf(sim, ex.PartyDef)?.Anchor ?? sim.Creatures().Select(e => w.Get<Position>(e).Cell).FirstOrDefault();
+        int3? entry = null;
+        var first = _rand.NextInt(4);
+        for (var i = 0; i < 4 && entry == null; i++)
+            entry = Raids.EdgeEntry(sim, (first + i) % 4, toward);
+        if (entry is not { } from)
+            return;
+        var spots = Raids.GatherSpots(sim, from, toward, survivors.Count);
+        var back = new List<Entity>();
+        for (var i = 0; i < spots.Count; i++)
+            back.Add(Respawn(sim, survivors[i], spots[i]));
+        var lost = ex.Members.Count - survivors.Count;
+        var word = DangerWord(quest.Danger);
+        var told = MathF.Abs(ex.Stated - quest.Danger) > 1f
+            ? $" {ex.BrokerName} told us it was {DangerWord(ex.Stated)}."
+            : "";
+        var tale = success
+            ? $"We've cleared {quest.Def.Label}. It was {word}.{told}{(lost > 0 ? $" {lost} of us didn't come back." : "")}"
+            : $"We couldn't do it. {Capital(quest.Def.Label)} is {word}.{told}{(lost > 0 ? $" We left {lost} of ours out there." : "")}";
+        if (back.Count > 0)
+            w.Add(back[0], new ReportPending { Quest = quest.Id, Danger = quest.Danger, Text = tale });
+        // How the broker's word held up counts with them.
+        if (told.Length > 0)
+            foreach (var e in back)
+                w.Get<Adventurer>(e).Satisfaction -= 1.5f;
+        sim.Messages.Add(success ? MessageKind.Good : MessageKind.Warning,
+            $"{Capital(ex.PartyDef.Label)} return from {quest.Def.Label}{(success ? ", laden" : ", beaten")}: {survivors.Count} of {ex.Members.Count}.", from);
+    }
+
+    private Entity Respawn(Simulation sim, MemberRecord m, int3 cell)
+    {
+        var w = sim.World;
+        var e = sim.SpawnCreature(sim.Defs.Creature("Human"), m.Name, cell, Faction.Adventurer, ageDays: m.AgeDays, rand: _rand);
+        w.Add(e, new LookedAs { Id = m.LookId });
+        if (m.Kind.OutfitDef != null)
+            Clothing.Dress(sim, e, m.Kind.OutfitDef, Clothing.StreamFor(sim, e));
+        foreach (var a in m.Apparel)
+            sim.WearItem(e, Remake(sim, a));
+        if (sim.Defs.TryThing(Simulation.StartingPack, out var pack))
+            sim.Wear(e, pack);
+        if (m.Weapon is { } wpn)
+            sim.EquipItem(e, Remake(sim, wpn));
+        var skills = w.Get<Skills>(e);
+        skills.Level[(int)Skill.Melee] = m.Melee;
+        skills.Level[(int)Skill.Shooting] = m.Shooting;
+        Array.Fill(w.Get<Needs>(e).Values, 0.6f);
+        w.Get<Needs>(e).Values[sim.Defs.Need("Food").Index] = m.Food;
+        if (m.Coin > 0)
+            Inventory.Stow(sim, e, sim.CreateItem(sim.Defs.Thing(Errands.Coin.Silver), m.Coin));
+        foreach (var wound in m.Wounds)
+            if (HealthSystem.Damage(sim, e, wound.Damage, wound.Type, wound.Part) is { } inj)
+            {
+                inj.Tended = wound.Tended;
+                inj.Quality = wound.TendQuality;
+                inj.Absorbed = wound.Absorbed;
+            }
+        w.Add(e, new Adventurer
+        {
+            Party = m.Party, Kind = m.Kind, PartyDef = m.PartyDef, Satisfaction = m.Satisfaction,
+            LeaveTick = sim.Clock.Tick + SimClock.HoursToTicks(StayAfterHours), NextDrink = sim.Clock.Tick + SimClock.HoursToTicks(0.5f),
+            Arrived = sim.Clock.Tick,
+        });
+        return e;
+    }
+
+    private static Entity Remake(Simulation sim, GearRecord g)
+    {
+        var item = sim.CreateItem(g.Def, 1, g.Material);
+        ref var t = ref sim.World.Get<Thing>(item);
+        t.Hp = Math.Max(1f, t.MaxHp * g.Hp);
+        if (g.Quality is { } q)
+            sim.World.Add(item, new Crafted { Quality = q, Maker = Entity.Null });
+        WeaponWear.SetDullness(sim, item, g.Dullness);
+        return item;
+    }
+
+    /// <summary>A returned party's tale, told once they're back at the tavern: whoever hears it knows how it really was.</summary>
+    private void Report(Simulation sim)
+    {
+        var w = sim.World;
+        foreach (var e in w.Query<ReportPending>())
+        {
+            if (!w.IsAlive(e) || !w.TryGet<Adventurer>(e, out var a) || !SpeechSystem.CanAct(sim, e))
+                continue;
+            if (Adventurers.PartySystem.HauntOf(sim, a.PartyDef) is { } haunt && Maps.Map.Distance(w.Get<Position>(e).Cell, haunt.Anchor) > 6)
+                continue;
+            var report = w.Get<ReportPending>(e);
+            if (sim.Speech.Say(sim, e, report.Text, Volume.Shout) is not { } said)
+                continue;
+            w.Remove<ReportPending>(e);
+            var reward = Find(report.Quest)?.Reward;
+            foreach (var h in said.Listeners)
+                if (h.Clarity == Clarity.Clear)
+                    Hear(h.Listener, report.Quest, report.Danger, reward, 1f);
+        }
+    }
+
+    private static string Capital(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
+
+    // ---------------- Saving ----------------
+
+    public void Save(SaveWriter w, Simulation sim)
+    {
+        var (a, b, c, d) = _rand.State;
+        w.UInt(a); w.UInt(b); w.UInt(c); w.UInt(d);
+        w.Int(_nextQuest);
+        w.Long(_nextRumour);
+        w.Bool(_rolled);
+        w.Int(Succeeded);
+        w.Int(Failed);
+        w.Int(Dead);
+        w.Int(_quests.Count);
+        foreach (var q in _quests)
+        {
+            w.Int(q.Id);
+            w.Def(q.Def);
+            w.Float(q.Danger);
+            w.Int(q.Reward);
+            w.Byte((byte)q.Status);
+        }
+        var intel = _intel.OrderBy(kv => kv.Key.Who.Index).ThenBy(kv => kv.Key.Quest).ToList();
+        w.Int(intel.Count);
+        foreach (var ((who, quest), i) in intel)
+        {
+            w.Entity(who);
+            w.Int(quest);
+            w.Float(i.Danger);
+            w.Float(i.Reward);
+            w.Float(i.Confidence);
+        }
+        w.Int(_out.Count);
+        foreach (var ex in _out)
+        {
+            w.Int(ex.Quest);
+            w.Int(ex.Party);
+            w.Def(ex.PartyDef);
+            w.Float(ex.Stated);
+            w.String(ex.BrokerName);
+            w.Long(ex.ReturnTick);
+            w.Int(ex.Members.Count);
+            foreach (var m in ex.Members)
+                WriteMember(w, m);
+        }
+    }
+
+    public void Load(SaveReader r, Simulation sim)
+    {
+        _rand.State = (r.UInt(), r.UInt(), r.UInt(), r.UInt());
+        _nextQuest = r.Int();
+        _nextRumour = r.Long();
+        _rolled = r.Bool();
+        Succeeded = r.Int();
+        Failed = r.Int();
+        Dead = r.Int();
+        _quests.Clear();
+        for (var n = r.Count(1 << 10); n > 0; n--)
+        {
+            var q = new Quest { Id = r.Int(), Def = r.Def<QuestDef>(), Danger = r.Float(), Reward = r.Int() };
+            var status = r.Byte();
+            if (!Enum.IsDefined((QuestStatus)status))
+                throw new SaveException($"Corrupt save: quest status {status}");
+            q.Status = (QuestStatus)status;
+            _quests.Add(q);
+        }
+        _intel.Clear();
+        for (var n = r.Count(1 << 20); n > 0; n--)
+            _intel[(r.Entity(), r.Int())] = new Intel { Danger = r.Float(), Reward = r.Float(), Confidence = r.Float() };
+        _out.Clear();
+        for (var n = r.Count(1 << 10); n > 0; n--)
+        {
+            var ex = new Expedition { Quest = r.Int(), Party = r.Int(), PartyDef = r.Def<PartyDef>(), Stated = r.Float(), BrokerName = r.String(), ReturnTick = r.Long() };
+            for (var k = r.Count(64); k > 0; k--)
+                ex.Members.Add(ReadMember(r));
+            _out.Add(ex);
+        }
+    }
+
+    private static void WriteGear(SaveWriter w, GearRecord? g)
+    {
+        w.Bool(g != null);
+        if (g == null)
+            return;
+        w.Def(g.Def);
+        w.Def(g.Material);
+        w.Int(g.Quality is { } q ? (int)q : -1);
+        w.Float(g.Hp);
+        w.Float(g.Dullness);
+    }
+
+    private static GearRecord? ReadGear(SaveReader r)
+    {
+        if (!r.Bool())
+            return null;
+        var def = r.Def<ThingDef>();
+        var material = r.DefOrNull<MaterialDef>();
+        var q = r.Int();
+        if (q < -1 || q > (int)Quality.Masterwork)
+            throw new SaveException($"Corrupt save: quality {q}");
+        return new GearRecord(def, material, q < 0 ? null : (Quality)q, r.Float(), r.Float());
+    }
+
+    private static void WriteMember(SaveWriter w, MemberRecord m)
+    {
+        w.String(m.Name);
+        w.Def(m.Kind);
+        w.Def(m.PartyDef);
+        w.Int(m.Party);
+        w.Int(m.LookId);
+        w.Float(m.AgeDays);
+        w.Int(m.Melee);
+        w.Int(m.Shooting);
+        w.Int(m.Coin);
+        w.Float(m.Satisfaction);
+        w.Float(m.Blood);
+        w.Float(m.Pain);
+        w.Float(m.Food);
+        WriteGear(w, m.Weapon);
+        w.Int(m.Apparel.Count);
+        foreach (var a in m.Apparel)
+            WriteGear(w, a);
+        w.Int(m.Wounds.Count);
+        foreach (var x in m.Wounds)
+        {
+            w.Int(x.Part);
+            w.Int((int)x.Type);
+            w.Float(x.Damage);
+            w.Bool(x.Tended);
+            w.Float(x.TendQuality);
+            w.Bool(x.Absorbed);
+        }
+    }
+
+    private static MemberRecord ReadMember(SaveReader r)
+    {
+        var m = new MemberRecord { Name = r.String(), Kind = r.Def<AdventurerKindDef>(), PartyDef = r.Def<PartyDef>() };
+        m.Party = r.Int();
+        m.LookId = r.Int();
+        m.AgeDays = r.Float();
+        m.Melee = r.Int();
+        m.Shooting = r.Int();
+        m.Coin = r.Int();
+        m.Satisfaction = r.Float();
+        m.Blood = r.Float();
+        m.Pain = r.Float();
+        m.Food = r.Float();
+        m.Weapon = ReadGear(r);
+        for (var n = r.Count(32); n > 0; n--)
+            m.Apparel.Add(ReadGear(r)!);
+        for (var n = r.Count(256); n > 0; n--)
+            m.Wounds.Add(new WoundRecord(r.Int(), (DamageType)r.Int(), r.Float(), r.Bool(), r.Float(), r.Bool()));
+        return m;
+    }
+}

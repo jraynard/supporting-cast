@@ -128,7 +128,7 @@ public static class Clothing
         if (Dressed(sim, e) || sim.World.Get<Creature>(e).Def.Race != Race.Human)
             return;
         var rand = StreamFor(sim, e);
-        var body = sim.World.TryGet<Appearance>(e, out var look) ? look.Body : DerivedBody(e.Index);
+        var body = sim.World.TryGet<Appearance>(e, out var look) ? look.Body : DerivedBody(LookId(sim, e));
         var choices = sim.Defs.AllOutfits.Where(o => o.Villager && Suits(o, body)).ToList();
         if (choices.Count > 0)
             Dress(sim, e, choices[rand.NextInt(choices.Count)], rand);
@@ -136,7 +136,10 @@ public static class Clothing
 
     /// <summary>A creature's own stream for its clothes, so dressing it never shifts another stream.</summary>
     public static SimRandom StreamFor(Simulation sim, Entity e) =>
-        new(sim.Seed ^ ((ulong)(e.Index + 1) * 0x9E3779B97F4A7C15UL) ^ 0xC107Eu);
+        new(sim.Seed ^ ((ulong)(LookId(sim, e) + 1) * 0x9E3779B97F4A7C15UL) ^ 0xC107Eu);
+
+    /// <summary>The id a derived look is drawn from: their own index, or the one they had before (<see cref="LookedAs"/>).</summary>
+    public static int LookId(Simulation sim, Entity e) => sim.World.TryGet<LookedAs>(e, out var l) ? l.Id : e.Index;
 
     public static bool Suits(OutfitDef outfit, BodyType body) =>
         string.IsNullOrEmpty(outfit.Body) || string.Equals(outfit.Body, body.ToString(), StringComparison.OrdinalIgnoreCase);

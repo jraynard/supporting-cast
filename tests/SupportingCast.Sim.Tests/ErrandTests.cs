@@ -69,6 +69,8 @@ public class ErrandTests
     {
         var (sim, party) = Round(Ana);
         sim.TickMany(SimClock.TicksPerHour);
+        Assert.DoesNotContain(sim.Errands.All, e => e.Kind.Kind == ErrandKind.Quest); // they want serving first
+        sim.TickMany(SimClock.HoursToTicks(ErrandSystem.QuestAfterHours));
         Assert.Single(sim.Errands.All, e => e.Kind.Kind == ErrandKind.Quest && party.Contains(e.Poster));
     }
 

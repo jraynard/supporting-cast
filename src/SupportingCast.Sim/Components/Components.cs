@@ -446,6 +446,23 @@ public struct Mana
     public float Max;
 }
 
+/// <summary>
+/// Looks as the person did under another entity id (an adventurer back from a quest is a new
+/// entity): the derived look and clothes come from <see cref="Id"/> rather than their own index.
+/// </summary>
+public struct LookedAs
+{
+    public int Id;
+}
+
+/// <summary>Back from a quest with something to tell, said once they reach the tavern (<c>Expeditions/</c>).</summary>
+public struct ReportPending
+{
+    public int Quest;
+    public float Danger;
+    public string Text;
+}
+
 /// <summary>A forge kept burning for a mend in hand (<c>Work.HammerSession</c>) until this tick, with no recipe on it.</summary>
 public struct FiredForMending
 {
@@ -1169,6 +1186,12 @@ public struct Adventurer
 
     /// <summary>When they next want a drink.</summary>
     public long NextDrink;
+
+    /// <summary>The quest they've taken and are setting out on (<c>Expeditions/</c>); 0 for none.</summary>
+    public int Quest;
+
+    /// <summary>When they came to town (or back to it).</summary>
+    public long Arrived;
 
     /// <summary>
     /// What they think of the town so far: up for each errand done (more if done quickly), down

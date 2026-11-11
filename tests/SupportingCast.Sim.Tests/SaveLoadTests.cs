@@ -98,6 +98,28 @@ public class SaveLoadTests
     }
 
     [Fact]
+    public void APartyAwayOnAQuestSurvives()
+    {
+        var (live, me, party) = ExpeditionTests.Round("QuestBroker");
+        var q = live.Expeditions.Quests[0];
+        var strength = Expeditions.ExpeditionSystem.PartyStrength(live, live.World.Get<Adventurer>(party[0]).Party);
+        live.Expeditions.Hear(me, q.Id, strength * 0.9f, null, 1f);
+        var at = live.World.Get<Position>(party[0]).Cell;
+        var cell = live.SpiralFrom(at, 2).First(c => c != at && live.Map.Passable(c) && c.Z == at.Z);
+        live.World.Get<Position>(me).Cell = cell;
+        live.World.Get<Position>(me).Pos = Position.CenterOf(cell);
+        Assert.True(live.Expeditions.Offer(live, me, party[0], q.Id));
+        for (var h = 0; h < 6 && party.Any(e => live.World.IsAlive(e)); h++)
+            live.TickMany(SimClock.TicksPerHour);
+        Assert.NotEmpty(live.Expeditions.Out[0].Members);
+
+        var loaded = RoundTrip(live);
+        Assert.Equal(live.Expeditions.Out[0].Members.Select(m => (m.Name, m.Coin, m.Wounds.Count, m.Weapon?.Hp)),
+            loaded.Expeditions.Out[0].Members.Select(m => (m.Name, m.Coin, m.Wounds.Count, m.Weapon?.Hp)));
+        AssertSameFuture(live, loaded, hours: 12);
+    }
+
+    [Fact]
     public void WildlifeStateSurvives()
     {
         var (live, _) = Generated(5, size: 64);

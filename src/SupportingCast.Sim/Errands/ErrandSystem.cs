@@ -32,6 +32,9 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// <summary>Game hours between an asker repeating an errand nobody has taken.</summary>
     public const float RepeatHours = 1.5f;
 
+    /// <summary>Game hours a party spends in town (eating, drinking, getting mended) before it asks for a quest.</summary>
+    public const float QuestAfterHours = 4;
+
     /// <summary>Game hours between one round and the next an adventurer orders (±25%).</summary>
     public const float HoursBetweenDrinks = 3;
 
@@ -95,7 +98,8 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         {
             if (!w.TryGet<Adventurer>(who, out var a) || w.Has<Leaving>(who) || !SpeechSystem.CanAct(sim, who))
                 continue;
-            if (!_questAsked.Contains(a.Party))
+            // Work comes after the road's been washed down: fed, served, mended, then a quest.
+            if (!_questAsked.Contains(a.Party) && sim.Clock.Tick - a.Arrived >= SimClock.HoursToTicks(QuestAfterHours))
             {
                 _questAsked.Add(a.Party);
                 PostFor(sim, who, ErrandKind.Quest, Entity.Null);

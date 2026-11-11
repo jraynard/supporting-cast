@@ -21,7 +21,10 @@ public sealed class AdventurerBrain : IBrain
         var tile = w.Get<Position>(pawn).Cell;
 
         if (w.Has<Leaving>(pawn))
-            return sim.NearestEdge(tile) is { } edge ? new LeaveMapJob(edge, "Heading out") : null;
+            return sim.NearestEdge(tile) is { } edge
+                ? new LeaveMapJob(edge, w.TryGet<Adventurer>(pawn, out var setting) && setting.Quest != 0
+                    && sim.Expeditions.Find(setting.Quest) is { } q ? $"Setting out for {q.Def.Label}" : "Heading out")
+                : null;
 
         var temp = Warmth.FeltAt(sim, tile);
         var tol = creature.Tolerance(sim.Clock.Tick);
