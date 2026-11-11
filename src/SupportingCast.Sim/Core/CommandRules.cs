@@ -21,6 +21,9 @@ public interface IPlayerCommand
     Guid? Owner { get; }
 }
 
+/// <summary>A command only the host may send, as part of running the session (starting the round).</summary>
+public interface IHostCommand;
+
 /// <summary>
 /// Who may send what in a co-op session. Commands arrive from the network, so the peers check
 /// them identically before applying: everyone may give village orders, but you steer only your own
@@ -33,6 +36,8 @@ public static class CommandRules
     {
         if (command is IDevCommand && !isHost)
             return "only the host can use developer tools";
+        if (command is IHostCommand && !isHost)
+            return "only the host can do that";
         if (command is IPlayerCommand p && p.Owner != issuer)
             return "that's another player's";
         if (command is IActorCommand a && Players.OwnerOf(sim, a.Actor) != issuer)

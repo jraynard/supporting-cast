@@ -137,6 +137,14 @@ internal static class ComponentCodecs
             return b;
         }),
         Codec("PlayerCharacter", (w, p) => w.String(p.PlayerId.ToString("N")), r => new PlayerCharacter { PlayerId = Guid.ParseExact(r.String(), "N") }),
+        Codec("Trade", (w, t) => w.Def(t.Def), r => new Trade { Def = r.Def<TradeDef>() }),
+        Codec<Work.WorkSession>("WorkSession", Work.WorkSession.Write, Work.WorkSession.Read),
+        Codec("WorkInput", (w, i) =>
+        {
+            w.Int(i.Step);
+            w.Int((int)i.Kind);
+            w.Int(i.Value);
+        }, r => new Work.WorkInput(r.Int(), (Work.WorkInputKind)r.Int(), r.Int())),
         Codec("Rot", (w, e) => w.Float(e.Progress), r => new Rot { Progress = r.Float() }),
         Codec("Prisoner", (w, p) =>
         {

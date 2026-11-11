@@ -195,6 +195,8 @@ else
         Adventure = !args.Contains("--furniture-demo") && !args.Contains("--building-demo"),
         HeroName = ParseString(args, "--name"),
         HeroPreset = ParseString(args, "--preset"),
+        HeroTrade = ParseString(args, "--trade"),
+        Bots = args.Contains("--bots") ? ParseInt(args, "--bots") : 0,
     });
 
 // Remember a window the player resized by hand. Settings.Current, not `settings`: the options

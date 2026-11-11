@@ -62,6 +62,12 @@ public sealed partial class Simulation
     public BuildingSystem Presets { get; } = new();
     public SocialSystem Social { get; }
 
+    /// <summary>The round's lobby and deal. <see cref="Round.RoundPhase.None"/> until something opens one.</summary>
+    public Round.RoundSystem Round { get; }
+
+    /// <summary>What's been said aloud, and who heard it.</summary>
+    public Speech.SpeechSystem Speech { get; } = new();
+
     /// <summary>The village's book of discovered recipes (see <see cref="RecipeBooks"/>).</summary>
     public RecipeBookSystem RecipeBook { get; } = new();
 
@@ -165,6 +171,7 @@ public sealed partial class Simulation
         Storyteller = new Storyteller(seed);
         Wildlife = new WildlifeSystem(seed);
         Social = new SocialSystem(seed);
+        Round = new Round.RoundSystem(seed);
         Messages.Now = () => Clock.Tick;
 
         World.Destroying += OnEntityDestroying;
@@ -177,7 +184,9 @@ public sealed partial class Simulation
     public static Simulation CreateStandard(DefDatabase defs, int width, int height, ulong seed, int depth = DefaultDepth)
     {
         var sim = new Simulation(defs, width, height, seed, depth);
-        sim.AddSystem(sim.Temperature)
+        sim.AddSystem(sim.Round)
+            .AddSystem(sim.Speech)
+            .AddSystem(sim.Temperature)
             .AddSystem(sim.Fire)
             .AddSystem(sim.Smoke)
             .AddSystem(sim.Lighting)
@@ -196,6 +205,7 @@ public sealed partial class Simulation
             .AddSystem(sim.Wildlife)
             .AddSystem(sim.Larder)
             .AddSystem(sim.Presets)
+            .AddSystem(new Work.WorkSystem())
             .AddSystem(new AvatarSystem())
             .AddSystem(new SettlerSystem())
             .AddSystem(sim.Ai)

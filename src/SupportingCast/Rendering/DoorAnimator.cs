@@ -52,6 +52,9 @@ public sealed class DoorAnimator
     /// <summary>How tall each door stands (world z): 1, or a stub where the walls are cut away (<see cref="WorldMesher.IsStub"/>).</summary>
     public Func<int3, float> HeightOf { get; set; } = _ => 1f;
 
+    /// <summary>Whether the viewer can see a cell; null when they see everything.</summary>
+    public Func<int3, bool>? CanSee { get; set; }
+
     /// <summary>Animate and draw every finished door in view.</summary>
     /// <param name="padlock">Draws the padlock on a locked gate: where (its middle) and the cell level's flags.</param>
     public void Draw(QuadRenderer quads, Simulation sim, Func<int3, bool> inView, float dt, Func<Thing, (Sprite Sprite, uint Tint)> art,
@@ -68,6 +71,8 @@ public sealed class DoorAnimator
             var (want, side) = Wanted(sim, door);
             if (gate)
                 want = !w.Has<Locked>(door.Entity); // a gate goes by its lock, not by who's near
+            else if (CanSee != null && !CanSee(door.Cell))
+                want = false; // a door swinging out of sight would give away who's behind it
             if (want && door.Open < 0.05f && side != 0)
                 door.Sign = side > 0 ? -1f : 1f; // pushed open, away from them
             var speed = gate ? GateSpeed : want ? OpenSpeed : CloseSpeed;

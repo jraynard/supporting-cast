@@ -75,6 +75,7 @@ public static class Players
         if (me.IsNull || !w.Has<Avatar>(me))
             return;
         w.Remove<Avatar>(me);
+        Work.WorkSystem.Stop(sim, me, null);
         // Ending the avatar's job as a villager also sets down what it carried (an egg included),
         // where the village will tend it.
         AiSystem.EndJob(sim, me, w.Get<Mind>(me), false);
@@ -96,6 +97,7 @@ public static class Players
         avatar.WorkHeld = false;
         avatar.Chain = AvatarActionKind.None;
         avatar.HasPending = false;
+        Work.WorkSystem.Stop(sim, me, null); // no one is there to play it
     }
 
     /// <summary>Hands every connected character except <paramref name="keep"/>'s back to the AI (a save hosted again).</summary>
@@ -135,12 +137,8 @@ public static class Players
         if (!CharacterOf(sim, player).IsNull)
             return Entity.Null;
         name = Clean(name);
-        var home = Home(sim);
-        var cell = sim.SpiralFrom(home + new int3(1, 2, 0), 10)
-            .FirstOrDefault(c => sim.Map.Passable(c) && sim.Map.Item[sim.Map.Idx(c)].IsNull && sim.Map.Structure[sim.Map.Idx(c)].IsNull, home);
-
-        var me = sim.SpawnCreature(sim.Defs.Creature("Human"), name, cell, ageDays: 19 * 365f);
-        Array.Fill(w.Get<Needs>(me).Values, 0.85f);
+        var me = SpawnNewcomer(sim, name);
+        var cell = w.Get<Position>(me).Cell;
         w.Add(me, new PlayerCharacter { PlayerId = player });
         w.Add(me, new Avatar());
         sim.GiveStartingPack(me);
@@ -155,7 +153,53 @@ public static class Players
         return me;
     }
 
-    private static string Clean(string name)
+    /// <summary>A young villager at <see cref="Home"/>, not yet anyone's.</summary>
+    internal static Entity SpawnNewcomer(Simulation sim, string name)
+    {
+        var home = Home(sim);
+        var cell = sim.SpiralFrom(home + new int3(1, 2, 0), 10)
+            .FirstOrDefault(c => sim.Map.Passable(c) && sim.Map.Item[sim.Map.Idx(c)].IsNull && sim.Map.Structure[sim.Map.Idx(c)].IsNull, home);
+        var me = sim.SpawnCreature(sim.Defs.Creature("Human"), name, cell, ageDays: 19 * 365f);
+        Array.Fill(sim.World.Get<Needs>(me).Values, 0.85f);
+        return me;
+    }
+
+    /// <summary>
+    /// A player takes over a villager the AI was running. <see cref="Guid.Empty"/> is single
+    /// player: the character stays unowned, so hosting that save later can adopt it (<see cref="Join"/>).
+    /// </summary>
+    internal static void Inhabit(Simulation sim, Guid player, Entity villager)
+    {
+        var w = sim.World;
+        var mind = w.Get<Mind>(villager);
+        AiSystem.EndJob(sim, villager, mind, false);
+        mind.Drafted = false;
+        mind.Asleep = false;
+        if (w.Has<Request>(villager))
+            w.Remove<Request>(villager);
+        if (player != Guid.Empty)
+            w.Add(villager, new PlayerCharacter { PlayerId = player });
+        w.Add(villager, new Avatar());
+        sim.GiveStartingPack(villager);
+    }
+
+    /// <summary>At the start of a round, before anyone has met them: a villager becomes the character a player made.</summary>
+    internal static void TakeOnLook(Simulation sim, Entity e, string name, Appearance? look, IReadOnlyList<string>? traits, IReadOnlyList<string>? clothes)
+    {
+        var w = sim.World;
+        w.Get<Creature>(e).Name = Clean(name);
+        if (look is { } a)
+        {
+            if (w.Has<Appearance>(e))
+                w.Remove<Appearance>(e);
+            w.Add(e, Valid(a));
+        }
+        if (traits is { Count: > 0 })
+            TraitRules.Set(sim, e, traits.Take(TraitRules.MaxTraits * 2));
+        Clothing.DressHero(sim, e, clothes);
+    }
+
+    internal static string Clean(string name)
     {
         var s = new string((name ?? "").Where(ch => !char.IsControl(ch)).ToArray()).Trim();
         if (s.Length > MaxNameLength)
@@ -164,7 +208,7 @@ public static class Players
     }
 
     // A look from the network: keep only values the renderer knows.
-    private static Appearance Valid(Appearance a) => a with
+    internal static Appearance Valid(Appearance a) => a with
     {
         Body = Enum.IsDefined(a.Body) ? a.Body : default,
         Hair = Enum.IsDefined(a.Hair) ? a.Hair : default,

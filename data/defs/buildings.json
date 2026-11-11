@@ -334,7 +334,7 @@
       "name": "Fence", "label": "fence", "category": "Building", "sprite": "buildings/wall_planks",
       "description": "Split rails between posts: keeps animals in or out. It fences a yard but never makes a room.",
       "maxHp": 80, "flammability": 1.0,
-      "building": { "outdoor": true, "fence": true, "isWall": true, "work": 40, "cost": [ { "def": "Wood", "count": 2 } ] }
+      "building": { "outdoor": true, "fence": true, "seeThrough": true, "isWall": true, "work": 40, "cost": [ { "def": "Wood", "count": 2 } ] }
     },
     {
       "name": "Palisade", "label": "palisade", "category": "Building", "sprite": "buildings/wall_wood",

@@ -226,7 +226,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         FindAvatar();
         OnSavedOrLoaded(null);
         Log.Engine.Info($"Village started with seed {seed}");
+        AnnounceTrade();
         StartHostingIfAsked();
+        SeatHost();
     }
 
     /// <summary>Generate the map and found the village (plus any demo setup). Returns where the camera should look.</summary>
@@ -241,8 +243,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             _sim.Storyteller.SetDifficulty(_sim, defs.Difficulty(difficulty));
         if (Adventure)
         {
-            var (look, clothes) = HeroAppearance();
-            VillageRound.SpawnHero(_sim, new Hero(HeroName, look, HeroTraits, clothes), center);
+            _sim.Round.OpenLobby();
+            if (HostCoop == null)
+                center = StartSoloRound(center);
         }
         var focus = center;
         if (IgniteForest)
@@ -315,6 +318,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             _predictor.Update(_sim, _avatar, dt, Paused ? 0 : SpeedMultipliers[_speed]);
         _renderer.Predicted = _coop != null && HasAvatar ? _predictor : null;
         _renderer.PredictedEntity = _avatar;
+        _renderer.Viewer = View.Omniscient ? null : View;
+        UpdateWork(dt);
+        RunBots();
         FollowAvatar(); // after the ticks, so the camera shows this frame's position
     }
 
@@ -589,6 +595,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         var i = _sim.Map.Idx(_hoverCell);
         // Click again on the same tile to cycle from the item to the structure underneath.
         var item = _sim.Map.Item[i];
+        if (!item.IsNull && !View.CanSee(item))
+            item = Entity.Null;
         var structure = _sim.Map.Structure[i];
         if (!item.IsNull && _selected != item)
             return item;

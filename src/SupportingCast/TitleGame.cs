@@ -15,7 +15,7 @@ namespace SupportingCast;
 
 /// <summary>
 /// The title screen: the game's name and main menu over a live, slowly orbiting view of a
-/// generated valley, with a wild adult dragon living its life in it. Menu entries start a village
+/// generated valley. Menu entries start a village
 /// (new, or continued from a save) or one of the demos through <see cref="GameHost.SwitchTo"/>, or
 /// open the settings; Credits is a placeholder for now. Exit closes the game.
 /// </summary>
@@ -127,8 +127,7 @@ public sealed class TitleGame : Game
         var anySave = SaveSlots.Newest() != null;
         return
         [
-            new("Host New Village", "The Sorcerer's Pact, together: make your character and dragon and start at the tower's site. "
-                + "Friends drop in with dragons of their own.", null, MenuAction.HostNew),
+            new("Host New Round", "Make your character and open a lobby. Friends join, say which trades they want, and you deal the round.", null, MenuAction.HostNew),
             new("Host a Saved Village", anySave ? "Open one of your saved villages to friends." : "No saves yet.", null, anySave ? MenuAction.HostSave : MenuAction.Start),
             new("Join a Game", "Find a village on your network, or type the host's address.", null, MenuAction.Join),
             new("Back", "Back to the main menu.", null, MenuAction.Back),
@@ -268,7 +267,7 @@ public sealed class TitleGame : Game
         if (header != null)
             ImGui.PopFont();
         var dim = Theme.Dim;
-        ImGui.TextColored(dim, "A village of dragons and humans"u8);
+        ImGui.TextColored(dim, "The people the heroes walk past"u8);
         var gap = new float2(1, 34);
         ImGui.Dummy(in gap);
 

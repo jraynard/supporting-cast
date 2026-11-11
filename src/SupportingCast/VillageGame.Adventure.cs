@@ -65,7 +65,7 @@ public sealed partial class VillageGame
     /// A player is one person in the village, not its overseer: no work orders or priorities for
     /// the AI villagers. Those belong to whoever holds the trade (M1).
     /// </summary>
-    private bool OrdersLocked => HasAvatar;
+    private bool OrdersLocked => HasAvatar || _sim.Round.Phase != Sim.Round.RoundPhase.None;
 
     private bool HasAvatar => !_avatar.IsNull && _sim.World.IsAlive(_avatar) && _sim.World.Has<Avatar>(_avatar);
 
@@ -84,6 +84,8 @@ public sealed partial class VillageGame
         {
             foreach (var e in _sim.World.Query<Avatar>())
             {
+                if (_sim.World.Has<PlayerCharacter>(e))
+                    continue; // a solo round's bots
                 _avatar = e;
                 _selected = e;
                 break;
@@ -100,7 +102,7 @@ public sealed partial class VillageGame
     /// <summary>Read WASD/F and send what changed. Outside combat only: in a fight the HUD gives orders.</summary>
     private void HandleAvatarInput(Input input)
     {
-        if (!HasAvatar)
+        if (!HasAvatar || Working) // at a mini-game the keys are the mini-game's (UpdateWork)
             return;
         var dir = int2.Zero;
         float x = 0, y = 0;
@@ -170,7 +172,7 @@ public sealed partial class VillageGame
         foreach (var e in w.Query<Creature>())
         {
             var pos = w.Get<Position>(e);
-            if (pos.Cell.Z > _renderer.CutawayZ)
+            if (pos.Cell.Z > _renderer.CutawayZ || !View.CanSee(e))
                 continue;
             var size = w.Get<Creature>(e).Stage(_sim.Clock.Tick).Size;
             var s = _camera.WorldToScreen(pos.Pos + WorldScale.Rise(size * 0.5f));

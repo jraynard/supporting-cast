@@ -182,6 +182,7 @@ public sealed class SaveReader(Stream stream, DefDatabase defs, int version = Sa
                 var t when t == typeof(TraitDef) => defs.Trait(name),
                 var t when t == typeof(RecipeDef) => defs.Recipe(name),
                 var t when t == typeof(BuildingDef) => defs.Building(name),
+                var t when t == typeof(TradeDef) => defs.Trade(name),
                 _ => throw new SaveException($"Defs of type {typeof(T).Name} can't be saved"),
             };
             return (T)def;

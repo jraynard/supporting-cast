@@ -597,7 +597,7 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.Craft:
                 if (w.Get<Workbench>(action.Target).Active is { } recipe)
-                    AiSystem.Order(sim, avatar, new CraftJob(action.Target, recipe));
+                    Crafting.WorkAt(sim, avatar, action.Target, recipe);
                 break;
             case AvatarActionKind.Harvest:
                 AiSystem.Order(sim, avatar, new HarvestJob(action.Target));

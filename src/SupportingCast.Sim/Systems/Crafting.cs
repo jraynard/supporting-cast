@@ -175,12 +175,13 @@ public static class Crafting
     /// one, cooked food a little fresher than what went in), count it on the bill and free the
     /// station. Returns the products, unspawned, for the caller to put down or stow.
     /// </summary>
-    public static List<Entity> Finish(Simulation sim, Entity station, Entity crafter)
+    /// <param name="quality">How it came out, when the crafter's hands decided (a mini-game); null rolls for it.</param>
+    public static List<Entity> Finish(Simulation sim, Entity station, Entity crafter, Quality? quality = null)
     {
         var w = sim.World;
         var bench = w.Get<Workbench>(station);
         var recipe = bench.Active ?? throw new InvalidOperationException("nothing is being made");
-        var made = MakeProducts(sim, recipe, bench.MainMaterial, bench.RotUnits > 0 ? bench.Rot : null, crafter, w.Get<Thing>(station).Cell);
+        var made = MakeProducts(sim, recipe, bench.MainMaterial, bench.RotUnits > 0 ? bench.Rot : null, crafter, w.Get<Thing>(station).Cell, quality);
         if (bench.By.IsNull && bench.BillFor(recipe) is { } bill)
         {
             bill.Done++;
@@ -195,7 +196,7 @@ public static class Crafting
     /// A recipe's products, unspawned: in <paramref name="material"/> where they come in it, cooked
     /// food half as far gone as what went in, gear with a quality rolled from the maker's skill.
     /// </summary>
-    public static List<Entity> MakeProducts(Simulation sim, RecipeDef recipe, MaterialDef? material, float? rot, Entity crafter, int3 at)
+    public static List<Entity> MakeProducts(Simulation sim, RecipeDef recipe, MaterialDef? material, float? rot, Entity crafter, int3 at, Quality? decided = null)
     {
         var w = sim.World;
         var made = new List<Entity>();
@@ -206,7 +207,7 @@ public static class Crafting
                 w.Get<Rot>(item).Progress = r * 0.5f;
             if (IsGear(p.ThingDef))
             {
-                var quality = RollQuality(sim, crafter, recipe);
+                var quality = decided ?? RollQuality(sim, crafter, recipe);
                 w.Add(item, new Crafted { Quality = quality, Maker = crafter });
                 if (quality == Quality.Masterwork && w.TryGet<Creature>(crafter, out var maker))
                     sim.Messages.Add(MessageKind.Good, $"{maker.Name} made a masterwork {w.Get<Thing>(item).Label}!", at);
@@ -319,14 +320,25 @@ public static class Crafting
     /// </summary>
     public static Quality RollQuality(Simulation sim, Entity crafter, RecipeDef recipe)
     {
-        var q = 0.25f + 0.035f * SkillRules.LevelOf(sim, crafter, recipe.Skill) + sim.Rand.Range(-0.15f, 0.15f);
-        return q switch
-        {
-            < 0.3f => Quality.Crude,
-            < 0.62f => Quality.Plain,
-            < 0.88f => Quality.Fine,
-            _ => Quality.Masterwork,
-        };
+        return QualityFrom(0.25f + 0.035f * SkillRules.LevelOf(sim, crafter, recipe.Skill) + sim.Rand.Range(-0.15f, 0.15f));
+    }
+
+    /// <summary>The grade of a piece from how well it was made, 0..1.</summary>
+    public static Quality QualityFrom(float q) => q switch
+    {
+        < 0.3f => Quality.Crude,
+        < 0.62f => Quality.Plain,
+        < 0.88f => Quality.Fine,
+        _ => Quality.Masterwork,
+    };
+
+    /// <summary>A player works a stocked station: by hand where the station wants it, otherwise as an ordinary job.</summary>
+    public static void WorkAt(Simulation sim, Entity avatar, Entity station, RecipeDef recipe)
+    {
+        if (Work.HammerSession.Applies(sim, avatar, station, recipe))
+            Work.HammerSession.TryStart(sim, avatar, station, recipe);
+        else
+            AiSystem.Order(sim, avatar, new Ai.CraftJob(station, recipe));
     }
 
     /// <summary>What quality does to armor and weapon damage.</summary>

@@ -218,7 +218,7 @@
       "description": "A brick hearth with bellows. Charcoal brings it near iron's heat, slowly; a dragon breathing into it gets it there fast.",
       "maxHp": 400, "flammability": 0,
       "building": {
-        "isWall": true, "insulation": 0.98, "work": 400, "workbench": { "bills": 8 },
+        "isWall": true, "insulation": 0.98, "work": 400, "workbench": { "bills": 8, "handWork": true },
         "cost": [ { "def": "Bricks", "count": 12 }, { "def": "Stone", "count": 6 } ],
         "heatOutput": 5200, "maxHeatTemp": 1150, "lightRadius": 4, "stokeHeat": 9000, "stokedMaxTemp": 1450,
         "fuel": { "def": "Charcoal", "capacity": 20, "burnPerDay": 40, "refuelAt": 0.4, "onDemand": true, "reach": 775,

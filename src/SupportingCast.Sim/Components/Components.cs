@@ -1090,6 +1090,12 @@ public struct PlayerCharacter
     public Guid PlayerId;
 }
 
+/// <summary>The role a villager holds in this round, whether a player or the AI is running them.</summary>
+public struct Trade
+{
+    public Defs.TradeDef Def;
+}
+
 /// <summary>A creature that owns a bed/nest.</summary>
 public struct BedOwner
 {

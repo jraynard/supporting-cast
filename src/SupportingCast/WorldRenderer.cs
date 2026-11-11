@@ -52,6 +52,14 @@ public sealed class WorldRenderer(TextureAtlas atlas)
     /// <summary>Highest level drawn. Solid blocks cut at this level show their caps.</summary>
     public int CutawayZ { get; set; } = int.MaxValue;
 
+    /// <summary>Whose eyes the world is drawn through; null draws everything (the title screen, the demos, no round).</summary>
+    public PerceptionView? Viewer { get; set; }
+
+    private bool Seen(Entity e) => Viewer == null || Viewer.CanSee(e);
+
+    private bool SeenAt(float3 at) => Viewer == null
+        || Viewer.CanSeeCell(new int3((int)MathF.Floor(at.X), (int)MathF.Floor(at.Y), (int)MathF.Floor(at.Z)));
+
     /// <summary>Art scale: a 32-pixel sprite spans one cell.</summary>
     public const float PixelsPerCell = 32f;
 
@@ -214,6 +222,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
 
         _mesher.CutHeading = CutawayWalls ? WorldMesher.SnapHeading(cam.Heading) : null;
         _doors.HeightOf = c => _mesher.IsStub(sim, c.X, c.Y, c.Z) ? WorldMesher.StubHeight : 1f;
+        _doors.CanSee = Viewer == null ? null : Viewer.CanSeeCell;
         _mesher.Draw(quads, sim);
 
         // Horizontal culling box: what's visible at the bottom and top of the map, plus a margin.
@@ -229,7 +238,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         foreach (var e in w.Each<Thing>())
         {
             var thing = w.Get<Thing>(e);
-            if (!thing.Spawned || !InView(thing.Cell))
+            if (!thing.Spawned || !InView(thing.Cell) || !Seen(e))
                 continue;
             DrawThing(sim, e, thing);
         }
@@ -278,7 +287,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         foreach (var e in w.Each<Creature>())
         {
             var p = w.Get<Position>(e);
-            if (!InView(p.Cell))
+            if (!InView(p.Cell) || !Seen(e))
                 continue;
             p.Pos = DrawPos(sim, e, p.Pos); // a copy: the sim's Position is untouched
             var c = w.Get<Creature>(e);
@@ -364,7 +373,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
 
         DrawOverlay(sim, x0, y0, x1, y1);
 
-        if (ShowPaths)
+        if (ShowPaths && Viewer == null)
             foreach (var e in sim.Creatures())
             {
                 var mover = w.Get<Mover>(e);
@@ -709,7 +718,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             if (ev.Tick <= _lastSpeechTick || !w.IsAlive(ev.Initiator))
                 continue;
             var cell = sim.LocationOf(ev.Initiator);
-            if (!inView(cell))
+            if (!inView(cell) || !Seen(ev.Initiator))
                 continue;
             var hostile = (ev.Def.RecipientThoughtDef?.Opinion ?? 0) < 0;
             var color = hostile ? new float4(1f, 0.55f, 0.5f, 0.95f) : new float4(1f, 0.97f, 0.88f, 0.95f);
@@ -808,6 +817,8 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         var white = S(TextureAtlas.White);
         foreach (var shot in sim.RecentShots)
         {
+            if (!SeenAt(shot.From) && !SeenAt(shot.To))
+                continue;
             if (!_firstSeen.ContainsKey(shot))
                 Float(shot.To + WorldScale.Rise(1.1f), shot.Hit ? "Hit!" : "Miss", shot.Hit ? new float4(1f, 0.43f, 0.35f, 1f) : new float4(0.8f, 0.8f, 0.8f, 1f));
             var age = Age(shot, time, 0.8f);
@@ -1422,7 +1433,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             {
                 var thing = w.Get<Thing>(e);
                 var count = w.Get<Stack>(e).Count;
-                if (!thing.Spawned || count <= 1 || thing.Cell.Z > cut)
+                if (!thing.Spawned || count <= 1 || thing.Cell.Z > cut || !Seen(e))
                     continue;
                 var p = cam.WorldToScreen(Position.CenterOf(thing.Cell) + new float3(0, 0, 0.15f + SurfaceUnder(map, w, thing.Cell)));
                 if (p.X < 0 || p.Y < 0 || p.X > cam.ViewportSize.X || p.Y > cam.ViewportSize.Y)
@@ -1436,7 +1447,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         {
             var c = w.Get<Creature>(e);
             var pos = w.Get<Position>(e);
-            if (pos.Cell.Z > cut)
+            if (pos.Cell.Z > cut || !Seen(e))
                 continue;
             // Under the feet (RimWorld-style), leaving the space over the head for status bubbles.
             var name = c.Dead ? $"{c.Name} (dead)" : c.Downed ? $"{c.Name} (down)" : c.Name;
@@ -1447,6 +1458,26 @@ public sealed class WorldRenderer(TextureAtlas atlas)
                 : c.Def.Race == Race.Animal ? new ImColor8(190, 215, 165, 255)
                 : new ImColor8(230, 230, 255, 255);
             Text(dl, p, name, color);
+        }
+        DrawSpokenLines(dl, cam, sim);
+    }
+
+    /// <summary>How long (ticks) a line stays over its speaker's head.</summary>
+    private const int SpokenLineTicks = SimClock.TicksPerSecond * 5;
+
+    /// <summary>What's just been said, over the heads of those the viewer can see and could make out.</summary>
+    private void DrawSpokenLines(ImDrawListPtr dl, Camera3D cam, Simulation sim)
+    {
+        if (Viewer == null)
+            return;
+        var w = sim.World;
+        foreach (var line in Viewer.Heard())
+        {
+            if (sim.Clock.Tick - line.Tick > SpokenLineTicks || line.Speaker is not { } who || !w.IsAlive(who) || !Seen(who))
+                continue;
+            var text = line.Text.Length > 60 ? line.Text[..59] + "…" : line.Text;
+            var at = cam.WorldToScreen(DrawPos(sim, who, w.Get<Position>(who).Pos) + WorldScale.Rise(VisualHeight(sim, who) + 0.5f));
+            Text(dl, at - new float2(ImGui.CalcTextSize(text, false, -1).X * 0.5f, 0), text, new ImColor8(255, 248, 225, 255));
         }
     }
 

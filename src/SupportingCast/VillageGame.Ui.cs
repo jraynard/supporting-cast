@@ -58,6 +58,8 @@ public sealed partial class VillageGame
             DrawCredits();
         DrawSaveWindows();
         DrawCoop();
+        DrawSpeech();
+        DrawWork();
         _settings.Draw();
     }
 
@@ -170,15 +172,32 @@ public sealed partial class VillageGame
         var w = _sim.World;
         if (!w.IsAlive(_selected))
             return;
+        var view = View;
+        if (!view.CanSee(_selected))
+        {
+            _selected = Entity.Null; // lost from sight
+            return;
+        }
         SetNextWindow(new float2(10, Screen.Y - 420), new float2(360, 400));
         ImGui.Begin("Inspector"u8, ImGuiWindowFlags.None);
 
         if (w.TryGet<Creature>(_selected, out var c))
-            InspectCreature(_selected, c);
+        {
+            if (view.Omniscient || _selected == _avatar)
+                InspectCreature(_selected, c);
+            else
+                InspectPerceived(_selected);
+        }
         else if (w.TryGet<Thing>(_selected, out var thing))
-            InspectThing(_selected, thing);
+        {
+            // A building is common knowledge, but what's in it takes going to look.
+            if (view.Omniscient || !thing.Spawned || view.CanSeeCell(thing.Cell))
+                InspectThing(_selected, thing);
+            else
+                InspectorHeader(thing.Def.Sprite is { Length: > 0 } art ? Host.Atlas.Get(art) : Host.Atlas.Get(TextureAtlas.White), thing.Def.Label, "Too far to make out.");
+        }
 
-        if (_devMode && ImGui.CollapsingHeader("Components (debug)"u8, ImGuiTreeNodeFlags.None))
+        if (_devMode && view.Omniscient && ImGui.CollapsingHeader("Components (debug)"u8, ImGuiTreeNodeFlags.None))
             foreach (var comp in w.DebugComponents(_selected))
                 TextC(Dim, Describe(comp));
         ImGui.End();
@@ -230,6 +249,16 @@ public sealed partial class VillageGame
         TextC(Dim, subtitle);
         ImGui.EndGroup();
         ImGui.Separator();
+    }
+
+    /// <summary>Someone else, as far as anyone can tell by looking.</summary>
+    private void InspectPerceived(Entity e)
+    {
+        if (View.Describe(e) is not { } seen)
+            return;
+        InspectorHeader(PortraitOf(e), seen.Name, seen.Condition, e);
+        if (seen.Holding is { } held)
+            TextC(Dim, $"Holding: {held}");
     }
 
     private void InspectCreature(Entity e, Creature c)
@@ -906,7 +935,7 @@ public sealed partial class VillageGame
             ImGui.Text($"Regrowing: {SimClock.TicksToDays((long)plant.RegrowTicksLeft) * 24:F1} h left");
 
         var reservedBy = _sim.Reservations.ReservedBy(e);
-        if (w.IsAlive(reservedBy))
+        if (w.IsAlive(reservedBy) && View.Omniscient) // who means to use it next is theirs to know
             TextC(Dim, $"Claimed by {w.Get<Creature>(reservedBy).Name}");
     }
 
@@ -965,13 +994,39 @@ public sealed partial class VillageGame
         ImGui.End();
     }
 
+    private readonly List<Message> _witnessedLog = [];
+    private long _witnessedTotal = -1;
+
+    /// <summary>Whether this player would know about a message: a public one, or one that happened where they can see.</summary>
+    private bool Witnessed(Message m) => m.Location is not { } at || View.CanSeeCell(at);
+
+    /// <summary>
+    /// The log this player is entitled to. In a round each message is judged as it arrives, by what
+    /// the character could see then, and kept here: by the next frame they may have walked away.
+    /// </summary>
+    private IReadOnlyList<Message> ShownMessages()
+    {
+        var log = _sim.Messages;
+        if (_sim.Round.Phase == Sim.Round.RoundPhase.None)
+            return log.Messages;
+        if (_witnessedTotal < 0 || _witnessedTotal > log.Total)
+            _witnessedTotal = log.Total; // nothing from before we arrived
+        for (var i = log.IndexAfter(_witnessedTotal); i < log.Messages.Count; i++)
+            if (Witnessed(log.Messages[i]))
+                _witnessedLog.Add(log.Messages[i]);
+        _witnessedTotal = log.Total;
+        if (_witnessedLog.Count > MessageLog.MaxKept)
+            _witnessedLog.RemoveRange(0, _witnessedLog.Count - MessageLog.MaxKept);
+        return _witnessedLog;
+    }
+
     private void DrawMessages()
     {
         SetNextWindow(new float2(Screen.X - 470, Screen.Y - 230), new float2(460, 220));
         // Toasts announce new messages; the full log starts collapsed.
         ImGui.SetNextWindowCollapsed(true, ImGuiCond.FirstUseEver);
         ImGui.Begin("Messages"u8, ImGuiWindowFlags.None);
-        var messages = _sim.Messages.Messages;
+        var messages = ShownMessages();
         var start = Math.Max(0, messages.Count - 60);
         for (var i = start; i < messages.Count; i++)
         {

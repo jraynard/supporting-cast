@@ -115,4 +115,7 @@ public sealed class WorkbenchProps
 {
     /// <summary>Most bills it takes at once.</summary>
     public int Bills { get; set; } = 8;
+
+    /// <summary>In a round, a player makes gear here by hand, as a mini-game (<see cref="Work.HammerSession"/>).</summary>
+    public bool HandWork { get; set; }
 }

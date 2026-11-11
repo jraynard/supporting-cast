@@ -25,6 +25,9 @@ public sealed class CoopSession : ILockstepGame, IDisposable
     public const int DefaultPort = 47060;
     public const int DiscoveryPort = 47061;
 
+    /// <summary>A round is for 4 to 12 players (docs/DESIGN.md).</summary>
+    public const int MaxPlayers = 12;
+
     private readonly LanAdvertiser? _advertiser;
 
     /// <summary>The shared village. Replaced when a snapshot loads (joining, resync); null until the first.</summary>
@@ -181,7 +184,7 @@ public sealed class CoopSession : ILockstepGame, IDisposable
     /// Session settings. Turns are sealed 30 times a second (two ticks each at normal speed):
     /// half of a turn is the average wait for a client's command, and a turn is a few bytes.
     /// </summary>
-    public static LockstepOptions Options(DefDatabase defs) => new() { GameId = GameId, BuildTag = BuildTag(defs), TurnInterval = 1f / 30f };
+    public static LockstepOptions Options(DefDatabase defs) => new() { GameId = GameId, BuildTag = BuildTag(defs), TurnInterval = 1f / 30f, MaxPlayers = MaxPlayers };
 
     private static string? _buildTag;
 
@@ -311,7 +314,11 @@ public sealed class CoopSession : ILockstepGame, IDisposable
 
     void ILockstepGame.PlayerAway(NetPlayer player) => VillagePlayers.Away(Sim!, player.Id);
 
-    void ILockstepGame.PlayerLeft(NetPlayer player) => VillagePlayers.Leave(Sim!, player.Id);
+    void ILockstepGame.PlayerLeft(NetPlayer player)
+    {
+        Sim!.Round.Stand(player.Id);
+        VillagePlayers.Leave(Sim, player.Id);
+    }
 
     void ILockstepGame.ApplyCommand(NetPlayer issuer, ReadOnlySpan<byte> bytes)
     {

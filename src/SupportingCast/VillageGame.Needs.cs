@@ -32,6 +32,8 @@ public sealed partial class VillageGame
         // Name: click for the inspector (everything else lives there).
         if (ImGui.Selectable(c.Name, _selected == _avatar, ImGuiSelectableFlags.None))
             _selected = _selected == _avatar ? Sim.Ecs.Entity.Null : _avatar;
+        if (_sim.World.TryGet<Trade>(_avatar, out var trade))
+            TextC(Ui.Theme.Dim, Capitalized(trade.Def.Label));
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
             Tip("Click for your full inspector: mood, health, skills, gear.");
 

@@ -17,22 +17,26 @@ namespace SupportingCast.Tests;
 /// </summary>
 public class CoopSessionTests
 {
-    private static readonly Lazy<DefDatabase> Defs = new(() => DefDatabase.LoadDirectory(DevPaths.Defs!));
+    internal static readonly Lazy<DefDatabase> Defs = new(() => DefDatabase.LoadDirectory(DevPaths.Defs!));
 
-    private sealed class Table
+    internal sealed class Table
     {
         public readonly LoopbackListener Listener = new();
         public readonly CoopSession Host;
         public readonly List<CoopSession> Clients = [];
         public float Speed = SimClock.TicksPerSecond;
 
-        public Table()
+        /// <param name="lobbyVillagers">Set: open a round's lobby over this many villagers, instead of a hero walking in.</param>
+        public Table(int? lobbyVillagers = null)
         {
             var sim = Simulation.CreateStandard(Defs.Value, 64, 64, 77, MapGenerator.RecommendedDepth);
-            var center = MapGenerator.Generate(sim, new MapGenerator.Options { Villagers = 1 });
+            var center = MapGenerator.Generate(sim, new MapGenerator.Options { Villagers = lobbyVillagers ?? 1 });
             sim.RebuildDerivedIfNeeded();
             VillageSetup.ApplyVillageDefaults(sim, center);
-            VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
+            if (lobbyVillagers == null)
+                VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
+            else
+                sim.Round.OpenLobby();
             Host = CoopSession.StartHost(sim, new PlayerIdentity(Guid.NewGuid(), "host"), "test", Listener);
         }
 

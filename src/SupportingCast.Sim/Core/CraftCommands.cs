@@ -130,7 +130,7 @@ public sealed record CraftCommand(Entity Avatar, Entity Station, RecipeDef Recip
             carrying.Item = Entity.Null;
 
         if (bench.Stocked)
-            AiSystem.Order(sim, Avatar, new CraftJob(Station, Recipe));
+            Crafting.WorkAt(sim, Avatar, Station, Recipe);
         else if (bench.NextNeeded(out var remaining) is var i and >= 0)
             sim.Messages.Add(MessageKind.Info,
                 $"The {Recipe.Label} still needs {remaining} {Recipe.Ingredients[i].ThingDef.Label}.", cell);

@@ -226,7 +226,7 @@ public sealed partial class VillageGame
         var w = _sim.World;
         var list = new List<Entity> { _avatar };
         var here = w.Get<Position>(_avatar).Cell;
-        foreach (var e in _sim.Creatures())
+        foreach (var e in View.Creatures())
             if (e != _avatar && w.Get<Creature>(e) is { Faction: Faction.Village, Dead: false }
                 && Sim.Ai.Pathfinder.Touches(here, w.Get<Position>(e).Cell) && Bandaging.WoundsToBind(_sim, e) > 0)
                 list.Add(e);

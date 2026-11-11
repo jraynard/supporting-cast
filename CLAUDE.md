@@ -13,7 +13,7 @@ dotnet build SupportingCast.sln
 dotnet test -c Release                                     # sim, game and Narsil tests
 dotnet test --filter VillageDayScenario --logger "console;verbosity=detailed"
 dotnet run --project src/SupportingCast                    # title screen
-dotnet run --project src/SupportingCast -- --new-game --name Arin        # straight into the village
+dotnet run --project src/SupportingCast -- --new-game --name Arin        # straight into a solo round (--trade Blacksmith, --bots N)
 dotnet run --project src/SupportingCast -- --host --name Arin            # host (--port N, --relay HOST, --difficulty D)
 dotnet run --project src/SupportingCast -- --join 127.0.0.1 --player-id bea --name Bea
 dotnet run --project src/SupportingCast -- --furniture-demo --zoom 80    # also --building-demo
@@ -40,6 +40,13 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art.
     `Simulation.Things.cs`; designate through `Map.Designate/...`. Anything affecting passability
     bumps `Map.MarkStructureChanged`.
   - `Scenarios/VillageRound` sets up a round's town. `Scenarios/VillageSetup` holds shared helpers.
+  - `Round/RoundSystem`: the lobby and deal. `Phase.None` means no round (tests, demos, bench), and
+    behaviour that belongs to rounds checks it. Players inhabit AI villagers.
+  - `Perception/`: what a character knows. Sight reads `Map.Light`, so it must never feed sim state.
+  - `Speech/`: who heard what, decided when spoken from positions and rooms, and saved.
+  - `Work/`: mini-games. `WorkSession.Advance` is pure, so `WorkPredictor` can run it ahead of the
+    sim; anything reading the world goes in `StillValid` or `Finish`. Inputs arrive in batches.
+  - `Bots/BotPlayer` plays only through commands and `Perception`.
   - Jobs (`Ai/Jobs.cs`) are iterator coroutines: use `GoTo`/`Reserve`, `Fail(reason)` then
     `yield break`, and check `Alive(target)` after every wait. `ReleasePawn` is everything ending a
     job does to the world. "Job" here is an AI task; a player's role is a **`Trade`**.
@@ -50,7 +57,7 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art.
     player's fight.
   - Player input reaches the sim only as `ISimCommand`s, through `VillageGame.Issue`. `CommandCodec`
     serializes by constructor parameter. Commands declare `IActorCommand`, `ISubjectCommand`,
-    `IPlayerCommand` or `IDevCommand`; `CommandRules.Refusal` checks them on every peer.
+    `IPlayerCommand`, `IHostCommand` or `IDevCommand`; `CommandRules.Refusal` checks them on every peer.
     `CommandTests.HostileCommandsDoNoHarm` sends each one hostile values.
   - Co-op: `PlayerCharacter` stays on a character, `Avatar` only while they're connected, so a
     player who leaves becomes an AI villager. See `external/narsil/docs/NETWORKING.md`.

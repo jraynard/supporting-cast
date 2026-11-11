@@ -30,6 +30,10 @@ public sealed class DefDatabase
     private readonly Dictionary<string, OutfitDef> _outfits = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, BuildingDef> _buildings = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, BuildingKitDef> _kits = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, TradeDef> _trades = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Trades a round deals out (data/defs/trades.json), in def order.</summary>
+    public List<TradeDef> AllTrades { get; } = [];
 
     public List<BlockDef> AllBlocks { get; } = [];
     public List<ThingDef> AllThings { get; } = [];
@@ -98,6 +102,7 @@ public sealed class DefDatabase
         public List<OutfitDef> Outfits { get; set; } = [];
         public List<BuildingDef> Buildings { get; set; } = [];
         public List<BuildingKitDef> Kits { get; set; } = [];
+        public List<TradeDef> Trades { get; set; } = [];
     }
 
     public static DefDatabase LoadDirectory(string directory)
@@ -152,6 +157,7 @@ public sealed class DefDatabase
         AddAll(file.Outfits, _outfits, AllOutfits, source);
         AddAll(file.Buildings, _buildings, AllBuildings, source);
         AddAll(file.Kits, _kits, AllKits, source);
+        AddAll(file.Trades, _trades, AllTrades, source);
     }
 
     private static void AddAll<T>(List<T> defs, Dictionary<string, T> map, List<T> all, string source)
@@ -197,6 +203,7 @@ public sealed class DefDatabase
         foreach (var d in AllRecipes) d.Resolve(this); // after things: stations collect their recipes
         foreach (var d in AllOutfits) d.Resolve(this);
         foreach (var d in AllBuildings) d.Resolve(this); // after things and thoughts: their parts, furniture, feasts
+        foreach (var d in AllTrades) d.Resolve(this); // after buildings: their workplaces
         GeneratePhaseDefs();
         // Every element a dragon can have needs its def (one each).
         Thoughts = KnownThoughts.Resolve(_thoughts);
@@ -342,6 +349,7 @@ public sealed class DefDatabase
     public OutfitDef Outfit(string name) => Lookup(_outfits, name);
     public BuildingDef Building(string name) => Lookup(_buildings, name);
     public BuildingKitDef Kit(string name) => Lookup(_kits, name);
+    public TradeDef Trade(string name) => Lookup(_trades, name);
     public bool TryMaterial(string name, out MaterialDef def) => _materials.TryGetValue(name, out def!);
     public bool TryTrait(string name, out TraitDef def) => _traits.TryGetValue(name, out def!);
 

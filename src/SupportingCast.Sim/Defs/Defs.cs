@@ -318,6 +318,9 @@ public sealed class BuildingProps
     /// <summary>A wall (with <see cref="IsWall"/>) that fences a yard but never encloses a room: rooms flow past it.</summary>
     public bool Fence { get; set; }
 
+    /// <summary>Low or open enough to see past, though it stops a walker (split rails, not logs).</summary>
+    public bool SeeThrough { get; set; }
+
     /// <summary>Construction work in work-ticks.</summary>
     public float Work { get; set; } = 100;
 

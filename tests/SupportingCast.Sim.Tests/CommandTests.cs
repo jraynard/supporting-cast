@@ -31,6 +31,8 @@ public class CommandTests
         if (t == typeof(MaterialDef)) return defs.Material("Oak");
         if (t == typeof(RaiderKindDef)) return defs.AllRaiderKinds[0];
         if (t == typeof(BuildingDef)) return defs.Building("Dwelling");
+        if (t == typeof(TradeDef)) return defs.Trade("Healer");
+        if (t == typeof(Work.WorkInput)) return new Work.WorkInput(1, Work.WorkInputKind.Press, 1);
         if (t.IsArray)
         {
             var a = Array.CreateInstance(t.GetElementType()!, 2);
@@ -110,6 +112,7 @@ public class CommandTests
                     3 => avatar,
                     _ => real[rand.Next(real.Count)],
                 };
+            if (t == typeof(Work.WorkInput)) return new Work.WorkInput(Int(), (Work.WorkInputKind)rand.Next(0, 8), Int());
             if (t == typeof(int2)) return new int2(Int(), Int());
             if (t == typeof(int3)) return rand.Next(3) == 0 ? new int3(Int(), Int(), Int()) : new int3(rand.Next(-2, 66), rand.Next(-2, 66), rand.Next(-1, 13));
             if (typeof(Def).IsAssignableFrom(t))

@@ -8,6 +8,7 @@ using SupportingCast.Sim;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Core;
 using SupportingCast.Sim.Ecs;
+using SupportingCast.Sim.Round;
 using SupportingCast.Sim.Scenarios;
 using SupportingCast.Sim.Systems;
 using SupportingCast.Ui;
@@ -136,7 +137,7 @@ public sealed partial class VillageGame
         var session = _coop!;
         if (session.Ended != null)
             return;
-        var stepsPerSecond = Paused ? 0 : SimClock.TicksPerSecond * SpeedMultipliers[_speed];
+        var stepsPerSecond = Paused || InLobby ? 0 : SimClock.TicksPerSecond * SpeedMultipliers[_speed];
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
         var before = _sim.Clock.Tick;
         session.Update(dt, stepsPerSecond);
@@ -159,6 +160,9 @@ public sealed partial class VillageGame
             {
                 var at = _sim.World.Get<Position>(_avatar).Cell;
                 _camera.Target = new float3(at.X + 0.5f, at.Y + 0.5f, at.Z);
+                if (StartZoom <= 0)
+                    _camera.Zoom = AdventureZoom;
+                AnnounceTrade();
             }
         }
     }
@@ -184,7 +188,14 @@ public sealed partial class VillageGame
         }
 
         if (session.Ready && Players.CharacterOf(_sim, session.Me.Id).IsNull)
-            DrawCoopCreator(session, center, middle);
+        {
+            if (_sim.Round.Phase == RoundPhase.Playing)
+                DrawTakeTrade(session, center, middle);
+            else if (_sim.Round.SeatOf(session.Me.Id) == null)
+                DrawCoopCreator(session, center, middle);
+        }
+        if (session.Ready && InLobby && _sim.Round.SeatOf(session.Me.Id) != null) // until then the creator has the screen
+            DrawLobby(session);
 
         if (session.Stalled || session.Reconnecting)
         {
@@ -230,8 +241,11 @@ public sealed partial class VillageGame
             }
             foreach (var p in session.Players)
             {
-                var character = Players.CharacterOf(_sim, p.Id);
-                var label = character.IsNull ? $"{p.Name} (making a character)" : $"{p.Name} as {_sim.World.Get<Creature>(character).Name}";
+                // In a round this list is names only: who plays whom, and where they are, is for
+                // characters to find out.
+                var character = _sim.Round.Phase == RoundPhase.None ? Players.CharacterOf(_sim, p.Id) : Entity.Null;
+                var label = _sim.Round.Phase != RoundPhase.None ? p.Name
+                    : character.IsNull ? $"{p.Name} (making a character)" : $"{p.Name} as {_sim.World.Get<Creature>(character).Name}";
                 ImGui.Text(p.IsHost ? $"{label}  [host]" : p.Away ? $"{label}  (reconnecting)" : $"{label}  {p.PingMs} ms");
                 if (!character.IsNull && ImGui.IsItemClicked(ImGuiMouseButton.Left))
                 {
@@ -248,7 +262,8 @@ public sealed partial class VillageGame
                     ImGui.PopID();
                 }
             }
-            DrawChat(session);
+            if (_sim.Round.Phase == RoundPhase.None) // the lobby has its own; a round has speech
+                DrawChat(session);
             if (session.IsHost)
                 TextC(Theme.Dim, "Peaceful: raids are off in co-op for now.");
             TextC(Theme.Dim, $"{BuildInfo.Label}, build {BuildInfo.Tag(_sim.Defs)}");
@@ -354,8 +369,7 @@ public sealed partial class VillageGame
     private void UseSaved(CoopSession session, SavedCharacter c)
     {
         _roster!.Put(c); // most recently used
-        session.Send(new CreateCharacterCommand(session.Me.Id, c.Name, c.Look, c.Traits, Clothes: c.Clothes));
-        _characterRequested = true;
+        SendArrival(session, c.Name, c.Look, c.Traits, c.Clothes);
     }
 
     /// <summary>Arrive as the character in the creator, and remember them (a new one, or the one edited).</summary>
@@ -368,7 +382,16 @@ public sealed partial class VillageGame
             Id = before?.Id ?? Guid.NewGuid(),
             Name = creator.Name, Look = creator.Look, Traits = creator.Traits.ToList(), Clothes = creator.Clothes.ToList(),
         });
-        session.Send(new CreateCharacterCommand(session.Me.Id, creator.Name, creator.Look, creator.Traits, Clothes: creator.Clothes));
+        SendArrival(session, creator.Name, creator.Look, creator.Traits, creator.Clothes);
+    }
+
+    /// <summary>A finished character takes a seat in the lobby, or with no round simply arrives.</summary>
+    private void SendArrival(CoopSession session, string name, Appearance look, IReadOnlyList<string> traits, IReadOnlyList<string> clothes)
+    {
+        if (InLobby)
+            session.Send(new JoinLobbyCommand(session.Me.Id, name, look, traits, clothes));
+        else
+            session.Send(new CreateCharacterCommand(session.Me.Id, name, look, traits, Clothes: clothes));
         _characterRequested = true;
     }
 

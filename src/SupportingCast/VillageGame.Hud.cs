@@ -23,7 +23,7 @@ public sealed partial class VillageGame
 
     /// <summary>Village members for the bar: humans first, then dragons, in a stable order.</summary>
     private IEnumerable<Entity> VillageMembers() =>
-        _sim.Creatures()
+        (_sim.Round.Phase == Sim.Round.RoundPhase.None ? _sim.Creatures() : HasAvatar ? [_avatar] : [])
             .Where(e => _sim.World.Get<Creature>(e) is { Faction: Faction.Village, Dead: false })
             .OrderBy(e => _sim.World.Get<Creature>(e).Def.Race == Race.Dragon ? 1 : 0)
             .ThenBy(e => e.Index);
@@ -249,7 +249,8 @@ public sealed partial class VillageGame
         if (_toastedMessages < 0)
             _toastedMessages = _sim.Messages.Total; // don't replay setup history
         for (var i = _sim.Messages.IndexAfter(_toastedMessages); i < messages.Count; i++)
-            _toasts.Add(new Toast(messages[i], _time));
+            if (Witnessed(messages[i]))
+                _toasts.Add(new Toast(messages[i], _time));
         _toastedMessages = _sim.Messages.Total;
         _toasts.RemoveAll(t => _time - t.Shown > 7f);
         while (_toasts.Count > 4)

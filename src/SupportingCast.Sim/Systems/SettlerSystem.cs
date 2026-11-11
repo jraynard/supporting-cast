@@ -21,6 +21,8 @@ public sealed class SettlerSystem : ISimSystem
     public void Update(Simulation sim)
     {
         var w = sim.World;
+        if (sim.Round.Phase != Round.RoundPhase.None)
+            return; // a round has a fixed cast
         if (w.Count<Avatar>() == 0 && w.Count<PlayerCharacter>() == 0)
             return; // no players
         var owned = new HashSet<Entity>();
