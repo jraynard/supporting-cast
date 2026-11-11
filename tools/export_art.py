@@ -4,7 +4,7 @@
     python3 tools/export_art.py                  # export everything that's stale
     python3 tools/export_art.py --all            # export everything
     python3 tools/export_art.py --check          # list stale exports, exit 1 if any (CI)
-    python3 tools/export_art.py --watch --also-copy-to src/DragonWorld/bin/Debug/net10.0/data/textures
+    python3 tools/export_art.py --watch --also-copy-to src/SupportingCast/bin/Debug/net10.0/data/textures
                                                  # re-export on save; the running game hot-reloads
 
 art/creatures/dragon_adult.aseprite -> data/textures/creatures/dragon_adult.png + .anim.json.

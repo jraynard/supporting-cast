@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # Install a Linux desktop entry for the game, for the current user: the app launcher entry, and the
 # taskbar icon on Wayland (where a window can't set its own icon; the compositor matches the
-# window's app_id, "embersong-vale", to embersong-vale.desktop and takes the icon from there).
+# window's app_id, "supporting-cast", to supporting-cast.desktop and takes the icon from there).
 #
 #   tools/install-desktop-entry.sh                    # launches from this checkout (dotnet run)
-#   tools/install-desktop-entry.sh /opt/ev/DragonWorld # launches a packaged build
+#   tools/install-desktop-entry.sh /opt/ev/SupportingCast # launches a packaged build
 #   tools/install-desktop-entry.sh --uninstall
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-id="embersong-vale"
+id="supporting-cast"
 data="${XDG_DATA_HOME:-$HOME/.local/share}"
 entry="$data/applications/$id.desktop"
 
@@ -24,7 +24,7 @@ if [[ $# -ge 1 ]]; then
     exec_line="\"$(realpath "$1")\""
     workdir="$(dirname "$(realpath "$1")")"
 else
-    exec_line="dotnet run --project \"$root/src/DragonWorld\""
+    exec_line="dotnet run --project \"$root/src/SupportingCast\""
     workdir="$root"
 fi
 
@@ -35,7 +35,7 @@ mkdir -p "$(dirname "$entry")"
 cat > "$entry" <<EOF
 [Desktop Entry]
 Type=Application
-Name=Embersong Vale
+Name=Supporting Cast
 Comment=A village of dragons and humans
 Exec=$exec_line
 Path=$workdir

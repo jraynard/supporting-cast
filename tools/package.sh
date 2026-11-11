@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Package DragonWorld for alpha testers: self-contained Windows, Linux and macOS (Apple Silicon)
+# Package SupportingCast for alpha testers: self-contained Windows, Linux and macOS (Apple Silicon)
 # builds, checked and archived.
 #
 #   tools/package.sh                 # version from Directory.Build.props
 #   tools/package.sh 0.1.0-alpha.2   # or a given version (CI passes the release tag's)
 #
-# Output in dist/: DragonWorld-<ver>-win-x64.zip, DragonWorld-<ver>-linux-x64.tar.gz,
-# DragonWorld-<ver>-osx-arm64.tar.gz (a DragonWorld.app) and SHA256SUMS.txt. If /srv/dragonworld exists (the LAN share; DW_SHARE_DIR picks another, and
+# Output in dist/: SupportingCast-<ver>-win-x64.zip, SupportingCast-<ver>-linux-x64.tar.gz,
+# SupportingCast-<ver>-osx-arm64.tar.gz (a SupportingCast.app) and SHA256SUMS.txt. If /srv/supporting-cast exists (the LAN share; SC_SHARE_DIR picks another, and
 # DW_NO_SHARE=1 skips it), the archives and README-ALPHA.txt are copied there too, replacing older builds.
 #
 # Every platform is built here from one compiler run on purpose: co-op only connects builds with
@@ -30,7 +30,7 @@ fi
 [[ -n "$version" ]] || { echo "error: no version" >&2; exit 1; }
 rids=(win-x64 linux-x64 osx-arm64)
 dist="$root/dist"
-name="DragonWorld-$version"
+name="SupportingCast-$version"
 
 MOLTENVK_VERSION=1.4.2
 MOLTENVK_SHA256=f95765a6229cb7b915990a2890ce12ebe36a730b021545d3d52ae69ce4c4024e
@@ -55,10 +55,10 @@ moltenvk() {
     echo "$cache"
 }
 
-# The Mac build as DragonWorld.app: everything in Contents/MacOS (the game finds data/ beside its
+# The Mac build as SupportingCast.app: everything in Contents/MacOS (the game finds data/ beside its
 # executable), plus an Info.plist so Finder launches it with a proper name and menu bar.
 make_app() {
-    local out="$1" app="$1/DragonWorld.app"
+    local out="$1" app="$1/SupportingCast.app"
     local stage="$out.stage"
     mv "$out" "$stage"
     mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
@@ -70,11 +70,11 @@ make_app() {
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleName</key><string>Embersong Vale</string>
-    <key>CFBundleDisplayName</key><string>Embersong Vale</string>
+    <key>CFBundleName</key><string>Supporting Cast</string>
+    <key>CFBundleDisplayName</key><string>Supporting Cast</string>
     <key>CFBundleIconFile</key><string>icon</string>
-    <key>CFBundleIdentifier</key><string>com.jraynard.dragonworld</string>
-    <key>CFBundleExecutable</key><string>DragonWorld</string>
+    <key>CFBundleIdentifier</key><string>com.jraynard.supportingcast</string>
+    <key>CFBundleExecutable</key><string>SupportingCast</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleVersion</key><string>$version</string>
     <key>CFBundleShortVersionString</key><string>${version%%-*}</string>
@@ -98,9 +98,9 @@ for rid in "${rids[@]}"; do
     # and embedded it gives crash reports line numbers. For the same reason every platform compiles
     # in one intermediate folder (no RID in its path), emptied first so nothing stale is reused.
     # PlatformTarget=AnyCPU too: publishing an executable for a RID otherwise stamps that RID's CPU
-    # (x64, arm64) into DragonWorld.dll, so the Mac build's would differ. IL runs on any of them.
+    # (x64, arm64) into SupportingCast.dll, so the Mac build's would differ. IL runs on any of them.
     find src external/narsil/src -type d -path '*/obj/package' -prune -exec rm -rf {} +
-    dotnet publish src/DragonWorld -c Release -r "$rid" --self-contained true \
+    dotnet publish src/SupportingCast -c Release -r "$rid" --self-contained true \
         -p:Version="$version" -p:PublishTrimmed=false -p:PublishSingleFile=false -p:PublishReadyToRun=false \
         -p:DebugType=embedded -p:PlatformTarget=AnyCPU -p:IntermediateOutputPath=obj/package/ -p:AppendRuntimeIdentifierToIntermediateOutputPath=false \
         -o "$out" --nologo -v quiet
@@ -115,10 +115,10 @@ for rid in "${rids[@]}"; do
     done
     (( $(find "$out/licenses" -name '*.txt' | wc -l) >= 4 )) || fail "$rid: the BRUTAL third-party notices are missing from licenses/"
     case "$rid" in
-        win-*) [[ -f "$out/DragonWorld.exe" && -f "$out/glfw3.dll" && -f "$out/shaderc_shared.dll" ]] || fail "$rid: exe or native DLLs missing" ;;
-        linux-*) [[ -x "$out/DragonWorld" && -f "$out/libglfw.so" && -f "$out/libshaderc_shared.so" ]] || fail "$rid: executable or native libraries missing" ;;
+        win-*) [[ -f "$out/SupportingCast.exe" && -f "$out/glfw3.dll" && -f "$out/shaderc_shared.dll" ]] || fail "$rid: exe or native DLLs missing" ;;
+        linux-*) [[ -x "$out/SupportingCast" && -f "$out/libglfw.so" && -f "$out/libshaderc_shared.so" ]] || fail "$rid: executable or native libraries missing" ;;
         osx-*)
-            [[ -x "$out/DragonWorld" && -f "$out/libglfw.dylib" && -f "$out/libshaderc_shared.dylib" && -f "$out/libVulkanEx.dylib" ]] \
+            [[ -x "$out/SupportingCast" && -f "$out/libglfw.dylib" && -f "$out/libshaderc_shared.dylib" && -f "$out/libVulkanEx.dylib" ]] \
                 || fail "$rid: executable or native libraries missing"
             mvk="$(moltenvk)"
             cp "$mvk/libMoltenVK.dylib" "$out/libvulkan.1.dylib"
@@ -134,7 +134,7 @@ echo "==> compare builds (co-op needs identical game code and defs)"
 a="$dist/$name-${rids[0]}"
 for rid in "${rids[@]:1}"; do
     b="$dist/$name-$rid"
-    for dll in DragonWorld.dll DragonWorld.Sim.dll Narsil.dll Narsil.Sim.dll Narsil.Voxel.dll; do
+    for dll in SupportingCast.dll SupportingCast.Sim.dll Narsil.dll Narsil.Sim.dll Narsil.Voxel.dll; do
         cmp -s "$a/$dll" "$b/$dll" || fail "$dll differs between ${rids[0]} and $rid: co-op between them would be refused"
     done
     diff -r -q "$a/data/defs" "$b/data/defs" > /dev/null || fail "data/defs differs between ${rids[0]} and $rid"
@@ -142,8 +142,8 @@ done
 
 echo "==> smoke test (linux-x64, headless)"
 linux="$dist/$name-linux-x64"
-"$linux/DragonWorld" --version | tee "$dist/version.txt"
-"$linux/DragonWorld" --check-art > /dev/null || fail "--check-art failed"
+"$linux/SupportingCast" --version | tee "$dist/version.txt"
+"$linux/SupportingCast" --check-art > /dev/null || fail "--check-art failed"
 
 echo "==> macOS app bundle"
 mac="$dist/$name-osx-arm64"
@@ -154,10 +154,10 @@ make_app "$mac"
 mv "$dist/.mac-docs"/* "$mac/" # beside the .app, where testers see them
 rmdir "$dist/.mac-docs"
 if command -v rcodesign > /dev/null; then
-    rcodesign sign "$mac/DragonWorld.app" > /dev/null || fail "rcodesign couldn't sign DragonWorld.app"
+    rcodesign sign "$mac/SupportingCast.app" > /dev/null || fail "rcodesign couldn't sign SupportingCast.app"
     echo "(ad-hoc signed with rcodesign)"
 else
-    echo "(rcodesign not found: DragonWorld.app is unsigned; CI signs it on a Mac)"
+    echo "(rcodesign not found: SupportingCast.app is unsigned; CI signs it on a Mac)"
 fi
 
 echo "==> archive"
@@ -176,14 +176,14 @@ echo "Packaged $version:"
 (cd "$dist" && ls -lh "$name"-*.zip "$name"-*.tar.gz SHA256SUMS.txt)
 
 # Publish to the LAN share (a folder Samba serves, see docs/alpha/README-ALPHA.md), when there is
-# one: DW_SHARE_DIR, default /srv/dragonworld. Only the newest build is kept there so nobody grabs
+# one: SC_SHARE_DIR, default /srv/supporting-cast. Only the newest build is kept there so nobody grabs
 # an old one. Files are copied under temporary names and renamed, so a tester copying while this
 # runs never gets half a file.
-share="${DW_SHARE_DIR:-/srv/dragonworld}"
+share="${SC_SHARE_DIR:-/srv/supporting-cast}"
 if [[ -n "${DW_NO_SHARE:-}" ]]; then
     echo "(DW_NO_SHARE set: not copying to the share)"
 elif [[ ! -d "$share" ]]; then
-    echo "(no share folder at $share: not copying; set DW_SHARE_DIR to use another)"
+    echo "(no share folder at $share: not copying; set SC_SHARE_DIR to use another)"
 elif [[ ! -w "$share" ]]; then
     fail "can't write to the share folder $share (it should belong to $(id -un))"
 else
@@ -197,6 +197,6 @@ else
     cp docs/alpha/README-ALPHA.md "$share/.README-ALPHA.txt.partial" && chmod 644 "$share/.README-ALPHA.txt.partial" \
         && mv -f "$share/.README-ALPHA.txt.partial" "$share/README-ALPHA.txt"
     # Older builds go once the new one is in place.
-    find "$share" -maxdepth 1 -name 'DragonWorld-*' ! -name "$name-*" -delete
+    find "$share" -maxdepth 1 -name 'SupportingCast-*' ! -name "$name-*" -delete
     ls -lh "$share"
 fi

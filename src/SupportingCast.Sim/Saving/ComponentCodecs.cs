@@ -1,0 +1,823 @@
+using SupportingCast.Sim.Combat;
+using SupportingCast.Sim.Components;
+using SupportingCast.Sim.Defs;
+
+namespace SupportingCast.Sim.Saving;
+
+/// <summary>Writes and reads one component type's store: entity plus data, in dense order.</summary>
+internal abstract class ComponentCodec
+{
+    public abstract string Name { get; }
+    public abstract Type Type { get; }
+    public abstract int Count(World world);
+    public abstract void Write(SaveWriter w, World world);
+    public abstract void Read(SaveReader r, World world);
+
+    /// <summary>One value on its own, for commands that carry a component (a look picked in the creator).</summary>
+    public abstract void WriteValue(SaveWriter w, object value);
+    public abstract object ReadValue(SaveReader r);
+}
+
+internal sealed class ComponentCodec<T>(string name, Action<SaveWriter, T> write, Func<SaveReader, T> read) : ComponentCodec
+{
+    public override string Name => name;
+    public override Type Type => typeof(T);
+    public override int Count(World world) => world.Store<T>().Count;
+    public override void WriteValue(SaveWriter w, object value) => write(w, (T)value);
+    public override object ReadValue(SaveReader r) => read(r)!;
+
+    public override void Write(SaveWriter w, World world)
+    {
+        var store = world.Store<T>();
+        w.Int(store.Count);
+        for (var i = 0; i < store.Count; i++)
+        {
+            w.Entity(store.Entities[i]);
+            write(w, store.Components[i]);
+        }
+    }
+
+    // Set in saved order, so the dense arrays (and with them Query/Each order) come back as they were.
+    public override void Read(SaveReader r, World world)
+    {
+        var store = world.Store<T>();
+        var count = r.Count();
+        for (var i = 0; i < count; i++)
+        {
+            var e = r.Entity();
+            if (!world.IsAlive(e))
+                throw new SaveException($"Corrupt save: {name} on dead {e}");
+            r.CurrentEntity = e;
+            store.Set(e, read(r));
+        }
+        r.CurrentEntity = Entity.Null;
+    }
+}
+
+/// <summary>
+/// One codec per component type, written by hand so the file format is explicit and a renamed field
+/// can't silently change it. Saving a world that has a component with no codec here throws, so a
+/// new component can't be forgotten (and <c>SaveLoadTests</c> checks every type in Components).
+/// </summary>
+internal static class ComponentCodecs
+{
+    /// <summary>An element read from a save, Fire for anything the enum doesn't name.</summary>
+    private static DragonElement ValidElement(int v) => Enum.IsDefined((DragonElement)v) ? (DragonElement)v : DragonElement.Fire;
+
+    public static readonly ComponentCodec[] All =
+    [
+        Codec("Thing", (w, t) =>
+        {
+            w.Def(t.Def);
+            w.Def(t.Material);
+            w.Int3(t.Cell);
+            w.Float(t.Hp);
+            w.Bool(t.Spawned);
+            w.Int(t.Facing);
+        }, r => new Thing
+        {
+            Def = r.Def<ThingDef>(), Material = r.DefOrNull<MaterialDef>(), Cell = r.Int3(), Hp = r.Float(), Spawned = r.Bool(),
+            Facing = r.Version >= 3 ? (byte)r.Int() : (byte)0, // facing came with format 3
+        }),
+        Codec("Stack", (w, s) => w.Int(s.Count), r => new Stack { Count = r.Int() }),
+        Codec("Fueled", (w, f) =>
+        {
+            w.Float(f.Fuel);
+            w.Def(f.Loaded);
+        }, r => new Fueled { Fuel = r.Float(), Loaded = r.Version >= 9 ? r.DefOrNull<ThingDef>() : null }), // the loaded fuel came with format 9
+        Codec("PlantState", (w, p) => w.Float(p.RegrowTicksLeft), r => new PlantState { RegrowTicksLeft = r.Float() }),
+        Codec("Construction", WriteConstruction, ReadConstruction),
+        // Preset buildings (format 18).
+        Codec("PresetBuilding", (w, b) =>
+        {
+            w.Def(b.Def);
+            w.Int(b.Variant);
+            w.Int3(b.Anchor);
+            w.Int(b.Facing);
+            w.Int((int)b.Phase);
+            w.Bool(b.Demolishing);
+            w.Int(b.Upgrades.Count);
+            foreach (var u in b.Upgrades)
+                w.String(u);
+        }, r =>
+        {
+            var b = new PresetBuilding
+            {
+                Def = r.Def<BuildingDef>(), Variant = r.Int(), Anchor = r.Int3(), Facing = (byte)(r.Int() & 3),
+                Phase = (BuildPhase)Math.Clamp(r.Int(), 0, (int)BuildPhase.Done), Demolishing = r.Bool(),
+            };
+            if (r.Version >= 19) // upgrades came with format 19; one the defs no longer have is dropped
+                for (var n = r.Count(100); n > 0; n--)
+                    if (r.String() is var name && b.Def.Upgrades.Exists(u => u.Name == name))
+                        b.Upgrades.Add(name);
+            return b;
+        }),
+        Codec("PartOf", (w, p) => w.Entity(p.Building), r => new PartOf { Building = r.Entity() }),
+        Codec("Workbench", WriteWorkbench, ReadWorkbench),
+        Codec("Stoked", (w, s) => w.Long(s.Until), r => new Stoked { Until = r.Long() }),
+        Codec("Blown", (w, b) => w.Long(b.Until), r => new Blown { Until = r.Long() }),
+        // Breath of the other elements (format 14).
+        Codec("Nurtured", (w, n) => w.Long(n.Until), r => new Nurtured { Until = r.Long() }),
+        Codec("Chilled", (w, c) => w.Long(c.Until), r => new Chilled { Until = r.Long() }),
+        Codec("VenomCloud", (w, v) =>
+        {
+            w.Int3(v.Cell);
+            w.Float(v.Radius);
+            w.Long(v.Until);
+            w.Entity(v.Source);
+        }, r => new VenomCloud { Cell = r.Int3(), Radius = r.Float(), Until = r.Long(), Source = r.Entity() }),
+        Codec("FoodPoisoned", (w, p) =>
+        {
+            w.Long(p.Until);
+            w.Float(p.Severity);
+        }, r => new FoodPoisoned { Until = r.Long(), Severity = r.Float() }),
+        Codec("Afflictions", (w, a) =>
+        {
+            w.Long(a.ChillUntil);
+            w.Float(a.Chill);
+            w.Long(a.StunUntil);
+            w.Float(a.StunTu);
+            w.Long(a.VenomUntil);
+            w.Float(a.VenomPerHour);
+            w.Entity(a.VenomFrom);
+            w.Long(a.RootUntil);
+        }, r => new Afflictions
+        {
+            ChillUntil = r.Long(), Chill = r.Float(), StunUntil = r.Long(), StunTu = r.Float(),
+            VenomUntil = r.Long(), VenomPerHour = r.Float(), VenomFrom = r.Entity(), RootUntil = r.Long(),
+        }),
+        Codec("Crafted", (w, c) =>
+        {
+            w.Int((int)c.Quality);
+            w.Entity(c.Maker);
+        }, r => new Crafted { Quality = (Quality)r.Int(), Maker = r.Entity() }),
+        Codec("RecipeBook", (w, b) =>
+        {
+            var known = b.Known.OrderBy(d => d.Index).ToList(); // a stable order, whatever the set's
+            w.Int(known.Count);
+            foreach (var d in known)
+                w.Def(d);
+        }, r =>
+        {
+            var b = new RecipeBook();
+            var n = r.Count(10000);
+            for (var i = 0; i < n; i++)
+                b.Known.Add(r.Def<RecipeDef>());
+            return b;
+        }),
+        Codec("Egg", (w, e) =>
+        {
+            w.Float(e.Progress);
+            w.Entity(e.Keeper);
+            w.Def(e.Breed);
+            w.Int((int)e.Element);
+        }, r => new Egg
+        {
+            Progress = r.Float(),
+            Keeper = r.Version >= 5 ? r.Entity() : Entity.Null, // keeper came with format 5
+            Breed = r.Version >= 14 ? r.DefOrNull<CreatureDef>() : null, // breeds and the egg's element came with format 14
+            Element = r.Version >= 14 ? ValidElement(r.Int()) : DragonElement.Fire,
+        }),
+        Codec("PlayerCharacter", (w, p) => w.String(p.PlayerId.ToString("N")), r => new PlayerCharacter { PlayerId = Guid.ParseExact(r.String(), "N") }),
+        Codec("Rot", (w, e) => w.Float(e.Progress), r => new Rot { Progress = r.Float() }),
+        Codec("Prisoner", (w, p) =>
+        {
+            w.Int((int)p.Was);
+            w.Int((int)p.Mode);
+            w.Float(p.Resistance);
+            w.Long(p.LastVisit);
+        }, r => new Prisoner { Was = (Faction)r.Int(), Mode = (PrisonerMode)r.Int(), Resistance = r.Float(), LastVisit = r.Long() }),
+        Tag<CaptureOrder>("CaptureOrder"),
+        Tag<HuntOrder>("HuntOrder"),
+        Codec("Saddled", (w, s) => w.Entity(s.Saddle), r => new Saddled { Saddle = r.Entity() }),
+        Codec("HuntPolicy", (w, p) =>
+        {
+            w.Int((int)p.Mode);
+            w.Bool(p.BringHome);
+            w.Bool(p.Dangerous);
+            w.Int(p.Range);
+        }, r => new HuntPolicy { Mode = (HuntMode)r.Int(), BringHome = r.Bool(), Dangerous = r.Bool(), Range = r.Int() }),
+        Codec("Mount", (w, m) => w.Entity(m.Rider), r => new Mount { Rider = r.Entity() }),
+        Codec("Riding", (w, m) => w.Entity(m.Mount), r => new Riding { Mount = r.Entity() }),
+        Codec("Provoked", (w, p) =>
+        {
+            w.Entity(p.By);
+            w.Long(p.Tick);
+        }, r => new Provoked { By = r.Entity(), Tick = r.Long() }),
+        Codec("Herd", (w, h) =>
+        {
+            w.Int(h.Id);
+            w.Long(h.LeaveTick);
+        }, r => new Herd { Id = r.Int(), LeaveTick = r.Long() }),
+        Tag<ForPrisoners>("ForPrisoners"),
+        Tag<NonViolent>("NonViolent"),
+        Tag<Leaving>("Leaving"),
+        Tag<Escaping>("Escaping"),
+        Codec("Equipment", (w, e) => w.Entity(e.Weapon), r => new Equipment { Weapon = r.Entity() }),
+        Codec("Apparel", (w, a) =>
+        {
+            w.Entity(a.Head);
+            w.Entity(a.Body);
+            w.Entity(a.Back);
+            w.Entity(a.Neck);
+            w.Entity(a.Tunic);
+            w.Entity(a.Legs);
+            w.Entity(a.Feet);
+            w.Entity(a.Cloak);
+        }, r => new Apparel
+        {
+            Head = r.Entity(), Body = r.Entity(),
+            Back = r.Version >= 6 ? r.Entity() : Entity.Null, // packs came with format 6
+            Neck = r.Version >= 9 ? r.Entity() : Entity.Null, // jewelry with format 9
+            Tunic = r.Version >= 12 ? r.Entity() : Entity.Null, // clothes with format 12
+            Legs = r.Version >= 12 ? r.Entity() : Entity.Null,
+            Feet = r.Version >= 12 ? r.Entity() : Entity.Null,
+            Cloak = r.Version >= 12 ? r.Entity() : Entity.Null,
+        }),
+        Codec("Outfit", (w, o) =>
+        {
+            w.Bool(o.BareHead);
+            w.Bool(o.BareBody);
+            w.Bool(o.Unarmed);
+            w.Entity(o.Wanted);
+            w.Bool(o.BareBack);
+            w.Bool(o.BareNeck);
+            w.Bool(o.BareTunic);
+            w.Bool(o.BareLegs);
+            w.Bool(o.BareFeet);
+            w.Bool(o.BareCloak);
+        }, r => new Outfit
+        {
+            BareHead = r.Bool(), BareBody = r.Bool(), Unarmed = r.Bool(), Wanted = r.Entity(),
+            BareBack = r.Version >= 6 && r.Bool(), BareNeck = r.Version >= 9 && r.Bool(),
+            BareTunic = r.Version >= 12 && r.Bool(), BareLegs = r.Version >= 12 && r.Bool(), // clothes with format 12
+            BareFeet = r.Version >= 12 && r.Bool(), BareCloak = r.Version >= 12 && r.Bool(),
+        }),
+        Codec("Creature", (w, c) =>
+        {
+            w.Def(c.Def);
+            w.String(c.Name);
+            w.Int((int)c.Faction);
+            w.Long(c.BornTick);
+            w.Float(c.Hp);
+            w.Bool(c.Dead);
+            w.Bool(c.Downed);
+        }, r => new Creature
+        {
+            Def = r.Def<CreatureDef>(), Name = r.String(), Faction = (Faction)r.Int(), BornTick = r.Long(),
+            Hp = r.Float(), Dead = r.Bool(), Downed = r.Bool(),
+        }),
+        Codec("Health", WriteHealth, ReadHealth),
+        Codec("Carried", (w, c) => w.Entity(c.By), r => new Carried { By = r.Entity() }),
+        Codec("Needs", WriteNeeds, ReadNeeds),
+        Codec("Position", (w, p) =>
+        {
+            w.Float3(p.Pos);
+            w.Int3(p.Cell);
+        }, r => new Position { Pos = r.Float3(), Cell = r.Int3() }),
+        // Saved stopped: paths belong to jobs, and jobs are dropped on load (see SaveGame).
+        Codec("Mover", (w, m) => w.Int3(m.StepFrom), r => new Mover { StepFrom = r.Int3() }),
+        Codec("Mind", WriteMind, ReadMind),
+        Codec("Carrying", (w, c) => w.Entity(c.Item), r => new Carrying { Item = r.Entity() }),
+        Codec("Dragon", (w, d) =>
+        {
+            w.Entity(d.Keeper);
+            w.Float(d.Affinity);
+            w.Int(d.Flights);
+            w.Int((int)d.Element);
+            w.Int((int)d.Sex);
+        }, r => new Dragon
+        {
+            Keeper = r.Entity(), Affinity = r.Float(), Flights = r.Int(),
+            Element = r.Version >= 14 ? ValidElement(r.Int()) : DragonElement.Fire, // older saves take it from the look (SaveGame)
+            Sex = r.Version >= 16 ? (r.Int() == 1 ? DragonSex.Male : DragonSex.Female) : DragonSex.Female, // older saves roll it (SaveGame)
+        }),
+        Codec("Gravid", (w, g) =>
+        {
+            w.Long(g.LayTick);
+            w.String(g.SireBreed ?? "");
+            w.Int((int)g.SireElement);
+        }, r => new Gravid { LayTick = r.Long(), SireBreed = r.String(), SireElement = ValidElement(r.Int()) }),
+        Codec("LaidClutch", (w, l) => w.Long(l.Tick), r => new LaidClutch { Tick = r.Long() }),
+        Codec("Migrating", (w, m) => w.Int3(m.To), r => new Migrating { To = r.Int3() }),
+        Codec("Visitor", (w, v) =>
+        {
+            w.Long(v.LeaveTick);
+            w.Int(v.Meals);
+        }, r => new Visitor { LeaveTick = r.Long(), Meals = r.Int() }),
+        Codec("Keeper", (w, k) => w.Entity(k.Dragon), r => new Keeper { Dragon = r.Entity() }),
+        Codec("Quest", (w, q) =>
+        {
+            w.Int((int)q.Stage);
+            w.Long(q.KeeperPassesTick);
+            w.String(q.Difficulty ?? "");
+        }, r => new Quest
+        {
+            Stage = (QuestStage)r.Int(), KeeperPassesTick = r.Long(), Difficulty = r.String() is { Length: > 0 } d ? d : null,
+        }),
+        Tag<StoryKeeper>("StoryKeeper"),
+        Tag<Captive>("Captive"),
+        Tag<Locked>("Locked"),
+        Tag<Chained>("Chained"),
+        Codec("StoryNpc", (w, n) =>
+        {
+            w.Int((int)n.Role);
+            w.Int3(n.Home);
+        }, r => new StoryNpc { Role = (StoryRole)r.Int(), Home = r.Int3() }),
+        Codec("Stored", (w, s) => w.Entity(s.In), r => new Stored { In = r.Entity() }),
+        Codec("Request", (w, q) =>
+        {
+            w.Int((int)q.Kind);
+            w.Entity(q.Target);
+            w.Entity(q.From);
+        }, r => new Request { Kind = (RequestKind)r.Int(), Target = r.Entity(), From = r.Entity() }),
+        Codec("Appearance", (w, a) =>
+        {
+            w.Int((int)a.Body);
+            w.Int((int)a.Hair);
+            w.Int((int)a.HairColor);
+            w.Int((int)a.EyeColor);
+            w.Int((int)a.SkinColor);
+            w.Int((int)a.Beard);
+            w.Int((int)a.Eyes);
+            w.Int((int)a.Stance);
+            w.NullableString(a.Model);
+        }, r => new Appearance
+        {
+            Body = (BodyType)r.Int(), Hair = (HairStyle)r.Int(), HairColor = (uint)r.Int(), EyeColor = (uint)r.Int(), SkinColor = (uint)r.Int(),
+            Beard = r.Version >= 12 ? (BeardStyle)r.Int() : BeardStyle.None, // beards and eye styles came with format 12
+            Eyes = r.Version >= 12 ? (EyeStyle)r.Int() : EyeStyle.Round,
+            Stance = r.Version >= 12 ? (Stance)r.Int() : Stance.Relaxed,
+            Model = r.Version >= 13 ? Appearance.ValidModel(r.NullableString()) : null, // 3D models came with format 13
+        }),
+        Codec("DragonLook", (w, d) =>
+        {
+            w.Int((int)d.Scales);
+            w.Int((int)d.Belly);
+            w.Int((int)d.Wings);
+            w.Int((int)d.Horns);
+            w.Int((int)d.Eyes);
+            w.Int((int)d.Element);
+        }, r =>
+        {
+            var look = new DragonLook { Scales = (uint)r.Int(), Belly = (uint)r.Int(), Wings = (uint)r.Int(), Horns = (uint)r.Int(), Eyes = (uint)r.Int() };
+            if (r.Version >= 10) // elements came with format 10; older dragons are Fire
+                look.Element = ValidElement(r.Int());
+            return look;
+        }),
+        Codec("AwaitingSettler", (w, a) => w.Long(a.ArriveTick), r => new AwaitingSettler { ArriveTick = r.Long() }),
+        Codec("Avatar", (w, a) =>
+        {
+            w.Int(a.MoveDir.X);
+            w.Int(a.MoveDir.Y);
+            w.Bool(a.WorkHeld);
+            w.Int(a.Facing.X);
+            w.Int(a.Facing.Y);
+            w.Int((int)a.Chain);
+            w.Bool(a.HasPending);
+            w.Int(a.PendingDir.X);
+            w.Int(a.PendingDir.Y);
+            w.Int3(a.PendingAt);
+        }, r =>
+        {
+            var a = new Avatar
+            {
+                MoveDir = new int2(r.Int(), r.Int()), WorkHeld = r.Bool(), Facing = new int2(r.Int(), r.Int()),
+                Chain = r.Version >= 7 ? (Systems.AvatarActionKind)r.Int() : Systems.AvatarActionKind.None, // chaining came with format 7
+            };
+            if (r.Version >= 8) // turns scheduled at a cell (co-op walk prediction) came with format 8
+            {
+                a.HasPending = r.Bool();
+                a.PendingDir = new int2(r.Int(), r.Int());
+                a.PendingAt = r.Int3();
+            }
+            return a;
+        }),
+        Codec("BedOwner", (w, b) => w.Entity(b.Bed), r => new BedOwner { Bed = r.Entity() }),
+        Codec("Skills", WriteSkills, ReadSkills),
+        Codec("Mood", WriteMood, ReadMood),
+        Codec("DragonCare", WriteDragonCare, ReadDragonCare), // format 10
+        Codec("Traits", (w, t) =>
+        {
+            w.Int(t.List.Count);
+            foreach (var def in t.List)
+                w.Def(def);
+        }, r =>
+        {
+            var traits = new Traits();
+            for (int i = 0, n = r.Count(100); i < n; i++)
+                traits.List.Add(r.Def<TraitDef>());
+            return traits;
+        }),
+    ];
+
+    private static readonly Dictionary<string, ComponentCodec> ByName = All.ToDictionary(c => c.Name);
+    private static readonly Dictionary<Type, ComponentCodec> ByType = All.ToDictionary(c => c.Type);
+
+    public static bool Has(Type type) => ByType.ContainsKey(type);
+
+    public static ComponentCodec? For(Type type) => ByType.GetValueOrDefault(type);
+
+    private static ComponentCodec<T> Codec<T>(string name, Action<SaveWriter, T> write, Func<SaveReader, T> read) => new(name, write, read);
+
+    private static ComponentCodec<T> Tag<T>(string name) where T : struct => new(name, (_, _) => { }, _ => default);
+
+    public static void WriteAll(SaveWriter w, World world)
+    {
+        foreach (var store in world.Stores)
+            if (store.Count > 0 && !ByType.ContainsKey(store.ComponentType))
+                throw new SaveException($"No save codec for component {store.ComponentType.Name} (add one in ComponentCodecs)");
+        var present = All.Where(c => c.Count(world) > 0).ToList();
+        w.Int(present.Count);
+        foreach (var codec in present)
+        {
+            w.String(codec.Name);
+            codec.Write(w, world);
+        }
+    }
+
+    public static void ReadAll(SaveReader r, World world)
+    {
+        var n = r.Count(1000);
+        for (var i = 0; i < n; i++)
+        {
+            var name = r.String();
+            if (!ByName.TryGetValue(name, out var codec))
+                throw new SaveException($"The save has '{name}' components, which this version of the game doesn't know.");
+            codec.Read(r, world);
+        }
+    }
+
+    // Enum-indexed arrays go by name, so adding or reordering a work type or skill keeps old saves loading.
+    private static void WriteByName<TEnum>(SaveWriter w, int[] values) where TEnum : struct, Enum
+    {
+        var names = Enum.GetNames<TEnum>();
+        w.Int(names.Length);
+        for (var i = 0; i < names.Length; i++)
+        {
+            w.String(names[i]);
+            w.Int(values[i]);
+        }
+    }
+
+    private static void ReadByName<TEnum>(SaveReader r, int[] into) where TEnum : struct, Enum
+    {
+        var n = r.Count(1000);
+        for (var i = 0; i < n; i++)
+        {
+            var name = r.String();
+            var value = r.Int();
+            if (Enum.TryParse<TEnum>(name, out var e) && Convert.ToInt32(e) is var k && k >= 0 && k < into.Length)
+                into[k] = value;
+        }
+    }
+
+    // Delivered counts go with the cost entry they were for (format 2), so a load against defs whose
+    // cost list changed (def hot reload, a new game version) puts them back on the right material.
+    private static void WriteConstruction(SaveWriter w, Construction c)
+    {
+        w.Def(c.Target);
+        var cost = c.Target.Building!.Cost;
+        w.Int(cost.Count);
+        for (var i = 0; i < cost.Count; i++)
+        {
+            w.Def(cost[i].ThingDef);
+            w.Def(cost[i].MaterialDef);
+            w.Int(c.Delivered[i]);
+        }
+        w.Float(c.WorkDone);
+        w.Int(c.Materials.Count);
+        foreach (var (m, n) in c.Materials)
+        {
+            w.Def(m);
+            w.Int(n);
+        }
+    }
+
+    private static Construction ReadConstruction(SaveReader r)
+    {
+        var target = r.Def<ThingDef>();
+        var cost = target.Building?.Cost ?? throw new SaveException($"The save has a {target.Name} being built, but it isn't a building any more.");
+        var delivered = new int[cost.Count];
+        if (r.Version < 2)
+        {
+            // Format 1 stored counts by position only.
+            var old = r.Ints();
+            Array.Copy(old, delivered, Math.Min(old.Length, delivered.Length));
+        }
+        else
+        {
+            var slots = r.Count(1000);
+            var used = new bool[cost.Count];
+            for (var i = 0; i < slots; i++)
+            {
+                var thing = r.Def<ThingDef>();
+                var material = r.DefOrNull<MaterialDef>();
+                var count = r.Int();
+                // The first unclaimed cost entry for the same thing and material; dropped if none is left.
+                var k = cost.FindIndex(e => e.ThingDef == thing && e.MaterialDef == material);
+                while (k >= 0 && used[k])
+                    k = cost.FindIndex(k + 1, e => e.ThingDef == thing && e.MaterialDef == material);
+                if (k < 0)
+                    continue;
+                used[k] = true;
+                delivered[k] = count;
+            }
+        }
+        var c = new Construction { Target = target, Delivered = delivered, WorkDone = r.Float() };
+        var n = r.Count(1000);
+        for (var i = 0; i < n; i++)
+            c.Materials.Add((r.Def<MaterialDef>(), r.Int()));
+        return c;
+    }
+
+    // Bills by recipe name; what's been brought goes with the ingredient entry it was for (as for
+    // construction), so a recipe edited by a def reload keeps what still fits.
+    private static void WriteWorkbench(SaveWriter w, Workbench b)
+    {
+        w.Int(b.Bills.Count);
+        foreach (var bill in b.Bills)
+        {
+            w.Def(bill.Recipe);
+            w.Int((int)bill.Mode);
+            w.Int(bill.Target);
+            w.Int(bill.Done);
+            w.Bool(bill.Suspended);
+            w.Def(bill.Material);
+        }
+        w.Def(b.Active);
+        w.Entity(b.By);
+        var ingredients = b.Active?.Ingredients ?? [];
+        w.Int(ingredients.Count);
+        for (var i = 0; i < ingredients.Count; i++)
+        {
+            w.Def(ingredients[i].ThingDef);
+            w.Def(ingredients[i].MaterialDef);
+            w.Int(b.Staged[i]);
+        }
+        w.Int(b.Materials.Count);
+        foreach (var (m, n) in b.Materials)
+        {
+            w.Def(m);
+            w.Int(n);
+        }
+        w.Float(b.Rot);
+        w.Int(b.RotUnits);
+        w.Float(b.Progress);
+    }
+
+    private static Workbench ReadWorkbench(SaveReader r)
+    {
+        var b = new Workbench();
+        var bills = r.Count(1000);
+        for (var i = 0; i < bills; i++)
+            b.Bills.Add(new Bill
+            {
+                Recipe = r.Def<RecipeDef>(), Mode = (BillMode)r.Int(), Target = r.Int(), Done = r.Int(), Suspended = r.Bool(),
+                Material = r.DefOrNull<MaterialDef>(),
+            });
+        var active = r.DefOrNull<RecipeDef>();
+        var by = r.Entity();
+        if (active != null)
+            b.Begin(active, by);
+        var slots = r.Count(1000);
+        var used = new bool[b.Staged.Length];
+        for (var i = 0; i < slots; i++)
+        {
+            var thing = r.Def<ThingDef>();
+            var material = r.DefOrNull<MaterialDef>();
+            var count = r.Int();
+            if (active == null)
+                continue;
+            var k = active.Ingredients.FindIndex(e => e.ThingDef == thing && e.MaterialDef == material);
+            while (k >= 0 && used[k])
+                k = active.Ingredients.FindIndex(k + 1, e => e.ThingDef == thing && e.MaterialDef == material);
+            if (k < 0)
+                continue;
+            used[k] = true;
+            b.Staged[k] = Math.Min(count, active.Ingredients[k].Count);
+        }
+        var n = r.Count(1000);
+        for (var i = 0; i < n; i++)
+            b.Materials.Add((r.Def<MaterialDef>(), r.Int()));
+        b.Rot = r.Float();
+        b.RotUnits = r.Int();
+        b.Progress = r.Float();
+        return b;
+    }
+
+    private static void WriteHealth(SaveWriter w, Health h)
+    {
+        w.Def(h.Body);
+        w.Float(h.Scale);
+        w.Float(h.Blood);
+        w.Int(h.Injuries.Count);
+        foreach (var inj in h.Injuries)
+        {
+            w.Int(inj.Part);
+            w.Int((int)inj.Type);
+            w.Float(inj.Damage);
+            w.Float(inj.PeakDamage);
+            w.Bool(inj.Tended);
+            w.Float(inj.Quality);
+            w.Long(inj.TendedTick);
+            w.Long(inj.Tick);
+            w.Bool(inj.InfectionRolled);
+            w.Bool(inj.Infection != null);
+            if (inj.Infection is { } inf)
+            {
+                w.Float(inf.Severity);
+                w.Float(inf.Immunity);
+                w.Float(inf.ImmunityRate);
+            }
+        }
+        w.Int(h.Scars.Count);
+        foreach (var s in h.Scars)
+        {
+            w.Int(s.Part);
+            w.Int((int)s.Type);
+            w.Float(s.Damage);
+        }
+        var (capacities, pain) = h.Cache;
+        w.Float(pain);
+        w.Bool(capacities != null);
+        if (capacities != null)
+            w.Ints(System.Runtime.InteropServices.MemoryMarshal.Cast<float, int>(capacities));
+    }
+
+    private static Health ReadHealth(SaveReader r)
+    {
+        var h = new Health { Body = r.Def<BodyDef>(), Scale = r.Float(), Blood = r.Float() };
+        var injuries = r.Count(10_000);
+        for (var i = 0; i < injuries; i++)
+        {
+            var inj = new Injury
+            {
+                Part = r.Int(), Type = (DamageType)r.Int(), Damage = r.Float(), PeakDamage = r.Float(), Tended = r.Bool(),
+                Quality = r.Float(), TendedTick = r.Long(), Tick = r.Long(), InfectionRolled = r.Bool(),
+            };
+            if (r.Bool())
+                inj.Infection = new Infection { Severity = r.Float(), Immunity = r.Float(), ImmunityRate = r.Float() };
+            if (inj.Part < 0 || inj.Part >= h.Body.Parts.Count)
+                throw new SaveException($"Corrupt save: injury on part {inj.Part} of a {h.Body.Name}");
+            h.Injuries.Add(inj);
+        }
+        var scars = r.Count(10_000);
+        for (var i = 0; i < scars; i++)
+            h.Scars.Add(new Scar(r.Int(), (DamageType)r.Int(), r.Float()));
+        var pain = r.Float();
+        var capacities = r.Bool() ? System.Runtime.InteropServices.MemoryMarshal.Cast<int, float>(r.Ints()).ToArray() : null;
+        if (capacities != null && capacities.Length != Enum.GetValues<Capacity>().Length)
+            capacities = null; // capacities were added or removed: recompute
+        h.Cache = (capacities, pain);
+        return h;
+    }
+
+    // Need values by def name, all of them: StateHash mixes in the unused slots too.
+    private static void WriteNeeds(SaveWriter w, Needs n)
+    {
+        w.Int(n.Values.Length);
+        for (var i = 0; i < n.Values.Length; i++)
+        {
+            w.Def(w.Defs.AllNeeds.Find(d => d.Index == i));
+            w.Bool(n.Has[i]);
+            w.Float(n.Values[i]);
+        }
+    }
+
+    private static Needs ReadNeeds(SaveReader r)
+    {
+        var count = r.Defs.AllNeeds.Count;
+        var needs = new Needs { Values = new float[count], Has = new bool[count] };
+        var n = r.Count(1000);
+        for (var i = 0; i < n; i++)
+        {
+            var def = r.DefOrNull<NeedDef>();
+            var has = r.Bool();
+            var value = r.Float();
+            if (def != null && def.Index < count)
+            {
+                needs.Has[def.Index] = has;
+                needs.Values[def.Index] = value;
+            }
+        }
+        return needs;
+    }
+
+    // Value and memories; the target and situational list are rebuilt on the next update.
+    private static void WriteDragonCare(SaveWriter w, DragonCare c)
+    {
+        w.Int(c.Last.Count);
+        foreach (var (name, (tick, repeats)) in c.Last.OrderBy(kv => kv.Key, StringComparer.Ordinal))
+        {
+            w.String(name);
+            w.Long(tick);
+            w.Int(repeats);
+        }
+        w.Int(c.Training.Count);
+        foreach (var (name, done) in c.Training.OrderBy(kv => kv.Key, StringComparer.Ordinal))
+        {
+            w.String(name);
+            w.Float(done);
+        }
+        w.Int((int)c.Want);
+        w.Long(c.WantSince);
+        w.Float(c.NeglectHours);
+        w.Float(c.SulkHours);
+        w.Bool(c.Sulking);
+        w.Long(c.ItchyUntil);
+        w.Entity(c.BringMeat);
+        w.Bool(c.StayAt.HasValue);
+        if (c.StayAt is { } stay)
+            w.Int3(stay);
+        w.Long(c.StayUntil);
+    }
+
+    private static DragonCare ReadDragonCare(SaveReader r)
+    {
+        var c = new DragonCare();
+        for (int i = 0, n = r.Count(1000); i < n; i++)
+            c.Last[r.String()] = (r.Long(), r.Int());
+        for (int i = 0, n = r.Count(1000); i < n; i++)
+            c.Training[r.String()] = r.Float();
+        c.Want = (DragonWant)r.Int();
+        c.WantSince = r.Long();
+        c.NeglectHours = r.Float();
+        c.SulkHours = r.Float();
+        c.Sulking = r.Bool();
+        c.ItchyUntil = r.Long();
+        c.BringMeat = r.Entity();
+        c.StayAt = r.Bool() ? r.Int3() : null;
+        c.StayUntil = r.Long();
+        return c;
+    }
+
+    private static void WriteMood(SaveWriter w, Mood m)
+    {
+        w.Float(m.Value);
+        w.Float(m.Target);
+        w.Int(m.Memories.Count);
+        foreach (var memory in m.Memories)
+        {
+            w.Def(memory.Def);
+            w.Int(memory.TicksLeft);
+            w.Entity(memory.Other);
+        }
+    }
+
+    private static Mood ReadMood(SaveReader r)
+    {
+        var mood = new Mood { Value = r.Float(), Target = r.Float() };
+        var n = r.Count(10000);
+        for (var i = 0; i < n; i++)
+            mood.Memories.Add(new Memory { Def = r.Def<ThoughtDef>(), TicksLeft = r.Int(), Other = r.Entity() });
+        return mood;
+    }
+
+    private static void WriteMind(SaveWriter w, Mind m)
+    {
+        w.Bool(m.Job != null);
+        w.Long(m.NextThinkTick);
+        w.Bool(m.Asleep);
+        w.Bool(m.Drafted);
+        WriteByName<WorkType>(w, m.WorkPriority);
+    }
+
+    private static Mind ReadMind(SaveReader r)
+    {
+        var hadJob = r.Bool();
+        var m = new Mind { NextThinkTick = r.Long(), Asleep = r.Bool(), Drafted = r.Bool() };
+        ReadByName<WorkType>(r, m.WorkPriority);
+        if (hadJob)
+            r.PawnsWithJobs.Add(r.CurrentEntity);
+        return m;
+    }
+
+    private static void WriteSkills(SaveWriter w, Skills s)
+    {
+        WriteByName<Skill>(w, s.Level);
+        var names = Enum.GetNames<Skill>();
+        w.Int(names.Length);
+        for (var i = 0; i < names.Length; i++)
+        {
+            w.String(names[i]);
+            w.Float(s.Xp[i]);
+        }
+    }
+
+    private static Skills ReadSkills(SaveReader r)
+    {
+        var s = new Skills();
+        Array.Fill(s.Level, -1); // a skill the save lacks (added since) is rolled after loading (SaveGame)
+        ReadByName<Skill>(r, s.Level);
+        var n = r.Count(1000);
+        for (var i = 0; i < n; i++)
+        {
+            var name = r.String();
+            var xp = r.Float();
+            if (Enum.TryParse<Skill>(name, out var k))
+                s.Xp[(int)k] = xp;
+        }
+        return s;
+    }
+}

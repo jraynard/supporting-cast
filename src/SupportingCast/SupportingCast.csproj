@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- The exe's icon in Explorer and the Windows taskbar (tools/gen_icon.py). -->
+    <ApplicationIcon>..\..\packaging\icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SupportingCast.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\external\narsil\src\Narsil\Narsil.csproj" />
+    <ProjectReference Include="..\..\external\narsil\src\Narsil.Voxel\Narsil.Voxel.csproj" />
+    <ProjectReference Include="..\SupportingCast.Sim\SupportingCast.Sim.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\data\**\*" LinkBase="data" CopyToOutputDirectory="PreserveNewest" />
+    <!-- BRUTAL License 2.3: NOTICE.txt must be distributed alongside the product. -->
+    <None Include="..\..\NOTICE.txt" Link="NOTICE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Bundled UI font (SIL Open Font License 1.1): its license ships with the other third-party notices. -->
+    <None Include="..\..\data\fonts\FiraSans-OFL.txt" Link="licenses\FiraSans-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- BRUTAL License 1.0 and 4.0: BRUTAL's license and third-party notices go to licenses/ on build and publish. -->
+  <Import Project="..\..\external\narsil\build\Narsil.Licensing.targets" />
+
+</Project>

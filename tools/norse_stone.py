@@ -29,7 +29,7 @@ ROCKS = {
     "basalt":    dict(base=(66, 64, 74),    kind="basalt",    bands=(5, 10)),
 }
 
-LEVEL = 64   # how tall a level looks in the game (src/DragonWorld/Rendering/WorldScale.cs): ramp art is drawn this tall
+LEVEL = 64   # how tall a level looks in the game (src/SupportingCast/Rendering/WorldScale.cs): ramp art is drawn this tall
 DIRT = (130, 94, 66)
 GRASS = (90, 132, 66)
 SAND = (214, 194, 148)
