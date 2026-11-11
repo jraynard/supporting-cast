@@ -6,7 +6,7 @@ namespace SupportingCast.Sim.Defs;
 /// <summary>
 /// All loaded defs. Each JSON file under the defs directory is an object with any of the keys
 /// "blocks", "things", "creatures", "needs", "bodies", "materials", "difficulties", "raiderKinds", "wildlife", "thoughts", "interactions", "traits", "recipes", "tiers", "veins",
-/// "dragonInteractions", "trustLevels", "tricks", "outfits", "elements", "buildings", "kits", "trades", "adventurerKinds", "parties",
+/// "dragonInteractions", "trustLevels", "tricks", "outfits", "elements", "buildings", "kits", "trades", "adventurerKinds", "parties", "errandKinds",
 /// each an array of defs. Files are merged in name
 /// order so later files (mods) can add content.
 /// </summary>
@@ -33,6 +33,11 @@ public sealed class DefDatabase
     private readonly Dictionary<string, TradeDef> _trades = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, AdventurerKindDef> _adventurerKinds = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, PartyDef> _parties = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, ErrandKindDef> _errandKinds = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ErrandKindDef?[] _byErrandKind = new ErrandKindDef?[Enum.GetValues<ErrandKind>().Length];
+
+    /// <summary>How each kind of errand goes (data/defs/errands.json).</summary>
+    public List<ErrandKindDef> AllErrandKinds { get; } = [];
 
     /// <summary>Who adventuring parties are made of (data/defs/adventurers.json).</summary>
     public List<AdventurerKindDef> AllAdventurerKinds { get; } = [];
@@ -113,6 +118,7 @@ public sealed class DefDatabase
         public List<TradeDef> Trades { get; set; } = [];
         public List<AdventurerKindDef> AdventurerKinds { get; set; } = [];
         public List<PartyDef> Parties { get; set; } = [];
+        public List<ErrandKindDef> ErrandKinds { get; set; } = [];
     }
 
     public static DefDatabase LoadDirectory(string directory)
@@ -170,6 +176,7 @@ public sealed class DefDatabase
         AddAll(file.Trades, _trades, AllTrades, source);
         AddAll(file.AdventurerKinds, _adventurerKinds, AllAdventurerKinds, source);
         AddAll(file.Parties, _parties, AllParties, source);
+        AddAll(file.ErrandKinds, _errandKinds, AllErrandKinds, source);
     }
 
     private static void AddAll<T>(List<T> defs, Dictionary<string, T> map, List<T> all, string source)
@@ -218,6 +225,11 @@ public sealed class DefDatabase
         foreach (var d in AllTrades) d.Resolve(this); // after buildings: their workplaces
         foreach (var d in AllAdventurerKinds) d.Resolve(this);
         foreach (var d in AllParties) d.Resolve(this); // after adventurer kinds and buildings
+        foreach (var d in AllErrandKinds)
+        {
+            d.Resolve(this);
+            _byErrandKind[(int)d.Kind] = d;
+        }
         GeneratePhaseDefs();
         // Every element a dragon can have needs its def (one each).
         Thoughts = KnownThoughts.Resolve(_thoughts);
@@ -358,6 +370,11 @@ public sealed class DefDatabase
     public RaiderKindDef RaiderKind(string name) => Lookup(_raiderKinds, name);
     public AdventurerKindDef AdventurerKind(string name) => Lookup(_adventurerKinds, name);
     public PartyDef Party(string name) => Lookup(_parties, name);
+    public ErrandKindDef ErrandKind(string name) => Lookup(_errandKinds, name);
+
+    /// <summary>The def for a kind of errand; every kind needs one.</summary>
+    public ErrandKindDef Errand(ErrandKind kind) =>
+        _byErrandKind[(int)kind] ?? throw new KeyNotFoundException($"No errand kind def for {kind}");
     public ThoughtDef Thought(string name) => Lookup(_thoughts, name);
     public InteractionDef Interaction(string name) => Lookup(_interactions, name);
     public TraitDef Trait(string name) => Lookup(_traits, name);

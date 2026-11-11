@@ -59,6 +59,7 @@ public sealed partial class VillageGame
         DrawSaveWindows();
         DrawCoop();
         DrawSpeech();
+        DrawErrands();
         DrawWork();
         _settings.Draw();
     }
@@ -259,6 +260,7 @@ public sealed partial class VillageGame
         InspectorHeader(PortraitOf(e), seen.Name, seen.Condition, e);
         if (seen.Holding is { } held)
             TextC(Dim, $"Holding: {held}");
+        DrawHandOver(e);
     }
 
     private void InspectCreature(Entity e, Creature c)

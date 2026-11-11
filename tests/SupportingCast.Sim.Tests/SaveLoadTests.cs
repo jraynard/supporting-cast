@@ -78,12 +78,16 @@ public class SaveLoadTests
         live.ApplyNow(new Round.StartRoundCommand());
         var party = live.Parties.Send(live, live.Defs.Party("IronLantern"));
         Assert.NotEmpty(party);
+        live.World.Get<Needs>(party[0]).Values[live.Defs.Need("Food").Index] = 0.5f;
         live.TickMany(SimClock.HoursToTicks(1));
+        Assert.Contains(live.Errands.All, e => e.Kind.Kind == ErrandKind.Meal);
 
         var loaded = RoundTrip(live);
         Assert.Equal(live.Parties.NextArrivalTick, loaded.Parties.NextArrivalTick);
         Assert.Equal(live.Parties.PartiesSent, loaded.Parties.PartiesSent);
         Assert.Equal(party.Count, loaded.World.Query<Adventurer>().Count);
+        Assert.Equal(live.Errands.All.Select(e => (e.Id, e.Kind, e.Status, e.KnownBy.Count)),
+            loaded.Errands.All.Select(e => (e.Id, e.Kind, e.Status, e.KnownBy.Count)));
         // Sent on their way in both: they walk off the map alike.
         foreach (var e in party)
         {

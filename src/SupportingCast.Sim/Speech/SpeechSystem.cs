@@ -146,7 +146,8 @@ public sealed class SpeechSystem : ISimSystem, ISaveState
         return MathF.Sqrt(dx * dx + dy * dy + dz * dz);
     }
 
-    private static bool CanAct(Simulation sim, Entity e)
+    /// <summary>Awake, conscious and on the map: able to speak and to hear.</summary>
+    public static bool CanAct(Simulation sim, Entity e)
     {
         var w = sim.World;
         return w.IsAlive(e) && w.TryGet<Creature>(e, out var c) && !c.Dead && !c.Downed
@@ -154,7 +155,8 @@ public sealed class SpeechSystem : ISimSystem, ISaveState
             && !(w.TryGet<Mind>(e, out var mind) && mind.Asleep);
     }
 
-    private static string Clean(string? text)
+    /// <summary>Text as it would be said: control characters out, trimmed, at most <see cref="MaxLength"/>.</summary>
+    public static string Clean(string? text)
     {
         var s = new string((text ?? "").Where(ch => !char.IsControl(ch)).ToArray()).Trim();
         return s.Length > MaxLength ? s[..MaxLength].Trim() : s;

@@ -120,6 +120,20 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         return new PerceivedPerson(c.Name, Condition(e, c), Holding(e));
     }
 
+    /// <summary>
+    /// The errands this character knows of, oldest first: those they heard asked, took on or asked
+    /// for themselves. Open ones and those closed within the last day.
+    /// </summary>
+    public IEnumerable<Errands.KnownErrand> Errands()
+    {
+        if (blind)
+            yield break;
+        foreach (var e in sim.Errands.All)
+            if (Omniscient || e.KnownBy.Contains(viewer))
+                yield return new Errands.KnownErrand(e.Id, e.Kind.Kind, e.Kind.Label, e.PosterName, e.Text, e.Price,
+                    e.PostedTick, e.Deadline, e.AssigneeName, e.Status, e.Poster == viewer, e.Assignee == viewer);
+    }
+
     /// <summary>Everything this character has heard that's still remembered, oldest first.</summary>
     public IEnumerable<HeardLine> Heard()
     {

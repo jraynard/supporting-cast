@@ -1123,6 +1123,12 @@ public struct Adventurer
 
     /// <summary>When they move on.</summary>
     public long LeaveTick;
+
+    /// <summary>
+    /// What they think of the town so far: up for each errand done (more if done quickly), down
+    /// for each they gave up on. M3's Renown is built from it.
+    /// </summary>
+    public float Satisfaction;
 }
 
 /// <summary>

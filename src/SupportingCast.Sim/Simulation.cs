@@ -68,6 +68,9 @@ public sealed partial class Simulation
     /// <summary>Adventuring parties coming to town during a round.</summary>
     public Adventurers.PartySystem Parties { get; }
 
+    /// <summary>Who wants what done, for how much (docs/DESIGN.md, "Errands are the shared spine").</summary>
+    public Errands.ErrandSystem Errands { get; }
+
     /// <summary>What's been said aloud, and who heard it.</summary>
     public Speech.SpeechSystem Speech { get; } = new();
 
@@ -176,6 +179,7 @@ public sealed partial class Simulation
         Social = new SocialSystem(seed);
         Round = new Round.RoundSystem(seed);
         Parties = new Adventurers.PartySystem(seed);
+        Errands = new Errands.ErrandSystem(seed);
         Messages.Now = () => Clock.Tick;
 
         World.Destroying += OnEntityDestroying;
@@ -201,6 +205,7 @@ public sealed partial class Simulation
             .AddSystem(new FoodPoisoningSystem())
             .AddSystem(new FuelSystem())
             .AddSystem(sim.Parties)
+            .AddSystem(sim.Errands)
             .AddSystem(new MoodSystem())
             .AddSystem(new PrisonBreakSystem())
             .AddSystem(sim.Social)
