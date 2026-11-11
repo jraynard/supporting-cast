@@ -537,6 +537,9 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
                 continue;
             if (Adventurers.PartySystem.HauntOf(sim, a.PartyDef) is { } haunt && Maps.Map.Distance(w.Get<Position>(e).Cell, haunt.Anchor) > 6)
                 continue;
+            // A tale wants an audience: they hold it until someone outside the party would hear it clearly.
+            if (!Audience(sim, e, a.Party))
+                continue;
             var report = w.Get<ReportPending>(e);
             if (sim.Speech.Say(sim, e, report.Text, Volume.Shout) is not { } said)
                 continue;
@@ -546,6 +549,18 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
                 if (h.Clarity == Clarity.Clear)
                     Hear(h.Listener, report.Quest, report.Danger, reward, 1f);
         }
+    }
+
+    /// <summary>Is anyone not of the party (awake, a person) near enough to catch a shouted tale clearly?</summary>
+    private static bool Audience(Simulation sim, Entity teller, int party)
+    {
+        var w = sim.World;
+        var at = w.Get<Position>(teller).Cell;
+        foreach (var e in sim.Creatures())
+            if (e != teller && !(w.TryGet<Adventurer>(e, out var a) && a.Party == party) && w.Get<Creature>(e).Def.Race == Race.Human
+                && SpeechSystem.CanAct(sim, e) && SpeechSystem.Hear(sim, at, w.Get<Position>(e).Cell, Volume.Shout) == Clarity.Clear)
+                return true;
+        return false;
     }
 
     private static string Capital(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];

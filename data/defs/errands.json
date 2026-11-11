@@ -11,7 +11,7 @@
       "lines": [ "A drink, barkeep! {0} silver.", "Something to wash the road down, {0} silver." ] },
     { "name": "Repair", "label": "a repair", "at": "Smithy", "priceMin": 5, "priceMax": 12, "patienceHours": 5,
       "lines": [ "My {1} has seen better days. {0} silver to whoever can mend it.", "Smith! My {1} needs work. {0} silver." ] },
-    { "name": "Healing", "label": "healing", "at": "Clinic", "priceMin": 6, "priceMax": 15, "patienceHours": 4,
+    { "name": "Healing", "label": "healing", "at": "Shrine", "priceMin": 6, "priceMax": 15, "patienceHours": 4,
       "lines": [ "I need a healer. Now. {0} silver.", "This {1} won't stop aching. {0} silver to anyone who can fix it." ] },
     { "name": "Quest", "label": "a quest", "at": "Longhouse", "priceMin": 8, "priceMax": 20, "patienceHours": 8,
       "lines": [ "We're looking for work worthy of us. {0} silver to whoever points us at it.",

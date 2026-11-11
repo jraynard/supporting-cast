@@ -31,6 +31,15 @@ public sealed class MeditateSession : WorkSession
     /// <summary>The pain carried when the sitting began, 0..1.</summary>
     public float Pain { get; set; }
 
+    /// <summary>
+    /// How much a meditation stone in reach helps (<see cref="Defs.BuildingProps.Meditation"/>),
+    /// 0 for none: pain unsettles the breath that much less, and each breath gathers that much more.
+    /// </summary>
+    public float Stillness { get; set; }
+
+    /// <summary>The pain that troubles the breath, after the stone's help.</summary>
+    public float FeltPain => Pain * (1f - Stillness);
+
     public float MaxMana { get; set; }
 
     /// <summary>Room for mana when the sitting began.</summary>
@@ -90,7 +99,24 @@ public sealed class MeditateSession : WorkSession
         }
         var mana = sim.World.Get<Mana>(who);
         var pain = sim.World.TryGet<Health>(who, out var h) ? Math.Clamp(h.Pain, 0f, 1f) : 0f;
-        WorkSystem.Start(sim, who, new MeditateSession { Pain = pain, MaxMana = mana.Max, Room = mana.Max - mana.Current });
+        WorkSystem.Start(sim, who, new MeditateSession
+        {
+            Pain = pain, MaxMana = mana.Max, Room = mana.Max - mana.Current, Stillness = StillnessAt(sim, who),
+        });
+    }
+
+    /// <summary>The help of the best meditation stone within reach (0 if none).</summary>
+    public static float StillnessAt(Simulation sim, Entity who)
+    {
+        var at = sim.World.Get<Position>(who).Cell;
+        var best = 0f;
+        foreach (var e in sim.World.Each<Thing>())
+        {
+            var t = sim.World.Get<Thing>(e);
+            if (t.Spawned && t.Def.Building is { Meditation: > 0 } b && !sim.World.Has<Construction>(e) && Systems.AvatarSystem.InReach(sim, at, e))
+                best = Math.Max(best, Math.Clamp(b.Meditation, 0f, 0.9f));
+        }
+        return best;
     }
 
     public override bool StillValid(Simulation sim) => sim.World.Has<Mana>(Worker);
@@ -102,7 +128,7 @@ public sealed class MeditateSession : WorkSession
     }
 
     /// <summary>Pain makes a breath come short or long.</summary>
-    private int HalfLength() => Math.Max(50, (int)(HalfBreath * (1f + (Rand.NextFloat() * 2f - 1f) * 0.55f * Pain)));
+    private int HalfLength() => Math.Max(50, (int)(HalfBreath * (1f + (Rand.NextFloat() * 2f - 1f) * 0.55f * FeltPain)));
 
     protected override void Press()
     {
@@ -115,7 +141,7 @@ public sealed class MeditateSession : WorkSession
         {
             _answered = true;
             Calm++;
-            var gain = MaxMana * GainPerBreath * (1f + 0.15f * Math.Min(Calm, 6));
+            var gain = MaxMana * GainPerBreath * (1f + 0.15f * Math.Min(Calm, 6)) * (1f + Stillness);
             Gained = Math.Min(Room, Gained + gain);
             Sample(1f);
         }
@@ -128,7 +154,7 @@ public sealed class MeditateSession : WorkSession
 
     protected override void Step()
     {
-        if (Pain > 0 && !Flinching && Rand.Chance(0.006f * Pain))
+        if (FeltPain > 0 && !Flinching && Rand.Chance(0.006f * FeltPain))
             FlinchUntil = StepsDone + FlinchSteps;
         if (StepsDone <= NextTurn + WindowSteps)
             return;
@@ -158,6 +184,7 @@ public sealed class MeditateSession : WorkSession
     protected override void WriteState(SaveWriter w)
     {
         w.Float(Pain);
+        w.Float(Stillness);
         w.Float(MaxMana);
         w.Float(Room);
         w.Int(Calm);
@@ -173,6 +200,7 @@ public sealed class MeditateSession : WorkSession
     protected override void ReadState(SaveReader r)
     {
         Pain = r.Float();
+        Stillness = r.Float();
         MaxMana = r.Float();
         Room = r.Float();
         Calm = r.Int();

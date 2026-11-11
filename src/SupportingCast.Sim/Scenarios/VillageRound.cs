@@ -19,7 +19,7 @@ public static class VillageRound
     public const int StartingVillagers = 6;
 
     /// <summary>The landing point and the buildings trades will work from.</summary>
-    public readonly record struct Town(int3 Center, Entity Tavern, Entity Forge, Entity Clinic);
+    public readonly record struct Town(int3 Center, Entity Tavern, Entity Forge, Entity Shrine);
 
     /// <summary>Generate the valley and raise the town. Returns where everything is.</summary>
     public static Town Setup(Simulation sim)
@@ -30,7 +30,8 @@ public static class VillageRound
 
         var tavern = Raise(sim, "Longhouse", center + new int3(-14, -12, 0), 0);
         var forge = Raise(sim, "Smithy", center + new int3(12, -12, 0), 0);
-        var clinic = Raise(sim, "Clinic", center + new int3(14, 6, 0), 0);
+        var shrine = Raise(sim, "Shrine", center + new int3(14, 6, 0), 0);
+        StockShrine(sim, shrine);
         // Beds for everyone, or the first night sends them all out to sleep in the cold.
         for (var i = 0; i < 3; i++)
         {
@@ -39,7 +40,22 @@ public static class VillageRound
                 VillageSetup.FillSpareBeds(sim, home);
         }
         sim.RebuildDerivedIfNeeded();
-        return new Town(center, tavern, forge, clinic);
+        return new Town(center, tavern, forge, shrine);
+    }
+
+    /// <summary>Bandages in the shrine's chest: the healer's backup for when the mana runs dry.</summary>
+    public const int ShrineBandages = 12;
+
+    private static void StockShrine(Simulation sim, Entity shrine)
+    {
+        if (shrine.IsNull)
+            return;
+        foreach (var e in sim.World.Query<PartOf>())
+            if (sim.World.Get<PartOf>(e).Building == shrine && sim.World.Get<Thing>(e).Def.Building is { StorageStacks: > 0 })
+            {
+                sim.Store(e, sim.CreateItem(sim.Defs.Thing(Systems.Bandaging.BandageDef), ShrineBandages));
+                return;
+            }
     }
 
     /// <summary>A finished building at the nearest spot its plot fits, on the landing's level; Entity.Null if none is in reach.</summary>

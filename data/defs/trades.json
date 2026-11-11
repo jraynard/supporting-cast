@@ -11,7 +11,7 @@
       "knows": [ "Forge" ], "skills": { "Crafting": 6 },
       "kit": [ { "def": "Hammer" }, { "def": "Whetstone" }, { "def": "IronBar", "count": 6 }, { "def": "Wood", "count": 4 } ] },
     { "name": "Healer", "label": "healer", "description": "An empath: lays on hands to take others' wounds into themselves, then mends them with the gift.",
-      "workplace": "Clinic", "workPriorities": { "Doctor": 1 }, "skills": { "Medicine": 6 }, "mana": 100,
+      "workplace": "Shrine", "workPriorities": { "Doctor": 1 }, "skills": { "Medicine": 6 }, "mana": 100,
       "kit": [ { "def": "Bandage", "count": 4 } ] },
     { "name": "QuestBroker", "label": "quest broker", "description": "Matches parties to work from a corner of the longhouse, on whatever intelligence can be had.",
       "workplace": "Longhouse", "brokers": true },

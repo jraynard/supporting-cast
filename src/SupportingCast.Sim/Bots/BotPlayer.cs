@@ -338,7 +338,12 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         }
         if (mana.Current < mana.Max * 0.3f && _task == 0)
         {
-            send(new MeditateCommand(me));
+            // At the shrine's stone if there is one: it's calmer there.
+            var stone = Nearest(sim, me, "MeditationStone");
+            if (!stone.IsNull && !AvatarSystem.InReach(sim, sim.World.Get<Position>(me).Cell, stone))
+                Walk(sim, me, sim.World.Get<Thing>(stone).Cell, sim.Clock.Tick);
+            else
+                send(new MeditateCommand(me));
             return true;
         }
         return false;

@@ -47,7 +47,7 @@ public sealed partial class VillageGame
             Issue(new MeditateCommand(_avatar));
         ImGui.EndDisabled();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            Tip(cantMeditate != null ? Cap(cantMeditate) + "." : "Press F at the top and bottom of each breath. Don't answer the flinches. Pain makes it hard.");
+            Tip(cantMeditate != null ? Cap(cantMeditate) + "." : "Press F at the top and bottom of each breath. Don't answer the flinches. Pain makes it hard; it's calmer at the shrine's meditation stone.");
         ImGui.Separator();
 
         var carried = View.FeltWounds(_avatar) ?? [];
@@ -150,7 +150,8 @@ public sealed partial class VillageGame
         var radius = 20f + 50f * s.Fullness;
         var near = Math.Abs(s.StepsDone - s.NextTurn) <= s.WindowSteps;
         dl.AddCircleFilled(in centre, radius, Theme.U8(s.Flinching ? Theme.Bad : near ? Theme.Good : Theme.AccentSoft), 48);
-        TextC(Theme.Dim, $"Calm {s.Calm}   Mana gathered {s.Gained:F0}   Breath {Math.Min(s.Turns / 2 + 1, MeditateSession.Breaths)} of {MeditateSession.Breaths}");
+        TextC(Theme.Dim, $"Calm {s.Calm}   Mana gathered {s.Gained:F0}   Breath {Math.Min(s.Turns / 2 + 1, MeditateSession.Breaths)} of {MeditateSession.Breaths}"
+            + (s.Stillness > 0 ? "   (the stone steadies you)" : ""));
         ImGui.End();
     }
 }

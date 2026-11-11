@@ -55,6 +55,20 @@
       ]
     },
     {
+      // The healer's shrine stone: meditating within reach of it is calmer and gathers more mana
+      // (Healing/MeditateSession). Art: borrows the mason's bench icon until the M6 art pass.
+      "name": "MeditationStone", "label": "meditation stone", "category": "Building", "sprite": "buildings/mason_bench",
+      "description": "A smooth, sun-warmed stone ringed with pebbles. An empath sits here to gather themselves.",
+      "maxHp": 300, "flammability": 0.0,
+      "building": { "work": 150, "surfaceHeight": 0.3, "cost": [ { "def": "Stone", "count": 6 } ], "meditation": 0.5 },
+      "model": [
+        { "min": [0.12, 0.12, 0], "max": [0.88, 0.88, 0.22], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.3, 0.3, 0.22], "max": [0.7, 0.7, 0.3], "top": "props/linen", "side": "props/stone_block" },
+        { "min": [0.04, 0.44, 0], "max": [0.12, 0.56, 0.08], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.88, 0.44, 0], "max": [0.96, 0.56, 0.08], "top": "props/stone_block", "side": "props/stone_block" }
+      ]
+    },
+    {
       // The tavern's cask on its cradle: F at it pours a drink (Work.PourSession). It holds
       // "servings" drinks; refilling it (and brewing) comes later.
       "name": "AleCask", "label": "ale cask", "category": "Building", "sprite": "buildings/chest",

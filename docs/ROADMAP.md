@@ -8,7 +8,7 @@ Milestones toward a playable prototype, then beyond. Design intent is in [DESIGN
 - Imported DragonWorld at `cf61dfc` without its history; Narsil at `7b6ac5a`.
 - Removed dragon raising, bonding, breeding, riding, elements, the story starts and turn-based
   combat, with their UI, defs and tests. Saves reset to format 1.
-- `Scenarios/VillageRound`: a generated town with a longhouse, smithy, clinic and dwellings, six AI
+- `Scenarios/VillageRound`: a generated town with a longhouse, smithy, clinic (a healer's shrine since M2) and dwellings, six AI
   villagers, and players walking in as avatars, alone or in co-op.
 - Raiders now strike in real time (`AssaultJob`); before, turn-based combat did it for them.
 - `VillageDayScenarioTests` replaces the dragon slice.
@@ -39,7 +39,9 @@ Milestones toward a playable prototype, then beyond. Design intent is in [DESIGN
   - **Blacksmith:** weapons dull and chip. Sharpen on a whetstone, hammer chips out at the forge
     (which flattens the edge), and judge which a blade needs.
   - **Healer, an empath:** draws wounds into themselves against their pain and knows them only by
-    feel. They cast the mending that fits and meditate their mana back.
+    feel. They cast the mending that fits and meditate their mana back. They work from a shrine
+    (it replaced the clinic) with pallets for the wounded, a meditation stone that steadies the
+    breath and gathers more mana, and a chest of bandages for when the mana runs dry.
   - **Quest Broker:** matches parties to quests on intel built from a rough guess, tavern rumours
     and returning parties' reports.
 - `Expeditions/`: parties go off the map as records. Their strength (gear upkeep, wounds, food,
@@ -50,10 +52,11 @@ Milestones toward a playable prototype, then beyond. Design intent is in [DESIGN
 - Fixed on the way: AI packs dropped their coin at every job's end, and an item in your own pack
   hid its condition from you.
 - Bench baselines:
-  - seed 1234: state `87B7818664D280DC`, full `8FB9DD781924A9CC`
-  - seed 99: state `88AEFA5A9CA8C509`, full `502EA042D1550E60`
+  - seed 1234: state `D5ACD46F44E08654`, full `C288044B89415D13`
+  - seed 99: state `76FFD6CFB5EA3AF2`, full `E280807092065635`
 
-  The state hashes moved only for the cask added to the longhouse.
+  The state hashes moved only for the town's buildings: the longhouse's cask, and the shrine in
+  place of the clinic.
 
 Known leftovers:
 - Build and zone tools are open to every player; the Carpenter should own them.
@@ -61,7 +64,7 @@ Known leftovers:
 - Villagers don't fight back against raiders, they only suffer them (M3).
 - The dragon creature has no brain or breath job of its own yet (M3's late-round crisis).
 - Some dragon-era art, tools and def fields are still in the tree. Prune with the M6 art pass;
-  the whetstone and ale cask borrow art too.
+  the whetstone, ale cask and meditation stone borrow art too.
 - AI healers only bandage. Casks don't refill and there's no brewing. Mixed drinks, forge
   management, the quench and commission details are still to come (docs/DESIGN.md, "Trade notes").
 - `Adventurer.Satisfaction` and the expedition tallies are collected, waiting for M3's Renown and Dread.

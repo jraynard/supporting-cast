@@ -6,7 +6,7 @@ using SupportingCast.Sim.Maps;
 namespace SupportingCast.Sim.Errands;
 
 /// <summary>
-/// An AI healer answers a Healing errand at their clinic the plain way: bandages
+/// An AI healer answers a Healing errand at their shrine the plain way: bandages
 /// (<see cref="TendJob"/>). The gift is for players; a villager in the trade binds wounds well
 /// enough. The errand pays once nothing's left untended.
 /// </summary>

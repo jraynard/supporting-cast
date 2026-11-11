@@ -6,7 +6,7 @@ What's built and what's next is in [ROADMAP.md](ROADMAP.md).
 ## Pitch
 
 A multiplayer fantasy village where the players are the people a tabletop adventuring party usually
-walks past. One player runs the inn, another the forge, another the clinic. Heroes arrive wanting
+walks past. One player runs the inn, another the forge, another the healer's shrine. Heroes arrive wanting
 food, repairs, healing and work, and treat everyone like scenery. The village has to keep them
 alive and paying long enough to survive the season, and someone in it may be working against
 everyone else.
@@ -102,6 +102,10 @@ model: wounds sit on body parts, have a kind, and bleed, hurt and fester.
 - *Meditating.* Out of mana, they meditate it back with a breathing rhythm. Pain they still
   carry makes the rhythm stutter and flinch, so a healer who couldn't mend themselves fully
   struggles to recover.
+- *The shrine.* The healer works from a shrine: pallets where the wounded come to lie, a
+  meditation stone that steadies the breath against pain and gathers more mana, and a chest of
+  bandages and other supplies for when the mana runs dry. Later, magical supplies can live there
+  too.
 - Betrayal later (M4): drawing only part of a wound, or quietly pushing one back.
 
 **Carpenter's locksmithing.** Adventurers come back with locked and trapped chests. Picking the

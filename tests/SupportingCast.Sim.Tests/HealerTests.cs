@@ -165,12 +165,18 @@ public class HealerTests
     }
 
     /// <summary>Meditate pressing on the rhythm you'd expect (a steady breath), as a person would.</summary>
-    private static float MeditateByRhythm(float pain)
+    private static float MeditateByRhythm(float pain, bool atStone = false)
     {
         var (sim, me, _, _) = AtTheBedside();
+        if (atStone)
+        {
+            sim.SpawnStructure(sim.Thing("MeditationStone"), C(10, 11));
+            sim.RebuildDerivedIfNeeded();
+        }
         sim.World.Get<Mana>(me).Current = 0;
         sim.ApplyNow(new MeditateCommand(me));
         var real = (MeditateSession)sim.World.Get<WorkSession>(me);
+        Assert.Equal(atStone, real.Stillness > 0);
         real.Pain = pain; // as if sitting down in that much pain
         var predictor = new WorkPredictor();
         for (var t = 0; t < 60 * 120 && sim.World.Has<WorkSession>(me); t++)
@@ -190,6 +196,30 @@ public class HealerTests
         var hurting = MeditateByRhythm(0.9f);
         Assert.True(calm > 60f, $"a calm sitting fills most of it ({calm})");
         Assert.True(hurting < calm * 0.6f, $"in pain: {hurting} vs {calm}");
+    }
+
+    [Fact]
+    public void MeditatingAtTheShrineStoneIsCalmerInPain()
+    {
+        var bare = MeditateByRhythm(0.9f);
+        var atStone = MeditateByRhythm(0.9f, atStone: true);
+        Assert.True(atStone > bare * 1.3f, $"at the stone {atStone} vs {bare}");
+    }
+
+    [Fact]
+    public void TheShrineHasPalletsAStoneAndSupplies()
+    {
+        var sim = Simulation.CreateStandard(LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
+        sim.Presets.PresetMode = true;
+        var town = VillageRound.Setup(sim);
+        Assert.False(town.Shrine.IsNull);
+        var parts = sim.World.Query<PartOf>().Where(e => sim.World.Get<PartOf>(e).Building == town.Shrine).ToList();
+        int Count(string def) => parts.Count(e => sim.World.Get<Thing>(e).Def.Name == def);
+        Assert.Equal(1, Count("MeditationStone"));
+        Assert.Equal(2, Count("StrawPallet"));
+        var chest = parts.Single(e => sim.World.Get<Thing>(e).Def.Name == "Chest");
+        Assert.Equal(VillageRound.ShrineBandages, sim.StoredIn(chest).Where(i => sim.World.Get<Thing>(i).Def.Name == "Bandage").Sum(i => sim.World.Get<Stack>(i).Count));
+        Assert.Equal("Shrine", sim.Defs.Trade("Healer").Workplace);
     }
 
     [Fact]
@@ -223,7 +253,7 @@ public class HealerTests
 
     // ---------------- Healing errands ----------------
 
-    private static (Simulation Sim, Entity Hurt) ClinicWithAHurtAdventurer(string playerTrade)
+    private static (Simulation Sim, Entity Hurt) ShrineWithAHurtAdventurer(string playerTrade)
     {
         var sim = Simulation.CreateStandard(LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
         sim.Presets.PresetMode = true;
@@ -243,7 +273,7 @@ public class HealerTests
     [Fact]
     public void AHealerWhoDrawsAnAdventurersWoundIsPaid()
     {
-        var (sim, hurt) = ClinicWithAHurtAdventurer("Healer");
+        var (sim, hurt) = ShrineWithAHurtAdventurer("Healer");
         var me = Players.CharacterOf(sim, Ana);
         Assert.True(Empathy.Gifted(sim, me), "the healer's trade brings the gift");
         var errand = sim.Errands.All.Single(e => e.IsOpen && e.Poster == hurt && e.Kind.Kind == ErrandKind.Healing);
@@ -268,7 +298,7 @@ public class HealerTests
     [Fact]
     public void AnAIHealerBandagesAnAdventurerAndIsPaid()
     {
-        var (sim, hurt) = ClinicWithAHurtAdventurer("Blacksmith");
+        var (sim, hurt) = ShrineWithAHurtAdventurer("Blacksmith");
         var healer = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
         for (var i = 0; i < 16 && sim.Errands.All.Any(e => e.IsOpen && e.Kind.Kind == ErrandKind.Healing); i++)
             sim.TickMany(SimClock.TicksPerHour / 4);

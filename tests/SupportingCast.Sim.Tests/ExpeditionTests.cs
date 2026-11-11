@@ -108,18 +108,19 @@ public class ExpeditionTests
             || (sim.World.TryGet<Equipment>(e, out var eq) && Combat.WeaponWear.HpFraction(sim, eq.Weapon) < 0.99f));
         Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("return from"));
 
-        // The one with the tale tells it at the tavern; whoever hears knows the truth.
-        var teller = back.Single(e => sim.World.Has<ReportPending>(e));
-        var haunt = Adventurers.PartySystem.HauntOf(sim, sim.World.Get<Adventurer>(teller).PartyDef)!.Anchor;
-        for (var t = 0; t < 600 && sim.World.Has<ReportPending>(teller); t++)
+        // The one with the tale tells it at the tavern; whoever hears it clearly knows the truth.
+        var teller = back.Single(e => sim.World.Has<ReportPending>(e) || sim.Speech.Kept.Any(u => u.Speaker == e && u.Text.Contains(q.Def.Label)));
+        for (var t = 0; t < 24 && sim.World.Has<ReportPending>(teller); t++)
+            sim.TickMany(SimClock.TicksPerHour / 2);
+        var tale = sim.Speech.Kept.Last(u => u.Speaker == teller && u.Text.Contains(q.Def.Label));
+        var heard = tale.Listeners.Where(h => h.Clarity == Speech.Clarity.Clear && h.Listener != teller).ToList();
+        Assert.NotEmpty(heard);
+        Assert.All(heard, h =>
         {
-            Beside(sim, me, teller);
-            sim.TickMany(SimClock.TicksPerSecond);
-        }
-        Assert.False(sim.World.Has<ReportPending>(teller), $"never told it (at {sim.World.Get<Position>(teller).Cell}, tavern {haunt})");
-        var intel = sim.Expeditions.IntelOf(me, q.Id)!;
-        Assert.Equal(1f, intel.Confidence);
-        Assert.Equal(q.Danger, intel.Danger, 0.01f);
+            var intel = sim.Expeditions.IntelOf(h.Listener, q.Id)!;
+            Assert.Equal(1f, intel.Confidence);
+            Assert.Equal(q.Danger, intel.Danger, 0.01f);
+        });
     }
 
     [Fact]

@@ -114,16 +114,22 @@
       ]
     },
     {
-      "name": "Clinic", "label": "clinic", "icon": "buildings/campfire",
-      "description": "A snug hut round a fire, kept warm for the sick and the wounded.",
+      "name": "Shrine", "label": "healer's shrine", "icon": "buildings/campfire",
+      "description": "The empath's house: pallets for the wounded, a fire to keep them warm, a stone to meditate at and a chest of supplies.",
       "layout": [
-        "WWWW",
-        "W..W",
-        "WDWW"
+        "WWWWWWW",
+        "W.....W",
+        "D.....W",
+        "W.....W",
+        "WWWWWWW"
       ],
       "parts": { "foundation": "Sill", "wall": "LogWall", "door": "PlankDoor", "roof": "TurfRoofPart" },
       "furnish": [
-        { "def": "Campfire", "at": [2, 1] }
+        { "def": "Campfire", "at": [1, 1] },
+        { "def": "MeditationStone", "at": [5, 2] },
+        { "def": "StrawPallet", "at": [2, 3], "facing": 1 },
+        { "def": "StrawPallet", "at": [4, 3], "facing": 1 },
+        { "def": "Chest", "at": [5, 1], "facing": 2 }
       ],
       "variants": [
         { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },

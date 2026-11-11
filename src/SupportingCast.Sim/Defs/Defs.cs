@@ -363,6 +363,12 @@ public sealed class BuildingProps
     /// </summary>
     public int StorageStacks { get; set; }
 
+    /// <summary>
+    /// An empath meditating within reach of it does better (<c>Healing.MeditateSession</c>): pain
+    /// unsettles them less by this share, and they gather more mana by half as much again.
+    /// </summary>
+    public float Meditation { get; set; }
+
     /// <summary>A cask drinks are poured from (<c>Work.PourSession</c>).</summary>
     public CaskProps? Cask { get; set; }
 }

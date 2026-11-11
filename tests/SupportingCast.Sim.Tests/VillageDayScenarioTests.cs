@@ -23,7 +23,7 @@ public class VillageDayScenarioTests
         var town = VillageRound.Setup(sim);
         Assert.False(town.Tavern.IsNull, "the longhouse should fit near the landing");
         Assert.False(town.Forge.IsNull, "the smithy should fit near the landing");
-        Assert.False(town.Clinic.IsNull, "the clinic should fit near the landing");
+        Assert.False(town.Shrine.IsNull, "the shrine should fit near the landing");
 
         sim.TickMany(SimClock.TicksPerDay * Days);
 
