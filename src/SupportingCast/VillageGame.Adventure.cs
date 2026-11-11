@@ -46,257 +46,6 @@ public sealed partial class VillageGame
             ? Rendering.HumanLook.FromPreset(preset, HeroLook ?? Rendering.HumanLook.Default)
             : (HeroLook, HeroClothes);
 
-    /// <summary>Start in the prologue's village (Adventure), rather than straight at a new home.</summary>
-    public bool Prologue { get; init; }
-
-    /// <summary>A party arriving from the village: set them down on this game's fresh map.</summary>
-    public TravelParty? Arrival { get; init; }
-
-    /// <summary>Adventure's new starts (Escape, Pact): with a dragon of your own (see <see cref="AdventureStart"/>).</summary>
-    public StartKind Start { get; init; }
-
-    /// <summary>The starting dragon's name and colours (from the dragon creator); null keeps the defaults.</summary>
-    public string? DragonName { get; init; }
-
-    public DragonLook? DragonLook { get; init; }
-
-    /// <summary>The starting dragon's breed (a def name), or for the prologue the egg's; null is the default breed.</summary>
-    public string? DragonBreed { get; init; }
-
-    /// <summary>
-    /// Start where the opening leads, skipping it: a Pact at the tower's site (co-op hosts always
-    /// do: leaving a map isn't networked yet), an Escape free in the wild. <c>--stage site</c>.
-    /// </summary>
-    public bool SkipOpening { get; init; }
-
-    /// <summary>The prologue: who's speaking (the dialogue window's page), and a pending departure to confirm.</summary>
-    private int _dialoguePage = -1;
-    private Entity _confirmDepart = Entity.Null;
-
-    /// <summary>Set up the prologue village, or the new home a party arrives at. Returns where to look.</summary>
-    private int3 StartAdventureStory(DefDatabase defs)
-    {
-        var (look, clothes) = HeroAppearance();
-        var hero = new Hero(HeroName, look, HeroTraits, DragonName, DragonLook, clothes, DragonBreed);
-        var avatar = Arrival is { } party ? Travel.Arrive(_sim, party)
-            : Start == StartKind.Pact && (SkipOpening || HostCoop != null) ? AdventureStart.PactSite(_sim, hero, Difficulty)
-            : Start == StartKind.Escape && SkipOpening ? AdventureStart.Refuge(_sim, hero, Difficulty)
-            : Start is StartKind.Escape or StartKind.Pact ? AdventureStart.Setup(_sim, Start, hero, Difficulty)
-            : Sim.Scenarios.Prologue.Setup(_sim, HeroName, look, Difficulty, HeroTraits, clothes,
-                DragonBreed != null ? hero.Breed(defs) : null, DragonLook?.Element ?? DragonElement.Fire); // the egg picked in the creator
-        // Raids only at the new home (the village is someone else's to defend), and for a pact
-        // only once the tower stands: until then the difficulty waits in sim.Story.
-        if (Arrival is { Start: not StartKind.Pact } && Difficulty is { } difficulty && !difficulty.Equals("Off", StringComparison.OrdinalIgnoreCase))
-            _sim.Storyteller.SetDifficulty(_sim, defs.Difficulty(difficulty));
-        return _sim.World.Get<Position>(avatar).Cell;
-    }
-
-    /// <summary>
-    /// Leave this map: pack the party and switch to a game on a new one. With a wagon it's the
-    /// prologue's road; without (Entity.Null) it's a flight on dragonback.
-    /// </summary>
-    private void SetOut(Entity wagon, int travelHours = Travel.RoadHours)
-    {
-        var party = Travel.Pack(_sim, _avatar, wagon, travelHours);
-        var difficulty = _sim.World.TryGet<Quest>(_avatar, out var q) && q.Difficulty != null ? q.Difficulty : Difficulty;
-        Log.Engine.Info(wagon.IsNull
-            ? $"Flying off with {party.Dragon?.Name ?? "no dragon"} ({party.Start})"
-            : $"Setting out from {Sim.Scenarios.Prologue.VillageName} with {party.Cargo.Count} stacks of cargo");
-        Host.SwitchTo(new VillageGame(seed + 1) { Arrival = party, Difficulty = difficulty, AutoPause = AutoPause });
-    }
-
-    /// <summary>The "Fly away?" question is open.</summary>
-    private bool _confirmFlight;
-
-    /// <summary>The prologue's objective line, Orla's words, and the "set out?" question.</summary>
-    private void DrawStory()
-    {
-        if (!HasAvatar)
-            return;
-        var screen = ImGui.GetIO().DisplaySize;
-        if ((Sim.Scenarios.Prologue.Objective(_sim, _avatar) ?? RefugeObjective()) is { } objective)
-        {
-            var pos = new float2(screen.X * 0.5f, 132);
-            float2? pivot = new float2(0.5f, 0f);
-            ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
-            ImGui.SetNextWindowBgAlpha(0.8f);
-            ImGui.Begin("##objective"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings
-                | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoNav);
-            TextC(Ui.Theme.Accent, objective);
-            ImGui.End();
-        }
-
-        DrawPactChecklist(screen);
-        var center = screen * 0.5f;
-        float2? middle = new float2(0.5f, 0.5f);
-        DrawFlightPrompt(screen, center, middle);
-        if (_dialoguePage >= 0 && Sim.Scenarios.Prologue.DialogueOf(_sim, _dialogueWith) is { } dialogue)
-        {
-            var lines = dialogue.Lines;
-            ImGui.SetNextWindowPos(in center, ImGuiCond.Always, in middle);
-            var size = new float2(520, 0);
-            ImGui.SetNextWindowSize(in size, ImGuiCond.Always);
-            var speaker = dialogue.Speaker.Length > 0 ? dialogue.Speaker : _sim.World.Get<Creature>(_dialogueWith).Name;
-            ImGui.Begin($"{speaker}###dialogue", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoResize);
-            Wrapped(lines[Math.Min(_dialoguePage, lines.Count - 1)]);
-            ImGui.Spacing();
-            var last = _dialoguePage >= lines.Count - 1;
-            if (ImGui.Button(last ? dialogue.Accept : "Continue", in _autoSize) || ImGui.IsKeyPressed(ImGuiKey.Enter))
-            {
-                if (last)
-                {
-                    // The story beat itself is the talk action, sent as a command like any other.
-                    Issue(new AvatarWorkCommand(_avatar, true, _dialogueAt));
-                    Issue(new AvatarWorkCommand(_avatar, false));
-                    _dialoguePage = -1;
-                }
-                else
-                    _dialoguePage++;
-            }
-            ImGui.End();
-        }
-        else
-            _dialoguePage = -1;
-
-        if (!_confirmDepart.IsNull)
-        {
-            ImGui.SetNextWindowPos(in center, ImGuiCond.Always, in middle);
-            ImGui.Begin("Set out?###depart"u8, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
-            Wrapped($"Hitch the wagon and leave {Sim.Scenarios.Prologue.VillageName} for good? The road is long: you'll arrive somewhere new in a few days.");
-            if (_coop != null)
-                TextC(Ui.Theme.Warn, "Setting out isn't possible in co-op yet.");
-            else if (ImGui.Button("Set out"u8, in _autoSize))
-            {
-                var wagon = _confirmDepart;
-                _confirmDepart = Entity.Null;
-                ImGui.End();
-                SetOut(wagon);
-                return;
-            }
-            ImGui.SameLine(0, 8);
-            if (ImGui.Button("Not yet"u8, in _autoSize))
-                _confirmDepart = Entity.Null;
-            ImGui.End();
-        }
-    }
-
-    private string? _refugeObjective;
-    private float _refugeCheckedAt = -10f;
-
-    /// <summary>
-    /// Escape's refuge, once you've got away: the next thing to see to (a fire, a roof over a bed,
-    /// food put by, a tool), guidance only and gone once all are done. Rechecked every couple of
-    /// seconds rather than every frame: it scans every thing on the map.
-    /// </summary>
-    private string? RefugeObjective()
-    {
-        if (_sim.Story.Start != StartKind.Escape || _sim.Story.Escape != null || _sim.World.Has<Quest>(_avatar))
-            return null;
-        if (_time - _refugeCheckedAt < 2f)
-            return _refugeObjective;
-        _refugeCheckedAt = _time;
-        var w = _sim.World;
-        bool fire = false, bed = false, tool = false;
-        var food = 0;
-        foreach (var e in w.Each<Thing>())
-        {
-            var t = w.Get<Thing>(e);
-            var def = t.Def;
-            if (def.Tool != null)
-                tool = true;
-            if (def.IsFood)
-                food += w.TryGet<Stack>(e, out var stack) ? stack.Count : 1;
-            if (!t.Spawned || w.Has<Construction>(e))
-                continue;
-            if (def.Building?.Fuel != null && def.Name == "Campfire" && w.TryGet<Fueled>(e, out var fueled) && fueled.Fuel > 0)
-                fire = true;
-            if (def.Building is { IsBed: true, IsNest: false } && _sim.Map.Roofed[_sim.Map.Idx(t.Cell)])
-                bed = true;
-        }
-        _refugeObjective = !fire ? "Make camp: build a campfire and light it before nightfall (Build tab)."
-            : !bed ? "Shelter: put a bed under a roof (walls round it, or a floor overhead)."
-            : food < 30 ? $"Put food by: {food}/30 (hunt, fish, gather berries; your dragon hunts for itself)."
-            : !tool ? "Make a tool: a hammer, saw or pick at a workbench (Recipes)."
-            : null;
-        return _refugeObjective;
-    }
-
-    /// <summary>
-    /// The Pact's tower: what it still needs, ticked off as the hourly check finds it built
-    /// (<see cref="TowerPact"/>). Under the clock, collapsible; gone once the pact is settled.
-    /// </summary>
-    private void DrawPactChecklist(float2 screen)
-    {
-        if (TowerPact.Of(_sim) is not { Done: false } pact)
-            return;
-        var pos = new float2(screen.X - 16, 214);
-        float2? pivot = new float2(1f, 0f);
-        ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
-        ImGui.SetNextWindowBgAlpha(0.8f);
-        if (ImGui.Begin($"{Capitalized(pact.Tower.Label)}###pact", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings
-            | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav))
-        {
-            var requirements = TowerPact.Requirements(pact);
-            for (var i = 0; i < requirements.Count; i++)
-            {
-                var met = i < pact.Met.Length && pact.Met[i];
-                TextC(met ? Ui.Theme.Good : Ui.Theme.Dim, met ? "[x]" : "[ ]");
-                ImGui.SameLine(0, 6);
-                ImGui.Text(requirements[i]);
-            }
-            TextC(Ui.Theme.Dim, "Within the ley stone's reach. Checked every hour.");
-        }
-        ImGui.End();
-    }
-
-    private static string Capitalized(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
-
-    /// <summary>
-    /// Mounted on your own dragon once the story lets you go: a "Fly away" button under the
-    /// objective, and the question it opens. Leaving isn't possible in co-op yet.
-    /// </summary>
-    private void DrawFlightPrompt(float2 screen, float2 center, float2? middle)
-    {
-        if (!Departure.StoryAllows(_sim, _avatar) || Departure.CantFlyOff(_sim, _avatar) != null)
-        {
-            _confirmFlight = false;
-            return;
-        }
-        var dragon = _sim.World.Get<Creature>(Companions.DragonOf(_sim, _avatar)).Name;
-        if (!_confirmFlight)
-        {
-            var pos = new float2(screen.X * 0.5f, 172);
-            float2? pivot = new float2(0.5f, 0f);
-            ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
-            ImGui.SetNextWindowBgAlpha(0.8f);
-            ImGui.Begin("##flyaway"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings
-                | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav);
-            if (ImGui.Button($"Fly away on {dragon}", in _autoSize))
-                _confirmFlight = true;
-            ImGui.End();
-            return;
-        }
-        ImGui.SetNextWindowPos(in center, ImGuiCond.Always, in middle);
-        ImGui.Begin("Fly away?###flyaway-confirm"u8, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
-        Wrapped($"Leave this place for good on {dragon}'s back? You'll take only what you carry, and come down somewhere new by morning.");
-        if (_coop != null)
-            TextC(Ui.Theme.Warn, "Flying off isn't possible in co-op yet.");
-        else if (ImGui.Button("Fly away"u8, in _autoSize))
-        {
-            _confirmFlight = false;
-            ImGui.End();
-            SetOut(Entity.Null, Travel.FlightHours);
-            return;
-        }
-        ImGui.SameLine(0, 8);
-        if (ImGui.Button("Not yet"u8, in _autoSize))
-            _confirmFlight = false;
-        ImGui.End();
-    }
-
-    private int3 _dialogueAt;
-    private Entity _dialogueWith = Entity.Null;
-
     private Entity _avatar = Entity.Null;
     private int2 _sentMoveDir;
 
@@ -305,33 +54,18 @@ public sealed partial class VillageGame
     private bool _sentWork;
 
     /// <summary>
-    /// Keys the avatar's controls use, the dragon's included (R ride, B breathe: <see cref="HandleDragonKeys"/>);
+    /// Keys the avatar's controls use.
     /// the toolbar's letter hotkeys skip them in Adventure mode.
     /// </summary>
-    private static readonly GlfwKey[] AvatarKeys = [GlfwKey.W, GlfwKey.A, GlfwKey.S, GlfwKey.D, GlfwKey.F, GlfwKey.Z, GlfwKey.X, GlfwKey.N, GlfwKey.R, GlfwKey.B];
+    private static readonly GlfwKey[] AvatarKeys = [GlfwKey.W, GlfwKey.A, GlfwKey.S, GlfwKey.D, GlfwKey.F, GlfwKey.Z, GlfwKey.X, GlfwKey.N];
 
     private bool _sentDig;
 
     /// <summary>
-    /// Adventure mode before anyone has joined: no work orders or work priorities, since there's
-    /// nobody to carry them out. Newcomers arrive once a bed is ready indoors (SettlerSystem).
+    /// A player is one person in the village, not its overseer: no work orders or priorities for
+    /// the AI villagers. Those belong to whoever holds the trade (M1).
     /// </summary>
-    private bool OrdersLocked
-    {
-        get
-        {
-            if (!HasAvatar)
-                return false;
-            var w = _sim.World;
-            foreach (var e in _sim.Creatures())
-            {
-                var c = w.Get<Creature>(e);
-                if (e != _avatar && c.Faction == Faction.Village && c.Def.Race == Race.Human)
-                    return false;
-            }
-            return true;
-        }
-    }
+    private bool OrdersLocked => HasAvatar;
 
     private bool HasAvatar => !_avatar.IsNull && _sim.World.IsAlive(_avatar) && _sim.World.Has<Avatar>(_avatar);
 
@@ -369,15 +103,12 @@ public sealed partial class VillageGame
         if (!HasAvatar)
             return;
         var dir = int2.Zero;
-        if (!InCombat)
-        {
-            float x = 0, y = 0;
-            if (input.IsKeyDown(GlfwKey.W)) y += 1;
-            if (input.IsKeyDown(GlfwKey.S)) y -= 1;
-            if (input.IsKeyDown(GlfwKey.D)) x += 1;
-            if (input.IsKeyDown(GlfwKey.A)) x -= 1;
-            dir = MapDirection(x, y);
-        }
+        float x = 0, y = 0;
+        if (input.IsKeyDown(GlfwKey.W)) y += 1;
+        if (input.IsKeyDown(GlfwKey.S)) y -= 1;
+        if (input.IsKeyDown(GlfwKey.D)) x += 1;
+        if (input.IsKeyDown(GlfwKey.A)) x -= 1;
+        dir = MapDirection(x, y);
         if (dir != _sentMoveDir)
         {
             // Co-op: walk on screen at once, and tell the sim where we turned or stopped so it
@@ -389,23 +120,19 @@ public sealed partial class VillageGame
         if (dir != int2.Zero)
             _clickWindow = null; // walked off: the clicked wagon or bench stays shut
 
-        if (!InCombat)
-        {
-            HandleInventoryKeys(input);
-            HandleDragonKeys(input);
-        }
+        HandleInventoryKeys(input);
 
         // N lies down where you stand (in the bed there, else on the ground): its own key, so F and clicks never put you to sleep.
-        if (!InCombat && input.WasKeyPressed(GlfwKey.N))
+        if (input.WasKeyPressed(GlfwKey.N))
             Issue(new SleepCommand(_avatar));
 
         // X puts down what you hold: its own key, so F never drops anything by accident.
-        if (!InCombat && input.WasKeyPressed(GlfwKey.X) && WorkTarget(AvatarTool.Drop) is { Kind: AvatarActionKind.PutDown } drop)
+        if (input.WasKeyPressed(GlfwKey.X) && WorkTarget(AvatarTool.Drop) is { Kind: AvatarActionKind.PutDown } drop)
             Issue(new AvatarDropCommand(_avatar, drop.Cell));
 
         // F uses, Z digs; both work only while held. A press starts the action, a release of both stops work.
-        var use = !InCombat && input.IsKeyDown(GlfwKey.F);
-        var dig = !InCombat && input.IsKeyDown(GlfwKey.Z);
+        var use = input.IsKeyDown(GlfwKey.F);
+        var dig = input.IsKeyDown(GlfwKey.Z);
         if (use && !_sentWork && WorkTarget() is { OpensWindow: true } window)
             OpenWindowFor(window, toggle: true); // F again closes it
         else if (use && !_sentWork)
@@ -429,16 +156,32 @@ public sealed partial class VillageGame
             case AvatarActionKind.OpenStation:
                 _openStation = toggle && _openStation == action.Target ? Entity.Null : action.Target;
                 break;
-            case AvatarActionKind.Talk:
-                (_dialoguePage, _dialogueAt, _dialogueWith) = (0, action.Cell, action.Target); // the story beat happens when the dialogue ends
-                break;
-            case AvatarActionKind.Depart:
-                _confirmDepart = action.Target;
-                break;
-            case AvatarActionKind.TendDragon:
-                _openCare = toggle && _openCare == action.Target ? Entity.Null : action.Target;
-                break;
         }
+    }
+
+    private static string Capitalized(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
+
+    /// <summary>A creature whose on-screen body is under the cursor.</summary>
+    private Entity PickCreature(float2 mouse)
+    {
+        var w = _sim.World;
+        var best = Entity.Null;
+        var bestDist = 0.6f * _camera.Zoom;
+        foreach (var e in w.Query<Creature>())
+        {
+            var pos = w.Get<Position>(e);
+            if (pos.Cell.Z > _renderer.CutawayZ)
+                continue;
+            var size = w.Get<Creature>(e).Stage(_sim.Clock.Tick).Size;
+            var s = _camera.WorldToScreen(pos.Pos + WorldScale.Rise(size * 0.5f));
+            var d = MathF.Sqrt((s.X - mouse.X) * (s.X - mouse.X) + (s.Y - mouse.Y) * (s.Y - mouse.Y));
+            if (d < bestDist)
+            {
+                best = e;
+                bestDist = d;
+            }
+        }
+        return best;
     }
 
     /// <summary>What the left button's last press started, until it's let go.</summary>
@@ -470,31 +213,11 @@ public sealed partial class VillageGame
     /// </summary>
     private bool HandleAdventureMouse(Input input, float dt)
     {
-        if (!HasAvatar || InCombat || _tool != ToolKind.Select)
+        if (!HasAvatar || _tool != ToolKind.Select)
             return false;
         UpdateClickWindow(dt);
 
         var shift = input.IsKeyDown(GlfwKey.LeftShift) || input.IsKeyDown(GlfwKey.RightShift);
-        if (!Ridden.IsNull)
-        {
-            // Mounted: a click on the ground (either button) sends the dragon there, flying with the
-            // wing toggle or Ctrl. Clicking a creature, or with Shift, still selects.
-            var left = input.WasMousePressed(MouseButton.Left);
-            if (!(left || input.WasMousePressed(MouseButton.Right)) || shift || !_sim.Map.InBounds(_hoverCell))
-                return false;
-            var clicked = PickCreature(input.MousePosition);
-            // Right-click on game: the dragon gives chase (F shoots it from the saddle).
-            if (!left && !clicked.IsNull && _sim.World.Get<Creature>(clicked) is { Dead: false } prey && prey.Def.Race == Race.Animal)
-            {
-                Issue(new MountedHuntCommand(_avatar, clicked));
-                return true;
-            }
-            if (left && !clicked.IsNull)
-                return false;
-            Issue(new MoveOrderCommand(_avatar, _hoverCell,
-                Fly: _rideFly || input.IsKeyDown(GlfwKey.LeftControl) || input.IsKeyDown(GlfwKey.RightControl)));
-            return true;
-        }
         if (input.WasMouseReleased(MouseButton.Left))
         {
             if (_clickHold == ClickHold.Act && !_sentWork && !_sentDig)
@@ -519,7 +242,7 @@ public sealed partial class VillageGame
         var creature = PickCreature(input.MousePosition);
         var (action, cell) = creature.IsNull ? ClickTarget()
             : (ProbeAt(_sim.World.Get<Position>(creature).Cell), _sim.World.Get<Position>(creature).Cell);
-        if (!creature.IsNull && action.Kind != AvatarActionKind.Talk)
+        if (!creature.IsNull)
             return false; // people and animals are selected, as before
         _clickWindow = null;
         if (action.Kind != AvatarActionKind.None)
@@ -563,7 +286,7 @@ public sealed partial class VillageGame
         if (!_sim.Map.InBounds(cell))
             return AvatarAction.None;
         var action = AvatarSystem.ActionAt(_sim, _avatar, cell, from: cell);
-        return action.Kind == AvatarActionKind.Depart && action.Cell != cell ? AvatarAction.None : action;
+        return action;
     }
 
     /// <summary>Right-clicked food lying in reach (or behind a wall in reach): its menu, to eat it there.</summary>
@@ -671,7 +394,7 @@ public sealed partial class VillageGame
         if (_openStorage.IsNull)
             return;
         var w = _sim.World;
-        if (!HasAvatar || InCombat || !Inventory.CanReachContainer(_sim, _avatar, _openStorage))
+        if (!HasAvatar || !Inventory.CanReachContainer(_sim, _avatar, _openStorage))
         {
             _openStorage = Entity.Null; // walked away (or someone picked the pack up)
             return;
@@ -741,23 +464,14 @@ public sealed partial class VillageGame
         ImGui.TextDisabled(current switch
         {
             RequestKind.Follow => "Following you",
-            RequestKind.GuardEgg => "Standing guard",
+            RequestKind.Guard => "Standing guard",
             _ => "Doing their own work",
         });
-        var guardLabel = Requests.GuardTarget(_sim, _avatar) is var ward && !ward.IsNull && !w.Has<Egg>(ward)
-            ? $"Guard {w.Get<Creature>(ward).Name}" : "Guard the egg";
         if (current != RequestKind.Follow)
         {
             if (ImGui.Button("Follow me"u8, in _autoSize))
                 Issue(new RequestCommand(_avatar, companion, RequestKind.Follow));
             WillingnessTip(companion, RequestKind.Follow);
-        }
-        if (current != RequestKind.GuardEgg && !ward.IsNull)
-        {
-            ImGui.SameLine(0, 6);
-            if (ImGui.Button(guardLabel, in _autoSize))
-                Issue(new RequestCommand(_avatar, companion, RequestKind.GuardEgg));
-            WillingnessTip(companion, RequestKind.GuardEgg);
         }
         if (Requests.RecentlyRefused(_sim, _avatar, companion))
             TextC(Warn, "They've just said no to you. Give it an hour.");
@@ -815,7 +529,7 @@ public sealed partial class VillageGame
     /// </summary>
     private void FollowAvatar()
     {
-        if (!HasAvatar || InCombat)
+        if (!HasAvatar)
             return;
         _camera.Target = AvatarDrawPos();
     }
@@ -826,7 +540,7 @@ public sealed partial class VillageGame
     /// <summary>The "[F] Chop pine tree" prompt over the avatar's head, and what it's doing while F is held.</summary>
     private void DrawAvatarPrompt()
     {
-        if (!HasAvatar || InCombat)
+        if (!HasAvatar)
             return;
         var w = _sim.World;
         var mind = w.Get<Mind>(_avatar);

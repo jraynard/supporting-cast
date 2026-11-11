@@ -205,29 +205,6 @@ public class JobTests
     }
 
     [Fact]
-    public void VillagerCarriesColdEggToTheFire()
-    {
-        var sim = TestWorld.Create();
-        sim.Climate.BaseTemperature = 5;
-        sim.Climate.DailySwing = 0;
-        Array.Fill(sim.Map.Temperature, 5f);
-        sim.BuildWallRing(C(10, 10), C(16, 16), door: C(13, 16));
-        var fire = sim.SpawnStructure(sim.Thing("Campfire"), C(13, 13));
-        sim.World.Get<Fueled>(fire).Fuel = 1000;
-        sim.TickMany(SimClock.TicksPerHour * 3); // let the room heat up
-
-        var egg = sim.CreateItem(sim.Thing("DragonEgg"), 1);
-        sim.PlaceItemNear(egg, C(3, 3));
-        Villager(sim, C(4, 4), WorkType.Tend);
-
-        sim.TickMany(SimClock.TicksPerHour);
-
-        var eggTile = sim.World.Get<Thing>(egg).Cell;
-        var temp = sim.TemperatureAt(eggTile);
-        Assert.True(temp >= 28f, $"egg should be somewhere warm, is at {eggTile} with {temp:F1}°C");
-    }
-
-    [Fact]
     public void DigsATunnelThroughARockRidge()
     {
         var sim = TestWorld.Create(20, 10, depth: 4);

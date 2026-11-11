@@ -5,7 +5,7 @@ using SupportingCast.Sim.Saving;
 namespace SupportingCast.Sim.Tests;
 
 /// <summary>
-/// Structures wider than a cell (<see cref="Defs.ThingDef.Size"/>): the 3x3 dragon nest, 1x2 beds,
+/// Structures wider than a cell (<see cref="Defs.ThingDef.Size"/>): the 3x3 pyre, 1x2 beds,
 /// 2x1 benches and 2x2 tables, turned by their facing.
 /// </summary>
 public class FootprintTests
@@ -18,22 +18,22 @@ public class FootprintTests
     }
 
     [Fact]
-    public void ANestHoldsItsWholeFootprintFromBlueprintToRubble()
+    public void APyreHoldsItsWholeFootprintFromBlueprintToRubble()
     {
         var sim = TestWorld.Create();
-        var nest = sim.Thing("Nest");
-        Assert.Equal(3, nest.Footprint);
+        var pyre = sim.Thing("Pyre");
+        Assert.Equal(3, pyre.Footprint);
 
-        var site = sim.PlaceBlueprint(nest, C(10, 10));
+        var site = sim.PlaceBlueprint(pyre, C(10, 10));
         Assert.False(site.IsNull);
         foreach (var c in Around(C(10, 10)))
             Assert.Equal(site, sim.Map.Structure[sim.Map.Idx(c)]);
         Assert.True(sim.Map.Structure[sim.Map.Idx(C(12, 10))].IsNull);
 
-        // Nothing else fits in it, nor another nest overlapping its edge; one beside it does.
+        // Nothing else fits in it, nor another pyre overlapping its edge; one beside it does.
         Assert.False(sim.CanPlaceStructure(C(11, 11), sim.Thing("Campfire")));
-        Assert.Equal(Entity.Null, sim.PlaceBlueprint(nest, C(12, 10)));
-        Assert.True(sim.CanPlaceStructure(C(13, 10), nest));
+        Assert.Equal(Entity.Null, sim.PlaceBlueprint(pyre, C(12, 10)));
+        Assert.True(sim.CanPlaceStructure(C(13, 10), pyre));
 
         var built = sim.CompleteConstruction(site);
         Assert.Equal(C(10, 10), sim.World.Get<Thing>(built).Cell);
@@ -46,21 +46,21 @@ public class FootprintTests
     }
 
     [Fact]
-    public void ANestNeedsRoomOnTheMapAndGroundUnderEveryCell()
+    public void APyreNeedsRoomOnTheMapAndGroundUnderEveryCell()
     {
         var sim = TestWorld.Create();
-        var nest = sim.Thing("Nest");
-        Assert.False(sim.CanPlaceStructure(C(0, 10), nest));      // its west edge would be off the map
-        Assert.True(sim.CanPlaceStructure(C(1, 10), nest));
+        var pyre = sim.Thing("Pyre");
+        Assert.False(sim.CanPlaceStructure(C(0, 10), pyre));      // its west edge would be off the map
+        Assert.True(sim.CanPlaceStructure(C(1, 10), pyre));
         sim.SpawnStructure(sim.Thing("WoodWall"), C(6, 6));
-        Assert.False(sim.CanPlaceStructure(C(5, 5), nest));       // a wall in its corner
+        Assert.False(sim.CanPlaceStructure(C(5, 5), pyre));       // a wall in its corner
     }
 
     [Fact]
     public void AWideStructureSurvivesASaveAndLoad()
     {
         var sim = TestWorld.Create();
-        var built = sim.SpawnStructure(sim.Thing("Nest"), C(10, 10));
+        var built = sim.SpawnStructure(sim.Thing("Pyre"), C(10, 10));
         var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
         var anchor = loaded.Map.Structure[loaded.Map.Idx(C(10, 10))];
         Assert.False(anchor.IsNull);

@@ -5,9 +5,12 @@ using SupportingCast.Sim.Systems;
 
 namespace SupportingCast.Sim.Combat;
 
+/// <summary>An attack of the last moments, for the renderer. Not part of the sim state.</summary>
+public sealed record ShotEvent(long Tick, float3 From, float3 To, bool Ranged, bool Hit);
+
 /// <summary>
-/// Attacks outside turn-based combat: hunters shooting game, a cornered boar goring back. Uses the
-/// same odds and wounds as <see cref="CombatRules"/>, on a cooldown instead of turns. The target is
+/// Every attack in the game: hunters shooting game, a cornered boar goring back. Uses the
+/// odds and wounds of <see cref="CombatRules"/>, on a cooldown. The target is
 /// <see cref="Provoked"/>, and an animal (with its herd-mates nearby) stops what it's doing to react.
 /// </summary>
 public static class RealtimeAttacks
@@ -19,8 +22,8 @@ public static class RealtimeAttacks
     public static AttackResult? TryAttack(Simulation sim, Entity attacker, Entity target, AttackDef attack)
     {
         var w = sim.World;
-        if (AfflictionRules.Stunned(sim, attacker) || !CombatRules.Chance(sim, attacker, target, attack).Possible)
-            return null; // reeling from a lightning strike: no attacks for a moment
+        if (!CombatRules.Chance(sim, attacker, target, attack).Possible)
+            return null;
         var wasAlive = !w.Get<Creature>(target).Dead;
         var result = CombatRules.Resolve(sim, attacker, target, attack);
 
@@ -60,7 +63,7 @@ public static class RealtimeAttacks
         if (c.Def.Race != Race.Animal)
             return;
         var mind = w.Get<Mind>(e);
-        if (mind.Job is AnimalAttackJob || sim.Combat.Involves(e))
+        if (mind.Job is AnimalAttackJob)
             return;
         AiSystem.EndJob(sim, e, mind, false);
         mind.NextThinkTick = sim.Clock.Tick;

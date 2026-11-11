@@ -25,20 +25,9 @@ public sealed class MovementSystem : ISimSystem
     }
 
     /// <summary>
-    /// One tick of movement for one creature (turn-based combat animates single units with this).
-    /// A mount carries its rider along: riders don't move on their own.
+    /// One tick of movement for one creature.
     /// </summary>
     public void Step(Simulation sim, Entity e)
-    {
-        var w = sim.World;
-        if (w.Has<Riding>(e))
-            return;
-        StepAlone(sim, e);
-        if (w.TryGet<Mount>(e, out var mount) && w.IsAlive(mount.Rider))
-            w.Get<Position>(mount.Rider) = w.Get<Position>(e);
-    }
-
-    private void StepAlone(Simulation sim, Entity e)
     {
         var w = sim.World;
         var map = sim.Map;
@@ -123,8 +112,6 @@ public sealed class MovementSystem : ISimSystem
             speed *= Math.Max(0.15f, health.Capacity(Capacity.Moving));
         if (w.Get<Carrying>(e).HasItem)
             speed *= 0.85f;
-        if (w.Has<Components.Afflictions>(e))
-            speed *= AfflictionRules.MoveFactor(sim, e); // chilled, stunned or rooted by a dragon's breath
         if (w.Has<Components.FoodPoisoned>(e))
             speed *= FoodPoisoning.MoveFactor(sim, e);
         foreach (var load in w.Each<Carried>())
@@ -179,8 +166,6 @@ public sealed class MovementSystem : ISimSystem
         if (!map.InBounds(cell) || map.Standable(map.Idx(cell)) || map.IsSolid(map.Idx(cell)))
             return;
         var canFly = Navigation.FlyingStage(sim, e) != null;
-        if (canFly && sim.Combat.Involves(e))
-            return; // hovering between turns
         var z = cell.Z;
         while (z > 0 && !map.Standable(map.Idx(cell.X, cell.Y, z)) && !map.IsSolid(map.Idx(cell.X, cell.Y, z - 1)))
             z--;
@@ -205,12 +190,10 @@ public sealed class AiSystem : ISimSystem
     public int Interval => 1;
 
     private readonly IBrain _human = new HumanBrain();
-    private readonly IBrain _dragon = new DragonBrain();
     private readonly IBrain _raider = new RaiderBrain();
     private readonly IBrain _prisoner = new PrisonerBrain();
     private readonly IBrain _animal = new AnimalBrain();
     private readonly IBrain _bedridden = new BedriddenBrain();
-    private readonly IBrain _storyNpc = new StoryNpcBrain();
 
     /// <summary>Most recent job failure per creature, for the inspector/debugging.</summary>
     public Dictionary<Entity, string> LastFailure { get; } = [];
@@ -222,21 +205,11 @@ public sealed class AiSystem : ISimSystem
         foreach (var e in sim.Creatures())
         {
             var mind = w.Get<Mind>(e);
-            if (w.Get<Creature>(e).Downed || w.Has<Carried>(e) || sim.Combat.Involves(e) || w.Has<Chained>(e))
+            if (w.Get<Creature>(e).Downed || w.Has<Carried>(e))
                 continue;
-            if (w.Has<Riding>(e))
-            {
-                if (mind.Job is IFromTheSaddle)
-                    RunJob(sim, e, mind, now); // a shot from dragonback; nothing else of its own
-                continue;
-            }
             if (mind.Drafted)
             {
-                // A ridden dragon (drafted while ridden) runs what it's told to (breathe fire from
-                // the saddle), but thinks up nothing itself; other drafted creatures just wait.
-                if (w.Has<Mount>(e) && mind.Job != null)
-                    RunJob(sim, e, mind, now);
-                continue;
+                continue; // waits for orders
             }
             // The player's avatar runs only the jobs its commands start; its brain never chooses.
             if (w.Has<Avatar>(e))
@@ -247,12 +220,9 @@ public sealed class AiSystem : ISimSystem
             }
             var creature = w.Get<Creature>(e);
             // Raiders, and anyone else on their way out (released prisoners, herds moving on), think like raiders.
-            var brain = w.Has<StoryKeeper>(e) ? _bedridden
-                : w.Has<StoryNpc>(e) && creature.Faction != Faction.Raider ? _storyNpc // Escape's captors fight as raiders once the alarm's up
-                : creature.Faction is Faction.Raider or Faction.Predator || w.Has<Combat.Leaving>(e) ? _raider
+            var brain = creature.Faction is Faction.Raider or Faction.Predator || w.Has<Combat.Leaving>(e) ? _raider
                 : creature.Faction == Faction.Prisoner ? _prisoner
                 : creature.Def.Race == Race.Animal ? _animal
-                : creature.Def.Race == Race.Dragon ? _dragon
                 : _human;
 
             // Emergencies (standing in fire, dangerous temperature) override any job but firefighting.
@@ -437,9 +407,6 @@ public sealed class NeedsSystem : ISimSystem
             {
                 var def = rate.NeedDef;
                 var decay = rate.DecayPerDay / UpdatesPerDay;
-                if (def == bond)
-                    // Asleep it doesn't miss anyone: the bond only fades while it's awake.
-                    decay = mind.Asleep ? 0f : decay * c.Stage(sim.Clock.Tick).BondDecayFactor * (Bonding.Reached(sim, e, Bonding.Soulbound) ? 0.5f : 1f);
                 if (def == rest && (mind.Asleep || c.Downed))
                     decay = -3.2f * ColdSleep(temp, tol) / UpdatesPerDay; // ~7.5 hours for a full night
                 needs.Add(def, -decay);
@@ -494,8 +461,6 @@ public sealed class NeedsSystem : ISimSystem
         c.Dead = true;
         c.Downed = false;
         c.Hp = 0;
-        RidingSystem.OnIncapacitated(sim, e);
-        Scenarios.EscapeCamp.OnIncapacitated(sim, e);
         AiSystem.EndJob(sim, e, sim.World.Get<Mind>(e), false);
         sim.World.Get<Mover>(e).Stop();
         sim.DropGear(e);
@@ -512,23 +477,14 @@ public sealed class PlantSystem : ISimSystem
     public string Name => "Plants";
     public int Interval => 60;
 
-    /// <summary>How much faster a plant a nature dragon breathed on grows back (<see cref="Components.Nurtured"/>).</summary>
-    public const int NurtureFactor = 3;
-
-    private static bool Nurtured(Simulation sim, Entity e) =>
-        sim.World.TryGet<Nurtured>(e, out var n) && n.Until >= sim.Clock.Tick;
-
     public void Update(Simulation sim)
     {
         foreach (var e in sim.World.Query<PlantState>())
         {
             ref var p = ref sim.World.Get<PlantState>(e);
             if (p.RegrowTicksLeft > 0)
-                p.RegrowTicksLeft -= Interval * (Nurtured(sim, e) ? NurtureFactor : 1);
+                p.RegrowTicksLeft -= Interval;
         }
-        foreach (var e in sim.World.Query<Nurtured>())
-            if (sim.World.Get<Nurtured>(e).Until < sim.Clock.Tick || !sim.World.Has<PlantState>(e) || sim.World.Get<PlantState>(e).Ready)
-                sim.World.Remove<Nurtured>(e);
     }
 }
 

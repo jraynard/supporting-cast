@@ -193,43 +193,6 @@ public class AvatarTests
     }
 
     [Fact]
-    public void CarriesTheEggAcrossJobsAndPutsItDown()
-    {
-        var sim = Warm();
-        var me = Avatar(sim, C(5, 5));
-        sim.SpawnItem(sim.Thing("DragonEgg"), 1, C(5, 6));
-        sim.SpawnStructure(sim.Thing("Pine"), C(4, 5));
-
-        sim.Enqueue(new AvatarWorkCommand(me, true, C(5, 6)));
-        sim.Tick();
-        var egg = sim.World.Get<Carrying>(me).Item;
-        Assert.False(egg.IsNull);
-        Assert.True(sim.World.Has<Egg>(egg));
-
-        // Chop a tree with the egg in hand; finishing (or abandoning) the job keeps it there.
-        sim.Enqueue(new AvatarWorkCommand(me, true, C(4, 5)));
-        sim.TickMany(SimClock.TicksPerSecond * 30);
-        Assert.Null(sim.World.Get<Mind>(me).Job);
-        Assert.Equal(egg, sim.World.Get<Carrying>(me).Item);
-
-        // Walk a few steps; the egg's location follows.
-        sim.Enqueue(new AvatarMoveCommand(me, new int2(0, 1)));
-        sim.TickMany(SimClock.TicksPerSecond * 2);
-        sim.Enqueue(new AvatarMoveCommand(me, default));
-        sim.TickMany(SimClock.TicksPerSecond);
-        Assert.Equal(Cell(sim, me), sim.LocationOf(egg));
-
-        var drop = Cell(sim, me) + new int3(1, 0, 0);
-        // F never drops what you carry; X does.
-        Assert.NotEqual(AvatarActionKind.PutDown, AvatarSystem.ActionAt(sim, me, drop).Kind);
-        Assert.Equal(AvatarActionKind.PutDown, AvatarSystem.ActionAt(sim, me, drop, AvatarTool.Drop).Kind);
-        sim.Enqueue(new AvatarDropCommand(me, drop));
-        sim.Tick();
-        Assert.True(sim.World.Get<Carrying>(me).Item.IsNull);
-        Assert.Equal(egg, sim.Map.Item[sim.Map.Idx(drop)]);
-    }
-
-    [Fact]
     public void DeliversToABlueprintTwoCellsOff()
     {
         var sim = Warm();
@@ -476,53 +439,6 @@ public class AvatarTests
         Assert.Equal(Play(), Play());
     }
 
-    [Fact]
-    public void AvatarAndItsHeldEggSurviveASave()
-    {
-        var sim = Warm();
-        var me = Avatar(sim, C(5, 5));
-        sim.SpawnItem(sim.Thing("DragonEgg"), 1, C(5, 6));
-        sim.Enqueue(new AvatarWorkCommand(me, true, C(5, 6)));
-        sim.Enqueue(new AvatarMoveCommand(me, new int2(1, 0)));
-        sim.Tick();
-
-        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
-        var avatar = Assert.Single(loaded.World.Query<Avatar>());
-        Assert.Equal(new int2(1, 0), loaded.World.Get<Avatar>(avatar).MoveDir);
-        Assert.True(loaded.World.Get<Avatar>(avatar).WorkHeld);
-        var egg = loaded.World.Get<Carrying>(avatar).Item;
-        Assert.True(loaded.World.Has<Egg>(egg));
-    }
-
-    [Fact]
-    public void InAFightCompanionsAreAiAndTheAvatarIsThePlayers()
-    {
-        var sim = Warm(depth: 6);
-        var me = Avatar(sim, C(10, 10));
-        var friend = sim.SpawnCreature(sim.Defs.Creature("Human"), "Friend", C(10, 12), ageDays: 25 * 365);
-        var dragon = sim.SpawnCreature(sim.Defs.Creature("Dragon"), "Ember", C(11, 10), ageDays: 5);
-        sim.World.Get<Dragon>(dragon).Keeper = me;
-        sim.World.Get<Dragon>(dragon).Affinity = 0.2f;
-        sim.SpawnCreature(sim.Defs.Creature("Human"), "Bandit", C(20, 10), Faction.Raider, ageDays: 25 * 365);
-        sim.Combat.Start(sim);
-
-        Assert.False(sim.Combat.AiControls(sim.Combat.Unit(me)!));
-        Assert.True(sim.Combat.AiControls(sim.Combat.Unit(friend)!));
-        Assert.True(sim.Combat.AiControls(sim.Combat.Unit(dragon)!), "a dragon that barely knows you won't take orders");
-
-        sim.World.Get<Dragon>(dragon).Affinity = AvatarSystem.CommandDragonAffinity;
-        Assert.True(Encounter.PlayerCommands(sim, dragon));
-    }
-
-    [Fact]
-    public void WithoutAnAvatarThePlayerCommandsEveryone()
-    {
-        var sim = Warm(depth: 6);
-        var a = sim.SpawnCreature(sim.Defs.Creature("Human"), "A", C(10, 10), ageDays: 25 * 365);
-        sim.SpawnCreature(sim.Defs.Creature("Human"), "Bandit", C(20, 10), Faction.Raider, ageDays: 25 * 365);
-        sim.Combat.Start(sim);
-        Assert.False(sim.Combat.AiControls(sim.Combat.Unit(a)!));
-    }
 }
 
 /// <summary>Adventure mode's separate dig key and newcomers moving into free beds.</summary>
@@ -624,24 +540,6 @@ public class AdventureSettlementTests
 
 public class EggBearerStartTests
 {
-    [Fact]
-    public void StartsAloneWithTheEggAndTheChosenLookWhichSurvivesASave()
-    {
-        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 96, 96, 7, Maps.MapGenerator.RecommendedDepth);
-        var center = Maps.MapGenerator.Generate(sim, new Maps.MapGenerator.Options { Villagers = 1 });
-        sim.RebuildDerivedIfNeeded();
-        Scenarios.SliceDemo.ApplyVillageDefaults(sim, center);
-        var look = new Appearance { Body = BodyType.Female, Hair = HairStyle.Long, HairColor = 0xC8A050, EyeColor = 0x3A6EC8, SkinColor = 0x8C5A3A };
-        var me = Scenarios.EggBearerStart.Setup(sim, "Wren", look);
-
-        Assert.Single(sim.Creatures(), e => sim.World.Get<Creature>(e).Def.Race == Defs.Race.Human);
-        Assert.True(sim.World.Has<Egg>(sim.World.Get<Carrying>(me).Item));
-
-        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
-        var avatar = Assert.Single(loaded.World.Query<Avatar>());
-        Assert.Equal("Wren", loaded.World.Get<Creature>(avatar).Name);
-        Assert.Equal(look, loaded.World.Get<Appearance>(avatar));
-    }
 }
 
 /// <summary>Adventure mode: asking companions to follow you or guard the egg.</summary>
@@ -688,32 +586,6 @@ public class CompanionRequestTests
         sim.Enqueue(new RequestCommand(me, friend, null));
         sim.Tick();
         Assert.False(sim.World.Has<Request>(friend));
-    }
-
-    [Fact]
-    public void AGuardStaysByTheEggThenGuardsTheHatchling()
-    {
-        var sim = Warm();
-        var me = Person(sim, C(5, 5), "Bearer");
-        sim.World.Add(me, new Avatar());
-        sim.World.Add(me, new Keeper { Dragon = Entity.Null });
-        var friend = Person(sim, C(20, 20), "Wren");
-        sim.SpawnItem(sim.Thing("DragonEgg"), 1, C(40, 10));
-        var egg = sim.World.Query<Egg>().Single();
-
-        sim.Enqueue(new RequestCommand(me, friend, RequestKind.GuardEgg));
-        sim.TickMany(SimClock.TicksPerSecond * 20);
-        Assert.True(Dist(sim, friend, C(40, 10)) <= GuardJob.Radius);
-        Assert.Equal(egg, sim.World.Get<Request>(friend).Target);
-
-        // It hatches: they watch over the dragon instead.
-        sim.World.Get<Egg>(egg).Progress = 0.9999f;
-        sim.Map.Temperature[sim.Map.Idx(C(40, 10))] = 40f;
-        Array.Fill(sim.Map.Temperature, 40f);
-        sim.TickMany(SimClock.TicksPerHour);
-        var dragon = sim.World.Query<Dragon>().Single();
-        sim.TickMany(SimClock.TicksPerSecond * 10);
-        Assert.Equal(dragon, sim.World.Get<Request>(friend).Target);
     }
 
     [Fact]
@@ -925,25 +797,6 @@ public class WagonTests
         Assert.True(sim.World.Get<Rot>(meat).Progress > 0.1f);
     }
 
-    [Fact]
-    public void TheEggBearerSetsOutWithTheKitInTheWagon()
-    {
-        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 96, 96, 7, Maps.MapGenerator.RecommendedDepth);
-        var center = Maps.MapGenerator.Generate(sim, new Maps.MapGenerator.Options { Villagers = 1 });
-        sim.RebuildDerivedIfNeeded();
-        var me = Scenarios.EggBearerStart.Setup(sim);
-        var wagon = sim.World.Query<Thing>().Single(e => sim.World.Get<Thing>(e).Def.Name == "Wagon");
-        var kit = sim.StoredIn(wagon).Select(e => sim.World.Get<Thing>(e).Def.Name).ToList();
-        Assert.Contains("Berries", kit);
-        Assert.Contains("Wood", kit);
-        Assert.Contains("Meat", kit);
-        Assert.True(sim.World.Has<Egg>(sim.World.Get<Carrying>(me).Item));
-        Assert.DoesNotContain(sim.SpawnedItems(), e => Maps.Map.Distance(sim.World.Get<Thing>(e).Cell, center) < 6);
-
-        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
-        var w2 = loaded.World.Query<Thing>().Single(e => loaded.World.Get<Thing>(e).Def.Name == "Wagon");
-        Assert.Equal(kit.Count, loaded.StoredIn(w2).Count);
-    }
 }
 
 /// <summary>Adventure mode's opening: the village, Orla's handover, and setting out for a new map.</summary>
@@ -952,142 +805,8 @@ public class PrologueTests
     private static Simulation NewSim(ulong seed = 11) =>
         Simulation.CreateStandard(TestWorld.LoadDefs(), 96, 96, seed, Maps.MapGenerator.RecommendedDepth);
 
-    private static Entity Keeper(Simulation sim) => sim.World.Query<StoryKeeper>().Single();
-
     private static int3 NextTo(Simulation sim, int3 cell) =>
         sim.SpiralFrom(cell, 2).First(c => c != cell && sim.Map.Passable(c) && Ai.Pathfinder.Touches(c, cell));
-
-    [Fact]
-    public void TheVillageIsNotYoursToCommand()
-    {
-        var sim = NewSim();
-        var me = Scenarios.Prologue.Setup(sim, "Wren", difficulty: "Normal");
-        var villagers = sim.Creatures().Where(e => e != me && sim.World.Get<Creature>(e).Def.Race == Defs.Race.Human).ToList();
-        Assert.Equal(5, villagers.Count);
-        Assert.All(villagers, v => Assert.Equal(Faction.Ashford, sim.World.Get<Creature>(v).Faction));
-        Assert.All(villagers, v => Assert.NotNull(Requests.CantAsk(sim, me, v)));
-        Assert.Equal(QuestStage.MeetKeeper, sim.World.Get<Quest>(me).Stage);
-        Assert.Contains("Speak with", Scenarios.Prologue.Objective(sim, me));
-
-        // Village life goes on for a day: Orla stays abed, nobody new moves in, nobody dies.
-        sim.TickMany(SimClock.TicksPerDay);
-        Assert.Equal(sim.World.Get<Thing>(sim.World.Get<BedOwner>(Keeper(sim)).Bed).Cell, sim.World.Get<Position>(Keeper(sim)).Cell);
-        Assert.Equal(6, sim.Creatures().Count(e => sim.World.Get<Creature>(e).Def.Race == Defs.Race.Human));
-    }
-
-    [Fact]
-    public void OrlaEntrustsTheEggThenPassesAway()
-    {
-        var sim = NewSim();
-        var me = Scenarios.Prologue.Setup(sim, "Wren");
-        var keeper = Keeper(sim);
-        var bed = sim.World.Get<Position>(keeper).Cell;
-        sim.World.Get<Position>(me) = Position.At(NextTo(sim, bed));
-
-        var talk = AvatarSystem.ActionAt(sim, me, bed);
-        Assert.Equal(AvatarActionKind.Talk, talk.Kind);
-        sim.Enqueue(new AvatarWorkCommand(me, true, bed));
-        sim.Tick();
-
-        Assert.Equal(QuestStage.Entrusted, sim.World.Get<Quest>(me).Stage);
-        Assert.True(sim.World.Has<Egg>(sim.World.Get<Carrying>(me).Item));
-        Assert.True(sim.World.Has<Keeper>(me));
-        Assert.NotEqual(AvatarActionKind.Talk, AvatarSystem.ActionAt(sim, me, bed).Kind); // said all she had to say
-
-        sim.TickMany(SimClock.HoursToTicks(Scenarios.Prologue.KeeperHours) + 120);
-        Assert.True(sim.World.Get<Creature>(keeper).Dead);
-    }
-
-    [Fact]
-    public void SettingOutCarriesYouTheEggAndTheWagonsLoadToANewMap()
-    {
-        var sim = NewSim();
-        var look = new Appearance { Body = BodyType.Female, Hair = HairStyle.Short, HairColor = 0xA8402A, EyeColor = 0x4A8A4A, SkinColor = 0xD2A27A };
-        var me = Scenarios.Prologue.Setup(sim, "Wren", look, traits: ["Hardy", "DragonFriend"]);
-        var wagon = sim.World.Query<Thing>().Single(e => sim.World.Get<Thing>(e).Def.Name == "Wagon");
-        Assert.False(Scenarios.Prologue.CanDepart(sim, me, wagon)); // not before Orla's said her piece
-
-        var bed = sim.World.Get<Position>(Keeper(sim)).Cell;
-        sim.World.Get<Position>(me) = Position.At(NextTo(sim, bed));
-        sim.Enqueue(new AvatarWorkCommand(me, true, bed));
-        sim.Tick();
-        var wagonCell = sim.World.Get<Thing>(wagon).Cell;
-        sim.World.Get<Position>(me) = Position.At(NextTo(sim, wagonCell));
-        Assert.Equal(AvatarActionKind.Depart, AvatarSystem.ActionAt(sim, me, wagonCell).Kind);
-
-        var cargo = sim.StoredIn(wagon).Sum(e => sim.World.Get<Stack>(e).Count);
-        // Gear and the pack's contents come along too.
-        sim.Equip(me, sim.Thing("Axe"));
-        var cap = sim.Wear(me, sim.Thing("LeatherCap"));
-        sim.World.Get<Thing>(cap).Hp = 20;
-        Assert.False(sim.PackOf(me).IsNull, "the prologue starts you with a satchel");
-        sim.Store(sim.PackOf(me), sim.CreateItem(sim.Thing("Berries"), 7));
-        var party = Scenarios.Travel.Pack(sim, me, wagon);
-        Assert.Equal("Wren", party.Name);
-        Assert.True(party.EggProgress >= 0);
-
-        var home = NewSim(12);
-        var arrived = Scenarios.Travel.Arrive(home, party);
-        Assert.Single(home.Creatures(), e => home.World.Get<Creature>(e).Def.Race == Defs.Race.Human);
-        Assert.Equal("Wren", home.World.Get<Creature>(arrived).Name);
-        Assert.Equal(look, home.World.Get<Appearance>(arrived));
-        Assert.Equal(["Hardy", "DragonFriend"], home.World.Get<Traits>(arrived).List.Select(t => t.Name)); // who you are comes along
-        Assert.True(home.World.Has<Avatar>(arrived));
-        Assert.False(home.World.Has<Quest>(arrived)); // the prologue's over
-        Assert.True(home.World.Has<Keeper>(arrived));
-        Assert.True(home.World.Has<Egg>(home.World.Get<Carrying>(arrived).Item));
-        var newWagon = home.World.Query<Thing>().Single(e => home.World.Get<Thing>(e).Def.Name == "Wagon");
-        Assert.Equal(cargo, home.StoredIn(newWagon).Sum(e => home.World.Get<Stack>(e).Count));
-        var worn = home.World.Get<Apparel>(arrived);
-        Assert.Equal(20f, home.World.Get<Thing>(worn.Head).Hp);
-        Assert.Equal("Axe", home.World.Get<Thing>(home.World.Get<Equipment>(arrived).Weapon).Def.Name);
-        Assert.Equal(7, home.StoredIn(home.PackOf(arrived)).Sum(e => home.World.Get<Stack>(e).Count));
-        Assert.True(home.Clock.Tick > sim.Clock.Tick + SimClock.HoursToTicks(Scenarios.Travel.RoadHours) - 1);
-        Assert.InRange(home.Clock.HourOfDay, 7.9f, 8.1f);
-    }
-
-    [Fact]
-    public void TheWagonHitchesFromAnywhereCloseButNotInThePrologueBeforeTheEgg()
-    {
-        var sim = NewSim();
-        var me = Scenarios.Prologue.Setup(sim, "Wren");
-        var wagon = sim.World.Query<Thing>().Single(e => sim.World.Get<Thing>(e).Def.Name == "Wagon");
-        var wagonCell = sim.World.Get<Thing>(wagon).Cell;
-        int3 At(int dist) => sim.SpiralFrom(wagonCell, dist + 1).First(c => sim.Map.Passable(c)
-            && Math.Max(Math.Abs(c.X - wagonCell.X), Math.Abs(c.Y - wagonCell.Y)) == dist);
-
-        sim.World.Get<Position>(me) = Position.At(At(2));
-        Assert.NotEqual(AvatarActionKind.Depart, AvatarSystem.ActionAt(sim, me, At(2)).Kind); // no egg yet
-
-        var bed = sim.World.Get<Position>(Keeper(sim)).Cell;
-        sim.World.Get<Position>(me) = Position.At(NextTo(sim, bed));
-        sim.Enqueue(new AvatarWorkCommand(me, true, bed));
-        sim.Tick();
-
-        // Two cells off, F on your own feet hitches it. It can't be taken apart while it's your way out.
-        Assert.False(AvatarSystem.CanDismantle(sim, me, wagon));
-        var near = At(Scenarios.Prologue.HitchReach);
-        sim.World.Get<Position>(me) = Position.At(near);
-        var action = AvatarSystem.ActionAt(sim, me, near);
-        Assert.Equal(AvatarActionKind.Depart, action.Kind);
-        Assert.Equal(wagon, action.Target);
-        var far = At(Scenarios.Prologue.HitchReach + 2);
-        sim.World.Get<Position>(me) = Position.At(far);
-        Assert.NotEqual(AvatarActionKind.Depart, AvatarSystem.ActionAt(sim, me, far).Kind);
-    }
-
-    [Fact]
-    public void APrologueSaveKeepsTheStory()
-    {
-        var sim = NewSim();
-        var me = Scenarios.Prologue.Setup(sim, "Wren", difficulty: "Hard");
-        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
-        var avatar = Assert.Single(loaded.World.Query<Avatar>());
-        Assert.Equal(QuestStage.MeetKeeper, loaded.World.Get<Quest>(avatar).Stage);
-        Assert.Equal("Hard", loaded.World.Get<Quest>(avatar).Difficulty);
-        Assert.Single(loaded.World.Query<StoryKeeper>());
-        Assert.Equal(Faction.Ashford, loaded.World.Get<Creature>(loaded.World.Query<StoryKeeper>().Single()).Faction);
-    }
 
     [Fact]
     public void FBeatsOutAFireOnlyWhileHeld()

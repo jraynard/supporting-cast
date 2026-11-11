@@ -2,7 +2,6 @@ using Brutal.Numerics;
 using Narsil.Net;
 using SupportingCast.Net;
 using SupportingCast.Sim;
-using SupportingCast.Sim.Combat;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Core;
 using SupportingCast.Sim.Defs;
@@ -14,7 +13,7 @@ namespace SupportingCast.Tests;
 
 /// <summary>
 /// Co-op end to end, in-process: a real village hosted over a loopback listener, players joining
-/// with their own characters and eggs, leaving and coming back, all while peers stay in step.
+/// with their own characters, leaving and coming back, all while peers stay in step.
 /// </summary>
 public class CoopSessionTests
 {
@@ -32,8 +31,8 @@ public class CoopSessionTests
             var sim = Simulation.CreateStandard(Defs.Value, 64, 64, 77, MapGenerator.RecommendedDepth);
             var center = MapGenerator.Generate(sim, new MapGenerator.Options { Villagers = 1 });
             sim.RebuildDerivedIfNeeded();
-            SliceDemo.ApplyVillageDefaults(sim, center);
-            EggBearerStart.Setup(sim, "Hosta");
+            VillageSetup.ApplyVillageDefaults(sim, center);
+            VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
             Host = CoopSession.StartHost(sim, new PlayerIdentity(Guid.NewGuid(), "host"), "test", Listener);
         }
 
@@ -209,7 +208,6 @@ public class CoopSessionTests
         t.Run(1f);
         var mine = Players.CharacterOf(client.Sim!, bea.Id);
         Assert.False(mine.IsNull);
-        Assert.True(client.Sim!.World.Has<Egg>(client.Sim.World.Get<Carrying>(mine).Item));
 
         // Walk about and give village orders from both sides.
         client.Send(new AvatarMoveCommand(mine, new int2(1, 0)));
@@ -222,155 +220,16 @@ public class CoopSessionTests
     }
 
     [Fact]
-    public void AFightPlaysOutAlikeOnEveryPeerAndWaitsForEveryPlayersTurn()
-    {
-        var t = new Table();
-        t.Run(1f);
-        var bea = new PlayerIdentity(Guid.NewGuid(), "Bea");
-        var client = t.Join(bea);
-        t.Run(1f);
-        client.Send(new CreateCharacterCommand(bea.Id, "Bea", default, []));
-        t.Run(1f);
-        var sim = t.Host.Sim!;
-        var host = Players.CharacterOf(sim, t.Host.Me.Id);
-        var mine = Players.CharacterOf(client.Sim!, bea.Id);
-        Assert.False(mine.IsNull);
-
-        // Raiders turn up beside the village (dev command: the storyteller is off in co-op).
-        client.Send(new DevRaidCommand(Defs.Value.AllRaiderKinds[0], 2, sim.World.Get<Position>(host).Cell + new int3(8, 0, 0)));
-        t.Run(1f);
-        Assert.False(sim.Combat.Active, "only the host may send developer commands");
-        t.Host.Send(new DevRaidCommand(Defs.Value.AllRaiderKinds[0], 2, sim.World.Get<Position>(host).Cell + new int3(8, 0, 0)));
-        t.Run(2f);
-        Assert.True(sim.Combat.Active, "the raiders were seen");
-        Assert.True(client.Sim!.Combat.Active);
-        Assert.Equal(Side.Village, sim.Combat.Phase);
-        Assert.NotNull(sim.Combat.Unit(mine));
-
-        // Bea may not order the host's character about.
-        var hostTu = sim.Combat.Unit(host)!.TimeUnits;
-        client.Send(new CombatMoveCommand(host, sim.World.Get<Position>(host).Cell + new int3(-2, 0, 0)));
-        // Bea is done; the round waits for the host.
-        client.Send(new CombatEndTurnCommand(bea.Id));
-        t.Run(2f);
-        Assert.Equal(hostTu, sim.Combat.Unit(host)!.TimeUnits);
-        Assert.True(sim.Combat.Unit(mine)!.Acted);
-        Assert.Equal(Side.Village, sim.Combat.Phase);
-        Assert.Equal(1, sim.Combat.Round);
-
-        t.Host.Send(new CombatEndTurnCommand(t.Host.Me.Id));
-        for (var i = 0; i < 40 && sim.Combat.Active && sim.Combat.Round == 1; i++)
-            t.Run(1f);
-        Assert.True(sim.Combat.Round > 1 || !sim.Combat.Active, "the raiders took their turn and the round came round");
-
-        // Every peer saw the same fight.
-        t.Run(1f);
-        Assert.Equal(sim.Combat.Log.Select(l => l.Text), client.Sim!.Combat.Log.Select(l => l.Text));
-        Assert.Equal(sim.Combat.Round, client.Sim.Combat.Round);
-        Assert.Equal(sim.Combat.Phase, client.Sim.Combat.Phase);
-        Assert.Equal(sim.Combat.Units.Select(u => (u.Entity, u.TimeUnits, u.Acted)), client.Sim.Combat.Units.Select(u => (u.Entity, u.TimeUnits, u.Acted)));
-        Assert.Equal(sim.StateHash(), client.Sim.StateHash());
-        Assert.Equal(0, t.Host.Host!.Desyncs);
-    }
-
-    /// <summary>Host and Bea (a client with a character) with raiders beside the host: the fight is on, the village's turn.</summary>
-    private static (Table T, CoopSession Client, PlayerIdentity Bea) Fight()
-    {
-        var t = new Table();
-        t.Run(1f);
-        var bea = new PlayerIdentity(Guid.NewGuid(), "Bea");
-        var client = t.Join(bea);
-        t.Run(1f);
-        client.Send(new CreateCharacterCommand(bea.Id, "Bea", default, []));
-        t.Run(1f);
-        var host = Players.CharacterOf(t.Host.Sim!, t.Host.Me.Id);
-        t.Host.Send(new DevRaidCommand(Defs.Value.AllRaiderKinds[0], 2, t.Host.Sim!.World.Get<Position>(host).Cell + new int3(8, 0, 0)));
-        t.Run(2f);
-        Assert.True(t.Host.Sim!.Combat.Active);
-        return (t, client, bea);
-    }
-
-    [Fact]
-    public void APlayerCanJoinMidFight()
-    {
-        var (t, client, bea) = Fight();
-        var sim = t.Host.Sim!;
-        // Something under way when they come in: Bea walking, the host's turn over.
-        var mine = Players.CharacterOf(sim, bea.Id);
-        client.Send(new CombatMoveCommand(mine, sim.World.Get<Position>(mine).Cell + new int3(1, 1, 0)));
-        t.Host.Send(new CombatEndTurnCommand(t.Host.Me.Id));
-        var cal = new PlayerIdentity(Guid.NewGuid(), "Cal");
-        var late = t.Join(cal);
-        t.Run(2f);
-        Assert.True(late.Ready, late.Ended ?? "the snapshot never came");
-        Assert.True(late.Sim!.Combat.Active);
-        Assert.Equal(sim.Combat.Log.Select(l => l.Text), late.Sim.Combat.Log.Select(l => l.Text));
-
-        // The fight goes on in step on all three.
-        client.Send(new CombatEndTurnCommand(bea.Id));
-        for (var i = 0; i < 40 && sim.Combat.Active && sim.Combat.Round == 1; i++)
-            t.Run(1f);
-        t.Run(1f);
-        foreach (var peer in new[] { client, late })
-        {
-            Assert.Equal(sim.Combat.Log.Select(l => l.Text), peer.Sim!.Combat.Log.Select(l => l.Text));
-            Assert.Equal(sim.StateHash(), peer.Sim.StateHash());
-        }
-        Assert.Equal(0, t.Host.Host!.Desyncs);
-    }
-
-    [Fact]
-    public void ADesyncMidFightResyncs()
-    {
-        var dumps = Path.Combine(Path.GetTempPath(), "dw-desync-" + Guid.NewGuid().ToString("N"));
-        var before = CoopSession.DumpDirectory;
-        CoopSession.DumpDirectory = dumps;
-        try
-        {
-            var (t, client, bea) = Fight();
-            client.Sim!.Combat.Units[0].TimeUnits -= 5; // knock the client's fight off the host's
-            t.Run(4f);
-            Assert.True(t.Host.Host!.Desyncs >= 1, "the fight is in the checksum");
-            Assert.True(client.Sim!.Combat.Active);
-            t.Run(1f);
-            Assert.Equal(t.Host.Sim!.StateHash(), client.Sim.StateHash());
-            Assert.Equal(t.Host.Sim.Combat.Units.Select(u => u.TimeUnits), client.Sim.Combat.Units.Select(u => u.TimeUnits));
-        }
-        finally
-        {
-            CoopSession.DumpDirectory = before;
-            if (Directory.Exists(dumps))
-                Directory.Delete(dumps, recursive: true);
-        }
-    }
-
-    [Fact]
     public void HostingKeepsTheStoryteller()
     {
         var sim = Simulation.CreateStandard(Defs.Value, 48, 48, 5, MapGenerator.RecommendedDepth);
         var center = MapGenerator.Generate(sim, new MapGenerator.Options { Villagers = 1 });
         sim.RebuildDerivedIfNeeded();
-        SliceDemo.ApplyVillageDefaults(sim, center);
-        EggBearerStart.Setup(sim, "Hosta");
+        VillageSetup.ApplyVillageDefaults(sim, center);
+        VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
         sim.Storyteller.SetDifficulty(sim, Defs.Value.Difficulty("Normal"));
         using var host = CoopSession.StartHost(sim, new PlayerIdentity(Guid.NewGuid(), "host"), "raids", new LoopbackListener());
         Assert.NotNull(host.Sim!.Storyteller.Difficulty); // raids come to co-op villages too
-    }
-
-    [Fact]
-    public void PlayersCantSteerEachOther()
-    {
-        var t = new Table();
-        var bea = new PlayerIdentity(Guid.NewGuid(), "Bea");
-        var client = t.Join(bea);
-        t.Run(1f);
-        var host = Players.CharacterOf(t.Host.Sim!, t.Host.Me.Id);
-        var at = t.Host.Sim!.World.Get<Position>(host).Cell;
-        client.Send(new AvatarMoveCommand(host, new int2(1, 0)));
-        client.Send(new DevHatchCommand());
-        t.Run(2f);
-        Assert.Equal(at, t.Host.Sim.World.Get<Position>(host).Cell);
-        t.AssertInStep();
     }
 
     [Fact]
@@ -419,8 +278,8 @@ public class CoopSessionTests
         var sim = Simulation.CreateStandard(Defs.Value, 48, 48, 5, MapGenerator.RecommendedDepth);
         var center = MapGenerator.Generate(sim, new MapGenerator.Options { Villagers = 1 });
         sim.RebuildDerivedIfNeeded();
-        SliceDemo.ApplyVillageDefaults(sim, center);
-        EggBearerStart.Setup(sim, "Hosta");
+        VillageSetup.ApplyVillageDefaults(sim, center);
+        VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
         var listener = new TcpNetListener(0, System.Net.IPAddress.Loopback);
         using var host = CoopSession.StartHost(sim, new PlayerIdentity(Guid.NewGuid(), "host"), "tcp", listener, listener.Port);
         var bea = new PlayerIdentity(Guid.NewGuid(), "Bea");
@@ -463,8 +322,8 @@ public class CoopSessionTests
             var sim = Simulation.CreateStandard(Defs.Value, 48, 48, 5, MapGenerator.RecommendedDepth);
             var center = MapGenerator.Generate(sim, new MapGenerator.Options { Villagers = 1 });
             sim.RebuildDerivedIfNeeded();
-            SliceDemo.ApplyVillageDefaults(sim, center);
-            EggBearerStart.Setup(sim, "Hosta");
+            VillageSetup.ApplyVillageDefaults(sim, center);
+            VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
             using var host = CoopSession.StartHost(sim, new PlayerIdentity(Guid.NewGuid(), "host"), "online", port: 0, online: true);
             CoopSession? client = null;
 
@@ -518,8 +377,8 @@ public class CoopSessionTests
             var sim = Simulation.CreateStandard(Defs.Value, 48, 48, 5, MapGenerator.RecommendedDepth);
             var center = MapGenerator.Generate(sim, new MapGenerator.Options { Villagers = 1 });
             sim.RebuildDerivedIfNeeded();
-            SliceDemo.ApplyVillageDefaults(sim, center);
-            EggBearerStart.Setup(sim, "Hosta");
+            VillageSetup.ApplyVillageDefaults(sim, center);
+            VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
             var host = CoopSession.StartHost(sim, new PlayerIdentity(Guid.NewGuid(), "host"), "online", port: 0, online: true);
             var peers = new List<CoopSession>();
             var hostAlive = true;

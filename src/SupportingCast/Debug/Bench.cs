@@ -12,9 +12,7 @@ public static class Bench
     {
         var defs = DefDatabase.LoadDirectory(Path.Combine(AppContext.BaseDirectory, "data", "defs"));
         var sim = Simulation.CreateStandard(defs, VillageGame.MapSize, VillageGame.MapSize, seed, MapGenerator.RecommendedDepth);
-        var center = MapGenerator.Generate(sim);
-        Sim.Scenarios.SliceDemo.ApplyVillageDefaults(sim, center);
-        Sim.Scenarios.SliceDemo.ApplyPlayerOrders(sim, center);
+        Sim.Scenarios.VillageRound.Setup(sim);
 
         // Per-tick times too: frames hitch on the slowest ticks, which the average hides.
         var times = new double[ticks];

@@ -15,20 +15,10 @@ public enum ThoughtCondition
     SeverePain,
     /// <summary>Awake in an indoor room with little light (no fire nearby at night).</summary>
     DarkIndoors,
-    /// <summary>Asleep at a comfortable temperature.</summary>
-    WarmAndSnug,
-    /// <summary>A dragon carrying its own keeper.</summary>
-    CarryingKeeper,
     /// <summary>Held prisoner by the village.</summary>
     Imprisoned,
-    /// <summary>A keeper wearing something made from dragon scales.</summary>
-    WearingDragonScales,
     /// <summary>Wearing jewelry (the Neck slot).</summary>
     WearingFinery,
-    /// <summary>A dragon asleep beside treasure (<c>Systems.Hoard</c>).</summary>
-    NearHoard,
-    /// <summary>A neglected dragon sulking until it's won back (<c>Systems.Bonding</c>).</summary>
-    Sulking,
     /// <summary>Ill from spoiled food (<c>Systems.FoodPoisoning</c>).</summary>
     FoodPoisoned,
 }
@@ -88,18 +78,9 @@ public sealed class KnownThoughts
     public ThoughtDef? SleptOnGround;
     public ThoughtDef? SleptOutdoors;
     public ThoughtDef? SleptInBed;
-    public ThoughtDef? SleptInNest;
     public ThoughtDef? VillagerDied;
-    public ThoughtDef? MyDragonDied;
-    public ThoughtDef? KeeperDied;
-    public ThoughtDef? EggHatched;
-    public ThoughtDef? ImprintedOnMe;
     public ThoughtDef? WonFight;
     public ThoughtDef? LostFight;
-    public ThoughtDef? FedByKeeper;
-    public ThoughtDef? GivenTreasure;
-    public ThoughtDef? PlayedWithKeeper;
-    public ThoughtDef? FedMe;
     public ThoughtDef? FriendDied;
     public ThoughtDef? RivalDied;
     public ThoughtDef? RescuedMe;
@@ -114,13 +95,7 @@ public sealed class KnownThoughts
     public ThoughtDef? PrisonerEscaped;
     public ThoughtDef? AteCookedMeal;
     public ThoughtDef? UsesTheirWork;
-    public ThoughtDef? CameWhenCalled;
-    public ThoughtDef? IgnoredMe;
-    public ThoughtDef? AteFavourite;
-    public ThoughtDef? MyDragonLeft;
     public ThoughtDef? AteSpoiledFood;
-    public ThoughtDef? CourtedMe;
-
     private static readonly FieldInfo[] Fields = typeof(KnownThoughts).GetFields(BindingFlags.Public | BindingFlags.Instance);
 
     /// <summary>Every def name code refers to.</summary>
@@ -140,8 +115,6 @@ public enum InteractionTarget
 {
     /// <summary>Another person of the same faction.</summary>
     Person,
-    /// <summary>The initiator's own dragon.</summary>
-    OwnDragon,
 }
 
 /// <summary>
@@ -170,9 +143,6 @@ public sealed class InteractionDef : Def
     /// <summary>Memories left on the initiator and the recipient, about each other (either may be empty).</summary>
     public string? InitiatorThought { get; set; }
     public string? RecipientThought { get; set; }
-
-    /// <summary>Added to the recipient's bond need (petting a dragon).</summary>
-    public float Bond { get; set; }
 
     /// <summary>Social experience for the initiator.</summary>
     public float Xp { get; set; } = 40f;

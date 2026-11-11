@@ -145,9 +145,6 @@ public sealed record AreaOrderCommand(AreaTool Tool, int2 Min, int2 Max, int Z, 
                 case AreaTool.Harvest when harvest?.WorkType == WorkType.Harvest:
                     map.Designate(i, Designation.Harvest);
                     break;
-                case AreaTool.Burn:
-                    DragonSystem.DesignateBurn(sim, [cell]);
-                    break;
                 case AreaTool.Fish:
                     Fishing.Designate(sim, [cell]);
                     break;
@@ -195,22 +192,8 @@ public sealed record MoveOrderCommand(Entity Pawn, int3 Cell, bool Fly = false) 
         var w = sim.World;
         if (!w.IsAlive(Pawn) || !w.TryGet<Creature>(Pawn, out var c) || c.Dead || c.Downed || !sim.Map.InBounds(Cell))
             return;
-        if (w.Has<Riding>(Pawn) || w.Has<Mount>(Pawn))
-            RidingSystem.OrderMove(sim, Pawn, Cell, Fly);
-        else if (w.TryGet<Mind>(Pawn, out var mind) && mind.Drafted)
+        if (w.TryGet<Mind>(Pawn, out var mind) && mind.Drafted)
             Orders.MoveTo(sim, Pawn, Cell, Fly);
-    }
-}
-
-/// <summary>Order a dragon to breathe fire at a cell.</summary>
-public sealed record BreathOrderCommand(Entity Dragon, int3 Target) : ISimCommand, ISubjectCommand
-{
-    public Entity Subject => Dragon;
-
-    public void Apply(Simulation sim)
-    {
-        if (sim.World.IsAlive(Dragon) && sim.World.Has<Dragon>(Dragon) && sim.Map.InBounds(Target))
-            DragonSystem.OrderBreath(sim, Dragon, Target);
     }
 }
 
@@ -242,117 +225,6 @@ public sealed record WorkPriorityCommand(Entity Pawn, WorkType Work, int Priorit
     }
 }
 
-/// <summary>Get off a dragon (refused, with a message, while airborne).</summary>
-public sealed record DismountCommand(Entity Rider) : ISimCommand, ISubjectCommand
-{
-    public Entity Subject => Rider;
-
-    public void Apply(Simulation sim)
-    {
-        if (!sim.World.IsAlive(Rider) || !sim.World.Has<Riding>(Rider))
-            return;
-        if (!RidingSystem.Dismount(sim, Rider))
-            sim.Messages.Add(MessageKind.Info, "Land first.", sim.LocationOf(Rider));
-    }
-}
-
-/// <summary>A keeper walks to their dragon and climbs on.</summary>
-public sealed record MountOrderCommand(Entity Rider, Entity Dragon) : ISimCommand, ISubjectCommand
-{
-    public Entity Subject => Rider;
-
-    public void Apply(Simulation sim)
-    {
-        var w = sim.World;
-        if (!w.IsAlive(Rider) || !w.IsAlive(Dragon) || !w.Has<Mind>(Rider))
-            return;
-        if (RidingSystem.CantMount(sim, Rider, Dragon) is { } why)
-        {
-            sim.Messages.Add(MessageKind.Info, $"Can't ride: {why}.", sim.LocationOf(Rider));
-            return;
-        }
-        // The player's own character calls the dragon over rather than chasing it about.
-        if (w.Has<Avatar>(Rider))
-            RidingSystem.CallToRide(sim, Rider, Dragon);
-        else
-            AiSystem.Order(sim, Rider, new MountJob(Dragon));
-    }
-}
-
-/// <summary>The rider sends their mount after an animal (<see cref="RidingSystem.OrderHunt"/>).</summary>
-public sealed record MountedHuntCommand(Entity Rider, Entity Prey) : ISimCommand, IActorCommand
-{
-    public Entity Actor => Rider;
-
-    public void Apply(Simulation sim)
-    {
-        if (sim.World.IsAlive(Rider) && sim.World.Has<Riding>(Rider) && !sim.Combat.Active)
-            RidingSystem.OrderHunt(sim, Rider, Prey);
-    }
-}
-
-/// <summary>
-/// Saddle a dragon (<see cref="Systems.Saddles"/>) with <paramref name="Saddle"/>, or with null take its
-/// saddle off. Its keeper does it (<see cref="SaddleJob"/>).
-/// </summary>
-public sealed record SaddleCommand(Entity Dragon, Entity? Saddle) : ISimCommand, ISubjectCommand
-{
-    public Entity Subject => Dragon;
-
-    public void Apply(Simulation sim)
-    {
-        var w = sim.World;
-        if (!w.IsAlive(Dragon) || !w.TryGet<Dragon>(Dragon, out var d))
-            return;
-        var keeper = d.Keeper;
-        if (!w.IsAlive(keeper) || !w.TryGet<Creature>(keeper, out var k) || !k.Able || !w.Has<Mind>(keeper) || w.Has<Riding>(keeper))
-        {
-            sim.Messages.Add(MessageKind.Info, "Only its keeper can saddle a dragon, on foot.", sim.LocationOf(Dragon));
-            return;
-        }
-        if (Saddle is { } item)
-        {
-            if (!w.IsAlive(item) || (!sim.IsAvailable(item) && w.Get<Carrying>(keeper).Item != item))
-                return;
-            if (Systems.Saddles.CantWear(sim, Dragon, item) is { } why)
-            {
-                sim.Messages.Add(MessageKind.Info, $"Can't saddle: {why}.", sim.LocationOf(Dragon));
-                return;
-            }
-        }
-        else if (Systems.Saddles.Of(sim, Dragon).IsNull)
-            return;
-        AiSystem.Order(sim, keeper, new SaddleJob(Dragon, Saddle));
-    }
-}
-
-/// <summary>Overseer mode: make this villager the dragon keeper, taking the role from anyone else.</summary>
-public sealed record MakeKeeperCommand(Entity Pawn, Entity? Dragon = null) : ISimCommand, ISubjectCommand
-{
-    public Entity Subject => Pawn;
-
-    public void Apply(Simulation sim)
-    {
-        var w = sim.World;
-        if (!w.IsAlive(Pawn) || !w.TryGet<Creature>(Pawn, out var c) || c.Dead || c.Def.Race != Race.Human || c.Faction != Faction.Village)
-            return;
-        // With several dragons this one keeps the one named (else the first without a keeper, else the
-        // first); whoever kept it gives it up, and this villager gives up the one they kept.
-        var dragon = Dragon is { } chosen && w.IsAlive(chosen) && w.Has<Dragon>(chosen) && !w.Get<Creature>(chosen).Dead ? chosen
-            : w.Query<Dragon>().FirstOrDefault(d => !w.Get<Creature>(d).Dead && !w.IsAlive(w.Get<Dragon>(d).Keeper),
-                w.Query<Dragon>().FirstOrDefault(d => !w.Get<Creature>(d).Dead, Entity.Null));
-        if (dragon != Entity.Null && Dragon is { } asked && asked != dragon)
-            return; // asked for one that isn't a living dragon
-        if (w.TryGet<Keeper>(Pawn, out var had) && w.IsAlive(had.Dragon) && w.Get<Dragon>(had.Dragon).Keeper == Pawn)
-            w.Get<Dragon>(had.Dragon).Keeper = Entity.Null;
-        w.Remove<Keeper>(Pawn);
-        if (!dragon.IsNull)
-            EggSystem.AssignKeeper(sim, dragon, Pawn);
-        else
-            w.Add(Pawn, new Keeper { Dragon = Entity.Null });
-    }
-}
-
 /// <summary>Toggle the order to hunt an animal (or, with <paramref name="WholeHerd"/>, its whole herd).</summary>
 public sealed record HuntOrderCommand(Entity Animal, bool Hunt, bool WholeHerd = false) : ISimCommand
 {
@@ -377,20 +249,6 @@ public sealed record HuntOrderCommand(Entity Animal, bool Hunt, bool WholeHerd =
             w.Add(e, new HuntOrder());
         else if (!on)
             w.Remove<HuntOrder>(e);
-    }
-}
-
-/// <summary>A dragon's hunting orders (<see cref="HuntPolicy"/>): when it hunts, how far, what, and whether it brings kills home.</summary>
-public sealed record HuntPolicyCommand(Entity Dragon, HuntMode Mode, bool BringHome, bool Dangerous, int Range) : ISimCommand, ISubjectCommand
-{
-    public Entity Subject => Dragon;
-
-    public void Apply(Simulation sim)
-    {
-        var w = sim.World;
-        if (!w.IsAlive(Dragon) || !w.Has<Dragon>(Dragon) || !Enum.IsDefined(Mode))
-            return;
-        w.Add(Dragon, new HuntPolicy { Mode = Mode, BringHome = BringHome, Dangerous = Dangerous, Range = Math.Clamp(Range, 0, 200) });
     }
 }
 
@@ -491,7 +349,7 @@ public sealed record PrisonerBedCommand(Entity Bed, bool ForPrisoners) : ISimCom
     public void Apply(Simulation sim)
     {
         var w = sim.World;
-        if (!w.IsAlive(Bed) || !w.TryGet<Thing>(Bed, out var t) || t.Def.Building is not { IsBed: true, IsNest: false } || w.Has<Construction>(Bed))
+        if (!w.IsAlive(Bed) || !w.TryGet<Thing>(Bed, out var t) || t.Def.Building is not { IsBed: true } || w.Has<Construction>(Bed))
             return;
         if (ForPrisoners && !w.Has<ForPrisoners>(Bed))
             w.Add(Bed, new ForPrisoners());
@@ -568,45 +426,13 @@ public sealed record DevRaidCommand(RaiderKindDef Kind, int Count, int3? At = nu
     }
 }
 
-/// <summary>Dev: finish incubating every egg.</summary>
-/// <summary>
-/// Debug: a grown dragon of the village, of the other sex to the first one (so a pair can court:
-/// <see cref="BreedingSystem"/>), beside it, fed and content.
-/// </summary>
-public sealed record DevSpawnDragonCommand : IDevCommand
-{
-    public void Apply(Simulation sim)
-    {
-        var w = sim.World;
-        var first = w.Query<Dragon>().FirstOrDefault(d => !w.Get<Creature>(d).Dead, Entity.Null);
-        var near = first.IsNull ? new int3(sim.Map.Width / 2, sim.Map.Height / 2, sim.Map.Depth - 1) : w.Get<Position>(first).Cell;
-        var cell = sim.SpiralFrom(near, 12).FirstOrDefault(c => sim.Map.Standable(sim.Map.Idx(c)) && sim.Map.Passable(c), near);
-        var breed = first.IsNull ? null : w.Get<Creature>(first).Def;
-        var dragon = Dragons.Spawn(sim, breed, DragonElement.Fire, "Wildwing", cell,
-            ageDays: Dragons.AdultAgeDays(Dragons.BreedOrDefault(sim.Defs, breed)) + 2);
-        if (!first.IsNull)
-            w.Get<Dragon>(dragon).Sex = w.Get<Dragon>(first).Sex == DragonSex.Male ? DragonSex.Female : DragonSex.Male;
-        w.Get<Dragon>(dragon).Affinity = 0.5f;
-        w.Get<Needs>(dragon).Values[sim.Defs.Need("Food").Index] = 1f;
-        sim.Messages.Add(MessageKind.Info, $"{w.Get<Creature>(dragon).Name}, a grown {(w.Get<Dragon>(dragon).Sex == DragonSex.Male ? "male" : "female")} dragon, joins the village.", cell);
-    }
-}
-
-/// <summary>Debug: a wild event now (<see cref="WildEventKind"/>: a wolf pack, a migration, a dragon visitor).</summary>
+/// <summary>Debug: a wild event now (<see cref="WildEventKind"/>: a wolf pack, a migration).</summary>
 public sealed record DevWildEventCommand(WildEventKind Kind) : IDevCommand
 {
     public void Apply(Simulation sim)
     {
-        if (Enum.IsDefined(Kind) && !sim.Combat.Active)
+        if (Enum.IsDefined(Kind))
             sim.Storyteller.SendWildEvent(sim, Kind);
     }
 }
 
-public sealed record DevHatchCommand : IDevCommand
-{
-    public void Apply(Simulation sim)
-    {
-        foreach (var egg in sim.World.Query<Egg>())
-            sim.World.Get<Egg>(egg).Progress = 1f;
-    }
-}

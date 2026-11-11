@@ -302,12 +302,6 @@ public struct Crafted
     public Entity Maker;
 }
 
-/// <summary>A forge a dragon has breathed into: it runs hotter until <see cref="Until"/> (see <c>BuildingProps.StokeHeat</c>).</summary>
-public struct Stoked
-{
-    public long Until;
-}
-
 /// <summary>
 /// A station whose bellows a smith is pumping (<c>BuildingProps.Bellows</c> beside it): it runs
 /// hotter until <see cref="Until"/>, a little after the pumping stops.
@@ -330,25 +324,6 @@ public sealed class RecipeBook
 public struct Rot
 {
     public float Progress;
-}
-
-/// <summary>An egg incubating. Health is Thing.Hp.</summary>
-public struct Egg
-{
-    /// <summary>0..1 incubation progress.</summary>
-    public float Progress;
-
-    /// <summary>
-    /// Who the hatchling imprints on, if they're still around: each co-op player's own egg. Null
-    /// for village eggs, which go to a free keeper or the nearest villager.
-    /// </summary>
-    public Entity Keeper;
-
-    /// <summary>The breed it hatches into (<c>Systems.Dragons</c>); null for the egg def's own (<c>EggProps.HatchesInto</c>).</summary>
-    public Defs.CreatureDef? Breed;
-
-    /// <summary>The hatchling's element (a chosen egg; Fire otherwise).</summary>
-    public DragonElement Element;
 }
 
 public enum Faction
@@ -403,18 +378,6 @@ public struct Escaping;
 
 /// <summary>The player wants this downed enemy taken prisoner (Doctor work carries them to a prisoner bed).</summary>
 public struct CaptureOrder;
-
-/// <summary>A dragon with someone on its back (see <c>RidingSystem</c>): it's drafted, and moves for both.</summary>
-public struct Mount
-{
-    public Entity Rider;
-}
-
-/// <summary>Riding a dragon: the rider's AI rests and it goes where the mount goes.</summary>
-public struct Riding
-{
-    public Entity Mount;
-}
 
 /// <summary>The player wants this animal hunted (Hunt work: someone with a bow).</summary>
 public struct HuntOrder;
@@ -952,57 +915,16 @@ public struct Appearance
         model is { Length: > 0 and <= MaxModelLength } && model.All(c => c is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '_') ? model : null;
 }
 
-/// <summary>
-/// A dragon's element, chosen in the dragon creator: what it breathes (<c>Defs.ElementDef</c>,
-/// <c>Environment.Breath</c>), the jobs it can do with it, and the colour of the core of its flames.
-/// Kept in <see cref="Dragon.Element"/>. Saved by value, so new ones go at the end (never reorder).
-/// </summary>
-public enum DragonElement : byte
-{
-    Fire,
-    Ice,
-    Lightning,
-    Poison,
-    Nature,
-}
-
-/// <summary>
-/// A dragon's colours, chosen in Adventure's dragon creator (cosmetic like <see cref="Appearance"/>:
-/// no system reads it, and it's left out of the state hash). Colours are 0xRRGGBB, tinting the
-/// greyscale layers of the dragon's sheets. Dragons without one get a derived look from the renderer.
-/// </summary>
-public struct DragonLook
-{
-    /// <summary>The creator's element pick, carried to the dragon's <see cref="Dragon.Element"/> when it's spawned; Fire is the default.</summary>
-    public DragonElement Element;
-    public uint Scales;
-    public uint Belly;
-
-    /// <summary>Wing membranes.</summary>
-    public uint Wings;
-
-    /// <summary>Horns, claws and wing spars.</summary>
-    public uint Horns;
-    public uint Eyes;
-
-    /// <summary>A look from the network: colours only, nothing outside 24 bits.</summary>
-    public readonly DragonLook Valid() => new()
-    {
-        Element = Enum.IsDefined(Element) ? Element : DragonElement.Fire,
-        Scales = Scales & 0xFFFFFF, Belly = Belly & 0xFFFFFF, Wings = Wings & 0xFFFFFF, Horns = Horns & 0xFFFFFF, Eyes = Eyes & 0xFFFFFF,
-    };
-}
-
 public enum RequestKind : byte
 {
     Follow,
-    GuardEgg,
+    Guard,
 }
 
 /// <summary>
 /// Something the player's avatar asked a companion to do until told otherwise (Adventure mode).
 /// The brain honours it after emergencies and urgent needs, ahead of ordinary work.
-/// <see cref="Target"/> is who to follow or what to guard (the egg, then the dragon that hatches);
+/// <see cref="Target"/> is who to follow or what to guard;
 /// <see cref="From"/> is who asked.
 /// </summary>
 public struct Request
@@ -1018,80 +940,11 @@ public struct Stored
     public Entity In;
 }
 
-public enum QuestStage : byte
-{
-    /// <summary>The prologue: Orla, the village's old keeper, has sent for you.</summary>
-    MeetKeeper,
-
-    /// <summary>She has given you the egg: take it out of the village by the road.</summary>
-    Entrusted,
-
-    /// <summary>The opening is done on this map: mount your dragon and fly to a new home (<see cref="Scenarios.Departure"/>).</summary>
-    TakeWing,
-
-    /// <summary>The Pact: gather moonpetal in the enchanted forest for your village (<see cref="Scenarios.EnchantedForest"/>).</summary>
-    GatherHerbs,
-
-    /// <summary>The sorcerer has caught you with his moonpetal: hear him out.</summary>
-    Confronted,
-
-    /// <summary>Escape: locked in the captors' cage, waiting for a chance (<see cref="Scenarios.EscapeCamp"/>).</summary>
-    Captive,
-
-    /// <summary>The jailer is in the cage with your supper, the gate open behind him.</summary>
-    Opportunity,
-
-    /// <summary>The alarm's up: free your dragon and get away.</summary>
-    Escaping,
-}
-
-/// <summary>The avatar's place in the prologue story (absent once you've left the village).</summary>
-public struct Quest
-{
-    public QuestStage Stage;
-
-    /// <summary>When the keeper passes away, after the handover.</summary>
-    public long KeeperPassesTick;
-
-    /// <summary>The storyteller difficulty for the new home (the village itself has no raids); null for none.</summary>
-    public string? Difficulty;
-}
-
-/// <summary>The prologue's dying dragon keeper: bedridden, and the one to speak with.</summary>
-public struct StoryKeeper;
-
-public enum StoryRole : byte
-{
-    Sorcerer,
-
-    /// <summary>Escape's camp: keeps their post until the alarm.</summary>
-    Captor,
-
-    /// <summary>Escape's camp: brings the prisoner supper each evening, and holds the dragon's chain key.</summary>
-    Jailer,
-}
-
 /// <summary>
 /// A lockable door, locked: nobody passes. Change it only through <see cref="Simulation.SetLocked"/>,
 /// which also tells the map (paths and regions rebuild).
 /// </summary>
 public struct Locked;
-
-/// <summary>Escape: the player, locked up. Their hands are their own, but there's nothing in reach but the cage.</summary>
-public struct Captive;
-
-/// <summary>Escape: a dragon held in chains: it can't move, fly or fight until someone with the key frees it.</summary>
-public struct Chained;
-
-/// <summary>
-/// A story character with a part to play (the Pact's sorcerer): never hungry or tired, keeps to
-/// <see cref="Home"/> unless the story calls them, and isn't anyone's to command.
-/// </summary>
-public struct StoryNpc
-{
-    public StoryRole Role;
-    public int3 Home;
-}
 
 /// <summary>A downed creature being carried; its position follows <see cref="By"/>.</summary>
 public struct Carried
@@ -1179,7 +1032,6 @@ public sealed class Mind
         p[(int)Defs.WorkType.Firefight] = 1;
         p[(int)Defs.WorkType.Doctor] = 1;
         p[(int)Defs.WorkType.Warden] = 2;
-        p[(int)Defs.WorkType.Tend] = 1;
         p[(int)Defs.WorkType.Refuel] = 2;
         p[(int)Defs.WorkType.Construct] = 2;
         return p;
@@ -1228,85 +1080,6 @@ public sealed class Memory
     public Entity Other = Entity.Null;
 }
 
-/// <summary>Dragon-specific state.</summary>
-public struct Dragon
-{
-    /// <summary>Human assigned to care for this dragon (Entity.Null if none).</summary>
-    public Entity Keeper;
-
-    /// <summary>Total bond accumulated over the dragon's life; affects obedience.</summary>
-    public float Affinity;
-
-    /// <summary>Flights taken (the first one is announced).</summary>
-    public int Flights;
-
-    /// <summary>What it breathes (<c>Defs.ElementDef</c>): the truth for a living dragon; <see cref="DragonLook.Element"/> only carries the creator's pick to it.</summary>
-    public DragonElement Element;
-
-    /// <summary>A pair of grown dragons, one of each, may raise a clutch (<c>Systems.Breeding</c>). Format 16.</summary>
-    public DragonSex Sex;
-}
-
-public enum DragonSex
-{
-    Female,
-    Male,
-}
-
-/// <summary>
-/// A dragon carrying a clutch (<c>Systems.Breeding</c>): she lays it in a nest once <see cref="LayTick"/>
-/// comes. The sire's breed and element (by name, so a def change doesn't scramble it) go into the eggs.
-/// </summary>
-public struct Gravid
-{
-    public long LayTick;
-    public string SireBreed;
-    public DragonElement SireElement;
-}
-
-/// <summary>When a dragon last laid a clutch (<c>Systems.Breeding</c>): she won't court again for a while.</summary>
-public struct LaidClutch
-{
-    public long Tick;
-}
-
-/// <summary>
-/// How a dragon's been cared for (docs/plans/dragon-interactions.md): when each interaction was
-/// last done (novelty), what it's asking for now, the tricks it's learning, and whether it's
-/// sulking. Kept by name so a def change doesn't scramble it. Every dragon has one
-/// (<c>Systems.Bonding.Care</c> adds it to older saves' dragons).
-/// </summary>
-public sealed class DragonCare
-{
-    /// <summary>Per interaction def name: the tick it was last done, and how many times running within its novelty window.</summary>
-    public Dictionary<string, (long Tick, int Repeats)> Last { get; } = new(StringComparer.Ordinal);
-
-    /// <summary>Per trick def name: lessons so far, in sessions (learned at the def's <see cref="Defs.TrickDef.Sessions"/>).</summary>
-    public Dictionary<string, float> Training { get; } = new(StringComparer.Ordinal);
-
-    public Defs.DragonWant Want;
-
-    /// <summary>When the want was made (or, asleep, the time awake it has been waiting is kept by moving this on).</summary>
-    public long WantSince;
-
-    /// <summary>Hours its bond has sat at the neglected level, and how long it has been sulking.</summary>
-    public float NeglectHours, SulkHours;
-
-    public bool Sulking;
-
-    /// <summary>Until when its scales itch (after it sheds): grooming then brings loose scales away.</summary>
-    public long ItchyUntil;
-
-    /// <summary>A devoted dragon's share of its kill, to carry to its keeper.</summary>
-    public Entity BringMeat = Entity.Null;
-
-    /// <summary>Told to stay here (the Stay trick), until called or <see cref="StayUntil"/>.</summary>
-    public int3? StayAt;
-    public long StayUntil;
-
-    public bool Knows(Defs.TrickDef trick) => Training.TryGetValue(trick.Name, out var done) && done >= trick.Sessions;
-}
-
 /// <summary>
 /// A person who belongs to a player (co-op), whether or not that player is connected. It outlives
 /// the session, so a returning player gets the same character back; while they're away the
@@ -1317,51 +1090,10 @@ public struct PlayerCharacter
     public Guid PlayerId;
 }
 
-/// <summary>Marks a human as a dragon keeper.</summary>
-public struct Keeper
-{
-    public Entity Dragon;
-}
-
 /// <summary>A creature that owns a bed/nest.</summary>
 public struct BedOwner
 {
     public Entity Bed;
-}
-
-/// <summary>A harvested plant a nature dragon breathed on: it grows back faster until <see cref="Until"/> (<c>PlantSystem</c>).</summary>
-public struct Nurtured
-{
-    public long Until;
-}
-
-/// <summary>A store an ice dragon breathed into: it's cooled until <see cref="Until"/> (<c>BuildingProps.Chill</c>, <c>TemperatureSystem</c>).</summary>
-public struct Chilled
-{
-    public long Until;
-}
-
-/// <summary>
-/// A poison breath's lingering cloud (<c>Environment.VenomClouds</c>): an entity of its own at a
-/// cell, sickening whoever stands in it and withering plants until <see cref="Until"/>.
-/// </summary>
-public struct VenomCloud
-{
-    public int3 Cell;
-    public float Radius;
-    public long Until;
-
-    /// <summary>The dragon that breathed it (who doesn't mind its own poison).</summary>
-    public Entity Source;
-}
-
-/// <summary>
-/// A dragon wearing a saddle (<c>Systems.Saddles</c>): the item, unspawned, held like worn apparel.
-/// Its saddlebags (<see cref="Defs.ThingDef.Container"/>) carry what's <see cref="Stored"/> in it.
-/// </summary>
-public struct Saddled
-{
-    public Entity Saddle;
 }
 
 /// <summary>A migrating herd crossing the valley (<c>Systems.WildEvents</c>): it heads for <see cref="To"/>, an edge, and leaves there.</summary>
@@ -1381,35 +1113,6 @@ public struct Visitor
     public int Meals;
 }
 
-/// <summary>When a grown dragon feeding itself (<c>Ai.DragonHunting</c>) goes hunting.</summary>
-public enum HuntMode
-{
-    /// <summary>Eats what's laid out first and hunts when there's nothing (the default).</summary>
-    StoresFirst,
-    /// <summary>Hunts first, sparing the larder, and eats stores only when there's no game.</summary>
-    HuntFirst,
-    /// <summary>Never hunts; eats only what it's given (it still hunts rather than starve).</summary>
-    Never,
-}
-
-/// <summary>
-/// A keeper's standing orders for how a dragon hunts (<c>Ai.DragonHunting</c>). Without one a dragon
-/// hunts as it always has: stores first, harmless game only, anywhere it can see.
-/// </summary>
-public struct HuntPolicy
-{
-    public HuntMode Mode;
-
-    /// <summary>Carry the kill to a butcher spot and eat there, so the leftovers land at home.</summary>
-    public bool BringHome;
-
-    /// <summary>Take on game that fights back (boars).</summary>
-    public bool Dangerous;
-
-    /// <summary>Only hunt within this many cells of its nest (0: anywhere).</summary>
-    public int Range;
-}
-
 /// <summary>
 /// Ill from spoiled food (<c>Systems.FoodPoisoning</c>): slower, working less, keeping little down,
 /// until <see cref="Until"/> (sooner in bed). Removed once it's passed.
@@ -1422,38 +1125,3 @@ public struct FoodPoisoned
     public float Severity;
 }
 
-/// <summary>
-/// What a dragon's breath left on a creature (<c>Systems.Afflictions</c>): chilled (slower, fewer
-/// time units), stunned (time units lost from its next turn, a moment frozen out of combat),
-/// poisoned (damage over time) or rooted (can't walk or fly). Times are ticks, so they run the
-/// same through a fight (a round is <c>Combat.Encounter.RoundTicks</c>) and out of one. Removed
-/// once everything has worn off.
-/// </summary>
-public struct Afflictions
-{
-    public long ChillUntil;
-
-    /// <summary>How much slower while chilled, 0..1.</summary>
-    public float Chill;
-
-    public long StunUntil;
-
-    /// <summary>The share of its next turn's time units a stun takes (spent once, at that turn).</summary>
-    public float StunTu;
-
-    public long VenomUntil;
-    public float VenomPerHour;
-
-    /// <summary>Who poisoned it (credited in messages).</summary>
-    public Entity VenomFrom;
-
-    public long RootUntil;
-
-    public readonly bool Chilled(long now) => ChillUntil > now && Chill > 0;
-    public readonly bool Stunned(long now) => StunUntil > now;
-    public readonly bool Poisoned(long now) => VenomUntil > now && VenomPerHour > 0;
-    public readonly bool Rooted(long now) => RootUntil > now;
-
-    /// <summary>Nothing left on it (the component can go).</summary>
-    public readonly bool Over(long now) => !Chilled(now) && !Stunned(now) && !Poisoned(now) && !Rooted(now) && StunTu <= 0;
-}

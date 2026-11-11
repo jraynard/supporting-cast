@@ -113,8 +113,8 @@
       ]
     },
     {
-      "name": "Hatchery", "label": "hatchery", "icon": "buildings/campfire",
-      "description": "A snug hut round a fire, kept hot for a dragon's egg (it needs 28°C, night and day) and the hatchling after it. Too warm for people to linger in.",
+      "name": "Clinic", "label": "clinic", "icon": "buildings/campfire",
+      "description": "A snug hut round a fire, kept warm for the sick and the wounded.",
       "layout": [
         "WWWW",
         "W..W",
@@ -151,33 +151,6 @@
         { "name": "Thatch", "label": "thatched", "kit": "stave_thatch", "parts": { "wall": "StaveWall", "roof": "ThatchRoofPart" } }
       ]
     },
-    {
-      "name": "DragonBarn", "label": "dragon barn", "icon": "buildings/nest",
-      "description": "A great barn round a nest, with wide doors a grown dragon can come and go by, and a trough for a hatchling.",
-      "layout": [
-        "WWWWWWW",
-        "W.....W",
-        "W.....W",
-        "W.....W",
-        "W.....W",
-        "W.....W",
-        "WWDDDWW"
-      ],
-      "parts": { "foundation": "Plinth", "wall": "LogWall", "door": "BarnDoor", "roof": "TurfRoofPart" },
-      "furnish": [
-        { "def": "Nest", "at": [3, 2] },
-        { "def": "FeedingTrough", "at": [5, 5] }
-      ],
-      "slots": [
-        { "defs": ["FeedingTrough"], "at": [1, 5] },
-        { "defs": ["StrawPallet"], "at": [5, 3] },
-        { "defs": ["Chest"], "at": [1, 1] }
-      ],
-      "variants": [
-        { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
-        { "name": "Thatch", "label": "thatched", "kit": "stave_thatch", "parts": { "wall": "StaveWall", "roof": "ThatchRoofPart" } }
-      ]
-    }
   ],
 
   // How the buildings look (presentation only; Rendering/BuildingKit.cs, docs/ART.md "Building

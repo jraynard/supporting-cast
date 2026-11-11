@@ -155,11 +155,11 @@ public sealed class AvatarPredictor
         _offset = default;
     }
 
-    /// <summary>Only plain walking is predicted: not riding, flying, being carried, lying down, or in a fight.</summary>
+    /// <summary>Only plain walking is predicted: not being carried or lying down.</summary>
     private static bool Eligible(Simulation sim, Entity avatar)
     {
         var w = sim.World;
-        if (!w.IsAlive(avatar) || !w.Has<Avatar>(avatar) || w.Has<Riding>(avatar) || w.Has<Carried>(avatar) || sim.Combat.Involves(avatar))
+        if (!w.IsAlive(avatar) || !w.Has<Avatar>(avatar) || w.Has<Carried>(avatar))
             return false;
         var c = w.Get<Creature>(avatar);
         if (c.Dead || c.Downed || w.Get<Mind>(avatar).Asleep)

@@ -660,8 +660,6 @@ public sealed partial class Simulation
         var e = World.Create();
         World.Add(e, new Thing { Def = def, Hp = def.MaxHp * (material?.HpFactor ?? 1f), Spawned = false, Cell = new int3(-1, -1, -1), Material = material });
         World.Add(e, new Stack { Count = count });
-        if (def.Egg != null)
-            World.Add(e, new Egg { Keeper = Entity.Null }); // nobody's yet: Entity 0 may well be a villager
         if (def.RotDays > 0)
             World.Add(e, new Rot());
         return e;
@@ -975,13 +973,7 @@ public sealed partial class Simulation
         if (def.BodyDef != null)
             World.Add(e, new Health { Body = def.BodyDef, Scale = def.MaxHp / 100f });
 
-        if (def.Race == Race.Dragon)
-        {
-            World.Add(e, new Dragon { Keeper = Entity.Null, Sex = BreedingSystem.RollSex(this, e) });
-            World.Add(e, new Components.DragonCare());
-            World.Get<Mind>(e).WorkPriority[(int)WorkType.Burn] = 2; // their own job comes first
-        }
-        else if (def.Race == Race.Human)
+        if (def.Race == Race.Human)
         {
             World.Add(e, SkillRules.Roll(Seed, e));
             World.Add(e, TraitRules.Roll(Defs, Seed, e));
@@ -1077,7 +1069,6 @@ public sealed partial class Simulation
         foreach (var slot in Enum.GetValues<ApparelSlot>())
             TakeOff(creature, slot);
         Toolbelt.DropAll(this, creature);
-        Saddles.TakeOff(this, creature);
     }
 
     /// <summary>Drop whatever the creature wields at its feet.</summary>
@@ -1165,9 +1156,6 @@ public sealed partial class Simulation
         }
         foreach (var c in World.Each<Equipment>())
             if (World.Get<Equipment>(c).Weapon == e)
-                return World.Get<Position>(c).Cell;
-        foreach (var c in World.Each<Saddled>())
-            if (World.Get<Saddled>(c).Saddle == e)
                 return World.Get<Position>(c).Cell;
         return thing.Cell;
     }

@@ -103,19 +103,6 @@ public sealed class SaveSlotsTests : IDisposable
         Assert.Throws<SaveException>(() => SaveSlots.Load(broken.Path, Defs.Value));
     }
 
-    [Fact]
-    public void RefusesWhatItCantSave()
-    {
-        var sim = Village();
-        sim.Combat.Start(sim);
-        Assert.NotNull(SaveSlots.Write("fight", sim, NoMeta));
-        Assert.False(File.Exists(SaveSlots.PathOf("fight")));
-
-        SaveSlots.Directory = null;
-        Assert.NotNull(SaveSlots.Write("off", Village(), NoMeta));
-        Assert.Empty(SaveSlots.List());
-    }
-
     [Theory]
     [InlineData("  My village ", "My village")]
     [InlineData("a/b", "a_b")]

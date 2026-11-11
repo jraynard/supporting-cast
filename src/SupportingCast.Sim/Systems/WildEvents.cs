@@ -8,27 +8,22 @@ namespace SupportingCast.Sim.Systems;
 /// <summary>The storyteller's wild events (<see cref="Storyteller"/>), besides raids.</summary>
 public enum WildEventKind
 {
-    /// <summary>A wolf pack or a bear comes for the village: a turn-based fight like a raid.</summary>
+    /// <summary>A wolf pack or a bear comes for the village.</summary>
     Predators,
     /// <summary>A big herd crosses the valley from edge to edge: a few hours' hunting.</summary>
     Migration,
-    /// <summary>A grown wild dragon stays a day or two; fed from the village's stores, it may stay for good.</summary>
-    DragonVisitor,
 }
 
 /// <summary>
 /// Animals in the storyteller: predators (defs with <see cref="AnimalProps.Predator"/>, of
-/// <see cref="Faction.Predator"/>: they think like raiders and fight in an <see cref="Encounter"/>),
-/// migrating herds (<see cref="Migrating"/>) and wild dragon visitors (<see cref="Visitor"/>). Every
+/// <see cref="Faction.Predator"/>: they think like raiders) and
+/// migrating herds (<see cref="Migrating"/>). Every
 /// roll comes from the stream it's given (the storyteller's own), never <see cref="Simulation.Rand"/>.
 /// </summary>
 public static class WildEvents
 {
     /// <summary>Animals in a migrating herd.</summary>
     public const int MigrationMin = 10, MigrationMax = 16;
-
-    /// <summary>Game hours a visiting dragon stays unless it's fed enough to settle.</summary>
-    public const int VisitHoursMin = 24, VisitHoursMax = 48;
 
     /// <summary>Predator kinds the village can be sent today, for the points it has earned.</summary>
     public static List<CreatureDef> PredatorKinds(Simulation sim, float points) =>
@@ -87,36 +82,6 @@ public static class WildEvents
         return herd;
     }
 
-    /// <summary>
-    /// A grown wild dragon landing at the edge of the village for a day or two: of the other sex to the
-    /// village's first grown dragon (so a pair can come of it), breed and element rolled.
-    /// </summary>
-    public static Entity SendDragonVisitor(Simulation sim, SimRandom rand)
-    {
-        var w = sim.World;
-        if (VillageTarget(sim) is not { } target || Entry(sim, rand, target) is not { } entry)
-            return Entity.Null;
-        var breeds = Dragons.Breeds(sim.Defs).ToList();
-        var breed = rand.Pick(breeds);
-        var element = rand.Pick(Enum.GetValues<DragonElement>());
-        var cell = sim.SpiralFrom(entry, 6).FirstOrDefault(c => sim.Map.Standable(sim.Map.Idx(c)) && sim.Map.Passable(c), entry);
-        var name = Names[rand.NextInt(Names.Length)];
-        var dragon = Dragons.Spawn(sim, breed, element, name, cell, Faction.Wild, Dragons.AdultAgeDays(breed) + rand.Range(2f, 30f));
-        var mate = w.Query<Dragon>().FirstOrDefault(d => d != dragon && w.Get<Creature>(d) is { Dead: false, Faction: Faction.Village } c
-            && c.Stage(sim.Clock.Tick).CanBeRidden, Entity.Null);
-        if (!mate.IsNull)
-            w.Get<Dragon>(dragon).Sex = w.Get<Dragon>(mate).Sex == DragonSex.Male ? DragonSex.Female : DragonSex.Male;
-        w.Get<Needs>(dragon).Values[sim.Defs.Need("Food").Index] = 0.35f; // hungry from the road
-        w.Add(dragon, new Visitor { LeaveTick = sim.Clock.Tick + SimClock.HoursToTicks(rand.Range(VisitHoursMin, VisitHoursMax + 1)) });
-        var sex = w.Get<Dragon>(dragon).Sex == DragonSex.Male ? "male" : "female";
-        sim.Messages.Add(MessageKind.Good,
-            $"A wild {Dragons.BreedLabel(breed).ToLowerInvariant()}, {name} ({sex}), has come down by the {Raids.Direction(sim.Map, entry)} edge of the village. Leave food out: fed well, it may stay.",
-            cell);
-        return dragon;
-    }
-
-    private static readonly string[] Names = ["Stormcrest", "Brackenwing", "Halla", "Skarn", "Myrdin", "Thessaly", "Grimsa", "Wyll"];
-
     /// <summary>The middle of the village: its first person, as wildlife reckons it.</summary>
     private static int3? VillageTarget(Simulation sim)
     {
@@ -140,13 +105,11 @@ public static class WildEvents
 }
 
 /// <summary>
-/// Wild dragons visiting (<see cref="Visitor"/>): one fed <see cref="MealsToStay"/> meals from the
-/// village's stores (or a keeper's hand) before its time is up joins the village; otherwise it flies off.
+/// Passers-through (<see cref="Visitor"/>): anyone here for a while who moves on when their time
+/// is up. The seed of M2's adventuring parties.
 /// </summary>
 public sealed class VisitorSystem : ISimSystem
 {
-    public const int MealsToStay = 3;
-
     public string Name => "Visitors";
     public int Interval => SimClock.TicksPerHour / 4;
 
@@ -162,23 +125,16 @@ public sealed class VisitorSystem : ISimSystem
                 w.Remove<Visitor>(e);
                 continue;
             }
-            if (v.Meals >= MealsToStay)
-            {
-                w.Remove<Visitor>(e);
-                c.Faction = Faction.Village;
-                sim.Messages.Add(MessageKind.Good, $"{c.Name} has settled in: the wild dragon is one of the village's now. Make someone its keeper.", w.Get<Position>(e).Cell);
-            }
-            else if (sim.Clock.Tick >= v.LeaveTick)
-            {
-                w.Remove<Visitor>(e);
-                w.Add(e, new Leaving());
-                AiSystem.EndJob(sim, e, w.Get<Mind>(e), false);
-                sim.Messages.Add(MessageKind.Info, $"{c.Name}, the wild dragon, is moving on.", w.Get<Position>(e).Cell);
-            }
+            if (sim.Clock.Tick < v.LeaveTick)
+                continue;
+            w.Remove<Visitor>(e);
+            w.Add(e, new Leaving());
+            AiSystem.EndJob(sim, e, w.Get<Mind>(e), false);
+            sim.Messages.Add(MessageKind.Info, $"{c.Name} is moving on.", w.Get<Position>(e).Cell);
         }
     }
 
-    /// <summary>A visiting dragon ate the village's food (not its own kill): one meal nearer staying.</summary>
+    /// <summary>A visitor ate the village's food.</summary>
     public static void AteVillageFood(Simulation sim, Entity eater)
     {
         if (sim.World.Has<Visitor>(eater))

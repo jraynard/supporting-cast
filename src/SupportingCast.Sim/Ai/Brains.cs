@@ -169,7 +169,7 @@ public static class AiQueries
     /// The creature's own bed, else the nearest free one of the right kind: a nest, a prisoner bed
     /// nobody else owns (<paramref name="prisoner"/>), or an ordinary bed.
     /// </summary>
-    public static Entity FindFreeBed(Simulation sim, Entity pawn, bool nest, bool prisoner = false)
+    public static Entity FindFreeBed(Simulation sim, Entity pawn, bool prisoner = false)
     {
         var w = sim.World;
         if (w.TryGet<BedOwner>(pawn, out var owner) && w.IsAlive(owner.Bed))
@@ -188,7 +188,7 @@ public static class AiQueries
         foreach (var e in w.Query<Thing>())
         {
             var thing = w.Get<Thing>(e);
-            if (thing.Def.Building is not { IsBed: true } b || b.IsNest != nest || w.Has<Construction>(e))
+            if (thing.Def.Building is not { IsBed: true } b || w.Has<Construction>(e))
                 continue;
             if (w.Has<ForPrisoners>(e) != prisoner || owned?.Contains(e) == true)
                 continue;
@@ -242,11 +242,7 @@ public sealed class HumanBrain : IBrain
         if (AnimalBrain.Charger(sim, pawn) is { } charger && AnimalBrain.FleeSpot(sim, pawn, charger, 12) is { } away)
             return new FleeJob(away);
 
-        // ...or standing in a poison dragon's cloud: out of it.
-        if (VenomClouds.CloudAt(sim, tile) is { } cloud && AnimalBrain.FleeSpot(sim, pawn, cloud.Cell, (int)MathF.Ceiling(cloud.Radius) + 4) is { } clear)
-            return new FleeJob(clear);
-
-        // 2. Urgent needs. Only real hunger makes villagers touch the dragon's meat.
+        // 2. Urgent needs. 
         if (needs.Get(food) < food.UrgentBelow && EatSomething(sim, pawn, def) is { } eat)
             return eat;
         if (needs.Get(rest) < rest.UrgentBelow)
@@ -357,11 +353,9 @@ public sealed class HumanBrain : IBrain
         if (def.EatsPlants && def.Race == Race.Human)
             food = AiQueries.FindNearestItem(sim, pawn, (e, d) => d.Cooked && d.EdibleBy(def) && ok(e, d));
         if (food.IsNull && def.EatsPlants)
-            food = AiQueries.FindNearestItem(sim, pawn, (e, d) => !d.IsMeat && !d.DragonFood && d.EdibleBy(def) && ok(e, d));
+            food = AiQueries.FindNearestItem(sim, pawn, (e, d) => !d.IsMeat && d.EdibleBy(def) && ok(e, d));
         if (food.IsNull && def.EatsMeat && (allowMeat || !def.EatsPlants))
             food = AiQueries.FindNearestItem(sim, pawn, (e, d) => d.IsMeat && d.EdibleBy(def) && ok(e, d));
-        if (food.IsNull && def.Race == Race.Dragon)
-            food = AiQueries.FindNearestItem(sim, pawn, (e, d) => d.DragonFood && ok(e, d));
         return food;
     }
 
@@ -382,7 +376,7 @@ public sealed class HumanBrain : IBrain
 
     private static Job Sleep(Simulation sim, Entity pawn)
     {
-        var bed = AiQueries.FindFreeBed(sim, pawn, nest: false);
+        var bed = AiQueries.FindFreeBed(sim, pawn);
         if (!bed.IsNull)
             return new SleepJob(bed);
         // No bed: find somewhere comfortable to lie down rather than wherever we happen to be.
@@ -404,29 +398,6 @@ public sealed class BedriddenBrain : IBrain
 }
 
 /// <summary>
-/// A story character (the Pact's sorcerer, Escape's captors): keeps to their spot, and walks up to
-/// the player when the story calls for it (<see cref="Scenarios.EnchantedForest"/>, the jailer's
-/// supper round in <see cref="Scenarios.EscapeCamp"/>). Their needs are kept full.
-/// </summary>
-public sealed class StoryNpcBrain : IBrain
-{
-    public Job? Think(Simulation sim, Entity pawn)
-    {
-        var w = sim.World;
-        var npc = w.Get<StoryNpc>(pawn);
-        var here = w.Get<Position>(pawn).Cell;
-        if (npc.Role == StoryRole.Sorcerer && Scenarios.EnchantedForest.Confronting(sim) is { IsNull: false } avatar)
-            return Pathfinder.Touches(here, sim.LocationOf(avatar)) ? new WanderJob(here, 60) : new FollowJob(avatar, 120);
-        // Escape's jailer (or whoever stands in for him): at supper time, into the cage with the bowl (the gate's open), and they stay by the prisoner till lock-up.
-        if (npc.Role is StoryRole.Jailer or StoryRole.Captor && Scenarios.EscapeCamp.Jailer(sim) == pawn
-            && Scenarios.EscapeCamp.SupperFor(sim) is { IsNull: false } prisoner
-            && Scenarios.EscapeCamp.Of(sim) is { } camp && !Scenarios.EscapeCamp.GateLocked(sim))
-            return Pathfinder.Touches(here, sim.LocationOf(prisoner)) && camp.InCage(here) ? new WanderJob(here, 60) : new FollowJob(prisoner, 120);
-        return AiQueries.RandomReachableNear(sim, pawn, npc.Home, 2) is { } spot ? new WanderJob(spot, sim.Rand.Range(300, 900)) : null;
-    }
-}
-
-/// <summary>
 /// Prisoners stay in their bed: sleeping when tired, lying there otherwise, getting out of fire
 /// or bitter cold. Wardens bring their food; they don't fetch it.
 /// </summary>
@@ -442,7 +413,7 @@ public sealed class PrisonerBrain : IBrain
             if (HumanBrain.SeekComfort(sim, pawn, tol, temp, urgent: true) is { } escape)
                 return escape;
 
-        var bed = AiQueries.FindFreeBed(sim, pawn, nest: false, prisoner: true);
+        var bed = AiQueries.FindFreeBed(sim, pawn, prisoner: true);
         if (bed.IsNull)
             return AiQueries.RandomReachableNear(sim, pawn, tile, 2) is { } spot ? new WanderJob(spot, 600) : null;
         var rest = sim.Defs.Need("Rest");
@@ -621,148 +592,3 @@ public sealed class AnimalBrain : IBrain
     }
 }
 
-public sealed class DragonBrain : IBrain
-{
-    private readonly WorkGivers _work = new();
-
-    public Job? Think(Simulation sim, Entity pawn)
-    {
-        var w = sim.World;
-        var creature = w.Get<Creature>(pawn);
-        var def = creature.Def;
-        var needs = w.Get<Needs>(pawn);
-        var tile = w.Get<Position>(pawn).Cell;
-        var temp = Warmth.FeltAt(sim, tile);
-        var tol = creature.Tolerance(sim.Clock.Tick);
-        var food = sim.Defs.Need("Food");
-        var rest = sim.Defs.Need("Rest");
-        var bond = sim.Defs.Need("Bond");
-        var keeper = w.Get<Dragon>(pawn).Keeper;
-        var hasKeeper = w.IsAlive(keeper) && !w.Get<Creature>(keeper).Dead;
-        var care = Bonding.Peek(sim, pawn);
-        var stage = creature.Stage(sim.Clock.Tick);
-        // A hatchling eats from a hand or a trough, unless it's starving (Bonding, LifeStage.HandFed).
-        Job? Meal() => stage.HandFed ? Bonding.TroughMeal(sim, pawn) : DragonHunting.Meal(sim, pawn, def);
-
-        if (temp < tol.SafeMin + 3)
-        {
-            if (HumanBrain.SeekComfort(sim, pawn, tol, temp, urgent: true) is { } warmUp)
-                return warmUp;
-            // Nothing warm nearby (out working, far from home): head back to the nest or the keeper.
-            if (WarmthAtHome(sim, pawn, hasKeeper ? keeper : Entity.Null) is { } goHome)
-                return goHome;
-        }
-
-        // Her time come, a gravid dragon lays her clutch in a nest (anywhere, if none can be reached).
-        if (w.TryGet<Gravid>(pawn, out var gravid) && sim.Clock.Tick >= gravid.LayTick && !w.Has<Mount>(pawn))
-            return new LayClutchJob(AiQueries.FindFreeBed(sim, pawn, nest: true));
-
-        // A devoted grown dragon carries its keeper home to bed if they're down (outside a fight).
-        if (hasKeeper && w.Get<Creature>(keeper).Downed && !w.Has<Carried>(keeper) && !HealthSystem.InBed(sim, keeper)
-            && !w.Has<Mount>(pawn) && Bonding.Reached(sim, pawn, Bonding.Devoted) && Rescues.CanCarry(sim, pawn, keeper)
-            && !sim.Reservations.IsReservedByOther(keeper, pawn) && Rescues.BedFor(sim, pawn, keeper) is { IsNull: false } keeperBed
-            && !sim.Reservations.IsReservedByOther(keeperBed, pawn))
-            return new RescueJob(keeper, keeperBed);
-
-        if (needs.Get(food) < food.UrgentBelow)
-        {
-            // What's laid out, or a grown dragon goes and catches something (in the order its
-            // HuntPolicy asks).
-            if (DragonHunting.Meal(sim, pawn, def) is { } eat)
-                return eat;
-            // Nothing to eat: go pester the keeper.
-            if (hasKeeper)
-                return new FollowJob(keeper, 300);
-        }
-
-        // A devoted dragon brings its keeper a share of what it caught.
-        if (hasKeeper && w.IsAlive(care.BringMeat) && sim.IsAvailable(care.BringMeat) && !sim.Reservations.IsReservedByOther(care.BringMeat, pawn))
-        {
-            var meat = care.BringMeat;
-            care.BringMeat = Entity.Null;
-            return new BringKillJob(meat, keeper);
-        }
-
-        // A flyer can end up where its keeper can't walk (a plateau, a far burn order). Hungry or
-        // lonely, it comes back within reach rather than waiting there for care that can't come.
-        var reachable = KeeperReachable(sim, pawn, hasKeeper ? keeper : Entity.Null);
-        if (hasKeeper && (needs.Get(food) < food.SeekBelow || needs.Get(bond) < bond.SeekBelow) && !reachable(tile) && !w.Has<Mount>(pawn))
-            return new FollowJob(keeper, 300);
-
-        if (needs.Get(rest) < rest.UrgentBelow || (AiQueries.IsNight(sim) && needs.Get(rest) < 0.6f))
-        {
-            // A full belly before a night's sleep (unless dead on its feet): a big dragon wakes up starving otherwise.
-            if (needs.Get(rest) >= rest.UrgentBelow && needs.Get(food) < SupperBelow && Meal() is { } supper)
-                return supper;
-            var nest = AiQueries.FindFreeBed(sim, pawn, nest: true);
-            if (!nest.IsNull)
-                return new SleepJob(nest);
-            var warm = AiQueries.FindTemperatureSpot(sim, pawn, tile, tol.ComfortMin, tol.ComfortMax, 20, reachable);
-            return new SleepJob(Entity.Null, warm);
-        }
-
-        // A hungry dragon eats before it works: an adult's working day would otherwise run it down.
-        if (needs.Get(food) < food.SeekBelow && Meal() is { } snack)
-            return snack;
-
-        // Told to stay (the Stay trick): it waits there, needs aside, until called.
-        if (care.StayAt is { } stay)
-            return new WanderJob(stay, 600);
-
-        // Work for the village (what its life stage allows, see the Work tab) comes before comfort,
-        // if it can be bothered: each time there's work it rolls its obedience (better at work it's
-        // been trained for). Not on a night cold enough to hurt, though: out in that, a dragon goes
-        // home instead. A sulking dragon won't lift a claw.
-        if (!care.Sulking && creature.Faction == Faction.Village && temp >= tol.SafeMin + ChillMargin && _work.TryGiveJob(sim, pawn) is { } work
-            && sim.Rand.Chance(DragonSystem.Obedience(sim, pawn, _work.LastType)))
-            return work;
-
-        if (temp < tol.ComfortMin && HumanBrain.SeekComfort(sim, pawn, tol, temp, accept: reachable) is { } bask)
-            return bask;
-
-        if (hasKeeper && needs.Get(bond) < bond.SeekBelow && !care.Sulking)
-            return new FollowJob(keeper, 600);
-
-        // Sulking keeps to itself, away from its keeper.
-        var home = hasKeeper && !care.Sulking ? sim.LocationOf(keeper) : tile;
-        if (stage.SoarChance > 0 && sim.Rand.Chance(stage.SoarChance)
-            && Navigation.SoaringRoute(sim, pawn, home, sim.Rand.Range(8, 16)) is { } soar)
-            return new SoarJob(soar);
-        // Dragons that can fly like a high vantage point now and then.
-        if (Navigation.FlyingStage(sim, pawn) != null && sim.Rand.Chance(0.25f) && AiQueries.FindPerch(sim, pawn, home, 14, reachable) is { } perch)
-            return new WanderJob(perch, sim.Rand.Range(300, 900));
-        return AiQueries.RandomReachableNear(sim, pawn, home, 5) is { } wander
-            ? new WanderJob(wander, sim.Rand.Range(120, 400))
-            : null;
-    }
-
-    /// <summary>
-    /// Cells a dragon's keeper could walk up to (to feed it, play, ride): where a kept dragon
-    /// rests, basks and perches. Everything, for a dragon with no keeper.
-    /// </summary>
-    private static Func<int3, bool> KeeperReachable(Simulation sim, Entity dragon, Entity keeper)
-    {
-        if (keeper.IsNull)
-            return _ => true;
-        var from = sim.LocationOf(keeper);
-        return c => Navigation.CanReach(sim, keeper, from, c, PathEnd.Touch);
-    }
-
-    /// <summary>Food below which a dragon eats (or hunts) before bed: a night's sleep costs about half the bar.</summary>
-    public const float SupperBelow = 0.7f;
-
-    /// <summary>Degrees above its safe minimum below which a dragon won't take on work.</summary>
-    public const float ChillMargin = 6;
-
-    /// <summary>A warm spot around the dragon's nest, else its keeper, for when there's none nearby.</summary>
-    private static Job? WarmthAtHome(Simulation sim, Entity pawn, Entity keeper)
-    {
-        var tol = sim.World.Get<Creature>(pawn).Tolerance(sim.Clock.Tick);
-        var nest = AiQueries.FindFreeBed(sim, pawn, nest: true);
-        var home = !nest.IsNull ? sim.World.Get<Thing>(nest).Cell : !keeper.IsNull ? sim.LocationOf(keeper) : (int3?)null;
-        if (home is not { } center)
-            return null;
-        var spot = AiQueries.FindTemperatureSpot(sim, pawn, center, tol.ComfortMin, tol.ComfortMax, 12);
-        return spot is { } t && t != sim.World.Get<Position>(pawn).Cell ? new SeekTemperatureJob(t, 1200, warmer: true, urgent: true) : null;
-    }
-}

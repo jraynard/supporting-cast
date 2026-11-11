@@ -5,16 +5,6 @@ namespace SupportingCast.Sim.Tests;
 public class DefTests
 {
     [Fact]
-    public void CoreDefsLoadAndResolve()
-    {
-        var db = TestWorld.LoadDefs();
-        Assert.Equal("Dragon", db.Thing("DragonEgg").Egg!.HatchesIntoDef.Name);
-        Assert.Equal("Wood", db.Thing("Campfire").Building!.Fuel!.ThingDef.Name);
-        Assert.Equal(3, db.Creature("Dragon").LifeStages.Count);
-        Assert.Same(db.Block("Dirt"), db.Block("Grass").BurnsIntoDef);
-    }
-
-    [Fact]
     public void EveryThoughtCodeAddsHasADef()
     {
         var db = TestWorld.LoadDefs();

@@ -308,12 +308,9 @@ public static class MapGenerator
             people.Add(villager);
         }
 
-        var egg = sim.CreateItem(sim.Defs.Thing("DragonEgg"), 1);
-        sim.PlaceItemNear(egg, center + new int3(0, -1, 0));
-
         // The settlers brought pine planks; everything later comes from what they fell.
         sim.SpawnItem(sim.Defs.Thing("Wood"), 60, center + new int3(3, -2, 0), sim.Defs.Material("Pine"));
-        // Food for the first days: after that the dragon's meat comes from hunting and fishing
+        // Food for the first days: after that it comes from hunting and fishing
         // (it rots, so there's no point bringing more). One hunting bow among them.
         sim.SpawnItem(sim.Defs.Thing("Berries"), 120, center + new int3(-3, -2, 0));
         sim.SpawnItem(sim.Defs.Thing("Meat"), 80, center + new int3(-4, 0, 0));

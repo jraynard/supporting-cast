@@ -50,17 +50,8 @@ public static class Navigation
         var flight = FlightRoute(sim, stage, from, to, end);
         if (flight == null)
             return walk;
-        // A fledgling is eager to try its wings: any trip worth taking off for, it flies.
-        var fledgling = sim.World.TryGet<Dragon>(pawn, out var young) && young.Flights < FledglingFlights;
-        if (walk != null && !fledgling && walk.Count <= FlyWhenSlowerBy * (flight.Count / stage.FlySpeedFactor))
+        if (walk != null && walk.Count <= FlyWhenSlowerBy * (flight.Count / stage.FlySpeedFactor))
             return walk;
-
-        if (sim.World.TryGet<Dragon>(pawn, out _))
-        {
-            ref var dragon = ref sim.World.Get<Dragon>(pawn);
-            if (dragon.Flights++ == 0)
-                sim.Messages.Add(MessageKind.Good, $"{sim.World.Get<Creature>(pawn).Name} takes to the air for the first time!", from);
-        }
         return flight;
     }
 
@@ -73,8 +64,6 @@ public static class Navigation
     {
         if (FlyingStage(sim, pawn) is not { } stage || FlightRoute(sim, stage, from, to, end) is not { } flight)
             return null;
-        if (sim.World.TryGet<Dragon>(pawn, out _) && sim.World.Get<Dragon>(pawn).Flights++ == 0)
-            sim.Messages.Add(MessageKind.Good, $"{sim.World.Get<Creature>(pawn).Name} takes to the air for the first time!", from);
         return flight;
     }
 

@@ -54,7 +54,7 @@ public sealed partial class VillageGame
     /// <summary>The pack's first stacks and what's in hand, bottom left, with the pack's load.</summary>
     private void DrawHotbar()
     {
-        if (!HasAvatar || InCombat)
+        if (!HasAvatar)
             return;
         var w = _sim.World;
         var pack = _sim.PackOf(_avatar);
@@ -167,7 +167,7 @@ public sealed partial class VillageGame
             {
                 var wounds = Bandaging.WoundsToBind(_sim, patient);
                 var label = patient == _avatar ? $"Bandage your wounds ({wounds})" : $"Bandage {w.Get<Creature>(patient).Name} ({wounds} wounds)";
-                var why = InCombat ? "in a fight, use the combat panel" : Bandaging.CantBind(_sim, _avatar, patient);
+                var why = Bandaging.CantBind(_sim, _avatar, patient);
                 ImGui.BeginDisabled(why != null);
                 if (ImGui.MenuItem(label))
                     Issue(new BandageCommand(_avatar, patient));
@@ -312,7 +312,7 @@ public sealed partial class VillageGame
     /// <summary>The inventory window: worn gear and hands on the left, the pack on the right.</summary>
     private void DrawInventoryWindow()
     {
-        if (!_inventoryOpen || !HasAvatar || InCombat)
+        if (!_inventoryOpen || !HasAvatar)
             return;
         var w = _sim.World;
         // Beside the avatar (the camera keeps them centred), not over them.

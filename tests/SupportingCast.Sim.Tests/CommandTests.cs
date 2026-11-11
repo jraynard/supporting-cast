@@ -29,8 +29,6 @@ public class CommandTests
         if (t == typeof(CreatureDef)) return defs.Creature("Human");
         if (t == typeof(RecipeDef)) return defs.Recipe("SawPlanks");
         if (t == typeof(MaterialDef)) return defs.Material("Oak");
-        if (t == typeof(DragonInteractionDef)) return defs.DragonInteraction("Play");
-        if (t == typeof(TrickDef)) return defs.Trick("Come");
         if (t == typeof(RaiderKindDef)) return defs.AllRaiderKinds[0];
         if (t == typeof(BuildingDef)) return defs.Building("Dwelling");
         if (t.IsArray)
@@ -78,9 +76,8 @@ public class CommandTests
         var sim = Simulation.CreateStandard(defs, 64, 64, 7, MapGenerator.RecommendedDepth);
         var center = MapGenerator.Generate(sim, new MapGenerator.Options { Villagers = 2 });
         sim.RebuildDerivedIfNeeded();
-        SliceDemo.ApplyVillageDefaults(sim, center);
-        var avatar = EggBearerStart.Setup(sim, "Arin");
-        Scenarios.Companions.SpawnBondedDragon(sim, avatar, "Ash", null, sim.World.Get<Position>(avatar).Cell);
+        VillageSetup.ApplyVillageDefaults(sim, center);
+        var avatar = VillageRound.SpawnHero(sim, new Hero("Arin", null, null), center);
         sim.TickMany(SimClock.TicksPerHour);
 
         var rand = new Random(1234);

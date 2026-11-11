@@ -183,15 +183,6 @@ public sealed class TemperatureSystem : ISimSystem, Saving.ISaveState
             Heat(map.Idx(thing.Cell), b.HeatOutput * (burn?.HeatFactor ?? 1f) / UpdatesPerHour, b.MaxHeatTemp + (burn?.MaxTempBonus ?? 0f));
         }
 
-        // Forges a dragon has breathed into (Stoke work) run hotter for a while.
-        foreach (var e in w.Query<Stoked>())
-        {
-            var thing = w.Get<Thing>(e);
-            if (!thing.Spawned || w.Get<Stoked>(e).Until < sim.Clock.Tick || thing.Def.Building is not { StokeHeat: > 0 } b)
-                continue;
-            Heat(map.Idx(thing.Cell), b.StokeHeat / UpdatesPerHour, b.StokedMaxTemp);
-        }
-
         // Bellows a smith is pumping: more heat, a little past the fire's own cap.
         foreach (var e in w.Query<Blown>())
         {
@@ -201,17 +192,6 @@ public sealed class TemperatureSystem : ISimSystem, Saving.ISaveState
                 continue;
             var bonus = b.Fuel != null ? w.Get<Fueled>(e).Burn(b.Fuel).MaxTempBonus : 0f;
             Heat(map.Idx(thing.Cell), bellows.Heat / UpdatesPerHour, b.MaxHeatTemp + bonus + bellows.MaxTempBonus);
-        }
-
-        // Stores an ice dragon breathed into (Chill work) are cooled for a while, down to their floor.
-        foreach (var e in w.Query<Chilled>())
-        {
-            var thing = w.Get<Thing>(e);
-            if (!thing.Spawned || w.Get<Chilled>(e).Until < sim.Clock.Tick || thing.Def.Building?.Chill is not { } chill)
-                continue;
-            var i = map.Idx(thing.Cell);
-            if (_next[i] > chill.MinTemp)
-                _next[i] = Math.Max(chill.MinTemp, _next[i] - chill.Cold / UpdatesPerHour);
         }
 
         foreach (var i in sim.Fire.BurningTiles)

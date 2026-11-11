@@ -81,7 +81,7 @@ public sealed record AvatarGoToCommand(Entity Avatar, int3 Target, bool Interact
     public void Apply(Simulation sim)
     {
         var w = sim.World;
-        if (!InventoryCommand.Ready(sim, Avatar) || !sim.Map.InBounds(Target) || w.Has<Riding>(Avatar) || w.Has<Carried>(Avatar))
+        if (!InventoryCommand.Ready(sim, Avatar) || !sim.Map.InBounds(Target) || w.Has<Carried>(Avatar))
             return;
         ref var a = ref w.Get<Avatar>(Avatar);
         a.Chain = AvatarActionKind.None;
@@ -119,13 +119,13 @@ public sealed record SleepCommand(Entity Avatar) : ISimCommand, IActorCommand
     public void Apply(Simulation sim)
     {
         var w = sim.World;
-        if (!w.IsAlive(Avatar) || !w.Has<Avatar>(Avatar) || !w.Get<Creature>(Avatar).Able || w.Has<Riding>(Avatar) || sim.Combat.Involves(Avatar))
+        if (!w.IsAlive(Avatar) || !w.Has<Avatar>(Avatar) || !w.Get<Creature>(Avatar).Able)
             return;
         var here = w.Get<Position>(Avatar).Cell;
         if (!sim.Map.Standable(sim.Map.Idx(here)))
             return;
         var site = sim.Map.Structure[sim.Map.Idx(here)];
-        var bed = !site.IsNull && w.Get<Thing>(site).Def.Building is { IsBed: true, IsNest: false } && !w.Has<Construction>(site) ? site : Entity.Null;
+        var bed = !site.IsNull && w.Get<Thing>(site).Def.Building is { IsBed: true } && !w.Has<Construction>(site) ? site : Entity.Null;
         w.Get<Avatar>(Avatar).Chain = AvatarActionKind.None;
         AiSystem.Order(sim, Avatar, new Ai.SleepJob(bed));
     }

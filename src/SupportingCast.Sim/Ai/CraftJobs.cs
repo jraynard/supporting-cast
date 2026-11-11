@@ -162,56 +162,6 @@ public sealed class CraftJob(Entity station, RecipeDef recipe) : Job
 }
 
 /// <summary>
-/// A dragon breathes into a forge or kiln for a while (Stoke work): a few long puffs aimed into
-/// its mouth, which leave it <see cref="Stoked"/> and heating fast for <see cref="Lasts"/> ticks.
-/// The flames stay inside the stonework, so nothing around it catches.
-/// </summary>
-public sealed class StokeJob(Entity station) : Job
-{
-    /// <summary>How long one stoking keeps the heat up: a game hour.</summary>
-    public const int Lasts = SimClock.TicksPerHour;
-
-    private const int Puffs = 4, PuffTicks = 45;
-
-    public override Entity Focus => station;
-
-    protected override IEnumerable<JobStatus> Run()
-    {
-        Report = "Going to stoke the fire";
-        if (!Crafting.IsStation(Sim, station))
-        {
-            Fail("the station is gone");
-            yield break;
-        }
-        foreach (var s in GoToBeside(station)) yield return s;
-        if (HasFailed) yield break;
-
-        Report = $"Breathing into the {Get<Thing>(station).Label}";
-        var stage = Get<Creature>(Pawn).Stage(Sim.Clock.Tick);
-        for (var p = 0; p < Puffs; p++)
-        {
-            if (!Crafting.IsStation(Sim, station) || !Sim.Burning(station))
-            {
-                Fail("the fire went out");
-                yield break;
-            }
-            // Only the look of a breath (render-only): the heat goes in through Stoked, not as flames.
-            var mouth = Get<Position>(Pawn).Pos + new float3(0, 0, stage.Size * 0.6f);
-            var ev = new Environment.BreathEvent { Tick = Sim.Clock.Tick, Mouth = mouth, Source = Pawn };
-            ev.RayEnds.Add(Position.CenterOf(Get<Thing>(station).Cell) + new float3(0, 0, 0.4f));
-            Sim.RecentBreaths.Add(ev);
-            foreach (var s in Wait(PuffTicks)) yield return s;
-        }
-        if (!Alive(station))
-            yield break;
-        if (Sim.World.Has<Stoked>(station))
-            Get<Stoked>(station).Until = Sim.Clock.Tick + Lasts;
-        else
-            Sim.World.Add(station, new Stoked { Until = Sim.Clock.Tick + Lasts });
-    }
-}
-
-/// <summary>
 /// The player mends a worn piece of gear at the station that makes it (<see cref="Crafting.RepairCost"/>),
 /// working while the key is held. The material is used up only when it's done, so stopping costs nothing.
 /// </summary>

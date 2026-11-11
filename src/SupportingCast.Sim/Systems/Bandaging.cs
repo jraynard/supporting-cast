@@ -46,10 +46,8 @@ public static class Bandaging
         var w = sim.World;
         if (!w.IsAlive(patient) || !w.Has<Creature>(patient) || w.Get<Creature>(patient).Dead)
             return "no one to bandage";
-        if (!w.Get<Creature>(binder).Able || w.Has<Captive>(binder) && binder != patient)
+        if (!w.Get<Creature>(binder).Able)
             return "can't do it now";
-        if (w.Has<Riding>(binder))
-            return "not from the saddle";
         if (WoundsToBind(sim, patient) == 0)
             return "no wounds to bandage";
         if (BandagesOn(sim, binder) == 0)

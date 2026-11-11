@@ -57,10 +57,8 @@ public class ToolTests
         var bare = TicksToFell(null);
         var stone = TicksToFell("StoneAxe");
         var iron = TicksToFell("Axe");
-        var dragon = TicksToFell("DragonAxe");
         Assert.True(bare > stone * 1.8f, $"bare {bare} vs stone {stone}");
         Assert.True(stone > iron * 1.4f, $"stone {stone} vs iron {iron}");
-        Assert.True(iron > dragon * 1.25f, $"iron {iron} vs dragonforged {dragon}");
     }
 
     [Fact]
@@ -94,8 +92,6 @@ public class ToolTests
         Assert.Null(Crafting.MissingTool(sim, smith, forge, sword));
         // Upgrades take the old tool: the iron axe is a stone axe reforged.
         Assert.Contains(axe.Ingredients, i => i.ThingDef.Name == "StoneAxe");
-        Assert.Contains(sim.Defs.Recipe("ForgeDragonAxe").Ingredients, i => i.ThingDef.Name == "SteelAxe"); // dragonforged is folded steel
-        Assert.True(sim.Defs.Recipe("ForgeDragonAxe").MinTemp > sim.Thing("Forge").Building!.MaxHeatTemp, "only a stoked forge gets that hot");
     }
 
     [Fact]

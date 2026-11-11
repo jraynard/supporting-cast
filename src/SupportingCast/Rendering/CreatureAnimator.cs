@@ -23,8 +23,7 @@ public readonly record struct AnimInputs(
     bool Working,
     bool Moving,
     bool Hatching = false,
-    string? Care = null,
-    bool Riding = false
+    string? Care = null
 );
 
 /// <summary>The resolved pose for one creature this frame.</summary>
@@ -118,8 +117,6 @@ public sealed class CreatureAnimator
             return "hatch";
         if (s.Asleep)
             return "sleep";
-        if (s.Riding)
-            return "ride";
         if (s.Breathing)
             return "breathe";
         if (s.WindingUp)
@@ -141,33 +138,6 @@ public sealed class CreatureAnimator
 
     /// <summary>How long (ticks) a dragon keeps leaning into a scratch or a meal from the hand after it.</summary>
     private const int CareAfterglowTicks = 90;
-
-    /// <summary>
-    /// A dragon being cared for right now: its keeper working a care job on it (play, grooming,
-    /// soothing), or a moment after a quick one (a scratch, a meal from the hand). Null otherwise.
-    /// </summary>
-    public static string? CareTag(Simulation sim, Entity e)
-    {
-        var w = sim.World;
-        if (!w.TryGet<Dragon>(e, out var d))
-            return null;
-        var now = sim.Clock.Tick;
-        if (w.IsAlive(d.Keeper) && w.TryGet<Mind>(d.Keeper, out var keeperMind)
-            && keeperMind.Job is DragonCareJob job && job.Focus == e && job.IsWorking(now))
-            return CareTagFor(job.Def);
-        var recent = sim.DragonCare.Recent;
-        for (var i = recent.Count - 1; i >= 0 && now - recent[i].Tick <= CareAfterglowTicks; i--)
-            if (recent[i].Dragon == e)
-                return CareTagFor(recent[i].Def);
-        return null;
-    }
-
-    private static string CareTagFor(DragonInteractionDef def) => def.Kind switch
-    {
-        CareKind.Groom => "groom",
-        _ when def.Name == "Play" => "play",
-        _ => "pet",
-    };
 
     /// <summary>What to show when a sheet lacks a tag, or a one-shot tag has finished.</summary>
     public static string? Fallback(string tag) => tag switch
@@ -273,14 +243,12 @@ public sealed class CreatureAnimator
         var airborne = airStep || (map.InBounds(pos.Cell) && !map.Standable(map.Idx(pos.Cell)) && !map.IsSolid(map.Idx(pos.Cell)));
 
         var job = mind.Job;
-        // A rider sits astride and looks the way the mount is going.
-        var riding = w.TryGet<Riding>(e, out var ride) && w.IsAlive(ride.Mount);
         var inputs = new AnimInputs(
             c.Dead,
             c.Downed,
             mind.Asleep,
             breathing,
-            job is BreatheFireJob && !mover.Moving,
+            false,
             airborne,
             vertical,
             landing,
@@ -288,8 +256,7 @@ public sealed class CreatureAnimator
             job is BuildJob or DeconstructJob or HarvestJob or DigJob && !mover.Moving,
             mover.Moving,
             sim.Clock.Tick - c.BornTick < HatchTicks,
-            CareTag(sim, e),
-            riding
+            null
         );
         var want = ChooseTag(inputs);
         if (want != st.Want || newBreath)
@@ -331,11 +298,6 @@ public sealed class CreatureAnimator
                 look = Position.CenterOf(sim.LocationOf(job.Focus)) - pos.Pos;
             else if (job.FocusCell is { } fc)
                 look = Position.CenterOf(fc) - pos.Pos;
-        }
-        if (look == null && riding && w.Get<Mover>(ride.Mount) is { Moving: true } mountMover)
-        {
-            var next = mountMover.Path![mountMover.PathIndex];
-            look = new float3(next.X - mountMover.StepFrom.X, next.Y - mountMover.StepFrom.Y, 0);
         }
         if (look == null && mover.Moving)
         {

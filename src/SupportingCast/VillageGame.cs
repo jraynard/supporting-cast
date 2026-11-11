@@ -34,7 +34,6 @@ public enum ToolKind
     DevSpawn,
 
     /// <summary>Click a target for the selected dragon to breathe fire at.</summary>
-    Breathe,
 
     /// <summary>Mark the wild animals in an area for hunting.</summary>
     Hunt,
@@ -50,7 +49,7 @@ public enum ToolKind
 /// The playable village: runs the simulation at the chosen speed, turns mouse/keyboard input
 /// into player orders, and draws the world plus the ImGui interface.
 /// </summary>
-public sealed partial class VillageGame(ulong seed, bool demo = false, int skipHours = 0) : Game
+public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 {
     public const int MapSize = 160;
     private static readonly int[] SpeedMultipliers = [0, 1, 3, 6];
@@ -147,28 +146,7 @@ public sealed partial class VillageGame(ulong seed, bool demo = false, int skipH
     }
     private bool _devMode = true;
 
-    /// <summary>Riding: every right-click flies (the rider's "Fly on every move" toggle), not only Ctrl+right-click.</summary>
-    private bool _rideFly;
-
-    /// <summary>
-    /// Adventure mode: the next left-click picks where your dragon (<see cref="BreathDragon"/>)
-    /// breathes fire, whether you ride it or not (right-click or Esc cancels).
-    /// </summary>
-    private bool _aimBreath;
-
-    /// <summary>The dragon the avatar is riding, or Entity.Null.</summary>
-    private Entity Ridden => HasAvatar && _sim.World.TryGet<Riding>(_avatar, out var r) && _sim.World.IsAlive(r.Mount) ? r.Mount : Entity.Null;
-
-    /// <summary>The dragon a breath aimed now would come from: the one under you, else your bonded one.</summary>
-    private Entity BreathDragon => Ridden is { IsNull: false } ridden ? ridden : HasAvatar ? Companions.DragonOf(_sim, _avatar) : Entity.Null;
-
     private bool Paused => _speed == 0;
-
-    /// <summary>--demo: the hall still waiting for its upper storey orders (given once the fire is built).</summary>
-    private SliceDemo.Hall? _demoHall;
-
-    /// <summary>The preset-building demo's homestead, until its houses are ordered (once the hatchery is up).</summary>
-    private SliceDemo.Homestead? _demoHomestead;
 
     public int StartYawDegrees { get; init; } = 45;
     public int StartCutaway { get; init; } = int.MaxValue;
@@ -186,12 +164,6 @@ public sealed partial class VillageGame(ulong seed, bool demo = false, int skipH
     /// <summary>Debug: set the tree cluster east of the landing site alight at the start.</summary>
     public bool IgniteForest { get; init; }
 
-    /// <summary>Debug: a juvenile dragon by the eastern trees, ordered to breathe fire at them.</summary>
-    public bool BreathDemo { get; init; }
-
-    /// <summary>Debug: an adult dragon that soars around the landing site, with the eastern trees marked to burn.</summary>
-    public bool DragonDemo { get; init; }
-
     /// <summary>Debug/screenshots (<c>--furniture-demo</c>): wide furniture and roofs beside the landing (<see cref="FurnitureShowcase"/>).</summary>
     public bool FurnitureDemo { get; init; }
 
@@ -206,15 +178,6 @@ public sealed partial class VillageGame(ulong seed, bool demo = false, int skipH
 
     /// <summary>Debug/screenshots (<c>--show-roofs</c>): start with roofs drawn rather than cut away.</summary>
     public bool ShowRoofs { init => HideRoofs = !value; }
-
-    /// <summary>Debug/screenshots (<c>--dragon-demo --mounted</c>): the keeper starts on the dragon's back.</summary>
-    public bool Mounted { get; init; }
-
-    /// <summary>The combat slice: armed villagers, a young dragon, and two bandits walking in.</summary>
-    public bool RaidDemo { get; init; }
-
-    /// <summary>Debug: the AI plays the village's side in combat too.</summary>
-    public bool AutoCombat { get; init; }
 
     /// <summary>The storyteller's difficulty by def name ("Normal", "Hard"...); null or "Off" sends no raids.</summary>
     public string? Difficulty { get; init; }
@@ -272,28 +235,14 @@ public sealed partial class VillageGame(ulong seed, bool demo = false, int skipH
         _sim = Simulation.CreateStandard(defs, MapSize, MapSize, seed, MapGenerator.RecommendedDepth);
         _sim.StrictJobs = false; // a buggy job fails itself, not the game
         _sim.Presets.PresetMode = !Freeform; // preset buildings replace freeform walls (the trial; --freeform for the old way)
-        if (Prologue || Arrival != null || Start != StartKind.None)
-            return StartAdventureStory(defs);
-        // Adventure mode starts alone: the egg, the kit, and you. Others come once there's room for them.
-        var center = MapGenerator.Generate(_sim, new MapGenerator.Options { Villagers = Adventure ? 1 : 3 });
-        _sim.RebuildDerivedIfNeeded();
+        var center = VillageRound.Setup(_sim).Center;
 
-        SliceDemo.ApplyVillageDefaults(_sim, center);
         if (Difficulty is { } difficulty && !difficulty.Equals("Off", StringComparison.OrdinalIgnoreCase))
             _sim.Storyteller.SetDifficulty(_sim, defs.Difficulty(difficulty));
-        if (demo)
-        {
-            // With preset buildings on, the slice raises a hatchery for the egg, then the houses.
-            if (_sim.Presets.PresetMode)
-                _demoHomestead = SliceDemo.ApplyPresetOrders(_sim, center);
-            else
-                _demoHall = SliceDemo.ApplyPlayerOrders(_sim, center);
-            _demoCenter = center;
-        }
         if (Adventure)
         {
             var (look, clothes) = HeroAppearance();
-            EggBearerStart.Setup(_sim, HeroName, look, HeroTraits, clothes);
+            VillageRound.SpawnHero(_sim, new Hero(HeroName, look, HeroTraits, clothes), center);
         }
         var focus = center;
         if (IgniteForest)
@@ -302,52 +251,15 @@ public sealed partial class VillageGame(ulong seed, bool demo = false, int skipH
             foreach (var cell in _sim.SpiralFrom(focus, 3))
                 _sim.Fire.Ignite(_sim, cell, 1f);
         }
-        if (BreathDemo)
-        {
-            focus = center + new int3(8, -6, 0);
-            var spot = _sim.SpiralFrom(focus, 4).First(c => _sim.Map.Passable(c));
-            var dragon = DemoDragon(defs, "Ember", spot, juvenile: true);
-            Array.Fill(_sim.World.Get<Needs>(dragon).Values, 1f);
-            _sim.World.Get<Dragon>(dragon).Affinity = 2f;
-            DragonSystem.OrderBreath(_sim, dragon, _sim.SpiralFrom(center + new int3(14, -6, 0), 0).First(), puffs: 60);
-            _selected = dragon;
-        }
-        if (DragonDemo)
-        {
-            var spot = _sim.SpiralFrom(center + new int3(3, 3, 0), 6).First(c => _sim.Map.Passable(c));
-            var dragon = DemoDragon(defs, "Vesper", spot, juvenile: false);
-            Array.Fill(_sim.World.Get<Needs>(dragon).Values, 1f);
-            _sim.World.Get<Dragon>(dragon).Affinity = 2f;
-            var keeper = _sim.World.Query<Keeper>().FirstOrDefault(Entity.Null);
-            if (!keeper.IsNull)
-                EggSystem.AssignKeeper(_sim, dragon, keeper);
-            var forest = center + new int3(14, -6, 0);
-            var marked = DragonSystem.DesignateBurn(_sim, _sim.SpiralFrom(forest, 4));
-            Log.Engine.Info($"Dragon demo: {marked} cells marked to burn around {forest}");
-            _selected = dragon;
-            if (Mounted && !keeper.IsNull && RidingSystem.CantMount(_sim, keeper, dragon) == null)
-            {
-                Saddles.PutOn(_sim, dragon, _sim.CreateItem(_sim.Defs.Thing("Saddle"), 1)); // the demo rides saddled
-                RidingSystem.MountUp(_sim, keeper, dragon);
-            }
-        }
         if (FurnitureDemo)
             focus = FurnitureShowcase.Setup(_sim, center);
         if (BuildingDemo)
             focus = BuildingShowcase.Setup(_sim, center);
-        if (RaidDemo)
-        {
-            var cast = Sim.Scenarios.RaidDemo.Setup(_sim, center);
-            _sim.Combat.VillageAuto = AutoCombat;
-            focus = center + new int3(8, 0, 0);
-            _selected = cast.Archer;
-        }
         if (skipHours > 0)
         {
             for (var h = 0; h < skipHours; h++)
             {
                 _sim.TickMany(SimClock.TicksPerHour);
-                OrderDemoUpperStorey();
             }
             Log.Engine.Info($"Skipped ahead {skipHours} hours to {_sim.Clock.TimeString()}");
         }
@@ -373,7 +285,7 @@ public sealed partial class VillageGame(ulong seed, bool demo = false, int skipH
     public override void Update(float dt)
     {
         _time += dt;
-        _animDt = InCombat ? dt : dt * Math.Min(SpeedMultipliers[_speed], 3);
+        _animDt = dt * Math.Min(SpeedMultipliers[_speed], 3);
         _artReloader ??= new ArtReloader(Host.Atlas);
         _artReloader.Update(Host.Input, dt);
         _defReloader ??= new DefReloader(DevPaths.Defs ?? Path.Combine(Host.DataDirectory, "defs"), DevPaths.Watch());
@@ -392,38 +304,12 @@ public sealed partial class VillageGame(ulong seed, bool demo = false, int skipH
         UpdateHover(input.MousePosition);
         HandleAvatarInput(input);
         _buildUp = input.IsKeyDown(GlfwKey.LeftControl) || input.IsKeyDown(GlfwKey.RightControl);
-        if (InCombat)
-        {
-            if (!_wasInCombat)
-            {
-                OnCombatStarted();
-                // Fights move units without ticking: tick smoothing would blend from where things
-                // were before the fight (a move ending near its start looked a cell short until the
-                // round's world time ran). Draw exact positions until ticking resumes.
-                _interp.Reset();
-            }
-            HandleCombatKeys(input);
-            HandleCombatMouse(input);
-            // Single player plays the fight's steps here; in co-op the session does, in lockstep.
-            if (_coop != null)
-                RunCoop(dt);
-            else
-                RunCombat(dt);
-            _interp.Alpha = 1f;
-            WatchCombat(dt);
-        }
+        HandleMouse(input, dt);
+        if (_coop != null)
+            RunCoop(dt);
         else
-        {
-            if (_wasInCombat)
-                OnCombatEnded();
-            HandleMouse(input, dt);
-            if (_coop != null)
-                RunCoop(dt);
-            else
-                RunSimulation(dt);
-        }
+            RunSimulation(dt);
         RecordSimProfile();
-        OrderDemoUpperStorey();
         PollAutosave();
         if (_coop != null && HasAvatar)
             _predictor.Update(_sim, _avatar, dt, Paused ? 0 : SpeedMultipliers[_speed]);
@@ -467,28 +353,6 @@ public sealed partial class VillageGame(ulong seed, bool demo = false, int skipH
         DisposeCoop();
         _artReloader?.Dispose();
         _defReloader?.Dispose();
-    }
-
-    private int3 _demoCenter;
-
-    private void OrderDemoUpperStorey()
-    {
-        if (_demoHomestead is { } home)
-        {
-            if (_sim.World.TryGet<PresetBuilding>(home.Hatchery, out var hatchery) && hatchery.Phase == BuildPhase.Done)
-            {
-                SliceDemo.ApplyHomeOrders(_sim, _demoCenter, home);
-                _demoHomestead = null;
-            }
-            return;
-        }
-        if (_demoHall is not { } hall)
-            return;
-        var fire = _sim.Map.Structure[_sim.Map.Idx(hall.Campfire)];
-        if (fire.IsNull || !_sim.World.Has<Fueled>(fire))
-            return;
-        SliceDemo.ApplyUpperStoreyOrders(_sim, hall);
-        _demoHall = null;
     }
 
     /// <summary>
@@ -562,11 +426,8 @@ public sealed partial class VillageGame(ulong seed, bool demo = false, int skipH
             _tickAccumulator = 0;
 
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
-        for (var i = 0; i < ticks && !_sim.Combat.Active; i++)
+        for (var i = 0; i < ticks; i++)
         {
-            // Between ticks is the only safe moment to save; a fight can't be saved, so save just before one.
-            if (AutosaveEnabled && _sim.Combat.StartsNextTick(_sim))
-                Autosave("before the fight");
             _interp.Capture(_sim);
             _sim.Tick();
             if (AutosaveEnabled && _sim.Clock.Day > _lastAutosaveDay && _sim.Clock.HourOfDay >= AutosaveHour)
@@ -575,7 +436,7 @@ public sealed partial class VillageGame(ulong seed, bool demo = false, int skipH
         if (ticks > 0)
             _lastTickMs = System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds / ticks;
         // The leftover fraction of a tick is how far the picture is toward the next one.
-        _interp.Alpha = _sim.Combat.Active ? 1f : (float)Math.Clamp(_tickAccumulator, 0, 1);
+        _interp.Alpha = (float)Math.Clamp(_tickAccumulator, 0, 1);
     }
 
     /// <summary>
@@ -643,7 +504,7 @@ public sealed partial class VillageGame(ulong seed, bool demo = false, int skipH
             if (CoopForbids("load a game") is { } no) Notify(MessageKind.Info, no);
             else QuickLoad();
         }
-        if (!InCombat) HandleToolHotkeys(input);
+        HandleToolHotkeys(input);
         if (_tool is ToolKind.Build or ToolKind.PlaceBuilding && input.WasKeyPressed(GlfwKey.R))
             _buildFacing = (_buildFacing + 1) & 3; // turn the blueprint (beds, tables, buildings...)
         if (_tool == ToolKind.Build && input.WasKeyPressed(GlfwKey.C))
@@ -661,35 +522,18 @@ public sealed partial class VillageGame(ulong seed, bool demo = false, int skipH
         _dragStart = null;
     }
 
-    private static bool IsAreaTool(ToolKind t) => t is not (ToolKind.Select or ToolKind.DevIgnite or ToolKind.DevSpawn or ToolKind.Breathe or ToolKind.PlaceBuilding);
+    private static bool IsAreaTool(ToolKind t) => t is not (ToolKind.Select or ToolKind.DevIgnite or ToolKind.DevSpawn or ToolKind.PlaceBuilding);
 
     private void HandleMouse(Input input, float dt)
     {
-        if (_aimBreath)
-        {
-            // Aiming your dragon's breath: a left-click picks the target, right-click or Esc calls it off.
-            if (BreathDragon.IsNull || input.WasMousePressed(MouseButton.Right) || input.WasKeyPressed(GlfwKey.Escape))
-            {
-                _aimBreath = false;
-                return;
-            }
-            if (input.WasMousePressed(MouseButton.Left) && _sim.Map.InBounds(_hoverCell) && !Host.Input.MouseCaptured)
-            {
-                Issue(new BreathOrderCommand(BreathDragon, _hoverCell));
-                _aimBreath = false;
-            }
-            return;
-        }
         if (HandleAdventureMouse(input, dt))
             return;
         if (input.WasMousePressed(MouseButton.Right))
         {
             if (_tool != ToolKind.Select)
                 SetTool(ToolKind.Select);
-            else if (_sim.World.IsAlive(_selected) && (_sim.World.Has<Riding>(_selected) || _sim.World.Has<Mount>(_selected)
-                         || (_sim.World.TryGet<Mind>(_selected, out var mind) && mind.Drafted)))
-                Issue(new MoveOrderCommand(_selected, _hoverCell,
-                    Fly: _rideFly || input.IsKeyDown(GlfwKey.LeftControl) || input.IsKeyDown(GlfwKey.RightControl)));
+            else if (_sim.World.IsAlive(_selected) && _sim.World.TryGet<Mind>(_selected, out var mind) && mind.Drafted)
+                Issue(new MoveOrderCommand(_selected, _hoverCell));
             else
                 _selected = Entity.Null;
             return;
@@ -723,11 +567,6 @@ public sealed partial class VillageGame(ulong seed, bool demo = false, int skipH
         {
             case ToolKind.Select:
                 _selected = PickEntity(mouse);
-                break;
-            case ToolKind.Breathe:
-                if (_sim.World.IsAlive(_selected) && _sim.World.Has<Dragon>(_selected))
-                    Issue(new BreathOrderCommand(_selected, _hoverCell));
-                SetTool(ToolKind.Select);
                 break;
             case ToolKind.DevIgnite:
                 Issue(new DevIgniteCommand(_hoverCell));
@@ -866,81 +705,6 @@ public sealed partial class VillageGame(ulong seed, bool demo = false, int skipH
     }
 
     /// <summary>
-    /// Aiming a breath: the cone of fire on the ground from the dragon to the cursor, at the stage's
-    /// reach and width, with the splash round the target. Out of reach, a dotted trail shows the
-    /// dragon closing in first (to about 0.7 of its reach, as <see cref="BreatheFireJob"/> does),
-    /// and the cone starts from there, paler.
-    /// </summary>
-    private void DrawBreathPreview(Entity dragon)
-    {
-        var map = _sim.Map;
-        var white = Host.Atlas.WhiteSprite;
-        var shape = Sim.Environment.Breath.ShapeOf(_sim, dragon); // its stage's breath, as its element shapes it
-        var element = Sim.Systems.Dragons.BreathOf(_sim, dragon);
-        // Fire's cone in its own orange; the other elements' in their colour.
-        var (cr, cg, cb) = element.Element == DragonElement.Fire ? (1f, 0.42f, 0.08f) : ((element.Rgb >> 16 & 0xFF) / 255f, (element.Rgb >> 8 & 0xFF) / 255f, (element.Rgb & 0xFF) / 255f);
-        var at = _renderer.DrawPos(_sim, dragon, _sim.World.Get<Position>(dragon).Pos);
-        var target = Position.CenterOf(_hoverCell);
-        var to = new float2(target.X - at.X, target.Y - at.Y);
-        var dist = MathF.Sqrt(to.X * to.X + to.Y * to.Y);
-        if (dist < 0.5f)
-            return;
-        var dir = to * (1f / dist);
-        var inReach = Sim.Combat.CombatRules.Distance(_sim.World.Get<Position>(dragon).Cell, _hoverCell) <= shape.Range;
-        var origin = new float2(at.X, at.Y);
-        if (!inReach)
-        {
-            origin = new float2(target.X, target.Y) - dir * (shape.Range * 0.7f);
-            var trail = dist - shape.Range * 0.7f;
-            for (var s = 0.8f; s < trail; s += 0.8f)
-            {
-                var p = new float2(at.X, at.Y) + dir * s;
-                var cell = _renderer.VisibleCell(map, (int)MathF.Floor(p.X), (int)MathF.Floor(p.Y));
-                if (map.InBounds(cell))
-                    _renderer.Decal(white, new float3(p.X, p.Y, _renderer.SurfaceHeight(map, cell) + 0.06f), 0.22f,
-                        Rgba.Pack(1f, 0.85f, 0.6f, 0.6f), Quad.Unlit | Quad.Always, translucent: true);
-            }
-        }
-
-        // The cone: cells whose centre lies within the breath's angle, out to the target and its splash.
-        var length = MathF.Min(shape.Range, MathF.Sqrt((target.X - origin.X) * (target.X - origin.X) + (target.Y - origin.Y) * (target.Y - origin.Y))) + shape.SplashRadius;
-        var spread = MathF.Tan(shape.ConeDegrees * MathF.PI / 360f);
-        var alpha = inReach ? 0.42f : 0.32f;
-        int x0 = (int)MathF.Floor(MathF.Min(origin.X, target.X) - 3), x1 = (int)MathF.Ceiling(MathF.Max(origin.X, target.X) + 3);
-        int y0 = (int)MathF.Floor(MathF.Min(origin.Y, target.Y) - 3), y1 = (int)MathF.Ceiling(MathF.Max(origin.Y, target.Y) + 3);
-        for (var y = y0; y <= y1; y++)
-        for (var x = x0; x <= x1; x++)
-        {
-            if (!map.InBounds(x, y, 0))
-                continue;
-            var v = new float2(x + 0.5f - origin.X, y + 0.5f - origin.Y);
-            var along = v.X * dir.X + v.Y * dir.Y;
-            var across = MathF.Abs(v.X * dir.Y - v.Y * dir.X);
-            var dx = x + 0.5f - target.X;
-            var dy = y + 0.5f - target.Y;
-            var splash = dx * dx + dy * dy <= shape.SplashRadius * shape.SplashRadius;
-            if (!splash && (along < 0.7f || along > length || across > along * spread + 0.5f))
-                continue;
-            // Hottest near the mouth, fading toward the far end; the splash glows a little brighter.
-            var fade = splash ? 1f : 1f - 0.45f * Math.Clamp(along / length, 0, 1);
-            var cell = _renderer.VisibleCell(map, x, y);
-            _renderer.Decal(white, new float3(x + 0.5f, y + 0.5f, _renderer.SurfaceHeight(map, cell) + 0.05f), 1f,
-                Rgba.Pack(cr, splash ? Math.Min(1f, cg + 0.18f) : cg, cb, alpha * fade), Quad.Unlit | Quad.Always, translucent: true);
-        }
-    }
-
-    /// <summary>
-    /// A demo's dragon (<c>--breath-demo</c>, <c>--dragon-demo</c>): the breed and element from
-    /// <c>--breed</c> and <c>--element</c>, a juvenile or a young adult of that breed.
-    /// </summary>
-    private Entity DemoDragon(DefDatabase defs, string name, int3 spot, bool juvenile)
-    {
-        var breed = Sim.Systems.Dragons.BreedOrDefault(defs, DragonBreed);
-        var age = juvenile ? breed.LifeStages[Math.Min(1, breed.LifeStages.Count - 1)].MinAgeDays + 1 : Math.Max(14f, Sim.Systems.Dragons.AdultAgeDays(breed));
-        return Sim.Systems.Dragons.Spawn(_sim, breed, DragonLook?.Element ?? DragonElement.Fire, name, spot, ageDays: age);
-    }
-
-    /// <summary>
     /// A dragged roof shows per cell what it would do: red past the reach of its support (a wall
     /// or door within the span), grey where the cell below is already sheltered (an enclosed
     /// room, a floor above), else the tool's colour.
@@ -958,18 +722,8 @@ public sealed partial class VillageGame(ulong seed, bool demo = false, int skipH
     private void DrawToolPreview()
     {
         _placeProblem = null;
-        if (InCombat)
-        {
-            DrawCombatPreview();
-            return;
-        }
         var map = _sim.Map;
         var white = Host.Atlas.WhiteSprite;
-        if (_aimBreath && BreathDragon is { IsNull: false } breather && map.InBounds(_hoverCell))
-        {
-            DrawBreathPreview(breather);
-            return;
-        }
         if (_dragStart is { } a)
         {
             var b = ClampToMap(_hoverCell);

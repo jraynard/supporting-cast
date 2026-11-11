@@ -47,7 +47,6 @@ public class MiningTests
         var defs = TestWorld.LoadDefs();
         Assert.Equal(1, (int)defs.Thing("StonePick").Tool!.Tier);
         Assert.Equal(4, (int)defs.Thing("Pick").Tool!.Tier);
-        Assert.Equal(6, (int)defs.Thing("DragonPick").Tool!.Tier);
         Assert.Equal(4, (int)defs.Recipe("ForgeSword").ToolTier);
         Assert.Equal(2, (int)defs.Block("Granite").DigTier);
         Assert.Equal(0, (int)defs.Block("Stone").DigTier);

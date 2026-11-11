@@ -49,9 +49,6 @@ public sealed partial class Simulation
     public AiSystem Ai { get; } = new();
     public MovementSystem Movement { get; } = new();
 
-    /// <summary>Turn-based combat: idle until hostiles come near the village.</summary>
-    public Encounter Combat { get; } = new();
-
     /// <summary>Sends raids. Off until <see cref="Storyteller.SetDifficulty"/> picks a difficulty.</summary>
     public Storyteller Storyteller { get; }
 
@@ -65,14 +62,8 @@ public sealed partial class Simulation
     public BuildingSystem Presets { get; } = new();
     public SocialSystem Social { get; }
 
-    /// <summary>Dragons' wants, sleeping together, neglect (docs/plans/dragon-interactions.md).</summary>
-    public DragonCareSystem DragonCare { get; }
-
     /// <summary>The village's book of discovered recipes (see <see cref="RecipeBooks"/>).</summary>
     public RecipeBookSystem RecipeBook { get; } = new();
-
-    /// <summary>The Adventure's story state: which opening, what's pending (see <see cref="Scenarios.StoryState"/>).</summary>
-    public Scenarios.StoryState Story { get; } = new();
 
     public ulong Seed { get; }
 
@@ -174,7 +165,6 @@ public sealed partial class Simulation
         Storyteller = new Storyteller(seed);
         Wildlife = new WildlifeSystem(seed);
         Social = new SocialSystem(seed);
-        DragonCare = new DragonCareSystem(seed);
         Messages.Now = () => Clock.Tick;
 
         World.Destroying += OnEntityDestroying;
@@ -193,31 +183,21 @@ public sealed partial class Simulation
             .AddSystem(sim.Lighting)
             .AddSystem(new NeedsSystem())
             .AddSystem(new HealthSystem())
-            .AddSystem(new AfflictionSystem())
-            .AddSystem(new Environment.VenomCloudSystem())
             .AddSystem(new PlantSystem())
             .AddSystem(new RotSystem())
             .AddSystem(new FoodPoisoningSystem())
             .AddSystem(new FuelSystem())
-            .AddSystem(new EggSystem())
-            .AddSystem(new DragonSystem())
-            .AddSystem(new BreedingSystem())
             .AddSystem(new VisitorSystem())
             .AddSystem(new MoodSystem())
             .AddSystem(new PrisonBreakSystem())
             .AddSystem(sim.Social)
-            .AddSystem(sim.DragonCare)
             .AddSystem(sim.RecipeBook)
             .AddSystem(sim.Storyteller)
             .AddSystem(sim.Wildlife)
             .AddSystem(sim.Larder)
             .AddSystem(sim.Presets)
-            .AddSystem(new RidingSystem())
-            .AddSystem(new CombatSystem())
             .AddSystem(new AvatarSystem())
             .AddSystem(new SettlerSystem())
-            .AddSystem(sim.Story)
-            .AddSystem(new Scenarios.PrologueSystem())
             .AddSystem(sim.Ai)
             .AddSystem(sim.Movement);
         return sim;
@@ -412,7 +392,6 @@ public sealed partial class Simulation
         Mix(Clock.Tick);
         Mix(World.AliveCount);
         Mix((long)Rand.Fingerprint);
-        Combat.Fingerprint(this, Mix); // only during a fight: outside one the hash is as it always was
         if (Storyteller.Difficulty != null) // off leaves the hash as it always was
         {
             Mix(Storyteller.NextRaidTick);
@@ -421,9 +400,6 @@ public sealed partial class Simulation
         if (Wildlife.Fingerprint is not 0 and var wildlife) // likewise: off and unfished leaves it out
             Mix(wildlife);
         Mix((long)Social.Rand.Fingerprint);
-        Mix((long)DragonCare.Rand.Fingerprint);
-        if (Story.Fingerprint is not 0 and var story) // likewise: only once an Adventure has set it
-            Mix(story);
         var designations = Map.Designations;
         var zones = Map.Zone;
         for (var i = 0; i < (withMap ? Map.Count : 0); i++)
@@ -460,15 +436,6 @@ public sealed partial class Simulation
             if (World.TryGet<Components.Skills>(e, out var skills))
                 foreach (var level in skills.Level)
                     Mix(level);
-            if (World.TryGet<Components.DragonCare>(e, out var care))
-            {
-                Mix((int)care.Want);
-                Mix(care.WantSince);
-                MixFloat(care.NeglectHours);
-                Mix(care.Sulking ? 1 : 0);
-                Mix(care.Last.Count);
-                MixFloat(care.Training.Values.Sum()); // order-free: a load sorts them by name
-            }
             if (World.TryGet<Components.Mood>(e, out var mood))
             {
                 MixFloat(mood.Value);
@@ -506,8 +473,6 @@ public sealed partial class Simulation
             Mix(RecipeBook.VillageDiscoveries.Count);
         foreach (var e in World.Each<Components.RecipeBook>())
             Mix(World.Get<Components.RecipeBook>(e).Known.Count);
-        foreach (var e in World.Each<Components.Stoked>())
-            Mix(World.Get<Components.Stoked>(e).Until);
         foreach (var e in World.Each<Components.Blown>())
             Mix(World.Get<Components.Blown>(e).Until);
         foreach (var e in World.Each<Components.Workbench>())

@@ -57,29 +57,19 @@ public sealed class TitleGame : Game
     /// <summary>A submenu (Adventure's difficulties, Load Game's saves) shown instead of the main menu.</summary>
     private MenuItem[]? _submenu;
     private string? _submenuTitle;
-    private MenuItem[] _difficultyItems = [];
     private MenuItem[] _items = [];
     private DefDatabase _defs = null!;
 
     /// <summary>Why the last load failed, shown under the menu.</summary>
     private string? _error;
 
-    private enum MenuAction { Start, Settings, Exit, NewGame, Sandbox, LoadGame, Back, Coop, HostNew, HostSave, Join, PickStart }
+    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Coop, HostNew, HostSave, Join }
 
     /// <summary>Adventure's character creator, shown instead of the menu while open.</summary>
     private CharacterCreator _creator = null!;
     private bool _creating;
 
-    /// <summary>Adventure's dragon creator (the dragon starts), after the character.</summary>
-    private DragonCreator _dragonCreator = null!;
-    private bool _creatingDragon;
 
-    /// <summary>The Adventure start picked from <see cref="StartItems"/>.</summary>
-    private StartKind _start = StartKind.EggBearer;
-    private MenuItem[] _startItems = [];
-
-    /// <summary>The difficulty submenu starts the classic overseer village rather than Adventure mode.</summary>
-    private bool _sandbox;
 
     /// <summary>The character creator is for a village to host (no prologue; the difficulty is asked last, in <see cref="HostAs"/>).</summary>
     private bool _hostingNew;
@@ -99,19 +89,7 @@ public sealed class TitleGame : Game
     /// <summary><c>--join address</c>: open the Join panel and connect straight away.</summary>
     public string? AutoJoin { get; set; }
 
-    private sealed record MenuItem(string Label, string Hint, Func<Game>? Start, MenuAction Action = MenuAction.Start, StartKind Kind = StartKind.None);
-
-    /// <summary>Adventure's openings. The dragon starts come with an adult dragon you name and colour.</summary>
-    private static MenuItem[] StartItems() =>
-    [
-        new("Escape", "Combat on. A dragon rider taken prisoner with your dragon: break free, fly, and survive in the wild "
-            + "by crafting, gathering and hunting.", null, MenuAction.PickStart, StartKind.Escape),
-        new("The Sorcerer's Pact", "Peaceful. Gathering herbs for your village, you and your dragon strike a bargain with a sorcerer: "
-            + "his help, for a tower built somewhere far away. Raids wait until it stands.", null, MenuAction.PickStart, StartKind.Pact),
-        new("The Last Egg", "The slow road. Ashford's dying dragon keeper entrusts you with her egg and her wagon: "
-            + "take it far away, keep it warm, and raise the dragon that hatches.", null, MenuAction.PickStart, StartKind.EggBearer),
-        new("Back", "Back to the main menu.", null, MenuAction.Back),
-    ];
+    private sealed record MenuItem(string Label, string Hint, Func<Game>? Start, MenuAction Action = MenuAction.Start);
 
     /// <summary>How many saves the Load Game list shows (the in-game Load window lists them all).</summary>
     private const int MaxListedSaves = 8;
@@ -124,10 +102,8 @@ public sealed class TitleGame : Game
             newest is { } last
                 ? new("Continue", $"{last.Name}: {last.Summary}", () => FromSave(last))
                 : new("Continue", "No saves yet.", null),
-            // Opens the character creator, then the difficulty choice (see Load).
-            new("Adventure", "You are a dragon rider. Choose your story and explore.", null, MenuAction.NewGame),
-            new("Village", "Oversee three settlers and their dragon egg as they embark on a new journey.", null, MenuAction.Sandbox),
-            new("Co-op", "Play together: host your village for friends, or join theirs (local network or address).", null, MenuAction.Coop),
+            new("New Round", "Walk into the village on your own, with AI villagers in the other trades.", null, MenuAction.NewGame),
+            new("Multiplayer", "Play together: host a village for friends, or join theirs (local network or address).", null, MenuAction.Coop),
             new("Load Game", newest == null ? "No saves yet." : "Pick a saved village.", null, newest == null ? MenuAction.Start : MenuAction.LoadGame),
             new("Options", "Display, interface and gameplay settings.", null, MenuAction.Settings),
             new("Credits", "Coming soon.", null),
@@ -177,39 +153,17 @@ public sealed class TitleGame : Game
         return new HostSettings(me, $"{me.Name}'s village");
     }
 
-    /// <summary>The creators start from a saved character (and its dragon).</summary>
+    /// <summary>The creator starts from a saved character.</summary>
     private void Prefill(SavedCharacter c)
     {
         _creator.Load(c.Name, c.Look, c.Traits, c.Clothes);
-        if (c.HasDragon)
-            _dragonCreator.Load(c.DragonName!, c.DragonLook!.Value, c.DragonBreed);
     }
 
-    /// <summary>
-    /// Host a new village as a saved character. Co-op is the Pact, at the tower's site: the forest and
-    /// the flight aren't networked yet.
-    /// </summary>
-    /// <summary>The character a new co-op village will be hosted as, while its difficulty is picked.</summary>
-    private SavedCharacter? _hostCharacter;
-
-    /// <summary>A new co-op village as <paramref name="c"/>: first, how often raiders come once the tower stands.</summary>
-    private void HostAs(SavedCharacter c)
+    /// <summary>Host a new village as <paramref name="c"/>.</summary>
+    private void HostAs(SavedCharacter c) => Host.SwitchTo(new VillageGame((ulong)Random.Shared.Next(1, 1_000_000))
     {
-        _hostCharacter = c;
-        (_submenu, _submenuTitle) = (HostDifficultyItems(), "Raids hold off until the tower stands. How often should bandits come after that?");
-    }
-
-    private MenuItem[] HostDifficultyItems() =>
-        _defs.AllDifficulties.Select(d => new MenuItem(d.Label, d.Description, () => HostGame(_hostCharacter!, d.Name)))
-            .Append(new MenuItem("Back", "Back.", null, MenuAction.Back))
-            .ToArray();
-
-    private Game HostGame(SavedCharacter c, string difficulty) =>
-        new VillageGame((ulong)Random.Shared.Next(1, 1_000_000), demo: false, skipHours: 0)
-        {
-            Start = StartKind.Pact, HeroName = c.Name, HeroLook = c.Look, HeroTraits = c.Traits, HeroClothes = c.Clothes,
-            DragonName = c.DragonName, DragonLook = c.DragonLook, HostCoop = HostSettingsFor(), Difficulty = difficulty, DragonBreed = c.DragonBreed,
-        };
+        Adventure = true, HeroName = c.Name, HeroLook = c.Look, HeroTraits = c.Traits, HeroClothes = c.Clothes, HostCoop = HostSettingsFor(),
+    });
 
     /// <summary>Load a save for <see cref="Press"/>; a <see cref="Sim.Saving.SaveException"/> keeps us on the title.</summary>
     private Game FromSave(SaveSlot slot) => VillageGame.FromSave(SaveSlots.Load(slot.Path, _defs));
@@ -220,47 +174,24 @@ public sealed class TitleGame : Game
         _settings = new SettingsWindow(Host);
         var defs = _defs = DefDatabase.LoadDirectory(Path.Combine(Host.DataDirectory, "defs"));
         _creator = new CharacterCreator(Host, defs);
-        _dragonCreator = new DragonCreator(Host, defs);
         _roster = CharacterRoster.Load(Host, defs);
         _picker = new CharacterPicker(Host, _roster, defs);
         if (_roster.Last is { } last)
             Prefill(last);
         _items = MainItems();
-        _startItems = StartItems();
-        // The slice the game has always started on (seed 1234, same as a bare launch), with raids
-        // as hard as the player picks.
-        _difficultyItems = defs.AllDifficulties
-            .Select(d => new MenuItem(d.Label, d.Description, () => _sandbox
-                ? new VillageGame(DefaultSeed, demo: false, skipHours: 0) { Difficulty = d.Name }
-                : new VillageGame(DefaultSeed, demo: false, skipHours: 0)
-                {
-                    Difficulty = d.Name, HeroName = _creator.Name, HeroLook = _creator.Look, HeroTraits = _creator.Traits, HeroClothes = _creator.Clothes,
-                    Prologue = _start == StartKind.EggBearer,
-                    Start = _start == StartKind.EggBearer ? StartKind.None : _start,
-                    DragonName = _start == StartKind.EggBearer ? null : _dragonCreator.Name,
-                    DragonLook = _dragonCreator.Look, // for an egg, only its element is used
-                    DragonBreed = _dragonCreator.Breed,
-                }))
-            .Append(new MenuItem("Back", "Back.", null, MenuAction.Back))
-            .ToArray();
-        // A fresh valley every time, with no village in it: just the land and a dragon.
+        // A fresh valley every time behind the menu.
         _sim = Simulation.CreateStandard(defs, MapSize, MapSize, (ulong)Random.Shared.Next(1, 100_000), MapGenerator.RecommendedDepth);
         _sim.StrictJobs = false; // a buggy job fails itself, not the game
         var center = MapGenerator.Generate(_sim, new MapGenerator.Options { SpawnStartingKit = false });
         _sim.RebuildDerivedIfNeeded();
-        var spot = _sim.SpiralFrom(center, 8).First(c => _sim.Map.Passable(c));
-        var dragon = _sim.SpawnCreature(defs.Creature("Dragon"), "Vesper", spot, ageDays: 20);
-        Array.Fill(_sim.World.Get<Needs>(dragon).Values, 1f);
 
         _camera.Target = new float3(center.X + 0.5f, center.Y + 0.5f, center.Z);
         _camera.Yaw = 0.6f;
         _renderer = new WorldRenderer(Host.Atlas) { ShowNames = false, ShowBubbles = false };
         _quads = new QuadRenderer(Host, new int3(_sim.Map.Width, _sim.Map.Height, _sim.Map.Depth), ShaderReload.QuadShaders(Host));
-        if (AutoCreator is { } step)
+        if (AutoCreator != null)
         {
-            _start = StartKind.Escape;
-            _creatingDragon = step.Equals("dragon", StringComparison.OrdinalIgnoreCase);
-            _creating = !_creatingDragon;
+            _creating = true;
             if (AutoPreset != null)
                 _creator.ApplyPreset(AutoPreset);
         }
@@ -281,9 +212,6 @@ public sealed class TitleGame : Game
         if (Host.Input.WasKeyPressed(GlfwKey.F7))
             _error = ShaderReload.Reload(Host, _quads) is { } shaderError ? $"Shader error: {shaderError}" : null;
 
-        // Keep the dragon well fed and rested so it spends its time flying about, not starving.
-        foreach (var e in _sim.World.Query<Dragon>())
-            Array.Fill(_sim.World.Get<Needs>(e).Values, 1f);
         if (_joining)
             _coopMenu?.Update(dt);
         _accumulator += dt * SimClock.TicksPerSecond;
@@ -361,15 +289,11 @@ public sealed class TitleGame : Game
         else if (_pickingHost)
         {
             ImGui.TextColored(dim, "Who will you be?"u8);
-            switch (_picker.Draw(_time, needsDragon: true))
+            switch (_picker.Draw(_time))
             {
-                case CharacterPicker.Result.Use when _picker.Picked!.HasDragon:
+                case CharacterPicker.Result.Use:
                     _pickingHost = false;
                     HostAs(_roster.Put(_picker.Picked!));
-                    break;
-                case CharacterPicker.Result.Use: // made in an egg game: make their dragon first
-                    Prefill(_picker.Picked!);
-                    (_editing, _pickingHost, _creatingDragon) = (_picker.Picked!.Id, false, true);
                     break;
                 case CharacterPicker.Result.Edit:
                     Prefill(_picker.Picked!);
@@ -383,45 +307,28 @@ public sealed class TitleGame : Game
                     break;
             }
         }
-        else if (_creatingDragon)
-        {
-            _dragonCreator.EggOnly = !_hostingNew && _start == StartKind.EggBearer;
-            ImGui.TextColored(dim, _dragonCreator.EggOnly ? "Your egg"u8 : "Your dragon"u8);
-            switch (_dragonCreator.Draw(_time))
-            {
-                case DragonCreator.Result.Continue when _hostingNew:
-                    _creatingDragon = false;
-                    HostAs(_roster.Put(new SavedCharacter
-                    {
-                        Id = _editing ?? Guid.NewGuid(), Name = _creator.Name, Look = _creator.Look, Traits = _creator.Traits.ToList(),
-                        DragonName = _dragonCreator.Name, DragonLook = _dragonCreator.Look, DragonBreed = _dragonCreator.Breed,
-                    }));
-                    break;
-                case DragonCreator.Result.Continue:
-                    _creatingDragon = false;
-                    ShowDifficulties();
-                    break;
-                case DragonCreator.Result.Back:
-                    (_creatingDragon, _creating) = (false, true);
-                    break;
-            }
-        }
         else if (_creating)
         {
-            ImGui.TextColored(dim, !_hostingNew && _start == StartKind.EggBearer ? "Who carries the egg?" : "Who are you?");
+            ImGui.TextColored(dim, "Who are you?"u8);
             switch (_creator.Draw(_time))
             {
                 case CharacterCreator.Result.Continue when _hostingNew:
-                    (_creating, _creatingDragon) = (false, true);
+                    _creating = false;
+                    HostAs(_roster.Put(new SavedCharacter
+                    {
+                        Id = _editing ?? Guid.NewGuid(), Name = _creator.Name, Look = _creator.Look, Traits = _creator.Traits.ToList(), Clothes = _creator.Clothes.ToList(),
+                    }));
                     break;
                 case CharacterCreator.Result.Continue:
-                    (_creating, _creatingDragon) = (false, true);
+                    _creating = false;
+                    Host.SwitchTo(new VillageGame(DefaultSeed)
+                    {
+                        Adventure = true, HeroName = _creator.Name, HeroLook = _creator.Look, HeroTraits = _creator.Traits, HeroClothes = _creator.Clothes,
+                    });
                     break;
                 case CharacterCreator.Result.Back:
                     _creating = false;
-                    if (!_hostingNew)
-                        (_submenu, _submenuTitle) = (_startItems, "Which story?");
-                    else if (_roster.Characters.Count > 0)
+                    if (_hostingNew && _roster.Characters.Count > 0)
                         _pickingHost = true;
                     break;
             }
@@ -466,12 +373,7 @@ public sealed class TitleGame : Game
                 Host.Window.ShouldClose = true;
                 break;
             case MenuAction.NewGame:
-                _sandbox = false;
                 _hostingNew = false;
-                (_submenu, _submenuTitle) = (_startItems, "Which story?");
-                break;
-            case MenuAction.PickStart:
-                _start = item.Kind;
                 (_submenu, _submenuTitle) = (null, null);
                 _creating = true;
                 break;
@@ -493,22 +395,10 @@ public sealed class TitleGame : Game
                 _joining = true;
                 _coopMenu ??= new CoopMenu(Host, _defs);
                 break;
-            case MenuAction.Sandbox:
-                _sandbox = true;
-                ShowDifficulties();
-                break;
             case MenuAction.LoadGame:
                 (_submenu, _submenuTitle) = (SaveItems(), "Which village?");
                 break;
             case MenuAction.Back:
-                // From the difficulty choice of a new Adventure, back to its last creator step.
-                if (_submenu == _difficultyItems && !_sandbox)
-                {
-                    if (_start == StartKind.EggBearer)
-                        _creating = true;
-                    else
-                        _creatingDragon = true;
-                }
                 (_submenu, _submenuTitle) = (null, null);
                 break;
             default:
@@ -527,15 +417,6 @@ public sealed class TitleGame : Game
                 break;
         }
     }
-
-    /// <summary>The difficulty choice, worded for the start being made.</summary>
-    private void ShowDifficulties() =>
-        (_submenu, _submenuTitle) = (_difficultyItems, _sandbox ? "How often should bandits come calling?" : _start switch
-        {
-            StartKind.Pact => "Raids hold off until the tower stands. How often should bandits come after that?",
-            StartKind.Escape => "How often should raiders come for you in the wild?",
-            _ => "How often should bandits come calling?",
-        });
 
     private void MenuButton(MenuItem item)
     {

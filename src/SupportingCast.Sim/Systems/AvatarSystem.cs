@@ -21,12 +21,6 @@ public enum AvatarActionKind
     /// <summary>Put what you hold into a container.</summary>
     Store,
 
-    /// <summary>Speak with someone the story needs you to (the prologue's keeper).</summary>
-    Talk,
-
-    /// <summary>Hitch the wagon and leave the prologue's village (the game confirms and changes maps).</summary>
-    Depart,
-
     /// <summary>Feed what you hold into a fire that burns it (wood into a campfire), done at once.</summary>
     Refuel,
 
@@ -48,26 +42,9 @@ public enum AvatarActionKind
     /// <summary>Beat out the flames in a burning cell, while the key is held.</summary>
     Extinguish,
 
-    /// <summary>Escape: jump the jailer while he's in the cage (<see cref="Scenarios.EscapeCamp.Overpower"/>), done at once.</summary>
-    Overpower,
-
-    /// <summary>Escape: strike the chains off your dragon with the key, done at once.</summary>
-    Unchain,
-
-    /// <summary>Climb onto your own dragon, on the ground beside you, done at once.</summary>
-    Ride,
-
     /// <summary>Cast into the water beside the bank you stand on (<see cref="Ai.FishJob"/>), while the key is held.</summary>
     Fish,
 
-    /// <summary>Give your dragon the treasure in your hands (<see cref="Hoard.Give"/>), done at once.</summary>
-    Gift,
-    /// <summary>Hand-feed your dragon the food in your hands (<see cref="Bonding.HandFeed"/>), done at once.</summary>
-    FeedDragon,
-    /// <summary>Do what your dragon is asking for (<see cref="Bonding.Answering"/>), worked while held.</summary>
-    AnswerDragon,
-    /// <summary>Tend your dragon: the game opens its care window (picking is a <see cref="Core.DragonCareCommand"/>).</summary>
-    TendDragon,
     /// <summary>Shoot or strike at a wild animal (<see cref="Ai.AvatarHuntJob"/>), while the key is held.</summary>
     Hunt,
     /// <summary>Cut up an animal's carcass into meat and hide (<see cref="Ai.ButcherJob"/>), while the key is held.</summary>
@@ -97,14 +74,12 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
 
     /// <summary>Done at once on the key press, rather than worked at while it's held.</summary>
     public bool Instant => Kind is AvatarActionKind.PutDown or AvatarActionKind.Deliver or AvatarActionKind.PickUp
-        or AvatarActionKind.Store or AvatarActionKind.OpenStorage or AvatarActionKind.Talk or AvatarActionKind.Depart
+        or AvatarActionKind.Store or AvatarActionKind.OpenStorage 
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
-        or AvatarActionKind.Overpower or AvatarActionKind.Unchain or AvatarActionKind.Ride or AvatarActionKind.Gift
-        or AvatarActionKind.FeedDragon or AvatarActionKind.TendDragon or AvatarActionKind.Carry;
+        or AvatarActionKind.Carry;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
-    public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation
-        or AvatarActionKind.Talk or AvatarActionKind.Depart or AvatarActionKind.TendDragon;
+    public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation;
 }
 
 /// <summary>
@@ -147,7 +122,7 @@ public sealed class AvatarSystem : ISimSystem
                 }
                 continue;
             }
-            if (sim.Combat.Involves(e) || w.Has<Riding>(e) || w.Has<Carried>(e))
+            if (w.Has<Carried>(e))
                 continue;
 
             ref var a = ref w.Get<Avatar>(e);
@@ -268,24 +243,9 @@ public sealed class AvatarSystem : ISimSystem
         if ((site.IsNull || !w.Has<Construction>(site)) && Buildings.SiteAt(sim, cell) is { IsNull: false } raising)
             site = raising;
         var held = w.Get<Carrying>(avatar).Item;
-        // Locked in Escape's cage: the things worth doing are jumping the jailer when he comes in, and sleeping.
-        if (w.Has<Captive>(avatar))
-        {
-            if (tool != AvatarTool.Use || !InReach(here, cell))
-                return AvatarAction.None;
-            if (Scenarios.EscapeCamp.JailerAt(sim, avatar, cell) is { IsNull: false } jailer)
-                return new(AvatarActionKind.Overpower, $"Overpower {w.Get<Creature>(jailer).Name}", cell, jailer);
-            if (cell == here && !site.IsNull && w.Get<Thing>(site).Def.Building is { IsBed: true, IsNest: false } && !w.Has<Construction>(site))
-                return new(AvatarActionKind.Sleep, $"Sleep on the {w.Get<Thing>(site).Label}", cell, site);
-            return AvatarAction.None;
-        }
         // Arms full of a creature (a hatchling for its nest, a carcass for the butcher spot): set it down.
         if (Rescues.CarriedBy(sim, avatar) is { IsNull: false } load)
             return tool is AvatarTool.Use or AvatarTool.Drop && InReach(here, cell) ? Rescues.SetDownAt(sim, load, cell) : AvatarAction.None;
-        // On dragonback the one thing to do is hunt: shoot (or strike at) game from the saddle.
-        if (w.Has<Riding>(avatar))
-            return tool == AvatarTool.Use && Ai.AvatarHunting.ActionAt(sim, avatar, cell, here) is { Kind: AvatarActionKind.Hunt } fromTheSaddle
-                ? fromTheSaddle : AvatarAction.None;
         // Game: shot from as far as the bow carries (or struck from beside it); a carcass in reach is butchered.
         if (tool == AvatarTool.Use && Ai.AvatarHunting.ActionAt(sim, avatar, cell, here) is { } hunting)
             return hunting;
@@ -316,34 +276,6 @@ public sealed class AvatarSystem : ISimSystem
             return map.IsSolid(i) && sim.CanDig(cell) && Mining.CanBreak(sim, avatar, map.Block[i])
                 ? new(AvatarActionKind.Dig, $"Dig {Mining.ShownBlock(sim, i).Label}", cell, Entity.Null)
                 : AvatarAction.None;
-
-        // The story first: speaking with the keeper, setting out with the wagon.
-        if (Scenarios.Prologue.KeeperAt(sim, avatar, cell) is { IsNull: false } keeper)
-            return new(AvatarActionKind.Talk, $"Speak with {w.Get<Creature>(keeper).Name}", cell, keeper);
-        if (Scenarios.EnchantedForest.SorcererAt(sim, avatar, cell) is { IsNull: false } sorcerer)
-            return new(AvatarActionKind.Talk, "Speak with the stranger", cell, sorcerer);
-        if (Scenarios.EscapeCamp.ChainedDragonInReach(sim, avatar) is { IsNull: false } chained && w.Get<Position>(chained).Cell == cell)
-            return new(AvatarActionKind.Unchain, $"Free {w.Get<Creature>(chained).Name}", cell, chained);
-        // Treasure in hand for your own dragon: it goes on its hoard.
-        if (Scenarios.Companions.DragonOf(sim, avatar) is { IsNull: false } hoarder && w.Get<Position>(hoarder).Cell == cell
-            && !held.IsNull && w.Get<Thing>(held).Def.HoardValue > 0)
-            return new(AvatarActionKind.Gift, $"Give {w.Get<Thing>(held).Label} to {w.Get<Creature>(hoarder).Name}", cell, hoarder) { Item = held };
-        // Your own dragon: food in hand feeds it, else do what it's asking for, else its care window.
-        if (Scenarios.Companions.DragonOf(sim, avatar) is { IsNull: false } mine && w.Get<Position>(mine).Cell == cell
-            && !w.Get<Creature>(mine).Dead)
-        {
-            var name = w.Get<Creature>(mine).Name;
-            if (!held.IsNull && sim.Defs.AllDragonInteractions.Find(d => d.Kind == Defs.CareKind.Feed) is { } feed
-                && Bonding.Problem(sim, avatar, mine, feed, w.Get<Thing>(held).Def) == null)
-                return new(AvatarActionKind.FeedDragon, $"Feed {name} {w.Get<Thing>(held).Label}", cell, mine) { Item = held };
-            if (Bonding.Answering(sim, Bonding.Peek(sim, mine).Want) is { Kind: not (Defs.CareKind.Feed or Defs.CareKind.Gift) } answer
-                && Bonding.Problem(sim, avatar, mine, answer) == null)
-                return new(AvatarActionKind.AnswerDragon, $"{answer.PromptFor(name)} (it {Bonding.Describe(Bonding.Peek(sim, mine).Want)})", cell, mine);
-            return new(AvatarActionKind.TendDragon, $"Tend {name}", cell, mine);
-        }
-        // Setting out works from anywhere near the wagon, whatever cell F points at.
-        if (Scenarios.Prologue.WagonToHitch(sim, avatar) is { IsNull: false } wagon)
-            return new(AvatarActionKind.Depart, "Hitch the wagon and set out", w.Get<Thing>(wagon).Cell, wagon);
 
         // A fire comes before anything else there: you can't chop a burning tree or pick up a burning stack.
         if (map.Fire[i] > 0 && !sim.Reservations.IsTileReservedByOther(cell, avatar))
@@ -428,7 +360,7 @@ public sealed class AvatarSystem : ISimSystem
                 };
                 return new(AvatarActionKind.Harvest, $"{verb} {thing.Label}", cell, site);
             }
-            else if (thing.Def.Building is { IsBed: true, IsNest: false } && cell == here)
+            else if (thing.Def.Building is { IsBed: true } && cell == here)
             {
                 return new(AvatarActionKind.Sleep, $"Sleep in {thing.Label}", cell, site);
             }
@@ -487,10 +419,10 @@ public sealed class AvatarSystem : ISimSystem
 
     /// <summary>
     /// A building that can come apart now (anything buildable, or with a salvage like an empty
-    /// wagon), and not while the story still needs it: in the prologue the wagon is how you leave.
+    /// wagon).
     /// </summary>
     public static bool CanDismantle(Simulation sim, Entity avatar, Entity e) =>
-        !e.IsNull && !sim.World.Has<Quest>(avatar) && !sim.World.Has<Construction>(e)
+        !e.IsNull && !sim.World.Has<Construction>(e)
         && sim.World.Get<Thing>(e).Def.Building is { Deconstructable: true } && sim.CanDeconstruct(e, out _)
         && !sim.Reservations.IsReservedByOther(e, avatar);
 
@@ -630,39 +562,8 @@ public sealed class AvatarSystem : ISimSystem
                 sim.PlaceItemNear(carrying.Item, action.Cell);
                 carrying.Item = Entity.Null;
                 break;
-            case AvatarActionKind.Ride:
-                if (RidingSystem.CanClimbOn(sim, avatar, action.Target))
-                    RidingSystem.MountUp(sim, avatar, action.Target);
-                break;
-            case AvatarActionKind.Overpower:
-                Scenarios.EscapeCamp.Overpower(sim, avatar, action.Target);
-                break;
-            case AvatarActionKind.Unchain:
-                Scenarios.EscapeCamp.Unchain(sim, avatar, action.Target);
-                break;
-            case AvatarActionKind.Talk when w.Has<StoryNpc>(action.Target):
-                Scenarios.EnchantedForest.StrikeBargain(sim, avatar, action.Target);
-                break;
-            case AvatarActionKind.Talk:
-                Scenarios.Prologue.Entrust(sim, avatar, action.Target);
-                break;
             case AvatarActionKind.Store:
                 carrying.Item = sim.Store(action.Target, carrying.Item);
-                break;
-            case AvatarActionKind.Gift:
-                if (carrying.Item == action.Item && w.IsAlive(action.Target))
-                {
-                    carrying.Item = Entity.Null;
-                    Hoard.Give(sim, avatar, action.Target, action.Item);
-                }
-                break;
-            case AvatarActionKind.FeedDragon:
-                if (carrying.Item == action.Item && w.IsAlive(action.Target) && w.IsAlive(action.Item))
-                    carrying.Item = Bonding.HandFeed(sim, avatar, action.Target, action.Item);
-                break;
-            case AvatarActionKind.AnswerDragon:
-                if (Bonding.Answering(sim, Bonding.Peek(sim, action.Target).Want) is { } answer)
-                    AiSystem.Order(sim, avatar, new DragonCareJob(action.Target, answer));
                 break;
             case AvatarActionKind.Deliver:
             {

@@ -6,7 +6,6 @@
   "needs": [
     { "name": "Food", "label": "food", "urgentBelow": 0.25, "seekBelow": 0.5, "damagePerDayAtZero": 0.35 },
     { "name": "Rest", "label": "rest", "urgentBelow": 0.15, "seekBelow": 0.3 },
-    { "name": "Bond", "label": "bond", "description": "Attention from the dragon's keeper.", "urgentBelow": 0.3, "seekBelow": 0.6 }
   ],
 
   // Blocks fill map cells. Air is the only non-solid one; the rest are ground you stand on top of.
@@ -78,12 +77,6 @@
       "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.28], "top": "props/meat_top", "side": "props/basket" } ] },
     { "name": "RawFish", "label": "raw fish", "category": "Item", "mass": 0.3, "sprite": "items/fish", "stackLimit": 30, "nutrition": 0.15, "isMeat": true, "rotDays": 2.5, "flammability": 0.3, "maxHp": 15,
       "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.28], "top": "props/fish_top", "side": "props/basket" } ] },
-    {
-      "name": "DragonEgg", "label": "dragon egg", "category": "Item", "mass": 5, "bulky": true, "sprite": "creatures/dragon_egg",
-      "description": "Warm to the touch. It needs fierce heat to hatch.",
-      "maxHp": 100, "flammability": 0,
-      "egg": { "hatchesInto": "Dragon", "incubationDays": 1.5, "idealTempMin": 28, "idealTempMax": 80, "damagePerDay": 0.35 }
-    },
 
     // ---- Buildings ----
     {
@@ -122,22 +115,7 @@
       }
     },
     {
-      "name": "Bed", "category": "Building", "sprite": "buildings/bed", "size": [1, 2],
-      // One cell wide, two long: the headboard in the cell it's placed in, the foot in front of it.
-      "description": "Somewhere warm and soft to sleep. Two cells long; R turns it while placing, and the headboard end is the head.",
-      "model": [
-        { "min": [0.08, 0.04, 0], "max": [0.92, 1.94, 0.22], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.12, 0.1, 0.22], "max": [0.88, 1.9, 0.34], "top": "props/blanket", "side": "props/linen" },
-        { "min": [0.2, 0.14, 0.34], "max": [0.8, 0.44, 0.42], "top": "props/pillow", "side": "props/pillow" },
-        { "min": [0.04, 0.0, 0], "max": [0.96, 0.1, 0.66], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.04, 1.9, 0], "max": [0.96, 2.0, 0.38], "top": "props/planks", "side": "props/planks" }
-      ],
-      "maxHp": 100, "flammability": 1.0,
-      "building": { "isBed": true, "work": 150, "cost": [ { "def": "Wood", "count": 10 } ] }
-    },
-    {
-      "name": "Nest", "label": "dragon nest", "category": "Building", "sprite": "buildings/nest", "footprint": 3,
-      // 3x3 cells round the cell it's placed in (a grown dragon is four cells long); the model reaches out over them.
+      "name": "Pyre", "label": "funeral pyre", "category": "Building", "sprite": "buildings/nest", "footprint": 3,
       "model": [
         { "min": [-0.7, -0.7, 0],  "max": [1.7, 1.7, 0.06],  "top": "props/straw",  "side": "props/straw" },
         { "min": [-0.15, -0.1, 0.06],  "max": [1.15, 1.1, 0.1],  "top": "props/straw",  "side": "props/straw" },
@@ -158,9 +136,27 @@
         { "min": [-0.46, -0.46, 0.04],  "max": [-0.02, -0.02, 0.14],  "top": "props/log_side",  "side": "props/log_side",  "front": "props/log_end" },
         { "min": [1.02, -0.46, 0.04],  "max": [1.46, -0.02, 0.14],  "top": "props/log_side",  "side": "props/log_side",  "front": "props/log_end" }
       ],
-      "description": "A wide ring of stones and boughs round a bed of straw, big enough for a grown dragon to curl up in. Takes up 3x3 cells.",
+      "description": "A wide ring of stones and boughs, built to burn the dead before they get up again.",
       "maxHp": 200, "flammability": 0,
-      "building": { "outdoor": true, "isNest": true, "isBed": true, "work": 100, "cost": [ { "def": "Stone", "count": 10 } ] }
+      "building": { "outdoor": true, "work": 100, "cost": [ { "def": "Stone", "count": 10 } ] }
+    },
+    {
+      "name": "Keg", "label": "keg of ale", "category": "Item", "mass": 30, "bulky": true, "sprite": "buildings/chest",
+      "description": "A full keg: it takes both arms to carry and won't go in a pack.", "maxHp": 60, "flammability": 0.3
+    },
+    {
+      "name": "Bed", "category": "Building", "sprite": "buildings/bed", "size": [1, 2],
+      // One cell wide, two long: the headboard in the cell it's placed in, the foot in front of it.
+      "description": "Somewhere warm and soft to sleep. Two cells long; R turns it while placing, and the headboard end is the head.",
+      "model": [
+        { "min": [0.08, 0.04, 0], "max": [0.92, 1.94, 0.22], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.12, 0.1, 0.22], "max": [0.88, 1.9, 0.34], "top": "props/blanket", "side": "props/linen" },
+        { "min": [0.2, 0.14, 0.34], "max": [0.8, 0.44, 0.42], "top": "props/pillow", "side": "props/pillow" },
+        { "min": [0.04, 0.0, 0], "max": [0.96, 0.1, 0.66], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.04, 1.9, 0], "max": [0.96, 2.0, 0.38], "top": "props/planks", "side": "props/planks" }
+      ],
+      "maxHp": 100, "flammability": 1.0,
+      "building": { "isBed": true, "work": 150, "cost": [ { "def": "Wood", "count": 10 } ] }
     },
 
     {
@@ -269,20 +265,19 @@
     {
       "name": "Dragon", "race": "Dragon", "body": "Dragon",
       // The breed (docs/plans/dragon-types.md): the lowest order is the default, which eggs hatch into.
-      "breed": { "label": "Hearth dragon", "order": 0, "description": "The vale's own: quick, nimble on the wing, an easy keeper." },
       "moveSpeed": 3.5, "maxHp": 150, "eatsPlants": false, "foodPoisonFactor": 0.15,
       // Work they'll take on (Work tab), by stage: juveniles breathe, adults also haul and fell trees.
       // Breath work is filtered by element (elements in dragons.json): fire burns and stokes, ice chills...
       "work": [],
       "comfortTempMin": 25, "comfortTempMax": 90, "safeTempMin": 8, "safeTempMax": 400,
-      "needs": [ { "need": "Food", "decayPerDay": 1.4 }, { "need": "Rest", "decayPerDay": 1.0 }, { "need": "Bond", "decayPerDay": 0.8 } ],
+      "needs": [ { "need": "Food", "decayPerDay": 1.4 }, { "need": "Rest", "decayPerDay": 1.0 }, ],
       "lifeStages": [
         { "name": "Hatchling", "label": "hatchling", "minAgeDays": 0, "sprite": "creatures/dragon_hatchling", "size": 0.8, "speedFactor": 0.8, "hungerFactor": 1.0, "fireSneezePerHour": 0.06, "bodyHeat": 8, "armor": 0.1,
           // Needs the most care (dragons.json): misses its keeper twice as fast, asks often, eats from a hand or a trough.
-          "bondDecayFactor": 2, "wantEveryHours": 3, "handFed": true,
+          "wantEveryHours": 3, "handFed": true,
           "attacks": [ { "name": "Bite", "label": "bite", "verb": "nips", "accuracy": 0.7, "damageMin": 3, "damageMax": 6, "damageType": "Bite" } ] },
         { "name": "Juvenile", "label": "juvenile", "minAgeDays": 4, "sprite": "creatures/dragon_juvenile", "size": 1.3, "speedFactor": 1.1, "hungerFactor": 1.5, "fireSneezePerHour": 0.02, "bodyHeat": 15, "armor": 0.25, "wantEveryHours": 5, "canFly": true, "flySpeedFactor": 2.2, "flyAltitude": 2,
-          "breathRange": 7, "breathCone": 22, "breathRays": 10, "work": [ "Burn", "Stoke", "Chill", "Quarry", "Blight", "Nurture" ],
+          "breathRange": 7, "breathCone": 22, "breathRays": 10, "work": [  ],
           "attacks": [
             { "name": "Bite", "label": "bite", "verb": "bites", "accuracy": 0.75, "damageMin": 10, "damageMax": 16, "damageType": "Bite", "penetration": 0.3 },
             { "name": "Claws", "label": "claws", "verb": "claws at", "accuracy": 0.8, "damageMin": 6, "damageMax": 11, "damageType": "Cut", "penetration": 0.15 }
@@ -290,40 +285,12 @@
         { "name": "Adult", "label": "adult", "minAgeDays": 12, "sprite": "creatures/dragon_adult", "size": 2.2, "speedFactor": 1.3, "hungerFactor": 2.5, "bodyHeat": 25, "armor": 0.5, "wantEveryHours": 12,
           // Hardier than the young: a night out in a nest a few tiles from a fire is cold, not dangerous.
           "comfortTempMin": 15, "safeTempMin": 0, "canBeRidden": true, "canFly": true, "flySpeedFactor": 2.8, "flyAltitude": 3, "soarChance": 0.35, "huntsAlone": true,
-          "breathRange": 11, "breathCone": 26, "breathRays": 16, "work": [ "Burn", "Stoke", "Chill", "Quarry", "Blight", "Nurture", "Haul", "Chop" ], "carryStacks": 4,
+          "breathRange": 11, "breathCone": 26, "breathRays": 16, "work": [ "Haul", "Chop" ], "carryStacks": 4,
           "attacks": [
             { "name": "Bite", "label": "bite", "verb": "bites", "accuracy": 0.8, "damageMin": 20, "damageMax": 30, "damageType": "Bite", "penetration": 0.5 },
             { "name": "Claws", "label": "claws", "verb": "rakes", "accuracy": 0.85, "damageMin": 14, "damageMax": 22, "damageType": "Cut", "penetration": 0.35 }
           ] }
       ]
     },
-    {
-      // The Norse breed: heavy-boned, long-necked and plated like a longship. Slower and hungrier
-      // than the Hearth dragon, but much harder to bring down (more blood, thicker scales).
-      "name": "NorseDragon", "label": "dragon", "race": "Dragon", "body": "Dragon",
-      "breed": { "label": "Norse dragon", "order": 1, "description": "Heavy-boned and long-necked: slower on the ground and in the air, hungrier, but very hard to bring down." },
-      "moveSpeed": 3.0, "maxHp": 200, "timeUnits": 54, "eatsPlants": false, "foodPoisonFactor": 0.15,
-      "work": [],
-      "comfortTempMin": 22, "comfortTempMax": 90, "safeTempMin": 5, "safeTempMax": 400,
-      "needs": [ { "need": "Food", "decayPerDay": 1.4 }, { "need": "Rest", "decayPerDay": 1.1 }, { "need": "Bond", "decayPerDay": 0.7 } ],
-      "lifeStages": [
-        { "name": "Hatchling", "label": "hatchling", "minAgeDays": 0, "sprite": "creatures/dragon_norse_hatchling", "size": 0.9, "speedFactor": 0.75, "hungerFactor": 1.1, "fireSneezePerHour": 0.05, "bodyHeat": 9, "armor": 0.15,
-          "bondDecayFactor": 2, "wantEveryHours": 3, "handFed": true,
-          "attacks": [ { "name": "Bite", "label": "bite", "verb": "nips", "accuracy": 0.7, "damageMin": 3, "damageMax": 7, "damageType": "Bite" } ] },
-        { "name": "Juvenile", "label": "juvenile", "minAgeDays": 5, "sprite": "creatures/dragon_norse_juvenile", "size": 1.5, "speedFactor": 1.0, "hungerFactor": 1.7, "fireSneezePerHour": 0.02, "bodyHeat": 17, "armor": 0.3, "wantEveryHours": 5, "canFly": true, "flySpeedFactor": 2.0, "flyAltitude": 2,
-          "breathRange": 7, "breathCone": 20, "breathRays": 10, "work": [ "Burn", "Stoke", "Chill", "Quarry", "Blight", "Nurture" ],
-          "attacks": [
-            { "name": "Bite", "label": "bite", "verb": "bites", "accuracy": 0.72, "damageMin": 12, "damageMax": 18, "damageType": "Bite", "penetration": 0.35 },
-            { "name": "Claws", "label": "claws", "verb": "claws at", "accuracy": 0.78, "damageMin": 7, "damageMax": 12, "damageType": "Cut", "penetration": 0.2 }
-          ] },
-        { "name": "Adult", "label": "adult", "minAgeDays": 14, "sprite": "creatures/dragon_norse_adult", "size": 2.6, "speedFactor": 1.2, "hungerFactor": 2.8, "bodyHeat": 28, "armor": 0.6, "wantEveryHours": 12,
-          "comfortTempMin": 12, "safeTempMin": -3, "canBeRidden": true, "canFly": true, "flySpeedFactor": 2.6, "flyAltitude": 3, "soarChance": 0.3, "huntsAlone": true,
-          "breathRange": 12, "breathCone": 22, "breathRays": 16, "work": [ "Burn", "Stoke", "Chill", "Quarry", "Blight", "Nurture", "Haul", "Chop" ], "carryStacks": 6,
-          "attacks": [
-            { "name": "Bite", "label": "bite", "verb": "bites", "accuracy": 0.78, "damageMin": 24, "damageMax": 34, "damageType": "Bite", "penetration": 0.55 },
-            { "name": "Claws", "label": "claws", "verb": "rakes", "accuracy": 0.82, "damageMin": 16, "damageMax": 25, "damageType": "Cut", "penetration": 0.4 }
-          ] }
-      ]
-    }
   ]
 }

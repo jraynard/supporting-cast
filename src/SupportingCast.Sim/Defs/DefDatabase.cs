@@ -25,15 +25,8 @@ public sealed class DefDatabase
     private readonly Dictionary<string, InteractionDef> _interactions = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, TraitDef> _traits = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, RecipeDef> _recipes = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, DialogueDef> _dialogues = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, TowerDef> _towers = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, TierDef> _tiers = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, ElementDef> _elements = new(StringComparer.OrdinalIgnoreCase);
-    private ElementDef[] _byElement = [];
     private readonly Dictionary<string, VeinDef> _veins = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, DragonInteractionDef> _dragonInteractions = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, TrustLevelDef> _trustLevels = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, TrickDef> _tricks = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, OutfitDef> _outfits = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, BuildingDef> _buildings = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, BuildingKitDef> _kits = new(StringComparer.OrdinalIgnoreCase);
@@ -51,17 +44,10 @@ public sealed class DefDatabase
     public List<InteractionDef> AllInteractions { get; } = [];
     public List<TraitDef> AllTraits { get; } = [];
     public List<RecipeDef> AllRecipes { get; } = [];
-    public List<DialogueDef> AllDialogues { get; } = [];
-    public List<TowerDef> AllTowers { get; } = [];
     public List<TierDef> AllTiers { get; } = [];
     public List<VeinDef> AllVeins { get; } = [];
-    public List<DragonInteractionDef> AllDragonInteractions { get; } = [];
-    public List<ElementDef> AllElements { get; } = [];
 
     /// <summary>Trust levels, lowest first (sorted by <see cref="TrustLevelDef.MinAffinity"/> at load).</summary>
-    public List<TrustLevelDef> TrustLevels { get; private set; } = [];
-    public List<TrustLevelDef> AllTrustLevels { get; } = [];
-    public List<TrickDef> AllTricks { get; } = [];
     public List<OutfitDef> AllOutfits { get; } = [];
 
     /// <summary>Preset buildings (data/defs/buildings.json), in def order: the build bar's order.</summary>
@@ -107,15 +93,9 @@ public sealed class DefDatabase
         public List<InteractionDef> Interactions { get; set; } = [];
         public List<TraitDef> Traits { get; set; } = [];
         public List<RecipeDef> Recipes { get; set; } = [];
-        public List<DialogueDef> Dialogues { get; set; } = [];
-        public List<TowerDef> Towers { get; set; } = [];
         public List<TierDef> Tiers { get; set; } = [];
         public List<VeinDef> Veins { get; set; } = [];
-        public List<DragonInteractionDef> DragonInteractions { get; set; } = [];
-        public List<TrustLevelDef> TrustLevels { get; set; } = [];
-        public List<TrickDef> Tricks { get; set; } = [];
         public List<OutfitDef> Outfits { get; set; } = [];
-        public List<ElementDef> Elements { get; set; } = [];
         public List<BuildingDef> Buildings { get; set; } = [];
         public List<BuildingKitDef> Kits { get; set; } = [];
     }
@@ -167,15 +147,9 @@ public sealed class DefDatabase
         AddAll(file.Interactions, _interactions, AllInteractions, source);
         AddAll(file.Traits, _traits, AllTraits, source);
         AddAll(file.Recipes, _recipes, AllRecipes, source);
-        AddAll(file.Dialogues, _dialogues, AllDialogues, source);
-        AddAll(file.Towers, _towers, AllTowers, source);
         AddAll(file.Tiers, _tiers, AllTiers, source);
         AddAll(file.Veins, _veins, AllVeins, source);
-        AddAll(file.DragonInteractions, _dragonInteractions, AllDragonInteractions, source);
-        AddAll(file.TrustLevels, _trustLevels, AllTrustLevels, source);
-        AddAll(file.Tricks, _tricks, AllTricks, source);
         AddAll(file.Outfits, _outfits, AllOutfits, source);
-        AddAll(file.Elements, _elements, AllElements, source);
         AddAll(file.Buildings, _buildings, AllBuildings, source);
         AddAll(file.Kits, _kits, AllKits, source);
     }
@@ -221,21 +195,10 @@ public sealed class DefDatabase
         foreach (var d in AllInteractions) d.Resolve(this);
         foreach (var d in AllTraits) d.Resolve(this);
         foreach (var d in AllRecipes) d.Resolve(this); // after things: stations collect their recipes
-        foreach (var d in AllDialogues) d.Resolve(this);
-        foreach (var d in AllTowers) d.Resolve(this);
-        foreach (var d in AllDragonInteractions) d.Resolve(this);
         foreach (var d in AllOutfits) d.Resolve(this);
-        foreach (var d in AllElements) d.Resolve(this);
         foreach (var d in AllBuildings) d.Resolve(this); // after things and thoughts: their parts, furniture, feasts
         GeneratePhaseDefs();
         // Every element a dragon can have needs its def (one each).
-        var elements = Enum.GetValues<Components.DragonElement>();
-        _byElement = new ElementDef[elements.Length];
-        foreach (var d in AllElements)
-            _byElement[(int)d.Element] = d;
-        if (AllElements.Count > 0 && Array.FindIndex(_byElement, d => d == null) is var missing and >= 0)
-            throw new Exception($"No element def for {elements[missing]}");
-        TrustLevels = AllTrustLevels.OrderBy(t => t.MinAffinity).ToList();
         Thoughts = KnownThoughts.Resolve(_thoughts);
         foreach (var r in AllRecipes)
         {
@@ -363,13 +326,6 @@ public sealed class DefDatabase
     }
 
     public TierDef Tier(string name) => Lookup(_tiers, name);
-    public DragonInteractionDef DragonInteraction(string name) => Lookup(_dragonInteractions, name);
-
-    /// <summary>What a dragon of <paramref name="element"/> breathes (data/defs/dragons.json "elements").</summary>
-    public ElementDef Element(Components.DragonElement element) =>
-        (uint)element < (uint)_byElement.Length && _byElement[(int)element] is { } d ? d : throw new KeyNotFoundException($"No element def for {element}");
-    public bool TryDragonInteraction(string name, out DragonInteractionDef def) => _dragonInteractions.TryGetValue(name, out def!);
-    public TrickDef Trick(string name) => Lookup(_tricks, name);
 
     public BlockDef Block(string name) => Lookup(_blocks, name);
     public ThingDef Thing(string name) => Lookup(_things, name);
@@ -383,8 +339,6 @@ public sealed class DefDatabase
     public InteractionDef Interaction(string name) => Lookup(_interactions, name);
     public TraitDef Trait(string name) => Lookup(_traits, name);
     public RecipeDef Recipe(string name) => Lookup(_recipes, name);
-    public DialogueDef Dialogue(string name) => Lookup(_dialogues, name);
-    public TowerDef Tower(string name) => Lookup(_towers, name);
     public OutfitDef Outfit(string name) => Lookup(_outfits, name);
     public BuildingDef Building(string name) => Lookup(_buildings, name);
     public BuildingKitDef Kit(string name) => Lookup(_kits, name);

@@ -36,19 +36,6 @@ public class AppearanceTests
     }
 
     [Fact]
-    public void AJoinerKeepsTheirModelButNotABadName()
-    {
-        var sim = Simulation.CreateStandard(LoadDefs(), 96, 96, 51, Maps.MapGenerator.RecommendedDepth);
-        AdventureStart.PactSite(sim, new Hero("Arin", null, null, "Vesper", null));
-        var bea = Guid.NewGuid();
-        var cat = Guid.NewGuid();
-        sim.ApplyNow(new CreateCharacterCommand(bea, "Bea", new Appearance { Model = "wanderer3d" }, []));
-        sim.ApplyNow(new CreateCharacterCommand(cat, "Cat", new Appearance { Model = "../../secrets" }, []));
-        Assert.Equal("wanderer3d", sim.World.Get<Appearance>(Players.CharacterOf(sim, bea)).Model);
-        Assert.Null(sim.World.Get<Appearance>(Players.CharacterOf(sim, cat)).Model);
-    }
-
-    [Fact]
     public void TheWandererIsDrawnNotAModelForNow() =>
         Assert.Null(LoadDefs().Outfit("Wanderer").Model);   // the 3D try is parked (art/3d, docs/ART.md); presets are drawn
 

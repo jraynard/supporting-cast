@@ -229,43 +229,6 @@ public class CraftingProgressionTests
         Assert.True(sim.World.Get<Creature>(worker).Hp >= sim.World.Get<Creature>(worker).Def.MaxHp - 0.01f);
     }
 
-    [Fact]
-    public void ADragonStokesTheForgeToIronHeat()
-    {
-        float Run(bool withDragon)
-        {
-            var sim = Warm();
-            var forge = Station(sim, "Forge", C(20, 20));
-            sim.World.Get<Fueled>(forge).Fuel = 20;
-            sim.ApplyNow(new AddBillCommand(forge, sim.Defs.Recipe("SmeltIron"), BillMode.Count, 1));
-            if (withDragon)
-            {
-                var d = sim.SpawnCreature(sim.Defs.Creature("Dragon"), "Ember", C(14, 20), ageDays: 6);
-                sim.World.Get<Dragon>(d).Affinity = 2f;
-                var work = sim.World.Get<Mind>(d).WorkPriority;
-                Array.Fill(work, 0);
-                work[(int)WorkType.Stoke] = 1;
-            }
-            for (var t = 0; t < SimClock.HoursToTicks(12); t += 60)
-            {
-                foreach (var e in sim.World.Query<Needs>())
-                    Array.Fill(sim.World.Get<Needs>(e).Values, 1f);
-                sim.TickMany(60);
-                if (sim.TemperatureAt(C(20, 20)) >= 1100)
-                {
-                    if (withDragon)
-                        Assert.True(sim.World.Has<Stoked>(forge));
-                    return (float)sim.Clock.Tick / SimClock.TicksPerHour;
-                }
-            }
-            return float.PositiveInfinity;
-        }
-        var alone = Run(false);
-        var stoked = Run(true);
-        Assert.True(stoked < 2f, $"a dragon got it to 1100°C in {stoked:F1} h");
-        Assert.True(stoked * 2 < alone, $"stoked {stoked:F1} h, charcoal alone {alone:F1} h");
-    }
-
     // ---------------- Quality, tools, mending ----------------
 
     [Fact]
@@ -373,16 +336,6 @@ public class CraftingProgressionTests
     }
 
     // ---------------- Scales and the map ----------------
-
-    [Fact]
-    public void GrowingDragonsShedScales()
-    {
-        var sim = Warm();
-        var d = sim.SpawnCreature(sim.Defs.Creature("Dragon"), "Ember", C(10, 10), ageDays: 3.9f);
-        TickFed(sim, SimClock.HoursToTicks(4));
-        Assert.Equal("Juvenile", sim.World.Get<Creature>(d).Stage(sim.Clock.Tick).Name);
-        Assert.True(Count(sim, "DragonScale") >= 3);
-    }
 
     [Fact]
     public void GeneratedMapsHaveOreAndClayAwayFromTheLanding()

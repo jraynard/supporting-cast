@@ -43,7 +43,7 @@ public static class Requests
     {
         var mood = MoodRules.MoodOf(sim, companion);
         var opinion = MoodRules.Opinion(sim, companion, from);
-        var chance = Math.Clamp(0.85f + (mood - 0.5f) * MoodWeight + opinion / 100f * OpinionWeight + (kind == RequestKind.GuardEgg ? 0.1f : 0f), 0.05f, 1f);
+        var chance = Math.Clamp(0.85f + (mood - 0.5f) * MoodWeight + opinion / 100f * OpinionWeight + (kind == RequestKind.Guard ? 0.1f : 0f), 0.05f, 1f);
         var moodDrag = Math.Max(0f, 0.5f - mood) * MoodWeight;
         var opinionDrag = Math.Max(0f, -opinion / 100f * OpinionWeight);
         var reason = moodDrag > 0.05f && moodDrag >= opinionDrag ? $"they're {MoodRules.Describe(mood)}"
@@ -59,31 +59,6 @@ public static class Requests
         sim.World.TryGet<Mood>(companion, out var mood)
         && mood.Memories.Exists(m => m.Def == sim.Defs.Thoughts.TurnedYouDown && m.Other == from);
 
-    /// <summary>What a guard should watch over for <paramref name="from"/>: the egg, or once hatched, their dragon.</summary>
-    public static Entity GuardTarget(Simulation sim, Entity from)
-    {
-        var w = sim.World;
-        var held = w.IsAlive(from) ? w.Get<Carrying>(from).Item : Entity.Null;
-        if (!held.IsNull && w.Has<Egg>(held))
-            return held;
-        // Their own egg first, then one nobody owns; never another player's.
-        var unowned = Entity.Null;
-        foreach (var egg in w.Query<Egg>())
-        {
-            var keeper = w.Get<Egg>(egg).Keeper;
-            if (keeper == from)
-                return egg;
-            if (unowned.IsNull && !w.IsAlive(keeper))
-                unowned = egg;
-        }
-        if (!unowned.IsNull)
-            return unowned;
-        foreach (var d in w.Query<Dragon>())
-            if (w.Get<Dragon>(d).Keeper == from && !w.Get<Creature>(d).Dead)
-                return d;
-        return Entity.Null;
-    }
-
     /// <summary>The job a standing request calls for now, or null (none, or nothing left to do it for).</summary>
     public static Job? JobFor(Simulation sim, Entity pawn)
     {
@@ -94,8 +69,7 @@ public static class Requests
         var target = req.Target;
         if (!Alive(sim, target))
         {
-            // The egg hatched (or was lost): guard the dragon instead, if there is one.
-            target = req.Kind == RequestKind.GuardEgg ? GuardTarget(sim, req.From) : Entity.Null;
+            target = Entity.Null;
             if (target.IsNull)
             {
                 w.Remove<Request>(pawn);
@@ -138,7 +112,7 @@ public sealed record RequestCommand(Entity From, Entity Companion, RequestKind? 
         }
         else
         {
-            var target = kind == RequestKind.Follow ? From : Requests.GuardTarget(sim, From);
+            var target = From;
             if (target.IsNull)
                 return;
             if (Requests.RecentlyRefused(sim, From, Companion))
@@ -158,7 +132,7 @@ public sealed record RequestCommand(Entity From, Entity Companion, RequestKind? 
             w.Add(Companion, new Request { Kind = kind, Target = target, From = From });
             sim.Messages.Add(MessageKind.Info, kind == RequestKind.Follow
                 ? $"{name} will follow {w.Get<Creature>(From).Name}."
-                : $"{name} will stand guard over the {(w.Has<Egg>(target) ? "egg" : w.Get<Creature>(target).Name)}.", at);
+                : $"{name} will stand guard over {w.Get<Creature>(target).Name}.", at);
         }
         // Drop whatever they were doing, so the request takes effect now.
         AiSystem.EndJob(sim, Companion, w.Get<Mind>(Companion), false);
@@ -198,7 +172,7 @@ public sealed class GuardJob(Entity ward, int ticks) : Job
 
     protected override IEnumerable<JobStatus> Run()
     {
-        Report = Sim.World.Has<Egg>(ward) ? "Guarding the egg" : $"Guarding {Get<Creature>(ward).Name}";
+        Report = $"Guarding {Get<Creature>(ward).Name}";
         for (var t = 0; t < ticks; t += 30)
         {
             if (!Alive(ward))

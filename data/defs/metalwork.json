@@ -172,11 +172,6 @@
                    "encumbrance": 0.15, "worn": "apparel/steel_plate" },
       "description": "The best a smith can make without dragonfire. Heavy: every step in a fight costs more."
     },
-    {
-      "name": "DragonBlade", "held": "longsword", "label": "dragon blade", "category": "Item", "mass": 2, "sprite": "items/dragon_blade", "maxHp": 260, "tier": "Dragonforged",
-      "weapon": { "verb": "cleaves", "accuracy": 0.8, "damageMin": 16, "damageMax": 26, "damageType": "Cut", "penetration": 0.38, "glance": 0.05 },
-      "description": "A longsword folded with shed scale and an ember crystal in dragonfire. It runs warm, and glows when swung."
-    }
   ],
 
   "recipes": [
@@ -258,11 +253,6 @@
       "tools": [ "Hammer" ], "toolTier": "Bronze", "unlock": { "discover": "handle:GoldBar" },
       "ingredients": [ { "def": "GoldBar", "count": 2 } ], "products": [ { "def": "GoldTorc", "count": 1 } ] },
 
-    { "name": "ForgeDragonBlade", "label": "dragon blade", "station": "Forge", "skill": "Crafting", "minSkill": 8, "work": 3600, "minTemp": 1300,
-      "tools": [ "Hammer", "Tongs" ], "toolTier": "Iron", "unlock": { "discover": "handle:EmberCrystal" },
-      "description": "Fold a longsword with shed scale and an ember crystal, in a forge your dragon has stoked.",
-      "ingredients": [ { "def": "Longsword", "count": 1 }, { "def": "SteelBar", "count": 2 }, { "def": "DragonScale", "count": 2 }, { "def": "EmberCrystal", "count": 1 } ],
-      "products": [ { "def": "DragonBlade", "count": 1 } ] },
 
     { "name": "SmeltSteel", "label": "steel bars", "station": "Forge", "skill": "Crafting", "minSkill": 5, "work": 1400, "minTemp": 1200,
       "helpedBy": [ "Tongs" ], "unlock": { "discover": "built:Bellows" },

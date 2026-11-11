@@ -43,18 +43,6 @@ public class AnimationTests
     }
 
     [Fact]
-    public void ARiderSitsAstrideUnlessDownedOrAsleep()
-    {
-        AnimInputs Rider(bool downed = false, bool asleep = false, bool airborne = false) =>
-            new(false, downed, asleep, false, false, airborne, 0, false, false, false, false, Riding: true);
-        Assert.Equal("ride", CreatureAnimator.ChooseTag(Rider()));
-        Assert.Equal("ride", CreatureAnimator.ChooseTag(Rider(airborne: true)));
-        Assert.Equal("downed", CreatureAnimator.ChooseTag(Rider(downed: true)));
-        Assert.Equal("sleep", CreatureAnimator.ChooseTag(Rider(asleep: true)));
-        Assert.Equal("idle", CreatureAnimator.Fallback("ride")); // sheets without it (3D models) sit idle
-    }
-
-    [Fact]
     public void PeopleSheetsHaveTheRidePoseInEveryView()
     {
         foreach (var body in new[] { "male", "female" })
@@ -64,22 +52,6 @@ public class AnimationTests
             foreach (var view in new[] { "ride", "ride_down", "ride_downside", "ride_upside", "ride_up" })
                 Assert.Contains($"\"{view}\"", tags);
         }
-    }
-
-    [Fact]
-    public void AScratchShowsOnTheDragonForAMoment()
-    {
-        var sim = SupportingCast.Sim.Simulation.CreateStandard(DefDatabase.LoadDirectory(DevPaths.Defs!), 20, 20, 1);
-        var keeper = sim.SpawnCreature(sim.Defs.Creature("Human"), "Arin", new int3(10, 10, 1), ageDays: 25 * 365);
-        var dragon = sim.SpawnCreature(sim.Defs.Creature("Dragon"), "Ember", new int3(11, 10, 1), ageDays: 2);
-        Sim.Systems.EggSystem.AssignKeeper(sim, dragon, keeper);
-        Assert.Null(CreatureAnimator.CareTag(sim, dragon));
-        Sim.Systems.Bonding.Interact(sim, keeper, dragon, sim.Defs.DragonInteraction("Pet"));
-        Assert.Equal("pet", CreatureAnimator.CareTag(sim, dragon));
-        sim.TickMany(200);
-        Assert.Null(CreatureAnimator.CareTag(sim, dragon));
-        Sim.Systems.Bonding.Interact(sim, keeper, dragon, sim.Defs.DragonInteraction("Groom"));
-        Assert.Equal("groom", CreatureAnimator.CareTag(sim, dragon));
     }
 
     [Fact]

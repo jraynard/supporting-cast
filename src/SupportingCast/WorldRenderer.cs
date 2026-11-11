@@ -61,7 +61,6 @@ public sealed class WorldRenderer(TextureAtlas atlas)
     private readonly CreatureAnimator _anim = new();
     private readonly Particles _particles = new();
     private long _lastSpeechTick = long.MaxValue;
-    private long _lastCareTick = long.MaxValue;
     private readonly MaterialArt _materials = new(atlas);
 
     /// <summary>The sprite and tint a thing is drawn with, given what it's made of.</summary>
@@ -185,9 +184,6 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         if (c.Def.Race == Race.Human && HumanLook.Sheet(atlas, HumanLook.Of(sim, e)) is { } look)
             return look;
         var name = SpriteNameOf(sim, e);
-        // Dragons likewise: the base layer (outline and glow) under their tinted colours (DragonLooks).
-        if (c.Def.Race == Race.Dragon && DragonLooks.BaseSheet(atlas, name) is { } dragonBase)
-            return dragonBase;
         return atlas.TryGetSheet(name, out var sheet) ? sheet : null;
     }
 
@@ -282,8 +278,8 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         foreach (var e in w.Each<Creature>())
         {
             var p = w.Get<Position>(e);
-            if (!InView(p.Cell) || w.Has<Riding>(e))
-                continue; // riders are drawn in the saddle, with their mount
+            if (!InView(p.Cell))
+                continue;
             p.Pos = DrawPos(sim, e, p.Pos); // a copy: the sim's Position is untouched
             var c = w.Get<Creature>(e);
             var stage = c.Stage(sim.Clock.Tick);
@@ -298,8 +294,6 @@ public sealed class WorldRenderer(TextureAtlas atlas)
                 Faction.Prisoner => Rgba.Pack(1f, 0.88f, 0.6f),
                 _ => Rgba.White,
             };
-            if (w.TryGet<Afflictions>(e, out var hurt))
-                tint = AfflictedTint(sim, hurt, tint);
             if (SheetOf(sim, e) is { } sheet)
             {
                 DrawAnimated(sim, e, sheet, p, tint, level);
@@ -363,10 +357,8 @@ public sealed class WorldRenderer(TextureAtlas atlas)
 
         DrawSmoke(sim, InView, time);
         DrawBreaths(sim, time);
-        DrawClouds(sim, InView, time);
         DrawShots(sim, time);
         EmitSpeech(sim, InView);
-        EmitCare(sim, InView);
         _particles.Update(animDt);
         _particles.Draw(this, cut);
 
@@ -498,17 +490,6 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             if (HumanLook.LayerFrame(sheet, layer, pose.Frame) is { } lf)
                 BillboardFrame(layer, lf, feet - _cam.Forward * (++nudge * LayerStep), pose.Facing, pose.Roll, layerColor, level, aboutCenter: airborne);
 
-        // A rider sits at the sheet's saddle point (or mid-back), drawn just in front of the mount.
-        if (w.TryGet<Mount>(e, out var mount) && w.IsAlive(mount.Rider) && SheetOf(sim, mount.Rider) is { } riderSheet)
-        {
-            var saddle = sheet.Points.TryGetValue("saddle", out var sp)
-                ? feet + _cam.Right * ((sp.X - sheet.Pivot.X) / (PixelsPerCell * sheet.Density) * pose.Facing) + _cam.Up * ((sheet.Pivot.Y - sp.Y) / (PixelsPerCell * sheet.Density))
-                : feet + _cam.Up * (sheet.FrameSize.Y * 0.5f / (PixelsPerCell * sheet.Density));
-            var seat = w.Get<Position>(mount.Rider);
-            seat.Pos = saddle - _cam.Forward * 0.25f;
-            DrawAnimated(sim, mount.Rider, riderSheet, seat, Rgba.White, level, seated: true);
-        }
-
         if (sheet.Points.TryGetValue("mouth", out var m))
         {
             var mouth = feet + _cam.Right * ((m.X - sheet.Pivot.X) / (PixelsPerCell * sheet.Density) * pose.Facing) + _cam.Up * ((sheet.Pivot.Y - m.Y) / (PixelsPerCell * sheet.Density));
@@ -517,7 +498,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             {
                 var pulse = 0.5f + 0.5f * MathF.Sin(_anim.Clock * 9f);
                 var glow = (0.18f + 0.12f * pulse) * sheet.FrameSize.X / 96f + 0.08f;
-                var flame = FlameOf(Sim.Systems.Dragons.ElementOf(sim, e));
+                var flame = FireColor;
                 var alpha = 0.55f + 0.35f * pulse;
                 Billboard(S("fx/fire"), mouth - WorldScale.Rise(glow * 0.5f), glow, glow, Rgba.Pack(1f, 0.8f, 0.5f, alpha), level | Quad.Unlit | Quad.Glow, translucent: true);
                 if (CoreSprite(0) is { } core)
@@ -582,22 +563,8 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         sim.World.Get<Creature>(e).Def.Race switch
         {
             Race.Human => HumanLook.Layers(atlas, HumanLook.Of(sim, e), color, HumanLook.WornOf(sim, e), HeldOf(sim, e)),
-            Race.Dragon => WithSaddle(sim, e, DragonLooks.Layers(atlas, SpriteNameOf(sim, e), DragonLooks.Of(sim, e), color), color),
             _ => [],
         };
-
-    /// <summary>A dragon's saddle (<see cref="Sim.Systems.Saddles"/>) over its own layers: <c>apparel/&lt;worn&gt;_&lt;sheet&gt;</c>, if drawn for it.</summary>
-    private List<(SpriteSheet Sheet, uint Color)> WithSaddle(Simulation sim, Entity e, List<(SpriteSheet Sheet, uint Color)> layers, uint color)
-    {
-        if (Sim.Systems.Saddles.PropsOf(sim, e) is { } saddle)
-        {
-            var sheet = SpriteNameOf(sim, e);
-            var name = $"apparel/{saddle.Worn}_{sheet[(sheet.LastIndexOf('/') + 1)..]}";
-            if (atlas.TryGetSheet(name, out var s))
-                layers.Add((s, color));
-        }
-        return layers;
-    }
 
     /// <summary>
     /// What a person has in hand: the tool their job works with (the axe while felling, the pick
@@ -752,58 +719,6 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             _lastSpeechTick = Math.Max(_lastSpeechTick, sim.Social.Recent[^1].Tick);
     }
 
-    /// <summary>Hearts over a dragon for each act of care since the last frame (Bonding): more for more affinity, grey when it's had plenty of that.</summary>
-    private void EmitCare(Simulation sim, Func<int3, bool> inView)
-    {
-        var w = sim.World;
-        if (_lastCareTick == long.MaxValue)
-            _lastCareTick = sim.Clock.Tick;
-        foreach (var ev in sim.DragonCare.Recent)
-        {
-            if (ev.Tick <= _lastCareTick || !w.IsAlive(ev.Dragon) || !inView(sim.LocationOf(ev.Dragon)))
-                continue;
-            var count = ev.Novelty < 1f ? 1 : Math.Clamp(1 + (int)(ev.Affinity * 20f) + (ev.Answered ? 1 : 0), 1, 6);
-            var over = DrawPos(sim, ev.Dragon, w.Get<Position>(ev.Dragon).Pos) + WorldScale.Rise(VisualHeight(sim, ev.Dragon) * 0.8f);
-            _particles.Hearts(over, count, ev.Novelty < 1f);
-            if (CareLine(ev) is var (line, color))
-                Float(over + WorldScale.Rise(0.3f), line, color);
-        }
-        if (sim.DragonCare.Recent.Count > 0)
-            _lastCareTick = Math.Max(_lastCareTick, sim.DragonCare.Recent[^1].Tick);
-    }
-
-    /// <summary>
-    /// What the dragon made of some care, floated over it: delight at its favourite food or at
-    /// getting what it asked for, and less and less interest in the same thing again soon (the
-    /// novelty rule made visible). Plain, fresh care says nothing; the hearts do.
-    /// </summary>
-    private static (string Text, float4 Color)? CareLine(in Sim.Systems.CareEvent ev) => ev switch
-    {
-        { Favourite: true } => ("loves it!", new float4(1f, 0.82f, 0.3f, 1f)),
-        { Answered: true } => ("just what it wanted!", new float4(1f, 0.6f, 0.7f, 1f)),
-        { Novelty: <= 0.25f } => ("meh", new float4(0.7f, 0.7f, 0.7f, 1f)),
-        { Novelty: < 1f } => ("less keen", new float4(0.85f, 0.8f, 0.75f, 1f)),
-        _ => null,
-    };
-
-    /// <summary>A creature as dragon breath left it: frost-blue while chilled, sickly while poisoned, mossy while rooted.</summary>
-    private static uint AfflictedTint(Simulation sim, in Afflictions a, uint tint)
-    {
-        var now = sim.Clock.Tick;
-        var by = a.Chilled(now) ? Rgba.Pack(0.75f, 0.88f, 1f)
-            : a.Poisoned(now) ? Rgba.Pack(0.88f, 0.72f, 0.98f)
-            : a.Rooted(now) ? Rgba.Pack(0.8f, 1f, 0.72f)
-            : Rgba.White;
-        return by == Rgba.White ? tint : HumanLook.Multiply(tint, by);
-    }
-
-    /// <summary>An element's flame-core colour, as 0..1 components with alpha 1.</summary>
-    private static float4 FlameOf(DragonElement element)
-    {
-        var c = HumanLook.ToFloat3(DragonLooks.FlameColor(element));
-        return new float4(c.X, c.Y, c.Z, 1f);
-    }
-
     /// <summary>
     /// The core of a breath flame (<c>fx/breath_core</c>, white, same frames as <c>fx/breath</c>): drawn
     /// over the orange flame and tinted with the element colour, so the flame keeps its normal body and
@@ -844,18 +759,13 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             if (age > 1f)
                 continue;
             var alpha = 0.9f * (1f - age);
-            var flame = FlameOf(ev.Element);
-            var fiery = ev.Element == DragonElement.Fire;
-            // Not fire: the whole flame takes the element's colour, lightened so it still glows.
-            var body = fiery ? Rgba.Pack(1, 1, 1, alpha) : Rgba.Pack(0.35f + 0.65f * flame.X, 0.35f + 0.65f * flame.Y, 0.35f + 0.65f * flame.Z, alpha);
+            var flame = FireColor;
+            var body = Rgba.Pack(1, 1, 1, alpha);
             var mouth = !ev.Source.IsNull && _anim.TryGetMouth(ev.Source, out var drawn) ? drawn : ev.Mouth;
             var reach = Math.Min(1f, 0.15f + age * 5f);
-            if (first && ev.Element is DragonElement.Fire or DragonElement.Lightning)
+            if (first)
                 foreach (var end in ev.RayEnds)
                     _particles.Embers(end, 3);
-            else if (first)
-                foreach (var end in ev.RayEnds)
-                    _particles.Dust(end, 2, 0.4f, new float4(flame.X, flame.Y, flame.Z, 0.7f), 0.3f);
             for (var r = 0; r < ev.RayEnds.Count; r++)
             {
                 var d = ev.RayEnds[r] - mouth;
@@ -882,69 +792,17 @@ public sealed class WorldRenderer(TextureAtlas atlas)
                 if (reach >= 1f)
                 {
                     var end = ev.RayEnds[r];
-                    var tint = fiery ? Rgba.Pack(1f, 0.5f, 0.15f, 0.5f * (1f - age)) : Rgba.Pack(flame.X, flame.Y, flame.Z, 0.5f * (1f - age));
+                    var tint = Rgba.Pack(1f, 0.5f, 0.15f, 0.5f * (1f - age));
                     Decal(glow, new float3(end.X, end.Y, MathF.Floor(end.Z) + 0.04f), 1.1f, tint, Quad.Level((int)end.Z) | Quad.Unlit, translucent: true);
                 }
             }
-            DrawArcs(ev, flame, alpha, time, cut);
         }
     }
 
-    /// <summary>Lightning leaping from one it struck to the next: a jagged line of glowing sparks along each arc.</summary>
-    private void DrawArcs(Sim.Environment.BreathEvent ev, float4 color, float alpha, float time, int cut)
-    {
-        if (ev.Arcs.Count == 0 || CoreSprite((int)(time * 16f)) is not { } spark)
-            return;
-        var rise = new float3(0, 0, 0.5f);
-        for (var a = 0; a < ev.Arcs.Count; a++)
-        {
-            var (from, to) = (ev.Arcs[a].From + rise, ev.Arcs[a].To + rise);
-            var d = to - from;
-            var len = MathF.Sqrt(d.X * d.X + d.Y * d.Y + d.Z * d.Z);
-            var steps = Math.Max(2, (int)(len / 0.25f));
-            for (var k = 0; k <= steps; k++)
-            {
-                var t = k / (float)steps;
-                // A zigzag that crawls: offsets from a few sines of where along the arc and when.
-                var jag = 0.18f * MathF.Sin(t * 23f + time * 40f + a * 5f) * MathF.Sin(t * MathF.PI);
-                var p = from + d * t + new float3(-d.Y, d.X, 0) * (jag / Math.Max(len, 0.01f)) + new float3(0, 0, jag * 0.6f);
-                if (p.Z > cut + 1)
-                    continue;
-                Billboard(spark, p, 0.22f, 0.22f, Rgba.Pack(0.6f + 0.4f * color.X, 0.6f + 0.4f * color.Y, 0.6f + 0.4f * color.Z, alpha),
-                    Quad.Level((int)p.Z) | Quad.Unlit | Quad.Glow, translucent: true);
-            }
-        }
-    }
+    /// <summary>The heart of a dragon's flame.</summary>
+    private static readonly float4 FireColor = new(1f, 0x4A / 255f, 0x24 / 255f, 1f);
 
-    /// <summary>Poison clouds (<see cref="VenomCloud"/>): slow-turning puffs of the poison colour over the cells they cover, thinning as they go.</summary>
-    private void DrawClouds(Simulation sim, Func<int3, bool> inView, float time)
-    {
-        var w = sim.World;
-        if (w.Count<VenomCloud>() == 0)
-            return;
-        var puff = S("fx/smoke");
-        var color = FlameOf(DragonElement.Poison);
-        var cut = Math.Min(CutawayZ, sim.Map.Depth - 1);
-        foreach (var e in w.Each<VenomCloud>())
-        {
-            var v = w.Get<VenomCloud>(e);
-            if (v.Cell.Z > cut || !inView(v.Cell))
-                continue;
-            var left = Math.Clamp((v.Until - sim.Clock.Tick) / (float)SimClock.TicksPerHour, 0f, 1f);
-            var n = 3 + (int)(v.Radius * 4);
-            for (var k = 0; k < n; k++)
-            {
-                var a = k * 2.399f + time * (0.15f + 0.05f * (k % 3));
-                var r = v.Radius * (0.25f + 0.7f * ((k * 0.618f) % 1f));
-                var at = Position.CenterOf(v.Cell) + new float3(MathF.Cos(a) * r, MathF.Sin(a) * r, 0.25f + 0.2f * MathF.Sin(time * 0.8f + k));
-                var size = 0.9f + 0.3f * MathF.Sin(time * 0.6f + k * 1.7f);
-                Billboard(puff, at, size, size * 0.7f, Rgba.Pack(color.X * 0.8f, color.Y * 0.8f, color.Z * 0.8f, 0.35f * (0.4f + 0.6f * left)),
-                    Quad.Level(v.Cell.Z) | Quad.Unlit, translucent: true);
-            }
-        }
-    }
-
-    /// <summary>Attacks in combat: an arrow streaking to the target, then a flash (red for a wound, grey for a miss).</summary>
+    /// <summary>Attacks: an arrow streaking to the target, then a flash (red for a wound, grey for a miss).</summary>
     private void DrawShots(Simulation sim, float time)
     {
         var white = S(TextureAtlas.White);
@@ -1129,22 +987,6 @@ public sealed class WorldRenderer(TextureAtlas atlas)
                 tint = Rgba.Pack(0.7f, 0.7f, 0.7f);
         }
 
-        if (def.Egg is { } eggProps && w.TryGet<Egg>(e, out var egg) && atlas.TryGetSheet(def.Sprite, out var eggSheet))
-        {
-            // The egg shows how it's doing: glowing while warm enough, dull when cold, rocking as it
-            // nears hatching, then cracking. Each egg keeps its own phase.
-            var temp = sim.TemperatureAt(cell);
-            var tag = egg.Progress > 0.95f ? "crack"
-                : egg.Progress > 0.8f ? "wobble"
-                : temp >= eggProps.IdealTempMin && temp <= eggProps.IdealTempMax ? "idle"
-                : "cold";
-            if (CreatureAnimator.Resolve(eggSheet, tag, out _) is { } anim)
-            {
-                BillboardFrame(eggSheet, anim.Frames[anim.FrameAt(_anim.Clock + e.Index * 0.37f)], floor, 1, 0, tint, level);
-                return;
-            }
-        }
-
         if (def.Model is { } model)
         {
             // Item piles grow with the stack; furniture is in the chunk meshes (WorldMesher).
@@ -1153,7 +995,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         }
         else if (def.Category == ThingCategory.Item)
         {
-            var scale = (def.Egg != null ? 0.8f : 0.75f) * def.RenderSize;
+            var scale = 0.75f * def.RenderSize;
             Billboard(art, floor, scale, scale, tint, level);
             return;
         }
@@ -1203,8 +1045,6 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             return "ui/icon_doctor";
         if (mind.Asleep)
             return null; // the Zzz say it
-        if (w.TryGet<DragonCare>(e, out var care) && WantIcon(care.Want) is { } want)
-            return want; // what a dragon is asking its keeper for comes first
         var needs = w.Get<Needs>(e);
         foreach (var rate in c.Def.Needs)
             if (needs.Get(rate.NeedDef) < rate.NeedDef.UrgentBelow)
@@ -1221,28 +1061,15 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             Sim.Ai.HaulJob => "ui/icon_haul",
             Sim.Ai.EatJob => "ui/icon_eat",
             Sim.Ai.SleepJob => "ui/icon_sleep",
-            Sim.Ai.BreatheFireJob or Sim.Ai.FightFireJob => "ui/icon_burn",
+            Sim.Ai.FightFireJob => "ui/icon_burn",
             Sim.Ai.TendJob or Sim.Ai.RescueJob => "ui/icon_doctor",
             Sim.Ai.AssaultJob => "ui/icon_fight",
             Sim.Ai.HuntJob => "ui/icon_hunt",
             Sim.Ai.ButcherJob => "ui/icon_butcher",
             Sim.Ai.FishJob => "ui/icon_fish",
-            Sim.Ai.DragonCareJob or Sim.Ai.FeedDragonJob or Sim.Ai.FillTroughJob => "ui/icon_bond",
             _ => null,
         };
     }
-
-    /// <summary>The icon for what a dragon wants (Bonding), or null.</summary>
-    public static string? WantIcon(DragonWant want) => want switch
-    {
-        DragonWant.Food => "ui/icon_feed",
-        DragonWant.Play => "ui/icon_play",
-        DragonWant.Scratch => "ui/icon_scratch",
-        DragonWant.Comfort => "ui/icon_comfort",
-        DragonWant.Groom => "ui/icon_groom",
-        DragonWant.Treasure => "ui/icon_treasure",
-        _ => null,
-    };
 
     private void DrawBubble(string icon, float3 at, uint level, float phase)
     {

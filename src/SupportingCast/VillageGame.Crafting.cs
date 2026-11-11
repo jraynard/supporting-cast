@@ -194,7 +194,7 @@ public sealed partial class VillageGame
         if (_openStation.IsNull)
             return;
         var w = _sim.World;
-        if (!HasAvatar || InCombat || !Crafting.IsStation(_sim, _openStation)
+        if (!HasAvatar || !Crafting.IsStation(_sim, _openStation)
             || !AvatarSystem.InReach(_sim, w.Get<Position>(_avatar).Cell, _openStation))
         {
             _openStation = Entity.Null;
@@ -321,7 +321,7 @@ public sealed partial class VillageGame
                     ImGui.PopID();
                     continue;
                 }
-                if (r.IsHandRecipe && HasAvatar && !InCombat)
+                if (r.IsHandRecipe && HasAvatar)
                 {
                     var skill = SkillRules.LevelOf(_sim, _avatar, r.Skill) >= r.MinSkill;
                     if (!skill)

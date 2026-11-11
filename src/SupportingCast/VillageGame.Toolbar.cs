@@ -213,11 +213,7 @@ public sealed partial class VillageGame
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                 Tip(key.Length > 0 ? $"{entry.Label}  [{key}]\n{entry.Hint}" : $"{entry.Label}\n{entry.Hint}");
         }
-        var hint = _aimBreath && BreathDragon is { IsNull: false } breather
-            ? $"Click where {_sim.World.Get<Creature>(breather).Name} should breathe fire · right-click or Esc to stop"
-            : !Ridden.IsNull && _tool == ToolKind.Select
-                ? $"Riding {_sim.World.Get<Creature>(Ridden).Name}: click the ground to {(_rideFly ? "fly" : "go")} there{(_rideFly ? "" : " · Ctrl: fly")} · F: shoot game · right-click game: give chase · R: dismount"
-                : _tool switch
+        var hint = _tool switch
         {
             ToolKind.Select => $"{(HasAvatar ? "Tab: inventory" : "Tab: next category")} · Q/E rotate · [ ] level {_renderer.CutawayZ} · Home: all levels · \\ roofs",
             ToolKind.PlaceBuilding when _toolPlan != null => $"Placing a {_toolPlan.Variant(PlanVariant(_toolPlan)).Label.ToLowerInvariant()} {_toolPlan.Label}: click to lay it out · R: turn · {(_toolPlan.Variants.Count > 1 ? "C: look · " : "")}right-click to stop",
@@ -271,7 +267,6 @@ public sealed partial class VillageGame
             }
         }
         ImGui.EndGroup();
-        DrawDragonAbilities();
         _toolbarHeight = ImGui.GetWindowSize().Y;
         ImGui.End();
     }
@@ -285,167 +280,6 @@ public sealed partial class VillageGame
         var shadow = at + new float2(1, 1);
         dl.AddText(in shadow, new ImColor8(0, 0, 0, 220), key);
         dl.AddText(in at, Theme.U8(Theme.Text), key);
-    }
-
-    /// <summary>R rides or dismounts, B aims a breath (or stops aiming), Q calls it. Not while placing a blueprint: R turns it.</summary>
-    private void HandleDragonKeys(Input input)
-    {
-        if (_tool is ToolKind.Build or ToolKind.PlaceBuilding)
-            return;
-        if (input.WasKeyPressed(GlfwKey.R))
-            ToggleRide();
-        if (input.WasKeyPressed(GlfwKey.B))
-            ToggleBreathAim();
-        HandleCareKeys(input);
-    }
-
-    private void ToggleRide()
-    {
-        if (!Ridden.IsNull)
-        {
-            Issue(new DismountCommand(_avatar));
-            return;
-        }
-        var dragon = Companions.DragonOf(_sim, _avatar);
-        if (dragon.IsNull)
-            return;
-        if (RidingSystem.CantMount(_sim, _avatar, dragon) is { } why)
-            Notify(MessageKind.Info, $"Can't ride {_sim.World.Get<Creature>(dragon).Name}: {why}.");
-        else
-            Issue(new MountOrderCommand(_avatar, dragon));
-    }
-
-    private void ToggleBreathAim()
-    {
-        if (_aimBreath)
-        {
-            _aimBreath = false;
-            return;
-        }
-        var dragon = BreathDragon;
-        if (dragon.IsNull)
-            return;
-        if (CantBreathe(dragon) is { } why)
-        {
-            Notify(MessageKind.Info, $"{_sim.World.Get<Creature>(dragon).Name} can't breathe fire: {why}.");
-            return;
-        }
-        SetTool(ToolKind.Select);
-        _aimBreath = true;
-    }
-
-    /// <summary>"Breathe fire", "Breathe frost"...: what a breath order to <paramref name="dragon"/> is called (its element).</summary>
-    private string BreatheLabel(Entity dragon) => $"Breathe {Sim.Systems.Dragons.BreathOf(_sim, dragon).Noun}";
-
-    /// <summary>Why a breath order to <paramref name="dragon"/> would go nowhere now, or null if it may obey.</summary>
-    private string? CantBreathe(Entity dragon)
-    {
-        var c = _sim.World.Get<Creature>(dragon);
-        var stage = c.Stage(_sim.Clock.Tick);
-        if (stage.BreathRange <= 0)
-            return $"too young ({stage.Label})";
-        if (!c.Able)
-            return "not fit";
-        if (_sim.World.Has<Chained>(dragon))
-            return "it's in chains";
-        return null;
-    }
-
-    /// <summary>
-    /// Adventure mode: your dragon's portrait (click to inspect it, its bond along the bottom) and
-    /// what you can ask of it, at the toolbar's right end. Unavailable abilities stay visible but
-    /// greyed, with the reason in their tooltip, so you see what's coming as it grows.
-    /// </summary>
-    private void DrawDragonAbilities()
-    {
-        if (!HasAvatar || Companions.DragonOf(_sim, _avatar) is not { IsNull: false } dragon)
-            return;
-        var w = _sim.World;
-        var c = w.Get<Creature>(dragon);
-        var d = w.Get<Dragon>(dragon);
-        var stage = c.Stage(_sim.Clock.Tick);
-        var riding = !Ridden.IsNull;
-        var dl = ImGui.GetWindowDrawList();
-
-        // A divider between the tools and the dragon.
-        var tools = ImGui.GetItemRectMax();
-        var top = ImGui.GetItemRectMin();
-        var a = new float2(tools.X + 8, top.Y + 2);
-        var b = new float2(tools.X + 8, tools.Y - 2);
-        dl.AddLine(in a, in b, Theme.U8(Theme.Dim), 1f);
-        ImGui.SameLine(0, 16);
-
-        ImGui.BeginGroup();
-        // Portrait, framed like an inventory slot, with the bond as a bar along its bottom.
-        var size = new float2(44, 44);
-        var min = ImGui.GetCursorScreenPos();
-        var max = min + size;
-        if (ImGui.InvisibleButton("##dragon_portrait"u8, in size, ImGuiButtonFlags.None))
-            _selected = dragon;
-        var hovered = ImGui.IsItemHovered(ImGuiHoveredFlags.None);
-        dl.AddRectFilled(in min, in max, Theme.U8(new float4(0, 0, 0, 0.35f)), 5f, ImDrawFlags.None);
-        DrawPortrait(dl, dragon, min + new float2(4, 2), size - new float2(8, 10));
-        var barMin = new float2(min.X + 4, max.Y - 6);
-        var barMax = new float2(max.X - 4, max.Y - 3);
-        var barFill = new float2(barMin.X + (barMax.X - barMin.X) * Math.Clamp(d.Affinity, 0, 1), barMax.Y);
-        dl.AddRectFilled(in barMin, in barMax, Theme.U8(new float4(0, 0, 0, 0.6f)), 1f, ImDrawFlags.None);
-        dl.AddRectFilled(in barMin, in barFill, Theme.U8(new float4(0.9f, 0.35f, 0.45f, 1f)), 1f, ImDrawFlags.None);
-        if (stage.CanBeRidden && stage.MinRideAffinity > 0 && d.Affinity < stage.MinRideAffinity)
-        {
-            // Where the bond lets you ride.
-            var x = barMin.X + (barMax.X - barMin.X) * stage.MinRideAffinity;
-            var t0 = new float2(x, barMin.Y - 2);
-            var t1 = new float2(x, barMax.Y + 1);
-            dl.AddLine(in t0, in t1, Theme.U8(Theme.Text), 1f);
-        }
-        dl.AddRect(in min, in max, Theme.U8(_selected == dragon || riding ? Theme.Accent : Theme.Dim), 5f, ImDrawFlags.None, riding ? 2f : 1f);
-        if (hovered)
-        {
-            var doing = w.TryGet<Mind>(dragon, out var mind) && mind.Job is { Report.Length: > 0 } job ? job.Report : mind?.Asleep == true ? "Asleep" : "Idle";
-            var care = Bonding.Peek(_sim, dragon);
-            Tip($"{c.Name}, {stage.Label} dragon\n{doing}\nTrust: {Bonding.Level(_sim, d.Affinity)?.Label ?? "?"}{(stage.CanBeRidden && d.Affinity < stage.MinRideAffinity ? $" (rides once trusting)" : "")}"
-                + (care.Sulking ? "\nSulking!" : care.Want != DragonWant.None ? $"\nIt {Bonding.Describe(care.Want)}." : "") + "\nClick to inspect.");
-        }
-
-        // Ride / dismount.
-        ImGui.SameLine(0, 6);
-        var calling = w.TryGet<Mind>(_avatar, out var me) && me.Job is WaitForMountJob;
-        var cantRide = riding ? null : RidingSystem.CantMount(_sim, _avatar, dragon);
-        if (AbilityButton("ride", "ui/icon_ride", riding || calling, disabled: cantRide != null, "R"))
-            ToggleRide();
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            Tip(riding ? $"Dismount  [R]\nGet down from {c.Name}'s back (on the ground)."
-                : cantRide != null ? $"Ride {c.Name}  [R]\nNot yet: {cantRide}."
-                : calling ? $"Ride {c.Name}  [R]\n{c.Name} is coming down for you."
-                : $"Ride {c.Name}  [R]\nCall {c.Name} over and climb on its back.");
-
-        // Breathe (fire, or its element's breath).
-        ImGui.SameLine(0, 6);
-        var cantBreathe = CantBreathe(dragon);
-        if (AbilityButton("breathe", "ui/icon_breath", _aimBreath, disabled: cantBreathe != null, "B"))
-            ToggleBreathAim();
-        var breath = Sim.Systems.Dragons.BreathOf(_sim, dragon);
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            Tip(cantBreathe != null ? $"{BreatheLabel(dragon)}  [B]\nNot yet: {cantBreathe}."
-                : $"{BreatheLabel(dragon)}  [B]\nClick where {c.Name} {breath.Breath} (reach {Sim.Environment.Breath.RangeOf(_sim, dragon):F0}; it closes in if further).\n{breath.Description}\n"
-                  + $"It does as asked about {DragonSystem.Obedience(_sim, dragon) * 100:F0}% of the time{(riding ? "" : ", more often with you on its back")}.");
-
-        // Care: the window, Call (and Stay once it knows it).
-        if (!riding)
-            DrawCareButtons(dragon);
-
-        // Mounted on a flyer: every move flies, not only with Ctrl.
-        if (riding && stage.CanFly)
-        {
-            ImGui.SameLine(0, 6);
-            if (AbilityButton("fly", "ui/icon_fly", _rideFly, disabled: false, ""))
-                _rideFly = !_rideFly;
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip(_rideFly ? "Flying: every move takes off, over trees and walls.\nClick to walk again (Ctrl still flies)."
-                    : "Fly on every move\nTake off for every move, however short, instead of only with Ctrl.");
-        }
-        TextC(riding ? Theme.Good : Theme.Dim, riding ? $"On {c.Name}" : calling ? $"{c.Name} is coming" : c.Name);
-        ImGui.EndGroup();
     }
 
     /// <summary>An <see cref="IconButton"/> for a dragon ability: accent ring while on, greyed with no click while unavailable.</summary>

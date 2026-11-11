@@ -113,27 +113,6 @@ public class SocialTests
     }
 
     [Fact]
-    public void KeepersPetTheirOwnDragonOnly()
-    {
-        var sim = TestWorld.Create();
-        var keeper = Person(sim, 5);
-        var other = Person(sim, 9);
-        var dragon = sim.SpawnCreature(sim.Defs.Creature("Dragon"), "D", C(7, 5));
-        EggSystem.AssignKeeper(sim, dragon, keeper);
-        var pet = sim.Defs.Interaction("Pet");
-        Assert.True(SocialSystem.Weight(sim, keeper, dragon, pet) > 0);
-        Assert.Equal(0f, SocialSystem.Weight(sim, other, dragon, pet));
-        Assert.Equal(0f, SocialSystem.Weight(sim, keeper, other, pet));
-        Assert.Equal(0f, SocialSystem.Weight(sim, keeper, dragon, sim.Defs.Interaction("Chat")));
-
-        var bond = sim.Defs.Need("Bond");
-        sim.World.Get<Needs>(dragon).Values[bond.Index] = 0.5f;
-        sim.Social.Interact(sim, keeper, dragon, pet);
-        Assert.Equal(0.5f + pet.Bond, sim.World.Get<Needs>(dragon).Get(bond), 4);
-        Assert.Contains(sim.World.Get<Mood>(dragon).Memories, m => m.Other == keeper && m.Def.Name == "Petted");
-    }
-
-    [Fact]
     public void FriendsGrieveHarderAndRivalsDont()
     {
         var sim = TestWorld.Create();

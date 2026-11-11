@@ -298,11 +298,7 @@ public sealed class CoopSession : ILockstepGame, IDisposable
 
     void ILockstepGame.Barrier()
     {
-        // Movers' paths aren't saved: a move under way in a fight plays out to its end (with its
-        // reactions) on every peer, so the snapshot holds the fight whole.
-        if (Sim!.Combat.Active)
-            Sim.Combat.FinishAnimation(Sim);
-        AiSystem.InterruptAll(Sim);
+        AiSystem.InterruptAll(Sim!);
     }
 
     void ILockstepGame.PlayerJoined(NetPlayer player)
@@ -339,15 +335,8 @@ public sealed class CoopSession : ILockstepGame, IDisposable
 
     void ILockstepGame.Step()
     {
-        // A fight plays out a step at a time on every peer (orders are commands, its pacing
-        // counts steps), while the world's clock waits between rounds (Encounter.EndPhase).
-        if (Sim!.Combat.Active)
-        {
-            Sim.Combat.Advance(Sim);
-            return;
-        }
         BeforeStep?.Invoke();
-        Sim.Tick();
+        Sim!.Tick();
         AfterStep?.Invoke();
     }
 

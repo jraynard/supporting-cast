@@ -21,14 +21,12 @@ public sealed class CharacterPicker(GameHost host, CharacterRoster roster, Sim.D
 
     private Guid? _confirmDelete;
 
-    /// <summary>Draw inside the current window. <paramref name="needsDragon"/>: the game is a Pact, where you fly in on one.</summary>
-    public Result Draw(float time, bool needsDragon)
+    /// <summary>Draw inside the current window.</summary>
+    public Result Draw(float time)
     {
         var result = Result.None;
         var size = (float2?)new float2(84, 28);
-        ImGuiText.Wrapped(needsDragon
-            ? "Bring one of your characters (and their dragon): they start out fresh here, with nothing but their kit."
-            : "Bring one of your characters: they start out fresh here, with nothing but their kit and an egg to keep warm.");
+        ImGuiText.Wrapped("Bring one of your characters: they start out fresh here, with nothing but their kit.");
         ImGui.Spacing();
         foreach (var c in roster.Characters.ToList())
         {
@@ -39,10 +37,6 @@ public sealed class CharacterPicker(GameHost host, CharacterRoster roster, Sim.D
             ImGui.BeginGroup();
             Theme.Header(host.ImGui, c.Name);
             ImGui.TextDisabled(c.Traits.Count > 0 ? string.Join(", ", c.Traits) : "No traits");
-            if (c.HasDragon)
-                ImGui.Text($"Flies {c.DragonName ?? ""}");
-            else
-                ImGui.TextDisabled(needsDragon ? "No dragon yet: you'll make one" : "No dragon");
             if (ImGui.Button("Use"u8, in size))
             {
                 Picked = c;

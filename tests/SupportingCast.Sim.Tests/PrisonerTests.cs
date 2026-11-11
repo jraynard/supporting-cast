@@ -86,9 +86,9 @@ public class PrisonerTests
         var sim = Warm();
         PrisonerBed(sim, C(10, 10));
         var villager = Villager(sim, C(5, 5), "Sleepy");
-        Assert.True(AiQueries.FindFreeBed(sim, villager, nest: false).IsNull);
+        Assert.True(AiQueries.FindFreeBed(sim, villager).IsNull);
         var bandit = DownedBandit(sim, C(15, 15));
-        Assert.False(AiQueries.FindFreeBed(sim, bandit, nest: false, prisoner: true).IsNull);
+        Assert.False(AiQueries.FindFreeBed(sim, bandit, prisoner: true).IsNull);
     }
 
     [Fact]
@@ -161,18 +161,6 @@ public class PrisonerTests
         sim.TickMany(SimClock.HoursToTicks(2));
         Assert.False(sim.World.IsAlive(prisoner));
         Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("released"));
-    }
-
-    [Fact]
-    public void RaidersIgnorePrisoners()
-    {
-        var sim = Warm(60);
-        var prisoner = Prisoner(sim, C(20, 20));
-        var raider = sim.SpawnCreature(sim.Defs.Creature("Human"), "Raider", C(25, 20), Faction.Raider, ageDays: 30 * 365);
-        Array.Fill(sim.World.Get<Needs>(raider).Values, 1f);
-        sim.TickMany(SimClock.HoursToTicks(1));
-        Assert.False(sim.Combat.Active);
-        Assert.Empty(sim.World.Get<Health>(prisoner).Injuries);
     }
 
     // ---------------- Prisoner mood and prison breaks ----------------
@@ -290,32 +278,6 @@ public class PrisonerTests
         Assert.True(armed, "the escapee should pick up the axe");
         sim.TickMany(SimClock.HoursToTicks(2));
         Assert.False(sim.World.IsAlive(prisoner), "then run off the map");
-    }
-
-    [Fact]
-    public void AnEscapeeIsFoughtAndCanBeJailedAgain()
-    {
-        var sim = Warm(40);
-        var prisoner = Prisoner(sim, C(20, 20));
-        var guard = Villager(sim, C(26, 20), "Guard", WorkType.Doctor);
-        sim.Equip(guard, sim.Thing("Axe"));
-        Prisoners.Escape(sim, prisoner);
-        for (var t = 0; t < SimClock.TicksPerHour && !sim.Combat.Active; t++)
-            sim.Tick();
-        Assert.True(sim.Combat.Active, "the guard sees the break");
-        Assert.NotNull(sim.Combat.Unit(prisoner));
-
-        // Brought down in the fight (by whatever means), then carried back.
-        sim.World.Get<Health>(prisoner).Blood = 0.4f;
-        HealthSystem.SetDowned(sim, prisoner, ref sim.World.Get<Creature>(prisoner), true);
-        sim.Combat.Resolve(sim, maxRounds: 10);
-        Assert.False(sim.Combat.Active);
-        Assert.True(Prisoners.Capturable(sim, prisoner));
-        sim.World.Add(prisoner, new CaptureOrder());
-        sim.TickMany(SimClock.HoursToTicks(3));
-        Assert.Equal(Faction.Prisoner, sim.World.Get<Creature>(prisoner).Faction);
-        Assert.False(sim.World.Has<Escaping>(prisoner));
-        Assert.True(sim.World.Get<Prisoner>(prisoner).Resistance >= 2f + Prisoners.RecapturedResistance);
     }
 
     [Fact]

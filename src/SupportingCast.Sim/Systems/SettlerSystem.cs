@@ -21,8 +21,8 @@ public sealed class SettlerSystem : ISimSystem
     public void Update(Simulation sim)
     {
         var w = sim.World;
-        if ((w.Count<Avatar>() == 0 && w.Count<PlayerCharacter>() == 0) || w.Count<Quest>() > 0)
-            return; // no players (overseer mode), or still in the prologue's village (its beds aren't yours to fill)
+        if (w.Count<Avatar>() == 0 && w.Count<PlayerCharacter>() == 0)
+            return; // no players
         var owned = new HashSet<Entity>();
         foreach (var e in w.Each<BedOwner>())
             owned.Add(w.Get<BedOwner>(e).Bed);
@@ -56,7 +56,7 @@ public sealed class SettlerSystem : ISimSystem
     {
         var w = sim.World;
         var thing = w.Get<Thing>(e);
-        if (!thing.Spawned || thing.Def.Building is not { IsBed: true, IsNest: false } || w.Has<Construction>(e) || w.Has<ForPrisoners>(e))
+        if (!thing.Spawned || thing.Def.Building is not { IsBed: true } || w.Has<Construction>(e) || w.Has<ForPrisoners>(e))
             return false;
         return sim.Rooms.RoomAt(thing.Cell) is { Indoors: true };
     }

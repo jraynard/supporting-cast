@@ -9,7 +9,7 @@ public interface IActorCommand
     Entity Actor { get; }
 }
 
-/// <summary>A command aimed at one creature (draft, priorities, gear, orders): not at another player's character or dragon.</summary>
+/// <summary>A command aimed at one creature (draft, priorities, gear, orders): not at another player's character.</summary>
 public interface ISubjectCommand
 {
     Entity Subject { get; }
@@ -24,7 +24,7 @@ public interface IPlayerCommand
 /// <summary>
 /// Who may send what in a co-op session. Commands arrive from the network, so the peers check
 /// them identically before applying: everyone may give village orders, but you steer only your own
-/// character and dragon, and only the host may use developer tools.
+/// character, and only the host may use developer tools.
 /// </summary>
 public static class CommandRules
 {
@@ -42,7 +42,7 @@ public static class CommandRules
         return null;
     }
 
-    /// <summary>The player steering a creature: their own character, or the dragon bonded to it.</summary>
+    /// <summary>The player steering a creature, if any.</summary>
     public static Guid? ControllerOf(Simulation sim, Entity e)
     {
         var w = sim.World;
@@ -50,8 +50,6 @@ public static class CommandRules
             return null;
         if (Players.OwnerOf(sim, e) is { } owner)
             return owner;
-        if (w.TryGet<Dragon>(e, out var dragon))
-            return Players.OwnerOf(sim, dragon.Keeper);
         return null;
     }
 }

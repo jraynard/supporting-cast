@@ -48,34 +48,6 @@ public class CraftingTests
             .Sum(e => sim.World.Get<Stack>(e).Count);
 
     [Fact]
-    public void BerriesAndEmberrootBakeIntoCakeOnlyDragonsEat()
-    {
-        var sim = Warm();
-        var cook = Villager(sim, C(5, 5), WorkType.Cook);
-        var fire = Station(sim, "Campfire", C(10, 10));
-        sim.World.Get<Fueled>(fire).Fuel = 20;
-        sim.SpawnItem(sim.Thing("Berries"), 6, C(6, 8));
-        AddBill(sim, fire, "BakeDragonCake");
-        sim.TickMany(SimClock.HoursToTicks(1));
-        Assert.Equal(0, Count(sim, "DragonCake")); // berries alone won't do
-        sim.SpawnItem(sim.Thing("Emberroot"), 2, C(6, 9));
-        sim.TickMany(SimClock.HoursToTicks(2));
-        Assert.Equal(2, Count(sim, "DragonCake"));
-        Assert.Equal(0, Count(sim, "Berries"));
-
-        // A starving villager leaves it alone; a hungry dragon goes for it.
-        var food = sim.Defs.Need("Food");
-        sim.World.Get<Needs>(cook).Values[food.Index] = 0.05f;
-        Assert.Null(HumanBrain.EatSomething(sim, cook, sim.Defs.Creature("Human")));
-        var dragon = sim.SpawnCreature(sim.Defs.Creature("Dragon"), "Ember", C(14, 14), ageDays: 14);
-        var eat = HumanBrain.EatSomething(sim, dragon, sim.Defs.Creature("Dragon"));
-        Assert.IsType<EatJob>(eat);
-        Assert.False(sim.Thing("DragonCake").EdibleBy(sim.Defs.Creature("Human")));
-        Assert.True(sim.Thing("DragonCake").EdibleBy(sim.Defs.Creature("Dragon")));
-        Assert.False(sim.Thing("Emberroot").IsFood);
-    }
-
-    [Fact]
     public void ABillSawsOakIntoOakPlanks()
     {
         var sim = Warm();

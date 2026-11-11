@@ -20,17 +20,8 @@ public sealed record SavedCharacter
     /// <summary>What they wear, as <c>"Def:Dye"</c> (<see cref="Sim.Systems.Clothing.Parse"/>): part of their look.</summary>
     public List<string> Clothes { get; init; } = [];
 
-    /// <summary>The dragon's name and colours; null until one was made for this character (an egg game has none).</summary>
-    public string? DragonName { get; init; }
-
-    public DragonLook? DragonLook { get; init; }
-
-    /// <summary>The dragon's breed (a def name); null for the default breed.</summary>
-    public string? DragonBreed { get; init; }
-
     public DateTime LastUsed { get; init; }
 
-    public bool HasDragon => DragonLook != null && !string.IsNullOrWhiteSpace(DragonName);
 }
 
 /// <summary>
@@ -93,8 +84,6 @@ public sealed class CharacterRoster
             Look = look,
             Traits = (c.Traits ?? []).Where(known.Contains).Distinct().Take(Sim.Systems.TraitRules.MaxTraits).ToList(),
             Clothes = (c.Clothes ?? []).Where(p => Sim.Systems.Clothing.Parse(defs, p) != null).Take(Sim.Systems.Clothing.Slots.Length).ToList(),
-            DragonLook = c.DragonLook?.Valid(),
-            DragonBreed = c.DragonBreed == null ? null : Sim.Systems.Dragons.BreedOrDefault(defs, c.DragonBreed).Name,
         };
     }
 

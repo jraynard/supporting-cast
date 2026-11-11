@@ -125,13 +125,11 @@ public static class Players
     }
 
     /// <summary>
-    /// Make a player's character: a young villager at <see cref="Home"/>, a dragon keeper. In a
-    /// Pact village they arrive with a grown dragon of their own (named and coloured in the
-    /// creator); otherwise with an egg in their arms that will imprint on them. Does nothing if
-    /// they already have one.
+    /// Make a player's character: a young villager at <see cref="Home"/>. Does nothing if they
+    /// already have one.
     /// </summary>
     public static Entity CreateCharacter(Simulation sim, Guid player, string name, Appearance? look, IReadOnlyList<string>? traits,
-        string? dragonName = null, DragonLook? dragonLook = null, IReadOnlyList<string>? clothes = null, Defs.CreatureDef? dragonBreed = null)
+        IReadOnlyList<string>? clothes = null)
     {
         var w = sim.World;
         if (!CharacterOf(sim, player).IsNull)
@@ -145,30 +143,15 @@ public static class Players
         Array.Fill(w.Get<Needs>(me).Values, 0.85f);
         w.Add(me, new PlayerCharacter { PlayerId = player });
         w.Add(me, new Avatar());
-        w.Add(me, new Keeper { Dragon = Entity.Null });
         sim.GiveStartingPack(me);
         if (look is { } a)
             w.Add(me, Valid(a));
         if (traits != null)
             TraitRules.Set(sim, me, traits.Take(TraitRules.MaxTraits * 2));
 
-        if (sim.Story.Start == Scenarios.StartKind.Pact)
-        {
-            var dragon = Scenarios.Companions.SpawnBondedDragon(sim, me, dragonName, dragonLook, cell + new int3(-2, 1, 0), breed: dragonBreed);
-            Clothing.DressHero(sim, me, clothes); // after the dragon, so its rolls don't move
-            sim.Messages.Add(MessageKind.Good,
-                $"{name} flies in on {w.Get<Creature>(dragon).Name}, come to help raise the sorcerer's tower.", cell);
-            return me;
-        }
+        Clothing.DressHero(sim, me, clothes); // last, so it shifts no other entity
 
-        var egg = sim.CreateItem(sim.Defs.Thing("DragonEgg"), 1);
-        w.Get<Egg>(egg).Keeper = me;
-        Dragons.ChooseEgg(sim, egg, dragonBreed, dragonLook?.Valid().Element ?? DragonElement.Fire); // the egg they picked
-        w.Get<Carrying>(me).Item = egg;
-        Clothing.DressHero(sim, me, clothes);
-
-        sim.Messages.Add(MessageKind.Good,
-            $"{name} arrives carrying a dragon egg of their own. Keep it warm and it will hatch to them.", cell);
+        sim.Messages.Add(MessageKind.Good, $"{name} has come to work in the village.", cell);
         return me;
     }
 
@@ -196,17 +179,11 @@ public static class Players
 }
 
 /// <summary>A newly joined player makes their character (from the character creator).</summary>
-/// <remarks>
-/// The dragon's name and look are used in a Pact village, where newcomers bring a grown dragon;
-/// its breed (and the look's element) also choose what their egg hatches into elsewhere.
-/// </remarks>
-public sealed record CreateCharacterCommand(Guid Player, string Name, Appearance Look, IReadOnlyList<string> Traits, string DragonName = "", DragonLook DragonLook = default,
-    IReadOnlyList<string>? Clothes = null, Defs.CreatureDef? DragonBreed = null)
+public sealed record CreateCharacterCommand(Guid Player, string Name, Appearance Look, IReadOnlyList<string> Traits,
+    IReadOnlyList<string>? Clothes = null)
     : ISimCommand, IPlayerCommand
 {
     public Guid? Owner => Player;
 
-    // An all-zero look means none was picked (an older client, or a test): keep the derived one.
-    public void Apply(Simulation sim) =>
-        Players.CreateCharacter(sim, Player, Name, Look, Traits, DragonName, DragonLook.Equals(default(DragonLook)) ? null : DragonLook, Clothes, DragonBreed);
+    public void Apply(Simulation sim) => Players.CreateCharacter(sim, Player, Name, Look, Traits, Clothes);
 }

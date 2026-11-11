@@ -54,7 +54,7 @@ public class SteelTests
     }
 
     [Fact]
-    public void ASmithWorkingTheBellowsSmeltsIronAndSteelWithoutADragon()
+    public void ASmithWorkingTheBellowsSmeltsIronAndSteel()
     {
         var sim = Warm();
         var smith = sim.SpawnCreature(sim.Defs.Creature("Human"), "Smith", C(5, 5), ageDays: 25 * 365);
@@ -97,16 +97,6 @@ public class SteelTests
         Assert.False(Crafting.CanGetHotEnough(sim, forge, sim.Defs.Recipe("SmeltIron")));
         sim.SpawnStructure(sim.Thing("Bellows"), C(15, 16));
         Assert.True(Crafting.CanGetHotEnough(sim, forge, sim.Defs.Recipe("SmeltIron")));
-        Assert.False(Crafting.CanGetHotEnough(sim, forge, sim.Defs.Recipe("ForgeDragonAxe"))); // that's dragon work
     }
 
-    [Fact]
-    public void PlateArmorSlowsAFighter()
-    {
-        var sim = Warm();
-        var knight = sim.SpawnCreature(sim.Defs.Creature("Human"), "Knight", C(5, 5), ageDays: 25 * 365);
-        var before = Combat.TimeUnits.WalkCost(sim, knight);
-        sim.Wear(knight, sim.Thing("SteelPlate"));
-        Assert.Equal(before * 1.15f, Combat.TimeUnits.WalkCost(sim, knight), 3);
-    }
 }

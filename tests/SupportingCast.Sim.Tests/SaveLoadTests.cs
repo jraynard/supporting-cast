@@ -44,63 +44,8 @@ public class SaveLoadTests
     {
         var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), size, size, seed, MapGenerator.RecommendedDepth);
         var center = MapGenerator.Generate(sim);
-        SliceDemo.ApplyVillageDefaults(sim, center);
+        VillageSetup.ApplyVillageDefaults(sim, center);
         return (sim, center);
-    }
-
-    [Fact]
-    public void LoadedGameContinuesLikeTheInterruptedOriginal()
-    {
-        var (live, center) = Generated(99);
-        SliceDemo.ApplyPlayerOrders(live, center);
-        live.TickMany(SimClock.HoursToTicks(7)); // mid-morning: hauling, building, digging
-        Assert.Contains(live.World.Query<Mind>(), e => live.World.Get<Mind>(e).Job != null);
-
-        var loaded = RoundTrip(live);
-        AssertSameFuture(live, loaded, hours: 5);
-    }
-
-    [Fact]
-    public void SavingALoadedGameGivesTheSameBytes()
-    {
-        var (live, center) = Generated(7, size: 64);
-        SliceDemo.ApplyPlayerOrders(live, center);
-        live.TickMany(SimClock.HoursToTicks(3));
-        AiSystem.InterruptAll(live);
-
-        var bytes = SaveGame.Write(live);
-        var again = SaveGame.Write(SaveGame.Read(bytes, live.Defs).Sim);
-        Assert.Equal(bytes, again);
-    }
-
-    [Fact]
-    public void SliceCarriesOnAfterALoad()
-    {
-        var (sim, center) = Generated(1234, size: 160);
-        var hall = SliceDemo.ApplyPlayerOrders(sim, center);
-        sim.TickMany(SimClock.DaysToTicks(1f));
-        SliceDemo.ApplyUpperStoreyOrders(sim, hall);
-        sim.TickMany(SimClock.HoursToTicks(2));
-
-        // Load in the middle of the slice and play on: the egg hatches and the hall gets finished.
-        var (loaded, header) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
-        Assert.Equal(sim.Clock.Tick, header.Tick);
-        Assert.Equal(sim.Clock.Tick, loaded.Clock.Tick);
-        // Whether the floor got finished is the question; a hatchling's sneeze may burn the hall
-        // down afterwards, which is the game working, not the load failing.
-        var floorBuilt = false;
-        for (var hour = 0; hour < 48 - 2; hour++)
-        {
-            loaded.TickMany(SimClock.HoursToTicks(1));
-            floorBuilt |= loaded.Map.HasFloor[loaded.Map.Idx(hall.UpperRoom)];
-        }
-
-        var w = loaded.World;
-        var dragon = Assert.Single(w.Query<Dragon>());
-        Assert.False(w.Get<Creature>(dragon).Dead);
-        Assert.True(w.IsAlive(w.Get<Dragon>(dragon).Keeper));
-        Assert.True(floorBuilt, "the upper floor should be built after loading");
-        Assert.All(w.Query<Creature>(), e => Assert.False(w.Get<Creature>(e).Dead, $"{w.Get<Creature>(e).Name} died"));
     }
 
     [Fact]
@@ -155,115 +100,6 @@ public class SaveLoadTests
     }
 
     [Fact]
-    public void AFightInProgressSnapshotsWholeAndPlaysOnAlike()
-    {
-        var (live, center) = Generated(1234, size: 160);
-        RaidDemo.Setup(live, center);
-        for (var t = 0; t < SimClock.TicksPerHour && !live.Combat.Active; t++)
-            live.Tick();
-        Assert.True(live.Combat.Active);
-        live.Combat.VillageAuto = true;
-        for (var i = 0; i < 1500 && live.Combat.Round < 2; i++)
-            live.Combat.Advance(live); // into the fight: TU spent, reactions used, a round gone by
-        Assert.True(live.Combat.Active, "the fight should still be on to snapshot it");
-
-        // As co-op's barrier does: play out any move under way, then interrupt.
-        live.Combat.FinishAnimation(live);
-        AiSystem.InterruptAll(live);
-        var (loaded, _) = SaveGame.Read(SaveGame.Snapshot(live), live.Defs);
-        Assert.True(loaded.Combat.Active);
-        Assert.Equal(live.StateHash(), loaded.StateHash());
-        Assert.True(live.FullHash() == loaded.FullHash(), "the snapshot restored the fight differently (FullHash)");
-
-        for (var step = 0; step < 20_000 && (live.Combat.Active || loaded.Combat.Active); step++)
-        {
-            live.Combat.Advance(live);
-            loaded.Combat.Advance(loaded);
-            if (step % 50 == 0)
-                Assert.True(live.StateHash() == loaded.StateHash(), $"the loaded fight diverged by step {step}");
-        }
-        Assert.Equal(live.Combat.Log, loaded.Combat.Log);
-        Assert.Equal(live.Combat.Outcome, loaded.Combat.Outcome);
-        AssertSameFuture(live, loaded, hours: 1);
-    }
-
-    [Fact]
-    public void AFightChangesTheStateHash()
-    {
-        var (sim, center) = Generated(1234, size: 160);
-        RaidDemo.Setup(sim, center);
-        for (var t = 0; t < SimClock.TicksPerHour && !sim.Combat.Active; t++)
-            sim.Tick();
-        var before = sim.StateHash(withMap: false);
-        sim.Combat.Units[0].TimeUnits -= 1; // nothing else moved: only the fight differs
-        Assert.NotEqual(before, sim.StateHash(withMap: false));
-    }
-
-    [Fact]
-    public void WoundsGearAndTheLastFightSurvive()
-    {
-        var (live, center) = Generated(1234, size: 160);
-        var cast = RaidDemo.Setup(live, center);
-        for (var t = 0; t < SimClock.TicksPerHour && !live.Combat.Active; t++)
-            live.Tick();
-        Assert.True(live.Combat.Active);
-        Assert.Throws<SaveException>(() => SaveGame.Write(live));
-        live.Combat.Resolve(live, maxRounds: 40);
-        live.TickMany(SimClock.HoursToTicks(2));
-
-        var loaded = RoundTrip(live);
-        Assert.Equal(live.Combat.Outcome, loaded.Combat.Outcome);
-        Assert.Equal(live.Combat.Log, loaded.Combat.Log);
-        foreach (var e in live.World.Query<Health>())
-        {
-            var a = live.World.Get<Health>(e);
-            var b = loaded.World.Get<Health>(e);
-            Assert.Equal(a.Injuries.Count, b.Injuries.Count);
-            Assert.Equal(a.Scars, b.Scars);
-            Assert.Equal(a.Pain, b.Pain);
-        }
-        Assert.Contains(live.World.Query<Health>(), e => live.World.Get<Health>(e).Injuries.Count > 0);
-        foreach (var e in live.World.Query<Apparel>())
-            Assert.Equal(live.World.Get<Apparel>(e), loaded.World.Get<Apparel>(e));
-        Assert.True(loaded.World.IsAlive(cast.Archer));
-        AssertSameFuture(live, loaded, hours: 4);
-    }
-
-    [Fact]
-    public void PrisonersSurvive()
-    {
-        var (live, center) = Generated(1234, size: 160);
-        RaidDemo.Setup(live, center);
-        for (var t = 0; t < SimClock.TicksPerHour && !live.Combat.Active; t++)
-            live.Tick();
-        live.Combat.Resolve(live, maxRounds: 40);
-        var bandit = live.Creatures().First(e => live.World.Get<Creature>(e).Faction == Faction.Raider);
-        live.World.Get<Creature>(bandit).Faction = Faction.Prisoner;
-        live.World.Add(bandit, new Prisoner { Was = Faction.Raider, Mode = PrisonerMode.Recruit, Resistance = 3, LastVisit = 17 });
-        live.World.Add(bandit, new CaptureOrder());
-
-        var loaded = RoundTrip(live);
-        Assert.Equal(live.World.Get<Prisoner>(bandit), loaded.World.Get<Prisoner>(bandit));
-        Assert.True(loaded.World.Has<CaptureOrder>(bandit));
-        Assert.Equal(Faction.Prisoner, loaded.World.Get<Creature>(bandit).Faction);
-    }
-
-    [Fact]
-    public void StartsNextTickPredictsTheFight()
-    {
-        var (sim, center) = Generated(1234, size: 160);
-        RaidDemo.Setup(sim, center);
-        var predicted = false;
-        for (var t = 0; t < SimClock.TicksPerHour && !sim.Combat.Active; t++)
-        {
-            predicted = sim.Combat.StartsNextTick(sim);
-            sim.Tick();
-            Assert.Equal(predicted, sim.Combat.Active);
-        }
-        Assert.True(predicted, "the bandits should have come within sight");
-    }
-
-    [Fact]
     public void BadFilesFailWithAClearError()
     {
         var (sim, _) = Generated(3, size: 48);
@@ -286,7 +122,7 @@ public class SaveLoadTests
         var defs = DefDatabase.LoadDirectory(TestWorld.FindDefsDirectory()); // a private copy we can rename in
         var sim = Simulation.CreateStandard(defs, 48, 48, 3, MapGenerator.RecommendedDepth);
         var center = MapGenerator.Generate(sim);
-        SliceDemo.ApplyVillageDefaults(sim, center);
+        VillageSetup.ApplyVillageDefaults(sim, center);
         sim.SpawnStructure(defs.Thing("Campfire"), sim.SpiralFrom(center + new int3(3, 3, 0), 6).First(c => sim.CanPlaceStructure(c, defs.Thing("Campfire"))));
         defs.Thing("Campfire").Name = "Brazier";
 
@@ -320,19 +156,6 @@ public class SaveLoadTests
         """;
 
     [Fact]
-    public void RebindOntoFreshDefsContinuesLikeTheOriginal()
-    {
-        var (live, center) = Generated(99, size: 64);
-        SliceDemo.ApplyPlayerOrders(live, center);
-        live.TickMany(SimClock.HoursToTicks(3));
-
-        var rebound = SaveGame.Rebind(live, EditedDefs(text => text));
-        Assert.NotSame(live.Defs, rebound.Defs);
-        AiSystem.InterruptAll(live);
-        AssertSameFuture(live, rebound, hours: 2);
-    }
-
-    [Fact]
     public void RebindKeepsDeliveriesWhenTheCostListChanges()
     {
         var sim = TestWorld.Create(20, 20);
@@ -363,31 +186,6 @@ public class SaveLoadTests
         // Renamed everywhere it's named (the sorcerer's tower wants one too), so only the save is stale.
         var defs = EditedDefs(text => text.Replace("\"name\": \"Bed\"", "\"name\": \"Cot\"").Replace("\"Bed\",", "\"Cot\","), everyFile: true);
         Assert.Contains("'Bed'", Assert.Throws<SaveException>(() => SaveGame.Rebind(sim, defs)).Message);
-    }
-
-    [Fact]
-    public void FormatOneConstructionSitesStillLoad()
-    {
-        // Format 1 wrote Delivered by position: [target, ints, work, materials].
-        var defs = TestWorld.LoadDefs();
-        using var buffer = new MemoryStream();
-        using (var w = new SaveWriter(buffer, defs))
-        {
-            w.Int(1); // one entity
-            w.Entity(new Entity(0, 0));
-            w.Def(defs.Thing("Bed"));
-            w.Ints([6, 99]); // a stale extra slot is dropped
-            w.Float(12f);
-            w.Int(0);
-        }
-        var world = new World();
-        world.Create();
-        buffer.Position = 0;
-        using var r = new SaveReader(buffer, defs, version: 1);
-        ComponentCodecs.All.Single(k => k.Name == "Construction").Read(r, world);
-        var c = world.Get<Construction>(new Entity(0, 0));
-        Assert.Equal([6], c.Delivered);
-        Assert.Equal(12f, c.WorkDone);
     }
 
     [Fact]

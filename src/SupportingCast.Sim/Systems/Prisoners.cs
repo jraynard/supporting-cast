@@ -192,8 +192,6 @@ public sealed class PrisonBreakSystem : ISimSystem
 
     public void Update(Simulation sim)
     {
-        if (sim.Combat.Active)
-            return;
         var w = sim.World;
         var prisoners = w.Query<Prisoner>();
         prisoners.Sort((a, b) => a.Index.CompareTo(b.Index));

@@ -150,8 +150,6 @@ public sealed class HealthSystem : ISimSystem
         var cell = sim.World.Get<Position>(e).Cell;
         if (downed)
         {
-            RidingSystem.OnIncapacitated(sim, e);
-            Scenarios.EscapeCamp.OnIncapacitated(sim, e);
             var mind = sim.World.Get<Mind>(e);
             AiSystem.EndJob(sim, e, mind, false);
             mind.Asleep = false;

@@ -37,13 +37,10 @@ public sealed partial class VillageGame
         DrawStorageWindow();
         DrawWorldItemMenu();
         DrawStationWindow();
-        DrawCareWindow();
         DrawRecipeBook();
         DrawInventoryWindow();
-        DrawStory();
         DrawTopBar();
-        if (!InCombat)
-            DrawToolbar();
+        DrawToolbar();
         DrawHotbar();
         DrawNeedsPanel();
         DrawVillagerBar();
@@ -51,10 +48,7 @@ public sealed partial class VillageGame
         DrawToasts();
         DrawInspector();
         DrawMessages();
-        if (InCombat)
-            DrawCombatHud();
-        if (!InCombat || !DrawCombatTooltip())
-            DrawHoverInfo();
+        DrawHoverInfo();
         if (_showWorkTab && !OrdersLocked)
             DrawWorkTab();
         if (_showDebug)
@@ -132,11 +126,10 @@ public sealed partial class VillageGame
             Host.SwitchTo(new TitleGame());
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
             Tip($"Back to the title screen ({LastSavedText()})");
-        var cannotSave = SaveGame.CannotSave(_sim);
-        if (ImGui.MenuItem("Save"u8, "F6"u8, _saveWindow == SaveWindow.Save, cannotSave == null))
+        if (ImGui.MenuItem("Save"u8, "F6"u8, _saveWindow == SaveWindow.Save, true))
             OpenSaveWindow(SaveWindow.Save);
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            Tip(cannotSave ?? $"Save the village ({LastSavedText()}). F6 quicksaves.");
+            Tip($"Save the village ({LastSavedText()}). F6 quicksaves.");
         if (ImGui.MenuItem("Load"u8, "F9"u8, _saveWindow == SaveWindow.Load, true))
             OpenSaveWindow(SaveWindow.Load);
         if (ImGui.MenuItem("Options"u8, ""u8, _settings.IsOpen, true))
@@ -151,13 +144,6 @@ public sealed partial class VillageGame
             _showCredits = !_showCredits;
         ImGui.Separator();
 
-        foreach (var egg in _sim.World.Each<Egg>()) // every frame: no snapshot list
-        {
-            var hp = _sim.World.Get<Thing>(egg).Hp;
-            var progress = _sim.World.Get<Egg>(egg).Progress;
-            ImGui.Separator();
-            TextC(hp < 50 ? Bad : Good, $"Egg {progress * 100:F0}% (health {hp:F0})");
-        }
         ImGui.Separator();
         TextC(Dim, $"{Host.FrameTimeMs:F1} ms");
         Tip($"Average frame time. Slowest in the last 2 s: {Host.FrameTimeMaxMs:F1} ms; {Host.Hitches} hitches so far (SC_PROFILE=1 logs each).");
@@ -250,16 +236,8 @@ public sealed partial class VillageGame
     {
         var w = _sim.World;
         var stage = c.Stage(_sim.Clock.Tick);
-        InspectorHeader(PortraitOf(e), c.Name, c.Def.Race == Race.Dragon
-            ? $"{stage.Label} {Sim.Systems.Dragons.BreedLabel(c.Def)} ({Sim.Systems.Dragons.ElementOf(_sim, e).ToString().ToLowerInvariant()}), {c.AgeDays(_sim.Clock.Tick):F1} days old"
-            : c.Def.Race == Race.Animal ? $"wild {c.Def.Label}"
+        InspectorHeader(PortraitOf(e), c.Name, c.Def.Race == Race.Animal ? $"wild {c.Def.Label}"
             : $"{c.Def.Label}", e);
-        if (!c.Dead && Sim.Systems.AfflictionRules.Describe(_sim, e) is { } afflicted)
-        {
-            TextC(Bad, $"From dragon breath: {afflicted}");
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip("Chilled: slower, fewer time units. Stunned: loses time units from its next turn. Poisoned: hurt by the hour. Rooted: can't move.");
-        }
         if (!c.Dead && Sim.Systems.FoodPoisoning.Describe(_sim, e) is { } sick)
             TextC(Warn, sick);
         if (c.Dead)
@@ -273,10 +251,6 @@ public sealed partial class VillageGame
             return;
         }
 
-        if (w.Has<Chained>(e))
-            TextC(Bad, "In chains: only the captors' key will free it.");
-        if (w.Has<Captive>(e))
-            TextC(Bad, "Locked in the captors' cage.");
         var mind = w.Get<Mind>(e);
         w.TryGet<Health>(e, out var h);
         if (!ImGui.BeginTabBar("creature"u8, ImGuiTabBarFlags.None))
@@ -607,103 +581,10 @@ public sealed partial class VillageGame
         return string.Join("\n", lines);
     }
 
-    private static readonly string[] HuntModeLabels = ["Eat stores first", "Hunt first", "Don't hunt"];
-
-    /// <summary>A grown dragon's hunting orders (<see cref="HuntPolicy"/>).</summary>
-    private void DragonHuntPolicy(Entity e, Creature c)
-    {
-        var p = Sim.Ai.DragonHunting.PolicyOf(_sim, e);
-        ImGui.Text(c.Stage(_sim.Clock.Tick).HuntsAlone ? "Hunting:" : "Hunting (once grown):");
-        var mode = (int)p.Mode;
-        for (var i = 0; i < HuntModeLabels.Length; i++)
-        {
-            ImGui.RadioButton($"{HuntModeLabels[i]}##hunt{i}", ref mode, i);
-            if (i < HuntModeLabels.Length - 1)
-                ImGui.SameLine(0, -1);
-        }
-        var home = p.BringHome;
-        ImGui.Checkbox("Bring kills home"u8, ref home);
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-            Tip("Carries its kill to a butcher spot and eats there, so the rest of the meat ends up at home.");
-        ImGui.SameLine(0, -1);
-        var dangerous = p.Dangerous;
-        ImGui.Checkbox("Take boars"u8, ref dangerous);
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-            Tip("Game that fights back. A dragon can be hurt badly, with nobody near to tend it.");
-        var range = p.Range;
-        ImGui.SetNextItemWidth(160);
-        ImGui.SliderInt("Range from nest##huntrange"u8, ref range, 0, 100, range == 0 ? "anywhere"u8 : "%d cells"u8, ImGuiSliderFlags.AlwaysClamp);
-        if (mode != (int)p.Mode || home != p.BringHome || dangerous != p.Dangerous || range != p.Range)
-            Issue(new HuntPolicyCommand(e, (HuntMode)mode, home, dangerous, range));
-        if (p.Mode == HuntMode.Never)
-            TextC(Dim, "It eats only what it's given, unless it's starving.");
-    }
-
-    /// <summary>A rideable dragon's saddle (<see cref="Saddles"/>): what it wears, its saddlebags, putting one on or taking it off.</summary>
-    private void DragonSaddle(Entity e, Dragon dragon)
-    {
-        var w = _sim.World;
-        if (Saddles.Of(_sim, e) is { IsNull: false } saddle)
-        {
-            var p = w.Get<Thing>(saddle).Def;
-            ImGui.Text($"Saddle: {_sim.LabelOf(saddle)} (bags {_sim.LoadOf(saddle):0.#}/{p.Container?.Capacity ?? 0:0} kg)");
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip($"A steadier seat: its rider's chance to hit +{p.Saddle!.MountedAim * 100:0}%.\nA little extra armor over the back.");
-            ImGui.SameLine(0, -1);
-            if (ImGui.Button("Take off##saddle"u8, in _autoSize))
-                Issue(new SaddleCommand(e, null));
-            return;
-        }
-        if (!w.IsAlive(dragon.Keeper))
-            return;
-        var keeper = dragon.Keeper;
-        var held = w.Get<Carrying>(keeper).Item;
-        var found = !held.IsNull && w.Get<Thing>(held).Def.Saddle != null
-            ? held
-            : Sim.Ai.AiQueries.FindNearestItem(_sim, keeper, (_, d) => d.Saddle != null);
-        if (found.IsNull)
-        {
-            TextC(Dim, "No saddle (make one at a tanning rack).");
-            return;
-        }
-        if (ImGui.Button("Saddle up"u8, in _autoSize))
-            Issue(new SaddleCommand(e, found));
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-            Tip($"{w.Get<Creature>(keeper).Name} fetches the {_sim.LabelOf(found)} and buckles it on.");
-    }
-
     /// <summary>Keeper bond, breath orders, drafting: the things a player clicks on a creature.</summary>
     private void InspectCreatureRoles(Entity e, Creature c, Mind mind)
     {
         var w = _sim.World;
-        if (w.TryGet<Dragon>(e, out var dragon))
-        {
-            ImGui.Separator();
-            ImGui.Text(w.IsAlive(dragon.Keeper) ? $"Keeper: {w.Get<Creature>(dragon.Keeper).Name}" : "No keeper");
-            ImGui.SameLine(0, -1);
-            TextC(Dim, dragon.Sex == DragonSex.Male ? "(male)" : "(female)");
-            if (w.TryGet<Gravid>(e, out var gravid))
-            {
-                var days = Math.Max(0f, (gravid.LayTick - _sim.Clock.Tick) / (float)SimClock.TicksPerDay);
-                TextC(Good, days > 0 ? $"Carrying a clutch: lays in about {days:0.#} days." : "Ready to lay her clutch: she'll look for a nest.");
-            }
-            DrawBond(e);
-            if (HasAvatar && dragon.Keeper == _avatar && !c.Dead && ImGui.Button("Tend..."u8, in _autoSize))
-                _openCare = e;
-            if (RidingSystem.RiderOf(_sim, e) is { IsNull: false } rider)
-            {
-                ImGui.Text($"Ridden by {w.Get<Creature>(rider).Name} (right-click to send them)");
-                if (ImGui.Button("Dismount"u8, in _autoSize))
-                    Issue(new DismountCommand(rider));
-            }
-            if (c.Stage(_sim.Clock.Tick).BreathRange > 0 && !c.Dead)
-                ToolButton($"{BreatheLabel(e)} at...", ToolKind.Breathe);
-            if (!c.Dead && c.Def.LifeStages.Exists(s => s.HuntsAlone))
-                DragonHuntPolicy(e, c);
-            if (!c.Dead && c.Stage(_sim.Clock.Tick).CanBeRidden)
-                DragonSaddle(e, dragon);
-        }
-
         if (c.Def.Race == Race.Human && c.Faction == Faction.Raider)
         {
             ImGui.Separator();
@@ -789,56 +670,16 @@ public sealed partial class VillageGame
         if (c.Def.Race == Race.Human && c.Faction == Faction.Village)
         {
             ImGui.Separator();
-            if (w.TryGet<Keeper>(e, out var keeper))
-            {
-                ImGui.Text(w.IsAlive(keeper.Dragon) ? $"Keeper of {w.Get<Creature>(keeper.Dragon).Name}" : "Designated dragon keeper");
-                if (w.Has<Riding>(e))
-                {
-                    TextC(Good, "Riding: right-click to go, Ctrl+right-click to fly there");
-                    ImGui.Checkbox("Fly on every move"u8, ref _rideFly);
-                    if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                        Tip("Right-clicks take off and fly (over trees and walls) instead of walking, however short the way.");
-                    if (w.TryGet<Riding>(e, out var mount) && w.Get<Creature>(mount.Mount).Stage(_sim.Clock.Tick).BreathRange > 0)
-                    {
-                        var label = BreatheLabel(mount.Mount);
-                        if (ImGui.Button(_aimBreath ? $"{label}: click a target (right-click cancels)" : label, in _autoSize))
-                            _aimBreath = !_aimBreath;
-                        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                            Tip($"{w.Get<Creature>(mount.Mount).Name} {Sim.Systems.Dragons.BreathOf(_sim, mount.Mount).Breath} where you click (reach {Sim.Environment.Breath.RangeOf(_sim, mount.Mount):F0} cells; it closes in if it's further).");
-                    }
-                    if (ImGui.Button("Dismount"u8, in _autoSize))
-                        Issue(new DismountCommand(e));
-                }
-                else if (w.IsAlive(keeper.Dragon) && w.Get<Creature>(keeper.Dragon).Stage(_sim.Clock.Tick).CanBeRidden)
-                {
-                    var why = RidingSystem.CantMount(_sim, e, keeper.Dragon);
-                    if (why == null && ImGui.Button($"Ride {w.Get<Creature>(keeper.Dragon).Name}", in _autoSize))
-                        Issue(new MountOrderCommand(e, keeper.Dragon));
-                    else if (why != null)
-                        TextC(Dim, $"Can't ride: {why}.");
-                }
-            }
-            else if (!HasAvatar)
-            {
-                var dragons = w.Query<Dragon>().Where(d => !w.Get<Creature>(d).Dead && w.Get<Creature>(d).Faction == Faction.Village).ToList();
-                if (dragons.Count <= 1 && ImGui.Button("Make dragon keeper"u8, in _autoSize))
-                    Issue(new MakeKeeperCommand(e));
-                else if (dragons.Count > 1)
-                    foreach (var d in dragons)
-                        if (ImGui.Button($"Keep {w.Get<Creature>(d).Name}##keep{d.Index}", in _autoSize))
-                            Issue(new MakeKeeperCommand(e, d));
-            }
-
             var drafted = mind.Drafted;
             if (w.Has<Avatar>(e))
             {
                 ImGui.TextDisabled("You (WASD to walk, hold F to work, Z to dig, X to put down, N to sleep, Tab: inventory, 1–4: pack to hand)"u8);
                 // Lie down where you stand: in the bed there, else on the ground.
                 var site = _sim.Map.Structure[_sim.Map.Idx(w.Get<Position>(e).Cell)];
-                var inBed = !site.IsNull && w.Get<Thing>(site).Def.Building is { IsBed: true, IsNest: false };
+                var inBed = !site.IsNull && w.Get<Thing>(site).Def.Building is { IsBed: true };
                 if (mind.Asleep)
                     TextC(Dim, "Asleep (walk to wake up).");
-                else if (!InCombat && !w.Has<Riding>(e) && ImGui.Button(inBed ? $"Sleep in the {w.Get<Thing>(site).Label} (N)" : "Sleep here, on the ground (N)", in _autoSize))
+                else if (ImGui.Button(inBed ? $"Sleep in the {w.Get<Thing>(site).Label} (N)" : "Sleep here, on the ground (N)", in _autoSize))
                     Issue(new SleepCommand(e));
             }
             else if (HasAvatar)
@@ -1018,14 +859,6 @@ public sealed partial class VillageGame
         if (w.TryGet<Rot>(e, out var rot))
             SpoilageBar(rot.Progress, temp);
 
-        if (w.TryGet<Egg>(e, out var egg))
-        {
-            var props = def.Egg!;
-            var ok = temp >= props.IdealTempMin && temp <= props.IdealTempMax;
-            Bar("Incubation", egg.Progress, Good);
-            TextC(ok ? Good : Bad, $"Needs {props.IdealTempMin:F0}–{props.IdealTempMax:F0}°C ({(ok ? "incubating" : "not incubating!")})");
-        }
-
         var building = Buildings.Of(_sim, e);
         if (!building.IsNull)
             InspectBuilding(building);
@@ -1045,7 +878,7 @@ public sealed partial class VillageGame
             }
         }
 
-        if (def.Building is { IsBed: true, IsNest: false } && !w.Has<Construction>(e))
+        if (def.Building is { IsBed: true } && !w.Has<Construction>(e))
         {
             var forPrisoners = w.Has<ForPrisoners>(e);
             if (ImGui.Checkbox("For prisoners"u8, ref forPrisoners))
@@ -1088,9 +921,7 @@ public sealed partial class VillageGame
         SetNextWindow(new float2(300, 60), new float2(640, 0));
         ImGui.Begin("Work priorities"u8, ref _showWorkTab, ImGuiWindowFlags.AlwaysAutoResize);
         TextC(Dim, "1 = highest, 4 = lowest, 0 = never");
-        // Breath work nobody here can do (no dragon of that element) stays out of the way.
-        var types = Enum.GetValues<WorkType>().Where(t => !ElementDef.IsBreathWork(t) || WorkTabRows().Any(e =>
-            _sim.World.Get<Creature>(e) is var c && c.Def.CanDo(t, c.Stage(_sim.Clock.Tick), Sim.Systems.Dragons.ElementDefOf(_sim, e)))).ToArray();
+        var types = Enum.GetValues<WorkType>();
         var outer = (float2?)null;
         if (ImGui.BeginTable("work"u8, types.Length + 1, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg, in outer, 0))
         {
@@ -1109,18 +940,14 @@ public sealed partial class VillageGame
                 ImGui.TableNextColumn();
                 if (ImGui.Selectable(c.Name, _selected == e, ImGuiSelectableFlags.None, in _autoSize))
                     _selected = e;
-                if (c.Def.Race == Race.Dragon && ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                    Tip($"{stage.Label} dragon: does the work about {DragonSystem.Obedience(_sim, e):P0} of the times it's asked (affinity).");
                 foreach (var t in types)
                 {
                     ImGui.TableNextColumn();
-                    if (!c.Def.CanDo(t, stage, Sim.Systems.Dragons.ElementDefOf(_sim, e)))
+                    if (!c.Def.CanDo(t, stage))
                     {
                         TextC(Dim, "-");
                         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                            Tip(c.Def.Race == Race.Dragon
-                                    ? ElementDef.IsBreathWork(t) && stage.BreathRange > 0 ? $"Needs a dragon of another element ({string.Join(", ", _sim.Defs.AllElements.Where(el => el.Work.Contains(t)).Select(el => el.Label))})." : $"Not as a {stage.Label}."
-                                : ElementDef.IsBreathWork(t) ? "Only dragons breathe." : "Can't do this.");
+                            Tip("Can't do this.");
                         continue;
                     }
                     ImGui.PushID(e.Index * 100 + (int)t);
@@ -1320,22 +1147,11 @@ public sealed partial class VillageGame
                 else _sim.TickMany(SimClock.TicksPerHour);
             }
             ImGui.SameLine(0, -1);
-            if (ImGui.Button("Hatch egg now"u8, in _autoSize))
-                Issue(new DevHatchCommand());
-            ImGui.SameLine(0, -1);
-            if (ImGui.Button("Add a dragon"u8, in _autoSize))
-                Issue(new DevSpawnDragonCommand());
-            ImGui.SameLine(0, -1);
             if (ImGui.Button("Wolves"u8, in _autoSize))
                 Issue(new DevWildEventCommand(WildEventKind.Predators));
             ImGui.SameLine(0, -1);
             if (ImGui.Button("Migration"u8, in _autoSize))
                 Issue(new DevWildEventCommand(WildEventKind.Migration));
-            ImGui.SameLine(0, -1);
-            if (ImGui.Button("Dragon visitor"u8, in _autoSize))
-                Issue(new DevWildEventCommand(WildEventKind.DragonVisitor));
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip("A grown dragon of the other sex to your first one, so a pair can court and lay eggs.");
             ImGui.SameLine(0, -1);
             // A fight on demand (co-op has no storyteller yet): raiders in off the nearest edge.
             if (ImGui.Button("Send raiders"u8, in _autoSize) && _sim.Defs.AllRaiderKinds.Count > 0)

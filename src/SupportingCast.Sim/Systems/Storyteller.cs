@@ -48,13 +48,8 @@ public sealed class Storyteller(ulong seed) : ISimSystem, Saving.ISaveState
         Difficulty = r.DefOrNull<DifficultyDef>();
         NextRaidTick = r.Long();
         RaidsSent = r.Int();
-        if (r.Version >= 17) // wild events came with format 17; an older game gets its first one soon
-        {
-            NextEventTick = r.Long();
-            EventsSent = r.Int();
-        }
-        else
-            NextEventTick = Difficulty == null ? -1 : sim.Clock.Tick + SimClock.DaysToTicks(1);
+        NextEventTick = r.Long();
+        EventsSent = r.Int();
     }
 
     public void SetDifficulty(Simulation sim, DifficultyDef? difficulty)
@@ -72,7 +67,7 @@ public sealed class Storyteller(ulong seed) : ISimSystem, Saving.ISaveState
         if (Difficulty == null)
             return;
         // Not while a fight is on or the last raiders are still about: try again in a couple of hours.
-        var busy = sim.Combat.Active || sim.Creatures().Any(e => Factions.Attacker(sim.World.Get<Creature>(e).Faction));
+        var busy = sim.Creatures().Any(e => Factions.Attacker(sim.World.Get<Creature>(e).Faction));
         if (NextRaidTick >= 0 && sim.Clock.Tick >= NextRaidTick)
         {
             if (busy)
@@ -97,18 +92,15 @@ public sealed class Storyteller(ulong seed) : ISimSystem, Saving.ISaveState
     }
 
     /// <summary>
-    /// What happens next: predators (not on Peaceful, not in the grace days, if any kind is affordable),
-    /// a migration, or a wild dragon visiting (rarer, and not while one already is).
+    /// What happens next: predators (not on Peaceful, not in the grace days, if any kind is affordable)
+    /// or a migration.
     /// </summary>
     public WildEventKind PickEvent(Simulation sim)
     {
-        var w = sim.World;
         var predators = Difficulty is { Peaceful: false } d && sim.Clock.Day > d.GraceDays
             && WildEvents.PredatorKinds(sim, PredatorPoints(sim)).Count > 0 ? 3f : 0f;
-        var visitor = w.Count<Visitor>() == 0 ? 1.2f : 0f;
         const float migration = 2f;
-        var roll = _rand.Range(0f, predators + visitor + migration);
-        return roll < predators ? WildEventKind.Predators : roll < predators + visitor ? WildEventKind.DragonVisitor : WildEventKind.Migration;
+        return _rand.Range(0f, predators + migration) < predators ? WildEventKind.Predators : WildEventKind.Migration;
     }
 
     /// <summary>A pack is bought with part of the raid points: animals come in smaller numbers than bandits.</summary>
@@ -121,7 +113,7 @@ public sealed class Storyteller(ulong seed) : ISimSystem, Saving.ISaveState
         {
             WildEventKind.Predators => WildEvents.SendPredators(sim, _rand, PredatorPoints(sim)).Count > 0,
             WildEventKind.Migration => WildEvents.SendMigration(sim, _rand).Count > 0,
-            _ => !WildEvents.SendDragonVisitor(sim, _rand).IsNull,
+            _ => false,
         };
         if (sent)
             EventsSent++;
@@ -152,8 +144,6 @@ public sealed class Storyteller(ulong seed) : ISimSystem, Saving.ISaveState
                 points += 40f * Math.Max(0, c.Def.LifeStages.IndexOf(c.Stage(sim.Clock.Tick)));
             }
         }
-        // Treasure draws raiders: a gold bar's worth adds a tenth of a raider.
-        points += Hoard.VillageWealth(sim) / Hoard.WealthPerPoint;
         return points * (Difficulty?.PointsFactor ?? 1f);
     }
 

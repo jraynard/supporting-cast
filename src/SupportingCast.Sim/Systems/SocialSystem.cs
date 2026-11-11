@@ -39,7 +39,7 @@ public sealed class SocialSystem(ulong seed) : ISimSystem, Saving.ISaveState
     public void Update(Simulation sim)
     {
         Recent.RemoveAll(ev => sim.Clock.Tick - ev.Tick > KeepTicks);
-        if (sim.Combat.Active || sim.Defs.AllInteractions.Count == 0)
+        if (sim.Defs.AllInteractions.Count == 0)
             return;
         var people = sim.Creatures().Where(e => CanTalk(sim, e)).ToList(); // ascending entity order
         if (people.Count == 0)
@@ -85,9 +85,6 @@ public sealed class SocialSystem(ulong seed) : ISimSystem, Saving.ISaveState
         foreach (var other in people)
             if (other != e && w.Get<Creature>(other).Faction == faction && Near(sim, e, other))
                 yield return other;
-        if (w.TryGet<Keeper>(e, out var keeper) && w.IsAlive(keeper.Dragon) && w.Get<Creature>(keeper.Dragon).Able
-            && !w.Get<Mind>(keeper.Dragon).Asleep && Near(sim, e, keeper.Dragon))
-            yield return keeper.Dragon;
     }
 
     /// <summary>Within <see cref="Range"/> on the same level and in the same room (or the same open air).</summary>
@@ -103,9 +100,6 @@ public sealed class SocialSystem(ulong seed) : ISimSystem, Saving.ISaveState
     public static float Weight(Simulation sim, Entity from, Entity to, InteractionDef def)
     {
         var w = sim.World;
-        var isDragon = w.Has<Dragon>(to);
-        if (def.With == InteractionTarget.OwnDragon ? !isDragon || w.Get<Dragon>(to).Keeper != from : isDragon)
-            return 0f;
         if (def.TargetMoodBelow < 1f && MoodRules.MoodOf(sim, to) >= def.TargetMoodBelow)
             return 0f;
         if (def.Teaches && RecipeBooks.Teachable(sim, from, to) == null)
@@ -119,34 +113,17 @@ public sealed class SocialSystem(ulong seed) : ISimSystem, Saving.ISaveState
     }
 
     /// <summary>
-    /// Carry out an interaction: memories on both sides, practice for the initiator. Petting your
-    /// own dragon is dragon care like any other (<see cref="Bonding.Interact"/>, the "Pet" care
-    /// scaled down to this def's bond): novelty, imprinting and the trust curve apply, and it
-    /// leaves the dragon's memory itself.
+    /// Carry out an interaction: memories on both sides, practice for the initiator.
     /// </summary>
     public void Interact(Simulation sim, Entity from, Entity to, InteractionDef def)
     {
         MoodSystem.Remember(sim, from, def.InitiatorThoughtDef, to);
-        if (def.With == InteractionTarget.OwnDragon && PetCare(sim) is { } pet)
-        {
-            if (def.Bond > 0 && Bonding.Problem(sim, from, to, pet) == null)
-                Bonding.Interact(sim, from, to, pet, amount: def.Bond / pet.Bond, answers: false);
-        }
-        else
-        {
-            MoodSystem.Remember(sim, to, def.RecipientThoughtDef, from);
-            if (def.Bond > 0)
-                sim.World.Get<Needs>(to).Add(sim.Defs.Need("Bond"), def.Bond);
-        }
+        MoodSystem.Remember(sim, to, def.RecipientThoughtDef, from);
         SkillRules.Learn(sim, from, Skill.Social, def.Xp);
         if (def.Teaches)
             RecipeBooks.Teach(sim, from, to);
         Recent.Add(new SocialEvent(sim.Clock.Tick, from, to, def));
     }
-
-    /// <summary>The dragon care a social pet counts as: the plain care named "Pet", if the defs have it.</summary>
-    private static DragonInteractionDef? PetCare(Simulation sim) =>
-        sim.Defs.AllDragonInteractions.Find(d => d.Name == "Pet" && d.Bond > 0);
 
     public void Save(Saving.SaveWriter w, Simulation sim)
     {

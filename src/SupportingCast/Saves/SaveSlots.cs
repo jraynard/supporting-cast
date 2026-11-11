@@ -19,7 +19,7 @@ public sealed record SaveSlot(string Name, string Path, DateTime Modified, SaveH
             if (Header is not { } h)
                 return Error ?? "unreadable";
             var people = h.Villagers == 1 ? "1 villager" : $"{h.Villagers} villagers";
-            return h.Dragons.Count > 0 ? $"{h.Time} · {people}, {string.Join(", ", h.Dragons)}" : $"{h.Time} · {people}";
+            return $"{h.Time} · {people}";
         }
     }
 }
@@ -96,8 +96,6 @@ public static class SaveSlots
     {
         if (Directory == null)
             return "Saving is disabled.";
-        if (SaveGame.CannotSave(sim) is { } reason)
-            return reason;
         var path = PathOf(name);
         var temp = path + ".tmp";
         try
@@ -125,8 +123,6 @@ public static class SaveSlots
     {
         if (Directory == null)
             return ("Saving is disabled.", null);
-        if (SaveGame.CannotSave(sim) is { } reason)
-            return (reason, null);
         SaveGame.Image image;
         try
         {

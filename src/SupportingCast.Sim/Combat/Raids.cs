@@ -91,3 +91,6 @@ public static class Raids
         return null;
     }
 }
+
+/// <summary>Beaten and making for the map edge: raiders who've given up, herds moving on. Nobody attacks them.</summary>
+public struct Leaving;

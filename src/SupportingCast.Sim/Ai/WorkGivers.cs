@@ -21,30 +21,22 @@ public sealed class WorkGivers
         var mind = sim.World.Get<Mind>(pawn);
         var creature = sim.World.Get<Creature>(pawn);
         var stage = creature.Stage(sim.Clock.Tick);
-        var element = Dragons.ElementDefOf(sim, pawn);
         for (var priority = 1; priority <= 4; priority++)
         {
             foreach (var type in Order)
             {
-                if (mind.WorkPriority[(int)type] != priority || !creature.Def.CanDo(type, stage, element))
+                if (mind.WorkPriority[(int)type] != priority || !creature.Def.CanDo(type, stage))
                     continue;
                 var job = type switch
                 {
                     WorkType.Firefight => Firefight(sim, pawn),
                     WorkType.Doctor => TendCritical(sim, pawn) ?? Rescue(sim, pawn) ?? TendWounds(sim, pawn) ?? FeedPatient(sim, pawn) ?? Capture(sim, pawn) ?? TendWounds(sim, pawn, enemies: true),
                     WorkType.Warden => FeedPrisoner(sim, pawn) ?? VisitPrisoner(sim, pawn),
-                    WorkType.Tend => Tend(sim, pawn),
                     WorkType.Refuel => Refuel(sim, pawn),
                     WorkType.Construct => Construct(sim, pawn) ?? Deconstruct(sim, pawn),
                     WorkType.Craft or WorkType.Cook => Craft(sim, pawn, type),
                     WorkType.Hunt => Butcher(sim, pawn) ?? Hunt(sim, pawn),
                     WorkType.Fish => Fish(sim, pawn),
-                    WorkType.Burn => Burn(sim, pawn),
-                    WorkType.Stoke => Stoke(sim, pawn),
-                    WorkType.Chill => Chill(sim, pawn),
-                    WorkType.Quarry => Quarry(sim, pawn),
-                    WorkType.Blight => Blight(sim, pawn),
-                    WorkType.Nurture => Nurture(sim, pawn),
                     WorkType.Mine => Harvest(sim, pawn, type) ?? Dig(sim, pawn),
                     WorkType.Chop or WorkType.Harvest => Harvest(sim, pawn, type),
                     WorkType.Haul => Haul(sim, pawn),
@@ -63,35 +55,6 @@ public sealed class WorkGivers
     private static int Dist(int3 a, int3 b) => Map.Distance(a, b);
 
     // ---------------- Burning (dragons) ----------------
-
-    /// <summary>
-    /// The nearest reachable cell marked <see cref="Designation.Burn"/> that will still burn and isn't
-    /// already alight. Marks over cells with nothing left to burn are cleared: the order is done.
-    /// </summary>
-    private static Job? Burn(Simulation sim, Entity pawn)
-    {
-        var map = sim.Map;
-        var from = sim.World.Get<Position>(pawn).Cell;
-        int3? best = null;
-        var bestDist = int.MaxValue;
-        List<int>? stale = null;
-        foreach (var i in map.Designated(Designation.Burn))
-        {
-            if (Environment.FireSystem.Fuel(sim, i) <= 0)
-            {
-                (stale ??= []).Add(i);
-                continue;
-            }
-            var cell = map.CellOf(i);
-            var d = Dist(from, cell);
-            if (d >= bestDist || map.Fire[i] > 0 || !Navigation.CanReach(sim, pawn, from, cell, PathEnd.Touch))
-                continue;
-            best = cell;
-            bestDist = d;
-        }
-        ClearStale(map, stale, Designation.Burn);
-        return best is { } b ? new BreatheFireJob(b, puffs: 6, untilLit: true) : null;
-    }
 
     // ---------------- Hunting ----------------
 
@@ -222,8 +185,6 @@ public sealed class WorkGivers
         var best = Entity.Null;
         var bestDist = int.MaxValue;
         var bestHours = float.MaxValue;
-        if (enemies && sim.Combat.Active)
-            return best;
         foreach (var e in sim.Creatures())
         {
             var c = w.Get<Creature>(e);
@@ -325,7 +286,7 @@ public sealed class WorkGivers
         var captive = NearestPatient(sim, pawn, (e, _) => w.Has<CaptureOrder>(e) && !w.Has<Carried>(e) && Systems.Prisoners.Capturable(sim, e), enemies: true);
         if (captive.IsNull)
             return null;
-        var bed = AiQueries.FindFreeBed(sim, captive, nest: false, prisoner: true);
+        var bed = AiQueries.FindFreeBed(sim, captive, prisoner: true);
         return bed.IsNull || sim.Reservations.IsReservedByOther(bed, pawn) ? null : new CaptureJob(captive, bed);
     }
 
@@ -359,9 +320,9 @@ public sealed class WorkGivers
         var prisoner = NearestPrisoner(sim, pawn, (e, _) => sim.World.Get<Needs>(e).Get(food) < food.SeekBelow);
         if (prisoner.IsNull)
             return null;
-        var meal = AiQueries.FindNearestItem(sim, pawn, (_, d) => d.IsFood && !d.IsMeat && !d.DragonFood);
+        var meal = AiQueries.FindNearestItem(sim, pawn, (_, d) => d.IsFood && !d.IsMeat);
         if (meal.IsNull)
-            meal = AiQueries.FindNearestItem(sim, pawn, (_, d) => d.IsFood && !d.DragonFood);
+            meal = AiQueries.FindNearestItem(sim, pawn, (_, d) => d.IsFood);
         return meal.IsNull ? null : new FeedPrisonerJob(prisoner, meal);
     }
 
@@ -375,145 +336,6 @@ public sealed class WorkGivers
     }
 
     // ---------------- Tending eggs and dragons ----------------
-
-    private static Job? Tend(Simulation sim, Entity pawn)
-    {
-        var w = sim.World;
-
-        // Eggs too cold or too hot get carried somewhere better.
-        foreach (var egg in w.Query<Egg>())
-        {
-            var thing = w.Get<Thing>(egg);
-            if (!thing.Spawned || sim.Reservations.IsReservedByOther(egg, pawn))
-                continue;
-            var props = thing.Def.Egg!;
-            var temp = sim.TemperatureAt(thing.Cell);
-            var lowWater = props.IdealTempMin + 2f;
-            var highWater = props.IdealTempMax - 5f;
-            if (temp >= lowWater && temp <= highWater)
-                continue;
-
-            var spot = AiQueries.FindTemperatureSpot(
-                sim,
-                pawn,
-                thing.Cell,
-                props.IdealTempMin + 6f,
-                props.IdealTempMax - 10f,
-                30,
-                t => sim.CanAcceptItem(t, thing.Def, out _),
-                felt: false
-            );
-            if (spot is { } s && s != thing.Cell)
-            {
-                var gain = Math.Abs(Mid(props) - sim.TemperatureAt(s)) + 3f < Math.Abs(Mid(props) - temp);
-                if (gain && sim.Regions.CanReach(w.Get<Position>(pawn).Cell, thing.Cell, PathEnd.OnTile))
-                    return new HaulJob(egg, s);
-            }
-        }
-
-        // Dragon care. Keepers handle their own dragon; anyone feeds a starving dragon.
-        var isKeeper = w.TryGet<Keeper>(pawn, out var keeper) && w.IsAlive(keeper.Dragon);
-        foreach (var dragon in w.Query<Dragon>())
-        {
-            if (w.Get<Creature>(dragon).Dead)
-                continue;
-            var mine = isKeeper && keeper.Dragon == dragon;
-            var needs = w.Get<Needs>(dragon);
-            var food = sim.Defs.Need("Food");
-            var bond = sim.Defs.Need("Bond");
-            var hungerThreshold = mine ? food.SeekBelow : food.UrgentBelow;
-            if (needs.Get(food) < hungerThreshold && !sim.Reservations.IsReservedByOther(dragon, pawn))
-            {
-                var meat = AiQueries.FindNearestItem(sim, pawn, (_, d) => d.IsFood && d.IsMeat);
-                if (meat.IsNull)
-                    meat = AiQueries.FindNearestItem(sim, pawn, (_, d) => d.DragonFood);
-                if (!meat.IsNull && sim.Reservations.TryReserve(dragon, pawn))
-                    return new FeedDragonJob(dragon, meat);
-            }
-            if (mine && KeeperCare(sim, pawn, dragon, needs, bond) is { } care)
-                return care;
-        }
-        return null;
-    }
-
-    /// <summary>
-    /// A keeper's own care for their dragon (docs/plans/dragon-interactions.md): keep a hand-fed
-    /// hatchling's trough stocked, answer what it asks for, spend time with it when its bond runs
-    /// low (whatever it's had least of lately), and a lesson a day once it's old enough.
-    /// </summary>
-    private static Job? KeeperCare(Simulation sim, Entity pawn, Entity dragon, Needs needs, NeedDef bond)
-    {
-        var w = sim.World;
-        var stage = w.Get<Creature>(dragon).Stage(sim.Clock.Tick);
-        if (stage.HandFed && TroughToFill(sim, pawn, dragon) is { } fill)
-            return fill;
-        if (AiQueries.IsNight(sim))
-            return null;
-        var care = Bonding.Peek(sim, dragon);
-        if (Bonding.Answering(sim, care.Want) is { Kind: not (CareKind.Feed or CareKind.Gift) } answer
-            && Bonding.Problem(sim, pawn, dragon, answer) == null)
-            return new DragonCareJob(dragon, answer);
-        if (needs.Get(bond) < bond.SeekBelow && BestCare(sim, pawn, dragon) is { } best)
-            return new DragonCareJob(dragon, best);
-        if (sim.Defs.AllDragonInteractions.Find(d => d.Kind == CareKind.Train) is { } train
-            && (!care.Last.TryGetValue(train.Name, out var last) || sim.Clock.Tick - last.Tick >= LessonEveryTicks)
-            && Bonding.Problem(sim, pawn, dragon, train) == null)
-            return new DragonCareJob(dragon, train);
-        return null;
-    }
-
-    /// <summary>How often a village keeper gives their dragon a lesson.</summary>
-    public const int LessonEveryTicks = SimClock.TicksPerHour * 20;
-
-    /// <summary>What a keeper does with their dragon when it's lonely: the plain care worth most now (novelty), if any.</summary>
-    private static DragonInteractionDef? BestCare(Simulation sim, Entity pawn, Entity dragon)
-    {
-        DragonInteractionDef? best = null;
-        var bestScore = 0f;
-        foreach (var d in sim.Defs.AllDragonInteractions)
-        {
-            if (d.Kind is not (CareKind.Plain or CareKind.Groom or CareKind.Comfort) || Bonding.Problem(sim, pawn, dragon, d) != null)
-                continue;
-            var score = d.Bond * Bonding.Novelty(sim, dragon, d);
-            if (score > bestScore)
-            {
-                best = d;
-                bestScore = score;
-            }
-        }
-        return best;
-    }
-
-    /// <summary>Units of food a keeper keeps in their hatchling's trough.</summary>
-    public const int TroughStock = 6;
-
-    /// <summary>A trough near the keeper running low, and food to put in it: a job, or null.</summary>
-    private static Job? TroughToFill(Simulation sim, Entity pawn, Entity dragon)
-    {
-        var w = sim.World;
-        var eater = w.Get<Creature>(dragon).Def;
-        var from = w.Get<Position>(pawn).Cell;
-        foreach (var trough in w.Query<Thing>())
-        {
-            var t = w.Get<Thing>(trough);
-            if (t.Def.Building?.DragonBowl != true || !t.Spawned || w.Has<Construction>(trough) || sim.Reservations.IsReservedByOther(trough, pawn))
-                continue;
-            var stocked = 0;
-            foreach (var item in sim.StoredIn(trough))
-                if (w.Get<Thing>(item).Def.EdibleBy(eater))
-                    stocked += w.Get<Stack>(item).Count;
-            if (stocked >= TroughStock || sim.ContainerRoom(trough, sim.Defs.Thing("Meat"), null) <= 0
-                || !sim.Regions.CanReach(from, t.Cell, PathEnd.Touch))
-                continue;
-            var food = AiQueries.FindNearestItem(sim, pawn, (e, d) => d.EdibleBy(eater) && !Bonding.InTrough(sim, e) && !d.DragonFood);
-            if (food.IsNull)
-                food = AiQueries.FindNearestItem(sim, pawn, (e, d) => d.DragonFood && !Bonding.InTrough(sim, e));
-            return food.IsNull ? null : new FillTroughJob(trough, food, TroughStock * 2 - stocked);
-        }
-        return null;
-    }
-
-    private static float Mid(EggProps p) => (p.IdealTempMin + p.IdealTempMax) * 0.5f;
 
     // ---------------- Construction ----------------
 
@@ -573,124 +395,7 @@ public sealed class WorkGivers
 
     // ---------------- Stoking (dragons) ----------------
 
-    /// <summary>
-    /// The nearest burning forge or kiln whose next work needs more heat than it has, that no
-    /// dragon has breathed into lately.
-    /// </summary>
-    private static Job? Stoke(Simulation sim, Entity pawn)
-    {
-        var w = sim.World;
-        var from = w.Get<Position>(pawn).Cell;
-        var best = Entity.Null;
-        var bestDist = int.MaxValue;
-        foreach (var station in w.Query<Workbench>())
-        {
-            if (w.Get<Thing>(station).Def.Building is not { StokeHeat: > 0 } || !Crafting.IsStation(sim, station) || !sim.Burning(station))
-                continue;
-            if (sim.Reservations.IsReservedByOther(station, pawn) && w.Get<Workbench>(station).Active == null)
-                continue;
-            if (w.TryGet<Stoked>(station, out var stoked) && stoked.Until > sim.Clock.Tick + StokeJob.Lasts / 4)
-                continue;
-            var cell = w.Get<Thing>(station).Cell;
-            if (Crafting.HeatWanted(sim, station) is var want && (want <= 0 || sim.TemperatureAt(cell) >= want + 50))
-                continue;
-            var d = Dist(from, cell);
-            if (d < bestDist && Navigation.CanReach(sim, pawn, from, cell, PathEnd.Touch))
-                (best, bestDist) = (station, d);
-        }
-        return best.IsNull ? null : new StokeJob(best);
-    }
-
     // ---------------- The other elements' breath (dragons: ElementDef.Work) ----------------
-
-    /// <summary>Ice: the nearest store (<see cref="BuildingProps.Chill"/>) holding something that rots, whose cold is running out.</summary>
-    private static Job? Chill(Simulation sim, Entity pawn)
-    {
-        var w = sim.World;
-        var from = w.Get<Position>(pawn).Cell;
-        var best = Entity.Null;
-        var bestDist = int.MaxValue;
-        foreach (var e in w.Query<Thing>())
-        {
-            var t = w.Get<Thing>(e);
-            if (!t.Spawned || t.Def.Building?.Chill == null || w.Has<Construction>(e) || sim.Reservations.IsReservedByOther(e, pawn))
-                continue;
-            if (w.TryGet<Chilled>(e, out var chilled) && chilled.Until > sim.Clock.Tick + ChillJob.Lasts / 2) // well before it warms: the trip back takes a while
-                continue;
-            if (!sim.StoredIn(e).Exists(i => w.Has<Rot>(i)))
-                continue; // nothing in it that would spoil
-            var d = Dist(from, t.Cell);
-            if (d < bestDist && Navigation.CanReach(sim, pawn, from, t.Cell, PathEnd.Touch))
-                (best, bestDist) = (e, d);
-        }
-        return best.IsNull ? null : new ChillJob(best);
-    }
-
-    /// <summary>Lightning: the nearest rock marked for digging, shattered from breath range.</summary>
-    private static Job? Quarry(Simulation sim, Entity pawn)
-    {
-        var map = sim.Map;
-        var from = sim.World.Get<Position>(pawn).Cell;
-        int3? best = null;
-        var bestDist = int.MaxValue;
-        foreach (var i in map.Designated(Designation.Dig))
-        {
-            var cell = map.CellOf(i);
-            if (!sim.CanDig(cell) || map.Block[i].DigTool == null)
-                continue; // gone already, or soil: lightning is wasted on dirt (anyone can shovel it)
-            var d = Dist(from, cell);
-            if (d >= bestDist || sim.Reservations.IsTileReservedByOther(cell, pawn) || !Mining.CanBreak(sim, pawn, map.Block[i]))
-                continue;
-            if (!Navigation.CanReach(sim, pawn, from, cell, PathEnd.Touch))
-                continue;
-            best = cell;
-            bestDist = d;
-        }
-        return best is { } b ? new QuarryJob(b) : null;
-    }
-
-    /// <summary>Poison: the nearest plant on land marked for clearing (<see cref="Designation.Burn"/>).</summary>
-    private static Job? Blight(Simulation sim, Entity pawn)
-    {
-        var map = sim.Map;
-        var w = sim.World;
-        var from = w.Get<Position>(pawn).Cell;
-        int3? best = null;
-        var bestDist = int.MaxValue;
-        foreach (var i in map.Designated(Designation.Burn))
-        {
-            var s = map.Structure[i];
-            if (s.IsNull || !w.TryGet<Thing>(s, out var t) || t.Def.Category != ThingCategory.Plant)
-                continue;
-            var cell = map.CellOf(i);
-            var d = Dist(from, cell);
-            if (d >= bestDist || sim.Reservations.IsTileReservedByOther(cell, pawn) || !Navigation.CanReach(sim, pawn, from, cell, PathEnd.Touch))
-                continue;
-            best = cell;
-            bestDist = d;
-        }
-        return best is { } b ? new BlightJob(b) : null;
-    }
-
-    /// <summary>Nature: the nearest harvested plant growing back that nobody's tended yet.</summary>
-    private static Job? Nurture(Simulation sim, Entity pawn)
-    {
-        var w = sim.World;
-        var from = w.Get<Position>(pawn).Cell;
-        var best = Entity.Null;
-        var bestDist = int.MaxValue;
-        foreach (var e in w.Query<PlantState>())
-        {
-            if (w.Get<PlantState>(e).Ready || !w.TryGet<Thing>(e, out var t) || !t.Spawned || sim.Reservations.IsReservedByOther(e, pawn))
-                continue;
-            if (w.TryGet<Nurtured>(e, out var n) && n.Until > sim.Clock.Tick)
-                continue;
-            var d = Dist(from, t.Cell);
-            if (d < bestDist && Navigation.CanReach(sim, pawn, from, t.Cell, PathEnd.Touch))
-                (best, bestDist) = (e, d);
-        }
-        return best.IsNull ? null : new NurtureJob(best, w.Get<Thing>(best).Cell);
-    }
 
     // ---------------- Crafting and cooking ----------------
 
@@ -924,7 +629,7 @@ public sealed class WorkGivers
         var item = AiQueries.FindNearestItem(
             sim,
             pawn,
-            (e, d) => d.Egg == null && !w.Has<Stored>(e) && !AiQueries.InStockpile(sim, w.Get<Thing>(e).Cell) && Storable(e, d)
+            (e, d) => !w.Has<Stored>(e) && !AiQueries.InStockpile(sim, w.Get<Thing>(e).Cell) && Storable(e, d)
         );
         if (item.IsNull)
             return null;

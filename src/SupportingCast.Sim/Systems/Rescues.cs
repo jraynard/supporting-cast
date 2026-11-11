@@ -7,7 +7,7 @@ namespace SupportingCast.Sim.Systems;
 /// <summary>
 /// Who can carry whom to bed when they're down (<see cref="RescueJob"/>): a person carries another
 /// person, or a dragon no bigger than a person can drag (a hatchling or juvenile, up to
-/// <see cref="Combat.Encounter.MaxDragSize"/>); a grown dragon carries anyone up to its own size,
+/// <see cref="MaxCarrySize"/>); a grown dragon carries anyone up to its own size,
 /// its keeper above all. People go to a bed, dragons to a nest. A downed adult dragon is too big
 /// for anyone: it's tended and fed where it lies (Doctor work) and mends faster by a fire.
 /// </summary>
@@ -18,23 +18,15 @@ public static class Rescues
         var w = sim.World;
         var by = w.Get<Creature>(carrier);
         var them = w.Get<Creature>(patient);
-        if (them.Def.Race is not (Race.Human or Race.Dragon) || !by.Able)
-            return false;
-        var size = them.Stage(sim.Clock.Tick).Size;
-        return by.Def.Race switch
-        {
-            Race.Human => them.Def.Race == Race.Human || size <= Combat.Encounter.MaxDragSize,
-            Race.Dragon => by.Stage(sim.Clock.Tick).CanBeRidden && size <= by.Stage(sim.Clock.Tick).Size,
-            _ => false,
-        };
+        return them.Def.Race == Race.Human && by.Def.Race == Race.Human && by.Able;
     }
 
-    /// <summary>The bed (people) or nest (dragons) <paramref name="carrier"/> can take <paramref name="patient"/> to, or Entity.Null.</summary>
+    /// <summary>The bed <paramref name="carrier"/> can take <paramref name="patient"/> to, or Entity.Null.</summary>
     public static Entity BedFor(Simulation sim, Entity carrier, Entity patient)
     {
         var w = sim.World;
         var c = w.Get<Creature>(patient);
-        var bed = AiQueries.FindFreeBed(sim, patient, nest: c.Def.Race == Race.Dragon, prisoner: c.Faction == Faction.Prisoner);
+        var bed = AiQueries.FindFreeBed(sim, patient, prisoner: c.Faction == Faction.Prisoner);
         // The patient's own reach may count the sky (a flyer's); the one carrying has to get there.
         return !bed.IsNull && Navigation.CanReach(sim, carrier, w.Get<Position>(carrier).Cell, w.Get<Thing>(bed).Cell, PathEnd.OnTile) ? bed : Entity.Null;
     }
@@ -75,7 +67,7 @@ public static class Rescues
         var c = w.Get<Creature>(carried);
         var site = map.Structure[map.Idx(cell)];
         if (!c.Dead && !site.IsNull && !w.Has<Construction>(site) && w.Get<Thing>(site).Def.Building is { IsBed: true } b
-            && b.IsNest == (c.Def.Race == Race.Dragon) && !w.Has<ForPrisoners>(site))
+            && !w.Has<ForPrisoners>(site))
             return new(AvatarActionKind.Carry, $"Lay {c.Name} in the {w.Get<Thing>(site).Label}", cell, carried);
         if (!map.Standable(map.Idx(cell)) || !map.Passable(cell))
             return AvatarAction.None;

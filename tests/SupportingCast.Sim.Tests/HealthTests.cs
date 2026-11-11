@@ -102,36 +102,6 @@ public class HealthTests
         Assert.True(sim.World.IsAlive(bed));
     }
 
-    [Fact]
-    public void ARaiderBleedingOutIsTendedBeforeAVillagersScratch()
-    {
-        // After a fight: a downed raider about to bleed out, and a villager with a cut arm. The
-        // doctor stabilizes the raider first (it used to see to every villager's wound before any raider).
-        var sim = Warm();
-        var villager = Person(sim, C(8, 5), "Corin");
-        var raider = sim.SpawnCreature(sim.Defs.Creature("Human"), "Grimsby", C(20, 5), Faction.Raider, ageDays: 30 * 365);
-        HealthSystem.Damage(sim, raider, 25, DamageType.Cut, Part(sim, raider, "Torso"));
-        HealthSystem.Damage(sim, raider, 20, DamageType.Cut, Part(sim, raider, "LeftLeg"));
-        sim.World.Get<Health>(raider).Blood = 0.35f;
-        sim.TickMany(60);
-        Assert.True(sim.World.Get<Creature>(raider).Downed);
-        if (sim.Combat.Active)
-            sim.Combat.Resolve(sim); // he's down: the fight's over, so he may be tended
-        Assert.False(sim.Combat.Active);
-        HealthSystem.Damage(sim, villager, 6, DamageType.Cut, Part(sim, villager, "LeftArm"));
-        Assert.Contains(sim.World.Get<Health>(villager).Injuries, i => !i.Tended);
-        var doctor = Person(sim, C(10, 5), "Dagny", WorkType.Doctor);
-
-        Job? job = null;
-        for (var t = 0; t < 120 && job is not TendJob; t++)
-        {
-            sim.Tick();
-            job = sim.World.Get<Mind>(doctor).Job;
-        }
-        Assert.IsType<TendJob>(job);
-        Assert.Equal(raider, job!.Focus);
-    }
-
     /// <summary>The bed burns down while the doctor walks to the patient: the rescue fails cleanly instead of throwing.</summary>
     [Fact]
     public void RescueGivesUpWhenTheBedIsGone()

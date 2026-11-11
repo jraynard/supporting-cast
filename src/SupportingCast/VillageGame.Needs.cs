@@ -17,7 +17,7 @@ public sealed partial class VillageGame
 
     private void DrawNeedsPanel()
     {
-        if (!HasAvatar || InCombat || !_sim.World.IsAlive(_avatar))
+        if (!HasAvatar || !_sim.World.IsAlive(_avatar))
             return;
         var w = _sim.World;
         var c = w.Get<Creature>(_avatar);

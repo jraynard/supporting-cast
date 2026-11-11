@@ -44,6 +44,7 @@ public class MoodTests
     {
         var sim = Mild();
         var e = Person(sim);
+        TraitRules.Set(sim, e, []); // a rolled trait would scale the thought
         var bad = sim.Defs.Thoughts.SleptOnGround!;
         MoodSystem.Remember(sim, e, bad);
         Assert.Single(MoodOf(sim, e).Memories);
@@ -79,13 +80,6 @@ public class MoodTests
         Assert.Single(mood.Memories);
         Assert.Equal(SimClock.HoursToTicks(ground.DurationHours), mood.Memories[0].TicksLeft);
         mood.Memories.Clear();
-
-        // A stacking one adds copies up to its limit, then refreshes the oldest.
-        var dragon = sim.SpawnCreature(sim.Defs.Creature("Dragon"), "D", C(13, 5));
-        var fed = sim.Defs.Thoughts.FedByKeeper!;
-        for (var i = 0; i < fed.StackLimit + 2; i++)
-            MoodSystem.Remember(sim, dragon, fed, e);
-        Assert.Equal(fed.StackLimit, MoodOf(sim, dragon).Memories.Count);
 
         MoodSystem.Remember(sim, e, died, a);
         MoodSystem.Remember(sim, e, died, b);
@@ -128,41 +122,6 @@ public class MoodTests
         UpdateMood(sim);
         Assert.Contains(sim.Defs.Thought("Ravenous"), MoodOf(sim, e).Situational);
         Assert.DoesNotContain(sim.Defs.Thought("Hungry"), MoodOf(sim, e).Situational);
-    }
-
-    [Fact]
-    public void ADeathSaddensTheVillageAndHitsTheKeeperHardest()
-    {
-        var sim = Mild();
-        var keeper = Person(sim);
-        var friend = Person(sim, 9);
-        var dragon = sim.SpawnCreature(sim.Defs.Creature("Dragon"), "D", C(7, 5));
-        EggSystem.AssignKeeper(sim, dragon, keeper);
-
-        ref var c = ref sim.World.Get<Creature>(dragon);
-        NeedsSystem.Kill(sim, dragon, ref c);
-
-        Assert.Equal([sim.Defs.Thoughts.MyDragonDied], MoodOf(sim, keeper).Memories.Select(m => m.Def));
-        Assert.Equal([sim.Defs.Thoughts.VillagerDied], MoodOf(sim, friend).Memories.Select(m => m.Def));
-        Assert.Equal(dragon, MoodOf(sim, friend).Memories[0].Other);
-    }
-
-    [Fact]
-    public void MoodPacesWorkAndDragonObedience()
-    {
-        Assert.Equal(1f, MoodRules.WorkFactor(0.5f));
-        Assert.Equal(1f, MoodRules.WorkFactor(MoodRules.NeutralLow));
-        Assert.Equal(MoodRules.MinWorkFactor, MoodRules.WorkFactor(0f), 4);
-        Assert.Equal(MoodRules.MaxWorkFactor, MoodRules.WorkFactor(1f), 4);
-
-        var sim = Mild();
-        var dragon = sim.SpawnCreature(sim.Defs.Creature("Dragon"), "D", C(7, 5));
-        sim.World.Get<Dragon>(dragon).Affinity = 0.5f;
-        var neutral = DragonSystem.Obedience(sim, dragon);
-        MoodOf(sim, dragon).Value = 1f;
-        Assert.Equal(neutral + MoodRules.ObedienceRange / 2, DragonSystem.Obedience(sim, dragon), 4);
-        MoodOf(sim, dragon).Value = 0f;
-        Assert.True(DragonSystem.Obedience(sim, dragon) < neutral);
     }
 
     [Fact]

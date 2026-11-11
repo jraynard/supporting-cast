@@ -45,13 +45,13 @@ public class InventoryTests
         return sim.Map.Item[sim.Map.Idx(cell)];
     }
 
-    private static Entity Egg(Simulation sim, Entity me) => sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("DragonEgg"), 1);
+    private static Entity Keg(Simulation sim, Entity me) => sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("Keg"), 1);
 
     [Fact]
     public void GearOnTheGroundGoesStraightOnIntoAnEmptySlot()
     {
         var (sim, me) = Setup();
-        Egg(sim, me); // hands full: doesn't matter
+        Keg(sim, me); // hands full: doesn't matter
         var helm = Spawn(sim, "IronHelm", C(11, 10));
         Assert.Equal(AvatarActionKind.Equip, AvatarSystem.ActionAt(sim, me, C(11, 10)).Kind);
         Press(sim, me, C(11, 10));
@@ -85,18 +85,18 @@ public class InventoryTests
     }
 
     [Fact]
-    public void WithAnEggInHandThePackStillPicksThingsUp()
+    public void WithAKegInHandThePackStillPicksThingsUp()
     {
         var (sim, me) = Setup();
-        var egg = Egg(sim, me);
+        var keg = Keg(sim, me);
         sim.SpawnItem(sim.Thing("Berries"), 10, C(11, 10));
         Press(sim, me, C(11, 10));
-        Assert.Equal(egg, sim.World.Get<Carrying>(me).Item);
+        Assert.Equal(keg, sim.World.Get<Carrying>(me).Item);
         Assert.Equal(10, Packed(sim, me, "Berries"));
 
         // Without a pack, hands full means no picking up, as before packs.
         var (bare, other) = Setup(pack: false);
-        Egg(bare, other);
+        Keg(bare, other);
         bare.SpawnItem(bare.Thing("Berries"), 10, C(11, 10));
         Assert.Equal(AvatarActionKind.None, AvatarSystem.ActionAt(bare, other, C(11, 10)).Kind);
     }
@@ -105,7 +105,7 @@ public class InventoryTests
     public void BuildingAndEatingTakeFromThePack()
     {
         var (sim, me) = Setup();
-        Egg(sim, me);
+        Keg(sim, me);
         sim.Store(sim.PackOf(me), sim.CreateItem(sim.Thing("Wood"), 20, sim.Defs.Material("Pine")));
         var wall = sim.PlaceBlueprint(sim.Thing("WoodWall"), C(11, 10));
         var deliver = AvatarSystem.ActionAt(sim, me, C(11, 10));
@@ -127,7 +127,7 @@ public class InventoryTests
     }
 
     [Fact]
-    public void HoldingSwapsWithThePackButNeverStowsTheEgg()
+    public void HoldingSwapsWithThePackButNeverStowsTheKeg()
     {
         var (sim, me) = Setup();
         var pack = sim.PackOf(me);
@@ -142,11 +142,11 @@ public class InventoryTests
         Assert.False(sim.World.Get<Carrying>(me).HasItem);
         Assert.Equal(5, Packed(sim, me, "Stone"));
 
-        var egg = Egg(sim, me);
+        var keg = Keg(sim, me);
         Do(sim, new HoldCommand(me, sim.StoredIn(pack)[0]));
-        Assert.Equal(egg, sim.World.Get<Carrying>(me).Item); // refused: the egg doesn't go in a pack
+        Assert.Equal(keg, sim.World.Get<Carrying>(me).Item); // refused: the keg doesn't go in a pack
         Do(sim, new StowCommand(me));
-        Assert.Equal(egg, sim.World.Get<Carrying>(me).Item);
+        Assert.Equal(keg, sim.World.Get<Carrying>(me).Item);
     }
 
     [Fact]

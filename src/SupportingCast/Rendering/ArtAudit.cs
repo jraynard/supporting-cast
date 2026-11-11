@@ -96,19 +96,6 @@ public static class ArtAudit
                 foreach (var tag in RequiredTags(c, s))
                     if (sheet.Find(tag) == null)
                         warnings.Add($"{who}: sheet '{sprite}' has no '{tag}' animation (falls back to '{CreatureAnimator.Fallback(tag) ?? "first frame"}')");
-                if (s.CanBeRidden && !sheet.Points.ContainsKey("saddle"))
-                    warnings.Add($"{who}: rideable, but sheet '{sprite}' has no 'saddle' point (riders sit mid-back)");
-                // Every breed is drawn from layered looks (DragonLooks): a base plus each tinted
-                // layer, on the plain sheet's frame layout, since layers are matched by frame index.
-                if (c.Race == Race.Dragon)
-                    foreach (var layer in DragonLooks.LayerNames.Append("base"))
-                    {
-                        var name = $"{sprite}_{layer}";
-                        if (!sheets.TryGetValue(name, out var ls))
-                            errors.Add($"{who}: no layer sheet '{name}'");
-                        else if (ls.Frames.Length != sheet.Frames.Length)
-                            errors.Add($"{who}: layer '{name}' has {ls.Frames.Length} frames, its sheet {sheet.Frames.Length}");
-                    }
             }
         }
         // People are drawn from layered looks (HumanLook): a base sheet per body, and every layer

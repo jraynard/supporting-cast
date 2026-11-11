@@ -67,43 +67,6 @@ public class BandagingTests
     }
 
     [Fact]
-    public void YouCanBindYourDragonBesideYouButNotFromAcrossTheField()
-    {
-        var (sim, me) = Wounded(cuts: 0);
-        var dragon = Companions.SpawnBondedDragon(sim, me, "Ashwing", null, C(6, 5));
-        sim.World.Get<Position>(dragon) = Position.At(C(6, 5));
-        HealthSystem.Damage(sim, dragon, 10, DamageType.Pierce);
-        Assert.Equal(1, Bandaging.WoundsToBind(sim, dragon));
-        Assert.Null(Bandaging.CantBind(sim, me, dragon));
-        sim.World.Get<Position>(dragon) = Position.At(C(15, 5));
-        Assert.Equal("too far away", Bandaging.CantBind(sim, me, dragon));
-    }
-
-    [Fact]
-    public void InAFightBandagingCostsTimeUnits()
-    {
-        var (sim, me) = Wounded();
-        sim.SpawnCreature(sim.Defs.Creature("Human"), "Bandit", C(15, 5), Faction.Raider);
-        sim.Combat.Start(sim);
-        var unit = sim.Combat.Unit(me)!;
-        Assert.Null(sim.Combat.Interact(sim, me, TimeUnits.Bandage, () => Bandaging.Bind(sim, me, me) > 0, "bandaged"));
-        Assert.Equal(TimeUnits.PerTurn(sim, me) - TimeUnits.Share(sim, me, TimeUnits.Bandage), unit.TimeUnits);
-        Assert.Equal(0, Bandaging.WoundsToBind(sim, me));
-        // Nothing left to bind: it doesn't happen, and costs nothing.
-        Assert.NotNull(sim.Combat.Interact(sim, me, TimeUnits.Bandage, () => Bandaging.Bind(sim, me, me) > 0, "bandaged"));
-        Assert.Equal(TimeUnits.PerTurn(sim, me) - TimeUnits.Share(sim, me, TimeUnits.Bandage), unit.TimeUnits);
-    }
-
-    [Fact]
-    public void TheCampsChestHoldsYourBandages()
-    {
-        var sim = Simulation.CreateStandard(LoadDefs(), 96, 96, 61, Maps.MapGenerator.RecommendedDepth);
-        AdventureStart.Setup(sim, StartKind.Escape, new Hero("Wren", null, null), "Normal");
-        var chest = EscapeCamp.Of(sim)!.Chest;
-        Assert.Contains(sim.StoredIn(chest), e => sim.World.Get<Thing>(e).Def.Name == "Bandage");
-    }
-
-    [Fact]
     public void BandagesAreWovenByHandFromFlaxFiber()
     {
         var (sim, me) = Wounded(bandages: 0, cuts: 2);

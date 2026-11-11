@@ -84,7 +84,7 @@ internal static class InventoryCommand
     public static bool Ready(Simulation sim, Entity avatar)
     {
         var w = sim.World;
-        if (!w.IsAlive(avatar) || !w.Has<Avatar>(avatar) || sim.Combat.Involves(avatar))
+        if (!w.IsAlive(avatar) || !w.Has<Avatar>(avatar))
             return false;
         var c = w.Get<Creature>(avatar);
         return !c.Dead && !c.Downed;

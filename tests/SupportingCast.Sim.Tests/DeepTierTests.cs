@@ -43,19 +43,6 @@ public class DeepTierTests
     }
 
     [Fact]
-    public void TheDragonBladeWantsDragonfireAndAnEmberCrystal()
-    {
-        var defs = TestWorld.LoadDefs();
-        var blade = defs.Recipe("ForgeDragonBlade");
-        Assert.Contains(blade.Ingredients, i => i.ThingDef.Name == "EmberCrystal");
-        var forge = defs.Thing("Forge").Building!;
-        var bellows = defs.Thing("Bellows").Building!.Bellows!;
-        var coal = forge.Fuel!.OptionFor(defs.Thing("Coal"))!;
-        Assert.True(blade.MinTemp > coal.Reach + bellows.Lift, "bellows can't get there: only a dragon"); // SteelTests measures the real plateau
-        Assert.True(defs.Thing("EmberCrystal").HoardValue > 0); // and a dragon's treat
-    }
-
-    [Fact]
     public void RockBesideHiddenOreIsStained()
     {
         var defs = TestWorld.LoadDefs();

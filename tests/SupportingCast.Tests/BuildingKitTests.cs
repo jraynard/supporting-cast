@@ -59,7 +59,6 @@ public class BuildingKitTests
     [Theory]
     [InlineData("Dwelling", 0)]
     [InlineData("Longhouse", 1)]
-    [InlineData("DragonBarn", 2)]
     public void TheRoofIsPitchedOverThePlot(string name, int facing)
     {
         var (sim, b) = Finished(name, facing);

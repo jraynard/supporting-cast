@@ -36,7 +36,7 @@ public sealed partial class VillageGame
     private bool _openedSaves;
 
     /// <summary>Demos don't autosave over the player's village.</summary>
-    private bool AutosaveEnabled => SaveSlots.Directory != null && !RaidDemo && !DragonDemo && !BreathDemo;
+    private bool AutosaveEnabled => SaveSlots.Directory != null;
 
     private void OnSavedOrLoaded(string? slot)
     {
@@ -153,13 +153,6 @@ public sealed partial class VillageGame
             Notify(MessageKind.Info, $"{no} (def changes apply next time)");
             return;
         }
-        if (InCombat)
-        {
-            if (!_defReloadPending)
-                Notify(MessageKind.Info, "Def changes will apply when the fight is over.");
-            _defReloadPending = true;
-            return;
-        }
         _defReloadPending = false;
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
         var dir = _defReloader!.Directory;
@@ -193,9 +186,6 @@ public sealed partial class VillageGame
         {
             Loaded = moved,
             AutoPause = AutoPause,
-            RaidDemo = RaidDemo,
-            DragonDemo = DragonDemo,
-            BreathDemo = BreathDemo,
             CarriedOver = new CarryOver(_lastSaveTick, _time - _lastSaveTime, "Defs reloaded (jobs restarted)."),
         });
     }
@@ -310,11 +300,10 @@ public sealed partial class VillageGame
 
     private void DrawSaveForm()
     {
-        var reason = SaveGame.CannotSave(_sim);
         ImGui.InputText("Name"u8, _saveName, ImGuiInputTextFlags.None, null, IntPtr.Zero);
         var name = SaveSlots.Clean(Narsil.Ui.ImGuiText.Value(_saveName));
         var exists = name.Length > 0 && _slots.Any(s => s.Name == name);
-        var disabled = reason != null || name.Length == 0;
+        var disabled = name.Length == 0;
         if (disabled)
             ImGui.BeginDisabled(true);
         if (ImGui.Button(exists ? "Overwrite" : "Save", in _autoSize))
@@ -329,7 +318,7 @@ public sealed partial class VillageGame
         if (disabled)
             ImGui.EndDisabled();
         ImGui.SameLine(0, -1);
-        TextC(Dim, reason ?? (exists ? "replaces the save with this name" : LastSavedText()));
+        TextC(Dim, exists ? "replaces the save with this name" : LastSavedText());
         ImGui.Separator();
     }
 

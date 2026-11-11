@@ -33,9 +33,6 @@ public sealed partial class VillageGame
     private CoopSession? _coop;
     private CharacterCreator? _coopCreator;
 
-    /// <summary>A Pact village: newcomers also make the dragon they fly in on.</summary>
-    private DragonCreator? _coopDragonCreator;
-    private bool _coopDragonStep;
     private bool _characterRequested;
 
     /// <summary>Your saved characters (<see cref="CharacterRoster"/>), offered before the creators.</summary>
@@ -113,8 +110,7 @@ public sealed partial class VillageGame
 
     private void AutosaveAtDawn()
     {
-        // Not mid-fight (a round's world time can cross dawn): it saves once the fight is over.
-        if (AutosaveEnabled && !_sim.Combat.Active && _sim.Clock.Day > _lastAutosaveDay && _sim.Clock.HourOfDay >= AutosaveHour)
+        if (AutosaveEnabled && _sim.Clock.Day > _lastAutosaveDay && _sim.Clock.HourOfDay >= AutosaveHour)
             Autosave("at dawn");
     }
 
@@ -129,12 +125,6 @@ public sealed partial class VillageGame
         old.Dispose();
         _selected = Entity.Null;
         _lastSeenMessages = _sim.Messages.Total;
-        // A snapshot can land mid-fight (a resync): its feedback isn't saved, and the turn should be framed afresh.
-        _seenFeedback = _sim.Combat.Feedback.Count;
-        _seenReactions = _sim.Combat.ReactionCount;
-        _framedTurn = default;
-        _range = null;
-        _watched.Clear();
         _interp.Reset();
         _predictor.Reset();
         FindAvatar();
@@ -146,8 +136,7 @@ public sealed partial class VillageGame
         var session = _coop!;
         if (session.Ended != null)
             return;
-        // A fight runs at its own pace (Encounter.Advance), whatever the speed or pause.
-        var stepsPerSecond = InCombat ? SimClock.TicksPerSecond : Paused ? 0 : SimClock.TicksPerSecond * SpeedMultipliers[_speed];
+        var stepsPerSecond = Paused ? 0 : SimClock.TicksPerSecond * SpeedMultipliers[_speed];
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
         var before = _sim.Clock.Tick;
         session.Update(dt, stepsPerSecond);
@@ -306,7 +295,6 @@ public sealed partial class VillageGame
             ImGui.End();
             return;
         }
-        var pact = _sim.Story.Start == StartKind.Pact;
         _coopCreator ??= new CharacterCreator(Host, _sim.Defs);
         _roster ??= CharacterRoster.Load(Host, _sim.Defs);
 
@@ -314,53 +302,36 @@ public sealed partial class VillageGame
         if (CharacterRoster.PickOverride is { } wanted && _roster.Find(wanted) is { } forced)
         {
             CharacterRoster.PickOverride = null;
-            UseSaved(session, forced, pact);
+            UseSaved(session, forced);
         }
         else if (_coopPicking && _roster.Characters.Count > 0)
         {
             _coopPicker ??= new CharacterPicker(Host, _roster, _sim.Defs);
             Wrapped($"You're new to {session.SessionName}.");
-            switch (_coopPicker.Draw(_time, pact))
+            switch (_coopPicker.Draw(_time))
             {
                 case CharacterPicker.Result.Use:
-                    UseSaved(session, _coopPicker.Picked!, pact);
+                    UseSaved(session, _coopPicker.Picked!);
                     break;
                 case CharacterPicker.Result.Edit:
                     Prefill(_coopPicker.Picked!);
-                    (_coopEditing, _coopPicking, _coopDragonStep) = (_coopPicker.Picked!.Id, false, false);
+                    (_coopEditing, _coopPicking) = (_coopPicker.Picked!.Id, false);
                     break;
                 case CharacterPicker.Result.New:
-                    (_coopEditing, _coopPicking, _coopDragonStep) = (null, false, false);
+                    (_coopEditing, _coopPicking) = (null, false);
                     break;
                 case CharacterPicker.Result.Back:
                     LeaveCoop();
                     break;
             }
         }
-        else if (_coopDragonStep && _coopDragonCreator != null)
-        {
-            Wrapped(_coopDragonCreator.EggOnly ? "And the egg you carry:" : "And the dragon you fly in on:");
-            switch (_coopDragonCreator.Draw(_time))
-            {
-                case DragonCreator.Result.Continue:
-                    SendCharacter(session);
-                    break;
-                case DragonCreator.Result.Back:
-                    _coopDragonStep = false;
-                    break;
-            }
-        }
         else
         {
-            Wrapped(pact
-                ? $"You're new to {session.SessionName}. Make your character, then your dragon: you'll fly in to help raise the sorcerer's tower."
-                : $"You're new to {session.SessionName}. Make your character: you'll arrive with a dragon egg of your own to keep warm.");
+            Wrapped($"You're new to {session.SessionName}. Make your character.");
             switch (_coopCreator.Draw(_time))
             {
                 case CharacterCreator.Result.Continue:
-                    _coopDragonCreator ??= new DragonCreator(Host, _sim.Defs);
-                    _coopDragonCreator.EggOnly = !pact; // off the Pact site they bring an egg: choose what hatches
-                    _coopDragonStep = true;
+                    SendCharacter(session);
                     break;
                 case CharacterCreator.Result.Back when _roster.Characters.Count > 0:
                     _coopPicking = true;
@@ -373,59 +344,31 @@ public sealed partial class VillageGame
         ImGui.End();
     }
 
-    /// <summary>The creators on a saved character (and its dragon, if it has one).</summary>
+    /// <summary>The creator on a saved character.</summary>
     private void Prefill(SavedCharacter c)
     {
         _coopCreator!.Load(c.Name, c.Look, c.Traits, c.Clothes);
-        if (c.HasDragon)
-            (_coopDragonCreator ??= new DragonCreator(Host, _sim.Defs)).Load(c.DragonName!, c.DragonLook!.Value, c.DragonBreed);
     }
 
-    /// <summary>
-    /// Arrive as a saved character. A Pact needs a dragon: one made in an egg game gets the dragon
-    /// step first, and keeps that dragon for next time.
-    /// </summary>
-    private void UseSaved(CoopSession session, SavedCharacter c, bool pact)
+    /// <summary>Arrive as a saved character.</summary>
+    private void UseSaved(CoopSession session, SavedCharacter c)
     {
-        if (pact && !c.HasDragon)
-        {
-            Prefill(c);
-            (_coopEditing, _coopPicking) = (c.Id, false);
-            _coopDragonCreator ??= new DragonCreator(Host, _sim.Defs);
-            _coopDragonCreator.EggOnly = false;
-            _coopDragonStep = true;
-            return;
-        }
         _roster!.Put(c); // most recently used
-        session.Send(pact
-            ? new CreateCharacterCommand(session.Me.Id, c.Name, c.Look, c.Traits, c.DragonName!, c.DragonLook!.Value, c.Clothes, BreedDef(c.DragonBreed))
-            : new CreateCharacterCommand(session.Me.Id, c.Name, c.Look, c.Traits, Clothes: c.Clothes));
+        session.Send(new CreateCharacterCommand(session.Me.Id, c.Name, c.Look, c.Traits, Clothes: c.Clothes));
         _characterRequested = true;
     }
 
-    /// <summary>A breed picked in the creator (by def name) as the command sends it; null for the default.</summary>
-    private Sim.Defs.CreatureDef? BreedDef(string? name) => name == null ? null : Sim.Systems.Dragons.BreedOrDefault(_sim.Defs, name);
-
-    /// <summary>Arrive as the character in the creators, and remember them (a new one, or the one edited).</summary>
+    /// <summary>Arrive as the character in the creator, and remember them (a new one, or the one edited).</summary>
     private void SendCharacter(CoopSession session)
     {
         var creator = _coopCreator!;
-        var step = _coopDragonCreator is { } d && _coopDragonStep ? d : null;
-        var withDragon = step is { EggOnly: false } ? step : null;
         var before = _coopEditing is { } id ? _roster?.Characters.Find(c => c.Id == id) : null;
         _roster?.Put(new SavedCharacter
         {
             Id = before?.Id ?? Guid.NewGuid(),
             Name = creator.Name, Look = creator.Look, Traits = creator.Traits.ToList(), Clothes = creator.Clothes.ToList(),
-            DragonName = withDragon?.Name ?? before?.DragonName,
-            DragonLook = withDragon?.Look ?? before?.DragonLook,
-            DragonBreed = withDragon != null ? withDragon.Breed : before?.DragonBreed,
         });
-        session.Send(withDragon != null
-            ? new CreateCharacterCommand(session.Me.Id, creator.Name, creator.Look, creator.Traits, withDragon.Name, withDragon.Look, creator.Clothes, BreedDef(withDragon.Breed))
-            : step != null // the egg step: its breed and element go to the egg
-                ? new CreateCharacterCommand(session.Me.Id, creator.Name, creator.Look, creator.Traits, "", step.Look, creator.Clothes, BreedDef(step.Breed))
-                : new CreateCharacterCommand(session.Me.Id, creator.Name, creator.Look, creator.Traits, Clothes: creator.Clothes));
+        session.Send(new CreateCharacterCommand(session.Me.Id, creator.Name, creator.Look, creator.Traits, Clothes: creator.Clothes));
         _characterRequested = true;
     }
 

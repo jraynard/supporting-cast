@@ -83,35 +83,6 @@ public class EnvironmentTests
     }
 
     [Fact]
-    public void AnAdultDragonSleepsOutInANestNearAFire()
-    {
-        var (sim, _) = ColdNightByAFire();
-        sim.SpawnStructure(sim.Thing("Nest"), C(23, 20));
-        var dragon = sim.SpawnCreature(sim.Defs.Creature("Dragon"), "Vesper", C(26, 24), ageDays: 14);
-        var needs = sim.World.Get<Needs>(dragon);
-        Array.Fill(needs.Values, 1f);
-        var rest = sim.Defs.Need("Rest");
-        needs.Values[rest.Index] = 0.1f;
-        var hp = sim.World.Get<Creature>(dragon).Hp;
-
-        // Out in the cold it warms up beside the fire first, then beds down in the nest for good.
-        var hours = 5;
-        var lastAwake = -1;
-        for (var q = 0; q < hours * 4; q++)
-        {
-            sim.TickMany(SimClock.TicksPerHour / 4);
-            if (sim.World.Get<Position>(dragon).Cell != C(23, 20) || !sim.World.Get<Mind>(dragon).Asleep)
-                lastAwake = q;
-        }
-        Assert.True(lastAwake < 4, $"still up after the first hour (quarter {lastAwake}): {sim.World.Get<Mind>(dragon).Job?.Report}");
-        Assert.Equal(hp, sim.World.Get<Creature>(dragon).Hp, 1);
-        // ...but it's cold out there: rest comes back, slower than in comfort.
-        var full = 3.2f * (hours - 1) / 24f;
-        var gained = needs.Get(rest) - 0.1f;
-        Assert.InRange(gained, full * 0.4f, full * 0.9f);
-    }
-
-    [Fact]
     public void ColdSleepIsSlowerSleep()
     {
         var tol = new Defs.TempTolerance(15, 90, 0, 400);

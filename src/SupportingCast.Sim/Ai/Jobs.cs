@@ -179,7 +179,7 @@ public sealed class SleepJob(Entity bed, int3? spot = null) : Job
         if (bed.IsNull)
             MoodSystem.Remember(Sim, Pawn, known.SleptOnGround);
         else
-            MoodSystem.Remember(Sim, Pawn, Get<Thing>(bed).Def.Building is { IsNest: true } ? known.SleptInNest : known.SleptInBed);
+            MoodSystem.Remember(Sim, Pawn, known.SleptInBed);
         if (Sim.Rooms.RoomAt(PawnCell) is not { Indoors: true })
             MoodSystem.Remember(Sim, Pawn, known.SleptOutdoors);
     }
@@ -744,10 +744,30 @@ public sealed class FightFireJob(int3 tile) : Job
 /// <summary>Close in on a target (raiders approaching the village; turn-based combat takes over once near).</summary>
 public sealed class AssaultJob(Entity target) : Job
 {
+    public override Entity Focus => target;
+
     protected override IEnumerable<JobStatus> Run()
     {
         Report = $"Attacking {Get<Creature>(target).Name}";
+        if (Combat.CombatRules.Attacks(Sim, Pawn).FirstOrDefault(a => !a.Ranged) is not { } attack)
+        {
+            Fail("nothing to attack with");
+            yield break;
+        }
         foreach (var s in GoToEntity(target, PathEnd.Touch, maxTicks: 600)) yield return s;
+        if (HasFailed) yield break;
+        // Blows land on the attack's cooldown for as long as they stay in reach; if the target
+        // steps away the job ends and the brain sends them after it again.
+        long nextAttack = 0;
+        while (Alive(target) && Get<Creature>(target).Able && Pathfinder.Touches(PawnCell, Sim.LocationOf(target)))
+        {
+            if (Sim.Clock.Tick >= nextAttack)
+            {
+                Combat.RealtimeAttacks.TryAttack(Sim, Pawn, target, attack);
+                nextAttack = Sim.Clock.Tick + attack.CooldownTicks;
+            }
+            yield return JobStatus.Running;
+        }
     }
 }
 
@@ -868,91 +888,6 @@ public sealed class FishJob(int3 spot, bool ordered = true) : Job
             if (Sim.Wildlife.Cast(Sim, patch))
                 Sim.SpawnItem(Sim.Defs.Thing("RawFish"), 1, spot);
         }
-    }
-}
-
-/// <summary>A keeper walks up to their dragon and climbs on, if it lets them (<see cref="RidingSystem"/>).</summary>
-public sealed class MountJob(Entity dragon) : Job
-{
-    public override Entity Focus => dragon;
-
-    protected override IEnumerable<JobStatus> Run()
-    {
-        Report = $"Mounting {Get<Creature>(dragon).Name}";
-        foreach (var s in GoToEntity(dragon, PathEnd.Touch)) yield return s;
-        if (HasFailed) yield break;
-        foreach (var s in Wait(60)) yield return s;
-        if (RidingSystem.CantMount(Sim, Pawn, dragon) is { } why)
-        {
-            Fail(why);
-            yield break;
-        }
-        if (Combat.TacticalMoves.Airborne(Sim, Sim.LocationOf(dragon)))
-        {
-            Fail("it took off");
-            yield break;
-        }
-        // Taught "steady", it never shrugs its keeper off.
-        if (!Bonding.Knows(Sim, dragon, TrickEffect.Steady) && !Sim.Rand.Chance(DragonSystem.Obedience(Sim, dragon)))
-        {
-            Sim.Messages.Add(MessageKind.Info, $"{Get<Creature>(dragon).Name} shrugs {Get<Creature>(Pawn).Name} off.", PawnCell);
-            Fail("the dragon wouldn't have it");
-            yield break;
-        }
-        RidingSystem.MountUp(Sim, Pawn, dragon);
-    }
-}
-
-/// <summary>
-/// A dragon called by its rider: it comes (flying if it's far, landing beside them) and waits on
-/// the ground while they climb on. Ends once mounted, or after a while if they never do.
-/// </summary>
-public sealed class AwaitRiderJob(Entity rider) : Job
-{
-    public const int WaitTicks = 60 * 30;
-
-    public override Entity Focus => rider;
-
-    protected override IEnumerable<JobStatus> Run()
-    {
-        Report = $"Coming to {Get<Creature>(rider).Name}";
-        foreach (var s in GoToEntity(rider, PathEnd.Touch)) yield return s;
-        if (HasFailed) yield break;
-        Report = $"Waiting for {Get<Creature>(rider).Name} to climb on";
-        for (var t = 0; t < WaitTicks && Alive(rider) && !Sim.World.Has<Mount>(Pawn); t++)
-            yield return JobStatus.Running;
-    }
-}
-
-/// <summary>
-/// The player's character waits for the dragon they called (<see cref="AwaitRiderJob"/>) to land
-/// beside them, then climbs on. Walking off calls it off.
-/// </summary>
-public sealed class WaitForMountJob(Entity dragon) : Job
-{
-    public const int GiveUpTicks = 60 * 40;
-
-    public override Entity Focus => dragon;
-
-    protected override IEnumerable<JobStatus> Run()
-    {
-        var name = Get<Creature>(dragon).Name;
-        Report = $"Waiting for {name}";
-        for (var t = 0; t < GiveUpTicks; t++)
-        {
-            if (!Alive(dragon) || Get<Creature>(dragon).Dead)
-            {
-                Fail("the dragon is gone");
-                yield break;
-            }
-            if (RidingSystem.CanClimbOn(Sim, Pawn, dragon))
-            {
-                RidingSystem.MountUp(Sim, Pawn, dragon);
-                yield break;
-            }
-            yield return JobStatus.Running;
-        }
-        Fail($"{name} didn't come");
     }
 }
 
@@ -1278,152 +1213,20 @@ public sealed class TendJob(Entity patient) : Job
     }
 }
 
-/// <summary>Keeper brings food to the dragon and hand-feeds it.</summary>
-public sealed class FeedDragonJob(Entity dragon, Entity food) : Job
-{
-    protected override IEnumerable<JobStatus> Run()
-    {
-        var def = Get<Thing>(food).Def;
-        var dragonName = Get<Creature>(dragon).Name;
-        Report = $"Fetching {def.Label} for {dragonName}";
-        if (!Reserve(food)) yield break;
-        foreach (var s in GoTo(Get<Thing>(food).Cell, PathEnd.OnTile)) yield return s;
-        if (HasFailed) yield break;
-        if (!Sim.IsAvailable(food))
-        {
-            Fail("food disappeared");
-            yield break;
-        }
-
-        var carried = Sim.TakeFromStack(food, Math.Min(EatJob.Wanted(Sim, dragon, def), Get<Stack>(food).Count));
-        Get<Carrying>(Pawn).Item = carried;
-
-        Report = $"Feeding {dragonName}";
-        foreach (var s in GoToEntity(dragon)) yield return s;
-        if (HasFailed) yield break;
-
-        foreach (var s in Wait(120)) yield return s;
-        if (!Alive(dragon))
-        {
-            Fail("dragon is gone");
-            yield break;
-        }
-        // Hand-feeding is care (Bonding): the leftovers stay in hand, and EndJob sets them down.
-        Get<Carrying>(Pawn).Item = Bonding.HandFeed(Sim, Pawn, dragon, carried);
-    }
-}
-
-/// <summary>
-/// Dragon breathes fire at a cell on its keeper's order: gets within range (walking or flying),
-/// then lets loose a few puffs of its breath cone. With <paramref name="untilLit"/> (burn orders)
-/// it stops as soon as the cell is burning.
-/// </summary>
-public sealed class BreatheFireJob(int3 target, int puffs = 4, bool untilLit = false) : Job
-{
-    public override int3? FocusCell => target;
-
-    protected override IEnumerable<JobStatus> Run()
-    {
-        var stage = Get<Creature>(Pawn).Stage(Sim.Clock.Tick);
-        var i = Sim.Map.Idx(target);
-        var element = Sim.Defs.AllElements.Count > 0 ? Dragons.BreathOf(Sim, Pawn) : null;
-        var reach = Breath.RangeOf(Sim, Pawn); // the stage's reach, times its element's
-        Report = untilLit ? "Going to burn the marked area" : element is { Element: not DragonElement.Fire } ? $"Going to breathe {element.Noun}" : "Going to breathe fire";
-        var aimAt = Position.CenterOf(target) + new float3(0, 0, 0.3f);
-
-        // Approach until close enough, stopping short rather than walking into the target.
-        var mover = Get<Mover>(Pawn);
-        var from = PawnCell;
-        if (Distance(from) > reach * 0.8f)
-        {
-            var route = Navigation.PlanRoute(Sim, Pawn, from, target, PathEnd.Touch);
-            if (route == null)
-            {
-                Fail("can't get close enough");
-                yield break;
-            }
-            mover.Path = route;
-            mover.PathIndex = 0;
-            mover.StepProgress = 0;
-            mover.StepFrom = from;
-            // Flyers land first: stopping mid-air would just drop them.
-            while (mover.Moving && (Distance(PawnCell) > reach * 0.7f || !Sim.Map.Passable(PawnCell)))
-                yield return JobStatus.Running;
-            mover.Stop();
-        }
-
-        Report = element is { Element: not DragonElement.Fire } ? $"Breathing {element.Noun}" : "Breathing fire";
-        var shape = Breath.ShapeOf(Sim, Pawn);
-        for (var p = 0; p < puffs; p++)
-        {
-            if (untilLit && Sim.Map.Fire[i] > 0)
-                yield break;
-            var pos = Get<Position>(Pawn).Pos;
-            var mouth = pos + new float3(0, 0, stage.Size * 0.6f);
-            Breath.Breathe(Sim, mouth, aimAt, shape, Pawn);
-            foreach (var s in Wait(15)) yield return s;
-            if (HasFailed) yield break;
-        }
-    }
-
-    private float Distance(int3 c)
-    {
-        float dx = c.X - target.X, dy = c.Y - target.Y, dz = c.Z - target.Z;
-        return MathF.Sqrt(dx * dx + dy * dy + dz * dz);
-    }
-}
-
-/// <summary>Dragon trails after its keeper for a while.</summary>
+/// <summary>Trails after someone for a while.</summary>
 public sealed class FollowJob(Entity leader, int ticks) : Job
 {
-    /// <summary>
-    /// Bond from just being near its keeper (0.03 an hour): company slows loneliness, but only
-    /// care (Bonding) makes up for it, so a keeper who never tends their dragon still loses it.
-    /// </summary>
-    public const float FollowBondPer30Ticks = 0.03f / (SimClock.TicksPerHour / 30f);
-
     public override bool Interruptible => true;
 
     protected override IEnumerable<JobStatus> Run()
     {
         Report = $"Following {Get<Creature>(leader).Name}";
-        var bond = Sim.Defs.Need("Bond");
         for (var t = 0; t < ticks; t += 30)
         {
             foreach (var s in GoToEntity(leader, PathEnd.Touch, maxTicks: 600)) yield return s;
             if (HasFailed) yield break;
-            Get<Needs>(Pawn).Add(bond, FollowBondPer30Ticks);
             foreach (var s in Wait(30)) yield return s;
         }
     }
 }
 
-/// <summary>
-/// A gravid dragon (<see cref="Gravid"/>) goes to a nest (if there's one to reach) and lays her
-/// clutch there (<see cref="BreedingSystem.Lay"/>); with none, she lays where she stands.
-/// </summary>
-public sealed class LayClutchJob(Entity nest) : Job
-{
-    public const int LayingTicks = 300;
-
-    public override Entity Focus => nest;
-
-    protected override IEnumerable<JobStatus> Run()
-    {
-        Report = "Making ready to lay";
-        if (Alive(nest))
-        {
-            if (!Reserve(nest)) yield break;
-            foreach (var s in GoTo(Get<Thing>(nest).Cell, PathEnd.OnTile)) yield return s;
-            if (HasFailed) yield break;
-        }
-        Report = "Laying a clutch";
-        foreach (var s in Wait(LayingTicks)) yield return s;
-        if (!Sim.World.Has<Gravid>(Pawn))
-        {
-            Fail("no clutch to lay");
-            yield break;
-        }
-        BreedingSystem.Lay(Sim, Pawn);
-    }
-}

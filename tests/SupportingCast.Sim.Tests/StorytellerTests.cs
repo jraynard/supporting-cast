@@ -105,21 +105,6 @@ public class StorytellerTests
     }
 
     [Fact]
-    public void AStorytellerRaidEndsInAFight()
-    {
-        var sim = Village();
-        sim.Storyteller.SetDifficulty(sim, Quick());
-        Assert.NotEmpty(AwaitRaid(sim));
-        for (var t = 0; t < SimClock.TicksPerHour * 2 && !sim.Combat.Active; t++)
-            sim.Tick();
-        Assert.True(sim.Combat.Active, "the raiders should walk in and start a fight");
-        sim.Combat.VillageAuto = true;
-        sim.Combat.Resolve(sim, maxRounds: 60);
-        Assert.False(sim.Combat.Active);
-        Assert.NotNull(sim.Combat.Outcome);
-    }
-
-    [Fact]
     public void RaidersClimbTheLadderWithTheVillage()
     {
         var stone = Village(armed: false);
@@ -149,7 +134,6 @@ public class StorytellerTests
         Assert.Equal(2, defs.Thing("CopperPick").GearTier);
         Assert.Equal(3, defs.Thing("BronzeHelm").GearTier);
         Assert.Equal(4, defs.Thing("ShortSword").GearTier);
-        Assert.Equal(6, defs.Thing("ScaleMail").GearTier);
         Assert.Equal(0, defs.Thing("Wood").GearTier);
         Assert.All(defs.AllRaiderKinds, k => Assert.True(k.Tier > 0, $"{k.Name} has no tier"));
     }

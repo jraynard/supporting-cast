@@ -80,19 +80,10 @@ public static class CombatRules
 
     /// <summary>Eye height above a creature's feet (a rider's feet are on their mount's back).</summary>
     private static float3 Eye(Simulation sim, Entity e, int3 cell) =>
-        Position.CenterOf(cell) + new float3(0, 0, 0.7f * sim.World.Get<Creature>(e).Stage(sim.Clock.Tick).Size + Seat(sim, e));
+        Position.CenterOf(cell) + new float3(0, 0, 0.7f * sim.World.Get<Creature>(e).Stage(sim.Clock.Tick).Size);
 
     private static float3 Body(Simulation sim, Entity e, int3 cell) =>
-        Position.CenterOf(cell) + new float3(0, 0, 0.5f * sim.World.Get<Creature>(e).Stage(sim.Clock.Tick).Size + Seat(sim, e));
-
-    /// <summary>How high a rider sits above the ground: most of their mount's height.</summary>
-    private static float Seat(Simulation sim, Entity e) =>
-        sim.World.TryGet<Riding>(e, out var r) && sim.World.IsAlive(r.Mount)
-            ? MountedHeight * sim.World.Get<Creature>(r.Mount).Stage(sim.Clock.Tick).Size
-            : 0f;
-
-    /// <summary>A rider's seat, as a share of the mount's size.</summary>
-    public const float MountedHeight = 0.8f;
+        Position.CenterOf(cell) + new float3(0, 0, 0.5f * sim.World.Get<Creature>(e).Stage(sim.Clock.Tick).Size);
 
     /// <summary>Share of blows aimed at a rider that land on the mount instead.</summary>
     public const float MountTakesHit = 0.2f;
@@ -124,7 +115,7 @@ public static class CombatRules
     /// </summary>
     public static float Cover(Simulation sim, int3 from, int3 target)
     {
-        if (TacticalMoves.Airborne(sim, target))
+        if (Airborne(sim, target))
             return 0;
         var dx = Math.Sign(from.X - target.X);
         var dy = Math.Sign(from.Y - target.Y);
@@ -165,18 +156,14 @@ public static class CombatRules
     public const float ReactionFactor = 0.8f;
 
     /// <summary>Odds of <paramref name="attacker"/> hitting <paramref name="target"/>, as if it stood at <paramref name="from"/>.</summary>
-    public static HitChance Chance(Simulation sim, Entity attacker, int3 from, Entity target, AttackDef attack, bool reaction = false, ShotMode mode = ShotMode.Normal) =>
-        Chance(sim, attacker, from, target, sim.World.Get<Position>(target).Cell, attack, reaction, mode);
+    public static HitChance Chance(Simulation sim, Entity attacker, int3 from, Entity target, AttackDef attack, bool reaction = false) =>
+        Chance(sim, attacker, from, target, sim.World.Get<Position>(target).Cell, attack, reaction);
 
     /// <summary>
     /// Odds with both ends placed: the attacker at <paramref name="from"/>, the target at
     /// <paramref name="to"/> (where a move would take it; see <see cref="Reactions.Threats"/>).
     /// </summary>
-    /// <remarks>
-    /// <paramref name="mode"/> only matters for ranged attacks: turn-based ones are snap or aimed, a
-    /// reaction is always a snap shot, and Normal (real-time hunting) uses the bow's own accuracy.
-    /// </remarks>
-    public static HitChance Chance(Simulation sim, Entity attacker, int3 from, Entity target, int3 to, AttackDef attack, bool reaction = false, ShotMode mode = ShotMode.Normal)
+    public static HitChance Chance(Simulation sim, Entity attacker, int3 from, Entity target, int3 to, AttackDef attack, bool reaction = false)
     {
         var w = sim.World;
         var tc = w.Get<Creature>(target);
@@ -186,8 +173,8 @@ public static class CombatRules
         if (tc.Dead)
             return Blocked("already dead");
         var dist = Distance(from, to);
-        var attackerAir = TacticalMoves.Airborne(sim, from);
-        var targetAir = TacticalMoves.Airborne(sim, to);
+        var attackerAir = Airborne(sim, from);
+        var targetAir = Airborne(sim, to);
         float range = 0, cover = 0, size = 0;
         if (attack.Ranged)
         {
@@ -214,10 +201,9 @@ public static class CombatRules
             wounds = h.Capacity(Capacity.Manipulation) * (0.5f + 0.5f * h.Capacity(Capacity.Sight));
         // A collapsed or crippled target is easy to hit.
         var helpless = tc.Downed ? 0.5f : w.TryGet<Health>(target, out var th) ? 0.1f * (1f - th.Capacity(Capacity.Moving)) : 0f;
-        var skill = SkillRules.Accuracy(sim, attacker, SkillFor(attack)) + Saddles.AimBonus(sim, attacker); // a saddle's steady seat
+        var skill = SkillRules.Accuracy(sim, attacker, SkillFor(attack));
         var hurried = reaction ? ReactionFactor : 1f;
-        // Turn-based shots are snap or aimed; Normal (real-time hunting, melee) leaves the odds alone.
-        var aim = attack.Ranged ? TimeUnits.Accuracy(reaction ? ShotMode.Snap : mode) : 1f;
+        const float aim = 1f;
         var chance = Math.Clamp((attack.Accuracy - range - cover + height + size + helpless + skill) * wounds * hurried * aim, MinChance, MaxChance);
         return new HitChance(chance, attack.Accuracy, range, cover, height, size, helpless, skill, wounds, damage, null, hurried, aim);
     }
@@ -225,12 +211,16 @@ public static class CombatRules
     /// <summary>Bows train (and use) Shooting, everything else Melee.</summary>
     public static Skill SkillFor(AttackDef attack) => attack.Ranged ? Skill.Shooting : Skill.Melee;
 
-    public static HitChance Chance(Simulation sim, Entity attacker, Entity target, AttackDef attack, ShotMode mode = ShotMode.Normal) =>
-        Chance(sim, attacker, sim.World.Get<Position>(attacker).Cell, target, attack, mode: mode);
+    public static HitChance Chance(Simulation sim, Entity attacker, Entity target, AttackDef attack) =>
+        Chance(sim, attacker, sim.World.Get<Position>(attacker).Cell, target, attack);
+
+    /// <summary>Is this cell in open air, with nothing to stand on?</summary>
+    public static bool Airborne(Simulation sim, int3 cell) =>
+        sim.Map.InBounds(cell) && !sim.Map.Passable(cell) && !sim.Map.IsSolid(sim.Map.Idx(cell));
 
     /// <summary>Could a melee blow pass between these cells (adjacent, and both on the ground or both in the air)?</summary>
     public static bool InReach(Simulation sim, int3 a, int3 b) =>
-        Pathfinder.Touches(a, b) && TacticalMoves.Airborne(sim, a) == TacticalMoves.Airborne(sim, b);
+        Pathfinder.Touches(a, b) && Airborne(sim, a) == Airborne(sim, b);
 
     /// <summary>Expected damage of an attack with these odds (the AI's yardstick).</summary>
     public static float Expected(in HitChance odds, AttackDef attack) =>
@@ -271,7 +261,6 @@ public static class CombatRules
         if (part >= 0 && w.TryGet<Health>(target, out var h))
         {
             var name = h.Body.Parts[part].Name;
-            best += Saddles.ArmorOver(sim, target, name); // on top of the scales, not instead of them
             foreach (var worn in sim.Worn(target))
             {
                 var a = w.Get<Thing>(worn).Def.Apparel!;
@@ -314,12 +303,9 @@ public static class CombatRules
     /// Roll the attack and apply any wound. Callers check <see cref="Chance"/> is possible first.
     /// A <paramref name="reaction"/> is hurried (<see cref="ReactionFactor"/>).
     /// </summary>
-    public static AttackResult Resolve(Simulation sim, Entity attacker, Entity target, AttackDef attack, bool reaction = false, ShotMode mode = ShotMode.Normal)
+    public static AttackResult Resolve(Simulation sim, Entity attacker, Entity target, AttackDef attack, bool reaction = false)
     {
-        // Aimed at a rider, a blow may strike the dragon under them.
-        if (sim.World.TryGet<Riding>(target, out var riding) && sim.World.IsAlive(riding.Mount) && sim.Rand.Chance(MountTakesHit))
-            target = riding.Mount;
-        var odds = Chance(sim, attacker, sim.World.Get<Position>(attacker).Cell, target, attack, reaction, mode);
+        var odds = Chance(sim, attacker, sim.World.Get<Position>(attacker).Cell, target, attack, reaction);
         AttackResult Result(AttackOutcome o, string? part = null, float dmg = 0) => new(attacker, target, attack, odds.Chance, o, part, dmg);
 
         if (odds.Possible)
@@ -367,16 +353,15 @@ public static class CombatRules
         var stage = w.Get<Creature>(dragon).Stage(sim.Clock.Tick);
         var mouth = w.Get<Position>(dragon).Pos + new float3(0, 0, stage.Size * 0.6f);
         var shape = Breath.ShapeOf(sim, dragon);
-        var el = sim.Defs.AllElements.Count > 0 ? Dragons.BreathOf(sim, dragon) : null;
-        var type = el?.DamageType ?? DamageType.Burn;
-        var (min, max) = el != null ? (el.Damage[0], el.Damage[1]) : (1.5f, 3f);
+        const DamageType type = DamageType.Burn;
+        const float min = 1.5f, max = 3f;
         var ev = Breath.Breathe(sim, mouth, Position.CenterOf(target) + new float3(0, 0, 0.3f), shape, dragon);
 
         var burned = new List<(Entity, float)>();
         foreach (var e in sim.Creatures())
         {
-            if (e == dragon || Dragons.Resists(sim, e, type) || (w.TryGet<Riding>(e, out var r) && r.Mount == dragon))
-                continue; // its own rider sits behind the flames
+            if (e == dragon || w.Get<Creature>(e).Def.SafeTempMax >= 300)
+                continue; // fireproof
             var body = Body(sim, e, w.Get<Position>(e).Cell);
             var hits = 0;
             foreach (var end in ev.RayEnds)
@@ -393,14 +378,6 @@ public static class CombatRules
             }
             burned.Add((e, total));
         }
-        if (el == null || el.Element == DragonElement.Fire)
-            return (ev, burned); // fire leaves nothing but its burns, as it always has
-
-        if (el.Chain is { } chain && burned.Count > 0)
-            Chain(sim, dragon, el, chain, ev, burned, min, max);
-        foreach (var (who, _) in burned)
-            if (w.IsAlive(who) && !w.Get<Creature>(who).Dead && !Dragons.ImmuneTo(sim, who, el))
-                AfflictionRules.Apply(sim, who, el.Status, dragon);
         return (ev, burned);
     }
 
@@ -416,44 +393,6 @@ public static class CombatRules
         dmg -= blunted;
         HealthSystem.Damage(sim, e, dmg, type, part);
         return dmg;
-    }
-
-    /// <summary>
-    /// Lightning leaping on from the first creature it struck to the nearest one it hasn't, up to
-    /// <see cref="ChainProps.Max"/> times, weaker each leap. Nearest first, ties by entity index, so
-    /// it leaps the same way every run.
-    /// </summary>
-    private static void Chain(Simulation sim, Entity dragon, ElementDef el, ChainProps chain, BreathEvent ev, List<(Entity Who, float Damage)> struck, float min, float max)
-    {
-        var w = sim.World;
-        var hit = new HashSet<Entity>(struck.Select(s => s.Who)) { dragon };
-        var last = struck[0].Who;
-        var factor = 1f;
-        for (var hop = 0; hop < chain.Max; hop++)
-        {
-            var from = Body(sim, last, w.Get<Position>(last).Cell);
-            Entity next = Entity.Null;
-            var best = float.MaxValue;
-            foreach (var e in sim.Creatures())
-            {
-                if (hit.Contains(e) || w.Get<Creature>(e).Dead || Dragons.Resists(sim, e, el.DamageType) || (w.TryGet<Riding>(e, out var r) && r.Mount == dragon))
-                    continue;
-                var at = Body(sim, e, w.Get<Position>(e).Cell);
-                var d = Length(at - from);
-                if (d > chain.Radius || !LineOfFire(sim, from, at))
-                    continue;
-                if (d < best || (d == best && e.Index < next.Index))
-                    (best, next) = (d, e);
-            }
-            if (next.IsNull)
-                return;
-            factor *= chain.Falloff;
-            var dmg = Wound(sim, next, sim.Rand.Range(min, max) * factor, el.DamageType);
-            ev.Arcs.Add((from, Body(sim, next, w.Get<Position>(next).Cell)));
-            struck.Add((next, dmg));
-            hit.Add(next);
-            last = next;
-        }
     }
 
     private static float Length(float3 v) => MathF.Sqrt(v.X * v.X + v.Y * v.Y + v.Z * v.Z);

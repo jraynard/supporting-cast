@@ -125,7 +125,6 @@ public enum WorkType
     Firefight,
     Doctor,
     Warden,
-    Tend,
     Refuel,
 
     /// <summary>Work cooking bills at a fire or hearth (<c>RecipeDef.Skill</c> Cooking).</summary>
@@ -146,33 +145,6 @@ public enum WorkType
 
     /// <summary>Cast from marked spots on the shore.</summary>
     Fish,
-
-    /// <summary>Set fire to areas marked <c>Designation.Burn</c>: dragons that can breathe fire only.</summary>
-    Burn,
-
-    /// <summary>Breathe into a forge or kiln that's short of the heat its work needs: dragons that can breathe fire only.</summary>
-    Stoke,
-
-    // Breath work for the other elements (ElementDef.Work), at the end so saved priorities and ties keep their order.
-
-    /// <summary>Breathe frost into a store (<c>BuildingProps.Chill</c>) so food in it keeps: ice dragons.</summary>
-    Chill,
-
-    /// <summary>Shatter rock marked for digging from breath range: lightning dragons.</summary>
-    Quarry,
-
-    /// <summary>Wither the plants on areas marked <c>Designation.Burn</c>, with no fire: poison dragons.</summary>
-    Blight,
-
-    /// <summary>Breathe green into harvested plants so they grow back sooner: nature dragons.</summary>
-    Nurture,
-}
-
-/// <summary>How an ice dragon's breath cools a store: °C per game hour while chilled, never below <see cref="MinTemp"/>.</summary>
-public sealed class ChillProps
-{
-    public float Cold { get; set; } = 900;
-    public float MinTemp { get; set; } = -4;
 }
 
 public sealed class ThingCount
@@ -367,24 +339,8 @@ public sealed class BuildingProps
 
     public FuelProps? Fuel { get; set; }
 
-    public bool IsNest { get; set; }
-
-    /// <summary>
-    /// A dragon breathing into it (Stoke work) adds this much heat per game hour for a while,
-    /// up to <see cref="StokedMaxTemp"/>: how a forge gets hot enough for iron in good time.
-    /// </summary>
-    public float StokeHeat { get; set; }
-
-    public float StokedMaxTemp { get; set; } = 1400;
-
-    /// <summary>An ice dragon can breathe into it to keep what's inside cold (Chill work, <c>Components.Chilled</c>).</summary>
-    public ChillProps? Chill { get; set; }
-
     /// <summary>Bellows: set beside a forge, a smith working there pumps them (<c>Components.Blown</c>).</summary>
     public BellowsProps? Bellows { get; set; }
-
-    /// <summary>A feeding trough: hand-fed dragons (<see cref="LifeStage.HandFed"/>) eat what's stored in it.</summary>
-    public bool DragonBowl { get; set; }
 
     /// <summary>Where carcasses are carried to be butchered (<c>Systems.ButcherSpots</c>).</summary>
     public ButcherSpotProps? ButcherSpot { get; set; }
@@ -497,19 +453,6 @@ public sealed class HarvestProps
     public bool DestroyOnHarvest { get; set; } = true;
 
     public float RegrowDays { get; set; }
-}
-
-public sealed class EggProps
-{
-    public string HatchesInto { get; set; } = "";
-    public float IncubationDays { get; set; } = 2;
-    public float IdealTempMin { get; set; } = 30;
-    public float IdealTempMax { get; set; } = 60;
-
-    /// <summary>Health fraction lost per game day while outside the ideal range (scaled by distance).</summary>
-    public float DamagePerDay { get; set; } = 0.5f;
-
-    [JsonIgnore] public CreatureDef HatchesIntoDef { get; internal set; } = null!;
 }
 
 /// <summary>How the 3D view draws a thing. <see cref="Auto"/> picks from the category and building props.</summary>
@@ -639,12 +582,6 @@ public sealed class ThingDef : Def
 
     public bool IsMeat { get; set; }
 
-    /// <summary>
-    /// Food only dragons eat (the berry-and-emberroot cake): another way to feed one than meat.
-    /// Nobody else touches it, whatever their hunger (<see cref="EdibleBy"/>).
-    /// </summary>
-    public bool DragonFood { get; set; }
-
     /// <summary>A cooked meal: people reach for it first, and it's a pleasure rather than raw meat.</summary>
     public bool Cooked { get; set; }
 
@@ -690,16 +627,8 @@ public sealed class ThingDef : Def
     /// <summary>The tier this gear stands at: its tool tier, else <see cref="Tier"/>.</summary>
     [JsonIgnore] public int GearTier => Math.Max(Tool?.Tier ?? 0, Tier);
 
-    /// <summary>Made from a dragon's shed scales: a keeper wearing it feels close to their dragon.</summary>
-    public bool DragonScale { get; set; }
-
     /// <summary>Items that hold other items by weight: packs, worn on the back.</summary>
     public ContainerProps? Container { get; set; }
-
-    /// <summary>A saddle a rideable dragon wears (<c>Systems.Saddles</c>).</summary>
-    public SaddleProps? Saddle { get; set; }
-
-    public EggProps? Egg { get; set; }
 
     /// <summary>
     /// Comes in the materials of another item, being made from it: planks are oak, pine or birch
@@ -716,7 +645,7 @@ public sealed class ThingDef : Def
 
     /// <summary>Food this kind of creature eats: dragon food for dragons, meat for meat-eaters, the rest for plant-eaters.</summary>
     public bool EdibleBy(CreatureDef eater) =>
-        IsFood && (DragonFood ? eater.Race == Race.Dragon : IsMeat ? eater.EatsMeat : eater.EatsPlants);
+        IsFood && (IsMeat ? eater.EatsMeat : eater.EatsPlants);
     [JsonIgnore] public bool BlocksMovement => Building?.IsWall == true || Category == ThingCategory.Resource;
     [JsonIgnore] public bool IsFloor => Building?.IsFloor == true;
     [JsonIgnore] public bool IsRoof => Building?.IsRoof == true;
@@ -752,8 +681,6 @@ public sealed class ThingDef : Def
             foreach (var b in Harvest.Bonus)
                 b.ThingDef = db.Thing(b.Def);
         }
-        if (Egg != null)
-            Egg.HatchesIntoDef = db.Creature(Egg.HatchesInto);
         if (BurnsInto != null)
             BurnsIntoDef = db.Thing(BurnsInto);
         if (MaterialsOf != null)
@@ -910,24 +837,6 @@ public sealed class OutfitPiece
     [System.Text.Json.Serialization.JsonIgnore] public List<MaterialDef> MaterialDefs { get; } = [];
 }
 
-/// <summary>
-/// An item that carries other items, up to a weight: a satchel, later bigger packs. Its contents
-/// are <c>Stored</c> in it, so they go wherever it goes (worn, dropped, hauled).
-/// </summary>
-public sealed class SaddleProps
-{
-    /// <summary>Added to its rider's chance to hit (a steady seat).</summary>
-    public float MountedAim { get; set; } = 0.1f;
-
-    /// <summary>Added to the dragon's scales over the parts it covers.</summary>
-    public float Armor { get; set; } = 0.05f;
-
-    public List<string> Covers { get; set; } = ["Torso"];
-
-    /// <summary>The layer drawn over the dragon (<c>apparel/&lt;worn&gt;_&lt;dragon sheet&gt;</c>).</summary>
-    public string Worn { get; set; } = "saddle";
-}
-
 public sealed class ContainerProps
 {
     /// <summary>Most it holds, in kg (its own weight not counted).</summary>
@@ -1021,11 +930,6 @@ public sealed class LifeStage
     /// <summary>Overrides the creature's <see cref="CreatureDef.SafeTempMin"/> at this stage.</summary>
     public float? SafeTempMin { get; set; }
 
-    /// <summary>Its keeper can ride it (see <c>RidingSystem</c>), once its affinity reaches <see cref="MinRideAffinity"/>.</summary>
-    public bool CanBeRidden { get; set; }
-
-    public float MinRideAffinity { get; set; } = 0.5f;
-
     /// <summary>Can take off and fly over obstacles (see <c>Ai.Navigation</c>).</summary>
     public bool CanFly { get; set; }
 
@@ -1037,9 +941,6 @@ public sealed class LifeStage
 
     /// <summary>Chance, each time a content flyer idles, of circling overhead instead of wandering.</summary>
     public float SoarChance { get; set; }
-
-    /// <summary>Feeds itself when there's no meat about: hunts wild game and eats the kill (<c>Ai.DragonHunting</c>).</summary>
-    public bool HuntsAlone { get; set; }
 
     /// <summary>Fire breath reach in cells; 0 means this stage can't breathe fire on command.</summary>
     public float BreathRange { get; set; }
@@ -1061,15 +962,6 @@ public sealed class LifeStage
 
     /// <summary>Work types this stage can do, replacing the creature's list; null keeps the creature's.</summary>
     public List<WorkType>? Work { get; set; }
-
-    /// <summary>Scales how fast the Bond need fades (hatchlings miss their keeper twice as fast).</summary>
-    public float BondDecayFactor { get; set; } = 1f;
-
-    /// <summary>A kept dragon at this stage asks for something about this often while awake (game hours; 0 never).</summary>
-    public float WantEveryHours { get; set; }
-
-    /// <summary>Eats only from a keeper's hand or a feeding trough, unless it's starving.</summary>
-    public bool HandFed { get; set; }
 
     [JsonIgnore] internal bool[]? Allowed { get; set; }
 }
@@ -1129,9 +1021,6 @@ public sealed class CreatureDef : Def
     /// <summary>Set for wild animals (<see cref="Race.Animal"/>).</summary>
     public AnimalProps? Animal { get; set; }
 
-    /// <summary>Set for dragons (<see cref="Race.Dragon"/>): which breed this def is (<c>Systems.Dragons</c>).</summary>
-    public BreedProps? Breed { get; set; }
-
     /// <summary>Work types this creature can be given (see <c>WorkGivers</c>); null means all of them.</summary>
     public List<WorkType>? Work { get; set; }
 
@@ -1142,9 +1031,7 @@ public sealed class CreatureDef : Def
     /// work (<see cref="ElementDef.IsBreathWork"/>) takes breath, and only what its
     /// <paramref name="element"/> lists (no element: fire's, Burn and Stoke).
     /// </summary>
-    public bool CanDo(WorkType type, LifeStage stage, ElementDef? element = null) =>
-        (stage.Allowed ?? _allowed)[(int)type]
-        && (!ElementDef.IsBreathWork(type) || (stage.BreathRange > 0 && (element?.Work.Contains(type) ?? type is WorkType.Burn or WorkType.Stoke)));
+    public bool CanDo(WorkType type, LifeStage stage) => (stage.Allowed ?? _allowed)[(int)type];
 
     /// <summary>The temperatures it's comfortable in and survives at <paramref name="stage"/>.</summary>
     public TempTolerance Tolerance(LifeStage stage) =>
@@ -1170,10 +1057,6 @@ public sealed class CreatureDef : Def
         LifeStages.Sort((a, b) => a.MinAgeDays.CompareTo(b.MinAgeDays));
         if ((Race == Race.Animal) != (Animal != null))
             throw new Exception($"Creature '{Name}': animals (and only animals) need \"animal\" props");
-        if ((Race == Race.Dragon) != (Breed != null))
-            throw new Exception($"Creature '{Name}': dragons (and only dragons) need \"breed\" props");
-        if (Breed is { Label: "" } unnamed)
-            unnamed.Label = Label;
         if (Animal is { } props && (props.HerdMin < 1 || props.HerdMax < props.HerdMin || props.StayHours.Length != 2))
             throw new Exception($"Creature '{Name}': bad herd size or stayHours");
         if (Animal is { Plural: "" } named)

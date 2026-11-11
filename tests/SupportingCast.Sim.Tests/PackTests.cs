@@ -60,7 +60,6 @@ public class PackTests
     public void BulkyThingsAndPacksStayOut()
     {
         var (sim, _, pack) = Setup();
-        Assert.Equal(0, sim.ContainerRoom(pack, sim.Thing("DragonEgg"), null));
         Assert.Equal(0, sim.ContainerRoom(pack, sim.Thing("Satchel"), null));
     }
 

@@ -61,9 +61,6 @@ internal sealed class ComponentCodec<T>(string name, Action<SaveWriter, T> write
 /// </summary>
 internal static class ComponentCodecs
 {
-    /// <summary>An element read from a save, Fire for anything the enum doesn't name.</summary>
-    private static DragonElement ValidElement(int v) => Enum.IsDefined((DragonElement)v) ? (DragonElement)v : DragonElement.Fire;
-
     public static readonly ComponentCodec[] All =
     [
         Codec("Thing", (w, t) =>
@@ -77,14 +74,14 @@ internal static class ComponentCodecs
         }, r => new Thing
         {
             Def = r.Def<ThingDef>(), Material = r.DefOrNull<MaterialDef>(), Cell = r.Int3(), Hp = r.Float(), Spawned = r.Bool(),
-            Facing = r.Version >= 3 ? (byte)r.Int() : (byte)0, // facing came with format 3
+            Facing = (byte)r.Int(), // facing came with format 3
         }),
         Codec("Stack", (w, s) => w.Int(s.Count), r => new Stack { Count = r.Int() }),
         Codec("Fueled", (w, f) =>
         {
             w.Float(f.Fuel);
             w.Def(f.Loaded);
-        }, r => new Fueled { Fuel = r.Float(), Loaded = r.Version >= 9 ? r.DefOrNull<ThingDef>() : null }), // the loaded fuel came with format 9
+        }, r => new Fueled { Fuel = r.Float(), Loaded = r.DefOrNull<ThingDef>()}), // the loaded fuel came with format 9
         Codec("PlantState", (w, p) => w.Float(p.RegrowTicksLeft), r => new PlantState { RegrowTicksLeft = r.Float() }),
         Codec("Construction", WriteConstruction, ReadConstruction),
         // Preset buildings (format 18).
@@ -106,46 +103,20 @@ internal static class ComponentCodecs
                 Def = r.Def<BuildingDef>(), Variant = r.Int(), Anchor = r.Int3(), Facing = (byte)(r.Int() & 3),
                 Phase = (BuildPhase)Math.Clamp(r.Int(), 0, (int)BuildPhase.Done), Demolishing = r.Bool(),
             };
-            if (r.Version >= 19) // upgrades came with format 19; one the defs no longer have is dropped
-                for (var n = r.Count(100); n > 0; n--)
-                    if (r.String() is var name && b.Def.Upgrades.Exists(u => u.Name == name))
-                        b.Upgrades.Add(name);
+            for (var n = r.Count(100); n > 0; n--) // one the defs no longer have is dropped
+                if (r.String() is var name && b.Def.Upgrades.Exists(u => u.Name == name))
+                    b.Upgrades.Add(name);
             return b;
         }),
         Codec("PartOf", (w, p) => w.Entity(p.Building), r => new PartOf { Building = r.Entity() }),
         Codec("Workbench", WriteWorkbench, ReadWorkbench),
-        Codec("Stoked", (w, s) => w.Long(s.Until), r => new Stoked { Until = r.Long() }),
         Codec("Blown", (w, b) => w.Long(b.Until), r => new Blown { Until = r.Long() }),
         // Breath of the other elements (format 14).
-        Codec("Nurtured", (w, n) => w.Long(n.Until), r => new Nurtured { Until = r.Long() }),
-        Codec("Chilled", (w, c) => w.Long(c.Until), r => new Chilled { Until = r.Long() }),
-        Codec("VenomCloud", (w, v) =>
-        {
-            w.Int3(v.Cell);
-            w.Float(v.Radius);
-            w.Long(v.Until);
-            w.Entity(v.Source);
-        }, r => new VenomCloud { Cell = r.Int3(), Radius = r.Float(), Until = r.Long(), Source = r.Entity() }),
         Codec("FoodPoisoned", (w, p) =>
         {
             w.Long(p.Until);
             w.Float(p.Severity);
         }, r => new FoodPoisoned { Until = r.Long(), Severity = r.Float() }),
-        Codec("Afflictions", (w, a) =>
-        {
-            w.Long(a.ChillUntil);
-            w.Float(a.Chill);
-            w.Long(a.StunUntil);
-            w.Float(a.StunTu);
-            w.Long(a.VenomUntil);
-            w.Float(a.VenomPerHour);
-            w.Entity(a.VenomFrom);
-            w.Long(a.RootUntil);
-        }, r => new Afflictions
-        {
-            ChillUntil = r.Long(), Chill = r.Float(), StunUntil = r.Long(), StunTu = r.Float(),
-            VenomUntil = r.Long(), VenomPerHour = r.Float(), VenomFrom = r.Entity(), RootUntil = r.Long(),
-        }),
         Codec("Crafted", (w, c) =>
         {
             w.Int((int)c.Quality);
@@ -165,19 +136,6 @@ internal static class ComponentCodecs
                 b.Known.Add(r.Def<RecipeDef>());
             return b;
         }),
-        Codec("Egg", (w, e) =>
-        {
-            w.Float(e.Progress);
-            w.Entity(e.Keeper);
-            w.Def(e.Breed);
-            w.Int((int)e.Element);
-        }, r => new Egg
-        {
-            Progress = r.Float(),
-            Keeper = r.Version >= 5 ? r.Entity() : Entity.Null, // keeper came with format 5
-            Breed = r.Version >= 14 ? r.DefOrNull<CreatureDef>() : null, // breeds and the egg's element came with format 14
-            Element = r.Version >= 14 ? ValidElement(r.Int()) : DragonElement.Fire,
-        }),
         Codec("PlayerCharacter", (w, p) => w.String(p.PlayerId.ToString("N")), r => new PlayerCharacter { PlayerId = Guid.ParseExact(r.String(), "N") }),
         Codec("Rot", (w, e) => w.Float(e.Progress), r => new Rot { Progress = r.Float() }),
         Codec("Prisoner", (w, p) =>
@@ -189,16 +147,6 @@ internal static class ComponentCodecs
         }, r => new Prisoner { Was = (Faction)r.Int(), Mode = (PrisonerMode)r.Int(), Resistance = r.Float(), LastVisit = r.Long() }),
         Tag<CaptureOrder>("CaptureOrder"),
         Tag<HuntOrder>("HuntOrder"),
-        Codec("Saddled", (w, s) => w.Entity(s.Saddle), r => new Saddled { Saddle = r.Entity() }),
-        Codec("HuntPolicy", (w, p) =>
-        {
-            w.Int((int)p.Mode);
-            w.Bool(p.BringHome);
-            w.Bool(p.Dangerous);
-            w.Int(p.Range);
-        }, r => new HuntPolicy { Mode = (HuntMode)r.Int(), BringHome = r.Bool(), Dangerous = r.Bool(), Range = r.Int() }),
-        Codec("Mount", (w, m) => w.Entity(m.Rider), r => new Mount { Rider = r.Entity() }),
-        Codec("Riding", (w, m) => w.Entity(m.Mount), r => new Riding { Mount = r.Entity() }),
         Codec("Provoked", (w, p) =>
         {
             w.Entity(p.By);
@@ -227,12 +175,12 @@ internal static class ComponentCodecs
         }, r => new Apparel
         {
             Head = r.Entity(), Body = r.Entity(),
-            Back = r.Version >= 6 ? r.Entity() : Entity.Null, // packs came with format 6
-            Neck = r.Version >= 9 ? r.Entity() : Entity.Null, // jewelry with format 9
-            Tunic = r.Version >= 12 ? r.Entity() : Entity.Null, // clothes with format 12
-            Legs = r.Version >= 12 ? r.Entity() : Entity.Null,
-            Feet = r.Version >= 12 ? r.Entity() : Entity.Null,
-            Cloak = r.Version >= 12 ? r.Entity() : Entity.Null,
+            Back = r.Entity(), // packs came with format 6
+            Neck = r.Entity(), // jewelry with format 9
+            Tunic = r.Entity(), // clothes with format 12
+            Legs = r.Entity(),
+            Feet = r.Entity(),
+            Cloak = r.Entity(),
         }),
         Codec("Outfit", (w, o) =>
         {
@@ -249,9 +197,9 @@ internal static class ComponentCodecs
         }, r => new Outfit
         {
             BareHead = r.Bool(), BareBody = r.Bool(), Unarmed = r.Bool(), Wanted = r.Entity(),
-            BareBack = r.Version >= 6 && r.Bool(), BareNeck = r.Version >= 9 && r.Bool(),
-            BareTunic = r.Version >= 12 && r.Bool(), BareLegs = r.Version >= 12 && r.Bool(), // clothes with format 12
-            BareFeet = r.Version >= 12 && r.Bool(), BareCloak = r.Version >= 12 && r.Bool(),
+            BareBack = r.Bool(), BareNeck = r.Bool(),
+            BareTunic = r.Bool(), BareLegs = r.Bool(), // clothes with format 12
+            BareFeet = r.Bool(), BareCloak = r.Bool(),
         }),
         Codec("Creature", (w, c) =>
         {
@@ -279,51 +227,13 @@ internal static class ComponentCodecs
         Codec("Mover", (w, m) => w.Int3(m.StepFrom), r => new Mover { StepFrom = r.Int3() }),
         Codec("Mind", WriteMind, ReadMind),
         Codec("Carrying", (w, c) => w.Entity(c.Item), r => new Carrying { Item = r.Entity() }),
-        Codec("Dragon", (w, d) =>
-        {
-            w.Entity(d.Keeper);
-            w.Float(d.Affinity);
-            w.Int(d.Flights);
-            w.Int((int)d.Element);
-            w.Int((int)d.Sex);
-        }, r => new Dragon
-        {
-            Keeper = r.Entity(), Affinity = r.Float(), Flights = r.Int(),
-            Element = r.Version >= 14 ? ValidElement(r.Int()) : DragonElement.Fire, // older saves take it from the look (SaveGame)
-            Sex = r.Version >= 16 ? (r.Int() == 1 ? DragonSex.Male : DragonSex.Female) : DragonSex.Female, // older saves roll it (SaveGame)
-        }),
-        Codec("Gravid", (w, g) =>
-        {
-            w.Long(g.LayTick);
-            w.String(g.SireBreed ?? "");
-            w.Int((int)g.SireElement);
-        }, r => new Gravid { LayTick = r.Long(), SireBreed = r.String(), SireElement = ValidElement(r.Int()) }),
-        Codec("LaidClutch", (w, l) => w.Long(l.Tick), r => new LaidClutch { Tick = r.Long() }),
         Codec("Migrating", (w, m) => w.Int3(m.To), r => new Migrating { To = r.Int3() }),
         Codec("Visitor", (w, v) =>
         {
             w.Long(v.LeaveTick);
             w.Int(v.Meals);
         }, r => new Visitor { LeaveTick = r.Long(), Meals = r.Int() }),
-        Codec("Keeper", (w, k) => w.Entity(k.Dragon), r => new Keeper { Dragon = r.Entity() }),
-        Codec("Quest", (w, q) =>
-        {
-            w.Int((int)q.Stage);
-            w.Long(q.KeeperPassesTick);
-            w.String(q.Difficulty ?? "");
-        }, r => new Quest
-        {
-            Stage = (QuestStage)r.Int(), KeeperPassesTick = r.Long(), Difficulty = r.String() is { Length: > 0 } d ? d : null,
-        }),
-        Tag<StoryKeeper>("StoryKeeper"),
-        Tag<Captive>("Captive"),
         Tag<Locked>("Locked"),
-        Tag<Chained>("Chained"),
-        Codec("StoryNpc", (w, n) =>
-        {
-            w.Int((int)n.Role);
-            w.Int3(n.Home);
-        }, r => new StoryNpc { Role = (StoryRole)r.Int(), Home = r.Int3() }),
         Codec("Stored", (w, s) => w.Entity(s.In), r => new Stored { In = r.Entity() }),
         Codec("Request", (w, q) =>
         {
@@ -345,25 +255,10 @@ internal static class ComponentCodecs
         }, r => new Appearance
         {
             Body = (BodyType)r.Int(), Hair = (HairStyle)r.Int(), HairColor = (uint)r.Int(), EyeColor = (uint)r.Int(), SkinColor = (uint)r.Int(),
-            Beard = r.Version >= 12 ? (BeardStyle)r.Int() : BeardStyle.None, // beards and eye styles came with format 12
-            Eyes = r.Version >= 12 ? (EyeStyle)r.Int() : EyeStyle.Round,
-            Stance = r.Version >= 12 ? (Stance)r.Int() : Stance.Relaxed,
-            Model = r.Version >= 13 ? Appearance.ValidModel(r.NullableString()) : null, // 3D models came with format 13
-        }),
-        Codec("DragonLook", (w, d) =>
-        {
-            w.Int((int)d.Scales);
-            w.Int((int)d.Belly);
-            w.Int((int)d.Wings);
-            w.Int((int)d.Horns);
-            w.Int((int)d.Eyes);
-            w.Int((int)d.Element);
-        }, r =>
-        {
-            var look = new DragonLook { Scales = (uint)r.Int(), Belly = (uint)r.Int(), Wings = (uint)r.Int(), Horns = (uint)r.Int(), Eyes = (uint)r.Int() };
-            if (r.Version >= 10) // elements came with format 10; older dragons are Fire
-                look.Element = ValidElement(r.Int());
-            return look;
+            Beard = (BeardStyle)r.Int(), // beards and eye styles came with format 12
+            Eyes = (EyeStyle)r.Int(),
+            Stance = (Stance)r.Int(),
+            Model = Appearance.ValidModel(r.NullableString()), // 3D models came with format 13
         }),
         Codec("AwaitingSettler", (w, a) => w.Long(a.ArriveTick), r => new AwaitingSettler { ArriveTick = r.Long() }),
         Codec("Avatar", (w, a) =>
@@ -383,20 +278,16 @@ internal static class ComponentCodecs
             var a = new Avatar
             {
                 MoveDir = new int2(r.Int(), r.Int()), WorkHeld = r.Bool(), Facing = new int2(r.Int(), r.Int()),
-                Chain = r.Version >= 7 ? (Systems.AvatarActionKind)r.Int() : Systems.AvatarActionKind.None, // chaining came with format 7
+                Chain = (Systems.AvatarActionKind)r.Int(), // chaining came with format 7
             };
-            if (r.Version >= 8) // turns scheduled at a cell (co-op walk prediction) came with format 8
-            {
-                a.HasPending = r.Bool();
-                a.PendingDir = new int2(r.Int(), r.Int());
-                a.PendingAt = r.Int3();
-            }
+            a.HasPending = r.Bool();
+            a.PendingDir = new int2(r.Int(), r.Int());
+            a.PendingAt = r.Int3();
             return a;
         }),
         Codec("BedOwner", (w, b) => w.Entity(b.Bed), r => new BedOwner { Bed = r.Entity() }),
         Codec("Skills", WriteSkills, ReadSkills),
         Codec("Mood", WriteMood, ReadMood),
-        Codec("DragonCare", WriteDragonCare, ReadDragonCare), // format 10
         Codec("Traits", (w, t) =>
         {
             w.Int(t.List.Count);
@@ -499,30 +390,21 @@ internal static class ComponentCodecs
         var target = r.Def<ThingDef>();
         var cost = target.Building?.Cost ?? throw new SaveException($"The save has a {target.Name} being built, but it isn't a building any more.");
         var delivered = new int[cost.Count];
-        if (r.Version < 2)
+        var slots = r.Count(1000);
+        var used = new bool[cost.Count];
+        for (var i = 0; i < slots; i++)
         {
-            // Format 1 stored counts by position only.
-            var old = r.Ints();
-            Array.Copy(old, delivered, Math.Min(old.Length, delivered.Length));
-        }
-        else
-        {
-            var slots = r.Count(1000);
-            var used = new bool[cost.Count];
-            for (var i = 0; i < slots; i++)
-            {
-                var thing = r.Def<ThingDef>();
-                var material = r.DefOrNull<MaterialDef>();
-                var count = r.Int();
-                // The first unclaimed cost entry for the same thing and material; dropped if none is left.
-                var k = cost.FindIndex(e => e.ThingDef == thing && e.MaterialDef == material);
-                while (k >= 0 && used[k])
-                    k = cost.FindIndex(k + 1, e => e.ThingDef == thing && e.MaterialDef == material);
-                if (k < 0)
-                    continue;
-                used[k] = true;
-                delivered[k] = count;
-            }
+            var thing = r.Def<ThingDef>();
+            var material = r.DefOrNull<MaterialDef>();
+            var count = r.Int();
+            // The first unclaimed cost entry for the same thing and material; dropped if none is left.
+            var k = cost.FindIndex(e => e.ThingDef == thing && e.MaterialDef == material);
+            while (k >= 0 && used[k])
+                k = cost.FindIndex(k + 1, e => e.ThingDef == thing && e.MaterialDef == material);
+            if (k < 0)
+                continue;
+            used[k] = true;
+            delivered[k] = count;
         }
         var c = new Construction { Target = target, Delivered = delivered, WorkDone = r.Float() };
         var n = r.Count(1000);
@@ -705,53 +587,6 @@ internal static class ComponentCodecs
     }
 
     // Value and memories; the target and situational list are rebuilt on the next update.
-    private static void WriteDragonCare(SaveWriter w, DragonCare c)
-    {
-        w.Int(c.Last.Count);
-        foreach (var (name, (tick, repeats)) in c.Last.OrderBy(kv => kv.Key, StringComparer.Ordinal))
-        {
-            w.String(name);
-            w.Long(tick);
-            w.Int(repeats);
-        }
-        w.Int(c.Training.Count);
-        foreach (var (name, done) in c.Training.OrderBy(kv => kv.Key, StringComparer.Ordinal))
-        {
-            w.String(name);
-            w.Float(done);
-        }
-        w.Int((int)c.Want);
-        w.Long(c.WantSince);
-        w.Float(c.NeglectHours);
-        w.Float(c.SulkHours);
-        w.Bool(c.Sulking);
-        w.Long(c.ItchyUntil);
-        w.Entity(c.BringMeat);
-        w.Bool(c.StayAt.HasValue);
-        if (c.StayAt is { } stay)
-            w.Int3(stay);
-        w.Long(c.StayUntil);
-    }
-
-    private static DragonCare ReadDragonCare(SaveReader r)
-    {
-        var c = new DragonCare();
-        for (int i = 0, n = r.Count(1000); i < n; i++)
-            c.Last[r.String()] = (r.Long(), r.Int());
-        for (int i = 0, n = r.Count(1000); i < n; i++)
-            c.Training[r.String()] = r.Float();
-        c.Want = (DragonWant)r.Int();
-        c.WantSince = r.Long();
-        c.NeglectHours = r.Float();
-        c.SulkHours = r.Float();
-        c.Sulking = r.Bool();
-        c.ItchyUntil = r.Long();
-        c.BringMeat = r.Entity();
-        c.StayAt = r.Bool() ? r.Int3() : null;
-        c.StayUntil = r.Long();
-        return c;
-    }
-
     private static void WriteMood(SaveWriter w, Mood m)
     {
         w.Float(m.Value);

@@ -18,64 +18,31 @@ public sealed record SaveHeader(
     int Height,
     int Depth,
     int Villagers,
-    IReadOnlyList<string> Dragons,
     IReadOnlyDictionary<string, string> Meta);
 
 /// <summary>
 /// Saving and loading a whole <see cref="Simulation"/>. A file is a small uncompressed header
 /// (<see cref="SaveHeader"/>) followed by a Brotli-compressed body: clock and random state, the
-/// entity allocator, the map layers, every component store, the message log, the last fight, and
+/// entity allocator, the map layers, every component store, the message log and
 /// each system's own <see cref="ISaveState"/>. Derived data (path costs, regions, rooms) is rebuilt.
 /// <para>
 /// Jobs are coroutines and aren't saved: loading drops them and creatures re-plan, exactly as if
 /// every job had been interrupted (<see cref="AiSystem.InterruptAll"/>). A loaded game therefore
 /// continues tick for tick like the original after <c>InterruptAll</c>, which is what the tests check.
-/// Player saves refuse a fight in progress; co-op snapshots carry one (<see cref="Snapshot"/>).
 /// </para>
 /// </summary>
 public static class SaveGame
 {
-    /// <summary>
-    /// 2: construction sites store delivered counts per cost entry (by def), not by position.
-    /// 3: things store their facing.
-    /// 4: gear orders (<c>Outfit</c>), prisoner mood and prison breaks. Older saves load as they are.
-    /// 5: co-op: <c>PlayerCharacter</c>, and eggs remember whose they are.
-    /// 6: packs: a Back apparel slot (and its gear order); pack contents are <c>Stored</c> in the pack.
-    /// 7: crafting: <c>Workbench</c> (bills, the craft under way), the recipe books; skills added since
-    ///    (Crafting, Cooking, Hunting) are rolled for older saves on loading.
-    /// 8: avatars keep a turn scheduled at a cell (<c>Avatar.HasPending</c>), for co-op walk prediction.
-    /// 9: mining: the fuel a station was loaded with, bellows, the Neck slot.
-    /// 10: a dragon's element (<c>DragonLook.Element</c>; older saves load their dragons as Fire), and
-    ///     dragon care (<c>DragonCare</c>: novelty, wants, tricks, sulking; older saves' dragons get a fresh one).
-    /// 11: the message log keeps its newest 500 and saves how many there have been (<c>MessageLog.Total</c>).
-    /// 12: clothes: Tunic, Legs, Feet and Cloak apparel slots (and their gear orders); beards, eye
-    ///     styles and stances in <c>Appearance</c>. Older saves' people load undressed.
-    /// 13: <c>Appearance.Model</c>, a character rendered from a 3D model.
-    /// 14: the encounter keeps a fight in progress whole (co-op snapshots mid-fight: <see cref="Snapshot"/>).
-    /// 15: dragon breeds and working elements (docs/plans/dragon-types.md): <c>Dragon.Element</c> is
-    ///     sim state (older saves take it from the dragon's look, so a dragon that was coloured Ice
-    ///     now breathes frost), and eggs carry the breed and element they hatch into.
-    /// 16: dragons have a sex (<c>Dragon.Sex</c>; older saves roll it as a new dragon would) for breeding.
-    /// 17: the storyteller's wild events (predators, migrations, dragon visitors) have their own timer.
-    /// 18: preset buildings (<c>PresetBuilding</c>, <c>PartOf</c>) and whether they're on
-    ///     (<c>BuildingSystem.PresetMode</c>; older saves keep freeform building).
-    /// 19: the upgrades fitted to a preset building (<c>PresetBuilding.Upgrades</c>).
-    /// </summary>
-    public const int FormatVersion = 19;
-    private static ReadOnlySpan<byte> Magic => "DWSV"u8;
-
-    /// <summary>Why the game can't be saved right now, or null if it can.</summary>
-    public static string? CannotSave(Simulation sim) =>
-        sim.Combat.Active ? "Can't save during a fight." : null;
+    /// <summary>Bump this and migrate in the codecs when a release has saves worth keeping. Format 1 is the fork from DragonWorld.</summary>
+    public const int FormatVersion = 1;
+    private static ReadOnlySpan<byte> Magic => "SCSV"u8;
 
     public static byte[] Write(Simulation sim, IReadOnlyDictionary<string, string>? meta = null) => Capture(sim, meta).Encode();
 
     /// <summary>
-    /// The whole game for a co-op peer (a joiner, a resync, a desync dump), a fight in progress
-    /// included, which player saves refuse. A move under way isn't kept: play it out first
-    /// (<see cref="Encounter.FinishAnimation"/>, as the co-op barrier does).
+    /// The whole game for a co-op peer (a joiner, a resync, a desync dump).
     /// </summary>
-    public static byte[] Snapshot(Simulation sim) => Capture(sim, null, duringFight: true).Encode();
+    public static byte[] Snapshot(Simulation sim) => Capture(sim, null).Encode();
 
     public static void Write(Stream stream, Simulation sim, IReadOnlyDictionary<string, string>? meta = null) =>
         Capture(sim, meta).Encode(stream);
@@ -103,10 +70,8 @@ public static class SaveGame
     }
 
     /// <summary>Serialize <paramref name="sim"/> as it is now (see <see cref="Image"/>). Throws <see cref="SaveException"/> during combat.</summary>
-    public static Image Capture(Simulation sim, IReadOnlyDictionary<string, string>? meta = null, bool duringFight = false)
+    public static Image Capture(Simulation sim, IReadOnlyDictionary<string, string>? meta = null)
     {
-        if (!duringFight && CannotSave(sim) is { } reason)
-            throw new SaveException(reason);
 
         using var head = new MemoryStream();
         using (var header = new BinaryWriter(head, Encoding.UTF8, leaveOpen: true))
@@ -185,10 +150,6 @@ public static class SaveGame
         w.Write(sim.Map.Depth);
         var village = sim.Creatures().Where(e => sim.World.Get<Creature>(e).Faction == Faction.Village).ToList();
         w.Write(village.Count(e => sim.World.Get<Creature>(e).Def.Race == Race.Human));
-        var dragons = village.Where(e => sim.World.Get<Creature>(e).Def.Race == Race.Dragon).Select(e => sim.World.Get<Creature>(e).Name).ToList();
-        w.Write(dragons.Count);
-        foreach (var name in dragons)
-            w.Write(name);
         w.Write(meta.Count);
         foreach (var (key, value) in meta.OrderBy(kv => kv.Key, StringComparer.Ordinal))
         {
@@ -206,13 +167,10 @@ public static class SaveGame
         if (width <= 0 || height <= 0 || depth <= 0 || (long)width * height * depth > 1 << 26)
             throw new SaveException($"Corrupt save: map size {width}x{height}x{depth}");
         var villagers = r.ReadInt32();
-        var dragons = new List<string>();
-        for (int i = 0, n = Bounded(r.ReadInt32()); i < n; i++)
-            dragons.Add(r.ReadString());
         var meta = new Dictionary<string, string>();
         for (int i = 0, n = Bounded(r.ReadInt32()); i < n; i++)
             meta[r.ReadString()] = r.ReadString();
-        return new SaveHeader(version, seed, tick, time, width, height, depth, villagers, dragons, meta);
+        return new SaveHeader(version, seed, tick, time, width, height, depth, villagers, meta);
     }
 
     private static int Bounded(int n) => n is >= 0 and <= 10_000 ? n : throw new SaveException($"Corrupt save: bad count {n}");
@@ -259,7 +217,6 @@ public static class SaveGame
         ComponentCodecs.WriteAll(w, sim.World);
         if (withMap)
             WriteMessages(w, sim.Messages);
-        sim.Combat.Save(w, sim);
 
         var states = sim.Systems.OfType<ISaveState>().ToList();
         w.Int(states.Count);
@@ -288,15 +245,6 @@ public static class SaveGame
 
         ReadMap(r, sim.Map);
         ComponentCodecs.ReadAll(r, sim.World);
-        if (r.Version < 14) // elements were only a look before format 14
-            foreach (var e in sim.World.Query<Dragon>())
-                if (sim.World.TryGet<DragonLook>(e, out var look))
-                    sim.World.Get<Dragon>(e).Element = look.Element;
-        if (r.Version < 16) // no sex before format 16: as if it had just been spawned
-            foreach (var e in sim.World.Query<Dragon>())
-                sim.World.Get<Dragon>(e).Sex = BreedingSystem.RollSex(sim, e);
-        foreach (var e in sim.World.Query<Dragon>())
-            Dragons.Refresh(sim, e); // what the element changes that isn't saved
         foreach (var e in sim.World.Query<Skills>())
             if (Array.IndexOf(sim.World.Get<Skills>(e).Level, -1) >= 0)
                 SkillRules.RollAdded(sim.Seed, e, sim.World.Get<Skills>(e));
@@ -307,7 +255,6 @@ public static class SaveGame
         // Structures whose def changed size since the save (beds became two cells long).
         sim.RefitFootprints();
         ReadMessages(r, sim.Messages);
-        sim.Combat.Load(r);
 
         var n = r.Count(1000);
         for (var i = 0; i < n; i++)
@@ -469,6 +416,6 @@ public static class SaveGame
         n = r.Count();
         for (var i = 0; i < n; i++)
             log.Cooldowns[r.String()] = r.Long();
-        log.Restore(messages, r.Version >= 11 ? r.Long() : null); // the running count came with format 11
+        log.Restore(messages, r.Long()); // the running count came with format 11
     }
 }

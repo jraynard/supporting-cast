@@ -121,7 +121,7 @@ public sealed class MoodSystem : ISimSystem
                 Remember(sim, e, def);
     }
 
-    /// <summary>A human or dragon died: the village grieves, and a keeper or dragon loses their other half.</summary>
+    /// <summary>A villager died: the village grieves.</summary>
     public static void OnDeath(Simulation sim, Entity dead)
     {
         var w = sim.World;
@@ -129,19 +129,12 @@ public sealed class MoodSystem : ISimSystem
         if (c.Faction != Faction.Village || !HasMood(c.Def))
             return;
         var known = sim.Defs.Thoughts;
-        var partner = Entity.Null;
-        ThoughtDef? partnerThought = null;
-        if (w.TryGet<Dragon>(dead, out var dragon))
-            (partner, partnerThought) = (dragon.Keeper, known.MyDragonDied);
-        else if (w.TryGet<Keeper>(dead, out var keeper))
-            (partner, partnerThought) = (keeper.Dragon, known.KeeperDied);
         foreach (var e in sim.Creatures())
         {
             if (e == dead || w.Get<Creature>(e).Faction != Faction.Village)
                 continue;
             var opinion = MoodRules.Opinion(sim, e, dead);
-            var thought = e == partner ? partnerThought
-                : opinion >= MoodRules.FriendAt ? known.FriendDied
+            var thought = opinion >= MoodRules.FriendAt ? known.FriendDied
                 : opinion <= MoodRules.RivalAt ? known.RivalDied
                 : known.VillagerDied;
             Remember(sim, e, thought, dead);
@@ -180,34 +173,13 @@ public sealed class MoodSystem : ISimSystem
                 var cell = w.Get<Position>(e).Cell;
                 return sim.Map.Light[sim.Map.Idx(cell)] < DarkBelow && sim.Rooms.RoomAt(cell) is { Indoors: true };
             }
-            case ThoughtCondition.WarmAndSnug:
-            {
-                if (!w.Get<Mind>(e).Asleep)
-                    return false;
-                var t = Warmth.Felt(sim, e);
-                var tol = c.Tolerance(sim.Clock.Tick);
-                return t >= tol.ComfortMin && t <= tol.ComfortMax;
-            }
             case ThoughtCondition.FoodPoisoned:
                 return FoodPoisoning.Severity(sim, e) > 0;
             case ThoughtCondition.Imprisoned:
                 return w.Has<Prisoner>(e);
-            case ThoughtCondition.WearingDragonScales:
-                if (!w.Has<Keeper>(e))
-                    return false;
-                foreach (var worn in sim.Worn(e))
-                    if (w.Get<Thing>(worn).Def.DragonScale)
-                        return true;
-                return false;
             case ThoughtCondition.WearingFinery:
                 return w.TryGet<Apparel>(e, out var dressed) && w.IsAlive(dressed.Neck)
                     && !Clothing.IsClothes(w.Get<Thing>(dressed.Neck).Def); // jewelry, not a wool scarf
-            case ThoughtCondition.NearHoard:
-                return w.Get<Mind>(e).Asleep && Hoard.ValueAround(sim, w.Get<Position>(e).Cell) >= Hoard.Enough;
-            case ThoughtCondition.Sulking:
-                return w.TryGet<DragonCare>(e, out var care) && care.Sulking;
-            case ThoughtCondition.CarryingKeeper:
-                return w.TryGet<Mount>(e, out var mount) && w.TryGet<Dragon>(e, out var d) && mount.Rider == d.Keeper;
             default:
                 return false;
         }
