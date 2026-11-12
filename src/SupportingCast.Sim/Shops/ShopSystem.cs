@@ -143,35 +143,51 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         }
     }
 
-    /// <summary>Evening, staying the night, and nowhere to sleep yet: they'll want a room.</summary>
+    /// <summary>Evening, staying the night, and no room paid for tonight: they'll want one (another night, if they had one last night).</summary>
     private static bool WantsARoom(Simulation sim, Entity who, Adventurer a)
     {
         var hour = sim.Clock.HourOfDay;
         if (hour is < LodgingFromHour and >= LodgingUntilHour || a.LeaveTick - sim.Clock.Tick < SimClock.HoursToTicks(6))
             return false;
-        return !(sim.World.TryGet<BedOwner>(who, out var own) && sim.World.IsAlive(own.Bed));
+        if (Hospitality.Lodging.Lodged(sim, who))
+            return false;
+        // A bed of their own that isn't a let one (a villager's): no need of a room.
+        return !(sim.World.TryGet<BedOwner>(who, out var own) && sim.World.IsAlive(own.Bed) && !IsLet(sim, own.Bed));
     }
 
     /// <summary>
-    /// Whoever took on a room for someone shows them up to it, once they're in reach: a free let
-    /// bed is theirs for their stay (<see cref="BedOwner"/>), and they pay. With every room taken,
-    /// they're told so, and wait or give up.
+    /// Whoever took on a room for someone shows them up to it, once they're in reach: tonight, a
+    /// let bed is theirs (<see cref="Hospitality.Lodging"/>; the one they had last night if they
+    /// did), and they pay. A made bed if there is one; shown to an unmade one, they take it and
+    /// think the less of the place. With every room taken, they wait or give up.
     /// </summary>
     private void TryLetARoom(Simulation sim, Order e)
     {
         var w = sim.World;
         if (e.Kind.Kind != ServiceKind.Lodging || e.Assignee.IsNull || !Handing.InReach(sim, e.Assignee, e.Poster))
             return;
-        var bed = FreeLetBed(sim, e.Where);
+        var kept = Hospitality.Lodging.Kept(sim, e.Poster);
+        var bed = kept.IsNull ? FreeLetBed(sim, e.Where) : kept;
         if (bed.IsNull)
             return;
-        w.Remove<BedOwner>(e.Poster);
-        w.Add(e.Poster, new BedOwner { Bed = bed });
-        sim.Speech.Say(sim, e.Assignee, "Up the stairs. Yours till you move on.", Volume.Say);
+        Hospitality.Lodging.Let(sim, e.Poster, bed);
+        sim.Speech.Say(sim, e.Assignee, kept.IsNull ? "Up the stairs. It's yours for the night." : "Same room again tonight.", Volume.Say);
+        if (kept.IsNull && Hospitality.Lodging.IsUnmade(sim, bed))
+        {
+            if (w.Has<Adventurer>(e.Poster))
+                w.Get<Adventurer>(e.Poster).Satisfaction -= UnmadeMood;
+            sim.Speech.Say(sim, e.Poster, "Somebody else's sheets? Lovely.", Volume.Say);
+        }
         Complete(sim, e, e.Assignee);
     }
 
-    /// <summary>A bed in a building that lets them (<see cref="BuildingDef.LetsBeds"/>) nobody living has been given; Entity.Null if they're all taken.</summary>
+    /// <summary>Satisfaction lost by a guest shown to a bed nobody's made up.</summary>
+    public const float UnmadeMood = 0.5f;
+
+    /// <summary>
+    /// A bed in a building that lets them (<see cref="BuildingDef.LetsBeds"/>) nobody living has been
+    /// given: a made one if there is one, else an unmade one. Entity.Null if they're all taken.
+    /// </summary>
     public static Entity FreeLetBed(Simulation sim, Entity building)
     {
         var w = sim.World;
@@ -180,10 +196,16 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var taken = new HashSet<Entity>();
         foreach (var o in w.Each<BedOwner>())
             taken.Add(w.Get<BedOwner>(o).Bed);
+        var unmade = Entity.Null;
         foreach (var part in Buildings.Parts(sim, building))
             if (w.Get<Thing>(part).Def.Building is { IsBed: true } && !w.Has<Construction>(part) && !taken.Contains(part))
-                return part;
-        return Entity.Null;
+            {
+                if (!w.Has<Hospitality.Unmade>(part))
+                    return part;
+                if (unmade.IsNull)
+                    unmade = part;
+            }
+        return unmade;
     }
 
     /// <summary>A bed let out (in a building that lets them): only whoever's been given it sleeps there.</summary>
@@ -717,6 +739,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             if (cooked is { } q)
                 Tasted(sim, to, q, meal: true);
             Work.Vessels.LeaveAfter(sim, to, def);
+            if (_rand.NextFloat() < 0.5f && w.TryGet<Position>(to, out var ate))
+                sim.Mess.Spill(sim, Hospitality.MessKind.Crumbs, ate.Cell, 0.4f);
             Complete(sim, meal, giver);
             return;
         }

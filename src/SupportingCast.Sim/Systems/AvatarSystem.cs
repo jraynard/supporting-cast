@@ -64,8 +64,11 @@ public enum AvatarActionKind
     /// <summary>At a stew pot: put food in, tend it, or ladle a bowl (<see cref="Work.Cooking.Start"/>), begun at once.</summary>
     Cook,
 
-    /// <summary>Wash dirty crockery at the tub, or knock a keg into a cask (<see cref="Work.BarWork.Start"/>), begun at once.</summary>
+    /// <summary>Wash dirty crockery at the tub, knock a keg into a cask or make up a bed (<see cref="Work.BarWork.Start"/>), begun at once.</summary>
     BarWork,
+
+    /// <summary>Clean up the mess on a cell (<see cref="Hospitality.ScrubSession"/>), begun at once.</summary>
+    Clean,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -91,7 +94,7 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
     public bool Instant => Kind is AvatarActionKind.PutDown or AvatarActionKind.Deliver or AvatarActionKind.PickUp
         or AvatarActionKind.Store or AvatarActionKind.OpenStorage 
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
-        or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork;
+        or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
     public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation;
@@ -403,6 +406,10 @@ public sealed class AvatarSystem : ISimSystem
                 return new(AvatarActionKind.OpenStorage, $"Open the {w.Get<Thing>(site).Label}", cell, site);
         }
 
+        // Mess on the floor: mop it up.
+        if (sim.Mess.At(sim, cell) is { } mess && !w.Has<Work.WorkSession>(avatar))
+            return new(AvatarActionKind.Clean, Hospitality.MessSystem.Verb(mess.Kind), cell, Entity.Null);
+
         // Work on what's there: hands full or not (you can chop wood with the egg on your back).
         if (!site.IsNull && !sim.Reservations.IsReservedByOther(site, avatar))
         {
@@ -672,6 +679,10 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.BarWork:
                 Work.BarWork.Start(sim, avatar, action.Target);
+                break;
+            case AvatarActionKind.Clean:
+                if (Hospitality.ScrubSession.For(sim, avatar, action.Cell) is { } scrub)
+                    Work.WorkSystem.Start(sim, avatar, scrub);
                 break;
             case AvatarActionKind.Craft:
                 if (w.Get<Workbench>(action.Target).Active is { } recipe)

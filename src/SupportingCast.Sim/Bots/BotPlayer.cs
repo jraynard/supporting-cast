@@ -176,6 +176,15 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 _struck = wa.OnBeat;
                 return (press, false, 0);
             }
+            case Hospitality.ScrubSession sc:
+                // Back and forth, a stroke every few steps.
+                return (false, false, (sc.StepsDone / 8) % 2 == 0 ? -1 : 1);
+            case Hospitality.MakeBedSession mb:
+            {
+                var press = mb.OnCue && !_struck;
+                _struck = mb.OnCue;
+                return (press, false, 0);
+            }
             case TapSession tap:
             {
                 var press = tap.OnTheTap && !_struck;
@@ -302,15 +311,53 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             _task = 0;
         if (_task == 0)
             TakeOn(sim, me, view, now);
-        if (_task == 0)
+        if (_task == 0 && !Upkeep(sim, me, view, now))
             Chat(view, me, now);
+    }
+
+    /// <summary>
+    /// Between orders, the innkeeper keeps the place: beds made up, floors mopped, the dirty
+    /// crockery washed. True while it's at it.
+    /// </summary>
+    private bool Upkeep(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Trade>(me, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+            return false;
+        var inn = ShopSystem.BuildingOf(sim, workplace);
+        if (inn.IsNull || w.Get<PresetBuilding>(inn).Def.Name != "Inn")
+            return false;
+        var bed = Buildings.Parts(sim, inn).FirstOrDefault(p => Hospitality.Lodging.IsUnmade(sim, p), Entity.Null);
+        if (!bed.IsNull)
+        {
+            Doing = "making up a bed";
+            return AtStation(sim, me, bed, now, b => send(new BarWorkCommand(me, b)));
+        }
+        var anchor = w.Get<PresetBuilding>(inn).Anchor;
+        var mess = view.Messes().Where(m => Maps.Map.Distance(m.Cell, anchor) <= CleanJob.InnReach)
+            .OrderBy(m => Maps.Map.Distance(m.Cell, w.Get<Position>(me).Cell)).Select(m => (int3?)m.Cell).FirstOrDefault();
+        if (mess is { } at)
+        {
+            Doing = "mopping the floor";
+            if (AvatarSystem.InReach(w.Get<Position>(me).Cell, at))
+                send(new Hospitality.ScrubCommand(me, at));
+            else
+                Walk(sim, me, at, now);
+            return true;
+        }
+        if (!BarWork.DirtyOn(sim, me).IsNull)
+        {
+            Doing = "washing up";
+            return AtStation(sim, me, Nearest(sim, me, "WashTub"), now, tub => send(new BarWorkCommand(me, tub)));
+        }
+        return false;
     }
 
     /// <summary>The order kinds this character's trade answers.</summary>
     private static ServiceKind[] KindsFor(TradeDef trade) => trade.Name switch
     {
         "Blacksmith" => [ServiceKind.Repair],
-        "Innkeeper" => [ServiceKind.Drink, ServiceKind.Meal, ServiceKind.Quest], // the bar, the pot and the quest board
+        "Innkeeper" => [ServiceKind.Drink, ServiceKind.Meal, ServiceKind.Lodging, ServiceKind.Quest], // the bar, the pot, the rooms and the quest board
         "Healer" => [ServiceKind.Healing],
         "Carpenter" => [ServiceKind.Unlock],
         _ => trade.Brokers ? [ServiceKind.Quest] : [],
@@ -348,6 +395,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             ServiceKind.Repair => Repair(sim, me, view, poster, now),
             ServiceKind.Drink => Pour(sim, me, view, poster, now),
             ServiceKind.Meal => Serve(sim, me, view, poster, now),
+            ServiceKind.Lodging => ShowUp(sim, me, poster, now),
             ServiceKind.Healing => Heal(sim, me, view, poster, now),
             ServiceKind.Quest => Broker(sim, me, view, poster, now),
             ServiceKind.Unlock => OpenBox(sim, me, view, poster, now),
@@ -529,7 +577,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             });
         return AtStation(sim, me, Nearest(sim, me, "FuelBin"), now, bin =>
         {
-            if (view.InContainer(bin).FirstOrDefault(IsFuel) is { IsNull: false } coal)
+            if (view.InContainer(bin).FirstOrDefault(IsFuel, Entity.Null) is { IsNull: false } coal)
                 send(new TakeFromStorageCommand(me, coal));
         });
     }
@@ -613,6 +661,14 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         return true;
     }
 
+    /// <summary>A room: walk up to the guest, and the order system shows them up to a bed.</summary>
+    private bool ShowUp(Simulation sim, Entity me, Entity guest, long now)
+    {
+        Doing = "letting a room";
+        Reach(sim, me, guest, now);
+        return true;
+    }
+
     /// <summary>
     /// A meal from the pot: ladle a bowl and hand it over; with the pot not ready, cook it (fill it
     /// from the larder, tend it till it's done, season it by taste) first.
@@ -646,7 +702,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             _potSeasoned = false;
             return AtStation(sim, me, Nearest(sim, me, "Larder"), now, larder =>
             {
-                if (view.InContainer(larder).FirstOrDefault(e => Cooking.IsIngredient(w.Get<Thing>(e).Def)) is { IsNull: false } stack)
+                if (view.InContainer(larder).FirstOrDefault(e => Cooking.IsIngredient(w.Get<Thing>(e).Def), Entity.Null) is { IsNull: false } stack)
                     send(new TakeFromStorageCommand(me, stack));
             });
         }
@@ -688,7 +744,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         }
         var at = w.Get<Thing>(usedAt).Cell;
         var shelf = w.Query<Thing>().Where(e => w.Get<Thing>(e) is { Spawned: true, Def.Name: "Shelf" })
-            .OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, at)).FirstOrDefault();
+            .OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, at)).FirstOrDefault(Entity.Null);
         if (!shelf.IsNull && sim.StoredIn(shelf).Any(e => w.Get<Thing>(e).Def.Name == clean))
         {
             Doing = $"fetching a clean {sim.Defs.Thing(clean).Label}";
@@ -699,7 +755,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             }
             return AtStation(sim, me, shelf, now, s =>
             {
-                if (view.InContainer(s).FirstOrDefault(e => w.Get<Thing>(e).Def.Name == clean) is { IsNull: false } stack)
+                if (view.InContainer(s).FirstOrDefault(e => w.Get<Thing>(e).Def.Name == clean, Entity.Null) is { IsNull: false } stack)
                     send(new TakeFromStorageCommand(me, stack));
             });
         }
@@ -707,7 +763,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         if (dirtyDef == null)
             return false;
         var dirty = w.Query<Thing>().Where(e => w.Get<Thing>(e) is { Spawned: true } t && t.Def.Name == dirtyDef && view.CanSeeCell(t.Cell))
-            .OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, w.Get<Position>(me).Cell)).FirstOrDefault();
+            .OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, w.Get<Position>(me).Cell)).FirstOrDefault(Entity.Null);
         if (dirty.IsNull)
             return false;
         Doing = "clearing up the dirty crockery";
@@ -737,12 +793,12 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         var keg = w.Get<Thing>(cask).Def.Building!.Cask!.Keg;
         var store = w.Query<Thing>().Where(e => w.Get<Thing>(e) is { Spawned: true } t && t.Def.Building?.StorageStacks > 0
                 && sim.StoredIn(e).Any(i => w.Get<Thing>(i).Def.Name == keg))
-            .OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, w.Get<Position>(me).Cell)).FirstOrDefault();
+            .OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, w.Get<Position>(me).Cell)).FirstOrDefault(Entity.Null);
         if (store.IsNull)
             return false;
         return AtStation(sim, me, store, now, s =>
         {
-            if (view.InContainer(s).FirstOrDefault(e => w.Get<Thing>(e).Def.Name == keg) is { IsNull: false } k)
+            if (view.InContainer(s).FirstOrDefault(e => w.Get<Thing>(e).Def.Name == keg, Entity.Null) is { IsNull: false } k)
                 send(new TakeFromStorageCommand(me, k));
         });
     }

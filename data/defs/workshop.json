@@ -124,6 +124,13 @@
       "tool": { "kind": "Hammer", "speed": 0.75, "tier": "Stone" }, "description": "Crude, but enough to beat out a first iron tool at the forge."
     },
     {
+      // The innkeeper's (Hospitality/MessSystem): mess comes up in fewer strokes with it on the belt.
+      // Art: items/mop from tools/inn_art.py; held like a fishing rod.
+      "name": "Mop", "held": "rod", "label": "mop", "category": "Item", "mass": 1.2, "sprite": "items/mop", "maxHp": 60,
+      "tool": { "kind": "Mop", "speed": 1.0, "tier": "Stone" },
+      "description": "A rag mop and a bucket's worth of grey water. For the floors, and what's on them."
+    },
+    {
       // Art: borrows the stone block sprite and the chisel held shape until the M6 art pass.
       "name": "Whetstone", "held": "chisel", "label": "whetstone", "category": "Item", "mass": 0.6, "sprite": "items/stone", "maxHp": 80,
       "tool": { "kind": "Whetstone", "speed": 1.0, "tier": "Stone" },

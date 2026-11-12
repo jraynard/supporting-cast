@@ -27,6 +27,18 @@ public readonly record struct KnownPiece(string Label, Work.Glow Glow, float Tem
 public readonly record struct KnownPot(Entity Pot, string Contents, Work.Surface Surface, float Heat, float Flame, bool Lit, float Doneness,
     bool Cooked, string? Caught, int Bowls, bool Empty);
 
+/// <summary>How a spot of mess looks: blood is just a dark stain.</summary>
+public enum MessLook : byte
+{
+    Puddle,
+    Mud,
+    Crumbs,
+    Stain,
+}
+
+/// <summary>A spot of mess on the floor, as anyone can see it.</summary>
+public readonly record struct KnownMess(int3 Cell, MessLook Look, float Amount, string Label);
+
 public readonly record struct PerceivedPerson(string Name, string Condition, string? Holding);
 
 /// <summary>A line as one character caught it. <see cref="Speaker"/> is null when they couldn't tell who it was.</summary>
@@ -184,6 +196,27 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         var next = smith == viewer || Omniscient ? Work.Smithing.NextStep(sim, smith, p) : null;
         var hot = p.Temp >= Work.Smithing.Window(p.Recipe).Lo;
         return new KnownPiece(Work.Smithing.PieceLabel(sim, p), Work.Smithing.GlowOf(p.Temp), p.Temp, hot, Math.Clamp(p.Shape, 0f, 1f), p.Shaped, p.IsMend, next, p.Forge);
+    }
+
+    /// <summary>The mess the viewer can see (all of it, for an omniscient view), as it looks.</summary>
+    public IEnumerable<KnownMess> Messes()
+    {
+        if (blind)
+            yield break;
+        foreach (var (i, s) in sim.Mess.All)
+        {
+            var c = sim.Map.CellOf(i);
+            if (!Omniscient && !CanSeeCell(c))
+                continue;
+            var look = s.Kind switch
+            {
+                Hospitality.MessKind.SpilledAle => MessLook.Puddle,
+                Hospitality.MessKind.Mud => MessLook.Mud,
+                Hospitality.MessKind.Crumbs => MessLook.Crumbs,
+                _ => MessLook.Stain,
+            };
+            yield return new KnownMess(c, look, s.Amount, Hospitality.MessSystem.Label(s.Kind));
+        }
     }
 
     /// <summary>A stew pot close enough to look into (<see cref="KnownPot"/>); null if it isn't one, or is too far.</summary>

@@ -5,7 +5,8 @@
 {
   "trades": [
     { "name": "Innkeeper", "label": "innkeeper", "description": "Keeps the inn fed and watered, hears everything said over the bar, and points adventuring parties at work, on whatever that's worth.",
-      "workplace": "Inn", "workPriorities": { "Cook": 1 }, "brokers": true },
+      "workplace": "Inn", "workPriorities": { "Cook": 1 }, "brokers": true,
+      "kit": [ { "def": "Mop" } ] },
     { "name": "Blacksmith", "label": "blacksmith", "description": "Works the forge: blades, tools and repairs.",
       "workplace": "Smithy", "workPriorities": { "Craft": 1 },
       "knows": [ "Forge" ], "skills": { "Crafting": 6 },

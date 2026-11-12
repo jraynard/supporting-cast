@@ -609,6 +609,7 @@ public sealed partial class VillageGame
     private static int FurnitureRank(AvatarActionKind kind) => kind switch
     {
         AvatarActionKind.Cook or AvatarActionKind.BarWork => 5,
+        AvatarActionKind.Clean => 1,
         AvatarActionKind.Craft => 4,
         AvatarActionKind.OpenStation => 3,
         AvatarActionKind.Pour => 2,

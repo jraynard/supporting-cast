@@ -26,7 +26,7 @@ public sealed class WashJob(Entity tub) : Job
         var inn = ShopSystem.BuildingOf(sim, workplace);
         if (inn.IsNull)
             return null;
-        var tub = Buildings.Parts(sim, inn).FirstOrDefault(e => BarWork.IsTub(sim, e));
+        var tub = Buildings.Parts(sim, inn).FirstOrDefault(e => BarWork.IsTub(sim, e), Entity.Null);
         if (tub.IsNull || sim.Reservations.IsReservedByOther(tub, pawn) || Dirty(sim, pawn, tub).IsNull)
             return null;
         return new WashJob(tub);
@@ -104,8 +104,8 @@ public sealed class WashJob(Entity tub) : Job
         if (Buildings.Of(sim, near) is not { IsNull: false } inn)
             return Entity.Null;
         var shelves = Buildings.Parts(sim, inn).Where(e => w.Get<Thing>(e).Def.Name == "Shelf" && !w.Has<Construction>(e)).ToList();
-        return shelves.FirstOrDefault(s => sim.StoredIn(s).Any(i => w.Get<Thing>(i).Def == def) && sim.HasRoomFor(s, def, null))
-            is { IsNull: false } keeps ? keeps : shelves.FirstOrDefault(s => sim.HasRoomFor(s, def, null));
+        return shelves.FirstOrDefault(s => sim.StoredIn(s).Any(i => w.Get<Thing>(i).Def == def) && sim.HasRoomFor(s, def, null), Entity.Null)
+            is { IsNull: false } keeps ? keeps : shelves.FirstOrDefault(s => sim.HasRoomFor(s, def, null), Entity.Null);
     }
 }
 
@@ -211,7 +211,7 @@ public sealed class InnSupplySystem : ISimSystem, Saving.ISaveState
     public static void Deliver(Simulation sim, Entity inn, string into, (string Def, int Count)[] goods)
     {
         var w = sim.World;
-        var box = Buildings.Parts(sim, inn).FirstOrDefault(e => w.Get<Thing>(e).Def.Name == into && !w.Has<Construction>(e));
+        var box = Buildings.Parts(sim, inn).FirstOrDefault(e => w.Get<Thing>(e).Def.Name == into && !w.Has<Construction>(e), Entity.Null);
         var at = box.IsNull ? w.Get<PresetBuilding>(inn).Anchor : w.Get<Thing>(box).Cell;
         foreach (var (def, count) in goods)
         {
@@ -231,4 +231,87 @@ public sealed class InnSupplySystem : ISimSystem, Saving.ISaveState
     public void Save(Saving.SaveWriter w, Simulation sim) => w.Int(_lastDay);
 
     public void Load(Saving.SaveReader r, Simulation sim) => _lastDay = r.Int();
+}
+
+/// <summary>An AI innkeeper cleans the inn: mops up whatever's on its floors, a spot at a time.</summary>
+public sealed class CleanJob(int3 cell) : Job
+{
+    /// <summary>Ticks to clear a whole spot, by hand; a mop halves it.</summary>
+    public const int TicksPerSpot = 240;
+
+    public static Job? For(Simulation sim, Entity pawn)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+            return null;
+        var inn = ShopSystem.BuildingOf(sim, workplace);
+        if (inn.IsNull || sim.Mess.All.Count == 0)
+            return null;
+        var anchor = w.Get<PresetBuilding>(inn).Anchor;
+        var from = w.Get<Position>(pawn).Cell;
+        int3? best = null;
+        var bestDist = int.MaxValue;
+        foreach (var i in sim.Mess.All.Keys)
+        {
+            var c = sim.Map.CellOf(i);
+            // In the inn, by the plan's reach from its middle: the keeper's floors, not the whole town's.
+            if (Map.Distance(c, anchor) > InnReach || sim.Reservations.IsTileReservedByOther(c, pawn))
+                continue;
+            var d = Map.Distance(from, c);
+            if (d < bestDist && Navigation.CanReach(sim, pawn, from, c, PathEnd.Touch))
+                (best, bestDist) = (c, d);
+        }
+        return best is { } at ? new CleanJob(at) : null;
+    }
+
+    /// <summary>How far from the inn's middle its floors reach.</summary>
+    public const int InnReach = 9;
+
+    protected override IEnumerable<JobStatus> Run()
+    {
+        if (!ReserveTile(cell))
+            yield break;
+        Report = "Cleaning the floor";
+        foreach (var s in GoTo(cell, PathEnd.Touch)) yield return s;
+        if (HasFailed) yield break;
+        if (Sim.Mess.At(Sim, cell) is not { } mess)
+            yield break;
+        var mop = !Toolbelt.Best(Sim, Pawn, "Mop").IsNull;
+        foreach (var s in Wait((int)(TicksPerSpot * mess.Amount * (mop ? 0.5f : 1f)))) yield return s;
+        Sim.Mess.Clean(Sim, cell, 1f);
+    }
+}
+
+/// <summary>An AI innkeeper makes up the beds guests have left.</summary>
+public sealed class MakeBedJob(Entity bed) : Job
+{
+    public const int Ticks = 150;
+
+    public static Job? For(Simulation sim, Entity pawn)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+            return null;
+        var inn = ShopSystem.BuildingOf(sim, workplace);
+        if (inn.IsNull || w.Count<Hospitality.Unmade>() == 0)
+            return null;
+        var from = w.Get<Position>(pawn).Cell;
+        foreach (var part in Buildings.Parts(sim, inn))
+            if (w.Has<Hospitality.Unmade>(part) && !sim.Reservations.IsReservedByOther(part, pawn)
+                && Navigation.CanReach(sim, pawn, from, w.Get<Thing>(part).Cell, PathEnd.Touch))
+                return new MakeBedJob(part);
+        return null;
+    }
+
+    protected override IEnumerable<JobStatus> Run()
+    {
+        if (!Reserve(bed))
+            yield break;
+        Report = "Making up a bed";
+        foreach (var s in GoTo(Get<Thing>(bed).Cell, PathEnd.Touch)) yield return s;
+        if (HasFailed) yield break;
+        foreach (var s in Wait(Ticks)) yield return s;
+        if (Alive(bed))
+            Sim.World.Remove<Hospitality.Unmade>(bed);
+    }
 }

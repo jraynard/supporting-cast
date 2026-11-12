@@ -269,6 +269,12 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         foreach (var e in w.Each<PresetBuilding>())
             DrawRaising(sim, e, InView);
 
+        // Mess on the floor, as the viewer sees it.
+        foreach (var m in (Viewer ?? Perception.For(sim, Entity.Null)).Messes())
+            if (InView(m.Cell))
+                Decal(S(MessSprite(m.Look)), new float3(m.Cell.X + 0.5f, m.Cell.Y + 0.5f, m.Cell.Z + 0.02f), 0.6f + 0.35f * m.Amount,
+                    Rgba.Pack(1f, 1f, 1f, 0.4f + 0.6f * m.Amount), Quad.Level(m.Cell.Z), translucent: true);
+
         _doors.Draw(quads, sim, InView, animDt, t => ArtOf(t), (at, level) => Billboard(S("props/padlock"), at - new float3(0, 0, 0.1f), 0.22f, 0.22f, Rgba.White, level));
 
         foreach (var (site, info) in _sites)
@@ -424,6 +430,14 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             Decal(S("ui/selection"), center + new float3(0, 0, 0.04f), ring, Rgba.Pack(1f, 0.85f, 0.35f), Quad.Unlit | Quad.Always, translucent: true);
         }
     }
+
+    private static string MessSprite(MessLook look) => look switch
+    {
+        MessLook.Puddle => "ui/mess_puddle",
+        MessLook.Mud => "ui/mess_mud",
+        MessLook.Crumbs => "ui/mess_crumbs",
+        _ => "ui/mess_stain",
+    };
 
     private static readonly float4 Dirt = new(0.62f, 0.52f, 0.4f, 0.55f);
 

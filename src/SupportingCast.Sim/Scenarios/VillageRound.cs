@@ -77,11 +77,11 @@ public static class VillageRound
         var parts = Buildings.Parts(sim, inn);
         Entity Near(string def, Func<Defs.ThingDef, bool> by)
         {
-            var mark = parts.FirstOrDefault(e => by(w.Get<Thing>(e).Def));
+            var mark = parts.FirstOrDefault(e => by(w.Get<Thing>(e).Def), Entity.Null);
             if (mark.IsNull)
                 return Entity.Null;
             var at = w.Get<Thing>(mark).Cell;
-            return parts.Where(e => w.Get<Thing>(e).Def.Name == def).OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, at)).FirstOrDefault();
+            return parts.Where(e => w.Get<Thing>(e).Def.Name == def).OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, at)).FirstOrDefault(Entity.Null);
         }
         if (Near("Shelf", d => d.Building?.Cask != null) is { IsNull: false } bar)
             sim.Store(bar, sim.CreateItem(sim.Defs.Thing("Tankard"), Tankards));

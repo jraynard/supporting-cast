@@ -39,6 +39,8 @@ public static class BarWork
             return $"Wash the {sim.World.Get<Thing>(dirty).Def.Label}{(sim.World.Get<Stack>(dirty).Count > 1 ? "s" : "")}";
         if (sim.World.Get<Thing>(station).Def.Building?.Cask != null && !KegFor(sim, who, station).IsNull)
             return PourSession.ServingsLeft(sim, station) <= TapBelow ? "Knock in the new keg" : "The cask isn't low enough to change yet";
+        if (Hospitality.Lodging.IsUnmade(sim, station))
+            return "Make the bed";
         return null;
     }
 
@@ -48,6 +50,11 @@ public static class BarWork
         if (!AvatarSystem.InReach(sim, w.Get<Position>(who).Cell, station))
             return;
         var cell = w.Get<Thing>(station).Cell;
+        if (Hospitality.Lodging.IsUnmade(sim, station))
+        {
+            WorkSystem.Start(sim, who, new Hospitality.MakeBedSession { Bed = station });
+            return;
+        }
         if (IsTub(sim, station))
         {
             if (DirtyOn(sim, who) is { IsNull: false } dirty)
@@ -254,6 +261,8 @@ public sealed class TapSession : WorkSession
             return;
         BarWork.Refill(sim, Cask, keg, Wasted);
         var at = sim.World.Get<Thing>(Cask).Cell;
+        if (Misses > 0)
+            sim.Mess.Spill(sim, Hospitality.MessKind.SpilledAle, sim.World.Get<Position>(Worker).Cell, 0.4f * Misses);
         sim.Messages.Add(MessageKind.Info, Misses == 0 ? "The tap's in clean, and the cask is full."
             : $"The tap's in, after a soaking: {Wasted} servings down your front and on the floor.", at);
     }

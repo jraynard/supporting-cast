@@ -111,6 +111,12 @@ public sealed partial class VillageGame
             case TapSession tap:
                 DrawTap(tap);
                 return;
+            case Sim.Hospitality.ScrubSession scrub:
+                DrawScrub(scrub);
+                return;
+            case Sim.Hospitality.MakeBedSession bed:
+                DrawMakeBed(bed);
+                return;
             case null:
                 DrawTongs();
                 DrawPotPanel();

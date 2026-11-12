@@ -101,4 +101,25 @@ public sealed partial class VillageGame
         }
         EndWork();
     }
+
+    /// <summary>Scrubbing up a mess: back and forth, and how much is left of it.</summary>
+    private void DrawScrub(Sim.Hospitality.ScrubSession s)
+    {
+        BeginWork(s.Title, ("A/D", "back and forth"), ("Esc", "stop"));
+        TextC(Theme.Dim, s.Mop ? "The mop makes short work of it." : "By hand, this takes a while: a mop would be quicker.");
+        Bar("Left", Math.Clamp(s.Amount, 0f, 1f), Theme.Warn);
+        ImGui.Text($"{s.Strokes} stroke{(s.Strokes == 1 ? "" : "s")}.");
+        EndWork();
+    }
+
+    /// <summary>Making up a bed: three movements, each as the hands come round.</summary>
+    private void DrawMakeBed(Sim.Hospitality.MakeBedSession s)
+    {
+        BeginWork(s.Title, ("F", "as the hands come round"), ("Esc", "leave it"));
+        string[] moves = ["Strip it", "Smooth the sheet", "Tuck it in"];
+        for (var i = 0; i < moves.Length; i++)
+            TextC(i < s.Movements ? Theme.Good : i == s.Movements ? Theme.Accent : Theme.Dim, (i < s.Movements ? "Done: " : "") + moves[i]);
+        Bar("", s.Sweep, s.OnCue ? Theme.Good : Theme.Dim);
+        EndWork();
+    }
 }

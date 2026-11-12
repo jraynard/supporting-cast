@@ -77,6 +77,9 @@ public sealed partial class Simulation
     /// <summary>Quests, what people believe about them, and the parties out on them.</summary>
     public Expeditions.ExpeditionSystem Expeditions { get; }
 
+    /// <summary>Mess on the floor: spilled ale, mud, crumbs, blood.</summary>
+    public Hospitality.MessSystem Mess { get; } = new();
+
     /// <summary>What's been said aloud, and who heard it.</summary>
     public Speech.SpeechSystem Speech { get; } = new();
 
@@ -214,6 +217,8 @@ public sealed partial class Simulation
             .AddSystem(sim.Parties)
             .AddSystem(sim.Shops)
             .AddSystem(new Shops.InnSupplySystem())
+            .AddSystem(new Hospitality.LodgingSystem())
+            .AddSystem(sim.Mess)
             .AddSystem(sim.Favours)
             .AddSystem(new Healing.ManaSystem())
             .AddSystem(sim.Expeditions)

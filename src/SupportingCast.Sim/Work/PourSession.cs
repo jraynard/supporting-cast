@@ -137,6 +137,7 @@ public sealed class PourSession : WorkSession
         var at = w.Get<Thing>(Cask).Cell;
         if (Spilled)
         {
+            sim.Mess.Spill(sim, Hospitality.MessKind.SpilledAle, w.Get<Position>(Worker).Cell);
             sim.Messages.Add(MessageKind.Info, $"It foams over the rim and down your arm: that {DrinkLabel} is on the floor.", at);
             return;
         }

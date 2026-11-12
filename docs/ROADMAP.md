@@ -235,7 +235,7 @@ Remaining trades, more maps (authored like Millbrook), crisis variety, personal 
 ### M7: Playing with strangers
 An authoritative server filtered by `Perception`, moderation, voice.
 
-### polish pass - undecided timing yet
+### polish pass - timing uncertain
 - add icon for the game executable
 - publish builds in a way we can easily distribute for playtesting (maybe use discord or something)
 - UX / art polish pass (not a full art pass but just clean things up as needed to make sure its legible)

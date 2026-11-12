@@ -38,7 +38,7 @@ public sealed class WorkGivers
                     WorkType.Refuel => Refuel(sim, pawn),
                     WorkType.Construct => Locks.OpenBoxJob.For(sim, pawn) ?? Shops.SellJob.For(sim, pawn) ?? Construct(sim, pawn) ?? Deconstruct(sim, pawn),
                     WorkType.Craft => Shops.SellJob.For(sim, pawn) ?? Shops.MendJob.For(sim, pawn) ?? Craft(sim, pawn, type), // a sale is quick, a mend is not
-                    WorkType.Cook => Shops.ServeJob.For(sim, pawn) ?? Shops.LodgeJob.For(sim, pawn) ?? Shops.SellJob.For(sim, pawn) ?? Shops.TapJob.For(sim, pawn) ?? Shops.WashJob.For(sim, pawn) ?? Shops.CookPotJob.For(sim, pawn) ?? Craft(sim, pawn, type),
+                    WorkType.Cook => Shops.ServeJob.For(sim, pawn) ?? Shops.LodgeJob.For(sim, pawn) ?? Shops.SellJob.For(sim, pawn) ?? Shops.TapJob.For(sim, pawn) ?? Shops.WashJob.For(sim, pawn) ?? Shops.CookPotJob.For(sim, pawn) ?? Shops.MakeBedJob.For(sim, pawn) ?? Shops.CleanJob.For(sim, pawn) ?? Craft(sim, pawn, type),
                     WorkType.Hunt => Butcher(sim, pawn) ?? Hunt(sim, pawn),
                     WorkType.Fish => Fish(sim, pawn),
                     WorkType.Mine => Harvest(sim, pawn, type) ?? Dig(sim, pawn),

@@ -395,6 +395,12 @@ internal static class ComponentCodecs
             return a;
         }),
         Codec("BedOwner", (w, b) => w.Entity(b.Bed), r => new BedOwner { Bed = r.Entity() }),
+        Codec("LodgeStay", (w, s) =>
+        {
+            w.Entity(s.Bed);
+            w.Int(s.Night);
+        }, r => new Hospitality.LodgeStay { Bed = r.Entity(), Night = r.Int() }),
+        Tag<Hospitality.Unmade>("Unmade"),
         Codec("Skills", WriteSkills, ReadSkills),
         Codec("ShopPrices", WriteShopPrices, ReadShopPrices),
         Codec("ForSale", (w, f) => { w.Entity(f.Seller); w.Int(f.Price); }, r => new Shops.ForSale { Seller = r.Entity(), Price = r.Int() }),
