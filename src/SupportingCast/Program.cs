@@ -198,6 +198,8 @@ else
         MapName = ParseString(args, "--map") ?? SupportingCast.Sim.Scenarios.VillageRound.DefaultMap,
         Freeform = args.Contains("--freeform"),
         HideAllRoofs = args.Contains("--hide-roofs"), // roofs are on by default; --show-roofs is still accepted
+        LookAt = ParseString(args, "--look-at") is { } look && look.Split(',') is [var lx, var ly] && int.TryParse(lx, out var x) && int.TryParse(ly, out var y)
+            ? new int2(x, y) : null,
         AutoPause = !args.Contains("--no-autopause"),
         Difficulty = ParseString(args, "--difficulty"),
         // The demos are for looking at; everything else walks in as a character.

@@ -17,7 +17,7 @@ dotnet run --project src/SupportingCast -- --new-game --name Arin        # strai
 dotnet run --project src/SupportingCast -- --host --name Arin            # host (--port N, --relay HOST, --difficulty D)
 dotnet run --project src/SupportingCast -- --join 127.0.0.1 --player-id bea --name Bea
 dotnet run --project src/SupportingCast -- --furniture-demo --zoom 80    # also --building-demo
-dotnet run --project src/SupportingCast -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui; any mode
+dotnet run --project src/SupportingCast -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui, --look-at X,Y; any mode
 dotnet run --project src/SupportingCast -- --art-preview
 dotnet run --project src/SupportingCast -- --check-art     # headless: every sprite and tag exists
 dotnet run --project src/SupportingCast -- --check-gpu

@@ -308,6 +308,13 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         foreach (var e in w.Each<PresetBuilding>())
             DrawRaising(sim, e, InView);
 
+        // Shop signs, hung out over the street from their front walls (not while the wall's cut down).
+        foreach (var e in w.Each<PresetBuilding>())
+            // It hangs outside the wall, so the storey above doesn't hide it, as it would something in the cell.
+            if (Sim.Shops.Signs.CellOf(sim, e) is { } signAt && signAt.X >= x0 && signAt.X <= x1 && signAt.Y >= y0 && signAt.Y <= y1 && signAt.Z <= cut
+                && Sim.Shops.Signs.At(sim, signAt) == e && !_mesher.IsStub(sim, signAt.X, signAt.Y, signAt.Z))
+                AddModel(SignModel, signAt, w.Get<PresetBuilding>(e).Facing, null, Rgba.White, Quad.Level(signAt.Z));
+
         // Mess on the floor, as the viewer sees it.
         foreach (var m in (Viewer ?? Perception.For(sim, Entity.Null)).Messes())
             if (InView(m.Cell))
@@ -469,6 +476,18 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             Decal(S("ui/selection"), center + new float3(0, 0, 0.04f), ring, Rgba.Pack(1f, 0.85f, 0.35f), Quad.Unlit | Quad.Always, translucent: true);
         }
     }
+
+    /// <summary>
+    /// A hanging shop sign, in its wall cell with the street to the front (+Y): an iron arm out from
+    /// the wall's top, and the board hung from it edge-on to the wall, painted both sides.
+    /// </summary>
+    private static readonly List<ModelBox> SignModel =
+    [
+        new() { Min = [0.47f, 0.92f, 0.86f], Max = [0.53f, 1.86f, 0.9f], Top = "props/stone_block", Side = "props/stone_block" },
+        new() { Min = [0.48f, 1.04f, 0.8f], Max = [0.52f, 1.08f, 0.86f], Top = "props/stone_block", Side = "props/stone_block" },
+        new() { Min = [0.48f, 1.72f, 0.8f], Max = [0.52f, 1.76f, 0.86f], Top = "props/stone_block", Side = "props/stone_block" },
+        new() { Min = [0.475f, 1.0f, 0.28f], Max = [0.525f, 1.8f, 0.8f], Top = "props/planks", Side = "props/sign_board", Front = "props/planks" },
+    ];
 
     private static string MessSprite(MessLook look) => look switch
     {

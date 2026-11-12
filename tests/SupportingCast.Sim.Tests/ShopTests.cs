@@ -404,4 +404,36 @@ public class ShopTests
             sim.TickMany(SimClock.TicksPerHour / 12);
         Assert.Contains(party, a => sim.World.Get<Mind>(a).Job?.Report?.Contains("at The Wild Bear") == true);
     }
+
+    // ---------------- The sign outside ----------------
+
+    [Fact]
+    public void TheInnsSignHangsOnItsFrontWallAndReadsItsNameAndPrices()
+    {
+        var (sim, keeper, inn, _) = Inn();
+        var at = Signs.CellOf(sim, inn)!.Value;
+        Assert.True(sim.World.Get<Thing>(sim.Map.Structure[sim.Map.Idx(at)]).Def.Building!.IsWall, "it's on a wall");
+        Assert.Equal(inn, Signs.At(sim, at));
+
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, 5, true));
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Quest, 12, false));
+        var sign = Signs.Read(sim, inn);
+        Assert.Equal("The Wild Bear", sign.Name);
+        Assert.Contains(sign.Prices, p => p.Kind == ServiceKind.Drink && p.Price == 5);
+        Assert.DoesNotContain(sign.Prices, p => p.Kind == ServiceKind.Quest); // not on offer, not on the sign
+    }
+
+    [Fact]
+    public void ItsReadFromTheStreetNotFromInside()
+    {
+        var (sim, keeper, inn, _) = Inn();
+        var at = Signs.CellOf(sim, inn)!.Value;
+        var outside = sim.SpiralFrom(at, 1).First(c => c.Z == at.Z && sim.Map.Passable(c) && Buildings.At(sim, c).IsNull);
+        var inside = sim.SpiralFrom(at, 1).First(c => c.Z == at.Z && sim.Map.Passable(c) && Buildings.At(sim, c) == inn);
+        var action = AvatarSystem.ActionAt(sim, keeper, at, from: outside);
+        Assert.Equal(AvatarActionKind.ReadSign, action.Kind);
+        Assert.True(action.OpensWindow);
+        Assert.Equal(inn, action.Target);
+        Assert.NotEqual(AvatarActionKind.ReadSign, AvatarSystem.ActionAt(sim, keeper, at, from: inside).Kind);
+    }
 }

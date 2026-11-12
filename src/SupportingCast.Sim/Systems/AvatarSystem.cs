@@ -69,6 +69,9 @@ public enum AvatarActionKind
 
     /// <summary>Clean up the mess on a cell (<see cref="Hospitality.ScrubSession"/>), begun at once.</summary>
     Clean,
+
+    /// <summary>Read a shop's sign on its front wall (<see cref="Shops.Signs"/>): the game opens it.</summary>
+    ReadSign,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -97,7 +100,7 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
         or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
-    public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation;
+    public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign;
 }
 
 /// <summary>
@@ -328,6 +331,10 @@ public sealed class AvatarSystem : ISimSystem
         // A fire comes before anything else there: you can't chop a burning tree or pick up a burning stack.
         if (map.Fire[i] > 0 && !sim.Reservations.IsTileReservedByOther(cell, avatar))
             return new(AvatarActionKind.Extinguish, "Beat out the fire", cell, Entity.Null);
+
+        // A shop's sign on its front wall, read from the street.
+        if (Shops.Signs.At(sim, cell) is { IsNull: false } signed && Buildings.At(sim, here) != signed)
+            return new(AvatarActionKind.ReadSign, "Read the sign", cell, signed);
 
         var item = map.Item[i];
         if (item.IsNull || sim.Reservations.IsReservedByOther(item, avatar))

@@ -106,12 +106,46 @@ def item_mop():
     return img
 
 
+def prop_sign_board():
+    """A hanging inn sign: a dark frame round a painted face, a gilt rule, and a bear's head in the middle."""
+    img = canvas()
+    px = img.load()
+    rnd = random.Random(46)
+    for y in range(S):
+        for x in range(S):
+            edge = min(x, y, S - 1 - x, S - 1 - y)
+            if edge < 3:
+                v = 40 + rnd.randrange(12)
+                px[x, y] = (v + 18, v + 6, v - 6, 255)                      # the dark frame
+            else:
+                v = 92 + rnd.randrange(14) + (6 if (y // 4) % 2 else 0)      # painted planks
+                px[x, y] = (v, int(v * 0.62), int(v * 0.36), 255)
+    for x in range(5, S - 5):                                               # gilt rules
+        px[x, 5] = (236, 178, 74, 255)
+        px[x, S - 6] = (236, 178, 74, 255)
+    # A bear's head: round face, two ears, a pale muzzle.
+    dark = (44, 28, 20, 255)
+    for y in range(S):
+        for x in range(S):
+            if math.hypot(x - 16, y - 17) < 6.5 or math.hypot(x - 11, y - 11) < 2.6 or math.hypot(x - 21, y - 11) < 2.6:
+                px[x, y] = dark
+    for y in range(S):
+        for x in range(S):
+            if math.hypot(x - 16, y - 19.5) < 2.6:
+                px[x, y] = (196, 150, 104, 255)
+    px[16, 18] = dark
+    px[14, 15] = (236, 178, 74, 255)
+    px[18, 15] = (236, 178, 74, 255)
+    return img
+
+
 def generate():
     save(mess_puddle(), "ui/mess_puddle")
     save(mess_mud(), "ui/mess_mud")
     save(mess_crumbs(), "ui/mess_crumbs")
     save(mess_stain(), "ui/mess_stain")
     save(item_mop(), "items/mop")
+    save(prop_sign_board(), "props/sign_board")
 
 
 if __name__ == "__main__":

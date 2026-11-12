@@ -193,6 +193,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// </summary>
     public bool Freeform { get; init; }
 
+    /// <summary>Debug/screenshots (<c>--look-at X,Y</c>): hold the camera on this map cell rather than following your character.</summary>
+    public int2? LookAt { get; init; }
+
     /// <summary>Debug/screenshots (<c>--hide-roofs</c>): start with every roof cut away, as \ does.</summary>
     public bool HideAllRoofs { init => HideRoofs = value; }
 
@@ -291,6 +294,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     private void SetUpView(int3 focus)
     {
+        if (LookAt is { } look && _sim.Map.InBounds(look.X, look.Y, 0))
+            focus = new int3(look.X, look.Y, _sim.Map.SurfaceZ(look.X, look.Y));
         _camera.Target = new float3(focus.X + 0.5f, focus.Y + 0.5f, focus.Z);
         _camera.Yaw = StartYawDegrees * MathF.PI / 180f;
         if (StartZoom > 0)

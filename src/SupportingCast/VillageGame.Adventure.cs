@@ -195,6 +195,9 @@ public sealed partial class VillageGame
             case AvatarActionKind.OpenStation:
                 _openStation = toggle && _openStation == action.Target ? Entity.Null : action.Target;
                 break;
+            case AvatarActionKind.ReadSign:
+                _readingSign = toggle && _readingSign == action.Target ? Entity.Null : action.Target;
+                break;
         }
     }
 
@@ -611,7 +614,7 @@ public sealed partial class VillageGame
         AvatarActionKind.Cook or AvatarActionKind.BarWork => 5,
         AvatarActionKind.Clean => 1,
         AvatarActionKind.Craft => 4,
-        AvatarActionKind.OpenStation => 3,
+        AvatarActionKind.OpenStation or AvatarActionKind.ReadSign => 3,
         AvatarActionKind.Pour => 2,
         AvatarActionKind.OpenStorage => 1,
         _ => 0,
@@ -761,7 +764,7 @@ public sealed partial class VillageGame
     /// </summary>
     private void FollowAvatar()
     {
-        if (!HasAvatar)
+        if (!HasAvatar || LookAt != null)
             return;
         _camera.Target = AvatarDrawPos();
     }

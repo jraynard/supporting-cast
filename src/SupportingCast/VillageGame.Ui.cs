@@ -54,6 +54,7 @@ public sealed partial class VillageGame
         DrawInspector();
         // Free windows.
         DrawStorageWindow();
+        DrawSignWindow();
         DrawWorldItemMenu();
         DrawStationWindow();
         DrawRecipeBook();

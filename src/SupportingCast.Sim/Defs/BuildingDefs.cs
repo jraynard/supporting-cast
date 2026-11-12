@@ -70,6 +70,12 @@ public sealed class BuildingDef : Def
     /// </summary>
     public List<int[]> Line { get; set; } = [];
 
+    /// <summary>
+    /// The front wall cell (column, row) the shop's sign hangs on, outside: its name and prices,
+    /// for anyone to read (<c>Shops.Signs</c>). Null: no sign.
+    /// </summary>
+    public int[]? Sign { get; set; }
+
     /// <summary>A memory its people get from eating inside it (feasting in the longhouse). Null: none.</summary>
     public string? EatThought { get; set; }
 
@@ -212,6 +218,8 @@ public sealed class BuildingDef : Def
         }
         if (Line.Any(c => c.Length != 2))
             throw new Exception($"Building '{Name}': each line cell is [column, row]");
+        if (Sign != null && (Sign.Length != 2 || At(Sign[0], Sign[1]) != 'W'))
+            throw new Exception($"Building '{Name}': its sign is [column, row] of a wall in its plan");
         if (UpperLayout.Count > 0 && UpperLayout.Count != Depth)
             throw new Exception($"Building '{Name}': the upper layout must have {Depth} rows, as the ground's");
         for (var row = 0; row < UpperLayout.Count; row++)
