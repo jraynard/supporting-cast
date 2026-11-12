@@ -2,7 +2,6 @@ using SupportingCast.Sim.Ai;
 using SupportingCast.Sim.Combat;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Saving;
 using SupportingCast.Sim.Scenarios;
 using SupportingCast.Sim.Systems;
@@ -40,18 +39,11 @@ public class SaveLoadTests
         Assert.Equal(live.Messages.Messages.Count, loaded.Messages.Messages.Count);
     }
 
-    private static (Simulation Sim, int3 Center) Generated(ulong seed, int size = 120)
-    {
-        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), size, size, seed, MapGenerator.RecommendedDepth);
-        var center = MapGenerator.Generate(sim);
-        VillageSetup.ApplyVillageDefaults(sim, center);
-        return (sim, center);
-    }
 
     [Fact]
     public void StorytellerStateSurvives()
     {
-        var (live, _) = Generated(5, size: 64);
+        var (live, _) = TestWorld.Millbrook(5);
         live.Storyteller.SetDifficulty(live, live.Defs.AllDifficulties.First(d => !d.Peaceful));
         live.TickMany(SimClock.HoursToTicks(2));
 
@@ -122,7 +114,7 @@ public class SaveLoadTests
     [Fact]
     public void WildlifeStateSurvives()
     {
-        var (live, _) = Generated(5, size: 64);
+        var (live, _) = TestWorld.Millbrook(5);
         live.TickMany(SimClock.HoursToTicks(1));
         Assert.NotEmpty(live.World.Query<Herd>());
 
@@ -138,7 +130,7 @@ public class SaveLoadTests
     [Fact]
     public void AHuntInProgressPlaysOnAlike()
     {
-        var (live, center) = Generated(5, size: 96);
+        var (live, center) = TestWorld.Millbrook(5);
         var w = live.World;
         var hunter = live.Creatures().First(e => w.Get<Creature>(e).Def.Race == Race.Human);
         live.Equip(hunter, live.Defs.Thing("Bow"));
@@ -154,7 +146,7 @@ public class SaveLoadTests
     [Fact]
     public void BadFilesFailWithAClearError()
     {
-        var (sim, _) = Generated(3, size: 48);
+        var (sim, _) = TestWorld.Millbrook(3);
         sim.TickMany(600);
         var bytes = SaveGame.Write(sim);
 
@@ -172,9 +164,7 @@ public class SaveLoadTests
     {
         // Saved with defs where the campfire is called something this game doesn't have.
         var defs = DefDatabase.LoadDirectory(TestWorld.FindDefsDirectory()); // a private copy we can rename in
-        var sim = Simulation.CreateStandard(defs, 48, 48, 3, MapGenerator.RecommendedDepth);
-        var center = MapGenerator.Generate(sim);
-        VillageSetup.ApplyVillageDefaults(sim, center);
+        var (sim, center) = TestWorld.Millbrook(3, defs: defs);
         sim.SpawnStructure(defs.Thing("Campfire"), sim.SpiralFrom(center + new int3(3, 3, 0), 6).First(c => sim.CanPlaceStructure(c, defs.Thing("Campfire"))));
         defs.Thing("Campfire").Name = "Brazier";
 

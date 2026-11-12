@@ -1,7 +1,6 @@
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Core;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Round;
 using SupportingCast.Sim.Saving;
 using SupportingCast.Sim.Scenarios;
@@ -17,10 +16,7 @@ public class RoundTests
 
     private static Simulation Town(int villagers = 4, ulong seed = 7)
     {
-        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 64, 64, seed, MapGenerator.RecommendedDepth);
-        var center = MapGenerator.Generate(sim, new MapGenerator.Options { Villagers = villagers });
-        sim.RebuildDerivedIfNeeded();
-        VillageSetup.ApplyVillageDefaults(sim, center);
+        var (sim, _) = TestWorld.Millbrook(seed, villagers);
         sim.Round.OpenLobby();
         return sim;
     }

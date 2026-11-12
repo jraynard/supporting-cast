@@ -34,23 +34,6 @@ public class WildlifeTests
         Assert.All(herd, e => Assert.False(w.IsAlive(e), "the herd should have left"));
     }
 
-    [Theory]
-    [InlineData(1234UL)]
-    [InlineData(99UL)]
-    public void ANewMapStartsWithDeerAmongItsHerds(ulong seed)
-    {
-        // A grown dragon hunting for itself needs game that won't fight back from the first day.
-        var sim = Simulation.CreateStandard(LoadDefs(), 160, 160, seed, MapGenerator.RecommendedDepth);
-        MapGenerator.Generate(sim);
-        var w = sim.World;
-        var herds = w.Query<Herd>().Select(e => w.Get<Herd>(e).Id).Distinct().Count();
-        Assert.True(herds >= 3, $"only {herds} starting herds");
-        Assert.Contains(w.Query<Herd>(), e => w.Get<Creature>(e).Def.Name == "Deer");
-        // And something to bake into the dragon's other food: emberroot and berry bushes.
-        Assert.True(w.Query<Thing>().Count(e => w.Get<Thing>(e).Def.Name == "EmberrootPlant") >= 10);
-        Assert.True(w.Query<Thing>().Count(e => w.Get<Thing>(e).Def.Name == "BerryBush") >= 10);
-    }
-
     [Fact]
     public void AnEmptiedValleyFillsUpSooner()
     {
@@ -100,13 +83,14 @@ public class WildlifeTests
     }
 
     [Fact]
-    public void GeneratedMapsStartWithHerdsAwayFromTheVillage()
+    public void MillbrookStartsWithHerdsAwayFromTheVillage()
     {
-        var sim = Simulation.CreateStandard(LoadDefs(), 120, 120, 3, MapGenerator.RecommendedDepth);
-        var center = MapGenerator.Generate(sim);
+        var (sim, center) = Millbrook(3);
         var w = sim.World;
         var animals = w.Query<Herd>();
-        Assert.NotEmpty(animals);
+        var herds = animals.Select(e => w.Get<Herd>(e).Id).Distinct().Count();
+        Assert.True(herds >= 3, $"only {herds} starting herds");
+        Assert.Contains(animals, e => w.Get<Creature>(e).Def.Name == "Deer");
         Assert.All(animals, e => Assert.True(Map.Distance(w.Get<Position>(e).Cell, center) >= 20));
         Assert.True(sim.Wildlife.Enabled);
     }

@@ -1,6 +1,5 @@
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Systems;
 
 namespace SupportingCast.Sim.Tests;
@@ -13,8 +12,7 @@ public class DeepTierTests
     [InlineData(99UL)]
     public void EmberCrystalLiesInTheDeepBasalt(ulong seed)
     {
-        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 160, 160, seed, MapGenerator.RecommendedDepth);
-        MapGenerator.Generate(sim, new MapGenerator.Options { SpawnStartingKit = false, Wildlife = false });
+        var (sim, _) = TestWorld.Millbrook(seed);
         var ember = sim.Defs.Block("EmberCrystal");
         var cells = Enumerable.Range(0, sim.Map.Count).Where(i => sim.Map.Block[i] == ember).ToList();
         Assert.True(cells.Count > 3, $"{cells.Count} ember crystal on seed {seed}");

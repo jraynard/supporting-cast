@@ -19,6 +19,14 @@ public class CoopSessionTests
 {
     internal static readonly Lazy<DefDatabase> Defs = new(() => DefDatabase.LoadDirectory(DevPaths.Defs!));
 
+    /// <summary>Millbrook, the map rounds are played on, with <paramref name="villagers"/> AI villagers and no round open.</summary>
+    internal static (Simulation Sim, int3 Center) Millbrook(ulong seed, int villagers)
+    {
+        var map = Defs.Value.Map(VillageRound.DefaultMap);
+        var sim = MapBuilder.CreateSimulation(Defs.Value, map, seed);
+        return (sim, MapBuilder.Build(sim, map, new MapGenerator.Options { Villagers = villagers }).Center);
+    }
+
     internal sealed class Table
     {
         public readonly LoopbackListener Listener = new();
@@ -29,10 +37,7 @@ public class CoopSessionTests
         /// <param name="lobbyVillagers">Set: open a round's lobby over this many villagers, instead of a hero walking in.</param>
         public Table(int? lobbyVillagers = null)
         {
-            var sim = Simulation.CreateStandard(Defs.Value, 64, 64, 77, MapGenerator.RecommendedDepth);
-            var center = MapGenerator.Generate(sim, new MapGenerator.Options { Villagers = lobbyVillagers ?? 1 });
-            sim.RebuildDerivedIfNeeded();
-            VillageSetup.ApplyVillageDefaults(sim, center);
+            var (sim, center) = Millbrook(77, lobbyVillagers ?? 1);
             if (lobbyVillagers == null)
                 VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
             else
@@ -226,10 +231,7 @@ public class CoopSessionTests
     [Fact]
     public void HostingKeepsTheStoryteller()
     {
-        var sim = Simulation.CreateStandard(Defs.Value, 48, 48, 5, MapGenerator.RecommendedDepth);
-        var center = MapGenerator.Generate(sim, new MapGenerator.Options { Villagers = 1 });
-        sim.RebuildDerivedIfNeeded();
-        VillageSetup.ApplyVillageDefaults(sim, center);
+        var (sim, center) = Millbrook(5, 1);
         VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
         sim.Storyteller.SetDifficulty(sim, Defs.Value.Difficulty("Normal"));
         using var host = CoopSession.StartHost(sim, new PlayerIdentity(Guid.NewGuid(), "host"), "raids", new LoopbackListener());
@@ -279,10 +281,7 @@ public class CoopSessionTests
     [Fact]
     public async Task WorksOverRealSockets()
     {
-        var sim = Simulation.CreateStandard(Defs.Value, 48, 48, 5, MapGenerator.RecommendedDepth);
-        var center = MapGenerator.Generate(sim, new MapGenerator.Options { Villagers = 1 });
-        sim.RebuildDerivedIfNeeded();
-        VillageSetup.ApplyVillageDefaults(sim, center);
+        var (sim, center) = Millbrook(5, 1);
         VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
         var listener = new TcpNetListener(0, System.Net.IPAddress.Loopback);
         using var host = CoopSession.StartHost(sim, new PlayerIdentity(Guid.NewGuid(), "host"), "tcp", listener, listener.Port);
@@ -323,10 +322,7 @@ public class CoopSessionTests
         CoopRelay.Override = $"127.0.0.1:{relayListener.Port}";
         try
         {
-            var sim = Simulation.CreateStandard(Defs.Value, 48, 48, 5, MapGenerator.RecommendedDepth);
-            var center = MapGenerator.Generate(sim, new MapGenerator.Options { Villagers = 1 });
-            sim.RebuildDerivedIfNeeded();
-            VillageSetup.ApplyVillageDefaults(sim, center);
+            var (sim, center) = Millbrook(5, 1);
             VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
             using var host = CoopSession.StartHost(sim, new PlayerIdentity(Guid.NewGuid(), "host"), "online", port: 0, online: true);
             CoopSession? client = null;
@@ -378,10 +374,7 @@ public class CoopSessionTests
         CoopRelay.Override = $"127.0.0.1:{relayListener.Port}";
         try
         {
-            var sim = Simulation.CreateStandard(Defs.Value, 48, 48, 5, MapGenerator.RecommendedDepth);
-            var center = MapGenerator.Generate(sim, new MapGenerator.Options { Villagers = 1 });
-            sim.RebuildDerivedIfNeeded();
-            VillageSetup.ApplyVillageDefaults(sim, center);
+            var (sim, center) = Millbrook(5, 1);
             VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
             var host = CoopSession.StartHost(sim, new PlayerIdentity(Guid.NewGuid(), "host"), "online", port: 0, online: true);
             var peers = new List<CoopSession>();

@@ -1,13 +1,10 @@
-using SupportingCast.Sim.Maps;
-
 namespace SupportingCast.Sim.Tests;
 
 public class DeterminismTests
 {
     private static (ulong State, ulong Full) RunGame(ulong seed, int ticks)
     {
-        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 120, 120, seed, MapGenerator.RecommendedDepth);
-        MapGenerator.Generate(sim);
+        var (sim, _) = TestWorld.Millbrook(seed);
         sim.TickMany(ticks);
         return (sim.StateHash(), sim.FullHash());
     }

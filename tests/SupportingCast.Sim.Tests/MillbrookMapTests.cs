@@ -1,5 +1,6 @@
 using SupportingCast.Sim.Combat;
 using SupportingCast.Sim.Components;
+using SupportingCast.Sim.Defs;
 using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Scenarios;
 
@@ -26,6 +27,7 @@ public class MillbrookMapTests
         foreach (var trade in sim.Defs.AllTrades)
             if (trade.WorkplaceDef is { } workplace)
                 Assert.Contains(sim.World.Query<PresetBuilding>(), e => sim.World.Get<PresetBuilding>(e).Def == workplace);
+        Assert.All(sim.World.Query<PresetBuilding>(), e => Assert.Equal(BuildPhase.Done, sim.World.Get<PresetBuilding>(e).Phase));
     }
 
     [Fact]

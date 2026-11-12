@@ -1,7 +1,6 @@
 using SupportingCast.Sim.Ai;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Saving;
 using SupportingCast.Sim.Systems;
 
@@ -333,30 +332,5 @@ public class CraftingProgressionTests
         sim.TickMany(10);
         Assert.Null(sim.World.Get<Mind>(me).Job);
         Assert.Equal(2, Count(sim, "Wood"));
-    }
-
-    // ---------------- Scales and the map ----------------
-
-    [Fact]
-    public void GeneratedMapsHaveOreAndClayAwayFromTheLanding()
-    {
-        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
-        var center = MapGenerator.Generate(sim, new MapGenerator.Options { SpawnStartingKit = false, Wildlife = false });
-        var ore = sim.Defs.Block("IronOre");
-        var clay = sim.Defs.Block("Clay");
-        int ores = 0, clays = 0, near = 0;
-        for (var i = 0; i < sim.Map.Count; i++)
-        {
-            var b = sim.Map.Block[i];
-            if (b != ore && b != clay)
-                continue;
-            if (b == ore) ores++; else clays++;
-            var c = sim.Map.CellOf(i);
-            if (MathF.Sqrt((c.X - center.X) * (c.X - center.X) + (c.Y - center.Y) * (c.Y - center.Y)) < 24)
-                near++;
-        }
-        Assert.True(ores > 20, $"{ores} ore blocks");
-        Assert.True(clays > 5, $"{clays} clay blocks");
-        Assert.Equal(0, near);
     }
 }

@@ -967,15 +967,9 @@ public class WagonTests
 
 }
 
-/// <summary>Adventure mode's opening: the village, Orla's handover, and setting out for a new map.</summary>
-public class PrologueTests
+/// <summary>Holding F: the avatar keeps at a task (beating out fire, building blueprints) only while the key is down.</summary>
+public class HeldActionTests
 {
-    private static Simulation NewSim(ulong seed = 11) =>
-        Simulation.CreateStandard(TestWorld.LoadDefs(), 96, 96, seed, Maps.MapGenerator.RecommendedDepth);
-
-    private static int3 NextTo(Simulation sim, int3 cell) =>
-        sim.SpiralFrom(cell, 2).First(c => c != cell && sim.Map.Passable(c) && Ai.Pathfinder.Touches(c, cell));
-
     [Fact]
     public void FBeatsOutAFireOnlyWhileHeld()
     {

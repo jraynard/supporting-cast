@@ -1,8 +1,8 @@
 using SupportingCast.Sim.Core;
+using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Scenarios;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
 
 namespace SupportingCast.Sim.Tests;
 
@@ -76,10 +76,7 @@ public class CommandTests
     public void HostileCommandsDoNoHarm()
     {
         var defs = TestWorld.LoadDefs();
-        var sim = Simulation.CreateStandard(defs, 64, 64, 7, MapGenerator.RecommendedDepth);
-        var center = MapGenerator.Generate(sim, new MapGenerator.Options { Villagers = 2 });
-        sim.RebuildDerivedIfNeeded();
-        VillageSetup.ApplyVillageDefaults(sim, center);
+        var (sim, center) = TestWorld.Millbrook(7, villagers: 2);
         var avatar = VillageRound.SpawnHero(sim, new Hero("Arin", null, null), center);
         sim.TickMany(SimClock.TicksPerHour);
 

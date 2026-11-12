@@ -1,6 +1,6 @@
+using SupportingCast.Sim.Maps;
 using SupportingCast.Sim;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Saving;
 
 namespace SupportingCast.Tests;
@@ -22,8 +22,9 @@ public sealed class SaveSlotsTests : IDisposable
 
     private static Simulation Village()
     {
-        var sim = Simulation.CreateStandard(Defs.Value, 48, 48, 3, MapGenerator.RecommendedDepth);
-        MapGenerator.Generate(sim);
+        var map = Defs.Value.Map("Millbrook");
+        var sim = MapBuilder.CreateSimulation(Defs.Value, map, 3);
+        MapBuilder.Build(sim, map);
         sim.TickMany(300);
         return sim;
     }

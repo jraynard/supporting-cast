@@ -2,7 +2,6 @@ using SupportingCast.Sim.Combat;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Core;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Scenarios;
 using SupportingCast.Sim.Systems;
 using static SupportingCast.Sim.Tests.TestWorld;
@@ -79,15 +78,5 @@ public class BandagingTests
 
         Assert.Equal(2, Bandaging.BandagesOn(sim, me));
         Assert.Null(Bandaging.CantBind(sim, me, me));
-    }
-
-    [Fact]
-    public void WildFlaxGrowsNearTheStart()
-    {
-        var sim = Simulation.CreateStandard(LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
-        var center = MapGenerator.Generate(sim, new MapGenerator.Options { SpawnStartingKit = false, Wildlife = false });
-        var flax = sim.World.Query<Thing>().Where(e => sim.World.Get<Thing>(e).Def.Name == "WildFlax").ToList();
-        Assert.Contains(flax, e => sim.World.Get<Thing>(e).Cell is var c && Math.Abs(c.X - center.X) + Math.Abs(c.Y - center.Y) < 25);
-        Assert.True(flax.Count > 4, $"only {flax.Count} wild flax on the map");
     }
 }

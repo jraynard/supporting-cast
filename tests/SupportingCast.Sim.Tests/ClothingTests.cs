@@ -1,7 +1,6 @@
 using SupportingCast.Sim.Combat;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Saving;
 using SupportingCast.Sim.Systems;
 using static SupportingCast.Sim.Tests.TestWorld;
@@ -31,10 +30,9 @@ public class ClothingTests
     }
 
     [Fact]
-    public void GeneratedVillagersAreDressedInDyedClothesWithoutMovingTheMainStream()
+    public void MillbrooksVillagersAreDressedInDyedClothesWithoutMovingTheMainStream()
     {
-        var sim = Simulation.CreateStandard(LoadDefs(), 96, 96, 1234, MapGenerator.RecommendedDepth);
-        MapGenerator.Generate(sim, new MapGenerator.Options());
+        var (sim, _) = Millbrook(1234);
         var people = sim.Creatures().Where(e => sim.World.Get<Creature>(e).Def.Race == Race.Human).ToList();
         Assert.NotEmpty(people);
         foreach (var e in people)
@@ -61,8 +59,7 @@ public class ClothingTests
     {
         string Outfit()
         {
-            var sim = Simulation.CreateStandard(LoadDefs(), 96, 96, 99, MapGenerator.RecommendedDepth);
-            MapGenerator.Generate(sim, new MapGenerator.Options());
+            var (sim, _) = Millbrook(99);
             return string.Join("|", sim.Creatures().Where(e => sim.World.Get<Creature>(e).Def.Race == Race.Human)
                 .Select(e => string.Join(",", Clothing.Describe(sim, e))));
         }

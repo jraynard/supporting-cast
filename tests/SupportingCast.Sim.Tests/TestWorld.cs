@@ -1,5 +1,7 @@
 using SupportingCast.Sim;
 using SupportingCast.Sim.Defs;
+using SupportingCast.Sim.Maps;
+using SupportingCast.Sim.Scenarios;
 
 namespace SupportingCast.Sim.Tests;
 
@@ -17,6 +19,20 @@ public static class TestWorld
         sim.RebuildDerivedIfNeeded();
         Array.Fill(sim.Map.Temperature, sim.Climate.OutdoorTemperature);
         return sim;
+    }
+
+    /// <summary>
+    /// Millbrook, the map rounds are played on, with <paramref name="villagers"/> AI villagers and no
+    /// round open: for tests that need a real town. <see cref="VillageRound.Setup"/> adds what a round
+    /// needs on top (beds filled, the shrine stocked) but fixes the villager count.
+    /// </summary>
+    public static (Simulation Sim, int3 Center) Millbrook(ulong seed = 1234, int villagers = VillageRound.StartingVillagers, DefDatabase? defs = null)
+    {
+        defs ??= Defs.Value;
+        var map = defs.Map(VillageRound.DefaultMap);
+        var sim = MapBuilder.CreateSimulation(defs, map, seed);
+        var center = MapBuilder.Build(sim, map, new MapGenerator.Options { Villagers = villagers }).Center;
+        return (sim, center);
     }
 
     /// <summary>Ground-level cell of a <see cref="Create"/> map (the walkable level above the z = 0 ground).</summary>

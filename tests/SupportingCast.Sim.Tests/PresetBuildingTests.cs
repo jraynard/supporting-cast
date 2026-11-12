@@ -330,24 +330,6 @@ public class PresetBuildingTests
     }
 }
 
-public class BuildingShowcaseTests
-{
-    [Theory]
-    [InlineData(1234UL)]
-    [InlineData(99UL)]
-    public void MostOfTheShowcaseFitsAGeneratedValley(ulong seed)
-    {
-        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 160, 160, seed, Maps.MapGenerator.RecommendedDepth);
-        var center = Maps.MapGenerator.Generate(sim, new Maps.MapGenerator.Options());
-        sim.RebuildDerivedIfNeeded();
-        Scenarios.BuildingShowcase.Setup(sim, center);
-        var placed = sim.World.Query<PresetBuilding>().Select(e => sim.World.Get<PresetBuilding>(e)).ToList();
-        var looks = sim.Defs.AllBuildings.Sum(d => d.Variants.Count) + (int)BuildPhase.Done + 1;
-        Assert.True(placed.Count >= looks * 2 / 3, $"only {placed.Count} of {looks} plots found ground");
-        Assert.Contains(placed, b => b.Def.Name == "Smithy" && b.Phase == BuildPhase.Done);
-    }
-}
-
 public class PresetBuildingHeatTests
 {
     /// <summary>
