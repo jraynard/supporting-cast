@@ -18,6 +18,9 @@ public sealed partial class VillageGame
     /// <summary>Prices being dragged on your sign, not yet sent (the sign itself changes when the command lands).</summary>
     private readonly Dictionary<Sim.Defs.ServiceKind, int> _priceDrafts = [];
 
+    /// <summary>The name being typed for your shop, before it's sent; null when not renaming.</summary>
+    private ImInputString? _shopNameInput;
+
     /// <summary>The highest price the sign's sliders reach (Ctrl+click to type one up to the sign's limit).</summary>
     private const int PriceSliderMax = 60;
 
@@ -114,6 +117,38 @@ public sealed partial class VillageGame
         Gui.Rule();
     }
 
+    /// <summary>What your shop's called, over the door: click Rename to paint a new name (empty puts the old one back).</summary>
+    private void DrawShopName(Entity shop, Sim.Defs.BuildingDef workplace)
+    {
+        var name = ShopName.Of(_sim, shop);
+        if (_shopNameInput == null)
+        {
+            ImGui.AlignTextToFramePadding();
+            TextC(Theme.Text, name != null ? $"Your sign at {name}" : $"Your sign at the {workplace.Label}");
+            ImGui.SameLine(0, 8);
+            if (ImGui.SmallButton("Rename"u8))
+            {
+                _shopNameInput = new ImInputString(ShopName.MaxLength + 8, ""u8);
+                _shopNameInput.SetValue((name ?? "").AsSpan());
+            }
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip("Paint a new name over the door. Everyone in town will know it by that.");
+            return;
+        }
+        ImGui.SetNextItemWidth(Gui.S(200));
+        var done = ImGui.InputTextWithHint("##shopname"u8, "What's it called?"u8, _shopNameInput, ImGuiInputTextFlags.EnterReturnsTrue, null, IntPtr.Zero);
+        ImGui.SameLine(0, 6);
+        done |= ImGui.SmallButton("Paint it"u8);
+        ImGui.SameLine(0, 6);
+        if (ImGui.SmallButton("Cancel"u8))
+            _shopNameInput = null;
+        else if (done)
+        {
+            Issue(new SetShopNameCommand(_avatar, shop, Narsil.Ui.ImGuiText.Value(_shopNameInput)));
+            _shopNameInput = null;
+        }
+    }
+
     /// <summary>Your shop's price sign, if your trade keeps one: what you charge, and what you're offering.</summary>
     private void DrawSign()
     {
@@ -123,7 +158,7 @@ public sealed partial class VillageGame
         var sign = shop.IsNull ? [] : View.Prices(shop);
         if (sign.Count == 0)
             return;
-        TextC(Theme.Text, $"Your sign at the {workplace.Label}");
+        DrawShopName(shop, workplace);
         TextC(Theme.Dim, "Adventurers who think it's too dear go without.");
         foreach (var p in sign)
         {

@@ -248,6 +248,9 @@ a plain `CraftJob`. Tune the heat and quench timing in play. Save format 3.
   party has seen. For the rest they ask aloud. Anyone who hears can point the way (the Shop
   panel), a villager does if nobody else has, and everyone in earshot learns it. A party back
   from a quest knows the town.
+- **The inn has a name:** "The Wild Bear" (`BuildingDef.DefaultName`). Its keeper can paint a
+  new one over the door from the Shop panel (`ShopName`). Customers line up at it, guests are
+  welcomed to it, and directions name it.
 - **AI keepers** fill and tend the pot, ladle from it, wash up, change kegs, make beds and mop.
   **Bots** play every new mini-game, answer the way, and mix the named drinks they hear asked for.
 - **Fixed on the way:**
@@ -277,6 +280,7 @@ Known leftovers:
 ### Trade refinement
 - refining the four initial trades to be fun. blacksmith, innkeeper, carpeneter (locksmith), and healer.
 - blacksmith done, innkeeper in progress.
+- healer next, then locksmith (split from carpenter)
 
 ### M3: A whole season
 - `Director`, Renown and Dread, crises including the late-round dragon, the festival, the

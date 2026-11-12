@@ -59,6 +59,9 @@ public sealed class BuildingDef : Def
     /// </summary>
     public bool LetsBeds { get; set; }
 
+    /// <summary>What it's called until its keeper names it (<c>Shops.ShopName</c>): "The Wild Bear". Empty: just its label.</summary>
+    public string DefaultName { get; set; } = "";
+
     /// <summary>
     /// Where customers line up to be served when it's a shop (<c>Shops.ShopSystem.Line</c>): plan
     /// cells (column, row) on the ground storey, the front of the line first, the one served from

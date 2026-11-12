@@ -123,7 +123,8 @@ public sealed class DirectionsSystem : ISimSystem, ISaveState
         var shop = Nearest(sim, ask.To, w.Get<Position>(ask.Asker).Cell);
         if (shop.IsNull)
             return false;
-        var line = $"The {ask.To.Label}? {Way(w.Get<Position>(by).Cell, w.Get<PresetBuilding>(shop).Anchor)}";
+        var named = ShopName.Of(sim, shop) is { } name ? $" That'll be {name}." : "";
+        var line = $"The {ask.To.Label}?{named} {Way(w.Get<Position>(by).Cell, w.Get<PresetBuilding>(shop).Anchor)}";
         if (sim.Speech.Say(sim, by, line, Volume.Say) is not { } said)
             return false;
         _asks.Remove(ask);

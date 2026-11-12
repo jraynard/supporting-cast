@@ -46,9 +46,8 @@ public sealed class AdventurerBrain : IBrain
         // past the line's end), wait about the shop; else lounge about the haunt, else stay put.
         if (sim.Shops.PlaceOf(sim, pawn) is { } place)
         {
-            var b = w.Get<PresetBuilding>(place.Shop);
             if (place.Cell is { } cell)
-                return new Shops.QueueJob(cell, Buildings.Label(b), place.Place == 0);
+                return new Shops.QueueJob(cell, Buildings.Called(sim, place.Shop), place.Place == 0);
         }
         var center = WaitingAt(sim, pawn)
             ?? (w.TryGet<Adventurer>(pawn, out var a) && PartySystem.HauntOf(sim, a.PartyDef) is { } haunt ? haunt.Anchor : tile);

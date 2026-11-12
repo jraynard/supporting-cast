@@ -80,6 +80,11 @@ public static class Buildings
     public static Entity Of(Simulation sim, Entity thing) =>
         sim.World.TryGet<PartOf>(thing, out var p) && sim.World.IsAlive(p.Building) && sim.World.Has<PresetBuilding>(p.Building) ? p.Building : Entity.Null;
 
+    /// <summary>How people refer to a building: its name if it has one ("The Wild Bear"), else "the" and its label.</summary>
+    public static string Called(Simulation sim, Entity building) =>
+        Shops.ShopName.Of(sim, building) is { } name ? name
+        : sim.World.TryGet<PresetBuilding>(building, out var b) ? $"the {Label(b)}" : "";
+
     /// <summary>"dwelling" or "thatched dwelling": the def, and the variant when there's a choice.</summary>
     public static string Label(PresetBuilding b) =>
         b.Def.Variants.Count > 1 ? $"{b.VariantDef.Label.ToLowerInvariant()} {b.Def.Label}" : b.Def.Label;

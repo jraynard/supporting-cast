@@ -171,7 +171,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (bed.IsNull)
             return;
         Hospitality.Lodging.Let(sim, e.Poster, bed);
-        sim.Speech.Say(sim, e.Assignee, kept.IsNull ? "Up the stairs. It's yours for the night." : "Same room again tonight.", Volume.Say);
+        var welcome = ShopName.Of(sim, e.Where) is { } called ? $" Welcome to {called}." : "";
+        sim.Speech.Say(sim, e.Assignee, kept.IsNull ? $"Up the stairs. It's yours for the night.{welcome}" : "Same room again tonight.", Volume.Say);
         if (kept.IsNull && Hospitality.Lodging.IsUnmade(sim, bed))
         {
             if (w.Has<Adventurer>(e.Poster))

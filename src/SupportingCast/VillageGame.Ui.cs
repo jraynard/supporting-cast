@@ -773,7 +773,7 @@ public sealed partial class VillageGame
     {
         var b = _sim.World.Get<PresetBuilding>(building);
         ImGui.Separator();
-        Theme.Header(Host.ImGui, $"Part of a {Buildings.Label(b)}");
+        Theme.Header(Host.ImGui, Sim.Shops.ShopName.Of(_sim, building) is { } called ? $"Part of {called}, a {Buildings.Label(b)}" : $"Part of a {Buildings.Label(b)}");
         foreach (var phase in Enum.GetValues<BuildPhase>())
         {
             if (phase == BuildPhase.Done)

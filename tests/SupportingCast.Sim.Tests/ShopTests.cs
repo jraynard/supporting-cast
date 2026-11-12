@@ -352,4 +352,56 @@ public class ShopTests
         Assert.True(DrinkPrice(sim, inn) > start, $"line {sim.Shops.LineAt(sim, inn).Count}, bot: {bot.Doing}");
         Assert.True(DrinkPrice(sim, inn) <= start * Bots.BotPlayer.MaxMarkup);
     }
+
+    // ---------------- The shop's name ----------------
+
+    [Fact]
+    public void TheInnIsTheWildBearUntilItsKeeperRenamesIt()
+    {
+        var (sim, keeper, inn, party) = Inn();
+        Assert.Equal("The Wild Bear", ShopName.Of(sim, inn));
+        Assert.Equal("The Wild Bear", Buildings.Called(sim, inn));
+
+        sim.ApplyNow(new SetShopNameCommand(keeper, inn, "  The   Drowned\nRat!  "));
+        Assert.Equal("The Drowned Rat!", ShopName.Of(sim, inn));
+        Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("The Drowned Rat!"));
+
+        // Anyone else can't, and an empty name puts the old one back.
+        sim.ApplyNow(new SetShopNameCommand(party[0], inn, "Nobody's Inn"));
+        Assert.Equal("The Drowned Rat!", ShopName.Of(sim, inn));
+        sim.ApplyNow(new SetShopNameCommand(keeper, inn, "   "));
+        Assert.Equal("The Wild Bear", ShopName.Of(sim, inn));
+    }
+
+    [Fact]
+    public void ANameIsKeptShortAndSurvivesASave()
+    {
+        var (sim, keeper, inn, _) = Inn();
+        sim.ApplyNow(new SetShopNameCommand(keeper, inn, new string('x', 80)));
+        Assert.Equal(ShopName.MaxLength, ShopName.Of(sim, inn)!.Length);
+        sim.ApplyNow(new SetShopNameCommand(keeper, inn, "The Gilded Goose"));
+        var (loaded, _) = Saving.SaveGame.Read(Saving.SaveGame.Write(sim), sim.Defs);
+        Assert.Equal("The Gilded Goose", ShopName.Of(loaded, inn));
+    }
+
+    [Fact]
+    public void ShopsWithoutANameGoByWhatTheyAre()
+    {
+        var (sim, _, _, _) = Inn();
+        var smithy = ShopSystem.BuildingOf(sim, sim.Defs.Building("Smithy"));
+        Assert.Null(ShopName.Of(sim, smithy));
+        Assert.StartsWith("the ", Buildings.Called(sim, smithy));
+        Assert.EndsWith("smithy", Buildings.Called(sim, smithy));
+    }
+
+    [Fact]
+    public void CustomersLineUpAtTheInnByName()
+    {
+        var (sim, _, _, party) = Inn();
+        foreach (var a in party)
+            Thirsty(sim, a);
+        for (var i = 0; i < 24 && !party.Any(a => sim.World.Get<Mind>(a).Job?.Report?.Contains("The Wild Bear") == true); i++)
+            sim.TickMany(SimClock.TicksPerHour / 12);
+        Assert.Contains(party, a => sim.World.Get<Mind>(a).Job?.Report?.Contains("at The Wild Bear") == true);
+    }
 }

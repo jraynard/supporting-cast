@@ -179,7 +179,7 @@
           ]
         }
       ],
-      "eatThought": "AteAtTheInn", "letsBeds": true,
+      "eatThought": "AteAtTheInn", "letsBeds": true, "defaultName": "The Wild Bear",
       "variants": [
         { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster" },
         { "name": "Shingle", "label": "shingle-roofed", "kit": "timber_shingle", "parts": { "roof": "ShingleRoofPart" } }

@@ -425,6 +425,7 @@ internal static class ComponentCodecs
         }, r => new Work.DrinkMix { Strength = r.Float(), Warming = r.Float(), Rousing = r.Float(), Numbing = r.Float(), Loosening = r.Float(), Adds = r.String() }),
         Codec("Skills", WriteSkills, ReadSkills),
         Codec("ShopPrices", WriteShopPrices, ReadShopPrices),
+        Codec("ShopName", (w, n) => w.String(n.Name), r => new Shops.ShopName { Name = Shops.ShopName.Clean(r.String()) }),
         Codec("ForSale", (w, f) => { w.Entity(f.Seller); w.Int(f.Price); }, r => new Shops.ForSale { Seller = r.Entity(), Price = r.Int() }),
         Codec("Mood", WriteMood, ReadMood),
         Codec("Traits", (w, t) =>
