@@ -518,6 +518,27 @@ public sealed class WorldMesher(TextureAtlas atlas)
     {
         var map = sim.Map;
         var top = z + 0.01f;
+        var grounded = z > 0 && map.IsSolid(map.Idx(x, y, z - 1));
+        // Under a wall up off the ground (an upper storey's), the boards stop at the wall's middle
+        // on each side that faces out, so they don't jut past its outer face; toward a room they
+        // run on under it. On the ground the foundation's meant to show, a plinth under the wall.
+        if (!grounded && IsWallAt(sim, x, y, z))
+        {
+            float x0 = Inside(x - 1, y) ? x : x + 0.5f, x1 = Inside(x + 1, y) ? x + 1 : x + 0.5f;
+            float y0 = Inside(x, y - 1) ? y : y + 0.5f, y1 = Inside(x, y + 1) ? y + 1 : y + 0.5f;
+            if (x1 > x0 && y1 > y0)
+                _quads.Add(new Quad
+                {
+                    Origin = new float3(x0, y0, top),
+                    AxisU = new float3(x1 - x0, 0, 0),
+                    AxisV = new float3(0, y1 - y0, 0),
+                    Flags = Quad.Level(z),
+                    Color = Rgba.White,
+                    Ao = TopAo(sim, x, y, z),
+                    Uv = Crop(sprite.Uv, x0 - x, y0 - y, x1 - x, y1 - y),
+                });
+            return; // the wall covers its edges
+        }
         _quads.Add(new Quad
         {
             Origin = new float3(x, y, top),
@@ -528,8 +549,11 @@ public sealed class WorldMesher(TextureAtlas atlas)
             Ao = TopAo(sim, x, y, z),
             Uv = sprite.Uv,
         });
-        if (z > 0 && map.IsSolid(map.Idx(x, y, z - 1)))
+        if (grounded)
             return; // laid on the ground: no visible edges
+
+        // A floor cell beside this one that isn't under a wall: the room side.
+        bool Inside(int nx, int ny) => map.InBounds(nx, ny, z) && map.HasFloor[map.Idx(nx, ny, z)] && !IsWallAt(sim, nx, ny, z);
 
         Edge(x + 1, y, new float3(x + 1, y + 1, top), new float3(0, -1, 0), 0.78f);
         Edge(x - 1, y, new float3(x, y, top), new float3(0, 1, 0), 0.66f);
@@ -546,6 +570,19 @@ public sealed class WorldMesher(TextureAtlas atlas)
             _quads.Add(WorldScale.Tile(template, origin, u, SlabThickness, sprite.Uv, WorldScale.TilesPerLevel(sprite), 0));
         }
     }
+
+    /// <summary>A wall, door or post stands in this cell.</summary>
+    private static bool IsWallAt(Simulation sim, int x, int y, int z)
+    {
+        var map = sim.Map;
+        if (!map.InBounds(x, y, z) || map.Structure[map.Idx(x, y, z)] is not { IsNull: false } s || sim.World.Has<Construction>(s))
+            return false;
+        return sim.World.Get<Thing>(s).Def.Building is { IsWall: true } or { IsDoor: true };
+    }
+
+    /// <summary>The part of a sprite's UV rect (u0, v0, u1, v1) for a sub-rectangle of the cell, 0..1 each way.</summary>
+    private static float4 Crop(float4 uv, float a0, float b0, float a1, float b1) =>
+        new(uv.X + (uv.Z - uv.X) * a0, uv.Y + (uv.W - uv.Y) * b0, uv.X + (uv.Z - uv.X) * a1, uv.Y + (uv.W - uv.Y) * b1);
 
     /// <summary>What the game draws over enclosed rooms (which the sim roofs without a built roof).</summary>
     private const string AutoRoofSprite = "buildings/roof_turf"; // sod over birch bark: the Norse house's roof
