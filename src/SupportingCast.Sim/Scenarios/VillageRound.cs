@@ -67,7 +67,7 @@ public static class VillageRound
     public const int StoreroomKegs = 3, Tankards = 10, Bowls = 10;
 
     /// <summary>What's on the shelf behind the bar for mixing drinks.</summary>
-    public static readonly (string Def, int Count)[] BarStock = [("Spirits", 8), ("Honey", 8), ("Herbs", 8)];
+    public static readonly (string Def, int Count)[] BarStock = [("Spirits", 8), ("Honey", 8), ("Herbs", 8), ("Berries", 10)];
 
     /// <summary>The inn opens stocked: food in the larder, kegs in the storeroom, tankards on the shelf behind the bar and bowls on the kitchen's.</summary>
     private static void StockInn(Simulation sim, Entity inn)

@@ -206,7 +206,7 @@ public sealed class InnSupplySystem : ISimSystem, Saving.ISaveState
     /// <summary>The hour the carter calls.</summary>
     public const float DeliveryHour = 6;
 
-    public static readonly (string Def, int Count)[] Kegs = [("Keg", 2), ("Spirits", 4), ("Honey", 4), ("Herbs", 4)];
+    public static readonly (string Def, int Count)[] Kegs = [("Keg", 2), ("Spirits", 4), ("Honey", 4), ("Herbs", 4), ("Berries", 6)];
     public static readonly (string Def, int Count)[] Food = [("Cabbage", 6), ("Meat", 5), ("Berries", 8)];
 
     private int _lastDay;

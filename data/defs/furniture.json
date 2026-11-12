@@ -150,9 +150,9 @@
     {
       // Behind the bar and in the kitchen: where the clean tankards and bowls are kept.
       "name": "Shelf", "label": "shelf", "category": "Building", "solid": true, "sprite": "buildings/chest",
-      "description": "Plank shelves on brackets. Holds 4 stacks: the clean crockery lives here.",
+      "description": "Plank shelves on brackets. Holds 6 stacks: the clean crockery lives here, and behind the bar what goes into a mix.",
       "maxHp": 80, "flammability": 1.0,
-      "building": { "work": 80, "storageStacks": 4, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "building": { "work": 80, "storageStacks": 6, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
       "model": [
         { "min": [0.08, 0.3, 0], "max": [0.92, 0.7, 0.06], "top": "props/planks", "side": "props/planks" },
         { "min": [0.08, 0.3, 0.42], "max": [0.92, 0.7, 0.48], "top": "props/planks", "side": "props/planks" },

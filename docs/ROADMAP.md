@@ -263,10 +263,11 @@ a plain `CraftJob`. Tune the heat and quench timing in play. Save format 3.
     paying for it.
   - Some entity `FirstOrDefault` calls fell back to entity 0 rather than `Entity.Null`.
 - Bench baselines:
-  - seed 1234: state `4ED162175B53B222`, full `0A8CE22DD961743F`
-  - seed 99: state `5069C912ABC1ECDA`, full `0E5D1C752585172A`
+  - seed 1234: state `CDBB67F795633E74`, full `025DF195DDF4B771`
+  - seed 99: state `A42B93417320CCC2`, full `1465D1BB7BA083D6`
 
-  Every hash moved: the inn and the cottage beside it changed, and the inn is stocked.
+  Every hash moved: the inn and the cottage beside it changed, and the inn is stocked. They
+  moved again when berries went on the bar shelf.
 
 Known leftovers:
 - The AI innkeeper doesn't mix: asked for a named drink, it pours an ale.
@@ -293,6 +294,9 @@ Known leftovers:
     juggling these changes remove: the whole stack grabbed into an empty hand, a refused mix
     reported only in the log, and walking off with things in hand.
 - Bots go by what they're carrying, not what's on a shelf they happen to stand by.
+- **Berries behind the bar:** the bramblecup's berries were only in the kitchen's larder. The bar
+  shelf holds six stacks now, with berries beside the spirits, honey and herbs, and the carter
+  brings more.
 
 ### Roofs on (2026-11-12)
 - **Roofs are on by default.** Only the building you're standing in opens up: its roof and
