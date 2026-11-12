@@ -1,4 +1,5 @@
 using Brutal.ImGuiApi;
+using Narsil.Ui;
 using SupportingCast.Net;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Core;
@@ -143,7 +144,7 @@ public sealed partial class VillageGame
             var rank = seat.Wanted.IndexOf(trade);
             var never = seat.Never.Contains(trade);
             ImGui.Text(Capitalized(trade.Label));
-            Tip(trade.Description);
+            Gui.ItemTip(trade.Description);
             ImGui.SameLine(160, -1);
             if (ImGui.SmallButton(rank >= 0 ? $"Choice {rank + 1}" : "Want"))
             {
@@ -185,7 +186,7 @@ public sealed partial class VillageGame
                 continue;
             if (ImGui.Button(Capitalized(trade.Label), in _autoSize))
                 Take(session, [trade]);
-            Tip(trade.Description);
+            Gui.ItemTip(trade.Description);
         }
         if (ImGui.Button("Anything going"u8, in _autoSize))
             Take(session, []);

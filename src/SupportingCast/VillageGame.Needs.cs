@@ -1,4 +1,5 @@
 using Brutal.ImGuiApi;
+using Narsil.Ui;
 using Brutal.Numerics;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Environment;
@@ -7,9 +8,9 @@ using SupportingCast.Sim.Systems;
 namespace SupportingCast;
 
 /// <summary>
-/// Adventure mode's needs panel: your character's needs, mood, warmth and wounds at a glance in
-/// the top-left corner, so you needn't select yourself and open the Needs tab. Click your name for
-/// the full inspector.
+/// Adventure mode's character card, top left: who you are (portrait, name, trade, purse) and your
+/// needs, mood, warmth and wounds at a glance, so you needn't select yourself. Click the portrait
+/// or name for the full inspector.
 /// </summary>
 public sealed partial class VillageGame
 {
@@ -22,20 +23,44 @@ public sealed partial class VillageGame
         var w = _sim.World;
         var c = w.Get<Creature>(_avatar);
 
-        var pos = new float2(10, 34);
-        float2? pivot = new float2(0f, 0f);
-        ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
-        ImGui.SetNextWindowBgAlpha(0.75f);
-        ImGui.Begin("##needs"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings
-            | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav);
+        _hud.Next(Anchor.TopLeft);
+        Panel.Begin("##needs", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
+        _hud.Took();
 
-        // Name: click for the inspector (everything else lives there).
-        if (ImGui.Selectable(c.Name, _selected == _avatar, ImGuiSelectableFlags.None))
-            _selected = _selected == _avatar ? Sim.Ecs.Entity.Null : _avatar;
+        // Who you are: portrait, name and trade, purse. Click for the inspector (everything else lives there).
+        var dl = ImGui.GetWindowDrawList();
+        var box = Gui.S(52, 52);
+        var min = ImGui.GetCursorScreenPos();
+        var clicked = ImGui.InvisibleButton("##me"u8, in box, ImGuiButtonFlags.None);
+        var hovered = ImGui.IsItemHovered(ImGuiHoveredFlags.None);
+        Gui.Trough(dl, min, min + box);
+        DrawPortrait(dl, _avatar, min + Gui.S(3, 3), box - Gui.S(6, 6));
+        if (hovered || _selected == _avatar)
+            dl.AddRect(in min, min + box, Ui.Theme.U8(Ui.Theme.Accent), Gui.S(3), ImDrawFlags.None, Gui.S(1.5f));
+        ImGui.SameLine(0, Gui.S(10));
+        ImGui.BeginGroup();
+        using (Gui.HeaderFont())
+            ImGui.Text(c.Name);
         if (_sim.World.TryGet<Trade>(_avatar, out var trade))
             TextC(Ui.Theme.Dim, Capitalized(trade.Def.Label));
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+        if (_sim.Round.Phase != Sim.Round.RoundPhase.None)
+        {
+            if (Gui.TrySprite("ui/icon_coin", out var coin))
+            {
+                var at = ImGui.GetCursorScreenPos();
+                var size = ImGui.GetTextLineHeight();
+                Gui.Sprite(dl, coin, at, new float2(size, size));
+                ImGui.Dummy(new float2(size, size));
+                ImGui.SameLine(0, Gui.S(4));
+            }
+            TextC(Ui.Theme.Warn, $"{Sim.Errands.Coin.Count(_sim, _avatar)} silver");
+        }
+        ImGui.EndGroup();
+        if (clicked || (ImGui.IsItemClicked(ImGuiMouseButton.Left)))
+            _selected = _selected == _avatar ? Sim.Ecs.Entity.Null : _avatar;
+        if (hovered)
             Tip("Click for your full inspector: mood, health, skills, gear.");
+        Gui.Rule();
 
         // Needs.
         var needs = w.Get<Needs>(_avatar);
@@ -96,17 +121,10 @@ public sealed partial class VillageGame
                 Tip(bleed > 0 ? "A bandage binds a wound and stops the bleeding (its item menu, on yourself)." : "Your inspector's Health tab lists the wounds.");
         }
 
-        ImGui.End();
+        Panel.End();
     }
 
     /// <summary>A short labelled bar for the HUD: narrower than the inspector's, label on the left.</summary>
-    private static void HudBar(string label, float value, float4 color, string overlay)
-    {
-        ImGui.Text(label);
-        ImGui.SameLine(52, -1);
-        ImGui.PushStyleColor(ImGuiCol.PlotHistogram, in color);
-        var size = (float2?)new float2(NeedsBarWidth, 0);
-        ImGui.ProgressBar(Math.Clamp(value, 0, 1), in size, overlay);
-        ImGui.PopStyleColor(1);
-    }
+    private static void HudBar(string label, float value, float4 color, string overlay) =>
+        Gui.Bar(label, value, color, overlay, NeedsBarWidth, labelWidth: 52);
 }

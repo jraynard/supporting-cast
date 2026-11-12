@@ -105,6 +105,8 @@ CoopIdentity.NameOverride = ParseString(args, "--name");
 var settings = Settings.Load(Settings.DefaultPath);
 SaveSlots.Directory = SaveSlots.DefaultDirectory;
 VillageGame.OpenProfiler = args.Contains("--profiler");
+if (args.Contains("--dev"))
+    VillageGame.DevMode = true;
 SupportingCast.Net.CoopRelay.Override = ParseString(args, "--relay");
 CharacterRoster.PickOverride = ParseString(args, "--character");
 using var host = new GameHost(new GameHostOptions

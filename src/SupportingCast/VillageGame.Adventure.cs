@@ -1,4 +1,5 @@
 using Brutal.ImGuiApi;
+using Narsil.Ui;
 using Narsil;
 using Narsil.Platform;
 using SupportingCast.Net;
@@ -87,7 +88,6 @@ public sealed partial class VillageGame
                 if (_sim.World.Has<PlayerCharacter>(e))
                     continue; // a solo round's bots
                 _avatar = e;
-                _selected = e;
                 break;
             }
         }

@@ -167,11 +167,11 @@ public sealed partial class VillageGame
 
     private void DrawToolbar()
     {
-        var screen = ImGui.GetIO().DisplaySize;
-        var pos = new float2(screen.X * 0.5f, screen.Y - 10);
-        float2? pivot = new float2(0.5f, 1f);
-        ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
-        ImGui.Begin("##toolbar"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoFocusOnAppearing);
+        if (!ToolbarOpen)
+            return;
+        _hud.Next(Narsil.Ui.Anchor.Bottom);
+        Narsil.Ui.Panel.Begin("##toolbar", Narsil.Ui.Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize);
+        _hud.Took();
 
         // Category tabs stacked on the left, the tab's tools to the right.
         ImGui.BeginGroup();
@@ -267,8 +267,8 @@ public sealed partial class VillageGame
             }
         }
         ImGui.EndGroup();
-        _toolbarHeight = ImGui.GetWindowSize().Y;
-        ImGui.End();
+
+        Narsil.Ui.Panel.End();
     }
 
     /// <summary>A hotkey letter in a button's bottom-right corner, shadowed so it reads over any icon.</summary>

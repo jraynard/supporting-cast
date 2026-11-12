@@ -59,6 +59,7 @@ public static class Theme
         Colors = new Dictionary<ImGuiCol, float4>
         {
             [ImGuiCol.Border] = new float4(0.06f, 0.045f, 0.035f, 0.9f),
+            [ImGuiCol.ChildBg] = new float4(0.075f, 0.055f, 0.042f, 0.88f),
             [ImGuiCol.FrameBg] = new float4(0.08f, 0.06f, 0.045f, 1f),
             [ImGuiCol.Button] = new float4(0.27f, 0.19f, 0.13f, 1f),
             [ImGuiCol.ButtonHovered] = new float4(0.42f, 0.27f, 0.15f, 1f),

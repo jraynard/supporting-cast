@@ -20,7 +20,6 @@ public sealed partial class VillageGame
     private bool _inventoryOpen;
 
     /// <summary>The toolbar's height last frame, so the hotbar sits just above it.</summary>
-    private float _toolbarHeight;
 
     /// <summary>Hotbar slots: the pack's first stacks, in pack order.</summary>
     private const int HotbarSlots = 4;
@@ -58,14 +57,10 @@ public sealed partial class VillageGame
             return;
         var w = _sim.World;
         var pack = _sim.PackOf(_avatar);
-        var screen = ImGui.GetIO().DisplaySize;
-        // Centred just above the toolbar.
-        var pos = new float2(screen.X * 0.5f, screen.Y - 10 - _toolbarHeight - 6);
-        float2? pivot = new float2(0.5f, 1f);
-        ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
-        ImGui.SetNextWindowBgAlpha(0.8f);
-        ImGui.Begin("##hotbar"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings
-            | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav);
+        // Centred at the bottom, over the build tools when they're out.
+        _hud.Next(Narsil.Ui.Anchor.Bottom);
+        Narsil.Ui.Panel.Begin("##hotbar", Narsil.Ui.Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
+        _hud.Took();
         var held = w.Get<Carrying>(_avatar).Item;
         SlotBox("hands", held, "In hand", "Empty hands. 1–4 take a stack from your pack; X puts down what you hold.", menu: true);
         if (!pack.IsNull)
@@ -85,7 +80,7 @@ public sealed partial class VillageGame
             ImGui.SameLine(0, 8);
             TextC(Dim, "No pack: Tab for gear");
         }
-        ImGui.End();
+        Narsil.Ui.Panel.End();
     }
 
     /// <summary>
@@ -390,6 +385,9 @@ public sealed partial class VillageGame
                 ImGui.SameLine(0, 6);
                 if (ImGui.SmallButton($"{(slot == GearSlot.Weapon ? "Put away" : "Take off")}##{slot}"))
                     Issue(new UnequipCommand(_avatar, slot));
+                Narsil.Ui.Gui.ItemTip(slot == GearSlot.Back
+                    ? "Take the pack off: it keeps what's in it, and goes into your hands if they're free."
+                    : "Into your pack if it fits, else your hands, else onto the ground.");
                 if (slot == GearSlot.Weapon && Sim.Work.SharpenSession.Problem(_sim, _avatar, item) == null)
                 {
                     ImGui.SameLine(0, 6);
@@ -398,10 +396,6 @@ public sealed partial class VillageGame
                     if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                         Tip($"It's {View.Condition(item)}. Hold F to grind, A/D to keep the angle.");
                 }
-                if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                    Tip(slot == GearSlot.Back
-                        ? "Take the pack off: it keeps what's in it, and goes into your hands if they're free."
-                        : "Into your pack if it fits, else your hands, else onto the ground.");
             }
             ImGui.EndGroup();
         }

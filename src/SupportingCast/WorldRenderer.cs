@@ -1,4 +1,5 @@
 using Brutal.ImGuiApi;
+using SupportingCast.Sim.Speech;
 using Narsil.Rendering;
 using SupportingCast.Net;
 using SupportingCast.Rendering;
@@ -1475,10 +1476,65 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         {
             if (sim.Clock.Tick - line.Tick > SpokenLineTicks || line.Speaker is not { } who || !w.IsAlive(who) || !Seen(who))
                 continue;
-            var text = line.Text.Length > 60 ? line.Text[..59] + "…" : line.Text;
-            var at = cam.WorldToScreen(DrawPos(sim, who, w.Get<Position>(who).Pos) + WorldScale.Rise(VisualHeight(sim, who) + 0.5f));
-            Text(dl, at - new float2(ImGui.CalcTextSize(text, false, -1).X * 0.5f, 0), text, new ImColor8(255, 248, 225, 255));
+            // Above the status bubble (+0.2), so the two never sit on each other.
+            var at = cam.WorldToScreen(DrawPos(sim, who, w.Get<Position>(who).Pos) + WorldScale.Rise(VisualHeight(sim, who) + 0.75f));
+            var age = (sim.Clock.Tick - line.Tick) / (float)SpokenLineTicks;
+            SpeechPlate(dl, at, line.Text, Math.Clamp((1f - age) * 5f, 0f, 1f), line.Volume);
         }
+    }
+
+    /// <summary>A said line on a small dark plate with a tail toward the speaker, wrapped to a few lines.</summary>
+    private static void SpeechPlate(ImDrawListPtr dl, float2 tail, string text, float alpha, Volume volume)
+    {
+        var maxW = Narsil.Ui.Gui.S(240);
+        var lines = Wrap(text, maxW, 3);
+        var lineH = ImGui.GetTextLineHeight();
+        var width = lines.Max(l => ImGui.CalcTextSize(l, false, -1).X);
+        var pad = Narsil.Ui.Gui.S(7, 4);
+        var size = new float2(width, lineH * lines.Count) + pad * 2;
+        var tailH = Narsil.Ui.Gui.S(6);
+        var min = new float2(tail.X - size.X * 0.5f, tail.Y - tailH - size.Y);
+        var max = min + size;
+        var back = Ui.Theme.U8(Ui.Theme.Panel, 0.9f * alpha);
+        var rim = Ui.Theme.U8(volume == Volume.Shout ? Ui.Theme.Warn : Ui.Theme.Iron, alpha);
+        dl.AddRectFilled(in min, in max, back, Narsil.Ui.Gui.S(4), ImDrawFlags.None);
+        dl.AddRect(in min, in max, rim, Narsil.Ui.Gui.S(4), ImDrawFlags.None, 1f);
+        var t1 = new float2(tail.X - tailH, max.Y);
+        var t2 = new float2(tail.X + tailH, max.Y);
+        dl.AddTriangleFilled(in t1, in t2, in tail, back);
+        var ink = Ui.Theme.U8(volume == Volume.Whisper ? Ui.Theme.Dim : Ui.Theme.Text, alpha);
+        for (var i = 0; i < lines.Count; i++)
+        {
+            var lw = ImGui.CalcTextSize(lines[i], false, -1).X;
+            var p = new float2(min.X + (size.X - lw) * 0.5f, min.Y + pad.Y + i * lineH);
+            dl.AddText(in p, ink, lines[i]);
+        }
+    }
+
+    /// <summary>Words into lines no wider than <paramref name="width"/> pixels; past <paramref name="most"/> lines, the last is cut with an ellipsis.</summary>
+    private static List<string> Wrap(string text, float width, int most)
+    {
+        var lines = new List<string>();
+        var line = "";
+        foreach (var word in text.Split(' '))
+        {
+            var next = line.Length == 0 ? word : line + " " + word;
+            if (line.Length > 0 && ImGui.CalcTextSize(next, false, -1).X > width)
+            {
+                lines.Add(line);
+                line = word;
+            }
+            else
+                line = next;
+        }
+        if (line.Length > 0)
+            lines.Add(line);
+        if (lines.Count > most)
+        {
+            lines = lines.Take(most).ToList();
+            lines[^1] = Narsil.Ui.Gui.Fit(lines[^1] + " …", width);
+        }
+        return lines.Count == 0 ? [""] : lines;
     }
 
     private static void Text(ImDrawListPtr dl, float2 pos, string text, ImColor8 color)

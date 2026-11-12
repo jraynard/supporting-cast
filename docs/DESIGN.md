@@ -28,6 +28,8 @@ Tone: warm, comic and a little put-upon, until someone finds the blacksmith in t
 ## A round
 
 - 30 to 40 minutes at fixed speed with no pause: 3 to 4 in-game days at 10 real minutes a day.
+  Players get no speed controls. When there's nothing left to do (everyone asleep, say, or the
+  town quiet between parties), the game advances time on its own.
 - 4 to 12 players. AI villagers fill the empty trades at a basic level, so any headcount works.
 - Self-contained: no progression between rounds yet.
 - Lobby, trade deal from player preferences, the season, end-of-round reveal.

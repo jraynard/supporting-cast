@@ -1,4 +1,5 @@
 using Brutal.ImGuiApi;
+using Narsil.Ui;
 using SupportingCast.Sim;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Ecs;
@@ -36,10 +37,9 @@ public sealed partial class VillageGame
     /// <summary>The gift's window: mana, meditating, and a mending for each wound you carry.</summary>
     private void DrawGift()
     {
-        if (_sim.Round.Phase != RoundPhase.Playing || !HasAvatar || !_sim.World.TryGet<Mana>(_avatar, out var mana))
+        if (_sim.Round.Phase != RoundPhase.Playing || !HasAvatar || !_showGift || !_sim.World.TryGet<Mana>(_avatar, out var mana))
             return;
-        SetNextWindow(new float2(Screen.X - 430, 410), new float2(420, 260));
-        ImGui.Begin("The gift###gift"u8, ImGuiWindowFlags.NoCollapse);
+        BeginJournal("The gift###gift", ref _showGift);
         Bar("Mana", mana.Current / Math.Max(1f, mana.Max), Theme.Accent, $"{mana.Current:F0} / {mana.Max:F0}");
         var cantMeditate = MeditateSession.Problem(_sim, _avatar);
         ImGui.BeginDisabled(cantMeditate != null || Working);
@@ -71,28 +71,14 @@ public sealed partial class VillageGame
             }
             ImGui.PopID();
         }
-        ImGui.End();
-    }
-
-    private static readonly ImGuiWindowFlags WorkFlags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize
-        | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav;
-
-    private static void BeginWorkWindow(float y)
-    {
-        var screen = ImGui.GetIO().DisplaySize;
-        var pos = new float2(screen.X * 0.5f, screen.Y * y);
-        float2? pivot = new float2(0.5f, 0.5f);
-        ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
-        ImGui.Begin("###work"u8, WorkFlags);
+        Panel.End();
     }
 
     private void DrawDraw(DrawSession s)
     {
-        BeginWorkWindow(0.68f);
-        TextC(Theme.Accent, s.Title);
-        TextC(Theme.Dim, "Hold F to draw the wound in, A/D to keep your composure in the band. Let go to pause. Esc to stop.");
+        BeginWork(s.Title, ("F", "hold to draw it in, let go to pause"), ("A/D", "keep your composure in the band"), ("Esc", "stop"));
         var dl = ImGui.GetWindowDrawList();
-        var size = new float2(420, 30);
+        var size = Gui.S(420, 30);
         var min = ImGui.GetCursorScreenPos();
         var max = min + size;
         ImGui.Dummy(in size);
@@ -106,22 +92,20 @@ public sealed partial class VillageGame
         dl.AddRectFilled(in nMin, in nMax, Theme.U8(s.Calm ? Theme.Accent : Theme.Bad), 1f, ImDrawFlags.None);
         Bar("Drawn", s.Drawn, Theme.Good);
         Bar("Strain", s.Strain, s.Strain > 0.6f ? Theme.Bad : Theme.Warn);
-        ImGui.End();
+        EndWork();
     }
 
     private void DrawCast(CastSession s)
     {
-        BeginWorkWindow(0.68f);
-        TextC(Theme.Accent, s.Title);
-        TextC(Theme.Dim, "Play each rune as it reaches the mark: L is A, R is D, F is F. Esc to stop (the mana stays).");
+        BeginWork(s.Title, ("A/D/F", "play each rune as it reaches the mark"), ("Esc", "stop (the mana stays)"));
         var dl = ImGui.GetWindowDrawList();
-        var size = new float2(420, 40);
+        var size = Gui.S(420, 40);
         var min = ImGui.GetCursorScreenPos();
         var max = min + size;
         ImGui.Dummy(in size);
         dl.AddRectFilled(in min, in max, Theme.U8(Theme.Spirit), 4f, ImDrawFlags.None);
-        const float pxPerStep = 2.2f;
-        var markX = min.X + 60;
+        var pxPerStep = Gui.S(2.2f);
+        var markX = min.X + Gui.S(60);
         var markMin = new float2(markX - s.WindowSteps * pxPerStep, min.Y);
         var markMax = new float2(markX + s.WindowSteps * pxPerStep, max.Y);
         dl.AddRectFilled(in markMin, in markMax, Theme.U8(Theme.Good, 0.4f), 2f, ImDrawFlags.None);
@@ -133,25 +117,24 @@ public sealed partial class VillageGame
                 continue;
             var colour = i < s.Resolved ? (s.Hits[i] ? Theme.Good : Theme.Bad) : Theme.Text;
             var at = new float2(rx - 5, min.Y + 12);
-            dl.AddText(in at, Theme.U8(colour), runes[i].ToString());
+            dl.AddText(in at, Theme.U8(colour), runes[i] switch { 'L' => "A", 'R' => "D", _ => "F" }); // the key that plays it
         }
-        ImGui.End();
+        EndWork();
     }
 
     private void DrawMeditate(MeditateSession s)
     {
-        BeginWorkWindow(0.62f);
-        TextC(Theme.Accent, s.Title);
-        TextC(Theme.Dim, "Press F at the top of each breath in and the bottom of each breath out. Don't answer the flinches. Esc to stop.");
+        BeginWork(s.Title, ("F", "at the top of each breath in, the bottom of each out"), ("Esc", "stop"));
+        TextC(Theme.Dim, "Don't answer the flinches.");
         var dl = ImGui.GetWindowDrawList();
         var origin = ImGui.GetCursorScreenPos();
-        ImGui.Dummy(new float2(420, 150));
-        var centre = new float2(origin.X + 210, origin.Y + 75);
-        var radius = 20f + 50f * s.Fullness;
+        ImGui.Dummy(Gui.S(420, 150));
+        var centre = origin + Gui.S(210, 75);
+        var radius = Gui.S(20f + 50f * s.Fullness);
         var near = Math.Abs(s.StepsDone - s.NextTurn) <= s.WindowSteps;
         dl.AddCircleFilled(in centre, radius, Theme.U8(s.Flinching ? Theme.Bad : near ? Theme.Good : Theme.AccentSoft), 48);
         TextC(Theme.Dim, $"Calm {s.Calm}   Mana gathered {s.Gained:F0}   Breath {Math.Min(s.Turns / 2 + 1, MeditateSession.Breaths)} of {MeditateSession.Breaths}"
             + (s.Stillness > 0 ? "   (the stone steadies you)" : ""));
-        ImGui.End();
+        EndWork();
     }
 }

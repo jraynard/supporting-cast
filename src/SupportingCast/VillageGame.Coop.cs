@@ -1,4 +1,5 @@
 using Brutal.ImGuiApi;
+using Narsil.Ui;
 using Narsil;
 using Narsil.Net;
 using Narsil.Rendering;
@@ -209,20 +210,9 @@ public sealed partial class VillageGame
 
         if (!_showPlayers)
             return;
-        var at = new float2(screen.X - 16, 120);
-        float2? corner = new float2(1f, 0f);
-        ImGui.SetNextWindowPos(in at, ImGuiCond.FirstUseEver, in corner);
         var open = true;
-        if (ImGui.Begin("Players###coop-players"u8, ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse))
+        if (BeginJournal("Players###coop-players", ref open))
         {
-            // It grows to fit (chat, long names) from a remembered left edge: keep it on screen.
-            var pos = ImGui.GetWindowPos();
-            var size = ImGui.GetWindowSize();
-            if (pos.X + size.X > screen.X)
-            {
-                var inside = new float2(Math.Max(0, screen.X - size.X), pos.Y);
-                ImGui.SetWindowPos(in inside, ImGuiCond.Always);
-            }
             TextC(Theme.Dim, session.IsHost ? $"Hosting on port {session.Port}" : $"Joined {session.SessionName}");
             if (session.JoinCode is { } code)
             {
@@ -230,14 +220,14 @@ public sealed partial class VillageGame
                 ImGui.SameLine(0, 8);
                 if (ImGui.SmallButton("Copy"u8))
                     ImGui.SetClipboardText(code);
-                Tip("Friends anywhere type this into Co-op → Join a Game.");
+                Gui.ItemTip("Friends anywhere type this into Co-op → Join a Game.");
             }
             else if (session.RelayStatus is { } status)
                 TextC(Theme.Warn, status);
             if (session.ClientStats is var (buffered, target, jitter, starved))
             {
                 TextC(Theme.Dim, $"Turns queued {buffered} (keeps {target}), jitter {jitter:F0} ms, ran dry {starved}x");
-                Tip("Each queued turn adds a little input delay; the client keeps just enough to cover how unevenly turns arrive.");
+                Gui.ItemTip("Each queued turn adds a little input delay; the client keeps just enough to cover how unevenly turns arrive.");
             }
             foreach (var p in session.Players)
             {
@@ -268,7 +258,7 @@ public sealed partial class VillageGame
                 TextC(Theme.Dim, "Peaceful: raids are off in co-op for now.");
             TextC(Theme.Dim, $"{BuildInfo.Label}, build {BuildInfo.Tag(_sim.Defs)}");
         }
-        ImGui.End();
+        Panel.End();
         if (!open)
             _showPlayers = false;
     }

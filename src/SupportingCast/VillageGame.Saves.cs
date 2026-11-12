@@ -52,7 +52,7 @@ public sealed partial class VillageGame
         _lastSaveTime = _time;
     }
 
-    private void Notify(MessageKind kind, string text) => _toasts.Add(new Toast(new Message(_sim.Clock.Tick, kind, text, null), _time));
+    private void Notify(MessageKind kind, string text) => Toast(new Message(_sim.Clock.Tick, kind, text, null));
 
     /// <summary>Save into a slot; returns why it failed, or null.</summary>
     private string? SaveTo(string slot)

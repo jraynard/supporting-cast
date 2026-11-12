@@ -34,36 +34,42 @@ public sealed partial class VillageGame
         DrawDayTint();
         _renderer.DrawLabels(_camera, _sim, _time);
         DrawAvatarPrompt();
+        DrawTopBar();
+        _hud.BeginFrame(Screen, ImGui.GetFrameHeight());
+        // Top right: the clock and its journal strip, then the open journal panels, stacked.
+        DrawClock();
+        DrawGift();
+        DrawErrands();
+        DrawQuestBoard();
+        DrawSpeech();
+        DrawMessages();
+        // Top left: you. Top centre: the village (god mode) and the toasts.
+        DrawNeedsPanel();
+        DrawVillagerBar();
+        DrawToasts();
+        // Bottom centre, stacking upward: the build tools, the hotbar, and the work in hand.
+        DrawToolbar();
+        DrawHotbar();
+        DrawWork();
+        DrawInspector();
+        // Free windows.
         DrawStorageWindow();
         DrawWorldItemMenu();
         DrawStationWindow();
         DrawRecipeBook();
         DrawInventoryWindow();
-        DrawTopBar();
-        DrawToolbar();
-        DrawHotbar();
-        DrawNeedsPanel();
-        DrawVillagerBar();
-        DrawClock();
-        DrawToasts();
-        DrawInspector();
-        DrawMessages();
         DrawHoverInfo();
         if (_showWorkTab && !OrdersLocked)
             DrawWorkTab();
-        if (_showDebug)
+        if (_showDebug && _devMode)
             DrawDebug();
         Narsil.Ui.ProfilerWindow.Draw(Host, ref _showProfiler);
-        if (_showCredits)
-            DrawCredits();
+        DrawCredits();
         DrawSaveWindows();
         DrawCoop();
-        DrawSpeech();
-        DrawErrands();
-        DrawGift();
-        DrawQuestBoard();
-        DrawWork();
+        DrawControls();
         _settings.Draw();
+        WatchForDanger();
     }
 
     private bool _showCredits;
@@ -114,15 +120,18 @@ public sealed partial class VillageGame
             _showWorkTab = !_showWorkTab;
         if (ImGui.MenuItem("Recipes"u8, ""u8, _showRecipeBook, true))
             _showRecipeBook = !_showRecipeBook;
-        if (ImGui.MenuItem("Debug"u8, ""u8, _showDebug, true))
+        if (ImGui.MenuItem("Controls"u8, "H"u8, _showControls, true))
+            _showControls = !_showControls;
+        if (_devMode && ImGui.MenuItem("Debug"u8, ""u8, _showDebug, true))
             _showDebug = !_showDebug;
         if (ImGui.MenuItem("Credits"u8, ""u8, _showCredits, true))
             _showCredits = !_showCredits;
-        ImGui.Separator();
-
-        ImGui.Separator();
-        TextC(Dim, $"{Host.FrameTimeMs:F1} ms");
-        Tip($"Average frame time. Slowest in the last 2 s: {Host.FrameTimeMaxMs:F1} ms; {Host.Hitches} hitches so far (SC_PROFILE=1 logs each).");
+        if (_devMode)
+        {
+            ImGui.Separator();
+            TextC(Dim, $"{Host.FrameTimeMs:F1} ms");
+            Gui.ItemTip($"Average frame time. Slowest in the last 2 s: {Host.FrameTimeMaxMs:F1} ms; {Host.Hitches} hitches so far (SC_PROFILE=1 logs each).");
+        }
         ImGui.EndMainMenuBar();
     }
 
@@ -152,8 +161,12 @@ public sealed partial class VillageGame
             _selected = Entity.Null; // lost from sight
             return;
         }
-        SetNextWindow(new float2(10, Screen.Y - 420), new float2(360, 400));
-        ImGui.Begin("Inspector"u8, ImGuiWindowFlags.None);
+        _hud.Next(Anchor.BottomLeft, Gui.S(360), Gui.S(400));
+        var open = true;
+        Panel.Begin("Inspector###inspector", ref open, Hud.Flags);
+        _hud.Took();
+        if (!open)
+            _selected = Entity.Null;
 
         if (w.TryGet<Creature>(_selected, out var c))
         {
@@ -174,7 +187,7 @@ public sealed partial class VillageGame
         if (_devMode && view.Omniscient && ImGui.CollapsingHeader("Components (debug)"u8, ImGuiTreeNodeFlags.None))
             foreach (var comp in w.DebugComponents(_selected))
                 TextC(Dim, Describe(comp));
-        ImGui.End();
+        Panel.End();
     }
 
     private static string Describe(object comp) => comp switch
@@ -989,12 +1002,33 @@ public sealed partial class VillageGame
         return _witnessedLog;
     }
 
+    /// <summary>
+    /// Pause on danger so the player can react, like RimWorld's letters, whether or not the log is
+    /// open. Not in co-op: one player's alert shouldn't stop everyone's game.
+    /// </summary>
+    private void WatchForDanger()
+    {
+        if (_sim.Messages.Total == _lastDangerCheck)
+            return;
+        _lastDangerCheck = _sim.Messages.Total;
+        var messages = ShownMessages();
+        if (AutoPause && _coop is null && Settings.Current.PauseOnDanger && messages.Count > 0 && messages[^1].Kind == MessageKind.Danger && !Paused)
+            SetSpeed(0);
+    }
+
+    private long _lastDangerCheck;
+
+    /// <summary>The message log, a journal panel (L): toasts announce new messages as they come.</summary>
     private void DrawMessages()
     {
-        SetNextWindow(new float2(Screen.X - 470, Screen.Y - 230), new float2(460, 220));
-        // Toasts announce new messages; the full log starts collapsed.
-        ImGui.SetNextWindowCollapsed(true, ImGuiCond.FirstUseEver);
-        ImGui.Begin("Messages"u8, ImGuiWindowFlags.None);
+        // God mode has no journal strip: the log is always there, under the clock.
+        if (HasAvatar && !_showLog)
+            return;
+        if (!BeginJournal("Log###messages", ref _showLog, 220))
+        {
+            Panel.End();
+            return;
+        }
         var messages = ShownMessages();
         var start = Math.Max(0, messages.Count - 60);
         for (var i = start; i < messages.Count; i++)
@@ -1019,12 +1053,8 @@ public sealed partial class VillageGame
         {
             ImGui.SetScrollHereY(1f);
             _lastSeenMessages = _sim.Messages.Total;
-            // Pause on danger so the player can react, like RimWorld's letters. Not in co-op: one
-            // player's alert shouldn't stop everyone's game.
-            if (AutoPause && _coop is null && Settings.Current.PauseOnDanger && messages.Count > 0 && messages[^1].Kind == MessageKind.Danger && !Paused)
-                SetSpeed(0);
         }
-        ImGui.End();
+        Panel.End();
     }
 
     /// <summary>What shelters a roofed cell: the nearest roof, floor or rock above it.</summary>
@@ -1052,7 +1082,9 @@ public sealed partial class VillageGame
         var i = map.Idx(_hoverCell);
         var room = _sim.Rooms.RoomAt(_hoverCell);
         var ground = map.IsSolid(i) ? Mining.ShownBlock(_sim, i) : map.GroundUnder(i) is { } under ? Mining.ShownBlock(_sim, i - map.LayerSize) : null;
-        var text = $"{ground?.Label ?? "air"}  ({_hoverCell.X},{_hoverCell.Y},{_hoverCell.Z})\n{map.Temperature[i]:F1}°C";
+        var text = _devMode
+            ? $"{ground?.Label ?? "air"}  ({_hoverCell.X},{_hoverCell.Y},{_hoverCell.Z})\n{map.Temperature[i]:F1}°C"
+            : $"{Capitalized(ground?.Label ?? "air")}\n{map.Temperature[i]:F0}°C";
         if (room is { Indoors: true })
             text += $"  indoors, room {room.AverageTemperature:F0}°C";
         else

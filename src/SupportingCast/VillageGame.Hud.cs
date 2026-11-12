@@ -15,9 +15,7 @@ namespace SupportingCast;
 /// </summary>
 public sealed partial class VillageGame
 {
-    private sealed record Toast(Message Message, float Shown);
 
-    private readonly List<Toast> _toasts = [];
     private long _toastedMessages = -1;
 
     private float2 Screen => ImGui.GetIO().DisplaySize;
@@ -72,14 +70,16 @@ public sealed partial class VillageGame
 
     private void DrawVillagerBar()
     {
+        // In Adventure your own card (top left) is you; the bar is for watching a village from above.
+        if (HasAvatar)
+            return;
         var members = VillageMembers().ToList();
         if (members.Count == 0)
             return;
-        var pos = new float2(Screen.X * 0.5f, 34);
-        float2? pivot = new float2(0.5f, 0f);
-        ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
+        _hud.Next(Anchor.Top);
         ImGui.SetNextWindowBgAlpha(0.75f);
-        ImGui.Begin("##villagers"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoFocusOnAppearing);
+        ImGui.Begin("##villagers"u8, Hud.Flags | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize);
+        _hud.Took();
         var dl = ImGui.GetWindowDrawList();
         var w = _sim.World;
         var card = new float2(68, 84);
@@ -158,18 +158,55 @@ public sealed partial class VillageGame
 
     private static readonly string[] SpeedLabels = ["||", ">", ">>", ">>>"];
 
+    /// <summary>A speed button drawn as a glyph: two bars for pause, one to three arrowheads for the speeds.</summary>
+    private static bool SpeedButton(int speed, bool active)
+    {
+        float2? size = Gui.S(34, 24);
+        if (active)
+        {
+            var c = Theme.AccentSoft;
+            ImGui.PushStyleColor(ImGuiCol.Button, in c);
+        }
+        var pressed = ImGui.Button($"##speed{speed}", in size);
+        if (active)
+            ImGui.PopStyleColor(1);
+        var dl = ImGui.GetWindowDrawList();
+        var min = ImGui.GetItemRectMin();
+        var mid = min + Gui.S(34, 24) * 0.5f;
+        var col = Theme.U8(active ? Theme.Text : Theme.Dim);
+        var h = Gui.S(6);
+        if (speed == 0)
+        {
+            foreach (var dx in new[] { -Gui.S(4), Gui.S(1.5f) })
+            {
+                var a = new float2(mid.X + dx, mid.Y - h);
+                var b = new float2(mid.X + dx + Gui.S(2.5f), mid.Y + h);
+                dl.AddRectFilled(in a, in b, col, 0f, ImDrawFlags.None);
+            }
+            return pressed;
+        }
+        var w = Gui.S(6);
+        var start = mid.X - w * speed * 0.5f;
+        for (var i = 0; i < speed; i++)
+        {
+            var p1 = new float2(start + i * w, mid.Y - h);
+            var p2 = new float2(start + i * w + w, mid.Y);
+            var p3 = new float2(start + i * w, mid.Y + h);
+            dl.AddTriangleFilled(in p1, in p2, in p3, col);
+        }
+        return pressed;
+    }
+
     /// <summary>Top-right: a day/night dial, the time, outdoor temperature and speed buttons.</summary>
     private void DrawClock()
     {
-        var pos = new float2(Screen.X - 10, 34);
-        float2? pivot = new float2(1f, 0f);
-        ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
-        ImGui.SetNextWindowBgAlpha(0.85f);
-        ImGui.Begin("##clock"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoFocusOnAppearing);
+        _hud.Next(Anchor.TopRight, HasAvatar && InRound ? Gui.S(JournalWidth) : 0f);
+        Panel.Begin("##clock", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
+        _hud.Took();
 
         var dl = ImGui.GetWindowDrawList();
         var origin = ImGui.GetCursorScreenPos();
-        const float r = 24f;
+        var r = Gui.S(24f);
         var center = origin + new float2(r + 2, r + 2);
         var day = _sim.Clock.Daylight;
         var sky = Lerp(new float4(0.08f, 0.1f, 0.25f, 1f), new float4(0.45f, 0.7f, 0.95f, 1f), day);
@@ -181,8 +218,8 @@ public sealed partial class VillageGame
         var angle = (_sim.Clock.HourOfDay / 24f) * MathF.Tau + MathF.PI / 2f;
         var body = center + new float2(MathF.Cos(angle), MathF.Sin(angle)) * (r * 0.68f);
         var isDay = _sim.Clock.HourOfDay is >= 6f and < 18.5f;
-        dl.AddCircleFilled(in body, 5.5f, isDay ? new ImColor8(255, 214, 90, 255) : new ImColor8(225, 225, 240, 255), 16);
-        dl.AddCircle(in center, r, Theme.U8(Theme.AccentSoft), 32, 2f);
+        dl.AddCircleFilled(in body, Gui.S(5.5f), isDay ? new ImColor8(255, 214, 90, 255) : new ImColor8(225, 225, 240, 255), 16);
+        dl.AddCircle(in center, r, Theme.U8(Theme.Iron), 32, Gui.S(2.5f));
         var dummy = new float2(r * 2 + 4, r * 2 + 4);
         ImGui.Dummy(in dummy);
 
@@ -192,31 +229,28 @@ public sealed partial class VillageGame
             ImGui.Text(_sim.Clock.TimeString());
         var outdoor = _sim.Climate.OutdoorTemperature;
         TextC(outdoor < 5 ? Theme.Warn : Theme.Dim, $"Outside {outdoor:F0}°C");
-        for (var s = 0; s < SpeedLabels.Length; s++)
-        {
-            if (s > 0)
-                ImGui.SameLine(0, 4);
-            var active = _speed == s;
-            if (active)
+        // Time runs at one speed for whoever plays a character; only god mode and the demos change it.
+        if (!HasAvatar)
+            for (var s = 0; s < SpeedLabels.Length; s++)
             {
-                var c = Theme.AccentSoft;
-                ImGui.PushStyleColor(ImGuiCol.Button, in c);
+                if (s > 0)
+                    ImGui.SameLine(0, Gui.S(4));
+                if (SpeedButton(s, _speed == s))
+                    SetSpeed(s);
+                Gui.ItemTip(s == 0 ? "Pause [Space]" : $"Speed {s} [Ctrl+{s}]");
             }
-            var size = (float2?)new float2(34, 0);
-            if (ImGui.Button(SpeedLabels[s], in size))
-                SetSpeed(s);
-            if (active)
-                ImGui.PopStyleColor(1);
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip(s == 0 ? "Pause [Space]" : $"Speed {s} [Ctrl+{s}]");
-        }
         ImGui.EndGroup();
-        ImGui.End();
+        if (HasAvatar)
+        {
+            Gui.Rule();
+            DrawJournalStrip();
+        }
+        Panel.End();
 
         static float4 Lerp(float4 a, float4 b, float t) => a + (b - a) * Math.Clamp(t, 0, 1);
     }
 
-    /// <summary>New messages pop up under the clock for a few seconds; click one to look at it.</summary>
+    /// <summary>New messages slide in at the top of the screen for a few seconds; click one to look at it.</summary>
     private void DrawToasts()
     {
         var messages = _sim.Messages.Messages;
@@ -224,55 +258,21 @@ public sealed partial class VillageGame
             _toastedMessages = _sim.Messages.Total; // don't replay setup history
         for (var i = _sim.Messages.IndexAfter(_toastedMessages); i < messages.Count; i++)
             if (Witnessed(messages[i]))
-                _toasts.Add(new Toast(messages[i], _time));
+                Toast(messages[i]);
         _toastedMessages = _sim.Messages.Total;
-        _toasts.RemoveAll(t => _time - t.Shown > 7f);
-        while (_toasts.Count > 4)
-            _toasts.RemoveAt(0);
-        if (_toasts.Count == 0)
-            return;
+        _toastStack.Draw(_hud, Anchor.Top, _time);
+    }
 
-        var pos = new float2(Screen.X - 10, 118);
-        float2? pivot = new float2(1f, 0f);
-        ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
-        ImGui.SetNextWindowBgAlpha(0f);
-        ImGui.Begin("##toasts"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav);
-        var dl = ImGui.GetWindowDrawList();
-        for (var i = _toasts.Count - 1; i >= 0; i--)
+    private void Toast(Message m)
+    {
+        var icon = m.Kind switch
         {
-            var t = _toasts[i];
-            var age = _time - t.Shown;
-            var alpha = Math.Clamp(Math.Min(age * 5f, (7f - age) / 1.2f), 0f, 1f);
-            var slide = (1f - Math.Min(1f, age * 4f)) * 40f;
-            var color = KindColor(t.Message.Kind);
-            var text = t.Message.Text.Length > 70 ? t.Message.Text[..69] + "…" : t.Message.Text;
-            var size = new float2(380, 30);
-            var min = ImGui.GetCursorScreenPos() + new float2(slide, 0);
-            var max = min + size;
-            dl.AddRectFilled(in min, in max, new ImColor8(30, 22, 18, (byte)(225 * alpha)), 6f, ImDrawFlags.None);
-            var bar = new float2(min.X + 4, max.Y);
-            dl.AddRectFilled(in min, in bar, Theme.U8(color, alpha), 6f, ImDrawFlags.RoundCornersLeft);
-            var icon = t.Message.Kind switch
-            {
-                MessageKind.Danger => "ui/icon_alert",
-                MessageKind.Warning => "ui/icon_alert",
-                MessageKind.Good => "ui/icon_build",
-                _ => null,
-            };
-            var textX = min.X + 12;
-            if (icon != null)
-            {
-                DrawSprite(dl, Host.Atlas.Get(icon), new float2(min.X + 9, min.Y + 5), new float2(20, 20), new ImColor8(255, 255, 255, (byte)(255 * alpha)));
-                textX += 24;
-            }
-            var tp = new float2(textX, min.Y + 6);
-            dl.AddText(in tp, Theme.U8(color, alpha), text);
-            ImGui.PushID(i);
-            if (ImGui.InvisibleButton("toast"u8, in size, ImGuiButtonFlags.None) && t.Message.Location is { } loc)
-                _camera.Target = new float3(loc.X + 0.5f, loc.Y + 0.5f, loc.Z);
-            ImGui.PopID();
-        }
-        ImGui.End();
+            MessageKind.Danger or MessageKind.Warning => "ui/icon_alert",
+            MessageKind.Good => "ui/icon_good",
+            _ => null,
+        };
+        Action? look = m.Location is { } loc ? () => _camera.Target = new float3(loc.X + 0.5f, loc.Y + 0.5f, loc.Z) : null;
+        _toastStack.Push(m.Text, KindColor(m.Kind), icon, _time, look);
     }
 
     private static float4 KindColor(MessageKind kind) => kind switch

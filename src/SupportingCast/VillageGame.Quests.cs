@@ -1,4 +1,5 @@
 using Brutal.ImGuiApi;
+using Narsil.Ui;
 using SupportingCast.Sim;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Ecs;
@@ -15,13 +16,12 @@ public sealed partial class VillageGame
 {
     private void DrawQuestBoard()
     {
-        if (_sim.Round.Phase != RoundPhase.Playing || !HasAvatar)
+        if (_sim.Round.Phase != RoundPhase.Playing || !HasAvatar || !_showQuests)
             return;
         var quests = View.Quests().ToList();
         if (quests.Count == 0)
             return;
-        SetNextWindow(new float2(10, 60), new float2(420, 300));
-        ImGui.Begin("Quests###quests"u8, ImGuiWindowFlags.NoCollapse);
+        BeginJournal("Quests###quests", ref _showQuests);
 
         // A party member in reach whose party wants work.
         var w = _sim.World;
@@ -60,6 +60,6 @@ public sealed partial class VillageGame
             ImGui.Separator();
             ImGui.PopID();
         }
-        ImGui.End();
+        Panel.End();
     }
 }

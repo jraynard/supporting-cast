@@ -1,4 +1,5 @@
 using Brutal.ImGuiApi;
+using Narsil.Ui;
 using Narsil.Platform;
 using SupportingCast.Sim;
 using SupportingCast.Sim.Bots;
@@ -77,16 +78,11 @@ public sealed partial class VillageGame
         }
         if (_work.Session is not HammerSession hammer)
             return;
-        var screen = ImGui.GetIO().DisplaySize;
-        var pos = new float2(screen.X * 0.5f, screen.Y * 0.68f);
-        float2? pivot = new float2(0.5f, 0.5f);
-        ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
-        ImGui.Begin("###work"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav);
-        TextC(Theme.Accent, hammer.Title);
-        TextC(Theme.Dim, $"Blow {Math.Min(hammer.Blows + 1, HammerSession.BlowsNeeded)} of {HammerSession.BlowsNeeded}. F to strike on the mark, Esc to stop.");
+        BeginWork(hammer.Title, ("F", "strike on the mark"), ("Esc", "stop"));
+        TextC(Theme.Dim, $"Blow {Math.Min(hammer.Blows + 1, HammerSession.BlowsNeeded)} of {HammerSession.BlowsNeeded}.");
 
         var dl = ImGui.GetWindowDrawList();
-        var size = new float2(420, 34);
+        var size = Gui.S(420, 34);
         var min = ImGui.GetCursorScreenPos();
         var max = min + size;
         ImGui.Dummy(in size);
@@ -98,16 +94,15 @@ public sealed partial class VillageGame
         var barMin = new float2(x - 2, min.Y - 3);
         var barMax = new float2(x + 2, max.Y + 3);
         dl.AddRectFilled(in barMin, in barMax, Theme.U8(hammer.Ready ? Theme.Accent : Theme.Dim), 1f, ImDrawFlags.None);
-        ImGui.End();
+        EndWork();
     }
 
     /// <summary>What your character has heard, and the box for saying something. Replaces chat once a round starts.</summary>
     private void DrawSpeech()
     {
-        if (_sim.Round.Phase != RoundPhase.Playing || !HasAvatar)
+        if (_sim.Round.Phase != RoundPhase.Playing || !HasAvatar || !_showHeard)
             return;
-        SetNextWindow(new float2(Screen.X - 430, Screen.Y - 470), new float2(420, 230));
-        ImGui.Begin("Heard###speech"u8, ImGuiWindowFlags.NoCollapse);
+        BeginJournal("Heard###speech", ref _showHeard, 250);
         var heard = View.Heard().ToList();
         float2? size = new float2(0, -30);
         if (ImGui.BeginChild("##speech-log"u8, in size, ImGuiChildFlags.Borders, ImGuiWindowFlags.None))
@@ -125,6 +120,11 @@ public sealed partial class VillageGame
         }
         ImGui.EndChild();
         ImGui.SetNextItemWidth(-1);
+        if (_focusSpeech)
+        {
+            ImGui.SetKeyboardFocusHere(0);
+            _focusSpeech = false;
+        }
         if (ImGui.InputTextWithHint("##speech"u8, "Say something. /w whispers, /s shouts."u8, _speechInput, ImGuiInputTextFlags.EnterReturnsTrue, null, IntPtr.Zero))
         {
             var (volume, text) = SpeechSystem.Parse(Narsil.Ui.ImGuiText.Value(_speechInput));
@@ -132,25 +132,20 @@ public sealed partial class VillageGame
             _speechInput.SetValue("".AsSpan());
             ImGui.SetKeyboardFocusHere(-1); // keep typing
         }
-        ImGui.End();
+        Panel.End();
     }
 
     /// <summary>The tankard from the side: the drink, the head on it, and the line to bring it to.</summary>
     private void DrawPour(PourSession s)
     {
-        var screen = ImGui.GetIO().DisplaySize;
-        var pos = new float2(screen.X * 0.5f, screen.Y * 0.62f);
-        float2? pivot = new float2(0.5f, 0.5f);
-        ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
-        ImGui.Begin("###work"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav);
-        TextC(Theme.Accent, s.Title);
-        TextC(Theme.Dim, "Hold F to pour, A/D to tilt (less foam, slower). Stop at the line and let it settle. Esc to stop.");
+        BeginWork(s.Title, ("F", "hold to pour"), ("A/D", "tilt: less foam, slower"), ("Esc", "stop"));
+        TextC(Theme.Dim, "Stop at the line and let the head settle.");
         var dl = ImGui.GetWindowDrawList();
-        var size = new float2(90, 160);
+        var size = Gui.S(90, 160);
         var origin = ImGui.GetCursorScreenPos();
-        var min = new float2(origin.X + 160, origin.Y);
+        var min = new float2(origin.X + Gui.S(165), origin.Y);
         var max = min + size;
-        ImGui.Dummy(new float2(420, size.Y));
+        ImGui.Dummy(new float2(Gui.S(420), size.Y));
         dl.AddRectFilled(in min, in max, new ImColor8(70, 48, 30, 255), 6f, ImDrawFlags.None);
         float Y(float f) => max.Y - Math.Clamp(f, 0f, 1f) * size.Y;
         var drinkMin = new float2(min.X + 6, Y(s.Level));
@@ -163,21 +158,16 @@ public sealed partial class VillageGame
         var lineMax = new float2(max.X + 10, Y(s.Line) + 1);
         dl.AddRectFilled(in lineMin, in lineMax, Theme.U8(Theme.Good), 0f, ImDrawFlags.None);
         TextC(Theme.Dim, $"Tilt {s.Tilt * 100:F0}%   Head {s.Foam * 100:F0}%   {PourSession.ServingsLeft(_sim, s.Cask)} left in the cask");
-        ImGui.End();
+        EndWork();
     }
 
     /// <summary>The whetstone: the blade's angle against the band, the steel's heat and the edge coming back.</summary>
     private void DrawSharpen(SharpenSession s)
     {
-        var screen = ImGui.GetIO().DisplaySize;
-        var pos = new float2(screen.X * 0.5f, screen.Y * 0.68f);
-        float2? pivot = new float2(0.5f, 0.5f);
-        ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
-        ImGui.Begin("###work"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav);
-        TextC(Theme.Accent, s.Title);
-        TextC(Theme.Dim, "Hold F to grind, A/D to keep the angle in the band. Ease off before it overheats. Esc to stop.");
+        BeginWork(s.Title, ("F", "hold to grind"), ("A/D", "keep the angle in the band"), ("Esc", "stop"));
+        TextC(Theme.Dim, "Ease off before the steel overheats.");
         var dl = ImGui.GetWindowDrawList();
-        var size = new float2(420, 30);
+        var size = Gui.S(420, 30);
         var min = ImGui.GetCursorScreenPos();
         var max = min + size;
         ImGui.Dummy(in size);
@@ -191,15 +181,16 @@ public sealed partial class VillageGame
         dl.AddRectFilled(in needleMin, in needleMax, Theme.U8(s.InBand ? Theme.Accent : Theme.Bad), 1f, ImDrawFlags.None);
         Bar("Edge", s.Progress, Theme.Good);
         Bar("Heat", s.Heat, s.Heat > 0.75f ? Theme.Bad : s.Heat > 0.5f ? Theme.Warn : Theme.Dim);
-        ImGui.End();
+        EndWork();
     }
 
     /// <summary>The lid's seam with the probe on it, what the probe tells the fingers, and the pressure on it.</summary>
     private void DrawProbe(Sim.Locks.ProbeSession s)
     {
-        BeginWorkWindow(s.Title, "A/D run the probe along the seam; sweep light. Where it catches, stop and hold F to ease the spring out. The far end finishes. Esc to stop.");
+        BeginWork(s.Title, ("A/D", "run the probe along the seam"), ("F", "hold to press in"), ("Esc", "stop"));
+        TextC(Theme.Dim, "Sweep light. Where it catches, stop and ease the spring out. The far end finishes.");
         var dl = ImGui.GetWindowDrawList();
-        var size = new float2(420, 26);
+        var size = Gui.S(420, 26);
         var min = ImGui.GetCursorScreenPos();
         var max = min + size;
         ImGui.Dummy(in size);
@@ -217,7 +208,7 @@ public sealed partial class VillageGame
         Bar("Feel", s.Feel, s.Feel > 0.6f ? Theme.Warn : Theme.Dim);
         // The pressure gauge, with the band that eases a spring out marked on it.
         var gMin = ImGui.GetCursorScreenPos();
-        var gSize = new float2(420, 16);
+        var gSize = Gui.S(420, 16);
         var gMax = gMin + gSize;
         ImGui.Dummy(in gSize);
         dl.AddRectFilled(in gMin, in gMax, Theme.U8(Theme.Well), 3f, ImDrawFlags.None);
@@ -231,16 +222,16 @@ public sealed partial class VillageGame
         dl.AddRectFilled(in pMin, in pMax, Theme.U8(s.Pressure > Sim.Locks.ProbeSession.LightTouch ? Theme.Accent : Theme.Text), 1f, ImDrawFlags.None);
         if (s.Progress > 0f)
             Bar("Spring", s.Progress, Theme.Good);
-        ImGui.End();
+        EndWork();
     }
 
     /// <summary>The pins set so far, the one being lifted, and how much it gives.</summary>
     private void DrawPick(Sim.Locks.PickSession s)
     {
-        BeginWorkWindow(s.Title, "A/D lift the pin; F sets it where it gives most. A slip drops a pin and wears the picks. Esc to stop.");
+        BeginWork(s.Title, ("A/D", "lift the pin"), ("F", "set it where it gives most"), ("Esc", "stop"));
         var dl = ImGui.GetWindowDrawList();
         var origin = ImGui.GetCursorScreenPos();
-        const float W = 36, H = 120;
+        var W = Gui.S(36); var H = Gui.S(120);
         ImGui.Dummy(new float2(420, H));
         for (var i = 0; i < s.Pins; i++)
         {
@@ -256,19 +247,23 @@ public sealed partial class VillageGame
         }
         Bar("Give", s.Feel, s.Feel > 0.7f ? Theme.Warn : Theme.Dim);
         TextC(s.Slips > 0 ? Theme.Warn : Theme.Dim, $"Slips {s.Slips} of {Sim.Locks.PickSession.MaxSlips}");
-        ImGui.End();
+        EndWork();
     }
 
-    private void BeginWorkWindow(string title, string help)
+    /// <summary>
+    /// The work in hand's window, centred just above the hotbar: a title plate, the keys as caps,
+    /// then the game. Every mini-game opens it this way; pair with <see cref="EndWork"/>.
+    /// </summary>
+    private void BeginWork(string title, params (string Keys, string Does)[] hints)
     {
-        var screen = ImGui.GetIO().DisplaySize;
-        var pos = new float2(screen.X * 0.5f, screen.Y * 0.66f);
-        float2? pivot = new float2(0.5f, 0.5f);
-        ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
-        ImGui.Begin("###work"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav);
-        TextC(Theme.Accent, title);
-        TextC(Theme.Dim, help);
+        _hud.Next(Anchor.Bottom);
+        Panel.Begin($"{title}###work", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
+        _hud.Took();
+        Gui.Hints(hints);
+        ImGui.Spacing();
     }
+
+    private static void EndWork() => Panel.End();
 
     private void RunBots()
     {

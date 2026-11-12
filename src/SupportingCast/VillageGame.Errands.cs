@@ -1,4 +1,5 @@
 using Brutal.ImGuiApi;
+using Narsil.Ui;
 using SupportingCast.Sim;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Ecs;
@@ -20,14 +21,11 @@ public sealed partial class VillageGame
     /// <summary>The errands you've heard asked, taken on or asked yourself, with your purse.</summary>
     private void DrawErrands()
     {
-        if (_sim.Round.Phase != RoundPhase.Playing || !HasAvatar)
+        if (_sim.Round.Phase != RoundPhase.Playing || !HasAvatar || !_showErrands)
             return;
-        SetNextWindow(new float2(Screen.X - 430, 60), new float2(420, 340));
-        ImGui.Begin("Errands###errands"u8, ImGuiWindowFlags.NoCollapse);
-        TextC(Theme.Warn, $"Purse: {Coin.Count(_sim, _avatar)} silver");
-        ImGui.SameLine(0, 16);
+        BeginJournal("Errands###errands", ref _showErrands);
         ImGui.Checkbox("Show closed"u8, ref _showClosedErrands);
-        ImGui.Separator();
+        Gui.Rule();
 
         var now = _sim.Clock.Tick;
         var any = false;
@@ -102,7 +100,7 @@ public sealed partial class VillageGame
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                 Tip("Only those who hear you will know. Say it where the people you need are.");
         }
-        ImGui.End();
+        Panel.End();
     }
 
     /// <summary>Inspector buttons for someone in reach: hand over what you're holding, or pay them.</summary>

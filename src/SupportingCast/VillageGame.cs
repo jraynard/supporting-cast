@@ -143,7 +143,17 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         HideRoofs = !HideRoofs;
         Notify(MessageKind.Info, HideRoofs ? "Roofs and front walls cut away (\\)" : "Roofs and walls shown (\\)");
     }
-    private bool _devMode = true;
+    /// <summary>
+    /// Developer tools: the Debug window, frame times, cell coordinates, the overlays on F1–F4.
+    /// On in Debug builds, or with <c>--dev</c>.
+    /// </summary>
+#if DEBUG
+    public static bool DevMode { get; set; } = true;
+#else
+    public static bool DevMode { get; set; }
+#endif
+
+    private bool _devMode => DevMode;
 
     private bool Paused => _speed == 0;
 
@@ -466,6 +476,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     {
         if (IsCoopClient)
             return; // the host keeps the clock
+        if (HasAvatar)
+            speed = Math.Min(speed, 1); // one speed for whoever plays a character (a pause aside)
         if (speed == 0 && _speed != 0)
             _speedBeforePause = _speed;
         _speed = speed;
@@ -476,23 +488,29 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         if (input.WasKeyPressed(GlfwKey.Space))
             SetSpeed(Paused ? _speedBeforePause : 0);
         // Ctrl+1–3: plain numbers are the Adventure hotbar (VillageGame.Inventory.cs).
-        if (input.IsKeyDown(GlfwKey.LeftControl) || input.IsKeyDown(GlfwKey.RightControl))
+        if (!HasAvatar && (input.IsKeyDown(GlfwKey.LeftControl) || input.IsKeyDown(GlfwKey.RightControl)))
         {
             if (input.WasKeyPressed(GlfwKey.Number1)) SetSpeed(1);
             if (input.WasKeyPressed(GlfwKey.Number2)) SetSpeed(2);
             if (input.WasKeyPressed(GlfwKey.Number3)) SetSpeed(3);
         }
-        if (input.WasKeyPressed(GlfwKey.Escape))
+        // Esc puts work down (VillageGame.Work.cs) before it does anything else.
+        if (input.WasKeyPressed(GlfwKey.Escape) && !Working)
         {
             if (_tool != ToolKind.Select)
                 SetTool(ToolKind.Select);
+            else if (_showControls)
+                _showControls = false;
             else
                 _selected = Entity.Null;
         }
-        if (input.WasKeyPressed(GlfwKey.F1)) _renderer.Overlay = _renderer.Overlay == Overlay.Temperature ? Overlay.None : Overlay.Temperature;
-        if (input.WasKeyPressed(GlfwKey.F2)) _renderer.Overlay = _renderer.Overlay == Overlay.Rooms ? Overlay.None : Overlay.Rooms;
-        if (input.WasKeyPressed(GlfwKey.F3)) _renderer.ShowPaths = !_renderer.ShowPaths;
-        if (input.WasKeyPressed(GlfwKey.F4)) _renderer.ShowDarkness = !_renderer.ShowDarkness;
+        if (_devMode)
+        {
+            if (input.WasKeyPressed(GlfwKey.F1)) _renderer.Overlay = _renderer.Overlay == Overlay.Temperature ? Overlay.None : Overlay.Temperature;
+            if (input.WasKeyPressed(GlfwKey.F2)) _renderer.Overlay = _renderer.Overlay == Overlay.Rooms ? Overlay.None : Overlay.Rooms;
+            if (input.WasKeyPressed(GlfwKey.F3)) _renderer.ShowPaths = !_renderer.ShowPaths;
+            if (input.WasKeyPressed(GlfwKey.F4)) _renderer.ShowDarkness = !_renderer.ShowDarkness;
+        }
         if (input.WasKeyPressed(GlfwKey.RightBracket) || input.WasKeyPressed(GlfwKey.PageUp)) SetCutaway(_renderer.CutawayZ + 1);
         if (input.WasKeyPressed(GlfwKey.LeftBracket) || input.WasKeyPressed(GlfwKey.PageDown)) SetCutaway(_renderer.CutawayZ - 1);
         if (input.WasKeyPressed(GlfwKey.Home)) SetCutaway(_sim.Map.Depth - 1);
@@ -514,7 +532,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             if (CoopForbids("load a game") is { } no) Notify(MessageKind.Info, no);
             else QuickLoad();
         }
-        HandleToolHotkeys(input);
+        HandleJournalKeys(input);
+        if (ToolbarOpen)
+            HandleToolHotkeys(input);
         if (_tool is ToolKind.Build or ToolKind.PlaceBuilding && input.WasKeyPressed(GlfwKey.R))
             _buildFacing = (_buildFacing + 1) & 3; // turn the blueprint (beds, tables, buildings...)
         if (_tool == ToolKind.Build && input.WasKeyPressed(GlfwKey.C))
