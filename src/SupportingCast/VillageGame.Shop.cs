@@ -132,6 +132,47 @@ public sealed partial class VillageGame
         Gui.Rule();
     }
 
+    /// <summary>The price being set for a piece in the inspector, and which piece it's for.</summary>
+    private int _salePrice = 10;
+    private Entity _salePriceFor;
+
+    /// <summary>
+    /// A piece's price, if it's for sale; and for its keeper, putting gear lying in their shop up
+    /// for sale, changing its price or taking it off sale.
+    /// </summary>
+    private void DrawForSale(Entity item, Thing thing)
+    {
+        if (!InRound)
+            return;
+        var sale = View.Sale(item);
+        if (sale is { } s)
+            TextC(Theme.Warn, s.OnShow ? $"For sale: {s.Price} silver." : $"Marked for sale at {s.Price} silver, but not on show in its seller's shop.");
+        if (!HasAvatar || !Goods.IsGear(thing.Def))
+            return;
+        var inMyShop = thing.Spawned && Sim.Systems.Buildings.At(_sim, thing.Cell) is { IsNull: false } shop && ShopPrices.Keeps(_sim, _avatar, shop);
+        var mine = sale is { } own && own.Seller == _avatar;
+        if (!inMyShop && !mine)
+            return;
+        if (_salePriceFor != item)
+        {
+            _salePriceFor = item;
+            _salePrice = sale?.Price ?? 10;
+        }
+        ImGui.SetNextItemWidth(Gui.S(150));
+        ImGui.SliderInt("##saleprice"u8, ref _salePrice, 0, Math.Max(PriceSliderMax * 2, _salePrice), "%d silver"u8, ImGuiSliderFlags.AlwaysClamp);
+        ImGui.SameLine(0, Gui.S(6));
+        if (inMyShop && ImGui.Button(sale == null ? "Put up for sale"u8 : "Change price"u8, in _autoSize))
+            Issue(new SetItemPriceCommand(_avatar, item, _salePrice, true));
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+            Tip("On show while it lies in your shop. Adventurers who'd be better off with it, and think it worth the price, line up to buy it.");
+        if (mine)
+        {
+            ImGui.SameLine(0, Gui.S(6));
+            if (ImGui.Button("Take off sale"u8, in _autoSize))
+                Issue(new SetItemPriceCommand(_avatar, item, 0, false));
+        }
+    }
+
     private static string Capital(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 
     private static string ServiceIcon(Sim.Defs.ServiceKind kind) => kind switch

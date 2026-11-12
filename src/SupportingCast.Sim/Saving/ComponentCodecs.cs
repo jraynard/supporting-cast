@@ -343,6 +343,7 @@ internal static class ComponentCodecs
         Codec("BedOwner", (w, b) => w.Entity(b.Bed), r => new BedOwner { Bed = r.Entity() }),
         Codec("Skills", WriteSkills, ReadSkills),
         Codec("ShopPrices", WriteShopPrices, ReadShopPrices),
+        Codec("ForSale", (w, f) => { w.Entity(f.Seller); w.Int(f.Price); }, r => new Shops.ForSale { Seller = r.Entity(), Price = r.Int() }),
         Codec("Mood", WriteMood, ReadMood),
         Codec("Traits", (w, t) =>
         {

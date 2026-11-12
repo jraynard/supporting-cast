@@ -32,6 +32,11 @@
     { "name": "Lodging", "label": "a room", "at": "Inn", "defaultPrice": 4, "worthMin": 5, "worthMax": 9,
       "tooDearLines": [ "{0} silver a night? We'll sleep under a hedge.", "{0} for a room? The barn will do." ], "patienceHours": 4,
       "lines": [ "We'll want beds tonight. {0} silver for a room.", "Innkeeper! A room for the night, {0} silver.",
-                 "Any rooms going? {0} silver, and clean sheets." ] }
+                 "Any rooms going? {0} silver, and clean sheets." ] },
+    // Gear on show for sale: priced item by item, so no default and no "at". Worth is per tier of
+    // the piece (an iron sword, tier 4, is worth 4x), times how well it's made.
+    { "name": "Goods", "label": "gear", "defaultPrice": 0, "worthMin": 6, "worthMax": 10,
+      "tooDearLines": [ "{0} silver for that {1}? I'll keep what I've got.", "{0} for a {1}? I've seen better for less." ], "patienceHours": 3,
+      "lines": [ "I'll take that {1}. {0} silver, you said.", "That {1} on show. {0} silver? Done." ] }
   ]
 }

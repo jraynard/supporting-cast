@@ -59,7 +59,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art.
     (only those who hear know of it). Each want is an `Order` of a `ServiceKind`; the line is
     derived from open orders, never stored. Coin is real `SilverCoin` items; paying moves them. AI
     trades serve front first (`MendJob`, `ServeJob`, `HealOrders`). An AI work pack keeps coin and
-    `Entrusted` items between jobs. `Favours/`: what players ask of each other, for silver they name.
+    `Entrusted` items between jobs. Gear marked `ForSale` and lying in its seller's shop is on show
+    (`Goods`); no job takes an item for sale (`IsAvailable`). `Favours/`: what players ask of each
+    other, for silver they name.
   - `Locks/`: the Carpenter's lockwork on strongboxes from quests. A box's trap is hidden item
     state: show it only through `PerceptionView.Strongbox`, which never says an armed one is there.
   - `Healing/`: the empath. Wounds drawn in are `Injury.Absorbed` and known only by feel

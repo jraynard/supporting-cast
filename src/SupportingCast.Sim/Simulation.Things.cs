@@ -464,16 +464,18 @@ public sealed partial class Simulation
 
     /// <summary>
     /// Can someone take this item: lying on the map, or kept in a container. What's in a pack is
-    /// its wearer's (or lies dropped inside it), so no job takes it out.
+    /// its wearer's (or lies dropped inside it), so no job takes it out; and what's up for sale
+    /// (<see cref="Shops.ForSale"/>) is left where its keeper put it.
     /// </summary>
     public bool IsAvailable(Entity item) =>
-        World.IsAlive(item) && (World.Get<Thing>(item).Spawned || (World.TryGet<Stored>(item, out var s) && !OnSomeone(s.In)));
+        World.IsAlive(item) && !World.Has<Shops.ForSale>(item)
+        && (World.Get<Thing>(item).Spawned || (World.TryGet<Stored>(item, out var s) && !OnSomeone(s.In)));
 
-    /// <summary>Items lying on the map plus items kept in containers (anything a job could take).</summary>
+    /// <summary>Items lying on the map plus items kept in containers (anything a job could take), less what's up for sale.</summary>
     public IEnumerable<Entity> AvailableItems()
     {
         foreach (var e in World.Query<Stack>())
-            if (World.Get<Thing>(e).Spawned || (World.TryGet<Stored>(e, out var s) && !OnSomeone(s.In)))
+            if ((World.Get<Thing>(e).Spawned || (World.TryGet<Stored>(e, out var s) && !OnSomeone(s.In))) && !World.Has<Shops.ForSale>(e))
                 yield return e;
     }
 

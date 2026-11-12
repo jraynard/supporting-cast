@@ -72,3 +72,18 @@ public sealed record SetPriceCommand(Entity Avatar, Entity Shop, Defs.ServiceKin
             ShopPrices.Set(sim, Avatar, Shop, Service, Price, Offered);
     }
 }
+
+/// <summary>
+/// Put a piece lying in your shop up for sale at a price, or take it off sale. Adventurers who'd be
+/// better off with it, and think it worth the price, line up to buy it.
+/// </summary>
+public sealed record SetItemPriceCommand(Entity Avatar, Entity Item, int Price, bool ForSale) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (InventoryCommand.Ready(sim, Avatar))
+            Goods.Set(sim, Avatar, Item, Price, ForSale);
+    }
+}

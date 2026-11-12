@@ -82,6 +82,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 Close(sim, e, OrderStatus.Cancelled);
                 LostTheirGear(sim, e);
             }
+            else if (e.Kind.Kind == ServiceKind.Goods && (!sim.World.IsAlive(e.Subject) || !sim.World.Has<ForSale>(e.Subject)))
+                Close(sim, e, OrderStatus.Cancelled); // sold to someone else, or taken off sale
             else if (e.Kind.Kind == ServiceKind.Healing && !Untended(sim, e.Poster))
                 Healed(sim, e);
             else if (now >= e.Deadline)
@@ -133,6 +135,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 Want(sim, who, ServiceKind.Unlock, box);
             if (WantsARoom(sim, who, a))
                 Want(sim, who, ServiceKind.Lodging, Entity.Null);
+            ShopForGear(sim, who);
         }
     }
 
@@ -208,6 +211,52 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var text = Asking(def, price, SubjectLabel(sim, subject) ?? WoundLabel(sim, who));
         Post(sim, who, def, text, price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), subject, shop, worth);
         return true;
+    }
+
+    /// <summary>
+    /// An adventurer looks over the gear on show in the town's shops (<see cref="Goods.OnShow"/>)
+    /// for a piece they'd be better off with. Of those within what it's worth to them (per tier,
+    /// times how well it's made) and what they can spare, they order the best, then the cheapest.
+    /// If the only pieces they'd want are too dear, they say so and stop looking for a while.
+    /// </summary>
+    private void ShopForGear(Simulation sim, Entity who)
+    {
+        if (!MayAsk(sim, who, ServiceKind.Goods))
+            return;
+        var w = sim.World;
+        var def = sim.Defs.Service(ServiceKind.Goods);
+        var spend = w.Get<Adventurer>(who).Kind?.Spend ?? 1f;
+        var spare = Math.Max(0, Coin.Count(sim, who) - Promised(who));
+        int? roll = null;
+        (Entity Item, Entity Shop, int Price, int Worth, int Tier)? best = null, dear = null;
+        foreach (var (item, shop, price) in Goods.OnShow(sim))
+        {
+            if (_orders.Exists(o => o.IsOpen && o.Subject == item) || !Goods.IsUpgrade(sim, who, item))
+                continue;
+            roll ??= _rand.Range(def.WorthMin, def.WorthMax + 1);
+            var t = w.Get<Thing>(item);
+            var quality = w.TryGet<Crafted>(item, out var made) ? made.Quality : Quality.Plain;
+            var worth = (int)MathF.Round(roll.Value * Math.Max(1, t.Def.GearTier) * Goods.QualityWorth(quality) * spend);
+            var tier = t.Def.GearTier;
+            if (price <= Math.Min(worth, spare))
+            {
+                if (best is not { } b || tier > b.Tier || (tier == b.Tier && price < b.Price))
+                    best = (item, shop, price, worth, tier);
+            }
+            else if (dear is not { } d || price < d.Price)
+                dear = (item, shop, price, worth, tier);
+        }
+        if (best is { } buy)
+        {
+            var label = w.Get<Thing>(buy.Item).Label;
+            Post(sim, who, def, Asking(def, buy.Price, label), buy.Price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours),
+                buy.Item, buy.Shop, buy.Worth);
+        }
+        else if (dear is { } no)
+        {
+            _wentWithout[(who, ServiceKind.Goods)] = sim.Clock.Tick;
+            TooDear(sim, who, def, no.Price, no.Worth, spare, w.Get<Thing>(no.Item).Label);
+        }
     }
 
     /// <summary>
@@ -306,9 +355,10 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         _orders.Add(order);
         Learn(order, poster);
         // Word of work at a trade's building reaches whoever holds that trade.
-        if (kind.AtDef != null)
+        var workplace = sim.World.IsAlive(order.Where) && sim.World.TryGet<PresetBuilding>(order.Where, out var shop) ? shop.Def : kind.AtDef;
+        if (workplace != null)
             foreach (var e in sim.Creatures())
-                if (sim.World.TryGet<Trade>(e, out var trade) && trade.Def.WorkplaceDef == kind.AtDef)
+                if (sim.World.TryGet<Trade>(e, out var trade) && trade.Def.WorkplaceDef == workplace)
                     Learn(order, e);
         // At a shop with a line they say it at the counter, when their turn comes (TimeToAsk).
         if (LineCells(sim, order.Where).Count == 0)
@@ -587,6 +637,13 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (unlock != null)
         {
             TakeBackBox(sim, unlock, giver);
+            return;
+        }
+        var bought = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Goods && e.Subject == item);
+        if (bought != null)
+        {
+            Goods.TakeUp(sim, to, item);
+            Complete(sim, bought, giver);
             return;
         }
         var drink = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Drink);

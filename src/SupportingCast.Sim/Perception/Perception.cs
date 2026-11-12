@@ -234,6 +234,15 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
     public List<Shops.PostedPrice> Prices(Entity building) => Shops.ShopPrices.Board(sim, building);
 
     /// <summary>
+    /// What a piece is for sale at and who's selling it, if it's for sale (the price is posted
+    /// with it, like a sign), and whether it's on show in their shop. Null if it isn't for sale.
+    /// </summary>
+    public (int Price, Entity Seller, bool OnShow)? Sale(Entity item) =>
+        sim.World.IsAlive(item) && sim.World.TryGet<Shops.ForSale>(item, out var s)
+            ? (s.Price, s.Seller, !Shops.Goods.ShownIn(sim, item).IsNull)
+            : null;
+
+    /// <summary>
     /// The favours players asked this character knows of, oldest first: those they heard asked, took
     /// on or asked for themselves. Open ones and those closed within the last day.
     /// </summary>

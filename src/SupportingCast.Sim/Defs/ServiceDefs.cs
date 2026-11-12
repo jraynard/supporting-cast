@@ -25,6 +25,12 @@ public enum ServiceKind
 
     /// <summary>A room for the night: a bed let to them upstairs at the inn (the Innkeeper's).</summary>
     Lodging,
+
+    /// <summary>
+    /// A piece of gear on show for sale in a shop (<c>Shops.ForSale</c>), at the price its keeper
+    /// put on it. Its def's worth is per tier of the piece; it's on no sign.
+    /// </summary>
+    Goods,
 }
 
 /// <summary>

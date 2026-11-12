@@ -40,7 +40,11 @@ Milestones toward a playable prototype, then beyond. Design intent is in [DESIGN
   building def's "line" cells: the inn's bar, the smithy's and woodshop's open fronts, inside the
   shrine) and say what they want when they reach the front; keepers serve front first, and someone
   who's handed over a blade or a box steps out of the line until it comes back. Bots keep their
-  sign as a simple market: a price called too dear drops, a long line puts it up. Coin is real silver that changes hands. `Favours/`: players post, take, finish and call off
+  sign as a simple market: a price called too dear drops, a long line puts it up. Goods: a keeper
+  puts gear lying in their shop up for sale at a price (the item inspector); an adventurer who'd
+  be better off with a piece (a tier up on their weapon of the same kind, or armor for a bare or
+  lesser slot) and thinks it worth the price lines up and buys it, keeping what it replaces.
+  Villagers leave what's for sale alone; an AI keeper sells what's on show. Coin is real silver that changes hands. `Favours/`: players post, take, finish and call off
   favours for each other.
 - The trades, each with its own hands-on game and an AI fallback (the Quest Broker started as a
   fourth and was folded into the Innkeeper: the keeper hears the rumours anyway):

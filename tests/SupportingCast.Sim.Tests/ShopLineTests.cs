@@ -39,7 +39,7 @@ public class ShopLineTests
     public void EveryShopInTheVillageHasRoomForALine()
     {
         var (sim, _, _) = Town("Labourer");
-        foreach (var name in sim.Defs.AllServices.Select(d => d.At).Distinct())
+        foreach (var name in sim.Defs.AllServices.Select(d => d.At).Where(a => a.Length > 0).Distinct())
         {
             var shop = Shop(sim, name);
             Assert.False(shop.IsNull, name);

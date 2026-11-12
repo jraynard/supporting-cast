@@ -36,9 +36,9 @@ public sealed class WorkGivers
                     WorkType.Doctor => TendCritical(sim, pawn) ?? Rescue(sim, pawn) ?? TendWounds(sim, pawn) ?? FeedPatient(sim, pawn) ?? Shops.HealOrders.For(sim, pawn) ?? Capture(sim, pawn) ?? TendWounds(sim, pawn, enemies: true),
                     WorkType.Warden => FeedPrisoner(sim, pawn) ?? VisitPrisoner(sim, pawn),
                     WorkType.Refuel => Refuel(sim, pawn),
-                    WorkType.Construct => Locks.OpenBoxJob.For(sim, pawn) ?? Construct(sim, pawn) ?? Deconstruct(sim, pawn),
-                    WorkType.Craft => Shops.MendJob.For(sim, pawn) ?? Craft(sim, pawn, type),
-                    WorkType.Cook => Shops.ServeJob.For(sim, pawn) ?? Shops.LodgeJob.For(sim, pawn) ?? Craft(sim, pawn, type),
+                    WorkType.Construct => Locks.OpenBoxJob.For(sim, pawn) ?? Shops.SellJob.For(sim, pawn) ?? Construct(sim, pawn) ?? Deconstruct(sim, pawn),
+                    WorkType.Craft => Shops.SellJob.For(sim, pawn) ?? Shops.MendJob.For(sim, pawn) ?? Craft(sim, pawn, type), // a sale is quick, a mend is not
+                    WorkType.Cook => Shops.ServeJob.For(sim, pawn) ?? Shops.LodgeJob.For(sim, pawn) ?? Shops.SellJob.For(sim, pawn) ?? Craft(sim, pawn, type),
                     WorkType.Hunt => Butcher(sim, pawn) ?? Hunt(sim, pawn),
                     WorkType.Fish => Fish(sim, pawn),
                     WorkType.Mine => Harvest(sim, pawn, type) ?? Dig(sim, pawn),
