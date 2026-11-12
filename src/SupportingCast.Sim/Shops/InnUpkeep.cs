@@ -182,7 +182,7 @@ public sealed class InnSupplySystem : ISimSystem, Saving.ISaveState
     /// <summary>The hour the carter calls.</summary>
     public const float DeliveryHour = 6;
 
-    public static readonly (string Def, int Count)[] Kegs = [("Keg", 2)];
+    public static readonly (string Def, int Count)[] Kegs = [("Keg", 2), ("Spirits", 4), ("Honey", 4), ("Herbs", 4)];
     public static readonly (string Def, int Count)[] Food = [("Cabbage", 6), ("Meat", 5), ("Berries", 8)];
 
     private int _lastDay;
@@ -203,7 +203,7 @@ public sealed class InnSupplySystem : ISimSystem, Saving.ISaveState
             return;
         Deliver(sim, inn, "Chest", Kegs);
         Deliver(sim, inn, "Larder", Food);
-        sim.Messages.Add(MessageKind.Info, "The carter's been by the inn: kegs for the storeroom and a sack of food for the larder.",
+        sim.Messages.Add(MessageKind.Info, "The carter's been by the inn: kegs and bar stock for the storeroom, and a sack of food for the larder.",
             sim.World.Get<PresetBuilding>(inn).Anchor);
     }
 

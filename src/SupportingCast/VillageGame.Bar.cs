@@ -1,5 +1,6 @@
 using Brutal.ImGuiApi;
 using Narsil.Ui;
+using SupportingCast.Sim.Ecs;
 using SupportingCast.Sim.Work;
 using SupportingCast.Ui;
 
@@ -121,5 +122,108 @@ public sealed partial class VillageGame
             TextC(i < s.Movements ? Theme.Good : i == s.Movements ? Theme.Accent : Theme.Dim, (i < s.Movements ? "Done: " : "") + moves[i]);
         Bar("", s.Sweep, s.OnCue ? Theme.Good : Theme.Dim);
         EndWork();
+    }
+
+    // The house mix being put together in the bar panel: which bar ingredients are ticked.
+    private readonly HashSet<string> _houseAdds = [];
+
+    /// <summary>
+    /// Mixing a drink: the cues coming along the bar toward the mark, each pressed (F, A or D) as it
+    /// reaches it. Done cues show how they landed.
+    /// </summary>
+    private void DrawMix(MixSession s)
+    {
+        BeginWork(s.Title, ("F A D", "the cue as it reaches the mark"), ("Esc", "stop"));
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(420, 90);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var max = min + size;
+        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+        var markX = min.X + size.X * 0.2f;
+        var midY = (min.Y + max.Y) * 0.5f;
+        var a = new float2(markX, min.Y + Gui.S(8));
+        var b = new float2(markX, max.Y - Gui.S(8));
+        dl.AddLine(in a, in b, Theme.U8(Theme.Good), Gui.S(2));
+        // Steps to pixels: a cue slides in from the right and reaches the mark when it's due.
+        var perStep = size.X * 0.7f / (MixSession.Gap * 3f);
+        for (var i = s.Resolved; i < s.Cues.Length; i++)
+        {
+            var x = markX + (s.DueOf(i) - s.StepsDone) * perStep;
+            if (x > max.X - Gui.S(10))
+                break;
+            var c = new float2(x, midY);
+            dl.AddCircleFilled(in c, Gui.S(14), Theme.U8(Theme.Accent, 0.85f), 20);
+            var label = s.Cues[i].ToString();
+            var ts = ImGui.CalcTextSize(label);
+            var tp = c - ts * 0.5f;
+            dl.AddText(in tp, Theme.U8(Theme.Text), label);
+        }
+        ImGui.Spacing();
+        ImGui.Text($"{s.Hits} of {s.Resolved} on the mark, {s.Cues.Length - s.Resolved} to go.");
+        if (s.Last is { } last)
+        {
+            ImGui.SameLine(0, 10);
+            TextC(last ? Theme.Good : Theme.Bad, last ? "Neat." : "Sloppy.");
+        }
+        EndWork();
+    }
+
+    /// <summary>The bar beside you: the named drinks (and what they take), and a house mix of whatever's ticked.</summary>
+    private void DrawBarPanel()
+    {
+        if (!HasAvatar || BarBeside() is not { IsNull: false } bar)
+            return;
+        var w = _sim.World;
+        _hud.Next(Anchor.Bottom);
+        Panel.Begin("The bar###bar", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
+        _hud.Took();
+        TextC(Theme.Dim, "With a clean tankard in hand, and what it takes in your pack:");
+        foreach (var drink in _sim.Defs.AllThings.Where(d => d.Mix is { House: false }))
+        {
+            ImGui.PushID(drink.Name);
+            var adds = MixSession.AddsOf(_sim, drink, null);
+            var have = adds.All(add => !Sim.Systems.AvatarSystem.Supply(_sim, _avatar, d => d == add).IsNull);
+            if (ImGui.SmallButton($"Mix a {drink.Label}"))
+                Issue(new MixCommand(_avatar, bar, drink, null));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip(drink.Description);
+            ImGui.SameLine(0, 8);
+            TextC(have ? Theme.Dim : Theme.Warn, $"ale, {string.Join(", ", adds.Select(d => d.Label))}");
+            ImGui.PopID();
+        }
+        Gui.Rule();
+        TextC(Theme.Dim, "A house mix of:");
+        foreach (var add in _sim.Defs.AllThings.Where(d => d.MixCue is { Length: > 0 }))
+        {
+            ImGui.SameLine(0, 8);
+            var on = _houseAdds.Contains(add.Name);
+            if (ImGui.Checkbox(add.Label, ref on))
+            {
+                if (on)
+                    _houseAdds.Add(add.Name);
+                else
+                    _houseAdds.Remove(add.Name);
+            }
+        }
+        if (_houseAdds.Count > 0 && ImGui.SmallButton("Mix it"u8))
+            Issue(new MixCommand(_avatar, bar, _sim.Defs.Thing("HouseMix"), string.Join(",", _houseAdds.Order())));
+        Panel.End();
+    }
+
+    /// <summary>A bar counter in arm's reach of you.</summary>
+    private Entity BarBeside()
+    {
+        var at = _sim.World.Get<Sim.Components.Position>(_avatar).Cell;
+        var map = _sim.Map;
+        for (var dy = -1; dy <= 1; dy++)
+        for (var dx = -1; dx <= 1; dx++)
+        {
+            var c = new int3(at.X + dx, at.Y + dy, at.Z);
+            if (map.InBounds(c) && map.Structure[map.Idx(c)] is { IsNull: false } s && _sim.World.TryGet<Sim.Components.Thing>(s, out var t)
+                && t.Def.Building is { Bar: true })
+                return s;
+        }
+        return Entity.Null;
     }
 }

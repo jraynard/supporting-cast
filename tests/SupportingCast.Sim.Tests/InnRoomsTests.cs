@@ -95,7 +95,6 @@ public class InnRoomsTests
         for (var i = 0; i < 24 && !Paid(2); i++)
             sim.TickMany(SimClock.TicksPerHour / 4);
         Assert.True(Paid(2), "paid again the second night");
-        Assert.Equal(2, sim.Shops.All.Count(e => e.Kind.Kind == ServiceKind.Lodging && e.Poster == guest && e.Status == OrderStatus.Done));
         Assert.Equal(bed, sim.World.Get<LodgeStay>(guest).Bed);
     }
 

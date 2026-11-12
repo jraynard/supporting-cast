@@ -191,6 +191,15 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 _struck = tap.OnTheTap;
                 return (press, false, 0);
             }
+            case MixSession mx:
+            {
+                // Each cue's key as it reaches the mark.
+                if (mx.Resolved >= mx.Cues.Length || mx.Resolved == _lastRune || mx.StepsDone < mx.DueOf(mx.Resolved))
+                    return (false, false, 0);
+                _lastRune = mx.Resolved;
+                var cue = mx.Cues[mx.Resolved];
+                return (cue == 'F', false, cue == 'A' ? -1 : cue == 'D' ? 1 : 0);
+            }
             case PourSession p:
                 // Stop where the settled head will bring it to the line.
                 _stopped |= p.Level + p.Foam * 0.73f >= p.Line;
@@ -322,6 +331,13 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     private bool Upkeep(Simulation sim, Entity me, PerceptionView view, long now)
     {
         var w = sim.World;
+        // Anyone who's asked the way within earshot is told it.
+        if (view.WaysAsked().FirstOrDefault() is { Id: > 0 } ask)
+        {
+            Doing = $"pointing {ask.AskerName} the way";
+            send(new Hospitality.DirectCommand(me, ask.Id));
+            return true;
+        }
         if (!w.TryGet<Trade>(me, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
             return false;
         var inn = ShopSystem.BuildingOf(sim, workplace);
@@ -393,7 +409,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         return order.Kind switch
         {
             ServiceKind.Repair => Repair(sim, me, view, poster, now),
-            ServiceKind.Drink => Pour(sim, me, view, poster, now),
+            ServiceKind.Drink => view.WantedDrink(_task) is { Mix: not null } named ? MixFor(sim, me, view, poster, named, now) : Pour(sim, me, view, poster, now),
             ServiceKind.Meal => Serve(sim, me, view, poster, now),
             ServiceKind.Lodging => ShowUp(sim, me, poster, now),
             ServiceKind.Healing => Heal(sim, me, view, poster, now),
@@ -629,6 +645,58 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 if (w.TryGet<Entrusted>(item, out var x) && x.Owner == owner)
                     return item;
         return Entity.Null;
+    }
+
+    /// <summary>
+    /// A named drink: the adds from the shelf behind the bar, a clean tankard, then mixed at the bar
+    /// to its cues, and handed over. Without what it takes, an ale will have to do.
+    /// </summary>
+    private bool MixFor(Simulation sim, Entity me, PerceptionView view, Entity drinker, ThingDef named, long now)
+    {
+        var w = sim.World;
+        var held = w.Get<Carrying>(me).Item;
+        if (w.IsAlive(held) && w.Get<Thing>(held).Def.Drink)
+        {
+            if (Reach(sim, me, drinker, now))
+                send(new GiveCommand(me, drinker, held, 1));
+            return true;
+        }
+        var bar = Nearest(sim, me, "BarCounter");
+        var cask = bar.IsNull ? Entity.Null : MixSession.CaskFor(sim, bar, named);
+        if (cask.IsNull)
+            return Pour(sim, me, view, drinker, now);
+        var into = w.Get<Thing>(cask).Def.Building!.Cask!.Into;
+        if (Vessels.CleanOn(sim, me, into).IsNull)
+            return Crockery(sim, me, view, now, into, cask);
+        // Each add, from the shelf behind the bar (or the larder, for berries).
+        foreach (var add in MixSession.AddsOf(sim, named, null))
+        {
+            if (!AvatarSystem.Supply(sim, me, d => d == add).IsNull)
+                continue;
+            var store = w.Query<Thing>().Where(e => w.Get<Thing>(e) is { Spawned: true } t && t.Def.Building?.StorageStacks > 0
+                    && sim.StoredIn(e).Any(i => w.Get<Thing>(i).Def == add))
+                .OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, w.Get<Thing>(bar).Cell)).FirstOrDefault(Entity.Null);
+            if (store.IsNull)
+                return Pour(sim, me, view, drinker, now);
+            Doing = $"fetching {add.Label}";
+            if (!w.Get<Carrying>(me).Item.IsNull && w.Get<Thing>(w.Get<Carrying>(me).Item).Def.Name != into)
+            {
+                send(new StowCommand(me));
+                return true;
+            }
+            return AtStation(sim, me, store, now, s =>
+            {
+                if (view.InContainer(s).FirstOrDefault(i => w.Get<Thing>(i).Def == add, Entity.Null) is { IsNull: false } stack)
+                    send(new TakeFromStorageCommand(me, stack));
+            });
+        }
+        if (!held.IsNull && w.Get<Thing>(held).Def.Name != into)
+        {
+            send(new StowCommand(me));
+            return true;
+        }
+        Doing = $"mixing a {named.Label}";
+        return AtStation(sim, me, bar, now, b => send(new MixCommand(me, b, named, null)));
     }
 
     private bool Pour(Simulation sim, Entity me, PerceptionView view, Entity drinker, long now)

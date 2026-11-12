@@ -170,6 +170,8 @@ public class BlacksmithTests
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(playerTrade)], []));
         sim.ApplyNow(new StartRoundCommand());
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
+        foreach (var e in party)
+            Hospitality.DirectionsSystem.KnowsTheTown(sim, e); // finding the way is InnTalkTests'
         var owner = party.First(e => sim.World.TryGet<Equipment>(e, out var eq) && WeaponWear.Edged(sim.World.Get<Thing>(eq.Weapon).Def));
         var sword = sim.World.Get<Equipment>(owner).Weapon;
         sim.World.Get<Thing>(sword).Hp = sim.World.Get<Thing>(sword).MaxHp * 0.5f;

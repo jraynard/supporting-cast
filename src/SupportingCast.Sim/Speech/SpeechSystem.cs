@@ -94,6 +94,8 @@ public sealed class SpeechSystem : ISimSystem, ISaveState
             return null;
 
         var at = w.Get<Position>(speaker).Cell;
+        // Drink makes a voice carry.
+        var reach = volume == Volume.Say && Hospitality.DrinkingSystem.LevelOf(sim, speaker) >= Hospitality.DrinkingSystem.LoudAt ? Hospitality.DrinkingSystem.LoudReach : 1f;
         var utterance = new Utterance
         {
             Id = _nextId++, Tick = sim.Clock.Tick, Speaker = speaker, SpeakerName = w.Get<Creature>(speaker).Name,
@@ -101,7 +103,7 @@ public sealed class SpeechSystem : ISimSystem, ISaveState
         };
         foreach (var e in w.Query<Creature>())
             if (e == speaker || (CanAct(sim, e) && w.Get<Creature>(e).Def.Race == Race.Human))
-                if (Hear(sim, at, w.Get<Position>(e).Cell, volume) is { } clarity)
+                if (Hear(sim, at, w.Get<Position>(e).Cell, volume, reach) is { } clarity)
                     utterance.Listeners.Add(new Hearing(e, clarity, e == speaker || Recognised(at, w.Get<Position>(e).Cell, clarity)));
 
         _kept.Add(utterance);
@@ -111,9 +113,9 @@ public sealed class SpeechSystem : ISimSystem, ISaveState
     }
 
     /// <summary>How well someone at <paramref name="to"/> catches a voice from <paramref name="from"/>, or null if they don't.</summary>
-    public static Clarity? Hear(Simulation sim, int3 from, int3 to, Volume volume)
+    public static Clarity? Hear(Simulation sim, int3 from, int3 to, Volume volume, float reach = 1f)
     {
-        var distance = Distance(from, to);
+        var distance = Distance(from, to) / reach;
         var together = SameSpace(sim, from, to);
         return volume switch
         {

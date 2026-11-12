@@ -1113,8 +1113,16 @@ public sealed partial class Simulation
         AiSystem.EndJob(this, e, World.Get<Mind>(e), false);
         if (World.TryGet<Equipment>(e, out var eq) && World.IsAlive(eq.Weapon))
             World.DestroyDeferred(eq.Weapon);
+        // What's in their pack and hands goes with them: left behind, it'd be stored in a pack
+        // that's gone, off the map, for any job to go looking for.
         foreach (var item in Worn(e))
+        {
+            foreach (var inside in StoredIn(item))
+                World.DestroyDeferred(inside);
             World.DestroyDeferred(item);
+        }
+        if (World.TryGet<Carrying>(e, out var carrying) && World.IsAlive(carrying.Item))
+            World.DestroyDeferred(carrying.Item);
         foreach (var tool in Toolbelt.Of(this, e))
             World.DestroyDeferred(tool);
         if (questing)

@@ -52,6 +52,8 @@ public sealed partial class VillageGame
             ImGui.BeginGroup();
             TextC(open ? (e.Mine ? Theme.Good : Theme.Text) : Theme.Dim, $"{who} want{(e.Mine ? "" : "s")} {e.KindLabel}");
             TextC(open ? Theme.Warn : Theme.Dim, $"{e.Price} silver");
+            if (open && e.Kind == Sim.Defs.ServiceKind.Drink && View.WantedDrink(e.Id) is { } named)
+                TextC(Theme.Accent, $"Asked for a {named.Label}");
             ImGui.EndGroup();
             ImGui.PushTextWrapPos(0f);
             TextC(Theme.Dim, $"\u201C{e.Text}\u201D");
@@ -87,8 +89,29 @@ public sealed partial class VillageGame
         if (!any)
             TextC(Theme.Dim, "You haven't heard anyone ask for anything.");
 
+        DrawWaysAsked();
         DrawFavours();
         Panel.End();
+    }
+
+    /// <summary>Strangers who've asked the way within your hearing: point them to it, and they'll thank you for it.</summary>
+    private void DrawWaysAsked()
+    {
+        var asks = View.WaysAsked().ToList();
+        if (asks.Count == 0)
+            return;
+        TextC(Theme.Accent, "Asking the way");
+        foreach (var a in asks)
+        {
+            ImGui.PushID(a.Id + 100000);
+            ImGui.AlignTextToFramePadding();
+            ImGui.Text($"{a.AskerName}: where's the {a.To}?");
+            ImGui.SameLine(0, 8);
+            if (ImGui.SmallButton("Point the way"u8))
+                Issue(new Sim.Hospitality.DirectCommand(_avatar, a.Id));
+            ImGui.PopID();
+        }
+        Gui.Rule();
     }
 
     /// <summary>Your shop's price sign, if your trade keeps one: what you charge, and what you're offering.</summary>

@@ -401,6 +401,28 @@ internal static class ComponentCodecs
             w.Int(s.Night);
         }, r => new Hospitality.LodgeStay { Bed = r.Entity(), Night = r.Int() }),
         Tag<Hospitality.Unmade>("Unmade"),
+        Codec("KnowsTheWay", (w, k) =>
+        {
+            w.Int(k.Shops.Count);
+            foreach (var s in k.Shops)
+                w.Entity(s);
+        }, r =>
+        {
+            var k = new Hospitality.KnowsTheWay();
+            for (var n = r.Count(1 << 12); n > 0; n--)
+                k.Shops.Add(r.Entity());
+            return k;
+        }),
+        Codec("Tipsy", (w, t) => w.Float(t.Level), r => new Hospitality.Tipsy { Level = r.Float() }),
+        Codec("DrinkMix", (w, m) =>
+        {
+            w.Float(m.Strength);
+            w.Float(m.Warming);
+            w.Float(m.Rousing);
+            w.Float(m.Numbing);
+            w.Float(m.Loosening);
+            w.String(m.Adds ?? "");
+        }, r => new Work.DrinkMix { Strength = r.Float(), Warming = r.Float(), Rousing = r.Float(), Numbing = r.Float(), Loosening = r.Float(), Adds = r.String() }),
         Codec("Skills", WriteSkills, ReadSkills),
         Codec("ShopPrices", WriteShopPrices, ReadShopPrices),
         Codec("ForSale", (w, f) => { w.Entity(f.Seller); w.Int(f.Price); }, r => new Shops.ForSale { Seller = r.Entity(), Price = r.Int() }),

@@ -63,7 +63,8 @@ public class PartyTests
         Assert.Single(party.Select(e => w.Get<Adventurer>(e).Party).Distinct());
         Assert.False(Factions.Hostile(Faction.Village, Faction.Adventurer));
 
-        sim.TickMany(SimClock.HoursToTicks(3));
+        // The tavern first: it's the one place in town they know the way to.
+        sim.TickMany(SimClock.HoursToTicks(1));
         var tavern = w.Get<PresetBuilding>(town.Tavern).Anchor;
         var near = party.Count(e => Map.Distance(w.Get<Position>(e).Cell, tavern) <= 10);
         Assert.True(near * 2 > party.Count, $"only {near} of {party.Count} adventurers made it to the tavern");

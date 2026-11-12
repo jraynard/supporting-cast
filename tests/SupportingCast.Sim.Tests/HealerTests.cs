@@ -263,6 +263,8 @@ public class HealerTests
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(playerTrade)], []));
         sim.ApplyNow(new StartRoundCommand());
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
+        foreach (var e in party)
+            Hospitality.DirectionsSystem.KnowsTheTown(sim, e); // finding the way is InnTalkTests'
         var hurt = party[0];
         var h = sim.World.Get<Health>(hurt);
         HealthSystem.Damage(sim, hurt, 15f, DamageType.Cut, h.Body.Parts.FindIndex(p => p.Label.Contains("arm") && !p.Vital));

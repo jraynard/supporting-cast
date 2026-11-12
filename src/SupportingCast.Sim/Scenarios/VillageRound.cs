@@ -66,6 +66,9 @@ public static class VillageRound
     /// <summary>Kegs in the inn's storeroom at the start, and the clean crockery on its shelves.</summary>
     public const int StoreroomKegs = 3, Tankards = 10, Bowls = 10;
 
+    /// <summary>What's on the shelf behind the bar for mixing drinks.</summary>
+    public static readonly (string Def, int Count)[] BarStock = [("Spirits", 8), ("Honey", 8), ("Herbs", 8)];
+
     /// <summary>The inn opens stocked: food in the larder, kegs in the storeroom, tankards on the shelf behind the bar and bowls on the kitchen's.</summary>
     private static void StockInn(Simulation sim, Entity inn)
     {
@@ -84,7 +87,11 @@ public static class VillageRound
             return parts.Where(e => w.Get<Thing>(e).Def.Name == def).OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, at)).FirstOrDefault(Entity.Null);
         }
         if (Near("Shelf", d => d.Building?.Cask != null) is { IsNull: false } bar)
+        {
             sim.Store(bar, sim.CreateItem(sim.Defs.Thing("Tankard"), Tankards));
+            foreach (var (def, count) in BarStock)
+                sim.Store(bar, sim.CreateItem(sim.Defs.Thing(def), count));
+        }
         if (Near("Shelf", d => d.Building?.StewPot != null) is { IsNull: false } kitchen)
             sim.Store(kitchen, sim.CreateItem(sim.Defs.Thing("Bowl"), Bowls));
     }

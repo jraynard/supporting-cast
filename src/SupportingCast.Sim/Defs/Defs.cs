@@ -389,6 +389,47 @@ public sealed class BuildingProps
 
     /// <summary>A tub of hot water dirty tankards and bowls are washed in (<c>Work.WashSession</c>).</summary>
     public bool WashTub { get; set; }
+
+    /// <summary>A bar: mixed drinks are made at it (<c>Work.MixSession</c>).</summary>
+    public bool Bar { get; set; }
+}
+
+/// <summary>
+/// A drink's properties: how strong it is, and what else it does. Effects add up in a mix, so a
+/// house mix does whatever its ingredients do; the same plumbing will carry reagents and poison.
+/// </summary>
+public sealed class DrinkEffectProps
+{
+    /// <summary>How much it goes to the head (<c>Hospitality.Tipsy</c>).</summary>
+    public float Strength { get; set; }
+
+    /// <summary>Takes the chill off on a cold day.</summary>
+    public float Warming { get; set; }
+
+    /// <summary>Wakes a drinker up: rest.</summary>
+    public float Rousing { get; set; }
+
+    /// <summary>Dulls the ache of a wound.</summary>
+    public float Numbing { get; set; }
+
+    /// <summary>Loosens the tongue: it goes to the head faster, and they talk.</summary>
+    public float Loosening { get; set; }
+}
+
+/// <summary>A mixed drink's recipe: a serving from the cask, what's added, and the cues to mix it to.</summary>
+public sealed class MixProps
+{
+    /// <summary>The drink it's built on, drawn from a cask behind the bar (a thing def name).</summary>
+    public string Base { get; set; } = "Ale";
+
+    /// <summary>What's added, one of each (thing def names).</summary>
+    public List<string> Adds { get; set; } = [];
+
+    /// <summary>The cues it's mixed to, F, A and D, in order. A house mix takes its cues from what's added.</summary>
+    public string Cues { get; set; } = "";
+
+    /// <summary>The house mix: any combination that isn't a named one.</summary>
+    public bool House { get; set; }
 }
 
 /// <summary>What a stew pot ladles out, and how far its ingredients stretch.</summary>
@@ -666,6 +707,15 @@ public sealed class ThingDef : Def
 
     /// <summary>A clean vessel a drink is poured or a bowl ladled into (<c>Work.Vessels</c>).</summary>
     public bool Vessel { get; set; }
+
+    /// <summary>What it does to whoever drinks it, or what it brings to a mix (<c>Hospitality.Drinking</c>).</summary>
+    public DrinkEffectProps? DrinkEffect { get; set; }
+
+    /// <summary>A mixed drink: what goes into it and the cues it's mixed to (<c>Work.MixSession</c>).</summary>
+    public MixProps? Mix { get; set; }
+
+    /// <summary>A bar ingredient: the cue (F, A or D) it's added to a mix on.</summary>
+    public string? MixCue { get; set; }
 
     /// <summary>Days until it rots away at 10–30°C (cold slows it, freezing stops it); 0 never rots.</summary>
     public float RotDays { get; set; }

@@ -190,6 +190,7 @@ public abstract class WorkSession
             nameof(SeasonSession) => new SeasonSession(),
             nameof(WashSession) => new WashSession(),
             nameof(TapSession) => new TapSession(),
+            nameof(MixSession) => new MixSession(),
             nameof(Hospitality.ScrubSession) => new Hospitality.ScrubSession(),
             nameof(Hospitality.MakeBedSession) => new Hospitality.MakeBedSession(),
             nameof(Healing.DrawSession) => new Healing.DrawSession(),

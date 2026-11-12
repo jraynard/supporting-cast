@@ -38,8 +38,56 @@
       // Poured at the tavern's cask (Work.PourSession); the pour's quality is the drink's.
       "name": "Ale", "label": "tankard of ale", "category": "Item", "mass": 0.8, "sprite": "items/ale", "stackLimit": 1,
       "drink": true, "leaves": "DirtyTankard", "flammability": 0.1, "maxHp": 10,
+      "drinkEffect": { "strength": 0.12, "loosening": 0.15 },
       "description": "Brown ale with a head on it. Adventurers drink it like water and complain about it like wine.",
       "model": [ { "min": [0.35, 0.35, 0], "max": [0.65, 0.65, 0.35], "top": "props/linen", "side": "props/planks" } ]
+    },
+    {
+      // Mixed at the bar (Work/MixSession): a serving from the cask, one of each add, mixed to the
+      // cues. What it does is the sum of what's in it ("drinkEffect"), so a house mix (any other
+      // combination) does whatever its ingredients do.
+      "name": "Hearthwarmer", "label": "hearthwarmer", "category": "Item", "mass": 0.8, "sprite": "items/ale", "stackLimit": 1,
+      "drink": true, "leaves": "DirtyTankard", "flammability": 0.2, "maxHp": 10,
+      "mix": { "base": "Ale", "adds": [ "Spirits", "Honey" ], "cues": "FADF" },
+      "description": "Ale with a slug of spirits and a spoon of honey, stirred hot. For coming in out of the cold.",
+      "model": [ { "min": [0.35, 0.35, 0], "max": [0.65, 0.65, 0.35], "top": "props/meal_top", "side": "props/planks" } ]
+    },
+    {
+      "name": "Bramblecup", "label": "bramblecup", "category": "Item", "mass": 0.8, "sprite": "items/ale", "stackLimit": 1,
+      "drink": true, "leaves": "DirtyTankard", "flammability": 0.1, "maxHp": 10,
+      "mix": { "base": "Ale", "adds": [ "Berries", "Herbs" ], "cues": "DAFD" },
+      "description": "Ale crushed with berries and a sprig of herbs. Sharp, cold, and it wakes you up.",
+      "model": [ { "min": [0.35, 0.35, 0], "max": [0.65, 0.65, 0.35], "top": "props/meal_top", "side": "props/planks" } ]
+    },
+    {
+      "name": "Stillwater", "label": "stillwater", "category": "Item", "mass": 0.8, "sprite": "items/ale", "stackLimit": 1,
+      "drink": true, "leaves": "DirtyTankard", "flammability": 0.3, "maxHp": 10,
+      "mix": { "base": "Ale", "adds": [ "Spirits", "Herbs" ], "cues": "AFAD" },
+      "description": "Spirits and bitter herbs in ale. Takes the edge off a wound, and off most other things.",
+      "model": [ { "min": [0.35, 0.35, 0], "max": [0.65, 0.65, 0.35], "top": "props/meal_top", "side": "props/planks" } ]
+    },
+    {
+      "name": "HouseMix", "label": "house mix", "category": "Item", "mass": 0.8, "sprite": "items/ale", "stackLimit": 1,
+      "drink": true, "leaves": "DirtyTankard", "flammability": 0.2, "maxHp": 10,
+      "mix": { "base": "Ale", "house": true },
+      "description": "Whatever the keeper had to hand, in ale. Nobody's quite sure what it does until they've drunk it.",
+      "model": [ { "min": [0.35, 0.35, 0], "max": [0.65, 0.65, 0.35], "top": "props/meal_top", "side": "props/planks" } ]
+    },
+    {
+      // What goes into a mix, kept on the shelf behind the bar: each one's cue and what it does.
+      "name": "Spirits", "label": "spirits", "category": "Item", "mass": 0.3, "sprite": "items/ale", "stackLimit": 20,
+      "mixCue": "F", "drinkEffect": { "strength": 0.3, "warming": 0.3, "loosening": 0.2 }, "flammability": 0.9, "maxHp": 10,
+      "description": "A measure of clear spirits. Burns going down."
+    },
+    {
+      "name": "Honey", "label": "honey", "category": "Item", "mass": 0.2, "sprite": "items/berries", "stackLimit": 20,
+      "mixCue": "A", "drinkEffect": { "warming": 0.3, "rousing": 0.1 }, "flammability": 0.2, "maxHp": 10,
+      "description": "A spoon of honey from the comb."
+    },
+    {
+      "name": "Herbs", "label": "herbs", "category": "Item", "mass": 0.1, "sprite": "items/emberroot", "stackLimit": 20,
+      "mixCue": "D", "drinkEffect": { "numbing": 0.4, "rousing": 0.2 }, "flammability": 0.4, "maxHp": 10,
+      "description": "Bitter sprigs, dried. Numbing, and good for a headache."
     },
     {
       // The inn's crockery (Work/Vessels): a drink is poured into a clean tankard, a bowl of stew

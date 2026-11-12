@@ -217,6 +217,8 @@ public class CarpenterTests
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(trade)], []));
         sim.ApplyNow(new StartRoundCommand());
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
+        foreach (var e in party)
+            Hospitality.DirectionsSystem.KnowsTheTown(sim, e); // finding the way is InnTalkTests'
         var owner = party[0];
         var box = Lockwork.Make(sim, new SimRandom(5), 3f, 25, "the Rimewater Caves");
         ref var b = ref sim.World.Get<Strongbox>(box);

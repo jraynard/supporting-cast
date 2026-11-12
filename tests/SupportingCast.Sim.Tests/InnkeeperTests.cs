@@ -188,6 +188,7 @@ public class InnkeeperTests
         var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
         StayTillEvening(sim, party);
         var lodger = party[0];
+        Inventory.Stow(sim, lodger, sim.CreateItem(sim.Thing(Coin.Silver), 20)); // whatever else they've spent on
         for (var i = 0; i < 16 && !sim.Shops.All.Any(e => e.Kind.Kind == ServiceKind.Lodging && e.Poster == lodger && e.Status == OrderStatus.Done); i++)
             sim.TickMany(SimClock.TicksPerHour / 4);
 

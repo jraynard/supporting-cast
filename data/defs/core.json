@@ -62,6 +62,7 @@
     { "name": "Stone", "label": "stone blocks", "category": "Item", "mass": 2, "sprite": "items/stone", "stackLimit": 50,
       "model": [ { "min": [0.10, 0.10, 0.00], "max": [0.48, 0.48, 0.36], "top": "props/stone_block", "side": "props/stone_block", "minCount": 1 }, { "min": [0.52, 0.10, 0.00], "max": [0.90, 0.48, 0.36], "top": "props/stone_block", "side": "props/stone_block", "minCount": 10 }, { "min": [0.10, 0.52, 0.00], "max": [0.48, 0.90, 0.36], "top": "props/stone_block", "side": "props/stone_block", "minCount": 20 }, { "min": [0.52, 0.52, 0.00], "max": [0.90, 0.90, 0.36], "top": "props/stone_block", "side": "props/stone_block", "minCount": 30 }, { "min": [0.30, 0.30, 0.36], "max": [0.68, 0.68, 0.72], "top": "props/stone_block", "side": "props/stone_block", "minCount": 40 } ] },
     { "name": "Berries", "category": "Item", "mass": 0.1, "sprite": "items/berries", "stackLimit": 30, "nutrition": 0.1, "rotDays": 8, "flammability": 0.4, "maxHp": 20,
+      "mixCue": "D", "drinkEffect": { "rousing": 0.3 },
       "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.28], "top": "props/berries_top", "side": "props/basket" } ] },
     // Emberroot: a warm, peppery root dug from forest edges and hillsides. Not food on its own; baked
     // with berries it makes the dragon cake (workshop.json), a dragon's food that isn't meat.

@@ -230,6 +230,12 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (kind == ServiceKind.Unlock && sim.World.TryGet<Strongbox>(subject, out var box))
             spare += box.Silver;
         var (shop, price, cheapest) = ChooseShop(sim, who, def, Math.Min(worth, spare));
+        // Somewhere offers it, but nowhere they know the way to: they ask.
+        if (cheapest == Lost)
+        {
+            sim.Directions.Ask(sim, who, def.AtDef!, def.Label);
+            return false;
+        }
         if (price < 0)
         {
             _wentWithout[(who, kind)] = sim.Clock.Tick;
@@ -309,11 +315,15 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         return sum;
     }
 
+    /// <summary><c>Cheapest</c> from <see cref="ChooseShop"/> when a shop offers it, but the asker doesn't know the way to any that do.</summary>
+    private const int Lost = -2;
+
     /// <summary>
     /// The shop to order from: of the standing buildings of the service's kind offering it at no
-    /// more than <paramref name="budget"/>, the cheapest, then the nearest. Price -1 if none;
-    /// <c>Cheapest</c> is the lowest price offered at all (-1 if nobody offers it). A town with no
-    /// building for it at all serves it at the default price, from nowhere in particular.
+    /// more than <paramref name="budget"/> that they know the way to (<see cref="Hospitality.DirectionsSystem"/>),
+    /// the cheapest, then the nearest. Price -1 if none; <c>Cheapest</c> is the lowest price offered
+    /// at all (-1 if nobody offers it, <see cref="Lost"/> if only shops they can't find do). A town
+    /// with no building for it at all serves it at the default price, from nowhere in particular.
     /// </summary>
     private static (Entity Shop, int Price, int Cheapest) ChooseShop(Simulation sim, Entity who, ServiceDef def, int budget)
     {
@@ -323,11 +333,17 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var from = w.Get<Position>(who).Cell;
         var best = Entity.Null;
         int bestPrice = -1, bestDist = int.MaxValue, cheapest = -1;
+        var lost = false;
         foreach (var e in w.Each<PresetBuilding>())
         {
             var b = w.Get<PresetBuilding>(e);
             if (b.Def != def.AtDef || b.Demolishing || ShopPrices.Posted(sim, e, def.Kind) is not { Offered: true } sign)
                 continue;
+            if (!Hospitality.DirectionsSystem.Knows(sim, who, e))
+            {
+                lost = true;
+                continue;
+            }
             if (cheapest < 0 || sign.Price < cheapest)
                 cheapest = sign.Price;
             if (sign.Price > budget)
@@ -340,7 +356,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 bestDist = dist;
             }
         }
-        return (best, bestPrice, cheapest);
+        return (best, bestPrice, cheapest < 0 && lost ? Lost : cheapest);
     }
 
     /// <summary>The cheapest offer is more than they'll pay: they say so, and a price over its worth sours them on the town.</summary>
@@ -392,6 +408,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         // At a shop with a line they say it at the counter, when their turn comes (TimeToAsk).
         if (LineCells(sim, order.Where).Count == 0)
             Announce(sim, order, text);
+        if (kind.Kind == ServiceKind.Drink && sim.World.Has<Adventurer>(poster))
+            sim.Drinking.Ordered(sim, order);
         return order;
     }
 
@@ -719,6 +737,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (drink != null && def.Drink)
         {
             var quality = w.TryGet<Crafted>(item, out var made) ? made.Quality : Quality.Plain;
+            sim.Drinking.Drank(sim, to, item, drink);
             w.Destroy(item);
             Tasted(sim, to, quality);
             Work.Vessels.LeaveAfter(sim, to, def);

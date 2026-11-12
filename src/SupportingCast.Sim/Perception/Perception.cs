@@ -150,7 +150,9 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         var w = sim.World;
         if (!CanSee(e) || !w.TryGet<Creature>(e, out var c))
             return null;
-        return new PerceivedPerson(c.Name, Condition(e, c), Holding(e));
+        var drink = Hospitality.DrinkingSystem.Looks(Hospitality.DrinkingSystem.LevelOf(sim, e));
+        var condition = Condition(e, c);
+        return new PerceivedPerson(c.Name, drink == null ? condition : $"{condition}, {drink}", Holding(e));
     }
 
     /// <summary>
@@ -197,6 +199,20 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         var hot = p.Temp >= Work.Smithing.Window(p.Recipe).Lo;
         return new KnownPiece(Work.Smithing.PieceLabel(sim, p), Work.Smithing.GlowOf(p.Temp), p.Temp, hot, Math.Clamp(p.Shape, 0f, 1f), p.Shaped, p.IsMend, next, p.Forge);
     }
+
+    /// <summary>Who asked the way (and where to) within the viewer's hearing, still waiting on an answer.</summary>
+    public IEnumerable<Hospitality.KnownAsk> WaysAsked()
+    {
+        if (blind)
+            yield break;
+        foreach (var a in sim.Directions.Open)
+            if (Omniscient || a.HeardBy.Contains(viewer))
+                yield return new Hospitality.KnownAsk(a.Id, a.Asker, a.AskerName, a.To.Label, a.Tick);
+    }
+
+    /// <summary>How far gone with drink someone looks (null sober, or out of sight).</summary>
+    public string? Drunkenness(Entity e) =>
+        blind || !CanSee(e) ? null : Hospitality.DrinkingSystem.Looks(Hospitality.DrinkingSystem.LevelOf(sim, e));
 
     /// <summary>The mess the viewer can see (all of it, for an omniscient view), as it looks.</summary>
     public IEnumerable<KnownMess> Messes()
@@ -321,6 +337,11 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
                 yield return new Shops.KnownOrder(e.Id, e.Kind.Kind, e.Kind.Label, e.PosterName, e.Text, e.Price,
                     e.PostedTick, e.Deadline, e.AssigneeName, e.Status, e.Poster == viewer, e.Assignee == viewer, e.Poster);
     }
+
+    /// <summary>The named drink a drink order the viewer knows of asked for, if it asked for one.</summary>
+    public Defs.ThingDef? WantedDrink(int order) =>
+        !blind && sim.Shops.Find(order) is { } e && (Omniscient || e.KnownBy.Contains(viewer)) && sim.Drinking.Wanted(order) is { } name
+            ? sim.Defs.Thing(name) : null;
 
     /// <summary>
     /// A shop's price sign: every service the building serves, what it costs and whether it's

@@ -237,6 +237,32 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         intel.Confidence = Math.Min(0.9f, intel.Confidence + weight * 0.5f); // only seeing for yourself is certain
     }
 
+    /// <summary>
+    /// A drinker running their mouth: they tell a quest's rumour unbidden, nearer the truth the
+    /// less <paramref name="spread"/> there is in it (drink loosens what they'd otherwise keep back).
+    /// </summary>
+    public void Gossip(Simulation sim, Entity teller, float spread)
+    {
+        var open = _quests.Where(q => q.Status != QuestStatus.Cleared).ToList();
+        if (open.Count == 0)
+            return;
+        Tell(sim, teller, open[_rand.NextInt(open.Count)], spread);
+    }
+
+    /// <summary>A rumour of a quest, told off by <paramref name="spread"/> either way: whoever catches it clearly takes it in.</summary>
+    private void Tell(Simulation sim, Entity teller, Quest q, float spread)
+    {
+        var told = q.Danger * _rand.Range(1f - spread, 1f + spread);
+        var line = q.Def.Rumours.Count > 0 ? q.Def.Rumours[_rand.NextInt(q.Def.Rumours.Count)] : $"They say {q.Def.Label} is {{0}}.";
+        if (sim.Speech.Say(sim, teller, string.Format(line, DangerWord(told)), Volume.Say) is not { } said)
+            return;
+        // Said plainer, it's taken in more: a gossiping drinker isn't just passing on what they heard.
+        var weight = spread < 0.2f ? 0.5f : 0.35f;
+        foreach (var h in said.Listeners)
+            if (h.Clarity == Clarity.Clear && h.Listener != teller)
+                Hear(h.Listener, q.Id, told, null, weight);
+    }
+
     /// <summary>An adventurer lounging at the tavern tells what they've heard of a quest, rightly or not.</summary>
     private void TellRumour(Simulation sim)
     {
@@ -253,13 +279,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             return;
         var teller = tellers[_rand.NextInt(tellers.Count)];
         var q = open[_rand.NextInt(open.Count)];
-        var told = q.Danger * _rand.Range(0.75f, 1.25f);
-        var line = q.Def.Rumours.Count > 0 ? q.Def.Rumours[_rand.NextInt(q.Def.Rumours.Count)] : $"They say {q.Def.Label} is {{0}}.";
-        if (sim.Speech.Say(sim, teller, string.Format(line, DangerWord(told)), Volume.Say) is not { } said)
-            return;
-        foreach (var h in said.Listeners)
-            if (h.Clarity == Clarity.Clear && h.Listener != teller)
-                Hear(h.Listener, q.Id, told, null, 0.35f);
+        Tell(sim, teller, q, 0.25f);
     }
 
     // ---------------- Sending a party ----------------
@@ -463,6 +483,9 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         var back = new List<Entity>();
         for (var i = 0; i < spots.Count; i++)
             back.Add(Respawn(sim, survivors[i], spots[i]));
+        // They've been here before: they know their way round the town now.
+        foreach (var e in back)
+            Hospitality.DirectionsSystem.KnowsTheTown(sim, e);
         var lost = ex.Members.Count - survivors.Count;
         var word = DangerWord(quest.Danger);
         var told = MathF.Abs(ex.Stated - quest.Danger) > 1f

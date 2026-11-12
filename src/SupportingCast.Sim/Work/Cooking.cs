@@ -249,20 +249,13 @@ public static class Cooking
             p.In[i] = p.In[i] with { Count = p.In[i].Count + count };
         else
             p.In.Add(new PotIngredient(t.Def, count));
+        // Out of whoever's hands (TakeFromStack hands back the same entity when it takes the lot) or pack.
         var used = sim.TakeFromStack(food, count);
-        if (w.Get<Carrying>(Holder(sim, used)).Item == used)
-            w.Get<Carrying>(Holder(sim, used)).Item = Entity.Null;
+        foreach (var e in w.Query<Carrying>())
+            if (w.Get<Carrying>(e).Item == used)
+                w.Get<Carrying>(e).Item = Entity.Null;
         w.Destroy(used);
         return count;
-    }
-
-    // Whoever's hands an item might be in: TakeFromStack hands back the same entity when it takes the lot.
-    private static Entity Holder(Simulation sim, Entity item)
-    {
-        foreach (var e in sim.World.Each<Carrying>())
-            if (sim.World.Get<Carrying>(e).Item == item)
-                return e;
-        return Entity.Null;
     }
 
     /// <summary>An empty pot starts over: nothing in it, and a new taste to find.</summary>

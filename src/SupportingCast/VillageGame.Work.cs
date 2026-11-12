@@ -111,6 +111,9 @@ public sealed partial class VillageGame
             case TapSession tap:
                 DrawTap(tap);
                 return;
+            case MixSession mix:
+                DrawMix(mix);
+                return;
             case Sim.Hospitality.ScrubSession scrub:
                 DrawScrub(scrub);
                 return;
@@ -120,6 +123,7 @@ public sealed partial class VillageGame
             case null:
                 DrawTongs();
                 DrawPotPanel();
+                DrawBarPanel();
                 return;
         }
     }
