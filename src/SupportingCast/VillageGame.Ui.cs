@@ -201,7 +201,7 @@ public sealed partial class VillageGame
         var min = ImGui.GetCursorScreenPos();
         var box = new float2(56, 56);
         var max = min + box;
-        dl.AddRectFilled(in min, in max, new ImColor8(40, 30, 24, 255), 6f, ImDrawFlags.None);
+        dl.AddRectFilled(in min, in max, Theme.U8(Theme.Well), 6f, ImDrawFlags.None);
         dl.AddRect(in min, in max, Theme.U8(Theme.AccentSoft), 6f, ImDrawFlags.None, 1.5f);
         if (creature is { IsNull: false } who && _sim.World.IsAlive(who) && _sim.World.Has<Creature>(who))
             DrawPortrait(dl, who, min + new float2(4, 4), box - new float2(8, 8));

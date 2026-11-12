@@ -97,7 +97,7 @@ public sealed partial class VillageGame
             ImGui.PopID();
             var max = min + card;
 
-            var bg = _selected == e ? Theme.U8(Theme.AccentSoft, 0.9f) : hovered ? new ImColor8(70, 50, 36, 230) : new ImColor8(40, 30, 24, 220);
+            var bg = _selected == e ? Theme.U8(Theme.AccentSoft, 0.9f) : hovered ? Theme.U8(Theme.Panel, 0.95f) : Theme.U8(Theme.Well, 0.86f);
             dl.AddRectFilled(in min, in max, bg, 6f, ImDrawFlags.None);
             if (_selected == e)
                 dl.AddRect(in min, in max, Theme.U8(Theme.Accent), 6f, ImDrawFlags.None, 2f);

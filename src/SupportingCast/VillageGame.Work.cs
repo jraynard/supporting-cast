@@ -90,7 +90,7 @@ public sealed partial class VillageGame
         var min = ImGui.GetCursorScreenPos();
         var max = min + size;
         ImGui.Dummy(in size);
-        dl.AddRectFilled(in min, in max, new ImColor8(40, 30, 24, 255), 4f, ImDrawFlags.None);
+        dl.AddRectFilled(in min, in max, Theme.U8(Theme.Well), 4f, ImDrawFlags.None);
         var markMin = new float2(min.X + (hammer.Mark - hammer.HalfWidth) * size.X, min.Y);
         var markMax = new float2(min.X + (hammer.Mark + hammer.HalfWidth) * size.X, max.Y);
         dl.AddRectFilled(in markMin, in markMax, Theme.U8(Theme.Good), 2f, ImDrawFlags.None);
@@ -181,7 +181,7 @@ public sealed partial class VillageGame
         var min = ImGui.GetCursorScreenPos();
         var max = min + size;
         ImGui.Dummy(in size);
-        dl.AddRectFilled(in min, in max, new ImColor8(40, 30, 24, 255), 4f, ImDrawFlags.None);
+        dl.AddRectFilled(in min, in max, Theme.U8(Theme.Well), 4f, ImDrawFlags.None);
         var bandMin = new float2(min.X + (0.5f - s.HalfWidth) * size.X, min.Y);
         var bandMax = new float2(min.X + (0.5f + s.HalfWidth) * size.X, max.Y);
         dl.AddRectFilled(in bandMin, in bandMax, Theme.U8(Theme.Good, 0.7f), 2f, ImDrawFlags.None);
@@ -220,7 +220,7 @@ public sealed partial class VillageGame
         var gSize = new float2(420, 16);
         var gMax = gMin + gSize;
         ImGui.Dummy(in gSize);
-        dl.AddRectFilled(in gMin, in gMax, new ImColor8(40, 30, 24, 255), 3f, ImDrawFlags.None);
+        dl.AddRectFilled(in gMin, in gMax, Theme.U8(Theme.Well), 3f, ImDrawFlags.None);
         var bandMin = new float2(gMin.X + s.Low * gSize.X, gMin.Y);
         var bandMax = new float2(gMin.X + s.High * gSize.X, gMax.Y);
         dl.AddRectFilled(in bandMin, in bandMax, Theme.U8(Theme.Good, 0.6f), 2f, ImDrawFlags.None);
@@ -246,7 +246,7 @@ public sealed partial class VillageGame
         {
             var colMin = new float2(origin.X + 10 + i * (W + 12), origin.Y);
             var colMax = new float2(colMin.X + W, origin.Y + H);
-            dl.AddRectFilled(in colMin, in colMax, new ImColor8(40, 30, 24, 255), 3f, ImDrawFlags.None);
+            dl.AddRectFilled(in colMin, in colMax, Theme.U8(Theme.Well), 3f, ImDrawFlags.None);
             var lift = i < s.Pin ? 1f : i == s.Pin ? s.Lift : 0f;
             var pinTop = colMax.Y - 10 - lift * (H - 20);
             var pinMin = new float2(colMin.X + 8, pinTop);

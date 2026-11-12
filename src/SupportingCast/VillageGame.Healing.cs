@@ -96,7 +96,7 @@ public sealed partial class VillageGame
         var min = ImGui.GetCursorScreenPos();
         var max = min + size;
         ImGui.Dummy(in size);
-        dl.AddRectFilled(in min, in max, new ImColor8(30, 26, 40, 255), 4f, ImDrawFlags.None);
+        dl.AddRectFilled(in min, in max, Theme.U8(Theme.Spirit), 4f, ImDrawFlags.None);
         var bandMin = new float2(min.X + (0.5f - s.HalfWidth) * size.X, min.Y);
         var bandMax = new float2(min.X + (0.5f + s.HalfWidth) * size.X, max.Y);
         dl.AddRectFilled(in bandMin, in bandMax, Theme.U8(Theme.Good, 0.55f), 2f, ImDrawFlags.None);
@@ -119,7 +119,7 @@ public sealed partial class VillageGame
         var min = ImGui.GetCursorScreenPos();
         var max = min + size;
         ImGui.Dummy(in size);
-        dl.AddRectFilled(in min, in max, new ImColor8(30, 26, 40, 255), 4f, ImDrawFlags.None);
+        dl.AddRectFilled(in min, in max, Theme.U8(Theme.Spirit), 4f, ImDrawFlags.None);
         const float pxPerStep = 2.2f;
         var markX = min.X + 60;
         var markMin = new float2(markX - s.WindowSteps * pxPerStep, min.Y);

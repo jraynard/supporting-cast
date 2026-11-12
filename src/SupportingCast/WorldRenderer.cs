@@ -1452,11 +1452,11 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             // Under the feet (RimWorld-style), leaving the space over the head for status bubbles.
             var name = c.Dead ? $"{c.Name} (dead)" : c.Downed ? $"{c.Name} (down)" : c.Name;
             var p = cam.WorldToScreen(DrawPos(sim, e, pos.Pos)) + new float2(-ImGui.CalcTextSize(name, false, -1).X * 0.5f, 2);
-            var color = c.Faction == Faction.Raider ? new ImColor8(255, 110, 100, 255)
-                : c.Faction == Faction.Prisoner ? new ImColor8(255, 205, 120, 255)
-                : c.Def.Race == Race.Dragon ? new ImColor8(255, 170, 120, 255)
-                : c.Def.Race == Race.Animal ? new ImColor8(190, 215, 165, 255)
-                : new ImColor8(230, 230, 255, 255);
+            var color = Ui.Theme.U8(c.Faction == Faction.Raider ? Ui.Theme.NameHostile
+                : c.Faction == Faction.Prisoner ? Ui.Theme.NamePrisoner
+                : c.Def.Race == Race.Dragon ? Ui.Theme.NameDragon
+                : c.Def.Race == Race.Animal ? Ui.Theme.NameAnimal
+                : Ui.Theme.NamePerson);
             Text(dl, p, name, color);
         }
         DrawSpokenLines(dl, cam, sim);

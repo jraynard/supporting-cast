@@ -141,7 +141,7 @@ public static class LookWidgets
         var dl = ImGui.GetWindowDrawList();
         var min = ImGui.GetCursorScreenPos();
         var max = min + box;
-        dl.AddRectFilled(in min, in max, new ImColor8(40, 30, 24, 220), 8f, ImDrawFlags.None);
+        dl.AddRectFilled(in min, in max, Theme.U8(Theme.Well, 0.86f), 8f, ImDrawFlags.None);
         dl.AddRect(in min, in max, Theme.U8(Theme.AccentSoft), 8f, ImDrawFlags.None, 1.5f);
         if (sheet?.Find(tag) is { } anim)
         {

@@ -338,6 +338,164 @@ ICONS = (("select", select), ("cancel", cancel), ("chop", axe), ("mine", pick), 
          ("call", call), ("stay", stay), ("breath", breath), ("fly", fly), ("ride", ride))
 
 
+# ---------------------------------------------------------------- chrome (nine-slice frames for the UI kit)
+# Narsil.Ui draws these nine-sliced: corners at a whole-pixel scale, edges and middle tiled. The
+# border is 6 px (UiFrames.Border), so everything decorative stays in the outer 6 px and the
+# middle tiles cleanly. Pixel art, drawn pixel by pixel: oak planks, an iron rim, riveted corners.
+
+OAK = ramp((92, 62, 40), 6, main=2, dark=0.5, light=1.45)
+IRONR = METAL["iron"]
+
+
+def _px(img, x, y, c):
+    if 0 <= x < img.width and 0 <= y < img.height:
+        img.putpixel((x, y), c if len(c) == 4 else (*c, 255))
+
+
+def _plank(x, y, wood, period=10, top=6):
+    """Oak planks running across: a lit top edge, a dark seam, long grain streaks, staggered butt joints."""
+    row = (y - top) % period
+    plank = (y - top) // period
+    if row == period - 1:
+        return wood[0]
+    if row == 0:
+        return wood[3]
+    if (x - top + plank * 9) % 20 == 0:
+        return wood[1]                                  # a butt joint, staggered plank to plank
+    streak = (x + plank * 7 + row * 5) % 23
+    if row in (2, 6) and streak < 9:
+        return wood[1]
+    if row == 4 and streak > 16:
+        return wood[3]
+    return wood[2]
+
+
+def frame_panel():
+    W = 32
+    img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
+    for y in range(W):
+        for x in range(W):
+            _px(img, x, y, _plank(x, y, OAK))
+    # A shadow under the rim, then the rim itself: iron, lit from the top left.
+    for i in range(W):
+        for d, col in ((3, OAK[0]), (4, OAK[1])):
+            _px(img, i, d, col); _px(img, d, i, col)
+            _px(img, i, W - 1 - d, OAK[1]); _px(img, W - 1 - d, i, OAK[1])
+        _px(img, i, 1, IRONR[4]); _px(img, 1, i, IRONR[4])
+        _px(img, i, 2, IRONR[3]); _px(img, 2, i, IRONR[3])
+        _px(img, i, W - 2, IRONR[1]); _px(img, W - 2, i, IRONR[2])
+        _px(img, i, W - 3, IRONR[2]); _px(img, W - 3, i, IRONR[2])
+        _px(img, i, 0, INK); _px(img, 0, i, INK); _px(img, i, W - 1, INK); _px(img, W - 1, i, INK)
+    # Riveted corner brackets.
+    for cx, cy in ((0, 0), (W - 6, 0), (0, W - 6), (W - 6, W - 6)):
+        for y in range(6):
+            for x in range(6):
+                edge = x in (0, 5) or y in (0, 5)
+                _px(img, cx + x, cy + y, INK if edge else (IRONR[4] if (x + y) < 5 else IRONR[2]))
+        _px(img, cx + 2, cy + 2, IRONR[5]); _px(img, cx + 3, cy + 3, IRONR[1]); _px(img, cx + 3, cy + 2, IRONR[3]); _px(img, cx + 2, cy + 3, IRONR[3])
+    return img
+
+
+def frame_title():
+    """A carved plate for a panel's title: lighter oak, bevelled, iron caps at the ends."""
+    W, H = 32, 16
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    wood = ramp((132, 92, 56), 6, main=2, dark=0.5, light=1.4)
+    for y in range(H):
+        for x in range(W):
+            c = wood[4] if y == 1 else wood[3] if y <= 3 else wood[1] if y >= H - 3 else wood[2]
+            if 3 < y < H - 3 and (x + y * 5) % 19 < 6 and y in (6, 9):
+                c = wood[1]
+            _px(img, x, y, c)
+    for x in range(W):
+        _px(img, x, 0, INK); _px(img, x, H - 1, INK); _px(img, x, H - 2, wood[0])
+    for y in range(H):
+        _px(img, 0, y, INK); _px(img, W - 1, y, INK)
+        for x in (1, 2, 3, 4):
+            _px(img, x, y, IRONR[4] if x == 1 else IRONR[3] if x == 2 else IRONR[2])
+            _px(img, W - 1 - x, y, IRONR[3] if x == 1 else IRONR[2] if x == 2 else IRONR[1])
+    for x, y in ((2, 3), (W - 3, 3), (2, H - 4), (W - 3, H - 4)):
+        _px(img, x, y, IRONR[5])
+    return img
+
+
+def frame_inset():
+    """A well cut into the panel: dark, shadowed at the top left, lit at the bottom right edge."""
+    W = 16
+    img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
+    deep = ramp((40, 28, 20), 5, main=2, dark=0.6, light=1.5)
+    for y in range(W):
+        for x in range(W):
+            c = deep[2]
+            if x <= 1 or y <= 1:
+                c = deep[0]
+            elif x == 2 or y == 2:
+                c = deep[1]
+            if x == W - 1 or y == W - 1:
+                c = OAK[3]
+            _px(img, x, y, (*c[:3], 235))
+    return img
+
+
+def bar_trough():
+    """The iron channel a bar fills."""
+    W, H = 24, 14
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    for y in range(H):
+        for x in range(W):
+            edge = x in (0, W - 1) or y in (0, H - 1)
+            rim = x in (1, W - 2) or y in (1, H - 2)
+            c = INK if edge else (IRONR[3] if y == 1 else IRONR[1]) if rim else (18, 14, 12)
+            if not edge and not rim and y == 2:
+                c = (8, 6, 6)
+            _px(img, x, y, c)
+    return img
+
+
+def keycap():
+    """A key, iron-faced, with a lip at the bottom."""
+    W = 16
+    img = Image.new("RGBA", (W, W), (0, 0, 0, 0))
+    for y in range(W):
+        for x in range(W):
+            corner = (x in (0, W - 1)) and (y in (0, W - 1))
+            if corner:
+                continue
+            edge = x in (0, W - 1) or y in (0, W - 1)
+            c = INK if edge else IRONR[1] if y >= W - 4 else IRONR[3] if y == 1 else (52, 50, 54)
+            _px(img, x, y, c)
+    return img
+
+
+def coin(img):
+    part(img, ell([3, 3, 21, 21]), GOLD, radius=1.2)
+    part(img, ell([8, 8, 16, 16]), GOLD[1:] + [GOLD[-1]], radius=0.6)
+
+
+def quest(img):
+    """A rolled map with a red mark on it."""
+    part(img, lambda d: d.rounded_rectangle([4, 5, 20, 19], radius=2, fill=255), LINEN, radius=1.0)
+    part(img, ell([2, 3, 7, 21]), LINEN[1:] + [LINEN[-1]])
+    part(img, ell([17, 3, 22, 21]), LINEN[1:] + [LINEN[-1]])
+    part(img, stick((9, 9), (15, 15), 2.2), RED)
+    part(img, stick((15, 9), (9, 15), 2.2), RED)
+
+
+def wound(img):
+    """A drop of blood."""
+    part(img, lambda d: (d.polygon([(12, 2), (6, 13), (18, 13)], fill=255), d.ellipse([6, 8, 18, 21], fill=255)), RED, radius=1.2)
+
+
+def good(img):
+    """A tick, carved."""
+    part(img, poly([(3, 12), (7, 9), (10, 13), (19, 3), (22, 6), (10, 20)]), GREEN, radius=1.0)
+
+
+CHROME = (("frame_panel", frame_panel), ("frame_title", frame_title), ("frame_inset", frame_inset),
+          ("bar_trough", bar_trough), ("keycap", keycap))
+TOAST_ICONS = (("coin", coin), ("quest", quest), ("wound", wound), ("good", good))
+
+
 def icons():
     out = {}
     for name, fn in ICONS:
@@ -350,6 +508,12 @@ def icons():
 def generate():
     for name, img in icons().items():
         img.save(os.path.join(ROOT, "ui", f"icon_{name}.png"))
+    for name, fn in CHROME:
+        fn().save(os.path.join(ROOT, "ui", f"{name}.png"))
+    for name, fn in TOAST_ICONS:
+        img = canvas()
+        fn(img)
+        ink_outline(img).save(os.path.join(ROOT, "ui", f"icon_{name}.png"))
     fx_fire().save(os.path.join(ROOT, "fx", "fire.png"))
     fx_ember().save(os.path.join(ROOT, "fx", "ember.png"))
 
