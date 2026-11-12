@@ -6,7 +6,7 @@
 #   tools/package.sh 0.1.0-alpha.2   # or a given version (CI passes the release tag's)
 #
 # Output in dist/: HeroesNotIncluded-<ver>-win-x64.zip, HeroesNotIncluded-<ver>-linux-x64.tar.gz,
-# HeroesNotIncluded-<ver>-osx-arm64.tar.gz (a HeroesNotIncluded.app) and SHA256SUMS.txt. If /srv/supporting-cast exists (the LAN share; SC_SHARE_DIR picks another, and
+# HeroesNotIncluded-<ver>-osx-arm64.tar.gz (a HeroesNotIncluded.app) and SHA256SUMS.txt. If /srv/heroes-not-included exists (the LAN share; SC_SHARE_DIR picks another, and
 # DW_NO_SHARE=1 skips it), the archives and README-ALPHA.txt are copied there too, replacing older builds.
 #
 # Every platform is built here from one compiler run on purpose: co-op only connects builds with
@@ -176,10 +176,10 @@ echo "Packaged $version:"
 (cd "$dist" && ls -lh "$name"-*.zip "$name"-*.tar.gz SHA256SUMS.txt)
 
 # Publish to the LAN share (a folder Samba serves, see docs/alpha/README-ALPHA.md), when there is
-# one: SC_SHARE_DIR, default /srv/supporting-cast. Only the newest build is kept there so nobody grabs
+# one: SC_SHARE_DIR, default /srv/heroes-not-included. Only the newest build is kept there so nobody grabs
 # an old one. Files are copied under temporary names and renamed, so a tester copying while this
 # runs never gets half a file.
-share="${SC_SHARE_DIR:-/srv/supporting-cast}"
+share="${SC_SHARE_DIR:-/srv/heroes-not-included}"
 if [[ -n "${DW_NO_SHARE:-}" ]]; then
     echo "(DW_NO_SHARE set: not copying to the share)"
 elif [[ ! -d "$share" ]]; then

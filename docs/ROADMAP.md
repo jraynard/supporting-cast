@@ -481,8 +481,8 @@ Known leftovers:
   the Mac bundle id and the co-op game id (older builds can't join newer ones).
 - Settings, saves, screenshots and logs live in `~/.config/Heroes Not Included` now. Nothing moves
   over from `Supporting Cast`: old saves stay there.
-- Still the old name: the repo folder, and the LAN share's default (`/srv/supporting-cast`,
-  `SC_SHARE_DIR` to change it). Bench hashes unchanged.
+- The LAN share's default is `/srv/heroes-not-included` (`SC_SHARE_DIR` to change it). Still the
+  old name: the repo folder. Bench hashes unchanged.
 
 ## Next
 
