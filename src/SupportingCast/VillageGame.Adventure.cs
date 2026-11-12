@@ -537,14 +537,18 @@ public sealed partial class VillageGame
         var facing = _sim.World.Get<Avatar>(_avatar).Facing;
         var front = new int3(at.X + facing.X, at.Y + facing.Y, at.Z);
         // Digging: the hovered block, else the face in front, else the ground in front (a way down).
-        ReadOnlySpan<int3> candidates = tool switch
+        // With the pointer over a window, what's behind it isn't what you mean: only what's in front.
+        var overUi = ImGui.GetIO().WantCaptureMouse;
+        ReadOnlySpan<int3> candidates = (tool, overUi) switch
         {
-            AvatarTool.Dig => [_hoverBlock, front, new int3(front.X, front.Y, front.Z - 1)],
-            AvatarTool.Drop => [_hoverCell, _hoverPastWalls, front, at],
-            _ => [_hoverCell, _hoverBlock, _hoverPastWalls, front, at],
+            (AvatarTool.Dig, false) => [_hoverBlock, front, new int3(front.X, front.Y, front.Z - 1)],
+            (AvatarTool.Dig, true) => [front, new int3(front.X, front.Y, front.Z - 1)],
+            (AvatarTool.Drop, false) => [_hoverCell, _hoverPastWalls, front, at],
+            (_, false) => [_hoverCell, _hoverBlock, _hoverPastWalls, front, at],
+            _ => [front, at],
         };
         // An animal under the cursor comes first: its sprite stands over a cell other than the ground hovered.
-        if (tool == AvatarTool.Use && !Host.Input.MouseCaptured && PickCreature(Host.Input.MousePosition) is { IsNull: false } animal
+        if (tool == AvatarTool.Use && !overUi && !Host.Input.MouseCaptured && PickCreature(Host.Input.MousePosition) is { IsNull: false } animal
             && _sim.World.Get<Creature>(animal).Def.Race == Race.Animal
             && AvatarSystem.ActionAt(_sim, _avatar, _sim.World.Get<Position>(animal).Cell, tool) is { Kind: AvatarActionKind.Hunt or AvatarActionKind.Butcher } hunt)
             return hunt;
@@ -565,12 +569,26 @@ public sealed partial class VillageGame
                 if (dx == 0 && dy == 0)
                     continue;
                 var action = AvatarSystem.ActionAt(_sim, _avatar, new int3(at.X + dx, at.Y + dy, at.Z), tool);
-                if (FurnitureRank(action.Kind) > FurnitureRank(best.Kind))
+                if (Rank(action) > Rank(best))
                     best = action;
             }
             return best;
         }
         return AvatarAction.None;
+    }
+
+    /// <summary>
+    /// Which use beside you F prefers when you aren't facing anything: the next step with the piece
+    /// in your tongs (the fire while it's dark, the anvil or tub while it glows), then working a
+    /// craft, a station, a cask, a chest.
+    /// </summary>
+    private int Rank(AvatarAction action)
+    {
+        if (action.Kind != AvatarActionKind.Smith)
+            return FurnitureRank(action.Kind);
+        var fire = _sim.World.IsAlive(action.Target) && _sim.World.Get<Thing>(action.Target).Def.Building?.Fuel != null;
+        var hot = View.Piece(_avatar) is { Hot: true };
+        return fire != hot ? 6 : 5;
     }
 
     /// <summary>Which furniture use beside you F prefers when you aren't facing anything: working a craft first, then a station, a cask, a chest.</summary>

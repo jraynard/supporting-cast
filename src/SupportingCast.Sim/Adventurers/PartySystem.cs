@@ -94,6 +94,9 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
             var a = w.Get<Adventurer>(e);
             if (now < a.LeaveTick || w.Has<Leaving>(e) || w.Get<Creature>(e).Dead)
                 continue;
+            // Nobody leaves town with their sword still at the smith's, if they can help it.
+            if (sim.Shops.GearOut(sim, e) && now < a.LeaveTick + SimClock.HoursToTicks(Shops.ShopSystem.HandedOverHours))
+                continue;
             w.Add(e, new Leaving());
             AiSystem.EndJob(sim, e, w.Get<Mind>(e), false);
             announced ??= [];

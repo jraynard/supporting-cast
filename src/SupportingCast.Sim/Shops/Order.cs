@@ -44,7 +44,7 @@ public sealed class Order
     public int Worth { get; init; }
 
     public long PostedTick { get; init; }
-    public long Deadline { get; init; }
+    public long Deadline { get; set; }
 
     /// <summary>Whoever said they'd see to it; Entity.Null until someone does.</summary>
     public Entity Assignee { get; set; } = Entity.Null;

@@ -1,6 +1,7 @@
 using Brutal.ImGuiApi;
 using Narsil.Sim.Core;
 using Narsil.Ui;
+using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Systems;
 using SupportingCast.Sim.Work;
 using SupportingCast.Ui;
@@ -228,6 +229,19 @@ public sealed partial class VillageGame
         TextC(p.Hot ? Theme.Good : Theme.Dim, p.Next is { } next ? Cap(next) + "." : "");
         if (!p.Shaped)
             Bar(p.Mend ? "Mended" : "Shaped", p.Shape, Theme.Accent);
+        // The forge it came from: how its fire looks, and whether it wants feeding.
+        if (_sim.World.IsAlive(p.Forge) && _sim.World.TryGet<Thing>(p.Forge, out var forge))
+        {
+            var fire = _sim.TemperatureAt(forge.Cell);
+            var fuel = View.FuelIn(p.Forge) ?? 0f;
+            ImGui.AlignTextToFramePadding();
+            Swatch(fire);
+            ImGui.SameLine(0, 8);
+            if (fuel <= 0f)
+                TextC(Theme.Bad, "The fire's out: feed it charcoal from the fuel bin.");
+            else
+                TextC(fuel < 2f ? Theme.Warn : Theme.Dim, $"The fire's {Smithing.GlowLabel(Smithing.GlowOf(fire))}.{(fuel < 2f ? " It's nearly out of fuel." : "")}");
+        }
         if (ImGui.SmallButton("Set it aside"u8))
             Issue(new SetAsidePieceCommand(_avatar));
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))

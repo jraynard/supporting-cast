@@ -80,12 +80,16 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             if (!sim.World.IsAlive(e.Poster) || sim.World.Get<Creature>(e.Poster).Dead || sim.World.Has<Leaving>(e.Poster))
             {
                 Close(sim, e, OrderStatus.Cancelled);
-                LostTheirGear(sim, e);
+                // Off on a quest, they leave it in the smith's keeping; leaving town for good, they call it theft.
+                var questing = sim.World.IsAlive(e.Poster) && sim.World.TryGet<Adventurer>(e.Poster, out var a) && a.Quest != 0;
+                LostTheirGear(sim, e, questing);
             }
             else if (e.Kind.Kind == ServiceKind.Goods && (!sim.World.IsAlive(e.Subject) || !sim.World.Has<ForSale>(e.Subject)))
                 Close(sim, e, OrderStatus.Cancelled); // sold to someone else, or taken off sale
             else if (e.Kind.Kind == ServiceKind.Healing && !Untended(sim, e.Poster))
                 Healed(sim, e);
+            else if (now >= e.Deadline && StillAtIt(sim, e))
+                BearWithIt(sim, e);
             else if (now >= e.Deadline)
                 GiveUp(sim, e);
             else if (e.Assignee.IsNull && TimeToAsk(sim, e))
@@ -540,6 +544,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             w.Add(box, new Entrusted { Owner = e.Poster });
             Inventory.Stow(sim, e.Assignee, box);
             sim.Speech.Say(sim, e.Poster, "Here. Mind your fingers: none of us would touch the lid.", Volume.Say);
+            GiveTime(sim, e);
             return true;
         }
         if (w.TryGet<Equipment>(e.Poster, out var eq) && eq.Weapon == e.Subject)
@@ -551,17 +556,53 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         w.Add(e.Subject, new Entrusted { Owner = e.Poster });
         Inventory.Stow(sim, e.Assignee, e.Subject);
         sim.Speech.Say(sim, e.Poster, $"Here. Mind you bring it back {(WeaponWear.Edged(w.Get<Thing>(e.Subject).Def) ? "sharp" : "whole")}.", Volume.Say);
+        GiveTime(sim, e);
         return true;
     }
 
+    /// <summary>Handed over: the work's clock starts now, whatever was left of their wait for someone to take it on.</summary>
+    private static void GiveTime(Simulation sim, Order e) =>
+        e.Deadline = Math.Max(e.Deadline, sim.Clock.Tick + SimClock.HoursToTicks(HandedOverHours));
+
+    /// <summary>Game hours an asker gives once they've handed their piece over: the work's clock starts then.</summary>
+    public const float HandedOverHours = 4f;
+
+    /// <summary>How long, in all, they'll wait on a piece that's still being worked: this many times their patience.</summary>
+    public const float MostPatience = 3f;
+
+    /// <summary>
+    /// The deadline's come but their piece is still with whoever took the job: they'd sooner wait
+    /// than walk off without it, up to <see cref="MostPatience"/> times their usual patience.
+    /// </summary>
+    private static bool StillAtIt(Simulation sim, Order e) =>
+        HandsOver(e.Kind.Kind) && !e.Assignee.IsNull && sim.World.IsAlive(e.Subject) && sim.World.IsAlive(e.Assignee)
+        && Inventory.OnPerson(sim, e.Assignee, e.Subject)
+        && sim.Clock.Tick < e.PostedTick + SimClock.HoursToTicks(e.Kind.PatienceHours * MostPatience);
+
+    private static void BearWithIt(Simulation sim, Order e)
+    {
+        e.Deadline = sim.Clock.Tick + SimClock.TicksPerHour;
+        sim.Speech.Say(sim, e.Poster, $"Is my {SubjectLabel(sim, e.Subject)} nearly done? I'll give you a while longer.", Volume.Say);
+    }
+
+    /// <summary>Has this person handed something over to be seen to that they haven't had back?</summary>
+    public bool GearOut(Simulation sim, Entity poster) =>
+        _orders.Exists(e => e.IsOpen && e.Poster == poster && HandsOver(e.Kind.Kind) && sim.World.IsAlive(e.Subject)
+            && !Inventory.OnPerson(sim, poster, e.Subject));
+
     /// <summary>Did the asker go without the thing they handed over (the order closing with it still out)?</summary>
-    private static void LostTheirGear(Simulation sim, Order e)
+    private static void LostTheirGear(Simulation sim, Order e, bool questing = false)
     {
         var w = sim.World;
         if (!HandsOver(e.Kind.Kind) || !w.IsAlive(e.Subject) || !w.IsAlive(e.Poster) || Inventory.OnPerson(sim, e.Poster, e.Subject))
             return;
         if (w.Has<Entrusted>(e.Subject))
             w.Remove<Entrusted>(e.Subject); // theirs now, for better or worse
+        if (questing)
+        {
+            sim.Speech.Say(sim, e.Poster, $"We're off. Keep my {SubjectLabel(sim, e.Subject)} safe till we're back.", Volume.Say);
+            return;
+        }
         if (w.Has<Adventurer>(e.Poster))
             w.Get<Adventurer>(e.Poster).Satisfaction -= 2f;
         sim.Speech.Say(sim, e.Poster, $"And {(e.AssigneeName.Length > 0 ? e.AssigneeName : "this town")} keeps my {SubjectLabel(sim, e.Subject)}. Thieves, the lot of you.", Volume.Shout);

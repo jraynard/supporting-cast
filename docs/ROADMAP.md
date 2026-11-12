@@ -193,6 +193,15 @@ the smith's spot to 80°C+ and kill a bot that stands there for hours (also befo
   - Customers' pieces come first under Mend.
   - Between steps, an "In your tongs" panel shows where the piece goes next.
 - **The hammer strikes with its head**, and the smith swings in the world while working.
+- **After the first playtest:**
+  - **The forge window** is pick a metal, then a shape (icons), then Begin. It closes once the
+    billet is in your tongs. Smelting and mending fold away.
+  - **The fire** is shown in the "In your tongs" panel instead.
+  - **F** ignores what's behind a window, and next to the smithy's stations it picks the right
+    next step.
+  - **More patience:** customers give four hours from the hand-over. While their piece is still
+    with you they ask after it and wait, up to three times their patience. They put off leaving
+    town for it. Setting out on a quest, they leave it in your keeping instead of crying thief.
 
 Known leftovers: commissions (the buyer's hilt, runes and metal); molds, and the hilt and grip
 as their own step; lighting and banking the forge by hand; reforging; AI smiths still forge with

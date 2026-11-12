@@ -202,6 +202,31 @@ public class BlacksmithTests
     }
 
     [Fact]
+    public void TheyWaitOnABladeThatsStillBeingWorked()
+    {
+        var (sim, owner, sword) = TownWithAWornSword("Blacksmith");
+        var me = Players.CharacterOf(sim, Ana);
+        sim.TickMany(SimClock.TicksPerHour / 6);
+        var order = RepairOf(sim, owner);
+        sim.ApplyNow(new TakeOrderCommand(me, order.Id));
+        var at = sim.World.Get<Position>(owner).Cell;
+        var cell = sim.SpiralFrom(at, 3).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z);
+        sim.World.Get<Position>(me).Cell = cell;
+        sim.World.Get<Position>(me).Pos = Position.CenterOf(cell);
+
+        // Late in their wait for someone to take it on, the hand-over starts the work's own clock.
+        var posted = order.Deadline;
+        Assert.True(sim.Shops.TryHandOver(sim, order));
+        Assert.True(order.Deadline >= sim.Clock.Tick + SimClock.HoursToTicks(ShopSystem.HandedOverHours) - 1);
+
+        // Past that, with the blade still at the smith's, they ask after it and wait on.
+        sim.TickMany((int)(order.Deadline - sim.Clock.Tick) + 120);
+        Assert.True(order.IsOpen, $"{order.Status}");
+        Assert.Contains(sim.Speech.Kept, u => u.Speaker == owner && u.Text.Contains("nearly done"));
+        Assert.True(order.Deadline > posted);
+    }
+
+    [Fact]
     public void ABladeHandedBackUnmendedIsRefusedAndTheJobReopens()
     {
         var (sim, owner, sword) = TownWithAWornSword("Blacksmith");

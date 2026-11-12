@@ -17,7 +17,7 @@ public readonly record struct KnownStrongbox(bool Locked, int Pins, bool Searche
 /// The piece in a smith's tongs as anyone in sight of it sees it: what it is, the colour it glows,
 /// and how far it's been beaten into shape (and the smith's own next step, to them). Never a flaw.
 /// </summary>
-public readonly record struct KnownPiece(string Label, Work.Glow Glow, float Temp, bool Hot, float Shape, bool Shaped, bool Mend, string? Next);
+public readonly record struct KnownPiece(string Label, Work.Glow Glow, float Temp, bool Hot, float Shape, bool Shaped, bool Mend, string? Next, Entity Forge);
 
 public readonly record struct PerceivedPerson(string Name, string Condition, string? Holding);
 
@@ -175,7 +175,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         // Temp is what the colour shows; the UI draws the colour from it and never prints it.
         var next = smith == viewer || Omniscient ? Work.Smithing.NextStep(sim, smith, p) : null;
         var hot = p.Temp >= Work.Smithing.Window(p.Recipe).Lo;
-        return new KnownPiece(Work.Smithing.PieceLabel(sim, p), Work.Smithing.GlowOf(p.Temp), p.Temp, hot, Math.Clamp(p.Shape, 0f, 1f), p.Shaped, p.IsMend, next);
+        return new KnownPiece(Work.Smithing.PieceLabel(sim, p), Work.Smithing.GlowOf(p.Temp), p.Temp, hot, Math.Clamp(p.Shape, 0f, 1f), p.Shaped, p.IsMend, next, p.Forge);
     }
 
     /// <summary>A strongbox within reach or on your person, as you can see it (<see cref="KnownStrongbox"/>). Null if it isn't one, or is out of reach.</summary>
