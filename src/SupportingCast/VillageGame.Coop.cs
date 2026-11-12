@@ -180,11 +180,11 @@ public sealed partial class VillageGame
         if (session.Ended is { } reason)
         {
             ImGui.SetNextWindowPos(in center, ImGuiCond.Always, in middle);
-            ImGui.Begin("Disconnected###coop-ended"u8, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
+            Narsil.Ui.Panel.Begin("Disconnected###coop-ended", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
             Wrapped($"The game with {session.SessionName} ended: {reason}.");
             if (ImGui.Button("Back to the title screen"u8, in _autoSize))
                 Host.SwitchTo(new TitleGame());
-            ImGui.End();
+            Narsil.Ui.Panel.End();
             return;
         }
 
@@ -293,11 +293,11 @@ public sealed partial class VillageGame
     private void DrawCoopCreator(CoopSession session, float2 center, float2? middle)
     {
         ImGui.SetNextWindowPos(in center, ImGuiCond.Always, in middle);
-        ImGui.Begin("Who are you?###coop-creator"u8, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
+        Narsil.Ui.Panel.Begin("Who are you?###coop-creator", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
         if (_characterRequested)
         {
             TextC(Theme.Dim, "Arriving...");
-            ImGui.End();
+            Narsil.Ui.Panel.End();
             return;
         }
         _coopCreator ??= new CharacterCreator(Host, _sim.Defs);
@@ -346,7 +346,7 @@ public sealed partial class VillageGame
                     break;
             }
         }
-        ImGui.End();
+        Narsil.Ui.Panel.End();
     }
 
     /// <summary>The creator on a saved character.</summary>

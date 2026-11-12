@@ -91,7 +91,7 @@ public sealed partial class VillageGame
         var pos = new float2(screen.X * 0.5f, screen.Y * 0.5f);
         float2? middle = new float2(0.5f, 0.5f);
         ImGui.SetNextWindowPos(in pos, ImGuiCond.FirstUseEver, in middle);
-        ImGui.Begin("The round is about to start###lobby"u8, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse);
+        Narsil.Ui.Panel.Begin("The round is about to start###lobby", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse);
         var round = _sim.Round;
 
         foreach (var p in session.Players)
@@ -131,7 +131,7 @@ public sealed partial class VillageGame
             TextC(Theme.Dim, $"{round.Seats.Count(s => s.Ready)} of {session.Players.Count} ready. Anyone still choosing can take a trade once it's under way.");
         }
         DrawChat(session);
-        ImGui.End();
+        Narsil.Ui.Panel.End();
     }
 
     private void DrawPreferences(CoopSession session, LobbySeat seat)
@@ -172,11 +172,11 @@ public sealed partial class VillageGame
     private void DrawTakeTrade(CoopSession session, float2 center, float2? middle)
     {
         ImGui.SetNextWindowPos(in center, ImGuiCond.Always, in middle);
-        ImGui.Begin("Who are you?###take-trade"u8, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
+        Narsil.Ui.Panel.Begin("Who are you?###take-trade", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
         if (_tradeRequested)
         {
             TextC(Theme.Dim, "Arriving...");
-            ImGui.End();
+            Narsil.Ui.Panel.End();
             return;
         }
         Wrapped("The round is under way. Whose work would you like to take up? You'll get the closest thing going.");
@@ -190,7 +190,7 @@ public sealed partial class VillageGame
         }
         if (ImGui.Button("Anything going"u8, in _autoSize))
             Take(session, []);
-        ImGui.End();
+        Narsil.Ui.Panel.End();
     }
 
     private void Take(CoopSession session, IReadOnlyList<TradeDef> wanted)

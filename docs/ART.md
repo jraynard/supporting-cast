@@ -466,6 +466,22 @@ on every layer. The adult has four to six shades per group (scales 64..255, bell
 `_base`: the outline, the face details and the cool rim light along the lit edge, none of which is
 tinted.
 
+## UI chrome (carved wood and iron)
+
+The interface is drawn by Narsil's UI kit (external/narsil/docs/UI.md) from sprites made by
+`tools/norse_ui.py`, named in `Ui/Theme.cs`:
+- **Nine-sliced** (border 6 px, drawn at 2× the UI scale; the corners stay whole-pixel, the edges and middle tile):
+  - `ui/frame_panel`: oak planks in an iron rim with riveted corners.
+  - `ui/frame_title`: a carved title plate.
+  - `ui/frame_inset`: a dark well.
+  - `ui/bar_trough`: an iron channel for bars.
+  - `ui/keycap`: a key.
+  - Keep anything decorative inside the outer 6 px, so the middle tiles cleanly.
+- **Toast and errand icons** (24×24, like the order icons): `ui/icon_coin`, `ui/icon_quest`, `ui/icon_wound`, `ui/icon_good`.
+- **The hammering scene:** `ui/work/anvil`, `ui/work/hammer` (handle left, head right; the game swings it) and `ui/work/billet`. The billet is drawn pale, and the game tints it by heat.
+
+The other mini-games are still drawn plainly from the palette, until play settles them.
+
 ## Placeholder art
 
 `python3 tools/gen_placeholder_art.py` regenerates all programmer art: tiles, plus the animated

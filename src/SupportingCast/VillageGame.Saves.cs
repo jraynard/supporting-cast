@@ -275,9 +275,9 @@ public sealed partial class VillageGame
         var open = true;
         SetNextWindow(new float2(Screen.X / 2f - 230, 140), new float2(460, 0));
         var title = _saveWindow == SaveWindow.Save ? "Save game###saves" : "Load game###saves";
-        if (!ImGui.Begin(title, ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse))
+        if (!Narsil.Ui.Panel.Begin(title, ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse))
         {
-            ImGui.End();
+            Narsil.Ui.Panel.End();
             if (!open) _saveWindow = SaveWindow.None;
             return;
         }
@@ -290,7 +290,7 @@ public sealed partial class VillageGame
             ImGui.Separator();
             Wrapped(_saveWindowError);
         }
-        ImGui.End();
+        Narsil.Ui.Panel.End();
         if (!open)
             _saveWindow = SaveWindow.None;
     }

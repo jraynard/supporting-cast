@@ -64,9 +64,9 @@ public sealed class SettingsWindow(GameHost host)
         float2? pivot = new float2(0.5f, 0.5f);
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in pivot);
         var open = true;
-        if (!ImGui.Begin("Settings"u8, ref open, ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
+        if (!Narsil.Ui.Panel.Begin("Settings", ref open, ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
         {
-            ImGui.End();
+            Narsil.Ui.Panel.End();
             IsOpen = open;
             return;
         }
@@ -103,7 +103,7 @@ public sealed class SettingsWindow(GameHost host)
 
         if (ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows) && ImGui.IsKeyPressed(ImGuiKey.Escape, false))
             open = false;
-        ImGui.End();
+        Narsil.Ui.Panel.End();
         IsOpen = open;
     }
 
@@ -394,7 +394,7 @@ public sealed class SettingsWindow(GameHost host)
         float2? pivot = new float2(0.5f, 0.5f);
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
         ImGui.SetNextWindowFocus();
-        ImGui.Begin("Keep display settings?"u8, ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove);
+        Narsil.Ui.Panel.Begin("Keep display settings?", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove);
         ImGui.Text("Keep these display settings?"u8);
         ImGuiText.Colored(Theme.Dim, $"Reverting in {MathF.Ceiling(_confirmLeft):F0} seconds.");
         var size = (float2?)new float2(S(120), 0);
@@ -403,7 +403,7 @@ public sealed class SettingsWindow(GameHost host)
         ImGui.SameLine(0, -1);
         if (ImGui.Button("Revert"u8, in size))
             Revert();
-        ImGui.End();
+        Narsil.Ui.Panel.End();
     }
 
     private void Keep()

@@ -37,14 +37,27 @@ public sealed partial class VillageGame
             any = true;
             ImGui.PushID(e.Id);
             var who = e.Mine ? "You" : e.PosterName;
-            TextC(open ? (e.Mine ? Theme.Good : Theme.Text) : Theme.Dim, $"{who} want{(e.Mine ? "" : "s")} {e.KindLabel}, {e.Price} silver");
-            Wrapped(e.Text);
+            // A card: the kind's icon, who wants what for how much, their words, and the time left as a bar.
+            var dl = ImGui.GetWindowDrawList();
+            var icon = ImGui.GetTextLineHeight() * 1.6f;
+            var at = ImGui.GetCursorScreenPos();
+            if (Gui.TrySprite(ErrandIcon(e.Kind), out var sprite))
+                Gui.Sprite(dl, sprite, at, new float2(icon, icon), open ? Gui.White : Gui.U8(Theme.Dim));
+            ImGui.Dummy(new float2(icon, icon));
+            ImGui.SameLine(0, Gui.S(8));
+            ImGui.BeginGroup();
+            TextC(open ? (e.Mine ? Theme.Good : Theme.Text) : Theme.Dim, $"{who} want{(e.Mine ? "" : "s")} {e.KindLabel}");
+            TextC(open ? Theme.Warn : Theme.Dim, $"{e.Price} silver");
+            ImGui.EndGroup();
+            ImGui.PushTextWrapPos(0f);
+            TextC(Theme.Dim, $"\u201C{e.Text}\u201D");
+            ImGui.PopTextWrapPos();
             if (open)
             {
                 var left = Math.Max(0, e.Deadline - now) / (float)SimClock.TicksPerHour;
-                TextC(left < 0.5f ? Theme.Bad : Theme.Dim, e.AssigneeName.Length > 0
-                    ? $"{(e.MineToDo ? "You're" : e.AssigneeName + " is")} on it. {left:F1}h left."
-                    : $"Nobody's taken it. {left:F1}h left.");
+                var whole = Math.Max(1, e.Deadline - e.PostedTick) / (float)SimClock.TicksPerHour;
+                Gui.Bar(e.AssigneeName.Length > 0 ? (e.MineToDo ? "You're on it" : $"{e.AssigneeName} is on it") : "Nobody's taken it",
+                    left / whole, left < 0.5f ? Theme.Bad : left / whole < 0.4f ? Theme.Warn : Theme.Good, $"{left:F1}h left", 170f);
                 if (e.MineToDo && e.Kind == Sim.Defs.ErrandKind.Repair)
                     TextC(Theme.Dim, $"Mended, give it back from {e.PosterName}'s inspector, in reach.");
                 if (e.MineToDo && e.Kind == Sim.Defs.ErrandKind.Unlock)
@@ -77,7 +90,7 @@ public sealed partial class VillageGame
                     ErrandStatus.Expired => "They gave up waiting.",
                     _ => "Called off.",
                 });
-            ImGui.Separator();
+            Gui.Rule();
             ImGui.PopID();
         }
         if (!any)
@@ -102,6 +115,16 @@ public sealed partial class VillageGame
         }
         Panel.End();
     }
+
+    private static string ErrandIcon(Sim.Defs.ErrandKind kind) => kind switch
+    {
+        Sim.Defs.ErrandKind.Meal or Sim.Defs.ErrandKind.Drink => "ui/icon_eat",
+        Sim.Defs.ErrandKind.Repair => "ui/icon_build",
+        Sim.Defs.ErrandKind.Healing => "ui/icon_doctor",
+        Sim.Defs.ErrandKind.Quest => "ui/icon_quest",
+        Sim.Defs.ErrandKind.Unlock => "ui/icon_treasure",
+        _ => "ui/icon_call",
+    };
 
     /// <summary>Inspector buttons for someone in reach: hand over what you're holding, or pay them.</summary>
     private void DrawHandOver(Entity other)

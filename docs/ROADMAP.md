@@ -115,10 +115,29 @@ Known leftovers:
 - The pig is the boar's sheet recoloured and shaven.
 - The start message still mentions a dragon egg.
 
-## Next
+### UX pass (2026-11-11)
+- **Shared kit:** UI that DragonWorld and this game copied between them now lives in
+  Narsil.Ui (theme, panels, anchored HUD, toasts, credits, sprites and nine-slices, bars, key
+  caps). DragonWorld uses it too, with its look unchanged.
+- **Carved wood and iron:** oak-plank panels in an iron rim, carved title plates, dark wells, an
+  iron bar trough, key caps.
+- **An anchored HUD:**
+  - **Where things sit:** a character card (top left), the clock and a journal strip (top right).
+    The journal panels (errands J, heard T, quests K, gift G, log L) stack under the clock.
+    Toasts sit top centre; the hotbar, the build drawer (B) and the work window bottom centre;
+    the inspector bottom left.
+  - **Rules:** nothing overlaps, everything follows the UI scale.
+  - **Controls card (H):** replaces the long hint lines.
+- **Speed and dev tools:** players have no speed controls. Dev tools are for Debug builds or `--dev`.
+- **The hammering game as a scene:** the anvil, a bar glowing as it cools, a hammer whose swing
+  is the timing cue, sparks and a word for each blow.
+- **Errand rows as cards:** an icon, the price, and time left as a bar.
+- **Speech plates:** said lines get a wrapped plate over the speaker's head.
 
-### UX Pass
-- UX needs a lot of work. let's clean things up and make it look a nicer visually. we can leave the job minigame art fairly basic for now until we playtest those a bit more to make sure everything is good, but lets do one as an example as well, we can use the blacksmith's hammering to start with. if possible design UX upgrades so they can be carried back to dragonworld / narsil as well.
+Known leftovers: the other mini-games are still drawn plainly; the title screen keeps its old
+look; time doesn't yet advance on its own when there's nothing to do.
+
+## Next
 
 ### M3: A whole season
 - `Director`, Renown and Dread, crises including the late-round dragon, the festival, the

@@ -435,7 +435,7 @@ public sealed partial class VillageGame
         float2? pivot = new float2(0f, 0.5f);
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in pivot);
         var open = true;
-        ImGui.Begin($"{char.ToUpper(thing.Label[0])}{thing.Label[1..]}###storage", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
+        Narsil.Ui.Panel.Begin($"{char.ToUpper(thing.Label[0])}{thing.Label[1..]}###storage", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
         ImGui.BeginGroup();
         if (thing.Def.Container != null)
         {
@@ -479,7 +479,7 @@ public sealed partial class VillageGame
         ImGui.BeginGroup();
         DrawPackList(myPack, _openStorage);
         ImGui.EndGroup();
-        ImGui.End();
+        Narsil.Ui.Panel.End();
         if (!open)
             _openStorage = Entity.Null;
     }

@@ -207,7 +207,7 @@ public sealed partial class VillageGame
         float2? pivot = new float2(0f, 0.5f);
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in pivot);
         var open = true;
-        ImGui.Begin($"{Cap(thing.Label)}###station", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
+        Narsil.Ui.Panel.Begin($"{Cap(thing.Label)}###station", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
         DrawCraftUnderWay(_openStation, bench);
         var byHand = bench.Active is { } making && Sim.Work.HammerSession.Applies(_sim, _avatar, _openStation, making);
         if (bench.Active != null && bench.Stocked)
@@ -260,7 +260,7 @@ public sealed partial class VillageGame
             ImGui.PopID();
         }
         DrawRepairs(thing.Def);
-        ImGui.End();
+        Narsil.Ui.Panel.End();
         if (!open)
             _openStation = Entity.Null;
     }
@@ -314,7 +314,7 @@ public sealed partial class VillageGame
             return;
         var open = true;
         ImGui.SetNextWindowSize(new float2(520, 460), ImGuiCond.FirstUseEver);
-        ImGui.Begin(HasAvatar ? "Your recipe book###recipes" : "The village's recipe book###recipes", ref open, ImGuiWindowFlags.NoCollapse);
+        Narsil.Ui.Panel.Begin(HasAvatar ? "Your recipe book###recipes" : "The village's recipe book###recipes", ref open, ImGuiWindowFlags.NoCollapse);
         var groups = _sim.Defs.AllRecipes.GroupBy(r => r.StationDef).OrderBy(g => g.Key == null ? -1 : g.Key.Index);
         foreach (var group in groups)
         {
@@ -359,7 +359,7 @@ public sealed partial class VillageGame
                 ImGui.PopID();
             }
         }
-        ImGui.End();
+        Narsil.Ui.Panel.End();
         if (!open)
             _showRecipeBook = false;
     }

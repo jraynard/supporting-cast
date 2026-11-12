@@ -930,7 +930,7 @@ public sealed partial class VillageGame
     private void DrawWorkTab()
     {
         SetNextWindow(new float2(300, 60), new float2(640, 0));
-        ImGui.Begin("Work priorities"u8, ref _showWorkTab, ImGuiWindowFlags.AlwaysAutoResize);
+        Narsil.Ui.Panel.Begin("Work priorities", ref _showWorkTab, ImGuiWindowFlags.AlwaysAutoResize);
         TextC(Dim, "1 = highest, 4 = lowest, 0 = never");
         var types = Enum.GetValues<WorkType>();
         var outer = (float2?)null;
@@ -973,7 +973,7 @@ public sealed partial class VillageGame
             }
             ImGui.EndTable();
         }
-        ImGui.End();
+        Narsil.Ui.Panel.End();
     }
 
     private readonly List<Message> _witnessedLog = [];
@@ -1106,7 +1106,7 @@ public sealed partial class VillageGame
     private void DrawDebug()
     {
         SetNextWindow(new float2(300, 400), new float2(320, 0));
-        ImGui.Begin("Debug"u8, ref _showDebug, ImGuiWindowFlags.AlwaysAutoResize);
+        Narsil.Ui.Panel.Begin("Debug", ref _showDebug, ImGuiWindowFlags.AlwaysAutoResize);
 
         ImGui.Text($"Tick {_sim.Clock.Tick}  ({_lastTickMs:F3} ms/tick)");
         ImGui.Text($"Entities {_sim.World.AliveCount}  Burning {_sim.Fire.BurningTiles.Count}  Rooms {_sim.Rooms.All.Count}");
@@ -1231,6 +1231,6 @@ public sealed partial class VillageGame
             foreach (var (name, ms) in _sim.SystemTimings.OrderByDescending(kv => _shownPeaks.GetValueOrDefault(kv.Key)))
                 ImGui.Text($"{name,-15} {ms,6:F3}  {_shownPeaks.GetValueOrDefault(name),6:F3}");
         }
-        ImGui.End();
+        Narsil.Ui.Panel.End();
     }
 }

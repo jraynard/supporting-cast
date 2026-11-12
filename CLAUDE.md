@@ -81,6 +81,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art.
     components implements `ISaveState`. Jobs aren't saved: a load equals `AiSystem.InterruptAll`.
   - Materials, crafting, tools, mining, apparel, mood, social, prisoners and rot work as their
     XML doc summaries describe. Read through `Thing.MaxHp` and friends, not the def's raw number.
+- UI: the Narsil.Ui kit (`external/narsil/docs/UI.md`). Panels go through `Panel.Begin/End`, anything
+  on screen in a round through `_hud` (`Hud`, anchored, stacked, nothing overlaps), sizes through
+  `Gui.S`, colours from `Ui/Theme`. Mini-games open with `BeginWork(title, hints)`.
 - `src/SupportingCast`: `TitleGame`, `VillageGame` (partials by area), `WorldRenderer`, `WorldMesher`,
   `Net/CoopSession`. Draw creatures at `WorldRenderer.DrawPos`, never raw `Position.Pos`.
 - `external/narsil`: make engine changes there and commit them first, then the submodule pointer.
