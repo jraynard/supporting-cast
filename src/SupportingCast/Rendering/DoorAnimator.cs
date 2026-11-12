@@ -137,8 +137,8 @@ public sealed class DoorAnimator
 
     /// <summary>Runs east-west if there's a wall (or rock) east or west of it, else north-south (as <see cref="WorldMesher"/> lines walls up).</summary>
     public static bool DoorRunsAlongX(Simulation sim, int3 c) =>
-        WorldMesher.Occludes(sim, c.X - 1, c.Y, c.Z) || WorldMesher.Occludes(sim, c.X + 1, c.Y, c.Z)
-        || !(WorldMesher.Occludes(sim, c.X, c.Y - 1, c.Z) || WorldMesher.Occludes(sim, c.X, c.Y + 1, c.Z));
+        WorldMesher.WallAt(sim, c.X - 1, c.Y, c.Z) || WorldMesher.WallAt(sim, c.X + 1, c.Y, c.Z)
+        || !(WorldMesher.WallAt(sim, c.X, c.Y - 1, c.Z) || WorldMesher.WallAt(sim, c.X, c.Y + 1, c.Z));
 
     /// <summary>
     /// The slab: hinged at its west (or south) end, rotated by the swing. Shut, it's exactly the

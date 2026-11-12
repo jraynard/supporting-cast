@@ -19,7 +19,7 @@ public sealed class HeatSession : WorkSession
     public const float PumpRate = 0.006f;
 
     /// <summary>Share of the gap back to its resting heat the fire closes each step when left alone.</summary>
-    public const float SettleRate = 0.002f;
+    public const float SettleRate = 0.0014f;
 
     /// <summary>Share of the gap to the fire's heat the piece closes each step.</summary>
     public const float SoakRate = 0.006f;

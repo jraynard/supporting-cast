@@ -112,17 +112,27 @@ public sealed partial class VillageGame
     private int2 _heldDir;
     private float _heldFor;
     private int _sentKeys;
+    private bool _moveKeysFromWork;
 
     /// <summary>Read WASD/F and send what changed. Outside combat only: in a fight the HUD gives orders.</summary>
     private void HandleAvatarInput(Input input, float dt)
     {
         if (!HasAvatar || Working) // at a mini-game the keys are the mini-game's (UpdateWork)
+        {
+            _moveKeysFromWork = Working;
             return;
+        }
         float x = 0, y = 0;
         if (input.IsKeyDown(GlfwKey.W)) y += 1;
         if (input.IsKeyDown(GlfwKey.S)) y -= 1;
         if (input.IsKeyDown(GlfwKey.D)) x += 1;
         if (input.IsKeyDown(GlfwKey.A)) x -= 1;
+        // A key that ended a mini-game (D draws the piece out) doesn't walk off once it's over: no
+        // moving till the keys held then come up.
+        if (_moveKeysFromWork && (x != 0 || y != 0))
+            x = y = 0;
+        else
+            _moveKeysFromWork = false;
         var dir = MapDirection(x, y);
         if (dir != _heldDir)
             (_heldDir, _heldFor) = (dir, 0f);

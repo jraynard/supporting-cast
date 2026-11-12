@@ -349,8 +349,9 @@ public sealed class WorldMesher(TextureAtlas atlas)
     }
 
     /// <summary>
-    /// Walls and solid blocks hide each other's faces; open air and everything else don't. Doors
-    /// are thinner than a cell, so the walls beside them still draw the faces towards them.
+    /// Walls and solid blocks hide each other's faces; open air and everything else don't. Doors,
+    /// and walls drawn as a model (a fence's post and rails), are thinner than a cell, so the ground
+    /// under them and the walls beside them still draw.
     /// </summary>
     internal static bool Occludes(Simulation sim, int x, int y, int z)
     {
@@ -364,7 +365,19 @@ public sealed class WorldMesher(TextureAtlas atlas)
         if (s.IsNull || sim.World.Has<Construction>(s))
             return false;
         var def = sim.World.Get<Thing>(s).Def;
-        return def.Shape == RenderShape.Block && def.Building?.IsDoor != true;
+        return def.Shape == RenderShape.Block && def.Model == null && def.Building?.IsDoor != true;
+    }
+
+    /// <summary>A wall of any kind (a fence too) or solid rock: what a door or gate lines up with.</summary>
+    internal static bool WallAt(Simulation sim, int x, int y, int z)
+    {
+        if (Occludes(sim, x, y, z))
+            return true;
+        var map = sim.Map;
+        if (!map.InBounds(x, y, z))
+            return false;
+        var s = map.Structure[map.Idx(x, y, z)];
+        return !s.IsNull && !sim.World.Has<Construction>(s) && sim.World.Get<Thing>(s).Def.Building is { IsWall: true };
     }
 
     private static readonly int3[] Around6 =
