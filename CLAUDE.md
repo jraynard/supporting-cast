@@ -55,7 +55,14 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     sim; anything reading the world goes in `StillValid` or `Finish`. Inputs arrive in batches.
     New sessions go in the `WorkSession.Read` switch. `Interrupted` keeps what lasts when one is
     stopped early. Forging (`Smithing`) keeps the piece in the tongs as a `WorkPiece` between its
-    sessions (fire, anvil, quench); its heat is shown only as colour.
+    sessions (fire, anvil, quench); its heat is shown only as colour. Cooking (`Cooking`) keeps
+    its state on the `StewPot`, carried on by `CookingSystem` between sessions; a pot's rot and
+    the seasoning it wants are hidden (read pots through `PerceptionView.Pot`). Poured and
+    ladled things go in clean vessels (`Vessels`); a customer leaves them dirty.
+  - `Hospitality/`: the inn beyond its counter. Rooms by the night (`Lodging`), mess on the floor
+    (`MessSystem`, through `PerceptionView.Messes`: blood is only a "dark stain"), drink taking
+    hold (`DrinkingSystem`; a drink's effects are its `DrinkMix`), and who knows the way where
+    (`DirectionsSystem`: adventurers order only from shops they know).
   - `Adventurers/`: `PartySystem` brings parties in a round; `AdventurerBrain` lounges, waits where
     their order is served, and leaves.
   - `Shops/`: what adventurers buy. Keepers set prices on their shop's sign (`ShopPrices`, defaults
@@ -64,7 +71,7 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     (only those who hear know of it). Each want is an `Order` of a `ServiceKind`; the line is
     derived from open orders, never stored. Coin is real `SilverCoin` items; paying moves them. AI
     trades serve front first (`MendJob`, `ServeJob`, `HealOrders`). An AI work pack keeps coin and
-    `Entrusted` items between jobs. Gear marked `ForSale` and lying in its seller's shop is on show
+    `Entrusted` items (and a few clean vessels) between jobs. Gear marked `ForSale` and lying in its seller's shop is on show
     (`Goods`); no job takes an item for sale (`IsAvailable`). `Favours/`: what players ask of each
     other, for silver they name.
   - `Locks/`: the Carpenter's lockwork on strongboxes from quests. A box's trap is hidden item

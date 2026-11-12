@@ -207,6 +207,71 @@ Known leftovers: commissions (the buyer's hilt, runes and metal); molds, and the
 as their own step; lighting and banking the forge by hand; reforging; AI smiths still forge with
 a plain `CraftJob`. Tune the heat and quench timing in play. Save format 3.
 
+### Innkeeper polish (2026-11-12)
+- **The inn grows a kitchen:** 13x13 now, with a kitchen (its own fire, the stew pot, a larder,
+  the wash tub, a shelf of bowls) and a storeroom of kegs behind the common room, and six rooms
+  upstairs. Cottage H moved two cells east to make room. The inn opens stocked, and the carter
+  restocks it each morning (`InnSupplySystem`).
+- **The pot** (`Work/Cooking`): whatever's in the larder goes in.
+  - **Tending it** (`StewSession`): F stirs, A/D bank or feed the fire. The heat shows only as
+    the surface (still, steaming, a simmer, a rolling boil). Past a simmer it catches unless
+    it's stirred.
+  - **Seasoning it** (`SeasonSession`): a pinch at a time, tasting as you go; a less practised
+    tongue tells less. Salt can't come back out.
+  - **Serving it:** a pot ladles many bowls, each with a quality the diner tastes. A turned
+    ingredient spoils it unseen.
+- **Crockery** (`Work/Vessels`): drinks go in clean tankards and stew in clean bowls. Customers
+  leave them dirty where they finished.
+  - **Washing up** (`WashSession`): at the tub, on the brush's beat.
+  - **Changing the keg** (`TapSession`): a dry cask takes a keg from the storeroom, its tap
+    knocked in as the mallet comes down. A miss sprays servings away.
+- **Rooms by the night** (`Hospitality/Lodging`): a guest pays each evening and keeps their room
+  while in town. They check out when they move on or leave a night unpaid. The bed's left unmade
+  until it's made up again, three movements on cue (`MakeBedSession`).
+- **Mess** (`Hospitality/MessSystem`): spilled ale, mud, crumbs and blood on the floor, drawn as
+  decals.
+  - **Its cost:** customers in a messy room think less of the town, and say so.
+  - **Cleaning it** (`ScrubSession`): A/D back and forth, faster with the mop now in the kit.
+  - **Blood** shows only as a dark stain, and scrubbed, it's gone.
+- **Mixed drinks** (`Work/MixSession`): at the bar, a press-on-cue sequence (F, A, D).
+  - **What goes in:** a serving from the cask, one of each add, and a clean tankard.
+  - **Named drinks:** the hearthwarmer, bramblecup and stillwater have their own cues.
+  - **House mixes:** anything else, one cue per add.
+  - **What a drink does** is a property of the drink (`DrinkMix`): the sum of what's in it.
+- **Drink taking hold** (`Hospitality/Drinking`): drink goes to the head and wears off.
+  - **Merry:** drinkers volunteer truer rumours.
+  - **Loud:** their speech carries further.
+  - **Drunk:** they spill.
+  - **Past it:** they sleep.
+  - **Named orders:** customers sometimes ask for a named drink, and care whether they get it.
+- **Directions** (`Hospitality/Directions`): adventurers know their haunt and the shops their
+  party has seen. For the rest they ask aloud. Anyone who hears can point the way (the Shop
+  panel), a villager does if nobody else has, and everyone in earshot learns it. A party back
+  from a quest knows the town.
+- **AI keepers** fill and tend the pot, ladle from it, wash up, change kegs, make beds and mop.
+  **Bots** play every new mini-game, answer the way, and mix the named drinks they hear asked for.
+- **Fixed on the way:**
+  - Jobs reach what's kept in solid furniture from beside it (`Navigation.EndFor`); AI fetches
+    from chests, shelves and larders hadn't worked since furniture went solid.
+  - Haulers leave the inn's crockery be.
+  - A creature leaving the map takes its pack's contents with it; they used to stay stored in a
+    pack that was gone.
+  - A party back with a strongbox waits to have it opened, and counts what's in the box toward
+    paying for it.
+  - Some entity `FirstOrDefault` calls fell back to entity 0 rather than `Entity.Null`.
+- Bench baselines:
+  - seed 1234: state `4ED162175B53B222`, full `0A8CE22DD961743F`
+  - seed 99: state `5069C912ABC1ECDA`, full `0E5D1C752585172A`
+
+  Every hash moved: the inn and the cottage beside it changed, and the inn is stocked.
+
+Known leftovers:
+- The AI innkeeper doesn't mix: asked for a named drink, it pours an ale.
+- Mess goes on floors only, not on tables, so there's no rag. Rooms have no keys yet.
+- The new stations borrow existing textures and the chest's toolbar sprite. The mop and the mess
+  decals have their own art (`tools/inn_art.py`).
+- Tune the pot, seasoning, wash, tap and mix timings in play.
+
 ## Next
 
 ### Trade refinement

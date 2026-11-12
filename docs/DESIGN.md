@@ -103,6 +103,9 @@ Ideas for depth, to build when each trade's milestone comes round.
 **Innkeeper.** Never one thing at a time: the line at the bar, the pot on the fire, the
 tankards in the tub and the room upstairs all want the keeper at once. The skill is in the
 juggling, and in what they overhear while they do it.
+- *Built (Innkeeper polish): all of the below, but brokering's unchanged and the "Later" list
+  is still to come.* The inn has a kitchen and a storeroom behind the common room, and six rooms
+  upstairs.
 - *The bar.* Since M2: pour ale at the cask. Hold to pour, and the tilt controls the head.
   Customers taste the quality.
   - **Vessels:** a drink goes in a clean tankard and a meal in a clean bowl, taken from the shelf
@@ -110,19 +113,20 @@ juggling, and in what they overhear while they do it.
     tub. Run out of clean ones and the line stalls.
   - **Casks and kegs:** a cask runs dry. Tap a new keg from the store by knocking the tap in on
     cue; a miss sprays foam and wastes servings.
-- *The pot.* Cooking is one stew pot over the hearth, cooked by taste.
+- *The pot.* Cooking is one stew pot by the kitchen's fire, cooked by taste (`Work/Cooking`).
   - **The ingredients:** whatever's in the larder.
   - **The heat:** keep it at a simmer, read only from the surface (still, a simmer, a rolling
     boil), as the forge is read from its colour. Stir so it doesn't catch.
   - **The seasoning:** season a pinch at a time, tasting as you go. It can't be taken back out.
   - **The result:** a pot gives many bowls, ladled out, each with a quality the diner tastes. A
     spoiled ingredient spoils the pot, and nobody can taste it until the diner is sick.
-- *Rooms.* Let by the night: the guest pays each evening and checks out when they move on. A
-  slept-in bed is stripped and remade before it can be let again, and a guest shown to an unmade
-  one says so.
-- *Mess.* Spilled ale, mud off the road, crumbs, dirty dishes and blood are things on the floor
-  and the tables, and anyone can see them. Customers think less of a dirty room. A rag does the
-  tables and a mop the floor. Scrubbed blood is gone, which will matter once there are bodies.
+- *Rooms.* Let by the night: the guest pays each evening, keeps the same room while they're in
+  town, and checks out when they move on or let a night go unpaid. A slept-in bed is stripped
+  and remade before it can be let again, and a guest shown to an unmade one says so.
+- *Mess.* Spilled ale, mud off the road, crumbs and blood are things on the floor
+  (`Hospitality/MessSystem`), and anyone can see them; dirty dishes lie where they were left.
+  Customers think less of a dirty room. Scrub it up, faster with the mop in the keeper's kit.
+  Scrubbed blood is gone, which will matter once there are bodies. Later: mess on the tables.
 - *Mixed drinks.* A press-on-cue sequence at the bar.
   - **Recipes:** named ones are what adventurers ask for.
   - **House mixes:** any other combination makes one, its effect coming from the properties of
@@ -133,9 +137,10 @@ juggling, and in what they overhear while they do it.
     the keeper's best intel.
   - **They get loud:** their speech carries further.
   - **They get clumsy:** they spill. Too much, and they're asleep on the floor.
-- *Directions.* Adventurers new to town know only the inn. Wanting a smith, they ask aloud where
-  one is. Whoever answers (keeper or anyone) points them there, and everyone in earshot learns it.
-  Unanswered, they think less of the town.
+- *Directions.* Adventurers new to town know only the inn, and the shops their party has walked
+  past. Wanting a smith, they ask aloud where one is. Whoever answers (keeper or anyone) points
+  them there, and everyone in earshot learns it; a villager answers if no player does. Unanswered,
+  they think less of the town.
 - *Brokering quests* (since M2, when the Quest Broker folded into the Innkeeper): the keeper
   hears every rumour over the bar and points parties at work on whatever it's worth.
 - Later:
@@ -245,7 +250,7 @@ want to move towards a more Tolkien inspired aesthetic in general though we can 
 ## Sim folders
 
 Built, all in `src/SupportingCast.Sim`, driven only by commands and headless-testable:
-`Round/`, `Perception/`, `Speech/`, `Work/`, `Adventurers/`, `Shops/`, `Favours/`, `Healing/`, `Expeditions/`.
+`Round/`, `Perception/`, `Speech/`, `Work/`, `Adventurers/`, `Shops/`, `Favours/`, `Healing/`, `Expeditions/`, `Hospitality/`.
 Still to come: `Director/`, `Secrets/`, `Reagents/`.
 
 ## Reuse
