@@ -226,8 +226,8 @@ public sealed partial class VillageGame
             ToggleRoofs();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
             Tip(HideRoofs
-                ? "Roofs are cut away so you can see inside; an outline marks what's sheltered.  [\\]"
-                : "Cut the roofs away to see into the rooms below.  [\\]");
+                ? "Every roof is cut away so you can see into all the rooms. Show them again, but for the building you're in.  [\\]"
+                : "Roofs are on, but for the building you're in. Cut them all away to see into every room.  [\\]");
         if (_tool == ToolKind.PlaceBuilding && _toolPlan is { Variants.Count: > 1 } plan)
         {
             // The looks to pick from, the current one lit.

@@ -117,10 +117,15 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     private bool PlacingRoof => _tool == ToolKind.Build && _toolDef?.IsRoof == true;
 
     /// <summary>
-    /// Roofs (built ones, and the ones drawn over enclosed rooms) are cut away so you can see into
-    /// the rooms below; an outline shows what's sheltered instead. \ or the toolbar toggles it.
+    /// Every roof cut away (built ones, and the ones drawn over enclosed rooms), and every room's
+    /// near walls with them, so you can see into all of them; \ or the toolbar toggles it. Off by
+    /// default: roofs are on, but for the building you're in (<see cref="InsideBuilding"/>).
     /// </summary>
-    private bool HideRoofs { get; set; } = true;
+    private bool HideRoofs { get; set; }
+
+    /// <summary>The preset building your character's standing in and the level they're on (its roof's off, and what's above them), or Entity.Null.</summary>
+    private (Entity Building, int Level) InsideBuilding() =>
+        HasAvatar && _sim.World.TryGet<Position>(_avatar, out var p) ? (Buildings.At(_sim, p.Cell), p.Cell.Z) : (Entity.Null, int.MaxValue);
 
     /// <summary>How wide (cells, on screen) the x-ray circle is.</summary>
     private const float XrayRadius = 1.7f;
@@ -141,7 +146,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     private void ToggleRoofs()
     {
         HideRoofs = !HideRoofs;
-        Notify(MessageKind.Info, HideRoofs ? "Roofs and front walls cut away (\\)" : "Roofs and walls shown (\\)");
+        Notify(MessageKind.Info, HideRoofs ? "Every roof and front wall cut away (\\)" : "Roofs on, but for the building you're in (\\)");
     }
     /// <summary>
     /// Developer tools: the Debug window, frame times, cell coordinates, the overlays on F1–F4.
@@ -188,8 +193,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// </summary>
     public bool Freeform { get; init; }
 
-    /// <summary>Debug/screenshots (<c>--show-roofs</c>): start with roofs drawn rather than cut away.</summary>
-    public bool ShowRoofs { init => HideRoofs = !value; }
+    /// <summary>Debug/screenshots (<c>--hide-roofs</c>): start with every roof cut away, as \ does.</summary>
+    public bool HideAllRoofs { init => HideRoofs = value; }
 
     /// <summary>The storyteller's difficulty by def name ("Normal", "Hard"...); null or "Off" sends no raids.</summary>
     public string? Difficulty { get; init; }
@@ -413,9 +418,19 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             // A floor is a thin slab at the bottom of its cell, not a cube: it catches the ray only
             // where the ray crosses it, so clicks land where the floor is drawn, not cells short.
             if (map.Floor[i] is { IsNull: false } floor)
+            {
+                // The building you're in: its roof and what's above your level aren't drawn, so they don't catch it.
+                var open = !HideRoofs && Buildings.Of(_sim, floor) is var of && !of.IsNull && of == _renderer.OpenBuilding.Building;
+                if (open && (_sim.World.Get<Thing>(floor).Def.IsRoof || i / map.LayerSize > _renderer.OpenBuilding.Level))
+                    return false;
                 return (!HideRoofs || !_sim.World.Get<Thing>(floor).Def.IsRoof) && CrossesFloor(map.CellOf(i));
+            }
             var s = map.Structure[i];
             // A wall cut down to a stub doesn't stand in the way: the ray reaches the room behind it.
+            // Nor does the storey above you in the building you're in, which isn't drawn.
+            if (!s.IsNull && !HideRoofs && i / map.LayerSize > _renderer.OpenBuilding.Level && Buildings.Of(_sim, s) is { IsNull: false } wallOf
+                && wallOf == _renderer.OpenBuilding.Building)
+                return false;
             return !throughWalls && !s.IsNull && _sim.World.Get<Thing>(s).Def.Shape == RenderShape.Block
                 && !_renderer.IsStub(_sim, map.CellOf(i));
         }
@@ -579,10 +594,11 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     }
 
     /// <summary>
-    /// Under an upper floor (the inn's ground floor), cut the view at your level so the storey
-    /// above doesn't hide you; anywhere else, show everything. Roofs aren't counted: hiding them
-    /// is the \ toggle's job. The 3x3 around you counts too, so a stairwell's opening doesn't
-    /// flicker the floor back in on the way up.
+    /// Under a floor that isn't a building's (a bridge, an overhang), cut the view at your level
+    /// so it doesn't hide you; anywhere else, show everything. In a preset building, only that
+    /// building's storeys above you are left out (<see cref="InsideBuilding"/>), so the rest of the
+    /// town keeps its roofs. Roofs aren't counted. The 3x3 around you counts too, so a stairwell's
+    /// opening doesn't flicker the floor back in on the way up.
     /// </summary>
     private void UpdateFollowedLevel()
     {
@@ -590,7 +606,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             return;
         var map = _sim.Map;
         var cut = map.Depth - 1;
-        if (HasAvatar && _sim.World.TryGet<Position>(_avatar, out var pos))
+        if (HasAvatar && _sim.World.TryGet<Position>(_avatar, out var pos) && InsideBuilding().Building.IsNull)
         {
             var c = pos.Cell;
             for (var z = c.Z + 1; z < map.Depth && cut == map.Depth - 1; z++)
@@ -743,6 +759,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         ApplyVisualStyle();
         _quads.HideRoofs = HideRoofs;
         _renderer.HideRoofs = HideRoofs;
+        _renderer.OpenBuilding = InsideBuilding();
         // With the roofs off, the walls in front of rooms come down too; whatever still stands
         // between the camera and you (or the cursor) thins out round you.
         _renderer.CutawayWalls = HideRoofs;

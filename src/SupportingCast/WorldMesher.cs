@@ -2,6 +2,7 @@ using Narsil.Rendering;
 using SupportingCast.Rendering;
 using SupportingCast.Sim;
 using SupportingCast.Sim.Components;
+using SupportingCast.Sim.Ecs;
 using SupportingCast.Sim.Defs;
 using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Systems;
@@ -67,8 +68,39 @@ public sealed class WorldMesher(TextureAtlas atlas)
         return new float2(MathF.Cos(a), MathF.Sin(a));
     }
 
-    /// <summary>Is the wall (or door) in this cell cut down to a stub just now (<see cref="CutHeading"/>)?</summary>
-    public bool IsStub(Simulation sim, int x, int y, int z) => _cutHeading is { } h && CutAt(sim, x, y, z, h);
+    private Entity _open = Entity.Null;
+    private int _openLevel = int.MaxValue;
+
+    /// <summary>
+    /// The building you're inside, and the level you're on in it: its roof and anything of it above
+    /// your level (the inn's upper storey, from the common room) are left out, and only its walls
+    /// are cut down (with <see cref="CutHeading"/> set). Every other building keeps its roof.
+    /// Entity.Null: every wall facing a room is cut (the \ view, when the shader hides every
+    /// roof), or none is (no heading). Changing it remeshes.
+    /// </summary>
+    public (Entity Building, int Level) OpenBuilding
+    {
+        get => (_open, _openLevel);
+        set
+        {
+            if (_open == value.Building && _openLevel == value.Level)
+                return;
+            (_open, _openLevel) = value;
+            for (var i = 0; i < _builtVersion.Length; i++)
+                if (_builtVersion[i] != -1)
+                    _builtVersion[i] = -2;
+        }
+    }
+
+    /// <summary>A part of the building you're in, above the level you're on: left out.</summary>
+    private bool AboveYou(Simulation sim, Entity part, int z) => z > _openLevel && OfOpen(sim, part);
+
+    /// <summary>Is the wall (or door) in this cell cut down to a stub just now (<see cref="CutHeading"/>, <see cref="OpenBuilding"/>)?</summary>
+    public bool IsStub(Simulation sim, int x, int y, int z) =>
+        _cutHeading is { } h && (_open.IsNull || OfOpen(sim, sim.Map.Structure[sim.Map.Idx(x, y, z)])) && CutAt(sim, x, y, z, h);
+
+    /// <summary>Part of the building you're in.</summary>
+    private bool OfOpen(Simulation sim, Entity part) => !_open.IsNull && !part.IsNull && Buildings.Of(sim, part) == _open;
 
     /// <summary>
     /// A wall or door with an indoor room on its far side, seen along <paramref name="heading"/>
@@ -261,24 +293,24 @@ public sealed class WorldMesher(TextureAtlas atlas)
                 AddCube(sim, x, y, z, TopSprite(block, x, y), SideSprite(block, x, y, z * tiles + 1), SideSprite(block, x, y, z * tiles, low: true), outcrop);
                 continue;
             }
-            if (map.HasFloor[i])
+            if (map.HasFloor[i] && !AboveYou(sim, map.Floor[i], z))
             {
                 var floor = sim.World.Get<Thing>(map.Floor[i]);
                 // A preset building's foundation shows its kit's floor (planks over the plinth).
                 var floorSprite = BuildingKit.Of(sim, map.Floor[i]) is { Kit.Floor.Length: > 0 } floorKit ? floorKit.Kit.Floor : floor.Def.Sprite;
                 AddSlab(sim, x, y, z, S(_materials.Resolve(floorSprite, floor.Material).Sprite));
             }
-            if (map.HasRoof[i])
+            // The roof over the building you're in is left out, so you can see in.
+            if (map.HasRoof[i] && !OfOpen(sim, map.Floor[i]))
             {
                 var roof = sim.World.Get<Thing>(map.Floor[i]);
                 if (BuildingKit.Of(sim, map.Floor[i]) is { Kit.Roof: { } pitched } roofKit)
                 {
-                    // Its share of the building's pitched roof, and the outline shown when roofs are hidden.
+                    // Its share of the building's pitched roof.
                     var roofMaterial = roof.Material;
                     BuildingKit.Roof(_quads, pitched, roofKit.Building, new int3(x, y, z),
                         (name, pick) => _materials.Resolve(name, roofMaterial) is var (art, artTint) && V(art) is var looks ? (looks[(int)(pick % (uint)looks.Count)], artTint) : default,
                         Rgba.White, Quad.Level(z) | Quad.Roof | Quad.Occluder);
-                    AddRoof(sim, x, y, z, default, Rgba.White, hintOnly: true);
                 }
                 else
                 {
@@ -290,7 +322,7 @@ public sealed class WorldMesher(TextureAtlas atlas)
             if (AutoRoofOver(map, i) && z + 1 < map.Depth && Buildings.At(sim, new int3(x, y, z)).IsNull)
                 AddRoof(sim, x, y, z + 1, S(AutoRoofSprite), Rgba.White);
             var s = map.Structure[i];
-            if (s.IsNull || sim.World.Has<Construction>(s))
+            if (s.IsNull || sim.World.Has<Construction>(s) || AboveYou(sim, s, z))
                 continue;
             var thing = sim.World.Get<Thing>(s);
             if (thing.Cell != new int3(x, y, z))
@@ -524,8 +556,6 @@ public sealed class WorldMesher(TextureAtlas atlas)
     private const float Eave = 0.14f;
 
     /// <summary>The outline drawn round a roofed area while roofs are hidden: its width, and colour.</summary>
-    private const float HintWidth = 0.07f;
-    private static readonly uint HintColor = Rgba.Pack(1f, 0.78f, 0.35f);
 
     /// <summary>
     /// The cell at <paramref name="i"/> is under an enclosed room's roof, and nothing (a floor, a
@@ -546,11 +576,9 @@ public sealed class WorldMesher(TextureAtlas atlas)
     /// <summary>
     /// A roof resting on the walls at the bottom of level <paramref name="z"/>: a thin slab, its
     /// open sides reaching out as eaves with an edge, flagged <see cref="Quad.Roof"/> so the roof
-    /// toggle hides it. While hidden, a <see cref="Quad.RoofHint"/> outline along the same open
-    /// sides shows what's sheltered; it belongs to the level below, so cutting down to the room
-    /// still shows it.
+    /// toggle hides it.
     /// </summary>
-    private void AddRoof(Simulation sim, int x, int y, int z, Sprite sprite, uint tint, bool hintOnly = false)
+    private void AddRoof(Simulation sim, int x, int y, int z, Sprite sprite, uint tint)
     {
         var map = sim.Map;
         bool east = !RoofAt(map, x + 1, y, z), west = !RoofAt(map, x - 1, y, z);
@@ -560,47 +588,26 @@ public sealed class WorldMesher(TextureAtlas atlas)
         var top = z + RoofThickness;
         var flags = Quad.Level(z) | Quad.Roof | Quad.Occluder;
         const uint lit = 0xF2F2F2F2; // a touch darker than the ground, so the roof reads as its own surface
-        if (!hintOnly)
+        _quads.Add(new Quad
         {
-            _quads.Add(new Quad
-            {
-                Origin = new float3(x0, y0, top),
-                AxisU = new float3(x1 - x0, 0, 0),
-                AxisV = new float3(0, y1 - y0, 0),
-                Flags = flags,
-                Color = tint,
-                Ao = lit,
-                Uv = sprite.Uv,
-            });
-        }
-        if (east && !hintOnly) Edge(new float3(x1, y1, top), new float3(0, y0 - y1, 0), 0.78f);
-        if (west && !hintOnly) Edge(new float3(x0, y0, top), new float3(0, y1 - y0, 0), 0.66f);
-        if (south && !hintOnly) Edge(new float3(x0, y1, top), new float3(x1 - x0, 0, 0), 0.88f);
-        if (north && !hintOnly) Edge(new float3(x1, y0, top), new float3(x0 - x1, 0, 0), 0.6f);
-
-        // The outline, just over the wall tops along the roof's edge.
-        var hint = new Quad { Flags = Quad.Level(Math.Max(z - 1, 0)) | Quad.RoofHint | Quad.Unlit, Color = HintColor, Ao = Quad.NoAo, Uv = atlas.WhiteSprite.Uv };
-        // Over a wall that's cut down to a stub, the outline sits on the stub rather than in the air.
-        var h = (z > 0 && IsStub(sim, x, y, z - 1) ? z - 1 + StubHeight : z) + 0.02f;
-        if (east) Hint(new float3(x + 1 - HintWidth, y, h), new float3(HintWidth, 0, 0), new float3(0, 1, 0));
-        if (west) Hint(new float3(x, y, h), new float3(HintWidth, 0, 0), new float3(0, 1, 0));
-        if (south) Hint(new float3(x, y + 1 - HintWidth, h), new float3(1, 0, 0), new float3(0, HintWidth, 0));
-        if (north) Hint(new float3(x, y, h), new float3(1, 0, 0), new float3(0, HintWidth, 0));
+            Origin = new float3(x0, y0, top),
+            AxisU = new float3(x1 - x0, 0, 0),
+            AxisV = new float3(0, y1 - y0, 0),
+            Flags = flags,
+            Color = tint,
+            Ao = lit,
+            Uv = sprite.Uv,
+        });
+        if (east) Edge(new float3(x1, y1, top), new float3(0, y0 - y1, 0), 0.78f);
+        if (west) Edge(new float3(x0, y0, top), new float3(0, y1 - y0, 0), 0.66f);
+        if (south) Edge(new float3(x0, y1, top), new float3(x1 - x0, 0, 0), 0.88f);
+        if (north) Edge(new float3(x1, y0, top), new float3(x0 - x1, 0, 0), 0.6f);
 
         void Edge(float3 origin, float3 u, float shade)
         {
             var b = (uint)(shade * 255f);
             var template = new Quad { Flags = flags, Color = tint, Ao = b | b << 8 | b << 16 | b << 24 };
             _quads.Add(WorldScale.Tile(template, origin, u, RoofThickness, sprite.Uv, WorldScale.TilesPerLevel(sprite), 0));
-        }
-
-        void Hint(float3 origin, float3 u, float3 v)
-        {
-            var q = hint;
-            q.Origin = origin;
-            q.AxisU = u;
-            q.AxisV = v;
-            _quads.Add(q);
         }
     }
 

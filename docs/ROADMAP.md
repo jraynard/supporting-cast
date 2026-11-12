@@ -275,6 +275,17 @@ Known leftovers:
   decals have their own art (`tools/inn_art.py`).
 - Tune the pot, seasoning, wash, tap and mix timings in play.
 
+### Roofs on (2026-11-12)
+- **Roofs are on by default.** Only the building you're standing in opens up: its roof and
+  anything of it above your level (the inn's upper storey, from the common room) aren't drawn,
+  and only its near walls come down. Every other building keeps its roof and full walls; before,
+  every building's near walls were cut down and the follow-your-floor cut took every roof in
+  town off with the inn's.
+- `\` (or the toolbar) still cuts every roof and front wall away at once (`--hide-roofs` to start
+  that way). The yellow outline of what's sheltered is gone.
+- Done in the mesher (`WorldMesher.OpenBuilding`), the renderer's hiding of what's under a drawn
+  floor, and clicks, which reach through what isn't drawn.
+
 ## Next
 
 ### Trade refinement

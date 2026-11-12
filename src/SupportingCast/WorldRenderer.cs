@@ -43,9 +43,40 @@ public sealed class WorldRenderer(TextureAtlas atlas)
 
     /// <summary>
     /// Cut the walls in front of indoor rooms down to stubs, as the camera faces
-    /// (<see cref="WorldMesher.CutHeading"/>). The game ties it to hidden roofs.
+    /// (<see cref="WorldMesher.CutHeading"/>): every building's with the roofs hidden, else only
+    /// <see cref="OpenBuilding"/>'s.
     /// </summary>
     public bool CutawayWalls { get; set; }
+
+    private Entity _open = Entity.Null;
+    private int _openLevel = int.MaxValue;
+    private PresetBuilding? _openPlan;
+
+    /// <summary>
+    /// The building you're standing in, and your level in it: its roof and whatever of it is above
+    /// you aren't drawn, and its near walls come down, so you can see yourself inside it; every
+    /// other building keeps its roof. Entity.Null outside.
+    /// </summary>
+    public (Entity Building, int Level) OpenBuilding
+    {
+        get => (_open, _openLevel);
+        set
+        {
+            (_open, _openLevel) = value;
+            _openPlan = null;
+        }
+    }
+
+    /// <summary>Is this column under the building you're in (its roof isn't drawn)?</summary>
+    private bool UnderOpenRoof(Simulation sim, int3 c)
+    {
+        if (_open.IsNull || !sim.World.IsAlive(_open))
+            return false;
+        _openPlan ??= sim.World.Get<PresetBuilding>(_open);
+        return Buildings.SymbolAt(_openPlan.Def, _openPlan.Anchor, _openPlan.Facing, new int3(c.X, c.Y, _openPlan.Anchor.Z)) != ' ';
+    }
+
+    private Simulation? _sim;
 
     /// <summary>Is this wall or door drawn cut down to a stub right now?</summary>
     public bool IsStub(Simulation sim, int3 c) => _mesher.IsStub(sim, c.X, c.Y, c.Z);
@@ -60,7 +91,13 @@ public sealed class WorldRenderer(TextureAtlas atlas)
     /// A floor, roof or ground is drawn over this cell: what's in it is hidden, sprites, bubbles and
     /// labels alike. The depth test alone lets tall heads, bubbles and text show through.
     /// </summary>
-    public bool UnderDrawnFloor(Map map, int3 c) => map.FloorAbove(c, CutawayZ, !HideRoofs);
+    public bool UnderDrawnFloor(Map map, int3 c)
+    {
+        // In the building you're in, only what's drawn of it counts: nothing above your level.
+        if (_sim != null && UnderOpenRoof(_sim, c))
+            return c.Z > _openLevel || map.FloorAbove(c, Math.Min(CutawayZ, _openLevel), false);
+        return map.FloorAbove(c, CutawayZ, !HideRoofs);
+    }
 
     /// <summary>Whose eyes the world is drawn through; null draws everything (the title screen, the demos, no round).</summary>
     public PerceptionView? Viewer { get; set; }
@@ -244,7 +281,9 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         var w = sim.World;
         var cut = Math.Min(CutawayZ, map.Depth - 1);
 
-        _mesher.CutHeading = CutawayWalls ? WorldMesher.SnapHeading(cam.Heading) : null;
+        _sim = sim;
+        _mesher.OpenBuilding = HideRoofs ? (Entity.Null, int.MaxValue) : (_open, _openLevel);
+        _mesher.CutHeading = CutawayWalls || (!_open.IsNull && !HideRoofs) ? WorldMesher.SnapHeading(cam.Heading) : null;
         _doors.HeightOf = c => _mesher.IsStub(sim, c.X, c.Y, c.Z) ? WorldMesher.StubHeight : 1f;
         _doors.CanSee = Viewer == null ? null : Viewer.CanSeeCell;
         _mesher.Draw(quads, sim);
