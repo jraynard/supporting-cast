@@ -298,6 +298,10 @@ public sealed partial class VillageGame
         var pos = ImGui.GetIO().DisplaySize * 0.5f + new float2(60, 0);
         float2? pivot = new float2(0f, 0.5f);
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in pivot);
+        // A fixed width: the fold-away headers would otherwise stretch it across the screen.
+        var size = new float2(Narsil.Ui.Gui.S(400), 0f);
+        var most = new float2(size.X, ImGui.GetIO().DisplaySize.Y * 0.8f);
+        ImGui.SetNextWindowSizeConstraints(in size, in most, (ImGuiSizeCallback?)null, default);
         var open = true;
         Narsil.Ui.Panel.Begin($"{Cap(thing.Label)}###station", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
         if (bench.Active != null && bench.By != _avatar)
@@ -309,7 +313,9 @@ public sealed partial class VillageGame
         var gear = thing.Def.Recipes.Where(r => Sim.Work.Smithing.Applies(_sim, _avatar, _openStation, r)).ToList();
         var metals = gear.GroupBy(MetalOf).OrderBy(g => g.Min(r => r.MinTemp)).ToList();
         if (_forgeMetal == null || metals.All(g => g.Key != _forgeMetal))
-            _forgeMetal = metals.FirstOrDefault(g => g.Any(r => RecipeBooks.Knows(_sim, _avatar, r)))?.Key;
+            // The metal you've most of to hand, among those you know how to work.
+            _forgeMetal = metals.Where(g => g.Any(r => RecipeBooks.Knows(_sim, _avatar, r)))
+                .OrderByDescending(g => g.First().Ingredients.Count > 0 ? has(g.First().Ingredients[0]) : 0).FirstOrDefault()?.Key;
 
         // 1. The metal: a chip each, with the bars you have of it.
         TextC(Dim, "Metal");
@@ -384,10 +390,9 @@ public sealed partial class VillageGame
             ImGui.Text(Cap(pick.Label));
             foreach (var x in pick.Ingredients)
             {
-                ImGui.SameLine(0, 10);
                 TextC(has(x) >= x.Count || (mine && bench.Stocked) ? Good : Bad, $"{Math.Min(has(x), x.Count)}/{x.Count} {x.ThingDef.Label}");
             }
-            TextC(Dim, $"Work it {Sim.Work.Smithing.WorkingColours(pick)}; about {Sim.Work.Smithing.BlowsFor(pick)} good blows"
+            Wrapped($"Work it {Sim.Work.Smithing.WorkingColours(pick)}; about {Sim.Work.Smithing.BlowsFor(pick)} good blows"
                 + (Sim.Work.Smithing.NeedsQuench(pick) ? ", then the quench." : "."));
             var enabled = blocker == null && !busy;
             if (!enabled)
