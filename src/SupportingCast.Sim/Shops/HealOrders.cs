@@ -19,7 +19,7 @@ public static class HealOrders
             return null;
         var now = sim.Clock.Tick;
         var from = w.Get<Position>(pawn).Cell;
-        foreach (var e in sim.Shops.All)
+        foreach (var e in sim.Shops.FrontFirst(sim))
         {
             if (!e.IsOpen || e.Kind.Kind != ServiceKind.Healing || e.Kind.AtDef != workplace || !e.KnownBy.Contains(pawn)
                 || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Poster)

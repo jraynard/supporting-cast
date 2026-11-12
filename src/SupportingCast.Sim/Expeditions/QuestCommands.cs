@@ -31,7 +31,7 @@ public sealed class BrokerJob(Entity member, int quest) : Job
         if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.Brokers)
             return null;
         var from = w.Get<Position>(pawn).Cell;
-        foreach (var e in sim.Shops.All)
+        foreach (var e in sim.Shops.FrontFirst(sim))
         {
             if (!e.IsOpen || e.Kind.Kind != Defs.ServiceKind.Quest || !e.KnownBy.Contains(pawn) || (!e.Assignee.IsNull && e.Assignee != pawn)
                 || !w.TryGet<Adventurer>(e.Poster, out var a) || w.Has<Leaving>(e.Poster))

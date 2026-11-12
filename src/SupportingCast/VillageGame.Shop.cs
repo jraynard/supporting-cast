@@ -151,6 +151,23 @@ public sealed partial class VillageGame
             return;
         ImGui.Separator();
         var w = _sim.World;
+        // What they've asked for that you heard: take it on (a mend or a box changes hands once you do).
+        foreach (var o in View.Orders().Where(o => o.Poster == other && o.Status == OrderStatus.Open))
+        {
+            ImGui.PushID(o.Id);
+            TextC(Theme.Text, $"Wants {o.KindLabel}, {o.Price} silver.");
+            if (o.AssigneeName.Length == 0)
+            {
+                ImGui.SameLine(0, Gui.S(8));
+                if (ImGui.Button("Take order"u8, in _autoSize))
+                    Issue(new TakeOrderCommand(_avatar, o.Id));
+                if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                    Tip(ShopSystem.HandsOver(o.Kind) ? "Say you'll see to it: they hand it over, and step out of the line while you work." : "Say you'll see to it. They pay when it's done.");
+            }
+            else
+                TextC(Theme.Dim, o.MineToDo ? "  You're seeing to it." : $"  {o.AssigneeName} is seeing to it.");
+            ImGui.PopID();
+        }
         // What they handed you to see to, wherever you've put it: give it back.
         foreach (var item in OnMe())
         {

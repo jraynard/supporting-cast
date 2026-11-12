@@ -9,8 +9,8 @@ namespace SupportingCast.Sim.Adventurers;
 /// <summary>
 /// Adventurers in town: out of danger, fed and rested, otherwise lounging about their haunt (the
 /// tavern) as if they owned it, and off down the road once their stay is up. They take no orders
-/// and do no work; what they want from the town they ask for as orders (<c>Shops.ShopSystem</c>),
-/// and they wait for it where it's served.
+/// and do no work; what they want from the town they buy from its shops (<c>Shops.ShopSystem</c>),
+/// lining up at the counter for it (<c>Shops.QueueJob</c>).
 /// </summary>
 public sealed class AdventurerBrain : IBrain
 {
@@ -42,8 +42,14 @@ public sealed class AdventurerBrain : IBrain
         if (needs.Get(rest) < rest.UrgentBelow || (AiQueries.IsNight(sim) && needs.Get(rest) < 0.5f))
             return HumanBrain.Sleep(sim, pawn);
 
-        // Wait where their oldest order is served (the smithy for a mend), else lounge about the
-        // haunt, else stay where they are.
+        // In line for something, take their place in it; waiting on a piece they've handed over (or
+        // past the line's end), wait about the shop; else lounge about the haunt, else stay put.
+        if (sim.Shops.PlaceOf(sim, pawn) is { } place)
+        {
+            var b = w.Get<PresetBuilding>(place.Shop);
+            if (place.Cell is { } cell)
+                return new Shops.QueueJob(cell, Buildings.Label(b), place.Place == 0);
+        }
         var center = WaitingAt(sim, pawn)
             ?? (w.TryGet<Adventurer>(pawn, out var a) && PartySystem.HauntOf(sim, a.PartyDef) is { } haunt ? haunt.Anchor : tile);
         return AiQueries.RandomReachableNear(sim, pawn, center, 4) is { } spot

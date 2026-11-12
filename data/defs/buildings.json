@@ -129,6 +129,8 @@
         { "def": "Bed", "at": [4, 1], "level": 1 },
         { "def": "Bed", "at": [9, 1], "level": 1 }
       ],
+      // Customers line up at the bar: the front at the counter, then back toward the door.
+      "line": [ [8, 4], [9, 4], [9, 5], [6, 5], [5, 4], [4, 5], [3, 5], [2, 5] ],
       "slots": [
         { "defs": ["Chest"], "at": [9, 2], "facing": 2 },
         { "defs": ["Chest"], "at": [2, 1], "facing": 2, "level": 1 },
@@ -210,6 +212,8 @@
       "furnish": [
         { "def": "Forge", "at": [2, 1] }
       ],
+      // Customers line up at the open front, out into the street.
+      "line": [ [2, 3], [2, 4], [2, 5], [2, 6], [2, 7], [2, 8] ],
       "slots": [
         { "defs": ["Bellows"], "at": [1, 1] },
         { "defs": ["Bellows"], "at": [3, 1] },
@@ -239,6 +243,8 @@
         { "def": "StrawPallet", "at": [4, 3], "facing": 1 },
         { "def": "Chest", "at": [5, 1], "facing": 2 }
       ],
+      // The wounded wait inside, out of the weather, the first by the fire.
+      "line": [ [2, 2], [3, 2], [4, 2], [2, 1], [3, 1], [4, 1] ],
       "variants": [
         { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster", "parts": { "wall": "TimberWall", "roof": "ThatchRoofPart" } },
         { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
@@ -258,6 +264,8 @@
       "furnish": [
         { "def": "Sawhorse", "at": [1, 1] }
       ],
+      // Customers line up at the open front, out into the street.
+      "line": [ [2, 3], [2, 4], [2, 5], [2, 6], [2, 7], [2, 8] ],
       "slots": [
         { "defs": ["CarpenterBench"], "at": [3, 1] },
         { "defs": ["Chest"], "at": [4, 3], "facing": 2 }

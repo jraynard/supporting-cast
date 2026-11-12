@@ -59,6 +59,14 @@ public sealed class BuildingDef : Def
     /// </summary>
     public bool LetsBeds { get; set; }
 
+    /// <summary>
+    /// Where customers line up to be served when it's a shop (<c>Shops.ShopSystem.Line</c>): plan
+    /// cells (column, row) on the ground storey, the front of the line first, the one served from
+    /// behind the counter. They may run off the plot (out of an open front). Empty: no line, and
+    /// customers just wait about the place.
+    /// </summary>
+    public List<int[]> Line { get; set; } = [];
+
     /// <summary>A memory its people get from eating inside it (feasting in the longhouse). Null: none.</summary>
     public string? EatThought { get; set; }
 
@@ -128,6 +136,8 @@ public sealed class BuildingDef : Def
                 if (ch is not ('W' or 'D' or 'P' or 'S' or '.' or ' '))
                     throw new Exception($"Building '{Name}': unknown layout symbol '{ch}' (W, D, P, S, . or space)");
         }
+        if (Line.Any(c => c.Length != 2))
+            throw new Exception($"Building '{Name}': each line cell is [column, row]");
         if (UpperLayout.Count > 0 && UpperLayout.Count != Depth)
             throw new Exception($"Building '{Name}': the upper layout must have {Depth} rows, as the ground's");
         for (var row = 0; row < UpperLayout.Count; row++)

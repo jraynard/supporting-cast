@@ -36,7 +36,10 @@ Milestones toward a playable prototype, then beyond. Design intent is in [DESIGN
   Each shop has a price sign its keeper sets (the Shop panel, J). An adventurer orders from the
   cheapest shop whose price is within what the service is worth to them (rolled per want, times
   their kind's spend and their need) and what they can spare; too dear, they say so, sulk a little
-  and go without for a while. A bargain pleases them more. Coin is real silver that changes hands. `Favours/`: players post, take, finish and call off
+  and go without for a while. A bargain pleases them more. Customers line up at the shop (each
+  building def's "line" cells: the inn's bar, the smithy's and woodshop's open fronts, inside the
+  shrine) and say what they want when they reach the front; keepers serve front first, and someone
+  who's handed over a blade or a box steps out of the line until it comes back. Coin is real silver that changes hands. `Favours/`: players post, take, finish and call off
   favours for each other.
 - The trades, each with its own hands-on game and an AI fallback (the Quest Broker started as a
   fourth and was folded into the Innkeeper: the keeper hears the rumours anyway):

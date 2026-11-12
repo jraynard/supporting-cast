@@ -24,7 +24,7 @@ public sealed class ServeJob(int order) : Job
         if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
             return null;
         var from = w.Get<Position>(pawn).Cell;
-        foreach (var e in sim.Shops.All)
+        foreach (var e in sim.Shops.FrontFirst(sim))
         {
             if (!e.IsOpen || e.Kind.Kind is not (ServiceKind.Drink or ServiceKind.Meal) || e.Kind.AtDef != workplace
                 || !e.KnownBy.Contains(pawn) || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Poster))

@@ -86,8 +86,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 Healed(sim, e);
             else if (now >= e.Deadline)
                 GiveUp(sim, e);
-            else if (e.Assignee.IsNull && now - e.LastAsked >= SimClock.HoursToTicks(RepeatHours))
-                Announce(sim, e, Line(e.Kind, e.Price, SubjectLabel(sim, e.Subject)));
+            else if (e.Assignee.IsNull && TimeToAsk(sim, e))
+                Announce(sim, e, Asking(e.Kind, e.Price, SubjectLabel(sim, e.Subject)));
             else
             {
                 TryHandOver(sim, e);
@@ -205,7 +205,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 TooDear(sim, who, def, cheapest, worth, spare, SubjectLabel(sim, subject) ?? WoundLabel(sim, who));
             return false;
         }
-        var text = Line(def, price, SubjectLabel(sim, subject) ?? WoundLabel(sim, who));
+        var text = Asking(def, price, SubjectLabel(sim, subject) ?? WoundLabel(sim, who));
         Post(sim, who, def, text, price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), subject, shop, worth);
         return true;
     }
@@ -310,7 +310,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             foreach (var e in sim.Creatures())
                 if (sim.World.TryGet<Trade>(e, out var trade) && trade.Def.WorkplaceDef == kind.AtDef)
                     Learn(order, e);
-        Announce(sim, order, text);
+        // At a shop with a line they say it at the counter, when their turn comes (TimeToAsk).
+        if (LineCells(sim, order.Where).Count == 0)
+            Announce(sim, order, text);
         return order;
     }
 
@@ -372,7 +374,101 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         sim.Speech.Say(sim, e.Poster, thanks, Volume.Say);
     }
 
-    /// <summary>Shops that hand something over to be seen to and given back.</summary>
+    // ---------------- The line ----------------
+
+    /// <summary>
+    /// Time to say what they want: nobody's taken it on, and they're at the front of the shop's
+    /// line (or it has none) and haven't said it since ordering, or not for <see cref="RepeatHours"/>.
+    /// </summary>
+    private bool TimeToAsk(Simulation sim, Order e)
+    {
+        var now = sim.Clock.Tick;
+        var lined = LineCells(sim, e.Where);
+        if (lined.Count == 0)
+            return now - e.LastAsked >= SimClock.HoursToTicks(RepeatHours);
+        if (LineAt(sim, e.Where) is not { Count: > 0 } line || line[0] != e.Poster || !sim.World.TryGet<Position>(e.Poster, out var at)
+            || at.Cell.Z != lined[0].Z || Maps.Map.Distance(at.Cell, lined[0]) > 1)
+            return false;
+        return e.LastAsked < e.PostedTick || now - e.LastAsked >= SimClock.HoursToTicks(RepeatHours);
+    }
+
+    /// <summary>
+    /// Is the order holding its asker's place in line: open, and not a piece they've already
+    /// handed over to be seen to (they step aside and wait for it to come back)?
+    /// </summary>
+    public static bool WaitsInLine(Simulation sim, Order e) =>
+        e.IsOpen && !(HandsOver(e.Kind.Kind) && !e.Assignee.IsNull && sim.World.IsAlive(e.Subject) && Inventory.OnPerson(sim, e.Assignee, e.Subject));
+
+    /// <summary>
+    /// The customers waiting at a shop, front first: in the order they first ordered there. Worked
+    /// out from the orders each time, so there's nothing to save and nothing to fall out of step.
+    /// </summary>
+    public List<Entity> LineAt(Simulation sim, Entity shop)
+    {
+        var line = new List<Entity>();
+        if (shop.IsNull)
+            return line;
+        foreach (var e in _orders) // oldest first
+            if (e.Where == shop && WaitsInLine(sim, e) && !line.Contains(e.Poster))
+                line.Add(e.Poster);
+        return line;
+    }
+
+    /// <summary>
+    /// The cells of a shop's line on the map, front first (<see cref="BuildingDef.Line"/>, turned
+    /// with the building), leaving out any that are off the map, walled, or have something built
+    /// in them. Empty if it isn't a building or has no line.
+    /// </summary>
+    public static List<int3> LineCells(Simulation sim, Entity shop)
+    {
+        var cells = new List<int3>();
+        if (!sim.World.IsAlive(shop) || !sim.World.TryGet<PresetBuilding>(shop, out var b) || b.Def.Line.Count == 0)
+            return cells;
+        foreach (var at in b.Def.Line)
+        {
+            var c = Buildings.CellOf(sim.Map, b.Def, b.Anchor, b.Facing, at[0], at[1]);
+            if (sim.Map.InBounds(c) && sim.Map.Passable(c) && sim.Map.Structure[sim.Map.Idx(c)].IsNull)
+                cells.Add(c);
+        }
+        return cells;
+    }
+
+    /// <summary>
+    /// Where a customer belongs: the shop of their oldest order still holding a place in line, their
+    /// place in it (0 at the front), and the cell to stand in (null past the line's end: they wait
+    /// about the shop). Null if they're waiting on nothing.
+    /// </summary>
+    public (Entity Shop, int Place, int3? Cell)? PlaceOf(Simulation sim, Entity who)
+    {
+        foreach (var e in _orders)
+        {
+            if (e.Poster != who || !WaitsInLine(sim, e) || !sim.World.IsAlive(e.Where))
+                continue;
+            var place = LineAt(sim, e.Where).IndexOf(who);
+            var cells = LineCells(sim, e.Where);
+            return (e.Where, place, place >= 0 && place < cells.Count ? cells[place] : null);
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Open orders in the order a keeper serves them: whoever's nearest the front of the line at
+    /// the shop it's for first, then the rest oldest first.
+    /// </summary>
+    public List<Order> FrontFirst(Simulation sim)
+    {
+        var lines = new Dictionary<Entity, List<Entity>>();
+        int Rank(Order e)
+        {
+            if (!lines.TryGetValue(e.Where, out var line))
+                lines[e.Where] = line = LineAt(sim, e.Where);
+            var place = line.IndexOf(e.Poster);
+            return place < 0 ? int.MaxValue : place;
+        }
+        return _orders.Where(e => e.IsOpen).OrderBy(Rank).ToList(); // stable: ties stay oldest first
+    }
+
+    /// <summary>Orders that hand something over to be seen to and given back.</summary>
     public static bool HandsOver(ServiceKind kind) => kind is ServiceKind.Repair or ServiceKind.Unlock;
 
     /// <summary>
@@ -590,7 +686,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         return worst;
     }
 
-    private string Line(ServiceDef def, int price, string? subject) =>
+    private string Asking(ServiceDef def, int price, string? subject) =>
         def.Lines.Count == 0 ? $"Wanted: {def.Label}. {price} silver." : string.Format(def.Lines[_rand.NextInt(def.Lines.Count)], price, subject ?? "gear");
 
     private static string? SubjectLabel(Simulation sim, Entity subject) =>
