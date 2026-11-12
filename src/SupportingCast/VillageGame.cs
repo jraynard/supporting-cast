@@ -740,6 +740,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     {
         ApplyVisualStyle();
         _quads.HideRoofs = HideRoofs;
+        _renderer.HideRoofs = HideRoofs;
         // With the roofs off, the walls in front of rooms come down too; whatever still stands
         // between the camera and you (or the cursor) thins out round you.
         _renderer.CutawayWalls = HideRoofs;
@@ -845,6 +846,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             DrawSlotMarkers(null); // the selected building's free spots
         if (_tool == ToolKind.Select && HasAvatar)
             DrawWalkMarkers();
+        if (HasAvatar)
+            DrawAvatarBeacon();
         if (!map.InBounds(_hoverCell) || _tool == ToolKind.Select)
             return;
 

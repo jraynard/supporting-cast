@@ -53,6 +53,15 @@ public sealed class WorldRenderer(TextureAtlas atlas)
     /// <summary>Highest level drawn. Solid blocks cut at this level show their caps.</summary>
     public int CutawayZ { get; set; } = int.MaxValue;
 
+    /// <summary>Roofs are cut away: they don't hide what's under them (<see cref="UnderDrawnFloor"/>).</summary>
+    public bool HideRoofs { get; set; }
+
+    /// <summary>
+    /// A floor, roof or ground is drawn over this cell: what's in it is hidden, sprites, bubbles and
+    /// labels alike. The depth test alone lets tall heads, bubbles and text show through.
+    /// </summary>
+    public bool UnderDrawnFloor(Map map, int3 c) => map.FloorAbove(c, CutawayZ, !HideRoofs);
+
     /// <summary>Whose eyes the world is drawn through; null draws everything (the title screen, the demos, no round).</summary>
     public PerceptionView? Viewer { get; set; }
 
@@ -233,7 +242,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         var max = float2.Max(a1, b1);
         int x0 = Math.Max(0, (int)min.X - 2), y0 = Math.Max(0, (int)min.Y - 2);
         int x1 = Math.Min(map.Width - 1, (int)max.X + 2), y1 = Math.Min(map.Height - 1, (int)max.Y + 2);
-        bool InView(int3 c) => c.X >= x0 && c.X <= x1 && c.Y >= y0 && c.Y <= y1 && c.Z <= cut;
+        bool InView(int3 c) => c.X >= x0 && c.X <= x1 && c.Y >= y0 && c.Y <= y1 && c.Z <= cut && !UnderDrawnFloor(map, c);
 
         // Structures that aren't meshed, construction ghosts and items.
         foreach (var e in w.Each<Thing>())
@@ -1434,7 +1443,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             {
                 var thing = w.Get<Thing>(e);
                 var count = w.Get<Stack>(e).Count;
-                if (!thing.Spawned || count <= 1 || thing.Cell.Z > cut || !Seen(e))
+                if (!thing.Spawned || count <= 1 || thing.Cell.Z > cut || UnderDrawnFloor(map, thing.Cell) || !Seen(e))
                     continue;
                 var p = cam.WorldToScreen(Position.CenterOf(thing.Cell) + new float3(0, 0, 0.15f + SurfaceUnder(map, w, thing.Cell)));
                 if (p.X < 0 || p.Y < 0 || p.X > cam.ViewportSize.X || p.Y > cam.ViewportSize.Y)
@@ -1448,7 +1457,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         {
             var c = w.Get<Creature>(e);
             var pos = w.Get<Position>(e);
-            if (pos.Cell.Z > cut || !Seen(e))
+            if (pos.Cell.Z > cut || UnderDrawnFloor(map, pos.Cell) || !Seen(e))
                 continue;
             // Under the feet (RimWorld-style), leaving the space over the head for status bubbles.
             var name = c.Dead ? $"{c.Name} (dead)" : c.Downed ? $"{c.Name} (down)" : c.Name;
@@ -1474,7 +1483,8 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         var w = sim.World;
         foreach (var line in Viewer.Heard())
         {
-            if (sim.Clock.Tick - line.Tick > SpokenLineTicks || line.Speaker is not { } who || !w.IsAlive(who) || !Seen(who))
+            if (sim.Clock.Tick - line.Tick > SpokenLineTicks || line.Speaker is not { } who || !w.IsAlive(who) || !Seen(who)
+                || UnderDrawnFloor(sim.Map, w.Get<Position>(who).Cell))
                 continue;
             // Above the status bubble (+0.2), so the two never sit on each other.
             var at = cam.WorldToScreen(DrawPos(sim, who, w.Get<Position>(who).Pos) + WorldScale.Rise(VisualHeight(sim, who) + 0.75f));

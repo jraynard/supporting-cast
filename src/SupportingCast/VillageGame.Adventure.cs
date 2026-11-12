@@ -200,7 +200,7 @@ public sealed partial class VillageGame
             if (e == _avatar)
                 continue;
             var pos = w.Get<Position>(e);
-            if (pos.Cell.Z > _renderer.CutawayZ || !View.CanSee(e))
+            if (pos.Cell.Z > _renderer.CutawayZ || _renderer.UnderDrawnFloor(_sim.Map, pos.Cell) || !View.CanSee(e))
                 continue;
             var size = w.Get<Creature>(e).Stage(_sim.Clock.Tick).Size;
             var s = _camera.WorldToScreen(pos.Pos + WorldScale.Rise(size * 0.5f));
@@ -341,6 +341,37 @@ public sealed partial class VillageGame
             Mark(cell, Rgba.Pack(1f, 0.75f, 0.25f, 0.65f));
         else
             Mark(_hoverCell, Rgba.Pack(1f, 1f, 1f, 0.3f));
+    }
+
+    /// <summary>
+    /// Under a floor that's drawn (you're downstairs and the view is on the storey above), you're
+    /// hidden like everything else there: a ring shows through the floor so you don't lose yourself.
+    /// </summary>
+    private void DrawAvatarBeacon()
+    {
+        var map = _sim.Map;
+        var cell = _sim.World.Get<Position>(_avatar).Cell;
+        if (!_renderer.UnderDrawnFloor(map, cell))
+            return;
+        // On the floor over you (a quad can't draw through one): the first floor or ground above.
+        var at = AvatarDrawPos();
+        for (var z = cell.Z + 1; z < map.Depth; z++)
+        {
+            var i = map.Idx(cell.X, cell.Y, z);
+            if (map.IsSolid(i))
+            {
+                at.Z = z + 1;
+                break;
+            }
+            if (map.HasFloor[i] || map.HasRoof[i])
+            {
+                at.Z = z;
+                break;
+            }
+        }
+        var pulse = 1f + 0.06f * MathF.Sin(_time * 4f);
+        _renderer.Decal(Host.Atlas.Get("ui/selection"), at + new float3(0, 0, 0.04f), 1.1f * pulse,
+            Rgba.Pack(1f, 0.85f, 0.35f, 0.75f), Quad.Unlit | Quad.Always, translucent: true);
     }
 
     /// <summary>A clicked walk that found no way there (and nowhere near it) says so, once.</summary>

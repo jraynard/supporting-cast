@@ -82,6 +82,17 @@ public class PathfindingTests
     }
 
     [Fact]
+    public void FloorAboveSeesWhatIsDrawnOverACellUpToTheCut()
+    {
+        var sim = TestWorld.Create(20, 10, depth: 6);
+        var under = C(5, 5);
+        Assert.False(sim.Map.FloorAbove(under, 5, countRoofs: true));
+        sim.FillBlocks(new int3(5, 5, 3), new int3(5, 5, 3)); // an overhang two levels up
+        Assert.True(sim.Map.FloorAbove(under, 5, countRoofs: true));
+        Assert.False(sim.Map.FloorAbove(under, 2, countRoofs: true)); // cut below it: not drawn
+    }
+
+    [Fact]
     public void CliffIsUnreachableWithoutAWayUp()
     {
         var sim = Plateau();

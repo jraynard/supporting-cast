@@ -253,6 +253,25 @@ public sealed class Map
     public bool CoveredAbove(int idx) => Covered[idx];
 
     /// <summary>
+    /// Is anything drawn over a cell with the view cut at <paramref name="cutZ"/>: a floor (or a
+    /// roof, if <paramref name="countRoofs"/>) or solid ground at a level above it up to the cut?
+    /// The renderer hides what's under one rather than let heads and labels poke through it.
+    /// </summary>
+    public bool FloorAbove(int3 c, int cutZ, bool countRoofs)
+    {
+        if (!InBounds(c))
+            return false;
+        var top = Math.Min(cutZ, Depth - 1);
+        for (var z = c.Z + 1; z <= top; z++)
+        {
+            var i = Idx(c.X, c.Y, z);
+            if (HasFloor[i] || IsSolid(i) || countRoofs && HasRoof[i])
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
     /// What a player sees in column (x, y) with the view cut at <paramref name="cutZ"/>: the
     /// highest solid or standable cell at or below the cut. Area orders act on it.
     /// </summary>
