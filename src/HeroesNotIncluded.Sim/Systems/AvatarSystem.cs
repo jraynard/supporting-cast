@@ -376,7 +376,9 @@ public sealed class AvatarSystem : ISimSystem
         // Marked to come apart (the Deconstruct tool, or a container's window): F does the work,
         // whatever's in your hands. Unmarked, F never takes anything apart, so an empty wagon kept
         // for storage or a fire you meant to feed is safe from a stray key press.
-        if ((map.Designations[i] & Designation.Deconstruct) != 0 && sim.DeconstructTarget(cell) is var marked && CanDismantle(sim, avatar, marked))
+        // The mark is on the thing's own cell (its anchor), wherever on a wide one you point.
+        if (sim.DeconstructTarget(cell) is { IsNull: false } marked && w.TryGet<Thing>(marked, out var markedThing)
+            && (map.Designations[map.Idx(markedThing.Cell)] & Designation.Deconstruct) != 0 && CanDismantle(sim, avatar, marked))
             return new(AvatarActionKind.Dismantle, $"Take the {w.Get<Thing>(marked).Label} apart", cell, marked);
 
         // Things only items in hand (or in the pack) can do: feed a construction site or a fire.
@@ -708,7 +710,7 @@ public sealed class AvatarSystem : ISimSystem
                 AiSystem.Order(sim, avatar, new HarvestJob(action.Target));
                 break;
             case AvatarActionKind.Dismantle:
-                sim.Map.Designate(sim.Map.Idx(action.Cell), Designation.Deconstruct);
+                sim.Map.Designate(sim.Map.Idx(w.Get<Thing>(action.Target).Cell), Designation.Deconstruct);
                 AiSystem.Order(sim, avatar, new DeconstructJob(action.Target));
                 break;
             case AvatarActionKind.Hunt:

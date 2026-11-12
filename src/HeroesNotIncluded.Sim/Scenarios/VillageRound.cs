@@ -49,7 +49,7 @@ public static class VillageRound
     /// <summary>Charcoal in the smithy's fuel bin: a working day's firing, for whoever keeps the forge fed.</summary>
     public const int SmithyCharcoal = 30;
 
-    /// <summary>Stock in the tinker's chest: iron for locks and clockwork, wood, charcoal for rockets.</summary>
+    /// <summary>Stock in the tinker's chest: iron for locks and clockwork, wood for contraptions and wagon axles, charcoal for rockets.</summary>
     private static void StockTinkerShop(Simulation sim, Entity shop)
     {
         if (shop.IsNull)
@@ -58,7 +58,7 @@ public static class VillageRound
             if (sim.World.Get<PartOf>(e).Building == shop && sim.World.Get<Thing>(e).Def.Name == "Chest")
             {
                 sim.Store(e, sim.CreateItem(sim.Defs.Thing("IronBar"), 6));
-                sim.Store(e, sim.CreateItem(sim.Defs.Thing("Wood"), 8));
+                sim.Store(e, sim.CreateItem(sim.Defs.Thing("Wood"), 16)); // contraptions, and new axles for parties' wagons (2 each)
                 sim.Store(e, sim.CreateItem(sim.Defs.Thing("Charcoal"), 6));
                 return;
             }

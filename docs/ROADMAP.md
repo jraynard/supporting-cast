@@ -451,7 +451,11 @@ building and fletching make a trade of their own). Design: DESIGN.md, "Tinker". 
   2 wood). Parked outside near their haunt; the richest member asks for it mended
   (`ServiceKind.WagonRepair`, paid once it's sound). Set out with it broken, the party brings no
   strongbox or curios home (`Expedition.Hauls`). The AI tinker mends them (`WagonJob`). The wagon
-  is a 3D box prop now, the town's too (canvas over hoops, wheels, a tongue), not a sprite.
+  is a 3D box prop now, the town's too, not a sprite: 3 cells long and 2 wide, solid (a bed with
+  sides, the driver's bench, stepped canvas hoops, four wheels on two axles, a tongue). Parked
+  only where the whole of it fits with a walkable ring round it; the map's carts likewise
+  (`village_map.py` reserves their footprint). F on any cell of a wide thing marked to come apart
+  now reads the mark on its own cell, as the job does (a wide thing's other cells never worked).
 - **Curios and the collector:** a cleared quest sometimes sends one or two curios home, a third of
   them fakes. True worth is hidden (`Curio`); `ServiceKind.Appraise` hands one over. Under the loupe
   (`LoupeSession`: A/D along it, F held over a tell to read it) each tell narrows the reckoning
@@ -465,13 +469,28 @@ building and fletching make a trade of their own). Design: DESIGN.md, "Tinker". 
 - Tests: `TinkerTests` (the lockwork, renamed from `CarpenterTests`) and `TinkerTradeTests`. Tests
   about something else take the party's wagon away, keep quests closed, or tell the party the way
   about town. The innkeeper's lodging test keeps its party off the quest board.
-- Save format 7. Bench baselines: seed 1234 state `544013139F82655B` full `B61AA7E526D6DC69`; seed
-  99 state `52477B5864C7C412` full `11DB40912DA1098D`.
+- After the first tinker playtest: fitting a part is aligning and pressing, not filing. The part
+  wanders off true over its seat; A/D keep its mark over the seat's, F presses it in. Square, it
+  slides home; pressed off true it rides on the seat's edge and binds, and binding all the way
+  jams it in crooked (the hidden `Binding`). Drawn in section: the housing and bore, the part and
+  its mark, the pressure as an arrow, the edge glowing as it binds. Winding draws the ratchet
+  turning a click a tap, the pawl dropping into a tooth at the catch, and the spring tightening
+  and reddening as it strains (nothing jitters any more). The tinker's chest starts with 16 wood.
+- After the second: each part is named (frame, gear train, pawl...; axle, linchpins) and listed
+  beside the seat, and a seated one sits home a second, flushing green ("Home, and square. Next:
+  the pawl."), before the next comes up. The ratchet marks the teeth the pawl catches in (brass)
+  and the ones past them where it snaps (red), so winding is bringing the brass round to the pawl.
+  Latching short of the catch no longer ends it: the pawl slips, and the winding goes on.
+- The tinker's stock stays the tinker's: villagers were carrying the chest's wood off for fires
+  and building (anything in any container was up for grabs). A building can keep its stock
+  (`BuildingDef.KeepsStock`, the tinker's shop does): no job takes from its containers, only
+  someone opening them by hand (`Simulation.IsAvailable`). That covers the collector's crate too.
+- Save format 7. Bench baselines: seed 1234 state `5DCB26EC7CD4459D` full `AB09BAC6394EC6FC`; seed
+  99 state `71272E53719B30F6` full `A09F9DA9676D2333`.
 
 Known leftovers:
 - No lockboxes or locked chests yet: locks go on doors only.
 - Bots don't pin locks, make contraptions or haggle over curios; AI tinkers don't buy curios.
-- The wagon's wheels are boxes: they read as legs from some angles.
 - Bridges, gates and the town's structures aren't damaged by anything yet: that's M3's crises.
 
 ### Heroes Not Included (2026-11-12)

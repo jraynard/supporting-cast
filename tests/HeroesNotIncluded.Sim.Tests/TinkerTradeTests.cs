@@ -210,6 +210,32 @@ public class TinkerTradeTests
         Assert.Equal(sim.World.Get<LockCut>(made.Single(e => Locksmithing.IsLock(sim, e))).Seed, sim.World.Get<Key>(key).Seed);
     }
 
+    // ---------------- The shop's stock ----------------
+
+    [Fact]
+    public void TheTinkersStockIsLeftForTheTinker()
+    {
+        var (sim, me, _) = ExpeditionTests.Round("Healer");
+        var w = sim.World;
+        var shop = sim.World.Query<PresetBuilding>().Single(e => w.Get<PresetBuilding>(e).Def.Name == "TinkerShop");
+        var chest = w.Query<PartOf>().Single(e => w.Get<PartOf>(e).Building == shop && w.Get<Thing>(e).Def.Name == "Chest");
+        int Wood() => sim.StoredIn(chest).Where(e => w.Get<Thing>(e).Def.Name == "Wood").Sum(e => w.Get<Stack>(e).Count);
+        Assert.Equal(16, Wood());
+        Assert.DoesNotContain(sim.AvailableItems(), e => w.TryGet<Stored>(e, out var st) && st.In == chest);
+        // Half a day of the town fetching wood and feeding fires: none of it from here.
+        sim.TickMany(SimClock.TicksPerHour * 12);
+        Assert.Equal(16, Wood());
+
+        // By hand it's there for the taking.
+        var wood = sim.StoredIn(chest).First(e => w.Get<Thing>(e).Def.Name == "Wood");
+        var at = w.Get<Thing>(chest).Cell;
+        var cell = sim.SpiralFrom(at, 2).First(c => c != at && sim.Map.Passable(c) && AvatarSystem.InReach(sim, c, chest));
+        w.Get<Position>(me).Cell = cell;
+        w.Get<Position>(me).Pos = Position.CenterOf(cell);
+        sim.ApplyNow(new TakeFromStorageCommand(me, wood, 2));
+        Assert.Equal(14, Wood());
+    }
+
     // ---------------- Contraptions ----------------
 
     /// <summary>Seat each part at its fit (the session's own copy: a test's privilege), then wind it to the catch.</summary>
@@ -218,7 +244,9 @@ public class TinkerTradeTests
         var s = (FitSession)w;
         if (s.Winding)
             return s.Catching ? (false, false, 1) : (s.StepsDone % 20 == 0, false, 0);
-        return s.Bind > 0.03f && s.Rattle == 0f ? (false, true, 0) : (false, false, 1);
+        // Square it up first; press only while it's square.
+        var steer = MathF.Abs(s.Offset) > s.TrueHalfWidth * 0.25f ? -Math.Sign(s.Offset) : 0;
+        return (false, MathF.Abs(s.Offset) <= s.TrueHalfWidth * 0.6f, steer);
     }
 
     [Fact]
@@ -232,11 +260,41 @@ public class TinkerTradeTests
         Assert.False(sim.World.Get<Contraption>(rod).Binding);
         Assert.True(sim.World.Get<Crafted>(rod).Quality >= Quality.Plain);
 
-        // Forced: every part seated at once, still tight.
+        // Forced: pressed hard, never squared up, so each part jams in crooked.
         sim.ApplyNow(new CraftCommand(me, bench, Recipe(sim, "MakeSpringSnare")));
-        Play(sim, me, w => ((FitSession)w).Winding ? FitTrue(w) : (false, false, w.StepsDone % 2 == 0 ? 1 : 0));
+        Play(sim, me, w => ((FitSession)w).Winding ? FitTrue(w) : (false, true, 0));
         var snare = Carried(sim, me).Single(e => Contraptions.IsContraption(sim, e) && sim.World.Get<Thing>(e).Def.Name == "SpringSnare");
         Assert.True(sim.World.Get<Contraption>(snare).Binding, "forced home while it bound");
+    }
+
+    [Fact]
+    public void ASeatedPartSitsHomeAMomentAndAnEarlyLatchSlips()
+    {
+        var (sim, me, bench) = AtTheBench();
+        sim.ApplyNow(new CraftCommand(me, bench, Recipe(sim, "MakeTappingRod")));
+        var sawSettle = false;
+        var slipped = false;
+        var early = false;
+        Play(sim, me, w =>
+        {
+            var s = (FitSession)w;
+            if (s.Settling > 0)
+            {
+                sawSettle = true;
+                Assert.Equal(1f, s.Depth); // the part that went in stays in while it sits home
+            }
+            if (s.Winding && !early)
+            {
+                early = true;
+                return (false, false, 1); // latch before winding at all: it won't hold
+            }
+            slipped |= s.Slipped > 0;
+            return FitTrue(w);
+        });
+        Assert.True(sawSettle);
+        Assert.True(slipped, "an early latch slips, and the winding goes on");
+        var rod = Carried(sim, me).Single(e => Contraptions.IsContraption(sim, e));
+        Assert.True(sim.World.Get<Crafted>(rod).Quality >= Quality.Plain);
     }
 
     [Fact]
@@ -298,9 +356,10 @@ public class TinkerTradeTests
             Hospitality.DirectionsSystem.KnowsTheTown(sim, e); // finding the way is InnTalkTests'
         var id = sim.World.Get<Adventurer>(party[0]).Party;
         var at = sim.World.Get<Position>(party[0]).Cell;
-        var cell = sim.SpiralFrom(at, 10).First(c => Maps.Map.Distance(c, at) >= 3 && sim.Map.Passable(c) && sim.Map.Structure[sim.Map.Idx(c)].IsNull
-            && sim.Map.Item[sim.Map.Idx(c)].IsNull && Buildings.At(sim, c).IsNull);
-        var wagon = sim.SpawnStructure(sim.Thing(Wagons.Def), cell);
+        var def = sim.Thing(Wagons.Def);
+        var cell = sim.SpiralFrom(at, 12).First(c => Maps.Map.Distance(c, at) >= 4 && sim.CanPlaceStructure(c, def, 0)
+            && sim.FootprintCells(def, c, 0).All(f => sim.Map.Passable(f) && sim.Map.Item[sim.Map.Idx(f)].IsNull && Buildings.At(sim, f).IsNull));
+        var wagon = sim.SpawnStructure(def, cell);
         sim.World.Add(wagon, new Wagon { Party = id, Owner = party[0], Damage = damage, WheelSeed = 77, MendedBy = Entity.Null });
         Inventory.Stow(sim, party[0], sim.CreateItem(sim.Thing(Coin.Silver), 30)); // the means to have it mended
         sim.RebuildDerivedIfNeeded();

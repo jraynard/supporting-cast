@@ -8,27 +8,48 @@ namespace HeroesNotIncluded.Sim.Tinkering;
 
 /// <summary>
 /// Fitting a contraption together at the tinker's bench, part by part, then winding its spring;
-/// or fitting a new axle to a wagon (no spring). Each part starts too tight: hold F to file it,
-/// and the bind needle drops as it eases; past the fit it rattles instead, loose. D seats the
-/// part. Seated at the fit, it's sound; loose, it's sloppy and the work the worse for it; forced
-/// home while it still binds, it seats, but leaves a hidden binding that may jam it later
-/// (<see cref="Contraption.Binding"/>). Then the spring: tap F to wind it a click at a time
-/// (it creeps back between clicks), and D to latch it while the pawl's catching. Past the catch
-/// it snaps, and the parts come apart to be fitted again.
+/// or fitting a new axle to a wagon (no spring). Each part has to go into its seat square: it
+/// wanders off true as the hands shake, A/D bring it back, and holding F presses it in. Lined up,
+/// it slides home under the pressure; pressed while it's off true, it binds against the seat's
+/// edge instead, and pressed hard enough for long enough it jams in crooked: seated, but with a
+/// hidden binding that may jam the thing later (<see cref="Contraption.Binding"/>). The deeper a
+/// part's in, the better the seat guides it. Then the spring: tap F to wind it a click at a time
+/// (it creeps back between clicks), and D to latch it while the pawl's catching. Short of the catch
+/// the pawl won't hold and the winding goes on; past it the spring strains (latched there, it's
+/// weaker work), and further it snaps, and the parts come apart to be fitted again. Each seated
+/// part sits home a moment before the next comes up, so it's plain one's done.
 /// </summary>
 public sealed class FitSession : WorkSession
 {
-    /// <summary>How much a part eases per step of filing.</summary>
-    public const float FilePerStep = 0.0032f;
+    /// <summary>Half the width of true (as a share of the seat), before skill widens it: within it, a pressed part slides in.</summary>
+    public const float TrueHalf = 0.07f;
 
-    /// <summary>Within this of the fit (before skill widens it), a part seats true.</summary>
-    public const float SeatWidth = 0.045f;
+    /// <summary>How far A/D move the part a step, and how fast the hands let it wander.</summary>
+    public const float SteerPerStep = 0.0045f, Wander = 0.0007f;
+
+    /// <summary>Pressure gained a step while F's held, and lost a step once it's let go.</summary>
+    public const float PressPerStep = 0.025f, EasePerStep = 0.05f;
+
+    /// <summary>Below this pressure a part neither moves in nor binds: a light touch to feel it.</summary>
+    public const float LightTouch = 0.15f;
+
+    /// <summary>How far in a part goes a step at full pressure, lined up (about three seconds home).</summary>
+    public const float SinkPerStep = 0.0055f;
+
+    /// <summary>How fast pressing off true binds a part, at full pressure and well off; and how fast it eases once it isn't.</summary>
+    public const float BindPerStep = 0.014f, UnbindPerStep = 0.006f;
 
     /// <summary>How far one tap winds the spring, how much it creeps back a step, and how far past the catch it snaps.</summary>
-    public const float WindPerTap = 0.05f, CreepPerStep = 0.0006f, SnapPast = 0.1f;
+    public const float WindPerTap = 0.05f, CreepPerStep = 0.0004f, SnapPast = 0.12f;
 
     /// <summary>Half the width of the band the pawl catches in, before skill widens it.</summary>
     public const float CatchHalf = 0.05f;
+
+    /// <summary>Steps a seated part sits before the next comes up (about a second): you see it go home.</summary>
+    public const int SettleSteps = 60;
+
+    /// <summary>Steps the "won't hold yet" of an early latch shows for.</summary>
+    public const int SlipSteps = 90;
 
     public Entity Station { get; set; } = Entity.Null;
 
@@ -43,31 +64,55 @@ public sealed class FitSession : WorkSession
 
     public int Part { get; private set; }
 
-    /// <summary>How far the part's been filed, 0 (as cast) up.</summary>
-    public float Filed { get; private set; }
+    /// <summary>How far off true the part is, −1..1 of the seat's width (0: square over it).</summary>
+    public float Offset { get; private set; }
 
-    /// <summary>The bind the fingers feel, 0..1: high while it's tight.</summary>
+    /// <summary>How hard it's being pressed, 0..1.</summary>
+    public float Pressure { get; private set; }
+
+    /// <summary>How far into its seat the part's gone, 0..1 (home).</summary>
+    public float Depth { get; private set; }
+
+    /// <summary>How badly it's binding against the seat's edge, 0..1 (at 1 it jams in crooked).</summary>
     public float Bind { get; private set; }
 
-    /// <summary>The rattle, 0..1: rising once it's past the fit.</summary>
-    public float Rattle { get; private set; }
+    /// <summary>The last part went in crooked (for the window to say so).</summary>
+    public bool Jammed { get; private set; }
+
+    /// <summary>Steps left of a seated part sitting home before the next comes up (0: fitting).</summary>
+    public int Settling { get; private set; }
+
+    /// <summary>Steps left of an early latch's slip showing: the pawl wouldn't hold yet.</summary>
+    public int Slipped { get; private set; }
+
+    /// <summary>Where the pawl catches (the middle of the band), as tension: the ratchet's marked teeth.</summary>
+    public float CatchAt => _catch;
 
     public bool Winding => Part >= Parts && Winds;
     public float Tension { get; private set; }
 
-    /// <summary>The pawl's catching (the spring's in the band to latch).</summary>
+    /// <summary>Taps of the winding key so far: the ratchet turns a click for each.</summary>
+    public int Clicks { get; private set; }
+
+    /// <summary>The pawl's in a tooth (the spring's in the band to latch).</summary>
     public bool Catching { get; private set; }
+
+    /// <summary>How near snapping, 0..1, once it's wound past the catch (0 below it).</summary>
+    public float Strain => Math.Clamp((Tension - (_catch + CatchHalfWidth)) / SnapPast, 0f, 1f);
 
     public bool Binding { get; private set; }
     public bool Snapped { get; private set; }
     public bool Latched { get; private set; }
 
-    private float[] _fits = [];
+    private float _drift;
     private float _catch;
-    private int _seat;
+    private int _steer, _latch;
+    private float _trueSum;
+    private int _trueSteps;
 
-    public float SeatHalf => SeatWidth * Hands.Tolerance;
+    public float TrueHalfWidth => TrueHalf * Hands.Tolerance;
     public float CatchHalfWidth => CatchHalf * Hands.Tolerance;
+    public bool OnTrue => MathF.Abs(Offset) <= TrueHalfWidth;
 
     public override Skill Skill => Skill.Crafting;
     public override float Xp => 15f + 8f * Parts;
@@ -100,24 +145,34 @@ public sealed class FitSession : WorkSession
 
     protected internal override void Begin()
     {
-        _fits = new float[Parts];
-        for (var i = 0; i < Parts; i++)
-            _fits[i] = Rand.Range(0.35f, 0.8f);
-        _catch = Rand.Range(0.55f, 0.78f);
+        _catch = Rand.Range(0.55f, 0.75f);
+        NextPart();
     }
 
-    protected override void Cloned()
+    /// <summary>A fresh part over its seat, somewhat off true.</summary>
+    private void NextPart()
     {
-        _fits = (float[])_fits.Clone();
+        Offset = Rand.Range(0.25f, 0.6f) * (Rand.Chance(0.5f) ? -1f : 1f);
+        _drift = 0f;
+        Depth = 0f;
+        Bind = 0f;
+        _trueSum = 0f;
+        _trueSteps = 0;
     }
 
-    protected override void Axis(int value) => _seat = value;
+    protected override void Axis(int value)
+    {
+        _steer = value;
+        if (value > 0)
+            _latch = 1;
+    }
 
     protected override void Press()
     {
         if (Done || !Winding)
             return;
-        Tension += WindPerTap * (1f + (Rand.NextFloat() * 2f - 1f) * (0.2f + Hands.Tremor));
+        Clicks++;
+        Tension += WindPerTap * (1f + (Rand.NextFloat() * 2f - 1f) * (0.15f + Hands.Tremor));
         if (Tension > _catch + CatchHalfWidth + SnapPast)
         {
             Snapped = true;
@@ -133,14 +188,20 @@ public sealed class FitSession : WorkSession
         if (Winding)
         {
             Tension = Math.Max(0f, Tension - CreepPerStep);
-            var off = MathF.Abs(Tension - _catch);
-            // The pawl ticks over the ratchet while it's in the band: with a little noise to it.
-            Catching = off <= CatchHalfWidth && Rand.NextFloat() > 0.1f * (1f + Hands.Tremor * 3f);
-            if (_seat > 0)
+            Catching = MathF.Abs(Tension - _catch) <= CatchHalfWidth;
+            if (Slipped > 0)
+                Slipped--;
+            if (_latch > 0)
             {
-                _seat = 0;
+                _latch = 0;
+                // Short of the catch the pawl won't hold: it slips back, and the winding goes on.
+                if (!Catching && Tension < _catch)
+                {
+                    Slipped = SlipSteps;
+                    return;
+                }
                 Latched = true;
-                Sample(off <= CatchHalfWidth ? 1f : Tension < _catch ? 0.35f : 0.6f);
+                Sample(Catching ? 1f : 0.6f); // past the catch: latched, but strained
                 Done = true;
             }
             return;
@@ -150,38 +211,74 @@ public sealed class FitSession : WorkSession
             Done = true;
             return;
         }
-        if (_seat > 0)
+        _latch = 0; // D does nothing while fitting: it only latches the spring
+        if (Settling > 0)
         {
-            _seat = 0;
-            SeatPart();
+            // The seated part sits home a moment; then on to the next.
+            if (--Settling == 0)
+                NextUp();
             return;
         }
-        if (Held)
-            Filed += FilePerStep * (1f + (Rand.NextFloat() * 2f - 1f) * (0.3f + Hands.Tremor));
-        var fit = _fits[Part];
-        var noise = (Rand.NextFloat() * 2f - 1f) * 0.08f * (1f + Hands.Tremor * 2f);
-        Bind = Math.Clamp((fit - Filed) / fit + noise, 0f, 1f);
-        Rattle = Math.Clamp((Filed - fit) / 0.25f + noise, 0f, 1f);
+
+        // The hands let it wander, less as the seat takes it; A/D bring it back.
+        _drift = Math.Clamp(_drift * 0.97f + (Rand.NextFloat() * 2f - 1f) * Wander * (1f + Hands.Tremor * 3f), -0.01f, 0.01f);
+        Offset = Math.Clamp(Offset + _drift * (1f - 0.7f * Depth) + _steer * SteerPerStep, -1f, 1f);
+        Pressure = Math.Clamp(Pressure + (Held ? PressPerStep : -EasePerStep), 0f, 1f);
+
+        if (Pressure > LightTouch)
+        {
+            if (OnTrue)
+            {
+                Depth = Math.Min(1f, Depth + SinkPerStep * Pressure);
+                _trueSum += 1f - 0.5f * MathF.Abs(Offset) / TrueHalfWidth;
+                _trueSteps++;
+                Bind = Math.Max(0f, Bind - UnbindPerStep);
+            }
+            else
+            {
+                // Pressed off true: it rides up on the seat's edge, the further off the harder.
+                var off = Math.Min(1f, (MathF.Abs(Offset) - TrueHalfWidth) / 0.2f + 0.25f);
+                Bind = Math.Min(1f, Bind + BindPerStep * Pressure * off);
+                if (Bind >= 1f)
+                {
+                    // Forced: it jams home crooked. Seated, but it'll bind.
+                    Binding = true;
+                    Jammed = true;
+                    Sample(0.35f);
+                    Seated();
+                    return;
+                }
+            }
+        }
+        else
+            Bind = Math.Max(0f, Bind - UnbindPerStep);
+
+        if (Depth >= 1f)
+        {
+            var square = _trueSteps == 0 ? 0.5f : _trueSum / _trueSteps;
+            Sample(Math.Clamp(square - 0.4f * Bind, 0f, 1f));
+            Seated();
+        }
     }
 
-    private void SeatPart()
+    /// <summary>The part's home: it sits there a moment, so you see it go in, before the next comes up.</summary>
+    private void Seated()
     {
-        var off = Filed - _fits[Part]; // past the fit: positive
-        if (off < -SeatHalf)
-        {
-            Binding = true;
-            Sample(0.5f);
-        }
-        else if (off <= SeatHalf)
-            Sample(1f - 0.3f * MathF.Abs(off) / SeatHalf);
-        else
-            Sample(Math.Max(0f, 0.6f * (1f - (off - SeatHalf) / 0.25f)));
+        Depth = 1f;
+        Pressure = 0f;
+        Settling = SettleSteps;
+    }
+
+    private void NextUp()
+    {
         Part++;
-        Filed = 0f;
-        Bind = 1f;
-        Rattle = 0f;
         if (Part >= Parts && !Winds)
             Done = true;
+        else if (Part < Parts)
+        {
+            Jammed = false;
+            NextPart();
+        }
     }
 
     public override void Finish(Simulation sim)
@@ -217,18 +314,25 @@ public sealed class FitSession : WorkSession
         w.Bool(Winds);
         w.String(What);
         w.Int(Part);
-        w.Float(Filed);
+        w.Float(Offset);
+        w.Float(Pressure);
+        w.Float(Depth);
         w.Float(Bind);
-        w.Float(Rattle);
+        w.Bool(Jammed);
+        w.Int(Settling);
+        w.Int(Slipped);
         w.Float(Tension);
+        w.Int(Clicks);
         w.Bool(Catching);
         w.Bool(Binding);
         w.Bool(Snapped);
         w.Bool(Latched);
-        foreach (var f in _fits)
-            w.Float(f);
+        w.Float(_drift);
         w.Float(_catch);
-        w.Int(_seat);
+        w.Int(_steer);
+        w.Int(_latch);
+        w.Float(_trueSum);
+        w.Int(_trueSteps);
     }
 
     protected override void ReadState(SaveReader r)
@@ -241,18 +345,24 @@ public sealed class FitSession : WorkSession
         Winds = r.Bool();
         What = r.String();
         Part = Math.Clamp(r.Int(), 0, Parts);
-        Filed = r.Float();
+        Offset = Math.Clamp(r.Float(), -1f, 1f);
+        Pressure = r.Float();
+        Depth = r.Float();
         Bind = r.Float();
-        Rattle = r.Float();
+        Jammed = r.Bool();
+        Settling = Math.Clamp(r.Int(), 0, SettleSteps);
+        Slipped = Math.Clamp(r.Int(), 0, SlipSteps);
         Tension = r.Float();
+        Clicks = r.Int();
         Catching = r.Bool();
         Binding = r.Bool();
         Snapped = r.Bool();
         Latched = r.Bool();
-        _fits = new float[Parts];
-        for (var i = 0; i < Parts; i++)
-            _fits[i] = r.Float();
+        _drift = r.Float();
         _catch = r.Float();
-        _seat = Math.Sign(r.Int());
+        _steer = Math.Clamp(r.Int(), -1, 1);
+        _latch = Math.Clamp(r.Int(), 0, 1);
+        _trueSum = r.Float();
+        _trueSteps = r.Int();
     }
 }

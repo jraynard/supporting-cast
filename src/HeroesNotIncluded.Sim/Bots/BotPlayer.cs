@@ -68,8 +68,8 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     private int _pin, _slips, _working, _dir = 1;
     private float _progress;
 
-    // The tinker's games: the spoke last worked on the wheel, the part being fitted, the tells read.
-    private int _spoke = -1, _part = -1, _read;
+    // The tinker's games: the spoke last worked on the wheel, the tells read.
+    private int _spoke = -1, _read;
 
     // The kitchen: the stirring rhythm, the seasoning's pinch-and-taste, and whether this pot's been seasoned yet.
     private int _stir, _seasonBeat;
@@ -148,7 +148,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             _progress = 0f;
             _stir = _seasonBeat = 0;
             _struck = false;
-            _spoke = _part = -1;
+            _spoke = -1;
             _read = 0;
         }
         switch (s)
@@ -343,7 +343,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         return s.Gauge > mark ? (true, false, 0) : s.Gauge < -mark ? (false, false, -1) : (false, false, 0);
     }
 
-    /// <summary>File each part while it binds, and seat it once the bind's all but gone (or at the first rattle); then wind to the catch and latch.</summary>
+    /// <summary>Keep each part square over its seat and press it in only while it is; then wind to the catch and latch.</summary>
     private (bool, bool, int) Fit(FitSession s)
     {
         if (s.Winding)
@@ -353,15 +353,9 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             _working = (_working + 1) % 24;
             return (_working == 0, false, 0);
         }
-        if (s.Part != _part)
-        {
-            (_part, _feel) = (s.Part, 1f);
-            return (false, false, 0);
-        }
-        _feel = _feel * 0.85f + s.Bind * 0.15f;
-        if (s.Rattle > 0.15f || _feel < 0.06f)
-            return (false, false, 1);
-        return (false, true, 0);
+        var square = MathF.Abs(s.Offset) <= s.TrueHalfWidth * 0.6f;
+        var steer = MathF.Abs(s.Offset) > s.TrueHalfWidth * 0.25f ? -Math.Sign(s.Offset) : 0;
+        return (false, square && s.Bind < 0.3f, steer);
     }
 
     /// <summary>Sweep the piece; at a catch, back to its middle and study it till it's read; then on to the end.</summary>

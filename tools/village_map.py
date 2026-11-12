@@ -226,8 +226,17 @@ garden(77, 46, 82, 51, gate=(77, 48))                            # H's
 # ---------------- Things on the ground ----------------
 
 feature[45][43] = "W"                                            # the well
-for (x, y), f in {(63, 34): "C", (35, 63): "C",                  # carts
-                  (65, 37): "u", (66, 37): "u", (53, 52): "X", (24, 36): "u", (25, 36): "X",
+# Carts are 3 cells long and 2 wide (the Wagon def's size, facing 0: x-1..x+1, y..y+1): placed only
+# where the whole of one fits on open town ground, and kept clear of trees and props.
+CART = [(dx, dy) for dy in (0, 1) for dx in (-1, 0, 1)]
+for x, y in [(63, 33), (35, 62)]:
+    cells = [(x + dx, y + dy) for dx, dy in CART]
+    if all(inside(cx, cy) and not reserved[cy][cx] and level[cy][cx] == TOWN and feature[cy][cx] == "." and ground[cy][cx] not in "wk~"
+           for cx, cy in cells):
+        feature[y][x] = "C"
+        for cx, cy in cells:
+            reserved[cy][cx] = True
+for (x, y), f in {(65, 37): "u", (66, 37): "u", (53, 52): "X", (24, 36): "u", (25, 36): "X",
                   (47, 34): "X", (48, 34): "u", (64, 52): "u", (37, 51): "X", (79, 64): "u",
                   (40, 40): "o", (58, 36): "o", (52, 32): "o", (65, 20): "o", (38, 66): "o", (19, 66): "o"}.items():
     if not reserved[y][x] and level[y][x] == TOWN:

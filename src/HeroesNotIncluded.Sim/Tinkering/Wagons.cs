@@ -100,26 +100,32 @@ public static class Wagons
         return wagon;
     }
 
-    /// <summary>A free cell outdoors, a few steps from <paramref name="toward"/>, that people can get round.</summary>
+    /// <summary>
+    /// Where a wagon (3 cells by 2) can stand outdoors, a few steps from <paramref name="toward"/>:
+    /// every cell of it free, and a walkable ring all round it, so it never closes a lane.
+    /// </summary>
     private static int3? ParkingNear(Simulation sim, int3 toward)
     {
         var map = sim.Map;
-        foreach (var c in sim.SpiralFrom(toward, 14))
+        var def = sim.Defs.Thing(Def);
+        bool Open(int3 c) => map.InBounds(c) && map.Structure[map.Idx(c)].IsNull && map.Item[map.Idx(c)].IsNull && map.Passable(c)
+            && Buildings.At(sim, c).IsNull && Buildings.SiteAt(sim, c) is not { IsNull: false } && !map.Roofed[map.Idx(c)];
+        foreach (var c in sim.SpiralFrom(toward, 16))
         {
-            var i = map.Idx(c);
-            if (Map.Distance(c, toward) < 4 || !map.Structure[i].IsNull || !map.Item[i].IsNull || !map.Passable(c)
-                || !Buildings.At(sim, c).IsNull || Buildings.SiteAt(sim, c) is { IsNull: false } || map.Roofed[i]
-                || !sim.Regions.CanReach(c, toward, PathEnd.Touch))
+            if (Map.Distance(c, toward) < 5 || !sim.CanPlaceStructure(c, def, 0))
                 continue;
-            // Not across a lane's only way through: every side but one open.
-            var open = 0;
-            foreach (var d in Map.Neighbors4)
-            {
-                var n = new int3(c.X + d.X, c.Y + d.Y, c.Z);
-                if (map.InBounds(n) && map.Passable(n) && map.Structure[map.Idx(n)].IsNull)
-                    open++;
-            }
-            if (open == 4)
+            var cells = sim.FootprintCells(def, c, 0).ToList();
+            if (!cells.All(Open) || !sim.Regions.CanReach(c, toward, PathEnd.Touch))
+                continue;
+            var ring = true;
+            foreach (var f in cells)
+                foreach (var d in Map.Neighbors8)
+                {
+                    var n = new int3(f.X + d.X, f.Y + d.Y, f.Z);
+                    if (!cells.Contains(n) && !Open(n))
+                        ring = false;
+                }
+            if (ring)
                 return c;
         }
         return null;

@@ -807,7 +807,7 @@ public class WagonTests
     public void AnEmptiedWagonComesApartForItsWood()
     {
         var sim = Warm();
-        var wagon = Wagon(sim, C(10, 10));
+        var wagon = Wagon(sim, C(11, 10)); // 3 cells long: 10 to 12, from beside the bearer
         var me = sim.SpawnCreature(sim.Defs.Creature("Human"), "Bearer", C(9, 10), ageDays: 25 * 365);
         Array.Fill(sim.World.Get<Needs>(me).Values, 1f);
         sim.World.Add(me, new Avatar());
@@ -824,7 +824,7 @@ public class WagonTests
         // Empty, F still just opens it: it only comes apart once marked (the wagon window's button).
         Assert.Equal(AvatarActionKind.OpenStorage, AvatarSystem.ActionAt(sim, me, C(10, 10)).Kind);
         Assert.True(AvatarSystem.CanDismantle(sim, me, wagon));
-        sim.Map.Designate(sim.Map.Idx(C(10, 10)), Maps.Designation.Deconstruct);
+        sim.ApplyNow(new DeconstructOrderCommand(C(11, 10), true)); // the window's button marks its own cell
         Assert.Equal(AvatarActionKind.Dismantle, AvatarSystem.ActionAt(sim, me, C(10, 10)).Kind);
 
         // Hold F until it's done.
@@ -891,7 +891,7 @@ public class WagonTests
         var me = sim.SpawnCreature(sim.Defs.Creature("Human"), "Bearer", C(5, 5), ageDays: 9000);
         Array.Fill(sim.World.Get<Needs>(me).Values, 1f);
         sim.World.Add(me, new Avatar());
-        var wagon = Wagon(sim, C(6, 5));
+        var wagon = Wagon(sim, C(7, 5)); // 3 cells long: 6 to 8, from beside the bearer
         sim.SpawnItem(sim.Thing("Wood"), 20, C(5, 6));
 
         Assert.Equal(AvatarActionKind.OpenStorage, AvatarSystem.ActionAt(sim, me, C(6, 5)).Kind);

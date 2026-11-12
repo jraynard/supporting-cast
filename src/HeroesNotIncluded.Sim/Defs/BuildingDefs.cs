@@ -59,6 +59,12 @@ public sealed class BuildingDef : Def
     /// </summary>
     public bool LetsBeds { get; set; }
 
+    /// <summary>
+    /// Its containers hold the keeper's stock (the tinker's iron and wood, the collector's crate):
+    /// no villager's job takes from them, only someone opening them by hand.
+    /// </summary>
+    public bool KeepsStock { get; set; }
+
     /// <summary>What it's called until its keeper names it (<c>Shops.ShopName</c>): "The Wild Bear". Empty: just its label.</summary>
     public string DefaultName { get; set; } = "";
 

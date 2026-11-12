@@ -186,25 +186,30 @@
       "building": { "isFloor": true, "isRoof": true, "supportSpan": 3, "insulation": 0.92, "work": 90, "cost": [ { "def": "Wood", "count": 2 } ] }
     },
     {
-      "name": "Wagon", "category": "Building", "sprite": "buildings/wagon",
+      "name": "Wagon", "category": "Building", "sprite": "buildings/wagon", "size": [3, 2], "solid": true,
       "description": "Everything you own, under canvas. Holds up to 16 stacks; F to store what you hold or open it. Once it's empty at journey's end, F takes it apart for its wood.",
       "maxHp": 200, "flammability": 0.8,
       // Nobody builds one, but an emptied wagon breaks up into timber (salvage).
       "building": { "buildable": false, "storageStacks": 16, "work": 200, "cost": [], "salvage": [ { "def": "Wood", "count": 30, "material": "Oak" } ] },
-      // A box-built cart under canvas (the same as a party's, tinkering.json's PartyWagon): bed, sides, cover, four wheels, the tongue.
+      // A box-built cart under canvas, 3 cells long and 2 wide (the same as a party's, tinkering.json's
+      // PartyWagon): the bed and its sides, the driver's bench, hoops of canvas, four wheels on two axles, the tongue.
       "model": [
-        { "min": [0.08, 0.10, 0.30], "max": [0.92, 0.90, 0.40], "top": "props/planks", "side": "props/timber_dark" },
-        { "min": [0.08, 0.10, 0.40], "max": [0.92, 0.16, 0.62], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.08, 0.84, 0.40], "max": [0.92, 0.90, 0.62], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.86, 0.16, 0.40], "max": [0.92, 0.84, 0.62], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.14, 0.14, 0.62], "max": [0.86, 0.86, 0.84], "top": "props/linen", "side": "props/linen" },
-        { "min": [0.14, 0.24, 0.84], "max": [0.86, 0.76, 0.94], "top": "props/linen", "side": "props/linen" },
-        { "min": [0.14, 0.36, 0.94], "max": [0.86, 0.64, 0.99], "top": "props/linen", "side": "props/linen" },
-        { "min": [0.18, 0.02, 0.00], "max": [0.42, 0.08, 0.36], "top": "props/log_end", "side": "props/log_end" },
-        { "min": [0.58, 0.02, 0.00], "max": [0.82, 0.08, 0.36], "top": "props/log_end", "side": "props/log_end" },
-        { "min": [0.18, 0.92, 0.00], "max": [0.42, 0.98, 0.36], "top": "props/log_end", "side": "props/log_end" },
-        { "min": [0.58, 0.92, 0.00], "max": [0.82, 0.98, 0.36], "top": "props/log_end", "side": "props/log_end" },
-        { "min": [0.00, 0.46, 0.26], "max": [0.08, 0.54, 0.32], "top": "props/timber_dark", "side": "props/timber_dark" }
+        { "min": [0.36, 0.30, 0.40], "max": [2.90, 1.70, 0.54], "top": "props/planks", "side": "props/timber_dark" },
+        { "min": [0.36, 0.30, 0.54], "max": [2.90, 0.40, 0.92], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.36, 1.60, 0.54], "max": [2.90, 1.70, 0.92], "top": "props/planks", "side": "props/planks" },
+        { "min": [2.80, 0.40, 0.54], "max": [2.90, 1.60, 0.92], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.36, 0.40, 0.54], "max": [0.46, 1.60, 0.80], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.46, 0.52, 0.80], "max": [0.80, 1.48, 0.92], "top": "props/planks", "side": "props/timber_dark" },
+        { "min": [0.90, 0.36, 0.92], "max": [2.84, 1.64, 1.30], "top": "props/linen", "side": "props/linen" },
+        { "min": [0.90, 0.52, 1.30], "max": [2.84, 1.48, 1.48], "top": "props/linen", "side": "props/linen" },
+        { "min": [0.90, 0.74, 1.48], "max": [2.84, 1.26, 1.56], "top": "props/linen", "side": "props/linen" },
+        { "min": [0.62, 0.12, 0.00], "max": [1.38, 0.24, 0.76], "top": "props/log_end", "side": "props/log_end" },
+        { "min": [2.02, 0.12, 0.00], "max": [2.78, 0.24, 0.76], "top": "props/log_end", "side": "props/log_end" },
+        { "min": [0.62, 1.76, 0.00], "max": [1.38, 1.88, 0.76], "top": "props/log_end", "side": "props/log_end" },
+        { "min": [2.02, 1.76, 0.00], "max": [2.78, 1.88, 0.76], "top": "props/log_end", "side": "props/log_end" },
+        { "min": [0.94, 0.24, 0.34], "max": [1.06, 1.76, 0.42], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [2.34, 0.24, 0.34], "max": [2.46, 1.76, 0.42], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.02, 0.94, 0.36], "max": [0.36, 1.06, 0.44], "top": "props/timber_dark", "side": "props/timber_dark" }
       ]
     },
     {

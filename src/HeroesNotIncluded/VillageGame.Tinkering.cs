@@ -61,25 +61,201 @@ public sealed partial class VillageGame
         EndWork();
     }
 
-    /// <summary>The part's bind and rattle as the fingers feel them; then the spring's tension and the pawl.</summary>
+    /// <summary>Fitting: the part over its seat in section. Winding: the ratchet, its pawl and the spring.</summary>
     private void DrawFit(FitSession s)
     {
         if (s.Winding)
         {
-            BeginWork(s.Title, ("F", "tap to wind a click"), ("D", "latch it"), ("Esc", "stop"));
-            TextC(Theme.Dim, "Wind it till the pawl catches, and latch it there. Too far and the spring snaps.");
-            Bar("Tension", Math.Clamp(s.Tension, 0f, 1f), Theme.Accent);
-            TextC(s.Catching ? Theme.Good : Theme.Dim, s.Catching ? "Click... click... the pawl's catching." : "The ratchet runs free.");
-            EndWork();
+            DrawWinding(s);
             return;
         }
-        BeginWork(s.Title, ("F", "hold to file the part"), ("D", "seat it"), ("Esc", "stop"));
-        TextC(Theme.Dim, "File while it binds. Seat it at the fit: forced home tight it'll bind, too loose it rattles.");
-        Bar("Bind", s.Bind, s.Bind > 0.5f ? Theme.Warn : Theme.Dim);
-        Bar("Rattle", s.Rattle, s.Rattle > 0.1f ? Theme.Bad : Theme.Dim);
-        TextC(Theme.Dim, $"Part {Math.Min(s.Part + 1, s.Parts)} of {s.Parts}{(s.Winds ? ", then the spring" : "")}.");
+        BeginWork(s.Title, ("A/D", "keep it square over the seat"), ("F", "hold to press it in"), ("Esc", "stop"));
+        var name = PartName(s, s.Part);
+        TextC(Theme.Text, s.Settling > 0 ? $"{Cap(name)}: seated." : $"Fitting the {name}.");
+        var dl = ImGui.GetWindowDrawList();
+        var min = ImGui.GetCursorScreenPos();
+        var size = Gui.S(420, 170);
+        ImGui.Dummy(in size);
+        var mid = min.X + size.X * 0.5f;
+        var travel = Gui.S(110);                   // how far a part off true by 1 sits from the middle
+        var partW = Gui.S(46);
+        var partH = Gui.S(78);
+        var lip = min.Y + Gui.S(78);               // the top of the seat
+        var sink = Gui.S(66);                      // how far a part goes down into it
+        var bore = partW * 0.5f + Gui.S(3);
+
+        // The housing either side of the bore, with the scribed mark over its middle.
+        var leftMin = new float2(min.X + Gui.S(40), lip);
+        var leftMax = new float2(mid - bore, min.Y + size.Y);
+        var rightMin = new float2(mid + bore, lip);
+        var rightMax = new float2(min.X + size.X - Gui.S(40), min.Y + size.Y);
+        dl.AddRectFilled(in leftMin, in leftMax, Theme.U8(Theme.Iron), Gui.S(2), ImDrawFlags.None);
+        dl.AddRectFilled(in rightMin, in rightMax, Theme.U8(Theme.Iron), Gui.S(2), ImDrawFlags.None);
+        var boreMin = new float2(mid - bore, lip);
+        var boreMax = new float2(mid + bore, min.Y + size.Y);
+        dl.AddRectFilled(in boreMin, in boreMax, Theme.U8(Theme.Well), 0f, ImDrawFlags.None);
+        var n1 = new float2(mid - Gui.S(7), lip - Gui.S(1));
+        var n2 = new float2(mid + Gui.S(7), lip - Gui.S(1));
+        var n3 = new float2(mid, lip + Gui.S(9));
+        dl.AddTriangleFilled(in n1, in n2, in n3, Theme.U8(s.OnTrue ? Theme.Good : Theme.Accent));
+
+        // The part: over the seat, as far off true as it is, down as far as it's gone; tilted as it binds.
+        var cx = mid + s.Offset * travel;
+        var bottom = lip + s.Depth * sink;
+        var tilt = s.Bind * 0.18f * MathF.Sign(s.Offset);
+        // Home, it flushes green a moment before the next part comes up.
+        var brass = s.Settling > 0 && !s.Jammed ? Lerp(new float4(0.80f, 0.64f, 0.30f, 1f), Theme.Good, s.Settling / (float)FitSession.SettleSteps)
+            : new float4(0.80f, 0.64f, 0.30f, 1f);
+        float2 P(float x, float y)
+        {
+            // Turned about the corner that's riding on the seat's edge.
+            var px = cx - MathF.Sign(s.Offset) * partW * 0.5f;
+            float dx = x - px, dy = y - bottom;
+            return new float2(px + dx * MathF.Cos(tilt) - dy * MathF.Sin(tilt), bottom + dx * MathF.Sin(tilt) + dy * MathF.Cos(tilt));
+        }
+        var a = P(cx - partW * 0.5f, bottom - partH);
+        var b = P(cx + partW * 0.5f, bottom - partH);
+        var c = P(cx + partW * 0.5f, bottom);
+        var d = P(cx - partW * 0.5f, bottom);
+        dl.AddTriangleFilled(in a, in b, in c, Gui.U8(brass));
+        dl.AddTriangleFilled(in a, in c, in d, Gui.U8(brass));
+        var m1 = P(cx, bottom - partH + Gui.S(4));
+        var m2 = P(cx, bottom - Gui.S(4));
+        dl.AddLine(in m1, in m2, Theme.U8(s.OnTrue ? Theme.Good : Theme.Text), Gui.S(2));   // the part's own mark, to line up
+
+        // Where it's riding on the edge, glowing as it binds.
+        if (s.Bind > 0.03f)
+        {
+            var edge = new float2(s.Offset > 0 ? mid + bore : mid - bore, lip);
+            dl.AddCircleFilled(in edge, Gui.S(5) + s.Bind * Gui.S(9), Theme.U8(Theme.Bad, 0.25f + 0.6f * s.Bind), 16);
+        }
+
+        // The pressure on it, as an arrow pushing down.
+        if (s.Pressure > 0.02f && s.Settling == 0)
+        {
+            var top = P(cx, bottom - partH);
+            var len = Gui.S(10) + s.Pressure * Gui.S(30);
+            var t0 = new float2(top.X, top.Y - Gui.S(6) - len);
+            var t1 = new float2(top.X, top.Y - Gui.S(10));
+            var colour = Theme.U8(s.Pressure > FitSession.LightTouch ? Theme.Accent : Theme.Dim);
+            dl.AddLine(in t0, in t1, colour, Gui.S(2) + s.Pressure * Gui.S(4));
+            var h1 = new float2(top.X - Gui.S(7), top.Y - Gui.S(12));
+            var h2 = new float2(top.X + Gui.S(7), top.Y - Gui.S(12));
+            var h3 = new float2(top.X, top.Y - Gui.S(3));
+            dl.AddTriangleFilled(in h1, in h2, in h3, colour);
+        }
+
+        // The parts, done and to come, by name.
+        for (var i = 0; i < s.Parts; i++)
+        {
+            var done = i < s.Part || (i == s.Part && s.Settling > 0);
+            var dot = new float2(min.X + Gui.S(10), min.Y + Gui.S(12) + i * Gui.S(18));
+            dl.AddCircleFilled(in dot, Gui.S(5), Theme.U8(done ? Theme.Good : i == s.Part ? Theme.Accent : Theme.Well), 12);
+            var at = dot + Gui.S(10, -7);
+            dl.AddText(in at, Theme.U8(done ? Theme.Good : i == s.Part ? Theme.Text : Theme.Dim), PartName(s, i));
+        }
+
+        var next = s.Part + 1 < s.Parts ? $"Next: the {PartName(s, s.Part + 1)}." : s.Winds ? "Next: wind the spring." : "That's the last.";
+        var (tone, say) = s.Settling > 0 ? (s.Jammed ? Theme.Warn : Theme.Good, s.Jammed ? $"It's in, but crooked: it'll bind. {next}" : $"Home, and square. {next}")
+            : s.Bind > 0.5f ? (Theme.Bad, "It's binding on the edge! Ease off and square it up.")
+            : s.Bind > 0.05f ? (Theme.Warn, "It's riding on the edge: off true.")
+            : s.OnTrue ? (Theme.Good, s.Pressure > FitSession.LightTouch ? "Going in square." : "Square over the seat: press it home.")
+            : (Theme.Dim, "Off true: bring its mark over the seat's.");
+        TextC(tone, say);
         EndWork();
     }
+
+    /// <summary>
+    /// The ratchet turning a click a tap, with the teeth the pawl catches in marked in brass and the
+    /// ones past them, where the spring snaps, in red: wind till the brass is under the pawl, then latch.
+    /// Beside it the spring tightens, reddening and shaking as it strains.
+    /// </summary>
+    private void DrawWinding(FitSession s)
+    {
+        BeginWork(s.Title, ("F", "tap to wind a click"), ("D", "latch it"), ("Esc", "stop"));
+        var dl = ImGui.GetWindowDrawList();
+        var min = ImGui.GetCursorScreenPos();
+        var size = Gui.S(420, 180);
+        ImGui.Dummy(in size);
+        var shake = s.Strain > 0f ? MathF.Sin((float)ImGui.GetTime() * 60f) * s.Strain * Gui.S(2) : 0f;
+
+        // The wheel turns clockwise as it's wound: the marked teeth come round to the pawl at the top.
+        const int Teeth = 16;
+        const float PerTension = MathF.Tau * 0.8f;          // a full wind is most of a turn
+        var wheel = new float2(min.X + Gui.S(120) + shake, min.Y + Gui.S(100));
+        var r = Gui.S(56);
+        var up = -MathF.PI / 2f;                            // where the pawl is
+        // A point on the wheel at tension t comes under the pawl when the wheel's wound to t.
+        float At(float t) => up + (s.Tension - t) * PerTension;
+        // The rim, in arcs: plain, then the catch (brass), then the snap (red).
+        var lo = s.CatchAt - s.CatchHalfWidth;
+        var hi = s.CatchAt + s.CatchHalfWidth;
+        dl.AddCircleFilled(in wheel, r, Theme.U8(Theme.Iron), 40);
+        void Arc(float t0, float t1, float4 colour)
+        {
+            const int N = 16;
+            for (var i = 0; i < N; i++)
+            {
+                float a0 = At(t0 + (t1 - t0) * i / N), a1 = At(t0 + (t1 - t0) * (i + 1) / N);
+                var p0 = wheel + new float2(MathF.Cos(a0), MathF.Sin(a0)) * (r - Gui.S(4));
+                var p1 = wheel + new float2(MathF.Cos(a1), MathF.Sin(a1)) * (r - Gui.S(4));
+                dl.AddLine(in p0, in p1, Theme.U8(colour), Gui.S(8));
+            }
+        }
+        Arc(lo, hi, new float4(0.86f, 0.68f, 0.30f, 1f));
+        Arc(hi, hi + FitSession.SnapPast, Theme.Bad);
+        for (var i = 0; i < Teeth; i++)
+        {
+            var a0 = At(i / (float)Teeth / 0.8f);
+            var a1 = a0 - MathF.Tau / Teeth * 0.6f;
+            var p0 = wheel + new float2(MathF.Cos(a0), MathF.Sin(a0)) * r;
+            var p1 = wheel + new float2(MathF.Cos(a1), MathF.Sin(a1)) * r;
+            var tip = wheel + new float2(MathF.Cos(a0), MathF.Sin(a0)) * (r + Gui.S(10));
+            dl.AddTriangleFilled(in p0, in tip, in p1, Theme.U8(Theme.Iron));
+        }
+        dl.AddCircleFilled(in wheel, Gui.S(10), Theme.U8(Theme.Well), 16);
+
+        // The pawl at the top: down in a tooth (green) while it's catching, riding the tips otherwise.
+        var pivot = new float2(wheel.X + Gui.S(46), wheel.Y - r - Gui.S(26));
+        var reach = s.Catching ? r + Gui.S(2) : r + Gui.S(14);
+        var pawlTip = new float2(wheel.X, wheel.Y - reach);
+        dl.AddLine(in pivot, in pawlTip, Theme.U8(s.Catching ? Theme.Good : s.Slipped > 0 ? Theme.Warn : Theme.Text), Gui.S(5));
+        dl.AddCircleFilled(in pivot, Gui.S(5), Theme.U8(Theme.Text), 12);
+
+        // The spring: more turns and tighter the more it's wound, warming to red past the catch.
+        var centre = new float2(min.X + Gui.S(310) + shake, min.Y + Gui.S(100));
+        var turns = 2.5f + s.Tension * 4f;
+        var outer = Gui.S(62) - s.Tension * Gui.S(12);
+        var tone = s.Strain > 0f ? Lerp(Theme.Warn, Theme.Bad, s.Strain) : Lerp(Theme.Iron, Theme.Text, Math.Clamp(s.Tension, 0f, 1f));
+        var last = centre;
+        const int Steps = 120;
+        for (var i = 1; i <= Steps; i++)
+        {
+            var f = i / (float)Steps;
+            var ang = f * turns * MathF.Tau;
+            var rad = Gui.S(6) + f * (outer - Gui.S(6));
+            var p = centre + new float2(MathF.Cos(ang), MathF.Sin(ang)) * rad;
+            dl.AddLine(in last, in p, Theme.U8(tone), Gui.S(2) + s.Tension * Gui.S(2));
+            last = p;
+        }
+
+        var (colour, say) = s.Strain > 0f ? (Theme.Bad, "Past the catch: it's straining! Let it creep back onto the brass, or latch it strained.")
+            : s.Catching ? (Theme.Good, "The pawl's in the brass teeth. Latch it now (D).")
+            : s.Slipped > 0 ? (Theme.Warn, "It won't hold yet: the pawl slips. Wind on till the brass teeth reach it.")
+            : s.Clicks == 0 ? (Theme.Text, "Tap F to wind the spring a click at a time.")
+            : (Theme.Text, $"Wind on: the brass teeth are coming round to the pawl. {s.Clicks} {(s.Clicks == 1 ? "click" : "clicks")}.");
+        TextC(colour, say);
+        EndWork();
+    }
+
+    /// <summary>What each part of a contraption (or an axle) is called, as it's fitted.</summary>
+    private static string PartName(FitSession s, int i)
+    {
+        string[] names = !s.Wagon.IsNull ? ["axle", "linchpins"] : ["frame", "gear train", "pawl", "spring barrel", "casing"];
+        return names[Math.Clamp(i, 0, names.Length - 1)];
+    }
+
+    private static float4 Lerp(float4 a, float4 b, float t) => a + (b - a) * Math.Clamp(t, 0f, 1f);
 
     /// <summary>The wheel turning past the gauge: the needle out for a bulge, in for a dip; the band it must run within.</summary>
     private void DrawTrue(TrueSession s)

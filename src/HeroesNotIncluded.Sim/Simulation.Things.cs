@@ -505,10 +505,12 @@ public sealed partial class Simulation
 
     /// <summary>
     /// A container whose contents aren't up for grabs: one someone carries (a pack, or a creature's
-    /// own tool belt), or a serving hatch (what's put up there is for the customer at it).
+    /// own tool belt), a serving hatch (what's put up there is for the customer at it), or one in a
+    /// shop that keeps its stock (<see cref="Defs.BuildingDef.KeepsStock"/>: it's taken by hand).
     /// </summary>
     private bool OnSomeone(Entity container) => IsPack(container) || World.Has<Creature>(container)
-        || (World.TryGet<Thing>(container, out var t) && t.Def.Building is { Hatch: true });
+        || (World.TryGet<Thing>(container, out var t) && t.Def.Building is { Hatch: true })
+        || (World.TryGet<PartOf>(container, out var part) && World.TryGet<PresetBuilding>(part.Building, out var shop) && shop.Def.KeepsStock);
 
     /// <summary>The stacks kept in a container, in entity order.</summary>
     public List<Entity> StoredIn(Entity container)

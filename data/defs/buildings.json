@@ -300,6 +300,8 @@
     },
     {
       "name": "TinkerShop", "label": "tinker's shop", "icon": "buildings/tinker_bench",
+      // Its chest and crate are the tinker's stock: no villager's job takes from them (Tinkering/).
+      "keepsStock": true,
       "description": "The tinker's: a shut shop with a door a lock can be fitted to, a bench with a vise and files at the back, a rack of tools, a chest of stock and the collector's crate. Customers come in and wait at the front.",
       "layout": [
         "WWWWWWW",
