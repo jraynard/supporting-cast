@@ -309,6 +309,14 @@ Known leftovers:
     same mending, priced by the mending's strength.
   - **On a quest:** charms go out with their bearer (`MemberRecord.Charms`). They add a little
     strength, ward the wounds they fit, may cheat a death, and come back if unspent.
+- **Meditation as a labyrinth** (`MeditateSession`): replaces the breathing rhythm.
+  - **The maze:** a 9x9 labyrinth grown from the session's seed, entered at a corner, to the
+    still centre. WASD walks it; holding F stands still and sees further.
+  - **Sight:** only what's near is clear, and what's been seen stays dimly remembered.
+  - **Mana:** a little for each new place, and a burst at the centre that shrinks over the
+    30 s sitting.
+  - **Pain** narrows sight, slows steps and scatters thoughts (back three places). The stone
+    eases it and gathers more.
 - **The weave as a sigil:** a beat ring closing on the heart circle, runes round the rim joined
   by strands, larger glyphs (64 px).
 - **Bots** feel, draw, bind when short of mana, weave from their book, and meditate.
@@ -322,9 +330,9 @@ Known leftovers:
 - Tune in play: the draw feels, the heartbeat window and the wrap band.
 - Bots don't weave charms or put goods on show.
 - Adventurers never tear a charm in town.
-- The meditation game wants rethinking.
+- Tune the labyrinth in play: its size, the sitting's length and the centre's burst.
 
-Save format 5. Bench hashes unchanged (1234: state `D21378177D6C73BA`, full `E0118354F8BBC3E0`;
+Save format 6. Bench hashes unchanged (1234: state `D21378177D6C73BA`, full `E0118354F8BBC3E0`;
 99: state `B5DB9B55CC58E7B1`, full `B023D3107619F18B`).
 
 ### The serving hatch (2026-11-12)

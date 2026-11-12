@@ -58,7 +58,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     // Mini-game state, per session.
     private long _session = -1;
     private bool _resting, _stopped;
-    private int _lastRune = -1, _lastTurn = -1;
+    private int _lastRune = -1;
 
     // Lockwork: the feel needle smoothed, where it rose past the mark, the middle it found, and
     // how long it's been working a trigger.
@@ -136,7 +136,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         {
             _session = s.StartTick;
             _resting = _stopped = false;
-            _lastRune = _lastTurn = -1;
+            _lastRune = -1;
             _feel = 0f;
             _rose = _middle = null;
             _skipTo = 0f;
@@ -235,10 +235,10 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             }
             case MeditateSession m:
             {
-                if (m.Flinching || m.NextTurn == _lastTurn || Math.Abs(m.StepsDone - m.NextTurn) > 2)
-                    return (false, false, 0);
-                _lastTurn = m.NextTurn;
-                return (true, false, 0);
+                // Toward the centre by what it's seen, guessing the unseen open.
+                var way = m.Heading();
+                _axis2 = way == 0 ? -1 : way == 2 ? 1 : 0;
+                return (false, false, way == 1 ? 1 : way == 3 ? -1 : 0);
             }
             case ProbeSession pr:
                 return Probe(pr);

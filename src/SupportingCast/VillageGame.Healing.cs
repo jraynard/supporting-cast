@@ -69,7 +69,7 @@ public sealed partial class VillageGame
             Issue(new MeditateCommand(_avatar));
         ImGui.EndDisabled();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            Tip(cantMeditate != null ? Cap(cantMeditate) + "." : "Press F at the top and bottom of each breath. Don't answer the flinches. Pain makes it hard; it's calmer at the shrine's meditation stone.");
+            Tip(cantMeditate != null ? Cap(cantMeditate) + "." : "Find your way inward, through a labyrinth to the still centre: each new place gathers mana, the centre most of all. Pain narrows your sight and scatters your thoughts; it's calmer at the shrine's meditation stone.");
         ImGui.SameLine(0, 6);
         var cantWeave = CastSession.Problem(_sim, _avatar, 0);
         ImGui.BeginDisabled(cantWeave != null || Working);
@@ -378,19 +378,81 @@ public sealed partial class VillageGame
         EndWork();
     }
 
+    /// <summary>
+    /// The labyrinth inward: what's in sight clear, what's been seen dim, the rest dark; the light
+    /// of the still centre always faintly there to walk toward; the way walked a faint thread.
+    /// </summary>
     private void DrawMeditate(MeditateSession s)
     {
-        BeginWork(s.Title, ("F", "at the top of each breath in, the bottom of each out"), ("Esc", "stop"));
-        TextC(Theme.Dim, "Don't answer the flinches.");
+        BeginWork(s.Title, ("WASD", "find your way inward"), ("F", "hold to be still and see further"), ("Esc", "come back"));
         var dl = ImGui.GetWindowDrawList();
+        var width = Math.Max(Gui.S(420), ImGui.GetContentRegionAvail().X);
+        var side = Gui.S(330f);
         var origin = ImGui.GetCursorScreenPos();
-        ImGui.Dummy(Gui.S(420, 150));
-        var centre = origin + Gui.S(210, 75);
-        var radius = Gui.S(20f + 50f * s.Fullness);
-        var near = Math.Abs(s.StepsDone - s.NextTurn) <= s.WindowSteps;
-        dl.AddCircleFilled(in centre, radius, Theme.U8(s.Flinching ? Theme.Bad : near ? Theme.Good : Theme.AccentSoft), 48);
-        TextC(Theme.Dim, $"Calm {s.Calm}   Mana gathered {s.Gained:F0}   Breath {Math.Min(s.Turns / 2 + 1, MeditateSession.Breaths)} of {MeditateSession.Breaths}"
-            + (s.Stillness > 0 ? "   (the stone steadies you)" : ""));
+        var areaSize = new float2(width, side);
+        ImGui.Dummy(in areaSize);
+        var min = origin + new float2((width - side) / 2, 0);
+        var max = min + new float2(side, side);
+        var cell = side / MeditateSession.Size;
+        dl.AddRectFilled(in min, in max, Theme.U8(Theme.Spirit), 6f, ImDrawFlags.None);
+        float2 Mid(int i) => min + new float2((i % MeditateSession.Size + 0.5f) * cell, (i / MeditateSession.Size + 0.5f) * cell);
+
+        var sight = s.SightNow;
+        var pulse = 0.5f + 0.5f * MathF.Sin(_time * 2.2f);
+        // The light at the heart: always there to walk toward, brighter once seen.
+        var heart = Mid(MeditateSession.Index(MeditateSession.Centre, MeditateSession.Centre));
+        var heartSeen = s.Seen[MeditateSession.Index(MeditateSession.Centre, MeditateSession.Centre)];
+        dl.AddCircleFilled(in heart, cell * (0.9f + 0.15f * pulse), Theme.U8(Theme.Accent, heartSeen ? 0.22f : 0.1f), 32);
+        dl.AddCircleFilled(in heart, cell * 0.32f, Theme.U8(Theme.Accent, heartSeen ? 0.9f : 0.35f), 24);
+
+        // The places walked, and the thread of the way here.
+        for (var i = 0; i < s.Walked.Length; i++)
+            if (s.Walked[i])
+            {
+                var c = Mid(i);
+                var a = c - new float2(cell / 2, cell / 2);
+                var b = c + new float2(cell / 2, cell / 2);
+                dl.AddRectFilled(in a, in b, Theme.U8(Theme.Arcane, 0.08f), 0f, ImDrawFlags.None);
+            }
+        for (var i = 1; i < s.Trail.Count; i++)
+        {
+            var a = Mid(s.Trail[i - 1]);
+            var b = Mid(s.Trail[i]);
+            dl.AddLine(in a, in b, Theme.U8(Theme.Arcane, 0.35f), Gui.S(2f));
+        }
+
+        // The walls of what's seen: clear in sight, dim as remembered.
+        var thick = Gui.S(2.5f);
+        for (var y = 0; y < MeditateSession.Size; y++)
+            for (var x = 0; x < MeditateSession.Size; x++)
+            {
+                var i = MeditateSession.Index(x, y);
+                if (!s.Seen[i])
+                    continue;
+                var near = (x - s.X) * (x - s.X) + (y - s.Y) * (y - s.Y) <= sight * sight;
+                var colour = Theme.U8(Theme.Arcane, near ? 0.9f : 0.3f);
+                var a = min + new float2(x * cell, y * cell);
+                var b = a + new float2(cell, cell);
+                var ne = new float2(b.X, a.Y);
+                var sw = new float2(a.X, b.Y);
+                if (!s.CanGo(x, y, 0)) dl.AddLine(in a, in ne, colour, thick);
+                if (!s.CanGo(x, y, 1)) dl.AddLine(in ne, in b, colour, thick);
+                if (!s.CanGo(x, y, 2)) dl.AddLine(in sw, in b, colour, thick);
+                if (!s.CanGo(x, y, 3)) dl.AddLine(in a, in sw, colour, thick);
+            }
+
+        // Them: a small light, ringed by how far they see; it flares red when a thought scatters them.
+        var me = Mid(MeditateSession.Index(s.X, s.Y));
+        dl.AddCircle(in me, sight * cell, Theme.U8(Theme.Arcane, 0.12f), 48, Gui.S(1f));
+        dl.AddCircleFilled(in me, cell * 0.45f, Theme.U8(s.Scattered ? Theme.Bad : Theme.Text, 0.25f), 24);
+        dl.AddCircleFilled(in me, cell * 0.22f, Theme.U8(s.Scattered ? Theme.Bad : Theme.Text), 24);
+
+        Bar("Mana gathered", s.Gained / Math.Max(1f, s.Room), Theme.Arcane, $"{s.Gained:F0}");
+        Bar("The sitting", 1f - s.StepsDone / (float)MeditateSession.MaxSteps, Theme.Dim);
+        if (s.Scattered)
+            TextC(Theme.Bad, "The pain scatters your thoughts.");
+        else if (s.Stillness > 0)
+            TextC(Theme.Dim, "The stone steadies you.");
         EndWork();
     }
 }

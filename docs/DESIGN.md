@@ -230,9 +230,12 @@ model: wounds sit on body parts, have a kind, and bleed, hurt and fester.
   spends itself on the first wound it fits, and a healing one may turn a death into a bad wound.
   Anyone can see which mending a charm holds; only its maker knows how well it was woven. Which
   to weave is a guess at what the parties will face.
-- *Meditating.* Out of mana, they meditate it back with a breathing rhythm. Pain they still
-  carry makes the rhythm stutter and flinch, so a healer who couldn't mend themselves fully
-  struggles to recover.
+- *Meditating.* Out of mana, they find their way inward: each sitting is a labyrinth grown fresh,
+  entered at a corner, with the still centre of the self at its heart. Only what's near is clear;
+  what's been seen stays dimly remembered, and holding still lets them see further. Each new place
+  reached gathers a little mana, and the centre a great deal, the sooner the more. Pain they still
+  carry narrows the sight, makes the steps heavy and scatters the thoughts, throwing them back
+  along their path, so a healer who couldn't mend themselves fully struggles to recover.
 - *Binding.* Anyone can bandage, the healer best: each turn of cloth is pulled tight by hand
   and let go in the band. Too slack slips; too tight bites. It stops bleeding without mana, so a
   healer can bind what they've drawn while their mana comes back. Bandages are woven from fiber

@@ -5,39 +5,44 @@ using SupportingCast.Sim.Work;
 namespace SupportingCast.Sim.Healing;
 
 /// <summary>
-/// Meditating mana back: breathe with the rhythm, pressing F at the top of each breath in and the
-/// bottom of each breath out. Each breath caught builds calm, and calm draws mana faster. The pain
-/// you carry (taken when you sat down) makes the breaths uneven and brings flinches: a jolt you
-/// mustn't answer, since pressing on one breaks your calm. A healer who couldn't mend themselves
-/// fully gets little from it.
+/// Meditating mana back: finding the way inward. Each sitting is a labyrinth grown fresh from the
+/// session's seed, entered at a corner, with the still centre of the self at its heart. WASD walk
+/// its passages; only what's near is clear, and what's been seen stays dimly remembered. Hold F to
+/// stop and widen what you see. Every new place reached gathers a little mana, and the centre a
+/// great deal (the sooner, the more), which ends the sitting. Pain narrows the sight, makes the
+/// steps heavy, and now and then scatters the thoughts, throwing you back along your path. A
+/// meditation stone in reach eases all of it and gathers more.
 /// </summary>
 public sealed class MeditateSession : WorkSession
 {
-    /// <summary>Steps of half a breath when untroubled.</summary>
-    public const int HalfBreath = 120;
+    /// <summary>The labyrinth's size, in places each way (odd, so it has a centre).</summary>
+    public const int Size = 9;
 
-    /// <summary>Steps either side of the turn of a breath that count, before skill widens it.</summary>
-    public const int Window = 14;
+    /// <summary>How long a sitting lasts, in steps.</summary>
+    public const int MaxSteps = 30 * 60;
 
-    /// <summary>Breaths a sitting lasts.</summary>
-    public const int Breaths = 12;
+    /// <summary>Steps to walk from one place to the next, untroubled.</summary>
+    public const int StepSteps = 9;
 
-    /// <summary>Mana per breath caught, as a share of the most they hold, before calm adds to it.</summary>
-    public const float GainPerBreath = 0.05f;
+    /// <summary>How far one sees untroubled (in places), and how much further holding still.</summary>
+    public const float Sight = 2.6f, FocusSight = 1.6f;
 
-    /// <summary>Steps a flinch shows for (pressing in it breaks calm).</summary>
-    public const int FlinchSteps = 25;
+    /// <summary>Mana for each new place reached, and for the centre, as shares of the most they hold.</summary>
+    public const float GainPerPlace = 0.008f, GainAtCentre = 0.6f;
+
+    /// <summary>Openings out of a place, as bits.</summary>
+    public const byte North = 1, East = 2, South = 4, West = 8;
 
     /// <summary>The pain carried when the sitting began, 0..1.</summary>
     public float Pain { get; set; }
 
     /// <summary>
     /// How much a meditation stone in reach helps (<see cref="Defs.BuildingProps.Meditation"/>),
-    /// 0 for none: pain unsettles the breath that much less, and each breath gathers that much more.
+    /// 0 for none: pain troubles the mind that much less, and each place gathers that much more.
     /// </summary>
     public float Stillness { get; set; }
 
-    /// <summary>The pain that troubles the breath, after the stone's help.</summary>
+    /// <summary>The pain that troubles the mind, after the stone's help.</summary>
     public float FeltPain => Pain * (1f - Stillness);
 
     public float MaxMana { get; set; }
@@ -45,37 +50,38 @@ public sealed class MeditateSession : WorkSession
     /// <summary>Room for mana when the sitting began.</summary>
     public float Room { get; set; }
 
-    /// <summary>Breaths caught in a row.</summary>
-    public int Calm { get; private set; }
-
     public float Gained { get; private set; }
 
-    /// <summary>Turns of breath gone by (two per breath).</summary>
-    public int Turns { get; private set; }
+    /// <summary>The labyrinth: the openings out of each place (<see cref="North"/> and so on), row by row.</summary>
+    public byte[] Open { get; private set; } = new byte[Size * Size];
 
-    /// <summary>Breathing in (rising) or out.</summary>
-    public bool Inhaling { get; private set; } = true;
+    /// <summary>Places seen (dimly remembered once out of sight) and places walked.</summary>
+    public bool[] Seen { get; private set; } = new bool[Size * Size];
+    public bool[] Walked { get; private set; } = new bool[Size * Size];
 
-    /// <summary>The next turn of breath: the step it comes at, and where this half began.</summary>
-    public int NextTurn { get; private set; }
-    public int HalfStart { get; private set; }
+    /// <summary>Where they are, and the way they came (for a scattered thought to throw them back along).</summary>
+    public int X { get; private set; }
+    public int Y { get; private set; }
+    public List<int> Trail { get; private set; } = [];
 
-    public int FlinchUntil { get; private set; } = -1;
-    private bool _answered;
+    /// <summary>Reached the still centre.</summary>
+    public bool Centred { get; private set; }
 
-    public int WindowSteps => (int)(Window * Hands.Tolerance);
+    /// <summary>The step a scattered thought last threw them back, for the scene.</summary>
+    public int ScatteredAt { get; private set; } = int.MinValue / 2;
 
-    /// <summary>The breath's fullness now, 0 (out) .. 1 (in), for drawing.</summary>
-    public float Fullness
-    {
-        get
-        {
-            var t = Math.Clamp((StepsDone - HalfStart) / (float)Math.Max(1, NextTurn - HalfStart), 0f, 1f);
-            return Inhaling ? t : 1f - t;
-        }
-    }
+    private int _dx, _dy, _ready;
 
-    public bool Flinching => StepsDone < FlinchUntil;
+    public static int Centre => Size / 2;
+    public static int Index(int x, int y) => y * Size + x;
+
+    /// <summary>How far they see now: less in pain, more holding still, more by the stone.</summary>
+    public float SightNow => (Sight * (1f - 0.55f * FeltPain) + (Held ? FocusSight : 0f)) * (1f + 0.3f * Stillness);
+
+    /// <summary>Steps a move takes now: heavier in pain.</summary>
+    public int StepLength => (int)(StepSteps * (1f + 2.5f * FeltPain));
+
+    public bool Scattered => StepsDone - ScatteredAt < 30;
 
     public override Skill Skill => Skill.Medicine;
     public override float Xp => 15f;
@@ -123,62 +129,185 @@ public sealed class MeditateSession : WorkSession
 
     protected internal override void Begin()
     {
-        HalfStart = 0;
-        NextTurn = HalfLength();
+        Grow();
+        var corner = Rand.NextInt(4);
+        (X, Y) = (corner % 2 == 0 ? 0 : Size - 1, corner < 2 ? 0 : Size - 1);
+        Trail.Add(Index(X, Y));
+        Walked[Index(X, Y)] = true;
+        Look();
     }
 
-    /// <summary>Pain makes a breath come short or long.</summary>
-    private int HalfLength() => Math.Max(50, (int)(HalfBreath * (1f + (Rand.NextFloat() * 2f - 1f) * 0.55f * FeltPain)));
-
-    protected override void Press()
+    /// <summary>A labyrinth grown by wandering from the centre and backing up at dead ends: every place reachable, one way between any two.</summary>
+    private void Grow()
     {
-        if (Flinching)
+        var stack = new List<int> { Index(Centre, Centre) };
+        var grown = new bool[Size * Size];
+        grown[stack[0]] = true;
+        Span<int> ways = stackalloc int[4];
+        while (stack.Count > 0)
         {
-            Calm = 0; // answered the pain, not the breath
-            return;
+            var here = stack[^1];
+            int x = here % Size, y = here / Size, n = 0;
+            for (var d = 0; d < 4; d++)
+            {
+                var (nx, ny) = Step(x, y, d);
+                if (nx is >= 0 and < Size && ny is >= 0 and < Size && !grown[Index(nx, ny)])
+                    ways[n++] = d;
+            }
+            if (n == 0)
+            {
+                stack.RemoveAt(stack.Count - 1);
+                continue;
+            }
+            var way = ways[Rand.NextInt(n)];
+            var (tx, ty) = Step(x, y, way);
+            var there = Index(tx, ty);
+            Open[here] |= Bit(way);
+            Open[there] |= Bit((way + 2) % 4);
+            grown[there] = true;
+            stack.Add(there);
         }
-        if (!_answered && Math.Abs(StepsDone - NextTurn) <= WindowSteps)
-        {
-            _answered = true;
-            Calm++;
-            var gain = MaxMana * GainPerBreath * (1f + 0.15f * Math.Min(Calm, 6)) * (1f + Stillness);
-            Gained = Math.Min(Room, Gained + gain);
-            Sample(1f);
-        }
-        else
-        {
-            Calm = 0;
-            Sample(0f);
-        }
+    }
+
+    /// <summary>Directions 0..3: north, east, south, west.</summary>
+    public static (int X, int Y) Step(int x, int y, int dir) => dir switch
+    {
+        0 => (x, y - 1),
+        1 => (x + 1, y),
+        2 => (x, y + 1),
+        _ => (x - 1, y),
+    };
+
+    public static byte Bit(int dir) => (byte)(1 << dir);
+
+    public bool CanGo(int x, int y, int dir) => (Open[Index(x, y)] & Bit(dir)) != 0;
+
+    protected override void Cloned()
+    {
+        Open = (byte[])Open.Clone();
+        Seen = (bool[])Seen.Clone();
+        Walked = (bool[])Walked.Clone();
+        Trail = [.. Trail];
+    }
+
+    protected override void Axis(int value) => _dx = value;
+    protected override void Axis2(int value) => _dy = value;
+
+    /// <summary>Everything within sight is seen (and stays remembered).</summary>
+    private void Look()
+    {
+        var r = SightNow;
+        for (var y = 0; y < Size; y++)
+            for (var x = 0; x < Size; x++)
+                if ((x - X) * (x - X) + (y - Y) * (y - Y) <= r * r)
+                    Seen[Index(x, y)] = true;
     }
 
     protected override void Step()
     {
-        if (FeltPain > 0 && !Flinching && Rand.Chance(0.006f * FeltPain))
-            FlinchUntil = StepsDone + FlinchSteps;
-        if (StepsDone <= NextTurn + WindowSteps)
-            return;
-        // The turn of breath has gone by: on to the next half.
-        if (!_answered)
+        // A scattered thought throws them a few places back the way they came.
+        if (FeltPain > 0 && Trail.Count > 1 && Rand.Chance(0.0035f * FeltPain))
         {
-            Calm = 0;
-            Sample(0f);
+            for (var i = 0; i < 3 && Trail.Count > 1; i++)
+                Trail.RemoveAt(Trail.Count - 1);
+            (X, Y) = (Trail[^1] % Size, Trail[^1] / Size);
+            ScatteredAt = StepsDone;
+            _ready = StepsDone + StepLength * 2;
         }
-        _answered = false;
-        Turns++;
-        Inhaling = !Inhaling;
-        HalfStart = NextTurn;
-        NextTurn += HalfLength();
-        Done = Turns >= Breaths * 2 || Gained >= Room - 0.01f;
+        if (!Held && StepsDone >= _ready && (_dx != 0 || _dy != 0))
+        {
+            // Across first if that way's open, else up or down.
+            int? dir = _dx > 0 && CanGo(X, Y, 1) ? 1 : _dx < 0 && CanGo(X, Y, 3) ? 3
+                : _dy < 0 && CanGo(X, Y, 0) ? 0 : _dy > 0 && CanGo(X, Y, 2) ? 2 : null;
+            if (dir is { } d)
+            {
+                (X, Y) = Step(X, Y, d);
+                var here = Index(X, Y);
+                // Walking back the way you came takes the trail back up.
+                if (Trail.Count > 1 && Trail[^2] == here)
+                    Trail.RemoveAt(Trail.Count - 1);
+                else
+                    Trail.Add(here);
+                if (!Walked[here])
+                {
+                    Walked[here] = true;
+                    Gain(MaxMana * GainPerPlace * (1f + Stillness));
+                    Sample(1f);
+                }
+                _ready = StepsDone + StepLength;
+                if (X == Centre && Y == Centre)
+                {
+                    // The sooner, the more.
+                    Gain(MaxMana * GainAtCentre * (1f + Stillness) * (1f - StepsDone / (float)MaxSteps));
+                    Centred = true;
+                    Done = true;
+                }
+            }
+        }
+        Look();
+        if (StepsDone + 1 >= MaxSteps || Gained >= Room - 0.01f)
+            Done = true;
     }
+
+    private void Gain(float mana) => Gained = Math.Min(Room, Gained + mana);
 
     public override void Finish(Simulation sim)
     {
         ref var mana = ref sim.World.Get<Mana>(Worker);
         mana.Current = Math.Min(mana.Max, mana.Current + Gained);
-        sim.Messages.Add(Gained >= Room * 0.5f ? MessageKind.Good : MessageKind.Info, Pain > 0.4f && Gained < Room * 0.5f
-            ? $"The pain keeps pulling you out of it. You come back with {Gained:F0} mana."
-            : $"You come back to yourself with {Gained:F0} mana.", sim.LocationOf(Worker));
+        var at = sim.LocationOf(Worker);
+        if (Centred)
+            sim.Messages.Add(MessageKind.Good, $"You find the still centre of yourself, and come back with {Gained:F0} mana.", at);
+        else
+            sim.Messages.Add(Gained >= Room * 0.5f ? MessageKind.Good : MessageKind.Info, Pain > 0.4f && Gained < Room * 0.5f
+                ? $"The pain keeps scattering your thoughts. You come back with {Gained:F0} mana."
+                : $"You come back to yourself with {Gained:F0} mana.", at);
+    }
+
+    // ---------------- For a careful meditator (bots) ----------------
+
+    /// <summary>
+    /// The way someone who remembers what they've seen would go next: toward the centre by the
+    /// shortest way through what they know, guessing unseen places open. -1 if there's nowhere to go.
+    /// </summary>
+    public int Heading()
+    {
+        var goal = Index(Centre, Centre);
+        var from = new int[Size * Size];
+        Array.Fill(from, -1);
+        var start = Index(X, Y);
+        from[start] = start;
+        var queue = new Queue<int>();
+        queue.Enqueue(start);
+        while (queue.Count > 0)
+        {
+            var here = queue.Dequeue();
+            if (here == goal)
+                break;
+            int x = here % Size, y = here / Size;
+            for (var d = 0; d < 4; d++)
+            {
+                var (nx, ny) = Step(x, y, d);
+                if (nx is < 0 or >= Size || ny is < 0 or >= Size)
+                    continue;
+                var next = Index(nx, ny);
+                // A seen place's walls are known; between two unseen ones, guess it's open.
+                var known = Seen[here] || Seen[next];
+                if (from[next] >= 0 || (known && !CanGo(x, y, d)))
+                    continue;
+                from[next] = here;
+                queue.Enqueue(next);
+            }
+        }
+        if (from[goal] < 0)
+            return -1;
+        var step = goal;
+        while (from[step] != start)
+            step = from[step];
+        for (var d = 0; d < 4; d++)
+            if (Step(X, Y, d) is var (sx, sy) && Index(sx, sy) == step)
+                return d;
+        return -1;
     }
 
     protected override void WriteState(SaveWriter w)
@@ -187,14 +316,23 @@ public sealed class MeditateSession : WorkSession
         w.Float(Stillness);
         w.Float(MaxMana);
         w.Float(Room);
-        w.Int(Calm);
         w.Float(Gained);
-        w.Int(Turns);
-        w.Bool(Inhaling);
-        w.Int(NextTurn);
-        w.Int(HalfStart);
-        w.Int(FlinchUntil);
-        w.Bool(_answered);
+        for (var i = 0; i < Size * Size; i++)
+        {
+            w.Byte(Open[i]);
+            w.Bool(Seen[i]);
+            w.Bool(Walked[i]);
+        }
+        w.Int(X);
+        w.Int(Y);
+        w.Int(Trail.Count);
+        foreach (var t in Trail)
+            w.Int(t);
+        w.Bool(Centred);
+        w.Int(ScatteredAt);
+        w.Int(_dx);
+        w.Int(_dy);
+        w.Int(_ready);
     }
 
     protected override void ReadState(SaveReader r)
@@ -203,13 +341,37 @@ public sealed class MeditateSession : WorkSession
         Stillness = r.Float();
         MaxMana = r.Float();
         Room = r.Float();
-        Calm = r.Int();
+        if (r.Version < 6)
+        {
+            // A sitting from before the labyrinth (a breathing rhythm): it ends with what it had.
+            r.Int(); // calm
+            Gained = r.Float();
+            r.Int(); // turns
+            r.Bool(); // inhaling
+            r.Int(); // next turn
+            r.Int(); // half start
+            r.Int(); // flinch until
+            r.Bool(); // answered
+            Done = true;
+            return;
+        }
         Gained = r.Float();
-        Turns = r.Int();
-        Inhaling = r.Bool();
-        NextTurn = r.Int();
-        HalfStart = r.Int();
-        FlinchUntil = r.Int();
-        _answered = r.Bool();
+        for (var i = 0; i < Size * Size; i++)
+        {
+            Open[i] = r.Byte();
+            Seen[i] = r.Bool();
+            Walked[i] = r.Bool();
+        }
+        X = Math.Clamp(r.Int(), 0, Size - 1);
+        Y = Math.Clamp(r.Int(), 0, Size - 1);
+        for (var n = r.Count(Size * Size * 4); n > 0; n--)
+            Trail.Add(Math.Clamp(r.Int(), 0, Size * Size - 1));
+        if (Trail.Count == 0)
+            Trail.Add(Index(X, Y));
+        Centred = r.Bool();
+        ScatteredAt = r.Int();
+        _dx = Math.Sign(r.Int());
+        _dy = Math.Sign(r.Int());
+        _ready = r.Int();
     }
 }

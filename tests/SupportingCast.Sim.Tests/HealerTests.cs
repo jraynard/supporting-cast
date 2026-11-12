@@ -425,8 +425,8 @@ public class HealerTests
             Assert.Equal(m, Weaving.Match(defs, Weaving.Recipe(m))?.Mending);
     }
 
-    /// <summary>Meditate pressing on the rhythm you'd expect (a steady breath), as a person would.</summary>
-    private static float MeditateByRhythm(float pain, bool atStone = false)
+    /// <summary>Meditate as a careful person would: toward the centre by what they've seen. Mana after, and whether they reached it.</summary>
+    private static (float Mana, bool Centred) MeditateByWalking(float pain, bool atStone = false, int seed = 0)
     {
         var (sim, me, _, _) = AtTheBedside();
         if (atStone)
@@ -434,37 +434,119 @@ public class HealerTests
             sim.SpawnStructure(sim.Thing("MeditationStone"), C(10, 11));
             sim.RebuildDerivedIfNeeded();
         }
+        sim.TickMany(seed); // a different labyrinth
         sim.World.Get<Mana>(me).Current = 0;
         sim.ApplyNow(new MeditateCommand(me));
         var real = (MeditateSession)sim.World.Get<WorkSession>(me);
         Assert.Equal(atStone, real.Stillness > 0);
         real.Pain = pain; // as if sitting down in that much pain
         var predictor = new WorkPredictor();
-        for (var t = 0; t < 60 * 120 && sim.World.Has<WorkSession>(me); t++)
+        var centred = false;
+        for (var t = 0; t < MeditateSession.MaxSteps + 600 && sim.World.Has<WorkSession>(me); t++)
         {
             sim.Tick();
-            var press = predictor.Session is MeditateSession m && m.StepsDone == m.HalfStart + MeditateSession.HalfBreath;
-            predictor.Update(sim, me, 1, press, false, 0, c => sim.ApplyNow(c));
+            var (axis, axis2) = (0, 0);
+            if (predictor.Session is MeditateSession m)
+            {
+                var way = m.Heading();
+                (axis, axis2) = (way == 1 ? 1 : way == 3 ? -1 : 0, way == 0 ? -1 : way == 2 ? 1 : 0);
+                centred = m.Centred;
+            }
+            predictor.Update(sim, me, 1, false, false, axis, c => sim.ApplyNow(c), axis2);
         }
         sim.Tick();
-        return sim.World.Get<Mana>(me).Current;
+        centred |= sim.Messages.Messages.Any(x => x.Text.Contains("still centre"));
+        return (sim.World.Get<Mana>(me).Current, centred);
+    }
+
+    /// <summary>The average over a few labyrinths, so one easy or hard one doesn't decide it.</summary>
+    private static float MeditateAverage(float pain, bool atStone = false) =>
+        Enumerable.Range(0, 4).Average(i => MeditateByWalking(pain, atStone, seed: i * 7).Mana);
+
+    [Fact]
+    public void ACalmMindFindsTheCentre()
+    {
+        var (mana, centred) = MeditateByWalking(0f);
+        Assert.True(centred, "a calm sitting reaches the still centre");
+        Assert.True(mana > 60f, $"and fills most of it ({mana})");
     }
 
     [Fact]
     public void MeditatingIsHarderWhileInPain()
     {
-        var calm = MeditateByRhythm(0f);
-        var hurting = MeditateByRhythm(0.9f);
-        Assert.True(calm > 60f, $"a calm sitting fills most of it ({calm})");
-        Assert.True(hurting < calm * 0.6f, $"in pain: {hurting} vs {calm}");
+        var calm = MeditateAverage(0f);
+        var hurting = MeditateAverage(0.9f);
+        Assert.True(hurting < calm * 0.8f, $"in pain: {hurting} vs {calm}");
     }
 
     [Fact]
     public void MeditatingAtTheShrineStoneIsCalmerInPain()
     {
-        var bare = MeditateByRhythm(0.9f);
-        var atStone = MeditateByRhythm(0.9f, atStone: true);
-        Assert.True(atStone > bare * 1.3f, $"at the stone {atStone} vs {bare}");
+        var bare = MeditateAverage(0.9f);
+        var atStone = MeditateAverage(0.9f, atStone: true);
+        Assert.True(atStone > bare * 1.2f, $"at the stone {atStone} vs {bare}");
+    }
+
+    [Fact]
+    public void EachSittingIsAWholeLabyrinthWithOneWayBetweenAnyTwoPlaces()
+    {
+        int[] Walls(ulong seed)
+        {
+            var s = new MeditateSession { Hands = new Hands(1f, 1f, 0) };
+            s.Rand = new SimRandom(seed);
+            s.Begin();
+            // A perfect maze: every place reachable, and exactly places - 1 openings between them.
+            var openings = 0;
+            for (var i = 0; i < s.Open.Length; i++)
+                openings += System.Numerics.BitOperations.PopCount(s.Open[i]);
+            Assert.Equal((MeditateSession.Size * MeditateSession.Size - 1) * 2, openings);
+            var reached = new HashSet<int> { 0 };
+            var queue = new Queue<int>([0]);
+            while (queue.Count > 0)
+            {
+                var here = queue.Dequeue();
+                for (var d = 0; d < 4; d++)
+                    if (s.CanGo(here % MeditateSession.Size, here / MeditateSession.Size, d)
+                        && MeditateSession.Step(here % MeditateSession.Size, here / MeditateSession.Size, d) is var (x, y)
+                        && reached.Add(MeditateSession.Index(x, y)))
+                        queue.Enqueue(MeditateSession.Index(x, y));
+            }
+            Assert.Equal(s.Open.Length, reached.Count);
+            Assert.True(s.X is 0 or MeditateSession.Size - 1 && s.Y is 0 or MeditateSession.Size - 1, "they start at a corner");
+            return s.Open.Select(b => (int)b).ToArray();
+        }
+        Assert.Equal(Walls(3), Walls(3));
+        Assert.NotEqual(Walls(3), Walls(4));
+    }
+
+    [Fact]
+    public void PainNarrowsTheSightAndHoldingStillWidensIt()
+    {
+        var calm = new MeditateSession { Pain = 0f };
+        var hurting = new MeditateSession { Pain = 0.9f };
+        Assert.True(hurting.SightNow < calm.SightNow * 0.7f);
+        Assert.True(hurting.StepLength > calm.StepLength * 1.5f);
+        var still = new MeditateSession { Pain = 0f, Hands = new Hands(1f, 1f, 0) };
+        still.Rand = new SimRandom(1);
+        still.Begin();
+        still.Advance([new WorkInput(0, WorkInputKind.Hold, 1)], 1);
+        Assert.True(still.SightNow > calm.SightNow + 1f);
+    }
+
+    [Fact]
+    public void ASittingSurvivesASave()
+    {
+        var (sim, me, _, _) = AtTheBedside();
+        sim.World.Get<Mana>(me).Current = 0;
+        sim.ApplyNow(new MeditateCommand(me));
+        var s = (MeditateSession)sim.World.Get<WorkSession>(me);
+        s.Advance([new WorkInput(0, WorkInputKind.Axis, 1), new WorkInput(0, WorkInputKind.Axis2, 1)], 120);
+
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        var copy = (MeditateSession)loaded.World.Get<WorkSession>(me);
+        Assert.Equal((s.X, s.Y, s.Gained, s.Trail.Count), (copy.X, copy.Y, copy.Gained, copy.Trail.Count));
+        Assert.Equal(s.Open, copy.Open);
+        Assert.Equal(s.Seen, copy.Seen);
     }
 
     [Fact]
