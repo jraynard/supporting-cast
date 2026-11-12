@@ -135,6 +135,23 @@ public sealed partial class VillageGame
     /// </summary>
     private void ItemMenu(Entity item)
     {
+        // What's chosen is issued once the menu's drawn: solo, a command applies at once, and the
+        // rest of the menu mustn't read an item it's just destroyed (a charm torn, a stack merged).
+        ISimCommand? chosen = null;
+        void Later(ISimCommand command) => chosen ??= command;
+        try
+        {
+            ItemMenuEntries(item, Later);
+        }
+        finally
+        {
+            if (chosen != null)
+                Issue(chosen);
+        }
+    }
+
+    private void ItemMenuEntries(Entity item, Action<ISimCommand> Later)
+    {
         var w = _sim.World;
         if (!w.IsAlive(item) || !HasAvatar)
         {
@@ -152,7 +169,7 @@ public sealed partial class VillageGame
         {
             any = true;
             if (ImGui.MenuItem($"Eat {def.Label}"))
-                Issue(new EatCommand(_avatar, item));
+                Later(new EatCommand(_avatar, item));
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                 Tip(EatTip(def));
         }
@@ -162,7 +179,7 @@ public sealed partial class VillageGame
             var cantTear = Working ? "you're busy" : null;
             ImGui.BeginDisabled(cantTear != null);
             if (ImGui.MenuItem("Tear the charm"u8))
-                Issue(new Sim.Healing.TearCharmCommand(_avatar, item));
+                Later(new Sim.Healing.TearCharmCommand(_avatar, item));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 Tip($"{charm.Mending.Description} It lands on you, on the worst hurt it fits."
@@ -179,7 +196,7 @@ public sealed partial class VillageGame
                 var why = Bandaging.CantBind(_sim, _avatar, patient);
                 ImGui.BeginDisabled(why != null);
                 if (ImGui.MenuItem(label))
-                    Issue(new BandageCommand(_avatar, patient));
+                    Later(new BandageCommand(_avatar, patient));
                 ImGui.EndDisabled();
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                     Tip(why ?? "For each turn of cloth, hold F to pull it tight and let go in the band.");
@@ -189,13 +206,13 @@ public sealed partial class VillageGame
         {
             any = true;
             if (ImGui.MenuItem("Hold"u8))
-                Issue(new HoldCommand(_avatar, item));
+                Later(new HoldCommand(_avatar, item));
         }
         if ((held || packed) && (def.Apparel != null || def.Weapon != null))
         {
             any = true;
             if (ImGui.MenuItem(def.Weapon != null ? "Wield"u8 : "Wear"u8))
-                Issue(new EquipCommand(_avatar, item));
+                Later(new EquipCommand(_avatar, item));
         }
         if ((held || packed) && Sim.Combat.WeaponWear.Edged(def))
         {
@@ -203,7 +220,7 @@ public sealed partial class VillageGame
             var why = Sim.Work.SharpenSession.Problem(_sim, _avatar, item);
             ImGui.BeginDisabled(why != null);
             if (ImGui.MenuItem("Sharpen"u8))
-                Issue(new Sim.Work.SharpenCommand(_avatar, item));
+                Later(new Sim.Work.SharpenCommand(_avatar, item));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 Tip(why != null ? Cap(why) + "." : "Hold F to grind, A/D to keep the angle. Ease off before the steel overheats.");
@@ -215,13 +232,13 @@ public sealed partial class VillageGame
             var why = Sim.Locks.Lockwork.Problem(_sim, _avatar, item);
             ImGui.BeginDisabled(why != null);
             if (ImGui.MenuItem(box.SearchedByMe ? "Feel for traps again"u8 : "Feel for traps"u8))
-                Issue(new Sim.Locks.ProbeBoxCommand(_avatar, item));
+                Later(new Sim.Locks.ProbeBoxCommand(_avatar, item));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 Tip(why != null ? Cap(why) + "." : "A/D run the probe along the seam; sweep light. Where it catches, stop and hold F to ease the spring out. The far end finishes.");
             ImGui.BeginDisabled(why != null);
             if (ImGui.MenuItem($"Pick the lock ({box.Pins} pins)"))
-                Issue(new Sim.Locks.PickLockCommand(_avatar, item));
+                Later(new Sim.Locks.PickLockCommand(_avatar, item));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 Tip(why != null ? Cap(why) + "." : box.SearchedByMe
@@ -233,7 +250,7 @@ public sealed partial class VillageGame
             any = true;
             ImGui.BeginDisabled(!Toolbelt.HasRoom(_sim, _avatar));
             if (ImGui.MenuItem("Put on belt"u8))
-                Issue(new BeltCommand(_avatar, item, On: true));
+                Later(new BeltCommand(_avatar, item, On: true));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 Tip(Toolbelt.HasRoom(_sim, _avatar) ? "Tools on your belt work for you and leave your hands free." : $"Your belt is full ({Toolbelt.Slots} tools).");
@@ -242,19 +259,19 @@ public sealed partial class VillageGame
         {
             any = true;
             if (ImGui.MenuItem("Put in pack"u8))
-                Issue(new StowCommand(_avatar));
+                Later(new StowCommand(_avatar));
         }
         if (held)
         {
             any = true;
             if (ImGui.MenuItem("Put down"u8))
-                Issue(new AvatarDropCommand(_avatar, w.Get<Position>(_avatar).Cell));
+                Later(new AvatarDropCommand(_avatar, w.Get<Position>(_avatar).Cell));
         }
         if (packed)
         {
             any = true;
             if (ImGui.MenuItem("Drop"u8))
-                Issue(new DropFromPackCommand(_avatar, item));
+                Later(new DropFromPackCommand(_avatar, item));
         }
         if (!any)
             TextC(Dim, "Nothing to do with it from here.");
@@ -284,6 +301,9 @@ public sealed partial class VillageGame
     /// <summary>An "Eat" button for a food stack (in hand, packed or in reach), or nothing if it isn't one you can eat.</summary>
     private void EatButton(Entity item)
     {
+        // Gone this very frame (a command already applied: stowed into a stack, eaten, put down).
+        if (!_sim.World.IsAlive(item))
+            return;
         var def = _sim.World.Get<Thing>(item).Def;
         if (!def.IsFood || !AvatarSystem.CanEat(_sim, _avatar, item))
             return;
@@ -440,7 +460,9 @@ public sealed partial class VillageGame
             }
             if (ImGui.SmallButton("Put down"u8))
                 Issue(new AvatarDropCommand(_avatar, w.Get<Position>(_avatar).Cell));
-            EatButton(held);
+            // Solo, a command applies at once: what was in hand may be in the pack's stack by now.
+            if (w.IsAlive(held) && w.Get<Carrying>(_avatar).Item == held)
+                EatButton(held);
         }
         ImGui.EndGroup();
         DrawBelt();
@@ -510,9 +532,19 @@ public sealed partial class VillageGame
         if (items.Count == 0)
             TextC(Dim, "Empty. F picks things up into it.");
         var into = !container.IsNull && w.IsAlive(container) ? container : Entity.Null;
-        for (var k = 0; k < items.Count; k++)
+        // Solo, a command applies at once, so the list can go stale mid-way (a stack held, merged or
+        // dropped): skip what's gone, and stop after the first button that acts.
+        var acted = false;
+        void Act(ISimCommand command)
+        {
+            Issue(command);
+            acted = true;
+        }
+        for (var k = 0; k < items.Count && !acted; k++)
         {
             var item = items[k];
+            if (!w.IsAlive(item))
+                continue;
             var t = w.Get<Thing>(item);
             ImGui.PushID(item.Index);
             SlotBox("pack", item, k < HotbarSlots ? $"{k + 1}" : "", "", menu: true);
@@ -520,25 +552,26 @@ public sealed partial class VillageGame
             ImGui.BeginGroup();
             ImGui.Text(ItemLine(item));
             if (ImGui.SmallButton("Hold"u8))
-                Issue(new HoldCommand(_avatar, item));
+                Act(new HoldCommand(_avatar, item));
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                 Tip(k < HotbarSlots ? $"Take it in hand [{k + 1}]" : "Take it in hand");
-            EatButton(item);
+            if (w.IsAlive(item))
+                EatButton(item);
             if (t.Def.Apparel != null || t.Def.Weapon != null)
             {
                 ImGui.SameLine(0, 4);
                 if (ImGui.SmallButton(t.Def.Weapon != null ? "Wield"u8 : "Wear"u8))
-                    Issue(new EquipCommand(_avatar, item));
+                    Act(new EquipCommand(_avatar, item));
             }
             if (!into.IsNull && _sim.ContainerRoom(into, t.Def, t.Material) > 0)
             {
                 ImGui.SameLine(0, 4);
                 if (ImGui.SmallButton($"Put in {w.Get<Thing>(into).Label}"))
-                    Issue(new StoreFromPackCommand(_avatar, into, item));
+                    Act(new StoreFromPackCommand(_avatar, into, item));
             }
             ImGui.SameLine(0, 4);
             if (ImGui.SmallButton("Drop"u8))
-                Issue(new DropFromPackCommand(_avatar, item));
+                Act(new DropFromPackCommand(_avatar, item));
             ImGui.EndGroup();
             ImGui.PopID();
         }
