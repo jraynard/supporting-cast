@@ -33,7 +33,6 @@ public sealed class TitleGame : Game
     /// <summary>Linux desktop id: the Wayland app_id / X11 class a <c>supporting-cast.desktop</c> entry matches (tools/install-desktop-entry.sh).</summary>
     public const string AppId = "supporting-cast";
     public const ulong DefaultSeed = 1234;
-    private const int MapSize = 96;
 
     private Simulation _sim = null!;
     private WorldRenderer _renderer = null!;
@@ -178,10 +177,11 @@ public sealed class TitleGame : Game
         if (_roster.Last is { } last)
             Prefill(last);
         _items = MainItems();
-        // A fresh valley every time behind the menu.
-        _sim = Simulation.CreateStandard(defs, MapSize, MapSize, (ulong)Random.Shared.Next(1, 100_000), MapGenerator.RecommendedDepth);
+        // The village behind the menu, its people not yet arrived.
+        var map = defs.Map(VillageRound.DefaultMap);
+        _sim = MapBuilder.CreateSimulation(defs, map, (ulong)Random.Shared.Next(1, 100_000));
         _sim.StrictJobs = false; // a buggy job fails itself, not the game
-        var center = MapGenerator.Generate(_sim, new MapGenerator.Options { SpawnStartingKit = false });
+        var center = MapBuilder.Build(_sim, map, new MapGenerator.Options { SpawnStartingKit = false }).Center;
         _sim.RebuildDerivedIfNeeded();
 
         _camera.Target = new float3(center.X + 0.5f, center.Y + 0.5f, center.Z);

@@ -17,7 +17,7 @@ public class ExpeditionTests
 
     internal static (Simulation Sim, Entity Me, List<Entity> Party) Round(string trade, ulong seed = 1234)
     {
-        var sim = Simulation.CreateStandard(LoadDefs(), 160, 160, seed, MapGenerator.RecommendedDepth);
+        var sim = VillageRound.NewSimulation(LoadDefs(), seed);
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();

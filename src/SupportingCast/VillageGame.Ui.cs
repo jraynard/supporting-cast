@@ -788,7 +788,7 @@ public sealed partial class VillageGame
             var p = Buildings.Progress(_sim, building, phase);
             if (p.Total == 0)
                 continue;
-            var name = phase.ToString();
+            var name = Buildings.PhaseName(phase);
             if (phase < b.Phase)
                 TextC(Good, $"  {name}: done");
             else if (phase == b.Phase && !b.Demolishing)

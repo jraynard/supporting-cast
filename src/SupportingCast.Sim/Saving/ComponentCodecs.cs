@@ -101,7 +101,7 @@ internal static class ComponentCodecs
             var b = new PresetBuilding
             {
                 Def = r.Def<BuildingDef>(), Variant = r.Int(), Anchor = r.Int3(), Facing = (byte)(r.Int() & 3),
-                Phase = (BuildPhase)Math.Clamp(r.Int(), 0, (int)BuildPhase.Done), Demolishing = r.Bool(),
+                Phase = ReadPhase(r), Demolishing = r.Bool(),
             };
             for (var n = r.Count(100); n > 0; n--) // one the defs no longer have is dropped
                 if (r.String() is var name && b.Def.Upgrades.Exists(u => u.Name == name))
@@ -363,6 +363,15 @@ internal static class ComponentCodecs
     public static bool Has(Type type) => ByType.ContainsKey(type);
 
     public static ComponentCodec? For(Type type) => ByType.GetValueOrDefault(type);
+
+    /// <summary>A building's phase; format 1 had no upper storey phases (Roof was 2).</summary>
+    private static BuildPhase ReadPhase(SaveReader r)
+    {
+        var n = r.Int();
+        if (r.Version < 2 && n >= 2)
+            n += BuildPhase.Roof - BuildPhase.UpperFloor;
+        return (BuildPhase)Math.Clamp(n, 0, (int)BuildPhase.Done);
+    }
 
     private static ComponentCodec<T> Codec<T>(string name, Action<SaveWriter, T> write, Func<SaveReader, T> read) => new(name, write, read);
 

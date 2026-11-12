@@ -4,8 +4,8 @@
 // have; kit: what they start with. Labourer is unlimited: it's what's left when the named trades run out.
 {
   "trades": [
-    { "name": "Innkeeper", "label": "innkeeper", "description": "Keeps the longhouse fed and watered, hears everything said over the bar, and points adventuring parties at work, on whatever that's worth.",
-      "workplace": "Longhouse", "workPriorities": { "Cook": 1 }, "brokers": true },
+    { "name": "Innkeeper", "label": "innkeeper", "description": "Keeps the inn fed and watered, hears everything said over the bar, and points adventuring parties at work, on whatever that's worth.",
+      "workplace": "Inn", "workPriorities": { "Cook": 1 }, "brokers": true },
     { "name": "Blacksmith", "label": "blacksmith", "description": "Works the forge: blades, tools and repairs.",
       "workplace": "Smithy", "workPriorities": { "Craft": 1 },
       "knows": [ "Forge" ], "skills": { "Crafting": 6 },

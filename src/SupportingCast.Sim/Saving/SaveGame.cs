@@ -33,8 +33,8 @@ public sealed record SaveHeader(
 /// </summary>
 public static class SaveGame
 {
-    /// <summary>Bump this and migrate in the codecs when a release has saves worth keeping. Format 1 is the fork from DragonWorld.</summary>
-    public const int FormatVersion = 1;
+    /// <summary>Bump this and migrate in the codecs when a release has saves worth keeping. Format 1 is the fork from DragonWorld; 2 added the upper storey build phases.</summary>
+    public const int FormatVersion = 2;
     private static ReadOnlySpan<byte> Magic => "SCSV"u8;
 
     public static byte[] Write(Simulation sim, IReadOnlyDictionary<string, string>? meta = null) => Capture(sim, meta).Encode();

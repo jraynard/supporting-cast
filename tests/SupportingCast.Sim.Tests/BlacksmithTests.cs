@@ -152,7 +152,7 @@ public class BlacksmithTests
 
     private static (Simulation Sim, Entity Owner, Entity Sword) TownWithAWornSword(string playerTrade)
     {
-        var sim = Simulation.CreateStandard(LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
+        var sim = VillageRound.NewSimulation(LoadDefs(), 1234);
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();

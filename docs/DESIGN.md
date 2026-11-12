@@ -107,6 +107,7 @@ model: wounds sit on body parts, have a kind, and bleed, hurt and fester.
   bandages and other supplies for when the mana runs dry. Later, magical supplies can live there
   too.
 - Betrayal later (M4): drawing only part of a wound, or quietly pushing one back.
+- Maybe we should make the spell casting more freeform, so you input a set of runes and that decides what spell is cast (kinda like Magicka, i'm sure there are other examples too). they can look at their spellbook to see the correct runes for which spell they want to cast along with any description of what it does.
 
 **Carpenter's locksmithing.** Adventurers come back with locked and trapped chests. Picking the
 lock and finding and disarming the traps are each a hands-on game. They're the Carpenter's for

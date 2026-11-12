@@ -282,7 +282,7 @@ public class RoundTests
     [Fact]
     public void EveryoneStartsTheRoundInTheirTradesBuilding()
     {
-        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
+        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();
@@ -308,7 +308,7 @@ public class RoundTests
     [Fact]
     public void ABlacksmithCanForgeFromTheFirstMorning()
     {
-        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
+        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();

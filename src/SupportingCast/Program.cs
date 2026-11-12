@@ -155,6 +155,7 @@ else if (args.Contains("--host"))
         {
             Adventure = true, HeroName = saved?.Name ?? ParseString(args, "--name"), HeroLook = saved?.Look, HeroTraits = saved?.Traits, HeroClothes = saved?.Clothes,
             Difficulty = ParseString(args, "--difficulty"), HostCoop = hosting, AutoPause = false,
+            MapName = ParseString(args, "--map") ?? SupportingCast.Sim.Scenarios.VillageRound.DefaultMap,
         });
     }
 }
@@ -187,6 +188,7 @@ else
         IgniteForest = args.Contains("--ignite-forest"),
         FurnitureDemo = args.Contains("--furniture-demo"),
         BuildingDemo = args.Contains("--building-demo"),
+        MapName = ParseString(args, "--map") ?? SupportingCast.Sim.Scenarios.VillageRound.DefaultMap,
         Freeform = args.Contains("--freeform"),
         ShowRoofs = args.Contains("--show-roofs"),
         AutoPause = !args.Contains("--no-autopause"),
@@ -212,7 +214,7 @@ if (host.Display.Mode == WindowMode.Windowed && host.Window.GetAttribute(GlfwWin
 // keep dropping straight into the village. --new-game does the same with no other changes.
 static bool LaunchesDirectly(string[] args) =>
     args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--freeform" or "--show-roofs"
-        or "--ignite-forest" or "--yaw" or "--cutaway" or "--difficulty");
+        or "--ignite-forest" or "--yaw" or "--cutaway" or "--difficulty" or "--map");
 
 // --load and --check-save take a path, or the name of a slot in the saves directory ("quicksave").
 static string ResolveSave(string pathOrSlot)

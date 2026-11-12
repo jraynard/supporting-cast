@@ -61,20 +61,20 @@ public class PresetBuildingTests
 
         // Each raised phase is one site, costing what all its parts do.
         Assert.Equal(BuildPhase.Foundation, state.Phase);
-        Assert.Equal(["Dwelling_Turf_Foundation"], Sites(sim, b));
+        Assert.Equal(["Dwelling_Timber_Foundation"], Sites(sim, b));
         var site = Buildings.PhaseSite(sim, b);
         Assert.Equal(30, sim.World.Get<Construction>(site).Target.Building!.Cost.Single(c => c.ThingDef.Name == "Wood").Count); // a timber sill per cell
         Assert.Equal(0, sim.World.Count<Construction>() - 1); // nothing laid cell by cell
 
         FinishPhase(sim, b);
         Assert.Equal(BuildPhase.Walls, state.Phase);
-        Assert.Equal(["Dwelling_Turf_Walls"], Sites(sim, b));
+        Assert.Equal(["Dwelling_Timber_Walls"], Sites(sim, b));
         Assert.Equal(30, Buildings.Parts(sim, b).Count(p => sim.World.Get<Thing>(p).Def.Name == "Sill")); // all at once
 
         FinishPhase(sim, b);
         Assert.Equal(BuildPhase.Roof, state.Phase);
-        Assert.Equal(["Dwelling_Turf_Roof"], Sites(sim, b));
-        Assert.Equal(17, Buildings.Parts(sim, b).Count(p => sim.World.Get<Thing>(p).Def.Name == "LogWall"));
+        Assert.Equal(["Dwelling_Timber_Roof"], Sites(sim, b));
+        Assert.Equal(17, Buildings.Parts(sim, b).Count(p => sim.World.Get<Thing>(p).Def.Name == "TimberWall"));
 
         FinishPhase(sim, b);
         Assert.All(Buildings.Parts(sim, b).Where(p => sim.World.Get<Thing>(p).Def.IsRoof), p => Assert.Equal(2, sim.World.Get<Thing>(p).Cell.Z));
@@ -88,7 +88,7 @@ public class PresetBuildingTests
         var inside = Buildings.CellOf(sim.Map, state.Def, state.Anchor, 0, 2, 2);
         Assert.True(sim.Rooms.RoomAt(inside)?.Indoors, "its walls and roof make a room");
         Assert.True(sim.Map.Covered[sim.Map.Idx(inside)], "under its own roof");
-        Assert.Contains(sim.Messages.Messages, m => m.Text == "The turf-roofed dwelling is finished.");
+        Assert.Contains(sim.Messages.Messages, m => m.Text == "The timber-framed dwelling is finished.");
     }
 
     [Fact]
@@ -239,14 +239,14 @@ public class PresetBuildingTests
     public void ABuildingHalfwayUpSurvivesASave()
     {
         var sim = World();
-        var b = Buildings.Place(sim, Plan(sim, "Dwelling"), C(12, 12), 0, variant: 1);
+        var b = Buildings.Place(sim, Plan(sim, "Dwelling"), C(12, 12), 0, variant: 2);
         FinishPhase(sim, b);
 
         var (loaded, _) = Saving.SaveGame.Read(Saving.SaveGame.Write(sim), sim.Defs);
         Assert.True(loaded.Presets.PresetMode);
         var again = Assert.Single(loaded.World.Query<PresetBuilding>());
         var state = loaded.World.Get<PresetBuilding>(again);
-        Assert.Equal((BuildPhase.Walls, 1), (state.Phase, state.Variant));
+        Assert.Equal((BuildPhase.Walls, 2), (state.Phase, state.Variant));
         Assert.Equal(["Dwelling_Thatch_Walls"], Sites(loaded, again)); // the thatched look's walls
         FinishPhase(loaded, again);
         Assert.Contains(Buildings.Parts(loaded, again), p => loaded.World.Get<Thing>(p).Def.Name == "StaveWall");

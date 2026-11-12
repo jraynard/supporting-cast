@@ -70,7 +70,7 @@ public class SaveLoadTests
     [Fact]
     public void APartyInTownSurvives()
     {
-        var live = Simulation.CreateStandard(TestWorld.LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
+        var live = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
         live.Presets.PresetMode = true;
         VillageRound.Setup(live);
         live.Round.OpenLobby();

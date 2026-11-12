@@ -78,6 +78,9 @@ Known leftovers:
 
 ## Next
 
+### UX Pass
+- UX needs a lot of work. let's clean things up and make it look a nicer visually. we can leave the job minigame art fairly basic for now until we playtest those a bit more to make sure everything is good, but lets do one as an example as well, we can use the blacksmith's hammering to start with. if possible design UX upgrades so they can be carried back to dragonworld / narsil as well.
+
 ### M3: A whole season
 - `Director`, Renown and Dread, crises including the late-round dragon, the festival, the
   end-of-round reveal. Villagers defend themselves.

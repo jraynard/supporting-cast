@@ -185,7 +185,13 @@ y 0.5 as its middle. The mesher pieces each wall cell together from its plan nei
 
 The pieces are turned as needed, cut down to stubs by the cutaway like any wall, and the
 material picks the art (`wall_wood_birch`...). Use the tiling wall art for the long faces, so
-pixels stay square up a level.
+pixels stay square up a level. On a second storey (`upperLayout`, the inn's) the same pieces are
+drawn without their footing: any box wholly below `BuildingKit.FootingHeight` is left off.
+
+The village's look is `timber_plaster` (limewashed panels in dark oak, straw thatch) and
+`timber_shingle`, drawn by `tools/village_art.py` with the rest of the village's scenery (lanes,
+garden soil, the well, the bridge, fences, crates, cabbages, the pig). It writes only its own files,
+so it can be re-run alone, and makes the wood and stone versions of its art itself.
 
 **The roof** is generated over the plot. Its ridge runs along the long side. It rests on the side
 walls' middles at `pitch` levels of rise per cell, reaches `eave` past them, and reaches

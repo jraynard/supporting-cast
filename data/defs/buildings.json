@@ -2,8 +2,9 @@
   // Preset buildings (Systems/Buildings.cs, docs/plans/preset-buildings.md): a plan raised in
   // phases (foundation, walls, roof, furniture), each phase laying its parts as blueprints once
   // the one before is built. Layout rows run from the back (-Y) to the front (+Y, where R turns
-  // the front): W wall, D door, P post, . inside, space for nothing. Every plot cell gets the
-  // foundation, and the roof a level above it. Foundation, walls and roof each go up as one site
+  // the front): W wall, D door, P post, S stair, . inside, space for nothing. Every plot cell gets
+  // the foundation, and the roof a level above the top storey. "upperLayout" is a second storey
+  // over the first (its cells above a stair stay open); "level": 1 puts furniture or a slot up there. Foundation, walls and roof each go up as one site
   // (several villagers at once); "furnish" puts furniture in piece by piece at plan cells
   // [column, row]. "slots" are the spots for extras once it's finished: each takes one of its
   // defs, at its cell and facing (added to the building's). A variant swaps parts for another look.
@@ -42,8 +43,115 @@
         }
       ],
       "variants": [
+        { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster", "parts": { "wall": "TimberWall", "roof": "ThatchRoofPart" } },
         { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
         { "name": "Thatch", "label": "thatched", "kit": "stave_thatch", "parts": { "wall": "StaveWall", "roof": "ThatchRoofPart" } }
+      ]
+    },
+    {
+      // A long thatched cottage, timber-framed: the village's ordinary home (Millbrook's houses).
+      "name": "Cottage", "label": "cottage", "icon": "buildings/bed",
+      "description": "A long timber-framed cottage under thatch: a hearth, a table, and beds for a household.",
+      "layout": [
+        "WWWWWWWWW",
+        "W.......W",
+        "W.......W",
+        "W.......W",
+        "W.......W",
+        "WWWDWWWWW"
+      ],
+      "parts": { "foundation": "Sill", "wall": "TimberWall", "door": "PlankDoor", "roof": "ThatchRoofPart" },
+      "furnish": [
+        { "def": "Bed", "at": [1, 1] },
+        { "def": "Hearth", "at": [5, 2] },
+        { "def": "Table", "at": [7, 3] },
+        { "def": "Stool", "at": [6, 3] },
+        { "def": "Chest", "at": [7, 1], "facing": 2 }
+      ],
+      "slots": [
+        { "defs": ["Bed", "StrawPallet"], "at": [2, 1] },
+        { "defs": ["Bed", "StrawPallet"], "at": [3, 1] },
+        { "defs": ["Chest", "Stool"], "at": [1, 4], "facing": 1 }
+      ],
+      "upgrades": [
+        {
+          "name": "CookingPot", "label": "cooking pot", "on": "Hearth", "work": 120,
+          "description": "An iron-banded pot hung over the hearth on a chain: stews go further than a roast.",
+          "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 6 } ],
+          "model": [
+            { "min": [0.47, 0.47, 0.18], "max": [0.53, 0.53, 0.95], "top": "props/log_side", "side": "props/log_side" },
+            { "min": [0.3, 0.3, 0.2], "max": [0.7, 0.7, 0.5], "top": "props/stone_block", "side": "props/stone_block" },
+            { "min": [0.34, 0.34, 0.5], "max": [0.66, 0.66, 0.54], "top": "props/meal_top", "side": "props/stone_block" }
+          ]
+        }
+      ],
+      "variants": [
+        { "name": "Timber", "label": "thatched", "kit": "timber_plaster" },
+        { "name": "Shingle", "label": "shingle-roofed", "kit": "timber_shingle", "parts": { "roof": "ShingleRoofPart" } }
+      ]
+    },
+    {
+      // A traditional inn: a common room with a bar, a hearth and tables below, and rooms to let
+      // above, reached by the stair in the corner. Where the innkeeper works.
+      "name": "Inn", "label": "inn", "icon": "buildings/table",
+      "description": "A two-storey inn: a common room with a bar and a hearth downstairs, and rooms to let upstairs.",
+      "layout": [
+        "WWWWWWWWWWW",
+        "W.........W",
+        "W.........W",
+        "W.........W",
+        "W.........W",
+        "WS........W",
+        "WWWWWDWWWWW"
+      ],
+      "upperLayout": [
+        "WWWWWWWWWWW",
+        "W..W..W...W",
+        "W..W..W...W",
+        "WWDWWDWWDWW",
+        "W.........W",
+        "W.........W",
+        "WWWWWWWWWWW"
+      ],
+      "parts": {
+        "foundation": "Sill", "wall": "TimberWall", "door": "PlankDoor", "roof": "ThatchRoofPart",
+        "stair": "InnStair", "upperFloor": "Floorboards"
+      },
+      "furnish": [
+        { "def": "Hearth", "at": [2, 1] },
+        { "def": "AleCask", "at": [8, 1] },
+        { "def": "BarCounter", "at": [8, 3] },
+        { "def": "SquareTable", "at": [3, 3] },
+        { "def": "Stool", "at": [2, 3] }, { "def": "Stool", "at": [2, 4] }, { "def": "Stool", "at": [5, 3] },
+        { "def": "LongTable", "at": [7, 4] },
+        { "def": "Stool", "at": [6, 4] }, { "def": "Stool", "at": [8, 5] },
+        { "def": "Bed", "at": [1, 1], "level": 1 },
+        { "def": "Bed", "at": [4, 1], "level": 1 },
+        { "def": "Bed", "at": [9, 1], "level": 1 }
+      ],
+      "slots": [
+        { "defs": ["Chest"], "at": [9, 2], "facing": 2 },
+        { "defs": ["Chest"], "at": [2, 1], "facing": 2, "level": 1 },
+        { "defs": ["Chest"], "at": [5, 1], "facing": 2, "level": 1 },
+        { "defs": ["Bed", "StrawPallet"], "at": [7, 1], "level": 1 },
+        { "defs": ["Chest", "Stool"], "at": [9, 5], "facing": 2, "level": 1 }
+      ],
+      "upgrades": [
+        {
+          "name": "CookingPot", "label": "cooking pot", "on": "Hearth", "work": 120,
+          "description": "An iron-banded pot hung over the hearth on a chain: stews go further than a roast.",
+          "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 6 } ],
+          "model": [
+            { "min": [0.47, 0.47, 0.18], "max": [0.53, 0.53, 0.95], "top": "props/log_side", "side": "props/log_side" },
+            { "min": [0.3, 0.3, 0.2], "max": [0.7, 0.7, 0.5], "top": "props/stone_block", "side": "props/stone_block" },
+            { "min": [0.34, 0.34, 0.5], "max": [0.66, 0.66, 0.54], "top": "props/meal_top", "side": "props/stone_block" }
+          ]
+        }
+      ],
+      "eatThought": "AteAtTheInn", "letsBeds": true,
+      "variants": [
+        { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster" },
+        { "name": "Shingle", "label": "shingle-roofed", "kit": "timber_shingle", "parts": { "roof": "ShingleRoofPart" } }
       ]
     },
     {
@@ -132,6 +240,7 @@
         { "def": "Chest", "at": [5, 1], "facing": 2 }
       ],
       "variants": [
+        { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster", "parts": { "wall": "TimberWall", "roof": "ThatchRoofPart" } },
         { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
         { "name": "Thatch", "label": "thatched", "kit": "stave_thatch", "parts": { "wall": "StaveWall", "roof": "ThatchRoofPart" } }
       ]
@@ -154,6 +263,7 @@
         { "defs": ["Chest"], "at": [4, 3], "facing": 2 }
       ],
       "variants": [
+        { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster", "parts": { "wall": "TimberWall", "roof": "ThatchRoofPart" } },
         { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
         { "name": "Thatch", "label": "thatched", "kit": "stave_thatch", "parts": { "wall": "StaveWall", "roof": "ThatchRoofPart" } }
       ]
@@ -166,6 +276,75 @@
   // (one towards each neighbour where walls meet or end, round a "corner" post), "post" a P cell,
   // "door" the frame round a door. The roof is pitched over the plot, the ridge along its long side.
   "kits": [
+    {
+      // Half-timbering: limewashed panels between dark oak posts and rails on a fieldstone footing,
+      // under a deep straw thatch. The village's look (docs/ART.md "Building kits").
+      "name": "timber_plaster",
+      "span": [
+        { "min": [0, 0.2, 0], "max": [1, 0.8, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0, 0.28, 0.1], "max": [1, 0.72, 0.94], "top": "props/planks", "side": "buildings/wall_timber_plaster" },
+        { "min": [0, 0.26, 0.94], "max": [1, 0.74, 1], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ],
+      "arm": [
+        { "min": [0.5, 0.2, 0], "max": [1, 0.8, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.5, 0.28, 0.1], "max": [1, 0.72, 0.94], "top": "props/planks", "side": "buildings/wall_timber_plaster" },
+        { "min": [0.5, 0.26, 0.94], "max": [1, 0.74, 1], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ],
+      "corner": [
+        { "min": [0.16, 0.16, 0], "max": [0.84, 0.84, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.24, 0.24, 0.1], "max": [0.76, 0.76, 1.04], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ],
+      "post": [
+        { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.3, 0.3, 0.1], "max": [0.7, 0.7, 1.04], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ],
+      "door": [
+        { "min": [0, 0.2, 0], "max": [1, 0.8, 0.04], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0, 0.24, 0], "max": [0.12, 0.76, 1], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.88, 0.24, 0], "max": [1, 0.76, 1], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0, 0.26, 0.88], "max": [1, 0.74, 1], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ],
+      "floor": "buildings/floor_planks",
+      "roof": {
+        "sprite": "buildings/roof_thatch_straw", "pitch": 0.5, "eave": 0.85, "overhang": 0.5, "thickness": 0.24,
+        "gable": "buildings/gable_plaster", "gableFill": "buildings/wall_timber_plaster", "trim": "props/timber_dark", "horns": 0,
+        "ridge": "buildings/roof_thatch_straw"
+      }
+    },
+    {
+      // The same walls under split-oak shingles: the better-off houses.
+      "name": "timber_shingle",
+      "span": [
+        { "min": [0, 0.2, 0], "max": [1, 0.8, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0, 0.28, 0.1], "max": [1, 0.72, 0.94], "top": "props/planks", "side": "buildings/wall_timber_plaster" },
+        { "min": [0, 0.26, 0.94], "max": [1, 0.74, 1], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ],
+      "arm": [
+        { "min": [0.5, 0.2, 0], "max": [1, 0.8, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.5, 0.28, 0.1], "max": [1, 0.72, 0.94], "top": "props/planks", "side": "buildings/wall_timber_plaster" },
+        { "min": [0.5, 0.26, 0.94], "max": [1, 0.74, 1], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ],
+      "corner": [
+        { "min": [0.16, 0.16, 0], "max": [0.84, 0.84, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.24, 0.24, 0.1], "max": [0.76, 0.76, 1.04], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ],
+      "post": [
+        { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.3, 0.3, 0.1], "max": [0.7, 0.7, 1.04], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ],
+      "door": [
+        { "min": [0, 0.2, 0], "max": [1, 0.8, 0.04], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0, 0.24, 0], "max": [0.12, 0.76, 1], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.88, 0.24, 0], "max": [1, 0.76, 1], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0, 0.26, 0.88], "max": [1, 0.74, 1], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ],
+      "floor": "buildings/floor_planks",
+      "roof": {
+        "sprite": "buildings/roof_shingles", "pitch": 0.55, "eave": 0.6, "overhang": 0.45, "thickness": 0.14,
+        "gable": "buildings/gable_plaster", "gableFill": "buildings/wall_timber_plaster", "trim": "props/timber_dark", "horns": 0,
+        "ridge": "props/timber_dark"
+      }
+    },
     {
       "name": "log_turf",
       "span": [
@@ -304,6 +483,29 @@
       "building": { "partOnly": true, "isDoor": true, "insulation": 0.8, "work": 120, "cost": [ { "def": "Wood", "count": 5 } ] }
     },
     {
+      // Wattle and daub in a frame of dark oak: the walls of the village's inn and houses.
+      "name": "TimberWall", "label": "timber-framed wall", "category": "Building", "sprite": "buildings/wall_timber_plaster",
+      "maxHp": 140, "flammability": 0.8,
+      "building": { "partOnly": true, "isWall": true, "insulation": 0.93, "work": 95, "cost": [ { "def": "Wood", "count": 3 } ] }
+    },
+    {
+      // Boards on joists over the walls below: an upper storey's floor.
+      "name": "Floorboards", "label": "floorboards", "category": "Building", "sprite": "buildings/floor_planks",
+      "maxHp": 120, "flammability": 0.8,
+      "building": { "partOnly": true, "isFloor": true, "supportSpan": 3, "insulation": 0.92, "work": 30, "cost": [ { "def": "Wood", "count": 1 } ] }
+    },
+    {
+      "name": "InnStair", "label": "staircase", "category": "Building", "sprite": "buildings/stairs_wood",
+      "description": "A boxed stair up to the next storey.",
+      "maxHp": 120, "flammability": 1.0, "pathCost": 1,
+      "building": { "partOnly": true, "climb": "Ramp", "work": 150, "cost": [ { "def": "Wood", "count": 6 } ] }
+    },
+    {
+      "name": "ShingleRoofPart", "label": "shingle roof", "category": "Building", "sprite": "buildings/roof_shingles",
+      "maxHp": 120, "flammability": 0.6,
+      "building": { "partOnly": true, "isFloor": true, "isRoof": true, "supportSpan": 4, "insulation": 0.9, "work": 60, "cost": [ { "def": "Wood", "count": 1 } ] }
+    },
+    {
       "name": "TurfRoofPart", "label": "turf roof", "category": "Building", "sprite": "buildings/roof_turf",
       "maxHp": 90, "flammability": 0.25,
       "building": { "partOnly": true, "isFloor": true, "isRoof": true, "supportSpan": 4, "insulation": 0.92, "work": 70, "cost": [ { "def": "Wood", "count": 1 } ] }
@@ -338,9 +540,15 @@
 
     // ---- Freeform: still dragged cell by cell, for yards and defences ----
     {
-      "name": "Fence", "label": "fence", "category": "Building", "sprite": "buildings/wall_planks",
+      "name": "Fence", "label": "fence", "category": "Building", "sprite": "buildings/fence",
       "description": "Split rails between posts: keeps animals in or out. It fences a yard but never makes a room.",
       "maxHp": 80, "flammability": 1.0,
+      // A post with rails running through it along X (turned along the run when placed).
+      "model": [
+        { "min": [0.42, 0.42, 0], "max": [0.58, 0.58, 0.72], "top": "props/log_end", "side": "props/fence_post" },
+        { "min": [0, 0.46, 0.5], "max": [1, 0.54, 0.6], "top": "props/fence_rail", "side": "props/fence_rail" },
+        { "min": [0, 0.46, 0.24], "max": [1, 0.54, 0.34], "top": "props/fence_rail", "side": "props/fence_rail" }
+      ],
       "building": { "outdoor": true, "fence": true, "seeThrough": true, "isWall": true, "work": 40, "cost": [ { "def": "Wood", "count": 2 } ] }
     },
     {
@@ -350,7 +558,7 @@
       "building": { "outdoor": true, "fence": true, "isWall": true, "work": 120, "cost": [ { "def": "Wood", "count": 5 } ] }
     },
     {
-      "name": "Gate", "label": "gate", "category": "Building", "sprite": "buildings/door",
+      "name": "Gate", "label": "gate", "category": "Building", "sprite": "buildings/gate",
       "description": "A way through a fence or palisade, barred at need.",
       "maxHp": 160, "flammability": 1.0,
       "building": { "outdoor": true, "fence": true, "isDoor": true, "lockable": true, "work": 90, "cost": [ { "def": "Wood", "count": 4 } ] }

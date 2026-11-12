@@ -11,7 +11,7 @@ public static class Bench
     public static void Run(ulong seed, int ticks = SimClock.TicksPerDay)
     {
         var defs = DefDatabase.LoadDirectory(Path.Combine(AppContext.BaseDirectory, "data", "defs"));
-        var sim = Simulation.CreateStandard(defs, VillageGame.MapSize, VillageGame.MapSize, seed, MapGenerator.RecommendedDepth);
+        var sim = Sim.Scenarios.VillageRound.NewSimulation(defs, seed);
         Sim.Scenarios.VillageRound.Setup(sim);
 
         // Per-tick times too: frames hitch on the slowest ticks, which the average hides.

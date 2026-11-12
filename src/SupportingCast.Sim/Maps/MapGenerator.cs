@@ -83,13 +83,8 @@ public static class MapGenerator
                 _ => moisture < 0.35f ? dirt : grass,
             };
 
-            // Fill the column: stone at depth, a couple of dirt layers under soft ground, then the top.
             var h = baseZ + rise;
-            for (var z = 0; z < h; z++)
-            {
-                var block = z == h - 1 ? top : top != rock && z >= h - 3 ? dirt : rock;
-                map.Block[map.Idx(x, y, z)] = block;
-            }
+            FillColumn(map, x, y, h, top, dirt, rock);
 
             var col = y * map.Width + x;
             standZ[col] = h;
@@ -160,20 +155,7 @@ public static class MapGenerator
         // Flax near the start, so the first wounds can be bandaged.
         PlaceCluster(sim, flax, center + new int3(-12, -2, 0), 4, seed + 6);
 
-        sim.RebuildDerivedIfNeeded();
-
-        // Start everything at the outdoor temperature, and light it, so the first frame looks right.
-        Array.Fill(map.Temperature, sim.Climate.OutdoorTemperature);
-        sim.Lighting.Update(sim);
-
-        if (options.SpawnStartingKit)
-            SpawnStart(sim, center, options.Villagers);
-        if (options.Wildlife)
-        {
-            sim.Wildlife.PlaceStartingHerds(sim, center);
-            sim.Wildlife.Enable(sim);
-        }
-
+        Settle(sim, center, options);
         return center;
 
         // Which tree grows where: a slow noise grows groves of one species, oaks in the wettest
@@ -192,6 +174,35 @@ public static class MapGenerator
         }
     }
 
+    /// <summary>Fill a column: stone at depth, a couple of dirt layers under soft ground, then the top. People stand at z = <paramref name="h"/>.</summary>
+    internal static void FillColumn(Map map, int x, int y, int h, Defs.BlockDef top, Defs.BlockDef dirt, Defs.BlockDef rock)
+    {
+        for (var z = 0; z < h; z++)
+        {
+            var block = z == h - 1 ? top : top != rock && z >= h - 3 ? dirt : rock;
+            map.Block[map.Idx(x, y, z)] = block;
+        }
+    }
+
+    /// <summary>
+    /// The land is shaped and dressed: rebuild what derives from it, start it at the outdoor
+    /// temperature and light it (so the first frame looks right), then bring the people and the herds.
+    /// </summary>
+    internal static void Settle(Simulation sim, int3 center, Options options)
+    {
+        sim.RebuildDerivedIfNeeded();
+        Array.Fill(sim.Map.Temperature, sim.Climate.OutdoorTemperature);
+        sim.Lighting.Update(sim);
+
+        if (options.SpawnStartingKit)
+            SpawnStart(sim, center, options.Villagers);
+        if (options.Wildlife)
+        {
+            sim.Wildlife.PlaceStartingHerds(sim, center);
+            sim.Wildlife.Enable(sim);
+        }
+    }
+
     /// <summary>Nothing changes this close to the landing, so the start (and the slice) plays the same with or without veins.</summary>
     private const float VeinClearRadius = 24f;
 
@@ -201,7 +212,7 @@ public static class MapGenerator
     /// rest limestone, sandstone or plain rough stone by region. Kept clear of the
     /// landing, which stays rough stone so the start plays the same. Skipped if the defs lack them.
     /// </summary>
-    private static void PlaceStrata(Simulation sim, int[] standZ, int baseZ, int3 center, uint seed)
+    internal static void PlaceStrata(Simulation sim, int[] standZ, int baseZ, int3 center, uint seed)
     {
         var map = sim.Map;
         var defs = sim.Defs;
@@ -244,7 +255,7 @@ public static class MapGenerator
     /// Ore and clay from the <see cref="Defs.VeinDef"/>s, each in blobs of its own hashed noise
     /// inside its host rock, at its depth below the surface. Kept clear of the landing.
     /// </summary>
-    private static void PlaceVeins(Simulation sim, int[] standZ, float[] moistures, int3 center, uint seed)
+    internal static void PlaceVeins(Simulation sim, int[] standZ, float[] moistures, int3 center, uint seed)
     {
         var map = sim.Map;
         if (sim.Defs.AllVeins.Count == 0)
@@ -348,7 +359,7 @@ public static class MapGenerator
         return a + (b - a) * fy;
     }
 
-    private static float Fbm(int x, int y, uint seed, float scale, int octaves)
+    internal static float Fbm(int x, int y, uint seed, float scale, int octaves)
     {
         float sum = 0, amp = 1, norm = 0, freq = 1f / scale;
         for (var o = 0; o < octaves; o++)

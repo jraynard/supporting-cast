@@ -25,7 +25,7 @@ public class PartyLoopScenarioTests(ITestOutputHelper output)
     [InlineData(99UL)]
     public void APartyIsServedSentOutAndComesBackChanged(ulong seed)
     {
-        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 160, 160, seed, MapGenerator.RecommendedDepth);
+        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), seed);
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();

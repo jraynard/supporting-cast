@@ -209,7 +209,7 @@ public class HealerTests
     [Fact]
     public void TheShrineHasPalletsAStoneAndSupplies()
     {
-        var sim = Simulation.CreateStandard(LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
+        var sim = VillageRound.NewSimulation(LoadDefs(), 1234);
         sim.Presets.PresetMode = true;
         var town = VillageRound.Setup(sim);
         Assert.False(town.Shrine.IsNull);
@@ -255,7 +255,7 @@ public class HealerTests
 
     private static (Simulation Sim, Entity Hurt) ShrineWithAHurtAdventurer(string playerTrade)
     {
-        var sim = Simulation.CreateStandard(LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
+        var sim = VillageRound.NewSimulation(LoadDefs(), 1234);
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();

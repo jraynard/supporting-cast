@@ -167,7 +167,7 @@ public static class AiQueries
 
     /// <summary>
     /// The creature's own bed, else the nearest free one of the right kind: a nest, a prisoner bed
-    /// nobody else owns (<paramref name="prisoner"/>), or an ordinary bed.
+    /// nobody else owns (<paramref name="prisoner"/>), or an ordinary bed that isn't let (the inn's).
     /// </summary>
     public static Entity FindFreeBed(Simulation sim, Entity pawn, bool prisoner = false)
     {
@@ -192,6 +192,8 @@ public static class AiQueries
                 continue;
             if (w.Has<ForPrisoners>(e) != prisoner || owned?.Contains(e) == true)
                 continue;
+            if (Errands.ErrandSystem.IsLet(sim, e))
+                continue; // the inn's rooms: only for whoever's been given one
             if (sim.Reservations.IsReservedByOther(e, pawn))
                 continue;
             var d = Dist(from, thing.Cell);

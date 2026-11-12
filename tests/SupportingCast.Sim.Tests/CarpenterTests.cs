@@ -209,7 +209,7 @@ public class CarpenterTests
     /// <summary>A round with the player in <paramref name="trade"/>, and an adventurer holding a strongbox.</summary>
     private static (Simulation Sim, Entity Owner, Entity Box) TownWithABox(string trade, bool trapped)
     {
-        var sim = Simulation.CreateStandard(LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
+        var sim = VillageRound.NewSimulation(LoadDefs(), 1234);
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();

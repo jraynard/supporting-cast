@@ -59,7 +59,7 @@ public sealed class PartyDef : Def
     public List<string> Members { get; set; } = [];
 
     /// <summary>The building they make for and loiter in (a building def name): the tavern.</summary>
-    public string Haunt { get; set; } = "Longhouse";
+    public string Haunt { get; set; } = "Inn";
 
     /// <summary>Game hours in town before they move on (±25%).</summary>
     public float StayHours { get; set; } = 12;

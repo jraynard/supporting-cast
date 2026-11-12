@@ -31,8 +31,24 @@ public static class BuildingKit
 
     private static bool Joins(char symbol) => symbol is 'W' or 'D' or 'P';
 
+    /// <summary>A box wholly this low is the footing a wall stands on: drawn on the ground storey only.</summary>
+    public const float FootingHeight = 0.12f;
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<IReadOnlyList<ModelBox>, IReadOnlyList<ModelBox>> Raised = new();
+
+    /// <summary>A piece without its footing, for an upper storey standing on the walls below.</summary>
+    private static IReadOnlyList<ModelBox> WithoutFooting(IReadOnlyList<ModelBox> model) =>
+        Raised.GetValue(model, m => m.Where(box => box.Max[2] > FootingHeight).ToList());
+
     /// <summary>The kit's models for a wall, post or door cell, each with its turn (made along X).</summary>
     public static IEnumerable<(IReadOnlyList<ModelBox> Model, int Facing)> WallPieces(BuildingKitDef kit, PresetBuilding b, int3 cell)
+    {
+        if (cell.Z == b.Anchor.Z)
+            return GroundPieces(kit, b, cell);
+        return GroundPieces(kit, b, cell).Select(p => (WithoutFooting(p.Model), p.Facing));
+    }
+
+    private static IEnumerable<(IReadOnlyList<ModelBox> Model, int Facing)> GroundPieces(BuildingKitDef kit, PresetBuilding b, int3 cell)
     {
         char At(int dx, int dy) => Buildings.SymbolAt(b.Def, b.Anchor, b.Facing, new int3(cell.X + dx, cell.Y + dy, cell.Z));
         var symbol = At(0, 0);

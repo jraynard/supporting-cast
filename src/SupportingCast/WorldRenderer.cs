@@ -917,7 +917,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
                     CubePart(sprite, s.Cell, frac, tint, level);
             }
         }
-        var top = phase == BuildPhase.Roof ? 2.3f : 1.3f;
+        var top = 1.3f + (phase == BuildPhase.Roof ? b.Def.Storeys : phase is BuildPhase.UpperFloor or BuildPhase.UpperWalls ? 1 : 0);
         if (frac > 0)
             Bar(Position.CenterOf(b.Anchor) + new float3(0, 0, top), frac, Rgba.Pack(0.4f, 0.9f, 0.4f), Quad.Level(b.Anchor.Z));
         _sitesNow[site] = (b.Anchor, c.Target.Label, frac);

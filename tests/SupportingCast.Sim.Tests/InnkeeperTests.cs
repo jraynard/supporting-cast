@@ -94,7 +94,7 @@ public class InnkeeperTests
 
     private static (Simulation Sim, List<Entity> Party) Tavern(string playerTrade)
     {
-        var sim = Simulation.CreateStandard(LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
+        var sim = VillageRound.NewSimulation(LoadDefs(), 1234);
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();
@@ -167,6 +167,43 @@ public class InnkeeperTests
         var meal = sim.Errands.All.First(e => e.Kind.Kind == ErrandKind.Meal && e.Poster == diner);
         Assert.Equal(ErrandStatus.Done, meal.Status);
         Assert.Equal(keeper, meal.Assignee);
+    }
+
+    /// <summary>Tick until evening, the party staying on past tomorrow.</summary>
+    private static void StayTillEvening(Simulation sim, List<Entity> party)
+    {
+        foreach (var a in party)
+            sim.World.Get<Adventurer>(a).LeaveTick = sim.Clock.Tick + SimClock.TicksPerDay * 2;
+        while (sim.Clock.HourOfDay < ErrandSystem.LodgingFromHour)
+            sim.TickMany(SimClock.TicksPerHour / 4);
+    }
+
+    [Fact]
+    public void AnAIInnkeeperLetsARoomUpstairsForTheNight()
+    {
+        var (sim, party) = Tavern("Healer");
+        var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
+        StayTillEvening(sim, party);
+        var lodger = party[0];
+        for (var i = 0; i < 16 && !sim.Errands.All.Any(e => e.Kind.Kind == ErrandKind.Lodging && e.Poster == lodger && e.Status == ErrandStatus.Done); i++)
+            sim.TickMany(SimClock.TicksPerHour / 4);
+
+        var room = sim.Errands.All.First(e => e.Kind.Kind == ErrandKind.Lodging && e.Poster == lodger);
+        Assert.Equal(ErrandStatus.Done, room.Status);
+        Assert.Equal(keeper, room.Assignee);
+        var bed = sim.World.Get<BedOwner>(lodger).Bed;
+        var inn = Buildings.Of(sim, bed);
+        Assert.Equal("Inn", sim.World.Get<PresetBuilding>(inn).Def.Name);
+        Assert.Equal(sim.World.Get<PresetBuilding>(inn).Anchor.Z + 1, sim.World.Get<Thing>(bed).Cell.Z); // upstairs
+    }
+
+    [Fact]
+    public void NobodySleepsInALetBedUnlessItsTheirs()
+    {
+        var (sim, _) = Tavern("Healer");
+        var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
+        var bed = Ai.AiQueries.FindFreeBed(sim, keeper);
+        Assert.False(!bed.IsNull && ErrandSystem.IsLet(sim, bed), "the innkeeper took a guest's bed");
     }
 
     private static int3 PartyHaunt(Simulation sim) =>

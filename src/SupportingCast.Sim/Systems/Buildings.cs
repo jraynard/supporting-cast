@@ -24,39 +24,40 @@ public static class Buildings
 
     private static readonly int3 Off = new(-1, -1, -1);
 
-    /// <summary>The plot's cells on the ground level, in plan order (rows back to front).</summary>
-    public static IEnumerable<PlotCell> Plot(Map map, BuildingDef def, int3 anchor, int facing)
+    /// <summary>The plot's cells on a storey (0: the ground), in plan order (rows back to front).</summary>
+    public static IEnumerable<PlotCell> Plot(Map map, BuildingDef def, int3 anchor, int facing, int level = 0)
     {
         for (var row = 0; row < def.Depth; row++)
         for (var col = 0; col < def.Width; col++)
         {
-            var ch = def.At(col, row);
+            var ch = def.At(col, row, level);
             if (ch == ' ')
                 continue;
-            yield return new PlotCell(CellOf(map, def, anchor, facing, col, row), ch, col, row);
+            yield return new PlotCell(CellOf(map, def, anchor, facing, col, row, level), ch, col, row);
         }
     }
 
-    /// <summary>Where a plan cell (column, row) lands on the map, or (-1, -1, -1) off it.</summary>
-    public static int3 CellOf(Map map, BuildingDef def, int3 anchor, int facing, int col, int row)
+    /// <summary>Where a plan cell (column, row) of a storey lands on the map, or (-1, -1, -1) off it.</summary>
+    public static int3 CellOf(Map map, BuildingDef def, int3 anchor, int facing, int col, int row, int level = 0)
     {
         var l = def.Local(col, row);
         var d = Footprint.Rotate(l.X, l.Y, facing);
-        var c = new int3(anchor.X + d.X, anchor.Y + d.Y, anchor.Z);
+        var c = new int3(anchor.X + d.X, anchor.Y + d.Y, anchor.Z + level);
         return map.InBounds(c) ? c : Off;
     }
 
-    /// <summary>The plan symbol under a map cell on the plot's level, ' ' if it's off the plot.</summary>
+    /// <summary>The plan symbol under a map cell on one of the building's storeys, ' ' if it's off the plot.</summary>
     public static char SymbolAt(BuildingDef def, int3 anchor, int facing, int3 cell)
     {
-        if (cell.Z != anchor.Z)
+        var level = cell.Z - anchor.Z;
+        if (level < 0 || level >= def.Storeys)
             return ' ';
         var d = Footprint.Rotate(cell.X - anchor.X, cell.Y - anchor.Y, (4 - facing) & 3); // undo the turn
-        return def.At(d.X - Footprint.Lo(def.Width), d.Y - Footprint.Lo(def.Depth));
+        return def.At(d.X - Footprint.Lo(def.Width), d.Y - Footprint.Lo(def.Depth), level);
     }
 
     /// <summary>
-    /// The building whose plot holds <paramref name="cell"/>: on its ground level, or the level of
+    /// The building whose plot holds <paramref name="cell"/>: on one of its storeys, or the level of
     /// its roof just above. Entity.Null if none.
     /// </summary>
     public static Entity At(Simulation sim, int3 cell)
@@ -67,9 +68,10 @@ public static class Buildings
             var b = w.Get<PresetBuilding>(e);
             if (SymbolAt(b.Def, b.Anchor, b.Facing, cell) != ' ')
                 return e;
-            if (b.VariantDef.Resolved.RoofDef != null && cell.Z == b.Anchor.Z + 1
-                && SymbolAt(b.Def, b.Anchor, b.Facing, new int3(cell.X, cell.Y, b.Anchor.Z)) != ' ')
-                return e;
+            if (cell.Z > b.Anchor.Z && cell.Z <= b.Anchor.Z + b.Def.Storeys
+                && SymbolAt(b.Def, b.Anchor, b.Facing, new int3(cell.X, cell.Y, b.Anchor.Z)) != ' '
+                && (cell.Z < b.Anchor.Z + b.Def.Storeys || b.VariantDef.Resolved.RoofDef != null))
+                return e; // over its ground plan, below or at its roof
         }
         return Entity.Null;
     }
@@ -93,7 +95,7 @@ public static class Buildings
     {
         var map = sim.Map;
         var w = sim.World;
-        if (!map.InBounds(anchor) || anchor.Z == 0 || anchor.Z + 1 >= map.Depth)
+        if (!map.InBounds(anchor) || anchor.Z == 0 || anchor.Z + def.Storeys >= map.Depth)
             return "It doesn't fit there.";
         var roof = def.Variant(variant).Resolved.RoofDef != null;
         foreach (var p in Plot(map, def, anchor, facing))
@@ -111,11 +113,11 @@ public static class Buildings
                 return $"The {w.Get<Thing>(s).Label} is in the way.";
             if (!At(sim, p.Cell).IsNull)
                 return "Another building's plot is there.";
-            if (roof)
+            for (var up = 1; up <= def.Storeys - (roof ? 0 : 1); up++)
             {
-                var j = i + map.LayerSize;
+                var j = i + map.LayerSize * up;
                 if (map.IsSolid(j) || !map.Floor[j].IsNull || !map.Structure[j].IsNull || !At(sim, map.CellOf(j)).IsNull)
-                    return "There's no room for the roof.";
+                    return up < def.Storeys ? "There's no room for the upper storey." : "There's no room for the roof.";
             }
         }
         return null;
@@ -166,6 +168,14 @@ public static class Buildings
     /// <summary>The most villagers who work on one phase at a time (any number may bring materials).</summary>
     public const int MaxBuilders = 4;
 
+    /// <summary>"Upper floor": a phase as a player reads it.</summary>
+    public static string PhaseName(BuildPhase phase) => phase switch
+    {
+        BuildPhase.UpperFloor => "Upper floor",
+        BuildPhase.UpperWalls => "Upper storey",
+        _ => phase.ToString(),
+    };
+
     /// <summary>What a phase lays, in a fixed order.</summary>
     public static IEnumerable<Stamp> Stamps(Map map, PresetBuilding b, BuildPhase phase)
     {
@@ -181,13 +191,24 @@ public static class Buildings
                     if (parts.ForSymbol(p.Symbol) is { } d)
                         yield return new Stamp(d, p.Cell, b.Facing);
                 break;
+            case BuildPhase.UpperFloor when parts.UpperFloorDef is { } f:
+                foreach (var p in Plot(map, b.Def, b.Anchor, b.Facing, 1))
+                    if (b.Def.At(p.Col, p.Row) != 'S') // the stairwell stays open
+                        yield return new Stamp(f, p.Cell, b.Facing);
+                break;
+            case BuildPhase.UpperWalls:
+                foreach (var p in Plot(map, b.Def, b.Anchor, b.Facing, 1))
+                    if (parts.ForSymbol(p.Symbol) is { } d)
+                        yield return new Stamp(d, p.Cell, b.Facing);
+                break;
             case BuildPhase.Roof when parts.RoofDef is { } r:
+                var top = b.Def.Storeys;
                 foreach (var p in Plot(map, b.Def, b.Anchor, b.Facing))
-                    yield return new Stamp(r, p.Cell == Off ? Off : new int3(p.Cell.X, p.Cell.Y, p.Cell.Z + 1), b.Facing);
+                    yield return new Stamp(r, p.Cell == Off || p.Cell.Z + top >= map.Depth ? Off : new int3(p.Cell.X, p.Cell.Y, p.Cell.Z + top), b.Facing);
                 break;
             case BuildPhase.Furnish:
                 foreach (var f in b.Def.Furnish)
-                    yield return new Stamp(f.ThingDef, CellOf(map, b.Def, b.Anchor, b.Facing, f.At[0], f.At[1]), (f.Facing + b.Facing) & 3);
+                    yield return new Stamp(f.ThingDef, CellOf(map, b.Def, b.Anchor, b.Facing, f.At[0], f.At[1], f.Level), (f.Facing + b.Facing) & 3);
                 break;
         }
     }
@@ -274,6 +295,8 @@ public static class Buildings
             {
                 BuildPhase.Foundation => $"The {label}'s foundation is laid.",
                 BuildPhase.Walls => $"The {label}'s walls are up.",
+                BuildPhase.UpperFloor => $"The {label}'s upper floor is laid.",
+                BuildPhase.UpperWalls => $"The {label}'s upper storey is up.",
                 BuildPhase.Roof => $"The {label}'s roof is on.",
                 _ => $"The {label} is furnished.",
             }, b.Anchor);
@@ -474,7 +497,7 @@ public static class Buildings
         for (var i = 0; i < b.Def.Slots.Count; i++)
         {
             var slot = b.Def.Slots[i];
-            yield return new SlotSpot(i, slot, CellOf(sim.Map, b.Def, b.Anchor, b.Facing, slot.At[0], slot.At[1]), (slot.Facing + b.Facing) & 3);
+            yield return new SlotSpot(i, slot, CellOf(sim.Map, b.Def, b.Anchor, b.Facing, slot.At[0], slot.At[1], slot.Level), (slot.Facing + b.Facing) & 3);
         }
     }
 

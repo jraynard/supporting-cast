@@ -17,12 +17,23 @@ public sealed class BuildingDef : Def
 
     /// <summary>
     /// The plan, one string per row from the back (-Y) to the front (+Y), every row as long:
-    /// <c>W</c> wall, <c>D</c> door, <c>P</c> post (a wall part standing alone: an open side's
+    /// <c>W</c> wall, <c>D</c> door, <c>S</c> stair up to the <see cref="UpperLayout"/>, <c>P</c> post (a wall part standing alone: an open side's
     /// corner), <c>.</c> inside, a space for no part of the plot. Every plot cell gets the
     /// foundation and the roof above it. Turned by the building's facing like a footprint
     /// (<see cref="Footprint.Rotate(int, int, int)"/>) round the plan's middle.
     /// </summary>
     public List<string> Layout { get; set; } = [];
+
+    /// <summary>
+    /// A second storey's plan, as <see cref="Layout"/> and as big, standing on it one level up:
+    /// <c>W</c>, <c>D</c>, <c>P</c>, <c>.</c> or space. Every cell of it gets the
+    /// <see cref="BuildingParts.UpperFloor"/> except above a stair (<c>S</c> in the ground plan,
+    /// which must be <c>.</c> here: the stairwell). Empty: one storey. The roof goes over both.
+    /// </summary>
+    public List<string> UpperLayout { get; set; } = [];
+
+    /// <summary>1, or 2 with an <see cref="UpperLayout"/>.</summary>
+    [JsonIgnore] public int Storeys => UpperLayout.Count > 0 ? 2 : 1;
 
     /// <summary>The structures each phase lays, unless the variant says otherwise.</summary>
     public BuildingParts Parts { get; set; } = new();
@@ -42,6 +53,12 @@ public sealed class BuildingDef : Def
     /// </summary>
     public List<BuildingUpgrade> Upgrades { get; set; } = [];
 
+    /// <summary>
+    /// Its beds are let, not slept in by whoever's tired (the inn's rooms): only someone given one
+    /// (<c>BedOwner</c>, a <c>Lodging</c> errand) sleeps there.
+    /// </summary>
+    public bool LetsBeds { get; set; }
+
     /// <summary>A memory its people get from eating inside it (feasting in the longhouse). Null: none.</summary>
     public string? EatThought { get; set; }
 
@@ -57,6 +74,10 @@ public sealed class BuildingDef : Def
     /// <summary>The plan symbol at a plan cell (column, row), ' ' outside.</summary>
     public char At(int col, int row) => col >= 0 && row >= 0 && col < Width && row < Depth ? Layout[row][col] : ' ';
 
+    /// <summary>The plan symbol at a plan cell on a storey (0 the ground, 1 the upper), ' ' outside or with no such storey.</summary>
+    public char At(int col, int row, int level) => level == 0 ? At(col, row)
+        : level == 1 && UpperLayout.Count > 0 && col >= 0 && row >= 0 && col < Width && row < Depth ? UpperLayout[row][col] : ' ';
+
     /// <summary>A plan cell's offset from the anchor before turning (the plan's middle, as footprints centre).</summary>
     public int2 Local(int col, int row) => new(col + Footprint.Lo(Width), row + Footprint.Lo(Depth));
 
@@ -65,29 +86,31 @@ public sealed class BuildingDef : Def
     /// <summary>Whether any of its slots takes <paramref name="def"/> (or a shape of it).</summary>
     public bool Accepts(ThingDef def) => Slots.Any(s => s.Accepts(def));
 
-    /// <summary>Whether <paramref name="def"/> turned to <paramref name="facing"/> at a plan cell stands wholly on <c>.</c> cells.</summary>
-    internal bool FitsInside(ThingDef def, int col, int row, int facing, HashSet<(int, int)>? taken = null)
+    /// <summary>Whether <paramref name="def"/> turned to <paramref name="facing"/> at a plan cell of a storey stands wholly on <c>.</c> cells (clear of a stairwell).</summary>
+    internal bool FitsInside(ThingDef def, int col, int row, int facing, int level, HashSet<(int, int, int)>? taken = null)
     {
         int lx = Footprint.Lo(def.SizeX), ly = Footprint.Lo(def.SizeY);
         for (var y = ly; y < ly + def.SizeY; y++)
         for (var x = lx; x < lx + def.SizeX; x++)
         {
             var d = Footprint.Rotate(x, y, facing);
-            if (At(col + d.X, row + d.Y) != '.' || taken?.Contains((col + d.X, row + d.Y)) == true)
+            if (At(col + d.X, row + d.Y, level) != '.' || taken?.Contains((col + d.X, row + d.Y, level)) == true)
                 return false;
+            if (level > 0 && At(col + d.X, row + d.Y, level - 1) == 'S')
+                return false; // the stairwell
         }
         return true;
     }
 
     /// <summary>The plan cells a piece of furniture covers.</summary>
-    internal static IEnumerable<(int, int)> Covers(ThingDef def, int col, int row, int facing)
+    internal static IEnumerable<(int, int, int)> Covers(ThingDef def, int col, int row, int facing, int level)
     {
         int lx = Footprint.Lo(def.SizeX), ly = Footprint.Lo(def.SizeY);
         for (var y = ly; y < ly + def.SizeY; y++)
         for (var x = lx; x < lx + def.SizeX; x++)
         {
             var d = Footprint.Rotate(x, y, facing);
-            yield return (col + d.X, row + d.Y);
+            yield return (col + d.X, row + d.Y, level);
         }
     }
 
@@ -102,8 +125,25 @@ public sealed class BuildingDef : Def
             if (row.Length != Width)
                 throw new Exception($"Building '{Name}': every layout row must be {Width} long");
             foreach (var ch in row)
+                if (ch is not ('W' or 'D' or 'P' or 'S' or '.' or ' '))
+                    throw new Exception($"Building '{Name}': unknown layout symbol '{ch}' (W, D, P, S, . or space)");
+        }
+        if (UpperLayout.Count > 0 && UpperLayout.Count != Depth)
+            throw new Exception($"Building '{Name}': the upper layout must have {Depth} rows, as the ground's");
+        for (var row = 0; row < UpperLayout.Count; row++)
+        {
+            if (UpperLayout[row].Length != Width)
+                throw new Exception($"Building '{Name}': every upper layout row must be {Width} long");
+            for (var col = 0; col < Width; col++)
+            {
+                var ch = UpperLayout[row][col];
                 if (ch is not ('W' or 'D' or 'P' or '.' or ' '))
-                    throw new Exception($"Building '{Name}': unknown layout symbol '{ch}' (W, D, P, . or space)");
+                    throw new Exception($"Building '{Name}': unknown upper layout symbol '{ch}' (W, D, P, . or space)");
+                if (ch != ' ' && At(col, row) == ' ')
+                    throw new Exception($"Building '{Name}': the upper storey overhangs the ground plan at [{col}, {row}]");
+                if (At(col, row) == 'S' && ch != '.')
+                    throw new Exception($"Building '{Name}': above the stair at [{col}, {row}] must be open ('.')");
+            }
         }
         if (Variants.Count == 0)
             Variants.Add(new BuildingVariant { Name = "Plain", Label = Label });
@@ -125,17 +165,19 @@ public sealed class BuildingDef : Def
                 c.Resolve(db);
         }
         // Furniture stands inside, clear of the rest of it; slots stand clear of the furniture.
-        var furnished = new HashSet<(int, int)>();
+        var furnished = new HashSet<(int, int, int)>();
         foreach (var f in Furnish)
         {
+            if (f.Level < 0 || f.Level >= Storeys)
+                throw new Exception($"Building '{Name}': the {f.Def} is on storey {f.Level}, which it doesn't have");
             f.ThingDef = db.Thing(f.Def);
             if (f.ThingDef.Building == null)
                 throw new Exception($"Building '{Name}' furnishes '{f.Def}', which isn't a building");
             if (f.At.Length != 2)
                 throw new Exception($"Building '{Name}': a furnishing is at [column, row]");
-            if (!FitsInside(f.ThingDef, f.At[0], f.At[1], f.Facing, furnished))
+            if (!FitsInside(f.ThingDef, f.At[0], f.At[1], f.Facing, f.Level, furnished))
                 throw new Exception($"Building '{Name}': the {f.Def} at [{f.At[0]}, {f.At[1]}] doesn't fit inside");
-            furnished.UnionWith(Covers(f.ThingDef, f.At[0], f.At[1], f.Facing));
+            furnished.UnionWith(Covers(f.ThingDef, f.At[0], f.At[1], f.Facing, f.Level));
         }
         foreach (var slot in Slots)
         {
@@ -145,7 +187,7 @@ public sealed class BuildingDef : Def
             foreach (var name in slot.Defs)
             {
                 var d = db.Thing(name);
-                if (d.Building == null || !FitsInside(d, slot.At[0], slot.At[1], slot.Facing, furnished))
+                if (slot.Level < 0 || slot.Level >= Storeys || d.Building == null || !FitsInside(d, slot.At[0], slot.At[1], slot.Facing, slot.Level, furnished))
                     throw new Exception($"Building '{Name}': a {name} in the slot at [{slot.At[0]}, {slot.At[1]}] doesn't fit inside, clear of the furniture");
                 slot.ThingDefs.Add(d);
             }
@@ -164,17 +206,25 @@ public sealed class BuildingParts
     public string? Post { get; set; }
     public string? Door { get; set; }
 
-    /// <summary>A roof over every plot cell, one level up. Null: no roof phase.</summary>
+    /// <summary>A roof over every plot cell, above the top storey. Null: no roof phase.</summary>
     public string? Roof { get; set; }
+
+    /// <summary>For <c>S</c> cells: stairs up to the second storey.</summary>
+    public string? Stair { get; set; }
+
+    /// <summary>The floor of the second storey, laid on the walls below.</summary>
+    public string? UpperFloor { get; set; }
 
     [JsonIgnore] public ThingDef? FoundationDef { get; private set; }
     [JsonIgnore] public ThingDef? WallDef { get; private set; }
     [JsonIgnore] public ThingDef? PostDef { get; private set; }
     [JsonIgnore] public ThingDef? DoorDef { get; private set; }
     [JsonIgnore] public ThingDef? RoofDef { get; private set; }
+    [JsonIgnore] public ThingDef? StairDef { get; private set; }
+    [JsonIgnore] public ThingDef? UpperFloorDef { get; private set; }
 
     /// <summary>The part for a plan symbol in the Walls phase.</summary>
-    public ThingDef? ForSymbol(char ch) => ch switch { 'W' => WallDef, 'D' => DoorDef, 'P' => PostDef, _ => null };
+    public ThingDef? ForSymbol(char ch) => ch switch { 'W' => WallDef, 'D' => DoorDef, 'P' => PostDef, 'S' => StairDef, _ => null };
 
     internal static BuildingParts Merge(BuildingParts over, BuildingParts base_) => new()
     {
@@ -183,6 +233,8 @@ public sealed class BuildingParts
         Post = over.Post ?? base_.Post,
         Door = over.Door ?? base_.Door,
         Roof = over.Roof ?? base_.Roof,
+        Stair = over.Stair ?? base_.Stair,
+        UpperFloor = over.UpperFloor ?? base_.UpperFloor,
     };
 
     internal void Resolve(DefDatabase db, BuildingDef owner)
@@ -201,9 +253,15 @@ public sealed class BuildingParts
         PostDef = Part(Post, "post", d => d.Building!.IsWall) ?? WallDef;
         DoorDef = Part(Door, "door", d => d.Building!.IsDoor);
         RoofDef = Part(Roof, "roof", d => d.IsRoof);
-        var plan = string.Concat(owner.Layout);
+        StairDef = Part(Stair, "stair", d => d.Building!.Climb == ClimbKind.Ramp);
+        UpperFloorDef = Part(UpperFloor, "upper floor", d => d.IsFloor && !d.IsRoof);
+        var plan = string.Concat(owner.Layout) + string.Concat(owner.UpperLayout);
         if ((plan.Contains('W') && WallDef == null) || (plan.Contains('D') && DoorDef == null) || (plan.Contains('P') && PostDef == null))
             throw new Exception($"Building '{owner.Name}': its plan has walls, doors or posts without a part for them");
+        if (plan.Contains('S') && StairDef == null)
+            throw new Exception($"Building '{owner.Name}': its plan has stairs without a stair part");
+        if (owner.UpperLayout.Count > 0 && UpperFloorDef == null)
+            throw new Exception($"Building '{owner.Name}': it has an upper storey without an upper floor part");
     }
 }
 
@@ -224,7 +282,7 @@ public sealed class BuildingVariant
     [JsonIgnore] public BuildingParts Resolved { get; internal set; } = new();
 
     /// <summary>
-    /// The site each raised phase is built as (Foundation, Walls, Roof; null where a phase lays
+    /// The site each raised phase is built as (Foundation, Walls, the upper storey's, Roof; null where a phase lays
     /// nothing): a def made at load from the parts, costing and taking the work of them all
     /// (<see cref="DefDatabase"/>), covering the whole plot so builders gather round it.
     /// </summary>
@@ -244,6 +302,9 @@ public sealed class BuildingFurnishing
     /// <summary>Its facing within the plan (added to the building's).</summary>
     public int Facing { get; set; }
 
+    /// <summary>The storey it stands on: 0 the ground, 1 the upper.</summary>
+    public int Level { get; set; }
+
     [JsonIgnore] public ThingDef ThingDef { get; internal set; } = null!;
 }
 
@@ -261,6 +322,9 @@ public sealed class BuildingSlot
     /// <summary>Its facing within the plan (added to the building's).</summary>
     public int Facing { get; set; }
 
+    /// <summary>The storey it's on: 0 the ground, 1 the upper.</summary>
+    public int Level { get; set; }
+
     [JsonIgnore] public List<ThingDef> ThingDefs { get; } = [];
 
     /// <summary>Takes <paramref name="def"/> (or a shape of it).</summary>
@@ -275,6 +339,12 @@ public enum BuildPhase : byte
 {
     Foundation,
     Walls,
+
+    /// <summary>A second storey's floor, on the walls below.</summary>
+    UpperFloor,
+
+    /// <summary>A second storey's walls, on that floor.</summary>
+    UpperWalls,
     Roof,
     Furnish,
     Done,

@@ -51,7 +51,6 @@ public enum ToolKind
 /// </summary>
 public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 {
-    public const int MapSize = 160;
     private static readonly int[] SpeedMultipliers = [0, 1, 3, 6];
 
     private Simulation _sim = null!;
@@ -170,6 +169,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>Debug/screenshots (<c>--building-demo</c>): every preset building, and one at each phase (<see cref="BuildingShowcase"/>).</summary>
     public bool BuildingDemo { get; init; }
 
+    /// <summary><c>--map NAME</c>: the hand-made map (data/defs/maps/) a new village is laid out on.</summary>
+    public string MapName { get; init; } = VillageRound.DefaultMap;
+
     /// <summary>
     /// <c>--freeform</c>: build walls, floors and roofs cell by cell as before, rather than raising
     /// preset buildings (<see cref="BuildingSystem.PresetMode"/>; both stay on the toolbar).
@@ -205,7 +207,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         {
             _sim = save.Sim;
             _sim.StrictJobs = false;
-            SetUpView(new int3(MapSize / 2, MapSize / 2, MapGenerator.RecommendedDepth / 2));
+            SetUpView(new int3(_sim.Map.Width / 2, _sim.Map.Height / 2, _sim.Map.Depth / 2));
             RestoreView(save.Header.Meta);
             if (CarriedOver is { } carried)
             {
@@ -234,10 +236,10 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>Generate the map and found the village (plus any demo setup). Returns where the camera should look.</summary>
     private int3 StartNewVillage(DefDatabase defs)
     {
-        _sim = Simulation.CreateStandard(defs, MapSize, MapSize, seed, MapGenerator.RecommendedDepth);
+        _sim = VillageRound.NewSimulation(defs, seed, MapName);
         _sim.StrictJobs = false; // a buggy job fails itself, not the game
         _sim.Presets.PresetMode = !Freeform; // preset buildings replace freeform walls (the trial; --freeform for the old way)
-        var center = VillageRound.Setup(_sim).Center;
+        var center = VillageRound.Setup(_sim, MapName).Center;
 
         if (Difficulty is { } difficulty && !difficulty.Equals("Off", StringComparison.OrdinalIgnoreCase))
             _sim.Storyteller.SetDifficulty(_sim, defs.Difficulty(difficulty));
@@ -250,7 +252,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         var focus = center;
         if (IgniteForest)
         {
-            focus = center + new int3(14, -6, 0);
+            // The nearest stand of trees to the landing.
+            focus = _sim.SpiralFrom(center, 40).FirstOrDefault(c => _sim.Map.Structure[_sim.Map.Idx(c)] is { IsNull: false } s
+                && _sim.World.Get<Thing>(s).Def.Harvest?.WorkType == WorkType.Chop, center);
             foreach (var cell in _sim.SpiralFrom(focus, 3))
                 _sim.Fire.Ignite(_sim, cell, 1f);
         }
@@ -277,7 +281,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             _camera.Zoom = StartZoom;
         else if (HasAvatar)
             _camera.Zoom = AdventureZoom;
-        _cameraController = new Camera3DController(_camera) { Bounds = (float2.Zero, new float2(MapSize, MapSize)) };
+        _cameraController = new Camera3DController(_camera) { Bounds = (float2.Zero, new float2(_sim.Map.Width, _sim.Map.Height)) };
         _basePanSpeed = _cameraController.PanSpeed;
         _renderer = new WorldRenderer(Host.Atlas) { CutawayZ = Math.Clamp(StartCutaway, 1, _sim.Map.Depth - 1), Interp = _interp };
         _quads = new QuadRenderer(Host, new int3(_sim.Map.Width, _sim.Map.Height, _sim.Map.Depth), ShaderReload.QuadShaders(Host));
@@ -565,7 +569,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         }
     }
 
-    private static int3 ClampToMap(int3 t) => new(Math.Clamp(t.X, 0, MapSize - 1), Math.Clamp(t.Y, 0, MapSize - 1), t.Z);
+    private int3 ClampToMap(int3 t) => new(Math.Clamp(t.X, 0, _sim.Map.Width - 1), Math.Clamp(t.Y, 0, _sim.Map.Height - 1), t.Z);
 
     private void ApplyClick(float2 mouse)
     {

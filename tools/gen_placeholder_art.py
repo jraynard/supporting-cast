@@ -35,6 +35,7 @@ import norse_ui
 import placeholder_mining
 import placeholder_dragoncare
 import placeholder_roofs
+import village_art
 
 S = 32
 ROOT = os.path.join(os.path.dirname(__file__), "..", "data", "textures")
@@ -543,6 +544,7 @@ if __name__ == "__main__":
     norse_roofs.generate()   # turf, thatch and shingle roofs: replaces placeholder_roofs' drawings
     norse_fx.generate()      # selection, designation mark, need and chatter bubbles (white art the game tints)
     chibi_nature.generate()  # trees, bushes, boulders, standing stones, wild plants: chibi, 4x detail (replaces the drawings above)
+    village_art.generate()   # lanes, gardens, half-timbering and straw thatch, well, bridge, fences, crates, cabbages, pig (after the boar)
     print("wooden buildings, wood and berry bushes: see placeholder_wood.py")
     count = sum(len(f) for _, _, f in os.walk(ROOT))
     print(f"wrote {count} sprites to {os.path.normpath(ROOT)}")

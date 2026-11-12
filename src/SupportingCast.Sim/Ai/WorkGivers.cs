@@ -38,7 +38,7 @@ public sealed class WorkGivers
                     WorkType.Refuel => Refuel(sim, pawn),
                     WorkType.Construct => Locks.OpenBoxJob.For(sim, pawn) ?? Construct(sim, pawn) ?? Deconstruct(sim, pawn),
                     WorkType.Craft => Errands.MendJob.For(sim, pawn) ?? Craft(sim, pawn, type),
-                    WorkType.Cook => Errands.ServeJob.For(sim, pawn) ?? Craft(sim, pawn, type),
+                    WorkType.Cook => Errands.ServeJob.For(sim, pawn) ?? Errands.LodgeJob.For(sim, pawn) ?? Craft(sim, pawn, type),
                     WorkType.Hunt => Butcher(sim, pawn) ?? Hunt(sim, pawn),
                     WorkType.Fish => Fish(sim, pawn),
                     WorkType.Mine => Harvest(sim, pawn, type) ?? Dig(sim, pawn),

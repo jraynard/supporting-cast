@@ -16,7 +16,7 @@ public class ErrandTests
     /// <summary>A round with players in it and a party in town.</summary>
     private static (Simulation Sim, List<Entity> Party) Round(params Guid[] players)
     {
-        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
+        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();

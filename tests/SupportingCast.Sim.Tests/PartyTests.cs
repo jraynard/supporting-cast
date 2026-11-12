@@ -14,7 +14,7 @@ public class PartyTests
 {
     private static (Simulation Sim, VillageRound.Town Town) Town(ulong seed = 1234, bool round = true)
     {
-        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 160, 160, seed, MapGenerator.RecommendedDepth);
+        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), seed);
         sim.Presets.PresetMode = true;
         var town = VillageRound.Setup(sim);
         if (round)
@@ -45,7 +45,10 @@ public class PartyTests
     public void APartyArrivesArmedAndPayingAndMakesForTheTavern()
     {
         var (sim, town) = Town();
-        sim.TickMany(SimClock.HoursToTicks(PartySystem.FirstArrivalHours + 0.5f));
+        // As they walk in: soon after, one may already have handed a blade to the smith to mend.
+        sim.TickMany(SimClock.HoursToTicks(PartySystem.FirstArrivalHours));
+        for (var t = 0; t < SimClock.TicksPerHour && Adventurers(sim).Count == 0; t += 60)
+            sim.TickMany(60);
 
         var party = Adventurers(sim);
         Assert.NotEmpty(party);

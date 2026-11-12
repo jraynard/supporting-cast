@@ -25,6 +25,9 @@ public enum ErrandKind
 
     /// <summary>A strongbox brought back from a quest, opened (the Carpenter's).</summary>
     Unlock,
+
+    /// <summary>A room for the night: a bed let to them upstairs at the inn (the Innkeeper's).</summary>
+    Lodging,
 }
 
 /// <summary>

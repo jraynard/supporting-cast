@@ -42,6 +42,21 @@
       ]
     },
     {
+      // The inn's bar: a long plank counter on a panelled front, three cells wide. People eat and
+      // drink at it as at a table (a shape of one).
+      "name": "BarCounter", "label": "bar counter", "shapeOf": "Table", "size": [3, 1], "category": "Building", "sprite": "buildings/table",
+      "description": "A long counter three cells wide, where the drinks are poured and the talk is heard.",
+      "maxHp": 200, "flammability": 1.0, "pathCost": 0,
+      "building": { "work": 260, "surfaceHeight": 0.86, "cost": [ { "def": "Wood", "count": 18 } ] },
+      "model": [
+        { "min": [0.04, 0.3, 0], "max": [2.96, 0.8, 0.08], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.06, 0.34, 0.08], "max": [2.94, 0.76, 0.8], "top": "props/planks", "side": "props/planks" },
+        { "min": [0, 0.22, 0.8], "max": [3, 0.88, 0.88], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.3, 0.4, 0.88], "max": [0.42, 0.52, 1.0], "top": "props/log_end", "side": "props/planks" },
+        { "min": [2.5, 0.48, 0.88], "max": [2.6, 0.58, 0.96], "top": "props/stone_block", "side": "props/stone_block" }
+      ]
+    },
+    {
       "name": "SquareTable", "label": "square table", "shapeOf": "Table", "size": [2, 2], "category": "Building", "sprite": "buildings/table",
       "description": "A broad table two cells square, for the whole household.",
       "maxHp": 180, "flammability": 1.0, "pathCost": 2,

@@ -38,6 +38,10 @@ public sealed class DefDatabase
 
     private readonly Dictionary<string, MendingDef> _mendings = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, QuestDef> _quests = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, MapDef> _maps = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Hand-made maps (data/defs/maps/), in def order.</summary>
+    public List<MapDef> AllMaps { get; } = [];
 
     /// <summary>Where parties can be sent (data/defs/quests.json), in def order.</summary>
     public List<QuestDef> AllQuests { get; } = [];
@@ -130,6 +134,7 @@ public sealed class DefDatabase
         public List<ErrandKindDef> ErrandKinds { get; set; } = [];
         public List<MendingDef> Mendings { get; set; } = [];
         public List<QuestDef> Quests { get; set; } = [];
+        public List<MapDef> Maps { get; set; } = [];
     }
 
     public static DefDatabase LoadDirectory(string directory)
@@ -190,6 +195,7 @@ public sealed class DefDatabase
         AddAll(file.ErrandKinds, _errandKinds, AllErrandKinds, source);
         AddAll(file.Mendings, _mendings, AllMendings, source);
         AddAll(file.Quests, _quests, AllQuests, source);
+        AddAll(file.Maps, _maps, AllMaps, source);
     }
 
     private static void AddAll<T>(List<T> defs, Dictionary<string, T> map, List<T> all, string source)
@@ -240,6 +246,7 @@ public sealed class DefDatabase
         foreach (var d in AllParties) d.Resolve(this); // after adventurer kinds and buildings
         foreach (var d in AllMendings) d.Resolve(this);
         foreach (var d in AllQuests) d.Resolve(this);
+        foreach (var d in AllMaps) d.Resolve(this); // after blocks, things, creatures and buildings
         foreach (var d in AllErrandKinds)
         {
             d.Resolve(this);
@@ -277,6 +284,7 @@ public sealed class DefDatabase
         {
             var parts = v.Resolved;
             var plan = string.Concat(b.Layout);
+            var upper = string.Concat(b.UpperLayout);
             var plot = plan.Count(ch => ch != ' ');
             for (var phase = BuildPhase.Foundation; phase < BuildPhase.Furnish; phase++)
             {
@@ -284,8 +292,9 @@ public sealed class DefDatabase
                 {
                     BuildPhase.Foundation when parts.FoundationDef is { } f => [(f, plot)],
                     BuildPhase.Roof when parts.RoofDef is { } r => [(r, plot)],
-                    BuildPhase.Walls => "WDP".Select(ch => (Part: parts.ForSymbol(ch)!, Count: plan.Count(c => c == ch)))
-                        .Where(x => x.Count > 0).GroupBy(x => x.Part).Select(g => (g.Key, g.Sum(x => x.Count))).ToList(),
+                    BuildPhase.Walls => Parts(plan, "WDPS"),
+                    BuildPhase.UpperFloor when parts.UpperFloorDef is { } f && upper.Length > 0 => [(f, upper.Count(ch => ch != ' ') - plan.Count(ch => ch == 'S'))],
+                    BuildPhase.UpperWalls => Parts(upper, "WDP"),
                     _ => [],
                 };
                 v.PhaseDefs[(int)phase] = null;
@@ -301,7 +310,7 @@ public sealed class DefDatabase
                     else
                         cost.Add(new ThingCount { Def = c.ThingDef.Name, Count = c.Count * n, Material = material });
                 }
-                var name = phase.ToString().ToLowerInvariant();
+                var name = phase switch { BuildPhase.UpperFloor => "upper floor", BuildPhase.UpperWalls => "upper storey", _ => phase.ToString().ToLowerInvariant() };
                 var def = new ThingDef
                 {
                     Name = $"{b.Name}_{v.Name}_{phase}",
@@ -318,6 +327,10 @@ public sealed class DefDatabase
                 def.Resolve(this);
                 v.PhaseDefs[(int)phase] = def;
             }
+
+            List<(ThingDef, int)> Parts(string cells, string symbols) => symbols
+                .Select(ch => (Part: parts.ForSymbol(ch)!, Count: cells.Count(c => c == ch)))
+                .Where(x => x.Count > 0).GroupBy(x => x.Part).Select(g => (g.Key, g.Sum(x => x.Count))).ToList();
         }
         // Each upgrade's site: at the furnishing's cell, one cell, made of what the upgrade costs.
         foreach (var b in AllBuildings)
@@ -388,6 +401,7 @@ public sealed class DefDatabase
     public ErrandKindDef ErrandKind(string name) => Lookup(_errandKinds, name);
     public MendingDef Mending(string name) => Lookup(_mendings, name);
     public QuestDef Quest(string name) => Lookup(_quests, name);
+    public MapDef Map(string name) => Lookup(_maps, name);
 
     /// <summary>The def for a kind of errand; every kind needs one.</summary>
     public ErrandKindDef Errand(ErrandKind kind) =>

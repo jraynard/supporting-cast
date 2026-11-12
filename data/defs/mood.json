@@ -66,8 +66,9 @@
     // Spoiled food (rot past half, Systems/FoodPoisoning): a sour memory, or worse, an illness while it lasts.
     { "name": "AteSpoiledFood", "label": "ate spoiled food", "mood": -3, "durationHours": 6, "races": [ "Human" ] },
     { "name": "FoodPoisoned", "label": "food poisoning", "description": "Something it ate had turned.", "mood": -10, "when": "FoodPoisoned" },
-    // Preset buildings (BuildingDef.EatThought): a meal eaten in the longhouse, among the village.
-    { "name": "FeastedInTheHall", "label": "ate in the longhouse", "mood": 4, "durationHours": 10, "races": [ "Human" ] }
+    // Preset buildings (BuildingDef.EatThought): a meal eaten in the longhouse or the inn, among the village.
+    { "name": "FeastedInTheHall", "label": "ate in the longhouse", "mood": 4, "durationHours": 10, "races": [ "Human" ] },
+    { "name": "AteAtTheInn", "label": "ate at the inn", "mood": 4, "durationHours": 10, "races": [ "Human" ] }
   ],
 
   // Traits: humans get 0-2 (rolled from their own stream; the player picks the avatar's). "mood" is

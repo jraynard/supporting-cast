@@ -4,21 +4,24 @@
 // "lines": what an adventurer says asking, {0} the price, {1} the thing in question.
 {
   "errandKinds": [
-    { "name": "Meal", "label": "a meal", "at": "Longhouse", "priceMin": 2, "priceMax": 4, "patienceHours": 2,
+    { "name": "Meal", "label": "a meal", "at": "Inn", "priceMin": 2, "priceMax": 4, "patienceHours": 2,
       "lines": [ "Food! Something hot, and quickly. {0} silver.", "Is anyone cooking in this town? {0} silver for a plate.",
                  "We've ridden all day. Feed us. {0} silver." ] },
-    { "name": "Drink", "label": "a drink", "at": "Longhouse", "priceMin": 1, "priceMax": 3, "patienceHours": 1.5,
+    { "name": "Drink", "label": "a drink", "at": "Inn", "priceMin": 1, "priceMax": 3, "patienceHours": 1.5,
       "lines": [ "A drink, barkeep! {0} silver.", "Something to wash the road down, {0} silver." ] },
     { "name": "Repair", "label": "a repair", "at": "Smithy", "priceMin": 5, "priceMax": 12, "patienceHours": 5,
       "lines": [ "My {1} has seen better days. {0} silver to whoever can mend it.", "Smith! My {1} needs work. {0} silver." ] },
     { "name": "Healing", "label": "healing", "at": "Shrine", "priceMin": 6, "priceMax": 15, "patienceHours": 4,
       "lines": [ "I need a healer. Now. {0} silver.", "This {1} won't stop aching. {0} silver to anyone who can fix it." ] },
-    { "name": "Quest", "label": "a quest", "at": "Longhouse", "priceMin": 8, "priceMax": 20, "patienceHours": 8,
+    { "name": "Quest", "label": "a quest", "at": "Inn", "priceMin": 8, "priceMax": 20, "patienceHours": 8,
       "lines": [ "We're looking for work worthy of us. {0} silver to whoever points us at it.",
                  "Who in this town knows where the glory is? {0} silver for a good lead." ] },
     { "name": "Unlock", "label": "a strongbox opened", "at": "Woodshop", "priceMin": 6, "priceMax": 14, "patienceHours": 6,
       "lines": [ "We dragged this {1} all the way back. {0} silver to whoever opens it, and keeps their fingers.",
                  "Carpenter! This {1} won't open and we don't trust it. {0} silver." ] },
+    { "name": "Lodging", "label": "a room", "at": "Inn", "priceMin": 3, "priceMax": 6, "patienceHours": 4,
+      "lines": [ "We'll want beds tonight. {0} silver for a room.", "Innkeeper! A room for the night, {0} silver.",
+                 "Any rooms going? {0} silver, and clean sheets." ] },
     { "name": "Request", "label": "a request", "priceMin": 0, "priceMax": 999, "patienceHours": 6 }
   ]
 }

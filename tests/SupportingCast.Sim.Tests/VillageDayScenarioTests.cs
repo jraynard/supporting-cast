@@ -18,7 +18,7 @@ public class VillageDayScenarioTests
     [InlineData(99UL)]
     public void TheVillageSurvivesARoundUnattended(ulong seed)
     {
-        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 160, 160, seed, MapGenerator.RecommendedDepth);
+        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), seed);
         sim.Presets.PresetMode = true;
         var town = VillageRound.Setup(sim);
         Assert.False(town.Tavern.IsNull, "the longhouse should fit near the landing");
@@ -37,7 +37,7 @@ public class VillageDayScenarioTests
     [Fact]
     public void APlayerWalksIntoTown()
     {
-        var sim = Simulation.CreateStandard(TestWorld.LoadDefs(), 160, 160, 1234, MapGenerator.RecommendedDepth);
+        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
         sim.Presets.PresetMode = true;
         var town = VillageRound.Setup(sim);
         var me = VillageRound.SpawnHero(sim, new Hero("Arin", null, null), town.Center);

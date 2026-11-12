@@ -38,6 +38,9 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// <summary>Game hours between one round and the next an adventurer orders (±25%).</summary>
     public const float HoursBetweenDrinks = 3;
 
+    /// <summary>The evening hour from which an adventurer staying the night asks for a room, and how late they still will.</summary>
+    public const float LodgingFromHour = 18, LodgingUntilHour = 2;
+
     /// <summary>Open requests one player may have at once.</summary>
     public const int MaxOpenRequests = 5;
 
@@ -81,7 +84,10 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
             else if (e.Assignee.IsNull && e.Kind.Kind != ErrandKind.Request && now - e.LastAsked >= SimClock.HoursToTicks(RepeatHours))
                 Announce(sim, e, Line(e.Kind, e.Price, SubjectLabel(sim, e.Subject)));
             else
+            {
                 TryHandOver(sim, e);
+                TryLetARoom(sim, e);
+            }
         }
         _errands.RemoveAll(e => !e.IsOpen && now - e.ClosedTick > KeepClosedTicks);
         foreach (var gone in _treatedBy.Keys.Where(k => !sim.World.IsAlive(k)).ToList())
@@ -117,8 +123,57 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 PostFor(sim, who, ErrandKind.Healing, Entity.Null);
             if (Locks.Lockwork.LockedBoxOf(sim, who) is { IsNull: false } box)
                 PostFor(sim, who, ErrandKind.Unlock, box);
+            if (WantsARoom(sim, who, a))
+                PostFor(sim, who, ErrandKind.Lodging, Entity.Null);
         }
     }
+
+    /// <summary>Evening, staying the night, and nowhere to sleep yet: they'll want a room.</summary>
+    private static bool WantsARoom(Simulation sim, Entity who, Adventurer a)
+    {
+        var hour = sim.Clock.HourOfDay;
+        if (hour is < LodgingFromHour and >= LodgingUntilHour || a.LeaveTick - sim.Clock.Tick < SimClock.HoursToTicks(6))
+            return false;
+        return !(sim.World.TryGet<BedOwner>(who, out var own) && sim.World.IsAlive(own.Bed));
+    }
+
+    /// <summary>
+    /// Whoever took on a room for someone shows them up to it, once they're in reach: a free let
+    /// bed is theirs for their stay (<see cref="BedOwner"/>), and they pay. With every room taken,
+    /// they're told so, and wait or give up.
+    /// </summary>
+    private void TryLetARoom(Simulation sim, Errand e)
+    {
+        var w = sim.World;
+        if (e.Kind.Kind != ErrandKind.Lodging || e.Assignee.IsNull || !Handing.InReach(sim, e.Assignee, e.Poster))
+            return;
+        var bed = FreeLetBed(sim, e.Where);
+        if (bed.IsNull)
+            return;
+        w.Remove<BedOwner>(e.Poster);
+        w.Add(e.Poster, new BedOwner { Bed = bed });
+        sim.Speech.Say(sim, e.Assignee, "Up the stairs. Yours till you move on.", Volume.Say);
+        Complete(sim, e, e.Assignee);
+    }
+
+    /// <summary>A bed in a building that lets them (<see cref="BuildingDef.LetsBeds"/>) nobody living has been given; Entity.Null if they're all taken.</summary>
+    public static Entity FreeLetBed(Simulation sim, Entity building)
+    {
+        var w = sim.World;
+        if (!w.IsAlive(building) || !w.TryGet<PresetBuilding>(building, out var b) || !b.Def.LetsBeds)
+            return Entity.Null;
+        var taken = new HashSet<Entity>();
+        foreach (var o in w.Each<BedOwner>())
+            taken.Add(w.Get<BedOwner>(o).Bed);
+        foreach (var part in Buildings.Parts(sim, building))
+            if (w.Get<Thing>(part).Def.Building is { IsBed: true } && !w.Has<Construction>(part) && !taken.Contains(part))
+                return part;
+        return Entity.Null;
+    }
+
+    /// <summary>A bed let out (in a building that lets them): only whoever's been given it sleeps there.</summary>
+    public static bool IsLet(Simulation sim, Entity bed) =>
+        Buildings.Of(sim, bed) is { IsNull: false } b && sim.World.Get<PresetBuilding>(b).Def.LetsBeds;
 
     private void PostFor(Simulation sim, Entity who, ErrandKind kind, Entity subject)
     {

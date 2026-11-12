@@ -1,0 +1,108 @@
+// The village's scenery and smallholdings, for hand-made maps (data/defs/maps/): lanes, garden
+// plots and what grows in them, the well, barrels and crates in the yards, the stone bridge, the
+// barn and the pigs in their pen. Art: tools/village_art.py.
+{
+  "blocks": [
+    // Packed earth worn by feet and cart wheels: the square and the lanes.
+    { "name": "Road", "label": "packed earth", "sprite": "terrain/road", "spriteSide": "terrain/dirt_side",
+      "accent": "terrain/road_ruts", "accentFringe": "terrain/road_ruts", "accentAbove": 0.72, "moveCost": 1.0, "digWork": 220 },
+    // Dug and raked garden soil, in furrows.
+    { "name": "TilledSoil", "label": "tilled soil", "sprite": "terrain/tilled", "spriteSide": "terrain/dirt_side", "moveCost": 1.2, "digWork": 150 }
+  ],
+
+  "things": [
+    { "name": "Cabbage", "label": "cabbage", "category": "Item", "mass": 0.4, "sprite": "items/cabbage", "stackLimit": 20, "nutrition": 0.12, "rotDays": 10,
+      "flammability": 0.2, "maxHp": 20, "description": "A tight green head from the village gardens. Better in a stew, but it'll do raw.",
+      "model": [ { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.4], "top": "props/cabbage_top", "side": "props/cabbage_top" } ] },
+    {
+      "name": "CabbagePlant", "label": "cabbages", "category": "Plant", "sprite": "things/cabbage", "renderSize": 0.6, "maxHp": 25, "flammability": 0.2, "pathCost": 1,
+      "description": "A row of cabbages in a garden plot. Cut, the stalk sprouts again.",
+      "harvest": { "workType": "Harvest", "work": 50, "yield": [ { "def": "Cabbage", "count": 3 } ], "destroyOnHarvest": false, "regrowDays": 3 }
+    },
+    {
+      // The village well on the square: a stone ring under a little shingled roof. People walk round it.
+      "name": "Well", "label": "well", "category": "Building", "sprite": "buildings/well", "pathCost": 12,
+      "description": "A stone-ringed well with a windlass and a bucket, the middle of the village.",
+      "maxHp": 400, "flammability": 0.1,
+      "building": { "outdoor": true, "work": 400, "cost": [ { "def": "Stone", "count": 20 }, { "def": "Wood", "count": 8 } ] },
+      "model": [
+        { "min": [0.1, 0.1, 0], "max": [0.9, 0.9, 0.36], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.22, 0.22, 0.3], "max": [0.78, 0.78, 0.34], "top": "terrain/water", "side": "terrain/water" },
+        { "min": [0.12, 0.44, 0.36], "max": [0.2, 0.56, 1.1], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.8, 0.44, 0.36], "max": [0.88, 0.56, 1.1], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.2, 0.46, 0.82], "max": [0.8, 0.54, 0.9], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" },
+        { "min": [0.42, 0.42, 0.52], "max": [0.58, 0.58, 0.66], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.02, 0.2, 1.1], "max": [0.98, 0.8, 1.18], "top": "buildings/roof_shingles", "side": "props/timber_dark" }
+      ]
+    },
+    {
+      "name": "Barrel", "label": "barrel", "category": "Building", "sprite": "buildings/chest", "pathCost": 3,
+      "description": "An oak barrel. Holds a couple of stacks.",
+      "maxHp": 80, "flammability": 0.8,
+      "building": { "outdoor": true, "work": 90, "storageStacks": 2, "surfaceHeight": 0.62, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "model": [
+        { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.62], "top": "props/log_end", "side": "props/planks" },
+        { "min": [0.2, 0.2, 0.1], "max": [0.8, 0.8, 0.16], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.2, 0.2, 0.46], "max": [0.8, 0.8, 0.52], "top": "props/stone_block", "side": "props/stone_block" }
+      ]
+    },
+    {
+      "name": "Crate", "label": "crate", "category": "Building", "sprite": "buildings/chest", "pathCost": 3,
+      "description": "A nailed plank crate. Holds a few stacks.",
+      "maxHp": 70, "flammability": 1.0,
+      "building": { "outdoor": true, "work": 80, "storageStacks": 4, "surfaceHeight": 0.56, "cost": [ { "def": "Wood", "count": 5 } ] },
+      "model": [
+        { "min": [0.14, 0.14, 0], "max": [0.86, 0.86, 0.56], "top": "props/crate_side", "side": "props/crate_side" }
+      ]
+    },
+    {
+      // Dressed stone on a timber centring: a bridge that carries a lane over a river.
+      "name": "StoneBridge", "label": "stone bridge", "category": "Building", "sprite": "buildings/bridge_stone",
+      "description": "Dressed stone over the water: a lane carried across a river. Must be within four cells of a bank.",
+      "maxHp": 600, "flammability": 0,
+      "building": { "isFloor": true, "outdoor": true, "supportSpan": 4, "insulation": 0.9, "work": 300, "cost": [ { "def": "Stone", "count": 6 } ] }
+    }
+  ],
+
+  "creatures": [
+    {
+      // Kept in a pen on the village's scraps. Not a herd that wanders in: placed by the map, and
+      // too used to people to run from them (fleeRadius 0).
+      "name": "Pig", "label": "pig", "race": "Animal", "body": "Quadruped",
+      "moveSpeed": 2.6, "maxHp": 70,
+      "comfortTempMin": -5, "comfortTempMax": 30, "safeTempMin": -25, "safeTempMax": 42,
+      "work": [],
+      "lifeStages": [ { "name": "Adult", "label": "pig", "sprite": "creatures/pig", "size": 0.9 } ],
+      "animal": { "plural": "pigs", "meatYield": 30, "mass": 90, "hideYield": 1, "butcherWork": 400, "herdMin": 1, "herdMax": 1, "commonness": 0, "fleeRadius": 0, "stayHours": [ 1, 1 ] }
+    }
+  ],
+
+  "buildings": [
+    {
+      // A tall thatched barn with double doors: the village's store, where its stockpile is kept.
+      "name": "Barn", "label": "barn", "icon": "buildings/chest",
+      "description": "A big timber barn under a deep thatch: dry storage for the village's goods.",
+      "layout": [
+        "WWWWWWWWWW",
+        "W........W",
+        "W........W",
+        "W........W",
+        "W........W",
+        "WWWWDDWWWW"
+      ],
+      "parts": { "foundation": "Sill", "wall": "TimberWall", "door": "BarnDoor", "roof": "ThatchRoofPart" },
+      "furnish": [
+        { "def": "Crate", "at": [1, 1] }, { "def": "Crate", "at": [2, 1] },
+        { "def": "Barrel", "at": [8, 1] }, { "def": "Barrel", "at": [8, 2] }
+      ],
+      "slots": [
+        { "defs": ["Crate", "Barrel", "Chest"], "at": [3, 1] },
+        { "defs": ["Crate", "Barrel", "Chest"], "at": [7, 1] }
+      ],
+      "variants": [
+        { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster" },
+        { "name": "Stave", "label": "stave", "kit": "stave_thatch", "parts": { "wall": "StaveWall" } }
+      ]
+    }
+  ]
+}
