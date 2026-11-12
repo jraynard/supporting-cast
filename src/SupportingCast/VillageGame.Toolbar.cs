@@ -215,7 +215,7 @@ public sealed partial class VillageGame
         }
         var hint = _tool switch
         {
-            ToolKind.Select => $"{(HasAvatar ? "Tab: inventory" : "Tab: next category")} · Q/E rotate · [ ] level {_renderer.CutawayZ} · Home: all levels · \\ roofs",
+            ToolKind.Select => $"{(HasAvatar ? "Tab: inventory" : "Tab: next category")} · Q/E rotate · [ ] level {_renderer.CutawayZ}{(_followLevel ? " (following)" : "")} · Home: follow · \\ roofs",
             ToolKind.PlaceBuilding when _toolPlan != null => $"Placing a {_toolPlan.Variant(PlanVariant(_toolPlan)).Label.ToLowerInvariant()} {_toolPlan.Label}: click to lay it out · R: turn · {(_toolPlan.Variants.Count > 1 ? "C: look · " : "")}right-click to stop",
             ToolKind.Build when _toolDef != null => $"Placing {_toolDef.Label}{(Footprint.IsWide(_toolDef) ? $" ({SizeLabel(_toolDef)})" : "")}: drag to place · {(_toolDef.Model != null ? "R: turn · " : "")}{(ShapesOf(_toolDef).Count > 1 ? "C: shape · " : "")}Ctrl: one level up · right-click to stop",
             _ => "Drag an area · Ctrl: one level up · right-click or Esc to stop",

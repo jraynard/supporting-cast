@@ -63,7 +63,7 @@ public sealed class TitleGame : Game
     /// <summary>Why the last load failed, shown under the menu.</summary>
     private string? _error;
 
-    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Coop, HostNew, HostSave, Join }
+    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Coop, HostNew, HostSave, Join, BackToCreator }
 
     /// <summary>Adventure's character creator, shown instead of the menu while open.</summary>
     private CharacterCreator _creator = null!;
@@ -145,6 +145,24 @@ public sealed class TitleGame : Game
             }))
             .Append(new MenuItem("Back", "Back.", null, MenuAction.Back))
             .ToArray();
+
+    /// <summary>
+    /// A solo round's last step: the trade to be dealt. The bots fill the others, so any choice
+    /// leaves a full cast; "Any" lets the deal decide as before.
+    /// </summary>
+    private MenuItem[] TradeItems()
+    {
+        Game Start(string? trade) => new VillageGame(DefaultSeed)
+        {
+            Adventure = true, HeroName = _creator.Name, HeroLook = _creator.Look, HeroTraits = _creator.Traits, HeroClothes = _creator.Clothes,
+            HeroTrade = trade,
+        };
+        return _defs.AllTrades
+            .Select(t => new MenuItem(char.ToUpperInvariant(t.Label[0]) + t.Label[1..], t.Description, () => Start(t.Name)))
+            .Append(new MenuItem("Any", "Let the deal pick a trade for you.", () => Start(null)))
+            .Append(new MenuItem("Back", "Back to your character.", null, MenuAction.BackToCreator))
+            .ToArray();
+    }
 
     private HostSettings HostSettingsFor()
     {
@@ -317,10 +335,7 @@ public sealed class TitleGame : Game
                     break;
                 case CharacterCreator.Result.Continue:
                     _creating = false;
-                    Host.SwitchTo(new VillageGame(DefaultSeed)
-                    {
-                        Adventure = true, HeroName = _creator.Name, HeroLook = _creator.Look, HeroTraits = _creator.Traits, HeroClothes = _creator.Clothes,
-                    });
+                    (_submenu, _submenuTitle) = (TradeItems(), "Which trade will you take?");
                     break;
                 case CharacterCreator.Result.Back:
                     _creating = false;
@@ -396,6 +411,10 @@ public sealed class TitleGame : Game
                 break;
             case MenuAction.Back:
                 (_submenu, _submenuTitle) = (null, null);
+                break;
+            case MenuAction.BackToCreator:
+                (_submenu, _submenuTitle) = (null, null);
+                _creating = true;
                 break;
             default:
                 if (item.Start == null)

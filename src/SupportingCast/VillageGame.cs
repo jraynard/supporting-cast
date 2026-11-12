@@ -294,6 +294,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         _cameraController = new Camera3DController(_camera) { Bounds = (float2.Zero, new float2(_sim.Map.Width, _sim.Map.Height)) };
         _basePanSpeed = _cameraController.PanSpeed;
         _renderer = new WorldRenderer(Host.Atlas) { CutawayZ = Math.Clamp(StartCutaway, 1, _sim.Map.Depth - 1), Interp = _interp };
+        _followLevel = StartCutaway == int.MaxValue;
         _quads = new QuadRenderer(Host, new int3(_sim.Map.Width, _sim.Map.Height, _sim.Map.Depth), ShaderReload.QuadShaders(Host));
         // Whatever happened during setup and skipping (or before the save) is history: don't auto-pause for it.
         _lastSeenMessages = _sim.Messages.Total;
@@ -326,6 +327,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             RunCoop(dt);
         else
             RunSimulation(dt);
+        UpdateFollowedLevel();
         RecordSimProfile();
         PollAutosave();
         if (_coop != null && HasAvatar)
@@ -513,7 +515,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         }
         if (input.WasKeyPressed(GlfwKey.RightBracket) || input.WasKeyPressed(GlfwKey.PageUp)) SetCutaway(_renderer.CutawayZ + 1);
         if (input.WasKeyPressed(GlfwKey.LeftBracket) || input.WasKeyPressed(GlfwKey.PageDown)) SetCutaway(_renderer.CutawayZ - 1);
-        if (input.WasKeyPressed(GlfwKey.Home)) SetCutaway(_sim.Map.Depth - 1);
+        if (input.WasKeyPressed(GlfwKey.Home)) FollowLevel();
         if (input.WasKeyPressed(GlfwKey.Backslash)) ToggleRoofs();
         if (input.WasKeyPressed(GlfwKey.F10))
         {
@@ -543,7 +545,51 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             _planVariant[_toolPlan] = (PlanVariant(_toolPlan) + 1) % _toolPlan.Variants.Count;
     }
 
-    private void SetCutaway(int z) => _renderer.CutawayZ = Math.Clamp(z, 1, _sim.Map.Depth - 1);
+    /// <summary>Pick a level by hand: the view stays there until Home hands it back to <see cref="FollowLevel"/>.</summary>
+    private void SetCutaway(int z)
+    {
+        _followLevel = false;
+        _renderer.CutawayZ = Math.Clamp(z, 1, _sim.Map.Depth - 1);
+    }
+
+    /// <summary>
+    /// The cutaway follows your character (<see cref="UpdateFollowedLevel"/>), or shows every level
+    /// when you have none. The default: [ and ] take it over by hand.
+    /// </summary>
+    private bool _followLevel = true;
+
+    private void FollowLevel()
+    {
+        _followLevel = true;
+        UpdateFollowedLevel();
+    }
+
+    /// <summary>
+    /// Under an upper floor (the inn's ground floor), cut the view at your level so the storey
+    /// above doesn't hide you; anywhere else, show everything. Roofs aren't counted: hiding them
+    /// is the \ toggle's job. The 3x3 around you counts too, so a stairwell's opening doesn't
+    /// flicker the floor back in on the way up.
+    /// </summary>
+    private void UpdateFollowedLevel()
+    {
+        if (!_followLevel)
+            return;
+        var map = _sim.Map;
+        var cut = map.Depth - 1;
+        if (HasAvatar && _sim.World.TryGet<Position>(_avatar, out var pos))
+        {
+            var c = pos.Cell;
+            for (var z = c.Z + 1; z < map.Depth && cut == map.Depth - 1; z++)
+                for (var dy = -1; dy <= 1; dy++)
+                    for (var dx = -1; dx <= 1; dx++)
+                    {
+                        int x = c.X + dx, y = c.Y + dy;
+                        if (x >= 0 && y >= 0 && x < map.Width && y < map.Height && map.HasFloor[map.Idx(x, y, z)])
+                            cut = c.Z;
+                    }
+        }
+        _renderer.CutawayZ = Math.Clamp(cut, 1, map.Depth - 1);
+    }
 
     private void SetTool(ToolKind tool, ThingDef? def = null)
     {

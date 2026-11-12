@@ -220,7 +220,7 @@ public sealed partial class VillageGame
         {
             ["savedAt"] = DateTime.UtcNow.ToString("o", inv),
             ["camera"] = string.Join(",", new[] { c.Target.X, c.Target.Y, c.Target.Z, c.Yaw, c.Zoom }.Select(v => v.ToString("R", inv))),
-            ["cutaway"] = _renderer.CutawayZ.ToString(inv),
+            ["cutaway"] = _followLevel ? "follow" : _renderer.CutawayZ.ToString(inv),
             ["speed"] = _speed.ToString(inv),
         };
     }
@@ -237,8 +237,11 @@ public sealed partial class VillageGame
             _camera.Yaw = v[3];
             _camera.Zoom = v[4];
         }
-        if (meta.TryGetValue("cutaway", out var cut) && int.TryParse(cut, inv, out var z))
+        // Older saves wrote the number even when it showed everything: that's following too.
+        if (meta.TryGetValue("cutaway", out var cut) && int.TryParse(cut, inv, out var z) && z < _sim.Map.Depth - 1)
             SetCutaway(z);
+        else
+            FollowLevel();
         if (meta.TryGetValue("speed", out var speed) && int.TryParse(speed, inv, out var s) && s >= 0 && s < SpeedMultipliers.Length)
             SetSpeed(s);
     }
