@@ -174,7 +174,15 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (!MayAsk(sim, who, kind))
             return;
         var def = sim.Defs.Service(kind);
-        var price = _rand.Range(def.PriceMin, def.PriceMax + 1);
+        // The shop's sign sets the price; a shop not offering it gets no custom.
+        var shop = def.AtDef is { } at ? BuildingOf(sim, at) : Entity.Null;
+        var price = def.DefaultPrice;
+        if (!shop.IsNull)
+        {
+            if (ShopPrices.Posted(sim, shop, kind) is not { Offered: true } posted)
+                return;
+            price = posted.Price;
+        }
         var text = Line(def, price, SubjectLabel(sim, subject) ?? WoundLabel(sim, who));
         Post(sim, who, def, text, price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), subject);
     }

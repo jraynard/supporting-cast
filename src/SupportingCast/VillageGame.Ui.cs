@@ -793,6 +793,12 @@ public sealed partial class VillageGame
         if (b.Phase == BuildPhase.Done && !b.Demolishing)
         {
             TextC(Good, "Finished.");
+            if (View.Prices(building) is { Count: > 0 } sign)
+            {
+                TextC(Dim, "The sign reads:");
+                foreach (var p in sign)
+                    TextC(p.Offered ? Theme.Text : Dim, p.Offered ? $"    {p.Label}: {p.Price} silver" : $"    {p.Label}: not to be had");
+            }
             if (b.Def.Slots.Count > 0)
             {
                 TextC(Dim, "Spots for extras:");

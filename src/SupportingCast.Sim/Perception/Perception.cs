@@ -228,6 +228,12 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
     }
 
     /// <summary>
+    /// A shop's price sign: every service the building serves, what it costs and whether it's
+    /// offered. Posted for anyone to read, so it isn't gated by sight. Empty if it's no shop.
+    /// </summary>
+    public List<Shops.PostedPrice> Prices(Entity building) => Shops.ShopPrices.Board(sim, building);
+
+    /// <summary>
     /// The favours players asked this character knows of, oldest first: those they heard asked, took
     /// on or asked for themselves. Open ones and those closed within the last day.
     /// </summary>

@@ -342,6 +342,7 @@ internal static class ComponentCodecs
         }),
         Codec("BedOwner", (w, b) => w.Entity(b.Bed), r => new BedOwner { Bed = r.Entity() }),
         Codec("Skills", WriteSkills, ReadSkills),
+        Codec("ShopPrices", WriteShopPrices, ReadShopPrices),
         Codec("Mood", WriteMood, ReadMood),
         Codec("Traits", (w, t) =>
         {
@@ -691,6 +692,24 @@ internal static class ComponentCodecs
         if (hadJob)
             r.PawnsWithJobs.Add(r.CurrentEntity);
         return m;
+    }
+
+    private static void WriteShopPrices(SaveWriter w, Shops.ShopPrices p)
+    {
+        WriteByName<ServiceKind>(w, p.Price);
+        WriteByName<ServiceKind>(w, p.Offered.Select(o => o ? 1 : 0).ToArray());
+    }
+
+    // A service added since the save keeps its default price, offered.
+    private static Shops.ShopPrices ReadShopPrices(SaveReader r)
+    {
+        var p = Shops.ShopPrices.Defaults(r.Defs);
+        ReadByName<ServiceKind>(r, p.Price);
+        var offered = p.Offered.Select(o => o ? 1 : 0).ToArray();
+        ReadByName<ServiceKind>(r, offered);
+        for (var i = 0; i < offered.Length; i++)
+            p.Offered[i] = offered[i] != 0;
+        return p;
     }
 
     private static void WriteSkills(SaveWriter w, Skills s)

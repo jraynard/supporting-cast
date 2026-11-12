@@ -138,4 +138,90 @@ public class ShopTests
         sim.ApplyNow(new GiveCommand(me, them, coins, 2));
         Assert.Equal(2, Coin.Count(sim, me));
     }
+
+    // ---------------- The price sign ----------------
+
+    /// <summary>A round with Ana as the innkeeper (and a party in town), and the inn.</summary>
+    private static (Simulation Sim, Entity Keeper, Entity Inn, List<Entity> Party) Inn()
+    {
+        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
+        sim.Presets.PresetMode = true;
+        VillageRound.Setup(sim);
+        sim.Round.OpenLobby();
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+        sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade("Innkeeper")], []));
+        sim.ApplyNow(new StartRoundCommand());
+        var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
+        Assert.NotEmpty(party);
+        var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+        Assert.False(inn.IsNull);
+        return (sim, Players.CharacterOf(sim, Ana), inn, party);
+    }
+
+    private static void Thirsty(Simulation sim, Entity who) => sim.World.Get<Adventurer>(who).NextDrink = sim.Clock.Tick;
+
+    [Fact]
+    public void AShopChargesTheDefaultsUntilItsKeeperSaysOtherwise()
+    {
+        var (sim, keeper, inn, _) = Inn();
+        var sign = Perception.For(sim, keeper).Prices(inn);
+        Assert.Equal(sim.Defs.AllServices.Where(d => d.At == "Inn").Select(d => d.Kind), sign.Select(p => p.Kind));
+        Assert.All(sign, p => Assert.True(p.Offered && p.Price == sim.Defs.Service(p.Kind).DefaultPrice));
+
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, 7, true));
+        Assert.Equal(7, ShopPrices.Posted(sim, inn, ServiceKind.Drink)!.Value.Price);
+        Assert.Equal(sim.Defs.Service(ServiceKind.Meal).DefaultPrice, ShopPrices.Posted(sim, inn, ServiceKind.Meal)!.Value.Price);
+    }
+
+    [Fact]
+    public void OnlyTheKeeperChangesTheSignAndOnlyForWhatTheShopServes()
+    {
+        var (sim, keeper, inn, party) = Inn();
+        var bea = sim.Creatures().First(e => e != keeper && sim.World.Has<Trade>(e) && sim.World.Get<Trade>(e).Def.Name != "Innkeeper");
+        sim.World.Add(bea, new Avatar());
+
+        sim.ApplyNow(new SetPriceCommand(bea, inn, ServiceKind.Drink, 50, true)); // not their shop
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Repair, 50, true)); // not served here
+        sim.ApplyNow(new SetPriceCommand(keeper, party[0], ServiceKind.Drink, 50, true)); // not a shop
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, (ServiceKind)200, 50, true));
+        Assert.False(sim.World.Has<ShopPrices>(inn));
+        Assert.Null(ShopPrices.Posted(sim, inn, ServiceKind.Repair));
+
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, int.MaxValue, true));
+        Assert.Equal(ShopPrices.MaxPrice, ShopPrices.Posted(sim, inn, ServiceKind.Drink)!.Value.Price);
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, -5, true));
+        Assert.Equal(0, ShopPrices.Posted(sim, inn, ServiceKind.Drink)!.Value.Price);
+    }
+
+    [Fact]
+    public void AdventurersPayWhatTheSignSays()
+    {
+        var (sim, keeper, inn, party) = Inn();
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, 4, true));
+        Thirsty(sim, party[0]);
+        sim.TickMany(SimClock.TicksPerHour / 6);
+        Assert.Equal(4, OpenOf(sim, party[0], ServiceKind.Drink).Price);
+    }
+
+    [Fact]
+    public void NobodyOrdersWhatTheShopIsntOffering()
+    {
+        var (sim, keeper, inn, party) = Inn();
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, 2, false));
+        Assert.False(ShopPrices.Posted(sim, inn, ServiceKind.Drink)!.Value.Offered);
+        foreach (var a in party)
+            Thirsty(sim, a);
+        sim.TickMany(SimClock.TicksPerHour / 6);
+        Assert.DoesNotContain(sim.Shops.All, o => o.Kind.Kind == ServiceKind.Drink);
+    }
+
+    [Fact]
+    public void TheSignSurvivesASave()
+    {
+        var (sim, keeper, inn, _) = Inn();
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, 9, true));
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Lodging, 5, false));
+        var loaded = SaveLoadTests.RoundTrip(sim);
+        Assert.Equal(Perception.For(sim, keeper).Prices(inn), Perception.For(loaded, keeper).Prices(inn));
+    }
 }

@@ -58,3 +58,17 @@ public sealed record TakeOrderCommand(Entity Avatar, int Order) : ISimCommand, I
     }
 }
 
+/// <summary>
+/// Change your shop's sign: what you charge for a service, and whether you're offering it. Only
+/// the keeper (whose trade works from that kind of building) can.
+/// </summary>
+public sealed record SetPriceCommand(Entity Avatar, Entity Shop, Defs.ServiceKind Service, int Price, bool Offered) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (InventoryCommand.Ready(sim, Avatar))
+            ShopPrices.Set(sim, Avatar, Shop, Service, Price, Offered);
+    }
+}

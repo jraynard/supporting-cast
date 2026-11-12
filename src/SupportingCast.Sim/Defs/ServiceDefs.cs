@@ -28,17 +28,20 @@ public enum ServiceKind
 }
 
 /// <summary>
-/// How a <see cref="ServiceKind"/> goes: where it's served, what it pays and how long the asker
-/// waits before giving up. Named after the kind it describes ("Meal"), one each.
+/// How a <see cref="ServiceKind"/> goes: where it's served, what a shop charges for it until its
+/// keeper says otherwise, and how long the asker waits before giving up. Named after the kind it
+/// describes ("Meal"), one each.
 /// </summary>
 public sealed class ServiceDef : Def
 {
     /// <summary>The building it's served at (a building def name); empty for anywhere.</summary>
     public string At { get; set; } = "";
 
-    /// <summary>Silver offered (inclusive range).</summary>
-    public int PriceMin { get; set; } = 2;
-    public int PriceMax { get; set; } = 5;
+    /// <summary>
+    /// Silver a shop charges until its keeper sets a price of their own (<c>Shops.SetPriceCommand</c>):
+    /// what an AI keeper charges.
+    /// </summary>
+    public int DefaultPrice { get; set; } = 3;
 
     /// <summary>Game hours they wait before giving up.</summary>
     public float PatienceHours { get; set; } = 3;
@@ -55,7 +58,7 @@ public sealed class ServiceDef : Def
             throw new Exception($"Service '{Name}' isn't one of {string.Join(", ", Enum.GetNames<ServiceKind>())}");
         Kind = kind;
         AtDef = At.Length > 0 ? db.Building(At) : null;
-        if (PriceMin < 0 || PriceMin > PriceMax || PatienceHours <= 0)
+        if (DefaultPrice < 0 || DefaultPrice > Shops.ShopPrices.MaxPrice || PatienceHours <= 0)
             throw new Exception($"Service '{Name}': bad price or patience");
     }
 }

@@ -15,12 +15,19 @@ public sealed partial class VillageGame
 {
     private bool _showClosedOrders;
 
+    /// <summary>Prices being dragged on your sign, not yet sent (the sign itself changes when the command lands).</summary>
+    private readonly Dictionary<Sim.Defs.ServiceKind, int> _priceDrafts = [];
+
+    /// <summary>The highest price the sign's sliders reach (Ctrl+click to type one up to the sign's limit).</summary>
+    private const int PriceSliderMax = 60;
+
     /// <summary>The orders you've heard asked or taken on, then the favours players ask of each other.</summary>
     private void DrawShop()
     {
         if (_sim.Round.Phase != RoundPhase.Playing || !HasAvatar || !_showShop)
             return;
         BeginJournal("Shop###orders", ref _showShop);
+        DrawSign();
         ImGui.Checkbox("Show closed"u8, ref _showClosedOrders);
         Gui.Rule();
 
@@ -83,6 +90,49 @@ public sealed partial class VillageGame
         DrawFavours();
         Panel.End();
     }
+
+    /// <summary>Your shop's price sign, if your trade keeps one: what you charge, and what you're offering.</summary>
+    private void DrawSign()
+    {
+        if (!_sim.World.TryGet<Trade>(_avatar, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+            return;
+        var shop = ShopSystem.BuildingOf(_sim, workplace);
+        var sign = shop.IsNull ? [] : View.Prices(shop);
+        if (sign.Count == 0)
+            return;
+        TextC(Theme.Text, $"Your sign at the {workplace.Label}");
+        TextC(Theme.Dim, "Adventurers who think it's too dear go without.");
+        foreach (var p in sign)
+        {
+            ImGui.PushID((int)p.Kind);
+            var offered = p.Offered;
+            if (ImGui.Checkbox("##offered"u8, ref offered))
+                Issue(new SetPriceCommand(_avatar, shop, p.Kind, p.Price, offered));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip(offered ? $"Offering {p.Label}. Untick to stop." : $"Not offering {p.Label}.");
+            ImGui.SameLine(0, Gui.S(6));
+            ImGui.BeginDisabled(!offered);
+            var price = _priceDrafts.TryGetValue(p.Kind, out var draft) ? draft : p.Price;
+            ImGui.SetNextItemWidth(Gui.S(150));
+            ImGui.SliderInt("##price"u8, ref price, 0, Math.Max(PriceSliderMax, p.Price), "%d silver"u8, ImGuiSliderFlags.AlwaysClamp);
+            if (ImGui.IsItemDeactivatedAfterEdit())
+            {
+                Issue(new SetPriceCommand(_avatar, shop, p.Kind, price, offered));
+                _priceDrafts.Remove(p.Kind);
+            }
+            else if (ImGui.IsItemActive())
+                _priceDrafts[p.Kind] = price;
+            else
+                _priceDrafts.Remove(p.Kind);
+            ImGui.SameLine(0, Gui.S(8));
+            TextC(offered ? Theme.Text : Theme.Dim, Capital(p.Label));
+            ImGui.EndDisabled();
+            ImGui.PopID();
+        }
+        Gui.Rule();
+    }
+
+    private static string Capital(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 
     private static string ServiceIcon(Sim.Defs.ServiceKind kind) => kind switch
     {
