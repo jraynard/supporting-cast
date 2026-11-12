@@ -491,6 +491,42 @@ def good(img):
     part(img, poly([(3, 12), (7, 9), (10, 13), (19, 3), (22, 6), (10, 20)]), GREEN, radius=1.0)
 
 
+def work_anvil():
+    """A horned anvil on a stump, side on, for the hammering scene."""
+    img = Image.new("RGBA", (48, 32), (0, 0, 0, 0))
+    part(img, poly([(3, 6), (12, 6), (15, 4), (44, 4), (44, 11), (36, 13), (34, 18), (14, 18), (12, 13), (8, 11)]), IRONR[1:], radius=1.2)  # horn, face, waist
+    part(img, poly([(16, 18), (32, 18), (36, 22), (12, 22)]), IRONR[1:], radius=0.8)                                                 # the foot
+    part(img, lambda d: d.rectangle([14, 22, 34, 31], fill=255), OAK[1:], radius=1.0)                                             # the stump
+    for x in range(15, 44):
+        put(img, x, 4, IRONR[5])                                                                                                   # the face, polished
+    return ink_outline(img)
+
+
+def work_hammer():
+    """A smith's hammer, lying flat: the head at the right, the handle running left (the pivot end)."""
+    img = Image.new("RGBA", (32, 14), (0, 0, 0, 0))
+    part(img, stick((1, 8), (24, 7), 2.4, 2.8), WALNUT, radius=0.6)
+    part(img, lambda d: d.rounded_rectangle([22, 1, 30, 13], radius=1, fill=255), IRONR[1:], radius=0.8)
+    for y in range(2, 13):
+        put(img, 29, y, IRONR[5])
+    return ink_outline(img)
+
+
+def work_billet():
+    """The bar being worked: drawn pale, the game tints it by its heat."""
+    img = Image.new("RGBA", (26, 6), (0, 0, 0, 0))
+    for y in range(6):
+        for x in range(26):
+            v = 255 if y < 2 else 225 if y < 4 else 190
+            if x in (0, 25) or y == 5:
+                v = 150
+            put(img, x, y, (v, v, v, 255))
+    return img
+
+
+WORK = (("anvil", work_anvil), ("hammer", work_hammer), ("billet", work_billet))
+
+
 CHROME = (("frame_panel", frame_panel), ("frame_title", frame_title), ("frame_inset", frame_inset),
           ("bar_trough", bar_trough), ("keycap", keycap))
 TOAST_ICONS = (("coin", coin), ("quest", quest), ("wound", wound), ("good", good))
@@ -514,6 +550,9 @@ def generate():
         img = canvas()
         fn(img)
         ink_outline(img).save(os.path.join(ROOT, "ui", f"icon_{name}.png"))
+    os.makedirs(os.path.join(ROOT, "ui", "work"), exist_ok=True)
+    for name, fn in WORK:
+        fn().save(os.path.join(ROOT, "ui", "work", f"{name}.png"))
     fx_fire().save(os.path.join(ROOT, "fx", "fire.png"))
     fx_ember().save(os.path.join(ROOT, "fx", "ember.png"))
 

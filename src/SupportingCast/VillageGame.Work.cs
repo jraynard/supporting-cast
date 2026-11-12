@@ -76,25 +76,8 @@ public sealed partial class VillageGame
                 DrawPick(pick);
                 return;
         }
-        if (_work.Session is not HammerSession hammer)
-            return;
-        BeginWork(hammer.Title, ("F", "strike on the mark"), ("Esc", "stop"));
-        TextC(Theme.Dim, $"Blow {Math.Min(hammer.Blows + 1, HammerSession.BlowsNeeded)} of {HammerSession.BlowsNeeded}.");
-
-        var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(420, 34);
-        var min = ImGui.GetCursorScreenPos();
-        var max = min + size;
-        ImGui.Dummy(in size);
-        dl.AddRectFilled(in min, in max, Theme.U8(Theme.Well), 4f, ImDrawFlags.None);
-        var markMin = new float2(min.X + (hammer.Mark - hammer.HalfWidth) * size.X, min.Y);
-        var markMax = new float2(min.X + (hammer.Mark + hammer.HalfWidth) * size.X, max.Y);
-        dl.AddRectFilled(in markMin, in markMax, Theme.U8(Theme.Good), 2f, ImDrawFlags.None);
-        var x = min.X + hammer.Marker * size.X;
-        var barMin = new float2(x - 2, min.Y - 3);
-        var barMax = new float2(x + 2, max.Y + 3);
-        dl.AddRectFilled(in barMin, in barMax, Theme.U8(hammer.Ready ? Theme.Accent : Theme.Dim), 1f, ImDrawFlags.None);
-        EndWork();
+        if (_work.Session is HammerSession hammer)
+            DrawHammer(hammer);
     }
 
     /// <summary>What your character has heard, and the box for saying something. Replaces chat once a round starts.</summary>
