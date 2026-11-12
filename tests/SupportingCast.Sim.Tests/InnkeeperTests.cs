@@ -104,6 +104,7 @@ public class InnkeeperTests
         sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(playerTrade)], []));
         sim.ApplyNow(new StartRoundCommand());
+        TestWorld.AleOnly(sim); // drink orders here are for ale
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
         Assert.NotEmpty(party);
         return (sim, party);
@@ -137,7 +138,8 @@ public class InnkeeperTests
         Assert.Equal(OrderStatus.Done, order.Status);
         Assert.Equal(purse + order.Price, Coin.Count(sim, me));
         Assert.False(sim.World.IsAlive(ale), "they drank it");
-        Assert.True(sim.World.Get<Adventurer>(drinker).Satisfaction - mood < 1f, "a crude pour pleases less");
+        // Quick service pleases by 1.5 (and a bargain a little more); a crude pour takes 0.75 off it.
+        Assert.True(sim.World.Get<Adventurer>(drinker).Satisfaction - mood < 1.5f, "a crude pour pleases less");
     }
 
     [Fact]

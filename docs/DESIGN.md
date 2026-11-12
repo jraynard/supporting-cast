@@ -114,8 +114,8 @@ do it.
 - *The bar.* Since M2: pour ale at the cask. Hold to pour, and the tilt controls the head.
   Customers taste the quality.
   - **Vessels:** a drink goes in a clean tankard and a meal in a clean bowl, taken from the shelf
-    behind the bar. They come back dirty, left where the customer drank, and are washed at the
-    tub. Run out of clean ones and the line stalls.
+    behind the bar. They come back dirty, left where the customer drank, and are scrubbed at the
+    tub, brush moved over the grime until the piece shines. Run out of clean ones and the line stalls.
   - **Casks and kegs:** a cask runs dry. Tap a new keg from the store by knocking the tap in on
     cue; a miss sprays foam and wastes servings.
 - *The pot.* Cooking is one stew pot by the kitchen's fire, cooked by taste (`Work/Cooking`).

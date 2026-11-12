@@ -222,11 +222,11 @@ public class InnTalkTests
     {
         var (sim, party) = Tavern("Innkeeper");
         var a = party[0];
-        var order = sim.Shops.Post(sim, a, sim.Defs.Service(ServiceKind.Drink), "A drink!", 2, sim.Clock.Tick + SimClock.TicksPerHour * 2);
+        var order = sim.Shops.Post(sim, a, sim.Defs.Service(ServiceKind.MixedDrink), "Something mixed!", 2, sim.Clock.Tick + SimClock.TicksPerHour * 2);
         // Ask until one wants something in particular.
         for (var i = 0; i < 40 && sim.Drinking.Wanted(order.Id) == null; i++)
         {
-            order = sim.Shops.Post(sim, party[i % party.Count], sim.Defs.Service(ServiceKind.Drink), "A drink!", 2, sim.Clock.Tick + SimClock.TicksPerHour * 2);
+            order = sim.Shops.Post(sim, party[i % party.Count], sim.Defs.Service(ServiceKind.MixedDrink), "Something mixed!", 2, sim.Clock.Tick + SimClock.TicksPerHour * 2);
             a = order.Poster;
         }
         var wanted = sim.Drinking.Wanted(order.Id);
@@ -254,7 +254,7 @@ public class InnTalkTests
         {
             if (order != null)
                 order.Status = OrderStatus.Cancelled;
-            order = sim.Shops.Post(sim, party[i % party.Count], sim.Defs.Service(ServiceKind.Drink), "A drink!", 2, sim.Clock.Tick + SimClock.TicksPerHour * 3);
+            order = sim.Shops.Post(sim, party[i % party.Count], sim.Defs.Service(ServiceKind.MixedDrink), "Something mixed!", 2, sim.Clock.Tick + SimClock.TicksPerHour * 3);
             ShopSystem.Learn(order, me);
         }
         var wanted = sim.Drinking.Wanted(order!.Id)!;
@@ -272,6 +272,32 @@ public class InnTalkTests
 
         Assert.True(order.Status == OrderStatus.Done, $"{order.Status}: bot {bot.Doing}\n" + string.Join("\n", trace));
         Assert.Contains(sim.Speech.Kept, u => u.Speaker == order.Poster && u.Text.Contains($"A proper {sim.Thing(wanted).Label}"));
+    }
+
+    [Fact]
+    public void AMixedDrinkIsDearerThanAnAleAndOrderedAtItsOwnPrice()
+    {
+        Assert.True(LoadDefs().Service(ServiceKind.MixedDrink).DefaultPrice > LoadDefs().Service(ServiceKind.Drink).DefaultPrice);
+        var (sim, party) = Tavern("Innkeeper");
+        var keeper = Players.CharacterOf(sim, Ana);
+        var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.MixedDrink, 6, true));
+        foreach (var e in party)
+            sim.World.Get<Health>(e).Injuries.Clear();
+        // Thirst again and again until one of them wants something mixed.
+        Order? mixed = null;
+        for (var i = 0; i < 60 && mixed == null; i++)
+        {
+            foreach (var e in party)
+                sim.World.Get<Adventurer>(e).NextDrink = sim.Clock.Tick;
+            sim.TickMany(SimClock.TicksPerHour / 12 + 1);
+            mixed = sim.Shops.All.FirstOrDefault(o => o.IsOpen && o.Kind.Kind == ServiceKind.MixedDrink);
+            foreach (var o in sim.Shops.All.Where(o => o.IsOpen && o.Kind.Kind == ServiceKind.Drink).ToList())
+                o.Status = OrderStatus.Cancelled; // not this one: another round
+        }
+        Assert.NotNull(mixed);
+        Assert.Equal(6, mixed!.Price);
+        Assert.NotNull(sim.Drinking.Wanted(mixed.Id)); // a named one, said aloud
     }
 
     // ---------------- Finding the way ----------------

@@ -75,8 +75,9 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     /// <summary>The pot as it last looked: it remembers, walking off to the shelf or the larder.</summary>
     private KnownPot? _pot;
 
-    // The tub and the tap: one press per stroke or swing.
+    // The tub and the tap: one press per stroke or swing; and the brush's up-and-down at the tub.
     private bool _struck;
+    private int _axis2;
 
     public Guid Player => player;
 
@@ -101,6 +102,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
 
         // A press meant for the last step (drawing the piece from the fire) mustn't land on the next.
         var live = sim.World.TryGet<WorkSession>(me, out var s) ? s.StartTick : -1;
+        _axis2 = 0;
         var (press, held, axis) = _work.Session?.StartTick == live ? Play(_work.Session) : (false, false, 0);
         // At the anvil it puts the hammer down as the colour fades, and takes the piece back to the fire.
         if (_work.Session is HammerSession { Workable: < 0.95f } && !_stopped)
@@ -108,7 +110,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             _stopped = true;
             send(new StopWorkCommand(me));
         }
-        _work.Update(sim, me, steps, press, held, axis, send);
+        _work.Update(sim, me, steps, press, held, axis, send, _axis2);
         if (_work.Session != null || sim.World.Has<WorkSession>(me) || now < _nextThink)
             return;
         _nextThink = now + ThinkTicks;
@@ -171,10 +173,12 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             }
             case WashSession wa:
             {
-                // Scrub as the brush comes round: once a stroke.
-                var press = wa.OnBeat && !_struck;
-                _struck = wa.OnBeat;
-                return (press, false, 0);
+                // To the grimiest spot, and scrub it once the brush is over it.
+                var (gx, gy) = Grimiest(wa);
+                float tx = (gx + 0.5f) / WashSession.GridW, ty = (gy + 0.5f) / WashSession.GridH;
+                _axis2 = MathF.Abs(ty - wa.BrushY) > 0.04f ? Math.Sign(ty - wa.BrushY) : 0;
+                var over = MathF.Abs(tx - wa.BrushX) < WashSession.BrushRadius * 0.6f && MathF.Abs(ty - wa.BrushY) < WashSession.BrushRadius * 0.8f;
+                return (false, over && wa.Shine == 0, MathF.Abs(tx - wa.BrushX) > 0.03f ? Math.Sign(tx - wa.BrushX) : 0);
             }
             case Hospitality.ScrubSession sc:
                 // Back and forth, a stroke every few steps.
@@ -301,6 +305,18 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         return (false, false, _dir);
     }
 
+    /// <summary>The cell on a piece being washed with the most grime left on it.</summary>
+    private static (int X, int Y) Grimiest(WashSession s)
+    {
+        var best = (X: WashSession.GridW / 2, Y: WashSession.GridH / 2);
+        var most = 0f;
+        for (var y = 0; y < WashSession.GridH; y++)
+            for (var x = 0; x < WashSession.GridW; x++)
+                if (s.GrimeAt(x, y) > most)
+                    (best, most) = ((x, y), s.GrimeAt(x, y));
+        return best;
+    }
+
     /// <summary>Steer a needle back toward the middle of its band.</summary>
     private static int Steer(float needle, float halfWidth)
     {
@@ -375,7 +391,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     private static ServiceKind[] KindsFor(TradeDef trade) => trade.Name switch
     {
         "Blacksmith" => [ServiceKind.Repair],
-        "Innkeeper" => [ServiceKind.Drink, ServiceKind.Lodging, ServiceKind.Quest], // the bar, the rooms and the quest board
+        "Innkeeper" => [ServiceKind.Drink, ServiceKind.MixedDrink, ServiceKind.Lodging, ServiceKind.Quest], // the bar, the rooms and the quest board
         "Cook" => [ServiceKind.Meal], // the pot
         "Healer" => [ServiceKind.Healing],
         "Carpenter" => [ServiceKind.Unlock],
@@ -412,7 +428,8 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         return order.Kind switch
         {
             ServiceKind.Repair => Repair(sim, me, view, poster, now),
-            ServiceKind.Drink => view.WantedDrink(_task) is { Mix: not null } named ? MixFor(sim, me, view, poster, named, now) : Pour(sim, me, view, poster, now),
+            ServiceKind.Drink => Pour(sim, me, view, poster, now),
+            ServiceKind.MixedDrink => view.WantedDrink(_task) is { Mix: not null } named ? MixFor(sim, me, view, poster, named, now) : Pour(sim, me, view, poster, now),
             ServiceKind.Meal => Serve(sim, me, view, poster, now),
             ServiceKind.Lodging => ShowUp(sim, me, poster, now),
             ServiceKind.Healing => Heal(sim, me, view, poster, now),

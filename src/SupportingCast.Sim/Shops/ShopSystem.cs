@@ -126,9 +126,14 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             var hunger = w.Get<Needs>(who).Get(food);
             if (hunger < MealBelow)
                 Want(sim, who, ServiceKind.Meal, Entity.Null, hunger < food.UrgentBelow ? 1.5f : 1f);
-            if (sim.Clock.Tick >= a.NextDrink && MayAsk(sim, who, ServiceKind.Drink))
+            if (sim.Clock.Tick >= a.NextDrink && MayAsk(sim, who, ServiceKind.Drink)
+                && !_orders.Exists(e => e.IsOpen && e.Poster == who && e.Kind.Kind == ServiceKind.MixedDrink))
             {
-                Want(sim, who, ServiceKind.Drink, Entity.Null);
+                // Now and then something mixed, at its dearer price; too dear, or not to be had, an ale.
+                var fancy = _rand.NextFloat() < Hospitality.DrinkingSystem.NamedDrinkChance && MayAsk(sim, who, ServiceKind.MixedDrink)
+                    && Want(sim, who, ServiceKind.MixedDrink, Entity.Null);
+                if (!fancy)
+                    Want(sim, who, ServiceKind.Drink, Entity.Null);
                 w.Get<Adventurer>(who).NextDrink = sim.Clock.Tick + SimClock.HoursToTicks(HoursBetweenDrinks * _rand.Range(0.75f, 1.25f));
             }
             if (MostWorn(sim, who) is { IsNull: false } gear)
@@ -409,7 +414,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         // At a shop with a line they say it at the counter, when their turn comes (TimeToAsk).
         if (LineCells(sim, order.Where).Count == 0)
             Announce(sim, order, text);
-        if (kind.Kind == ServiceKind.Drink && sim.World.Has<Adventurer>(poster))
+        if (kind.Kind == ServiceKind.MixedDrink && sim.World.Has<Adventurer>(poster))
             sim.Drinking.Ordered(sim, order);
         return order;
     }
@@ -734,7 +739,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             Complete(sim, bought, giver);
             return;
         }
-        var drink = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Drink);
+        // A mixed drink's order first: it's what they'd rather have, if both are open.
+        var drink = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.MixedDrink)
+            ?? _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Drink);
         if (drink != null && def.Drink)
         {
             var quality = w.TryGet<Crafted>(item, out var made) ? made.Quality : Quality.Plain;

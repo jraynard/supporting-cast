@@ -55,7 +55,7 @@ public sealed partial class VillageGame
             ImGui.BeginGroup();
             TextC(open ? (e.Mine ? Theme.Good : Theme.Text) : Theme.Dim, $"{who} want{(e.Mine ? "" : "s")} {e.KindLabel}");
             TextC(open ? Theme.Warn : Theme.Dim, $"{e.Price} silver");
-            if (open && e.Kind == Sim.Defs.ServiceKind.Drink && View.WantedDrink(e.Id) is { } named)
+            if (open && e.Kind == Sim.Defs.ServiceKind.MixedDrink && View.WantedDrink(e.Id) is { } named)
                 TextC(Theme.Accent, $"Asked for a {named.Label}");
             ImGui.EndGroup();
             ImGui.PushTextWrapPos(0f);
@@ -238,7 +238,7 @@ public sealed partial class VillageGame
 
     private static string ServiceIcon(Sim.Defs.ServiceKind kind) => kind switch
     {
-        Sim.Defs.ServiceKind.Meal or Sim.Defs.ServiceKind.Drink => "ui/icon_eat",
+        Sim.Defs.ServiceKind.Meal or Sim.Defs.ServiceKind.Drink or Sim.Defs.ServiceKind.MixedDrink => "ui/icon_eat",
         Sim.Defs.ServiceKind.Repair => "ui/icon_build",
         Sim.Defs.ServiceKind.Healing => "ui/icon_doctor",
         Sim.Defs.ServiceKind.Quest => "ui/icon_quest",

@@ -24,6 +24,7 @@ public class ShopLineTests
         sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(trade)], []));
         sim.ApplyNow(new StartRoundCommand());
+        TestWorld.AleOnly(sim); // drink orders here are for ale
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
         foreach (var e in party)
             Hospitality.DirectionsSystem.KnowsTheTown(sim, e); // finding the way is InnTalkTests'

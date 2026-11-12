@@ -297,6 +297,14 @@ Known leftovers:
 - **Berries behind the bar:** the bramblecup's berries were only in the kitchen's larder. The bar
   shelf holds six stacks now, with berries beside the spirits, honey and herbs, and the carter
   brings more.
+- **Washing up with a brush:** the wash game is a piece of crockery seen from above, with blots of
+  grime on it. WASD moves the brush (a second axis, `WorkInputKind.Axis2`) and holding F scrubs
+  under it. A piece is done when it's clean enough, then it shines and the next comes up. A careful
+  scrubber takes about 6 s a piece. Stop halfway and what's washed stays washed.
+- **Mixed drinks have their own price:** `ServiceKind.MixedDrink`, 4 silver by default against an
+  ale's 2, on the sign as its own line. About a third of thirsty customers want a named drink; if it's
+  dearer than it's worth to them they settle for an ale. The AI innkeeper pours an ale for one. Tests
+  about ale prices take mixed drinks off the sign (`TestWorld.AleOnly`). Bench hashes unchanged.
 
 ### Roofs on (2026-11-12)
 - **Roofs are on by default.** Only the building you're standing in opens up: its roof and

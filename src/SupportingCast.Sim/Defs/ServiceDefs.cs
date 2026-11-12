@@ -31,6 +31,9 @@ public enum ServiceKind
     /// put on it. Its def's worth is per tier of the piece; it's on no sign.
     /// </summary>
     Goods,
+
+    /// <summary>A named mixed drink, mixed at the bar (the Innkeeper's): dearer than an ale, and they want the one they asked for.</summary>
+    MixedDrink,
 }
 
 /// <summary>

@@ -28,6 +28,9 @@ public enum WorkInputKind : byte
     Press,
     Hold,
     Axis,
+
+    /// <summary>The second direction, up and down (W/S): for moving something about, not just along.</summary>
+    Axis2,
 }
 
 /// <summary>One input to a session, stamped with the step it happened on.</summary>
@@ -105,6 +108,9 @@ public abstract class WorkSession
     /// <summary>A direction held: -1, +1, or 0 when let go.</summary>
     protected virtual void Axis(int value) { }
 
+    /// <summary>The second direction held (W -1, S +1, 0 when let go).</summary>
+    protected virtual void Axis2(int value) { }
+
     /// <summary>Count one moment or blow of work at quality 0..1.</summary>
     protected void Sample(float quality)
     {
@@ -140,16 +146,23 @@ public abstract class WorkSession
             case WorkInputKind.Axis:
                 Axis(Math.Sign(input.Value));
                 break;
+            case WorkInputKind.Axis2:
+                Axis2(Math.Sign(input.Value));
+                break;
         }
     }
 
-    /// <summary>A copy to run ahead on. Subclasses hold only values, so a shallow copy plus the random stream is a full one.</summary>
+    /// <summary>A copy to run ahead on: a shallow copy plus the random stream, and <see cref="Cloned"/> for anything that isn't a value.</summary>
     public WorkSession Clone()
     {
         var copy = (WorkSession)MemberwiseClone();
         copy.Rand = new SimRandom(1) { State = Rand.State };
+        copy.Cloned();
         return copy;
     }
+
+    /// <summary>On a fresh copy: copy anything that's shared by reference (an array), so the copy and the original don't share it.</summary>
+    protected virtual void Cloned() { }
 
     /// <summary>A triangle wave 0..1..0 over <paramref name="period"/> seconds: a sweep with no trig, so no DetMath needed.</summary>
     protected static float Triangle(int steps, float period)

@@ -28,6 +28,7 @@ public class ShopTests
         if (firstTrade != null)
             sim.ApplyNow(new SetTradePreferencesCommand(players[0], [sim.Defs.Trade(firstTrade)], []));
         sim.ApplyNow(new StartRoundCommand());
+        TestWorld.AleOnly(sim); // drink orders here are for ale
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
         Assert.NotEmpty(party);
         sim.TickMany(SimClock.TicksPerHour / 2);
@@ -146,8 +147,8 @@ public class ShopTests
 
     // ---------------- The price sign ----------------
 
-    /// <summary>A round with Ana as the innkeeper (and a party in town), and the inn.</summary>
-    private static (Simulation Sim, Entity Keeper, Entity Inn, List<Entity> Party) Inn()
+    /// <summary>A round with Ana as the innkeeper (and a party in town), and the inn; its sign untouched unless <paramref name="aleOnly"/>.</summary>
+    private static (Simulation Sim, Entity Keeper, Entity Inn, List<Entity> Party) Inn(bool aleOnly = true)
     {
         var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
         sim.Presets.PresetMode = true;
@@ -156,6 +157,8 @@ public class ShopTests
         sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade("Innkeeper")], []));
         sim.ApplyNow(new StartRoundCommand());
+        if (aleOnly)
+            TestWorld.AleOnly(sim); // drink orders here are for ale
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
         Assert.NotEmpty(party);
         var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
@@ -168,7 +171,7 @@ public class ShopTests
     [Fact]
     public void AShopChargesTheDefaultsUntilItsKeeperSaysOtherwise()
     {
-        var (sim, keeper, inn, _) = Inn();
+        var (sim, keeper, inn, _) = Inn(aleOnly: false);
         var sign = Perception.For(sim, keeper).Prices(inn);
         Assert.Equal(sim.Defs.AllServices.Where(d => d.At == "Inn").Select(d => d.Kind), sign.Select(p => p.Kind));
         Assert.All(sign, p => Assert.True(p.Offered && p.Price == sim.Defs.Service(p.Kind).DefaultPrice));
@@ -181,7 +184,7 @@ public class ShopTests
     [Fact]
     public void OnlyTheKeeperChangesTheSignAndOnlyForWhatTheShopServes()
     {
-        var (sim, keeper, inn, party) = Inn();
+        var (sim, keeper, inn, party) = Inn(aleOnly: false);
         var bea = sim.Creatures().First(e => e != keeper && sim.World.Has<Trade>(e) && sim.World.Get<Trade>(e).Def.Name != "Innkeeper");
         sim.World.Add(bea, new Avatar());
 

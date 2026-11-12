@@ -35,7 +35,7 @@ public sealed class DrinkingSystem : ISimSystem, ISaveState
     /// <summary>How much further a loud drinker's speech carries.</summary>
     public const float LoudReach = 1.5f;
 
-    /// <summary>The chance a customer asks for a named drink rather than whatever's poured.</summary>
+    /// <summary>The chance a customer, wanting a drink, wants a named one (a <see cref="ServiceKind.MixedDrink"/>) rather than an ale.</summary>
     public const float NamedDrinkChance = 0.35f;
 
     /// <summary>Satisfaction for the drink they asked for, or lost for something else.</summary>
@@ -66,11 +66,11 @@ public sealed class DrinkingSystem : ISimSystem, ISaveState
         _ => null,
     };
 
-    /// <summary>A drink order's just been put in: now and then it's for something in particular.</summary>
+    /// <summary>A mixed drink's been ordered: which one they have in mind, said aloud.</summary>
     public void Ordered(Simulation sim, Order order)
     {
         var named = sim.Defs.AllThings.Where(d => d.Mix is { House: false }).ToList();
-        if (named.Count == 0 || _rand.NextFloat() >= NamedDrinkChance)
+        if (named.Count == 0)
             return;
         var pick = named[_rand.NextInt(named.Count)];
         _wanted[order.Id] = pick.Name;

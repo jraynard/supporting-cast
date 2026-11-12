@@ -7,7 +7,7 @@
     // The inn takes two: the innkeeper keeps the bar, the rooms and the quest board; the cook keeps
     // the kitchen. "serves": the services at the workplace a trade sees to (and prices on the sign).
     { "name": "Innkeeper", "label": "innkeeper", "description": "Keeps the bar and the rooms, hears everything said over the counter, and points adventuring parties at work, on whatever that's worth.",
-      "workplace": "Inn", "workPriorities": { "Cook": 1 }, "brokers": true, "serves": [ "Drink", "Lodging", "Quest" ],
+      "workplace": "Inn", "workPriorities": { "Cook": 1 }, "brokers": true, "serves": [ "Drink", "MixedDrink", "Lodging", "Quest" ],
       "kit": [ { "def": "Mop" } ] },
     { "name": "Cook", "label": "cook", "description": "Keeps the inn's kitchen: the stew pot by taste, the larder, the bowls, and the meals out to the tables.",
       "workplace": "Inn", "workPriorities": { "Cook": 1 }, "serves": [ "Meal" ], "namesShop": false, "skills": { "Cooking": 5 },

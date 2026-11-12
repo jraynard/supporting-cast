@@ -47,6 +47,7 @@ public sealed partial class VillageGame
             Issue(new StopWorkCommand(_avatar));
         var live = speed > 0 && Working;
         var axis = !live ? 0 : (input.IsKeyDown(GlfwKey.D) ? 1 : 0) - (input.IsKeyDown(GlfwKey.A) ? 1 : 0);
+        var axis2 = !live ? 0 : (input.IsKeyDown(GlfwKey.S) ? 1 : 0) - (input.IsKeyDown(GlfwKey.W) ? 1 : 0);
         // The F that started a job doesn't also work it: a new session waits for F to come up
         // before a press or hold counts (else a long press to start the quench plunges the piece).
         var session = Working ? _sim.World.Get<WorkSession>(_avatar).StartTick : -1;
@@ -55,7 +56,7 @@ public sealed partial class VillageGame
         if (!input.IsKeyDown(GlfwKey.F))
             _fArmed = true;
         var f = _fArmed && speed > 0;
-        _work.Update(_sim, _avatar, steps, f && input.WasKeyPressed(GlfwKey.F), f && live && input.IsKeyDown(GlfwKey.F), axis, Issue);
+        _work.Update(_sim, _avatar, steps, f && input.WasKeyPressed(GlfwKey.F), f && live && input.IsKeyDown(GlfwKey.F), axis, Issue, axis2);
     }
 
     private void DrawWork()

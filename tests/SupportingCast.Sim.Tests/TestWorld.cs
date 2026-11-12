@@ -86,4 +86,18 @@ public static class TestWorld
         }
         throw new DirectoryNotFoundException("Could not find data/defs above the test directory");
     }
+
+    /// <summary>
+    /// Takes mixed drinks off the inn's sign, so a thirsty customer orders a plain ale: for tests
+    /// about drink orders and their price, not about which drink.
+    /// </summary>
+    public static void AleOnly(Simulation sim)
+    {
+        var inn = Shops.ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+        if (inn.IsNull)
+            return;
+        if (!sim.World.Has<Shops.ShopPrices>(inn))
+            sim.World.Add(inn, Shops.ShopPrices.Defaults(sim.Defs));
+        sim.World.Get<Shops.ShopPrices>(inn).Offered[(int)SupportingCast.Sim.Defs.ServiceKind.MixedDrink] = false;
+    }
 }

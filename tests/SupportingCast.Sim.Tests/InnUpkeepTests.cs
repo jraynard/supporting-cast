@@ -75,15 +75,44 @@ public class InnUpkeepTests
         Assert.Equal(3, sim.StoredIn(sim.PackOf(me)).Where(e => sim.World.Get<Thing>(e).Def.Name == "Tankard").Sum(e => sim.World.Get<Stack>(e).Count));
     }
 
+    /// <summary>Wash as a player would: steer the brush to the grimiest spot (WASD) and scrub there (F held), until done or stopped.</summary>
+    private static void Scrub(Simulation sim, Entity me, Func<WashSession, bool>? until = null)
+    {
+        var predictor = new WorkPredictor();
+        for (var t = 0; t < 60 * 120 && sim.World.Has<WorkSession>(me); t++)
+        {
+            sim.Tick();
+            bool held = false;
+            int ax = 0, ay = 0;
+            if (predictor.Session is WashSession s)
+            {
+                if (until?.Invoke(s) == true)
+                    break;
+                var (gx, gy, most) = (0, 0, 0f);
+                for (var y = 0; y < WashSession.GridH; y++)
+                    for (var x = 0; x < WashSession.GridW; x++)
+                        if (s.GrimeAt(x, y) > most)
+                            (gx, gy, most) = (x, y, s.GrimeAt(x, y));
+                float tx = (gx + 0.5f) / WashSession.GridW, ty = (gy + 0.5f) / WashSession.GridH;
+                ax = MathF.Abs(tx - s.BrushX) > 0.03f ? Math.Sign(tx - s.BrushX) : 0;
+                ay = MathF.Abs(ty - s.BrushY) > 0.03f ? Math.Sign(ty - s.BrushY) : 0;
+                held = MathF.Abs(tx - s.BrushX) < 0.09f && MathF.Abs(ty - s.BrushY) < 0.09f;
+            }
+            predictor.Update(sim, me, 1, false, held, ax, c => sim.ApplyNow(c), ay);
+        }
+        sim.Tick();
+    }
+
     [Fact]
-    public void DirtyCrockeryWashesCleanOnTheBeat()
+    public void DirtyCrockeryIsScrubbedCleanWithTheBrush()
     {
         var (sim, me, _, tub) = Bar();
         sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("DirtyTankard"), 3);
         Assert.Equal(AvatarActionKind.BarWork, AvatarSystem.ActionAt(sim, me, C(9, 10)).Kind);
         sim.ApplyNow(new BarWorkCommand(me, tub));
-        Assert.IsType<WashSession>(sim.World.Get<WorkSession>(me));
-        OnTheBeat(sim, me, s => ((WashSession)s).OnBeat);
+        var start = Assert.IsType<WashSession>(sim.World.Get<WorkSession>(me));
+        Assert.True(start.Clean < 0.9f, "it comes out of the water grimy");
+        Scrub(sim, me);
 
         Assert.True(BarWork.DirtyOn(sim, me).IsNull, "nothing dirty left");
         var clean = Vessels.CleanOn(sim, me, "Tankard");
@@ -92,21 +121,26 @@ public class InnUpkeepTests
     }
 
     [Fact]
+    public void ScrubbingOnlyCleansWhereTheBrushIs()
+    {
+        var (sim, me, _, tub) = Bar();
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("DirtyTankard"), 1);
+        sim.ApplyNow(new BarWorkCommand(me, tub));
+        var s = (WashSession)sim.World.Get<WorkSession>(me);
+        // Scrubbing the empty water off to one side does nothing to the piece.
+        var before = s.Clean;
+        s.Advance([new WorkInput(0, WorkInputKind.Axis, -1), new WorkInput(0, WorkInputKind.Axis2, -1), new WorkInput(60, WorkInputKind.Hold, 1)], 200);
+        Assert.Equal(0f, s.BrushX);
+        Assert.Equal(before, s.Clean, 3);
+    }
+
+    [Fact]
     public void StoppedHalfwayWhatsWashedStaysWashed()
     {
         var (sim, me, _, tub) = Bar();
         sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("DirtyBowl"), 4);
         sim.ApplyNow(new BarWorkCommand(me, tub));
-        var s = (WashSession)sim.World.Get<WorkSession>(me);
-        // Strokes on the beat until the first bowl comes clean.
-        var was = false;
-        for (var step = 0; s.Washed == 0 && step < 2000; step++)
-        {
-            var on = s.OnBeat;
-            s.Advance(on && !was ? [new WorkInput(step, WorkInputKind.Press)] : [], step + 1);
-            was = on;
-        }
-        Assert.Equal(1, s.Washed);
+        Scrub(sim, me, until: s => s.Washed >= 1);
         sim.ApplyNow(new StopWorkCommand(me));
         Assert.Equal(1, sim.World.Get<Stack>(Vessels.CleanOn(sim, me, "Bowl")).Count);
         Assert.Equal(3, sim.World.Get<Stack>(BarWork.DirtyOn(sim, me)).Count);
@@ -154,10 +188,14 @@ public class InnUpkeepTests
         sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("DirtyTankard"), 3);
         sim.ApplyNow(new BarWorkCommand(me, tub));
         var s = (WashSession)sim.World.Get<WorkSession>(me);
-        s.Advance([new WorkInput(3, WorkInputKind.Press)], 10);
+        s.Advance([new WorkInput(0, WorkInputKind.Axis, 1), new WorkInput(0, WorkInputKind.Hold, 1)], 20);
         var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
         var copy = (WashSession)loaded.World.Get<WorkSession>(me);
-        Assert.Equal((s.DirtyDef, s.Count, s.Scrub, s.StepsDone), (copy.DirtyDef, copy.Count, copy.Scrub, copy.StepsDone));
+        Assert.Equal((s.DirtyDef, s.Count, s.BrushX, s.Clean, s.StepsDone), (copy.DirtyDef, copy.Count, copy.BrushX, copy.Clean, copy.StepsDone));
+        // A copy run ahead doesn't share the grime with the original.
+        var ahead = (WashSession)s.Clone();
+        ahead.Advance([new WorkInput(0, WorkInputKind.Axis, -1), new WorkInput(0, WorkInputKind.Axis2, 1), new WorkInput(0, WorkInputKind.Hold, 1)], 60);
+        Assert.NotEqual(s.Clean, ahead.Clean);
     }
 
     // ---------------- In a round ----------------
@@ -171,6 +209,7 @@ public class InnUpkeepTests
         sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(playerTrade)], []));
         sim.ApplyNow(new StartRoundCommand());
+        TestWorld.AleOnly(sim); // drink orders here are for ale
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
         return (sim, party);
     }

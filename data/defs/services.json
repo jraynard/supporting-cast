@@ -21,6 +21,10 @@
     { "name": "Healing", "label": "healing", "at": "Shrine", "defaultPrice": 10, "worthMin": 12, "worthMax": 24,
       "tooDearLines": [ "{0} silver to see to a scrape? I'll bind it myself.", "{0} silver? It'll heal on its own." ], "patienceHours": 4,
       "lines": [ "I need a healer. Now. {0} silver.", "This {1} won't stop aching. {0} silver to anyone who can fix it." ] },
+    // A named drink: they ask for it by name (Hospitality/Drinking) and it's mixed at the bar (Work/MixSession).
+    { "name": "MixedDrink", "label": "a mixed drink", "at": "Inn", "defaultPrice": 4, "worthMin": 6, "worthMax": 10,
+      "tooDearLines": [ "{0} silver for a fancy drink? An ale will do.", "{0} a cup? I'll have it plain." ], "patienceHours": 1.5,
+      "lines": [ "Something mixed, barkeep! {0} silver.", "I'll pay {0} silver for a proper mixed drink." ] },
     { "name": "Quest", "label": "a quest", "at": "Inn", "defaultPrice": 12, "worthMin": 14, "worthMax": 28,
       "tooDearLines": [ "{0} silver for a rumour? We'll find our own work.", "{0} for a lead? Keep it." ], "patienceHours": 8,
       "lines": [ "We're looking for work worthy of us. {0} silver to whoever points us at it.",

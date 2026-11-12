@@ -10,51 +10,138 @@ namespace SupportingCast;
 // new keg's tap in as the mallet comes down. Read from the session only.
 public sealed partial class VillageGame
 {
-    /// <summary>The tub and the brush going round: scrub as it comes to the top of its stroke.</summary>
+    private readonly List<Puff> _washSuds = [];
+    private float _washSudsDue;
+
+    /// <summary>
+    /// Washing up: the piece out of the water, big, with its grime on it in patches; the brush you
+    /// move over it (WASD), scrubbing with F held, suds where it scrubs. A clean piece shines a
+    /// moment before the next comes up.
+    /// </summary>
     private void DrawWash(WashSession s)
     {
-        BeginWork(s.Title, ("F", "scrub as the brush comes round"), ("Esc", "stop"));
+        BeginWork(s.Title, ("WASD", "move the brush"), ("F", "hold to scrub"), ("Esc", "stop"));
         var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(420, 150);
+        var size = Gui.S(420, 210);
         var min = ImGui.GetCursorScreenPos();
         ImGui.Dummy(in size);
         var max = min + size;
-        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+        // Grey dishwater all round.
+        dl.AddRectFilled(in min, in max, new ImColor8(96, 108, 110, 255), Gui.S(6), ImDrawFlags.None);
+        for (var i = 0; i < 6; i++)
+        {
+            var c = new float2(min.X + (0.1f + 0.16f * i) * size.X, min.Y + (0.2f + 0.12f * (i % 3)) * size.Y + MathF.Sin(_time * 1.5f + i) * Gui.S(3));
+            dl.AddCircle(in c, Gui.S(10 + 4 * (i % 2)), new ImColor8(130, 145, 148, 120), 16, Gui.S(1));
+        }
 
-        // The tub of grey water, and the vessel in it.
-        var tubMin = new float2(min.X + size.X * 0.2f, min.Y + size.Y * 0.45f);
-        var tubMax = new float2(max.X - size.X * 0.2f, max.Y - Gui.S(8));
-        dl.AddRectFilled(in tubMin, in tubMax, new ImColor8(96, 66, 40, 255), Gui.S(4), ImDrawFlags.None);
-        var waterMin = new float2(tubMin.X + Gui.S(6), tubMin.Y + Gui.S(8));
-        var waterMax = new float2(tubMax.X - Gui.S(6), tubMax.Y - Gui.S(6));
-        dl.AddRectFilled(in waterMin, in waterMax, new ImColor8(120, 130, 128, 255), Gui.S(2), ImDrawFlags.None);
-        var cup = (waterMin + waterMax) * 0.5f - new float2(0, Gui.S(18));
-        var grime = (byte)(200 * (1f - s.Scrub));
-        var cupMin = cup - Gui.S(22, 20);
-        var cupMax = cup + Gui.S(22, 20);
-        dl.AddRectFilled(in cupMin, in cupMax, new ImColor8(150, 112, 70, 255), Gui.S(4), ImDrawFlags.None);
-        dl.AddRectFilled(in cupMin, in cupMax, new ImColor8(70, 60, 40, grime), Gui.S(4), ImDrawFlags.None);
+        // The piece fills a square in the middle; the grid's cells map onto it.
+        var side = size.Y - Gui.S(16);
+        var p0 = new float2((min.X + max.X - side) * 0.5f, min.Y + Gui.S(8));
+        float2 At(float u, float v) => p0 + new float2(u * side, v * side);
+        var cw = side / WashSession.GridW;
+        var ch = side / WashSession.GridH;
+        var wood = new ImColor8(178, 132, 82, 255);
+        var dark = new ImColor8(110, 74, 42, 255);
+        if (s.Bowl)
+        {
+            var c = At(0.5f, 0.55f);
+            dl.AddCircleFilled(in c, side * 0.46f, dark, 48);
+            dl.AddCircleFilled(in c, side * 0.43f, wood, 48);
+            dl.AddCircleFilled(in c, side * 0.3f, new ImColor8(160, 116, 70, 255), 48);
+        }
+        else
+        {
+            var a = At(0.2f, 0.06f);
+            var b = At(0.8f, 0.97f);
+            dl.AddRectFilled(in a, in b, dark, Gui.S(10), ImDrawFlags.None);
+            var a2 = a + Gui.S(5, 5);
+            var b2 = b - Gui.S(5, 5);
+            dl.AddRectFilled(in a2, in b2, wood, Gui.S(8), ImDrawFlags.None);
+            foreach (var hoop in new[] { 0.25f, 0.75f })
+            {
+                var h0 = At(0.2f, hoop);
+                var h1 = At(0.8f, hoop);
+                dl.AddLine(in h0, in h1, Theme.U8(Theme.Iron), Gui.S(4));
+            }
+            var hand0 = At(0.8f, 0.3f);
+            var hand1 = At(0.92f, 0.5f);
+            var hand2 = At(0.8f, 0.7f);
+            dl.AddLine(in hand0, in hand1, dark, Gui.S(7));
+            dl.AddLine(in hand1, in hand2, dark, Gui.S(7));
+        }
 
-        // The brush sweeping across: the mark at the top of its stroke is the moment to scrub.
-        var arcY = min.Y + Gui.S(22);
-        float X(float brush) => min.X + size.X * (0.15f + 0.7f * brush);
-        var markMin = new float2(X(0.75f), arcY - Gui.S(10));
-        var markMax = new float2(X(1f) + Gui.S(14), arcY + Gui.S(10));
-        dl.AddRectFilled(in markMin, in markMax, Theme.U8(s.OnBeat ? Theme.Good : Theme.Dim, 0.35f), Gui.S(3), ImDrawFlags.None);
-        var bx = X(s.Brush);
-        var brush = new float2(bx, arcY);
-        var brushMin = brush - Gui.S(14, 6);
-        var brushMax = brush + Gui.S(14, 6);
-        dl.AddRectFilled(in brushMin, in brushMax, new ImColor8(160, 120, 70, 255), Gui.S(2), ImDrawFlags.None);
+        // The grime: a blot per cell, as thick as what's left there.
+        for (var y = 0; y < WashSession.GridH; y++)
+            for (var x = 0; x < WashSession.GridW; x++)
+            {
+                var g = s.GrimeAt(x, y);
+                if (g <= 0.02f)
+                    continue;
+                var c = p0 + new float2((x + 0.5f) * cw, (y + 0.5f) * ch);
+                dl.AddCircleFilled(in c, MathF.Max(cw, ch) * (0.45f + 0.35f * g), new ImColor8(78, 60, 34, (byte)(230 * Math.Min(1f, g))), 10);
+            }
+
+        // Clean: a shine across it.
+        if (s.Shine > 0)
+        {
+            var t = 1f - s.Shine / (float)WashSession.ShineSteps;
+            for (var k = 0; k < 5; k++)
+            {
+                var c = At(0.3f + 0.1f * k, 0.25f + 0.12f * (k % 3));
+                var r = Gui.S(6 + 8 * MathF.Sin(t * MathF.PI));
+                var a = c - new float2(r, 0);
+                var b = c + new float2(r, 0);
+                var a2 = c - new float2(0, r);
+                var b2 = c + new float2(0, r);
+                dl.AddLine(in a, in b, new ImColor8(255, 250, 220, 230), Gui.S(2));
+                dl.AddLine(in a2, in b2, new ImColor8(255, 250, 220, 230), Gui.S(2));
+            }
+            var label = "Clean!";
+            var ls = ImGui.CalcTextSize(label);
+            var lp = new float2((min.X + max.X - ls.X) * 0.5f, max.Y - ls.Y - Gui.S(10));
+            dl.AddText(in lp, Theme.U8(Theme.Good), label);
+        }
+
+        // The brush: bristles down on the piece, a handle up and away; it jiggles as it scrubs.
+        var jig = s.Scrubbing ? new float2(MathF.Sin(_time * 40f) * Gui.S(4), MathF.Cos(_time * 33f) * Gui.S(2)) : default;
+        var bc = p0 + new float2(s.BrushX * side, s.BrushY * side) + jig;
+        // As wide as what it scrubs.
+        var bw = WashSession.BrushRadius * 2f * side;
+        var bh = bw * 0.4f;
+        var bristle0 = bc - new float2(bw * 0.5f, 0);
+        var bristle1 = bc + new float2(bw * 0.5f, bh * 0.5f);
+        dl.AddRectFilled(in bristle0, in bristle1, new ImColor8(220, 200, 150, 255), Gui.S(2), ImDrawFlags.None);
+        var back0 = bc - new float2(bw * 0.55f, bh * 0.5f);
+        var back1 = bc + new float2(bw * 0.55f, 0);
+        dl.AddRectFilled(in back0, in back1, new ImColor8(120, 80, 46, 255), Gui.S(4), ImDrawFlags.None);
+        var handleEnd = bc + Gui.S(50, -46);
+        var handleStart = bc + new float2(bw * 0.3f, -bh * 0.4f);
+        dl.AddLine(in handleStart, in handleEnd, new ImColor8(120, 80, 46, 255), Gui.S(6));
+
+        // Suds where it scrubs.
+        var dt = ImGui.GetIO().DeltaTime;
+        if (s.Scrubbing)
+            _washSudsDue += dt * 40f;
+        var seed = (int)(_time * 1000f);
+        while (_washSudsDue >= 1f)
+        {
+            _washSudsDue -= 1f;
+            var r = new Narsil.Sim.Core.SimRandom((ulong)(seed++ * 2654435761u + 3));
+            _washSuds.Add(new Puff(bc + new float2(r.Range(-20f, 20f), r.Range(0f, 10f)) * Gui.Scale, new float2(r.Range(-30f, 30f), r.Range(-50f, -15f)) * Gui.Scale,
+                _time, r.Range(0.4f, 0.9f), Gui.S(r.Range(2f, 5f))));
+        }
+        _washSuds.RemoveAll(p => _time - p.Born > p.Life);
+        foreach (var p in _washSuds)
+        {
+            var t = _time - p.Born;
+            var at = p.Pos + p.Vel * t;
+            dl.AddCircle(in at, p.Size, new ImColor8(245, 248, 250, (byte)(220 * (1f - t / p.Life))), 10, Gui.S(1.2f));
+        }
 
         ImGui.Spacing();
         ImGui.Text($"{s.Washed} of {s.Count} washed.");
-        if (s.Washed > 0 || s.Scrub > 0)
-        {
-            ImGui.SameLine(0, 10);
-            TextC(s.LastGood ? Theme.Good : Theme.Dim, s.LastGood ? "A good stroke." : "That barely touched it.");
-        }
-        Bar("Clean", s.Scrub, Theme.Accent);
+        ImGui.SameLine(0, 10);
+        Bar("Clean", s.Shine > 0 ? 1f : s.Clean, Theme.Accent);
         EndWork();
     }
 

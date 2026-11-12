@@ -90,20 +90,27 @@ public static class BarWork
 }
 
 /// <summary>
-/// Washing up at the tub, a vessel at a time: scrub on the beat (press F as the brush comes round)
-/// and each is clean in a few good strokes, or in a lot of bad ones. Stop early and what's clean
-/// stays clean.
+/// Washing up at the tub, a vessel at a time. Each comes out of the water with grime on it in
+/// patches (different each time); move the brush over it (WASD) and hold F to scrub, and the
+/// grime under the brush comes off. When none's left it shines, and the next comes up. Stop early
+/// and what's washed stays washed.
 /// </summary>
 public sealed class WashSession : WorkSession
 {
-    /// <summary>Seconds a stroke of the brush takes, round and back.</summary>
-    public const float Beat = 0.8f;
+    /// <summary>The grime is kept on a grid over the piece, this many cells across and down.</summary>
+    public const int GridW = 12, GridH = 9;
 
-    /// <summary>How clean a stroke on the beat gets a vessel, and one off it.</summary>
-    public const float GoodStroke = 0.34f, PoorStroke = 0.05f;
+    /// <summary>How far the brush moves a step, across the piece (0..1).</summary>
+    public const float BrushSpeed = 0.02f;
 
-    /// <summary>Steps a stroke takes: presses while the brush is still going are lost, so mashing doesn't pay.</summary>
-    public const int StrokeSteps = 20;
+    /// <summary>How far round the brush scrubs, and how much grime a step of scrubbing takes off a cell under it.</summary>
+    public const float BrushRadius = 0.2f, ScrubRate = 0.16f;
+
+    /// <summary>Grime a cell can have left and still count clean.</summary>
+    public const float CleanEnough = 0.06f;
+
+    /// <summary>Steps a clean piece shines before the next comes up.</summary>
+    public const int ShineSteps = 36;
 
     public Entity Tub { get; set; } = Entity.Null;
 
@@ -113,24 +120,55 @@ public sealed class WashSession : WorkSession
 
     public int Washed { get; private set; }
 
-    /// <summary>How clean the one in hand is, 0..1.</summary>
-    public float Scrub { get; private set; }
+    /// <summary>The brush, 0..1 across and down the piece.</summary>
+    public float BrushX { get; private set; } = 0.5f;
+    public float BrushY { get; private set; } = 0.5f;
 
-    /// <summary>Where the brush is in its stroke, 0..1..0: a stroke counts when it's near the top.</summary>
-    public float Brush => Triangle(StepsDone, Beat);
+    public bool Scrubbing => Held;
 
-    public bool OnBeat => Brush > 0.75f;
+    /// <summary>Steps of shine left on a piece just washed (0: none).</summary>
+    public int Shine { get; private set; }
 
-    /// <summary>The last stroke landed on the beat (for the scene).</summary>
-    public bool LastGood { get; private set; }
+    private float[] _grime = new float[GridW * GridH];
+    private int _dx, _dy;
 
-    private int _sinceStroke = StrokeSteps;
+    /// <summary>The grime on the piece at a grid cell, 0..1.</summary>
+    public float GrimeAt(int x, int y) => _grime[y * GridW + x];
 
-    public override int3? Focus(Simulation sim) => sim.World.IsAlive(Tub) && sim.World.TryGet<Thing>(Tub, out var t) ? t.Cell : null;
+    /// <summary>The shape of the piece on the grid: a tankard's tall body, a bowl's wide one. Grime only sits on it.</summary>
+    public bool OnPiece(int x, int y)
+    {
+        float u = (x + 0.5f) / GridW, v = (y + 0.5f) / GridH;
+        return Bowl
+            ? (u - 0.5f) * (u - 0.5f) / 0.2f + (v - 0.55f) * (v - 0.55f) / 0.14f <= 1f
+            : u is > 0.22f and < 0.78f && v is > 0.08f and < 0.95f;
+    }
+
+    /// <summary>What's being washed is a bowl (else a tankard).</summary>
+    public bool Bowl => DirtyDef.Contains("Bowl");
+
+    /// <summary>How clean the piece in hand is, 0..1.</summary>
+    public float Clean
+    {
+        get
+        {
+            float sum = 0f, cells = 0f;
+            for (var y = 0; y < GridH; y++)
+                for (var x = 0; x < GridW; x++)
+                    if (OnPiece(x, y))
+                    {
+                        sum += _grime[y * GridW + x];
+                        cells++;
+                    }
+            return cells == 0 ? 1f : 1f - sum / cells;
+        }
+    }
 
     public override Skill Skill => Skill.Cooking;
     public override float Xp => 3f;
     public override string Title => "Washing up";
+
+    public override int3? Focus(Simulation sim) => sim.World.IsAlive(Tub) && sim.World.TryGet<Thing>(Tub, out var t) ? t.Cell : null;
 
     internal static WashSession For(Simulation sim, Entity tub, Entity dirty) =>
         new() { Tub = tub, DirtyDef = sim.World.Get<Thing>(dirty).Def.Name, Count = sim.World.Get<Stack>(dirty).Count };
@@ -139,25 +177,66 @@ public sealed class WashSession : WorkSession
         BarWork.IsTub(sim, Tub) && AvatarSystem.InReach(sim, sim.World.Get<Position>(Worker).Cell, Tub)
         && !AvatarSystem.Supply(sim, Worker, d => d.Name == DirtyDef).IsNull;
 
-    protected override void Press()
+    protected internal override void Begin() => Soil();
+
+    protected override void Cloned() => _grime = (float[])_grime.Clone();
+
+    /// <summary>A fresh piece out of the water: a few patches of grime, heavier in their middles.</summary>
+    private void Soil()
     {
-        if (_sinceStroke < StrokeSteps)
-            return;
-        _sinceStroke = 0;
-        LastGood = OnBeat;
-        Scrub += LastGood ? GoodStroke * Hands.Precision : PoorStroke;
-        if (Scrub < 1f)
-            return;
-        Scrub = 0f;
-        Washed++;
-        if (Washed >= Count)
-            Done = true;
+        Array.Clear(_grime);
+        var patches = Rand.NextInt(3) + 3;
+        for (var k = 0; k < patches; k++)
+        {
+            float cx = Rand.Range(0.15f, 0.85f) * GridW, cy = Rand.Range(0.15f, 0.85f) * GridH, r = Rand.Range(1.4f, 2.8f);
+            for (var y = 0; y < GridH; y++)
+                for (var x = 0; x < GridW; x++)
+                {
+                    var d = MathF.Sqrt((x + 0.5f - cx) * (x + 0.5f - cx) + (y + 0.5f - cy) * (y + 0.5f - cy)) / r;
+                    if (d < 1f && OnPiece(x, y))
+                        _grime[y * GridW + x] = Math.Min(1f, _grime[y * GridW + x] + (1f - d * d) * Rand.Range(0.7f, 1f));
+                }
+        }
     }
+
+    protected override void Axis(int value) => _dx = value;
+
+    protected override void Axis2(int value) => _dy = value;
 
     protected override void Step()
     {
-        if (_sinceStroke < StrokeSteps)
-            _sinceStroke++;
+        BrushX = Math.Clamp(BrushX + _dx * BrushSpeed, 0f, 1f);
+        BrushY = Math.Clamp(BrushY + _dy * BrushSpeed, 0f, 1f);
+        if (Shine > 0)
+        {
+            // Admiring it a moment; then the next one out of the water.
+            if (--Shine == 0 && Washed < Count)
+                Soil();
+            return;
+        }
+        if (!Held)
+            return;
+        var any = false;
+        for (var y = 0; y < GridH; y++)
+            for (var x = 0; x < GridW; x++)
+            {
+                ref var g = ref _grime[y * GridW + x];
+                if (g <= 0f)
+                    continue;
+                // The piece is square to the eye: across and down measure alike.
+                float dx = (x + 0.5f) / GridW - BrushX, dy = (y + 0.5f) / GridH - BrushY;
+                var d = MathF.Sqrt(dx * dx + dy * dy) / BrushRadius;
+                if (d < 1f)
+                    g = Math.Max(0f, g - ScrubRate * (1f - d * 0.5f) * Hands.Precision);
+                if (g > CleanEnough)
+                    any = true;
+            }
+        if (any)
+            return;
+        Washed++;
+        Shine = ShineSteps;
+        if (Washed >= Count)
+            Done = true;
     }
 
     public override void Finish(Simulation sim) => Apply(sim);
@@ -182,7 +261,7 @@ public sealed class WashSession : WorkSession
         if (done == 0)
             return;
         Inventory.Stow(sim, Worker, sim.CreateItem(clean, done));
-        sim.Messages.Add(MessageKind.Info, $"Washed {done} {(done == 1 ? clean.Label : clean.Label + "s")}.", w.Get<Position>(Worker).Cell);
+        sim.Messages.Add(MessageKind.Info, $"Washed {done} {(done == 1 ? clean.Label : clean.Label + "s")}: clean and shining.", w.Get<Position>(Worker).Cell);
     }
 
     protected override void WriteState(SaveWriter w)
@@ -191,9 +270,13 @@ public sealed class WashSession : WorkSession
         w.String(DirtyDef);
         w.Int(Count);
         w.Int(Washed);
-        w.Float(Scrub);
-        w.Bool(LastGood);
-        w.Int(_sinceStroke);
+        w.Float(BrushX);
+        w.Float(BrushY);
+        w.Int(Shine);
+        w.Int(_dx);
+        w.Int(_dy);
+        foreach (var g in _grime)
+            w.Float(g);
     }
 
     protected override void ReadState(SaveReader r)
@@ -202,9 +285,14 @@ public sealed class WashSession : WorkSession
         DirtyDef = r.String();
         Count = r.Int();
         Washed = r.Int();
-        Scrub = r.Float();
-        LastGood = r.Bool();
-        _sinceStroke = r.Int();
+        BrushX = r.Float();
+        BrushY = r.Float();
+        Shine = r.Int();
+        _dx = Math.Sign(r.Int());
+        _dy = Math.Sign(r.Int());
+        _grime = new float[GridW * GridH];
+        for (var i = 0; i < _grime.Length; i++)
+            _grime[i] = r.Float();
     }
 }
 

@@ -17,7 +17,7 @@ public sealed class WorkPredictor
     private WorkSession? _local;
     private int _sentUpTo;
     private bool _held;
-    private int _axis;
+    private int _axis, _axis2;
 
     /// <summary>The session as the player should see it; null when there's no job.</summary>
     public WorkSession? Session => _local;
@@ -27,11 +27,11 @@ public sealed class WorkPredictor
         _local = null;
         _unsent.Clear();
         _held = false;
-        _axis = 0;
+        _axis = _axis2 = 0;
     }
 
     /// <summary>Play this frame's <paramref name="steps"/> with its input, and send a batch if one is due.</summary>
-    public void Update(Simulation sim, Entity worker, int steps, bool press, bool held, int axis, Action<ISimCommand> send)
+    public void Update(Simulation sim, Entity worker, int steps, bool press, bool held, int axis, Action<ISimCommand> send, int axis2 = 0)
     {
         if (!sim.World.IsAlive(worker) || !sim.World.TryGet<WorkSession>(worker, out var real))
         {
@@ -56,7 +56,9 @@ public sealed class WorkPredictor
             _frame.Add(new WorkInput(at, WorkInputKind.Hold, held ? 1 : 0));
         if (axis != _axis)
             _frame.Add(new WorkInput(at, WorkInputKind.Axis, axis));
-        (_held, _axis) = (held, axis);
+        if (axis2 != _axis2)
+            _frame.Add(new WorkInput(at, WorkInputKind.Axis2, axis2));
+        (_held, _axis, _axis2) = (held, axis, axis2);
         if (_frame.Count > 0 && steps == 0)
             steps = 1; // an input needs a step to land on
         local.Advance(_frame, at + steps);
