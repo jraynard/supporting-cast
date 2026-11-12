@@ -17,6 +17,9 @@ public sealed class ServeJob(int order) : Job
     /// <summary>Ticks it takes an AI innkeeper to pour.</summary>
     public const int PourTicks = 120;
 
+    /// <summary>Clean tankards or bowls a keeper takes from the shelf at a time.</summary>
+    public const int VesselsAtOnce = 4;
+
     /// <summary>Ticks it takes to ladle a bowl.</summary>
     public const int LadleTicks = 60;
 
@@ -33,10 +36,53 @@ public sealed class ServeJob(int order) : Job
                 || !e.KnownBy.Contains(pawn) || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Poster))
                 continue;
             var supply = e.Kind.Kind == ServiceKind.Drink ? Cask(sim, pawn) : Pot(sim, e.Where) is { IsNull: false } pot ? pot : Meal(sim, pawn, e.Poster);
+            // Poured and ladled things go in a clean vessel: none to hand, and the washing comes first.
+            var vessel = VesselFor(sim, supply);
+            if (vessel != null && Vessels.CleanOn(sim, pawn, vessel).IsNull && CleanVessel(sim, pawn, vessel).IsNull)
+                continue;
             if (!supply.IsNull && Navigation.CanReach(sim, pawn, from, w.Get<Position>(e.Poster).Cell, PathEnd.Touch))
                 return new ServeJob(e.Id);
         }
         return null;
+    }
+
+    /// <summary>The clean vessel what comes from a cask or pot goes in; null for a meal from the stores.</summary>
+    private static string? VesselFor(Simulation sim, Entity supply)
+    {
+        if (supply.IsNull || !sim.World.TryGet<Thing>(supply, out var t))
+            return null;
+        return t.Def.Building?.Cask?.Into ?? t.Def.Building?.StewPot?.Into;
+    }
+
+    /// <summary>The nearest clean vessel of a kind lying about or on a shelf.</summary>
+    public static Entity CleanVessel(Simulation sim, Entity pawn, string def) =>
+        AiQueries.FindNearestItem(sim, pawn, (_, d) => d.Name == def, 80);
+
+    /// <summary>Fetch a clean vessel into hand, unless one's already on them.</summary>
+    private IEnumerable<JobStatus> FetchVessel(string def)
+    {
+        if (!Vessels.CleanOn(Sim, Pawn, def).IsNull)
+            yield break;
+        var vessel = CleanVessel(Sim, Pawn, def);
+        if (vessel.IsNull || !Reserve(vessel))
+        {
+            Fail($"no clean {def}");
+            yield break;
+        }
+        Report = $"Fetching a clean {Sim.Defs.Thing(def).Label}";
+        foreach (var s in GoTo(Get<Thing>(vessel).Cell, PathEnd.OnTile)) yield return s;
+        if (HasFailed) yield break;
+        if (!Sim.IsAvailable(vessel))
+        {
+            Fail("it's gone");
+            yield break;
+        }
+        // A few at once, for the orders after this one.
+        var some = Sim.TakeFromStack(vessel, Math.Min(VesselsAtOnce, Get<Stack>(vessel).Count));
+        if (Get<Carrying>(Pawn).Item.IsNull)
+            Get<Carrying>(Pawn).Item = some;
+        else
+            Inventory.Stow(Sim, Pawn, some);
     }
 
     /// <summary>The nearest cask with a drink left in it.</summary>
@@ -90,6 +136,8 @@ public sealed class ServeJob(int order) : Job
                 Fail("nothing to pour");
                 yield break;
             }
+            foreach (var s in FetchVessel(Get<Thing>(cask).Def.Building!.Cask!.Into)) yield return s;
+            if (HasFailed) yield break;
             Report = $"Pouring for {e.PosterName}";
             foreach (var s in GoTo(Get<Thing>(cask).Cell, PathEnd.Touch)) yield return s;
             if (HasFailed) yield break;
@@ -100,12 +148,19 @@ public sealed class ServeJob(int order) : Job
                 yield break;
             }
             PourSession.Draw(Sim, cask);
+            if (!Vessels.Use(Sim, Pawn, Get<Thing>(cask).Def.Building!.Cask!.Into))
+            {
+                Fail("lost the tankard");
+                yield break;
+            }
             var level = SkillRules.LevelOf(Sim, Pawn, Skill.Cooking);
             SkillRules.Learn(Sim, Pawn, Skill.Cooking, 20f);
             served = PourSession.PourInto(Sim, Pawn, cask, Crafting.QualityFrom(0.3f + 0.035f * level + Sim.Rand.Range(-0.15f, 0.15f)));
         }
         else if (Pot(Sim, e.Where) is { IsNull: false } pot && Reserve(pot))
         {
+            foreach (var s in FetchVessel(Cooking.BowlOf(Sim, pot))) yield return s;
+            if (HasFailed) yield break;
             Report = $"Ladling a bowl for {e.PosterName}";
             foreach (var s in GoTo(Get<Thing>(pot).Cell, PathEnd.Touch)) yield return s;
             if (HasFailed) yield break;

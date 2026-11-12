@@ -63,17 +63,30 @@ public static class VillageRound
     /// <summary>What the inn's larder starts a round with: a day or two of stew for a busy common room.</summary>
     public static readonly (string Def, int Count)[] LarderStock = [("Cabbage", 12), ("Meat", 10), ("Berries", 20)];
 
+    /// <summary>Kegs in the inn's storeroom at the start, and the clean crockery on its shelves.</summary>
+    public const int StoreroomKegs = 3, Tankards = 10, Bowls = 10;
+
+    /// <summary>The inn opens stocked: food in the larder, kegs in the storeroom, tankards on the shelf behind the bar and bowls on the kitchen's.</summary>
     private static void StockInn(Simulation sim, Entity inn)
     {
         if (inn.IsNull)
             return;
-        foreach (var e in sim.World.Query<PartOf>())
-            if (sim.World.Get<PartOf>(e).Building == inn && sim.World.Get<Thing>(e).Def.Name == "Larder")
-            {
-                foreach (var (def, count) in LarderStock)
-                    sim.Store(e, sim.CreateItem(sim.Defs.Thing(def), count));
-                return;
-            }
+        var w = sim.World;
+        Shops.InnSupplySystem.Deliver(sim, inn, "Larder", LarderStock);
+        Shops.InnSupplySystem.Deliver(sim, inn, "Chest", [("Keg", StoreroomKegs)]);
+        var parts = Buildings.Parts(sim, inn);
+        Entity Near(string def, Func<Defs.ThingDef, bool> by)
+        {
+            var mark = parts.FirstOrDefault(e => by(w.Get<Thing>(e).Def));
+            if (mark.IsNull)
+                return Entity.Null;
+            var at = w.Get<Thing>(mark).Cell;
+            return parts.Where(e => w.Get<Thing>(e).Def.Name == def).OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, at)).FirstOrDefault();
+        }
+        if (Near("Shelf", d => d.Building?.Cask != null) is { IsNull: false } bar)
+            sim.Store(bar, sim.CreateItem(sim.Defs.Thing("Tankard"), Tankards));
+        if (Near("Shelf", d => d.Building?.StewPot != null) is { IsNull: false } kitchen)
+            sim.Store(kitchen, sim.CreateItem(sim.Defs.Thing("Bowl"), Bowls));
     }
 
     /// <summary>Bandages in the shrine's chest: the healer's backup for when the mana runs dry.</summary>

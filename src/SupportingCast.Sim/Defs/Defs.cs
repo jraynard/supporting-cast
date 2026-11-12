@@ -386,6 +386,9 @@ public sealed class BuildingProps
 
     /// <summary>A stew pot, cooked by taste over the fire beside it (<c>Work.Cooking</c>).</summary>
     public StewPotProps? StewPot { get; set; }
+
+    /// <summary>A tub of hot water dirty tankards and bowls are washed in (<c>Work.WashSession</c>).</summary>
+    public bool WashTub { get; set; }
 }
 
 /// <summary>What a stew pot ladles out, and how far its ingredients stretch.</summary>
@@ -393,6 +396,9 @@ public sealed class StewPotProps
 {
     /// <summary>The bowl it ladles (a thing def name): its nutrition is one serving's worth.</summary>
     public string Serves { get; set; } = "Stew";
+
+    /// <summary>The clean vessel a bowl is ladled into (a thing def name).</summary>
+    public string Into { get; set; } = "Bowl";
 
     /// <summary>Servings per serving's worth of nutrition put in: a stew goes further than the raw food.</summary>
     public float Yield { get; set; } = 1.5f;
@@ -408,6 +414,12 @@ public sealed class CaskProps
     public string Pours { get; set; } = "";
 
     public int Servings { get; set; } = 60;
+
+    /// <summary>The keg it's refilled from (a thing def name), knocked in at the tap (<c>Work.TapSession</c>).</summary>
+    public string Keg { get; set; } = "Keg";
+
+    /// <summary>The vessel a serving is poured into (a thing def name).</summary>
+    public string Into { get; set; } = "Tankard";
 }
 
 public sealed class FuelProps
@@ -645,6 +657,15 @@ public sealed class ThingDef : Def
 
     /// <summary>Something to drink, served to whoever ordered one (<c>Shops.ServiceKind.Drink</c>).</summary>
     public bool Drink { get; set; }
+
+    /// <summary>What's left once a customer has drunk or eaten it (a dirty tankard, a dirty bowl): a thing def name.</summary>
+    public string? Leaves { get; set; }
+
+    /// <summary>A dirty vessel: what it is again once it's washed at a wash tub (<c>Work.WashSession</c>).</summary>
+    public string? WashesInto { get; set; }
+
+    /// <summary>A clean vessel a drink is poured or a bowl ladled into (<c>Work.Vessels</c>).</summary>
+    public bool Vessel { get; set; }
 
     /// <summary>Days until it rots away at 10–30°C (cold slows it, freezing stops it); 0 never rots.</summary>
     public float RotDays { get; set; }

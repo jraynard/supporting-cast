@@ -213,6 +213,7 @@ public sealed partial class Simulation
             .AddSystem(new FuelSystem())
             .AddSystem(sim.Parties)
             .AddSystem(sim.Shops)
+            .AddSystem(new Shops.InnSupplySystem())
             .AddSystem(sim.Favours)
             .AddSystem(new Healing.ManaSystem())
             .AddSystem(sim.Expeditions)

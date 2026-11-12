@@ -105,6 +105,12 @@ public sealed partial class VillageGame
             case SeasonSession season:
                 DrawSeason(season);
                 return;
+            case WashSession wash:
+                DrawWash(wash);
+                return;
+            case TapSession tap:
+                DrawTap(tap);
+                return;
             case null:
                 DrawTongs();
                 DrawPotPanel();

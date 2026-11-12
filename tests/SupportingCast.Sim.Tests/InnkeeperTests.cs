@@ -26,6 +26,7 @@ public class InnkeeperTests
         sim.GiveStartingPack(me);
         var cask = sim.SpawnStructure(sim.Thing("AleCask"), C(11, 10));
         sim.RebuildDerivedIfNeeded();
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("Tankard"), 3);
         return (sim, me, cask);
     }
 
@@ -73,7 +74,9 @@ public class InnkeeperTests
         PourSession.TryStart(sim, me, cask);
         Pour(sim, me, tilted: false, stop: false);
 
-        Assert.True(sim.World.Get<Carrying>(me).Item.IsNull, "nothing to show for it");
+        var held = sim.World.Get<Carrying>(me).Item;
+        Assert.Equal("Tankard", sim.World.Get<Thing>(held).Def.Name); // nothing to show for it but the tankard, still clean
+        Assert.Equal(3, sim.World.Get<Stack>(held).Count);
         Assert.Equal(full - 1, PourSession.ServingsLeft(sim, cask));
     }
 

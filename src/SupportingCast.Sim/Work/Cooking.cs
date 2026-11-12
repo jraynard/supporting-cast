@@ -74,8 +74,8 @@ public static class Cooking
     /// <summary>The heat at which each surface starts.</summary>
     public const float SteamingAt = 0.3f, SimmerAt = 0.5f, BoilAt = 0.75f;
 
-    /// <summary>Doneness a step at a simmer: forty seconds of it cooks a pot through.</summary>
-    public const float CookPerStep = 1f / (40 * SimClock.TicksPerSecond);
+    /// <summary>Doneness a step at a simmer: twenty seconds of it (most of a game hour) cooks a pot through.</summary>
+    public const float CookPerStep = 1f / (20 * SimClock.TicksPerSecond);
 
     /// <summary>How fast the heat follows the fire, a step.</summary>
     public const float HeatFollow = 0.004f;
@@ -83,8 +83,8 @@ public static class Cooking
     /// <summary>How fast A/D turn the fire up or down, a step.</summary>
     public const float FlameStep = 0.008f;
 
-    /// <summary>Scorch a step for each unit of heat over a simmer's start, left unstirred: a boil scorches through in fifteen seconds.</summary>
-    public const float ScorchRate = 1f / 450f;
+    /// <summary>Scorch a step for each unit of heat over a simmer's start, left unstirred: a boil scorches through in ten seconds.</summary>
+    public const float ScorchRate = 1f / 300f;
 
     /// <summary>Steps unstirred before the bottom starts to catch; it catches at its full rate after as long again.</summary>
     public const int CatchSteps = 4 * SimClock.TicksPerSecond;
@@ -134,7 +134,7 @@ public static class Cooking
             _ => 1.15f,
         };
         // Stirring all the time lets the heat out: it cooks slower while the spoon's going.
-        doneness = Math.Min(1.5f, doneness + CookPerStep * rate * (stirring ? 0.6f : 1f));
+        doneness = Math.Min(1.5f, doneness + CookPerStep * rate * (stirring ? 0.8f : 1f));
         if (heat > SimmerAt)
         {
             var unstirred = stirring ? 0f : Math.Clamp((sinceStir - CatchSteps) / (float)CatchSteps, 0f, 1f) * catchFactor;
@@ -274,14 +274,18 @@ public static class Cooking
         p.SeasonTarget = sim.Rand.Range(0.3f, 0.6f);
     }
 
+    /// <summary>The clean vessel a pot's bowls are ladled into.</summary>
+    public static string BowlOf(Simulation sim, Entity pot) => sim.World.Get<Thing>(pot).Def.Building!.StewPot!.Into;
+
     /// <summary>
-    /// A bowl from the pot, into the server's hand: the pot's quality, and its rot with it. The
-    /// last bowl empties it. Entity.Null if there's nothing to ladle.
+    /// A bowl from the pot, into the server's hand, in a clean bowl of theirs: the pot's quality,
+    /// and its rot with it. The last bowl empties it. Entity.Null if there's nothing to ladle or
+    /// nothing clean to ladle into.
     /// </summary>
     public static Entity Ladle(Simulation sim, Entity server, Entity pot, Quality? quality = null)
     {
         var w = sim.World;
-        if (!IsPot(sim, pot) || ServingsLeft(sim, pot) <= 0)
+        if (!IsPot(sim, pot) || ServingsLeft(sim, pot) <= 0 || !Vessels.Use(sim, server, BowlOf(sim, pot)))
             return Entity.Null;
         var p = PotOf(sim, pot);
         var bowl = sim.CreateItem(Serves(sim, pot), 1);
@@ -309,7 +313,7 @@ public static class Cooking
             return $"Put the {w.Get<Thing>(food).Def.Label} in the pot";
         if (!w.TryGet<StewPot>(station, out var p) || p.Empty)
             return null;
-        if (p.Cooked && ServingsLeft(sim, station) > 0 && w.Get<Carrying>(cook).Item.IsNull)
+        if (p.Cooked && ServingsLeft(sim, station) > 0 && Vessels.Ready(sim, cook, BowlOf(sim, station)))
             return "Ladle a bowl of stew";
         return "Tend the stew";
     }
@@ -332,7 +336,7 @@ public static class Cooking
                 return;
             }
             else
-                step = p.Cooked && ServingsLeft(sim, station) > 0 && w.Get<Carrying>(cook).Item.IsNull ? PotStep.Ladle : PotStep.Tend;
+                step = p.Cooked && ServingsLeft(sim, station) > 0 && Vessels.Ready(sim, cook, BowlOf(sim, station)) ? PotStep.Ladle : PotStep.Tend;
         }
         switch (step)
         {
@@ -359,9 +363,12 @@ public static class Cooking
                     sim.Messages.Add(MessageKind.Info, "It's nowhere near cooked yet.", cell);
                     return;
                 }
-                if (!w.Get<Carrying>(cook).Item.IsNull)
+                var bowlDef = BowlOf(sim, station);
+                if (!Vessels.Ready(sim, cook, bowlDef))
                 {
-                    sim.Messages.Add(MessageKind.Info, "You need a free hand to ladle.", cell);
+                    sim.Messages.Add(MessageKind.Info, Vessels.CleanOn(sim, cook, bowlDef).IsNull
+                        ? $"You need a clean {sim.Defs.Thing(bowlDef).Label} to ladle into: there are some on the kitchen shelf."
+                        : $"You need a hand free for the {sim.Defs.Thing(bowlDef).Label}.", cell);
                     return;
                 }
                 var bowl = Ladle(sim, cook, station);

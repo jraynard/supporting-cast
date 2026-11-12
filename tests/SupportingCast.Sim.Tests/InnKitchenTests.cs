@@ -36,6 +36,7 @@ public class InnKitchenTests
         var pot = sim.SpawnStructure(sim.Thing("StewPot"), C(11, 11));
         sim.RebuildDerivedIfNeeded();
         sim.World.Get<Fueled>(hearth).Fuel = 10;
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Bowl"), 4));
         return (sim, me, pot);
     }
 
@@ -266,6 +267,12 @@ public class InnKitchenTests
             sim.TickMany(SimClock.TicksPerHour / 4);
         Assert.True(Cooking.PotOf(sim, pot).Cooked, $"cooked {Cooking.PotOf(sim, pot).Doneness:0.00}");
 
+        // Nothing else on the books: whole, and not thirsty yet.
+        foreach (var e in party)
+        {
+            sim.World.Get<Health>(e).Injuries.Clear();
+            sim.World.Get<Adventurer>(e).NextDrink = sim.Clock.Tick + SimClock.TicksPerDay;
+        }
         var diner = party[0];
         sim.World.Get<Needs>(diner).Values[sim.Defs.Need("Food").Index] = 0.5f;
         var bowls = Cooking.ServingsLeft(sim, pot);

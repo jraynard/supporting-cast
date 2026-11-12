@@ -38,7 +38,7 @@ public sealed class WorkGivers
                     WorkType.Refuel => Refuel(sim, pawn),
                     WorkType.Construct => Locks.OpenBoxJob.For(sim, pawn) ?? Shops.SellJob.For(sim, pawn) ?? Construct(sim, pawn) ?? Deconstruct(sim, pawn),
                     WorkType.Craft => Shops.SellJob.For(sim, pawn) ?? Shops.MendJob.For(sim, pawn) ?? Craft(sim, pawn, type), // a sale is quick, a mend is not
-                    WorkType.Cook => Shops.ServeJob.For(sim, pawn) ?? Shops.LodgeJob.For(sim, pawn) ?? Shops.SellJob.For(sim, pawn) ?? Shops.CookPotJob.For(sim, pawn) ?? Craft(sim, pawn, type),
+                    WorkType.Cook => Shops.ServeJob.For(sim, pawn) ?? Shops.LodgeJob.For(sim, pawn) ?? Shops.SellJob.For(sim, pawn) ?? Shops.TapJob.For(sim, pawn) ?? Shops.WashJob.For(sim, pawn) ?? Shops.CookPotJob.For(sim, pawn) ?? Craft(sim, pawn, type),
                     WorkType.Hunt => Butcher(sim, pawn) ?? Hunt(sim, pawn),
                     WorkType.Fish => Fish(sim, pawn),
                     WorkType.Mine => Harvest(sim, pawn, type) ?? Dig(sim, pawn),
@@ -619,8 +619,9 @@ public sealed class WorkGivers
     {
         var w = sim.World;
 
-        // Move loose items into stockpiles. Eggs are tended, not hauled. Only items some stockpile
-        // cell can take: a full stockpile for the nearest thing mustn't stop the rest being hauled.
+        // Move loose items into stockpiles. Eggs are tended, not hauled; the inn's crockery is the
+        // innkeeper's to clear. Only items some stockpile cell can take: a full stockpile for the
+        // nearest thing mustn't stop the rest being hauled.
         Dictionary<(ThingDef, MaterialDef?), bool>? room = null;
         bool Storable(Entity e, ThingDef d)
         {
@@ -633,7 +634,7 @@ public sealed class WorkGivers
         var item = AiQueries.FindNearestItem(
             sim,
             pawn,
-            (e, d) => !w.Has<Stored>(e) && !AiQueries.InStockpile(sim, w.Get<Thing>(e).Cell) && Storable(e, d)
+            (e, d) => !w.Has<Stored>(e) && !d.Vessel && d.WashesInto == null && !AiQueries.InStockpile(sim, w.Get<Thing>(e).Cell) && Storable(e, d)
         );
         if (item.IsNull)
             return null;

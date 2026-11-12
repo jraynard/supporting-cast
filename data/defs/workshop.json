@@ -37,13 +37,39 @@
     {
       // Poured at the tavern's cask (Work.PourSession); the pour's quality is the drink's.
       "name": "Ale", "label": "tankard of ale", "category": "Item", "mass": 0.8, "sprite": "items/ale", "stackLimit": 1,
-      "drink": true, "flammability": 0.1, "maxHp": 10,
+      "drink": true, "leaves": "DirtyTankard", "flammability": 0.1, "maxHp": 10,
       "description": "Brown ale with a head on it. Adventurers drink it like water and complain about it like wine.",
       "model": [ { "min": [0.35, 0.35, 0], "max": [0.65, 0.65, 0.35], "top": "props/linen", "side": "props/planks" } ]
     },
     {
+      // The inn's crockery (Work/Vessels): a drink is poured into a clean tankard, a bowl of stew
+      // ladled into a clean bowl, and the customer leaves it dirty where they finished.
+      "name": "Tankard", "label": "tankard", "category": "Item", "mass": 0.4, "sprite": "items/ale", "stackLimit": 12,
+      "vessel": true, "flammability": 0.3, "maxHp": 30,
+      "description": "A clean wooden tankard, banded in iron. Pour into it at the cask.",
+      "model": [ { "min": [0.36, 0.36, 0], "max": [0.64, 0.64, 0.3], "top": "props/planks", "side": "props/planks" } ]
+    },
+    {
+      "name": "DirtyTankard", "label": "dirty tankard", "category": "Item", "mass": 0.4, "sprite": "items/ale", "stackLimit": 12,
+      "washesInto": "Tankard", "flammability": 0.3, "maxHp": 30,
+      "description": "Sticky with dregs. Wash it in the tub before it's poured into again.",
+      "model": [ { "min": [0.36, 0.36, 0], "max": [0.64, 0.64, 0.3], "top": "props/log_end", "side": "props/planks" } ]
+    },
+    {
+      "name": "Bowl", "label": "bowl", "category": "Item", "mass": 0.3, "sprite": "items/meal", "stackLimit": 12,
+      "vessel": true, "flammability": 0.3, "maxHp": 30,
+      "description": "A clean turned-wood bowl. Ladle stew into it at the pot.",
+      "model": [ { "min": [0.3, 0.3, 0], "max": [0.7, 0.7, 0.14], "top": "props/planks", "side": "props/planks" } ]
+    },
+    {
+      "name": "DirtyBowl", "label": "dirty bowl", "category": "Item", "mass": 0.3, "sprite": "items/meal", "stackLimit": 12,
+      "washesInto": "Bowl", "flammability": 0.3, "maxHp": 30,
+      "description": "Scraped, mostly. Wash it in the tub before it's ladled into again.",
+      "model": [ { "min": [0.3, 0.3, 0], "max": [0.7, 0.7, 0.14], "top": "props/meal_top", "side": "props/planks" } ]
+    },
+    {
       "name": "Stew", "label": "stew", "category": "Item", "mass": 0.5, "sprite": "items/meal", "stackLimit": 20,
-      "nutrition": 0.35, "cooked": true, "rotDays": 2, "flammability": 0.2, "maxHp": 20,
+      "nutrition": 0.35, "cooked": true, "rotDays": 2, "leaves": "DirtyBowl", "flammability": 0.2, "maxHp": 20,
       "description": "Meat and berries simmered over the hearth in its pot. Filling, and warming going down.",
       "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.2], "top": "props/meal_top", "side": "props/stone_block" } ]
     },

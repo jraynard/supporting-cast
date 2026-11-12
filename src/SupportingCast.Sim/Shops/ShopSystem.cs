@@ -204,6 +204,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var def = sim.Defs.Service(kind);
         var worth = Worth(sim, who, def, urgency);
         var spare = Math.Max(0, Coin.Count(sim, who) - Promised(who));
+        // The box pays for its own opening: they know what's in it, and they pay once it's open.
+        if (kind == ServiceKind.Unlock && sim.World.TryGet<Strongbox>(subject, out var box))
+            spare += box.Silver;
         var (shop, price, cheapest) = ChooseShop(sim, who, def, Math.Min(worth, spare));
         if (price < 0)
         {
@@ -696,6 +699,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             var quality = w.TryGet<Crafted>(item, out var made) ? made.Quality : Quality.Plain;
             w.Destroy(item);
             Tasted(sim, to, quality);
+            Work.Vessels.LeaveAfter(sim, to, def);
             Complete(sim, drink, giver);
             return;
         }
@@ -712,6 +716,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             EatJob.Nourish(sim, to, def, count, rot);
             if (cooked is { } q)
                 Tasted(sim, to, q, meal: true);
+            Work.Vessels.LeaveAfter(sim, to, def);
             Complete(sim, meal, giver);
             return;
         }

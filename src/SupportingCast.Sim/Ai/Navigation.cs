@@ -153,8 +153,17 @@ public static class Navigation
     /// Can <paramref name="pawn"/> get from one cell to another at all: by walking, or by flying
     /// between two areas that both touch open sky.
     /// </summary>
+    /// <summary>
+    /// Where to stand for a cell: on it, unless solid furniture's there (a chest, a shelf), when
+    /// beside it is as close as anyone gets. What's kept in a container is reached from beside it.
+    /// </summary>
+    public static PathEnd EndFor(Simulation sim, int3 cell, PathEnd end) =>
+        end == PathEnd.OnTile && sim.Map.InBounds(cell) && sim.Map.Structure[sim.Map.Idx(cell)] is { IsNull: false } s
+        && sim.World.TryGet<Thing>(s, out var t) && t.Def.Solid ? PathEnd.Touch : end;
+
     public static bool CanReach(Simulation sim, Entity pawn, int3 from, int3 to, PathEnd end)
     {
+        end = EndFor(sim, to, end);
         if (sim.Regions.CanReach(from, to, end))
             return true;
         if (FlyingStage(sim, pawn) == null)

@@ -85,6 +85,9 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
     }
 
     /// <summary>Everyone whose stay is up makes for the edge, with one word for each party.</summary>
+    /// <summary>Game hours past their leaving time an adventurer waits to have a locked strongbox opened.</summary>
+    public const float BoxWaitHours = 8;
+
     private static void SendOff(Simulation sim, long now)
     {
         var w = sim.World;
@@ -96,6 +99,9 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
                 continue;
             // Nobody leaves town with their sword still at the smith's, if they can help it.
             if (sim.Shops.GearOut(sim, e) && now < a.LeaveTick + SimClock.HoursToTicks(Shops.ShopSystem.HandedOverHours))
+                continue;
+            // Nor with the reward still locked in its box: back late, they'll want it opened in the morning.
+            if (!Locks.Lockwork.LockedBoxOf(sim, e).IsNull && now < a.LeaveTick + SimClock.HoursToTicks(BoxWaitHours))
                 continue;
             w.Add(e, new Leaving());
             AiSystem.EndJob(sim, e, w.Get<Mind>(e), false);

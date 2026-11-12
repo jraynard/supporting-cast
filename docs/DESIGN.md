@@ -236,6 +236,12 @@ or perhaps by the traitor if they are a necromancer. they can come back in the n
   map is data with exact building anchors. The seed still varies what's underground, what grows,
   and who lives there.
 
+## Art Direction
+
+Currently comes from Dragonworld which is norse inspired, but have added some more traditional stuff for the pre-made town map now.
+
+want to move towards a more Tolkien inspired aesthetic in general though we can definitely keep the norse stuff as well.
+
 ## Sim folders
 
 Built, all in `src/SupportingCast.Sim`, driven only by commands and headless-testable:

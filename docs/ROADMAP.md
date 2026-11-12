@@ -213,16 +213,6 @@ a plain `CraftJob`. Tune the heat and quench timing in play. Save format 3.
 - refining the four initial trades to be fun. blacksmith, innkeeper, carpeneter (locksmith), and healer.
 - blacksmith done, innkeeper in progress.
 
-### polish pass
-- add icon for the game executable
-- publish builds in a way we can easily distribute for playtesting (maybe use discord or something)
-- UX / art polish pass (not a full art pass but just clean things up as needed to make sure its legible)
-- get rid of the sprite wagon and do a box prop for it, check to see if theres any others that need updating
-- make the bridge over the river nicer
-- title screen refinement
-- doc cleanup pass
-- character creation - more traditional DnD fantasy options. elves, dwarves, hobbits, etc
-
 ### M3: A whole season
 - `Director`, Renown and Dread, crises including the late-round dragon, the festival, the
   end-of-round reveal. Villagers defend themselves.
@@ -244,3 +234,13 @@ Remaining trades, more maps (authored like Millbrook), crisis variety, personal 
 
 ### M7: Playing with strangers
 An authoritative server filtered by `Perception`, moderation, voice.
+
+### polish pass - undecided timing yet
+- add icon for the game executable
+- publish builds in a way we can easily distribute for playtesting (maybe use discord or something)
+- UX / art polish pass (not a full art pass but just clean things up as needed to make sure its legible)
+- get rid of the sprite wagon and do a box prop for it, check to see if theres any others that need updating
+- make the bridge over the river nicer
+- title screen refinement
+- doc cleanup pass
+- character creation - more traditional DnD fantasy options. elves, dwarves, hobbits, etc

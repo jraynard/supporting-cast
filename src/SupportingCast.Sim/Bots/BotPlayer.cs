@@ -72,6 +72,12 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     private int _stir, _seasonBeat;
     private bool _potSeasoned;
 
+    /// <summary>The pot as it last looked: it remembers, walking off to the shelf or the larder.</summary>
+    private KnownPot? _pot;
+
+    // The tub and the tap: one press per stroke or swing.
+    private bool _struck;
+
     public Guid Player => player;
 
     /// <summary>What it last decided, for tests and debugging.</summary>
@@ -128,6 +134,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             _dir = 1;
             _progress = 0f;
             _stir = _seasonBeat = 0;
+            _struck = false;
         }
         switch (s)
         {
@@ -161,6 +168,19 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 if (_seasonBeat == 0 && (se.TastedAt == se.Pinches || se.Pinches == 0))
                     return (true, false, 0);
                 return (false, false, _seasonBeat is >= 15 and < 18 && se.TastedAt != se.Pinches ? 1 : 0);
+            }
+            case WashSession wa:
+            {
+                // Scrub as the brush comes round: once a stroke.
+                var press = wa.OnBeat && !_struck;
+                _struck = wa.OnBeat;
+                return (press, false, 0);
+            }
+            case TapSession tap:
+            {
+                var press = tap.OnTheTap && !_struck;
+                _struck = tap.OnTheTap;
+                return (press, false, 0);
             }
             case PourSession p:
                 // Stop where the settled head will bring it to the line.
@@ -326,7 +346,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         return order.Kind switch
         {
             ServiceKind.Repair => Repair(sim, me, view, poster, now),
-            ServiceKind.Drink => Pour(sim, me, poster, now),
+            ServiceKind.Drink => Pour(sim, me, view, poster, now),
             ServiceKind.Meal => Serve(sim, me, view, poster, now),
             ServiceKind.Healing => Heal(sim, me, view, poster, now),
             ServiceKind.Quest => Broker(sim, me, view, poster, now),
@@ -563,7 +583,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         return Entity.Null;
     }
 
-    private bool Pour(Simulation sim, Entity me, Entity drinker, long now)
+    private bool Pour(Simulation sim, Entity me, PerceptionView view, Entity drinker, long now)
     {
         var w = sim.World;
         var held = w.Get<Carrying>(me).Item;
@@ -573,14 +593,17 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 send(new GiveCommand(me, drinker, held, 1));
             return true;
         }
-        if (!held.IsNull)
+        var cask = ServeJob.Cask(sim, me);
+        if (cask.IsNull)
+            return Restock(sim, me, view, now);
+        var into = w.Get<Thing>(cask).Def.Building!.Cask!.Into;
+        if (Vessels.CleanOn(sim, me, into).IsNull)
+            return Crockery(sim, me, view, now, into, cask);
+        if (!held.IsNull && w.Get<Thing>(held).Def.Name != into)
         {
             send(new StowCommand(me)); // a free hand to pour with
             return true;
         }
-        var cask = ServeJob.Cask(sim, me);
-        if (cask.IsNull)
-            return false;
         // Walk up to the cask and use it: that starts the pour.
         if (now - _lastWalk >= ThinkTicks * 4)
         {
@@ -607,14 +630,15 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         var pot = Nearest(sim, me, "StewPot");
         if (pot.IsNull)
             return false;
-        if (!AvatarSystem.InReach(sim, w.Get<Position>(me).Cell, pot) || view.Pot(pot) is not { } p)
+        if (view.Pot(pot) is { } seen)
+            _pot = seen;
+        if (_pot is not { } p || p.Pot != pot)
             return AtStation(sim, me, pot, now, _ => { });
         if (AvatarSystem.Supply(sim, me, Cooking.IsIngredient) is { IsNull: false } food && (p.Empty || !p.Cooked))
         {
             Doing = "filling the pot";
             _potSeasoned = false;
-            send(new PotCommand(me, pot, PotStep.Add));
-            return true;
+            return AtStation(sim, me, pot, now, at => send(new PotCommand(me, at, PotStep.Add)));
         }
         if (p.Empty || (p.Bowls == 0 && p.Cooked))
         {
@@ -629,23 +653,98 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         if (!p.Cooked)
         {
             Doing = "cooking a stew";
-            send(new PotCommand(me, pot, PotStep.Tend));
-            return true;
+            return AtStation(sim, me, pot, now, at => send(new PotCommand(me, at, PotStep.Tend)));
         }
         if (!_potSeasoned)
         {
             Doing = "seasoning the stew";
-            send(new PotCommand(me, pot, PotStep.Season));
-            return true;
+            return AtStation(sim, me, pot, now, at => send(new PotCommand(me, at, PotStep.Season)));
         }
-        if (!held.IsNull)
+        var bowl = Cooking.BowlOf(sim, pot);
+        if (Vessels.CleanOn(sim, me, bowl).IsNull)
+            return Crockery(sim, me, view, now, bowl, pot);
+        if (!held.IsNull && w.Get<Thing>(held).Def.Name != bowl)
         {
             send(new StowCommand(me)); // a free hand for the ladle
             return true;
         }
         Doing = "ladling a bowl";
-        send(new PotCommand(me, pot, PotStep.Ladle));
+        return AtStation(sim, me, pot, now, at => send(new PotCommand(me, at, PotStep.Ladle)));
+    }
+
+    /// <summary>
+    /// A clean vessel of a kind to pour or ladle into: from the shelf nearest where it's used, and
+    /// if there are none clean, gather up the dirty ones and wash them.
+    /// </summary>
+    private bool Crockery(Simulation sim, Entity me, PerceptionView view, long now, string clean, Entity usedAt)
+    {
+        var w = sim.World;
+        var dirtyDef = sim.Defs.AllThings.FirstOrDefault(d => d.WashesInto == clean)?.Name;
+        var dirtyHeld = BarWork.DirtyOn(sim, me);
+        if (!dirtyHeld.IsNull)
+        {
+            Doing = "washing up";
+            return AtStation(sim, me, Nearest(sim, me, "WashTub"), now, tub => send(new BarWorkCommand(me, tub)));
+        }
+        var at = w.Get<Thing>(usedAt).Cell;
+        var shelf = w.Query<Thing>().Where(e => w.Get<Thing>(e) is { Spawned: true, Def.Name: "Shelf" })
+            .OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, at)).FirstOrDefault();
+        if (!shelf.IsNull && sim.StoredIn(shelf).Any(e => w.Get<Thing>(e).Def.Name == clean))
+        {
+            Doing = $"fetching a clean {sim.Defs.Thing(clean).Label}";
+            if (!w.Get<Carrying>(me).Item.IsNull && w.Get<Thing>(w.Get<Carrying>(me).Item).Def.Name != clean)
+            {
+                send(new StowCommand(me));
+                return true;
+            }
+            return AtStation(sim, me, shelf, now, s =>
+            {
+                if (view.InContainer(s).FirstOrDefault(e => w.Get<Thing>(e).Def.Name == clean) is { IsNull: false } stack)
+                    send(new TakeFromStorageCommand(me, stack));
+            });
+        }
+        // None clean on the shelf: pick up the dirty ones lying about, then to the tub.
+        if (dirtyDef == null)
+            return false;
+        var dirty = w.Query<Thing>().Where(e => w.Get<Thing>(e) is { Spawned: true } t && t.Def.Name == dirtyDef && view.CanSeeCell(t.Cell))
+            .OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, w.Get<Position>(me).Cell)).FirstOrDefault();
+        if (dirty.IsNull)
+            return false;
+        Doing = "clearing up the dirty crockery";
+        if (now - _lastWalk >= ThinkTicks * 4)
+        {
+            send(new AvatarGoToCommand(me, w.Get<Thing>(dirty).Cell, Interact: true));
+            _lastWalk = now;
+        }
         return true;
+    }
+
+    /// <summary>The cask's dry: fetch a keg from the storeroom and knock it in.</summary>
+    private bool Restock(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        var w = sim.World;
+        var cask = Nearest(sim, me, "AleCask");
+        if (cask.IsNull)
+            return false;
+        Doing = "changing the keg";
+        if (!BarWork.KegFor(sim, me, cask).IsNull)
+            return AtStation(sim, me, cask, now, c => send(new BarWorkCommand(me, c)));
+        if (!w.Get<Carrying>(me).Item.IsNull)
+        {
+            send(new StowCommand(me));
+            return true;
+        }
+        var keg = w.Get<Thing>(cask).Def.Building!.Cask!.Keg;
+        var store = w.Query<Thing>().Where(e => w.Get<Thing>(e) is { Spawned: true } t && t.Def.Building?.StorageStacks > 0
+                && sim.StoredIn(e).Any(i => w.Get<Thing>(i).Def.Name == keg))
+            .OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, w.Get<Position>(me).Cell)).FirstOrDefault();
+        if (store.IsNull)
+            return false;
+        return AtStation(sim, me, store, now, s =>
+        {
+            if (view.InContainer(s).FirstOrDefault(e => w.Get<Thing>(e).Def.Name == keg) is { IsNull: false } k)
+                send(new TakeFromStorageCommand(me, k));
+        });
     }
 
     private bool Heal(Simulation sim, Entity me, PerceptionView view, Entity patient, long now)

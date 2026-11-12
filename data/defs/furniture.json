@@ -146,6 +146,30 @@
       "model": [
         { "min": [0.1, 0.18, 0], "max": [0.9, 0.82, 0.6], "top": "props/basket", "side": "props/planks", "front": "props/chest_front" }
       ]
+    },
+    {
+      // Behind the bar and in the kitchen: where the clean tankards and bowls are kept.
+      "name": "Shelf", "label": "shelf", "category": "Building", "solid": true, "sprite": "buildings/chest",
+      "description": "Plank shelves on brackets. Holds 4 stacks: the clean crockery lives here.",
+      "maxHp": 80, "flammability": 1.0,
+      "building": { "work": 80, "storageStacks": 4, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "model": [
+        { "min": [0.08, 0.3, 0], "max": [0.92, 0.7, 0.06], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.08, 0.3, 0.42], "max": [0.92, 0.7, 0.48], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.08, 0.3, 0.84], "max": [0.92, 0.7, 0.9], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.08, 0.3, 0], "max": [0.14, 0.7, 0.9], "top": "props/log_side", "side": "props/log_side" },
+        { "min": [0.86, 0.3, 0], "max": [0.92, 0.7, 0.9], "top": "props/log_side", "side": "props/log_side" }
+      ]
+    },
+    {
+      // The kitchen's wash tub (Work.WashSession): F at it with dirty crockery to scrub it clean.
+      "name": "WashTub", "label": "wash tub", "category": "Building", "solid": true, "sprite": "buildings/chest",
+      "description": "A half-barrel of hot water and a scrubbing brush. F at it with dirty tankards or bowls to wash them.",
+      "maxHp": 80, "flammability": 0.6,
+      "building": { "work": 90, "surfaceHeight": 0.5, "washTub": true, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "model": [
+        { "min": [0.12, 0.12, 0], "max": [0.88, 0.88, 0.5], "top": "props/water", "side": "props/tub_side" }
+      ]
     }
   ]
 }

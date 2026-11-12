@@ -10,6 +10,7 @@ namespace SupportingCast.Sim.Work;
 /// tilted, it foams less but fills slower. Let go and let it settle; once it's still, it's poured.
 /// The best pour settles at the line with a decent head; overfill it and it spills (a wasted
 /// serving). The quality is the drink's (<see cref="Crafted"/>), and the customer can taste it.
+/// It's poured into a clean tankard (<see cref="Vessels"/>), in hand or from the pack.
 /// </summary>
 public sealed class PourSession : WorkSession
 {
@@ -73,9 +74,12 @@ public sealed class PourSession : WorkSession
             sim.Messages.Add(MessageKind.Info, $"The {w.Get<Thing>(cask).Label} is dry.", at);
             return;
         }
-        if (!w.Get<Carrying>(worker).Item.IsNull)
+        var into = w.Get<Thing>(cask).Def.Building!.Cask!.Into;
+        if (!Vessels.Ready(sim, worker, into))
         {
-            sim.Messages.Add(MessageKind.Info, "You need a free hand to pour.", at);
+            sim.Messages.Add(MessageKind.Info, Vessels.CleanOn(sim, worker, into).IsNull
+                ? $"You need a clean {sim.Defs.Thing(into).Label} to pour into: there are some on the shelf behind the bar."
+                : $"You need a hand free for the {sim.Defs.Thing(into).Label}.", at);
             return;
         }
         var drink = sim.Defs.Thing(w.Get<Thing>(cask).Def.Building!.Cask!.Pours);
@@ -83,7 +87,8 @@ public sealed class PourSession : WorkSession
     }
 
     public override bool StillValid(Simulation sim) =>
-        ServingsLeft(sim, Cask) > 0 && AvatarSystem.InReach(sim, sim.World.Get<Position>(Worker).Cell, Cask);
+        ServingsLeft(sim, Cask) > 0 && AvatarSystem.InReach(sim, sim.World.Get<Position>(Worker).Cell, Cask)
+        && !Vessels.CleanOn(sim, Worker, sim.World.Get<Thing>(Cask).Def.Building!.Cask!.Into).IsNull;
 
     protected internal override void Begin() => Line = Rand.Range(0.78f, 0.9f);
 
@@ -135,6 +140,7 @@ public sealed class PourSession : WorkSession
             sim.Messages.Add(MessageKind.Info, $"It foams over the rim and down your arm: that {DrinkLabel} is on the floor.", at);
             return;
         }
+        Vessels.Use(sim, Worker, w.Get<Thing>(Cask).Def.Building!.Cask!.Into);
         var drink = PourInto(sim, Worker, Cask, Crafting.QualityFrom(Quality));
         sim.Messages.Add(MessageKind.Info, $"Poured a {Crafting.QualityLabel(w.Get<Crafted>(drink).Quality)} {DrinkLabel}.", at);
     }

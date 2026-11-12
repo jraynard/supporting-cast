@@ -608,7 +608,7 @@ public sealed partial class VillageGame
     /// <summary>Which furniture use beside you F prefers when you aren't facing anything: working a craft first, then a station, a cask, a chest.</summary>
     private static int FurnitureRank(AvatarActionKind kind) => kind switch
     {
-        AvatarActionKind.Cook => 5,
+        AvatarActionKind.Cook or AvatarActionKind.BarWork => 5,
         AvatarActionKind.Craft => 4,
         AvatarActionKind.OpenStation => 3,
         AvatarActionKind.Pour => 2,

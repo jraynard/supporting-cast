@@ -63,6 +63,9 @@ public enum AvatarActionKind
 
     /// <summary>At a stew pot: put food in, tend it, or ladle a bowl (<see cref="Work.Cooking.Start"/>), begun at once.</summary>
     Cook,
+
+    /// <summary>Wash dirty crockery at the tub, or knock a keg into a cask (<see cref="Work.BarWork.Start"/>), begun at once.</summary>
+    BarWork,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -88,7 +91,7 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
     public bool Instant => Kind is AvatarActionKind.PutDown or AvatarActionKind.Deliver or AvatarActionKind.PickUp
         or AvatarActionKind.Store or AvatarActionKind.OpenStorage 
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
-        or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook;
+        or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
     public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation;
@@ -343,6 +346,10 @@ public sealed class AvatarSystem : ISimSystem
         if (Work.Cooking.StepAt(sim, avatar, site) is { } cooking && !sim.Reservations.IsReservedByOther(site, avatar))
             return new(AvatarActionKind.Cook, cooking, cell, site);
 
+        // Dirty crockery to the wash tub; a keg in your arms to a dry cask.
+        if (Work.BarWork.StepAt(sim, avatar, site) is { } upkeep && !sim.Reservations.IsReservedByOther(site, avatar))
+            return new(AvatarActionKind.BarWork, upkeep, cell, site);
+
         // A craft that has everything it needs is worked on the spot.
         if (Crafting.IsStation(sim, site) && w.Get<Workbench>(site) is { Active: { } making, Stocked: true } ready
             && (ready.By == avatar || (ready.By.IsNull && Crafting.CanMake(sim, avatar, making)))
@@ -368,10 +375,11 @@ public sealed class AvatarSystem : ISimSystem
         }
         if (Crafting.IsStation(sim, site))
             return new(AvatarActionKind.OpenStation, $"Use the {w.Get<Thing>(site).Label}", cell, site);
-        if (!site.IsNull && w.Get<Thing>(site).Def.Building?.Cask is { } cask && w.Get<Carrying>(avatar).Item.IsNull
+        if (!site.IsNull && w.Get<Thing>(site).Def.Building?.Cask is { } cask && (held.IsNull || w.Get<Thing>(held).Def.Name == cask.Into)
             && !w.Has<Work.WorkSession>(avatar))
-            return new(AvatarActionKind.Pour, Work.PourSession.ServingsLeft(sim, site) > 0
-                ? $"Pour {sim.Defs.Thing(cask.Pours).Label}" : $"The {w.Get<Thing>(site).Label} is dry", cell, site);
+            return new(AvatarActionKind.Pour, Work.PourSession.ServingsLeft(sim, site) <= 0 ? $"The {w.Get<Thing>(site).Label} is dry"
+                : Work.Vessels.CleanOn(sim, avatar, cask.Into).IsNull ? $"Pour {sim.Defs.Thing(cask.Pours).Label} (no clean {sim.Defs.Thing(cask.Into).Label})"
+                : $"Pour {sim.Defs.Thing(cask.Pours).Label}", cell, site);
         if (!held.IsNull && IsContainer(sim, site) && sim.HasRoomFor(site, w.Get<Thing>(held).Def, w.Get<Thing>(held).Material))
             return new(AvatarActionKind.Store, $"Put {w.Get<Thing>(held).Label} in the {w.Get<Thing>(site).Label}", cell, site);
         // A pack lying about opens like the wagon (you're already wearing one, or it'd go on).
@@ -661,6 +669,9 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.Cook:
                 Work.Cooking.Start(sim, avatar, action.Target);
+                break;
+            case AvatarActionKind.BarWork:
+                Work.BarWork.Start(sim, avatar, action.Target);
                 break;
             case AvatarActionKind.Craft:
                 if (w.Get<Workbench>(action.Target).Active is { } recipe)

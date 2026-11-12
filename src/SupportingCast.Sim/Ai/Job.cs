@@ -173,6 +173,7 @@ public abstract class Job
     /// <summary>Walk (or fly, see <see cref="Navigation"/>) to a cell. Yields while moving; calls Fail if no route.</summary>
     protected IEnumerable<JobStatus> GoTo(int3 target, PathEnd end)
     {
+        end = Navigation.EndFor(Sim, target, end);
         if (Arrived(target, end))
             yield break;
 
