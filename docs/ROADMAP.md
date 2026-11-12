@@ -33,8 +33,10 @@ Milestones toward a playable prototype, then beyond. Design intent is in [DESIGN
 - `Adventurers/`: parties arrive during a round, road-worn, with silver in their packs. They're
   neutral, wait where their orders are served, and move on.
 - `Shops/`: every adventurer's want is an order asked aloud, so only those who hear it know of it.
-  Each shop has a price sign its keeper sets (the Shop panel, J), and adventurers pay what it says;
-  a shop not offering something gets no orders for it. Coin is real silver that changes hands. `Favours/`: players post, take, finish and call off
+  Each shop has a price sign its keeper sets (the Shop panel, J). An adventurer orders from the
+  cheapest shop whose price is within what the service is worth to them (rolled per want, times
+  their kind's spend and their need) and what they can spare; too dear, they say so, sulk a little
+  and go without for a while. A bargain pleases them more. Coin is real silver that changes hands. `Favours/`: players post, take, finish and call off
   favours for each other.
 - The trades, each with its own hands-on game and an AI fallback (the Quest Broker started as a
   fourth and was folded into the Innkeeper: the keeper hears the rumours anyway):

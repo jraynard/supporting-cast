@@ -197,10 +197,11 @@ public class ShopTests
     public void AdventurersPayWhatTheSignSays()
     {
         var (sim, keeper, inn, party) = Inn();
-        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, 4, true));
+        var price = sim.Defs.Service(ServiceKind.Drink).DefaultPrice + 1; // still under what any of them thinks it's worth
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, price, true));
         Thirsty(sim, party[0]);
         sim.TickMany(SimClock.TicksPerHour / 6);
-        Assert.Equal(4, OpenOf(sim, party[0], ServiceKind.Drink).Price);
+        Assert.Equal(price, OpenOf(sim, party[0], ServiceKind.Drink).Price);
     }
 
     [Fact]
@@ -223,5 +224,91 @@ public class ShopTests
         sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Lodging, 5, false));
         var loaded = SaveLoadTests.RoundTrip(sim);
         Assert.Equal(Perception.For(sim, keeper).Prices(inn), Perception.For(loaded, keeper).Prices(inn));
+    }
+
+    // ---------------- Worth and budget ----------------
+
+    [Fact]
+    public void TooDearTheySaySoGoWithoutAndThinkLessOfTheTown()
+    {
+        var (sim, keeper, inn, party) = Inn();
+        var drinker = party[0];
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, 50, true));
+        var mood = sim.World.Get<Adventurer>(drinker).Satisfaction;
+        Thirsty(sim, drinker);
+        sim.TickMany(SimClock.TicksPerHour / 6);
+
+        Assert.DoesNotContain(sim.Shops.All, o => o.Poster == drinker && o.Kind.Kind == ServiceKind.Drink);
+        Assert.Contains(sim.Speech.Kept, u => u.Speaker == drinker && u.Text.Contains("50"));
+        Assert.Equal(mood - ShopSystem.TooDearMood, sim.World.Get<Adventurer>(drinker).Satisfaction, 3);
+
+        // Cheaper, and once they've stopped sulking, they'll have one.
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, 2, true));
+        Thirsty(sim, drinker);
+        sim.TickMany(SimClock.HoursToTicks(ShopSystem.CooldownHours) + SimClock.TicksPerHour / 6);
+        Thirsty(sim, drinker);
+        sim.TickMany(SimClock.TicksPerHour / 6);
+        Assert.Contains(sim.Shops.All, o => o.Poster == drinker && o.Kind.Kind == ServiceKind.Drink && o.Price == 2);
+    }
+
+    [Fact]
+    public void WithAnEmptyPurseTheyOrderNothingButDontBlameTheTown()
+    {
+        var (sim, keeper, _, party) = Inn();
+        var drinker = party[0];
+        Coin.Pay(sim, drinker, keeper, Coin.Count(sim, drinker));
+        var mood = sim.World.Get<Adventurer>(drinker).Satisfaction;
+        Thirsty(sim, drinker);
+        sim.TickMany(SimClock.TicksPerHour / 6);
+        Assert.DoesNotContain(sim.Shops.All, o => o.Poster == drinker && o.Kind.Kind == ServiceKind.Drink);
+        Assert.Equal(mood, sim.World.Get<Adventurer>(drinker).Satisfaction, 3);
+    }
+
+    [Fact]
+    public void ABargainPleasesMoreThanAFullPrice()
+    {
+        float Gain(int price)
+        {
+            var (sim, keeper, inn, party) = Inn();
+            var drinker = party[0];
+            sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, price, true));
+            Thirsty(sim, drinker);
+            sim.TickMany(SimClock.TicksPerHour / 6);
+            var order = OpenOf(sim, drinker, ServiceKind.Drink);
+            Assert.True(order.Worth >= price);
+            var mood = sim.World.Get<Adventurer>(drinker).Satisfaction;
+            sim.Shops.Complete(sim, order, keeper);
+            return sim.World.Get<Adventurer>(drinker).Satisfaction - mood;
+        }
+        var full = TestWorld.LoadDefs().Service(ServiceKind.Drink).DefaultPrice + 1;
+        Assert.True(Gain(0) > Gain(full));
+    }
+
+    [Fact]
+    public void APartyTurnedAwayFromAQuestAsksAgainLater()
+    {
+        var (sim, keeper, inn, party) = Inn();
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Quest, ShopPrices.MaxPrice, true));
+        sim.TickMany(SimClock.HoursToTicks(ShopSystem.QuestAfterHours) + SimClock.TicksPerHour / 6);
+        Assert.DoesNotContain(sim.Shops.All, o => o.Kind.Kind == ServiceKind.Quest);
+
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Quest, sim.Defs.Service(ServiceKind.Quest).DefaultPrice, true));
+        sim.TickMany(SimClock.HoursToTicks(ShopSystem.CooldownHours) + SimClock.TicksPerHour / 6);
+        Assert.Single(sim.Shops.All, o => o.Kind.Kind == ServiceKind.Quest && o.IsOpen && party.Contains(o.Poster));
+    }
+
+    [Fact]
+    public void WhoWentWithoutAndWhatOrdersWereWorthSurviveASave()
+    {
+        var (sim, keeper, inn, party) = Inn();
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, 50, true));
+        Thirsty(sim, party[0]);
+        Hunger(sim, party[1], 0.5f);
+        sim.TickMany(SimClock.TicksPerHour / 6);
+        var meal = OpenOf(sim, party[1], ServiceKind.Meal);
+
+        var loaded = SaveLoadTests.RoundTrip(sim);
+        Assert.Equal(meal.Worth, loaded.Shops.Find(meal.Id)!.Worth);
+        SaveLoadTests.AssertSameFuture(sim, loaded, 3);
     }
 }

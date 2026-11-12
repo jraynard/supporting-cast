@@ -23,6 +23,9 @@ public sealed class AdventurerKindDef : Def
     public int PurseMin { get; set; } = 10;
     public int PurseMax { get; set; } = 30;
 
+    /// <summary>How free they are with coin: what a service is worth to them is its def's worth times this.</summary>
+    public float Spend { get; set; } = 1f;
+
     [JsonIgnore] public OutfitDef? OutfitDef { get; private set; }
     [JsonIgnore] public ThingDef? WeaponDef { get; private set; }
     [JsonIgnore] public List<ThingDef> ApparelDefs { get; } = [];
@@ -46,6 +49,8 @@ public sealed class AdventurerKindDef : Def
         }
         if (SkillMin > SkillMax || PurseMin > PurseMax || PurseMin < 0)
             throw new Exception($"Adventurer kind {Name}: a min is above its max");
+        if (!(Spend > 0))
+            throw new Exception($"Adventurer kind {Name}: spend must be above 0");
     }
 }
 

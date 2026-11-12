@@ -9,9 +9,11 @@ using SupportingCast.Sim.Systems;
 namespace SupportingCast.Sim.Shops;
 
 /// <summary>
-/// Every <see cref="Order"/> in the round. Adventurers ask aloud for what they want (a meal when
-/// hungry, a mend when their gear is worn, a healer when hurt, and once per party a quest), and
-/// keep asking while nobody takes it on. Done, they pay in silver and think better of the town;
+/// Every <see cref="Order"/> in the round. Adventurers want things (a meal when hungry, a mend when
+/// their gear is worn, a healer when hurt, and once per party a quest), each worth so much to them.
+/// They read the shops' signs (<see cref="ShopPrices"/>) and order from the cheapest that's worth
+/// it and that their purse covers; if none is, they say so and go without for a while. Ordered,
+/// they ask aloud and keep asking while nobody takes it on. Done, they pay in silver and think better of the town;
 /// left waiting, they give up and think worse (<see cref="Adventurer.Satisfaction"/>). Only those
 /// who heard an order asked know of it. Players asking each other go through <c>Favours.FavourBoard</c>.
 /// </summary>
@@ -41,12 +43,21 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// <summary>The evening hour from which an adventurer staying the night asks for a room, and how late they still will.</summary>
     public const float LodgingFromHour = 18, LodgingUntilHour = 2;
 
+    /// <summary>Satisfaction lost each time an adventurer finds the price too dear for what it's worth.</summary>
+    public const float TooDearMood = 0.25f;
+
+    /// <summary>Satisfaction gained, at most, for a bargain: scaled by how much under its worth they paid.</summary>
+    public const float BargainMood = 0.5f;
+
     /// <summary>How long closed orders stay on the books (for the list and the cooldown).</summary>
     public const int KeepClosedTicks = SimClock.TicksPerDay;
 
     private readonly SimRandom _rand = new(seed ^ 0xE77A_4D5u);
     private readonly List<Order> _orders = [];
     private readonly HashSet<int> _questAsked = [];
+
+    /// <summary>When someone last went without something (too dear, or nobody offering it): they don't look again until the cooldown's passed.</summary>
+    private readonly Dictionary<(Entity Who, ServiceKind Kind), long> _wentWithout = [];
 
     /// <summary>Who last saw to each patient's wounds (drawn or bandaged), to be paid for a Healing order.</summary>
     private readonly Dictionary<Entity, Entity> _treatedBy = [];
@@ -86,11 +97,14 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         _orders.RemoveAll(e => !e.IsOpen && now - e.ClosedTick > KeepClosedTicks);
         foreach (var gone in _treatedBy.Keys.Where(k => !sim.World.IsAlive(k)).ToList())
             _treatedBy.Remove(gone);
-        AskForWhatTheyWant(sim);
+        var stale = SimClock.HoursToTicks(CooldownHours);
+        foreach (var key in _wentWithout.Where(kv => !sim.World.IsAlive(kv.Key.Who) || now - kv.Value > stale).Select(kv => kv.Key).ToList())
+            _wentWithout.Remove(key);
+        ShopForWhatTheyWant(sim);
     }
 
-    /// <summary>Each adventurer in town asks for whatever they lack and haven't already asked for.</summary>
-    private void AskForWhatTheyWant(Simulation sim)
+    /// <summary>Each adventurer in town shops for whatever they lack and haven't already ordered.</summary>
+    private void ShopForWhatTheyWant(Simulation sim)
     {
         var w = sim.World;
         var food = sim.Defs.Need("Food");
@@ -99,26 +113,26 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             if (!w.TryGet<Adventurer>(who, out var a) || w.Has<Leaving>(who) || !SpeechSystem.CanAct(sim, who))
                 continue;
             // Work comes after the road's been washed down: fed, served, mended, then a quest.
-            if (!_questAsked.Contains(a.Party) && sim.Clock.Tick - a.Arrived >= SimClock.HoursToTicks(QuestAfterHours))
-            {
+            // Once one of the party has a quest on order, the rest leave it to them.
+            if (!_questAsked.Contains(a.Party) && sim.Clock.Tick - a.Arrived >= SimClock.HoursToTicks(QuestAfterHours)
+                && Want(sim, who, ServiceKind.Quest, Entity.Null))
                 _questAsked.Add(a.Party);
-                PostFor(sim, who, ServiceKind.Quest, Entity.Null);
-            }
-            if (w.Get<Needs>(who).Get(food) < MealBelow)
-                PostFor(sim, who, ServiceKind.Meal, Entity.Null);
+            var hunger = w.Get<Needs>(who).Get(food);
+            if (hunger < MealBelow)
+                Want(sim, who, ServiceKind.Meal, Entity.Null, hunger < food.UrgentBelow ? 1.5f : 1f);
             if (sim.Clock.Tick >= a.NextDrink && MayAsk(sim, who, ServiceKind.Drink))
             {
-                PostFor(sim, who, ServiceKind.Drink, Entity.Null);
+                Want(sim, who, ServiceKind.Drink, Entity.Null);
                 w.Get<Adventurer>(who).NextDrink = sim.Clock.Tick + SimClock.HoursToTicks(HoursBetweenDrinks * _rand.Range(0.75f, 1.25f));
             }
             if (MostWorn(sim, who) is { IsNull: false } gear)
-                PostFor(sim, who, ServiceKind.Repair, gear);
+                Want(sim, who, ServiceKind.Repair, gear, WeaponWear.HpFraction(sim, gear) < 0.35f ? 1.5f : 1f);
             if (w.TryGet<Health>(who, out var h) && h.Injuries.Exists(i => !i.Tended))
-                PostFor(sim, who, ServiceKind.Healing, Entity.Null);
+                Want(sim, who, ServiceKind.Healing, Entity.Null, h.Injuries.Where(i => !i.Tended).Sum(i => i.Damage) >= 8f ? 1.75f : 1f);
             if (Locks.Lockwork.LockedBoxOf(sim, who) is { IsNull: false } box)
-                PostFor(sim, who, ServiceKind.Unlock, box);
+                Want(sim, who, ServiceKind.Unlock, box);
             if (WantsARoom(sim, who, a))
-                PostFor(sim, who, ServiceKind.Lodging, Entity.Null);
+                Want(sim, who, ServiceKind.Lodging, Entity.Null);
         }
     }
 
@@ -169,28 +183,110 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     public static bool IsLet(Simulation sim, Entity bed) =>
         Buildings.Of(sim, bed) is { IsNull: false } b && sim.World.Get<PresetBuilding>(b).Def.LetsBeds;
 
-    private void PostFor(Simulation sim, Entity who, ServiceKind kind, Entity subject)
+    /// <summary>
+    /// An adventurer wants something: what's it worth to them (<see cref="Worth"/>), and what can
+    /// they spare? They order from the cheapest shop offering it within that, the nearest of equals,
+    /// at the price on its sign. Too dear everywhere, they say so, think the less of the town for it
+    /// and go without for <see cref="CooldownHours"/>; with nobody offering it, they just go without.
+    /// True if they ordered.
+    /// </summary>
+    private bool Want(Simulation sim, Entity who, ServiceKind kind, Entity subject, float urgency = 1f)
     {
         if (!MayAsk(sim, who, kind))
-            return;
+            return false;
         var def = sim.Defs.Service(kind);
-        // The shop's sign sets the price; a shop not offering it gets no custom.
-        var shop = def.AtDef is { } at ? BuildingOf(sim, at) : Entity.Null;
-        var price = def.DefaultPrice;
-        if (!shop.IsNull)
+        var worth = Worth(sim, who, def, urgency);
+        var spare = Math.Max(0, Coin.Count(sim, who) - Promised(who));
+        var (shop, price, cheapest) = ChooseShop(sim, who, def, Math.Min(worth, spare));
+        if (price < 0)
         {
-            if (ShopPrices.Posted(sim, shop, kind) is not { Offered: true } posted)
-                return;
-            price = posted.Price;
+            _wentWithout[(who, kind)] = sim.Clock.Tick;
+            if (cheapest >= 0)
+                TooDear(sim, who, def, cheapest, worth, spare, SubjectLabel(sim, subject) ?? WoundLabel(sim, who));
+            return false;
         }
         var text = Line(def, price, SubjectLabel(sim, subject) ?? WoundLabel(sim, who));
-        Post(sim, who, def, text, price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), subject);
+        Post(sim, who, def, text, price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), subject, shop, worth);
+        return true;
     }
 
-    /// <summary>Has nothing of this kind open, and didn't just have one close?</summary>
+    /// <summary>
+    /// What a service is worth to this adventurer right now, in silver: rolled in the def's range
+    /// (<see cref="ServiceDef.WorthMin"/>), times how free with coin their kind is
+    /// (<see cref="AdventurerKindDef.Spend"/>), times how badly they need it.
+    /// </summary>
+    private int Worth(Simulation sim, Entity who, ServiceDef def, float urgency)
+    {
+        var spend = sim.World.Get<Adventurer>(who).Kind?.Spend ?? 1f;
+        return Math.Max(0, (int)MathF.Round(_rand.Range(def.WorthMin, def.WorthMax + 1) * spend * urgency));
+    }
+
+    /// <summary>Silver this person has promised to orders still open.</summary>
+    private int Promised(Entity who)
+    {
+        var sum = 0;
+        foreach (var e in _orders)
+            if (e.IsOpen && e.Poster == who)
+                sum += e.Price;
+        return sum;
+    }
+
+    /// <summary>
+    /// The shop to order from: of the standing buildings of the service's kind offering it at no
+    /// more than <paramref name="budget"/>, the cheapest, then the nearest. Price -1 if none;
+    /// <c>Cheapest</c> is the lowest price offered at all (-1 if nobody offers it). A town with no
+    /// building for it at all serves it at the default price, from nowhere in particular.
+    /// </summary>
+    private static (Entity Shop, int Price, int Cheapest) ChooseShop(Simulation sim, Entity who, ServiceDef def, int budget)
+    {
+        if (def.AtDef == null || BuildingOf(sim, def.AtDef).IsNull)
+            return def.DefaultPrice <= budget ? (Entity.Null, def.DefaultPrice, def.DefaultPrice) : (Entity.Null, -1, def.DefaultPrice);
+        var w = sim.World;
+        var from = w.Get<Position>(who).Cell;
+        var best = Entity.Null;
+        int bestPrice = -1, bestDist = int.MaxValue, cheapest = -1;
+        foreach (var e in w.Each<PresetBuilding>())
+        {
+            var b = w.Get<PresetBuilding>(e);
+            if (b.Def != def.AtDef || b.Demolishing || ShopPrices.Posted(sim, e, def.Kind) is not { Offered: true } sign)
+                continue;
+            if (cheapest < 0 || sign.Price < cheapest)
+                cheapest = sign.Price;
+            if (sign.Price > budget)
+                continue;
+            var dist = Maps.Map.Distance(from, b.Anchor);
+            if (best.IsNull || sign.Price < bestPrice || (sign.Price == bestPrice && dist < bestDist))
+            {
+                best = e;
+                bestPrice = sign.Price;
+                bestDist = dist;
+            }
+        }
+        return (best, bestPrice, cheapest);
+    }
+
+    /// <summary>The cheapest offer is more than they'll pay: they say so, and a price over its worth sours them on the town.</summary>
+    private void TooDear(Simulation sim, Entity who, ServiceDef def, int price, int worth, int spare, string? subject)
+    {
+        string line;
+        if (price > worth)
+        {
+            sim.World.Get<Adventurer>(who).Satisfaction -= TooDearMood;
+            line = def.TooDearLines.Count == 0
+                ? $"{price} silver for {def.Label}? I'll do without."
+                : string.Format(def.TooDearLines[_rand.NextInt(def.TooDearLines.Count)], price, subject ?? "gear");
+        }
+        else
+            line = spare <= 0 ? $"I'd want {def.Label}, if I had the silver." : $"{price} silver? I haven't got it to spare.";
+        sim.Speech.Say(sim, who, line, Volume.Say);
+    }
+
+    /// <summary>Has nothing of this kind open, didn't just have one close, and didn't just go without one?</summary>
     private bool MayAsk(Simulation sim, Entity who, ServiceKind kind)
     {
         var since = sim.Clock.Tick - SimClock.HoursToTicks(CooldownHours);
+        if (_wentWithout.TryGetValue((who, kind), out var at) && at > since)
+            return false;
         foreach (var e in _orders)
             if (e.Poster == who && e.Kind.Kind == kind && (e.IsOpen || e.ClosedTick > since))
                 return false;
@@ -198,13 +294,14 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     }
 
     /// <summary>Put an order on the books and say it aloud. Those who hear it clearly know of it.</summary>
-    public Order Post(Simulation sim, Entity poster, ServiceDef kind, string text, int price, long deadline, Entity? subject = null)
+    public Order Post(Simulation sim, Entity poster, ServiceDef kind, string text, int price, long deadline, Entity? subject = null,
+        Entity? where = null, int worth = 0)
     {
         var order = new Order
         {
             Id = _nextId++, Kind = kind, Poster = poster, PosterName = sim.World.Get<Creature>(poster).Name, Text = text,
-            Where = kind.AtDef is { } at ? BuildingOf(sim, at) : Entity.Null, Subject = subject ?? Entity.Null, Price = price,
-            PostedTick = sim.Clock.Tick, Deadline = deadline,
+            Where = where ?? (kind.AtDef is { } at ? BuildingOf(sim, at) : Entity.Null), Subject = subject ?? Entity.Null, Price = price,
+            Worth = worth, PostedTick = sim.Clock.Tick, Deadline = deadline,
         };
         _orders.Add(order);
         Learn(order, poster);
@@ -266,9 +363,10 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         }
         if (sim.World.TryGet<Adventurer>(e.Poster, out _))
         {
-            // Quick service counts for more.
+            // Quick service counts for more, and so does a bargain.
             var quick = sim.Clock.Tick - e.PostedTick < (e.Deadline - e.PostedTick) / 2;
-            sim.World.Get<Adventurer>(e.Poster).Satisfaction += quick ? 1.5f : 1f;
+            var bargain = e.Worth > 0 ? Math.Clamp((e.Worth - e.Price) / (float)e.Worth, 0f, 1f) * BargainMood : 0f;
+            sim.World.Get<Adventurer>(e.Poster).Satisfaction += (quick ? 1.5f : 1f) + bargain;
         }
         var thanks = paid >= e.Price ? $"There. {paid} silver, as promised." : $"Here's {paid} silver. It's all I've got.";
         sim.Speech.Say(sim, e.Poster, thanks, Volume.Say);
@@ -534,6 +632,14 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             w.Entity(patient);
             w.Entity(by);
         }
+        var without = _wentWithout.OrderBy(kv => kv.Key.Who.Index).ThenBy(kv => kv.Key.Kind).ToList();
+        w.Int(without.Count);
+        foreach (var ((who, kind), tick) in without)
+        {
+            w.Entity(who);
+            w.Def(sim.Defs.Service(kind));
+            w.Long(tick);
+        }
         w.Int(_orders.Count);
         foreach (var e in _orders)
         {
@@ -545,6 +651,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             w.Entity(e.Where);
             w.Entity(e.Subject);
             w.Int(e.Price);
+            w.Int(e.Worth);
             w.Long(e.PostedTick);
             w.Long(e.Deadline);
             w.Entity(e.Assignee);
@@ -568,13 +675,20 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         _treatedBy.Clear();
         for (var n = r.Count(1 << 16); n > 0; n--)
             _treatedBy[r.Entity()] = r.Entity();
+        _wentWithout.Clear();
+        for (var n = r.Count(1 << 16); n > 0; n--)
+        {
+            var who = r.Entity();
+            var kind = r.Def<ServiceDef>().Kind;
+            _wentWithout[(who, kind)] = r.Long();
+        }
         _orders.Clear();
         for (var n = r.Count(1 << 16); n > 0; n--)
         {
             var e = new Order
             {
                 Id = r.Int(), Kind = r.Def<ServiceDef>(), Poster = r.Entity(), PosterName = r.String(), Text = r.String(),
-                Where = r.Entity(), Subject = r.Entity(), Price = r.Int(), PostedTick = r.Long(), Deadline = r.Long(),
+                Where = r.Entity(), Subject = r.Entity(), Price = r.Int(), Worth = r.Int(), PostedTick = r.Long(), Deadline = r.Long(),
                 Assignee = r.Entity(), AssigneeName = r.String(),
             };
             var status = r.Byte();

@@ -223,6 +223,8 @@ public class CarpenterTests
         b.Armed = trapped;
         b.Trap = trapped ? TrapKind.Needle : TrapKind.None;
         Inventory.Stow(sim, owner, box);
+        // Back from a quest with their share: enough to pay for the box on top of whatever else they've ordered.
+        Inventory.Stow(sim, owner, sim.CreateItem(sim.Defs.Thing(Coin.Silver), 40));
         return (sim, owner, box);
     }
 

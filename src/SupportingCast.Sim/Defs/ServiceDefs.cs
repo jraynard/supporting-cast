@@ -43,6 +43,17 @@ public sealed class ServiceDef : Def
     /// </summary>
     public int DefaultPrice { get; set; } = 3;
 
+    /// <summary>
+    /// What it's worth to an adventurer, in silver (inclusive range, rolled each time they want it,
+    /// then scaled by their kind's <see cref="AdventurerKindDef.Spend"/> and how badly they need it).
+    /// A shop asking more gets "too dear" and no order.
+    /// </summary>
+    public int WorthMin { get; set; } = 3;
+    public int WorthMax { get; set; } = 6;
+
+    /// <summary>What an adventurer says when the price is more than it's worth to them. "{0}" is the price, "{1}" the thing in question.</summary>
+    public List<string> TooDearLines { get; set; } = [];
+
     /// <summary>Game hours they wait before giving up.</summary>
     public float PatienceHours { get; set; } = 3;
 
@@ -58,7 +69,7 @@ public sealed class ServiceDef : Def
             throw new Exception($"Service '{Name}' isn't one of {string.Join(", ", Enum.GetNames<ServiceKind>())}");
         Kind = kind;
         AtDef = At.Length > 0 ? db.Building(At) : null;
-        if (DefaultPrice < 0 || DefaultPrice > Shops.ShopPrices.MaxPrice || PatienceHours <= 0)
-            throw new Exception($"Service '{Name}': bad price or patience");
+        if (DefaultPrice < 0 || DefaultPrice > Shops.ShopPrices.MaxPrice || WorthMin < 0 || WorthMin > WorthMax || PatienceHours <= 0)
+            throw new Exception($"Service '{Name}': bad price, worth or patience");
     }
 }

@@ -1,26 +1,36 @@
 // What shops sell adventurers, and how each order goes (Shops/ShopSystem). Adventurers ask aloud,
 // so only those who hear (or are told) know about them. "at": the building it's served at;
 // defaultPrice: silver a shop charges until its keeper sets a price (and what an AI keeper
-// charges); patienceHours: game hours before they give up and think the less of the town.
+// charges); worthMin/worthMax: what it's worth to an adventurer (rolled each time, times their
+// kind's "spend" and how badly they need it): asked more, they say a "tooDearLines" line and go
+// without. Keep worthMin at least the default price over the lowest spend, so a default sells.
+// patienceHours: game hours before they give up and think the less of the town.
 // "lines": what an adventurer says asking, {0} the price, {1} the thing in question.
 {
   "services": [
-    { "name": "Meal", "label": "a meal", "at": "Inn", "defaultPrice": 3, "patienceHours": 2,
+    { "name": "Meal", "label": "a meal", "at": "Inn", "defaultPrice": 3, "worthMin": 4, "worthMax": 7,
+      "tooDearLines": [ "{0} silver for a plate? I'll eat what's in my pack.", "{0} silver? For stew? Not likely." ], "patienceHours": 2,
       "lines": [ "Food! Something hot, and quickly. {0} silver.", "Is anyone cooking in this town? {0} silver for a plate.",
                  "We've ridden all day. Feed us. {0} silver." ] },
-    { "name": "Drink", "label": "a drink", "at": "Inn", "defaultPrice": 2, "patienceHours": 1.5,
+    { "name": "Drink", "label": "a drink", "at": "Inn", "defaultPrice": 2, "worthMin": 3, "worthMax": 5,
+      "tooDearLines": [ "{0} silver for an ale? I'll go thirsty.", "{0} a mug? Robbery. I'll drink from the well." ], "patienceHours": 1.5,
       "lines": [ "A drink, barkeep! {0} silver.", "Something to wash the road down, {0} silver." ] },
-    { "name": "Repair", "label": "a repair", "at": "Smithy", "defaultPrice": 8, "patienceHours": 5,
+    { "name": "Repair", "label": "a repair", "at": "Smithy", "defaultPrice": 8, "worthMin": 9, "worthMax": 18,
+      "tooDearLines": [ "{0} silver to mend my {1}? I'll make do with it as it is.", "{0}? For that I'd buy a new {1}." ], "patienceHours": 5,
       "lines": [ "My {1} has seen better days. {0} silver to whoever can mend it.", "Smith! My {1} needs work. {0} silver." ] },
-    { "name": "Healing", "label": "healing", "at": "Shrine", "defaultPrice": 10, "patienceHours": 4,
+    { "name": "Healing", "label": "healing", "at": "Shrine", "defaultPrice": 10, "worthMin": 12, "worthMax": 24,
+      "tooDearLines": [ "{0} silver to see to a scrape? I'll bind it myself.", "{0} silver? It'll heal on its own." ], "patienceHours": 4,
       "lines": [ "I need a healer. Now. {0} silver.", "This {1} won't stop aching. {0} silver to anyone who can fix it." ] },
-    { "name": "Quest", "label": "a quest", "at": "Inn", "defaultPrice": 12, "patienceHours": 8,
+    { "name": "Quest", "label": "a quest", "at": "Inn", "defaultPrice": 12, "worthMin": 14, "worthMax": 28,
+      "tooDearLines": [ "{0} silver for a rumour? We'll find our own work.", "{0} for a lead? Keep it." ], "patienceHours": 8,
       "lines": [ "We're looking for work worthy of us. {0} silver to whoever points us at it.",
                  "Who in this town knows where the glory is? {0} silver for a good lead." ] },
-    { "name": "Unlock", "label": "a strongbox opened", "at": "Woodshop", "defaultPrice": 10, "patienceHours": 6,
+    { "name": "Unlock", "label": "a strongbox opened", "at": "Woodshop", "defaultPrice": 10, "worthMin": 12, "worthMax": 22,
+      "tooDearLines": [ "{0} silver to open a box? We'll take a hammer to it ourselves.", "{0}? There's not that much in it." ], "patienceHours": 6,
       "lines": [ "We dragged this {1} all the way back. {0} silver to whoever opens it, and keeps their fingers.",
                  "Carpenter! This {1} won't open and we don't trust it. {0} silver." ] },
-    { "name": "Lodging", "label": "a room", "at": "Inn", "defaultPrice": 4, "patienceHours": 4,
+    { "name": "Lodging", "label": "a room", "at": "Inn", "defaultPrice": 4, "worthMin": 5, "worthMax": 9,
+      "tooDearLines": [ "{0} silver a night? We'll sleep under a hedge.", "{0} for a room? The barn will do." ], "patienceHours": 4,
       "lines": [ "We'll want beds tonight. {0} silver for a room.", "Innkeeper! A room for the night, {0} silver.",
                  "Any rooms going? {0} silver, and clean sheets." ] }
   ]

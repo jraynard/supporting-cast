@@ -37,8 +37,11 @@ public sealed class Order
     /// <summary>The thing in question (the blade to mend); Entity.Null if none.</summary>
     public Entity Subject { get; init; } = Entity.Null;
 
-    /// <summary>Silver promised on completion.</summary>
+    /// <summary>Silver promised on completion: the shop's price when they ordered, whatever the sign says since.</summary>
     public int Price { get; init; }
+
+    /// <summary>What it was worth to them when they ordered; paying less is a bargain they think well of. 0 if unknown.</summary>
+    public int Worth { get; init; }
 
     public long PostedTick { get; init; }
     public long Deadline { get; init; }
