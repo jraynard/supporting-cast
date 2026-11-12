@@ -211,6 +211,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         ArtAudit.Log(ArtAudit.Run(defs, Host.Atlas.Sprites, Host.Atlas.Sheets));
         Ui.Theme.Apply(Settings.Current.UiScale);
         _settings = new Ui.SettingsWindow(Host);
+        Host.ScreenshotSaved += OnScreenshotSaved;
         if (LoadJoinedVillage())
             return;
         if (Loaded is { } save)
@@ -370,6 +371,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     public override void Dispose()
     {
+        Host.ScreenshotSaved -= OnScreenshotSaved;
         // Quitting (or travelling) right after dawn mustn't lose a half-written autosave.
         try { _autosaving?.Wait(TimeSpan.FromSeconds(5)); } catch (AggregateException) { }
         _quads?.Dispose();

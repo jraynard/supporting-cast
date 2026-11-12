@@ -17,6 +17,7 @@ dotnet run --project src/SupportingCast -- --new-game --name Arin        # strai
 dotnet run --project src/SupportingCast -- --host --name Arin            # host (--port N, --relay HOST, --difficulty D)
 dotnet run --project src/SupportingCast -- --join 127.0.0.1 --player-id bea --name Bea
 dotnet run --project src/SupportingCast -- --furniture-demo --zoom 80    # also --building-demo
+dotnet run --project src/SupportingCast -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui; any mode
 dotnet run --project src/SupportingCast -- --art-preview
 dotnet run --project src/SupportingCast -- --check-art     # headless: every sprite and tag exists
 dotnet run --project src/SupportingCast -- --check-gpu
@@ -26,7 +27,8 @@ python3 tools/chibi_people.py --preview                    # art generators: see
 ```
 
 Data files are copied to the output on build. From a checkout, `data/defs` edits reload by
-themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art.
+themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 saves a screenshot (Shift+F12 without the UI) to
+`~/.config/Supporting Cast/screenshots`.
 
 ## Architecture
 

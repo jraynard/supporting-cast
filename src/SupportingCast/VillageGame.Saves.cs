@@ -52,6 +52,10 @@ public sealed partial class VillageGame
         _lastSaveTime = _time;
     }
 
+    private void OnScreenshotSaved(string path, string? error) =>
+        Notify(error == null ? MessageKind.Info : MessageKind.Warning,
+            error == null ? $"Screenshot saved: {Path.GetFileName(path)}" : $"Screenshot failed: {error}");
+
     private void Notify(MessageKind kind, string text) => Toast(new Message(_sim.Clock.Tick, kind, text, null));
 
     /// <summary>Save into a slot; returns why it failed, or null.</summary>

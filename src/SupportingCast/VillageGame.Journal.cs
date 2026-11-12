@@ -132,7 +132,8 @@ public sealed partial class VillageGame
         ("The village", [("Left-click", "walk there or act"), ("Shift-click", "look at someone or something"), ("Right-click", "an item's menu"), ("Esc", "stop looking")]),
         ("Hands-on work", [("F", "strike, pour, set, press"), ("A/D", "steer, tilt, lift"), ("Esc", "put the work down")]),
         ("Panels", [("J", "shop and favours"), ("T", "talk (what you've heard)"), ("K", "quests"), ("G", "the gift"), ("L", "message log"), ("B", "build tools"), ("H", "this card")]),
-        ("Camera and time", [("Q/E", "turn"), ("Wheel", "zoom"), ("[ / ]", "level down / up"), ("Home", "all levels"), ("\\", "roofs"), ("Space", "pause")]),
+        ("Camera and time", [("Q/E", "turn"), ("Wheel", "zoom"), ("[ / ]", "level down / up"), ("Home", "all levels"), ("\\", "roofs"), ("Space", "pause"),
+            ("F12", "screenshot"), ("Shift+F12", "screenshot without the UI")]),
     ];
 
     /// <summary>Every binding by what you're doing (H), in place of long hint lines scattered round the HUD.</summary>

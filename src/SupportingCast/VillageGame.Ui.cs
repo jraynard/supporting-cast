@@ -120,6 +120,10 @@ public sealed partial class VillageGame
             _showWorkTab = !_showWorkTab;
         if (ImGui.MenuItem("Recipes"u8, ""u8, _showRecipeBook, true))
             _showRecipeBook = !_showRecipeBook;
+        if (ImGui.MenuItem("Screenshot"u8, "F12"u8, false, true))
+            Host.Screenshot();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+            Tip($"Save what's on screen to {Host.ScreenshotDirectory}. F12 anywhere; Shift+F12 leaves out the UI.");
         if (ImGui.MenuItem("Controls"u8, "H"u8, _showControls, true))
             _showControls = !_showControls;
         if (_devMode && ImGui.MenuItem("Debug"u8, ""u8, _showDebug, true))

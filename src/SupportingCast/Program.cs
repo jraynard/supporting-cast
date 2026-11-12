@@ -122,6 +122,11 @@ using var host = new GameHost(new GameHostOptions
     UnfocusedMaxFps = stress ? 0 : FrameCap.DefaultUnfocused,
     SkipSplash = args.Contains("--no-splash"), // Debug builds only
     Profile = Environment.GetEnvironmentVariable("SC_PROFILE") == "1" || Environment.GetEnvironmentVariable("NARSIL_PROFILE") == "1",
+    // Scripted screenshots: --screenshot shot.png [--screenshot-at 5] [--screenshot-no-ui] [--quit].
+    AutoScreenshot = ParseString(args, "--screenshot") is { } shotPath
+        ? new AutoScreenshot(shotPath, args.Contains("--screenshot-at") ? ParseFloat(args, "--screenshot-at") : 3f,
+            WithUi: !args.Contains("--screenshot-no-ui"), Quit: args.Contains("--quit"))
+        : null,
 });
 
 if (args.Contains("--render-test"))
@@ -231,6 +236,12 @@ static string? ParseString(string[] args, string flag)
 {
     var i = Array.IndexOf(args, flag);
     return i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
+}
+
+static float ParseFloat(string[] args, string flag)
+{
+    var i = Array.IndexOf(args, flag);
+    return i >= 0 && i + 1 < args.Length && float.TryParse(args[i + 1], System.Globalization.CultureInfo.InvariantCulture, out var v) ? v : 0f;
 }
 
 static int ParseInt(string[] args, string flag)
