@@ -107,6 +107,7 @@ Ideas for depth, to build when each trade's milestone comes round.
 - cleaning up: cleaning up tables, the bar, the floor, doing dishes
 - Later: brewing, and refilling casks from kegs.
 - Mixed drinks: a press-on-cue sequence. maybe allow for cusomt concotions that can have different effects.
+- directions: giving directions to adventurers, like where to find the blacksmith
 - Brokering quests (since M2, when the Quest Broker folded into the Innkeeper): the keeper hears
   every rumour over the bar and points parties at work on whatever it's worth.
 

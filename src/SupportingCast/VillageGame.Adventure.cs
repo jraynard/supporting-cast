@@ -112,14 +112,14 @@ public sealed partial class VillageGame
     private int2 _heldDir;
     private float _heldFor;
     private int _sentKeys;
-    private bool _moveKeysFromWork;
+    private bool _moveKeysFromWork, _useKeyFromWork;
 
     /// <summary>Read WASD/F and send what changed. Outside combat only: in a fight the HUD gives orders.</summary>
     private void HandleAvatarInput(Input input, float dt)
     {
         if (!HasAvatar || Working) // at a mini-game the keys are the mini-game's (UpdateWork)
         {
-            _moveKeysFromWork = Working;
+            _moveKeysFromWork = _useKeyFromWork = Working;
             return;
         }
         float x = 0, y = 0;
@@ -127,8 +127,8 @@ public sealed partial class VillageGame
         if (input.IsKeyDown(GlfwKey.S)) y -= 1;
         if (input.IsKeyDown(GlfwKey.D)) x += 1;
         if (input.IsKeyDown(GlfwKey.A)) x -= 1;
-        // A key that ended a mini-game (D draws the piece out) doesn't walk off once it's over: no
-        // moving till the keys held then come up.
+        // A key that ended a mini-game (D draws the piece out, F the last blow) doesn't walk off or
+        // use the station again once it's over: nothing till the keys held then come up.
         if (_moveKeysFromWork && (x != 0 || y != 0))
             x = y = 0;
         else
@@ -167,6 +167,10 @@ public sealed partial class VillageGame
 
         // F uses, Z digs; both work only while held. A press starts the action, a release of both stops work.
         var use = input.IsKeyDown(GlfwKey.F);
+        if (_useKeyFromWork && use)
+            use = false;
+        else
+            _useKeyFromWork = false;
         var dig = input.IsKeyDown(GlfwKey.Z);
         if (use && !_sentWork && WorkTarget() is { OpensWindow: true } window)
             OpenWindowFor(window, toggle: true); // F again closes it
