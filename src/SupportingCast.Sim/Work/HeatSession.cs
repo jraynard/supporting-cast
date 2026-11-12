@@ -7,7 +7,9 @@ namespace SupportingCast.Sim.Work;
 
 /// <summary>
 /// The piece in the fire (<see cref="Smithing"/>). Hold to work the bellows: the fire climbs toward
-/// all the fuel and bellows can give, and sinks back to a sullen glow when you stop. The piece
+/// all the fuel and bellows can give, and sinks back to a sullen glow when you stop. An unblown fire
+/// is too cool for iron, so every heat starts there and the bellows bring it up, unless they were
+/// worked moments ago and it's still blown. The piece
 /// takes the fire's heat, and you read it only by its colour: draw it out (the axis, D) when it's right.
 /// Left past white heat it burns, costing it quality, and at last burns through.
 /// </summary>
@@ -22,8 +24,8 @@ public sealed class HeatSession : WorkSession
     /// <summary>Share of the gap to the fire's heat the piece closes each step.</summary>
     public const float SoakRate = 0.006f;
 
-    /// <summary>An unblown fire rests at this share of its fuel's reach.</summary>
-    public const float RestShare = 0.75f;
+    /// <summary>An unblown fire rests at this share of its fuel's reach: a dull red on charcoal, blood red on coal, short of iron's heat.</summary>
+    public const float RestShare = 0.65f;
 
     /// <summary>The forge.</summary>
     public Entity Station { get; set; }
@@ -72,12 +74,17 @@ public sealed class HeatSession : WorkSession
         var (lo, hi, burn) = Smithing.Window(p.Recipe);
         var reach = w.Get<Thing>(forge).Def.Building?.Fuel is { } props && w.TryGet<Fueled>(forge, out var f) ? f.Burn(props).Reach : 0f;
         var lift = Crafting.BellowsOf(sim, forge)?.Lift ?? 0f;
+        // The air on the forge's cell is the building's heat, held near its cap all day; the fire in
+        // the hearth is only that hot while it's being blown.
         var now = sim.TemperatureAt(w.Get<Thing>(forge).Cell);
+        var rest = reach * RestShare;
+        var max = MathF.Max(now, reach + lift);
+        var blown = w.TryGet<Blown>(forge, out var b) && b.Until >= sim.Clock.Tick;
         return new HeatSession
         {
             Station = forge, ItemLabel = Smithing.PieceLabel(sim, p), Temp = p.Temp, BurnSteps = p.BurnSteps,
             Lo = lo, Hi = hi, BurnAt = burn,
-            Fire = now, FireRest = MathF.Max(now, reach * RestShare), FireMax = MathF.Max(now, reach + lift),
+            Fire = blown ? max : MathF.Min(now, rest), FireRest = rest, FireMax = max,
         };
     }
 

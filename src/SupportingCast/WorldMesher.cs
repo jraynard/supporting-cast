@@ -72,8 +72,10 @@ public sealed class WorldMesher(TextureAtlas atlas)
 
     /// <summary>
     /// A wall or door with an indoor room on its far side, seen along <paramref name="heading"/>
-    /// (a neighbour, diagonals included for corners, within 60° of straight ahead). Stations built
-    /// as walls (a kiln) stay whole: they're furniture, not the room's shell.
+    /// (a neighbour, diagonals included for corners, within 60° of straight ahead). A preset
+    /// building's floor counts as indoors even when it's open to the street (the smithy's front),
+    /// since it never makes a room. Stations built as walls (a kiln) stay whole: they're furniture,
+    /// not the room's shell.
     /// </summary>
     public static bool CutAt(Simulation sim, int x, int y, int z, float2 heading)
     {
@@ -91,7 +93,7 @@ public sealed class WorldMesher(TextureAtlas atlas)
             if (!map.InBounds(nx, ny, z))
                 return false;
             var id = map.RoomId[map.Idx(nx, ny, z)];
-            return id > 0 && id <= rooms.Count && rooms[id - 1].Indoors;
+            return id > 0 && id <= rooms.Count && rooms[id - 1].Indoors || InsideBuilding(sim, new int3(nx, ny, z));
         }
         bool Ahead(int2 d) => (d.X * heading.X + d.Y * heading.Y) / MathF.Sqrt(d.X * d.X + d.Y * d.Y) > 0.5f;
 
@@ -110,6 +112,19 @@ public sealed class WorldMesher(TextureAtlas atlas)
         foreach (var d in Map.Neighbors8)
             if (d.X != 0 && d.Y != 0 && Indoors(d) && Ahead(d))
                 return true;
+        return false;
+    }
+
+    /// <summary>An open floor cell of a preset building's plan ('.').</summary>
+    private static bool InsideBuilding(Simulation sim, int3 cell)
+    {
+        var w = sim.World;
+        foreach (var e in w.Each<PresetBuilding>())
+        {
+            var b = w.Get<PresetBuilding>(e);
+            if (Buildings.SymbolAt(b.Def, b.Anchor, b.Facing, cell) == '.')
+                return true;
+        }
         return false;
     }
 

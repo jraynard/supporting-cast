@@ -439,6 +439,7 @@ public sealed class TitleGame : Game
         var size = (float2?)new float2(340, 48);
         var align = new float2(0.06f, 0.5f);
         ImGui.PushStyleVar(ImGuiStyleVar.ButtonTextAlign, in align);
+        ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0f); // the theme rims frames; these entries are bare text
         var clear = new float4(0, 0, 0, 0);
         var hover = Theme.AccentSoft with { W = 0.85f };
         var active = Theme.Accent with { W = 0.9f };
@@ -455,7 +456,7 @@ public sealed class TitleGame : Game
                 ImGui.EndDisabled();
         }
         ImGui.PopStyleColor(3);
-        ImGui.PopStyleVar(1);
+        ImGui.PopStyleVar(2);
 
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
         {

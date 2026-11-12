@@ -102,8 +102,11 @@ Ideas for depth, to build when each trade's milestone comes round.
 
 **Innkeeper.**
 - M2 pours ale at the cask. Hold to pour; the tilt controls the head. Customers taste the quality.
+- cooking: cooking meals for customers
+- rooms: renting out rooms
+- cleaning up: cleaning up tables, the bar, the floor, doing dishes
 - Later: brewing, and refilling casks from kegs.
-- Mixed drinks: a press-on-cue sequence.
+- Mixed drinks: a press-on-cue sequence. maybe allow for cusomt concotions that can have different effects.
 - Brokering quests (since M2, when the Quest Broker folded into the Innkeeper): the keeper hears
   every rumour over the bar and points parties at work on whatever it's worth.
 

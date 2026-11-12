@@ -42,6 +42,30 @@ public class CutawayWallTests
     }
 
     [Fact]
+    public void AnOpenFrontedBuildingsWallsComeDownToo()
+    {
+        // The smithy is open at the front, so its floor is never an indoor room; its plan says it's inside.
+        var defs = DefDatabase.LoadDirectory(DevPaths.Defs!);
+        var sim = SupportingCast.Sim.Simulation.CreateStandard(defs, 30, 30, 1, depth: 5);
+        var smithy = defs.Building("Smithy");
+        var anchor = new int3(12, 12, 1);
+        var b = SupportingCast.Sim.Systems.Buildings.SpawnFinished(sim, smithy, anchor, 0);
+        sim.RebuildDerivedIfNeeded();
+        sim.Rooms.UpdateIfNeeded();
+        var p = sim.World.Get<SupportingCast.Sim.Components.PresetBuilding>(b);
+        int3 At(int col, int row) => SupportingCast.Sim.Systems.Buildings.CellOf(sim.Map, smithy, p.Anchor, p.Facing, col, row);
+
+        var back = At(3, 0);
+        var side = At(0, 2);
+        // Looking from behind the back wall, into the smithy.
+        var fromBack = new float2(Math.Sign(At(3, 2).X - back.X), Math.Sign(At(3, 2).Y - back.Y));
+        Assert.True(WorldMesher.CutAt(sim, back.X, back.Y, back.Z, fromBack), "the back wall comes down");
+        Assert.False(WorldMesher.CutAt(sim, side.X, side.Y, side.Z, fromBack), "the side walls stay up");
+        // Looking from the open front, the back wall is the far wall.
+        Assert.False(WorldMesher.CutAt(sim, back.X, back.Y, back.Z, -fromBack), "the far wall stays up");
+    }
+
+    [Fact]
     public void HeadingsSnapToTheEightCompassDirections()
     {
         var h = WorldMesher.SnapHeading(new float3(0.9f, 0.2f, -0.5f));

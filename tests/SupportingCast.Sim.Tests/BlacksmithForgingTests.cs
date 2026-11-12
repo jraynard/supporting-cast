@@ -52,6 +52,23 @@ public class BlacksmithForgingTests
     }
 
     [Fact]
+    public void AnUnblownFireIsTooCoolForIronTillTheBellowsBringItUp()
+    {
+        var (sim, me, kit) = Smithy(); // the forge's cell is at 1200: the building has been hot all day
+        sim.ApplyNow(new SmithCommand(me, kit.Forge));
+        var heat = Assert.IsType<HeatSession>(sim.World.Get<WorkSession>(me));
+        Assert.True(heat.Fire < heat.Lo, $"starts at {heat.Fire}, iron works from {heat.Lo}");
+
+        for (var t = 0; t < 60 * 20; t++)
+            sim.Tick();
+        Assert.True(heat.Fire < heat.Lo, $"left alone it settles at {heat.Fire}");
+
+        // Worked, the bellows bring it to working heat and the piece is drawn out.
+        kit.Drive(sim, me, maxTicks: 60 * 60);
+        Assert.Contains(sim.Messages.Messages, m => m.Text.StartsWith("Drew the"));
+    }
+
+    [Fact]
     public void HammeringBlackIronCracksIt()
     {
         var (sim, me, kit) = Smithy();
