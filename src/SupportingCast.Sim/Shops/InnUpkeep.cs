@@ -260,6 +260,9 @@ public sealed class InnSupplySystem : ISimSystem, Saving.ISaveState
 /// <summary>An AI innkeeper cleans the inn: mops up whatever's on its floors, a spot at a time.</summary>
 public sealed class CleanJob(int3 cell) : Job
 {
+    public override string? ToolKind => "Mop";
+    public override int3? FocusCell => cell;
+
     /// <summary>Ticks to clear a whole spot, by hand; a mop halves it.</summary>
     public const int TicksPerSpot = 240;
 
@@ -324,6 +327,8 @@ public sealed class CleanJob(int3 cell) : Job
 /// <summary>An AI innkeeper makes up the beds guests have left.</summary>
 public sealed class MakeBedJob(Entity bed) : Job
 {
+    public override Entity Focus => bed;
+
     public const int Ticks = 150;
 
     public static Job? For(Simulation sim, Entity pawn)

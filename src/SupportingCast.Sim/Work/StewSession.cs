@@ -34,6 +34,8 @@ public sealed class StewSession : WorkSession
     /// <summary>Starting to catch: a careful cook can smell it (the bottom's catching at more than a trickle).</summary>
     public bool Catching => Heat > Cooking.SimmerAt && !Held && SinceStir > Cooking.CatchSteps;
 
+    public override int3? Focus(Simulation sim) => sim.World.IsAlive(Pot) && sim.World.TryGet<Thing>(Pot, out var t) ? t.Cell : null;
+
     public override Skill Skill => Skill.Cooking;
     public override float Xp => 25f;
     public override string Title => "Tending the stew";
@@ -138,6 +140,8 @@ public sealed class SeasonSession : WorkSession
 
     private int _sincePinch = PinchSteps;
     private int _lastAxis;
+
+    public override int3? Focus(Simulation sim) => sim.World.IsAlive(Pot) && sim.World.TryGet<Thing>(Pot, out var t) ? t.Cell : null;
 
     public override Skill Skill => Skill.Cooking;
     public override float Xp => 10f;

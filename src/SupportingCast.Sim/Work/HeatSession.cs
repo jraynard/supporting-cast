@@ -64,6 +64,8 @@ public sealed class HeatSession : WorkSession
     public Glow Glow => Smithing.GlowOf(Temp);
     public bool Burning => Temp > BurnAt;
 
+    public override int3? Focus(Simulation sim) => sim.World.IsAlive(Station) && sim.World.TryGet<Thing>(Station, out var t) ? t.Cell : null;
+
     public override Skill Skill => Skill.Crafting;
     public override float Xp => 5f;
     public override string Title => $"Heating the {ItemLabel}";

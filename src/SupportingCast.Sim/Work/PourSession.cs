@@ -52,6 +52,8 @@ public sealed class PourSession : WorkSession
 
     public float Top => Level + Foam;
 
+    public override int3? Focus(Simulation sim) => sim.World.IsAlive(Cask) && sim.World.TryGet<Thing>(Cask, out var t) ? t.Cell : null;
+
     public override Skill Skill => Skill.Cooking;
     public override float Xp => 20f;
     public override string Title => $"Pouring {DrinkLabel}";

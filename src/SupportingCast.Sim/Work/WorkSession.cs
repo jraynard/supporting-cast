@@ -78,6 +78,12 @@ public abstract class WorkSession
 
     public abstract string Title { get; }
 
+    /// <summary>
+    /// Where the work is, for drawing: the worker faces it in their working pose (the anvil, the
+    /// tub, the stain being scrubbed). Null: no one place.
+    /// </summary>
+    public virtual int3? Focus(Simulation sim) => null;
+
     /// <summary>The target is still there and in reach. Sim-only; checked before every tick.</summary>
     public abstract bool StillValid(Simulation sim);
 

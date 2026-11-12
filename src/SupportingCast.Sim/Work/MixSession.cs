@@ -50,6 +50,8 @@ public sealed class MixSession : WorkSession
     private string _label = "";
     private int _lastAxis;
 
+    public override int3? Focus(Simulation sim) => sim.World.IsAlive(Bar) && sim.World.TryGet<Thing>(Bar, out var t) ? t.Cell : null;
+
     public override Skill Skill => Skill.Cooking;
     public override float Xp => 15f;
     public override string Title => $"Mixing a {_label}";

@@ -244,8 +244,9 @@ public sealed class CreatureAnimator
         var airborne = airStep || (map.InBounds(pos.Cell) && !map.Standable(map.Idx(pos.Cell)) && !map.IsSolid(map.Idx(pos.Cell)));
 
         var job = mind.Job;
-        // A player at the anvil is in a hands-on session, not an AI job, but swings all the same.
-        var anvil = w.TryGet<Sim.Work.WorkSession>(e, out var session) && session is Sim.Work.HammerSession h ? h.Station : Entity.Null;
+        // A player in a hands-on session (at the anvil, the tub, a stain on the floor) isn't in an AI
+        // job, but works all the same, facing the work.
+        var station = w.TryGet<Sim.Work.WorkSession>(e, out var session) ? session.Focus(sim) : null;
         var inputs = new AnimInputs(
             c.Dead,
             c.Downed,
@@ -256,7 +257,8 @@ public sealed class CreatureAnimator
             vertical,
             landing,
             job is SoarJob && GlidingNow(e),
-            (job is BuildJob or DeconstructJob or HarvestJob or DigJob || !anvil.IsNull) && !mover.Moving,
+            (job is BuildJob or DeconstructJob or HarvestJob or DigJob or Sim.Shops.CleanJob or Sim.Shops.MakeBedJob or Sim.Shops.WashJob
+                || station != null) && !mover.Moving,
             mover.Moving,
             sim.Clock.Tick - c.BornTick < HatchTicks,
             null
@@ -295,8 +297,8 @@ public sealed class CreatureAnimator
                 sum += end;
             look = sum * (1f / st.Breath.RayEnds.Count) - st.Breath.Mouth;
         }
-        if (look == null && !anvil.IsNull && w.IsAlive(anvil))
-            look = Position.CenterOf(w.Get<Thing>(anvil).Cell) - pos.Pos;
+        if (look == null && station is { } at)
+            look = Position.CenterOf(at) - pos.Pos;
         if (look == null && job != null && (tag is "work" or "breathe_windup" || inputs.WindingUp))
         {
             if (!job.Focus.IsNull && w.IsAlive(job.Focus))

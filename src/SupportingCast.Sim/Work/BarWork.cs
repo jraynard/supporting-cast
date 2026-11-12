@@ -126,6 +126,8 @@ public sealed class WashSession : WorkSession
 
     private int _sinceStroke = StrokeSteps;
 
+    public override int3? Focus(Simulation sim) => sim.World.IsAlive(Tub) && sim.World.TryGet<Thing>(Tub, out var t) ? t.Cell : null;
+
     public override Skill Skill => Skill.Cooking;
     public override float Xp => 3f;
     public override string Title => "Washing up";
@@ -234,6 +236,8 @@ public sealed class TapSession : WorkSession
     public bool OnTheTap => Mallet > 0.82f;
 
     public int Wasted => Misses * SprayPerMiss;
+
+    public override int3? Focus(Simulation sim) => sim.World.IsAlive(Cask) && sim.World.TryGet<Thing>(Cask, out var t) ? t.Cell : null;
 
     public override Skill Skill => Skill.Cooking;
     public override float Xp => 15f;

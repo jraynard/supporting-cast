@@ -113,6 +113,8 @@ public sealed class MakeBedSession : WorkSession
 
     public bool OnCue => Sweep > 0.78f;
 
+    public override int3? Focus(Simulation sim) => sim.World.IsAlive(Bed) && sim.World.TryGet<Thing>(Bed, out var t) ? t.Cell : null;
+
     public override Skill Skill => Skill.Cooking;
     public override float Xp => 2f;
     public override string Title => "Making the bed";

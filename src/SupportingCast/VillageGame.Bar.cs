@@ -103,12 +103,103 @@ public sealed partial class VillageGame
         EndWork();
     }
 
-    /// <summary>Scrubbing up a mess: back and forth, and how much is left of it.</summary>
+    // The mop in the scrub scene: where its head is (eased toward the way you last stroked), the
+    // strokes seen so far (a new one throws suds), and the suds.
+    private float _mopX;
+    private int _mopStrokesSeen = -1;
+    private long _mopSession = -1;
+    private readonly List<Puff> _suds = [];
+
+    /// <summary>
+    /// Scrubbing up a mess, seen from above: the stain on the boards fading as it's scrubbed, the
+    /// mop swinging across it with each stroke (A, D), a wet sheen where it's been and suds
+    /// thrown up by every stroke. How much is left is shown by the stain itself, and a bar.
+    /// </summary>
     private void DrawScrub(Sim.Hospitality.ScrubSession s)
     {
+        if (s.StartTick != _mopSession)
+            (_mopSession, _mopStrokesSeen) = (s.StartTick, -1); // a new stain: the mop starts in the middle
         BeginWork(s.Title, ("A/D", "back and forth"), ("Esc", "stop"));
         TextC(Theme.Dim, s.Mop ? "The mop makes short work of it." : "By hand, this takes a while: a mop would be quicker.");
-        Bar("Left", Math.Clamp(s.Amount, 0f, 1f), Theme.Warn);
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(420, 170);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var max = min + size;
+
+        // The floorboards.
+        dl.AddRectFilled(in min, in max, new ImColor8(96, 66, 42, 255), Gui.S(4), ImDrawFlags.None);
+        for (var y = min.Y + Gui.S(24); y < max.Y; y += Gui.S(24))
+        {
+            var a = new float2(min.X, y);
+            var b = new float2(max.X, y);
+            dl.AddLine(in a, in b, new ImColor8(60, 40, 26, 255), Gui.S(2));
+        }
+        for (var row = 0; row * Gui.S(24) < size.Y; row++)
+        {
+            var x = min.X + ((row * 137) % 300) * Gui.Scale + Gui.S(40);
+            var a = new float2(x, min.Y + row * Gui.S(24));
+            var b = new float2(x, Math.Min(max.Y, a.Y + Gui.S(24)));
+            dl.AddLine(in a, in b, new ImColor8(60, 40, 26, 255), Gui.S(2));
+        }
+
+        // The stain, fading as it comes up (blood looks like any dark stain).
+        var mid = (min + max) * 0.5f;
+        var sprite = s.Kind switch
+        {
+            Sim.Hospitality.MessKind.SpilledAle => "ui/mess_puddle",
+            Sim.Hospitality.MessKind.Mud => "ui/mess_mud",
+            Sim.Hospitality.MessKind.Crumbs => "ui/mess_crumbs",
+            _ => "ui/mess_stain",
+        };
+        var left = Math.Clamp(s.Amount, 0f, 1f);
+        if (Gui.TrySprite(sprite, out var stain))
+        {
+            var box = Gui.S(150, 150);
+            Gui.Sprite(dl, stain, mid - box * 0.5f, box, Gui.U8(new float4(1f, 1f, 1f, 0.15f + 0.85f * left)));
+        }
+
+        // The mop: its head eases toward the side you last stroked to; the handle runs up and off to the right.
+        var reach = Gui.S(110);
+        var target = mid.X + s.LastDir * reach;
+        if (_mopStrokesSeen < 0)
+            _mopX = mid.X;
+        var dt = ImGui.GetIO().DeltaTime;
+        _mopX += (target - _mopX) * Math.Min(1f, dt * 12f);
+        var headC = new float2(_mopX, mid.Y + Gui.S(10));
+        // The wet sheen it leaves along its way.
+        var sheen0 = new float2(Math.Min(_mopX, mid.X) - Gui.S(20), mid.Y - Gui.S(10));
+        var sheen1 = new float2(Math.Max(_mopX, mid.X) + Gui.S(20), mid.Y + Gui.S(30));
+        dl.AddRectFilled(in sheen0, in sheen1, new ImColor8(200, 220, 230, 40), Gui.S(10), ImDrawFlags.None);
+        var handleTop = new float2(headC.X + Gui.S(90), min.Y - Gui.S(6));
+        dl.AddLine(in headC, in handleTop, new ImColor8(196, 160, 110, 255), Gui.S(5));
+        for (var i = -6; i <= 6; i++)
+        {
+            var a = headC + new float2(i * Gui.S(3), 0);
+            var swing = MathF.Sin(_time * 18f + i) * Gui.S(2) - (target - _mopX) * 0.05f;
+            var b = a + new float2(swing + i * Gui.S(1.5f), Gui.S(22));
+            dl.AddLine(in a, in b, new ImColor8(210, 210, 200, 255), Gui.S(3));
+        }
+
+        // Suds thrown up with each new stroke.
+        if (_mopStrokesSeen >= 0 && s.Strokes > _mopStrokesSeen)
+            for (var k = 0; k < 8; k++)
+            {
+                var r = new Narsil.Sim.Core.SimRandom((ulong)(s.Strokes * 31 + k + 1));
+                _suds.Add(new Puff(headC + new float2(r.Range(-20f, 20f), Gui.S(18)) * 1f, new float2(r.Range(-40f, 40f), r.Range(-60f, -20f)) * Gui.Scale,
+                    _time, r.Range(0.3f, 0.7f), Gui.S(r.Range(2f, 5f))));
+            }
+        _mopStrokesSeen = s.Strokes;
+        _suds.RemoveAll(p => _time - p.Born > p.Life);
+        foreach (var p in _suds)
+        {
+            var t = _time - p.Born;
+            var at = p.Pos + p.Vel * t;
+            dl.AddCircle(in at, p.Size, new ImColor8(240, 245, 250, (byte)(220 * (1f - t / p.Life))), 10, Gui.S(1.2f));
+        }
+
+        ImGui.Spacing();
+        Bar("Left", left, Theme.Warn);
         ImGui.Text($"{s.Strokes} stroke{(s.Strokes == 1 ? "" : "s")}.");
         EndWork();
     }

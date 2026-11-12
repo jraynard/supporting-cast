@@ -85,6 +85,8 @@ public sealed class HammerSession : WorkSession
 
     public bool Shaped => Shape >= 1f;
 
+    public override int3? Focus(Simulation sim) => sim.World.IsAlive(Station) && sim.World.TryGet<Thing>(Station, out var t) ? t.Cell : null;
+
     public override Skill Skill => Recipe.Skill;
     public override float Xp => Shaped ? 60f : 15f;
     public override string Title => Repairing ? $"Hammering out the {ItemLabel}" : $"Hammering the {ItemLabel}";

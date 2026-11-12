@@ -220,6 +220,11 @@ public sealed class ScrubSession : WorkSession
     private int _lastDir;
     private float _start;
 
+    /// <summary>Which way the last stroke went (-1, 0, +1): the mop swings with it.</summary>
+    public int LastDir => _lastDir;
+
+    public override int3? Focus(Simulation sim) => Cell;
+
     public override Skill Skill => Skill.Cooking;
     public override float Xp => 2f;
     public override string Title => MessSystem.Verb(Kind);

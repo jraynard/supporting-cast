@@ -166,30 +166,112 @@ public sealed partial class VillageGame
         Panel.End();
     }
 
-    /// <summary>The tankard from the side: the drink, the head on it, and the line to bring it to.</summary>
+    /// <summary>How far the tankard leans at full tilt, radians: toward the tap, so the ale runs down its side.</summary>
+    private const float PourMaxLean = 0.7f;
+
+    /// <summary>
+    /// The tankard from the side under the cask's tap, leaning as it's tilted (A/D): the ale and its
+    /// head keep level as it tips, the line is marked inside the cup, and the stream runs while you
+    /// hold F.
+    /// </summary>
     private void DrawPour(PourSession s)
     {
         BeginWork(s.Title, ("F", "hold to pour"), ("A/D", "tilt: less foam, slower"), ("Esc", "stop"));
         TextC(Theme.Dim, "Stop at the line and let the head settle.");
         var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(90, 160);
-        var origin = ImGui.GetCursorScreenPos();
-        var min = new float2(origin.X + Gui.S(165), origin.Y);
+        var size = Gui.S(420, 200);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
         var max = min + size;
-        ImGui.Dummy(new float2(Gui.S(420), size.Y));
-        dl.AddRectFilled(in min, in max, new ImColor8(70, 48, 30, 255), 6f, ImDrawFlags.None);
-        float Y(float f) => max.Y - Math.Clamp(f, 0f, 1f) * size.Y;
-        var drinkMin = new float2(min.X + 6, Y(s.Level));
-        var drinkMax = new float2(max.X - 6, max.Y - 4);
-        dl.AddRectFilled(in drinkMin, in drinkMax, new ImColor8(184, 122, 40, 255), 2f, ImDrawFlags.None);
-        var foamMin = new float2(min.X + 6, Y(s.Top));
-        var foamMax = new float2(max.X - 6, Y(s.Level));
-        dl.AddRectFilled(in foamMin, in foamMax, new ImColor8(240, 232, 210, 255), 2f, ImDrawFlags.None);
-        var lineMin = new float2(min.X - 10, Y(s.Line) - 1);
-        var lineMax = new float2(max.X + 10, Y(s.Line) + 1);
-        dl.AddRectFilled(in lineMin, in lineMax, Theme.U8(Theme.Good), 0f, ImDrawFlags.None);
-        TextC(Theme.Dim, $"Tilt {s.Tilt * 100:F0}%   Head {s.Foam * 100:F0}%   {PourSession.ServingsLeft(_sim, s.Cask)} left in the cask");
+        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+
+        // The cask's end and its tap, top right.
+        var caskC = new float2(min.X + size.X * 0.5f + Gui.S(52), min.Y + Gui.S(36));
+        dl.AddCircleFilled(in caskC, Gui.S(30), new ImColor8(120, 82, 46, 255), 32);
+        dl.AddCircle(in caskC, Gui.S(30), Theme.U8(Theme.Iron), 32, Gui.S(3));
+        var tap0 = caskC + Gui.S(-26, 18);
+        var tap1 = tap0 + Gui.S(-26, 6);
+        dl.AddLine(in tap0, in tap1, new ImColor8(170, 140, 90, 255), Gui.S(5));
+        var spout = tap1 + Gui.S(0, 6);
+
+        // The tankard: its foot pivots, leaning its mouth toward the tap.
+        var w = Gui.S(70);
+        var h = Gui.S(110);
+        var pivot = new float2(min.X + size.X * 0.5f, max.Y - Gui.S(14));
+        var lean = s.Tilt * PourMaxLean;
+        float cos = MathF.Cos(lean), sin = MathF.Sin(lean);
+        // x across the cup, y up it (negative on screen); turned clockwise by the lean, toward the tap.
+        float2 Cup(float x, float y) => pivot + new float2(x * cos - y * sin, x * sin + y * cos);
+        var outer = new[] { Cup(-w / 2, 0), Cup(w / 2, 0), Cup(w / 2, -h), Cup(-w / 2, -h) };
+        Fill(dl, outer, new ImColor8(70, 48, 30, 255));
+        var inset = Gui.S(6);
+        var inner = new[] { Cup(-w / 2 + inset, -inset), Cup(w / 2 - inset, -inset), Cup(w / 2 - inset, -h), Cup(-w / 2 + inset, -h) };
+        Fill(dl, inner, new ImColor8(40, 28, 18, 255));
+        // The ale and its head, level whatever the lean: filled up to the height of their share of the cup's axis.
+        float LevelY(float f) => Cup(0, -inset - (h - inset) * Math.Clamp(f, 0f, 1f)).Y;
+        var ale = Below(inner, LevelY(s.Level));
+        Fill(dl, ale, new ImColor8(184, 122, 40, 255));
+        var head = Below(Above(inner, LevelY(s.Level)), LevelY(s.Top));
+        Fill(dl, head, new ImColor8(240, 232, 210, 255));
+        // The line, marked on both walls inside.
+        var la = Cup(-w / 2 + inset, -inset - (h - inset) * s.Line);
+        var lb = Cup(w / 2 - inset, -inset - (h - inset) * s.Line);
+        dl.AddLine(in la, in lb, Theme.U8(Theme.Good, 0.9f), Gui.S(2));
+        // The handle on the far side.
+        var h0 = Cup(-w / 2, -h * 0.25f);
+        var h1 = Cup(-w / 2 - Gui.S(16), -h * 0.45f);
+        var h2 = Cup(-w / 2, -h * 0.7f);
+        dl.AddLine(in h0, in h1, new ImColor8(70, 48, 30, 255), Gui.S(6));
+        dl.AddLine(in h1, in h2, new ImColor8(70, 48, 30, 255), Gui.S(6));
+
+        // The stream from the tap into the mouth while you hold F.
+        if (s.Held)
+        {
+            var mouth = Cup(w * 0.2f, -h);
+            var target = new float2(spout.X, Math.Max(mouth.Y, LevelY(s.Top)));
+            dl.AddLine(in spout, in target, new ImColor8(200, 140, 50, 230), Gui.S(4));
+        }
+
+        TextC(Theme.Dim, $"Head {s.Foam * 100:F0}%   {PourSession.ServingsLeft(_sim, s.Cask)} left in the cask");
         EndWork();
+    }
+
+    /// <summary>A convex shape filled, as a fan of triangles.</summary>
+    private static void Fill(ImDrawListPtr dl, IReadOnlyList<float2> poly, ImColor8 colour)
+    {
+        for (var i = 1; i + 1 < poly.Count; i++)
+        {
+            var a = poly[0];
+            var b = poly[i];
+            var c = poly[i + 1];
+            dl.AddTriangleFilled(in a, in b, in c, colour);
+        }
+    }
+
+    /// <summary>The part of a convex shape below a level on screen (y down): what liquid fills.</summary>
+    private static List<float2> Below(IReadOnlyList<float2> poly, float level) => Clip(poly, p => p.Y >= level, level);
+
+    /// <summary>The part of a convex shape above a level on screen.</summary>
+    private static List<float2> Above(IReadOnlyList<float2> poly, float level) => Clip(poly, p => p.Y <= level, level);
+
+    // One edge of Sutherland-Hodgman against a horizontal line.
+    private static List<float2> Clip(IReadOnlyList<float2> poly, Func<float2, bool> keep, float level)
+    {
+        var output = new List<float2>();
+        for (var i = 0; i < poly.Count; i++)
+        {
+            var a = poly[i];
+            var b = poly[(i + 1) % poly.Count];
+            bool ina = keep(a), inb = keep(b);
+            if (ina)
+                output.Add(a);
+            if (ina != inb && MathF.Abs(b.Y - a.Y) > 1e-4f)
+            {
+                var t = (level - a.Y) / (b.Y - a.Y);
+                output.Add(a + (b - a) * t);
+            }
+        }
+        return output;
     }
 
     /// <summary>The whetstone: the blade's angle against the band, the steel's heat and the edge coming back.</summary>

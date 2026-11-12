@@ -55,6 +55,8 @@ public sealed class QuenchSession : WorkSession
     /// <summary>How much steam is coming off, 0..1: what the smith watches.</summary>
     public float Steam => Dunked && Held ? Math.Clamp((Temp - 90f) / 600f, 0f, 1f) : 0f;
 
+    public override int3? Focus(Simulation sim) => sim.World.IsAlive(Station) && sim.World.TryGet<Thing>(Station, out var t) ? t.Cell : null;
+
     public override Skill Skill => Skill.Crafting;
     public override float Xp => 20f;
     public override string Title => $"Quenching the {ItemLabel}";
