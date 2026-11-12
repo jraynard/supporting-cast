@@ -103,7 +103,21 @@ public sealed class WorldRenderer(TextureAtlas atlas)
     public float3 DrawPos(Simulation sim, Entity e, float3 simPos)
     {
         var p = Interp?.Smoothed(sim, e, simPos) ?? simPos;
-        return Predicted != null && e == PredictedEntity ? Predicted.DrawPos(p) : p;
+        p = Predicted != null && e == PredictedEntity ? Predicted.DrawPos(p) : p;
+        return p + new float3(0, 0, PerchLift(sim, e, p));
+    }
+
+    /// <summary>
+    /// How far up someone on furniture stands (<see cref="Perched"/>): its top in its cell, easing
+    /// up and down over the step on and off, so the climb reads as one.
+    /// </summary>
+    private static float PerchLift(Simulation sim, Entity e, float3 p)
+    {
+        if (!sim.World.TryGet<Perched>(e, out var perched))
+            return 0f;
+        var top = Position.CenterOf(perched.Cell);
+        var d = MathF.Max(MathF.Abs(p.X - top.X), MathF.Abs(p.Y - top.Y));
+        return SurfaceUnder(sim.Map, sim.World, perched.Cell) * Math.Clamp(1f - d, 0f, 1f);
     }
 
     /// <summary>World-anchored text that rises and fades ("Built!", "Hit"), drawn with the labels.</summary>

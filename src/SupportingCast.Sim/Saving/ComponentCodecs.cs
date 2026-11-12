@@ -225,6 +225,7 @@ internal static class ComponentCodecs
         }),
         Codec("Health", WriteHealth, ReadHealth),
         Codec("Carried", (w, c) => w.Entity(c.By), r => new Carried { By = r.Entity() }),
+        Codec("Perched", (w, p) => w.Int3(p.Cell), r => new Perched { Cell = r.Int3() }),
         Codec("Needs", WriteNeeds, ReadNeeds),
         Codec("Position", (w, p) =>
         {

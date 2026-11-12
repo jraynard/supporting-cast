@@ -110,6 +110,77 @@ public sealed class BuildingDef : Def
         return true;
     }
 
+    /// <summary>
+    /// Whether people can still get about inside once it's furnished, or why not: every open cell
+    /// reachable from the doors (or an open side), every piece of furniture and slot in reach of
+    /// one, and the whole customer line walkable. Solid furniture is walked round, so a careless
+    /// layout boxes in a corner or the bar; slots count as filled with whatever's most in the way.
+    /// The stair leads up to the cells round its head on the upper storey.
+    /// </summary>
+    public string? LayoutProblem()
+    {
+        for (var level = 0; level < Storeys; level++)
+        {
+            var blocked = new HashSet<(int, int)>();
+            foreach (var f in Furnish.Where(f => f.Level == level && f.ThingDef.Impassable))
+                foreach (var (x, y, _) in Covers(f.ThingDef, f.At[0], f.At[1], f.Facing, level))
+                    blocked.Add((x, y));
+            foreach (var slot in Slots.Where(s => s.Level == level))
+                if (slot.ThingDefs.FirstOrDefault(d => d.Impassable) is { } solid)
+                    foreach (var (x, y, _) in Covers(solid, slot.At[0], slot.At[1], slot.Facing, level))
+                        blocked.Add((x, y));
+
+            bool Open(int x, int y) => At(x, y, level) is '.' or 'D' or 'S' && !blocked.Contains((x, y))
+                && !(level > 0 && At(x, y, level - 1) == 'S');
+            var start = new List<(int, int)>();
+            for (var y = 0; y < Depth; y++)
+            for (var x = 0; x < Width; x++)
+            {
+                if (!Open(x, y))
+                    continue;
+                var edge = x == 0 || y == 0 || x == Width - 1 || y == Depth - 1;
+                var upStair = level > 0 && Enumerable.Range(-1, 3).Any(dy => Enumerable.Range(-1, 3).Any(dx => At(x + dx, y + dy, level - 1) == 'S'));
+                if (At(x, y, level) == 'D' || (level == 0 && edge) || upStair)
+                    start.Add((x, y));
+            }
+            var reached = new HashSet<(int, int)>(start);
+            var queue = new Queue<(int, int)>(start);
+            while (queue.Count > 0)
+            {
+                var (x, y) = queue.Dequeue();
+                for (var dy = -1; dy <= 1; dy++)
+                for (var dx = -1; dx <= 1; dx++)
+                {
+                    var (nx, ny) = (x + dx, y + dy);
+                    if ((dx == 0 && dy == 0) || !Open(nx, ny) || reached.Contains((nx, ny)))
+                        continue;
+                    if (dx != 0 && dy != 0 && (!Open(x + dx, y) || !Open(x, y + dy)))
+                        continue; // no squeezing past corners
+                    reached.Add((nx, ny));
+                    queue.Enqueue((nx, ny));
+                }
+            }
+
+            for (var y = 0; y < Depth; y++)
+            for (var x = 0; x < Width; x++)
+                if (At(x, y, level) == '.' && Open(x, y) && !reached.Contains((x, y)))
+                    return $"{Name}: cell [{x}, {y}] on storey {level} can't be reached";
+            bool Touched(IEnumerable<(int X, int Y, int)> cells) =>
+                cells.Any(c => reached.Contains((c.X, c.Y)) || Enumerable.Range(-1, 3).Any(dy => Enumerable.Range(-1, 3).Any(dx => reached.Contains((c.X + dx, c.Y + dy)))));
+            foreach (var f in Furnish.Where(f => f.Level == level))
+                if (!Touched(Covers(f.ThingDef, f.At[0], f.At[1], f.Facing, level)))
+                    return $"{Name}: nobody can get to the {f.ThingDef.Label} at [{f.At[0]}, {f.At[1]}]";
+            foreach (var slot in Slots.Where(s => s.Level == level))
+                if (!Touched([(slot.At[0], slot.At[1], level)]))
+                    return $"{Name}: nobody can get to the slot at [{slot.At[0]}, {slot.At[1]}]";
+            if (level == 0)
+                foreach (var cell in Line)
+                    if (!reached.Contains((cell[0], cell[1])) && At(cell[0], cell[1]) != ' ')
+                        return $"{Name}: the line's cell [{cell[0]}, {cell[1]}] can't be stood in";
+        }
+        return null;
+    }
+
     /// <summary>The plan cells a piece of furniture covers.</summary>
     internal static IEnumerable<(int, int, int)> Covers(ThingDef def, int col, int row, int facing, int level)
     {

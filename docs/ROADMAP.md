@@ -149,10 +149,29 @@ Known leftovers:
 Known leftovers: the other mini-games are still drawn plainly; the title screen keeps its old
 look; time doesn't yet advance on its own when there's nothing to do.
 
-## Next
+### Control pass (2026-11-11)
+- **Solo round:** pick your trade after making your character (or let the deal pick).
+- **The view follows your floor:** under an upper storey the cutaway drops to your level;
+  `[`/`]` take it over by hand, Home hands it back. Nothing below a drawn floor shows through
+  it (sprites, bubbles, labels); a ring on the floor marks you when you're hidden.
+- **Click to move:** clicks land on the floor as drawn (they fell cells short indoors), never
+  select yourself, interact only when pointing at a thing, pick tall sprites by their art, and
+  pin their cell unless dragged. Unreachable clicks go as near as they can, or say so. Rings show
+  the hovered cell and where you're heading. Switching walks never snaps you back.
+- **WASD:** a blocked diagonal looks ahead and slides the way that gets on (into doorways,
+  round corners, up stairs); facing is the step taken; two-key presses and releases a frame
+  apart no longer start stray steps; the keys don't pan the camera.
+- **Solid furniture:** tables, the bar, casks, crates, chests, benches, the hearth and the well
+  are walked round. Tables and the bar can be climbed (F); any step gets you down. Nothing is
+  put down on solid furniture. `BuildingDef.LayoutProblem` (tested over every preset) keeps
+  layouts walkable.
+- **Roomier buildings:** inn 13x9 (aisle to the bar, three rooms upstairs), smithy and woodshop
+  7x5. Bots carry mended pieces and opened strongboxes back to customers wherever they are.
 
-### Control pass
-- tighten up the controls. click to move doesnt work as expected much of the time. WASD have issues with moving diagnoally. accidently walking into furniture constantly and slowing down (maybe don't allow moving over placed furniture without an action to like climb up on the table or something). if on the first level of a multistory building like the inn, the view should cutaway to your characters level (also i could see the top of my character poking through the floor when viewing the second level). not control related but buildings also feel a bit claustrophobic and could probably use more space.
+Known leftovers: no mid-step turns (a turn waits for the step under way); the forge can heat
+the smith's spot to 80°C+ and kill a bot that stands there for hours (also before this pass).
+
+## Next
 
 ### M3: A whole season
 - `Director`, Renown and Dread, crises including the late-round dragon, the festival, the

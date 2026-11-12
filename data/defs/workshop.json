@@ -149,10 +149,10 @@
 
     // ---- Stations ----
     {
-      "name": "Sawhorse", "category": "Building", "sprite": "buildings/sawhorse", "size": [2, 1],
+      "name": "Sawhorse", "category": "Building", "solid": true, "sprite": "buildings/sawhorse", "size": [2, 1],
       // Workbenches are two cells wide (the sawyer works from the front, +Y).
       "description": "Saws logs into planks. Two cells wide. Add bills in its window; F at it to saw some yourself.",
-      "maxHp": 80, "flammability": 1.0, "pathCost": 2,
+      "maxHp": 80, "flammability": 1.0, 
       "building": { "work": 90, "surfaceHeight": 0.54, "workbench": { "bills": 6 }, "cost": [ { "def": "Wood", "count": 6 } ] },
       "model": [
         { "min": [0.10, 0.40, 0.42], "max": [1.90, 0.60, 0.54], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" },
@@ -164,9 +164,9 @@
       ]
     },
     {
-      "name": "CarpenterBench", "label": "carpenter's bench", "category": "Building", "sprite": "buildings/carpenter_bench", "size": [2, 1],
+      "name": "CarpenterBench", "label": "carpenter's bench", "category": "Building", "solid": true, "sprite": "buildings/carpenter_bench", "size": [2, 1],
       "description": "A planked workbench with a vise, two cells wide, for bows, clubs and finer woodwork.",
-      "maxHp": 120, "flammability": 1.0, "pathCost": 2,
+      "maxHp": 120, "flammability": 1.0, 
       "building": { "work": 200, "surfaceHeight": 0.68, "workbench": { "bills": 8 }, "cost": [ { "def": "Planks", "count": 14 }, { "def": "Wood", "count": 2 } ] },
       "model": [
         { "min": [0.02, 0.14, 0.56], "max": [1.98, 0.86, 0.68], "top": "props/planks", "side": "props/planks" },
@@ -210,9 +210,9 @@
     },
 
     {
-      "name": "MasonBench", "label": "mason's bench", "category": "Building", "sprite": "buildings/mason_bench", "size": [2, 1],
+      "name": "MasonBench", "label": "mason's bench", "category": "Building", "solid": true, "sprite": "buildings/mason_bench", "size": [2, 1],
       "description": "A heavy bench two cells wide for squaring stone into blocks.",
-      "maxHp": 200, "flammability": 0.3, "pathCost": 2,
+      "maxHp": 200, "flammability": 0.3, 
       "building": { "outdoor": true, "work": 220, "surfaceHeight": 0.66, "workbench": { "bills": 6 }, "cost": [ { "def": "Stone", "count": 10 }, { "def": "Wood", "count": 4 } ] },
       "model": [
         { "min": [0.04, 0.14, 0.48], "max": [1.96, 0.86, 0.66], "top": "props/stone_block", "side": "props/stone_block" },

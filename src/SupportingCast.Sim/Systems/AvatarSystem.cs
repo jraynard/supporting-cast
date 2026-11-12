@@ -54,6 +54,9 @@ public enum AvatarActionKind
 
     /// <summary>Draw a drink from a cask (<see cref="Work.PourSession"/>), begun at once.</summary>
     Pour,
+
+    /// <summary>Climb up onto a table or counter beside you (<see cref="ClimbJob"/>); any step takes you down.</summary>
+    Climb,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -402,6 +405,10 @@ public sealed class AvatarSystem : ISimSystem
                 return new(AvatarActionKind.Sleep, $"Sleep in {thing.Label}", cell, site);
             }
         }
+        // Up onto a table or counter beside you (solid furniture is walked round, not over).
+        if (!site.IsNull && cell != here && cell.Z == here.Z && !w.Has<Perched>(avatar) && map.Standable(i)
+            && w.Get<Thing>(site).Def is { Solid: true, Climbable: true } && !w.Has<Construction>(site))
+            return new(AvatarActionKind.Climb, $"Climb onto the {w.Get<Thing>(site).Label}", cell, site);
         // Fishing: from the dry bank you stand on, into the water beside it (or pointing at your own feet).
         if (Fishing.CanFishFrom(sim, here) && !sim.Reservations.IsTileReservedByOther(here, avatar)
             && (cell == here || (Maps.Map.Distance(here, cell) <= 1 && cell.Z == here.Z && !map.IsSolid(i) && map.GroundUnder(i) is { IsWater: true })))
@@ -658,6 +665,9 @@ public sealed class AvatarSystem : ISimSystem
             case AvatarActionKind.Fish:
                 AiSystem.Order(sim, avatar, new FishJob(action.Cell, ordered: false));
                 break;
+            case AvatarActionKind.Climb:
+                AiSystem.Order(sim, avatar, new ClimbJob(action.Cell));
+                break;
             case AvatarActionKind.Dig:
                 sim.Map.Designate(sim.Map.Idx(action.Cell), Designation.Dig);
                 AiSystem.Order(sim, avatar, new DigJob(action.Cell));
@@ -855,5 +865,43 @@ public sealed class AvatarWalkJob(int3 target, bool interact) : Job
     {
         var done = end == PathEnd.OnTile ? from == Target : Pathfinder.Touches(from, Target);
         return done ? [] : Navigation.PlanRoute(Sim, Pawn, from, Target, end);
+    }
+}
+
+/// <summary>
+/// A player climbs up onto solid furniture beside them (<see cref="AvatarActionKind.Climb"/>): one
+/// slow step into its cell, let through by <see cref="Perched"/>. Stepping off is an ordinary step,
+/// which takes the perch away again.
+/// </summary>
+public sealed class ClimbJob(int3 cell) : Job
+{
+    public override int3? FocusCell => cell;
+
+    protected override IEnumerable<JobStatus> Run()
+    {
+        var mover = Get<Mover>(Pawn);
+        while (mover.Moving)
+            yield return JobStatus.Running; // the step under way first
+        var map = Sim.Map;
+        var piece = map.InBounds(cell) ? map.Structure[map.Idx(cell)] : Entity.Null;
+        if (!AvatarSystem.InReach(PawnCell, cell) || cell.Z != PawnCell.Z || !Alive(piece)
+            || Get<Thing>(piece).Def is not { Solid: true, Climbable: true } || Sim.World.Has<Construction>(piece))
+        {
+            Fail("nothing to climb");
+            yield break;
+        }
+        Report = $"Climbing onto the {Get<Thing>(piece).Label}";
+        Sim.World.Add(Pawn, new Perched { Cell = cell });
+        mover.Path = [cell];
+        mover.PathIndex = 0;
+        mover.StepProgress = 0;
+        mover.StepFrom = PawnCell;
+        while (mover.Moving)
+            yield return JobStatus.Running;
+        if (PawnCell != cell)
+        {
+            Sim.World.Remove<Perched>(Pawn);
+            Fail("couldn't climb up");
+        }
     }
 }

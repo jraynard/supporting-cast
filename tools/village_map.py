@@ -28,7 +28,7 @@ TOWN = 2        # the village's level; a river bank is one down, its bed two
 rnd = random.Random(1234)
 
 # Plan sizes (width across, depth front to back) of the preset buildings, as buildings.json.
-PLANS = {"Inn": (11, 7), "Dwelling": (6, 5), "Cottage": (9, 6), "Smithy": (5, 4), "Shrine": (7, 5), "Woodshop": (6, 4), "Barn": (10, 6)}
+PLANS = {"Inn": (13, 9), "Dwelling": (6, 5), "Cottage": (9, 6), "Smithy": (7, 5), "Shrine": (7, 5), "Woodshop": (7, 5), "Barn": (10, 6)}
 
 GROUND_LEGEND = {"g": "Grass", "d": "Dirt", "r": "Road", "t": "TilledSoil", "k": "Stone", "s": "Sand", "~": "ShallowWater", "w": "Water"}
 FEATURE_LEGEND = {
@@ -204,7 +204,7 @@ building("Cottage", 50, 28, 0, role="Home")                     # C: top middle
 building("Woodshop", 70, 28, 1, role="Woodshop")                 # D: by the lake, the cart outside
 building("Smithy", 20, 30, 3, role="Forge", variant="Stone")     # E: the west barn with the stone chimney
 building("Cottage", 28, 41, 0, role="Home")                     # F: west house with the yard
-building("Inn", 58, 46, 1, role="Tavern", variant="Timber")      # G: on the square, facing the well
+building("Inn", 59, 45, 1, role="Tavern", variant="Timber")      # G: on the square, facing the well
 building("Cottage", 72, 44, 1, role="Home", variant="Shingle")  # H: east, the big brown roof
 building("Cottage", 30, 56, 0, role="Home")                     # I: south-west, with its garden
 building("Cottage", 43, 61, 2, role="Home")                     # J: south of the square
@@ -226,7 +226,7 @@ garden(77, 46, 82, 51, gate=(77, 48))                            # H's
 
 feature[45][43] = "W"                                            # the well
 for (x, y), f in {(63, 34): "C", (35, 63): "C",                  # carts
-                  (61, 40): "u", (62, 40): "u", (53, 52): "X", (24, 36): "u", (25, 36): "X",
+                  (65, 37): "u", (66, 37): "u", (53, 52): "X", (24, 36): "u", (25, 36): "X",
                   (47, 34): "X", (48, 34): "u", (64, 52): "u", (37, 51): "X", (79, 64): "u",
                   (40, 40): "o", (58, 36): "o", (52, 32): "o", (65, 20): "o", (38, 66): "o", (19, 66): "o"}.items():
     if not reserved[y][x] and level[y][x] == TOWN:

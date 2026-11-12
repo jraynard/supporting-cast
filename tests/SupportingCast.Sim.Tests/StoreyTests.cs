@@ -26,13 +26,13 @@ public class StoreyTests
     public void TheInnStandsWithItsUpperFloorStairAndRoof()
     {
         var (sim, _, b) = FinishedInn();
-        var stair = Buildings.CellOf(sim.Map, b.Def, b.Anchor, 0, 1, 5);
+        var stair = Buildings.CellOf(sim.Map, b.Def, b.Anchor, 0, 1, 7);
         Assert.Equal("InnStair", DefAt(sim, sim.Map.Structure, stair));
         Assert.Equal("", DefAt(sim, sim.Map.Floor, stair + new int3(0, 0, 1))); // the stairwell
-        var room = Buildings.CellOf(sim.Map, b.Def, b.Anchor, 0, 5, 4, level: 1);
+        var room = Buildings.CellOf(sim.Map, b.Def, b.Anchor, 0, 5, 6, level: 1);
         Assert.Equal(2, room.Z);
         Assert.Equal("Floorboards", DefAt(sim, sim.Map.Floor, room));
-        Assert.Equal("TimberWall", DefAt(sim, sim.Map.Structure, Buildings.CellOf(sim.Map, b.Def, b.Anchor, 0, 3, 1, level: 1)));
+        Assert.Equal("TimberWall", DefAt(sim, sim.Map.Structure, Buildings.CellOf(sim.Map, b.Def, b.Anchor, 0, 4, 1, level: 1)));
         Assert.Equal("ThatchRoofPart", DefAt(sim, sim.Map.Floor, room + new int3(0, 0, 1)));
         Assert.Equal(3, sim.World.Query<Thing>().Count(e => sim.World.Get<Thing>(e) is { Def.Name: "Bed", Cell.Z: 2 }));
     }
@@ -50,7 +50,7 @@ public class StoreyTests
         Assert.True(sim.Map.Passable(bedside));
         var path = sim.Pathfinder.FindPath(street, bedside, PathEnd.OnTile);
         Assert.NotNull(path);
-        var stair = Buildings.CellOf(sim.Map, b.Def, b.Anchor, b.Facing, 1, 5);
+        var stair = Buildings.CellOf(sim.Map, b.Def, b.Anchor, b.Facing, 1, 7);
         Assert.Contains(stair, path!);
     }
 
@@ -100,6 +100,6 @@ public class StoreyTests
         var b = loaded.World.Get<PresetBuilding>(inn);
         Assert.Equal(BuildPhase.Done, b.Phase);
         Assert.Equal("Inn", b.Def.Name);
-        Assert.Equal(inn, Buildings.At(loaded, Buildings.CellOf(loaded.Map, b.Def, b.Anchor, 0, 5, 4, level: 1)));
+        Assert.Equal(inn, Buildings.At(loaded, Buildings.CellOf(loaded.Map, b.Def, b.Anchor, 0, 5, 6, level: 1)));
     }
 }

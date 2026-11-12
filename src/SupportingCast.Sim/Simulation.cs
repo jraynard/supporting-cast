@@ -373,7 +373,7 @@ public sealed partial class Simulation
             if (c > 0 && !s.IsNull && !World.Has<Components.Construction>(s))
             {
                 var def = World.Get<Components.Thing>(s).Def;
-                c = def.BlocksMovement || World.Has<Components.Locked>(s) ? 0 : c + def.PathCost;
+                c = def.Impassable || World.Has<Components.Locked>(s) ? 0 : c + def.PathCost;
             }
             cost[i] = c;
 

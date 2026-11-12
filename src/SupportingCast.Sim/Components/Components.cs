@@ -1049,6 +1049,16 @@ public struct Stored
 /// </summary>
 public struct Locked;
 
+/// <summary>
+/// A player up on a piece of solid furniture (<see cref="Defs.ThingDef.Climbable"/>): the one
+/// creature allowed in its cell. Set when they climb (the step onto it is let through by
+/// <c>MovementSystem</c>) and taken off when they step down to anywhere else.
+/// </summary>
+public struct Perched
+{
+    public int3 Cell;
+}
+
 /// <summary>A downed creature being carried; its position follows <see cref="By"/>.</summary>
 public struct Carried
 {

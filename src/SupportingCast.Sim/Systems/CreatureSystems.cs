@@ -55,7 +55,9 @@ public sealed class MovementSystem : ISimSystem
         var ni = map.Idx(next);
         var from = mover.StepFrom;
         var diagonal = from.X != next.X && from.Y != next.Y;
-        var airborne = !map.Passable(next) || !map.Passable(from);
+        // Someone climbing onto furniture (or up on it) may be in its cell: that step is on foot.
+        int3? perch = w.TryGet<Perched>(e, out var perched) ? perched.Cell : null;
+        var airborne = (!map.Passable(next) && next != perch) || (!map.Passable(from) && from != perch);
         float stepLength;
         if (airborne)
         {
@@ -71,7 +73,7 @@ public sealed class MovementSystem : ISimSystem
         else
         {
             // Something may have been built in the way; then the job will notice and re-plan.
-            var cost = map.PathCost[ni];
+            var cost = next == perch ? ClimbCost : map.PathCost[ni];
             if (cost <= 0)
             {
                 mover.Stop();
@@ -87,6 +89,8 @@ public sealed class MovementSystem : ISimSystem
             mover.StepFrom = next;
             mover.PathIndex++;
             w.Get<Position>(e) = Position.At(next);
+            if (perch is { } up && next != up)
+                w.Remove<Perched>(e); // stepped down
         }
         else
         {
@@ -123,6 +127,9 @@ public sealed class MovementSystem : ISimSystem
         return speed;
     }
 
+    /// <summary>The path cost of climbing up onto a piece of furniture: slower than a step.</summary>
+    public const float ClimbCost = 3f;
+
     /// <summary>How long a walking step is in speed units: climbs and diagonals are longer, rough ground costs more.</summary>
     public static float GroundStepLength(int3 from, int3 next, float cost) =>
         (from.Z != next.Z ? NavGraph.ClimbFactor : from.X != next.X && from.Y != next.Y ? 1.41421356f : 1f) * cost;
@@ -137,6 +144,8 @@ public sealed class MovementSystem : ISimSystem
         var cell = sim.World.Get<Position>(e).Cell;
         if (!map.InBounds(cell) || map.Passable(cell) || !map.Standable(map.Idx(cell)))
             return; // fine, or airborne / falling (handled elsewhere)
+        if (sim.World.TryGet<Perched>(e, out var perched) && perched.Cell == cell)
+            return; // up on a table on purpose
         foreach (var c in sim.SpiralFrom(cell, 3))
             if (map.Passable(c))
             {

@@ -83,7 +83,7 @@
     // ---- Bellows: beside a forge, the smith pumps them between blows. With coal they bring it to
     // iron and steel heat without a dragon (Crafting.CanGetHotEnough). ----
     {
-      "name": "Bellows", "label": "bellows", "category": "Building", "sprite": "buildings/bellows",
+      "name": "Bellows", "label": "bellows", "category": "Building", "solid": true, "sprite": "buildings/bellows",
       "description": "Leather lungs for a forge. Built beside one, the smith pumps them while working: on coal, hot enough for iron and steel.",
       "maxHp": 120, "flammability": 0.6,
       "building": { "work": 300, "cost": [ { "def": "Leather", "count": 4 }, { "def": "Wood", "count": 8 } ],
@@ -92,9 +92,9 @@
 
     // ---- Silver and gold: coin and jewelry (no armor, but treasure: hoardValue) ----
     {
-      "name": "Mint", "label": "goldsmith's bench", "category": "Building", "sprite": "buildings/mint",
+      "name": "Mint", "label": "goldsmith's bench", "category": "Building", "solid": true, "sprite": "buildings/mint",
       "description": "Dies and a heavy hammer: strikes silver and gold into coin, and makes rings and torcs.",
-      "maxHp": 150, "flammability": 0.6, "pathCost": 2,
+      "maxHp": 150, "flammability": 0.6, 
       "building": { "work": 250, "surfaceHeight": 0.5, "workbench": { "bills": 6 }, "cost": [ { "def": "Wood", "count": 6 }, { "def": "Stone", "count": 4 }, { "def": "CopperBar", "count": 2 } ] },
       "model": [
         { "min": [0.10, 0.20, 0.00], "max": [0.90, 0.80, 0.46], "top": "props/planks", "side": "props/planks" },

@@ -518,7 +518,7 @@ public sealed class BuildJob(Entity site) : Job
         }
 
         // Don't entomb anyone: give others a moment to get off the tiles, and step off them ourselves.
-        List<int3> tiles = phase ? Buildings.SolidCells(Sim, site) : target.BlocksMovement ? [Get<Thing>(site).Cell] : [];
+        List<int3> tiles = phase ? Buildings.SolidCells(Sim, site) : target.Impassable ? [Get<Thing>(site).Cell] : [];
         for (var waited = 0; waited < SimClock.TicksPerSecond * 5 && SomeoneElseOn(tiles); waited++)
             yield return JobStatus.Running;
         if (tiles.Contains(PawnCell))

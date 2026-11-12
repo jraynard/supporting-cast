@@ -166,14 +166,36 @@ public sealed partial class Simulation
         Map.MarkStructureChanged(i);
         Cover(e, def, cell, facing);
 
-        // Anything lying where a wall goes gets pushed aside.
-        if (def.BlocksMovement && !Map.Item[i].IsNull)
-        {
-            var item = Map.Item[i];
-            DespawnThing(item);
-            PlaceItemNear(item, cell);
-        }
+        // Anything lying where a wall or solid furniture goes gets pushed aside.
+        if (def.Impassable)
+            PushItemsOff(def, cell, facing);
         return e;
+    }
+
+    /// <summary>Move items lying in a solid thing's cells to the nearest free spot beside it.</summary>
+    private void PushItemsOff(ThingDef def, int3 cell, int facing)
+    {
+        foreach (var c in FootprintCells(def, cell, facing))
+        {
+            if (!Map.InBounds(c) || Map.Item[Map.Idx(c)] is not { IsNull: false } item)
+                continue;
+            DespawnThing(item);
+            PlaceItemNear(item, c);
+        }
+    }
+
+    /// <summary>
+    /// Old saves (from before furniture was solid) can have items on tables and benches: put them
+    /// down beside instead, where everyone can reach them. Nothing to do in a current save.
+    /// </summary>
+    internal void PushItemsOffFurniture()
+    {
+        foreach (var e in World.Query<Thing>())
+        {
+            var t = World.Get<Thing>(e);
+            if (t.Spawned && t.Def.Solid && !World.Has<Construction>(e) && Map.InBounds(t.Cell) && Map.Structure[Map.Idx(t.Cell)] == e)
+                PushItemsOff(t.Def, t.Cell, t.Facing);
+        }
     }
 
     /// <summary>Place a construction site for <paramref name="def"/>. Returns Entity.Null if blocked.</summary>
@@ -641,7 +663,7 @@ public sealed partial class Simulation
         // Not into a wall, nor onto a wall's blueprint (drawn as a see-through wall, so an item there
         // looks walled in; building it would push the item aside anyway).
         var s = Map.Structure[i];
-        if (!s.IsNull && World.Get<Thing>(s).Def.BlocksMovement)
+        if (!s.IsNull && World.Get<Thing>(s).Def.Impassable)
             return false;
         var existing = Map.Item[i];
         if (existing.IsNull)

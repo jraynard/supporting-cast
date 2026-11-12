@@ -10,6 +10,13 @@ namespace SupportingCast.Sim.Tests;
 /// <summary>Preset buildings (<see cref="Buildings"/>): plans, phases, extras, taking them down.</summary>
 public class PresetBuildingTests
 {
+    [Fact]
+    public void EveryPresetCanBeGotAboutOnceFurnished()
+    {
+        var problems = TestWorld.LoadDefs().AllBuildings.Select(b => b.LayoutProblem()).OfType<string>().ToList();
+        Assert.True(problems.Count == 0, string.Join("\n", problems));
+    }
+
     private static Simulation World(bool presetMode = true)
     {
         var sim = TestWorld.Create(30, 30, depth: 5);

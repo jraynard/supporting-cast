@@ -123,7 +123,7 @@ public class PropModelTests
     }
 
     [Fact]
-    public void ItemsInAFurnishedCellRestOnItsTop()
+    public void ATableHasASurfaceButNothingIsPutOnIt()
     {
         var defs = DefDatabase.LoadDirectory(DevPaths.Defs!);
         var sim = SupportingCast.Sim.Simulation.CreateStandard(defs, 20, 20, 1);
@@ -133,6 +133,6 @@ public class PropModelTests
         Assert.Equal(0f, WorldRenderer.SurfaceUnder(sim.Map, sim.World, at)); // not while it's a blueprint
         sim.CompleteConstruction(site);
         Assert.Equal(defs.Thing("Table").Building!.SurfaceHeight, WorldRenderer.SurfaceUnder(sim.Map, sim.World, at));
-        Assert.True(sim.CanAcceptItem(at, defs.Thing("Wood"), out _)); // and things can be put there
+        Assert.False(sim.CanAcceptItem(at, defs.Thing("Wood"), out _)); // solid: things go down beside it
     }
 }

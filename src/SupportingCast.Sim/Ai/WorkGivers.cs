@@ -361,7 +361,7 @@ public sealed class WorkGivers
             if (!sim.Regions.CanReach(from, tile, PathEnd.Touch))
                 continue;
             // Don't wall in someone standing on the site.
-            if (w.Get<Construction>(site).MaterialsComplete && w.Get<Construction>(site).Target.BlocksMovement && Occupied(sim, tile, pawn))
+            if (w.Get<Construction>(site).MaterialsComplete && w.Get<Construction>(site).Target.Impassable && Occupied(sim, tile, pawn))
                 continue;
             sites.Add((site, Dist(from, tile)));
         }

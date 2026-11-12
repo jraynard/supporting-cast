@@ -190,6 +190,89 @@ public class AvatarTests
     }
 
     [Fact]
+    public void SolidFurnitureIsWalkedRoundNotOver()
+    {
+        var sim = Warm();
+        sim.SpawnStructure(sim.Thing("Table"), C(7, 5));
+        sim.RebuildDerivedIfNeeded();
+        Assert.False(sim.Map.Passable(C(7, 5)));
+        var me = Avatar(sim, C(5, 5));
+        sim.Enqueue(new AvatarMoveCommand(me, new int2(1, 0)));
+        sim.TickMany(SimClock.TicksPerSecond * 2);
+        Assert.Equal(C(6, 5), Cell(sim, me)); // stopped at the table
+
+        // A clicked walk goes round it.
+        sim.Enqueue(new AvatarMoveCommand(me, default));
+        sim.TickMany(30);
+        sim.Enqueue(new AvatarGoToCommand(me, C(9, 5)));
+        sim.TickMany(SimClock.TicksPerSecond * 5);
+        Assert.Equal(C(9, 5), Cell(sim, me));
+    }
+
+    [Fact]
+    public void NothingIsPutDownOnSolidFurniture()
+    {
+        var sim = Warm();
+        sim.SpawnStructure(sim.Thing("Table"), C(7, 5));
+        Assert.False(sim.CanAcceptItem(C(7, 5), sim.Thing("Wood"), out _));
+        sim.SpawnItem(sim.Thing("Wood"), 5, C(7, 5));
+        Assert.True(sim.Map.Item[sim.Map.Idx(C(7, 5))].IsNull);
+
+        // A table built over something lying there pushes it aside.
+        sim.SpawnItem(sim.Thing("Wood"), 3, C(12, 5));
+        Assert.False(sim.Map.Item[sim.Map.Idx(C(12, 5))].IsNull);
+        sim.SpawnStructure(sim.Thing("Table"), C(12, 5));
+        Assert.True(sim.Map.Item[sim.Map.Idx(C(12, 5))].IsNull);
+        Assert.Equal(8, sim.SpawnedItems().Sum(e => sim.World.Get<Stack>(e).Count));
+    }
+
+    [Fact]
+    public void ClimbingOntoATableAndSteppingDown()
+    {
+        var sim = Warm();
+        sim.SpawnStructure(sim.Thing("Table"), C(6, 5));
+        sim.RebuildDerivedIfNeeded();
+        var me = Avatar(sim, C(5, 5));
+        var climb = AvatarSystem.ActionAt(sim, me, C(6, 5));
+        Assert.Equal(AvatarActionKind.Climb, climb.Kind);
+
+        sim.Enqueue(new AvatarWorkCommand(me, true, C(6, 5)));
+        sim.TickMany(SimClock.TicksPerSecond * 2);
+        Assert.Equal(C(6, 5), Cell(sim, me));
+        Assert.True(sim.World.Has<Perched>(me));
+
+        // Standing about up there: nobody pushes you off.
+        sim.Enqueue(new AvatarWorkCommand(me, false));
+        sim.TickMany(SimClock.TicksPerSecond * 5);
+        Assert.Equal(C(6, 5), Cell(sim, me));
+
+        // Any step takes you down again, and then the table is solid once more.
+        sim.Enqueue(new AvatarMoveCommand(me, new int2(1, 0)));
+        sim.Tick();
+        sim.Enqueue(new AvatarMoveCommand(me, default));
+        sim.TickMany(SimClock.TicksPerSecond);
+        Assert.Equal(C(7, 5), Cell(sim, me));
+        Assert.False(sim.World.Has<Perched>(me));
+    }
+
+    [Fact]
+    public void APerchSurvivesASave()
+    {
+        var sim = Warm();
+        sim.SpawnStructure(sim.Thing("SquareTable"), C(6, 5));
+        sim.RebuildDerivedIfNeeded();
+        var me = Avatar(sim, C(5, 5));
+        sim.Enqueue(new AvatarWorkCommand(me, true, C(6, 5)));
+        sim.TickMany(SimClock.TicksPerSecond * 2);
+        Assert.Equal(C(6, 5), Cell(sim, me));
+        AiSystem.InterruptAll(sim);
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        Assert.Equal(C(6, 5), loaded.World.Get<Perched>(me).Cell);
+        loaded.TickMany(SimClock.TicksPerSecond * 3);
+        Assert.Equal(C(6, 5), loaded.World.Get<Position>(me).Cell);
+    }
+
+    [Fact]
     public void ChoppingOnlyProgressesWhileTheWorkKeyIsHeld()
     {
         var sim = Warm();

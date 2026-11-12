@@ -254,6 +254,7 @@ public static class SaveGame
                 Crafting.EnsureBench(sim, e);
         // Structures whose def changed size since the save (beds became two cells long).
         sim.RefitFootprints();
+        sim.PushItemsOffFurniture();
         ReadMessages(r, sim.Messages);
 
         var n = r.Count(1000);

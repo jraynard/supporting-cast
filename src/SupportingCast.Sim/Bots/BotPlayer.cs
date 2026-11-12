@@ -383,10 +383,12 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
 
     /// <summary>
     /// Walk toward someone (re-aimed now and then, as they move). Far off, it waits at its
-    /// workplace instead: customers come to the building their order is served at. True if
-    /// they're already in reach.
+    /// workplace instead: customers come to the building their order is served at. But a customer
+    /// who handed something over doesn't come back for it (they're off seeing to their other
+    /// errands), so with <paramref name="returning"/> it takes the finished piece to them wherever
+    /// they are. True if they're already in reach.
     /// </summary>
-    private bool Reach(Simulation sim, Entity me, Entity who, long now)
+    private bool Reach(Simulation sim, Entity me, Entity who, long now, bool returning = false)
     {
         if (Handing.InReach(sim, me, who))
             return true;
@@ -394,7 +396,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             return false;
         _lastWalk = now;
         var here = sim.World.Get<Position>(me).Cell;
-        if (Maps.Map.Distance(here, at.Cell) > ChaseCells && Workplace(sim, me) is { } work)
+        if (!returning && Maps.Map.Distance(here, at.Cell) > ChaseCells && Workplace(sim, me) is { } work)
         {
             if (Maps.Map.Distance(here, work) > 6)
                 send(new AvatarGoToCommand(me, work));
@@ -445,7 +447,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             send(new SharpenCommand(me, blade));
             return true;
         }
-        if (Reach(sim, me, owner, now))
+        if (Reach(sim, me, owner, now, returning: true))
             send(new GiveCommand(me, owner, blade, 1));
         return true;
     }
@@ -467,7 +469,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             send(known.SearchedByMe ? new PickLockCommand(me, box) : new ProbeBoxCommand(me, box));
             return true;
         }
-        if (Reach(sim, me, owner, now))
+        if (Reach(sim, me, owner, now, returning: true))
             send(new GiveCommand(me, owner, box, 1));
         return true;
     }

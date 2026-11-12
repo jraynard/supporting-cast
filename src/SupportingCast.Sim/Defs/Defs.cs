@@ -590,6 +590,15 @@ public sealed class ThingDef : Def
     /// <summary>Extra movement cost when walking over this (0 = none).</summary>
     public float PathCost { get; set; }
 
+    /// <summary>
+    /// Furniture you walk round, not over (a table, a barrel, a workbench): nobody passes and
+    /// nothing is put down in its cells. Unlike a wall it doesn't divide rooms.
+    /// </summary>
+    public bool Solid { get; set; }
+
+    /// <summary>A solid piece a player can climb up onto (<see cref="Components.Perched"/>): a table or a counter.</summary>
+    public bool Climbable { get; set; }
+
     public int StackLimit { get; set; } = 1;
 
     /// <summary>Weight in kg per unit; required for items, since packs carry by weight (<see cref="ContainerProps"/>).</summary>
@@ -671,6 +680,9 @@ public sealed class ThingDef : Def
     public bool EdibleBy(CreatureDef eater) =>
         IsFood && (IsMeat ? eater.EatsMeat : eater.EatsPlants);
     [JsonIgnore] public bool BlocksMovement => Building?.IsWall == true || Category == ThingCategory.Resource;
+
+    /// <summary>Nobody walks through it: a wall or boulder, or solid furniture.</summary>
+    [JsonIgnore] public bool Impassable => BlocksMovement || Solid;
     [JsonIgnore] public bool IsFloor => Building?.IsFloor == true;
     [JsonIgnore] public bool IsRoof => Building?.IsRoof == true;
 

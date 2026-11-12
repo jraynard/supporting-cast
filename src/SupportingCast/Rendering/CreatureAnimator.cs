@@ -233,7 +233,8 @@ public sealed class CreatureAnimator
         {
             var next = mover.Path![mover.PathIndex];
             var from = mover.StepFrom;
-            airStep = !map.Passable(next) || !map.Passable(from);
+            int3? perch = w.TryGet<Perched>(e, out var perched) ? perched.Cell : null; // climbing onto furniture is on foot
+            airStep = (!map.Passable(next) && next != perch) || (!map.Passable(from) && from != perch);
             if (airStep && next.X == from.X && next.Y == from.Y)
             {
                 vertical = Math.Sign(next.Z - from.Z);

@@ -21,7 +21,7 @@
     },
     {
       // The village well on the square: a stone ring under a little shingled roof. People walk round it.
-      "name": "Well", "label": "well", "category": "Building", "sprite": "buildings/well", "pathCost": 12,
+      "name": "Well", "label": "well", "category": "Building", "solid": true, "sprite": "buildings/well",
       "description": "A stone-ringed well with a windlass and a bucket, the middle of the village.",
       "maxHp": 400, "flammability": 0.1,
       "building": { "outdoor": true, "work": 400, "cost": [ { "def": "Stone", "count": 20 }, { "def": "Wood", "count": 8 } ] },
@@ -36,7 +36,7 @@
       ]
     },
     {
-      "name": "Barrel", "label": "barrel", "category": "Building", "sprite": "buildings/chest", "pathCost": 3,
+      "name": "Barrel", "label": "barrel", "category": "Building", "solid": true, "sprite": "buildings/chest",
       "description": "An oak barrel. Holds a couple of stacks.",
       "maxHp": 80, "flammability": 0.8,
       "building": { "outdoor": true, "work": 90, "storageStacks": 2, "surfaceHeight": 0.62, "cost": [ { "def": "Wood", "count": 6 } ] },
@@ -47,7 +47,7 @@
       ]
     },
     {
-      "name": "Crate", "label": "crate", "category": "Building", "sprite": "buildings/chest", "pathCost": 3,
+      "name": "Crate", "label": "crate", "category": "Building", "solid": true, "sprite": "buildings/chest",
       "description": "A nailed plank crate. Holds a few stacks.",
       "maxHp": 70, "flammability": 1.0,
       "building": { "outdoor": true, "work": 80, "storageStacks": 4, "surfaceHeight": 0.56, "cost": [ { "def": "Wood", "count": 5 } ] },
