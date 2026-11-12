@@ -1,8 +1,8 @@
 using System.Reflection;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Saving;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Saving;
 
-namespace SupportingCast.Sim.Core;
+namespace HeroesNotIncluded.Sim.Core;
 
 /// <summary>
 /// Turns <see cref="ISimCommand"/>s into bytes and back, for lockstep multiplayer (and later

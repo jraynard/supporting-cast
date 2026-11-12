@@ -1,11 +1,11 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Round;
-using SupportingCast.Sim.Scenarios;
-using SupportingCast.Sim.Shops;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Shops;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>Gear put up for sale in a shop, and the adventurers who'd be better off with it buying it.</summary>
 public class GoodsTests

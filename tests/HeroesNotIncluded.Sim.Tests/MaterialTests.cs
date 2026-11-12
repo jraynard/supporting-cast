@@ -1,7 +1,7 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Maps;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Maps;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>Materials that matter: what a thing is made of changes its HP, weight, flammability, insulation and work.</summary>
 public class MaterialTests

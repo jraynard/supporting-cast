@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Scenarios;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>
 /// The village a round is played in, left to its AI villagers for a whole round's worth of days.

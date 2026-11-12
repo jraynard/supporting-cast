@@ -1,6 +1,6 @@
-using SupportingCast.Sim.Components;
+using HeroesNotIncluded.Sim.Components;
 
-namespace SupportingCast.Sim.Systems;
+namespace HeroesNotIncluded.Sim.Systems;
 
 /// <summary>
 /// Food and animal carcasses go off and finally rot away: at full speed between 10 and 30°C,

@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>
 /// Ore (docs/plans/mining-progression.md): hidden until a face of it is opened, a chance of it in

@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Ai;
+namespace HeroesNotIncluded.Sim.Ai;
 
 /// <summary>
 /// Finds work for a villager, honoring their per-work-type priorities (1 = highest, 0 = disabled).

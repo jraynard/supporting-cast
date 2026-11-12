@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Combat;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Sim.Systems;
+namespace HeroesNotIncluded.Sim.Systems;
 
 /// <summary>The storyteller's wild events (<see cref="Storyteller"/>), besides raids.</summary>
 public enum WildEventKind

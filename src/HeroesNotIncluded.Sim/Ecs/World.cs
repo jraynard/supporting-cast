@@ -1,4 +1,4 @@
-namespace SupportingCast.Sim.Ecs;
+namespace HeroesNotIncluded.Sim.Ecs;
 
 /// <summary>
 /// Entity registry and component storage. Components are plain structs (or classes for

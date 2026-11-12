@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Healing;
+namespace HeroesNotIncluded.Sim.Healing;
 
 /// <summary>A charm as it went out on a quest with its bearer (<c>Expeditions.MemberRecord</c>).</summary>
 public sealed record CharmRecord(MendingDef Mending, int Extra, float Quality, Entity Maker);

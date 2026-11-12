@@ -1,7 +1,7 @@
 using System.Reflection;
 using System.Text.Json.Serialization;
 
-namespace SupportingCast.Sim.Defs;
+namespace HeroesNotIncluded.Sim.Defs;
 
 /// <summary>A state the mood system checks every update for situational thoughts (see <see cref="ThoughtDef.When"/>).</summary>
 public enum ThoughtCondition

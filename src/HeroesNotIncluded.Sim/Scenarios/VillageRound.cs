@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Scenarios;
+namespace HeroesNotIncluded.Sim.Scenarios;
 
 /// <summary>Who a player made in the creator.</summary>
 public sealed record Hero(string? Name, Appearance? Look, IReadOnlyList<string>? Traits, IReadOnlyList<string>? Clothes = null);

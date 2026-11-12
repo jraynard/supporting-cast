@@ -1,13 +1,13 @@
 using System.Globalization;
 using Brutal.ImGuiApi;
 using Narsil;
-using SupportingCast.Rendering;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Rendering;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 /// <summary>
 /// Saving and loading in the village: F6 quicksave, F9 quickload, autosaves at dawn and just before

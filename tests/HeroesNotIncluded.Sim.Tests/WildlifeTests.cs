@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Combat;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Maps;
-using static SupportingCast.Sim.Tests.TestWorld;
+using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Maps;
+using static HeroesNotIncluded.Sim.Tests.TestWorld;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>Herds arriving, grazing, shying away from people and moving on (<see cref="Systems.WildlifeSystem"/>).</summary>
 public class WildlifeTests

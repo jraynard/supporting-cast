@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Work;
+namespace HeroesNotIncluded.Sim.Work;
 
 /// <summary>
 /// One heat on the anvil (<see cref="Smithing"/>): a marker sweeps back and forth and each blow

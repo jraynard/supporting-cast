@@ -1,16 +1,16 @@
-using SupportingCast.Sim.Combat;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Round;
-using SupportingCast.Sim.Scenarios;
-using SupportingCast.Sim.Shops;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Sim.Work;
-using static SupportingCast.Sim.Tests.TestWorld;
+using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Shops;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Sim.Work;
+using static HeroesNotIncluded.Sim.Tests.TestWorld;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>Weapon wear and the two ways of putting it right: the whetstone and the anvil (Stage 3 of M2).</summary>
 public class BlacksmithTests

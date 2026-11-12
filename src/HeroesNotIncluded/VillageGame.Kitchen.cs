@@ -1,13 +1,13 @@
 using Brutal.ImGuiApi;
 using Narsil.Sim.Core;
 using Narsil.Ui;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Sim.Work;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Sim.Work;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 // The inn's kitchen: the stew pot from the side as it's tended (its heat shown only by the
 // surface and the steam), seasoning by taste, and the pot beside you between times. Everything

@@ -1,11 +1,11 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Shops;
-using SupportingCast.Sim.Speech;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Shops;
+using HeroesNotIncluded.Sim.Speech;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Tinkering;
+namespace HeroesNotIncluded.Sim.Tinkering;
 
 /// <summary>
 /// Something odd brought back from a quest. All of it is hidden: what it would really fetch

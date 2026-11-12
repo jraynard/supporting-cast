@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Maps;
 
-namespace SupportingCast.Sim.Systems;
+namespace HeroesNotIncluded.Sim.Systems;
 
 /// <summary>
 /// A butcher spot (<see cref="BuildingProps.ButcherSpot"/>) is where the village cuts up its kills:

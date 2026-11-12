@@ -1,9 +1,9 @@
 using Narsil.Rendering;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Ecs;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Ecs;
 
-namespace SupportingCast.Rendering;
+namespace HeroesNotIncluded.Rendering;
 
 /// <summary>
 /// Doors that swing. A door is drawn per frame (not baked into the chunk meshes) as a slab hinged

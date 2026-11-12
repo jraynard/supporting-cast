@@ -1,7 +1,7 @@
 using Narsil.Rendering;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Rendering;
+namespace HeroesNotIncluded.Rendering;
 
 /// <summary>
 /// Art for things made of a material: <c>buildings/wall_wood</c> made of birch draws

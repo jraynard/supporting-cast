@@ -1,7 +1,7 @@
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Components;
 
-namespace SupportingCast.Sim.Systems;
+namespace HeroesNotIncluded.Sim.Systems;
 
 /// <summary>
 /// A creature's hands, pack and gear, moved between by the player (<c>Core/InventoryCommands.cs</c>)

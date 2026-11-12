@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace SupportingCast.Sim.Defs;
+namespace HeroesNotIncluded.Sim.Defs;
 
 /// <summary>How hard the storyteller pushes: when raids start, how often they come and how big they get.</summary>
 public sealed class DifficultyDef : Def

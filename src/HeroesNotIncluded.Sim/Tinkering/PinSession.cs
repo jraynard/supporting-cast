@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Sim.Work;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Sim.Work;
 
-namespace SupportingCast.Sim.Tinkering;
+namespace HeroesNotIncluded.Sim.Tinkering;
 
 /// <summary>
 /// Pinning a lock at the tinker's bench, or filing a copy of a key. Each pin starts long and is

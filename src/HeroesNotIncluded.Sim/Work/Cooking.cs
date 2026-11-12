@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Work;
+namespace HeroesNotIncluded.Sim.Work;
 
 /// <summary>How a pot looks on top: the only way a cook reads its heat, as a smith reads iron by its glow.</summary>
 public enum Surface : byte

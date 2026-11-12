@@ -1,10 +1,10 @@
 using Brutal.ImGuiApi;
 using Narsil.Ui;
-using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Work;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Work;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 // The bar's upkeep scenes: scrubbing crockery at the tub in time with the brush, and knocking a
 // new keg's tap in as the mallet comes down. Read from the session only.

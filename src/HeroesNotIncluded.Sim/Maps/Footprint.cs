@@ -1,6 +1,6 @@
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Sim.Maps;
+namespace HeroesNotIncluded.Sim.Maps;
 
 /// <summary>
 /// The cells a structure wider than one cell covers (<see cref="ThingDef.SizeX"/> ×

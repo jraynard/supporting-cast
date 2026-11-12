@@ -1,7 +1,7 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Saving;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Saving;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>
 /// Built roofs (<see cref="Defs.BuildingProps.IsRoof"/>): a porch or lean-to off a wall, in the floor

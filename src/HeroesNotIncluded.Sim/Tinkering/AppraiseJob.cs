@@ -1,11 +1,11 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Shops;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Shops;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Tinkering;
+namespace HeroesNotIncluded.Sim.Tinkering;
 
 /// <summary>
 /// An AI tinker appraises a curio for its owner: takes the order on, collects the piece, looks it

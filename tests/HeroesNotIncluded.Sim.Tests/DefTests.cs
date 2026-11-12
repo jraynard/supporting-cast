@@ -1,6 +1,6 @@
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 public class DefTests
 {

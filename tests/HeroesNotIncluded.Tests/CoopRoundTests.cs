@@ -1,17 +1,17 @@
 using Narsil.Net;
-using SupportingCast.Net;
+using HeroesNotIncluded.Net;
 using Brutal.Numerics;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Bots;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Speech;
-using SupportingCast.Sim.Round;
-using SupportingCast.Sim.Systems;
-using Table = SupportingCast.Tests.CoopSessionTests.Table;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Bots;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Speech;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Systems;
+using Table = HeroesNotIncluded.Tests.CoopSessionTests.Table;
 
-namespace SupportingCast.Tests;
+namespace HeroesNotIncluded.Tests;
 
 /// <summary>A round end to end over loopback: real sessions in a real lobby, dealt on every peer alike.</summary>
 public class CoopRoundTests
@@ -86,7 +86,7 @@ public class CoopRoundTests
         foreach (var sim in new[] { host, client, players[2].Sim!, players[3].Sim! })
         {
             PutAt(sim, ids[0], whisperer);
-            PutAt(sim, ids[1], sim.SpiralFrom(whisperer, 1).First(c => c != whisperer && sim.Map.Passable(c) && SupportingCast.Sim.Ai.Pathfinder.Touches(c, whisperer)));
+            PutAt(sim, ids[1], sim.SpiralFrom(whisperer, 1).First(c => c != whisperer && sim.Map.Passable(c) && HeroesNotIncluded.Sim.Ai.Pathfinder.Touches(c, whisperer)));
             PutAt(sim, ids[2], sim.SpiralFrom(whisperer + new int3(7, 0, 0), 5).First(c => sim.Map.Passable(c)));
             PutAt(sim, ids[3], sim.SpiralFrom(whisperer + new int3(40, 0, 0), 12).First(c => sim.Map.Passable(c)));
         }

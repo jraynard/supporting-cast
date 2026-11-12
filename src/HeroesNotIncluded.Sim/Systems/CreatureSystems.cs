@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Environment;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Environment;
 
-namespace SupportingCast.Sim.Systems;
+namespace HeroesNotIncluded.Sim.Systems;
 
 /// <summary>
 /// Moves creatures along their paths, and drops creatures left standing on nothing. Steps into

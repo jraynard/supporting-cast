@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Round;
-using SupportingCast.Sim.Shops;
-using SupportingCast.Sim.Speech;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Shops;
+using HeroesNotIncluded.Sim.Speech;
 
-namespace SupportingCast.Sim.Favours;
+namespace HeroesNotIncluded.Sim.Favours;
 
 /// <summary>
 /// Every player <see cref="Favour"/> in the round. Asked aloud, so only those who hear know of it;

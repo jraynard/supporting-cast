@@ -1,10 +1,10 @@
-using SupportingCast.Sim.Combat;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Round;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Adventurers;
+namespace HeroesNotIncluded.Sim.Adventurers;
 
 /// <summary>
 /// Brings adventuring parties (<see cref="PartyDef"/>) to town during a round, one at a time, and

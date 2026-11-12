@@ -1,7 +1,7 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Tinkering;
+namespace HeroesNotIncluded.Sim.Tinkering;
 
 /// <summary>
 /// The cut of a lock: how many pins and at what heights (from <see cref="Seed"/>, as

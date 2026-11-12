@@ -1,10 +1,10 @@
 using Brutal.ImGuiApi;
 using Narsil;
 using Narsil.Net;
-using SupportingCast.Net;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Net;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Ui;
+namespace HeroesNotIncluded.Ui;
 
 /// <summary>
 /// The title screen's Join panel: your name, villages found on the local network, a box for a

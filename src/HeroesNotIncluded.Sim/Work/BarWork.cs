@@ -1,10 +1,10 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Work;
+namespace HeroesNotIncluded.Sim.Work;
 
 /// <summary>
 /// The inn's upkeep at its stations: washing dirty crockery at the tub (<see cref="WashSession"/>)

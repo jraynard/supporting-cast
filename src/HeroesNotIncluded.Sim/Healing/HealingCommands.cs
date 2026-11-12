@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Work;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Work;
 
-namespace SupportingCast.Sim.Healing;
+namespace HeroesNotIncluded.Sim.Healing;
 
 /// <summary>Regains an empath's mana a little at a time, slower for the pain they carry, faster asleep.</summary>
 public sealed class ManaSystem : ISimSystem

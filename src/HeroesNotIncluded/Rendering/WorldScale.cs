@@ -1,6 +1,6 @@
 using Narsil.Rendering;
 
-namespace SupportingCast.Rendering;
+namespace HeroesNotIncluded.Rendering;
 
 /// <summary>
 /// How tall a map level looks. A cell is 32 px wide, but people are 56 px tall and the adult dragon
@@ -27,7 +27,7 @@ public static class WorldScale
     public const float FurnitureHeight = 0.65f;
 
     /// <summary>What a thing's box model is scaled by up the way: furniture (any building drawn as a model but walls and doors) by <see cref="FurnitureHeight"/>, the rest not at all.</summary>
-    public static float HeightOf(SupportingCast.Sim.Defs.ThingDef def) =>
+    public static float HeightOf(HeroesNotIncluded.Sim.Defs.ThingDef def) =>
         def.Model != null && def.Building is { IsWall: false, IsDoor: false, IsFloor: false, IsRoof: false } ? FurnitureHeight : 1f;
 
     /// <summary>A world offset that rises <paramref name="cells"/> sprite cells: world z divided by the stretch.</summary>

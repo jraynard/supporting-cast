@@ -1,15 +1,15 @@
 using Brutal.ImGuiApi;
 using Narsil.Ui;
-using SupportingCast.Net;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Round;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Net;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 /// <summary>
 /// The round's lobby: seats, trade preferences and the host's Start. The state is all in

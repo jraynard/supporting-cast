@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Healing;
+namespace HeroesNotIncluded.Sim.Healing;
 
 /// <summary>A wound as an empath feels it (<c>PerceptionView.FeltWounds</c>). <see cref="Key"/> names it in commands.</summary>
 public readonly record struct FeltWound(int Key, string Part, string Feels, string Severity, bool Festering, bool Absorbed);

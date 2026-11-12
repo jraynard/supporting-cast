@@ -1,14 +1,14 @@
 using Brutal.ImGuiApi;
 using Brutal.Numerics;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 // Workbenches: the bills section of a station's inspector (village orders, for anyone), and the
 // Adventure station window opened with F (the player making something themselves).

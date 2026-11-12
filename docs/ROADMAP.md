@@ -474,6 +474,16 @@ Known leftovers:
 - The wagon's wheels are boxes: they read as legs from some angles.
 - Bridges, gates and the town's structures aren't damaged by anything yet: that's M3's crises.
 
+### Heroes Not Included (2026-11-12)
+- The game is **Heroes Not Included** throughout: the solution, projects and namespaces
+  (`HeroesNotIncluded`, `HeroesNotIncluded.Sim`, their tests), the exe and the Mac `.app`, the
+  packages, the Linux desktop id (`heroes-not-included`: run `tools/install-desktop-entry.sh` again),
+  the Mac bundle id and the co-op game id (older builds can't join newer ones).
+- Settings, saves, screenshots and logs live in `~/.config/Heroes Not Included` now. Nothing moves
+  over from `Supporting Cast`: old saves stay there.
+- Still the old name: the repo folder, and the LAN share's default (`/srv/supporting-cast`,
+  `SC_SHARE_DIR` to change it). Bench hashes unchanged.
+
 ## Next
 
 ### Trade refinement

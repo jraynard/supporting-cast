@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Maps;
 
-namespace SupportingCast.Sim.Ai;
+namespace HeroesNotIncluded.Sim.Ai;
 
 /// <summary>
 /// Chooses how a creature gets somewhere: walking (<see cref="Pathfinder"/>) or, for creatures

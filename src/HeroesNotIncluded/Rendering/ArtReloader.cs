@@ -2,7 +2,7 @@ using Narsil;
 using Narsil.Platform;
 using Narsil.Rendering;
 
-namespace SupportingCast.Rendering;
+namespace HeroesNotIncluded.Rendering;
 
 /// <summary>
 /// Hot-reloads the texture atlas on F5, and (in Debug builds, or with SC_WATCH=1) whenever a PNG

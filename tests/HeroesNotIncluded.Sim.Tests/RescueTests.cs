@@ -1,11 +1,11 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Scenarios;
-using SupportingCast.Sim.Systems;
-using static SupportingCast.Sim.Tests.TestWorld;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Systems;
+using static HeroesNotIncluded.Sim.Tests.TestWorld;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>Rescuing downed dragons (<see cref="Rescues"/>): carried to a nest, or fed and tended where they lie.</summary>
 public class RescueTests

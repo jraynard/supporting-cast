@@ -1,8 +1,8 @@
-using SupportingCast.Sim;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Ecs;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Ecs;
 
-namespace SupportingCast.Rendering;
+namespace HeroesNotIncluded.Rendering;
 
 /// <summary>
 /// Render-side interpolation between sim ticks. The sim runs at a fixed 60 Hz, but frames land

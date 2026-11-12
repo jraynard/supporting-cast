@@ -1,9 +1,9 @@
-using SupportingCast.Rendering;
-using SupportingCast.Net;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Rendering;
+using HeroesNotIncluded.Net;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Tests;
+namespace HeroesNotIncluded.Tests;
 
 /// <summary>The saved characters players bring into co-op games (<see cref="CharacterRoster"/>).</summary>
 public class CharacterRosterTests : IDisposable

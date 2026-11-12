@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Shops;
+namespace HeroesNotIncluded.Sim.Shops;
 
 /// <summary>
 /// An item its keeper has put up for sale, at a price they named (<see cref="SetItemPriceCommand"/>).

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Package SupportingCast for alpha testers: self-contained Windows, Linux and macOS (Apple Silicon)
+# Package HeroesNotIncluded for alpha testers: self-contained Windows, Linux and macOS (Apple Silicon)
 # builds, checked and archived.
 #
 #   tools/package.sh                 # version from Directory.Build.props
 #   tools/package.sh 0.1.0-alpha.2   # or a given version (CI passes the release tag's)
 #
-# Output in dist/: SupportingCast-<ver>-win-x64.zip, SupportingCast-<ver>-linux-x64.tar.gz,
-# SupportingCast-<ver>-osx-arm64.tar.gz (a SupportingCast.app) and SHA256SUMS.txt. If /srv/supporting-cast exists (the LAN share; SC_SHARE_DIR picks another, and
+# Output in dist/: HeroesNotIncluded-<ver>-win-x64.zip, HeroesNotIncluded-<ver>-linux-x64.tar.gz,
+# HeroesNotIncluded-<ver>-osx-arm64.tar.gz (a HeroesNotIncluded.app) and SHA256SUMS.txt. If /srv/supporting-cast exists (the LAN share; SC_SHARE_DIR picks another, and
 # DW_NO_SHARE=1 skips it), the archives and README-ALPHA.txt are copied there too, replacing older builds.
 #
 # Every platform is built here from one compiler run on purpose: co-op only connects builds with
@@ -30,7 +30,7 @@ fi
 [[ -n "$version" ]] || { echo "error: no version" >&2; exit 1; }
 rids=(win-x64 linux-x64 osx-arm64)
 dist="$root/dist"
-name="SupportingCast-$version"
+name="HeroesNotIncluded-$version"
 
 MOLTENVK_VERSION=1.4.2
 MOLTENVK_SHA256=f95765a6229cb7b915990a2890ce12ebe36a730b021545d3d52ae69ce4c4024e
@@ -55,10 +55,10 @@ moltenvk() {
     echo "$cache"
 }
 
-# The Mac build as SupportingCast.app: everything in Contents/MacOS (the game finds data/ beside its
+# The Mac build as HeroesNotIncluded.app: everything in Contents/MacOS (the game finds data/ beside its
 # executable), plus an Info.plist so Finder launches it with a proper name and menu bar.
 make_app() {
-    local out="$1" app="$1/SupportingCast.app"
+    local out="$1" app="$1/HeroesNotIncluded.app"
     local stage="$out.stage"
     mv "$out" "$stage"
     mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
@@ -73,8 +73,8 @@ make_app() {
     <key>CFBundleName</key><string>Heroes Not Included</string>
     <key>CFBundleDisplayName</key><string>Heroes Not Included</string>
     <key>CFBundleIconFile</key><string>icon</string>
-    <key>CFBundleIdentifier</key><string>com.jraynard.supportingcast</string>
-    <key>CFBundleExecutable</key><string>SupportingCast</string>
+    <key>CFBundleIdentifier</key><string>com.jraynard.heroesnotincluded</string>
+    <key>CFBundleExecutable</key><string>HeroesNotIncluded</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleVersion</key><string>$version</string>
     <key>CFBundleShortVersionString</key><string>${version%%-*}</string>
@@ -98,9 +98,9 @@ for rid in "${rids[@]}"; do
     # and embedded it gives crash reports line numbers. For the same reason every platform compiles
     # in one intermediate folder (no RID in its path), emptied first so nothing stale is reused.
     # PlatformTarget=AnyCPU too: publishing an executable for a RID otherwise stamps that RID's CPU
-    # (x64, arm64) into SupportingCast.dll, so the Mac build's would differ. IL runs on any of them.
+    # (x64, arm64) into HeroesNotIncluded.dll, so the Mac build's would differ. IL runs on any of them.
     find src external/narsil/src -type d -path '*/obj/package' -prune -exec rm -rf {} +
-    dotnet publish src/SupportingCast -c Release -r "$rid" --self-contained true \
+    dotnet publish src/HeroesNotIncluded -c Release -r "$rid" --self-contained true \
         -p:Version="$version" -p:PublishTrimmed=false -p:PublishSingleFile=false -p:PublishReadyToRun=false \
         -p:DebugType=embedded -p:PlatformTarget=AnyCPU -p:IntermediateOutputPath=obj/package/ -p:AppendRuntimeIdentifierToIntermediateOutputPath=false \
         -o "$out" --nologo -v quiet
@@ -115,10 +115,10 @@ for rid in "${rids[@]}"; do
     done
     (( $(find "$out/licenses" -name '*.txt' | wc -l) >= 4 )) || fail "$rid: the BRUTAL third-party notices are missing from licenses/"
     case "$rid" in
-        win-*) [[ -f "$out/SupportingCast.exe" && -f "$out/glfw3.dll" && -f "$out/shaderc_shared.dll" ]] || fail "$rid: exe or native DLLs missing" ;;
-        linux-*) [[ -x "$out/SupportingCast" && -f "$out/libglfw.so" && -f "$out/libshaderc_shared.so" ]] || fail "$rid: executable or native libraries missing" ;;
+        win-*) [[ -f "$out/HeroesNotIncluded.exe" && -f "$out/glfw3.dll" && -f "$out/shaderc_shared.dll" ]] || fail "$rid: exe or native DLLs missing" ;;
+        linux-*) [[ -x "$out/HeroesNotIncluded" && -f "$out/libglfw.so" && -f "$out/libshaderc_shared.so" ]] || fail "$rid: executable or native libraries missing" ;;
         osx-*)
-            [[ -x "$out/SupportingCast" && -f "$out/libglfw.dylib" && -f "$out/libshaderc_shared.dylib" && -f "$out/libVulkanEx.dylib" ]] \
+            [[ -x "$out/HeroesNotIncluded" && -f "$out/libglfw.dylib" && -f "$out/libshaderc_shared.dylib" && -f "$out/libVulkanEx.dylib" ]] \
                 || fail "$rid: executable or native libraries missing"
             mvk="$(moltenvk)"
             cp "$mvk/libMoltenVK.dylib" "$out/libvulkan.1.dylib"
@@ -134,7 +134,7 @@ echo "==> compare builds (co-op needs identical game code and defs)"
 a="$dist/$name-${rids[0]}"
 for rid in "${rids[@]:1}"; do
     b="$dist/$name-$rid"
-    for dll in SupportingCast.dll SupportingCast.Sim.dll Narsil.dll Narsil.Sim.dll Narsil.Voxel.dll; do
+    for dll in HeroesNotIncluded.dll HeroesNotIncluded.Sim.dll Narsil.dll Narsil.Sim.dll Narsil.Voxel.dll; do
         cmp -s "$a/$dll" "$b/$dll" || fail "$dll differs between ${rids[0]} and $rid: co-op between them would be refused"
     done
     diff -r -q "$a/data/defs" "$b/data/defs" > /dev/null || fail "data/defs differs between ${rids[0]} and $rid"
@@ -142,8 +142,8 @@ done
 
 echo "==> smoke test (linux-x64, headless)"
 linux="$dist/$name-linux-x64"
-"$linux/SupportingCast" --version | tee "$dist/version.txt"
-"$linux/SupportingCast" --check-art > /dev/null || fail "--check-art failed"
+"$linux/HeroesNotIncluded" --version | tee "$dist/version.txt"
+"$linux/HeroesNotIncluded" --check-art > /dev/null || fail "--check-art failed"
 
 echo "==> macOS app bundle"
 mac="$dist/$name-osx-arm64"
@@ -154,10 +154,10 @@ make_app "$mac"
 mv "$dist/.mac-docs"/* "$mac/" # beside the .app, where testers see them
 rmdir "$dist/.mac-docs"
 if command -v rcodesign > /dev/null; then
-    rcodesign sign "$mac/SupportingCast.app" > /dev/null || fail "rcodesign couldn't sign SupportingCast.app"
+    rcodesign sign "$mac/HeroesNotIncluded.app" > /dev/null || fail "rcodesign couldn't sign HeroesNotIncluded.app"
     echo "(ad-hoc signed with rcodesign)"
 else
-    echo "(rcodesign not found: SupportingCast.app is unsigned; CI signs it on a Mac)"
+    echo "(rcodesign not found: HeroesNotIncluded.app is unsigned; CI signs it on a Mac)"
 fi
 
 echo "==> archive"
@@ -197,6 +197,6 @@ else
     cp docs/alpha/README-ALPHA.md "$share/.README-ALPHA.txt.partial" && chmod 644 "$share/.README-ALPHA.txt.partial" \
         && mv -f "$share/.README-ALPHA.txt.partial" "$share/README-ALPHA.txt"
     # Older builds go once the new one is in place.
-    find "$share" -maxdepth 1 -name 'SupportingCast-*' ! -name "$name-*" -delete
+    find "$share" -maxdepth 1 -name 'HeroesNotIncluded-*' ! -name "$name-*" -delete
     ls -lh "$share"
 fi

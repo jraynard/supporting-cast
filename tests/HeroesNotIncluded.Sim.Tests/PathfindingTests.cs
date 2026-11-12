@@ -1,6 +1,6 @@
-using SupportingCast.Sim.Ai;
+using HeroesNotIncluded.Sim.Ai;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 public class PathfindingTests
 {

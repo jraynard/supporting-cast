@@ -1,4 +1,4 @@
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 /// <summary>
 /// The source checkout's data folders when the game runs from one (dotnet run, tests). The game
@@ -9,11 +9,11 @@ public static class DevPaths
 {
     private static readonly Lazy<string?> Root = new(() => FindRoot(AppContext.BaseDirectory));
 
-    /// <summary>The folder holding SupportingCast.sln above <paramref name="start"/>, or null.</summary>
+    /// <summary>The folder holding HeroesNotIncluded.sln above <paramref name="start"/>, or null.</summary>
     public static string? FindRoot(string start)
     {
         for (var dir = new DirectoryInfo(start); dir != null; dir = dir.Parent)
-            if (File.Exists(Path.Combine(dir.FullName, "SupportingCast.sln")))
+            if (File.Exists(Path.Combine(dir.FullName, "HeroesNotIncluded.sln")))
                 return dir.FullName;
         return null;
     }

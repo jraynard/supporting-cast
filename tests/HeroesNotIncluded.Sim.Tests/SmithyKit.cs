@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Work;
-using static SupportingCast.Sim.Tests.TestWorld;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Work;
+using static HeroesNotIncluded.Sim.Tests.TestWorld;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>How a test smith goes about it: a careful hand, or one particular mistake.</summary>
 public enum SmithStyle

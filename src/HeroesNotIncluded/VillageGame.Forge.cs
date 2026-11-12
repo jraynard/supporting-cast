@@ -1,12 +1,12 @@
 using Brutal.ImGuiApi;
 using Narsil.Sim.Core;
 using Narsil.Ui;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Sim.Work;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Sim.Work;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 // The forge's other scenes: the piece in the fire with the bellows, the quench with its steam, and
 // the piece in your tongs between steps. Heat is only ever shown as colour, never as a number: a

@@ -1,10 +1,10 @@
-using SupportingCast.Sim.Combat;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Sim.Maps;
+using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Sim.Maps;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 public class SkillTests
 {

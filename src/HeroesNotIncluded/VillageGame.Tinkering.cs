@@ -1,15 +1,15 @@
 using Brutal.ImGuiApi;
 using Brutal.GlfwApi;
 using Narsil.Ui;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Shops;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Sim.Tinkering;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Shops;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Sim.Tinkering;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 // The tinker's: pinning locks and filing keys, fitting contraptions together, truing wagon wheels,
 // curios under the loupe; the window at a door's lock or a party's wagon; and what can be done

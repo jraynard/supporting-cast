@@ -1,6 +1,6 @@
-using SupportingCast.Sim.Maps;
+using HeroesNotIncluded.Sim.Maps;
 
-namespace SupportingCast.Sim.Environment;
+namespace HeroesNotIncluded.Sim.Environment;
 
 public sealed class Room
 {

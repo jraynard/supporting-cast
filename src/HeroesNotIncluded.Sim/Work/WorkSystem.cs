@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Work;
+namespace HeroesNotIncluded.Sim.Work;
 
 /// <summary>
 /// Looks after hands-on jobs: stops one if the worker can't carry on, the target goes or the

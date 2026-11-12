@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace SupportingCast.Sim.Defs;
+namespace HeroesNotIncluded.Sim.Defs;
 
 /// <summary>A service a shop sells to adventurers. The code decides what completes each kind; the defs set its price and patience.</summary>
 public enum ServiceKind

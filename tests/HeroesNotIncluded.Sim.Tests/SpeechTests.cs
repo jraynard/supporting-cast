@@ -1,11 +1,11 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Speech;
-using SupportingCast.Sim.Systems;
-using static SupportingCast.Sim.Tests.TestWorld;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Speech;
+using HeroesNotIncluded.Sim.Systems;
+using static HeroesNotIncluded.Sim.Tests.TestWorld;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 public class SpeechTests
 {

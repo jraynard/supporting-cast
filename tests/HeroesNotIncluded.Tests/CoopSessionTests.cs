@@ -1,15 +1,15 @@
 using Brutal.Numerics;
 using Narsil.Net;
-using SupportingCast.Net;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Scenarios;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Net;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Tests;
+namespace HeroesNotIncluded.Tests;
 
 /// <summary>
 /// Co-op end to end, in-process: a real village hosted over a loopback listener, players joining

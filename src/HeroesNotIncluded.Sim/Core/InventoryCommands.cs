@@ -1,7 +1,7 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Core;
+namespace HeroesNotIncluded.Sim.Core;
 
 // The player's own hands, pack and gear (the inventory window and hotbar). All of them act as the
 // player's character and do nothing if the request has gone stale; the rules are in Inventory.

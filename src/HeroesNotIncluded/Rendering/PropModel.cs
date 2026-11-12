@@ -1,8 +1,8 @@
 using Narsil.Rendering;
-using SupportingCast.Sim.Defs;
-using Maps = SupportingCast.Sim.Maps;
+using HeroesNotIncluded.Sim.Defs;
+using Maps = HeroesNotIncluded.Sim.Maps;
 
-namespace SupportingCast.Rendering;
+namespace HeroesNotIncluded.Rendering;
 
 /// <summary>
 /// Turns a <see cref="ThingDef.Model"/> (a few textured boxes) into <see cref="Quad"/>s for one

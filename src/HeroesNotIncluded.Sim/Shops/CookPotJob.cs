@@ -1,11 +1,11 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Sim.Work;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Sim.Work;
 
-namespace SupportingCast.Sim.Shops;
+namespace HeroesNotIncluded.Sim.Shops;
 
 /// <summary>
 /// An AI innkeeper keeps the pot going: fills it from the larder (or whatever raw food is to hand)

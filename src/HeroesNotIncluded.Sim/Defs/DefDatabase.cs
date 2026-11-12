@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace SupportingCast.Sim.Defs;
+namespace HeroesNotIncluded.Sim.Defs;
 
 /// <summary>
 /// All loaded defs. Each JSON file under the defs directory is an object with any of the keys

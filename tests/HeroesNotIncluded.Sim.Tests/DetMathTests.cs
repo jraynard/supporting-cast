@@ -1,10 +1,10 @@
 using System.Text.RegularExpressions;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>
 /// The sim calls Narsil's platform-exact <see cref="DetMath"/> (co-op peers on different machines must
-/// agree); Narsil tests its accuracy, this keeps the C runtime's trig out of SupportingCast.Sim.
+/// agree); Narsil tests its accuracy, this keeps the C runtime's trig out of HeroesNotIncluded.Sim.
 /// </summary>
 public class DetMathTests
 {
@@ -14,7 +14,7 @@ public class DetMathTests
     [Fact]
     public void TheSimUsesNoPlatformTrig()
     {
-        var src = Path.Combine(Path.GetDirectoryName(TestWorld.FindDefsDirectory())!, "..", "src", "SupportingCast.Sim");
+        var src = Path.Combine(Path.GetDirectoryName(TestWorld.FindDefsDirectory())!, "..", "src", "HeroesNotIncluded.Sim");
         var found = new List<string>();
         foreach (var file in Directory.GetFiles(src, "*.cs", SearchOption.AllDirectories))
         {

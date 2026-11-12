@@ -1,18 +1,18 @@
-using SupportingCast;
-using SupportingCast.Debug;
-using SupportingCast.Net;
+using HeroesNotIncluded;
+using HeroesNotIncluded.Debug;
+using HeroesNotIncluded.Net;
 using Narsil;
 using Narsil.Platform;
 using Narsil.Rendering;
-using SupportingCast.Rendering;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Scenarios;
+using HeroesNotIncluded.Rendering;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Scenarios;
 
 // Headless runs (bench, checks) log to the console only; the game also writes a file testers can send.
 var headless = args.Any(a => a is "--bench" or "--check-art" or "--check-save" or "--check-gpu" or "--version");
-Log.Initialize(logDirectory: headless ? null : BuildInfo.LogDirectory, appName: "supporting-cast");
+Log.Initialize(logDirectory: headless ? null : BuildInfo.LogDirectory, appName: TitleGame.AppId);
 string? buildTag = null;
 Log.CrashContext = () => BuildInfo.Describe(buildTag);
 
@@ -20,7 +20,7 @@ if (args.Contains("--version"))
 {
     // Headless: what testers (and the packaging script) compare. Co-op only works between equal tags.
     var defs = DefDatabase.LoadDirectory(Path.Combine(AppContext.BaseDirectory, "data", "defs"));
-    Console.WriteLine($"SupportingCast {BuildInfo.Label}");
+    Console.WriteLine($"{TitleGame.Title} {BuildInfo.Label}");
     Console.WriteLine($"build tag {BuildInfo.Tag(defs)}");
     Console.WriteLine($"{System.Runtime.InteropServices.RuntimeInformation.OSDescription} {System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier}");
     return;
@@ -107,12 +107,12 @@ SaveSlots.Directory = SaveSlots.DefaultDirectory;
 VillageGame.OpenProfiler = args.Contains("--profiler");
 if (args.Contains("--dev"))
     VillageGame.DevMode = true;
-SupportingCast.Net.CoopRelay.Override = ParseString(args, "--relay");
+HeroesNotIncluded.Net.CoopRelay.Override = ParseString(args, "--relay");
 CharacterRoster.PickOverride = ParseString(args, "--character");
 using var host = new GameHost(new GameHostOptions
 {
     Title = TitleGame.Title,
-    AppName = TitleGame.DataFolder, // the config folder (and shader cache) keep the old name
+    AppName = TitleGame.DataFolder, // the config folder and shader cache
     AppId = TitleGame.AppId,
     IconPath = Path.Combine(AppContext.BaseDirectory, "data", "icon.png"),
     Display = settings.Display,
@@ -162,7 +162,7 @@ else if (args.Contains("--host"))
         {
             Adventure = true, HeroName = saved?.Name ?? ParseString(args, "--name"), HeroLook = saved?.Look, HeroTraits = saved?.Traits, HeroClothes = saved?.Clothes,
             Difficulty = ParseString(args, "--difficulty"), HostCoop = hosting, AutoPause = false,
-            MapName = ParseString(args, "--map") ?? SupportingCast.Sim.Scenarios.VillageRound.DefaultMap,
+            MapName = ParseString(args, "--map") ?? HeroesNotIncluded.Sim.Scenarios.VillageRound.DefaultMap,
         });
     }
 }
@@ -195,7 +195,7 @@ else
         IgniteForest = args.Contains("--ignite-forest"),
         FurnitureDemo = args.Contains("--furniture-demo"),
         BuildingDemo = args.Contains("--building-demo"),
-        MapName = ParseString(args, "--map") ?? SupportingCast.Sim.Scenarios.VillageRound.DefaultMap,
+        MapName = ParseString(args, "--map") ?? HeroesNotIncluded.Sim.Scenarios.VillageRound.DefaultMap,
         Freeform = args.Contains("--freeform"),
         HideAllRoofs = args.Contains("--hide-roofs"), // roofs are on by default; --show-roofs is still accepted
         LookAt = ParseString(args, "--look-at") is { } look && look.Split(',') is [var lx, var ly] && int.TryParse(lx, out var x) && int.TryParse(ly, out var y)

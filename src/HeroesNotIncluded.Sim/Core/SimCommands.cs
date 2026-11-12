@@ -1,7 +1,7 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Core;
+namespace HeroesNotIncluded.Sim.Core;
 
 /// <summary>
 /// A player action, queued with <see cref="Simulation.Enqueue"/> and applied at the start of the

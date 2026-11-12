@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # Install a Linux desktop entry for the game, for the current user: the app launcher entry, and the
 # taskbar icon on Wayland (where a window can't set its own icon; the compositor matches the
-# window's app_id, "supporting-cast", to supporting-cast.desktop and takes the icon from there).
+# window's app_id, "heroes-not-included", to heroes-not-included.desktop and takes the icon from there).
 #
 #   tools/install-desktop-entry.sh                    # launches from this checkout (dotnet run)
-#   tools/install-desktop-entry.sh /opt/ev/SupportingCast # launches a packaged build
+#   tools/install-desktop-entry.sh /opt/ev/HeroesNotIncluded # launches a packaged build
 #   tools/install-desktop-entry.sh --uninstall
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-id="supporting-cast"
+id="heroes-not-included"
 data="${XDG_DATA_HOME:-$HOME/.local/share}"
 entry="$data/applications/$id.desktop"
 
@@ -24,7 +24,7 @@ if [[ $# -ge 1 ]]; then
     exec_line="\"$(realpath "$1")\""
     workdir="$(dirname "$(realpath "$1")")"
 else
-    exec_line="dotnet run --project \"$root/src/SupportingCast\""
+    exec_line="dotnet run --project \"$root/src/HeroesNotIncluded\""
     workdir="$root"
 fi
 

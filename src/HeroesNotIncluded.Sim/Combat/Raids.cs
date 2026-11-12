@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Maps;
 
-namespace SupportingCast.Sim.Combat;
+namespace HeroesNotIncluded.Sim.Combat;
 
 /// <summary>
 /// Putting raiders on the map, kitted out by <see cref="RaiderKindDef"/>. Used by the storyteller

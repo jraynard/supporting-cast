@@ -1,4 +1,4 @@
-namespace SupportingCast.Sim.Favours;
+namespace HeroesNotIncluded.Sim.Favours;
 
 public enum FavourStatus : byte
 {

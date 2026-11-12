@@ -2,18 +2,18 @@ using Brutal.ImGuiApi;
 using Narsil;
 using Narsil.Platform;
 using Narsil.Rendering;
-using SupportingCast.Rendering;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Scenarios;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Rendering;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 public enum ToolKind
 {

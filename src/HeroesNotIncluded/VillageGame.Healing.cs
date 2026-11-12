@@ -1,16 +1,16 @@
 using Brutal.ImGuiApi;
 using Narsil.Ui;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Healing;
-using SupportingCast.Sim.Round;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Sim.Work;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Healing;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Sim.Work;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 // The empath's gift: feeling a patient's wounds and drawing them across, mending what you carry,
 // meditating. Wounds come through View.FeltWounds, which names what you've drawn only by its feel.

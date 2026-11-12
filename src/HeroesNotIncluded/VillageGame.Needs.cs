@@ -1,11 +1,11 @@
 using Brutal.ImGuiApi;
 using Narsil.Ui;
 using Brutal.Numerics;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Environment;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Environment;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 /// <summary>
 /// Adventure mode's character card, top left: who you are (portrait, name, trade, purse) and your

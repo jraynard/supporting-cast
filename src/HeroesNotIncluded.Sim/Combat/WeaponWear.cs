@@ -1,7 +1,7 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Sim.Combat;
+namespace HeroesNotIncluded.Sim.Combat;
 
 /// <summary>
 /// Weapons wear in two ways that need different mending (docs/DESIGN.md, "Trade notes"): a blade's

@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Combat;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Work;
+namespace HeroesNotIncluded.Sim.Work;
 
 /// <summary>
 /// Putting an edge back on a blade with a whetstone. Hold F to grind; the blade's angle wanders

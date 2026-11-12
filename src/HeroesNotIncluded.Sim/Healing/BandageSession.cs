@@ -1,10 +1,10 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Sim.Work;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Sim.Work;
 
-namespace SupportingCast.Sim.Healing;
+namespace HeroesNotIncluded.Sim.Healing;
 
 /// <summary>
 /// Binding wounds by hand (<see cref="Bandaging"/>): anyone's, your own included, and the

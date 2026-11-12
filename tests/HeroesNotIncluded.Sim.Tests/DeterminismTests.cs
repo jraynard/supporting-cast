@@ -1,4 +1,4 @@
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 public class DeterminismTests
 {

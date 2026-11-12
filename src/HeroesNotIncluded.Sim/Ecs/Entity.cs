@@ -1,4 +1,4 @@
-namespace SupportingCast.Sim.Ecs;
+namespace HeroesNotIncluded.Sim.Ecs;
 
 /// <summary>
 /// Handle to an entity. The generation detects stale handles after an index is recycled.

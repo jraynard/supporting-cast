@@ -1,12 +1,12 @@
 using System.Diagnostics;
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Combat;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Environment;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Environment;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim;
+namespace HeroesNotIncluded.Sim;
 
 /// <summary>A system run by the simulation every <see cref="Interval"/> ticks.</summary>
 public interface ISimSystem

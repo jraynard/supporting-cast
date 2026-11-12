@@ -6,7 +6,7 @@ The reference is a 36x36-square battlemap; one square is two cells, and the vill
 middle of a 96x96 map with a 12-cell band of woods, fields and water round it (so a reference
 square (sx, sy) is the cell (12 + 2*sx, 12 + 2*sy)). Everything below is in cells.
 
-The output is the plain text-grid MapDef (see src/SupportingCast.Sim/Defs/MapDefs.cs): edit this
+The output is the plain text-grid MapDef (see src/HeroesNotIncluded.Sim/Defs/MapDefs.cs): edit this
 script and re-run it, or hand-edit the JSON for a small fix.
 
   python3 tools/village_map.py                 # write data/defs/maps/millbrook.json

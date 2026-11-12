@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Sim.Work;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Sim.Work;
 
-namespace SupportingCast.Sim.Tinkering;
+namespace HeroesNotIncluded.Sim.Tinkering;
 
 /// <summary>
 /// Picking a lock, one pin at a time: a strongbox's, or one a tinker fitted to a door

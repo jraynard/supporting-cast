@@ -1,7 +1,7 @@
 using Brutal.Numerics;
 using Narsil.Platform;
 
-namespace SupportingCast.Tests;
+namespace HeroesNotIncluded.Tests;
 
 public class SettingsTests
 {

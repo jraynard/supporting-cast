@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace SupportingCast.Sim.Defs;
+namespace HeroesNotIncluded.Sim.Defs;
 
 /// <summary>
 /// Somewhere a party can be sent (<c>Expeditions.ExpeditionSystem</c>). A round rolls its true

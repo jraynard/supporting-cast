@@ -1,6 +1,6 @@
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Sim.Maps;
+namespace HeroesNotIncluded.Sim.Maps;
 
 [Flags]
 public enum Designation : byte

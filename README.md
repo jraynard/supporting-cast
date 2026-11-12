@@ -17,15 +17,15 @@ Requires the .NET 10 SDK and a Vulkan 1.3 GPU.
 
 ```sh
 git submodule update --init
-dotnet run --project src/SupportingCast
+dotnet run --project src/HeroesNotIncluded
 dotnet test
 ```
 
 Two players on one machine:
 
 ```sh
-dotnet run --project src/SupportingCast -- --host --name Arin
-dotnet run --project src/SupportingCast -- --join 127.0.0.1 --player-id bea --name Bea
+dotnet run --project src/HeroesNotIncluded -- --host --name Arin
+dotnet run --project src/HeroesNotIncluded -- --join 127.0.0.1 --player-id bea --name Bea
 ```
 
 | Input | Action |
@@ -44,8 +44,8 @@ dotnet run --project src/SupportingCast -- --join 127.0.0.1 --player-id bea --na
 
 ```
 external/narsil/          Narsil engine (git submodule)
-src/SupportingCast.Sim/   headless, deterministic simulation
-src/SupportingCast/       the game: rendering, UI, networking
+src/HeroesNotIncluded.Sim/   headless, deterministic simulation
+src/HeroesNotIncluded/       the game: rendering, UI, networking
 tests/                    sim and game tests (headless)
 data/defs/                all content, as JSON
 data/textures/            sprites

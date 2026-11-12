@@ -1,6 +1,6 @@
-using SupportingCast.Sim.Components;
+using HeroesNotIncluded.Sim.Components;
 
-namespace SupportingCast.Sim.Environment;
+namespace HeroesNotIncluded.Sim.Environment;
 
 /// <summary>
 /// Smoke as a density per air cell (<see cref="Maps.Map.Smoke"/>), kept sparse: only smoky cells

@@ -1,15 +1,15 @@
 using Brutal.ImGuiApi;
 using Narsil.Ui;
 using Narsil.Platform;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Bots;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Round;
-using SupportingCast.Sim.Speech;
-using SupportingCast.Sim.Work;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Bots;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Speech;
+using HeroesNotIncluded.Sim.Work;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 // Speech, hands-on work and solo bots. The play is all in the sim; this reads keys, sends
 // commands and draws what the character knows.

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace SupportingCast.Sim.Defs;
+namespace HeroesNotIncluded.Sim.Defs;
 
 /// <summary>
 /// One of the runes an empath weaves mendings from (<c>Healing.CastSession</c>). Runes are keyed

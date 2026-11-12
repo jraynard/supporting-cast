@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
-using SupportingCast.Sim.Maps;
+using HeroesNotIncluded.Sim.Maps;
 
-namespace SupportingCast.Sim.Defs;
+namespace HeroesNotIncluded.Sim.Defs;
 
 /// <summary>
 /// A preset building (a dwelling, a longhouse, a smithy): a fixed plan raised in phases

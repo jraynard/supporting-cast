@@ -3,7 +3,7 @@ using System.Text;
 using Narsil;
 using Narsil.Net;
 
-namespace SupportingCast.Net;
+namespace HeroesNotIncluded.Net;
 
 /// <summary>
 /// This player's co-op identity, kept in the config directory so hosts recognise them next time.

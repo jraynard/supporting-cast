@@ -2,7 +2,7 @@ using Brutal.ImGuiApi;
 using Narsil;
 using Narsil.Rendering;
 
-namespace SupportingCast.Debug;
+namespace HeroesNotIncluded.Debug;
 
 /// <summary>Sprite renderer and camera stress scene. Run with --render-test [--stress].</summary>
 public sealed class RenderTestGame : Game

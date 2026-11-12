@@ -1,7 +1,7 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Sim.Environment;
+namespace HeroesNotIncluded.Sim.Environment;
 
 /// <summary>Shape of one breath: how far it reaches, how wide, how many rays, how hot.</summary>
 /// <param name="SparesBuildings">

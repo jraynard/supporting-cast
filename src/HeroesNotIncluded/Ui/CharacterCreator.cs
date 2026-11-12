@@ -1,13 +1,13 @@
 using Brutal.ImGuiApi;
 using Narsil;
 using Narsil.Rendering;
-using SupportingCast.Rendering;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Rendering;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Systems;
 using Narsil.Ui;
 
-namespace SupportingCast.Ui;
+namespace HeroesNotIncluded.Ui;
 
 /// <summary>
 /// Adventure's first step: name your character and pick their look and clothes, with a live

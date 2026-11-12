@@ -1,7 +1,7 @@
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Saving;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Saving;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>The log keeps its newest messages (it's in every save and co-op snapshot) and still counts them all.</summary>
 public class MessageLogTests

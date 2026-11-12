@@ -1,9 +1,9 @@
-using SupportingCast.Sim;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Scenarios;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Scenarios;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>Helpers for building small headless simulations from the real game defs.</summary>
 public static class TestWorld
@@ -106,6 +106,6 @@ public static class TestWorld
             return;
         if (!sim.World.Has<Shops.ShopPrices>(inn))
             sim.World.Add(inn, Shops.ShopPrices.Defaults(sim.Defs));
-        sim.World.Get<Shops.ShopPrices>(inn).Offered[(int)SupportingCast.Sim.Defs.ServiceKind.MixedDrink] = false;
+        sim.World.Get<Shops.ShopPrices>(inn).Offered[(int)HeroesNotIncluded.Sim.Defs.ServiceKind.MixedDrink] = false;
     }
 }

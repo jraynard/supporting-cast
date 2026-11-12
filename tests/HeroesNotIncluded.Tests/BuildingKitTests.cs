@@ -1,12 +1,12 @@
 using Brutal.Numerics;
 using Narsil.Rendering;
-using SupportingCast.Rendering;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Rendering;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Tests;
+namespace HeroesNotIncluded.Tests;
 
 /// <summary>Preset buildings drawn with their art kits (<see cref="BuildingKit"/>): wall pieces and the pitched roof.</summary>
 public class BuildingKitTests

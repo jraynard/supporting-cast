@@ -1,6 +1,6 @@
-using SupportingCast.Sim.Components;
+using HeroesNotIncluded.Sim.Components;
 
-namespace SupportingCast.Sim.Environment;
+namespace HeroesNotIncluded.Sim.Environment;
 
 /// <summary>
 /// The temperature a creature feels: the air, plus warmth radiating from a lit fire close by

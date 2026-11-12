@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace SupportingCast.Sim.Defs;
+namespace HeroesNotIncluded.Sim.Defs;
 
 /// <summary>
 /// A rung of the tool ladder (stone, copper, bronze, iron, steel, dragonforged), named so defs can

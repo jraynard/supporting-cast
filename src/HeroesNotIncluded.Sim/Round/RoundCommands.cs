@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Sim.Round;
+namespace HeroesNotIncluded.Sim.Round;
 
 /// <summary>A player sits down in the lobby as the character they made.</summary>
 public sealed record JoinLobbyCommand(Guid Player, string Name, Appearance? Look, IReadOnlyList<string> Traits, IReadOnlyList<string>? Clothes = null)

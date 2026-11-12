@@ -3,18 +3,18 @@ using Narsil.Ui;
 using Narsil;
 using Narsil.Net;
 using Narsil.Rendering;
-using SupportingCast.Net;
-using SupportingCast.Rendering;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Round;
-using SupportingCast.Sim.Scenarios;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Net;
+using HeroesNotIncluded.Rendering;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 /// <summary>What the title screen asks for when it starts a village to host.</summary>
 public sealed record HostSettings(PlayerIdentity Identity, string SessionName, int Port = CoopSession.DefaultPort);

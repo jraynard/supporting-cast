@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
 
 // Not in a namespace of its own: a namespace named Perception would hide the class from the rest
-// of SupportingCast.Sim.
-namespace SupportingCast.Sim.Systems;
+// of HeroesNotIncluded.Sim.
+namespace HeroesNotIncluded.Sim.Systems;
 
 /// <summary>What can be told about someone from looking at them. Nothing here needs an examination.</summary>
 /// <summary>

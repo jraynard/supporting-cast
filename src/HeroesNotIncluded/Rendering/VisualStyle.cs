@@ -1,7 +1,7 @@
 using Narsil;
 using Narsil.Rendering;
 
-namespace SupportingCast.Rendering;
+namespace HeroesNotIncluded.Rendering;
 
 /// <summary>
 /// The HD-2D look (<see cref="Settings.Hd2d"/>) with a cool Nordic grade: the player's strengths turned into Narsil's

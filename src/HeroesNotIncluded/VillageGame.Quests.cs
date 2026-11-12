@@ -1,14 +1,14 @@
 using Brutal.ImGuiApi;
 using Narsil.Ui;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Expeditions;
-using SupportingCast.Sim.Round;
-using SupportingCast.Sim.Shops;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Expeditions;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Shops;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 // The quest board: what your character believes about each quest, and, with a party member in
 // reach who wants work, the means to send them. All of it comes through View (Perception).

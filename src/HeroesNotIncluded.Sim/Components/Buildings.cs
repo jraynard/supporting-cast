@@ -1,6 +1,6 @@
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Sim.Components;
+namespace HeroesNotIncluded.Sim.Components;
 
 /// <summary>
 /// A preset building (<see cref="BuildingDef"/>) as a whole: an entity of its own, off the map

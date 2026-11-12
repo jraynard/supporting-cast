@@ -1,7 +1,7 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Core;
+namespace HeroesNotIncluded.Sim.Core;
 
 /// <summary>A command performed as a character (walking, working): only that character's player may send it.</summary>
 public interface IActorCommand

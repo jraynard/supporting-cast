@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Work;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Work;
 
-namespace SupportingCast.Sim.Healing;
+namespace HeroesNotIncluded.Sim.Healing;
 
 /// <summary>
 /// Weaving a mending (docs/DESIGN.md, "Healer"): runes keyed one at a time (1 to 6) on the beat of

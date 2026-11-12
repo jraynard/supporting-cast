@@ -1,9 +1,9 @@
-using SupportingCast.Sim;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Net;
+namespace HeroesNotIncluded.Net;
 
 /// <summary>
 /// Client-side prediction for the local player's WASD walk in co-op. A move command only takes

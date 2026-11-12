@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Round;
+namespace HeroesNotIncluded.Sim.Round;
 
 /// <summary>Where a village is in a round. <see cref="None"/> is a village with no round at all: tests, demos, the bench.</summary>
 public enum RoundPhase : byte

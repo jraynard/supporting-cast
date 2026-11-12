@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Saving;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Saving;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>
 /// Structures wider than a cell (<see cref="Defs.ThingDef.Size"/>): the 3x3 pyre, 1x2 beds,

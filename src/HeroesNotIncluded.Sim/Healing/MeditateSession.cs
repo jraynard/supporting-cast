@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Work;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Work;
 
-namespace SupportingCast.Sim.Healing;
+namespace HeroesNotIncluded.Sim.Healing;
 
 /// <summary>
 /// Meditating mana back: finding the way inward. Each sitting is a labyrinth grown fresh from the

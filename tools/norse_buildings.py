@@ -19,7 +19,7 @@ from norse_stone import ROCKS, rock_ramp
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "data", "textures")
 S = 32
-LEVEL = 64   # how tall a level looks in the game (src/SupportingCast/Rendering/WorldScale.cs): faces drawn this tall show once
+LEVEL = 64   # how tall a level looks in the game (src/HeroesNotIncluded/Rendering/WorldScale.cs): faces drawn this tall show once
 
 
 def graded(c):

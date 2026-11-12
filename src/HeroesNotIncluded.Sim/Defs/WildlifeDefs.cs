@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace SupportingCast.Sim.Defs;
+namespace HeroesNotIncluded.Sim.Defs;
 
 /// <summary>What makes a creature a wild animal: what it's worth to a hunter and how its herds behave.</summary>
 public sealed class AnimalProps

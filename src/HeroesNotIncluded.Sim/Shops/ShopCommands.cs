@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Speech;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Speech;
 
-namespace SupportingCast.Sim.Shops;
+namespace HeroesNotIncluded.Sim.Shops;
 
 // What players do with orders and coin. All act as the player's own character, and do nothing
 // if the order has gone stale (it closed, the other person walked off).

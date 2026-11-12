@@ -1,6 +1,6 @@
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Sim.Scenarios;
+namespace HeroesNotIncluded.Sim.Scenarios;
 
 /// <summary>
 /// Debug/screenshots (<c>--furniture-demo</c>): the wide furniture and roofs, finished, beside the

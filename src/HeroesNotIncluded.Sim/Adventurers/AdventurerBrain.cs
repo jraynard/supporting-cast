@@ -1,10 +1,10 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Combat;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Environment;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Environment;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Adventurers;
+namespace HeroesNotIncluded.Sim.Adventurers;
 
 /// <summary>
 /// Adventurers in town: out of danger, fed and rested, otherwise lounging about their haunt (the

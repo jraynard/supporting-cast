@@ -1,6 +1,6 @@
 using Narsil.Net;
 
-namespace SupportingCast.Net;
+namespace HeroesNotIncluded.Net;
 
 /// <summary>
 /// Which relay server online co-op uses: <c>--relay</c> for this run, else the Options setting.

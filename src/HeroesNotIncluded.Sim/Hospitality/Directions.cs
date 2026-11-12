@@ -1,14 +1,14 @@
-using SupportingCast.Sim.Combat;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Round;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Shops;
-using SupportingCast.Sim.Speech;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Shops;
+using HeroesNotIncluded.Sim.Speech;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Hospitality;
+namespace HeroesNotIncluded.Sim.Hospitality;
 
 /// <summary>The shops an adventurer knows the way to, besides their party's haunt: seen in passing, or told.</summary>
 public sealed class KnowsTheWay

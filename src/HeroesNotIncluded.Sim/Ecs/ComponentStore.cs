@@ -1,4 +1,4 @@
-namespace SupportingCast.Sim.Ecs;
+namespace HeroesNotIncluded.Sim.Ecs;
 
 internal interface IComponentStore
 {

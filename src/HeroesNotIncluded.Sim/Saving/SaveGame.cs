@@ -1,12 +1,12 @@
 using System.IO.Compression;
 using System.Text;
-using SupportingCast.Sim.Combat;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Saving;
+namespace HeroesNotIncluded.Sim.Saving;
 
 /// <summary>What a save file says about itself, readable without loading the whole game (load menus).</summary>
 public sealed record SaveHeader(
@@ -101,7 +101,7 @@ public static class SaveGame
             Span<byte> magic = stackalloc byte[4];
             stream.ReadExactly(magic);
             if (!magic.SequenceEqual(Magic))
-                throw new SaveException("Not a SupportingCast save");
+                throw new SaveException("Not a Heroes Not Included save");
             var version = r.ReadInt32();
             if (version > FormatVersion)
                 throw new SaveException($"This save is from a newer version of the game (format {version}, this game reads up to {FormatVersion}).");

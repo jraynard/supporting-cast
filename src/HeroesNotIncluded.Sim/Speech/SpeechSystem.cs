@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Saving;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Saving;
 
-namespace SupportingCast.Sim.Speech;
+namespace HeroesNotIncluded.Sim.Speech;
 
 /// <summary>How loudly something is said.</summary>
 public enum Volume : byte

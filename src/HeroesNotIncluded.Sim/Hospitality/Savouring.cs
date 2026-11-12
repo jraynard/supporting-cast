@@ -1,11 +1,11 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Round;
-using SupportingCast.Sim.Speech;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Sim.Work;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Speech;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Sim.Work;
 
-namespace SupportingCast.Sim.Hospitality;
+namespace HeroesNotIncluded.Sim.Hospitality;
 
 /// <summary>
 /// A customer taking their time over what they were served: the drink or the bowl in hand, they

@@ -1,12 +1,12 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Favours;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Round;
-using SupportingCast.Sim.Scenarios;
-using SupportingCast.Sim.Shops;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Favours;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Shops;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 public class FavourTests
 {

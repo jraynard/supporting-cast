@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Combat;
-using SupportingCast.Sim.Components;
-using static SupportingCast.Sim.Tests.TestWorld;
+using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Components;
+using static HeroesNotIncluded.Sim.Tests.TestWorld;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>Fights happen in the world's own time: nothing stops the clock, and only those in reach are hurt.</summary>
 public class RealtimeFightTests

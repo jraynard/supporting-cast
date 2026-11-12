@@ -1,6 +1,6 @@
-using SupportingCast.Sim.Ecs;
+using HeroesNotIncluded.Sim.Ecs;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 public class EcsTests
 {

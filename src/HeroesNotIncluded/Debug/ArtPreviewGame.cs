@@ -1,9 +1,9 @@
 using Brutal.ImGuiApi;
 using Narsil;
 using Narsil.Rendering;
-using SupportingCast.Rendering;
+using HeroesNotIncluded.Rendering;
 
-namespace SupportingCast.Debug;
+namespace HeroesNotIncluded.Debug;
 
 /// <summary>
 /// The artist's view (<c>--art-preview</c>): every animated sheet, every tag looping side by side at

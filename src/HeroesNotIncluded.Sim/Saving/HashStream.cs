@@ -1,4 +1,4 @@
-namespace SupportingCast.Sim.Saving;
+namespace HeroesNotIncluded.Sim.Saving;
 
 /// <summary>
 /// A write-only stream that keeps an FNV-1a hash of everything written to it, so the save writers

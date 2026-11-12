@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Core;
+namespace HeroesNotIncluded.Sim.Core;
 
 // Bills are village orders (anyone may set them); making something yourself is an actor command.
 // Bills are addressed by index plus their recipe, so a stale request (the list changed under it)

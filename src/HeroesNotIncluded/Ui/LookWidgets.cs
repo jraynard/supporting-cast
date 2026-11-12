@@ -1,9 +1,9 @@
 using Brutal.ImGuiApi;
 using Narsil;
 using Narsil.Rendering;
-using SupportingCast.Rendering;
+using HeroesNotIncluded.Rendering;
 
-namespace SupportingCast.Ui;
+namespace HeroesNotIncluded.Ui;
 
 /// <summary>
 /// Pieces the character and dragon creators share: a colour row (round preset swatches plus a picker circle) and

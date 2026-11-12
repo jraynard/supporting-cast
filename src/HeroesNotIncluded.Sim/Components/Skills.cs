@@ -1,6 +1,6 @@
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Sim.Components;
+namespace HeroesNotIncluded.Sim.Components;
 
 /// <summary>What a person can get better at. Work types and attacks map onto these.</summary>
 public enum Skill

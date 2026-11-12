@@ -1,7 +1,7 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Ai;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Ai;
 
-namespace SupportingCast.Sim.Shops;
+namespace HeroesNotIncluded.Sim.Shops;
 
 /// <summary>
 /// A customer takes their place in a shop's line (<see cref="ShopSystem.PlaceOf"/>) and stands

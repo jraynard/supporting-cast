@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Combat;
+namespace HeroesNotIncluded.Sim.Combat;
 
 /// <summary>An attack of the last moments, for the renderer. Not part of the sim state.</summary>
 public sealed record ShotEvent(long Tick, float3 From, float3 To, bool Ranged, bool Hit);

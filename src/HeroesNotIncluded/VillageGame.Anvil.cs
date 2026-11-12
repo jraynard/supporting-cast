@@ -1,10 +1,10 @@
 using Brutal.ImGuiApi;
 using Narsil.Sim.Core;
 using Narsil.Ui;
-using SupportingCast.Sim.Work;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Sim.Work;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 // The hammering game drawn as a scene: the anvil, the glowing bar on it, and the hammer whose
 // swing is the timing cue (it comes down as the marker crosses the mark). A blow throws sparks

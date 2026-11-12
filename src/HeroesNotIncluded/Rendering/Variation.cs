@@ -1,7 +1,7 @@
 using Narsil.Rendering;
-using SupportingCast.Sim.Core;
+using HeroesNotIncluded.Sim.Core;
 
-namespace SupportingCast.Rendering;
+namespace HeroesNotIncluded.Rendering;
 
 /// <summary>
 /// Cosmetic per-cell variety: which sprite variant a cell shows, whether it's mirrored, and smooth

@@ -7,13 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="SupportingCast.Tests" />
+    <InternalsVisibleTo Include="HeroesNotIncluded.Tests" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\external\narsil\src\Narsil\Narsil.csproj" />
     <ProjectReference Include="..\..\external\narsil\src\Narsil.Voxel\Narsil.Voxel.csproj" />
-    <ProjectReference Include="..\SupportingCast.Sim\SupportingCast.Sim.csproj" />
+    <ProjectReference Include="..\HeroesNotIncluded.Sim\HeroesNotIncluded.Sim.csproj" />
   </ItemGroup>
 
   <ItemGroup>

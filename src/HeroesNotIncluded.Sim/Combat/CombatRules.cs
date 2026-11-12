@@ -1,10 +1,10 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Environment;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Environment;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Combat;
+namespace HeroesNotIncluded.Sim.Combat;
 
 /// <summary>Why an attack has the odds it has, for the UI tooltip and the log.</summary>
 public readonly record struct HitChance(

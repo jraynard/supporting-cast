@@ -1,8 +1,8 @@
 using Narsil.Rendering;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Rendering;
+namespace HeroesNotIncluded.Rendering;
 
 /// <summary>
 /// Checks that every sprite the defs and renderer name exists, and that creature sheets have the

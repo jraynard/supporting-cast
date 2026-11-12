@@ -2,15 +2,15 @@ using System.Reflection;
 using System.Security.Cryptography;
 using Narsil;
 using Narsil.Net;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Systems;
-using VillagePlayers = SupportingCast.Sim.Systems.Players;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Systems;
+using VillagePlayers = HeroesNotIncluded.Sim.Systems.Players;
 
-namespace SupportingCast.Net;
+namespace HeroesNotIncluded.Net;
 
 /// <summary>
 /// Drop-in co-op over Narsil's lockstep: the village's <see cref="Simulation"/> as an
@@ -21,7 +21,7 @@ namespace SupportingCast.Net;
 /// </summary>
 public sealed class CoopSession : ILockstepGame, IDisposable
 {
-    public const string GameId = "SupportingCast";
+    public const string GameId = "HeroesNotIncluded";
     public const int DefaultPort = 47060;
     public const int DiscoveryPort = 47061;
 

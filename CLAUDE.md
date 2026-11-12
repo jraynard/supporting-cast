@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Heroes Not Included (the repo, projects and namespaces still say SupportingCast) is a multiplayer fantasy village game in C#/.NET 10: players take
+Heroes Not Included (`HeroesNotIncluded` in code; the repo folder is still `supporting-cast`) is a multiplayer fantasy village game in C#/.NET 10: players take
 the trades a tabletop party usually walks past, with optional traitors. It was forked from
 DragonWorld at `cf61dfc` and runs on the **Narsil** engine (git submodule at `external/narsil`) on
 BRUTAL (GLFW + Vulkan + Dear ImGui). Design: docs/DESIGN.md. Done and next: docs/ROADMAP.md.
@@ -9,30 +9,30 @@ BRUTAL (GLFW + Vulkan + Dear ImGui). Design: docs/DESIGN.md. Done and next: docs
 
 ```sh
 git submodule update --init
-dotnet build SupportingCast.sln
+dotnet build HeroesNotIncluded.sln
 dotnet test -c Release                                     # sim, game and Narsil tests
 dotnet test --filter VillageDayScenario --logger "console;verbosity=detailed"
-dotnet run --project src/SupportingCast                    # title screen
-dotnet run --project src/SupportingCast -- --new-game --name Arin        # straight into a solo round (--trade Blacksmith, --bots N, --map NAME)
-dotnet run --project src/SupportingCast -- --host --name Arin            # host (--port N, --relay HOST, --difficulty D)
-dotnet run --project src/SupportingCast -- --join 127.0.0.1 --player-id bea --name Bea
-dotnet run --project src/SupportingCast -- --furniture-demo --zoom 80    # also --building-demo
-dotnet run --project src/SupportingCast -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui, --look-at X,Y; any mode
-dotnet run --project src/SupportingCast -- --art-preview
-dotnet run --project src/SupportingCast -- --check-art     # headless: every sprite and tag exists
-dotnet run --project src/SupportingCast -- --check-gpu
-dotnet run --project src/SupportingCast -c Release -- --bench --seed 1234   # per-system cost and hashes
+dotnet run --project src/HeroesNotIncluded                    # title screen
+dotnet run --project src/HeroesNotIncluded -- --new-game --name Arin        # straight into a solo round (--trade Blacksmith, --bots N, --map NAME)
+dotnet run --project src/HeroesNotIncluded -- --host --name Arin            # host (--port N, --relay HOST, --difficulty D)
+dotnet run --project src/HeroesNotIncluded -- --join 127.0.0.1 --player-id bea --name Bea
+dotnet run --project src/HeroesNotIncluded -- --furniture-demo --zoom 80    # also --building-demo
+dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui, --look-at X,Y; any mode
+dotnet run --project src/HeroesNotIncluded -- --art-preview
+dotnet run --project src/HeroesNotIncluded -- --check-art     # headless: every sprite and tag exists
+dotnet run --project src/HeroesNotIncluded -- --check-gpu
+dotnet run --project src/HeroesNotIncluded -c Release -- --bench --seed 1234   # per-system cost and hashes
 dotnet run --project external/narsil/src/Narsil.Relay -- --port 47050       # relay for online play
 python3 tools/chibi_people.py --preview                    # art generators: see docs/ART.md
 ```
 
 Data files are copied to the output on build. From a checkout, `data/defs` edits reload by
 themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 saves a screenshot (Shift+F12 without the UI) to
-`~/.config/Supporting Cast/screenshots`.
+`~/.config/Heroes Not Included/screenshots`.
 
 ## Architecture
 
-- `src/SupportingCast.Sim`: **headless, deterministic.** References only `Brutal.Numerics` and
+- `src/HeroesNotIncluded.Sim`: **headless, deterministic.** References only `Brutal.Numerics` and
   `Narsil.Sim`, never the engine, GLFW, Vulkan or ImGui.
   - `Simulation` runs `ISimSystem`s in the fixed order in `CreateStandard`. 60 ticks = 1 game second;
     a game day is 16 real minutes at 1x (`TicksPerHour` 2400: keep it divisible by 12).
@@ -112,7 +112,7 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
 - UI: the Narsil.Ui kit (`external/narsil/docs/UI.md`). Panels go through `Panel.Begin/End`, anything
   on screen in a round through `_hud` (`Hud`, anchored, stacked, nothing overlaps), sizes through
   `Gui.S`, colours from `Ui/Theme`. Mini-games open with `BeginWork(title, hints)`.
-- `src/SupportingCast`: `TitleGame`, `VillageGame` (partials by area), `WorldRenderer`, `WorldMesher`,
+- `src/HeroesNotIncluded`: `TitleGame`, `VillageGame` (partials by area), `WorldRenderer`, `WorldMesher`,
   `Net/CoopSession`. Draw creatures at `WorldRenderer.DrawPos`, never raw `Position.Pos`.
 - `external/narsil`: make engine changes there and commit them first, then the submodule pointer.
   Keep it game-agnostic. A change to `Narsil.Sim` or `Narsil.Voxel` affects DragonWorld and Lifeline.

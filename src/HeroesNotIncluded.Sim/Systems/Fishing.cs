@@ -1,6 +1,6 @@
-using SupportingCast.Sim.Maps;
+using HeroesNotIncluded.Sim.Maps;
 
-namespace SupportingCast.Sim.Systems;
+namespace HeroesNotIncluded.Sim.Systems;
 
 /// <summary>
 /// Fishing from the shore: a villager stands on a marked bank cell next to water and casts. Each

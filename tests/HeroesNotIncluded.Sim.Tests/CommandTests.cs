@@ -1,10 +1,10 @@
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Scenarios;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>Player commands: every one survives the wire, and the overseer's orders do what the tools did.</summary>
 public class CommandTests

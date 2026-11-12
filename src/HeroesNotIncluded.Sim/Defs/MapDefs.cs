@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace SupportingCast.Sim.Defs;
+namespace HeroesNotIncluded.Sim.Defs;
 
 /// <summary>
 /// A hand-made map (<c>Maps.MapBuilder</c> stamps it into a simulation) instead of a generated

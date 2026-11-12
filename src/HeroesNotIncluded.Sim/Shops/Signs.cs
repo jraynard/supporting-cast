@@ -1,7 +1,7 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Shops;
+namespace HeroesNotIncluded.Sim.Shops;
 
 /// <summary>What a shop's sign says to anyone who stops to read it: its name, and the prices it's offering.</summary>
 public readonly record struct SignReading(string Name, string What, IReadOnlyList<PostedPrice> Prices);

@@ -1,4 +1,4 @@
-namespace SupportingCast.Sim.Ai;
+namespace HeroesNotIncluded.Sim.Ai;
 
 /// <summary>
 /// Claims on entities and tiles so two pawns don't haul the same item or build on the same spot.

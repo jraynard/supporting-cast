@@ -1,10 +1,10 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Systems;
-using static SupportingCast.Sim.Tests.TestWorld;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Systems;
+using static HeroesNotIncluded.Sim.Tests.TestWorld;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>Fishing from marked bank cells, and fish stocks that thin out and recover.</summary>
 public class FishingTests

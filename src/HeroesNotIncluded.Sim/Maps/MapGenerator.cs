@@ -1,6 +1,6 @@
-using SupportingCast.Sim.Components;
+using HeroesNotIncluded.Sim.Components;
 
-namespace SupportingCast.Sim.Maps;
+namespace HeroesNotIncluded.Sim.Maps;
 
 /// <summary>
 /// Generates the starting map: lakes, beaches, rocky hills with boulders and natural slopes,

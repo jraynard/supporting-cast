@@ -1,13 +1,13 @@
 using Narsil.Rendering;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Environment;
-using SupportingCast.Sim.Maps;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Environment;
+using HeroesNotIncluded.Sim.Maps;
 
-namespace SupportingCast.Rendering;
+namespace HeroesNotIncluded.Rendering;
 
 /// <summary>What a creature is visibly doing this frame, read from sim state. Input to <see cref="CreatureAnimator.ChooseTag"/>.</summary>
 public readonly record struct AnimInputs(

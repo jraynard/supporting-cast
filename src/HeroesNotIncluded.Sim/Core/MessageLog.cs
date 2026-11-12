@@ -1,4 +1,4 @@
-namespace SupportingCast.Sim.Core;
+namespace HeroesNotIncluded.Sim.Core;
 
 public enum MessageKind
 {

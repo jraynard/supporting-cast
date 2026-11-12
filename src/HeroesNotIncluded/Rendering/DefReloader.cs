@@ -1,7 +1,7 @@
 using Narsil;
 using Narsil.Platform;
 
-namespace SupportingCast.Rendering;
+namespace HeroesNotIncluded.Rendering;
 
 /// <summary>
 /// Notices def edits: F8, or (Debug builds, <c>SC_WATCH=1</c>) any <c>*.json</c> change under the

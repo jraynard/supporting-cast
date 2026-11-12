@@ -1,6 +1,6 @@
 using Narsil.Sim.Core;
 
-namespace SupportingCast.Sim.Work;
+namespace HeroesNotIncluded.Sim.Work;
 
 /// <summary>
 /// Runs a copy of the worker's session ahead of the sim, for instant feedback, and sends the

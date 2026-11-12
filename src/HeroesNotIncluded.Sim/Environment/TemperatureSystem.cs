@@ -1,6 +1,6 @@
-using SupportingCast.Sim.Components;
+using HeroesNotIncluded.Sim.Components;
 
-namespace SupportingCast.Sim.Environment;
+namespace HeroesNotIncluded.Sim.Environment;
 
 /// <summary>
 /// Per-cell heat diffusion over the map's active cells (<see cref="Maps.Map.Active"/>). Each

@@ -1,14 +1,14 @@
-using SupportingCast.Sim.Adventurers;
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Combat;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Round;
-using SupportingCast.Sim.Scenarios;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Adventurers;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 public class PartyTests
 {

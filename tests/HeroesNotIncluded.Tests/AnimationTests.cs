@@ -1,10 +1,10 @@
 using Brutal.Numerics;
 using Narsil.Rendering;
-using SupportingCast.Rendering;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Rendering;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Tests;
+namespace HeroesNotIncluded.Tests;
 
 public class AnimationTests
 {

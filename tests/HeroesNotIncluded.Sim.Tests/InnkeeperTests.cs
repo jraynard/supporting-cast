@@ -1,15 +1,15 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Round;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Scenarios;
-using SupportingCast.Sim.Shops;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Sim.Work;
-using static SupportingCast.Sim.Tests.TestWorld;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Shops;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Sim.Work;
+using static HeroesNotIncluded.Sim.Tests.TestWorld;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>The tavern: pouring at the cask, and serving drink and meal orders (Stage 4 of M2).</summary>
 public class InnkeeperTests

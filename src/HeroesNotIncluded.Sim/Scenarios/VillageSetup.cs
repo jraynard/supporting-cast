@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Maps;
 
-namespace SupportingCast.Sim.Scenarios;
+namespace HeroesNotIncluded.Sim.Scenarios;
 
 /// <summary>
 /// Standard village setup plus the orders a player would give in the vertical slice: a wooden hall

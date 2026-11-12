@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 using Narsil;
 using Narsil.Platform;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 /// <summary>
 /// The player's options, saved as JSON in the user config directory. One shared instance

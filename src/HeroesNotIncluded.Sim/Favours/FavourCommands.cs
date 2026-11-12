@@ -1,7 +1,7 @@
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Speech;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Speech;
 
-namespace SupportingCast.Sim.Favours;
+namespace HeroesNotIncluded.Sim.Favours;
 
 // What players do with each other's favours. All act as the player's own character, and do
 // nothing if the favour has gone stale (closed, or the other person walked off).

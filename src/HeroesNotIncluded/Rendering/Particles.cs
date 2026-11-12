@@ -1,6 +1,6 @@
 using Narsil.Rendering;
 
-namespace SupportingCast.Rendering;
+namespace HeroesNotIncluded.Rendering;
 
 /// <summary>
 /// Small render-only particle pool for dust, embers, chips and Zzz. Lives entirely outside the sim,

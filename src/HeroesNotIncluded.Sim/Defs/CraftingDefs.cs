@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
-using SupportingCast.Sim.Components;
+using HeroesNotIncluded.Sim.Components;
 
-namespace SupportingCast.Sim.Defs;
+namespace HeroesNotIncluded.Sim.Defs;
 
 /// <summary>
 /// One thing that can be made: ingredients in, products out, after some skilled work. Made at a

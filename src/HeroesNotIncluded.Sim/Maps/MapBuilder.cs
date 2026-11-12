@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Maps;
+namespace HeroesNotIncluded.Sim.Maps;
 
 /// <summary>
 /// Stamps a hand-made <see cref="MapDef"/> into a simulation: the ground column by column, rock and

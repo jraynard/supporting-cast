@@ -1,9 +1,9 @@
 using System.Text.Json;
 using Narsil;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Net;
+namespace HeroesNotIncluded.Net;
 
 /// <summary>
 /// A character the player made once and brings into any co-op game: who they are and look like,

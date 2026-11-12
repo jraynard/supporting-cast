@@ -1,13 +1,13 @@
 using Brutal.ImGuiApi;
 using Narsil.Ui;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Round;
-using SupportingCast.Sim.Shops;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Shops;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 // Shops and coin: the orders your character knows of, and handing things over.
 // Everything about other people comes through View (Perception); the sim decides what's allowed.

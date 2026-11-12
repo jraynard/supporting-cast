@@ -1,8 +1,8 @@
 using System.Runtime.InteropServices;
 using System.Text;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Sim.Saving;
+namespace HeroesNotIncluded.Sim.Saving;
 
 /// <summary>A save file that can't be read: corrupt, from a newer game, or naming defs that no longer exist.</summary>
 public sealed class SaveException(string message, Exception? inner = null) : Exception(message, inner);

@@ -1,16 +1,16 @@
 using Brutal.Numerics;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Tests;
+namespace HeroesNotIncluded.Tests;
 
 /// <summary>Cutaway walls (<see cref="WorldMesher.CutAt"/>): which walls drop to stubs for a camera heading.</summary>
 public class CutawayWallTests
 {
     /// <summary>A room 3x3 inside (walls on x and y 5..9), a door on its south side, and a lone wall out in the open.</summary>
-    private static SupportingCast.Sim.Simulation Room()
+    private static HeroesNotIncluded.Sim.Simulation Room()
     {
         var defs = DefDatabase.LoadDirectory(DevPaths.Defs!);
-        var sim = SupportingCast.Sim.Simulation.CreateStandard(defs, 20, 20, 1);
+        var sim = HeroesNotIncluded.Sim.Simulation.CreateStandard(defs, 20, 20, 1);
         for (var y = 5; y <= 9; y++)
         for (var x = 5; x <= 9; x++)
             if (x == 5 || x == 9 || y == 5 || y == 9)
@@ -46,14 +46,14 @@ public class CutawayWallTests
     {
         // The smithy is open at the front, so its floor is never an indoor room; its plan says it's inside.
         var defs = DefDatabase.LoadDirectory(DevPaths.Defs!);
-        var sim = SupportingCast.Sim.Simulation.CreateStandard(defs, 30, 30, 1, depth: 5);
+        var sim = HeroesNotIncluded.Sim.Simulation.CreateStandard(defs, 30, 30, 1, depth: 5);
         var smithy = defs.Building("Smithy");
         var anchor = new int3(12, 12, 1);
-        var b = SupportingCast.Sim.Systems.Buildings.SpawnFinished(sim, smithy, anchor, 0);
+        var b = HeroesNotIncluded.Sim.Systems.Buildings.SpawnFinished(sim, smithy, anchor, 0);
         sim.RebuildDerivedIfNeeded();
         sim.Rooms.UpdateIfNeeded();
-        var p = sim.World.Get<SupportingCast.Sim.Components.PresetBuilding>(b);
-        int3 At(int col, int row) => SupportingCast.Sim.Systems.Buildings.CellOf(sim.Map, smithy, p.Anchor, p.Facing, col, row);
+        var p = sim.World.Get<HeroesNotIncluded.Sim.Components.PresetBuilding>(b);
+        int3 At(int col, int row) => HeroesNotIncluded.Sim.Systems.Buildings.CellOf(sim.Map, smithy, p.Anchor, p.Facing, col, row);
 
         var back = At(3, 0);
         var side = At(0, 2);

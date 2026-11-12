@@ -1,15 +1,15 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Expeditions;
-using SupportingCast.Sim.Healing;
-using SupportingCast.Sim.Tinkering;
-using SupportingCast.Sim.Shops;
-using SupportingCast.Sim.Speech;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Sim.Work;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Expeditions;
+using HeroesNotIncluded.Sim.Healing;
+using HeroesNotIncluded.Sim.Tinkering;
+using HeroesNotIncluded.Sim.Shops;
+using HeroesNotIncluded.Sim.Speech;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Sim.Work;
 
-namespace SupportingCast.Sim.Bots;
+namespace HeroesNotIncluded.Sim.Bots;
 
 /// <summary>
 /// A stand-in player, for scenario tests and solo playtests. It plays only through commands and

@@ -1,10 +1,10 @@
 using System.Globalization;
 using Narsil;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Saving;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Saving;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 /// <summary>A save file on disk and what its header says (or why it can't be read).</summary>
 public sealed record SaveSlot(string Name, string Path, DateTime Modified, SaveHeader? Header, string? Error)

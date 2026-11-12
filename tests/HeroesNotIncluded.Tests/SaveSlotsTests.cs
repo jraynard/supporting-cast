@@ -1,9 +1,9 @@
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Saving;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Saving;
 
-namespace SupportingCast.Tests;
+namespace HeroesNotIncluded.Tests;
 
 public sealed class SaveSlotsTests : IDisposable
 {

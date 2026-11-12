@@ -1,7 +1,7 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Sim.Maps;
+namespace HeroesNotIncluded.Sim.Maps;
 
 /// <summary>
 /// The village <see cref="Map"/> as Narsil's <see cref="INavGrid"/>. A struct so the generic pathing

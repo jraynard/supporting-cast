@@ -2,10 +2,10 @@ using Brutal.ImGuiApi;
 using Narsil;
 using Narsil.Rendering;
 using Narsil.Ui;
-using SupportingCast.Net;
-using SupportingCast.Rendering;
+using HeroesNotIncluded.Net;
+using HeroesNotIncluded.Rendering;
 
-namespace SupportingCast.Ui;
+namespace HeroesNotIncluded.Ui;
 
 /// <summary>
 /// Pick one of your saved characters (<see cref="CharacterRoster"/>) to bring into a co-op game, or

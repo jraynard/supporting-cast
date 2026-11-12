@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace SupportingCast.Tests;
+namespace HeroesNotIncluded.Tests;
 
 /// <summary>
 /// Keeps the secrets rule true: the game reads other characters through <c>Perception</c>. A new
@@ -24,7 +24,7 @@ public partial class PerceptionBoundaryTests
     [Fact]
     public void TheGameReadsOtherCharactersOnlyThroughPerception()
     {
-        var root = Path.GetFullPath(Path.Combine(DevPaths.Defs!, "..", "..", "src", "SupportingCast"));
+        var root = Path.GetFullPath(Path.Combine(DevPaths.Defs!, "..", "..", "src", "HeroesNotIncluded"));
         var found = Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories)
             .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}") && !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}"))
             .Select(f => (File: Path.GetRelativePath(root, f).Replace('\\', '/'), Count: DirectRead().Count(File.ReadAllText(f))))

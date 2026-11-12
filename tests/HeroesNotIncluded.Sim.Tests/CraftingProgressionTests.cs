@@ -1,10 +1,10 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Tests;
+namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>
 /// The crafting chain past the first benches: recipe books and discovery, leather and cooking,
@@ -257,8 +257,8 @@ public class CraftingProgressionTests
         sim.WearItem(a, fine);
         sim.WearItem(b, crude);
         var head = sim.World.Get<Health>(a).Body.PartIndex("Head");
-        var fineArmor = SupportingCast.Sim.Combat.CombatRules.ArmorAt(sim, a, head, DamageType.Cut).Armor;
-        var crudeArmor = SupportingCast.Sim.Combat.CombatRules.ArmorAt(sim, b, head, DamageType.Cut).Armor;
+        var fineArmor = HeroesNotIncluded.Sim.Combat.CombatRules.ArmorAt(sim, a, head, DamageType.Cut).Armor;
+        var crudeArmor = HeroesNotIncluded.Sim.Combat.CombatRules.ArmorAt(sim, b, head, DamageType.Cut).Armor;
         Assert.Equal(0.25f * 1.15f, fineArmor, 3);
         Assert.Equal(0.25f * 0.8f, crudeArmor, 3);
         Assert.Equal("fine leather cap", sim.LabelOf(fine));

@@ -67,12 +67,12 @@ A sheet is a PNG plus a sibling `.anim.json`. The usual way to make one is Asepr
 2. Run `python3 tools/export_art.py` (stale files only; `--all` exports everything). It writes
    `data/textures/<path>.png` and `.anim.json`. Commit both, so the build never needs Aseprite.
 3. For a live loop while drawing, run
-   `python3 tools/export_art.py --watch --also-copy-to src/SupportingCast/bin/Debug/net10.0/data/textures`.
+   `python3 tools/export_art.py --watch --also-copy-to src/HeroesNotIncluded/bin/Debug/net10.0/data/textures`.
    The game (Debug build, or with `DW_WATCH=1`) reloads art whenever those files change. F5
    reloads by hand.
-4. `dotnet run --project src/SupportingCast -- --art-preview` shows every sheet with each tag looping
+4. `dotnet run --project src/HeroesNotIncluded -- --art-preview` shows every sheet with each tag looping
    side by side, plus pivot and point markers and a flip toggle. Run
-   `dotnet run --project src/SupportingCast -- --check-art` to confirm every def's sprite and every
+   `dotnet run --project src/HeroesNotIncluded -- --check-art` to confirm every def's sprite and every
    needed animation exists. A test runs the same check.
 
 ### Aseprite conventions

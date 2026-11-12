@@ -1,11 +1,11 @@
 using Brutal.ImGuiApi;
 using Narsil.Platform;
 using Narsil.Ui;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Round;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 // The anchored HUD (Narsil.Ui.Hud): everything on screen hangs from an edge and stacks, so nothing
 // overlaps at any resolution or UI scale. The journal panels (orders, what you've heard, quests,

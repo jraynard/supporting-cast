@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Combat;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Sim.Saving;
+namespace HeroesNotIncluded.Sim.Saving;
 
 /// <summary>Writes and reads one component type's store: entity plus data, in dense order.</summary>
 internal abstract class ComponentCodec

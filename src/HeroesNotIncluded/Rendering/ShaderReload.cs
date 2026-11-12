@@ -1,6 +1,6 @@
 using Narsil;
 
-namespace SupportingCast.Rendering;
+namespace HeroesNotIncluded.Rendering;
 
 /// <summary>
 /// The F7 key: recompile the quad shaders (Narsil.Voxel) and Narsil's sprite and post shaders from the source

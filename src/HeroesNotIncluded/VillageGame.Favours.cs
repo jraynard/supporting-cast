@@ -1,10 +1,10 @@
 using Brutal.ImGuiApi;
 using Narsil.Ui;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Favours;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Favours;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 // Favours: what players ask of each other, for silver they name. Known through View (Perception).
 public sealed partial class VillageGame

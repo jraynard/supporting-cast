@@ -1,9 +1,9 @@
 using Brutal.Numerics;
 using Narsil.Rendering;
-using SupportingCast.Rendering;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Rendering;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Tests;
+namespace HeroesNotIncluded.Tests;
 
 /// <summary>Box models (furniture, item piles) turned into quads.</summary>
 public class PropModelTests
@@ -126,14 +126,14 @@ public class PropModelTests
     public void ATableHasASurfaceButNothingIsPutOnIt()
     {
         var defs = DefDatabase.LoadDirectory(DevPaths.Defs!);
-        var sim = SupportingCast.Sim.Simulation.CreateStandard(defs, 20, 20, 1);
+        var sim = HeroesNotIncluded.Sim.Simulation.CreateStandard(defs, 20, 20, 1);
         var at = new int3(5, 5, 1);
         Assert.Equal(0f, WorldRenderer.SurfaceUnder(sim.Map, sim.World, at));
         var site = sim.PlaceBlueprint(defs.Thing("Table"), at);
         Assert.Equal(0f, WorldRenderer.SurfaceUnder(sim.Map, sim.World, at)); // not while it's a blueprint
         sim.CompleteConstruction(site);
         // As drawn: the def's height, lowered with the rest of the furniture.
-        Assert.Equal(defs.Thing("Table").Building!.SurfaceHeight * SupportingCast.Rendering.WorldScale.FurnitureHeight, WorldRenderer.SurfaceUnder(sim.Map, sim.World, at), 4);
+        Assert.Equal(defs.Thing("Table").Building!.SurfaceHeight * HeroesNotIncluded.Rendering.WorldScale.FurnitureHeight, WorldRenderer.SurfaceUnder(sim.Map, sim.World, at), 4);
         Assert.False(sim.CanAcceptItem(at, defs.Thing("Wood"), out _)); // solid: things go down beside it
     }
 }

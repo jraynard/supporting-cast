@@ -1,11 +1,11 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Combat;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Shops;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Shops;
 
-namespace SupportingCast.Sim.Expeditions;
+namespace HeroesNotIncluded.Sim.Expeditions;
 
 /// <summary>Put a quest you know of to a party member in reach (<see cref="ExpeditionSystem.Offer"/>).</summary>
 public sealed record OfferQuestCommand(Entity Avatar, Entity Member, int Quest) : ISimCommand, IActorCommand

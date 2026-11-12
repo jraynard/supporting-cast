@@ -1,7 +1,7 @@
-using SupportingCast.Sim.Ai;
-using SupportingCast.Sim.Defs;
+using HeroesNotIncluded.Sim.Ai;
+using HeroesNotIncluded.Sim.Defs;
 
-namespace SupportingCast.Sim.Components;
+namespace HeroesNotIncluded.Sim.Components;
 
 /// <summary>
 /// Anything placed on (or carried off) the map that has a ThingDef: items, buildings, plants,

@@ -1,13 +1,13 @@
 using Brutal.ImGuiApi;
 using Narsil.Platform;
 using Narsil.Ui;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Shops;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Shops;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 // A shop's sign, read from the street: a painted board with its name and its prices. What's on it
 // is painted up for anyone to see (Shops.Signs), so it's read straight from the sim.

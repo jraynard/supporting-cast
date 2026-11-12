@@ -1,6 +1,6 @@
-using SupportingCast.Rendering;
+using HeroesNotIncluded.Rendering;
 
-namespace SupportingCast.Tests;
+namespace HeroesNotIncluded.Tests;
 
 public class ReloadTests
 {

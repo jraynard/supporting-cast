@@ -1,7 +1,7 @@
 using Brutal.ImGuiApi;
 using Narsil.Ui;
 
-namespace SupportingCast.Ui;
+namespace HeroesNotIncluded.Ui;
 
 /// <summary>
 /// The game's ImGui look: "carved wood and iron". Oak-plank panels in an iron rim with riveted

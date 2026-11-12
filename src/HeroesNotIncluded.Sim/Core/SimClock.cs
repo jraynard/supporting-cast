@@ -1,4 +1,4 @@
-namespace SupportingCast.Sim.Core;
+namespace HeroesNotIncluded.Sim.Core;
 
 /// <summary>
 /// Game time. The sim advances in fixed ticks; 60 ticks are one game second at 1x speed.

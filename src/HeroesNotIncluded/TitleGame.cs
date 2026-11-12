@@ -2,17 +2,17 @@ using Brutal.ImGuiApi;
 using Narsil.Ui;
 using Narsil;
 using Narsil.Rendering;
-using SupportingCast.Rendering;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Maps;
-using SupportingCast.Sim.Scenarios;
-using SupportingCast.Net;
-using SupportingCast.Ui;
+using HeroesNotIncluded.Rendering;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Maps;
+using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Net;
+using HeroesNotIncluded.Ui;
 
-namespace SupportingCast;
+namespace HeroesNotIncluded;
 
 /// <summary>
 /// The title screen: the game's name and main menu over a live, slowly orbiting view of a
@@ -25,14 +25,11 @@ public sealed class TitleGame : Game
     /// <summary>The game's name, as players see it (window, title screen, credits).</summary>
     public const string Title = "Heroes Not Included";
 
-    /// <summary>
-    /// The per-user folder for settings, saves and logs. It keeps the old name so a rename never
-    /// strands anyone's saves.
-    /// </summary>
-    public const string DataFolder = "Supporting Cast";
+    /// <summary>The per-user folder for settings, saves, screenshots and logs.</summary>
+    public const string DataFolder = "Heroes Not Included";
 
-    /// <summary>Linux desktop id: the Wayland app_id / X11 class a <c>supporting-cast.desktop</c> entry matches (tools/install-desktop-entry.sh).</summary>
-    public const string AppId = "supporting-cast";
+    /// <summary>Linux desktop id: the Wayland app_id / X11 class a <c>heroes-not-included.desktop</c> entry matches (tools/install-desktop-entry.sh).</summary>
+    public const string AppId = "heroes-not-included";
     public const ulong DefaultSeed = 1234;
 
     private Simulation _sim = null!;

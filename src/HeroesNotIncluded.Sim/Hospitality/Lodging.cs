@@ -1,10 +1,10 @@
-using SupportingCast.Sim.Combat;
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Saving;
-using SupportingCast.Sim.Systems;
-using SupportingCast.Sim.Work;
+using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Sim.Work;
 
-namespace SupportingCast.Sim.Hospitality;
+namespace HeroesNotIncluded.Sim.Hospitality;
 
 /// <summary>A guest's room at the inn: the bed they've been given, and the last night they've paid for.</summary>
 public struct LodgeStay

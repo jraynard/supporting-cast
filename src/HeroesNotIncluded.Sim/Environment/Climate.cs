@@ -1,4 +1,4 @@
-namespace SupportingCast.Sim.Environment;
+namespace HeroesNotIncluded.Sim.Environment;
 
 /// <summary>
 /// Outdoor temperature over the day. Cold nights are the main pressure in the slice:

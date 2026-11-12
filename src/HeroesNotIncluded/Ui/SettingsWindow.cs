@@ -3,7 +3,7 @@ using Narsil;
 using Narsil.Platform;
 using Narsil.Ui;
 
-namespace SupportingCast.Ui;
+namespace HeroesNotIncluded.Ui;
 
 /// <summary>
 /// The options screen, shared by the title screen and the village. Edits a draft of

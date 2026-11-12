@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\SupportingCast.Sim\SupportingCast.Sim.csproj" />
+    <ProjectReference Include="..\..\src\HeroesNotIncluded.Sim\HeroesNotIncluded.Sim.csproj" />
   </ItemGroup>
 
   <ItemGroup>

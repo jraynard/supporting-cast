@@ -1,8 +1,8 @@
-using SupportingCast.Sim.Components;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Systems;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Systems;
 
-namespace SupportingCast.Sim.Scenarios;
+namespace HeroesNotIncluded.Sim.Scenarios;
 
 /// <summary>
 /// Debug/screenshots (<c>--building-demo</c>): the preset buildings beside the landing. A row to

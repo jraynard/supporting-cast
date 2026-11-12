@@ -1,9 +1,9 @@
 using System.Diagnostics;
-using SupportingCast.Sim;
-using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Maps;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Maps;
 
-namespace SupportingCast.Debug;
+namespace HeroesNotIncluded.Debug;
 
 /// <summary>Headless sim benchmark: run a generated village for a game day and report per-system cost.</summary>
 public static class Bench

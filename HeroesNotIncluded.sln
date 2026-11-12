@@ -5,15 +5,15 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SupportingCast", "src\SupportingCast\SupportingCast.csproj", "{E1F5B348-59DE-4405-A01B-46642B27E66D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeroesNotIncluded", "src\HeroesNotIncluded\HeroesNotIncluded.csproj", "{E1F5B348-59DE-4405-A01B-46642B27E66D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SupportingCast.Sim", "src\SupportingCast.Sim\SupportingCast.Sim.csproj", "{103CE39D-53C1-4427-92B3-39F69BEF5D13}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeroesNotIncluded.Sim", "src\HeroesNotIncluded.Sim\HeroesNotIncluded.Sim.csproj", "{103CE39D-53C1-4427-92B3-39F69BEF5D13}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SupportingCast.Sim.Tests", "tests\SupportingCast.Sim.Tests\SupportingCast.Sim.Tests.csproj", "{CC342FBA-7F76-4B9F-B61C-29484F10529C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeroesNotIncluded.Sim.Tests", "tests\HeroesNotIncluded.Sim.Tests\HeroesNotIncluded.Sim.Tests.csproj", "{CC342FBA-7F76-4B9F-B61C-29484F10529C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SupportingCast.Tests", "tests\SupportingCast.Tests\SupportingCast.Tests.csproj", "{6613F90D-8EF2-4DED-8E06-AA9DD81445C8}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeroesNotIncluded.Tests", "tests\HeroesNotIncluded.Tests\HeroesNotIncluded.Tests.csproj", "{6613F90D-8EF2-4DED-8E06-AA9DD81445C8}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "external", "external", "{A288BEE0-695A-BEEA-455C-649571D89326}"
 EndProject
