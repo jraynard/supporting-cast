@@ -368,8 +368,8 @@ Known leftovers:
 
 ### Trade refinement
 - refining the four initial trades to be fun. blacksmith, innkeeper, carpeneter (locksmith), and healer.
-- blacksmith done, innkeeper in progress.
-- healer next, then locksmith (split from carpenter)
+- blacksmith done, innkeeper done (some jobs split off to cook which will be handled later).
+- healer next, then locksmith / artificer (split from carpenter)
 
 ### M3: A whole season
 - `Director`, Renown and Dread, crises including the late-round dragon, the festival, the
