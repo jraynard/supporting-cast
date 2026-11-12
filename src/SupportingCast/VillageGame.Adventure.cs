@@ -93,6 +93,7 @@ public sealed partial class VillageGame
             }
         }
         _sentMoveDir = default;
+        _sentKeys = 0;
         _predictor.Reset();
         _sentWork = false;
         _sentDig = false;
@@ -101,20 +102,40 @@ public sealed partial class VillageGame
         _seenWalkFailure = !_avatar.IsNull && _sim.Ai.LastFailure.TryGetValue(_avatar, out var failed) ? failed : null;
     }
 
+    /// <summary>
+    /// Seconds a direction that may be half a two-key press waits before it's sent: starting on one
+    /// key (the second often lands a frame later), or letting go of one of two (the other often
+    /// follows). Without it, those frames start a stray step the wrong way.
+    /// </summary>
+    private const float ChordGrace = 0.05f;
+
+    private int2 _heldDir;
+    private float _heldFor;
+    private int _sentKeys;
+
     /// <summary>Read WASD/F and send what changed. Outside combat only: in a fight the HUD gives orders.</summary>
-    private void HandleAvatarInput(Input input)
+    private void HandleAvatarInput(Input input, float dt)
     {
         if (!HasAvatar || Working) // at a mini-game the keys are the mini-game's (UpdateWork)
             return;
-        var dir = int2.Zero;
         float x = 0, y = 0;
         if (input.IsKeyDown(GlfwKey.W)) y += 1;
         if (input.IsKeyDown(GlfwKey.S)) y -= 1;
         if (input.IsKeyDown(GlfwKey.D)) x += 1;
         if (input.IsKeyDown(GlfwKey.A)) x -= 1;
-        dir = MapDirection(x, y);
+        var dir = MapDirection(x, y);
+        if (dir != _heldDir)
+            (_heldDir, _heldFor) = (dir, 0f);
+        else
+            _heldFor += dt;
+        // One key held, coming from nothing or from two: wait a moment for the other key.
+        var oneKey = (x != 0) != (y != 0);
+        var sentTwo = _sentKeys == 2;
+        if (oneKey && (_sentMoveDir == int2.Zero || sentTwo) && _heldFor < ChordGrace)
+            dir = _sentMoveDir;
         if (dir != _sentMoveDir)
         {
+            _sentKeys = dir == int2.Zero ? 0 : oneKey ? 1 : 2;
             // Co-op: walk on screen at once, and tell the sim where we turned or stopped so it
             // ends up there too when the command comes back.
             var at = _coop != null ? _predictor.DirectionChanged(_sim, _avatar, dir) : null;

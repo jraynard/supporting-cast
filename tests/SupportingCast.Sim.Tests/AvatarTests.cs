@@ -145,6 +145,51 @@ public class AvatarTests
     }
 
     [Fact]
+    public void ADiagonalIntoAWallFindsTheDoorwayInIt()
+    {
+        var sim = Warm();
+        sim.FillBlocks(new int3(0, 8, 1), new int3(6, 8, 1)); // a wall along y = 8 with a gap at x = 7
+        sim.FillBlocks(new int3(8, 8, 1), new int3(39, 8, 1));
+        var me = Avatar(sim, C(5, 7));
+        sim.Enqueue(new AvatarMoveCommand(me, new int2(1, 1)));
+        sim.TickMany(SimClock.TicksPerSecond * 2);
+        Assert.True(Cell(sim, me).Y > 8, $"went through the gap, at {Cell(sim, me)}");
+    }
+
+    [Fact]
+    public void ADiagonalKeyOnAStairClimbsIt()
+    {
+        var sim = TestWorld.Create(12, 12, depth: 5);
+        sim.FillBlocks(new int3(0, 0, 1), new int3(11, 4, 1)); // high ground to the north
+        // Stairs at (5,5) running up north, whichever facing that is.
+        var up = new int3(5, 4, 2);
+        for (var facing = 0; facing < 4; facing++)
+        {
+            var stairs = sim.SpawnStructure(sim.Thing("WoodStairs"), C(5, 5), facing);
+            sim.RebuildDerivedIfNeeded();
+            if (sim.Pathfinder.FindPath(C(5, 6), up, PathEnd.OnTile) is { Count: <= 3 })
+                break;
+            sim.DestroyThing(stairs);
+            sim.RebuildDerivedIfNeeded();
+        }
+        var me = Avatar(sim, C(5, 5));
+        sim.Enqueue(new AvatarMoveCommand(me, new int2(1, -1)));
+        sim.TickMany(SimClock.TicksPerSecond);
+        Assert.Equal(2, Cell(sim, me).Z);
+    }
+
+    [Fact]
+    public void FacingIsTheStepTaken()
+    {
+        var sim = Warm();
+        sim.FillBlocks(new int3(0, 8, 1), new int3(39, 8, 1));
+        var me = Avatar(sim, C(5, 7));
+        sim.Enqueue(new AvatarMoveCommand(me, new int2(1, 1)));
+        sim.TickMany(SimClock.TicksPerSecond);
+        Assert.Equal(new int2(1, 0), sim.World.Get<Avatar>(me).Facing);
+    }
+
+    [Fact]
     public void ChoppingOnlyProgressesWhileTheWorkKeyIsHeld()
     {
         var sim = Warm();

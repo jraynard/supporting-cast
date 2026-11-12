@@ -149,7 +149,7 @@ public sealed class AvatarSystem : ISimSystem
             var here = w.Get<Position>(e).Cell;
             if (StepToward(sim.Map, here, a.MoveDir) is not { } next)
                 continue;
-            a.Facing = a.MoveDir;
+            a.Facing = new int2(Math.Sign(next.X - here.X), Math.Sign(next.Y - here.Y)); // the step taken, so F's "in front" is where you went
             mover.Path = [next];
             mover.PathIndex = 0;
             mover.StepProgress = 0;
@@ -179,16 +179,46 @@ public sealed class AvatarSystem : ISimSystem
         a.HasPending = false;
     }
 
+    /// <summary>How many steps ahead a blocked diagonal looks to choose which way to slide.</summary>
+    public const int SlideLookahead = 3;
+
     /// <summary>
     /// The walkable neighbor in a direction: on the level, else up or down a slope. A blocked
-    /// diagonal slides along whichever axis is open, so walking into a wall at an angle follows it.
+    /// diagonal slides along an open axis, so walking into a wall at an angle follows it. When both
+    /// axes are open it takes the one that gets further in the held direction over the next few
+    /// steps: into a doorway or round a corner rather than along the wall past it. A climb breaks
+    /// a tie, so a diagonal at the foot of a stair goes up it. Pure, so a co-op client predicts the same steps.
     /// </summary>
-    public int3? StepToward(Map map, int3 from, int2 dir)
+    public int3? StepToward(Map map, int3 from, int2 dir) => StepToward(map, from, dir, SlideLookahead);
+
+    private int3? StepToward(Map map, int3 from, int2 dir, int lookahead)
     {
         if (!map.InBounds(from))
             return null;
         var count = NavGraph.Neighbors(new MapNav(map), map.Idx(from), _steps);
-        return Find(dir) ?? (dir.X != 0 && dir.Y != 0 ? Find(new int2(dir.X, 0)) ?? Find(new int2(0, dir.Y)) : null);
+        if (Find(dir) is { } straight)
+            return straight;
+        if (dir.X == 0 || dir.Y == 0)
+            return null;
+        var alongX = Find(new int2(dir.X, 0));
+        var alongY = Find(new int2(0, dir.Y));
+        if (alongX is not { } x || alongY is not { } y || lookahead == 0)
+            return alongX ?? alongY;
+        // (Find is done with _steps: the look ahead below refills it.)
+        return Progress(y) > Progress(x) ? y : x;
+
+        float Progress(int3 start)
+        {
+            var at = start;
+            for (var i = 0; i < lookahead; i++)
+            {
+                if (StepToward(map, at, dir, 0) is not { } next)
+                    break;
+                at = next;
+            }
+            var gained = (at.X - from.X) * dir.X + (at.Y - from.Y) * dir.Y;
+            return gained + (start.Z != from.Z ? 0.5f : 0f);
+        }
 
         int3? Find(int2 d)
         {

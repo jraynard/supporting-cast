@@ -316,11 +316,12 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
         var input = Host.Input;
         HandleKeys(input);
-        _cameraController.PanSpeed = _basePanSpeed * Settings.Current.CameraPanSpeed;
+        // WASD walks your character, not the camera: panning it here would also shift the cursor's cell.
+        _cameraController.PanSpeed = HasAvatar ? 0f : _basePanSpeed * Settings.Current.CameraPanSpeed;
         _cameraController.Update(input, dt);
 
         UpdateHover(input.MousePosition);
-        HandleAvatarInput(input);
+        HandleAvatarInput(input, dt);
         _buildUp = input.IsKeyDown(GlfwKey.LeftControl) || input.IsKeyDown(GlfwKey.RightControl);
         HandleMouse(input, dt);
         if (_coop != null)
