@@ -53,10 +53,13 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art.
     New sessions go in the `WorkSession.Read` switch.
   - `Adventurers/`: `PartySystem` brings parties in a round; `AdventurerBrain` lounges, waits where
     their order is served, and leaves.
-  - `Shops/`: what adventurers buy. Each want is an `Order` of a `ServiceKind`, asked aloud (only
-    those who hear know of it). Coin is real `SilverCoin` items; paying moves them. AI trades serve
-    orders (`MendJob`, `ServeJob`, `HealOrders`). An AI work pack keeps coin and `Entrusted` items
-    between jobs. `Favours/`: what players ask of each other, for silver they name.
+  - `Shops/`: what adventurers buy. Keepers set prices on their shop's sign (`ShopPrices`, defaults
+    from `services.json`); an adventurer orders when the price is within what it's worth to them
+    and their purse, lines up at the building def's `line` cells, and says the order at the front
+    (only those who hear know of it). Each want is an `Order` of a `ServiceKind`; the line is
+    derived from open orders, never stored. Coin is real `SilverCoin` items; paying moves them. AI
+    trades serve front first (`MendJob`, `ServeJob`, `HealOrders`). An AI work pack keeps coin and
+    `Entrusted` items between jobs. `Favours/`: what players ask of each other, for silver they name.
   - `Locks/`: the Carpenter's lockwork on strongboxes from quests. A box's trap is hidden item
     state: show it only through `PerceptionView.Strongbox`, which never says an armed one is there.
   - `Healing/`: the empath. Wounds drawn in are `Injury.Absorbed` and known only by feel

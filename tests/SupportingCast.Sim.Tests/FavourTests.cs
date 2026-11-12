@@ -1,9 +1,9 @@
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Favours;
-using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Round;
 using SupportingCast.Sim.Scenarios;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Systems;
 
 namespace SupportingCast.Sim.Tests;

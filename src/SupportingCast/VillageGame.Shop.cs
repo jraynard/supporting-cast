@@ -3,8 +3,8 @@ using Narsil.Ui;
 using SupportingCast.Sim;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Round;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Ui;
 
 namespace SupportingCast;

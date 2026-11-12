@@ -2,8 +2,8 @@ using SupportingCast.Sim.Ai;
 using SupportingCast.Sim.Combat;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Maps;
+using SupportingCast.Sim.Shops;
 
 namespace SupportingCast.Sim.Expeditions;
 

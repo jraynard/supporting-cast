@@ -1,9 +1,9 @@
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Round;
 using SupportingCast.Sim.Scenarios;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Systems;
 
 namespace SupportingCast.Sim.Tests;
@@ -310,5 +310,46 @@ public class ShopTests
         var loaded = SaveLoadTests.RoundTrip(sim);
         Assert.Equal(meal.Worth, loaded.Shops.Find(meal.Id)!.Worth);
         SaveLoadTests.AssertSameFuture(sim, loaded, 3);
+    }
+
+    // ---------------- Bots at the counter ----------------
+
+    private static int DrinkPrice(Simulation sim, Entity inn) => ShopPrices.Posted(sim, inn, ServiceKind.Drink)!.Value.Price;
+
+    [Fact]
+    public void ABotKeeperDropsAPriceItHearsCalledTooDear()
+    {
+        var (sim, keeper, inn, party) = Inn();
+        var bot = new Bots.BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 11);
+        sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, 50, true));
+        for (var t = 0; t < SimClock.HoursToTicks(6) && DrinkPrice(sim, inn) == 50; t++)
+        {
+            if (t % SimClock.TicksPerHour == 0)
+                foreach (var a in party)
+                    Thirsty(sim, a);
+            sim.Tick();
+            bot.Tick();
+        }
+        Assert.True(DrinkPrice(sim, inn) < 50, $"bot: {bot.Doing}\n" + string.Join("\n", sim.Speech.Kept.TakeLast(12).Select(u => $"{u.SpeakerName}: {u.Text}")));
+    }
+
+    [Fact]
+    public void ABotKeeperChargesMoreWhileItsLineIsLong()
+    {
+        var (sim, keeper, inn, _) = Inn();
+        var bot = new Bots.BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 11);
+        var start = DrinkPrice(sim, inn);
+        var more = sim.Parties.Send(sim, sim.Defs.Party("IronLantern")); // a crowd
+        Assert.NotEmpty(more);
+        for (var t = 0; t < SimClock.HoursToTicks(6) && DrinkPrice(sim, inn) <= start; t++)
+        {
+            if (t % (SimClock.TicksPerHour / 2) == 0)
+                foreach (var a in sim.Creatures().Where(e => sim.World.Has<Adventurer>(e)))
+                    Thirsty(sim, a);
+            sim.Tick();
+            bot.Tick();
+        }
+        Assert.True(DrinkPrice(sim, inn) > start, $"line {sim.Shops.LineAt(sim, inn).Count}, bot: {bot.Doing}");
+        Assert.True(DrinkPrice(sim, inn) <= start * Bots.BotPlayer.MaxMarkup);
     }
 }

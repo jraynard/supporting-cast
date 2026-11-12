@@ -1,8 +1,8 @@
 using SupportingCast.Sim.Ai;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Maps;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Systems;
 
 namespace SupportingCast.Sim.Locks;

@@ -1,10 +1,10 @@
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Expeditions;
 using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Round;
 using SupportingCast.Sim.Scenarios;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Systems;
 using static SupportingCast.Sim.Tests.TestWorld;
 

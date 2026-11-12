@@ -1,10 +1,10 @@
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Core;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Expeditions;
 using SupportingCast.Sim.Healing;
 using SupportingCast.Sim.Locks;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Speech;
 using SupportingCast.Sim.Systems;
 using SupportingCast.Sim.Work;
@@ -18,8 +18,10 @@ namespace SupportingCast.Sim.Bots;
 /// It plays its trade: the smith takes repairs and judges hammer or stone by what the blade looks
 /// like, the innkeeper pours for orders and matches parties to the quests it believes fit, the
 /// healer draws wounds and casts the mending whose feel it knows, the carpenter feels a strongbox
-/// over for traps and picks its lock by the feel alone. Every mini-game is played
-/// by hand, through the same predictor as the game's.
+/// over for traps and picks its lock by the feel alone. It keeps its shop's sign as a simple
+/// market: down when it hears a price called too dear, up while its line is long. It serves
+/// whoever's nearest the counter first. Every mini-game is played by hand, through the same
+/// predictor as the game's.
 /// </summary>
 /// <param name="world">The current sim: a resync replaces it.</param>
 public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCommand> send, ulong seed)
@@ -42,6 +44,10 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     private long _nextThink;
     private long _nextTalk;
     private long _heardUpTo;
+
+    // Pricing: the last heard line it's weighed, and when it last changed each price.
+    private long _pricedUpTo;
+    private readonly Dictionary<ServiceKind, long> _repriced = [];
     private bool _sentToWork;
 
     // The order in hand.
@@ -232,6 +238,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     private void Think(Simulation sim, Entity me, PerceptionView view, long now)
     {
         GoToWork(sim, me);
+        Price(sim, me, view, now);
         if (Mend(sim, me, view))
             return;
         if (_task != 0 && (now - _taskSince > TaskTimeoutTicks || !Work(sim, me, view, now)))
@@ -257,7 +264,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     {
         if (!sim.World.TryGet<Trade>(me, out var trade) || KindsFor(trade.Def) is not { Length: > 0 } kinds)
             return;
-        foreach (var e in view.Orders().OrderBy(e => e.PostedTick))
+        foreach (var e in view.Orders().OrderBy(e => FromCounter(sim, me, e.Poster)).ThenBy(e => e.PostedTick))
         {
             if (e.Status != OrderStatus.Open || e.Mine || !kinds.Contains(e.Kind) || (e.AssigneeName.Length > 0 && !e.MineToDo))
                 continue;
@@ -288,6 +295,87 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             ServiceKind.Unlock => OpenBox(sim, me, view, poster, now),
             _ => false,
         };
+    }
+
+    // ---------------- Pricing ----------------
+
+    /// <summary>Game hours between changes to the same price.</summary>
+    public const float RepriceHours = 1;
+
+    /// <summary>The most it will ask, as a multiple of the default price.</summary>
+    public const int MaxMarkup = 3;
+
+    /// <summary>People in line it can see before it reckons business is good enough to charge more.</summary>
+    public const int BusyLine = 3;
+
+    /// <summary>
+    /// A simple market, played from its side of the counter: hearing an adventurer call a price
+    /// too dear, it drops that one; seeing a line of <see cref="BusyLine"/> or more, it puts up the
+    /// price of what they've asked for. Its sign starts at the defaults. Only what it heard and saw.
+    /// </summary>
+    private void Price(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        if (MyShop(sim, me) is not { IsNull: false } shop || view.Prices(shop) is not { Count: > 0 } sign)
+        {
+            _pricedUpTo = view.Heard().Select(l => l.Id).DefaultIfEmpty(_pricedUpTo).Max();
+            return;
+        }
+        var changed = new HashSet<ServiceKind>();
+        void Set(PostedPrice p, int price)
+        {
+            var max = sim.Defs.Service(p.Kind).DefaultPrice * MaxMarkup;
+            price = Math.Clamp(price, 1, Math.Max(1, max));
+            if (price == p.Price || changed.Contains(p.Kind)
+                || (_repriced.TryGetValue(p.Kind, out var at) && now - at < SimClock.HoursToTicks(RepriceHours)))
+                return;
+            send(new SetPriceCommand(me, shop, p.Kind, price, true));
+            _repriced[p.Kind] = now;
+            changed.Add(p.Kind);
+            Doing = $"pricing {p.Label} at {price}";
+        }
+        foreach (var line in view.Heard())
+        {
+            if (line.Id <= _pricedUpTo)
+                continue;
+            _pricedUpTo = line.Id;
+            if (line.Speaker is not { } who || who == me || line.Clarity != Clarity.Clear || !sim.World.Has<Adventurer>(who))
+                continue;
+            foreach (var p in sign)
+                if (p.Offered && TooDear(sim.Defs.Service(p.Kind), p.Price, line.Text))
+                    Set(p, p.Price - 1);
+        }
+        var cells = ShopSystem.LineCells(sim, shop);
+        var waiting = view.Creatures().Where(e => e != me && sim.World.Has<Adventurer>(e) && cells.Contains(sim.World.Get<Position>(e).Cell)).ToHashSet();
+        if (waiting.Count < BusyLine)
+            return;
+        foreach (var kind in view.Orders().Where(o => o.Status == OrderStatus.Open && waiting.Contains(o.Poster)).Select(o => o.Kind).Distinct())
+            if (sign.FirstOrDefault(p => p.Kind == kind) is { Offered: true } p)
+                Set(p, p.Price + 1);
+    }
+
+    /// <summary>Is this what an adventurer says when a price is more than they'll pay (the def's lines, filled in)?</summary>
+    private static bool TooDear(ServiceDef def, int price, string text)
+    {
+        foreach (var template in def.TooDearLines.Append($"{{0}} silver for {def.Label}? I'll do without."))
+        {
+            var pattern = "^" + System.Text.RegularExpressions.Regex.Escape(template).Replace(@"\{0}", price.ToString()).Replace(@"\{1}", ".+") + "$";
+            if (System.Text.RegularExpressions.Regex.IsMatch(text, pattern))
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>The shop this character keeps, if their trade works from one.</summary>
+    private static Entity? MyShop(Simulation sim, Entity me) =>
+        sim.World.TryGet<Trade>(me, out var trade) && trade.Def.WorkplaceDef is { } workplace ? ShopSystem.BuildingOf(sim, workplace) : null;
+
+    /// <summary>How far someone stands from the front of this character's line (for serving the front first); large if it can't say.</summary>
+    private static int FromCounter(Simulation sim, Entity me, Entity who)
+    {
+        if (MyShop(sim, me) is not { IsNull: false } shop || ShopSystem.LineCells(sim, shop) is not { Count: > 0 } cells
+            || !sim.World.TryGet<Position>(who, out var at))
+            return int.MaxValue;
+        return Maps.Map.Distance(at.Cell, cells[0]);
     }
 
     /// <summary>Cells away past which it waits at its workplace for someone, rather than chasing them.</summary>
