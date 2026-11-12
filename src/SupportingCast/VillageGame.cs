@@ -894,7 +894,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             {
                 var spotGhost = Rgba.Pack(0.6f, 1f, 0.7f, 0.55f);
                 if (_toolDef.Model is { } spotModel)
-                    _renderer.AddModel(spotModel, slot.Spot.Cell, slot.Spot.Facing, null, spotGhost, Quad.Always, translucent: true);
+                    _renderer.AddModel(spotModel, slot.Spot.Cell, slot.Spot.Facing, null, spotGhost, Quad.Always, translucent: true, heightScale: WorldScale.HeightOf(_toolDef));
                 else
                     _renderer.Cube(Host.Atlas.Get(_toolDef.Sprite), slot.Spot.Cell, spotGhost, Quad.Always, translucent: true);
             }
@@ -916,7 +916,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             var ghost = ok ? Rgba.Pack(0.6f, 0.8f, 1f, 0.5f) : Rgba.Pack(1f, 0.35f, 0.3f, 0.5f);
             var sprite = Host.Atlas.Get(_toolDef.Sprite);
             if (_toolDef.Model is { } model)
-                _renderer.AddModel(model, target, _buildFacing, null, ghost, Quad.Always, translucent: true);
+                _renderer.AddModel(model, target, _buildFacing, null, ghost, Quad.Always, translucent: true, heightScale: WorldScale.HeightOf(_toolDef));
             else switch (_toolDef.Shape)
             {
                 case RenderShape.Block:
@@ -960,7 +960,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         {
             var cell = Buildings.CellOf(map, plan, anchor, _buildFacing, f.At[0], f.At[1]);
             if (map.InBounds(cell) && f.ThingDef.Model is { } model)
-                _renderer.AddModel(model, cell, (f.Facing + _buildFacing) & 3, null, ghost, Quad.Always, translucent: true);
+                _renderer.AddModel(model, cell, (f.Facing + _buildFacing) & 3, null, ghost, Quad.Always, translucent: true, heightScale: WorldScale.HeightOf(f.ThingDef));
         }
     }
 

@@ -19,6 +19,17 @@ public static class WorldScale
 {
     public const float LevelHeight = 2f;
 
+    /// <summary>
+    /// How much of its modelled height furniture stands at. Models are measured in cells, but the
+    /// stretch that makes walls tall enough for people makes tables, counters and stools tall too:
+    /// a 0.66 table stood chest-high. Scaled, it's waist-high beside a person.
+    /// </summary>
+    public const float FurnitureHeight = 0.65f;
+
+    /// <summary>What a thing's box model is scaled by up the way: furniture (any building drawn as a model but walls and doors) by <see cref="FurnitureHeight"/>, the rest not at all.</summary>
+    public static float HeightOf(SupportingCast.Sim.Defs.ThingDef def) =>
+        def.Model != null && def.Building is { IsWall: false, IsDoor: false, IsFloor: false, IsRoof: false } ? FurnitureHeight : 1f;
+
     /// <summary>A world offset that rises <paramref name="cells"/> sprite cells: world z divided by the stretch.</summary>
     public static float3 Rise(float cells) => new(0, 0, cells / LevelHeight);
 

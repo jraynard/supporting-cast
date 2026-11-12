@@ -348,14 +348,14 @@ public sealed class WorldMesher(TextureAtlas atlas)
                 var material = thing.Material;
                 PropModel.Build(_quads, model, new int3(x, y, z), thing.Facing,
                     name => (S(_materials.Resolve(name, material).Sprite), _materials.Resolve(name, material).Tint),
-                    Rgba.White, Quad.Level(z), d => Occludes(sim, x + d.X, y + d.Y, z));
+                    Rgba.White, Quad.Level(z), d => Occludes(sim, x + d.X, y + d.Y, z), heightScale: WorldScale.HeightOf(def));
                 // A preset building's upgrades fitted to it (the hearth's cooking pot).
                 if (BuildingKit.Of(sim, s) is { } fitted)
                     foreach (var u in fitted.Building.Def.Upgrades)
                         if (fitted.Building.Upgrades.Contains(u.Name) && def.IsA(u.OnDef) && u.Model.Count > 0)
                             PropModel.Build(_quads, u.Model, new int3(x, y, z), thing.Facing,
                                 name => (S(_materials.Resolve(name, null).Sprite), _materials.Resolve(name, null).Tint),
-                                Rgba.White, Quad.Level(z));
+                                Rgba.White, Quad.Level(z), heightScale: WorldScale.HeightOf(def));
             }
             else if (def.Building?.IsDoor == true)
                 continue; // drawn per frame so they can swing (Rendering/DoorAnimator)

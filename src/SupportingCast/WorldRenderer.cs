@@ -535,7 +535,8 @@ public sealed class WorldRenderer(TextureAtlas atlas)
                 var mid = Sim.Maps.Footprint.Centre(bedThing.Def, bedThing.Cell, bedThing.Facing);
                 center = new float3(mid.X, mid.Y, Position.CenterOf(p.Cell).Z);
                 if (bedThing.Def.Model is { } bedModel)
-                    center.Z += Math.Max(PropModel.SurfaceAt(bedModel, 0.5f, length * 0.5f), PropModel.SurfaceAt(bedModel, 0.5f, 0.2f));
+                    center.Z += Math.Max(PropModel.SurfaceAt(bedModel, 0.5f, length * 0.5f), PropModel.SurfaceAt(bedModel, 0.5f, 0.2f))
+                        * WorldScale.HeightOf(bedThing.Def);
                 facing = bedThing.Facing;
                 scale = length > 1 ? SleeperInLongBed : SleeperInBed;
             }
@@ -678,22 +679,23 @@ public sealed class WorldRenderer(TextureAtlas atlas)
 
     /// <summary>A box model drawn this frame (items, blueprint ghosts, tool previews); see <see cref="PropModel"/>.</summary>
     public void AddModel(IReadOnlyList<ModelBox> model, int3 cell, int facing, MaterialDef? material, uint color, uint flags,
-        bool translucent = false, int count = int.MaxValue, float rise = 1f, float lift = 0f)
+        bool translucent = false, int count = int.MaxValue, float rise = 1f, float lift = 0f, float heightScale = 1f)
     {
         _modelQuads.Clear();
         PropModel.Build(_modelQuads, model, cell, facing, name => _materials.Resolve(name, material) is var (n, t) ? (S(n), t) : default,
-            color, flags, count: count, rise: rise, lift: lift);
+            color, flags, count: count, rise: rise, lift: lift, heightScale: heightScale);
         foreach (var q in _modelQuads)
             _quads.Add(q, translucent);
     }
 
-    /// <summary>How high the top of the furniture in a cell is (0 with none, or a blueprint): where items there rest.</summary>
+    /// <summary>How high the top of the furniture in a cell is, as drawn (0 with none, or a blueprint): where items there rest, and who's climbed up stands.</summary>
     public static float SurfaceUnder(Map map, World w, int3 cell)
     {
         if (!map.InBounds(cell))
             return 0f;
         var s = map.Structure[map.Idx(cell)];
-        return !s.IsNull && !w.Has<Construction>(s) && w.Get<Thing>(s).Def.Building is { SurfaceHeight: > 0 } b ? b.SurfaceHeight : 0f;
+        return !s.IsNull && !w.Has<Construction>(s) && w.Get<Thing>(s).Def is { Building.SurfaceHeight: > 0 } d
+            ? d.Building!.SurfaceHeight * WorldScale.HeightOf(d) : 0f;
     }
 
     /// <summary>Height of the first surface under a column, starting at <paramref name="cell"/>.</summary>
@@ -939,9 +941,10 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             {
                 var uc = w.Get<Construction>(fitting);
                 var done = Math.Clamp(uc.WorkDone / u.Work, 0, 1);
-                AddModel(u.Model, ft.Cell, ft.Facing, null, Rgba.Pack(0.6f, 0.8f, 1f, 0.3f + 0.3f * Buildings.Delivered(uc)), Quad.Level(ft.Cell.Z), translucent: true);
+                AddModel(u.Model, ft.Cell, ft.Facing, null, Rgba.Pack(0.6f, 0.8f, 1f, 0.3f + 0.3f * Buildings.Delivered(uc)), Quad.Level(ft.Cell.Z), translucent: true,
+                    heightScale: WorldScale.FurnitureHeight);
                 if (done > 0)
-                    AddModel(u.Model, ft.Cell, ft.Facing, null, Rgba.White, Quad.Level(ft.Cell.Z), rise: done);
+                    AddModel(u.Model, ft.Cell, ft.Facing, null, Rgba.White, Quad.Level(ft.Cell.Z), rise: done, heightScale: WorldScale.FurnitureHeight);
                 _sitesNow[fitting] = (ft.Cell, u.Label, done);
             }
         var site = Buildings.PhaseSite(sim, building);
@@ -1026,9 +1029,9 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             {
                 // Boxes: a see-through ghost of the whole thing, and the real one rising inside it.
                 var frac = Math.Clamp(c.WorkDone / c.Target.Building!.Work, 0, 1);
-                AddModel(siteModel, cell, thing.Facing, c.MainMaterial, ghost, level, translucent: true);
+                AddModel(siteModel, cell, thing.Facing, c.MainMaterial, ghost, level, translucent: true, heightScale: WorldScale.HeightOf(def));
                 if (frac > 0)
-                    AddModel(siteModel, cell, thing.Facing, c.MainMaterial, Rgba.White, level, rise: frac);
+                    AddModel(siteModel, cell, thing.Facing, c.MainMaterial, Rgba.White, level, rise: frac, heightScale: WorldScale.HeightOf(def));
                 _sitesNow[e] = (cell, c.MainMaterial?.Describe(def.Label) ?? def.Label, frac);
                 if (frac > 0)
                     Bar(floor + new float3(0, 0, 1.15f), frac, Rgba.Pack(0.4f, 0.9f, 0.4f), level);

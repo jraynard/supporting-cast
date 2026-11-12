@@ -132,7 +132,8 @@ public class PropModelTests
         var site = sim.PlaceBlueprint(defs.Thing("Table"), at);
         Assert.Equal(0f, WorldRenderer.SurfaceUnder(sim.Map, sim.World, at)); // not while it's a blueprint
         sim.CompleteConstruction(site);
-        Assert.Equal(defs.Thing("Table").Building!.SurfaceHeight, WorldRenderer.SurfaceUnder(sim.Map, sim.World, at));
+        // As drawn: the def's height, lowered with the rest of the furniture.
+        Assert.Equal(defs.Thing("Table").Building!.SurfaceHeight * SupportingCast.Rendering.WorldScale.FurnitureHeight, WorldRenderer.SurfaceUnder(sim.Map, sim.World, at), 4);
         Assert.False(sim.CanAcceptItem(at, defs.Thing("Wood"), out _)); // solid: things go down beside it
     }
 }
