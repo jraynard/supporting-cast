@@ -35,12 +35,28 @@ public static class VillageRound
         Entity Role(string role) => built.Buildings.FirstOrDefault(b => b.Spec.Role == role).Building;
         var shrine = Role("Shrine");
         StockShrine(sim, shrine);
+        StockSmithy(sim, Role("Forge"));
         // Beds for everyone, or the first night sends them all out to sleep in the cold.
         foreach (var (spec, home) in built.Buildings)
             if (spec.Role == "Home")
                 VillageSetup.FillSpareBeds(sim, home);
         sim.RebuildDerivedIfNeeded();
         return new Town(built.Center, Role("Tavern"), Role("Forge"), shrine, Role("Woodshop"));
+    }
+
+    /// <summary>Charcoal in the smithy's fuel bin: a working day's firing, for whoever keeps the forge fed.</summary>
+    public const int SmithyCharcoal = 30;
+
+    private static void StockSmithy(Simulation sim, Entity smithy)
+    {
+        if (smithy.IsNull)
+            return;
+        foreach (var e in sim.World.Query<PartOf>())
+            if (sim.World.Get<PartOf>(e).Building == smithy && sim.World.Get<Thing>(e).Def.Name == "FuelBin")
+            {
+                sim.Store(e, sim.CreateItem(sim.Defs.Thing("Charcoal"), SmithyCharcoal));
+                return;
+            }
     }
 
     /// <summary>Bandages in the shrine's chest: the healer's backup for when the mana runs dry.</summary>

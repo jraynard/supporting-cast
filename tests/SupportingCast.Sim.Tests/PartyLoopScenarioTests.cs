@@ -64,7 +64,8 @@ public class PartyLoopScenarioTests(ITestOutputHelper output)
         var orders = sim.Shops.All.GroupBy(e => (e.Kind.Kind, e.Status)).Select(g => $"{g.Key.Kind}/{g.Key.Status}: {g.Count()}");
         var summary = string.Join("\n", log) + $"\nerrands: {string.Join(", ", orders)}\nparties {sim.Parties.PartiesSent}, out {sim.Expeditions.Out.Count}, "
             + $"succeeded {sim.Expeditions.Succeeded}, failed {sim.Expeditions.Failed}, dead {sim.Expeditions.Dead}\n"
-            + string.Join("\n", sim.Messages.Messages.TakeLast(25).Select(m => m.Text));
+            + string.Join("\n", sim.Messages.Messages.TakeLast(25).Select(m => m.Text))
+            + "\nbots: " + string.Join("; ", bots.Select(b => b.Doing));
         output.WriteLine(summary);
 
         Assert.True(sim.Parties.PartiesSent >= 1, summary);

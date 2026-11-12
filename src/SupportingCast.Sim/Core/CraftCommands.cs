@@ -198,8 +198,8 @@ public sealed record RepairCommand(Entity Avatar, Entity Station, Entity Item) :
             || !AvatarSystem.InReach(sim, w.Get<Position>(Avatar).Cell, Station)
             || Crafting.RepairCost(sim, w.Get<Thing>(Station).Def, Item) == null)
             return;
-        if (Work.HammerSession.AppliesToRepair(sim, Avatar, Station))
-            Work.HammerSession.TryStartRepair(sim, Avatar, Station, Item);
+        if (Work.Smithing.AppliesToRepair(sim, Avatar, Station))
+            Work.Smithing.BeginMending(sim, Avatar, Station, Item);
         else
             AiSystem.Order(sim, Avatar, new RepairJob(Station, Item));
     }

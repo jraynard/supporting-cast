@@ -324,13 +324,12 @@ public class RoundTests
         var beside = sim.SpiralFrom(w.Get<Thing>(forge).Cell, 2).First(c => sim.Map.Passable(c) && Ai.Pathfinder.Touches(c, w.Get<Thing>(forge).Cell));
         w.Get<Position>(me).Cell = beside;
         w.Get<Position>(me).Pos = Position.CenterOf(beside);
-        sim.ApplyNow(new CraftCommand(me, forge, spear)); // brings the kit's bars and lights the forge
-        Assert.Contains("heating up", sim.Messages.Messages[^1].Text);
-        for (var t = 0; t < SimClock.TicksPerHour && !Crafting.HotEnough(sim, forge, spear); t++)
-            sim.Tick();
-        sim.ApplyNow(new CraftCommand(me, forge, spear));
+        sim.ApplyNow(new CraftCommand(me, forge, spear)); // brings the kit's bars: the billet's in the tongs, and the forge lights
+        Assert.NotNull(Work.Smithing.PieceOf(sim, me));
+        Assert.Contains("billet", sim.Messages.Messages[^1].Text);
+        sim.ApplyNow(new Work.SmithCommand(me, forge));
 
-        Assert.True(w.Has<Work.WorkSession>(me), "once hot, the blacksmith is at the anvil");
+        Assert.True(w.Get<Work.WorkSession>(me) is Work.HeatSession, "cold or not, it goes in the fire: the bellows bring it up");
     }
 
     [Fact]

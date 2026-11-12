@@ -47,16 +47,19 @@ public sealed class SharpenSession : WorkSession
     /// <summary>Overheated: the temper's gone.</summary>
     public bool Burned { get; private set; }
 
+    /// <summary>On a smithy's grindstone rather than a whetstone: the wheel takes off steel twice as fast.</summary>
+    public bool OnWheel { get; set; }
+
     private float _drift;
     private int _steer;
 
     public float HalfWidth => BandHalfWidth * Hands.Tolerance;
     public bool InBand => MathF.Abs(Angle - 0.5f) <= HalfWidth;
-    private int StepsNeeded => Math.Max(60, (int)(StepsForBlunt * StartDullness));
+    private int StepsNeeded => Math.Max(60, (int)(StepsForBlunt * StartDullness * (OnWheel ? 0.5f : 1f)));
 
     public override Skill Skill => Skill.Crafting;
     public override float Xp => 30f;
-    public override string Title => $"Sharpening the {ItemLabel}";
+    public override string Title => OnWheel ? $"Grinding an edge on the {ItemLabel}" : $"Sharpening the {ItemLabel}";
 
     /// <summary>Can this worker put an edge on this item now? Null if so, else why not.</summary>
     public static string? Problem(Simulation sim, Entity worker, Entity item)
@@ -67,15 +70,18 @@ public sealed class SharpenSession : WorkSession
         if (!WeaponWear.Edged(w.Get<Thing>(item).Def))
             return "it has no edge to sharpen";
         if (Whetstone(sim, worker).IsNull)
-            return "you need a whetstone";
+            return "you need a whetstone or a grindstone";
         if (WeaponWear.Dullness(sim, item) <= 0.02f)
             return "it's already keen";
         return null;
     }
 
-    /// <summary>A whetstone on the worker's belt or in their pack or hands.</summary>
+    /// <summary>A grindstone in reach, else a whetstone on the worker's belt or in their pack or hands.</summary>
     public static Entity Whetstone(Simulation sim, Entity worker)
     {
+        var wheel = Smithing.GrindstoneInReach(sim, worker);
+        if (!wheel.IsNull)
+            return wheel;
         var belt = Toolbelt.Best(sim, worker, "Whetstone");
         if (!belt.IsNull)
             return belt;
@@ -101,6 +107,7 @@ public sealed class SharpenSession : WorkSession
         {
             Item = item, ItemLabel = sim.LabelOf(item), StartDullness = WeaponWear.Dullness(sim, item),
             Chipped = WeaponWear.HpFraction(sim, item) < WeaponWear.MendedHp,
+            OnWheel = !Smithing.GrindstoneInReach(sim, worker).IsNull,
         });
     }
 
@@ -179,6 +186,7 @@ public sealed class SharpenSession : WorkSession
         w.Bool(Burned);
         w.Float(_drift);
         w.Int(_steer);
+        w.Bool(OnWheel);
     }
 
     protected override void ReadState(SaveReader r)
@@ -193,6 +201,7 @@ public sealed class SharpenSession : WorkSession
         Burned = r.Bool();
         _drift = r.Float();
         _steer = Math.Sign(r.Int());
+        OnWheel = r.Version >= 3 && r.Bool();
     }
 }
 

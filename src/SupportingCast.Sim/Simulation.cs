@@ -225,6 +225,7 @@ public sealed partial class Simulation
             .AddSystem(sim.Larder)
             .AddSystem(sim.Presets)
             .AddSystem(new Work.WorkSystem())
+            .AddSystem(new Work.SmithingSystem())
             .AddSystem(new AvatarSystem())
             .AddSystem(new SettlerSystem())
             .AddSystem(sim.Ai)

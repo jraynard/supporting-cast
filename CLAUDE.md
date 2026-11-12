@@ -51,7 +51,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art.
   - `Speech/`: who heard what, decided when spoken from positions and rooms, and saved.
   - `Work/`: mini-games. `WorkSession.Advance` is pure, so `WorkPredictor` can run it ahead of the
     sim; anything reading the world goes in `StillValid` or `Finish`. Inputs arrive in batches.
-    New sessions go in the `WorkSession.Read` switch.
+    New sessions go in the `WorkSession.Read` switch. `Interrupted` keeps what lasts when one is
+    stopped early. Forging (`Smithing`) keeps the piece in the tongs as a `WorkPiece` between its
+    sessions (fire, anvil, quench); its heat is shown only as colour.
   - `Adventurers/`: `PartySystem` brings parties in a round; `AdventurerBrain` lounges, waits where
     their order is served, and leaves.
   - `Shops/`: what adventurers buy. Keepers set prices on their shop's sign (`ShopPrices`, defaults

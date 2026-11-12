@@ -13,6 +13,12 @@ namespace SupportingCast.Sim.Systems;
 /// </summary>
 public readonly record struct KnownStrongbox(bool Locked, int Pins, bool SearchedByMe, string? SpentTrap, int? Silver, string From);
 
+/// <summary>
+/// The piece in a smith's tongs as anyone in sight of it sees it: what it is, the colour it glows,
+/// and how far it's been beaten into shape (and the smith's own next step, to them). Never a flaw.
+/// </summary>
+public readonly record struct KnownPiece(string Label, Work.Glow Glow, float Temp, bool Hot, float Shape, bool Shaped, bool Mend, string? Next);
+
 public readonly record struct PerceivedPerson(string Name, string Condition, string? Holding);
 
 /// <summary>A line as one character caught it. <see cref="Speaker"/> is null when they couldn't tell who it was.</summary>
@@ -141,6 +147,35 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         if (!Omniscient && !onMe && !Within(t.Spawned ? t.Cell : sim.LocationOf(item), 1))
             return null;
         return Combat.WeaponWear.Describe(sim, item);
+    }
+
+    /// <summary>How much fuel is in a fire or forge the viewer can see; null if they can't, or it takes none.</summary>
+    public float? FuelIn(Entity station)
+    {
+        var w = sim.World;
+        if (blind || !CanSee(station) || !w.TryGet<Fueled>(station, out var f))
+            return null;
+        return f.Fuel;
+    }
+
+    /// <summary>What's in a chest or bin within the viewer's reach (nothing if it's further off).</summary>
+    public IEnumerable<Entity> InContainer(Entity container)
+    {
+        var w = sim.World;
+        if (blind || !w.IsAlive(container) || !w.TryGet<Thing>(container, out var t) || (!Omniscient && !Within(t.Cell, 1)))
+            return [];
+        return sim.StoredIn(container);
+    }
+
+    /// <summary>The piece in someone's tongs, if they have one and the viewer can see them (<see cref="KnownPiece"/>).</summary>
+    public KnownPiece? Piece(Entity smith)
+    {
+        if (blind || !CanSee(smith) || Work.Smithing.PieceOf(sim, smith) is not { } p)
+            return null;
+        // Temp is what the colour shows; the UI draws the colour from it and never prints it.
+        var next = smith == viewer || Omniscient ? Work.Smithing.NextStep(sim, smith, p) : null;
+        var hot = p.Temp >= Work.Smithing.Window(p.Recipe).Lo;
+        return new KnownPiece(Work.Smithing.PieceLabel(sim, p), Work.Smithing.GlowOf(p.Temp), p.Temp, hot, Math.Clamp(p.Shape, 0f, 1f), p.Shaped, p.IsMend, next);
     }
 
     /// <summary>A strongbox within reach or on your person, as you can see it (<see cref="KnownStrongbox"/>). Null if it isn't one, or is out of reach.</summary>

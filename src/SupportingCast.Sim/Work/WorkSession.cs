@@ -84,6 +84,9 @@ public abstract class WorkSession
     /// <summary>Apply the result, once <see cref="Done"/>. Sim-only.</summary>
     public abstract void Finish(Simulation sim);
 
+    /// <summary>Stopped before it was done (walked off, Esc, gone quiet): keep what lasts, such as a piece's heat. Sim-only.</summary>
+    public virtual void Interrupted(Simulation sim) { }
+
     /// <summary>Set up from <see cref="Rand"/> and <see cref="Hands"/>, once they're assigned.</summary>
     protected internal virtual void Begin() { }
 
@@ -179,6 +182,8 @@ public abstract class WorkSession
         WorkSession s = name switch
         {
             nameof(HammerSession) => new HammerSession(),
+            nameof(HeatSession) => new HeatSession(),
+            nameof(QuenchSession) => new QuenchSession(),
             nameof(SharpenSession) => new SharpenSession(),
             nameof(PourSession) => new PourSession(),
             nameof(Healing.DrawSession) => new Healing.DrawSession(),

@@ -97,7 +97,7 @@
       "name": "Anvil", "label": "anvil", "category": "Building", "solid": true, "sprite": "buildings/anvil",
       "description": "A block of iron on an oak stump: where hot metal is beaten into shape.",
       "maxHp": 600, "flammability": 0.1,
-      "building": { "work": 300, "surfaceHeight": 0.5, "cost": [ { "def": "IronBar", "count": 6 }, { "def": "Wood", "count": 4 } ] },
+      "building": { "work": 300, "surfaceHeight": 0.5, "smithy": "Anvil", "cost": [ { "def": "IronBar", "count": 6 }, { "def": "Wood", "count": 4 } ] },
       "model": [
         { "min": [0.30, 0.30, 0.00], "max": [0.70, 0.70, 0.34], "top": "props/log_end", "side": "props/log_side" },
         { "min": [0.22, 0.38, 0.34], "max": [0.82, 0.62, 0.50], "top": "props/iron", "side": "props/iron" },
@@ -108,7 +108,7 @@
       "name": "QuenchTub", "label": "quench tub", "category": "Building", "solid": true, "sprite": "buildings/quench_tub",
       "description": "A hooped tub of water. Hot steel plunged in and held for the right breath hardens; too long and it turns brittle.",
       "maxHp": 140, "flammability": 0.3,
-      "building": { "work": 160, "surfaceHeight": 0.36, "cost": [ { "def": "Wood", "count": 10 }, { "def": "IronBar", "count": 1 } ] },
+      "building": { "work": 160, "surfaceHeight": 0.36, "smithy": "Quench", "cost": [ { "def": "Wood", "count": 10 }, { "def": "IronBar", "count": 1 } ] },
       "model": [
         { "min": [0.14, 0.14, 0.00], "max": [0.86, 0.86, 0.36], "top": "props/water", "side": "props/tub_side" }
       ]
@@ -117,7 +117,7 @@
       "name": "Grindstone", "label": "grindstone", "category": "Building", "solid": true, "sprite": "buildings/grindstone",
       "description": "A sandstone wheel on a trestle, turned by a crank: where a blade takes its edge.",
       "maxHp": 200, "flammability": 0.4,
-      "building": { "work": 200, "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 6 } ] },
+      "building": { "work": 200, "smithy": "Grind", "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 6 } ] },
       "model": [
         { "min": [0.18, 0.34, 0.00], "max": [0.82, 0.66, 0.22], "top": "props/planks", "side": "props/planks" },
         { "min": [0.25, 0.44, 0.10], "max": [0.75, 0.56, 0.50], "top": "props/grindstone", "side": "props/grindstone" }

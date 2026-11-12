@@ -89,7 +89,15 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         if (_view == null || !_view.IsFor(sim, me))
             _view = Perception.For(sim, me);
 
-        var (press, held, axis) = Play(_work.Session);
+        // A press meant for the last step (drawing the piece from the fire) mustn't land on the next.
+        var live = sim.World.TryGet<WorkSession>(me, out var s) ? s.StartTick : -1;
+        var (press, held, axis) = _work.Session?.StartTick == live ? Play(_work.Session) : (false, false, 0);
+        // At the anvil it puts the hammer down as the colour fades, and takes the piece back to the fire.
+        if (_work.Session is HammerSession { Workable: < 0.95f } && !_stopped)
+        {
+            _stopped = true;
+            send(new StopWorkCommand(me));
+        }
         _work.Update(sim, me, steps, press, held, axis, send);
         if (_work.Session != null || sim.World.Has<WorkSession>(me) || now < _nextThink)
             return;
@@ -120,6 +128,12 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         {
             case HammerSession h:
                 return (h.Ready && MathF.Abs(h.Marker - h.Mark) <= h.HalfWidth * 0.5f, false, 0);
+            case HeatSession heat:
+                // Pump, and draw it out once it glows the colour at the top of its working heat.
+                return (false, true, heat.LooksReady ? 1 : 0);
+            case QuenchSession q:
+                // Keep it under till the steam thins to a hiss.
+                return (false, !(q.Dunked && q.Steam < 0.2f), 0);
             case SharpenSession sh:
             {
                 _resting = _resting ? sh.Heat > 0.3f : sh.Heat > 0.8f;
@@ -431,24 +445,60 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         }
         var condition = view.Condition(blade) ?? "";
         Doing = $"repair: {condition}";
-        if (condition.Contains("chip") || condition.Contains("bent") || condition.Contains("breaking"))
+        // In the tongs: to the fire while it's dark, to the anvil while it glows. A forge gone out is fed first.
+        if (view.Piece(me) is { } piece)
         {
-            var forge = Nearest(sim, me, "Forge");
-            if (forge.IsNull)
-                return false;
-            if (!AvatarSystem.InReach(sim, w.Get<Position>(me).Cell, forge))
-                Walk(sim, me, w.Get<Thing>(forge).Cell, now);
-            else
-                send(new RepairCommand(me, forge, blade)); // fires the forge; again once it's hot
-            return true;
+            if (!piece.Hot && Nearest(sim, me, "Forge") is { IsNull: false } forge && view.FuelIn(forge) is <= 0f)
+                return FeedForge(sim, me, view, forge, now);
+            Doing = $"forging: {piece.Label} {(piece.Hot ? "to the anvil" : "to the fire")}";
+            return AtStation(sim, me, Nearest(sim, me, piece.Hot ? "Anvil" : "Forge"), now, s => send(new SmithCommand(me, s)));
         }
+        if (condition.Contains("chip") || condition.Contains("bent") || condition.Contains("breaking"))
+            return AtStation(sim, me, Nearest(sim, me, "Forge"), now, s => send(new RepairCommand(me, s, blade)));
         if (condition.Contains("dull") || condition.Contains("blunt"))
         {
-            send(new SharpenCommand(me, blade));
+            // The grindstone if the smithy has one, else the whetstone in the kit.
+            var wheel = Nearest(sim, me, "Grindstone");
+            if (wheel.IsNull)
+                send(new SharpenCommand(me, blade));
+            else
+                AtStation(sim, me, wheel, now, s => send(new SmithCommand(me, s)));
             return true;
         }
         if (Reach(sim, me, owner, now, returning: true))
             send(new GiveCommand(me, owner, blade, 1));
+        return true;
+    }
+
+    /// <summary>Feed a forge that's gone out: charcoal from the smithy's fuel bin, then into the fire.</summary>
+    private bool FeedForge(Simulation sim, Entity me, PerceptionView view, Entity forge, long now)
+    {
+        var w = sim.World;
+        Doing = "feeding the forge";
+        bool IsFuel(Entity e) => w.IsAlive(e) && w.Get<Thing>(e).Def.Name is "Charcoal" or "Coal";
+        var pack = sim.PackOf(me);
+        if (IsFuel(w.Get<Carrying>(me).Item) || (!pack.IsNull && sim.StoredIn(pack).Any(IsFuel)))
+            return AtStation(sim, me, forge, now, f =>
+            {
+                send(new AvatarWorkCommand(me, true, w.Get<Thing>(f).Cell));
+                send(new AvatarWorkCommand(me, false));
+            });
+        return AtStation(sim, me, Nearest(sim, me, "FuelBin"), now, bin =>
+        {
+            if (view.InContainer(bin).FirstOrDefault(IsFuel) is { IsNull: false } coal)
+                send(new TakeFromStorageCommand(me, coal));
+        });
+    }
+
+    /// <summary>Walk to a station, then use it. False if there's none.</summary>
+    private bool AtStation(Simulation sim, Entity me, Entity station, long now, Action<Entity> use)
+    {
+        if (station.IsNull)
+            return false;
+        if (!AvatarSystem.InReach(sim, sim.World.Get<Position>(me).Cell, station))
+            Walk(sim, me, sim.World.Get<Thing>(station).Cell, now);
+        else
+            use(station);
         return true;
     }
 
@@ -587,11 +637,16 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         return best;
     }
 
+    private static readonly int3 Entity3None = new(int.MinValue, int.MinValue, int.MinValue);
+
     private void Walk(Simulation sim, Entity me, int3 cell, long now)
     {
         if (now - _lastWalk < ThinkTicks * 2)
             return;
-        var spot = sim.SpiralFrom(cell, 2).FirstOrDefault(c => c != cell && sim.Map.Passable(c), cell);
+        // Beside it, where it can be reached from (not just near it, which may be behind a wall).
+        var spot = sim.SpiralFrom(cell, 1).FirstOrDefault(c => c != cell && sim.Map.Passable(c) && Ai.Pathfinder.Touches(c, cell), Entity3None);
+        if (spot == Entity3None)
+            spot = sim.SpiralFrom(cell, 2).FirstOrDefault(c => c != cell && sim.Map.Passable(c), cell);
         send(new AvatarGoToCommand(me, spot));
         _lastWalk = now;
     }

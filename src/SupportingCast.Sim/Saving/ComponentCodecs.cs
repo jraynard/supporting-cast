@@ -290,6 +290,24 @@ internal static class ComponentCodecs
         }),
         Codec("CaskDrawn", (w, c) => w.Int(c.Drawn), r => new CaskDrawn { Drawn = r.Int() }),
         Codec("FiredForMending", (w, f) => w.Long(f.Until), r => new FiredForMending { Until = r.Long() }),
+        Codec("WorkPiece", (w, p) =>
+        {
+            w.Entity(p.Forge);
+            w.Def(p.Recipe);
+            w.Entity(p.Mending);
+            w.Float(p.Temp);
+            w.Float(p.Shape);
+            w.Int(p.BlowsNeeded);
+            w.Float(p.BlowSum);
+            w.Int(p.BlowCount);
+            w.Int(p.BurnSteps);
+            w.Int((int)p.Flaw);
+        }, r => new Work.WorkPiece
+        {
+            Forge = r.Entity(), Recipe = r.Def<RecipeDef>(), Mending = r.Entity(), Temp = r.Float(), Shape = r.Float(),
+            BlowsNeeded = r.Int(), BlowSum = r.Float(), BlowCount = r.Int(), BurnSteps = r.Int(), Flaw = (Work.PieceFlaw)r.Int(),
+        }),
+        Codec("Flawed", (w, f) => w.Int((int)f.Flaw), r => new Work.Flawed { Flaw = (Work.PieceFlaw)r.Int() }),
         Codec("Stored", (w, s) => w.Entity(s.In), r => new Stored { In = r.Entity() }),
         Codec("Request", (w, q) =>
         {

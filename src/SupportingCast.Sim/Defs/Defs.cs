@@ -253,6 +253,15 @@ public sealed class ButcherSpotProps
     public float Yield { get; set; } = 0.1f;
 }
 
+/// <summary>A smithy station's part in forging a piece (<c>Work.Smithing</c>).</summary>
+public enum SmithyRole
+{
+    None,
+    Anvil,
+    Quench,
+    Grind,
+}
+
 public sealed class BuildingProps
 {
     /// <summary>False for structures that only map generation places (natural slopes).</summary>
@@ -344,6 +353,9 @@ public sealed class BuildingProps
 
     /// <summary>Bellows: set beside a forge, a smith working there pumps them (<c>Components.Blown</c>).</summary>
     public BellowsProps? Bellows { get; set; }
+
+    /// <summary>Where a hot piece goes after the forge (<c>Work.Smithing</c>): the anvil, the quench tub or the grindstone.</summary>
+    public SmithyRole Smithy { get; set; }
 
     /// <summary>Where carcasses are carried to be butchered (<c>Systems.ButcherSpots</c>).</summary>
     public ButcherSpotProps? ButcherSpot { get; set; }

@@ -130,18 +130,28 @@ public class BlacksmithTests
     public void HammeringOutChipsAtTheForgeLeavesTheBladeToSharpen()
     {
         var (sim, me, forge, sword) = AtTheBench(hp: 0.4f);
+        var kit = new SmithyKit(forge, sim.SpawnStructure(sim.Thing("Anvil"), C(9, 10)), sim.SpawnStructure(sim.Thing("QuenchTub"), C(10, 11)),
+            sim.SpawnStructure(sim.Thing("Grindstone"), C(10, 9)));
+        sim.SpawnStructure(sim.Thing("Bellows"), C(12, 10));
+        sim.RebuildDerivedIfNeeded();
         var bars = Coinless(sim, me, "IronBar");
-        sim.ApplyNow(new RepairCommand(me, forge, sword));
-        Assert.IsType<HammerSession>(sim.World.Get<WorkSession>(me));
-        Hammer(sim, me);
 
+        // Into the tongs, then the fire and the anvil, a heat at a time.
+        sim.ApplyNow(new RepairCommand(me, forge, sword));
+        Assert.True(Smithing.PieceOf(sim, me) is { IsMend: true } p && p.Mending == sword);
+        kit.Drive(sim, me);
+
+        Assert.Null(Smithing.PieceOf(sim, me));
         Assert.True(WeaponWear.HpFraction(sim, sword) >= WeaponWear.MendedHp);
         Assert.True(WeaponWear.Dullness(sim, sword) >= WeaponWear.DullAfterHammering, "the anvil flattens the edge");
         Assert.True(Coinless(sim, me, "IronBar") < bars, "mending uses iron");
 
-        // Then the stone, and it's right.
-        sim.ApplyNow(new SharpenCommand(me, sword));
-        Grind(sim, me);
+        // Then the grindstone, which is quicker than a whetstone, and it's right.
+        Assert.Equal("Grind an edge on the " + sim.LabelOf(sword), Smithing.StepAt(sim, me, kit.Grindstone));
+        sim.ApplyNow(new SmithCommand(me, kit.Grindstone));
+        Assert.True(sim.World.Get<WorkSession>(me) is SharpenSession { OnWheel: true });
+        sim.ApplyNow(new StopWorkCommand(me));
+        kit.Grind(sim, me);
         Assert.True(WeaponWear.Mended(sim, sword));
     }
 

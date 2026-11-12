@@ -83,8 +83,8 @@ Known leftovers:
 - The dragon creature has no brain or breath job of its own yet (M3's late-round crisis).
 - Some dragon-era art, tools and def fields are still in the tree. Prune with the M6 art pass;
   the whetstone, ale cask and meditation stone borrow art too.
-- AI healers only bandage. Casks don't refill and there's no brewing. Mixed drinks, forge
-  management, the quench and commission details are still to come (docs/DESIGN.md, "Trade notes").
+- AI healers only bandage. Casks don't refill and there's no brewing. Mixed drinks, lighting the
+  forge by hand and commission details are still to come (docs/DESIGN.md, "Trade notes").
 - `Adventurer.Satisfaction` and the expedition tallies are collected, waiting for M3's Renown and Dread.
 - The new mini-games haven't been tuned in play yet.
 
@@ -170,6 +170,33 @@ look; time doesn't yet advance on its own when there's nothing to do.
 
 Known leftovers: no mid-step turns (a turn waits for the step under way); the forge can heat
 the smith's spot to 80°C+ and kill a bot that stands there for hours (also before this pass).
+
+### Blacksmith polish (2026-11-11)
+- **Forging a heat at a time** (`Work/Smithing`):
+  - **The piece:** a `WorkPiece` in the smith's tongs.
+  - **The fire** (`HeatSession`): bellows on F, draw it out with D, heat read only as colour.
+  - **The anvil** (`HammerSession`): the hammer's timing game, now against a cooling piece.
+  - **The quench** (`QuenchSession`): lift it as the steam dies to a hiss.
+  - **The edge:** grind it on the grindstone.
+  - **Flaws:** hammering cold cracks, a long quench leaves it brittle, a short one soft, and
+    burning costs grades or the piece. The flaw is hidden (`Flawed`) and tells in use.
+  - **Mending:** the same stations.
+  - **Bots** play the whole loop, feeding the forge from the bin when it goes out.
+- **The smithy, furnished:** an anvil, a quench tub, a grindstone, both bellows, a tool rack, and
+  a fuel bin stocked with charcoal (`tools/norse_smithy.py`). Smithy roles are a building def
+  field (`smithy`).
+- **The forge window:**
+  - Recipes are grouped by metal, with one Forge button that brings the materials and puts the
+    billet in your tongs.
+  - Each recipe's tooltip gives its working colours and number of blows.
+  - The fire is shown by its colour.
+  - Customers' pieces come first under Mend.
+  - Between steps, an "In your tongs" panel shows where the piece goes next.
+- **The hammer strikes with its head**, and the smith swings in the world while working.
+
+Known leftovers: commissions (the buyer's hilt, runes and metal); molds, and the hilt and grip
+as their own step; lighting and banking the forge by hand; reforging; AI smiths still forge with
+a plain `CraftJob`. Tune the heat and quench timing in play. Save format 3.
 
 ## Next
 

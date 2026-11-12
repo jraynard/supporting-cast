@@ -76,13 +76,27 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 Ideas for depth, to build when each trade's milestone comes round.
 
 **Blacksmith.**
-- Running the forge is play in its own right: lighting it, stoking it and keeping it at heat.
-- Quenching is its own mini-game: hold the piece in for the right length of time.
+- *Built: forging a heat at a time* (`Work/Smithing`).
+  - **Begin:** a piece is begun at the forge, its materials staged there, with the billet in the
+    smith's tongs.
+  - **The fire:** hold F to work the bellows, and draw the piece out (D) when its colour is
+    right. Heat is shown only as colour, black through cherry and orange to white.
+  - **The anvil:** it shapes while it holds that colour; as it fades it goes back to the fire.
+    Hammering black iron can crack it.
+  - **The quench:** for weapons and tools. Lift it as the steam dies to a hiss: too soon and
+    it's soft, too long and it's brittle. Armour is finished off the anvil.
+  - **The edge:** edged pieces come out blunt, for the grindstone.
+  - **Flaws:** they don't show; they tell in use (`Flawed`, `WeaponWear.Struck`), the hook for
+    the hidden-flaw betrayal.
+  - **The smithy:** an anvil, a quench tub, a grindstone, bellows, a tool rack and a fuel bin.
+- Running the forge is play in its own right: the bellows are, so far. Still to come: lighting
+  and banking it by hand. It lights itself for the work now, and the smith feeds it from the bin.
 - Repair starts from what's actually wrong with the piece. A dull edge goes to the sharpening
   wheel or stone; a chipped or bent blade goes on the anvil, and the worst may need reforging, or
   other real techniques. The smith has to judge the right approach. M2 starts with an abstract
   version: an edge (dull or keen) and chips (HP). Hammering out chips flattens the edge, so a
-  chipped blade is hammered first and then sharpened.
+  chipped blade is hammered first and then sharpened. Mending now uses the forge's stations:
+  heat it, hammer out the chips, then the grindstone. Reforging the worst is still to come.
 - Commissions have details the buyer chooses: the hilt, runes engraved on it, the materials.
 - more detail - heating the billet to the correct temp based on how hot it looks, using molds or shaping the item, making the hilt, handle and grip, thinking of like forged in fire style with realistic detailed forging here (as long as its fun).
 

@@ -14,26 +14,33 @@ public class WorkTests
 {
     private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
 
-    /// <summary>A round with a character standing beside a stocked, hot forge.</summary>
+    /// <summary>A round with a character in a smithy (<see cref="SmithyKit"/>), a billet for an axe in their tongs.</summary>
     private static (Simulation Sim, Entity Me, Entity Forge, RecipeDef Recipe) AtTheForge()
+    {
+        var (sim, me, kit, recipe) = AtTheSmithy();
+        return (sim, me, kit.Forge, recipe);
+    }
+
+    private static (Simulation Sim, Entity Me, SmithyKit Kit, RecipeDef Recipe) AtTheSmithy()
     {
         var sim = Create(40, 40);
         var me = sim.SpawnCreature(sim.Defs.Creature("Human"), "Smith", C(10, 10), ageDays: 25 * 365);
         sim.Round.OpenLobby();
         sim.Round.Sit(Ana, "Smith", null, null, null);
         sim.Round.Start(sim);
-        var forge = sim.SpawnStructure(sim.Thing("Forge"), C(11, 10));
-        sim.RebuildDerivedIfNeeded();
+        var kit = SmithyKit.Place(sim);
         var recipe = sim.Defs.Recipe("ForgeAxe");
-        sim.World.Get<Fueled>(forge).Fuel = 10;
-        sim.Map.Temperature[sim.Map.Idx(C(11, 10))] = 1200;
-        sim.World.Get<Workbench>(forge).Begin(recipe, me);
-        return (sim, me, forge, recipe);
+        sim.World.Get<Workbench>(kit.Forge).Begin(recipe, me);
+        Smithing.BeginMaking(sim, me, kit.Forge, recipe);
+        return (sim, me, kit, recipe);
     }
 
+    /// <summary>A heat on the anvil, the billet drawn from the fire glowing orange.</summary>
     private static HammerSession Start(Simulation sim, Entity me, Entity forge, RecipeDef recipe)
     {
-        HammerSession.TryStart(sim, me, forge, recipe);
+        Smithing.PieceOf(sim, me)!.Temp = 950f;
+        var anvil = sim.World.Query<Thing>().First(e => sim.World.Get<Thing>(e).Def.Name == "Anvil");
+        sim.ApplyNow(new SmithCommand(me, anvil));
         return (HammerSession)sim.World.Get<WorkSession>(me);
     }
 
@@ -50,29 +57,48 @@ public class WorkTests
     }
 
     [Fact]
-    public void GoodBlowsFinishTheJobAndMakeTheItem()
+    public void ACarefulHandForgesAMasterworkHeatByHeat()
     {
-        var (sim, me, forge, recipe) = AtTheForge();
-        Start(sim, me, forge, recipe);
-        Play(sim, me, new WorkPredictor(), onTheMark: true);
-        sim.Tick();
+        var (sim, me, kit, _) = AtTheSmithy();
+        kit.Drive(sim, me);
 
         Assert.False(sim.World.Has<WorkSession>(me));
-        Assert.Null(sim.World.Get<Workbench>(forge).Active);
+        Assert.True(Smithing.PieceOf(sim, me) == null, string.Join("\n", sim.Messages.Messages.TakeLast(12).Select(m => m.Text)));
+        Assert.Null(sim.World.Get<Workbench>(kit.Forge).Active);
         var made = sim.World.Query<Crafted>().Single();
         Assert.Equal(Quality.Masterwork, sim.World.Get<Crafted>(made).Quality);
+        Assert.False(sim.World.Has<Flawed>(made));
     }
 
     [Fact]
     public void BadBlowsMakeACrudePiece()
     {
-        var (sim, me, forge, recipe) = AtTheForge();
-        Start(sim, me, forge, recipe);
-        Play(sim, me, new WorkPredictor(), onTheMark: false);
-        sim.Tick();
+        var (sim, me, kit, _) = AtTheSmithy();
+        kit.Drive(sim, me, SmithStyle.BadAim);
 
         var made = sim.World.Query<Crafted>().Single();
         Assert.Equal(Quality.Crude, sim.World.Get<Crafted>(made).Quality);
+    }
+
+    [Fact]
+    public void AHeatEndsWhenThePieceGoesBlackAndItKeepsItsShape()
+    {
+        var (sim, me, forge, recipe) = AtTheForge();
+        Smithing.PieceOf(sim, me)!.Shape = 0.3f;
+        Start(sim, me, forge, recipe);
+        var predictor = new WorkPredictor();
+        for (var t = 0; t < 60 * 60 && sim.World.Has<WorkSession>(me); t++)
+        {
+            sim.Tick();
+            predictor.Update(sim, me, 1, false, false, 0, c => sim.ApplyNow(c));
+        }
+        sim.Tick();
+
+        var piece = Smithing.PieceOf(sim, me)!;
+        Assert.False(sim.World.Has<WorkSession>(me));
+        Assert.Equal(0.3f, piece.Shape);
+        Assert.True(piece.Temp < Smithing.Window(recipe).Lo * HammerSession.TooCold + 1f, "it went too cold to work");
+        Assert.Equal(Glow.Black, Smithing.GlowOf(piece.Temp));
     }
 
     [Fact]
@@ -221,15 +247,15 @@ public class WorkTests
         var me = sim.SpawnCreature(sim.Defs.Creature("Human"), "Smith", C(10, 10), ageDays: 25 * 365);
         sim.World.Add(me, new Avatar());
         var forge = sim.SpawnStructure(sim.Thing("Forge"), C(11, 10));
-        Assert.False(HammerSession.Applies(sim, me, forge, sim.Defs.Recipe("ForgeAxe")));
+        Assert.False(Smithing.Applies(sim, me, forge, sim.Defs.Recipe("ForgeAxe")));
     }
 
     [Fact]
     public void OnlyGearIsHammered()
     {
         var (sim, me, forge, _) = AtTheForge();
-        Assert.True(HammerSession.Applies(sim, me, forge, sim.Defs.Recipe("ForgeAxe")));
-        Assert.False(HammerSession.Applies(sim, me, forge, sim.Defs.Recipe("SmeltIron")));
+        Assert.True(Smithing.Applies(sim, me, forge, sim.Defs.Recipe("ForgeAxe")));
+        Assert.False(Smithing.Applies(sim, me, forge, sim.Defs.Recipe("SmeltIron")));
     }
 
     [Fact]
@@ -246,8 +272,12 @@ public class WorkTests
         }
         sim.Tick();
 
+        // It stops as the colour fades, so the heat's blows are good ones and nothing cracks.
+        var piece = Smithing.PieceOf(sim, me)!;
         Assert.False(sim.World.Has<WorkSession>(me));
-        Assert.True(sim.World.Get<Crafted>(sim.World.Query<Crafted>().Single()).Quality >= Quality.Fine);
+        Assert.True(piece.Shape > 0.2f, $"shape {piece.Shape}");
+        Assert.True(piece.BlowQuality > 0.8f, $"blows {piece.BlowQuality}");
+        Assert.Equal(PieceFlaw.None, piece.Flaw);
     }
 
     [Fact]

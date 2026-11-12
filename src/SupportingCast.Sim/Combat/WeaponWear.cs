@@ -30,6 +30,9 @@ public static class WeaponWear
     /// <summary>Hammering out chips leaves a blade at least this dull.</summary>
     public const float DullAfterHammering = 0.5f;
 
+    /// <summary>Chance a cracked blade (<see cref="Work.PieceFlaw.Crack"/>) snaps when a blow is turned.</summary>
+    public const float CrackSnapChance = 0.04f;
+
     /// <summary>A melee weapon with a cutting or stabbing edge (bows and clubs have none).</summary>
     public static bool Edged(ThingDef def) => def.Weapon is { Ranged: false, DamageType: DamageType.Cut or DamageType.Pierce };
 
@@ -61,10 +64,15 @@ public static class WeaponWear
         var def = sim.World.Get<Thing>(weapon).Def;
         if (def.Weapon is not { Ranged: false })
             return;
+        // A hidden flaw from the forge shows only here: soft steel dulls fast, brittle steel chips,
+        // and a cracked blade may let go on a blow that's turned.
+        var flaw = sim.World.TryGet<Work.Flawed>(weapon, out var f) ? f.Flaw : Work.PieceFlaw.None;
         if (Edged(def))
-            SetDullness(sim, weapon, Dullness(sim, weapon) + (turned ? DullPerDeflect : DullPerHit));
+            SetDullness(sim, weapon, Dullness(sim, weapon) + (turned ? DullPerDeflect : DullPerHit) * (flaw == Work.PieceFlaw.Soft ? 2f : 1f));
         ref var t = ref sim.World.Get<Thing>(weapon);
-        t.Hp -= ChipPerHit + (turned ? damage * ChipFromDeflect : 0f);
+        t.Hp -= (ChipPerHit + (turned ? damage * ChipFromDeflect : 0f)) * (flaw == Work.PieceFlaw.Brittle ? 2f : 1f);
+        if (flaw == Work.PieceFlaw.Crack && turned && sim.Rand.NextFloat() < CrackSnapChance)
+            t.Hp = 0f;
         if (t.Hp > 0)
             return;
         var label = t.Label;

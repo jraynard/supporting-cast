@@ -57,6 +57,9 @@ public enum AvatarActionKind
 
     /// <summary>Climb up onto a table or counter beside you (<see cref="ClimbJob"/>); any step takes you down.</summary>
     Climb,
+
+    /// <summary>The next step with the piece in your tongs at a smithy station (<see cref="Work.Smithing.Start"/>), begun at once.</summary>
+    Smith,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -328,6 +331,10 @@ public sealed class AvatarSystem : ISimSystem
             var gear = w.Get<Thing>(item);
             return new(AvatarActionKind.Equip, $"{(gear.Def.Weapon != null ? "Wield" : "Wear")} {gear.Label}", cell, item);
         }
+
+        // A piece in the tongs goes to the fire, the anvil or the tub; a blade to the grindstone.
+        if (Work.Smithing.StepAt(sim, avatar, site) is { } step && !sim.Reservations.IsReservedByOther(site, avatar))
+            return new(AvatarActionKind.Smith, step, cell, site);
 
         // A craft that has everything it needs is worked on the spot.
         if (Crafting.IsStation(sim, site) && w.Get<Workbench>(site) is { Active: { } making, Stocked: true } ready
@@ -641,6 +648,9 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.Pour:
                 Work.PourSession.TryStart(sim, avatar, action.Target);
+                break;
+            case AvatarActionKind.Smith:
+                Work.Smithing.Start(sim, avatar, action.Target);
                 break;
             case AvatarActionKind.Craft:
                 if (w.Get<Workbench>(action.Target).Active is { } recipe)

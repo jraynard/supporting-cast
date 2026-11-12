@@ -76,8 +76,21 @@ public sealed partial class VillageGame
                 DrawPick(pick);
                 return;
         }
-        if (_work.Session is HammerSession hammer)
-            DrawHammer(hammer);
+        switch (_work.Session)
+        {
+            case HammerSession hammer:
+                DrawHammer(hammer);
+                return;
+            case HeatSession heat:
+                DrawHeat(heat);
+                return;
+            case QuenchSession quench:
+                DrawQuench(quench);
+                return;
+            case null:
+                DrawTongs();
+                return;
+        }
     }
 
     /// <summary>What your character has heard, and the box for saying something. Replaces chat once a round starts.</summary>

@@ -188,7 +188,9 @@ public sealed partial class VillageGame
 
     /// <summary>
     /// The avatar's window at a station: its recipes with what you have toward each (hands, pack,
-    /// containers in reach), Make to bring them, and the craft under way. Closes when you walk off.
+    /// containers in reach), one button to bring them and start, and the craft under way. A forge
+    /// in a round shows the piece in your tongs, the fire by its colour, its recipes by metal, and
+    /// what you could mend. Closes when you walk off.
     /// </summary>
     private void DrawStationWindow()
     {
@@ -208,12 +210,34 @@ public sealed partial class VillageGame
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in pivot);
         var open = true;
         Narsil.Ui.Panel.Begin($"{Cap(thing.Label)}###station", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
-        DrawCraftUnderWay(_openStation, bench);
-        var byHand = bench.Active is { } making && Sim.Work.HammerSession.Applies(_sim, _avatar, _openStation, making);
-        if (bench.Active != null && bench.Stocked)
-            TextC(Good, byHand
-                ? "Everything's here. Press Start (or F at it) once it's hot, then strike with F as the marker crosses the mark."
-                : "Everything's here: hold F at it to work.");
+        var forging = Sim.Work.Smithing.AppliesToRepair(_sim, _avatar, _openStation);
+        var piece = View.Piece(_avatar);
+        if (forging)
+        {
+            DrawFire(thing);
+            if (piece is { } p)
+            {
+                ImGui.Separator();
+                ImGui.AlignTextToFramePadding();
+                Swatch(p.Temp);
+                ImGui.SameLine(0, 8);
+                ImGui.Text($"In your tongs: {p.Label}");
+                if (!p.Shaped)
+                    Bar(p.Mend ? "Mended" : "Shaped", p.Shape, Theme.Accent);
+                if (p.Next is { } next)
+                    TextC(Good, $"{Cap(next)}. F at the fire, the anvil or the tub.");
+                if (ImGui.SmallButton("Set it aside"u8))
+                    Issue(new Sim.Work.SetAsidePieceCommand(_avatar));
+            }
+            else if (bench.Active != null && bench.By != _avatar)
+                DrawCraftUnderWay(_openStation, bench);
+        }
+        else
+        {
+            DrawCraftUnderWay(_openStation, bench);
+            if (bench.Active != null && bench.Stocked)
+                TextC(Good, "Everything's here: hold F at it to work.");
+        }
         ImGui.Separator();
 
         // What the player has to hand, by def and material.
@@ -226,8 +250,15 @@ public sealed partial class VillageGame
         int Has(ThingCount x) => have.Where(kv => kv.Key.Item1 == x.ThingDef && (x.MaterialDef == null || kv.Key.Item2 == x.MaterialDef)).Sum(kv => kv.Value);
 
         var busy = !bench.Untouched && (bench.By != _avatar || bench.Active == null);
-        foreach (var r in thing.Def.Recipes)
+        // At a forge, by metal (what goes in first): copper, bronze, iron, steel; smelting on its own.
+        string? group = null;
+        foreach (var r in thing.Def.Recipes.OrderBy(r => forging ? GroupOf(r) : "").ThenBy(r => r.MinTemp))
         {
+            if (forging && GroupOf(r) is var g && g != group)
+            {
+                group = g;
+                Theme.Header(Host.ImGui, g);
+            }
             ImGui.PushID(r.Name);
             if (!RecipeBooks.Knows(_sim, _avatar, r))
             {
@@ -235,38 +266,62 @@ public sealed partial class VillageGame
                 ImGui.PopID();
                 continue;
             }
+            var byHand = forging && Sim.Work.Smithing.Applies(_sim, _avatar, _openStation, r);
             var blocker = RecipeBlocker(_avatar, _openStation, r);
             var mine = bench.Active == r && (bench.By == _avatar || bench.By.IsNull);
-            var enabled = blocker == null && (!busy || mine);
+            var ready = r.Ingredients.TrueForAll(x => Has(x) >= x.Count) || (mine && bench.Stocked);
+            var enabled = blocker == null && (!busy || mine) && piece == null;
             if (!enabled)
                 ImGui.BeginDisabled(true);
-            var start = mine && bench.Stocked && byHand;
-            if (ImGui.Button(start ? "Start" : mine ? "Bring more" : "Make", in _autoSize))
+            var verb = byHand ? (ready ? "Forge" : "Bring") : mine ? "Bring more" : "Make";
+            if (ImGui.Button(verb, in _autoSize))
                 Issue(new CraftCommand(_avatar, _openStation, r));
             if (!enabled)
                 ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(blocker != null ? $"You can't yet: {blocker}."
-                    : start ? "Take up the hammer. If the fire's still coming up to heat, you'll be told how far it has to go."
+                Tip(piece != null ? "Finish or set aside what's in your tongs first."
+                    : blocker != null ? $"You can't yet: {blocker}."
                     : busy && !mine ? $"The {thing.Def.Label} is busy with {bench.Active!.Label}; call that off first."
+                    : byHand ? $"Takes what it needs from your hands, pack and any chest in reach, and puts the billet in your tongs. "
+                        + $"Work it {Sim.Work.Smithing.WorkingColours(r)}; about {Sim.Work.Smithing.BlowsFor(r)} good blows."
+                        + (Sim.Work.Smithing.NeedsQuench(r) ? " Then the quench." : "")
                     : "Brings what you have of it from your hands, pack and any chest or wagon in reach; once it's all here, hold F to work.");
             ImGui.SameLine(0, 8);
             ImGui.Text($"{Cap(r.Label)}");
             ImGui.SameLine(0, 6);
             var parts = r.Ingredients.Select(x => $"{Math.Min(Has(x), x.Count)}/{x.Count} {x.ThingDef.Label}");
-            TextC(r.Ingredients.TrueForAll(x => Has(x) >= x.Count) ? Good : Dim, $"({string.Join(", ", parts)})");
+            TextC(ready ? Good : Dim, $"({string.Join(", ", parts)})");
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip($"Makes {Products(r)}. About {r.Work / SimClock.TicksPerHour:0.#} h of {r.Skill} work.");
+                Tip($"Makes {Products(r)}.");
             ImGui.PopID();
         }
-        DrawRepairs(thing.Def);
+        DrawRepairs(thing.Def, piece == null);
         Narsil.Ui.Panel.End();
         if (!open)
             _openStation = Entity.Null;
     }
 
-    /// <summary>Gear the avatar has on them that this station could mend, with what it would take.</summary>
-    private void DrawRepairs(ThingDef station)
+    /// <summary>A forge recipe's group: the metal that goes into it, or smelting.</summary>
+    private static string GroupOf(RecipeDef r) =>
+        !r.Products.Exists(p => Crafting.IsGear(p.ThingDef)) ? "Smelting"
+        : r.Ingredients.Count > 0 ? Cap(r.Ingredients[0].ThingDef.Label) : "Other";
+
+    /// <summary>The forge's fire as a smith sees it: its colour, and the fuel left in it.</summary>
+    private void DrawFire(Thing forge)
+    {
+        var temp = _sim.TemperatureAt(forge.Cell);
+        var fuel = _sim.World.TryGet<Fueled>(_openStation, out var f) ? f.Fuel : 0f;
+        ImGui.AlignTextToFramePadding();
+        Swatch(temp);
+        ImGui.SameLine(0, 8);
+        if (fuel <= 0)
+            TextC(Bad, "The fire's out: it needs charcoal or coal.");
+        else
+            TextC(fuel < 2f ? Warn : Dim, $"The fire's {Sim.Work.Smithing.GlowLabel(Sim.Work.Smithing.GlowOf(temp))}.{(fuel < 2f ? " It's nearly out of fuel." : "")}");
+    }
+
+    /// <summary>Gear the avatar has on them that this station could mend, what it would take, the pieces customers left first.</summary>
+    private void DrawRepairs(ThingDef station, bool enabled = true)
     {
         var w = _sim.World;
         var gear = _sim.Worn(_avatar).ToList();
@@ -277,7 +332,7 @@ public sealed partial class VillageGame
         if (_sim.PackOf(_avatar) is { IsNull: false } pack)
             gear.AddRange(_sim.StoredIn(pack));
         var first = true;
-        foreach (var item in gear)
+        foreach (var item in gear.OrderBy(i => w.Has<Entrusted>(i) ? 0 : 1))
         {
             if (Crafting.RepairCost(_sim, station, item) is not { } cost)
                 continue;
@@ -288,15 +343,21 @@ public sealed partial class VillageGame
                 first = false;
             }
             ImGui.PushID(item.Index);
+            if (!enabled)
+                ImGui.BeginDisabled(true);
             if (ImGui.Button("Mend"u8, in _autoSize))
                 Issue(new RepairCommand(_avatar, _openStation, item));
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip(Sim.Work.HammerSession.AppliesToRepair(_sim, _avatar, _openStation)
-                    ? "Hammer out the chips on the mark. It leaves a blade dull: sharpen it after."
+            if (!enabled)
+                ImGui.EndDisabled();
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                Tip(!enabled ? "Finish or set aside what's in your tongs first."
+                    : Sim.Work.Smithing.AppliesToRepair(_sim, _avatar, _openStation)
+                    ? "Take it in your tongs: heat it, then hammer out the chips on the anvil. It comes off dull: grind it after."
                     : "Hold F at the station to work; the material is used once it's done.");
             ImGui.SameLine(0, 8);
             var t = w.Get<Thing>(item);
-            ImGui.Text($"{Cap(_sim.LabelOf(item))} ({View.Condition(item) ?? $"{t.Hp / t.MaxHp * 100:F0}%"}): {cost.Count} {cost.Material.ThingDef.Label}");
+            var whose = w.TryGet<Entrusted>(item, out var e) && w.IsAlive(e.Owner) && w.TryGet<Creature>(e.Owner, out var owner) ? $"{owner.Name}'s " : "";
+            ImGui.Text($"{whose}{_sim.LabelOf(item)} ({View.Condition(item) ?? $"{t.Hp / t.MaxHp * 100:F0}%"}): {cost.Count} {cost.Material.ThingDef.Label}");
             ImGui.PopID();
         }
     }

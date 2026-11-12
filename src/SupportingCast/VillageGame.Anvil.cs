@@ -22,7 +22,7 @@ public sealed partial class VillageGame
 
     private void DrawHammer(HammerSession s)
     {
-        BeginWork(s.Title, ("F", "strike as the hammer comes down on the mark"), ("Esc", "stop"));
+        BeginWork(s.Title, ("F", "strike as the hammer comes down on the mark"), ("Esc", "back to the fire"));
         if (s.StartTick != _anvilSession)
         {
             _anvilSession = s.StartTick;
@@ -38,6 +38,7 @@ public sealed partial class VillageGame
             _anvilBlows = s.Blows;
             _anvilQuality = s.Quality;
             _strikeAt = _time;
+            _strikeCold = s.LastCold;
             _pendingSparks = true;
         }
 
@@ -61,7 +62,6 @@ public sealed partial class VillageGame
         dl.AddRectFilledMultiColor(in gMin, in gMax, glowTop, glowTop, glowBottom, glowBottom);
 
         var px = MathF.Max(1f, MathF.Round(3f * Gui.Scale));
-        var heat = 1f - 0.7f * s.Blows / (float)HammerSession.BlowsNeeded;
         if (Gui.TrySprite("ui/work/anvil", out var anvil))
         {
             var a = new float2(anvil.PixelSize.X, anvil.PixelSize.Y) * px;
@@ -73,9 +73,9 @@ public sealed partial class VillageGame
             {
                 var b = new float2(billet.PixelSize.X, billet.PixelSize.Y) * px;
                 var bMin = new float2(face.X + 2 * px, face.Y - b.Y + px);
-                var hot = HeatColour(heat);
+                var hot = GlowColour(s.Temp);
                 var glowAt = bMin + b * 0.5f;
-                dl.AddCircleFilled(in glowAt, b.X * 0.7f, Gui.U8(hot, 0.18f * heat), 24);
+                dl.AddCircleFilled(in glowAt, b.X * 0.7f, Gui.U8(hot, 0.25f * GlowStrength(s.Temp)), 24);
                 Gui.Image(dl, billet, bMin, bMin + b, Gui.U8(hot));
                 if (since < 0.08f)
                     dl.AddRectFilled(in bMin, bMin + b, new ImColor8(255, 255, 240, (byte)(220 * (1f - since / 0.08f))), 0f, ImDrawFlags.None);
@@ -109,31 +109,26 @@ public sealed partial class VillageGame
         var nMax = new float2(x + Gui.S(2), tMax.Y + Gui.S(3));
         dl.AddRectFilled(in nMin, in nMax, Theme.U8(s.Ready ? Theme.Text : Theme.Dim), Gui.S(1), ImDrawFlags.None);
 
+        // How far it's been beaten into shape, over every heat; and a warning as the colour goes.
         ImGui.Spacing();
-        var pipR = Gui.S(5);
-        var pips = ImGui.GetCursorScreenPos();
-        ImGui.Dummy(new float2(tSize.X, pipR * 2 + Gui.S(2)));
-        var pipsW = HammerSession.BlowsNeeded * pipR * 3;
-        for (var i = 0; i < HammerSession.BlowsNeeded; i++)
-        {
-            var c = new float2(pips.X + (tSize.X - pipsW) * 0.5f + pipR * 1.5f + i * pipR * 3, pips.Y + pipR + Gui.S(1));
-            if (i < s.Blows)
-                dl.AddCircleFilled(in c, pipR, Theme.U8(Theme.Accent), 12);
-            dl.AddCircle(in c, pipR, Theme.U8(Theme.Iron), 12, Gui.S(1.5f));
-        }
+        var sMin = ImGui.GetCursorScreenPos();
+        var sSize = Gui.S(420, 10);
+        ImGui.Dummy(in sSize);
+        var sMax = sMin + sSize;
+        Gui.Trough(dl, sMin, sMax);
+        var fill = new float2(sMin.X + Gui.S(2) + (sSize.X - Gui.S(4)) * Math.Clamp(s.Shape, 0f, 1f), sMax.Y - Gui.S(2));
+        var fMin = sMin + Gui.S(2, 2);
+        dl.AddRectFilled(in fMin, in fill, Theme.U8(Theme.Accent, 0.8f), 0f, ImDrawFlags.None);
+        if (s.Workable < 0.95f)
+            TextC(s.Workable < 0.5f ? Theme.Bad : Theme.Warn, s.Workable < 0.5f
+                ? "It's going black: blows now do it no good, and may crack it. Back to the fire."
+                : "The colour's fading: it's moving less under the hammer.");
+        else
+            TextC(Theme.Dim, s.Repairing ? "Hammering out the chips." : "Beating it into shape.");
         EndWork();
     }
 
-    private bool _pendingSparks;
-
-    /// <summary>White-hot to cherry to dull red as the bar cools under the hammer.</summary>
-    private static float4 HeatColour(float heat)
-    {
-        var cherry = new float4(0.95f, 0.36f, 0.12f, 1f);
-        var white = new float4(1f, 0.9f, 0.6f, 1f);
-        var dull = new float4(0.45f, 0.16f, 0.1f, 1f);
-        return heat > 0.6f ? cherry + (white - cherry) * ((heat - 0.6f) / 0.4f) : dull + (cherry - dull) * (heat / 0.6f);
-    }
+    private bool _pendingSparks, _strikeCold;
 
     /// <summary>
     /// The hammer, pivoting at the smith's hand off to the right. Between blows it hangs high when
@@ -189,7 +184,7 @@ public sealed partial class VillageGame
 
     private void DrawGrade(ImDrawListPtr dl, float2 at, float since)
     {
-        var (word, colour) = _strikeGrade switch
+        var (word, colour) = _strikeCold ? ("Cold iron!", Theme.Bad) : _strikeGrade switch
         {
             >= 0.95f => ("Clean!", Theme.Good),
             >= 0.7f => ("Good", Theme.Text),

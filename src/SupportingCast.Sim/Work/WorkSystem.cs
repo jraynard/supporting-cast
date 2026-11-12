@@ -75,6 +75,8 @@ public sealed class WorkSystem : ISimSystem
             avatar.WorkHeld = false;
             avatar.HasPending = false;
         }
+        if (w.TryGet<WorkSession>(worker, out var before))
+            before.Interrupted(sim);
         w.Remove<WorkSession>(worker);
         w.Add(worker, session);
     }
@@ -83,6 +85,8 @@ public sealed class WorkSystem : ISimSystem
     public static void Stop(Simulation sim, Entity worker, string? message)
     {
         var w = sim.World;
+        if (w.TryGet<WorkSession>(worker, out var session))
+            session.Interrupted(sim);
         if (!w.Remove<WorkSession>(worker) || message == null)
             return;
         sim.Messages.Add(MessageKind.Info, message, w.Get<Position>(worker).Cell);
