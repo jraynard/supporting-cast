@@ -359,6 +359,46 @@ public class AvatarTests
     }
 
     [Fact]
+    public void SwitchingAClickedWalkKeepsTheStepInProgress()
+    {
+        var sim = Warm();
+        var me = Avatar(sim, C(5, 5));
+        sim.Enqueue(new AvatarGoToCommand(me, C(20, 5)));
+        sim.Tick();
+        // Partway into a step: an interact click (a new job) or the keys mustn't snap it back.
+        while (sim.World.Get<Mover>(me).StepProgress is < 0.3f or > 0.45f)
+            sim.Tick();
+        var before = sim.World.Get<Position>(me).Pos;
+        sim.Enqueue(new AvatarGoToCommand(me, C(5, 12), Interact: true));
+        sim.Tick();
+        var after = sim.World.Get<Position>(me).Pos;
+        Assert.True(MathF.Abs(after.X - before.X) < 0.2f && MathF.Abs(after.Y - before.Y) < 0.2f, $"jumped from {before} to {after}");
+
+        before = after;
+        sim.Enqueue(new AvatarMoveCommand(me, new int2(0, 1)));
+        sim.Tick();
+        after = sim.World.Get<Position>(me).Pos;
+        Assert.True(MathF.Abs(after.X - before.X) < 0.2f && MathF.Abs(after.Y - before.Y) < 0.2f, $"jumped from {before} to {after}");
+    }
+
+    [Fact]
+    public void AnUnreachableClickWalksToTheNearestReachableCell()
+    {
+        var sim = Warm();
+        // A walled-in square round (15..17, 5..7): its middle can't be reached.
+        sim.FillBlocks(new int3(14, 4, 1), new int3(18, 4, 1));
+        sim.FillBlocks(new int3(14, 8, 1), new int3(18, 8, 1));
+        sim.FillBlocks(new int3(14, 5, 1), new int3(14, 7, 1));
+        sim.FillBlocks(new int3(18, 5, 1), new int3(18, 7, 1));
+        var me = Avatar(sim, C(5, 6));
+        sim.Enqueue(new AvatarGoToCommand(me, C(16, 6)));
+        sim.TickMany(SimClock.TicksPerSecond * 10);
+        var at = Cell(sim, me);
+        Assert.True(AvatarSystem.Distance(at, C(16, 6)) <= 3 && at.X < 14, $"stopped near the walls, at {at}");
+        Assert.Null(sim.World.Get<Mind>(me).Job);
+    }
+
+    [Fact]
     public void ClickingATreeWalksOverAndChopsWhileTheButtonIsHeld()
     {
         var sim = Warm();

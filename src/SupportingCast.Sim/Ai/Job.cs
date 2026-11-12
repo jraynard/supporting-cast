@@ -103,7 +103,17 @@ public abstract class Job
         OnEnd(succeeded);
         Sim.Reservations.ReleaseAll(Pawn);
         if (Sim.World.TryGet<Mover>(Pawn, out var mover))
-            mover.Stop();
+        {
+            // A player's character finishes the step under way rather than snapping back to the
+            // cell it left: the next walk or held direction carries on from there.
+            if (Sim.World.Has<Avatar>(Pawn) && mover.Moving && mover.StepProgress > 0)
+            {
+                mover.Path = [mover.Path![mover.PathIndex]];
+                mover.PathIndex = 0;
+            }
+            else
+                mover.Stop();
+        }
     }
 
     protected abstract IEnumerable<JobStatus> Run();

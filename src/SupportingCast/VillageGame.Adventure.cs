@@ -2,6 +2,7 @@ using Brutal.ImGuiApi;
 using Narsil.Ui;
 using Narsil;
 using Narsil.Platform;
+using Narsil.Rendering;
 using SupportingCast.Net;
 using SupportingCast.Rendering;
 using SupportingCast.Sim.Ai;
@@ -97,6 +98,7 @@ public sealed partial class VillageGame
         _sentDig = false;
         _clickHold = ClickHold.None;
         _clickWindow = null;
+        _seenWalkFailure = !_avatar.IsNull && _sim.Ai.LastFailure.TryGetValue(_avatar, out var failed) ? failed : null;
     }
 
     /// <summary>Read WASD/F and send what changed. Outside combat only: in a fight the HUD gives orders.</summary>
@@ -163,7 +165,10 @@ public sealed partial class VillageGame
 
     private static string Capitalized(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 
-    /// <summary>A creature whose on-screen body is under the cursor.</summary>
+    /// <summary>
+    /// A creature whose on-screen body is under the cursor. Never your own character: the camera
+    /// sits on it, so clicks round yourself would select you instead of walking (the portrait does that).
+    /// </summary>
     private Entity PickCreature(float2 mouse)
     {
         var w = _sim.World;
@@ -171,6 +176,8 @@ public sealed partial class VillageGame
         var bestDist = 0.6f * _camera.Zoom;
         foreach (var e in w.Query<Creature>())
         {
+            if (e == _avatar)
+                continue;
             var pos = w.Get<Position>(e);
             if (pos.Cell.Z > _renderer.CutawayZ || !View.CanSee(e))
                 continue;
@@ -201,6 +208,16 @@ public sealed partial class VillageGame
     private ClickHold _clickHold;
     private int3 _clickSent;
 
+    /// <summary>Where and how long ago the button went down: a walk only follows the cursor once it's clearly being dragged.</summary>
+    private float2 _clickPressAt;
+    private float _clickHeldFor;
+
+    /// <summary>Hold this long (seconds) and move this far (pixels) before a walk follows the cursor.</summary>
+    private const float FollowAfter = 0.25f, FollowDrag = 6f;
+
+    /// <summary>The last walk failure shown, so each "can't get there" is said once.</summary>
+    private string? _seenWalkFailure;
+
     /// <summary>A click on something that opens a window (the wagon, a bench, the keeper): opened once the walk there ends in reach.</summary>
     private int3? _clickWindow;
 
@@ -226,11 +243,19 @@ public sealed partial class VillageGame
                 Issue(new AvatarWorkCommand(_avatar, false));
             _clickHold = ClickHold.None;
         }
-        else if (_clickHold == ClickHold.Walk && input.IsMouseDown(MouseButton.Left)
-                 && _sim.Map.InBounds(_hoverCell) && _hoverCell != _clickSent)
+        else if (_clickHold == ClickHold.Walk && input.IsMouseDown(MouseButton.Left))
         {
-            Issue(new AvatarGoToCommand(_avatar, _hoverCell));
-            _clickSent = _hoverCell;
+            // A click names one cell; the camera following you mustn't drag it about. Only a held,
+            // moved press steers the walk with the cursor.
+            _clickHeldFor += dt;
+            var moved = input.MousePosition - _clickPressAt;
+            if (_clickHeldFor >= FollowAfter && moved.X * moved.X + moved.Y * moved.Y >= FollowDrag * FollowDrag)
+                _clickPressAt = new float2(float.NegativeInfinity, 0); // dragging from now on
+            if (float.IsNegativeInfinity(_clickPressAt.X) && _sim.Map.InBounds(_hoverCell) && _hoverCell != _clickSent)
+            {
+                Issue(new AvatarGoToCommand(_avatar, _hoverCell));
+                _clickSent = _hoverCell;
+            }
         }
 
         if (input.WasMousePressed(MouseButton.Right) && ItemInReach() is { IsNull: false } menuItem)
@@ -266,20 +291,112 @@ public sealed partial class VillageGame
         if (!_sim.Map.InBounds(_hoverCell))
             return true;
         Issue(new AvatarGoToCommand(_avatar, _hoverCell));
-        (_clickHold, _clickSent) = (ClickHold.Walk, _hoverCell);
+        (_clickHold, _clickSent, _clickPressAt, _clickHeldFor) = (ClickHold.Walk, _hoverCell, input.MousePosition, 0f);
         return true;
     }
 
     /// <summary>
-    /// What a click would walk over and do: the first of the hovered cell, block and what walls
-    /// hide that F could act on once you stood there.
+    /// Where a click would go: a faint ring on the hovered cell, amber on the thing a click would
+    /// act on; and a ring on where a clicked walk is heading, so you can see what it understood.
+    /// </summary>
+    private void DrawWalkMarkers()
+    {
+        var ring = Host.Atlas.Get("ui/selection");
+        void Mark(int3 c, uint color)
+        {
+            if (!_sim.Map.InBounds(c))
+                return;
+            var at = Position.CenterOf(c);
+            if (_sim.Map.IsSolid(_sim.Map.Idx(c)))
+                at.Z += 1;
+            _renderer.Decal(ring, at + new float3(0, 0, 0.05f), 0.8f, color, Quad.Unlit | Quad.Always, translucent: true);
+        }
+        if (_sim.World.Get<Mind>(_avatar).Job is AvatarWalkJob walk)
+            Mark(walk.Target, Rgba.Pack(0.55f, 0.95f, 0.5f, 0.7f));
+        if (Host.Input.MouseCaptured || Working)
+            return;
+        var (action, cell) = ClickTarget();
+        if (action.Kind != AvatarActionKind.None)
+            Mark(cell, Rgba.Pack(1f, 0.75f, 0.25f, 0.65f));
+        else
+            Mark(_hoverCell, Rgba.Pack(1f, 1f, 1f, 0.3f));
+    }
+
+    /// <summary>A clicked walk that found no way there (and nowhere near it) says so, once.</summary>
+    private void NoticeWalkFailure()
+    {
+        if (!HasAvatar || !_sim.Ai.LastFailure.TryGetValue(_avatar, out var failure) || ReferenceEquals(failure, _seenWalkFailure))
+            return;
+        _seenWalkFailure = failure;
+        if (failure.StartsWith(nameof(AvatarWalkJob), StringComparison.Ordinal))
+            Notify(MessageKind.Info, "You can't get there from here.");
+    }
+
+    /// <summary>
+    /// What a click would walk over and do. Only a thing counts: one whose sprite is under the
+    /// cursor (a tree's crown, a tall station), else a structure or item in the hovered cell, the
+    /// block, or what walls hide. Bare ground is a plain walk, even where F would do something
+    /// (fish from a bank): a click on the ground means "go there".
     /// </summary>
     private (AvatarAction Action, int3 Cell) ClickTarget()
     {
+        if (!Host.Input.MouseCaptured && PickThingSprite(Host.Input.MousePosition) is { IsNull: false } thing
+            && _sim.World.Get<Thing>(thing).Cell is var at && ProbeAt(at) is { Kind: not AvatarActionKind.None } onSprite)
+            return (onSprite, at);
         foreach (var c in (ReadOnlySpan<int3>)[_hoverCell, _hoverBlock, _hoverPastWalls])
-            if (ProbeAt(c) is { Kind: not AvatarActionKind.None } action)
+            if (HoldsThing(c) && ProbeAt(c) is { Kind: not AvatarActionKind.None } action)
                 return (action, c);
         return (AvatarAction.None, _hoverCell);
+    }
+
+    /// <summary>Something to click on in a cell: a structure, plant, item or blueprint, not just ground.</summary>
+    private bool HoldsThing(int3 c)
+    {
+        var map = _sim.Map;
+        if (!map.InBounds(c))
+            return false;
+        var i = map.Idx(c);
+        return !map.Structure[i].IsNull || !map.Item[i].IsNull
+            || map.Floor[i] is { IsNull: false } f && _sim.World.Has<Construction>(f);
+    }
+
+    /// <summary>
+    /// A plant or piece of furniture whose sprite is under the cursor, frontmost first. Tall sprites
+    /// rise over cells behind them, so the ground under the cursor isn't enough: clicking a tree's
+    /// crown should chop that tree, not walk to the grass behind it.
+    /// </summary>
+    private Entity PickThingSprite(float2 mouse)
+    {
+        var map = _sim.Map;
+        var w = _sim.World;
+        var best = Entity.Null;
+        var bestFront = float.NegativeInfinity;
+        var cut = Math.Min(_renderer.CutawayZ, map.Depth - 1);
+        var c0 = _hoverCell;
+        // A sprite's base is nearer the camera than the cell its top hides: look a few cells round.
+        for (var dz = -1; dz <= 1; dz++)
+        for (var dy = -3; dy <= 3; dy++)
+        for (var dx = -3; dx <= 3; dx++)
+        {
+            var c = new int3(c0.X + dx, c0.Y + dy, c0.Z + dz);
+            if (!map.InBounds(c) || c.Z > cut)
+                continue;
+            var e = map.Structure[map.Idx(c)];
+            if (e.IsNull || !w.TryGet<Thing>(e, out var thing) || thing.Cell != c || !View.CanSee(e))
+                continue; // a wide piece is tested once, from its anchor
+            var def = thing.Def;
+            if (def.Building?.IsWall == true || (def.Model == null && def.Shape is RenderShape.Block or RenderShape.Ramp or RenderShape.Slab or RenderShape.Decal))
+                continue; // walls and flat things are picked by the cell
+            var rise = def.Model != null ? 0.9f : def.RenderSize; // sprite cells
+            var feet = _camera.WorldToScreen(Position.CenterOf(c));
+            var top = _camera.WorldToScreen(Position.CenterOf(c) + WorldScale.Rise(rise));
+            var halfWidth = (def.Model != null ? 0.5f : 0.3f * def.RenderSize) * _camera.Zoom;
+            if (mouse.X < feet.X - halfWidth || mouse.X > feet.X + halfWidth || mouse.Y > feet.Y + 0.15f * _camera.Zoom || mouse.Y < top.Y)
+                continue;
+            if (feet.Y > bestFront)
+                (best, bestFront) = (e, feet.Y);
+        }
+        return best;
     }
 
     /// <summary>What F would do at a cell from right by it. Setting out counts only on the wagon itself, not anywhere near it.</summary>
@@ -330,6 +447,7 @@ public sealed partial class VillageGame
     /// <summary>A walk to something with a window ended: open it if it's now in reach.</summary>
     private void UpdateClickWindow(float dt)
     {
+        NoticeWalkFailure();
         if (_clickWindow is not { } cell)
             return;
         _clickWindowAge += dt;

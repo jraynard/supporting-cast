@@ -407,12 +407,23 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             if (map.IsSolid(i))
                 return true;
             // A built roof cut away (\\) doesn't catch the ray either: it reaches the room under it.
+            // A floor is a thin slab at the bottom of its cell, not a cube: it catches the ray only
+            // where the ray crosses it, so clicks land where the floor is drawn, not cells short.
             if (map.Floor[i] is { IsNull: false } floor)
-                return !HideRoofs || !_sim.World.Get<Thing>(floor).Def.IsRoof;
+                return (!HideRoofs || !_sim.World.Get<Thing>(floor).Def.IsRoof) && CrossesFloor(map.CellOf(i));
             var s = map.Structure[i];
             // A wall cut down to a stub doesn't stand in the way: the ray reaches the room behind it.
             return !throughWalls && !s.IsNull && _sim.World.Get<Thing>(s).Def.Shape == RenderShape.Block
                 && !_renderer.IsStub(_sim, map.CellOf(i));
+        }
+
+        bool CrossesFloor(int3 c)
+        {
+            if (dir.Z >= -1e-6f)
+                return false;
+            var t = (c.Z + 0.01f - origin.Z) / dir.Z;
+            var p = origin + dir * t;
+            return (int)MathF.Floor(p.X) == c.X && (int)MathF.Floor(p.Y) == c.Y;
         }
 
         if (!map.Raycast(origin, dir, _camera.DepthRange * 3, Hits, out var hit, out var normal))
@@ -831,6 +842,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         }
         if (_tool == ToolKind.Select && _sim.World.IsAlive(_selected) && !Buildings.Of(_sim, _selected).IsNull)
             DrawSlotMarkers(null); // the selected building's free spots
+        if (_tool == ToolKind.Select && HasAvatar)
+            DrawWalkMarkers();
         if (!map.InBounds(_hoverCell) || _tool == ToolKind.Select)
             return;
 

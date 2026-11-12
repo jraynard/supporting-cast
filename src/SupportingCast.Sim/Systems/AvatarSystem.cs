@@ -786,6 +786,12 @@ public sealed class AvatarWalkJob(int3 target, bool interact) : Job
             OnTile = false;
             route = Route(from, PathEnd.Touch);
         }
+        if (route == null && !Interact && NearestReachable(from) is { } near)
+        {
+            // Somewhere you can't get to (across water, a closed-off room): as close as you can.
+            (Target, OnTile) = (near, true);
+            route = Route(from, PathEnd.OnTile);
+        }
         if (route == null)
             return false;
         if (midStep)
@@ -802,6 +808,17 @@ public sealed class AvatarWalkJob(int3 target, bool interact) : Job
             mover.StepFrom = from;
         }
         return true;
+    }
+
+    /// <summary>How far round an unreachable click to look for somewhere to stand instead.</summary>
+    public const int NearbyRadius = 6;
+
+    private int3? NearestReachable(int3 from)
+    {
+        foreach (var c in Sim.SpiralFrom(Target, NearbyRadius))
+            if (c != from && Sim.Map.Passable(c) && Navigation.CanReach(Sim, Pawn, from, c, PathEnd.OnTile))
+                return c;
+        return null;
     }
 
     private List<int3>? Route(int3 from, PathEnd end)
