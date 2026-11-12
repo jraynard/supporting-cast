@@ -34,7 +34,7 @@ public class StoreyTests
         Assert.Equal("Floorboards", DefAt(sim, sim.Map.Floor, room));
         Assert.Equal("TimberWall", DefAt(sim, sim.Map.Structure, Buildings.CellOf(sim.Map, b.Def, b.Anchor, 0, 4, 1, level: 1)));
         Assert.Equal("ThatchRoofPart", DefAt(sim, sim.Map.Floor, room + new int3(0, 0, 1)));
-        Assert.Equal(3, sim.World.Query<Thing>().Count(e => sim.World.Get<Thing>(e) is { Def.Name: "Bed", Cell.Z: 2 }));
+        Assert.Equal(6, sim.World.Query<Thing>().Count(e => sim.World.Get<Thing>(e) is { Def.Name: "Bed", Cell.Z: 2 })); // three over the kitchen, three over the common room
     }
 
     [Theory]

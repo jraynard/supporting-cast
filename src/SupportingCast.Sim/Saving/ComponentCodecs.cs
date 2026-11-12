@@ -307,6 +307,41 @@ internal static class ComponentCodecs
             Forge = r.Entity(), Recipe = r.Def<RecipeDef>(), Mending = r.Entity(), Temp = r.Float(), Shape = r.Float(),
             BlowsNeeded = r.Int(), BlowSum = r.Float(), BlowCount = r.Int(), BurnSteps = r.Int(), Flaw = (Work.PieceFlaw)r.Int(),
         }),
+        Codec("StewPot", (w, p) =>
+        {
+            w.Int(p.In.Count);
+            foreach (var i in p.In)
+            {
+                w.Def(i.Def);
+                w.Int(i.Count);
+            }
+            w.Float(p.Nutrition);
+            w.Float(p.Heat);
+            w.Float(p.Flame);
+            w.Float(p.Doneness);
+            w.Float(p.Scorch);
+            w.Float(p.Seasoning);
+            w.Float(p.SeasonTarget);
+            w.Float(p.Rot);
+            w.Int(p.Ladled);
+            w.Long(p.TendedUntil);
+        }, r =>
+        {
+            var p = new Work.StewPot();
+            for (var n = r.Count(1000); n > 0; n--)
+                p.In.Add(new Work.PotIngredient(r.Def<ThingDef>(), r.Int()));
+            p.Nutrition = r.Float();
+            p.Heat = r.Float();
+            p.Flame = r.Float();
+            p.Doneness = r.Float();
+            p.Scorch = r.Float();
+            p.Seasoning = r.Float();
+            p.SeasonTarget = r.Float();
+            p.Rot = r.Float();
+            p.Ladled = r.Int();
+            p.TendedUntil = r.Long();
+            return p;
+        }),
         Codec("Flawed", (w, f) => w.Int((int)f.Flaw), r => new Work.Flawed { Flaw = (Work.PieceFlaw)r.Int() }),
         Codec("Stored", (w, s) => w.Entity(s.In), r => new Stored { In = r.Entity() }),
         Codec("Request", (w, q) =>

@@ -68,6 +68,10 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     private int _pin, _slips, _working, _dir = 1;
     private float _progress;
 
+    // The kitchen: the stirring rhythm, the seasoning's pinch-and-taste, and whether this pot's been seasoned yet.
+    private int _stir, _seasonBeat;
+    private bool _potSeasoned;
+
     public Guid Player => player;
 
     /// <summary>What it last decided, for tests and debugging.</summary>
@@ -123,6 +127,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             _pin = _slips = _working = 0;
             _dir = 1;
             _progress = 0f;
+            _stir = _seasonBeat = 0;
         }
         switch (s)
         {
@@ -138,6 +143,24 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             {
                 _resting = _resting ? sh.Heat > 0.3f : sh.Heat > 0.8f;
                 return (false, !_resting && sh.InBand, Steer(sh.Angle, sh.HalfWidth));
+            }
+            case StewSession st:
+            {
+                // Keep it at a simmer, and stir every couple of seconds.
+                if (st.SinceStir > 120)
+                    _stir = 20;
+                return (false, _stir-- > 0, st.Flame < 0.6f ? 1 : st.Flame > 0.64f ? -1 : 0);
+            }
+            case SeasonSession se:
+            {
+                // A pinch, a taste, and stop when it tastes right.
+                _potSeasoned = true;
+                _seasonBeat = (_seasonBeat + 1) % 30;
+                if (se.TastedAt == se.Pinches && se.Taste is "about right" or "a touch salty" or "far too salty")
+                    return (false, false, -1);
+                if (_seasonBeat == 0 && (se.TastedAt == se.Pinches || se.Pinches == 0))
+                    return (true, false, 0);
+                return (false, false, _seasonBeat is >= 15 and < 18 && se.TastedAt != se.Pinches ? 1 : 0);
             }
             case PourSession p:
                 // Stop where the settled head will bring it to the line.
@@ -267,7 +290,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     private static ServiceKind[] KindsFor(TradeDef trade) => trade.Name switch
     {
         "Blacksmith" => [ServiceKind.Repair],
-        "Innkeeper" => [ServiceKind.Drink, ServiceKind.Quest], // the bar and the quest board both
+        "Innkeeper" => [ServiceKind.Drink, ServiceKind.Meal, ServiceKind.Quest], // the bar, the pot and the quest board
         "Healer" => [ServiceKind.Healing],
         "Carpenter" => [ServiceKind.Unlock],
         _ => trade.Brokers ? [ServiceKind.Quest] : [],
@@ -304,6 +327,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         {
             ServiceKind.Repair => Repair(sim, me, view, poster, now),
             ServiceKind.Drink => Pour(sim, me, poster, now),
+            ServiceKind.Meal => Serve(sim, me, view, poster, now),
             ServiceKind.Healing => Heal(sim, me, view, poster, now),
             ServiceKind.Quest => Broker(sim, me, view, poster, now),
             ServiceKind.Unlock => OpenBox(sim, me, view, poster, now),
@@ -563,6 +587,64 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             send(new AvatarGoToCommand(me, w.Get<Thing>(cask).Cell, Interact: true));
             _lastWalk = now;
         }
+        return true;
+    }
+
+    /// <summary>
+    /// A meal from the pot: ladle a bowl and hand it over; with the pot not ready, cook it (fill it
+    /// from the larder, tend it till it's done, season it by taste) first.
+    /// </summary>
+    private bool Serve(Simulation sim, Entity me, PerceptionView view, Entity diner, long now)
+    {
+        var w = sim.World;
+        var held = w.Get<Carrying>(me).Item;
+        if (w.IsAlive(held) && w.Get<Thing>(held).Def.Cooked)
+        {
+            if (Reach(sim, me, diner, now))
+                send(new GiveCommand(me, diner, held, 1));
+            return true;
+        }
+        var pot = Nearest(sim, me, "StewPot");
+        if (pot.IsNull)
+            return false;
+        if (!AvatarSystem.InReach(sim, w.Get<Position>(me).Cell, pot) || view.Pot(pot) is not { } p)
+            return AtStation(sim, me, pot, now, _ => { });
+        if (AvatarSystem.Supply(sim, me, Cooking.IsIngredient) is { IsNull: false } food && (p.Empty || !p.Cooked))
+        {
+            Doing = "filling the pot";
+            _potSeasoned = false;
+            send(new PotCommand(me, pot, PotStep.Add));
+            return true;
+        }
+        if (p.Empty || (p.Bowls == 0 && p.Cooked))
+        {
+            Doing = "fetching food for the pot";
+            _potSeasoned = false;
+            return AtStation(sim, me, Nearest(sim, me, "Larder"), now, larder =>
+            {
+                if (view.InContainer(larder).FirstOrDefault(e => Cooking.IsIngredient(w.Get<Thing>(e).Def)) is { IsNull: false } stack)
+                    send(new TakeFromStorageCommand(me, stack));
+            });
+        }
+        if (!p.Cooked)
+        {
+            Doing = "cooking a stew";
+            send(new PotCommand(me, pot, PotStep.Tend));
+            return true;
+        }
+        if (!_potSeasoned)
+        {
+            Doing = "seasoning the stew";
+            send(new PotCommand(me, pot, PotStep.Season));
+            return true;
+        }
+        if (!held.IsNull)
+        {
+            send(new StowCommand(me)); // a free hand for the ladle
+            return true;
+        }
+        Doing = "ladling a bowl";
+        send(new PotCommand(me, pot, PotStep.Ladle));
         return true;
     }
 

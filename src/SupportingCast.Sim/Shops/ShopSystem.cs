@@ -627,14 +627,17 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             Complete(sim, e, by);
     }
 
-    /// <summary>They can taste how it was poured, and say so.</summary>
-    private static void Tasted(Simulation sim, Entity who, Quality quality)
+    /// <summary>They can taste how it was poured (or cooked), and say so.</summary>
+    private static void Tasted(Simulation sim, Entity who, Quality quality, bool meal = false)
     {
-        var (mood, line) = quality switch
+        var (mood, line) = (quality, meal) switch
         {
-            Quality.Crude => (-0.75f, "Flat and warm. Still, a drink's a drink."),
-            Quality.Fine => (0.25f, "That's a decent pour."),
-            Quality.Masterwork => (0.5f, "Now that's how you pour an ale!"),
+            (Quality.Crude, false) => (-0.75f, "Flat and warm. Still, a drink's a drink."),
+            (Quality.Fine, false) => (0.25f, "That's a decent pour."),
+            (Quality.Masterwork, false) => (0.5f, "Now that's how you pour an ale!"),
+            (Quality.Crude, true) => (-0.75f, "Burnt, or bland, or both. I've eaten worse. Not often."),
+            (Quality.Fine, true) => (0.25f, "Good stew, this."),
+            (Quality.Masterwork, true) => (0.5f, "Gods, that's a stew. My compliments to whoever's at the pot!"),
             _ => (0f, (string?)null),
         };
         if (sim.World.Has<Adventurer>(who))
@@ -704,8 +707,11 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             if (eaten != item)
                 Inventory.Stow(sim, giver, item); // the rest back to the server
             var rot = FoodPoisoning.RotOf(sim, eaten);
+            var cooked = w.TryGet<Crafted>(eaten, out var made) ? made.Quality : (Quality?)null;
             w.Destroy(eaten);
             EatJob.Nourish(sim, to, def, count, rot);
+            if (cooked is { } q)
+                Tasted(sim, to, q, meal: true);
             Complete(sim, meal, giver);
             return;
         }

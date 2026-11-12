@@ -186,6 +186,8 @@ public abstract class WorkSession
             nameof(QuenchSession) => new QuenchSession(),
             nameof(SharpenSession) => new SharpenSession(),
             nameof(PourSession) => new PourSession(),
+            nameof(StewSession) => new StewSession(),
+            nameof(SeasonSession) => new SeasonSession(),
             nameof(Healing.DrawSession) => new Healing.DrawSession(),
             nameof(Healing.CastSession) => new Healing.CastSession(),
             nameof(Healing.MeditateSession) => new Healing.MeditateSession(),

@@ -19,6 +19,14 @@ public readonly record struct KnownStrongbox(bool Locked, int Pins, bool Searche
 /// </summary>
 public readonly record struct KnownPiece(string Label, Work.Glow Glow, float Temp, bool Hot, float Shape, bool Shaped, bool Mend, string? Next, Entity Forge);
 
+/// <summary>
+/// A stew pot as anyone looking in sees it: what went in, the surface (the heat as it shows), how
+/// far it's cooked, whether it's caught, and the bowls in it. Never whether it's turned, or what
+/// seasoning it wants.
+/// </summary>
+public readonly record struct KnownPot(Entity Pot, string Contents, Work.Surface Surface, float Heat, float Flame, bool Lit, float Doneness,
+    bool Cooked, string? Caught, int Bowls, bool Empty);
+
 public readonly record struct PerceivedPerson(string Name, string Condition, string? Holding);
 
 /// <summary>A line as one character caught it. <see cref="Speaker"/> is null when they couldn't tell who it was.</summary>
@@ -176,6 +184,25 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         var next = smith == viewer || Omniscient ? Work.Smithing.NextStep(sim, smith, p) : null;
         var hot = p.Temp >= Work.Smithing.Window(p.Recipe).Lo;
         return new KnownPiece(Work.Smithing.PieceLabel(sim, p), Work.Smithing.GlowOf(p.Temp), p.Temp, hot, Math.Clamp(p.Shape, 0f, 1f), p.Shaped, p.IsMend, next, p.Forge);
+    }
+
+    /// <summary>A stew pot close enough to look into (<see cref="KnownPot"/>); null if it isn't one, or is too far.</summary>
+    public KnownPot? Pot(Entity pot)
+    {
+        if (blind || !Work.Cooking.IsPot(sim, pot))
+            return null;
+        var t = sim.World.Get<Thing>(pot);
+        if (!Omniscient && !Within(t.Cell, 2))
+            return null;
+        var p = sim.World.TryGet<Work.StewPot>(pot, out var sp) ? sp : new Work.StewPot();
+        // A session in hand has the pot's newest state.
+        foreach (var e in sim.World.Each<Work.WorkSession>())
+            if (sim.World.Get<Work.WorkSession>(e) is Work.StewSession s && s.Pot == pot)
+                p = new Work.StewPot { In = p.In, Nutrition = p.Nutrition, Heat = s.Heat, Flame = s.Flame, Doneness = s.Doneness, Scorch = s.Scorch, Ladled = p.Ladled };
+        var contents = string.Join(", ", p.In.Select(i => $"{i.Count} {i.Def.Label}"));
+        var caught = p.Scorch > 0.35f ? "it's caught on the bottom" : p.Scorch > 0.12f ? "a little caught" : null;
+        return new KnownPot(pot, contents, Work.Cooking.SurfaceOf(p.Heat), p.Heat, p.Flame, Work.Cooking.Lit(sim, pot), Math.Clamp(p.Doneness, 0f, 1f),
+            p.Cooked, caught, Work.Cooking.ServingsLeft(sim, pot), p.Empty);
     }
 
     /// <summary>A strongbox within reach or on your person, as you can see it (<see cref="KnownStrongbox"/>). Null if it isn't one, or is out of reach.</summary>

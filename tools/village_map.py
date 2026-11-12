@@ -28,7 +28,7 @@ TOWN = 2        # the village's level; a river bank is one down, its bed two
 rnd = random.Random(1234)
 
 # Plan sizes (width across, depth front to back) of the preset buildings, as buildings.json.
-PLANS = {"Inn": (13, 9), "Dwelling": (6, 5), "Cottage": (9, 6), "Smithy": (7, 5), "Shrine": (7, 5), "Woodshop": (7, 5), "Barn": (10, 6)}
+PLANS = {"Inn": (13, 13), "Dwelling": (6, 5), "Cottage": (9, 6), "Smithy": (7, 5), "Shrine": (7, 5), "Woodshop": (7, 5), "Barn": (10, 6)}
 
 GROUND_LEGEND = {"g": "Grass", "d": "Dirt", "r": "Road", "t": "TilledSoil", "k": "Stone", "s": "Sand", "~": "ShallowWater", "w": "Water"}
 FEATURE_LEGEND = {
@@ -204,8 +204,8 @@ building("Cottage", 50, 28, 0, role="Home")                     # C: top middle
 building("Woodshop", 70, 28, 1, role="Woodshop")                 # D: by the lake, the cart outside
 building("Smithy", 20, 30, 3, role="Forge", variant="Stone")     # E: the west barn with the stone chimney
 building("Cottage", 28, 41, 0, role="Home")                     # F: west house with the yard
-building("Inn", 59, 45, 1, role="Tavern", variant="Timber")      # G: on the square, facing the well
-building("Cottage", 72, 44, 1, role="Home", variant="Shingle")  # H: east, the big brown roof
+building("Inn", 61, 45, 1, role="Tavern", variant="Timber")      # G: on the square, facing the well (its kitchen out the back)
+building("Cottage", 74, 44, 1, role="Home", variant="Shingle")  # H: east, the big brown roof (moved over for the inn's kitchen)
 building("Cottage", 30, 56, 0, role="Home")                     # I: south-west, with its garden
 building("Cottage", 43, 61, 2, role="Home")                     # J: south of the square
 building("Cottage", 66, 58, 1, role="Home")                     # K: east, by the cabbage field

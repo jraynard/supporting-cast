@@ -91,19 +91,24 @@
       ]
     },
     {
-      // A traditional inn: a common room with a bar, a hearth and tables below, and rooms to let
-      // above, reached by the stair in the corner. Where the innkeeper works.
+      // A traditional inn: a common room with a bar, a hearth and tables at the front; a kitchen
+      // and a storeroom behind it; and rooms to let upstairs, reached by the stair by the hearth.
+      // Where the innkeeper works.
       "name": "Inn", "label": "inn", "icon": "buildings/table",
-      "description": "A two-storey inn: a common room with a bar and a hearth downstairs, and rooms to let upstairs.",
+      "description": "A two-storey inn: a common room with a bar and a hearth, a kitchen and a storeroom behind, and rooms to let upstairs.",
       "layout": [
         "WWWWWWWWWWWWW",
-        "W...........W",
-        "W...........W",
-        "W...........W",
-        "W...........W",
+        "W.......W...W",
+        "W.......W...W",
+        "W.......W...W",
+        "WWWWDWWWWDWWW",
         "W...........W",
         "W...........W",
         "WS..........W",
+        "W...........W",
+        "W...........W",
+        "W...........W",
+        "W...........W",
         "WWWWWWDWWWWWW"
       ],
       "upperLayout": [
@@ -115,34 +120,48 @@
         "W...........W",
         "W...........W",
         "W...........W",
+        "WWDWWWDWWWDWW",
+        "W...W...W...W",
+        "W...W...W...W",
+        "W...W...W...W",
         "WWWWWWWWWWWWW"
       ],
       "parts": {
         "foundation": "Sill", "wall": "TimberWall", "door": "PlankDoor", "roof": "ThatchRoofPart",
         "stair": "InnStair", "upperFloor": "Floorboards"
       },
-      // The bar runs along the back right, the keeper's side behind it reached past its left end;
-      // the hearth and the tables on the left, with an aisle from the door to the counter.
+      // The kitchen (back left): its own fire with the stew pot hung beside it, and the larder.
+      // The storeroom (back right) opens behind the bar. The bar runs across the common room's
+      // back right, the keeper's side behind it reached past its left end; the hearth and the
+      // tables on the left, with an aisle from the door to the counter.
       "furnish": [
+        { "def": "Larder", "at": [1, 1], "facing": 2 },
         { "def": "Hearth", "at": [2, 1] },
-        { "def": "AleCask", "at": [10, 1] },
-        { "def": "BarCounter", "at": [10, 3] },
-        { "def": "SquareTable", "at": [3, 4] },
-        { "def": "Stool", "at": [2, 4] }, { "def": "Stool", "at": [2, 5] }, { "def": "Stool", "at": [5, 4] }, { "def": "Stool", "at": [5, 5] },
-        { "def": "LongTable", "at": [5, 1] },
-        { "def": "Stool", "at": [4, 1] }, { "def": "Stool", "at": [6, 2] },
+        { "def": "StewPot", "at": [3, 1] },
+        { "def": "Hearth", "at": [2, 5] },
+        { "def": "AleCask", "at": [10, 5] },
+        { "def": "BarCounter", "at": [10, 7] },
+        { "def": "SquareTable", "at": [3, 8] },
+        { "def": "Stool", "at": [2, 8] }, { "def": "Stool", "at": [2, 9] }, { "def": "Stool", "at": [5, 8] }, { "def": "Stool", "at": [5, 9] },
+        { "def": "LongTable", "at": [5, 5] },
+        { "def": "Stool", "at": [4, 6] }, { "def": "Stool", "at": [6, 5] }, { "def": "Stool", "at": [6, 6] },
         { "def": "Bed", "at": [1, 1], "level": 1 },
         { "def": "Bed", "at": [5, 1], "level": 1 },
-        { "def": "Bed", "at": [9, 1], "level": 1 }
+        { "def": "Bed", "at": [9, 1], "level": 1 },
+        { "def": "Bed", "at": [1, 9], "level": 1 },
+        { "def": "Bed", "at": [5, 9], "level": 1 },
+        { "def": "Bed", "at": [9, 9], "level": 1 }
       ],
       // Customers line up at the bar: the front at the counter, then back toward the door.
-      "line": [ [10, 4], [11, 4], [11, 5], [10, 5], [9, 5], [8, 5], [8, 6], [7, 6] ],
+      "line": [ [10, 8], [11, 8], [11, 9], [10, 9], [9, 9], [8, 9], [8, 10], [7, 10] ],
       "slots": [
         { "defs": ["Chest"], "at": [11, 1], "facing": 2 },
         { "defs": ["Chest"], "at": [3, 1], "facing": 2, "level": 1 },
         { "defs": ["Chest"], "at": [7, 1], "facing": 2, "level": 1 },
+        { "defs": ["Chest"], "at": [3, 11], "facing": 0, "level": 1 },
+        { "defs": ["Chest"], "at": [7, 11], "facing": 0, "level": 1 },
         { "defs": ["Bed", "StrawPallet"], "at": [11, 1], "level": 1 },
-        { "defs": ["Chest", "Stool"], "at": [11, 7], "facing": 2, "level": 1 }
+        { "defs": ["Bed", "StrawPallet"], "at": [11, 9], "level": 1 }
       ],
       "upgrades": [
         {

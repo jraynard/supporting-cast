@@ -9,13 +9,16 @@ namespace SupportingCast.Sim.Shops;
 
 /// <summary>
 /// An AI innkeeper serves an order: pours a drink at the cask (as well as their Cooking skill
-/// allows, a basic hand next to a player's <see cref="PourSession"/>) or fetches a cooked meal
-/// from the stores, and takes it to whoever asked.
+/// allows, a basic hand next to a player's <see cref="PourSession"/>) or ladles a bowl from the
+/// inn's stew pot (else fetches a cooked meal from the stores), and takes it to whoever asked.
 /// </summary>
 public sealed class ServeJob(int order) : Job
 {
     /// <summary>Ticks it takes an AI innkeeper to pour.</summary>
     public const int PourTicks = 120;
+
+    /// <summary>Ticks it takes to ladle a bowl.</summary>
+    public const int LadleTicks = 60;
 
     /// <summary>An order this villager could serve now: their trade's, known to them, theirs or nobody's, with something to serve.</summary>
     public static Job? For(Simulation sim, Entity pawn)
@@ -29,7 +32,7 @@ public sealed class ServeJob(int order) : Job
             if (!e.IsOpen || e.Kind.Kind is not (ServiceKind.Drink or ServiceKind.Meal) || e.Kind.AtDef != workplace
                 || !e.KnownBy.Contains(pawn) || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Poster))
                 continue;
-            var supply = e.Kind.Kind == ServiceKind.Drink ? Cask(sim, pawn) : Meal(sim, pawn, e.Poster);
+            var supply = e.Kind.Kind == ServiceKind.Drink ? Cask(sim, pawn) : Pot(sim, e.Where) is { IsNull: false } pot ? pot : Meal(sim, pawn, e.Poster);
             if (!supply.IsNull && Navigation.CanReach(sim, pawn, from, w.Get<Position>(e.Poster).Cell, PathEnd.Touch))
                 return new ServeJob(e.Id);
         }
@@ -58,12 +61,17 @@ public sealed class ServeJob(int order) : Job
         return best;
     }
 
-    /// <summary>The nearest cooked meal the diner can eat.</summary>
+    /// <summary>The nearest cooked meal the diner can eat, and that hasn't turned: a villager can smell it.</summary>
     private static Entity Meal(Simulation sim, Entity pawn, Entity diner)
     {
         var eater = sim.World.Get<Creature>(diner).Def;
-        return AiQueries.FindNearestItem(sim, pawn, (_, def) => def.Cooked && def.EdibleBy(eater));
+        return AiQueries.FindNearestItem(sim, pawn, (e, def) => def.Cooked && def.EdibleBy(eater) && !FoodPoisoning.IsSpoiled(sim, e));
     }
+
+    /// <summary>The shop's stew pot, if it has a cooked bowl to ladle; Entity.Null otherwise.</summary>
+    public static Entity Pot(Simulation sim, Entity shop) =>
+        Cooking.PotIn(sim, shop) is { IsNull: false } pot && Cooking.PotOf(sim, pot).Cooked && Cooking.ServingsLeft(sim, pot) > 0
+        && !sim.Reservations.IsReservedByOther(pot, Entity.Null) ? pot : Entity.Null;
 
     protected override IEnumerable<JobStatus> Run()
     {
@@ -95,6 +103,19 @@ public sealed class ServeJob(int order) : Job
             var level = SkillRules.LevelOf(Sim, Pawn, Skill.Cooking);
             SkillRules.Learn(Sim, Pawn, Skill.Cooking, 20f);
             served = PourSession.PourInto(Sim, Pawn, cask, Crafting.QualityFrom(0.3f + 0.035f * level + Sim.Rand.Range(-0.15f, 0.15f)));
+        }
+        else if (Pot(Sim, e.Where) is { IsNull: false } pot && Reserve(pot))
+        {
+            Report = $"Ladling a bowl for {e.PosterName}";
+            foreach (var s in GoTo(Get<Thing>(pot).Cell, PathEnd.Touch)) yield return s;
+            if (HasFailed) yield break;
+            foreach (var s in Wait(LadleTicks)) yield return s;
+            served = Cooking.Ladle(Sim, Pawn, pot);
+            if (served.IsNull)
+            {
+                Fail("the pot's empty");
+                yield break;
+            }
         }
         else
         {

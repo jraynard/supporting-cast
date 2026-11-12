@@ -383,6 +383,22 @@ public sealed class BuildingProps
 
     /// <summary>A cask drinks are poured from (<c>Work.PourSession</c>).</summary>
     public CaskProps? Cask { get; set; }
+
+    /// <summary>A stew pot, cooked by taste over the fire beside it (<c>Work.Cooking</c>).</summary>
+    public StewPotProps? StewPot { get; set; }
+}
+
+/// <summary>What a stew pot ladles out, and how far its ingredients stretch.</summary>
+public sealed class StewPotProps
+{
+    /// <summary>The bowl it ladles (a thing def name): its nutrition is one serving's worth.</summary>
+    public string Serves { get; set; } = "Stew";
+
+    /// <summary>Servings per serving's worth of nutrition put in: a stew goes further than the raw food.</summary>
+    public float Yield { get; set; } = 1.5f;
+
+    /// <summary>The most ingredients' nutrition it holds.</summary>
+    public float Holds { get; set; } = 6f;
 }
 
 /// <summary>What a cask pours and how many it holds when full.</summary>

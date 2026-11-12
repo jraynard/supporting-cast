@@ -36,6 +36,7 @@ public static class VillageRound
         var shrine = Role("Shrine");
         StockShrine(sim, shrine);
         StockSmithy(sim, Role("Forge"));
+        StockInn(sim, Role("Tavern"));
         // Beds for everyone, or the first night sends them all out to sleep in the cold.
         foreach (var (spec, home) in built.Buildings)
             if (spec.Role == "Home")
@@ -55,6 +56,22 @@ public static class VillageRound
             if (sim.World.Get<PartOf>(e).Building == smithy && sim.World.Get<Thing>(e).Def.Name == "FuelBin")
             {
                 sim.Store(e, sim.CreateItem(sim.Defs.Thing("Charcoal"), SmithyCharcoal));
+                return;
+            }
+    }
+
+    /// <summary>What the inn's larder starts a round with: a day or two of stew for a busy common room.</summary>
+    public static readonly (string Def, int Count)[] LarderStock = [("Cabbage", 12), ("Meat", 10), ("Berries", 20)];
+
+    private static void StockInn(Simulation sim, Entity inn)
+    {
+        if (inn.IsNull)
+            return;
+        foreach (var e in sim.World.Query<PartOf>())
+            if (sim.World.Get<PartOf>(e).Building == inn && sim.World.Get<Thing>(e).Def.Name == "Larder")
+            {
+                foreach (var (def, count) in LarderStock)
+                    sim.Store(e, sim.CreateItem(sim.Defs.Thing(def), count));
                 return;
             }
     }

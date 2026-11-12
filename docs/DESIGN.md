@@ -59,7 +59,7 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 
 | Trade | The game it plays | Built from | Betrayal it enables |
 | --- | --- | --- | --- |
-| Innkeeper | Order juggling, drink mixing, hearing gossip; matching parties to quests on partial intel | Larder, cooking, Social, `Expeditions/` | Spiked drinks, selling secrets, sending a party to its death |
+| Innkeeper | Order juggling, cooking by taste, drink mixing, keeping the place clean, hearing gossip; matching parties to quests on partial intel | Larder, cooking, Social, `Expeditions/` | Spiked drinks, selling secrets, sending a party to its death |
 | Blacksmith | Heat, hammer and quench timing | Forge, bellows, tiers, `Crafted` quality | A hidden flaw in a blade |
 | Healer | Take a patient's wounds into yourself with focus, cast the right mending on yourself, meditate back your mana | Health, `Work/`, new mana | Taking only part of a wound, or handing one back |
 | Constable | Patrol, evidence, arrests, jail | `Prisoners`, locks | Framing, abuse of authority |
@@ -100,16 +100,62 @@ Ideas for depth, to build when each trade's milestone comes round.
 - Commissions have details the buyer chooses: the hilt, runes engraved on it, the materials.
 - more detail - heating the billet to the correct temp based on how hot it looks, using molds or shaping the item, making the hilt, handle and grip, thinking of like forged in fire style with realistic detailed forging here (as long as its fun).
 
-**Innkeeper.**
-- M2 pours ale at the cask. Hold to pour; the tilt controls the head. Customers taste the quality.
-- cooking: cooking meals for customers
-- rooms: renting out rooms
-- cleaning up: cleaning up tables, the bar, the floor, doing dishes
-- Later: brewing, and refilling casks from kegs.
-- Mixed drinks: a press-on-cue sequence. maybe allow for cusomt concotions that can have different effects.
-- directions: giving directions to adventurers, like where to find the blacksmith
-- Brokering quests (since M2, when the Quest Broker folded into the Innkeeper): the keeper hears
-  every rumour over the bar and points parties at work on whatever it's worth.
+**Innkeeper.** Never one thing at a time: the line at the bar, the pot on the fire, the
+tankards in the tub and the room upstairs all want the keeper at once. The skill is in the
+juggling, and in what they overhear while they do it.
+- *The bar.* Since M2: pour ale at the cask. Hold to pour, and the tilt controls the head.
+  Customers taste the quality.
+  - **Vessels:** a drink goes in a clean tankard and a meal in a clean bowl, taken from the shelf
+    behind the bar. They come back dirty, left where the customer drank, and are washed at the
+    tub. Run out of clean ones and the line stalls.
+  - **Casks and kegs:** a cask runs dry. Tap a new keg from the store by knocking the tap in on
+    cue; a miss sprays foam and wastes servings.
+- *The pot.* Cooking is one stew pot over the hearth, cooked by taste.
+  - **The ingredients:** whatever's in the larder.
+  - **The heat:** keep it at a simmer, read only from the surface (still, a simmer, a rolling
+    boil), as the forge is read from its colour. Stir so it doesn't catch.
+  - **The seasoning:** season a pinch at a time, tasting as you go. It can't be taken back out.
+  - **The result:** a pot gives many bowls, ladled out, each with a quality the diner tastes. A
+    spoiled ingredient spoils the pot, and nobody can taste it until the diner is sick.
+- *Rooms.* Let by the night: the guest pays each evening and checks out when they move on. A
+  slept-in bed is stripped and remade before it can be let again, and a guest shown to an unmade
+  one says so.
+- *Mess.* Spilled ale, mud off the road, crumbs, dirty dishes and blood are things on the floor
+  and the tables, and anyone can see them. Customers think less of a dirty room. A rag does the
+  tables and a mop the floor. Scrubbed blood is gone, which will matter once there are bodies.
+- *Mixed drinks.* A press-on-cue sequence at the bar.
+  - **Recipes:** named ones are what adventurers ask for.
+  - **House mixes:** any other combination makes one, its effect coming from the properties of
+    what's in it (warming, rousing, numbing, loosening). The same plumbing later carries reagents
+    and poison.
+- *Drink takes hold.* Drinkers get merry.
+  - **Tongues loosen:** a tipsy adventurer volunteers rumours, and truer ones, so a busy bar is
+    the keeper's best intel.
+  - **They get loud:** their speech carries further.
+  - **They get clumsy:** they spill. Too much, and they're asleep on the floor.
+- *Directions.* Adventurers new to town know only the inn. Wanting a smith, they ask aloud where
+  one is. Whoever answers (keeper or anyone) points them there, and everyone in earshot learns it.
+  Unanswered, they think less of the town.
+- *Brokering quests* (since M2, when the Quest Broker folded into the Innkeeper): the keeper
+  hears every rumour over the bar and points parties at work on whatever it's worth.
+- Later:
+  - **Brewing:** the kegs from the keeper's own barley and hops (Forager), not a delivery.
+  - **Money:** a tab for parties good for it, and tips for quick, fine service.
+  - **Bar fights:** drunk adventurers start brawls that break furniture (work for the
+    Carpenter). The keeper throws them out, or calls the Constable.
+  - **Rooms:** keys (the Carpenter's locks), and a chest per room for a guest's things while
+    they're out.
+  - **A notice board:** at the inn, for shop signs, favours and quests posted where anyone can
+    read them.
+  - **Supplies:** bought from the Forager, the Miner's hunting trips and the farms by favour,
+    so an empty larder is everyone's problem.
+- Betrayal later (M4/M5):
+  - a drink spiked or watered, or a short measure;
+  - a guest's room rifled while they're out;
+  - what was overheard sold to the highest bidder;
+  - directions to the wrong place;
+  - a party sent to its death;
+  - a floor scrubbed clean of evidence.
 
 **Healer (empathic).** Magical in flavour rather than clinical, but grounded in the health
 model: wounds sit on body parts, have a kind, and bleed, hurt and fester.

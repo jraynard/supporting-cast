@@ -594,7 +594,7 @@ public sealed partial class VillageGame
     /// <summary>
     /// Which use beside you F prefers when you aren't facing anything: the next step with the piece
     /// in your tongs (the fire while it's dark, the anvil or tub while it glows), then working a
-    /// craft, a station, a cask, a chest.
+    /// craft, the stew pot over a station, a cask, a chest.
     /// </summary>
     private int Rank(AvatarAction action)
     {
@@ -608,6 +608,7 @@ public sealed partial class VillageGame
     /// <summary>Which furniture use beside you F prefers when you aren't facing anything: working a craft first, then a station, a cask, a chest.</summary>
     private static int FurnitureRank(AvatarActionKind kind) => kind switch
     {
+        AvatarActionKind.Cook => 5,
         AvatarActionKind.Craft => 4,
         AvatarActionKind.OpenStation => 3,
         AvatarActionKind.Pour => 2,

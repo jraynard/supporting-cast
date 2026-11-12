@@ -99,8 +99,15 @@ public sealed partial class VillageGame
             case QuenchSession quench:
                 DrawQuench(quench);
                 return;
+            case StewSession stew:
+                DrawStew(stew);
+                return;
+            case SeasonSession season:
+                DrawSeason(season);
+                return;
             case null:
                 DrawTongs();
+                DrawPotPanel();
                 return;
         }
     }

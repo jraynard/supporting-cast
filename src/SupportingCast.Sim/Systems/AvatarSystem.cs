@@ -60,6 +60,9 @@ public enum AvatarActionKind
 
     /// <summary>The next step with the piece in your tongs at a smithy station (<see cref="Work.Smithing.Start"/>), begun at once.</summary>
     Smith,
+
+    /// <summary>At a stew pot: put food in, tend it, or ladle a bowl (<see cref="Work.Cooking.Start"/>), begun at once.</summary>
+    Cook,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -85,7 +88,7 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
     public bool Instant => Kind is AvatarActionKind.PutDown or AvatarActionKind.Deliver or AvatarActionKind.PickUp
         or AvatarActionKind.Store or AvatarActionKind.OpenStorage 
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
-        or AvatarActionKind.Carry or AvatarActionKind.Pour;
+        or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
     public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation;
@@ -335,6 +338,10 @@ public sealed class AvatarSystem : ISimSystem
         // A piece in the tongs goes to the fire, the anvil or the tub; a blade to the grindstone.
         if (Work.Smithing.StepAt(sim, avatar, site) is { } step && !sim.Reservations.IsReservedByOther(site, avatar))
             return new(AvatarActionKind.Smith, step, cell, site);
+
+        // A stew pot takes the food you carry, wants tending, or gives a bowl.
+        if (Work.Cooking.StepAt(sim, avatar, site) is { } cooking && !sim.Reservations.IsReservedByOther(site, avatar))
+            return new(AvatarActionKind.Cook, cooking, cell, site);
 
         // A craft that has everything it needs is worked on the spot.
         if (Crafting.IsStation(sim, site) && w.Get<Workbench>(site) is { Active: { } making, Stocked: true } ready
@@ -651,6 +658,9 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.Smith:
                 Work.Smithing.Start(sim, avatar, action.Target);
+                break;
+            case AvatarActionKind.Cook:
+                Work.Cooking.Start(sim, avatar, action.Target);
                 break;
             case AvatarActionKind.Craft:
                 if (w.Get<Workbench>(action.Target).Active is { } recipe)
