@@ -26,6 +26,10 @@ public sealed partial class VillageGame
 
     private bool Working => HasAvatar && _sim.World.Has<WorkSession>(_avatar);
 
+    // Whether F has come up since the session in hand began (see UpdateWork).
+    private long _fArmedFor = -1;
+    private bool _fArmed;
+
     /// <summary>A frame of hands-on work: F strikes, Esc puts it down.</summary>
     private void UpdateWork(float dt)
     {
@@ -43,7 +47,15 @@ public sealed partial class VillageGame
             Issue(new StopWorkCommand(_avatar));
         var live = speed > 0 && Working;
         var axis = !live ? 0 : (input.IsKeyDown(GlfwKey.D) ? 1 : 0) - (input.IsKeyDown(GlfwKey.A) ? 1 : 0);
-        _work.Update(_sim, _avatar, steps, speed > 0 && input.WasKeyPressed(GlfwKey.F), live && input.IsKeyDown(GlfwKey.F), axis, Issue);
+        // The F that started a job doesn't also work it: a new session waits for F to come up
+        // before a press or hold counts (else a long press to start the quench plunges the piece).
+        var session = Working ? _sim.World.Get<WorkSession>(_avatar).StartTick : -1;
+        if (session != _fArmedFor)
+            (_fArmedFor, _fArmed) = (session, false);
+        if (!input.IsKeyDown(GlfwKey.F))
+            _fArmed = true;
+        var f = _fArmed && speed > 0;
+        _work.Update(_sim, _avatar, steps, f && input.WasKeyPressed(GlfwKey.F), f && live && input.IsKeyDown(GlfwKey.F), axis, Issue);
     }
 
     private void DrawWork()

@@ -82,7 +82,21 @@ public sealed partial class VillageGame
     private static void TextC(float4 color, string text) => ImGuiText.Colored(color, text);
 
     private static void Tip(string text) => ImGuiText.Tooltip(text);
-    private static void Wrapped(string text) => ImGuiText.Wrapped(text);
+    /// <summary>
+    /// Text wrapped to the space there is, but never wider than <see cref="WrapCap"/>: in a window
+    /// that sizes itself to its content, wrapping at the window's own edge feeds back, and the
+    /// window creeps wider every frame.
+    /// </summary>
+    private static void Wrapped(string text)
+    {
+        var width = MathF.Min(ImGui.GetContentRegionAvail().X, Narsil.Ui.Gui.S(WrapCap));
+        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + MathF.Max(width, Narsil.Ui.Gui.S(120)));
+        ImGui.TextWrapped(Narsil.Ui.ImGuiText.Escape(text));
+        ImGui.PopTextWrapPos();
+    }
+
+    /// <summary>The widest a wrapped line runs, unscaled.</summary>
+    private const float WrapCap = 320f;
     private static void Bullet(string text) => ImGuiText.Bullet(text);
 
     private static void SetNextWindow(float2 pos, float2 size)
