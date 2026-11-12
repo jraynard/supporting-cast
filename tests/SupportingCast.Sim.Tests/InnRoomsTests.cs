@@ -80,8 +80,17 @@ public class InnRoomsTests
     public void AGuestStayingOnPaysForAnotherNightAndKeepsTheirRoom()
     {
         var (sim, party) = Tavern("Healer");
+        // Whole, so nobody bleeds out untreated (the player here is the healer, and idle) before the
+        // second night; and no quest on offer to take them off the map.
+        var inn = Inn(sim);
+        if (!sim.World.Has<ShopPrices>(inn))
+            sim.World.Add(inn, ShopPrices.Defaults(sim.Defs));
+        sim.World.Get<ShopPrices>(inn).Offered[(int)ServiceKind.Quest] = false;
         foreach (var a in party)
+        {
             sim.World.Get<Adventurer>(a).LeaveTick = sim.Clock.Tick + SimClock.TicksPerDay * 3;
+            sim.World.Get<Health>(a).Injuries.Clear();
+        }
         var guest = party[0];
         Inventory.Stow(sim, guest, sim.CreateItem(sim.Thing(Coin.Silver), 60)); // enough for the stay, whatever else they buy
         bool Paid(int night) => sim.World.TryGet<LodgeStay>(guest, out var s) && s.Night >= night;
@@ -231,7 +240,7 @@ public class InnRoomsTests
         sim.Mess.Spill(sim, MessKind.SpilledAle, Plan(sim, 7, 9));
         var bed = Beds(sim)[0];
         sim.World.Add(bed, new Unmade());
-        for (var i = 0; i < 24 && (sim.Mess.At(sim, room) != null || Lodging.IsUnmade(sim, bed)); i++)
+        for (var i = 0; i < 24 && (sim.Mess.At(sim, room) != null || sim.Mess.At(sim, Plan(sim, 7, 9)) != null || Lodging.IsUnmade(sim, bed)); i++)
             sim.TickMany(SimClock.TicksPerHour / 4);
         Assert.Null(sim.Mess.At(sim, room));
         Assert.Null(sim.Mess.At(sim, Plan(sim, 7, 9)));

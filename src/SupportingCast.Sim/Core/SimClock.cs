@@ -7,8 +7,8 @@ namespace SupportingCast.Sim.Core;
 public sealed class SimClock
 {
     public const int TicksPerSecond = 60;
-    public const int TicksPerHour = 1500;   // 25 real seconds per in-game hour at 1x
-    public const int TicksPerDay = TicksPerHour * 24; // 10 real minutes per day at 1x
+    public const int TicksPerHour = 2400;   // 40 real seconds per in-game hour at 1x (divides by 12, 4, 6, 10, 15)
+    public const int TicksPerDay = TicksPerHour * 24; // 16 real minutes per day at 1x
 
     public long Tick { get; internal set; }
 

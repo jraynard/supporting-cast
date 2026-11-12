@@ -20,6 +20,13 @@ public sealed class TemperatureSystem : ISimSystem, Saving.ISaveState
     public const float UpdatesPerHour = SimClock.TicksPerHour / 10f;
 
     /// <summary>
+    /// The exchange coefficients below were tuned when an hour was 150 updates. They're scaled to
+    /// the hour's length so heat spreads and leaks per game hour, as fires heat: a longer hour
+    /// changes nothing but how long it all takes in real time.
+    /// </summary>
+    public const float PerTunedUpdate = 150f / UpdatesPerHour;
+
+    /// <summary>
     /// Neighbor exchange coefficient for open air. Explicit diffusion is stable while a cell's total
     /// outflow per update stays ≤ 1: 4 × this + this × (rise + sink factors) + ambient.
     /// </summary>
@@ -87,8 +94,8 @@ public sealed class TemperatureSystem : ISimSystem, Saving.ISaveState
         var roofed = map.Roofed;
         var active = map.Active;
         int w = map.Width, h = map.Height, layer = map.LayerSize, count = map.Count;
-        float k = Conductance, rise = k * RiseFactor, sink = k * SinkFactor;
-        float roofedEx = RoofedExchange, outdoorEx = OutdoorExchange;
+        float k = Conductance * PerTunedUpdate, rise = k * RiseFactor, sink = k * SinkFactor;
+        float roofedEx = RoofedExchange * PerTunedUpdate, outdoorEx = OutdoorExchange * PerTunedUpdate;
         var cells = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(map.ActiveCells);
         foreach (var i in cells)
         {

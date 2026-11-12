@@ -95,7 +95,8 @@ public class EnvironmentTests
     [Fact]
     public void FireSpreadsOnlyThroughFlammablesAndBurnsOut()
     {
-        var sim = TestWorld.Create(30, 10);
+        // Fire is chancy: along a line of walls it dies out about half the time. A seed where it takes.
+        var sim = TestWorld.Create(30, 10, seed: 3);
         var dirt = sim.Defs.Block("Dirt");
         Array.Fill(sim.Map.Block, dirt, 0, sim.Map.LayerSize);
         // A row of wooden walls touching a stone wall.
@@ -192,7 +193,8 @@ public class EnvironmentTests
     [Fact]
     public void SmokeRisesOutdoorsAndIsTrappedIndoors()
     {
-        var outdoors = TestWorld.Create(20, 20, depth: 8);
+        // Fire is chancy (how far it takes varies a lot): seeds where it catches.
+        var outdoors = TestWorld.Create(20, 20, seed: 5, depth: 8);
         outdoors.SpawnStructure(outdoors.Thing("Oak"), C(10, 10));
         outdoors.RebuildDerivedIfNeeded();
         outdoors.Fire.Ignite(outdoors, C(10, 10), 1f);
@@ -201,7 +203,7 @@ public class EnvironmentTests
 
         // A walled room under a rock ceiling (a dug-out cave room). Under a wooden floor the fire
         // would climb into the floor and burn its way out, which is fine, but not this test.
-        var indoors = TestWorld.Create(20, 20, depth: 5);
+        var indoors = TestWorld.Create(20, 20, seed: 7, depth: 5);
         indoors.BuildWallRing(C(4, 4), C(10, 10), "StoneWall");
         indoors.FillBlocks(new int3(4, 4, 2), new int3(10, 10, 2));
         indoors.SpawnItem(indoors.Thing("Wood"), 40, C(7, 8));

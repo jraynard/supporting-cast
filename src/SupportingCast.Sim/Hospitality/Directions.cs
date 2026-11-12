@@ -23,7 +23,12 @@ public sealed class WayAsked
     public Entity Asker;
     public string AskerName = "";
     public required BuildingDef To;
+    /// <summary>When first asked: how long it's waited for an answer.</summary>
     public long Tick;
+
+    /// <summary>When last said aloud, so they don't ask again too soon.</summary>
+    public long LastAsked;
+
     public readonly List<Entity> HeardBy = [];
 }
 
@@ -59,7 +64,8 @@ public sealed class DirectionsSystem : ISimSystem, ISaveState
     private int _nextId = 1;
 
     public string Name => "Directions";
-    public int Interval => SimClock.TicksPerHour / 12;
+    /// <summary>Every two real seconds: often enough to catch someone walking past a shop.</summary>
+    public int Interval => SimClock.TicksPerSecond * 2;
 
     /// <summary>Asks still waiting on an answer, oldest first. Game code reads them through <see cref="PerceptionView.WaysAsked"/>.</summary>
     public IReadOnlyList<WayAsked> Open => _asks;
@@ -102,16 +108,21 @@ public sealed class DirectionsSystem : ISimSystem, ISaveState
     public void Ask(Simulation sim, Entity who, BuildingDef to, string service)
     {
         var now = sim.Clock.Tick;
-        if (_asks.Exists(x => x.Asker == who && x.To == to && now - x.Tick < SimClock.HoursToTicks(AskAgainHours)))
+        if (_asks.Exists(x => x.Asker == who && x.To == to && now - x.LastAsked < SimClock.HoursToTicks(AskAgainHours)))
             return;
-        _asks.RemoveAll(x => x.Asker == who && x.To == to);
         if (sim.Speech.Say(sim, who, $"Where would I find the {to.Label}? I'm after {service}.", Volume.Say) is not { } said)
             return;
-        var ask = new WayAsked { Id = _nextId++, Asker = who, AskerName = sim.World.Get<Creature>(who).Name, To = to, Tick = now };
+        // Asking again, the question stands as it was (its wait unchanged); new ears have heard it.
+        var ask = _asks.Find(x => x.Asker == who && x.To == to);
+        if (ask == null)
+        {
+            ask = new WayAsked { Id = _nextId++, Asker = who, AskerName = sim.World.Get<Creature>(who).Name, To = to, Tick = now };
+            _asks.Add(ask);
+        }
+        ask.LastAsked = now;
         foreach (var h in said.Listeners)
-            if (h.Clarity == Clarity.Clear && h.Listener != who)
+            if (h.Clarity == Clarity.Clear && h.Listener != who && !ask.HeardBy.Contains(h.Listener))
                 ask.HeardBy.Add(h.Listener);
-        _asks.Add(ask);
     }
 
     /// <summary>Someone points the way: the nearest such building, said aloud. Everyone who catches it clearly knows it now.</summary>
@@ -227,6 +238,7 @@ public sealed class DirectionsSystem : ISimSystem, ISaveState
             w.String(a.AskerName);
             w.Def(a.To);
             w.Long(a.Tick);
+            w.Long(a.LastAsked);
             w.Int(a.HeardBy.Count);
             foreach (var h in a.HeardBy)
                 w.Entity(h);
@@ -239,7 +251,7 @@ public sealed class DirectionsSystem : ISimSystem, ISaveState
         _asks.Clear();
         for (var n = r.Count(1 << 16); n > 0; n--)
         {
-            var a = new WayAsked { Id = r.Int(), Asker = r.Entity(), AskerName = r.String(), To = r.Def<BuildingDef>(), Tick = r.Long() };
+            var a = new WayAsked { Id = r.Int(), Asker = r.Entity(), AskerName = r.String(), To = r.Def<BuildingDef>(), Tick = r.Long(), LastAsked = r.Long() };
             for (var k = r.Count(1 << 16); k > 0; k--)
                 a.HeardBy.Add(r.Entity());
             _asks.Add(a);

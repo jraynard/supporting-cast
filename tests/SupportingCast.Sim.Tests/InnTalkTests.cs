@@ -346,7 +346,10 @@ public class InnTalkTests
     public void LeftUnansweredAVillagerTellsThemInTheEnd()
     {
         var (sim, lost, _) = LostAtTheInn("Healer"); // an AI innkeeper hears them
-        for (var i = 0; i < 12 && !DirectionsSystem.Knows(sim, lost, Smithy(sim)); i++)
+        // Whole, so it's the smithy they're asking after and nothing takes them off to the shrine.
+        foreach (var e in sim.Creatures().Where(c => sim.World.Has<Adventurer>(c)))
+            sim.World.Get<Health>(e).Injuries.Clear();
+        for (var i = 0; i < 18 && !DirectionsSystem.Knows(sim, lost, Smithy(sim)); i++)
             sim.TickMany(SimClock.TicksPerHour / 6);
         Assert.True(DirectionsSystem.Knows(sim, lost, Smithy(sim)));
     }

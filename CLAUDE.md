@@ -35,7 +35,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
 - `src/SupportingCast.Sim`: **headless, deterministic.** References only `Brutal.Numerics` and
   `Narsil.Sim`, never the engine, GLFW, Vulkan or ImGui.
   - `Simulation` runs `ISimSystem`s in the fixed order in `CreateStandard`. 60 ticks = 1 game second;
-    a game day is 10 real minutes at 1x.
+    a game day is 16 real minutes at 1x (`TicksPerHour` 2400: keep it divisible by 12).
+    Per-update physics constants (heat, fire) are scaled to the hour by `PerTunedUpdate`.
   - ECS in `Ecs/World.cs`: `Query<T>()` snapshots, `Each<T>()` doesn't allocate but throws if the
     store changes mid-loop.
   - The map is a 3D cell grid (`(z*H + y)*W + x`). Spawn, move and destroy through

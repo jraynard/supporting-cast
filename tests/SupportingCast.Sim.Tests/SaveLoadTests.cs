@@ -136,7 +136,8 @@ public class SaveLoadTests
         live.Equip(hunter, live.Defs.Thing("Bow"));
         foreach (var e in live.World.Query<Herd>())
             w.Add(e, new HuntOrder());
-        live.TickMany(SimClock.HoursToTicks(1));
+        for (var t = 0; t < SimClock.HoursToTicks(1) && !w.Query<Mind>().Any(e => w.Get<Mind>(e).Job is HuntJob); t += 60)
+            live.TickMany(60);
         Assert.Contains(w.Query<Mind>(), e => w.Get<Mind>(e).Job is HuntJob);
 
         var loaded = RoundTrip(live);

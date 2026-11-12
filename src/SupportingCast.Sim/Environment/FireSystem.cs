@@ -15,6 +15,12 @@ public sealed class FireSystem : ISimSystem, Saving.ISaveState
 
     public const float UpdatesPerHour = SimClock.TicksPerHour / 15f;
 
+    /// <summary>
+    /// The rates below are per update, tuned when an hour was 100 updates; scaled by this so a fire
+    /// grows, spreads and eats its fuel per game hour, in step with the heat and smoke it makes.
+    /// </summary>
+    public const float PerTunedUpdate = 100f / UpdatesPerHour;
+
     public float SpreadChance { get; set; } = 0.035f;
     public float GrowthRate { get; set; } = 0.06f;
     public float BurnOutRate { get; set; } = 0.1f;
@@ -103,7 +109,7 @@ public sealed class FireSystem : ISimSystem, Saving.ISaveState
             }
 
             var fuel = Fuel(sim, i);
-            fire = fuel > 0 ? Math.Min(1f, fire + GrowthRate * fuel) : fire - BurnOutRate;
+            fire = fuel > 0 ? Math.Min(1f, fire + GrowthRate * PerTunedUpdate * fuel) : fire - BurnOutRate * PerTunedUpdate;
             map.Fire[i] = Math.Max(0, fire);
             if (fire <= 0)
             {
@@ -123,7 +129,7 @@ public sealed class FireSystem : ISimSystem, Saving.ISaveState
                 if (map.Fire[ni] > 0)
                     continue;
                 var nf = Fuel(sim, ni);
-                if (nf > 0 && sim.Rand.Chance(SpreadChance * factor * fire * nf))
+                if (nf > 0 && sim.Rand.Chance(SpreadChance * PerTunedUpdate * factor * fire * nf))
                     Ignite(sim, n, 0.15f);
             }
         }
@@ -136,7 +142,7 @@ public sealed class FireSystem : ISimSystem, Saving.ISaveState
     private void Consume(Simulation sim, int i, float fire)
     {
         var map = sim.Map;
-        var damage = ThingDamage * fire;
+        var damage = ThingDamage * PerTunedUpdate * fire;
 
         foreach (var e in (ReadOnlySpan<Entity>)[map.Structure[i], map.Item[i], map.Floor[i]])
         {
@@ -164,7 +170,7 @@ public sealed class FireSystem : ISimSystem, Saving.ISaveState
         }
 
         var ground = map.Floor[i].IsNull ? map.GroundUnder(i) : null;
-        if (ground?.BurnsIntoDef != null && sim.Rand.Chance(0.04f * fire))
+        if (ground?.BurnsIntoDef != null && sim.Rand.Chance(0.04f * PerTunedUpdate * fire))
         {
             map.Block[i - map.LayerSize] = ground.BurnsIntoDef;
             map.MarkCellChanged(i - map.LayerSize);

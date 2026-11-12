@@ -276,6 +276,20 @@ Known leftovers:
   decals have their own art (`tools/inn_art.py`).
 - Tune the pot, seasoning, wash, tap and mix timings in play.
 
+### Slower days (2026-11-12)
+- **A game hour is 40 real seconds, a day 16 minutes** (was 25 s and 10 minutes), so a 30 to 40
+  minute round is 2 to 2.5 days. `TicksPerHour` is 2400 because systems tick every hour/12, /6 and /4.
+  Everything set per game hour or day (needs, rot, wounds, prices' patience, arrivals) slows with it
+  in real time. Walking, mini-games and fights stay in real time.
+- Heat exchange and fire were per update, tuned against a 1500-tick hour: they're scaled by
+  `PerTunedUpdate`, so forges, rooms and fires settle where `EnvironmentTests` tuned them.
+- Directions: shop sightings are checked every 2 real seconds. Asking the way again keeps the first
+  question open (its wait for an answer unchanged) and adds whoever newly heard it.
+- Test fixes: fire tests pin seeds where the fire takes (spread along a line of walls is a coin flip
+  at any hour length). Tests about lodging and directions heal the party first, and lodging takes quests off the sign.
+- Bench baselines: seed 1234 state `1EB48993F8038C03` full `DF6CBE9347E7261E`; seed 99 state
+  `FC1148287E60DEAF` full `2D877DFA76813B15`.
+
 ### After the innkeeper playtest (2026-11-12)
 - **A Cook trade** (`trades.json`): the inn's kitchen, split off from the innkeeper.
   - **Who does what:** each trade lists the services it `serves`; the AI's jobs, the bot and
