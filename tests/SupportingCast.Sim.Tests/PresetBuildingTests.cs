@@ -184,25 +184,35 @@ public class PresetBuildingTests
     }
 
     [Fact]
-    public void BellowsGoBesideTheSmithysForge()
+    public void TheSmithyComesWithItsBellowsAnvilTubAndGrindstone()
+    {
+        var sim = World();
+        var b = Buildings.SpawnFinished(sim, Plan(sim, "Smithy"), C(12, 12), 0);
+        var parts = Buildings.Parts(sim, b).Select(p => sim.World.Get<Thing>(p).Def.Name).ToList();
+        foreach (var name in new[] { "Forge", "Anvil", "QuenchTub", "Grindstone", "ToolRack", "FuelBin" })
+            Assert.Contains(name, parts);
+        var forge = Buildings.Parts(sim, b).First(p => sim.World.Get<Thing>(p).Def.Name == "Forge");
+        Assert.Same(sim.Thing("Bellows").Building!.Bellows, Crafting.BellowsOf(sim, forge));
+    }
+
+    [Fact]
+    public void ChestsGoInTheSmithysSlots()
     {
         var sim = World();
         var b = Buildings.SpawnFinished(sim, Plan(sim, "Smithy"), C(12, 12), 0);
         var state = sim.World.Get<PresetBuilding>(b);
-        var bellows = sim.Thing("Bellows");
-        var spots = Buildings.Slots(sim, state).Where(s => s.Slot.Accepts(bellows)).ToList();
+        var chest = sim.Thing("Chest");
+        var spots = Buildings.Slots(sim, state).Where(s => s.Slot.Accepts(chest)).ToList();
         Assert.Equal(2, spots.Count);
         var beside = spots[1].Cell;
-        Assert.NotNull(Buildings.PlayerProblem(sim, bellows, Buildings.CellOf(sim.Map, state.Def, state.Anchor, 0, 2, 2), 0, out _)); // in front of the forge: no slot
+        Assert.NotNull(Buildings.PlayerProblem(sim, chest, Buildings.CellOf(sim.Map, state.Def, state.Anchor, 0, 3, 2), 0, out _)); // in front of the forge: no slot
 
-        // Through the order a player gives, the bellows become part of the smithy.
-        sim.ApplyNow(new AreaOrderCommand(AreaTool.Build, new int2(beside.X, beside.Y), new int2(beside.X, beside.Y), beside.Z, 4, bellows, spots[1].Facing));
+        // Through the order a player gives, the chest becomes part of the smithy.
+        sim.ApplyNow(new AreaOrderCommand(AreaTool.Build, new int2(beside.X, beside.Y), new int2(beside.X, beside.Y), beside.Z, 4, chest, spots[1].Facing));
         var site = sim.Map.Structure[sim.Map.Idx(beside)];
         Assert.Equal(b, Buildings.Of(sim, site));
         var built = sim.CompleteConstruction(site);
         Assert.Equal(b, Buildings.Of(sim, built));
-        var forge = Buildings.Parts(sim, b).First(p => sim.World.Get<Thing>(p).Def.Name == "Forge");
-        Assert.Same(bellows.Building!.Bellows, Crafting.BellowsOf(sim, forge));
     }
 
     [Fact]

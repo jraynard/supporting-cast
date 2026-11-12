@@ -26,6 +26,7 @@ import norse_fx
 import norse_stone
 import norse_glow
 import norse_buildings
+import norse_smithy
 import norse_gear
 import chibi_people
 import chibi_animals
@@ -535,6 +536,7 @@ if __name__ == "__main__":
     norse_stone.generate()   # rock, ore, slopes, earth sides, boulders: replaces the drawings above
     placeholder_dragoncare.generate()
     norse_buildings.generate()   # walls, floors, doors, stairs, ladders, beds, model textures, furniture icons
+    norse_smithy.generate()      # anvil, quench tub, grindstone, tool rack, fuel bin: model textures and icons
     placeholder_roofs.generate()     # roof thatch and shingles
     norse_gear.generate()        # tools and weapons per metal, stock, ores, fuel, food, hides: replaces the recoloured gear
     chibi_animals.generate()     # deer, boar, hare: chibi, 4x detail

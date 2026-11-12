@@ -90,6 +90,58 @@
                     "bellows": { "heat": 2000, "maxTempBonus": 140, "lift": 270 } }
     },
 
+    // ---- The rest of a smithy: where the hot piece goes between heats (anvil), to harden (quench
+    // tub) and to take an edge (grindstone), with the smith's tools on the wall and a bin of fuel.
+    // Box models from tools/norse_smithy.py. ----
+    {
+      "name": "Anvil", "label": "anvil", "category": "Building", "solid": true, "sprite": "buildings/anvil",
+      "description": "A block of iron on an oak stump: where hot metal is beaten into shape.",
+      "maxHp": 600, "flammability": 0.1,
+      "building": { "work": 300, "surfaceHeight": 0.5, "cost": [ { "def": "IronBar", "count": 6 }, { "def": "Wood", "count": 4 } ] },
+      "model": [
+        { "min": [0.30, 0.30, 0.00], "max": [0.70, 0.70, 0.34], "top": "props/log_end", "side": "props/log_side" },
+        { "min": [0.22, 0.38, 0.34], "max": [0.82, 0.62, 0.50], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.08, 0.43, 0.40], "max": [0.22, 0.57, 0.50], "top": "props/iron", "side": "props/iron" }
+      ]
+    },
+    {
+      "name": "QuenchTub", "label": "quench tub", "category": "Building", "solid": true, "sprite": "buildings/quench_tub",
+      "description": "A hooped tub of water. Hot steel plunged in and held for the right breath hardens; too long and it turns brittle.",
+      "maxHp": 140, "flammability": 0.3,
+      "building": { "work": 160, "surfaceHeight": 0.36, "cost": [ { "def": "Wood", "count": 10 }, { "def": "IronBar", "count": 1 } ] },
+      "model": [
+        { "min": [0.14, 0.14, 0.00], "max": [0.86, 0.86, 0.36], "top": "props/water", "side": "props/tub_side" }
+      ]
+    },
+    {
+      "name": "Grindstone", "label": "grindstone", "category": "Building", "solid": true, "sprite": "buildings/grindstone",
+      "description": "A sandstone wheel on a trestle, turned by a crank: where a blade takes its edge.",
+      "maxHp": 200, "flammability": 0.4,
+      "building": { "work": 200, "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 6 } ] },
+      "model": [
+        { "min": [0.18, 0.34, 0.00], "max": [0.82, 0.66, 0.22], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.25, 0.44, 0.10], "max": [0.75, 0.56, 0.50], "top": "props/grindstone", "side": "props/grindstone" }
+      ]
+    },
+    {
+      "name": "ToolRack", "label": "tool rack", "category": "Building", "solid": true, "sprite": "buildings/tool_rack",
+      "description": "A board on the wall hung with tongs, hammers and files.",
+      "maxHp": 100, "flammability": 0.8,
+      "building": { "work": 120, "cost": [ { "def": "Wood", "count": 4 } ] },
+      "model": [
+        { "min": [0.06, 0.00, 0.10], "max": [0.94, 0.14, 0.90], "top": "props/planks", "side": "props/planks", "front": "props/tool_rack" }
+      ]
+    },
+    {
+      "name": "FuelBin", "label": "fuel bin", "category": "Building", "solid": true, "sprite": "buildings/fuel_bin",
+      "description": "An open bin heaped with coal and charcoal for the forge. Holds 4 stacks.",
+      "maxHp": 120, "flammability": 0.9,
+      "building": { "work": 120, "storageStacks": 4, "surfaceHeight": 0.4, "cost": [ { "def": "Wood", "count": 8 } ] },
+      "model": [
+        { "min": [0.10, 0.18, 0.00], "max": [0.90, 0.82, 0.40], "top": "props/coal", "side": "props/crate_side" }
+      ]
+    },
+
     // ---- Silver and gold: coin and jewelry (no armor, but treasure: hoardValue) ----
     {
       "name": "Mint", "label": "goldsmith's bench", "category": "Building", "solid": true, "sprite": "buildings/mint",

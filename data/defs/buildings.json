@@ -207,7 +207,7 @@
     },
     {
       "name": "Smithy", "label": "smithy", "icon": "buildings/forge",
-      "description": "A forge under a roof, open at the front for the heat. Spots either side of the forge for bellows, which drive it hotter for iron and steel, and for a goldsmith's bench and chests.",
+      "description": "A forge under a roof, open at the front for the heat: bellows either side to drive it hot enough for iron and steel, an anvil, a quench tub and a grindstone, tools on the wall and a bin of fuel. Room for a goldsmith's bench and chests.",
       "layout": [
         "WWWWWWW",
         "W.....W",
@@ -216,16 +216,24 @@
         "P.....P"
       ],
       "parts": { "foundation": "Plinth", "wall": "LogWall", "post": "CornerPost", "roof": "TurfRoofPart" },
+      // The forge between its bellows at the back, tools on the wall, fuel to hand. The anvil, tub
+      // and grindstone are where the hot piece goes next: a step or two from the fire, clear of
+      // the counter at the front.
       "furnish": [
-        { "def": "Forge", "at": [3, 1] }
+        { "def": "Forge", "at": [3, 1] },
+        { "def": "Bellows", "at": [2, 1] },
+        { "def": "Bellows", "at": [4, 1] },
+        { "def": "ToolRack", "at": [1, 1] },
+        { "def": "FuelBin", "at": [5, 1] },
+        { "def": "Anvil", "at": [2, 3] },
+        { "def": "QuenchTub", "at": [1, 3] },
+        { "def": "Grindstone", "at": [5, 3], "facing": 3 }
       ],
       // Customers line up at the open front, out into the street.
       "line": [ [3, 4], [3, 5], [3, 6], [3, 7], [3, 8], [3, 9] ],
       "slots": [
-        { "defs": ["Bellows"], "at": [2, 1] },
-        { "defs": ["Bellows"], "at": [4, 1] },
-        { "defs": ["Mint", "Chest"], "at": [1, 1], "facing": 1 },
-        { "defs": ["Chest"], "at": [5, 1], "facing": 3 }
+        { "defs": ["Mint", "Chest"], "at": [1, 2], "facing": 1 },
+        { "defs": ["Chest"], "at": [5, 2], "facing": 3 }
       ],
       "variants": [
         { "name": "Timber", "label": "timber", "kit": "log_turf" },
