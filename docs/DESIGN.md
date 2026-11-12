@@ -79,6 +79,7 @@ Ideas for depth, to build when each trade's milestone comes round.
   version: an edge (dull or keen) and chips (HP). Hammering out chips flattens the edge, so a
   chipped blade is hammered first and then sharpened.
 - Commissions have details the buyer chooses: the hilt, runes engraved on it, the materials.
+- more detail - heating the billet to the correct temp based on how hot it looks, using molds or shaping the item, making the hilt, handle and grip, thinking of like forged in fire style with realistic detailed forging here (as long as its fun).
 
 **Innkeeper.**
 - M2 pours ale at the cask. Hold to pour; the tilt controls the head. Customers taste the quality.
