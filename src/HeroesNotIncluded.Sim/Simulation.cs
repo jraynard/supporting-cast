@@ -230,6 +230,7 @@ public sealed partial class Simulation
             .AddSystem(sim.Favours)
             .AddSystem(new Healing.ManaSystem())
             .AddSystem(new Tinkering.CollectorSystem())
+            .AddSystem(new Tinkering.RelockSystem())
             .AddSystem(sim.Expeditions)
             .AddSystem(new MoodSystem())
             .AddSystem(new PrisonBreakSystem())

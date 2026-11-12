@@ -24,9 +24,9 @@ public static class Inventory
         sim.World.Has<Avatar>(creature) || sim.World.Has<PlayerCharacter>(creature) || sim.World.Has<Adventurer>(creature)
             ? Entity.Null : sim.PackOf(creature);
 
-    /// <summary>Kept in a work pack when a job ends: coin, what someone handed over to be seen to, and a few clean tankards or bowls for the next order.</summary>
+    /// <summary>Kept in a work pack when a job ends: coin, keys, what someone handed over to be seen to, and a few clean tankards or bowls for the next order.</summary>
     public static bool KeptBetweenJobs(Simulation sim, Entity item) =>
-        Shops.Coin.IsSilver(sim, item) || sim.World.Has<Entrusted>(item) || sim.World.Get<Thing>(item).Def.Vessel;
+        Shops.Coin.IsSilver(sim, item) || sim.World.Has<Entrusted>(item) || sim.World.Has<Tinkering.Key>(item) || sim.World.Get<Thing>(item).Def.Vessel;
 
     /// <summary>Is this item a stack in the creature's own pack?</summary>
     public static bool InOwnPack(Simulation sim, Entity creature, Entity item) =>

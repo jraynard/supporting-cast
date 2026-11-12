@@ -1,4 +1,7 @@
+using HeroesNotIncluded.Sim.Ai;
 using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Maps;
 using HeroesNotIncluded.Sim.Systems;
 
 namespace HeroesNotIncluded.Sim.Tinkering;
@@ -111,6 +114,78 @@ public static class Locksmithing
         return best;
     }
 
+    // ---------------- Keys in AI hands ----------------
+
+    /// <summary>Ticks an AI villager takes to unlock a door with their key.</summary>
+    public const int UnlockTicks = 40;
+
+    /// <summary>A key to every lock fitted at a trade's workplace (<see cref="TradeDef.HoldsKeys"/>), for whoever takes it up.</summary>
+    public static void GiveWorkplaceKeys(Simulation sim, Entity who, TradeDef trade)
+    {
+        var w = sim.World;
+        if (trade.WorkplaceDef is not { } workplace)
+            return;
+        foreach (var door in w.Query<LockCut>().OrderBy(e => e.Index))
+        {
+            if (!IsDoor(sim, door) || Buildings.Of(sim, door) is not { IsNull: false } b || w.Get<PresetBuilding>(b).Def != workplace)
+                continue;
+            var cut = w.Get<LockCut>(door);
+            if (KeyFor(sim, who, cut.Seed).IsNull)
+                Inventory.Stow(sim, who, MakeKey(sim, cut.Seed, cut.Pins, 1f));
+        }
+    }
+
+    /// <summary>
+    /// For an AI villager who can't otherwise get from <paramref name="from"/> to <paramref name="to"/>:
+    /// a locked door they hold the key to, that they can reach and that opens the way. Entity.Null if
+    /// there's none (or it's a player's character: players turn their own keys).
+    /// </summary>
+    public static Entity KeyedDoor(Simulation sim, Entity pawn, int3 from, int3 to, PathEnd end)
+    {
+        var w = sim.World;
+        if (w.Count<LockCut>() == 0 || w.Has<Avatar>(pawn) || w.Has<PlayerCharacter>(pawn))
+            return Entity.Null;
+        var keys = Keys(sim, pawn);
+        if (keys.Count == 0)
+            return Entity.Null;
+        var map = sim.Map;
+        foreach (var door in w.Query<LockCut>().OrderBy(e => e.Index))
+        {
+            if (!IsDoor(sim, door) || !sim.IsLocked(door) || !keys.Exists(k => w.Get<Key>(k).Seed == w.Get<LockCut>(door).Seed))
+                continue;
+            var cell = w.Get<Thing>(door).Cell;
+            bool near = false, far = false;
+            foreach (var d in Map.Neighbors8)
+            {
+                var n = new int3(cell.X + d.X, cell.Y + d.Y, cell.Z);
+                if (!map.InBounds(n) || !map.Passable(n))
+                    continue;
+                near |= sim.Regions.CanReach(from, n, PathEnd.OnTile);
+                far |= sim.Regions.CanReach(n, to, end);
+            }
+            if (near && far)
+                return door;
+        }
+        return Entity.Null;
+    }
+
+    /// <summary>An AI villager unlocks a door with their key to get through; it's locked again behind them (<see cref="Relock"/>).</summary>
+    public static bool LetThrough(Simulation sim, Entity pawn, Entity door)
+    {
+        var w = sim.World;
+        if (!HasLock(sim, door) || KeyFor(sim, pawn, w.Get<LockCut>(door).Seed).IsNull)
+            return false;
+        if (!sim.IsLocked(door))
+            return true;
+        sim.SetLocked(door, false);
+        if (w.Has<Relock>(door))
+            w.Get<Relock>(door).By = pawn;
+        else
+            w.Add(door, new Relock { By = pawn });
+        sim.RebuildDerivedIfNeeded();
+        return true;
+    }
+
     /// <summary>Why this person can't fit this lock to this door now, or null if they can.</summary>
     public static string? FitProblem(Simulation sim, Entity who, Entity door, Entity lockItem)
     {
@@ -177,6 +252,44 @@ public static class Locksmithing
         sim.SetLocked(door, lockIt);
         sim.Messages.Add(MessageKind.Info, $"{w.Get<Creature>(who).Name} {(lockIt ? "locks" : "unlocks")} the {w.Get<Thing>(door).Label}.", at);
         return true;
+    }
+}
+
+/// <summary>A door an AI villager unlocked with their key to get through: locked again once they're clear of it (<see cref="RelockSystem"/>).</summary>
+public struct Relock
+{
+    public Entity By;
+}
+
+/// <summary>
+/// Doors an AI villager let themselves through: locked again behind them once they're two steps
+/// clear and nobody's in the doorway (or they're gone). A door a player unlocks stays as they left it.
+/// </summary>
+public sealed class RelockSystem : ISimSystem
+{
+    public string Name => "Relock";
+    public int Interval => 20;
+
+    public void Update(Simulation sim)
+    {
+        var w = sim.World;
+        if (w.Count<Relock>() == 0)
+            return;
+        foreach (var door in w.Query<Relock>())
+        {
+            var by = w.Get<Relock>(door).By;
+            if (!Locksmithing.HasLock(sim, door) || sim.IsLocked(door))
+            {
+                w.Remove<Relock>(door);
+                continue;
+            }
+            var cell = w.Get<Thing>(door).Cell;
+            var clear = !w.IsAlive(by) || !w.TryGet<Position>(by, out var p) || w.Get<Creature>(by).Dead || Map.Distance(p.Cell, cell) >= 2;
+            if (!clear || sim.Creatures().Any(c => w.Get<Position>(c).Cell == cell))
+                continue;
+            sim.SetLocked(door, true);
+            w.Remove<Relock>(door);
+        }
     }
 }
 

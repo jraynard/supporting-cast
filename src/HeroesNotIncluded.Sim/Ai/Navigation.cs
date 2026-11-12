@@ -166,6 +166,9 @@ public static class Navigation
         end = EndFor(sim, to, end);
         if (sim.Regions.CanReach(from, to, end))
             return true;
+        // Through a locked door they hold the key to.
+        if (!Tinkering.Locksmithing.KeyedDoor(sim, pawn, from, to, end).IsNull)
+            return true;
         if (FlyingStage(sim, pawn) == null)
             return false;
         return TouchesSky(sim, from) && TouchesSky(sim, to);

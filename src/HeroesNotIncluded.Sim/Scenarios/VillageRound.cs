@@ -37,6 +37,7 @@ public static class VillageRound
         StockShrine(sim, shrine);
         StockSmithy(sim, Role("Forge"));
         StockInn(sim, Role("Tavern"));
+        LockStoreroom(sim, Role("Tavern"));
         StockTinkerShop(sim, Role("TinkerShop"));
         // Beds for everyone, or the first night sends them all out to sleep in the cold.
         foreach (var (spec, home) in built.Buildings)
@@ -48,6 +49,31 @@ public static class VillageRound
 
     /// <summary>Charcoal in the smithy's fuel bin: a working day's firing, for whoever keeps the forge fed.</summary>
     public const int SmithyCharcoal = 30;
+
+    /// <summary>
+    /// The inn's storeroom door has a lock fitted, and starts locked: the innkeeper holds the key
+    /// (<see cref="Defs.TradeDef.HoldsKeys"/>), and anyone else picks it.
+    /// </summary>
+    private static void LockStoreroom(Simulation sim, Entity inn)
+    {
+        if (inn.IsNull)
+            return;
+        var w = sim.World;
+        var parts = Buildings.Parts(sim, inn);
+        var chest = parts.FirstOrDefault(e => w.Get<Thing>(e).Def.Name == "Chest", Entity.Null);
+        if (chest.IsNull)
+            return;
+        var at = w.Get<Thing>(chest).Cell;
+        var door = parts.Where(e => w.Get<Thing>(e).Def.Building is { IsDoor: true } && w.Get<Thing>(e).Cell.Z == at.Z)
+            .OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, at)).FirstOrDefault(Entity.Null);
+        if (door.IsNull)
+            return;
+        w.Add(door, new Tinkering.LockCut { Seed = sim.Rand.NextUInt() | 1u, Pins = StoreroomPins, Tightness = 0.5f, Maker = Entity.Null });
+        sim.SetLocked(door, true);
+    }
+
+    /// <summary>Pins in the storeroom's lock.</summary>
+    public const int StoreroomPins = 4;
 
     /// <summary>Stock in the tinker's chest: iron for locks and clockwork, wood for contraptions and wagon axles, charcoal for rockets.</summary>
     private static void StockTinkerShop(Simulation sim, Entity shop)

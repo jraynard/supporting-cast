@@ -1,13 +1,13 @@
 // Trades: the roles a round deals out. workPriorities change the AI's defaults for whoever holds
 // the trade (1 highest, 4 lowest); only what the trade puts first is listed, so the town's other
 // work still gets done. knows: stations whose recipes the holder knows; skills: the least they
-// have; kit: what they start with. Labourer is unlimited: it's what's left when the named trades run out.
+// have; kit: what they start with; holdsKeys: a key to every lock at the workplace (the inn's storeroom). Labourer is unlimited: it's what's left when the named trades run out.
 {
   "trades": [
     // The inn takes two: the innkeeper keeps the bar, the rooms and the quest board; the cook keeps
     // the kitchen. "serves": the services at the workplace a trade sees to (and prices on the sign).
     { "name": "Innkeeper", "label": "innkeeper", "description": "Keeps the bar and the rooms, hears everything said over the counter, and points adventuring parties at work, on whatever that's worth.",
-      "workplace": "Inn", "workPriorities": { "Cook": 1 }, "brokers": true, "serves": [ "Drink", "MixedDrink", "Lodging", "Quest" ],
+      "workplace": "Inn", "workPriorities": { "Cook": 1 }, "brokers": true, "serves": [ "Drink", "MixedDrink", "Lodging", "Quest" ], "holdsKeys": true,
       "kit": [ { "def": "Mop" } ] },
     { "name": "Cook", "label": "cook", "description": "Keeps the inn's kitchen: the stew pot by taste, the larder, the bowls, and the meals out to the tables.",
       "workplace": "Inn", "workPriorities": { "Cook": 1 }, "serves": [ "Meal" ], "namesShop": false, "skills": { "Cooking": 5 },

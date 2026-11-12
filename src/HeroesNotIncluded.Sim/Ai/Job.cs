@@ -186,6 +186,23 @@ public abstract class Job
         var mover = Sim.World.Get<Mover>(Pawn);
         var from = PawnCell;
         var path = Navigation.PlanRoute(Sim, Pawn, from, target, end);
+        // No way but through a door they've the key to: to it, unlock it, and on.
+        if (path == null && Tinkering.Locksmithing.KeyedDoor(Sim, Pawn, from, target, end) is { IsNull: false } door)
+        {
+            foreach (var s in GoTo(Get<Thing>(door).Cell, PathEnd.Touch)) yield return s;
+            if (HasFailed) yield break;
+            var doing = Report;
+            Report = $"Unlocking the {Get<Thing>(door).Label}";
+            foreach (var s in Wait(Tinkering.Locksmithing.UnlockTicks)) yield return s;
+            Report = doing;
+            if (!Tinkering.Locksmithing.LetThrough(Sim, Pawn, door))
+            {
+                Fail("couldn't unlock the door");
+                yield break;
+            }
+            from = PawnCell;
+            path = Navigation.PlanRoute(Sim, Pawn, from, target, end);
+        }
         if (path == null)
         {
             Fail($"no path to {target}");

@@ -331,6 +331,7 @@ internal static class ComponentCodecs
             w.Int(k.Pins);
             w.Float(k.Fit);
         }, r => new Tinkering.Key { Seed = r.UInt(), Pins = Math.Clamp(r.Int(), Tinkering.Lockwork.MinPins, Tinkering.Lockwork.MaxPins), Fit = Math.Clamp(r.Float(), 0f, 1f) }),
+        Codec("Relock", (w, x) => w.Entity(x.By), r => new Tinkering.Relock { By = r.Entity() }),
         Codec("Contraption", (w, c) =>
         {
             w.Bool(c.Binding);

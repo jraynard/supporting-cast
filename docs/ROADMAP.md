@@ -485,8 +485,20 @@ building and fletching make a trade of their own). Design: DESIGN.md, "Tinker". 
   and building (anything in any container was up for grabs). A building can keep its stock
   (`BuildingDef.KeepsStock`, the tinker's shop does): no job takes from its containers, only
   someone opening them by hand (`Simulation.IsAvailable`). That covers the collector's crate too.
-- Save format 7. Bench baselines: seed 1234 state `5DCB26EC7CD4459D` full `AB09BAC6394EC6FC`; seed
-  99 state `71272E53719B30F6` full `A09F9DA9676D2333`.
+- **The inn's storeroom is locked**, with a fitted 4-pin lock, from the start of every round: a
+  door to pick, and to fit a lock of your own beside. The innkeeper holds the key
+  (`TradeDef.HoldsKeys`: a key to every lock at the workplace, dealt with the trade). AI villagers
+  use keys now: a job with no way through but a locked door they hold the key to walks to it,
+  unlocks it and goes on (`Locksmithing.KeyedDoor`, `Job.GoTo`; reachability counts it,
+  `Navigation.CanReach`), and it's locked again behind them once they're clear (`RelockSystem`).
+  Players turn their own keys. AI work packs keep keys between jobs.
+- **Narsil: no reaching through floors.** Touch (working on a cell from beside it) crossed a level
+  anywhere, so a guest in the room over the storeroom could take from its chest through the
+  floorboards. On a grid it now crosses a level only where the lower cell is open overhead
+  (`NavGraph.Touches(grid, ...)`, used by regions and the pathfinder); a step on open ground still
+  counts. Changes DragonWorld and Lifeline the same way. The gridless `Touches` is unchanged.
+- Save format 7. Bench baselines: seed 1234 state `57207EEE9FA2C71F` full `46AFDADEBB1266A1`; seed
+  99 state `16FBF26C8FB6EAB0` full `41C91768EF877819`.
 
 Known leftovers:
 - No lockboxes or locked chests yet: locks go on doors only.
@@ -505,11 +517,11 @@ Known leftovers:
 
 ## Next
 
-### Trade refinement
-- refining the four initial trades to be fun. blacksmith, innkeeper, carpeneter (locksmith), and healer.
-- blacksmith done, innkeeper done (some jobs split off to cook which will be handled later).
-- healer done (see Healer polish), tinker done (see The Tinker): the starting trades are in. The
-  Carpenter (building, furniture, fletching and bows) waits for later.
+### PLAYTEST PREP
+- add icon for the game executable
+- publish builds in a way we can easily distribute for playtesting (maybe use discord or something)
+- UX / art polish pass (not a full art pass but just clean things up as needed to make sure its legible for people that are not hardcore gamers) 
+- reduce reliance on text where possible for doing things so kids can play more easily
 
 ### M3: A whole season
 - `Director`, Renown and Dread, crises including the late-round dragon, the festival, the
@@ -520,12 +532,6 @@ Known leftovers:
 - needs probably will have to be tuned to not be too annoying, but it would be good for the townspeople to gather at the inn after the day to eat, and later when we have the miner and forager trades they will have to buy supplies from each other to replenish their stocks, so there will be some interaction pressure there.
 - make the "favors" system a physical board that has to be interacted with in the town square so people looking for work can use it. or even use it to ask for help from a laborer or something.
 *Exit: an Honest round is playable start to finish.*
-
-### PLAYTEST PREP
-- add icon for the game executable
-- publish builds in a way we can easily distribute for playtesting (maybe use discord or something)
-- UX / art polish pass (not a full art pass but just clean things up as needed to make sure its legible for people that are not hardcore gamers)
-
 **Playtest gate: is serving heroes fun with friends, without traitors?** Tune before going further.
 
 ### M4: Whispers

@@ -296,6 +296,8 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             if (item.Count != 1 || item.ThingDef.Tool == null || Toolbelt.PutOn(sim, e, made).IsNull)
                 Inventory.Stow(sim, e, made);
         }
+        if (trade.HoldsKeys)
+            Tinkering.Locksmithing.GiveWorkplaceKeys(sim, e, trade);
         if (w.Has<Mana>(e))
             w.Remove<Mana>(e);
         if (w.Has<Spellbook>(e))

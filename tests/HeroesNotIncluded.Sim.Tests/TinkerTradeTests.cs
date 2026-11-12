@@ -236,6 +236,70 @@ public class TinkerTradeTests
         Assert.Equal(14, Wood());
     }
 
+    // ---------------- The inn's storeroom ----------------
+
+    private static Entity StoreroomDoor(Simulation sim) =>
+        sim.World.Query<LockCut>().Single(e => Locksmithing.IsDoor(sim, e));
+
+    [Fact]
+    public void TheStoreroomStartsLockedAndTheInnkeeperHoldsTheKey()
+    {
+        var (sim, me, _) = ExpeditionTests.Round("Healer");
+        var door = StoreroomDoor(sim);
+        Assert.True(sim.IsLocked(door));
+        Assert.Equal("Inn", sim.World.Get<PresetBuilding>(Buildings.Of(sim, door)).Def.Name);
+        var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
+        Assert.False(Locksmithing.KeyFor(sim, keeper, sim.World.Get<LockCut>(door).Seed).IsNull);
+        Assert.True(Locksmithing.KeyFor(sim, me, sim.World.Get<LockCut>(door).Seed).IsNull);
+        // The key's kept between jobs: still on them hours later.
+        sim.TickMany(SimClock.TicksPerHour * 3);
+        Assert.False(Locksmithing.KeyFor(sim, keeper, sim.World.Get<LockCut>(door).Seed).IsNull);
+        // A tinker in the doorway sees a lock to pick, and no key for it.
+        Assert.StartsWith("The lock on the", Tinkers.ActionAt(sim, me, door));
+        Assert.False(Perception.For(sim, me).Lock(door)!.Value.HaveKey);
+    }
+
+    [Fact]
+    public void AnAIInnkeeperLetsThemselvesIntoTheStoreroomForAKegAndLocksUpBehind()
+    {
+        var (sim, _, _) = ExpeditionTests.Round("Healer");
+        NoQuests(sim);
+        var w = sim.World;
+        var door = StoreroomDoor(sim);
+        var keeper = sim.Creatures().Single(e => w.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
+        var cask = w.Query<Thing>().Single(e => w.Get<Thing>(e).Def.Building?.Cask != null);
+        var props = w.Get<Thing>(cask).Def.Building!.Cask!;
+        if (w.Has<CaskDrawn>(cask))
+            w.Get<CaskDrawn>(cask).Drawn = props.Servings;
+        else
+            w.Add(cask, new CaskDrawn { Drawn = props.Servings }); // run dry
+        var unlocked = false;
+        for (var t = 0; t < SimClock.TicksPerHour * 6 && PourSession.ServingsLeft(sim, cask) == 0; t++)
+        {
+            sim.Tick();
+            unlocked |= !sim.IsLocked(door);
+        }
+        Assert.True(PourSession.ServingsLeft(sim, cask) > 0, $"{sim.Ai.LastFailure.GetValueOrDefault(keeper)} / {w.Get<Mind>(keeper).Job?.Report}");
+        Assert.True(unlocked, "through the storeroom door, with the key");
+        sim.TickMany(SimClock.TicksPerHour / 4);
+        Assert.True(sim.IsLocked(door), "locked up again behind them");
+    }
+
+    [Fact]
+    public void NobodyWithoutTheKeyGetsAtTheKegs()
+    {
+        var (sim, me, _) = ExpeditionTests.Round("Healer");
+        var w = sim.World;
+        var door = StoreroomDoor(sim);
+        var keeper = sim.Creatures().Single(e => w.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
+        var keg = sim.AvailableItems().First(e => w.Get<Thing>(e).Def.Name == "Keg");
+        var stranger = sim.Creatures().First(e => e != keeper && e != me && w.Has<Trade>(e) && !w.Has<Adventurer>(e));
+        var from = w.Get<Position>(stranger).Cell;
+        Assert.False(Ai.Navigation.CanReach(sim, stranger, from, w.Get<Thing>(keg).Cell, PathEnd.OnTile));
+        Assert.True(Ai.Navigation.CanReach(sim, keeper, w.Get<Position>(keeper).Cell, w.Get<Thing>(keg).Cell, PathEnd.OnTile));
+        Assert.True(sim.IsLocked(door));
+    }
+
     // ---------------- Contraptions ----------------
 
     /// <summary>Seat each part at its fit (the session's own copy: a test's privilege), then wind it to the catch.</summary>
