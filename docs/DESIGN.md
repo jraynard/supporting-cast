@@ -202,27 +202,49 @@ do it.
 
 **Healer (empathic).** Magical in flavour rather than clinical, but grounded in the health
 model: wounds sit on body parts, have a kind, and bleed, hurt and fester.
-- *Laying on hands.* Touching a patient, the healer feels their wounds, including the ones
-  that sight misses, like an infection under a dressing. That touch is the diagnosis. They draw
-  a wound across, holding their composure against its pain; lose it and the link snaps, with a
-  backlash. The wound lands on the same part of the healer, lighter the more skilled they are.
-  An infection comes with a fully drawn wound.
+- *Feeling them over.* Touch is the diagnosis. The healer runs their hands from head to feet;
+  the feel rises near a wound, and lingering there makes it out. Only a wound they've felt can
+  be drawn. Pressing in is slower, but it's the only way to find festering under a dressing.
+- *Laying on hands.* They draw a wound across, holding their composure against its pain; lose
+  it and the link snaps, with a backlash. Each kind of wound pulls on the composure its own way:
+  a cut jolts, a bite tears twice, a bruise swells and ebbs, a burn pulls steadily one way, frost
+  numbs the hands so they answer late, venom grows worse the more comes across. So the draw
+  teaches what each feeling is. A patient lying on a pallet is calmer to draw from. The wound
+  lands on the same part of the healer, lighter the more skilled they are. An infection comes
+  with a fully drawn wound.
 - *Carrying it.* What the healer takes on is real. It bleeds and hurts, and a healer who takes
   too much collapses.
-- *Mending.* They cast the mending that fits each wound they've taken. One heals cuts and bites,
-  another bruising, and so on, each cast by playing its runes on cue. Absorbed wounds read as
-  sensations, not labels: a clean bright line of pain, a deep swelling throb, skin tight and
-  stinging. Telling which mending is needed is a skill the player learns. The wrong one costs
-  its mana and heals nothing.
+- *Weaving.* Mendings are woven from six runes (Thread, Flesh, Ember, Rime, Salt, Still), keyed
+  1 to 6 on the beat of the healer's own heart, then let go. The mix decides the mending, in any
+  order: Thread and Flesh knit a cut; Still and Flesh ease a bruise. Extra copies of a mending's
+  lead rune make it stronger, for more mana. A mix that makes nothing fizzles for a little mana.
+  Absorbed wounds read as sensations, not labels (a clean bright line of pain, a deep swelling
+  throb), so telling which mending a wound wants is a skill the player learns. Pain makes the
+  heart race and stumble, and the weave with it.
+- *The book.* Every empath starts with the common mendings written in their book: each one's
+  runes, what it does, and the feelings it answers. Others are found by trying new mixes, and
+  written in when they work: searing a wound shut, steadying your own hands, grounding lightning.
+- *Charms.* Before anyone's hurt, the healer weaves ahead: a mending woven into a strip of linen
+  keeps. Torn, it lands on whoever tears it, gift or no. Put out in the shrine with a price,
+  charms sell to parties as wards for the road, a couple each and no two alike. On a quest a charm
+  spends itself on the first wound it fits, and a healing one may turn a death into a bad wound.
+  Anyone can see which mending a charm holds; only its maker knows how well it was woven. Which
+  to weave is a guess at what the parties will face.
 - *Meditating.* Out of mana, they meditate it back with a breathing rhythm. Pain they still
   carry makes the rhythm stutter and flinch, so a healer who couldn't mend themselves fully
   struggles to recover.
-- *The shrine.* The healer works from a shrine: pallets where the wounded come to lie, a
-  meditation stone that steadies the breath against pain and gathers more mana, and a chest of
-  bandages and other supplies for when the mana runs dry. Later, magical supplies can live there
-  too.
+- *Binding.* Anyone can bandage, the healer best: each turn of cloth is pulled tight by hand
+  and let go in the band. Too slack slips; too tight bites. It stops bleeding without mana, so a
+  healer can bind what they've drawn while their mana comes back. Bandages are woven from fiber
+  or torn from cloth.
+- *The shrine.* The healer works from a shrine: pallets where the wounded come to lie (the
+  front of its line), a meditation stone that steadies the breath against pain and gathers more
+  mana, and a chest of bandages and other supplies for when the mana runs dry. Later, magical
+  supplies can live there too.
+- Later:
+  - **Herbs and poultices**, from the Apothecary (M5).
+  - **Reviving** the dead, somehow.
 - Betrayal later (M4): drawing only part of a wound, or quietly pushing one back.
-- Maybe we should make the spell casting more freeform, so you input a set of runes and that decides what spell is cast (kinda like Magicka, i'm sure there are other examples too). they can look at their spellbook to see the correct runes for which spell they want to cast along with any description of what it does.
 
 **Carpenter's locksmithing.** Adventurers come back with locked and trapped chests. Picking the
 lock and finding and disarming the traps are each a hands-on game. They're the Carpenter's for

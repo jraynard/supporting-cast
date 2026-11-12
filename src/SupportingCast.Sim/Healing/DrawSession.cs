@@ -1,3 +1,4 @@
+using SupportingCast.Sim.Defs;
 using SupportingCast.Sim.Ai;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Saving;
@@ -8,10 +9,12 @@ namespace SupportingCast.Sim.Healing;
 
 /// <summary>
 /// Laying on hands: drawing one of a patient's wounds into yourself. Hold F to draw. The wound's
-/// pain jolts your composure (the needle) away from the calm band, harder the worse the wound;
-/// A/D bring it back. Out of the band too long and the link snaps: you keep what you'd drawn so
-/// far, and a backlash on top. Let go and the drawing pauses, which is allowed. The result is
-/// applied by <see cref="Empathy.Draw"/>.
+/// pain pushes your composure (the needle) away from the calm band, harder the worse the wound,
+/// and each kind of wound its own way (<see cref="DrawPattern"/>): a cut jolts, a bruise swells,
+/// a burn pulls, frost numbs your hands. A/D bring it back. Out of the band too long and the link
+/// snaps: you keep what you'd drawn so far, and a backlash on top. Let go and the drawing pauses,
+/// which is allowed. A patient lying in bed, or a steadying mending, widens the band. The result
+/// is applied by <see cref="Empathy.Draw"/>.
 /// </summary>
 public sealed class DrawSession : WorkSession
 {
@@ -27,12 +30,26 @@ public sealed class DrawSession : WorkSession
     /// <summary>Steps out of the band before the link snaps.</summary>
     public const int SnapSteps = 75;
 
+    /// <summary>How much wider the band is with the patient lying in bed.</summary>
+    public const float BedsideBand = 0.25f;
+
     public Entity Patient { get; set; } = Entity.Null;
     public int Wound { get; set; }
     public string PatientName { get; set; } = "";
 
     /// <summary>How grave the wound was at the start, 0..1 of the part: sets the jolts and the time.</summary>
     public float Gravity { get; set; }
+
+    /// <summary>How the wound's pain moves the needle (from its kind's <see cref="DrawFeelDef"/>).</summary>
+    public DrawPattern Pattern { get; set; }
+    public float Rate { get; set; } = 1f;
+    public float Strength { get; set; } = 1f;
+
+    /// <summary>The patient lies in bed (a calmer draw).</summary>
+    public bool Bedside { get; set; }
+
+    /// <summary>How much a steadying mending widens the band (<see cref="Empathy.SteadiedBand"/>).</summary>
+    public float Steady { get; set; }
 
     /// <summary>Composure, 0..1; the band is centred on 0.5.</summary>
     public float Composure { get; private set; } = 0.5f;
@@ -48,7 +65,11 @@ public sealed class DrawSession : WorkSession
     private float _push;
     private int _steer;
 
-    public float HalfWidth => BandHalfWidth * Hands.Tolerance;
+    // Numb hands' steering, easing toward what's pressed; a burn's pull's way; a bite's second jolt.
+    private float _steerFelt;
+    private int _driftWay = 1, _echoIn, _echoWay;
+
+    public float HalfWidth => BandHalfWidth * Hands.Tolerance * (1f + Steady) * (Bedside ? 1f + BedsideBand : 1f);
     public bool Calm => MathF.Abs(Composure - 0.5f) <= HalfWidth;
     private int StepsNeeded => BaseSteps + (int)(StepsPerSeverity * Gravity);
 
@@ -68,8 +89,10 @@ public sealed class DrawSession : WorkSession
             return "there's no one to heal";
         if (!Pathfinder.Touches(w.Get<Position>(healer).Cell, w.Get<Position>(patient).Cell))
             return "you need to be able to touch them";
-        if (Empathy.Find(sim, patient, wound) == null)
+        if (Empathy.Find(sim, patient, wound) is not { } inj)
             return "that wound is gone";
+        if (inj.FeltBy != healer)
+            return "you haven't felt that hurt under your hands; feel them over first";
         return null;
     }
 
@@ -82,10 +105,13 @@ public sealed class DrawSession : WorkSession
         }
         var h = sim.World.Get<Health>(patient);
         var inj = Empathy.Find(sim, patient, wound)!;
+        var feel = sim.Defs.DrawFeel(inj.Type);
         WorkSystem.Start(sim, healer, new DrawSession
         {
             Patient = patient, Wound = wound, PatientName = sim.World.Get<Creature>(patient).Name,
             Gravity = Math.Clamp(inj.Damage / Math.Max(1f, h.PartMaxHp(inj.Part)), 0f, 1f),
+            Pattern = feel?.Pattern ?? DrawPattern.Spike, Rate = feel?.Rate ?? 1f, Strength = feel?.Strength ?? 1f,
+            Bedside = HealthSystem.InBed(sim, patient), Steady = Empathy.SteadiedBand(sim, healer),
         });
         // Someone the AI runs keeps still for it; walking off would break the touch.
         var w = sim.World;
@@ -97,15 +123,54 @@ public sealed class DrawSession : WorkSession
 
     protected override void Axis(int value) => _steer = value;
 
+    protected internal override void Begin() => _driftWay = Rand.NextFloat() < 0.5f ? -1 : 1;
+
     protected override void Step()
     {
         // The wound's pain comes in jolts, the worse the wound the harder; they ease off between.
         // A jolt about once a second at worst; each would carry the needle 0.1 to 0.3 off if not
-        // steered against (a push decays over half a second).
-        if (Held && Rand.Chance(0.008f + 0.016f * Gravity))
-            _push += (Rand.NextFloat() < 0.5f ? -1f : 1f) * (0.003f + 0.006f * Gravity) * (1f + Hands.Tremor * 2f);
+        // steered against (a push decays over half a second). Each kind of wound has its own way.
+        var size = (0.003f + 0.006f * Gravity) * (1f + Hands.Tremor * 2f) * Strength;
+        var jolt = Held && Rand.Chance((0.008f + 0.016f * Gravity) * Rate * (Pattern is DrawPattern.Drift or DrawPattern.Wave ? 0.4f : 1f));
+        var way = jolt && Rand.NextFloat() < 0.5f ? -1 : 1;
+        var force = 0f;
+        switch (Pattern)
+        {
+            case DrawPattern.Double:
+                if (jolt)
+                {
+                    _push += way * size * 0.75f;
+                    (_echoIn, _echoWay) = (8 + Rand.NextInt(6), way);
+                }
+                if (_echoIn > 0 && --_echoIn == 0)
+                    _push += _echoWay * size * 0.75f;
+                break;
+            case DrawPattern.Wave:
+                // A slow swell, a couple of seconds each way: ridden with the keys, not caught.
+                if (jolt)
+                    _push += way * size * 0.5f;
+                if (Held)
+                    force = (Triangle(StepsDone, 2.6f) * 2f - 1f) * size * 0.6f;
+                break;
+            case DrawPattern.Drift:
+                if (jolt)
+                    _push += way * size * 0.5f;
+                if (Held)
+                    force = _driftWay * size * 0.2f;
+                break;
+            case DrawPattern.Grow:
+                if (jolt)
+                    _push += way * size * (0.5f + 2f * Drawn);
+                break;
+            default: // Spike and Numb
+                if (jolt)
+                    _push += way * size;
+                break;
+        }
         _push *= 0.97f;
-        Composure = Math.Clamp(Composure + _push + _steer * SteerPerStep, 0f, 1f);
+        // Numb hands answer the keys late, and keep going after.
+        _steerFelt = Pattern == DrawPattern.Numb ? _steerFelt + (_steer - _steerFelt) * 0.04f : _steer;
+        Composure = Math.Clamp(Composure + _push + force + _steerFelt * SteerPerStep, 0f, 1f);
         var calm = Calm;
         Strain = calm ? Math.Max(0f, Strain - 1f / (SnapSteps * 2)) : Strain + 1f / SnapSteps;
         if (Strain >= 1f)
@@ -151,6 +216,15 @@ public sealed class DrawSession : WorkSession
         w.Bool(Snapped);
         w.Float(_push);
         w.Int(_steer);
+        w.Int((int)Pattern);
+        w.Float(Rate);
+        w.Float(Strength);
+        w.Bool(Bedside);
+        w.Float(Steady);
+        w.Float(_steerFelt);
+        w.Int(_driftWay);
+        w.Int(_echoIn);
+        w.Int(_echoWay);
     }
 
     protected override void ReadState(SaveReader r)
@@ -165,6 +239,19 @@ public sealed class DrawSession : WorkSession
         Snapped = r.Bool();
         _push = r.Float();
         _steer = Math.Sign(r.Int());
+        if (r.Version < 4)
+            return; // before draw feels: a plain jolting draw
+        Pattern = (DrawPattern)r.Int();
+        if (!Enum.IsDefined(Pattern))
+            throw new SaveException("Corrupt save: a draw's pattern is unknown");
+        Rate = r.Float();
+        Strength = r.Float();
+        Bedside = r.Bool();
+        Steady = r.Float();
+        _steerFelt = r.Float();
+        _driftWay = Math.Sign(r.Int());
+        _echoIn = r.Int();
+        _echoWay = Math.Sign(r.Int());
     }
 }
 
@@ -186,5 +273,5 @@ public sealed class HoldStillJob(Entity healer) : Ai.Job
     }
 
     private bool Drawing() =>
-        Alive(healer) && Sim.World.TryGet<WorkSession>(healer, out var s) && s is DrawSession d && d.Patient == Pawn;
+        Alive(healer) && Sim.World.TryGet<WorkSession>(healer, out var s) && Empathy.HandsOn(s, Pawn);
 }

@@ -71,9 +71,9 @@ public static class Goods
         return true;
     }
 
-    /// <summary>What adventurers buy: weapons, and armor (apparel that turns a blade or a blow).</summary>
+    /// <summary>What adventurers buy: weapons, armor (apparel that turns a blade or a blow), and the empath's charms.</summary>
     public static bool IsGear(ThingDef def) =>
-        def.Weapon != null || def.Apparel is { } a && (a.Sharp > 0 || a.Blunt > 0);
+        def.Weapon != null || def.Apparel is { } a && (a.Sharp > 0 || a.Blunt > 0) || def.Charm;
 
     /// <summary>
     /// Would they be better off with this? A weapon of the kind they fight with (in hand or at
@@ -84,6 +84,13 @@ public static class Goods
     {
         var w = sim.World;
         var def = w.Get<Thing>(item).Def;
+        if (def.Charm)
+        {
+            // A ward for the road: a couple, and not two of the same mending.
+            var mine = Healing.Charms.Carried(sim, who);
+            return w.TryGet<Charm>(item, out var c) && mine.Count < Healing.Charms.MostCarried
+                && !mine.Exists(e => w.Get<Charm>(e).Mending == c.Mending);
+        }
         if (def.Weapon is { } attack)
         {
             if (!w.TryGet<Equipment>(who, out var eq) || !w.IsAlive(eq.Weapon))
@@ -95,6 +102,17 @@ public static class Goods
             return false;
         var worn = w.TryGet<Apparel>(who, out var a) ? a[apparel.Slot] : Entity.Null;
         return !w.IsAlive(worn) || def.GearTier > w.Get<Thing>(worn).Def.GearTier;
+    }
+
+    /// <summary>
+    /// What a piece is worth against a plain one of its tier, by what a buyer can see: how well
+    /// it's made, or for a charm the mending in it and how strongly it's woven (not how well).
+    /// </summary>
+    public static float WorthFactor(Simulation sim, Entity item)
+    {
+        if (sim.World.TryGet<Charm>(item, out var charm))
+            return Healing.Charms.Worth * (1f + 0.5f * charm.Extra);
+        return QualityWorth(sim.World.TryGet<Crafted>(item, out var made) ? made.Quality : Quality.Plain);
     }
 
     /// <summary>How much better made pieces are worth, by quality.</summary>
@@ -113,6 +131,11 @@ public static class Goods
         if (w.Has<ForSale>(item))
             w.Remove<ForSale>(item);
         var def = w.Get<Thing>(item).Def;
+        if (def.Charm)
+        {
+            Inventory.Stow(sim, who, item);
+            return;
+        }
         if (def.Weapon != null)
         {
             if (w.TryGet<Equipment>(who, out var eq) && w.IsAlive(eq.Weapon))

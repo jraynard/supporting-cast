@@ -35,6 +35,8 @@ public sealed partial class VillageGame
             _inventoryOpen = !_inventoryOpen;
         if (input.IsKeyDown(GlfwKey.LeftControl) || input.IsKeyDown(GlfwKey.RightControl))
             return; // Ctrl+1–3 is game speed
+        if (Working)
+            return; // numbers belong to the work in hand (an empath's runes)
         var pack = _sim.PackOf(_avatar);
         if (pack.IsNull)
             return;
@@ -154,6 +156,18 @@ public sealed partial class VillageGame
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                 Tip(EatTip(def));
         }
+        if ((held || packed) && View.Charm(item) is { } charm)
+        {
+            any = true;
+            var cantTear = Working ? "you're busy" : null;
+            ImGui.BeginDisabled(cantTear != null);
+            if (ImGui.MenuItem("Tear the charm"u8))
+                Issue(new Sim.Healing.TearCharmCommand(_avatar, item));
+            ImGui.EndDisabled();
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                Tip($"{charm.Mending.Description} It lands on you, on the worst hurt it fits."
+                    + (charm.Quality is { } q ? q >= 0.75f ? " You wove it well." : " You wove it loosely." : ""));
+        }
         if ((held || packed) && Bandaging.IsBandage(_sim, item))
         {
             // Bind wounds: your own, or anyone's beside you (your dragon). In a fight, it's the combat panel's.
@@ -167,8 +181,8 @@ public sealed partial class VillageGame
                 if (ImGui.MenuItem(label))
                     Issue(new BandageCommand(_avatar, patient));
                 ImGui.EndDisabled();
-                if (why != null && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                    Tip(why);
+                if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                    Tip(why ?? "For each turn of cloth, hold F to pull it tight and let go in the band.");
             }
         }
         if (packed)

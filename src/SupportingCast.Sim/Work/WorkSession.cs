@@ -31,6 +31,9 @@ public enum WorkInputKind : byte
 
     /// <summary>The second direction, up and down (W/S): for moving something about, not just along.</summary>
     Axis2,
+
+    /// <summary>One of a set of keys pressed (1 to 9; Value 0 to 8): an empath's runes.</summary>
+    Rune,
 }
 
 /// <summary>One input to a session, stamped with the step it happened on.</summary>
@@ -111,6 +114,9 @@ public abstract class WorkSession
     /// <summary>The second direction held (W -1, S +1, 0 when let go).</summary>
     protected virtual void Axis2(int value) { }
 
+    /// <summary>A numbered key pressed, 0 for 1 (off the network: check the range).</summary>
+    protected virtual void Rune(int index) { }
+
     /// <summary>Count one moment or blow of work at quality 0..1.</summary>
     protected void Sample(float quality)
     {
@@ -148,6 +154,9 @@ public abstract class WorkSession
                 break;
             case WorkInputKind.Axis2:
                 Axis2(Math.Sign(input.Value));
+                break;
+            case WorkInputKind.Rune:
+                Rune(input.Value);
                 break;
         }
     }
@@ -213,6 +222,8 @@ public abstract class WorkSession
             nameof(Hospitality.ScrubSession) => new Hospitality.ScrubSession(),
             nameof(Hospitality.MakeBedSession) => new Hospitality.MakeBedSession(),
             nameof(Healing.DrawSession) => new Healing.DrawSession(),
+            nameof(Healing.FeelSession) => new Healing.FeelSession(),
+            nameof(Healing.BandageSession) => new Healing.BandageSession(),
             nameof(Healing.CastSession) => new Healing.CastSession(),
             nameof(Healing.MeditateSession) => new Healing.MeditateSession(),
             nameof(Locks.ProbeSession) => new Locks.ProbeSession(),

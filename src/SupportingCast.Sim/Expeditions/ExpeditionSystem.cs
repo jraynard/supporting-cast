@@ -69,6 +69,9 @@ public sealed class MemberRecord
     public GearRecord? Weapon;
     public List<GearRecord> Apparel = [];
     public List<WoundRecord> Wounds = [];
+
+    /// <summary>The empath's charms they carry (<see cref="Healing.Charms"/>): wards for the road.</summary>
+    public List<Healing.CharmRecord> Charms = [];
 }
 
 /// <summary>A party out on a quest.</summary>
@@ -297,7 +300,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         var health = Math.Clamp(1f - 0.8f * m.Pain - (1f - m.Blood), 0.2f, 1f);
         var morale = 1f + 0.08f * Math.Clamp(m.Satisfaction, -4f, 4f);
         var fed = m.Food < 0.3f ? 0.85f : 1f;
-        return skill * weapon * armor * health * morale * fed;
+        return skill * weapon * armor * health * morale * fed * Healing.Charms.StrengthFactor(m.Charms);
     }
 
     /// <summary>Everyone in a party who's in town and not leaving.</summary>
@@ -399,6 +402,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             foreach (var inj in h.Injuries)
                 m.Wounds.Add(new WoundRecord(inj.Part, inj.Type, inj.Damage, inj.Tended, inj.Quality, inj.Absorbed));
         }
+        m.Charms = Healing.Charms.Records(sim, e);
         return m;
     }
 
@@ -429,18 +433,34 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         var success = ratio >= 0.9f;
         var hit = Math.Clamp(ratio, 0.5f, 2f);
         var survivors = new List<MemberRecord>();
+        var warded = 0;
         foreach (var m in ex.Members)
         {
             var frail = Math.Clamp(1f - 0.8f * m.Pain - (1f - m.Blood), 0.2f, 1f) < 0.5f;
             var death = Math.Clamp(0.55f - 0.5f * ratio, 0f, 0.6f) * (frail ? 1.5f : 1f);
             if (_rand.Chance(death))
             {
-                Dead++;
-                continue;
+                // A charm that heals may turn it into a bad wound instead (the roll only if they carry one).
+                if (m.Charms.Count == 0 || Healing.Charms.Spare(m.Charms, _rand.NextFloat()) == null)
+                {
+                    Dead++;
+                    continue;
+                }
+                warded++;
+                m.Wounds.Add(new WoundRecord(-1, quest.Def.Threats[_rand.NextInt(quest.Def.Threats.Count)], 14f / hit, false, 0f, false));
             }
             var wounds = _rand.NextInt(2) + (ratio < 1f ? 2 : ratio < 1.5f ? 1 : 0);
             for (var i = 0; i < wounds; i++)
-                m.Wounds.Add(new WoundRecord(-1, quest.Def.Threats[_rand.NextInt(quest.Def.Threats.Count)], _rand.Range(4f, 12f) / hit, false, 0f, false));
+            {
+                var type = quest.Def.Threats[_rand.NextInt(quest.Def.Threats.Count)];
+                var damage = _rand.Range(4f, 12f) / hit;
+                // Charms ward what they fit: the first that fits spends itself on it.
+                var before = m.Charms.Count;
+                damage = Healing.Charms.Ward(m.Charms, type, damage);
+                warded += before - m.Charms.Count;
+                if (damage > 0.5f)
+                    m.Wounds.Add(new WoundRecord(-1, type, damage, false, 0f, false));
+            }
             if (m.Weapon is { } wpn)
                 m.Weapon = wpn with { Hp = Math.Max(0.05f, wpn.Hp - _rand.Range(0.1f, 0.3f) / hit), Dullness = WeaponWear.Edged(wpn.Def) ? Math.Min(1f, wpn.Dullness + _rand.Range(0.2f, 0.5f)) : 0f };
             m.Apparel = m.Apparel.Select(a => a with { Hp = Math.Max(0.05f, a.Hp - _rand.Range(0.05f, 0.25f) / hit) }).ToList();
@@ -465,6 +485,8 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             sim.Messages.Add(MessageKind.Warning, $"No one comes back from {quest.Def.Label}.", null);
             return;
         }
+        if (warded > 0)
+            sim.Messages.Add(MessageKind.Good, $"{Capital(ex.PartyDef.Label)} spent {warded} {(warded == 1 ? "charm" : "charms")} on the road to {quest.Def.Label}.", null);
         Return(sim, ex, quest, survivors, success);
     }
 
@@ -529,6 +551,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         w.Get<Needs>(e).Values[sim.Defs.Need("Food").Index] = m.Food;
         if (m.Coin > 0)
             Inventory.Stow(sim, e, sim.CreateItem(sim.Defs.Thing(Shops.Coin.Silver), m.Coin));
+        Healing.Charms.Restore(sim, e, m.Charms);
         foreach (var wound in m.Wounds)
             if (HealthSystem.Damage(sim, e, wound.Damage, wound.Type, wound.Part) is { } inj)
             {
@@ -727,6 +750,14 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             w.Float(x.TendQuality);
             w.Bool(x.Absorbed);
         }
+        w.Int(m.Charms.Count);
+        foreach (var c in m.Charms)
+        {
+            w.Def(c.Mending);
+            w.Int(c.Extra);
+            w.Float(c.Quality);
+            w.Entity(c.Maker);
+        }
     }
 
     private static MemberRecord ReadMember(SaveReader r)
@@ -747,6 +778,9 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             m.Apparel.Add(ReadGear(r)!);
         for (var n = r.Count(256); n > 0; n--)
             m.Wounds.Add(new WoundRecord(r.Int(), (DamageType)r.Int(), r.Float(), r.Bool(), r.Float(), r.Bool()));
+        if (r.Version >= 5)
+            for (var n = r.Count(64); n > 0; n--)
+                m.Charms.Add(new Healing.CharmRecord(r.Def<MendingDef>(), Math.Clamp(r.Int(), 0, MendingDef.MaxRunes), r.Float(), r.Entity()));
         return m;
     }
 }

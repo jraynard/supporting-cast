@@ -51,6 +51,8 @@ public static class ArtAudit
                 Need(box.Front, $"thing {t.Name} model");
             }
         }
+        foreach (var r in defs.AllRunes)
+            Need(r.Icon, $"rune {r.Name}");
         foreach (var kit in defs.AllKits)
         {
             foreach (var box in kit.Span.Concat(kit.Arm).Concat(kit.Corner).Concat(kit.Post).Concat(kit.Door))

@@ -11,6 +11,9 @@ namespace SupportingCast.Sim.Systems;
 /// felt it over themselves, and a trap only once it's been drawn or gone off. Whether an armed trap
 /// is there is never shown; it has to be felt for.
 /// </summary>
+/// <summary>A charm as someone sees it: the mending in it and how strong (anyone), how well woven (its maker only).</summary>
+public readonly record struct KnownCharm(Defs.MendingDef Mending, int Extra, float? Quality);
+
 public readonly record struct KnownStrongbox(bool Locked, int Pins, bool SearchedByMe, string? SpentTrap, int? Silver, string From);
 
 /// <summary>
@@ -254,6 +257,14 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
             p.Cooked, caught, Work.Cooking.ServingsLeft(sim, pot), p.Empty);
     }
 
+    /// <summary>A charm, as this character can tell it (<see cref="KnownCharm"/>). Null if it isn't one.</summary>
+    public KnownCharm? Charm(Entity item)
+    {
+        if (!sim.World.IsAlive(item) || !sim.World.TryGet<Components.Charm>(item, out var c))
+            return null;
+        return new KnownCharm(c.Mending, c.Extra, Omniscient || (!viewer.IsNull && c.Maker == viewer) ? c.Quality : null);
+    }
+
     /// <summary>A strongbox within reach or on your person, as you can see it (<see cref="KnownStrongbox"/>). Null if it isn't one, or is out of reach.</summary>
     public KnownStrongbox? Strongbox(Entity item)
     {
@@ -269,8 +280,10 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
 
     /// <summary>
     /// The wounds this character can feel on someone: their own always (the ones they drew into
-    /// themselves only as sensations), and a patient's while an empath has hands on them, as an
-    /// empath feels them. Null if they can't tell. Never the kind of a felt wound by name.
+    /// themselves only as sensations), and a patient's while an empath has hands on them: those
+    /// they've found by feeling them over (<see cref="Injury.FeltBy"/>), as an empath feels them.
+    /// Festering under a dressing shows only once a pressed pass has found it. Null if they can't
+    /// tell. Never the kind of a felt wound by name.
     /// </summary>
     public List<Healing.FeltWound>? FeltWounds(Entity who)
     {
@@ -284,10 +297,13 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         var felt = new List<Healing.FeltWound>();
         foreach (var inj in h.Injuries)
         {
+            if (!Omniscient && !mine && inj.FeltBy != viewer)
+                continue;
             var bySense = !Omniscient && (!mine || inj.Absorbed);
             var feels = bySense ? Healing.Empathy.Feel(sim, inj.Type) : Defs.DamageTypes.Wound(inj.Type);
+            var festering = inj.Infection != null && (Omniscient || mine || !inj.Tended || inj.FeltFestering);
             felt.Add(new Healing.FeltWound(Healing.Empathy.KeyOf(inj), h.Body.Parts[inj.Part].Label, feels,
-                Healing.Empathy.Severity(h, inj), inj.Infection != null, inj.Absorbed));
+                Healing.Empathy.Severity(h, inj), festering, inj.Absorbed));
         }
         return felt;
     }

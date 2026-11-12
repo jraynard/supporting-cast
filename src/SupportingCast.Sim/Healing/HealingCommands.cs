@@ -26,6 +26,18 @@ public sealed class ManaSystem : ISimSystem
     }
 }
 
+/// <summary>Lay hands on someone in reach and feel them over, to find what hurts (<see cref="FeelSession"/>).</summary>
+public sealed record FeelCommand(Entity Avatar, Entity Patient) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (InventoryCommand.Ready(sim, Avatar) && !sim.World.Has<WorkSession>(Avatar))
+            FeelSession.TryStart(sim, Avatar, Patient);
+    }
+}
+
 /// <summary>Lay hands on someone in reach and draw one of their wounds into yourself.</summary>
 public sealed record LayOnHandsCommand(Entity Avatar, Entity Patient, int Wound) : ISimCommand, IActorCommand
 {
@@ -38,15 +50,42 @@ public sealed record LayOnHandsCommand(Entity Avatar, Entity Patient, int Wound)
     }
 }
 
-/// <summary>Cast a mending on a wound you carry.</summary>
-public sealed record CastMendingCommand(Entity Avatar, int Wound, MendingDef Mending) : ISimCommand, IActorCommand
+/// <summary>
+/// Begin weaving a mending, meant for a wound you carry (0 for none). The runes come as the
+/// weave's own input (<see cref="CastSession"/>), so what it makes is decided as it's woven.
+/// </summary>
+public sealed record WeaveCommand(Entity Avatar, int Wound) : ISimCommand, IActorCommand
 {
     public Entity Actor => Avatar;
 
     public void Apply(Simulation sim)
     {
-        if (Mending != null && InventoryCommand.Ready(sim, Avatar) && !sim.World.Has<WorkSession>(Avatar))
-            CastSession.TryStart(sim, Avatar, Wound, Mending);
+        if (InventoryCommand.Ready(sim, Avatar) && !sim.World.Has<WorkSession>(Avatar))
+            CastSession.TryStart(sim, Avatar, Wound);
+    }
+}
+
+/// <summary>Begin weaving a mending into a charm, to keep or sell (<see cref="Charms"/>).</summary>
+public sealed record WeaveCharmCommand(Entity Avatar) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (InventoryCommand.Ready(sim, Avatar) && !sim.World.Has<WorkSession>(Avatar))
+            CastSession.TryStart(sim, Avatar, 0, intoCharm: true);
+    }
+}
+
+/// <summary>Tear a charm you have on you: its mending lands on you.</summary>
+public sealed record TearCharmCommand(Entity Avatar, Entity Item) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (InventoryCommand.Ready(sim, Avatar) && !sim.World.Has<WorkSession>(Avatar))
+            Charms.Tear(sim, Avatar, Item);
     }
 }
 

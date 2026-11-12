@@ -269,7 +269,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         }
     }
 
-    private static void Assign(Simulation sim, Entity e, TradeDef? trade)
+    internal static void Assign(Simulation sim, Entity e, TradeDef? trade)
     {
         if (trade == null)
             return;
@@ -298,8 +298,13 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         }
         if (w.Has<Mana>(e))
             w.Remove<Mana>(e);
+        if (w.Has<Spellbook>(e))
+            w.Remove<Spellbook>(e);
         if (trade.Mana > 0)
+        {
             w.Add(e, new Mana { Current = trade.Mana, Max = trade.Mana });
+            w.Add(e, Healing.Weaving.NewBook(sim));
+        }
     }
 
     public void Save(SaveWriter w, Simulation sim)

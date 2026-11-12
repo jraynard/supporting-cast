@@ -7,8 +7,9 @@ namespace SupportingCast.Sim.Systems;
 /// <summary>
 /// Binding wounds with bandages, for the player (village doctors bring their own dressings:
 /// <see cref="TendJob"/>). One bandage per wound that needs tending: it stops the bleeding and
-/// heals faster, like a doctor's dressing, a little worse done on yourself. Out of a fight it's a
-/// short job (<see cref="BandageJob"/>, from the item's menu); in one it's an action for time units.
+/// heals faster, like a doctor's dressing, a little worse done on yourself. It's done by hand
+/// (<see cref="Healing.BandageSession"/>), from the item's menu or a healer's hands. Bandages come
+/// from the binder's hands, their pack, or a chest within reach (the shrine's supplies).
 /// </summary>
 public static class Bandaging
 {
@@ -20,18 +21,37 @@ public static class Bandaging
     /// <summary>Binding your own wounds is awkward: this much off the dressing's quality.</summary>
     public const float SelfPenalty = 0.1f;
 
-    /// <summary>Bandages on the binder (in hand and in the pack).</summary>
+    /// <summary>Bandages to hand: held, in the pack, and in chests within reach.</summary>
     public static int BandagesOn(Simulation sim, Entity binder)
     {
         var w = sim.World;
         var n = 0;
         if (w.Get<Carrying>(binder).Item is { IsNull: false } held && IsBandage(sim, held))
             n += w.TryGet<Stack>(held, out var s) ? s.Count : 1;
-        if (sim.PackOf(binder) is { IsNull: false } pack)
-            foreach (var item in sim.StoredIn(pack))
+        foreach (var source in Sources(sim, binder))
+            foreach (var item in sim.StoredIn(source))
                 if (IsBandage(sim, item))
                     n += sim.World.TryGet<Stack>(item, out var s) ? s.Count : 1;
         return n;
+    }
+
+    /// <summary>Where bandages can be taken from besides the hands: the pack, then chests within reach (in cell order).</summary>
+    private static IEnumerable<Entity> Sources(Simulation sim, Entity binder)
+    {
+        if (sim.PackOf(binder) is { IsNull: false } pack)
+            yield return pack;
+        var at = sim.World.Get<Position>(binder).Cell;
+        var seen = new HashSet<Entity>();
+        for (var dy = -1; dy <= 1; dy++)
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                var c = at + new Brutal.Numerics.int3(dx, dy, 0);
+                if (!sim.Map.InBounds(c))
+                    continue;
+                var s = sim.Map.Structure[sim.Map.Idx(c)];
+                if (!s.IsNull && seen.Add(s) && Inventory.CanReachContainer(sim, binder, s) && !sim.IsPack(s))
+                    yield return s;
+            }
     }
 
     public static bool IsBandage(Simulation sim, Entity item) => sim.World.Get<Thing>(item).Def.Name == BandageDef;
@@ -57,8 +77,11 @@ public static class Bandaging
         return null;
     }
 
-    /// <summary>Bind as many of the patient's wounds as there are bandages for. Returns how many were bound.</summary>
-    public static int Bind(Simulation sim, Entity binder, Entity patient)
+    /// <summary>
+    /// Bind as many of the patient's wounds as there are bandages for, at a dressing quality (by
+    /// the binder's Medicine if not given). Returns how many were bound.
+    /// </summary>
+    public static int Bind(Simulation sim, Entity binder, Entity patient, float? dressing = null)
     {
         if (CantBind(sim, binder, patient) != null)
             return 0;
@@ -70,7 +93,7 @@ public static class Bandaging
         {
             if (!inj.NeedsTending(sim.Clock.Tick) || !TakeBandage(sim, binder))
                 continue;
-            var quality = Math.Clamp(0.35f + 0.03f * medicine - (binder == patient ? SelfPenalty : 0f) + sim.Rand.Range(-0.1f, 0.1f), 0.05f, 1f);
+            var quality = Math.Clamp((dressing ?? 0.35f + 0.03f * medicine + sim.Rand.Range(-0.1f, 0.1f)) - (binder == patient ? SelfPenalty : 0f), 0.05f, 1f);
             inj.Quality = inj.Tended ? Math.Max(inj.Quality, quality) : quality;
             inj.Tended = true;
             inj.TendedTick = sim.Clock.Tick;
@@ -87,14 +110,13 @@ public static class Bandaging
         return bound;
     }
 
-    /// <summary>Use up one bandage: from the binder's hands first, then the pack.</summary>
-    private static bool TakeBandage(Simulation sim, Entity binder)
+    /// <summary>Use up one bandage: from the binder's hands first, then the pack, then a chest within reach.</summary>
+    internal static bool TakeBandage(Simulation sim, Entity binder)
     {
         var w = sim.World;
         ref var carrying = ref w.Get<Carrying>(binder);
         var from = carrying.Item is { IsNull: false } held && IsBandage(sim, held) ? held
-            : sim.PackOf(binder) is { IsNull: false } pack ? sim.StoredIn(pack).FirstOrDefault(i => IsBandage(sim, i), Entity.Null)
-            : Entity.Null;
+            : Sources(sim, binder).Select(s => sim.StoredIn(s).FirstOrDefault(i => IsBandage(sim, i), Entity.Null)).FirstOrDefault(i => !i.IsNull, Entity.Null);
         if (from.IsNull)
             return false;
         var one = sim.TakeFromStack(from, 1);
@@ -105,39 +127,14 @@ public static class Bandaging
     }
 }
 
-/// <summary>The player binds wounds (theirs, or someone's beside them): a short while per wound, then <see cref="Bandaging.Bind"/>.</summary>
-public sealed class BandageJob(Entity patient) : Job
-{
-    public override Entity Focus => patient;
-
-    protected override IEnumerable<JobStatus> Run()
-    {
-        if (Bandaging.CantBind(Sim, Pawn, patient) is { } why)
-        {
-            Fail(why);
-            yield break;
-        }
-        var self = patient == Pawn;
-        Report = self ? "Bandaging wounds" : $"Bandaging {Get<Creature>(patient).Name}";
-        var wounds = Math.Min(Bandaging.WoundsToBind(Sim, patient), Bandaging.BandagesOn(Sim, Pawn));
-        foreach (var s in Wait(Bandaging.TicksPerWound * Math.Max(1, wounds))) yield return s;
-        if (!Alive(patient) || Bandaging.CantBind(Sim, Pawn, patient) is { } gone)
-        {
-            Fail("couldn't finish");
-            yield break;
-        }
-        Bandaging.Bind(Sim, Pawn, patient);
-    }
-}
-
-/// <summary>Bind wounds with bandages from the avatar's hands or pack: their own, or someone's beside them. Out of a fight.</summary>
+/// <summary>Bind wounds with bandages to hand: your own, or someone's beside you, by hand (<see cref="Healing.BandageSession"/>).</summary>
 public sealed record BandageCommand(Entity Avatar, Entity Patient) : ISimCommand, IActorCommand
 {
     public Entity Actor => Avatar;
 
     public void Apply(Simulation sim)
     {
-        if (InventoryCommand.Ready(sim, Avatar) && Bandaging.CantBind(sim, Avatar, Patient) == null)
-            AiSystem.Order(sim, Avatar, new BandageJob(Patient));
+        if (InventoryCommand.Ready(sim, Avatar) && !sim.World.Has<Work.WorkSession>(Avatar) && Bandaging.CantBind(sim, Avatar, Patient) == null)
+            Healing.BandageSession.TryStart(sim, Avatar, Patient);
     }
 }

@@ -253,7 +253,7 @@ public sealed class CreatureAnimator
         var inputs = new AnimInputs(
             c.Dead,
             c.Downed,
-            mind.Asleep,
+            mind.Asleep || mind.Job is { LiesDown: true }, // a patient lying on a pallet lies as a sleeper does
             breathing,
             false,
             airborne,

@@ -288,7 +288,9 @@
         { "def": "StrawPallet", "at": [4, 3], "facing": 1 },
         { "def": "Chest", "at": [5, 1], "facing": 2 }
       ],
-      // The wounded wait inside, out of the weather, the first by the fire.
+      // The wounded lie on the pallets first (lineOnBeds), then wait inside, out of the weather,
+      // the first by the fire.
+      "lineOnBeds": true,
       "line": [ [2, 2], [3, 2], [4, 2], [2, 1], [3, 1], [4, 1] ],
       "variants": [
         { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster", "parts": { "wall": "TimberWall", "roof": "ThatchRoofPart" } },

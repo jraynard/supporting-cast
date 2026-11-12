@@ -71,6 +71,12 @@ public sealed class BuildingDef : Def
     public List<int[]> Line { get; set; } = [];
 
     /// <summary>
+    /// Customers lie on its beds before they line up (the shrine's pallets: the wounded lie down to
+    /// be seen to). The beds are the front of the line, and <see cref="Line"/> carries on after them.
+    /// </summary>
+    public bool LineOnBeds { get; set; }
+
+    /// <summary>
     /// Orders of these kinds are taken at the building's serving hatch (a furniture piece with
     /// <see cref="BuildingProps.Hatch"/>) rather than its counter: the inn's meals, ordered from the
     /// common room and put up on the hatch by the cook (<c>Shops.Hatch</c>).

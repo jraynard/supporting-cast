@@ -29,14 +29,19 @@ public static class Empathy
 
     public static bool Gifted(Simulation sim, Entity e) => sim.World.Has<Mana>(e);
 
-    /// <summary>Who's drawing a wound from this patient right now, Entity.Null if nobody.</summary>
+    /// <summary>Who has hands on this patient right now (feeling them over, or drawing a wound), Entity.Null if nobody.</summary>
     public static Entity DrawnBy(Simulation sim, Entity patient)
     {
         foreach (var e in sim.World.Each<Work.WorkSession>())
-            if (sim.World.Get<Work.WorkSession>(e) is DrawSession d && d.Patient == patient)
+            if (HandsOn(sim.World.Get<Work.WorkSession>(e), patient))
                 return e;
         return Entity.Null;
     }
+
+    /// <summary>This session is an empath's hands on this patient.</summary>
+    public static bool HandsOn(Work.WorkSession? s, Entity patient) =>
+        s is DrawSession d && d.Patient == patient || s is FeelSession f && f.Patient == patient
+        || s is BandageSession b && b.Patient == patient && b.Worker != patient;
 
     public static int KeyOf(Injury inj) => inj.Part * 64 + (int)inj.Type;
 
@@ -111,31 +116,54 @@ public static class Empathy
     }
 
     /// <summary>
-    /// Cast a mending on a wound the caster carries, at a cast quality 0..1. The mana goes either
-    /// way; only the right mending takes hold. Returns whether it healed anything.
+    /// A mending lands on the caster, at a cast quality 0..1, with <paramref name="extra"/> lead
+    /// runes past its base. Mana is the weave's business (<see cref="CastSession"/>); only the right
+    /// mending takes hold of a wound. Returns whether it did anything.
     /// </summary>
-    public static bool Cast(Simulation sim, Entity caster, int key, MendingDef mending, float quality)
+    public static bool Cast(Simulation sim, Entity caster, int key, MendingDef mending, float quality, int extra = 0)
     {
         var w = sim.World;
-        if (!w.Has<Mana>(caster))
+        if (!w.TryGet<Health>(caster, out var h))
             return false;
-        ref var mana = ref w.Get<Mana>(caster);
-        mana.Current = Math.Max(0f, mana.Current - mending.ManaCost);
-        if (Find(sim, caster, key) is not { } wound || !w.TryGet<Health>(caster, out var h))
-            return false;
+        quality = Math.Clamp(quality, 0f, 1f);
+        var did = false;
+        if (mending.Steadies > 0)
+        {
+            var band = mending.Steadies * (0.5f + 0.5f * quality) * (1f + 0.5f * extra);
+            var until = sim.Clock.Tick + SimClock.HoursToTicks(mending.SteadyHours);
+            if (w.Has<Steadied>(caster))
+                w.Remove<Steadied>(caster);
+            w.Add(caster, new Steadied { Band = band, Until = until });
+            did = true;
+        }
+        if (Find(sim, caster, key) is not { } wound)
+            return did;
         var fits = mending.Heals.Contains(wound.Type);
         var cleansed = mending.Cleanses && wound.Infection != null && quality >= 0.5f;
         if (!fits && !cleansed)
-            return false;
+            return did;
         if (cleansed)
             wound.Infection = null;
+        if (fits && mending.Staunches && !wound.Tended)
+        {
+            wound.Tended = true;
+            wound.TendedTick = sim.Clock.Tick;
+            wound.Quality = Math.Max(wound.Quality, 0.3f + 0.4f * quality);
+        }
+        var part = wound.Part;
         if (fits)
         {
-            wound.Damage -= mending.Heal * (0.25f + 0.75f * Math.Clamp(quality, 0f, 1f));
+            wound.Damage -= mending.HealAt(extra) * (0.25f + 0.75f * quality);
             if (wound.Damage <= 0.01f)
                 h.Injuries.Remove(wound);
         }
         h.Changed();
+        if (fits && mending.Sears > 0)
+            HealthSystem.Damage(sim, caster, mending.Sears, DamageType.Burn, part);
         return true;
     }
+
+    /// <summary>How much wider a steadying mending has made this empath's calm band (0 if it hasn't, or it's worn off).</summary>
+    public static float SteadiedBand(Simulation sim, Entity who) =>
+        sim.World.TryGet<Steadied>(who, out var s) && s.Until > sim.Clock.Tick ? s.Band : 0f;
 }

@@ -2,6 +2,8 @@ using SupportingCast.Sim.Combat;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Core;
 using SupportingCast.Sim.Defs;
+using SupportingCast.Sim.Healing;
+using SupportingCast.Sim.Work;
 using SupportingCast.Sim.Scenarios;
 using SupportingCast.Sim.Systems;
 using static SupportingCast.Sim.Tests.TestWorld;
@@ -55,14 +57,60 @@ public class BandagingTests
         Assert.Equal("no bandages", Bandaging.CantBind(sim, me, me));
     }
 
-    [Fact]
-    public void OutOfAFightItsAShortJobFromTheItemsMenu()
+    /// <summary>
+    /// Bind by hand: each turn of cloth pulled to <paramref name="pullTo"/> of the way from the
+    /// band's bottom (0) to its top (1), then let go. Returns the dressings' quality.
+    /// </summary>
+    private static float BindByHand(Simulation sim, Entity binder, Entity patient, float pullTo)
     {
-        var (sim, me) = Wounded();
-        sim.Enqueue(new BandageCommand(me, me));
-        for (var t = 0; t < SimClock.TicksPerSecond * 10 && Bandaging.WoundsToBind(sim, me) > 0; t++)
+        sim.ApplyNow(new BandageCommand(binder, patient));
+        Assert.IsType<BandageSession>(sim.World.Get<WorkSession>(binder));
+        var predictor = new WorkPredictor();
+        for (var t = 0; t < SimClock.TicksPerSecond * 60 && sim.World.Has<WorkSession>(binder); t++)
+        {
             sim.Tick();
+            var held = predictor.Session is BandageSession b && b.Tension < b.Low + (b.High - b.Low) * pullTo;
+            predictor.Update(sim, binder, 1, false, held, 0, c => sim.ApplyNow(c));
+        }
+        sim.Tick();
+        return sim.World.Get<Health>(patient).Injuries.Where(i => i.Tended).Average(i => i.Quality);
+    }
+
+    [Fact]
+    public void YouBindByHandATurnOfClothAtATime()
+    {
+        var (sim, me) = Wounded(bandages: 5, cuts: 2);
+        BindByHand(sim, me, me, 0.5f);
         Assert.Equal(0, Bandaging.WoundsToBind(sim, me));
+        Assert.Equal(3, Bandaging.BandagesOn(sim, me));
+    }
+
+    [Fact]
+    public void TurnsThatSitRightMakeABetterDressingThanSlackOrCrushingOnes()
+    {
+        var (a, me) = Wounded();
+        var right = BindByHand(a, me, me, 0.5f);
+        var (b, me2) = Wounded();
+        var slack = BindByHand(b, me2, me2, -0.6f);
+        var (c, me3) = Wounded();
+        var tight = BindByHand(c, me3, me3, 3f); // past the band, into the crush
+        Assert.True(right > slack + 0.15f, $"right {right} vs slack {slack}");
+        Assert.True(right > tight + 0.15f, $"right {right} vs too tight {tight}");
+        Assert.Contains(c.Messages.Messages, m => m.Text.Contains("too tight"));
+    }
+
+    [Fact]
+    public void ABandageCanComeFromAChestWithinReach()
+    {
+        var (sim, me) = Wounded(bandages: 0, cuts: 1);
+        Assert.Equal("no bandages", Bandaging.CantBind(sim, me, me));
+        var chest = sim.SpawnStructure(sim.Thing("Chest"), C(6, 5));
+        sim.RebuildDerivedIfNeeded();
+        sim.Store(chest, sim.CreateItem(sim.Thing("Bandage"), 3));
+        Assert.Equal(3, Bandaging.BandagesOn(sim, me));
+        BindByHand(sim, me, me, 0.5f);
+        Assert.Equal(0, Bandaging.WoundsToBind(sim, me));
+        Assert.Equal(2, sim.StoredIn(chest).Sum(i => sim.World.Get<Stack>(i).Count));
     }
 
     [Fact]
@@ -78,5 +126,19 @@ public class BandagingTests
 
         Assert.Equal(2, Bandaging.BandagesOn(sim, me));
         Assert.Null(Bandaging.CantBind(sim, me, me));
+    }
+
+    [Fact]
+    public void ClothTearsIntoBandagesFasterThanFiberWeaves()
+    {
+        var (sim, me) = Wounded(bandages: 0, cuts: 2);
+        sim.Store(sim.PackOf(me), sim.CreateItem(sim.Thing("Cloth"), 1));
+        Assert.True(sim.Defs.Recipe("TearBandages").Work < sim.Defs.Recipe("MakeBandages").Work);
+
+        sim.ApplyNow(new HandCraftCommand(me, sim.Defs.Recipe("TearBandages")));
+        sim.ApplyNow(new AvatarWorkCommand(me, true));
+        sim.TickMany(SimClock.TicksPerSecond * 12);
+
+        Assert.Equal(3, Bandaging.BandagesOn(sim, me));
     }
 }

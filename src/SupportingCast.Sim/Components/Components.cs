@@ -487,6 +487,36 @@ public struct Mana
 }
 
 /// <summary>
+/// The mendings an empath knows how to weave (<c>Healing.Weaving</c>): those every empath starts
+/// with, and any they've found by weaving a new mix of runes. Only a book entry shows its runes.
+/// </summary>
+public sealed class Spellbook
+{
+    public readonly HashSet<Defs.MendingDef> Known = [];
+}
+
+/// <summary>
+/// A mending woven into a charm (<c>Healing.Charms</c>): torn, it lands on whoever tears it, as if
+/// they'd cast it; carried on a quest, it's a ward. What mending it holds anyone can tell (the
+/// knot's token); how well it was woven only its maker knows (<c>PerceptionView.Charm</c>).
+/// </summary>
+public struct Charm
+{
+    public Defs.MendingDef Mending;
+    public int Extra;
+    public float Quality;
+    public Entity Maker;
+}
+
+/// <summary>Settled by a steadying mending: drawing a wound shakes the empath less until <see cref="Until"/>.</summary>
+public struct Steadied
+{
+    /// <summary>How much wider the calm band is, as a share.</summary>
+    public float Band;
+    public long Until;
+}
+
+/// <summary>
 /// Looks as the person did under another entity id (an adventurer back from a quest is a new
 /// entity): the derived look and clothes come from <see cref="Id"/> rather than their own index.
 /// </summary>
@@ -710,6 +740,15 @@ public sealed class Injury
 
     /// <summary>Drawn out of someone else by an empath (<c>Healing.Empathy</c>): they feel it rather than see it.</summary>
     public bool Absorbed;
+
+    /// <summary>
+    /// The empath who's felt this wound with their hands (<c>Healing.FeelSession</c>), Entity.Null if
+    /// none: only they know it's there, and can draw it.
+    /// </summary>
+    public Entity FeltBy = Entity.Null;
+
+    /// <summary>Festering found under the dressing by a pressed pass (an untended one shows anyway).</summary>
+    public bool FeltFestering;
 
     /// <summary>Wounds get one chance to fester, half a day after they're made.</summary>
     public bool InfectionRolled;

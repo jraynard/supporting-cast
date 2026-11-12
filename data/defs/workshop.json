@@ -506,6 +506,13 @@
       "ingredients": [ { "def": "Fiber", "count": 3 } ],
       "products": [ { "def": "Bandage", "count": 2 } ]
     },
+    // A healer short of bandages tears up cloth: quicker than weaving fiber, and more of them.
+    {
+      "name": "TearBandages", "label": "bandages from cloth", "skill": "Medicine", "work": 120,
+      "description": "By hand: tear a length of wool cloth into 3 bandages.",
+      "ingredients": [ { "def": "Cloth", "count": 1 } ],
+      "products": [ { "def": "Bandage", "count": 3 } ]
+    },
     // Stone tools, by hand anywhere (the inventory's Craft tab).
     {
       "name": "MakeStoneAxe", "label": "stone axe", "skill": "Crafting", "work": 600,

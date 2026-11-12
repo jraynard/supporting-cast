@@ -52,7 +52,13 @@ public sealed class AdventurerBrain : IBrain
         if (inLine is { } place)
         {
             if (place.Cell is { } cell)
+            {
+                // A shop that lays its customers down: their place is a bed.
+                var s = sim.Map.Structure[sim.Map.Idx(cell)];
+                if (!s.IsNull && w.TryGet<Thing>(s, out var bed) && bed.Def.Building?.IsBed == true)
+                    return new Shops.LieAbedJob(s, Buildings.Called(sim, place.Shop));
                 return new Shops.QueueJob(cell, Buildings.Called(sim, place.Shop), place.Place == 0);
+            }
         }
         var center = WaitingAt(sim, pawn)
             ?? (w.TryGet<Adventurer>(pawn, out var a) && PartySystem.HauntOf(sim, a.PartyDef) is { } haunt ? haunt.Anchor : tile);

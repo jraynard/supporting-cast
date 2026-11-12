@@ -389,7 +389,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
                 // Slung over the carrier's shoulder.
                 Decal(sprite, p.Pos + new float3(0, 0, 0.75f), size * 0.8f, tint, level);
             }
-            else if (c.Dead || c.Downed || mind.Asleep)
+            else if (c.Dead || c.Downed || mind.Asleep || mind.Job is { LiesDown: true })
             {
                 // Lying down.
                 Decal(sprite, p.Pos, size, c.Dead ? Rgba.Pack(0.5f, 0.5f, 0.5f, 0.9f) : c.Downed ? Rgba.Pack(0.85f, 0.7f, 0.7f) : tint, level);
@@ -546,7 +546,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         if (lying && flat)
         {
             var center = p.Pos;
-            var bed = mind.Asleep && mind.Job is { } job && !job.Focus.IsNull && w.IsAlive(job.Focus) && w.Has<Thing>(job.Focus)
+            var bed = (mind.Asleep || mind.Job is { LiesDown: true }) && mind.Job is { } job && !job.Focus.IsNull && w.IsAlive(job.Focus) && w.Has<Thing>(job.Focus)
                 && w.Get<Thing>(job.Focus).Cell == p.Cell ? job.Focus : Entity.Null;
             var facing = 0;
             var scale = 1f;

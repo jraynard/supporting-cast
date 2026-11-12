@@ -187,6 +187,7 @@ public sealed class SaveReader(Stream stream, DefDatabase defs, int version = Sa
                 var t when t == typeof(PartyDef) => defs.Party(name),
                 var t when t == typeof(ServiceDef) => defs.Service(name),
                 var t when t == typeof(MendingDef) => defs.Mending(name),
+                var t when t == typeof(RuneDef) => defs.Rune(name),
                 var t when t == typeof(QuestDef) => defs.Quest(name),
                 _ => throw new SaveException($"Defs of type {typeof(T).Name} can't be saved"),
             };

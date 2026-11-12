@@ -37,6 +37,8 @@ public sealed class DefDatabase
     private readonly ServiceDef?[] _byServiceKind = new ServiceDef?[Enum.GetValues<ServiceKind>().Length];
 
     private readonly Dictionary<string, MendingDef> _mendings = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, RuneDef> _runes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, DrawFeelDef> _drawFeels = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, QuestDef> _quests = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, MapDef> _maps = new(StringComparer.OrdinalIgnoreCase);
 
@@ -48,6 +50,12 @@ public sealed class DefDatabase
 
     /// <summary>What an empath can cast (data/defs/healing.json), in def order.</summary>
     public List<MendingDef> AllMendings { get; } = [];
+
+    /// <summary>What mendings are woven from (data/defs/healing.json), in def order: keys 1 to 9.</summary>
+    public List<RuneDef> AllRunes { get; } = [];
+
+    /// <summary>How drawing each kind of wound feels (data/defs/healing.json).</summary>
+    public List<DrawFeelDef> AllDrawFeels { get; } = [];
 
     /// <summary>How each kind of order goes (data/defs/orders.json).</summary>
     public List<ServiceDef> AllServices { get; } = [];
@@ -133,6 +141,8 @@ public sealed class DefDatabase
         public List<PartyDef> Parties { get; set; } = [];
         public List<ServiceDef> Services { get; set; } = [];
         public List<MendingDef> Mendings { get; set; } = [];
+        public List<RuneDef> Runes { get; set; } = [];
+        public List<DrawFeelDef> DrawFeels { get; set; } = [];
         public List<QuestDef> Quests { get; set; } = [];
         public List<MapDef> Maps { get; set; } = [];
     }
@@ -194,6 +204,8 @@ public sealed class DefDatabase
         AddAll(file.Parties, _parties, AllParties, source);
         AddAll(file.Services, _services, AllServices, source);
         AddAll(file.Mendings, _mendings, AllMendings, source);
+        AddAll(file.Runes, _runes, AllRunes, source);
+        AddAll(file.DrawFeels, _drawFeels, AllDrawFeels, source);
         AddAll(file.Quests, _quests, AllQuests, source);
         AddAll(file.Maps, _maps, AllMaps, source);
     }
@@ -244,7 +256,11 @@ public sealed class DefDatabase
         foreach (var d in AllTrades) d.Resolve(this); // after buildings: their workplaces
         foreach (var d in AllAdventurerKinds) d.Resolve(this);
         foreach (var d in AllParties) d.Resolve(this); // after adventurer kinds and buildings
+        if (AllRunes.Count > 9)
+            throw new Exception("At most 9 runes: they're keyed 1 to 9");
         foreach (var d in AllMendings) d.Resolve(this);
+        Healing.Weaving.Validate(this);
+        foreach (var d in AllDrawFeels) d.Resolve(this);
         foreach (var d in AllQuests) d.Resolve(this);
         foreach (var d in AllMaps) d.Resolve(this); // after blocks, things, creatures and buildings
         foreach (var d in AllServices)
@@ -400,6 +416,10 @@ public sealed class DefDatabase
     public PartyDef Party(string name) => Lookup(_parties, name);
     public ServiceDef Service(string name) => Lookup(_services, name);
     public MendingDef Mending(string name) => Lookup(_mendings, name);
+    public RuneDef Rune(string name) => Lookup(_runes, name);
+
+    /// <summary>How drawing a wound of this kind feels; plain jolts for a kind with no def.</summary>
+    public DrawFeelDef? DrawFeel(DamageType type) => _drawFeels.GetValueOrDefault(type.ToString());
     public QuestDef Quest(string name) => Lookup(_quests, name);
     public MapDef Map(string name) => Lookup(_maps, name);
 

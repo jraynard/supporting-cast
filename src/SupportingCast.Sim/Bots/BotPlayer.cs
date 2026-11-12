@@ -79,6 +79,13 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     private bool _struck;
     private int _axis2;
 
+    // Feeling over: who it last ran its hands over, and when.
+    private readonly Dictionary<Entity, long> _feltOver = [];
+
+    // Weaving: the runes it means to key (indices into the defs' runes), and the one to key this frame.
+    private List<int> _weave = [];
+    private int _rune = -1;
+
     public Guid Player => player;
 
     /// <summary>What it last decided, for tests and debugging.</summary>
@@ -103,6 +110,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         // A press meant for the last step (drawing the piece from the fire) mustn't land on the next.
         var live = sim.World.TryGet<WorkSession>(me, out var s) ? s.StartTick : -1;
         _axis2 = 0;
+        _rune = -1;
         var (press, held, axis) = _work.Session?.StartTick == live ? Play(_work.Session) : (false, false, 0);
         // At the anvil it puts the hammer down as the colour fades, and takes the piece back to the fire.
         if (_work.Session is HammerSession { Workable: < 0.95f } && !_stopped)
@@ -110,7 +118,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             _stopped = true;
             send(new StopWorkCommand(me));
         }
-        _work.Update(sim, me, steps, press, held, axis, send, _axis2);
+        _work.Update(sim, me, steps, press, held, axis, send, _axis2, _rune);
         if (_work.Session != null || sim.World.Has<WorkSession>(me) || now < _nextThink)
             return;
         _nextThink = now + ThinkTicks;
@@ -210,13 +218,20 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 return (false, !_stopped, 1);
             case DrawSession d:
                 return (false, true, Steer(d.Composure, d.HalfWidth));
+            case FeelSession f:
+                return (false, true, 1); // a slow, pressed pass from head to feet: it misses nothing
+            case BandageSession b:
+                return (false, b.Tension < (b.Low + b.High) / 2f, 0); // pull to the middle of the band, then let go
             case CastSession c:
             {
-                if (c.Resolved >= c.Mending.Runes.Length || c.Resolved == _lastRune || Math.Abs(c.StepsDone - c.DueOf(c.Resolved)) > 2)
+                // The book's runes for the mending it means, each on a beat; then let it go.
+                if (c.Woven.Count >= _weave.Count)
+                    return (c.Woven.Count > 0, false, 0);
+                if (c.NextBeat == _lastRune || Math.Abs(c.StepsDone - c.NextBeat) > 1)
                     return (false, false, 0);
-                _lastRune = c.Resolved;
-                var rune = c.Mending.Runes[c.Resolved];
-                return (rune == 'F', false, rune == 'L' ? -1 : rune == 'R' ? 1 : 0);
+                _lastRune = c.NextBeat;
+                _rune = _weave[c.Woven.Count];
+                return (false, false, 0);
             }
             case MeditateSession m:
             {
@@ -919,26 +934,47 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     {
         if (!Reach(sim, me, patient, now))
             return true;
-        if (view.FeltWounds(patient) is not { Count: > 0 } wounds)
+        if (view.FeltWounds(patient) is not { } wounds)
             return false;
+        if (wounds.Count == 0)
+        {
+            // Hands over them first, to find what hurts; once a while is enough.
+            if (_feltOver.TryGetValue(patient, out var felt) && now - felt < SimClock.TicksPerHour)
+                return false;
+            _feltOver[patient] = now;
+            send(new FeelCommand(me, patient));
+            return true;
+        }
         send(new LayOnHandsCommand(me, patient, wounds[0].Key));
         return true;
     }
 
-    /// <summary>The healer's own upkeep: mend what they carry, or meditate when short of mana. True if it did either.</summary>
+    /// <summary>It knows the mending this wound's feel wants, and has the mana for it.</summary>
+    private static bool CanWeave(Simulation sim, Entity me, Healing.FeltWound wound, Mana mana) =>
+        sim.Defs.AllMendings.FirstOrDefault(m => m.Feels.ContainsValue(wound.Feels) && Weaving.Knows(sim, me, m)) is { } m && mana.Current >= m.ManaCost;
+
+    /// <summary>The healer's own upkeep: mend what they carry, bind it if they can't, or meditate when short of mana. True if it did any.</summary>
     private bool Mend(Simulation sim, Entity me, PerceptionView view)
     {
         if (!sim.World.TryGet<Mana>(me, out var mana))
             return false;
         foreach (var wound in view.FeltWounds(me) ?? [])
         {
-            // The feel of a wound tells a practised empath which mending it wants.
-            var mending = sim.Defs.AllMendings.FirstOrDefault(m => m.Feels.ContainsValue(wound.Feels));
+            // The feel of a wound tells a practised empath which mending it wants, and the book its runes.
+            var mending = sim.Defs.AllMendings.FirstOrDefault(m => m.Feels.ContainsValue(wound.Feels) && Weaving.Knows(sim, me, m));
             if (wound.Absorbed && mending != null && mana.Current >= mending.ManaCost)
             {
-                send(new CastMendingCommand(me, wound.Key, mending));
+                _weave = mending.RuneDefs.Select(r => r.Index).ToList();
+                send(new WeaveCommand(me, wound.Key));
                 return true;
             }
+        }
+        // Short of mana with a drawn wound bleeding: bind it while the mana comes back.
+        if (Bandaging.WoundsToBind(sim, me) > 0 && Bandaging.CantBind(sim, me, me) == null
+            && (view.FeltWounds(me) ?? []).Any(f => f.Absorbed) && !(view.FeltWounds(me) ?? []).Any(f => f.Absorbed && CanWeave(sim, me, f, mana)))
+        {
+            send(new BandageCommand(me, me));
+            return true;
         }
         if (mana.Current < mana.Max * 0.3f && _task == 0)
         {

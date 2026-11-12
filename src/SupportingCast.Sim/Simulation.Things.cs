@@ -422,6 +422,8 @@ public sealed partial class Simulation
     public string LabelOf(Entity e)
     {
         var label = World.Get<Thing>(e).Label;
+        if (World.TryGet<Charm>(e, out var charm))
+            return $"{label} of {charm.Mending.Label.ToLowerInvariant()}{(charm.Extra > 0 ? $" ({new string('+', charm.Extra)})" : "")}";
         return World.TryGet<Crafted>(e, out var c) && c.Quality != Quality.Plain ? $"{Crafting.QualityLabel(c.Quality)} {label}" : label;
     }
 

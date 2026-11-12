@@ -771,6 +771,9 @@ public sealed class ThingDef : Def
     /// <summary>Items that hold other items by weight: packs, worn on the back.</summary>
     public ContainerProps? Container { get; set; }
 
+    /// <summary>A charm: holds a mending woven into it, to be torn later or carried as a ward (<c>Healing.Charms</c>).</summary>
+    public bool Charm { get; set; }
+
     /// <summary>
     /// Comes in the materials of another item, being made from it: planks are oak, pine or birch
     /// like the wood they were sawn from (a recipe's product takes its ingredients' material).

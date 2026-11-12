@@ -17,8 +17,8 @@ public class HealerTests
 {
     private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
 
-    /// <summary>An empath (a player, Medicine 10) beside a villager with a cut on the arm.</summary>
-    private static (Simulation Sim, Entity Me, Entity Patient, int Arm) AtTheBedside(float cut = 20f, int medicine = 10)
+    /// <summary>An empath (a player, Medicine 10) beside a villager with a cut on the arm, which they've felt (unless not).</summary>
+    private static (Simulation Sim, Entity Me, Entity Patient, int Arm) AtTheBedside(float cut = 20f, int medicine = 10, bool felt = true)
     {
         var sim = Create(40, 40);
         var me = sim.SpawnCreature(sim.Defs.Creature("Human"), "Eir", C(10, 10), ageDays: 25 * 365);
@@ -37,7 +37,23 @@ public class HealerTests
         var h = sim.World.Get<Health>(patient);
         var arm = h.Body.Parts.FindIndex(p => p.Label.Contains("arm") && !p.Vital);
         HealthSystem.Damage(sim, patient, cut, DamageType.Cut, arm);
+        if (felt)
+            FeelOver(sim, me, patient);
         return (sim, me, patient, arm);
+    }
+
+    /// <summary>Run the hands from head to feet, pressing in (slow and thorough) or skimming.</summary>
+    private static void FeelOver(Simulation sim, Entity me, Entity patient, bool pressed = true)
+    {
+        sim.ApplyNow(new FeelCommand(me, patient));
+        Assert.IsType<FeelSession>(sim.World.Get<WorkSession>(me));
+        var predictor = new WorkPredictor();
+        for (var t = 0; t < 60 * 60 && sim.World.Has<WorkSession>(me); t++)
+        {
+            sim.Tick();
+            predictor.Update(sim, me, 1, false, pressed, 1, c => sim.ApplyNow(c));
+        }
+        sim.Tick();
     }
 
     private static int CutKey(Simulation sim, Entity who, int part) =>
@@ -61,28 +77,28 @@ public class HealerTests
         sim.Tick();
     }
 
-    /// <summary>Play the runes perfectly, each on its mark.</summary>
-    private static void Cast(Simulation sim, Entity me, int maxTicks = 60 * 60)
+    /// <summary>
+    /// Weave these runes (by name), each keyed on a beat (or well before one), then let it go with F.
+    /// Null runes: start the weave and leave it in hand.
+    /// </summary>
+    private static void Weave(Simulation sim, Entity me, int wound, string[] runes, bool onBeat = true, int maxTicks = 60 * 60)
     {
+        sim.ApplyNow(new WeaveCommand(me, wound));
+        var keys = runes.Select(n => sim.Defs.Rune(n).Index).ToList();
         var predictor = new WorkPredictor();
-        var lastAxis = 0;
         for (var t = 0; t < maxTicks && sim.World.Has<WorkSession>(me); t++)
         {
             sim.Tick();
+            var rune = -1;
             var press = false;
-            var axis = 0;
-            if (predictor.Session is CastSession c && c.Resolved < c.Mending.Runes.Length && c.StepsDone == c.DueOf(c.Resolved))
+            if (predictor.Session is CastSession c)
             {
-                var rune = c.Mending.Runes[c.Resolved];
-                press = rune == 'F';
-                axis = rune == 'L' ? -1 : rune == 'R' ? 1 : 0;
-                if (axis != 0 && axis == lastAxis)
-                {
-                    predictor.Update(sim, me, 0, false, false, 0, x => sim.ApplyNow(x)); // let go first
-                }
+                if (c.Woven.Count >= keys.Count)
+                    press = true;
+                else if (c.StepsDone == (onBeat ? c.NextBeat : c.NextBeat - 20))
+                    rune = keys[c.Woven.Count];
             }
-            lastAxis = axis;
-            predictor.Update(sim, me, 1, press, false, axis, x => sim.ApplyNow(x));
+            predictor.Update(sim, me, 1, press, false, 0, x => sim.ApplyNow(x), 0, rune);
         }
         sim.Tick();
     }
@@ -132,6 +148,124 @@ public class HealerTests
         Assert.True(mine > drawn * Empathy.Burden(sim, me), $"the backlash adds to it: mine {mine}, drawn {drawn}, burden {Empathy.Burden(sim, me)}; {string.Join("; ", sim.Messages.Messages.Select(m => m.Text))}");
     }
 
+    /// <summary>A draw of this kind held for <paramref name="steps"/>, the keys as given, its jolts all but gone (to see the pattern's own push).</summary>
+    private static List<float> DrawPath(DrawPattern pattern, int steps, bool held, int steer, float gravity = 1f)
+    {
+        var s = new DrawSession { Pattern = pattern, Rate = 1e-6f, Gravity = gravity, Hands = new Hands(1f, 1.25f, 10) };
+        s.Begin();
+        var inputs = new List<WorkInput> { new(0, WorkInputKind.Hold, held ? 1 : 0) };
+        if (steer != 0)
+            inputs.Add(new WorkInput(0, WorkInputKind.Axis, steer));
+        var path = new List<float>();
+        for (var i = 0; i < steps && !s.Done; i++)
+        {
+            s.Advance(i == 0 ? inputs : [], i + 1);
+            path.Add(s.Composure);
+        }
+        return path;
+    }
+
+    [Fact]
+    public void FrostNumbsTheHandsSoSteeringAnswersLate()
+    {
+        var plain = DrawPath(DrawPattern.Spike, 12, held: false, steer: 1);
+        var numb = DrawPath(DrawPattern.Numb, 12, held: false, steer: 1);
+        Assert.True(plain[^1] - 0.5f > 0.1f, $"plain hands move it ({plain[^1]})");
+        Assert.True(numb[^1] - 0.5f < (plain[^1] - 0.5f) * 0.5f, $"numb ones barely ({numb[^1]} vs {plain[^1]})");
+    }
+
+    [Fact]
+    public void ABurnPullsOneWayAndABruiseSwellsAndEbbs()
+    {
+        var burn = DrawPath(DrawPattern.Drift, 120, held: true, steer: 0);
+        var off = burn.Select(c => c - 0.5f).ToList();
+        Assert.True(MathF.Abs(off[^1]) > 0.1f, $"a burn pulls the needle away ({off[^1]})");
+        Assert.All(off.Skip(1), o => Assert.Equal(Math.Sign(off[^1]), Math.Sign(o))); // and always the same way
+
+        var period = (int)(2.6f * SimClock.TicksPerSecond);
+        var bruise = DrawPath(DrawPattern.Wave, period, held: true, steer: 0);
+        Assert.True(bruise.Max(c => MathF.Abs(c - 0.5f)) > 0.1f, "a bruise swells the needle off the middle");
+        Assert.True(MathF.Abs(bruise[^1] - 0.5f) < 0.03f, $"and it ebbs back by itself ({bruise[^1]})");
+
+        var still = DrawPath(DrawPattern.Spike, 120, held: true, steer: 0);
+        Assert.All(still, c => Assert.Equal(0.5f, c, 0.001f)); // a cut only jolts
+    }
+
+    [Fact]
+    public void ABedOrASteadyingMendingWidensTheCalm()
+    {
+        var hands = new Hands(1f, 1f, 0);
+        var plain = new DrawSession { Hands = hands }.HalfWidth;
+        Assert.True(new DrawSession { Hands = hands, Bedside = true }.HalfWidth > plain * 1.2f);
+        Assert.True(new DrawSession { Hands = hands, Steady = 0.5f }.HalfWidth > plain * 1.4f);
+    }
+
+    [Fact]
+    public void EachKindOfWoundDrawsItsOwnWay()
+    {
+        var (sim, me, patient, arm) = AtTheBedside();
+        HealthSystem.Damage(sim, patient, 10f, DamageType.Burn, arm);
+        var burn = Empathy.KeyOf(sim.World.Get<Health>(patient).Injuries.Single(i => i.Type == DamageType.Burn));
+        FeelOver(sim, me, patient);
+        sim.ApplyNow(new LayOnHandsCommand(me, patient, burn));
+        var s = (DrawSession)sim.World.Get<WorkSession>(me);
+        Assert.Equal(DrawPattern.Drift, s.Pattern);
+        s.Advance([new WorkInput(0, WorkInputKind.Hold, 1)], 30);
+
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        var copy = (DrawSession)loaded.World.Get<WorkSession>(me);
+        Assert.Equal((s.Pattern, s.Composure, s.Bedside, s.Steady), (copy.Pattern, copy.Composure, copy.Bedside, copy.Steady));
+    }
+
+    [Fact]
+    public void AWoundIsKnownAndDrawnOnlyOnceItsBeenFelt()
+    {
+        var (sim, me, patient, arm) = AtTheBedside(felt: false);
+        var view = Perception.For(sim, me);
+        Assert.Empty(view.FeltWounds(patient)!);
+        var key = Empathy.KeyOf(sim.World.Get<Health>(patient).Injuries.Single());
+        Assert.NotNull(DrawSession.Problem(sim, me, patient, key)); // no drawing what you haven't felt
+
+        FeelOver(sim, me, patient, pressed: false);
+        var felt = Perception.For(sim, me).FeltWounds(patient)!;
+        Assert.Equal(key, felt.Single().Key);
+        Assert.Equal("arm", felt.Single().Part.Split(' ')[^1]);
+        Assert.Null(DrawSession.Problem(sim, me, patient, key));
+    }
+
+    [Fact]
+    public void OnlyAPressedPassFindsFesteringUnderADressing()
+    {
+        bool Finds(bool pressed)
+        {
+            var (sim, me, patient, _) = AtTheBedside(felt: false);
+            var inj = sim.World.Get<Health>(patient).Injuries.Single();
+            inj.Tended = true;
+            inj.Infection = new Infection { Severity = 0.3f };
+            FeelOver(sim, me, patient, pressed);
+            var felt = Perception.For(sim, me).FeltWounds(patient)!.Single();
+            return felt.Festering;
+        }
+        Assert.False(Finds(pressed: false));
+        Assert.True(Finds(pressed: true));
+    }
+
+    [Fact]
+    public void APatientKeepsStillWhileFeltOverAndAFeelSurvivesASave()
+    {
+        var (sim, me, patient, _) = AtTheBedside(felt: false);
+        sim.World.Get<Mind>(patient).Drafted = false;
+        sim.ApplyNow(new FeelCommand(me, patient));
+        sim.TickMany(30);
+        Assert.Equal(me, Empathy.DrawnBy(sim, patient));
+        var s = (FeelSession)sim.World.Get<WorkSession>(me);
+        s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Hold, 1), new WorkInput(s.StepsDone, WorkInputKind.Axis, 1)], s.StepsDone + 40);
+
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        var copy = (FeelSession)loaded.World.Get<WorkSession>(me);
+        Assert.Equal((s.Hands01, s.Spots.Count, s.Spots[0].Found, s.Parts.Count), (copy.Hands01, copy.Spots.Count, copy.Spots[0].Found, copy.Parts.Count));
+    }
+
     [Fact]
     public void AbsorbedWoundsAreKnownOnlyByTheirFeel()
     {
@@ -153,15 +287,142 @@ public class HealerTests
         var key = CutKey(sim, me, arm);
         var before = Empathy.Find(sim, me, key)!.Damage;
 
-        sim.ApplyNow(new CastMendingCommand(me, key, sim.Defs.Mending("Ease")));
-        Cast(sim, me);
+        Weave(sim, me, key, ["Still", "Flesh"]); // easing: for a bruise
         Assert.Equal(100f - sim.Defs.Mending("Ease").ManaCost, sim.World.Get<Mana>(me).Current, 0.5f);
         Assert.Equal(before, Empathy.Find(sim, me, key)!.Damage, 0.2f); // natural healing aside
 
-        sim.ApplyNow(new CastMendingCommand(me, key, sim.Defs.Mending("Knit")));
-        Cast(sim, me);
+        Weave(sim, me, key, ["Flesh", "Thread"]); // knitting, in either order
         var after = Empathy.Find(sim, me, key)?.Damage ?? 0f;
         Assert.True(after < before - 10f, $"{before} -> {after}");
+    }
+
+    [Fact]
+    public void AnExtraLeadRuneHealsMoreForMoreMana()
+    {
+        float Mend(string[] runes, out float spent)
+        {
+            var (sim, me, _, _) = AtTheBedside();
+            // A deep cut on the healer's biggest limb: more than either cast can close.
+            var h = sim.World.Get<Health>(me);
+            var limb = Enumerable.Range(0, h.Body.Parts.Count).Where(i => !h.Body.Parts[i].Vital).MaxBy(h.PartMaxHp);
+            HealthSystem.Damage(sim, me, h.PartMaxHp(limb) * 0.8f, DamageType.Cut, limb);
+            var key = CutKey(sim, me, limb);
+            var before = Empathy.Find(sim, me, key)!.Damage;
+            Assert.True(before > 18f, $"the wound should outlast a plain cast ({before})");
+            Weave(sim, me, key, runes);
+            spent = 100f - sim.World.Get<Mana>(me).Current;
+            return before - (Empathy.Find(sim, me, key)?.Damage ?? 0f);
+        }
+        var plain = Mend(["Thread", "Flesh"], out var plainCost);
+        var strong = Mend(["Thread", "Flesh", "Thread"], out var strongCost);
+        Assert.True(strong > plain + 3f, $"{plain} -> {strong}");
+        Assert.True(strongCost > plainCost + 5f, $"{plainCost} -> {strongCost}");
+        // Any other extra rune spoils the mix.
+        var (sim2, _, _, _) = AtTheBedside();
+        Assert.Null(Weaving.Match(sim2.Defs, new[] { "Thread", "Flesh", "Flesh" }.Select(sim2.Defs.Rune).ToList()));
+    }
+
+    [Fact]
+    public void AWeaveThatMakesNothingFizzlesForALittleMana()
+    {
+        var (sim, me, patient, arm) = AtTheBedside();
+        Empathy.Draw(sim, me, patient, CutKey(sim, patient, arm), 1f, snapped: false);
+        var key = CutKey(sim, me, arm);
+        var before = Empathy.Find(sim, me, key)!.Damage;
+        Weave(sim, me, key, ["Salt", "Rime", "Thread"]);
+        Assert.Equal(100f - 3 * Weaving.FizzlePerRune, sim.World.Get<Mana>(me).Current, 0.5f);
+        Assert.Equal(before, Empathy.Find(sim, me, key)!.Damage, 0.2f);
+        Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("fizzles"));
+    }
+
+    [Fact]
+    public void AMixThatWorksIsWrittenIntoTheBook()
+    {
+        var (sim, me, _, _) = AtTheBedside();
+        sim.World.Add(me, Weaving.NewBook(sim));
+        var steady = sim.Defs.Mending("Steady");
+        Assert.False(Weaving.Knows(sim, me, steady));
+        Assert.Equal(0f, Empathy.SteadiedBand(sim, me));
+
+        Weave(sim, me, 0, ["Still", "Still"]); // needs no wound
+        Assert.True(Weaving.Knows(sim, me, steady));
+        Assert.True(Empathy.SteadiedBand(sim, me) > 0.2f);
+        sim.TickMany(SimClock.HoursToTicks(steady.SteadyHours) + 60);
+        Assert.Equal(0f, Empathy.SteadiedBand(sim, me));
+    }
+
+    [Fact]
+    public void TheDealGivesAHealerTheirBook()
+    {
+        var (sim, me, _, _) = AtTheBedside();
+        RoundSystem.Assign(sim, me, sim.Defs.Trade("Healer"));
+        Assert.True(Weaving.Knows(sim, me, sim.Defs.Mending("Knit")));
+        Assert.False(Weaving.Knows(sim, me, sim.Defs.Mending("Sear")));
+    }
+
+    [Fact]
+    public void LettingAWeaveGoCostsNothing()
+    {
+        var (sim, me, _, _) = AtTheBedside();
+        sim.ApplyNow(new WeaveCommand(me, 0));
+        var s = (CastSession)sim.World.Get<WorkSession>(me);
+        s.Advance([new WorkInput(s.NextBeat, WorkInputKind.Rune, sim.Defs.Rune("Still").Index)], s.NextBeat + 5);
+        sim.ApplyNow(new StopWorkCommand(me));
+        Assert.False(sim.World.Has<WorkSession>(me));
+        Assert.Equal(100f, sim.World.Get<Mana>(me).Current, 0.01f);
+    }
+
+    [Fact]
+    public void RunesOffTheBeatMakeAWeakerMending()
+    {
+        float Mend(bool onBeat)
+        {
+            var (sim, me, patient, arm) = AtTheBedside(cut: 40f);
+            Empathy.Draw(sim, me, patient, CutKey(sim, patient, arm), 1f, snapped: false);
+            var key = CutKey(sim, me, arm);
+            var before = Empathy.Find(sim, me, key)!.Damage;
+            Weave(sim, me, key, ["Thread", "Flesh"], onBeat);
+            return before - (Empathy.Find(sim, me, key)?.Damage ?? 0f);
+        }
+        var good = Mend(true);
+        var poor = Mend(false);
+        Assert.True(poor < good * 0.6f, $"on the beat {good}, off it {poor}");
+    }
+
+    [Fact]
+    public void PainMakesTheHeartRaceAndStumble()
+    {
+        List<int> Beats(float pain)
+        {
+            var s = new CastSession { Pain = pain };
+            s.Begin();
+            var beats = new List<int>();
+            var last = s.NextBeat;
+            for (var step = 0; step < 60 * 20; step++)
+            {
+                s.Advance([], step + 1);
+                if (s.NextBeat != last)
+                {
+                    beats.Add(s.NextBeat - last);
+                    last = s.NextBeat;
+                }
+            }
+            return beats;
+        }
+        var calm = Beats(0f);
+        var hurting = Beats(0.9f);
+        Assert.Single(calm.Distinct());
+        Assert.True(hurting.Average() < calm.Average(), "faster");
+        Assert.True(hurting.Distinct().Count() > 3, "and uneven");
+    }
+
+    [Fact]
+    public void NoWeaveMakesTwoMendings()
+    {
+        // Checked at load (Weaving.Validate); this guards the defs as they're written.
+        var defs = LoadDefs();
+        foreach (var m in defs.AllMendings)
+            Assert.Equal(m, Weaving.Match(defs, Weaving.Recipe(m))?.Mending);
     }
 
     /// <summary>Meditate pressing on the rhythm you'd expect (a steady breath), as a person would.</summary>
@@ -242,13 +503,16 @@ public class HealerTests
     {
         var (sim, me, patient, arm) = AtTheBedside();
         Empathy.Draw(sim, me, patient, CutKey(sim, patient, arm), 1f, snapped: false);
-        sim.ApplyNow(new CastMendingCommand(me, CutKey(sim, me, arm), sim.Defs.Mending("Knit")));
+        sim.World.Add(me, Weaving.NewBook(sim));
+        sim.ApplyNow(new WeaveCommand(me, CutKey(sim, me, arm)));
         var s = (CastSession)sim.World.Get<WorkSession>(me);
-        s.Advance([new WorkInput(s.DueOf(0), WorkInputKind.Axis, -1)], s.DueOf(0) + 5);
+        s.Advance([new WorkInput(s.NextBeat, WorkInputKind.Rune, sim.Defs.Rune("Thread").Index)], s.NextBeat + 5);
 
         var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
         var copy = (CastSession)loaded.World.Get<WorkSession>(me);
-        Assert.Equal((s.Mending, s.Resolved, s.StepsDone, s.Hits[0]), (copy.Mending, copy.Resolved, copy.StepsDone, copy.Hits[0]));
+        Assert.Equal((s.Wound, s.StepsDone, s.NextBeat, s.Woven[0], s.Strong[0], s.Palette.Count),
+            (copy.Wound, copy.StepsDone, copy.NextBeat, copy.Woven[0], copy.Strong[0], copy.Palette.Count));
+        Assert.Equal(sim.World.Get<Spellbook>(me).Known.Count, loaded.World.Get<Spellbook>(me).Known.Count);
     }
 
     // ---------------- Healing orders ----------------
@@ -286,6 +550,8 @@ public class HealerTests
         var cell = sim.SpiralFrom(at, 2).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z && Ai.Pathfinder.Touches(c, at));
         sim.World.Get<Position>(me).Cell = cell;
         sim.World.Get<Position>(me).Pos = Position.CenterOf(cell);
+        Assert.Empty(Perception.For(sim, me).FeltWounds(hurt)!); // not till their hands have been over them
+        FeelOver(sim, me, hurt);
         var wounds = Perception.For(sim, me).FeltWounds(hurt)!;
         Assert.NotEmpty(wounds);
         var purse = Coin.Count(sim, me);
@@ -308,5 +574,55 @@ public class HealerTests
         var order = sim.Shops.All.Single(e => e.Poster == hurt && e.Kind.Kind == ServiceKind.Healing);
         Assert.Equal(OrderStatus.Done, order.Status);
         Assert.Equal(healer, order.Assignee);
+    }
+
+    [Fact]
+    public void ABotHealerDrawsAnAdventurersWoundAndWeavesItAway()
+    {
+        var (sim, hurt) = ShrineWithAHurtAdventurer("Healer");
+        var me = Players.CharacterOf(sim, Ana);
+        var bot = new Bots.BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 11);
+        var order = sim.Shops.All.Single(e => e.IsOpen && e.Poster == hurt && e.Kind.Kind == ServiceKind.Healing);
+        var wove = false;
+        for (var t = 0; t < SimClock.TicksPerHour * 6; t++)
+        {
+            sim.Tick();
+            bot.Tick();
+            wove |= sim.World.TryGet<WorkSession>(me, out var s) && s is CastSession;
+            if (wove && order.Status == OrderStatus.Done && !sim.World.Get<Health>(me).Injuries.Exists(i => i.Absorbed))
+                break;
+        }
+        var log = $"bot {bot.Doing}\n" + string.Join("\n", sim.Messages.Messages.TakeLast(12).Select(m => m.Text));
+        Assert.True(order.Status == OrderStatus.Done, $"{order.Status}: {log}");
+        Assert.True(wove, "it wove a mending: " + log);
+        Assert.DoesNotContain(sim.Messages.Messages, m => m.Text.Contains("fizzles"));
+        Assert.False(sim.World.Get<Health>(me).Injuries.Exists(i => i.Absorbed), "it mended what it took: " + log);
+    }
+
+    [Fact]
+    public void TheWoundedLieOnTheShrinesPalletsAndAreDrawnFromAtTheBedside()
+    {
+        var (sim, hurt) = ShrineWithAHurtAdventurer("Healer");
+        var order = sim.Shops.All.Single(e => e.IsOpen && e.Poster == hurt && e.Kind.Kind == ServiceKind.Healing);
+        Assert.Equal(2, ShopSystem.BedsOf(sim, order.Where).Count);
+        var cells = ShopSystem.LineCells(sim, order.Where);
+        Assert.Equal(ShopSystem.BedsOf(sim, order.Where).Select(b => sim.World.Get<Thing>(b).Cell), cells.Take(2));
+
+        for (var t = 0; t < SimClock.TicksPerHour * 2 && !HealthSystem.InBed(sim, hurt); t++)
+            sim.Tick();
+        Assert.True(HealthSystem.InBed(sim, hurt), $"lying down: {sim.World.Get<Mind>(hurt).Job?.Report}");
+        sim.TickMany(60);
+        Assert.True(sim.World.Get<Mind>(hurt).Job is { LiesDown: true }, sim.World.Get<Mind>(hurt).Job?.Report);
+
+        var me = Players.CharacterOf(sim, Ana);
+        var at = sim.World.Get<Position>(hurt).Cell;
+        var cell = sim.SpiralFrom(at, 2).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z && Ai.Pathfinder.Touches(c, at)
+            && sim.Map.Structure[sim.Map.Idx(c)].IsNull);
+        sim.World.Get<Position>(me).Cell = cell;
+        sim.World.Get<Position>(me).Pos = Position.CenterOf(cell);
+        FeelOver(sim, me, hurt);
+        var wound = Perception.For(sim, me).FeltWounds(hurt)!.First();
+        sim.ApplyNow(new LayOnHandsCommand(me, hurt, wound.Key));
+        Assert.True(((DrawSession)sim.World.Get<WorkSession>(me)).Bedside);
     }
 }

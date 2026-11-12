@@ -1,25 +1,73 @@
-// The empath's mendings (Healing/CastSession). An empath draws a patient's wound into their own
-// body, then casts on themselves the mending that fits it. They know a wound they've taken only by
-// how it feels ("feels", one line per kind it heals), so telling which mending a wound wants is a
-// skill the player learns. A wrong mending costs its mana and heals nothing. "runes" is the cast,
-// played on cue: L (A), R (D), F. "heal" is damage mended by a perfect cast.
+// The empath's gift (Healing/). An empath draws a patient's wound into their own body, then
+// weaves on themselves the mending that fits it. They know a wound they've taken only by how it
+// feels ("feels", one line per kind it heals), so telling which mending a wound wants is a skill
+// the player learns.
+//
+// "runes" are what mendings are woven from, keyed 1 to 9 in this order. A mending's "runes" are
+// its mix, in any order; extra copies of its "lead" rune (the first, if not given) make a stronger,
+// dearer cast ("manaPerLead"/"healPerLead", half the base if not given). A weave that makes no
+// mending fizzles and costs a little mana for each rune in it. Mendings not "knownAtStart" are
+// found by weaving them, and written into the empath's book. "heal" is damage mended by a perfect
+// cast at the base mix.
 {
+  "runes": [
+    { "name": "Thread", "label": "Thread", "icon": "ui/rune_thread", "description": "Binds what's parted." },
+    { "name": "Flesh", "label": "Flesh", "icon": "ui/rune_flesh", "description": "The body, and what it's made of." },
+    { "name": "Ember", "label": "Ember", "icon": "ui/rune_ember", "description": "Warmth, and the blood that carries it." },
+    { "name": "Rime", "label": "Rime", "icon": "ui/rune_rime", "description": "Cold, that draws heat out." },
+    { "name": "Salt", "label": "Salt", "icon": "ui/rune_salt", "description": "Purges what doesn't belong." },
+    { "name": "Still", "label": "Still", "icon": "ui/rune_still", "description": "Calm, and the settling of things." }
+  ],
+
+  // How drawing each kind of wound moves the empath's composure (Healing/DrawSession), so the
+  // draw teaches the feel: "pattern" is Spike, Double, Wave, Drift, Numb or Grow; "rate" and
+  // "strength" scale the jolts against a plain wound's.
+  "drawFeels": [
+    { "name": "Cut", "pattern": "Spike" },
+    { "name": "Pierce", "pattern": "Spike", "rate": 0.6, "strength": 1.5 },
+    { "name": "Bite", "pattern": "Double" },
+    { "name": "Blunt", "pattern": "Wave" },
+    { "name": "Burn", "pattern": "Drift" },
+    { "name": "Frost", "pattern": "Numb" },
+    { "name": "Venom", "pattern": "Grow" },
+    { "name": "Shock", "pattern": "Spike", "rate": 0.4, "strength": 2.2 }
+  ],
+
   "mendings": [
     { "name": "Knit", "label": "Knitting", "description": "Draws parted flesh back together.",
-      "heals": [ "Cut", "Pierce", "Bite" ], "manaCost": 20, "heal": 16, "runes": "LRLF",
+      "runes": [ "Thread", "Flesh" ], "lead": "Thread",
+      "heals": [ "Cut", "Pierce", "Bite" ], "manaCost": 20, "heal": 16,
       "feels": { "Cut": "a clean, bright line of pain", "Pierce": "a deep, narrow ache, like a nail left in",
                  "Bite": "a ragged, tearing soreness" } },
     { "name": "Ease", "label": "Easing", "description": "Soothes crushed and swollen flesh until it settles.",
-      "heals": [ "Blunt" ], "manaCost": 15, "heal": 18, "runes": "RRF",
+      "runes": [ "Still", "Flesh" ], "lead": "Flesh",
+      "heals": [ "Blunt" ], "manaCost": 15, "heal": 18,
       "feels": { "Blunt": "a deep, swelling throb" } },
     { "name": "Cool", "label": "Cooling", "description": "Draws the fire out of burned skin.",
-      "heals": [ "Burn" ], "manaCost": 22, "heal": 14, "runes": "FLLF",
+      "runes": [ "Rime", "Flesh" ], "lead": "Rime",
+      "heals": [ "Burn" ], "manaCost": 22, "heal": 14,
       "feels": { "Burn": "tight, hot skin that won't stop stinging" } },
     { "name": "Kindle", "label": "Kindling", "description": "Brings warmth and blood back into frozen flesh.",
-      "heals": [ "Frost" ], "manaCost": 22, "heal": 14, "runes": "FRRF",
+      "runes": [ "Ember", "Flesh" ], "lead": "Ember",
+      "heals": [ "Frost" ], "manaCost": 22, "heal": 14,
       "feels": { "Frost": "numbness, then needles" } },
     { "name": "Cleanse", "label": "Cleansing", "description": "Burns out venom and festering.",
-      "heals": [ "Venom" ], "cleanses": true, "manaCost": 30, "heal": 10, "runes": "LFRFL",
-      "feels": { "Venom": "a sick, spreading heat under the skin" } }
+      "runes": [ "Salt", "Salt", "Flesh" ], "lead": "Salt",
+      "heals": [ "Venom" ], "cleanses": true, "manaCost": 30, "heal": 10,
+      "feels": { "Venom": "a sick, spreading heat under the skin" } },
+
+    // ---- Found by weaving ----
+    { "name": "Sear", "label": "Searing", "description": "Seals a wound shut with heat: it stops bleeding at once and heals a little, but it burns.",
+      "runes": [ "Ember", "Thread" ], "lead": "Thread", "knownAtStart": false,
+      "heals": [ "Cut", "Pierce", "Bite" ], "staunches": true, "sears": 2, "manaCost": 12, "heal": 6,
+      "feels": { "Cut": "a clean, bright line of pain", "Pierce": "a deep, narrow ache, like a nail left in",
+                 "Bite": "a ragged, tearing soreness" } },
+    { "name": "Steady", "label": "Steadying", "description": "Settles the empath's own nerves: for an hour, drawing a wound shakes them less.",
+      "runes": [ "Still", "Still" ], "knownAtStart": false,
+      "steadies": 0.5, "steadyHours": 1, "manaCost": 15, "heal": 1, "manaPerLead": 10 },
+    { "name": "Ground", "label": "Grounding", "description": "Lets the lightning left in the flesh run out of it.",
+      "runes": [ "Still", "Ember", "Rime" ], "lead": "Still", "knownAtStart": false,
+      "heals": [ "Shock" ], "manaCost": 24, "heal": 14,
+      "feels": { "Shock": "a crackling ache that jumps with your pulse" } }
   ]
 }

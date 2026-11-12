@@ -50,6 +50,12 @@ public abstract class Job
 
     /// <summary>Idle-type jobs that may be dropped when something more important comes up.</summary>
     public virtual bool Interruptible => false;
+
+    /// <summary>
+    /// Lying awake on <see cref="Focus"/> (a bed) right now, like a patient on a pallet: for the
+    /// renderer, which lays them down as it does a sleeper. The sim doesn't use it.
+    /// </summary>
+    public virtual bool LiesDown => false;
     public bool HasFailed => FailReason != null;
 
     /// <summary>

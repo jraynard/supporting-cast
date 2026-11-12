@@ -80,7 +80,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
   - `Locks/`: the Carpenter's lockwork on strongboxes from quests. A box's trap is hidden item
     state: show it only through `PerceptionView.Strongbox`, which never says an armed one is there.
   - `Healing/`: the empath. Wounds drawn in are `Injury.Absorbed` and known only by feel
-    (`PerceptionView.FeltWounds`); never show their kind by name.
+    (`PerceptionView.FeltWounds`); never show their kind by name. A patient's wounds are known
+    only once felt over (`Injury.FeltBy`). Mendings are woven from runes, the mix deciding which
+    (`Weaving`); the book (`Spellbook`) is what the empath knows of them.
   - `Expeditions/`: quests with hidden truth, per-person `Intel`, parties off the map as
     `MemberRecord`s, the resolver, the return.
   - `Bots/BotPlayer` plays only through commands and `Perception`, a trade's whole game included.

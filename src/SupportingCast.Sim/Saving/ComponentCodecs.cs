@@ -256,6 +256,32 @@ internal static class ComponentCodecs
             w.Float(m.Current);
             w.Float(m.Max);
         }, r => new Mana { Current = r.Float(), Max = r.Float() }),
+        Codec("Spellbook", (w, b) =>
+        {
+            var known = b.Known.OrderBy(d => d.Index).ToList(); // a stable order, whatever the set's
+            w.Int(known.Count);
+            foreach (var d in known)
+                w.Def(d);
+        }, r =>
+        {
+            var b = new Spellbook();
+            var n = r.Count(1000);
+            for (var i = 0; i < n; i++)
+                b.Known.Add(r.Def<MendingDef>());
+            return b;
+        }),
+        Codec("Charm", (w, c) =>
+        {
+            w.Def(c.Mending);
+            w.Int(c.Extra);
+            w.Float(c.Quality);
+            w.Entity(c.Maker);
+        }, r => new Charm { Mending = r.Def<MendingDef>(), Extra = Math.Clamp(r.Int(), 0, MendingDef.MaxRunes), Quality = r.Float(), Maker = r.Entity() }),
+        Codec("Steadied", (w, s) =>
+        {
+            w.Float(s.Band);
+            w.Long(s.Until);
+        }, r => new Steadied { Band = r.Float(), Until = r.Long() }),
         Codec("LookedAs", (w, l) => w.Int(l.Id), r => new LookedAs { Id = r.Int() }),
         Codec("ReportPending", (w, p) =>
         {
@@ -665,6 +691,8 @@ internal static class ComponentCodecs
             w.Long(inj.Tick);
             w.Bool(inj.InfectionRolled);
             w.Bool(inj.Absorbed);
+            w.Entity(inj.FeltBy);
+            w.Bool(inj.FeltFestering);
             w.Bool(inj.Infection != null);
             if (inj.Infection is { } inf)
             {
@@ -698,6 +726,11 @@ internal static class ComponentCodecs
                 Part = r.Int(), Type = (DamageType)r.Int(), Damage = r.Float(), PeakDamage = r.Float(), Tended = r.Bool(),
                 Quality = r.Float(), TendedTick = r.Long(), Tick = r.Long(), InfectionRolled = r.Bool(), Absorbed = r.Bool(),
             };
+            if (r.Version >= 4)
+            {
+                inj.FeltBy = r.Entity();
+                inj.FeltFestering = r.Bool();
+            }
             if (r.Bool())
                 inj.Infection = new Infection { Severity = r.Float(), Immunity = r.Float(), ImmunityRate = r.Float() };
             if (inj.Part < 0 || inj.Part >= h.Body.Parts.Count)

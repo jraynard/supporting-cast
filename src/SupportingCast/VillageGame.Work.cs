@@ -26,6 +26,13 @@ public sealed partial class VillageGame
 
     private bool Working => HasAvatar && _sim.World.Has<WorkSession>(_avatar);
 
+    /// <summary>Numbered keys, for work that takes them (the empath's runes); the hotbar's while not working.</summary>
+    private static readonly GlfwKey[] RuneKeys =
+    [
+        GlfwKey.Number1, GlfwKey.Number2, GlfwKey.Number3, GlfwKey.Number4, GlfwKey.Number5,
+        GlfwKey.Number6, GlfwKey.Number7, GlfwKey.Number8, GlfwKey.Number9,
+    ];
+
     // Whether F has come up since the session in hand began (see UpdateWork).
     private long _fArmedFor = -1;
     private bool _fArmed;
@@ -56,7 +63,11 @@ public sealed partial class VillageGame
         if (!input.IsKeyDown(GlfwKey.F))
             _fArmed = true;
         var f = _fArmed && speed > 0;
-        _work.Update(_sim, _avatar, steps, f && input.WasKeyPressed(GlfwKey.F), f && live && input.IsKeyDown(GlfwKey.F), axis, Issue, axis2);
+        var rune = -1;
+        for (var k = 0; live && k < RuneKeys.Length; k++)
+            if (input.WasKeyPressed(RuneKeys[k]))
+                rune = k;
+        _work.Update(_sim, _avatar, steps, f && input.WasKeyPressed(GlfwKey.F), f && live && input.IsKeyDown(GlfwKey.F), axis, Issue, axis2, rune);
     }
 
     private void DrawWork()
@@ -73,6 +84,12 @@ public sealed partial class VillageGame
         }
         switch (_work.Session)
         {
+            case Sim.Healing.FeelSession feel:
+                DrawFeel(feel);
+                return;
+            case Sim.Healing.BandageSession bandage:
+                DrawBandage(bandage);
+                return;
             case Sim.Healing.DrawSession draw:
                 DrawDraw(draw);
                 return;

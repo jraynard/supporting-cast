@@ -280,8 +280,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 continue;
             roll ??= _rand.Range(def.WorthMin, def.WorthMax + 1);
             var t = w.Get<Thing>(item);
-            var quality = w.TryGet<Crafted>(item, out var made) ? made.Quality : Quality.Plain;
-            var worth = (int)MathF.Round(roll.Value * Math.Max(1, t.Def.GearTier) * Goods.QualityWorth(quality) * spend);
+            var worth = (int)MathF.Round(roll.Value * Math.Max(1, t.Def.GearTier) * Goods.WorthFactor(sim, item) * spend);
             var tier = t.Def.GearTier;
             if (price <= Math.Min(worth, spare))
             {
@@ -533,6 +532,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var cells = new List<int3>();
         if (!sim.World.IsAlive(shop) || !sim.World.TryGet<PresetBuilding>(shop, out var b))
             return cells;
+        if (!hatch && b.Def.LineOnBeds)
+            foreach (var bed in BedsOf(sim, shop))
+                cells.Add(sim.World.Get<Thing>(bed).Cell);
         foreach (var at in hatch ? b.Def.HatchLine : b.Def.Line)
         {
             var c = Buildings.CellOf(sim.Map, b.Def, b.Anchor, b.Facing, at[0], at[1]);
@@ -540,6 +542,18 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 cells.Add(c);
         }
         return cells;
+    }
+
+    /// <summary>A shop's finished beds that a customer can lie on (<see cref="BuildingDef.LineOnBeds"/>), in store order.</summary>
+    public static List<Entity> BedsOf(Simulation sim, Entity shop)
+    {
+        var beds = new List<Entity>();
+        var w = sim.World;
+        foreach (var e in w.Each<PartOf>())
+            if (w.Get<PartOf>(e).Building == shop && w.TryGet<Thing>(e, out var t) && t.Spawned && t.Def.Building?.IsBed == true
+                && !w.Has<Construction>(e) && sim.Map.Passable(t.Cell))
+                beds.Add(e);
+        return beds;
     }
 
     /// <summary>

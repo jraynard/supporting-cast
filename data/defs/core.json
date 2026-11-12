@@ -71,6 +71,10 @@
     // Bandages: the player binds wounds with them (Systems/Bandaging.cs), one a wound.
     { "name": "Bandage", "label": "bandage", "category": "Item", "mass": 0.05, "sprite": "items/bandage", "stackLimit": 20, "flammability": 0.8, "maxHp": 10,
       "description": "Clean strips of woven flax. One binds a wound: it stops the bleeding and heals faster." },
+    // A mending woven into a knotted strip of linen (Healing/Charms): torn, it mends whoever tears it;
+    // carried on a quest, it wards them. Made by an empath weaving into a bandage; sold like gear.
+    { "name": "Charm", "label": "charm", "category": "Item", "mass": 0.02, "sprite": "items/charm", "stackLimit": 1, "flammability": 0.8, "maxHp": 10,
+      "charm": true, "description": "A strip of linen knotted round a woven mending, a rune token tied in. Tear it and the mending's yours." },
     // Plant fiber: stripped from wild flax (below). Twisted and woven by hand into bandages (workshop.json).
     { "name": "Fiber", "label": "plant fiber", "category": "Item", "mass": 0.05, "sprite": "items/fiber", "stackLimit": 50, "flammability": 0.9, "maxHp": 10,
       "description": "Pale, tough strands stripped from wild flax. Twisted and woven, it makes bandages." },

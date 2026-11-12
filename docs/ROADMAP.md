@@ -276,6 +276,57 @@ Known leftovers:
   decals have their own art (`tools/inn_art.py`).
 - Tune the pot, seasoning, wash, tap and mix timings in play.
 
+### Healer polish (2026-11-12)
+- **Feeling them over** (`Healing/FeelSession`): touch is the diagnosis.
+  - **The sweep:** A/D run the hands head to feet, and lingering near a wound makes it out.
+  - **Felt wounds only:** only a wound this empath has felt is listed or can be drawn
+    (`Injury.FeltBy`).
+  - **Pressing in** (F) finds festering under a dressing.
+- **Each wound draws its own way** (`drawFeels` in `healing.json`): cuts jolt, bites tear twice,
+  bruises swell and ebb, burns pull one way, frost numbs the steering, venom grows. Drawing from
+  a patient on a pallet is calmer.
+- **Weaving runes** (`CastSession`, `Healing/Weaving`): six runes keyed 1–6 on the healer's
+  heartbeat, F to let it go.
+  - **The mix is the mending**, in any order. Extra lead runes make it stronger for more mana.
+    A mix that makes nothing fizzles.
+  - **Pain** makes the heart race and stumble.
+- **The book** (`Spellbook`):
+  - The common mendings are known at the deal (the gift window's Book tab).
+  - Searing, Steadying and Grounding are found by weaving them, then written in.
+  - Steadying widens the next draws' band for an hour.
+  - Grounding heals lightning burns, which had no mending before.
+- **Binding by hand** (`Healing/BandageSession`): replaces the timed bandage job.
+  - **The wrap:** for each turn of cloth, hold F to pull it tight and let go in the band. How
+    well the turns sat, with Medicine, is the dressing's quality.
+  - **Supplies:** bandages come from the hands, the pack or a chest in reach (the shrine's).
+  - **Cloth** tears into 3 bandages.
+- **Pallets first:** the shrine lines its patients up on its pallets (`lineOnBeds`), and they
+  lie there awake (`Job.LiesDown`).
+- **Charms** (`Healing/Charms`): the healer's work before anyone's hurt.
+  - **Weaving a charm:** a mending woven into a bandage keeps.
+  - **Tearing one:** it lands on whoever tears it.
+  - **Selling them:** charms go on show like gear. Adventurers buy up to two, never two of the
+    same mending, priced by the mending's strength.
+  - **On a quest:** charms go out with their bearer (`MemberRecord.Charms`). They add a little
+    strength, ward the wounds they fit, may cheat a death, and come back if unspent.
+- **The weave as a sigil:** a beat ring closing on the heart circle, runes round the rim joined
+  by strands, larger glyphs (64 px).
+- **Bots** feel, draw, bind when short of mana, weave from their book, and meditate.
+- **Art:** rune glyphs (`tools/healer_art.py`).
+
+Known leftovers:
+- The meditation stone still borrows the mason's bench icon.
+- AI healers still only bandage.
+- A wound stays felt once found, however it changes.
+- Pallets aren't kept from villagers who sleep there.
+- Tune in play: the draw feels, the heartbeat window and the wrap band.
+- Bots don't weave charms or put goods on show.
+- Adventurers never tear a charm in town.
+- The meditation game wants rethinking.
+
+Save format 5. Bench hashes unchanged (1234: state `D21378177D6C73BA`, full `E0118354F8BBC3E0`;
+99: state `B5DB9B55CC58E7B1`, full `B023D3107619F18B`).
+
 ### The serving hatch (2026-11-12)
 - **Meals are ordered at a hatch in the kitchen wall** (`Shops/Hatch`, `ServingHatch` furniture
   at the inn's [7, 4]). It's a building prop (`hatch`): a small container that bounds rooms like
@@ -369,7 +420,7 @@ Known leftovers:
 ### Trade refinement
 - refining the four initial trades to be fun. blacksmith, innkeeper, carpeneter (locksmith), and healer.
 - blacksmith done, innkeeper done (some jobs split off to cook which will be handled later).
-- healer next, then locksmith / artificer (split from carpenter)
+- healer done (see Healer polish), then locksmith / artificer (split from carpenter)
 
 ### M3: A whole season
 - `Director`, Renown and Dread, crises including the late-round dragon, the festival, the

@@ -206,7 +206,8 @@ public sealed class TitleGame : Game
         _camera.Target = new float3(center.X + 0.5f, center.Y + 0.5f, center.Z);
         _camera.Yaw = 0.6f;
         _renderer = new WorldRenderer(Host.Atlas) { ShowNames = false, ShowBubbles = false };
-        _quads = new QuadRenderer(Host, new int3(_sim.Map.Width, _sim.Map.Height, _sim.Map.Depth), ShaderReload.QuadShaders(Host));
+        // Roofs on: the title's view of the village is from outside, with nobody inside to open up.
+        _quads = new QuadRenderer(Host, new int3(_sim.Map.Width, _sim.Map.Height, _sim.Map.Depth), ShaderReload.QuadShaders(Host)) { HideRoofs = false };
         if (AutoCreator != null)
         {
             _creating = true;
