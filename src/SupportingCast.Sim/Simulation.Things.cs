@@ -501,8 +501,12 @@ public sealed partial class Simulation
                 yield return e;
     }
 
-    /// <summary>A container someone carries (a pack, or a creature's own tool belt): its contents aren't up for grabs.</summary>
-    private bool OnSomeone(Entity container) => IsPack(container) || World.Has<Creature>(container);
+    /// <summary>
+    /// A container whose contents aren't up for grabs: one someone carries (a pack, or a creature's
+    /// own tool belt), or a serving hatch (what's put up there is for the customer at it).
+    /// </summary>
+    private bool OnSomeone(Entity container) => IsPack(container) || World.Has<Creature>(container)
+        || (World.TryGet<Thing>(container, out var t) && t.Def.Building is { Hatch: true });
 
     /// <summary>The stacks kept in a container, in entity order.</summary>
     public List<Entity> StoredIn(Entity container)

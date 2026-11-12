@@ -92,6 +92,9 @@ public sealed class WorldMesher(TextureAtlas atlas)
         }
     }
 
+    /// <summary>Model height (in its own units) of a serving hatch's counter: boxes from here up are its posts and lintel.</summary>
+    private const float HatchCounterTop = 0.86f;
+
     /// <summary>A part of the building you're in, above the level you're on: left out.</summary>
     private bool AboveYou(Simulation sim, Entity part, int z) => z > _openLevel && OfOpen(sim, part);
 
@@ -346,6 +349,9 @@ public sealed class WorldMesher(TextureAtlas atlas)
             if (def.Model is { } model)
             {
                 var material = thing.Material;
+                // A serving hatch in a wall cut down to stubs: just its counter, not the posts and lintel standing above it.
+                if (def.Building is { Hatch: true } && (IsStub(sim, x - 1, y, z) || IsStub(sim, x + 1, y, z) || IsStub(sim, x, y - 1, z) || IsStub(sim, x, y + 1, z)))
+                    model = model.Where(b => b.Min[2] < HatchCounterTop).ToList();
                 PropModel.Build(_quads, model, new int3(x, y, z), thing.Facing,
                     name => (S(_materials.Resolve(name, material).Sprite), _materials.Resolve(name, material).Tint),
                     Rgba.White, Quad.Level(z), d => Occludes(sim, x + d.X, y + d.Y, z), heightScale: WorldScale.HeightOf(def));

@@ -35,6 +35,9 @@ public sealed class ServeJob(int order) : Job
             if (!e.IsOpen || e.Kind.Kind is not (ServiceKind.Drink or ServiceKind.MixedDrink or ServiceKind.Meal) || e.Kind.AtDef != workplace || !trade.Def.Serving(e.Kind.Kind)
                 || !e.KnownBy.Contains(pawn) || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Poster))
                 continue;
+            // Ordered at the hatch: no more put up than are waiting for.
+            if (Hatch.Takes(sim, e) && Hatch.Enough(sim, e.Where, e.Kind.Kind))
+                continue;
             var supply = e.Kind.Kind is ServiceKind.Drink or ServiceKind.MixedDrink ? Cask(sim, pawn) : Pot(sim, e.Where) is { IsNull: false } pot ? pot : Meal(sim, pawn, e.Poster);
             // Poured and ladled things go in a clean vessel: none to hand, and the washing comes first.
             var vessel = VesselFor(sim, supply);
@@ -199,6 +202,26 @@ public sealed class ServeJob(int order) : Job
             served = portion;
         }
 
+        // Ordered at the hatch: put it up there, for whoever's at the front to take.
+        if (Hatch.Takes(Sim, e) && Hatch.Of(Sim, e.Where) is { IsNull: false } hatch)
+        {
+            Report = "Putting a dish up on the hatch";
+            foreach (var s in GoToBeside(hatch)) yield return s;
+            if (HasFailed) yield break;
+            if (!Alive(served) || !Inventory.OnPerson(Sim, Pawn, served) || !Inventory.CanReachContainer(Sim, Pawn, hatch))
+            {
+                Fail("couldn't put it up");
+                yield break;
+            }
+            var label = Get<Thing>(served).Def.Label;
+            var left = Sim.Store(hatch, Inventory.TakeFromPerson(Sim, Pawn, served, Get<Stack>(served).Count));
+            if (!left.IsNull)
+                Inventory.Stow(Sim, Pawn, left);
+            else
+                Sim.Speech.Say(Sim, Pawn, $"{Capital(label)}'s up!", Speech.Volume.Say);
+            yield break;
+        }
+
         Report = $"Serving {e.PosterName}";
         foreach (var s in GoToEntity(e.Poster, PathEnd.Touch, 1500)) yield return s;
         if (HasFailed) yield break;
@@ -209,4 +232,6 @@ public sealed class ServeJob(int order) : Job
         }
         orders.Received(Sim, Pawn, e.Poster, Inventory.TakeFromPerson(Sim, Pawn, served, Get<Stack>(served).Count));
     }
+
+    private static string Capital(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 }

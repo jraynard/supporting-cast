@@ -395,6 +395,12 @@ public sealed class BuildingProps
 
     /// <summary>Somewhere to sit: a customer served a drink or a meal takes it to one (<c>Hospitality.SavourJob</c>).</summary>
     public bool Seat { get; set; }
+
+    /// <summary>
+    /// A serving hatch, set in a wall: a counter that holds what's put up on it for collecting
+    /// (<c>Shops.Hatch</c>), dividing rooms as a wall does but heard through, as a doorway is.
+    /// </summary>
+    public bool Hatch { get; set; }
 }
 
 /// <summary>

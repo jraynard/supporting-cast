@@ -283,6 +283,7 @@ public class InnKitchenTests
         Assert.Equal(OrderStatus.Done, meal.Status);
         Assert.Equal(keeper, meal.Assignee);
         Assert.True(Cooking.ServingsLeft(sim, pot) < bowls, "it came out of the pot");
+        Assert.Contains(sim.Speech.Kept, u => u.Speaker == keeper && u.Text.EndsWith("'s up!")); // through the hatch
     }
 
     [Fact]
@@ -294,13 +295,101 @@ public class InnKitchenTests
         sim.World.Get<Needs>(diner).Values[sim.Defs.Need("Food").Index] = 0.5f;
         var pot = Cooking.PotIn(sim, ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn")));
         bool Served() => sim.Shops.All.Any(e => e.Kind.Kind == ServiceKind.Meal && e.Poster == diner && e.Status == OrderStatus.Done);
+        var putUp = false;
         for (var t = 0; t < SimClock.TicksPerHour * 6 && !Served(); t++)
         {
             sim.Tick();
             bot.Tick();
+            putUp |= bot.Doing == "putting a dish up on the hatch";
         }
         Assert.True(Served(), $"bot {bot.Doing}, pot {Cooking.PotOf(sim, pot).Doneness:0.00}\n" + string.Join("\n", sim.Messages.Messages.TakeLast(10).Select(m => m.Text)));
         Assert.Equal(Players.CharacterOf(sim, Ana), sim.Shops.All.First(e => e.Kind.Kind == ServiceKind.Meal && e.Poster == diner).Assignee);
         Assert.True(Cooking.PotOf(sim, pot).Seasoning > 0f, "it seasoned the pot");
+        Assert.True(putUp, "it put the bowl up on the hatch");
+    }
+
+    // ---------------- The serving hatch ----------------
+
+    private static Entity Inn(Simulation sim) => ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+
+    private static int3 InnCell(Simulation sim, int col, int row)
+    {
+        var b = sim.World.Get<PresetBuilding>(Inn(sim));
+        return Buildings.CellOf(sim.Map, b.Def, b.Anchor, b.Facing, col, row);
+    }
+
+    private static Entity Stew(Simulation sim, Entity maker)
+    {
+        var stew = sim.CreateItem(sim.Thing("Stew"), 1);
+        sim.World.Add(stew, new Crafted { Quality = Quality.Fine, Maker = maker });
+        return stew;
+    }
+
+    [Fact]
+    public void MealsAreOrderedAtTheHatchAndTakenOffItWhenTheCookPutsThemUp()
+    {
+        var (sim, party) = Tavern("Cook");
+        var me = Players.CharacterOf(sim, Ana);
+        var inn = Inn(sim);
+        var hatch = Hatch.Of(sim, inn);
+        Assert.False(hatch.IsNull);
+        foreach (var e in party)
+        {
+            sim.World.Get<Health>(e).Injuries.Clear();
+            sim.World.Get<Adventurer>(e).NextDrink = sim.Clock.Tick + SimClock.TicksPerDay;
+        }
+        var diner = party[0];
+        sim.World.Get<Needs>(diner).Values[sim.Defs.Need("Food").Index] = 0.5f;
+        sim.TickMany(SimClock.TicksPerHour / 6);
+        var order = sim.Shops.All.Single(e => e.IsOpen && e.Poster == diner && e.Kind.Kind == ServiceKind.Meal);
+        Assert.True(Hatch.Takes(sim, order));
+        Assert.Contains(diner, sim.Shops.LineAt(sim, inn, hatch: true)); // the hatch's line, not the bar's
+        Assert.DoesNotContain(diner, sim.Shops.LineAt(sim, inn));
+        var front = ShopSystem.LineCells(sim, inn, hatch: true)[0];
+        for (var i = 0; i < 40 && sim.World.Get<Position>(diner).Cell != front; i++)
+            sim.TickMany(60);
+        Assert.Equal(front, sim.World.Get<Position>(diner).Cell);
+
+        // The cook, in the kitchen, puts a bowl up: the work key at the hatch with it in hand.
+        var kitchenSide = InnCell(sim, 7, 3);
+        sim.World.Get<Position>(me) = Position.At(kitchenSide);
+        sim.World.Get<Carrying>(me).Item = Stew(sim, me);
+        var purse = Coin.Count(sim, me);
+        var action = AvatarSystem.ActionAt(sim, me, sim.World.Get<Thing>(hatch).Cell);
+        Assert.Equal(AvatarActionKind.Store, action.Kind);
+        Assert.Contains("up on the serving hatch", action.Label);
+        AvatarSystem.Perform(sim, me, action);
+        Assert.Single(sim.StoredIn(hatch));
+
+        // The diner at the front takes it, pays the cook, and goes to sit with it.
+        for (var i = 0; i < 10 && order.IsOpen; i++)
+            sim.TickMany(60);
+        Assert.Equal(OrderStatus.Done, order.Status);
+        Assert.Equal(purse + order.Price, Coin.Count(sim, me));
+        Assert.Empty(sim.StoredIn(hatch));
+        Assert.True(sim.World.TryGet<Hospitality.Savouring>(diner, out var savouring) && savouring.Meal);
+        Assert.Equal(Quality.Fine, sim.World.Get<Crafted>(savouring.Item).Quality);
+    }
+
+    [Fact]
+    public void WhatsUpOnTheHatchIsntAnyoneElsesToTake()
+    {
+        var (sim, _) = Tavern("Cook");
+        var hatch = Hatch.Of(sim, Inn(sim));
+        sim.Store(hatch, Stew(sim, Entity.Null));
+        var stew = sim.StoredIn(hatch).Single();
+        Assert.False(sim.IsAvailable(stew));
+        Assert.DoesNotContain(stew, sim.AvailableItems());
+    }
+
+    [Fact]
+    public void TheKitchenIsARoomOfItsOwnButHeardThroughTheHatch()
+    {
+        var (sim, _) = Tavern("Cook");
+        int3 kitchen = InnCell(sim, 7, 3), counter = InnCell(sim, 7, 5);
+        Assert.NotEqual(sim.Rooms.RoomAt(kitchen), sim.Rooms.RoomAt(counter));
+        Assert.Equal(Speech.Clarity.Clear, Speech.SpeechSystem.Hear(sim, counter, kitchen, Speech.Volume.Say));
+        // Across the common room, away from the hatch, it's only heard through the wall.
+        Assert.Equal(Speech.Clarity.Muffled, Speech.SpeechSystem.Hear(sim, InnCell(sim, 1, 6), InnCell(sim, 1, 2), Speech.Volume.Say));
     }
 }

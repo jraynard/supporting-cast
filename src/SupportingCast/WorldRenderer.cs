@@ -1170,6 +1170,18 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             }
             Bar(floor + new float3(0, 0, 0.9f), frac, frac > props.RefuelAt ? Rgba.Pack(1f, 0.6f, 0.2f) : Rgba.Pack(1f, 0.2f, 0.2f), level);
         }
+
+        // What's put up on a serving hatch stands on its counter, side by side (up to three shown).
+        if (def.Building is { Hatch: true })
+        {
+            var dishes = new List<ThingDef>();
+            foreach (var item in sim.StoredIn(e))
+                for (var n = w.Get<Stack>(item).Count; n > 0 && dishes.Count < 3; n--)
+                    dishes.Add(w.Get<Thing>(item).Def);
+            var top = floor + new float3(0, 0, SurfaceUnder(sim.Map, w, cell));
+            for (var k = 0; k < dishes.Count; k++)
+                Billboard(S(dishes[k].Sprite), top + _cam.Right * ((k - (dishes.Count - 1) * 0.5f) * 0.28f), 0.34f, 0.34f, Rgba.White, level);
+        }
     }
 
     private static string DesignationIcon(Designation d) =>

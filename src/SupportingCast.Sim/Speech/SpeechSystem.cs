@@ -192,6 +192,20 @@ public sealed class SpeechSystem : ISimSystem, ISaveState
         {
             rooms[count++] = own;
             outdoors = !sim.Rooms.All[own - 1].Indoors;
+            // At a serving hatch, you're heard (and hear) through it, as in a doorway.
+            foreach (var d in Maps.Map.Neighbors4)
+            {
+                var n = Maps.Map.Offset(cell, d);
+                if (!map.InBounds(n) || map.Structure[map.Idx(n)] is not { IsNull: false } s
+                    || sim.World.Get<Components.Thing>(s).Def.Building is not { Hatch: true })
+                    continue;
+                var far = Maps.Map.Offset(n, d);
+                if (!map.InBounds(far))
+                    continue;
+                var beyond = map.RoomId[map.Idx(far)];
+                if (beyond > 0 && beyond != own && count < rooms.Length)
+                    rooms[count++] = beyond;
+            }
             return count;
         }
         foreach (var d in Maps.Map.Neighbors4)

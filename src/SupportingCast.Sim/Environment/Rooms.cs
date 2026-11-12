@@ -134,8 +134,9 @@ public sealed class Rooms
         // Construction sites don't count until finished.
         if (_sim.World.Has<Components.Construction>(e))
             return false;
-        // Fences and palisades (and their gates) wall in a yard, never a room.
-        return def.Building is { Fence: false } b && (b.IsWall || b.IsDoor);
+        // Fences and palisades (and their gates) wall in a yard, never a room. A serving hatch is
+        // part of its wall.
+        return def.Building is { Fence: false } b && (b.IsWall || b.IsDoor || b.Hatch);
     }
 
     private void Flood(int seed, Room room)

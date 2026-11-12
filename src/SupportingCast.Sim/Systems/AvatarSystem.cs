@@ -391,7 +391,9 @@ public sealed class AvatarSystem : ISimSystem
                 : Work.Vessels.CleanOn(sim, avatar, cask.Into).IsNull ? $"Pour {sim.Defs.Thing(cask.Pours).Label} (no clean {sim.Defs.Thing(cask.Into).Label})"
                 : $"Pour {sim.Defs.Thing(cask.Pours).Label}", cell, site);
         if (!held.IsNull && IsContainer(sim, site) && sim.HasRoomFor(site, w.Get<Thing>(held).Def, w.Get<Thing>(held).Material))
-            return new(AvatarActionKind.Store, $"Put {w.Get<Thing>(held).Label} in the {w.Get<Thing>(site).Label}", cell, site);
+            return new(AvatarActionKind.Store, w.Get<Thing>(site).Def.Building is { Hatch: true }
+                ? $"Put {w.Get<Thing>(held).Label} up on the {w.Get<Thing>(site).Label}"
+                : $"Put {w.Get<Thing>(held).Label} in the {w.Get<Thing>(site).Label}", cell, site);
         // A pack lying about opens like the wagon (you're already wearing one, or it'd go on).
         if (!item.IsNull && sim.IsPack(item))
             return new(AvatarActionKind.OpenStorage, $"Open the {w.Get<Thing>(item).Label}", cell, item);

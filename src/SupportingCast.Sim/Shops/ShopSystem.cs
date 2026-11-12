@@ -92,6 +92,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 BearWithIt(sim, e);
             else if (now >= e.Deadline)
                 GiveUp(sim, e);
+            else if (Hatch.TryCollect(sim, e))
+                continue; // took a dish off the hatch
             else if (e.Assignee.IsNull && TimeToAsk(sim, e))
                 Announce(sim, e, Asking(e.Kind, e.Price, SubjectLabel(sim, e.Subject)));
             else
@@ -413,8 +415,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             foreach (var e in sim.Creatures())
                 if (sim.World.TryGet<Trade>(e, out var trade) && trade.Def.WorkplaceDef == workplace)
                     Learn(order, e);
-        // At a shop with a line they say it at the counter, when their turn comes (TimeToAsk).
-        if (LineCells(sim, order.Where).Count == 0)
+        // At a shop with a line they say it at the counter (or the hatch), when their turn comes (TimeToAsk).
+        if (LineCells(sim, order.Where, Hatch.Takes(sim, order)).Count == 0)
             Announce(sim, order, text);
         if (kind.Kind == ServiceKind.MixedDrink && sim.World.Has<Adventurer>(poster))
             sim.Drinking.Ordered(sim, order);
@@ -488,10 +490,11 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     private bool TimeToAsk(Simulation sim, Order e)
     {
         var now = sim.Clock.Tick;
-        var lined = LineCells(sim, e.Where);
+        var hatch = Hatch.Takes(sim, e);
+        var lined = LineCells(sim, e.Where, hatch);
         if (lined.Count == 0)
             return now - e.LastAsked >= SimClock.HoursToTicks(RepeatHours);
-        if (LineAt(sim, e.Where) is not { Count: > 0 } line || line[0] != e.Poster || !sim.World.TryGet<Position>(e.Poster, out var at)
+        if (LineAt(sim, e.Where, hatch) is not { Count: > 0 } line || line[0] != e.Poster || !sim.World.TryGet<Position>(e.Poster, out var at)
             || at.Cell.Z != lined[0].Z || Maps.Map.Distance(at.Cell, lined[0]) > 1)
             return false;
         return e.LastAsked < e.PostedTick || now - e.LastAsked >= SimClock.HoursToTicks(RepeatHours);
@@ -507,14 +510,15 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// <summary>
     /// The customers waiting at a shop, front first: in the order they first ordered there. Worked
     /// out from the orders each time, so there's nothing to save and nothing to fall out of step.
+    /// <paramref name="hatch"/>: the line at its serving hatch instead (<see cref="Shops.Hatch"/>).
     /// </summary>
-    public List<Entity> LineAt(Simulation sim, Entity shop)
+    public List<Entity> LineAt(Simulation sim, Entity shop, bool hatch = false)
     {
         var line = new List<Entity>();
         if (shop.IsNull)
             return line;
         foreach (var e in _orders) // oldest first
-            if (e.Where == shop && WaitsInLine(sim, e) && !line.Contains(e.Poster))
+            if (e.Where == shop && WaitsInLine(sim, e) && !line.Contains(e.Poster) && Hatch.Takes(sim, e) == hatch)
                 line.Add(e.Poster);
         return line;
     }
@@ -524,12 +528,12 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// with the building), leaving out any that are off the map, walled, or have something built
     /// in them. Empty if it isn't a building or has no line.
     /// </summary>
-    public static List<int3> LineCells(Simulation sim, Entity shop)
+    public static List<int3> LineCells(Simulation sim, Entity shop, bool hatch = false)
     {
         var cells = new List<int3>();
-        if (!sim.World.IsAlive(shop) || !sim.World.TryGet<PresetBuilding>(shop, out var b) || b.Def.Line.Count == 0)
+        if (!sim.World.IsAlive(shop) || !sim.World.TryGet<PresetBuilding>(shop, out var b))
             return cells;
-        foreach (var at in b.Def.Line)
+        foreach (var at in hatch ? b.Def.HatchLine : b.Def.Line)
         {
             var c = Buildings.CellOf(sim.Map, b.Def, b.Anchor, b.Facing, at[0], at[1]);
             if (sim.Map.InBounds(c) && sim.Map.Passable(c) && sim.Map.Structure[sim.Map.Idx(c)].IsNull)
@@ -549,8 +553,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         {
             if (e.Poster != who || !WaitsInLine(sim, e) || !sim.World.IsAlive(e.Where))
                 continue;
-            var place = LineAt(sim, e.Where).IndexOf(who);
-            var cells = LineCells(sim, e.Where);
+            var hatch = Hatch.Takes(sim, e);
+            var place = LineAt(sim, e.Where, hatch).IndexOf(who);
+            var cells = LineCells(sim, e.Where, hatch);
             return (e.Where, place, place >= 0 && place < cells.Count ? cells[place] : null);
         }
         return null;
@@ -562,11 +567,12 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// </summary>
     public List<Order> FrontFirst(Simulation sim)
     {
-        var lines = new Dictionary<Entity, List<Entity>>();
+        var lines = new Dictionary<(Entity, bool), List<Entity>>();
         int Rank(Order e)
         {
-            if (!lines.TryGetValue(e.Where, out var line))
-                lines[e.Where] = line = LineAt(sim, e.Where);
+            var key = (e.Where, Hatch.Takes(sim, e));
+            if (!lines.TryGetValue(key, out var line))
+                lines[key] = line = LineAt(sim, e.Where, key.Item2);
             var place = line.IndexOf(e.Poster);
             return place < 0 ? int.MaxValue : place;
         }

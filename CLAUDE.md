@@ -73,7 +73,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     (only those who hear know of it). Each want is an `Order` of a `ServiceKind`; the line is
     derived from open orders, never stored. Coin is real `SilverCoin` items; paying moves them. AI
     trades serve front first (`MendJob`, `ServeJob`, `HealOrders`). An AI work pack keeps coin and
-    `Entrusted` items (and a few clean vessels) between jobs. Gear marked `ForSale` and lying in its seller's shop is on show
+    `Entrusted` items (and a few clean vessels) between jobs. The inn's meals go through its serving
+    `Hatch` (their own line; dishes put up, taken by whoever's at the front). Gear marked `ForSale` and lying in its seller's shop is on show
     (`Goods`); no job takes an item for sale (`IsAvailable`). `Favours/`: what players ask of each
     other, for silver they name.
   - `Locks/`: the Carpenter's lockwork on strongboxes from quests. A box's trap is hidden item

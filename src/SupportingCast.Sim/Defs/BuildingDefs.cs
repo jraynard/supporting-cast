@@ -71,6 +71,16 @@ public sealed class BuildingDef : Def
     public List<int[]> Line { get; set; } = [];
 
     /// <summary>
+    /// Orders of these kinds are taken at the building's serving hatch (a furniture piece with
+    /// <see cref="BuildingProps.Hatch"/>) rather than its counter: the inn's meals, ordered from the
+    /// common room and put up on the hatch by the cook (<c>Shops.Hatch</c>).
+    /// </summary>
+    public List<ServiceKind> HatchServes { get; set; } = [];
+
+    /// <summary>Where those line up at the hatch, as <see cref="Line"/>: the front one beside it, where dishes are taken from.</summary>
+    public List<int[]> HatchLine { get; set; } = [];
+
+    /// <summary>
     /// The front wall cell (column, row) the shop's sign hangs on, outside: its name and prices,
     /// for anyone to read (<c>Shops.Signs</c>). Null: no sign.
     /// </summary>
@@ -183,7 +193,7 @@ public sealed class BuildingDef : Def
                 if (!Touched([(slot.At[0], slot.At[1], level)]))
                     return $"{Name}: nobody can get to the slot at [{slot.At[0]}, {slot.At[1]}]";
             if (level == 0)
-                foreach (var cell in Line)
+                foreach (var cell in Line.Concat(HatchLine))
                     if (!reached.Contains((cell[0], cell[1])) && At(cell[0], cell[1]) != ' ')
                         return $"{Name}: the line's cell [{cell[0]}, {cell[1]}] can't be stood in";
         }
@@ -216,8 +226,10 @@ public sealed class BuildingDef : Def
                 if (ch is not ('W' or 'D' or 'P' or 'S' or '.' or ' '))
                     throw new Exception($"Building '{Name}': unknown layout symbol '{ch}' (W, D, P, S, . or space)");
         }
-        if (Line.Any(c => c.Length != 2))
+        if (Line.Concat(HatchLine).Any(c => c.Length != 2))
             throw new Exception($"Building '{Name}': each line cell is [column, row]");
+        if (HatchServes.Count > 0 != HatchLine.Count > 0)
+            throw new Exception($"Building '{Name}': a hatch needs both what it serves and a line");
         if (Sign != null && (Sign.Length != 2 || At(Sign[0], Sign[1]) != 'W'))
             throw new Exception($"Building '{Name}': its sign is [column, row] of a wall in its plan");
         if (UpperLayout.Count > 0 && UpperLayout.Count != Depth)

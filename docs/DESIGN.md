@@ -125,6 +125,11 @@ do it.
   - **The seasoning:** season a pinch at a time, tasting as you go. It can't be taken back out.
   - **The result:** a pot gives many bowls, ladled out, each with a quality the diner tastes. A
     spoiled ingredient spoils the pot, and nobody can taste it until the diner is sick.
+- *The hatch.* Meals are ordered at a serving hatch in the kitchen wall, not the bar (`Shops/Hatch`).
+  Diners line up at it from the common room and say what they want through it. The cook puts
+  bowls up on its counter, no more than are waiting for one, and whoever's at the front takes one,
+  pays the cook and goes to sit with it. First come, first served: a bowl up on the hatch is
+  anyone's at the front, and nobody else can take it.
 - *Rooms.* Let by the night: the guest pays each evening, keeps the same room while they're in
   town, and checks out when they move on or let a night go unpaid. A slept-in bed is stripped
   and remade before it can be let again, and a guest shown to an unmade one says so.
@@ -164,7 +169,30 @@ do it.
     read them.
   - **Supplies:** bought from the Forager, the Miner's hunting trips and the farms by favour,
     so an empty larder is everyone's problem.
+- Cook, later (ideas to give the kitchen more to do):
+  - **A menu beyond stew:** a roast on the spit (turned on cue), bread and pies from an oven
+    (knead, prove, bake by smell), porridge in the morning. Each dish is its own small game, and
+    the sign prices them apart.
+  - **Prep:** chopping on rhythm, butchering what the hunters bring in, plucking. Done ahead in
+    a quiet hour, it makes the rush go faster.
+  - **Rushes:** breakfast and supper come all at once. Two pots on the go, the fire kept fed
+    (the Woodcutter's wood), the hatch line growing.
+  - **Diners who want something:** "something hot", "no meat", a party's own tastes. Get it
+    right and they tip; a rich party asks for something special.
+  - **Rations for the road:** a party setting out orders provisions. How well they're packed,
+    and whether they've turned, tells on the expedition (`Expeditions/`): fed well, they fare
+    better; spoiled, they sicken on the road.
+  - **Feasts:** a party back in triumph orders a feast for the whole room. A big, many-dish job
+    that lifts everyone's mood and loosens tongues.
+  - **Keeping the larder:** rot runs faster in a warm kitchen. Salt, smoke or pickle to keep
+    meat, and keep the cold store cold.
+  - **With the Healer:** broths that speed healing and teas from shared herbs; the Healer sends
+    patients to eat.
+  - **Trouble in the kitchen:** a grease fire if the pot's left, rats in the larder.
+  - **Word of the food:** a good table gets talked about, and more parties come to eat.
 - Betrayal later (M4/M5):
+  - one bowl poisoned for one diner (the hatch is first come, so a target has to be handed it);
+  - a party's rations drugged or spoiled to weaken them on the road;
   - a drink spiked or watered, or a short measure;
   - a guest's room rifled while they're out;
   - what was overheard sold to the highest bidder;

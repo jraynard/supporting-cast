@@ -768,8 +768,29 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     {
         var w = sim.World;
         var held = w.Get<Carrying>(me).Item;
+        // Ordered at the hatch: put it up there (a dish waiting already, and it's the diner's to take).
+        var shop = MyShop(sim, me) ?? Entity.Null;
+        var atHatch = view.Orders().Any(o => o.Status == OrderStatus.Open && o.Poster == diner && o.Kind == ServiceKind.Meal)
+            && sim.World.TryGet<PresetBuilding>(shop, out var building) && building.Def.HatchServes.Contains(ServiceKind.Meal);
+        var hatch = atHatch ? Hatch.Of(sim, shop) : Entity.Null;
+        // As many up as it knows are waiting for one: no more till one's taken.
+        if (!hatch.IsNull && view.InContainer(hatch).Where(d => w.Get<Thing>(d).Def.Cooked).Sum(d => w.Get<Stack>(d).Count)
+            >= view.Orders().Count(o => o.Status == OrderStatus.Open && o.Kind == ServiceKind.Meal))
+        {
+            Doing = "waiting on the hatch";
+            return true;
+        }
         if (w.IsAlive(held) && w.Get<Thing>(held).Def.Cooked)
         {
+            if (!hatch.IsNull)
+            {
+                Doing = "putting a dish up on the hatch";
+                return AtStation(sim, me, hatch, now, at =>
+                {
+                    send(new AvatarWorkCommand(me, true, w.Get<Thing>(at).Cell));
+                    send(new AvatarWorkCommand(me, false));
+                });
+            }
             if (Reach(sim, me, diner, now))
                 send(new GiveCommand(me, diner, held, 1));
             return true;

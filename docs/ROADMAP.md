@@ -276,6 +276,23 @@ Known leftovers:
   decals have their own art (`tools/inn_art.py`).
 - Tune the pot, seasoning, wash, tap and mix timings in play.
 
+### The serving hatch (2026-11-12)
+- **Meals are ordered at a hatch in the kitchen wall** (`Shops/Hatch`, `ServingHatch` furniture
+  at the inn's [7, 4]). It's a building prop (`hatch`): a small container that bounds rooms like
+  a wall, but is heard through like a doorway (`SpeechSystem.RoomsAt`). The building def lists what
+  it serves (`hatchServes`) and its own line (`hatchLine`). `ShopSystem.LineAt` and `LineCells`
+  take `hatch:`, and an order's lane follows from its kind.
+- The cook puts a bowl up by storing it in the hatch: F with it in hand ("Put stew up on the
+  serving hatch"). The AI cook (`ServeJob`) and the bot do the same, putting up no more than are
+  waiting (`Hatch.Enough`). The customer at the front of the hatch's line takes one
+  (`Hatch.TryCollect`) and pays its maker, keeping the bowl's quality, then sits with it. What's on
+  the hatch isn't available to other jobs, so no villager eats a customer's stew.
+- Drawn: up to three dishes stand on its counter, and from inside the inn its posts and lintel are
+  cut down with the walls.
+- Design doc: a list of ideas for the Cook, to flesh out later.
+- Bench baselines (the inn's layout changed): seed 1234 state `D21378177D6C73BA` full
+  `E0118354F8BBC3E0`; seed 99 state `B5DB9B55CC58E7B1` full `B023D3107619F18B`.
+
 ### Sitting over a drink (2026-11-12)
 - **Served, a customer sits with it.** A drink or a meal handed over is paid for and tasted at
   once (a named drink is judged then too: `DrinkingSystem.Served`). Then it stays in their hand
@@ -381,7 +398,9 @@ An authoritative server filtered by `Perception`, moderation, voice.
 - publish builds in a way we can easily distribute for playtesting (maybe use discord or something)
 - UX / art polish pass (not a full art pass but just clean things up as needed to make sure its legible)
 - get rid of the sprite wagon and do a box prop for it, check to see if theres any others that need updating
-- make the bridge over the river nicer
+- make the bridge over the river nicer - half height walls, maybe an arch to it or supports?
 - title screen refinement
 - doc cleanup pass
 - character creation - more traditional DnD fantasy options. elves, dwarves, hobbits, etc
+- make the hearth into a fireplace
+- wall torches
