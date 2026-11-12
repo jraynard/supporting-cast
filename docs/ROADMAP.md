@@ -76,6 +76,45 @@ Known leftovers:
 - `Adventurer.Satisfaction` and the expedition tallies are collected, waiting for M3's Renown and Dread.
 - The new mini-games haven't been tuned in play yet.
 
+### The village: Millbrook (2026-11-11)
+- Rounds are played on a hand-made map instead of DragonWorld's generated valley. `MapDef`
+  (`data/defs/maps/`) holds text grids of ground, levels and features, the buildings with exact
+  anchors, the landing, the stockpile and the livestock. `Maps/MapBuilder` stamps it in, with rock
+  and ore still underground. Size a round's sim with `VillageRound.NewSimulation`. `--map NAME`
+  picks another map.
+- **Millbrook** (96×96) is traced from `art/reference/village-map2.webp`, one battlemap square to
+  two cells, with a 12-cell band of woods round it. It has a square round a well, lanes out north,
+  east, west and south-west, a river with a stone bridge, a lake, a pig pen, fenced cabbage
+  gardens, and thirteen buildings. `tools/village_map.py` writes it; `--preview` draws it beside
+  the reference. Edit the script rather than the JSON.
+- Buildings can have a second storey (`upperLayout`, stairs `S`, phases `UpperFloor` and
+  `UpperWalls`). Saves are format 2 and convert format 1's build phases.
+- The **Inn** is the Innkeeper's workplace: a common room with a bar counter downstairs, and rooms
+  to let upstairs. **Lodging:** adventurers staying the night ask for a room, and whoever takes it
+  on walks up to them to let one of the inn's beds (`LetsBeds`). Nobody else sleeps there.
+- The half-timbered look (`timber_plaster`, `timber_shingle`) is now the default variant of the
+  village's buildings, with the Norse looks kept as alternatives. New buildings: Cottage and Barn.
+  New content (`data/defs/village.json`):
+  - packed-earth lanes and tilled soil
+  - cabbages
+  - the well, barrels and crates
+  - the stone bridge
+  - fences with rails
+  - penned pigs
+- The art comes from `tools/village_art.py`, which writes only its own files.
+- Bench baselines:
+  - seed 1234: state `5BA0216B86F0F306`, full `AAB07A6C746B1A2D`
+  - seed 99: state `EE89C4B72A134C2D`, full `C33639D6C1427D2A`
+
+  These are a new town, so every hash moved. Before the switch, lifting the generator's helpers
+  for the builder left M2's hashes unchanged. Ticks and saves are cheaper on the smaller map.
+
+Known leftovers:
+- Lanes cost the same to walk as grass, so villagers don't prefer them.
+- `--building-demo` now lays its showcase over the village.
+- The pig is the boar's sheet recoloured and shaven.
+- The start message still mentions a dragon egg.
+
 ## Next
 
 ### UX Pass
@@ -98,7 +137,7 @@ Known leftovers:
 `Reagents`, Apothecary, Undertaker, Merchant, writable notes, keys, disguises, poison on anything.
 
 ### M6: Breadth
-Remaining trades, more maps, crisis variety, personal ambitions, art pass.
+Remaining trades, more maps (authored like Millbrook), crisis variety, personal ambitions, art pass.
 
 ### M7: Playing with strangers
 An authoritative server filtered by `Perception`, moderation, voice.

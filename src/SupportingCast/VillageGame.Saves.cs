@@ -139,8 +139,6 @@ public sealed partial class VillageGame
 
     public CarryOver? CarriedOver { get; init; }
 
-    private bool _defReloadPending;
-
     /// <summary>
     /// Def hot reload: read the defs again and move the village onto them through a save round trip
     /// (every def is looked up by name), then continue in a fresh VillageGame so nothing render-side
@@ -153,7 +151,6 @@ public sealed partial class VillageGame
             Notify(MessageKind.Info, $"{no} (def changes apply next time)");
             return;
         }
-        _defReloadPending = false;
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
         var dir = _defReloader!.Directory;
         DefDatabase defs;

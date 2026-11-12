@@ -158,6 +158,11 @@ or perhaps by the traitor if they are a necromancer. they can come back in the n
   inputs, which the sim replays, like `AvatarPredictor` does for walking. Interruptions still come
   from the sim.
 - **Bots.** A `BotPlayer` plays through commands, for scenario tests and solo playtests.
+- **Hand-made villages.** A round is played on an authored map (`MapDef`, starting with
+  Millbrook), not a generated valley. The town's layout is part of the social game: who can see the
+  forge from the inn, which lane the parties come in by, and where a body would go unnoticed. A
+  map is data with exact building anchors. The seed still varies what's underground, what grows,
+  and who lives there.
 
 ## Sim folders
 

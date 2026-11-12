@@ -11,7 +11,7 @@ using static SupportingCast.Sim.Tests.TestWorld;
 namespace SupportingCast.Sim.Tests;
 
 /// <summary>Animals in the storyteller (<see cref="WildEvents"/>): predators fought turn by turn, migrations, wild dragon visitors.</summary>
-public class WildEventTests(ITestOutputHelper output)
+public class WildEventTests
 {
     private static Simulation Mild(int size = 60)
     {
