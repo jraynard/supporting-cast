@@ -55,7 +55,7 @@ public sealed class SettingsWindow(GameHost host)
             DrawConfirm();
     }
 
-    private float S(float v) => v * Theme.Scale;
+    private static float S(float v) => Narsil.Ui.Gui.S(v);
 
     private void DrawWindow()
     {

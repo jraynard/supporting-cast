@@ -1,4 +1,5 @@
 using Brutal.ImGuiApi;
+using Narsil.Ui;
 using Narsil.Rendering;
 using SupportingCast.Sim;
 using SupportingCast.Sim.Components;
@@ -62,36 +63,12 @@ public sealed partial class VillageGame
                 DrawFramePart(dl, lf, origin, scale, Color8(color));
     }
 
-    /// <summary>One frame of a sheet at its offset within the frame, from the frame's top-left <paramref name="origin"/>.</summary>
-    private void DrawFramePart(ImDrawListPtr dl, in SheetFrame f, float2 origin, float scale, ImColor8 tint)
-    {
-        var a = origin + new float2(f.Offset.X, f.Offset.Y) * scale;
-        var b = a + new float2(f.Sprite.PixelSize.X, f.Sprite.PixelSize.Y) * scale;
-        var (texture, page0, page1) = Host.AtlasImage(f.Sprite);
-        float2? uv0 = page0;
-        float2? uv1 = page1;
-        dl.AddImage(texture, in a, in b, in uv0, in uv1, tint);
-    }
+    // The kit's sprite drawing (Narsil.Ui.Gui), under the names the HUD code uses.
+    private static void DrawFramePart(ImDrawListPtr dl, in SheetFrame f, float2 origin, float scale, ImColor8 tint) => Gui.FramePart(dl, f, origin, scale, tint);
 
-    private static ImColor8 Color8(uint packed) =>
-        new((byte)(packed & 0xFF), (byte)(packed >> 8 & 0xFF), (byte)(packed >> 16 & 0xFF), (byte)(packed >> 24));
+    private static ImColor8 Color8(uint packed) => Gui.Color8(packed);
 
-    /// <summary>A sprite fitted (aspect kept) and centered in a box.</summary>
-    private void DrawSprite(ImDrawListPtr dl, in Sprite s, float2 min, float2 box, ImColor8? tint = null)
-    {
-        var aspect = s.PixelSize.Y == 0 ? 1f : s.PixelSize.X / (float)s.PixelSize.Y;
-        var size = aspect >= 1 ? new float2(box.X, box.X / aspect) : new float2(box.Y * aspect, box.Y);
-        // Whole-pixel scale when that doesn't waste much of the box, so pixel art stays crisp.
-        var scale = MathF.Floor(size.X / Math.Max(1, s.PixelSize.X));
-        if (scale >= 1 && scale * s.PixelSize.X >= size.X * 0.8f)
-            size = new float2(s.PixelSize.X, s.PixelSize.Y) * scale;
-        var a = min + (box - size) * 0.5f;
-        var b = a + size;
-        var (texture, page0, page1) = Host.AtlasImage(s);
-        float2? uv0 = page0;
-        float2? uv1 = page1;
-        dl.AddImage(texture, in a, in b, in uv0, in uv1, tint ?? new ImColor8(255, 255, 255, 255));
-    }
+    private static void DrawSprite(ImDrawListPtr dl, in Sprite s, float2 min, float2 box, ImColor8? tint = null) => Gui.Sprite(dl, s, min, box, tint);
 
     private void DrawVillagerBar()
     {
@@ -211,11 +188,8 @@ public sealed partial class VillageGame
 
         ImGui.SameLine(0, 10);
         ImGui.BeginGroup();
-        if (Host.ImGui.HeaderFont is { } font)
-            ImGui.PushFont(font, 0f);
-        ImGui.Text(_sim.Clock.TimeString());
-        if (Host.ImGui.HeaderFont != null)
-            ImGui.PopFont();
+        using (Gui.HeaderFont())
+            ImGui.Text(_sim.Clock.TimeString());
         var outdoor = _sim.Climate.OutdoorTemperature;
         TextC(outdoor < 5 ? Theme.Warn : Theme.Dim, $"Outside {outdoor:F0}°C");
         for (var s = 0; s < SpeedLabels.Length; s++)

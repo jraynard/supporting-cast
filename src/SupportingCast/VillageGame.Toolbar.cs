@@ -297,29 +297,6 @@ public sealed partial class VillageGame
         return pressed && !disabled;
     }
 
-    /// <summary>A square button showing an atlas sprite, aspect-preserved and centered.</summary>
-    private bool IconButton(string id, string sprite, float size, bool active)
-    {
-        var s = Host.Atlas.Get(sprite);
-        var aspect = s.PixelSize.Y == 0 ? 1f : s.PixelSize.X / (float)s.PixelSize.Y;
-        var inner = size - 10;
-        var imgSize = aspect >= 1 ? new float2(inner, inner / aspect) : new float2(inner * aspect, inner);
-        var pad = new float2((size - imgSize.X) * 0.5f, (size - imgSize.Y) * 0.5f);
-        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, in pad);
-        if (active)
-        {
-            var c = Theme.AccentSoft;
-            ImGui.PushStyleColor(ImGuiCol.Button, in c);
-        }
-        var (texture, page0, page1) = Host.AtlasImage(s);
-        float2? uv0 = page0;
-        float2? uv1 = page1;
-        float4? bg = null;
-        float4? tint = null;
-        var pressed = ImGui.ImageButton(id, texture, in imgSize, in uv0, in uv1, in bg, in tint);
-        if (active)
-            ImGui.PopStyleColor(1);
-        ImGui.PopStyleVar(1);
-        return pressed;
-    }
+    /// <summary>A square button showing an atlas sprite (<see cref="Narsil.Ui.Gui.IconButton"/>).</summary>
+    private static bool IconButton(string id, string sprite, float size, bool active) => Narsil.Ui.Gui.IconButton(id, sprite, size, active);
 }

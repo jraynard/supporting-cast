@@ -67,36 +67,10 @@ public sealed partial class VillageGame
     }
 
     private bool _showCredits;
-    private string? _noticeText;
-    private string[]? _thirdPartyNotices;
+    private readonly CreditsWindow _credits = new(TitleGame.Title, "The people the heroes walk past.");
 
-    /// <summary>
-    /// Credits screen. BRUTAL License 2.1 requires its copyright notice here, so it is read from
-    /// the shipped NOTICE.txt rather than duplicated in code.
-    /// </summary>
-    private void DrawCredits()
-    {
-        var baseDir = AppContext.BaseDirectory;
-        _noticeText ??= File.Exists(Path.Combine(baseDir, "NOTICE.txt"))
-            ? File.ReadAllText(Path.Combine(baseDir, "NOTICE.txt")).Trim()
-            : "NOTICE.txt is missing from the installation.";
-        _thirdPartyNotices ??= Directory.Exists(Path.Combine(baseDir, "licenses"))
-            ? Directory.GetFiles(Path.Combine(baseDir, "licenses"), "*.txt").Select(f => Path.GetFileName(f)).Order().ToArray()
-            : [];
-
-        SetNextWindow(new float2(Screen.X / 2f - 300, 120), new float2(600, 0));
-        ImGui.Begin("Credits"u8, ref _showCredits, ImGuiWindowFlags.AlwaysAutoResize);
-        ImGui.Text(TitleGame.Title);
-        TextC(Dim, "A village of dragons and humans.");
-        TextC(Dim, $"{BuildInfo.Label}, build tag {BuildInfo.Tag(_sim.Defs)}");
-        ImGui.Separator();
-        Wrapped(_noticeText);
-        ImGui.Separator();
-        TextC(Dim, "Third-party components and their licenses are in the licenses/ folder:");
-        foreach (var file in _thirdPartyNotices)
-            Bullet(file);
-        ImGui.End();
-    }
+    /// <summary>Credits screen. BRUTAL License 2.1 requires its copyright notice here (<see cref="CreditsWindow"/>).</summary>
+    private void DrawCredits() => _credits.Draw(ref _showCredits, $"{BuildInfo.Label}, build tag {BuildInfo.Tag(_sim.Defs)}");
 
     // Short names for Narsil's ImGuiText helpers, which escape literal % for the printf-style ImGui calls.
     private static void TextC(float4 color, string text) => ImGuiText.Colored(color, text);
@@ -120,11 +94,8 @@ public sealed partial class VillageGame
         if (!ImGui.BeginMainMenuBar())
             return;
 
-        if (Host.ImGui.HeaderFont is { } font)
-            ImGui.PushFont(font, 0f);
-        TextC(Theme.Accent, TitleGame.Title);
-        if (Host.ImGui.HeaderFont != null)
-            ImGui.PopFont();
+        using (Gui.HeaderFont())
+            TextC(Theme.Accent, TitleGame.Title);
         ImGui.Separator();
 
         if (ImGui.MenuItem("Menu"u8, ""u8, false, true))
@@ -216,16 +187,7 @@ public sealed partial class VillageGame
         _ => comp.ToString() ?? comp.GetType().Name,
     };
 
-    private void Bar(string label, float value, float4 color, string? overlay = null)
-    {
-        var v = Math.Clamp(value, 0, 1);
-        ImGui.PushStyleColor(ImGuiCol.PlotHistogram, in color);
-        var size = (float2?)new float2(180, 0);
-        ImGui.ProgressBar(v, in size, overlay ?? $"{v * 100:F0}%");
-        ImGui.PopStyleColor(1);
-        ImGui.SameLine(0, -1);
-        ImGui.Text(label);
-    }
+    private static void Bar(string label, float value, float4 color, string? overlay = null) => Gui.Bar(label, value, color, overlay);
 
     /// <summary>Portrait, name in the header font, and a subtitle line.</summary>
     /// <remarks>

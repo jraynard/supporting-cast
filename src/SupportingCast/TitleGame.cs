@@ -1,4 +1,5 @@
 using Brutal.ImGuiApi;
+using Narsil.Ui;
 using Narsil;
 using Narsil.Rendering;
 using SupportingCast.Rendering;
@@ -260,12 +261,8 @@ public sealed class TitleGame : Game
         ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0f);
         ImGui.Begin("##title"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove);
 
-        var header = Host.ImGui.HeaderFont;
-        if (header is { } big)
-            ImGui.PushFont(big, 76f);
-        ImGui.TextColored(Theme.Accent, Title);
-        if (header != null)
-            ImGui.PopFont();
+        using (Gui.HeaderFont(76f))
+            ImGui.TextColored(Theme.Accent, Title);
         var dim = Theme.Dim;
         ImGui.TextColored(dim, "The people the heroes walk past"u8);
         var gap = new float2(1, 34);
@@ -429,15 +426,15 @@ public sealed class TitleGame : Game
         ImGui.PushStyleColor(ImGuiCol.Button, in clear);
         ImGui.PushStyleColor(ImGuiCol.ButtonHovered, in hover);
         ImGui.PushStyleColor(ImGuiCol.ButtonActive, in active);
-        if (Host.ImGui.HeaderFont is { } font)
-            ImGui.PushFont(font, 26f);
-        if (!enabled)
-            ImGui.BeginDisabled(true);
-        var pressed = ImGui.Button(item.Label, in size);
-        if (!enabled)
-            ImGui.EndDisabled();
-        if (Host.ImGui.HeaderFont != null)
-            ImGui.PopFont();
+        bool pressed;
+        using (Gui.HeaderFont(26f))
+        {
+            if (!enabled)
+                ImGui.BeginDisabled(true);
+            pressed = ImGui.Button(item.Label, in size);
+            if (!enabled)
+                ImGui.EndDisabled();
+        }
         ImGui.PopStyleColor(3);
         ImGui.PopStyleVar(1);
 
