@@ -155,8 +155,9 @@ public sealed partial class VillageGame
         var back = pivot - dir * (len.X * 0.15f);
         var head = back + dir * len.X;
         var h = up * (len.Y * 0.5f);
-        // The sprite runs handle (left) to head (right), so its left edge sits at the far end, the head.
-        Gui.ImageQuad(dl, hammer, head - h, back - h, back + h, head + h, Gui.White);
+        // The sprite runs handle (u=0) to iron head (u=1): the handle sits at the hand and the head
+        // at the far end, on the bar. `h` points up off the shaft, where the sprite's top row goes.
+        Gui.ImageQuad(dl, hammer, back + h, head + h, head - h, back - h, Gui.White);
     }
 
     private void ThrowSparks(float2 at, float grade, int seed)

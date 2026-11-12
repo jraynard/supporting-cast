@@ -612,6 +612,10 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         if (w.TryGet<Mind>(e, out var mind) && mind.Job?.ToolKind is { } kind && Sim.Systems.Crafting.ToolInHand(sim, e, kind) is { IsNull: false } tool
             && HumanLook.HeldOf(w.Get<Thing>(tool).Def) is { } t)
             return t;
+        // A player at the anvil has their hammer out.
+        if (w.TryGet<Sim.Work.WorkSession>(e, out var session) && session is Sim.Work.HammerSession
+            && Sim.Systems.Crafting.ToolInHand(sim, e, "Hammer") is { IsNull: false } hammer && HumanLook.HeldOf(w.Get<Thing>(hammer).Def) is { } h)
+            return h;
         if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon) && HumanLook.HeldOf(w.Get<Thing>(eq.Weapon).Def) is { } weapon)
             return weapon;
         return null;
