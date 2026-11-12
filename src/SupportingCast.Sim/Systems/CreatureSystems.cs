@@ -357,9 +357,10 @@ public sealed class AiSystem : ISimSystem
             w.Get<Position>(carried) = Position.At(w.Get<Position>(e).Cell);
         }
 
-        // The avatar keeps what it holds (the egg!) until the player puts it down.
+        // The avatar keeps what it holds (the egg!) until the player puts it down; a customer, the
+        // drink or the meal they're sat with (Hospitality.Table).
         ref var carrying = ref w.Get<Carrying>(e);
-        if (carrying.HasItem && !w.Has<Avatar>(e))
+        if (carrying.HasItem && !w.Has<Avatar>(e) && !(w.TryGet<Hospitality.Savouring>(e, out var savouring) && savouring.Item == carrying.Item))
         {
             var item = carrying.Item;
             carrying.Item = Entity.Null;

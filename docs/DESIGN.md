@@ -137,6 +137,11 @@ do it.
   - **House mixes:** any other combination makes one, its effect coming from the properties of
     what's in it (warming, rousing, numbing, loosening). The same plumbing later carries reagents
     and poison.
+- *Sitting over it.* Served a drink or a meal, a customer pays and tastes it at once, then takes it
+  to a free stool and sits with it a while (about half a game hour for a drink, more for a meal).
+  It takes hold, or fills them, when it's finished, and the empty is left where they sat. Sat
+  together, they talk: a third and two thirds of the way through, each may tell a rumour, likelier
+  with drink in them. So a full common room is where things are overheard.
 - *Drink takes hold.* Drinkers get merry.
   - **Tongues loosen:** a tipsy adventurer volunteers rumours, and truer ones, so a busy bar is
     the keeper's best intel.

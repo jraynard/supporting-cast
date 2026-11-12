@@ -23,7 +23,8 @@ public readonly record struct AnimInputs(
     bool Working,
     bool Moving,
     bool Hatching = false,
-    string? Care = null
+    string? Care = null,
+    bool Seated = false
 );
 
 /// <summary>The resolved pose for one creature this frame.</summary>
@@ -123,6 +124,8 @@ public sealed class CreatureAnimator
             return "breathe_windup";
         if (s.Care != null && !s.Airborne && !s.Moving)
             return s.Care;
+        if (s.Seated && !s.Moving)
+            return "sit";
         if (s.Airborne)
         {
             if (s.Landing)
@@ -146,7 +149,7 @@ public sealed class CreatureAnimator
         "fly" or "breathe_windup" or "work" or "walk" or "sleep" => "idle",
         "breathe" => "breathe_windup",
         "downed" => "sleep",
-        "hatch" or "pet" or "play" or "groom" or "ride" => "idle",
+        "hatch" or "pet" or "play" or "groom" or "ride" or "sit" => "idle",
         _ => null,
     };
 
@@ -261,7 +264,8 @@ public sealed class CreatureAnimator
                 || station != null) && !mover.Moving,
             mover.Moving,
             sim.Clock.Tick - c.BornTick < HatchTicks,
-            null
+            null,
+            job is Sim.Hospitality.SavourJob { Seated: true }
         );
         var want = ChooseTag(inputs);
         if (want != st.Want || newBreath)

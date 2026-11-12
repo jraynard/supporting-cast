@@ -15,9 +15,9 @@ layers the game mixes and matches (Rendering/HumanLook, docs/ART.md "People"):
 
 Every frame of every sheet is one pose of one shared skeleton (``Fig``: the shoulders, elbows,
 hands, legs, head drop of a body in a frame), so sleeves, bracers and armor follow the arms through
-the crossed, hip and coin stances. 131 frames: idle, walk, work and the three stances in four
+the crossed, hip and coin stances. 147 frames: idle, walk, work and the three stances in four
 views (facing the viewer, turned toward screen right, turned away, from behind; the game mirrors
-the turned ones), then sleep and downed, then riding astride in the four views. Garments draw what lies over their cloth into the plain
+the turned ones), then sleep and downed, then riding astride and sitting in the four views. Garments draw what lies over their cloth into the plain
 sheet and cut it from the dyed one (the game draws the plain sheet first); whatever a crossed
 arm or a coin covers is cut from the torso; back panels and the back half of the hair are cut
 under the base, since the game draws them after it.
@@ -50,8 +50,13 @@ class Pose:
         self.blink, self.lying, self.helm, self.coin = blink, lying, helm, coin
 
 
+# How far the body drops onto a seat (design units of the 40x60 frame): the game lifts the figure
+# by as much less the stool's height (WorldRenderer.SitSeat).
+SIT_DROP = 6.0
+
+
 def sequence():
-    """The 131 frames and their tags, as the game asks for them (CreatureAnimator, HumanLook.IdleTag)."""
+    """The 147 frames and their tags, as the game asks for them (CreatureAnimator, HumanLook.IdleTag)."""
     frames, tags = [], {}
 
     def add(name, poses, ms, loop=True, event=-1):
@@ -81,7 +86,17 @@ def sequence():
     for v in VIEWS:
         add(f"ride_{v}", [Pose(v, "ride", k, body_dy=(0, 0.5, 0.75, 0.25)[k], head_dy=(0, 0.1, 0.25, 0.1)[k],
                                legs=((-2.4, 3.0), (2.4, 3.0))) for k in range(4)], 180)
-    for alias in ("idle", "walk", "work", "ride"):
+    # Sat on a stool with a drink or a bowl (after the rest, so the frames above keep their
+    # indexes): the body drops onto the seat and the knees come forward, so the legs foreshorten;
+    # one hand rests at the lap, the other holds the cup there, and now and then lifts it for a sip.
+    for v in VIEWS:
+        face = v in ("down", "downside")
+        knees = ((-1.4, 0), (1.4, 0))
+        add(f"sit_{v}", [Pose(v, "sit", 0, body_dy=SIT_DROP, legs=knees), Pose(v, "sit", 1, body_dy=SIT_DROP, head_dy=0.25, legs=knees),
+                         Pose(v, "sit", 2, body_dy=SIT_DROP, head_dy=-0.25, legs=knees),
+                         Pose(v, "sit", 3, body_dy=SIT_DROP, head_dy=0.25, blink=face, legs=knees)],
+            [1400, 260, 900, 300])
+    for alias in ("idle", "walk", "work", "ride", "sit"):
         tags[alias] = tags[f"{alias}_down"]
     return frames, tags
 
@@ -140,6 +155,12 @@ class Fig:
         elif p.anim == "ride":
             # both hands forward at the waist on the reins: in front from the front, hidden from behind
             elbow, hand, front = (sx + out * 2.2, 36.6 + by), (sx - out * 1.2, 40.2 + by), self.front
+        elif p.anim == "sit":
+            # hands together at the lap, the cup in the right; on k == 2 it's lifted to the mouth
+            if role == 1 and p.k == 2:
+                elbow, hand, front = (sx + out * 2.4, 37.4 + by), (sx - out * 3.6, 30.5 + by), self.front
+            else:
+                elbow, hand, front = (sx + out * 2.0, 37.2 + by), (sx - out * 1.6, 41.2 + by), self.front
         elif p.anim == "coin" and role == 1:
             lift = 0.6 if p.coin and p.coin > 0 else 0
             elbow, hand, front = (sx + out * 1.6, 38.2 + by), (sx - out * 1.4, 35 + by - lift), True

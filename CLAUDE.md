@@ -62,7 +62,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     ladled things go in clean vessels (`Vessels`); a customer leaves them dirty.
   - `Hospitality/`: the inn beyond its counter. Rooms by the night (`Lodging`), mess on the floor
     (`MessSystem`, through `PerceptionView.Messes`: blood is only a "dark stain"), drink taking
-    hold (`DrinkingSystem`; a drink's effects are its `DrinkMix`), and who knows the way where
+    hold (`DrinkingSystem`; a drink's effects are its `DrinkMix`), customers sitting with what
+    they're served (`Table`, `Savouring`: effects land when it's finished), and who knows the way where
     (`DirectionsSystem`: adventurers order only from shops they know).
   - `Adventurers/`: `PartySystem` brings parties in a round; `AdventurerBrain` lounges, waits where
     their order is served, and leaves.

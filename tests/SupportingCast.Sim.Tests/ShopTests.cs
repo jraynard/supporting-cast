@@ -103,6 +103,7 @@ public class ShopTests
         Assert.Equal(OrderStatus.Done, meal.Status);
         Assert.Equal(mine + meal.Price, Coin.Count(sim, me));
         Assert.Equal(coinBefore, AllCoin(sim));
+        TillFinished(sim, diner);
         Assert.True(sim.World.Get<Needs>(diner).Get(sim.Defs.Need("Food")) > 0.5f, "they ate it");
         Assert.True(sim.World.Get<Adventurer>(diner).Satisfaction > 0);
     }

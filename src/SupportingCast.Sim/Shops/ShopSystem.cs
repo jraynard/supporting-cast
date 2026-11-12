@@ -123,10 +123,12 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             if (!_questAsked.Contains(a.Party) && sim.Clock.Tick - a.Arrived >= SimClock.HoursToTicks(QuestAfterHours)
                 && Want(sim, who, ServiceKind.Quest, Entity.Null))
                 _questAsked.Add(a.Party);
+            // Sat with a drink or a meal, they don't order another till it's finished.
+            var savouring = Hospitality.Table.IsSavouring(sim, who);
             var hunger = w.Get<Needs>(who).Get(food);
-            if (hunger < MealBelow)
+            if (hunger < MealBelow && !savouring)
                 Want(sim, who, ServiceKind.Meal, Entity.Null, hunger < food.UrgentBelow ? 1.5f : 1f);
-            if (sim.Clock.Tick >= a.NextDrink && MayAsk(sim, who, ServiceKind.Drink)
+            if (sim.Clock.Tick >= a.NextDrink && !savouring && MayAsk(sim, who, ServiceKind.Drink)
                 && !_orders.Exists(e => e.IsOpen && e.Poster == who && e.Kind.Kind == ServiceKind.MixedDrink))
             {
                 // Now and then something mixed, at its dearer price; too dear, or not to be had, an ale.
@@ -744,12 +746,12 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             ?? _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Drink);
         if (drink != null && def.Drink)
         {
+            // A first sip, and they pay; then they take it off to sit with (Hospitality.Table).
             var quality = w.TryGet<Crafted>(item, out var made) ? made.Quality : Quality.Plain;
-            sim.Drinking.Drank(sim, to, item, drink);
-            w.Destroy(item);
+            sim.Drinking.Served(sim, to, item, drink);
             Tasted(sim, to, quality);
-            Work.Vessels.LeaveAfter(sim, to, def);
             Complete(sim, drink, giver);
+            Hospitality.Table.Begin(sim, to, item, meal: false, 1, 0f, _rand);
             return;
         }
         var meal = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Meal);
@@ -760,15 +762,10 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             if (eaten != item)
                 Inventory.Stow(sim, giver, item); // the rest back to the server
             var rot = FoodPoisoning.RotOf(sim, eaten);
-            var cooked = w.TryGet<Crafted>(eaten, out var made) ? made.Quality : (Quality?)null;
-            w.Destroy(eaten);
-            EatJob.Nourish(sim, to, def, count, rot);
-            if (cooked is { } q)
+            if (w.TryGet<Crafted>(eaten, out var made) && made.Quality is var q)
                 Tasted(sim, to, q, meal: true);
-            Work.Vessels.LeaveAfter(sim, to, def);
-            if (_rand.NextFloat() < 0.5f && w.TryGet<Position>(to, out var ate))
-                sim.Mess.Spill(sim, Hospitality.MessKind.Crumbs, ate.Cell, 0.4f);
             Complete(sim, meal, giver);
+            Hospitality.Table.Begin(sim, to, eaten, meal: true, count, rot, _rand);
             return;
         }
         Inventory.Stow(sim, to, item);

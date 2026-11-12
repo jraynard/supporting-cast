@@ -113,6 +113,54 @@ public class InnkeeperTests
     private static void Thirsty(Simulation sim, Entity who) => sim.World.Get<Adventurer>(who).NextDrink = sim.Clock.Tick;
 
     [Fact]
+    public void ServedTheyTakeASeatAndSitOverItTalking()
+    {
+        var (sim, party) = Tavern("Innkeeper");
+        var me = Players.CharacterOf(sim, Ana);
+        foreach (var e in party)
+        {
+            sim.World.Get<Health>(e).Injuries.Clear(); // nothing to take them off to the shrine
+            Thirsty(sim, e);
+        }
+        sim.TickMany(SimClock.TicksPerHour / 6);
+        var served = new List<Entity>();
+        foreach (var e in party)
+        {
+            if (!sim.Shops.All.Any(o => o.IsOpen && o.Poster == e && o.Kind.Kind is ServiceKind.Drink or ServiceKind.MixedDrink))
+                continue;
+            var at = sim.World.Get<Position>(e).Cell;
+            var cell = sim.SpiralFrom(at, 3).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z);
+            sim.World.Get<Position>(me).Cell = cell;
+            sim.World.Get<Position>(me).Pos = Position.CenterOf(cell);
+            var ale = sim.CreateItem(sim.Thing("Ale"), 1);
+            sim.World.Add(ale, new Crafted { Quality = Quality.Plain, Maker = me });
+            Inventory.Stow(sim, me, ale);
+            sim.ApplyNow(new GiveCommand(me, e, ale, 1));
+            Assert.True(sim.World.Has<Hospitality.Savouring>(e));
+            served.Add(e);
+        }
+        Assert.True(served.Count >= 2, $"{served.Count} served");
+        var servedAt = sim.Clock.Tick;
+
+        // A while later they're sat on the stools with their drinks.
+        sim.TickMany(SimClock.HoursToTicks(0.25f));
+        bool Seated(Entity e) => sim.World.Get<Mind>(e).Job is Hospitality.SavourJob { Seated: true } j
+            && sim.World.Get<Thing>(j.Seat).Cell == sim.World.Get<Position>(e).Cell;
+        Assert.All(served, e => Assert.True(Seated(e), $"{sim.World.Get<Creature>(e).Name} is {sim.World.Get<Mind>(e).Job?.Report} savouring {sim.World.Has<Hospitality.Savouring>(e)} at {sim.World.Get<Position>(e).Cell}"));
+        Assert.Equal(served.Count, served.Select(e => sim.World.Get<Position>(e).Cell).Distinct().Count()); // a stool each
+
+        // It survives a save, sat with it.
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        Assert.Equal(sim.World.Get<Hospitality.Savouring>(served[0]).Until, loaded.World.Get<Hospitality.Savouring>(served[0]).Until);
+
+        // Over their drinks, someone talked; then they're done, and leave their tankards.
+        foreach (var e in served)
+            TillFinished(sim, e);
+        Assert.Contains(sim.Speech.Kept, u => u.Tick > servedAt && served.Contains(u.Speaker));
+        Assert.All(served, e => Assert.True(sim.World.Get<Carrying>(e).Item.IsNull || sim.World.Get<Thing>(sim.World.Get<Carrying>(e).Item).Def.Name != "Ale"));
+    }
+
+    [Fact]
     public void AnAleHandedToWhoeverOrderedOneIsPaidForAndTasted()
     {
         var (sim, party) = Tavern("Innkeeper");
@@ -137,6 +185,8 @@ public class InnkeeperTests
 
         Assert.Equal(OrderStatus.Done, order.Status);
         Assert.Equal(purse + order.Price, Coin.Count(sim, me));
+        Assert.Equal(ale, sim.World.Get<Carrying>(drinker).Item); // in hand, to sit with
+        TillFinished(sim, drinker);
         Assert.False(sim.World.IsAlive(ale), "they drank it");
         // Quick service pleases by 1.5 (and a bargain a little more); a crude pour takes 0.75 off it.
         Assert.True(sim.World.Get<Adventurer>(drinker).Satisfaction - mood < 1.5f, "a crude pour pleases less");

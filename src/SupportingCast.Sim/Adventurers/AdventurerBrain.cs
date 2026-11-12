@@ -8,7 +8,8 @@ namespace SupportingCast.Sim.Adventurers;
 
 /// <summary>
 /// Adventurers in town: out of danger, fed and rested, otherwise lounging about their haunt (the
-/// tavern) as if they owned it, and off down the road once their stay is up. They take no orders
+/// tavern) as if they owned it, sitting down with whatever they're served, and off down the road
+/// once their stay is up. They take no orders
 /// and do no work; what they want from the town they buy from its shops (<c>Shops.ShopSystem</c>),
 /// lining up at the counter for it (<c>Shops.QueueJob</c>).
 /// </summary>
@@ -44,7 +45,11 @@ public sealed class AdventurerBrain : IBrain
 
         // In line for something, take their place in it; waiting on a piece they've handed over (or
         // past the line's end), wait about the shop; else lounge about the haunt, else stay put.
-        if (sim.Shops.PlaceOf(sim, pawn) is { } place)
+        // Served a drink or a meal, they sit with it, unless they're at the front of a line being served.
+        var inLine = sim.Shops.PlaceOf(sim, pawn);
+        if (w.Has<Hospitality.Savouring>(pawn) && inLine is not { Place: 0 })
+            return new Hospitality.SavourJob(Hospitality.Table.FreeSeat(sim, pawn));
+        if (inLine is { } place)
         {
             if (place.Cell is { } cell)
                 return new Shops.QueueJob(cell, Buildings.Called(sim, place.Shop), place.Place == 0);

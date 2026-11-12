@@ -238,6 +238,8 @@ public class InnUpkeepTests
 
         sim.ApplyNow(new GiveCommand(me, drinker, ale, 1));
         Assert.Equal(OrderStatus.Done, order.Status);
+        Assert.Equal(dirty, Count(sim, "DirtyTankard")); // still drinking it
+        TillFinished(sim, drinker);
         Assert.Equal(dirty + 1, Count(sim, "DirtyTankard"));
     }
 

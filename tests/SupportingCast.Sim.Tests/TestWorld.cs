@@ -91,6 +91,14 @@ public static class TestWorld
     /// Takes mixed drinks off the inn's sign, so a thirsty customer orders a plain ale: for tests
     /// about drink orders and their price, not about which drink.
     /// </summary>
+    /// <summary>Someone served a drink or a meal sits with it a while (Hospitality.Table): tick till they've finished.</summary>
+    public static void TillFinished(Simulation sim, Entity who)
+    {
+        for (var t = 0; t < SimClock.HoursToTicks(1.5f) && sim.World.Has<Hospitality.Savouring>(who); t += 60)
+            sim.TickMany(60);
+        Assert.False(sim.World.Has<Hospitality.Savouring>(who), "they finished what they were served");
+    }
+
     public static void AleOnly(Simulation sim)
     {
         var inn = Shops.ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));

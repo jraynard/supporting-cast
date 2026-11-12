@@ -392,6 +392,9 @@ public sealed class BuildingProps
 
     /// <summary>A bar: mixed drinks are made at it (<c>Work.MixSession</c>).</summary>
     public bool Bar { get; set; }
+
+    /// <summary>Somewhere to sit: a customer served a drink or a meal takes it to one (<c>Hospitality.SavourJob</c>).</summary>
+    public bool Seat { get; set; }
 }
 
 /// <summary>

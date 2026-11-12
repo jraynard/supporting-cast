@@ -164,7 +164,7 @@ public class InnTalkTests
         var (sim, party) = Tavern("Innkeeper");
         var a = party[0];
         for (var i = 0; i < 3; i++)
-            sim.Drinking.Drank(sim, a, Drink(sim, "Ale"), null);
+            sim.Drinking.Drank(sim, a, Drink(sim, "Ale"));
         var level = DrinkingSystem.LevelOf(sim, a);
         Assert.True(level >= DrinkingSystem.MerryAt, $"{level}");
         Assert.Equal("merry", Perception.For(sim, Players.CharacterOf(sim, Ana)).Drunkenness(a) ?? Perception.For(sim, Entity.Null).Drunkenness(a));
@@ -232,7 +232,7 @@ public class InnTalkTests
         var wanted = sim.Drinking.Wanted(order.Id);
         Assert.NotNull(wanted);
         var mood = sim.World.Get<Adventurer>(a).Satisfaction;
-        sim.Drinking.Drank(sim, a, Drink(sim, wanted!), order);
+        sim.Drinking.Served(sim, a, Drink(sim, wanted!), order);
         Assert.True(sim.World.Get<Adventurer>(a).Satisfaction >= mood + DrinkingSystem.RightDrinkMood - 0.01f);
     }
 

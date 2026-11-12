@@ -80,8 +80,23 @@ public sealed class DrinkingSystem : ISimSystem, ISaveState
                     ShopSystem.Learn(order, h.Listener);
     }
 
-    /// <summary>A customer drinks what they were served: it goes to their head, does what it does, and they say what they think.</summary>
-    public void Drank(Simulation sim, Entity who, Entity drink, Order? order)
+    /// <summary>
+    /// Handed the drink for their order: if they'd asked for a named one, they look at what they've
+    /// got and say whether it's what they asked for.
+    /// </summary>
+    public void Served(Simulation sim, Entity who, Entity drink, Order order)
+    {
+        var w = sim.World;
+        if (!_wanted.Remove(order.Id, out var wanted) || !w.Has<Adventurer>(who))
+            return;
+        var right = w.Get<Thing>(drink).Def.Name == wanted;
+        w.Get<Adventurer>(who).Satisfaction += right ? RightDrinkMood : -WrongDrinkMood;
+        var label = sim.Defs.Thing(wanted).Label;
+        sim.Speech.Say(sim, who, right ? $"A proper {label}. Good." : $"I asked for a {label}.", Volume.Say);
+    }
+
+    /// <summary>A customer has drunk what they were served: it goes to their head and does what it does.</summary>
+    public void Drank(Simulation sim, Entity who, Entity drink)
     {
         var w = sim.World;
         var def = w.Get<Thing>(drink).Def;
@@ -108,14 +123,6 @@ public sealed class DrinkingSystem : ISimSystem, ISaveState
             if (a) w.Get<Adventurer>(who).Satisfaction += 0.6f * mix.Numbing;
             sim.Speech.Say(sim, who, "Dulls the ache, that does.", Volume.Say);
         }
-        // Was it what they asked for?
-        if (order != null && _wanted.Remove(order.Id, out var wanted) && a)
-        {
-            var right = def.Name == wanted;
-            w.Get<Adventurer>(who).Satisfaction += right ? RightDrinkMood : -WrongDrinkMood;
-            var label = sim.Defs.Thing(wanted).Label;
-            sim.Speech.Say(sim, who, right ? $"A proper {label}. Good." : $"I asked for a {label}.", Volume.Say);
-        }
         // Too far gone to hold a tankard straight.
         if (was >= ClumsyAt && _rand.NextFloat() < 0.35f)
         {
@@ -132,6 +139,7 @@ public sealed class DrinkingSystem : ISimSystem, ISaveState
     public void Update(Simulation sim)
     {
         var w = sim.World;
+        Table.Update(sim, _rand);
         // Orders gone: what they wanted goes with them.
         if (_wanted.Count > 0)
             foreach (var id in _wanted.Keys.Where(id => sim.Shops.Find(id) is not { IsOpen: true }).ToList())

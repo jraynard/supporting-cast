@@ -379,6 +379,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
                 Faction.Prisoner => Rgba.Pack(1f, 0.88f, 0.6f),
                 _ => Rgba.White,
             };
+            _heldAt = null;
             if (SheetOf(sim, e) is { } sheet)
             {
                 DrawAnimated(sim, e, sheet, p, tint, level);
@@ -415,7 +416,12 @@ public sealed class WorldRenderer(TextureAtlas atlas)
                 Billboard(S(w.Get<Thing>(eq.Weapon).Def.Sprite), p.Pos - cam.Right * 0.3f * size + WorldScale.Rise(size * 0.25f), 0.45f, 0.45f, Rgba.White, level);
             var carried = w.Get<Carrying>(e).Item;
             if (!carried.IsNull && w.IsAlive(carried))
-                Billboard(S(w.Get<Thing>(carried).Def.Sprite), p.Pos + cam.Right * 0.3f + WorldScale.Rise(size * 0.45f), 0.5f, 0.5f, Rgba.White, level);
+            {
+                if (_heldAt is { } hand)
+                    Billboard(S(w.Get<Thing>(carried).Def.Sprite), hand - _cam.Up * 0.12f, 0.3f, 0.3f, Rgba.White, level);
+                else
+                    Billboard(S(w.Get<Thing>(carried).Def.Sprite), p.Pos + cam.Right * 0.3f + WorldScale.Rise(size * 0.45f), 0.5f, 0.5f, Rgba.White, level);
+            }
             if (ShowBubbles && c.Faction == Faction.Village && !c.Dead && !w.Has<Carried>(e) && BubbleIcon(sim, e) is { } icon)
                 DrawBubble(icon, p.Pos + WorldScale.Rise(VisualHeight(sim, e) + 0.2f), level, time + e.Index);
             else if (w.Has<HuntOrder>(e) && !c.Dead)
@@ -582,6 +588,19 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         // Astride, the hips sit on the saddle (the frame's pivot is the feet, which hang lower).
         if (seated && pose.Tag == "ride")
             feet -= _cam.Up * (sheet.FrameSize.Y * RideSeat / (PixelsPerCell * sheet.Density));
+        // Sat on a stool: drawn a little toward the viewer, so they sit in front of its seat rather
+        // than in it, with what they're drinking in hand (lifted for a sip).
+        if (pose.Tag == "sit")
+        {
+            var toward = new float3(-_cam.Forward.X, -_cam.Forward.Y, 0f);
+            var len = MathF.Sqrt(toward.X * toward.X + toward.Y * toward.Y);
+            if (len > 1e-4f)
+                feet += toward * (SitForward / len);
+            var sip = pose.Anim is { Frames.Length: > 2 } a && pose.Frame.Index == a.Frames[2].Index;
+            var hand = sip ? SipHand : LapHand;
+            var unit = sheet.FrameSize.Y / 60f / (PixelsPerCell * sheet.Density); // the generator's 40x60 design units
+            _heldAt = feet + _cam.Right * ((hand.X - 20f) * unit * pose.Facing) + _cam.Up * ((58f - hand.Y) * unit) - _cam.Forward * 0.02f;
+        }
         if (pose.Tag == "glide")
             feet.Z += MathF.Sin(_anim.Clock * 2f + e.Index) * 0.05f;
         if (!airborne && !c.Dead)
@@ -664,6 +683,18 @@ public sealed class WorldRenderer(TextureAtlas atlas)
     /// height (tools/chibi_people.py: hips at 42 of 60 design units, the bent legs end at 54).
     /// </summary>
     private const float RideSeat = 0.2f;
+
+    /// <summary>How far toward the viewer someone sat on a stool is drawn (cells).</summary>
+    private const float SitForward = 0.1f;
+
+    /// <summary>
+    /// Where the cup is in a sitting frame, in tools/chibi_people.py's design units (40x60, the feet
+    /// at 20,58): at the lap, and lifted to the mouth for a sip.
+    /// </summary>
+    private static readonly float2 LapHand = new(25f, 47.2f), SipHand = new(23f, 36.5f);
+
+    /// <summary>Where DrawAnimated put someone's hand this frame, if it moved it (sitting); else the held item goes beside them.</summary>
+    private float3? _heldAt;
 
     public IEnumerable<(SpriteSheet Sheet, uint Color)> LookLayers(Simulation sim, Entity e, uint color) =>
         sim.World.Get<Creature>(e).Def.Race switch

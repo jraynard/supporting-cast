@@ -124,6 +124,9 @@ animator (`CreatureAnimator.ViewOf`) picks a three-quarter view for anything wit
 (older sheets with a `_side` profile still work as the fallback). The plain `idle`/`walk`/`work` alias
 the `_down` frames. Standing about, a person shows their **stance** (`Appearance.Stance`):
 `idle_<view>_crossed`, `_hip` and `_coin` (a toss, a catch, a beat holding it) beside the plain idle.
+Sat on a stool with a drink or a bowl, `sit_<view>`: the body drops onto the seat (`SIT_DROP`), the
+knees spread, and the cup is held at the lap and lifted for a sip on the third frame. The game draws
+the cup at that hand (`WorldRenderer.LapHand`/`SipHand`, in the same design units).
 `sleep` and `downed` stay top-down, centred in the frame, and are drawn flat at native scale. Faces have
 big eyes (a lash line, a two-tone iris, a catch-light) and no mouth. Dragons and animals keep side-on
 sheets.

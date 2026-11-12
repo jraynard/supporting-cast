@@ -102,7 +102,7 @@
       "name": "Stool", "category": "Building", "sprite": "buildings/stool",
       "description": "Somewhere to sit by the fire.",
       "maxHp": 60, "flammability": 1.0,
-      "building": { "work": 60, "surfaceHeight": 0.42, "cost": [ { "def": "Wood", "count": 3 } ] },
+      "building": { "work": 60, "surfaceHeight": 0.42, "seat": true, "cost": [ { "def": "Wood", "count": 3 } ] },
       "model": [
         { "min": [0.3, 0.3, 0.34], "max": [0.7, 0.7, 0.42], "top": "props/planks", "side": "props/planks" },
         { "min": [0.34, 0.34, 0], "max": [0.42, 0.42, 0.34], "top": "props/planks", "side": "props/log_side" },

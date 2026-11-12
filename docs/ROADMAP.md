@@ -276,6 +276,22 @@ Known leftovers:
   decals have their own art (`tools/inn_art.py`).
 - Tune the pot, seasoning, wash, tap and mix timings in play.
 
+### Sitting over a drink (2026-11-12)
+- **Served, a customer sits with it.** A drink or a meal handed over is paid for and tasted at
+  once (a named drink is judged then too: `DrinkingSystem.Served`). Then it stays in their hand
+  (`Hospitality.Savouring`) and they take it to the nearest free seat in the room (`SavourJob`; a
+  building prop's `seat`, the stools). They sit there about 0.6 game hours over a drink and 0.8 over
+  a meal, and order no more drink or food meanwhile. When it's finished it takes hold
+  (`DrinkingSystem.Drank`) or fills them, and the dirty tankard or bowl is left at their seat.
+- **Talk at the table:** a third and two thirds of the way through, each may tell a rumour (50%, more
+  with drink in them), heard by whoever sits near.
+- Ending a job no longer drops what a customer is savouring. Leaving town finishes it in a gulp.
+- **Art:** people have a `sit_<view>` pose (147 frames now), with the cup drawn in hand and lifted for
+  a sip.
+- Tests about serving wait for the customer to finish (`TestWorld.TillFinished`).
+  `ServedTheyTakeASeatAndSitOverItTalking` covers seats, a stool each, saving, and the talk.
+  Bench hashes unchanged.
+
 ### Slower days (2026-11-12)
 - **A game hour is 40 real seconds, a day 16 minutes** (was 25 s and 10 minutes), so a 30 to 40
   minute round is 2 to 2.5 days. `TicksPerHour` is 2400 because systems tick every hour/12, /6 and /4.
