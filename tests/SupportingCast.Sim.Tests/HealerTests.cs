@@ -1,6 +1,6 @@
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Errands;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Healing;
 using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Round;
@@ -251,7 +251,7 @@ public class HealerTests
         Assert.Equal((s.Mending, s.Resolved, s.StepsDone, s.Hits[0]), (copy.Mending, copy.Resolved, copy.StepsDone, copy.Hits[0]));
     }
 
-    // ---------------- Healing errands ----------------
+    // ---------------- Healing orders ----------------
 
     private static (Simulation Sim, Entity Hurt) ShrineWithAHurtAdventurer(string playerTrade)
     {
@@ -276,9 +276,9 @@ public class HealerTests
         var (sim, hurt) = ShrineWithAHurtAdventurer("Healer");
         var me = Players.CharacterOf(sim, Ana);
         Assert.True(Empathy.Gifted(sim, me), "the healer's trade brings the gift");
-        var errand = sim.Errands.All.Single(e => e.IsOpen && e.Poster == hurt && e.Kind.Kind == ErrandKind.Healing);
-        Assert.Contains(Perception.For(sim, me).Errands(), e => e.Id == errand.Id);
-        sim.ApplyNow(new AcceptErrandCommand(me, errand.Id));
+        var order = sim.Shops.All.Single(e => e.IsOpen && e.Poster == hurt && e.Kind.Kind == ServiceKind.Healing);
+        Assert.Contains(Perception.For(sim, me).Orders(), e => e.Id == order.Id);
+        sim.ApplyNow(new TakeOrderCommand(me, order.Id));
 
         var at = sim.World.Get<Position>(hurt).Cell;
         var cell = sim.SpiralFrom(at, 2).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z && Ai.Pathfinder.Touches(c, at));
@@ -291,8 +291,8 @@ public class HealerTests
             Empathy.Draw(sim, me, hurt, wound.Key, 1f, snapped: false);
         sim.TickMany(SimClock.TicksPerHour / 6);
 
-        Assert.Equal(ErrandStatus.Done, errand.Status);
-        Assert.Equal(purse + errand.Price, Coin.Count(sim, me));
+        Assert.Equal(OrderStatus.Done, order.Status);
+        Assert.Equal(purse + order.Price, Coin.Count(sim, me));
     }
 
     [Fact]
@@ -300,11 +300,11 @@ public class HealerTests
     {
         var (sim, hurt) = ShrineWithAHurtAdventurer("Blacksmith");
         var healer = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
-        for (var i = 0; i < 16 && sim.Errands.All.Any(e => e.IsOpen && e.Kind.Kind == ErrandKind.Healing); i++)
+        for (var i = 0; i < 16 && sim.Shops.All.Any(e => e.IsOpen && e.Kind.Kind == ServiceKind.Healing); i++)
             sim.TickMany(SimClock.TicksPerHour / 4);
 
-        var errand = sim.Errands.All.Single(e => e.Poster == hurt && e.Kind.Kind == ErrandKind.Healing);
-        Assert.Equal(ErrandStatus.Done, errand.Status);
-        Assert.Equal(healer, errand.Assignee);
+        var order = sim.Shops.All.Single(e => e.Poster == hurt && e.Kind.Kind == ServiceKind.Healing);
+        Assert.Equal(OrderStatus.Done, order.Status);
+        Assert.Equal(healer, order.Assignee);
     }
 }

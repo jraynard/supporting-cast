@@ -6,18 +6,18 @@ using SupportingCast.Sim.Round;
 using SupportingCast.Sim.Speech;
 using SupportingCast.Sim.Systems;
 
-namespace SupportingCast.Sim.Errands;
+namespace SupportingCast.Sim.Shops;
 
 /// <summary>
-/// Every <see cref="Errand"/> in the round. Adventurers ask aloud for what they want (a meal when
+/// Every <see cref="Order"/> in the round. Adventurers ask aloud for what they want (a meal when
 /// hungry, a mend when their gear is worn, a healer when hurt, and once per party a quest), and
 /// keep asking while nobody takes it on. Done, they pay in silver and think better of the town;
-/// left waiting, they give up and think worse (<see cref="Adventurer.Satisfaction"/>). Players
-/// post requests of their own. Only those who heard an errand asked know of it.
+/// left waiting, they give up and think worse (<see cref="Adventurer.Satisfaction"/>). Only those
+/// who heard an order asked know of it. Players asking each other go through <c>Favours.FavourBoard</c>.
 /// </summary>
-public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
+public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
 {
-    public string Name => "Errands";
+    public string Name => "Shops";
     public int Interval => SimClock.TicksPerHour / 12;
 
     /// <summary>Hunger (the Food need) below which an adventurer asks for a meal.</summary>
@@ -26,10 +26,10 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// <summary>Wear (fraction of max HP) below which an adventurer wants a piece of gear mended.</summary>
     public const float RepairBelow = 0.75f;
 
-    /// <summary>Game hours after one errand of a kind closes before the same asker posts another.</summary>
+    /// <summary>Game hours after one order of a kind closes before the same asker posts another.</summary>
     public const float CooldownHours = 2;
 
-    /// <summary>Game hours between an asker repeating an errand nobody has taken.</summary>
+    /// <summary>Game hours between an asker repeating an order nobody has taken.</summary>
     public const float RepeatHours = 1.5f;
 
     /// <summary>Game hours a party spends in town (eating, drinking, getting mended) before it asks for a quest.</summary>
@@ -41,47 +41,41 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// <summary>The evening hour from which an adventurer staying the night asks for a room, and how late they still will.</summary>
     public const float LodgingFromHour = 18, LodgingUntilHour = 2;
 
-    /// <summary>Open requests one player may have at once.</summary>
-    public const int MaxOpenRequests = 5;
-
-    /// <summary>How long closed errands stay on the books (for the list and the cooldown).</summary>
+    /// <summary>How long closed orders stay on the books (for the list and the cooldown).</summary>
     public const int KeepClosedTicks = SimClock.TicksPerDay;
 
-    /// <summary>Longest request text.</summary>
-    public const int MaxTextLength = 120;
-
     private readonly SimRandom _rand = new(seed ^ 0xE77A_4D5u);
-    private readonly List<Errand> _errands = [];
+    private readonly List<Order> _orders = [];
     private readonly HashSet<int> _questAsked = [];
 
-    /// <summary>Who last saw to each patient's wounds (drawn or bandaged), to be paid for a Healing errand.</summary>
+    /// <summary>Who last saw to each patient's wounds (drawn or bandaged), to be paid for a Healing order.</summary>
     private readonly Dictionary<Entity, Entity> _treatedBy = [];
     private int _nextId = 1;
 
-    /// <summary>Every errand still on the books, oldest first. Game code reads them through <c>Perception</c>.</summary>
-    public IReadOnlyList<Errand> All => _errands;
+    /// <summary>Every order still on the books, oldest first. Game code reads them through <c>Perception</c>.</summary>
+    public IReadOnlyList<Order> All => _orders;
 
-    public Errand? Find(int id) => _errands.Find(e => e.Id == id);
+    public Order? Find(int id) => _orders.Find(e => e.Id == id);
 
     public void Update(Simulation sim)
     {
         if (sim.Round.Phase != RoundPhase.Playing)
             return;
         var now = sim.Clock.Tick;
-        foreach (var e in _errands)
+        foreach (var e in _orders)
         {
             if (!e.IsOpen)
                 continue;
             if (!sim.World.IsAlive(e.Poster) || sim.World.Get<Creature>(e.Poster).Dead || sim.World.Has<Leaving>(e.Poster))
             {
-                Close(sim, e, ErrandStatus.Cancelled);
+                Close(sim, e, OrderStatus.Cancelled);
                 LostTheirGear(sim, e);
             }
-            else if (e.Kind.Kind == ErrandKind.Healing && !Untended(sim, e.Poster))
+            else if (e.Kind.Kind == ServiceKind.Healing && !Untended(sim, e.Poster))
                 Healed(sim, e);
             else if (now >= e.Deadline)
                 GiveUp(sim, e);
-            else if (e.Assignee.IsNull && e.Kind.Kind != ErrandKind.Request && now - e.LastAsked >= SimClock.HoursToTicks(RepeatHours))
+            else if (e.Assignee.IsNull && now - e.LastAsked >= SimClock.HoursToTicks(RepeatHours))
                 Announce(sim, e, Line(e.Kind, e.Price, SubjectLabel(sim, e.Subject)));
             else
             {
@@ -89,7 +83,7 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 TryLetARoom(sim, e);
             }
         }
-        _errands.RemoveAll(e => !e.IsOpen && now - e.ClosedTick > KeepClosedTicks);
+        _orders.RemoveAll(e => !e.IsOpen && now - e.ClosedTick > KeepClosedTicks);
         foreach (var gone in _treatedBy.Keys.Where(k => !sim.World.IsAlive(k)).ToList())
             _treatedBy.Remove(gone);
         AskForWhatTheyWant(sim);
@@ -108,23 +102,23 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
             if (!_questAsked.Contains(a.Party) && sim.Clock.Tick - a.Arrived >= SimClock.HoursToTicks(QuestAfterHours))
             {
                 _questAsked.Add(a.Party);
-                PostFor(sim, who, ErrandKind.Quest, Entity.Null);
+                PostFor(sim, who, ServiceKind.Quest, Entity.Null);
             }
             if (w.Get<Needs>(who).Get(food) < MealBelow)
-                PostFor(sim, who, ErrandKind.Meal, Entity.Null);
-            if (sim.Clock.Tick >= a.NextDrink && MayAsk(sim, who, ErrandKind.Drink))
+                PostFor(sim, who, ServiceKind.Meal, Entity.Null);
+            if (sim.Clock.Tick >= a.NextDrink && MayAsk(sim, who, ServiceKind.Drink))
             {
-                PostFor(sim, who, ErrandKind.Drink, Entity.Null);
+                PostFor(sim, who, ServiceKind.Drink, Entity.Null);
                 w.Get<Adventurer>(who).NextDrink = sim.Clock.Tick + SimClock.HoursToTicks(HoursBetweenDrinks * _rand.Range(0.75f, 1.25f));
             }
             if (MostWorn(sim, who) is { IsNull: false } gear)
-                PostFor(sim, who, ErrandKind.Repair, gear);
+                PostFor(sim, who, ServiceKind.Repair, gear);
             if (w.TryGet<Health>(who, out var h) && h.Injuries.Exists(i => !i.Tended))
-                PostFor(sim, who, ErrandKind.Healing, Entity.Null);
+                PostFor(sim, who, ServiceKind.Healing, Entity.Null);
             if (Locks.Lockwork.LockedBoxOf(sim, who) is { IsNull: false } box)
-                PostFor(sim, who, ErrandKind.Unlock, box);
+                PostFor(sim, who, ServiceKind.Unlock, box);
             if (WantsARoom(sim, who, a))
-                PostFor(sim, who, ErrandKind.Lodging, Entity.Null);
+                PostFor(sim, who, ServiceKind.Lodging, Entity.Null);
         }
     }
 
@@ -142,10 +136,10 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// bed is theirs for their stay (<see cref="BedOwner"/>), and they pay. With every room taken,
     /// they're told so, and wait or give up.
     /// </summary>
-    private void TryLetARoom(Simulation sim, Errand e)
+    private void TryLetARoom(Simulation sim, Order e)
     {
         var w = sim.World;
-        if (e.Kind.Kind != ErrandKind.Lodging || e.Assignee.IsNull || !Handing.InReach(sim, e.Assignee, e.Poster))
+        if (e.Kind.Kind != ServiceKind.Lodging || e.Assignee.IsNull || !Handing.InReach(sim, e.Assignee, e.Poster))
             return;
         var bed = FreeLetBed(sim, e.Where);
         if (bed.IsNull)
@@ -175,48 +169,48 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
     public static bool IsLet(Simulation sim, Entity bed) =>
         Buildings.Of(sim, bed) is { IsNull: false } b && sim.World.Get<PresetBuilding>(b).Def.LetsBeds;
 
-    private void PostFor(Simulation sim, Entity who, ErrandKind kind, Entity subject)
+    private void PostFor(Simulation sim, Entity who, ServiceKind kind, Entity subject)
     {
         if (!MayAsk(sim, who, kind))
             return;
-        var def = sim.Defs.Errand(kind);
+        var def = sim.Defs.Service(kind);
         var price = _rand.Range(def.PriceMin, def.PriceMax + 1);
         var text = Line(def, price, SubjectLabel(sim, subject) ?? WoundLabel(sim, who));
         Post(sim, who, def, text, price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), subject);
     }
 
     /// <summary>Has nothing of this kind open, and didn't just have one close?</summary>
-    private bool MayAsk(Simulation sim, Entity who, ErrandKind kind)
+    private bool MayAsk(Simulation sim, Entity who, ServiceKind kind)
     {
         var since = sim.Clock.Tick - SimClock.HoursToTicks(CooldownHours);
-        foreach (var e in _errands)
+        foreach (var e in _orders)
             if (e.Poster == who && e.Kind.Kind == kind && (e.IsOpen || e.ClosedTick > since))
                 return false;
         return true;
     }
 
-    /// <summary>Put an errand on the books and say it aloud. Those who hear it clearly know of it.</summary>
-    public Errand Post(Simulation sim, Entity poster, ErrandKindDef kind, string text, int price, long deadline, Entity? subject = null)
+    /// <summary>Put an order on the books and say it aloud. Those who hear it clearly know of it.</summary>
+    public Order Post(Simulation sim, Entity poster, ServiceDef kind, string text, int price, long deadline, Entity? subject = null)
     {
-        var errand = new Errand
+        var order = new Order
         {
             Id = _nextId++, Kind = kind, Poster = poster, PosterName = sim.World.Get<Creature>(poster).Name, Text = text,
             Where = kind.AtDef is { } at ? BuildingOf(sim, at) : Entity.Null, Subject = subject ?? Entity.Null, Price = price,
             PostedTick = sim.Clock.Tick, Deadline = deadline,
         };
-        _errands.Add(errand);
-        Learn(errand, poster);
+        _orders.Add(order);
+        Learn(order, poster);
         // Word of work at a trade's building reaches whoever holds that trade.
         if (kind.AtDef != null)
             foreach (var e in sim.Creatures())
                 if (sim.World.TryGet<Trade>(e, out var trade) && trade.Def.WorkplaceDef == kind.AtDef)
-                    Learn(errand, e);
-        Announce(sim, errand, text);
-        return errand;
+                    Learn(order, e);
+        Announce(sim, order, text);
+        return order;
     }
 
     /// <summary>The asker says it (again): everyone who catches it clearly now knows of it.</summary>
-    private static void Announce(Simulation sim, Errand e, string? text)
+    private static void Announce(Simulation sim, Order e, string? text)
     {
         if (text == null || sim.Speech.Say(sim, e.Poster, text, Volume.Say) is not { } said)
             return;
@@ -226,13 +220,13 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 Learn(e, h.Listener);
     }
 
-    public static void Learn(Errand e, Entity who)
+    public static void Learn(Order e, Entity who)
     {
         if (!who.IsNull && !e.KnownBy.Contains(who))
             e.KnownBy.Add(who);
     }
 
-    /// <summary>Someone says they'll see to an errand they know of. False if they can't take it.</summary>
+    /// <summary>Someone says they'll see to an order they know of. False if they can't take it.</summary>
     public bool Accept(Simulation sim, Entity who, int id)
     {
         if (Find(id) is not { IsOpen: true } e || e.Poster == who || !e.Assignee.IsNull || !e.KnownBy.Contains(who))
@@ -247,15 +241,15 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
     }
 
     /// <summary>
-    /// The errand is done, by <paramref name="by"/>: the asker pays what they promised (or what
+    /// The order is done, by <paramref name="by"/>: the asker pays what they promised (or what
     /// they have), thanks them aloud, and an adventurer thinks the better of the town for it.
     /// </summary>
-    public void Complete(Simulation sim, Errand e, Entity by)
+    public void Complete(Simulation sim, Order e, Entity by)
     {
         if (!e.IsOpen)
             return;
         var paid = Coin.Pay(sim, e.Poster, by, e.Price);
-        Close(sim, e, ErrandStatus.Done);
+        Close(sim, e, OrderStatus.Done);
         Learn(e, by);
         if (e.Assignee.IsNull)
         {
@@ -272,14 +266,14 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         sim.Speech.Say(sim, e.Poster, thanks, Volume.Say);
     }
 
-    /// <summary>Errands that hand something over to be seen to and given back.</summary>
-    public static bool HandsOver(ErrandKind kind) => kind is ErrandKind.Repair or ErrandKind.Unlock;
+    /// <summary>Shops that hand something over to be seen to and given back.</summary>
+    public static bool HandsOver(ServiceKind kind) => kind is ServiceKind.Repair or ServiceKind.Unlock;
 
     /// <summary>
     /// An adventurer gives the piece to be mended (or the box to be opened) to whoever took the
     /// job on, once they're in reach. True if it changed hands (or already had).
     /// </summary>
-    public bool TryHandOver(Simulation sim, Errand e)
+    public bool TryHandOver(Simulation sim, Order e)
     {
         var w = sim.World;
         if (!e.IsOpen || !HandsOver(e.Kind.Kind) || e.Assignee.IsNull || !w.IsAlive(e.Subject))
@@ -288,7 +282,7 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
             return true;
         if (!Inventory.OnPerson(sim, e.Poster, e.Subject) || !Handing.InReach(sim, e.Poster, e.Assignee) || !SpeechSystem.CanAct(sim, e.Poster))
             return false;
-        if (e.Kind.Kind == ErrandKind.Unlock)
+        if (e.Kind.Kind == ServiceKind.Unlock)
         {
             var box = Inventory.TakeFromPerson(sim, e.Poster, e.Subject, 1);
             w.Add(box, new Entrusted { Owner = e.Poster });
@@ -308,8 +302,8 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         return true;
     }
 
-    /// <summary>Did the asker go without the thing they handed over (the errand closing with it still out)?</summary>
-    private static void LostTheirGear(Simulation sim, Errand e)
+    /// <summary>Did the asker go without the thing they handed over (the order closing with it still out)?</summary>
+    private static void LostTheirGear(Simulation sim, Order e)
     {
         var w = sim.World;
         if (!HandsOver(e.Kind.Kind) || !w.IsAlive(e.Subject) || !w.IsAlive(e.Poster) || Inventory.OnPerson(sim, e.Poster, e.Subject))
@@ -328,14 +322,14 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         sim.World.TryGet<Health>(who, out var h) && h.Injuries.Exists(i => i.NeedsTending(sim.Clock.Tick));
 
     /// <summary>Nothing left untended: whoever took it on (or did the work) is paid; if nobody did, they mended on their own.</summary>
-    private void Healed(Simulation sim, Errand e)
+    private void Healed(Simulation sim, Order e)
     {
         var w = sim.World;
         var by = !e.Assignee.IsNull && w.IsAlive(e.Assignee) ? e.Assignee
             : _treatedBy.TryGetValue(e.Poster, out var t) && w.IsAlive(t) ? t : Entity.Null;
         _treatedBy.Remove(e.Poster);
         if (by.IsNull)
-            Close(sim, e, ErrandStatus.Cancelled);
+            Close(sim, e, OrderStatus.Cancelled);
         else
             Complete(sim, e, by);
     }
@@ -356,18 +350,9 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
             sim.Speech.Say(sim, who, line, Volume.Say);
     }
 
-    /// <summary>The asker calls it off (a player's own request).</summary>
-    public bool Cancel(Simulation sim, Entity who, int id)
+    private static void GiveUp(Simulation sim, Order e)
     {
-        if (Find(id) is not { IsOpen: true } e || e.Poster != who)
-            return false;
-        Close(sim, e, ErrandStatus.Cancelled);
-        return true;
-    }
-
-    private static void GiveUp(Simulation sim, Errand e)
-    {
-        Close(sim, e, ErrandStatus.Expired);
+        Close(sim, e, OrderStatus.Expired);
         LostTheirGear(sim, e);
         if (sim.World.Has<Adventurer>(e.Poster))
         {
@@ -376,7 +361,7 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         }
     }
 
-    private static void Close(Simulation sim, Errand e, ErrandStatus status)
+    private static void Close(Simulation sim, Order e, OrderStatus status)
     {
         e.Status = status;
         e.ClosedTick = sim.Clock.Tick;
@@ -384,25 +369,25 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
 
     /// <summary>
     /// Something handed to someone (<see cref="GiveCommand"/>): if it's what they're waiting for,
-    /// the errand is done and paid; otherwise they keep it. Takes ownership of the unspawned item.
+    /// the order is done and paid; otherwise they keep it. Takes ownership of the unspawned item.
     /// </summary>
     public void Received(Simulation sim, Entity giver, Entity to, Entity item)
     {
         var w = sim.World;
         var def = w.Get<Thing>(item).Def;
-        var repair = _errands.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ErrandKind.Repair && e.Subject == item);
+        var repair = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Repair && e.Subject == item);
         if (repair != null)
         {
             TakeBack(sim, repair, giver);
             return;
         }
-        var unlock = _errands.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ErrandKind.Unlock && e.Subject == item);
+        var unlock = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Unlock && e.Subject == item);
         if (unlock != null)
         {
             TakeBackBox(sim, unlock, giver);
             return;
         }
-        var drink = _errands.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ErrandKind.Drink);
+        var drink = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Drink);
         if (drink != null && def.Drink)
         {
             var quality = w.TryGet<Crafted>(item, out var made) ? made.Quality : Quality.Plain;
@@ -411,7 +396,7 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
             Complete(sim, drink, giver);
             return;
         }
-        var meal = _errands.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ErrandKind.Meal);
+        var meal = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Meal);
         if (meal != null && def.EdibleBy(w.Get<Creature>(to).Def))
         {
             var count = Math.Min(EatJob.Wanted(sim, to, def), w.Get<Stack>(item).Count);
@@ -431,7 +416,7 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// The mended piece comes back: they take it up again and look it over. Done right, they pay;
     /// otherwise they say what's still wrong and the job is open again for anyone.
     /// </summary>
-    private void TakeBack(Simulation sim, Errand e, Entity giver)
+    private void TakeBack(Simulation sim, Order e, Entity giver)
     {
         var w = sim.World;
         var item = e.Subject;
@@ -454,7 +439,7 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// The strongbox comes back. Open, they take the silver out and pay; still locked, they say so
     /// and the job is open again for anyone.
     /// </summary>
-    private void TakeBackBox(Simulation sim, Errand e, Entity giver)
+    private void TakeBackBox(Simulation sim, Order e, Entity giver)
     {
         var w = sim.World;
         var box = e.Subject;
@@ -499,7 +484,7 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         return worst;
     }
 
-    private string Line(ErrandKindDef def, int price, string? subject) =>
+    private string Line(ServiceDef def, int price, string? subject) =>
         def.Lines.Count == 0 ? $"Wanted: {def.Label}. {price} silver." : string.Format(def.Lines[_rand.NextInt(def.Lines.Count)], price, subject ?? "gear");
 
     private static string? SubjectLabel(Simulation sim, Entity subject) =>
@@ -525,20 +510,6 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         return Entity.Null;
     }
 
-    /// <summary>Post a player's request in their own words. Null if it's empty or they have too many open.</summary>
-    public Errand? PostRequest(Simulation sim, Entity who, string? text, int price, int hours)
-    {
-        var line = SpeechSystem.Clean(text);
-        if (line.Length > MaxTextLength)
-            line = line[..MaxTextLength].Trim();
-        if (line.Length == 0 || _errands.Count(e => e.IsOpen && e.Poster == who) >= MaxOpenRequests)
-            return null;
-        var def = sim.Defs.Errand(ErrandKind.Request);
-        price = Math.Clamp(price, def.PriceMin, def.PriceMax);
-        hours = Math.Clamp(hours, 1, 24);
-        return Post(sim, who, def, $"{line} ({price} silver)", price, sim.Clock.Tick + SimClock.HoursToTicks(hours));
-    }
-
     public void Save(Saving.SaveWriter w, Simulation sim)
     {
         var (a, b, c, d) = _rand.State;
@@ -555,8 +526,8 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
             w.Entity(patient);
             w.Entity(by);
         }
-        w.Int(_errands.Count);
-        foreach (var e in _errands)
+        w.Int(_orders.Count);
+        foreach (var e in _orders)
         {
             w.Int(e.Id);
             w.Def(e.Kind);
@@ -589,24 +560,24 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         _treatedBy.Clear();
         for (var n = r.Count(1 << 16); n > 0; n--)
             _treatedBy[r.Entity()] = r.Entity();
-        _errands.Clear();
+        _orders.Clear();
         for (var n = r.Count(1 << 16); n > 0; n--)
         {
-            var e = new Errand
+            var e = new Order
             {
-                Id = r.Int(), Kind = r.Def<ErrandKindDef>(), Poster = r.Entity(), PosterName = r.String(), Text = r.String(),
+                Id = r.Int(), Kind = r.Def<ServiceDef>(), Poster = r.Entity(), PosterName = r.String(), Text = r.String(),
                 Where = r.Entity(), Subject = r.Entity(), Price = r.Int(), PostedTick = r.Long(), Deadline = r.Long(),
                 Assignee = r.Entity(), AssigneeName = r.String(),
             };
             var status = r.Byte();
-            if (!Enum.IsDefined((ErrandStatus)status))
-                throw new Saving.SaveException($"Corrupt save: errand status {status}");
-            e.Status = (ErrandStatus)status;
+            if (!Enum.IsDefined((OrderStatus)status))
+                throw new Saving.SaveException($"Corrupt save: order status {status}");
+            e.Status = (OrderStatus)status;
             e.ClosedTick = r.Long();
             e.LastAsked = r.Long();
             for (var k = r.Count(1 << 16); k > 0; k--)
                 e.KnownBy.Add(r.Entity());
-            _errands.Add(e);
+            _orders.Add(e);
         }
     }
 }

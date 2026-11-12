@@ -3,10 +3,10 @@ using SupportingCast.Sim.Core;
 using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Speech;
 
-namespace SupportingCast.Sim.Errands;
+namespace SupportingCast.Sim.Shops;
 
-// What players do with errands and coin. All act as the player's own character, and do nothing
-// if the request has gone stale (the errand closed, the other person walked off).
+// What players do with orders and coin. All act as the player's own character, and do nothing
+// if the order has gone stale (it closed, the other person walked off).
 
 /// <summary>How close two people must be to hand something over.</summary>
 public static class Handing
@@ -42,56 +42,19 @@ public sealed record GiveCommand(Entity Avatar, Entity To, Entity Item, int Coun
         if (w.Get<Carrying>(Avatar).Item != Item && !Systems.Inventory.InOwnPack(sim, Avatar, Item))
             return;
         var taken = Systems.Inventory.TakeFromPerson(sim, Avatar, Item, Math.Min(Count, w.Get<Stack>(Item).Count));
-        sim.Errands.Received(sim, Avatar, To, taken);
+        sim.Shops.Received(sim, Avatar, To, taken);
     }
 }
 
-/// <summary>Ask for something in your own words, for a price, said aloud where you stand.</summary>
-public sealed record PostErrandCommand(Entity Avatar, string Text, int Price, int Hours) : ISimCommand, IActorCommand
+/// <summary>Say you'll see to an order you know of: a mend, a strongbox, a pour.</summary>
+public sealed record TakeOrderCommand(Entity Avatar, int Order) : ISimCommand, IActorCommand
 {
     public Entity Actor => Avatar;
 
     public void Apply(Simulation sim)
     {
         if (InventoryCommand.Ready(sim, Avatar) && SpeechSystem.CanAct(sim, Avatar))
-            sim.Errands.PostRequest(sim, Avatar, Text, Price, Hours);
+            sim.Shops.Accept(sim, Avatar, Order);
     }
 }
 
-/// <summary>Say you'll see to an errand you know of.</summary>
-public sealed record AcceptErrandCommand(Entity Avatar, int Errand) : ISimCommand, IActorCommand
-{
-    public Entity Actor => Avatar;
-
-    public void Apply(Simulation sim)
-    {
-        if (InventoryCommand.Ready(sim, Avatar) && SpeechSystem.CanAct(sim, Avatar))
-            sim.Errands.Accept(sim, Avatar, Errand);
-    }
-}
-
-/// <summary>Your request is done: pay whoever took it on, if they're in reach.</summary>
-public sealed record CompleteErrandCommand(Entity Avatar, int Errand) : ISimCommand, IActorCommand
-{
-    public Entity Actor => Avatar;
-
-    public void Apply(Simulation sim)
-    {
-        if (!InventoryCommand.Ready(sim, Avatar) || sim.Errands.Find(Errand) is not { IsOpen: true } e
-            || e.Poster != Avatar || e.Kind.Kind != Defs.ErrandKind.Request || !Handing.InReach(sim, Avatar, e.Assignee))
-            return;
-        sim.Errands.Complete(sim, e, e.Assignee);
-    }
-}
-
-/// <summary>Call off a request of yours.</summary>
-public sealed record CancelErrandCommand(Entity Avatar, int Errand) : ISimCommand, IActorCommand
-{
-    public Entity Actor => Avatar;
-
-    public void Apply(Simulation sim)
-    {
-        if (InventoryCommand.Ready(sim, Avatar))
-            sim.Errands.Cancel(sim, Avatar, Errand);
-    }
-}

@@ -53,7 +53,7 @@ public sealed partial class VillageGame
                 ImGui.Dummy(new float2(size, size));
                 ImGui.SameLine(0, Gui.S(4));
             }
-            TextC(Ui.Theme.Warn, $"{Sim.Errands.Coin.Count(_sim, _avatar)} silver");
+            TextC(Ui.Theme.Warn, $"{Sim.Shops.Coin.Count(_sim, _avatar)} silver");
         }
         ImGui.EndGroup();
         if (clicked || (ImGui.IsItemClicked(ImGuiMouseButton.Left)))

@@ -45,8 +45,13 @@ informed them decides how the expedition goes.
 - The town wins by reaching the end-of-season festival with Renown high enough. It loses if Dread
   overflows or the town falls.
 
-**Errands are the shared spine.** Every demand is an `Errand`: who wants what, where, for how much
-and how long they'll wait. Adventurers post them and players post them to each other.
+**Shops and the line.** Players set the prices for their own goods and services on a sign at
+their shop, which anyone can read. An adventurer who wants something (a drink, a mend, a healer, a
+room, a quest lead) weighs the price against what it's worth to them and what's in their purse. If
+it fits, they go to the shop and line up at its counter: the bar for a drink, the smithy's counter
+for a mend. If it doesn't, they say so aloud and go without. Each want is an `Order` in code. Price
+is a lever: too high and nobody comes and Satisfaction falls; too low and the purse fills slowly.
+Players ask each other for things as **favours**, for silver they name.
 
 ## Trades
 
@@ -170,7 +175,7 @@ or perhaps by the traitor if they are a necromancer. they can come back in the n
 ## Sim folders
 
 Built, all in `src/SupportingCast.Sim`, driven only by commands and headless-testable:
-`Round/`, `Perception/`, `Speech/`, `Work/`, `Adventurers/`, `Errands/`, `Healing/`, `Expeditions/`.
+`Round/`, `Perception/`, `Speech/`, `Work/`, `Adventurers/`, `Shops/`, `Favours/`, `Healing/`, `Expeditions/`.
 Still to come: `Director/`, `Secrets/`, `Reagents/`.
 
 ## Reuse

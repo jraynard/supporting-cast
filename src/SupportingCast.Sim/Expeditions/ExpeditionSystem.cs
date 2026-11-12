@@ -1,7 +1,7 @@
 using SupportingCast.Sim.Combat;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Errands;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Round;
 using SupportingCast.Sim.Saving;
 using SupportingCast.Sim.Speech;
@@ -294,8 +294,8 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
     public static float PartyStrength(Simulation sim, int party) => PartyInTown(sim, party).Sum(e => Strength(Record(sim, e)));
 
     /// <summary>The party's open request for a quest, if any.</summary>
-    public static Errand? QuestErrand(Simulation sim, int party) =>
-        sim.Errands.All.FirstOrDefault(e => e.IsOpen && e.Kind.Kind == ErrandKind.Quest
+    public static Order? QuestOrder(Simulation sim, int party) =>
+        sim.Shops.All.FirstOrDefault(e => e.IsOpen && e.Kind.Kind == ServiceKind.Quest
             && sim.World.TryGet<Adventurer>(e.Poster, out var a) && a.Party == party);
 
     /// <summary>
@@ -308,7 +308,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         var w = sim.World;
         if (Find(questId) is not { Status: QuestStatus.Open } quest || !_intel.TryGetValue((broker, questId), out var intel)
             || !w.TryGet<Adventurer>(member, out var a) || w.Has<Leaving>(member) || !Handing.InReach(sim, broker, member)
-            || !SpeechSystem.CanAct(sim, member) || QuestErrand(sim, a.Party) is not { } errand)
+            || !SpeechSystem.CanAct(sim, member) || QuestOrder(sim, a.Party) is not { } order)
             return false;
         var strength = PartyStrength(sim, a.Party);
         var label = quest.Def.Label;
@@ -323,7 +323,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             return false;
         }
         sim.Speech.Say(sim, member, $"{Capital(label)}. {Capital(DangerWord(intel.Danger))}, you say? We'll do it.", Volume.Say);
-        sim.Errands.Complete(sim, errand, broker);
+        sim.Shops.Complete(sim, order, broker);
         quest.Status = QuestStatus.Taken;
         var party = PartyInTown(sim, a.Party);
         foreach (var e in party)
@@ -364,7 +364,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         {
             Name = w.Get<Creature>(e).Name, Kind = a.Kind, PartyDef = a.PartyDef, Party = a.Party, LookId = Clothing.LookId(sim, e),
             AgeDays = w.Get<Creature>(e).AgeDays(sim.Clock.Tick), Melee = skills[Skill.Melee], Shooting = skills[Skill.Shooting],
-            Coin = Errands.Coin.Count(sim, e), Satisfaction = a.Satisfaction,
+            Coin = Shops.Coin.Count(sim, e), Satisfaction = a.Satisfaction,
             Food = w.TryGet<Needs>(e, out var needs) ? needs.Get(sim.Defs.Need("Food")) : 1f,
         };
         if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon))
@@ -505,7 +505,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         Array.Fill(w.Get<Needs>(e).Values, 0.6f);
         w.Get<Needs>(e).Values[sim.Defs.Need("Food").Index] = m.Food;
         if (m.Coin > 0)
-            Inventory.Stow(sim, e, sim.CreateItem(sim.Defs.Thing(Errands.Coin.Silver), m.Coin));
+            Inventory.Stow(sim, e, sim.CreateItem(sim.Defs.Thing(Shops.Coin.Silver), m.Coin));
         foreach (var wound in m.Wounds)
             if (HealthSystem.Damage(sim, e, wound.Damage, wound.Type, wound.Part) is { } inj)
             {

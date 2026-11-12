@@ -1,7 +1,7 @@
 using SupportingCast.Sim.Bots;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Errands;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Expeditions;
 using SupportingCast.Sim.Locks;
 using SupportingCast.Sim.Maps;
@@ -200,10 +200,10 @@ public class CarpenterTests
         Assert.InRange(sim.World.Get<Strongbox>(box).Pins, Lockwork.MinPins, Lockwork.MaxPins);
 
         sim.TickMany(SimClock.TicksPerHour / 4);
-        var errand = sim.Errands.All.Single(e => e.Kind.Kind == ErrandKind.Unlock && e.Poster == carrier);
-        Assert.Equal(box, errand.Subject);
+        var order = sim.Shops.All.Single(e => e.Kind.Kind == ServiceKind.Unlock && e.Poster == carrier);
+        Assert.Equal(box, order.Subject);
         var carpenter = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Carpenter");
-        Assert.Contains(carpenter, errand.KnownBy); // word of work at the woodshop reaches the carpenter
+        Assert.Contains(carpenter, order.KnownBy); // word of work at the woodshop reaches the carpenter
     }
 
     /// <summary>A round with the player in <paramref name="trade"/>, and an adventurer holding a strongbox.</summary>
@@ -226,8 +226,8 @@ public class CarpenterTests
         return (sim, owner, box);
     }
 
-    private static Errand UnlockOf(Simulation sim, Entity owner) =>
-        sim.Errands.All.Single(e => e.Poster == owner && e.Kind.Kind == ErrandKind.Unlock);
+    private static Order UnlockOf(Simulation sim, Entity owner) =>
+        sim.Shops.All.Single(e => e.Poster == owner && e.Kind.Kind == ServiceKind.Unlock);
 
     [Fact]
     public void AnAICarpenterOpensAStrongboxAndIsPaid()
@@ -238,18 +238,18 @@ public class CarpenterTests
         var purse = Coin.Count(sim, carpenter);
         var theirs = Coin.Count(sim, owner);
 
-        for (var h = 0; h < 12 && sim.Errands.All.All(e => e.Kind.Kind != ErrandKind.Unlock || e.IsOpen); h++)
+        for (var h = 0; h < 12 && sim.Shops.All.All(e => e.Kind.Kind != ServiceKind.Unlock || e.IsOpen); h++)
             sim.TickMany(SimClock.TicksPerHour);
 
-        var errand = UnlockOf(sim, owner);
-        Assert.True(errand.Status == ErrandStatus.Done, $"{errand.Status}, carpenter: {sim.Ai.LastFailure.GetValueOrDefault(carpenter)} / {sim.World.Get<Mind>(carpenter).Job?.Report}\n"
+        var order = UnlockOf(sim, owner);
+        Assert.True(order.Status == OrderStatus.Done, $"{order.Status}, carpenter: {sim.Ai.LastFailure.GetValueOrDefault(carpenter)} / {sim.World.Get<Mind>(carpenter).Job?.Report}\n"
             + string.Join("\n", sim.Speech.Kept.TakeLast(12).Select(u => $"{u.SpeakerName}: {u.Text}")));
-        Assert.Equal(carpenter, errand.Assignee);
+        Assert.Equal(carpenter, order.Assignee);
         Assert.False(sim.World.Get<Strongbox>(box).Locked);
         Assert.Equal(0, sim.World.Get<Strongbox>(box).Silver);
         Assert.True(Inventory.OnPerson(sim, owner, box));
-        Assert.Equal(purse + errand.Price, Coin.Count(sim, carpenter));
-        Assert.True(Coin.Count(sim, owner) >= theirs + 25 - errand.Price - 10, "the silver inside went to its owner"); // less what they spent on drink meanwhile
+        Assert.Equal(purse + order.Price, Coin.Count(sim, carpenter));
+        Assert.True(Coin.Count(sim, owner) >= theirs + 25 - order.Price - 10, "the silver inside went to its owner"); // less what they spent on drink meanwhile
     }
 
     [Fact]
@@ -258,17 +258,17 @@ public class CarpenterTests
         var (sim, owner, box) = TownWithABox("Carpenter", trapped: false);
         var me = Players.CharacterOf(sim, Ana);
         sim.TickMany(SimClock.TicksPerHour / 6);
-        var errand = UnlockOf(sim, owner);
-        sim.ApplyNow(new AcceptErrandCommand(me, errand.Id));
+        var order = UnlockOf(sim, owner);
+        sim.ApplyNow(new TakeOrderCommand(me, order.Id));
         var at = sim.World.Get<Position>(owner).Cell;
         sim.World.Get<Position>(me) = Position.At(sim.SpiralFrom(at, 2).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z));
-        Assert.True(sim.Errands.TryHandOver(sim, errand));
+        Assert.True(sim.Shops.TryHandOver(sim, order));
         Assert.True(Inventory.OnPerson(sim, me, box));
         Assert.True(sim.World.Has<Entrusted>(box));
 
         sim.ApplyNow(new GiveCommand(me, owner, box, 1));
-        Assert.True(errand.IsOpen);
-        Assert.True(errand.Assignee.IsNull);
+        Assert.True(order.IsOpen);
+        Assert.True(order.Assignee.IsNull);
         Assert.True(Inventory.OnPerson(sim, owner, box));
     }
 
@@ -279,14 +279,14 @@ public class CarpenterTests
         var bot = new BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 11);
         var me = Players.CharacterOf(sim, Ana);
         var purse = Coin.Count(sim, me);
-        for (var t = 0; t < SimClock.TicksPerHour * 8 && sim.Errands.All.All(e => e.Kind.Kind != ErrandKind.Unlock || e.IsOpen); t++)
+        for (var t = 0; t < SimClock.TicksPerHour * 8 && sim.Shops.All.All(e => e.Kind.Kind != ServiceKind.Unlock || e.IsOpen); t++)
         {
             sim.Tick();
             bot.Tick();
         }
-        var errand = UnlockOf(sim, owner);
-        Assert.True(errand.Status == ErrandStatus.Done, $"{errand.Status}: bot {bot.Doing}\n" + string.Join("\n", sim.Messages.Messages.TakeLast(10).Select(m => m.Text)));
-        Assert.True(Coin.Count(sim, me) >= purse + errand.Price);
+        var order = UnlockOf(sim, owner);
+        Assert.True(order.Status == OrderStatus.Done, $"{order.Status}: bot {bot.Doing}\n" + string.Join("\n", sim.Messages.Messages.TakeLast(10).Select(m => m.Text)));
+        Assert.True(Coin.Count(sim, me) >= purse + order.Price);
         Assert.Equal(0, Wounds(sim, me)); // it found the needle before the lid came up
     }
 }

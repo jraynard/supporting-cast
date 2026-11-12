@@ -52,10 +52,11 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art.
     sim; anything reading the world goes in `StillValid` or `Finish`. Inputs arrive in batches.
     New sessions go in the `WorkSession.Read` switch.
   - `Adventurers/`: `PartySystem` brings parties in a round; `AdventurerBrain` lounges, waits where
-    their errand is served, and leaves.
-  - `Errands/`: every demand is an `Errand`, asked aloud (only those who hear know of it). Coin is
-    real `SilverCoin` items; paying moves them. AI trades answer errands (`MendJob`, `ServeJob`,
-    `HealErrands`). An AI work pack keeps coin and `Entrusted` items between jobs.
+    their order is served, and leaves.
+  - `Shops/`: what adventurers buy. Each want is an `Order` of a `ServiceKind`, asked aloud (only
+    those who hear know of it). Coin is real `SilverCoin` items; paying moves them. AI trades serve
+    orders (`MendJob`, `ServeJob`, `HealOrders`). An AI work pack keeps coin and `Entrusted` items
+    between jobs. `Favours/`: what players ask of each other, for silver they name.
   - `Locks/`: the Carpenter's lockwork on strongboxes from quests. A box's trap is hidden item
     state: show it only through `PerceptionView.Strongbox`, which never says an armed one is there.
   - `Healing/`: the empath. Wounds drawn in are `Injury.Absorbed` and known only by feel

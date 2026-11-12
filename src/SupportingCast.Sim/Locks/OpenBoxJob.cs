@@ -1,33 +1,33 @@
 using SupportingCast.Sim.Ai;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Errands;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Systems;
 
 namespace SupportingCast.Sim.Locks;
 
 /// <summary>
-/// An AI carpenter opens a strongbox for its owner: takes the errand on, collects the box, feels
+/// An AI carpenter opens a strongbox for its owner: takes the order on, collects the box, feels
 /// it over for a trap, picks the lock and brings it back for the pay. A basic hand at it, rolled
 /// rather than played: skill makes finding and drawing a trap likelier, and a missed trap goes
 /// off when the lid comes up. Players do it by hand (<see cref="ProbeSession"/>, <see cref="PickSession"/>).
 /// </summary>
-public sealed class OpenBoxJob(int errand) : Job
+public sealed class OpenBoxJob(int order) : Job
 {
     /// <summary>Ticks of searching and of picking.</summary>
     public const int ProbeTicks = 420, PickTicks = 540;
 
-    /// <summary>An unlock errand this villager could see to now: their trade's, known to them, theirs or nobody's.</summary>
+    /// <summary>An unlock order this villager could see to now: their trade's, known to them, theirs or nobody's.</summary>
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
         if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace || Lockwork.Picks(sim, pawn).IsNull)
             return null;
         var from = w.Get<Position>(pawn).Cell;
-        foreach (var e in sim.Errands.All)
+        foreach (var e in sim.Shops.All)
         {
-            if (!e.IsOpen || e.Kind.Kind != ErrandKind.Unlock || e.Kind.AtDef != workplace || !e.KnownBy.Contains(pawn)
+            if (!e.IsOpen || e.Kind.Kind != ServiceKind.Unlock || e.Kind.AtDef != workplace || !e.KnownBy.Contains(pawn)
                 || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Subject) || !w.IsAlive(e.Poster))
                 continue;
             if (Navigation.CanReach(sim, pawn, from, w.Get<Position>(e.Poster).Cell, PathEnd.Touch))
@@ -38,8 +38,8 @@ public sealed class OpenBoxJob(int errand) : Job
 
     protected override IEnumerable<JobStatus> Run()
     {
-        var errands = Sim.Errands;
-        if (errands.Find(errand) is not { IsOpen: true } e || (e.Assignee != Pawn && !errands.Accept(Sim, Pawn, errand)))
+        var orders = Sim.Shops;
+        if (orders.Find(order) is not { IsOpen: true } e || (e.Assignee != Pawn && !orders.Accept(Sim, Pawn, order)))
         {
             Fail("someone else has it");
             yield break;
@@ -50,7 +50,7 @@ public sealed class OpenBoxJob(int errand) : Job
         {
             foreach (var s in GoToEntity(e.Poster, PathEnd.Touch, 1500)) yield return s;
             if (HasFailed) yield break;
-            if (!errands.TryHandOver(Sim, e))
+            if (!orders.TryHandOver(Sim, e))
                 foreach (var s in Wait(30)) yield return s;
         }
         if (!Inventory.OnPerson(Sim, Pawn, box))
@@ -108,6 +108,6 @@ public sealed class OpenBoxJob(int errand) : Job
             Fail("couldn't hand it back");
             yield break;
         }
-        errands.Received(Sim, Pawn, e.Poster, Inventory.TakeFromPerson(Sim, Pawn, box, 1));
+        orders.Received(Sim, Pawn, e.Poster, Inventory.TakeFromPerson(Sim, Pawn, box, 1));
     }
 }

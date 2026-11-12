@@ -606,7 +606,7 @@ public sealed class ThingDef : Def
     /// <summary>A cooked meal: people reach for it first, and it's a pleasure rather than raw meat.</summary>
     public bool Cooked { get; set; }
 
-    /// <summary>Something to drink, served to whoever ordered one (<c>Errands.ErrandKind.Drink</c>).</summary>
+    /// <summary>Something to drink, served to whoever ordered one (<c>Shops.ServiceKind.Drink</c>).</summary>
     public bool Drink { get; set; }
 
     /// <summary>Days until it rots away at 10–30°C (cold slows it, freezing stops it); 0 never rots.</summary>

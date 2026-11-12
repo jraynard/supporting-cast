@@ -192,7 +192,7 @@ public static class AiQueries
                 continue;
             if (w.Has<ForPrisoners>(e) != prisoner || owned?.Contains(e) == true)
                 continue;
-            if (Errands.ErrandSystem.IsLet(sim, e))
+            if (Shops.ShopSystem.IsLet(sim, e))
                 continue; // the inn's rooms: only for whoever's been given one
             if (sim.Reservations.IsReservedByOther(e, pawn))
                 continue;
@@ -260,7 +260,7 @@ public sealed class HumanBrain : IBrain
         if (Requests.JobFor(sim, pawn) is { } asked)
             return asked;
 
-        // 3. Gear lying around (a quick errand between jobs), then work by the pawn's priorities.
+        // 3. Gear lying around (a quick order between jobs), then work by the pawn's priorities.
         if ((FindGear(sim, pawn) ?? FindTool(sim, pawn)) is { } gear)
             return gear;
         if (_work.TryGiveJob(sim, pawn) is { } job)

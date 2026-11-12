@@ -1,7 +1,7 @@
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Core;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Errands;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Expeditions;
 using SupportingCast.Sim.Healing;
 using SupportingCast.Sim.Locks;
@@ -44,7 +44,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     private long _heardUpTo;
     private bool _sentToWork;
 
-    // The errand in hand.
+    // The order in hand.
     private int _task;
     private long _taskSince;
     private long _lastWalk;
@@ -67,7 +67,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     /// <summary>What it last decided, for tests and debugging.</summary>
     public string Doing { get; private set; } = "";
 
-    /// <summary>The errand the bot is seeing to, if any (for tests).</summary>
+    /// <summary>The order the bot is seeing to, if any (for tests).</summary>
     public int Task => _task;
 
     /// <summary>Call once per frame or tick. Does nothing until the bot has a character.</summary>
@@ -242,50 +242,50 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             Chat(view, me, now);
     }
 
-    /// <summary>The errand kinds this character's trade answers.</summary>
-    private static ErrandKind[] KindsFor(TradeDef trade) => trade.Name switch
+    /// <summary>The order kinds this character's trade answers.</summary>
+    private static ServiceKind[] KindsFor(TradeDef trade) => trade.Name switch
     {
-        "Blacksmith" => [ErrandKind.Repair],
-        "Innkeeper" => [ErrandKind.Drink, ErrandKind.Quest], // the bar and the quest board both
-        "Healer" => [ErrandKind.Healing],
-        "Carpenter" => [ErrandKind.Unlock],
-        _ => trade.Brokers ? [ErrandKind.Quest] : [],
+        "Blacksmith" => [ServiceKind.Repair],
+        "Innkeeper" => [ServiceKind.Drink, ServiceKind.Quest], // the bar and the quest board both
+        "Healer" => [ServiceKind.Healing],
+        "Carpenter" => [ServiceKind.Unlock],
+        _ => trade.Brokers ? [ServiceKind.Quest] : [],
     };
 
-    /// <summary>Take on the oldest open errand of the trade's kind it knows of.</summary>
+    /// <summary>Take on the oldest open order of the trade's kind it knows of.</summary>
     private void TakeOn(Simulation sim, Entity me, PerceptionView view, long now)
     {
         if (!sim.World.TryGet<Trade>(me, out var trade) || KindsFor(trade.Def) is not { Length: > 0 } kinds)
             return;
-        foreach (var e in view.Errands().OrderBy(e => e.PostedTick))
+        foreach (var e in view.Orders().OrderBy(e => e.PostedTick))
         {
-            if (e.Status != ErrandStatus.Open || e.Mine || !kinds.Contains(e.Kind) || (e.AssigneeName.Length > 0 && !e.MineToDo))
+            if (e.Status != OrderStatus.Open || e.Mine || !kinds.Contains(e.Kind) || (e.AssigneeName.Length > 0 && !e.MineToDo))
                 continue;
-            if (e.Kind == ErrandKind.Quest && !QuestFor(sim, view, e.Poster).HasValue)
+            if (e.Kind == ServiceKind.Quest && !QuestFor(sim, view, e.Poster).HasValue)
                 continue;
-            if (e.Kind != ErrandKind.Quest && !e.MineToDo)
-                send(new AcceptErrandCommand(me, e.Id));
+            if (e.Kind != ServiceKind.Quest && !e.MineToDo)
+                send(new TakeOrderCommand(me, e.Id));
             _task = e.Id;
             _taskSince = now;
             return;
         }
     }
 
-    /// <summary>One step of the errand in hand. False when it's over (done, gone or hopeless).</summary>
+    /// <summary>One step of the order in hand. False when it's over (done, gone or hopeless).</summary>
     private bool Work(Simulation sim, Entity me, PerceptionView view, long now)
     {
-        if (view.Errands().FirstOrDefault(e => e.Id == _task) is not { Status: ErrandStatus.Open } errand)
+        if (view.Orders().FirstOrDefault(e => e.Id == _task) is not { Status: OrderStatus.Open } order)
             return false;
-        var poster = errand.Poster;
+        var poster = order.Poster;
         if (!view.CanSee(poster) && !sim.World.IsAlive(poster))
             return false;
-        return errand.Kind switch
+        return order.Kind switch
         {
-            ErrandKind.Repair => Repair(sim, me, view, poster, now),
-            ErrandKind.Drink => Pour(sim, me, poster, now),
-            ErrandKind.Healing => Heal(sim, me, view, poster, now),
-            ErrandKind.Quest => Broker(sim, me, view, poster, now),
-            ErrandKind.Unlock => OpenBox(sim, me, view, poster, now),
+            ServiceKind.Repair => Repair(sim, me, view, poster, now),
+            ServiceKind.Drink => Pour(sim, me, poster, now),
+            ServiceKind.Healing => Heal(sim, me, view, poster, now),
+            ServiceKind.Quest => Broker(sim, me, view, poster, now),
+            ServiceKind.Unlock => OpenBox(sim, me, view, poster, now),
             _ => false,
         };
     }
@@ -295,7 +295,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
 
     /// <summary>
     /// Walk toward someone (re-aimed now and then, as they move). Far off, it waits at its
-    /// workplace instead: customers come to the building their errand is served at. True if
+    /// workplace instead: customers come to the building their order is served at. True if
     /// they're already in reach.
     /// </summary>
     private bool Reach(Simulation sim, Entity me, Entity who, long now)

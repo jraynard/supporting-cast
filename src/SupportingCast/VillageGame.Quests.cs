@@ -3,7 +3,7 @@ using Narsil.Ui;
 using SupportingCast.Sim;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Errands;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Expeditions;
 using SupportingCast.Sim.Round;
 using SupportingCast.Ui;
@@ -28,7 +28,7 @@ public sealed partial class VillageGame
         var member = Entity.Null;
         float? looks = null;
         if (w.IsAlive(_selected) && w.TryGet<Adventurer>(_selected, out var a) && Handing.InReach(_sim, _avatar, _selected)
-            && ExpeditionSystem.QuestErrand(_sim, a.Party) is { } asked && View.Errands().Any(e => e.Id == asked.Id))
+            && ExpeditionSystem.QuestOrder(_sim, a.Party) is { } asked && View.Orders().Any(e => e.Id == asked.Id))
         {
             member = _selected;
             looks = View.PartyLooks(member);

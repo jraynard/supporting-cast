@@ -214,17 +214,31 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
     }
 
     /// <summary>
-    /// The errands this character knows of, oldest first: those they heard asked, took on or asked
+    /// The orders this character knows of, oldest first: those they heard asked, took on or asked
     /// for themselves. Open ones and those closed within the last day.
     /// </summary>
-    public IEnumerable<Errands.KnownErrand> Errands()
+    public IEnumerable<Shops.KnownOrder> Orders()
     {
         if (blind)
             yield break;
-        foreach (var e in sim.Errands.All)
+        foreach (var e in sim.Shops.All)
             if (Omniscient || e.KnownBy.Contains(viewer))
-                yield return new Errands.KnownErrand(e.Id, e.Kind.Kind, e.Kind.Label, e.PosterName, e.Text, e.Price,
+                yield return new Shops.KnownOrder(e.Id, e.Kind.Kind, e.Kind.Label, e.PosterName, e.Text, e.Price,
                     e.PostedTick, e.Deadline, e.AssigneeName, e.Status, e.Poster == viewer, e.Assignee == viewer, e.Poster);
+    }
+
+    /// <summary>
+    /// The favours players asked this character knows of, oldest first: those they heard asked, took
+    /// on or asked for themselves. Open ones and those closed within the last day.
+    /// </summary>
+    public IEnumerable<Favours.KnownFavour> Favours()
+    {
+        if (blind)
+            yield break;
+        foreach (var r in sim.Favours.All)
+            if (Omniscient || r.KnownBy.Contains(viewer))
+                yield return new Favours.KnownFavour(r.Id, r.PosterName, r.Text, r.Price, r.PostedTick, r.Deadline,
+                    r.AssigneeName, r.Status, r.Poster == viewer, r.Assignee == viewer, r.Poster);
     }
 
     /// <summary>Everything this character has heard that's still remembered, oldest first.</summary>

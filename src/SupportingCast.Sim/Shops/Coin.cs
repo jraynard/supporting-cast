@@ -1,7 +1,7 @@
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Systems;
 
-namespace SupportingCast.Sim.Errands;
+namespace SupportingCast.Sim.Shops;
 
 /// <summary>
 /// Money is silver coins, real items in hands and packs (<c>SilverCoin</c>): it can be dropped,

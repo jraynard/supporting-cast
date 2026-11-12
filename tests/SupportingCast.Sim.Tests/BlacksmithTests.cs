@@ -2,7 +2,7 @@ using SupportingCast.Sim.Combat;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Core;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Errands;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Round;
 using SupportingCast.Sim.Scenarios;
@@ -148,7 +148,7 @@ public class BlacksmithTests
     private static int Coinless(Simulation sim, Entity me, string def) =>
         sim.StoredIn(sim.PackOf(me)).Where(i => sim.World.Get<Thing>(i).Def.Name == def).Sum(i => sim.World.Get<Stack>(i).Count);
 
-    // ---------------- Repair errands ----------------
+    // ---------------- Repair orders ----------------
 
     private static (Simulation Sim, Entity Owner, Entity Sword) TownWithAWornSword(string playerTrade)
     {
@@ -167,8 +167,8 @@ public class BlacksmithTests
         return (sim, owner, sword);
     }
 
-    private static Errand RepairOf(Simulation sim, Entity owner) =>
-        sim.Errands.All.Single(e => e.Poster == owner && e.Kind.Kind == ErrandKind.Repair);
+    private static Order RepairOf(Simulation sim, Entity owner) =>
+        sim.Shops.All.Single(e => e.Poster == owner && e.Kind.Kind == ServiceKind.Repair);
 
     [Fact]
     public void AnAISmithSeesARepairThroughAndIsPaid()
@@ -178,13 +178,13 @@ public class BlacksmithTests
         Assert.False(sim.World.Has<Avatar>(smith));
         var purse = Coin.Count(sim, smith);
 
-        for (var h = 0; h < 10 && sim.Errands.All.All(e => e.Kind.Kind != ErrandKind.Repair || e.IsOpen); h++)
+        for (var h = 0; h < 10 && sim.Shops.All.All(e => e.Kind.Kind != ServiceKind.Repair || e.IsOpen); h++)
             sim.TickMany(SimClock.TicksPerHour);
 
-        var errand = RepairOf(sim, owner);
-        Assert.True(errand.Status == ErrandStatus.Done, $"{errand.Status}, assignee {errand.AssigneeName}, smith: {sim.Ai.LastFailure.GetValueOrDefault(smith)} / {sim.World.Get<Mind>(smith).Job?.Report}\n"
+        var order = RepairOf(sim, owner);
+        Assert.True(order.Status == OrderStatus.Done, $"{order.Status}, assignee {order.AssigneeName}, smith: {sim.Ai.LastFailure.GetValueOrDefault(smith)} / {sim.World.Get<Mind>(smith).Job?.Report}\n"
             + string.Join("\n", sim.Speech.Kept.TakeLast(12).Select(u => $"{u.SpeakerName}: {u.Text}")));
-        Assert.Equal(smith, errand.Assignee);
+        Assert.Equal(smith, order.Assignee);
         Assert.Equal(sword, sim.World.Get<Equipment>(owner).Weapon);
         Assert.True(WeaponWear.Mended(sim, sword));
         Assert.True(Coin.Count(sim, smith) > purse, $"purse {purse} now {Coin.Count(sim, smith)}, held {sim.World.Get<Carrying>(smith).Item}, pack {sim.PackOf(smith)} "
@@ -197,33 +197,33 @@ public class BlacksmithTests
         var (sim, owner, sword) = TownWithAWornSword("Blacksmith");
         var me = Players.CharacterOf(sim, Ana);
         sim.TickMany(SimClock.TicksPerHour / 6);
-        var errand = RepairOf(sim, owner);
-        Assert.Contains(Perception.For(sim, me).Errands(), e => e.Id == errand.Id); // word reaches the smith
+        var order = RepairOf(sim, owner);
+        Assert.Contains(Perception.For(sim, me).Orders(), e => e.Id == order.Id); // word reaches the smith
 
-        sim.ApplyNow(new AcceptErrandCommand(me, errand.Id));
-        Assert.Equal(me, errand.Assignee);
+        sim.ApplyNow(new TakeOrderCommand(me, order.Id));
+        Assert.Equal(me, order.Assignee);
         var at = sim.World.Get<Position>(owner).Cell;
         var cell = sim.SpiralFrom(at, 3).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z);
         sim.World.Get<Position>(me).Cell = cell;
         sim.World.Get<Position>(me).Pos = Position.CenterOf(cell);
-        Assert.True(sim.Errands.TryHandOver(sim, errand));
+        Assert.True(sim.Shops.TryHandOver(sim, order));
         Assert.True(Inventory.OnPerson(sim, me, sword));
         Assert.False(sim.World.Has<Equipment>(owner));
 
         sim.World.Get<Position>(owner).Cell = cell + new int3(1, 0, 0) == at ? at : sim.World.Get<Position>(owner).Cell;
         sim.ApplyNow(new GiveCommand(me, owner, sword, 1));
-        Assert.True(errand.IsOpen);
-        Assert.True(errand.Assignee.IsNull, "refused: the job is open again");
+        Assert.True(order.IsOpen);
+        Assert.True(order.Assignee.IsNull, "refused: the job is open again");
         Assert.Equal(sword, sim.World.Get<Equipment>(owner).Weapon);
 
         // Done properly the second time, it's paid for.
-        sim.ApplyNow(new AcceptErrandCommand(me, errand.Id));
-        Assert.True(sim.Errands.TryHandOver(sim, errand));
+        sim.ApplyNow(new TakeOrderCommand(me, order.Id));
+        Assert.True(sim.Shops.TryHandOver(sim, order));
         sim.World.Get<Thing>(sword).Hp = sim.World.Get<Thing>(sword).MaxHp;
         WeaponWear.SetDullness(sim, sword, 0f);
         var purse = Coin.Count(sim, me);
         sim.ApplyNow(new GiveCommand(me, owner, sword, 1));
-        Assert.Equal(ErrandStatus.Done, errand.Status);
-        Assert.Equal(purse + errand.Price, Coin.Count(sim, me));
+        Assert.Equal(OrderStatus.Done, order.Status);
+        Assert.Equal(purse + order.Price, Coin.Count(sim, me));
     }
 }

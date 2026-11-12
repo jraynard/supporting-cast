@@ -31,9 +31,10 @@ Milestones toward a playable prototype, then beyond. Design intent is in [DESIGN
 
 ### M2: The first party (2026-11-11)
 - `Adventurers/`: parties arrive during a round, road-worn, with silver in their packs. They're
-  neutral, wait where their errands are served, and move on.
-- `Errands/`: every demand is an errand asked aloud, so only those who hear it know of it. Coin is
-  real silver that changes hands. Players post, take, finish and call off errands for each other.
+  neutral, wait where their orders are served, and move on.
+- `Shops/`: every adventurer's want is an order asked aloud, so only those who hear it know of it.
+  Coin is real silver that changes hands. `Favours/`: players post, take, finish and call off
+  favours for each other.
 - The trades, each with its own hands-on game and an AI fallback (the Quest Broker started as a
   fourth and was folded into the Innkeeper: the keeper hears the rumours anyway):
   - **Innkeeper:** pour ale at the cask (head and tilt); customers taste the pour.
@@ -138,6 +139,9 @@ Known leftovers: the other mini-games are still drawn plainly; the title screen 
 look; time doesn't yet advance on its own when there's nothing to do.
 
 ## Next
+
+### Control pass
+- tighten up the controls. click to move doesnt work as expected much of the time. WASD have issues with moving diagnoally. accidently walking into furniture constantly and slowing down (maybe don't allow moving over placed furniture without an action to like climb up on the table or something). if on the first level of a multistory building like the inn, the view should cutaway to your characters level (also i could see the top of my character poking through the floor when viewing the second level). not control related but buildings also feel a bit claustrophobic and could probably use more space.
 
 ### M3: A whole season
 - `Director`, Renown and Dread, crises including the late-round dragon, the festival, the

@@ -1,8 +1,8 @@
 using SupportingCast.Sim.Defs;
 
-namespace SupportingCast.Sim.Errands;
+namespace SupportingCast.Sim.Shops;
 
-public enum ErrandStatus : byte
+public enum OrderStatus : byte
 {
     Open,
     Done,
@@ -15,15 +15,14 @@ public enum ErrandStatus : byte
 }
 
 /// <summary>
-/// One demand: who wants what, where, for how much and until when (docs/DESIGN.md, "Errands are
-/// the shared spine"). Adventurers post them and players post them to each other. Nobody sees the
-/// list: an errand is known only to those who heard it asked (<see cref="KnownBy"/>), through
-/// <c>Perception</c>.
+/// One adventurer's order: who wants what, where, for how much and until when (docs/DESIGN.md,
+/// "Shops and the line"). Nobody sees the list: an order is known only to those who heard it
+/// asked (<see cref="KnownBy"/>), through <c>Perception</c>.
 /// </summary>
-public sealed class Errand
+public sealed class Order
 {
     public int Id { get; init; }
-    public required ErrandKindDef Kind { get; init; }
+    public required ServiceDef Kind { get; init; }
     public Entity Poster { get; init; } = Entity.Null;
 
     /// <summary>The asker's name as it was when they asked, so the list reads right after they're gone.</summary>
@@ -48,7 +47,7 @@ public sealed class Errand
     public Entity Assignee { get; set; } = Entity.Null;
     public string AssigneeName { get; set; } = "";
 
-    public ErrandStatus Status { get; set; }
+    public OrderStatus Status { get; set; }
     public long ClosedTick { get; set; }
 
     /// <summary>When the asker last said it aloud (they repeat themselves while nobody takes it).</summary>
@@ -57,13 +56,13 @@ public sealed class Errand
     /// <summary>Who knows of it, in the order they learned.</summary>
     public List<Entity> KnownBy { get; } = [];
 
-    public bool IsOpen => Status == ErrandStatus.Open;
+    public bool IsOpen => Status == OrderStatus.Open;
 }
 
 /// <summary>
-/// An errand as someone who knows of it sees it (<c>PerceptionView.Errands</c>). <see cref="Poster"/>
+/// An order as someone who knows of it sees it (<c>PerceptionView.Shops</c>). <see cref="Poster"/>
 /// is who asked: they heard the voice, so they know whom to go to.
 /// </summary>
-public readonly record struct KnownErrand(
-    int Id, ErrandKind Kind, string KindLabel, string PosterName, string Text, int Price,
-    long PostedTick, long Deadline, string AssigneeName, ErrandStatus Status, bool Mine, bool MineToDo, Entity Poster);
+public readonly record struct KnownOrder(
+    int Id, ServiceKind Kind, string KindLabel, string PosterName, string Text, int Price,
+    long PostedTick, long Deadline, string AssigneeName, OrderStatus Status, bool Mine, bool MineToDo, Entity Poster);

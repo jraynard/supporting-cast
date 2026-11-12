@@ -3,36 +3,33 @@ using Narsil.Ui;
 using SupportingCast.Sim;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Ecs;
-using SupportingCast.Sim.Errands;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Round;
 using SupportingCast.Ui;
 
 namespace SupportingCast;
 
-// Errands and coin: the errands your character knows of, your purse, and handing things over.
+// Shops and coin: the orders your character knows of, and handing things over.
 // Everything about other people comes through View (Perception); the sim decides what's allowed.
 public sealed partial class VillageGame
 {
-    private readonly ImInputString _requestText = new(ErrandSystem.MaxTextLength + 8, ""u8);
-    private int _requestPrice = 5;
-    private int _requestHours = 4;
-    private bool _showClosedErrands;
+    private bool _showClosedOrders;
 
-    /// <summary>The errands you've heard asked, taken on or asked yourself, with your purse.</summary>
-    private void DrawErrands()
+    /// <summary>The orders you've heard asked or taken on, then the favours players ask of each other.</summary>
+    private void DrawShop()
     {
-        if (_sim.Round.Phase != RoundPhase.Playing || !HasAvatar || !_showErrands)
+        if (_sim.Round.Phase != RoundPhase.Playing || !HasAvatar || !_showShop)
             return;
-        BeginJournal("Errands###errands", ref _showErrands);
-        ImGui.Checkbox("Show closed"u8, ref _showClosedErrands);
+        BeginJournal("Shop###orders", ref _showShop);
+        ImGui.Checkbox("Show closed"u8, ref _showClosedOrders);
         Gui.Rule();
 
         var now = _sim.Clock.Tick;
         var any = false;
-        foreach (var e in View.Errands().OrderBy(e => e.Status != ErrandStatus.Open).ThenBy(e => e.Deadline))
+        foreach (var e in View.Orders().OrderBy(e => e.Status != OrderStatus.Open).ThenBy(e => e.Deadline))
         {
-            var open = e.Status == ErrandStatus.Open;
-            if (!open && !_showClosedErrands)
+            var open = e.Status == OrderStatus.Open;
+            if (!open && !_showClosedOrders)
                 continue;
             any = true;
             ImGui.PushID(e.Id);
@@ -41,7 +38,7 @@ public sealed partial class VillageGame
             var dl = ImGui.GetWindowDrawList();
             var icon = ImGui.GetTextLineHeight() * 1.6f;
             var at = ImGui.GetCursorScreenPos();
-            if (Gui.TrySprite(ErrandIcon(e.Kind), out var sprite))
+            if (Gui.TrySprite(ServiceIcon(e.Kind), out var sprite))
                 Gui.Sprite(dl, sprite, at, new float2(icon, icon), open ? Gui.White : Gui.U8(Theme.Dim));
             ImGui.Dummy(new float2(icon, icon));
             ImGui.SameLine(0, Gui.S(8));
@@ -58,36 +55,23 @@ public sealed partial class VillageGame
                 var whole = Math.Max(1, e.Deadline - e.PostedTick) / (float)SimClock.TicksPerHour;
                 Gui.Bar(e.AssigneeName.Length > 0 ? (e.MineToDo ? "You're on it" : $"{e.AssigneeName} is on it") : "Nobody's taken it",
                     left / whole, left < 0.5f ? Theme.Bad : left / whole < 0.4f ? Theme.Warn : Theme.Good, $"{left:F1}h left", 170f);
-                if (e.MineToDo && e.Kind == Sim.Defs.ErrandKind.Repair)
+                if (e.MineToDo && e.Kind == Sim.Defs.ServiceKind.Repair)
                     TextC(Theme.Dim, $"Mended, give it back from {e.PosterName}'s inspector, in reach.");
-                if (e.MineToDo && e.Kind == Sim.Defs.ErrandKind.Unlock)
+                if (e.MineToDo && e.Kind == Sim.Defs.ServiceKind.Unlock)
                     TextC(Theme.Dim, $"From your pack: feel the box over for traps, pick it, then give it back from {e.PosterName}'s inspector.");
                 if (!e.Mine && e.AssigneeName.Length == 0)
                 {
                     if (ImGui.Button("I'll do it"u8, in _autoSize))
-                        Issue(new AcceptErrandCommand(_avatar, e.Id));
+                        Issue(new TakeOrderCommand(_avatar, e.Id));
                     if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                         Tip("Say aloud that you'll see to it. They pay whoever gets it done.");
-                }
-                if (e.Mine && e.Kind == Sim.Defs.ErrandKind.Request)
-                {
-                    if (e.AssigneeName.Length > 0)
-                    {
-                        if (ImGui.Button("Done: pay them"u8, in _autoSize))
-                            Issue(new CompleteErrandCommand(_avatar, e.Id));
-                        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                            Tip($"Hand {e.AssigneeName} the {e.Price} silver. They have to be within reach.");
-                        ImGui.SameLine(0, 6);
-                    }
-                    if (ImGui.Button("Call it off"u8, in _autoSize))
-                        Issue(new CancelErrandCommand(_avatar, e.Id));
                 }
             }
             else
                 TextC(Theme.Dim, e.Status switch
                 {
-                    ErrandStatus.Done => e.AssigneeName.Length > 0 ? $"Done by {e.AssigneeName}." : "Done.",
-                    ErrandStatus.Expired => "They gave up waiting.",
+                    OrderStatus.Done => e.AssigneeName.Length > 0 ? $"Done by {e.AssigneeName}." : "Done.",
+                    OrderStatus.Expired => "They gave up waiting.",
                     _ => "Called off.",
                 });
             Gui.Rule();
@@ -96,33 +80,17 @@ public sealed partial class VillageGame
         if (!any)
             TextC(Theme.Dim, "You haven't heard anyone ask for anything.");
 
-        if (ImGui.CollapsingHeader("Ask for something"u8, ImGuiTreeNodeFlags.None))
-        {
-            ImGui.SetNextItemWidth(-1);
-            ImGui.InputTextWithHint("##request"u8, "What you want done"u8, _requestText, ImGuiInputTextFlags.None, null, IntPtr.Zero);
-            ImGui.SetNextItemWidth(120);
-            ImGui.SliderInt("silver"u8, ref _requestPrice, 0, 50, "%d"u8, ImGuiSliderFlags.AlwaysClamp);
-            ImGui.SameLine(0, 12);
-            ImGui.SetNextItemWidth(120);
-            ImGui.SliderInt("hours"u8, ref _requestHours, 1, 24, "%d"u8, ImGuiSliderFlags.AlwaysClamp);
-            if (ImGui.Button("Ask aloud"u8, in _autoSize))
-            {
-                Issue(new PostErrandCommand(_avatar, Narsil.Ui.ImGuiText.Value(_requestText), _requestPrice, _requestHours));
-                _requestText.SetValue("".AsSpan());
-            }
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip("Only those who hear you will know. Say it where the people you need are.");
-        }
+        DrawFavours();
         Panel.End();
     }
 
-    private static string ErrandIcon(Sim.Defs.ErrandKind kind) => kind switch
+    private static string ServiceIcon(Sim.Defs.ServiceKind kind) => kind switch
     {
-        Sim.Defs.ErrandKind.Meal or Sim.Defs.ErrandKind.Drink => "ui/icon_eat",
-        Sim.Defs.ErrandKind.Repair => "ui/icon_build",
-        Sim.Defs.ErrandKind.Healing => "ui/icon_doctor",
-        Sim.Defs.ErrandKind.Quest => "ui/icon_quest",
-        Sim.Defs.ErrandKind.Unlock => "ui/icon_treasure",
+        Sim.Defs.ServiceKind.Meal or Sim.Defs.ServiceKind.Drink => "ui/icon_eat",
+        Sim.Defs.ServiceKind.Repair => "ui/icon_build",
+        Sim.Defs.ServiceKind.Healing => "ui/icon_doctor",
+        Sim.Defs.ServiceKind.Quest => "ui/icon_quest",
+        Sim.Defs.ServiceKind.Unlock => "ui/icon_treasure",
         _ => "ui/icon_call",
     };
 

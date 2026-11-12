@@ -5,14 +5,14 @@ using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Systems;
 using SupportingCast.Sim.Work;
 
-namespace SupportingCast.Sim.Errands;
+namespace SupportingCast.Sim.Shops;
 
 /// <summary>
 /// An AI innkeeper serves an order: pours a drink at the cask (as well as their Cooking skill
 /// allows, a basic hand next to a player's <see cref="PourSession"/>) or fetches a cooked meal
 /// from the stores, and takes it to whoever asked.
 /// </summary>
-public sealed class ServeJob(int errand) : Job
+public sealed class ServeJob(int order) : Job
 {
     /// <summary>Ticks it takes an AI innkeeper to pour.</summary>
     public const int PourTicks = 120;
@@ -24,12 +24,12 @@ public sealed class ServeJob(int errand) : Job
         if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
             return null;
         var from = w.Get<Position>(pawn).Cell;
-        foreach (var e in sim.Errands.All)
+        foreach (var e in sim.Shops.All)
         {
-            if (!e.IsOpen || e.Kind.Kind is not (ErrandKind.Drink or ErrandKind.Meal) || e.Kind.AtDef != workplace
+            if (!e.IsOpen || e.Kind.Kind is not (ServiceKind.Drink or ServiceKind.Meal) || e.Kind.AtDef != workplace
                 || !e.KnownBy.Contains(pawn) || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Poster))
                 continue;
-            var supply = e.Kind.Kind == ErrandKind.Drink ? Cask(sim, pawn) : Meal(sim, pawn, e.Poster);
+            var supply = e.Kind.Kind == ServiceKind.Drink ? Cask(sim, pawn) : Meal(sim, pawn, e.Poster);
             if (!supply.IsNull && Navigation.CanReach(sim, pawn, from, w.Get<Position>(e.Poster).Cell, PathEnd.Touch))
                 return new ServeJob(e.Id);
         }
@@ -67,14 +67,14 @@ public sealed class ServeJob(int errand) : Job
 
     protected override IEnumerable<JobStatus> Run()
     {
-        var errands = Sim.Errands;
-        if (errands.Find(errand) is not { IsOpen: true } e || (e.Assignee != Pawn && !errands.Accept(Sim, Pawn, errand)))
+        var orders = Sim.Shops;
+        if (orders.Find(order) is not { IsOpen: true } e || (e.Assignee != Pawn && !orders.Accept(Sim, Pawn, order)))
         {
             Fail("someone else has it");
             yield break;
         }
         Entity served;
-        if (e.Kind.Kind == ErrandKind.Drink)
+        if (e.Kind.Kind == ServiceKind.Drink)
         {
             var cask = Cask(Sim, Pawn);
             if (cask.IsNull || !Reserve(cask))
@@ -130,6 +130,6 @@ public sealed class ServeJob(int errand) : Job
             Fail("couldn't serve it");
             yield break;
         }
-        errands.Received(Sim, Pawn, e.Poster, Inventory.TakeFromPerson(Sim, Pawn, served, Get<Stack>(served).Count));
+        orders.Received(Sim, Pawn, e.Poster, Inventory.TakeFromPerson(Sim, Pawn, served, Get<Stack>(served).Count));
     }
 }

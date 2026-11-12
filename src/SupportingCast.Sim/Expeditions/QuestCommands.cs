@@ -2,7 +2,7 @@ using SupportingCast.Sim.Ai;
 using SupportingCast.Sim.Combat;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Core;
-using SupportingCast.Sim.Errands;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Maps;
 
 namespace SupportingCast.Sim.Expeditions;
@@ -31,9 +31,9 @@ public sealed class BrokerJob(Entity member, int quest) : Job
         if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.Brokers)
             return null;
         var from = w.Get<Position>(pawn).Cell;
-        foreach (var e in sim.Errands.All)
+        foreach (var e in sim.Shops.All)
         {
-            if (!e.IsOpen || e.Kind.Kind != Defs.ErrandKind.Quest || !e.KnownBy.Contains(pawn) || (!e.Assignee.IsNull && e.Assignee != pawn)
+            if (!e.IsOpen || e.Kind.Kind != Defs.ServiceKind.Quest || !e.KnownBy.Contains(pawn) || (!e.Assignee.IsNull && e.Assignee != pawn)
                 || !w.TryGet<Adventurer>(e.Poster, out var a) || w.Has<Leaving>(e.Poster))
                 continue;
             var strength = ExpeditionSystem.PartyStrength(sim, a.Party);

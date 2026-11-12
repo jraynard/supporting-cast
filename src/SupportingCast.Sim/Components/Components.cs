@@ -422,7 +422,7 @@ public struct Edge
 }
 
 /// <summary>
-/// Handed over to be seen to (a blade to mend, <c>Errands.ErrandSystem</c>): whoever holds it keeps
+/// Handed over to be seen to (a blade to mend, <c>Shops.ShopSystem</c>): whoever holds it keeps
 /// it safe between jobs until it goes back to its owner.
 /// </summary>
 public struct Entrusted
@@ -1234,7 +1234,7 @@ public struct Adventurer
     public long Arrived;
 
     /// <summary>
-    /// What they think of the town so far: up for each errand done (more if done quickly), down
+    /// What they think of the town so far: up for each order done (more if done quickly), down
     /// for each they gave up on. M3's Renown is built from it.
     /// </summary>
     public float Satisfaction;

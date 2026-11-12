@@ -1,9 +1,9 @@
-// How each kind of errand goes (Errands/ErrandSystem). Adventurers post them aloud, so only those
+// What shops sell adventurers, and how each order goes (Shops/ShopSystem). Adventurers ask aloud, so only those
 // who hear (or are told) know about them. "at": the building it's served at; price in silver
 // (inclusive range); patienceHours: game hours before they give up and think the less of the town.
 // "lines": what an adventurer says asking, {0} the price, {1} the thing in question.
 {
-  "errandKinds": [
+  "services": [
     { "name": "Meal", "label": "a meal", "at": "Inn", "priceMin": 2, "priceMax": 4, "patienceHours": 2,
       "lines": [ "Food! Something hot, and quickly. {0} silver.", "Is anyone cooking in this town? {0} silver for a plate.",
                  "We've ridden all day. Feed us. {0} silver." ] },
@@ -21,7 +21,6 @@
                  "Carpenter! This {1} won't open and we don't trust it. {0} silver." ] },
     { "name": "Lodging", "label": "a room", "at": "Inn", "priceMin": 3, "priceMax": 6, "patienceHours": 4,
       "lines": [ "We'll want beds tonight. {0} silver for a room.", "Innkeeper! A room for the night, {0} silver.",
-                 "Any rooms going? {0} silver, and clean sheets." ] },
-    { "name": "Request", "label": "a request", "priceMin": 0, "priceMax": 999, "patienceHours": 6 }
+                 "Any rooms going? {0} silver, and clean sheets." ] }
   ]
 }

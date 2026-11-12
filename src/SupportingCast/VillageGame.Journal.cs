@@ -8,7 +8,7 @@ using SupportingCast.Ui;
 namespace SupportingCast;
 
 // The anchored HUD (Narsil.Ui.Hud): everything on screen hangs from an edge and stacks, so nothing
-// overlaps at any resolution or UI scale. The journal panels (errands, what you've heard, quests,
+// overlaps at any resolution or UI scale. The journal panels (orders, what you've heard, quests,
 // the gift, the message log, co-op players) share the right-hand column under the clock; each one
 // toggles with a key, shown on the strip under the clock.
 public sealed partial class VillageGame
@@ -17,7 +17,7 @@ public sealed partial class VillageGame
     private readonly ToastStack _toastStack = new();
 
     // Journal panels, open or not.
-    private bool _showErrands = true, _showHeard = true, _showQuests = true, _showGift = true, _showLog;
+    private bool _showShop = true, _showHeard = true, _showQuests = true, _showGift = true, _showLog;
     private bool _showControls;
 
     /// <summary>In Adventure, the build toolbar is a drawer (B): closed, its letter keys are free for the journal.</summary>
@@ -38,7 +38,7 @@ public sealed partial class VillageGame
 
     private static readonly JournalTab[] JournalTabs =
     [
-        new("J", "Errands", g => g._showErrands, g => g._showErrands = !g._showErrands),
+        new("J", "Shop", g => g._showShop, g => g._showShop = !g._showShop),
         new("T", "Heard", g => g._showHeard, g => g._showHeard = !g._showHeard),
         new("K", "Quests", g => g._showQuests, g => g._showQuests = !g._showQuests),
         new("G", "Gift", g => g._showGift, g => g._showGift = !g._showGift),
@@ -48,7 +48,7 @@ public sealed partial class VillageGame
     /// <summary>Which journal tabs apply now: the gift only to an empath, quests once any are known.</summary>
     private bool TabApplies(JournalTab tab) => tab.Label switch
     {
-        "Errands" or "Heard" => InRound,
+        "Shop" or "Heard" => InRound,
         "Quests" => InRound && View.Quests().Any(),
         "Gift" => InRound && _sim.World.Has<Mana>(_avatar),
         _ => true,
@@ -131,7 +131,7 @@ public sealed partial class VillageGame
             ("X", "put down what you hold"), ("Z", "dig"), ("N", "sleep where you stand")]),
         ("The village", [("Left-click", "walk there or act"), ("Shift-click", "look at someone or something"), ("Right-click", "an item's menu"), ("Esc", "stop looking")]),
         ("Hands-on work", [("F", "strike, pour, set, press"), ("A/D", "steer, tilt, lift"), ("Esc", "put the work down")]),
-        ("Panels", [("J", "errands"), ("T", "talk (what you've heard)"), ("K", "quests"), ("G", "the gift"), ("L", "message log"), ("B", "build tools"), ("H", "this card")]),
+        ("Panels", [("J", "shop and favours"), ("T", "talk (what you've heard)"), ("K", "quests"), ("G", "the gift"), ("L", "message log"), ("B", "build tools"), ("H", "this card")]),
         ("Camera and time", [("Q/E", "turn"), ("Wheel", "zoom"), ("[ / ]", "level down / up"), ("Home", "all levels"), ("\\", "roofs"), ("Space", "pause")]),
     ];
 

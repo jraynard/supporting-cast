@@ -106,7 +106,7 @@ public static class Empathy
         if (snapped)
             HealthSystem.Damage(sim, healer, drawn * Backlash, wound.Type, part);
         mine.Changed();
-        sim.Errands.Treated(sim, patient, healer);
+        sim.Shops.Treated(sim, patient, healer);
         return drawn;
     }
 

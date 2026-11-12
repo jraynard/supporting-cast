@@ -9,7 +9,7 @@ namespace SupportingCast.Sim.Adventurers;
 /// <summary>
 /// Adventurers in town: out of danger, fed and rested, otherwise lounging about their haunt (the
 /// tavern) as if they owned it, and off down the road once their stay is up. They take no orders
-/// and do no work; what they want from the town they ask for as errands (<c>Errands.ErrandSystem</c>),
+/// and do no work; what they want from the town they ask for as orders (<c>Shops.ShopSystem</c>),
 /// and they wait for it where it's served.
 /// </summary>
 public sealed class AdventurerBrain : IBrain
@@ -42,7 +42,7 @@ public sealed class AdventurerBrain : IBrain
         if (needs.Get(rest) < rest.UrgentBelow || (AiQueries.IsNight(sim) && needs.Get(rest) < 0.5f))
             return HumanBrain.Sleep(sim, pawn);
 
-        // Wait where their oldest errand is served (the smithy for a mend), else lounge about the
+        // Wait where their oldest order is served (the smithy for a mend), else lounge about the
         // haunt, else stay where they are.
         var center = WaitingAt(sim, pawn)
             ?? (w.TryGet<Adventurer>(pawn, out var a) && PartySystem.HauntOf(sim, a.PartyDef) is { } haunt ? haunt.Anchor : tile);
@@ -51,10 +51,10 @@ public sealed class AdventurerBrain : IBrain
             : null;
     }
 
-    /// <summary>The anchor of the building their oldest open errand is to be done at, if any.</summary>
+    /// <summary>The anchor of the building their oldest open order is to be done at, if any.</summary>
     private static int3? WaitingAt(Simulation sim, Entity pawn)
     {
-        foreach (var e in sim.Errands.All)
+        foreach (var e in sim.Shops.All)
             if (e.IsOpen && e.Poster == pawn && sim.World.IsAlive(e.Where) && sim.World.TryGet<PresetBuilding>(e.Where, out var b))
                 return b.Anchor;
         return null;

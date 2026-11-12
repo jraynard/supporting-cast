@@ -68,8 +68,11 @@ public sealed partial class Simulation
     /// <summary>Adventuring parties coming to town during a round.</summary>
     public Adventurers.PartySystem Parties { get; }
 
-    /// <summary>Who wants what done, for how much (docs/DESIGN.md, "Errands are the shared spine").</summary>
-    public Errands.ErrandSystem Errands { get; }
+    /// <summary>What adventurers buy from the town's shops, and their orders (docs/DESIGN.md, "Shops and the line").</summary>
+    public Shops.ShopSystem Shops { get; }
+
+    /// <summary>What players ask of each other, for silver they name.</summary>
+    public Favours.FavourBoard Favours { get; } = new();
 
     /// <summary>Quests, what people believe about them, and the parties out on them.</summary>
     public Expeditions.ExpeditionSystem Expeditions { get; }
@@ -182,7 +185,7 @@ public sealed partial class Simulation
         Social = new SocialSystem(seed);
         Round = new Round.RoundSystem(seed);
         Parties = new Adventurers.PartySystem(seed);
-        Errands = new Errands.ErrandSystem(seed);
+        Shops = new Shops.ShopSystem(seed);
         Expeditions = new Expeditions.ExpeditionSystem(seed);
         Messages.Now = () => Clock.Tick;
 
@@ -209,7 +212,8 @@ public sealed partial class Simulation
             .AddSystem(new FoodPoisoningSystem())
             .AddSystem(new FuelSystem())
             .AddSystem(sim.Parties)
-            .AddSystem(sim.Errands)
+            .AddSystem(sim.Shops)
+            .AddSystem(sim.Favours)
             .AddSystem(new Healing.ManaSystem())
             .AddSystem(sim.Expeditions)
             .AddSystem(new MoodSystem())

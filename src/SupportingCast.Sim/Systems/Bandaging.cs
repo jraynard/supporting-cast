@@ -78,7 +78,7 @@ public static class Bandaging
         }
         health.Changed();
         if (bound > 0 && binder != patient)
-            sim.Errands.Treated(sim, patient, binder);
+            sim.Shops.Treated(sim, patient, binder);
         if (bound > 0)
         {
             var who = binder == patient ? "their own" : $"{w.Get<Creature>(patient).Name}'s";

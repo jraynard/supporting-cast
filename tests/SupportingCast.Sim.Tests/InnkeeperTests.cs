@@ -1,6 +1,6 @@
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Errands;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Round;
 using SupportingCast.Sim.Saving;
@@ -116,8 +116,8 @@ public class InnkeeperTests
         var drinker = party[0];
         Thirsty(sim, drinker);
         sim.TickMany(SimClock.TicksPerHour / 6);
-        var order = sim.Errands.All.Single(e => e.IsOpen && e.Poster == drinker && e.Kind.Kind == ErrandKind.Drink);
-        Assert.Contains(Perception.For(sim, me).Errands(), e => e.Id == order.Id); // word reaches the innkeeper
+        var order = sim.Shops.All.Single(e => e.IsOpen && e.Poster == drinker && e.Kind.Kind == ServiceKind.Drink);
+        Assert.Contains(Perception.For(sim, me).Orders(), e => e.Id == order.Id); // word reaches the innkeeper
 
         var at = sim.World.Get<Position>(drinker).Cell;
         var cell = sim.SpiralFrom(at, 3).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z);
@@ -131,7 +131,7 @@ public class InnkeeperTests
 
         sim.ApplyNow(new GiveCommand(me, drinker, ale, 1));
 
-        Assert.Equal(ErrandStatus.Done, order.Status);
+        Assert.Equal(OrderStatus.Done, order.Status);
         Assert.Equal(purse + order.Price, Coin.Count(sim, me));
         Assert.False(sim.World.IsAlive(ale), "they drank it");
         Assert.True(sim.World.Get<Adventurer>(drinker).Satisfaction - mood < 1f, "a crude pour pleases less");
@@ -145,10 +145,10 @@ public class InnkeeperTests
         foreach (var e in party)
             Thirsty(sim, e);
 
-        for (var i = 0; i < 12 && !sim.Errands.All.Any(e => e.Kind.Kind == ErrandKind.Drink && e.Status == ErrandStatus.Done); i++)
+        for (var i = 0; i < 12 && !sim.Shops.All.Any(e => e.Kind.Kind == ServiceKind.Drink && e.Status == OrderStatus.Done); i++)
             sim.TickMany(SimClock.TicksPerHour / 4);
 
-        Assert.Contains(sim.Errands.All, e => e.Kind.Kind == ErrandKind.Drink && e.Status == ErrandStatus.Done && e.Assignee == keeper);
+        Assert.Contains(sim.Shops.All, e => e.Kind.Kind == ServiceKind.Drink && e.Status == OrderStatus.Done && e.Assignee == keeper);
     }
 
     [Fact]
@@ -161,11 +161,11 @@ public class InnkeeperTests
         var diner = party[0];
         sim.World.Get<Needs>(diner).Values[sim.Defs.Need("Food").Index] = 0.5f;
 
-        for (var i = 0; i < 12 && !sim.Errands.All.Any(e => e.Kind.Kind == ErrandKind.Meal && e.Status == ErrandStatus.Done); i++)
+        for (var i = 0; i < 12 && !sim.Shops.All.Any(e => e.Kind.Kind == ServiceKind.Meal && e.Status == OrderStatus.Done); i++)
             sim.TickMany(SimClock.TicksPerHour / 4);
 
-        var meal = sim.Errands.All.First(e => e.Kind.Kind == ErrandKind.Meal && e.Poster == diner);
-        Assert.Equal(ErrandStatus.Done, meal.Status);
+        var meal = sim.Shops.All.First(e => e.Kind.Kind == ServiceKind.Meal && e.Poster == diner);
+        Assert.Equal(OrderStatus.Done, meal.Status);
         Assert.Equal(keeper, meal.Assignee);
     }
 
@@ -174,7 +174,7 @@ public class InnkeeperTests
     {
         foreach (var a in party)
             sim.World.Get<Adventurer>(a).LeaveTick = sim.Clock.Tick + SimClock.TicksPerDay * 2;
-        while (sim.Clock.HourOfDay < ErrandSystem.LodgingFromHour)
+        while (sim.Clock.HourOfDay < ShopSystem.LodgingFromHour)
             sim.TickMany(SimClock.TicksPerHour / 4);
     }
 
@@ -185,11 +185,11 @@ public class InnkeeperTests
         var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
         StayTillEvening(sim, party);
         var lodger = party[0];
-        for (var i = 0; i < 16 && !sim.Errands.All.Any(e => e.Kind.Kind == ErrandKind.Lodging && e.Poster == lodger && e.Status == ErrandStatus.Done); i++)
+        for (var i = 0; i < 16 && !sim.Shops.All.Any(e => e.Kind.Kind == ServiceKind.Lodging && e.Poster == lodger && e.Status == OrderStatus.Done); i++)
             sim.TickMany(SimClock.TicksPerHour / 4);
 
-        var room = sim.Errands.All.First(e => e.Kind.Kind == ErrandKind.Lodging && e.Poster == lodger);
-        Assert.Equal(ErrandStatus.Done, room.Status);
+        var room = sim.Shops.All.First(e => e.Kind.Kind == ServiceKind.Lodging && e.Poster == lodger);
+        Assert.Equal(OrderStatus.Done, room.Status);
         Assert.Equal(keeper, room.Assignee);
         var bed = sim.World.Get<BedOwner>(lodger).Bed;
         var inn = Buildings.Of(sim, bed);
@@ -203,7 +203,7 @@ public class InnkeeperTests
         var (sim, _) = Tavern("Healer");
         var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
         var bed = Ai.AiQueries.FindFreeBed(sim, keeper);
-        Assert.False(!bed.IsNull && ErrandSystem.IsLet(sim, bed), "the innkeeper took a guest's bed");
+        Assert.False(!bed.IsNull && ShopSystem.IsLet(sim, bed), "the innkeeper took a guest's bed");
     }
 
     private static int3 PartyHaunt(Simulation sim) =>

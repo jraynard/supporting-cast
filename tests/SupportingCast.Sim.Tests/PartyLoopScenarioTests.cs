@@ -1,7 +1,7 @@
 using SupportingCast.Sim.Bots;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Errands;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Round;
 using SupportingCast.Sim.Scenarios;
@@ -43,7 +43,7 @@ public class PartyLoopScenarioTests(ITestOutputHelper output)
             Assert.Equal(Trades[i], sim.World.Get<Trade>(Players.CharacterOf(sim, bots[i].Player)).Def.Name);
 
         // Served by a bot, per kind; and how the round went.
-        var served = new HashSet<ErrandKind>();
+        var served = new HashSet<ServiceKind>();
         var log = new List<string>();
         var end = SimClock.TicksPerDay * 3 / 2;
         for (var t = 0; t < end; t++)
@@ -53,26 +53,26 @@ public class PartyLoopScenarioTests(ITestOutputHelper output)
                 bot.Tick();
             if (t % 60 != 0)
                 continue;
-            foreach (var e in sim.Errands.All)
-                if (e.Status == ErrandStatus.Done && players.Contains(e.Assignee) && served.Add(e.Kind.Kind))
+            foreach (var e in sim.Shops.All)
+                if (e.Status == OrderStatus.Done && players.Contains(e.Assignee) && served.Add(e.Kind.Kind))
                     log.Add($"{SimClock.TicksToDays(t) * 24:F1}h: {e.AssigneeName} did {e.Kind.Label} for {e.PosterName}");
             if (served.Count >= 4 && sim.Expeditions.Succeeded + sim.Expeditions.Failed > 0
-                && (sim.Expeditions.Succeeded == 0 || served.Contains(ErrandKind.Unlock)))
+                && (sim.Expeditions.Succeeded == 0 || served.Contains(ServiceKind.Unlock)))
                 break;
         }
 
-        var errands = sim.Errands.All.GroupBy(e => (e.Kind.Kind, e.Status)).Select(g => $"{g.Key.Kind}/{g.Key.Status}: {g.Count()}");
-        var summary = string.Join("\n", log) + $"\nerrands: {string.Join(", ", errands)}\nparties {sim.Parties.PartiesSent}, out {sim.Expeditions.Out.Count}, "
+        var orders = sim.Shops.All.GroupBy(e => (e.Kind.Kind, e.Status)).Select(g => $"{g.Key.Kind}/{g.Key.Status}: {g.Count()}");
+        var summary = string.Join("\n", log) + $"\nerrands: {string.Join(", ", orders)}\nparties {sim.Parties.PartiesSent}, out {sim.Expeditions.Out.Count}, "
             + $"succeeded {sim.Expeditions.Succeeded}, failed {sim.Expeditions.Failed}, dead {sim.Expeditions.Dead}\n"
             + string.Join("\n", sim.Messages.Messages.TakeLast(25).Select(m => m.Text));
         output.WriteLine(summary);
 
         Assert.True(sim.Parties.PartiesSent >= 1, summary);
-        foreach (var kind in new[] { ErrandKind.Drink, ErrandKind.Repair, ErrandKind.Quest })
+        foreach (var kind in new[] { ServiceKind.Drink, ServiceKind.Repair, ServiceKind.Quest })
             Assert.True(served.Contains(kind), $"no bot served {kind}\n{summary}");
         Assert.True(sim.Expeditions.Succeeded + sim.Expeditions.Failed >= 1, $"no party came back from a quest\n{summary}");
         Assert.True(sim.Messages.Messages.Any(m => m.Text.Contains("return from") || m.Text.StartsWith("No one comes back")), summary);
         if (sim.Expeditions.Succeeded > 0)
-            Assert.True(served.Contains(ErrandKind.Unlock), $"a party came back with a strongbox, and no bot opened it\n{summary}");
+            Assert.True(served.Contains(ServiceKind.Unlock), $"a party came back with a strongbox, and no bot opened it\n{summary}");
     }
 }

@@ -26,7 +26,7 @@ public static class Inventory
 
     /// <summary>Kept in a work pack when a job ends: coin, and what someone handed over to be seen to.</summary>
     public static bool KeptBetweenJobs(Simulation sim, Entity item) =>
-        Errands.Coin.IsSilver(sim, item) || sim.World.Has<Entrusted>(item);
+        Shops.Coin.IsSilver(sim, item) || sim.World.Has<Entrusted>(item);
 
     /// <summary>Is this item a stack in the creature's own pack?</summary>
     public static bool InOwnPack(Simulation sim, Entity creature, Entity item) =>

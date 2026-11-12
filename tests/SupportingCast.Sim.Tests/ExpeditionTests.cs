@@ -1,6 +1,6 @@
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Errands;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Expeditions;
 using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Round;
@@ -27,7 +27,7 @@ public class ExpeditionTests
         var party = sim.Parties.Send(sim, sim.Defs.Party("IronLantern"));
         Assert.NotEmpty(party);
         // Until they've asked for work.
-        for (var t = 0; t < 40 && ExpeditionSystem.QuestErrand(sim, sim.World.Get<Adventurer>(party[0]).Party) == null; t++)
+        for (var t = 0; t < 40 && ExpeditionSystem.QuestOrder(sim, sim.World.Get<Adventurer>(party[0]).Party) == null; t++)
             sim.TickMany(SimClock.TicksPerHour / 4);
         return (sim, Players.CharacterOf(sim, Ana), party);
     }

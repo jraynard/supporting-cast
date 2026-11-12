@@ -1,6 +1,6 @@
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
-using SupportingCast.Sim.Errands;
+using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Round;
 using SupportingCast.Sim.Scenarios;
@@ -8,7 +8,7 @@ using SupportingCast.Sim.Systems;
 
 namespace SupportingCast.Sim.Tests;
 
-public class ErrandTests
+public class ShopTests
 {
     private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
     private static readonly Guid Bea = new("00000000-0000-0000-0000-00000000000b");
@@ -42,8 +42,8 @@ public class ErrandTests
 
     private static int AllCoin(Simulation sim) => sim.Creatures().Sum(e => Coin.Count(sim, e));
 
-    private static Errand OpenOf(Simulation sim, Entity poster, ErrandKind kind) =>
-        sim.Errands.All.Single(e => e.IsOpen && e.Poster == poster && e.Kind.Kind == kind);
+    private static Order OpenOf(Simulation sim, Entity poster, ServiceKind kind) =>
+        sim.Shops.All.Single(e => e.IsOpen && e.Poster == poster && e.Kind.Kind == kind);
 
     [Fact]
     public void AHungryAdventurerAsksAloudAndOnlyThoseWhoHeardKnow()
@@ -55,9 +55,9 @@ public class ErrandTests
         Hunger(sim, diner, 0.5f);
         sim.TickMany(SimClock.TicksPerHour / 6);
 
-        var meal = OpenOf(sim, diner, ErrandKind.Meal);
+        var meal = OpenOf(sim, diner, ServiceKind.Meal);
         Assert.True(meal.Price > 0);
-        Assert.Contains(Perception.For(sim, me).Errands(), e => e.Id == meal.Id && e.Kind == ErrandKind.Meal);
+        Assert.Contains(Perception.For(sim, me).Orders(), e => e.Id == meal.Id && e.Kind == ServiceKind.Meal);
         // Someone far off didn't hear it.
         var far = sim.Creatures().First(e => e != me && !party.Contains(e)
             && Map.Distance(sim.World.Get<Position>(e).Cell, sim.World.Get<Position>(diner).Cell) > 40);
@@ -69,9 +69,9 @@ public class ErrandTests
     {
         var (sim, party) = Round(Ana);
         sim.TickMany(SimClock.TicksPerHour);
-        Assert.DoesNotContain(sim.Errands.All, e => e.Kind.Kind == ErrandKind.Quest); // they want serving first
-        sim.TickMany(SimClock.HoursToTicks(ErrandSystem.QuestAfterHours));
-        Assert.Single(sim.Errands.All, e => e.Kind.Kind == ErrandKind.Quest && party.Contains(e.Poster));
+        Assert.DoesNotContain(sim.Shops.All, e => e.Kind.Kind == ServiceKind.Quest); // they want serving first
+        sim.TickMany(SimClock.HoursToTicks(ShopSystem.QuestAfterHours));
+        Assert.Single(sim.Shops.All, e => e.Kind.Kind == ServiceKind.Quest && party.Contains(e.Poster));
     }
 
     [Fact]
@@ -82,7 +82,7 @@ public class ErrandTests
         var diner = party[0];
         Hunger(sim, diner, 0.5f);
         sim.TickMany(SimClock.TicksPerHour / 6);
-        var meal = OpenOf(sim, diner, ErrandKind.Meal);
+        var meal = OpenOf(sim, diner, ServiceKind.Meal);
 
         Beside(sim, me, diner);
         var stew = sim.CreateItem(sim.Defs.Thing("Stew"), 3);
@@ -94,7 +94,7 @@ public class ErrandTests
 
         sim.ApplyNow(new GiveCommand(me, diner, stack, 3));
 
-        Assert.Equal(ErrandStatus.Done, meal.Status);
+        Assert.Equal(OrderStatus.Done, meal.Status);
         Assert.Equal(mine + meal.Price, Coin.Count(sim, me));
         Assert.Equal(coinBefore, AllCoin(sim));
         Assert.True(sim.World.Get<Needs>(diner).Get(sim.Defs.Need("Food")) > 0.5f, "they ate it");
@@ -102,48 +102,20 @@ public class ErrandTests
     }
 
     [Fact]
-    public void AnErrandNobodyServesExpiresAndTheyThinkLessOfTheTown()
+    public void AnOrderNobodyServesExpiresAndTheyThinkLessOfTheTown()
     {
         var (sim, party) = Round(Ana);
         var diner = party[0];
         Hunger(sim, diner, 0.5f);
         sim.TickMany(SimClock.TicksPerHour / 6);
-        var meal = OpenOf(sim, diner, ErrandKind.Meal);
+        var meal = OpenOf(sim, diner, ServiceKind.Meal);
         Hunger(sim, diner, 0.5f);
 
         sim.TickMany(SimClock.HoursToTicks(meal.Kind.PatienceHours + 0.5f));
 
-        Assert.Equal(ErrandStatus.Expired, meal.Status);
+        Assert.Equal(OrderStatus.Expired, meal.Status);
         // Others in town may have served them meanwhile; the meal they waited for counts against it.
         Assert.Contains(sim.Speech.Kept, u => u.Speaker == diner && u.Text.Contains("So much for a meal"));
-    }
-
-    [Fact]
-    public void APlayersRequestIsTakenOnAndPaidWhenDone()
-    {
-        var (sim, _) = Round(Ana, Bea);
-        var ana = Players.CharacterOf(sim, Ana);
-        var bea = Players.CharacterOf(sim, Bea);
-        Beside(sim, bea, ana);
-        Inventory.Stow(sim, ana, sim.CreateItem(sim.Defs.Thing(Coin.Silver), 10));
-        var coinBefore = AllCoin(sim);
-
-        sim.ApplyNow(new PostErrandCommand(ana, "Bring me six birch logs", 7, 4));
-        var request = sim.Errands.All.Single(e => e.Poster == ana);
-        Assert.Contains(Perception.For(sim, bea).Errands(), e => e.Id == request.Id);
-
-        sim.ApplyNow(new AcceptErrandCommand(ana, request.Id)); // not your own
-        Assert.True(request.Assignee.IsNull);
-        sim.ApplyNow(new AcceptErrandCommand(bea, request.Id));
-        Assert.Equal(bea, request.Assignee);
-        sim.ApplyNow(new CompleteErrandCommand(bea, request.Id)); // only the asker says it's done
-        Assert.True(request.IsOpen);
-
-        var had = Coin.Count(sim, bea);
-        sim.ApplyNow(new CompleteErrandCommand(ana, request.Id));
-        Assert.Equal(ErrandStatus.Done, request.Status);
-        Assert.Equal(had + 7, Coin.Count(sim, bea));
-        Assert.Equal(coinBefore, AllCoin(sim));
     }
 
     [Fact]

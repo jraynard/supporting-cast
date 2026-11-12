@@ -6,7 +6,7 @@ namespace SupportingCast.Sim.Defs;
 /// <summary>
 /// All loaded defs. Each JSON file under the defs directory is an object with any of the keys
 /// "blocks", "things", "creatures", "needs", "bodies", "materials", "difficulties", "raiderKinds", "wildlife", "thoughts", "interactions", "traits", "recipes", "tiers", "veins",
-/// "dragonInteractions", "trustLevels", "tricks", "outfits", "elements", "buildings", "kits", "trades", "adventurerKinds", "parties", "errandKinds", "mendings", "quests",
+/// "dragonInteractions", "trustLevels", "tricks", "outfits", "elements", "buildings", "kits", "trades", "adventurerKinds", "parties", "services", "mendings", "quests",
 /// each an array of defs. Files are merged in name
 /// order so later files (mods) can add content.
 /// </summary>
@@ -33,8 +33,8 @@ public sealed class DefDatabase
     private readonly Dictionary<string, TradeDef> _trades = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, AdventurerKindDef> _adventurerKinds = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, PartyDef> _parties = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, ErrandKindDef> _errandKinds = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ErrandKindDef?[] _byErrandKind = new ErrandKindDef?[Enum.GetValues<ErrandKind>().Length];
+    private readonly Dictionary<string, ServiceDef> _services = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ServiceDef?[] _byServiceKind = new ServiceDef?[Enum.GetValues<ServiceKind>().Length];
 
     private readonly Dictionary<string, MendingDef> _mendings = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, QuestDef> _quests = new(StringComparer.OrdinalIgnoreCase);
@@ -49,8 +49,8 @@ public sealed class DefDatabase
     /// <summary>What an empath can cast (data/defs/healing.json), in def order.</summary>
     public List<MendingDef> AllMendings { get; } = [];
 
-    /// <summary>How each kind of errand goes (data/defs/errands.json).</summary>
-    public List<ErrandKindDef> AllErrandKinds { get; } = [];
+    /// <summary>How each kind of order goes (data/defs/orders.json).</summary>
+    public List<ServiceDef> AllServices { get; } = [];
 
     /// <summary>Who adventuring parties are made of (data/defs/adventurers.json).</summary>
     public List<AdventurerKindDef> AllAdventurerKinds { get; } = [];
@@ -131,7 +131,7 @@ public sealed class DefDatabase
         public List<TradeDef> Trades { get; set; } = [];
         public List<AdventurerKindDef> AdventurerKinds { get; set; } = [];
         public List<PartyDef> Parties { get; set; } = [];
-        public List<ErrandKindDef> ErrandKinds { get; set; } = [];
+        public List<ServiceDef> Services { get; set; } = [];
         public List<MendingDef> Mendings { get; set; } = [];
         public List<QuestDef> Quests { get; set; } = [];
         public List<MapDef> Maps { get; set; } = [];
@@ -192,7 +192,7 @@ public sealed class DefDatabase
         AddAll(file.Trades, _trades, AllTrades, source);
         AddAll(file.AdventurerKinds, _adventurerKinds, AllAdventurerKinds, source);
         AddAll(file.Parties, _parties, AllParties, source);
-        AddAll(file.ErrandKinds, _errandKinds, AllErrandKinds, source);
+        AddAll(file.Services, _services, AllServices, source);
         AddAll(file.Mendings, _mendings, AllMendings, source);
         AddAll(file.Quests, _quests, AllQuests, source);
         AddAll(file.Maps, _maps, AllMaps, source);
@@ -247,10 +247,10 @@ public sealed class DefDatabase
         foreach (var d in AllMendings) d.Resolve(this);
         foreach (var d in AllQuests) d.Resolve(this);
         foreach (var d in AllMaps) d.Resolve(this); // after blocks, things, creatures and buildings
-        foreach (var d in AllErrandKinds)
+        foreach (var d in AllServices)
         {
             d.Resolve(this);
-            _byErrandKind[(int)d.Kind] = d;
+            _byServiceKind[(int)d.Kind] = d;
         }
         GeneratePhaseDefs();
         // Every element a dragon can have needs its def (one each).
@@ -398,14 +398,14 @@ public sealed class DefDatabase
     public RaiderKindDef RaiderKind(string name) => Lookup(_raiderKinds, name);
     public AdventurerKindDef AdventurerKind(string name) => Lookup(_adventurerKinds, name);
     public PartyDef Party(string name) => Lookup(_parties, name);
-    public ErrandKindDef ErrandKind(string name) => Lookup(_errandKinds, name);
+    public ServiceDef Service(string name) => Lookup(_services, name);
     public MendingDef Mending(string name) => Lookup(_mendings, name);
     public QuestDef Quest(string name) => Lookup(_quests, name);
     public MapDef Map(string name) => Lookup(_maps, name);
 
-    /// <summary>The def for a kind of errand; every kind needs one.</summary>
-    public ErrandKindDef Errand(ErrandKind kind) =>
-        _byErrandKind[(int)kind] ?? throw new KeyNotFoundException($"No errand kind def for {kind}");
+    /// <summary>The def for a kind of service; every kind needs one.</summary>
+    public ServiceDef Service(ServiceKind kind) =>
+        _byServiceKind[(int)kind] ?? throw new KeyNotFoundException($"No service def for {kind}");
     public ThoughtDef Thought(string name) => Lookup(_thoughts, name);
     public InteractionDef Interaction(string name) => Lookup(_interactions, name);
     public TraitDef Trait(string name) => Lookup(_traits, name);

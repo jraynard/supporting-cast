@@ -39,7 +39,7 @@ public sealed partial class VillageGame
         // Top right: the clock and its journal strip, then the open journal panels, stacked.
         DrawClock();
         DrawGift();
-        DrawErrands();
+        DrawShop();
         DrawQuestBoard();
         DrawSpeech();
         DrawMessages();

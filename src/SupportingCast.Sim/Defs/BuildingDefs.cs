@@ -55,7 +55,7 @@ public sealed class BuildingDef : Def
 
     /// <summary>
     /// Its beds are let, not slept in by whoever's tired (the inn's rooms): only someone given one
-    /// (<c>BedOwner</c>, a <c>Lodging</c> errand) sleeps there.
+    /// (<c>BedOwner</c>, a <c>Lodging</c> order) sleeps there.
     /// </summary>
     public bool LetsBeds { get; set; }
 
