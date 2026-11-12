@@ -275,6 +275,25 @@ Known leftovers:
   decals have their own art (`tools/inn_art.py`).
 - Tune the pot, seasoning, wash, tap and mix timings in play.
 
+### After the innkeeper playtest (2026-11-12)
+- **A Cook trade** (`trades.json`): the inn's kitchen, split off from the innkeeper.
+  - **Who does what:** each trade lists the services it `serves`; the AI's jobs, the bot and
+    the sign's prices go by it.
+  - **Cook:** meals, the pot, the larder and bowls.
+  - **Innkeeper:** drinks, mixing, kegs, rooms, quests and tankards.
+  - **Cleaning:** the kitchen's floor is the cook's, the common room's the keeper's.
+  - **The name:** only the innkeeper renames the inn (`namesShop`).
+- **One at a time:** taking from a chest, shelf or larder takes one (`TakeFromStorageCommand`'s
+  count), with an All button for the whole stack.
+- **Mixing works from the shelf:** the ingredients and a clean tankard can be on the shelf
+  you're standing by, not only in your hands or pack, and the drink lands in your hand.
+  - The bar panel greys out a drink you can't mix and says why. Before, it failed with only a
+    line in the log.
+  - I couldn't reproduce the playtest's lost herbs in the sim. The likeliest cause was the
+    juggling these changes remove: the whole stack grabbed into an empty hand, a refused mix
+    reported only in the log, and walking off with things in hand.
+- Bots go by what they're carrying, not what's on a shelf they happen to stand by.
+
 ### Roofs on (2026-11-12)
 - **Roofs are on by default.** Only the building you're standing in opens up: its roof and
   anything of it above your level (the inn's upper storey, from the common room) aren't drawn,

@@ -39,6 +39,19 @@ public sealed class TradeDef : Def
     /// <summary>What the holder starts the round with: the tools of the trade and a little stock.</summary>
     public List<ThingCount> Kit { get; set; } = [];
 
+    /// <summary>
+    /// The services at its workplace this trade sees to, when it shares one (the inn: the
+    /// innkeeper the bar, rooms and quests, the cook the meals). Empty: everything served there.
+    /// It's what its AI takes on, and the prices on the sign its holder sets.
+    /// </summary>
+    public List<ServiceKind> Serves { get; set; } = [];
+
+    /// <summary>The holder names the shop (<c>Shops.ShopName</c>): the innkeeper, not the cook.</summary>
+    public bool NamesShop { get; set; } = true;
+
+    /// <summary>Does this trade see to this service at its workplace?</summary>
+    public bool Serving(ServiceKind kind) => Serves.Count == 0 || Serves.Contains(kind);
+
     [JsonIgnore]
     public List<ThingDef> KnownStations { get; } = [];
 

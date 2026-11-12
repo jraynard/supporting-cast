@@ -196,7 +196,7 @@ public class InventoryTests
         var theirs = sim.GiveStartingPack(other);
         sim.Store(theirs, sim.CreateItem(sim.Thing("Berries"), 5));
         var berries = sim.StoredIn(theirs).Single();
-        Do(sim, new TakeFromStorageCommand(me, berries));
+        Do(sim, new TakeFromStorageCommand(me, berries, TakeFromStorageCommand.All));
         Assert.False(sim.World.Get<Carrying>(me).HasItem); // not out of someone's back
 
         sim.TakeOff(other, ApparelSlot.Back);
@@ -204,7 +204,7 @@ public class InventoryTests
         var cell = sim.World.Get<Thing>(theirs).Cell;
         sim.World.Get<Position>(me) = Position.At(cell);
         Assert.Equal(AvatarActionKind.OpenStorage, AvatarSystem.ActionAt(sim, me, cell).Kind);
-        Do(sim, new TakeFromStorageCommand(me, berries));
+        Do(sim, new TakeFromStorageCommand(me, berries, TakeFromStorageCommand.All));
         Assert.Equal(berries, sim.World.Get<Carrying>(me).Item);
 
         Do(sim, new StoreFromPackCommand(me, theirs, berries)); // not from hands
@@ -225,6 +225,25 @@ public class InventoryTests
         Assert.Equal(4, Packed(sim, me, "Stone"));
         Assert.Empty(sim.StoredIn(old));
         Assert.Equal(old, sim.World.Get<Carrying>(me).Item);
+    }
+
+    [Fact]
+    public void TakingFromAContainerTakesOneUnlessYouAskForMore()
+    {
+        var (sim, me) = Setup();
+        var other = sim.SpawnCreature(sim.Defs.Creature("Human"), "Other", C(20, 10), ageDays: 25 * 365);
+        var pack = sim.GiveStartingPack(other);
+        sim.TakeOff(other, ApparelSlot.Back);
+        sim.Store(pack, sim.CreateItem(sim.Thing("Berries"), 5));
+        var cell = sim.World.Get<Thing>(pack).Cell;
+        sim.World.Get<Position>(me) = Position.At(cell);
+        var berries = sim.StoredIn(pack).Single();
+        Do(sim, new TakeFromStorageCommand(me, berries));
+        Assert.Equal(1, sim.World.Get<Stack>(sim.World.Get<Carrying>(me).Item).Count);
+        Assert.Equal(4, sim.World.Get<Stack>(berries).Count);
+        Do(sim, new StowCommand(me));
+        Do(sim, new TakeFromStorageCommand(me, berries, TakeFromStorageCommand.All));
+        Assert.Equal(berries, sim.World.Get<Carrying>(me).Item);
     }
 }
 

@@ -146,11 +146,15 @@ public sealed record AvatarDropCommand(Entity Avatar, int3 Target) : ISimCommand
 }
 
 /// <summary>
-/// Take a stack (up to a full one) out of a container in reach (the wagon, a pack on the ground):
-/// into empty hands, else as much as fits into the avatar's pack.
+/// Take some of a stack (one, by default; <see cref="All"/> for up to a full stack) out of a
+/// container in reach (the wagon, a shelf, a pack on the ground): into empty hands, else as much
+/// as fits into the avatar's pack.
 /// </summary>
-public sealed record TakeFromStorageCommand(Entity Avatar, Entity Item) : ISimCommand, IActorCommand
+public sealed record TakeFromStorageCommand(Entity Avatar, Entity Item, int Count = 1) : ISimCommand, IActorCommand
 {
+    /// <summary>The whole stack (as much of it as fits).</summary>
+    public const int All = int.MaxValue;
+
     public Entity Actor => Avatar;
 
     public void Apply(Simulation sim)
@@ -160,7 +164,8 @@ public sealed record TakeFromStorageCommand(Entity Avatar, Entity Item) : ISimCo
             return;
         if (sim.Reservations.IsReservedByOther(Item, Avatar) || !Inventory.CanReachContainer(sim, Avatar, stored.In))
             return;
-        var count = Math.Min(w.Get<Stack>(Item).Count, w.Get<Thing>(Item).Def.StackLimit);
+        // One at a time unless more is asked for: a stack's not grabbed whole by accident.
+        var count = Math.Clamp(Count, 1, Math.Min(w.Get<Stack>(Item).Count, w.Get<Thing>(Item).Def.StackLimit));
         if (!w.Get<Carrying>(Avatar).HasItem)
         {
             w.Get<Carrying>(Avatar).Item = sim.TakeFromStack(Item, count);
@@ -170,7 +175,7 @@ public sealed record TakeFromStorageCommand(Entity Avatar, Entity Item) : ISimCo
         if (pack.IsNull)
             return;
         var t = w.Get<Thing>(Item);
-        var room = Math.Min(sim.ContainerRoom(pack, t.Def, t.Material), w.Get<Stack>(Item).Count);
+        var room = Math.Min(sim.ContainerRoom(pack, t.Def, t.Material), count);
         if (room > 0)
             sim.Store(pack, sim.TakeFromStack(Item, room));
     }

@@ -42,11 +42,11 @@ public sealed class ShopName
 
     /// <summary>
     /// The keeper names the shop (an empty name puts the default back). False, and nothing
-    /// changes, unless they keep it.
+    /// changes, unless they keep it and their trade's the one that names it (the innkeeper's).
     /// </summary>
     public static bool Set(Simulation sim, Entity who, Entity building, string? name)
     {
-        if (!ShopPrices.Keeps(sim, who, building))
+        if (!ShopPrices.Keeps(sim, who, building) || !sim.World.Get<Trade>(who).Def.NamesShop)
             return false;
         var w = sim.World;
         if (!w.TryGet<ShopName>(building, out var n))

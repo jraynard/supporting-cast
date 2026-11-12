@@ -343,14 +343,14 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         var inn = ShopSystem.BuildingOf(sim, workplace);
         if (inn.IsNull || w.Get<PresetBuilding>(inn).Def.Name != "Inn")
             return false;
-        var bed = Buildings.Parts(sim, inn).FirstOrDefault(p => Hospitality.Lodging.IsUnmade(sim, p), Entity.Null);
+        var bed = trade.Def.Serving(ServiceKind.Lodging) ? Buildings.Parts(sim, inn).FirstOrDefault(p => Hospitality.Lodging.IsUnmade(sim, p), Entity.Null) : Entity.Null;
         if (!bed.IsNull)
         {
             Doing = "making up a bed";
             return AtStation(sim, me, bed, now, b => send(new BarWorkCommand(me, b)));
         }
         var anchor = w.Get<PresetBuilding>(inn).Anchor;
-        var mess = view.Messes().Where(m => Maps.Map.Distance(m.Cell, anchor) <= CleanJob.InnReach)
+        var mess = view.Messes().Where(m => Maps.Map.Distance(m.Cell, anchor) <= CleanJob.InnReach && CleanJob.Mine(sim, trade.Def, inn, m.Cell))
             .OrderBy(m => Maps.Map.Distance(m.Cell, w.Get<Position>(me).Cell)).Select(m => (int3?)m.Cell).FirstOrDefault();
         if (mess is { } at)
         {
@@ -361,7 +361,9 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 Walk(sim, me, at, now);
             return true;
         }
-        if (!BarWork.DirtyOn(sim, me).IsNull)
+        // Its own crockery: the bar's tankards, or the kitchen's bowls.
+        var mine = WashJob.VesselsOf(sim, me);
+        if (BarWork.DirtyOn(sim, me) is { IsNull: false } dirty && w.Get<Thing>(dirty).Def.WashesInto is { } clean && mine.Contains(clean))
         {
             Doing = "washing up";
             return AtStation(sim, me, Nearest(sim, me, "WashTub"), now, tub => send(new BarWorkCommand(me, tub)));
@@ -373,7 +375,8 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     private static ServiceKind[] KindsFor(TradeDef trade) => trade.Name switch
     {
         "Blacksmith" => [ServiceKind.Repair],
-        "Innkeeper" => [ServiceKind.Drink, ServiceKind.Meal, ServiceKind.Lodging, ServiceKind.Quest], // the bar, the pot, the rooms and the quest board
+        "Innkeeper" => [ServiceKind.Drink, ServiceKind.Lodging, ServiceKind.Quest], // the bar, the rooms and the quest board
+        "Cook" => [ServiceKind.Meal], // the pot
         "Healer" => [ServiceKind.Healing],
         "Carpenter" => [ServiceKind.Unlock],
         _ => trade.Brokers ? [ServiceKind.Quest] : [],
@@ -594,9 +597,12 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         return AtStation(sim, me, Nearest(sim, me, "FuelBin"), now, bin =>
         {
             if (view.InContainer(bin).FirstOrDefault(IsFuel, Entity.Null) is { IsNull: false } coal)
-                send(new TakeFromStorageCommand(me, coal));
+                send(new TakeFromStorageCommand(me, coal, 10)); // a few shovelfuls
         });
     }
+
+    /// <summary>A clean vessel of a kind it's actually carrying: what's on a shelf it happens to stand by won't come with it to the next station.</summary>
+    private static Entity Carried(Simulation sim, Entity me, string vessel) => AvatarSystem.Supply(sim, me, d => d.Name == vessel);
 
     /// <summary>Walk to a station, then use it. False if there's none.</summary>
     private bool AtStation(Simulation sim, Entity me, Entity station, long now, Action<Entity> use)
@@ -666,7 +672,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         if (cask.IsNull)
             return Pour(sim, me, view, drinker, now);
         var into = w.Get<Thing>(cask).Def.Building!.Cask!.Into;
-        if (Vessels.CleanOn(sim, me, into).IsNull)
+        if (Carried(sim, me, into).IsNull)
             return Crockery(sim, me, view, now, into, cask);
         // Each add, from the shelf behind the bar (or the larder, for berries).
         foreach (var add in MixSession.AddsOf(sim, named, null))
@@ -713,7 +719,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         if (cask.IsNull)
             return Restock(sim, me, view, now);
         var into = w.Get<Thing>(cask).Def.Building!.Cask!.Into;
-        if (Vessels.CleanOn(sim, me, into).IsNull)
+        if (Carried(sim, me, into).IsNull)
             return Crockery(sim, me, view, now, into, cask);
         if (!held.IsNull && w.Get<Thing>(held).Def.Name != into)
         {
@@ -771,7 +777,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             return AtStation(sim, me, Nearest(sim, me, "Larder"), now, larder =>
             {
                 if (view.InContainer(larder).FirstOrDefault(e => Cooking.IsIngredient(w.Get<Thing>(e).Def), Entity.Null) is { IsNull: false } stack)
-                    send(new TakeFromStorageCommand(me, stack));
+                    send(new TakeFromStorageCommand(me, stack, 8)); // an armful for the pot
             });
         }
         if (!p.Cooked)
@@ -785,7 +791,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             return AtStation(sim, me, pot, now, at => send(new PotCommand(me, at, PotStep.Season)));
         }
         var bowl = Cooking.BowlOf(sim, pot);
-        if (Vessels.CleanOn(sim, me, bowl).IsNull)
+        if (Carried(sim, me, bowl).IsNull)
             return Crockery(sim, me, view, now, bowl, pot);
         if (!held.IsNull && w.Get<Thing>(held).Def.Name != bowl)
         {
@@ -824,7 +830,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             return AtStation(sim, me, shelf, now, s =>
             {
                 if (view.InContainer(s).FirstOrDefault(e => w.Get<Thing>(e).Def.Name == clean, Entity.Null) is { IsNull: false } stack)
-                    send(new TakeFromStorageCommand(me, stack));
+                    send(new TakeFromStorageCommand(me, stack, ServeJob.VesselsAtOnce));
             });
         }
         // None clean on the shelf: pick up the dirty ones lying about, then to the tub.

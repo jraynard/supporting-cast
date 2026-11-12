@@ -81,6 +81,27 @@ public class InnTalkTests
     }
 
     [Fact]
+    public void WhatsOnTheShelfBesideYouNeedntBeCarried()
+    {
+        // The shelf behind the bar holds the tankards and the herbs; the bowl in hand isn't in the way.
+        var (sim, me, bar, _) = Bar();
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("Bowl"), 1);
+        var shelf = sim.SpawnStructure(sim.Thing("Shelf"), C(9, 11));
+        sim.RebuildDerivedIfNeeded();
+        sim.Store(shelf, sim.CreateItem(sim.Thing("Tankard"), 5));
+        sim.Store(shelf, sim.CreateItem(sim.Thing("Herbs"), 5));
+        Give(sim, me, "Berries", 3);
+        Assert.Null(MixSession.WhyNot(sim, me, bar, sim.Thing("Bramblecup"), null));
+        sim.ApplyNow(new MixCommand(me, bar, sim.Thing("Bramblecup"), null));
+        Mix(sim, me);
+
+        Assert.Equal("Bramblecup", sim.World.Get<Thing>(sim.World.Get<Carrying>(me).Item).Def.Name); // in hand, the bowl to the pack
+        Assert.Equal(4, sim.StoredIn(shelf).Where(e => sim.World.Get<Thing>(e).Def.Name is "Tankard").Sum(e => sim.World.Get<Stack>(e).Count));
+        Assert.Equal(4, sim.StoredIn(shelf).Where(e => sim.World.Get<Thing>(e).Def.Name is "Herbs").Sum(e => sim.World.Get<Stack>(e).Count));
+        Assert.False(AvatarSystem.Supply(sim, me, d => d.Name == "Bowl").IsNull);
+    }
+
+    [Fact]
     public void AFumbledMixIsCrude()
     {
         var (sim, me, bar, _) = Bar();
@@ -237,12 +258,19 @@ public class InnTalkTests
             ShopSystem.Learn(order, me);
         }
         var wanted = sim.Drinking.Wanted(order!.Id)!;
+        var trace = new List<string>();
         for (var t = 0; t < SimClock.TicksPerHour * 2 && order.IsOpen; t++)
         {
             sim.Tick();
             bot.Tick();
+            if (t % 300 == 0)
+            {
+                var h = sim.World.Get<Carrying>(me).Item;
+                trace.Add($"{t}: {bot.Doing} at {sim.World.Get<Position>(me).Cell} hand {(h.IsNull ? "-" : sim.World.Get<Stack>(h).Count + " " + sim.World.Get<Thing>(h).Def.Name)} pack {string.Join(",", sim.StoredIn(sim.PackOf(me)).Select(i => sim.World.Get<Stack>(i).Count + " " + sim.World.Get<Thing>(i).Def.Name))}");
+            }
         }
-        Assert.True(order.Status == OrderStatus.Done, $"{order.Status}: bot {bot.Doing}\n" + string.Join("\n", sim.Messages.Messages.TakeLast(8).Select(m => m.Text)));
+
+        Assert.True(order.Status == OrderStatus.Done, $"{order.Status}: bot {bot.Doing}\n" + string.Join("\n", trace));
         Assert.Contains(sim.Speech.Kept, u => u.Speaker == order.Poster && u.Text.Contains($"A proper {sim.Thing(wanted).Label}"));
     }
 

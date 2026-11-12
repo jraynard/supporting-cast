@@ -666,10 +666,19 @@ public sealed partial class VillageGame
                 ImGui.BeginDisabled(true);
             if (ImGui.Button("Take"u8, in _autoSize))
                 Issue(new TakeFromStorageCommand(_avatar, item));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                Tip(!canTake ? "Your hands are full and it won't fit in your pack." : handsFull ? "One, into your pack." : "One, into your hands.");
+            var many = w.Get<Stack>(item).Count > 1;
+            if (many)
+            {
+                ImGui.SameLine(0, 4);
+                if (ImGui.Button("All"u8, in _autoSize))
+                    Issue(new TakeFromStorageCommand(_avatar, item, TakeFromStorageCommand.All));
+                if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                    Tip(handsFull ? "The whole stack, as much as fits in your pack." : "The whole stack, into your hands.");
+            }
             if (!canTake)
                 ImGui.EndDisabled();
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(!canTake ? "Your hands are full and it won't fit in your pack." : handsFull ? "Into your pack (as much as fits)." : "Into your hands.");
             EatButton(item);
             ImGui.SameLine(0, 8);
             ImGui.Text($"{w.Get<Stack>(item).Count} {t.Label}");

@@ -21,7 +21,7 @@ public sealed class LodgeJob(int order) : Job
         var from = w.Get<Position>(pawn).Cell;
         foreach (var e in sim.Shops.FrontFirst(sim))
         {
-            if (!e.IsOpen || e.Kind.Kind != ServiceKind.Lodging || e.Kind.AtDef != workplace || !e.KnownBy.Contains(pawn)
+            if (!e.IsOpen || e.Kind.Kind != ServiceKind.Lodging || e.Kind.AtDef != workplace || !trade.Def.Serving(ServiceKind.Lodging) || !e.KnownBy.Contains(pawn)
                 || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Poster))
                 continue;
             if (!ShopSystem.FreeLetBed(sim, e.Where).IsNull && Navigation.CanReach(sim, pawn, from, w.Get<Position>(e.Poster).Cell, PathEnd.Touch))

@@ -818,7 +818,7 @@ public class WagonTests
         Assert.False(sim.CanDeconstruct(wagon, out var why));
         Assert.Contains("emptied", why);
 
-        sim.Enqueue(new TakeFromStorageCommand(me, berries));
+        sim.Enqueue(new TakeFromStorageCommand(me, berries, TakeFromStorageCommand.All));
         sim.Tick();
         sim.World.Get<Carrying>(me).Item = Entity.Null; // eaten, say
         // Empty, F still just opens it: it only comes apart once marked (the wagon window's button).
@@ -903,7 +903,7 @@ public class WagonTests
         Assert.True(sim.World.Get<Carrying>(me).Item.IsNull);
         var wood = Assert.Single(sim.StoredIn(wagon));
 
-        sim.Enqueue(new TakeFromStorageCommand(me, wood));
+        sim.Enqueue(new TakeFromStorageCommand(me, wood, TakeFromStorageCommand.All));
         sim.Tick();
         Assert.Equal(wood, sim.World.Get<Carrying>(me).Item);
         Assert.False(sim.World.Has<Stored>(wood));

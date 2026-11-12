@@ -72,12 +72,13 @@ public sealed class ShopPrices
         && sim.World.TryGet<Trade>(who, out var trade) && trade.Def.WorkplaceDef == b.Def;
 
     /// <summary>
-    /// The keeper changes the sign. False (and nothing changes) unless they keep the shop and it
-    /// serves the service. The price is clamped to 0..<see cref="MaxPrice"/>.
+    /// The keeper changes the sign. False (and nothing changes) unless they keep the shop, it serves
+    /// the service, and it's their trade's to see to (the cook prices the meals, not the drinks). The price is clamped to 0..<see cref="MaxPrice"/>.
     /// </summary>
     public static bool Set(Simulation sim, Entity who, Entity building, ServiceKind kind, int price, bool offered)
     {
-        if (!Enum.IsDefined(kind) || !Keeps(sim, who, building) || Posted(sim, building, kind) == null)
+        if (!Enum.IsDefined(kind) || !Keeps(sim, who, building) || Posted(sim, building, kind) == null
+            || !sim.World.Get<Trade>(who).Def.Serving(kind))
             return false;
         var w = sim.World;
         if (!w.Has<ShopPrices>(building))

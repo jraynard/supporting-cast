@@ -14,7 +14,10 @@ public class ShopTests
     private static readonly Guid Bea = new("00000000-0000-0000-0000-00000000000b");
 
     /// <summary>A round with players in it and a party in town.</summary>
-    private static (Simulation Sim, List<Entity> Party) Round(params Guid[] players)
+    private static (Simulation Sim, List<Entity> Party) Round(params Guid[] players) => Round(null, players);
+
+    /// <summary>A round with these players in it (the first wanting <paramref name="firstTrade"/>, if given), a party in town half an hour.</summary>
+    private static (Simulation Sim, List<Entity> Party) Round(string? firstTrade, params Guid[] players)
     {
         var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
         sim.Presets.PresetMode = true;
@@ -22,6 +25,8 @@ public class ShopTests
         sim.Round.OpenLobby();
         foreach (var p in players)
             sim.ApplyNow(new JoinLobbyCommand(p, p.ToString()[^1..], default, []));
+        if (firstTrade != null)
+            sim.ApplyNow(new SetTradePreferencesCommand(players[0], [sim.Defs.Trade(firstTrade)], []));
         sim.ApplyNow(new StartRoundCommand());
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
         Assert.NotEmpty(party);
@@ -104,7 +109,7 @@ public class ShopTests
     [Fact]
     public void AnOrderNobodyServesExpiresAndTheyThinkLessOfTheTown()
     {
-        var (sim, party) = Round(Ana);
+        var (sim, party) = Round("Cook", Ana); // the cook's a player who isn't cooking
         var diner = party[0];
         Hunger(sim, diner, 0.5f);
         sim.TickMany(SimClock.TicksPerHour / 6);
@@ -435,5 +440,46 @@ public class ShopTests
         Assert.True(action.OpensWindow);
         Assert.Equal(inn, action.Target);
         Assert.NotEqual(AvatarActionKind.ReadSign, AvatarSystem.ActionAt(sim, keeper, at, from: inside).Kind);
+    }
+
+    // ---------------- The inn's two trades ----------------
+
+    [Fact]
+    public void TheCookPricesTheMealsAndTheInnkeeperTheRest()
+    {
+        var (sim, _) = Round("Cook", Ana);
+        var cook = Players.CharacterOf(sim, Ana);
+        var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
+        var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+        Assert.True(ShopPrices.Set(sim, cook, inn, ServiceKind.Meal, 6, true));
+        Assert.False(ShopPrices.Set(sim, cook, inn, ServiceKind.Drink, 9, true));
+        Assert.False(ShopPrices.Set(sim, keeper, inn, ServiceKind.Meal, 1, true));
+        Assert.True(ShopPrices.Set(sim, keeper, inn, ServiceKind.Drink, 3, true));
+        Assert.False(ShopName.Set(sim, cook, inn, "Cook's Corner")); // the innkeeper names it
+        Assert.Equal("The Wild Bear", ShopName.Of(sim, inn));
+    }
+
+    [Fact]
+    public void EachSeesToTheirOwnWork()
+    {
+        var (sim, _) = Round("Healer", Ana);
+        Entity Holder(string trade) => sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == trade);
+        var keeper = Holder("Innkeeper");
+        var cook = Holder("Cook");
+        var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+        Assert.Null(CookPotJob.For(sim, keeper));
+        Assert.Contains("Tankard", WashJob.VesselsOf(sim, keeper));
+        Assert.DoesNotContain("Bowl", WashJob.VesselsOf(sim, keeper));
+        Assert.Equal(["Bowl"], WashJob.VesselsOf(sim, cook));
+        // The kitchen's floor is the cook's, the common room's the keeper's.
+        var pot = Work.Cooking.PotIn(sim, inn);
+        var kitchen = sim.World.Get<Thing>(pot).Cell + new int3(0, 0, 0);
+        var b = sim.World.Get<PresetBuilding>(inn);
+        var common = Buildings.CellOf(sim.Map, b.Def, b.Anchor, b.Facing, 6, 10);
+        var by = sim.SpiralFrom(kitchen, 1).First(c => c != kitchen && sim.Map.Passable(c));
+        Assert.True(CleanJob.Mine(sim, sim.World.Get<Trade>(cook).Def, inn, by));
+        Assert.False(CleanJob.Mine(sim, sim.World.Get<Trade>(keeper).Def, inn, by));
+        Assert.True(CleanJob.Mine(sim, sim.World.Get<Trade>(keeper).Def, inn, common));
+        Assert.False(CleanJob.Mine(sim, sim.World.Get<Trade>(cook).Def, inn, common));
     }
 }

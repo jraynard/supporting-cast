@@ -32,7 +32,7 @@ public sealed class ServeJob(int order) : Job
         var from = w.Get<Position>(pawn).Cell;
         foreach (var e in sim.Shops.FrontFirst(sim))
         {
-            if (!e.IsOpen || e.Kind.Kind is not (ServiceKind.Drink or ServiceKind.Meal) || e.Kind.AtDef != workplace
+            if (!e.IsOpen || e.Kind.Kind is not (ServiceKind.Drink or ServiceKind.Meal) || e.Kind.AtDef != workplace || !trade.Def.Serving(e.Kind.Kind)
                 || !e.KnownBy.Contains(pawn) || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Poster))
                 continue;
             var supply = e.Kind.Kind == ServiceKind.Drink ? Cask(sim, pawn) : Pot(sim, e.Where) is { IsNull: false } pot ? pot : Meal(sim, pawn, e.Poster);

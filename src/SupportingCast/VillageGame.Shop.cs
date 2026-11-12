@@ -118,13 +118,15 @@ public sealed partial class VillageGame
     }
 
     /// <summary>What your shop's called, over the door: click Rename to paint a new name (empty puts the old one back).</summary>
-    private void DrawShopName(Entity shop, Sim.Defs.BuildingDef workplace)
+    private void DrawShopName(Entity shop, Sim.Defs.BuildingDef workplace, bool mayRename)
     {
         var name = ShopName.Of(_sim, shop);
-        if (_shopNameInput == null)
+        if (_shopNameInput == null || !mayRename)
         {
             ImGui.AlignTextToFramePadding();
             TextC(Theme.Text, name != null ? $"Your sign at {name}" : $"Your sign at the {workplace.Label}");
+            if (!mayRename)
+                return;
             ImGui.SameLine(0, 8);
             if (ImGui.SmallButton("Rename"u8))
             {
@@ -155,10 +157,11 @@ public sealed partial class VillageGame
         if (!_sim.World.TryGet<Trade>(_avatar, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
             return;
         var shop = ShopSystem.BuildingOf(_sim, workplace);
-        var sign = shop.IsNull ? [] : View.Prices(shop);
+        // Only your trade's lines: the cook prices the meals, the innkeeper the rest.
+        var sign = shop.IsNull ? [] : View.Prices(shop).Where(p => trade.Def.Serving(p.Kind)).ToList();
         if (sign.Count == 0)
             return;
-        DrawShopName(shop, workplace);
+        DrawShopName(shop, workplace, trade.Def.NamesShop);
         TextC(Theme.Dim, "Adventurers who think it's too dear go without.");
         foreach (var p in sign)
         {

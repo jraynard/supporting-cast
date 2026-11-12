@@ -178,18 +178,22 @@ public sealed partial class VillageGame
         _hud.Next(Anchor.Bottom);
         Panel.Begin("The bar###bar", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
         _hud.Took();
-        TextC(Theme.Dim, "With a clean tankard in hand, and what it takes in your pack:");
+        TextC(Theme.Dim, "From the cask, with a clean tankard and what goes in to hand (yours, or the shelf beside you):");
         foreach (var drink in _sim.Defs.AllThings.Where(d => d.Mix is { House: false }))
         {
             ImGui.PushID(drink.Name);
             var adds = MixSession.AddsOf(_sim, drink, null);
-            var have = adds.All(add => !Sim.Systems.AvatarSystem.Supply(_sim, _avatar, d => d == add).IsNull);
+            var why = MixSession.WhyNot(_sim, _avatar, bar, drink, null);
+            if (why != null)
+                ImGui.BeginDisabled(true);
             if (ImGui.SmallButton($"Mix a {drink.Label}"))
                 Issue(new MixCommand(_avatar, bar, drink, null));
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip(drink.Description);
+            if (why != null)
+                ImGui.EndDisabled();
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                Tip(why ?? drink.Description);
             ImGui.SameLine(0, 8);
-            TextC(have ? Theme.Dim : Theme.Warn, $"ale, {string.Join(", ", adds.Select(d => d.Label))}");
+            TextC(why == null ? Theme.Dim : Theme.Warn, why == null ? $"ale, {string.Join(", ", adds.Select(d => d.Label))}" : why);
             ImGui.PopID();
         }
         Gui.Rule();
@@ -206,8 +210,22 @@ public sealed partial class VillageGame
                     _houseAdds.Remove(add.Name);
             }
         }
-        if (_houseAdds.Count > 0 && ImGui.SmallButton("Mix it"u8))
-            Issue(new MixCommand(_avatar, bar, _sim.Defs.Thing("HouseMix"), string.Join(",", _houseAdds.Order())));
+        if (_houseAdds.Count > 0)
+        {
+            var house = _sim.Defs.Thing("HouseMix");
+            var adds = string.Join(",", _houseAdds.Order());
+            var why = MixSession.WhyNot(_sim, _avatar, bar, house, adds);
+            if (why != null)
+                ImGui.BeginDisabled(true);
+            if (ImGui.SmallButton("Mix it"u8))
+                Issue(new MixCommand(_avatar, bar, house, adds));
+            if (why != null)
+            {
+                ImGui.EndDisabled();
+                ImGui.SameLine(0, 8);
+                TextC(Theme.Warn, why);
+            }
+        }
         Panel.End();
     }
 

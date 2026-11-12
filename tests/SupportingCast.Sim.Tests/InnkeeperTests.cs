@@ -155,10 +155,10 @@ public class InnkeeperTests
     }
 
     [Fact]
-    public void AnAIInnkeeperServesAMealFromTheStores()
+    public void AnAICookServesAMealFromTheStores()
     {
         var (sim, party) = Tavern("Healer");
-        var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
+        var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Cook");
         var tavern = PartyHaunt(sim);
         sim.PlaceItemNear(sim.CreateItem(sim.Thing("Stew"), 10), tavern);
         var diner = party[0];
@@ -186,16 +186,28 @@ public class InnkeeperTests
     {
         var (sim, party) = Tavern("Healer");
         var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
+        // Nothing else on the books to keep the keeper busy: whole, and not thirsty.
+        foreach (var a in party)
+        {
+            sim.World.Get<Health>(a).Injuries.Clear();
+            sim.World.Get<Adventurer>(a).NextDrink = sim.Clock.Tick + SimClock.TicksPerDay * 3;
+        }
         StayTillEvening(sim, party);
         var lodger = party[0];
         Inventory.Stow(sim, lodger, sim.CreateItem(sim.Thing(Coin.Silver), 20)); // whatever else they've spent on
-        for (var i = 0; i < 16 && !sim.Shops.All.Any(e => e.Kind.Kind == ServiceKind.Lodging && e.Poster == lodger && e.Status == OrderStatus.Done); i++)
-            sim.TickMany(SimClock.TicksPerHour / 4);
+        // The bed they're given, as soon as they have it (a party sent on a quest the same evening checks out again).
+        var bed = Entity.Null;
+        for (var t = 0; t < SimClock.TicksPerHour * 6 && bed.IsNull; t += 30)
+        {
+            sim.TickMany(30);
+            if (sim.World.TryGet<BedOwner>(lodger, out var own))
+                bed = own.Bed;
+        }
 
         var room = sim.Shops.All.First(e => e.Kind.Kind == ServiceKind.Lodging && e.Poster == lodger);
         Assert.Equal(OrderStatus.Done, room.Status);
         Assert.Equal(keeper, room.Assignee);
-        var bed = sim.World.Get<BedOwner>(lodger).Bed;
+        Assert.False(bed.IsNull);
         var inn = Buildings.Of(sim, bed);
         Assert.Equal("Inn", sim.World.Get<PresetBuilding>(inn).Def.Name);
         Assert.Equal(sim.World.Get<PresetBuilding>(inn).Anchor.Z + 1, sim.World.Get<Thing>(bed).Cell.Z); // upstairs

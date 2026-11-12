@@ -258,10 +258,10 @@ public class InnKitchenTests
     }
 
     [Fact]
-    public void AnAIInnkeeperCooksAPotAndServesItByTheBowl()
+    public void AnAICookCooksAPotAndServesItByTheBowl()
     {
         var (sim, party) = Tavern("Healer");
-        var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
+        var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Cook");
         var pot = Cooking.PotIn(sim, ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn")));
         for (var i = 0; i < 24 && !Cooking.PotOf(sim, pot).Cooked; i++)
             sim.TickMany(SimClock.TicksPerHour / 4);
@@ -286,9 +286,9 @@ public class InnKitchenTests
     }
 
     [Fact]
-    public void ABotInnkeeperCooksTheStewAndServesItHot()
+    public void ABotCookCooksTheStewAndServesItHot()
     {
-        var (sim, party) = Tavern("Innkeeper");
+        var (sim, party) = Tavern("Cook");
         var bot = new BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 7);
         var diner = party[0];
         sim.World.Get<Needs>(diner).Values[sim.Defs.Need("Food").Index] = 0.5f;

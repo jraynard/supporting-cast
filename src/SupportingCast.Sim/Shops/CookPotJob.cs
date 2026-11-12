@@ -28,7 +28,7 @@ public sealed class CookPotJob(Entity pot) : Job
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace || !trade.Def.Serving(ServiceKind.Meal))
             return null;
         var pot = Cooking.PotIn(sim, ShopSystem.BuildingOf(sim, workplace));
         if (pot.IsNull || sim.Reservations.IsReservedByOther(pot, pawn) || Cooking.BeingWorked(sim, pot) || !Cooking.Lit(sim, pot))

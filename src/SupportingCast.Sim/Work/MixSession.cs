@@ -88,14 +88,14 @@ public sealed class MixSession : WorkSession
         if (cask.IsNull)
             return $"There's no {sim.Defs.Thing(drink.Mix.Base).Label} behind the bar.";
         var into = sim.World.Get<Thing>(cask).Def.Building!.Cask!.Into;
-        if (!Vessels.Ready(sim, mixer, into))
-            return $"You need a clean {sim.Defs.Thing(into).Label}, and a hand free for it.";
+        if (Vessels.CleanOn(sim, mixer, into).IsNull)
+            return $"You need a clean {sim.Defs.Thing(into).Label} to hand: carry one, or stand by the shelf behind the bar.";
         var list = AddsOf(sim, drink, adds);
         if (drink.Mix.House && list.Count == 0)
             return "A house mix needs something added.";
         foreach (var add in list)
-            if (AvatarSystem.Supply(sim, mixer, d => d == add).IsNull)
-                return $"You need some {add.Label} to hand: there's some on the shelf behind the bar.";
+            if (Vessels.ToHand(sim, mixer, d => d == add).IsNull)
+                return $"You need some {add.Label} to hand: carry some, or stand by the shelf behind the bar.";
         return null;
     }
 
@@ -177,18 +177,25 @@ public sealed class MixSession : WorkSession
         PourSession.Draw(sim, cask);
         var adds = AddsOf(sim, drink, Adds);
         foreach (var add in adds)
-            w.Destroy(Inventory.TakeFromPerson(sim, Worker, AvatarSystem.Supply(sim, Worker, d => d == add), 1));
+            Vessels.UseOne(sim, Worker, d => d == add);
         Vessels.Use(sim, Worker, into);
         var made = sim.CreateItem(drink, 1);
         var quality = Crafting.QualityFrom(Quality);
         w.Add(made, new Crafted { Quality = quality, Maker = Worker });
         w.Add(made, MixOf(sim, drink, adds, Quality));
+        // Into your hand, whatever was in it going to the pack: you've made it to hand over.
         ref var carrying = ref w.Get<Carrying>(Worker);
+        if (!carrying.Item.IsNull)
+        {
+            var was = carrying.Item;
+            carrying.Item = Entity.Null;
+            Inventory.Stow(sim, Worker, was);
+        }
         if (carrying.Item.IsNull)
             carrying.Item = made;
         else
             Inventory.Stow(sim, Worker, made);
-        sim.Messages.Add(MessageKind.Info, $"Mixed a {Crafting.QualityLabel(quality)} {_label}.", at);
+        sim.Messages.Add(MessageKind.Info, $"Mixed a {Crafting.QualityLabel(quality)} {_label}: it's in your hand.", at);
     }
 
     /// <summary>What a mix does: its base and adds summed, the better mixed, the more of it.</summary>

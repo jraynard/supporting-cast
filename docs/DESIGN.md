@@ -59,7 +59,8 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 
 | Trade | The game it plays | Built from | Betrayal it enables |
 | --- | --- | --- | --- |
-| Innkeeper | Order juggling, cooking by taste, drink mixing, keeping the place clean, hearing gossip; matching parties to quests on partial intel | Larder, cooking, Social, `Expeditions/` | Spiked drinks, selling secrets, sending a party to its death |
+| Innkeeper | Order juggling at the bar, drink mixing, letting rooms, keeping the common room, hearing gossip; matching parties to quests on partial intel | Social, `Expeditions/` | Spiked drinks, selling secrets, sending a party to its death |
+| Cook | The inn's kitchen: the stew pot by taste, the larder, the bowls | Larder, cooking | A turned ingredient left in the pot, or something worse |
 | Blacksmith | Heat, hammer and quench timing | Forge, bellows, tiers, `Crafted` quality | A hidden flaw in a blade |
 | Healer | Take a patient's wounds into yourself with focus, cast the right mending on yourself, meditate back your mana | Health, `Work/`, new mana | Taking only part of a wound, or handing one back |
 | Constable | Patrol, evidence, arrests, jail | `Prisoners`, locks | Framing, abuse of authority |
@@ -100,9 +101,13 @@ Ideas for depth, to build when each trade's milestone comes round.
 - Commissions have details the buyer chooses: the hilt, runes engraved on it, the materials.
 - more detail - heating the billet to the correct temp based on how hot it looks, using molds or shaping the item, making the hilt, handle and grip, thinking of like forged in fire style with realistic detailed forging here (as long as its fun).
 
-**Innkeeper.** Never one thing at a time: the line at the bar, the pot on the fire, the
-tankards in the tub and the room upstairs all want the keeper at once. The skill is in the
-juggling, and in what they overhear while they do it.
+**Innkeeper and Cook.** The inn takes two. The innkeeper keeps the bar (drinks, mixing, the
+kegs, the tankards), the rooms upstairs and the quest board; the cook keeps the kitchen (the pot,
+the larder, the bowls, the meals out). Each washes their own crockery and mops their own floor:
+the kitchen's the cook's, the common room's the keeper's. After the first playtest the whole
+inn was too much for one person. Even split, the bar's line, a room to show up and a keg to change
+all want the keeper at once. The skill is in the juggling, and in what they overhear while they
+do it.
 - *Built (Innkeeper polish): all of the below, but brokering's unchanged and the "Later" list
   is still to come.* The inn has a kitchen and a storeroom behind the common room, and six rooms
   upstairs.

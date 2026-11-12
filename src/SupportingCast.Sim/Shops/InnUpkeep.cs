@@ -32,9 +32,33 @@ public sealed class WashJob(Entity tub) : Job
         return new WashJob(tub);
     }
 
-    /// <summary>The nearest dirty tankard or bowl, wherever the customer left it (by the shrine, as often as not).</summary>
-    private static Entity Dirty(Simulation sim, Entity pawn, Entity tub) =>
-        AiQueries.FindNearestItem(sim, pawn, (_, def) => Vessels.IsDirty(def), 80);
+    /// <summary>
+    /// The clean vessels a villager's trade serves into at their workplace: the bar's tankards
+    /// for whoever pours, the pot's bowls for whoever cooks. Each washes up their own.
+    /// </summary>
+    public static HashSet<string> VesselsOf(Simulation sim, Entity pawn)
+    {
+        var w = sim.World;
+        var kinds = new HashSet<string>();
+        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+            return kinds;
+        foreach (var part in Buildings.Parts(sim, ShopSystem.BuildingOf(sim, workplace)))
+        {
+            var b = w.Get<Thing>(part).Def.Building;
+            if (b?.Cask is { } cask && trade.Def.Serving(ServiceKind.Drink))
+                kinds.Add(cask.Into);
+            if (b?.StewPot is { } pot && trade.Def.Serving(ServiceKind.Meal))
+                kinds.Add(pot.Into);
+        }
+        return kinds;
+    }
+
+    /// <summary>The nearest dirty tankard or bowl of theirs, wherever the customer left it (by the shrine, as often as not).</summary>
+    private static Entity Dirty(Simulation sim, Entity pawn, Entity tub)
+    {
+        var mine = VesselsOf(sim, pawn);
+        return mine.Count == 0 ? Entity.Null : AiQueries.FindNearestItem(sim, pawn, (_, def) => def.WashesInto is { } clean && mine.Contains(clean), 80);
+    }
 
     protected override IEnumerable<JobStatus> Run()
     {
@@ -118,7 +142,7 @@ public sealed class TapJob(Entity cask, Entity keg) : Job
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace || !trade.Def.Serving(ServiceKind.Drink))
             return null;
         var inn = ShopSystem.BuildingOf(sim, workplace);
         if (inn.IsNull)
@@ -255,7 +279,7 @@ public sealed class CleanJob(int3 cell) : Job
         {
             var c = sim.Map.CellOf(i);
             // In the inn, by the plan's reach from its middle: the keeper's floors, not the whole town's.
-            if (Map.Distance(c, anchor) > InnReach || sim.Reservations.IsTileReservedByOther(c, pawn))
+            if (Map.Distance(c, anchor) > InnReach || sim.Reservations.IsTileReservedByOther(c, pawn) || !Mine(sim, trade.Def, inn, c))
                 continue;
             var d = Map.Distance(from, c);
             if (d < bestDist && Navigation.CanReach(sim, pawn, from, c, PathEnd.Touch))
@@ -266,6 +290,21 @@ public sealed class CleanJob(int3 cell) : Job
 
     /// <summary>How far from the inn's middle its floors reach.</summary>
     public const int InnReach = 9;
+
+    /// <summary>
+    /// Whose floor a cell is: the kitchen's (the room with the pot) the cook's, the rest the
+    /// keeper's. A trade that sees to everything there cleans it all.
+    /// </summary>
+    public static bool Mine(Simulation sim, TradeDef trade, Entity inn, int3 cell)
+    {
+        bool meals = trade.Serving(ServiceKind.Meal), rest = trade.Serving(ServiceKind.Drink) || trade.Serving(ServiceKind.Lodging);
+        if (meals && rest)
+            return true;
+        var pot = Cooking.PotIn(sim, inn);
+        var kitchen = pot.IsNull ? null : sim.Rooms.RoomAt(sim.World.Get<Thing>(pot).Cell);
+        var inKitchen = kitchen != null && sim.Rooms.RoomAt(cell) == kitchen;
+        return inKitchen ? meals : rest;
+    }
 
     protected override IEnumerable<JobStatus> Run()
     {
@@ -290,7 +329,7 @@ public sealed class MakeBedJob(Entity bed) : Job
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace || !trade.Def.Serving(ServiceKind.Lodging))
             return null;
         var inn = ShopSystem.BuildingOf(sim, workplace);
         if (inn.IsNull || w.Count<Hospitality.Unmade>() == 0)
