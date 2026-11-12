@@ -16,6 +16,9 @@
     { "name": "Quest", "label": "a quest", "at": "Longhouse", "priceMin": 8, "priceMax": 20, "patienceHours": 8,
       "lines": [ "We're looking for work worthy of us. {0} silver to whoever points us at it.",
                  "Who in this town knows where the glory is? {0} silver for a good lead." ] },
+    { "name": "Unlock", "label": "a strongbox opened", "at": "Woodshop", "priceMin": 6, "priceMax": 14, "patienceHours": 6,
+      "lines": [ "We dragged this {1} all the way back. {0} silver to whoever opens it, and keeps their fingers.",
+                 "Carpenter! This {1} won't open and we don't trust it. {0} silver." ] },
     { "name": "Request", "label": "a request", "priceMin": 0, "priceMax": 999, "patienceHours": 6 }
   ]
 }

@@ -52,6 +52,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art.
   - `Errands/`: every demand is an `Errand`, asked aloud (only those who hear know of it). Coin is
     real `SilverCoin` items; paying moves them. AI trades answer errands (`MendJob`, `ServeJob`,
     `HealErrands`). An AI work pack keeps coin and `Entrusted` items between jobs.
+  - `Locks/`: the Carpenter's lockwork on strongboxes from quests. A box's trap is hidden item
+    state: show it only through `PerceptionView.Strongbox`, which never says an armed one is there.
   - `Healing/`: the empath. Wounds drawn in are `Injury.Absorbed` and known only by feel
     (`PerceptionView.FeltWounds`); never show their kind by name.
   - `Expeditions/`: quests with hidden truth, per-person `Intel`, parties off the map as

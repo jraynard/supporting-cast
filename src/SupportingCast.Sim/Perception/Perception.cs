@@ -6,6 +6,13 @@ using SupportingCast.Sim.Defs;
 namespace SupportingCast.Sim.Systems;
 
 /// <summary>What can be told about someone from looking at them. Nothing here needs an examination.</summary>
+/// <summary>
+/// A strongbox as someone looking it over sees it: locked or not, how many pins, whether they've
+/// felt it over themselves, and a trap only once it's been drawn or gone off. Whether an armed trap
+/// is there is never shown; it has to be felt for.
+/// </summary>
+public readonly record struct KnownStrongbox(bool Locked, int Pins, bool SearchedByMe, string? SpentTrap, int? Silver, string From);
+
 public readonly record struct PerceivedPerson(string Name, string Condition, string? Holding);
 
 /// <summary>A line as one character caught it. <see cref="Speaker"/> is null when they couldn't tell who it was.</summary>
@@ -134,6 +141,19 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         if (!Omniscient && !onMe && !Within(t.Spawned ? t.Cell : sim.LocationOf(item), 1))
             return null;
         return Combat.WeaponWear.Describe(sim, item);
+    }
+
+    /// <summary>A strongbox within reach or on your person, as you can see it (<see cref="KnownStrongbox"/>). Null if it isn't one, or is out of reach.</summary>
+    public KnownStrongbox? Strongbox(Entity item)
+    {
+        var w = sim.World;
+        if (!w.IsAlive(item) || !w.TryGet<Components.Strongbox>(item, out var b) || !w.TryGet<Thing>(item, out var t))
+            return null;
+        var onMe = !viewer.IsNull && Inventory.OnPerson(sim, viewer, item);
+        if (!Omniscient && !onMe && !Within(t.Spawned ? t.Cell : sim.LocationOf(item), 1))
+            return null;
+        var spent = b.Trap != TrapKind.None && !b.Armed ? Locks.Lockwork.TrapLabel(b.Trap) : null;
+        return new KnownStrongbox(b.Locked, b.Pins, !viewer.IsNull && b.SearchedBy == viewer, spent, b.Locked ? null : b.Silver, b.From ?? "");
     }
 
     /// <summary>

@@ -68,6 +68,12 @@ public sealed partial class VillageGame
             case Sim.Healing.MeditateSession meditate:
                 DrawMeditate(meditate);
                 return;
+            case Sim.Locks.ProbeSession probe:
+                DrawProbe(probe);
+                return;
+            case Sim.Locks.PickSession pick:
+                DrawPick(pick);
+                return;
         }
         if (_work.Session is not HammerSession hammer)
             return;
@@ -186,6 +192,82 @@ public sealed partial class VillageGame
         Bar("Edge", s.Progress, Theme.Good);
         Bar("Heat", s.Heat, s.Heat > 0.75f ? Theme.Bad : s.Heat > 0.5f ? Theme.Warn : Theme.Dim);
         ImGui.End();
+    }
+
+    /// <summary>The lid's seam with the probe on it, what the probe tells the fingers, and the pressure on it.</summary>
+    private void DrawProbe(Sim.Locks.ProbeSession s)
+    {
+        BeginWorkWindow(s.Title, "A/D run the probe along the seam; sweep light. Where it catches, stop and hold F to ease the spring out. The far end finishes. Esc to stop.");
+        var dl = ImGui.GetWindowDrawList();
+        var size = new float2(420, 26);
+        var min = ImGui.GetCursorScreenPos();
+        var max = min + size;
+        ImGui.Dummy(in size);
+        dl.AddRectFilled(in min, in max, new ImColor8(92, 62, 36, 255), 3f, ImDrawFlags.None);
+        var seamMin = new float2(min.X + 4, min.Y + size.Y * 0.5f - 1);
+        var seamMax = new float2(max.X - 4, min.Y + size.Y * 0.5f + 1);
+        dl.AddRectFilled(in seamMin, in seamMax, new ImColor8(30, 22, 16, 255), 0f, ImDrawFlags.None);
+        var x = min.X + 4 + s.Probe * (size.X - 8);
+        var probeMin = new float2(x - 2, min.Y - 3);
+        var probeMax = new float2(x + 2, max.Y + 3);
+        dl.AddRectFilled(in probeMin, in probeMax, Theme.U8(Theme.Accent), 1f, ImDrawFlags.None);
+        TextC(Theme.Dim, "hasp");
+        ImGui.SameLine(size.X - 24, 0);
+        TextC(Theme.Dim, "hinge");
+        Bar("Feel", s.Feel, s.Feel > 0.6f ? Theme.Warn : Theme.Dim);
+        // The pressure gauge, with the band that eases a spring out marked on it.
+        var gMin = ImGui.GetCursorScreenPos();
+        var gSize = new float2(420, 16);
+        var gMax = gMin + gSize;
+        ImGui.Dummy(in gSize);
+        dl.AddRectFilled(in gMin, in gMax, new ImColor8(40, 30, 24, 255), 3f, ImDrawFlags.None);
+        var bandMin = new float2(gMin.X + s.Low * gSize.X, gMin.Y);
+        var bandMax = new float2(gMin.X + s.High * gSize.X, gMax.Y);
+        dl.AddRectFilled(in bandMin, in bandMax, Theme.U8(Theme.Good, 0.6f), 2f, ImDrawFlags.None);
+        var dangerMin = new float2(gMin.X + Sim.Locks.ProbeSession.SpringAbove * gSize.X, gMin.Y);
+        dl.AddRectFilled(in dangerMin, in gMax, Theme.U8(Theme.Bad, 0.6f), 2f, ImDrawFlags.None);
+        var pMin = new float2(gMin.X, gMin.Y + 4);
+        var pMax = new float2(gMin.X + s.Pressure * gSize.X, gMax.Y - 4);
+        dl.AddRectFilled(in pMin, in pMax, Theme.U8(s.Pressure > Sim.Locks.ProbeSession.LightTouch ? Theme.Accent : Theme.Text), 1f, ImDrawFlags.None);
+        if (s.Progress > 0f)
+            Bar("Spring", s.Progress, Theme.Good);
+        ImGui.End();
+    }
+
+    /// <summary>The pins set so far, the one being lifted, and how much it gives.</summary>
+    private void DrawPick(Sim.Locks.PickSession s)
+    {
+        BeginWorkWindow(s.Title, "A/D lift the pin; F sets it where it gives most. A slip drops a pin and wears the picks. Esc to stop.");
+        var dl = ImGui.GetWindowDrawList();
+        var origin = ImGui.GetCursorScreenPos();
+        const float W = 36, H = 120;
+        ImGui.Dummy(new float2(420, H));
+        for (var i = 0; i < s.Pins; i++)
+        {
+            var colMin = new float2(origin.X + 10 + i * (W + 12), origin.Y);
+            var colMax = new float2(colMin.X + W, origin.Y + H);
+            dl.AddRectFilled(in colMin, in colMax, new ImColor8(40, 30, 24, 255), 3f, ImDrawFlags.None);
+            var lift = i < s.Pin ? 1f : i == s.Pin ? s.Lift : 0f;
+            var pinTop = colMax.Y - 10 - lift * (H - 20);
+            var pinMin = new float2(colMin.X + 8, pinTop);
+            var pinMax = new float2(colMax.X - 8, pinTop + 10);
+            var colour = i < s.Pin ? Theme.Good : i == s.Pin ? (s.Feel > 0.7f ? Theme.Warn : Theme.Accent) : Theme.Dim;
+            dl.AddRectFilled(in pinMin, in pinMax, Theme.U8(colour), 2f, ImDrawFlags.None);
+        }
+        Bar("Give", s.Feel, s.Feel > 0.7f ? Theme.Warn : Theme.Dim);
+        TextC(s.Slips > 0 ? Theme.Warn : Theme.Dim, $"Slips {s.Slips} of {Sim.Locks.PickSession.MaxSlips}");
+        ImGui.End();
+    }
+
+    private void BeginWorkWindow(string title, string help)
+    {
+        var screen = ImGui.GetIO().DisplaySize;
+        var pos = new float2(screen.X * 0.5f, screen.Y * 0.66f);
+        float2? pivot = new float2(0.5f, 0.5f);
+        ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, in pivot);
+        ImGui.Begin("###work"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav);
+        TextC(Theme.Accent, title);
+        TextC(Theme.Dim, help);
     }
 
     private void RunBots()

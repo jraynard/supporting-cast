@@ -71,7 +71,7 @@ public class ExpeditionTests
     }
 
     /// <summary>Send the party on a quest that sounds right, and wait until they're back (or known lost).</summary>
-    private static (Quest Quest, List<string> Names) SendAndWait(Simulation sim, Entity me, List<Entity> party)
+    internal static (Quest Quest, List<string> Names) SendAndWait(Simulation sim, Entity me, List<Entity> party)
     {
         var q = sim.Expeditions.Quests[0];
         var strength = ExpeditionSystem.PartyStrength(sim, PartyOf(sim, party[0]));

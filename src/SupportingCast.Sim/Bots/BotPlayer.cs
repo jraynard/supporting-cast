@@ -4,6 +4,7 @@ using SupportingCast.Sim.Defs;
 using SupportingCast.Sim.Errands;
 using SupportingCast.Sim.Expeditions;
 using SupportingCast.Sim.Healing;
+using SupportingCast.Sim.Locks;
 using SupportingCast.Sim.Speech;
 using SupportingCast.Sim.Systems;
 using SupportingCast.Sim.Work;
@@ -16,7 +17,8 @@ namespace SupportingCast.Sim.Bots;
 /// would, so a test driven by bots proves the game is playable from the player's side of the line.
 /// It plays its trade: the smith takes repairs and judges hammer or stone by what the blade looks
 /// like, the innkeeper pours for orders and matches parties to the quests it believes fit, the
-/// healer draws wounds and casts the mending whose feel it knows. Every mini-game is played
+/// healer draws wounds and casts the mending whose feel it knows, the carpenter feels a strongbox
+/// over for traps and picks its lock by the feel alone. Every mini-game is played
 /// by hand, through the same predictor as the game's.
 /// </summary>
 /// <param name="world">The current sim: a resync replaces it.</param>
@@ -51,6 +53,14 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     private long _session = -1;
     private bool _resting, _stopped;
     private int _lastRune = -1, _lastTurn = -1;
+
+    // Lockwork: the feel needle smoothed, where it rose past the mark, the middle it found, and
+    // how long it's been working a trigger.
+    private float _feel;
+    private float? _rose, _middle;
+    private float _skipTo;
+    private int _pin, _slips, _working, _dir = 1;
+    private float _progress;
 
     public Guid Player => player;
 
@@ -93,6 +103,12 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             _session = s.StartTick;
             _resting = _stopped = false;
             _lastRune = _lastTurn = -1;
+            _feel = 0f;
+            _rose = _middle = null;
+            _skipTo = 0f;
+            _pin = _slips = _working = 0;
+            _dir = 1;
+            _progress = 0f;
         }
         switch (s)
         {
@@ -124,8 +140,84 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 _lastTurn = m.NextTurn;
                 return (true, false, 0);
             }
+            case ProbeSession pr:
+                return Probe(pr);
+            case PickSession pk:
+                return Pick(pk);
         }
         return (false, false, 0);
+    }
+
+    /// <summary>
+    /// Where the smoothed feel rose past the mark and where it fell back: the middle of the two is
+    /// where the catch is (the smoothing's lag cancels out). Null until it's found one.
+    /// </summary>
+    private float? Middle(float at, float mark)
+    {
+        if (_rose == null && _feel > mark)
+            _rose = at;
+        else if (_rose is { } rose && _feel < mark)
+        {
+            _rose = null;
+            return (rose + at) * 0.5f;
+        }
+        return null;
+    }
+
+    /// <summary>Sweep the seam light; at a catch, go back to its middle and ease the spring out; then on to the hinge.</summary>
+    private (bool, bool, int) Probe(ProbeSession s)
+    {
+        _feel = _feel * 0.8f + s.Feel * 0.2f;
+        var mid = (s.Low + s.High) * 0.5f;
+        if (_working > 0)
+        {
+            _working = s.Progress > _progress ? 60 : _working - 1; // stalled: not on it after all
+            _progress = s.Progress;
+            if (!s.Disarmed && _working > 0)
+                return (false, s.Pressure < mid - 0.03f, 0);
+            _working = 0;
+        }
+        if (s.Pressure > ProbeSession.LightTouch - 0.08f)
+            return (false, false, 0); // never drag weight across the seam
+        if (_middle is { } target)
+        {
+            var off = target - s.Probe;
+            if (MathF.Abs(off) > ProbeSession.ProbePerStep)
+                return (false, false, Math.Sign(off));
+            _middle = null;
+            _skipTo = target + ProbeSession.CatchRange;
+            _working = 90;
+            return (false, true, 0);
+        }
+        if (s.Probe >= _skipTo && Middle(s.Probe, 0.5f) is { } found)
+            _middle = found;
+        return (false, false, 1);
+    }
+
+    /// <summary>Lift each pin through where it gives, back to the middle of that, and set it.</summary>
+    private (bool, bool, int) Pick(PickSession s)
+    {
+        if (s.Pin != _pin || s.Slips != _slips)
+        {
+            (_pin, _slips) = (s.Pin, s.Slips);
+            _rose = _middle = null;
+            _feel = 0f;
+            _dir = 1;
+        }
+        _feel = _feel * 0.7f + s.Feel * 0.3f;
+        if (_middle is { } target)
+        {
+            var off = target - s.Lift;
+            return MathF.Abs(off) <= s.HalfWidth * 0.3f ? (true, false, 0) : (false, false, Math.Sign(off));
+        }
+        if (Middle(s.Lift, 0.45f) is { } found)
+            _middle = found;
+        if (s.Lift >= 0.99f || s.Lift <= 0.01f)
+        {
+            _dir = s.Lift >= 0.99f ? -1 : 1;
+            _rose = null;
+        }
+        return (false, false, _dir);
     }
 
     /// <summary>Steer a needle back toward the middle of its band.</summary>
@@ -156,6 +248,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         "Blacksmith" => [ErrandKind.Repair],
         "Innkeeper" => [ErrandKind.Drink, ErrandKind.Quest], // the bar and the quest board both
         "Healer" => [ErrandKind.Healing],
+        "Carpenter" => [ErrandKind.Unlock],
         _ => trade.Brokers ? [ErrandKind.Quest] : [],
     };
 
@@ -192,6 +285,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             ErrandKind.Drink => Pour(sim, me, poster, now),
             ErrandKind.Healing => Heal(sim, me, view, poster, now),
             ErrandKind.Quest => Broker(sim, me, view, poster, now),
+            ErrandKind.Unlock => OpenBox(sim, me, view, poster, now),
             _ => false,
         };
     }
@@ -265,6 +359,28 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         }
         if (Reach(sim, me, owner, now))
             send(new GiveCommand(me, owner, blade, 1));
+        return true;
+    }
+
+    /// <summary>Feel a strongbox over for traps, then pick it, then hand it back open.</summary>
+    private bool OpenBox(Simulation sim, Entity me, PerceptionView view, Entity owner, long now)
+    {
+        var box = Entrusted(sim, me, owner);
+        if (box.IsNull)
+        {
+            Reach(sim, me, owner, now);
+            return true;
+        }
+        if (view.Strongbox(box) is not { } known)
+            return false;
+        Doing = known.Locked ? (known.SearchedByMe ? "picking a lock" : "feeling for traps") : "handing back a strongbox";
+        if (known.Locked)
+        {
+            send(known.SearchedByMe ? new PickLockCommand(me, box) : new ProbeBoxCommand(me, box));
+            return true;
+        }
+        if (Reach(sim, me, owner, now))
+            send(new GiveCommand(me, owner, box, 1));
         return true;
     }
 

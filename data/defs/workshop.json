@@ -104,6 +104,17 @@
       "description": "A fine-grained stone for putting an edge back on a blade. Grind steady and don't let the steel heat."
     },
     {
+      // Strongboxes: a party that clears a quest brings one back, locked, maybe trapped
+      // (Locks/Lockwork). The lock and any trap live on the item, not the def.
+      "name": "Strongbox", "label": "strongbox", "category": "Item", "mass": 6, "sprite": "items/strongbox", "stackLimit": 1, "maxHp": 150,
+      "description": "Iron-bound oak, taken from somewhere it wasn't meant to leave. Feel along the lid for traps before you pick the lock."
+    },
+    {
+      "name": "Lockpicks", "held": "chisel", "label": "lockpicks", "category": "Item", "mass": 0.2, "sprite": "items/lockpicks", "maxHp": 60,
+      "tool": { "kind": "Lockpicks", "speed": 1.0, "tier": "Iron" },
+      "description": "A roll of thin iron picks and a probe. A slip in a stiff lock can snap one."
+    },
+    {
       "name": "FishingRod", "held": "rod", "label": "fishing rod", "category": "Item", "mass": 0.5, "sprite": "items/fishing_rod", "maxHp": 30,
       "tool": { "kind": "Rod", "speed": 1.0, "tier": "Stone" }, "description": "A springy pole and a line. Casting without one is mostly hoping."
     },

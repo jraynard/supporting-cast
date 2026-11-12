@@ -184,6 +184,8 @@ public abstract class WorkSession
             nameof(Healing.DrawSession) => new Healing.DrawSession(),
             nameof(Healing.CastSession) => new Healing.CastSession(),
             nameof(Healing.MeditateSession) => new Healing.MeditateSession(),
+            nameof(Locks.ProbeSession) => new Locks.ProbeSession(),
+            nameof(Locks.PickSession) => new Locks.PickSession(),
             _ => throw new SaveException($"Corrupt save: unknown work session {name}"),
         };
         s.Worker = r.Entity();

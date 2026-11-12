@@ -45,22 +45,27 @@ Milestones toward a playable prototype, then beyond. Design intent is in [DESIGN
     breath and gathers more mana, and a chest of bandages for when the mana runs dry.
   - **Innkeeper as quest broker:** matches parties to quests on intel built from a rough guess,
     rumours over the bar and returning parties' reports.
+  - **Carpenter, the lockwork first:** a party that clears a quest brings back a strongbox with
+    part of the reward locked in it, often trapped. Feel along the seam for the trap and ease its
+    spring out, then pick the lock pin by pin; a trap missed goes off as the lid comes up. The
+    town has a woodshop for it.
 - `Expeditions/`: parties go off the map as records. Their strength (gear upkeep, wounds, food,
   mood) against a quest's hidden danger decides deaths, wounds, wear and loot, and survivors
   come back changed.
-- `Bots/BotPlayer` plays all three trades. `PartyLoopScenarioTests` is the exit: bots serve a
-  party, send it out, and it comes back.
-- Fixed on the way: AI packs dropped their coin at every job's end, and an item in your own pack
-  hid its condition from you.
+- `Bots/BotPlayer` plays all four trades. `PartyLoopScenarioTests` is the exit: bots serve a
+  party, send it out, it comes back, and what it brought back gets opened.
+- Fixed on the way: AI packs dropped their coin at every job's end (and their trade's tools,
+  which now start on the belt), and an item in your own pack hid its condition from you.
 - Bench baselines:
-  - seed 1234: state `D5ACD46F44E08654`, full `C288044B89415D13`
-  - seed 99: state `76FFD6CFB5EA3AF2`, full `E280807092065635`
+  - seed 1234: state `8C73C48227F3E496`, full `71517EF6742999F6`
+  - seed 99: state `285714EBDFEB4418`, full `5C666264F50686B2`
 
-  The state hashes moved only for the town's buildings: the longhouse's cask, and the shrine in
-  place of the clinic.
+  The state hashes moved only for the round's town: the longhouse's cask, the shrine in place of
+  the clinic, the woodshop, and kit tools dealt onto the belt.
 
 Known leftovers:
-- Build and zone tools are open to every player; the Carpenter should own them.
+- Build and zone tools are open to every player; the Carpenter should own them. The Carpenter's
+  building and mending have no game of their own yet, only the lockwork.
 - Players can hunt animals but can't yet attack people (M4).
 - Villagers don't fight back against raiders, they only suffer them (M3).
 - The dragon creature has no brain or breath job of its own yet (M3's late-round crisis).

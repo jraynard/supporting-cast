@@ -288,8 +288,14 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         foreach (var station in trade.KnownStations)
             foreach (var recipe in station.Recipes)
                 RecipeBooks.Learn(sim, e, recipe);
+        // Tools of the trade go on the belt: they work from there, and an AI villager's work pack
+        // is emptied at the end of every job.
         foreach (var item in trade.Kit)
-            Inventory.Stow(sim, e, sim.CreateItem(item.ThingDef, item.Count, Simulation.MaterialFor(item.ThingDef, null)));
+        {
+            var made = sim.CreateItem(item.ThingDef, item.Count, Simulation.MaterialFor(item.ThingDef, null));
+            if (item.Count != 1 || item.ThingDef.Tool == null || Toolbelt.PutOn(sim, e, made).IsNull)
+                Inventory.Stow(sim, e, made);
+        }
         if (w.Has<Mana>(e))
             w.Remove<Mana>(e);
         if (trade.Mana > 0)

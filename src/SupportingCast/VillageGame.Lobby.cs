@@ -49,7 +49,7 @@ public sealed partial class VillageGame
         if (HeroTrade != null)
             round.SetPreferences(Guid.Empty, [_sim.Defs.Trade(HeroTrade)], []);
         // Bots ask for the trades that have a game to play, the hero's aside, so a solo round has its cast.
-        var wanted = new[] { "Innkeeper", "Blacksmith", "Healer" }.Where(t => t != HeroTrade).ToList();
+        var wanted = new[] { "Innkeeper", "Blacksmith", "Healer", "Carpenter" }.Where(t => t != HeroTrade).ToList();
         for (var i = 0; i < Bots; i++)
         {
             var id = new Guid(i + 1, 0, 0, new byte[8]);

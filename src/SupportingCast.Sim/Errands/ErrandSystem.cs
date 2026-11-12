@@ -115,6 +115,8 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 PostFor(sim, who, ErrandKind.Repair, gear);
             if (w.TryGet<Health>(who, out var h) && h.Injuries.Exists(i => !i.Tended))
                 PostFor(sim, who, ErrandKind.Healing, Entity.Null);
+            if (Locks.Lockwork.LockedBoxOf(sim, who) is { IsNull: false } box)
+                PostFor(sim, who, ErrandKind.Unlock, box);
         }
     }
 
@@ -215,19 +217,30 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         sim.Speech.Say(sim, e.Poster, thanks, Volume.Say);
     }
 
+    /// <summary>Errands that hand something over to be seen to and given back.</summary>
+    public static bool HandsOver(ErrandKind kind) => kind is ErrandKind.Repair or ErrandKind.Unlock;
+
     /// <summary>
-    /// An adventurer gives the piece to be mended to whoever took the job on, once they're in
-    /// reach. True if it changed hands (or already had).
+    /// An adventurer gives the piece to be mended (or the box to be opened) to whoever took the
+    /// job on, once they're in reach. True if it changed hands (or already had).
     /// </summary>
     public bool TryHandOver(Simulation sim, Errand e)
     {
         var w = sim.World;
-        if (!e.IsOpen || e.Kind.Kind != ErrandKind.Repair || e.Assignee.IsNull || !w.IsAlive(e.Subject))
+        if (!e.IsOpen || !HandsOver(e.Kind.Kind) || e.Assignee.IsNull || !w.IsAlive(e.Subject))
             return false;
         if (Inventory.OnPerson(sim, e.Assignee, e.Subject))
             return true;
         if (!Inventory.OnPerson(sim, e.Poster, e.Subject) || !Handing.InReach(sim, e.Poster, e.Assignee) || !SpeechSystem.CanAct(sim, e.Poster))
             return false;
+        if (e.Kind.Kind == ErrandKind.Unlock)
+        {
+            var box = Inventory.TakeFromPerson(sim, e.Poster, e.Subject, 1);
+            w.Add(box, new Entrusted { Owner = e.Poster });
+            Inventory.Stow(sim, e.Assignee, box);
+            sim.Speech.Say(sim, e.Poster, "Here. Mind your fingers: none of us would touch the lid.", Volume.Say);
+            return true;
+        }
         if (w.TryGet<Equipment>(e.Poster, out var eq) && eq.Weapon == e.Subject)
             w.Remove<Equipment>(e.Poster);
         else if (w.Get<Thing>(e.Subject).Def.Apparel is { } apparel && w.TryGet<Apparel>(e.Poster, out var worn) && worn[apparel.Slot] == e.Subject)
@@ -244,7 +257,7 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
     private static void LostTheirGear(Simulation sim, Errand e)
     {
         var w = sim.World;
-        if (e.Kind.Kind != ErrandKind.Repair || !w.IsAlive(e.Subject) || !w.IsAlive(e.Poster) || Inventory.OnPerson(sim, e.Poster, e.Subject))
+        if (!HandsOver(e.Kind.Kind) || !w.IsAlive(e.Subject) || !w.IsAlive(e.Poster) || Inventory.OnPerson(sim, e.Poster, e.Subject))
             return;
         if (w.Has<Entrusted>(e.Subject))
             w.Remove<Entrusted>(e.Subject); // theirs now, for better or worse
@@ -328,6 +341,12 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
             TakeBack(sim, repair, giver);
             return;
         }
+        var unlock = _errands.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ErrandKind.Unlock && e.Subject == item);
+        if (unlock != null)
+        {
+            TakeBackBox(sim, unlock, giver);
+            return;
+        }
         var drink = _errands.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ErrandKind.Drink);
         if (drink != null && def.Drink)
         {
@@ -374,6 +393,31 @@ public sealed class ErrandSystem(ulong seed) : ISimSystem, Saving.ISaveState
         e.Assignee = Entity.Null;
         e.AssigneeName = "";
         sim.Speech.Say(sim, e.Poster, $"It's still {WeaponWear.Faults(sim, item)}. I'm not paying for that.", Volume.Say);
+    }
+
+    /// <summary>
+    /// The strongbox comes back. Open, they take the silver out and pay; still locked, they say so
+    /// and the job is open again for anyone.
+    /// </summary>
+    private void TakeBackBox(Simulation sim, Errand e, Entity giver)
+    {
+        var w = sim.World;
+        var box = e.Subject;
+        w.Remove<Entrusted>(box);
+        Inventory.Stow(sim, e.Poster, box);
+        ref var b = ref w.Get<Strongbox>(box);
+        if (b.Locked)
+        {
+            e.Assignee = Entity.Null;
+            e.AssigneeName = "";
+            sim.Speech.Say(sim, e.Poster, "It's still locked. I'm not paying for that.", Volume.Say);
+            return;
+        }
+        var silver = b.Silver;
+        b.Silver = 0;
+        if (silver > 0)
+            Inventory.Stow(sim, e.Poster, sim.CreateItem(sim.Defs.Thing(Coin.Silver), silver));
+        Complete(sim, e, giver);
     }
 
     /// <summary>The weapon or armor most in need of mending (<see cref="WeaponWear.NeedsMending"/>); Entity.Null if none.</summary>

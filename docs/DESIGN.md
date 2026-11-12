@@ -111,6 +111,17 @@ model: wounds sit on body parts, have a kind, and bleed, hurt and fester.
 **Carpenter's locksmithing.** Adventurers come back with locked and trapped chests. Picking the
 lock and finding and disarming the traps are each a hands-on game. They're the Carpenter's for
 now; if the trade gets too crowded, the lock work splits off into a Locksmith trade of its own.
+- Since M2: a party that clears a quest brings back a strongbox holding part of the reward, and
+  asks at the woodshop to have it opened. The harder the place, the more pins and the likelier a
+  trap (a poisoned needle, a spring blade, burning powder).
+- *Feeling for the trap.* Run a probe along the lid's seam, light. The feel twitches as it goes
+  and catches hard near a trigger. Dragging weight across a trigger sets it off; stopped over
+  one, press in and hold the pressure in the band to ease the spring out, too hard and it fires.
+  Reaching the hinge ends the search, so finishing never tells you whether there was one.
+- *Picking the lock.* Lift each pin until it gives most and set it there. A slip drops a pin,
+  wears the picks and can jar an armed trap; enough slips snap the pick. Opening a box with its
+  trap still armed sets it off. A sprung trap wounds the hand, which is work for the healer.
+- Betrayal later (M4): a spare key, a box opened early and some silver missing, a trap left armed.
 
 ## Pressure and traitors
 

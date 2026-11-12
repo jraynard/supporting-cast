@@ -11,13 +11,14 @@ using Xunit.Abstractions;
 namespace SupportingCast.Sim.Tests;
 
 /// <summary>
-/// M2's exit, played from the players' side of the line: three bots take the three trades, parties
-/// arrive, are served (drink, mending, healing), are sent on a quest, and come back changed. Bots
+/// M2's exit, played from the players' side of the line: four bots take the four trades, parties
+/// arrive, are served (drink, mending, healing), are sent on a quest, come back changed, and have
+/// what they brought back opened. Bots
 /// play only through commands and Perception, so this proves the loop is playable by people.
 /// </summary>
 public class PartyLoopScenarioTests(ITestOutputHelper output)
 {
-    private static readonly string[] Trades = ["Blacksmith", "Innkeeper", "Healer"];
+    private static readonly string[] Trades = ["Blacksmith", "Innkeeper", "Healer", "Carpenter"];
 
     [Theory]
     [InlineData(1234UL)]
@@ -55,7 +56,8 @@ public class PartyLoopScenarioTests(ITestOutputHelper output)
             foreach (var e in sim.Errands.All)
                 if (e.Status == ErrandStatus.Done && players.Contains(e.Assignee) && served.Add(e.Kind.Kind))
                     log.Add($"{SimClock.TicksToDays(t) * 24:F1}h: {e.AssigneeName} did {e.Kind.Label} for {e.PosterName}");
-            if (served.Count >= 4 && sim.Expeditions.Succeeded + sim.Expeditions.Failed > 0)
+            if (served.Count >= 4 && sim.Expeditions.Succeeded + sim.Expeditions.Failed > 0
+                && (sim.Expeditions.Succeeded == 0 || served.Contains(ErrandKind.Unlock)))
                 break;
         }
 
@@ -70,5 +72,7 @@ public class PartyLoopScenarioTests(ITestOutputHelper output)
             Assert.True(served.Contains(kind), $"no bot served {kind}\n{summary}");
         Assert.True(sim.Expeditions.Succeeded + sim.Expeditions.Failed >= 1, $"no party came back from a quest\n{summary}");
         Assert.True(sim.Messages.Messages.Any(m => m.Text.Contains("return from") || m.Text.StartsWith("No one comes back")), summary);
+        if (sim.Expeditions.Succeeded > 0)
+            Assert.True(served.Contains(ErrandKind.Unlock), $"a party came back with a strongbox, and no bot opened it\n{summary}");
     }
 }

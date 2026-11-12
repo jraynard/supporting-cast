@@ -22,6 +22,9 @@ public enum ErrandKind
 
     /// <summary>Anything a player asks of another, in their own words; the poster says when it's done.</summary>
     Request,
+
+    /// <summary>A strongbox brought back from a quest, opened (the Carpenter's).</summary>
+    Unlock,
 }
 
 /// <summary>

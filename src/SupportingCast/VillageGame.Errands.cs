@@ -49,6 +49,8 @@ public sealed partial class VillageGame
                     : $"Nobody's taken it. {left:F1}h left.");
                 if (e.MineToDo && e.Kind == Sim.Defs.ErrandKind.Repair)
                     TextC(Theme.Dim, $"Mended, give it back from {e.PosterName}'s inspector, in reach.");
+                if (e.MineToDo && e.Kind == Sim.Defs.ErrandKind.Unlock)
+                    TextC(Theme.Dim, $"From your pack: feel the box over for traps, pick it, then give it back from {e.PosterName}'s inspector.");
                 if (!e.Mine && e.AssigneeName.Length == 0)
                 {
                     if (ImGui.Button("I'll do it"u8, in _autoSize))
@@ -119,7 +121,9 @@ public sealed partial class VillageGame
             if (ImGui.Button($"Give back their {_sim.LabelOf(item)}", in _autoSize))
                 Issue(new GiveCommand(_avatar, other, item, 1));
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip(View.Condition(item) is { } c ? $"It's {c}. They'll look it over: mended, they pay; if not, they'll say what's wrong." : "They'll look it over before they pay.");
+                Tip(View.Strongbox(item) is { } box
+                    ? (box.Locked ? "It's still locked: they won't pay for that." : "Open: they'll take out what's inside and pay.")
+                    : View.Condition(item) is { } c ? $"It's {c}. They'll look it over: mended, they pay; if not, they'll say what's wrong." : "They'll look it over before they pay.");
             ImGui.PopID();
         }
         var held = w.Get<Carrying>(_avatar).Item;

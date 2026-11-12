@@ -25,7 +25,7 @@ public sealed class Quest
 {
     public int Id { get; init; }
     public required QuestDef Def { get; init; }
-    public float Danger { get; init; }
+    public float Danger { get; internal set; }
     public int Reward { get; init; }
     public QuestStatus Status { get; set; }
 }
@@ -431,8 +431,9 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         {
             Succeeded++;
             quest.Status = QuestStatus.Cleared;
+            // Most of it in their purses; the rest locked in a strongbox they bring back (Locks/).
             foreach (var m in survivors)
-                m.Coin += quest.Reward / Math.Max(1, survivors.Count);
+                m.Coin += (quest.Reward - BoxShare(quest)) / Math.Max(1, survivors.Count);
         }
         else
         {
@@ -470,6 +471,8 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         var tale = success
             ? $"We've cleared {quest.Def.Label}. It was {word}.{told}{(lost > 0 ? $" {lost} of us didn't come back." : "")}"
             : $"We couldn't do it. {Capital(quest.Def.Label)} is {word}.{told}{(lost > 0 ? $" We left {lost} of ours out there." : "")}";
+        if (success && back.Count > 0)
+            Inventory.Stow(sim, back[^1], Locks.Lockwork.Make(sim, _rand, quest.Danger, BoxShare(quest), quest.Def.Label));
         if (back.Count > 0)
             w.Add(back[0], new ReportPending { Quest = quest.Id, Danger = quest.Danger, Text = tale });
         // How the broker's word held up counts with them.
@@ -479,6 +482,9 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         sim.Messages.Add(success ? MessageKind.Good : MessageKind.Warning,
             $"{Capital(ex.PartyDef.Label)} return from {quest.Def.Label}{(success ? ", laden" : ", beaten")}: {survivors.Count} of {ex.Members.Count}.", from);
     }
+
+    /// <summary>The part of a quest's reward that comes back locked in a strongbox.</summary>
+    public static int BoxShare(Quest quest) => quest.Reward * 2 / 5;
 
     private Entity Respawn(Simulation sim, MemberRecord m, int3 cell)
     {

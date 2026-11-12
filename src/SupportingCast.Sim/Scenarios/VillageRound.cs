@@ -19,7 +19,7 @@ public static class VillageRound
     public const int StartingVillagers = 6;
 
     /// <summary>The landing point and the buildings trades will work from.</summary>
-    public readonly record struct Town(int3 Center, Entity Tavern, Entity Forge, Entity Shrine);
+    public readonly record struct Town(int3 Center, Entity Tavern, Entity Forge, Entity Shrine, Entity Woodshop);
 
     /// <summary>Generate the valley and raise the town. Returns where everything is.</summary>
     public static Town Setup(Simulation sim)
@@ -32,6 +32,7 @@ public static class VillageRound
         var forge = Raise(sim, "Smithy", center + new int3(12, -12, 0), 0);
         var shrine = Raise(sim, "Shrine", center + new int3(14, 6, 0), 0);
         StockShrine(sim, shrine);
+        var woodshop = Raise(sim, "Woodshop", center + new int3(-18, 2, 0), 1);
         // Beds for everyone, or the first night sends them all out to sleep in the cold.
         for (var i = 0; i < 3; i++)
         {
@@ -40,7 +41,7 @@ public static class VillageRound
                 VillageSetup.FillSpareBeds(sim, home);
         }
         sim.RebuildDerivedIfNeeded();
-        return new Town(center, tavern, forge, shrine);
+        return new Town(center, tavern, forge, shrine, woodshop);
     }
 
     /// <summary>Bandages in the shrine's chest: the healer's backup for when the mana runs dry.</summary>

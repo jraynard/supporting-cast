@@ -13,6 +13,9 @@
     { "name": "Healer", "label": "healer", "description": "An empath: lays on hands to take others' wounds into themselves, then mends them with the gift.",
       "workplace": "Shrine", "workPriorities": { "Doctor": 1 }, "skills": { "Medicine": 6 }, "mana": 100,
       "kit": [ { "def": "Bandage", "count": 4 } ] },
+    { "name": "Carpenter", "label": "carpenter", "description": "Builds and mends in wood, and opens what adventurers drag home: feels a strongbox over for traps, then picks its lock.",
+      "workplace": "Woodshop", "workPriorities": { "Construct": 1 }, "skills": { "Construction": 6, "Crafting": 5 },
+      "kit": [ { "def": "Lockpicks" }, { "def": "Wood", "count": 6 } ] },
     { "name": "Labourer", "label": "labourer", "description": "Hauls, chops and digs for anyone who'll pay.", "unlimited": true }
   ]
 }

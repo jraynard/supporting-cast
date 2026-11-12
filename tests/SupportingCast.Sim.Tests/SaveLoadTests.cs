@@ -17,7 +17,7 @@ namespace SupportingCast.Sim.Tests;
 public class SaveLoadTests
 {
     /// <summary>Save <paramref name="live"/>, load it back, and interrupt the original to match.</summary>
-    private static Simulation RoundTrip(Simulation live)
+    internal static Simulation RoundTrip(Simulation live)
     {
         var bytes = SaveGame.Write(live);
         var (loaded, _) = SaveGame.Read(bytes, live.Defs);
@@ -26,7 +26,7 @@ public class SaveLoadTests
     }
 
     /// <summary>Equal now and after every game hour for <paramref name="hours"/> hours.</summary>
-    private static void AssertSameFuture(Simulation live, Simulation loaded, int hours)
+    internal static void AssertSameFuture(Simulation live, Simulation loaded, int hours)
     {
         Assert.Equal(live.StateHash(), loaded.StateHash());
         Assert.True(live.FullHash() == loaded.FullHash(), "the load restored something differently (FullHash)");

@@ -430,6 +430,46 @@ public struct Entrusted
     public Entity Owner;
 }
 
+/// <summary>What a strongbox's trap does to the hand that springs it (<c>Locks/Lockwork</c>).</summary>
+public enum TrapKind : byte
+{
+    None,
+
+    /// <summary>A poisoned needle in the hasp.</summary>
+    Needle,
+
+    /// <summary>A spring-loaded blade under the lid.</summary>
+    Blade,
+
+    /// <summary>A charge of burning powder.</summary>
+    Powder,
+}
+
+/// <summary>
+/// A locked box brought back from a quest (<c>Locks/</c>). The lock's pins are set from
+/// <see cref="LockSeed"/>; the trap, where it sits on the seam and whether it's armed are hidden
+/// item state, shown to players only through Perception. The silver inside is taken out by its
+/// owner when it comes back open.
+/// </summary>
+public struct Strongbox
+{
+    public int Pins;
+    public uint LockSeed;
+    public bool Locked;
+    public TrapKind Trap;
+
+    /// <summary>Where along the lid's seam (0..1) the trap's trigger sits.</summary>
+    public float TrapAt;
+    public bool Armed;
+    public int Silver;
+
+    /// <summary>The last one to run a probe along the seam (they know what they felt, or didn't).</summary>
+    public Entity SearchedBy;
+
+    /// <summary>Where it came from, for its description.</summary>
+    public string From;
+}
+
 /// <summary>How many drinks have been drawn from a cask (<see cref="Defs.CaskProps"/>); none until the first.</summary>
 public struct CaskDrawn
 {

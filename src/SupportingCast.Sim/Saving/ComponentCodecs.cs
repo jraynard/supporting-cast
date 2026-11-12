@@ -262,6 +262,31 @@ internal static class ComponentCodecs
             w.Float(p.Danger);
             w.String(p.Text ?? "");
         }, r => new ReportPending { Quest = r.Int(), Danger = r.Float(), Text = r.String() }),
+        Codec("Strongbox", (w, b) =>
+        {
+            w.Int(b.Pins);
+            w.UInt(b.LockSeed);
+            w.Bool(b.Locked);
+            w.Byte((byte)b.Trap);
+            w.Float(b.TrapAt);
+            w.Bool(b.Armed);
+            w.Int(b.Silver);
+            w.Entity(b.SearchedBy);
+            w.String(b.From ?? "");
+        }, r =>
+        {
+            var b = new Strongbox { Pins = r.Int(), LockSeed = r.UInt(), Locked = r.Bool() };
+            var trap = r.Byte();
+            if (!Enum.IsDefined((TrapKind)trap) || b.Pins is < 1 or > Locks.Lockwork.MaxPins)
+                throw new SaveException($"Corrupt save: strongbox trap {trap}, pins {b.Pins}");
+            b.Trap = (TrapKind)trap;
+            b.TrapAt = r.Float();
+            b.Armed = r.Bool();
+            b.Silver = r.Int();
+            b.SearchedBy = r.Entity();
+            b.From = r.String();
+            return b;
+        }),
         Codec("CaskDrawn", (w, c) => w.Int(c.Drawn), r => new CaskDrawn { Drawn = r.Int() }),
         Codec("FiredForMending", (w, f) => w.Long(f.Until), r => new FiredForMending { Until = r.Long() }),
         Codec("Stored", (w, s) => w.Entity(s.In), r => new Stored { In = r.Entity() }),

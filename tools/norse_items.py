@@ -118,6 +118,41 @@ def tankard(drink):
     return selective_outline(img)
 
 
+def strongbox():
+    """An iron-bound oak box with a hasp and a heavy lock plate: what parties drag back from a quest."""
+    img = Image.new("RGBA", SIZE, (0, 0, 0, 0))
+    oak = ramp((128, 86, 50), 5)
+    shape(img, lambda d: d.rounded_rectangle([3, 12, 28, 28], radius=1, fill=255), oak,
+          tex=lambda x, y: 0.1 if y % 4 == 0 else 0.0)                                               # the body, in planks
+    shape(img, lambda d: d.rounded_rectangle([2, 6, 29, 13], radius=3, fill=255), oak[1:] + [oak[4]], radius=1.2)   # the curved lid
+    for x in (6, 25):                                                                                  # iron straps over lid and body
+        px(img, [(x, y) for y in range(6, 29)], IRON[1])
+        px(img, [(x + 1, y) for y in range(6, 29)], IRON[3])
+    px(img, [(x, 13) for x in range(3, 29)], IRON[2])                                                  # the lid's rim
+    shape(img, lambda d: d.rectangle([13, 14, 18, 21], fill=255), IRON, radius=0.8)                    # the lock plate
+    px(img, [(15, 16), (16, 16), (15, 17), (16, 17), (16, 18), (16, 19)], (24, 20, 18, 255))           # keyhole
+    px(img, [(14, 11), (15, 11), (16, 11), (17, 11), (14, 12), (17, 12)], IRON[3])                     # the hasp
+    px(img, [(4, 27), (27, 27), (4, 14), (27, 14)], GOLD[2])                                           # corner studs
+    return selective_outline(img)
+
+
+def lockpicks():
+    """A leather roll, opened out, with a probe and three thin picks."""
+    img = Image.new("RGBA", SIZE, (0, 0, 0, 0))
+    shape(img, lambda d: d.rounded_rectangle([3, 9, 29, 25], radius=2, fill=255), LEATHER, tex=lambda x, y: bayer(x, y) * 0.06)
+    px(img, [(x, 22) for x in range(5, 28, 2)], LEATHER[0])                                            # the stitched pocket
+    for i, (x, tip) in enumerate(((8, "hook"), (13, "rake"), (18, "probe"), (23, "half"))):
+        px(img, [(x, y) for y in range(5, 22)], IRON[3] if i % 2 else IRON[2])
+        px(img, [(x + 1, y) for y in range(14, 22)], IRON[1])                                          # the handles, wider
+        if tip == "hook":
+            px(img, [(x + 1, 5), (x + 1, 6)], IRON[3])
+        elif tip == "rake":
+            px(img, [(x + 1, 6), (x + 1, 8), (x + 1, 10)], IRON[3])
+        elif tip == "half":
+            px(img, [(x + 1, 6), (x + 1, 7), (x + 2, 7)], IRON[3])
+    return selective_outline(img)
+
+
 # ---------------------------------------------------------------- clothes
 
 def dyes():
@@ -284,7 +319,7 @@ def clothes():
 def generate():
     clothes()
     for name, make in (("leather_jerkin", jerkin), ("leather_cap", cap), ("iron_helm", helm), ("horned_helm", horned_helm), ("chain_shirt", byrnie), ("satchel", satchel),
-                       ("ale", lambda: tankard(ramp((176, 118, 40), 5)))):
+                       ("ale", lambda: tankard(ramp((176, 118, 40), 5))), ("strongbox", strongbox), ("lockpicks", lockpicks)):
         path = os.path.join(ROOT, "items", name + ".png")
         os.makedirs(os.path.dirname(path), exist_ok=True)
         make().save(path)
