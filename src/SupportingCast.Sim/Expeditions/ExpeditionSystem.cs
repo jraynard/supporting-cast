@@ -72,6 +72,9 @@ public sealed class MemberRecord
 
     /// <summary>The empath's charms they carry (<see cref="Healing.Charms"/>): wards for the road.</summary>
     public List<Healing.CharmRecord> Charms = [];
+
+    /// <summary>The tinker's contraptions they carry (<see cref="Tinkering.Contraptions"/>).</summary>
+    public List<Tinkering.ContraptionRecord> Contraptions = [];
 }
 
 /// <summary>A party out on a quest.</summary>
@@ -86,6 +89,9 @@ public sealed class Expedition
     public string BrokerName = "";
     public long ReturnTick;
     public List<MemberRecord> Members = [];
+
+    /// <summary>They've a sound wagon to bring home what they find, or none to worry about (<see cref="Tinkering.Wagons"/>).</summary>
+    public bool Hauls = true;
 }
 
 /// <summary>
@@ -288,7 +294,13 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
     // ---------------- Sending a party ----------------
 
     /// <summary>How strong one person is for a quest: skill, gear and its upkeep, wounds, how fed and how pleased they are.</summary>
-    public static float Strength(MemberRecord m)
+    public static float Strength(MemberRecord m) => Strength(m, null, null);
+
+    /// <summary>
+    /// How strong one person is for this quest, with the contraptions they carry that work there
+    /// (none of the <paramref name="jammed"/> ones).
+    /// </summary>
+    public static float Strength(MemberRecord m, QuestDef? quest, ISet<Tinkering.ContraptionRecord>? jammed)
     {
         var skill = Math.Clamp(Math.Max(m.Melee, m.Shooting) / 9f, 0.3f, 2f);
         var weapon = m.Weapon is not { } wpn ? 0.4f
@@ -300,8 +312,13 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         var health = Math.Clamp(1f - 0.8f * m.Pain - (1f - m.Blood), 0.2f, 1f);
         var morale = 1f + 0.08f * Math.Clamp(m.Satisfaction, -4f, 4f);
         var fed = m.Food < 0.3f ? 0.85f : 1f;
-        return skill * weapon * armor * health * morale * fed * Healing.Charms.StrengthFactor(m.Charms);
+        var kit = quest == null ? 1f : Tinkering.Contraptions.StrengthFactor(Working(m, jammed), quest);
+        return skill * weapon * armor * health * morale * fed * Healing.Charms.StrengthFactor(m.Charms) * kit;
     }
+
+    /// <summary>The contraptions someone carries that haven't jammed.</summary>
+    private static IEnumerable<Tinkering.ContraptionRecord> Working(MemberRecord m, ISet<Tinkering.ContraptionRecord>? jammed) =>
+        jammed == null ? m.Contraptions : m.Contraptions.Where(c => !jammed.Contains(c));
 
     /// <summary>Everyone in a party who's in town and not leaving.</summary>
     public static List<Entity> PartyInTown(Simulation sim, int party)
@@ -349,6 +366,14 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         sim.Shops.Complete(sim, order, broker);
         quest.Status = QuestStatus.Taken;
         var party = PartyInTown(sim, a.Party);
+        // A wagon still broken: they'll go, but they'll carry home only what's in their packs.
+        var hauls = !Tinkering.Wagons.Damaged(sim, Tinkering.Wagons.Of(sim, a.Party));
+        if (!hauls)
+        {
+            foreach (var e in party)
+                w.Get<Adventurer>(e).Satisfaction -= Tinkering.Wagons.BrokenMood;
+            sim.Speech.Say(sim, member, "And the wagon's still broken. Whatever we find out there stays there, then.", Volume.Say);
+        }
         foreach (var e in party)
         {
             w.Get<Adventurer>(e).Quest = questId;
@@ -358,7 +383,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         _out.Add(new Expedition
         {
             Quest = questId, Party = a.Party, PartyDef = a.PartyDef, Stated = intel.Danger, BrokerName = w.Get<Creature>(broker).Name,
-            ReturnTick = sim.Clock.Tick + SimClock.HoursToTicks(quest.Def.Hours + 2 * TravelHours),
+            ReturnTick = sim.Clock.Tick + SimClock.HoursToTicks(quest.Def.Hours + 2 * TravelHours), Hauls = hauls,
         });
         sim.Messages.Add(MessageKind.Info, $"{Capital(a.PartyDef.Label)} set out for {label}.", w.Get<Position>(member).Cell);
         return true;
@@ -403,6 +428,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
                 m.Wounds.Add(new WoundRecord(inj.Part, inj.Type, inj.Damage, inj.Tended, inj.Quality, inj.Absorbed));
         }
         m.Charms = Healing.Charms.Records(sim, e);
+        m.Contraptions = Tinkering.Contraptions.Records(sim, e);
         return m;
     }
 
@@ -428,25 +454,34 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             quest.Status = QuestStatus.Open;
             return;
         }
-        var strength = ex.Members.Sum(Strength);
+        // Contraptions that bind may jam on the road, and do nothing all the way (they still come home).
+        var jammed = new HashSet<Tinkering.ContraptionRecord>(
+            Tinkering.Contraptions.Jam(ex.Members.SelectMany(m => m.Contraptions), _rand.NextFloat), ReferenceEqualityComparer.Instance);
+        var strength = ex.Members.Sum(m => Strength(m, quest.Def, jammed));
         var ratio = strength / quest.Danger * _rand.Range(0.85f, 1.15f);
         var success = ratio >= 0.9f;
         var hit = Math.Clamp(ratio, 0.5f, 2f);
         var survivors = new List<MemberRecord>();
         var warded = 0;
+        var caught = 0;
+        var rocket = (Tinkering.ContraptionRecord?)null;
         foreach (var m in ex.Members)
         {
             var frail = Math.Clamp(1f - 0.8f * m.Pain - (1f - m.Blood), 0.2f, 1f) < 0.5f;
             var death = Math.Clamp(0.55f - 0.5f * ratio, 0f, 0.6f) * (frail ? 1.5f : 1f);
             if (_rand.Chance(death))
             {
-                // A charm that heals may turn it into a bad wound instead (the roll only if they carry one).
-                if (m.Charms.Count == 0 || Healing.Charms.Spare(m.Charms, _rand.NextFloat()) == null)
+                // A charm that heals may turn it into a bad wound instead (the roll only if they carry one);
+                // then a grapnel; then a rocket, once one's gone up, brings help in time.
+                if (m.Charms.Count > 0 && Healing.Charms.Spare(m.Charms, _rand.NextFloat()) != null)
+                    warded++;
+                else if (Spared(m, ex, jammed, ref rocket))
+                    caught++;
+                else
                 {
                     Dead++;
                     continue;
                 }
-                warded++;
                 m.Wounds.Add(new WoundRecord(-1, quest.Def.Threats[_rand.NextInt(quest.Def.Threats.Count)], 14f / hit, false, 0f, false));
             }
             var wounds = _rand.NextInt(2) + (ratio < 1f ? 2 : ratio < 1.5f ? 1 : 0);
@@ -454,6 +489,9 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             {
                 var type = quest.Def.Threats[_rand.NextInt(quest.Def.Threats.Count)];
                 var damage = _rand.Range(4f, 12f) / hit;
+                // A tapping rod finds some of it before it finds them.
+                if (Working(m, jammed).FirstOrDefault(c => c.Use == ContraptionUse.Traps) is { } rod && _rand.Chance(Tinkering.Contraptions.TrapsAvoided(rod)))
+                    continue;
                 // Charms ward what they fit: the first that fits spends itself on it.
                 var before = m.Charms.Count;
                 damage = Healing.Charms.Ward(m.Charms, type, damage);
@@ -471,7 +509,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         {
             Succeeded++;
             quest.Status = QuestStatus.Cleared;
-            // Most of it in their purses; the rest locked in a strongbox they bring back (Locks/).
+            // Most of it in their purses; the rest locked in a strongbox they bring back (Tinkering/).
             foreach (var m in survivors)
                 m.Coin += (quest.Reward - BoxShare(quest)) / Math.Max(1, survivors.Count);
         }
@@ -482,12 +520,40 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         }
         if (survivors.Count == 0)
         {
+            Tinkering.Wagons.Leave(sim, ex.Party); // nobody to come back for it
             sim.Messages.Add(MessageKind.Warning, $"No one comes back from {quest.Def.Label}.", null);
             return;
         }
         if (warded > 0)
             sim.Messages.Add(MessageKind.Good, $"{Capital(ex.PartyDef.Label)} spent {warded} {(warded == 1 ? "charm" : "charms")} on the road to {quest.Def.Label}.", null);
+        if (caught > 0)
+            sim.Messages.Add(MessageKind.Good, $"{Capital(ex.PartyDef.Label)} owe {caught} {(caught == 1 ? "life" : "lives")} to a tinker's work at {quest.Def.Label}.", null);
+        foreach (var c in jammed)
+            sim.Messages.Add(MessageKind.Warning, $"A {c.Def.Label} {ex.PartyDef.Label} carried jammed on the road to {quest.Def.Label}.", null);
         Return(sim, ex, quest, survivors, success);
+    }
+
+    /// <summary>
+    /// A death on a quest, against a tinker's work: a grapnel may catch the fall (and is spent), or
+    /// once a rocket's gone up (the first death fires it), help may come in time. True if they live.
+    /// </summary>
+    private bool Spared(MemberRecord m, Expedition ex, ISet<Tinkering.ContraptionRecord> jammed, ref Tinkering.ContraptionRecord? rocket)
+    {
+        if (Working(m, jammed).FirstOrDefault(c => c.Use == ContraptionUse.Falls) is { } grapnel)
+        {
+            m.Contraptions.Remove(grapnel);
+            if (_rand.Chance(Tinkering.Contraptions.FallCaught(grapnel)))
+                return true;
+        }
+        if (rocket == null)
+            foreach (var bearer in ex.Members)
+                if (Working(bearer, jammed).FirstOrDefault(c => c.Use == ContraptionUse.Rescue) is { } fired)
+                {
+                    bearer.Contraptions.Remove(fired);
+                    rocket = fired;
+                    break;
+                }
+        return rocket != null && _rand.Chance(Tinkering.Contraptions.Rescued(rocket));
     }
 
     /// <summary>The survivors walk back in from an edge, worn and wounded and maybe richer, with a tale to tell at the tavern.</summary>
@@ -516,8 +582,16 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         var tale = success
             ? $"We've cleared {quest.Def.Label}. It was {word}.{told}{(lost > 0 ? $" {lost} of us didn't come back." : "")}"
             : $"We couldn't do it. {Capital(quest.Def.Label)} is {word}.{told}{(lost > 0 ? $" We left {lost} of ours out there." : "")}";
-        if (success && back.Count > 0)
-            Inventory.Stow(sim, back[^1], Locks.Lockwork.Make(sim, _rand, quest.Danger, BoxShare(quest), quest.Def.Label));
+        // What they found comes home on the wagon, if it's fit to carry it (or they never had one).
+        if (success && back.Count > 0 && ex.Hauls)
+        {
+            Inventory.Stow(sim, back[^1], Tinkering.Lockwork.Make(sim, _rand, quest.Danger, BoxShare(quest), quest.Def.Label));
+            for (var i = 0; i < 2 && _rand.Chance(i == 0 ? Tinkering.Curios.FoundChance : 0.3f); i++)
+                if (Tinkering.Curios.Make(sim, _rand, quest.Danger) is { IsNull: false } curio)
+                    Inventory.Stow(sim, back[i % back.Count], curio);
+        }
+        else if (success && !ex.Hauls)
+            tale += " We had to leave what we found: the wagon wouldn't carry it.";
         if (back.Count > 0)
             w.Add(back[0], new ReportPending { Quest = quest.Id, Danger = quest.Danger, Text = tale });
         // How the broker's word held up counts with them.
@@ -552,6 +626,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         if (m.Coin > 0)
             Inventory.Stow(sim, e, sim.CreateItem(sim.Defs.Thing(Shops.Coin.Silver), m.Coin));
         Healing.Charms.Restore(sim, e, m.Charms);
+        Tinkering.Contraptions.Restore(sim, e, m.Contraptions);
         foreach (var wound in m.Wounds)
             if (HealthSystem.Damage(sim, e, wound.Damage, wound.Type, wound.Part) is { } inj)
             {
@@ -659,6 +734,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             w.Float(ex.Stated);
             w.String(ex.BrokerName);
             w.Long(ex.ReturnTick);
+            w.Bool(ex.Hauls);
             w.Int(ex.Members.Count);
             foreach (var m in ex.Members)
                 WriteMember(w, m);
@@ -691,6 +767,8 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         for (var n = r.Count(1 << 10); n > 0; n--)
         {
             var ex = new Expedition { Quest = r.Int(), Party = r.Int(), PartyDef = r.Def<PartyDef>(), Stated = r.Float(), BrokerName = r.String(), ReturnTick = r.Long() };
+            if (r.Version >= 7)
+                ex.Hauls = r.Bool();
             for (var k = r.Count(64); k > 0; k--)
                 ex.Members.Add(ReadMember(r));
             _out.Add(ex);
@@ -758,6 +836,14 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             w.Float(c.Quality);
             w.Entity(c.Maker);
         }
+        w.Int(m.Contraptions.Count);
+        foreach (var c in m.Contraptions)
+        {
+            w.Def(c.Def);
+            w.Int((int)c.Quality);
+            w.Bool(c.Binding);
+            w.Entity(c.Maker);
+        }
     }
 
     private static MemberRecord ReadMember(SaveReader r)
@@ -781,6 +867,15 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         if (r.Version >= 5)
             for (var n = r.Count(64); n > 0; n--)
                 m.Charms.Add(new Healing.CharmRecord(r.Def<MendingDef>(), Math.Clamp(r.Int(), 0, MendingDef.MaxRunes), r.Float(), r.Entity()));
+        if (r.Version >= 7)
+            for (var n = r.Count(64); n > 0; n--)
+            {
+                var def = r.Def<ThingDef>();
+                var q = r.Int();
+                if (def.Contraption == null || q < 0 || q > (int)Quality.Masterwork)
+                    throw new SaveException($"Corrupt save: contraption {def.Name}, quality {q}");
+                m.Contraptions.Add(new Tinkering.ContraptionRecord(def, (Quality)q, r.Bool(), r.Entity()));
+            }
         return m;
     }
 }

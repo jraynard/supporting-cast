@@ -430,7 +430,7 @@ public struct Entrusted
     public Entity Owner;
 }
 
-/// <summary>What a strongbox's trap does to the hand that springs it (<c>Locks/Lockwork</c>).</summary>
+/// <summary>What a strongbox's trap does to the hand that springs it (<c>Tinkering/Lockwork</c>).</summary>
 public enum TrapKind : byte
 {
     None,
@@ -446,7 +446,7 @@ public enum TrapKind : byte
 }
 
 /// <summary>
-/// A locked box brought back from a quest (<c>Locks/</c>). The lock's pins are set from
+/// A locked box brought back from a quest (<c>Tinkering/</c>). The lock's pins are set from
 /// <see cref="LockSeed"/>; the trap, where it sits on the seam and whether it's armed are hidden
 /// item state, shown to players only through Perception. The silver inside is taken out by its
 /// owner when it comes back open.

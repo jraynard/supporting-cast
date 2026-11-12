@@ -17,6 +17,22 @@ public readonly record struct KnownCharm(Defs.MendingDef Mending, int Extra, flo
 public readonly record struct KnownStrongbox(bool Locked, int Pins, bool SearchedByMe, string? SpentTrap, int? Silver, string From);
 
 /// <summary>
+/// A tinker's lock (fitted to a door, or not yet) as someone sees it: how many pins, locked or not,
+/// whether a key they carry turns it, and how tight it is to its maker alone (a picker finds out).
+/// </summary>
+public readonly record struct KnownLock(bool Locked, int Pins, bool HaveKey, float? Tightness);
+
+/// <summary>
+/// A curio as someone sees it: what it is, their own reading of it if they've looked it over (the
+/// range they'd put it in, whether they think it a fake, what they said aloud), and what they've
+/// been told it's worth. Never what it's really worth, or whether it's genuine.
+/// </summary>
+public readonly record struct KnownCurio(string Label, int? Low, int? High, bool Doubts, int? Quoted, int? Told, bool Mine);
+
+/// <summary>A party's wagon as anyone near it sees it: whose it is and what's wrong with it (it shows).</summary>
+public readonly record struct KnownWagon(string Owner, Tinkering.WagonDamage Damage);
+
+/// <summary>
 /// The piece in a smith's tongs as anyone in sight of it sees it: what it is, the colour it glows,
 /// and how far it's been beaten into shape (and the smith's own next step, to them). Never a flaw.
 /// </summary>
@@ -274,8 +290,43 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         var onMe = !viewer.IsNull && Inventory.OnPerson(sim, viewer, item);
         if (!Omniscient && !onMe && !Within(t.Spawned ? t.Cell : sim.LocationOf(item), 1))
             return null;
-        var spent = b.Trap != TrapKind.None && !b.Armed ? Locks.Lockwork.TrapLabel(b.Trap) : null;
+        var spent = b.Trap != TrapKind.None && !b.Armed ? Tinkering.Lockwork.TrapLabel(b.Trap) : null;
         return new KnownStrongbox(b.Locked, b.Pins, !viewer.IsNull && b.SearchedBy == viewer, spent, b.Locked ? null : b.Silver, b.From ?? "");
+    }
+
+    /// <summary>A lock on a door in sight, or a lock item, as you can tell it (<see cref="KnownLock"/>). Null if there's none.</summary>
+    public KnownLock? Lock(Entity doorOrLock)
+    {
+        var w = sim.World;
+        if (!w.IsAlive(doorOrLock) || !w.TryGet<Tinkering.LockCut>(doorOrLock, out var c))
+            return null;
+        var haveKey = !viewer.IsNull && !Tinkering.Locksmithing.KeyFor(sim, viewer, c.Seed).IsNull;
+        return new KnownLock(sim.IsLocked(doorOrLock), c.Pins, haveKey, Omniscient || (!viewer.IsNull && c.Maker == viewer) ? c.Tightness : null);
+    }
+
+    /// <summary>A curio as you can tell it (<see cref="KnownCurio"/>): within reach or on your person. Null if it isn't one, or is out of reach.</summary>
+    public KnownCurio? Curio(Entity item)
+    {
+        var w = sim.World;
+        if (!Tinkering.Curios.IsCurio(sim, item) || !w.TryGet<Thing>(item, out var t))
+            return null;
+        var onMe = !viewer.IsNull && Inventory.OnPerson(sim, viewer, item);
+        if (!Omniscient && !onMe && !Within(t.Spawned ? t.Cell : sim.LocationOf(item), 1))
+            return null;
+        var mine = w.TryGet<Tinkering.Appraisal>(item, out var a) && (Omniscient || (!viewer.IsNull && a.By == viewer));
+        var owned = onMe && !w.Has<Entrusted>(item);
+        int? told = owned && w.TryGet<Tinkering.Valued>(item, out var v) && !v.ToldBy.IsNull ? v.Worth : null;
+        return new KnownCurio(t.Label, mine ? a.Low : null, mine ? a.High : null, mine && a.Doubts, mine && a.Quoted >= 0 ? a.Quoted : null, told, mine);
+    }
+
+    /// <summary>A party's wagon in sight (<see cref="KnownWagon"/>). Null if it isn't one, or can't be seen.</summary>
+    public KnownWagon? Wagon(Entity wagon)
+    {
+        var w = sim.World;
+        if (!Tinkering.Wagons.IsWagon(sim, wagon) || !w.TryGet<Thing>(wagon, out var t) || (!Omniscient && !Within(t.Cell, 3)))
+            return null;
+        var g = w.Get<Tinkering.Wagon>(wagon);
+        return new KnownWagon(w.IsAlive(g.Owner) && w.TryGet<Creature>(g.Owner, out var c) ? c.Name : "someone", g.Damage);
     }
 
     /// <summary>

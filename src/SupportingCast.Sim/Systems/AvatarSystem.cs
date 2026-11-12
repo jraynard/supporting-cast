@@ -72,6 +72,9 @@ public enum AvatarActionKind
 
     /// <summary>Read a shop's sign on its front wall (<see cref="Shops.Signs"/>): the game opens it.</summary>
     ReadSign,
+
+    /// <summary>A door's lock or a party's wagon (<see cref="Tinkering.Tinkers.ActionAt"/>): the game opens what can be done there.</summary>
+    Tinker,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -95,12 +98,12 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
 
     /// <summary>Done at once on the key press, rather than worked at while it's held.</summary>
     public bool Instant => Kind is AvatarActionKind.PutDown or AvatarActionKind.Deliver or AvatarActionKind.PickUp
-        or AvatarActionKind.Store or AvatarActionKind.OpenStorage 
+        or AvatarActionKind.Store or AvatarActionKind.OpenStorage or AvatarActionKind.Tinker
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
         or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
-    public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign;
+    public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker;
 }
 
 /// <summary>
@@ -359,6 +362,10 @@ public sealed class AvatarSystem : ISimSystem
         // Dirty crockery to the wash tub; a keg in your arms to a dry cask.
         if (Work.BarWork.StepAt(sim, avatar, site) is { } upkeep && !sim.Reservations.IsReservedByOther(site, avatar))
             return new(AvatarActionKind.BarWork, upkeep, cell, site);
+
+        // A door's lock (locked, or one you could fit or turn), or a party's wagon: what can be done there.
+        if (tool == AvatarTool.Use && Tinkering.Tinkers.ActionAt(sim, avatar, site) is { } tinkering)
+            return new(AvatarActionKind.Tinker, tinkering, cell, site);
 
         // A craft that has everything it needs is worked on the spot.
         if (Crafting.IsStation(sim, site) && w.Get<Workbench>(site) is { Active: { } making, Stocked: true } ready

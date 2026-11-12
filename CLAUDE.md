@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Supporting Cast (working title) is a multiplayer fantasy village game in C#/.NET 10: players take
+Heroes Not Included (the repo, projects and namespaces still say SupportingCast) is a multiplayer fantasy village game in C#/.NET 10: players take
 the trades a tabletop party usually walks past, with optional traitors. It was forked from
 DragonWorld at `cf61dfc` and runs on the **Narsil** engine (git submodule at `external/narsil`) on
 BRUTAL (GLFW + Vulkan + Dear ImGui). Design: docs/DESIGN.md. Done and next: docs/ROADMAP.md.
@@ -77,8 +77,13 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     `Hatch` (their own line; dishes put up, taken by whoever's at the front). Gear marked `ForSale` and lying in its seller's shop is on show
     (`Goods`); no job takes an item for sale (`IsAvailable`). `Favours/`: what players ask of each
     other, for silver they name.
-  - `Locks/`: the Carpenter's lockwork on strongboxes from quests. A box's trap is hidden item
-    state: show it only through `PerceptionView.Strongbox`, which never says an armed one is there.
+  - `Tinkering/`: the Tinker. Lockwork on strongboxes from quests: a box's trap is hidden item
+    state, shown only through `PerceptionView.Strongbox`, which never says an armed one is there.
+    Locks pinned at the bench (`PinSession`) and fitted to doors (`LockCut`), keys (`Key`);
+    contraptions fitted together (`FitSession`) whose hidden `Binding` may jam them on a quest;
+    party wagons (`Wagons`, `TrueSession`); curios whose true worth is hidden (`Curio`), read only
+    through `PerceptionView.Curio` (your own `Appraisal`, never the truth), and the collector.
+    Hand games start from the bench through `Crafting.WorkAt` (`Tinkers.Applies`).
   - `Healing/`: the empath. Wounds drawn in are `Injury.Absorbed` and known only by feel
     (`PerceptionView.FeltWounds`); never show their kind by name. A patient's wounds are known
     only once felt over (`Injury.FeltBy`). Mendings are woven from runes, the mix deciding which

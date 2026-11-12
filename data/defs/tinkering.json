@@ -1,0 +1,128 @@
+// The Tinker's trade (Sim/Tinkering, docs/DESIGN.md "Tinker"): the bench at the tinker's shop and
+// what's made at it (locks and their keys, contraptions for the road), the collector's crate,
+// the curios parties bring home, and the wagons they ride in on. Units as in core.json.
+{
+  "things": [
+    {
+      "name": "TinkerBench", "label": "tinker's bench", "category": "Building", "solid": true, "sprite": "buildings/tinker_bench", "size": [2, 1],
+      "description": "A heavy bench with an iron vise, a rack of files and a tray of small parts: locks, keys and clockwork are made and mended here.",
+      "maxHp": 140, "flammability": 0.8,
+      "building": { "work": 220, "surfaceHeight": 0.68, "workbench": { "bills": 8 }, "cost": [ { "def": "Planks", "count": 12 }, { "def": "IronBar", "count": 2 } ] },
+      "model": [
+        { "min": [0.02, 0.14, 0.56], "max": [1.98, 0.86, 0.68], "top": "props/planks", "side": "props/timber_dark" },
+        { "min": [0.06, 0.18, 0.00], "max": [0.16, 0.28, 0.56], "top": "props/planks", "side": "props/timber_dark" },
+        { "min": [1.84, 0.18, 0.00], "max": [1.94, 0.28, 0.56], "top": "props/planks", "side": "props/timber_dark" },
+        { "min": [0.06, 0.72, 0.00], "max": [0.16, 0.82, 0.56], "top": "props/planks", "side": "props/timber_dark" },
+        { "min": [1.84, 0.72, 0.00], "max": [1.94, 0.82, 0.56], "top": "props/planks", "side": "props/timber_dark" },
+        { "min": [0.08, 0.20, 0.16], "max": [1.92, 0.80, 0.22], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.14, 0.72, 0.68], "max": [0.44, 0.92, 0.84], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.70, 0.30, 0.68], "max": [1.20, 0.60, 0.72], "top": "props/iron", "side": "props/iron" },
+        { "min": [1.40, 0.70, 0.68], "max": [1.86, 0.84, 0.80], "top": "props/tool_rack", "side": "props/tool_rack" }
+      ]
+    },
+    {
+      // Curios put in here go off with the morning carrier to a collector (Tinkering.CollectorSystem),
+      // and the silver for them comes back into it the morning after.
+      "name": "CollectorsCrate", "label": "collector's crate", "category": "Building", "solid": true, "sprite": "buildings/collectors_crate",
+      "description": "A straw-packed crate with a collector's mark burned into the lid. Curios put in it go off with the morning carrier; the silver comes back the morning after.",
+      "maxHp": 100, "flammability": 1.0,
+      "building": { "work": 120, "storageStacks": 6, "surfaceHeight": 0.5, "cost": [ { "def": "Wood", "count": 8 } ] },
+      "model": [
+        { "min": [0.12, 0.18, 0], "max": [0.88, 0.82, 0.5], "top": "props/straw", "side": "props/crate_side" }
+      ]
+    },
+    {
+      // A party's wagon (Tinkering.Wagons): parked in town while they're here, often the worse for
+      // the road. Not a container: their things stay with them.
+      "name": "PartyWagon", "label": "wagon", "category": "Building", "solid": true, "sprite": "buildings/wagon",
+      "description": "An adventuring party's wagon, mud to the axles. Whatever they find out there comes home in it, if it's fit to carry it.",
+      "maxHp": 200, "flammability": 0.8,
+      "building": { "buildable": false, "work": 200, "cost": [] },
+      "model": [
+        { "min": [0.08, 0.10, 0.30], "max": [0.92, 0.90, 0.40], "top": "props/planks", "side": "props/timber_dark" },
+        { "min": [0.08, 0.10, 0.40], "max": [0.92, 0.16, 0.62], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.08, 0.84, 0.40], "max": [0.92, 0.90, 0.62], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.86, 0.16, 0.40], "max": [0.92, 0.84, 0.62], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.14, 0.14, 0.62], "max": [0.86, 0.86, 0.84], "top": "props/linen", "side": "props/linen" },
+        { "min": [0.14, 0.24, 0.84], "max": [0.86, 0.76, 0.94], "top": "props/linen", "side": "props/linen" },
+        { "min": [0.14, 0.36, 0.94], "max": [0.86, 0.64, 0.99], "top": "props/linen", "side": "props/linen" },
+        { "min": [0.18, 0.02, 0.00], "max": [0.42, 0.08, 0.36], "top": "props/log_end", "side": "props/log_end" },
+        { "min": [0.58, 0.02, 0.00], "max": [0.82, 0.08, 0.36], "top": "props/log_end", "side": "props/log_end" },
+        { "min": [0.18, 0.92, 0.00], "max": [0.42, 0.98, 0.36], "top": "props/log_end", "side": "props/log_end" },
+        { "min": [0.58, 0.92, 0.00], "max": [0.82, 0.98, 0.36], "top": "props/log_end", "side": "props/log_end" },
+        { "min": [0.00, 0.46, 0.26], "max": [0.08, 0.54, 0.32], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ]
+    },
+
+    // Locks and keys (Tinkering.Locksmithing). A lock is pinned by hand (Tinkering.PinSession)
+    // and comes with its first key; keys are copied at the bench from an iron bar.
+    { "name": "Lock", "label": "lock", "category": "Item", "mass": 0.6, "sprite": "items/door_lock", "stackLimit": 1, "maxHp": 120,
+      "description": "An iron lock, pinned at the tinker's bench. Fit it to a door, and only its keys will turn it (or a good pick)." },
+    { "name": "Key", "label": "key", "category": "Item", "mass": 0.05, "sprite": "items/key", "stackLimit": 1, "maxHp": 80,
+      "description": "A key filed to one lock. A well-cut one turns sweetly; a poor copy sticks." },
+
+    // Contraptions for the road (Tinkering.Contraptions): sold to parties like gear. "parts": how
+    // many are filed and seated when it's made by hand (Tinkering.FitSession).
+    { "name": "TappingRod", "label": "tapping rod", "category": "Item", "mass": 1.2, "sprite": "items/tapping_rod", "stackLimit": 1, "maxHp": 80, "tier": 3,
+      "contraption": { "use": "Traps", "parts": 3 },
+      "description": "A sprung rod with a bell on the grip: tap the floor ahead and it rings where it shouldn't. Fewer traps sprung, fewer pits fallen into." },
+    { "name": "Grapnel", "label": "grapnel and winch", "category": "Item", "mass": 2.5, "sprite": "items/grapnel", "stackLimit": 1, "maxHp": 120, "tier": 3,
+      "contraption": { "use": "Falls", "parts": 4 },
+      "description": "Three iron hooks and a geared winch that catches when the line runs too fast. Turns a fall that would kill into one that only hurts, once." },
+    { "name": "ClockworkLantern", "label": "clockwork lantern", "category": "Item", "mass": 1.0, "sprite": "items/clockwork_lantern", "stackLimit": 1, "maxHp": 70, "tier": 3,
+      "contraption": { "use": "Dark", "parts": 4 },
+      "description": "A wound spring turns a shuttered flame steady for hours, hands free. Worth having in barrows, mines and caves." },
+    { "name": "SpringSnare", "label": "spring snare", "category": "Item", "mass": 1.8, "sprite": "items/spring_snare", "stackLimit": 1, "maxHp": 90, "tier": 3,
+      "contraption": { "use": "Beasts", "parts": 3 },
+      "description": "Toothless iron jaws on a stiff spring, set across a trail. Takes the fight out of beasts before it starts." },
+    { "name": "SignalRocket", "label": "signal rocket", "category": "Item", "mass": 0.6, "sprite": "items/signal_rocket", "stackLimit": 1, "maxHp": 30, "flammability": 1.0, "tier": 3,
+      "contraption": { "use": "Rescue", "parts": 2 },
+      "description": "Packed powder in a paper case on a spring trigger: a bright star over the hills, and help comes if anyone sees it. Once." },
+
+    // Curios brought home from quests (Tinkering.Curios): what one looks like it would fetch from
+    // a collector, if it's genuine. Some aren't.
+    { "name": "CarvedIdol", "label": "carved idol", "category": "Item", "mass": 1.5, "sprite": "items/carved_idol", "stackLimit": 1, "maxHp": 60,
+      "curio": { "worthMin": 18, "worthMax": 50 }, "description": "A squat figure in dark stone, worn smooth by hands. Old, or made to look it." },
+    { "name": "ClockworkBird", "label": "clockwork bird", "category": "Item", "mass": 0.6, "sprite": "items/clockwork_bird", "stackLimit": 1, "maxHp": 40,
+      "curio": { "worthMin": 30, "worthMax": 80 }, "description": "A brass songbird with a key in its back. Wound, it might sing. Collectors pay well for the real ones." },
+    { "name": "OldSeal", "label": "old seal", "category": "Item", "mass": 0.3, "sprite": "items/old_seal", "stackLimit": 1, "maxHp": 60,
+      "curio": { "worthMin": 15, "worthMax": 40 }, "description": "A heavy signet with a device nobody in town knows. Some house long gone, or a clever forger's." },
+    { "name": "GildedChalice", "label": "gilded chalice", "category": "Item", "mass": 0.8, "sprite": "items/gilded_chalice", "stackLimit": 1, "maxHp": 50,
+      "curio": { "worthMin": 25, "worthMax": 65 }, "description": "A cup with a gilt rim and a band of worn figures. The gilt may go deep, or only skin deep." },
+    { "name": "StarChart", "label": "star chart", "category": "Item", "mass": 0.2, "sprite": "items/star_chart", "stackLimit": 1, "maxHp": 20, "flammability": 1.0,
+      "curio": { "worthMin": 20, "worthMax": 55 }, "description": "A brittle sheet of stars and lines in brown ink. Someone once knew what it showed." }
+  ],
+  "recipes": [
+    {
+      "name": "MakeLock", "label": "lock", "station": "TinkerBench", "skill": "Crafting", "work": 900,
+      "description": "Pin a lock for a door from an iron bar, and file its first key.",
+      "ingredients": [ { "def": "IronBar", "count": 1 } ],
+      "products": [ { "def": "Lock", "count": 1 } ]
+    },
+    {
+      "name": "MakeTappingRod", "label": "tapping rod", "station": "TinkerBench", "skill": "Crafting", "work": 1200,
+      "ingredients": [ { "def": "Wood", "count": 2 }, { "def": "IronBar", "count": 1 } ],
+      "products": [ { "def": "TappingRod", "count": 1 } ]
+    },
+    {
+      "name": "MakeGrapnel", "label": "grapnel and winch", "station": "TinkerBench", "skill": "Crafting", "work": 1500, "minSkill": 3,
+      "ingredients": [ { "def": "IronBar", "count": 2 }, { "def": "Wood", "count": 1 } ],
+      "products": [ { "def": "Grapnel", "count": 1 } ]
+    },
+    {
+      "name": "MakeClockworkLantern", "label": "clockwork lantern", "station": "TinkerBench", "skill": "Crafting", "work": 1500, "minSkill": 3,
+      "ingredients": [ { "def": "IronBar", "count": 2 } ],
+      "products": [ { "def": "ClockworkLantern", "count": 1 } ]
+    },
+    {
+      "name": "MakeSpringSnare", "label": "spring snare", "station": "TinkerBench", "skill": "Crafting", "work": 1200,
+      "ingredients": [ { "def": "IronBar", "count": 1 }, { "def": "Wood", "count": 2 } ],
+      "products": [ { "def": "SpringSnare", "count": 1 } ]
+    },
+    {
+      "name": "MakeSignalRocket", "label": "signal rocket", "station": "TinkerBench", "skill": "Crafting", "work": 900,
+      "ingredients": [ { "def": "Charcoal", "count": 3 }, { "def": "Wood", "count": 1 } ],
+      "products": [ { "def": "SignalRocket", "count": 1 } ]
+    }
+  ]
+}

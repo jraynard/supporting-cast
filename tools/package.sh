@@ -70,8 +70,8 @@ make_app() {
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleName</key><string>Supporting Cast</string>
-    <key>CFBundleDisplayName</key><string>Supporting Cast</string>
+    <key>CFBundleName</key><string>Heroes Not Included</string>
+    <key>CFBundleDisplayName</key><string>Heroes Not Included</string>
     <key>CFBundleIconFile</key><string>icon</string>
     <key>CFBundleIdentifier</key><string>com.jraynard.supportingcast</string>
     <key>CFBundleExecutable</key><string>SupportingCast</string>

@@ -107,6 +107,7 @@ public class InnkeeperTests
         TestWorld.AleOnly(sim); // drink orders here are for ale
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
         Assert.NotEmpty(party);
+        Tinkering.Wagons.Leave(sim, sim.World.Get<Adventurer>(party[0]).Party); // the inn's the thing here
         return (sim, party);
     }
 
@@ -243,6 +244,7 @@ public class InnkeeperTests
         {
             sim.World.Get<Health>(a).Injuries.Clear();
             sim.World.Get<Adventurer>(a).NextDrink = sim.Clock.Tick + SimClock.TicksPerDay * 3;
+            sim.World.Get<Adventurer>(a).Arrived = sim.Clock.Tick + SimClock.TicksPerDay; // and not after work today: they're staying the night
         }
         StayTillEvening(sim, party);
         var lodger = party[0];

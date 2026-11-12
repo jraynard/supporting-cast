@@ -28,7 +28,7 @@ TOWN = 2        # the village's level; a river bank is one down, its bed two
 rnd = random.Random(1234)
 
 # Plan sizes (width across, depth front to back) of the preset buildings, as buildings.json.
-PLANS = {"Inn": (13, 13), "Dwelling": (6, 5), "Cottage": (9, 6), "Smithy": (7, 5), "Shrine": (7, 5), "Woodshop": (7, 5), "Barn": (10, 6)}
+PLANS = {"Inn": (13, 13), "Dwelling": (6, 5), "Cottage": (9, 6), "Smithy": (7, 5), "Shrine": (7, 5), "Woodshop": (7, 5), "TinkerShop": (7, 6), "Barn": (10, 6)}
 
 GROUND_LEGEND = {"g": "Grass", "d": "Dirt", "r": "Road", "t": "TilledSoil", "k": "Stone", "s": "Sand", "~": "ShallowWater", "w": "Water"}
 FEATURE_LEGEND = {
@@ -202,6 +202,7 @@ building("Barn", 51, 18, 0, variant="Timber")                    # A: the big ba
 building("Cottage", 40, 31, 3, role="Home")                     # B: the house by the pig pen
 building("Cottage", 50, 28, 0, role="Home")                     # C: top middle
 building("Woodshop", 70, 28, 1, role="Woodshop")                 # D: by the lake, the cart outside
+building("TinkerShop", 63, 67, 2, role="TinkerShop", variant="Timber")  # N: south of the square, between the east houses, its door to the north
 building("Smithy", 20, 30, 3, role="Forge", variant="Stone")     # E: the west barn with the stone chimney
 building("Cottage", 28, 41, 0, role="Home")                     # F: west house with the yard
 building("Inn", 61, 45, 1, role="Tavern", variant="Timber")      # G: on the square, facing the well (its kitchen out the back)

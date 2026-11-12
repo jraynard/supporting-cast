@@ -88,6 +88,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 Close(sim, e, OrderStatus.Cancelled); // sold to someone else, or taken off sale
             else if (e.Kind.Kind == ServiceKind.Healing && !Untended(sim, e.Poster))
                 Healed(sim, e);
+            else if (e.Kind.Kind == ServiceKind.WagonRepair && !Tinkering.Wagons.Damaged(sim, e.Subject))
+                WagonMended(sim, e);
             else if (now >= e.Deadline && StillAtIt(sim, e))
                 BearWithIt(sim, e);
             else if (now >= e.Deadline)
@@ -144,8 +146,13 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 Want(sim, who, ServiceKind.Repair, gear, WeaponWear.HpFraction(sim, gear) < 0.35f ? 1.5f : 1f);
             if (w.TryGet<Health>(who, out var h) && h.Injuries.Exists(i => !i.Tended))
                 Want(sim, who, ServiceKind.Healing, Entity.Null, h.Injuries.Where(i => !i.Tended).Sum(i => i.Damage) >= 8f ? 1.75f : 1f);
-            if (Locks.Lockwork.LockedBoxOf(sim, who) is { IsNull: false } box)
+            if (Tinkering.Lockwork.LockedBoxOf(sim, who) is { IsNull: false } box)
                 Want(sim, who, ServiceKind.Unlock, box);
+            if (Tinkering.Wagons.Of(sim, a.Party) is { IsNull: false } wagon && Tinkering.Wagons.Damaged(sim, wagon)
+                && w.Get<Tinkering.Wagon>(wagon).Owner == who && !_orders.Exists(e => e.IsOpen && e.Subject == wagon))
+                Want(sim, who, ServiceKind.WagonRepair, wagon);
+            if (Tinkering.Curios.UnvaluedOf(sim, who) is { IsNull: false } curio)
+                Want(sim, who, ServiceKind.Appraise, curio);
             if (WantsARoom(sim, who, a))
                 Want(sim, who, ServiceKind.Lodging, Entity.Null);
             ShopForGear(sim, who);
@@ -594,7 +601,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     }
 
     /// <summary>Orders that hand something over to be seen to and given back.</summary>
-    public static bool HandsOver(ServiceKind kind) => kind is ServiceKind.Repair or ServiceKind.Unlock;
+    public static bool HandsOver(ServiceKind kind) => kind is ServiceKind.Repair or ServiceKind.Unlock or ServiceKind.Appraise;
 
     /// <summary>
     /// An adventurer gives the piece to be mended (or the box to be opened) to whoever took the
@@ -615,6 +622,15 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             w.Add(box, new Entrusted { Owner = e.Poster });
             Inventory.Stow(sim, e.Assignee, box);
             sim.Speech.Say(sim, e.Poster, "Here. Mind your fingers: none of us would touch the lid.", Volume.Say);
+            GiveTime(sim, e);
+            return true;
+        }
+        if (e.Kind.Kind == ServiceKind.Appraise)
+        {
+            var curio = Inventory.TakeFromPerson(sim, e.Poster, e.Subject, 1);
+            w.Add(curio, new Entrusted { Owner = e.Poster });
+            Inventory.Stow(sim, e.Assignee, curio);
+            sim.Speech.Say(sim, e.Poster, "Careful with it. Tell us straight what it's worth.", Volume.Say);
             GiveTime(sim, e);
             return true;
         }
@@ -754,6 +770,12 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             TakeBackBox(sim, unlock, giver);
             return;
         }
+        var appraise = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Appraise && e.Subject == item);
+        if (appraise != null)
+        {
+            TakeBackCurio(sim, appraise, giver);
+            return;
+        }
         var bought = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Goods && e.Subject == item);
         if (bought != null)
         {
@@ -839,6 +861,45 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         Complete(sim, e, giver);
     }
 
+    /// <summary>
+    /// The curio comes back. Looked over by whoever hands it back, they take that one's word for
+    /// what it's worth (their quote, or the middle of their reckoning) and pay; not looked at, they
+    /// say so and the job is open again for anyone.
+    /// </summary>
+    private void TakeBackCurio(Simulation sim, Order e, Entity giver)
+    {
+        var w = sim.World;
+        var curio = e.Subject;
+        w.Remove<Entrusted>(curio);
+        Inventory.Stow(sim, e.Poster, curio);
+        if (!w.TryGet<Tinkering.Appraisal>(curio, out var a) || a.By != giver)
+        {
+            e.Assignee = Entity.Null;
+            e.AssigneeName = "";
+            sim.Speech.Say(sim, e.Poster, "You haven't even looked at it. I'm not paying for that.", Volume.Say);
+            return;
+        }
+        var told = Tinkering.Curios.Told(a);
+        w.Get<Tinkering.Valued>(curio) = new Tinkering.Valued { Worth = told, ToldBy = giver };
+        sim.Speech.Say(sim, e.Poster, a.Doubts ? $"A fake? Worth {told}? Gods. Well, I'm glad I asked." : $"{told} silver, you reckon. I'll remember that.", Volume.Say);
+        Complete(sim, e, giver);
+    }
+
+    /// <summary>Nothing wrong with their wagon now: whoever mended it is paid (whoever took it on, if nobody's known to have).</summary>
+    private void WagonMended(Simulation sim, Order e)
+    {
+        var w = sim.World;
+        var by = Tinkering.Wagons.IsWagon(sim, e.Subject) && w.Get<Tinkering.Wagon>(e.Subject).MendedBy is var m && w.IsAlive(m) ? m
+            : !e.Assignee.IsNull && w.IsAlive(e.Assignee) ? e.Assignee : Entity.Null;
+        if (by.IsNull)
+        {
+            Close(sim, e, OrderStatus.Cancelled);
+            return;
+        }
+        sim.Speech.Say(sim, e.Poster, "The wagon runs like new. Good work.", Volume.Say);
+        Complete(sim, e, by);
+    }
+
     /// <summary>The weapon or armor most in need of mending (<see cref="WeaponWear.NeedsMending"/>); Entity.Null if none.</summary>
     public static Entity MostWorn(Simulation sim, Entity who)
     {
@@ -867,7 +928,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         def.Lines.Count == 0 ? $"Wanted: {def.Label}. {price} silver." : string.Format(def.Lines[_rand.NextInt(def.Lines.Count)], price, subject ?? "gear");
 
     private static string? SubjectLabel(Simulation sim, Entity subject) =>
-        sim.World.IsAlive(subject) && sim.World.TryGet<Thing>(subject, out var t) ? t.Label : null;
+        sim.World.TryGet<Tinkering.Wagon>(subject, out var wagon) ? Tinkering.Wagons.DamageLabel(wagon.Damage)
+        : sim.World.IsAlive(subject) && sim.World.TryGet<Thing>(subject, out var t) ? t.Label : null;
 
     private static string? WoundLabel(Simulation sim, Entity who)
     {

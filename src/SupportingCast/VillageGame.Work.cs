@@ -99,11 +99,23 @@ public sealed partial class VillageGame
             case Sim.Healing.MeditateSession meditate:
                 DrawMeditate(meditate);
                 return;
-            case Sim.Locks.ProbeSession probe:
+            case Sim.Tinkering.ProbeSession probe:
                 DrawProbe(probe);
                 return;
-            case Sim.Locks.PickSession pick:
+            case Sim.Tinkering.PickSession pick:
                 DrawPick(pick);
+                return;
+            case Sim.Tinkering.PinSession pin:
+                DrawPin(pin);
+                return;
+            case Sim.Tinkering.FitSession fit:
+                DrawFit(fit);
+                return;
+            case Sim.Tinkering.TrueSession truing:
+                DrawTrue(truing);
+                return;
+            case Sim.Tinkering.LoupeSession loupe:
+                DrawLoupe(loupe);
                 return;
         }
         switch (_work.Session)
@@ -316,7 +328,7 @@ public sealed partial class VillageGame
     }
 
     /// <summary>The lid's seam with the probe on it, what the probe tells the fingers, and the pressure on it.</summary>
-    private void DrawProbe(Sim.Locks.ProbeSession s)
+    private void DrawProbe(Sim.Tinkering.ProbeSession s)
     {
         BeginWork(s.Title, ("A/D", "run the probe along the seam"), ("F", "hold to press in"), ("Esc", "stop"));
         TextC(Theme.Dim, "Sweep light. Where it catches, stop and ease the spring out. The far end finishes.");
@@ -346,18 +358,18 @@ public sealed partial class VillageGame
         var bandMin = new float2(gMin.X + s.Low * gSize.X, gMin.Y);
         var bandMax = new float2(gMin.X + s.High * gSize.X, gMax.Y);
         dl.AddRectFilled(in bandMin, in bandMax, Theme.U8(Theme.Good, 0.6f), 2f, ImDrawFlags.None);
-        var dangerMin = new float2(gMin.X + Sim.Locks.ProbeSession.SpringAbove * gSize.X, gMin.Y);
+        var dangerMin = new float2(gMin.X + Sim.Tinkering.ProbeSession.SpringAbove * gSize.X, gMin.Y);
         dl.AddRectFilled(in dangerMin, in gMax, Theme.U8(Theme.Bad, 0.6f), 2f, ImDrawFlags.None);
         var pMin = new float2(gMin.X, gMin.Y + 4);
         var pMax = new float2(gMin.X + s.Pressure * gSize.X, gMax.Y - 4);
-        dl.AddRectFilled(in pMin, in pMax, Theme.U8(s.Pressure > Sim.Locks.ProbeSession.LightTouch ? Theme.Accent : Theme.Text), 1f, ImDrawFlags.None);
+        dl.AddRectFilled(in pMin, in pMax, Theme.U8(s.Pressure > Sim.Tinkering.ProbeSession.LightTouch ? Theme.Accent : Theme.Text), 1f, ImDrawFlags.None);
         if (s.Progress > 0f)
             Bar("Spring", s.Progress, Theme.Good);
         EndWork();
     }
 
     /// <summary>The pins set so far, the one being lifted, and how much it gives.</summary>
-    private void DrawPick(Sim.Locks.PickSession s)
+    private void DrawPick(Sim.Tinkering.PickSession s)
     {
         BeginWork(s.Title, ("A/D", "lift the pin"), ("F", "set it where it gives most"), ("Esc", "stop"));
         var dl = ImGui.GetWindowDrawList();
@@ -377,7 +389,7 @@ public sealed partial class VillageGame
             dl.AddRectFilled(in pinMin, in pinMax, Theme.U8(colour), 2f, ImDrawFlags.None);
         }
         Bar("Give", s.Feel, s.Feel > 0.7f ? Theme.Warn : Theme.Dim);
-        TextC(s.Slips > 0 ? Theme.Warn : Theme.Dim, $"Slips {s.Slips} of {Sim.Locks.PickSession.MaxSlips}");
+        TextC(s.Slips > 0 ? Theme.Warn : Theme.Dim, $"Slips {s.Slips} of {Sim.Tinkering.PickSession.MaxSlips}");
         EndWork();
     }
 

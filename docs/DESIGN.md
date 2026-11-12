@@ -1,6 +1,6 @@
-# Supporting Cast: design
+# Heroes Not Included: design
 
-Working title. Living document: the decisions so far and the intended depth of each system.
+Living document: the decisions so far and the intended depth of each system.
 What's built and what's next is in [ROADMAP.md](ROADMAP.md).
 
 ## Pitch
@@ -65,10 +65,11 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 | Healer | Take a patient's wounds into yourself with focus, cast the right mending on yourself, meditate back your mana | Health, `Work/`, new mana | Taking only part of a wound, or handing one back |
 | Constable | Patrol, evidence, arrests, jail | `Prisoners`, locks | Framing, abuse of authority |
 | Apothecary | Discover reagent reactions, reshuffled each round | New `Reagents` | Poisons, explosives |
-| Merchant | Haggling, appraisal, spotting cursed loot | Inventory, `HoardValue` | Fencing, forged goods |
+| Merchant | Haggling, spotting cursed loot | Inventory, `HoardValue` | Fencing, forged goods |
 | Undertaker | Autopsy, burial before the dead rise | Health, `Scars`, carcasses, the pyre | Destroying evidence |
 | Forager, Miner | Risky trips beyond the walls | Harvest, Mining, Hunting, Fishing | Alone out there, in both directions |
-| Carpenter | Build, repair, fit locks; pick the locks and disarm the traps on chests adventurers bring back | Construction, Rooms, doors, locks, `Work/`, expedition loot | A spare key, a chest opened early, a trap left armed |
+| Tinker | Pick the locks and disarm the traps on chests adventurers bring back; pin locks and cut keys; fit contraptions together for the road; mend wagons; appraise curios and buy them for a collector | `Tinkering/`, doors, `Work/`, expeditions, loot | A spare key, a chest opened early, a trap left armed, a contraption that jams, a curio talked down |
+| Carpenter | *Benched for now.* Building, mending furniture, fletching and bows | Construction, Rooms, the woodshop | Comes back as a trade of its own later |
 | Bard | Rhythm performance, morale, rumours | Mood, Social | Spreading lies |
 | Mayor | Treasury, laws, chairs town meetings | New | Corruption |
 
@@ -162,9 +163,9 @@ do it.
   - **Brewing:** the kegs from the keeper's own barley and hops (Forager), not a delivery.
   - **Money:** a tab for parties good for it, and tips for quick, fine service.
   - **Bar fights:** drunk adventurers start brawls that break furniture (work for the
-    Carpenter). The keeper throws them out, or calls the Constable.
-  - **Rooms:** keys (the Carpenter's locks), and a chest per room for a guest's things while
-    they're out.
+    Carpenter, when it's back). The keeper throws them out, or calls the Constable.
+  - **Rooms:** keys (the Tinker fits locks to the room doors; built), and a chest per room for a
+    guest's things while they're out.
   - **A notice board:** at the inn, for shop signs, favours and quests posted where anyone can
     read them.
   - **Supplies:** bought from the Forager, the Miner's hunting trips and the farms by favour,
@@ -249,20 +250,52 @@ model: wounds sit on body parts, have a kind, and bleed, hurt and fester.
   - **Reviving** the dead, somehow.
 - Betrayal later (M4): drawing only part of a wound, or quietly pushing one back.
 
-**Carpenter's locksmithing.** Adventurers come back with locked and trapped chests. Picking the
-lock and finding and disarming the traps are each a hands-on game. They're the Carpenter's for
-now; if the trade gets too crowded, the lock work splits off into a Locksmith trade of its own.
-- Since M2: a party that clears a quest brings back a strongbox holding part of the reward, and
-  asks at the woodshop to have it opened. The harder the place, the more pins and the likelier a
-  trap (a poisoned needle, a spring blade, burning powder).
-- *Feeling for the trap.* Run a probe along the lid's seam, light. The feel twitches as it goes
-  and catches hard near a trigger. Dragging weight across a trigger sets it off; stopped over
-  one, press in and hold the pressure in the band to ease the spring out, too hard and it fires.
-  Reaching the hinge ends the search, so finishing never tells you whether there was one.
-- *Picking the lock.* Lift each pin until it gives most and set it there. A slip drops a pin,
-  wears the picks and can jar an armed trap; enough slips snap the pick. Opening a box with its
-  trap still armed sets it off. A sprung trap wounds the hand, which is work for the healer.
-- Betrayal later (M4): a spare key, a box opened early and some silver missing, a trap left armed.
+**Tinker.** Locks and clockwork, the last of the starting trades, split off the Carpenter (who's
+benched until building and fletching make a trade of their own). Works from the tinker's shop on
+Millbrook, south of the square, with a bench, a stock chest and the collector's crate
+(`Tinkering/`, `data/defs/tinkering.json`).
+- *Strongboxes (since M2).* A party that clears a quest brings back a strongbox holding part of
+  the reward, and asks at the tinker's to have it opened. The harder the place, the more pins and
+  the likelier a trap (a poisoned needle, a spring blade, burning powder).
+  - *Feeling for the trap.* Run a probe along the lid's seam, light. The feel twitches as it goes
+    and catches hard near a trigger. Dragging weight across a trigger sets it off; stopped over
+    one, press in and hold the pressure in the band to ease the spring out, too hard and it fires.
+    Reaching the hinge ends the search, so finishing never tells you whether there was one.
+  - *Picking the lock.* Lift each pin until it gives most and set it there. A slip drops a pin,
+    wears the picks and can jar an armed trap; enough slips snap the pick. Opening a box with its
+    trap still armed sets it off. A sprung trap wounds the hand, which is work for the healer.
+- *Locks and keys.* A lock is pinned at the bench from an iron bar: each pin is filed down to its
+  mark (hold F; the longer the stroke, the harder the file bites) and set with D. Pins set
+  crisply make a tight lock, hard to pick (a pick has less room to set a pin), and a key that
+  turns sweetly; filed past the mark, it's loose, and a poor key sticks. The lock is fitted to any
+  door, which then locks and unlocks for its keys alone (or a good pick). Keys are copied at the
+  bench from an iron bar. AI villagers never lock a door; the Innkeeper is the obvious customer
+  (room doors), through favours.
+- *Contraptions for the road.* A tapping rod (fewer wounds from traps), a grapnel and winch (a
+  fatal fall becomes a bad wound, once), a clockwork lantern (stronger in dark places), a spring
+  snare (stronger against beasts), a signal rocket (when a quest goes wrong, some who'd have
+  died are found). Made by fitting parts: hold F to file a part while it binds, D to seat it at
+  the fit; then tap F to wind the spring and latch it with D while the pawl catches. Loose parts
+  cost quality; a part forced home while it still binds leaves a hidden *binding*, and a binding
+  contraption may jam on the road and do nothing. They go on show and sell like the smith's gear;
+  adventurers carry two, not two alike, and judge them only by what shows.
+- *Wagons.* Some parties ride in with a wagon, often the worse for the road: a buckled wheel or a
+  cracked axle. It's parked outside near their haunt, and its owner asks for it mended. Truing a
+  wheel: it turns past a gauge; F tightens the spoke at the gauge where the rim bulges out, A
+  slackens it where it dips in. A new axle is fitted like a contraption's parts, from two wood. A
+  party that sets out with its wagon still broken brings nothing home: no strongbox, no curios.
+- *Curios and the collector.* A cleared quest sometimes sends a curio home (an idol, a clockwork
+  bird, an old seal), on a sound wagon. What it's really worth is hidden, and some are fakes. The
+  party asks what it's worth. Under the loupe, A/D move the glass along it and the eye catches
+  near a tell; held still over one, it's read. Each tell read narrows the reckoning, and on a fake
+  one of them gives it away. The tinker says what they'd put it at (aloud: anyone by hears) and
+  hands it back; the owner believes them. Or offers to buy it: the owner takes a price near what
+  they believe. Curios in the collector's crate go off with the morning carrier, and the silver
+  comes back the morning after: what it was really worth, less a cut, nearly nothing for a fake.
+- Later: bridges, gates and the town's structures damaged in the M3 crises (the Director), mended
+  by the Tinker; town devices (alarms, a bell trip) when there are thieves to catch (M4).
+- Betrayal later (M4): a spare key, a box opened early and some silver missing, a trap left armed,
+  a contraption that jams, a curio talked down to nothing and sold on.
 
 ## Pressure and traitors
 

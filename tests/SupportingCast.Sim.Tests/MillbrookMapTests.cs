@@ -23,7 +23,7 @@ public class MillbrookMapTests
         Assert.Equal("Inn", sim.World.Get<PresetBuilding>(town.Tavern).Def.Name);
         Assert.Equal("Smithy", sim.World.Get<PresetBuilding>(town.Forge).Def.Name);
         Assert.Equal("Shrine", sim.World.Get<PresetBuilding>(town.Shrine).Def.Name);
-        Assert.Equal("Woodshop", sim.World.Get<PresetBuilding>(town.Woodshop).Def.Name);
+        Assert.Equal("TinkerShop", sim.World.Get<PresetBuilding>(town.TinkerShop).Def.Name);
         foreach (var trade in sim.Defs.AllTrades)
             if (trade.WorkplaceDef is { } workplace)
                 Assert.Contains(sim.World.Query<PresetBuilding>(), e => sim.World.Get<PresetBuilding>(e).Def == workplace);

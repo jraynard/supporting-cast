@@ -3,7 +3,7 @@ using SupportingCast.Sim.Core;
 using SupportingCast.Sim.Defs;
 using SupportingCast.Sim.Expeditions;
 using SupportingCast.Sim.Healing;
-using SupportingCast.Sim.Locks;
+using SupportingCast.Sim.Tinkering;
 using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Speech;
 using SupportingCast.Sim.Systems;
@@ -67,6 +67,9 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     private float _skipTo;
     private int _pin, _slips, _working, _dir = 1;
     private float _progress;
+
+    // The tinker's games: the spoke last worked on the wheel, the part being fitted, the tells read.
+    private int _spoke = -1, _part = -1, _read;
 
     // The kitchen: the stirring rhythm, the seasoning's pinch-and-taste, and whether this pot's been seasoned yet.
     private int _stir, _seasonBeat;
@@ -145,6 +148,8 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             _progress = 0f;
             _stir = _seasonBeat = 0;
             _struck = false;
+            _spoke = _part = -1;
+            _read = 0;
         }
         switch (s)
         {
@@ -244,6 +249,12 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 return Probe(pr);
             case PickSession pk:
                 return Pick(pk);
+            case TrueSession tr:
+                return True(tr);
+            case FitSession fit:
+                return Fit(fit);
+            case LoupeSession lp:
+                return Loupe(lp);
         }
         return (false, false, 0);
     }
@@ -318,6 +329,66 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             _rose = null;
         }
         return (false, false, _dir);
+    }
+
+    /// <summary>As each spoke comes past the gauge: a bulge tightened in, a dip slackened out, once a pass.</summary>
+    private (bool, bool, int) True(TrueSession s)
+    {
+        var at = s.Turn * TrueSession.Spokes;
+        var frac = at - MathF.Floor(at);
+        if (frac is > 0.12f and < 0.88f || s.AtGauge == _spoke)
+            return (false, false, 0);
+        _spoke = s.AtGauge;
+        var mark = s.BandWidth * 0.8f;
+        return s.Gauge > mark ? (true, false, 0) : s.Gauge < -mark ? (false, false, -1) : (false, false, 0);
+    }
+
+    /// <summary>File each part while it binds, and seat it once the bind's all but gone (or at the first rattle); then wind to the catch and latch.</summary>
+    private (bool, bool, int) Fit(FitSession s)
+    {
+        if (s.Winding)
+        {
+            if (s.Catching)
+                return (false, false, 1);
+            _working = (_working + 1) % 24;
+            return (_working == 0, false, 0);
+        }
+        if (s.Part != _part)
+        {
+            (_part, _feel) = (s.Part, 1f);
+            return (false, false, 0);
+        }
+        _feel = _feel * 0.85f + s.Bind * 0.15f;
+        if (s.Rattle > 0.15f || _feel < 0.06f)
+            return (false, false, 1);
+        return (false, true, 0);
+    }
+
+    /// <summary>Sweep the piece; at a catch, back to its middle and study it till it's read; then on to the end.</summary>
+    private (bool, bool, int) Loupe(LoupeSession s)
+    {
+        _feel = _feel * 0.8f + s.Catch * 0.2f;
+        if (_working > 0)
+        {
+            _working = s.Reading > _progress || s.ReadCount > _read ? 60 : _working - 1;
+            _progress = s.Reading;
+            if (s.ReadCount == _read && _working > 0)
+                return (false, true, 0);
+            (_working, _read) = (0, s.ReadCount);
+        }
+        if (_middle is { } target)
+        {
+            var off = target - s.At;
+            if (MathF.Abs(off) > LoupeSession.MovePerStep)
+                return (false, false, Math.Sign(off));
+            _middle = null;
+            _skipTo = target + LoupeSession.CatchRange;
+            _working = 60;
+            return (false, true, 0);
+        }
+        if (s.At >= _skipTo && Middle(s.At, 0.5f) is { } found)
+            _middle = found;
+        return (false, false, 1);
     }
 
     /// <summary>The cell on a piece being washed with the most grime left on it.</summary>
@@ -409,7 +480,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         "Innkeeper" => [ServiceKind.Drink, ServiceKind.MixedDrink, ServiceKind.Lodging, ServiceKind.Quest], // the bar, the rooms and the quest board
         "Cook" => [ServiceKind.Meal], // the pot
         "Healer" => [ServiceKind.Healing],
-        "Carpenter" => [ServiceKind.Unlock],
+        "Tinker" => [ServiceKind.Unlock, ServiceKind.WagonRepair, ServiceKind.Appraise],
         _ => trade.Brokers ? [ServiceKind.Quest] : [],
     };
 
@@ -450,6 +521,8 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             ServiceKind.Healing => Heal(sim, me, view, poster, now),
             ServiceKind.Quest => Broker(sim, me, view, poster, now),
             ServiceKind.Unlock => OpenBox(sim, me, view, poster, now),
+            ServiceKind.WagonRepair => MendWagon(sim, me, view, poster, now),
+            ServiceKind.Appraise => Appraise(sim, me, view, poster, now),
             _ => false,
         };
     }
@@ -667,6 +740,86 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         }
         if (Reach(sim, me, owner, now, returning: true))
             send(new GiveCommand(me, owner, box, 1));
+        return true;
+    }
+
+    /// <summary>
+    /// Out to the customer's wagon (whose is whose is plain to see), and mend what's wrong with it:
+    /// true the wheel, then a new axle (wood from the shop's chest if it hasn't the wood on it).
+    /// Paid once nothing's wrong with it.
+    /// </summary>
+    private bool MendWagon(Simulation sim, Entity me, PerceptionView view, Entity owner, long now)
+    {
+        var w = sim.World;
+        var wagon = Entity.Null;
+        foreach (var e in w.Each<Wagon>())
+            if (w.Get<Wagon>(e).Owner == owner)
+                wagon = e;
+        if (wagon.IsNull)
+            return false;
+        var cell = w.Get<Thing>(wagon).Cell;
+        var seen = view.Wagon(wagon);
+        if (!AvatarSystem.InReach(sim, w.Get<Position>(me).Cell, wagon) || seen is not { } known)
+        {
+            // An axle wants wood: from the shop on the way, if it's none on it.
+            if (seen is { } s && (s.Damage & WagonDamage.Axle) != 0 && Wagons.WoodOn(sim, me) < Wagons.AxleWood && FetchWood(sim, me, view, now))
+                return true;
+            Doing = "going out to a wagon";
+            Walk(sim, me, cell, now);
+            return true;
+        }
+        if (known.Damage == WagonDamage.None)
+            return false;
+        Doing = "mending a wagon";
+        if ((known.Damage & WagonDamage.Wheel) != 0)
+            send(new TrueWheelCommand(me, wagon));
+        else if (Wagons.WoodOn(sim, me) >= Wagons.AxleWood)
+            send(new FitAxleCommand(me, wagon));
+        else
+            return FetchWood(sim, me, view, now);
+        return true;
+    }
+
+    /// <summary>Wood from a chest at its workplace, for an axle. False if there's none to be had.</summary>
+    private bool FetchWood(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Trade>(me, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+            return false;
+        foreach (var e in w.Each<PartOf>())
+        {
+            var b = w.Get<PartOf>(e).Building;
+            if (!w.TryGet<PresetBuilding>(b, out var pb) || pb.Def != workplace || w.Get<Thing>(e).Def.Name != "Chest")
+                continue;
+            var chest = e;
+            if (view.InContainer(chest).FirstOrDefault(i => w.Get<Thing>(i).Def.Name == "Wood", Entity.Null) is not { IsNull: false } wood)
+                continue;
+            Doing = "fetching wood for an axle";
+            return AtStation(sim, me, chest, now, _ => send(new TakeFromStorageCommand(me, wood, Wagons.AxleWood)));
+        }
+        return false;
+    }
+
+    /// <summary>Look a curio over under the loupe, then hand it back with an honest reckoning (its middle).</summary>
+    private bool Appraise(Simulation sim, Entity me, PerceptionView view, Entity owner, long now)
+    {
+        var curio = Entrusted(sim, me, owner);
+        if (curio.IsNull)
+        {
+            Reach(sim, me, owner, now);
+            return true;
+        }
+        if (view.Curio(curio) is not { } known)
+            return false;
+        if (known.Low == null)
+        {
+            Doing = "looking a curio over";
+            send(new AppraiseCommand(me, curio));
+            return true;
+        }
+        Doing = "handing back a curio";
+        if (Reach(sim, me, owner, now, returning: true))
+            send(new GiveCommand(me, owner, curio, 1));
         return true;
     }
 

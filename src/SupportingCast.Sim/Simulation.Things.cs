@@ -838,7 +838,9 @@ public sealed partial class Simulation
     /// </summary>
     public bool SetLocked(Entity door, bool locked)
     {
-        if (!World.IsAlive(door) || !World.TryGet<Thing>(door, out var t) || t.Def.Building is not { IsDoor: true, Lockable: true })
+        // Lockable by its make (a cage gate), or by a tinker's lock fitted to it.
+        if (!World.IsAlive(door) || !World.TryGet<Thing>(door, out var t) || t.Def.Building is not { IsDoor: true } door2
+            || !(door2.Lockable || World.Has<Tinkering.LockCut>(door)))
             return false;
         if (World.Has<Locked>(door) == locked)
             return true;

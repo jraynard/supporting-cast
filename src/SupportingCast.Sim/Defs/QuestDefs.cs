@@ -26,6 +26,12 @@ public sealed class QuestDef : Def
     /// <summary>What's said about it over a cup ("{0}": how dangerous the teller thinks it is).</summary>
     public List<string> Rumours { get; set; } = [];
 
+    /// <summary>Somewhere without daylight (a barrow, a mine, caves): a clockwork lantern helps.</summary>
+    public bool Dark { get; set; }
+
+    /// <summary>Beasts to be dealt with: a spring snare helps.</summary>
+    public bool Beasts { get; set; }
+
     internal override void Resolve(DefDatabase db)
     {
         if (DangerMin <= 0 || DangerMin > DangerMax || RewardMin < 0 || RewardMin > RewardMax || Hours <= 0 || Threats.Count == 0)

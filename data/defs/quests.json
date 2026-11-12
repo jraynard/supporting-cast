@@ -2,23 +2,24 @@
 // a true danger and reward from these ranges that nobody is told. Danger is against a party's
 // strength: an ordinary, well-kept adventurer is about 1, so a party of three is about 3. The
 // Innkeeper (who brokers quests) starts with a guess at each; rumours over a cup ("rumours", {0} the teller's sense
-// of the danger) and parties coming back sharpen it. Our own places; keep tabletop terms out.
+// of the danger) and parties coming back sharpen it. "dark": no daylight there (a tinker's lantern
+// helps); "beasts": beasts to deal with (a spring snare helps). Our own places; keep tabletop terms out.
 {
   "quests": [
     { "name": "Hollowmere", "label": "the Hollowmere Barrow", "description": "An old grave-mound in the marsh. Lights are seen there on still nights.",
-      "dangerMin": 1.8, "dangerMax": 3.6, "rewardMin": 40, "rewardMax": 80, "hours": 8, "threats": [ "Cut", "Venom" ],
+      "dangerMin": 1.8, "dangerMax": 3.6, "rewardMin": 40, "rewardMax": 80, "hours": 8, "threats": [ "Cut", "Venom" ], "dark": true,
       "rumours": [ "My cousin says the lights on Hollowmere are {0}.", "Nobody fishes near the Barrow any more. They say it's {0}." ] },
     { "name": "GloamWood", "label": "the Gloam Wood", "description": "Charcoal-burners won't go past the stream. Something takes their dogs.",
-      "dangerMin": 2.5, "dangerMax": 4.5, "rewardMin": 50, "rewardMax": 100, "hours": 10, "threats": [ "Bite", "Cut" ],
+      "dangerMin": 2.5, "dangerMax": 4.5, "rewardMin": 50, "rewardMax": 100, "hours": 10, "threats": [ "Bite", "Cut" ], "beasts": true,
       "rumours": [ "Whatever's in the Gloam Wood, the burners reckon it's {0}.", "Lost two dogs past the stream. The Gloam's {0}, I'd say." ] },
     { "name": "KetterickDeep", "label": "Ketterick's Deep", "description": "A flooded mine shaft the old miners sealed. The seal is broken.",
-      "dangerMin": 3.0, "dangerMax": 5.5, "rewardMin": 80, "rewardMax": 150, "hours": 12, "threats": [ "Blunt", "Pierce" ],
+      "dangerMin": 3.0, "dangerMax": 5.5, "rewardMin": 80, "rewardMax": 150, "hours": 12, "threats": [ "Blunt", "Pierce" ], "dark": true,
       "rumours": [ "Ketterick sealed that shaft for a reason. It's {0} down there.", "The Deep's open again. {0}, my father always said." ] },
     { "name": "AshfallTower", "label": "the Ashfall Tower", "description": "A burned watchtower on the ridge, and smoke from it again at dusk.",
       "dangerMin": 3.5, "dangerMax": 6.0, "rewardMin": 90, "rewardMax": 170, "hours": 10, "threats": [ "Burn", "Cut" ],
       "rumours": [ "Smoke from the Ashfall Tower again. Shepherds say it's {0}.", "I wouldn't go up to the Tower. {0}, from what I hear." ] },
     { "name": "Rimewater", "label": "the Rimewater Caves", "description": "Ice caves under the falls, where the cold never leaves.",
-      "dangerMin": 1.5, "dangerMax": 3.0, "rewardMin": 30, "rewardMax": 60, "hours": 6, "threats": [ "Frost", "Bite" ],
+      "dangerMin": 1.5, "dangerMax": 3.0, "rewardMin": 30, "rewardMax": 60, "hours": 6, "threats": [ "Frost", "Bite" ], "dark": true, "beasts": true,
       "rumours": [ "The Rimewater caves are {0}, but the cold'll get you first.", "Trappers go into Rimewater. It's {0}, they say." ] }
   ]
 }

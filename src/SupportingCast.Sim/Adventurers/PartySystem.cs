@@ -101,7 +101,7 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
             if (sim.Shops.GearOut(sim, e) && now < a.LeaveTick + SimClock.HoursToTicks(Shops.ShopSystem.HandedOverHours))
                 continue;
             // Nor with the reward still locked in its box: back late, they'll want it opened in the morning.
-            if (!Locks.Lockwork.LockedBoxOf(sim, e).IsNull && now < a.LeaveTick + SimClock.HoursToTicks(BoxWaitHours))
+            if (!Tinkering.Lockwork.LockedBoxOf(sim, e).IsNull && now < a.LeaveTick + SimClock.HoursToTicks(BoxWaitHours))
                 continue;
             w.Add(e, new Leaving());
             AiSystem.EndJob(sim, e, w.Get<Mind>(e), false);
@@ -109,6 +109,7 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
             if (announced.Contains(a.Party))
                 continue;
             announced.Add(a.Party);
+            Tinkering.Wagons.Leave(sim, a.Party);
             sim.Messages.Add(MessageKind.Info, $"{Capital(a.PartyDef.Label)} are moving on.", w.Get<Position>(e).Cell);
         }
     }
@@ -149,6 +150,8 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (members.Count > 0)
         {
             PartiesSent++;
+            // The wagon's whoever's best able to pay for its mending.
+            Tinkering.Wagons.Bring(sim, seed, def, id, members.OrderByDescending(e => Shops.Coin.Count(sim, e)).First(), target);
             sim.Messages.Add(MessageKind.Good,
                 $"{Capital(def.Label)} ride in from the {Raids.Direction(sim.Map, from)}, wanting everything at once.", from);
         }

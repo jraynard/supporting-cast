@@ -35,7 +35,7 @@ mkdir -p "$(dirname "$entry")"
 cat > "$entry" <<EOF
 [Desktop Entry]
 Type=Application
-Name=Supporting Cast
+Name=Heroes Not Included
 Comment=A village of dragons and humans
 Exec=$exec_line
 Path=$workdir

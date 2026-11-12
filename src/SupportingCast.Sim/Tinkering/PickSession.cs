@@ -3,10 +3,11 @@ using SupportingCast.Sim.Saving;
 using SupportingCast.Sim.Systems;
 using SupportingCast.Sim.Work;
 
-namespace SupportingCast.Sim.Locks;
+namespace SupportingCast.Sim.Tinkering;
 
 /// <summary>
-/// Picking a strongbox's lock, one pin at a time. A/D lift the pin; the feel needle shows how
+/// Picking a lock, one pin at a time: a strongbox's, or one a tinker fitted to a door
+/// (<see cref="LockCut"/>, whose tightness narrows where a pin will set). A/D lift the pin; the feel needle shows how
 /// much it gives, and it gives most at the height where it sets. F sets it there. Set every pin
 /// and the lid comes up; an armed trap goes off as it does. A slip (F off the mark) drops the last
 /// pin set, wears the picks, and may jar a trap that's still armed. Too many slips and the pick
@@ -28,7 +29,15 @@ public sealed class PickSession : WorkSession
     /// <summary>How much of the picks one slip wears away.</summary>
     public const float WearPerSlip = 0.06f;
 
+    /// <summary>The strongbox, or the door.</summary>
     public Entity Box { get; set; } = Entity.Null;
+
+    /// <summary>It's a door's lock (<see cref="LockCut"/>), not a strongbox's.</summary>
+    public bool Door { get; set; }
+
+    /// <summary>How tight the lock is (<see cref="LockCut.Tightness"/>); 0 for a strongbox.</summary>
+    public float Tightness { get; set; }
+
     public int Pins { get; set; }
     public uint LockSeed { get; set; }
     public bool Armed { get; set; }
@@ -51,11 +60,13 @@ public sealed class PickSession : WorkSession
     private float _drift;
     private int _steer;
 
-    public float HalfWidth => SetHalfWidth * Hands.Tolerance;
+    public float HalfWidth => SetHalfWidth * Hands.Tolerance * (1f - Locksmithing.TightnessSqueeze * Tightness);
 
     public override Skill Skill => Skill.Crafting;
     public override float Xp => Opened ? 50f : 15f;
-    public override string Title => $"Picking the strongbox's lock (pin {Math.Min(Pin + 1, Pins)} of {Pins})";
+    public override string Title => $"Picking the {(Door ? "door's" : "strongbox's")} lock (pin {Math.Min(Pin + 1, Pins)} of {Pins})";
+
+    public override int3? Focus(Simulation sim) => Door && sim.World.IsAlive(Box) ? sim.World.Get<Thing>(Box).Cell : null;
 
     public static void TryStart(Simulation sim, Entity worker, Entity box)
     {
@@ -68,8 +79,30 @@ public sealed class PickSession : WorkSession
         WorkSystem.Start(sim, worker, new PickSession { Box = box, Pins = b.Pins, LockSeed = b.LockSeed, Armed = b.Armed });
     }
 
-    public override bool StillValid(Simulation sim) =>
-        Lockwork.IsLocked(sim, Box) && Inventory.OnPerson(sim, Worker, Box) && !Lockwork.Picks(sim, Worker).IsNull;
+    /// <summary>Pick the lock a tinker fitted to a door in reach, while it's locked.</summary>
+    public static void TryStartDoor(Simulation sim, Entity worker, Entity door)
+    {
+        if (DoorProblem(sim, worker, door) is { } why)
+        {
+            sim.Messages.Add(MessageKind.Info, $"Can't pick that: {why}.", sim.LocationOf(worker));
+            return;
+        }
+        var cut = sim.World.Get<LockCut>(door);
+        WorkSystem.Start(sim, worker, new PickSession { Box = door, Door = true, Tightness = cut.Tightness, Pins = cut.Pins, LockSeed = cut.Seed });
+    }
+
+    public static string? DoorProblem(Simulation sim, Entity worker, Entity door)
+    {
+        if (!Locksmithing.HasLock(sim, door) || !sim.IsLocked(door))
+            return "it isn't locked";
+        if (!AvatarSystem.InReach(sim, sim.World.Get<Position>(worker).Cell, door))
+            return "you need to be at the door";
+        return Lockwork.Picks(sim, worker).IsNull ? "you need lockpicks" : null;
+    }
+
+    public override bool StillValid(Simulation sim) => Door
+        ? DoorProblem(sim, Worker, Box) == null
+        : Lockwork.IsLocked(sim, Box) && Inventory.OnPerson(sim, Worker, Box) && !Lockwork.Picks(sim, Worker).IsNull;
 
     protected internal override void Begin()
     {
@@ -133,6 +166,11 @@ public sealed class PickSession : WorkSession
             Lockwork.WearPicks(sim, Worker, WearPerSlip * Slips + (Snapped ? 0.25f : 0f));
         if (Jarred)
             Lockwork.Spring(sim, Worker, Box);
+        else if (Opened && Door)
+        {
+            sim.SetLocked(Box, false);
+            sim.Messages.Add(MessageKind.Info, $"{sim.World.Get<Creature>(Worker).Name} picks the lock on the {sim.World.Get<Thing>(Box).Label}.", at);
+        }
         else if (Opened)
             Lockwork.Open(sim, Worker, Box);
         else if (Snapped)
@@ -142,6 +180,8 @@ public sealed class PickSession : WorkSession
     protected override void WriteState(SaveWriter w)
     {
         w.Entity(Box);
+        w.Bool(Door);
+        w.Float(Tightness);
         w.Int(Pins);
         w.UInt(LockSeed);
         w.Bool(Armed);
@@ -159,6 +199,11 @@ public sealed class PickSession : WorkSession
     protected override void ReadState(SaveReader r)
     {
         Box = r.Entity();
+        if (r.Version >= 7)
+        {
+            Door = r.Bool();
+            Tightness = Math.Clamp(r.Float(), 0f, 1f);
+        }
         Pins = r.Int();
         if (Pins is < 1 or > Lockwork.MaxPins)
             throw new SaveException($"Corrupt save: a lock of {Pins} pins");
@@ -198,5 +243,17 @@ public sealed record PickLockCommand(Entity Avatar, Entity Box) : ISimCommand, C
     {
         if (Core.InventoryCommand.Ready(sim, Avatar) && Core.InventoryCommand.IsItem(sim, Box) && !sim.World.Has<WorkSession>(Avatar))
             PickSession.TryStart(sim, Avatar, Box);
+    }
+}
+
+/// <summary>Pick the lock fitted to a door in reach (<see cref="PickSession"/>).</summary>
+public sealed record PickDoorCommand(Entity Avatar, Entity Door) : ISimCommand, Core.IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (Core.InventoryCommand.Ready(sim, Avatar) && Locksmithing.HasLock(sim, Door) && !sim.World.Has<WorkSession>(Avatar))
+            PickSession.TryStartDoor(sim, Avatar, Door);
     }
 }

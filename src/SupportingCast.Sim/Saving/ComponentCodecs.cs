@@ -304,7 +304,7 @@ internal static class ComponentCodecs
         {
             var b = new Strongbox { Pins = r.Int(), LockSeed = r.UInt(), Locked = r.Bool() };
             var trap = r.Byte();
-            if (!Enum.IsDefined((TrapKind)trap) || b.Pins is < 1 or > Locks.Lockwork.MaxPins)
+            if (!Enum.IsDefined((TrapKind)trap) || b.Pins is < 1 or > Tinkering.Lockwork.MaxPins)
                 throw new SaveException($"Corrupt save: strongbox trap {trap}, pins {b.Pins}");
             b.Trap = (TrapKind)trap;
             b.TrapAt = r.Float();
@@ -314,6 +314,59 @@ internal static class ComponentCodecs
             b.From = r.String();
             return b;
         }),
+        // The tinker's (Tinkering/).
+        Codec("LockCut", (w, c) =>
+        {
+            w.UInt(c.Seed);
+            w.Int(c.Pins);
+            w.Float(c.Tightness);
+            w.Entity(c.Maker);
+        }, r => new Tinkering.LockCut
+        {
+            Seed = r.UInt(), Pins = Math.Clamp(r.Int(), Tinkering.Lockwork.MinPins, Tinkering.Lockwork.MaxPins), Tightness = Math.Clamp(r.Float(), 0f, 1f), Maker = r.Entity(),
+        }),
+        Codec("Key", (w, k) =>
+        {
+            w.UInt(k.Seed);
+            w.Int(k.Pins);
+            w.Float(k.Fit);
+        }, r => new Tinkering.Key { Seed = r.UInt(), Pins = Math.Clamp(r.Int(), Tinkering.Lockwork.MinPins, Tinkering.Lockwork.MaxPins), Fit = Math.Clamp(r.Float(), 0f, 1f) }),
+        Codec("Contraption", (w, c) =>
+        {
+            w.Bool(c.Binding);
+            w.Entity(c.Maker);
+        }, r => new Tinkering.Contraption { Binding = r.Bool(), Maker = r.Entity() }),
+        Codec("PartyWagon", (w, g) =>
+        {
+            w.Int(g.Party);
+            w.Entity(g.Owner);
+            w.Byte((byte)g.Damage);
+            w.UInt(g.WheelSeed);
+            w.Entity(g.MendedBy);
+        }, r => new Tinkering.Wagon
+        {
+            Party = r.Int(), Owner = r.Entity(), Damage = (Tinkering.WagonDamage)(r.Byte() & 3), WheelSeed = r.UInt(), MendedBy = r.Entity(),
+        }),
+        Codec("Curio", (w, c) =>
+        {
+            w.Int(c.Worth);
+            w.Int(c.Face);
+            w.Bool(c.Genuine);
+            w.UInt(c.Seed);
+        }, r => new Tinkering.Curio { Worth = Math.Max(0, r.Int()), Face = Math.Max(0, r.Int()), Genuine = r.Bool(), Seed = r.UInt() }),
+        Codec("Appraisal", (w, a) =>
+        {
+            w.Entity(a.By);
+            w.Int(a.Low);
+            w.Int(a.High);
+            w.Bool(a.Doubts);
+            w.Int(a.Quoted);
+        }, r => new Tinkering.Appraisal { By = r.Entity(), Low = r.Int(), High = r.Int(), Doubts = r.Bool(), Quoted = r.Int() }),
+        Codec("Valued", (w, v) =>
+        {
+            w.Int(v.Worth);
+            w.Entity(v.ToldBy);
+        }, r => new Tinkering.Valued { Worth = r.Int(), ToldBy = r.Entity() }),
         Codec("CaskDrawn", (w, c) => w.Int(c.Drawn), r => new CaskDrawn { Drawn = r.Int() }),
         Codec("FiredForMending", (w, f) => w.Long(f.Until), r => new FiredForMending { Until = r.Long() }),
         Codec("WorkPiece", (w, p) =>

@@ -77,7 +77,8 @@ Milestones toward a playable prototype, then beyond. Design intent is in [DESIGN
 
 Known leftovers:
 - Build and zone tools are open to every player; the Carpenter should own them. The Carpenter's
-  building and mending have no game of their own yet, only the lockwork.
+  building and mending have no game of their own yet. (The lockwork has since gone to the Tinker,
+  and the Carpenter is benched: see "The Tinker".)
 - Players can hunt animals but can't yet attack people (M4).
 - Villagers don't fight back against raiders, they only suffer them (M3).
 - The dragon creature has no brain or breath job of its own yet (M3's late-round crisis).
@@ -423,18 +424,79 @@ Save format 6. Bench hashes unchanged (1234: state `D21378177D6C73BA`, full `E01
 - Done in the mesher (`WorldMesher.OpenBuilding`), the renderer's hiding of what's under a drawn
   floor, and clicks, which reach through what isn't drawn.
 
+### The Tinker (2026-11-12)
+The last of the starting trades: locks and clockwork, split off the Carpenter (benched until
+building and fletching make a trade of their own). Design: DESIGN.md, "Tinker". `Tinkering/`
+(was `Locks/`), `data/defs/tinkering.json`, `VillageGame.Tinkering.cs`, `tools/tinker_art.py`.
+- **The split:** the Tinker replaces the Carpenter in the deal (five named trades and a labourer
+  for six villagers). A new tinker's shop on Millbrook, south of the square (`village_map.py`,
+  `TinkerShop`): a door, the tinker's bench, a tool rack, a stock chest (iron, wood, charcoal) and
+  the collector's crate. `Unlock` is served there. The woodshop stays, empty.
+- **Locks and keys:** `MakeLock` at the bench is pinned by hand (`PinSession`: hold F to file each
+  pin to its mark, D to set it); a crisp lock is tight (`LockCut.Tightness` narrows a pick's room)
+  and its key turns sweetly (`Key.Fit`; a poor one sticks). Fitted to any door (`FitLockCommand`),
+  which then locks for its keys (`TurnKeyCommand`; `SetLocked` takes a fitted lock) or a pick
+  (`PickDoorCommand`, `PickSession` on a door). Keys copied at the bench from an iron bar
+  (`CopyKeyCommand`). F at a locked door, or one you hold a key or a lock for, opens its window;
+  otherwise doors are walked through as ever. AI villagers never lock doors.
+- **Contraptions:** tapping rod, grapnel and winch, clockwork lantern, spring snare, signal
+  rocket (`ContraptionProps.Use`; quests are flagged `dark` and `beasts`). Fitted part by part
+  and wound (`FitSession`); a part forced home leaves a hidden `Contraption.Binding`, which may jam
+  it for the whole quest. Carried out as `MemberRecord.Contraptions` (save format 7) and back
+  unspent; the rod turns wounds aside, the grapnel and rocket turn deaths into bad wounds, the
+  lantern and snare add strength where they fit. On show and sold like gear (two, not alike). AI
+  tinkers make them from bills, never binding.
+- **Wagons:** half the parties bring one (`PartyDef.WagonChance`), mostly damaged: a buckled wheel
+  (`TrueSession`: F tightens the spoke at the gauge, A slackens) or a cracked axle (`FitSession`,
+  2 wood). Parked outside near their haunt; the richest member asks for it mended
+  (`ServiceKind.WagonRepair`, paid once it's sound). Set out with it broken, the party brings no
+  strongbox or curios home (`Expedition.Hauls`). The AI tinker mends them (`WagonJob`). The wagon
+  is a 3D box prop now, the town's too (canvas over hoops, wheels, a tongue), not a sprite.
+- **Curios and the collector:** a cleared quest sometimes sends one or two curios home, a third of
+  them fakes. True worth is hidden (`Curio`); `ServiceKind.Appraise` hands one over. Under the loupe
+  (`LoupeSession`: A/D along it, F held over a tell to read it) each tell narrows the reckoning
+  (`Appraisal`, the appraiser's own), and a fake's giveaway tell shows it up. Say what it's worth
+  aloud (`QuoteCurioCommand`), hand it back (the owner believes it), or buy it near what they
+  believe (`OfferForCurioCommand`). The collector's crate is emptied by the morning carrier, who
+  brings back what each was really worth, less a fifth, the morning after (`CollectorSystem`).
+  The AI tinker appraises honestly and doesn't buy (`AppraiseJob`).
+- **Bots** play the Tinker's orders: boxes, wagons (truing, axles, wood from the shop's chest) and
+  appraisals. They don't pin locks or make contraptions.
+- Tests: `TinkerTests` (the lockwork, renamed from `CarpenterTests`) and `TinkerTradeTests`. Tests
+  about something else take the party's wagon away, keep quests closed, or tell the party the way
+  about town. The innkeeper's lodging test keeps its party off the quest board.
+- Save format 7. Bench baselines: seed 1234 state `544013139F82655B` full `B61AA7E526D6DC69`; seed
+  99 state `52477B5864C7C412` full `11DB40912DA1098D`.
+
+Known leftovers:
+- No lockboxes or locked chests yet: locks go on doors only.
+- Bots don't pin locks, make contraptions or haggle over curios; AI tinkers don't buy curios.
+- The wagon's wheels are boxes: they read as legs from some angles.
+- Bridges, gates and the town's structures aren't damaged by anything yet: that's M3's crises.
+
 ## Next
 
 ### Trade refinement
 - refining the four initial trades to be fun. blacksmith, innkeeper, carpeneter (locksmith), and healer.
 - blacksmith done, innkeeper done (some jobs split off to cook which will be handled later).
-- healer done (see Healer polish), then locksmith / artificer (split from carpenter)
+- healer done (see Healer polish), tinker done (see The Tinker): the starting trades are in. The
+  Carpenter (building, furniture, fletching and bows) waits for later.
 
 ### M3: A whole season
 - `Director`, Renown and Dread, crises including the late-round dragon, the festival, the
   end-of-round reveal. Villagers defend themselves.
-
+- Crises damage the town's bridge, gate and buildings; the Tinker mends them (a game like truing
+  a wheel), and a broken bridge cuts a road until they do.
+- need to deal with downtime for the villagers as well during the night or when they should be sleeping, and how that might interact with the traitor system later. they shouldn't just have to watch their character sleep for 5 minutes though, that would be boring.
+- needs probably will have to be tuned to not be too annoying, but it would be good for the townspeople to gather at the inn after the day to eat, and later when we have the miner and forager trades they will have to buy supplies from each other to replenish their stocks, so there will be some interaction pressure there.
+- make the "favors" system a physical board that has to be interacted with in the town square so people looking for work can use it. or even use it to ask for help from a laborer or something.
 *Exit: an Honest round is playable start to finish.*
+
+### PLAYTEST PREP
+- add icon for the game executable
+- publish builds in a way we can easily distribute for playtesting (maybe use discord or something)
+- UX / art polish pass (not a full art pass but just clean things up as needed to make sure its legible for people that are not hardcore gamers)
+
 **Playtest gate: is serving heroes fun with friends, without traitors?** Tune before going further.
 
 ### M4: Whispers
@@ -453,13 +515,11 @@ Remaining trades, more maps (authored like Millbrook), crisis variety, personal 
 An authoritative server filtered by `Perception`, moderation, voice.
 
 ### polish pass - timing uncertain
-- add icon for the game executable
-- publish builds in a way we can easily distribute for playtesting (maybe use discord or something)
-- UX / art polish pass (not a full art pass but just clean things up as needed to make sure its legible)
-- get rid of the sprite wagon and do a box prop for it, check to see if theres any others that need updating
+- ~~get rid of the sprite wagon and do a box prop for it~~ (done with the Tinker); check to see if there are any others that need updating
 - make the bridge over the river nicer - half height walls, maybe an arch to it or supports?
-- title screen refinement
+- title screen polish
 - doc cleanup pass
 - character creation - more traditional DnD fantasy options. elves, dwarves, hobbits, etc
 - make the hearth into a fireplace
 - wall torches
+- difficulty tuning - some jobs should be easier, some harder, to accomodate different players and styles.

@@ -144,7 +144,7 @@ public sealed class MapBuilding
     public int[] At { get; set; } = [];
     public int Facing { get; set; }
 
-    /// <summary>What the round uses it for: Tavern, Forge, Shrine, Woodshop, Home. Empty: it's just there.</summary>
+    /// <summary>What the round uses it for: Tavern, Forge, Shrine, TinkerShop, Home. Empty: it's just there.</summary>
     public string Role { get; set; } = "";
 
     [JsonIgnore] public BuildingDef BuildingDef { get; private set; } = null!;

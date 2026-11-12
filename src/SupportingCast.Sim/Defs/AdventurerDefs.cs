@@ -72,6 +72,9 @@ public sealed class PartyDef : Def
     /// <summary>Names members are given, in a rolled order.</summary>
     public List<string> Names { get; set; } = [];
 
+    /// <summary>The chance they come with a wagon, and so the chance it's come off the road the worse for it (<c>Tinkering.Wagons</c>).</summary>
+    public float WagonChance { get; set; } = 0.5f;
+
     [JsonIgnore] public List<AdventurerKindDef> MemberDefs { get; } = [];
     [JsonIgnore] public BuildingDef? HauntDef { get; private set; }
 

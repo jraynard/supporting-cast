@@ -3,7 +3,7 @@ using SupportingCast.Sim.Saving;
 using SupportingCast.Sim.Systems;
 using SupportingCast.Sim.Work;
 
-namespace SupportingCast.Sim.Locks;
+namespace SupportingCast.Sim.Tinkering;
 
 /// <summary>
 /// Feeling along a strongbox's lid for a trap. A/D run a probe along the seam from the hasp to

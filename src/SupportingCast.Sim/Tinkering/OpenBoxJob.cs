@@ -5,10 +5,10 @@ using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Shops;
 using SupportingCast.Sim.Systems;
 
-namespace SupportingCast.Sim.Locks;
+namespace SupportingCast.Sim.Tinkering;
 
 /// <summary>
-/// An AI carpenter opens a strongbox for its owner: takes the order on, collects the box, feels
+/// An AI tinker opens a strongbox for its owner: takes the order on, collects the box, feels
 /// it over for a trap, picks the lock and brings it back for the pay. A basic hand at it, rolled
 /// rather than played: skill makes finding and drawing a trap likelier, and a missed trap goes
 /// off when the lid comes up. Players do it by hand (<see cref="ProbeSession"/>, <see cref="PickSession"/>).
@@ -27,7 +27,7 @@ public sealed class OpenBoxJob(int order) : Job
         var from = w.Get<Position>(pawn).Cell;
         foreach (var e in sim.Shops.FrontFirst(sim))
         {
-            if (!e.IsOpen || e.Kind.Kind != ServiceKind.Unlock || e.Kind.AtDef != workplace || !e.KnownBy.Contains(pawn)
+            if (!e.IsOpen || e.Kind.Kind != ServiceKind.Unlock || e.Kind.AtDef != workplace || !trade.Def.Serving(e.Kind.Kind) || !e.KnownBy.Contains(pawn)
                 || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Subject) || !w.IsAlive(e.Poster))
                 continue;
             if (Navigation.CanReach(sim, pawn, from, w.Get<Position>(e.Poster).Cell, PathEnd.Touch))

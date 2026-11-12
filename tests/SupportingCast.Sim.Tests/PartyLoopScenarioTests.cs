@@ -18,7 +18,7 @@ namespace SupportingCast.Sim.Tests;
 /// </summary>
 public class PartyLoopScenarioTests(ITestOutputHelper output)
 {
-    private static readonly string[] Trades = ["Blacksmith", "Innkeeper", "Healer", "Carpenter"];
+    private static readonly string[] Trades = ["Blacksmith", "Innkeeper", "Healer", "Tinker"];
 
     [Theory]
     [InlineData(1234UL)]

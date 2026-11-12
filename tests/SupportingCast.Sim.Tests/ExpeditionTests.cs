@@ -26,6 +26,7 @@ public class ExpeditionTests
         sim.ApplyNow(new StartRoundCommand());
         var party = sim.Parties.Send(sim, sim.Defs.Party("IronLantern"));
         Assert.NotEmpty(party);
+        Tinkering.Wagons.Leave(sim, sim.World.Get<Adventurer>(party[0]).Party); // no wagon to see to (TinkerTests' wagons have their own)
         // Until they've asked for work.
         for (var t = 0; t < 40 && ExpeditionSystem.QuestOrder(sim, sim.World.Get<Adventurer>(party[0]).Party) == null; t++)
             sim.TickMany(SimClock.TicksPerHour / 4);

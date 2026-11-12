@@ -71,9 +71,9 @@ public static class Goods
         return true;
     }
 
-    /// <summary>What adventurers buy: weapons, armor (apparel that turns a blade or a blow), and the empath's charms.</summary>
+    /// <summary>What adventurers buy: weapons, armor (apparel that turns a blade or a blow), the empath's charms and the tinker's contraptions.</summary>
     public static bool IsGear(ThingDef def) =>
-        def.Weapon != null || def.Apparel is { } a && (a.Sharp > 0 || a.Blunt > 0) || def.Charm;
+        def.Weapon != null || def.Apparel is { } a && (a.Sharp > 0 || a.Blunt > 0) || def.Charm || def.Contraption != null;
 
     /// <summary>
     /// Would they be better off with this? A weapon of the kind they fight with (in hand or at
@@ -90,6 +90,12 @@ public static class Goods
             var mine = Healing.Charms.Carried(sim, who);
             return w.TryGet<Charm>(item, out var c) && mine.Count < Healing.Charms.MostCarried
                 && !mine.Exists(e => w.Get<Charm>(e).Mending == c.Mending);
+        }
+        if (def.Contraption is { } contraption)
+        {
+            // Kit for the road: a couple, and not two that do the same.
+            var mine = Tinkering.Contraptions.Carried(sim, who);
+            return mine.Count < Tinkering.Contraptions.MostCarried && !mine.Exists(e => w.Get<Thing>(e).Def.Contraption!.Use == contraption.Use);
         }
         if (def.Weapon is { } attack)
         {
@@ -112,7 +118,8 @@ public static class Goods
     {
         if (sim.World.TryGet<Charm>(item, out var charm))
             return Healing.Charms.Worth * (1f + 0.5f * charm.Extra);
-        return QualityWorth(sim.World.TryGet<Crafted>(item, out var made) ? made.Quality : Quality.Plain);
+        var quality = QualityWorth(sim.World.TryGet<Crafted>(item, out var made) ? made.Quality : Quality.Plain);
+        return sim.World.Get<Thing>(item).Def.Contraption != null ? Tinkering.Contraptions.Worth * quality : quality;
     }
 
     /// <summary>How much better made pieces are worth, by quality.</summary>
@@ -131,7 +138,7 @@ public static class Goods
         if (w.Has<ForSale>(item))
             w.Remove<ForSale>(item);
         var def = w.Get<Thing>(item).Def;
-        if (def.Charm)
+        if (def.Charm || def.Contraption != null)
         {
             Inventory.Stow(sim, who, item);
             return;

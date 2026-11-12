@@ -774,6 +774,12 @@ public sealed class ThingDef : Def
     /// <summary>A charm: holds a mending woven into it, to be torn later or carried as a ward (<c>Healing.Charms</c>).</summary>
     public bool Charm { get; set; }
 
+    /// <summary>A tinker's contraption for the road (<c>Tinkering.Contraptions</c>): what it does on a quest.</summary>
+    public ContraptionProps? Contraption { get; set; }
+
+    /// <summary>A curio brought back from a quest (<c>Tinkering.Curios</c>): what such a thing can be worth.</summary>
+    public CurioProps? Curio { get; set; }
+
     /// <summary>
     /// Comes in the materials of another item, being made from it: planks are oak, pine or birch
     /// like the wood they were sawn from (a recipe's product takes its ingredients' material).
@@ -875,6 +881,42 @@ public sealed class ThingDef : Def
 /// one goes at <c>Crafting.BareHands</c>. Recipes name kinds they need (<c>RecipeDef.Tools</c>, of at
 /// least <c>RecipeDef.ToolTier</c>) or go faster with (<c>RecipeDef.HelpedBy</c>).
 /// </summary>
+/// <summary>What a contraption does for its bearer on a quest (<c>Tinkering.Contraptions</c>).</summary>
+public enum ContraptionUse
+{
+    /// <summary>A tapping rod: feels out traps and pits ahead, so fewer wounds.</summary>
+    Traps,
+
+    /// <summary>A grapnel and winch: a fall that would kill becomes a bad wound. Spent when it does.</summary>
+    Falls,
+
+    /// <summary>A clockwork lantern: stronger in dark places (<see cref="QuestDef.Dark"/>).</summary>
+    Dark,
+
+    /// <summary>A spring snare: stronger against beasts (<see cref="QuestDef.Beasts"/>).</summary>
+    Beasts,
+
+    /// <summary>A signal rocket: on a quest gone wrong, some who'd have died are found and brought home. Spent when fired.</summary>
+    Rescue,
+}
+
+/// <summary>A tinker's contraption: what it does, and how many parts are fitted to make it.</summary>
+public sealed class ContraptionProps
+{
+    public ContraptionUse Use { get; set; }
+
+    /// <summary>Parts filed and seated when it's made by hand (<c>Tinkering.FitSession</c>), 2 to 5.</summary>
+    public int Parts { get; set; } = 3;
+}
+
+/// <summary>Something odd brought back from a quest, and what it might fetch (<c>Tinkering.Curios</c>).</summary>
+public sealed class CurioProps
+{
+    /// <summary>What a genuine one fetches from a collector, in silver.</summary>
+    public int WorthMin { get; set; } = 20;
+    public int WorthMax { get; set; } = 60;
+}
+
 public sealed class ToolProps
 {
     public string Kind { get; set; } = "";

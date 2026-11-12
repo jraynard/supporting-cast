@@ -29,6 +29,7 @@ import norse_buildings
 import norse_smithy
 import inn_art
 import healer_art
+import tinker_art
 import norse_gear
 import chibi_people
 import chibi_animals
@@ -541,6 +542,7 @@ if __name__ == "__main__":
     norse_smithy.generate()      # anvil, quench tub, grindstone, tool rack, fuel bin: model textures and icons
     inn_art.generate()           # the inn's upkeep: the mop, and the mess on the floor
     healer_art.generate()        # the empath's rune glyphs
+    tinker_art.generate()        # the tinker's bench, locks, keys, contraptions and curios
     placeholder_roofs.generate()     # roof thatch and shingles
     norse_gear.generate()        # tools and weapons per metal, stock, ores, fuel, food, hides: replaces the recoloured gear
     chibi_animals.generate()     # deer, boar, hare: chibi, 4x detail

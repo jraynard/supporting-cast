@@ -20,7 +20,7 @@ public enum ServiceKind
     /// <summary>Somewhere to go and something to kill (the Innkeeper's, who brokers quests).</summary>
     Quest,
 
-    /// <summary>A strongbox brought back from a quest, opened (the Carpenter's).</summary>
+    /// <summary>A strongbox brought back from a quest, opened (the Tinker's).</summary>
     Unlock,
 
     /// <summary>A room for the night: a bed let to them upstairs at the inn (the Innkeeper's).</summary>
@@ -34,6 +34,12 @@ public enum ServiceKind
 
     /// <summary>A named mixed drink, mixed at the bar (the Innkeeper's): dearer than an ale, and they want the one they asked for.</summary>
     MixedDrink,
+
+    /// <summary>Their wagon, come off the road the worse for it, mended where it stands (the Tinker's).</summary>
+    WagonRepair,
+
+    /// <summary>A curio brought back from a quest looked over, and its worth told them (the Tinker's).</summary>
+    Appraise,
 }
 
 /// <summary>

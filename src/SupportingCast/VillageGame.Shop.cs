@@ -243,6 +243,8 @@ public sealed partial class VillageGame
         Sim.Defs.ServiceKind.Healing => "ui/icon_doctor",
         Sim.Defs.ServiceKind.Quest => "ui/icon_quest",
         Sim.Defs.ServiceKind.Unlock => "ui/icon_treasure",
+        Sim.Defs.ServiceKind.WagonRepair => "ui/icon_build",
+        Sim.Defs.ServiceKind.Appraise => "ui/icon_treasure",
         _ => "ui/icon_call",
     };
 

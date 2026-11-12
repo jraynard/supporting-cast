@@ -22,7 +22,7 @@ public static class VillageRound
     public const string DefaultMap = "Millbrook";
 
     /// <summary>The landing point and the buildings trades will work from.</summary>
-    public readonly record struct Town(int3 Center, Entity Tavern, Entity Forge, Entity Shrine, Entity Woodshop);
+    public readonly record struct Town(int3 Center, Entity Tavern, Entity Forge, Entity Shrine, Entity TinkerShop);
 
     /// <summary>A simulation the size of the round's map, with the standard systems: what <see cref="Setup"/> builds into.</summary>
     public static Simulation NewSimulation(DefDatabase defs, ulong seed, string map = DefaultMap) =>
@@ -37,16 +37,32 @@ public static class VillageRound
         StockShrine(sim, shrine);
         StockSmithy(sim, Role("Forge"));
         StockInn(sim, Role("Tavern"));
+        StockTinkerShop(sim, Role("TinkerShop"));
         // Beds for everyone, or the first night sends them all out to sleep in the cold.
         foreach (var (spec, home) in built.Buildings)
             if (spec.Role == "Home")
                 VillageSetup.FillSpareBeds(sim, home);
         sim.RebuildDerivedIfNeeded();
-        return new Town(built.Center, Role("Tavern"), Role("Forge"), shrine, Role("Woodshop"));
+        return new Town(built.Center, Role("Tavern"), Role("Forge"), shrine, Role("TinkerShop"));
     }
 
     /// <summary>Charcoal in the smithy's fuel bin: a working day's firing, for whoever keeps the forge fed.</summary>
     public const int SmithyCharcoal = 30;
+
+    /// <summary>Stock in the tinker's chest: iron for locks and clockwork, wood, charcoal for rockets.</summary>
+    private static void StockTinkerShop(Simulation sim, Entity shop)
+    {
+        if (shop.IsNull)
+            return;
+        foreach (var e in sim.World.Query<PartOf>())
+            if (sim.World.Get<PartOf>(e).Building == shop && sim.World.Get<Thing>(e).Def.Name == "Chest")
+            {
+                sim.Store(e, sim.CreateItem(sim.Defs.Thing("IronBar"), 6));
+                sim.Store(e, sim.CreateItem(sim.Defs.Thing("Wood"), 8));
+                sim.Store(e, sim.CreateItem(sim.Defs.Thing("Charcoal"), 6));
+                return;
+            }
+    }
 
     private static void StockSmithy(Simulation sim, Entity smithy)
     {

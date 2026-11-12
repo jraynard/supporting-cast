@@ -198,6 +198,9 @@ public sealed partial class VillageGame
             case AvatarActionKind.ReadSign:
                 _readingSign = toggle && _readingSign == action.Target ? Entity.Null : action.Target;
                 break;
+            case AvatarActionKind.Tinker:
+                OpenTinkerWindow(action.Target, toggle);
+                break;
         }
     }
 
@@ -614,7 +617,7 @@ public sealed partial class VillageGame
         AvatarActionKind.Cook or AvatarActionKind.BarWork => 5,
         AvatarActionKind.Clean => 1,
         AvatarActionKind.Craft => 4,
-        AvatarActionKind.OpenStation or AvatarActionKind.ReadSign => 3,
+        AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker => 3,
         AvatarActionKind.Pour => 2,
         AvatarActionKind.OpenStorage => 1,
         _ => 0,

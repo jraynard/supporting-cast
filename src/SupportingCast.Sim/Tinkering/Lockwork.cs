@@ -2,10 +2,10 @@ using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
 using SupportingCast.Sim.Systems;
 
-namespace SupportingCast.Sim.Locks;
+namespace SupportingCast.Sim.Tinkering;
 
 /// <summary>
-/// Strongboxes and the Carpenter's lockwork (docs/DESIGN.md, "Carpenter's locksmithing"). A party
+/// Strongboxes and the Tinker's lockwork (docs/DESIGN.md, "Tinker"). A party
 /// that clears a quest brings back a locked box with part of the reward inside, and often a trap
 /// tied to the lid. Feeling along the seam for the trap (<see cref="ProbeSession"/>) comes first;
 /// picking the lock (<see cref="PickSession"/>) with the trap still armed sets it off as the lid

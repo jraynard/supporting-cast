@@ -226,8 +226,12 @@ public abstract class WorkSession
             nameof(Healing.BandageSession) => new Healing.BandageSession(),
             nameof(Healing.CastSession) => new Healing.CastSession(),
             nameof(Healing.MeditateSession) => new Healing.MeditateSession(),
-            nameof(Locks.ProbeSession) => new Locks.ProbeSession(),
-            nameof(Locks.PickSession) => new Locks.PickSession(),
+            nameof(Tinkering.ProbeSession) => new Tinkering.ProbeSession(),
+            nameof(Tinkering.PickSession) => new Tinkering.PickSession(),
+            nameof(Tinkering.PinSession) => new Tinkering.PinSession(),
+            nameof(Tinkering.FitSession) => new Tinkering.FitSession(),
+            nameof(Tinkering.TrueSession) => new Tinkering.TrueSession(),
+            nameof(Tinkering.LoupeSession) => new Tinkering.LoupeSession(),
             _ => throw new SaveException($"Corrupt save: unknown work session {name}"),
         };
         s.Worker = r.Entity();

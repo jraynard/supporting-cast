@@ -186,11 +186,26 @@
       "building": { "isFloor": true, "isRoof": true, "supportSpan": 3, "insulation": 0.92, "work": 90, "cost": [ { "def": "Wood", "count": 2 } ] }
     },
     {
-      "name": "Wagon", "category": "Building", "sprite": "buildings/wagon", "shape": "Billboard", "renderSize": 1.875,
+      "name": "Wagon", "category": "Building", "sprite": "buildings/wagon",
       "description": "Everything you own, under canvas. Holds up to 16 stacks; F to store what you hold or open it. Once it's empty at journey's end, F takes it apart for its wood.",
       "maxHp": 200, "flammability": 0.8,
       // Nobody builds one, but an emptied wagon breaks up into timber (salvage).
-      "building": { "buildable": false, "storageStacks": 16, "work": 200, "cost": [], "salvage": [ { "def": "Wood", "count": 30, "material": "Oak" } ] }
+      "building": { "buildable": false, "storageStacks": 16, "work": 200, "cost": [], "salvage": [ { "def": "Wood", "count": 30, "material": "Oak" } ] },
+      // A box-built cart under canvas (the same as a party's, tinkering.json's PartyWagon): bed, sides, cover, four wheels, the tongue.
+      "model": [
+        { "min": [0.08, 0.10, 0.30], "max": [0.92, 0.90, 0.40], "top": "props/planks", "side": "props/timber_dark" },
+        { "min": [0.08, 0.10, 0.40], "max": [0.92, 0.16, 0.62], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.08, 0.84, 0.40], "max": [0.92, 0.90, 0.62], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.86, 0.16, 0.40], "max": [0.92, 0.84, 0.62], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.14, 0.14, 0.62], "max": [0.86, 0.86, 0.84], "top": "props/linen", "side": "props/linen" },
+        { "min": [0.14, 0.24, 0.84], "max": [0.86, 0.76, 0.94], "top": "props/linen", "side": "props/linen" },
+        { "min": [0.14, 0.36, 0.94], "max": [0.86, 0.64, 0.99], "top": "props/linen", "side": "props/linen" },
+        { "min": [0.18, 0.02, 0.00], "max": [0.42, 0.08, 0.36], "top": "props/log_end", "side": "props/log_end" },
+        { "min": [0.58, 0.02, 0.00], "max": [0.82, 0.08, 0.36], "top": "props/log_end", "side": "props/log_end" },
+        { "min": [0.18, 0.92, 0.00], "max": [0.42, 0.98, 0.36], "top": "props/log_end", "side": "props/log_end" },
+        { "min": [0.58, 0.92, 0.00], "max": [0.82, 0.98, 0.36], "top": "props/log_end", "side": "props/log_end" },
+        { "min": [0.00, 0.46, 0.26], "max": [0.08, 0.54, 0.32], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ]
     },
     {
       "name": "Ladder", "category": "Building", "sprite": "buildings/ladder", "shape": "Billboard", "renderSize": 3.0,

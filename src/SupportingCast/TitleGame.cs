@@ -22,8 +22,8 @@ namespace SupportingCast;
 /// </summary>
 public sealed class TitleGame : Game
 {
-    /// <summary>The game's name, as players see it (window, title screen, credits). A working title.</summary>
-    public const string Title = "Supporting Cast";
+    /// <summary>The game's name, as players see it (window, title screen, credits).</summary>
+    public const string Title = "Heroes Not Included";
 
     /// <summary>
     /// The per-user folder for settings, saves and logs. It keeps the old name so a rename never

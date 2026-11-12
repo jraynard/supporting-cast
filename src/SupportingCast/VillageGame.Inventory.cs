@@ -229,22 +229,24 @@ public sealed partial class VillageGame
         {
             // Feel for the trap first; pick the lock with one still armed and it goes off as the lid comes up.
             any = true;
-            var why = Sim.Locks.Lockwork.Problem(_sim, _avatar, item);
+            var why = Sim.Tinkering.Lockwork.Problem(_sim, _avatar, item);
             ImGui.BeginDisabled(why != null);
             if (ImGui.MenuItem(box.SearchedByMe ? "Feel for traps again"u8 : "Feel for traps"u8))
-                Later(new Sim.Locks.ProbeBoxCommand(_avatar, item));
+                Later(new Sim.Tinkering.ProbeBoxCommand(_avatar, item));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 Tip(why != null ? Cap(why) + "." : "A/D run the probe along the seam; sweep light. Where it catches, stop and hold F to ease the spring out. The far end finishes.");
             ImGui.BeginDisabled(why != null);
             if (ImGui.MenuItem($"Pick the lock ({box.Pins} pins)"))
-                Later(new Sim.Locks.PickLockCommand(_avatar, item));
+                Later(new Sim.Tinkering.PickLockCommand(_avatar, item));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 Tip(why != null ? Cap(why) + "." : box.SearchedByMe
                     ? "A/D lift the pin; F sets it where it gives most. A slip drops a pin and wears the picks."
                     : "You haven't felt it over for traps. A trap still armed goes off when the lid comes up.");
         }
+        if ((held || packed) && TinkerMenuEntries(item, Later))
+            any = true;
         if ((held || packed) && def.Tool != null)
         {
             any = true;
@@ -351,6 +353,7 @@ public sealed partial class VillageGame
             else if (box.Locked)
                 lines.Add(box.SearchedByMe ? "You've felt it over." : "Nobody you know of has felt it over for traps.");
         }
+        TinkerDetails(item, lines);
         if (def.Apparel is { } a && def.Container == null)
         {
             lines.Add($"{a.Slot} armor, covers {string.Join(", ", a.Covers)}");

@@ -1,4 +1,4 @@
-# Supporting Cast (working title)
+# Heroes Not Included
 
 A multiplayer fantasy village where the players are the people a tabletop party usually walks
 past: the innkeeper, the blacksmith, the healer, the quest broker. Everyone has their own trade to

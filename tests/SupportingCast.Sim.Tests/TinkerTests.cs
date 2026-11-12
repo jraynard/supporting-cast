@@ -2,7 +2,7 @@ using SupportingCast.Sim.Bots;
 using SupportingCast.Sim.Components;
 using SupportingCast.Sim.Defs;
 using SupportingCast.Sim.Expeditions;
-using SupportingCast.Sim.Locks;
+using SupportingCast.Sim.Tinkering;
 using SupportingCast.Sim.Maps;
 using SupportingCast.Sim.Round;
 using SupportingCast.Sim.Scenarios;
@@ -13,8 +13,8 @@ using static SupportingCast.Sim.Tests.TestWorld;
 
 namespace SupportingCast.Sim.Tests;
 
-/// <summary>The Carpenter's lockwork: strongboxes from quests, feeling for traps, picking locks.</summary>
-public class CarpenterTests
+/// <summary>The Tinker's lockwork: strongboxes from quests, feeling for traps, picking locks.</summary>
+public class TinkerTests
 {
     private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
 
@@ -202,8 +202,8 @@ public class CarpenterTests
         sim.TickMany(SimClock.TicksPerHour / 4);
         var order = sim.Shops.All.Single(e => e.Kind.Kind == ServiceKind.Unlock && e.Poster == carrier);
         Assert.Equal(box, order.Subject);
-        var carpenter = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Carpenter");
-        Assert.Contains(carpenter, order.KnownBy); // word of work at the woodshop reaches the carpenter
+        var tinker = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Tinker");
+        Assert.Contains(tinker, order.KnownBy); // word of work at the tinker's shop reaches the tinker
     }
 
     /// <summary>A round with the player in <paramref name="trade"/>, and an adventurer holding a strongbox.</summary>
@@ -217,6 +217,7 @@ public class CarpenterTests
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(trade)], []));
         sim.ApplyNow(new StartRoundCommand());
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
+        Wagons.Leave(sim, sim.World.Get<Adventurer>(party[0]).Party); // the box is the work here, not the wagon
         foreach (var e in party)
             Hospitality.DirectionsSystem.KnowsTheTown(sim, e); // finding the way is InnTalkTests'
         var owner = party[0];
@@ -234,32 +235,32 @@ public class CarpenterTests
         sim.Shops.All.Single(e => e.Poster == owner && e.Kind.Kind == ServiceKind.Unlock);
 
     [Fact]
-    public void AnAICarpenterOpensAStrongboxAndIsPaid()
+    public void AnAITinkerOpensAStrongboxAndIsPaid()
     {
         var (sim, owner, box) = TownWithABox("Healer", trapped: false);
-        var carpenter = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Carpenter");
-        Assert.False(sim.World.Has<Avatar>(carpenter));
-        var purse = Coin.Count(sim, carpenter);
+        var tinker = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Tinker");
+        Assert.False(sim.World.Has<Avatar>(tinker));
+        var purse = Coin.Count(sim, tinker);
         var theirs = Coin.Count(sim, owner);
 
         for (var h = 0; h < 12 && sim.Shops.All.All(e => e.Kind.Kind != ServiceKind.Unlock || e.IsOpen); h++)
             sim.TickMany(SimClock.TicksPerHour);
 
         var order = UnlockOf(sim, owner);
-        Assert.True(order.Status == OrderStatus.Done, $"{order.Status}, carpenter: {sim.Ai.LastFailure.GetValueOrDefault(carpenter)} / {sim.World.Get<Mind>(carpenter).Job?.Report}\n"
+        Assert.True(order.Status == OrderStatus.Done, $"{order.Status}, tinker: {sim.Ai.LastFailure.GetValueOrDefault(tinker)} / {sim.World.Get<Mind>(tinker).Job?.Report}\n"
             + string.Join("\n", sim.Speech.Kept.TakeLast(12).Select(u => $"{u.SpeakerName}: {u.Text}")));
-        Assert.Equal(carpenter, order.Assignee);
+        Assert.Equal(tinker, order.Assignee);
         Assert.False(sim.World.Get<Strongbox>(box).Locked);
         Assert.Equal(0, sim.World.Get<Strongbox>(box).Silver);
         Assert.True(Inventory.OnPerson(sim, owner, box));
-        Assert.Equal(purse + order.Price, Coin.Count(sim, carpenter));
+        Assert.Equal(purse + order.Price, Coin.Count(sim, tinker));
         Assert.True(Coin.Count(sim, owner) >= theirs + 25 - order.Price - 10, "the silver inside went to its owner"); // less what they spent on drink meanwhile
     }
 
     [Fact]
     public void ABoxHandedBackLockedIsRefusedAndTheJobReopens()
     {
-        var (sim, owner, box) = TownWithABox("Carpenter", trapped: false);
+        var (sim, owner, box) = TownWithABox("Tinker", trapped: false);
         var me = Players.CharacterOf(sim, Ana);
         sim.TickMany(SimClock.TicksPerHour / 6);
         var order = UnlockOf(sim, owner);
@@ -277,9 +278,9 @@ public class CarpenterTests
     }
 
     [Fact]
-    public void ABotCarpenterFeelsForTheTrapPicksTheLockAndIsPaid()
+    public void ABotTinkerFeelsForTheTrapPicksTheLockAndIsPaid()
     {
-        var (sim, owner, box) = TownWithABox("Carpenter", trapped: true);
+        var (sim, owner, box) = TownWithABox("Tinker", trapped: true);
         var bot = new BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 11);
         var me = Players.CharacterOf(sim, Ana);
         var purse = Coin.Count(sim, me);

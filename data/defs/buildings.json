@@ -299,6 +299,32 @@
       ]
     },
     {
+      "name": "TinkerShop", "label": "tinker's shop", "icon": "buildings/tinker_bench",
+      "description": "The tinker's: a shut shop with a door a lock can be fitted to, a bench with a vise and files at the back, a rack of tools, a chest of stock and the collector's crate. Customers come in and wait at the front.",
+      "layout": [
+        "WWWWWWW",
+        "W.....W",
+        "W.....W",
+        "W.....W",
+        "W.....W",
+        "WWWDWWW"
+      ],
+      "parts": { "foundation": "Sill", "wall": "LogWall", "door": "PlankDoor", "roof": "TurfRoofPart" },
+      "furnish": [
+        { "def": "TinkerBench", "at": [1, 1] },
+        { "def": "ToolRack", "at": [4, 1] },
+        { "def": "Chest", "at": [5, 3], "facing": 3 },
+        { "def": "CollectorsCrate", "at": [1, 3], "facing": 1 }
+      ],
+      // Customers come in at the door and wait in front of the bench, the rest out of the door.
+      "line": [ [3, 3], [3, 4], [3, 5], [3, 6], [3, 7], [3, 8] ],
+      "variants": [
+        { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster", "parts": { "wall": "TimberWall", "roof": "ThatchRoofPart" } },
+        { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
+        { "name": "Thatch", "label": "thatched", "kit": "stave_thatch", "parts": { "wall": "StaveWall", "roof": "ThatchRoofPart" } }
+      ]
+    },
+    {
       "name": "Woodshop", "label": "woodshop", "icon": "buildings/sawhorse",
       "description": "An open-fronted shed for woodworking: it comes with a sawhorse for planks, and has a spot for a carpenter's bench and a chest. No foundation: it stands on the ground.",
       "layout": [

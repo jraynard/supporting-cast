@@ -55,6 +55,8 @@ public sealed partial class VillageGame
         // Free windows.
         DrawStorageWindow();
         DrawSignWindow();
+        DrawTinkerWindow();
+        DrawCurioTalk();
         DrawWorldItemMenu();
         DrawStationWindow();
         DrawRecipeBook();

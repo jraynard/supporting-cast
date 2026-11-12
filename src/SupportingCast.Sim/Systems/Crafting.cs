@@ -190,6 +190,9 @@ public static class Crafting
         var bench = w.Get<Workbench>(station);
         var recipe = bench.Active ?? throw new InvalidOperationException("nothing is being made");
         var made = MakeProducts(sim, recipe, bench.MainMaterial, bench.RotUnits > 0 ? bench.Rot : null, crafter, w.Get<Thing>(station).Cell, quality);
+        // Made the plain way (not played by hand): a lock gets cut and keyed, a contraption put together.
+        if (quality == null)
+            Tinkering.Tinkers.Made(sim, made, crafter);
         if (bench.By.IsNull && bench.BillFor(recipe) is { } bill)
         {
             bill.Done++;
@@ -320,7 +323,7 @@ public static class Crafting
 
     /// <summary>Things that get a quality when made: gear that doesn't stack (weapons, apparel, packs, tools).</summary>
     public static bool IsGear(ThingDef def) =>
-        def.StackLimit <= 1 && (def.Weapon != null || def.Apparel != null || def.Container != null || def.Tool != null);
+        def.StackLimit <= 1 && (def.Weapon != null || def.Apparel != null || def.Container != null || def.Tool != null || def.Contraption != null);
 
     /// <summary>
     /// How well it comes out: 0.25 + 0.035 per skill level, ± 0.15 (from sim.Rand), so a novice
@@ -345,6 +348,8 @@ public static class Crafting
     {
         if (Work.Smithing.Applies(sim, avatar, station, recipe))
             Work.Smithing.BeginMaking(sim, avatar, station, recipe);
+        else if (Tinkering.Tinkers.Applies(sim, avatar, station, recipe))
+            Tinkering.Tinkers.WorkAt(sim, avatar, station, recipe);
         else
             AiSystem.Order(sim, avatar, new Ai.CraftJob(station, recipe));
     }
