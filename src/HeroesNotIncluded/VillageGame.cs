@@ -316,8 +316,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             _sim.Round.OpenLobby();
             if (HostCoop == null)
                 center = StartSoloRound(center);
-            // Free movement: solo only for now (co-op's prediction is still the grid's).
-            if (FreeMove && HostCoop == null)
+            // Free movement (the setting, or --free-move): the host's choice, for everyone who joins.
+            if (FreeMove)
                 _sim.FreeMove.Enable(_sim);
             if (RaidTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } me)
                 RaidDrill.Stage(_sim, me);
@@ -408,7 +408,10 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         PollAutosave();
         if (_coop != null && HasAvatar)
             _predictor.Update(_sim, _avatar, dt, Paused ? 0 : RunMultiplier);
-        _renderer.Predicted = _coop != null && HasAvatar ? _predictor : null;
+        _renderer.Predicted = _coop != null && HasAvatar && !FreeMoving ? _predictor : null;
+        if (_coop != null && FreeMoving)
+            _freePredictor.Update(_sim, _avatar, _wish, dt, Paused ? 0 : RunMultiplier);
+        _renderer.FreePredicted = _coop != null && FreeMoving ? _freePredictor : null;
         _renderer.PredictedEntity = _avatar;
         _renderer.Viewer = View.Omniscient ? null : View;
         UpdateOrderBubbles();

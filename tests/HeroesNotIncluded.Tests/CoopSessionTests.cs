@@ -177,6 +177,49 @@ public class CoopSessionTests
     }
 
     [Fact]
+    public void AFreeWalkPredictedOnAClientStopsWhereThePlayerSawItStop()
+    {
+        var t = new Table();
+        t.Host.Sim!.FreeMove.Enable(t.Host.Sim);
+        t.Run(1f);
+        var bea = new PlayerIdentity(Guid.NewGuid(), "Bea");
+        var client = t.Join(bea);
+        t.Run(1f);
+        client.Send(new CreateCharacterCommand(bea.Id, "Bea", new Appearance(), ["Kind"]));
+        t.Run(1.5f);
+        var sim = client.Sim!;
+        var mine = Players.CharacterOf(sim, bea.Id);
+        Assert.True(sim.World.Has<Sim.Combat.FreeMover>(mine), "the joiner moves freely too");
+        var start = sim.World.Get<Position>(mine).Pos;
+
+        // Walk east, predicted, sending where we are now and then as the game does.
+        var predictor = new FreeMovePredictor();
+        var wish = new float2(1, 0);
+        var since = 0f;
+        client.Send(new FreeMoveCommand(mine, wish.X, wish.Y, 0f));
+        t.Run(1f, () =>
+        {
+            predictor.Update(sim, mine, wish, 1 / 60f, 1);
+            if ((since += 1 / 60f) > 0.2f && predictor.Active)
+            {
+                since = 0;
+                client.Send(new FreeMoveCommand(mine, wish.X, wish.Y, 0f, predictor.Pos.X, predictor.Pos.Y, predictor.Level));
+            }
+        });
+        Assert.True(predictor.Active);
+        // Let go: the picture stops at once, and the stop says where.
+        predictor.Update(sim, mine, float2.Zero, 1 / 60f, 1);
+        var seen = predictor.Pos;
+        Assert.True(seen.X > start.X + 1f, $"walked east from {start} to {seen}");
+        client.Send(new FreeMoveCommand(mine, 0f, 0f, 0f, seen.X, seen.Y, predictor.Level));
+        t.Run(1.5f, () => predictor.Update(sim, mine, float2.Zero, 1 / 60f, 1));
+        var hostAt = t.Host.Sim.World.Get<Position>(Players.CharacterOf(t.Host.Sim, bea.Id)).Pos;
+        Assert.True(MathF.Abs(hostAt.X - seen.X) < 0.4f && MathF.Abs(hostAt.Y - seen.Y) < 0.1f, $"the host has them at {hostAt}, they saw {seen}");
+        Assert.False(predictor.Active, "handed back to the sim once it arrived");
+        t.AssertInStep();
+    }
+
+    [Fact]
     public void ADroppedPlayerStopsWhereTheyAreAndPicksUpOnReconnecting()
     {
         var t = new Table();

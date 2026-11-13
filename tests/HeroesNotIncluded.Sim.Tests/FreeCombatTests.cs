@@ -470,5 +470,23 @@ public class FreeCombatTests
         }
         Assert.True(struck, "a bot drew and struck the raider");
     }
+
+    [Fact]
+    public void AClaimedPositionIsTakenOnlyWhenItsNearAndSomewhereToStand()
+    {
+        var (sim, me) = Ring();
+        var at = Where(sim, me);
+        var z = sim.World.Get<Position>(me).Cell.Z;
+        sim.ApplyNow(new FreeMoveCommand(me, 0f, 0f, 0f, at.X + 1f, at.Y, z));
+        Assert.Equal(at.X + 1f, Where(sim, me).X, 3);
+        // Too far, into the fence, nonsense: ignored.
+        sim.ApplyNow(new FreeMoveCommand(me, 0f, 0f, 0f, at.X + 9f, at.Y, z));
+        sim.ApplyNow(new FreeMoveCommand(me, 0f, 0f, 0f, float.PositiveInfinity, at.Y, z));
+        sim.ApplyNow(new FreeMoveCommand(me, 0f, 0f, 0f, at.X + 1f, at.Y, z + 5));
+        Assert.Equal(at.X + 1f, Where(sim, me).X, 3);
+        Place(sim, me, new float2(25.5f, 16.5f)); // by the east fence
+        sim.ApplyNow(new FreeMoveCommand(me, 0f, 0f, 0f, 27.2f, 16.5f, z));
+        Assert.Equal(25.5f, Where(sim, me).X, 3);
+    }
 }
 

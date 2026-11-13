@@ -20,7 +20,7 @@ Fighting, reworked: you can see a blow coming now, and do something about it.
   the next, a panel to pick foe and weapon. In the ring you move freely and fight with the mouse: aim
   with it, left click to strike, right click to swing heavy. Hits land by where your weapon reaches,
   not by chance: a sword sweeps wide, a spear reaches far and narrow.
-- Try it in the village: Settings, Free movement (solo games). You walk freely with WASD and
+- Try it in the village: Settings, Free movement (games you start or host; whoever joins gets it too). You walk freely with WASD and
   still click to walk to things; R draws your weapon, and then the mouse fights. A blow landing on
   you draws it for you. Swings hit whoever's in the way, friend or foe, so mind the neighbours.
   Raiders move freely too: they circle while they wait their turn, step in to strike and back off,

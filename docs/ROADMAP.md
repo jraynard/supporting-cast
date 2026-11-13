@@ -75,7 +75,7 @@ village-day scenarios passing.
    telegraphed as its sweep on the ground (a wedge), not a ring under its target.
 4. **Bots** (first pass in) walk and fight the new way (steering along paths, aiming, clicking), so the season and
    village-day scenarios keep guarding the town.
-5. **Co-op.** Your own movement predicted and eased toward the host's; commands carry where you are.
+5. **Co-op** (first pass in; the sweep's position history still to come). Your own movement predicted and eased toward the host's; commands carry where you are.
    Blows at you keep a latency grace for your guard and dodge keys; a sweep is judged against where
    people were when it was pressed (a short position history).
 6. **Feel and art.** Real swing and dodge frames from the people pipeline (the drawn-on weapon is a

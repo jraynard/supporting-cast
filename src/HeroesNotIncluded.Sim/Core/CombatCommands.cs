@@ -57,7 +57,11 @@ public sealed record CombatInputCommand(Entity Avatar, CombatInput Input, long A
 /// <paramref name="WishY"/>, on the map, up to length 1) and which way the mouse points
 /// (<paramref name="Aim"/>, radians). Sent when either changes enough to matter.
 /// </summary>
-public sealed record FreeMoveCommand(Entity Avatar, float WishX, float WishY, float Aim) : ISimCommand, IActorCommand
+/// <remarks>In co-op it also says where the player is on their own screen (<paramref name="AtX"/>,
+/// <paramref name="AtY"/>, <paramref name="AtZ"/>; NaN for none), where their walk runs ahead:
+/// the sim takes it if it's near (<see cref="FreeMoveSystem.Claim"/>).</remarks>
+public sealed record FreeMoveCommand(Entity Avatar, float WishX, float WishY, float Aim, float AtX = float.NaN, float AtY = float.NaN, int AtZ = 0)
+    : ISimCommand, IActorCommand
 {
     public Entity Actor => Avatar;
 
@@ -66,8 +70,10 @@ public sealed record FreeMoveCommand(Entity Avatar, float WishX, float WishY, fl
         var w = sim.World;
         if (!w.IsAlive(Avatar) || !w.Has<FreeMover>(Avatar))
             return;
+        var wish = Moves.Wish(WishX, WishY);
+        FreeMoveSystem.Claim(sim, Avatar, AtX, AtY, AtZ, stopped: wish == float2.Zero);
         ref var m = ref w.Get<FreeMover>(Avatar);
-        m.Wish = Moves.Wish(WishX, WishY);
+        m.Wish = wish;
         // Sheathed, you face the way you walk (FreeMoveSystem); drawn, the way you aim.
         if (m.Drawn && float.IsFinite(Aim))
             m.Aim = MathF.IEEERemainder(Aim, MathF.Tau);
@@ -75,13 +81,16 @@ public sealed record FreeMoveCommand(Entity Avatar, float WishX, float WishY, fl
 }
 
 /// <summary>A swing with free movement, light or heavy, the way the mouse points: it lands on whoever's in its sweep (<see cref="Reach"/>).</summary>
-public sealed record AttackCommand(Entity Avatar, bool Heavy, float Aim) : ISimCommand, IActorCommand
+public sealed record AttackCommand(Entity Avatar, bool Heavy, float Aim, float AtX = float.NaN, float AtY = float.NaN, int AtZ = 0)
+    : ISimCommand, IActorCommand
 {
     public Entity Actor => Avatar;
 
     public void Apply(Simulation sim)
     {
         var w = sim.World;
+        // Struck from where you were on your screen (co-op), if that's near.
+        FreeMoveSystem.Claim(sim, Avatar, AtX, AtY, AtZ, stopped: false);
         if (!w.IsAlive(Avatar) || !w.TryGet<FreeMover>(Avatar, out var free) || !free.Drawn || !w.Get<Creature>(Avatar).Able || !float.IsFinite(Aim)
             || CombatRules.Attacks(sim, Avatar).FirstOrDefault() is not { } attack)
             return;
@@ -90,13 +99,15 @@ public sealed record AttackCommand(Entity Avatar, bool Heavy, float Aim) : ISimC
 }
 
 /// <summary>A dodge with free movement: blows pass through you for a moment as you dash along <paramref name="DirX"/>, <paramref name="DirY"/> (or back from your aim).</summary>
-public sealed record DodgeCommand(Entity Avatar, float DirX, float DirY, long At) : ISimCommand, IActorCommand
+public sealed record DodgeCommand(Entity Avatar, float DirX, float DirY, long At, float AtX = float.NaN, float AtY = float.NaN, int AtZ = 0)
+    : ISimCommand, IActorCommand
 {
     public Entity Actor => Avatar;
 
     public void Apply(Simulation sim)
     {
         var w = sim.World;
+        FreeMoveSystem.Claim(sim, Avatar, AtX, AtY, AtZ, stopped: false);
         if (!w.IsAlive(Avatar) || !w.Has<FreeMover>(Avatar) || !w.Get<Creature>(Avatar).Able)
             return;
         var at = Blows.Stamp(sim, At);

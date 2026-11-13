@@ -42,7 +42,17 @@ public sealed partial class VillageGame
             _guardSent = guard;
         }
         if (input.WasKeyPressed(GlfwKey.Space))
-            Issue(free ? new DodgeCommand(_avatar, _wish.X, _wish.Y, tick) : new CombatInputCommand(_avatar, CombatInput.Dodge, tick));
+        {
+            if (free)
+            {
+                var (ax, ay, az) = Here();
+                Issue(new DodgeCommand(_avatar, _wish.X, _wish.Y, tick, ax, ay, az));
+                if (_coop != null)
+                    _freePredictor.Dash(_sim, _avatar, _wish);
+            }
+            else
+                Issue(new CombatInputCommand(_avatar, CombatInput.Dodge, tick));
+        }
         var shift = input.IsKeyDown(GlfwKey.LeftShift) || input.IsKeyDown(GlfwKey.RightShift);
         if (!free && shift && input.WasKeyPressed(GlfwKey.F) && FoeBeside(_sim.World.Get<Position>(_avatar).Cell, _sim.World.Get<Avatar>(_avatar).Facing) is { Kind: AvatarActionKind.Hunt } strike)
         {
@@ -112,6 +122,13 @@ public sealed partial class VillageGame
     /// <summary>How far the aim turns (radians) before the sim is told: what others see you face, and nothing more.</summary>
     private const float AimStep = 0.06f;
 
+    /// <summary>Co-op: how often (seconds) your predicted position goes to the host while you move.</summary>
+    private const float PositionEvery = 0.2f;
+
+    /// <summary>Where you are on your screen, for a command (co-op's prediction); NaN with none, solo.</summary>
+    private (float X, float Y, int Z) Here() =>
+        _coop != null && _freePredictor.Active ? (_freePredictor.Pos.X, _freePredictor.Pos.Y, _freePredictor.Level) : (float.NaN, float.NaN, 0);
+
     /// <summary>
     /// Free movement's keys and mouse (<see cref="FreeMoveSystem"/>): WASD to move, relative to
     /// the camera; the mouse aims (your character faces it at once, here, before the sim hears).
@@ -135,9 +152,12 @@ public sealed partial class VillageGame
         // Drawn, you face the mouse at once; sheathed, the way you walk (the sim's say).
         _renderer.LocalAim = WeaponDrawn ? (_avatar, _aim) : null;
         var turned = float.IsNaN(_sentAim) || MathF.Abs(MathF.IEEERemainder(_aim - _sentAim, MathF.Tau)) > AimStep;
-        if (_wish != _sentWish || (turned && _time - _aimSentAt > 0.05f))
+        // In co-op, where you are goes too, now and then while you move, so the host keeps up with your screen.
+        var drift = _coop != null && _freePredictor.Active && _time - _aimSentAt > PositionEvery;
+        if (_wish != _sentWish || (turned && _time - _aimSentAt > 0.05f) || drift)
         {
-            Issue(new FreeMoveCommand(_avatar, _wish.X, _wish.Y, _aim));
+            var (ax, ay, az) = Here();
+            Issue(new FreeMoveCommand(_avatar, _wish.X, _wish.Y, _aim, ax, ay, az));
             (_sentWish, _sentAim, _aimSentAt) = (_wish, _aim, _time);
         }
     }
@@ -153,7 +173,10 @@ public sealed partial class VillageGame
         var light = input.WasMousePressed(MouseButton.Left);
         var heavy = input.WasMousePressed(MouseButton.Right);
         if (light || heavy)
-            Issue(new AttackCommand(_avatar, heavy, _aim));
+        {
+            var (ax, ay, az) = Here();
+            Issue(new AttackCommand(_avatar, heavy, _aim, ax, ay, az));
+        }
         return light || heavy || input.IsMouseDown(MouseButton.Left) || input.IsMouseDown(MouseButton.Right);
     }
 

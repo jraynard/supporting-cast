@@ -117,24 +117,9 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
             m.Vel = float2.Zero;
             return;
         }
-        float2 want;
-        // Standing still for work in hand (a mini-game), asleep or down.
-        if (!c.Able || w.Get<Mind>(e).Asleep || w.Has<Work.WorkSession>(e))
-            want = float2.Zero;
-        else if (now < m.DashUntil)
-            want = m.DashDir * (DashCells / DashTicks);
-        else
-        {
-            var speed = MovementSystem.WalkSpeedPerTick(sim, e);
-            if (w.Has<Windup>(e))
-                speed *= SwingSlow;
-            else if (w.TryGet<Guard>(e, out var g) && g.RaisedAt >= 0)
-                speed *= GuardSlow;
-            else if (m.Drawn)
-                speed *= DrawnSlow;
-            want = m.Wish * speed;
-        }
-        m.Vel = now < m.DashUntil ? want : m.Vel + (want - m.Vel) * Ease;
+        var dashing = now < m.DashUntil;
+        var want = Wanted(sim, e, m.Wish, m.Drawn, dashing ? m.DashDir : null);
+        m.Vel = dashing ? want : m.Vel + (want - m.Vel) * Ease;
         // Easing never quite gets there: near enough standing still is standing still.
         // Weapon sheathed, you face the way you walk; drawn, the way you aim.
         if (!m.Drawn && now >= m.DashUntil && m.Wish != float2.Zero)
@@ -145,25 +130,87 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
             return;
         }
         ref var p = ref w.Get<Position>(e);
-        // Each axis on its own, so a wall stops one and you slide along it on the other.
-        var at = new float2(p.Pos.X, p.Pos.Y);
-        var cell = p.Cell;
-        if (Into(sim, cell, new float2(at.X + m.Vel.X, at.Y)) is { } intoX)
-            (at, cell) = (new float2(at.X + m.Vel.X, at.Y), intoX);
-        else
-            m.Vel = new float2(0, m.Vel.Y);
-        if (Into(sim, cell, new float2(at.X, at.Y + m.Vel.Y)) is { } intoY)
-            (at, cell) = (new float2(at.X, at.Y + m.Vel.Y), intoY);
-        else
-            m.Vel = new float2(m.Vel.X, 0);
+        var (pos, cell, vel) = Slide(sim, p.Pos, p.Cell, m.Vel);
+        m.Vel = vel;
         if (cell != p.Cell && w.TryGet<Perched>(e, out var perch) && perch.Cell != cell)
             w.Remove<Perched>(e); // stepped down off the furniture
-        p.Pos = new float3(at.X, at.Y, cell.Z);
+        p.Pos = pos;
         p.Cell = cell;
         // F's "in front" is the way you face, to the nearest of eight.
         var (cx, cy) = (DetMath.Cos(m.Aim), DetMath.Sin(m.Aim));
         if (w.Has<Avatar>(e))
             w.Get<Avatar>(e).Facing = new int2(cx > 0.38f ? 1 : cx < -0.38f ? -1 : 0, cy > 0.38f ? 1 : cy < -0.38f ? -1 : 0);
+    }
+
+    /// <summary>
+    /// The velocity (cells per tick) a free mover's keys ask for now: its walking speed, slower
+    /// swinging, guarding or with a weapon drawn; nothing while it's down, asleep or at work; a dash's
+    /// speed along <paramref name="dash"/>. Shared with co-op's prediction (it reads the sim, writes nothing).
+    /// </summary>
+    public static float2 Wanted(Simulation sim, Entity e, float2 wish, bool drawn, float2? dash)
+    {
+        var w = sim.World;
+        var c = w.Get<Creature>(e);
+        if (!c.Able || w.Get<Mind>(e).Asleep || w.Has<Work.WorkSession>(e))
+            return float2.Zero;
+        if (dash is { } d)
+            return d * (DashCells / DashTicks);
+        var speed = MovementSystem.WalkSpeedPerTick(sim, e);
+        if (w.Has<Windup>(e))
+            speed *= SwingSlow;
+        else if (w.TryGet<Guard>(e, out var g) && g.RaisedAt >= 0)
+            speed *= GuardSlow;
+        else if (drawn)
+            speed *= DrawnSlow;
+        return wish * speed;
+    }
+
+    /// <summary>
+    /// One tick's move by <paramref name="vel"/> from <paramref name="pos"/>: each axis on its own,
+    /// so a wall stops one and you slide along the other; levels change as the walking links allow
+    /// (<see cref="Into"/>). Returns where it ends up and what's left of the velocity. Pure.
+    /// </summary>
+    public static (float3 Pos, int3 Cell, float2 Vel) Slide(Simulation sim, float3 pos, int3 cell, float2 vel)
+    {
+        var at = new float2(pos.X, pos.Y);
+        if (Into(sim, cell, new float2(at.X + vel.X, at.Y)) is { } intoX)
+            (at, cell) = (new float2(at.X + vel.X, at.Y), intoX);
+        else
+            vel = new float2(0, vel.Y);
+        if (Into(sim, cell, new float2(at.X, at.Y + vel.Y)) is { } intoY)
+            (at, cell) = (new float2(at.X, at.Y + vel.Y), intoY);
+        else
+            vel = new float2(vel.X, 0);
+        return (new float3(at.X, at.Y, cell.Z), cell, vel);
+    }
+
+    /// <summary>How far (cells) a player's claimed position may be from where the sim has them.</summary>
+    public const float MaxClaim = 2.5f;
+
+    /// <summary>
+    /// Co-op: a player says where they are (<see cref="Core.FreeMoveCommand"/>'s At, from their own
+    /// screen, where their walk is predicted). Taken if it's near where the sim has them, on their level
+    /// or one off, and somewhere they could stand; else ignored. <paramref name="stopped"/> also stops them dead there.
+    /// </summary>
+    public static void Claim(Simulation sim, Entity e, float x, float y, int z, bool stopped)
+    {
+        var w = sim.World;
+        if (!float.IsFinite(x) || !float.IsFinite(y) || !w.Has<FreeMover>(e) || w.Get<Mover>(e).Moving || w.Has<Carried>(e))
+            return;
+        ref var p = ref w.Get<Position>(e);
+        var dx = x - p.Pos.X;
+        var dy = y - p.Pos.Y;
+        if (dx * dx + dy * dy > MaxClaim * MaxClaim || Math.Abs(z - p.Cell.Z) > 1 || !w.Get<Creature>(e).Able)
+            return;
+        var cell = new int3((int)MathF.Floor(x), (int)MathF.Floor(y), z);
+        if (!sim.Map.Passable(cell) || !Fits(sim, new float2(x, y), z))
+            return;
+        if (cell != p.Cell && w.TryGet<Perched>(e, out var perch) && perch.Cell != cell)
+            w.Remove<Perched>(e);
+        p.Pos = new float3(x, y, z);
+        p.Cell = cell;
+        if (stopped)
+            w.Get<FreeMover>(e).Vel = float2.Zero;
     }
 
     /// <summary>Could a free mover stand with its middle at <paramref name="at"/>: every cell its circle touches passable (on the level, or a step up or down)?</summary>

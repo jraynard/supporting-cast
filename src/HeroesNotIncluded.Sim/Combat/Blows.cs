@@ -321,7 +321,7 @@ public static class Blows
 
     /// <summary>When a blow wound up now lands: its impact, and a moment more if it's at a player.</summary>
     public static long LandsAt(Simulation sim, in Windup windup) =>
-        windup.Impact + (!sim.FreeMove.Enabled && sim.World.Has<Avatar>(windup.Target) ? LatencyGrace : 0);
+        windup.Impact + (sim.World.Has<Avatar>(windup.Target) ? LatencyGrace : 0);
 
     /// <summary>
     /// A blow lands (or doesn't). On the town's grid it's at its target, if it's still in reach;
@@ -341,7 +341,11 @@ public static class Blows
         {
             var struck = Reach.Struck(sim, attacker, attack, windup.Aim);
             if (struck.Count == 0)
-                Report(sim, attacker, windup.Target, BlowOutcome.Miss, windup.Heavy); // into the air, or they stepped out of it
+            {
+                // Into the air, or they stepped out of it: dashed clear, it's a dodge.
+                var dodged = w.IsAlive(windup.Target) && w.TryGet<Guard>(windup.Target, out var tg) && DodgedAt(tg, windup.Impact, IsDragon(sim, attacker));
+                Report(sim, attacker, windup.Target, dodged ? BlowOutcome.Dodged : BlowOutcome.Miss, windup.Heavy);
+            }
             foreach (var victim in struck)
                 Meet(sim, attacker, victim, windup, attack, free: true);
             return;

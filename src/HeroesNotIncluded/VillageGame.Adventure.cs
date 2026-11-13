@@ -77,6 +77,7 @@ public sealed partial class VillageGame
 
     /// <summary>Co-op only: the local walk drawn ahead of the round trip (see <see cref="AvatarPredictor"/>).</summary>
     private readonly AvatarPredictor _predictor = new();
+    private readonly FreeMovePredictor _freePredictor = new();
     private bool _sentWork;
 
     /// <summary>
@@ -119,6 +120,7 @@ public sealed partial class VillageGame
         _sentMoveDir = default;
         _sentKeys = 0;
         _predictor.Reset();
+        _freePredictor.Reset();
         _sentWork = false;
         _sentDig = false;
         _guardSent = _heavyKeyHeld = false;

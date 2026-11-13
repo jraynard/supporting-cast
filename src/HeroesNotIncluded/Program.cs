@@ -188,6 +188,7 @@ else if (args.Contains("--host"))
         {
             Adventure = true, Character = saved, HeroName = saved == null ? ParseString(args, "--name") : null,
             Difficulty = ParseString(args, "--difficulty"), HostCoop = hosting, AutoPause = false,
+            FreeMove = args.Contains("--free-move") || Settings.Current.FreeMovement,
             MapName = ParseString(args, "--map") ?? HeroesNotIncluded.Sim.Scenarios.VillageRound.DefaultMap,
         });
     }

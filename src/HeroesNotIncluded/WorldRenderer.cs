@@ -151,11 +151,15 @@ public sealed class WorldRenderer(TextureAtlas atlas)
 
     public Entity PredictedEntity { get; set; } = Entity.Null;
 
+    /// <summary>The local co-op player's predicted free movement, drawn for <see cref="PredictedEntity"/> (<see cref="FreeMovePredictor"/>).</summary>
+    public FreeMovePredictor? FreePredicted { get; set; }
+
     /// <summary>Where a creature is drawn this frame: its sim position, smoothed between ticks (or predicted, for the local co-op player).</summary>
     public float3 DrawPos(Simulation sim, Entity e, float3 simPos)
     {
         var p = Interp?.Smoothed(sim, e, simPos) ?? simPos;
         p = Predicted != null && e == PredictedEntity ? Predicted.DrawPos(p) : p;
+        p = FreePredicted != null && e == PredictedEntity ? FreePredicted.DrawPos(p) : p;
         // On a stair, on the tread under their feet (the sim has them at the floor until they step off).
         if (Stairs.FloorAt(sim, p) is { } floor)
             p = new float3(p.X, p.Y, floor);

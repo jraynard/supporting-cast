@@ -32,7 +32,7 @@ public sealed class Settings
 
     /// <summary>
     /// The combat pass's prototype in the village (docs/ROADMAP.md): move freely and fight with the
-    /// mouse, R to draw your weapon. Solo games only for now; new games pick it up.
+    /// mouse, R to draw your weapon. Games you start or host pick it up; joiners get the host's.
     /// </summary>
     public bool FreeMovement { get; set; }
 

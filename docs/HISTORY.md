@@ -1033,4 +1033,14 @@ shared); fights stay real time, Souls-lite.
   predator it can see near, through commands only: to its reach, striking the way it aims,
   stepping out of a blow's sweep (or guarding, winded). The season scenario runs with free movement
   too (`SeasonScenarioTests`, both ways).
+- **Free movement in co-op** (step 5, first pass): the host's setting holds for everyone. Your keys
+  move a copy of your character at once on your screen, by the sim's own steps
+  (`Net/FreeMovePredictor`, sharing `FreeMoveSystem.Wanted` and `Slide`), and your commands say
+  where you are; the sim takes it when it's near and somewhere to stand (`FreeMoveSystem.Claim`),
+  so the host ends up where you saw yourself, and a swing or a dodge comes from there. Let go and
+  you stop dead where you let go. Blows at a player land `Blows.LatencyGrace` late again with free
+  movement too, and a blow you dashed clear of says "Dodged". Still to come: judging a sweep
+  against where people were when it was pressed.
+- Archers hold their range (they walked in and backed off again, the jitter) and shoot at their
+  bow's own pace.
 
