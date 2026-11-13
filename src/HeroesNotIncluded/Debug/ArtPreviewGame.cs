@@ -37,7 +37,7 @@ public sealed class ArtPreviewGame : Game
 
     public override void Load()
     {
-        _reloader = new ArtReloader(Host.Atlas);
+        _reloader = new ArtReloader(Host.Atlas, DevPaths.Watch("SC_WATCH_ART"));
         try
         {
             _defs = Sim.Defs.DefDatabase.LoadDirectory(Path.Combine(Host.DataDirectory, "defs"));

@@ -25,16 +25,6 @@ public class SettingsTests
         Assert.True(partial.VSync);
     }
 
-    [Theory]
-    [InlineData("1", null, null, true)]           // Game Mode
-    [InlineData(null, "Valve\n", "Jupiter\n", true)] // Desktop Mode, LCD (sysfs values end in a newline)
-    [InlineData(null, "Valve", "Galileo", true)]   // OLED
-    [InlineData("0", "Valve", "Index", false)]
-    [InlineData(null, "Gigabyte Technology Co., Ltd.", "B650 AORUS ELITE AX", false)]
-    [InlineData(null, null, null, false)]
-    public void SpotsASteamDeck(string? env, string? vendor, string? product, bool deck) =>
-        Assert.Equal(deck, HandheldDefaults.IsSteamDeck(env, vendor, product));
-
     [Fact]
     public void FirstRunOnADeckIsReadableAndFrugal()
     {

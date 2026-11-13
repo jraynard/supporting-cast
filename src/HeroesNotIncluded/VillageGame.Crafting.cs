@@ -7,6 +7,7 @@ using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Ecs;
 using HeroesNotIncluded.Sim.Systems;
 using HeroesNotIncluded.Ui;
+using Narsil.Ui;
 
 namespace HeroesNotIncluded;
 

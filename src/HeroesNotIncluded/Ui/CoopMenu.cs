@@ -1,6 +1,7 @@
 using Brutal.ImGuiApi;
 using Narsil;
 using Narsil.Net;
+using Narsil.Ui;
 using HeroesNotIncluded.Net;
 using HeroesNotIncluded.Sim.Defs;
 

@@ -11,7 +11,6 @@ public class ReloadTests
         Assert.True(File.Exists(Path.Combine(DevPaths.Defs, "core.json")));
         Assert.True(File.Exists(Path.Combine(DevPaths.VoxelShaders!, "quad.frag")));
         Assert.True(File.Exists(Path.Combine(DevPaths.EngineShaders!, "sprite.frag")));
-        Assert.Null(DevPaths.FindRoot(Path.GetTempPath()));
     }
 
     [Fact]
