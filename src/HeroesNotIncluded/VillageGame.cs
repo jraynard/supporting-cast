@@ -482,6 +482,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     private void RunSimulation(float dt)
     {
+        // Whoever plays a character can't stop the clock, whatever a save or a key last set.
+        if (HasAvatar && !_devMode && _speed != 1)
+            _speed = 1;
         if (Paused || RoundOver)
         {
             _tickAccumulator = 0;
@@ -526,8 +529,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     {
         if (IsCoopClient)
             return; // the host keeps the clock
-        if (HasAvatar)
-            speed = Math.Min(speed, 1); // one speed for whoever plays a character (a pause aside)
+        if (HasAvatar && !_devMode)
+            speed = 1; // one speed for whoever plays a character, and no pausing: the town doesn't wait
         if (speed == 0 && _speed != 0)
             _speedBeforePause = _speed;
         _speed = speed;

@@ -93,7 +93,7 @@ public sealed class BuildingDef : Def
     public List<int[]> HatchLine { get; set; } = [];
 
     /// <summary>
-    /// The front wall cell (column, row) the shop's sign hangs on, outside: its name and prices,
+    /// The front wall (or post) cell (column, row) the shop's sign hangs on, outside: its name and prices,
     /// for anyone to read (<c>Shops.Signs</c>). Null: no sign.
     /// </summary>
     public int[]? Sign { get; set; }
@@ -242,8 +242,8 @@ public sealed class BuildingDef : Def
             throw new Exception($"Building '{Name}': each line cell is [column, row]");
         if (HatchServes.Count > 0 != HatchLine.Count > 0)
             throw new Exception($"Building '{Name}': a hatch needs both what it serves and a line");
-        if (Sign != null && (Sign.Length != 2 || At(Sign[0], Sign[1]) != 'W'))
-            throw new Exception($"Building '{Name}': its sign is [column, row] of a wall in its plan");
+        if (Sign != null && (Sign.Length != 2 || At(Sign[0], Sign[1]) is not ('W' or 'P')))
+            throw new Exception($"Building '{Name}': its sign is [column, row] of a wall or post in its plan");
         if (UpperLayout.Count > 0 && UpperLayout.Count != Depth)
             throw new Exception($"Building '{Name}': the upper layout must have {Depth} rows, as the ground's");
         for (var row = 0; row < UpperLayout.Count; row++)

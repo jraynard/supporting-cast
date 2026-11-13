@@ -47,6 +47,6 @@
                 "When raiders bring the bridge down, it's yours to mend: take 2 wood to the gap and press F.",
                 "Your prices are on the sign (J)." ],
       "kit": [ { "def": "Lockpicks" }, { "def": "IronBar", "count": 4 }, { "def": "Wood", "count": 2 } ] },
-    { "name": "Labourer", "label": "labourer", "description": "Hauls, chops and digs for anyone who'll pay.", "unlimited": true }
+    { "name": "Labourer", "label": "labourer", "description": "Hauls, chops and digs for anyone who'll pay.", "unlimited": true, "gathers": true }
   ]
 }

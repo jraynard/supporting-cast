@@ -426,6 +426,16 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         }
     }
 
+    /// <summary>
+    /// Whether someone may dig, mine, chop or forage: anyone outside a round, and in one only a
+    /// trade that gathers (<see cref="TradeDef.Gathers"/>). Players and the AI alike.
+    /// </summary>
+    public static bool MayGather(Simulation sim, Entity who) =>
+        sim.Round.Phase == RoundPhase.None || (sim.World.TryGet<Trade>(who, out var t) && t.Def.Gathers);
+
+    /// <summary>The work only a gathering trade does in a round.</summary>
+    public static readonly WorkType[] GatheringWork = [WorkType.Chop, WorkType.Mine, WorkType.Harvest];
+
     internal static void Assign(Simulation sim, Entity e, TradeDef? trade)
     {
         if (trade == null)
@@ -438,6 +448,9 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         mind.WorkPriority = Mind.DefaultPriorities();
         foreach (var (work, priority) in trade.WorkPriorities)
             mind.WorkPriority[(int)work] = priority;
+        if (!trade.Gathers)
+            foreach (var work in GatheringWork)
+                mind.WorkPriority[(int)work] = 0;
 
         if (w.TryGet<Skills>(e, out var skills))
             foreach (var (skill, least) in trade.Skills)

@@ -209,7 +209,7 @@ building("Inn", 61, 45, 1, role="Tavern", variant="Timber")      # G: on the squ
 building("Cottage", 74, 44, 1, role="Home", variant="Shingle")  # H: east, the big brown roof (moved over for the inn's kitchen)
 building("Cottage", 30, 56, 0, role="Home")                     # I: south-west, with its garden
 building("Cottage", 43, 61, 2, role="Home")                     # J: south of the square
-building("Cottage", 66, 58, 1, role="Home")                     # K: east, by the cabbage field
+building("Cottage", 69, 56, 1, role="Home")                     # K: east, by the cabbage field (moved off the tinker's shop)
 building("Shrine", 55, 73, 2, role="Shrine")                     # L: south, in its garden
 building("Cottage", 75, 70, 2, role="Home", variant="Shingle")  # M: the south-east corner
 

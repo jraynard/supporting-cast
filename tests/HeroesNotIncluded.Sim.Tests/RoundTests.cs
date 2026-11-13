@@ -343,4 +343,32 @@ public class RoundTests
         sim.World.Get<Fueled>(forge).Fuel = 5;
         Assert.True(Crafting.CanFireFor(sim, forge, spear));
     }
+
+    [Fact]
+    public void InARoundOnlyTheLabourerDigsChopsAndForages()
+    {
+        var sim = Town();
+        Sit(sim, Ana, "Ana", "Healer");
+        Sit(sim, Bea, "Bea", "Labourer");
+        sim.ApplyNow(new StartRoundCommand());
+        var ana = Players.CharacterOf(sim, Ana);
+        var bea = Players.CharacterOf(sim, Bea);
+        Assert.False(RoundSystem.MayGather(sim, ana));
+        Assert.True(RoundSystem.MayGather(sim, bea));
+
+        // Nobody's offered a dig or a harvest who isn't a gatherer.
+        var w = sim.World;
+        var tree = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Harvest is { WorkType: WorkType.Chop });
+        var at = w.Get<Thing>(tree).Cell;
+        Assert.NotEqual(AvatarActionKind.Harvest, AvatarSystem.ActionAt(sim, ana, at, AvatarTool.Use, at + new int3(1, 0, 0)).Kind);
+        Assert.Equal(AvatarActionKind.Harvest, AvatarSystem.ActionAt(sim, bea, at, AvatarTool.Use, at + new int3(1, 0, 0)).Kind);
+
+        // The AI's trades leave it to the labourer too.
+        foreach (var e in Humans(sim).Where(e => !w.Has<PlayerCharacter>(e)))
+        {
+            var gathers = w.Get<Trade>(e).Def.Gathers;
+            foreach (var work in RoundSystem.GatheringWork)
+                Assert.Equal(gathers, w.Get<Mind>(e).WorkPriority[(int)work] > 0);
+        }
+    }
 }

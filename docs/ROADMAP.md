@@ -75,20 +75,6 @@ Milestones toward a playable prototype, then beyond. Design intent is in [DESIGN
   The state hashes moved only for the round's town: the longhouse's cask, the shrine in place of
   the clinic, the woodshop, and kit tools dealt onto the belt.
 
-Known leftovers:
-- Build and zone tools are open to every player; the Carpenter should own them. The Carpenter's
-  building and mending have no game of their own yet. (The lockwork has since gone to the Tinker,
-  and the Carpenter is benched: see "The Tinker".)
-- Players can hunt animals but can't yet attack people (M4).
-- Villagers don't fight back against raiders, they only suffer them (M3).
-- The dragon creature has no brain or breath job of its own yet (M3's late-round crisis).
-- Some dragon-era art, tools and def fields are still in the tree. Prune with the M6 art pass;
-  the whetstone, ale cask and meditation stone borrow art too.
-- AI healers only bandage. Casks don't refill and there's no brewing. Mixed drinks, lighting the
-  forge by hand and commission details are still to come (docs/DESIGN.md, "Trade notes").
-- `Adventurer.Satisfaction` and the expedition tallies are collected, waiting for M3's Renown and Dread.
-- The new mini-games haven't been tuned in play yet.
-
 ### The village: Millbrook (2026-11-11)
 - Rounds are played on a hand-made map instead of DragonWorld's generated valley. `MapDef`
   (`data/defs/maps/`) holds text grids of ground, levels and features, the buildings with exact
@@ -122,12 +108,6 @@ Known leftovers:
   These are a new town, so every hash moved. Before the switch, lifting the generator's helpers
   for the builder left M2's hashes unchanged. Ticks and saves are cheaper on the smaller map.
 
-Known leftovers:
-- Lanes cost the same to walk as grass, so villagers don't prefer them.
-- `--building-demo` now lays its showcase over the village.
-- The pig is the boar's sheet recoloured and shaven.
-- The start message still mentions a dragon egg.
-
 ### UX pass (2026-11-11)
 - **Shared kit:** UI that DragonWorld and this game copied between them now lives in
   Narsil.Ui (theme, panels, anchored HUD, toasts, credits, sprites and nine-slices, bars, key
@@ -147,9 +127,6 @@ Known leftovers:
 - **Errand rows as cards:** an icon, the price, and time left as a bar.
 - **Speech plates:** said lines get a wrapped plate over the speaker's head.
 
-Known leftovers: the other mini-games are still drawn plainly; the title screen keeps its old
-look; time doesn't yet advance on its own when there's nothing to do.
-
 ### Control pass (2026-11-11)
 - **Solo round:** pick your trade after making your character (or let the deal pick).
 - **The view follows your floor:** under an upper storey the cutaway drops to your level;
@@ -168,9 +145,6 @@ look; time doesn't yet advance on its own when there's nothing to do.
   layouts walkable.
 - **Roomier buildings:** inn 13x9 (aisle to the bar, three rooms upstairs), smithy and woodshop
   7x5. Bots carry mended pieces and opened strongboxes back to customers wherever they are.
-
-Known leftovers: no mid-step turns (a turn waits for the step under way); the forge can heat
-the smith's spot to 80°C+ and kill a bot that stands there for hours (also before this pass).
 
 ### Blacksmith polish (2026-11-11)
 - **Forging a heat at a time** (`Work/Smithing`):
@@ -203,10 +177,6 @@ the smith's spot to 80°C+ and kill a bot that stands there for hours (also befo
   - **More patience:** customers give four hours from the hand-over. While their piece is still
     with you they ask after it and wait, up to three times their patience. They put off leaving
     town for it. Setting out on a quest, they leave it in your keeping instead of crying thief.
-
-Known leftovers: commissions (the buyer's hilt, runes and metal); molds, and the hilt and grip
-as their own step; lighting and banking the forge by hand; reforging; AI smiths still forge with
-a plain `CraftJob`. Tune the heat and quench timing in play. Save format 3.
 
 ### Innkeeper polish (2026-11-12)
 - **The inn grows a kitchen:** 13x13 now, with a kitchen (its own fire, the stew pot, a larder,
@@ -270,13 +240,6 @@ a plain `CraftJob`. Tune the heat and quench timing in play. Save format 3.
   Every hash moved: the inn and the cottage beside it changed, and the inn is stocked. They
   moved again when berries went on the bar shelf.
 
-Known leftovers:
-- The AI innkeeper doesn't mix: asked for a named drink, it pours an ale.
-- Mess goes on floors only, not on tables, so there's no rag. Rooms have no keys yet.
-- The new stations borrow existing textures and the chest's toolbar sprite. The mop and the mess
-  decals have their own art (`tools/inn_art.py`).
-- Tune the pot, seasoning, wash, tap and mix timings in play.
-
 ### Healer polish (2026-11-12)
 - **Feeling them over** (`Healing/FeelSession`): touch is the diagnosis.
   - **The sweep:** A/D run the hands head to feet, and lingering near a wound makes it out.
@@ -322,16 +285,6 @@ Known leftovers:
   by strands, larger glyphs (64 px).
 - **Bots** feel, draw, bind when short of mana, weave from their book, and meditate.
 - **Art:** rune glyphs (`tools/healer_art.py`).
-
-Known leftovers:
-- The meditation stone still borrows the mason's bench icon.
-- AI healers still only bandage.
-- A wound stays felt once found, however it changes.
-- Pallets aren't kept from villagers who sleep there.
-- Tune in play: the draw feels, the heartbeat window and the wrap band.
-- Bots don't weave charms or put goods on show.
-- Adventurers never tear a charm in town.
-- Tune the labyrinth in play: its size, the sitting's length and the centre's burst.
 
 Save format 6. Bench hashes unchanged (1234: state `D21378177D6C73BA`, full `E0118354F8BBC3E0`;
 99: state `B5DB9B55CC58E7B1`, full `B023D3107619F18B`).
@@ -517,11 +470,6 @@ building and fletching make a trade of their own). Design: DESIGN.md, "Tinker". 
 - Save format 7. Bench baselines: seed 1234 state `57207EEE9FA2C71F` full `46AFDADEBB1266A1`; seed
   99 state `16FBF26C8FB6EAB0` full `41C91768EF877819`.
 
-Known leftovers:
-- No lockboxes or locked chests yet: locks go on doors only.
-- Bots don't pin locks, make contraptions or haggle over curios; AI tinkers don't buy curios.
-- Bridges, gates and the town's structures aren't damaged by anything yet: that's M3's crises.
-
 ### Heroes Not Included (2026-11-12)
 - The game is **Heroes Not Included** throughout: the solution, projects and namespaces
   (`HeroesNotIncluded`, `HeroesNotIncluded.Sim`, their tests), the exe and the Mac `.app`, the
@@ -558,10 +506,6 @@ Known leftovers:
     `stations` till you've stood beside it (trades.json; Options > Interface > Tips).
 - Save format 8. Bench hashes unchanged.
 
-Known leftovers (in the audit): the inn's dark interior, the meditation stone's borrowed icon,
-the carter's sprite wagon, and a hands-on pass over each mini-game's window. Watch a child and a
-non-gamer play the first ten minutes.
-
 ### M3.1: The season and its reckoning (2026-11-12)
 - **A round is a season** (`data/defs/season.json`, `SeasonDef`):
   - **Length:** three days from the deal.
@@ -595,12 +539,6 @@ non-gamer play the first ten minutes.
   `16FBF26C8FB6EAB0`). The full hashes moved for the new saved state: 1234 `184E22DC013BCF66`, 99
   `A5E56D2BC8C32CC2`.
 
-Known leftovers:
-- The weights are first guesses. A 61-hour run with nobody tending the bar ended at Renown -42
-  and Dread 71. Tune in play.
-- The festival has nothing of its own yet (slice 9).
-- Difficulty doesn't scale the target or the limit yet (slice 4).
-
 ### M3.2: Nights and suppers (2026-11-12)
 - **The night passes while everyone sleeps.**
   - **When:** `Players.AllAsleep` is true once every character a player is steering is asleep. It's
@@ -624,11 +562,6 @@ Known leftovers:
 - `NightTests`. Bench baselines moved for the need rates: seed 1234 state `412D36A8850D6AD2` full
   `AA0974F679D047A8`; seed 99 state `A79FED518CE17A4C` full `0739283CD3C51B04`.
 
-Known leftovers:
-- A sleeping player is woken only by walking. Nothing rouses them yet: a shout, a fire, a raid.
-- Villagers at supper only sit; they don't swap rumours like adventurers do.
-- Players can't order from the hatch themselves.
-
 ### M3.3: The Director (2026-11-12)
 - **`Director/Director`** sends a round's crises on the season's beats (`season.json` `beats`):
   - **The beats:** a small raid late on the first night (20–23), a crisis on day two (10–17) and
@@ -649,10 +582,6 @@ Known leftovers:
     - **Unmet:** otherwise, and those still about leave with what they came for.
 - `DirectorTests`. Bench state hashes unchanged; the full hashes moved for the Director's saved
   state: 1234 `2C1EE4B896631A9D`, 99 `3B07FA28C5E95F88`.
-
-Known leftovers:
-- Villagers still don't fight back (slice 5), so a raid is rarely met.
-- Difficulty doesn't scale the Renown target or the Dread limit yet.
 
 ### M3.4: The town fights back (2026-11-12)
 - **Villagers defend themselves** (`Ai/Defence`):
@@ -677,11 +606,6 @@ Known leftovers:
   the round.
 - `DefenceTests`, `DirectorTests.ARaidOnTheTownIsFoughtOver`. Bench hashes unchanged.
 
-Known leftovers:
-- The unarmed don't mob a raider together. Without adventurers in town, two raiders put every
-  villager down.
-- The wounded lie where they fell until someone thinks to help.
-
 ### M3.5: The bridge comes down (2026-11-12)
 - **A proper raid may pull the bridge down** (`Tinkering/Repairs`):
   - **When:** a raid of strength 1 or more, with chance `season.json` `raidBreaksBridge` (0.6).
@@ -701,11 +625,6 @@ Known leftovers:
     fetches wood from the shop and plays it.
 - `RepairTests`. Bench state hashes unchanged; the full hashes moved for the new saved state: 1234
   `5FFE13EAE6A878AC`, 99 `A322D5DFEEAF6181`.
-
-Known leftovers:
-- Raiders don't bash doors or gates yet. Only the bridge breaks.
-- The bracing window hasn't been seen in a running game. Nothing can break the bridge on demand
-  there yet (a dev button would).
 
 ### M3.6: Fire, shortage and fever (2026-11-12)
 The Director's second-day crisis can now be any of the four (`Director.CanSend`; `Director/Crises.cs`).
@@ -731,10 +650,6 @@ The Director's second-day crisis can now be any of the four (`Director.CanSend`;
 - `CrisisTests`. Save format 10. Bench state hashes unchanged; the full hashes moved for the new
   saved state: 1234 `6977970C16F19263`, 99 `CFBD91FACBA4EFA6`.
 
-Known leftovers:
-- A fever doesn't yet weaken a party on a quest.
-- The second-day crisis kinds have the same weight as each other. Tune in play.
-
 ### M3.7: The dragon (2026-11-12)
 - **The season's last crisis** (day three, 11:00–15:00): a wild adult dragon (`DragonCrisis`)
   comes in from an edge with a name ("Cinderwing", "Old Ashjaw"...). The town shouts
@@ -755,10 +670,6 @@ Known leftovers:
   several roofs burned.
 - `CrisisTests` (the dragon). Bench hashes unchanged.
 
-Known leftovers:
-- The dragon hasn't been seen in a running game yet. The art is DragonWorld's adult sprite.
-- It's likely too easy with a party in town and impossible without one. Tune in play.
-
 ### M3.8: The festival (2026-11-12)
 - **At the festival** (18:00 on the last day), the town and its visitors leave off work and gather
   in the square, milling about the well (`Ai/Festival`; `RoundSystem.Square`, found when it
@@ -768,8 +679,6 @@ Known leftovers:
   and a pall hangs over the valley. It wasn't enough, friends." Then the reveal.
 - `SeasonTests.TheTownGathersInTheSquareAndHearsTheReckoning`. Bench state hashes unchanged; the
   full hashes moved for the saved square: 1234 `AC1A82C53B37D20C`, 99 `22437529DFFF4EAD`.
-
-Known leftovers: no lanterns, tables or music in the square yet; the inn doesn't serve outside.
 
 ### M3.9: The notice board (2026-11-12)
 - **Millbrook has a notice board** in the square by the well (`NoticeBoard` in village.json, a box
@@ -793,11 +702,6 @@ Known leftovers: no lanterns, tables or music in the square yet; the inn doesn't
   `BD2586001B6090EF` full `ABEA0CC24C779DF9`; seed 99 state `5E71028AC8D8CA95` full
   `DF94104B81C1236D`.
 
-Known leftovers:
-- Bots don't use the board.
-- Errands fetch only what's lying about or in common stores, not what a shop keeps.
-- Wood left lying on a cold day goes on the fires before a labourer gets to it.
-
 ### M3.10: A season played through (2026-11-12)
 - **The exit test** (`SeasonScenarioTests`): an Honest round on Millbrook, with bots as innkeeper,
   cook, blacksmith, healer and tinker and the Director at Normal, played from the deal to the
@@ -819,9 +723,20 @@ Known leftovers:
     with the town through at Renown 79 and 104, with bots dead.
   - **What that says:** the numbers swing a lot on small things. That's for the playtest.
 
-Known leftovers:
-- Bots don't bind their own wounds or go to the healer, so a hurt bot can bleed out.
-- The scenario's outcome isn't asserted, only that the round plays through.
+### After M3: trims before the playtest (2026-11-12)
+- **Gathering is the labourer's:** in a round, only a trade that gathers (`TradeDef.Gathers`, the
+  labourer for now) is offered digging (Z), mining, chopping or harvesting, and the other trades'
+  AI has that work turned off (`RoundSystem.MayGather`, `GatheringWork`). Outside a round,
+  anyone gathers as before. These are for the Miner and Forager when they come.
+- **No pausing for players:** whoever plays a character can't stop the clock, Space and saves
+  included (dev mode aside). The controls card no longer offers a pause.
+- **Signs on every shop:** the smithy's hangs from its front post, the shrine's and tinker's on
+  their front walls. A sign may now hang on a post as well as a wall.
+- **Cottage K moved** north-east off the tinker's shop (`village_map.py`).
+- **Roadmap:** every milestone's leftovers are gathered into the polish pass.
+- `RoundTests.InARoundOnlyTheLabourerDigsChopsAndForages`. Bench baselines moved for cottage K:
+  seed 1234 state `EBF41849818741DD` full `577A4DE93229CF66`; seed 99 state `E002E776A79DC0E1`
+  full `87714F2EB525E133`.
 
 ### M3: A whole season (done)
 Slices M3.1–M3.10 above. What it set out to do is below, kept for the record; it all landed,
@@ -918,12 +833,103 @@ Remaining trades, more maps (authored like Millbrook), crisis variety, personal 
 ### M7: Playing with strangers
 An authoritative server filtered by `Perception`, moderation, voice.
 
-### polish pass - timing uncertain
-- ~~get rid of the sprite wagon and do a box prop for it~~ (done with the Tinker); check to see if there are any others that need updating
-- make the bridge over the river nicer - half height walls, maybe an arch to it or supports?
-- title screen polish
-- doc cleanup pass
-- character creation - more traditional DnD fantasy options. elves, dwarves, hobbits, etc
-- make the hearth into a fireplace
-- wall torches
-- difficulty tuning - some jobs should be easier, some harder, to accomodate different players and styles.
+### Polish pass (timing uncertain)
+What's been left behind along the way, gathered from each milestone's leftovers, plus wishes.
+Grouped by area; nothing here blocks a playtest.
+
+**Tuning, once there's play to tune from**
+- The season (`season.json`):
+  - the Renown target and the Dread rates;
+  - the weights of the day-two crises (equal for now);
+  - raid size;
+  - Difficulty doesn't scale the target or the limit yet.
+- The dragon: likely too easy with a party in town, and impossible without one.
+- Night speed and the need rates.
+- Every mini-game's timing, none of it tuned in play yet:
+  - **Forge:** the heat and quench windows.
+  - **Kitchen:** the pot, the seasoning.
+  - **Bar:** washing up, tapping a keg, mixing.
+  - **Healing:** the draw feels, the heartbeat window, the wrap band; the labyrinth's size,
+    sitting and centre burst.
+  - **Tinkering:** truing a wheel, bracing a span.
+- Some jobs easier, some harder, to suit different players and styles.
+- The forge can heat the smith's spot past 80°C. Bots step back from it now; AI smiths and
+  players don't.
+
+**The trades, deeper** (docs/DESIGN.md, "Trade notes")
+- **Blacksmith:**
+  - commissions (the buyer's hilt, runes and metal);
+  - molds, and the hilt and grip as their own step;
+  - lighting and banking the forge by hand;
+  - reforging;
+  - AI smiths still forge with a plain `CraftJob`.
+- **Innkeeper and cook:**
+  - the AI innkeeper doesn't mix (asked for a named drink, it pours an ale);
+  - casks don't refill and there's no brewing;
+  - mess on tables, and a rag;
+  - keys for the guest rooms;
+  - players can't order from the hatch;
+  - villagers at supper sit but don't swap rumours.
+- **Healer:**
+  - AI healers only bandage;
+  - a wound stays felt once found, however it changes;
+  - pallets aren't kept from villagers who sleep there;
+  - adventurers never tear a charm in town;
+  - a fever doesn't weaken a party on a quest.
+- **Tinker:**
+  - no lockboxes or locked chests (locks go on doors only);
+  - AI tinkers don't buy curios.
+- **Carpenter** (benched): the build and zone tools are open to every player and should be the
+  carpenter's; building and mending have no game of their own.
+- **Gathering:** digging, mining, chopping and foraging are the labourer's for now, until the
+  Miner and Forager come.
+
+**Bots** (solo playtests and the scenario tests)
+- Bots don't:
+  - weave charms or put goods on show;
+  - pin locks, make contraptions or haggle over curios;
+  - use the notice board;
+  - bind their own wounds or go to the healer, so a hurt bot can bleed out.
+- `SeasonScenarioTests` checks only that a round plays through, not how it comes out.
+
+**Crises and the town**
+- Raiders don't bash doors or gates; only the bridge breaks.
+- The unarmed don't mob a raider together. Without adventurers in town, two raiders put every
+  villager down.
+- The wounded lie where they fell until someone thinks to help.
+- A sleeping player is woken only by walking. A shout, a fire or a raid should rouse them.
+- Time passes fast only while everyone sleeps, not when the town is otherwise quiet.
+- The festival has no lanterns, tables or music, and the inn doesn't serve outside.
+- Errands fetch only what's lying about or in common stores. Wood left out on a cold day goes on
+  the fires first.
+- A dev button to break the bridge or send a crisis. The bracing window and the dragon haven't
+  been seen in a running game yet.
+- Homes: villagers sleep in whichever free bed is nearest; nobody has a house of their own.
+
+**Art and look**
+- Dragon-era art, tools and def fields are still in the tree; prune them in the art pass.
+- Borrowed art:
+  - the whetstone, ale cask and inn stations borrow textures, and some use the chest's toolbar
+    sprite;
+  - the meditation stone uses the mason's bench icon;
+  - the pig is the boar's sheet, recoloured and shaven;
+  - the wild dragon is DragonWorld's adult sprite.
+- The inn's interior is dark.
+- A hands-on pass over each mini-game's window; some are still drawn plainly.
+- Check for other sprite props that should be box models (the wagon was one).
+- The bridge over the river could be nicer: half-height walls, maybe an arch or supports.
+- Make the hearth a fireplace.
+- Wall torches.
+- Title screen polish.
+- Character creation with more fantasy folk (our own takes on elves, dwarves, halflings).
+
+**Map and movement**
+- Lanes cost the same to walk as grass, so villagers don't prefer them.
+- No turning mid-step: a turn waits for the step under way.
+- The shrine sits close by the tinker's shop; their roofs nearly meet.
+- `--building-demo` lays its showcase over the village.
+
+**Words and docs**
+- The start message still mentions a dragon egg.
+- A doc cleanup pass.
+- Watch a child and a non-gamer play the first ten minutes.

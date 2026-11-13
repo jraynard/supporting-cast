@@ -24,6 +24,9 @@ A round has a beginning, a middle and an end now.
   for so many of something, brought to you, and the town's labourer will take it on.
 - Hunger and tiredness go down slower. Everyone starts with 12 silver, and villagers buy their
   supper at the inn of an evening.
+- No pausing once you're in town: the town doesn't wait.
+- Digging, mining, chopping and foraging are the labourer's work for now.
+- Every shop has a sign out front, like the inn's.
 - Old saves won't carry over into a season.
 
 ## 0.1.0-playtest.2

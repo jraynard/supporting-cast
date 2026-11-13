@@ -339,7 +339,7 @@ public sealed class AvatarSystem : ISimSystem
         }
         // Digging has its own key, so pointing at the ground never offers it by accident.
         if (tool == AvatarTool.Dig)
-            return map.IsSolid(i) && sim.CanDig(cell) && Mining.CanBreak(sim, avatar, map.Block[i])
+            return Round.RoundSystem.MayGather(sim, avatar) && map.IsSolid(i) && sim.CanDig(cell) && Mining.CanBreak(sim, avatar, map.Block[i])
                 ? new(AvatarActionKind.Dig, $"Dig {Mining.ShownBlock(sim, i).Label}", cell, Entity.Null)
                 : AvatarAction.None;
 
@@ -453,7 +453,8 @@ public sealed class AvatarSystem : ISimSystem
                 if ((c.MaterialsComplete || (Buildings.IsPhaseSite(sim, site) && Buildings.HasWork(c))) && sim.CanBuildNow(site))
                     return new(AvatarActionKind.Build, $"Build {c.Target.Label}", cell, site);
             }
-            else if (thing.Def.Harvest is { } harvest && (!w.TryGet<PlantState>(site, out var plant) || plant.Ready))
+            else if (thing.Def.Harvest is { } harvest && (!w.TryGet<PlantState>(site, out var plant) || plant.Ready)
+                && Round.RoundSystem.MayGather(sim, avatar))
             {
                 var verb = harvest.WorkType switch
                 {

@@ -58,6 +58,12 @@ public sealed class TradeDef : Def
     /// <summary>The holder is given a key to every lock fitted at its workplace (the innkeeper's storeroom).</summary>
     public bool HoldsKeys { get; set; }
 
+    /// <summary>
+    /// The holder may dig, mine, chop and forage in a round (the labourer, for now). Nobody else
+    /// does: that's the Miner's and Forager's work, when they come.
+    /// </summary>
+    public bool Gathers { get; set; }
+
     /// <summary>The holder mends what crises break in town (<c>Tinkering.Repairs</c>): the tinker, the bridge.</summary>
     public bool MendsTown { get; set; }
 
