@@ -72,6 +72,16 @@ jobs:
       - name: Test
         run: dotnet test -c Release
 
+      # The placeholder music isn't in git: tools/package.sh fetches it (tools/fetch_music.py),
+      # cached here so every push doesn't download it again.
+      - name: ffmpeg
+        run: command -v ffmpeg > /dev/null || (sudo apt-get update -q && sudo apt-get install -yq ffmpeg)
+
+      - uses: actions/cache@v4
+        with:
+          path: data/sounds/music/free
+          key: music-${{ hashFiles('tools/fetch_music.py') }}
+
       - name: Package
         run: DW_NO_SHARE=1 tools/package.sh "${{ steps.version.outputs.version }}"
 

@@ -9,6 +9,8 @@
 # HeroesNotIncluded-<ver>-osx-arm64.tar.gz (a HeroesNotIncluded.app) and SHA256SUMS.txt. If /srv/heroes-not-included exists (the LAN share; SC_SHARE_DIR picks another, and
 # DW_NO_SHARE=1 skips it), the archives and README-ALPHA.txt are copied there too, replacing older builds.
 #
+# The placeholder music is fetched first (tools/fetch_music.py: network and ffmpeg) and ships in data/.
+#
 # Every platform is built here from one compiler run on purpose: co-op only connects builds with
 # the same tag, which hashes the game assemblies and defs, so the script refuses to package
 # platforms whose game DLLs or defs differ.
@@ -89,6 +91,12 @@ PLIST
 rm -rf "$dist"
 mkdir -p "$dist"
 
+# The placeholder music isn't in git (tools/fetch_music.py): fetch what's missing so it ships in
+# data/sounds/music/free/. Its CC-BY credits are already in NOTICE.txt and the Credits window.
+echo "==> music"
+python3 tools/fetch_music.py || fail "couldn't fetch the music (needs network and ffmpeg with libvorbis)"
+music_count="$(find data/sounds/music/free -name '*.ogg' | wc -l)"
+
 for rid in "${rids[@]}"; do
     out="$dist/$name-$rid"
     echo "==> publish $rid"
@@ -109,6 +117,7 @@ for rid in "${rids[@]}"; do
     for need in data/defs data/shaders data/fonts data/textures; do
         [[ -d "$out/$need" ]] || fail "$rid: $need is missing"
     done
+    (( $(find "$out/data/sounds/music/free" -name '*.ogg' 2>/dev/null | wc -l) == music_count )) || fail "$rid: the music is missing"
     # BRUTAL License: the notice, its license and the third-party notices must ship (docs/LICENSING.md).
     for need in NOTICE.txt licenses/BRUTAL-LICENSE.txt licenses/FiraSans-OFL.txt licenses/Cinzel-OFL.txt; do
         [[ -f "$out/$need" ]] || fail "$rid: $need is missing"
