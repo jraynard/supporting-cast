@@ -699,13 +699,14 @@ public sealed partial class VillageGame
         {
             ImGui.PushID(item.Index);
             var t = w.Get<Thing>(item);
-            var canTake = !handsFull || (!myPack.IsNull && _sim.ContainerRoom(myPack, t.Def, t.Material) > 0);
+            var packRoom = myPack.IsNull ? 0 : _sim.ContainerRoom(myPack, t.Def, t.Material);
+            var canTake = !handsFull || packRoom > 0;
             if (!canTake)
                 ImGui.BeginDisabled(true);
             if (ImGui.Button("Take"u8, in _autoSize))
                 Issue(new TakeFromStorageCommand(_avatar, item));
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(!canTake ? "Your hands are full and it won't fit in your pack." : handsFull ? "One, into your pack." : "One, into your hands.");
+                Tip(!canTake ? "Your hands are full and it won't fit in your pack." : packRoom > 0 ? "One, into your pack." : "One, into your hands.");
             var many = w.Get<Stack>(item).Count > 1;
             if (many)
             {
@@ -713,7 +714,7 @@ public sealed partial class VillageGame
                 if (ImGui.Button("All"u8, in _autoSize))
                     Issue(new TakeFromStorageCommand(_avatar, item, TakeFromStorageCommand.All));
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                    Tip(handsFull ? "The whole stack, as much as fits in your pack." : "The whole stack, into your hands.");
+                    Tip(packRoom <= 0 ? "The whole stack, into your hands." : handsFull ? "The whole stack, as much as fits in your pack." : "The whole stack: what fits in your pack, the rest in your hands.");
             }
             if (!canTake)
                 ImGui.EndDisabled();

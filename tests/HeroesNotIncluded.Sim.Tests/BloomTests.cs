@@ -133,6 +133,46 @@ public class BloomTests
     }
 
     [Fact]
+    public void OreAndCharcoalFetchedFromTheBinsAllGoInTheBloom()
+    {
+        // Taken a piece at a time from the chest and the fuel bin, as a player does: nothing's left
+        // in hand, so F at the bin opens it (rather than putting ore in it) and F at the forge
+        // doesn't feed the charcoal to the fire.
+        var (sim, me, _) = ExpeditionTests.Round("Blacksmith");
+        var w = sim.World;
+        var forge = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "Forge");
+        var at = w.Get<Thing>(forge).Cell;
+        var stand = sim.SpiralFrom(at, 2).First(c => c != at && c.Z == at.Z && sim.Map.Passable(c) && AvatarSystem.InReach(sim, c, forge));
+        w.Get<Position>(me).Cell = stand;
+        w.Get<Position>(me).Pos = Position.CenterOf(stand);
+        var chests = CraftCommandRules.ContainersInReach(sim, me);
+        var chest = chests.First(c => w.Get<Thing>(c).Def.Name == "Chest");
+        var bin = chests.First(c => w.Get<Thing>(c).Def.Name == "FuelBin");
+        Entity In(Entity c, string def) => sim.StoredIn(c).First(e => w.Get<Thing>(e).Def.Name == def);
+        int Packed(string def) => sim.StoredIn(sim.PackOf(me)).Where(e => w.Get<Thing>(e).Def.Name == def).Sum(e => w.Get<Stack>(e).Count);
+
+        Assert.Equal(AvatarActionKind.OpenStorage, AvatarSystem.ActionAt(sim, me, w.Get<Thing>(chest).Cell).Kind);
+        for (var i = 0; i < 4; i++)
+            sim.ApplyNow(new TakeFromStorageCommand(me, In(chest, "IronOre")));
+        Assert.Equal(AvatarActionKind.OpenStorage, AvatarSystem.ActionAt(sim, me, w.Get<Thing>(bin).Cell).Kind);
+        for (var i = 0; i < 2; i++)
+            sim.ApplyNow(new TakeFromStorageCommand(me, In(bin, "Charcoal")));
+        Assert.False(w.Get<Carrying>(me).HasItem);
+        Assert.Equal(4, Packed("IronOre"));
+        Assert.Equal(2, Packed("Charcoal"));
+        Assert.Equal(AvatarActionKind.OpenStation, AvatarSystem.ActionAt(sim, me, at).Kind);
+
+        // Nothing within reach but the pack now: the bloom takes all of it.
+        foreach (var c in chests)
+            foreach (var item in sim.StoredIn(c).ToList())
+                sim.DestroyThing(item);
+        sim.ApplyNow(new CraftCommand(me, forge, sim.Defs.Recipe("SmeltIron")));
+        Assert.True(Smithing.PieceOf(sim, me)?.IsBloom);
+        Assert.Equal(0, Packed("IronOre"));
+        Assert.Equal(0, Packed("Charcoal"));
+    }
+
+    [Fact]
     public void CharcoalInYourPackGoesInTheBloomNotOnTheFire()
     {
         // In the smithy with the ore and charcoal packed: F at the forge opens it (the fire has fuel),

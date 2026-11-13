@@ -205,11 +205,10 @@ public class InventoryTests
         sim.World.Get<Position>(me) = Position.At(cell);
         Assert.Equal(AvatarActionKind.OpenStorage, AvatarSystem.ActionAt(sim, me, cell).Kind);
         Do(sim, new TakeFromStorageCommand(me, berries, TakeFromStorageCommand.All));
-        Assert.Equal(berries, sim.World.Get<Carrying>(me).Item);
+        Assert.Equal(5, Packed(sim, me, "Berries"));
+        Assert.False(sim.World.Get<Carrying>(me).HasItem);
 
-        Do(sim, new StoreFromPackCommand(me, theirs, berries)); // not from hands
-        Do(sim, new StowCommand(me));
-        Do(sim, new StoreFromPackCommand(me, theirs, sim.StoredIn(sim.PackOf(me)).Single()));
+        Do(sim, new StoreFromPackCommand(me, theirs, sim.StoredIn(sim.PackOf(me)).Single(e => sim.World.Get<Thing>(e).Def.Name == "Berries")));
         Assert.Equal(5, sim.StoredIn(theirs).Sum(e => sim.World.Get<Stack>(e).Count));
     }
 
@@ -239,11 +238,34 @@ public class InventoryTests
         sim.World.Get<Position>(me) = Position.At(cell);
         var berries = sim.StoredIn(pack).Single();
         Do(sim, new TakeFromStorageCommand(me, berries));
-        Assert.Equal(1, sim.World.Get<Stack>(sim.World.Get<Carrying>(me).Item).Count);
+        Assert.Equal(1, Packed(sim, me, "Berries"));
         Assert.Equal(4, sim.World.Get<Stack>(berries).Count);
-        Do(sim, new StowCommand(me));
         Do(sim, new TakeFromStorageCommand(me, berries, TakeFromStorageCommand.All));
-        Assert.Equal(berries, sim.World.Get<Carrying>(me).Item);
+        Assert.Equal(5, Packed(sim, me, "Berries"));
+        Assert.Empty(sim.StoredIn(pack));
+        Assert.False(sim.World.Get<Carrying>(me).HasItem); // into the pack, never the hands, while it fits
+    }
+
+    [Fact]
+    public void WhatWontGoInThePackIsTakenInHand()
+    {
+        var (sim, me) = Setup();
+        var other = sim.SpawnCreature(sim.Defs.Creature("Human"), "Other", C(20, 10), ageDays: 25 * 365);
+        var pack = sim.GiveStartingPack(other);
+        sim.TakeOff(other, ApparelSlot.Back);
+        sim.World.Get<Position>(me) = Position.At(sim.World.Get<Thing>(pack).Cell);
+        // My pack nearly full: room for two stones.
+        var mine = sim.PackOf(me);
+        sim.Store(mine, sim.CreateItem(sim.Thing("Stone"), sim.ContainerRoom(mine, sim.Thing("Stone"), null) - 2));
+        var had = Packed(sim, me, "Stone");
+        sim.Store(pack, sim.CreateItem(sim.Thing("Stone"), 5));
+        var stone = sim.StoredIn(pack).Single();
+
+        // The whole stack: the pack takes what it can, the hands the rest.
+        Do(sim, new TakeFromStorageCommand(me, stone, TakeFromStorageCommand.All));
+        Assert.Equal(had + 2, Packed(sim, me, "Stone"));
+        Assert.Equal(3, sim.World.Get<Stack>(sim.World.Get<Carrying>(me).Item).Count);
+        Assert.Empty(sim.StoredIn(pack));
     }
 }
 

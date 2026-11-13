@@ -112,8 +112,7 @@ public class MilitiaTests
         // Taken down (the raid's come) and hung up again: nothing more.
         sim.Militia.Muster(sim);
         sim.ApplyNow(new TakeFromStorageCommand(me, spear));
-        Assert.False(sim.World.Has<Stored>(spear));
-        Inventory.Stow(sim, me, sim.World.Get<Carrying>(me).Item == spear ? Inventory.TakeFromPerson(sim, me, spear, 1) : spear);
+        Assert.True(Inventory.InOwnPack(sim, me, spear)); // off the rack, into the pack
         sim.ApplyNow(new StoreFromPackCommand(me, rack, spear));
         Assert.Equal(silver + price, Coin.Count(sim, me));
 

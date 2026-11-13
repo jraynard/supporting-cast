@@ -52,15 +52,6 @@ First pass done (docs/AUDIO.md, HISTORY.md). Next, as long-term items:
      (and players type theirs), so this can't be pre-recorded.
 5. **Steam Deck:** check the sound there (output switching, volume, CPU).
 
-### Character customization
-- The roster is one for every mode, with its own Characters screen (done: HISTORY.md). Next, more to
-  choose in the creator: customization is a focus.
-
-### Progression systems
-- ways to improve your characters... rpg like systems, and, more importantly haha, cosmetic options. Glamour is the true end game! this should be tied to your saved character.
-  - Builds on `CharacterProgress` (`Characters/CharacterRoster.cs`): rounds, survivals and silver per
-    trade are already kept; `Titles`, `Title` and `Unlocked` wait to be filled.
-- if you master a trade you get a cool outfit and title related to that trade
 
 ### Death and ghosts
 - need to move this up most likely as people can and should die when the dragon attacks, or other dangers added in the crisis system.
@@ -79,6 +70,16 @@ Remaining trades, more maps (authored like Millbrook), crisis variety, personal 
 
 ### M7: Playing with strangers
 An authoritative server filtered by `Perception`, moderation, voice.
+
+### Character customization
+- The roster is one for every mode, with its own Characters screen (done: HISTORY.md). Next, more to
+  choose in the creator: customization is a focus.
+
+### Progression systems
+- ways to improve your characters... rpg like systems, and, more importantly haha, cosmetic options. Glamour is the true end game! this should be tied to your saved character.
+  - Builds on `CharacterProgress` (`Characters/CharacterRoster.cs`): rounds, survivals and silver per
+    trade are already kept; `Titles`, `Title` and `Unlocked` wait to be filled.
+- if you master a trade you get a cool outfit and title related to that trade
 
 ### Polish pass (timing uncertain)
 What's been left behind along the way, gathered from each milestone's leftovers, plus wishes.
