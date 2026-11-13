@@ -3,6 +3,10 @@
 The last two PLAYTEST PREP items: make the game legible for people who aren't hardcore gamers,
 and lean less on reading so kids can play.
 
+**Status (2026-11-12):** everything below marked **Done** shipped for `0.1.0-playtest.2` (see
+ROADMAP, "Playtest prep"). What's left: the inn's lighting, the two art leftovers, and the
+hands-on pass.
+
 **How it was audited:**
 - Solo rounds as each trade, from the packaged Release build (what testers get: no debug
   tooltip coordinates, frame times or Debug menu).
@@ -22,27 +26,27 @@ work under PLAYTEST PREP.
 
 ## Biggest wins
 
-1. **What customers want, over their heads (M, every trade).** Osric's "wants a drink" is only a
+1. **Done.** **What customers want, over their heads (M, every trade).** Osric's "wants a drink" is only a
    line in the Shop panel; nothing in the world shows who's waiting or for what.
    - Proposal: a speech bubble over a waiting customer with the service's icon (tankard, bowl,
      sword, bandage, lockbox), and a patience ring that empties.
    - Only for orders you heard, read through `Perception` (the order is spoken; only those who
      heard know it).
    - The single change that most reduces reading.
-2. **"Go here next" (M, every trade).** A new player at 8:37 in an empty common room has no idea
+2. **Done** (tips under the portrait, rings on the stations). **"Go here next" (M, every trade).** A new player at 8:37 in an empty common room has no idea
    what to do. Proposal: a short first-day goal line in the HUD per trade ("Customers will come to
    the bar. Set your prices (J) while you wait."), and the trade's own stations outlined softly in
    the world until each has been used once.
-3. **Fewer panels open at the start (S).**
+3. **Done.** **Fewer panels open at the start (S).**
    - The innkeeper starts with Shop, Quests and Heard all open; the Quests list runs off the
      bottom of a 900px screen.
    - The Heard chat box is a large empty black rectangle until someone speaks.
    - Proposal: open only Shop. Heard opens itself (or flashes its tab) when there's something
      to read, and Quests opens when a party member asks for work.
-4. **Key caps instead of letters (M, all mini-games).** Draw F / A / D / W / S / WASD / Esc as
+4. **Done** (the hints already drew caps; the prompt over your head now does). **Key caps instead of letters (M, all mini-games).** Draw F / A / D / W / S / WASD / Esc as
    little key icons in `BeginWork` hints and in the `[F]` world prompt. Kids find keys by shape
    faster than by reading "A/D".
-5. **The same key, the same kind of thing (M, design).** Letters mean different things in
+5. **Done:** Space is the other action (`WorkInputKind.Act`); A/D only steer or mean less/more. **The same key, the same kind of thing (M, design).** Letters mean different things in
    different games:
    - D: "draw it out" (bellows), "taste it" (seasoning), "set the pin, take up the next" (pinning),
      "latch it" (ratchet).
@@ -54,7 +58,7 @@ work under PLAYTEST PREP.
 
 ## Smaller fixes (S each)
 
-**HUD**
+**HUD** (all done)
 - The hover tooltip ("Packed earth, 13°C outdoors") follows the cursor everywhere and says
   nothing a player needs. Show it only over things you can use or inspect, or only in dev mode.
 - Mood shows a bare number (48) where Food and Rest show percentages; the number also sits on the
@@ -62,20 +66,20 @@ work under PLAYTEST PREP.
 - The quest-giver hint is cut off at the panel's edge ("...who's asked for work to sen"). Wrap it.
 - Time left on an order reads "0.2h left": show only the bar, or "a few minutes".
 
-**Top bar**
+**Top bar** (done)
 - The top menu (Menu, Save, Load, Options, Recipes, Screenshot, Controls, Credits) is a lot for a
   child to scan. Fold Save/Load/Screenshot/Credits into Menu; keep Recipes and Controls.
 
-**Inventory**
-- Hotbar slots show tiny item sprites with no names. Add a hover tooltip with the name, and make
-  the sprites larger.
+**Inventory** (done)
+- Hotbar slots show tiny item sprites. They already had tooltips (this audit missed them); the
+  sprites are larger now.
 
 **Inn**
 - The inn's interior is dark, and the cask, shelf and larder are hard to tell apart from above.
   Brighten interiors a step (or add a lamp over the bar), and the station outlines in (2) cover
   the rest.
 
-**Title screen**
+**Title screen** (done, with the stacked logo)
 - The menu labels are centred in fixed-width buttons under a left-aligned title, so they look
   ragged. Left-align them.
 - "Alpha build": change to "Playtest build", to match the itch page.

@@ -532,24 +532,37 @@ Known leftovers:
 - The LAN share's default is `/srv/heroes-not-included` (`SC_SHARE_DIR` to change it). Still the
   old name: the repo folder. Bench hashes unchanged.
 
-## Next
+### Playtest prep (2026-11-12)
+- **The icon** is the brand emblem (`art/brand/`, `tools/brand_logo.py`; the small-size sign at
+  48 px and under), rendered by `tools/gen_icon.py` for the exe, window, Mac app, Linux desktop
+  entry, and `packaging/icon-512.png` for Discord and itch.io.
+- **Publishing:** tagging `v<Version>` runs `.github/workflows/playtest-release.yml`. It tests,
+  packages, pushes the three platforms to a restricted itch.io page through butler, and announces
+  the build in Discord's #builds. Pushes to main only test and package. `docs/alpha/` has the
+  testers' README and CHANGELOG, and PUBLISHING (the one-time setup and the release steps). The
+  title screen's Report a Bug says where reports go and opens the logs folder.
+- **Legibility, from `docs/PLAYTEST-AUDIT.md`:**
+  - A quieter HUD: only the shop panel opens at the start, and Heard and Quests mark their tab
+    when there's something new. No tooltip trails the cursor over ordinary ground. Mood reads as
+    a word, an order's time left in words. Save, Load, Options, Screenshot and Credits fold into
+    the Menu dropdown, and Back to title asks first. Bigger hotbar slots. The prompt over your
+    head draws its key as a key cap.
+  - The title screen wears the stacked logo and the brand's tagline, its menu flush left.
+  - **Space is a mini-game's other action** (`WorkInputKind.Act`): drawing the piece out of the
+    fire, tasting the stew, setting a pin, latching a spring. A/D only steer or mean less/more;
+    seasoning's "that'll do" is stepping away (Esc). Space doesn't pause while working.
+  - **Customers' wants over their heads:** the service's icon (`icon` in services.json) in a
+    bubble that reddens as patience runs out, with the ember quest marker (`ui/icon_marker`) when
+    it's your trade's work. Only orders you heard (`PerceptionView.Orders`).
+  - **A first day:** each trade's `tips` under your portrait, and a parchment ring on each of its
+    `stations` till you've stood beside it (trades.json; Options > Interface > Tips).
+- Save format 8. Bench hashes unchanged.
 
-### PLAYTEST PREP
-- ~~add icon for the game executable~~ Done: the brand emblem (`art/brand/`, `tools/brand_logo.py`;
-  the small-size sign at 48 px and under), rendered by `tools/gen_icon.py` for the exe, window,
-  Mac app, Linux desktop entry, and `packaging/icon-512.png` for Discord and itch.io.
-- Publishing: tagging `v<Version>` runs `.github/workflows/playtest-release.yml`. It tests,
-  packages, pushes the three platforms to a restricted itch.io page through butler, and
-  announces the build in Discord's #builds. Pushes to main only test and package.
-  - `docs/alpha/` is restored: README-ALPHA, the testers' CHANGELOG, and PUBLISHING (the
-    itch/GitHub/Discord setup and the server's layout).
-  - The title screen has Report a Bug: where reports go, and the logs folder.
-  - Version `0.1.0-playtest.1`.
-  - **Still to do (you):** the itch project and API key, the GitHub secrets, the Discord webhook
-    and invite (`BuildInfo.Community`), then push the first tag.
-- UX / art polish pass (not a full art pass but just clean things up as needed to make sure its legible for people that are not hardcore gamers) 
-- reduce reliance on text where possible for doing things so kids can play more easily
-  - Both audited in `docs/PLAYTEST-AUDIT.md`: pick the fixes to do.
+Known leftovers (in the audit): the inn's dark interior, the meditation stone's borrowed icon,
+the carter's sprite wagon, and a hands-on pass over each mini-game's window. Watch a child and a
+non-gamer play the first ten minutes.
+
+## Next
 
 ### M3: A whole season
 - `Director`, Renown and Dread, crises including the late-round dragon, the festival, the

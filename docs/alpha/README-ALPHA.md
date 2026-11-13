@@ -38,7 +38,7 @@ If the game won't start, run it from a terminal with --check-gpu and send us wha
   Windows: HeroesNotIncluded.exe --check-gpu
   macOS:   /path/to/HeroesNotIncluded.app/Contents/MacOS/HeroesNotIncluded --check-gpu
 
-Your version is at the bottom of the title screen ("Alpha build v0.1.0-playtest.N"). The host
+Your version is at the bottom of the title screen ("Playtest build v0.1.0-playtest.N"). The host
 refuses a different build and says which one it runs.
 
 
@@ -72,7 +72,8 @@ CONTROLS
 --------
 WASD or left-click: walk. Click something to walk over and use it.
 F (hold): use or work on what's in reach. Your trade's stations start their own little games;
-  each one shows its keys while it's open.
+  each one shows its keys while it's open. In them, A/D steer and Space does the other thing
+  (taste, latch, draw it out); Esc steps away.
 X: put down what you hold. N: sleep.
 Tab: inventory. 1-4: take a stack from your pack.
 Q/E or the mouse wheel: turn and zoom.  [ ]: look up or down a floor.  \: show or hide roofs.
