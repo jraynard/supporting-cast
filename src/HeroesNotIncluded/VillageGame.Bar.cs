@@ -158,20 +158,42 @@ public sealed partial class VillageGame
 
         // The cask's head, hooped, with the tap going into it.
         var c = new float2(min.X + size.X * 0.4f, (min.Y + max.Y) * 0.5f);
-        dl.AddCircleFilled(in c, Gui.S(54), new ImColor8(120, 82, 46, 255), 40);
-        dl.AddCircle(in c, Gui.S(54), Theme.U8(Theme.Iron), 40, Gui.S(4));
+        var px = MathF.Max(1f, MathF.Round(3f * Gui.Scale));
+        if (Gui.TrySprite("ui/work/cask_end", out var caskArt))
+        {
+            var half = new float2(20, 20) * px;
+            Gui.Image(dl, caskArt, c - half, c + half, Gui.White);
+        }
+        else
+        {
+            dl.AddCircleFilled(in c, Gui.S(54), new ImColor8(120, 82, 46, 255), 40);
+            dl.AddCircle(in c, Gui.S(54), Theme.U8(Theme.Iron), 40, Gui.S(4));
+        }
+        // The tap, driven home into the cask's side a little further with every good blow.
         var seated = s.Blows / (float)TapSession.BlowsNeeded;
-        var tapMin = new float2(c.X + Gui.S(40) - Gui.S(30) * seated, c.Y - Gui.S(6));
-        var tapMax = new float2(c.X + Gui.S(90) - Gui.S(30) * seated, c.Y + Gui.S(6));
-        dl.AddRectFilled(in tapMin, in tapMax, new ImColor8(170, 140, 90, 255), Gui.S(2), ImDrawFlags.None);
+        var tapPx = MathF.Max(1f, MathF.Round(2f * Gui.Scale));
+        var tapMin = new float2(c.X + Gui.S(40) - Gui.S(30) * seated, c.Y - 6 * tapPx);
+        var tapMax = tapMin + new float2(26, 12) * tapPx;
+        if (Gui.TrySprite("ui/work/spigot", out var spigotArt))
+            Gui.Image(dl, spigotArt, new float2(tapMax.X, tapMin.Y), new float2(tapMin.X, tapMax.Y), Gui.White); // mirrored: the spout outward
+        else
+            dl.AddRectFilled(in tapMin, in tapMax, new ImColor8(170, 140, 90, 255), Gui.S(2), ImDrawFlags.None);
 
         // The mallet: raised, then down onto the tap's end.
         var head = new float2(tapMax.X + Gui.S(18), c.Y - Gui.S(60) * (1f - s.Mallet));
-        var headMin = head - Gui.S(12, 16);
-        var headMax = head + Gui.S(12, 16);
-        dl.AddRectFilled(in headMin, in headMax, s.OnTheTap ? Theme.U8(Theme.Good) : new ImColor8(110, 80, 50, 255), Gui.S(2), ImDrawFlags.None);
-        var handleEnd = head + new float2(Gui.S(60), Gui.S(10));
-        dl.AddLine(in head, in handleEnd, new ImColor8(150, 110, 70, 255), Gui.S(4));
+        if (Gui.TrySprite("ui/work/mallet", out var malletArt))
+        {
+            var mMin = head - new float2(6, 8) * px;
+            Gui.Image(dl, malletArt, mMin, mMin + new float2(40, 16) * px, s.OnTheTap ? Gui.U8(Theme.Good) : Gui.White);
+        }
+        else
+        {
+            var headMin = head - Gui.S(12, 16);
+            var headMax = head + Gui.S(12, 16);
+            dl.AddRectFilled(in headMin, in headMax, s.OnTheTap ? Theme.U8(Theme.Good) : new ImColor8(110, 80, 50, 255), Gui.S(2), ImDrawFlags.None);
+            var handleEnd = head + new float2(Gui.S(60), Gui.S(10));
+            dl.AddLine(in head, in handleEnd, new ImColor8(150, 110, 70, 255), Gui.S(4));
+        }
 
         // Foam where it's sprayed.
         for (var i = 0; i < s.Misses * 6; i++)

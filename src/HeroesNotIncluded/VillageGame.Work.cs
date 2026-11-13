@@ -226,12 +226,7 @@ public sealed partial class VillageGame
 
         // The cask's end and its tap, top right.
         var caskC = new float2(min.X + size.X * 0.5f + Gui.S(52), min.Y + Gui.S(36));
-        dl.AddCircleFilled(in caskC, Gui.S(30), new ImColor8(120, 82, 46, 255), 32);
-        dl.AddCircle(in caskC, Gui.S(30), Theme.U8(Theme.Iron), 32, Gui.S(3));
-        var tap0 = caskC + Gui.S(-26, 18);
-        var tap1 = tap0 + Gui.S(-26, 6);
-        dl.AddLine(in tap0, in tap1, new ImColor8(170, 140, 90, 255), Gui.S(5));
-        var spout = tap1 + Gui.S(0, 6);
+        var spout = CaskAndTap(dl, caskC, MathF.Max(1f, MathF.Round(1.5f * Gui.Scale)), Gui.S(30));
 
         // The tankard: its foot pivots, leaning its mouth toward the tap.
         var w = Gui.S(70);

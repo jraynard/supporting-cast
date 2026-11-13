@@ -159,7 +159,6 @@ Grouped by area; nothing here blocks a playtest.
 - The bridge's parapets are drawn, not built: check nobody can step off its side.
 
 **Art and look**
-- A hands-on pass over each mini-game's window; some are still drawn plainly.
 - More fantasy folk: our own takes on dwarves and halflings. Elves are in, as a look; they could
   have something of their own (keener sight at dusk, an aptitude).
 - The title's loading line shows for a frame while a village is made ready; a real loading screen

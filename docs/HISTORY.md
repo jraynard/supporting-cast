@@ -943,3 +943,6 @@ dragon and the festival.
 - **The smithy keeps its stock:** the chest by the forge (the carter's ore, the smith's wood and
   bars) is the smith's, like the tinker's. No labourer's haul, refuel or errand takes from it; whoever
   works at a shop that keeps its stock still uses it (`IsAvailable(item, taker)`).
+- **Mini-games, the last of the props:** pouring and tapping a cask show the cask's head, its bronze
+  tap and the mallet; the stew sits in the iron pot over the fire. The games that are diagrams (the
+  lock in section, the cue lane, the scrubbing grid) keep their drawn shapes.

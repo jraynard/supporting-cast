@@ -43,13 +43,25 @@ public sealed partial class VillageGame
             dl.AddTriangleFilled(in a, in b, in c, Gui.U8(new float4(0.95f, 0.45f + 0.3f * s.Flame, 0.1f, 0.85f)));
         }
 
-        // The pot, and the stew's surface in it.
-        dl.AddRectFilled(in potMin, in potMax, new ImColor8(38, 36, 38, 255), Gui.S(14), ImDrawFlags.None);
-        var rimMin = new float2(potMin.X - Gui.S(6), potMin.Y - Gui.S(6));
-        var rimMax = new float2(potMax.X + Gui.S(6), potMin.Y + Gui.S(4));
-        dl.AddRectFilled(in rimMin, in rimMax, new ImColor8(58, 56, 60, 255), Gui.S(3), ImDrawFlags.None);
-        var surfMin = new float2(potMin.X + Gui.S(8), potMin.Y + Gui.S(4));
-        var surfMax = new float2(potMax.X - Gui.S(8), potMin.Y + Gui.S(16));
+        // The pot (the iron pot's art at a whole-pixel scale, sat on the fire), and the stew's surface in it.
+        float2 surfMin, surfMax;
+        if (Gui.TrySprite("ui/work/stew_pot", out var potArt))
+        {
+            var px = MathF.Max(1f, MathF.Floor((potMax.X - potMin.X + Gui.S(12)) / 44f));
+            var pMin = new float2(MathF.Round((potMin.X + potMax.X) * 0.5f - 22 * px), MathF.Round(potMax.Y - 30 * px));
+            Gui.Image(dl, potArt, pMin, pMin + new float2(44, 30) * px, Gui.White);
+            surfMin = pMin + new float2(6, 5) * px;
+            surfMax = pMin + new float2(38, 9) * px;
+        }
+        else
+        {
+            dl.AddRectFilled(in potMin, in potMax, new ImColor8(38, 36, 38, 255), Gui.S(14), ImDrawFlags.None);
+            var rimMin = new float2(potMin.X - Gui.S(6), potMin.Y - Gui.S(6));
+            var rimMax = new float2(potMax.X + Gui.S(6), potMin.Y + Gui.S(4));
+            dl.AddRectFilled(in rimMin, in rimMax, new ImColor8(58, 56, 60, 255), Gui.S(3), ImDrawFlags.None);
+            surfMin = new float2(potMin.X + Gui.S(8), potMin.Y + Gui.S(4));
+            surfMax = new float2(potMax.X - Gui.S(8), potMin.Y + Gui.S(16));
+        }
         var stew = StewColour * (0.85f + 0.15f * s.Heat);
         stew.W = 1f;
         dl.AddRectFilled(in surfMin, in surfMax, Gui.U8(stew), Gui.S(4), ImDrawFlags.None);

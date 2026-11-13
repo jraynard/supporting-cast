@@ -345,6 +345,25 @@ public sealed partial class VillageGame
         Prop(dl, "hand", new float2(MathF.Min(AlongBody(hands) + 6 * px, max.X - 13 * px), bodyY - 2 * px + press), px, held ? Gui.White : Gui.U8(new float4(0.88f, 0.84f, 0.8f, 1f)));
     }
 
+    /// <summary>The cask's head end at <paramref name="centre"/> and the tap in its side; where the spout is.</summary>
+    private static float2 CaskAndTap(ImDrawListPtr dl, float2 centre, float px, float fallbackRadius)
+    {
+        if (!Gui.TrySprite("ui/work/cask_end", out var cask) || !Gui.TrySprite("ui/work/spigot", out var tap))
+        {
+            dl.AddCircleFilled(in centre, fallbackRadius, new ImColor8(120, 82, 46, 255), 32);
+            dl.AddCircle(in centre, fallbackRadius, Theme.U8(Theme.Iron), 32, Gui.S(3));
+            var t0 = centre + new float2(-fallbackRadius * 0.86f, fallbackRadius * 0.6f);
+            var t1 = t0 + Gui.S(-26, 6);
+            dl.AddLine(in t0, in t1, new ImColor8(170, 140, 90, 255), Gui.S(5));
+            return t1 + Gui.S(0, 6);
+        }
+        var half = new float2(20, 20) * px;
+        var tapMin = new float2(MathF.Round(centre.X - 14 * px - 26 * px), MathF.Round(centre.Y + 6 * px));
+        Gui.Image(dl, tap, tapMin, tapMin + new float2(26, 12) * px, Gui.White);
+        Gui.Image(dl, cask, centre - half, centre + half, Gui.White);
+        return tapMin + new float2(2, 12) * px;
+    }
+
     // ---------------- The gallery (--work-scenes) ----------------
 
     /// <summary>Every scene at once, driven by a clock instead of a session: to look over the art without playing each game.</summary>
@@ -369,6 +388,18 @@ public sealed partial class VillageGame
             Cell("Sharpen", () => SharpenScene(1, true, Wave(0.8f), Wave(0.3f), _time * 0.05f));
             Cell("Probe", () => ProbeScene(Wave(0.4f), Wave(3f) > 0.85f ? 0.8f : 0.1f, Wave(1.1f)));
             Cell("Loupe", () => LoupeScene(Wave(0.3f), Wave(1.3f), Wave(0.6f) > 0.5f));
+            Cell("Cask, tap and mallet", () =>
+            {
+                var (dl, min, max, px) = WorkScene(130);
+                var spout = CaskAndTap(dl, new float2(min.X + Gui.S(150), min.Y + Gui.S(62)), px, Gui.S(54));
+                dl.AddLine(spout, spout + new float2(0, Gui.S(30)), new ImColor8(200, 140, 50, 230), Gui.S(4));
+                if (Gui.TrySprite("ui/work/mallet", out var mallet))
+                {
+                    var head = new float2(min.X + Gui.S(300), min.Y + Gui.S(20) + Wave(3f) * Gui.S(60));
+                    var mMin = head - new float2(6, 8) * px;
+                    Gui.Image(dl, mallet, mMin, mMin + new float2(40, 16) * px, Gui.White);
+                }
+            });
             Cell("Feel", () => FeelScene(["head", "chest", "belly", "arms", "legs"], [(0.3f, 0.6f, 0.9f, false), (0.75f, 0.3f, Wave(0.5f), true)], Wave(0.35f), Wave(1f) > 0.5f));
             Cell("True", () => TrueScene(_time * 0.1f, (Wave(0.63f) - 0.5f) * 0.6f, 0.06f));
             ImGui.EndTable();

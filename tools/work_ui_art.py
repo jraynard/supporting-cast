@@ -12,6 +12,7 @@ them at a whole-pixel scale and moves, turns and tints them from the session in 
   patient                 someone lying on a pallet, head to feet (the healer's hands run along them)
   stone, spirit_level     a dressed stone of the bridge's span, and the level laid on them
   rasp                    the file a lock's pins are filed down with
+  cask_end, spigot, mallet  the cask's head, its tap and the mallet that drives the tap home
 
 Writes only its own files. Run alone (``python3 tools/work_ui_art.py``) or from gen_placeholder_art.py.
 """
@@ -216,10 +217,45 @@ def rasp():
     return ink_outline(img)
 
 
+def cask_end():
+    """A cask's head end on: oak staves in an iron hoop, the bung, a chalked tally."""
+    img = canvas(40, 40)
+    oak = ramp((150, 104, 60), 6, main=3, dark=0.45, light=1.3)
+    part(img, lambda d: d.ellipse([1, 1, 38, 38], fill=255), IRONR[1:], radius=0.8)
+    part(img, lambda d: d.ellipse([4, 4, 35, 35], fill=255), oak, radius=2.0,
+         tex=lambda x, y: -0.7 if x % 6 == 0 else 0)
+    part(img, lambda d: d.ellipse([16, 22, 22, 28], fill=255), oak[:3], radius=0.4)      # the bung
+    for y in (10, 12):                                                                  # chalk tally marks
+        for x in range(13, 24, 3):
+            put(img, x, y, (232, 228, 216, 255))
+    return ink_outline(img)
+
+
+def spigot():
+    """The bronze tap, its key on top, the spout at the left (into the cask at the right)."""
+    img = canvas(26, 12)
+    bronze = ramp((186, 130, 66), 5, dark=0.5, light=1.35)
+    part(img, lambda d: d.rectangle([4, 4, 25, 8], fill=255), bronze, radius=0.5)
+    part(img, poly([(0, 6), (5, 4), (5, 11), (2, 11)]), bronze, radius=0.4)                # the spout
+    part(img, lambda d: d.rectangle([12, 0, 16, 4], fill=255), bronze[1:], radius=0.3)     # the key
+    return ink_outline(img)
+
+
+def mallet():
+    """A wooden mallet, the head at the left, the handle running right."""
+    img = canvas(40, 16)
+    part(img, stick((10, 8), (39, 9), 3.0, 2.4), WALNUT, radius=0.5)
+    oak = ramp((150, 104, 60), 5, dark=0.45, light=1.3)
+    part(img, lambda d: d.rounded_rectangle([0, 0, 12, 15], radius=2, fill=255), oak, radius=1.0,
+         tex=lambda x, y: -0.6 if y in (3, 12) else 0)
+    return ink_outline(img)
+
+
 SPRITES = (("whetstone", whetstone), ("blade", blade), ("stew_pot", stew_pot), ("salt_crock", salt_crock),
            ("bed", bed), ("sheet", sheet), ("hand", hand), ("forearm", forearm), ("wrap", wrap),
            ("strongbox", strongbox), ("probe", probe), ("curio", curio), ("loupe", loupe), ("patient", patient),
-           ("stone", stone), ("spirit_level", spirit_level), ("rasp", rasp))
+           ("stone", stone), ("spirit_level", spirit_level), ("rasp", rasp),
+           ("cask_end", cask_end), ("spigot", spigot), ("mallet", mallet))
 
 
 def generate():
