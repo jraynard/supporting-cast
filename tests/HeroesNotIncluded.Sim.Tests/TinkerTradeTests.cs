@@ -43,14 +43,21 @@ public class TinkerTradeTests
         Play(sim, me, w => { var (p, h, a) = keys(w); return (p, h, a, 0); }, maxTicks);
 
     /// <summary>As the other, with W/S too.</summary>
-    private static void Play(Simulation sim, Entity me, Func<WorkSession, (bool Press, bool Held, int Axis, int Axis2)> keys, int maxTicks = 60 * 180)
+    private static void Play(Simulation sim, Entity me, Func<WorkSession, (bool Press, bool Held, int Axis, int Axis2)> keys, int maxTicks = 60 * 180) =>
+        PlayAll(sim, me, w => { var (p, h, a, a2) = keys(w); return (p, h, a, a2, false); }, maxTicks);
+
+    /// <summary>As the first, with the game's other action (Space): set a pin, latch a spring.</summary>
+    private static void Play(Simulation sim, Entity me, Func<WorkSession, (bool Press, bool Held, int Axis, bool Act)> keys, int maxTicks = 60 * 180) =>
+        PlayAll(sim, me, w => { var (p, h, a, act) = keys(w); return (p, h, a, 0, act); }, maxTicks);
+
+    private static void PlayAll(Simulation sim, Entity me, Func<WorkSession, (bool Press, bool Held, int Axis, int Axis2, bool Act)> keys, int maxTicks)
     {
         var predictor = new WorkPredictor();
         for (var t = 0; t < maxTicks && sim.World.Has<WorkSession>(me); t++)
         {
             sim.Tick();
-            var (press, held, axis, axis2) = predictor.Session is { } s ? keys(s) : (false, false, 0, 0);
-            predictor.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c), axis2);
+            var (press, held, axis, axis2, act) = predictor.Session is { } s ? keys(s) : (false, false, 0, 0, false);
+            predictor.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c), axis2, act: act);
         }
         sim.Tick();
         Assert.False(sim.World.Has<WorkSession>(me), "the session should have ended");
@@ -64,10 +71,10 @@ public class TinkerTradeTests
     // ---------------- Locks and keys ----------------
 
     /// <summary>File each pin down to its mark (the session knows it: the maker sees it on the gauge), then set it.</summary>
-    private static (bool, bool, int) FileToTheMark(WorkSession w)
+    private static (bool, bool, int, bool) FileToTheMark(WorkSession w)
     {
         var s = (PinSession)w;
-        return s.Length > s.Mark + 0.004f ? (false, true, 0) : (false, false, 1);
+        return s.Length > s.Mark + 0.004f ? (false, true, 0, false) : (false, false, 0, true);
     }
 
     private static (Entity Lock, Entity Key) PinALock(Simulation sim, Entity me, Entity bench)
@@ -103,7 +110,7 @@ public class TinkerTradeTests
         Play(sim, me, w =>
         {
             var s = (PinSession)w;
-            return s.Length > s.Mark - 0.06f ? (false, true, 0) : (false, false, 1);
+            return s.Length > s.Mark - 0.06f ? (false, true, 0, false) : (false, false, 0, true);
         });
         var lk = Carried(sim, me).Single(e => Locksmithing.IsLock(sim, e));
         Assert.True(sim.World.Get<LockCut>(lk).Tightness < 0.5f);
@@ -308,14 +315,14 @@ public class TinkerTradeTests
     // ---------------- Contraptions ----------------
 
     /// <summary>Seat each part at its fit (the session's own copy: a test's privilege), then wind it to the catch.</summary>
-    private static (bool, bool, int) FitTrue(WorkSession w)
+    private static (bool, bool, int, bool) FitTrue(WorkSession w)
     {
         var s = (FitSession)w;
         if (s.Winding)
-            return s.Catching ? (false, false, 1) : (s.StepsDone % 20 == 0, false, 0);
+            return s.Catching ? (false, false, 0, true) : (s.StepsDone % 20 == 0, false, 0, false);
         // Square it up first; press only while it's square.
         var steer = MathF.Abs(s.Offset) > s.TrueHalfWidth * 0.25f ? -Math.Sign(s.Offset) : 0;
-        return (false, MathF.Abs(s.Offset) <= s.TrueHalfWidth * 0.6f, steer);
+        return (false, MathF.Abs(s.Offset) <= s.TrueHalfWidth * 0.6f, steer, false);
     }
 
     [Fact]
@@ -331,7 +338,7 @@ public class TinkerTradeTests
 
         // Forced: pressed hard, never squared up, so each part jams in crooked.
         sim.ApplyNow(new CraftCommand(me, bench, Recipe(sim, "MakeSpringSnare")));
-        Play(sim, me, w => ((FitSession)w).Winding ? FitTrue(w) : (false, true, 0));
+        Play(sim, me, w => ((FitSession)w).Winding ? FitTrue(w) : (false, true, 0, false));
         var snare = Carried(sim, me).Single(e => Contraptions.IsContraption(sim, e) && sim.World.Get<Thing>(e).Def.Name == "SpringSnare");
         Assert.True(sim.World.Get<Contraption>(snare).Binding, "forced home while it bound");
     }
@@ -355,7 +362,7 @@ public class TinkerTradeTests
             if (s.Winding && !early)
             {
                 early = true;
-                return (false, false, 1); // latch before winding at all: it won't hold
+                return (false, false, 0, true); // latch before winding at all: it won't hold
             }
             slipped |= s.Slipped > 0;
             return FitTrue(w);
@@ -700,5 +707,17 @@ public class TinkerTradeTests
         Assert.Equal(sim.World.Get<Appraisal>(bird), loaded.World.Get<Appraisal>(bird));
         Assert.True(loaded.World.Get<Contraption>(rod).Binding);
         SaveLoadTests.AssertSameFuture(sim, loaded, 1);
+    }
+
+    [Fact]
+    public void APinIsSetWithSpaceNotD()
+    {
+        var (sim, me, bench) = AtTheBench();
+        sim.ApplyNow(new CraftCommand(me, bench, Recipe(sim, "MakeLock")));
+        var s = Assert.IsType<PinSession>(sim.World.Get<WorkSession>(me));
+        s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Axis, 1)], s.StepsDone + 5);
+        Assert.Equal(0, s.Pin);
+        s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Act)], s.StepsDone + 2);
+        Assert.Equal(1, s.Pin);
     }
 }

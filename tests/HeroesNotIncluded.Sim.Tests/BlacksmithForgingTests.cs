@@ -192,4 +192,16 @@ public class BlacksmithForgingTests
         Smithing.PieceOf(sim, me)!.Shape = 1f;
         Assert.StartsWith("Quench the", Smithing.StepAt(sim, me, kit.Tub));
     }
+
+    [Fact]
+    public void ThePieceIsDrawnOutWithSpaceNotD()
+    {
+        var (sim, me, kit) = Smithy();
+        sim.ApplyNow(new SmithCommand(me, kit.Forge));
+        var heat = Assert.IsType<HeatSession>(sim.World.Get<WorkSession>(me));
+        heat.Advance([new WorkInput(heat.StepsDone, WorkInputKind.Axis, 1)], heat.StepsDone + 10);
+        Assert.False(heat.Done, "D only steers now: it doesn't draw the piece out");
+        heat.Advance([new WorkInput(heat.StepsDone, WorkInputKind.Act)], heat.StepsDone + 1);
+        Assert.True(heat.Done);
+    }
 }

@@ -14,7 +14,7 @@ namespace HeroesNotIncluded.Sim.Tinkering;
 /// edge instead, and pressed hard enough for long enough it jams in crooked: seated, but with a
 /// hidden binding that may jam the thing later (<see cref="Contraption.Binding"/>). The deeper a
 /// part's in, the better the seat guides it. Then the spring: tap F to wind it a click at a time
-/// (it creeps back between clicks), and D to latch it while the pawl's catching. Short of the catch
+/// (it creeps back between clicks), and Space to latch it while the pawl's catching. Short of the catch
 /// the pawl won't hold and the winding goes on; past it the spring strains (latched there, it's
 /// weaker work), and further it snaps, and the parts come apart to be fitted again. Each seated
 /// part sits home a moment before the next comes up, so it's plain one's done.
@@ -160,12 +160,10 @@ public sealed class FitSession : WorkSession
         _trueSteps = 0;
     }
 
-    protected override void Axis(int value)
-    {
-        _steer = value;
-        if (value > 0)
-            _latch = 1;
-    }
+    protected override void Axis(int value) => _steer = value;
+
+    /// <summary>Latch the wound spring (Space); nothing while fitting parts.</summary>
+    protected override void Act() => _latch = 1;
 
     protected override void Press()
     {
@@ -211,7 +209,7 @@ public sealed class FitSession : WorkSession
             Done = true;
             return;
         }
-        _latch = 0; // D does nothing while fitting: it only latches the spring
+        _latch = 0; // Space does nothing while fitting: it only latches the spring
         if (Settling > 0)
         {
             // The seated part sits home a moment; then on to the next.

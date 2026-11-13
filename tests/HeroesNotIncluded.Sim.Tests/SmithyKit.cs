@@ -66,13 +66,12 @@ public sealed record SmithyKit(Entity Forge, Entity Anvil, Entity Tub, Entity Gr
                 predictor.Update(sim, me, 1, false, false, 0, c => sim.ApplyNow(c));
                 continue;
             }
-            bool press = false, held = false;
-            var axis = 0;
+            bool press = false, held = false, act = false;
             switch (predictor.Session)
             {
                 case HeatSession h:
                     held = true;
-                    axis = style != SmithStyle.LeaveInFire && h.LooksReady ? 1 : 0;
+                    act = style != SmithStyle.LeaveInFire && h.LooksReady;
                     break;
                 case HammerSession h:
                     // A careful smith goes back to the fire as the colour fades.
@@ -94,7 +93,7 @@ public sealed record SmithyKit(Entity Forge, Entity Anvil, Entity Tub, Entity Gr
                     };
                     break;
             }
-            predictor.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c));
+            predictor.Update(sim, me, 1, press, held, 0, c => sim.ApplyNow(c), act: act);
         }
         sim.Tick();
     }

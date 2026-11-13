@@ -107,7 +107,7 @@ public sealed partial class VillageGame
     /// <summary>Seasoning by taste: pinches in, a taste, and what it says.</summary>
     private void DrawSeason(SeasonSession s)
     {
-        BeginWork(s.Title, ("F", "a pinch"), ("D", "taste it"), ("A", "that'll do"), ("Esc", "stop"));
+        BeginWork(s.Title, ("F", "a pinch"), ("Space", "taste it"), ("Esc", "that'll do"));
         TextC(Theme.Dim, "Every pot wants its own. Taste as you go: it can't come back out.");
         ImGui.Spacing();
         ImGui.Text($"{s.Pinches} pinch{(s.Pinches == 1 ? "" : "es")} in.");

@@ -29,7 +29,7 @@ public sealed partial class VillageGame
     /// <summary>The pins as columns, each filed down toward its mark; the one in the file, and how each set one sits.</summary>
     private void DrawPin(PinSession s)
     {
-        BeginWork(s.Title, ("F", "hold to file"), ("D", "set the pin, take up the next"), ("Esc", "stop"));
+        BeginWork(s.Title, ("F", "hold to file"), ("Space", "set the pin, take up the next"), ("Esc", "stop"));
         TextC(Theme.Dim, "File to the mark: the longer a stroke, the harder the file bites. Past the mark, it's sloppy; far past, ruined.");
         var dl = ImGui.GetWindowDrawList();
         var origin = ImGui.GetCursorScreenPos();
@@ -172,7 +172,7 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawWinding(FitSession s)
     {
-        BeginWork(s.Title, ("F", "tap to wind a click"), ("D", "latch it"), ("Esc", "stop"));
+        BeginWork(s.Title, ("F", "tap to wind a click"), ("Space", "latch it"), ("Esc", "stop"));
         var dl = ImGui.GetWindowDrawList();
         var min = ImGui.GetCursorScreenPos();
         var size = Gui.S(420, 180);
@@ -240,7 +240,7 @@ public sealed partial class VillageGame
         }
 
         var (colour, say) = s.Strain > 0f ? (Theme.Bad, "Past the catch: it's straining! Let it creep back onto the brass, or latch it strained.")
-            : s.Catching ? (Theme.Good, "The pawl's in the brass teeth. Latch it now (D).")
+            : s.Catching ? (Theme.Good, "The pawl's in the brass teeth. Latch it now (Space).")
             : s.Slipped > 0 ? (Theme.Warn, "It won't hold yet: the pawl slips. Wind on till the brass teeth reach it.")
             : s.Clicks == 0 ? (Theme.Text, "Tap F to wind the spring a click at a time.")
             : (Theme.Text, $"Wind on: the brass teeth are coming round to the pawl. {s.Clicks} {(s.Clicks == 1 ? "click" : "clicks")}.");
@@ -599,7 +599,7 @@ public sealed partial class VillageGame
                 Later(new CopyKeyCommand(_avatar, bench, item));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(why != null ? Cap(why) + "." : "File a blank from an iron bar to this key's bits: hold F to file, D to set each.");
+                Tip(why != null ? Cap(why) + "." : "File a blank from an iron bar to this key's bits: hold F to file, Space to set each.");
         }
         if (View.Curio(item) is { } curio)
         {

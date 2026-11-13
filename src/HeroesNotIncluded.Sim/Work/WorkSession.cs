@@ -34,6 +34,13 @@ public enum WorkInputKind : byte
 
     /// <summary>One of a set of keys pressed (1 to 9; Value 0 to 8): an empath's runes.</summary>
     Rune,
+
+    /// <summary>
+    /// The game's other action, pressed once (Space): draw the piece out, taste the pot, set the
+    /// pin, latch the spring. Its own input so that A/D only ever steer or mean less/more.
+    /// Appended last: the kinds go over the wire by number.
+    /// </summary>
+    Act,
 }
 
 /// <summary>One input to a session, stamped with the step it happened on.</summary>
@@ -117,6 +124,9 @@ public abstract class WorkSession
     /// <summary>A numbered key pressed, 0 for 1 (off the network: check the range).</summary>
     protected virtual void Rune(int index) { }
 
+    /// <summary>The game's other action (<see cref="WorkInputKind.Act"/>), once per press.</summary>
+    protected virtual void Act() { }
+
     /// <summary>Count one moment or blow of work at quality 0..1.</summary>
     protected void Sample(float quality)
     {
@@ -157,6 +167,9 @@ public abstract class WorkSession
                 break;
             case WorkInputKind.Rune:
                 Rune(input.Value);
+                break;
+            case WorkInputKind.Act:
+                Act();
                 break;
         }
     }

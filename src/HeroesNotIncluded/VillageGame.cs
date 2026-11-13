@@ -521,7 +521,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     private void HandleKeys(Input input)
     {
-        if (input.WasKeyPressed(GlfwKey.Space))
+        // Space pauses, except at hands-on work, where it's the game's other action (UpdateWork).
+        if (input.WasKeyPressed(GlfwKey.Space) && !Working)
             SetSpeed(Paused ? _speedBeforePause : 0);
         // Ctrl+1–3: plain numbers are the Adventure hotbar (VillageGame.Inventory.cs).
         if (!HasAvatar && (input.IsKeyDown(GlfwKey.LeftControl) || input.IsKeyDown(GlfwKey.RightControl)))

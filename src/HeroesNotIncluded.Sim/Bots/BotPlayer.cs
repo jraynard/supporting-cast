@@ -89,6 +89,12 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     private List<int> _weave = [];
     private int _rune = -1;
 
+    /// <summary>The session's other action (Space) this frame: set by <see cref="Play"/>.</summary>
+    private bool _act;
+
+    /// <summary>Done with the pot's seasoning: step away, which keeps it.</summary>
+    private bool _seasoned;
+
     public Guid Player => player;
 
     /// <summary>What it last decided, for tests and debugging.</summary>
@@ -114,6 +120,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         var live = sim.World.TryGet<WorkSession>(me, out var s) ? s.StartTick : -1;
         _axis2 = 0;
         _rune = -1;
+        _act = false;
         var (press, held, axis) = _work.Session?.StartTick == live ? Play(_work.Session) : (false, false, 0);
         // At the anvil it puts the hammer down as the colour fades, and takes the piece back to the fire.
         if (_work.Session is HammerSession { Workable: < 0.95f } && !_stopped)
@@ -121,7 +128,12 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             _stopped = true;
             send(new StopWorkCommand(me));
         }
-        _work.Update(sim, me, steps, press, held, axis, send, _axis2, _rune);
+        if (_work.Session is SeasonSession && _seasoned && !_stopped)
+        {
+            _stopped = true;
+            send(new StopWorkCommand(me));
+        }
+        _work.Update(sim, me, steps, press, held, axis, send, _axis2, _rune, _act);
         if (_work.Session != null || sim.World.Has<WorkSession>(me) || now < _nextThink)
             return;
         _nextThink = now + ThinkTicks;
@@ -138,7 +150,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         if (s.StartTick != _session)
         {
             _session = s.StartTick;
-            _resting = _stopped = false;
+            _resting = _stopped = _seasoned = false;
             _lastRune = -1;
             _feel = 0f;
             _rose = _middle = null;
@@ -157,7 +169,8 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 return (h.Ready && MathF.Abs(h.Marker - h.Mark) <= h.HalfWidth * 0.5f, false, 0);
             case HeatSession heat:
                 // Pump, and draw it out once it glows the colour at the top of its working heat.
-                return (false, true, heat.LooksReady ? 1 : 0);
+                _act = heat.LooksReady;
+                return (false, true, 0);
             case QuenchSession q:
                 // Keep it under till the steam thins to a hiss.
                 return (false, !(q.Dunked && q.Steam < 0.2f), 0);
@@ -179,10 +192,14 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 _potSeasoned = true;
                 _seasonBeat = (_seasonBeat + 1) % 30;
                 if (se.TastedAt == se.Pinches && se.Taste is "about right" or "a touch salty" or "far too salty")
-                    return (false, false, -1);
+                {
+                    _seasoned = true;
+                    return (false, false, 0);
+                }
                 if (_seasonBeat == 0 && (se.TastedAt == se.Pinches || se.Pinches == 0))
                     return (true, false, 0);
-                return (false, false, _seasonBeat is >= 15 and < 18 && se.TastedAt != se.Pinches ? 1 : 0);
+                _act = _seasonBeat == 15 && se.TastedAt != se.Pinches;
+                return (false, false, 0);
             }
             case WashSession wa:
             {
@@ -352,7 +369,10 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         if (s.Winding)
         {
             if (s.Catching)
-                return (false, false, 1);
+            {
+                _act = true;
+                return (false, false, 0);
+            }
             _working = (_working + 1) % 24;
             return (_working == 0, false, 0);
         }

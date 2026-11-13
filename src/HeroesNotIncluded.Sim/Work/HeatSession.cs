@@ -10,7 +10,7 @@ namespace HeroesNotIncluded.Sim.Work;
 /// all the fuel and bellows can give, and sinks back to a sullen glow when you stop. An unblown fire
 /// is too cool for iron, so every heat starts there and the bellows bring it up, unless they were
 /// worked moments ago and it's still blown. The piece
-/// takes the fire's heat, and you read it only by its colour: draw it out (the axis, D) when it's right.
+/// takes the fire's heat, and you read it only by its colour: draw it out (Space) when it's right.
 /// Left past white heat it burns, costing it quality, and at last burns through.
 /// </summary>
 public sealed class HeatSession : WorkSession
@@ -121,12 +121,8 @@ public sealed class HeatSession : WorkSession
         }
     }
 
-    /// <summary>Draw it out of the fire (D, a push toward the anvil). The work key itself is the bellows.</summary>
-    protected override void Axis(int value)
-    {
-        if (value > 0)
-            Done = true;
-    }
+    /// <summary>Draw it out of the fire (Space). The work key itself is the bellows.</summary>
+    protected override void Act() => Done = true;
 
     public override void Finish(Simulation sim)
     {

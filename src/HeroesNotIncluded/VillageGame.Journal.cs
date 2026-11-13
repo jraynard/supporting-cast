@@ -150,9 +150,9 @@ public sealed partial class VillageGame
         ("Getting about", [("W/A/S/D", "walk"), ("F", "use, talk to, work at what's in front of you"), ("Tab", "inventory"), ("1/2/3/4", "take a stack into your hands"),
             ("X", "put down what you hold"), ("Z", "dig"), ("N", "sleep where you stand")]),
         ("The village", [("Left-click", "walk there or act"), ("Shift-click", "look at someone or something"), ("Right-click", "an item's menu"), ("Esc", "stop looking")]),
-        ("Hands-on work", [("F", "strike, pour, set, press"), ("A/D", "steer, tilt, lift"), ("Esc", "put the work down")]),
+        ("Hands-on work", [("F", "strike, pour, set, press"), ("A/D", "steer, tilt, lift"), ("Space", "the other thing: taste, latch, draw out"), ("Esc", "put the work down")]),
         ("Panels", [("J", "shop and favours"), ("T", "talk (what you've heard)"), ("K", "quests"), ("G", "the gift"), ("L", "message log"), ("B", "build tools"), ("H", "this card")]),
-        ("Camera and time", [("Q/E", "turn"), ("Wheel", "zoom"), ("[ / ]", "level down / up"), ("Home", "all levels"), ("\\", "roofs"), ("Space", "pause"),
+        ("Camera and time", [("Q/E", "turn"), ("Wheel", "zoom"), ("[ / ]", "level down / up"), ("Home", "all levels"), ("\\", "roofs"), ("Space", "pause (not while working)"),
             ("F12", "screenshot"), ("Shift+F12", "screenshot without the UI")]),
     ];
 

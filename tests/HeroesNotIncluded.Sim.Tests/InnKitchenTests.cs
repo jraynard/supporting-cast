@@ -100,20 +100,22 @@ public class InnKitchenTests
         for (var t = 0; t < 60 * 60 && sim.World.Has<WorkSession>(me); t++)
         {
             sim.Tick();
-            bool press = false;
-            var axis = 0;
+            bool press = false, act = false;
             if (predictor.Session is SeasonSession s)
             {
                 // A pinch, then a taste, then (taste come up) decide.
                 phase = (phase + 1) % 30;
                 if (s.TastedAt == s.Pinches && s.Taste is "about right" or "a touch salty" or "far too salty")
-                    axis = -1;
-                else if (phase == 0)
+                {
+                    sim.ApplyNow(new StopWorkCommand(me)); // that'll do: stepping away keeps it
+                    continue;
+                }
+                if (phase == 0)
                     press = s.TastedAt == s.Pinches || s.Pinches == 0;
                 else if (phase == 15 && s.TastedAt != s.Pinches)
-                    axis = 1;
+                    act = true;
             }
-            predictor.Update(sim, me, 1, press, false, axis, c => sim.ApplyNow(c));
+            predictor.Update(sim, me, 1, press, false, 0, c => sim.ApplyNow(c), act: act);
         }
         sim.Tick();
     }
@@ -191,10 +193,10 @@ public class InnKitchenTests
         sim.ApplyNow(new PotCommand(me, pot, PotStep.Season));
         var s = (SeasonSession)sim.World.Get<WorkSession>(me);
         var inputs = Enumerable.Range(0, 20).Select(i => new WorkInput(i * SeasonSession.PinchSteps, WorkInputKind.Press)).ToList();
-        inputs.Add(new WorkInput(20 * SeasonSession.PinchSteps + 1, WorkInputKind.Axis, 1));
-        inputs.Add(new WorkInput(20 * SeasonSession.PinchSteps + 2, WorkInputKind.Axis, -1));
+        inputs.Add(new WorkInput(20 * SeasonSession.PinchSteps + 1, WorkInputKind.Act));
         s.Advance(inputs, 20 * SeasonSession.PinchSteps + 5);
         Assert.Contains("salty", s.Taste);
+        sim.ApplyNow(new StopWorkCommand(me)); // that'll do
         sim.Tick();
         Assert.True(sim.World.Get<StewPot>(pot).Seasoning > 1f);
     }
@@ -391,5 +393,43 @@ public class InnKitchenTests
         Assert.Equal(Speech.Clarity.Clear, Speech.SpeechSystem.Hear(sim, counter, kitchen, Speech.Volume.Say));
         // Across the common room, away from the hatch, it's only heard through the wall.
         Assert.Equal(Speech.Clarity.Muffled, Speech.SpeechSystem.Hear(sim, InnCell(sim, 1, 6), InnCell(sim, 1, 2), Speech.Volume.Say));
+    }
+
+    [Fact]
+    public void TastingIsSpaceAndAOrDDoNothing()
+    {
+        var (sim, me, pot) = Kitchen();
+        Fill(sim, me, pot, ("Cabbage", 6));
+        sim.ApplyNow(new PotCommand(me, pot, PotStep.Season));
+        var s = (SeasonSession)sim.World.Get<WorkSession>(me);
+        s.Advance([new WorkInput(0, WorkInputKind.Press), new WorkInput(1, WorkInputKind.Axis, 1), new WorkInput(3, WorkInputKind.Axis, -1)], 10);
+        Assert.Equal(-1, s.TastedAt);
+        Assert.False(s.Done, "A no longer means that'll do: stepping away does");
+        s.Advance([new WorkInput(10, WorkInputKind.Act)], 12);
+        Assert.Equal(1, s.TastedAt);
+        Assert.NotEqual("", s.Taste);
+    }
+
+    [Fact]
+    public void ASeasoningSavedBeforeTheOtherActionLoads()
+    {
+        // Format 7 kept the seasoning's last A/D after its state; a format 7 save must still read.
+        var (sim, me, pot) = Kitchen();
+        Fill(sim, me, pot, ("Cabbage", 6));
+        sim.ApplyNow(new PotCommand(me, pot, PotStep.Season));
+        var s = (SeasonSession)sim.World.Get<WorkSession>(me);
+        s.Advance([new WorkInput(0, WorkInputKind.Press), new WorkInput(1, WorkInputKind.Act)], 5);
+        using var stream = new MemoryStream();
+        using (var w = new SaveWriter(stream, sim.Defs))
+        {
+            WorkSession.Write(w, s);
+            w.Int(1);       // format 7's last A/D
+            w.Int(0x5EA50); // what follows in the save
+        }
+        stream.Position = 0;
+        using var r = new SaveReader(stream, sim.Defs, version: 7);
+        var read = Assert.IsType<SeasonSession>(WorkSession.Read(r));
+        Assert.Equal((s.Seasoning, s.Pinches, s.Taste), (read.Seasoning, read.Pinches, read.Taste));
+        Assert.Equal(0x5EA50, r.Int());
     }
 }

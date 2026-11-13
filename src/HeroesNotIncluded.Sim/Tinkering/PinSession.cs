@@ -8,7 +8,7 @@ namespace HeroesNotIncluded.Sim.Tinkering;
 /// <summary>
 /// Pinning a lock at the tinker's bench, or filing a copy of a key. Each pin starts long and is
 /// filed down to its mark: hold F to file (the file bites harder the longer a stroke goes on),
-/// let go to look, and D to set the pin and take up the next. Set near the mark, the pin sits
+/// let go to look, and Space to set the pin and take up the next. Set near the mark, the pin sits
 /// crisply; filed past it, it's sloppy, and far past it the pin is ruined. A lock whose pins all
 /// sit crisply is tight, and hard to pick (<see cref="LockCut.Tightness"/>), and its key turns
 /// sweetly (<see cref="Key.Fit"/>). Copying a key is the same, filed to the bits of the key in hand.
@@ -111,7 +111,8 @@ public sealed class PinSession : WorkSession
         Errors = (float[])Errors.Clone();
     }
 
-    protected override void Axis(int value) => _set = value;
+    /// <summary>Set the pin and take up the next (Space), on the next step.</summary>
+    protected override void Act() => _set = 1;
 
     protected override void Step()
     {
@@ -120,7 +121,7 @@ public sealed class PinSession : WorkSession
         if (_set > 0)
         {
             SetPin();
-            _set = 0; // one pin per press of D
+            _set = 0; // one pin per press
             return;
         }
         if (!Held)

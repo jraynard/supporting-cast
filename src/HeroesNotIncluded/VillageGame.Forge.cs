@@ -64,7 +64,7 @@ public sealed partial class VillageGame
     /// <summary>The piece glowing on the coals; the bellows pumping as you hold F; draw it out when it looks right.</summary>
     private void DrawHeat(HeatSession s)
     {
-        BeginWork(s.Title, ("F", "hold to work the bellows"), ("D", "draw it out"), ("Esc", "leave it"));
+        BeginWork(s.Title, ("F", "hold to work the bellows"), ("Space", "draw it out"), ("Esc", "leave it"));
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 170);
         var min = ImGui.GetCursorScreenPos();

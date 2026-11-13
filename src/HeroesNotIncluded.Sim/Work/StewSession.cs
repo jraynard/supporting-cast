@@ -116,7 +116,7 @@ public sealed class StewSession : WorkSession
 }
 
 /// <summary>
-/// Seasoning the stew a pinch at a time (F), tasting as you go (D), done with A. A taste says how it
+/// Seasoning the stew a pinch at a time (F), tasting as you go (Space), done when you step away. A taste says how it
 /// sits against what this pot wants, roughly: the less practised the cook, the less they can tell.
 /// Nothing takes salt back out.
 /// </summary>
@@ -139,7 +139,6 @@ public sealed class SeasonSession : WorkSession
     public int TastedAt { get; private set; } = -1;
 
     private int _sincePinch = PinchSteps;
-    private int _lastAxis;
 
     public override int3? Focus(Simulation sim) => sim.World.IsAlive(Pot) && sim.World.TryGet<Thing>(Pot, out var t) ? t.Cell : null;
 
@@ -165,20 +164,13 @@ public sealed class SeasonSession : WorkSession
         Pinches++;
     }
 
-    protected override void Axis(int value)
+    /// <summary>A taste. Stepping away (Esc) is "that'll do": it keeps the seasoning just as finishing would.</summary>
+    protected override void Act()
     {
-        if (value == _lastAxis)
-            return;
-        _lastAxis = value;
-        if (value > 0)
-        {
-            // How well they can tell: a practised tongue is within a few hundredths, a raw one far off.
-            var noise = Rand.Range(-1f, 1f) * 0.1f / Hands.Tolerance;
-            Taste = Cooking.TasteWord(Seasoning - Target + noise);
-            TastedAt = Pinches;
-        }
-        else if (value < 0)
-            Done = true;
+        // How well they can tell: a practised tongue is within a few hundredths, a raw one far off.
+        var noise = Rand.Range(-1f, 1f) * 0.1f / Hands.Tolerance;
+        Taste = Cooking.TasteWord(Seasoning - Target + noise);
+        TastedAt = Pinches;
     }
 
     protected override void Step()
@@ -206,7 +198,6 @@ public sealed class SeasonSession : WorkSession
         w.String(Taste);
         w.Int(TastedAt);
         w.Int(_sincePinch);
-        w.Int(_lastAxis);
     }
 
     protected override void ReadState(SaveReader r)
@@ -218,6 +209,7 @@ public sealed class SeasonSession : WorkSession
         Taste = r.String();
         TastedAt = r.Int();
         _sincePinch = r.Int();
-        _lastAxis = Math.Sign(r.Int());
+        if (r.Version < 8)
+            r.Int(); // the last A/D, from when tasting was D
     }
 }

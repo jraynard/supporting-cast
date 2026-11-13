@@ -127,7 +127,7 @@ public sealed partial class VillageGame
         if (input.IsKeyDown(GlfwKey.S)) y -= 1;
         if (input.IsKeyDown(GlfwKey.D)) x += 1;
         if (input.IsKeyDown(GlfwKey.A)) x -= 1;
-        // A key that ended a mini-game (D draws the piece out, F the last blow) doesn't walk off or
+        // A key that ended a mini-game (F the last blow, A/D steering as it ended) doesn't walk off or
         // use the station again once it's over: nothing till the keys held then come up.
         if (_moveKeysFromWork && (x != 0 || y != 0))
             x = y = 0;

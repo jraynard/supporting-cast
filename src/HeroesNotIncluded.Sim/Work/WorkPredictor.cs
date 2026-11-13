@@ -32,9 +32,10 @@ public sealed class WorkPredictor
 
     /// <summary>
     /// Play this frame's <paramref name="steps"/> with its input, and send a batch if one is due.
-    /// <paramref name="rune"/> is a numbered key pressed this frame (0 for 1), or -1.
+    /// <paramref name="rune"/> is a numbered key pressed this frame (0 for 1), or -1; <paramref name="act"/>
+    /// the game's other action pressed this frame (<see cref="WorkInputKind.Act"/>).
     /// </summary>
-    public void Update(Simulation sim, Entity worker, int steps, bool press, bool held, int axis, Action<ISimCommand> send, int axis2 = 0, int rune = -1)
+    public void Update(Simulation sim, Entity worker, int steps, bool press, bool held, int axis, Action<ISimCommand> send, int axis2 = 0, int rune = -1, bool act = false)
     {
         if (!sim.World.IsAlive(worker) || !sim.World.TryGet<WorkSession>(worker, out var real))
         {
@@ -63,6 +64,8 @@ public sealed class WorkPredictor
             _frame.Add(new WorkInput(at, WorkInputKind.Axis2, axis2));
         if (rune >= 0)
             _frame.Add(new WorkInput(at, WorkInputKind.Rune, rune));
+        if (act)
+            _frame.Add(new WorkInput(at, WorkInputKind.Act));
         (_held, _axis, _axis2) = (held, axis, axis2);
         if (_frame.Count > 0 && steps == 0)
             steps = 1; // an input needs a step to land on

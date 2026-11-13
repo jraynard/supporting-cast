@@ -37,7 +37,7 @@ public sealed partial class VillageGame
     private long _fArmedFor = -1;
     private bool _fArmed;
 
-    /// <summary>A frame of hands-on work: F strikes, Esc puts it down.</summary>
+    /// <summary>A frame of hands-on work: F strikes, A/D and W/S steer, Space is the game's other action, Esc puts it down.</summary>
     private void UpdateWork(float dt)
     {
         if (!HasAvatar)
@@ -67,7 +67,8 @@ public sealed partial class VillageGame
         for (var k = 0; live && k < RuneKeys.Length; k++)
             if (input.WasKeyPressed(RuneKeys[k]))
                 rune = k;
-        _work.Update(_sim, _avatar, steps, f && input.WasKeyPressed(GlfwKey.F), f && live && input.IsKeyDown(GlfwKey.F), axis, Issue, axis2, rune);
+        var act = live && input.WasKeyPressed(GlfwKey.Space);
+        _work.Update(_sim, _avatar, steps, f && input.WasKeyPressed(GlfwKey.F), f && live && input.IsKeyDown(GlfwKey.F), axis, Issue, axis2, rune, act);
     }
 
     private void DrawWork()
