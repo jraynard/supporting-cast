@@ -4,7 +4,7 @@ namespace HeroesNotIncluded.Sim.Environment;
 
 /// <summary>
 /// Light level per cell (0 = pitch dark, 1 = full daylight): sky light where unroofed plus
-/// point lights from lit campfires and burning tiles. Drawn by the renderer; the sim only reads it
+/// point lights from lit fires, buildings' lamps (<see cref="Defs.BuildingDef.Lamps"/>) and burning tiles. Drawn by the renderer; the sim only reads it
 /// for mood (sitting in the dark indoors).
 /// </summary>
 public sealed class LightingSystem : ISimSystem
@@ -36,11 +36,17 @@ public sealed class LightingSystem : ISimSystem
                 Splat(sim, Warmth.FireCell(thing), thing.Def.Building!.LightRadius, 1f);
         }
 
+        foreach (var (cell, lamp) in Systems.Buildings.LitLamps(sim))
+            Splat(sim, cell, lamp.Building!.LightRadius, LampStrength);
+
         foreach (var i in sim.Fire.BurningTiles)
             Splat(sim, map.CellOf(i), 2f + 3f * map.Fire[i], map.Fire[i]);
 
         sim.Rooms.UpdateTemperatures();
     }
+
+    /// <summary>A lamp is softer than a fire.</summary>
+    public const float LampStrength = 0.8f;
 
     /// <summary>
     /// A point light: full strength at the center fading to nothing at the radius. It reaches up and

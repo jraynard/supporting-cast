@@ -42,6 +42,18 @@ public sealed class BuildingDef : Def
     public List<BuildingFurnishing> Furnish { get; set; } = [];
 
     /// <summary>
+    /// Lamps hung from the beams once it's finished (the inn's lanterns): <see cref="Lamp"/>'s look
+    /// and light at each of these plan cells. Not structures, so they take no floor: people walk,
+    /// stand and set things down under them. They need no fuel.
+    /// </summary>
+    public List<BuildingLampAt> Lamps { get; set; } = [];
+
+    /// <summary>The thing def its lamps are drawn and lit as (its model, flame and light radius).</summary>
+    public string? Lamp { get; set; }
+
+    [JsonIgnore] public ThingDef? LampDef { get; private set; }
+
+    /// <summary>
     /// Spots for extras once it's finished: this one takes a second bed, these two take bellows
     /// either side of the forge. Each is filled (or not) on its own; nothing else goes inside.
     /// </summary>
@@ -275,6 +287,12 @@ public sealed class BuildingDef : Def
                 v.Label = v.Name;
         }
         EatThoughtDef = EatThought != null ? db.Thought(EatThought) : null;
+        LampDef = Lamp != null ? db.Thing(Lamp) : null;
+        if (Lamps.Count > 0 && LampDef?.Building is not { LightRadius: > 0 })
+            throw new Exception($"Building '{Name}': lamps need a \"lamp\" def that gives light (building lightRadius)");
+        foreach (var l in Lamps)
+            if (l.At.Length != 2 || l.Level < 0 || l.Level >= Storeys || At(l.At[0], l.At[1], l.Level) != '.')
+                throw new Exception($"Building '{Name}': a lamp at [{string.Join(", ", l.At)}] isn't over an open floor of its plan");
         foreach (var u in Upgrades)
         {
             u.OnDef = db.Thing(u.On);
@@ -411,6 +429,13 @@ public sealed class BuildingVariant
 }
 
 /// <summary>A piece of furniture the Furnish phase puts in.</summary>
+/// <summary>Where a building hangs a lamp (<see cref="BuildingDef.Lamps"/>): a plan cell, on a storey.</summary>
+public sealed class BuildingLampAt
+{
+    public int[] At { get; set; } = [0, 0];
+    public int Level { get; set; }
+}
+
 public sealed class BuildingFurnishing
 {
     public string Def { get; set; } = "";

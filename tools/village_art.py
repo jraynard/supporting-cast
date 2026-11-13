@@ -266,6 +266,16 @@ def hearth_soot():
     return img
 
 
+def candle():
+    """A tallow candle's side: creamy wax, drips down from the top."""
+    base = (232, 218, 182)
+    img = noise(base, 4, 60)
+    d = ImageDraw.Draw(img)
+    for x in range(2, S, 7):
+        d.line([(x, 0), (x, 6 + (x * 5) % 9)], fill=tint(base, 1.08))
+    return img
+
+
 # ---------------- Icons and billboards ----------------
 
 def well_icon():
@@ -429,6 +439,7 @@ def generate():
     save(cabbage_top(), "props/cabbage_top")
     save(bridge_stone(), "buildings/bridge_stone")
     save(hearth_soot(), "props/hearth_soot")
+    save(candle(), "props/candle")
     materials(bridge_stone(), "buildings/bridge_stone", STONES)
     for name, art in (("bridge_parapet", bridge_parapet), ("bridge_coping", bridge_coping), ("bridge_pier", bridge_pier)):
         save(art(), f"buildings/{name}")

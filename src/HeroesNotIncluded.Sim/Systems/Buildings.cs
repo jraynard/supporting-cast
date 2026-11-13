@@ -38,6 +38,21 @@ public static class Buildings
     }
 
     /// <summary>Where a plan cell (column, row) of a storey lands on the map, or (-1, -1, -1) off it.</summary>
+    /// <summary>Every finished building's lamps (<see cref="BuildingDef.Lamps"/>): where they hang and what they are.</summary>
+    public static IEnumerable<(int3 Cell, ThingDef Def)> LitLamps(Simulation sim)
+    {
+        var w = sim.World;
+        foreach (var e in w.Query<PresetBuilding>())
+        {
+            var b = w.Get<PresetBuilding>(e);
+            if (b.Phase != BuildPhase.Done || b.Demolishing || b.Def.LampDef is not { } lamp)
+                continue;
+            foreach (var l in b.Def.Lamps)
+                if (CellOf(sim.Map, b.Def, b.Anchor, b.Facing, l.At[0], l.At[1], l.Level) is var c && c != Off)
+                    yield return (c, lamp);
+        }
+    }
+
     public static int3 CellOf(Map map, BuildingDef def, int3 anchor, int facing, int col, int row, int level = 0)
     {
         var l = def.Local(col, row);

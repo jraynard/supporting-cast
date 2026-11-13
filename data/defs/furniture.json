@@ -179,6 +179,25 @@
       ]
     },
     {
+      // A lantern hung from the beams on a short chain: an open iron frame round a candle. Never
+      // placed itself: buildings hang it at their "lamps" (lit once finished, no fuel, no floor taken).
+      "name": "Lantern", "label": "hanging lantern", "category": "Building", "sprite": "buildings/campfire",
+      "description": "An iron lantern hung from the beams, a candle burning in it. Keeps a room from gloom.",
+      "maxHp": 40, "flammability": 0.2,
+      "building": { "partOnly": true, "work": 30, "lightRadius": 5, "cost": [ { "def": "Wood", "count": 1 } ] },
+      "fireAt": [0.5, 0.5, 0.92], "fireSize": 0.55,
+      "model": [
+        { "min": [0.485, 0.485, 1.2], "max": [0.515, 0.515, 1.54], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.35, 0.35, 1.12], "max": [0.65, 0.65, 1.2], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.36, 0.36, 0.8], "max": [0.64, 0.64, 0.86], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.36, 0.36, 0.86], "max": [0.39, 0.39, 1.12], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.61, 0.36, 0.86], "max": [0.64, 0.39, 1.12], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.36, 0.61, 0.86], "max": [0.39, 0.64, 1.12], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.61, 0.61, 0.86], "max": [0.64, 0.64, 1.12], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.46, 0.46, 0.86], "max": [0.54, 0.54, 0.9], "top": "props/candle", "side": "props/candle" }
+      ]
+    },
+    {
       // The kitchen's wash tub (Work.WashSession): F at it with dirty crockery to scrub it clean.
       "name": "WashTub", "label": "wash tub", "category": "Building", "solid": true, "sprite": "buildings/chest",
       "description": "A half-barrel of hot water and a scrubbing brush. F at it with dirty tankards or bowls to wash them.",

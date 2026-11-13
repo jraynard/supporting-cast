@@ -868,6 +868,11 @@ dragon and the festival.
   - Ember stays rare: barrel-gold and oak for the picked entry; the wash is cellar dark.
   - Millbrook going about its day behind it, in golden light; loading lines while a village is
     made ready. The lobby and the round start get their lines too.
+- **The fireplace in its wall:** its chimney breast now rises the full width to the walls' cap beam
+  (the oak mantel still stands out), and the walls beside it are no longer cut down for it.
+- **The inn's lanterns** (`BuildingDef.Lamps`): hung from the beams over the tables, by the bar, in
+  the kitchen, the storeroom and the hall upstairs. No fuel and no floor taken; the dark corners of
+  the common room are about half again as bright at night.
 - **Docs:** the Done log moved here from the roadmap; dragon-era sections of ART.md pruned or
   condensed; the dragon-egg start message gone.
 - Starting herds are placed by `Map.Distance`, as sight measures, so none grazes in view of town.

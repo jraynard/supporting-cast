@@ -175,6 +175,11 @@ cell: its boxes use coordinates past 0..1 (the nest's run from -1 to 2) to cover
   fireplace's chimney breast). Kit walls run straight on into such a model (`BuildingKit`).
 - **Fire and smoke:** a fuelled model draws its flames at `fireAt` (model units; the cell's middle
   by default), `fireSize` times as big, and `smokeAt` sends a wisp up from a chimney's top.
+- **Lamps:** a building's `lamps` (plan cells) hang its `lamp` def's model from the beams, with a
+  small steady flame at its `fireAt` (the inn's lanterns). They're not structures, so they take no
+  floor, and they light once the building's finished, without fuel.
+- **Set-in walls and the cutaway:** a plan gap filled by something built as a wall counts as wall,
+  so the walls beside a fireplace aren't cut down for it.
 
 ## Building kits (preset buildings)
 

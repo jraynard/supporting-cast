@@ -123,7 +123,6 @@ Grouped by area; nothing here blocks a playtest.
   - the meditation stone uses the mason's bench icon;
   - the pig is the boar's sheet, recoloured and shaven;
   - the wild dragon is DragonWorld's adult sprite.
-- The inn's interior is dark.
 - A hands-on pass over each mini-game's window; some are still drawn plainly.
 - Check for other sprite props that should be box models (the wagon was one).
 - Wall torches.

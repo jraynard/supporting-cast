@@ -32,6 +32,7 @@ A round has a beginning, a middle and an end now.
 - The bridge looks like one now: low walls, piers and arches over a straighter river. When
   raiders bring it down, you'll see the gap.
 - Houses and the inn have fireplaces in their walls. Stand in front to warm up, cook or feed it.
+- The inn has lanterns hanging from its beams, so it isn't so gloomy after dark.
 - Elves: pick one in the character creator (Look, then Folk), and you'll spot a few about town.
 - A fresh title screen: Host game and Join game have their own entries, each line tells you what
   it does underneath, and Credits works.

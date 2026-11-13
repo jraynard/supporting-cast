@@ -124,6 +124,10 @@ public sealed class WorldMesher(TextureAtlas atlas)
             int nx = x + d.X, ny = y + d.Y;
             if (!map.InBounds(nx, ny, z))
                 return false;
+            // A plan gap filled by something built as a wall (a fireplace) is more wall, not room.
+            if (map.Structure[map.Idx(nx, ny, z)] is { IsNull: false } beside && !sim.World.Has<Construction>(beside)
+                && sim.World.Get<Thing>(beside).Def.Building is { IsWall: true })
+                return false;
             var id = map.RoomId[map.Idx(nx, ny, z)];
             return id > 0 && id <= rooms.Count && rooms[id - 1].Indoors || InsideBuilding(sim, new int3(nx, ny, z));
         }

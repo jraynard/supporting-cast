@@ -476,3 +476,25 @@ public class BuildingUpgradeTests
         }
     }
 }
+
+/// <summary>The inn's hanging lanterns (<see cref="BuildingDef.Lamps"/>): no fuel and no floor, so its rooms aren't dark at night.</summary>
+public class LanternTests
+{
+    [Fact]
+    public void LanternsLightTheInnAtNight()
+    {
+        var sim = TestWorld.Create(40, 40, depth: 6);
+        var b = Buildings.SpawnFinished(sim, sim.Defs.Building("Inn"), C(20, 20), 0);
+        var lamps = Buildings.LitLamps(sim).ToList();
+        Assert.Equal(sim.Defs.Building("Inn").Lamps.Count, lamps.Count);
+        Assert.All(lamps, l => Assert.True(sim.Map.Structure[sim.Map.Idx(l.Cell)].IsNull, "they take no floor"));
+        sim.TickMany(SimClock.TicksPerHour * 13); // night
+        Assert.True(sim.Clock.Daylight < 0.1f);
+        var state = sim.World.Get<PresetBuilding>(b);
+        foreach (var (col, row) in new[] { (6, 8), (9, 9), (5, 2) }) // the common room's middle, by the bar, the kitchen
+        {
+            var cell = Buildings.CellOf(sim.Map, state.Def, state.Anchor, 0, col, row);
+            Assert.True(sim.Map.Light[sim.Map.Idx(cell)] > 0.4f, $"({col},{row}) is lit {sim.Map.Light[sim.Map.Idx(cell)]:F2}");
+        }
+    }
+}
