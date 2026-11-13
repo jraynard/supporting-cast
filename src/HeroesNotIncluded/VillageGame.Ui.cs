@@ -98,6 +98,14 @@ public sealed partial class VillageGame
         ImGui.PopTextWrapPos();
     }
 
+    /// <summary><see cref="Wrapped"/> in a colour.</summary>
+    private static void WrappedC(float4 color, string text)
+    {
+        ImGui.PushStyleColor(ImGuiCol.Text, in color);
+        Wrapped(text);
+        ImGui.PopStyleColor(1);
+    }
+
     /// <summary>The widest a wrapped line runs, unscaled.</summary>
     private const float WrapCap = 320f;
     private static void Bullet(string text) => ImGuiText.Bullet(text);
@@ -121,32 +129,49 @@ public sealed partial class VillageGame
             TextC(Theme.Accent, TitleGame.Title);
         ImGui.Separator();
 
-        if (ImGui.MenuItem("Menu"u8, ""u8, false, true))
-            Host.SwitchTo(new TitleGame());
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-            Tip($"Back to the title screen ({LastSavedText()})");
-        if (ImGui.MenuItem("Save"u8, "F6"u8, _saveWindow == SaveWindow.Save, true))
-            OpenSaveWindow(SaveWindow.Save);
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            Tip($"Save the village ({LastSavedText()}). F6 quicksaves.");
-        if (ImGui.MenuItem("Load"u8, "F9"u8, _saveWindow == SaveWindow.Load, true))
-            OpenSaveWindow(SaveWindow.Load);
-        if (ImGui.MenuItem("Options"u8, ""u8, _settings.IsOpen, true))
-            _settings.Toggle();
+        // Menu: the things you reach for now and then, folded away so the bar stays short.
+        if (ImGui.BeginMenu("Menu"u8, true))
+        {
+            if (ImGui.MenuItem("Save"u8, "F6"u8, _saveWindow == SaveWindow.Save, true))
+                OpenSaveWindow(SaveWindow.Save);
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip($"Save the village ({LastSavedText()}). F6 quicksaves.");
+            if (ImGui.MenuItem("Load"u8, "F9"u8, _saveWindow == SaveWindow.Load, true))
+                OpenSaveWindow(SaveWindow.Load);
+            if (ImGui.MenuItem("Options"u8, ""u8, _settings.IsOpen, true))
+                _settings.Toggle();
+            if (ImGui.MenuItem("Screenshot"u8, "F12"u8, false, true))
+                Host.Screenshot();
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip($"Save what's on screen to {Host.ScreenshotDirectory}. F12 anywhere; Shift+F12 leaves out the UI.");
+            if (ImGui.MenuItem("Credits"u8, ""u8, _showCredits, true))
+                _showCredits = !_showCredits;
+            ImGui.Separator();
+            // A submenu, so leaving takes a second, deliberate click.
+            if (ImGui.BeginMenu("Back to title"u8, true))
+            {
+                TextC(Theme.Dim, Cap(LastSavedText()) + ".");
+                if (ImGui.MenuItem("Save, then leave"u8, ""u8, false, true))
+                {
+                    if (SaveTo(SaveSlots.Quicksave) is { } error)
+                        Notify(MessageKind.Warning, error); // stay: nothing's lost
+                    else
+                        Host.SwitchTo(new TitleGame());
+                }
+                if (ImGui.MenuItem("Leave without saving"u8, ""u8, false, true))
+                    Host.SwitchTo(new TitleGame());
+                ImGui.EndMenu();
+            }
+            ImGui.EndMenu();
+        }
         if (!OrdersLocked && ImGui.MenuItem("Work"u8, ""u8, _showWorkTab, true))
             _showWorkTab = !_showWorkTab;
         if (ImGui.MenuItem("Recipes"u8, ""u8, _showRecipeBook, true))
             _showRecipeBook = !_showRecipeBook;
-        if (ImGui.MenuItem("Screenshot"u8, "F12"u8, false, true))
-            Host.Screenshot();
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-            Tip($"Save what's on screen to {Host.ScreenshotDirectory}. F12 anywhere; Shift+F12 leaves out the UI.");
         if (ImGui.MenuItem("Controls"u8, "H"u8, _showControls, true))
             _showControls = !_showControls;
         if (_devMode && ImGui.MenuItem("Debug"u8, ""u8, _showDebug, true))
             _showDebug = !_showDebug;
-        if (ImGui.MenuItem("Credits"u8, ""u8, _showCredits, true))
-            _showCredits = !_showCredits;
         if (_devMode)
         {
             ImGui.Separator();
@@ -1102,30 +1127,37 @@ public sealed partial class VillageGame
         return "a room's roof";
     }
 
+    /// <summary>
+    /// What the cursor is over. For players, only what matters (fire, rock their pick can't break, why
+    /// a placement won't go), so nothing trails the cursor over ordinary ground; dev mode shows the
+    /// cell, its block and its temperature too.
+    /// </summary>
     private void DrawHoverInfo()
     {
         if (!_sim.Map.InBounds(_hoverCell) || Host.Input.MouseCaptured)
             return;
         var map = _sim.Map;
         var i = map.Idx(_hoverCell);
-        var room = _sim.Rooms.RoomAt(_hoverCell);
-        var ground = map.IsSolid(i) ? Mining.ShownBlock(_sim, i) : map.GroundUnder(i) is { } under ? Mining.ShownBlock(_sim, i - map.LayerSize) : null;
-        var text = _devMode
-            ? $"{ground?.Label ?? "air"}  ({_hoverCell.X},{_hoverCell.Y},{_hoverCell.Z})\n{map.Temperature[i]:F1}°C"
-            : $"{Capitalized(ground?.Label ?? "air")}\n{map.Temperature[i]:F0}°C";
-        if (room is { Indoors: true })
-            text += $"  indoors, room {room.AverageTemperature:F0}°C";
-        else
-            text += map.Roofed[i] ? $"  roofed ({CoverOf(_hoverCell)})" : "  outdoors";
+        var lines = new List<string>();
+        if (_placeProblem != null)
+            lines.Add(_placeProblem);
+        if (_devMode)
+        {
+            var room = _sim.Rooms.RoomAt(_hoverCell);
+            var ground = map.IsSolid(i) ? Mining.ShownBlock(_sim, i) : map.GroundUnder(i) is { } ? Mining.ShownBlock(_sim, i - map.LayerSize) : null;
+            lines.Add($"{ground?.Label ?? "air"}  ({_hoverCell.X},{_hoverCell.Y},{_hoverCell.Z})");
+            lines.Add($"{map.Temperature[i]:F1}°C" + (room is { Indoors: true }
+                ? $"  indoors, room {room.AverageTemperature:F0}°C"
+                : map.Roofed[i] ? $"  roofed ({CoverOf(_hoverCell)})" : "  outdoors"));
+        }
         if (map.Fire[i] > 0)
-            text += $"\nON FIRE ({map.Fire[i] * 100:F0}%)";
+            lines.Add(_devMode ? $"ON FIRE ({map.Fire[i] * 100:F0}%)" : "On fire!");
         // Rock that wants a better pick: what it takes, and what you (or the village) have.
         if (map.InBounds(_hoverBlock) && map.IsSolid(map.Idx(_hoverBlock))
             && Mining.DigNote(_sim, map.Idx(_hoverBlock), HasAvatar ? _avatar : null) is { } dig)
-            text += $"\n{dig}";
-        if (_placeProblem != null)
-            text = $"{_placeProblem}\n{text}";
-        Tip(text);
+            lines.Add(dig);
+        if (lines.Count > 0)
+            Tip(string.Join("\n", lines));
     }
 
     private ThingDef? _spawnDef;

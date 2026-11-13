@@ -784,30 +784,39 @@ public sealed partial class VillageGame
     /// <summary>Where the avatar is drawn this frame.</summary>
     private float3 AvatarDrawPos() => _renderer.DrawPos(_sim, _avatar, _sim.World.Get<Position>(_avatar).Pos);
 
-    /// <summary>The "[F] Chop pine tree" prompt over the avatar's head, and what it's doing while F is held.</summary>
+    /// <summary>
+    /// The prompt over the avatar's head: a key cap and what it does ("F  Chop pine tree"), or what
+    /// it's doing while the key is held. The key is drawn, not spelled out in brackets, so it reads
+    /// at a glance.
+    /// </summary>
     private void DrawAvatarPrompt()
     {
         if (!HasAvatar)
             return;
         var w = _sim.World;
         var mind = w.Get<Mind>(_avatar);
+        string? key = null;
         string text;
+        var hold = false;
         if (mind.Job is AvatarWalkJob { Interact: false })
             return; // just walking where you clicked
         if (mind.Asleep)
             text = $"{mind.Job?.Report ?? "Sleeping"} (walk to get up)";
         else if (mind.Job != null)
+        {
             // Only hands-on work waits for the key; walking to a bed or eating just happens.
-            text = w.Get<Avatar>(_avatar).WorkHeld || !mind.Job.IsWorking(_sim.Clock.Tick)
-                ? mind.Job.Report : $"{(mind.Job is DigJob ? "[Z]" : "[F]")} {mind.Job.Report} (hold)";
+            text = mind.Job.Report;
+            if (!w.Get<Avatar>(_avatar).WorkHeld && mind.Job.IsWorking(_sim.Clock.Tick))
+                (key, hold) = (mind.Job is DigJob ? "Z" : "F", true);
+        }
         else if (WorkTarget() is { Kind: not AvatarActionKind.None } action)
-            text = $"[F] {action.Label}";
+            (key, text) = ("F", action.Label);
         else if (_tool == ToolKind.Select && !Host.Input.MouseCaptured && ClickTarget() is { Action.Kind: not AvatarActionKind.None } click)
-            text = $"[Click] {click.Action.Label}"; // out of reach: a click walks over
+            (key, text) = ("Click", click.Action.Label); // out of reach: a click walks over
         else if (WorkTarget(AvatarTool.Drop) is { Kind: AvatarActionKind.PutDown } drop)
-            text = $"[X] {drop.Label}";
+            (key, text) = ("X", drop.Label);
         else if (_sim.Map.InBounds(_hoverBlock) && AvatarSystem.ActionAt(_sim, _avatar, _hoverBlock, AvatarTool.Dig) is { Kind: not AvatarActionKind.None } dig)
-            text = $"[Z] {dig.Label}"; // only when pointing at a block in reach, so it isn't offered everywhere
+            (key, text) = ("Z", dig.Label); // only when pointing at a block in reach, so it isn't offered everywhere
         else if (_sim.Map.InBounds(_hoverBlock) && _sim.Map.IsSolid(_sim.Map.Idx(_hoverBlock))
                  && Mining.ShownBlock(_sim, _sim.Map.Idx(_hoverBlock)) is var rock && Mining.BreakProblem(_sim, _avatar, rock) is { } why
                  && Map.Distance(_sim.World.Get<Position>(_avatar).Cell, _hoverBlock) <= 2)
@@ -823,7 +832,18 @@ public sealed partial class VillageGame
         ImGui.SetNextWindowBgAlpha(0.75f);
         ImGui.Begin("##avatarPrompt"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings
             | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoNav);
+        if (key != null)
+        {
+            Gui.KeyCap(key);
+            ImGui.SameLine(0, Gui.S(6));
+        }
+        ImGui.AlignTextToFramePadding();
         ImGui.Text(text);
+        if (hold)
+        {
+            ImGui.SameLine(0, Gui.S(6));
+            TextC(HeroesNotIncluded.Ui.Theme.Dim, "hold");
+        }
         ImGui.End();
     }
 }

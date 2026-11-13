@@ -23,6 +23,12 @@ public static class Theme
     public static readonly float4 Inset = new(0.09f, 0.065f, 0.05f, 1f);
     public static readonly float4 Iron = new(0.5f, 0.52f, 0.56f, 0.9f);
 
+    /// <summary>The brand's parchment: notices and "something new here", quieter than the ember accent.</summary>
+    public static readonly float4 Parchment = new(0.85f, 0.77f, 0.61f, 1f);
+
+    /// <summary>The brand's hearth red: warnings drawn in the world (an impatient customer).</summary>
+    public static readonly float4 HearthRed = new(0.71f, 0.26f, 0.17f, 1f);
+
     /// <summary>The background of a mini-game's scene and its tracks.</summary>
     public static readonly float4 Well = new(0.07f, 0.055f, 0.045f, 1f);
 

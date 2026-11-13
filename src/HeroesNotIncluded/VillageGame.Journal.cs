@@ -16,8 +16,12 @@ public sealed partial class VillageGame
     private readonly Hud _hud = new();
     private readonly ToastStack _toastStack = new();
 
-    // Journal panels, open or not.
-    private bool _showShop = true, _showHeard = true, _showQuests = true, _showGift = true, _showLog;
+    // Journal panels, open or not. A round starts with only the shop (and an empath's gift) open; the
+    // others mark their tab when there's something new rather than filling the screen from the start.
+    private bool _showShop = true, _showHeard, _showQuests, _showGift = true, _showLog;
+
+    /// <summary>Quests known when the quest board was last open: more than this marks its tab.</summary>
+    private int _questsSeen;
     private bool _showControls;
 
     /// <summary>In Adventure, the build toolbar is a drawer (B): closed, its letter keys are free for the journal.</summary>
@@ -80,6 +84,14 @@ public sealed partial class VillageGame
         }
     }
 
+    /// <summary>A closed panel with something in it the player hasn't seen: new speech, or a new quest.</summary>
+    private bool Unread(JournalTab tab) => tab.Label switch
+    {
+        "Heard" => View.Heard().Count() > _speechSeen,
+        "Quests" => View.Quests().Count() > _questsSeen,
+        _ => false,
+    };
+
     /// <summary>The strip of journal toggles under the clock: a key cap and a name each, lit when open.</summary>
     private void DrawJournalStrip()
     {
@@ -103,7 +115,15 @@ public sealed partial class VillageGame
                 tab.Toggle(this);
             if (open)
                 ImGui.PopStyleColor(1);
-            Gui.ItemTip($"{(open ? "Close" : "Open")} {tab.Label.ToLowerInvariant()}  [{tab.Key}]");
+            var unread = !open && Unread(tab);
+            if (unread)
+            {
+                var r = Gui.S(3.5f);
+                var corner = ImGui.GetItemRectMax();
+                var at = new float2(corner.X - r - Gui.S(2), ImGui.GetItemRectMin().Y + r + Gui.S(2));
+                ImGui.GetWindowDrawList().AddCircleFilled(in at, r, Theme.U8(Theme.Parchment), 0);
+            }
+            Gui.ItemTip($"{(open ? "Close" : "Open")} {tab.Label.ToLowerInvariant()}{(unread ? " (something new)" : "")}  [{tab.Key}]");
         }
         if (!first)
             ImGui.SameLine(0, Gui.S(4));

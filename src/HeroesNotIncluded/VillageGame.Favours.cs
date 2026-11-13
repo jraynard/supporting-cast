@@ -33,10 +33,9 @@ public sealed partial class VillageGame
             ImGui.PopTextWrapPos();
             if (open)
             {
-                var left = Math.Max(0, f.Deadline - now) / (float)SimClock.TicksPerHour;
-                var whole = Math.Max(1, f.Deadline - f.PostedTick) / (float)SimClock.TicksPerHour;
+                var (share, color, words) = TimeLeft(f.PostedTick, f.Deadline, now);
                 Gui.Bar(f.AssigneeName.Length > 0 ? (f.MineToDo ? "You're on it" : $"{f.AssigneeName} is on it") : "Nobody's taken it",
-                    left / whole, left < 0.5f ? Theme.Bad : left / whole < 0.4f ? Theme.Warn : Theme.Good, $"{left:F1}h left", 170f);
+                    share, color, words, 170f);
                 if (!f.Mine && f.AssigneeName.Length == 0)
                 {
                     if (ImGui.Button("I'll do it"u8, in _autoSize))

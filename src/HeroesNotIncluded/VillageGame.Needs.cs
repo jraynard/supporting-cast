@@ -85,9 +85,10 @@ public sealed partial class VillageGame
         if (w.TryGet<Mood>(_avatar, out var mood))
         {
             var trend = mood.Target > mood.Value + 0.01f ? " ↑" : mood.Target < mood.Value - 0.01f ? " ↓" : "";
-            HudBar("Mood", mood.Value, MoodColor(mood.Value), $"{mood.Value * 100:F0}{trend}");
+            // A word, not a number: the number means nothing until you've learned the scale.
+            HudBar("Mood", mood.Value, MoodColor(mood.Value), MoodRules.Describe(mood.Value) + trend);
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip($"You feel {MoodRules.Describe(mood.Value)}, heading for {mood.Target * 100:F0}. Your inspector's Mood tab says why.");
+                Tip($"You feel {MoodRules.Describe(mood.Value)} ({mood.Value * 100:F0}), heading for {MoodRules.Describe(mood.Target)} ({mood.Target * 100:F0}). Your inspector's Mood tab says why.");
         }
 
         // Warmth: what you feel (air plus a fire's warmth) against what's comfortable.

@@ -22,6 +22,7 @@ public sealed partial class VillageGame
         if (quests.Count == 0)
             return;
         BeginJournal("Quests###quests", ref _showQuests);
+        _questsSeen = quests.Count;
 
         // A party member in reach whose party wants work.
         var w = _sim.World;
@@ -32,11 +33,11 @@ public sealed partial class VillageGame
         {
             member = _selected;
             looks = View.PartyLooks(member);
-            TextC(Theme.Accent, $"{Cap(a.PartyDef.Label)} want work. They look {ExpeditionSystem.StrengthWord(looks ?? 0)}.");
+            WrappedC(Theme.Accent, $"{Cap(a.PartyDef.Label)} want work. They look {ExpeditionSystem.StrengthWord(looks ?? 0)}.");
             ImGui.Separator();
         }
         else
-            TextC(Theme.Dim, "Select a party member in reach who's asked for work to send them.");
+            WrappedC(Theme.Dim, "Select a party member in reach who's asked for work to send them.");
 
         foreach (var q in quests)
         {

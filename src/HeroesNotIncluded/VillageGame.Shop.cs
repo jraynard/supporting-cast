@@ -15,6 +15,19 @@ public sealed partial class VillageGame
 {
     private bool _showClosedOrders;
 
+    /// <summary>
+    /// How much of a wait is left, as a bar's fill, colour and a few words: "0.2h left" means nothing
+    /// to someone who doesn't know a game hour from a real one. Shared by orders and favours.
+    /// </summary>
+    internal static (float Share, float4 Color, string Words) TimeLeft(long posted, long deadline, long now)
+    {
+        var left = Math.Max(0, deadline - now) / (float)SimClock.TicksPerHour;
+        var share = left / (Math.Max(1, deadline - posted) / (float)SimClock.TicksPerHour);
+        return left < 0.5f ? (share, Theme.Bad, "almost out of time")
+            : share < 0.4f ? (share, Theme.Warn, "time's getting short")
+            : (share, Theme.Good, "plenty of time");
+    }
+
     /// <summary>Prices being dragged on your sign, not yet sent (the sign itself changes when the command lands).</summary>
     private readonly Dictionary<Sim.Defs.ServiceKind, int> _priceDrafts = [];
 
@@ -63,10 +76,9 @@ public sealed partial class VillageGame
             ImGui.PopTextWrapPos();
             if (open)
             {
-                var left = Math.Max(0, e.Deadline - now) / (float)SimClock.TicksPerHour;
-                var whole = Math.Max(1, e.Deadline - e.PostedTick) / (float)SimClock.TicksPerHour;
+                var (share, color, words) = TimeLeft(e.PostedTick, e.Deadline, now);
                 Gui.Bar(e.AssigneeName.Length > 0 ? (e.MineToDo ? "You're on it" : $"{e.AssigneeName} is on it") : "Nobody's taken it",
-                    left / whole, left < 0.5f ? Theme.Bad : left / whole < 0.4f ? Theme.Warn : Theme.Good, $"{left:F1}h left", 170f);
+                    share, color, words, 170f);
                 if (e.MineToDo && e.Kind == Sim.Defs.ServiceKind.Repair)
                     TextC(Theme.Dim, $"Mended, give it back from {e.PosterName}'s inspector, in reach.");
                 if (e.MineToDo && e.Kind == Sim.Defs.ServiceKind.Unlock)

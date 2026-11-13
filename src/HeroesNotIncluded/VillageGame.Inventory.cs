@@ -1,5 +1,6 @@
 using Brutal.ImGuiApi;
 using Narsil.Platform;
+using Narsil.Ui;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Defs;
@@ -26,7 +27,8 @@ public sealed partial class VillageGame
 
     private static readonly GlfwKey[] HotbarKeys = [GlfwKey.Number1, GlfwKey.Number2, GlfwKey.Number3, GlfwKey.Number4];
 
-    private const float IconSize = 30;
+    /// <summary>An item slot's icon, before UI scale: big enough to tell a tankard from a bowl at a glance.</summary>
+    private const float IconSize = 40;
 
     /// <summary>Tab toggles the window; 1–4 take a pack stack in hand (an empty slot's key puts what you hold away).</summary>
     private void HandleInventoryKeys(Input input)
@@ -70,12 +72,12 @@ public sealed partial class VillageGame
             var items = _sim.StoredIn(pack);
             for (var k = 0; k < HotbarSlots; k++)
             {
-                ImGui.SameLine(0, 4);
+                ImGui.SameLine(0, Gui.S(4));
                 SlotBox($"hot{k}", k < items.Count ? items[k] : Entity.Null, $"{k + 1}",
                     k < items.Count ? $"[{k + 1}] Take in hand (what you hold goes in the pack)" : $"[{k + 1}] Put what you hold in the pack", menu: true);
             }
-            ImGui.SameLine(0, 8);
-            LoadBar(pack, 90);
+            ImGui.SameLine(0, Gui.S(8));
+            LoadBar(pack, Gui.S(90));
         }
         else
         {
@@ -94,25 +96,28 @@ public sealed partial class VillageGame
         var w = _sim.World;
         var dl = ImGui.GetWindowDrawList();
         var min = ImGui.GetCursorScreenPos();
-        var box = new float2(IconSize + 10, IconSize + 10);
+        var icon = Gui.S(IconSize);
+        var pad = Gui.S(5);
+        var box = new float2(icon + 2 * pad, icon + 2 * pad);
         var max = min + box;
-        dl.AddRectFilled(in min, in max, Theme.U8(new float4(0, 0, 0, 0.35f)), 4f, ImDrawFlags.None);
-        dl.AddRect(in min, in max, Theme.U8(Theme.Dim), 4f, ImDrawFlags.None, 1f);
+        dl.AddRectFilled(in min, in max, Theme.U8(new float4(0, 0, 0, 0.35f)), Gui.S(4), ImDrawFlags.None);
+        dl.AddRect(in min, in max, Theme.U8(Theme.Dim), Gui.S(4), ImDrawFlags.None, 1f);
         var alive = !item.IsNull && w.IsAlive(item);
         if (alive)
         {
             var (sprite, tint) = _renderer.ArtOf(w.Get<Thing>(item));
-            DrawSprite(dl, sprite, min + new float2(5, 5), new float2(IconSize, IconSize), Color8(tint));
+            DrawSprite(dl, sprite, min + new float2(pad, pad), new float2(icon, icon), Color8(tint));
             if (w.TryGet<Stack>(item, out var stack) && stack.Count > 1)
             {
                 var text = stack.Count.ToString();
-                var at = max - new float2(4 + 7 * text.Length, 17);
+                var size = ImGui.CalcTextSize(text, false, -1f);
+                var at = max - new float2(Gui.S(4) + size.X, size.Y + Gui.S(2));
                 var shadow = at + new float2(1, 1);
                 dl.AddText(in shadow, new ImColor8(0, 0, 0, 220), text);
                 dl.AddText(in at, Theme.U8(Theme.Text), text);
             }
         }
-        var c = min + new float2(3, 1);
+        var c = min + new float2(Gui.S(3), Gui.S(1));
         dl.AddText(in c, Theme.U8(Theme.Dim), corner.Length <= 2 ? corner : "");
         ImGui.Dummy(in box);
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
