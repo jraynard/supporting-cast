@@ -70,17 +70,11 @@ public sealed class TitleGame : Game
     private readonly CreditsWindow _credits = new(Title, "Somebody has to keep the lights on.", GameCredits.People);
     private bool _showCredits;
 
-    /// <summary>An entry pressed that starts a game: drawn behind a loading line for a frame, then started.</summary>
-    private MenuItem? _starting;
-    private bool _startingShown;
-    private string _loadingLine = "";
+    /// <summary>Why the last start came back (a save that wouldn't read, say), shown on the title.</summary>
+    public string? StartError { get; init; }
 
-    /// <summary>The brand's loading lines (one at random while a village is made ready).</summary>
-    private static readonly string[] LoadingLines =
-    [
-        "Sweeping the common room...", "Hiding the good ale...", "Re-hanging the quest board...", "Practising our polite smile...",
-        "Polishing tankards nobody asked about...",
-    ];
+    /// <summary>Into a village behind the loading screen (<see cref="LoadingScreen"/>): back here with what went wrong if it fails.</summary>
+    private void Begin(Func<Game> start) => Host.SwitchTo(new LoadingScreen(start, error => new TitleGame { StartError = error }));
 
     /// <summary>Adventure's character creator, shown instead of the menu while open.</summary>
     private CharacterCreator _creator = null!;
@@ -247,7 +241,7 @@ public sealed class TitleGame : Game
     }
 
     /// <summary>Host a new village as <paramref name="c"/>.</summary>
-    private void HostAs(SavedCharacter c) => Host.SwitchTo(new VillageGame((ulong)Random.Shared.Next(1, 1_000_000))
+    private void HostAs(SavedCharacter c) => Begin(() => new VillageGame((ulong)Random.Shared.Next(1, 1_000_000))
     {
         Adventure = true, Character = c, HostCoop = HostSettingsFor(c),
     });
@@ -258,6 +252,7 @@ public sealed class TitleGame : Game
     public override void Load()
     {
         Theme.Apply(Settings.Current.UiScale);
+        _error = StartError;
         _settings = new SettingsWindow(Host);
         var defs = _defs = DefDatabase.LoadDirectory(Path.Combine(Host.DataDirectory, "defs"));
         _creator = new CharacterCreator(Host, defs);
@@ -372,6 +367,15 @@ public sealed class TitleGame : Game
         ImGui.TextColored(dim, "Somebody has to keep the lights on."u8);
         var gap = new float2(1, Gui.S(24));
         ImGui.Dummy(in gap);
+        // What went wrong last (a save that wouldn't read, a start that failed): up here, where a
+        // short screen can't push it off the bottom.
+        if (_error != null)
+        {
+            ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + Gui.S(340));
+            ImGui.TextColored(Theme.Bad, Narsil.Ui.ImGuiText.Escape(_error));
+            ImGui.PopTextWrapPos();
+            ImGui.Dummy(in gap);
+        }
 
         if (_joining && _coopMenu != null)
         {
@@ -380,7 +384,8 @@ public sealed class TitleGame : Game
             {
                 case CoopMenu.Result.Joined when _coopMenu.Joined is { Sim: { } joinedSim } session:
                     _joining = false;
-                    Host.SwitchTo(new VillageGame(joinedSim.Seed) { Coop = session, Character = _coopMenu.Playing });
+                    var playing = _coopMenu.Playing;
+                    Begin(() => new VillageGame(joinedSim.Seed) { Coop = session, Character = playing });
                     break;
                 case CoopMenu.Result.Change:
                     _joining = false;
@@ -442,20 +447,12 @@ public sealed class TitleGame : Game
                 MenuButton(item);
         }
 
-        if (_error != null)
-        {
-            ImGui.Dummy(in gap);
-            ImGui.PushTextWrapPos(340);
-            ImGui.TextColored(Theme.Bad, Narsil.Ui.ImGuiText.Escape(_error));
-            ImGui.PopTextWrapPos();
-        }
         ImGui.Dummy(in gap);
         ImGui.TextColored(dim with { W = 0.7f }, $"Playtest build {BuildInfo.Label}. Built with BRUTAL.");
         ImGui.End();
         ImGui.PopStyleVar(1);
         _settings.Draw();
         _credits.Draw(ref _showCredits, $"Playtest build {BuildInfo.Label}");
-        DrawStarting(screen);
 
         if (AutoPick != null && _time > 3f && (_submenu ?? _items).FirstOrDefault(i => i.Label.Equals(AutoPick, StringComparison.OrdinalIgnoreCase)) is { } pick)
         {
@@ -536,44 +533,11 @@ public sealed class TitleGame : Game
                 ChooseCharacter(Purpose.Solo);
                 break;
             default:
-                if (item.Start == null || _starting != null)
+                if (item.Start == null)
                     break;
-                // A frame behind a loading line first: making a village ready takes a moment.
-                (_starting, _startingShown, _loadingLine) = (item, false, LoadingLines[Random.Shared.Next(LoadingLines.Length)]);
+                _error = null;
+                Begin(item.Start);
                 break;
-        }
-    }
-
-    /// <summary>The loading line over the screen, and once it's been seen, the start itself.</summary>
-    private void DrawStarting(float2 screen)
-    {
-        if (_starting is not { } item)
-            return;
-        var bg = ImGui.GetForegroundDrawList(ImGui.GetMainViewport());
-        var full = screen;
-        var zero = float2.Zero;
-        bg.AddRectFilled(in zero, in full, Theme.U8(Theme.Cellar with { W = 0.85f }), 0f, ImDrawFlags.None);
-        using (Gui.DisplayFont(30f))
-        {
-            var size = ImGui.CalcTextSize(_loadingLine);
-            var at = new float2((screen.X - size.X) * 0.5f, (screen.Y - size.Y) * 0.5f);
-            bg.AddText(in at, Theme.U8(Theme.Parchment), _loadingLine);
-        }
-        if (!_startingShown)
-        {
-            _startingShown = true;
-            return;
-        }
-        _starting = null;
-        try
-        {
-            _error = null;
-            Host.SwitchTo(item.Start!());
-        }
-        catch (Sim.Saving.SaveException ex)
-        {
-            Log.Engine.Warning($"Couldn't load '{item.Label}': {ex.Message}");
-            _error = ex.Message;
         }
     }
 

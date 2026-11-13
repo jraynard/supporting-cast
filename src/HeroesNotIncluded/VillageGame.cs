@@ -228,9 +228,26 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     public static VillageGame FromSave(LoadedGame save, bool autoPause = true) => new(save.Sim.Seed) { Loaded = save, AutoPause = autoPause };
 
+    /// <summary>A new village's world, made ready ahead of <see cref="Load"/> (<see cref="PrepareWorld"/>), and where to look.</summary>
+    private (DefDatabase Defs, int3 Focus)? _prepared;
+
+    /// <summary>
+    /// The CPU side of starting a new village, off the main thread (<see cref="Ui.LoadingScreen"/>):
+    /// the defs, the map and the town, the round dealt. Touches only the sim, the bots and this
+    /// game's own fields, never the GPU or ImGui; <see cref="Load"/> does the rest. A save or a
+    /// joined village has nothing to do here.
+    /// </summary>
+    public void PrepareWorld(string dataDirectory)
+    {
+        if (Coop != null || Loaded != null || _prepared != null)
+            return;
+        var defs = DefDatabase.LoadDirectory(Path.Combine(dataDirectory, "defs"));
+        _prepared = (defs, StartNewVillage(defs));
+    }
+
     public override void Load()
     {
-        var defs = Coop?.Defs ?? Loaded?.Sim.Defs ?? DefDatabase.LoadDirectory(Path.Combine(Host.DataDirectory, "defs"));
+        var defs = Coop?.Defs ?? Loaded?.Sim.Defs ?? _prepared?.Defs ?? DefDatabase.LoadDirectory(Path.Combine(Host.DataDirectory, "defs"));
         ArtAudit.Log(ArtAudit.Run(defs, Host.Atlas.Sprites, Host.Atlas.Sheets));
         Ui.Theme.Apply(Settings.Current.UiScale);
         _settings = new Ui.SettingsWindow(Host);
@@ -258,7 +275,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             StartHostingIfAsked();
             return;
         }
-        SetUpView(StartNewVillage(defs));
+        SetUpView(_prepared?.Focus ?? StartNewVillage(defs));
         FindAvatar();
         OnSavedOrLoaded(null);
         Log.Engine.Info($"Village started with seed {seed}");

@@ -946,3 +946,8 @@ dragon and the festival.
 - **Mini-games, the last of the props:** pouring and tapping a cask show the cask's head, its bronze
   tap and the mallet; the stew sits in the iron pot over the fire. The games that are diagrams (the
   lock in section, the cue lane, the scrubbing grid) keep their drawn shapes.
+- **A loading screen** (`Ui/LoadingScreen`): the logo on the cellar dark, the brand's loading lines
+  in turn and three embers breathing, while a new village is made ready (`VillageGame.PrepareWorld`)
+  or a save read on a worker thread. Starting, loading, hosting, joining and the direct-launch
+  flags all go through it; a start that fails comes back to the title with what went wrong, now
+  shown under the tagline rather than below the menu.

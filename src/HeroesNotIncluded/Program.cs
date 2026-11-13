@@ -212,7 +212,8 @@ else if (ParseString(args, "--load") is { } loadPath)
 else if (!LaunchesDirectly(args))
     host.Run(new TitleGame { AutoPick = ParseString(args, "--menu-pick"), AutoCreator = ParseString(args, "--creator"), AutoPreset = ParseString(args, "--preset") });
 else
-    host.Run(new VillageGame(ParseSeed(args), skipHours: ParseInt(args, "--skip-hours"))
+    // Behind the loading screen like a start from the title (back to the title if it fails).
+    host.Run(new HeroesNotIncluded.Ui.LoadingScreen(() => new VillageGame(ParseSeed(args), skipHours: ParseInt(args, "--skip-hours"))
     {
         // Debug/screenshot helpers: starting camera rotation (degrees) and cutaway level.
         StartYawDegrees = args.Contains("--yaw") ? ParseInt(args, "--yaw") : 45,
@@ -240,7 +241,7 @@ else
         HeroTrade = ParseString(args, "--trade") ?? (args.Contains("--raid-test") ? "Blacksmith" : null),
         RaidTest = args.Contains("--raid-test"),
         Bots = args.Contains("--bots") ? ParseInt(args, "--bots") : 0,
-    });
+    }, error => new TitleGame { StartError = error }));
 
 HeroesNotIncluded.Audio.GameAudio.Close();
 
