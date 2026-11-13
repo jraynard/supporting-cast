@@ -289,7 +289,7 @@
     },
     {
       "name": "Dragon", "race": "Dragon", "body": "Dragon",
-      // The breed (docs/plans/dragon-types.md): the lowest order is the default, which eggs hatch into.
+      // The breed (DragonWorld's, kept for the dragon crisis): the lowest order is the default, which eggs hatch into.
       "moveSpeed": 3.5, "maxHp": 150, "eatsPlants": false, "foodPoisonFactor": 0.15,
       // Work they'll take on (Work tab), by stage: juveniles breathe, adults also haul and fell trees.
       // Breath work is filtered by element (elements in dragons.json): fire burns and stokes, ice chills...

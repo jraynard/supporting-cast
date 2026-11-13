@@ -4,7 +4,9 @@ namespace HeroesNotIncluded.Sim.Maps;
 
 /// <summary>
 /// Generates the starting map: lakes, beaches, rocky hills with boulders and natural slopes,
-/// forests and berry bushes, plus a flat landing site in the middle with the villagers and the egg.
+/// forests and berry bushes, plus a flat landing site in the middle with the villagers. Rounds are
+/// played on hand-made maps (<see cref="MapBuilder"/>); this is the freeform valley, and the helpers
+/// MapBuilder borrows.
 /// </summary>
 public static class MapGenerator
 {
@@ -334,13 +336,9 @@ public static class MapGenerator
         foreach (var villager in people)
             Systems.Clothing.DressVillager(sim, villager);
 
-        sim.Messages.Add(
-            MessageKind.Info,
-            sim.Presets.PresetMode
-                ? "Your villagers have arrived with a dragon egg. Raise a hatchery (the Buildings bar) to keep the egg warm through the night."
-                : "Your villagers have arrived with a dragon egg. Build a fire and keep the egg warm through the night.",
-            center
-        );
+        // A freeform valley has nothing standing yet; a town (a round's) has its fires already.
+        if (!sim.Presets.PresetMode)
+            sim.Messages.Add(MessageKind.Info, "Your villagers have arrived. Get a fire going before the night comes.", center);
     }
 
     // ---- Value noise ----

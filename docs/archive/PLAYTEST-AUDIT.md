@@ -4,7 +4,7 @@ The last two PLAYTEST PREP items: make the game legible for people who aren't ha
 and lean less on reading so kids can play.
 
 **Status (2026-11-12):** everything below marked **Done** shipped for `0.1.0-playtest.2` (see
-ROADMAP, "Playtest prep"). What's left: the inn's lighting, the two art leftovers, and the
+docs/HISTORY.md, "Playtest prep"). What's left: the inn's lighting, the two art leftovers, and the
 hands-on pass.
 
 **How it was audited:**
@@ -84,7 +84,7 @@ work under PLAYTEST PREP.
   ragged. Left-align them.
 - "Alpha build": change to "Playtest build", to match the itch page.
 
-**Art leftovers** (from ROADMAP)
+**Art leftovers** (from the roadmap)
 - The meditation stone borrows the mason's bench icon.
 - The carter's wagon on the street is still a sprite where the tinker's wagon became a box prop.
 

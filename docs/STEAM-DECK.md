@@ -23,7 +23,7 @@ which Steam sets in Game Mode, or by the board's name in Desktop Mode. The defau
 - borderless at 1280×800
 - a 45 fps cap
 
-Change any of them in **Options**. 40 and 45 fps are offered for battery life. Once you've saved
+Change any of them in **Settings**. 40 and 45 fps are offered for battery life. Once you've saved
 settings, the game never changes them again.
 
 Clicking into a text field (your name, the shop's name, chat, a join address) asks Steam for its

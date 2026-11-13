@@ -219,6 +219,7 @@ public sealed class TitleGame : Game
         // The village behind the menu, its people about their day (no round: nobody's dealt a trade).
         _sim = VillageRound.NewSimulation(defs, (ulong)Random.Shared.Next(1, 100_000));
         _sim.StrictJobs = false; // a buggy job fails itself, not the game
+        _sim.Presets.PresetMode = true; // as a round's town is
         var center = VillageRound.Setup(_sim).Center;
         _sim.RebuildDerivedIfNeeded();
 

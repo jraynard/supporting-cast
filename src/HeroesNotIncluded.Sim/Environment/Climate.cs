@@ -1,8 +1,7 @@
 namespace HeroesNotIncluded.Sim.Environment;
 
 /// <summary>
-/// Outdoor temperature over the day. Cold nights are the main pressure in the slice:
-/// the egg needs a fire, humans need shelter.
+/// Outdoor temperature over the day: cold nights send people to a fire and indoors.
 /// </summary>
 public sealed class Climate(Simulation sim)
 {

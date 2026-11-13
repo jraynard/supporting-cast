@@ -313,7 +313,7 @@ Whisper) with favour earned by completing them. Everything leaves evidence: make
 wounds, witnesses. A limited town bell calls a meeting to accuse, vote and exile.
 
 **Death.** Ghosts watch and can be revived. They can only re-enter the round by being revived somehow,
-or perhaps by the traitor if they are a necromancer. they can come back in the next round as a new character.
+or perhaps by the traitor if they are a necromancer. They can come back in the next round as a new character.
 
 ## Technical decisions
 
@@ -339,11 +339,16 @@ or perhaps by the traitor if they are a necromancer. they can come back in the n
   map is data with exact building anchors. The seed still varies what's underground, what grows,
   and who lives there.
 
-## Art Direction
+## Art direction
 
-Currently comes from Dragonworld which is norse inspired, but have added some more traditional stuff for the pre-made town map now.
-
-want to move towards a more Tolkien inspired aesthetic in general though we can definitely keep the norse stuff as well.
+- **The brand** (logo, palette, type, voice, word bank): [art/brand/brand-guide.html](../art/brand/brand-guide.html).
+  The art's own rules and pipelines: [ART.md](ART.md).
+- **Where it's going:** the world's art came over from DragonWorld, which is Norse-inspired; the
+  hand-made town added more traditional half-timbered houses, thatch and a stone bridge. The aim
+  is a more Tolkien-inspired look in general, keeping the Norse pieces where they fit.
+- **Fantasy folk** are our own takes, not anyone else's. Elves came first: long-lived and a little
+  fey, out of step with the village's hurry, with tall swept-back ears; for now a look only, with
+  no rules of their own. Dwarves and halflings are to follow.
 
 ## Sim folders
 

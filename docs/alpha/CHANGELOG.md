@@ -29,6 +29,12 @@ A round has a beginning, a middle and an end now.
 - Every shop has a sign out front, like the inn's.
 - Everyone has a home: a cottage of their own near their work, and nobody else sleeps in your
   bed. The tinker's shop has a little more room round it.
+- The bridge looks like one now: low walls, piers and arches over a straighter river. When
+  raiders bring it down, you'll see the gap.
+- Houses and the inn have fireplaces in their walls. Stand in front to warm up, cook or feed it.
+- Elves: pick one in the character creator (Look, then Folk), and you'll spot a few about town.
+- A fresh title screen: Host game and Join game have their own entries, each line tells you what
+  it does underneath, and Credits works.
 - Old saves won't carry over into a season.
 
 ## 0.1.0-playtest.2

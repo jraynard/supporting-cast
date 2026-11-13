@@ -258,7 +258,7 @@ public sealed class HumanBrain : IBrain
         if (AiQueries.IsNight(sim) && needs.Get(rest) < 0.7f)
             return Sleep(sim, pawn);
 
-        // 2b. What the player's avatar asked of them (follow, guard the egg), until told otherwise.
+        // 2b. What the player's avatar asked of them (follow, guard), until told otherwise.
         if (Requests.JobFor(sim, pawn) is { } asked)
             return asked;
 

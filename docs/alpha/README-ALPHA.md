@@ -46,10 +46,9 @@ refuses a different build and says which one it runs.
 
 PLAYING TOGETHER
 ----------------
-Multiplayer -> Host New Round opens a lobby: friends join, say which trades they want, and the
-host deals the round. Host a Saved Village opens one of the host's saves. Friends pick
-Multiplayer -> Join a Game and either pick the village from the list (same network) or type the
-host's address.
+Host game -> New round opens a lobby: friends join, say which trades they want, and the host
+deals the round. Host game -> A saved village opens one of the host's saves. Friends pick
+Join game and either pick the village from the list (same network) or type the host's address.
 
 Over the internet, the host's computer has to be reachable. Two ways:
 
@@ -90,7 +89,7 @@ Post in the Discord's #bug-reports forum (the title screen's Report a Bug says t
 - and attach the newest log file, plus any crash-*.txt or desync-* files from the same folder.
 
 The files are in the game's folder in your user profile (Report a Bug -> Open logs folder, or
-Options -> Interface -> Open logs folder, opens it):
+Settings -> Interface -> Open logs folder, opens it):
   Windows: %APPDATA%\Heroes_Not_Included\logs
   Linux:   ~/.config/Heroes_Not_Included/logs
   macOS:   ~/.config/Heroes_Not_Included/logs (a hidden folder: in Finder, Go -> Go to Folder...)

@@ -11,7 +11,7 @@ public enum MessageKind
 public readonly record struct Message(long Tick, MessageKind Kind, string Text, int3? Location);
 
 /// <summary>
-/// Player-facing event log ("The egg is getting cold!"). Keeps the newest <see cref="MaxKept"/>:
+/// Player-facing event log ("The stone bridge is down!"). Keeps the newest <see cref="MaxKept"/>:
 /// the log goes into every save and every co-op join snapshot. Code that wants "what's new" counts
 /// by <see cref="Total"/>, not by index, since old messages drop off the front.
 /// </summary>
@@ -65,7 +65,7 @@ public sealed class MessageLog
 
     /// <summary>
     /// Add a message unless the same key was posted within <paramref name="cooldownTicks"/>.
-    /// Use for conditions that persist (cold egg) so the log isn't spammed.
+    /// Use for conditions that persist (a fire burning low) so the log isn't spammed.
     /// </summary>
     public void AddThrottled(string key, int cooldownTicks, MessageKind kind, string text, int3? location = null)
     {

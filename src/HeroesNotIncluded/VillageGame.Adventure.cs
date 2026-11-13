@@ -25,7 +25,7 @@ namespace HeroesNotIncluded;
 /// </summary>
 public sealed partial class VillageGame
 {
-    /// <summary>Adventure mode at a new home: the keeper is the player's avatar, egg in hand (no prologue).</summary>
+    /// <summary>Played as a character: the player inhabits a villager (their avatar), rather than overseeing the town.</summary>
     public bool Adventure { get; init; }
 
     /// <summary>Name for the avatar (from the character creator).</summary>

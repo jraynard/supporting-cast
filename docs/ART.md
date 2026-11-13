@@ -107,11 +107,8 @@ The animator picks a tag from what the creature is doing. A missing tag falls ba
 | `takeoff!`, `land!` | One-shots at the start and end of a flight. |
 | `breathe_windup` | Lining up a fire breath (looping). |
 | `breathe!` | One puff of flame (about 0.4 s). |
-| `hatch!` | A newborn breaking out of its egg (plays for the first 4 game seconds of life). Mark the frame where the shell bursts with `event=N`: chips and embers fly. |
 
-The **egg** (`creatures/dragon_egg`) is an item with its own sheet: `idle` while warm enough to
-incubate, `cold` when it isn't, `wobble` past 80% incubation and `crack` past 95%, so its state reads
-at a glance. The hatchling's `hatch` should start from the cracked egg, so the egg doesn't pop.
+The flight and breath tags are the season's dragon's (below, "The dragon").
 
 **Four-way people (JRPG style).** Human sheets are 40×60 frames of people about 3 heads tall (pivot at
 the feet, (20, 58); the top 4 rows are headroom, so a big crown lifted by an idle breath isn't cut off), with `idle`, `walk` and `work` drawn four ways: `_down` (facing the viewer), `_up`
@@ -171,11 +168,17 @@ cell: its boxes use coordinates past 0..1 (the nest's run from -1 to 2) to cover
   count.
 - **Sprites still needed:** the def's own `sprite` is still used for its toolbar icon and the
   inspector.
+- **Set in a wall** (`isWall` with a `model`: the fireplace): drawn at full height, not squashed
+  like furniture. Boxes starting at 1 or higher (a chimney stack) go with the roof: hidden when
+  roofs are, and left out under another storey or while you're inside. `modelCutAt` leaves out the
+  boxes starting that high while the walls beside it are cut down (the serving hatch's posts, the
+  fireplace's chimney breast). Kit walls run straight on into such a model (`BuildingKit`).
+- **Fire and smoke:** a fuelled model draws its flames at `fireAt` (model units; the cell's middle
+  by default), `fireSize` times as big, and `smokeAt` sends a wisp up from a chimney's top.
 
 ## Building kits (preset buildings)
 
-Preset buildings (`data/defs/buildings.json`, docs/plans/preset-buildings.md) aren't drawn as
-cubes. Each look names a **kit** (`"kits"` in the same file; `Rendering/BuildingKit.cs`).
+Preset buildings (`data/defs/buildings.json`) aren't drawn as cubes. Each look names a **kit** (`"kits"` in the same file; `Rendering/BuildingKit.cs`).
 
 **Walls** are box models like furniture's, made for a wall running along X through the cell, with
 y 0.5 as its middle. The mesher pieces each wall cell together from its plan neighbours:
@@ -225,6 +228,23 @@ post pieces are turned per cell, so their end grain doesn't repeat. A roof's `ea
 
 The art audit (`--check-art`) checks every kit sprite.
 
+## Bridges
+
+A floor def with a `bridge` look (`BridgeLook`: the stone bridge in `village.json`) is dressed by
+the mesher (`WorldMesher.AddBridge`) from the run of the span through each cell; the sim never sees
+any of it.
+
+- **Parapets** with coping along each side whose neighbour isn't part of the span; the ends, where
+  the road comes on, stay open.
+- **Abutments** at the span's ends, down to the bank; a **pier** every `pierEvery` cells, buttressed
+  out past an open side; between them a stepped **round arch** with a ring of paler voussoirs.
+- **Broken:** cells of a breach (`Repairs`) still count as span, so the arches keep their places.
+  Beside the gap the parapets stop short and ragged, the vault's edge is torn, and there's rubble in
+  the water.
+- Art: `buildings/bridge_parapet`, `_coping`, `_pier` (and their stone variants), drawn by
+  `tools/village_art.py`. A bridge reads best square to its river: Millbrook's crosses a straight
+  reach (`tools/village_map.py`).
+
 ## People: layered looks
 
 Humans are drawn in layers so the character creator can recolour and dress them, mixing and
@@ -240,6 +260,8 @@ through every stance.
 |---|---|---|
 | `creatures/person_<body>` | linen underclothes (a chemise; a shirt and braies), the base every layer matches; the coin | as is |
 | `creatures/person_<body>_skin` | the whole head, ears, arms with fists, legs | skin colour |
+| `creatures/person_<body>_skin_elf` | the same with an elf's long swept-back ears | skin colour |
+| `creatures/person_<body>_ears_elf` | an elf's ears again, what shows past the head, drawn over the hair | skin colour |
 | `creatures/person_<body>_eyes_<style>` | the iris, per eye style (`round`, `narrow`, `sleepy`, `bright`) | eye colour |
 | `creatures/person_<body>_face_<style>` | whites, lids, lashes, catch-lights, nose, mouth, blush | as is |
 | `creatures/person_hair_<style>` | hair in front (from behind: all of it) and the brows; for both bodies | hair colour |
@@ -249,6 +271,12 @@ through every stance.
 | `apparel/<worn>_dye_<body>` | its dyed cloth, greyscale (main shade grey 200) | the dye |
 | `apparel/<cloak>_back_<body>` (+ `_dye`) | a cloak's back panel, cut under the base | first |
 | `apparel/held_<shape>_<body>` (+ `_metal`, `_back`, `_back_metal`) | a weapon or tool in the working hand, along the forearm through every pose and swing (front views over the body, back views behind it); the metal is tinted by the item's tier (`HumanLook.MetalTint`) | in hand |
+
+**Folk** (`Appearance.Folk`): humans, and our elves, whose skin sheet has long ears swept up and
+back past the head (`elf_ear`) and whose ears are drawn again over the hair (`ears_layer`), so they
+stand out through any style. A new folk is a name in `FOLK` and its own skin (and ears) sheets;
+the game falls back to the human skin when a folk's is missing. Elves run to their own swatches
+(`HumanLook.ElfSkinTones` and friends) and grow no beards.
 
 Bodies are `male` and `female` (shown as Masculine and Feminine). Hair styles (`HairStyle`, new ones go at the end of the
 enum) are `short`, `shaggy`, `long`, `ponytail`, `bun`, `sidebraid`, `crownbraid`, `pigtails` (two braids),
@@ -260,7 +288,7 @@ sloped shoulders, a waist, and arms that hang beside the body and swing when wal
 
 The game draws, in order (`HumanLook.Layers`): a cloak's back panel, the hair's back half, skin, eyes
 and face, clothes from the legs up (Legs, Feet, Tunic), body armor, packs, the cloak, the beard, the
-hair (unless a helm with `hidesHair`), head armor. `creatures/human` (the def's own sprite) is a copy
+hair (unless a helm with `hidesHair`), an elf's ears, head armor. `creatures/human` (the def's own sprite) is a copy
 of the male base. Hand-drawn replacements must keep the same frames and tags.
 
 **Clothes** (`data/defs/outfits.json`) are apparel in the Tunic, Legs, Feet and Cloak slots. Cloth ones
@@ -284,8 +312,7 @@ dressed in each armor set and outfit.
 
 ### 3D to sprites
 
-People can come from a rigged 3D model instead of the generator (docs/ROADMAP.md, "People art, the
-way forward"): every view, animation and stance is a camera angle and an action, and each hair style
+People can come from a rigged 3D model instead of the generator (parked for now): every view, animation and stance is a camera angle and an action, and each hair style
 or garment is one more mesh rendered as its own layer. Two steps, per character (the Wanderer's
 config is `art/3d/wanderer.json`):
 
@@ -416,58 +443,36 @@ Layer frames may be **trimmed** to their opaque pixels (the manifest's `ox`/`oy`
 offset, as Aseprite's `--trim` export writes); everything that draws a layer places it by that
 offset. The placeholder layers are trimmed to save atlas space; base sheets aren't.
 
-## Dragons: layered looks
+## Nature, animals and piles
 
-The egg (`creatures/dragon_egg`: idle glow, cold, wobble, crack) is drawn by `chibi_dragon.egg_sheet` at the same detail, and the hatchling's `hatch` frames split that egg. The wild animals (deer, boar, hare) come from `tools/chibi_animals.py` in the same style, untinted, on the same canvas helpers.
+The wild animals (deer, boar, hare) come from `tools/chibi_animals.py` in the people's style,
+untinted, on the same canvas helpers.
 
-Trees, bushes, boulders, the standing and ley stones and the wild plants (`things/*`, variants `_v2`/`_v3` and `_bare` included) come from `tools/chibi_nature.py`: puffy outlined foliage lobes (a tone darker behind), flat cel shading lit from the upper left, at four times the detail on their old canvases. They're static PNGs without an `.anim.json`; the game sizes them by the def's `renderSize` and the sprite's aspect, and `WorldRenderer.DrawVariedBillboard` draws them with `Quad.Smooth`. It runs last in `gen_placeholder_art.py`, replacing the older `norse_nature`/`norse_plants`/`norse_stone`/`norse_glow` drawings of the same sprites.
+Trees, bushes, boulders, the standing and ley stones and the wild plants (`things/*`, variants
+`_v2`/`_v3` and `_bare` included) come from `tools/chibi_nature.py`: puffy outlined foliage lobes (a
+tone darker behind), flat cel shading lit from the upper left, at four times the detail on their old
+canvases. They're static PNGs without an `.anim.json`; the game sizes them by the def's `renderSize`
+and the sprite's aspect, and `WorldRenderer.DrawVariedBillboard` draws them with `Quad.Smooth`. It
+runs last in `gen_placeholder_art.py`, replacing the older `norse_nature`/`norse_plants`/`norse_stone`/
+`norse_glow` drawings of the same sprites.
 
-The Wood item's pile is a box model (`props/woodpile_top`/`_side`/`_end`, `norse_buildings.py`). Box faces show the top-left of their texture at the face's size, they don't stretch it, so each log is 0.25 across and 0.125 levels tall (square on screen, as levels look twice as tall) and its textures repeat every 8 px: one log end, one log's curve of bark.
+The Wood item's pile is a box model (`props/woodpile_top`/`_side`/`_end`, `norse_buildings.py`). Box
+faces show the top-left of their texture at the face's size, they don't stretch it, so each log is
+0.25 across and 0.125 levels tall (square on screen, as levels look twice as tall) and its textures
+repeat every 8 px: one log end, one log's curve of bark.
 
-Dragons come from `tools/chibi_dragon.py` (`--preview` writes `.cache/dragons.png`), in the
-people's style: a round, big-eyed hatchling and juvenile growing into a larger, majestic adult with
-an S-curved neck, horns and haunches but the same kind face. Side-on, at four times the detail
-(`"density": 4`; the plain composite stays at world size since only the def's sprite and fallbacks
-use it). An item def's `held` names its shape (`sword`, `longsword`, `knife`, `axe`, `pick`, `hammer`, `mace`, `club`, `spear`, `bow`, `rod`, `tongs`, `saw`, `chisel`, `brush`). A person holds the tool their job works with (`Job.ToolKind`, found by `Crafting.ToolInHand`), else their weapon.
+An item def's `held` names its shape in hand (`sword`, `longsword`, `knife`, `axe`, `pick`, `hammer`,
+`mace`, `club`, `spear`, `bow`, `rod`, `tongs`, `saw`, `chisel`, `brush`). A person holds the tool their
+job works with (`Job.ToolKind`, found by `Crafting.ToolInHand`), else their weapon.
 
-Each frame is a pose of one rig per stage (`Rig`: chest and hip, the neck's bend, head,
-bent hind legs, front legs, wings drawn upright and turned to their angle, tail); the figure is
-painted back to front while a map records which layer owns each pixel, and split by that map, so
-the layers never overlap. The `mouth` and adult `saddle` points come from the rig. The element's
-markings (`_veins`) are the brow's flame mark and the young ones' speckles.
+## The dragon
 
-The **Norse breed** (`NorseDragon`, docs/plans/dragon-types.md) is the older Norse HD-2D dragon,
-`tools/norse_dragon.py` (`--preview` writes `.cache/norse_dragons.png`): the same layered contract
-and tags, written to `creatures/dragon_norse_<stage>[_layer]` at density 1. It's designed at
-128×96 and drawn 1.2× (154×116, the young by their own size ratios to the Hearth stages) since it's
-the heavier breed; the rim light and outline go on after the resample, so outlines stay a pixel.
-Both breeds share the egg (`creatures/dragon_egg`) and the breath core (`fx/breath_core`). A new
-breed is a creature def with `breed` props and stage sprites, plus a script writing its sheets;
-`--check-art` checks every breed's layers.
-
-Dragons are recoloured the same way (Adventure's dragon creator, `DragonLook`). Each life stage's
-sheet `creatures/dragon_<stage>` keeps the plain, default-coloured composite (fallback, def
-sprite) and adds a base sheet `_base` (outline and face details, drawn as is) plus greyscale
-`_scales`, `_belly`, `_wings` (membranes), `_horns` (horns, claws and wing spars), `_eyes` and
-`_flame` and `_veins` layers in the same frame layout. The game tints both with the dragon's
-**element** colour (`DragonLook.Element`, `DragonLooks.FlameColor`: fire red, ice blue, lightning
-yellow, poison purple, nature green). `_flame` is only the hottest glow marker (the yellow core of
-the tail flame and chest glow), while the orange body of every flame stays in `_base`; `_veins` is
-the ember veins, entirely the element colour (hot ones brighter). Breath
-works the same way: the orange `fx/breath` jet gets a white `fx/breath_core` drawn over its yellow
-core, tinted per breather. Ordinary fire (`fx/fire`, `fx/ember`, burning ground) is all orange. The creator starts a dragon from its
-element's palette (`DragonLooks.ForElement`: scales, belly, wings and eyes in its colour, black horns
-and claws). The game draws `_base` and then the layers in that order,
-tinted (`Rendering/DragonLooks.cs`). Main tones sit below white (scales 200, belly and wings 230)
-so highlights stay lighter than the chosen colour; `DragonLooks.Default` is each group's main
-palette colour scaled back up, so an untouched dragon looks like the composite. Dragons without
-a look get one derived from their entity. The generators split the composite by palette colour
-(`LAYER_SHADES` in `tools/norse_dragon.py`; `DRAGON_LAYER_SHADES` in `tools/placeholder_sheets.py`
-for the young); hand-drawn replacements must keep the frames, tags and points (`mouth`, `saddle`)
-on every layer. The adult has four to six shades per group (scales 64..255, belly 150..255, wings
-96..255, horns 120..255) with the same main tones as above. Pixels that belong to no group stay in
-`_base`: the outline, the face details and the cool rim light along the lit edge, none of which is
-tinted.
+The season's last crisis is a wild dragon, drawn from DragonWorld's adult sheet
+(`creatures/dragon_adult`, side-on, with the flight and breath tags above). The egg, the younger
+stages, the second breed and the dragon creator's recolouring went with the fork; what's left of
+their generators (`tools/chibi_dragon.py`, `tools/norse_dragon.py`) and sheets goes in the art pass
+(docs/ROADMAP.md, the polish pass). The dragon's breath is the orange `fx/breath` jet with the white `fx/breath_core`
+over its yellow core; ordinary fire (`fx/fire`, `fx/ember`, burning ground) is all orange.
 
 ## UI chrome (carved wood and iron)
 
@@ -495,7 +500,7 @@ It needs Pillow (`pip install pillow`) and is deterministic, so a rerun leaves g
 The Norse art pass (below) lives in its own modules, which the generator calls: `norse_art.py` (palette
 ramps, the shaded-shape painter, the selective outline, the Nordic grade), `norse_people.py` (people and
 worn gear), `norse_items.py` (the gear's inventory icons), `norse_ground.py` (grass, flowers, dirt, sand and water tops),
-`norse_dragon.py` (all three dragon stages),
+`norse_dragon.py` (DragonWorld's dragon stages; to prune),
 `norse_nature.py` (spruce, oak, birch and the burnt snag), `norse_stone.py` (every rock's top and strata
 side, ore seams, clay, slopes and their sides, the earth side faces, moss, boulders) and `norse_glow.py`
 (everything that glows: campfire, kiln, forge, ember crystal, the standing and ley stones, moonpetal, the
@@ -515,7 +520,7 @@ hand. Preview with `norse_art.contact_sheet`.
 
 The target is **HD-2D with a Norse hand**: Octopath Traveler's look (richly shaded pixel sprites with
 real proportions, lit scenes, depth blur and bloom) in a cold Nordic world of wool, linen, iron and
-spruce. **Redrawn from scratch: all three dragon stages and the egg, the four trees, the grass (with
+spruce. **Redrawn from scratch: the dragon, the four trees, the grass (with
 Nordic wildflowers), dirt, sand and water tops, every rock, ore, slope and side face, boulders, people and
 everything they wear (sheets and inventory icons), everything that glows (campfire, kiln, forge, ember
 crystal, ley and standing stones, moonpetal, dragonforged tools), every building, model texture and
@@ -540,7 +545,7 @@ colour grade is cool and slightly muted by default (`VisualStyle`).
   meet it. No black lines inside a form.
 - **Proportions:** people about 3 heads tall (40×60 with headroom; the generator designs them on a 32-wide grid and
   broadens the body and legs through `Fig.T`): a readable face (3 px eyes, brows, a jaw), a neck, a
-  wide easy stance, arms that hang clear of the body with a seam against it, small hands and feet. The adult
+  wide easy stance, arms that hang clear of the body with a seam against it, small hands and feet. The
   dragon is 128×96 and keeps the 1.65:1 height ratio to a person it always had.
 - **Norse details:** woven braid at hems, tortoise brooches and bead strings on the apron dress,
   leg wraps (winingas) and turnshoes, spangenhelms with a nasal guard (**no horned helmets**),
@@ -553,8 +558,7 @@ colour grade is cool and slightly muted by default (`VisualStyle`).
   a saturated orange-to-amber hue, or near-full blue), so graded art keeps its fire too. Only quads the
   renderer flags `Quad.Glow` (fire effects, defs with `glow`, such as moonpetal) actually bloom; the
   kiln's mouth, forge coals and ley runes are bright pixels on an ordinary texture.
-- The people's and dragons' greyscale tint layers and `ui/`, `fx/` art stay neutral because the game
-  tints them. Do not run Norse art through `world_finish` (it is already in palette).
+- The people's greyscale tint layers and `ui/`, `fx/` art stay neutral because the game tints them. Do not run Norse art through `world_finish` (it is already in palette).
 
 ### Older placeholder drawings
 
@@ -564,22 +568,8 @@ colour grade is cool and slightly muted by default (`VisualStyle`).
 
 ### The dragon (original design)
 
-Our dragon is its own creature, not a copy of any existing franchise monster. It uses only the
-general dragon conventions below:
-
-- **Silhouette:** stands upright on two legs and leans forward, heavy and reptilian. A long neck that
-  curves like a carved prow into a wedge head with swept-back horns. Large membranous wings, wider
-  than the body when spread. Thick tapering tail curling up at the tip.
-- **Norse carving:** a ridge of bone plates down the back like ship ribs (largest at the shoulders,
-  shrinking along neck and tail), and a throat and belly of bone plates.
-- **Motif: ember veins.** Glowing veins stepped at right angles like runes, not random cracks. The
-  tail tip glows like a coal; no open flame burns on the tail.
-- **Palette:** rust scales (the default tint `#9e402e`; shaded 64..255) with darker shadows, bone belly
-  and horns (`#edd9b1`, `#e4d8be`), dark rust membranes (`#662621`). Glow `#ff8c28`, hot `#ffe06e`.
-  Avoid a solid bright-orange body with a cream belly and teal wing membranes.
-- **Stages:** hatchling (52×39: a round body, short neck and tail, a head too big for it, budding horns,
-  a big bright eye), juvenile (68×57: the adult's silhouette with a larger head and smaller wings and
-  plates), adult 128×96 (full plates and veins). All three come from one rig (`Dragon` in
-  `tools/norse_dragon.py`): drawn at the adult's design scale with the stage's proportions, shrunk by taking
-  each pixel's most common colour (so the layer palette stays exact), then given the details that only read
-  small: the eye, the tail flame and the outline.
+Our dragon is its own creature, not any franchise's monster: upright on two legs and leaning
+forward, a long neck curving like a carved prow into a wedge head with swept-back horns, wings wider
+than its body, a ridge of bone plates down the back like a ship's ribs, rust scales (`#9e402e`) with
+a bone belly and horns, and glowing **ember veins** stepped at right angles like runes. Keep to that
+if it's redrawn; avoid a bright-orange body with a cream belly and teal wings.

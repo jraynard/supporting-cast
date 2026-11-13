@@ -3,7 +3,7 @@
 Heroes Not Included (`HeroesNotIncluded` in code; the repo folder is still `supporting-cast`) is a multiplayer fantasy village game in C#/.NET 10: players take
 the trades a tabletop party usually walks past, with optional traitors. It was forked from
 DragonWorld at `cf61dfc` and runs on the **Narsil** engine (git submodule at `external/narsil`) on
-BRUTAL (GLFW + Vulkan + Dear ImGui). Design: docs/DESIGN.md. Done and next: docs/ROADMAP.md.
+BRUTAL (GLFW + Vulkan + Dear ImGui). Design: docs/DESIGN.md. Next: docs/ROADMAP.md; done: docs/HISTORY.md. Brand: art/brand/brand-guide.html.
 
 ## Commands
 
@@ -14,7 +14,7 @@ dotnet test -c Release                                     # sim, game and Narsi
 dotnet test --filter VillageDayScenario --logger "console;verbosity=detailed"
 dotnet test --filter SeasonScenario --logger "console;verbosity=detailed"   # a whole round, bots, to the reveal
 dotnet run --project src/HeroesNotIncluded                    # title screen
-dotnet run --project src/HeroesNotIncluded -- --new-game --name Arin        # straight into a solo round (--trade Blacksmith, --bots N, --map NAME)
+dotnet run --project src/HeroesNotIncluded -- --new-game --name Arin        # straight into a solo round (--trade Blacksmith, --bots N, --map NAME, --folk Elf)
 dotnet run --project src/HeroesNotIncluded -- --host --name Arin            # host (--port N, --relay HOST, --difficulty D)
 dotnet run --project src/HeroesNotIncluded -- --join 127.0.0.1 --player-id bea --name Bea
 dotnet run --project src/HeroesNotIncluded -- --furniture-demo --zoom 80    # also --building-demo
@@ -109,6 +109,10 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     job does to the world. "Job" here is an AI task; a player's role is a **`Trade`**.
   - Brains (`Ai/Brains.cs`): emergencies, urgent needs, gear, work by priority, comfort, idle.
   - Health: injuries on body parts; hurt bodies only through `HealthSystem.Damage`.
+  - Fires give off heat, light and radiant warmth from `Warmth.FireCell`: their own cell, or for a
+    fireplace (`setInWall`) the room's cell in front of it, which is also the only place it's worked from.
+  - `Appearance` is cosmetic and left out of the hash, its `Folk` (human, elf) included. AI villagers
+    have none: `HumanLook.Derived` hashes their look (and folk) from the entity, the same on every peer.
   - Fights are real time: every attack goes through `Combat/RealtimeAttacks.TryAttack`, odds and
     wounds from `CombatRules`. There's no turn-based combat, and nothing may stop the clock for one
     player's fight.
@@ -124,9 +128,12 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     XML doc summaries describe. Read through `Thing.MaxHp` and friends, not the def's raw number.
 - UI: the Narsil.Ui kit (`external/narsil/docs/UI.md`). Panels go through `Panel.Begin/End`, anything
   on screen in a round through `_hud` (`Hud`, anchored, stacked, nothing overlaps), sizes through
-  `Gui.S`, colours from `Ui/Theme`. Mini-games open with `BeginWork(title, hints)`.
+  `Gui.S`, colours from `Ui/Theme` (the brand's: keep ember rare). Mini-games open with
+  `BeginWork(title, hints)`. Titles and the main menu use `Gui.DisplayFont` (Cinzel); words follow the
+  brand guide's voice and word bank.
 - `src/HeroesNotIncluded`: `TitleGame`, `VillageGame` (partials by area), `WorldRenderer`, `WorldMesher`,
-  `Net/CoopSession`. Draw creatures at `WorldRenderer.DrawPos`, never raw `Position.Pos`.
+  `Net/CoopSession`. Draw creatures at `WorldRenderer.DrawPos`, never raw `Position.Pos`. Presentation
+  that lives on defs (`model`, `bridge`, `fireAt`, `smokeAt`, `modelCutAt`) is never read by the sim.
 - `external/narsil`: make engine changes there and commit them first, then the submodule pointer.
   Keep it game-agnostic. A change to `Narsil.Sim` or `Narsil.Voxel` affects DragonWorld and Lifeline.
 - `data/defs/*.json`: all content. Files merge in name order; references resolve at load.

@@ -10,7 +10,7 @@ namespace HeroesNotIncluded;
 
 // A newcomer's first day in a trade: a few short tips under your portrait (the trade's "tips" in
 // trades.json), and a soft ring on each of its stations (its "stations") until you've stood beside
-// it. Both go when the tips are closed, or with Options > Interface > Tips off. Nothing is saved:
+// it. Both go when the tips are closed, or with Settings > Interface > Tips off. Nothing is saved:
 // a loaded game starts them over, which is what someone coming back to it wants anyway.
 public sealed partial class VillageGame
 {

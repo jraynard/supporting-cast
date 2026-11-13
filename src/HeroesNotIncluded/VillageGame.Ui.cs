@@ -144,7 +144,7 @@ public sealed partial class VillageGame
                 Tip($"Save the village ({LastSavedText()}). F6 quicksaves.");
             if (ImGui.MenuItem("Load"u8, "F9"u8, _saveWindow == SaveWindow.Load, true))
                 OpenSaveWindow(SaveWindow.Load);
-            if (ImGui.MenuItem("Options"u8, ""u8, _settings.IsOpen, true))
+            if (ImGui.MenuItem("Settings"u8, ""u8, _settings.IsOpen, true))
                 _settings.Toggle();
             if (ImGui.MenuItem("Screenshot"u8, "F12"u8, false, true))
                 Host.Screenshot();
