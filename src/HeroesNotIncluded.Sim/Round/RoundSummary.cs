@@ -17,7 +17,7 @@ public enum RoundOutcome : byte
     /// <summary>Dread overflowed before the festival.</summary>
     Dread,
 
-    /// <summary>Nobody of the village was left standing.</summary>
+    /// <summary>Nobody of the village was left alive.</summary>
     TownFell,
 }
 

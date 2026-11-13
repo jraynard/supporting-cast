@@ -29,6 +29,10 @@ public sealed class AdventurerBrain : IBrain
                     && sim.Expeditions.Find(setting.Quest) is { } q ? $"Setting out for {q.Def.Label}" : "Heading out")
                 : null;
 
+        // Trouble in town is what they're for: anyone armed goes for it.
+        if (Defence.Threat(sim, pawn, Defence.AdventurerRange) is { } foe && Defence.Respond(sim, pawn, foe) is { } defend)
+            return defend;
+
         var temp = Warmth.FeltAt(sim, tile);
         var tol = creature.Tolerance(sim.Clock.Tick);
         if (sim.Map.Fire[sim.Map.Idx(tile)] > 0 || temp < tol.SafeMin + 2 || temp > tol.SafeMax - 2)

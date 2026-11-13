@@ -27,6 +27,24 @@ public static class AvatarHunting
         return Entity.Null;
     }
 
+    /// <summary>
+    /// A raider or predator on its feet in a cell, or Entity.Null: the only people a player can
+    /// strike at so far. Fighting the town's own (or adventurers) waits for M4.
+    /// </summary>
+    public static Entity FoeAt(Simulation sim, int3 cell)
+    {
+        var w = sim.World;
+        foreach (var e in w.Each<Creature>())
+            if (w.Get<Creature>(e) is { Dead: false, Downed: false } c && Factions.Attacker(c.Faction) && c.Def.Race != Race.Animal
+                && w.Get<Position>(e).Cell == cell)
+                return e;
+        return Entity.Null;
+    }
+
+    /// <summary>What to call a quarry in a prompt: "the boar", or a raider's name.</summary>
+    public static string Called(Simulation sim, Entity e) =>
+        sim.World.Get<Creature>(e) is { Def.Race: Race.Animal } c ? $"the {c.Def.Label}" : sim.World.Get<Creature>(e).Name;
+
     /// <summary>The attack the hunter could make on the prey from where they stand now, or null (out of range, no line of fire, won't fight).</summary>
     public static AttackDef? AttackOn(Simulation sim, Entity hunter, Entity prey)
     {
@@ -41,6 +59,10 @@ public static class AvatarHunting
     {
         var w = sim.World;
         var animal = AnimalAt(sim, cell);
+        if (animal.IsNull && FoeAt(sim, cell) is { IsNull: false } foe)
+            return AttackOn(sim, avatar, foe) is { } swing
+                ? new(AvatarActionKind.Hunt, $"{(swing.Ranged ? "Shoot at" : "Strike at")} {Called(sim, foe)}", cell, foe)
+                : null;
         if (animal.IsNull || sim.Reservations.IsReservedByOther(animal, avatar))
             return null;
         var c = w.Get<Creature>(animal);
@@ -72,8 +94,9 @@ public sealed class AvatarHuntJob(Entity prey) : Job, IFromTheSaddle
 
     protected override IEnumerable<JobStatus> Run()
     {
-        var label = Get<Creature>(prey).Def.Label;
-        Report = $"Hunting the {label}";
+        var animal = Get<Creature>(prey).Def.Race == Race.Animal;
+        var label = AvatarHunting.Called(Sim, prey);
+        Report = animal ? $"Hunting {label}" : $"Fighting {label}";
         var nextAttack = 0L;
         while (true)
         {
@@ -82,7 +105,7 @@ public sealed class AvatarHuntJob(Entity prey) : Job, IFromTheSaddle
                 Fail("prey is gone");
                 yield break;
             }
-            if (Get<Creature>(prey).Dead)
+            if (Get<Creature>(prey).Dead || (!animal && Get<Creature>(prey).Downed))
                 yield break;
             if (WaitingForWorkKey())
             {
@@ -91,7 +114,7 @@ public sealed class AvatarHuntJob(Entity prey) : Job, IFromTheSaddle
             }
             if (AvatarHunting.AttackOn(Sim, Pawn, prey) is not { } attack)
             {
-                Fail($"the {label} is out of reach");
+                Fail($"{label} is out of reach");
                 yield break;
             }
             if (Sim.Clock.Tick >= nextAttack)
@@ -99,12 +122,15 @@ public sealed class AvatarHuntJob(Entity prey) : Job, IFromTheSaddle
                 FacePrey();
                 var wasAlive = !Get<Creature>(prey).Dead;
                 Combat.RealtimeAttacks.TryAttack(Sim, Pawn, prey, attack);
-                SkillRules.Learn(Sim, Pawn, Skill.Hunting, AvatarHunting.XpPerAttack);
+                var skill = animal ? Skill.Hunting : attack.Ranged ? Skill.Shooting : Skill.Melee;
+                SkillRules.Learn(Sim, Pawn, skill, AvatarHunting.XpPerAttack);
                 nextAttack = Sim.Clock.Tick + attack.CooldownTicks;
-                if (wasAlive && Get<Creature>(prey).Dead)
+                if (wasAlive && (Get<Creature>(prey).Dead || (!animal && Get<Creature>(prey).Downed)))
                 {
-                    SkillRules.Learn(Sim, Pawn, Skill.Hunting, AvatarHunting.XpPerKill);
-                    Sim.Messages.Add(MessageKind.Good, $"{Get<Creature>(Pawn).Name} brought down the {label}. Butcher it for meat and hide.", Sim.LocationOf(prey));
+                    SkillRules.Learn(Sim, Pawn, skill, AvatarHunting.XpPerKill);
+                    Sim.Messages.Add(MessageKind.Good, animal
+                        ? $"{Get<Creature>(Pawn).Name} brought down {label}. Butcher it for meat and hide."
+                        : $"{Get<Creature>(Pawn).Name} brought down {label}.", Sim.LocationOf(prey));
                     yield break;
                 }
             }

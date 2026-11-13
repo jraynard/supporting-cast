@@ -53,6 +53,12 @@ public sealed class SeasonDef : Def
     /// <summary>Dread for a crisis the town didn't meet.</summary>
     public float CrisisUnmetDread { get; set; } = 10;
 
+    /// <summary>
+    /// A round's raids against the old storyteller's (<c>Raids.Points</c>, sized for an armed
+    /// colony): the town is mostly tradesfolk, and the fighting is the adventurers'.
+    /// </summary>
+    public float RaidPointsFactor { get; set; } = 0.4f;
+
     /// <summary>Game hours a crisis runs before it's over whether the town met it or not.</summary>
     public float CrisisHours { get; set; } = 6;
 }

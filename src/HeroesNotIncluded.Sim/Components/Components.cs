@@ -406,7 +406,10 @@ public static class Factions
 {
     /// <summary>Will these two fight? Raiders and the village do; wild animals keep to themselves unless hunted.</summary>
     public static bool Hostile(Faction a, Faction b) =>
-        (Attacker(a) && b == Faction.Village) || (a == Faction.Village && Attacker(b));
+        (Attacker(a) && Defends(b)) || (Defends(a) && Attacker(b));
+
+    /// <summary>Who raiders and predators come for, and who fights them: the village, and adventurers in town.</summary>
+    public static bool Defends(Faction f) => f is Faction.Village or Faction.Adventurer;
 
     /// <summary>The village's enemies' side in a fight: raiders, and predators.</summary>
     public static bool Attacker(Faction f) => f is Faction.Raider or Faction.Predator;

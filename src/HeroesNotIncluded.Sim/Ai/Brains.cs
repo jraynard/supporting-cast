@@ -248,6 +248,11 @@ public sealed class HumanBrain : IBrain
         if (AnimalBrain.Charger(sim, pawn) is { } charger && AnimalBrain.FleeSpot(sim, pawn, charger, 12) is { } away)
             return new FleeJob(away);
 
+        // Raiders or predators in town: the armed fight, the rest get indoors.
+        if (creature.Faction == Faction.Village && Defence.Threat(sim, pawn, Defence.VillagerRange) is { } foe
+            && Defence.Respond(sim, pawn, foe) is { } defend)
+            return defend;
+
         // 2. Urgent needs. 
         if (needs.Get(food) < food.UrgentBelow && EatSomething(sim, pawn, def) is { } eat)
             return eat;

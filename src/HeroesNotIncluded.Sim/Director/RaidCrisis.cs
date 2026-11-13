@@ -23,7 +23,7 @@ public sealed class RaidCrisis : ICrisis
 
     internal static RaidCrisis? Begin(Simulation sim, SimRandom rand, DifficultyDef? difficulty, float strength)
     {
-        var points = Raids.Points(sim) * (difficulty?.PointsFactor ?? 1f) * strength;
+        var points = Raids.Points(sim) * sim.Defs.Season.RaidPointsFactor * (difficulty?.PointsFactor ?? 1f) * strength;
         var raiders = Raids.Send(sim, rand, points, difficulty?.MaxRaiders ?? 5);
         if (raiders.Count == 0)
             return null;

@@ -128,7 +128,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             End(sim, reckoning.Renown >= sim.Defs.Season.RenownTarget ? RoundOutcome.Won : RoundOutcome.FellShort);
             return;
         }
-        if (!AnyoneStanding(sim))
+        if (!AnyoneAlive(sim))
             End(sim, RoundOutcome.TownFell);
     }
 
@@ -157,12 +157,12 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         sim.Messages.Add(outcome == RoundOutcome.Won ? MessageKind.Good : MessageKind.Danger, Summary.Headline, null);
     }
 
-    /// <summary>Is anyone of the village still alive and on their feet?</summary>
-    private static bool AnyoneStanding(Simulation sim)
+    /// <summary>Is anyone of the village still alive? Someone down may yet get up, or be got up.</summary>
+    private static bool AnyoneAlive(Simulation sim)
     {
         var w = sim.World;
         foreach (var e in sim.Creatures())
-            if (w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Dead: false, Downed: false })
+            if (w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Dead: false })
                 return true;
         return false;
     }

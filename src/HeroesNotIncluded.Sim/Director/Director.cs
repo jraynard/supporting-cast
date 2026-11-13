@@ -68,12 +68,18 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
             Plan(sim, season);
         var now = sim.Clock.Tick;
         if (sim.Round.Phase == Round.RoundPhase.Playing)
+        {
+            // Trouble comes for the heroes' purses, and the heroes are who fights it: a beat waits
+            // in its window for a party to be in town, and comes at its end regardless.
+            var heroes = Adventurers.PartySystem.Present(sim);
             for (var i = 0; i < _beatAt.Count && i < season.Beats.Count; i++)
-                if (!_fired[i] && now >= Due(sim, season, i))
+                if (!_fired[i] && now >= Due(sim, season, i)
+                    && (heroes || now >= sim.Round.TickAt(sim, season.Beats[i].Day, season.Beats[i].ToHour)))
                 {
                     _fired[i] = true;
                     Fire(sim, season, season.Beats[i]);
                 }
+        }
         for (var i = 0; i < _active.Count; i++)
         {
             if (_active[i].Check(sim) is not { } met)

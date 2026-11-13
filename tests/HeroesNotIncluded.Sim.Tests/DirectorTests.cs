@@ -84,14 +84,31 @@ public class DirectorTests
         var sim = Round();
         var raid = (RaidCrisis)sim.Director.Send(sim, CrisisKind.Raid)!;
         var dread = sim.Reckoning.Dread;
-        // Keep them at the edge: they've come, and nobody's gone out to them.
-        foreach (var e in raid.Raiders)
+        // Keep them at the edge, and the town indoors: they've come, and nobody's gone out to them.
+        foreach (var e in sim.Creatures())
             sim.World.Get<Mind>(e).Drafted = true;
         sim.TickMany(SimClock.HoursToTicks(sim.Defs.Season.CrisisHours) + SimClock.TicksPerHour / 6 + 1);
         Assert.Empty(sim.Director.Active);
         Assert.Equal(1, sim.Director.Unmet);
         Assert.True(sim.Reckoning.Dread >= dread + sim.Defs.Season.CrisisUnmetDread - 0.01f);
         Assert.All(raid.Raiders.Where(sim.World.IsAlive), e => Assert.True(sim.World.Has<Combat.Leaving>(e)));
+    }
+
+    [Fact]
+    public void ARaidOnTheTownIsFoughtOver()
+    {
+        var sim = Round();
+        sim.Parties.Send(sim, sim.Defs.AllParties[0]);
+        sim.TickMany(SimClock.TicksPerHour); // they've walked in
+        var raid = (RaidCrisis)sim.Director.Send(sim, CrisisKind.Raid)!;
+        for (var i = 0; i < 8 * 6 && sim.Director.Active.Count > 0; i++)
+            sim.TickMany(SimClock.TicksPerHour / 6);
+        Assert.True(sim.Director.Active.Count == 0, $"{sim.Round.Phase} {sim.Round.Outcome}\n" + string.Join("\n", sim.Messages.Messages.TakeLast(15).Select(m => m.Text))); // over, one way or the other, within its hours
+        var w = sim.World;
+        var hurt = raid.Raiders.Count(e => !w.IsAlive(e) || w.Get<Creature>(e).Dead || w.Get<Health>(e).Injuries.Count > 0);
+        Assert.True(hurt > 0, $"met {sim.Director.Met}, unmet {sim.Director.Unmet}: nobody laid a hand on the raiders\n"
+            + string.Join("\n", sim.Messages.Messages.TakeLast(12).Select(m => m.Text)));
+        Console.WriteLine($"Raid of {raid.Raiders.Count}: met {sim.Director.Met}, unmet {sim.Director.Unmet}, {hurt} raiders hurt");
     }
 
     [Fact]

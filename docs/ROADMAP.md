@@ -654,6 +654,34 @@ Known leftovers:
 - Villagers still don't fight back (slice 5), so a raid is rarely met.
 - Difficulty doesn't scale the Renown target or the Dread limit yet.
 
+### M3.4: The town fights back (2026-11-12)
+- **Villagers defend themselves** (`Ai/Defence`):
+  - **When:** a raider or predator comes within 10 cells.
+  - **The armed and fit** go out and fight it (`DefendJob`: close in, strike on the weapon's
+    cooldown, break off when it falls, flees or they're hurt).
+  - **Everyone else** gets indoors, further from it (`HideJob` once inside), or just away.
+  - **Waking:** it's an emergency (`AiSystem.InDanger`), so sleepers wake to it and work is
+    dropped.
+- **Adventurers in town fight too,** from 16 cells. Raiders and predators come for them as well:
+  `Factions.Hostile` now counts adventurers on the village's side (`Factions.Defends`).
+- **Players can strike at raiders** with F, as at game (`AvatarHunting.FoeAt`). It trains Melee
+  or Shooting. Nobody of the town or the parties can be attacked (M4).
+- **Raids sized for a town of tradesfolk:**
+  - **Size:** `season.json` `raidPointsFactor` is 0.4. At full size a first-day raid killed
+    everyone on Millbrook.
+  - **Timing:** a beat waits in its window for a party to be in town (they're what raiders come
+    for, and who fights them), and comes at the window's end regardless.
+  - **With heroes in town:** a strength-1.5 raid of two was met in two of three seeds, with
+    nobody killed.
+- **The town falls** only when nobody of the village is alive. Before, everyone being down ended
+  the round.
+- `DefenceTests`, `DirectorTests.ARaidOnTheTownIsFoughtOver`. Bench hashes unchanged.
+
+Known leftovers:
+- The unarmed don't mob a raider together. Without adventurers in town, two raiders put every
+  villager down.
+- The wounded lie where they fell until someone thinks to help.
+
 ## Next
 
 ### M3: A whole season

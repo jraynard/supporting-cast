@@ -29,6 +29,7 @@
       "crisisMetDread": -4,
       "crisisUnmetDread": 10,
       "crisisHours": 6,
+      "raidPointsFactor": 0.4,
       "beats": [
         { "day": 1, "fromHour": 20, "toHour": 23, "strength": 0.5, "kinds": { "Raid": 1 } },
         { "day": 2, "fromHour": 10, "toHour": 17, "strength": 1, "kinds": { "Raid": 3, "Fire": 2, "Shortage": 2, "Plague": 2 } },
