@@ -46,7 +46,8 @@ refuses a different build and says which one it runs.
 
 PLAYING TOGETHER
 ----------------
-Host game -> New round opens a lobby: friends join, say which trades they want, and the host
+Every game starts by picking or making your character (they're kept between games; the
+Characters screen looks after them). Host game -> New round opens a lobby: friends join, say which trades they want, and the host
 deals the round. Host game -> A saved village opens one of the host's saves. Friends pick
 Join game and either pick the village from the list (same network) or type the host's address.
 
@@ -78,7 +79,11 @@ F (hold): use or work on what's in reach. Your trade's stations start their own 
 X: put down what you hold. N: sleep.
 Tab: inventory. 1-4: take a stack from your pack.
 Q/E or the mouse wheel: turn and zoom.  [ ]: look up or down a floor.  \: show or hide roofs.
-J: your shop's price sign. Hungry: F at the inn's serving hatch orders a meal; wait in its line.  F12: screenshot (Shift+F12 without the interface).
+J: your shop's price sign. Hungry: F at the inn's serving hatch orders a meal; wait in its line.
+Raiders: F to strike at them. When the bell rings, F at the muster rack by the well takes up a
+  weapon if you have none.
+F12: screenshot (Shift+F12 without the interface).
+Sound and music volumes: Settings -> Sound.
 
 
 REPORTING BUGS

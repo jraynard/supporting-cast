@@ -4,9 +4,16 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
-## Unreleased: a whole season
+## 0.1.0-playtest.4
 
-A round has a beginning, a middle and an end now.
+A whole season: a round has a beginning, a middle and an end now. And the town has sound.
+
+- Sound and music. You hear what your character would: fights and fire (muffled through walls),
+  people talking, wind, birds, the river, the hearth, the anvil and the pour. Music follows the
+  mood: day, night, danger, the festival. Volumes are under Settings > Sound.
+- Characters: before any game you pick or make a character, and they're kept. The new
+  Characters screen on the main menu lets you change them or let them go, and shows the trades
+  each has played. Joining a game goes by your character's name.
 
 - A round is three days. On the last evening the town holds its festival in the square, and the
   season is reckoned: how well travellers speak of the town (Renown) against how much the dungeon
@@ -17,9 +24,17 @@ A round has a beginning, a middle and an end now.
 - Trouble comes: raiders on the first night, then a fire, a shortage at the inn, raiders or a fever
   on the second day, and a dragon on the third. Villagers with a weapon fight; the rest get indoors.
   You can strike at raiders with F.
+- Before a raid a shepherd brings word of how many are coming and when. The town calls for
+  weapons and pays the blacksmith for each one hung on the muster rack by the well. When the
+  bell rings, anyone without a weapon can take one from the rack (F) and stand with the town.
+- Raids are bigger: left to itself, the town loses. It needs you.
 - Raiders may pull down the bridge, cutting the road. The tinker mends it: two wood to the gap, F,
   and brace the span level.
 - The healer can feel a fever ("a heat in the blood") and quell it with Rime and Still.
+- The blacksmith smelts their own iron: ore and charcoal in the forge, the bellows (hold F)
+  keeping the fire orange while the bloom comes together, then the slag beaten out on the anvil.
+  A good bloom gives three bars. You start with two bars and a chest of ore, and a carter brings
+  more each morning.
 - Favours are pinned to the notice board in the square: F to read it or pin your own. You can ask
   for so many of something, brought to you, and the town's labourer will take it on.
 - Hunger and tiredness go down slower. Everyone starts with 12 silver, and villagers buy their
@@ -37,7 +52,9 @@ A round has a beginning, a middle and an end now.
   when the cook puts a bowl up.
 - Elves: pick one in the character creator (Look, then Folk), and you'll spot a few about town.
 - A fresh title screen: Host game and Join game have their own entries, each line tells you what
-  it does underneath, and Credits works.
+  it does underneath, and Credits shows who made the game.
+- Steam Deck: the Linux build fits the Deck's screen and plays with its controls (see
+  STEAM-DECK.md).
 - Old saves won't carry over into a season.
 
 ## 0.1.0-playtest.2

@@ -8,7 +8,7 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <!-- Playtest builds: pushing the tag v$(Version) publishes this version to itch.io and Discord
          (.github/workflows/playtest-release.yml, docs/alpha/PUBLISHING.md); bump it for each one. -->
-    <Version>0.1.0-playtest.2</Version>
+    <Version>0.1.0-playtest.4</Version>
     <!-- Same source, same bytes: co-op's build tag hashes the assemblies, so every platform's package
          must come out identical. CI also maps source paths so the checkout location doesn't matter. -->
     <Deterministic>true</Deterministic>
