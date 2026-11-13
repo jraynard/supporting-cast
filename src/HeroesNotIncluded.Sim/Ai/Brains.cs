@@ -273,6 +273,10 @@ public sealed class HumanBrain : IBrain
         if (inLine is { Cell: { } queueAt } place)
             return new Shops.QueueJob(queueAt, Buildings.Called(sim, place.Shop), place.Place == 0);
 
+        // 2d. The festival: down tools and off to the square.
+        if (Festival.Gathering(sim, pawn) is { } party)
+            return party;
+
         // 3. Gear lying around (a quick order between jobs), then work by the pawn's priorities.
         if ((FindGear(sim, pawn) ?? FindTool(sim, pawn)) is { } gear)
             return gear;

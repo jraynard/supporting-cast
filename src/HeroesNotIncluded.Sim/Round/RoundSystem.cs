@@ -75,6 +75,9 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     /// </summary>
     public bool Endless { get; set; }
 
+    /// <summary>Where the festival gathers (the well in the square), once it's begun.</summary>
+    public int3? Square { get; private set; }
+
     /// <summary>How the round came out, once it's <see cref="RoundPhase.Over"/>.</summary>
     public RoundSummary? Summary { get; private set; }
 
@@ -119,12 +122,14 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         if (Phase == RoundPhase.Playing && now >= FestivalTick(sim))
         {
             Phase = RoundPhase.Festival;
-            sim.Messages.Add(MessageKind.Good, "The festival begins! Lanterns go up in the square.", null);
+            Square = FindSquare(sim);
+            sim.Messages.Add(MessageKind.Good, "The festival begins! Everyone's gathering in the square.", Square);
         }
         if (Phase == RoundPhase.Festival && now >= EndTick(sim))
         {
             var reckoning = sim.Reckoning;
             reckoning.FinalCount(sim);
+            ReadTheReckoning(sim);
             End(sim, reckoning.Renown >= sim.Defs.Season.RenownTarget ? RoundOutcome.Won : RoundOutcome.FellShort);
             return;
         }
@@ -155,6 +160,41 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         };
         Phase = RoundPhase.Over;
         sim.Messages.Add(outcome == RoundOutcome.Won ? MessageKind.Good : MessageKind.Danger, Summary.Headline, null);
+    }
+
+    /// <summary>The town's well, where a festival gathers; failing one, wherever the first villager stands.</summary>
+    private static int3? FindSquare(Simulation sim)
+    {
+        var w = sim.World;
+        foreach (var e in w.Query<Thing>())
+            if (w.Get<Thing>(e).Def.Name == "Well")
+                return w.Get<Thing>(e).Cell;
+        foreach (var e in sim.Creatures())
+            if (w.Get<Creature>(e).Faction == Faction.Village)
+                return w.Get<Position>(e).Cell;
+        return null;
+    }
+
+    /// <summary>
+    /// The festival's end: whoever of the town stands nearest the well calls out how the season
+    /// went, in the words everyone knows it by. The numbers are for the reveal.
+    /// </summary>
+    private void ReadTheReckoning(Simulation sim)
+    {
+        var w = sim.World;
+        var at = Square ?? default;
+        var crier = sim.Creatures()
+            .Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Dead: false } && Speech.SpeechSystem.CanAct(sim, e))
+            .OrderBy(e => Maps.Map.Distance(w.Get<Position>(e).Cell, at))
+            .FirstOrDefault(Entity.Null);
+        if (crier.IsNull)
+            return;
+        var season = sim.Defs.Season;
+        var r = sim.Reckoning;
+        var renown = Director.Reckoning.RenownWord(r.Renown, season.RenownTarget);
+        var dread = Director.Reckoning.DreadWord(r.Dread, season.DreadLimit);
+        var verdict = r.Renown >= season.RenownTarget ? "We've done it, friends: the season's ours!" : "It wasn't enough, friends. Not this season.";
+        sim.Speech.Say(sim, crier, $"Friends! The season's over. {renown}, and {char.ToLowerInvariant(dread[0])}{dread[1..]}. {verdict}", Speech.Volume.Shout);
     }
 
     /// <summary>Is anyone of the village still alive? Someone down may yet get up, or be got up.</summary>
@@ -456,6 +496,13 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         }
         w.Bool(Summary != null);
         Summary?.Save(w);
+        w.Bool(Square != null);
+        if (Square is { } sq)
+        {
+            w.Int(sq.X);
+            w.Int(sq.Y);
+            w.Int(sq.Z);
+        }
     }
 
     public void Load(SaveReader r, Simulation sim)
@@ -478,6 +525,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         _startCoin.Clear();
         Summary = null;
         StartTick = -1;
+        Square = null;
         if (r.Version < 9)
         {
             // Saves from before the season: the round started when the game did, and nobody's purse was noted.
@@ -490,6 +538,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             _startCoin.Add((r.Entity(), r.Int()));
         if (r.Bool())
             Summary = RoundSummary.Read(r);
+        Square = r.Version >= 10 && r.Bool() ? new int3(r.Int(), r.Int(), r.Int()) : null;
     }
 
     private static void WriteStrings(SaveWriter w, List<string> list)

@@ -759,6 +759,18 @@ Known leftovers:
 - The dragon hasn't been seen in a running game yet. The art is DragonWorld's adult sprite.
 - It's likely too easy with a party in town and impossible without one. Tune in play.
 
+### M3.8: The festival (2026-11-12)
+- **At the festival** (18:00 on the last day), the town and its visitors leave off work and gather
+  in the square, milling about the well (`Ai/Festival`; `RoundSystem.Square`, found when it
+  begins and saved). Urgent needs, the wounded and fights still come first.
+- **The reckoning aloud:** at its end, whoever stands nearest the well shouts how the season went,
+  in the words everyone knows it by: "Friends! The season's over. Travellers speak of the town,
+  and a pall hangs over the valley. It wasn't enough, friends." Then the reveal.
+- `SeasonTests.TheTownGathersInTheSquareAndHearsTheReckoning`. Bench state hashes unchanged; the
+  full hashes moved for the saved square: 1234 `AC1A82C53B37D20C`, 99 `22437529DFFF4EAD`.
+
+Known leftovers: no lanterns, tables or music in the square yet; the inn doesn't serve outside.
+
 ## Next
 
 ### M3: A whole season

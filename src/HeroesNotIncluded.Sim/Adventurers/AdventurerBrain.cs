@@ -64,6 +64,8 @@ public sealed class AdventurerBrain : IBrain
                 return new Shops.QueueJob(cell, Buildings.Called(sim, place.Shop), place.Place == 0);
             }
         }
+        if (Festival.Gathering(sim, pawn) is { } party)
+            return party;
         var center = WaitingAt(sim, pawn)
             ?? (w.TryGet<Adventurer>(pawn, out var a) && PartySystem.HauntOf(sim, a.PartyDef) is { } haunt ? haunt.Anchor : tile);
         return AiQueries.RandomReachableNear(sim, pawn, center, 4) is { } spot

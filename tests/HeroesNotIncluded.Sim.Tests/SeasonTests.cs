@@ -148,6 +148,25 @@ public class SeasonTests
     }
 
     [Fact]
+    public void TheTownGathersInTheSquareAndHearsTheReckoning()
+    {
+        var sim = Round();
+        PlayTo(sim, sim.Round.FestivalTick(sim));
+        Assert.Equal(RoundPhase.Festival, sim.Round.Phase);
+        var square = sim.Round.Square;
+        Assert.NotNull(square);
+        sim.TickMany(SimClock.TicksPerHour / 2);
+        var w = sim.World;
+        var town = sim.Creatures().Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Dead: false } && !w.Has<Avatar>(e)).ToList();
+        var there = town.Count(e => Maps.Map.Distance(w.Get<Position>(e).Cell, square.Value) <= Ai.Festival.Spread + 2);
+        Assert.True(there * 2 >= town.Count, $"{there} of {town.Count} in the square");
+
+        PlayTo(sim, sim.Round.EndTick(sim));
+        Assert.Equal(RoundPhase.Over, sim.Round.Phase);
+        Assert.Contains(sim.Speech.Kept, u => u.Text.StartsWith("Friends! The season's over."));
+    }
+
+    [Fact]
     public void AnEndlessRoundHasNoFestival()
     {
         var sim = Round();
