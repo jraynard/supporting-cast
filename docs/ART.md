@@ -313,9 +313,10 @@ The game lifts the hair tint (`HumanLook.HairLift`) so the chosen colour sits ne
 width and length merged and lined as one mass, strand lines down each (a shadow along its fold, a
 sheen at its root), strays breaking loose, curls as coils and ringlets of every size, braids woven
 strand by strand, a bun wound round itself; each with a back view of its own. Beards follow
-`art/reference/shortbeard.webp` and `fullbeard.webp`: the beard is the jaw (its outer edge the face's,
-round the chin and a little past, roughed up along the bottom; its inner edge one clean line across each
-cheek from the sideburn to the moustache; a notch under the lip), and the full one hangs to a ragged row
+`art/reference/shortbeard.webp` and `fullbeard.webp`: the beard is the jaw, in smooth curves (its outer edge the
+face's, round the chin and a little past, softening into tapered wisps along the bottom; beside the
+eyes it keeps to the side of the face, never near them, then curves in along the jaw to the moustache
+under the nose; a notch under the lip), and the full one hangs to a ragged row
 of points under a moustache of its own whose tips curl up. `python3 tools/chibi_people.py --hair-preview [styles]`
 draws every style (or those named) in four views beside its game size, then every beard, into
 `.cache/people/hair.png`. Braids hanging from the hair are drawn before it, so the hair lies over their
