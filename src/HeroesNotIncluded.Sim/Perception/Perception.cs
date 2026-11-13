@@ -449,7 +449,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         foreach (var r in sim.Favours.All)
             if (Omniscient || r.KnownBy.Contains(viewer))
                 yield return new Favours.KnownFavour(r.Id, r.PosterName, r.Text, r.Price, r.PostedTick, r.Deadline,
-                    r.AssigneeName, r.Status, r.Poster == viewer, r.Assignee == viewer, r.Poster);
+                    r.AssigneeName, r.Status, r.Poster == viewer, r.Assignee == viewer, r.Poster, r.Wants, r.Count);
     }
 
     /// <summary>Everything this character has heard that's still remembered, oldest first.</summary>

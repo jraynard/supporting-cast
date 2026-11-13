@@ -201,6 +201,11 @@ public sealed partial class VillageGame
             case AvatarActionKind.Tinker:
                 OpenTinkerWindow(action.Target, toggle);
                 break;
+            case AvatarActionKind.ReadBoard:
+                Issue(new Sim.Favours.ReadBoardCommand(_avatar));
+                _showShop = true;
+                _favoursOpen = true;
+                break;
         }
     }
 

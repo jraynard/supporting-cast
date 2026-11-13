@@ -51,7 +51,9 @@ room, a quest lead) weighs the price against what it's worth to them and what's 
 it fits, they go to the shop and line up at its counter: the bar for a drink, the smithy's counter
 for a mend. If it doesn't, they say so aloud and go without. Each want is an `Order` in code. Price
 is a lever: too high and nobody comes and Satisfaction falls; too low and the purse fills slowly.
-Players ask each other for things as **favours**, for silver they name.
+Players ask each other for things as **favours**, for silver they name, pinned to the notice board
+in the square: only those who read it know what's wanted. An errand (bring me so many of a thing)
+is done by bringing it, and the town's labourer takes those on.
 
 ## Trades
 

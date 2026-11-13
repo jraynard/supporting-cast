@@ -106,7 +106,7 @@ public class CrisisTests
         var beside = sim.SpiralFrom(at, 2).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z);
         w.Get<Position>(near).Cell = beside;
         w.Get<Position>(near).Pos = Position.CenterOf(beside);
-        for (var i = 0; i < 24 && !FeverSystem.Has(sim, near); i++)
+        for (var i = 0; i < 96 && !FeverSystem.Has(sim, near); i++) // 5% a quarter hour: a day all but makes it sure
             sim.TickMany(SimClock.TicksPerHour / 4);
         Assert.True(FeverSystem.Has(sim, near), "a fever passes to whoever sits close");
 

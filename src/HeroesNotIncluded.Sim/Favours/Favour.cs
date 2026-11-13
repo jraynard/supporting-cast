@@ -41,6 +41,14 @@ public sealed class Favour
     public FavourStatus Status { get; set; }
     public long ClosedTick { get; set; }
 
+    /// <summary>
+    /// An errand: what's to be brought to the asker, and how many (null for a favour in words).
+    /// Bringing it is doing it: the asker pays on delivery (<see cref="FavourBoard.Deliver"/>), and
+    /// a labourer the AI runs takes these on.
+    /// </summary>
+    public Defs.ThingDef? Wants { get; init; }
+    public int Count { get; init; }
+
     /// <summary>Who knows of it, in the order they learned.</summary>
     public List<Entity> KnownBy { get; } = [];
 
@@ -50,4 +58,4 @@ public sealed class Favour
 /// <summary>A favour as someone who knows of it sees it (<c>PerceptionView.Favours</c>).</summary>
 public readonly record struct KnownFavour(
     int Id, string PosterName, string Text, int Price, long PostedTick, long Deadline, string AssigneeName,
-    FavourStatus Status, bool Mine, bool MineToDo, Entity Poster);
+    FavourStatus Status, bool Mine, bool MineToDo, Entity Poster, Defs.ThingDef? Wants = null, int Count = 0);

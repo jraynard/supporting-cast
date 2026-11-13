@@ -2,13 +2,16 @@ using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Round;
 using HeroesNotIncluded.Sim.Shops;
 using HeroesNotIncluded.Sim.Speech;
+using HeroesNotIncluded.Sim.Systems;
 
 namespace HeroesNotIncluded.Sim.Favours;
 
 /// <summary>
-/// Every player <see cref="Favour"/> in the round. Asked aloud, so only those who hear know of it;
-/// someone says they'll do it, and the asker pays them in silver when they say it's done. Shops are
-/// for what adventurers buy (<see cref="ShopSystem"/>); this is players asking each other.
+/// Every <see cref="Favour"/> in the round, pinned to the town's notice board in the square: only
+/// those who've read the board (F at it) know of one. Someone says they'll do it, and the asker
+/// pays them in silver when they say it's done. An errand (bring so many of something) is done by
+/// bringing it, and a labourer the AI runs will take one on (<see cref="ErrandJob"/>). Shops are for
+/// what adventurers buy (<see cref="ShopSystem"/>); this is the town asking itself.
 /// </summary>
 public sealed class FavourBoard : ISimSystem, Saving.ISaveState
 {
@@ -55,25 +58,104 @@ public sealed class FavourBoard : ISimSystem, Saving.ISaveState
         _favours.RemoveAll(r => !r.IsOpen && now - r.ClosedTick > KeepClosedTicks);
     }
 
-    /// <summary>Ask in your own words, aloud. Null if it's empty or they have too many open.</summary>
-    public Favour? Post(Simulation sim, Entity who, string? text, int price, int hours)
+    /// <summary>Most of one thing an errand may ask for.</summary>
+    public const int MaxCount = 99;
+
+    /// <summary>The notice board within reach of someone, or Entity.Null.</summary>
+    public static Entity BoardBy(Simulation sim, Entity who)
     {
-        var line = SpeechSystem.Clean(text);
+        var w = sim.World;
+        var here = w.Get<Position>(who).Cell;
+        foreach (var c in sim.SpiralFrom(here, 1))
+        {
+            if (!sim.Map.InBounds(c))
+                continue;
+            var e = sim.Map.Structure[sim.Map.Idx(c)];
+            if (IsBoard(sim, e) && AvatarSystem.InReach(sim, here, e))
+                return e;
+        }
+        return Entity.Null;
+    }
+
+    public static bool IsBoard(Simulation sim, Entity e) =>
+        !e.IsNull && sim.World.IsAlive(e) && sim.World.TryGet<Thing>(e, out var t) && t.Def.Name == "NoticeBoard";
+
+    /// <summary>
+    /// Pin a favour to the board, in your own words: you have to be at it. Null if it's empty,
+    /// you're not at the board, or you have too many open.
+    /// </summary>
+    public Favour? Post(Simulation sim, Entity who, string? text, int price, int hours) => Pin(sim, who, text, price, hours, null, 0);
+
+    /// <summary>Pin an errand: so many of a thing wanted, brought to you, for a price.</summary>
+    public Favour? PostErrand(Simulation sim, Entity who, Defs.ThingDef? wants, int count, int price, int hours) =>
+        wants == null || wants.Category != Defs.ThingCategory.Item ? null : Pin(sim, who, null, price, hours, wants, Math.Clamp(count, 1, MaxCount));
+
+    private Favour? Pin(Simulation sim, Entity who, string? text, int price, int hours, Defs.ThingDef? wants, int count)
+    {
+        var line = wants != null ? $"Wanted: {count} {wants.Label}, brought to me" : SpeechSystem.Clean(text);
         if (line.Length > MaxTextLength)
             line = line[..MaxTextLength].Trim();
         if (line.Length == 0 || _favours.Count(r => r.IsOpen && r.Poster == who) >= MaxOpen)
             return null;
+        var board = BoardBy(sim, who);
+        if (board.IsNull)
+        {
+            sim.Messages.Add(MessageKind.Info, "Favours are pinned to the notice board in the square: go to it first.", sim.LocationOf(who));
+            return null;
+        }
         price = Math.Clamp(price, 0, MaxPrice);
         hours = Math.Clamp(hours, 1, MaxHours);
         var favour = new Favour
         {
             Id = _nextId++, Poster = who, PosterName = sim.World.Get<Creature>(who).Name, Text = $"{line} ({price} silver)",
             Price = price, PostedTick = sim.Clock.Tick, Deadline = sim.Clock.Tick + SimClock.HoursToTicks(hours),
+            Wants = wants, Count = count,
         };
         _favours.Add(favour);
         Learn(favour, who);
-        SayAndSpread(sim, favour, who, favour.Text);
+        sim.Messages.Add(MessageKind.Info, $"{favour.PosterName} pins a note to the notice board.", sim.World.Get<Thing>(board).Cell);
         return favour;
+    }
+
+    /// <summary>Read the board: everything open on it is known to you now. How many you hadn't known; -1 if you're not at it.</summary>
+    public int Read(Simulation sim, Entity who)
+    {
+        if (BoardBy(sim, who).IsNull)
+            return -1;
+        var learned = 0;
+        foreach (var r in _favours)
+            if (r.IsOpen && !r.KnownBy.Contains(who))
+            {
+                Learn(r, who);
+                learned++;
+            }
+        return learned;
+    }
+
+    /// <summary>
+    /// An errand's goods handed over: whoever took it on, in reach of the asker with enough of the
+    /// thing on them, gives it over and is paid at once. False if it isn't so.
+    /// </summary>
+    public bool Deliver(Simulation sim, Entity who, int id)
+    {
+        if (Find(id) is not { IsOpen: true, Wants: { } wants } r || r.Assignee != who || !Handing.InReach(sim, who, r.Poster))
+            return false;
+        var stacks = Inventory.CarriedOf(sim, who, wants);
+        if (stacks.Sum(s => sim.World.Get<Stack>(s).Count) < r.Count)
+            return false;
+        var left = r.Count;
+        foreach (var stack in stacks)
+        {
+            if (left <= 0)
+                break;
+            var take = Math.Min(left, sim.World.Get<Stack>(stack).Count);
+            Inventory.Stow(sim, r.Poster, Inventory.TakeFromPerson(sim, who, stack, take));
+            left -= take;
+        }
+        var paid = Coin.Pay(sim, r.Poster, who, r.Price);
+        Close(sim, r, FavourStatus.Done);
+        sim.Speech.Say(sim, r.Poster, paid >= r.Price ? $"Just what I wanted. {paid} silver, as promised." : $"Thanks. Here's {paid} silver; it's all I've got.", Volume.Say);
+        return true;
     }
 
     /// <summary>Someone says they'll see to a favour they know of. False if they can't take it.</summary>
@@ -146,6 +228,12 @@ public sealed class FavourBoard : ISimSystem, Saving.ISaveState
             w.String(r.AssigneeName);
             w.Byte((byte)r.Status);
             w.Long(r.ClosedTick);
+            w.Bool(r.Wants != null);
+            if (r.Wants != null)
+            {
+                w.Def(r.Wants);
+                w.Int(r.Count);
+            }
             w.Int(r.KnownBy.Count);
             foreach (var k in r.KnownBy)
                 w.Entity(k);
@@ -158,16 +246,19 @@ public sealed class FavourBoard : ISimSystem, Saving.ISaveState
         _favours.Clear();
         for (var n = r.Count(1 << 16); n > 0; n--)
         {
-            var q = new Favour
-            {
-                Id = r.Int(), Poster = r.Entity(), PosterName = r.String(), Text = r.String(), Price = r.Int(),
-                PostedTick = r.Long(), Deadline = r.Long(), Assignee = r.Entity(), AssigneeName = r.String(),
-            };
+            var (id, poster, posterName, text, price) = (r.Int(), r.Entity(), r.String(), r.String(), r.Int());
+            var (posted, deadline, assignee, assigneeName) = (r.Long(), r.Long(), r.Entity(), r.String());
             var status = r.Byte();
             if (!Enum.IsDefined((FavourStatus)status))
                 throw new Saving.SaveException($"Corrupt save: favour status {status}");
-            q.Status = (FavourStatus)status;
-            q.ClosedTick = r.Long();
+            var closed = r.Long();
+            var (wants, count) = r.Version >= 11 && r.Bool() ? (r.Def<Defs.ThingDef>(), r.Int()) : (null, 0);
+            var q = new Favour
+            {
+                Id = id, Poster = poster, PosterName = posterName, Text = text, Price = price, PostedTick = posted,
+                Deadline = deadline, Assignee = assignee, AssigneeName = assigneeName, Wants = wants, Count = count,
+                Status = (FavourStatus)status, ClosedTick = closed,
+            };
             for (var k = r.Count(1 << 16); k > 0; k--)
                 q.KnownBy.Add(r.Entity());
             _favours.Add(q);

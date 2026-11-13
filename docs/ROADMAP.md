@@ -771,6 +771,33 @@ Known leftovers:
 
 Known leftovers: no lanterns, tables or music in the square yet; the inn doesn't serve outside.
 
+### M3.9: The notice board (2026-11-12)
+- **Millbrook has a notice board** in the square by the well (`NoticeBoard` in village.json, a box
+  model: two posts, a board with notes pinned to it, a shingle cap; placed by
+  `tools/village_map.py`).
+- **Favours are pinned to it,** not asked aloud (`FavourBoard`):
+  - **Posting:** you have to be at the board, and its window says so otherwise.
+  - **Knowing:** F at the board ("Read the notice board", `ReadBoardCommand`) is how you learn
+    what's on it, and it opens the Favours list.
+  - **Unchanged:** taking one on, finishing it and calling it off.
+- **Errands:** a favour can ask for so many of a thing, brought to you (`PostErrandCommand`; the
+  panel's "an errand: bring me..." picker).
+  - **Doing one:** bringing it is doing it. Whoever took it on hands it over in reach
+    (`DeliverFavourCommand`, "Hand it over") and is paid on the spot.
+  - **The labourer** the AI runs checks the board, takes on an errand there's enough of lying
+    about or in common stores, gathers it and brings it (`Favours/ErrandJob`, under Haul).
+- **Tests:** `FavourTests` rewritten for the board. Two older tests were tied to the town's timing
+  and got sturdier: the bot keeper's party is healed so it lounges within earshot, and the fever
+  gets a day to spread.
+- Save format 11. Bench baselines moved for the board on the map: seed 1234 state
+  `BD2586001B6090EF` full `ABEA0CC24C779DF9`; seed 99 state `5E71028AC8D8CA95` full
+  `DF94104B81C1236D`.
+
+Known leftovers:
+- Bots don't use the board.
+- Errands fetch only what's lying about or in common stores, not what a shop keeps.
+- Wood left lying on a cold day goes on the fires before a labourer gets to it.
+
 ## Next
 
 ### M3: A whole season

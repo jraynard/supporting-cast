@@ -32,6 +32,23 @@ public static class Inventory
     public static bool InOwnPack(Simulation sim, Entity creature, Entity item) =>
         sim.World.IsAlive(item) && sim.World.TryGet<Stored>(item, out var s) && !s.In.IsNull && s.In == sim.PackOf(creature);
 
+    /// <summary>Stacks of a thing someone has in hand or in their pack, hand first.</summary>
+    public static List<Entity> CarriedOf(Simulation sim, Entity who, Defs.ThingDef def)
+    {
+        var w = sim.World;
+        var stacks = new List<Entity>();
+        if (!w.IsAlive(who) || !w.Has<Carrying>(who))
+            return stacks;
+        var held = w.Get<Carrying>(who).Item;
+        if (w.IsAlive(held) && w.Get<Thing>(held).Def == def)
+            stacks.Add(held);
+        if (sim.PackOf(who) is { IsNull: false } pack)
+            foreach (var item in sim.StoredIn(pack))
+                if (w.Get<Thing>(item).Def == def)
+                    stacks.Add(item);
+        return stacks;
+    }
+
     /// <summary>Is this item something the creature has on it: in hand, in its pack, worn or wielded?</summary>
     public static bool OnPerson(Simulation sim, Entity creature, Entity item)
     {

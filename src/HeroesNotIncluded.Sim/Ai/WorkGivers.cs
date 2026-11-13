@@ -43,7 +43,7 @@ public sealed class WorkGivers
                     WorkType.Fish => Fish(sim, pawn),
                     WorkType.Mine => Harvest(sim, pawn, type) ?? Dig(sim, pawn),
                     WorkType.Chop or WorkType.Harvest => Harvest(sim, pawn, type),
-                    WorkType.Haul => Haul(sim, pawn),
+                    WorkType.Haul => Favours.ErrandJob.For(sim, pawn) ?? Haul(sim, pawn),
                     _ => null,
                 };
                 if (job != null)

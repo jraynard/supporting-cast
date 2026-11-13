@@ -33,7 +33,7 @@ PLANS = {"Inn": (13, 13), "Dwelling": (6, 5), "Cottage": (9, 6), "Smithy": (7, 5
 GROUND_LEGEND = {"g": "Grass", "d": "Dirt", "r": "Road", "t": "TilledSoil", "k": "Stone", "s": "Sand", "~": "ShallowWater", "w": "Water"}
 FEATURE_LEGEND = {
     "O": "Oak", "P": "Pine", "B": "Birch", "b": "BerryBush", "o": "Boulder", "x": "WildFlax",
-    "f": "Fence", "G": "Gate!", "c": "CabbagePlant", "W": "Well", "=": "StoneBridge@2",
+    "f": "Fence", "G": "Gate!", "c": "CabbagePlant", "W": "Well", "N": "NoticeBoard", "=": "StoneBridge@2",
     "u": "Barrel", "X": "Crate", "C": "Wagon", "/": "Slope",
 }
 
@@ -226,6 +226,13 @@ garden(77, 46, 82, 51, gate=(77, 48))                            # H's
 # ---------------- Things on the ground ----------------
 
 feature[45][43] = "W"                                            # the well
+for x, y in [(46, 43), (46, 44), (47, 43), (40, 43)]:             # the notice board, by the well
+    if not reserved[y][x] and level[y][x] == TOWN and feature[y][x] == "." and ground[y][x] not in "wk~":
+        feature[y][x] = "N"
+        reserved[y][x] = True
+        break
+else:
+    raise SystemExit("no room for the notice board by the well")
 # Carts are 3 cells long and 2 wide (the Wagon def's size, facing 0: x-1..x+1, y..y+1): placed only
 # where the whole of one fits on open town ground, and kept clear of trees and props.
 CART = [(dx, dy) for dy in (0, 1) for dx in (-1, 0, 1)]

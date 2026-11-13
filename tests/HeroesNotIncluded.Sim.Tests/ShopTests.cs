@@ -331,6 +331,9 @@ public class ShopTests
     {
         var (sim, keeper, inn, party) = Inn();
         var bot = new Bots.BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 11);
+        // Whole, so they lounge at the inn within the keeper's hearing, not about the healer's.
+        foreach (var a in party)
+            sim.World.Get<Health>(a).Injuries.Clear();
         sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, 50, true));
         for (var t = 0; t < SimClock.HoursToTicks(6) && DrinkPrice(sim, inn) == 50; t++)
         {
@@ -340,7 +343,8 @@ public class ShopTests
             sim.Tick();
             bot.Tick();
         }
-        Assert.True(DrinkPrice(sim, inn) < 50, $"bot: {bot.Doing}\n" + string.Join("\n", sim.Speech.Kept.TakeLast(12).Select(u => $"{u.SpeakerName}: {u.Text}")));
+        var heard = Perception.For(sim, keeper).Heard().Where(l => l.Text.Contains("50")).Select(l => $"{l.Tick / 60}s {l.Who} ({l.Clarity}): {l.Text}");
+        Assert.True(DrinkPrice(sim, inn) < 50, $"bot: {bot.Doing}, price {DrinkPrice(sim, inn)}, heard:\n" + string.Join("\n", heard));
     }
 
     [Fact]

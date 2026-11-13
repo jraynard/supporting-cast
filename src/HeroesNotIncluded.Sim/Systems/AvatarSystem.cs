@@ -76,6 +76,9 @@ public enum AvatarActionKind
     /// <summary>A door's lock or a party's wagon (<see cref="Tinkering.Tinkers.ActionAt"/>): the game opens what can be done there.</summary>
     Tinker,
 
+    /// <summary>Read the notice board (<see cref="Favours.FavourBoard"/>): the game reads it and opens the favours.</summary>
+    ReadBoard,
+
     /// <summary>Brace a span a crisis broke (<see cref="Tinkering.SpanSession"/>), begun at once: the tinker's.</summary>
     Mend,
 }
@@ -107,7 +110,8 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
         or AvatarActionKind.Mend;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
-    public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker;
+    public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker
+        or AvatarActionKind.ReadBoard;
 }
 
 /// <summary>
@@ -370,6 +374,10 @@ public sealed class AvatarSystem : ISimSystem
         // Dirty crockery to the wash tub; a keg in your arms to a dry cask.
         if (Work.BarWork.StepAt(sim, avatar, site) is { } upkeep && !sim.Reservations.IsReservedByOther(site, avatar))
             return new(AvatarActionKind.BarWork, upkeep, cell, site);
+
+        // The notice board: read what's pinned to it, and pin your own.
+        if (tool == AvatarTool.Use && Favours.FavourBoard.IsBoard(sim, site))
+            return new(AvatarActionKind.ReadBoard, "Read the notice board", cell, site);
 
         // A door's lock (locked, or one you could fit or turn), or a party's wagon: what can be done there.
         if (tool == AvatarTool.Use && Tinkering.Tinkers.ActionAt(sim, avatar, site) is { } tinkering)
