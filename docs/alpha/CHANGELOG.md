@@ -4,6 +4,37 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+## 0.1.0-playtest.5
+
+The art pass: the village looks more like itself, and so do its people.
+
+- Dwarves and halflings: two more folk to play (Look, then Folk in the character creator), each
+  with a build of their own. Dwarves are short, broad and bearded; halflings small and slight. You'll
+  spot a few of each about town. Every outfit and tool fits them.
+- Hair, redrawn: every style is made of locks now, with braids woven strand by strand, a bun wound
+  round itself and proper back views. The curly styles are new: a big shoulder-length mop of curls,
+  and long loose waves to the waist.
+- Beards, redrawn: the short beard follows the jaw, the full one hangs to the chest under a
+  moustache that curls down, and the braided one ends in a plait with a bead.
+- The dragon is redrawn: our own, upright, with ember veins that glow brighter as it draws breath.
+- The mini-games look like what they are: the pot and its salt, the bed being made, the arm being
+  bound, the hurt drawn into the healer's hand, the blade on the whetstone, the probe along the
+  strongbox's seam, the loupe on a curio, the patient on the pallet, the wheel on its stand, the
+  cask, its tap and the mallet.
+- A proper loading screen while the village gets ready, instead of a frozen title.
+- Stairs are real steps now, gentler to look at, and you walk up them instead of through them.
+- Torches on the walls of the inn and the smithy. The bellows stand beside the forge instead of
+  lying flat on the floor.
+- The inn's cask, keg, shelves, larder, stew pot, wash tub, counter, hatch, fireplace and lantern,
+  the barrel, crate, barn, whetstone, meditation stone, herbs and pyre all have pictures of their own.
+  The pig looks like a pig.
+- A compass in the corner, so north is where you think it is.
+- Raiders come in by the road, and the shepherd's warning says the right side of the valley.
+- Labourers leave the smith's chest alone: its wood and ore are the smith's.
+- Picking something up puts it in your pack first, and only into your hands if it won't fit. Ore and
+  charcoal fetched for a bloom no longer go astray one at a time.
+- A campfire doesn't offer stew any more (it needs a building's fire and its pot).
+
 ## 0.1.0-playtest.4
 
 A whole season: a round has a beginning, a middle and an end now. And the town has sound.
