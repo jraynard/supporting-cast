@@ -964,3 +964,6 @@ dragon and the festival.
 - Braids grow out of the hair rather than sitting on it, and the curls are tighter: springy
   ringlets drawn as columns of turns, and dense coils over a crown of small bumps. `--turn-test`
   tries a real three-quarter turn of the head and hair on a few styles.
+- The curly styles redrawn after reference art: a wide, airy bob edged in loops with spiral line-work,
+  and long hair in big S-waves wrapping the head and fanning out, each lock its own. Braids lying on
+  the head are shaded into the hair with no outline. The turn test keeps the jaw over the neck.

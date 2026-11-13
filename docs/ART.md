@@ -316,12 +316,19 @@ strand by strand, a bun wound round itself; each with a back view of its own. Be
 way from the jaw, with a sweeping moustache. `python3 tools/chibi_people.py --hair-preview [styles]`
 draws every style (or those named) in four views beside its game size, then every beard, into
 `.cache/people/hair.png`. Braids hanging from the hair are drawn before it, so the hair lies over their
-roots with locks gathered into them; braids lying on the head are lined in a deep hair tone, not ink.
+roots with locks gathered into them; braids lying on the head (`dutch_plait(..., soft=True)`) are shaded
+into it with no outline, only a mid-tone where each strand tucks under the next, and the braided
+ponytail's is fed by locks off the crown. The curly styles follow `art/reference/curly-hair.webp` (a
+wide, airy bob, its edge all small loops, loose spiral line-work inside: `scalloped`, `spirals`) and
+`curly-hair-long.webp` (big S-waves from a side parting, wrapping the head and fanning out, each lock
+painted on its own back to front with its sheen and spiral tip: `s_path`, `paint_waves`). Big hair is
+kept within a dome over the head (`under_volume`) rather than the skull's outline.
 
 **A true three-quarter turn (a test, not in the sheets yet):** `--turn-test [styles]` draws each
 style's turned views beside a head turned for real: drawn facing us and from behind, wrapped round
 a cylinder per row (as wide as the head and hair there) and turned 30° (150° away), so the face slides
-and foreshortens and the hair comes round the near side (`turned_figure`, `turn_warp`). Into
+and foreshortens and the hair comes round the near side (`turned_figure`, `turn_warp`). The turn eases
+off down the face to a third at the chin, so the jaw stays over the neck. Into
 `.cache/people/turn.png`. Adopting it would turn the face sheets and every hair layer the same way. Hair is drawn as **locks**: tapered strands
 with a parting or a cut fringe, and a broken band of the lightest step across the crown (the Octopath
 sheen), never one shaded blob. People are about three heads tall: an 18 px head with a jaw and a neck,
