@@ -160,6 +160,37 @@ public abstract class Job
         return Sim.World.TryGet<Avatar>(Pawn, out var avatar) && !avatar.WorkHeld;
     }
 
+    /// <summary>Set by <see cref="AwaitTurn"/>: it got a turn pressing its target.</summary>
+    protected bool GotTurn { get; private set; }
+
+    /// <summary>
+    /// Wait for a turn pressing <paramref name="target"/> (<see cref="Combat.Engagement"/>): a step
+    /// back out of its reach until one frees up. Gives up after <see cref="Combat.Engagement.WaitTicks"/>
+    /// or if the target falls; <see cref="GotTurn"/> says which.
+    /// </summary>
+    protected IEnumerable<JobStatus> AwaitTurn(Entity target)
+    {
+        GotTurn = false;
+        var since = Sim.Clock.Tick;
+        while (Alive(target) && Get<Creature>(target).Able)
+        {
+            if (Combat.Engagement.TryPress(Sim, Pawn, target))
+            {
+                GotTurn = true;
+                yield break;
+            }
+            if (Sim.Clock.Tick - since > Combat.Engagement.WaitTicks)
+                yield break;
+            var at = Sim.LocationOf(target);
+            if (Pathfinder.Touches(PawnCell, at) && Combat.Engagement.HoldSpot(Sim, PawnCell, at) is { } spot)
+            {
+                foreach (var s in GoTo(spot, PathEnd.OnTile)) yield return s;
+                if (HasFailed) yield break;
+            }
+            yield return JobStatus.Running;
+        }
+    }
+
     protected bool Reserve(Entity target)
     {
         if (Sim.Reservations.TryReserve(target, Pawn))

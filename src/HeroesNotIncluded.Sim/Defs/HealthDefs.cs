@@ -168,11 +168,14 @@ public sealed class AttackDef
     /// <summary>Chance a hit glances off and does nothing.</summary>
     public float Glance { get; set; } = 0.1f;
 
-    /// <summary>Seconds between attacks outside turn-based combat (hunting); 0 means 2.5 for ranged, 1.5 for melee.</summary>
+    /// <summary>
+    /// Seconds between attacks; 0 means 2.5 for either. Melee was 1.5, and a band hacking at one
+    /// person at that pace downed them before they could answer (with <c>Combat.Engagement</c>).
+    /// </summary>
     public float CooldownSeconds { get; set; }
 
     [JsonIgnore]
-    public int CooldownTicks => (int)((CooldownSeconds > 0 ? CooldownSeconds : Ranged ? 2.5f : 1.5f) * SimClock.TicksPerSecond);
+    public int CooldownTicks => (int)((CooldownSeconds > 0 ? CooldownSeconds : 2.5f) * SimClock.TicksPerSecond);
 
     public override string ToString() => Name;
 }

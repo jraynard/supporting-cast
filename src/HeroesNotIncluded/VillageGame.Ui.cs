@@ -56,6 +56,7 @@ public sealed partial class VillageGame
         // Bottom centre, stacking upward: the build tools, the hotbar, and the work in hand.
         DrawToolbar();
         DrawHotbar();
+        DrawFightHint();
         DrawWork();
         if (WorkScenesDemo)
             DrawWorkSceneGallery();

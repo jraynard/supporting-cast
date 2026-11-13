@@ -17,7 +17,8 @@ public sealed partial class VillageGame
         _hud.Next(Anchor.Top);
         Panel.Begin("##call-to-arms", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoDecoration);
         _hud.Took();
-        TextC(Theme.Warn, $"Call to arms: raiders expected {m.When}.");
+        TextC(Theme.Warn, m.Mustering ? "Call to arms: raiders in the village!"
+            : string.IsNullOrEmpty(m.When) ? "Call to arms: raiders expected." : $"Call to arms: raiders expected {m.When}.");
         ImGui.SameLine(0, 10);
         if (m.Paying)
             TextC(Theme.Dim, $"{m.Paid} of {m.Wanted} weapons hung on the muster rack · {m.Price} silver each");

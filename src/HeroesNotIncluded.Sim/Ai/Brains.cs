@@ -466,23 +466,28 @@ public sealed class RaiderBrain : IBrain
         if (WantsToFlee(sim, pawn) || w.Has<Combat.Leaving>(pawn) || w.Has<Escaping>(pawn))
             return sim.NearestEdge(tile) is { } edge ? new LeaveMapJob(edge) : null;
 
+        // The nearest they can get at: someone with room for another attacker (Engagement) before
+        // someone who's already pressed as hard as they can be.
         var best = Entity.Null;
-        var bestDist = int.MaxValue;
+        var bestScore = int.MaxValue;
         foreach (var e in sim.Creatures())
         {
             var c = w.Get<Creature>(e);
             if (!Factions.Hostile(Faction.Raider, c.Faction) || c.Downed)
                 continue;
             var at = w.Get<Position>(e).Cell;
-            var d = Map.Distance(tile, at);
-            if (d < bestDist && sim.Regions.CanReach(tile, at, PathEnd.Touch))
+            var score = Map.Distance(tile, at) + (Combat.Engagement.HasRoom(sim, pawn, e) ? 0 : CrowdedPenalty);
+            if (score < bestScore && sim.Regions.CanReach(tile, at, PathEnd.Touch))
             {
                 best = e;
-                bestDist = d;
+                bestScore = score;
             }
         }
         return best.IsNull ? null : new AssaultJob(best);
     }
+
+    /// <summary>How much further a raider will go for someone not already pressed by as many as can be.</summary>
+    public const int CrowdedPenalty = 12;
 
     /// <summary>How far an escaping prisoner will go out of their way for a weapon.</summary>
     public const int EscapeWeaponReach = 15;

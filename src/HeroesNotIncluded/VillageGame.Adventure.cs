@@ -608,6 +608,9 @@ public sealed partial class VillageGame
             && _sim.World.Get<Creature>(animal).Def.Race == Race.Animal
             && AvatarSystem.ActionAt(_sim, _avatar, _sim.World.Get<Position>(animal).Cell, tool) is { Kind: AvatarActionKind.Hunt or AvatarActionKind.Butcher } hunt)
             return hunt;
+        // In a fight, F fights: a raider or predator beside you comes before whatever's under the cursor.
+        if (tool == AvatarTool.Use && FoeBeside(at, facing) is { Kind: AvatarActionKind.Hunt } strike)
+            return strike;
         foreach (var c in candidates)
         {
             var action = AvatarSystem.ActionAt(_sim, _avatar, c, tool);
@@ -631,6 +634,34 @@ public sealed partial class VillageGame
             return best;
         }
         return AvatarAction.None;
+    }
+
+    /// <summary>
+    /// A strike at a foe on its feet beside you: the one you face, else the one pressing you
+    /// (<see cref="Sim.Combat.Engagement"/>), else any. <see cref="AvatarAction.None"/> if there's none.
+    /// </summary>
+    private AvatarAction FoeBeside(int3 at, int2 facing)
+    {
+        var w = _sim.World;
+        AvatarAction best = AvatarAction.None;
+        var bestRank = -1;
+        for (var dy = -1; dy <= 1; dy++)
+        for (var dx = -1; dx <= 1; dx++)
+        {
+            if (dx == 0 && dy == 0)
+                continue;
+            var cell = new int3(at.X + dx, at.Y + dy, at.Z);
+            var foe = Sim.Ai.AvatarHunting.FoeAt(_sim, cell);
+            if (foe.IsNull || !View.CanSee(foe) || AvatarSystem.ActionAt(_sim, _avatar, cell) is not { Kind: AvatarActionKind.Hunt } strike)
+                continue;
+            var rank = dx == facing.X && dy == facing.Y ? 2 : Sim.Combat.Engagement.Presses(_sim, foe, _avatar) ? 1 : 0;
+            if (rank > bestRank)
+            {
+                best = strike;
+                bestRank = rank;
+            }
+        }
+        return best;
     }
 
     /// <summary>

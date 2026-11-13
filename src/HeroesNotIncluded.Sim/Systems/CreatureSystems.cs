@@ -349,6 +349,7 @@ public sealed class AiSystem : ISimSystem
     {
         var w = sim.World;
         w.Get<Mind>(e).Asleep = false;
+        Combat.Engagement.Release(sim, e); // their turn at whoever they were fighting
 
         var carried = Entity.Null;
         foreach (var other in w.Each<Carried>())

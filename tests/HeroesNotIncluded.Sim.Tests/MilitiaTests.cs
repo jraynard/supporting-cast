@@ -238,4 +238,57 @@ public class MilitiaTests
         sim.TickMany(SimClock.TicksPerHour / 2);
         Assert.Contains(sim.Creatures(), e => e != me && Armed(sim, e) && w.Has<TownArms>(w.Get<Equipment>(e).Weapon));
     }
+
+    [Fact]
+    public void InTheDrillNobodyIsMobbedAndTheTownDrivesThemOff()
+    {
+        var sim = Round();
+        var me = Me(sim);
+        var raid = RaidDrill.Stage(sim, me)!;
+        var w = sim.World;
+        int mostOnMe = 0, mostOnOthers = 0;
+        var end = sim.Clock.Tick + SimClock.HoursToTicks(sim.Defs.Season.CrisisHours) + SimClock.TicksPerHour;
+        while (sim.Director.Active.Contains(raid) && sim.Clock.Tick < end)
+        {
+            sim.Tick();
+            foreach (var e in sim.Creatures())
+            {
+                var n = Engagement.Pressers(sim, e, Entity.Null);
+                if (e == me)
+                    mostOnMe = Math.Max(mostOnMe, n);
+                else
+                    mostOnOthers = Math.Max(mostOnOthers, n);
+            }
+        }
+        Assert.True(mostOnMe <= Engagement.OnPlayer, $"{mostOnMe} pressed the player at once");
+        Assert.True(mostOnOthers <= Engagement.OnOthers, $"{mostOnOthers} pressed one villager at once");
+        Assert.False(sim.Director.Active.Contains(raid), "the raid should be over");
+    }
+
+    [Fact]
+    public void ABandAtYourElbowTakesItInTurns()
+    {
+        var sim = Round(director: false);
+        var me = Me(sim);
+        var w = sim.World;
+        var here = w.Get<Position>(me).Cell;
+        var band = Raids.Spawn(sim, Enumerable.Repeat(sim.Defs.AllRaiderKinds.First(k => k.Name == "Swordsman"), 3).ToList(), here, here, sim.Rand);
+        Assert.Equal(3, band.Count);
+        long firstHurt = -1, downed = -1;
+        var mostOnMe = 0;
+        for (var t = 0; t < SimClock.TicksPerSecond * 90 && downed < 0; t++)
+        {
+            sim.Tick();
+            mostOnMe = Math.Max(mostOnMe, Engagement.Pressers(sim, me, Entity.Null));
+            if (firstHurt < 0 && w.Get<Health>(me).Injuries.Count > 0)
+                firstHurt = sim.Clock.Tick;
+            if (w.Get<Creature>(me).Downed)
+                downed = sim.Clock.Tick;
+        }
+        Assert.True(firstHurt >= 0, "they came at you");
+        Assert.Equal(Engagement.OnPlayer, mostOnMe);
+        // Standing there doing nothing, you've still a good while to answer: it was ~5 s when all three swung at once.
+        var lasted = (downed < 0 ? sim.Clock.Tick : downed) - firstHurt;
+        Assert.True(lasted >= SimClock.TicksPerSecond * 10, $"downed {lasted / (float)SimClock.TicksPerSecond:0.0} s after the first wound");
+    }
 }

@@ -118,6 +118,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
   - Fights are real time: every attack goes through `Combat/RealtimeAttacks.TryAttack`, odds and
     wounds from `CombatRules`. There's no turn-based combat, and nothing may stop the clock for one
     player's fight.
+    Only so many press one target at a time (`Combat/Engagement`: one on a player); the rest
+    wait a step back (`Job.AwaitTurn`).
   - Player input reaches the sim only as `ISimCommand`s, through `VillageGame.Issue`. `CommandCodec`
     serializes by constructor parameter. Commands declare `IActorCommand`, `ISubjectCommand`,
     `IPlayerCommand`, `IHostCommand` or `IDevCommand`; `CommandRules.Refusal` checks them on every peer.

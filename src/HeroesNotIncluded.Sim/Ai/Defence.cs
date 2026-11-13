@@ -104,7 +104,7 @@ public sealed class HideJob : Job
 
 /// <summary>
 /// Stand and fight a raider or predator that's come into town: close in and strike on the
-/// weapon's cooldown while it's in reach. Ends when it falls, flees or steps away (the brain sends
+/// weapon's cooldown while it's in reach, when it's their turn to (<see cref="Engagement"/>). Ends when it falls, flees or steps away (the brain sends
 /// them after it again if it's still near), or when they're hurt enough to want out.
 /// </summary>
 public sealed class DefendJob(Entity foe) : Job
@@ -125,6 +125,16 @@ public sealed class DefendJob(Entity foe) : Job
         while (Alive(foe) && Get<Creature>(foe) is { Dead: false, Downed: false } && !Sim.World.Has<Leaving>(foe)
             && Pathfinder.Touches(PawnCell, Sim.LocationOf(foe)) && !RaiderBrain.WantsToFlee(Sim, Pawn))
         {
+            if (!Engagement.Presses(Sim, Pawn, foe))
+            {
+                // Two at a time on one foe (Engagement): the rest wait a step back for a turn.
+                foreach (var s in AwaitTurn(foe)) yield return s;
+                if (HasFailed || !GotTurn) yield break;
+                foreach (var s in GoToEntity(foe, PathEnd.Touch, maxTicks: 120)) yield return s;
+                if (HasFailed) yield break;
+                nextAttack = Math.Max(nextAttack, Sim.Clock.Tick + Engagement.FirstBlowTicks);
+                continue;
+            }
             if (Sim.Clock.Tick >= nextAttack)
             {
                 RealtimeAttacks.TryAttack(Sim, Pawn, foe, attack);

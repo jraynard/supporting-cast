@@ -759,7 +759,11 @@ public sealed class FightFireJob(int3 tile) : Job
     }
 }
 
-/// <summary>Close in on a target (raiders approaching the village; turn-based combat takes over once near).</summary>
+/// <summary>
+/// Close in on a target and fight it (raiders in the village). Only so many press one target at a
+/// time (<see cref="Combat.Engagement"/>): without a turn, they hang back a step out of reach and
+/// wait for one, and give up after a while so the brain can pick someone else.
+/// </summary>
 public sealed class AssaultJob(Entity target) : Job
 {
     public override Entity Focus => target;
@@ -774,15 +778,28 @@ public sealed class AssaultJob(Entity target) : Job
         }
         foreach (var s in GoToEntity(target, PathEnd.Touch, maxTicks: 600)) yield return s;
         if (HasFailed) yield break;
-        // Blows land on the attack's cooldown for as long as they stay in reach; if the target
-        // steps away the job ends and the brain sends them after it again.
         long nextAttack = 0;
-        while (Alive(target) && Get<Creature>(target).Able && Pathfinder.Touches(PawnCell, Sim.LocationOf(target)))
+        // Hurt enough to want out, or told to go: the brain sends them off.
+        while (Alive(target) && Get<Creature>(target).Able && !RaiderBrain.WantsToFlee(Sim, Pawn) && !Sim.World.Has<Combat.Leaving>(Pawn))
         {
+            if (!Combat.Engagement.Presses(Sim, Pawn, target))
+            {
+                Report = $"Circling {Get<Creature>(target).Name}";
+                foreach (var s in AwaitTurn(target)) yield return s;
+                if (HasFailed || !GotTurn) yield break;
+                Report = $"Attacking {Get<Creature>(target).Name}";
+                // In again from where it waited, then a beat to see them coming.
+                foreach (var s in GoToEntity(target, PathEnd.Touch, maxTicks: 300)) yield return s;
+                if (HasFailed) yield break;
+                nextAttack = Math.Max(nextAttack, Sim.Clock.Tick + Combat.Engagement.FirstBlowTicks);
+            }
+            // They've stepped off: the job ends, and the brain sends them after whoever's best now.
+            if (!Pathfinder.Touches(PawnCell, Sim.LocationOf(target)))
+                yield break;
             if (Sim.Clock.Tick >= nextAttack)
             {
                 Combat.RealtimeAttacks.TryAttack(Sim, Pawn, target, attack);
-                nextAttack = Sim.Clock.Tick + attack.CooldownTicks;
+                nextAttack = Sim.Clock.Tick + Combat.Engagement.Cooldown(Sim, attack, target);
             }
             yield return JobStatus.Running;
         }
@@ -1001,10 +1018,17 @@ public sealed class AnimalAttackJob(Entity target) : Job
             if (Pathfinder.Touches(here, at))
             {
                 mover.Stop();
+                if (!Combat.Engagement.Presses(Sim, Pawn, target))
+                {
+                    foreach (var s in AwaitTurn(target)) yield return s;
+                    if (HasFailed || !GotTurn) yield break;
+                    nextAttack = Math.Max(nextAttack, Sim.Clock.Tick + Combat.Engagement.FirstBlowTicks);
+                    continue;
+                }
                 if (Sim.Clock.Tick >= nextAttack)
                 {
                     Combat.RealtimeAttacks.TryAttack(Sim, Pawn, target, attack);
-                    nextAttack = Sim.Clock.Tick + attack.CooldownTicks;
+                    nextAttack = Sim.Clock.Tick + Combat.Engagement.Cooldown(Sim, attack, target);
                 }
             }
             else if (!mover.Moving || Sim.Clock.Tick >= nextPlan)

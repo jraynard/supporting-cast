@@ -160,6 +160,11 @@ internal static class ComponentCodecs
             w.Entity(p.By);
             w.Long(p.Tick);
         }, r => new Provoked { By = r.Entity(), Tick = r.Long() }),
+        Codec("Pressing", (w, p) =>
+        {
+            w.Entity(p.Target);
+            w.Long(p.Since);
+        }, r => new Combat.Pressing { Target = r.Entity(), Since = r.Long() }),
         Codec("Herd", (w, h) =>
         {
             w.Int(h.Id);
