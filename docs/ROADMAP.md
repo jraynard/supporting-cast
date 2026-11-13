@@ -23,7 +23,34 @@ raid size), the dragon's toughness, the night speed and the need rates.
 
 ### SOUND
 
-- we need to add audio feedback to just about every part of the game. i also need to work on a theme song or at least the start of one or something. 
+First pass done (docs/AUDIO.md, HISTORY.md). Next, as long-term items:
+
+1. **Music, ours:** a theme song (at least the start of one), then a score to replace the free
+   placeholder tracks mood by mood (`title`, `day`, `night`, `danger`, `festival`, `reveal`).
+   Later, adaptive layers (danger drums over the day track), festival songs, and a bard.
+2. **Coverage:** audio feedback for just about every part of the game:
+   - footsteps by surface, doors, animals and weather
+   - hammering heard from other smithies, every trade action seen from outside
+   - room reverb (EFX) for the inn, cottages and caves
+   - a mix pass from playtest notes
+3. **Recorded sounds:** most thin spots now have CC0 recordings (AUDIO.md).
+   - **Still synthesized:** the inn's murmur, a town bell, a burning building and an arrow's
+     impact. There's nothing good on OpenGameArt; these CC0 freesound pages need a login to
+     download:
+     - murmur: freesound.org/people/ivolipa/sounds/326313, squareal/sounds/237398
+     - bell: dsp9000/sounds/76405, Audeption/sounds/425172
+     - house fire: 7778/sounds/196619
+     - arrow hit: plantmonkey/sounds/410751
+     - a babbling stream: BurghRecords/sounds/415151
+     - a beer pour: Kinoton/sounds/347006
+   - Bring them in through `tools/import_sounds.py`.
+4. **Voices (text to speech):** NPC lines spoken aloud.
+   - Local neural TTS through sherpa-onnx (NuGet) running Kokoro or Piper voices, a voice per
+     character derived like their look.
+   - Synthesized off the main thread, cached, opt-in in Settings; babble stays the fallback.
+   - Watch the model size (about 100 MB) and the CPU on a Steam Deck. Lines are made at runtime
+     (and players type theirs), so this can't be pre-recorded.
+5. **Steam Deck:** check the sound there (output switching, volume, CPU).
 
 ### SAVED CHARACTERS
 - multiplayer may have carried over but we should unify this between single and multi even and give its own menu option for managing your roster. character customization will be a focus,

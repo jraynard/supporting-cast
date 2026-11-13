@@ -17,3 +17,6 @@ art/3d/**/*.fbx
 
 # reference material
 art/reference/
+
+# Placeholder music, fetched by tools/fetch_music.py (docs/AUDIO.md)
+data/sounds/music/free/

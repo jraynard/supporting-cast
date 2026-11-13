@@ -13,6 +13,9 @@ public static class DevPaths
 
     public static string? Defs => Checkout.Value?.Dir("data", "defs");
 
+    /// <summary>The sound manifest's folder (<c>data/sounds</c>), played from the checkout so edits are heard without a rebuild.</summary>
+    public static string? Sounds => Checkout.Value?.Dir("data", "sounds");
+
     /// <summary>The quad renderer's shaders, in Narsil's voxel module (copied into the output's data/shaders).</summary>
     public static string? VoxelShaders => Checkout.Value?.VoxelShaders;
 

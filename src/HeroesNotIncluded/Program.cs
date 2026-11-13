@@ -61,7 +61,13 @@ if (args.Contains("--check-art"))
     foreach (var w in report.Warnings)
         Console.WriteLine($"warning: {w}");
     Console.WriteLine($"{packed.Sprites.Count} sprites, {packed.Sheets.Count} sheets, {packed.Pages} atlas page(s) of {packed.Size}x{packed.Size}: {report.Errors.Count} error(s), {report.Warnings.Count} warning(s)");
-    Environment.Exit(report.Errors.Count > 0 ? 1 : 0);
+    var sounds = HeroesNotIncluded.Audio.SoundAudit.Run(Path.Combine(data, "sounds", "sounds.json"));
+    foreach (var e in sounds.Errors)
+        Console.WriteLine($"error: {e}");
+    foreach (var w in sounds.Warnings)
+        Console.WriteLine($"warning: {w}");
+    Console.WriteLine($"{sounds.Files} sound file(s): {sounds.Errors.Count} error(s), {sounds.Warnings.Count} warning(s)");
+    Environment.Exit(report.Errors.Count + sounds.Errors.Count > 0 ? 1 : 0);
 }
 
 if (ParseString(args, "--check-save") is { } checkPath)
@@ -145,6 +151,11 @@ using var host = new GameHost(new GameHostOptions
         : null,
 });
 
+// Sound for every mode; silent with no device, or with --mute (screenshot runs, scripts).
+if (args.Contains("--mute"))
+    Environment.SetEnvironmentVariable("NARSIL_AUDIO", "0");
+HeroesNotIncluded.Audio.GameAudio.Open(host);
+
 if (args.Contains("--render-test"))
     host.Run(new RenderTestGame { StressFromArgs = stress });
 else if (args.Contains("--art-preview"))
@@ -226,6 +237,8 @@ else
         HeroTrade = ParseString(args, "--trade"),
         Bots = args.Contains("--bots") ? ParseInt(args, "--bots") : 0,
     });
+
+HeroesNotIncluded.Audio.GameAudio.Close();
 
 // Remember a window the player resized by hand. Settings.Current, not `settings`: the options
 // screen replaces the instance when it applies changes.

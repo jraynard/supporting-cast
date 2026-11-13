@@ -881,3 +881,19 @@ dragon and the festival.
 - **Docs:** the Done log moved here from the roadmap; dragon-era sections of ART.md pruned or
   condensed; the dragon-egg start message gone.
 - Starting herds are placed by `Map.Distance`, as sight measures, so none grazes in view of town.
+- **Sound, the first pass** (docs/AUDIO.md):
+  - **Engine:** Narsil's new `Narsil.Audio`, OpenAL Soft and NVorbis behind `AudioEngine`
+    (one-shots, held loops, music by mood, buses, falloff, muffling). A `sounds.json` manifest,
+    live reloads, and silence with no device.
+  - **The village** heard as you perceive it (`SoundDirector`):
+    - fights and dragon fire, placed, and muffled through walls
+    - babble for lines your character heard
+    - wind, birds or crickets, the river, hearths and blazes, a full room
+    - a bell for danger, coin, and music that follows the day, danger, the festival and the reveal
+  - **Every mini-game** has its sounds (`WorkSounds`); the anvil rings by how clean the blow was.
+  - **Effects** synthesized from scratch (`tools/sfx_synth.py`), with CC0 recordings where
+    synthesis was thin (`tools/import_sounds.py`, data/sounds/CREDITS.md).
+  - **Placeholder music**, two free tracks per mood, fetched rather than kept in git
+    (`tools/fetch_music.py`).
+  - **A Sound tab** in Settings: five volumes, babble, mute in background.
+

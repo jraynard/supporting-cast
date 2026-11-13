@@ -1,0 +1,72 @@
+{
+  // What each sound id plays (docs/AUDIO.md). Ids are named in src/HeroesNotIncluded/Audio/Sounds.cs;
+  // files are relative to this folder, and a wildcard takes every variant. "range" (cells) places a
+  // sound in the world, fading out by that distance; without it a sound plays straight to the ears.
+  // Synthesized files come from tools/sfx_synth.py; recorded ones (*_rec*, CC0) from
+  // tools/import_sounds.py, listed in CREDITS.md.
+  "sounds": {
+    "ui.open":   { "files": ["sfx/ui_open.ogg"],  "bus": "ui", "gain": 0.5, "pitch": [0.97, 1.03], "cooldown": 0.05 },
+    "ui.close":  { "files": ["sfx/ui_close.ogg"], "bus": "ui", "gain": 0.5, "cooldown": 0.05 },
+    "ui.coin":   { "files": ["sfx/ui_coin_rec_*.ogg"], "bus": "ui", "gain": 0.7, "pitch": [0.95, 1.05], "cooldown": 0.1 },
+    "ui.bell":   { "files": ["sfx/ui_bell.ogg"],  "bus": "ui", "gain": 0.7, "priority": 5, "cooldown": 6 },
+    "ui.good":   { "files": ["sfx/ui_good.ogg"],  "bus": "ui", "gain": 0.45, "cooldown": 1.5 },
+
+    "anvil.good":    { "files": ["sfx/anvil_good_*.ogg"], "gain": 0.9, "pitch": [0.98, 1.02], "max": 3, "priority": 3 },
+    "anvil.fair":    { "files": ["sfx/anvil_fair_*.ogg"], "gain": 0.85, "pitch": [0.98, 1.02], "max": 3, "priority": 3 },
+    "anvil.poor":    { "files": ["sfx/anvil_poor_*.ogg"], "gain": 0.85, "pitch": [0.97, 1.03], "max": 3, "priority": 3 },
+    "anvil.cold":    { "files": ["sfx/anvil_cold_*.ogg"], "gain": 0.9, "max": 3, "priority": 3 },
+    "forge.fire":    { "files": ["amb/forge_fire.ogg"], "gain": 0.45, "priority": 2 },
+    "forge.bellows": { "files": ["sfx/forge_bellows_*.ogg"], "gain": 0.6, "pitch": [0.92, 1.08], "max": 2 },
+    "forge.quench":  { "files": ["sfx/forge_quench_rec_*.ogg"], "gain": 0.8, "max": 1, "priority": 3 },
+    "forge.steam":   { "files": ["amb/forge_steam.ogg"], "gain": 0.5 },
+    "work.grind":    { "files": ["amb/work_grind.ogg"], "gain": 0.45 },
+
+    "kitchen.bubble": { "files": ["amb/kitchen_bubble_rec.ogg"], "gain": 0.6 },
+    "kitchen.stir":   { "files": ["amb/kitchen_stir.ogg"], "gain": 0.4 },
+    "kitchen.pinch":  { "files": ["sfx/kitchen_pinch_*.ogg"], "gain": 0.8, "pitch": [0.9, 1.1] },
+    "bar.pour":   { "files": ["amb/bar_pour.ogg"], "gain": 0.5 },
+    "bar.clink":  { "files": ["sfx/bar_clink_rec_*.ogg"], "gain": 0.6, "pitch": [0.95, 1.05] },
+    "bar.knock":  { "files": ["sfx/bar_knock_rec_*.ogg"], "gain": 0.8, "pitch": [0.95, 1.05] },
+    "work.scrub": { "files": ["sfx/work_scrub_*.ogg"], "gain": 0.6, "pitch": [0.9, 1.1], "max": 2 },
+    "work.cloth": { "files": ["sfx/work_cloth_rec_*.ogg"], "gain": 0.7, "pitch": [0.9, 1.1], "max": 2 },
+
+    "tinker.click":   { "files": ["sfx/tinker_click_rec_*.ogg", "sfx/tinker_click_?.ogg"], "gain": 0.7, "pitch": [0.95, 1.05] },
+    "tinker.ratchet": { "files": ["sfx/tinker_ratchet_*.ogg"], "gain": 0.7, "pitch": [0.95, 1.05] },
+    "heal.rune":  { "files": ["sfx/heal_rune_*.ogg"], "gain": 0.6 },
+    "heal.weave": { "files": ["sfx/heal_weave.ogg"], "gain": 0.6, "priority": 3 },
+    "heal.hum":   { "files": ["amb/heal_hum.ogg"], "gain": 0.35 },
+
+    "combat.swing": { "files": ["sfx/combat_swing_rec_*.ogg"], "gain": 0.6, "pitch": [0.9, 1.1], "range": 34, "near": 6, "max": 6 },
+    "combat.clash": { "files": ["sfx/combat_clash_rec_*.ogg"], "gain": 0.75, "pitch": [0.92, 1.08], "range": 34, "near": 6, "max": 6, "priority": 2 },
+    "combat.hit":   { "files": ["sfx/combat_hit_rec_*.ogg"], "gain": 0.8, "pitch": [0.9, 1.1], "range": 30, "near": 6, "max": 6, "priority": 2 },
+    "combat.bow":   { "files": ["sfx/combat_bow_rec.ogg", "sfx/combat_bow_?.ogg"], "gain": 0.7, "pitch": [0.95, 1.05], "range": 34, "near": 6, "max": 4 },
+    "combat.miss":  { "files": ["sfx/combat_miss_*.ogg"], "gain": 0.5, "pitch": [0.9, 1.1], "range": 30, "near": 6, "max": 4 },
+    "combat.din":   { "files": ["amb/combat_din_rec.ogg"], "bus": "ambience", "gain": 0.5, "priority": 2 },
+
+    "dragon.roar":   { "files": ["sfx/dragon_roar_rec*.ogg"], "gain": 1.0, "pitch": [0.92, 1.05], "range": 110, "near": 25, "max": 2, "priority": 6 },
+    "dragon.breath": { "files": ["sfx/dragon_breath_rec_*.ogg"], "gain": 0.9, "range": 70, "near": 15, "max": 2, "priority": 5 },
+    "dragon.wings":  { "files": ["amb/dragon_wings_rec.ogg"], "gain": 0.8, "range": 60, "near": 10, "priority": 4 },
+
+    "amb.wind":  { "files": ["amb/amb_wind_rec.ogg"],  "bus": "ambience", "gain": 0.5 },
+    "amb.birds": { "files": ["amb/amb_birds_rec.ogg"], "bus": "ambience", "gain": 0.45 },
+    "amb.night": { "files": ["amb/amb_night_rec.ogg"], "bus": "ambience", "gain": 0.4 },
+    "amb.river": { "files": ["amb/amb_river_rec.ogg"], "bus": "ambience", "gain": 0.6, "range": 30, "near": 4 },
+    "amb.fire":  { "files": ["amb/amb_fire_rec.ogg"],  "bus": "ambience", "gain": 0.55, "range": 12, "near": 2 },
+    "amb.blaze": { "files": ["amb/amb_blaze.ogg"], "bus": "ambience", "gain": 0.8, "range": 40, "near": 6, "priority": 3 },
+    "amb.crowd": { "files": ["amb/amb_crowd.ogg"], "bus": "ambience", "gain": 0.45 },
+
+    "voice.blip": { "files": ["voice/voice_blip_a.ogg", "voice/voice_blip_e.ogg", "voice/voice_blip_i.ogg", "voice/voice_blip_o.ogg", "voice/voice_blip_u.ogg"], "bus": "voice", "gain": 0.45, "max": 12, "priority": 2 }
+  },
+
+  // Music by mood (src/HeroesNotIncluded/Audio/Sounds.cs, Moods). Tracks shuffle with a quiet gap
+  // between. Our own songs go in music/ as <mood>_<name>.ogg (kept in git); the free placeholders
+  // are fetched into music/free/ by tools/fetch_music.py (not kept in git).
+  "music": {
+    "title":    { "files": ["music/title_*.ogg", "music/free/title_*.ogg"], "gain": 0.8 },
+    "day":      { "files": ["music/day_*.ogg", "music/free/day_*.ogg"], "gain": 0.6, "gap": [20, 60] },
+    "night":    { "files": ["music/night_*.ogg", "music/free/night_*.ogg"], "gain": 0.5, "gap": [30, 90] },
+    "danger":   { "files": ["music/danger_*.ogg", "music/free/danger_*.ogg"], "gain": 0.7, "gap": [2, 6] },
+    "festival": { "files": ["music/festival_*.ogg", "music/free/festival_*.ogg"], "gain": 0.7, "gap": [4, 12] },
+    "reveal":   { "files": ["music/reveal_*.ogg", "music/free/reveal_*.ogg"], "gain": 0.75, "gap": [6, 12] }
+  }
+}

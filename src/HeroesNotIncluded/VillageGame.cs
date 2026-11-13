@@ -369,6 +369,25 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         UpdateWork(dt);
         RunBots();
         FollowAvatar(); // after the ticks, so the camera shows this frame's position
+        UpdateSound(dt);
+    }
+
+    private Audio.SoundDirector? _sound;
+    private Audio.WorkSounds? _workSound;
+
+    /// <summary>The world as heard from the camera (panned to the screen), and the work in hand.</summary>
+    private void UpdateSound(float dt)
+    {
+        var audio = Audio.GameAudio.Engine;
+        _sound ??= new Audio.SoundDirector(audio);
+        _workSound ??= new Audio.WorkSounds(audio);
+        var center = _camera.ViewportSize * 0.5f;
+        var right = _camera.ScreenToPlane(center + new float2(64, 0), _camera.Target.Z) - _camera.ScreenToPlane(center, _camera.Target.Z);
+        // Zoomed out, the town is heard from higher up: quieter, and more of it at once.
+        var height = Math.Clamp(240f / Math.Max(1f, _camera.Zoom), 1.5f, 14f);
+        _sound.Update(_sim, View, HasAvatar ? _avatar : Entity.Null, _camera.Target, right, height, dt);
+        _workSound.Update(HasAvatar ? _work.Session : null);
+        Audio.GameAudio.Update(Host, dt);
     }
 
     private readonly Dictionary<string, double> _profiledTotals = [];

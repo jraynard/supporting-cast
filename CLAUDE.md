@@ -25,6 +25,8 @@ dotnet run --project src/HeroesNotIncluded -- --check-gpu
 dotnet run --project src/HeroesNotIncluded -c Release -- --bench --seed 1234   # per-system cost and hashes
 dotnet run --project external/narsil/src/Narsil.Relay -- --port 47050       # relay for online play
 python3 tools/chibi_people.py --preview                    # art generators: see docs/ART.md
+python3 tools/sfx_synth.py --preview                       # synthesized sound effects: see docs/AUDIO.md
+python3 tools/fetch_music.py                               # placeholder music (not in git); once per checkout
 ```
 
 Data files are copied to the output on build. From a checkout, `data/defs` edits reload by
@@ -126,6 +128,11 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     components implements `ISaveState`. Jobs aren't saved: a load equals `AiSystem.InterruptAll`.
   - Materials, crafting, tools, mining, apparel, mood, social, prisoners and rot work as their
     XML doc summaries describe. Read through `Thing.MaxHp` and friends, not the def's raw number.
+- Sound (docs/AUDIO.md): `Audio/GameAudio` holds Narsil's `AudioEngine`; ids are constants in
+  `Audio/Sounds.cs`, mapped to files by `data/sounds/sounds.json`. `SoundDirector` plays the world
+  only as the player perceives it (`PerceptionView`, `SpeechSystem.Hear`), `WorkSounds` the
+  mini-games from the session in hand. Never key a sound to hidden state. `--check-art` audits
+  sounds; `--mute` (or `NARSIL_AUDIO=0`) runs silent; `SC_SOUND_LOG=1` logs each sound.
 - UI: the Narsil.Ui kit (`external/narsil/docs/UI.md`). Panels go through `Panel.Begin/End`, anything
   on screen in a round through `_hud` (`Hud`, anchored, stacked, nothing overlaps), sizes through
   `Gui.S`, colours from `Ui/Theme` (the brand's: keep ember rare). Mini-games open with

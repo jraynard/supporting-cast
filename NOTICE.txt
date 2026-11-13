@@ -7,3 +7,10 @@ www.ahwoo.com/brutal
 The interface font is Fira Sans, Copyright (c) 2012-2018 The Mozilla Foundation, Telefonica S.A., Carrois Corporate GbR and bBox Type GmbH, used under the SIL Open Font License 1.1 (licenses/FiraSans-OFL.txt).
 
 The title lettering is Cinzel, Copyright 2020 The Cinzel Project Authors (https://github.com/NDISCOVER/Cinzel), used under the SIL Open Font License 1.1 (licenses/Cinzel-OFL.txt).
+
+Sound plays through OpenAL Soft (https://openal-soft.org), used under the GNU Library General Public License 2.0 (licenses/OpenAL-Soft-LGPL-2.0.txt), and NVorbis, used under the MIT License (licenses/NVorbis-MIT.txt).
+
+Placeholder music (fetched by tools/fetch_music.py):
+"Skye Cuillin", "Village Consort", "Teller of the Tales", "Midnight Tale", "Five Armies", "Master of the Feast" and "Heavy Heart" by Kevin MacLeod (incompetech.com), licensed under Creative Commons: By Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/).
+"Varyag War Drum" by Tausdei Music (https://opengameart.org/content/varyag-war-drum), licensed under Creative Commons: By Attribution 3.0 (https://creativecommons.org/licenses/by/3.0/).
+Other music and the recorded sound effects are CC0; see data/sounds/CREDITS.md.

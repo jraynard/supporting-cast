@@ -42,6 +42,19 @@ public sealed class Settings
     public float Vignette { get; set; } = 0.35f;
     public float Warmth { get; set; } = 0.5f;
 
+    /// <summary>Sound volumes, 0..1: everything, then music, effects (work, fights, the interface), the world around, and voices.</summary>
+    public float MasterVolume { get; set; } = 0.8f;
+    public float MusicVolume { get; set; } = 0.55f;
+    public float EffectsVolume { get; set; } = 1f;
+    public float AmbienceVolume { get; set; } = 0.8f;
+    public float VoiceVolume { get; set; } = 0.8f;
+
+    /// <summary>Silence while another window has focus.</summary>
+    public bool MuteInBackground { get; set; } = true;
+
+    /// <summary>Speech heard as a babble of syllables, each voice its own.</summary>
+    public bool Babble { get; set; } = true;
+
     /// <summary>Relay server for online co-op ("host" or "host:port"); empty turns join codes off.</summary>
     public string RelayServer { get; set; } = "";
 
@@ -96,6 +109,11 @@ public sealed class Settings
         s.Bloom = Unit(s.Bloom, 0.7f);
         s.Vignette = Unit(s.Vignette, 0.35f);
         s.Warmth = Unit(s.Warmth, 0.5f);
+        s.MasterVolume = Unit(s.MasterVolume, 0.8f);
+        s.MusicVolume = Unit(s.MusicVolume, 0.55f);
+        s.EffectsVolume = Unit(s.EffectsVolume, 1f);
+        s.AmbienceVolume = Unit(s.AmbienceVolume, 0.8f);
+        s.VoiceVolume = Unit(s.VoiceVolume, 0.8f);
         s.RelayServer = (s.RelayServer ?? "").Trim();
         if (s.RelayServer.Length > 200)
             s.RelayServer = "";

@@ -257,6 +257,8 @@ public sealed class TitleGame : Game
         var window = Host.Window.Size;
         _camera.ViewportSize = new float2(Math.Max(1, window.X), Math.Max(1, window.Y));
         _camera.Yaw += dt * 0.025f; // a slow orbit
+        Audio.GameAudio.Engine.PlayMusic(Audio.Moods.Title);
+        Audio.GameAudio.Update(Host, dt);
         if (Host.Input.WasKeyPressed(GlfwKey.F7))
             _error = ShaderReload.Reload(Host, _quads) is { } shaderError ? $"Shader error: {shaderError}" : null;
 

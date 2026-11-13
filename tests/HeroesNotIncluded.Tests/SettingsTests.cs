@@ -26,6 +26,15 @@ public class SettingsTests
     }
 
     [Fact]
+    public void VolumesStayInRange()
+    {
+        var s = Settings.Deserialize("""{ "MasterVolume": 3, "MusicVolume": -1 }""");
+        Assert.Equal(1f, s.MasterVolume);
+        Assert.Equal(0f, s.MusicVolume);
+        Assert.Equal(new Settings().VoiceVolume, new Settings { VoiceVolume = float.NaN }.Sanitized().VoiceVolume);
+    }
+
+    [Fact]
     public void FirstRunOnADeckIsReadableAndFrugal()
     {
         Assert.Equal(Settings.Serialize(new Settings()), Settings.Serialize(HandheldDefaults.FirstRun(steamDeck: false)));

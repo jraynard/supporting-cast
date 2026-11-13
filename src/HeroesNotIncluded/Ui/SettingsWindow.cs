@@ -37,7 +37,11 @@ public sealed class SettingsWindow(GameHost host)
         _monitors = Display.Monitors(); // re-query: monitors come and go
     }
 
-    public void Close() => IsOpen = false;
+    public void Close()
+    {
+        IsOpen = false;
+        Audio.GameAudio.Apply(Settings.Current); // volumes dragged but not applied
+    }
 
     public void Toggle()
     {
@@ -79,6 +83,11 @@ public sealed class SettingsWindow(GameHost host)
                 DisplayTab();
                 ImGui.EndTabItem();
             }
+            if (ImGui.BeginTabItem("Sound"u8, ImGuiTabItemFlags.None))
+            {
+                SoundTab();
+                ImGui.EndTabItem();
+            }
             if (ImGui.BeginTabItem("Interface"u8, ImGuiTabItemFlags.None))
             {
                 InterfaceTab();
@@ -105,6 +114,8 @@ public sealed class SettingsWindow(GameHost host)
         if (ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows) && ImGui.IsKeyPressed(ImGuiKey.Escape, false))
             open = false;
         Narsil.Ui.Panel.End();
+        if (!open && IsOpen)
+            Close();
         IsOpen = open;
     }
 
@@ -327,6 +338,34 @@ public sealed class SettingsWindow(GameHost host)
             set(percent / 100f);
     }
 
+    private void SoundTab()
+    {
+        var gap = new float2(1, S(4));
+        ImGui.Dummy(in gap);
+        // Volumes are heard as they're dragged; Cancel puts them back.
+        Strength("Master", "Everything at once.", "##master"u8, _draft.MasterVolume, v => _draft.MasterVolume = v);
+        Strength("Music", "The songs of the season.", "##music"u8, _draft.MusicVolume, v => _draft.MusicVolume = v);
+        Strength("Effects", "Hammers, pots, locks, fights and the interface.", "##effects"u8, _draft.EffectsVolume, v => _draft.EffectsVolume = v);
+        Strength("World", "Wind, birds, the river, fires crackling, a full inn.", "##ambience"u8, _draft.AmbienceVolume, v => _draft.AmbienceVolume = v);
+        Strength("Voices", "The babble of people talking within earshot.", "##voices"u8, _draft.VoiceVolume, v => _draft.VoiceVolume = v);
+        Audio.GameAudio.Apply(_draft.Sanitized());
+
+        ImGui.Dummy(in gap);
+        Row("Babble", "Hear speech as a babble of syllables, every voice its own. Off: only the words on screen.");
+        var babble = _draft.Babble;
+        if (ImGui.Checkbox("##babble"u8, ref babble))
+            _draft.Babble = babble;
+        Row("Mute in background", "Go quiet while another window has focus.");
+        var mute = _draft.MuteInBackground;
+        if (ImGui.Checkbox("##mutebg"u8, ref mute))
+            _draft.MuteInBackground = mute;
+        if (Audio.GameAudio.Engine.IsSilent)
+        {
+            ImGui.Dummy(in gap);
+            ImGuiText.Colored(Theme.Warn, "No sound device was found; the game is running silent.");
+        }
+    }
+
     private void GameplayTab()
     {
         var gap = new float2(1, S(4));
@@ -372,6 +411,7 @@ public sealed class SettingsWindow(GameHost host)
         var before = Settings.Current;
         var next = _draft.Sanitized();
         Settings.Current = next;
+        Audio.GameAudio.Apply(next);
         host.Renderer.SetVSync(next.VSync);
         host.MaxFps = next.MaxFps;
         if (Math.Abs(next.UiScale - Theme.Scale) > 0.001f)
