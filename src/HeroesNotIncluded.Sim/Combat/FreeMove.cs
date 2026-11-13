@@ -73,6 +73,21 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
             Join(sim, e);
     }
 
+    /// <summary>Turn it off: every player's character back on the grid, in the middle of its cell.</summary>
+    public void Disable(Simulation sim)
+    {
+        Enabled = false;
+        var w = sim.World;
+        foreach (var e in w.Query<FreeMover>())
+        {
+            w.Remove<FreeMover>(e);
+            w.Get<Mover>(e).Stop();
+            var cell = w.Get<Position>(e).Cell;
+            if (sim.Map.Passable(cell) && !w.Has<Carried>(e))
+                w.Get<Position>(e) = Position.At(cell);
+        }
+    }
+
     /// <summary>A player's character starts moving freely, facing the way it faced.</summary>
     public static void Join(Simulation sim, Entity e)
     {

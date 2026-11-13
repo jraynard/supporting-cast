@@ -190,8 +190,11 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>Debug (<c>--raid-test</c>): arm your character and the muster rack, and bandits come by the north road at once (<see cref="RaidDrill"/>).</summary>
     public bool RaidTest { get; init; }
 
-    /// <summary><c>--free-move</c> or the setting: the combat pass's free movement in a solo village (<see cref="Sim.Combat.FreeMoveSystem"/>).</summary>
-    public bool FreeMove { get; init; }
+    /// <summary>
+    /// The setting (or <c>--free-move</c>): the combat pass's free movement (<see cref="Sim.Combat.FreeMoveSystem"/>)
+    /// in a village you start, host or load. However the game was started: the title screen too.
+    /// </summary>
+    public bool FreeMove { get; init; } = Settings.Current.FreeMovement;
 
     /// <summary>Debug/screenshots (<c>--furniture-demo</c>): wide furniture and roofs beside the landing (<see cref="FurnitureShowcase"/>).</summary>
     public bool FurnitureDemo { get; init; }
@@ -270,6 +273,14 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         {
             _sim = save.Sim;
             _sim.StrictJobs = false;
+            // A save you load (or host) moves as the setting says now; a joiner gets the host's.
+            if (Coop == null && FreeMove != _sim.FreeMove.Enabled)
+            {
+                if (FreeMove)
+                    _sim.FreeMove.Enable(_sim);
+                else
+                    _sim.FreeMove.Disable(_sim);
+            }
             SetUpView(new int3(_sim.Map.Width / 2, _sim.Map.Height / 2, _sim.Map.Depth / 2));
             RestoreView(save.Header.Meta);
             if (CarriedOver is { } carried)

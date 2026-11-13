@@ -286,7 +286,7 @@ public sealed class SettingsWindow(GameHost host)
             _draft.UiScale = MathF.Round(percent / 5f) * 5f / 100f; // 5% steps
 
         ImGui.Dummy(in gap);
-        Row("Free movement", "Prototype: move freely and fight with the mouse (R draws your weapon). Starts with the next game you start or host.");
+        Row("Free movement", "Prototype: move freely and fight with the mouse (R draws your weapon). Takes effect when you next start, host or load a game.");
         var freeMove = _draft.FreeMovement;
         if (ImGui.Checkbox("##freemove"u8, ref freeMove))
             _draft.FreeMovement = freeMove;
