@@ -57,12 +57,14 @@ public class MilitiaTests
         var warned = sim.Clock.Tick;
         Assert.Contains(sim.Messages.Messages, m => m.Text.StartsWith("A shepherd runs in") && m.Text.Contains(Raids.SideName(plan.Side)));
         Assert.True(sim.Militia.Open);
+        Assert.False(sim.Militia.Mustering, "the town goes about its day till they come");
         Assert.Empty(Raiders(sim));
 
         // It keeps through a save.
         var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
         Assert.Equal(plan.Kinds.Select(k => k.Name), loaded.Director.Coming!.Kinds.Select(k => k.Name));
         Assert.True(loaded.Militia.Open);
+        Assert.False(loaded.Militia.Mustering);
         Assert.Equal(sim.Militia.Wanted, loaded.Militia.Wanted);
         sim = loaded;
 
@@ -71,6 +73,8 @@ public class MilitiaTests
         var raid = Assert.IsType<RaidCrisis>(Assert.Single(sim.Director.Active));
         Assert.True(sim.Clock.Tick - warned >= SimClock.HoursToTicks(hours) - SimClock.TicksPerHour / 3, "the warning came hours ahead");
         Assert.Equal(plan.Kinds.Count, raid.Raiders.Count);
+        Assert.True(sim.Militia.Mustering, "the bandits are here: the town takes up arms");
+        Assert.Contains(sim.Messages.Messages, m => m.Text.StartsWith("The bell rings out") && m.Location == null);
 
         // Over, and the muster stands down.
         foreach (var e in raid.Raiders)
@@ -78,6 +82,7 @@ public class MilitiaTests
         sim.TickMany(SimClock.TicksPerHour / 6 + 1);
         Assert.Empty(sim.Director.Active);
         Assert.False(sim.Militia.Open);
+        Assert.False(sim.Militia.Mustering);
     }
 
     [Fact]
@@ -104,7 +109,8 @@ public class MilitiaTests
         Assert.Equal(silver + price, Coin.Count(sim, me));
         Assert.Equal(purse - price, sim.Militia.Coffer);
 
-        // Taken down (it's a muster) and hung up again: nothing more.
+        // Taken down (the raid's come) and hung up again: nothing more.
+        sim.Militia.Muster(sim);
         sim.ApplyNow(new TakeFromStorageCommand(me, spear));
         Assert.False(sim.World.Has<Stored>(spear));
         Inventory.Stow(sim, me, sim.World.Get<Carrying>(me).Item == spear ? Inventory.TakeFromPerson(sim, me, spear, 1) : spear);
@@ -125,7 +131,7 @@ public class MilitiaTests
     }
 
     [Fact]
-    public void TheRacksArmsAreLeftAloneTillTheMusterThenTheUnarmedTakeThem()
+    public void TheRacksArmsAreLeftAloneTillTheRaidComesThenTheUnarmedTakeThem()
     {
         var sim = Round(director: false);
         var rack = Rack(sim);
@@ -145,7 +151,12 @@ public class MilitiaTests
         sim.ApplyNow(new TakeFromStorageCommand(me, spears[0]));
         Assert.True(sim.World.Has<Stored>(spears[0]));
 
+        // Word of a raid isn't the raid: the rack's still left alone.
         sim.Militia.Call(sim, "tonight");
+        sim.TickMany(SimClock.TicksPerHour * 2);
+        Assert.All(spears, s => Assert.Equal(rack, sim.World.Get<Stored>(s).In));
+
+        sim.Militia.Muster(sim);
         for (var h = 0; h < 6 && spears.Any(s => sim.World.Has<Stored>(s)); h++)
             sim.TickMany(SimClock.TicksPerHour);
         var w = sim.World;

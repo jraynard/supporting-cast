@@ -103,8 +103,8 @@ Ideas for depth, to build when each trade's milestone comes round.
 - *Built: the call to arms* (`Militia/`). Some hours before a raid a shepherd brings word: how
   many, by which road, and when (the raid is then fixed as told). The town calls for weapons for
   its unarmed folk and pays the smith from a town purse for each new one hung on the muster rack
-  by the well. While the call is out the town musters: villagers without a weapon take one from
-  the rack (players by hand), and the armed fight when the raiders come. The rack is left alone
+  by the well. When the raiders actually arrive the bell rings and the town musters: villagers
+  without a weapon take one from the rack (players by hand), and the armed fight. The rack is left alone
   otherwise. The town's arms don't count toward a raid's size.
 - Running the forge is play in its own right: the bellows are, so far. Still to come: lighting
   and banking it by hand. It lights itself for the work now, and the smith feeds it from the bin.

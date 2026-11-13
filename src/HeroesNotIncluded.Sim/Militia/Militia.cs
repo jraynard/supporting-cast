@@ -16,9 +16,10 @@ public struct TownArms;
 /// <summary>
 /// The call to arms. When word of a raid comes in (<c>Director</c>), the town asks for weapons for
 /// the folk who have none and pays the smith (or anyone) for each new one hung on the muster rack,
-/// from a town purse (<see cref="Defs.SeasonDef.TownPurse"/>) until it's spent. While the call is
-/// on, the town musters: anyone of the village without a weapon takes one from the rack (players
-/// by hand), and when the raid's over the muster stands down and the rack's left alone again.
+/// from a town purse (<see cref="Defs.SeasonDef.TownPurse"/>) until it's spent: those hours are the
+/// smith's. When the bandits actually come (<see cref="Muster"/>), the town musters: anyone of the
+/// village without a weapon takes one from the rack (players by hand), and when the raid's over the
+/// muster stands down and the rack's left alone again.
 /// The purse is the town's, held by nobody yet: it'll be the mayor's when there is one.
 /// </summary>
 public sealed class MilitiaSystem : ISimSystem, ISaveState
@@ -33,11 +34,11 @@ public sealed class MilitiaSystem : ISimSystem, ISaveState
     /// <summary>Silver left in the town purse.</summary>
     public int Coffer { get; private set; }
 
-    /// <summary>A call to arms is out: weapons are wanted, and the town musters at the rack.</summary>
+    /// <summary>A call to arms is out: weapons are wanted for the rack.</summary>
     public bool Open { get; private set; }
 
-    /// <summary>The town arms itself from the rack while this holds (no one takes from it otherwise).</summary>
-    public bool Mustering => Open;
+    /// <summary>The raid's here: the town arms itself from the rack (no one takes from it otherwise).</summary>
+    public bool Mustering { get; private set; }
 
     /// <summary>Weapons the call asks for, and how many it's paid for so far.</summary>
     public int Wanted { get; private set; }
@@ -105,12 +106,28 @@ public sealed class MilitiaSystem : ISimSystem, ISaveState
             sim.Messages.Add(MessageKind.Info, $"The town will pay {Price} silver for each weapon hung on the muster rack: {Wanted} wanted.", at);
     }
 
+    /// <summary>
+    /// The bandits are here: the town takes up arms from the rack. Called or not (a raid nobody
+    /// was warned of musters too, but then nothing's wanted or paid for).
+    /// </summary>
+    public void Muster(Simulation sim)
+    {
+        if (!Open)
+        {
+            Open = true;
+            Wanted = Paid = 0;
+            When = "";
+        }
+        Mustering = true;
+    }
+
     /// <summary>The raid's over (or never came): the muster stands down and the rack's left alone.</summary>
     public void StandDown(Simulation sim)
     {
         if (!Open)
             return;
         Open = false;
+        Mustering = false;
         sim.Messages.Add(MessageKind.Info, "The muster stands down.", null);
     }
 
@@ -154,6 +171,7 @@ public sealed class MilitiaSystem : ISimSystem, ISaveState
         w.Int(Paid);
         w.Int(Price);
         w.String(When);
+        w.Bool(Mustering);
     }
 
     public void Load(SaveReader r, Simulation sim)
@@ -165,13 +183,14 @@ public sealed class MilitiaSystem : ISimSystem, ISaveState
         Paid = Math.Max(0, r.Int());
         Price = Math.Max(0, r.Int());
         When = r.String();
+        Mustering = r.Version >= 14 ? r.Bool() : Open;
     }
 }
 
 /// <summary>What the village's AI folk do in a muster (<see cref="MilitiaSystem.Mustering"/>).</summary>
 public static class Muster
 {
-    /// <summary>Unarmed and willing, in a muster: fetch a weapon from the rack. Null otherwise.</summary>
+    /// <summary>Unarmed and willing, with the raid here: fetch a weapon from the rack. Null otherwise.</summary>
     public static Ai.Job? ArmFromRack(Simulation sim, Entity pawn)
     {
         var w = sim.World;

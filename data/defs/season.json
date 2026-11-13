@@ -31,7 +31,10 @@
       "dragonMetRenown": 20,
       "dragonUnmetDread": 20,
       "crisisHours": 6,
-      "raidPointsFactor": 0.4,
+      // Raid points (storyteller.json's formula) times this: at 0.85 a town of six meets a bandit or
+      // two on the first evening and three on the second day. Left to itself the town loses that
+      // one (at 1 it was wiped out): it needs its players.
+      "raidPointsFactor": 0.85,
       "raidBreaksBridge": 0.6,
       "dreadPerBreachHour": 0.5,
       // Word of a raid comes this many game hours ahead (Director/Director.cs), and the town calls

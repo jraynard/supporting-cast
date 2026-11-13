@@ -84,7 +84,7 @@ docs/                        design, roadmap, history, art pipeline, Steam Deck,
 
 ## Credits & licensing
 
-Created by Justin Raynard and Tasha Raynard, made with the help of Claude, by Anthropic. The game's
+Created by Justin Raynard and Tasha Raynard, made with the help of Claude. The game's
 Credits window lists the same (`Ui/GameCredits.cs`).
 
 Built with BRUTAL, a game development framework by Ahwoo Limited, used under the BRUTAL License
