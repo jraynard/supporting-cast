@@ -90,16 +90,28 @@ public static class VillageRound
             }
     }
 
+    /// <summary>Iron ore and wood in the smithy's chest at the start: a few blooms' worth, and hafts for spears. The carter brings more (<see cref="Shops.OreCarterSystem"/>).</summary>
+    public const int SmithyOre = 12, SmithyWood = 6;
+
     private static void StockSmithy(Simulation sim, Entity smithy)
     {
         if (smithy.IsNull)
             return;
         foreach (var e in sim.World.Query<PartOf>())
-            if (sim.World.Get<PartOf>(e).Building == smithy && sim.World.Get<Thing>(e).Def.Name == "FuelBin")
+        {
+            if (sim.World.Get<PartOf>(e).Building != smithy)
+                continue;
+            switch (sim.World.Get<Thing>(e).Def.Name)
             {
-                sim.Store(e, sim.CreateItem(sim.Defs.Thing("Charcoal"), SmithyCharcoal));
-                return;
+                case "FuelBin":
+                    sim.Store(e, sim.CreateItem(sim.Defs.Thing("Charcoal"), SmithyCharcoal));
+                    break;
+                case "Chest":
+                    sim.Store(e, sim.CreateItem(sim.Defs.Thing("IronOre"), SmithyOre));
+                    sim.Store(e, sim.CreateItem(sim.Defs.Thing("Wood"), SmithyWood));
+                    break;
             }
+        }
     }
 
     /// <summary>What the inn's larder starts a round with: a day or two of stew for a busy common room.</summary>

@@ -440,7 +440,11 @@ public sealed class AvatarSystem : ISimSystem
             return new(AvatarActionKind.Pour, Work.PourSession.ServingsLeft(sim, site) <= 0 ? $"The {w.Get<Thing>(site).Label} is dry"
                 : Work.Vessels.CleanOn(sim, avatar, cask.Into).IsNull ? $"Pour {sim.Defs.Thing(cask.Pours).Label} (no clean {sim.Defs.Thing(cask.Into).Label})"
                 : $"Pour {sim.Defs.Thing(cask.Pours).Label}", cell, site);
-        if (!held.IsNull && IsContainer(sim, site) && sim.HasRoomFor(site, w.Get<Thing>(held).Def, w.Get<Thing>(held).Material))
+        // The muster rack takes weapons only, and the town may pay for them.
+        var rack = Militia.MilitiaSystem.IsRack(sim, site);
+        if (!held.IsNull && rack && Militia.MilitiaSystem.IsWeapon(sim, held) && sim.HasRoomFor(site, w.Get<Thing>(held).Def, w.Get<Thing>(held).Material))
+            return new(AvatarActionKind.Store, sim.Militia.RackLabel(sim, held), cell, site);
+        if (!held.IsNull && !rack && IsContainer(sim, site) && sim.HasRoomFor(site, w.Get<Thing>(held).Def, w.Get<Thing>(held).Material))
             return new(AvatarActionKind.Store, w.Get<Thing>(site).Def.Building is { Hatch: true }
                 ? $"Put {w.Get<Thing>(held).Label} up on the {w.Get<Thing>(site).Label}"
                 : $"Put {w.Get<Thing>(held).Label} in the {w.Get<Thing>(site).Label}", cell, site);
@@ -464,6 +468,8 @@ public sealed class AvatarSystem : ISimSystem
         }
         if (held.IsNull)
         {
+            if (rack)
+                return new(AvatarActionKind.OpenStorage, sim.Militia.Mustering ? "Take up arms from the muster rack" : "Look over the muster rack", cell, site);
             if (IsContainer(sim, site))
                 return new(AvatarActionKind.OpenStorage, $"Open the {w.Get<Thing>(site).Label}", cell, site);
         }
@@ -699,8 +705,13 @@ public sealed class AvatarSystem : ISimSystem
                 carrying.Item = Entity.Null;
                 break;
             case AvatarActionKind.Store:
+            {
+                var put = carrying.Item;
                 carrying.Item = sim.Store(action.Target, carrying.Item);
+                if (carrying.Item != put && Militia.MilitiaSystem.IsRack(sim, action.Target))
+                    sim.Militia.Racked(sim, avatar, put);
                 break;
+            }
             case AvatarActionKind.Deliver:
             {
                 var left = Deliver(sim, action.Target, action.Item);

@@ -447,7 +447,9 @@ public class TinkerTests
         Assert.Equal(0, sim.World.Get<Strongbox>(box).Silver);
         Assert.True(Inventory.OnPerson(sim, owner, box));
         Assert.Equal(purse + order.Price, Coin.Count(sim, tinker));
-        Assert.True(Coin.Count(sim, owner) >= theirs + 25 - order.Price - 10, "the silver inside went to its owner"); // less what they spent on drink meanwhile
+        // The silver inside went to its owner, less what they paid for (this and whatever else they ordered meanwhile).
+        var spent = sim.Shops.All.Where(e => e.Poster == owner && e.Status == OrderStatus.Done).Sum(e => e.Price);
+        Assert.Equal(theirs + 25 - spent, Coin.Count(sim, owner));
     }
 
     [Fact]

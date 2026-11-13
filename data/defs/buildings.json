@@ -261,14 +261,14 @@
         { "def": "FuelBin", "at": [5, 1] },
         { "def": "Anvil", "at": [2, 3] },
         { "def": "QuenchTub", "at": [1, 3] },
-        { "def": "Grindstone", "at": [5, 3], "facing": 3 }
+        { "def": "Grindstone", "at": [5, 3], "facing": 3 },
+        { "def": "Chest", "at": [5, 2], "facing": 3 } // where the carter leaves the ore
       ],
       // Customers line up at the open front, out into the street.
       "line": [ [3, 4], [3, 5], [3, 6], [3, 7], [3, 8], [3, 9] ],
       "sign": [0, 4], // on the front post, over the open forge-front
       "slots": [
-        { "defs": ["Mint", "Chest"], "at": [1, 2], "facing": 1 },
-        { "defs": ["Chest"], "at": [5, 2], "facing": 3 }
+        { "defs": ["Mint", "Chest"], "at": [1, 2], "facing": 1 }
       ],
       "variants": [
         { "name": "Timber", "label": "timber", "kit": "log_turf" },

@@ -167,6 +167,10 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         {
             case HammerSession h:
                 return (h.Ready && MathF.Abs(h.Marker - h.Mark) <= h.HalfWidth * 0.5f, false, 0);
+            case BloomSession bloom:
+                // Keep it orange: pump below the middle of the band, ease off above. Out once it's grown.
+                _act = bloom.Grown;
+                return (false, bloom.Temp < (bloom.Lo + bloom.SlagAt) * 0.5f, 0);
             case HeatSession heat:
                 // Pump, and draw it out once it glows the colour at the top of its working heat.
                 _act = heat.LooksReady;
@@ -455,6 +459,8 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         if (_task == 0)
             TakeOn(sim, me, view, now);
         if (_task == 0 && MendTown(sim, me, view, now))
+            return;
+        if (_task == 0 && Smith(sim, me, view, now))
             return;
         if (_task == 0 && !Upkeep(sim, me, view, now))
             Chat(view, me, now);
@@ -987,6 +993,131 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         Doing = $"mending the {breach.Label}";
         send(new MendBreachCommand(me, breach.Id));
         return true;
+    }
+
+    /// <summary>Bars it likes to have to hand before it'll smelt more.</summary>
+    public const int SmeltBelow = 2;
+
+    private long _noOreUntil;
+
+    /// <summary>
+    /// The smith between customers: a piece in the tongs is seen through (to the fire while it's
+    /// dark, the anvil while it glows, the tub once it's shaped); in a call to arms, spears for the
+    /// muster rack, and each one hung there; short of bars, ore from the smithy chest and charcoal
+    /// from the bin go in the forge as a bloom. True while at it.
+    /// </summary>
+    private bool Smith(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Trade>(me, out var trade) || trade.Def.Name != "Blacksmith")
+            return false;
+        if (view.Piece(me) is { } piece)
+        {
+            if (!piece.Hot && Nearest(sim, me, "Forge") is { IsNull: false } lit && view.FuelIn(lit) is <= 0f)
+                return FeedForge(sim, me, view, lit, now);
+            var next = !piece.Hot ? "Forge" : piece.Shaped ? "QuenchTub" : "Anvil";
+            Doing = $"forging: {piece.Label} to the {next.ToLowerInvariant()}";
+            return AtStation(sim, me, Nearest(sim, me, next), now, st => send(new SmithCommand(me, st)));
+        }
+        if (sim.Militia.Paying && ArmTheTown(sim, me, view, now))
+            return true;
+        if (now < _noOreUntil || sim.Defs.AllRecipes.FirstOrDefault(r => r.Bloom) is not { } recipe || OnMe(sim, me, "IronBar") >= SmeltBelow)
+            return false;
+        var forge = Nearest(sim, me, "Forge");
+        if (forge.IsNull)
+            return false;
+        var ore = recipe.Ingredients[0];
+        var fuel = recipe.Ingredients.Count > 1 ? recipe.Ingredients[1] : null;
+        if (!w.Get<Carrying>(me).Item.IsNull && w.Get<Thing>(w.Get<Carrying>(me).Item).Def != ore.ThingDef)
+        {
+            send(new StowCommand(me));
+            return true;
+        }
+        if (OnMe(sim, me, ore.Def) < ore.Count)
+            return Fetch(sim, me, view, now, ore, "ore");
+        if (fuel != null && OnMe(sim, me, fuel.Def) < fuel.Count)
+            return Fetch(sim, me, view, now, fuel, "charcoal");
+        Doing = "smelting a bloom";
+        return AtStation(sim, me, forge, now, f => send(new CraftCommand(me, f, recipe)));
+    }
+
+    /// <summary>The spear the call to arms is answered with: cheap (a bar and two hafts), and quick at the anvil.</summary>
+    public const string MilitiaWeapon = "ForgeIronSpear";
+
+    /// <summary>A weapon of its own making to hang on the muster rack, or one to make. False if it can't do either.</summary>
+    private bool ArmTheTown(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        var w = sim.World;
+        var rack = Nearest(sim, me, Militia.MilitiaSystem.RackDef);
+        if (rack.IsNull)
+            return false;
+        bool Spare(Entity e) => Militia.MilitiaSystem.IsWeapon(sim, e) && w.TryGet<Crafted>(e, out var c) && c.Maker == me
+            && !w.Has<Militia.TownArms>(e) && !w.Has<Entrusted>(e);
+        var pack = sim.PackOf(me);
+        if (Spare(w.Get<Carrying>(me).Item))
+        {
+            Doing = "taking a spear to the muster rack";
+            return AtStation(sim, me, rack, now, r =>
+            {
+                send(new AvatarWorkCommand(me, true, w.Get<Thing>(r).Cell));
+                send(new AvatarWorkCommand(me, false));
+            });
+        }
+        if (!pack.IsNull && sim.StoredIn(pack).FirstOrDefault(Spare, Entity.Null) is { IsNull: false } spare)
+        {
+            Doing = "taking a spear to the muster rack";
+            return AtStation(sim, me, rack, now, r => send(new StoreFromPackCommand(me, r, spare)));
+        }
+        if (sim.Defs.AllRecipes.FirstOrDefault(r => r.Name == MilitiaWeapon) is not { } recipe || !RecipeBooks.Knows(sim, me, recipe))
+            return false;
+        var bar = recipe.Ingredients[0];
+        if (OnMe(sim, me, bar.Def) < bar.Count)
+            return false; // smelt first
+        foreach (var x in recipe.Ingredients.Skip(1))
+            if (OnMe(sim, me, x.Def) < x.Count)
+                return Fetch(sim, me, view, now, x, x.ThingDef.Label);
+        var forge = Nearest(sim, me, "Forge");
+        if (forge.IsNull)
+            return false;
+        Doing = "forging a spear for the muster";
+        return AtStation(sim, me, forge, now, f => send(new CraftCommand(me, f, recipe)));
+    }
+
+    /// <summary>Units of an item in its hands and pack.</summary>
+    private static int OnMe(Simulation sim, Entity me, string def)
+    {
+        var w = sim.World;
+        var n = 0;
+        if (w.Get<Carrying>(me).Item is { IsNull: false } held && w.Get<Thing>(held).Def.Name == def)
+            n += w.Get<Stack>(held).Count;
+        if (sim.PackOf(me) is { IsNull: false } pack)
+            foreach (var e in sim.StoredIn(pack))
+                if (w.Get<Thing>(e).Def.Name == def)
+                    n += w.Get<Stack>(e).Count;
+        return n;
+    }
+
+    /// <summary>Take what the forge wants from the containers at its workplace (the chest, the fuel bin). False, and gives up a while, if there's none.</summary>
+    private bool Fetch(Simulation sim, Entity me, PerceptionView view, long now, ThingCount want, string what)
+    {
+        var w = sim.World;
+        if (MyShop(sim, me) is not { IsNull: false } shop)
+            return false;
+        var store = Buildings.Parts(sim, shop).Where(e => w.Get<Thing>(e).Def.Building?.StorageStacks > 0)
+            .OrderBy(e => e.Index).ToList();
+        // Its own workplace's chests are common knowledge to it, as a keeper knows their shelves.
+        var holding = store.FirstOrDefault(e => sim.StoredIn(e).Any(i => w.Get<Thing>(i).Def == want.ThingDef), Entity.Null);
+        if (holding.IsNull)
+        {
+            _noOreUntil = now + SimClock.TicksPerHour;
+            return false;
+        }
+        Doing = $"fetching {what}";
+        return AtStation(sim, me, holding, now, s =>
+        {
+            if (view.InContainer(s).FirstOrDefault(e => w.Get<Thing>(e).Def == want.ThingDef, Entity.Null) is { IsNull: false } item)
+                send(new TakeFromStorageCommand(me, item, want.Count * 2));
+        });
     }
 
     /// <summary>Wood from a chest at its workplace, for an axle. False if there's none to be had.</summary>

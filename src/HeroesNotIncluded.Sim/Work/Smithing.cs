@@ -67,6 +67,15 @@ public sealed class WorkPiece
 
     public PieceFlaw Flaw;
 
+    /// <summary>Ore being smelted to a bloom (<see cref="Smithing.BeginBloom"/>), not a billet.</summary>
+    public bool IsBloom;
+
+    /// <summary>A bloom's: how far the ore's come together in the fire, 0..1.</summary>
+    public float Reduced;
+
+    /// <summary>A bloom's: how much iron ran off to slag in a fire blown too hot, 0..1.</summary>
+    public float Slag;
+
     public bool Shaped => Shape >= 1f;
     public bool IsMend => !Mending.IsNull;
     public float BlowQuality => BlowCount == 0 ? 0f : BlowSum / BlowCount;
@@ -148,17 +157,51 @@ public static class Smithing
     public static int BlowsFor(RecipeDef recipe) => Math.Clamp((int)MathF.Round(recipe.Work / 150f), 4, 24);
 
     /// <summary>Gear that hardens in the quench: weapons and tools. Armor is finished off the anvil.</summary>
-    public static bool NeedsQuench(RecipeDef recipe) => recipe.Products.Exists(p => p.ThingDef.Apparel == null);
+    public static bool NeedsQuench(RecipeDef recipe) => !recipe.Bloom && recipe.Products.Exists(p => p.ThingDef.Apparel == null);
+
+    /// <summary>Blows to beat the slag out of a bloom.</summary>
+    public const int BloomBlows = 6;
+
+    /// <summary>A bloom too little come together to hold under the hammer: back in the fire first.</summary>
+    public const float BloomMinReduced = 0.3f;
+
+    /// <summary>The heat a bloom comes together at (orange), and where its iron starts to run to slag (yellow).</summary>
+    public static (float Lo, float SlagAt) BloomBand(RecipeDef recipe)
+    {
+        var t = recipe.MinTemp > 0 ? recipe.MinTemp : DefaultWorkTemp;
+        return (t * 0.95f, t * 1.06f);
+    }
+
+    /// <summary>How the bloom looks, as words: the smith judges it by eye.</summary>
+    public static string BloomWords(float reduced) => reduced switch
+    {
+        < 0.1f => "the ore's barely begun to come together",
+        < BloomMinReduced => "a little iron's gathering in the ore",
+        < 0.65f => "a small bloom, still loose",
+        < 1f => "a good bloom, and growing",
+        _ => "a fat bloom, all come together",
+    };
+
+    /// <summary>
+    /// Bars a bloom gives: one more than the recipe's count for a fat bloom, little slag and the
+    /// slag well beaten out; fewer the smaller the bloom, the more burnt to slag and the worse the blows.
+    /// </summary>
+    public static int BloomYield(RecipeDef recipe, WorkPiece p)
+    {
+        var most = (recipe.Products.Count > 0 ? recipe.Products[0].Count : 1) + 1;
+        var bars = most * p.Reduced * (1f - 0.6f * p.Slag) * (0.5f + 0.5f * p.BlowQuality);
+        return Math.Clamp((int)MathF.Round(bars), 0, most);
+    }
 
     public static WorkPiece? PieceOf(Simulation sim, Entity smith) =>
         sim.World.TryGet<WorkPiece>(smith, out var p) ? p : null;
 
     public static string PieceLabel(Simulation sim, WorkPiece p) =>
-        p.IsMend && sim.World.IsAlive(p.Mending) ? sim.LabelOf(p.Mending) : p.Recipe.Products.Count > 0 ? p.Recipe.Products[0].ThingDef.Label : p.Recipe.Label;
+        p.IsBloom ? "bloom" : p.IsMend && sim.World.IsAlive(p.Mending) ? sim.LabelOf(p.Mending) : p.Recipe.Products.Count > 0 ? p.Recipe.Products[0].ThingDef.Label : p.Recipe.Label;
 
     /// <summary>Should a player's work on this recipe at this station be forged by hand? In a round, at a hand-work station, for gear.</summary>
     public static bool Applies(Simulation sim, Entity worker, Entity station, RecipeDef recipe) =>
-        AppliesToRepair(sim, worker, station) && recipe.Products.Exists(p => Crafting.IsGear(p.ThingDef));
+        AppliesToRepair(sim, worker, station) && (recipe.Bloom || recipe.Products.Exists(p => Crafting.IsGear(p.ThingDef)));
 
     /// <summary>Should a player's mend at this station be done by hand? As for making: in a round, at a station that wants it.</summary>
     public static bool AppliesToRepair(Simulation sim, Entity worker, Entity station) =>
@@ -183,6 +226,25 @@ public static class Smithing
             Forge = forge, Recipe = recipe, Temp = AirAt(sim, smith), BlowsNeeded = BlowsFor(recipe),
         });
         sim.Messages.Add(MessageKind.Info, $"A billet for the {recipe.Label} is in your tongs: put it in the fire, and work it {WorkingColours(recipe)}.", cell);
+    }
+
+    /// <summary>Begin a bloom from ore and charcoal staged at the forge: it's smelted in the fire, then beaten on the anvil.</summary>
+    public static void BeginBloom(Simulation sim, Entity smith, Entity forge, RecipeDef recipe)
+    {
+        var w = sim.World;
+        var cell = w.Get<Thing>(forge).Cell;
+        if (PieceOf(sim, smith) is { } held)
+        {
+            sim.Messages.Add(MessageKind.Info, held.Forge == forge && held.Recipe == recipe && held.IsBloom
+                ? $"The bloom is in the forge: {NextStep(sim, smith, held)}."
+                : $"You already have the {PieceLabel(sim, held)} in your tongs.", cell);
+            return;
+        }
+        w.Add(smith, new WorkPiece
+        {
+            Forge = forge, Recipe = recipe, Temp = AirAt(sim, smith), BlowsNeeded = BloomBlows, IsBloom = true,
+        });
+        sim.Messages.Add(MessageKind.Info, "Ore and charcoal are in the forge: blow it up to orange and keep it there while the bloom comes together.", cell);
     }
 
     /// <summary>Take a worn piece the smith has on them into the tongs, to heat and hammer out its chips. Firing the forge for an hour.</summary>
@@ -237,11 +299,11 @@ public static class Smithing
         var piece = PieceOf(sim, smith);
         // A forge gone out is fed first: the work key offers that (AvatarSystem's refuel) instead.
         if (piece != null && b.Workbench is { HandWork: true } && b.Fuel != null)
-            return w.TryGet<Fueled>(station, out var fuel) && fuel.Fuel > 0 ? $"Put the {PieceLabel(sim, piece)} in the fire" : null;
+            return w.TryGet<Fueled>(station, out var fuel) && fuel.Fuel > 0 ? (piece.IsBloom ? "Run the bloom" : $"Put the {PieceLabel(sim, piece)} in the fire") : null;
         switch (b.Smithy)
         {
             case SmithyRole.Anvil when piece is { Shaped: false }:
-                return $"Hammer the {PieceLabel(sim, piece)}";
+                return piece.IsBloom ? "Beat the slag out of the bloom" : $"Hammer the {PieceLabel(sim, piece)}";
             case SmithyRole.Quench when piece is { Shaped: true } && NeedsQuench(piece.Recipe) && !piece.IsMend:
                 return $"Quench the {PieceLabel(sim, piece)}";
             case SmithyRole.Grind when ToGrind(sim, smith) is { IsNull: false } blade:
@@ -268,11 +330,17 @@ public static class Smithing
             }
             if (piece.IsMend)
                 FireForMending(sim, piece.Forge);
-            WorkSystem.Start(sim, smith, HeatSession.For(sim, station, piece));
+            if (piece.IsBloom)
+                WorkSystem.Start(sim, smith, BloomSession.For(sim, station, piece));
+            else
+                WorkSystem.Start(sim, smith, HeatSession.For(sim, station, piece));
             return;
         }
         switch (b.Smithy)
         {
+            case SmithyRole.Anvil when piece is { Shaped: false, IsBloom: true, Reduced: < BloomMinReduced }:
+                sim.Messages.Add(MessageKind.Info, $"There's too little bloom to hold under the hammer: {BloomWords(piece.Reduced)}. Back in the fire.", cell);
+                return;
             case SmithyRole.Anvil when piece is { Shaped: false }:
                 WorkSystem.Start(sim, smith, HammerSession.For(sim, smith, station, piece));
                 return;
@@ -294,6 +362,10 @@ public static class Smithing
     public static string NextStep(Simulation sim, Entity smith, WorkPiece p)
     {
         var (lo, _, _) = Window(p.Recipe);
+        if (p.IsBloom)
+            return p.Reduced < BloomMinReduced ? "keep it in the fire, orange"
+                : p.Temp >= lo ? "hot enough: to the anvil, and beat the slag out"
+                : p.Reduced < 1f ? "back in the fire: it'll grow some more" : "back in the fire for another heat";
         if (!p.Shaped)
             return p.Temp >= lo ? "hot enough: to the anvil" : p.Shape > 0 ? "back to the fire" : "into the fire";
         return p.Temp >= lo * 0.75f ? "quench it while it's hot" : "heat it again, then quench it";
@@ -365,6 +437,33 @@ public static class Smithing
             var edge = WeaponWear.Edged(w.Get<Thing>(item).Def) ? " Grind it an edge." : "";
             sim.Messages.Add(MessageKind.Info, $"Made a {sim.LabelOf(item)}.{edge}", cell);
         }
+    }
+
+    /// <summary>
+    /// The slag's beaten out of a bloom: bars by how big it grew, how much ran to slag and how well
+    /// the blows landed (<see cref="BloomYield"/>). The ore and charcoal staged at the forge are spent.
+    /// </summary>
+    internal static void CompleteBloom(Simulation sim, Entity smith, WorkPiece p)
+    {
+        var w = sim.World;
+        w.Remove<WorkPiece>(smith);
+        var cell = w.Get<Position>(smith).Cell;
+        if (!w.IsAlive(p.Forge) || !w.TryGet<Workbench>(p.Forge, out var bench) || bench.Active != p.Recipe || bench.By != smith)
+        {
+            sim.Messages.Add(MessageKind.Warning, $"The work on the {p.Recipe.Label} was called off at the forge.", cell);
+            return;
+        }
+        bench.Clear();
+        var bars = BloomYield(p.Recipe, p);
+        var product = p.Recipe.Products[0];
+        if (bars <= 0)
+        {
+            sim.Messages.Add(MessageKind.Warning, "The bloom crumbled to slag under the hammer: nothing worth keeping.", cell);
+            return;
+        }
+        Inventory.Stow(sim, smith, sim.CreateItem(product.ThingDef, bars, product.MaterialDef));
+        var label = bars == 1 ? $"a single {product.ThingDef.Label}" : $"{bars} {p.Recipe.Label}";
+        sim.Messages.Add(MessageKind.Info, $"Beat the bloom out into {label}.", cell);
     }
 
     /// <summary>
@@ -452,7 +551,7 @@ public sealed class SmithingSystem : ISimSystem
                 continue;
             }
             // While a step is under way the session has the piece; it writes it back when done.
-            if (w.TryGet<WorkSession>(e, out var s) && s is HeatSession or HammerSession or QuenchSession)
+            if (w.TryGet<WorkSession>(e, out var s) && s is HeatSession or BloomSession or HammerSession or QuenchSession)
                 continue;
             var air = Smithing.AirAt(sim, e);
             p.Temp = air + (p.Temp - air) * Cooling;

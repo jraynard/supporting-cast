@@ -61,10 +61,9 @@ public sealed partial class VillageGame
         dl.AddRect(in min, in max, Theme.U8(Theme.Iron), Gui.S(2), ImDrawFlags.None, Gui.S(1));
     }
 
-    /// <summary>The piece glowing on the coals; the bellows pumping as you hold F; draw it out when it looks right.</summary>
-    private void DrawHeat(HeatSession s)
+    /// <summary>The hearth: coals as hot as the fire, the piece (or bloom) lying in them, and the bellows puffing while you pump.</summary>
+    private void DrawHearth(float fireHeat, float temp, bool pumping, bool sparking)
     {
-        BeginWork(s.Title, ("F", "hold to work the bellows"), ("Space", "draw it out"), ("Esc", "leave it"));
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 170);
         var min = ImGui.GetCursorScreenPos();
@@ -73,11 +72,11 @@ public sealed partial class VillageGame
         Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
 
         // The hearth: a bed of coals as hot as the fire, flickering.
-        var fire = GlowColour(s.Fire);
+        var fire = GlowColour(fireHeat);
         var bedMin = new float2(min.X + size.X * 0.28f, max.Y - Gui.S(54));
         var bedMax = new float2(max.X - Gui.S(18), max.Y - Gui.S(10));
         var glowAt = (bedMin + bedMax) * 0.5f;
-        dl.AddCircleFilled(in glowAt, size.X * 0.32f, Gui.U8(fire, 0.12f + 0.2f * GlowStrength(s.Fire)), 40);
+        dl.AddCircleFilled(in glowAt, size.X * 0.32f, Gui.U8(fire, 0.12f + 0.2f * GlowStrength(fireHeat)), 40);
         dl.AddRectFilled(in bedMin, in bedMax, new ImColor8(26, 20, 18, 255), Gui.S(6), ImDrawFlags.None);
         for (var i = 0; i < 46; i++)
         {
@@ -85,7 +84,7 @@ public sealed partial class VillageGame
             var hy = (i * 0.381966f + 0.17f) % 1f;
             var c = new float2(bedMin.X + Gui.S(8) + hx * (bedMax.X - bedMin.X - Gui.S(16)), bedMin.Y + Gui.S(6) + hy * (bedMax.Y - bedMin.Y - Gui.S(12)));
             var flicker = 0.55f + 0.45f * MathF.Sin(_time * (3f + i % 5) + i * 1.7f);
-            var lit = GlowStrength(s.Fire) * flicker;
+            var lit = GlowStrength(fireHeat) * flicker;
             var coal = new float4(0.12f, 0.1f, 0.1f, 1f) + (fire - new float4(0.12f, 0.1f, 0.1f, 1f)) * lit;
             dl.AddCircleFilled(in c, Gui.S(4.5f + i % 3), Gui.U8(coal), 8);
         }
@@ -96,23 +95,23 @@ public sealed partial class VillageGame
         {
             var b = new float2(billet.PixelSize.X, billet.PixelSize.Y) * px;
             var bMin = new float2(glowAt.X - b.X * 0.5f, bedMin.Y + Gui.S(10) - b.Y * 0.5f);
-            var hot = GlowColour(s.Temp);
+            var hot = GlowColour(temp);
             var c = bMin + b * 0.5f;
-            dl.AddCircleFilled(in c, b.X * 0.6f, Gui.U8(hot, 0.25f * GlowStrength(s.Temp)), 24);
+            dl.AddCircleFilled(in c, b.X * 0.6f, Gui.U8(hot, 0.25f * GlowStrength(temp)), 24);
             Gui.Image(dl, billet, bMin, bMin + b, Gui.U8(hot));
-            if (s.Burning && (_time * 30f) % 1f < 0.5f)
+            if (sparking && (_time * 30f) % 1f < 0.5f)
                 ThrowSparks(c, 0.6f, (int)(_time * 60f));
         }
 
         // The bellows on the left, squeezed while you pump, puffing air at the fire.
         if (Gui.TrySprite("buildings/bellows", out var bellows))
         {
-            var squeeze = s.Pumping ? 0.5f + 0.5f * MathF.Sin(_time * 9f) : 1f;
+            var squeeze = pumping ? 0.5f + 0.5f * MathF.Sin(_time * 9f) : 1f;
             var bw = Gui.S(78) * (0.75f + 0.25f * squeeze);
             var bh = Gui.S(78);
             var bMin = new float2(min.X + Gui.S(14), max.Y - bh - Gui.S(18));
             Gui.Image(dl, bellows, bMin, bMin + new float2(bw, bh), Gui.White);
-            if (s.Pumping)
+            if (pumping)
                 for (var i = 0; i < 3; i++)
                 {
                     var t = (_time * 1.8f + i / 3f) % 1f;
@@ -122,6 +121,13 @@ public sealed partial class VillageGame
                 }
         }
         DrawSparks(dl);
+    }
+
+    /// <summary>The piece glowing on the coals; the bellows pumping as you hold F; draw it out when it looks right.</summary>
+    private void DrawHeat(HeatSession s)
+    {
+        BeginWork(s.Title, ("F", "hold to work the bellows"), ("Space", "draw it out"), ("Esc", "leave it"));
+        DrawHearth(s.Fire, s.Temp, s.Pumping, s.Burning);
 
         // What it should look like to work: the colours, not the numbers.
         ImGui.Spacing();
@@ -138,6 +144,36 @@ public sealed partial class VillageGame
             ImGui.SameLine(0, 14);
             TextC(Theme.Bad, "It's throwing sparks: it's burning!");
         }
+        EndWork();
+    }
+
+    /// <summary>Ore on the coals, run down to a bloom: keep the fire orange with the bellows, and draw it out when it's grown.</summary>
+    private void DrawBloom(BloomSession s)
+    {
+        BeginWork(s.Title, ("F", "hold to work the bellows"), ("Space", "draw the bloom out"), ("Esc", "leave it"));
+        DrawHearth(s.Fire, s.Temp, s.Pumping, s.TooHot);
+
+        // The band to hold it in, as colours; how the bloom looks, in words.
+        ImGui.Spacing();
+        ImGui.AlignTextToFramePadding();
+        TextC(Theme.Dim, "Keep it");
+        ImGui.SameLine(0, 6);
+        Swatch((s.Lo + s.SlagAt) * 0.5f);
+        ImGui.SameLine(0, 6);
+        TextC(Theme.Dim, "not");
+        ImGui.SameLine(0, 6);
+        Swatch(s.SlagAt + 40f);
+        if (s.TooHot)
+        {
+            ImGui.SameLine(0, 14);
+            TextC(Theme.Bad, "Too hot: the iron's running off with the slag!");
+        }
+        else if (s.Temp < s.Lo)
+        {
+            ImGui.SameLine(0, 14);
+            TextC(Theme.Dim, "Not hot enough to come together.");
+        }
+        TextC(s.Grown ? Theme.Good : Theme.Dim, Cap(Smithing.BloomWords(s.Reduced)) + (s.Grown ? ": draw it out." : "."));
         EndWork();
     }
 
@@ -227,8 +263,10 @@ public sealed partial class VillageGame
         ImGui.Text(Cap(p.Label));
         ImGui.SameLine(0, 10);
         TextC(p.Hot ? Theme.Good : Theme.Dim, p.Next is { } next ? Cap(next) + "." : "");
+        if (p.Bloom is { } bloom)
+            TextC(Theme.Dim, Cap(bloom) + ".");
         if (!p.Shaped)
-            Bar(p.Mend ? "Mended" : "Shaped", p.Shape, Theme.Accent);
+            Bar(p.Mend ? "Mended" : p.Bloom != null ? "Beaten" : "Shaped", p.Shape, Theme.Accent);
         // The forge it came from: how its fire looks, and whether it wants feeding.
         if (_sim.World.IsAlive(p.Forge) && _sim.World.TryGet<Thing>(p.Forge, out var forge))
         {

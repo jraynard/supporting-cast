@@ -50,6 +50,12 @@ public sealed class RecipeDef : Def
     /// <summary>How it gets into the recipe book; null means everyone knows it from the start.</summary>
     public RecipeUnlock? Unlock { get; set; }
 
+    /// <summary>
+    /// Smelted as a bloom: a player in a round runs the ore down in the fire and beats the slag out
+    /// on the anvil (<c>Work.Smithing.BeginBloom</c>), and how well decides how many bars come of it.
+    /// </summary>
+    public bool Bloom { get; set; }
+
     [JsonIgnore] public ThingDef? StationDef { get; private set; }
 
     /// <summary>

@@ -86,6 +86,9 @@ public sealed partial class Simulation
     /// <summary>The crises a round's season sends. Off until the game enables it for a round.</summary>
     public Director.Director Director { get; }
 
+    /// <summary>The call to arms ahead of a raid, the town purse that pays for them, and the muster at the rack.</summary>
+    public Militia.MilitiaSystem Militia { get; } = new();
+
     /// <summary>Who knows the way where, and who's asked.</summary>
     public Hospitality.DirectionsSystem Directions { get; } = new();
 
@@ -241,10 +244,12 @@ public sealed partial class Simulation
             .AddSystem(new Healing.ManaSystem())
             .AddSystem(new Healing.FeverSystem(seed))
             .AddSystem(new Tinkering.CollectorSystem())
+            .AddSystem(new Shops.OreCarterSystem())
             .AddSystem(new Tinkering.RelockSystem())
             .AddSystem(sim.Expeditions)
             .AddSystem(sim.Reckoning)
             .AddSystem(sim.Director)
+            .AddSystem(sim.Militia)
             .AddSystem(sim.Repairs)
             .AddSystem(new MoodSystem())
             .AddSystem(new PrisonBreakSystem())

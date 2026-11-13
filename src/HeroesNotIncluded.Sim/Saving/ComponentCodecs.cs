@@ -168,6 +168,7 @@ internal static class ComponentCodecs
         Tag<ForPrisoners>("ForPrisoners"),
         Tag<NonViolent>("NonViolent"),
         Tag<Leaving>("Leaving"),
+        Tag<Militia.TownArms>("TownArms"),
         Tag<Escaping>("Escaping"),
         Codec("Equipment", (w, e) => w.Entity(e.Weapon), r => new Equipment { Weapon = r.Entity() }),
         Codec("Apparel", (w, a) =>
@@ -382,10 +383,15 @@ internal static class ComponentCodecs
             w.Int(p.BlowCount);
             w.Int(p.BurnSteps);
             w.Int((int)p.Flaw);
+            w.Bool(p.IsBloom);
+            w.Float(p.Reduced);
+            w.Float(p.Slag);
         }, r => new Work.WorkPiece
         {
             Forge = r.Entity(), Recipe = r.Def<RecipeDef>(), Mending = r.Entity(), Temp = r.Float(), Shape = r.Float(),
             BlowsNeeded = r.Int(), BlowSum = r.Float(), BlowCount = r.Int(), BurnSteps = r.Int(), Flaw = (Work.PieceFlaw)r.Int(),
+            // From format 13: blooms.
+            IsBloom = r.Version >= 13 && r.Bool(), Reduced = r.Version >= 13 ? Math.Clamp(r.Float(), 0f, 1f) : 0f, Slag = r.Version >= 13 ? Math.Clamp(r.Float(), 0f, 1f) : 0f,
         }),
         Codec("StewPot", (w, p) =>
         {

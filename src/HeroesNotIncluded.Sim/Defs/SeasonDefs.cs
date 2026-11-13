@@ -71,6 +71,27 @@ public sealed class SeasonDef : Def
 
     /// <summary>Game hours a crisis runs before it's over whether the town met it or not.</summary>
     public float CrisisHours { get; set; } = 6;
+
+    /// <summary>Game hours before a raid that word of it comes in, and the town calls for arms.</summary>
+    public float RaidWarningHours { get; set; } = 5;
+
+    /// <summary>Silver the town has to pay for arms over the round (<c>Militia.MilitiaSystem</c>).</summary>
+    public int TownPurse { get; set; } = 40;
+
+    /// <summary>Silver the town pays for each new weapon hung on the muster rack.</summary>
+    public int ArmsPrice { get; set; } = 6;
+
+    /// <summary>The most weapons a call to arms asks for, however many are unarmed.</summary>
+    public int ArmsWanted { get; set; } = 6;
+
+    /// <summary>What the carter leaves at the smithy each morning from the second day: ore to smelt, and fuel.</summary>
+    public List<ThingCount> OreDelivery { get; set; } = [];
+
+    internal override void Resolve(DefDatabase db)
+    {
+        foreach (var t in OreDelivery)
+            t.Resolve(db);
+    }
 }
 
 /// <summary>What sort of trouble the Director sends.</summary>

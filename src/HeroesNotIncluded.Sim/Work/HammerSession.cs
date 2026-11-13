@@ -156,7 +156,9 @@ public sealed class HammerSession : WorkSession
             sim.Messages.Add(MessageKind.Info, $"The {ItemLabel} has gone {Smithing.GlowLabel(Smithing.GlowOf(Temp))}: back to the fire.", cell);
             return;
         }
-        if (p.IsMend)
+        if (p.IsBloom)
+            Smithing.CompleteBloom(sim, Worker, p);
+        else if (p.IsMend)
             Smithing.Mend(sim, Worker, p);
         else if (!Smithing.NeedsQuench(p.Recipe))
             Smithing.Complete(sim, Worker, p, null);

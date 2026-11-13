@@ -26,6 +26,9 @@ public interface ICrisis
 /// crises <see cref="SeasonDef.Beats"/> lays out: a scare late on the first night, something worse
 /// on the second day, the dragon before the festival. Dread brings each sooner in its window and
 /// makes it stronger. Each crisis is met or not, and <see cref="Reckoning"/> hears which.
+/// Each beat's kind is settled when the round is planned, so a raid can be seen coming: some
+/// <see cref="SeasonDef.RaidWarningHours"/> ahead, word of it reaches the town (how many, from which
+/// road), the raid is fixed as told, and the town calls for arms (<see cref="Militia.MilitiaSystem"/>).
 /// Off until the game turns it on for a round (<see cref="Enable"/>), so tests and the bench stay
 /// scripted; outside a round the old <c>Storyteller</c> is the one that sends raids. Its rolls are
 /// its own stream.
@@ -38,6 +41,8 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
     private readonly SimRandom _rand = new(seed ^ 0xD1EC_7012u);
     private readonly List<long> _beatAt = [];
     private readonly List<bool> _fired = [];
+    private readonly List<CrisisKind> _kind = [];
+    private readonly List<PlannedRaid?> _planned = [];
     private readonly List<ICrisis> _active = [];
 
     /// <summary>Sending crises in rounds. Set by the game when it starts a village for a round.</summary>
@@ -47,6 +52,18 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
     public DifficultyDef? Difficulty { get; private set; }
 
     public IReadOnlyList<ICrisis> Active => _active;
+
+    /// <summary>The raid the town's been warned of and is waiting on, if any (as it was told).</summary>
+    public PlannedRaid? Coming
+    {
+        get
+        {
+            for (var i = 0; i < _planned.Count; i++)
+                if (!_fired[i] && _planned[i] is { } plan)
+                    return plan;
+            return null;
+        }
+    }
     public int Met { get; private set; }
     public int Unmet { get; private set; }
 
@@ -73,11 +90,15 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
             // in its window for a party to be in town, and comes at its end regardless.
             var heroes = Adventurers.PartySystem.Present(sim);
             for (var i = 0; i < _beatAt.Count && i < season.Beats.Count; i++)
+                if (!_fired[i] && _kind[i] == CrisisKind.Raid && _planned[i] == null
+                    && now >= Due(sim, season, i) - SimClock.HoursToTicks(season.RaidWarningHours))
+                    Warn(sim, season, i);
+            for (var i = 0; i < _beatAt.Count && i < season.Beats.Count; i++)
                 if (!_fired[i] && now >= Due(sim, season, i)
                     && (heroes || now >= sim.Round.TickAt(sim, season.Beats[i].Day, season.Beats[i].ToHour)))
                 {
                     _fired[i] = true;
-                    Fire(sim, season, season.Beats[i]);
+                    Fire(sim, season, i);
                 }
         }
         for (var i = 0; i < _active.Count; i++)
@@ -91,11 +112,13 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
             else
                 Unmet++;
             sim.Reckoning.CrisisResolved(sim, crisis.Kind, met);
+            if (crisis.Kind == CrisisKind.Raid)
+                sim.Militia.StandDown(sim);
             sim.Messages.Add(met ? MessageKind.Good : MessageKind.Warning, crisis.Outcome(met), null);
         }
     }
 
-    /// <summary>Each beat's moment, picked in its window at the start of the round.</summary>
+    /// <summary>Each beat's moment, picked in its window at the start of the round, and what it'll be.</summary>
     private void Plan(Simulation sim, SeasonDef season)
     {
         foreach (var beat in season.Beats)
@@ -104,7 +127,51 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
             var to = Math.Max(from, sim.Round.TickAt(sim, beat.Day, beat.ToHour));
             _beatAt.Add(from + (long)((to - from) * _rand.NextFloat()));
             _fired.Add(false);
+            _kind.Add(PickKind(beat) ?? CrisisKind.Raid);
+            _planned.Add(null);
         }
+    }
+
+    /// <summary>One of a beat's kinds, by weight; null if it has none the game can send.</summary>
+    private CrisisKind? PickKind(CrisisBeat beat)
+    {
+        var kinds = beat.Weights().Where(k => CanSend(k.Kind)).ToList();
+        if (kinds.Count == 0)
+            return null;
+        var roll = _rand.NextFloat() * kinds.Sum(k => k.Weight);
+        foreach (var (k, weight) in kinds)
+        {
+            if (roll < weight)
+                return k;
+            roll -= weight;
+        }
+        return kinds[^1].Kind;
+    }
+
+    /// <summary>A beat's strength now: its own, more with Dread.</summary>
+    private static float StrengthOf(Simulation sim, SeasonDef season, CrisisBeat beat)
+    {
+        var dread = Math.Clamp(sim.Reckoning.Dread / Math.Max(1f, season.DreadLimit), 0f, 1f);
+        return beat.Strength * (1f + 0.5f * dread);
+    }
+
+    /// <summary>
+    /// Word of a raid hours ahead: it's sized and its road picked now, and the town told so (the
+    /// count is honest), and the call goes out for arms. Raiders are bandits on the hills, so the
+    /// town's arming after this doesn't make the band any bigger.
+    /// </summary>
+    private void Warn(Simulation sim, SeasonDef season, int i)
+    {
+        var strength = StrengthOf(sim, season, season.Beats[i]);
+        var plan = RaidCrisis.Plan(sim, _rand, Difficulty, strength);
+        _planned[i] = plan;
+        var due = Due(sim, season, i);
+        var hour = (int)(((due + sim.Clock.StartHour * (long)SimClock.TicksPerHour) % SimClock.TicksPerDay) / SimClock.TicksPerHour);
+        var when = hour >= 18 || hour < 5 ? "tonight" : hour >= 12 ? "by evening" : "before noon";
+        var many = plan.Kinds.Count == 1 ? "one of them" : plan.Kinds.Count <= 3 ? $"{plan.Kinds.Count} of them" : $"{plan.Kinds.Count} or so";
+        sim.Messages.Add(MessageKind.Danger,
+            $"A shepherd runs in from the {Combat.Raids.SideName(plan.Side)} road: bandits camped in the hills, {many}. They'll come {when}.", null);
+        sim.Militia.Call(sim, when);
     }
 
     /// <summary>When a beat is due: its planned moment, pulled toward the start of its window by Dread.</summary>
@@ -115,24 +182,21 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
         return _beatAt[i] - (long)((_beatAt[i] - from) * dread);
     }
 
-    private void Fire(Simulation sim, SeasonDef season, CrisisBeat beat)
+    private void Fire(Simulation sim, SeasonDef season, int i)
     {
-        var kinds = beat.Weights().Where(k => CanSend(k.Kind)).ToList();
-        if (kinds.Count == 0)
+        var beat = season.Beats[i];
+        if (beat.Weights().All(k => !CanSend(k.Kind)))
             return;
-        var roll = _rand.NextFloat() * kinds.Sum(k => k.Weight);
-        var kind = kinds[^1].Kind;
-        foreach (var (k, weight) in kinds)
+        if (_kind[i] == CrisisKind.Raid && _planned[i] is { } plan)
         {
-            if (roll < weight)
-            {
-                kind = k;
-                break;
-            }
-            roll -= weight;
+            var raid = RaidCrisis.Begin(sim, _rand, plan);
+            if (raid != null)
+                _active.Add(raid);
+            else
+                sim.Militia.StandDown(sim);
+            return;
         }
-        var dread = Math.Clamp(sim.Reckoning.Dread / Math.Max(1f, season.DreadLimit), 0f, 1f);
-        Send(sim, kind, beat.Strength * (1f + 0.5f * dread));
+        Send(sim, _kind[i], StrengthOf(sim, season, beat));
     }
 
     /// <summary>Send a crisis now (the beats, tests and the debug panel). Null if it couldn't come.</summary>
@@ -163,6 +227,9 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
         {
             w.Long(_beatAt[i]);
             w.Bool(_fired[i]);
+            w.Int((int)_kind[i]);
+            w.Bool(_planned[i] != null);
+            _planned[i]?.Save(w);
         }
         w.Int(Met);
         w.Int(Unmet);
@@ -181,11 +248,28 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
         Difficulty = r.DefOrNull<DifficultyDef>();
         _beatAt.Clear();
         _fired.Clear();
+        _kind.Clear();
+        _planned.Clear();
         for (var n = r.Count(1000); n > 0; n--)
         {
             _beatAt.Add(r.Long());
             _fired.Add(r.Bool());
+            // From format 13 each beat's kind is settled when it's planned (and a raid when it's warned of).
+            if (r.Version >= 13)
+            {
+                var kind = r.Int();
+                _kind.Add(Enum.IsDefined((CrisisKind)kind) ? (CrisisKind)kind : CrisisKind.Raid);
+                _planned.Add(r.Bool() ? PlannedRaid.Read(r) : null);
+            }
+            else
+            {
+                _kind.Add(CrisisKind.Raid);
+                _planned.Add(null);
+            }
         }
+        if (r.Version < 13)
+            for (var i = 0; i < _kind.Count && i < sim.Defs.Season.Beats.Count; i++)
+                _kind[i] = PickKind(sim.Defs.Season.Beats[i]) ?? CrisisKind.Raid;
         Met = r.Int();
         Unmet = r.Int();
         _active.Clear();

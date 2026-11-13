@@ -62,7 +62,8 @@ public static class Raids
             if (c.Def.Race == Race.Human)
             {
                 points += 20f;
-                if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon))
+                // The town's own arms (Militia) are handed out after the band is sized: they don't count.
+                if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon) && !w.Has<Militia.TownArms>(eq.Weapon))
                     points += 15f;
             }
             else if (c.Def.Race == Race.Dragon)
@@ -106,18 +107,8 @@ public static class Raids
     /// </summary>
     public static List<Entity> Send(Simulation sim, SimRandom rand, float points, int maxRaiders)
     {
-        var w = sim.World;
-        var villagers = sim.Creatures().Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human }).ToList();
-        if (villagers.Count == 0)
+        if (VillageTarget(sim) is not { } target)
             return [];
-        var sum = new float3();
-        foreach (var e in villagers)
-            sum += Position.CenterOf(w.Get<Position>(e).Cell);
-        var mid = sum * (1f / villagers.Count);
-        var target = villagers
-            .Select(e => w.Get<Position>(e).Cell)
-            .MinBy(c => (Position.CenterOf(c) - mid) is var d ? d.X * d.X + d.Y * d.Y : 0);
-
         var first = rand.NextInt(4);
         int3? entry = null;
         for (var i = 0; i < 4 && entry == null; i++)
@@ -132,6 +123,52 @@ public static class Raids
         sim.Messages.Add(MessageKind.Danger, $"{who} coming from the {Direction(sim.Map, at)}!", at);
         return raiders;
     }
+
+    /// <summary>
+    /// A raid warned of: these raiders, by the road on <paramref name="side"/> (or the next side
+    /// round if that's no way in now), for whoever is nearest the middle of the village.
+    /// </summary>
+    public static List<Entity> SendPlanned(Simulation sim, SimRandom rand, IReadOnlyList<RaiderKindDef> kinds, int side)
+    {
+        if (kinds.Count == 0 || VillageTarget(sim) is not { } target)
+            return [];
+        int3? entry = null;
+        for (var i = 0; i < 4 && entry == null; i++)
+            entry = EdgeEntry(sim, (side + i) % 4, target);
+        if (entry is not { } at)
+            return [];
+        var raiders = Spawn(sim, kinds, at, target, rand);
+        if (raiders.Count == 0)
+            return raiders;
+        var who = raiders.Count == 1 ? "A bandit is" : $"{raiders.Count} bandits are";
+        sim.Messages.Add(MessageKind.Danger, $"{who} coming from the {Direction(sim.Map, at)}!", at);
+        return raiders;
+    }
+
+    /// <summary>The village human nearest the middle of them all; null if there's none.</summary>
+    private static int3? VillageTarget(Simulation sim)
+    {
+        var w = sim.World;
+        var villagers = sim.Creatures().Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human }).ToList();
+        if (villagers.Count == 0)
+            return null;
+        var sum = new float3();
+        foreach (var e in villagers)
+            sum += Position.CenterOf(w.Get<Position>(e).Cell);
+        var mid = sum * (1f / villagers.Count);
+        return villagers
+            .Select(e => w.Get<Position>(e).Cell)
+            .MinBy(c => (Position.CenterOf(c) - mid) is var d ? d.X * d.X + d.Y * d.Y : 0);
+    }
+
+    /// <summary>The road a map side (as <see cref="EdgeEntry"/> numbers them) is.</summary>
+    public static string SideName(int side) => side switch
+    {
+        0 => "west",
+        1 => "east",
+        2 => "south",
+        _ => "north",
+    };
 
     public static List<int3> GatherSpots(Simulation sim, int3 entry, int3 target, int count)
     {

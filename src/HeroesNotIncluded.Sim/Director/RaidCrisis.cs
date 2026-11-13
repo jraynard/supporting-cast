@@ -21,10 +21,25 @@ public sealed class RaidCrisis : ICrisis
     private readonly List<Entity> _raiders = [];
     public IReadOnlyList<Entity> Raiders => _raiders;
 
-    internal static RaidCrisis? Begin(Simulation sim, SimRandom rand, DifficultyDef? difficulty, float strength)
+    internal static RaidCrisis? Begin(Simulation sim, SimRandom rand, DifficultyDef? difficulty, float strength) =>
+        Start(sim, rand, Raids.Send(sim, rand, PointsFor(sim, difficulty, strength), difficulty?.MaxRaiders ?? 5), strength);
+
+    /// <summary>A raid warned of (<see cref="Plan"/>): the band and the road as the town was told.</summary>
+    internal static RaidCrisis? Begin(Simulation sim, SimRandom rand, PlannedRaid plan) =>
+        Start(sim, rand, Raids.SendPlanned(sim, rand, plan.Kinds, plan.Side), plan.Strength);
+
+    /// <summary>Size a raid and pick its road now, to be sent later as it was told.</summary>
+    internal static PlannedRaid Plan(Simulation sim, SimRandom rand, DifficultyDef? difficulty, float strength)
     {
-        var points = Raids.Points(sim) * sim.Defs.Season.RaidPointsFactor * (difficulty?.PointsFactor ?? 1f) * strength;
-        var raiders = Raids.Send(sim, rand, points, difficulty?.MaxRaiders ?? 5);
+        var kinds = Raids.Choose(sim, rand, PointsFor(sim, difficulty, strength), difficulty?.MaxRaiders ?? 5);
+        return new PlannedRaid(rand.NextInt(4), strength, kinds);
+    }
+
+    private static float PointsFor(Simulation sim, DifficultyDef? difficulty, float strength) =>
+        Raids.Points(sim) * sim.Defs.Season.RaidPointsFactor * (difficulty?.PointsFactor ?? 1f) * strength;
+
+    private static RaidCrisis? Start(Simulation sim, SimRandom rand, List<Entity> raiders, float strength)
+    {
         if (raiders.Count == 0)
             return null;
         var crisis = new RaidCrisis
@@ -101,5 +116,28 @@ public sealed class RaidCrisis : ICrisis
         for (var n = r.Count(1000); n > 0; n--)
             crisis._raiders.Add(r.Entity());
         return crisis;
+    }
+}
+
+/// <summary>A raid the town's been warned of: the road it'll come by (a map side) and the band, fixed when told.</summary>
+public sealed record PlannedRaid(int Side, float Strength, List<RaiderKindDef> Kinds)
+{
+    internal void Save(SaveWriter w)
+    {
+        w.Int(Side);
+        w.Float(Strength);
+        w.Int(Kinds.Count);
+        foreach (var k in Kinds)
+            w.Def(k);
+    }
+
+    internal static PlannedRaid Read(SaveReader r)
+    {
+        var side = Math.Clamp(r.Int(), 0, 3);
+        var strength = r.Float();
+        var kinds = new List<RaiderKindDef>();
+        for (var n = r.Count(64); n > 0; n--)
+            kinds.Add(r.Def<RaiderKindDef>());
+        return new PlannedRaid(side, strength, kinds);
     }
 }

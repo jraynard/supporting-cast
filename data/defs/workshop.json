@@ -438,7 +438,8 @@
       "products": [ { "def": "Bricks", "count": 5 } ]
     },
     {
-      "name": "SmeltIron", "label": "iron bars", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 900, "minTemp": 1100, "helpedBy": [ "Tongs" ],
+      "name": "SmeltIron", "label": "iron bars", "station": "Forge", "skill": "Crafting", "minSkill": 3, "work": 900, "minTemp": 950, "helpedBy": [ "Tongs" ],
+      "bloom": true,
       "unlock": { "discover": "handle:IronOre" },
       "ingredients": [ { "def": "IronOre", "count": 4 }, { "def": "Charcoal", "count": 2 } ],
       "products": [ { "def": "IronBar", "count": 2 } ]

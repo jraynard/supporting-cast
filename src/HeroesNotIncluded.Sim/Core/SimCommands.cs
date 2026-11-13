@@ -164,6 +164,12 @@ public sealed record TakeFromStorageCommand(Entity Avatar, Entity Item, int Coun
             return;
         if (sim.Reservations.IsReservedByOther(Item, Avatar) || !Inventory.CanReachContainer(sim, Avatar, stored.In))
             return;
+        // The town's arms come down only for the muster.
+        if (Militia.MilitiaSystem.IsRack(sim, stored.In) && !sim.Militia.Mustering)
+        {
+            sim.Messages.Add(MessageKind.Info, "The muster rack's arms are for the call to arms.", w.Get<Thing>(stored.In).Cell);
+            return;
+        }
         // One at a time unless more is asked for: a stack's not grabbed whole by accident.
         var count = Math.Clamp(Count, 1, Math.Min(w.Get<Stack>(Item).Count, w.Get<Thing>(Item).Def.StackLimit));
         if (!w.Get<Carrying>(Avatar).HasItem)

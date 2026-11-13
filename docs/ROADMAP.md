@@ -23,7 +23,17 @@ raid size), the dragon's toughness, the night speed and the need rates.
 
 ### SOUND
 
-- we need to add audio feedback to just about every part of the game. i also need to work on a theme song or at least the start of one or something.
+- we need to add audio feedback to just about every part of the game. i also need to work on a theme song or at least the start of one or something. 
+
+### SAVED CHARACTERS
+- multiplayer may have carried over but we should unify this between single and multi even and give its own menu option for managing your roster. character customization will be a focus,
+
+### Progression systems
+- ways to improve your characters... rpg like systems, and, more importantly haha, cosmetic options. Glamour is the true end game! this should be tied to your saved character.
+- if you master a trade you get a cool outfit and title related to that trade
+
+### Death and ghosts
+- need to move this up most likely as people can and should die when the dragon attacks, or other dangers added in the crisis system.
 
 ### M4: Whispers
 - Allegiance, objectives, the hidden shop, evidence, player violence, Constable and jail, the bell,
@@ -49,11 +59,12 @@ Grouped by area; nothing here blocks a playtest.
   - the Renown target and the Dread rates;
   - the weights of the day-two crises (equal for now);
   - raid size;
+  - the raid warning's lead, the town purse and the price of arms, the carter's load;
   - Difficulty doesn't scale the target or the limit yet.
 - The dragon: likely too easy with a party in town, and impossible without one.
 - Night speed and the need rates.
 - Every mini-game's timing, none of it tuned in play yet:
-  - **Forge:** the heat and quench windows.
+  - **Forge:** the heat and quench windows; the bloom's band, how long it takes and its yield.
   - **Kitchen:** the pot, the seasoning.
   - **Bar:** washing up, tapping a keg, mixing.
   - **Healing:** the draw feels, the heartbeat window, the wrap band; the labyrinth's size,
@@ -69,7 +80,11 @@ Grouped by area; nothing here blocks a playtest.
   - molds, and the hilt and grip as their own step;
   - lighting and banking the forge by hand;
   - reforging;
-  - AI smiths still forge with a plain `CraftJob`.
+  - AI smiths still forge and smelt with a plain `CraftJob`, and don't answer a call to arms
+    (bots do);
+  - the town purse is a number, not coin in a strongbox: it wants the Mayor;
+  - villagers keep the town's arms after a muster, and nobody hangs them back on the rack;
+  - only iron is smelted by hand; copper, tin and the Kiln aren't in Millbrook.
 - **Innkeeper and cook:**
   - the AI innkeeper doesn't mix (asked for a named drink, it pours an ale);
   - casks don't refill and there's no brewing;

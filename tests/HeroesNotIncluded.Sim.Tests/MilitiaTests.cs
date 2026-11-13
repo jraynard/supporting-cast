@@ -1,0 +1,184 @@
+using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Director;
+using HeroesNotIncluded.Sim.Militia;
+using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Shops;
+using HeroesNotIncluded.Sim.Systems;
+
+namespace HeroesNotIncluded.Sim.Tests;
+
+/// <summary>Word of a raid ahead of it, the call to arms, the town purse and the muster rack.</summary>
+public class MilitiaTests
+{
+    private static Simulation Round(bool director = true)
+    {
+        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
+        sim.Presets.PresetMode = true;
+        VillageRound.Setup(sim);
+        if (director)
+            sim.Director.Enable(sim.Defs.Difficulty("Normal"));
+        sim.Round.OpenLobby();
+        sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default, []));
+        sim.ApplyNow(new StartRoundCommand());
+        sim.TickMany(SimClock.TicksPerHour / 4); // the beats are planned, the purse filled
+        return sim;
+    }
+
+    private static Entity Rack(Simulation sim) => sim.World.Query<Thing>().Single(e => MilitiaSystem.IsRack(sim, e));
+
+    private static Entity Me(Simulation sim) => sim.World.Query<Avatar>().Single();
+
+    private static Entity Spear(Simulation sim, Entity maker)
+    {
+        var spear = sim.CreateItem(sim.Defs.Thing("IronSpear"), 1);
+        sim.World.Add(spear, new Crafted { Quality = Quality.Plain, Maker = maker });
+        return spear;
+    }
+
+    private static List<Entity> Raiders(Simulation sim) =>
+        sim.Creatures().Where(e => sim.World.Get<Creature>(e) is { Faction: Faction.Raider, Dead: false }).ToList();
+
+    private static bool Armed(Simulation sim, Entity e) => sim.World.TryGet<Equipment>(e, out var eq) && sim.World.IsAlive(eq.Weapon);
+
+    [Fact]
+    public void WordOfTheFirstRaidComesHoursAheadAndItComesAsTold()
+    {
+        var sim = Round();
+        var beat = sim.Defs.Season.Beats[0];
+        var hours = sim.Defs.Season.RaidWarningHours;
+        sim.Clock.Tick = sim.Round.TickAt(sim, beat.Day, beat.FromHour - hours - 1);
+        while (sim.Director.Coming == null && sim.Clock.Tick < sim.Round.TickAt(sim, beat.Day, beat.ToHour))
+            sim.TickMany(SimClock.TicksPerHour / 6);
+        var plan = Assert.IsType<PlannedRaid>(sim.Director.Coming);
+        var warned = sim.Clock.Tick;
+        Assert.Contains(sim.Messages.Messages, m => m.Text.StartsWith("A shepherd runs in") && m.Text.Contains(Raids.SideName(plan.Side)));
+        Assert.True(sim.Militia.Open);
+        Assert.Empty(Raiders(sim));
+
+        // It keeps through a save.
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        Assert.Equal(plan.Kinds.Select(k => k.Name), loaded.Director.Coming!.Kinds.Select(k => k.Name));
+        Assert.True(loaded.Militia.Open);
+        Assert.Equal(sim.Militia.Wanted, loaded.Militia.Wanted);
+        sim = loaded;
+
+        while (sim.Director.Active.Count == 0 && sim.Clock.Tick < sim.Round.TickAt(sim, beat.Day, beat.ToHour) + SimClock.TicksPerHour)
+            sim.TickMany(SimClock.TicksPerHour / 6);
+        var raid = Assert.IsType<RaidCrisis>(Assert.Single(sim.Director.Active));
+        Assert.True(sim.Clock.Tick - warned >= SimClock.HoursToTicks(hours) - SimClock.TicksPerHour / 3, "the warning came hours ahead");
+        Assert.Equal(plan.Kinds.Count, raid.Raiders.Count);
+
+        // Over, and the muster stands down.
+        foreach (var e in raid.Raiders)
+            NeedsSystem.Kill(sim, e, ref sim.World.Get<Creature>(e));
+        sim.TickMany(SimClock.TicksPerHour / 6 + 1);
+        Assert.Empty(sim.Director.Active);
+        Assert.False(sim.Militia.Open);
+    }
+
+    [Fact]
+    public void TheTownPaysOnceForEachNewWeaponWhileItWantsThem()
+    {
+        var sim = Round(director: false);
+        var me = Me(sim);
+        var rack = Rack(sim);
+        sim.Militia.Call(sim, "tonight");
+        var wanted = sim.Militia.Wanted;
+        Assert.True(wanted >= 2, $"{wanted} wanted");
+        var price = sim.Defs.Season.ArmsPrice;
+        var purse = sim.Militia.Coffer;
+        var silver = Coin.Count(sim, me);
+
+        // Hung on the rack from the pack (the work key does the same from the hands).
+        sim.World.Get<Position>(me).Cell = sim.SpiralFrom(sim.World.Get<Thing>(rack).Cell, 2)
+            .First(c => sim.Map.Passable(c) && AvatarSystem.InReach(c, sim.World.Get<Thing>(rack).Cell));
+        var spear = Spear(sim, me);
+        Inventory.Stow(sim, me, spear);
+        sim.ApplyNow(new StoreFromPackCommand(me, rack, spear));
+        Assert.Equal(rack, sim.World.Get<Stored>(spear).In);
+        Assert.True(sim.World.Has<TownArms>(spear));
+        Assert.Equal(silver + price, Coin.Count(sim, me));
+        Assert.Equal(purse - price, sim.Militia.Coffer);
+
+        // Taken down (it's a muster) and hung up again: nothing more.
+        sim.ApplyNow(new TakeFromStorageCommand(me, spear));
+        Assert.False(sim.World.Has<Stored>(spear));
+        Inventory.Stow(sim, me, sim.World.Get<Carrying>(me).Item == spear ? Inventory.TakeFromPerson(sim, me, spear, 1) : spear);
+        sim.ApplyNow(new StoreFromPackCommand(me, rack, spear));
+        Assert.Equal(silver + price, Coin.Count(sim, me));
+
+        // Nothing for what nobody made, and nothing that isn't a weapon goes on.
+        var found = sim.CreateItem(sim.Defs.Thing("IronSpear"), 1);
+        sim.Militia.Racked(sim, me, found);
+        Assert.Equal(silver + price, Coin.Count(sim, me));
+        Assert.Equal(0, sim.ContainerRoom(rack, sim.Defs.Thing("IronBar"), null));
+
+        // No more than it asked for.
+        for (var i = 0; i < wanted + 2; i++)
+            sim.Militia.Racked(sim, me, Spear(sim, me));
+        Assert.Equal(silver + price * wanted, Coin.Count(sim, me));
+        Assert.False(sim.Militia.Paying);
+    }
+
+    [Fact]
+    public void TheRacksArmsAreLeftAloneTillTheMusterThenTheUnarmedTakeThem()
+    {
+        var sim = Round(director: false);
+        var rack = Rack(sim);
+        var spears = Enumerable.Range(0, 2).Select(_ => Spear(sim, Entity.Null)).ToList();
+        foreach (var s in spears)
+        {
+            Assert.True(sim.Store(rack, s).IsNull);
+            sim.World.Add(s, new TownArms());
+        }
+        sim.TickMany(SimClock.TicksPerHour * 2);
+        Assert.All(spears, s => Assert.Equal(rack, sim.World.Get<Stored>(s).In));
+
+        // Nor can a player lift one outside a muster.
+        var me = Me(sim);
+        sim.World.Get<Position>(me).Cell = sim.SpiralFrom(sim.World.Get<Thing>(rack).Cell, 2)
+            .First(c => sim.Map.Passable(c) && AvatarSystem.InReach(c, sim.World.Get<Thing>(rack).Cell));
+        sim.ApplyNow(new TakeFromStorageCommand(me, spears[0]));
+        Assert.True(sim.World.Has<Stored>(spears[0]));
+
+        sim.Militia.Call(sim, "tonight");
+        for (var h = 0; h < 6 && spears.Any(s => sim.World.Has<Stored>(s)); h++)
+            sim.TickMany(SimClock.TicksPerHour);
+        var w = sim.World;
+        Assert.All(spears, s => Assert.Contains(sim.Creatures(), e => !w.Has<Avatar>(e) && w.TryGet<Equipment>(e, out var eq) && eq.Weapon == s));
+    }
+
+    [Fact]
+    public void TheTownsOwnArmsDontSwellTheNextRaid()
+    {
+        var sim = Round(director: false);
+        var w = sim.World;
+        var villager = sim.Creatures().First(e => !w.Has<Avatar>(e) && w.Get<Creature>(e).Faction == Faction.Village && !Armed(sim, e));
+        var before = Raids.Points(sim);
+        var town = Spear(sim, Entity.Null);
+        w.Add(town, new TownArms());
+        sim.EquipItem(villager, town);
+        Assert.Equal(before, Raids.Points(sim));
+        sim.EquipItem(villager, Spear(sim, Entity.Null));
+        Assert.Equal(before + 15f, Raids.Points(sim));
+    }
+
+    [Fact]
+    public void AVillagerFetchesAWeaponKeptInAChest()
+    {
+        var sim = Round(director: false);
+        var w = sim.World;
+        // The smithy chest: a solid cell, reached from beside it.
+        var chest = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "Chest" && Buildings.Of(sim, e) is { IsNull: false } b
+            && w.Get<PresetBuilding>(b).Def.Name == "Smithy");
+        var spear = Spear(sim, Entity.Null);
+        Assert.True(sim.Store(chest, spear).IsNull);
+        for (var h = 0; h < 8 && w.Has<Stored>(spear); h++)
+            sim.TickMany(SimClock.TicksPerHour);
+        Assert.Contains(sim.Creatures(), e => w.TryGet<Equipment>(e, out var eq) && eq.Weapon == spear);
+    }
+}

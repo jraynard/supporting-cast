@@ -189,7 +189,7 @@ public class PresetBuildingTests
         var sim = World();
         var b = Buildings.SpawnFinished(sim, Plan(sim, "Smithy"), C(12, 12), 0);
         var parts = Buildings.Parts(sim, b).Select(p => sim.World.Get<Thing>(p).Def.Name).ToList();
-        foreach (var name in new[] { "Forge", "Anvil", "QuenchTub", "Grindstone", "ToolRack", "FuelBin" })
+        foreach (var name in new[] { "Forge", "Anvil", "QuenchTub", "Grindstone", "ToolRack", "FuelBin", "Chest" })
             Assert.Contains(name, parts);
         var forge = Buildings.Parts(sim, b).First(p => sim.World.Get<Thing>(p).Def.Name == "Forge");
         Assert.Same(sim.Thing("Bellows").Building!.Bellows, Crafting.BellowsOf(sim, forge));
@@ -202,13 +202,14 @@ public class PresetBuildingTests
         var b = Buildings.SpawnFinished(sim, Plan(sim, "Smithy"), C(12, 12), 0);
         var state = sim.World.Get<PresetBuilding>(b);
         var chest = sim.Thing("Chest");
+        // One chest comes with it (where the carter leaves the ore); the other is a slot.
         var spots = Buildings.Slots(sim, state).Where(s => s.Slot.Accepts(chest)).ToList();
-        Assert.Equal(2, spots.Count);
-        var beside = spots[1].Cell;
+        Assert.Single(spots);
+        var beside = spots[0].Cell;
         Assert.NotNull(Buildings.PlayerProblem(sim, chest, Buildings.CellOf(sim.Map, state.Def, state.Anchor, 0, 3, 2), 0, out _)); // in front of the forge: no slot
 
         // Through the order a player gives, the chest becomes part of the smithy.
-        sim.ApplyNow(new AreaOrderCommand(AreaTool.Build, new int2(beside.X, beside.Y), new int2(beside.X, beside.Y), beside.Z, 4, chest, spots[1].Facing));
+        sim.ApplyNow(new AreaOrderCommand(AreaTool.Build, new int2(beside.X, beside.Y), new int2(beside.X, beside.Y), beside.Z, 4, chest, spots[0].Facing));
         var site = sim.Map.Structure[sim.Map.Idx(beside)];
         Assert.Equal(b, Buildings.Of(sim, site));
         var built = sim.CompleteConstruction(site);

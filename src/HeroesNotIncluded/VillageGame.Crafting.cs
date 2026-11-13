@@ -312,7 +312,14 @@ public sealed partial class VillageGame
             ImGui.Separator();
         }
 
-        var gear = thing.Def.Recipes.Where(r => Sim.Work.Smithing.Applies(_sim, _avatar, _openStation, r)).ToList();
+        // 0. Smelting: ore to bars, a bloom at a time, before there's metal to work.
+        var blooms = thing.Def.Recipes.Where(r => r.Bloom && Sim.Work.Smithing.Applies(_sim, _avatar, _openStation, r) && RecipeBooks.Knows(_sim, _avatar, r)).ToList();
+        foreach (var r in blooms)
+            DrawBloomRow(r, bench, thing.Def, has);
+        if (blooms.Count > 0)
+            ImGui.Separator();
+
+        var gear = thing.Def.Recipes.Where(r => !r.Bloom && Sim.Work.Smithing.Applies(_sim, _avatar, _openStation, r)).ToList();
         var metals = gear.GroupBy(MetalOf).OrderBy(g => g.Min(r => r.MinTemp)).ToList();
         if (_forgeMetal == null || metals.All(g => g.Key != _forgeMetal))
             // The metal you've most of to hand, among those you know how to work.
@@ -411,7 +418,7 @@ public sealed partial class VillageGame
         }
 
         // Smelting and mending, folded away unless there's something waiting.
-        var other = thing.Def.Recipes.Where(r => !gear.Contains(r)).ToList();
+        var other = thing.Def.Recipes.Where(r => !gear.Contains(r) && !blooms.Contains(r)).ToList();
         if (other.Count > 0)
         {
             ImGui.Spacing();
@@ -426,6 +433,33 @@ public sealed partial class VillageGame
         Narsil.Ui.Panel.End();
         if (!open)
             _openStation = Entity.Null;
+    }
+
+    /// <summary>A smelting recipe run as a bloom by hand: the ore to hand, what it takes, and the button.</summary>
+    private void DrawBloomRow(RecipeDef r, Workbench bench, ThingDef station, Func<ThingCount, int> has)
+    {
+        var ore = r.Ingredients[0];
+        var blocker = RecipeBlocker(_avatar, _openStation, r);
+        var mine = bench.Active == r && (bench.By == _avatar || bench.By.IsNull);
+        var busy = !bench.Untouched && (bench.By != _avatar || bench.Active == null) && !mine;
+        var stocked = r.Ingredients.TrueForAll(x => has(x) >= x.Count) || (mine && bench.Stocked);
+        TextC(Dim, "Smelt");
+        ImGui.Text($"{Cap(r.Label)} from {ore.ThingDef.Label}");
+        foreach (var x in r.Ingredients)
+            TextC(has(x) >= x.Count || (mine && bench.Stocked) ? Good : Bad, $"{Math.Min(has(x), x.Count)}/{x.Count} {x.ThingDef.Label}  ({has(x)} to hand)");
+        Wrapped("Keep the fire orange while the bloom comes together, then beat the slag out on the anvil. A good bloom gives a bar more; too hot and the iron runs to slag.");
+        var enabled = blocker == null && !busy;
+        if (!enabled)
+            ImGui.BeginDisabled(true);
+        if (ImGui.Button($"{(stocked ? "Smelt a bloom" : "Bring what I have")}###bloom{r.Name}", in _autoSize))
+            Issue(new CraftCommand(_avatar, _openStation, r));
+        if (!enabled)
+            ImGui.EndDisabled();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            Tip(blocker != null ? $"You can't yet: {blocker}."
+                : busy ? $"The {station.Label} is busy with {bench.Active!.Label}; call that off first."
+                : stocked ? "Takes the ore and charcoal from your hands, pack and any chest in reach and puts them in the forge. Then F at the fire."
+                : "Brings what you have of it to the forge; the rest can follow.");
     }
 
     /// <summary>The metal a forge recipe works (the first thing that goes in, less its "bar").</summary>

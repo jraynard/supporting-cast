@@ -13,6 +13,12 @@ public enum SmithStyle
     QuenchTooLong,
     QuenchTooShort,
     LeaveInFire,
+
+    /// <summary>A bloom blown hard all the while: yellow, and the iron runs to slag.</summary>
+    BloomTooHot,
+
+    /// <summary>A bloom drawn out as soon as it'll hold under the hammer.</summary>
+    BloomEarly,
 }
 
 /// <summary>
@@ -56,7 +62,9 @@ public sealed record SmithyKit(Entity Forge, Entity Anvil, Entity Tub, Entity Gr
                         sim.ApplyNow(new SmithCommand(me, Anvil));
                     continue;
                 }
-                var station = !hot ? Forge : !p.Shaped ? Anvil : Tub;
+                // A bloom stays in the fire till it's grown (or barely holds, for the hasty).
+                var grown = !p.IsBloom || p.Reduced >= (style == SmithStyle.BloomEarly ? Smithing.BloomMinReduced : 1f);
+                var station = !hot || !grown ? Forge : !p.Shaped ? Anvil : Tub;
                 sim.ApplyNow(new SmithCommand(me, station));
                 continue;
             }
@@ -69,6 +77,11 @@ public sealed record SmithyKit(Entity Forge, Entity Anvil, Entity Tub, Entity Gr
             bool press = false, held = false, act = false;
             switch (predictor.Session)
             {
+                case BloomSession b:
+                    // Keep it orange: blow while it's below the middle of the band and the fire isn't already past it.
+                    held = style == SmithStyle.BloomTooHot || (b.Temp < (b.Lo + b.SlagAt) * 0.5f && b.Fire < b.SlagAt);
+                    act = style == SmithStyle.BloomEarly ? b.Reduced >= Smithing.BloomMinReduced + 0.05f : b.Grown;
+                    break;
                 case HeatSession h:
                     held = true;
                     act = style != SmithStyle.LeaveInFire && h.LooksReady;

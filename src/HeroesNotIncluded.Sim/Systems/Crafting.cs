@@ -346,7 +346,9 @@ public static class Crafting
     /// <summary>A player works a stocked station: by hand where the station wants it, otherwise as an ordinary job.</summary>
     public static void WorkAt(Simulation sim, Entity avatar, Entity station, RecipeDef recipe)
     {
-        if (Work.Smithing.Applies(sim, avatar, station, recipe))
+        if (Work.Smithing.Applies(sim, avatar, station, recipe) && recipe.Bloom)
+            Work.Smithing.BeginBloom(sim, avatar, station, recipe);
+        else if (Work.Smithing.Applies(sim, avatar, station, recipe))
             Work.Smithing.BeginMaking(sim, avatar, station, recipe);
         else if (Tinkering.Tinkers.Applies(sim, avatar, station, recipe))
             Tinkering.Tinkers.WorkAt(sim, avatar, station, recipe);

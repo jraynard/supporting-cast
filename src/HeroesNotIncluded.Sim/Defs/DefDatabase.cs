@@ -274,6 +274,7 @@ public sealed class DefDatabase
         foreach (var d in AllDrawFeels) d.Resolve(this);
         foreach (var d in AllQuests) d.Resolve(this);
         foreach (var d in AllMaps) d.Resolve(this); // after blocks, things, creatures and buildings
+        foreach (var d in AllSeasons) d.Resolve(this);
         foreach (var d in AllServices)
         {
             d.Resolve(this);

@@ -224,6 +224,7 @@ public abstract class WorkSession
         {
             nameof(HammerSession) => new HammerSession(),
             nameof(HeatSession) => new HeatSession(),
+            nameof(BloomSession) => new BloomSession(),
             nameof(QuenchSession) => new QuenchSession(),
             nameof(SharpenSession) => new SharpenSession(),
             nameof(PourSession) => new PourSession(),

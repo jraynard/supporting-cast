@@ -130,6 +130,9 @@ public sealed partial class VillageGame
             case HeatSession heat:
                 DrawHeat(heat);
                 return;
+            case BloomSession bloom:
+                DrawBloom(bloom);
+                return;
             case QuenchSession quench:
                 DrawQuench(quench);
                 return;

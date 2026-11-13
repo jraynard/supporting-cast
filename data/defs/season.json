@@ -34,6 +34,15 @@
       "raidPointsFactor": 0.4,
       "raidBreaksBridge": 0.6,
       "dreadPerBreachHour": 0.5,
+      // Word of a raid comes this many game hours ahead (Director/Director.cs), and the town calls
+      // for arms (Militia/Militia.cs): it pays armsPrice silver from townPurse for each new weapon
+      // hung on the muster rack, as many as it has unarmed folk (up to armsWanted).
+      "raidWarningHours": 5,
+      "townPurse": 40,
+      "armsPrice": 6,
+      "armsWanted": 6,
+      // What the carter leaves at the smithy each morning from the second day (Shops/Deliveries.cs).
+      "oreDelivery": [ { "def": "IronOre", "count": 12 }, { "def": "Charcoal", "count": 10 }, { "def": "Wood", "count": 4 } ],
       "beats": [
         { "day": 1, "fromHour": 20, "toHour": 23, "strength": 0.5, "kinds": { "Raid": 1 } },
         { "day": 2, "fromHour": 10, "toHour": 17, "strength": 1, "kinds": { "Raid": 3, "Fire": 2, "Shortage": 2, "Plague": 2 } },

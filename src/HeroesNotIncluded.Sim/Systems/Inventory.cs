@@ -254,8 +254,14 @@ public static class Inventory
             return;
         var t = w.Get<Thing>(item);
         var room = Math.Min(sim.ContainerRoom(container, t.Def, t.Material), w.Get<Stack>(item).Count);
-        if (room > 0 && !sim.Store(container, sim.TakeFromStack(item, room)).IsNull)
+        if (room <= 0)
+            return;
+        var moved = sim.TakeFromStack(item, room);
+        if (!sim.Store(container, moved).IsNull)
             throw new InvalidOperationException("room was counted, so it must fit");
+        // A weapon hung on the muster rack: the town may pay for it.
+        if (w.IsAlive(moved) && Militia.MilitiaSystem.IsRack(sim, container))
+            sim.Militia.Racked(sim, creature, moved);
     }
 
     /// <summary>

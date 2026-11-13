@@ -251,11 +251,11 @@ public class WorkTests
     }
 
     [Fact]
-    public void OnlyGearIsHammered()
+    public void GearIsHammeredAndIronSmeltedByHand()
     {
         var (sim, me, forge, _) = AtTheForge();
         Assert.True(Smithing.Applies(sim, me, forge, sim.Defs.Recipe("ForgeAxe")));
-        Assert.False(Smithing.Applies(sim, me, forge, sim.Defs.Recipe("SmeltIron")));
+        Assert.True(Smithing.Applies(sim, me, forge, sim.Defs.Recipe("SmeltIron"))); // smelted by hand, as a bloom
     }
 
     [Fact]

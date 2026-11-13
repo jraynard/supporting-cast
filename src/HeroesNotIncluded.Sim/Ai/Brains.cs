@@ -250,6 +250,10 @@ public sealed class HumanBrain : IBrain
             && Defence.Respond(sim, pawn, foe) is { } defend)
             return defend;
 
+        // 1b. A call to arms: the unarmed take a weapon from the muster rack before the raid comes.
+        if (creature.Faction == Faction.Village && Militia.Muster.ArmFromRack(sim, pawn) is { } arm)
+            return arm;
+
         // 2. Urgent needs. 
         if (needs.Get(food) < food.UrgentBelow && EatSomething(sim, pawn, def) is { } eat)
             return eat;

@@ -92,7 +92,20 @@ Ideas for depth, to build when each trade's milestone comes round.
   - **The edge:** edged pieces come out blunt, for the grindstone.
   - **Flaws:** they don't show; they tell in use (`Flawed`, `WeaponWear.Struck`), the hook for
     the hidden-flaw betrayal.
-  - **The smithy:** an anvil, a quench tub, a grindstone, bellows, a tool rack and a fuel bin.
+  - **The smithy:** an anvil, a quench tub, a grindstone, bellows, a tool rack, a fuel bin and
+    the chest the ore comes in.
+- *Built: smelting a bloom* (`Work/BloomSession`). The smith starts a round with two bars and a
+  chest of iron ore; a carter brings more each morning (`Shops/Deliveries`). Ore and charcoal go
+  in the forge, and the bellows keep the fire orange while the bloom comes together: let it sink
+  and it stalls, blow it yellow and the iron runs to slag. Then the slag is beaten out on the
+  anvil. A fat, clean, well-beaten bloom gives three bars, a poor one one or none. It's shown as
+  colour and words, never a number.
+- *Built: the call to arms* (`Militia/`). Some hours before a raid a shepherd brings word: how
+  many, by which road, and when (the raid is then fixed as told). The town calls for weapons for
+  its unarmed folk and pays the smith from a town purse for each new one hung on the muster rack
+  by the well. While the call is out the town musters: villagers without a weapon take one from
+  the rack (players by hand), and the armed fight when the raiders come. The rack is left alone
+  otherwise. The town's arms don't count toward a raid's size.
 - Running the forge is play in its own right: the bellows are, so far. Still to come: lighting
   and banking it by hand. It lights itself for the work now, and the smith feeds it from the bin.
 - Repair starts from what's actually wrong with the piece. A dull edge goes to the sharpening

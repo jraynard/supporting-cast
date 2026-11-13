@@ -34,7 +34,7 @@ GROUND_LEGEND = {"g": "Grass", "d": "Dirt", "r": "Road", "t": "TilledSoil", "k":
 FEATURE_LEGEND = {
     "O": "Oak", "P": "Pine", "B": "Birch", "b": "BerryBush", "o": "Boulder", "x": "WildFlax",
     "f": "Fence", "G": "Gate!", "c": "CabbagePlant", "W": "Well", "N": "NoticeBoard", "=": "StoneBridge@2",
-    "u": "Barrel", "X": "Crate", "C": "Wagon", "/": "Slope",
+    "u": "Barrel", "X": "Crate", "C": "Wagon", "/": "Slope", "R": "WeaponRack",
 }
 
 ground = [["g"] * N for _ in range(N)]
@@ -234,6 +234,13 @@ for x, y in [(46, 43), (46, 44), (47, 43), (40, 43)]:             # the notice b
         break
 else:
     raise SystemExit("no room for the notice board by the well")
+for x, y in [(44, 43), (44, 44), (46, 45), (45, 45), (42, 43), (46, 42)]:   # the muster rack, by them both
+    if not reserved[y][x] and level[y][x] == TOWN and feature[y][x] == "." and ground[y][x] not in "wk~":
+        feature[y][x] = "R"
+        reserved[y][x] = True
+        break
+else:
+    raise SystemExit("no room for the muster rack by the well")
 # Carts are 3 cells long and 2 wide (the Wagon def's size, facing 0: x-1..x+1, y..y+1): placed only
 # where the whole of one fits on open town ground, and kept clear of trees and props.
 CART = [(dx, dy) for dy in (0, 1) for dx in (-1, 0, 1)]

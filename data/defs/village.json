@@ -36,6 +36,19 @@
       ]
     },
     {
+      // The muster rack by the well (Militia/): weapons the town has paid for, taken down only for a call to arms.
+      "name": "WeaponRack", "label": "muster rack", "category": "Building", "solid": true, "sprite": "buildings/tool_rack",
+      "description": "A rack of spears and blades by the well. The town pays for weapons hung on it when a raid's coming, and arms itself from it.",
+      "maxHp": 120, "flammability": 0.7,
+      "building": { "outdoor": true, "work": 200, "storageStacks": 8, "cost": [ { "def": "Wood", "count": 8 } ] },
+      "model": [
+        { "min": [0.1, 0.42, 0], "max": [0.2, 0.58, 1.2], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.8, 0.42, 0], "max": [0.9, 0.58, 1.2], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.1, 0.45, 0.3], "max": [0.9, 0.55, 1.05], "top": "props/planks", "side": "props/tool_rack" },
+        { "min": [0.05, 0.38, 1.2], "max": [0.95, 0.62, 1.28], "top": "buildings/roof_shingles", "side": "props/timber_dark" }
+      ]
+    },
+    {
       "name": "Well", "label": "well", "category": "Building", "solid": true, "sprite": "buildings/well",
       "description": "A stone-ringed well with a windlass and a bucket, the middle of the village.",
       "maxHp": 400, "flammability": 0.1,

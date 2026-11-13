@@ -36,7 +36,8 @@ public readonly record struct KnownWagon(string Owner, Tinkering.WagonDamage Dam
 /// The piece in a smith's tongs as anyone in sight of it sees it: what it is, the colour it glows,
 /// and how far it's been beaten into shape (and the smith's own next step, to them). Never a flaw.
 /// </summary>
-public readonly record struct KnownPiece(string Label, Work.Glow Glow, float Temp, bool Hot, float Shape, bool Shaped, bool Mend, string? Next, Entity Forge);
+/// <remarks><see cref="Bloom"/>: a bloom's growth in words, as the smith sees it (null for a billet or a mend).</remarks>
+public readonly record struct KnownPiece(string Label, Work.Glow Glow, float Temp, bool Hot, float Shape, bool Shaped, bool Mend, string? Next, Entity Forge, string? Bloom = null);
 
 /// <summary>
 /// A stew pot as anyone looking in sees it: what went in, the surface (the heat as it shows), how
@@ -216,7 +217,8 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         // Temp is what the colour shows; the UI draws the colour from it and never prints it.
         var next = smith == viewer || Omniscient ? Work.Smithing.NextStep(sim, smith, p) : null;
         var hot = p.Temp >= Work.Smithing.Window(p.Recipe).Lo;
-        return new KnownPiece(Work.Smithing.PieceLabel(sim, p), Work.Smithing.GlowOf(p.Temp), p.Temp, hot, Math.Clamp(p.Shape, 0f, 1f), p.Shaped, p.IsMend, next, p.Forge);
+        return new KnownPiece(Work.Smithing.PieceLabel(sim, p), Work.Smithing.GlowOf(p.Temp), p.Temp, hot, Math.Clamp(p.Shape, 0f, 1f), p.Shaped, p.IsMend, next, p.Forge,
+            p.IsBloom ? Work.Smithing.BloomWords(p.Reduced) : null);
     }
 
     /// <summary>Who asked the way (and where to) within the viewer's hearing, still waiting on an answer.</summary>
