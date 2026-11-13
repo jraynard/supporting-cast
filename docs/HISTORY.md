@@ -969,3 +969,6 @@ dragon and the festival.
   the head are shaded into the hair with no outline. The turn test keeps the jaw over the neck.
 - The short curls are built of curl clumps (defined springy locks, not a lumpy mass), and the long
   curls sweep across the brow from a deep side parting, the forehead bare on the parting's side.
+- Beards after reference art: the short one is the jaw, with a clean cheek line and a notch under
+  the lip; the full one hangs to ragged points under a curled moustache. The curly bob's dark shows
+  only between its curls, not as a solid shape behind them.

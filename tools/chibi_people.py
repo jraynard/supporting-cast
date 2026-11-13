@@ -1369,28 +1369,32 @@ def bob_clumps(F, dx, front):
 
 def style_curly_bob(F):
     """Big shoulder-length curls (the reference's): a wide, airy mass widening to the jaw, built of
-    curl clumps, each its own springy lock with its sheen and spiral tip, over a dark depth; some
-    falling over the brow."""
+    curl clumps, each its own springy lock with its sheen and spiral tip; the shadowed hair shows
+    only in the gaps between them, so the silhouette is the curls' own; some fall over the brow."""
     front, back = blank(), blank()
     hy, t = F.hy, F.t
     clip = lambda m: under_volume(m, F)
-    depth = [grey(v) for v in (40, 52, 66, 80, 96)]                   # the shadowed hair between the curls
+    depth = [grey(v) for v in (40, 52, 66, 80, 96)]
+
+    def gaps(clumps):
+        """The shadowed hair between curls: within the curls' own outline, never past it."""
+        whole = union(*[c_[0] for c_ in clumps])
+        return clip(whole.filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.MinFilter(7)))
     if F.front:
         fs = F.fs * 0.5
-        base = clip(scalloped(F, t * 0.6, BOB, rmin=0.9, rmax=1.4, salt=1))
-        part(back, base, depth, HAIR_LINE, radius=2.6)
-        paint_clumps(back, [c_ for c_ in bob_clumps(F, t * 0.6, True)[:10]], clip, bias=-0.12)   # the sides, behind the shoulders
-        top = clip(both(base, rect([0, 0, 40, 13.0 + hy])))
-        shade(front, top, depth, radius=2.0)
-        paint_clumps(front, bob_clumps(F, fs * 0.6, True)[10:], clip, bias=0.04)
-        halo(front, clip(union(top, *[c_[0] for c_ in bob_clumps(F, fs * 0.6, True)[10:]])), 3.6 + hy, F.fs)
+        sides = bob_clumps(F, t * 0.6, True)[:10]
+        shade(back, gaps(sides), depth, radius=2.0)
+        paint_clumps(back, sides, clip, bias=-0.12)                     # the sides, behind the shoulders
+        rest = bob_clumps(F, fs * 0.6, True)[10:]
+        shade(front, gaps(rest), depth, radius=2.0)
+        paint_clumps(front, rest, clip, bias=0.04)
+        halo(front, clip(union(*[c_[0] for c_ in rest])), 3.6 + hy, F.fs)
         brows(front, F)
     else:
-        outline = BOB[:10] + [(28.6, 35.6), (24.0, 36.2), (20.0, 36.4), (16.0, 36.2), (11.4, 35.6)] + BOB[13:]
-        base = clip(scalloped(F, t, outline, rmin=0.9, rmax=1.4, salt=6))
-        part(front, base, depth, HAIR_LINE, radius=2.6)
-        paint_clumps(front, bob_clumps(F, t, False), clip)
-        halo(front, base, 3.6 + hy, 0)
+        allc = bob_clumps(F, t, False)
+        shade(front, gaps(allc), depth, radius=2.0)
+        paint_clumps(front, allc, clip)
+        halo(front, clip(union(*[c_[0] for c_ in allc])), 3.6 + hy, 0)
     return front, back
 
 
@@ -1895,41 +1899,76 @@ def beard_layer(F, style):
             pts = [(x, y) for y in range(bb[1], bb[3]) for x in range(bb[0], bb[2]) if ((x * 73856093) ^ (y * 19349663)) % 5 == 0]
             fine(img, pts, grey(120), jaw)
         return img
-    # Short, full or braided: the beard grows from the jaw as locks pointing down and in toward
-    # the chin (the longest at the middle), merged and lined once over a fuller base; a moustache
-    # sweeping out from under the nose, its tips turned down; strand lines following the growth.
+    # Short, full or braided, after art/reference/shortbeard.webp and fullbeard.webp. The beard is
+    # the jaw: its outer edge follows the face from the sideburns down round the chin (a little past
+    # it, roughed up along the bottom), its inner edge one clean line across each cheek from the
+    # sideburn to the moustache, a notch of skin under the lower lip. The full beard hangs well past
+    # the chin to a ragged row of points under a big moustache whose tips curl up.
     big = style in ("full", "braided")
-    length = 39.6 if big else 33.4
-    jaw = minus(both(ellipse([9.8 + d * 0.3, 16 + hy, 30.2 + d * 0.3, (length - 2.4) + hy]), rect([0, 21.6 + hy, 40, 60])),
-                ellipse([12.4 + d * 0.3, 10 + hy, 27.6 + d * 0.3, 28.6 + hy]))
-    locks = []
-    roots = ((10.6, 21.0), (11.4, 25.0), (13.0, 28.6), (15.4, 30.6), (18.0, 31.6), (20.4, 31.8), (22.8, 31.6), (25.4, 30.6), (27.4, 28.6), (28.8, 25.0), (29.6, 21.0))
-    for k, (rx, ry) in enumerate(roots):
-        pull = (20 - rx) * (0.16 if big else 0.1)                        # drawn in toward the chin
-        drop = (length - ry) * (0.55 + 0.45 * (1 - abs(rx - 20) / 10)) + (0.8 if k % 2 else 0) - (0 if big else 1.4)
-        drop = max(2.0, drop)
-        pts = [(rx + d * 0.3, ry), (rx + pull * 0.5 + d * 0.3, ry + drop * 0.5), (rx + pull + d * 0.3 + (0.4 if k % 2 else -0.3), ry + drop)]
-        locks.append(hwisp(F, [(x, y) for x, y in pts], (3.6 if big else 2.8) - (0.5 if k in (0, len(roots) - 1) else 0), 0.0, power=1.4))
-    shape = union(jaw, *[l[0] for l in locks])
+    sx = d * 0.3                                                       # the jaw shifts with a turned head
+    bottom = 41.0 if big else 33.6
+    outer = [(9.6, 18.6), (9.4, 22.0), (9.8, 25.4), (11.0, 28.4)]
+    if big:
+        outer += [(11.8, 32.0), (13.0, 36.0)]
+    else:
+        outer += [(13.0, 30.8), (15.6, 32.6)]
+    edge_pts = []                                                      # the ragged bottom, point to point across the chin
+    n = 7 if big else 9
+    x0, x1 = (13.0, 27.0) if big else (15.6, 24.4)
+    for k in range(n + 1):
+        x = x0 + (x1 - x0) * k / n
+        mid = 1 - abs(x - 20) / 10
+        y = (bottom - (1 - mid) * (6.0 if big else 1.6)) - (2.4 if big else 0.6) * (k % 2)
+        edge_pts.append((x, y))
+    right = [(40 - x, y) for x, y in reversed(outer)]
+    cheek_r = [(30.4, 18.6), (28.8, 21.6), (26.4, 24.6), (cx + 4.4 - sx, 26.4)]
+    cheek_l = [(cx - 4.4 - sx, 26.4), (13.6, 24.6), (11.2, 21.6), (9.6, 18.6)]
+    if big:
+        cheek_r = [(30.4, 18.6), (29.0, 21.0), (27.0, 23.0), (cx + 4.8 - sx, 25.0)]
+        cheek_l = [(cx - 4.8 - sx, 25.0), (13.0, 23.0), (11.0, 21.0), (9.6, 18.6)]
+    outline = [(x + sx, y + hy) for x, y in outer + edge_pts + right + cheek_r + cheek_l]
+    shape = poly(outline)
+    # the notch under the lower lip, and the mouth
+    lip = ellipse([cx - 1.9, 27.9 + hy, cx + 1.9, 29.7 + hy])
+    notch = poly([(cx - 1.2, 29.4 + hy), (cx + 1.2, 29.4 + hy), (cx + 0.7, 31.0 + hy), (cx - 0.7, 31.0 + hy)])
     stache = []
     for s_ in (-1, 1):
-        pts = [(cx + s_ * 0.3, 26.2), (cx + s_ * 2.4, 26.8), (cx + s_ * 4.2, 27.8), (cx + s_ * (5.2 if big else 4.6), 29.6 if big else 29.0)]
-        stache.append(hwisp(F, pts, 2.2 if big else 1.8, 0.0, power=1.3))
-    shape = minus(union(shape, *[l[0] for l in stache]), mouth)
-    if style == "braided":
-        spine = [(cx, length - 4.6 + hy), (cx + 0.4, length - 0.8 + hy), (cx - 0.2, length + 3.0 + hy), (cx + 0.2, length + 5.6 + hy)]
-        dutch_plait(img, spine, 3.0, 6)
-        part(img, ellipse([cx - 1.4, length + 5.4 + hy, cx + 1.4, length + 6.8 + hy]), [grey(110), grey(150), grey(196)], HAIR_LINE, radius=0.4, width=1)   # a bead
-        tuft = hwisp(F, [(cx, length + 6.6), (cx - 0.4, length + 8.2), (cx + 0.2, length + 9.4)], 2.2, 0.0)
-        part(img, tuft[0], HAIR, HAIR_LINE, radius=0.5, bias=0.05)
-    part(img, shape, HAIR, HAIR_LINE, radius=1.2, bias=-0.05)
-    hstrands(img, locks, shape, start=0.15)
+        if big:                                                        # sweeping out past the mouth, the tips curling up
+            pts = [(cx + s_ * 0.2, 26.0), (cx + s_ * 2.6, 26.4), (cx + s_ * 5.0, 27.8), (cx + s_ * 6.8, 27.6), (cx + s_ * 7.6, 26.0), (cx + s_ * 7.0, 24.8)]
+            stache.append(hwisp(F, pts, 2.8, 0.0, power=1.1))
+        else:
+            pts = [(cx + s_ * 0.2, 26.0), (cx + s_ * 2.4, 26.2), (cx + s_ * 4.2, 27.2), (cx + s_ * 4.8, 28.4)]
+            stache.append(hwisp(F, pts, 2.0, 0.0, power=1.2))
+    if big:
+        lip = ellipse([cx - 1.6, 28.6 + hy, cx + 1.6, 29.8 + hy])
+        shape = minus(shape, lip)
+        part(img, shape, HAIR, HAIR_LINE, radius=1.4, bias=-0.1)
+        sm = union(*[l[0] for l in stache])                            # the moustache its own shape over the beard
+        part(img, sm, HAIR, HAIR_LINE, radius=0.9, bias=0.18)
+        fill(img, both(lip, ellipse([cx - 1.6, 28.6 + hy, cx + 1.6, 29.2 + hy])), grey(64))   # the mouth under it
+        shape = union(shape, sm)
+    else:
+        shape = minus(union(shape, *[l[0] for l in stache]), union(lip, notch))
+        part(img, shape, HAIR, HAIR_LINE, radius=1.4, bias=-0.08)
+    # texture: short strokes down the beard, the growth's direction; a sheen on the cheeks
+    for k in range(9 if big else 6):
+        x = 12.4 + k * (15.2 / ((9 if big else 6) - 1)) + sx
+        top = 24.0 if abs(x - 20) > 4 else 30.0
+        length = (bottom - top - 2.0) * (0.55 + 0.35 * (k % 2))
+        curve(img, [(x, top + hy), (x + (20 - x) * 0.06, top + length * 0.5 + hy), (x + (20 - x) * 0.12, top + length + hy)], HAIR[1], 1, shape)
+    for s_ in (-1, 1):
+        X = lambda x: (x if s_ < 0 else 40 - x) + sx
+        curve(img, [(X(11.2), 21.0 + hy), (X(11.6), 24.0 + hy), (X(12.8), 27.0 + hy)], HAIR[4], 1, shape)
     for _, pts, w in stache:
-        curve(img, [(x, y + 0.3) for x, y in pts[1:-1]], HAIR[1], 1, shape)
-        curve(img, [(x - 0.3, y - 0.4) for x, y in pts[:2]], HAIR[4], 1, shape)
-    for side in (-1, 1):                                               # the sideburns' growth, combed down
-        x = 20 + side * 9.6 + d * 0.3
-        curve(img, [(x, 21.0 + hy), (x + side * -0.2, 24.0 + hy)], HAIR[1], 1, shape)
+        curve(img, [(x, y + 0.4) for x, y in pts[1:-1]], HAIR[1], 1, shape)
+        curve(img, [(x - 0.2, y - 0.5) for x, y in pts[:3]], HAIR[4], 1, shape)
+    if style == "braided":
+        spine = [(cx, bottom - 3.0 + hy), (cx + 0.4, bottom + 0.4 + hy), (cx - 0.2, bottom + 3.6 + hy), (cx + 0.2, bottom + 6.0 + hy)]
+        dutch_plait(img, spine, 3.0, 6)
+        part(img, ellipse([cx - 1.4, bottom + 5.8 + hy, cx + 1.4, bottom + 7.2 + hy]), [grey(110), grey(150), grey(196)], HAIR_LINE, radius=0.4, width=1)
+        tuft = hwisp(F, [(cx, bottom + 7.0), (cx - 0.4, bottom + 8.6), (cx + 0.2, bottom + 9.8)], 2.2, 0.0)
+        part(img, tuft[0], HAIR, HAIR_LINE, radius=0.5, bias=0.05)
+        part(img, both(shape, rect([0, bottom - 6 + hy, 40, 60])), HAIR, HAIR_LINE, radius=1.4, bias=-0.08)   # the beard over its root
     return img
 
 

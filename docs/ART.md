@@ -312,8 +312,11 @@ The game lifts the hair tint (`HumanLook.HairLift`) so the chosen colour sits ne
 `wave_lock`, `dutch_plait`, `coils` in chibi_people.py): a soft crown, then tapered locks of varied
 width and length merged and lined as one mass, strand lines down each (a shadow along its fold, a
 sheen at its root), strays breaking loose, curls as coils and ringlets of every size, braids woven
-strand by strand, a bun wound round itself; each with a back view of its own. Beards grow the same
-way from the jaw, with a sweeping moustache. `python3 tools/chibi_people.py --hair-preview [styles]`
+strand by strand, a bun wound round itself; each with a back view of its own. Beards follow
+`art/reference/shortbeard.webp` and `fullbeard.webp`: the beard is the jaw (its outer edge the face's,
+round the chin and a little past, roughed up along the bottom; its inner edge one clean line across each
+cheek from the sideburn to the moustache; a notch under the lip), and the full one hangs to a ragged row
+of points under a moustache of its own whose tips curl up. `python3 tools/chibi_people.py --hair-preview [styles]`
 draws every style (or those named) in four views beside its game size, then every beard, into
 `.cache/people/hair.png`. Braids hanging from the hair are drawn before it, so the hair lies over their
 roots with locks gathered into them; braids lying on the head (`dutch_plait(..., soft=True)`) are shaded
