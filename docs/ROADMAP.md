@@ -129,6 +129,7 @@ Grouped by area; nothing here blocks a playtest.
   have something of their own (keener sight at dusk, an aptitude).
 - The title's loading line shows for a frame while a village is made ready; a real loading screen
   would let it breathe, and work for joining and hosting too.
+- improve stair visuals
 
 **Map and movement**
 - Lanes cost the same to walk as grass, so villagers don't prefer them.
