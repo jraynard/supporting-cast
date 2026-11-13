@@ -5,8 +5,8 @@ namespace HeroesNotIncluded.Sim.Scenarios;
 /// <summary>
 /// Debug/screenshots (<c>--furniture-demo</c>): the wide furniture and roofs, finished, beside the
 /// landing. A walled room (roofed by its walls) holds beds and every table shape; off its east
-/// wall a porch under a built thatch roof shelters the workbenches. Pieces that don't fit the
-/// ground there are skipped.
+/// wall a porch under a built thatch roof shelters the workbenches, and past it stairs climb to a
+/// landing. Pieces that don't fit the ground there are skipped.
 /// </summary>
 public static class FurnitureShowcase
 {
@@ -24,7 +24,7 @@ public static class FurnitureShowcase
 
         // Clear the plot of trees, bushes and boulders (and anything lying there).
         for (var y = -1; y <= 8; y++)
-        for (var x = -1; x <= 11; x++)
+        for (var x = -1; x <= 15; x++)
         {
             var c = At(x, y);
             if (!sim.Map.InBounds(c))
@@ -62,6 +62,19 @@ public static class FurnitureShowcase
         Put("MasonBench", 9, 2);
         Put("TanningRack", 9, 4);
         Put("Sawhorse", 9, 6);
+
+        // A landing a level up on walls, with stairs up to it from the west and the south: how a
+        // flight reads, and how someone walks up it.
+        for (var y = 1; y <= 3; y++)
+        for (var x = 13; x <= 14; x++)
+        {
+            Put("WoodWall", x, y);
+            var floor = new int3(o.X + x, o.Y + y, o.Z + 1);
+            if (sim.CanPlaceStructure(floor, defs.Thing("WoodFloor")))
+                sim.SpawnStructure(defs.Thing("WoodFloor"), floor);
+        }
+        Put("WoodStairs", 12, 2);
+        Put("WoodStairs", 13, 4);
         sim.RebuildDerivedIfNeeded();
         return At(5, 4);
     }

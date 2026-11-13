@@ -156,6 +156,9 @@ public sealed class WorldRenderer(TextureAtlas atlas)
     {
         var p = Interp?.Smoothed(sim, e, simPos) ?? simPos;
         p = Predicted != null && e == PredictedEntity ? Predicted.DrawPos(p) : p;
+        // On a stair, on the tread under their feet (the sim has them at the floor until they step off).
+        if (Stairs.FloorAt(sim, p) is { } floor)
+            p = new float3(p.X, p.Y, floor);
         return p + new float3(0, 0, PerchLift(sim, e, p));
     }
 

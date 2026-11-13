@@ -51,9 +51,12 @@ top-left corner to the bottom-right (stairs: a stepped profile, four steps 8 px 
 ramp's sides stay open.
 
 A stair def with `steps` (`WoodStairs`, `InnStair`: 4) isn't drawn as a slope at all: the mesher
-builds that many solid steps (`WorldMesher.AddStairs`), each a box with a plank tread and sides and a
-dark riser, turned to the climb. Solid to the floor, it leaves no holes in a stairwell. Its sprite is
-then only the toolbar icon.
+builds solid steps (`WorldMesher.AddStairs`), each a box with a plank tread and riser between dark
+timber stringers, turned to the climb. Solid to the floor, it leaves no holes in a stairwell. A whole
+level in one cell is steep, so when the cell at its foot is clear the flight starts half a cell out
+into it (`Rendering/Stairs`, half as many steps again). The sim lifts a walker only as they step off
+the stair, so `WorldRenderer.DrawPos` draws them on the tread under their feet (`Stairs.FloorAt`).
+Its sprite is then only the toolbar icon.
 
 ## Materials (wood types)
 

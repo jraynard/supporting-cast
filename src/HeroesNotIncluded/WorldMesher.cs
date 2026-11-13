@@ -398,7 +398,7 @@ public sealed class WorldMesher(TextureAtlas atlas)
                         spriteName = onGround;
                 }
                 if (def.Steps > 0)
-                    AddStairs(sim, x, y, z, def.Steps, thing.Material);
+                    AddStairs(sim, x, y, z, def, thing.Material);
                 else
                     AddRamp(sim, x, y, z, spriteName);
             }
@@ -814,34 +814,28 @@ public sealed class WorldMesher(TextureAtlas atlas)
         }
     }
 
-    /// <summary>The way a ramp climbs: towards the first neighbour one level up that can be stood on.</summary>
-    private static int2 ClimbOf(Map map, int x, int y, int z)
-    {
-        foreach (var d in Map.Neighbors4)
-            if (map.InBounds(x + d.X, y + d.Y, z + 1) && map.Standable(map.Idx(x + d.X, y + d.Y, z + 1)))
-                return d;
-        return new int2(0, -1);
-    }
-
     /// <summary>
     /// A stair (<see cref="ThingDef.Steps"/>): solid steps from the floor, each a box with a plank
-    /// tread and a dark riser facing down the flight, so it's closed beneath and at its high end
-    /// (no holes in a stairwell). Built facing 0 climbing to -Y, then turned to the climb.
+    /// tread and riser and dark timber stringers at its sides, so it's closed beneath and at its
+    /// high end (no holes in a stairwell). Laid out by <see cref="Stairs.Flight"/>: when the cell at
+    /// its foot is clear, the flight starts out in it, for a gentler pitch. Built facing 0, climbing
+    /// to -Y, then turned to the climb.
     /// </summary>
-    private void AddStairs(Simulation sim, int x, int y, int z, int steps, MaterialDef? material)
+    private void AddStairs(Simulation sim, int x, int y, int z, ThingDef def, MaterialDef? material)
     {
-        var dir = ClimbOf(sim.Map, x, y, z);
+        var (dir, leads, steps) = Stairs.Flight(sim, x, y, z, def);
         var facing = 0;
         for (var f = 0; f < 4; f++)
             if (Footprint.Rotate(0, -1, f) == dir)
                 facing = f;
+        var run = leads ? 1f + Stairs.Lead : 1f;
         var boxes = new List<ModelBox>(steps);
         for (var i = 0; i < steps; i++)
             boxes.Add(new ModelBox
             {
-                Min = [0, 1f - (i + 1f) / steps, 0],
-                Max = [1, 1f - (float)i / steps, (i + 1f) / steps],
-                Top = "props/planks", Side = "props/planks", Front = "props/timber_dark",
+                Min = [0, run * (1f - (i + 1f) / steps), 0],
+                Max = [1, run * (1f - (float)i / steps), (i + 1f) / steps],
+                Top = "props/planks", Side = "props/timber_dark", Front = "props/planks",
             });
         PropModel.Build(_quads, boxes, new int3(x, y, z), facing,
             name => (S(_materials.Resolve(name, material).Sprite), _materials.Resolve(name, material).Tint),
@@ -857,7 +851,7 @@ public sealed class WorldMesher(TextureAtlas atlas)
     /// </summary>
     private void AddRamp(Simulation sim, int x, int y, int z, string spriteName)
     {
-        var dir = ClimbOf(sim.Map, x, y, z);
+        var dir = Stairs.ClimbOf(sim.Map, x, y, z);
         var center = new float3(x + 0.5f, y + 0.5f, z);
         var half = new float3(dir.X * 0.5f, dir.Y * 0.5f, 0);
         var high = center + half + new float3(0, 0, 1);
