@@ -36,7 +36,7 @@
       "stations": [ "StrawPallet", "MeditationStone" ],
       "tips": [ "The wounded come to the shrine. A bandage over a head means they want healing.",
                 "Feel their wounds over before you mend them. You'll only know them by feel.",
-                "Your gift runs on mana (G). The meditation stone brings it back." ],
+                "Your gift runs on mana (Y). The meditation stone brings it back." ],
       "kit": [ { "def": "Bandage", "count": 4 } ] },
     // The Carpenter is benched for now: building and fletching come back as a trade of its own later.
     { "name": "Tinker", "label": "tinker", "description": "Locks and clockwork: opens what adventurers drag home, fits locks and cuts keys, builds contraptions for the road, mends wagons and knows what a curio's worth.",

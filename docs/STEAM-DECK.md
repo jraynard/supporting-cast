@@ -52,7 +52,7 @@ starting from the **Keyboard (WASD) and Mouse** template:
 | B | Esc | stop, close, put the work down |
 | X | Space | the mini-game's other action |
 | Y | Tab | inventory |
-| L1 / R1 | Q / E | turn the camera |
+| L1 / R1 | Z / X | turn the camera |
 | D-pad up / down | = / − | zoom in / out |
 | D-pad left / right | [ / ] | level down / up |
 | L4 | Left Shift | held: Shift-click looks at someone |
@@ -60,7 +60,7 @@ starting from the **Keyboard (WASD) and Mouse** template:
 | L5 / R5 | J / T | shop / talk |
 | View button | H | the controls card |
 | Menu button | Esc | |
-| Left trackpad | radial menu: 1 2 3 4 5 6, K, L, G, N, Z, X | hotbar and runes, quests, log, gift, sleep, dig, drop |
+| Left trackpad | radial menu: 1 2 3 4 5 6, K, L, Y, N, C, G | hotbar and runes, quests, log, gift, sleep, dig, drop |
 
 When you walk with the stick, F acts on what's in front of you, not on the spot where the
 trackpad cursor was left. Touch the trackpad again and F goes back to what's under the pointer.

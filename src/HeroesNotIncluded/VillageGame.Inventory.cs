@@ -66,7 +66,7 @@ public sealed partial class VillageGame
         Narsil.Ui.Panel.Begin("##hotbar", Narsil.Ui.Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
         _hud.Took();
         var held = w.Get<Carrying>(_avatar).Item;
-        SlotBox("hands", held, "In hand", "Empty hands. 1–4 take a stack from your pack; X puts down what you hold.", menu: true);
+        SlotBox("hands", held, "In hand", "Empty hands. 1–4 take a stack from your pack; G puts down what you hold.", menu: true);
         if (!pack.IsNull)
         {
             var items = _sim.StoredIn(pack);

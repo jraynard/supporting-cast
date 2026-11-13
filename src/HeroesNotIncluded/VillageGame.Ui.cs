@@ -742,7 +742,7 @@ public sealed partial class VillageGame
             var drafted = mind.Drafted;
             if (w.Has<Avatar>(e))
             {
-                ImGui.TextDisabled("You (WASD to walk, hold F to work, Z to dig, X to put down, N to sleep, Tab: inventory, 1–4: pack to hand)"u8);
+                ImGui.TextDisabled("You (WASD to walk, hold F to work, C to dig, G to put down, N to sleep, Tab: inventory, 1–4: pack to hand)"u8);
                 // Lie down where you stand: in the bed there, else on the ground.
                 var site = _sim.Map.Structure[_sim.Map.Idx(w.Get<Position>(e).Cell)];
                 var inBed = !site.IsNull && w.Get<Thing>(site).Def.Building is { IsBed: true };

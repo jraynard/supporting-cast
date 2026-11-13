@@ -384,6 +384,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         HandleKeys(input);
         // WASD walks your character, not the camera: panning it here would also shift the cursor's cell.
         _cameraController.PanSpeed = HasAvatar ? 0f : _basePanSpeed * Settings.Current.CameraPanSpeed;
+        // Q is a guard and E a technique for a character: they turn the view on Z/X. Without one
+        // (god mode, the demos) Z and X are the toolbar's, and the view turns on Q/E as before.
+        (_cameraController.RotateLeftKey, _cameraController.RotateRightKey) = HasAvatar ? (GlfwKey.Z, GlfwKey.X) : (GlfwKey.Q, GlfwKey.E);
         _cameraController.Update(input, dt);
 
         UpdateHover(input.MousePosition);

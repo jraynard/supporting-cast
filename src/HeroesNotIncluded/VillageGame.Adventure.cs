@@ -83,7 +83,7 @@ public sealed partial class VillageGame
     /// Keys the avatar's controls use.
     /// the toolbar's letter hotkeys skip them in Adventure mode.
     /// </summary>
-    private static readonly GlfwKey[] AvatarKeys = [GlfwKey.W, GlfwKey.A, GlfwKey.S, GlfwKey.D, GlfwKey.F, GlfwKey.Z, GlfwKey.X, GlfwKey.N, GlfwKey.V, GlfwKey.Q];
+    private static readonly GlfwKey[] AvatarKeys = [GlfwKey.W, GlfwKey.A, GlfwKey.S, GlfwKey.D, GlfwKey.F, GlfwKey.C, GlfwKey.G, GlfwKey.N, GlfwKey.V, GlfwKey.Q, GlfwKey.Z, GlfwKey.X];
 
     private bool _sentDig;
 
@@ -198,17 +198,17 @@ public sealed partial class VillageGame
         if (input.WasKeyPressed(GlfwKey.N))
             Issue(new SleepCommand(_avatar));
 
-        // X puts down what you hold: its own key, so F never drops anything by accident.
-        if (input.WasKeyPressed(GlfwKey.X) && WorkTarget(AvatarTool.Drop) is { Kind: AvatarActionKind.PutDown } drop)
+        // G puts down what you hold: its own key, so F never drops anything by accident.
+        if (input.WasKeyPressed(GlfwKey.G) && WorkTarget(AvatarTool.Drop) is { Kind: AvatarActionKind.PutDown } drop)
             Issue(new AvatarDropCommand(_avatar, drop.Cell));
 
-        // F uses, Z digs; both work only while held. A press starts the action, a release of both stops work.
+        // F uses, C digs (not with a build tool out: C is theirs); both work only while held. A press starts the action, a release of both stops work.
         var use = input.IsKeyDown(GlfwKey.F);
         if ((_useKeyFromWork || _heavyKeyHeld) && use)
             use = false;
         else
             _useKeyFromWork = _heavyKeyHeld = false;
-        var dig = input.IsKeyDown(GlfwKey.Z);
+        var dig = input.IsKeyDown(GlfwKey.C) && _tool is not (ToolKind.Build or ToolKind.PlaceBuilding);
         if (use && !_sentWork && WorkTarget() is { OpensWindow: true } window)
             OpenWindowFor(window, toggle: true); // F again closes it
         else if (use && !_sentWork)
@@ -595,7 +595,7 @@ public sealed partial class VillageGame
     /// <summary>
     /// What F would act on: the hovered cell (or the block under the cursor, or what a wall in the
     /// way hides) if it's in reach and you haven't walked since the pointer moved, else the cell in front
-    /// of the avatar, else where it stands. Z and X look at their own cells.
+    /// of the avatar, else where it stands. Digging (C) and putting down (G) look at their own cells.
     /// </summary>
     private AvatarAction WorkTarget(AvatarTool tool = AvatarTool.Use)
     {
@@ -889,16 +889,16 @@ public sealed partial class VillageGame
             // Only hands-on work waits for the key; walking to a bed or eating just happens.
             text = mind.Job.Report;
             if (!w.Get<Avatar>(_avatar).WorkHeld && mind.Job.IsWorking(_sim.Clock.Tick))
-                (key, hold) = (mind.Job is DigJob ? "Z" : "F", true);
+                (key, hold) = (mind.Job is DigJob ? "C" : "F", true);
         }
         else if (WorkTarget() is { Kind: not AvatarActionKind.None } action)
             (key, text) = ("F", action.Label);
         else if (_tool == ToolKind.Select && !Host.Input.MouseCaptured && ClickTarget() is { Action.Kind: not AvatarActionKind.None } click)
             (key, text) = ("Click", click.Action.Label); // out of reach: a click walks over
         else if (WorkTarget(AvatarTool.Drop) is { Kind: AvatarActionKind.PutDown } drop)
-            (key, text) = ("X", drop.Label);
+            (key, text) = ("G", drop.Label);
         else if (_sim.Map.InBounds(_hoverBlock) && AvatarSystem.ActionAt(_sim, _avatar, _hoverBlock, AvatarTool.Dig) is { Kind: not AvatarActionKind.None } dig)
-            (key, text) = ("Z", dig.Label); // only when pointing at a block in reach, so it isn't offered everywhere
+            (key, text) = ("C", dig.Label); // only when pointing at a block in reach, so it isn't offered everywhere
         else if (_sim.Map.InBounds(_hoverBlock) && _sim.Map.IsSolid(_sim.Map.Idx(_hoverBlock))
                  && Mining.ShownBlock(_sim, _sim.Map.Idx(_hoverBlock)) is var rock && Mining.BreakProblem(_sim, _avatar, rock) is { } why
                  && Map.Distance(_sim.World.Get<Position>(_avatar).Cell, _hoverBlock) <= 2)
