@@ -39,7 +39,7 @@ public static class Engagement
 
     /// <summary>Ticks between <paramref name="attacker"/>'s blows at <paramref name="target"/>.</summary>
     public static int Cooldown(Simulation sim, Defs.AttackDef attack, Entity target) =>
-        sim.World.Has<Avatar>(target) ? (int)(attack.CooldownTicks * PaceOnPlayer) : attack.CooldownTicks;
+        sim.World.Has<Avatar>(target) && !attack.Ranged ? (int)(attack.CooldownTicks * PaceOnPlayer) : attack.CooldownTicks; // a bow keeps its own pace
 
     public static int Limit(Simulation sim, Entity target) => sim.World.Has<Avatar>(target) ? OnPlayer : OnOthers;
 

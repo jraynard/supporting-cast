@@ -88,7 +88,9 @@ public static class FreeFight
         // Far off, a level apart, or something in the way: the path, as walking would.
         var clear = them.Cell.Z == me.Cell.Z
             && CombatRules.LineOfFire(sim, me.Pos + new float3(0, 0, 0.5f), them.Pos + new float3(0, 0, 0.5f));
-        if (dist > SteerWithin || !clear)
+        // A bow steers within its range; a blade only once close (else it walks the way there).
+        var steerWithin = attack.Ranged ? Math.Max(SteerWithin, attack.Range) : SteerWithin;
+        if (dist > steerWithin || !clear)
         {
             m.Wish = float2.Zero;
             // A fresh path when there's none, or they've moved off the end of the last.
