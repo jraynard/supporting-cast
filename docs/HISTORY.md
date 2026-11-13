@@ -919,3 +919,6 @@ dragon and the festival.
   side-on creatures share moved to `tools/chibi_canvas.py`, and the breath's core to `norse_fx.py`.
 - A campfire no longer offers stew: a recipe that needs an upgrade is listed only on stations that
   can take it.
+- **A dragon of our own:** the wild dragon is redrawn (`tools/chibi_dragon.py`) to the design in
+  ART.md (upright, a prow neck, swept horns, rib-like plates, a bone-plated front, rune-stepped
+  ember veins, a narrow burning eye) at four times the detail, replacing DragonWorld's adult sheet.

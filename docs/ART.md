@@ -474,8 +474,9 @@ job works with (`Job.ToolKind`, found by `Crafting.ToolInHand`), else their weap
 ## The dragon
 
 The season's last crisis is a wild dragon (`creatures/dragon_adult`, side-on, with the flight and
-breath tags above), drawn by `tools/chibi_dragon.py` (`--preview` writes `.cache/dragons.png`). It
-has one life stage, the adult: the egg, the young, the second breed and their recolouring went with
+breath tags above), drawn by `tools/chibi_dragon.py` at four times the detail ("density": 4, so
+it's drawn smooth like the people) to the design below; `--preview` writes `.cache/dragons.png`
+with the mouth point marked. It has one life stage, the adult: the egg, the young, the second breed and their recolouring went with
 DragonWorld. The dragon's breath is the orange `fx/breath` jet with the white `fx/breath_core`
 (`norse_fx.py`) over its yellow core; ordinary fire (`fx/fire`, `fx/ember`, burning ground) is all orange.
 
