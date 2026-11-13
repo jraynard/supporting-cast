@@ -10,7 +10,7 @@ Everything is vector. The wordmark is converted to outlines, so the SVGs need no
     pip install fonttools
     python tools/brand_logo.py --fonts path/to/fonts          # Cinzel[wght].ttf (SIL OFL)
 
-Writes art/brand/*.svg and palette.json. The palette is the single source of truth: it starts from
+Writes art/brand/: the SVGs, emblem.png (via headless Edge/Chrome), palette.json and brand-guide.html. The palette is the single source of truth: it starts from
 Ui/Theme.cs (oak, iron, bone, ember) so the logo sits in the game's own chrome.
 """
 from __future__ import annotations
@@ -328,6 +328,171 @@ def label(k: str) -> str:
     return k.replace("_", " ").title()
 
 
+GUIDE_CSS = """
+:root{--cellar:@cellar;--deep:@oak_deep;--oak:@oak;--oakl:@oak_light;--bone:@bone;--parch:@parchment;--ember:@ember;--red:@hearth_red;--iron:@iron}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--deep);color:var(--bone);font:17px/1.6 "Fira Sans",system-ui,sans-serif}
+main{max-width:1080px;margin:0 auto;padding:40px 16px 112px}
+h1,h2,h3,h4{font-family:Cinzel,Georgia,serif;margin:0;letter-spacing:.03em}
+h2{font-size:1.75rem;margin:84px 0 6px;color:var(--ember);scroll-margin-top:16px}
+h3{font-size:1.05rem;margin:30px 0 2px;color:var(--parch)}
+p{margin:0 0 12px}
+.lede{margin:0 0 18px;color:var(--parch);max-width:68ch}
+nav{display:flex;flex-wrap:wrap;gap:6px 18px;margin:0 0 36px;font-size:.9rem}
+nav a{color:var(--parch);text-decoration:none;border-bottom:1px solid var(--oakl)} nav a:hover{color:var(--ember);border-color:var(--ember)}
+.hero{display:grid;gap:32px;align-items:center;grid-template-columns:minmax(0,1fr)}
+@media(min-width:760px){.hero{grid-template-columns:1.1fr .9fr}}
+.hero img{width:100%;height:auto;display:block}
+.kicker{font:600 .8rem Cinzel,Georgia,serif;letter-spacing:.2em;color:var(--parch);margin:0 0 10px}
+.big{font:800 clamp(1.7rem,4.5vw,2.5rem)/1.15 Cinzel,Georgia,serif;margin:0 0 16px;color:var(--bone)}
+.big em{color:var(--ember);font-style:normal}
+.card{margin:0;border:2px solid var(--cellar);border-radius:8px;overflow:hidden;background:var(--cellar)}
+.card .pad{padding:24px;display:grid;place-items:center;min-width:0}
+.card figcaption{padding:10px 14px;background:var(--cellar);font-size:.85rem;color:var(--parch)}
+.card img{max-width:100%;height:auto;display:block}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.panel{background:var(--cellar);border-radius:8px;padding:18px 20px}
+.panel h4{font:600 1.02rem "Fira Sans",sans-serif;color:var(--ember);margin:0 0 6px;letter-spacing:0}
+.panel p{margin:0;font-size:.95rem}
+.num{font:800 1.5rem Cinzel,Georgia,serif;color:var(--oakl);display:block;margin-bottom:2px}
+.rule{margin:20px 0 0;padding:14px 18px;border-left:5px solid var(--ember);background:var(--cellar);border-radius:0 8px 8px 0}
+.rule b{color:var(--ember)}
+.pairs{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.pairs li{display:grid;gap:10px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:700px){.pairs li{grid-template-columns:1fr 1fr}}
+.pairs div{border-radius:8px;padding:12px 16px;border:2px solid var(--cellar)}
+.pairs .no{background:var(--cellar);opacity:.85} .pairs .yes{background:var(--oak)}
+.pairs small{display:block;font:600 .72rem "Fira Sans",sans-serif;letter-spacing:.14em;text-transform:uppercase;margin-bottom:2px}
+.pairs .no small{color:var(--red);filter:brightness(1.5)} .pairs .yes small{color:var(--ember)}
+.pairs q{font-size:1.02rem;quotes:none}
+.lines{display:grid;gap:0;border:2px solid var(--cellar);border-radius:8px;overflow:hidden}
+.lines .row{display:grid;gap:4px 16px;grid-template-columns:minmax(0,1fr);padding:11px 16px;background:var(--cellar)}
+.lines .row:nth-child(even){background:var(--deep)}
+@media(min-width:700px){.lines .row{grid-template-columns:200px 1fr}}
+.lines .where{font-size:.82rem;color:var(--parch);letter-spacing:.04em}
+.lines .say b{color:var(--bone)} .lines .say i{color:var(--parch)}
+.tags{list-style:none;margin:0;padding:0;display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.tags li{background:var(--cellar);border-radius:8px;padding:16px 18px;font:600 1.1rem/1.3 Cinzel,Georgia,serif}
+.tags li:first-child{outline:2px solid var(--ember)}
+.tags small{display:block;font:.72rem "Fira Sans",sans-serif;letter-spacing:.14em;color:var(--ember);margin-bottom:4px}
+.anat{display:grid;gap:28px;align-items:center;grid-template-columns:minmax(0,1fr)}
+@media(min-width:800px){.anat{grid-template-columns:.8fr 1.2fr}}
+.anat ol{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.anat li{background:var(--cellar);border-radius:8px;padding:10px 14px;font-size:.95rem}
+.anat li b{color:var(--ember)}
+.sws{list-style:none;margin:0;padding:0;display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.sw{background:var(--c);color:var(--f);border:2px solid var(--cellar);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:2px;min-height:128px}
+.sw b{font-family:Cinzel,Georgia,serif;font-size:1.02rem} .sw code{font:600 .95rem ui-monospace,Consolas,monospace}
+.sw .use{font-size:.82rem;line-height:1.35;margin-top:4px} .sw .f4{font:.72rem ui-monospace,Consolas,monospace;opacity:.85;margin-top:auto;padding-top:6px}
+.chips{list-style:none;margin:0;padding:0;display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.chips li{border:2px solid var(--cellar);border-radius:8px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center}
+.chips b{font:800 1.6rem Cinzel,Georgia,serif;grid-row:span 2} .chips span{font-size:.85rem} .chips em{font-style:normal;font-weight:600;font-size:.85rem}
+.type{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.type small{color:var(--parch);display:block;margin-bottom:6px}
+footer{margin-top:96px;color:var(--parch);font-size:.9rem;border-top:2px solid var(--cellar);padding-top:20px}
+"""
+
+GUIDE_BODY = """
+<nav aria-label="Sections"><a href="#story">Story</a><a href="#voice">Voice</a><a href="#words">Word bank</a><a href="#emblem">Emblem</a><a href="#logo">Logo</a><a href="#palette">Palette</a><a href="#using">Using it</a><a href="#type">Type</a></nav>
+
+<header class="hero"><div>
+<p class="kicker">BRAND GUIDE</p>
+<h1 class="big">Every legend needs someone to <em>pour the drinks.</em></h1>
+<p class="lede">Heroes Not Included is the village behind the adventure: the innkeeper, the smith, the healer, the tinker and the folks who know where everything is buried. The heroes get the glory. You get the tab, the gossip and, if you play it right, the whole story.</p>
+</div><img src="emblem.svg" alt="Heroes Not Included emblem"></header>
+
+<h2 id="story">The story in one breath</h2>
+<p class="lede">Every adventure starts in a tavern. Ours starts <b>behind the bar</b>. You are the person the party walks past on the way to glory: the one who hears the rumours, posts the quests, patches the armour and keeps the lights on. The adventurers think they are the main characters. They are not wrong, exactly. They just aren't the ones running the place.</p>
+<div class="grid">
+<div class="panel"><h4>Who we are</h4><p>A warm, cheeky village of people with jobs, secrets and a long memory for who didn't tip.</p></div>
+<div class="panel"><h4>Who we are not</h4><p>Not a hero's journey. No chosen ones, no destiny, no swords on the logo. The adventure is the weather; the village is the story.</p></div>
+<div class="panel"><h4>How it feels</h4><p>A busy common room at dusk: warm, a little loud, someone laughing, and one person in the corner who is definitely up to something.</p></div></div>
+
+<h2 id="voice">How we sound</h2>
+<p class="lede">We sound like the innkeeper: warm, quick, a bit worn at the edges, and always listening. Fun first, fantasy as seasoning. If a line needs a glossary or a funny accent to land, it is too much.</p>
+<div class="grid">
+<div class="panel"><span class="num">1</span><h4>Warm first</h4><p>Welcome people in before explaining anything. We are the lit window on a cold night.</p></div>
+<div class="panel"><span class="num">2</span><h4>Dry, never mean</h4><p>Heroes are the punchline. Players never are. Tease the entitled adventurer, not the person who just burned the stew.</p></div>
+<div class="panel"><span class="num">3</span><h4>Plain words, fantasy furniture</h4><p>Quests, coin, ale and rumours are the seasoning. Sentences stay short and modern. No thee, thou, hath or "ye olde".</p></div>
+<div class="panel"><span class="num">4</span><h4>Sly about secrets</h4><p>We always seem to know a bit more than we say. Hint, wink, raise an eyebrow. Never state what a character couldn't know.</p></div></div>
+<p class="rule"><b>Clarity beats cute on anything you press.</b> A button says what it does. The joke goes in the line underneath.</p>
+
+<h3>Too much, just right</h3>
+<p class="lede">The fantasy is in the nouns, not the grammar.</p>
+<ul class="pairs">
+<li><div class="no"><small>Too much</small><q>Hark, weary traveller! Ye olde tavern doth bid thee welcome!</q></div><div class="yes"><small>Just right</small><q>Pull up a stool.</q></div></li>
+<li><div class="no"><small>Too much</small><q>Alas, thy connection to the realm hath been severed.</q></div><div class="yes"><small>Just right</small><q>Lost the connection. The tavern's still standing. Probably.</q></div></li>
+<li><div class="no"><small>Too much</small><q>Thy quest hath ended in naught but sorrow.</q></div><div class="yes"><small>Just right</small><q>The party didn't come back. Pour one out.</q></div></li>
+<li><div class="no"><small>Too plain</small><q>Please wait while the game loads.</q></div><div class="yes"><small>Just right</small><q>Sweeping the common room...</q></div></li>
+<li><div class="no"><small>Too mean</small><q>You mixed that drink wrong. Again.</q></div><div class="yes"><small>Just right</small><q>That one's going to be a story. Try another?</q></div></li></ul>
+
+<h2 id="words">Word bank</h2>
+<p class="lede">Real labels on the left so nobody gets lost. A little flavour on the right.</p>
+<div class="lines">
+<div class="row"><span class="where">Host a game</span><span class="say"><b>Host game</b> <i>Open the doors.</i></span></div>
+<div class="row"><span class="where">Join a game</span><span class="say"><b>Join game</b> <i>Pull up a stool.</i></span></div>
+<div class="row"><span class="where">Settings</span><span class="say"><b>Settings</b> <i>House rules.</i></span></div>
+<div class="row"><span class="where">Quit</span><span class="say"><b>Quit</b> <i>Close up for the night.</i></span></div>
+<div class="row"><span class="where">Empty lobby</span><span class="say"><i>Nobody's here yet. Suspicious.</i></span></div>
+<div class="row"><span class="where">Round starts</span><span class="say"><i>Doors open. Smile.</i></span></div>
+<div class="row"><span class="where">Town wins</span><span class="say"><i>The festival's on, the town is standing, and nobody had to say thank you.</i></span></div>
+<div class="row"><span class="where">Town loses</span><span class="say"><i>Rough season. Next time, lock the cellar.</i></span></div>
+<div class="row"><span class="where">Loading lines<br>(rotate)</span><span class="say"><i>Sweeping the common room... / Hiding the good ale... / Re-hanging the quest board... / Practising our polite smile... / Polishing tankards nobody asked about...</i></span></div></div>
+
+<h3>Taglines</h3>
+<ul class="tags">
+<li><small>PRIMARY</small>Somebody has to keep the lights on.</li>
+<li><small>ALSO GOOD</small>The heroes get the glory. You get the tab.</li>
+<li><small>ALSO GOOD</small>Every legend needs someone to pour the drinks.</li>
+<li><small>ALSO GOOD</small>Quests posted daily. Heroes tolerated.</li></ul>
+
+<h3>Say it this way</h3>
+<div class="lines">
+<div class="row"><span class="where">The people in town</span><span class="say"><b>Villagers</b> in the game. <i>"NPC" is our in-joke for trailers and posters.</i></span></div>
+<div class="row"><span class="where">The visitors</span><span class="say"><b>Heroes</b> when we're poking fun. <b>Adventurers</b> when we're being clear.</span></div>
+<div class="row"><span class="where">What a player is</span><span class="say"><b>Trade</b>, not class. You're the innkeeper, the smith, the healer.</span></div>
+<div class="row"><span class="where">Scores</span><span class="say"><b>Renown</b> and <b>Dread</b>. Always capitalised, never explained twice.</span></div>
+<div class="row"><span class="where">Money</span><span class="say"><b>Silver</b> and <b>coin</b>. Never gold, never credits.</span></div></div>
+<p class="rule"><b>Keep it ours.</b> We borrow the feel of the tabletop table, not its names. No trademarked monsters, classes or spell names, and no assets from the games that inspired us.</p>
+
+<h2 id="emblem">The emblem</h2>
+<p class="lede">A tavern sign, hung by the people who run the place. Where a hero's crest would carry crossed swords, ours carries the tools of the trades.</p>
+<div class="anat"><figure class="card" style="background:var(--oak)"><div class="pad"><img src="emblem.svg" alt="Emblem" style="width:min(100%,380px)"></div></figure>
+<ol>
+<li><b>The signboard.</b> The village's own sign. This is the NPC world, and you're the one who hung it up.</li>
+<li><b>The "!"</b> The quest marker every adventurer knows. Above your head, it means you have work for them.</li>
+<li><b>The tankard.</b> The innkeeper's seat: where rumours land and jobs get handed out.</li>
+<li><b>Hammer and chef's knife.</b> The smith and the cook, crossed where a crest would carry swords.</li>
+<li><b>The flame.</b> The hearth. It's warm in here, so stay a while.</li>
+<li><b>24 runes.</b> One for every hour of a game day, engraved into the iron.</li></ol></div>
+
+<h2 id="logo">Logo</h2>
+<p class="lede">Lettering is Cinzel Extra Bold, converted to outlines. The ribbon is the label on the box: heroes, not included.</p>
+<div class="grid"><figure class="card" style="grid-column:1/-1"><div class="pad"><img src="logo-horizontal.svg" alt="Horizontal logo" style="width:min(100%,760px)"></div><figcaption>logo-horizontal.svg: headers, store pages, splash</figcaption></figure>
+<figure class="card"><div class="pad"><img src="logo-stacked.svg" alt="Stacked logo" style="width:min(100%,380px)"></div><figcaption>logo-stacked.svg: title screen, posters, loading</figcaption></figure>
+<figure class="card" style="background:var(--oak)"><div class="pad"><img src="emblem.png" alt="Emblem PNG" style="width:min(100%,300px)"></div><figcaption>emblem.png (1024 px, transparent): icons, avatars, socials</figcaption></figure>
+<figure class="card" style="background:@bone"><div class="pad"><img src="emblem-mono-ink.svg" alt="One colour emblem, ink" style="width:min(100%,240px)"></div><figcaption>emblem-mono-ink.svg: print, stamps, light backgrounds</figcaption></figure>
+<figure class="card"><div class="pad"><img src="emblem-mono-bone.svg" alt="One colour emblem, bone" style="width:min(100%,240px)"></div><figcaption>emblem-mono-bone.svg: engraved UI, dark backgrounds</figcaption></figure><figure class="card" style="background:var(--oak)"><div class="pad" style="grid-auto-flow:column;gap:20px;align-items:end"><img src="favicon.svg" alt="Favicon at 128 px" width="128"><img src="favicon.svg" alt="Favicon at 48 px" width="48"><img src="favicon.svg" alt="Favicon at 32 px" width="32"><img src="favicon.svg" alt="Favicon at 16 px" width="16"></div><figcaption>favicon.svg, favicon.ico (16 / 32 / 48), apple-touch-icon.png: the small-size sign, no runes or tools</figcaption></figure></div>
+
+<h2 id="palette">Palette</h2>
+<p class="lede">Oak, iron, bone and ember are the game's own colours from Ui/Theme.cs, so the logo and the chrome are one family. The last line on each swatch is ready to paste into C#.</p>
+@GROUPS
+<h3>Pairings that pass</h3><p class="lede">WCAG contrast ratios. Bone on the red ribbon is for large lettering only.</p><ul class="chips">@CHIPS</ul>
+
+<h2 id="using">Using it</h2><div class="grid">
+<div class="panel"><h4>Ember is rare</h4><p>One ember thing per screen: the quest marker, the call to action, a lit window. If everything glows, nothing is hiring.</p></div>
+<div class="panel"><h4>Dark ground, bone text</h4><p>The brand lives in the dark of the common room. Oak Deep or Cellar for the page, Bone for text, Parchment for the quieter lines.</p></div>
+<div class="panel"><h4>Clear space and size</h4><p>Keep the height of the quest marker (about one fifth of the emblem) clear on every side. Full-colour emblem down to 32 px; below that, use a simplified icon without the runes.</p></div>
+<div class="panel"><h4>Never</h4><p>Put a hero on it. No swords, shields, helmets or dragons: the brand is the world around them. Don't recolour the ribbon, stretch the lettering, or set the emblem on a busy photo without the ink version.</p></div></div>
+
+<h2 id="type">Type</h2><div class="type"><div class="panel"><small>Display: Cinzel 600 / 800 (SIL OFL)</small><span style="font:800 2rem Cinzel,Georgia,serif;letter-spacing:.06em">Heroes Not Included</span></div>
+<div class="panel"><small>Text and UI: Fira Sans (already in data/fonts)</small><span style="font:600 1.4rem 'Fira Sans',sans-serif">Somebody has to keep the lights on.</span></div></div>
+
+<footer>Generated by tools/brand_logo.py. Edit the script, not these files.</footer>
+"""
+
+
 def brand_sheet() -> str:
     def swatch(k: str) -> str:
         hx = P[k]
@@ -342,72 +507,105 @@ def brand_sheet() -> str:
              ("cellar", "ember"), ("bone", "hearth_red")]
     chips = "".join(f'<li style="background:{P[b]};color:{P[f]}"><b>Aa</b><span>{label(f)} on {label(b)}</span>'
                     f'<em>{contrast(P[f], P[b]):.1f}:1</em></li>' for f, b in pairs)
-    return f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Heroes Not Included: brand sheet</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Fira+Sans:wght@400;600&display=swap" rel="stylesheet">
-<style>
-:root{{--cellar:{P["cellar"]};--deep:{P["oak_deep"]};--oak:{P["oak"]};--bone:{P["bone"]};--parch:{P["parchment"]};--ember:{P["ember"]}}}
-*{{box-sizing:border-box}}
-body{{margin:0;background:var(--deep);color:var(--bone);font:16px/1.55 "Fira Sans",system-ui,sans-serif}}
-main{{max-width:1080px;margin:0 auto;padding:48px 16px 96px}}
-h1,h2,h3{{font-family:Cinzel,Georgia,serif;margin:0;letter-spacing:.04em}}
-h2{{font-size:1.6rem;margin:64px 0 6px;color:var(--ember)}} h3{{font-size:1.05rem;margin:28px 0 2px;color:var(--parch)}}
-.lede{{margin:0 0 14px;color:var(--parch)}}
-.hero{{display:grid;gap:32px;align-items:center;grid-template-columns:minmax(0,1fr)}}
-@media(min-width:760px){{.hero{{grid-template-columns:1fr 1fr}}}}
-.hero img{{width:100%;height:auto;display:block}}
-.hero p.tag{{font-family:Cinzel,Georgia,serif;font-size:1.3rem;color:var(--parch);margin:0 0 12px}}
-.card{{margin:0;border:2px solid var(--cellar);border-radius:8px;overflow:hidden}}
-.card .pad{{padding:24px;display:grid;place-items:center;min-width:0}}
-.card figcaption{{padding:10px 14px;background:var(--cellar);font-size:.85rem;color:var(--parch)}}
-.grid{{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}}
-.card img{{max-width:100%;height:auto;display:block}}
-.sws{{list-style:none;margin:0;padding:0;display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}}
-.sw{{background:var(--c);color:var(--f);border:2px solid var(--cellar);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:2px;min-height:128px}}
-.sw b{{font-family:Cinzel,Georgia,serif;font-size:1.02rem}} .sw code{{font:600 .95rem ui-monospace,Consolas,monospace}}
-.sw .use{{font-size:.82rem;line-height:1.35;margin-top:4px}} .sw .f4{{font:.72rem ui-monospace,Consolas,monospace;opacity:.85;margin-top:auto;padding-top:6px}}
-.chips{{list-style:none;margin:0;padding:0;display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}}
-.chips li{{border:2px solid var(--cellar);border-radius:8px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center}}
-.chips b{{font:800 1.6rem Cinzel,Georgia,serif;grid-row:span 2}} .chips span{{font-size:.85rem}} .chips em{{font-style:normal;font-weight:600;font-size:.85rem}}
-.rules{{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}}
-.rules div{{background:var(--cellar);border-radius:8px;padding:16px 18px}} .rules h4{{margin:0 0 6px;font:600 1rem "Fira Sans",sans-serif;color:var(--ember)}} .rules p{{margin:0;font-size:.92rem}}
-.type{{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}}
-.type div{{background:var(--cellar);border-radius:8px;padding:18px 20px}} .type small{{color:var(--parch);display:block;margin-bottom:6px}}
-</style></head><body><main>
-<header class="hero"><div><h1 style="font-size:.85rem;color:var(--parch);margin-bottom:10px">BRAND SHEET</h1>
-<p class="tag">The sign over the door of the people a hero walks past.</p>
-<p>The emblem is a tavern signboard. Where a hero's crest would carry crossed swords, ours carries a hammer and a chef's knife, the tools of the trades. The tankard is the innkeeper's, and above it hangs the marker every adventurer reads as <em>this one has work for me</em>. You are the NPC. You run the village, and you are the one who knows.</p>
-<p style="color:var(--parch)">Warm, comic and a little put-upon, until someone finds the blacksmith in the river.</p></div>
-<img src="emblem.svg" alt="Heroes Not Included emblem"></header>
 
-<h2>Logo</h2><p class="lede">Lettering is Cinzel Extra Bold, converted to outlines. The ribbon is the label on the box.</p>
-<div class="grid"><figure class="card" style="grid-column:1/-1"><div class="pad"><img src="logo-horizontal.svg" alt="Horizontal logo" style="width:min(100%,760px)"></div><figcaption>logo-horizontal.svg: headers, store pages, splash</figcaption></figure>
-<figure class="card"><div class="pad"><img src="logo-stacked.svg" alt="Stacked logo" style="width:min(100%,380px)"></div><figcaption>logo-stacked.svg: title screen, posters, loading</figcaption></figure>
-<figure class="card" style="background:var(--oak)"><div class="pad"><img src="emblem.svg" alt="Emblem" style="width:min(100%,300px)"></div><figcaption>emblem.svg: app icon, avatars, stickers</figcaption></figure>
-<figure class="card" style="background:{P["bone"]}"><div class="pad"><img src="emblem-mono-ink.svg" alt="One colour emblem, ink" style="width:min(100%,240px)"></div><figcaption>emblem-mono-ink.svg: print, stamps, light backgrounds</figcaption></figure>
-<figure class="card" style="background:var(--cellar)"><div class="pad"><img src="emblem-mono-bone.svg" alt="One colour emblem, bone" style="width:min(100%,240px)"></div><figcaption>emblem-mono-bone.svg: engraved UI, dark backgrounds</figcaption></figure></div>
+    def fill(t: str) -> str:
+        for k in sorted(P, key=len, reverse=True):
+            t = t.replace("@" + k, P[k])
+        return t
 
-<h2>Palette</h2><p class="lede">Oak, iron, bone and ember are the game's own colours from Ui/Theme.cs, so the logo and the chrome are one family. The last line on each swatch is ready to paste into C#.</p>
-{groups}
-<h3>Pairings that pass</h3><p class="lede">WCAG contrast ratios. Bone on the red ribbon is for large lettering only.</p><ul class="chips">{chips}</ul>
+    body = GUIDE_BODY.replace("@GROUPS", groups).replace("@CHIPS", chips)
+    return ('<!doctype html>\n<html lang="en"><head><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width,initial-scale=1">\n'
+            '<title>Heroes Not Included: brand guide</title>\n'
+            '<link rel="preconnect" href="https://fonts.googleapis.com">\n'
+            '<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Fira+Sans:wght@400;600&display=swap" rel="stylesheet">\n'
+            f'<style>{fill(GUIDE_CSS)}</style></head><body><main>{fill(body)}</main></body></html>\n')
 
-<h2>Using it</h2><div class="rules">
-<div><h4>Ember is rare</h4><p>One ember thing per screen: the quest marker, the call to action, a lit window. If everything glows, nothing is hiring.</p></div>
-<div><h4>Dark ground, bone text</h4><p>The brand lives in the dark of the common room. Use Oak Deep or Cellar as the page and Bone for text, Parchment for the quieter lines.</p></div>
-<div><h4>Clear space and size</h4><p>Keep the height of the quest marker (about one fifth of the emblem) clear on every side. Full-colour emblem down to 32 px; below that, draw a simplified icon.</p></div>
-<div><h4>Never</h4><p>Put a hero on it. No swords, shields, helmets or dragons: the brand is the world around them. Don't recolour the ribbon, stretch the lettering, or put the emblem on a busy photo without the ink version.</p></div></div>
 
-<h2>Type</h2><div class="type"><div><small>Display: Cinzel 600 / 800 (SIL OFL)</small><span style="font:800 2rem Cinzel,Georgia,serif;letter-spacing:.06em">Heroes Not Included</span></div>
-<div><small>Text and UI: Fira Sans (already in data/fonts)</small><span style="font:600 1.4rem 'Fira Sans',sans-serif">Somebody has to keep the lights on.</span></div></div>
-</main></body></html>
-"""
+def favicon_group(c: dict, uid: str = "f") -> str:
+    """The small-size sign: no runes and no crossed tools, just the rim, the "!" and the tankard, with
+    heavy outlines so it survives 16 px."""
+    L, W = c["line"], 12
+    foam = [(200, 294, 32), (234, 268, 38), (278, 262, 40), (314, 284, 32), (256, 300, 38)]
+    mug = "M176 298H336L328 398Q327 408 316 408H196Q185 408 184 398Z"
+    return (f'<defs><clipPath id="{uid}-mug"><path d="{mug}"/></clipPath></defs>'
+            f'<circle cx="256" cy="256" r="252" fill="{L}"/><circle cx="256" cy="256" r="244" fill="{c["rim"]}"/>'
+            f'<circle cx="256" cy="256" r="220" fill="{L}"/><circle cx="256" cy="256" r="213" fill="{c["field"]}"/>'
+            f'<g transform="translate(-12 6) translate(256 242) scale(1.12) translate(-256 -242)">'
+            f'<path d="M328 318C384 312 390 388 322 384" fill="none" stroke="{L}" stroke-width="48" stroke-linecap="round"/>'
+            f'<path d="M328 318C384 312 390 388 322 384" fill="none" stroke="{c["iron"]}" stroke-width="24" stroke-linecap="round"/>'
+            f'<path d="{mug}" fill="{c["barrel"]}" stroke="{L}" stroke-width="{W}" stroke-linejoin="round"/>'
+            f'<g clip-path="url(#{uid}-mug)"><rect x="160" y="344" width="190" height="24" fill="{c["iron"]}" stroke="{L}" stroke-width="7"/></g>'
+            f'<g fill="{L}" stroke="{L}" stroke-width="{2 * W}" stroke-linejoin="round">'
+            + "".join(f'<circle cx="{x}" cy="{y}" r="{r}"/>' for x, y, r in foam) + '</g>'
+            f'<g fill="{c["foam"]}">' + "".join(f'<circle cx="{x}" cy="{y}" r="{r}"/>' for x, y, r in foam) + '</g>'
+            f'<g fill="{c["mark"]}" stroke="{L}" stroke-width="{W}" stroke-linejoin="round">'
+            f'<path d="M230 76H282L275 150Q274 160 264 160H248Q238 160 237 150Z"/><circle cx="256" cy="186" r="21"/></g></g>')
+
+
+def favicon_svg() -> str:
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Heroes Not Included">'
+            f'{favicon_group(COLOUR)}</svg>\n')
+
+
+def export_icons(svg: Path) -> list[Path]:
+    """favicon.ico (16/32/48), apple-touch-icon.png (180, on oak since iOS fills transparency with black)."""
+    try:
+        from PIL import Image
+    except ImportError:
+        print("Pillow not installed: skipped favicon.ico and apple-touch-icon.png")
+        return []
+    big = OUT / "_favicon-512.png"
+    if not export_png(svg, big, 512):
+        return []
+    src = Image.open(big).convert("RGBA")
+    big.unlink()
+    ico = OUT / "favicon.ico"
+    src.save(ico, sizes=[(16, 16), (32, 32), (48, 48)])
+    apple = Image.new("RGBA", (180, 180), P["oak_deep"])
+    disc = src.resize((150, 150), Image.LANCZOS)
+    apple.alpha_composite(disc, (15, 15))
+    apple.convert("RGB").save(OUT / "apple-touch-icon.png")
+    return [ico, OUT / "apple-touch-icon.png"]
+
+
+def export_png(svg: Path, png: Path, size: int) -> bool:
+    """Rasterise with headless Edge or Chrome, keeping the transparency. No extra Python packages."""
+    import shutil
+    import subprocess
+    import tempfile
+    cands = [shutil.which(n) for n in ("msedge", "chrome", "google-chrome", "chromium")] + [
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"]
+    exe = next((c for c in cands if c and Path(c).exists()), None)
+    if not exe:
+        print("no Edge or Chrome found: skipped", png.name)
+        return False
+    with tempfile.TemporaryDirectory() as td:
+        page = Path(td) / "p.html"
+        page.write_text(f'<!doctype html><meta charset="utf-8"><style>html,body{{margin:0;background:transparent}}'
+                        f'img{{display:block;width:{size}px;height:{size}px}}</style><img src="{svg.resolve().as_uri()}">', encoding="utf-8")
+        png.unlink(missing_ok=True)
+        subprocess.run([exe, "--headless", "--disable-gpu", "--hide-scrollbars", "--default-background-color=00000000",
+                        f"--screenshot={png}", f"--window-size={size},{size}", page.as_uri()],
+                       check=False, capture_output=True, timeout=60)
+        # the browser can hand back before the file is written: wait for it to appear and settle
+        import time
+        last = -1
+        for _ in range(60):
+            now = png.stat().st_size if png.exists() else -1
+            if now > 0 and now == last:
+                return True
+            last = now
+            time.sleep(0.5)
+    return False
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--fonts", type=Path, required=True, help="folder holding Cinzel[wght].ttf")
+    ap.add_argument("--no-png", action="store_true", help="skip emblem.png (needs Edge or Chrome installed)")
     a = ap.parse_args()
     font = load_font(next(a.fonts.glob("Cinzel*.ttf")), 800)
     OUT.mkdir(parents=True, exist_ok=True)
@@ -417,13 +615,19 @@ def main() -> None:
         "emblem-mono-ink.svg": emblem_mono_svg(P["cellar"]),
         "logo-stacked.svg": logo_stacked(font),
         "logo-horizontal.svg": logo_horizontal(font),
-        "brand-sheet.html": brand_sheet(),
+        "favicon.svg": favicon_svg(),
+        "brand-guide.html": brand_sheet(),
     }
     for name, svg in files.items():
         (OUT / name).write_text(svg, encoding="utf-8")
     (OUT / "palette.json").write_text(json.dumps({k: {"hex": v[0], "use": v[1]} for k, v in PALETTE.items()}, indent=2) + "\n", encoding="utf-8")
     for name in files:
         print("wrote", OUT / name)
+    if not a.no_png and export_png(OUT / "emblem.svg", OUT / "emblem.png", 1024):
+        print("wrote", OUT / "emblem.png")
+    if not a.no_png:
+        for f in export_icons(OUT / "favicon.svg"):
+            print("wrote", f)
     for fg, bg in (("bone", "oak_deep"), ("bone", "cellar"), ("ember", "oak_deep"), ("parchment", "oak_deep"),
                    ("cellar", "bone"), ("cellar", "ember"), ("bone", "hearth_red"), ("iron_light", "oak_deep")):
         print(f"contrast {fg:>9} on {bg:<9} {contrast(P[fg], P[bg]):5.2f}")
