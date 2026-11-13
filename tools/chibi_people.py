@@ -33,6 +33,7 @@ from placeholder_sheets import write_sheet  # noqa: E402
 from norse_art import contact_sheet  # noqa: E402
 
 BODIES = ("male", "female")
+FOLK = ("human", "elf")                                    # Folk's order; each but the first has its own skin sheet
 HAIR_STYLES = ("short", "long", "ponytail", "pigtails", "curlyshort", "curlylong", "none", "sidebraid", "topknot", "bun",
                "crownbraid", "shaggy", "swept", "braidedponytail")           # HairStyle's order
 EYE_STYLES = ("round", "narrow", "sleepy", "bright")       # EyeStyle's order
@@ -230,7 +231,31 @@ def coin_layer(F, img):
     part(img, c, GOLD, INK, radius=0.4, bias=0.2, width=1)
 
 
-def skin_layer(F):
+def elf_ear(ex, hy, s):
+    """Our elves' ear: long, narrow and swept up and back past the head, tip above the brow."""
+    return poly([(ex - s * 0.4, 19.6 + hy), (ex + s * 1.6, 17.4 + hy), (ex + s * 6.0, 12.4 + hy), (ex + s * 3.4, 18.2 + hy),
+                 (ex + s * 1.8, 21.6 + hy), (ex + s * 0.5, 24.2 + hy), (ex - s * 0.6, 23.4 + hy)])
+
+
+def ear_spots(F):
+    """Each ear's root (x) and side, as the head turns: the far one's hidden in a front three-quarter view."""
+    for s in (-1, 1):
+        if F.front and F.t and s == 1:
+            continue
+        yield 20 + s * 10.4 + (F.t if F.front else 0) * (0.6 if s < 0 else 0), s
+
+
+def ears_layer(F, folk):
+    """The ears again, over the hair (a folk whose ears stand out through it): what shows past the head."""
+    img = blank()
+    if folk != "elf":
+        return img
+    for ex, s in ear_spots(F):
+        part(img, minus(elf_ear(ex, F.hy, s), F.head()), SKIN, SKIN_LINE, radius=0.6)
+    return img
+
+
+def skin_layer(F, folk="human"):
     """The head (all of it: hair and helms go over), ears, arms with fists, legs."""
     img = blank()
     by, hy, t = F.by, F.hy, F.t
@@ -239,11 +264,9 @@ def skin_layer(F):
         part(img, rect([x0, top, x0 + w, foot - 0.6]), SKIN, SKIN_LINE, radius=1.0)
         part(img, ellipse([x0 - 0.6, foot - 2.6, x0 + w + 0.8, foot + 0.6]), SKIN, SKIN_LINE, radius=0.8)
     # ears, then the head over their roots
-    for s in (-1, 1):
-        if F.front and t and s == 1:
-            continue
-        ex = 20 + s * 10.4 + (t if F.front else 0) * (0.6 if s < 0 else 0)
-        part(img, ellipse([ex - 1.1, 19.6 + hy, ex + 1.1, 24.4 + hy]), SKIN, SKIN_LINE, radius=0.6)
+    for ex, s in ear_spots(F):
+        ear = elf_ear(ex, hy, s) if folk == "elf" else ellipse([ex - 1.1, 19.6 + hy, ex + 1.1, 24.4 + hy])
+        part(img, ear, SKIN, SKIN_LINE, radius=0.6)
     part(img, F.head(), SKIN, SKIN_LINE, radius=2.4, depth=0.2, bias=0.18)
     arms_drawn = []
     for side in (0, 1):
@@ -1756,7 +1779,11 @@ def job_frames(job):
         if kind == "base":
             img = base_layer(Fig(args, pose))
         elif kind == "skin":
-            img = skin_layer(Fig(args, pose))
+            body, folk = args
+            img = skin_layer(Fig(body, pose), folk)
+        elif kind == "ears":
+            body, folk = args
+            img = ears_layer(Fig(body, pose), folk)
         elif kind == "eyes":
             body, style, which = args
             img = eyes_layers(Fig(body, pose), style)[0 if which == "eyes" else 1]
@@ -1796,7 +1823,10 @@ def jobs():
     out = []
     for body in BODIES:
         out.append((f"creatures/person_{body}", ("base", body)))
-        out.append((f"creatures/person_{body}_skin", ("skin", body)))
+        out.append((f"creatures/person_{body}_skin", ("skin", (body, "human"))))
+        for folk in FOLK[1:]:
+            out.append((f"creatures/person_{body}_skin_{folk}", ("skin", (body, folk))))
+            out.append((f"creatures/person_{body}_ears_{folk}", ("ears", (body, folk))))
         for style in EYE_STYLES:
             out.append((f"creatures/person_{body}_eyes_{style}", ("eyes", (body, style, "eyes"))))
             out.append((f"creatures/person_{body}_face_{style}", ("eyes", (body, style, "face"))))
@@ -1854,7 +1884,7 @@ def tint(img, rgb):
     return out
 
 
-def figure(body, pose, hair="long", eyes="round", beard=None, wear=(), dyes=None, colors=None):
+def figure(body, pose, hair="long", eyes="round", beard=None, wear=(), dyes=None, colors=None, folk="human"):
     """A whole person for one frame, layered as the game does (HumanLook.Layers)."""
     colors = dict(TINTS, **(colors or {}))
     dyes = dyes or {}
@@ -1875,7 +1905,7 @@ def figure(body, pose, hair="long", eyes="round", beard=None, wear=(), dyes=None
         if item in ("cloak", "hooded_cloak", "scarf"):
             order += [worn[item]["_back"], tint(worn[item]["_back_dye"], dye_of(item))]
     order.append(tint(back, hairc))
-    order.append(tint(skin_layer(F), colors["skin"]))
+    order.append(tint(skin_layer(F, folk), colors["skin"]))
     e, f = eyes_layers(F, eyes)
     order += [tint(e, colors["eyes"]), f]
     slots = ["trousers", "skirt", "turnshoes", "boots", "tunic", "kaftan", "apron_dress", "vest", "leather_jerkin", "studded_jerkin",
@@ -1886,6 +1916,7 @@ def figure(body, pose, hair="long", eyes="round", beard=None, wear=(), dyes=None
     if beard:
         order.append(tint(beard_layer(Fig("female", pose), beard), hairc))
     order.append(tint(front, hairc))
+    order.append(tint(ears_layer(F, folk), colors["skin"]))
     for item in HEAD_ITEMS:
         if item in wear:
             order.append(worn[item][""])
@@ -1914,6 +1945,10 @@ if __name__ == "__main__":
         preview(os.path.join(out, "looks.png"), [
             dict(body="female", hair="long", eyes="round", wear=("tunic", "trousers", "boots", "fur_mantle", "horned_helm"), colors={"dye": (150, 156, 170, 255)}),
             dict(body="male", hair="short", eyes="narrow", beard="short", wear=("tunic", "trousers", "turnshoes")),
+            dict(body="female", hair="long", eyes="bright", folk="elf", wear=("kaftan", "trousers", "boots"),
+                 colors={"skin": (226, 214, 196, 255), "hair": (214, 214, 220, 255), "eyes": (96, 176, 140, 255)}),
+            dict(body="male", hair="swept", eyes="narrow", folk="elf", wear=("tunic", "trousers", "boots", "cloak"),
+                 colors={"skin": (150, 116, 96, 255), "hair": (40, 36, 44, 255), "eyes": (196, 160, 72, 255), "dye": (60, 96, 70, 255)}),
         ])
     else:
         generate(only)

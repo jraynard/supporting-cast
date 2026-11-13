@@ -7,7 +7,7 @@ using static HeroesNotIncluded.Sim.Tests.TestWorld;
 
 namespace HeroesNotIncluded.Sim.Tests;
 
-/// <summary><see cref="Appearance.Model"/>: a character drawn from a 3D model's sheets, by name.</summary>
+/// <summary><see cref="Appearance"/>: a 3D model's sheets by name, and the folk (elves).</summary>
 public class AppearanceTests
 {
     [Theory]
@@ -34,6 +34,25 @@ public class AppearanceTests
         var round = (CreateCharacterCommand)CommandCodec.Decode(CommandCodec.Encode(command, sim.Defs), sim.Defs);
         Assert.Equal("wanderer3d", round.Look.Model);
     }
+
+    [Fact]
+    public void AnElfSurvivesSavingAndTheWire()
+    {
+        var sim = Create(12, 12);
+        var e = sim.World.Create();
+        sim.World.Add(e, new Appearance { Folk = Folk.Elf, Model = "wanderer3d" }); // the field after the model reads back too
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        Assert.Equal(Folk.Elf, loaded.World.Get<Appearance>(e).Folk);
+        Assert.Equal("wanderer3d", loaded.World.Get<Appearance>(e).Model);
+
+        var command = new CreateCharacterCommand(Guid.NewGuid(), "Bea", new Appearance { Folk = Folk.Elf }, []);
+        var round = (CreateCharacterCommand)CommandCodec.Decode(CommandCodec.Encode(command, sim.Defs), sim.Defs);
+        Assert.Equal(Folk.Elf, round.Look.Folk);
+    }
+
+    [Fact]
+    public void AFolkNobodyKnowsIsHuman() =>
+        Assert.Equal(Folk.Human, Players.Valid(new Appearance { Folk = (Folk)200 }).Folk);
 
     [Fact]
     public void TheWandererIsDrawnNotAModelForNow() =>

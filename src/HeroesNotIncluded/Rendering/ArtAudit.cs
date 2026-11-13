@@ -115,6 +115,13 @@ public static class ArtAudit
                 continue;
             }
             CheckLayer(HumanLook.SkinSheet(look), $"body {body}", required: true);
+            foreach (var folk in Enum.GetValues<Folk>())
+                if (folk != Folk.Human)
+                {
+                    CheckLayer(HumanLook.SkinSheet(look with { Folk = folk }), $"body {body}/{folk}", required: true);
+                    if (HumanLook.EarsSheet(look with { Folk = folk }) is { } ears)
+                        CheckLayer(ears, $"body {body}/{folk}", required: true);
+                }
             foreach (var hair in Enum.GetValues<HairStyle>())
             {
                 CheckLayer(HumanLook.HairSheet(look with { Hair = hair }), $"hair {hair}", required: hair != HairStyle.None);

@@ -221,6 +221,7 @@ else
         Adventure = !args.Contains("--furniture-demo") && !args.Contains("--building-demo"),
         HeroName = ParseString(args, "--name"),
         HeroPreset = ParseString(args, "--preset"),
+        HeroFolk = Enum.TryParse<HeroesNotIncluded.Sim.Components.Folk>(ParseString(args, "--folk"), true, out var folk) ? folk : null,
         HeroTrade = ParseString(args, "--trade"),
         Bots = args.Contains("--bots") ? ParseInt(args, "--bots") : 0,
     });

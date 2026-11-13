@@ -55,6 +55,36 @@ public class CharacterRosterTests : IDisposable
     }
 
     [Fact]
+    public void AnElfStaysAnElfAndAFolkNobodyKnowsIsHuman()
+    {
+        var roster = CharacterRoster.Load(File, Defs.Value);
+        roster.Put(new SavedCharacter { Name = "Ilsa", Look = new Appearance { Folk = Folk.Elf, SkinColor = HumanLook.ElfSkinTones[2] } });
+        roster.Put(new SavedCharacter { Name = "Odd", Look = new Appearance { Folk = (Folk)99 } });
+        var loaded = CharacterRoster.Load(File, Defs.Value).Characters;
+        Assert.Equal(Folk.Elf, loaded.Single(c => c.Name == "Ilsa").Look.Folk);
+        Assert.Equal(Folk.Human, loaded.Single(c => c.Name == "Odd").Look.Folk);
+    }
+
+    /// <summary>
+    /// Some villagers are elves, by the same hash that picks their looks (the same on every peer);
+    /// the draw comes last, so everyone who was human before still looks as they did.
+    /// </summary>
+    [Fact]
+    public void AboutOneVillagerInSixIsAnElf()
+    {
+        var looks = Enumerable.Range(1, 1200).Select(id => HumanLook.Derived(id)).ToList();
+        var elves = looks.Where(a => a.Folk == Folk.Elf).ToList();
+        Assert.InRange(elves.Count, 1200 / HumanLook.ElfOneIn - 80, 1200 / HumanLook.ElfOneIn + 80);
+        Assert.All(elves, a =>
+        {
+            Assert.Contains(a.SkinColor, HumanLook.ElfSkinTones);
+            Assert.Equal(BeardStyle.None, a.Beard);
+        });
+        Assert.All(looks.Where(a => a.Folk == Folk.Human), a => Assert.Contains(a.SkinColor, HumanLook.SkinTones));
+        Assert.Equal(HumanLook.Derived(77), HumanLook.Derived(77));
+    }
+
+    [Fact]
     public void EveryHairStyleIsOfferedOnceWithItsOwnSheets()
     {
         Assert.Equal(Enum.GetValues<HairStyle>().Order(), HumanLook.HairStyles.Select(s => s.Style).Order());

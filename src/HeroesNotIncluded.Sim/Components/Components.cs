@@ -1029,6 +1029,17 @@ public enum EyeStyle : byte
 }
 
 /// <summary>
+/// Which of the fantasy folk someone is: humans, or our own take on elves (long-lived, fey and a
+/// little out of step with the village's hurry; tall swept-back ears). Cosmetic for now, like the
+/// rest of <see cref="Appearance"/>: no system reads it. Saved by value: new ones go at the end.
+/// </summary>
+public enum Folk : byte
+{
+    Human,
+    Elf,
+}
+
+/// <summary>
 /// How a person looks, chosen in the character creator (purely cosmetic: no system reads it, and
 /// it's left out of the state hash). Colours are 0xRRGGBB. People without one get a look derived
 /// from their entity by the renderer.
@@ -1043,6 +1054,9 @@ public struct Appearance
     public BeardStyle Beard;
     public EyeStyle Eyes;
     public Stance Stance;
+
+    /// <summary>Which folk they are (the ears, and the colours their kind runs to).</summary>
+    public Folk Folk;
 
     /// <summary>
     /// A character modelled in 3D and rendered to sprites (docs/ART.md "3D to sprites"), named by

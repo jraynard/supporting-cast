@@ -43,11 +43,22 @@ public sealed partial class VillageGame
     /// <summary>Debug/screenshots (<c>--preset Wanderer</c>): the avatar looks and dresses as a creator preset.</summary>
     public string? HeroPreset { get; init; }
 
-    /// <summary>The avatar's look and clothes: the creator's, else <see cref="HeroPreset"/>'s.</summary>
-    private (Appearance? Look, IReadOnlyList<string>? Clothes) HeroAppearance() =>
-        HeroPreset != null && _sim.Defs.AllOutfits.Find(o => o.Name.Equals(HeroPreset, StringComparison.OrdinalIgnoreCase)) is { } preset
+    /// <summary>Debug/screenshots (<c>--folk Elf</c>): the avatar is of this folk, with a skin their kind runs to.</summary>
+    public Folk? HeroFolk { get; init; }
+
+    /// <summary>The avatar's look and clothes: the creator's, else <see cref="HeroPreset"/>'s; then <see cref="HeroFolk"/>.</summary>
+    private (Appearance? Look, IReadOnlyList<string>? Clothes) HeroAppearance()
+    {
+        var (look, clothes) = HeroPreset != null && _sim.Defs.AllOutfits.Find(o => o.Name.Equals(HeroPreset, StringComparison.OrdinalIgnoreCase)) is { } preset
             ? Rendering.HumanLook.FromPreset(preset, HeroLook ?? Rendering.HumanLook.Default)
             : (HeroLook, HeroClothes);
+        if (HeroFolk is not { } folk || look?.Folk == folk)
+            return (look, clothes);
+        var a = (look ?? Rendering.HumanLook.Default) with { Folk = folk, Model = null };
+        if (folk == Folk.Elf)
+            a = a with { SkinColor = Rendering.HumanLook.ElfSkinTones[0], Beard = BeardStyle.None };
+        return (a, clothes);
+    }
 
     private Entity _avatar = Entity.Null;
     private int2 _sentMoveDir;

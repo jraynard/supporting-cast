@@ -235,6 +235,7 @@ public static class Players
         Beard = Enum.IsDefined(a.Beard) ? a.Beard : default,
         Eyes = Enum.IsDefined(a.Eyes) ? a.Eyes : default,
         Stance = Enum.IsDefined(a.Stance) ? a.Stance : default,
+        Folk = Enum.IsDefined(a.Folk) ? a.Folk : default,
         HairColor = a.HairColor & 0xFFFFFF,
         EyeColor = a.EyeColor & 0xFFFFFF,
         SkinColor = a.SkinColor & 0xFFFFFF,

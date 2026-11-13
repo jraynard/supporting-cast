@@ -78,6 +78,8 @@ public sealed class CharacterRoster
             look.Eyes = EyeStyle.Round;
         if (!Enum.IsDefined(look.Stance))
             look.Stance = Stance.Relaxed;
+        if (!Enum.IsDefined(look.Folk))
+            look.Folk = Folk.Human; // older rosters have none: human, as they were
         return c with
         {
             Name = string.IsNullOrWhiteSpace(c.Name) ? "Arin" : c.Name.Trim(),

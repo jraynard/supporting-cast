@@ -441,13 +441,15 @@ internal static class ComponentCodecs
             w.Int((int)a.Eyes);
             w.Int((int)a.Stance);
             w.NullableString(a.Model);
+            w.Int((int)a.Folk);
         }, r => new Appearance
         {
             Body = (BodyType)r.Int(), Hair = (HairStyle)r.Int(), HairColor = (uint)r.Int(), EyeColor = (uint)r.Int(), SkinColor = (uint)r.Int(),
-            Beard = (BeardStyle)r.Int(), // beards and eye styles came with format 12
+            Beard = (BeardStyle)r.Int(), // beards, eye styles and 3D models came over from DragonWorld
             Eyes = (EyeStyle)r.Int(),
             Stance = (Stance)r.Int(),
-            Model = Appearance.ValidModel(r.NullableString()), // 3D models came with format 13
+            Model = Appearance.ValidModel(r.NullableString()),
+            Folk = r.Version >= 12 && (Folk)r.Int() is var folk && Enum.IsDefined(folk) ? folk : Folk.Human, // the folk came with format 12
         }),
         Codec("AwaitingSettler", (w, a) => w.Long(a.ArriveTick), r => new AwaitingSettler { ArriveTick = r.Long() }),
         Codec("Avatar", (w, a) =>

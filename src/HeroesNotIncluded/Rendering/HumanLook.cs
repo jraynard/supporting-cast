@@ -14,7 +14,8 @@ namespace HeroesNotIncluded.Rendering;
 /// the sheets are drawn at four times the detail, <c>"density": 4</c>). Every layer has the base sheet's frame layout, so a layer's frame is found by
 /// index. People without an Appearance get a stable look derived from their entity. A look with a
 /// <see cref="Appearance.Model"/> is drawn from that 3D model's own sheets instead (its body, skin,
-/// eyes, face and hair, and only the garments rendered for it), while they exist.
+/// eyes, face and hair, and only the garments rendered for it), while they exist. An elf
+/// (<see cref="Folk"/>) has their own skin layer, with long ears, and the ears again over the hair.
 /// </summary>
 public static class HumanLook
 {
@@ -30,6 +31,22 @@ public static class HumanLook
     public static readonly uint[] EyeColors = [0x3C2A1E, 0x6A4A2A, 0x3A6EC8, 0x4A8A4A, 0x7A8A9A, 0xC02A2A, 0xEDEDED, 0x8A4AC8];
 
     public const int NaturalEyeColors = 5;
+
+    /// <summary>
+    /// What our elves run to (the creator offers these too): fair, ashen, olive and dusky skins;
+    /// silver, ash, pale gold, copper and raven hair; green, amber, violet-grey and pale blue eyes.
+    /// </summary>
+    public static readonly uint[] ElfSkinTones = [0xF4E6D6, 0xE0D6CC, 0xCDB89A, 0xA88468, 0x7A5646, 0x52403E];
+
+    public static readonly uint[] ElfHairColors = [0xD8DCE4, 0xB8B4AC, 0xE6D29A, 0xB4582E, 0x22202A];
+
+    public static readonly uint[] ElfEyeColors = [0x4AA07A, 0xC8A040, 0x8A7AB8, 0x7AB4D8];
+
+    /// <summary>The folk the creator offers, with their labels.</summary>
+    public static readonly (Folk Folk, string Label)[] Folks = [(Folk.Human, "Human"), (Folk.Elf, "Elf")];
+
+    /// <summary>One villager in this many is an elf (derived looks).</summary>
+    public const int ElfOneIn = 6;
 
     /// <summary>Hair styles in the order the creator offers them, with their labels. None stays last: derived looks skip it.</summary>
     public static readonly (HairStyle Style, string Label)[] HairStyles =
@@ -133,6 +150,15 @@ public static class HumanLook
         a.Eyes = EyeStyles[Next() % (uint)EyeStyles.Length].Style;
         var beard = Next() % 10;
         a.Beard = a.Body == BodyType.Male && beard < 6 ? Beards[1 + beard % (uint)(Beards.Length - 1)].Style : BeardStyle.None;
+        // Drawn last, so everyone who was human before looks just as they did.
+        if (Next() % ElfOneIn == 0)
+        {
+            a.Folk = Folk.Elf;
+            a.SkinColor = ElfSkinTones[Next() % (uint)ElfSkinTones.Length];
+            a.HairColor = ElfHairColors[Next() % (uint)ElfHairColors.Length];
+            a.EyeColor = ElfEyeColors[Next() % (uint)ElfEyeColors.Length];
+            a.Beard = BeardStyle.None; // our elves don't grow them
+        }
         return a;
     }
 
@@ -171,8 +197,8 @@ public static class HumanLook
 
     private static int BodyIndex(in Appearance a) => a.Body == BodyType.Female ? 1 : 0;
 
-    private static readonly (string Base, string Skin)[] BodySheets =
-        BodyNames.Select(b => ($"creatures/person_{b}", $"creatures/person_{b}_skin")).ToArray();
+    private static readonly (string Base, string Skin, string ElfSkin, string ElfEars)[] BodySheets =
+        BodyNames.Select(b => ($"creatures/person_{b}", $"creatures/person_{b}_skin", $"creatures/person_{b}_skin_elf", $"creatures/person_{b}_ears_elf")).ToArray();
 
     private static readonly (string Front, string Back)[] HairSheets =
         Enum.GetValues<HairStyle>().Select(h => ($"creatures/person_hair_{StyleName(h)}", $"creatures/person_hair_{StyleName(h)}_back")).ToArray();
@@ -190,7 +216,12 @@ public static class HumanLook
     private static T Pick<T>(T[] names, int i) => names[(uint)i < names.Length ? i : 0];
 
     public static string BaseSheet(in Appearance a) => BodySheets[BodyIndex(a)].Base;
-    public static string SkinSheet(in Appearance a) => BodySheets[BodyIndex(a)].Skin;
+    /// <summary>The skin layer: an elf's has their ears (falling back to the human one if it's missing).</summary>
+    public static string SkinSheet(in Appearance a) => a.Folk == Folk.Elf ? BodySheets[BodyIndex(a)].ElfSkin : BodySheets[BodyIndex(a)].Skin;
+    public static string HumanSkinSheet(in Appearance a) => BodySheets[BodyIndex(a)].Skin;
+
+    /// <summary>An elf's ears again, drawn over the hair they stand out through; null for humans.</summary>
+    public static string? EarsSheet(in Appearance a) => a.Folk == Folk.Elf ? BodySheets[BodyIndex(a)].ElfEars : null;
     public static string HairSheet(in Appearance a) => Pick(HairSheets, (int)a.Hair).Front;
     public static string HairBackSheet(in Appearance a) => Pick(HairSheets, (int)a.Hair).Back;
     public static string EyesSheet(in Appearance a) => Pick(EyeSheets, (int)a.Eyes * 2 + BodyIndex(a)).Eyes;
@@ -338,7 +369,7 @@ public static class HumanLook
                 }
         if (hairBack != null)
             list.Add((hairBack, hairColor));
-        if (atlas.TryGetSheet(model?.Skin ?? SkinSheet(a), out var skin))
+        if (atlas.TryGetSheet(model?.Skin ?? SkinSheet(a), out var skin) || model == null && atlas.TryGetSheet(HumanSkinSheet(a), out skin))
             list.Add((skin, Multiply(color, a.SkinColor)));
         if (atlas.TryGetSheet(model?.Eyes ?? EyesSheet(a), out var eyes))
             list.Add((eyes, Multiply(color, a.EyeColor)));
@@ -364,6 +395,8 @@ public static class HumanLook
             list.Add((beard, hairColor));
         if (!hidesHair && atlas.TryGetSheet(model?.Hair ?? HairSheet(a), out var hair))
             list.Add((hair, hairColor));
+        if (model == null && EarsSheet(a) is { } earsName && atlas.TryGetSheet(earsName, out var ears))     // through the hair, under a helm
+            list.Add((ears, Multiply(color, a.SkinColor)));
         if (worn != null)
             foreach (var w in worn)
                 if (w.Props.Slot is ApparelSlot.Head)

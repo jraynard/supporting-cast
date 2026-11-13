@@ -168,6 +168,28 @@ public sealed class CharacterCreator
     private void DrawLookTab()
     {
         DrawModelNote("Picking a body or hair style switches to a drawn figure.");
+        ImGui.TextColored(Theme.Dim, "Folk"u8);
+        var folk = (int)_look.Folk;
+        for (var i = 0; i < HumanLook.Folks.Length; i++)
+        {
+            if (i > 0)
+                ImGui.SameLine(0, 12);
+            ImGui.RadioButton($"{HumanLook.Folks[i].Label}##folk", ref folk, (int)HumanLook.Folks[i].Folk);
+        }
+        if ((Folk)folk != _look.Folk)
+        {
+            // A skin from the new folk's swatches, and our elves don't grow beards.
+            _look.Model = null;
+            _look.Folk = (Folk)folk;
+            var tones = _look.Folk == Folk.Elf ? HumanLook.ElfSkinTones : HumanLook.SkinTones;
+            if (Array.IndexOf(tones, _look.SkinColor) < 0)
+                _look.SkinColor = tones[0];
+            if (_look.Folk == Folk.Elf)
+                _look.Beard = BeardStyle.None;
+        }
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+            ImGuiText.Tooltip("Elves: long-lived and a little fey, out of step with the village's hurry. Just a look, for now.");
+
         ImGui.TextColored(Theme.Dim, "Body"u8);
         var body = (int)_look.Body;
         ImGui.RadioButton("Masculine"u8, ref body, (int)BodyType.Male);
@@ -176,7 +198,7 @@ public sealed class CharacterCreator
         if ((BodyType)body != _look.Body)
             _look.Model = null;
         _look.Body = (BodyType)body;
-        LookWidgets.ColorRow("Skin", 3, ref _look.SkinColor, HumanLook.SkinTones);
+        LookWidgets.ColorRow("Skin", 3, ref _look.SkinColor, _look.Folk == Folk.Elf ? HumanLook.ElfSkinTones : HumanLook.SkinTones);
 
         ImGui.TextColored(Theme.Dim, "Eyes"u8);
         var eyes = (int)_look.Eyes;
