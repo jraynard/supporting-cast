@@ -1026,6 +1026,8 @@ public enum Folk : byte
 {
     Human,
     Elf,
+    Dwarf,
+    Halfling,
 }
 
 /// <summary>

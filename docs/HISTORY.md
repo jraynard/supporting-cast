@@ -951,3 +951,8 @@ dragon and the festival.
   or a save read on a worker thread. Starting, loading, hosting, joining and the direct-launch
   flags all go through it; a start that fails comes back to the title with what went wrong, now
   shown under the tagline rather than below the menu.
+- **Dwarves and halflings:** two more folk, as looks. Dwarves are short and broad (every man and
+  some women bearded, ruddy skins, red to grey hair), halflings small and slight (warm browns). Each
+  has a build of its own, every people sheet warped to it (`tools/chibi_builds.py`), so every garment,
+  tool and hair style fits. One villager in eight of each about town; pick one in the creator (Look,
+  then Folk) or with `--folk Dwarf|Halfling`.

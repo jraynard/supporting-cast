@@ -33,6 +33,7 @@ import healer_art
 import tinker_art
 import norse_gear
 import chibi_people
+import chibi_builds
 import chibi_animals
 import chibi_nature
 import norse_plants
@@ -519,6 +520,7 @@ if __name__ == "__main__":
     norse_fx.generate()      # selection, designation mark, need and chatter bubbles (white art the game tints), the breath core
     chibi_nature.generate()  # trees, bushes, boulders, standing stones, wild plants: chibi, 4x detail (replaces the drawings above)
     village_art.generate()   # lanes, gardens, half-timbering and straw thatch, well, bridge, fences, crates, cabbages
+    chibi_builds.generate()  # dwarves' and halflings' builds, warped from every people sheet above (so: last)
     print("wooden buildings, wood and berry bushes: see placeholder_wood.py")
     count = sum(len(f) for _, _, f in os.walk(ROOT))
     print(f"wrote {count} sprites to {os.path.normpath(ROOT)}")

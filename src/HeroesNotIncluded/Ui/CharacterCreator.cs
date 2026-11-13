@@ -181,17 +181,21 @@ public sealed class CharacterCreator
         }
         if ((Folk)folk != _look.Folk)
         {
-            // A skin from the new folk's swatches, and our elves don't grow beards.
+            // A skin from the new folk's swatches; a beard as they run to (none for our elves, one for a dwarf).
             _look.Model = null;
             _look.Folk = (Folk)folk;
-            var tones = _look.Folk == Folk.Elf ? HumanLook.ElfSkinTones : HumanLook.SkinTones;
-            if (Array.IndexOf(tones, _look.SkinColor) < 0)
-                _look.SkinColor = tones[0];
-            if (_look.Folk == Folk.Elf)
+            var kind = HumanLook.FolkOf(_look.Folk);
+            if (Array.IndexOf(kind.Skin, _look.SkinColor) < 0)
+                _look.SkinColor = kind.Skin[0];
+            if (kind.Hair is { } hair && Array.IndexOf(hair, _look.HairColor) < 0)
+                _look.HairColor = hair[0];
+            if (kind.BeardedMen == 0)
                 _look.Beard = BeardStyle.None;
+            else if (kind.BeardedMen >= 10 && _look.Body == BodyType.Male && _look.Beard == BeardStyle.None)
+                _look.Beard = BeardStyle.Full;
         }
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-            ImGuiText.Tooltip("Elves: long-lived and a little fey, out of step with the village's hurry. Just a look, for now.");
+            ImGuiText.Tooltip(HumanLook.FolkOf(_look.Folk).About);
 
         ImGui.TextColored(Theme.Dim, "Body"u8);
         var body = (int)_look.Body;
@@ -201,7 +205,7 @@ public sealed class CharacterCreator
         if ((BodyType)body != _look.Body)
             _look.Model = null;
         _look.Body = (BodyType)body;
-        LookWidgets.ColorRow("Skin", 3, ref _look.SkinColor, _look.Folk == Folk.Elf ? HumanLook.ElfSkinTones : HumanLook.SkinTones);
+        LookWidgets.ColorRow("Skin", 3, ref _look.SkinColor, HumanLook.FolkOf(_look.Folk).Skin);
 
         ImGui.TextColored(Theme.Dim, "Eyes"u8);
         var eyes = (int)_look.Eyes;

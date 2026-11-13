@@ -105,9 +105,12 @@ public static class ArtAudit
         // People are drawn from layered looks (HumanLook): a base sheet per body, and every layer
         // (skin, hair and its back half, eyes and face, beards, worn things) on its frame layout
         // with its tags, since layers are matched by frame index.
-        foreach (var body in Enum.GetValues<BodyType>())
+        // Every build (tools/chibi_builds.py) has every body's layers too: a folk of each build stands for it.
+        foreach (var build in HumanLook.Folks.GroupBy(f => f.Build).Select(g => g.First().Folk))
+        foreach (var bodyType in Enum.GetValues<BodyType>())
         {
-            var look = new Appearance { Body = body };
+            var look = new Appearance { Body = bodyType, Folk = build };
+            var body = HumanLook.BodyKey(look);
             var name = HumanLook.BaseSheet(look);
             if (!sheets.TryGetValue(name, out var baseSheet))
             {
@@ -116,7 +119,7 @@ public static class ArtAudit
             }
             CheckLayer(HumanLook.SkinSheet(look), $"body {body}", required: true);
             foreach (var folk in Enum.GetValues<Folk>())
-                if (folk != Folk.Human)
+                if (folk != build && HumanLook.FolkOf(folk).Build == HumanLook.FolkOf(build).Build)
                 {
                     CheckLayer(HumanLook.SkinSheet(look with { Folk = folk }), $"body {body}/{folk}", required: true);
                     if (HumanLook.EarsSheet(look with { Folk = folk }) is { } ears)
@@ -138,8 +141,8 @@ public static class ArtAudit
             // Held weapons and tools are layers too: their shape's sheets in hand (apparel/held_<shape>_<body>).
             foreach (var shape in defs.AllThings.Select(t => t.Held).OfType<string>().Distinct())
             {
-                CheckLayer($"apparel/held_{shape}_{Lower(body)}", $"held {shape}", required: true);
-                CheckLayer($"apparel/held_{shape}_back_{Lower(body)}", $"held {shape}", required: true);
+                CheckLayer($"apparel/held_{shape}_{body}", $"held {shape}", required: true);
+                CheckLayer($"apparel/held_{shape}_back_{body}", $"held {shape}", required: true);
             }
             // Worn apparel is a layer too, found by HumanLook.WornSheet (<worn>_<body>).
             foreach (var t in defs.AllThings)
@@ -155,11 +158,11 @@ public static class ArtAudit
 
             void CheckWorn(ThingDef t, string worn, bool required)
             {
-                var sheetName = new[] { $"{worn}_{Lower(body)}", worn }.FirstOrDefault(sheets.ContainsKey);
+                var sheetName = new[] { $"{worn}_{body}", worn }.FirstOrDefault(sheets.ContainsKey);
                 if (sheetName == null)
                 {
                     if (required)
-                        warnings.Add($"thing {t.Name}: no worn sheet '{worn}_{Lower(body)}' (drawn without it)");
+                        warnings.Add($"thing {t.Name}: no worn sheet '{worn}_{body}' (drawn without it)");
                 }
                 else
                     CheckLayer(sheetName, $"thing {t.Name}", required: true);

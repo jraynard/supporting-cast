@@ -42,11 +42,63 @@ public static class HumanLook
 
     public static readonly uint[] ElfEyeColors = [0x4AA07A, 0xC8A040, 0x8A7AB8, 0x7AB4D8];
 
-    /// <summary>The folk the creator offers, with their labels.</summary>
-    public static readonly (Folk Folk, string Label)[] Folks = [(Folk.Human, "Human"), (Folk.Elf, "Elf")];
+    /// <summary>Our dwarves: weathered, ruddy skins; red, dark, grey and straw-gold hair.</summary>
+    public static readonly uint[] DwarfSkinTones = [0xEABC9E, 0xD69E7E, 0xBA7E5C, 0x925E44, 0x6A4434];
 
-    /// <summary>One villager in this many is an elf (derived looks).</summary>
-    public const int ElfOneIn = 6;
+    public static readonly uint[] DwarfHairColors = [0xA8402C, 0x5A3A26, 0x2A2220, 0x8E8C88, 0xC8A060];
+
+    /// <summary>Our halflings: warm, sun-browned skins and every brown of hair.</summary>
+    public static readonly uint[] HalflingSkinTones = [0xF2CEAA, 0xE2B68E, 0xCA9A72, 0xAA7C5A, 0x7C5C44];
+
+    public static readonly uint[] HalflingHairColors = [0x6A4428, 0x8A5A34, 0xA8743E, 0x3A2A1E, 0xC89458];
+
+    /// <summary>
+    /// What a folk looks like: its label and line in the creator, the swatches it runs to, how often
+    /// its men and women are bearded (in ten), and its build: the sheets drawn for its body shape
+    /// (tools/chibi_builds.py: "" for the human frame, else <c>_dwarf</c>, <c>_halfling</c>).
+    /// </summary>
+    public sealed record FolkLook(Folk Folk, string Label, string About, uint[] Skin, uint[]? Hair, uint[]? Eyes,
+        int BeardedMen, int BeardedWomen, int Build);
+
+    public static readonly FolkLook[] Folks =
+    [
+        new(Folk.Human, "Human", "Most of the village: quick, stubborn and everywhere.", SkinTones, null, null, 6, 0, 0),
+        new(Folk.Elf, "Elf", "Elves: long-lived and a little fey, out of step with the village's hurry. Just a look, for now.",
+            ElfSkinTones, ElfHairColors, ElfEyeColors, 0, 0, 0),
+        new(Folk.Dwarf, "Dwarf", "Dwarves: short, broad and bearded, and they'll tell you the forge was theirs first. Just a look, for now.",
+            DwarfSkinTones, DwarfHairColors, null, 10, 3, 1),
+        new(Folk.Halfling, "Halfling", "Halflings: small, quick and fond of second breakfasts. Just a look, for now.",
+            HalflingSkinTones, HalflingHairColors, null, 1, 0, 2),
+    ];
+
+    /// <summary>A folk's look (the human's for anything unknown).</summary>
+    public static FolkLook FolkOf(Folk folk) => (uint)folk < (uint)Folks.Length && Folks[(int)folk].Folk == folk ? Folks[(int)folk] : Folks[0];
+
+    /// <summary>One villager in this many is an elf (derived looks); of the rest, one in <see cref="SmallFolkOneIn"/> each a dwarf or a halfling.</summary>
+    public const int ElfOneIn = 6, SmallFolkOneIn = 8;
+
+    /// <summary>
+    /// The builds' shapes, as tools/chibi_builds.py warps them (keep in step): the head drops by
+    /// <c>Drop</c> design units, the body below <see cref="Neck"/> is squashed down to the feet and
+    /// broadened by <c>Widen</c>. Index 0 is the human frame.
+    /// </summary>
+    private static readonly (string Suffix, float Drop, float Widen)[] Builds = [("", 0f, 1f), ("_dwarf", 5f, 1.24f), ("_halfling", 7f, 1f)];
+
+    private const float Neck = 31.5f, Feet = 58f, Ease = 3f;
+
+    /// <summary>Where a point of the human frame (design units, the 40x60 frame) lands in this look's build: a hand, a cup.</summary>
+    public static float2 BuildPoint(in Appearance a, float2 p)
+    {
+        var (_, drop, widen) = Builds[FolkOf(a.Folk).Build];
+        if (drop == 0f && widen == 1f)
+            return p;
+        if (p.Y < Neck)
+            return new float2(p.X, p.Y + drop);
+        var y = Neck + drop + (p.Y - Neck) * (Feet - Neck - drop) / (Feet - Neck);
+        var t = Math.Clamp((y - Neck - drop) / Ease, 0f, 1f);
+        var grow = 1f + (widen - 1f) * t * t * (3f - 2f * t);
+        return new float2(20f + (p.X - 20f) * grow, y);
+    }
 
     /// <summary>Hair styles in the order the creator offers them, with their labels. None stays last: derived looks skip it.</summary>
     public static readonly (HairStyle Style, string Label)[] HairStyles =
@@ -150,7 +202,7 @@ public static class HumanLook
         a.Eyes = EyeStyles[Next() % (uint)EyeStyles.Length].Style;
         var beard = Next() % 10;
         a.Beard = a.Body == BodyType.Male && beard < 6 ? Beards[1 + beard % (uint)(Beards.Length - 1)].Style : BeardStyle.None;
-        // Drawn last, so everyone who was human before looks just as they did.
+        // Drawn last, so everyone who was human before looks just as they did (the elves too).
         if (Next() % ElfOneIn == 0)
         {
             a.Folk = Folk.Elf;
@@ -158,6 +210,15 @@ public static class HumanLook
             a.HairColor = ElfHairColors[Next() % (uint)ElfHairColors.Length];
             a.EyeColor = ElfEyeColors[Next() % (uint)ElfEyeColors.Length];
             a.Beard = BeardStyle.None; // our elves don't grow them
+        }
+        else if (Next() % SmallFolkOneIn is var small && small < 2)
+        {
+            var f = FolkOf(small == 0 ? Folk.Dwarf : Folk.Halfling);
+            a.Folk = f.Folk;
+            a.SkinColor = f.Skin[Next() % (uint)f.Skin.Length];
+            a.HairColor = f.Hair![Next() % (uint)f.Hair.Length];
+            var bearded = Next() % 10 < (a.Body == BodyType.Male ? f.BeardedMen : f.BeardedWomen);
+            a.Beard = bearded ? Beards[1 + Next() % (uint)(Beards.Length - 1)].Style : BeardStyle.None;
         }
         return a;
     }
@@ -193,20 +254,27 @@ public static class HumanLook
     // writes them). The base (linen underclothes) and skin are per body; hair, its back half and
     // beards are per style and fit both bodies (the heads are the same); eyes and the face's lines
     // are per body and style; a garment is <worn>_<body>.
-    private static readonly string[] BodyNames = ["male", "female"];
+    private static readonly string[] BodyNames =
+        Builds.SelectMany(b => new[] { "male" + b.Suffix, "female" + b.Suffix }).ToArray();
 
-    private static int BodyIndex(in Appearance a) => a.Body == BodyType.Female ? 1 : 0;
+    /// <summary>The body part of a look's sheet names (<c>male</c>, <c>female_dwarf</c>...): its sex in its folk's build.</summary>
+    public static string BodyKey(in Appearance a) => BodyNames[BodyIndex(a)];
+
+    /// <summary>The body's sheets: its sex, in its folk's build.</summary>
+    private static int BodyIndex(in Appearance a) => (a.Body == BodyType.Female ? 1 : 0) + 2 * FolkOf(a.Folk).Build;
 
     private static readonly (string Base, string Skin, string ElfSkin, string ElfEars)[] BodySheets =
         BodyNames.Select(b => ($"creatures/person_{b}", $"creatures/person_{b}_skin", $"creatures/person_{b}_skin_elf", $"creatures/person_{b}_ears_elf")).ToArray();
 
-    private static readonly (string Front, string Back)[] HairSheets =
-        Enum.GetValues<HairStyle>().Select(h => ($"creatures/person_hair_{StyleName(h)}", $"creatures/person_hair_{StyleName(h)}_back")).ToArray();
+    // Hair and beards fit every body of a build (the heads are the same); a build's are moved down with its head.
+    private static readonly (string Front, string Back)[][] HairSheets = Builds.Select(b =>
+        Enum.GetValues<HairStyle>().Select(h => ($"creatures/person_hair_{StyleName(h)}{b.Suffix}", $"creatures/person_hair_{StyleName(h)}_back{b.Suffix}")).ToArray()).ToArray();
 
     private static readonly (string Eyes, string Face)[] EyeSheets =
         Enum.GetValues<EyeStyle>().SelectMany(e => BodyNames.Select(b => ($"creatures/person_{b}_eyes_{Lower(e)}", $"creatures/person_{b}_face_{Lower(e)}"))).ToArray();
 
-    private static readonly string[] BeardSheets = Enum.GetValues<BeardStyle>().Select(b => $"creatures/person_beard_{Lower(b)}").ToArray();
+    private static readonly string[][] BeardSheets = Builds.Select(build =>
+        Enum.GetValues<BeardStyle>().Select(b => $"creatures/person_beard_{Lower(b)}{build.Suffix}").ToArray()).ToArray();
 
     private static string Lower<T>(T value) where T : Enum => value.ToString().ToLowerInvariant();
 
@@ -222,11 +290,11 @@ public static class HumanLook
 
     /// <summary>An elf's ears again, drawn over the hair they stand out through; null for humans.</summary>
     public static string? EarsSheet(in Appearance a) => a.Folk == Folk.Elf ? BodySheets[BodyIndex(a)].ElfEars : null;
-    public static string HairSheet(in Appearance a) => Pick(HairSheets, (int)a.Hair).Front;
-    public static string HairBackSheet(in Appearance a) => Pick(HairSheets, (int)a.Hair).Back;
-    public static string EyesSheet(in Appearance a) => Pick(EyeSheets, (int)a.Eyes * 2 + BodyIndex(a)).Eyes;
-    public static string FaceSheet(in Appearance a) => Pick(EyeSheets, (int)a.Eyes * 2 + BodyIndex(a)).Face;
-    public static string BeardSheet(in Appearance a) => Pick(BeardSheets, (int)a.Beard);
+    public static string HairSheet(in Appearance a) => Pick(HairSheets[FolkOf(a.Folk).Build], (int)a.Hair).Front;
+    public static string HairBackSheet(in Appearance a) => Pick(HairSheets[FolkOf(a.Folk).Build], (int)a.Hair).Back;
+    public static string EyesSheet(in Appearance a) => Pick(EyeSheets, (int)a.Eyes * BodyNames.Length + BodyIndex(a)).Eyes;
+    public static string FaceSheet(in Appearance a) => Pick(EyeSheets, (int)a.Eyes * BodyNames.Length + BodyIndex(a)).Face;
+    public static string BeardSheet(in Appearance a) => Pick(BeardSheets[FolkOf(a.Folk).Build], (int)a.Beard);
 
     /// <summary>A layer's frame matching a base-sheet frame (same index in the shared layout).</summary>
     public static SheetFrame? LayerFrame(SpriteSheet baseSheet, SpriteSheet layer, in SheetFrame frame)

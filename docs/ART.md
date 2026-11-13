@@ -289,11 +289,21 @@ through every stance.
 | `apparel/<cloak>_back_<body>` (+ `_dye`) | a cloak's back panel, cut under the base | first |
 | `apparel/held_<shape>_<body>` (+ `_metal`, `_back`, `_back_metal`) | a weapon or tool in the working hand, along the forearm through every pose and swing (front views over the body, back views behind it); the metal is tinted by the item's tier (`HumanLook.MetalTint`) | in hand |
 
-**Folk** (`Appearance.Folk`): humans, and our elves, whose skin sheet has long ears swept up and
+**Folk** (`Appearance.Folk`, `HumanLook.Folks`: each its label, swatches, how often bearded and its build):
+humans, our dwarves (ruddy, bearded, the dwarf build), our halflings (warm browns, the halfling build), and our elves, whose skin sheet has long ears swept up and
 back past the head (`elf_ear`) and whose ears are drawn again over the hair (`ears_layer`), so they
 stand out through any style. A new folk is a name in `FOLK` and its own skin (and ears) sheets;
 the game falls back to the human skin when a folk's is missing. Elves run to their own swatches
 (`HumanLook.ElfSkinTones` and friends) and grow no beards.
+
+**Builds** (`tools/chibi_builds.py`, run last): dwarves and halflings have bodies of their own,
+warped from every finished people sheet so all their layers stay aligned. The head drops (a dwarf's
+5 design units, a halfling's 7), the body below the neck (31.5) is squashed to the feet (which stay
+on the pivot) and a dwarf's broadened (×1.24, eased in below the neck). Each build has its own
+`person_<body>_<build>[_skin|_eyes_*|_face_*]`, `apparel/<worn>_<body>_<build>` and, moved down
+with its head, `person_hair_<style>[_back]_<build>` and `person_beard_<style>_<build>`. The game picks
+them by folk (`HumanLook.FolkOf(...).Build`, `BodyKey`) and maps points such as the seated cup's hand
+with the same numbers (`HumanLook.BuildPoint`). The builds about double the people's atlas pages.
 
 Bodies are `male` and `female` (shown as Masculine and Feminine). Hair styles (`HairStyle`, new ones go at the end of the
 enum) are `short`, `shaggy`, `long`, `ponytail`, `bun`, `sidebraid`, `crownbraid`, `pigtails` (two braids),

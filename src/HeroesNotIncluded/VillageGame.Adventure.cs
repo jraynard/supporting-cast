@@ -63,8 +63,12 @@ public sealed partial class VillageGame
         if (HeroFolk is not { } folk || look?.Folk == folk)
             return (look, clothes);
         var a = (look ?? Rendering.HumanLook.Default) with { Folk = folk, Model = null };
-        if (folk == Folk.Elf)
-            a = a with { SkinColor = Rendering.HumanLook.ElfSkinTones[0], Beard = BeardStyle.None };
+        var kind = Rendering.HumanLook.FolkOf(folk);
+        a = a with { SkinColor = kind.Skin[0], HairColor = kind.Hair?[0] ?? a.HairColor };
+        if (kind.BeardedMen == 0)
+            a = a with { Beard = BeardStyle.None };
+        else if (kind.BeardedMen >= 10 && a.Body == BodyType.Male && a.Beard == BeardStyle.None)
+            a = a with { Beard = BeardStyle.Full };
         return (a, clothes);
     }
 

@@ -361,7 +361,9 @@ or perhaps by the traitor if they are a necromancer. They can come back in the n
   is a more Tolkien-inspired look in general, keeping the Norse pieces where they fit.
 - **Fantasy folk** are our own takes, not anyone else's. Elves came first: long-lived and a little
   fey, out of step with the village's hurry, with tall swept-back ears; for now a look only, with
-  no rules of their own. Dwarves and halflings are to follow.
+  no rules of their own. Dwarves are short and broad, bearded (the women too, some of them) and
+  ruddy; halflings are small, slight and quick, in warm browns. Each has a build of its own, not a
+  shrunk human. All three are looks for now.
 
 ## Sim folders
 

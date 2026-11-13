@@ -643,7 +643,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             if (len > 1e-4f)
                 feet += toward * (SitForward / len);
             var sip = pose.Anim is { Frames.Length: > 2 } a && pose.Frame.Index == a.Frames[2].Index;
-            var hand = sip ? SipHand : LapHand;
+            var hand = HumanLook.BuildPoint(HumanLook.Of(sim, e), sip ? SipHand : LapHand); // a dwarf's lap is lower
             var unit = sheet.FrameSize.Y / 60f / (PixelsPerCell * sheet.Density); // the generator's 40x60 design units
             _heldAt = feet + _cam.Right * ((hand.X - 20f) * unit * pose.Facing) + _cam.Up * ((58f - hand.Y) * unit) - _cam.Forward * 0.02f;
         }

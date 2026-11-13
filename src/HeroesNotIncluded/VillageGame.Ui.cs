@@ -303,7 +303,8 @@ public sealed partial class VillageGame
         var w = _sim.World;
         var stage = c.Stage(_sim.Clock.Tick);
         InspectorHeader(PortraitOf(e), c.Name, c.Def.Race == Race.Animal ? $"wild {c.Def.Label}"
-            : c.Def.Race == Race.Human && Rendering.HumanLook.Of(_sim, e).Folk == Folk.Elf ? "elf" : $"{c.Def.Label}", e);
+            : c.Def.Race == Race.Human && Rendering.HumanLook.Of(_sim, e).Folk is not Folk.Human and var folk
+                ? Rendering.HumanLook.FolkOf(folk).Label.ToLowerInvariant() : $"{c.Def.Label}", e);
         if (!c.Dead && Sim.Systems.FoodPoisoning.Describe(_sim, e) is { } sick)
             TextC(Warn, sick);
         if (c.Dead)

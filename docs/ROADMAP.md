@@ -159,8 +159,9 @@ Grouped by area; nothing here blocks a playtest.
 - The bridge's parapets are drawn, not built: check nobody can step off its side.
 
 **Art and look**
-- More fantasy folk: our own takes on dwarves and halflings. Elves are in, as a look; they could
-  have something of their own (keener sight at dusk, an aptitude).
+- The folk (elves, dwarves, halflings) are looks; they could have something of their own (an elf's
+  keener sight at dusk, a dwarf's ease at the forge, a halfling's quiet step). Halflings could go
+  barefoot (villagers' clothes come from the sim, so it isn't only a look).
 
 **Map and movement**
 - Lanes cost the same to walk as grass, so villagers don't prefer them.
