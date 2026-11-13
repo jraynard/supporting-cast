@@ -42,4 +42,53 @@ public sealed class SeasonDef : Def
 
     /// <summary>Dread a cleared quest lifts.</summary>
     public float DreadPerQuestCleared { get; set; } = -12;
+
+    /// <summary>When the Director (<c>Director.Director</c>) sends its crises, in order.</summary>
+    public List<CrisisBeat> Beats { get; set; } = [];
+
+    /// <summary>Renown and Dread for a crisis the town met (drove the raiders off, put the fire out).</summary>
+    public float CrisisMetRenown { get; set; } = 6;
+    public float CrisisMetDread { get; set; } = -4;
+
+    /// <summary>Dread for a crisis the town didn't meet.</summary>
+    public float CrisisUnmetDread { get; set; } = 10;
+
+    /// <summary>Game hours a crisis runs before it's over whether the town met it or not.</summary>
+    public float CrisisHours { get; set; } = 6;
+}
+
+/// <summary>What sort of trouble the Director sends.</summary>
+public enum CrisisKind : byte
+{
+    Raid,
+    Fire,
+    Shortage,
+    Plague,
+    Dragon,
+}
+
+/// <summary>
+/// One crisis in the season: on <see cref="Day"/> (1 is the day of the deal), at a time between
+/// <see cref="FromHour"/> and <see cref="ToHour"/> (sooner the more Dread there is), one of
+/// <see cref="Kinds"/> by weight, at <see cref="Strength"/> (more with Dread too).
+/// </summary>
+public sealed class CrisisBeat
+{
+    public int Day { get; set; } = 1;
+    public float FromHour { get; set; } = 10;
+    public float ToHour { get; set; } = 16;
+    public float Strength { get; set; } = 1;
+
+    /// <summary>Kind name to weight. Kinds the game can't send yet are passed over.</summary>
+    public Dictionary<string, float> Kinds { get; set; } = [];
+
+    /// <summary>The kinds and weights, read.</summary>
+    public List<(CrisisKind Kind, float Weight)> Weights()
+    {
+        var list = new List<(CrisisKind, float)>();
+        foreach (var (name, weight) in Kinds.OrderBy(k => k.Key, StringComparer.Ordinal))
+            if (Enum.TryParse<CrisisKind>(name, ignoreCase: true, out var kind) && weight > 0)
+                list.Add((kind, weight));
+        return list;
+    }
 }

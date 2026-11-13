@@ -271,6 +271,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
         if (Difficulty is { } difficulty && !difficulty.Equals("Off", StringComparison.OrdinalIgnoreCase))
             _sim.Storyteller.SetDifficulty(_sim, defs.Difficulty(difficulty));
+        // A round's season brings its crises, at Normal unless asked otherwise ("Off" for none).
+        if (Adventure && !string.Equals(Difficulty, "Off", StringComparison.OrdinalIgnoreCase))
+            _sim.Director.Enable(defs.Difficulty(Difficulty ?? "Normal"));
         if (Adventure)
         {
             _sim.Round.OpenLobby();

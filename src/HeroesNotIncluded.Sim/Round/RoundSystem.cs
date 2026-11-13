@@ -87,15 +87,17 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     /// The tick the festival starts: <see cref="SeasonDef.FestivalHour"/> on the season's last day,
     /// counting the day of the deal as the first. -1 before the deal.
     /// </summary>
-    public long FestivalTick(Simulation sim)
+    public long FestivalTick(Simulation sim) =>
+        StartTick < 0 ? -1 : Math.Max(StartTick, TickAt(sim, Math.Max(1, sim.Defs.Season.Days), sim.Defs.Season.FestivalHour));
+
+    /// <summary>The tick at <paramref name="hour"/> on the season's <paramref name="day"/> (1 is the day of the deal). -1 before the deal.</summary>
+    public long TickAt(Simulation sim, int day, float hour)
     {
         if (StartTick < 0)
             return -1;
-        var season = sim.Defs.Season;
         var startHour = sim.Clock.StartHour * (long)SimClock.TicksPerHour;
         var firstDay = (StartTick + startHour) / SimClock.TicksPerDay;
-        var total = (firstDay + Math.Max(1, season.Days) - 1) * SimClock.TicksPerDay + SimClock.HoursToTicks(season.FestivalHour);
-        return Math.Max(StartTick, total - startHour);
+        return (firstDay + day - 1) * SimClock.TicksPerDay + SimClock.HoursToTicks(hour) - startHour;
     }
 
     /// <summary>The tick the festival ends and the town is reckoned. -1 before the deal.</summary>

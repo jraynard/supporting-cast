@@ -629,6 +629,31 @@ Known leftovers:
 - Villagers at supper only sit; they don't swap rumours like adventurers do.
 - Players can't order from the hatch themselves.
 
+### M3.3: The Director (2026-11-12)
+- **`Director/Director`** sends a round's crises on the season's beats (`season.json` `beats`):
+  - **The beats:** a small raid late on the first night (20–23), a crisis on day two (10–17) and
+    the dragon on day three (11–15).
+  - **Timing:** each beat's moment is picked in its window when the round starts. Dread pulls it
+    earlier and makes it stronger (×1 to ×1.5).
+  - **Kinds not built yet** are passed over: so far only raids can come (`Director.CanSend`).
+- **Off unless the game enables it:** the game enables it for every new village it starts for a
+  round, at Normal unless `--difficulty` says otherwise (`Off` for none, `Peaceful` sends
+  nothing). Tests and the bench leave it off.
+- **The Storyteller stands down** in rounds and still sends raids outside them. Its raid helpers
+  moved to `Raids.Points`, `Raids.Choose` and `Raids.Send` for both to use.
+- **`ICrisis`:** each crisis reports itself met or not, and `Reckoning.CrisisResolved` moves
+  Renown and Dread (met +6 Renown, −4 Dread; unmet +10 Dread).
+  - **`RaidCrisis`:**
+    - **When it starts:** the villager nearest the road shouts the alarm.
+    - **Met:** every raider is dead, down or fled before `crisisHours` (6), and no villager died.
+    - **Unmet:** otherwise, and those still about leave with what they came for.
+- `DirectorTests`. Bench state hashes unchanged; the full hashes moved for the Director's saved
+  state: 1234 `2C1EE4B896631A9D`, 99 `3B07FA28C5E95F88`.
+
+Known leftovers:
+- Villagers still don't fight back (slice 5), so a raid is rarely met.
+- Difficulty doesn't scale the Renown target or the Dread limit yet.
+
 ## Next
 
 ### M3: A whole season

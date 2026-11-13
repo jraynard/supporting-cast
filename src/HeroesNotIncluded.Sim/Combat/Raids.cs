@@ -46,6 +46,93 @@ public static class Raids
     }
 
     /// <summary>Up to <paramref name="count"/> distinct passable cells near <paramref name="entry"/> that can reach <paramref name="target"/>.</summary>
+    /// <summary>
+    /// How big a raid the village has earned: it grows with the days survived, the people (armed
+    /// ones count extra) and how far the dragons have grown. Before any difficulty's factor.
+    /// </summary>
+    public static float Points(Simulation sim)
+    {
+        var w = sim.World;
+        var points = 40f + 10f * (sim.Clock.Day - 1);
+        foreach (var e in sim.Creatures())
+        {
+            var c = w.Get<Creature>(e);
+            if (c.Faction != Faction.Village)
+                continue;
+            if (c.Def.Race == Race.Human)
+            {
+                points += 20f;
+                if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon))
+                    points += 15f;
+            }
+            else if (c.Def.Race == Race.Dragon)
+            {
+                points += 40f * Math.Max(0, c.Def.LifeStages.IndexOf(c.Stage(sim.Clock.Tick)));
+            }
+        }
+        return points;
+    }
+
+    /// <summary>
+    /// Pick raiders worth up to <paramref name="points"/>: random affordable kinds, at least the
+    /// cheapest one. Only kinds whose gear is at most one tier past the village's best
+    /// (<see cref="Systems.Mining.VillageGearTier"/>): raiders climb the ladder with you.
+    /// </summary>
+    public static List<RaiderKindDef> Choose(Simulation sim, SimRandom rand, float points, int maxRaiders)
+    {
+        var villageTier = Systems.Mining.VillageGearTier(sim);
+        var kinds = sim.Defs.AllRaiderKinds.Where(k => k.Tier <= villageTier + 1).ToList();
+        if (kinds.Count == 0)
+            kinds = [sim.Defs.AllRaiderKinds.MinBy(k => (int)k.Tier)!];
+        var chosen = new List<RaiderKindDef>();
+        var left = points;
+        while (chosen.Count < maxRaiders)
+        {
+            var affordable = kinds.Where(k => k.Cost <= left).ToList();
+            if (affordable.Count == 0)
+                break;
+            var kind = rand.Pick(affordable);
+            chosen.Add(kind);
+            left -= kind.Cost;
+        }
+        if (chosen.Count == 0 && kinds.Count > 0)
+            chosen.Add(kinds.MinBy(k => k.Cost)!);
+        return chosen;
+    }
+
+    /// <summary>
+    /// A raid of up to <paramref name="points"/> comes from a map edge, heading for whoever is nearest
+    /// the middle of the village. Returns the raiders, none if there was nowhere to come from.
+    /// </summary>
+    public static List<Entity> Send(Simulation sim, SimRandom rand, float points, int maxRaiders)
+    {
+        var w = sim.World;
+        var villagers = sim.Creatures().Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human }).ToList();
+        if (villagers.Count == 0)
+            return [];
+        var sum = new float3();
+        foreach (var e in villagers)
+            sum += Position.CenterOf(w.Get<Position>(e).Cell);
+        var mid = sum * (1f / villagers.Count);
+        var target = villagers
+            .Select(e => w.Get<Position>(e).Cell)
+            .MinBy(c => (Position.CenterOf(c) - mid) is var d ? d.X * d.X + d.Y * d.Y : 0);
+
+        var first = rand.NextInt(4);
+        int3? entry = null;
+        for (var i = 0; i < 4 && entry == null; i++)
+            entry = EdgeEntry(sim, (first + i) % 4, target);
+        if (entry is not { } at)
+            return [];
+
+        var raiders = Spawn(sim, Choose(sim, rand, points, maxRaiders), at, target, rand);
+        if (raiders.Count == 0)
+            return raiders;
+        var who = raiders.Count == 1 ? "A bandit is" : $"{raiders.Count} bandits are";
+        sim.Messages.Add(MessageKind.Danger, $"{who} coming from the {Direction(sim.Map, at)}!", at);
+        return raiders;
+    }
+
     public static List<int3> GatherSpots(Simulation sim, int3 entry, int3 target, int count)
     {
         var spots = new List<int3>();

@@ -64,7 +64,8 @@ public sealed class Storyteller(ulong seed) : ISimSystem, Saving.ISaveState
 
     public void Update(Simulation sim)
     {
-        if (Difficulty == null)
+        // A round's crises are the Director's (Director/Director.cs).
+        if (Difficulty == null || sim.Round.Phase != Round.RoundPhase.None)
             return;
         // Not while a fight is on or the last raiders are still about: try again in a couple of hours.
         var busy = sim.Creatures().Any(e => Factions.Attacker(sim.World.Get<Creature>(e).Faction));
@@ -120,90 +121,18 @@ public sealed class Storyteller(ulong seed) : ISimSystem, Saving.ISaveState
         return sent;
     }
 
-    /// <summary>
-    /// How big a raid the village has earned: it grows with the days survived, the people (armed
-    /// ones count extra) and how far the dragons have grown.
-    /// </summary>
-    public float RaidPoints(Simulation sim)
-    {
-        var w = sim.World;
-        var points = 40f + 10f * (sim.Clock.Day - 1);
-        foreach (var e in sim.Creatures())
-        {
-            var c = w.Get<Creature>(e);
-            if (c.Faction != Faction.Village)
-                continue;
-            if (c.Def.Race == Race.Human)
-            {
-                points += 20f;
-                if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon))
-                    points += 15f;
-            }
-            else if (c.Def.Race == Race.Dragon)
-            {
-                points += 40f * Math.Max(0, c.Def.LifeStages.IndexOf(c.Stage(sim.Clock.Tick)));
-            }
-        }
-        return points * (Difficulty?.PointsFactor ?? 1f);
-    }
+    /// <summary>How big a raid the village has earned (<see cref="Raids.Points"/>), at this difficulty.</summary>
+    public float RaidPoints(Simulation sim) => Raids.Points(sim) * (Difficulty?.PointsFactor ?? 1f);
 
-    /// <summary>
-    /// Pick raiders worth up to <paramref name="points"/>: random affordable kinds, at least the
-    /// cheapest one. Only kinds whose gear is at most one tier past the village's best
-    /// (<see cref="Mining.VillageGearTier"/>): raiders climb the ladder with you.
-    /// </summary>
-    public List<RaiderKindDef> Choose(Simulation sim, float points, int maxRaiders)
-    {
-        var villageTier = Mining.VillageGearTier(sim);
-        var kinds = sim.Defs.AllRaiderKinds.Where(k => k.Tier <= villageTier + 1).ToList();
-        if (kinds.Count == 0)
-            kinds = [sim.Defs.AllRaiderKinds.MinBy(k => (int)k.Tier)!];
-        var chosen = new List<RaiderKindDef>();
-        var left = points;
-        while (chosen.Count < maxRaiders)
-        {
-            var affordable = kinds.Where(k => k.Cost <= left).ToList();
-            if (affordable.Count == 0)
-                break;
-            var kind = _rand.Pick(affordable);
-            chosen.Add(kind);
-            left -= kind.Cost;
-        }
-        if (chosen.Count == 0 && kinds.Count > 0)
-            chosen.Add(kinds.MinBy(k => k.Cost)!);
-        return chosen;
-    }
+    /// <summary>Pick raiders worth up to <paramref name="points"/> (<see cref="Raids.Choose"/>).</summary>
+    public List<RaiderKindDef> Choose(Simulation sim, float points, int maxRaiders) => Raids.Choose(sim, _rand, points, maxRaiders);
 
     /// <summary>Send a raid now (also the debug panel's "Raid now"). Returns the raiders, none if there was nowhere to come from.</summary>
     public List<Entity> SendRaid(Simulation sim)
     {
-        var w = sim.World;
-        var villagers = sim.Creatures().Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human }).ToList();
-        if (villagers.Count == 0)
-            return [];
-        // Head for whoever is nearest the middle of the village.
-        var sum = new float3();
-        foreach (var e in villagers)
-            sum += Position.CenterOf(w.Get<Position>(e).Cell);
-        var mid = sum * (1f / villagers.Count);
-        var target = villagers
-            .Select(e => w.Get<Position>(e).Cell)
-            .MinBy(c => (Position.CenterOf(c) - mid) is var d ? d.X * d.X + d.Y * d.Y : 0);
-
-        var first = _rand.NextInt(4);
-        int3? entry = null;
-        for (var i = 0; i < 4 && entry == null; i++)
-            entry = Raids.EdgeEntry(sim, (first + i) % 4, target);
-        if (entry is not { } at)
-            return [];
-
-        var kinds = Choose(sim, RaidPoints(sim), Difficulty?.MaxRaiders ?? 5);
-        var raiders = Raids.Spawn(sim, kinds, at, target, _rand);
-        if (raiders.Count == 0)
-            return raiders;
-        RaidsSent++;
-        var who = raiders.Count == 1 ? "A bandit is" : $"{raiders.Count} bandits are";
-        sim.Messages.Add(MessageKind.Danger, $"{who} coming from the {Raids.Direction(sim.Map, at)}!", at);
+        var raiders = Raids.Send(sim, _rand, RaidPoints(sim), Difficulty?.MaxRaiders ?? 5);
+        if (raiders.Count > 0)
+            RaidsSent++;
         return raiders;
     }
 }

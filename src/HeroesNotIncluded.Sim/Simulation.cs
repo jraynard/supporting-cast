@@ -80,6 +80,9 @@ public sealed partial class Simulation
     /// <summary>The town's Renown and Dread over a round.</summary>
     public Director.Reckoning Reckoning { get; } = new();
 
+    /// <summary>The crises a round's season sends. Off until the game enables it for a round.</summary>
+    public Director.Director Director { get; }
+
     /// <summary>Who knows the way where, and who's asked.</summary>
     public Hospitality.DirectionsSystem Directions { get; } = new();
 
@@ -199,6 +202,7 @@ public sealed partial class Simulation
         Parties = new Adventurers.PartySystem(seed);
         Shops = new Shops.ShopSystem(seed);
         Expeditions = new Expeditions.ExpeditionSystem(seed);
+        Director = new Director.Director(seed);
         Messages.Now = () => Clock.Tick;
 
         World.Destroying += OnEntityDestroying;
@@ -236,6 +240,7 @@ public sealed partial class Simulation
             .AddSystem(new Tinkering.RelockSystem())
             .AddSystem(sim.Expeditions)
             .AddSystem(sim.Reckoning)
+            .AddSystem(sim.Director)
             .AddSystem(new MoodSystem())
             .AddSystem(new PrisonBreakSystem())
             .AddSystem(sim.Social)

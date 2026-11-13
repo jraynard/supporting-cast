@@ -79,6 +79,16 @@ public sealed class Reckoning : ISimSystem, ISaveState
         AdventurersCounted++;
     }
 
+    /// <summary>A crisis is over: met, it's a story travellers tell; not, the valley's fear grows.</summary>
+    public void CrisisResolved(Simulation sim, bool met)
+    {
+        var season = sim.Defs.Season;
+        if (met)
+            Add(sim, season.CrisisMetRenown, season.CrisisMetDread);
+        else
+            Add(sim, 0, season.CrisisUnmetDread);
+    }
+
     /// <summary>At the festival's end: everyone still in town has their say too.</summary>
     public void FinalCount(Simulation sim)
     {
