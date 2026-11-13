@@ -24,6 +24,15 @@ public sealed class TradeDef : Def
     /// </summary>
     public List<string> Knows { get; set; } = [];
 
+    /// <summary>
+    /// The trade's working stations at its workplace (thing def names): marked in the world for a
+    /// newcomer until they've been to each, so the first thing a new player sees is where to go.
+    /// </summary>
+    public List<string> Stations { get; set; } = [];
+
+    /// <summary>A few short first-day lines for a player new to the trade, shown one at a time.</summary>
+    public List<string> Tips { get; set; } = [];
+
     /// <summary>The least the holder has in a skill: a smith can smith.</summary>
     public Dictionary<Components.Skill, int> Skills { get; set; } = [];
 
@@ -59,6 +68,9 @@ public sealed class TradeDef : Def
     public List<ThingDef> KnownStations { get; } = [];
 
     [JsonIgnore]
+    public List<ThingDef> StationDefs { get; } = [];
+
+    [JsonIgnore]
     public BuildingDef? WorkplaceDef { get; private set; }
 
     internal override void Resolve(DefDatabase db)
@@ -68,6 +80,9 @@ public sealed class TradeDef : Def
         KnownStations.Clear();
         foreach (var station in Knows)
             KnownStations.Add(db.Thing(station));
+        StationDefs.Clear();
+        foreach (var station in Stations)
+            StationDefs.Add(db.Thing(station));
         foreach (var item in Kit)
             item.ThingDef = db.Thing(item.Def);
         foreach (var (skill, level) in Skills)

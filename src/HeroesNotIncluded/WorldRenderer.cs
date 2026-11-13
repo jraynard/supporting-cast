@@ -122,6 +122,9 @@ public sealed class WorldRenderer(TextureAtlas atlas)
     /// </summary>
     public Dictionary<Entity, OrderBubble> OrderBubbles { get; } = [];
 
+    /// <summary>Cells of the player's trade's stations they haven't been to yet: a soft ring on each.</summary>
+    public List<int3> StationMarks { get; } = [];
+
     private readonly Dictionary<string, Sprite> _spriteCache = [];
     private readonly WorldMesher _mesher = new(atlas);
     private readonly DoorAnimator _doors = new();
@@ -483,6 +486,17 @@ public sealed class WorldRenderer(TextureAtlas atlas)
                     prev = next;
                 }
             }
+
+        // A newcomer's stations: a parchment ring, breathing slowly, on the floor under each.
+        foreach (var cell in StationMarks)
+        {
+            if (!InView(cell))
+                continue;
+            // Wide enough that the ring's corners show past the furniture standing in it.
+            var ring = 1.8f * (1f + 0.08f * MathF.Sin(time * 2.5f));
+            Decal(S("ui/selection"), Position.CenterOf(cell) + new float3(0, 0, 0.04f), ring,
+                Rgba.Pack(Ui.Theme.Parchment.X, Ui.Theme.Parchment.Y, Ui.Theme.Parchment.Z), Quad.Level(cell.Z) | Quad.Unlit, translucent: true);
+        }
 
         if (w.IsAlive(selected))
         {

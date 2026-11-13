@@ -34,4 +34,20 @@ public class DefTests
         Assert.Single(db.AllThings);
         Assert.Equal(99, db.Thing("Rock").MaxHp);
     }
+
+    [Fact]
+    public void EveryTradesStationsStandInItsWorkplace()
+    {
+        // The first-day rings mark these: one that isn't there marks nothing, silently.
+        var (sim, _) = TestWorld.Millbrook();
+        var w = sim.World;
+        foreach (var trade in sim.Defs.AllTrades.Where(t => t.StationDefs.Count > 0))
+        {
+            var building = Shops.ShopSystem.BuildingOf(sim, trade.WorkplaceDef!);
+            Assert.False(building.IsNull, $"{trade.Name}: no {trade.Workplace} in town");
+            foreach (var station in trade.StationDefs)
+                Assert.True(w.Query<Components.Thing>().Any(e => w.Get<Components.Thing>(e).Def == station && Systems.Buildings.Of(sim, e) == building),
+                    $"{trade.Name}: no {station.Name} in the {trade.Workplace}");
+        }
+    }
 }

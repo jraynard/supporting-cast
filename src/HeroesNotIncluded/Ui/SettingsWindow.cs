@@ -274,6 +274,12 @@ public sealed class SettingsWindow(GameHost host)
             _draft.UiScale = MathF.Round(percent / 5f) * 5f / 100f; // 5% steps
 
         ImGui.Dummy(in gap);
+        Row("Tips", "First-day tips for your trade, and markers on its stations till you've been to each.");
+        var tips = _draft.ShowTips;
+        if (ImGui.Checkbox("##tips"u8, ref tips))
+            _draft.ShowTips = tips;
+
+        ImGui.Dummy(in gap);
         Row("HD-2D look", "Tilt-shift blur, glowing fire, a vignette and warmer colours. F10 toggles it in game.");
         var hd2d = _draft.Hd2d;
         if (ImGui.Checkbox("##hd2d"u8, ref hd2d))

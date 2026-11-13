@@ -45,6 +45,7 @@ public sealed partial class VillageGame
         DrawMessages();
         // Top left: you. Top centre: the village (god mode) and the toasts.
         DrawNeedsPanel();
+        DrawTips();
         DrawVillagerBar();
         DrawToasts();
         // Bottom centre, stacking upward: the build tools, the hotbar, and the work in hand.

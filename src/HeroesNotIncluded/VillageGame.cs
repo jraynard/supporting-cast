@@ -348,6 +348,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         _renderer.PredictedEntity = _avatar;
         _renderer.Viewer = View.Omniscient ? null : View;
         UpdateOrderBubbles();
+        UpdateStationMarks();
         UpdateWork(dt);
         RunBots();
         FollowAvatar(); // after the ticks, so the camera shows this frame's position
