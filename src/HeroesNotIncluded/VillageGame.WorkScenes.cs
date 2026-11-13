@@ -2,6 +2,7 @@ using Brutal.ImGuiApi;
 using Narsil.Rendering;
 using Narsil.Ui;
 using HeroesNotIncluded.Sim.Healing;
+using HeroesNotIncluded.Sim.Tinkering;
 using HeroesNotIncluded.Sim.Work;
 using HeroesNotIncluded.Ui;
 
@@ -247,6 +248,103 @@ public sealed partial class VillageGame
         Prop(dl, "probe", new float2(x + shake, seamY + depth + px), px);
     }
 
+    /// <summary>The curio on its cloth and the loupe moved along it; a glint where the eye catches.</summary>
+    private void LoupeScene(float at, float caught, bool held)
+    {
+        var (dl, min, max, px) = WorkScene(120);
+        if (Prop(dl, "curio", new float2((min.X + max.X) * 0.5f, max.Y - Gui.S(40)), px) is not { } piece)
+            return;
+        var x = piece.Min.X + 4 * px + at * (piece.Max.X - piece.Min.X - 8 * px);
+        var lens = new float2(x, piece.Min.Y + 9 * px);
+        var still = held ? 0f : MathF.Sin(_time * 3f) * px;
+        Prop(dl, "loupe", new float2(lens.X, lens.Y + 20 * px + still), px);
+        if (caught > 0.3f) // what catches the eye: a glint in the glass
+        {
+            var g = Gui.U8(new float4(1f, 0.97f, 0.85f, 1f), Math.Clamp((caught - 0.3f) * 1.6f, 0f, 1f));
+            var r = px * (2f + 2f * caught) * (0.8f + 0.2f * MathF.Sin(_time * 8f));
+            dl.AddLine(lens - new float2(r, 0), lens + new float2(r, 0), g, px);
+            dl.AddLine(lens - new float2(0, r), lens + new float2(0, r), g, px);
+        }
+    }
+
+    /// <summary>
+    /// The wheel on its stand, side on: it turns with the session, its rim swinging out and in at
+    /// the gauge (the right) by what the gauge reads, the spoke there picked out.
+    /// </summary>
+    private void TrueScene(float turn, float gauge, float band)
+    {
+        var (dl, min, max, px) = WorkScene(130);
+        var centre = new float2((min.X + max.X) * 0.5f, min.Y + Gui.S(62));
+        var r = Gui.S(52);
+        var oak = Theme.U8(Theme.OakLight);
+        var dark = Theme.U8(Theme.Oak);
+        foreach (var dx in new[] { -1f, 1f }) // the stand's legs
+        {
+            var top = centre + new float2(dx * Gui.S(6), 0);
+            var foot = new float2(centre.X + dx * Gui.S(40), max.Y - Gui.S(6));
+            dl.AddLine(in top, in foot, dark, Gui.S(6));
+        }
+        var lean = gauge * Gui.S(30); // the rim's wobble, drawn as the wheel's right side swinging
+        for (var i = 0; i < TrueSession.Spokes; i++)
+        {
+            var a = (i / (float)TrueSession.Spokes - turn) * MathF.Tau;
+            var dir = new float2(MathF.Cos(a), MathF.Sin(a));
+            var tip = centre + dir * r + new float2(MathF.Max(0f, dir.X) * lean, 0);
+            var picked = MathF.Abs(MathF.IEEERemainder(a, MathF.Tau)) < MathF.PI / TrueSession.Spokes;
+            dl.AddLine(in centre, in tip, picked ? Theme.U8(Theme.Accent) : oak, Gui.S(picked ? 4 : 3));
+        }
+        for (var k = 0; k < 32; k++) // the rim, its right side out of true by the reading
+        {
+            float2 At(int n)
+            {
+                var a = n / 32f * MathF.Tau;
+                var dir = new float2(MathF.Cos(a), MathF.Sin(a));
+                return centre + dir * r + new float2(MathF.Max(0f, dir.X) * lean, 0);
+            }
+            var p0 = At(k);
+            var p1 = At(k + 1);
+            dl.AddLine(in p0, in p1, dark, Gui.S(7));
+            dl.AddLine(in p0, in p1, oak, Gui.S(4));
+        }
+        dl.AddCircleFilled(in centre, Gui.S(9), dark, 16);
+        dl.AddCircleFilled(in centre, Gui.S(5), Theme.U8(Theme.Iron), 12);
+        // The gauge's finger at the rim, and where true lies.
+        var gx = centre.X + r + Gui.S(14);
+        var trueA = new float2(gx, centre.Y - Gui.S(16));
+        var trueB = new float2(gx, centre.Y + Gui.S(16));
+        dl.AddLine(in trueA, in trueB, Theme.U8(MathF.Abs(gauge) <= band ? Theme.Good : Theme.Dim), Gui.S(2));
+        var finger = new float2(centre.X + r + lean + Gui.S(4), centre.Y);
+        var post = new float2(gx + Gui.S(18), centre.Y);
+        dl.AddLine(in finger, in post, Theme.U8(Theme.Iron), Gui.S(3));
+    }
+
+    /// <summary>
+    /// The patient lying head to feet across it, the parts named over them; what the hands have made
+    /// out glows where it lies (the worse the redder, festering found sickly), and the hands over them,
+    /// pressing in as you press. Only what's been felt is drawn.
+    /// </summary>
+    private void FeelScene(IReadOnlyList<string> parts, IEnumerable<(float At, float Gravity, float Found, bool Festering)> found, float hands, bool held)
+    {
+        var (dl, min, max, px) = WorkScene(104, Theme.Arcane);
+        if (Prop(dl, "patient", new float2((min.X + max.X) * 0.5f, max.Y - Gui.S(6)), px) is not { } body)
+            return;
+        float AlongBody(float f) => body.Min.X + 4 * px + f * (body.Max.X - body.Min.X - 8 * px);
+        var bodyY = body.Min.Y + 12 * px;
+        for (var i = 0; i < parts.Count; i++)
+        {
+            var label = parts[i];
+            var at = new float2(AlongBody(FeelSession.PartAt(i, parts.Count)) - ImGui.CalcTextSize(label).X / 2, min.Y + Gui.S(4));
+            dl.AddText(in at, Theme.U8(Theme.Dim), label);
+        }
+        foreach (var (at, gravity, amount, festering) in found)
+        {
+            var centre = new float2(AlongBody(at), bodyY);
+            dl.AddCircleFilled(in centre, Gui.S(4f + 6f * gravity), Theme.U8(festering ? Theme.Warn : Theme.Bad, 0.25f + 0.65f * amount), 20);
+        }
+        var press = held ? 3f * px : 0f;
+        Prop(dl, "hand", new float2(MathF.Min(AlongBody(hands) + 6 * px, max.X - 13 * px), bodyY - 2 * px + press), px, held ? Gui.White : Gui.U8(new float4(0.88f, 0.84f, 0.8f, 1f)));
+    }
+
     // ---------------- The gallery (--work-scenes) ----------------
 
     /// <summary>Every scene at once, driven by a clock instead of a session: to look over the art without playing each game.</summary>
@@ -270,6 +368,9 @@ public sealed partial class VillageGame
             Cell("Draw", () => DrawScene(true, Wave(0.7f) > 0.3f, (_time * 0.1f) % 1f, Wave(0.9f)));
             Cell("Sharpen", () => SharpenScene(1, true, Wave(0.8f), Wave(0.3f), _time * 0.05f));
             Cell("Probe", () => ProbeScene(Wave(0.4f), Wave(3f) > 0.85f ? 0.8f : 0.1f, Wave(1.1f)));
+            Cell("Loupe", () => LoupeScene(Wave(0.3f), Wave(1.3f), Wave(0.6f) > 0.5f));
+            Cell("Feel", () => FeelScene(["head", "chest", "belly", "arms", "legs"], [(0.3f, 0.6f, 0.9f, false), (0.75f, 0.3f, Wave(0.5f), true)], Wave(0.35f), Wave(1f) > 0.5f));
+            Cell("True", () => TrueScene(_time * 0.1f, (Wave(0.63f) - 0.5f) * 0.6f, 0.06f));
             ImGui.EndTable();
         }
         Panel.End();

@@ -936,3 +936,7 @@ dragon and the festival.
   turns on the arm, the one being pulled tinted by how tight), drawing a hurt (its glow drawn up into
   the hand), sharpening (the blade on the stone at your angle, warming, sparks) and probing a
   strongbox (the pick along its seam). Props from `tools/work_ui_art.py`; `--work-scenes` shows them all.
+- **Mini-games as scenes, the second batch:** studying a curio (the loupe moved along it, a glint
+  where the eye catches), feeling for wounds (the patient lying head to feet under the hands, only
+  what's been felt glowing), truing a wheel (it turns on its stand, the rim swinging out and in at the
+  gauge), bracing a span (dressed stones and a spirit level) and filing pins (the rasp at the pin).

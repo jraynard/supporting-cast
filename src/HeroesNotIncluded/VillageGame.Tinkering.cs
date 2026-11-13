@@ -56,6 +56,14 @@ public sealed partial class VillageGame
                 var a = new float2(colMin.X + Gui.S(2), y);
                 var b = new float2(colMax.X - Gui.S(2), y);
                 dl.AddLine(in a, in b, Theme.U8(Theme.Accent), Gui.S(2));
+                // The file across the pin's end, stroking while you file.
+                if (Gui.TrySprite("ui/work/rasp", out var rasp))
+                {
+                    var rpx = MathF.Max(1f, MathF.Round(2f * Gui.Scale));
+                    var stroke = s.Held ? MathF.Sin(_time * 14f) * 6f * rpx : 0f;
+                    var rMin = new float2((colMin.X + colMax.X) * 0.5f - 20 * rpx + stroke, top - 7 * rpx);
+                    Gui.Image(dl, rasp, rMin, rMin + new float2(34 * rpx, 7 * rpx), Gui.White);
+                }
             }
         }
         EndWork();
@@ -262,6 +270,7 @@ public sealed partial class VillageGame
     {
         BeginWork(s.Title, ("F", "tighten the spoke at the gauge"), ("A", "slacken it"), ("Esc", "stop"));
         TextC(Theme.Dim, "Tighten where the needle swings out, slacken where it swings in. Get it running within the band.");
+        TrueScene(s.Turn, s.Gauge, s.BandWidth);
         var dl = ImGui.GetWindowDrawList();
         var min = ImGui.GetCursorScreenPos();
         var size = Gui.S(420, 60);
@@ -313,17 +322,26 @@ public sealed partial class VillageGame
             var a = new float2(cx - w * 0.5f + Gui.S(2), top);
             var b = new float2(cx + w * 0.5f - Gui.S(2), top + Gui.S(18));
             var level = MathF.Abs(s.Offsets[i]) <= s.BandWidth;
-            dl.AddRectFilled(in a, in b, level ? new ImColor8(170, 160, 140, 255) : new ImColor8(130, 118, 100, 255), Gui.S(2), ImDrawFlags.None);
+            if (Gui.TrySprite("ui/work/stone", out var stone))
+                Gui.Image(dl, stone, a, b, level ? Gui.White : Gui.U8(new float4(0.78f, 0.74f, 0.7f, 1f)));
+            else
+                dl.AddRectFilled(in a, in b, level ? new ImColor8(170, 160, 140, 255) : new ImColor8(130, 118, 100, 255), Gui.S(2), ImDrawFlags.None);
             if (i == s.AtStone)
                 dl.AddRect(in a, in b, Theme.U8(Theme.Accent), Gui.S(2), ImDrawFlags.None, Gui.S(2));
         }
         // The level: a bar over the span, its bubble off the middle by what it reads.
         var lx = StoneX(s.At);
-        var barA = new float2(lx - Gui.S(30), min.Y + Gui.S(4));
-        var barB = new float2(lx + Gui.S(30), min.Y + Gui.S(14));
-        dl.AddRectFilled(in barA, in barB, new ImColor8(200, 180, 120, 255), Gui.S(3), ImDrawFlags.None);
-        var bubble = new float2(Math.Clamp(lx - s.Reading * Gui.S(80), barA.X + Gui.S(5), barB.X - Gui.S(5)), min.Y + Gui.S(9));
-        dl.AddCircleFilled(in bubble, Gui.S(4), Theme.U8(MathF.Abs(s.Reading) <= s.BandWidth ? Theme.Good : Theme.Accent), 12);
+        var px = MathF.Max(1f, MathF.Round(2f * Gui.Scale));
+        var barA = new float2(lx - 22 * px, min.Y + Gui.S(3));
+        var barB = barA + new float2(44 * px, 9 * px);
+        if (Gui.TrySprite("ui/work/spirit_level", out var levelArt))
+            Gui.Image(dl, levelArt, barA, barB, Gui.White);
+        else
+            dl.AddRectFilled(in barA, in barB, new ImColor8(200, 180, 120, 255), Gui.S(3), ImDrawFlags.None);
+        // The bubble in the vial (its middle at 21.5 of 44), off true by what the level reads.
+        var vial = barA.X + 21.5f * px;
+        var bubble = new float2(Math.Clamp(vial - s.Reading * 40f * px, barA.X + 14 * px, barA.X + 29 * px), barA.Y + 4.5f * px);
+        dl.AddCircleFilled(in bubble, 1.6f * px, Theme.U8(MathF.Abs(s.Reading) <= s.BandWidth ? Theme.Good : Theme.Accent), 12);
         Bar("Span", 1f - Math.Clamp(s.Worst / 0.32f, 0f, 1f), Theme.Good, $"stone {s.AtStone + 1} of {SpanSession.Stones}");
         EndWork();
     }
@@ -333,15 +351,7 @@ public sealed partial class VillageGame
     {
         BeginWork(s.Title, ("A/D", "move the loupe along it"), ("F", "hold still to study"), ("Esc", "stop"));
         TextC(Theme.Dim, "Where the eye catches, stop and study it. The far end finishes.");
-        var dl = ImGui.GetWindowDrawList();
-        var min = ImGui.GetCursorScreenPos();
-        var size = Gui.S(420, 28);
-        var max = min + size;
-        ImGui.Dummy(in size);
-        dl.AddRectFilled(in min, in max, new ImColor8(120, 96, 58, 255), Gui.S(4), ImDrawFlags.None);
-        var x = min.X + Gui.S(4) + s.At * (size.X - Gui.S(8));
-        var c = new float2(x, (min.Y + max.Y) * 0.5f);
-        dl.AddCircle(in c, Gui.S(11), Theme.U8(Theme.Accent), 20, Gui.S(2.5f));
+        LoupeScene(s.At, s.Catch, s.Held);
         Bar("Eye", s.Catch, s.Catch > 0.6f ? Theme.Warn : Theme.Dim);
         if (s.Reading > 0f)
             Bar("Reading", s.Reading, Theme.Good);

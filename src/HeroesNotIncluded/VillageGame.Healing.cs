@@ -200,34 +200,7 @@ public sealed partial class VillageGame
     private void DrawFeel(FeelSession s)
     {
         BeginWork(s.Title, ("A/D", "run your hands along them"), ("F", "hold to press in (slower, deeper)"), ("Esc", "stop (what you found stays found)"));
-        var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(420, 56);
-        var min = ImGui.GetCursorScreenPos();
-        var max = min + size;
-        ImGui.Dummy(in size);
-        dl.AddRectFilled(in min, in max, Theme.U8(Theme.Spirit), 4f, ImDrawFlags.None);
-        // The body, head to feet, its parts marked along it.
-        for (var i = 0; i < s.Parts.Count; i++)
-        {
-            var x = min.X + FeelSession.PartAt(i, s.Parts.Count) * size.X;
-            var label = s.Parts[i];
-            var at = new float2(x - ImGui.CalcTextSize(label).X / 2, max.Y - Gui.S(16));
-            dl.AddText(in at, Theme.U8(Theme.Dim), label);
-        }
-        // What's been made out glows where it lies, the worse the redder; festering found shows sickly.
-        foreach (var spot in s.Spots)
-        {
-            if (spot.Found <= 0.05f)
-                continue;
-            var centre = new float2(min.X + spot.At * size.X, min.Y + Gui.S(18));
-            var colour = s.FoundFestering(spot) ? Theme.Warn : Theme.Bad;
-            dl.AddCircleFilled(in centre, Gui.S(4f + 6f * spot.Gravity), Theme.U8(colour, 0.25f + 0.65f * spot.Found), 20);
-        }
-        // The hands, and what they feel.
-        var hx = min.X + s.Hands01 * size.X;
-        var top = new float2(hx - Gui.S(3), min.Y + 2);
-        var bottom = new float2(hx + Gui.S(3), max.Y - Gui.S(18));
-        dl.AddRectFilled(in top, in bottom, Theme.U8(s.Held ? Theme.Accent : Theme.Text), 2f, ImDrawFlags.None);
+        FeelScene(s.Parts, s.Spots.Where(p => p.Found > 0.05f).Select(p => (p.At, p.Gravity, p.Found, s.FoundFestering(p))), s.Hands01, s.Held);
         Bar("Feel", s.Feel, s.Feel > 0.6f ? Theme.Bad : Theme.Warn);
         EndWork();
     }

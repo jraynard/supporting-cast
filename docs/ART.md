@@ -515,7 +515,8 @@ The interface is drawn by Narsil's UI kit (external/narsil/docs/UI.md) from spri
 
 - **The other scenes** (`tools/work_ui_art.py`): the whetstone and a blade (pale, tinted by its heat),
   the stew pot and salt crock, a bed and a sheet, a hand, a forearm and a turn of bandage, a
-  strongbox's front and the probe. `VillageGame.WorkScenes` draws them as a small scene over each
+  strongbox's front and the probe, a curio and the loupe, a patient on a pallet, the span's dressed
+  stone and spirit level, and the rasp. `VillageGame.WorkScenes` draws them as a small scene over each
   game's gauges, moved and tinted from the session in hand. `--work-scenes` opens every scene in
   one panel, played by stand-in values, to look the art over without playing each game.
 
