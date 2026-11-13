@@ -308,7 +308,14 @@ with the same numbers (`HumanLook.BuildPoint`). The builds about double the peop
 Bodies are `male` and `female` (shown as Masculine and Feminine). Hair styles (`HairStyle`, new ones go at the end of the
 enum) are `short`, `shaggy`, `long`, `ponytail`, `bun`, `sidebraid`, `crownbraid`, `pigtails` (two braids),
 `topknot` (shaved sides), `swept` (layered, the fringe over one eye), `curlyshort`, `curlylong` and `none`.
-The game lifts the hair tint (`HumanLook.HairLift`) so the chosen colour sits near the main shade. Hair is drawn as **locks**: tapered strands
+The game lifts the hair tint (`HumanLook.HairLift`) so the chosen colour sits near the main shade. Every style is built **lock by lock**, as swept and the braided ponytail were first (`hwisp`,
+`wave_lock`, `dutch_plait`, `coils` in chibi_people.py): a soft crown, then tapered locks of varied
+width and length merged and lined as one mass, strand lines down each (a shadow along its fold, a
+sheen at its root), strays breaking loose, curls as coils and ringlets of every size, braids woven
+strand by strand, a bun wound round itself; each with a back view of its own. Beards grow the same
+way from the jaw, with a sweeping moustache. `python3 tools/chibi_people.py --hair-preview [styles]`
+draws every style (or those named) in four views beside its game size, then every beard, into
+`.cache/people/hair.png`. Hair is drawn as **locks**: tapered strands
 with a parting or a cut fringe, and a broken band of the lightest step across the crown (the Octopath
 sheen), never one shaded blob. People are about three heads tall: an 18 px head with a jaw and a neck,
 sloped shoulders, a waist, and arms that hang beside the body and swing when walking.

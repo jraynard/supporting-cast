@@ -956,3 +956,8 @@ dragon and the festival.
   has a build of its own, every people sheet warped to it (`tools/chibi_builds.py`), so every garment,
   tool and hair style fits. One villager in eight of each about town; pick one in the creator (Look,
   then Folk) or with `--folk Dwarf|Halfling`.
+- **Hair and beards, lock by lock:** every style is now built as swept and the braided ponytail
+  were: a soft crown, tapered locks of every length with strand lines and strays, curls as coils
+  and ringlets of every size (not a stamped pattern), woven braids, a wound bun, a bound topknot,
+  each with its own back view. Beards grow from the jaw as locks, with a sweeping moustache and,
+  for the braided one, a woven plait and a bead. `--hair-preview` shows them all.
