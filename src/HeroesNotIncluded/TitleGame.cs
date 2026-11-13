@@ -102,12 +102,12 @@ public sealed class TitleGame : Game
                 ? new("Continue", $"{last.Name}: {last.Summary}", () => FromSave(last))
                 : new("Continue", "No saves yet.", null),
             new("New Round", "Walk into the village on your own, with AI villagers in the other trades.", null, MenuAction.NewGame),
-            new("Multiplayer", "Play together: host a village for friends, or join theirs (local network or address).", null, MenuAction.Coop),
+            new("Multiplayer", "Open the doors to friends, or pull up a stool in their village.", null, MenuAction.Coop),
             new("Load Game", newest == null ? "No saves yet." : "Pick a saved village.", null, newest == null ? MenuAction.Start : MenuAction.LoadGame),
             new("Options", "Display, interface and gameplay settings.", null, MenuAction.Settings),
             new("Report a Bug", "Where to tell us, and the files that help.", null, MenuAction.Report),
             new("Credits", "Coming soon.", null),
-            new("Exit", "Close the game.", null, MenuAction.Exit),
+            new("Quit", "Close up for the night.", null, MenuAction.Exit),
         ];
     }
 
@@ -280,10 +280,9 @@ public sealed class TitleGame : Game
         ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0f);
         ImGui.Begin("##title"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove);
 
-        using (Gui.HeaderFont(76f))
-            ImGui.TextColored(Theme.Accent, Title);
+        DrawLogo(screen);
         var dim = Theme.Dim;
-        ImGui.TextColored(dim, "The people the heroes walk past"u8);
+        ImGui.TextColored(dim, "Somebody has to keep the lights on."u8);
         var gap = new float2(1, 34);
         ImGui.Dummy(in gap);
 
@@ -363,7 +362,7 @@ public sealed class TitleGame : Game
             ImGui.PopTextWrapPos();
         }
         ImGui.Dummy(in gap);
-        ImGui.TextColored(dim, $"Alpha build {BuildInfo.Label}. Built with BRUTAL.");
+        ImGui.TextColored(dim, $"Playtest build {BuildInfo.Label}. Built with BRUTAL.");
         ImGui.End();
         ImGui.PopStyleVar(1);
         _settings.Draw();
@@ -462,13 +461,36 @@ public sealed class TitleGame : Game
         }
     }
 
+    /// <summary>
+    /// The stacked logo (art/brand, rendered by tools/gen_icon.py), sized to leave the menu room on
+    /// a short screen; the title in text if the sprite is missing.
+    /// </summary>
+    private static void DrawLogo(float2 screen)
+    {
+        if (!Gui.TrySprite("ui/logo", out var logo) || logo.PixelSize.Y == 0)
+        {
+            using (Gui.HeaderFont(76f))
+                ImGui.TextColored(Theme.Accent, Title);
+            return;
+        }
+        var h = MathF.Min(Gui.S(280), screen.Y * 0.32f);
+        var size = new float2(h * logo.PixelSize.X / logo.PixelSize.Y, h);
+        var min = ImGui.GetCursorScreenPos();
+        Gui.Image(ImGui.GetWindowDrawList(), logo, min, min + size, new ImColor8(255, 255, 255, 255));
+        ImGui.Dummy(in size);
+    }
+
     private void MenuButton(MenuItem item)
     {
         var enabled = item.Start != null || item.Action != MenuAction.Start;
-        var size = (float2?)new float2(340, 48);
-        var align = new float2(0.06f, 0.5f);
+        var size = (float2?)new float2(Gui.S(340), Gui.S(48));
+        // Flush left, a fixed step in from the edge: aligning by a fraction of the leftover width
+        // indented short labels more than long ones.
+        var align = new float2(0f, 0.5f);
         ImGui.PushStyleVar(ImGuiStyleVar.ButtonTextAlign, in align);
         ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0f); // the theme rims frames; these entries are bare text
+        var padding = new float2(Gui.S(16), Gui.S(4)); // room for the hover bar before the label
+        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, in padding);
         var clear = new float4(0, 0, 0, 0);
         var hover = Theme.AccentSoft with { W = 0.85f };
         var active = Theme.Accent with { W = 0.9f };
@@ -485,7 +507,7 @@ public sealed class TitleGame : Game
                 ImGui.EndDisabled();
         }
         ImGui.PopStyleColor(3);
-        ImGui.PopStyleVar(2);
+        ImGui.PopStyleVar(3);
 
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
         {

@@ -7,7 +7,8 @@ legible in a taskbar. Rasterised with rsvg-convert (librsvg), packed with Pillow
 
 Writes data/icon.png (256, the window icon), packaging/icon.ico (Windows exe), packaging/icon.icns
 (the Mac bundle), packaging/icon-<n>.png (Linux desktop entry sizes) and packaging/icon-512.png
-(the Discord server and itch.io page).
+(the Discord server and itch.io page), and data/textures/ui/logo.png (the stacked logo, for the
+title screen; drawn at up to half its pixel height, so it stays crisp on a larger UI scale).
 
     python3 tools/gen_icon.py
 """
@@ -24,9 +25,10 @@ BRAND = os.path.join(ROOT, "art", "brand")
 SMALL_MAX = 48  # this size and under use the small-size sign
 
 
-def render(svg, size):
-    png = subprocess.run(["rsvg-convert", "-w", str(size), "-h", str(size), os.path.join(BRAND, svg)],
-                         check=True, capture_output=True).stdout
+def render(svg, size, height=None):
+    """An SVG at size x size, or at a height with its own aspect when height is given."""
+    dims = ["-h", str(height)] if height else ["-w", str(size), "-h", str(size)]
+    png = subprocess.run(["rsvg-convert", *dims, os.path.join(BRAND, svg)], check=True, capture_output=True).stdout
     return Image.open(io.BytesIO(png)).convert("RGBA")
 
 
@@ -46,7 +48,9 @@ def main():
     first, *rest = (icon(s) for s in ico_sizes)
     first.save(os.path.join(pkg, "icon.ico"), sizes=[(s, s) for s in ico_sizes], append_images=rest)
     icon(1024).save(os.path.join(pkg, "icon.icns"))  # macOS bundle
-    print("wrote data/icon.png and packaging/icon*")
+    logo = render("logo-stacked.svg", 0, height=600)
+    logo.crop(logo.getbbox()).save(os.path.join(ROOT, "data", "textures", "ui", "logo.png"))  # flush with the menu
+    print("wrote data/icon.png, data/textures/ui/logo.png and packaging/icon*")
 
 
 if __name__ == "__main__":
