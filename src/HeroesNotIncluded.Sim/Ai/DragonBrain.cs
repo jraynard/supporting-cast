@@ -90,8 +90,16 @@ public sealed class DragonPassJob(int3 target) : Job
         foreach (var s in GoTo(landing, PathEnd.OnTile)) yield return s;
         if (HasFailed) yield break;
 
+        // It rears and draws breath where it can be seen (Combat.Inhaling): a moment to guard, or to dodge late.
+        Report = "Drawing breath";
+        var at = Sim.Clock.Tick + Blows.InhaleTicks;
+        Sim.World.Add(Pawn, new Inhaling { Target = target, Start = Sim.Clock.Tick, At = at });
+        // A moment more, as for any blow at a player (Blows.LatencyGrace), for their keys to arrive.
+        foreach (var s in Wait(Blows.InhaleTicks + Blows.LatencyGrace)) yield return s;
+        if (Sim.World.Has<Inhaling>(Pawn))
+            Sim.World.Remove<Inhaling>(Pawn);
         Report = "Breathing fire";
-        CombatRules.Breathe(Sim, Pawn, target);
+        CombatRules.Breathe(Sim, Pawn, target, at);
         foreach (var s in Wait(SimClock.TicksPerSecond)) yield return s;
 
         Report = "Snapping at the town";
@@ -101,8 +109,9 @@ public sealed class DragonPassJob(int3 target) : Job
         {
             if (attack != null && Sim.Clock.Tick >= next && Beside() is { IsNull: false } foe)
             {
-                RealtimeAttacks.TryAttack(Sim, Pawn, foe, attack);
-                next = Sim.Clock.Tick + attack.CooldownTicks;
+                // Its jaws are wound up like any blow (Combat.Blows), quick and hard to dodge.
+                if (Blows.Begin(Sim, Pawn, foe, attack))
+                    next = Sim.Clock.Tick + attack.CooldownTicks;
             }
             yield return JobStatus.Running;
         }

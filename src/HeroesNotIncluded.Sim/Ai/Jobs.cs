@@ -771,12 +771,13 @@ public sealed class AssaultJob(Entity target) : Job
     protected override IEnumerable<JobStatus> Run()
     {
         Report = $"Attacking {Get<Creature>(target).Name}";
-        if (Combat.CombatRules.Attacks(Sim, Pawn).FirstOrDefault(a => !a.Ranged) is not { } attack)
+        // What they're holding (the first attack listed), else fists: with a bow, an archer keeps its distance and shoots.
+        if (Combat.CombatRules.Attacks(Sim, Pawn).FirstOrDefault() is not { } attack)
         {
             Fail("nothing to attack with");
             yield break;
         }
-        foreach (var s in GoToEntity(target, PathEnd.Touch, maxTicks: 600)) yield return s;
+        foreach (var s in CloseIn(attack, 600)) yield return s;
         if (HasFailed) yield break;
         long nextAttack = 0;
         // Hurt enough to want out, or told to go: the brain sends them off.
@@ -789,18 +790,63 @@ public sealed class AssaultJob(Entity target) : Job
                 if (HasFailed || !GotTurn) yield break;
                 Report = $"Attacking {Get<Creature>(target).Name}";
                 // In again from where it waited, then a beat to see them coming.
-                foreach (var s in GoToEntity(target, PathEnd.Touch, maxTicks: 300)) yield return s;
+                foreach (var s in CloseIn(attack, 300)) yield return s;
                 if (HasFailed) yield break;
                 nextAttack = Math.Max(nextAttack, Sim.Clock.Tick + Combat.Engagement.FirstBlowTicks);
             }
-            // They've stepped off: the job ends, and the brain sends them after whoever's best now.
-            if (!Pathfinder.Touches(PawnCell, Sim.LocationOf(target)))
+            // Out of reach (or out of a shot): the job ends, and the brain sends them after whoever's best now.
+            if (!Combat.CombatRules.Chance(Sim, Pawn, target, attack).Possible)
                 yield break;
-            // Wound up where it can be seen coming (Combat.Blows), a heavy one now and then.
-            if (Sim.Clock.Tick >= nextAttack && Combat.Blows.Begin(Sim, Pawn, target, attack, heavy: Sim.Rand.Chance(HeavyShare)))
+            // Wound up (or drawn) where it can be seen coming (Combat.Blows); a heavy blow now and then.
+            if (Sim.Clock.Tick >= nextAttack && Combat.Blows.Begin(Sim, Pawn, target, attack, heavy: !attack.Ranged && Sim.Rand.Chance(HeavyShare)))
                 nextAttack = Sim.Clock.Tick + Combat.Engagement.Cooldown(Sim, attack, target);
             yield return JobStatus.Running;
         }
+    }
+
+    /// <summary>
+    /// Get where the attack can be made from: beside them for a blade; for a bow, near enough for a
+    /// good shot (<see cref="AttackDef.OptimalRange"/>, give or take) with a clear line, and no nearer.
+    /// </summary>
+    private IEnumerable<JobStatus> CloseIn(AttackDef attack, int maxTicks)
+    {
+        if (!attack.Ranged)
+        {
+            foreach (var s in GoToEntity(target, PathEnd.Touch, maxTicks)) yield return s;
+            yield break;
+        }
+        var mover = Get<Mover>(Pawn);
+        long nextPlan = 0;
+        for (var t = 0; t < maxTicks; t++)
+        {
+            if (!Alive(target))
+            {
+                Fail("target is gone");
+                yield break;
+            }
+            var here = PawnCell;
+            var at = Sim.LocationOf(target);
+            if (Combat.CombatRules.Chance(Sim, Pawn, target, attack).Possible && Maps.Map.Distance(here, at) <= attack.OptimalRange + 2)
+            {
+                mover.Stop();
+                yield break;
+            }
+            if (!mover.Moving || Sim.Clock.Tick >= nextPlan)
+            {
+                if (Navigation.PlanRoute(Sim, Pawn, here, at, PathEnd.Touch) is not { } path)
+                {
+                    Fail($"no way to {at}");
+                    yield break;
+                }
+                mover.Path = path;
+                mover.PathIndex = 0;
+                mover.StepProgress = 0;
+                mover.StepFrom = here;
+                nextPlan = Sim.Clock.Tick + 30;
+            }
+            yield return JobStatus.Running;
+        }
+        Fail("couldn't get a shot");
     }
 
     /// <summary>Of a raider's blows, the share that are heavy.</summary>

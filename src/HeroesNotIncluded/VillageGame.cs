@@ -199,6 +199,15 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>Debug/screenshots (<c>--building-demo</c>): every preset building, and one at each phase (<see cref="BuildingShowcase"/>).</summary>
     public bool BuildingDemo { get; init; }
 
+    /// <summary>
+    /// Debug (<c>--arena [FOE]</c>): the practice ring instead of a village, this raider kind in each
+    /// bout (<see cref="Arena"/>). Null for a village.
+    /// </summary>
+    public string? ArenaFoe { get; init; }
+
+    /// <summary>Debug (<c>--weapon NAME</c>, with <c>--arena</c>): what you fight with in the ring.</summary>
+    public string? ArenaWeapon { get; init; }
+
     /// <summary><c>--map NAME</c>: the hand-made map (data/defs/maps/) a new village is laid out on.</summary>
     public string MapName { get; init; } = VillageRound.DefaultMap;
 
@@ -287,6 +296,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>Generate the map and found the village (plus any demo setup). Returns where the camera should look.</summary>
     private int3 StartNewVillage(DefDatabase defs)
     {
+        if (ArenaFoe != null)
+            return StartArena(defs);
         _sim = VillageRound.NewSimulation(defs, seed, MapName);
         _sim.StrictJobs = false; // a buggy job fails itself, not the game
         _sim.Presets.PresetMode = !Freeform; // preset buildings replace freeform walls (the trial; --freeform for the old way)

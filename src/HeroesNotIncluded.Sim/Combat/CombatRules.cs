@@ -353,9 +353,10 @@ public static class CombatRules
     /// A dragon's breath in combat: the usual cone (which sets the ground alight, or frosts it, or
     /// leaves a cloud: <see cref="Breath"/>), plus a wound on every creature it passes over, friend
     /// or foe: burns. Fireproof creatures (a dragon's own kind) shrug it off. Loosed by a wild
-    /// dragon on the town (<see cref="Ai.DragonPassJob"/>).
+    /// dragon on the town (<see cref="Ai.DragonPassJob"/>) after it's drawn breath where it can be
+    /// seen: given when it <paramref name="drawn"/> it, a guard or a late dodge then takes some of it.
     /// </summary>
-    public static (BreathEvent Breath, List<(Entity Who, float Damage)> Burned) Breathe(Simulation sim, Entity dragon, int3 target)
+    public static (BreathEvent Breath, List<(Entity Who, float Damage)> Burned) Breathe(Simulation sim, Entity dragon, int3 target, long? drawn = null)
     {
         var w = sim.World;
         var stage = w.Get<Creature>(dragon).Stage(sim.Clock.Tick);
@@ -377,10 +378,28 @@ public static class CombatRules
                     hits++;
             if (hits == 0)
                 continue;
+            // Seen coming (Blows.Inhaling, drawn at drawn): a guard up then takes a little of it,
+            // and a late dodge half; nothing gets anyone wholly clear of a dragon's fire.
+            var share = 1f;
+            if (drawn is { } when && w.Has<Guard>(e))
+            {
+                ref var g = ref w.Get<Guard>(e);
+                if (Blows.DodgedAt(g, when, dragon: true))
+                {
+                    share = Blows.BreathDodged;
+                    Blows.Report(sim, dragon, e, BlowOutcome.Dodged, heavy: true);
+                }
+                else if (g.UpAt(when) && g.StaggeredUntil <= when)
+                {
+                    share = Blows.DragonBlocked;
+                    g.Stamina = Math.Max(0f, g.Stamina - Blows.BlockCost * 2f);
+                    Blows.Report(sim, dragon, e, BlowOutcome.Blocked, heavy: true);
+                }
+            }
             var total = 0f;
             for (var i = 0; i < hits; i++)
             {
-                total += Wound(sim, e, sim.Rand.Range(min, max), type);
+                total += Wound(sim, e, sim.Rand.Range(min, max) * share, type);
                 if (w.Get<Creature>(e).Dead)
                     break;
             }

@@ -17,6 +17,8 @@ dotnet run --project src/HeroesNotIncluded                    # title screen
 dotnet run --project src/HeroesNotIncluded -- --new-game --name Arin        # straight into a solo round (--trade Blacksmith, --bots N, --map NAME, --folk Elf)
 dotnet run --project src/HeroesNotIncluded -- --host --name Arin            # host (--port N, --relay HOST, --difficulty D)
 dotnet run --project src/HeroesNotIncluded -- --join 127.0.0.1 --player-id bea --name Bea
+dotnet run --project src/HeroesNotIncluded -- --raid-test --name Arin          # as the smith, bandits down the north road
+dotnet run --project src/HeroesNotIncluded -- --arena Swordsman --weapon IronSpear  # the practice ring: one foe a bout (any raider kind, or Dragon)
 dotnet run --project src/HeroesNotIncluded -- --furniture-demo --zoom 80    # also --building-demo
 dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui, --look-at X,Y; any mode
 dotnet run --project src/HeroesNotIncluded -- --art-preview
@@ -122,6 +124,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     wait a step back (`Job.AwaitTurn`). Melee blows are wound up first (`Combat/Blows.Begin`, a
     `Windup` the `BlowSystem` lands) and met by `Guard` (block, parry, dodge); a player's keys are
     stamped (`CombatInputCommand`) and blows at them land `LatencyGrace` late.
+    Arrows (their draw is the windup) are blocked or dodged, never parried; a dragon's jaws and
+    breath (`Inhaling`) are only partly blocked, and dodged only late.
   - Player input reaches the sim only as `ISimCommand`s, through `VillageGame.Issue`. `CommandCodec`
     serializes by constructor parameter. Commands declare `IActorCommand`, `ISubjectCommand`,
     `IPlayerCommand`, `IHostCommand` or `IDevCommand`; `CommandRules.Refusal` checks them on every peer.

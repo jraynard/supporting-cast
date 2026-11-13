@@ -218,7 +218,7 @@ else
         // Debug/screenshot helpers: starting camera rotation (degrees) and cutaway level.
         StartYawDegrees = args.Contains("--yaw") ? ParseInt(args, "--yaw") : 45,
         StartCutaway = args.Contains("--cutaway") ? ParseInt(args, "--cutaway") : int.MaxValue,
-        StartZoom = args.Contains("--zoom") ? ParseInt(args, "--zoom") : 0,
+        StartZoom = args.Contains("--zoom") ? ParseInt(args, "--zoom") : args.Contains("--arena") ? (int)VillageGame.AdventureZoom : 0,
         IgniteForest = args.Contains("--ignite-forest"),
         FurnitureDemo = args.Contains("--furniture-demo"),
         WorkScenesDemo = args.Contains("--work-scenes"),
@@ -230,8 +230,11 @@ else
             ? new int2(x, y) : null,
         AutoPause = !args.Contains("--no-autopause"),
         Difficulty = ParseString(args, "--difficulty"),
-        // The demos are for looking at; everything else walks in as a character.
-        Adventure = !args.Contains("--furniture-demo") && !args.Contains("--building-demo"),
+        // The demos are for looking at, and the arena has no round; everything else walks in as a character.
+        Adventure = !args.Contains("--furniture-demo") && !args.Contains("--building-demo") && !args.Contains("--arena"),
+        // --arena [FOE]: the practice ring, one raider kind at a time (--weapon NAME to fight with).
+        ArenaFoe = args.Contains("--arena") ? (ParseString(args, "--arena") is { } foe && !foe.StartsWith("--") ? foe : HeroesNotIncluded.Sim.Scenarios.Arena.DefaultFoe) : null,
+        ArenaWeapon = ParseString(args, "--weapon"),
         // --character: a saved character, credited at the reveal; without it, an unsaved one-off.
         Character = PickedCharacter(),
         HeroName = ParseString(args, "--name"),
@@ -270,7 +273,7 @@ SavedCharacter? PickedCharacter()
 
 static bool LaunchesDirectly(string[] args) =>
     args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--freeform" or "--show-roofs" or "--hide-roofs"
-        or "--ignite-forest" or "--raid-test" or "--yaw" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
+        or "--ignite-forest" or "--raid-test" or "--arena" or "--yaw" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
 
 // --load and --check-save take a path, or the name of a slot in the saves directory ("quicksave").
 static string ResolveSave(string pathOrSlot)

@@ -995,3 +995,11 @@ shared); fights stay real time, Souls-lite.
 - Ranged shots and the dragon still strike at once; trade and weapon techniques are next.
 - Bench baselines: seed 1234 state `853A200442B00386`, full `EFC778FFC76E0163`; seed 99 state
   `9039CE5D8E55CCBD`, full `36736D4F7C3441D1`.
+- **The practice ring** (`--arena [FOE]`, `Scenarios/Arena`, `tools/arena_map.py`): a small fenced
+  ring and one foe a bout, any raider kind or a dragon, with a panel to pick the next foe and your
+  weapon, and R for a new bout with both of you fresh.
+- **Arrows and the dragon:** a bow's draw is its windup, so an arrow is seen coming; it's blocked
+  or dodged, never parried. Archers now keep their distance and shoot (before, a raider with a bow
+  had nothing to fight with). A dragon's jaws come quicker, can't be parried, get through a guard at
+  70% for twice the wind, and are dodged only by a late dodge; its breath is drawn first where it
+  can be seen (a wide ember ring), and a guard or a late dodge takes only some of the fire.

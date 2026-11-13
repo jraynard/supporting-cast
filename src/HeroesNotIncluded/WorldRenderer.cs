@@ -485,6 +485,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         DrawBreaths(sim, time);
         DrawShots(sim, time);
         DrawWindups(sim);
+        DrawInhaling(sim);
         DrawBlowWords(sim);
         EmitSpeech(sim, InView);
         _particles.Update(animDt);
@@ -1010,6 +1011,28 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             Decal(ring, at, size, Rgba.Pack(c.X, c.Y, c.Z, c.W * (0.35f + 0.65f * p)), Quad.Unlit | Quad.Always, translucent: true);
             // The goal it closes on.
             Decal(ring, at, 0.85f, Rgba.Pack(c.X, c.Y, c.Z, 0.25f), Quad.Unlit | Quad.Always, translucent: true);
+        }
+    }
+
+    /// <summary>
+    /// A dragon drawing breath (<see cref="Sim.Combat.Inhaling"/>): a wide ember ring on where it'll
+    /// breathe, closing until it does, white as the fire comes.
+    /// </summary>
+    private void DrawInhaling(Simulation sim)
+    {
+        var w = sim.World;
+        var ring = S("ui/blow_ring");
+        var now = sim.Clock.Tick + (Interp?.Alpha ?? 1f);
+        foreach (var e in w.Each<Sim.Combat.Inhaling>())
+        {
+            if (!Seen(e))
+                continue;
+            var breath = w.Get<Sim.Combat.Inhaling>(e);
+            var at = Position.CenterOf(breath.Target) + new float3(0, 0, 0.06f);
+            var p = Math.Clamp((now - breath.Start) / Math.Max(1f, breath.At - breath.Start), 0f, 1f);
+            var c = now >= breath.At ? new float4(1f, 1f, 1f, 0.95f) : HeavyBlowColor;
+            Decal(ring, at, 2.4f + 3f * (1f - p), Rgba.Pack(c.X, c.Y, c.Z, c.W * (0.35f + 0.65f * p)), Quad.Unlit | Quad.Always, translucent: true);
+            Decal(ring, at, 2.4f, Rgba.Pack(c.X, c.Y, c.Z, 0.25f), Quad.Unlit | Quad.Always, translucent: true);
         }
     }
 

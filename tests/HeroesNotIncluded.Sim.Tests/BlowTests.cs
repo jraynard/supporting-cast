@@ -9,16 +9,30 @@ namespace HeroesNotIncluded.Sim.Tests;
 /// <summary>Blows seen coming (<see cref="Blows"/>): parry, block, dodge, reach, and a player's late-arriving keys.</summary>
 public class BlowTests
 {
-    /// <summary>A player with a sword and a swordsman beside them, his blow at them just wound up.</summary>
-    private static (Simulation Sim, Entity Me, Entity Raider, Windup Blow) Duel(bool heavy = false)
+    /// <summary>
+    /// A player with a sword and a foe near them (a swordsman beside them by default; an archer a
+    /// few steps off; a dragon), its first blow at them just wound up.
+    /// </summary>
+    private static (Simulation Sim, Entity Me, Entity Raider, Windup Blow) Duel(bool heavy = false, string foe = "Swordsman")
     {
         var (sim, center) = TestWorld.Millbrook(villagers: 0);
+        sim.TickMany(SimClock.TicksPerSecond * 3); // a clock well past zero, as a real fight's is
         var me = VillageRound.SpawnHero(sim, new Hero("Arin", null, null), center);
         sim.Equip(me, sim.Defs.Thing("ShortSword"));
         var here = sim.World.Get<Position>(me).Cell;
-        var beside = sim.SpiralFrom(here, 2).First(c => c != here && sim.Map.Passable(c) && Ai.Pathfinder.Touches(c, here) && c.Z == here.Z);
-        var raider = Raids.SpawnRaider(sim, sim.Defs.AllRaiderKinds.First(k => k.Name == "Swordsman"), "Mott", beside, sim.Rand);
-        var attack = CombatRules.Attacks(sim, raider).First(a => !a.Ranged);
+        var off = foe == "Archer" ? 4 : 1;
+        var at = sim.SpiralFrom(here, off + 2).First(c => c.Z == here.Z && sim.Map.Passable(c) && Maps.Map.Distance(c, here) == off
+            && CombatRules.LineOfFire(sim, Position.CenterOf(c) + new float3(0, 0, 0.7f), Position.CenterOf(here) + new float3(0, 0, 0.5f)));
+        Entity raider;
+        if (foe == "Dragon")
+        {
+            var def = sim.Defs.AllCreatures.First(c => c.Race == Defs.Race.Dragon);
+            raider = sim.SpawnCreature(def, "Old Ashjaw", at, Faction.Predator, ageDays: def.LifeStages[^1].MinAgeDays + 8);
+            sim.World.Get<Mind>(raider).Drafted = true; // held where it is: its own mind would take wing
+        }
+        else
+            raider = Raids.SpawnRaider(sim, sim.Defs.AllRaiderKinds.First(k => k.Name == foe), "Mott", at, sim.Rand);
+        var attack = foe == "Archer" ? CombatRules.Attacks(sim, raider).First(a => a.Ranged) : CombatRules.Attacks(sim, raider).First(a => !a.Ranged);
         Assert.True(Blows.Begin(sim, raider, me, attack, heavy));
         return (sim, me, raider, sim.World.Get<Windup>(raider));
     }
@@ -145,5 +159,77 @@ public class BlowTests
         Assert.Equal(blow.Impact, loaded.World.Get<Windup>(raider).Impact);
         Assert.Equal(me, loaded.World.Get<Windup>(raider).Target);
         Assert.Equal(sim.World.Get<Guard>(me).RaisedAt, loaded.World.Get<Guard>(me).RaisedAt);
+    }
+
+    [Fact]
+    public void AnArrowCannotBeParriedOnlyBlocked()
+    {
+        var (sim, me, raider, shot) = Duel(foe: "Archer");
+        Assert.True(shot.Impact - shot.Start >= SimClock.TicksPerSecond * 9 / 10, "a bow's draw is seen coming");
+        RunTo(sim, shot.Impact - 4);
+        Guard(sim, me, true, sim.Clock.Tick);
+        RunTo(sim, Blows.LandsAt(sim, shot) + 1);
+        Assert.Equal(BlowOutcome.Blocked, First(sim, me));
+        Assert.False(Blows.Staggered(sim, raider));
+    }
+
+    [Fact]
+    public void AnArrowCanBeDodged()
+    {
+        var (sim, me, _, shot) = Duel(foe: "Archer");
+        RunTo(sim, shot.Impact - 6);
+        sim.ApplyNow(new CombatInputCommand(me, CombatInput.Dodge, sim.Clock.Tick));
+        RunTo(sim, Blows.LandsAt(sim, shot) + 1);
+        Assert.Equal(BlowOutcome.Dodged, First(sim, me));
+    }
+
+    [Fact]
+    public void ADragonsJawsAreOnlyPartlyBlockedAndNeverParried()
+    {
+        var (sim, me, dragon, bite) = Duel(foe: "Dragon");
+        RunTo(sim, bite.Impact - 4);
+        Guard(sim, me, true, sim.Clock.Tick); // a parry's timing, against a sword
+        RunTo(sim, Blows.LandsAt(sim, bite) + 1);
+        Assert.Equal(BlowOutcome.Blocked, First(sim, me));
+        Assert.False(Blows.Staggered(sim, dragon));
+        Assert.True(sim.World.Get<Guard>(me).Stamina <= 1f - Blows.BlockCost * 2f + 0.05f, "it costs twice the wind");
+    }
+
+    [Fact]
+    public void ADragonIsDodgedOnlyLate()
+    {
+        var (sim, me, _, bite) = Duel(foe: "Dragon");
+        // Early, as against a man: still within the dodge, but a dragon reaches you anyway.
+        RunTo(sim, bite.Impact - Blows.DodgeTicks + 3);
+        sim.ApplyNow(new CombatInputCommand(me, CombatInput.Dodge, sim.Clock.Tick));
+        RunTo(sim, Blows.LandsAt(sim, bite) + 1);
+        Assert.NotEqual(BlowOutcome.Dodged, First(sim, me));
+
+        var (sim2, me2, _, bite2) = Duel(foe: "Dragon");
+        RunTo(sim2, bite2.Impact - 3);
+        sim2.ApplyNow(new CombatInputCommand(me2, CombatInput.Dodge, sim2.Clock.Tick));
+        RunTo(sim2, Blows.LandsAt(sim2, bite2) + 1);
+        Assert.Equal(BlowOutcome.Dodged, First(sim2, me2));
+    }
+
+    [Fact]
+    public void ADragonsBreathIsSeenComingAndAGuardOrALateDodgeOnlyTakesSomeOfIt()
+    {
+        var (sim, me, dragon, _) = Duel(foe: "Dragon");
+        Blows.Cancel(sim, dragon);
+        var at = sim.World.Get<Position>(me).Cell;
+        var drawn = sim.Clock.Tick;
+        Guard(sim, me, true, drawn - 30);
+        var (_, guarded) = CombatRules.Breathe(sim, dragon, at, drawn);
+        Assert.Contains(sim.RecentBlows, b => b.Target == me && b.Outcome == BlowOutcome.Blocked);
+        Assert.True(guarded.Single(b => b.Who == me).Damage > 0, "a guard doesn't keep it all off");
+
+        var (sim2, me2, dragon2, _) = Duel(foe: "Dragon");
+        Blows.Cancel(sim2, dragon2);
+        var drawn2 = sim2.Clock.Tick;
+        sim2.ApplyNow(new CombatInputCommand(me2, CombatInput.Dodge, drawn2 - 2));
+        var (_, dodged) = CombatRules.Breathe(sim2, dragon2, sim2.World.Get<Position>(me2).Cell, drawn2);
+        Assert.Contains(sim2.RecentBlows, b => b.Target == me2 && b.Outcome == BlowOutcome.Dodged);
+        Assert.True(dodged.Single(b => b.Who == me2).Damage > 0, "nobody gets wholly clear of its fire");
     }
 }

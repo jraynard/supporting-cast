@@ -45,12 +45,12 @@ public sealed partial class VillageGame
         }
     }
 
-    /// <summary>A foe this close (cells) and in sight is a fight.</summary>
-    private const int FightHintRange = 5;
+    /// <summary>A foe this close (cells) and in sight is a fight: far enough to take in an archer's stand-off.</summary>
+    private const int FightHintRange = 9;
 
     private void DrawFightHint()
     {
-        if (!HasAvatar || !InRound || !_sim.World.Get<Creature>(_avatar).Able || NearestFoe() is not { } foe)
+        if (!HasAvatar || !(InRound || ArenaFoe != null) || !_sim.World.Get<Creature>(_avatar).Able || NearestFoe() is not { } foe)
             return;
         var w = _sim.World;
         var at = w.Get<Position>(_avatar).Cell;
@@ -66,7 +66,12 @@ public sealed partial class VillageGame
         else
             TextC(Theme.Warn, "Close in, then F to strike.");
         ImGui.SameLine(0, Gui.S(10));
-        TextC(Theme.Dim, "Hold V or the right button to guard: raise it as their ring closes to parry. Space dodges.");
+        var shoots = w.TryGet<Equipment>(foe, out var theirs) && w.IsAlive(theirs.Weapon) && w.Get<Thing>(theirs.Weapon).Def.Weapon is { Ranged: true };
+        TextC(Theme.Dim, Sim.Combat.Blows.IsDragon(_sim, foe)
+            ? "Its jaws and fire can't be parried: a guard (V) takes only some of it. Dodge (Space) late, just as the ring closes."
+            : shoots
+                ? "Arrows can't be parried: guard (V or the right button) or dodge (Space) as the ring closes."
+                : "Hold V or the right button to guard: raise it as their ring closes to parry. Space dodges.");
         Panel.End();
     }
 

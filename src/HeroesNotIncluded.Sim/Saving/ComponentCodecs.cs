@@ -178,6 +178,12 @@ internal static class ComponentCodecs
             Target = r.Entity(), Attack = Math.Max(0, r.Int()), Heavy = r.Bool(), Start = r.Long(), Impact = r.Long(),
             Response = (Combat.BlowResponse)Math.Clamp(r.Int(), 0, 2),
         }),
+        Codec("Inhaling", (w, i) =>
+        {
+            w.Int3(i.Target);
+            w.Long(i.Start);
+            w.Long(i.At);
+        }, r => new Combat.Inhaling { Target = r.Int3(), Start = r.Long(), At = r.Long() }),
         Codec("Guard", (w, g) =>
         {
             w.Float(g.Stamina);

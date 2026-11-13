@@ -84,9 +84,8 @@ public static class AvatarHunting
 }
 
 /// <summary>
-/// The player's character attacks an animal or a foe while the work key is held: a shot each time
-/// the bow is ready (<see cref="AttackDef.CooldownTicks"/>), or a blow wound up and landed
-/// (<see cref="Combat.Blows"/>), and the next once it's recovered. They don't move on their own (the
+/// The player's character attacks an animal or a foe while the work key is held: a blow wound up
+/// or a bow drawn, and loosed (<see cref="Combat.Blows"/>), and the next once it's ready. They don't move on their own (the
 /// player does the stalking), so the job ends when the prey falls or gets out of range or sight.
 /// </summary>
 public sealed class AvatarHuntJob(Entity prey) : Job, IFromTheSaddle
@@ -98,7 +97,6 @@ public sealed class AvatarHuntJob(Entity prey) : Job, IFromTheSaddle
         var animal = Get<Creature>(prey).Def.Race == Race.Animal;
         var label = AvatarHunting.Called(Sim, prey);
         Report = animal ? $"Hunting {label}" : $"Fighting {label}";
-        var nextAttack = 0L;
         var struck = false;
         while (true)
         {
@@ -130,21 +128,9 @@ public sealed class AvatarHuntJob(Entity prey) : Job, IFromTheSaddle
                 yield break;
             }
             var skill = animal ? Skill.Hunting : attack.Ranged ? Skill.Shooting : Skill.Melee;
-            if (attack.Ranged)
+            // A blow wound up, or a bow drawn, quick (Combat.Blows): F held looses again once it's ready.
+            if (!Combat.Blows.WindingUp(Sim, Pawn) && Combat.Blows.Begin(Sim, Pawn, prey, attack))
             {
-                // A shot flies at once, on the bow's own pace.
-                if (Sim.Clock.Tick >= nextAttack)
-                {
-                    FacePrey();
-                    Combat.RealtimeAttacks.TryAttack(Sim, Pawn, prey, attack);
-                    SkillRules.Learn(Sim, Pawn, skill, AvatarHunting.XpPerAttack);
-                    nextAttack = Sim.Clock.Tick + attack.CooldownTicks;
-                    struck = true;
-                }
-            }
-            else if (!Combat.Blows.WindingUp(Sim, Pawn) && Combat.Blows.Begin(Sim, Pawn, prey, attack))
-            {
-                // A blow, wound up quick (Combat.Blows): F held swings again once it's landed.
                 FacePrey();
                 SkillRules.Learn(Sim, Pawn, skill, AvatarHunting.XpPerAttack);
                 struck = true;

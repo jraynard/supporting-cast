@@ -118,6 +118,7 @@ public class HuntingTests
         var (sim, me) = Player();
         // Beyond the hare's flee radius (9 cells) but inside the bow's 14: it hasn't noticed you.
         var hare = Animal(sim, "Hare", C(20, 30), hunt: false);
+        sim.World.Get<Mind>(hare).Drafted = true; // keeps still for the bow's draw (Combat.Blows), as a hare grazing might
         var action = AvatarSystem.ActionAt(sim, me, C(20, 30));
         Assert.Equal(AvatarActionKind.Hunt, action.Kind);
         Assert.Equal("Shoot the hare", action.Label);

@@ -13,6 +13,7 @@ public partial class PerceptionBoundaryTests
     {
         ["Rendering/DoorAnimator.cs"] = 1, // who's in a doorway; DoorAnimator.CanSee gates the result
         ["VillageGame.Adventure.cs"] = 1, // PickCreature, which filters by View.CanSee
+        ["VillageGame.Arena.cs"] = 1, // the practice ring's foe: a dev tool with no round, two people and no secrets
         ["VillageGame.Hud.cs"] = 1, // the overseer's bar, only with no round
         ["VillageGame.Ui.cs"] = 2, // your own opinions of the cast; the Work tab, closed to players
         ["WorldRenderer.cs"] = 3, // the draw and label loops, which filter by Seen; debug paths, only with no viewer

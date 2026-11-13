@@ -70,6 +70,18 @@ public struct Guard
         RaisedAt >= 0 ? RaisedAt <= tick : LastRaise >= 0 && LastRaise <= tick && LoweredAt > tick;
 }
 
+/// <summary>
+/// A dragon drawing breath before it breathes on <see cref="Target"/> at <see cref="At"/>: in plain
+/// sight, so the renderer marks where it'll land. A guard up then takes some of the sting out; only
+/// a late dodge gets most of the way clear (<see cref="CombatRules.Breathe"/>).
+/// </summary>
+public struct Inhaling
+{
+    public int3 Target;
+    public long Start;
+    public long At;
+}
+
 /// <summary>How a blow ended, for the renderer's words and the sounds. Not sim state.</summary>
 public enum BlowOutcome : byte
 {
@@ -90,6 +102,8 @@ public sealed record BlowEvent(long Tick, Entity Attacker, Entity Target, BlowOu
 /// enough to read: whoever it's aimed at can raise a guard to block it (less hurt, some stamina),
 /// raise it just as it lands to parry it (no hurt, and the attacker is left open for a riposte),
 /// or step out of reach or dodge. A heavy blow takes longer, hurts more and breaks a tired guard.
+/// An arrow (its draw is the windup) is blocked or dodged, never parried; a dragon's jaws come
+/// quick, are only partly blocked, and are dodged only late.
 /// The wounds themselves are still <see cref="CombatRules"/>'s, through <see cref="RealtimeAttacks.TryAttack"/>.
 /// <para>
 /// A blow at a player's character lands <see cref="LatencyGrace"/> after its impact: in co-op the
@@ -128,6 +142,25 @@ public static class Blows
 
     /// <summary>Of a blocked blow's hurt, the share that still gets through.</summary>
     public const float BlockedDamage = 0.3f;
+
+    /// <summary>
+    /// A dragon's jaws (and its breath, <see cref="CombatRules.Breathe"/>) can't be parried and are
+    /// only partly blocked: this share still gets through a guard, which it costs twice the wind.
+    /// </summary>
+    public const float DragonBlocked = 0.7f;
+
+    /// <summary>
+    /// Against a dragon a dodge must be late, started this close before it lands: it's quick and it
+    /// covers a lot of ground. Its blows also come quicker than the attack's own windup.
+    /// </summary>
+    public const int DragonDodgeTicks = SimClock.TicksPerSecond / 7;
+    public const float DragonWindup = 0.7f;
+
+    /// <summary>A breath dodged in time still singes: this share of it lands.</summary>
+    public const float BreathDodged = 0.5f;
+
+    /// <summary>How long a dragon draws breath before it breathes: long enough to see, not to get clear.</summary>
+    public const int InhaleTicks = SimClock.TicksPerSecond * 6 / 5;
 
     public const float SwingCost = 0.1f, HeavyCost = 0.22f, DodgeCost = 0.2f, BlockCost = 0.18f, ParryCost = 0.04f;
 
@@ -170,7 +203,7 @@ public static class Blows
         if (g.StaggeredUntil > now || g.RaisedAt >= 0 || g.Stamina < cost || (player && now < g.NextSwing))
             return false;
         g.Stamina -= cost;
-        var ticks = attack.WindupTicks * (heavy ? HeavyWindup : 1f) * (player ? PlayerWindup : 1f);
+        var ticks = attack.WindupTicks * (heavy ? HeavyWindup : 1f) * (player ? PlayerWindup : 1f) * (IsDragon(sim, attacker) ? DragonWindup : 1f);
         var windup = new Windup
         {
             Target = target,
@@ -178,9 +211,12 @@ public static class Blows
             Heavy = heavy,
             Start = now,
             Impact = now + Math.Max(1, (int)ticks),
-            Response = w.Has<Avatar>(target) ? BlowResponse.None : AiResponse(sim, target, heavy),
+            Response = w.Has<Avatar>(target) ? BlowResponse.None : AiResponse(sim, target, heavy, Parryable(sim, attacker, attack)),
         };
         w.Add(attacker, windup);
+        // A player's next may start a moment after this one lands; after a shot, once the bow's ready again.
+        if (player)
+            g.NextSwing = windup.Impact + (attack.Ranged ? Math.Max(PlayerRecoveryTicks, attack.CooldownTicks - (int)ticks) : PlayerRecoveryTicks);
         return true;
     }
 
@@ -188,7 +224,7 @@ public static class Blows
     /// How an AI meets a blow it sees coming, rolled once: armed folk block or parry by their
     /// skill, the unarmed and animals take it. A heavy blow is harder to parry.
     /// </summary>
-    private static BlowResponse AiResponse(Simulation sim, Entity target, bool heavy)
+    private static BlowResponse AiResponse(Simulation sim, Entity target, bool heavy, bool parryable)
     {
         var w = sim.World;
         if (!w.TryGet<Equipment>(target, out var eq) || !w.IsAlive(eq.Weapon) || w.Get<Thing>(eq.Weapon).Def.Weapon is not { Ranged: false }
@@ -198,7 +234,8 @@ public static class Blows
         var parry = (AiParry + AiParryPerSkill * skill) * (heavy ? 0.5f : 1f);
         var block = AiBlock + AiBlockPerSkill * skill;
         var roll = sim.Rand.NextFloat();
-        return roll < parry ? BlowResponse.Parry : roll < parry + block ? BlowResponse.Block : BlowResponse.None;
+        // What can't be parried is blocked by whoever would have tried.
+        return roll < parry ? parryable ? BlowResponse.Parry : BlowResponse.Block : roll < parry + block ? BlowResponse.Block : BlowResponse.None;
     }
 
     /// <summary>Stop a blow being wound up (the job behind it ended, or a guard went up mid-swing).</summary>
@@ -206,13 +243,28 @@ public static class Blows
     {
         if (sim.World.Has<Windup>(attacker))
             sim.World.Remove<Windup>(attacker);
+        if (sim.World.Has<Inhaling>(attacker))
+            sim.World.Remove<Inhaling>(attacker);
     }
+
+    public static bool IsDragon(Simulation sim, Entity e) =>
+        sim.World.TryGet<Creature>(e, out var c) && c.Def.Race == Race.Dragon;
+
+    /// <summary>A blade can be parried; an arrow or a dragon's jaws can't (they're blocked, or dodged).</summary>
+    public static bool Parryable(Simulation sim, Entity attacker, AttackDef attack) => !attack.Ranged && !IsDragon(sim, attacker);
+
+    /// <summary>
+    /// Did a dodge carry <paramref name="e"/> clear of something landing at <paramref name="impact"/>?
+    /// From a dragon only if it was started late, close before it (<see cref="DragonDodgeTicks"/>).
+    /// </summary>
+    public static bool DodgedAt(in Guard g, long impact, bool dragon) =>
+        g.DodgeFrom <= impact && impact < g.DodgeUntil && (!dragon || impact - g.DodgeFrom <= DragonDodgeTicks);
 
     /// <summary>A player's stamped key, taken as now if it's from the future or too old.</summary>
     public static long Stamp(Simulation sim, long at)
     {
         var now = sim.Clock.Tick;
-        return at > now || at < now - MaxStampAge ? now : at;
+        return at > now || at < now - MaxStampAge || at < 0 ? now : at;
     }
 
     /// <summary>Raise or lower a guard, as of <paramref name="at"/>. Raising one ends your own swing.</summary>
@@ -267,7 +319,8 @@ public static class Blows
             Report(sim, attacker, target, BlowOutcome.Miss, windup.Heavy); // stepped out of reach
             return;
         }
-        if (theirs.DodgeFrom <= impact && impact < theirs.DodgeUntil)
+        var dragon = IsDragon(sim, attacker);
+        if (DodgedAt(theirs, impact, dragon))
         {
             Report(sim, attacker, target, BlowOutcome.Dodged, windup.Heavy);
             return;
@@ -275,7 +328,7 @@ public static class Blows
         var guarding = w.Has<Avatar>(target)
             ? theirs.UpAt(impact) && theirs.StaggeredUntil <= impact
             : windup.Response != BlowResponse.None;
-        var parried = guarding && (w.Has<Avatar>(target)
+        var parried = guarding && Parryable(sim, attacker, attack) && (w.Has<Avatar>(target)
             ? impact - theirs.LastRaise <= ParryTicks
             : windup.Response == BlowResponse.Parry);
         if (parried)
@@ -296,11 +349,11 @@ public static class Blows
         var outcome = riposte ? BlowOutcome.Riposte : BlowOutcome.Hit;
         if (guarding)
         {
-            var cost = BlockCost * (windup.Heavy ? 2f : 1f);
+            var cost = BlockCost * (windup.Heavy || dragon ? 2f : 1f);
             if (theirs.Stamina >= cost)
             {
                 theirs.Stamina -= cost;
-                damage *= BlockedDamage;
+                damage *= dragon ? DragonBlocked : BlockedDamage;
                 outcome = BlowOutcome.Blocked;
             }
             else
@@ -317,7 +370,7 @@ public static class Blows
         Report(sim, attacker, target, outcome, windup.Heavy);
     }
 
-    private static void Report(Simulation sim, Entity attacker, Entity target, BlowOutcome outcome, bool heavy)
+    internal static void Report(Simulation sim, Entity attacker, Entity target, BlowOutcome outcome, bool heavy)
     {
         var now = sim.Clock.Tick;
         sim.RecentBlows.RemoveAll(b => now - b.Tick > SimClock.TicksPerSecond * 5);
@@ -352,8 +405,6 @@ public sealed class BlowSystem : ISimSystem
             var windup = w.Get<Windup>(e);
             w.Remove<Windup>(e);
             Blows.Land(sim, e, windup);
-            if (w.IsAlive(e) && w.Has<Avatar>(e) && w.Has<Guard>(e))
-                w.Get<Guard>(e).NextSwing = now + Blows.PlayerRecoveryTicks;
         }
         foreach (var e in w.Each<Guard>())
         {
