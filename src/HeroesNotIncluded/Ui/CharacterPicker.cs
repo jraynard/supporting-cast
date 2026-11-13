@@ -25,7 +25,7 @@ public sealed class CharacterPicker(GameHost host, CharacterRoster roster, Sim.D
     public Result Draw(float time)
     {
         var result = Result.None;
-        var size = (float2?)new float2(84, 28);
+        var size = (float2?)new float2(Gui.S(84), Gui.S(28));
         ImGuiText.Wrapped("Bring one of your characters: they start out fresh here, with nothing but their kit.");
         ImGui.Spacing();
         foreach (var c in roster.Characters.ToList())
@@ -65,7 +65,7 @@ public sealed class CharacterPicker(GameHost host, CharacterRoster roster, Sim.D
             ImGui.PopID();
             ImGui.Spacing();
         }
-        var wide = (float2?)new float2(160, 32);
+        var wide = (float2?)new float2(Gui.S(160), Gui.S(32));
         if (roster.Characters.Count >= CharacterRoster.Max)
             ImGui.TextDisabled($"That's {CharacterRoster.Max}: a new one replaces the one you haven't used longest.");
         if (ImGui.Button("New character"u8, in wide))

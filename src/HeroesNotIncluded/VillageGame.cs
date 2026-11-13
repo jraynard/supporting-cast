@@ -314,7 +314,12 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             _camera.Zoom = StartZoom;
         else if (HasAvatar)
             _camera.Zoom = AdventureZoom;
-        _cameraController = new Camera3DController(_camera) { Bounds = (float2.Zero, new float2(_sim.Map.Width, _sim.Map.Height)) };
+        _cameraController = new Camera3DController(_camera)
+        {
+            Bounds = (float2.Zero, new float2(_sim.Map.Width, _sim.Map.Height)),
+            ZoomInKey = GlfwKey.Equal, // zoom without a scroll wheel: a Steam Deck button, say
+            ZoomOutKey = GlfwKey.Minus,
+        };
         _basePanSpeed = _cameraController.PanSpeed;
         _renderer = new WorldRenderer(Host.Atlas) { CutawayZ = Math.Clamp(StartCutaway, 1, _sim.Map.Depth - 1), Interp = _interp };
         _followLevel = StartCutaway == int.MaxValue;

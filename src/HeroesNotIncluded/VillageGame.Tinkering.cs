@@ -553,6 +553,7 @@ public sealed partial class VillageGame
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in pivot);
         var open = true;
         var label = w.Get<Thing>(_tinkerAt).Label;
+        ScreenFit.Next();
         Panel.Begin($"{Cap(label)}###tinker", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
         if (View.Wagon(_tinkerAt) is { } wagon)
             DrawWagonInside(wagon);
@@ -699,6 +700,7 @@ public sealed partial class VillageGame
         float2? pivot = new float2(0f, 0.5f);
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in pivot);
         var open = true;
+        ScreenFit.Next();
         Panel.Begin($"{Cap(curio.Label)}###curio", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
         TextC(curio.Doubts ? Theme.Warn : Theme.Text, curio.Doubts
             ? $"A fake, you'd say: worth {curio.Low} to {curio.High} silver as a curiosity."

@@ -94,6 +94,7 @@ public sealed partial class VillageGame
         var pos = new float2(screen.X * 0.5f, screen.Y * 0.5f);
         float2? middle = new float2(0.5f, 0.5f);
         ImGui.SetNextWindowPos(in pos, ImGuiCond.FirstUseEver, in middle);
+        ScreenFit.Next();
         Narsil.Ui.Panel.Begin("The round is about to start###lobby", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse);
         var round = _sim.Round;
 
@@ -175,6 +176,7 @@ public sealed partial class VillageGame
     private void DrawTakeTrade(CoopSession session, float2 center, float2? middle)
     {
         ImGui.SetNextWindowPos(in center, ImGuiCond.Always, in middle);
+        ScreenFit.Next();
         Narsil.Ui.Panel.Begin("Who are you?###take-trade", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
         if (_tradeRequested)
         {

@@ -48,11 +48,12 @@ public sealed partial class VillageGame
         DrawTips();
         DrawVillagerBar();
         DrawToasts();
+        // Bottom left, before the centre so the centre keeps clear of it.
+        DrawInspector();
         // Bottom centre, stacking upward: the build tools, the hotbar, and the work in hand.
         DrawToolbar();
         DrawHotbar();
         DrawWork();
-        DrawInspector();
         // Free windows.
         DrawStorageWindow();
         DrawSignWindow();
@@ -112,11 +113,14 @@ public sealed partial class VillageGame
     private const float WrapCap = 320f;
     private static void Bullet(string text) => ImGuiText.Bullet(text);
 
+    /// <summary>A free window's first place (screen units) and size (unscaled), kept on screen.</summary>
     private static void SetNextWindow(float2 pos, float2 size)
     {
         float2? pivot = null;
         ImGui.SetNextWindowPos(in pos, ImGuiCond.FirstUseEver, in pivot);
-        ImGui.SetNextWindowSize(in size, ImGuiCond.FirstUseEver);
+        var scaled = new float2(Gui.S(size.X), Gui.S(size.Y));
+        ImGui.SetNextWindowSize(in scaled, ImGuiCond.FirstUseEver);
+        ScreenFit.Next();
     }
 
     /// <summary>Passed by <c>in</c> to ImGui overloads that take an optional size; null means "auto".</summary>
@@ -191,7 +195,7 @@ public sealed partial class VillageGame
             var c = new float4(0.25f, 0.5f, 0.85f, 1f);
             ImGui.PushStyleColor(ImGuiCol.Button, in c);
         }
-        var size = (float2?)new float2(110, 0);
+        var size = (float2?)new float2(Gui.S(110), 0);
         if (ImGui.Button(label, in size))
             SetTool(active ? ToolKind.Select : tool, active ? null : def);
         if (active)
@@ -209,7 +213,7 @@ public sealed partial class VillageGame
             _selected = Entity.Null; // lost from sight
             return;
         }
-        _hud.Next(Anchor.BottomLeft, Gui.S(360), Gui.S(400));
+        _hud.Next(Anchor.BottomLeft, ScreenFit.Width(360, 0.32f), Gui.S(400));
         var open = true;
         Panel.Begin("Inspector###inspector", ref open, Hud.Flags);
         _hud.Took();
@@ -984,7 +988,7 @@ public sealed partial class VillageGame
 
     private void DrawWorkTab()
     {
-        SetNextWindow(new float2(300, 60), new float2(640, 0));
+        SetNextWindow(new float2(Gui.S(300), Gui.S(60)), new float2(640, 0));
         Narsil.Ui.Panel.Begin("Work priorities", ref _showWorkTab, ImGuiWindowFlags.AlwaysAutoResize);
         TextC(Dim, "1 = highest, 4 = lowest, 0 = never");
         var types = Enum.GetValues<WorkType>();
@@ -1167,7 +1171,7 @@ public sealed partial class VillageGame
 
     private void DrawDebug()
     {
-        SetNextWindow(new float2(300, 400), new float2(320, 0));
+        SetNextWindow(new float2(Gui.S(300), Gui.S(400)), new float2(320, 0));
         Narsil.Ui.Panel.Begin("Debug", ref _showDebug, ImGuiWindowFlags.AlwaysAutoResize);
 
         ImGui.Text($"Tick {_sim.Clock.Tick}  ({_lastTickMs:F3} ms/tick)");

@@ -99,10 +99,11 @@ public sealed partial class VillageGame
         Gui.Rule();
         ImGui.SetNextItemWidth(-1);
         ImGui.InputTextWithHint("##favour"u8, "What you want done"u8, _favourText, ImGuiInputTextFlags.None, null, IntPtr.Zero);
-        ImGui.SetNextItemWidth(120);
+        OnScreenKeyboard.AfterTextField();
+        ImGui.SetNextItemWidth(Gui.S(120));
         ImGui.SliderInt("silver"u8, ref _favourPrice, 0, 50, "%d"u8, ImGuiSliderFlags.AlwaysClamp);
         ImGui.SameLine(0, 12);
-        ImGui.SetNextItemWidth(120);
+        ImGui.SetNextItemWidth(Gui.S(120));
         ImGui.SliderInt("hours"u8, ref _favourHours, 1, FavourBoard.MaxHours, "%d"u8, ImGuiSliderFlags.AlwaysClamp);
         if (ImGui.Button("Pin it to the board"u8, in _autoSize))
         {

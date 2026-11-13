@@ -180,6 +180,7 @@ public sealed partial class VillageGame
         if (session.Ended is { } reason)
         {
             ImGui.SetNextWindowPos(in center, ImGuiCond.Always, in middle);
+            ScreenFit.Next();
             Narsil.Ui.Panel.Begin("Disconnected###coop-ended", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
             Wrapped($"The game with {session.SessionName} ended: {reason}.");
             if (ImGui.Button("Back to the title screen"u8, in _autoSize))
@@ -266,7 +267,7 @@ public sealed partial class VillageGame
     private void DrawChat(CoopSession session)
     {
         ImGui.Separator();
-        float2? size = new float2(360, 140);
+        float2? size = new float2(Narsil.Ui.Gui.S(360), Narsil.Ui.Gui.S(140));
         if (ImGui.BeginChild("##chat-log"u8, in size, ImGuiChildFlags.Borders, ImGuiWindowFlags.None))
         {
             foreach (var (from, text) in session.ChatLog)
@@ -282,7 +283,9 @@ public sealed partial class VillageGame
         }
         ImGui.EndChild();
         ImGui.SetNextItemWidth(360);
-        if (ImGui.InputTextWithHint("##chat"u8, "Say something (Enter)"u8, _chatInput, ImGuiInputTextFlags.EnterReturnsTrue, null, IntPtr.Zero))
+        var said = ImGui.InputTextWithHint("##chat"u8, "Say something (Enter)"u8, _chatInput, ImGuiInputTextFlags.EnterReturnsTrue, null, IntPtr.Zero);
+        OnScreenKeyboard.AfterTextField();
+        if (said)
         {
             session.SendChat(Narsil.Ui.ImGuiText.Value(_chatInput));
             _chatInput.SetValue("".AsSpan());
@@ -293,6 +296,7 @@ public sealed partial class VillageGame
     private void DrawCoopCreator(CoopSession session, float2 center, float2? middle)
     {
         ImGui.SetNextWindowPos(in center, ImGuiCond.Always, in middle);
+        ScreenFit.Next();
         Narsil.Ui.Panel.Begin("Who are you?###coop-creator", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
         if (_characterRequested)
         {

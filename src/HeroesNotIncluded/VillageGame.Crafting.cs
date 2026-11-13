@@ -209,10 +209,11 @@ public sealed partial class VillageGame
         }
         var thing = w.Get<Thing>(_openStation);
         var bench = w.Get<Workbench>(_openStation);
-        var pos = ImGui.GetIO().DisplaySize * 0.5f + new float2(60, 0);
+        var pos = ImGui.GetIO().DisplaySize * 0.5f + new float2(Narsil.Ui.Gui.S(60), 0);
         float2? pivot = new float2(0f, 0.5f);
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in pivot);
         var open = true;
+        ScreenFit.Next();
         Narsil.Ui.Panel.Begin($"{Cap(thing.Label)}###station", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
         DrawCraftUnderWay(_openStation, bench);
         if (bench.Active != null && bench.Stocked)
@@ -299,7 +300,7 @@ public sealed partial class VillageGame
         float2? pivot = new float2(0f, 0.5f);
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in pivot);
         // A fixed width: the fold-away headers would otherwise stretch it across the screen.
-        var size = new float2(Narsil.Ui.Gui.S(400), 0f);
+        var size = new float2(ScreenFit.Width(400, 0.45f), 0f);
         var most = new float2(size.X, ImGui.GetIO().DisplaySize.Y * 0.8f);
         ImGui.SetNextWindowSizeConstraints(in size, in most, (ImGuiSizeCallback?)null, default);
         var open = true;
@@ -498,7 +499,8 @@ public sealed partial class VillageGame
         if (!_showRecipeBook)
             return;
         var open = true;
-        ImGui.SetNextWindowSize(new float2(520, 460), ImGuiCond.FirstUseEver);
+        var bookSize = new float2(Narsil.Ui.Gui.S(520), Narsil.Ui.Gui.S(460));
+        ImGui.SetNextWindowSize(in bookSize, ImGuiCond.FirstUseEver);
         Narsil.Ui.Panel.Begin(HasAvatar ? "Your recipe book###recipes" : "The village's recipe book###recipes", ref open, ImGuiWindowFlags.NoCollapse);
         var groups = _sim.Defs.AllRecipes.GroupBy(r => r.StationDef).OrderBy(g => g.Key == null ? -1 : g.Key.Index);
         foreach (var group in groups)

@@ -280,7 +280,7 @@ public sealed partial class VillageGame
         if (_saveWindow == SaveWindow.None)
             return;
         var open = true;
-        SetNextWindow(new float2(Screen.X / 2f - 230, 140), new float2(460, 0));
+        SetNextWindow(new float2(Screen.X / 2f - Narsil.Ui.Gui.S(230), Narsil.Ui.Gui.S(140)), new float2(460, 0));
         var title = _saveWindow == SaveWindow.Save ? "Save game###saves" : "Load game###saves";
         if (!Narsil.Ui.Panel.Begin(title, ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse))
         {
@@ -305,6 +305,7 @@ public sealed partial class VillageGame
     private void DrawSaveForm()
     {
         ImGui.InputText("Name"u8, _saveName, ImGuiInputTextFlags.None, null, IntPtr.Zero);
+        OnScreenKeyboard.AfterTextField();
         var name = SaveSlots.Clean(Narsil.Ui.ImGuiText.Value(_saveName));
         var exists = name.Length > 0 && _slots.Any(s => s.Name == name);
         var disabled = name.Length == 0;

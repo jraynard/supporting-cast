@@ -34,6 +34,7 @@ public sealed partial class VillageGame
         var pos = new float2(screen.X * 0.5f, screen.Y * 0.5f);
         float2? middle = new float2(0.5f, 0.5f);
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in middle);
+        ScreenFit.Next();
         Panel.Begin("The season's end###reveal", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse);
 
         using (Gui.HeaderFont())

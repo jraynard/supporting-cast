@@ -25,6 +25,46 @@ public class SettingsTests
         Assert.True(partial.VSync);
     }
 
+    [Theory]
+    [InlineData("1", null, null, true)]           // Game Mode
+    [InlineData(null, "Valve\n", "Jupiter\n", true)] // Desktop Mode, LCD (sysfs values end in a newline)
+    [InlineData(null, "Valve", "Galileo", true)]   // OLED
+    [InlineData("0", "Valve", "Index", false)]
+    [InlineData(null, "Gigabyte Technology Co., Ltd.", "B650 AORUS ELITE AX", false)]
+    [InlineData(null, null, null, false)]
+    public void SpotsASteamDeck(string? env, string? vendor, string? product, bool deck) =>
+        Assert.Equal(deck, HandheldDefaults.IsSteamDeck(env, vendor, product));
+
+    [Fact]
+    public void FirstRunOnADeckIsReadableAndFrugal()
+    {
+        Assert.Equal(Settings.Serialize(new Settings()), Settings.Serialize(HandheldDefaults.FirstRun(steamDeck: false)));
+        var deck = HandheldDefaults.FirstRun(steamDeck: true);
+        Assert.True(deck.UiScale > 1.1f);
+        Assert.Equal(WindowMode.Borderless, deck.WindowMode);
+        Assert.InRange(deck.MaxFps, 30, 60);
+        Assert.Equal(Settings.Serialize(deck), Settings.Serialize(deck.Sanitized())); // in range as it stands
+    }
+
+    [Fact]
+    public void ASavedFileWinsOverDeckDefaults()
+    {
+        var dir = Directory.CreateTempSubdirectory("hni-settings");
+        try
+        {
+            var path = Path.Combine(dir.FullName, "settings.json");
+            Assert.Equal(HandheldDefaults.DeckUiScale, Settings.Load(path, steamDeck: true).UiScale);
+            File.WriteAllText(path, Settings.Serialize(new Settings { UiScale = 1.1f }));
+            Assert.Equal(1.1f, Settings.Load(path, steamDeck: true).UiScale);
+        }
+        finally
+        {
+            Settings.FilePath = null;
+            Settings.Current = new Settings();
+            dir.Delete(recursive: true);
+        }
+    }
+
     [Fact]
     public void BorderlessKeepsTheWindowedSize()
     {

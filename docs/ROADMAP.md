@@ -748,6 +748,23 @@ The Director's second-day crisis can now be any of the four (`Director.CanSend`;
   moved for the map: seed 1234 state `B21A0A9DEA5BAFF1` full `51CF6D49C62A656B`; seed 99 state
   `6F4F5C7500D2CD22` full `2C87E5DE1CF65026`.
 
+### Steam Deck pass (2026-11-12)
+- **The Deck spotted:** with no settings file yet, `HandheldDefaults` finds a Deck (`SteamDeck=1`,
+  or the board's DMI name) and starts at UI scale 1.2, borderless and a 45 fps cap. 40 and 45
+  join the fps caps. `--deck`, `--size WxH` and `--ui-scale N` show other screens from the desktop
+  without saving.
+- **Fits 1280×800:** windows that skipped `Gui.S` scale; free windows are capped at the screen and
+  scroll (`ScreenFit`); the journal, inspector, station, sign and tips take at most a share of the
+  width. In Narsil, `Hud` moves the centre columns (toasts, hotbar, work) aside from the side
+  panels at their height, and narrows them only when there's no room.
+- **Controls through Steam Input:** `-`/`=` zoom (`Camera3DController.ZoomInKey`); F acts in front
+  once you've walked away from the pointer (`PointerIntent`); text fields ask Steam for its
+  keyboard. Layout and setup in docs/STEAM-DECK.md.
+- Left for the device: tune the scale, check every mini-game's panel, export the controller layout
+  to `tools/steamdeck/`, and measure frame time at 45 fps with HD-2D on.
+- `SettingsTests` (Deck detection, first-run defaults), `PointerIntentTests`, Narsil
+  `CameraTests.ZoomKeysZoomOnlyWhenSet`.
+
 ### M3: A whole season (done)
 Slices M3.1–M3.10 above. What it set out to do is below, kept for the record; it all landed,
 with the leftovers each slice notes.
@@ -936,6 +953,11 @@ Grouped by area; nothing here blocks a playtest.
 - Lanes cost the same to walk as grass, so villagers don't prefer them.
 - No turning mid-step: a turn waits for the step under way.
 - `--building-demo` lays its showcase over the village.
+
+**Steam Deck**
+- Native gamepad support (an action layer over `Input`, ImGui gamepad navigation), so menus work
+  from the d-pad and nothing needs the trackpad.
+- Tooltips reachable without hovering.
 
 **Words and docs**
 - The start message still mentions a dragon egg.

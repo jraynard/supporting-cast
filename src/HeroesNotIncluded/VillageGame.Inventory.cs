@@ -400,6 +400,7 @@ public sealed partial class VillageGame
         float2? left = new float2(0f, 0.5f);
         ImGui.SetNextWindowPos(in beside, ImGuiCond.Appearing, in left);
         var open = true;
+        ScreenFit.Next();
         Narsil.Ui.Panel.Begin("Inventory###inventory", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
 
         if (ImGui.SmallButton("Recipe book"u8))

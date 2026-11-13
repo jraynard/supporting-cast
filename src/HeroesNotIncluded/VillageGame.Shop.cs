@@ -151,6 +151,7 @@ public sealed partial class VillageGame
         }
         ImGui.SetNextItemWidth(Gui.S(200));
         var done = ImGui.InputTextWithHint("##shopname"u8, "What's it called?"u8, _shopNameInput, ImGuiInputTextFlags.EnterReturnsTrue, null, IntPtr.Zero);
+        OnScreenKeyboard.AfterTextField();
         ImGui.SameLine(0, 6);
         done |= ImGui.SmallButton("Paint it"u8);
         ImGui.SameLine(0, 6);

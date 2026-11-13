@@ -103,6 +103,21 @@ if (Log.File is { } file)
 CoopIdentity.IdOverride = ParseString(args, "--player-id");
 CoopIdentity.NameOverride = ParseString(args, "--name");
 var settings = Settings.Load(Settings.DefaultPath);
+// Trying another screen from the desktop: --deck (the Steam Deck's first-run settings), --size WxH,
+// --ui-scale N. These are for looking, so the player's settings file is left alone.
+if (args.Contains("--deck") || args.Contains("--size") || args.Contains("--ui-scale"))
+{
+    if (args.Contains("--deck"))
+        settings = Settings.Current = HandheldDefaults.FirstRun(steamDeck: true);
+    if (ParseString(args, "--size")?.Split('x') is [var w, var h] && int.TryParse(w, out var width) && int.TryParse(h, out var height))
+        (settings.WindowMode, settings.Width, settings.Height) = (WindowMode.Windowed, width, height);
+    else if (args.Contains("--deck"))
+        settings.WindowMode = WindowMode.Windowed; // a Deck-sized window, not the desktop's whole screen
+    if (args.Contains("--ui-scale"))
+        settings.UiScale = ParseFloat(args, "--ui-scale");
+    settings = Settings.Current = settings.Sanitized();
+    Settings.FilePath = null;
+}
 SaveSlots.Directory = SaveSlots.DefaultDirectory;
 VillageGame.OpenProfiler = args.Contains("--profiler");
 if (args.Contains("--dev"))

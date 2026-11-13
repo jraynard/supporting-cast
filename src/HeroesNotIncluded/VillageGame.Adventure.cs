@@ -13,6 +13,7 @@ using HeroesNotIncluded.Sim.Ecs;
 using HeroesNotIncluded.Sim.Maps;
 using HeroesNotIncluded.Sim.Scenarios;
 using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Ui;
 
 namespace HeroesNotIncluded;
 
@@ -114,9 +115,14 @@ public sealed partial class VillageGame
     private int _sentKeys;
     private bool _moveKeysFromWork, _useKeyFromWork;
 
+    /// <summary>Whether the pointer still says what F means, or the avatar has walked away from it.</summary>
+    private PointerIntent _pointer;
+
     /// <summary>Read WASD/F and send what changed. Outside combat only: in a fight the HUD gives orders.</summary>
     private void HandleAvatarInput(Input input, float dt)
     {
+        if (HasAvatar)
+            _pointer.Update(input.MouseDelta != float2.Zero, _sim.World.Get<Position>(_avatar).Cell);
         if (!HasAvatar || Working) // at a mini-game the keys are the mini-game's (UpdateWork)
         {
             _moveKeysFromWork = _useKeyFromWork = Working;
@@ -554,7 +560,8 @@ public sealed partial class VillageGame
 
     /// <summary>
     /// What F would act on: the hovered cell (or the block under the cursor, or what a wall in the
-    /// way hides) if it's in reach, else the cell in front of the avatar, else where it stands. Z and X look at their own cells.
+    /// way hides) if it's in reach and you haven't walked since the pointer moved, else the cell in front
+    /// of the avatar, else where it stands. Z and X look at their own cells.
     /// </summary>
     private AvatarAction WorkTarget(AvatarTool tool = AvatarTool.Use)
     {
@@ -562,8 +569,9 @@ public sealed partial class VillageGame
         var facing = _sim.World.Get<Avatar>(_avatar).Facing;
         var front = new int3(at.X + facing.X, at.Y + facing.Y, at.Z);
         // Digging: the hovered block, else the face in front, else the ground in front (a way down).
-        // With the pointer over a window, what's behind it isn't what you mean: only what's in front.
-        var overUi = ImGui.GetIO().WantCaptureMouse;
+        // With the pointer over a window, what's behind it isn't what you mean: only what's in front. The same once
+        // you've walked away from where the pointer rests (a stick and an idle trackpad on a Steam Deck).
+        var overUi = ImGui.GetIO().WantCaptureMouse || _pointer.Stale;
         ReadOnlySpan<int3> candidates = (tool, overUi) switch
         {
             (AvatarTool.Dig, false) => [_hoverBlock, front, new int3(front.X, front.Y, front.Z - 1)],
@@ -650,6 +658,7 @@ public sealed partial class VillageGame
         float2? pivot = new float2(0f, 0.5f);
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in pivot);
         var open = true;
+        ScreenFit.Next();
         Narsil.Ui.Panel.Begin($"{char.ToUpper(thing.Label[0])}{thing.Label[1..]}###storage", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
         ImGui.BeginGroup();
         if (thing.Def.Container != null)

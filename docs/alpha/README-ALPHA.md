@@ -27,6 +27,8 @@ Windows: unzip anywhere and run HeroesNotIncluded.exe. Windows SmartScreen will 
   app is unrecognised (it isn't code-signed yet): click "More info", then "Run anyway". A console
   window opens alongside the game; it shows the log, and you can ignore it.
 Linux: extract the tarball and run ./HeroesNotIncluded from that folder.
+Steam Deck: the Linux build, added to Steam as a non-Steam game. The controller layout and
+  setup are in STEAM-DECK.md (docs/STEAM-DECK.md in the source).
 macOS: unpack it and drag HeroesNotIncluded.app wherever you like. It isn't notarized by Apple
   yet, so the first launch of a downloaded copy is blocked: open Terminal and run
       xattr -dr com.apple.quarantine /path/to/HeroesNotIncluded.app

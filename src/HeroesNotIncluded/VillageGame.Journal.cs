@@ -33,6 +33,9 @@ public sealed partial class VillageGame
     /// <summary>Width of a journal panel, before UI scale.</summary>
     private const float JournalWidth = 400f;
 
+    /// <summary>The most of the screen's width the journal takes, so the inspector still fits beside it on a small screen.</summary>
+    private const float JournalShare = 0.36f;
+
     private bool InRound => _sim.Round.Live;
 
     /// <summary>The build drawer is open, or there's no avatar (god mode always has the toolbar).</summary>
@@ -139,7 +142,7 @@ public sealed partial class VillageGame
     /// <summary>A journal panel in the right-hand column, under the clock. Pair with <see cref="Panel.End"/>.</summary>
     private bool BeginJournal(string title, ref bool open, float height = 0f)
     {
-        _hud.Next(Anchor.TopRight, Gui.S(JournalWidth), height > 0 ? Gui.S(height) : 0f);
+        _hud.Next(Anchor.TopRight, ScreenFit.Width(JournalWidth, JournalShare), height > 0 ? Gui.S(height) : 0f);
         var visible = Panel.Begin(title, ref open, Hud.Flags);
         _hud.Took();
         return visible;
@@ -152,7 +155,7 @@ public sealed partial class VillageGame
         ("The village", [("Left-click", "walk there or act"), ("Shift-click", "look at someone or something"), ("Right-click", "an item's menu"), ("Esc", "stop looking")]),
         ("Hands-on work", [("F", "strike, pour, set, press"), ("A/D", "steer, tilt, lift"), ("Space", "the other thing: taste, latch, draw out"), ("Esc", "put the work down")]),
         ("Panels", [("J", "shop and favours"), ("T", "talk (what you've heard)"), ("K", "quests"), ("G", "the gift"), ("L", "message log"), ("B", "build tools"), ("H", "this card")]),
-        ("Camera and time", [("Q/E", "turn"), ("Wheel", "zoom"), ("[ / ]", "level down / up"), ("Home", "all levels"), ("\\", "roofs"), ("N", "sleep: time runs on once everyone does"),
+        ("Camera and time", [("Q/E", "turn"), ("Wheel or - / =", "zoom"), ("[ / ]", "level down / up"), ("Home", "all levels"), ("\\", "roofs"), ("N", "sleep: time runs on once everyone does"),
             ("F12", "screenshot"), ("Shift+F12", "screenshot without the UI")]),
     ];
 

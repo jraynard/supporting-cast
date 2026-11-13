@@ -85,6 +85,7 @@ public sealed class CoopMenu(GameHost host, DefDatabase defs) : IDisposable
             ImGui.BeginDisabled(true);
         ImGui.SetNextItemWidth(220);
         ImGui.InputText("Your name"u8, _name, ImGuiInputTextFlags.None, null, IntPtr.Zero);
+        OnScreenKeyboard.AfterTextField();
         if (ImGui.IsItemDeactivatedAfterEdit())
             _me = CoopIdentity.Rename(host, _me, Narsil.Ui.ImGuiText.Value(_name));
 
@@ -107,6 +108,7 @@ public sealed class CoopMenu(GameHost host, DefDatabase defs) : IDisposable
         ImGui.TextColored(Theme.Dim, CoopRelay.TryGet(out _, out _) ? "By join code or address"u8 : "By address"u8);
         ImGui.SetNextItemWidth(220);
         var enter = ImGui.InputText("##address"u8, _address, ImGuiInputTextFlags.EnterReturnsTrue, null, IntPtr.Zero);
+        OnScreenKeyboard.AfterTextField();
         ImGui.SameLine(0, 8);
         if (ImGui.Button("Join"u8, in _auto) || enter)
             Begin(Narsil.Ui.ImGuiText.Value(_address));

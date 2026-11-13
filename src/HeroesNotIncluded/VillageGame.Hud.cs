@@ -212,7 +212,7 @@ public sealed partial class VillageGame
     /// <summary>Top-right: a day/night dial, the time, outdoor temperature and speed buttons.</summary>
     private void DrawClock()
     {
-        _hud.Next(Anchor.TopRight, HasAvatar && InRound ? Gui.S(JournalWidth) : 0f);
+        _hud.Next(Anchor.TopRight, HasAvatar && InRound ? ScreenFit.Width(JournalWidth, JournalShare) : 0f);
         Panel.Begin("##clock", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
         _hud.Took();
 

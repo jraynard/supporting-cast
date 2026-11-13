@@ -190,7 +190,9 @@ public sealed partial class VillageGame
             ImGui.SetKeyboardFocusHere(0);
             _focusSpeech = false;
         }
-        if (ImGui.InputTextWithHint("##speech"u8, "Say something. /w whispers, /s shouts."u8, _speechInput, ImGuiInputTextFlags.EnterReturnsTrue, null, IntPtr.Zero))
+        var said = ImGui.InputTextWithHint("##speech"u8, "Say something. /w whispers, /s shouts."u8, _speechInput, ImGuiInputTextFlags.EnterReturnsTrue, null, IntPtr.Zero);
+        OnScreenKeyboard.AfterTextField();
+        if (said)
         {
             var (volume, text) = SpeechSystem.Parse(Narsil.Ui.ImGuiText.Value(_speechInput));
             Issue(new SayCommand(_avatar, text, volume));

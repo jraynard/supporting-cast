@@ -15,7 +15,7 @@ public sealed class SettingsWindow(GameHost host)
 {
     public const float ConfirmSeconds = 15f;
 
-    private static readonly int[] FpsCaps = [0, 30, 60, 90, 120, 144, 165, 240];
+    private static readonly int[] FpsCaps = [0, 30, 40, 45, 60, 90, 120, 144, 165, 240];
     private static readonly WindowMode[] Modes = [WindowMode.Windowed, WindowMode.Borderless, WindowMode.Fullscreen];
 
     public bool IsOpen { get; private set; }
@@ -64,6 +64,7 @@ public sealed class SettingsWindow(GameHost host)
         float2? pivot = new float2(0.5f, 0.5f);
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in pivot);
         var open = true;
+        ScreenFit.Next();
         if (!Narsil.Ui.Panel.Begin("Settings", ref open, ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings))
         {
             Narsil.Ui.Panel.End();
@@ -355,7 +356,9 @@ public sealed class SettingsWindow(GameHost host)
             _relayShown = _draft.RelayServer;
         }
         ImGui.SetNextItemWidth(S(240));
-        if (ImGui.InputTextWithHint("##relay"u8, "relay.example.com"u8, _relay, ImGuiInputTextFlags.None, null, IntPtr.Zero))
+        var edited = ImGui.InputTextWithHint("##relay"u8, "relay.example.com"u8, _relay, ImGuiInputTextFlags.None, null, IntPtr.Zero);
+        OnScreenKeyboard.AfterTextField();
+        if (edited)
             _relayShown = _draft.RelayServer = Narsil.Ui.ImGuiText.Value(_relay);
 
         Row("Host online", "When you host, also open the village through the relay so friends anywhere can join with a code.");

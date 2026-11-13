@@ -87,6 +87,7 @@ public sealed class CharacterCreator
 
         ImGui.SetNextItemWidth(220);
         ImGui.InputText("Name"u8, _name, ImGuiInputTextFlags.None, null, IntPtr.Zero);
+        OnScreenKeyboard.AfterTextField();
         DrawPresets();
         ImGui.Spacing();
         DrawTabs();
@@ -107,9 +108,9 @@ public sealed class CharacterCreator
                 break;
         }
 
-        var gap = new float2(1, 10);
+        var gap = new float2(1, Gui.S(10));
         ImGui.Dummy(in gap);
-        var size = (float2?)new float2(104, 34);
+        var size = (float2?)new float2(Gui.S(104), Gui.S(34));
         if (ImGui.Button("Randomize"u8, in size))
             Randomize();
         ImGui.SameLine(0, 8);
@@ -131,7 +132,7 @@ public sealed class CharacterCreator
         if (_presets.Count == 0)
             return;
         ImGui.TextColored(Theme.Dim, "Start from"u8);
-        var size = (float2?)new float2(0, 26);
+        var size = (float2?)new float2(Gui.S(0), Gui.S(26));
         for (var i = 0; i < _presets.Count; i++)
         {
             if (i % 4 != 0)
@@ -146,7 +147,7 @@ public sealed class CharacterCreator
 
     private void DrawTabs()
     {
-        var size = (float2?)new float2(76, 26);
+        var size = (float2?)new float2(Gui.S(76), Gui.S(26));
         foreach (var tab in Enum.GetValues<Tab>())
         {
             if (tab != Tab.Look)
@@ -385,7 +386,7 @@ public sealed class CharacterCreator
         var worn = HumanLook.WornOf(defs, Clothes);
         var tag = _walk ? $"walk_{Views[_view]}" : HumanLook.IdleTag(sheet, Views[_view], _look.Stance);
         LookWidgets.Preview(host, sheet, HumanLook.Layers(host.Atlas, _look, Rgba.White, worn), tag, time, 5f);
-        var size = (float2?)new float2(34, 26);
+        var size = (float2?)new float2(Gui.S(34), Gui.S(26));
         if (ImGui.Button("<"u8, in size))
             _view = (_view + Views.Length - 1) % Views.Length;
         ImGui.SameLine(0, 4);

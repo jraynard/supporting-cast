@@ -38,12 +38,13 @@ public sealed partial class VillageGame
             return;
         }
         var sign = Signs.Read(_sim, _readingSign);
-        var width = Gui.S(460);
+        var width = ScreenFit.Width(460, 0.6f);
         var rowH = Gui.S(30);
         var rows = Math.Max(1, sign.Prices.Count);
         var height = Gui.S(176) + rows * rowH;
         var size = new float2(width, height);
         var pos = ImGui.GetIO().DisplaySize * 0.5f - new float2(width * 0.5f, height * 0.62f);
+        pos.Y = MathF.Max(pos.Y, Gui.S(10)); // a long price list still starts on screen
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, default);
         ImGui.SetNextWindowSize(in size, ImGuiCond.Always);
         var flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings

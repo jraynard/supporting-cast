@@ -118,11 +118,14 @@ public sealed class Settings
         }
     }
 
-    public static Settings Load(string path)
+    /// <summary>Load the settings file; with none yet, start from defaults suited to this machine (a Steam Deck gets its own).</summary>
+    public static Settings Load(string path) => Load(path, HandheldDefaults.OnSteamDeck);
+
+    public static Settings Load(string path, bool steamDeck)
     {
         FilePath = path;
         if (!File.Exists(path))
-            return Current = new Settings();
+            return Current = HandheldDefaults.FirstRun(steamDeck);
         try
         {
             return Current = Deserialize(File.ReadAllText(path));

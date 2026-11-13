@@ -33,7 +33,7 @@ public sealed partial class VillageGame
             return;
         var tips = _sim.World.Get<Trade>(_avatar).Def.Tips;
         _tipIndex = Math.Clamp(_tipIndex, 0, tips.Count - 1);
-        _hud.Next(Anchor.TopLeft, Gui.S(300));
+        _hud.Next(Anchor.TopLeft, ScreenFit.Width(300, 0.3f));
         var open = true;
         var visible = Panel.Begin("Getting started###tips", ref open, Hud.Flags);
         _hud.Took();
