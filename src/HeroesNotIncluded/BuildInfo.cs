@@ -19,7 +19,7 @@ public static class BuildInfo
     /// The playtest Discord's invite, shown as text on the title screen's Report a Bug panel so
     /// testers know where reports go. Empty: the panel doesn't mention it.
     /// </summary>
-    public const string Community = "";
+    public const string Community = "https://discord.gg/GxkCEQ8N2h";
 
     /// <summary>"0.1.0-alpha.1".</summary>
     public static string Version => Informational.Split('+')[0];
