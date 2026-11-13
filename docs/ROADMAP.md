@@ -565,13 +565,68 @@ non-gamer play the first ten minutes.
 ## Next
 
 ### M3: A whole season
-- `Director`, Renown and Dread, crises including the late-round dragon, the festival, the
-  end-of-round reveal. Villagers defend themselves.
-- Crises damage the town's bridge, gate and buildings; the Tinker mends them (a game like truing
-  a wheel), and a broken bridge cuts a road until they do.
-- need to deal with downtime for the villagers as well during the night or when they should be sleeping, and how that might interact with the traitor system later. they shouldn't just have to watch their character sleep for 5 minutes though, that would be boring.
-- needs probably will have to be tuned to not be too annoying, but it would be good for the townspeople to gather at the inn after the day to eat, and later when we have the miner and forager trades they will have to buy supplies from each other to replenish their stocks, so there will be some interaction pressure there.
-- make the "favors" system a physical board that has to be interacted with in the town square so people looking for work can use it. or even use it to ask for help from a laborer or something.
+A round has no shape yet: `RoundPhase` stops at Playing, nothing reads `Adventurer.Satisfaction`
+or the expedition tallies, the Storyteller's 5-day grace outlasts a round, villagers ignore
+raiders, and the dragon's breath has no caller. Decided: night skips only while every player
+sleeps; a fixed season with the festival on day 3's evening; raids, fire, shortage, plague and
+the dragon as crises; a physical favour board replaces asking aloud. In slices, each with tests
+and a Done entry:
+
+1. **The season and its end:**
+   - `RoundPhase` gains `Festival` and `Over`, run by the clock from `season.json`. Losing ends
+     the round early.
+   - When it's `Over` the sim pauses, and a reveal screen shows the outcome, Renown and Dread
+     over time, parties served, the dead and each player's earnings. M4 adds its traitor rows to
+     the same screen.
+2. **Renown and Dread** (`Director/Reckoning`):
+   - Renown is built from Satisfaction as parties leave, and from quests cleared.
+   - Dread grows from quests left open, quests failed and crises the town didn't meet.
+   - Players see each as a word with the clock. The numbers appear only at the reveal.
+3. **Nights, needs and evenings:**
+   - **The night skip:** `Players.AllAsleep` is a sim read. While it's true the host runs at 8x,
+     so anyone awake holds 1x, and in M4 a traitor who won't go to bed stands out.
+   - **Waking:** players wake at dawn.
+   - **Needs:** tuned so a day is breakfast and supper.
+   - **Supper at the inn:** AI villagers buy it at the hatch from 18:00, sit and talk.
+   - **Staying up:** late drinkers, lodging and the odd night raid are reasons to.
+4. **The Director:**
+   - It replaces the Storyteller in rounds; `Phase.None` keeps the Storyteller, so the bench is
+     unchanged.
+   - Day 1 is quiet, day 2 brings a crisis, day 3 the dragon. Dread brings crises sooner and
+     makes them harder.
+   - Each crisis reports itself met or unmet, and it's shouted in the world, not announced.
+5. **Villagers defend themselves:**
+   - Armed villagers and adventurers fight hostiles (`DefendJob`, on `AssaultJob`'s pattern).
+     The unarmed shelter indoors.
+   - Players can attack `Faction.Attacker` creatures only. Attacking people stays M4.
+6. **Raids break things; the Tinker mends them:**
+   - Raiders bash the gate, doors and walls. A structure below a quarter of its Hp is `Broken`:
+     impassable, but not gone.
+   - A broken bridge cuts the road for parties and the carter.
+   - `MendSession` (like `TrueSession`) braces a span or rehangs a gate. The AI tinker uses
+     `MendStructureJob`.
+7. **Fire, shortage and plague:**
+   - **Fire:** fires with a cause, and a bucket line from the well (`DouseJob`).
+   - **Shortage:** the carter doesn't come.
+   - **Plague:** a party brings a `Fever` that spreads to those they sit with. The Healer feels
+     it ("a heat in the blood") and mends it.
+8. **The dragon:**
+   - A hostile, flying `DragonBrain` strafes with `Breath.Breathe`, lands when it's pressed, and
+     flees when hurt.
+   - Driven off, it's a lot of Renown. If the inn burns, it's a lot of Dread.
+9. **The festival:**
+   - Day 3's evening gathers everyone in the square. The parties' Satisfaction counts one last
+     time.
+   - The reckoning is read out at the well, then the reveal.
+10. **The favour board:**
+    - A `NoticeBoard` in the square (`village_map.py`). Favours are posted there and known by
+       reading it (F).
+    - Structured errands ("bring N of X here") are taken by AI labourers, who are paid on
+      delivery.
+
+Bench hashes should hold except at slices 6 (passability) and 10 (a new prop). The exit test is
+`SeasonScenarioTests`: bots play an Honest round from the deal to `Over`, through a crisis, the
+dragon and the festival.
 *Exit: an Honest round is playable start to finish.*
 **Playtest gate: is serving heroes fun with friends, without traitors?** Tune before going further.
 
