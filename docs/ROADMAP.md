@@ -535,9 +535,9 @@ Known leftovers:
 ## Next
 
 ### PLAYTEST PREP
-- ~~add icon for the game executable~~ Done: a hammer crossed with a tankard over a shield
-  (`tools/gen_icon.py`), for the exe, window, Mac app, Linux desktop entry, and
-  `packaging/icon-512.png` for Discord and itch.io.
+- ~~add icon for the game executable~~ Done: the brand emblem (`art/brand/`, `tools/brand_logo.py`;
+  the small-size sign at 48 px and under), rendered by `tools/gen_icon.py` for the exe, window,
+  Mac app, Linux desktop entry, and `packaging/icon-512.png` for Discord and itch.io.
 - Publishing: tagging `v<Version>` runs `.github/workflows/playtest-release.yml`. It tests,
   packages, pushes the three platforms to a restricted itch.io page through butler, and
   announces the build in Discord's #builds. Pushes to main only test and package.
