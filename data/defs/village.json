@@ -64,7 +64,7 @@
       ]
     },
     {
-      "name": "Barrel", "label": "barrel", "category": "Building", "solid": true, "sprite": "buildings/chest",
+      "name": "Barrel", "label": "barrel", "category": "Building", "solid": true, "sprite": "buildings/barrel",
       "description": "An oak barrel. Holds a couple of stacks.",
       "maxHp": 80, "flammability": 0.8,
       "building": { "outdoor": true, "work": 90, "storageStacks": 2, "surfaceHeight": 0.62, "cost": [ { "def": "Wood", "count": 6 } ] },
@@ -75,7 +75,7 @@
       ]
     },
     {
-      "name": "Crate", "label": "crate", "category": "Building", "solid": true, "sprite": "buildings/chest",
+      "name": "Crate", "label": "crate", "category": "Building", "solid": true, "sprite": "buildings/crate",
       "description": "A nailed plank crate. Holds a few stacks.",
       "maxHp": 70, "flammability": 1.0,
       "building": { "outdoor": true, "work": 80, "storageStacks": 4, "surfaceHeight": 0.56, "cost": [ { "def": "Wood", "count": 5 } ] },
@@ -109,7 +109,7 @@
   "buildings": [
     {
       // A tall thatched barn with double doors: the village's store, where its stockpile is kept.
-      "name": "Barn", "label": "barn", "icon": "buildings/chest",
+      "name": "Barn", "label": "barn", "icon": "buildings/barn",
       "description": "A big timber barn under a deep thatch: dry storage for the village's goods.",
       "layout": [
         "WWWWWWWWWW",

@@ -970,21 +970,6 @@ def icon_mint():
     return selective_outline(img)
 
 
-def icon_nest():
-    """A ring of woven boughs round a bed of straw (the pyre's icon, for now)."""
-    img = canvas()
-    w = WOODS[""]
-    m = mask_of(img.size, lambda d: d.ellipse([2, 6, 30, 30], fill=255))
-    shade_shape(img, m, w.bark, radius=1.6, slope=1.2, tex=lambda x, y: -0.5 if (x * 2 + y * 3) % 7 < 2 else 0.2)
-    m = mask_of(img.size, lambda d: d.ellipse([8, 11, 24, 25], fill=255))
-    img.paste(STRAW[1], mask=m)
-    shade_shape(img, mask_of(img.size, lambda d: d.ellipse([9, 12, 23, 24], fill=255)), STRAW, radius=2.0, slope=-1.0, depth=-0.4,
-                tex=lambda x, y: 0.25 if (x + y * 3) % 5 == 0 else 0)
-    for x, y in ((13, 15), (18, 18), (15, 20), (20, 14)):                                           # tufts of down
-        put(img, x, y, FLEECE[3]); put(img, x + 1, y, FLEECE[2])
-    return selective_outline(img)
-
-
 def wagon():
     """A covered wagon in side view, 72x60 (renderSize 1.875, so drawn 1:1 beside 56-px people): oak bed
     with carved planking, oat-wool hood over bent hoops, a woad stripe, spoked wheels with iron tyres,
@@ -1078,7 +1063,7 @@ def generate():
     save(prop_hide(), "props/hide")
     for name, make in (("table", icon_table), ("stool", icon_stool), ("chest", icon_chest), ("sawhorse", icon_sawhorse),
                        ("carpenter_bench", icon_carpenter_bench), ("mason_bench", icon_mason_bench),
-                       ("tanning_rack", icon_tanning_rack), ("mint", icon_mint), ("nest", icon_nest),
+                       ("tanning_rack", icon_tanning_rack), ("mint", icon_mint),
                        ("butcher_spot", icon_butcher_spot), ("wagon", wagon)):
         save(make(), "buildings/" + name)
 

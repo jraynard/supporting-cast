@@ -85,7 +85,7 @@
       "description": "A spoon of honey from the comb."
     },
     {
-      "name": "Herbs", "label": "herbs", "category": "Item", "mass": 0.1, "sprite": "items/emberroot", "stackLimit": 20,
+      "name": "Herbs", "label": "herbs", "category": "Item", "mass": 0.1, "sprite": "items/herbs", "stackLimit": 20,
       "mixCue": "D", "drinkEffect": { "numbing": 0.4, "rousing": 0.2 }, "flammability": 0.4, "maxHp": 10,
       "description": "Bitter sprigs, dried. Numbing, and good for a headache."
     },
@@ -179,8 +179,8 @@
       "description": "A rag mop and a bucket's worth of grey water. For the floors, and what's on them."
     },
     {
-      // Art: borrows the stone block sprite and the chisel held shape until the M6 art pass.
-      "name": "Whetstone", "held": "chisel", "label": "whetstone", "category": "Item", "mass": 0.6, "sprite": "items/stone", "maxHp": 80,
+      // In hand it's drawn with the chisel's held shape.
+      "name": "Whetstone", "held": "chisel", "label": "whetstone", "category": "Item", "mass": 0.6, "sprite": "items/whetstone", "maxHp": 80,
       "tool": { "kind": "Whetstone", "speed": 1.0, "tier": "Stone" },
       "description": "A fine-grained stone for putting an edge back on a blade. Grind steady and don't let the steel heat."
     },

@@ -68,7 +68,7 @@ def legs4(cv, body, ground, thick, pose, colors, hoof=None, length_front=1.0):
 
 # ---------------------------------------------------------------- the animals
 
-SCALE = {"deer": 1.55, "boar": 1.75, "hare": 1.3, "wolf": 1.6, "bear": 1.9}   # drawn bigger than their old frames: the deer about 3/4 of a person
+SCALE = {"deer": 1.55, "boar": 1.75, "pig": 1.7, "hare": 1.3, "wolf": 1.6, "bear": 1.9}   # drawn bigger than their old frames: the deer about 3/4 of a person
 
 
 def deer(pose):
@@ -169,6 +169,51 @@ def boar(pose):
     brow = cv.strip([(hx - 0.8, hy - 2.4), (hx + 0.6, hy - 2.7), (hx + 2.0, hy - 2.0)], [0.8, 0.9, 0.4], steps=3)
     shade(cv, brow, dark, radius=0.3, line=False)
     cv.fill(cv.ellipse(hx + 0.6, hy + 1.6, 0.9, 0.5), CHEEK, "base")
+    return cv
+
+
+def pig(pose):
+    """The farm pig: a round pink-grey hide, no mane or tusks, a snub snout, ears flopped forward
+    over the eyes and a curly tail."""
+    cv = Canvas(36, 26, K * SCALE["pig"])
+    ground, bob = 25, pose["bob"]
+    hide = ramp((222, 160, 150), 5, dark=0.55, light=1.12)
+    blush = ramp((206, 126, 122), 4)
+    snout_c = ramp((236, 150, 146), 4)
+    body = (15.5, 17.0 + bob, 9.8, 6.4)
+    if pose["sleep"]:
+        body = (15.5, ground - 5.8, 10.0, 5.8)
+    bx, by, rx, ry = body
+    legs = legs4(cv, body, ground, 1.6, pose, hide)
+    for near, m, foot in legs:
+        if not near:
+            shade(cv, m, hide, bias=-0.3)
+            cv.fill(cv.ellipse(foot[0], foot[1] - 0.4, 0.9, 0.55), HOOF[1], "base")
+    tail = [(bx - rx * 0.95, by - ry * 0.3), (bx - rx * 1.2, by - ry * 0.6), (bx - rx * 1.05, by - ry * 0.95),
+            (bx - rx * 1.25, by - ry * 1.0), (bx - rx * 1.3, by - ry * 0.7)]
+    cv.curve(tail, hide[1], "base", 4)
+    torso = cv.ellipse(bx, by, rx, ry)
+    shade(cv, torso, hide, radius=2.0, bias=0.08)
+    shade(cv, both(cv.ellipse(bx + 1.5, by + ry * 0.62, rx * 0.72, ry * 0.36), torso), blush, line=False)
+    for near, m, foot in legs:
+        if near:
+            shade(cv, m, hide, outside=torso)
+            cv.fill(cv.ellipse(foot[0], foot[1] - 0.4, 0.9, 0.55), HOOF[1], "base")
+    hx, hy = bx + rx * 0.92, by - ry * 0.2 + pose["head"]
+    if pose["sleep"]:
+        hx, hy = bx + rx * 0.92, ground - 4.4
+    head = cv.ellipse(hx, hy, 5.0, 4.5)
+    shade(cv, head, hide, radius=1.4, bias=0.14, outside=torso)
+    snout = cv.ellipse(hx + 4.6, hy + 1.0, 1.6, 1.9)
+    shade(cv, snout, snout_c, radius=0.5)
+    for dx in (-0.6, 0.6):                                             # the nostrils, side by side
+        cv.fill(cv.ellipse(hx + 4.7 + dx, hy + 1.1, 0.32, 0.42), NOSE, "base")
+    eye(cv, hx + 1.0, hy - 0.2, 1.2, 1.4, closed=pose["closed"], iris=(84, 52, 44))
+    for far in (True, False):                                          # ears flopped forward off the crown
+        ex = hx - (1.6 if not far else 0.4)
+        ear = cv.poly([(ex - 1.6, hy - 3.2), (ex + 0.6, hy - 5.4), (ex + 3.0 + pose["ear"] * 0.4, hy - 3.6), (ex + 1.4, hy - 2.6)])
+        shade(cv, ear, hide if not far else blush, radius=0.5, bias=-0.3 if far else 0.05)
+    cv.fill(cv.ellipse(hx + 0.6, hy + 1.8, 0.9, 0.5), CHEEK, "base")
     return cv
 
 
@@ -309,7 +354,7 @@ def bear(pose):
     return cv
 
 
-KINDS = {"deer": deer, "boar": boar, "hare": hare, "wolf": wolf, "bear": bear}
+KINDS = {"deer": deer, "boar": boar, "pig": pig, "hare": hare, "wolf": wolf, "bear": bear}
 
 
 def poses(kind):
@@ -347,7 +392,7 @@ def sheet(kind):
     return frames, tags
 
 
-PIVOTS = {"deer": (20, 35), "boar": (18, 25), "hare": (10, 15), "wolf": (17, 27), "bear": (22, 33)}
+PIVOTS = {"deer": (20, 35), "boar": (18, 25), "pig": (18, 25), "hare": (10, 15), "wolf": (17, 27), "bear": (22, 33)}
 
 
 def generate():

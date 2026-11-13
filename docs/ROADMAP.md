@@ -158,12 +158,6 @@ Grouped by area; nothing here blocks a playtest.
 - The bridge's parapets are drawn, not built: check nobody can step off its side.
 
 **Art and look**
-- Borrowed art:
-  - the whetstone, ale cask and inn stations borrow textures, and some use the chest's toolbar
-    sprite;
-  - the meditation stone uses the mason's bench icon;
-  - the pig is the boar's sheet, recoloured and shaven;
-  - the wild dragon is DragonWorld's adult sprite.
 - A hands-on pass over each mini-game's window; some are still drawn plainly.
 - Check for other sprite props that should be box models (the wagon was one).
 - Wall torches.

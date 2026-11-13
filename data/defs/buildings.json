@@ -635,7 +635,7 @@
       // Cooks what a campfire does and keeps the room as a hearth does; it divides rooms as a wall
       // does, and is worked, fed and warmed at from the room in front of it, never from outside.
       // Model: front (+Y) into the room, the back flush with the wall's outer face.
-      "name": "Fireplace", "label": "fireplace", "category": "Building", "solid": true, "sprite": "buildings/campfire", "shapeOf": "Campfire",
+      "name": "Fireplace", "label": "fireplace", "category": "Building", "solid": true, "sprite": "buildings/fireplace", "shapeOf": "Campfire",
       "model": [
         { "min": [-0.06, 0.3, 0], "max": [1.06, 1.12, 0.05], "top": "props/stone_block", "side": "props/stone_block" },
         { "min": [0.12, 0.12, 0], "max": [0.88, 0.42, 0.62], "top": "props/stone_block", "side": "props/stone_block", "front": "props/hearth_soot" },

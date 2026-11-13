@@ -922,3 +922,7 @@ dragon and the festival.
 - **A dragon of our own:** the wild dragon is redrawn (`tools/chibi_dragon.py`) to the design in
   ART.md (upright, a prow neck, swept horns, rib-like plates, a bone-plated front, rune-stepped
   ember veins, a narrow burning eye) at four times the detail, replacing DragonWorld's adult sheet.
+- **Nothing borrowed:** the inn's stations, the barrel, crate and barn, the whetstone, the
+  meditation stone, herbs and the pyre have icons of their own (`tools/station_art.py`); the cask's
+  hoops, the stew pot and the wash tub wear their own faces instead of stone and the quench tub's.
+  The pig is drawn as a pig (`chibi_animals.py`), not the boar shaven and recoloured.

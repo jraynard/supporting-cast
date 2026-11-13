@@ -201,7 +201,7 @@ drawn without their footing: any box wholly below `BuildingKit.FootingHeight` is
 
 The village's look is `timber_plaster` (limewashed panels in dark oak, straw thatch) and
 `timber_shingle`, drawn by `tools/village_art.py` with the rest of the village's scenery (lanes,
-garden soil, the well, the bridge, fences, crates, cabbages, the pig). It writes only its own files,
+garden soil, the well, the bridge, fences, crates, cabbages). It writes only its own files,
 so it can be re-run alone, and makes the wood and stone versions of its art itself.
 
 **The roof** is generated over the plot. Its ridge runs along the long side. It rests on the side
@@ -450,7 +450,7 @@ offset. The placeholder layers are trimmed to save atlas space; base sheets aren
 
 ## Nature, animals and piles
 
-The wild animals (deer, boar, hare, wolf, bear) come from `tools/chibi_animals.py` in the people's
+The animals (deer, boar, hare, wolf, bear, and the village's pig) come from `tools/chibi_animals.py` in the people's
 style, untinted, on the side-on creatures' canvas (`tools/chibi_canvas.py`, shared with the dragon
 and nature).
 
@@ -461,6 +461,13 @@ canvases. They're static PNGs without an `.anim.json`; the game sizes them by th
 and the sprite's aspect, and `WorldRenderer.DrawVariedBillboard` draws them with `Quad.Smooth`. It
 runs last in `gen_placeholder_art.py`, replacing the older `norse_nature`/`norse_plants`/`norse_stone`/
 `norse_glow` drawings of the same sprites.
+
+**Stations and props of their own** come from `tools/station_art.py`: the inn's cask, keg, shelf,
+larder, stew pot, wash tub, counter, serving hatch, fireplace and lantern, the village's barrel,
+crate and barn, the whetstone, the meditation stone and herbs, and the pyre (toolbar and inventory
+icons), plus the faces the cask's hoops, the pot and the wash tub wear (`props/iron_band`,
+`props/iron_pot`, `props/washtub_side`, `props/suds`). Nothing borrows another thing's icon: a new
+station gets its own there.
 
 The Wood item's pile is a box model (`props/woodpile_top`/`_side`/`_end`, `norse_buildings.py`). Box
 faces show the top-left of their texture at the face's size, they don't stretch it, so each log is

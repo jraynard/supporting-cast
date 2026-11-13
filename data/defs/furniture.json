@@ -44,7 +44,7 @@
     {
       // The inn's bar: a long plank counter on a panelled front, three cells wide. People eat and
       // drink at it as at a table (a shape of one).
-      "name": "BarCounter", "label": "bar counter", "shapeOf": "Table", "size": [3, 1], "category": "Building", "solid": true, "climbable": true, "sprite": "buildings/table",
+      "name": "BarCounter", "label": "bar counter", "shapeOf": "Table", "size": [3, 1], "category": "Building", "solid": true, "climbable": true, "sprite": "buildings/bar_counter",
       "description": "A long counter three cells wide, where the drinks are poured and the talk is heard.",
       "maxHp": 200, "flammability": 1.0, 
       "building": { "work": 260, "surfaceHeight": 0.86, "bar": true, "cost": [ { "def": "Wood", "count": 18 } ] },
@@ -71,8 +71,8 @@
     },
     {
       // The healer's shrine stone: meditating within reach of it is calmer and gathers more mana
-      // (Healing/MeditateSession). Art: borrows the mason's bench icon until the M6 art pass.
-      "name": "MeditationStone", "label": "meditation stone", "category": "Building", "sprite": "buildings/mason_bench",
+      // (Healing/MeditateSession).
+      "name": "MeditationStone", "label": "meditation stone", "category": "Building", "sprite": "buildings/meditation_stone",
       "description": "A smooth, sun-warmed stone ringed with pebbles. An empath sits here to gather themselves.",
       "maxHp": 300, "flammability": 0.0,
       "building": { "work": 150, "surfaceHeight": 0.3, "cost": [ { "def": "Stone", "count": 6 } ], "meditation": 0.5 },
@@ -86,15 +86,15 @@
     {
       // The tavern's cask on its cradle: F at it pours a drink (Work.PourSession). It holds
       // "servings" drinks; refilling it (and brewing) comes later.
-      "name": "AleCask", "label": "ale cask", "category": "Building", "solid": true, "sprite": "buildings/chest",
+      "name": "AleCask", "label": "ale cask", "category": "Building", "solid": true, "sprite": "buildings/ale_cask",
       "description": "A great oak cask on a cradle, with a tap. F at it to pour.",
       "maxHp": 120, "flammability": 0.8,
       "building": { "work": 200, "surfaceHeight": 0.7, "cost": [ { "def": "Wood", "count": 14 } ], "cask": { "pours": "Ale", "servings": 60 } },
       "model": [
         { "min": [0.12, 0.2, 0], "max": [0.88, 0.8, 0.16], "top": "props/planks", "side": "props/planks" },
         { "min": [0.08, 0.14, 0.12], "max": [0.92, 0.86, 0.7], "top": "props/log_end", "side": "props/planks" },
-        { "min": [0.07, 0.3, 0.12], "max": [0.93, 0.36, 0.7], "top": "props/stone_block", "side": "props/stone_block" },
-        { "min": [0.07, 0.64, 0.12], "max": [0.93, 0.7, 0.7], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.07, 0.3, 0.12], "max": [0.93, 0.36, 0.7], "top": "props/iron_band", "side": "props/iron_band" },
+        { "min": [0.07, 0.64, 0.12], "max": [0.93, 0.7, 0.7], "top": "props/iron_band", "side": "props/iron_band" },
         { "min": [0.46, 0.86, 0.2], "max": [0.54, 0.95, 0.28], "top": "props/log_side", "side": "props/log_side" }
       ]
     },
@@ -125,21 +125,21 @@
       // The inn's stew pot (Work.Cooking): hung beside a fire, which heats it only while it burns.
       // F at it puts in the food you carry, tends it (stir with F, the fire up and down with A/D),
       // or ladles a bowl once it's cooked; seasoning is a step of its own.
-      "name": "StewPot", "label": "stew pot", "category": "Building", "solid": true, "sprite": "buildings/chest",
+      "name": "StewPot", "label": "stew pot", "category": "Building", "solid": true, "sprite": "buildings/stew_pot",
       "description": "A black iron pot on a trivet by the fire. Whatever goes in comes out as stew, if it's watched.",
       "maxHp": 150, "flammability": 0,
       "building": { "work": 120, "surfaceHeight": 0.55, "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 2 } ],
                     "stewPot": { "serves": "Stew", "yield": 1.5, "holds": 6 } },
       "model": [
         { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.08], "top": "props/stone_block", "side": "props/stone_block" },
-        { "min": [0.16, 0.16, 0.08], "max": [0.84, 0.84, 0.5], "top": "props/stone_block", "side": "props/stone_block" },
-        { "min": [0.22, 0.22, 0.5], "max": [0.78, 0.78, 0.53], "top": "props/meal_top", "side": "props/stone_block" }
+        { "min": [0.16, 0.16, 0.08], "max": [0.84, 0.84, 0.5], "top": "props/iron_pot", "side": "props/iron_pot" },
+        { "min": [0.22, 0.22, 0.5], "max": [0.78, 0.78, 0.53], "top": "props/meal_top", "side": "props/iron_pot" }
       ]
     },
     {
       // A cool bin in the inn's kitchen for what the pot needs: a chest by another name, kept
       // stocked at the start of a round (Scenarios/VillageRound).
-      "name": "Larder", "label": "larder", "category": "Building", "solid": true, "sprite": "buildings/chest",
+      "name": "Larder", "label": "larder", "category": "Building", "solid": true, "sprite": "buildings/larder",
       "description": "Slatted bins and a crock or two: where the kitchen keeps its food. Holds 8 stacks.",
       "maxHp": 120, "flammability": 1.0,
       "building": { "work": 150, "storageStacks": 8, "surfaceHeight": 0.6, "cost": [ { "def": "Wood", "count": 12 } ] },
@@ -149,7 +149,7 @@
     },
     {
       // Behind the bar and in the kitchen: where the clean tankards and bowls are kept.
-      "name": "Shelf", "label": "shelf", "category": "Building", "solid": true, "sprite": "buildings/chest",
+      "name": "Shelf", "label": "shelf", "category": "Building", "solid": true, "sprite": "buildings/shelf",
       "description": "Plank shelves on brackets. Holds 6 stacks: the clean crockery lives here, and behind the bar what goes into a mix.",
       "maxHp": 80, "flammability": 1.0,
       "building": { "work": 80, "storageStacks": 6, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
@@ -165,7 +165,7 @@
       // A serving hatch, set in the wall between kitchen and common room (Shops.Hatch): meals are
       // ordered at it, and the cook puts dishes up on its counter for whoever's at the front to take.
       // Heights in model units: 1.54 is the wall's top once furniture is scaled to 0.65.
-      "name": "ServingHatch", "label": "serving hatch", "category": "Building", "solid": true, "sprite": "buildings/table",
+      "name": "ServingHatch", "label": "serving hatch", "category": "Building", "solid": true, "sprite": "buildings/serving_hatch",
       "description": "A window through the kitchen wall with a counter across it. Order here; your bowl comes up on the counter.",
       "maxHp": 120, "flammability": 1.0,
       "building": { "work": 120, "storageStacks": 4, "surfaceHeight": 0.86, "hatch": true, "cost": [ { "def": "Wood", "count": 8 } ] },
@@ -181,7 +181,7 @@
     {
       // A lantern hung from the beams on a short chain: an open iron frame round a candle. Never
       // placed itself: buildings hang it at their "lamps" (lit once finished, no fuel, no floor taken).
-      "name": "Lantern", "label": "hanging lantern", "category": "Building", "sprite": "buildings/campfire",
+      "name": "Lantern", "label": "hanging lantern", "category": "Building", "sprite": "buildings/lantern",
       "description": "An iron lantern hung from the beams, a candle burning in it. Keeps a room from gloom.",
       "maxHp": 40, "flammability": 0.2,
       "building": { "partOnly": true, "work": 30, "lightRadius": 5, "cost": [ { "def": "Wood", "count": 1 } ] },
@@ -199,12 +199,12 @@
     },
     {
       // The kitchen's wash tub (Work.WashSession): F at it with dirty crockery to scrub it clean.
-      "name": "WashTub", "label": "wash tub", "category": "Building", "solid": true, "sprite": "buildings/chest",
+      "name": "WashTub", "label": "wash tub", "category": "Building", "solid": true, "sprite": "buildings/wash_tub",
       "description": "A half-barrel of hot water and a scrubbing brush. F at it with dirty tankards or bowls to wash them.",
       "maxHp": 80, "flammability": 0.6,
       "building": { "work": 90, "surfaceHeight": 0.5, "washTub": true, "cost": [ { "def": "Wood", "count": 6 } ] },
       "model": [
-        { "min": [0.12, 0.12, 0], "max": [0.88, 0.88, 0.5], "top": "props/water", "side": "props/tub_side" }
+        { "min": [0.12, 0.12, 0], "max": [0.88, 0.88, 0.5], "top": "props/suds", "side": "props/washtub_side" }
       ]
     }
   ]

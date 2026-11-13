@@ -119,7 +119,7 @@
       }
     },
     {
-      "name": "Pyre", "label": "funeral pyre", "category": "Building", "sprite": "buildings/nest", "footprint": 3,
+      "name": "Pyre", "label": "funeral pyre", "category": "Building", "sprite": "buildings/pyre", "footprint": 3,
       "model": [
         { "min": [-0.7, -0.7, 0],  "max": [1.7, 1.7, 0.06],  "top": "props/straw",  "side": "props/straw" },
         { "min": [-0.15, -0.1, 0.06],  "max": [1.15, 1.1, 0.1],  "top": "props/straw",  "side": "props/straw" },
@@ -145,7 +145,7 @@
       "building": { "outdoor": true, "work": 100, "cost": [ { "def": "Stone", "count": 10 } ] }
     },
     {
-      "name": "Keg", "label": "keg of ale", "category": "Item", "mass": 30, "bulky": true, "sprite": "buildings/chest",
+      "name": "Keg", "label": "keg of ale", "category": "Item", "mass": 30, "bulky": true, "sprite": "items/keg",
       "description": "A full keg: it takes both arms to carry and won't go in a pack.", "maxHp": 60, "flammability": 0.3
     },
     {

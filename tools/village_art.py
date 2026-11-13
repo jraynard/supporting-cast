@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 """The village's scenery (data/defs/village.json) and the half-timbered building kit
 (buildings.json "timber_plaster", "timber_shingle"): lanes and garden soil, plaster and dark oak,
-straw thatch, the well, the stone bridge, fences and gates, crates, cabbages and the pig.
+straw thatch, the well, the stone bridge, fences and gates, crates and cabbages.
 
 Programmer art in the style of the rest: 32x32 tiles, 128px chibi plants, the shared world grade
 (placeholder_nature.world_finish). Writes only the files listed here, so it's safe to re-run on its
 own: python3 tools/village_art.py. gen_placeholder_art.py runs it too, after the Norse pass.
 """
-import colorsys
 import json
 import os
 import random
-import shutil
 
 from PIL import Image, ImageDraw
 
@@ -338,62 +336,6 @@ def cabbage_item():
     return img
 
 
-MANE = {(70, 56, 56), (73, 58, 58), (49, 39, 41), (52, 34, 38)}
-OUTLINE = (34, 18, 26, 255)
-
-
-def shave(src, frames):
-    """The boar without its bristly mane: the mane painted over in the body's grey, and the spikes
-    cut off along the line of the back (the top edge with its narrow peaks opened away), re-outlined."""
-    img = src.copy()
-    px = img.load()
-    for f in frames:
-        x0, y0, w, h = f["x"], f["y"], f["w"], f["h"]
-        upper = y0 + int(h * 0.45)  # the legs below share the mane's dark grey
-        maned = [any(px[x, y][:3] in MANE for y in range(y0, upper)) for x in range(x0, x0 + w)]
-        top = []
-        for x in range(x0, x0 + w):
-            ys = [y for y in range(y0, y0 + h) if px[x, y][3] > 0]
-            top.append(ys[0] if ys else y0 + h)
-        # Opening on the top edge: narrow upward spikes go, the broad curve of the back stays.
-        r = 7
-        lowered = [max(top[max(0, i - r):i + r + 1]) for i in range(w)]
-        back = [min(lowered[max(0, i - r):i + r + 1]) for i in range(w)]
-        for i in range(w):
-            near = any(maned[max(0, i - 3):i + 4])
-            if not near:
-                continue
-            x = x0 + i
-            for y in range(y0, min(back[i], y0 + h)):
-                px[x, y] = (0, 0, 0, 0)
-            for y in range(back[i], min(back[i] + 2, y0 + h)):
-                if px[x, y][3] > 0:
-                    px[x, y] = OUTLINE
-            for y in range(back[i] + 2, upper):
-                c = px[x, y]
-                if c[:3] in MANE or (y < back[i] + 18 and c[:3] == (104, 88, 84)):
-                    px[x, y] = (120, 105, 99, 255)  # the mane, and the scalloped shadow it cast on the back
-    return img
-
-
-def pig():
-    # The boar's sheet, grown pink, smooth and shaven: same frames and pivot (creatures/boar.anim.json).
-    with open(os.path.join(ROOT, "creatures", "boar.anim.json")) as fh:
-        frames = json.load(fh)["frames"]
-    src = shave(Image.open(os.path.join(ROOT, "creatures", "boar.png")).convert("RGBA"), frames)
-    out = Image.new("RGBA", src.size)
-    px, po = src.load(), out.load()
-    for y in range(src.size[1]):
-        for x in range(src.size[0]):
-            r, g, b, a = px[x, y]
-            h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
-            if a == 0 or v < 0.2 or (s < 0.12 and v > 0.85):
-                po[x, y] = (r, g, b, a)  # outline, eyes and highlights stay
-                continue
-            nr, ng, nb = colorsys.hsv_to_rgb(0.97, 0.32 + s * 0.3, min(1.0, v * 1.35 + 0.08))
-            po[x, y] = (clamp(nr * 255), clamp(ng * 255), clamp(nb * 255), a)
-    out.save(os.path.join(ROOT, "creatures", "pig.png"))
-    shutil.copyfile(os.path.join(ROOT, "creatures", "boar.anim.json"), os.path.join(ROOT, "creatures", "pig.anim.json"))
 
 
 # Material colours (core.json and mining.json "materials"): the art for a piece built of each,
@@ -451,8 +393,7 @@ def generate():
     save(chibi_cabbages(bare=False), "things/cabbage")
     save(chibi_cabbages(bare=True), "things/cabbage_bare")
     save(cabbage_item(), "items/cabbage")
-    pig()
-    print("village art: lanes, gardens, half-timbering, thatch, well, bridge, fences, crates, cabbages, pig")
+    print("village art: lanes, gardens, half-timbering, thatch, well, bridge, fences, crates, cabbages")
 
 
 if __name__ == "__main__":

@@ -27,6 +27,7 @@ import norse_glow
 import norse_buildings
 import norse_smithy
 import inn_art
+import station_art
 import healer_art
 import tinker_art
 import norse_gear
@@ -360,10 +361,6 @@ def buildings():
         for x in range(off, S, 16):
             d.line([(x, y), (x, y + 8)], fill=(80, 80, 86, 255))
     save(wall, "buildings/wall_stone")
-    img = blank(); d = ImageDraw.Draw(img)
-    d.ellipse([3, 3, 29, 29], fill=(130, 100, 70, 255), outline=(80, 60, 40, 255))
-    d.ellipse([8, 8, 24, 24], fill=(200, 170, 120, 255))
-    save(img, "buildings/nest")
     wagon()
 
 
@@ -507,18 +504,19 @@ if __name__ == "__main__":
     norse_buildings.generate()   # walls, floors, doors, stairs, ladders, beds, model textures, furniture icons
     norse_smithy.generate()      # anvil, quench tub, grindstone, tool rack, fuel bin: model textures and icons
     inn_art.generate()           # the inn's upkeep: the mop, and the mess on the floor
+    station_art.generate()       # icons of their own for the inn's stations, the barrel, crate, barn, whetstone, pyre...
     healer_art.generate()        # the empath's rune glyphs
     tinker_art.generate()        # the tinker's bench, locks, keys, contraptions and curios
     placeholder_roofs.generate()     # roof thatch and shingles
     norse_gear.generate()        # tools and weapons per metal, stock, ores, fuel, food, hides: replaces the recoloured gear
-    chibi_animals.generate()     # deer, boar, hare: chibi, 4x detail
+    chibi_animals.generate()     # deer, boar, pig, hare, wolf, bear: chibi, 4x detail
     norse_plants.generate()      # berry bushes, wild flax, emberroot
     norse_ui.generate()          # toolbar icons, fire and ember fx
     norse_glow.generate()    # campfire, kiln, forge, ember crystal, standing stones, moonpetal
     norse_roofs.generate()   # turf, thatch and shingle roofs: replaces placeholder_roofs' drawings
     norse_fx.generate()      # selection, designation mark, need and chatter bubbles (white art the game tints), the breath core
     chibi_nature.generate()  # trees, bushes, boulders, standing stones, wild plants: chibi, 4x detail (replaces the drawings above)
-    village_art.generate()   # lanes, gardens, half-timbering and straw thatch, well, bridge, fences, crates, cabbages, pig (after the boar)
+    village_art.generate()   # lanes, gardens, half-timbering and straw thatch, well, bridge, fences, crates, cabbages
     print("wooden buildings, wood and berry bushes: see placeholder_wood.py")
     count = sum(len(f) for _, _, f in os.walk(ROOT))
     print(f"wrote {count} sprites to {os.path.normpath(ROOT)}")
