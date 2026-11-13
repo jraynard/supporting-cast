@@ -251,10 +251,33 @@ def grind_loop(rng, seconds=4.0):
 
 
 def pour_loop(rng, seconds=4.0):
-    n = noise(rng, seconds + 0.5)
-    centers = 500 + 400 * np.abs(np.sin(np.cumsum(rng.uniform(0, 0.02, 200))))
-    s = sweep_band(n, centers, 3) + band(n, lo=3000, hi=8000) * 0.15
-    return norm(loopable(s), 0.6)
+    """Drink running into a tankard: a stream's hiss over dense bubbling, with the odd glug."""
+    out = band(noise(rng, seconds + 0.5), lo=600, hi=7000) * 0.25
+    t = t_axis(seconds + 0.5)
+    out *= 0.8 + 0.2 * np.sin(2 * np.pi * 5.3 * t) * np.sin(2 * np.pi * 1.7 * t)
+    for _ in range(int(seconds * 140)):
+        k = int(rng.uniform(0.006, 0.025) * RATE)
+        tt = np.arange(k) / RATE
+        f = rng.uniform(700, 2200) * (1 + 0.8 * tt / tt[-1])
+        i = int(rng.uniform(0, len(out) - k))
+        out[i:i + k] += np.sin(2 * np.pi * np.cumsum(f) / RATE) * np.exp(-tt / (k / RATE / 3)) * rng.uniform(0.05, 0.3)
+    for g in range(int(seconds * 1.5)):
+        k = int(0.08 * RATE)
+        tt = np.arange(k) / RATE
+        glug = np.sin(2 * np.pi * np.cumsum(rng.uniform(180, 320) * (1 + 1.2 * tt / tt[-1])) / RATE) * np.hanning(k)
+        i = int(rng.uniform(0, len(out) - k))
+        out[i:i + k] += glug * 0.35
+    return norm(loopable(out, 0.4), 0.6)
+
+
+def fizz_loop(rng, seconds=4.0):
+    """A settling head: tiny bursting bubbles over a faint hiss."""
+    out = band(noise(rng, seconds + 0.5), lo=5000, hi=14000) * 0.05
+    for _ in range(int(seconds * 220)):
+        k = int(rng.uniform(0.001, 0.004) * RATE)
+        i = int(rng.uniform(0, len(out) - k))
+        out[i:i + k] += rng.standard_normal(k) * np.hanning(k) * rng.uniform(0.05, 0.4)
+    return norm(loopable(band(out, lo=2500), 0.4), 0.4)
 
 
 def clink(rng):
@@ -479,18 +502,101 @@ def din_loop(rng, seconds=8.0):
     return norm(loopable(band(out, hi=4500), 1.0), 0.6)
 
 
-VOWELS = {"a": (800, 1200), "e": (500, 1900), "i": (320, 2400), "o": (500, 850), "u": (330, 800)}
+# ---------------------------------------------------------------- babble: a small formant voice
+
+# F1..F4 (Hz) for an adult voice; registers scale them (a smaller throat, higher formants).
+VOWELS = {
+    "a": (730, 1100, 2450, 3300), "e": (530, 1840, 2480, 3400), "i": (300, 2250, 3000, 3600),
+    "o": (570, 850, 2400, 3200), "u": (330, 900, 2250, 3200),
+}
+BANDWIDTHS = (80, 100, 140, 220)
+ONSETS = ["", "b", "d", "g", "m", "s", "l"]
+# Where F1/F2 start before gliding to the vowel (a consonant's "locus").
+LOCUS = {"": None, "b": (250, 900), "d": (250, 1800), "g": (250, 2200), "m": (280, 1000), "s": (350, 1700), "l": (360, 1000)}
+# (f0 Hz, formant scale, breathiness): a deep voice, a middling one, a high one.
+REGISTERS = [(108, 0.9, 0.03), (165, 1.0, 0.04), (238, 1.15, 0.07)]
 
 
-def syllable(rng, vowel, seconds=0.1, pitch=200.0):
-    """A sung blip: a glottal pulse train through a vowel's two formants."""
-    t = t_axis(seconds)
-    f1, f2 = VOWELS[vowel]
-    phase = np.cumsum(pitch * (1 + 0.04 * np.sin(2 * np.pi * 6 * t))) / RATE
-    pulses = (phase % 1) ** 6 * 2 - 0.3
-    voiced = band(pulses, lo=f1 * 0.7, hi=f1 * 1.3, slope=1.5) + 0.6 * band(pulses, lo=f2 * 0.8, hi=f2 * 1.25, slope=1.5)
-    shape = np.clip(t / 0.012, 0, 1) * np.clip((seconds - t) / 0.04, 0, 1)
-    return norm(voiced * shape, 0.7)
+def resonate(x, freqs, bw):
+    """A Klatt resonator whose centre may glide (freqs: Hz per sample)."""
+    y = np.zeros_like(x)
+    y1 = y2 = 0.0
+    T = 1 / RATE
+    c = -np.exp(-2 * np.pi * bw * T)
+    r = np.exp(-np.pi * bw * T)
+    for n in range(len(x)):
+        b_ = 2 * r * np.cos(2 * np.pi * freqs[n] * T)
+        a_ = 1 - b_ - c
+        v = a_ * x[n] + b_ * y1 + c * y2
+        y2, y1 = y1, v
+        y[n] = v
+    return y
+
+
+def glottal(rng, n, f0, breath):
+    """Rosenberg glottal pulses with a falling pitch and a little jitter, differentiated (lip
+    radiation), plus breath noise in the open phase: the raw buzz of a voice."""
+    u = np.linspace(0, 1, n)
+    wander = np.cumsum(rng.standard_normal(n)) / np.sqrt(n) * 0.015
+    f = f0 * (1.03 - 0.08 * u) * (1 + wander)
+    phase = np.cumsum(f) / RATE % 1
+    flow = np.where(phase < 0.4, 0.5 * (1 - np.cos(np.pi * phase / 0.4)),
+                    np.where(phase < 0.56, np.cos(np.pi * (phase - 0.4) / 0.32), 0.0))
+    shimmer = 1 + 0.06 * band(rng.standard_normal(n), hi=40)
+    src = np.diff(flow * shimmer, prepend=0.0) * 20
+    asp = rng.standard_normal(n) * breath * (0.5 + flow)
+    return src + asp
+
+
+def speech_syllable(rng, register, onset, vowel):
+    """One spoken syllable: an onset consonant, then the vowel, its formants gliding in from the
+    consonant's locus, through a cascade of resonators. Short and unremarkable, as speech is."""
+    f0, scale, breath = REGISTERS[register]
+    f0 *= rng.uniform(0.97, 1.03)
+    pre = {"": 0.012, "b": 0.03, "d": 0.03, "g": 0.032, "m": 0.06, "s": 0.075, "l": 0.045}[onset]
+    vowel_s = rng.uniform(0.1, 0.13)
+    total = pre + vowel_s
+    n = int(total * RATE)
+    t = np.arange(n) / RATE
+    target = np.array(VOWELS[vowel]) * scale
+    start = LOCUS[onset]
+    tracks = []
+    for k in range(4):
+        tr = np.full(n, target[k])
+        if start is not None and k < 2:
+            s0 = start[k] * scale
+            glide = np.clip((t - pre * 0.6) / 0.05, 0, 1)
+            tr = s0 + (target[k] - s0) * glide
+        tracks.append(tr)
+    voice = glottal(rng, n, f0, breath)
+    # Voicing: none during s; a low murmur in a b/d/g closure; nasal for m.
+    amp = np.ones(n)
+    if onset in ("b", "d", "g"):
+        amp = np.where(t < pre - 0.008, 0.12, 1.0)
+    elif onset == "s":
+        amp = np.where(t < pre - 0.01, 0.0, 1.0)
+    elif onset == "m":
+        amp = np.where(t < pre, 0.5, 1.0)
+    amp = band(amp, hi=120)
+    y = voice * amp
+    for k in range(4):
+        y = resonate(y, tracks[k], BANDWIDTHS[k] * (1 + 0.3 * (register == 2)))
+    if onset == "m":
+        murmur = band(voice, hi=400) * (t < pre) * 0.6
+        y = y * np.clip((t - pre * 0.8) / 0.02, 0, 1) + murmur
+    # Consonant noise: a burst for b/d/g, a hiss for s.
+    if onset in ("b", "d", "g"):
+        lo, hi = {"b": (300, 1500), "d": (2500, 6500), "g": (1400, 3200)}[onset]
+        burst = band(rng.standard_normal(n), lo=lo, hi=hi) * np.exp(-np.maximum(t - (pre - 0.008), 0) / 0.006) * (t >= pre - 0.008)
+        y += burst * 0.5 * np.max(np.abs(y))
+    if onset == "s":
+        fric = band(rng.standard_normal(n), lo=4200 * scale, hi=9500) * np.sin(np.pi * np.clip(t / (pre - 0.01), 0, 1)) * (t < pre)
+        y += fric * 0.35 * np.max(np.abs(y))
+    shape = np.clip(t / 0.015, 0, 1) * np.clip((total - t) / 0.045, 0, 1) * (1 - 0.35 * np.clip((t - pre) / vowel_s, 0, 1))
+    # A real voice is brighter than a resonator cascade: lift the highs so the upper formants
+    # (what makes an "ee" an "ee") come through, and drop the rumble below the voice.
+    y = band(tilt(y * shape, 4), lo=f0 * 0.7, hi=8000)
+    return norm(fade_edges(y, 3), 0.7)
 
 
 # name -> (folder, [signal makers]); variants become name_1, name_2...
@@ -515,6 +621,7 @@ def catalogue():
         "kitchen_stir": ("amb", [lambda r: scrape_loop(r, 4, 700, 0.8)]),
         "kitchen_pinch": ("sfx", v(pinch, 3)),
         "bar_pour": ("amb", [pour_loop]),
+        "bar_fizz": ("amb", [fizz_loop]),
         "bar_clink": ("sfx", v(clink, 4)),
         "bar_knock": ("sfx", v(knock, 3)),
         "work_scrub": ("sfx", v(scrub, 3)),
@@ -540,7 +647,9 @@ def catalogue():
         "amb_fire": ("amb", [lambda r: fire_loop(r, 5, roar=0.5, crackle=1.2)]),
         "amb_blaze": ("amb", [lambda r: fire_loop(r, 6, roar=2.0, crackle=1.6)]),
         "amb_crowd": ("amb", [crowd_loop]),
-        "voice_blip": ("voice", [lambda r, k=k: syllable(r, k) for k in "aeiou"]),
+        # Babble: register x onset x vowel, as voice/blip_ROV.ogg (Audio/Babble.cs picks by index).
+        "blip": ("voice", [lambda r, g=g, o=o, v=v: speech_syllable(r, g, o, v)
+                           for g in range(len(REGISTERS)) for o in ONSETS for v in "aeiou"]),
     }
 
 
@@ -561,7 +670,7 @@ def to_ogg(x, path):
         wav = tmp.name
     try:
         write_wav(wav, x)
-        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", wav, "-c:a", "libvorbis", "-q:a", "5", path], check=True)
+        subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", wav, "-c:a", "libvorbis", "-q:a", "5", "-serial_offset", "1", "-fflags", "+bitexact", path], check=True)
     finally:
         os.remove(wav)
 
@@ -580,7 +689,8 @@ def main():
             x = fade_edges(make(rng)) if folder != "amb" else make(rng)
             suffix = f"_{i + 1}" if len(makers) > 1 else ""
             if folder == "voice":
-                suffix = f"_{'aeiou'[i]}"
+                per = len(ONSETS) * 5
+                suffix = f"_{i // per}{i % per // 5}{i % 5}"
             path = os.path.join(OUT, folder, f"{name}{suffix}.ogg")
             to_ogg(x, path)
             made.append((name, x))

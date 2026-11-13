@@ -209,8 +209,15 @@ public sealed class SoundDirector(AudioEngine audio)
             audio.Play(Sounds.UiGood);
     }
 
+    /// <summary>Lines babbling at once, at most: past that a room is a murmur (amb.crowd), not a chorus.</summary>
+    public const int MaxTalking = 3;
+
+    private readonly List<(float Until, float Distance)> _talking = [];
+
+
     private void Speech(Simulation sim, PerceptionView view)
     {
+        _talking.RemoveAll(t => t.Until <= _time);
         var kept = sim.Speech.Kept;
         if (kept.Count == 0 || kept[^1].Id <= _lineSeen)
             return;
@@ -218,12 +225,23 @@ public sealed class SoundDirector(AudioEngine audio)
         _lineSeen = kept[^1].Id;
         if (!Settings.Current.Babble)
             return;
-        foreach (var line in view.Heard())
+        // The nearest new lines first: a line under way can't be cut, so a crowd keeps the nearest few.
+        var fresh = view.Heard()
+            .Where(l => l.Id > seen && sim.Clock.Tick - l.Tick <= FreshTicks)
+            .Select(l => (Line: l, At: ToAudio(l.At)))
+            .OrderBy(l => float3.Distance(l.At, audio.Listener))
+            .ToList();
+        foreach (var (line, at) in fresh)
         {
-            if (line.Id <= seen || sim.Clock.Tick - line.Tick > FreshTicks)
+            if (_talking.Count >= MaxTalking)
+                break; // lost under the others
+            var syllables = Babble.For(line);
+            if (syllables.Count == 0)
                 continue;
-            foreach (var s in Babble.For(line))
-                audio.Play(Sounds.Voice, gain: s.Gain, pitch: s.Pitch, muffle: s.Muffle, delay: s.Delay, variant: s.Variant);
+            // Each voice from where it was said: near ones loud, far ones soft, as in a room.
+            _talking.Add((_time + syllables[^1].Delay + 0.2f, float3.Distance(at, audio.Listener)));
+            foreach (var s in syllables)
+                audio.Play(Sounds.Voice, at, gain: s.Gain, pitch: s.Pitch, muffle: s.Muffle, delay: s.Delay, variant: s.Variant);
         }
     }
 

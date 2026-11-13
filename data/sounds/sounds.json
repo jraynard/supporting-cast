@@ -25,6 +25,7 @@
     "kitchen.stir":   { "files": ["amb/kitchen_stir.ogg"], "gain": 0.4 },
     "kitchen.pinch":  { "files": ["sfx/kitchen_pinch_*.ogg"], "gain": 0.8, "pitch": [0.9, 1.1] },
     "bar.pour":   { "files": ["amb/bar_pour.ogg"], "gain": 0.5 },
+    "bar.fizz":   { "files": ["amb/bar_fizz.ogg"], "gain": 0.35 },
     "bar.clink":  { "files": ["sfx/bar_clink_rec_*.ogg"], "gain": 0.6, "pitch": [0.95, 1.05] },
     "bar.knock":  { "files": ["sfx/bar_knock_rec_*.ogg"], "gain": 0.8, "pitch": [0.95, 1.05] },
     "work.scrub": { "files": ["sfx/work_scrub_*.ogg"], "gain": 0.6, "pitch": [0.9, 1.1], "max": 2 },
@@ -55,7 +56,7 @@
     "amb.blaze": { "files": ["amb/amb_blaze.ogg"], "bus": "ambience", "gain": 0.8, "range": 40, "near": 6, "priority": 3 },
     "amb.crowd": { "files": ["amb/amb_crowd.ogg"], "bus": "ambience", "gain": 0.45 },
 
-    "voice.blip": { "files": ["voice/voice_blip_a.ogg", "voice/voice_blip_e.ogg", "voice/voice_blip_i.ogg", "voice/voice_blip_o.ogg", "voice/voice_blip_u.ogg"], "bus": "voice", "gain": 0.45, "max": 12, "priority": 2 }
+    "voice.blip": { "files": ["voice/blip_*.ogg"], "bus": "voice", "gain": 0.6, "range": 26, "near": 4, "max": 16, "priority": 2 }
   },
 
   // Music by mood (src/HeroesNotIncluded/Audio/Sounds.cs, Moods). Tracks shuffle with a quiet gap

@@ -115,7 +115,7 @@ def encode(x, path):
         raw = tmp.name
     try:
         subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-f", "f32le", "-ar", str(RATE), "-ac", str(x.shape[1]), "-i", raw,
-                        "-c:a", "libvorbis", "-q:a", "4", path], check=True)
+                        "-c:a", "libvorbis", "-q:a", "4", "-serial_offset", "1", "-fflags", "+bitexact", path], check=True)
     finally:
         os.remove(raw)
 

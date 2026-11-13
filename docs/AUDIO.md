@@ -108,7 +108,21 @@ remove the free ones (the folder or the script's entries) and their credits: no 
 
 ## Voices
 
-Speech is babble for now (`Audio/Babble.cs`): a blip per syllable, timed by the words and
-punctuation. The voice is pitched from the speaker, steady all game; one you didn't recognise is
-pitched from the line, so babble never gives away who spoke. Shouts are louder, whispers soft, and
-lines through a wall muffled. Real voices (text to speech) are on the roadmap.
+Speech is babble for now (`Audio/Babble.cs`). Its syllables come from a small formant synthesizer
+in `sfx_synth.py`: a breathy glottal buzz through four gliding resonators. They're made in three
+registers (deep, middling, high), with seven onset consonants (none, b, d, g, m, s, l) and five
+vowels, so each register keeps a natural throat instead of being a pitched-up deep voice.
+
+- **The words:** each syllable is picked from the line's own letters, so different words sound
+  different.
+- **The speaker:** each speaker keeps their own register, pitch, loudness and pace all game.
+- **The line:** each line drifts down in pitch, stresses the first syllable of longer words, and
+  falls at the end, or rises for a question.
+- **Placement:** voices come from where they were said, so near ones are loud and far ones soft.
+  Shouts are louder, whispers soft, and lines through a wall muffled.
+- **Crowds:** at most `SoundDirector.MaxTalking` lines babble at once, the nearest; the rest of
+  a busy room is the inn's murmur.
+- **Strangers:** a voice you didn't recognise takes its voice from the line, so babble never
+  gives away who spoke.
+
+Real voices (text to speech) are on the roadmap.

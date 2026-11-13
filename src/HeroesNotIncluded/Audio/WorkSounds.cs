@@ -14,6 +14,9 @@ namespace HeroesNotIncluded.Audio;
 /// </summary>
 public sealed class WorkSounds(AudioEngine audio)
 {
+    /// <summary>Fade for loops a held key turns on and off: quick, or they never come up.</summary>
+    private const float Quick = 0.08f;
+
     private long _session = -1;
     private int _a, _b;
     private float _q;
@@ -64,22 +67,25 @@ public sealed class WorkSounds(AudioEngine audio)
                 audio.Hold("work:steam", Sounds.ForgeSteam, s.Steam);
                 break;
             case SharpenSession s:
-                audio.Hold("work:grind", Sounds.Grind, s.OnWheel ? 0.8f : 0f, pitch: 0.9f + 0.2f * Math.Clamp(s.Heat, 0f, 1f));
+                audio.Hold("work:grind", Sounds.Grind, s.OnWheel ? 0.8f : 0f, pitch: 0.9f + 0.2f * Math.Clamp(s.Heat, 0f, 1f), fade: Quick);
                 break;
             case StewSession s:
                 audio.Hold("work:pot", Sounds.PotBubble, s.Lit ? Math.Clamp(s.Flame, 0.2f, 1f) : 0f);
-                audio.Hold("work:stir", Sounds.PotStir, s.Stirring ? 0.7f : 0f);
+                audio.Hold("work:stir", Sounds.PotStir, s.Stirring ? 0.7f : 0f, fade: Quick);
                 break;
             case SeasonSession s:
                 Count(s.Pinches, Sounds.Pinch);
                 break;
             case PourSession s:
-                audio.Hold("work:pour", Sounds.Pour, s.Level > _q + 0.0005f ? 0.9f : 0f, pitch: 0.9f + 0.3f * Math.Clamp(s.Level, 0f, 1f));
-                _q = s.Level;
+                // F held is pouring (the level only moves on sim steps, not every frame). The note
+                // climbs as the tankard fills, as a real pour's does; the head fizzes as it settles.
+                var pouring = s.Held && !s.Spilled;
+                audio.Hold("work:pour", Sounds.Pour, pouring ? 0.9f : 0f, pitch: 0.85f + 0.4f * Math.Clamp(s.Top, 0f, 1f), fade: Quick);
+                audio.Hold("work:fizz", Sounds.Fizz, Math.Clamp(s.Foam * 4f, 0f, 0.8f), fade: 0.3f);
                 break;
             case WashSession s:
                 Count(s.Washed, Sounds.Clink);
-                audio.Hold("work:scrub", Sounds.Scrub, s.Scrubbing ? 0.5f : 0f);
+                audio.Hold("work:scrub", Sounds.Scrub, s.Scrubbing ? 0.5f : 0f, fade: Quick);
                 break;
             case TapSession s:
                 Count(s.Blows + s.Misses, Sounds.Knock);

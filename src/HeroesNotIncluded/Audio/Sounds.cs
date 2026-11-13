@@ -29,6 +29,7 @@ public static class Sounds
     public const string PotStir = "kitchen.stir";
     public const string Pinch = "kitchen.pinch";
     public const string Pour = "bar.pour";
+    public const string Fizz = "bar.fizz";
     public const string Clink = "bar.clink";
     public const string Knock = "bar.knock";
     public const string Scrub = "work.scrub";
@@ -68,7 +69,7 @@ public static class Sounds
     [
         UiOpen, UiClose, UiCoin, UiBell, UiGood,
         AnvilGood, AnvilFair, AnvilPoor, AnvilCold, ForgeFire, ForgeBellows, ForgeQuench, ForgeSteam, Grind,
-        PotBubble, PotStir, Pinch, Pour, Clink, Knock, Scrub, Cloth,
+        PotBubble, PotStir, Pinch, Pour, Fizz, Clink, Knock, Scrub, Cloth,
         Click, Ratchet, Rune, Weave, Hum,
         Swing, Clash, Wound, Bow, Miss, Din, Roar, Breath, Wings,
         Wind, Birds, Night, River, Hearth, Blaze, Crowd,

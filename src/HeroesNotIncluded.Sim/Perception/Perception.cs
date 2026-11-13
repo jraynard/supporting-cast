@@ -61,8 +61,11 @@ public readonly record struct KnownMess(int3 Cell, MessLook Look, float Amount, 
 
 public readonly record struct PerceivedPerson(string Name, string Condition, string? Holding);
 
-/// <summary>A line as one character caught it. <see cref="Speaker"/> is null when they couldn't tell who it was.</summary>
-public readonly record struct HeardLine(long Id, long Tick, string Who, string Text, Speech.Volume Volume, Speech.Clarity Clarity, Entity? Speaker);
+/// <summary>
+/// A line as one character caught it. <see cref="Speaker"/> is null when they couldn't tell who it was;
+/// <see cref="At"/> is where it was said from, which hearing it tells you (a voice has a direction).
+/// </summary>
+public readonly record struct HeardLine(long Id, long Tick, string Who, string Text, Speech.Volume Volume, Speech.Clarity Clarity, Entity? Speaker, int3 At = default);
 
 /// <summary>
 /// The one way the game learns what a character knows (docs/DESIGN.md, "One knowledge layer").
@@ -463,13 +466,13 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         {
             if (Omniscient)
             {
-                yield return new HeardLine(u.Id, u.Tick, u.SpeakerName, u.Text, u.Volume, Speech.Clarity.Clear, u.Speaker);
+                yield return new HeardLine(u.Id, u.Tick, u.SpeakerName, u.Text, u.Volume, Speech.Clarity.Clear, u.Speaker, u.At);
                 continue;
             }
             foreach (var h in u.Listeners)
                 if (h.Listener == viewer)
                     yield return new HeardLine(u.Id, u.Tick, h.Identified ? u.SpeakerName : "Someone",
-                        Speech.SpeechSystem.TextFor(u, h), u.Volume, h.Clarity, h.Identified ? u.Speaker : null);
+                        Speech.SpeechSystem.TextFor(u, h), u.Volume, h.Clarity, h.Identified ? u.Speaker : null, u.At);
         }
     }
 
