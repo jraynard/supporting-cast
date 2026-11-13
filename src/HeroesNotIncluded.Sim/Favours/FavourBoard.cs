@@ -40,7 +40,7 @@ public sealed class FavourBoard : ISimSystem, Saving.ISaveState
 
     public void Update(Simulation sim)
     {
-        if (sim.Round.Phase != RoundPhase.Playing)
+        if (!sim.Round.Live)
             return;
         var now = sim.Clock.Tick;
         foreach (var r in _favours)

@@ -1,0 +1,26 @@
+// A round's season (Defs/SeasonDefs.cs). It runs `days` days from the deal, and the festival
+// starts at `festivalHour` on the last of them; `festivalHours` later the town's Renown is reckoned
+// against `renownTarget` and the round is over. Dread reaching `dreadLimit` ends it sooner, lost.
+// Renown comes from adventurers leaving town (their satisfaction, clamped to satisfactionRange,
+// times renownPerSatisfaction) and quests cleared; Dread from quests left unanswered (per quest
+// per game hour), failed or deadly, and eases when one is cleared. Tune in play.
+{
+  "seasons": [
+    {
+      "name": "Season",
+      "days": 3,
+      "festivalHour": 18,
+      "festivalHours": 2,
+      "renownTarget": 60,
+      "dreadLimit": 100,
+      "renownPerSatisfaction": 1,
+      "satisfactionRange": [ -5, 10 ],
+      "renownPerQuestCleared": 10,
+      "renownPerAdventurerLost": -4,
+      "dreadPerOpenQuestHour": 0.4,
+      "dreadPerQuestFailed": 12,
+      "dreadPerAdventurerLost": 3,
+      "dreadPerQuestCleared": -12
+    }
+  ]
+}

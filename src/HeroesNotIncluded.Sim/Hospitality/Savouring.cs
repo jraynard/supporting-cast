@@ -128,7 +128,7 @@ public static class Table
                 continue;
             s.Talks++;
             var tipsy = DrinkingSystem.LevelOf(sim, e);
-            if (sim.Round.Phase == RoundPhase.Playing && w.Has<Adventurer>(e) && SpeechSystem.CanAct(sim, e)
+            if (sim.Round.Live && w.Has<Adventurer>(e) && SpeechSystem.CanAct(sim, e)
                 && rand.NextFloat() < TalkChance + 0.4f * tipsy)
                 sim.Expeditions.Gossip(sim, e, spread: Math.Max(0.05f, 0.25f - 0.2f * tipsy));
         }

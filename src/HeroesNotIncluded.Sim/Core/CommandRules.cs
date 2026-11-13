@@ -34,6 +34,8 @@ public static class CommandRules
     /// <summary>Why <paramref name="issuer"/> may not send this command right now, or null if they may.</summary>
     public static string? Refusal(Simulation sim, ISimCommand command, Guid issuer, bool isHost)
     {
+        if (sim.Round.Phase == Round.RoundPhase.Over && command is IActorCommand)
+            return "the season's over";
         if (command is IDevCommand && !isHost)
             return "only the host can use developer tools";
         if (command is IHostCommand && !isHost)

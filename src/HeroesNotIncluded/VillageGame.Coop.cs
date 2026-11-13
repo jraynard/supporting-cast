@@ -138,7 +138,7 @@ public sealed partial class VillageGame
         var session = _coop!;
         if (session.Ended != null)
             return;
-        var stepsPerSecond = Paused || InLobby ? 0 : SimClock.TicksPerSecond * SpeedMultipliers[_speed];
+        var stepsPerSecond = Paused || InLobby || RoundOver ? 0 : SimClock.TicksPerSecond * SpeedMultipliers[_speed];
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
         var before = _sim.Clock.Tick;
         session.Update(dt, stepsPerSecond);
@@ -190,9 +190,9 @@ public sealed partial class VillageGame
 
         if (session.Ready && Players.CharacterOf(_sim, session.Me.Id).IsNull)
         {
-            if (_sim.Round.Phase == RoundPhase.Playing)
+            if (_sim.Round.Live)
                 DrawTakeTrade(session, center, middle);
-            else if (_sim.Round.SeatOf(session.Me.Id) == null)
+            else if (InLobby && _sim.Round.SeatOf(session.Me.Id) == null)
                 DrawCoopCreator(session, center, middle);
         }
         if (session.Ready && InLobby && _sim.Round.SeatOf(session.Me.Id) != null) // until then the creator has the screen

@@ -70,7 +70,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
 
     public void Update(Simulation sim)
     {
-        if (sim.Round.Phase != RoundPhase.Playing)
+        if (!sim.Round.Live)
             return;
         var now = sim.Clock.Tick;
         foreach (var e in _orders)
@@ -124,7 +124,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 continue;
             // Work comes after the road's been washed down: fed, served, mended, then a quest.
             // Once one of the party has a quest on order, the rest leave it to them.
-            if (!_questAsked.Contains(a.Party) && sim.Clock.Tick - a.Arrived >= SimClock.HoursToTicks(QuestAfterHours)
+            // Nobody sets out on the festival's night.
+            if (!_questAsked.Contains(a.Party) && sim.Round.Phase != Round.RoundPhase.Festival
+                && sim.Clock.Tick - a.Arrived >= SimClock.HoursToTicks(QuestAfterHours)
                 && Want(sim, who, ServiceKind.Quest, Entity.Null))
                 _questAsked.Add(a.Party);
             // Sat with a drink or a meal, they don't order another till it's finished.

@@ -162,7 +162,7 @@ public sealed partial class VillageGame
     /// <summary>What your character has heard, and the box for saying something. Replaces chat once a round starts.</summary>
     private void DrawSpeech()
     {
-        if (_sim.Round.Phase != RoundPhase.Playing || !HasAvatar || !_showHeard)
+        if (!_sim.Round.Live || !HasAvatar || !_showHeard)
             return;
         BeginJournal("Heard###speech", ref _showHeard, 250);
         var heard = View.Heard().ToList();

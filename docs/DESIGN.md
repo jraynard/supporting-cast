@@ -346,8 +346,9 @@ want to move towards a more Tolkien inspired aesthetic in general though we can 
 ## Sim folders
 
 Built, all in `src/HeroesNotIncluded.Sim`, driven only by commands and headless-testable:
-`Round/`, `Perception/`, `Speech/`, `Work/`, `Adventurers/`, `Shops/`, `Favours/`, `Healing/`, `Expeditions/`, `Hospitality/`.
-Still to come: `Director/`, `Secrets/`, `Reagents/`.
+`Round/`, `Perception/`, `Speech/`, `Work/`, `Adventurers/`, `Shops/`, `Favours/`, `Healing/`, `Expeditions/`, `Hospitality/`,
+`Tinkering/`, `Director/` (Renown and Dread so far).
+Still to come: `Secrets/`, `Reagents/`.
 
 ## Reuse
 

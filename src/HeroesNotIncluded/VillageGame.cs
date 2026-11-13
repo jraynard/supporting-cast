@@ -470,7 +470,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     private void RunSimulation(float dt)
     {
-        if (Paused)
+        if (Paused || RoundOver)
         {
             _tickAccumulator = 0;
             _interp.Alpha = 1f; // show exactly where things are (paused orders apply at once)

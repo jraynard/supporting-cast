@@ -262,7 +262,7 @@ public sealed class CollectorSystem : ISimSystem, ISaveState
 
     public void Update(Simulation sim)
     {
-        if (sim.Round.Phase != Round.RoundPhase.Playing || sim.Clock.HourOfDay < CollectHour || sim.Clock.Day == _lastDay)
+        if (!sim.Round.Live || sim.Clock.HourOfDay < CollectHour || sim.Clock.Day == _lastDay)
             return;
         _lastDay = sim.Clock.Day;
         var w = sim.World;

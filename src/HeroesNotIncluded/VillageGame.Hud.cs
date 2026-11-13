@@ -197,6 +197,18 @@ public sealed partial class VillageGame
         return pressed;
     }
 
+    /// <summary>Where the round is in its season: the day, and how long till the festival.</summary>
+    private string SeasonLine()
+    {
+        var round = _sim.Round;
+        if (round.Phase == Sim.Round.RoundPhase.Festival)
+            return "The festival!";
+        var (day, of) = round.SeasonDay(_sim);
+        var hours = (int)Math.Ceiling((round.FestivalTick(_sim) - _sim.Clock.Tick) / (double)SimClock.TicksPerHour);
+        var until = hours <= 1 ? "within the hour" : hours < 24 ? $"in {hours} hours" : $"in {(hours + 12) / 24} days";
+        return $"Day {day} of {of}: the festival {until}";
+    }
+
     /// <summary>Top-right: a day/night dial, the time, outdoor temperature and speed buttons.</summary>
     private void DrawClock()
     {
@@ -229,6 +241,14 @@ public sealed partial class VillageGame
             ImGui.Text(_sim.Clock.TimeString());
         var outdoor = _sim.Climate.OutdoorTemperature;
         TextC(outdoor < 5 ? Theme.Warn : Theme.Dim, $"Outside {outdoor:F0}°C");
+        if (View.Standing() is { } standing)
+        {
+            TextC(Theme.Dim, SeasonLine());
+            TextC(Theme.Dim, standing.Renown);
+            Gui.ItemTip("What travellers say of the town. The festival on the season's last evening reckons it: well spoken of, the town comes through.");
+            TextC(Theme.Dim, standing.Dread);
+            Gui.ItemTip("How the dungeon weighs on the valley. Quests left unanswered, or gone badly, feed it; if it grips the valley completely, the season is lost.");
+        }
         // Time runs at one speed for whoever plays a character; only god mode and the demos change it.
         if (!HasAvatar)
             for (var s = 0; s < SpeedLabels.Length; s++)

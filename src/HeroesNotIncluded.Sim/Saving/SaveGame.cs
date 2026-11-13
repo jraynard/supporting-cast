@@ -33,8 +33,8 @@ public sealed record SaveHeader(
 /// </summary>
 public static class SaveGame
 {
-    /// <summary>Bump this and migrate in the codecs when a release has saves worth keeping. Format 1 is the fork from DragonWorld; 2 added the upper storey build phases; 3 forging a heat at a time; 4 the empath's runes, draw feels and touch; 5 charms; 6 meditation's labyrinth; 7 the tinker (door locks picked, contraptions and wagons on quests); 8 a work session's other action on its own key (seasoning no longer keeps its last A/D).
-    public const int FormatVersion = 8;
+    /// <summary>Bump this and migrate in the codecs when a release has saves worth keeping. Format 1 is the fork from DragonWorld; 2 added the upper storey build phases; 3 forging a heat at a time; 4 the empath's runes, draw feels and touch; 5 charms; 6 meditation's labyrinth; 7 the tinker (door locks picked, contraptions and wagons on quests); 8 a work session's other action on its own key (seasoning no longer keeps its last A/D); 9 the season (the round's start, purses at the deal, the reveal) and Renown and Dread.
+    public const int FormatVersion = 9;
     private static ReadOnlySpan<byte> Magic => "SCSV"u8;
 
     public static byte[] Write(Simulation sim, IReadOnlyDictionary<string, string>? meta = null) => Capture(sim, meta).Encode();

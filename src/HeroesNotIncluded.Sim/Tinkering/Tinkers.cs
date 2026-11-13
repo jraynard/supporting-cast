@@ -35,7 +35,7 @@ public static class Tinkers
 
     /// <summary>Should a player's work on this recipe at this station be done by hand? In a round, at the tinker's bench, for a lock or a contraption.</summary>
     public static bool Applies(Simulation sim, Entity worker, Entity station, RecipeDef recipe) =>
-        sim.Round.Phase == Round.RoundPhase.Playing && sim.World.Has<Avatar>(worker) && IsBench(sim, station)
+        sim.Round.Live && sim.World.Has<Avatar>(worker) && IsBench(sim, station)
         && (MakesLock(recipe) || MakesContraption(recipe) != null);
 
     /// <summary>A player works a stocked bench: the hand game for the recipe (<see cref="Applies"/>).</summary>

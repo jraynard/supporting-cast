@@ -25,6 +25,9 @@ public sealed partial class VillageGame
 
     private bool InLobby => _sim.Round.Phase == RoundPhase.Lobby;
 
+    /// <summary>The round has ended: the session stands still and the reveal is up.</summary>
+    private bool RoundOver => _sim.Round.Phase == RoundPhase.Over;
+
     private PerceptionView? _view;
 
     /// <summary>What the local player knows. Every read of other characters and items goes through this.</summary>
@@ -33,7 +36,7 @@ public sealed partial class VillageGame
         get
         {
             var phase = _sim.Round.Phase;
-            var blind = phase == RoundPhase.Playing && !HasAvatar;
+            var blind = phase >= RoundPhase.Playing && !HasAvatar;
             var who = phase != RoundPhase.None && HasAvatar ? _avatar : Entity.Null;
             if (_view == null || !_view.IsFor(_sim, who) || _view.Blind != blind)
                 _view = blind ? Perception.Blind(_sim) : Perception.For(_sim, who);

@@ -562,6 +562,45 @@ Known leftovers (in the audit): the inn's dark interior, the meditation stone's 
 the carter's sprite wagon, and a hands-on pass over each mini-game's window. Watch a child and a
 non-gamer play the first ten minutes.
 
+### M3.1: The season and its reckoning (2026-11-12)
+- **A round is a season** (`data/defs/season.json`, `SeasonDef`):
+  - **Length:** three days from the deal.
+  - **Festival:** `RoundPhase.Festival` starts at 18:00 on the last day. No new parties arrive and
+    nobody sets out on a quest, but the shops keep serving.
+  - **The end:** two hours later the town is reckoned and the round is `Over`.
+  - **`RoundSystem.Live`:** means playing or at the festival. Everything that used to check
+    `Playing` checks it now.
+  - **`Endless`:** keeps a round going for tools and tests.
+- **Renown and Dread** (`Director/Reckoning`):
+  - **Renown:**
+    - It rises by each adventurer's `Satisfaction` as they leave town, clamped to [-5, 10].
+    - Those still in town at the festival's end count too.
+    - Each quest cleared adds to it, and each adventurer lost takes from it.
+  - **Dread:**
+    - It grows each hour by 0.4 for every quest nobody has taken.
+    - A failed quest or a death raises it, and a cleared quest lowers it.
+  - **Reaching the limit (100)** ends the round lost (`RoundOutcome.Dread`). The outcomes are
+    `Won`, `FellShort`, `Dread` and `TownFell` (nobody of the village standing).
+- **The HUD:** the clock shows the season's day, the festival's countdown, and a word for each
+  number (`PerceptionView.Standing`: "Travellers speak of the town", "A pall hangs over the
+  valley"). Nobody in town sees the numbers.
+- **The reveal** (`VillageGame.Reveal.cs`, from `RoundSummary`, built in the sim and saved):
+  - The outcome, then Renown against its target and Dread against its limit, with an hourly
+    graph.
+  - Parties, quests and losses.
+  - Everyone's trade and silver earned since the deal, players first.
+  - "Look around" hides it, and the session stands still. Character commands are refused once
+    it's over (`CommandRules`).
+- `SeasonTests`. Save format 9. Bench state hashes unchanged (1234 `57207EEE9FA2C71F`, 99
+  `16FBF26C8FB6EAB0`). The full hashes moved for the new saved state: 1234 `184E22DC013BCF66`, 99
+  `A5E56D2BC8C32CC2`.
+
+Known leftovers:
+- The weights are first guesses. A 61-hour run with nobody tending the bar ended at Renown -42
+  and Dread 71. Tune in play.
+- The festival has nothing of its own yet (slice 9).
+- Difficulty doesn't scale the target or the limit yet (slice 4).
+
 ## Next
 
 ### M3: A whole season

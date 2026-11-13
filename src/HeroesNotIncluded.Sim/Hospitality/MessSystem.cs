@@ -114,7 +114,7 @@ public sealed class MessSystem : ISimSystem, ISaveState
                 foreach (var i in gone)
                     _spots.Remove(i);
         }
-        if (sim.Round.Phase != RoundPhase.Playing)
+        if (!sim.Round.Live)
             return;
         foreach (var e in sim.Creatures())
         {

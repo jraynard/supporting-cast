@@ -48,8 +48,13 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     `art/reference/village-map2.webp`: edit the script, not the JSON. `Scenarios/VillageSetup`
     holds shared helpers. `MapGenerator` (the old valley) remains only for the helpers `MapBuilder`
     borrows; tests that need a town use `TestWorld.Millbrook`.
-  - `Round/RoundSystem`: the lobby and deal. `Phase.None` means no round (tests, demos, bench), and
-    behaviour that belongs to rounds checks it. Players inhabit AI villagers.
+  - `Round/RoundSystem`: the lobby, the deal and the season (`season.json`): `Festival` on the last
+    evening, then `Over` with a `RoundSummary` for the reveal. `Phase.None` means no round (tests,
+    demos, bench); behaviour that belongs to rounds checks `Round.Live` (playing or festival).
+    `Endless` keeps a test's round going. Players inhabit AI villagers.
+  - `Director/`: `Reckoning` keeps Renown (adventurers leaving pleased, quests cleared) and Dread
+    (quests unanswered or gone badly; its limit ends the round). Players see words for them,
+    through `PerceptionView.Standing`.
   - `Perception/`: what a character knows. Sight reads `Map.Light`, so it must never feed sim state.
   - `Speech/`: who heard what, decided when spoken from positions and rooms, and saved.
   - `Work/`: mini-games. `WorkSession.Advance` is pure, so `WorkPredictor` can run it ahead of the

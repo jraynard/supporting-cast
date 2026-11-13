@@ -40,7 +40,7 @@ public sealed partial class VillageGame
     /// <summary>The orders you've heard asked or taken on, then the favours players ask of each other.</summary>
     private void DrawShop()
     {
-        if (_sim.Round.Phase != RoundPhase.Playing || !HasAvatar || !_showShop)
+        if (!_sim.Round.Live || !HasAvatar || !_showShop)
             return;
         BeginJournal("Shop###orders", ref _showShop);
         DrawSign();
@@ -257,7 +257,7 @@ public sealed partial class VillageGame
     {
         var bubbles = _renderer.OrderBubbles;
         bubbles.Clear();
-        if (!HasAvatar || _sim.Round.Phase != Sim.Round.RoundPhase.Playing)
+        if (!HasAvatar || !_sim.Round.Live)
             return;
         var trade = _sim.World.TryGet<Trade>(_avatar, out var t) ? t.Def : null;
         var now = _sim.Clock.Tick;
@@ -283,7 +283,7 @@ public sealed partial class VillageGame
     /// <summary>Inspector buttons for someone in reach: hand over what you're holding, or pay them.</summary>
     private void DrawHandOver(Entity other)
     {
-        if (!HasAvatar || other == _avatar || _sim.Round.Phase != RoundPhase.Playing || !Handing.InReach(_sim, _avatar, other))
+        if (!HasAvatar || other == _avatar || !_sim.Round.Live || !Handing.InReach(_sim, _avatar, other))
             return;
         ImGui.Separator();
         var w = _sim.World;

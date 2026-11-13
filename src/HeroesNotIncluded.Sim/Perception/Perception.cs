@@ -426,6 +426,19 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
             : null;
 
     /// <summary>
+    /// The town's standing as anyone in it feels it: what travellers say of it, and how the dungeon
+    /// weighs on the valley. Words, never the numbers (those are for the reveal). Null outside a round.
+    /// </summary>
+    public (string Renown, string Dread)? Standing()
+    {
+        if (!sim.Round.Live)
+            return null;
+        var season = sim.Defs.Season;
+        var r = sim.Reckoning;
+        return (Director.Reckoning.RenownWord(r.Renown, season.RenownTarget), Director.Reckoning.DreadWord(r.Dread, season.DreadLimit));
+    }
+
+    /// <summary>
     /// The favours players asked this character knows of, oldest first: those they heard asked, took
     /// on or asked for themselves. Open ones and those closed within the last day.
     /// </summary>

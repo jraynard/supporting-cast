@@ -5,7 +5,7 @@ namespace HeroesNotIncluded.Sim.Defs;
 
 /// <summary>
 /// All loaded defs. Each JSON file under the defs directory is an object with any of the keys
-/// "blocks", "things", "creatures", "needs", "bodies", "materials", "difficulties", "raiderKinds", "wildlife", "thoughts", "interactions", "traits", "recipes", "tiers", "veins",
+/// "blocks", "things", "creatures", "needs", "bodies", "materials", "difficulties", "raiderKinds", "wildlife", "seasons", "thoughts", "interactions", "traits", "recipes", "tiers", "veins",
 /// "dragonInteractions", "trustLevels", "tricks", "outfits", "elements", "buildings", "kits", "trades", "adventurerKinds", "parties", "services", "mendings", "quests",
 /// each an array of defs. Files are merged in name
 /// order so later files (mods) can add content.
@@ -21,6 +21,7 @@ public sealed class DefDatabase
     private readonly Dictionary<string, DifficultyDef> _difficulties = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, RaiderKindDef> _raiderKinds = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, WildlifeDef> _wildlife = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, SeasonDef> _seasons = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ThoughtDef> _thoughts = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, InteractionDef> _interactions = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, TraitDef> _traits = new(StringComparer.OrdinalIgnoreCase);
@@ -108,6 +109,14 @@ public sealed class DefDatabase
 
     private static readonly WildlifeDef DefaultWildlife = new() { Name = "Default" };
 
+    /// <summary>A round's season (data/defs/season.json): the last one loaded.</summary>
+    public List<SeasonDef> AllSeasons { get; } = [];
+
+    /// <summary>The season in effect: the last one loaded, or the built-in default.</summary>
+    public SeasonDef Season => AllSeasons.Count > 0 ? AllSeasons[^1] : DefaultSeason;
+
+    private static readonly SeasonDef DefaultSeason = new() { Name = "Default" };
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -127,6 +136,7 @@ public sealed class DefDatabase
         public List<DifficultyDef> Difficulties { get; set; } = [];
         public List<RaiderKindDef> RaiderKinds { get; set; } = [];
         public List<WildlifeDef> Wildlife { get; set; } = [];
+        public List<SeasonDef> Seasons { get; set; } = [];
         public List<ThoughtDef> Thoughts { get; set; } = [];
         public List<InteractionDef> Interactions { get; set; } = [];
         public List<TraitDef> Traits { get; set; } = [];
@@ -190,6 +200,7 @@ public sealed class DefDatabase
         AddAll(file.Difficulties, _difficulties, AllDifficulties, source);
         AddAll(file.RaiderKinds, _raiderKinds, AllRaiderKinds, source);
         AddAll(file.Wildlife, _wildlife, AllWildlife, source);
+        AddAll(file.Seasons, _seasons, AllSeasons, source);
         AddAll(file.Thoughts, _thoughts, AllThoughts, source);
         AddAll(file.Interactions, _interactions, AllInteractions, source);
         AddAll(file.Traits, _traits, AllTraits, source);

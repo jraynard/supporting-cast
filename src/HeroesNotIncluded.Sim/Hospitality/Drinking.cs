@@ -158,7 +158,7 @@ public sealed class DrinkingSystem : ISimSystem, ISaveState
                 w.Remove<Tipsy>(e);
                 continue;
             }
-            if (sim.Round.Phase != RoundPhase.Playing || !SpeechSystem.CanAct(sim, e) || w.Has<Leaving>(e))
+            if (!sim.Round.Live || !SpeechSystem.CanAct(sim, e) || w.Has<Leaving>(e))
                 continue;
             // Under the table: they sleep it off where they are.
             if (t.Level >= OutAt && w.TryGet<Needs>(e, out var needs))

@@ -77,6 +77,9 @@ public sealed partial class Simulation
     /// <summary>Quests, what people believe about them, and the parties out on them.</summary>
     public Expeditions.ExpeditionSystem Expeditions { get; }
 
+    /// <summary>The town's Renown and Dread over a round.</summary>
+    public Director.Reckoning Reckoning { get; } = new();
+
     /// <summary>Who knows the way where, and who's asked.</summary>
     public Hospitality.DirectionsSystem Directions { get; } = new();
 
@@ -232,6 +235,7 @@ public sealed partial class Simulation
             .AddSystem(new Tinkering.CollectorSystem())
             .AddSystem(new Tinkering.RelockSystem())
             .AddSystem(sim.Expeditions)
+            .AddSystem(sim.Reckoning)
             .AddSystem(new MoodSystem())
             .AddSystem(new PrisonBreakSystem())
             .AddSystem(sim.Social)

@@ -11,6 +11,12 @@ public enum RoundPhase : byte
     None,
     Lobby,
     Playing,
+
+    /// <summary>The season's last evening: no new parties or quests, the town gathers, and then the reckoning.</summary>
+    Festival,
+
+    /// <summary>The round has ended (<see cref="RoundSystem.Summary"/>). The session stands still, as in the lobby.</summary>
+    Over,
 }
 
 /// <summary>A player waiting in the lobby: who they'll be, and what they'd like to do.</summary>
@@ -50,15 +56,114 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     private readonly SimRandom _rand = new(seed ^ 0x7EADE5EEDUL);
     private readonly List<LobbySeat> _seats = [];
 
+    private readonly List<(Entity Who, int Coin)> _startCoin = [];
+
     public string Name => "Round";
-    public int Interval => SimClock.TicksPerDay;
+    public int Interval => SimClock.TicksPerHour / 12;
 
     public RoundPhase Phase { get; private set; }
+
+    /// <summary>A round is under way: playing, or at its festival. What happens only in a round checks this.</summary>
+    public bool Live => Phase is RoundPhase.Playing or RoundPhase.Festival;
+
+    /// <summary>The tick the trades were dealt; -1 before.</summary>
+    public long StartTick { get; private set; } = -1;
+
+    /// <summary>
+    /// Keeps the round going past its season: no festival, no end. For tests and tools that run a
+    /// round for days to watch something else. Not saved.
+    /// </summary>
+    public bool Endless { get; set; }
+
+    /// <summary>How the round came out, once it's <see cref="RoundPhase.Over"/>.</summary>
+    public RoundSummary? Summary { get; private set; }
+
+    public RoundOutcome Outcome => Summary?.Outcome ?? RoundOutcome.None;
 
     /// <summary>Who's in the lobby, in the order they sat down.</summary>
     public IReadOnlyList<LobbySeat> Seats => _seats;
 
-    public void Update(Simulation sim) { }
+    /// <summary>
+    /// The tick the festival starts: <see cref="SeasonDef.FestivalHour"/> on the season's last day,
+    /// counting the day of the deal as the first. -1 before the deal.
+    /// </summary>
+    public long FestivalTick(Simulation sim)
+    {
+        if (StartTick < 0)
+            return -1;
+        var season = sim.Defs.Season;
+        var startHour = sim.Clock.StartHour * (long)SimClock.TicksPerHour;
+        var firstDay = (StartTick + startHour) / SimClock.TicksPerDay;
+        var total = (firstDay + Math.Max(1, season.Days) - 1) * SimClock.TicksPerDay + SimClock.HoursToTicks(season.FestivalHour);
+        return Math.Max(StartTick, total - startHour);
+    }
+
+    /// <summary>The tick the festival ends and the town is reckoned. -1 before the deal.</summary>
+    public long EndTick(Simulation sim) =>
+        StartTick < 0 ? -1 : FestivalTick(sim) + SimClock.HoursToTicks(sim.Defs.Season.FestivalHours);
+
+    /// <summary>The day of the season it is (1 on the day of the deal), and how many there are.</summary>
+    public (int Day, int Of) SeasonDay(Simulation sim)
+    {
+        var first = StartTick < 0 ? sim.Clock.Day : (int)((StartTick + sim.Clock.StartHour * (long)SimClock.TicksPerHour) / SimClock.TicksPerDay) + 1;
+        return (sim.Clock.Day - first + 1, Math.Max(1, sim.Defs.Season.Days));
+    }
+
+    public void Update(Simulation sim)
+    {
+        if (!Live || Endless)
+            return;
+        var now = sim.Clock.Tick;
+        if (Phase == RoundPhase.Playing && now >= FestivalTick(sim))
+        {
+            Phase = RoundPhase.Festival;
+            sim.Messages.Add(MessageKind.Good, "The festival begins! Lanterns go up in the square.", null);
+        }
+        if (Phase == RoundPhase.Festival && now >= EndTick(sim))
+        {
+            var reckoning = sim.Reckoning;
+            reckoning.FinalCount(sim);
+            End(sim, reckoning.Renown >= sim.Defs.Season.RenownTarget ? RoundOutcome.Won : RoundOutcome.FellShort);
+            return;
+        }
+        if (!AnyoneStanding(sim))
+            End(sim, RoundOutcome.TownFell);
+    }
+
+    /// <summary>
+    /// End the round: build the reveal and stand the session still. Only once; a round that isn't
+    /// live has nothing to end.
+    /// </summary>
+    public void End(Simulation sim, RoundOutcome outcome)
+    {
+        if (!Live || outcome == RoundOutcome.None)
+            return;
+        var reckoning = sim.Reckoning;
+        var season = sim.Defs.Season;
+        var ex = sim.Expeditions;
+        Summary = new RoundSummary
+        {
+            Outcome = outcome, EndedTick = sim.Clock.Tick,
+            Renown = reckoning.Renown, Dread = reckoning.Dread,
+            RenownTarget = season.RenownTarget, DreadLimit = season.DreadLimit,
+            RenownByHour = reckoning.RenownByHour.ToList(), DreadByHour = reckoning.DreadByHour.ToList(),
+            Parties = sim.Parties.PartiesSent, AdventurersServed = reckoning.AdventurersCounted,
+            QuestsCleared = ex.Succeeded, QuestsFailed = ex.Failed, AdventurersLost = ex.Dead,
+            People = RoundSummary.PeopleOf(sim, _startCoin),
+        };
+        Phase = RoundPhase.Over;
+        sim.Messages.Add(outcome == RoundOutcome.Won ? MessageKind.Good : MessageKind.Danger, Summary.Headline, null);
+    }
+
+    /// <summary>Is anyone of the village still alive and on their feet?</summary>
+    private static bool AnyoneStanding(Simulation sim)
+    {
+        var w = sim.World;
+        foreach (var e in sim.Creatures())
+            if (w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Dead: false, Downed: false })
+                return true;
+        return false;
+    }
 
     public LobbySeat? SeatOf(Guid player) => _seats.Find(s => s.Player == player);
 
@@ -195,6 +300,11 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         }
         _seats.Clear();
         Phase = RoundPhase.Playing;
+        StartTick = sim.Clock.Tick;
+        _startCoin.Clear();
+        foreach (var e in sim.Creatures())
+            if (sim.World.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human })
+                _startCoin.Add((e, Shops.Coin.Count(sim, e)));
     }
 
     /// <summary>
@@ -204,7 +314,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     /// </summary>
     public Entity TakeTrade(Simulation sim, Guid player, IReadOnlyList<TradeDef>? wanted, IReadOnlyList<TradeDef>? never)
     {
-        if (Phase != RoundPhase.Playing || !Players.CharacterOf(sim, player).IsNull)
+        if (!Live || !Players.CharacterOf(sim, player).IsNull)
             return Entity.Null;
         var (yes, no) = CleanPreferences(wanted, never);
         var w = sim.World;
@@ -330,6 +440,15 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             WriteTrades(w, seat.Never);
             w.Bool(seat.Ready);
         }
+        w.Long(StartTick);
+        w.Int(_startCoin.Count);
+        foreach (var (e, coin) in _startCoin)
+        {
+            w.Entity(e);
+            w.Int(coin);
+        }
+        w.Bool(Summary != null);
+        Summary?.Save(w);
     }
 
     public void Load(SaveReader r, Simulation sim)
@@ -349,6 +468,21 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             seat.Ready = r.Bool();
             _seats.Add(seat);
         }
+        _startCoin.Clear();
+        Summary = null;
+        StartTick = -1;
+        if (r.Version < 9)
+        {
+            // Saves from before the season: the round started when the game did, and nobody's purse was noted.
+            if (Phase == RoundPhase.Playing)
+                StartTick = 0;
+            return;
+        }
+        StartTick = r.Long();
+        for (var n = r.Count(MaxSeats * 4); n > 0; n--)
+            _startCoin.Add((r.Entity(), r.Int()));
+        if (r.Bool())
+            Summary = RoundSummary.Read(r);
     }
 
     private static void WriteStrings(SaveWriter w, List<string> list)

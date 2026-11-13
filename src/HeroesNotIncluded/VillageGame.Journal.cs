@@ -33,7 +33,7 @@ public sealed partial class VillageGame
     /// <summary>Width of a journal panel, before UI scale.</summary>
     private const float JournalWidth = 400f;
 
-    private bool InRound => _sim.Round.Phase == RoundPhase.Playing;
+    private bool InRound => _sim.Round.Live;
 
     /// <summary>The build drawer is open, or there's no avatar (god mode always has the toolbar).</summary>
     private bool ToolbarOpen => !HasAvatar || _showBuild;

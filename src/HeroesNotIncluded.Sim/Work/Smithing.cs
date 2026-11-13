@@ -162,7 +162,7 @@ public static class Smithing
 
     /// <summary>Should a player's mend at this station be done by hand? As for making: in a round, at a station that wants it.</summary>
     public static bool AppliesToRepair(Simulation sim, Entity worker, Entity station) =>
-        sim.Round.Phase == Round.RoundPhase.Playing && sim.World.Has<Avatar>(worker)
+        sim.Round.Live && sim.World.Has<Avatar>(worker)
         && sim.World.Get<Thing>(station).Def.Building?.Workbench is { HandWork: true };
 
     /// <summary>Take up a billet for a recipe whose materials are all staged at the forge. It goes in the fire next.</summary>

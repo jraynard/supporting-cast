@@ -59,7 +59,7 @@ public sealed partial class VillageGame
     /// <summary>The gift's window: mana and meditating, what you carry (each to weave a mending for), and your book.</summary>
     private void DrawGift()
     {
-        if (_sim.Round.Phase != RoundPhase.Playing || !HasAvatar || !_showGift || !_sim.World.TryGet<Mana>(_avatar, out var mana))
+        if (!_sim.Round.Live || !HasAvatar || !_showGift || !_sim.World.TryGet<Mana>(_avatar, out var mana))
             return;
         BeginJournal("The gift###gift", ref _showGift);
         Bar("Mana", mana.Current / Math.Max(1f, mana.Max), Theme.Accent, $"{mana.Current:F0} / {mana.Max:F0}");

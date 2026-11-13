@@ -175,7 +175,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
 
     public void Update(Simulation sim)
     {
-        if (sim.Round.Phase != RoundPhase.Playing)
+        if (!sim.Round.Live)
             return;
         if (!_rolled)
             Roll(sim);

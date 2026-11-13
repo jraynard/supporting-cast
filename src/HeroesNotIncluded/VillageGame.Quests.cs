@@ -16,7 +16,7 @@ public sealed partial class VillageGame
 {
     private void DrawQuestBoard()
     {
-        if (_sim.Round.Phase != RoundPhase.Playing || !HasAvatar || !_showQuests)
+        if (!_sim.Round.Live || !HasAvatar || !_showQuests)
             return;
         var quests = View.Quests().ToList();
         if (quests.Count == 0)

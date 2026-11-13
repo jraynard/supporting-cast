@@ -185,7 +185,7 @@ public sealed class DirectionsSystem : ISimSystem, ISaveState
     public void Update(Simulation sim)
     {
         var w = sim.World;
-        if (sim.Round.Phase != RoundPhase.Playing)
+        if (!sim.Round.Live)
             return;
         // Walking past a shop, they see it for what it is.
         var shops = new List<(Entity Shop, int3 At)>();

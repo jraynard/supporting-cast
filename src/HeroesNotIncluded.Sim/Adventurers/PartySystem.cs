@@ -9,7 +9,8 @@ namespace HeroesNotIncluded.Sim.Adventurers;
 /// <summary>
 /// Brings adventuring parties (<see cref="PartyDef"/>) to town during a round, one at a time, and
 /// sends them on their way when their stay is up. Nothing happens outside a round
-/// (<see cref="RoundPhase.Playing"/>), so tests, demos and the bench are untouched. Its rolls use a
+/// (<see cref="RoundSystem.Live"/>), so tests, demos and the bench are untouched. None come once the
+/// festival starts. Its rolls use a
 /// stream of its own, so a party arriving doesn't reshuffle the rest of the sim.
 /// </summary>
 public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
@@ -51,10 +52,12 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
 
     public void Update(Simulation sim)
     {
-        if (sim.Round.Phase != RoundPhase.Playing)
+        if (!sim.Round.Live)
             return;
         var now = sim.Clock.Tick;
         SendOff(sim, now);
+        if (sim.Round.Phase == RoundPhase.Festival)
+            return;
         if (NextArrivalTick < 0)
         {
             NextArrivalTick = now + SimClock.HoursToTicks(FirstArrivalHours);
@@ -104,6 +107,7 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
             if (!Tinkering.Lockwork.LockedBoxOf(sim, e).IsNull && now < a.LeaveTick + SimClock.HoursToTicks(BoxWaitHours))
                 continue;
             w.Add(e, new Leaving());
+            sim.Reckoning.AdventurerLeft(sim, a.Satisfaction);
             AiSystem.EndJob(sim, e, w.Get<Mind>(e), false);
             announced ??= [];
             if (announced.Contains(a.Party))

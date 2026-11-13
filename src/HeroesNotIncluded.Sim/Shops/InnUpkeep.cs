@@ -216,7 +216,7 @@ public sealed class InnSupplySystem : ISimSystem, Saving.ISaveState
 
     public void Update(Simulation sim)
     {
-        if (sim.Round.Phase != RoundPhase.Playing || sim.Clock.HourOfDay < DeliveryHour || sim.Clock.Day <= _lastDay)
+        if (!sim.Round.Live || sim.Clock.HourOfDay < DeliveryHour || sim.Clock.Day <= _lastDay)
             return;
         _lastDay = sim.Clock.Day;
         // The round's first morning is what it was stocked with.

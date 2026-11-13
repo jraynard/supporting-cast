@@ -71,6 +71,7 @@ public sealed partial class VillageGame
         DrawCredits();
         DrawSaveWindows();
         DrawCoop();
+        DrawReveal();
         DrawControls();
         _settings.Draw();
         WatchForDanger();
