@@ -111,6 +111,39 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         foreach (var key in _wentWithout.Where(kv => !sim.World.IsAlive(kv.Key.Who) || now - kv.Value > stale).Select(kv => kv.Key).ToList())
             _wentWithout.Remove(key);
         ShopForWhatTheyWant(sim);
+        ShopForSupper(sim);
+    }
+
+    /// <summary>The evening hours villagers buy their supper at the inn.</summary>
+    public const float SupperFromHour = 18f, SupperUntilHour = 21f;
+
+    /// <summary>Food below which a villager wants supper.</summary>
+    public const float SupperBelow = 0.6f;
+
+    /// <summary>
+    /// Of an evening, the villagers the AI runs buy their supper at the inn's hatch, if they're
+    /// hungry and have the silver: they line up with the adventurers, pay the cook and sit down
+    /// with it. So the common room fills at supper, and the kitchen has its rush. Whoever cooks
+    /// doesn't buy from themselves; players eat as they like.
+    /// </summary>
+    private void ShopForSupper(Simulation sim)
+    {
+        var hour = sim.Clock.HourOfDay;
+        if (hour < SupperFromHour || hour >= SupperUntilHour)
+            return;
+        var w = sim.World;
+        var food = sim.Defs.Need("Food");
+        foreach (var who in sim.Creatures())
+        {
+            if (w.Get<Creature>(who) is not { Faction: Faction.Village, Def.Race: Race.Human, Dead: false }
+                || w.Has<Avatar>(who) || w.Get<Mind>(who).Asleep || !SpeechSystem.CanAct(sim, who))
+                continue;
+            if (w.TryGet<Trade>(who, out var trade) && trade.Def.Serving(ServiceKind.Meal))
+                continue;
+            if (w.Get<Needs>(who).Get(food) >= SupperBelow || Hospitality.Table.IsSavouring(sim, who))
+                continue;
+            Want(sim, who, ServiceKind.Meal, Entity.Null);
+        }
     }
 
     /// <summary>Each adventurer in town shops for whatever they lack and haven't already ordered.</summary>
@@ -319,7 +352,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// </summary>
     private int Worth(Simulation sim, Entity who, ServiceDef def, float urgency)
     {
-        var spend = sim.World.Get<Adventurer>(who).Kind?.Spend ?? 1f;
+        var spend = sim.World.TryGet<Adventurer>(who, out var a) ? a.Kind?.Spend ?? 1f : 1f;
         return Math.Max(0, (int)MathF.Round(_rand.Range(def.WorthMin, def.WorthMax + 1) * spend * urgency));
     }
 
@@ -383,7 +416,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         string line;
         if (price > worth)
         {
-            sim.World.Get<Adventurer>(who).Satisfaction -= TooDearMood;
+            if (sim.World.Has<Adventurer>(who))
+                sim.World.Get<Adventurer>(who).Satisfaction -= TooDearMood;
             line = def.TooDearLines.Count == 0
                 ? $"{price} silver for {def.Label}? I'll do without."
                 : string.Format(def.TooDearLines[_rand.NextInt(def.TooDearLines.Count)], price, subject ?? "gear");

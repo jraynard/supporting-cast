@@ -8,6 +8,7 @@
   "seasons": [
     {
       "name": "Season",
+      "startingPurse": 12,
       "days": 3,
       "festivalHour": 18,
       "festivalHours": 2,

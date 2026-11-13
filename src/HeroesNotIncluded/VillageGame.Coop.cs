@@ -138,7 +138,7 @@ public sealed partial class VillageGame
         var session = _coop!;
         if (session.Ended != null)
             return;
-        var stepsPerSecond = Paused || InLobby || RoundOver ? 0 : SimClock.TicksPerSecond * SpeedMultipliers[_speed];
+        var stepsPerSecond = InLobby || RoundOver ? 0 : SimClock.TicksPerSecond * RunMultiplier;
         var start = System.Diagnostics.Stopwatch.GetTimestamp();
         var before = _sim.Clock.Tick;
         session.Update(dt, stepsPerSecond);

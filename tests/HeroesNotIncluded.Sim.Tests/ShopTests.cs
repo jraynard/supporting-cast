@@ -135,15 +135,16 @@ public class ShopTests
         Inventory.Stow(sim, me, sim.CreateItem(sim.Defs.Thing(Coin.Silver), 5));
         var coins = sim.StoredIn(sim.PackOf(me)).First(i => Coin.IsSilver(sim, i));
         var theirs = Coin.Count(sim, them);
+        var mine = Coin.Count(sim, me); // the 5, and the purse everyone starts with
 
         sim.ApplyNow(new GiveCommand(me, them, coins, 3));
-        Assert.Equal(2, Coin.Count(sim, me));
+        Assert.Equal(mine - 3, Coin.Count(sim, me));
         Assert.Equal(theirs + 3, Coin.Count(sim, them));
 
         // Out of reach, nothing moves.
         sim.World.Get<Position>(them).Cell += new int3(10, 0, 0);
         sim.ApplyNow(new GiveCommand(me, them, coins, 2));
-        Assert.Equal(2, Coin.Count(sim, me));
+        Assert.Equal(mine - 3, Coin.Count(sim, me));
     }
 
     // ---------------- The price sign ----------------

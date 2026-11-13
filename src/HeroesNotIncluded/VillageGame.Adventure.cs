@@ -801,7 +801,9 @@ public sealed partial class VillageGame
         if (mind.Job is AvatarWalkJob { Interact: false })
             return; // just walking where you clicked
         if (mind.Asleep)
-            text = $"{mind.Job?.Report ?? "Sleeping"} (walk to get up)";
+            text = NightPassing
+                ? "Everyone's asleep: the night passes (walk to get up)"
+                : $"{mind.Job?.Report ?? "Sleeping"} (walk to get up; time runs on once everyone sleeps)";
         else if (mind.Job != null)
         {
             // Only hands-on work waits for the key; walking to a bed or eating just happens.

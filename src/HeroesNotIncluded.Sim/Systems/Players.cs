@@ -27,6 +27,26 @@ public static class Players
         return Entity.Null;
     }
 
+    /// <summary>
+    /// Every character a player is steering right now is asleep (and there's at least one). While
+    /// that's so the host runs time fast, so nobody watches their character sleep; anyone awake holds
+    /// it at the usual speed. A sim read, so every peer agrees on it. Someone downed isn't asleep.
+    /// </summary>
+    public static bool AllAsleep(Simulation sim)
+    {
+        var w = sim.World;
+        var any = false;
+        foreach (var e in w.Each<Avatar>())
+        {
+            if (w.Get<Creature>(e).Dead)
+                continue;
+            if (!w.Get<Mind>(e).Asleep)
+                return false;
+            any = true;
+        }
+        return any;
+    }
+
     /// <summary>The player a character belongs to, if any.</summary>
     public static Guid? OwnerOf(Simulation sim, Entity e) =>
         sim.World.IsAlive(e) && sim.World.TryGet<PlayerCharacter>(e, out var p) ? p.PlayerId : null;

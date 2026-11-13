@@ -601,6 +601,34 @@ Known leftovers:
 - The festival has nothing of its own yet (slice 9).
 - Difficulty doesn't scale the target or the limit yet (slice 4).
 
+### M3.2: Nights and suppers (2026-11-12)
+- **The night passes while everyone sleeps.**
+  - **When:** `Players.AllAsleep` is true once every character a player is steering is asleep. It's
+    a sim read, so every peer agrees.
+  - **How fast:** while it holds, the host (or solo game) runs at 8x, so an 8-hour night takes
+    40 seconds. Anyone awake holds 1x.
+  - **What you see:** the sleeping prompt says "Everyone's asleep: the night passes", or that time
+    runs on once everyone sleeps.
+- **Getting up:** a player's character gets up at the first 06:00 after lying down, once at least
+  0.6 rested (`SleepJob.NextDawn`, `DawnRest`). A nap mid-morning isn't cut short.
+- **Bots go to bed at night** when they're tired and have no order in hand (`BotPlayer.Bedtime`),
+  so a solo round with bots has nights that pass.
+- **Gentler needs:** Food 0.9 → 0.7 a day (two stews), Rest 1.1 → 0.8.
+- **Supper at the inn** (`ShopSystem.ShopForSupper`):
+  - From 18:00 to 21:00, hungry villagers the AI runs (Food below 0.6) order a meal at the hatch
+    like any customer. They line up, pay the cook and sit with it (`HumanBrain` step 2c,
+    `QueueJob`/`SavourJob`).
+  - Whoever cooks doesn't buy from themselves.
+  - Everyone starts the round with a 12-silver purse (`SeasonDef.StartingPurse`); the reveal's
+    earnings leave it out.
+- `NightTests`. Bench baselines moved for the need rates: seed 1234 state `412D36A8850D6AD2` full
+  `AA0974F679D047A8`; seed 99 state `A79FED518CE17A4C` full `0739283CD3C51B04`.
+
+Known leftovers:
+- A sleeping player is woken only by walking. Nothing rouses them yet: a shout, a fire, a raid.
+- Villagers at supper only sit; they don't swap rumours like adventurers do.
+- Players can't order from the hatch themselves.
+
 ## Next
 
 ### M3: A whole season

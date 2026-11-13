@@ -260,6 +260,14 @@ public sealed class HumanBrain : IBrain
         if (Requests.JobFor(sim, pawn) is { } asked)
             return asked;
 
+        // 2c. Supper bought at the inn (Shops.ShopSystem.ShopForSupper): in line for it, take their
+        // place; served, sit down with it, as a customer would.
+        var inLine = sim.Shops.PlaceOf(sim, pawn);
+        if (w.Has<Hospitality.Savouring>(pawn) && inLine is not { Place: 0 })
+            return new Hospitality.SavourJob(Hospitality.Table.FreeSeat(sim, pawn));
+        if (inLine is { Cell: { } queueAt } place)
+            return new Shops.QueueJob(queueAt, Buildings.Called(sim, place.Shop), place.Place == 0);
+
         // 3. Gear lying around (a quick order between jobs), then work by the pawn's priorities.
         if ((FindGear(sim, pawn) ?? FindTool(sim, pawn)) is { } gear)
             return gear;

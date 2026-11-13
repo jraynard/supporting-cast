@@ -302,9 +302,14 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         Phase = RoundPhase.Playing;
         StartTick = sim.Clock.Tick;
         _startCoin.Clear();
+        var purse = sim.Defs.Season.StartingPurse;
         foreach (var e in sim.Creatures())
             if (sim.World.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human })
+            {
+                if (purse > 0)
+                    Inventory.Stow(sim, e, sim.CreateItem(sim.Defs.Thing(Shops.Coin.Silver), purse));
                 _startCoin.Add((e, Shops.Coin.Count(sim, e)));
+            }
     }
 
     /// <summary>

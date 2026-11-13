@@ -431,6 +431,8 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
 
     private void Think(Simulation sim, Entity me, PerceptionView view, long now)
     {
+        if (Bedtime(sim, me, now))
+            return;
         GoToWork(sim, me);
         Price(sim, me, view, now);
         if (Mend(sim, me, view))
@@ -442,6 +444,36 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         if (_task == 0 && !Upkeep(sim, me, view, now))
             Chat(view, me, now);
     }
+
+    /// <summary>
+    /// At night, with nothing in hand and tired, it goes to bed like a player would, so a solo
+    /// round's night can pass (time runs on only while every player sleeps). Asleep, it does
+    /// nothing at all: any step would wake it. True while it's sleeping or on its way.
+    /// </summary>
+    private bool Bedtime(Simulation sim, Entity me, long now)
+    {
+        var w = sim.World;
+        if (w.Get<Mind>(me).Asleep)
+        {
+            Doing = "asleep";
+            return true;
+        }
+        if (_task != 0 || !Ai.AiQueries.IsNight(sim) || w.Get<Needs>(me).Get(sim.Defs.Need("Rest")) > BedtimeRest)
+            return false;
+        Doing = "going to bed";
+        var bed = Ai.AiQueries.FindFreeBed(sim, me);
+        if (bed.IsNull || w.Get<Position>(me).Cell == w.Get<Thing>(bed).Cell)
+            send(new SleepCommand(me));
+        else if (now - _lastWalk >= ThinkTicks * 2)
+        {
+            send(new AvatarGoToCommand(me, w.Get<Thing>(bed).Cell));
+            _lastWalk = now;
+        }
+        return true;
+    }
+
+    /// <summary>Rest below which a bot turns in at night.</summary>
+    private const float BedtimeRest = 0.85f;
 
     /// <summary>
     /// Between orders, the innkeeper keeps the place: beds made up, floors mopped, the dirty

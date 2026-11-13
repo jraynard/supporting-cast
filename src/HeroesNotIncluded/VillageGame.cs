@@ -162,6 +162,15 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     private bool Paused => _speed == 0;
 
+    /// <summary>How fast time runs while every player sleeps (<see cref="Players.AllAsleep"/>): an 8-hour night in 40 seconds.</summary>
+    private const int NightSpeed = 8;
+
+    /// <summary>Everyone playing is asleep in a round, so the night is passing fast.</summary>
+    private bool NightPassing => _sim.Round.Live && Players.AllAsleep(_sim);
+
+    /// <summary>The speed time actually runs at: the chosen one, or the night's while everyone sleeps.</summary>
+    private int RunMultiplier => Paused ? 0 : NightPassing ? NightSpeed : SpeedMultipliers[_speed];
+
     public int StartYawDegrees { get; init; } = 45;
     public int StartCutaway { get; init; } = int.MaxValue;
 
@@ -314,7 +323,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     public override void Update(float dt)
     {
         _time += dt;
-        _animDt = dt * Math.Min(SpeedMultipliers[_speed], 3);
+        _animDt = dt * Math.Min(RunMultiplier, 3);
         _artReloader ??= new ArtReloader(Host.Atlas);
         _artReloader.Update(Host.Input, dt);
         _defReloader ??= new DefReloader(DevPaths.Defs ?? Path.Combine(Host.DataDirectory, "defs"), DevPaths.Watch());
@@ -343,7 +352,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         RecordSimProfile();
         PollAutosave();
         if (_coop != null && HasAvatar)
-            _predictor.Update(_sim, _avatar, dt, Paused ? 0 : SpeedMultipliers[_speed]);
+            _predictor.Update(_sim, _avatar, dt, Paused ? 0 : RunMultiplier);
         _renderer.Predicted = _coop != null && HasAvatar ? _predictor : null;
         _renderer.PredictedEntity = _avatar;
         _renderer.Viewer = View.Omniscient ? null : View;
@@ -476,7 +485,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             _interp.Alpha = 1f; // show exactly where things are (paused orders apply at once)
             return;
         }
-        _tickAccumulator += dt * SimClock.TicksPerSecond * SpeedMultipliers[_speed];
+        _tickAccumulator += dt * SimClock.TicksPerSecond * RunMultiplier;
         // Never fall into a death spiral: cap the work per frame.
         var ticks = Math.Min((int)_tickAccumulator, 6 * SimClock.TicksPerSecond / 4);
         _tickAccumulator -= ticks;

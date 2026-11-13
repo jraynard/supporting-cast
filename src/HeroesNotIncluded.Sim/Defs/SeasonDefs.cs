@@ -7,6 +7,9 @@ namespace HeroesNotIncluded.Sim.Defs;
 /// </summary>
 public sealed class SeasonDef : Def
 {
+    /// <summary>Silver everyone in town starts the round with: enough for a supper or two, or a favour.</summary>
+    public int StartingPurse { get; set; } = 12;
+
     /// <summary>Days in the season, counting the day of the deal as the first.</summary>
     public int Days { get; set; } = 3;
 

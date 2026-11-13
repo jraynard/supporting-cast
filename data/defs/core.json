@@ -284,7 +284,7 @@
       "name": "Human", "race": "Human", "sprite": "creatures/human", "body": "Humanoid",
       "moveSpeed": 4.5, "maxHp": 100,
       "comfortTempMin": 12, "comfortTempMax": 30, "safeTempMin": -6, "safeTempMax": 50,
-      "needs": [ { "need": "Food", "decayPerDay": 0.9 }, { "need": "Rest", "decayPerDay": 1.1 } ],
+      "needs": [ { "need": "Food", "decayPerDay": 0.7 }, { "need": "Rest", "decayPerDay": 0.8 } ],
       "attacks": [ { "name": "Fists", "label": "fists", "verb": "punches", "accuracy": 0.7, "damageMin": 2, "damageMax": 5, "damageType": "Blunt", "glance": 0.3 } ]
     },
     {

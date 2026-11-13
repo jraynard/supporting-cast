@@ -165,11 +165,30 @@ public sealed class SleepJob(Entity bed, int3? spot = null) : Job
         Report = bed.IsNull ? "Sleeping on the ground" : "Sleeping";
         var maxTicks = SimClock.HoursToTicks(10);
         var slept = 0;
-        for (; slept < maxTicks && needs.Get(rest) < 0.99f; slept++)
+        // A player's character gets up with the sun once they've had a fair night: nobody waits
+        // in bed for the last of their rest while the town opens.
+        var dawn = Sim.World.Has<Avatar>(Pawn) ? NextDawn(Sim.Clock) : long.MaxValue;
+        for (; slept < maxTicks && needs.Get(rest) < 0.99f && !(Sim.Clock.Tick >= dawn && needs.Get(rest) >= DawnRest); slept++)
             yield return JobStatus.Running;
         if (slept >= SimClock.HoursToTicks(2))
             RememberNight();
     }
+
+    /// <summary>The tick of the first dawn (<see cref="DawnHour"/>) after now.</summary>
+    internal static long NextDawn(SimClock clock)
+    {
+        var total = clock.TotalTicks;
+        var dawn = total - total % SimClock.TicksPerDay + SimClock.HoursToTicks(DawnHour);
+        if (dawn <= total)
+            dawn += SimClock.TicksPerDay;
+        return dawn - clock.StartHour * (long)SimClock.TicksPerHour;
+    }
+
+    /// <summary>The hour sleeping players wake, if rested enough.</summary>
+    public const float DawnHour = 6f;
+
+    /// <summary>Rest a player needs to get up at dawn rather than sleep on.</summary>
+    public const float DawnRest = 0.6f;
 
     /// <summary>How the night went: on the ground or in a bed (a nest, for dragons), under the sky or a roof.</summary>
     private void RememberNight()
