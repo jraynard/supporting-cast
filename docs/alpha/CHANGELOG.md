@@ -4,6 +4,26 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+## 0.1.0-playtest.6
+
+Fighting, reworked: you can see a blow coming now, and do something about it.
+
+- Raiders take you on one at a time while the rest circle, instead of all hacking at once.
+- Every blow is wound up first: a ring closes on whoever it's aimed at (amber, ember for a heavy
+  one) and flashes as it lands. Hold Q (or V) to guard; raise it just as it lands to parry, which
+  leaves them open to a harder blow back. Space dodges. Shift+F swings heavy and knocks aside a
+  tired guard. A Wind bar under your needs shows what you've left to fight with.
+- Arrows can be blocked or dodged, never parried, and archers keep their distance and shoot. A
+  dragon's jaws and fire can only be partly blocked, and dodged only late; it draws breath where
+  you can see it first.
+- The practice ring (`--arena`, or `--arena Archer`, `--arena Dragon`): one foe a bout, R for the
+  next, a panel to pick foe and weapon. In the ring you move freely and fight with the mouse: aim
+  with it, left click to strike, right click to swing heavy. Hits land by where your weapon reaches,
+  not by chance: a sword sweeps wide, a spear reaches far and narrow.
+- The camera turns on Z and X now (Q and E without a character). Dig is C, put down is G, and the
+  empath's gift panel is Y. The controls card (H) has a Fighting section.
+- `--raid-test`: play as the smith with bandits coming down the north road at once.
+
 ## 0.1.0-playtest.5
 
 The art pass: the village looks more like itself, and so do its people.

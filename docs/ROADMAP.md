@@ -52,6 +52,38 @@ First pass done (docs/AUDIO.md, HISTORY.md). Next, as long-term items:
      (and players type theirs), so this can't be pre-recorded.
 5. **Steam Deck:** check the sound there (output switching, volume, CPU).
 
+### Combat pass
+Fights move to free movement and blows by reach and timing (no roll to hit), Souls-lite: blows are
+seen coming, and met with a guard, a parry or a dodge. Prototyped in the practice ring (`--arena`:
+HISTORY.md, "Combat: blows seen coming"). Each step lands with tests and keeps the season and
+village-day scenarios passing.
+
+1. **Free movement in the village, and combat mode** (in progress). Your character moves freely
+   everywhere (stairs, slopes and ladders by the walking links, doors, locks; perching, sitting and
+   lying snap to the cell). A key (R) draws or sheathes your weapon: sheathed, clicks walk and act and
+   F interacts; drawn, the weapon's in hand, left/right click strike light/heavy the way you aim, Q
+   guards, Space dodges, and you're a little slower. A blow landing on you draws it for you. Behind a
+   setting at first, then the default; the old cell-stepping for players goes.
+2. **Friendly fire, always.** A swing hits everyone in its sweep, ally or not, players included.
+   AI fighters hold a blow while a friend's in its sweep and step for a clearer angle. First pass:
+   townsfolk are just hurt; what the town makes of it (memory, shouting, the reveal) comes with M4.
+   Wild animals you attack count as foes, so hunting works with free swings.
+3. **AI fighters on the model.** Raiders, villagers, adventurers, animals and the dragon steer
+   smoothly in a fight: close to their weapon's reach, keep spacing, step in to strike, circle on the
+   one-at-a-time turns, back off hurt. Archers hold range and lead a moving target. An AI's blow is
+   telegraphed as its sweep on the ground (a wedge), not a ring under its target.
+4. **Bots** walk and fight the new way (steering along paths, aiming, clicking), so the season and
+   village-day scenarios keep guarding the town.
+5. **Co-op.** Your own movement predicted and eased toward the host's; commands carry where you are.
+   Blows at you keep a latency grace for your guard and dodge keys; a sweep is judged against where
+   people were when it was pressed (a short position history).
+6. **Feel and art.** Real swing and dodge frames from the people pipeline (the drawn-on weapon is a
+   stand-in), a drawn weapon worn on the back or belt when sheathed, hit-stop and a little shake on a
+   heavy hit, a sound per weapon.
+7. **Controls** (with the Control Pass below): rebinding, a controller (left stick moves, right
+   stick aims), the Steam Deck layout.
+8. **One model.** The old rolls to hit, `Engagement.PaceOnPlayer` and the grid's dodge go once raids,
+   hunting, the dragon and defence are all on it; then tuning, in the ring and in `--raid-test`.
 
 ### Death and ghosts
 - need to move this up most likely as people can and should die when the dragon attacks, or other dangers added in the crisis system.
@@ -70,6 +102,10 @@ Remaining trades, more maps (authored like Millbrook), crisis variety, personal 
 
 ### M7: Playing with strangers
 An authoritative server filtered by `Perception`, moderation, voice.
+
+### Control Pass
+- control customization / keybind window (add at the engine level)
+- controller support
 
 ### Character customization
 - The roster is one for every mode, with its own Characters screen (done: HISTORY.md). Next, more to
