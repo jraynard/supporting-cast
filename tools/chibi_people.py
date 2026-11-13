@@ -1308,36 +1308,89 @@ BOB = [(20.0, 1.4), (24.8, 1.8), (28.8, 3.6), (31.8, 6.6), (33.8, 10.6), (35.0, 
        (5.0, 15.2), (6.2, 10.6), (8.2, 6.6), (11.2, 3.6), (15.2, 1.8)]
 
 
+def clump(F, root, tip, w, dx=0.0, phase=0.0):
+    """One curl clump: a short springy lock from ``root`` to ``tip`` (design points), wiggling tightly, its tip a spiral."""
+    mid = lerp(root, tip, 0.5)
+    bend = ((tip[1] - root[1]) * 0.12, -(tip[0] - root[0]) * 0.12)
+    return s_path(F, [root, (mid[0] + bend[0], mid[1] + bend[1]), tip], w, amp=0.9, period=3.4, phase=phase, curl=1 if tip[0] >= root[0] else -1, dx=dx)
+
+
+def paint_clumps(img, clumps, clip, bias=0.0):
+    """Curl clumps painted back to front, each shaded and lined on its own, a sheen down it and a spiral at its tip."""
+    for c_ in clumps:
+        cm = clip(c_[0])
+        part(img, cm, HAIR, HAIR_LINE, radius=1.0, bias=bias)
+        pts, w = c_[1], c_[2]
+        body = pts[:-2]
+        curve(img, [(x - w * 0.22, y) for x, y in body[: max(2, len(body) * 2 // 3)]], HAIR[4], 1, cm)
+        curve(img, [(x + w * 0.22, y) for x, y in body[len(body) // 3:]], HAIR[1], 1, cm)
+        tx, ty = pts[-3]
+        spiral(img, tx, ty, min(1.3, w * 0.34), 0.0, cm, width=1, turns=1.1)
+
+
+def bob_clumps(F, dx, front):
+    """The bob as curl clumps: radiating from the crown, hanging in tiers down the sides, the
+    longest at the jaw; from the front, small ones over the brow. Back to front."""
+    out = []
+    k = 0
+    def add(root, tip, w):
+        nonlocal k
+        out.append(clump(F, root, tip, w, dx, phase=k * 1.3))
+        k += 1
+    # the outermost tier first: down the sides to the jaw and the shoulders
+    for s in (-1, 1):
+        X = lambda x: x if s < 0 else 40 - x
+        for (rx, ry), (tx, ty), w in (((9.0, 18.0), (4.6, 30.0), 4.6), ((10.6, 22.0), (7.0, 34.0), 4.4), ((12.6, 25.0), (10.6, 34.6), 4.0),
+                                      ((8.6, 12.0), (4.2, 22.0), 4.4), ((7.6, 24.0), (3.8, 29.0), 3.6)):
+            add((X(rx), ry), (X(tx), ty), w)
+    # round the crown, falling outward and down
+    for i, a in enumerate((-172, -154, -136, -118, -100, -82, -64, -46, -28, -10)):      # up and over the crown from its whorl
+        ang = math.radians(a + 6 * jitter(i, 3.0))
+        r0, r1 = 2.4, 11.8 + 1.2 * jitter(i, 4.0)
+        root = (20 + r0 * math.cos(ang), 10.0 + r0 * math.sin(ang) * 0.8)
+        tip = (20 + r1 * math.cos(ang) * 1.22, 10.0 + r1 * math.sin(ang) * 0.72 + (3.0 if abs(a + 90) > 60 else 0.0))
+        add(root, tip, 4.6 + 0.4 * jitter(i, 5.0))
+    for s in (-1, 1):                                                 # framing the face, over the ears
+        X = lambda x: x if s < 0 else 40 - x
+        add((X(11.4), 9.0), (X(8.0), 20.0), 4.2)
+        add((X(12.6), 12.0), (X(11.0), 24.0), 3.8)
+    if front:                                                         # over the brow
+        for rx, tx in ((14.0, 12.8), (17.4, 16.6), (21.0, 22.0), (24.6, 25.6), (27.0, 28.4)):
+            add((rx, 6.4), (tx, 14.4 + (0.8 if rx > 20 else 0)), 3.4)
+    else:                                                             # over the back of the head
+        for i in range(6):                                            # tiers down the back, no two alike
+            rx = 11.4 + i * 3.4 + 1.0 * jitter(i, 6.0)
+            add((rx, 9.0 + 1.6 * jitter(i, 7.0)), (rx + (rx - 20) * 0.18 + 1.2 * jitter(i, 8.0), 20.0 + 2.4 * jitter(i, 9.0)), 4.4 + 0.5 * jitter(i, 10.0))
+        for i in range(5):
+            rx = 12.8 + i * 3.6 + 1.2 * jitter(i, 11.0)
+            add((rx, 17.0 + 2.0 * jitter(i, 12.0)), (rx + (rx - 20) * 0.2 + 1.4 * jitter(i, 13.0), 31.0 + 2.6 * jitter(i, 14.0)), 4.2 + 0.5 * jitter(i, 15.0))
+    return out
+
+
 def style_curly_bob(F):
-    """Big shoulder-length curls (the reference's): a wide, airy mass widening to the jaw, its edge
-    all small loops, the inside covered in loose spirals; curls falling over the brow and the cheeks."""
+    """Big shoulder-length curls (the reference's): a wide, airy mass widening to the jaw, built of
+    curl clumps, each its own springy lock with its sheen and spiral tip, over a dark depth; some
+    falling over the brow."""
     front, back = blank(), blank()
     hy, t = F.hy, F.t
     clip = lambda m: under_volume(m, F)
+    depth = [grey(v) for v in (40, 52, 66, 80, 96)]                   # the shadowed hair between the curls
     if F.front:
         fs = F.fs * 0.5
-        mass = clip(scalloped(F, t * 0.6, BOB, salt=1))
-        part(back, mass, HAIR, HAIR_LINE, radius=2.6, bias=-0.18)
-        spirals(back, mass, (4.0 + t, 14.0, 36.0 + t, 34.0), 20, salt=2, hy=hy)
-        # over the head and beside the face: the crown, curls at the hairline, the sides over the cheeks
-        top = both(scalloped(F, fs * 0.6, BOB, salt=1), rect([0, 0, 40, 12.6 + hy]))
-        bangs = [scalloped(F, fs, [(x - 1.6, 11.0), (x + 1.6, 11.0), (x + 1.2 + s_ * 0.6, 14.8), (x - 1.0 + s_ * 0.6, 15.4)], rmin=1.0, rmax=1.5, salt=x)
-                 for x, s_ in ((13.4, -1), (17.6, 1), (22.6, -1), (26.6, 1))]
-        sides = [both(scalloped(F, t * (0.6 if s > 0 else 0), BOB, salt=1), rect([0 if s < 0 else 28.6, 10 + hy, 11.4 if s < 0 else 40, 36 + hy])) for s in (-1, 1)]
-        cheek = [scalloped(F, t * (0.6 if s > 0 else 0), mirror([(9.6, 13.0), (12.0, 15.6), (12.4, 21.0), (11.6, 26.0), (9.6, 27.0)], s), rmin=1.0, rmax=1.6, salt=s)
-                 for s in (-1, 1)]
-        m = clip(union(crown(F), top, *bangs, *sides, *cheek))
-        part(front, m, HAIR, HAIR_LINE, radius=2.0, bias=-0.05)
-        spirals(front, m, (5.0 + fs, 2.4, 35.0 + fs, 14.6), 16, salt=4, hy=hy)
-        spirals(front, both(m, rect([0, 15 + hy, 40, 40])), (3.6 + t * 0.6, 15.0, 36.4 + t * 0.6, 33.0), 14, salt=5, hy=hy)
-        halo(front, m, 3.6 + hy, F.fs)
+        base = clip(scalloped(F, t * 0.6, BOB, rmin=0.9, rmax=1.4, salt=1))
+        part(back, base, depth, HAIR_LINE, radius=2.6)
+        paint_clumps(back, [c_ for c_ in bob_clumps(F, t * 0.6, True)[:10]], clip, bias=-0.12)   # the sides, behind the shoulders
+        top = clip(both(base, rect([0, 0, 40, 13.0 + hy])))
+        shade(front, top, depth, radius=2.0)
+        paint_clumps(front, bob_clumps(F, fs * 0.6, True)[10:], clip, bias=0.04)
+        halo(front, clip(union(top, *[c_[0] for c_ in bob_clumps(F, fs * 0.6, True)[10:]])), 3.6 + hy, F.fs)
         brows(front, F)
     else:
-        outline = BOB[:10] + [(28.6, 35.6), (24.0, 36.2), (20.0, 36.4), (16.0, 36.2), (11.4, 35.6)] + BOB[13:]   # from behind: no face, the back full
-        m = clip(scalloped(F, t, outline, salt=6))
-        part(front, m, HAIR, HAIR_LINE, radius=2.6, bias=-0.08)
-        spirals(front, m, (4.0 + t, 2.4, 36.0 + t, 35.0), 40, salt=7, hy=hy)
-        halo(front, m, 3.6 + hy, 0)
+        outline = BOB[:10] + [(28.6, 35.6), (24.0, 36.2), (20.0, 36.4), (16.0, 36.2), (11.4, 35.6)] + BOB[13:]
+        base = clip(scalloped(F, t, outline, rmin=0.9, rmax=1.4, salt=6))
+        part(front, base, depth, HAIR_LINE, radius=2.6)
+        paint_clumps(front, bob_clumps(F, t, False), clip)
+        halo(front, base, 3.6 + hy, 0)
     return front, back
 
 
@@ -1412,16 +1465,31 @@ def style_curly_long(F):
                                             (16.0, 22, 26, -1.0, 5.4, 2.0), (24.0, 22, 26, 1.0, 5.4, 0.4))]
         part(back, clip(back_mass(F, 34)), HAIR, HAIR_LINE, radius=2.4, bias=-0.15)
         paint_waves(back, behind, clip, bias=-0.12)
-        top = soft_crown(F, fs * 0.6, lumps=((10.4, 4.2, 22.0, 12.6), (20.0, 3.4, 30.0, 12.6)))
-        part(front, clip(top), HAIR, HAIR_LINE, radius=1.8, bias=0.05)                 # the base the waves lie over
-        waves = [s_path(F, [(24.2, 3.4), (16.4, 4.4), (10.6, 9.2), (8.6, 16.0), (8.0, 28.0), (5.6, 44.0)], 6.6, phase=0.4, curl=-1, dx=fs * 0.4),
-                 s_path(F, [(25.8, 3.6), (29.8, 7.0), (31.4, 13.0), (31.8, 24.0), (33.6, 40.0)], 6.0, phase=1.6, curl=1, dx=t * 0.6),
-                 s_path(F, [(23.2, 5.0), (17.0, 6.8), (12.8, 11.8), (11.4, 20.0), (11.8, 31.0), (10.2, 42.0)], 5.2, phase=2.4, curl=1, dx=fs * 0.4),
-                 s_path(F, [(25.4, 5.8), (28.0, 10.0), (28.8, 18.0), (28.6, 29.0), (29.6, 37.0)], 4.2, phase=0.8, curl=-1, dx=t * 0.6),
-                 s_path(F, [(22.4, 6.6), (18.4, 8.6), (15.4, 12.6), (14.2, 16.8)], 3.4, amp=1.2, phase=0.0, curl=1, dx=fs * 0.4)]
+        # From a deep side parting, big locks rise, fold over and sweep down across the brow to the far
+        # temple (as the braided ponytail's do), leaving the forehead bare on the parting's side,
+        # where the hair is combed back over the ear; the waves fall from under the sweep and the ear.
+        waves = [s_path(F, [(11.4, 14.0), (9.4, 20.0), (8.6, 30.0), (6.4, 44.0)], 6.4, phase=0.4, curl=-1, dx=fs * 0.3),
+                 s_path(F, [(13.6, 17.0), (12.0, 24.0), (12.2, 33.0), (10.6, 42.0)], 4.8, phase=2.4, curl=1, dx=fs * 0.3),
+                 s_path(F, [(29.6, 12.0), (31.2, 18.0), (31.8, 27.0), (33.6, 41.0)], 6.0, phase=1.6, curl=1, dx=t * 0.6),
+                 s_path(F, [(28.0, 16.0), (28.8, 23.0), (28.6, 31.0), (29.6, 38.0)], 4.0, phase=0.8, curl=-1, dx=t * 0.6)]
         paint_waves(front, waves, clip, bias=0.04)
-        curve(front, [(25.0 + fs, 3.0 + hy), (24.8 + fs, 6.0 + hy)], HAIR_LINE, 1, clip(top))
-        halo(front, clip(union(top, *[l[0] for l in waves])), 4.0 + hy, F.fs)
+        sweep_def = [([(24.4, 3.2), (19.2, 2.0), (13.2, 4.6), (9.6, 10.4), (8.4, 16.0), (9.6, 19.2)], 6.4),
+                     ([(24.0, 5.0), (18.4, 3.6), (12.4, 7.4), (9.8, 13.2), (9.4, 18.6), (7.6, 21.0)], 5.8),
+                     ([(23.6, 6.8), (18.6, 6.2), (13.4, 9.4), (11.2, 14.4), (11.4, 18.2), (13.0, 19.6)], 5.0),
+                     ([(23.2, 8.6), (19.2, 8.6), (15.2, 11.6), (13.6, 15.8), (14.4, 18.6)], 4.2)]
+        sweep = [hwisp(F, pts, w, fs, power=2.2) for pts, w in sweep_def]
+        back_comb = [hwisp(F, [(25.4, 3.6), (28.4, 6.2), (30.2, 10.6), (30.6, 15.0)], 4.6, fs, power=1.6),
+                     hwisp(F, [(25.0, 5.6), (27.6, 8.4), (28.8, 12.6), (29.0, 16.4)], 3.2, fs)]
+        brow_ = poly([(22.0 + fs, 10.6 + hy), (24.0 + fs, 8.0 + hy), (27.0 + fs, 9.6 + hy), (28.6 + fs, 13.6 + hy), (29.0 + fs, 20 + hy), (21.0 + fs, 20 + hy)])
+        fm = clip(union(minus(crown(F), brow_), *[l[0] for l in sweep + back_comb]))
+        part(front, fm, HAIR, HAIR_LINE, radius=1.8, bias=0.06)
+        for k, (_, pts, w) in enumerate(sweep):                         # a lit crest where each lock lifts, a shadow where it folds
+            curve(front, [(x - 0.2, y + 0.5) for x, y in (lerp(pts[0], pts[1], 0.3), pts[1], lerp(pts[1], pts[2], 0.5))], HAIR[4], 3 if k < 2 else 2, fm)
+            curve(front, [(x + 1.0, y + 1.0) for x, y in (lerp(pts[1], pts[2], 0.5), pts[2], lerp(pts[2], pts[3], 0.55))], HAIR[0] if k < 2 else HAIR[1], 2, fm)
+        hstrands(front, sweep + back_comb, fm, start=0.45)
+        spiral(front, 8.8 + fs, 19.2 + hy, 1.4, 0.0, fm, width=1)
+        curve(front, [(24.8 + fs, 2.8 + hy), (24.6 + fs, 6.0 + hy)], HAIR_LINE, 1, fm)
+        halo(front, fm, 3.6 + hy, F.fs)
         brows(front, F)
     else:
         m = clip(union(soft_crown(F, t, lumps=((8.6, 3.6, 22.6, 13.4), (19.4, 2.8, 31.4, 13.4))), ellipse([7.6 + t, 7 + hy, 32.4 + t, 26 + hy])))

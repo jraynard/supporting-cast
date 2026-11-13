@@ -967,3 +967,5 @@ dragon and the festival.
 - The curly styles redrawn after reference art: a wide, airy bob edged in loops with spiral line-work,
   and long hair in big S-waves wrapping the head and fanning out, each lock its own. Braids lying on
   the head are shaded into the hair with no outline. The turn test keeps the jaw over the neck.
+- The short curls are built of curl clumps (defined springy locks, not a lumpy mass), and the long
+  curls sweep across the brow from a deep side parting, the forehead bare on the parting's side.

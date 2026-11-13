@@ -319,9 +319,10 @@ draws every style (or those named) in four views beside its game size, then ever
 roots with locks gathered into them; braids lying on the head (`dutch_plait(..., soft=True)`) are shaded
 into it with no outline, only a mid-tone where each strand tucks under the next, and the braided
 ponytail's is fed by locks off the crown. The curly styles follow `art/reference/curly-hair.webp` (a
-wide, airy bob, its edge all small loops, loose spiral line-work inside: `scalloped`, `spirals`) and
-`curly-hair-long.webp` (big S-waves from a side parting, wrapping the head and fanning out, each lock
-painted on its own back to front with its sheen and spiral tip: `s_path`, `paint_waves`). Big hair is
+wide, airy bob built of curl clumps, each a short springy lock with its sheen and spiral tip, painted
+back to front over a dark depth: `clump`, `bob_clumps`, `paint_clumps`) and `curly-hair-long.webp` (big
+S-waves wrapping the head and fanning out, each lock painted on its own with its sheen and spiral tip:
+`s_path`, `paint_waves`; in front, the braided ponytail's sweep across the brow from a deep side parting). Big hair is
 kept within a dome over the head (`under_volume`) rather than the skull's outline.
 
 **A true three-quarter turn (a test, not in the sheets yet):** `--turn-test [styles]` draws each
