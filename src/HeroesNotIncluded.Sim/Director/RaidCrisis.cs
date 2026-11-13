@@ -25,8 +25,8 @@ public sealed class RaidCrisis : ICrisis
         Start(sim, rand, Raids.Send(sim, rand, PointsFor(sim, difficulty, strength), difficulty?.MaxRaiders ?? 5), strength);
 
     /// <summary>A raid warned of (<see cref="Plan"/>): the band and the road as the town was told.</summary>
-    internal static RaidCrisis? Begin(Simulation sim, SimRandom rand, PlannedRaid plan) =>
-        Start(sim, rand, Raids.SendPlanned(sim, rand, plan.Kinds, plan.Side), plan.Strength);
+    internal static RaidCrisis? Begin(Simulation sim, SimRandom rand, PlannedRaid plan, bool byRoad = false) =>
+        Start(sim, rand, Raids.SendPlanned(sim, rand, plan.Kinds, plan.Side, byRoad), plan.Strength);
 
     /// <summary>Size a raid and pick its road now, to be sent later as it was told.</summary>
     internal static PlannedRaid Plan(Simulation sim, SimRandom rand, DifficultyDef? difficulty, float strength)

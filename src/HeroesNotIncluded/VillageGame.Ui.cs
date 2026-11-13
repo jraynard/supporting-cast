@@ -51,6 +51,8 @@ public sealed partial class VillageGame
         DrawToasts();
         // Bottom left, before the centre so the centre keeps clear of it.
         DrawInspector();
+        // Bottom right: which way north is.
+        DrawCompass();
         // Bottom centre, stacking upward: the build tools, the hotbar, and the work in hand.
         DrawToolbar();
         DrawHotbar();

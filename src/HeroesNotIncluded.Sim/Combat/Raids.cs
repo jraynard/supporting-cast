@@ -124,11 +124,11 @@ public static class Raids
     /// A raid warned of: these raiders, by the road on <paramref name="side"/> (or the next side
     /// round if that's no way in now), for whoever is nearest the middle of the village.
     /// </summary>
-    public static List<Entity> SendPlanned(Simulation sim, SimRandom rand, IReadOnlyList<RaiderKindDef> kinds, int side)
+    public static List<Entity> SendPlanned(Simulation sim, SimRandom rand, IReadOnlyList<RaiderKindDef> kinds, int side, bool byRoad = false)
     {
         if (kinds.Count == 0 || VillageTarget(sim) is not { } target)
             return [];
-        int3? entry = null;
+        var entry = byRoad ? RoadEntry(sim, side, target) : null;
         for (var i = 0; i < 4 && entry == null; i++)
             entry = EdgeEntry(sim, (side + i) % 4, target);
         if (entry is not { } at)
@@ -162,8 +162,8 @@ public static class Raids
     {
         0 => "west",
         1 => "east",
-        2 => "south",
-        _ => "north",
+        2 => "north",
+        _ => "south",
     };
 
     public static List<int3> GatherSpots(Simulation sim, int3 entry, int3 target, int count)
@@ -179,12 +179,42 @@ public static class Raids
         return spots;
     }
 
-    /// <summary>Which way a cell on the map edge lies: +x is east, +y north.</summary>
+    /// <summary>Which way a cell on the map edge lies: +x is east, -y north (as the map's rows run, <see cref="Defs.MapDef"/>).</summary>
     public static string Direction(Map map, int3 edge) =>
-        edge.X == 0 ? "west" : edge.X == map.Width - 1 ? "east" : edge.Y == 0 ? "south" : "north";
+        edge.X == 0 ? "west" : edge.X == map.Width - 1 ? "east" : edge.Y == 0 ? "north" : "south";
 
     /// <summary>
-    /// A standable cell on one side of the map (0 west, 1 east, 2 south, 3 north), level with and
+    /// Where a road leaves the map on one side (as <see cref="EdgeEntry"/> numbers them): the road
+    /// cell on that edge nearest across from <paramref name="toward"/> that can reach it. Null if no
+    /// road runs off that side.
+    /// </summary>
+    public static int3? RoadEntry(Simulation sim, int side, int3 toward)
+    {
+        var map = sim.Map;
+        var length = side < 2 ? map.Height : map.Width;
+        var along = side < 2 ? toward.Y : toward.X;
+        int3? best = null;
+        var bestOff = int.MaxValue;
+        for (var a = 0; a < length; a++)
+        {
+            var (x, y) = side switch
+            {
+                0 => (0, a),
+                1 => (map.Width - 1, a),
+                2 => (a, 0),
+                _ => (a, map.Height - 1),
+            };
+            if (Math.Abs(a - along) >= bestOff || map.NearestStandable(x, y, toward.Z, map.Depth) is not { } c
+                || map.GroundUnder(map.Idx(c)) is not { Name: "Road" } || !map.Passable(c) || !sim.Regions.CanReach(c, toward, PathEnd.Touch))
+                continue;
+            best = c;
+            bestOff = Math.Abs(a - along);
+        }
+        return best;
+    }
+
+    /// <summary>
+    /// A standable cell on one side of the map (0 west, 1 east, 2 north, 3 south), level with and
     /// across from <paramref name="toward"/>, sliding along the edge until one can reach it.
     /// </summary>
     public static int3? EdgeEntry(Simulation sim, int side, int3 toward)

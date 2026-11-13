@@ -236,7 +236,9 @@ else
         HeroName = ParseString(args, "--name"),
         HeroPreset = ParseString(args, "--preset"),
         HeroFolk = Enum.TryParse<HeroesNotIncluded.Sim.Components.Folk>(ParseString(args, "--folk"), true, out var folk) ? folk : null,
-        HeroTrade = ParseString(args, "--trade"),
+        // --raid-test: the raid drill (RaidDrill), as the smith unless --trade says otherwise.
+        HeroTrade = ParseString(args, "--trade") ?? (args.Contains("--raid-test") ? "Blacksmith" : null),
+        RaidTest = args.Contains("--raid-test"),
         Bots = args.Contains("--bots") ? ParseInt(args, "--bots") : 0,
     });
 
@@ -267,7 +269,7 @@ SavedCharacter? PickedCharacter()
 
 static bool LaunchesDirectly(string[] args) =>
     args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--freeform" or "--show-roofs" or "--hide-roofs"
-        or "--ignite-forest" or "--yaw" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
+        or "--ignite-forest" or "--raid-test" or "--yaw" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
 
 // --load and --check-save take a path, or the name of a slot in the saves directory ("quicksave").
 static string ResolveSave(string pathOrSlot)

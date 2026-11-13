@@ -216,6 +216,19 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
         return crisis;
     }
 
+    /// <summary>
+    /// A raid now, sized as a beat's would be, by the road off one side of the map (0 west, 1 east,
+    /// 2 north, 3 south; the map edge there if no road leaves it). The raid drill and tests.
+    /// </summary>
+    public RaidCrisis? SendRaid(Simulation sim, int side, float strength = 1f)
+    {
+        var plan = RaidCrisis.Plan(sim, _rand, Difficulty, strength) with { Side = Math.Clamp(side, 0, 3) };
+        var raid = RaidCrisis.Begin(sim, _rand, plan, byRoad: true);
+        if (raid != null)
+            _active.Add(raid);
+        return raid;
+    }
+
     public void Save(SaveWriter w, Simulation sim)
     {
         var (a, b, c, d) = _rand.State;

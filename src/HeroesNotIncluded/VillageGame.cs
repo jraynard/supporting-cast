@@ -187,6 +187,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>Debug: set the tree cluster east of the landing site alight at the start.</summary>
     public bool IgniteForest { get; init; }
 
+    /// <summary>Debug (<c>--raid-test</c>): arm your character and the muster rack, and bandits come by the north road at once (<see cref="RaidDrill"/>).</summary>
+    public bool RaidTest { get; init; }
+
     /// <summary>Debug/screenshots (<c>--furniture-demo</c>): wide furniture and roofs beside the landing (<see cref="FurnitureShowcase"/>).</summary>
     public bool FurnitureDemo { get; init; }
 
@@ -282,6 +285,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             _sim.Round.OpenLobby();
             if (HostCoop == null)
                 center = StartSoloRound(center);
+            if (RaidTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } me)
+                RaidDrill.Stage(_sim, me);
         }
         var focus = center;
         if (IgniteForest)

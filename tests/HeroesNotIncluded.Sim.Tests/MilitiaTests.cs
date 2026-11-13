@@ -211,4 +211,31 @@ public class MilitiaTests
         sim.TickMany(SimClock.TicksPerHour * 6);
         Assert.True(w.IsAlive(wood) && w.Has<Stored>(wood) && w.Get<Stack>(wood).Count == count, "still in the chest");
     }
+
+    [Fact]
+    public void TheRaidDrillArmsYouStocksTheRackAndSendsBanditsDownTheNorthRoad()
+    {
+        var sim = Round();
+        var me = Me(sim);
+        var raid = Assert.IsType<RaidCrisis>(RaidDrill.Stage(sim, me));
+        var w = sim.World;
+
+        Assert.Equal(RaidDrill.Sword, w.Get<Thing>(w.Get<Equipment>(me).Weapon).Def.Name);
+        var racked = sim.StoredIn(Rack(sim)).Where(e => w.Get<Thing>(e).Def.Name == RaidDrill.Spear).ToList();
+        Assert.Equal(RaidDrill.Spears, racked.Count);
+        Assert.All(racked, e => Assert.True(w.Has<TownArms>(e)));
+
+        Assert.Contains(raid, sim.Director.Active);
+        Assert.NotEmpty(raid.Raiders);
+        Assert.True(sim.Militia.Mustering);
+        Assert.Contains(sim.Messages.Messages, m => m.Text == "The bell rings out: raiders on the north road!");
+        // They come in on the road itself, where it leaves the map's north edge.
+        var at = w.Get<Position>(raid.Raiders[0]).Cell;
+        Assert.True(at.Y <= 8, $"raiders gathered at {at}, not by the north edge");
+        Assert.Contains(raid.Raiders, e => sim.Map.GroundUnder(sim.Map.Idx(w.Get<Position>(e).Cell)) is { Name: "Road" });
+
+        // The town arms itself from the rack.
+        sim.TickMany(SimClock.TicksPerHour / 2);
+        Assert.Contains(sim.Creatures(), e => e != me && Armed(sim, e) && w.Has<TownArms>(w.Get<Equipment>(e).Weapon));
+    }
 }
