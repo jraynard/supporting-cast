@@ -297,7 +297,7 @@ public sealed class SettingsWindow(GameHost host)
     private string? _logsError;
 
     /// <summary>Open a folder in the file manager; returns a message (with the path) if that isn't possible.</summary>
-    private static string? OpenFolder(string path)
+    internal static string? OpenFolder(string path)
     {
         try
         {

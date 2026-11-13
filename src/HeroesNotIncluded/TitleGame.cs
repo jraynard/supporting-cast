@@ -60,13 +60,15 @@ public sealed class TitleGame : Game
     /// <summary>Why the last load failed, shown under the menu.</summary>
     private string? _error;
 
-    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Coop, HostNew, HostSave, Join, BackToCreator }
+    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Coop, HostNew, HostSave, Join, BackToCreator, Report }
 
     /// <summary>Adventure's character creator, shown instead of the menu while open.</summary>
     private CharacterCreator _creator = null!;
     private bool _creating;
 
-
+    /// <summary>The Report a Bug panel (where the logs are, where to send them), shown instead of the menu while open.</summary>
+    private bool _reporting;
+    private string? _logsError;
 
     /// <summary>The character creator is for a village to host (no prologue; the difficulty is asked last, in <see cref="HostAs"/>).</summary>
     private bool _hostingNew;
@@ -103,6 +105,7 @@ public sealed class TitleGame : Game
             new("Multiplayer", "Play together: host a village for friends, or join theirs (local network or address).", null, MenuAction.Coop),
             new("Load Game", newest == null ? "No saves yet." : "Pick a saved village.", null, newest == null ? MenuAction.Start : MenuAction.LoadGame),
             new("Options", "Display, interface and gameplay settings.", null, MenuAction.Settings),
+            new("Report a Bug", "Where to tell us, and the files that help.", null, MenuAction.Report),
             new("Credits", "Coming soon.", null),
             new("Exit", "Close the game.", null, MenuAction.Exit),
         ];
@@ -298,6 +301,8 @@ public sealed class TitleGame : Game
                     break;
             }
         }
+        else if (_reporting)
+            DrawReport(dim);
         else if (_pickingHost)
         {
             ImGui.TextColored(dim, "Who will you be?"u8);
@@ -371,6 +376,29 @@ public sealed class TitleGame : Game
         }
     }
 
+    /// <summary>
+    /// For playtesters: where reports go, the version line to quote, and the logs folder (crash
+    /// reports and desync dumps land there too).
+    /// </summary>
+    private void DrawReport(float4 dim)
+    {
+        ImGui.TextColored(dim, "Report a bug"u8);
+        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + Gui.S(420));
+        if (BuildInfo.Community.Length > 0)
+            ImGuiText.Wrapped($"Post it in #bug-reports on our Discord: {BuildInfo.Community}");
+        else
+            ImGuiText.Wrapped("Tell whoever gave you the game.");
+        ImGuiText.Wrapped($"Say what you were doing, and include this line: {BuildInfo.Label}.");
+        ImGuiText.Wrapped("Attach the newest log file, and any crash or desync files beside it:");
+        ImGui.TextColored(dim, ImGuiText.Escape(_logsError ?? BuildInfo.LogDirectory));
+        ImGui.PopTextWrapPos();
+        float2? size = new float2(Gui.S(200), 0);
+        if (ImGui.Button("Open logs folder"u8, in size))
+            _logsError = SettingsWindow.OpenFolder(BuildInfo.LogDirectory);
+        if (ImGui.Button("Back"u8, in size))
+            _reporting = false;
+    }
+
     private void Press(MenuItem item)
     {
         switch (item.Action)
@@ -409,6 +437,9 @@ public sealed class TitleGame : Game
                 break;
             case MenuAction.Back:
                 (_submenu, _submenuTitle) = (null, null);
+                break;
+            case MenuAction.Report:
+                (_reporting, _logsError) = (true, null);
                 break;
             case MenuAction.BackToCreator:
                 (_submenu, _submenuTitle) = (null, null);
