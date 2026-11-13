@@ -36,7 +36,7 @@ cat > "$entry" <<EOF
 [Desktop Entry]
 Type=Application
 Name=Heroes Not Included
-Comment=A village of dragons and humans
+Comment=Run the village a party of heroes walks past
 Exec=$exec_line
 Path=$workdir
 Icon=$id

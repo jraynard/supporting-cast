@@ -535,10 +535,21 @@ Known leftovers:
 ## Next
 
 ### PLAYTEST PREP
-- add icon for the game executable
-- publish builds in a way we can easily distribute for playtesting (maybe use discord or something)
+- ~~add icon for the game executable~~ Done: a hammer crossed with a tankard over a shield
+  (`tools/gen_icon.py`), for the exe, window, Mac app, Linux desktop entry, and
+  `packaging/icon-512.png` for Discord and itch.io.
+- Publishing: tagging `v<Version>` runs `.github/workflows/playtest-release.yml`. It tests,
+  packages, pushes the three platforms to a restricted itch.io page through butler, and
+  announces the build in Discord's #builds. Pushes to main only test and package.
+  - `docs/alpha/` is restored: README-ALPHA, the testers' CHANGELOG, and PUBLISHING (the
+    itch/GitHub/Discord setup and the server's layout).
+  - The title screen has Report a Bug: where reports go, and the logs folder.
+  - Version `0.1.0-playtest.1`.
+  - **Still to do (you):** the itch project and API key, the GitHub secrets, the Discord webhook
+    and invite (`BuildInfo.Community`), then push the first tag.
 - UX / art polish pass (not a full art pass but just clean things up as needed to make sure its legible for people that are not hardcore gamers) 
 - reduce reliance on text where possible for doing things so kids can play more easily
+  - Both audited in `docs/PLAYTEST-AUDIT.md`: pick the fixes to do.
 
 ### M3: A whole season
 - `Director`, Renown and Dread, crises including the late-round dragon, the festival, the

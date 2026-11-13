@@ -15,6 +15,12 @@ public static class BuildInfo
     private static readonly string Informational =
         typeof(BuildInfo).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "dev";
 
+    /// <summary>
+    /// The playtest Discord's invite, shown as text on the title screen's Report a Bug panel so
+    /// testers know where reports go. Empty: the panel doesn't mention it.
+    /// </summary>
+    public const string Community = "";
+
     /// <summary>"0.1.0-alpha.1".</summary>
     public static string Version => Informational.Split('+')[0];
 
