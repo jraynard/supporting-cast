@@ -75,6 +75,7 @@
       "name": "StoneBridge", "label": "stone bridge", "category": "Building", "sprite": "buildings/bridge_stone",
       "description": "Dressed stone over the water: a lane carried across a river. Must be within four cells of a bank.",
       "maxHp": 600, "flammability": 0,
+      "bridge": { "parapet": "buildings/bridge_parapet", "coping": "buildings/bridge_coping", "pier": "buildings/bridge_pier", "height": 0.45, "pierEvery": 3 },
       "building": { "isFloor": true, "outdoor": true, "supportSpan": 4, "insulation": 0.9, "work": 300, "cost": [ { "def": "Stone", "count": 6 } ] }
     }
   ],

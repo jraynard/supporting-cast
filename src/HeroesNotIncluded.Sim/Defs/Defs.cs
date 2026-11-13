@@ -609,6 +609,27 @@ public sealed class ModelBox
     public int MinCount { get; set; }
 }
 
+/// <summary>
+/// How a bridge floor is dressed (<see cref="ThingDef.Bridge"/>): low walls along its open sides,
+/// piers down to the bed every few cells, and arched undersides between them. Kept as data so a
+/// timber footbridge could be dressed differently; the sim never reads it.
+/// </summary>
+public sealed class BridgeLook
+{
+    /// <summary>The parapet's face and the coping stones along its top.</summary>
+    public string Parapet { get; set; } = "";
+    public string Coping { get; set; } = "";
+
+    /// <summary>The piers and the arch rings between them.</summary>
+    public string Pier { get; set; } = "";
+
+    /// <summary>How tall the parapet stands above the deck, in levels.</summary>
+    public float Height { get; set; } = 0.45f;
+
+    /// <summary>A pier every so many cells along the span (counted from its first cell).</summary>
+    public int PierEvery { get; set; } = 2;
+}
+
 public sealed class ThingDef : Def
 {
     public ThingCategory Category { get; set; }
@@ -669,6 +690,13 @@ public sealed class ThingDef : Def
     /// presentation: the sim never reads it. See <see cref="ModelBox"/>.
     /// </summary>
     public List<ModelBox>? Model { get; set; }
+
+    /// <summary>
+    /// A floor that spans water (the stone bridge): the game dresses it with parapets, piers and
+    /// arches worked out from the run of it. Pure presentation, like <see cref="Model"/>.
+    /// </summary>
+    public BridgeLook? Bridge { get; set; }
+
     public float MaxHp { get; set; } = 100;
     public float Flammability { get; set; }
 

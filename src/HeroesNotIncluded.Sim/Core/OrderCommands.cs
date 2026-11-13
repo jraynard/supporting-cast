@@ -426,6 +426,16 @@ public sealed record DevRaidCommand(RaiderKindDef Kind, int Count, int3? At = nu
     }
 }
 
+/// <summary>Dev: bring the town's bridge down now, as a strong raid might (<see cref="Tinkering.Repairs.BreakBridge"/>).</summary>
+public sealed record DevBreakBridgeCommand : IDevCommand
+{
+    public void Apply(Simulation sim)
+    {
+        if (sim.Repairs.BreakBridge(sim, sim.Rand) == null)
+            sim.Messages.Add(MessageKind.Info, "There's no standing bridge to break.");
+    }
+}
+
 /// <summary>Debug: a wild event now (<see cref="WildEventKind"/>: a wolf pack, a migration).</summary>
 public sealed record DevWildEventCommand(WildEventKind Kind) : IDevCommand
 {

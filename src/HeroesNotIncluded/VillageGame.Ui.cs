@@ -1278,6 +1278,9 @@ public sealed partial class VillageGame
             // A fight on demand (co-op has no storyteller yet): raiders in off the nearest edge.
             if (ImGui.Button("Send raiders"u8, in _autoSize) && _sim.Defs.AllRaiderKinds.Count > 0)
                 Issue(new DevRaidCommand(_sim.Defs.AllRaiderKinds[0], 3));
+            ImGui.SameLine(0, -1);
+            if (ImGui.Button("Break the bridge"u8, in _autoSize))
+                Issue(new DevBreakBridgeCommand());
         }
 
         if (ImGui.CollapsingHeader("System timings (ms)"u8, ImGuiTreeNodeFlags.None))

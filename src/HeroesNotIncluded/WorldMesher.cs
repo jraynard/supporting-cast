@@ -302,6 +302,8 @@ public sealed class WorldMesher(TextureAtlas atlas)
                 // A preset building's foundation shows its kit's floor (planks over the plinth).
                 var floorSprite = BuildingKit.Of(sim, map.Floor[i]) is { Kit.Floor.Length: > 0 } floorKit ? floorKit.Kit.Floor : floor.Def.Sprite;
                 AddSlab(sim, x, y, z, S(_materials.Resolve(floorSprite, floor.Material).Sprite));
+                if (floor.Def.Bridge is { } bridge && !sim.World.Has<Construction>(map.Floor[i]))
+                    AddBridge(sim, x, y, z, floor.Def, bridge, floor.Material);
             }
             // The roof over the building you're in is left out, so you can see in.
             if (map.HasRoof[i] && !OfOpen(sim, map.Floor[i]))
@@ -575,6 +577,147 @@ public sealed class WorldMesher(TextureAtlas atlas)
             var template = new Quad { Flags = Quad.Level(z), Color = Rgba.White, Ao = b | b << 8 | b << 16 | b << 24 };
             _quads.Add(WorldScale.Tile(template, origin, u, SlabThickness, sprite.Uv, WorldScale.TilesPerLevel(sprite), 0));
         }
+    }
+
+    private readonly List<ModelBox> _bridgeTop = [];
+    private readonly List<ModelBox> _bridgeUnder = [];
+
+    /// <summary>
+    /// A bridge floor's dressing (<see cref="BridgeLook"/>), worked out from the run of the span
+    /// through this cell: a parapet along each side that's open to the drop, solid abutments at its
+    /// ends, a pier every <see cref="BridgeLook.PierEvery"/> cells down to the bed, and a stepped
+    /// vault between them. Cells lost to a breach (<c>Repairs</c>) still count as span, so the
+    /// arches keep their places; the stones beside the gap stop ragged, with rubble in the water.
+    /// </summary>
+    private void AddBridge(Simulation sim, int x, int y, int z, ThingDef def, BridgeLook look, MaterialDef? material)
+    {
+        var map = sim.Map;
+        bool Deck(int nx, int ny) =>
+            map.InBounds(nx, ny, z) && map.HasFloor[map.Idx(nx, ny, z)] && sim.World.Get<Thing>(map.Floor[map.Idx(nx, ny, z)]).Def == def;
+        bool Broken(int nx, int ny) => !Deck(nx, ny) && sim.Repairs.At(new int3(nx, ny, z)) is { } b && b.Def == def;
+        bool Span(int nx, int ny) => Deck(nx, ny) || Broken(nx, ny);
+        int Run(int dx, int dy)
+        {
+            var n = 0;
+            while (n < 32 && Span(x + dx * (n + 1), y + dy * (n + 1)))
+                n++;
+            return n;
+        }
+        // Levels of open air under the deck at a cell (0: it lies on the ground).
+        int Drop(int cx, int cy)
+        {
+            var below = z - 1;
+            while (below >= 0 && !map.IsSolid(map.Idx(cx, cy, below)))
+                below--;
+            return z - 1 - below;
+        }
+
+        int west = Run(-1, 0), east = Run(1, 0), north = Run(0, -1), south = Run(0, 1);
+        var alongX = west + east > north + south; // the long way is the way it carries the road
+        var at = alongX ? west : north;
+        var length = at + 1 + (alongX ? east : south);
+        // Cells along (u) and across (v) the span, from this one.
+        (int X, int Y) Cell(int du, int dv) => alongX ? (x + du, y + dv) : (x + dv, y + du);
+        var top = _bridgeTop;
+        var under = _bridgeUnder;
+        top.Clear();
+        under.Clear();
+        void Box(List<ModelBox> into, float u0, float u1, float v0, float v1, float z0, float z1, string sprite, string? cap = null) =>
+            into.Add(alongX
+                ? new ModelBox { Min = [u0, v0, z0], Max = [u1, v1, z1], Top = cap ?? sprite, Side = sprite }
+                : new ModelBox { Min = [v0, u0, z0], Max = [v1, u1, z1], Top = cap ?? sprite, Side = sprite });
+        var seed = (uint)(x * 73856093 ^ y * 19349663 ^ z * 83492791);
+        float Rand(int k) => ((seed + (uint)k * 2654435761u) >> 8 & 0xFFFF) / 65535f;
+
+        var h = look.Height;
+        const float Wall = 0.2f, Lip = 0.03f, CopeHeight = 0.07f;
+        var brokenBefore = Cell(-1, 0) is var (bx0, by0) && Broken(bx0, by0);
+        var brokenAfter = Cell(1, 0) is var (bx1, by1) && Broken(bx1, by1);
+
+        // Parapets, along each side with nothing of the span beyond it.
+        foreach (var (side, v0, v1) in new[] { (-1, 0f, Wall), (1, 1 - Wall, 1f) })
+        {
+            if (Cell(0, side) is var (sx, sy) && Span(sx, sy))
+                continue;
+            float cv0 = side < 0 ? v0 - Lip : v0, cv1 = side < 0 ? v1 : v1 + Lip;
+            // Beside a gap the wall's torn off short and uneven, without its coping.
+            float u0 = brokenBefore ? 0.3f + 0.3f * Rand(side + 3) : 0, u1 = brokenAfter ? 0.4f + 0.3f * Rand(side + 5) : 1;
+            Box(top, u0, u1, v0, v1, 0.01f, h, look.Parapet, look.Coping);
+            if (brokenBefore || brokenAfter)
+                Box(top, brokenBefore ? u0 - 0.2f : u1, brokenBefore ? u0 : u1 + 0.2f, v0, v1, 0.01f, h * (0.35f + 0.3f * Rand(side + 7)), look.Parapet, look.Coping);
+            else
+                Box(top, 0, 1, cv0, cv1, h, h + CopeHeight, look.Coping);
+        }
+
+        (Sprite, uint) Art(string name) => _materials.Resolve(name, material) is var (art, tint) ? (S(art), tint) : default;
+        var drop = Drop(x, y);
+        if (drop <= 0)
+        {
+            PropModel.Build(_quads, top, new int3(x, y, z), 0, Art, Rgba.White, Quad.Level(z));
+            return;
+        }
+        var bed = -drop; // the ground under it, in this cell's model units
+        bool Abutment(int i) => i == 0 || i == length - 1;
+        bool Pier(int i) => Abutment(i) || i % Math.Max(1, look.PierEvery) == 0;
+
+        if (Pier(at))
+        {
+            // Solid to the deck at the ends; a pier between, buttressed out past an open side.
+            float p0 = Abutment(at) ? 0 : 0.15f, p1 = Abutment(at) ? 1 : 0.85f;
+            Box(under, p0, p1, 0, 1, bed, -SlabThickness, look.Pier);
+            if (!Abutment(at))
+                foreach (var side in new[] { -1, 1 })
+                    if (Cell(0, side) is var (sx, sy) && !Span(sx, sy))
+                        Box(under, 0.25f, 0.75f, side < 0 ? -0.14f : 1, side < 0 ? 0 : 1.14f, bed, h + CopeHeight, look.Pier, look.Coping);
+        }
+        else
+        {
+            // The vault: an arch from the support before to the support after, drawn in steps.
+            var prev = at - 1;
+            while (prev > 0 && !Pier(prev))
+                prev--;
+            var next = at + 1;
+            while (next < length - 1 && !Pier(next))
+                next++;
+            float o0 = prev - at + (Abutment(prev) ? 1 : 0.85f), o1 = next - at + (Abutment(next) ? 0 : 0.15f);
+            // A round arch: it springs half its span below the crown, or just above the water if that's nearer.
+            var crown = SlabThickness + 0.12f;
+            var spring = Math.Clamp(crown + (o1 - o0) / 2, 0.3f, drop - 0.3f);
+            const int Steps = 8;
+            for (var k = 0; k < Steps; k++)
+            {
+                float a = k / (float)Steps, b = (k + 1) / (float)Steps;
+                var s = 2 * ((a + b) / 2 - o0) / (o1 - o0) - 1;
+                var depth = crown + (spring - crown) * (1 - MathF.Sqrt(Math.Max(0, 1 - s * s)));
+                if (brokenBefore && k < 2 || brokenAfter && k >= Steps - 2)
+                    depth *= 0.4f + 0.4f * Rand(k); // the vault's torn edge
+                Box(under, a, b, 0, 1, -depth, -SlabThickness, look.Pier);
+                // The arch ring: paler dressed voussoirs standing proud of each open face, tracing the curve.
+                foreach (var side in new[] { -1, 1 })
+                    if (Cell(0, side) is var (sx, sy) && !Span(sx, sy))
+                        Box(under, a, b, side < 0 ? -0.03f : 1, side < 0 ? 0 : 1.03f, -depth, -depth + 0.13f, look.Coping);
+            }
+        }
+
+        // Rubble from the fallen span, in the water under the gap beside this cell.
+        foreach (var (broken, dir) in new[] { (brokenBefore, -1), (brokenAfter, 1) })
+        {
+            if (!broken)
+                continue;
+            var (gx, gy) = Cell(dir, 0);
+            var gapDrop = Drop(gx, gy);
+            if (gapDrop <= 0)
+                continue;
+            for (var k = 0; k < 3; k++)
+            {
+                float cu = dir < 0 ? -0.8f + 0.6f * Rand(10 + k) : 1.2f + 0.6f * Rand(10 + k), cv = 0.15f + 0.7f * Rand(20 + k);
+                var size = 0.12f + 0.12f * Rand(30 + k);
+                Box(under, cu - size, cu + size, cv - size, cv + size, -gapDrop, -gapDrop + size * 1.4f, look.Pier);
+            }
+        }
+
+        PropModel.Build(_quads, top, new int3(x, y, z), 0, Art, Rgba.White, Quad.Level(z));
+        PropModel.Build(_quads, under, new int3(x, y, z), 0, Art, Rgba.White, Quad.Level(z - 1));
     }
 
     /// <summary>A wall, door or post stands in this cell.</summary>

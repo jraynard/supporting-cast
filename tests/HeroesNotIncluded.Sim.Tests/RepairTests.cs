@@ -28,12 +28,13 @@ public class RepairTests
         return (sim, Players.CharacterOf(sim, Ana));
     }
 
-    /// <summary>The bridge's two ends: its cells furthest apart along its longer side (Millbrook's runs east to west).</summary>
+    /// <summary>The bridge's two ends: its cells furthest apart along its longer side (Millbrook's runs north to south).</summary>
     private static (int3 A, int3 B) Ends(Simulation sim)
     {
         var w = sim.World;
         var span = w.Query<Thing>().Select(e => w.Get<Thing>(e)).Where(t => t.Def.Name == "StoneBridge").Select(t => t.Cell).ToList();
-        return (span.MinBy(c => c.X)!, span.MaxBy(c => c.X)!);
+        var alongX = span.Max(c => c.X) - span.Min(c => c.X) >= span.Max(c => c.Y) - span.Min(c => c.Y);
+        return alongX ? (span.MinBy(c => c.X)!, span.MaxBy(c => c.X)!) : (span.MinBy(c => c.Y)!, span.MaxBy(c => c.Y)!);
     }
 
     private static bool Across(Simulation sim, Entity who, int3 a, int3 b) => Navigation.CanReach(sim, who, a, b, PathEnd.OnTile);

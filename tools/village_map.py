@@ -176,7 +176,9 @@ def sq(sx, sy):
 # ---------------- The land ----------------
 
 # Water first: the river down the south-west under the bridge, and the lake to the north-east.
-river = [(-2, 61), sq(2, 23.5), sq(5, 25.5), sq(7.5, 28.5), sq(9.5, 31), sq(11, 34), (36, 96 + 2)]
+# Where the bridge crosses, the river runs a short straight reach east-west, so the bridge can span
+# it square on (straight parapets, piers in a row) instead of stepping across on the diagonal.
+river = [(-2, 61), sq(2, 23.5), (20, 63.5), (22.5, 68), (33.5, 68), (35, 73), sq(11, 34), (36, 96 + 2)]
 water(cells_path(river, 5))
 water(list(cells_disc(*sq(35.5, 4), 9, 18, wobble=0.18, seed=3)) + list(cells_path([sq(33, -6), sq(34, 0), sq(36.5, 6), (98, 34)], 8)))
 
@@ -186,7 +188,7 @@ paint(cells_disc(*sq(12, 9), 9, 6, wobble=0.15, seed=7), g="r")               # 
 paint(cells_path([sq(23.7, 12), sq(23.7, 4), sq(23.2, 0), (58, -2)], 4), g="r")    # the north road
 paint(cells_path([sq(7, 6.5), sq(12, 6), sq(16, 6.5)], 3), g="r")             # past the pig pen
 paint(cells_path([sq(22, 21), sq(27, 21), sq(31, 20.5), (97, 52)], 4), g="r")     # the east road
-SOUTH_WEST_ROAD = [sq(12, 24), sq(9, 26.5), sq(6.5, 28.5), sq(3.5, 31.5), sq(1.5, 35), (12, 97)]
+SOUTH_WEST_ROAD = [sq(12, 24), (31, 61), (27.5, 62.5), (27.5, 74), (22, 76), sq(3.5, 31.5), sq(1.5, 35), (12, 97)]   # straight over the bridge
 paint(cells_path(SOUTH_WEST_ROAD, 4), g="r")                                  # south-west, over the bridge
 paint(cells_path([sq(5, 9), sq(1, 9.5), (-2, 30)], 3), g="r")                # out west past the barn
 paint(cells_path([sq(22, 25), sq(25, 26), sq(27, 26)], 3), g="r")             # to the south-east houses
@@ -368,7 +370,7 @@ COLORS = {"g": (96, 150, 70), "d": (130, 100, 70), "r": (186, 160, 116), "t": (1
           "s": (210, 196, 140), "~": (90, 160, 190), "w": (50, 120, 170)}
 FEATURE_COLORS = {"O": (40, 90, 40), "P": (30, 70, 50), "B": (90, 130, 60), "b": (150, 40, 60), "x": (110, 140, 200),
                   "o": (140, 140, 140), "f": (90, 60, 30), "G": (200, 140, 60), "c": (120, 200, 90), "W": (60, 60, 200),
-                  "=": (170, 170, 170), "u": (120, 80, 40), "X": (160, 120, 70), "C": (110, 70, 40), "/": (200, 200, 120)}
+                  "=": (170, 170, 170), "N": (150, 110, 60), "u": (120, 80, 40), "X": (160, 120, 70), "C": (110, 70, 40), "/": (200, 200, 120)}
 
 
 def preview(path):

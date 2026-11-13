@@ -181,7 +181,7 @@ public sealed class WildlifeSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// Herds already grazing on a fresh map, out of sight of the landing site: a few random spots
     /// <paramref name="minDistance"/> or more from <paramref name="center"/> that can reach it.
     /// </summary>
-    public void PlaceStartingHerds(Simulation sim, int3 center, int minDistance = 30)
+    public void PlaceStartingHerds(Simulation sim, int3 center, int minDistance = 24)
     {
         var map = sim.Map;
         for (var i = 0; i < sim.Defs.Wildlife.StartingHerds; i++)
@@ -192,7 +192,8 @@ public sealed class WildlifeSystem(ulong seed) : ISimSystem, Saving.ISaveState
             {
                 var x = Rand.Range(2, map.Width - 2);
                 var y = Rand.Range(2, map.Height - 2);
-                if (Math.Abs(x - center.X) + Math.Abs(y - center.Y) < minDistance)
+                // Measured as sight is (Map.Distance), so a herd on the diagonal isn't nearer than it looks.
+                if (Map.Distance(new int3(x, y, center.Z), center) < minDistance)
                     continue;
                 if (map.NearestStandable(x, y, center.Z, map.Depth) is not { } at || !map.Passable(at) || !sim.Regions.CanReach(at, center, PathEnd.Touch))
                     continue;

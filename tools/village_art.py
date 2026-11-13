@@ -195,6 +195,57 @@ def bridge_stone():
     return img
 
 
+def bridge_parapet():
+    """The parapet's faces: big squared blocks in courses of two, a shade darker than the deck."""
+    base = (138, 134, 128)
+    img = noise(base, 7, 54)
+    d = ImageDraw.Draw(img)
+    mortar = tint(base, 0.62)
+    rnd = random.Random(55)
+    for row, y in enumerate(range(0, S, 11)):
+        d.line([(0, y), (S, y)], fill=mortar)
+        off = 0 if row % 2 == 0 else 10
+        for x in range(off, S + 20, 20):
+            d.line([(x, y), (x, y + 11)], fill=mortar)
+        for _ in range(3):  # a chipped arris here and there
+            cx, cy = rnd.randrange(S), y + rnd.randrange(1, 10)
+            img.putpixel((cx, min(S - 1, cy)), tint(base, 0.8))
+    d.line([(0, 0), (S, 0)], fill=tint(base, 1.12))
+    return img
+
+
+def bridge_coping():
+    """The coping along the parapet's top: long dressed slabs, pale and worn smooth."""
+    base = (168, 164, 156)
+    img = noise(base, 4, 56)
+    d = ImageDraw.Draw(img)
+    mortar = tint(base, 0.7)
+    for x in range(0, S, 16):
+        d.line([(x, 0), (x, S)], fill=mortar)
+    d.line([(0, S - 1), (S, S - 1)], fill=tint(base, 0.8))
+    return img
+
+
+def bridge_pier():
+    """Piers and arch rings: rough-faced blocks, darker and greened toward the water."""
+    base = (120, 118, 112)
+    img = noise(base, 9, 57)
+    d = ImageDraw.Draw(img)
+    mortar = tint(base, 0.55)
+    for row, y in enumerate(range(0, S, 8)):
+        d.line([(0, y), (S, y)], fill=mortar)
+        off = 0 if row % 2 == 0 else 6
+        for x in range(off, S + 12, 12):
+            d.line([(x, y), (x, y + 8)], fill=mortar)
+    rnd = random.Random(58)
+    for y in range(S // 2, S):  # damp and moss low down
+        for x in range(S):
+            if rnd.random() < (y - S / 2) / S:
+                r, g, b, a = img.getpixel((x, y))
+                img.putpixel((x, y), (clamp(r * 0.8), clamp(g * 0.92), clamp(b * 0.75), a))
+    return img
+
+
 # ---------------- Icons and billboards ----------------
 
 def well_icon():
@@ -358,6 +409,9 @@ def generate():
     save(cabbage_top(), "props/cabbage_top")
     save(bridge_stone(), "buildings/bridge_stone")
     materials(bridge_stone(), "buildings/bridge_stone", STONES)
+    for name, art in (("bridge_parapet", bridge_parapet), ("bridge_coping", bridge_coping), ("bridge_pier", bridge_pier)):
+        save(art(), f"buildings/{name}")
+        materials(art(), f"buildings/{name}", STONES)
     save(well_icon(), "buildings/well")
     save(fence_icon(), "buildings/fence")
     save(gate(), "buildings/gate")
