@@ -21,6 +21,7 @@ S = 24
 IRON, STEEL, GOLD, BRONZE, SILVER = METAL["iron"], METAL["steel"], METAL["gold"], METAL["bronze"], METAL["silver"]
 BONE = ramp((228, 216, 190), 5, main=2, dark=0.6, light=1.1)
 RED = ramp((196, 58, 48), 5, dark=0.5, light=1.3)
+QUEST_EMBER = ramp((252, 163, 66), 5, dark=0.5, light=1.25)  # the brand's ember: the quest marker
 HEART = ramp((214, 72, 96), 5, dark=0.5, light=1.3)
 GREEN = ramp((84, 140, 70), 5, dark=0.5, light=1.4)
 MOON = ramp((236, 222, 160), 4, main=2, dark=0.7, light=1.1)
@@ -486,6 +487,12 @@ def wound(img):
     part(img, lambda d: (d.polygon([(12, 2), (6, 13), (18, 13)], fill=255), d.ellipse([6, 8, 18, 21], fill=255)), RED, radius=1.2)
 
 
+def marker(img):
+    """The quest marker, "!": over a customer's head it means they have work for you (the brand's emblem)."""
+    part(img, poly([(9, 1), (15, 1), (14, 15), (10, 15)]), QUEST_EMBER, radius=1.0)
+    part(img, ell([9, 17, 15, 23]), QUEST_EMBER)
+
+
 def good(img):
     """A tick, carved."""
     part(img, poly([(3, 12), (7, 9), (10, 13), (19, 3), (22, 6), (10, 20)]), GREEN, radius=1.0)
@@ -529,7 +536,7 @@ WORK = (("anvil", work_anvil), ("hammer", work_hammer), ("billet", work_billet))
 
 CHROME = (("frame_panel", frame_panel), ("frame_title", frame_title), ("frame_inset", frame_inset),
           ("bar_trough", bar_trough), ("keycap", keycap))
-TOAST_ICONS = (("coin", coin), ("quest", quest), ("wound", wound), ("good", good))
+TOAST_ICONS = (("coin", coin), ("quest", quest), ("wound", wound), ("good", good), ("marker", marker))
 
 
 def icons():

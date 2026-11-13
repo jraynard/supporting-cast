@@ -248,17 +248,37 @@ public sealed partial class VillageGame
 
     private static string Capital(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
 
-    private static string ServiceIcon(Sim.Defs.ServiceKind kind) => kind switch
+    /// <summary>
+    /// What each waiting customer the player heard wants, for the bubbles over their heads. Only
+    /// through <see cref="PerceptionView.Orders"/>: an order nobody heard shows nothing. Work for
+    /// the player's trade (or taken on by them) gets the quest marker.
+    /// </summary>
+    private void UpdateOrderBubbles()
     {
-        Sim.Defs.ServiceKind.Meal or Sim.Defs.ServiceKind.Drink or Sim.Defs.ServiceKind.MixedDrink => "ui/icon_eat",
-        Sim.Defs.ServiceKind.Repair => "ui/icon_build",
-        Sim.Defs.ServiceKind.Healing => "ui/icon_doctor",
-        Sim.Defs.ServiceKind.Quest => "ui/icon_quest",
-        Sim.Defs.ServiceKind.Unlock => "ui/icon_treasure",
-        Sim.Defs.ServiceKind.WagonRepair => "ui/icon_build",
-        Sim.Defs.ServiceKind.Appraise => "ui/icon_treasure",
-        _ => "ui/icon_call",
-    };
+        var bubbles = _renderer.OrderBubbles;
+        bubbles.Clear();
+        if (!HasAvatar || _sim.Round.Phase != Sim.Round.RoundPhase.Playing)
+            return;
+        var trade = _sim.World.TryGet<Trade>(_avatar, out var t) ? t.Def : null;
+        var now = _sim.Clock.Tick;
+        foreach (var o in View.Orders())
+        {
+            if (o.Status != OrderStatus.Open || o.Mine || o.Poster.IsNull || (o.AssigneeName.Length > 0 && !o.MineToDo))
+                continue; // served, given up, someone else's to do, or the player's own ask
+            var forYou = o.MineToDo || (o.AssigneeName.Length == 0 && Serves(trade, o.Kind));
+            var left = TimeLeft(o.PostedTick, o.Deadline, now).Share;
+            // The newest want wins if one customer has two.
+            bubbles[o.Poster] = new WorldRenderer.OrderBubble(ServiceIcon(o.Kind), left, forYou);
+        }
+    }
+
+    /// <summary>Is this the trade's work: served at its workplace, and one of the services it sees to there?</summary>
+    private bool Serves(Sim.Defs.TradeDef? trade, Sim.Defs.ServiceKind kind) =>
+        trade?.WorkplaceDef is { } shop && _sim.Defs.Service(kind).AtDef == shop && trade.Serving(kind);
+
+    /// <summary>The service's own icon (services.json), or a speech mark for one without.</summary>
+    private string ServiceIcon(Sim.Defs.ServiceKind kind) =>
+        _sim.Defs.Service(kind).Icon is { Length: > 0 } icon ? icon : "ui/icon_call";
 
     /// <summary>Inspector buttons for someone in reach: hand over what you're holding, or pay them.</summary>
     private void DrawHandOver(Entity other)

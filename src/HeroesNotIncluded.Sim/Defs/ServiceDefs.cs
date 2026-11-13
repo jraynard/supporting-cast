@@ -49,6 +49,12 @@ public enum ServiceKind
 /// </summary>
 public sealed class ServiceDef : Def
 {
+    /// <summary>
+    /// The sprite that stands for it (an atlas name): drawn over a waiting customer's head, so who
+    /// wants what reads without the shop panel, and on the panel's order cards.
+    /// </summary>
+    public string Icon { get; set; } = "";
+
     /// <summary>The building it's served at (a building def name); empty for anywhere.</summary>
     public string At { get; set; } = "";
 

@@ -110,6 +110,18 @@ public sealed class WorldRenderer(TextureAtlas atlas)
     /// <summary>Art scale: a 32-pixel sprite spans one cell.</summary>
     public const float PixelsPerCell = 32f;
 
+    /// <summary>
+    /// A customer's want over their head: the service's icon in a bubble that reddens as their
+    /// patience runs out, and the quest marker when it's work for the viewer.
+    /// </summary>
+    public readonly record struct OrderBubble(string Icon, float TimeLeft, bool ForYou);
+
+    /// <summary>
+    /// Who's waiting for what, by customer. Filled each frame by the game from what the viewer
+    /// heard (<see cref="Sim.Perception.PerceptionView.Orders"/>), never from the orders themselves.
+    /// </summary>
+    public Dictionary<Entity, OrderBubble> OrderBubbles { get; } = [];
+
     private readonly Dictionary<string, Sprite> _spriteCache = [];
     private readonly WorldMesher _mesher = new(atlas);
     private readonly DoorAnimator _doors = new();
@@ -422,7 +434,9 @@ public sealed class WorldRenderer(TextureAtlas atlas)
                 else
                     Billboard(S(w.Get<Thing>(carried).Def.Sprite), p.Pos + cam.Right * 0.3f + WorldScale.Rise(size * 0.45f), 0.5f, 0.5f, Rgba.White, level);
             }
-            if (ShowBubbles && c.Faction == Faction.Village && !c.Dead && !w.Has<Carried>(e) && BubbleIcon(sim, e) is { } icon)
+            if (OrderBubbles.TryGetValue(e, out var wants) && !c.Dead && !c.Downed && !w.Has<Carried>(e))
+                DrawOrderBubble(wants, p.Pos + WorldScale.Rise(VisualHeight(sim, e) + 0.2f), level, time + e.Index);
+            else if (ShowBubbles && c.Faction == Faction.Village && !c.Dead && !w.Has<Carried>(e) && BubbleIcon(sim, e) is { } icon)
                 DrawBubble(icon, p.Pos + WorldScale.Rise(VisualHeight(sim, e) + 0.2f), level, time + e.Index);
             else if (w.Has<HuntOrder>(e) && !c.Dead)
                 DrawBubble("ui/icon_hunt", p.Pos + WorldScale.Rise(VisualHeight(sim, e) + 0.2f), level, time + e.Index);
@@ -1229,12 +1243,30 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         };
     }
 
-    private void DrawBubble(string icon, float3 at, uint level, float phase)
+    /// <summary>
+    /// An order's bubble: bone while there's time, warming to hearth red as it runs out, with the
+    /// ember quest marker above it when it's for the viewer (the one bright thing on screen).
+    /// </summary>
+    private void DrawOrderBubble(OrderBubble b, float3 at, uint level, float phase)
+    {
+        var urgency = Math.Clamp(1f - b.TimeLeft / 0.4f, 0f, 1f); // nothing till 40% of the wait is left
+        var tint = Ui.Theme.Text + (Ui.Theme.HearthRed - Ui.Theme.Text) * urgency;
+        const float size = 0.8f; // bigger than a villager's status bubble: this one asks something of you
+        DrawBubble(b.Icon, at, level, phase, Rgba.Pack(tint.X, tint.Y, tint.Z, 0.95f), size);
+        if (b.ForYou)
+        {
+            var bob = MathF.Sin(phase * 3f) * 0.04f;
+            // Over the bubble's top, and nudged towards the camera so the bubble never hides it.
+            Billboard(S("ui/icon_marker"), at + WorldScale.Rise(size * 30f / 24f + 0.12f + bob) - _cam.Forward * 0.06f,
+                0.42f, 0.42f, Rgba.White, level | Quad.Unlit);
+        }
+    }
+
+    private void DrawBubble(string icon, float3 at, uint level, float phase, uint? tint = null, float size = 0.56f)
     {
         at += WorldScale.Rise(MathF.Sin(phase * 2f) * 0.03f);
         var bubble = S("ui/bubble");
-        const float size = 0.56f;
-        Billboard(bubble, at, size, size * 30f / 24f, Rgba.Pack(1, 1, 1, 0.95f), level | Quad.Unlit);
+        Billboard(bubble, at, size, size * 30f / 24f, tint ?? Rgba.Pack(1, 1, 1, 0.95f), level | Quad.Unlit);
         // Nudged towards the camera so the icon wins the depth test against its bubble.
         Billboard(S(icon), at + WorldScale.Rise(size * 6f / 24f + size * 0.15f) - _cam.Forward * 0.03f, size * 0.7f, size * 0.7f, Rgba.White, level | Quad.Unlit);
     }

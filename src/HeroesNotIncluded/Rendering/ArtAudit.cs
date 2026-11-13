@@ -53,6 +53,8 @@ public static class ArtAudit
         }
         foreach (var r in defs.AllRunes)
             Need(r.Icon, $"rune {r.Name}");
+        foreach (var sv in defs.AllServices)
+            Need(sv.Icon, $"service {sv.Name} icon");
         foreach (var kit in defs.AllKits)
         {
             foreach (var box in kit.Span.Concat(kit.Arm).Concat(kit.Corner).Concat(kit.Post).Concat(kit.Door))

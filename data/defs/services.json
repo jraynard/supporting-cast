@@ -6,48 +6,49 @@
 // without. Keep worthMin at least the default price over the lowest spend, so a default sells.
 // patienceHours: game hours before they give up and think the less of the town.
 // "lines": what an adventurer says asking, {0} the price, {1} the thing in question.
+// "icon": the sprite for it, over a waiting customer's head and on the shop's order cards.
 {
   "services": [
-    { "name": "Meal", "label": "a meal", "at": "Inn", "defaultPrice": 3, "worthMin": 4, "worthMax": 7,
+    { "name": "Meal", "icon": "items/meal", "label": "a meal", "at": "Inn", "defaultPrice": 3, "worthMin": 4, "worthMax": 7,
       "tooDearLines": [ "{0} silver for a plate? I'll eat what's in my pack.", "{0} silver? For stew? Not likely." ], "patienceHours": 2,
       "lines": [ "Food! Something hot, and quickly. {0} silver.", "Is anyone cooking in this town? {0} silver for a plate.",
                  "We've ridden all day. Feed us. {0} silver." ] },
-    { "name": "Drink", "label": "a drink", "at": "Inn", "defaultPrice": 2, "worthMin": 3, "worthMax": 5,
+    { "name": "Drink", "icon": "items/ale", "label": "a drink", "at": "Inn", "defaultPrice": 2, "worthMin": 3, "worthMax": 5,
       "tooDearLines": [ "{0} silver for an ale? I'll go thirsty.", "{0} a mug? Robbery. I'll drink from the well." ], "patienceHours": 1.5,
       "lines": [ "A drink, barkeep! {0} silver.", "Something to wash the road down, {0} silver." ] },
-    { "name": "Repair", "label": "a repair", "at": "Smithy", "defaultPrice": 8, "worthMin": 9, "worthMax": 18,
+    { "name": "Repair", "icon": "items/hammer", "label": "a repair", "at": "Smithy", "defaultPrice": 8, "worthMin": 9, "worthMax": 18,
       "tooDearLines": [ "{0} silver to mend my {1}? I'll make do with it as it is.", "{0}? For that I'd buy a new {1}." ], "patienceHours": 5,
       "lines": [ "My {1} has seen better days. {0} silver to whoever can mend it.", "Smith! My {1} needs work. {0} silver." ] },
-    { "name": "Healing", "label": "healing", "at": "Shrine", "defaultPrice": 10, "worthMin": 12, "worthMax": 24,
+    { "name": "Healing", "icon": "items/bandage", "label": "healing", "at": "Shrine", "defaultPrice": 10, "worthMin": 12, "worthMax": 24,
       "tooDearLines": [ "{0} silver to see to a scrape? I'll bind it myself.", "{0} silver? It'll heal on its own." ], "patienceHours": 4,
       "lines": [ "I need a healer. Now. {0} silver.", "This {1} won't stop aching. {0} silver to anyone who can fix it." ] },
     // A named drink: they ask for it by name (Hospitality/Drinking) and it's mixed at the bar (Work/MixSession).
-    { "name": "MixedDrink", "label": "a mixed drink", "at": "Inn", "defaultPrice": 4, "worthMin": 6, "worthMax": 10,
+    { "name": "MixedDrink", "icon": "items/gilded_chalice", "label": "a mixed drink", "at": "Inn", "defaultPrice": 4, "worthMin": 6, "worthMax": 10,
       "tooDearLines": [ "{0} silver for a fancy drink? An ale will do.", "{0} a cup? I'll have it plain." ], "patienceHours": 1.5,
       "lines": [ "Something mixed, barkeep! {0} silver.", "I'll pay {0} silver for a proper mixed drink." ] },
-    { "name": "Quest", "label": "a quest", "at": "Inn", "defaultPrice": 12, "worthMin": 14, "worthMax": 28,
+    { "name": "Quest", "icon": "ui/icon_quest", "label": "a quest", "at": "Inn", "defaultPrice": 12, "worthMin": 14, "worthMax": 28,
       "tooDearLines": [ "{0} silver for a rumour? We'll find our own work.", "{0} for a lead? Keep it." ], "patienceHours": 8,
       "lines": [ "We're looking for work worthy of us. {0} silver to whoever points us at it.",
                  "Who in this town knows where the glory is? {0} silver for a good lead." ] },
-    { "name": "Unlock", "label": "a strongbox opened", "at": "TinkerShop", "defaultPrice": 10, "worthMin": 12, "worthMax": 22,
+    { "name": "Unlock", "icon": "items/strongbox", "label": "a strongbox opened", "at": "TinkerShop", "defaultPrice": 10, "worthMin": 12, "worthMax": 22,
       "tooDearLines": [ "{0} silver to open a box? We'll take a hammer to it ourselves.", "{0}? There's not that much in it." ], "patienceHours": 6,
       "lines": [ "We dragged this {1} all the way back. {0} silver to whoever opens it, and keeps their fingers.",
                  "Tinker! This {1} won't open and we don't trust it. {0} silver." ] },
     // Their wagon, mended where it's parked (Tinkering/Wagons): {1} what's wrong with it.
-    { "name": "WagonRepair", "label": "a wagon mended", "at": "TinkerShop", "defaultPrice": 10, "worthMin": 12, "worthMax": 24,
+    { "name": "WagonRepair", "icon": "ui/icon_build", "label": "a wagon mended", "at": "TinkerShop", "defaultPrice": 10, "worthMin": 12, "worthMax": 24,
       "tooDearLines": [ "{0} silver for a wagon? We'll lash it up ourselves.", "{0}? The wagon's not worth that." ], "patienceHours": 6,
       "lines": [ "Our wagon's come in with {1}. {0} silver to whoever can mend it.", "Tinker! The wagon's got {1}. {0} silver." ] },
     // A curio from a quest looked over (Tinkering/Curios): {1} the thing.
-    { "name": "Appraise", "label": "a curio appraised", "at": "TinkerShop", "defaultPrice": 6, "worthMin": 7, "worthMax": 14,
+    { "name": "Appraise", "icon": "items/clockwork_bird", "label": "a curio appraised", "at": "TinkerShop", "defaultPrice": 6, "worthMin": 7, "worthMax": 14,
       "tooDearLines": [ "{0} silver to be told what it's worth? I'll find out when I sell it.", "{0}? It'd better be worth a lot." ], "patienceHours": 5,
       "lines": [ "We found this {1} out there. {0} silver to anyone who can tell us what it's worth.", "Who knows old things? {0} silver to look this {1} over." ] },
-    { "name": "Lodging", "label": "a room", "at": "Inn", "defaultPrice": 4, "worthMin": 5, "worthMax": 9,
+    { "name": "Lodging", "icon": "ui/icon_sleep", "label": "a room", "at": "Inn", "defaultPrice": 4, "worthMin": 5, "worthMax": 9,
       "tooDearLines": [ "{0} silver a night? We'll sleep under a hedge.", "{0} for a room? The barn will do." ], "patienceHours": 4,
       "lines": [ "We'll want beds tonight. {0} silver for a room.", "Innkeeper! A room for the night, {0} silver.",
                  "Any rooms going? {0} silver, and clean sheets." ] },
     // Gear on show for sale: priced item by item, so no default and no "at". Worth is per tier of
     // the piece (an iron sword, tier 4, is worth 4x), times how well it's made.
-    { "name": "Goods", "label": "gear", "defaultPrice": 0, "worthMin": 6, "worthMax": 10,
+    { "name": "Goods", "icon": "ui/icon_coin", "label": "gear", "defaultPrice": 0, "worthMin": 6, "worthMax": 10,
       "tooDearLines": [ "{0} silver for that {1}? I'll keep what I've got.", "{0} for a {1}? I've seen better for less." ], "patienceHours": 3,
       "lines": [ "I'll take that {1}. {0} silver, you said.", "That {1} on show. {0} silver? Done." ] }
   ]

@@ -347,6 +347,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         _renderer.Predicted = _coop != null && HasAvatar ? _predictor : null;
         _renderer.PredictedEntity = _avatar;
         _renderer.Viewer = View.Omniscient ? null : View;
+        UpdateOrderBubbles();
         UpdateWork(dt);
         RunBots();
         FollowAvatar(); // after the ticks, so the camera shows this frame's position
