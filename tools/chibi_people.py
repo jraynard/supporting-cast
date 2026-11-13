@@ -640,7 +640,7 @@ def wave_lines(img, locks, m):
             curve(img, [(x - w * 0.02, y + 0.4) for x, y in body[1:]], HAIR[2], 1, m)
 
 
-def dutch_plait(img, spine, width, n, clip=None, tie=True):
+def dutch_plait(img, spine, width, n, clip=None, tie=True, line=HAIR_LINE):
     """A Dutch braid along a spine (design points): ``n`` rows of woven chevrons, each row a strand
     from either edge meeting the other in a V that points along the spine, the row nearer the
     start lying over the next one's top. Each strand is lined and shaded on its own over a
@@ -662,7 +662,7 @@ def dutch_plait(img, spine, width, n, clip=None, tie=True):
     core = strip(spine, [width * 0.55] + [width * 0.85] * (len(spine) - 2) + [width * 0.55], steps=8)
     if clip is not None:
         core = clip(core)
-    part(img, core, [HAIR[0], HAIR[1], HAIR[1], HAIR[2], HAIR[2]], HAIR_LINE, radius=0.6)
+    part(img, core, [HAIR[0], HAIR[1], HAIR[1], HAIR[2], HAIR[2]], line, radius=0.6)
     seg = total / K / n
     whole = core
     for r in reversed(range(n)):                                         # the far rows first: each nearer row lies over them
@@ -678,7 +678,7 @@ def dutch_plait(img, spine, width, n, clip=None, tie=True):
                          ellipse([a[0] - r_, a[1] - r_, a[0] + r_, a[1] + r_]), ellipse([b[0] - r_, b[1] - r_, b[0] + r_, b[1] + r_]))
             if clip is not None:
                 lobe = clip(lobe)
-            part(img, lobe, HAIR, HAIR_LINE, radius=0.6, bias=0.15, width=1)
+            part(img, lobe, HAIR, line, radius=0.6, bias=0.15, width=1)
             curve(img, [lerp(a, mid, 0.45), lerp(mid, b, 0.25)], HAIR[4], 1, minus(lobe, edge(lobe, 2)))   # the sheen across the strand
             whole = union(whole, lobe)
     if tie:
@@ -767,7 +767,7 @@ def braided_ponytail(F):
         # the braid from the brow back into the tie (it runs from the tie, so its chevrons point at
         # the brow), and the thin one hanging behind the ear
         spine = [(22.6, 5.0), (26.0, 7.0), (28.6, 11.6), (30.0, 17.4), (30.8, 23.0), (31.2, 28.6), (31.0, 34.6)]
-        dutch_plait(front, [(x + fs, y + hy) for x, y in spine], 3.8, 9, clip=clip)
+        dutch_plait(front, [(x + fs, y + hy) for x, y in spine], 3.8, 9, clip=clip, line=HAIR[0])
         brows(front, F)
     else:
         # from behind: the braids are out of sight round the front; the ponytail, tied off the
@@ -1104,31 +1104,35 @@ def style_pigtails(F):
         sides = [hwisp(F, mirror([(19.4, 5.6), (14.6, 8.4), (11.4, 13.4), (10.2, 18.2), (10.6, 21.0)], s, t * (0.6 if s > 0 else 0)), 5.0, power=1.4) for s in (-1, 1)]
         bangs = [hwisp(F, mirror([(19.0, 6.6), (17.4, 10.4), (16.6, 14.2), (17.0, 15.8)], s), 2.6, fs) for s in (-1, 1)]
         edge_ = [hwisp(F, mirror([(rx, 11.6), (rx - 0.4, 13.8), (rx - 0.8, 15.4)], s), 2.6, fs) for s in (-1, 1) for rx in (12.6, 15.0)]
-        m = clip(union(top, *[l[0] for l in sides + bangs + edge_]))
+        for s in (-1, 1):                                               # the braids first: the hair lies over their roots
+            dutch_plait(front, [(x, y + hy) for x, y in spines[s]], 3.6, 8, clip=clip)
+            tip = spines[s][-1]
+            tuft = hwisp(F, [(tip[0], tip[1] + 0.6), (tip[0] - s * 0.4, tip[1] + 2.6), (tip[0] + s * 0.2, tip[1] + 4.2)], 2.6)
+            part(front, clip(tuft[0]), HAIR, HAIR_LINE, radius=0.6, bias=0.05)
+        gather = [hwisp(F, mirror([(11.6, 15.6), (10.8, 20.0), (10.6, 23.6)], s, t * (0.6 if s > 0 else 0)), 3.4, power=2.2) for s in (-1, 1)]
+        m = clip(union(top, *[l[0] for l in sides + bangs + edge_ + gather]))
         part(front, m, HAIR, HAIR_LINE, radius=1.8, bias=0.05)
         curve(front, [(20 + fs, 4.0 + hy), (20 + fs, 7.6 + hy)], HAIR_LINE, 1, m)
         for s in (-1, 1):                                               # combed from the parting round behind the ears
             for k in range(3):
                 pts = mirror([(19.0 - k * 0.4, 5.0 + k * 2.0), (14.6 - k * 0.6, 8.6 + k * 1.8), (11.4 - k * 0.2, 14.0 + k * 1.4), (10.6, 19.0)], s, fs)
                 curve(front, [(x, y + hy) for x, y in pts], HAIR[1] if k != 1 else HAIR[4], 1, m)
-        hstrands(front, bangs + edge_, m, start=0.4)
-        for s in (-1, 1):
-            dutch_plait(front, [(x, y + hy) for x, y in spines[s]], 3.6, 8, clip=clip)
-            tip = spines[s][-1]
-            tuft = hwisp(F, [(tip[0], tip[1] + 0.6), (tip[0] - s * 0.4, tip[1] + 2.6), (tip[0] + s * 0.2, tip[1] + 4.2)], 2.6)
-            part(front, clip(tuft[0]), HAIR, HAIR_LINE, radius=0.6, bias=0.05)
+        hstrands(front, bangs + edge_ + gather, m, start=0.4)
         halo(front, m, 4.4 + hy, F.fs)
         brows(front, F)
     else:
-        m = clip(union(soft_crown(F, t, lumps=((10.8, 4.8, 19.8, 13.0), (20.2, 4.8, 29.2, 13.0))), ellipse([8.6 + t, 8 + hy, 31.4 + t, 24.0 + hy])))
+        for s in (-1, 1):                                               # the braids under the hair they grow from
+            spine = [(x + (0.6 if s < 0 else -0.6), y) for x, y in spines[s]]
+            dutch_plait(front, [(x, y + hy) for x, y in spine], 3.4, 8, clip=clip)
+        gather = [hwisp(F, mirror([(12.4, 17.0), (11.2, 21.0), (11.2, 24.4)], s, t), 3.6, power=2.2) for s in (-1, 1)]
+        m = clip(union(soft_crown(F, t, lumps=((10.8, 4.8, 19.8, 13.0), (20.2, 4.8, 29.2, 13.0))), ellipse([8.6 + t, 8 + hy, 31.4 + t, 24.0 + hy]),
+                       *[l[0] for l in gather]))
         part(front, m, HAIR, HAIR_LINE, radius=2.2, bias=-0.05)
         curve(front, [(20 + t, 4.2 + hy), (20 + t, 12.0 + hy), (20.2 + t, 23.6 + hy)], HAIR_LINE, 1, m)           # parted down the back
         for s in (-1, 1):
             for k in range(4):
                 pts = mirror([(19.2, 6.0 + k * 4.4), (15.0, 9.0 + k * 3.8), (11.6, 15.0 + k * 2.4), (10.4, 21.0)], s, t)
                 curve(front, [(x, y + hy) for x, y in pts], HAIR[1] if k % 2 == 0 else HAIR[4], 1, m)
-            spine = [(x + (0.6 if s < 0 else -0.6), y) for x, y in spines[s]]
-            dutch_plait(front, [(x, y + hy) for x, y in spine], 3.4, 8, clip=clip)
         halo(front, m, 4.4 + hy, 0)
     return front, back
 
@@ -1138,8 +1142,23 @@ def jitter(k, salt=0.0):
     return math.sin(k * 12.9898 + salt * 78.233) * 43758.5453 % 2 - 1
 
 
-def coils(img, F, m, area, n, rmin=1.3, rmax=2.3, salt=0.0):
-    """Curls scattered over a region (x0, y0, x1, y1), each its own size: a shadowed rim, a catch of light."""
+def curl_hooks(img, spots, m):
+    """Each curl a C turning on itself: a dark hook round its lower side, a light one round its top,
+    and the shadowed hollow inside it, so the coils read as springs, not dents."""
+    for k, (x, y, r) in enumerate(spots):
+        cx, cy = P(x, y)
+        rr = r * K
+        turn = 40 * jitter(k, 9.0)                                         # each curl turns its own way
+        hollow = mask(lambda d: d.ellipse([cx - rr * 0.42, cy - rr * 0.3, cx + rr * 0.42, cy + rr * 0.42], fill=255))
+        fill(img, hollow, HAIR[1], m)
+        rim = mask(lambda d: d.arc([cx - rr, cy - rr, cx + rr, cy + rr], 300 + turn, 160 + turn + 360, fill=255, width=3))
+        fill(img, rim, HAIR[0], m)
+        lit = mask(lambda d: d.arc([cx - rr * 0.8, cy - rr * 0.85, cx + rr * 0.8, cy + rr * 0.75], 190 + turn, 280 + turn, fill=255, width=2))
+        fill(img, lit, HAIR[4], m)
+
+
+def coils(img, F, m, area, n, rmin=1.0, rmax=2.0, salt=0.0):
+    """Curls scattered over a region (x0, y0, x1, y1), each its own size and turn."""
     x0, y0, x1, y1 = area
     cols = max(1, int(round(math.sqrt(n * (x1 - x0) / max(1, y1 - y0)))))
     rows = max(1, (n + cols - 1) // cols)
@@ -1148,18 +1167,31 @@ def coils(img, F, m, area, n, rmin=1.3, rmax=2.3, salt=0.0):
         cx = x0 + (k % cols + 0.5 + 0.35 * jitter(k, salt)) * (x1 - x0) / cols + (0.5 if (k // cols) % 2 else 0) * (x1 - x0) / cols * 0.5
         cy = y0 + (k // cols + 0.5 + 0.3 * jitter(k, salt + 1)) * (y1 - y0) / rows
         spots.append((cx, cy + F.hy, rmin + (rmax - rmin) * (0.5 + 0.5 * jitter(k, salt + 2))))
-    curl_marks(img, spots, m)
+    curl_hooks(img, spots, m)
 
 
-def bumpy(F, dx, pts, rmin=2.0, rmax=2.9, salt=0.0):
-    """A curly outline: a soft bump at each point, each its own size."""
+def bumpy(F, dx, pts, rmin=1.5, rmax=2.4, salt=0.0):
+    """A curly outline: a tight bump every little way along it (twice as many as points given), each its own size."""
+    dense = []
+    for a, b in zip(pts, pts[1:]):
+        dense += [a, lerp(a, b, 0.5)]
+    dense.append(pts[-1])
     return union(*[ellipse([x + dx - r, y + F.hy - r, x + dx + r, y + F.hy + r])
-                   for k, (x, y) in enumerate(pts) for r in [rmin + (rmax - rmin) * (0.5 + 0.5 * jitter(k, salt))]])
+                   for k, (x, y) in enumerate(dense) for r in [rmin + (rmax - rmin) * (0.5 + 0.5 * jitter(k, salt))]])
 
 
 def ringlet(F, x0, y0, length, side, w, dx=0.0):
-    """A corkscrew curl: tight waves, tapering into a turned-up tip."""
-    return wave_lock(F, x0 + dx, y0, length, side, w, amp=1.2, period=3.8, curl=-side)
+    """A corkscrew curl: tight, springy waves, tapering into a turned-up tip."""
+    return wave_lock(F, x0 + dx, y0, length, side, w, amp=1.6, period=3.0, curl=-side)
+
+
+def ringlet_turns(img, locks, m):
+    """Down each ringlet, its turns: a small curl at every swing of the spring, smaller toward the tip."""
+    for _, pts, w in locks:
+        body = pts[:-1]
+        for k, (x, y) in enumerate(body[::2]):
+            f = k / max(1, len(body[::2]) - 1)
+            curl_hooks(img, [(x, y, max(0.7, w * 0.42 * (1 - 0.45 * f)))], m)
 
 
 CROWN_EDGE = [(9.4, 15.0), (9.8, 11.2), (11.4, 7.6), (14.0, 5.0), (17.2, 3.6), (20.4, 3.2), (23.6, 3.8), (26.4, 5.2), (28.8, 7.8), (30.4, 11.4), (30.8, 15.0)]
@@ -1181,28 +1213,30 @@ def style_curly(F, long):
                     behind.append(ringlet(F, (x if s < 0 else 40 - x) + t, y, 22 - k * 2, s * (1 if k % 2 else -1), 4.2))
         bm = clip(union(bumpy(F, t, [(x, y) for x, y in CROWN_EDGE] + [(9.2, 20), (30.8, 20), (10.0, 25), (30.0, 25)], salt=3), *[l[0] for l in behind]))
         part(back, bm, HAIR, HAIR_LINE, radius=2.0, bias=-0.15)
-        coils(back, F, bm, (8.6 + t, 17, 31.4 + t, 38 if long else 27), 14 if long else 8, salt=1)
-        wave_lines(back, behind, bm)
+        coils(back, F, bm, (8.6 + t, 17, 31.4 + t, 38 if long else 27), 26 if long else 14, salt=1)
+        ringlet_turns(back, behind, bm)
         top = union(crown(F), bumpy(F, fs * 0.6, CROWN_EDGE, salt=0))
-        fringe_ = [ringlet(F, x, 10.4 + (k % 2) * 0.8, 5.2 + (k % 3) * 0.8, (-1, 1)[k % 2], 3.2, fs) for k, x in enumerate((12.6, 15.4, 18.2, 21.0, 23.8, 26.6))]
+        fringe_ = [ringlet(F, x, 10.2 + (k % 2) * 0.8, 5.6 + (k % 3) * 0.9, (-1, 1)[k % 2], 2.8, fs)
+                   for k, x in enumerate((12.0, 14.4, 16.8, 19.2, 21.6, 24.0, 26.4, 28.4))]
         sides = []
         for s in (-1, 1):
             X = lambda x: (x if s < 0 else 40 - x) + (t * 0.6 if s > 0 else 0)
-            sides += [ringlet(F, X(10.2), 12, side_len, s, 4.0), ringlet(F, X(12.0), 15, side_len - 4, -s, 3.0)]
+            sides += [ringlet(F, X(10.0), 12, side_len, s, 3.6), ringlet(F, X(12.0), 15, side_len - 3, -s, 2.8),
+                      ringlet(F, X(8.4), 17, side_len - 6, -s, 2.6)]
         m = clip(union(top, *[l[0] for l in fringe_ + sides]))
         part(front, m, HAIR, HAIR_LINE, radius=1.6, bias=0.05)
-        coils(front, F, both(m, rect([0, 0, 40, 13.4 + hy])), (10.4 + fs, 4.6, 29.6 + fs, 12.0), 12, salt=4)
-        wave_lines(front, fringe_ + sides, m)
+        coils(front, F, both(m, rect([0, 0, 40, 13.6 + hy])), (10.0 + fs, 3.8, 30.0 + fs, 12.8), 22, salt=4)
+        ringlet_turns(front, fringe_ + sides, m)
         halo(front, m, 4.2 + hy, F.fs)
         brows(front, F)
     else:
         length = 44 if long else 28
-        hang = [ringlet(F, x + t, length - 12 + (abs(x - 20) * 0.2), 10 + (k % 3) * 2, (-1, 1)[k % 2], 4.4) for k, x in enumerate((10.0, 13.6, 17.2, 20.8, 24.4, 28.0, 30.6))]
+        hang = [ringlet(F, x + t, length - 12 + (abs(x - 20) * 0.2), 10 + (k % 3) * 2, (-1, 1)[k % 2], 3.8) for k, x in enumerate((9.6, 12.4, 15.2, 18.0, 20.8, 23.6, 26.4, 29.0, 31.0))]
         edge_ = CROWN_EDGE + [(9.0, 19), (31.0, 19), (9.4, 24), (30.6, 24)] + ([(9.8, 30), (30.2, 30), (10.4, 36), (29.6, 36)] if long else [])
         m = clip(union(bumpy(F, t, edge_, salt=5), ellipse([9.0 + t, 6 + hy, 31.0 + t, length - 8 + hy]), *[l[0] for l in hang]))
         part(front, m, HAIR, HAIR_LINE, radius=2.2, bias=-0.05)
-        coils(front, F, m, (9.4 + t, 5.0, 30.6 + t, length - 10), 26 if long else 16, salt=6)
-        wave_lines(front, hang, m)
+        coils(front, F, m, (9.4 + t, 4.4, 30.6 + t, length - 10), 48 if long else 28, salt=6)
+        ringlet_turns(front, hang, m)
         halo(front, m, 4.2 + hy, 0)
     return front, back
 
@@ -1238,15 +1272,16 @@ def style_sidebraid(F):
                  hwisp(F, [(24.4, 9.0), (21.0, 11.6), (18.6, 15.0), (18.6, 16.8)], 2.8, fs)]
         far = [hwisp(F, [(25.8, 6.4), (28.0, 10.0), (29.0, 15.0), (28.6, 18.4)], 3.4, fs),
                wave_lock(F, 29.8 + t * 0.6, 12, 18, 1, 4.4, amp=1.0, curl=-1)]
-        m = clip(union(top, *[l[0] for l in sweep + far]))
-        part(front, m, HAIR, HAIR_LINE, radius=1.8, bias=0.05)
-        curve(front, [(25.2 + fs, 4.2 + hy), (25.0 + fs, 8.0 + hy)], HAIR_LINE, 1, m)
-        hstrands(front, sweep + far[:1], m, start=0.3)
-        wave_lines(front, far[1:], m)
-        dutch_plait(front, [(x + t * 0.3, y + hy) for x, y in spine], 3.8, 10, clip=clip)
+        dutch_plait(front, [(x + t * 0.3, y + hy) for x, y in spine], 3.8, 10, clip=clip)          # under the sweep it grows from
         ties(front, F, [(12.6 + t * 0.3, 39.0)])
         tuft = hwisp(F, [(12.6, 39.6), (12.2, 41.6), (12.8, 43.2)], 2.6, t * 0.3)
         part(front, clip(tuft[0]), HAIR, HAIR_LINE, radius=0.6, bias=0.05)
+        gather = [hwisp(F, [(14.6, 11.0), (12.4, 15.6), (11.4, 19.6), (11.0, 22.0)], 3.8, fs, power=2.2)]
+        m = clip(union(top, *[l[0] for l in sweep + far + gather]))
+        part(front, m, HAIR, HAIR_LINE, radius=1.8, bias=0.05)
+        curve(front, [(25.2 + fs, 4.2 + hy), (25.0 + fs, 8.0 + hy)], HAIR_LINE, 1, m)
+        hstrands(front, sweep + far[:1] + gather, m, start=0.3)
+        wave_lines(front, far[1:], m)
         halo(front, m, 4.4 + hy, F.fs)
         brows(front, F)
     else:
@@ -1256,7 +1291,7 @@ def style_sidebraid(F):
         combed(front, F, m, [(x, y) for x, y in ((11.0, 12), (13.6, 8), (17.4, 5.4), (21.6, 5.0), (25.4, 7.0), (27.6, 12.0), (24.0, 20.0), (18.0, 22.0))],
                (30.0, 21.0), dx=t, bend=0.3)
         bspine = [(28.4, 15.0), (30.0, 21.0), (30.2, 28.0), (29.4, 34.0), (28.6, 38.0)]          # round to the other shoulder, seen from behind
-        dutch_plait(front, [(x + t, y + hy) for x, y in bspine], 3.6, 9, clip=clip)
+        dutch_plait(front, [(x + t, y + hy) for x, y in bspine], 3.6, 9, clip=clip, line=HAIR[0])
         halo(front, m, 4.4 + hy, 0)
     return front, back
 
@@ -1316,7 +1351,7 @@ def style_crownbraid(F):
         hstrands(front, wisps, m, start=0.3)
         halo(front, m, 4.2 + hy, F.fs)
         dutch_plait(front, [(10.2 + fs * 0.3, 17.4 + hy), (12.0 + fs * 0.4, 11.4 + hy), (20.0 + fs, 7.6 + hy), (28.0 + fs * 0.4, 11.4 + hy), (29.8 + fs * 0.3, 17.4 + hy)],
-                    3.8, 11, clip=clip, tie=False)
+                    3.8, 11, clip=clip, tie=False, line=HAIR[0])
         brows(front, F)
     else:
         nape = [hwisp(F, [(x, 20), (x + s * 0.4, 24.4), (x + s * 0.8, 27.0)], 3.6, t) for x, s in ((11.4, -1), (15.4, -1), (19.6, 1), (24.0, 1), (28.4, 1))]
@@ -1326,7 +1361,7 @@ def style_crownbraid(F):
         hstrands(front, nape, m, start=0.4)
         halo(front, m, 4.4 + hy, 0)
         dutch_plait(front, [(9.8 + t, 12.4 + hy), (14.0 + t, 15.4 + hy), (20.0 + t, 16.4 + hy), (26.0 + t, 15.4 + hy), (30.2 + t, 12.4 + hy)], 3.8, 11,
-                    clip=lambda m_: under_helm(both(m_, ellipse([9.5 + t * 0.5, 5 + hy, 30.5 + t * 0.5, 31.2 + hy])), F), tie=False)
+                    clip=lambda m_: under_helm(both(m_, ellipse([9.5 + t * 0.5, 5 + hy, 30.5 + t * 0.5, 31.2 + hy])), F), tie=False, line=HAIR[0])
     return front, back
 
 
@@ -1618,6 +1653,12 @@ def beard_layer(F, style):
         pts = [(cx + s_ * 0.3, 26.2), (cx + s_ * 2.4, 26.8), (cx + s_ * 4.2, 27.8), (cx + s_ * (5.2 if big else 4.6), 29.6 if big else 29.0)]
         stache.append(hwisp(F, pts, 2.2 if big else 1.8, 0.0, power=1.3))
     shape = minus(union(shape, *[l[0] for l in stache]), mouth)
+    if style == "braided":
+        spine = [(cx, length - 4.6 + hy), (cx + 0.4, length - 0.8 + hy), (cx - 0.2, length + 3.0 + hy), (cx + 0.2, length + 5.6 + hy)]
+        dutch_plait(img, spine, 3.0, 6)
+        part(img, ellipse([cx - 1.4, length + 5.4 + hy, cx + 1.4, length + 6.8 + hy]), [grey(110), grey(150), grey(196)], HAIR_LINE, radius=0.4, width=1)   # a bead
+        tuft = hwisp(F, [(cx, length + 6.6), (cx - 0.4, length + 8.2), (cx + 0.2, length + 9.4)], 2.2, 0.0)
+        part(img, tuft[0], HAIR, HAIR_LINE, radius=0.5, bias=0.05)
     part(img, shape, HAIR, HAIR_LINE, radius=1.2, bias=-0.05)
     hstrands(img, locks, shape, start=0.15)
     for _, pts, w in stache:
@@ -1626,12 +1667,6 @@ def beard_layer(F, style):
     for side in (-1, 1):                                               # the sideburns' growth, combed down
         x = 20 + side * 9.6 + d * 0.3
         curve(img, [(x, 21.0 + hy), (x + side * -0.2, 24.0 + hy)], HAIR[1], 1, shape)
-    if style == "braided":
-        spine = [(cx, length - 4.6 + hy), (cx + 0.4, length - 0.8 + hy), (cx - 0.2, length + 3.0 + hy), (cx + 0.2, length + 5.6 + hy)]
-        dutch_plait(img, spine, 3.0, 6)
-        part(img, ellipse([cx - 1.4, length + 5.4 + hy, cx + 1.4, length + 6.8 + hy]), [grey(110), grey(150), grey(196)], HAIR_LINE, radius=0.4, width=1)   # a bead
-        tuft = hwisp(F, [(cx, length + 6.6), (cx - 0.4, length + 8.2), (cx + 0.2, length + 9.4)], 2.2, 0.0)
-        part(img, tuft[0], HAIR, HAIR_LINE, radius=0.5, bias=0.05)
     return img
 
 
@@ -2474,6 +2509,124 @@ def preview(path, looks, tags=("idle_down", "idle_downside", "idle_up"), scale=1
     contact_sheet(imgs, path, scale=scale, columns=len(tags) * 2, bg=(40, 40, 40, 255), pad=2)
 
 
+# ---------------------------------------------------------------- a true three-quarter turn (test)
+# The turned views today slide the face a little toward the far cheek. A real three-quarter view
+# turns the whole head: drawn facing us and from behind, the head and its hair are wrapped round a
+# cylinder and turned by ``psi`` degrees about it (0 faces us, 180 faces away), so the face slides
+# and foreshortens, the far eye narrows, and the side and back of the hair come round on the near
+# side. Hair behind the body turns too but stays behind it; the body keeps its turned pose.
+
+TURN_R = 13.0     # the cylinder the head and hair wrap round (design units: wide enough for the hair)
+
+
+def turn_warp(front, back, psi, cx=20.0):
+    """Turn a head drawn facing us (``front``) and from behind (``back``, or None) by ``psi``
+    degrees. Each row wraps round its own cylinder, as wide as the head and hair are there, so the
+    silhouette keeps its width and nothing is cut off; columns past the turn come from behind."""
+    import numpy as np
+    fa = np.asarray(front)
+    ba = np.asarray(back) if back is not None else np.zeros_like(fa)
+    h, w = fa.shape[:2]
+    c = cx * K
+    xs = (np.arange(w) + 0.5) - c
+    solid = (fa[:, :, 3] > 0) | (ba[:, :, 3] > 0)
+    reach = np.where(solid, np.abs(xs)[None, :], 0).max(axis=1) + 1.0         # each row's half width...
+    win = 4 * K                                                                # ...eased over its neighbours, so the
+    padded = np.pad(reach, win, mode="edge")                                   # cylinders vary gently down the head
+    reach = np.array([padded[i:i + 2 * win + 1].max() for i in range(h)])
+    reach = np.convolve(np.pad(reach, win, mode="edge"), np.ones(2 * win + 1) / (2 * win + 1), mode="valid")
+    R = reach[:, None]
+    inside = np.abs(xs)[None, :] < R
+    phi = np.arcsin(np.clip(xs[None, :] / R, -1, 1))
+    a = phi - math.radians(psi)
+    a = (a + math.pi) % (2 * math.pi) - math.pi
+    front_side = np.abs(a) <= math.pi / 2
+    fx = np.clip(np.floor(c + R * np.sin(a)).astype(int), 0, w - 1)
+    bx = np.clip(np.floor(c - R * np.sin(a)).astype(int), 0, w - 1)
+    rows = np.broadcast_to(np.arange(h)[:, None], (h, w))
+    out = np.where((inside & front_side)[:, :, None], fa[rows, fx], 0)
+    if back is not None:
+        out = np.where((inside & ~front_side)[:, :, None], ba[rows, bx], out)
+    img = Image.fromarray(out.astype(np.uint8), "RGBA")
+    # Specks the wrap's steep edge picks up: keep only what lies by the main mass (its outline and
+    # flyaways stay), dropping loose pixels off on their own.
+    solid_ = img.getchannel("A").point(lambda v: 255 if v else 0)
+    core = solid_.filter(ImageFilter.MinFilter(5)).filter(ImageFilter.MaxFilter(5))
+    near = core.filter(ImageFilter.MaxFilter(9))
+    img.putalpha(ImageChops.multiply(img.getchannel("A"), near))
+    return img
+
+
+def head_only(img, pose):
+    """The part of a skin layer above the neck: the head and its ears."""
+    keep = Image.new("L", img.size, 0)
+    keep.paste(255, (0, 0, img.width, round((31.5 + pose.head_dy + pose.body_dy) * K)))
+    out = img.copy()
+    out.putalpha(ImageChops.multiply(img.getchannel("A"), keep))
+    return out
+
+
+def turned_figure(body, psi, hair="long", eyes="round", beard=None, wear=("tunic", "trousers", "turnshoes"), colors=None):
+    """A person with the head truly turned (``psi``: 30 toward us and to the right, 150 away), the
+    body in the matching turned pose."""
+    colors = dict(TINTS, **(colors or {}))
+    hairc = tuple(min(255, int(v * 1.3)) for v in colors["hair"][:3]) + (255,)
+    toward = psi < 90
+    pose_t = FRAMES[TAGS["idle_downside" if toward else "idle_upside"][0]][0]
+    pose_f = FRAMES[TAGS["idle_down"][0]][0]
+    pose_b = FRAMES[TAGS["idle_up"][0]][0]
+    Ft, Ff, Fb = Fig(body, pose_t), Fig(body, pose_f), Fig(body, pose_b)
+    hf_front, hf_behind = hair_layers(Fig("female", pose_f), hair)
+    hb_front, _ = hair_layers(Fig("female", pose_b), hair)
+    head_f = tint(head_only(skin_layer(Ff), pose_f), colors["skin"])
+    e, f = eyes_layers(Ff, eyes)
+    head_f.alpha_composite(tint(e, colors["eyes"]))
+    head_f.alpha_composite(f)
+    if beard:
+        head_f.alpha_composite(tint(beard_layer(Fig("female", pose_f), beard), hairc))
+    head_f.alpha_composite(tint(hf_front, hairc))
+    head_b = tint(head_only(skin_layer(Fb), pose_b), colors["skin"])
+    head_b.alpha_composite(tint(hb_front, hairc))
+    behind = tint(hf_behind, hairc)
+    cut(behind, both_bases(pose_f))
+    # the body in its turned pose, without its own head
+    body_img = base_layer(Ft)
+    skin = tint(skin_layer(Ft), colors["skin"])
+    neck = round((31.5 + pose_t.head_dy + pose_t.body_dy) * K)
+    skin_body = skin.copy()
+    skin_body.paste((0, 0, 0, 0), (0, 0, skin.width, neck))
+    layers = [turn_warp(behind, None, psi), skin_body]
+    for item in ("trousers", "turnshoes", "tunic"):
+        if item in wear:
+            G = Garment(Ft)
+            GARMENTS[item](G, Ft)
+            done = G.finish(base_mask(body, pose_t))
+            layers += [done[""], tint(done["_dye"], colors["dye"])]
+    head = turn_warp(head_f, head_b, psi) if toward else turn_warp(head_b, head_f, psi - 180)
+    layers.append(head)
+    for layer in layers:
+        body_img.alpha_composite(layer)
+    return body_img
+
+
+def turn_preview(path, styles=("short", "long", "ponytail", "braidedponytail")):
+    """Each style: today's turned views beside the true turn, toward us and away."""
+    imgs = []
+    colors = [(118, 82, 52, 255), (60, 44, 36, 255), (196, 150, 90, 255), (150, 70, 46, 255)]
+    for i, h in enumerate(styles):
+        body = "female" if i % 2 else "male"
+        look = dict(body=body, hair=h, colors={"hair": colors[i % len(colors)]})
+        for tag, psi in (("idle_downside", 30), ("idle_upside", 150)):
+            for new in (False, True):
+                canvas = Image.new("RGBA", (W, H), (96, 120, 80, 255) if not new else (106, 132, 88, 255))
+                if new:
+                    canvas.alpha_composite(turned_figure(psi=psi, **look))
+                else:
+                    canvas.alpha_composite(figure(pose=FRAMES[TAGS[tag][0]][0], wear=("tunic", "trousers", "turnshoes"), **look))
+                imgs.append(canvas.crop((0, 0, W, H * 2 // 3)))
+    contact_sheet(imgs, path, scale=1, columns=4, bg=(40, 40, 40, 255), pad=2)
+
+
 def hair_preview(path, styles=None, beards=True):
     """Every hair style (a row each, in a natural colour on a plain tunic) in four views, then every
     beard: to judge the hair side by side. Two sizes: the detail at 1x, and the game's 1/4 beside it."""
@@ -2499,6 +2652,13 @@ def hair_preview(path, styles=None, beards=True):
 
 if __name__ == "__main__":
     only = sys.argv[sys.argv.index("--only") + 1] if "--only" in sys.argv else None
+    if "--turn-test" in sys.argv:
+        out = os.path.join(os.path.dirname(__file__), "..", ".cache", "people", "turn.png")
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        pick = [a for a in sys.argv[sys.argv.index("--turn-test") + 1:] if not a.startswith("--")]
+        turn_preview(out, tuple(pick) or ("short", "long", "ponytail", "braidedponytail"))
+        print(out)
+        sys.exit(0)
     if "--hair-preview" in sys.argv:
         out = os.path.join(os.path.dirname(__file__), "..", ".cache", "people")
         os.makedirs(out, exist_ok=True)

@@ -961,3 +961,6 @@ dragon and the festival.
   and ringlets of every size (not a stamped pattern), woven braids, a wound bun, a bound topknot,
   each with its own back view. Beards grow from the jaw as locks, with a sweeping moustache and,
   for the braided one, a woven plait and a bead. `--hair-preview` shows them all.
+- Braids grow out of the hair rather than sitting on it, and the curls are tighter: springy
+  ringlets drawn as columns of turns, and dense coils over a crown of small bumps. `--turn-test`
+  tries a real three-quarter turn of the head and hair on a few styles.

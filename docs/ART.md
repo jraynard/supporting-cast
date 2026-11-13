@@ -315,7 +315,14 @@ sheen at its root), strays breaking loose, curls as coils and ringlets of every 
 strand by strand, a bun wound round itself; each with a back view of its own. Beards grow the same
 way from the jaw, with a sweeping moustache. `python3 tools/chibi_people.py --hair-preview [styles]`
 draws every style (or those named) in four views beside its game size, then every beard, into
-`.cache/people/hair.png`. Hair is drawn as **locks**: tapered strands
+`.cache/people/hair.png`. Braids hanging from the hair are drawn before it, so the hair lies over their
+roots with locks gathered into them; braids lying on the head are lined in a deep hair tone, not ink.
+
+**A true three-quarter turn (a test, not in the sheets yet):** `--turn-test [styles]` draws each
+style's turned views beside a head turned for real: drawn facing us and from behind, wrapped round
+a cylinder per row (as wide as the head and hair there) and turned 30° (150° away), so the face slides
+and foreshortens and the hair comes round the near side (`turned_figure`, `turn_warp`). Into
+`.cache/people/turn.png`. Adopting it would turn the face sheets and every hair layer the same way. Hair is drawn as **locks**: tapered strands
 with a parting or a cut fringe, and a broken band of the lightest step across the crown (the Octopath
 sheen), never one shaded blob. People are about three heads tall: an 18 px head with a jaw and a neck,
 sloped shoulders, a waist, and arms that hang beside the body and swing when walking.
