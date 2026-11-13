@@ -39,11 +39,12 @@
       "kit": [ { "def": "Bandage", "count": 4 } ] },
     // The Carpenter is benched for now: building and fletching come back as a trade of its own later.
     { "name": "Tinker", "label": "tinker", "description": "Locks and clockwork: opens what adventurers drag home, fits locks and cuts keys, builds contraptions for the road, mends wagons and knows what a curio's worth.",
-      "workplace": "TinkerShop", "workPriorities": { "Craft": 1 }, "skills": { "Crafting": 6, "Construction": 4 },
+      "workplace": "TinkerShop", "workPriorities": { "Craft": 1 }, "skills": { "Crafting": 6, "Construction": 4 }, "mendsTown": true,
       "knows": [ "TinkerBench" ],
       "stations": [ "TinkerBench" ],
       "tips": [ "Strongboxes, wagons and curios come to your bench. Hold F at the bench to start.",
                 "Feel a strongbox over for traps before you pick it. Fingers are hard to replace.",
+                "When raiders bring the bridge down, it's yours to mend: take 2 wood to the gap and press F.",
                 "Your prices are on the sign (J)." ],
       "kit": [ { "def": "Lockpicks" }, { "def": "IronBar", "count": 4 }, { "def": "Wood", "count": 2 } ] },
     { "name": "Labourer", "label": "labourer", "description": "Hauls, chops and digs for anyone who'll pay.", "unlimited": true }

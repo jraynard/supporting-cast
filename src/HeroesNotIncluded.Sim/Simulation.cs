@@ -80,6 +80,9 @@ public sealed partial class Simulation
     /// <summary>The town's Renown and Dread over a round.</summary>
     public Director.Reckoning Reckoning { get; } = new();
 
+    /// <summary>What crises broke in town (the bridge), and their mending.</summary>
+    public Tinkering.Repairs Repairs { get; } = new();
+
     /// <summary>The crises a round's season sends. Off until the game enables it for a round.</summary>
     public Director.Director Director { get; }
 
@@ -241,6 +244,7 @@ public sealed partial class Simulation
             .AddSystem(sim.Expeditions)
             .AddSystem(sim.Reckoning)
             .AddSystem(sim.Director)
+            .AddSystem(sim.Repairs)
             .AddSystem(new MoodSystem())
             .AddSystem(new PrisonBreakSystem())
             .AddSystem(sim.Social)

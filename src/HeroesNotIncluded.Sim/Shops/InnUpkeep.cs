@@ -225,6 +225,11 @@ public sealed class InnSupplySystem : ISimSystem, Saving.ISaveState
         var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
         if (inn.IsNull)
             return;
+        if (sim.Repairs.RoadCut)
+        {
+            sim.Messages.Add(MessageKind.Warning, "The carter couldn't get over the river: no kegs or food for the inn today.", sim.World.Get<PresetBuilding>(inn).Anchor);
+            return;
+        }
         Deliver(sim, inn, "Chest", Kegs);
         Deliver(sim, inn, "Larder", Food);
         sim.Messages.Add(MessageKind.Info, "The carter's been by the inn: kegs and bar stock for the storeroom, and a sack of food for the larder.",

@@ -58,6 +58,9 @@ public sealed class TradeDef : Def
     /// <summary>The holder is given a key to every lock fitted at its workplace (the innkeeper's storeroom).</summary>
     public bool HoldsKeys { get; set; }
 
+    /// <summary>The holder mends what crises break in town (<c>Tinkering.Repairs</c>): the tinker, the bridge.</summary>
+    public bool MendsTown { get; set; }
+
     /// <summary>The holder names the shop (<c>Shops.ShopName</c>): the innkeeper, not the cook.</summary>
     public bool NamesShop { get; set; } = true;
 

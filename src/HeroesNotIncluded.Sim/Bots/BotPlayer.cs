@@ -268,6 +268,8 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 return Pick(pk);
             case TrueSession tr:
                 return True(tr);
+            case SpanSession sp:
+                return Span(sp);
             case FitSession fit:
                 return Fit(fit);
             case LoupeSession lp:
@@ -363,6 +365,17 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         return s.Gauge > mark ? (true, false, 0) : s.Gauge < -mark ? (false, false, -1) : (false, false, 0);
     }
 
+    /// <summary>As the level reaches each stone: a sag wedged up, a high one eased down, once a pass.</summary>
+    private (bool, bool, int) Span(SpanSession s)
+    {
+        var at = s.At * (SpanSession.Stones - 1);
+        if (MathF.Abs(at - MathF.Round(at)) > 0.12f || s.AtStone == _spoke)
+            return (false, false, 0);
+        _spoke = s.AtStone;
+        var mark = s.BandWidth * 0.8f;
+        return s.Reading < -mark ? (true, false, 0) : s.Reading > mark ? (false, false, -1) : (false, false, 0);
+    }
+
     /// <summary>Keep each part square over its seat and press it in only while it is; then wind to the catch and latch.</summary>
     private (bool, bool, int) Fit(FitSession s)
     {
@@ -441,6 +454,8 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             _task = 0;
         if (_task == 0)
             TakeOn(sim, me, view, now);
+        if (_task == 0 && MendTown(sim, me, view, now))
+            return;
         if (_task == 0 && !Upkeep(sim, me, view, now))
             Chat(view, me, now);
     }
@@ -826,6 +841,31 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             send(new FitAxleCommand(me, wagon));
         else
             return FetchWood(sim, me, view, now);
+        return true;
+    }
+
+    /// <summary>The tinker mends what a crisis broke: wood from the shop, then to the gap, and brace it. True while at it.</summary>
+    private bool MendTown(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Trade>(me, out var trade) || !trade.Def.MendsTown || sim.Repairs.Breaches.Count == 0)
+            return false;
+        var breach = sim.Repairs.Breaches[0];
+        if (Wagons.WoodOn(sim, me) < Repairs.MendWood)
+            return FetchWood(sim, me, view, now);
+        var here = w.Get<Position>(me).Cell;
+        if (!breach.Cells.Exists(c => AvatarSystem.InReach(here, c.Cell)))
+        {
+            var near = breach.Cells.Select(c => c.Cell).Where(c => Ai.Navigation.CanReach(sim, me, here, c, PathEnd.Touch))
+                .OrderBy(c => Maps.Map.Distance(c, here)).Select(c => (int3?)c).FirstOrDefault();
+            if (near is not { } gap)
+                return false;
+            Doing = $"going to mend the {breach.Label}";
+            Walk(sim, me, gap, now);
+            return true;
+        }
+        Doing = $"mending the {breach.Label}";
+        send(new MendBreachCommand(me, breach.Id));
         return true;
     }
 

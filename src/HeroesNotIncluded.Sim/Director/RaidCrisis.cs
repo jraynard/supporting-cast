@@ -35,6 +35,9 @@ public sealed class RaidCrisis : ICrisis
         };
         crisis._raiders.AddRange(raiders);
         RaiseTheAlarm(sim, sim.World.Get<Position>(raiders[0]).Cell);
+        // A proper raid cuts the town off behind it: the bridge comes down (Tinkering.Repairs).
+        if (strength >= 1f && rand.Chance(sim.Defs.Season.RaidBreaksBridge))
+            sim.Repairs.BreakBridge(sim, rand);
         return crisis;
     }
 

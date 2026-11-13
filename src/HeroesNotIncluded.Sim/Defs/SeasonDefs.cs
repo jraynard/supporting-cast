@@ -59,6 +59,12 @@ public sealed class SeasonDef : Def
     /// </summary>
     public float RaidPointsFactor { get; set; } = 0.4f;
 
+    /// <summary>Dread each game hour while something a crisis broke (the bridge) stays down.</summary>
+    public float DreadPerBreachHour { get; set; } = 0.5f;
+
+    /// <summary>Chance a raid of strength 1 or more pulls the bridge down as it comes.</summary>
+    public float RaidBreaksBridge { get; set; } = 0.6f;
+
     /// <summary>Game hours a crisis runs before it's over whether the town met it or not.</summary>
     public float CrisisHours { get; set; } = 6;
 }

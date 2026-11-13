@@ -179,7 +179,7 @@ public static class Wagons
         return n;
     }
 
-    private static void UseWood(Simulation sim, Entity who, int count)
+    internal static void UseWood(Simulation sim, Entity who, int count)
     {
         var w = sim.World;
         var sources = new List<Entity>();

@@ -284,6 +284,50 @@ public sealed partial class VillageGame
         EndWork();
     }
 
+    /// <summary>
+    /// The span from the side: its stones on the centring, the level sliding along them, and its
+    /// bubble off the middle where a stone sags or rides high. The band is where level lies.
+    /// </summary>
+    private void DrawSpan(SpanSession s)
+    {
+        BeginWork(s.Title, ("F", "drive a wedge under the stone at the level"), ("A", "ease one out"), ("Esc", "stop"));
+        TextC(Theme.Dim, "Lift the stones that sag, ease down the ones riding high. Get the whole span level.");
+        var dl = ImGui.GetWindowDrawList();
+        var min = ImGui.GetCursorScreenPos();
+        var size = Gui.S(420, 90);
+        var max = min + size;
+        ImGui.Dummy(in size);
+        dl.AddRectFilled(in min, in max, new ImColor8(40, 66, 80, 255), Gui.S(3), ImDrawFlags.None); // the river under it
+        var w = size.X / SpanSession.Stones;
+        float StoneX(float at) => min.X + w * 0.5f + at * (size.X - w);
+        var mid = (min.Y + max.Y) * 0.5f;
+        var scale = size.Y * 0.5f / 0.4f;
+        // The band where level lies.
+        var bandMin = new float2(min.X, mid - s.BandWidth * scale);
+        var bandMax = new float2(max.X, mid + s.BandWidth * scale);
+        dl.AddRectFilled(in bandMin, in bandMax, Theme.U8(Theme.Good, 0.3f), 0f, ImDrawFlags.None);
+        for (var i = 0; i < SpanSession.Stones; i++)
+        {
+            var top = mid - s.Offsets[i] * scale - Gui.S(9);
+            var cx = StoneX(i / (float)(SpanSession.Stones - 1));
+            var a = new float2(cx - w * 0.5f + Gui.S(2), top);
+            var b = new float2(cx + w * 0.5f - Gui.S(2), top + Gui.S(18));
+            var level = MathF.Abs(s.Offsets[i]) <= s.BandWidth;
+            dl.AddRectFilled(in a, in b, level ? new ImColor8(170, 160, 140, 255) : new ImColor8(130, 118, 100, 255), Gui.S(2), ImDrawFlags.None);
+            if (i == s.AtStone)
+                dl.AddRect(in a, in b, Theme.U8(Theme.Accent), Gui.S(2), ImDrawFlags.None, Gui.S(2));
+        }
+        // The level: a bar over the span, its bubble off the middle by what it reads.
+        var lx = StoneX(s.At);
+        var barA = new float2(lx - Gui.S(30), min.Y + Gui.S(4));
+        var barB = new float2(lx + Gui.S(30), min.Y + Gui.S(14));
+        dl.AddRectFilled(in barA, in barB, new ImColor8(200, 180, 120, 255), Gui.S(3), ImDrawFlags.None);
+        var bubble = new float2(Math.Clamp(lx - s.Reading * Gui.S(80), barA.X + Gui.S(5), barB.X - Gui.S(5)), min.Y + Gui.S(9));
+        dl.AddCircleFilled(in bubble, Gui.S(4), Theme.U8(MathF.Abs(s.Reading) <= s.BandWidth ? Theme.Good : Theme.Accent), 12);
+        Bar("Span", 1f - Math.Clamp(s.Worst / 0.32f, 0f, 1f), Theme.Good, $"stone {s.AtStone + 1} of {SpanSession.Stones}");
+        EndWork();
+    }
+
     /// <summary>The piece under the glass, the loupe on it, what catches the eye, and the reading.</summary>
     private void DrawLoupe(LoupeSession s)
     {

@@ -682,6 +682,31 @@ Known leftovers:
   villager down.
 - The wounded lie where they fell until someone thinks to help.
 
+### M3.5: The bridge comes down (2026-11-12)
+- **A proper raid may pull the bridge down** (`Tinkering/Repairs`):
+  - **When:** a raid of strength 1 or more, with chance `season.json` `raidBreaksBridge` (0.6).
+  - **What goes:** a line of the span across its middle is destroyed, along its longer side, with
+    whatever falls with it. The gap is real: Millbrook's river has no other crossing.
+  - **What it costs:** parties come round by another edge, the carter can't get to the inn
+    ("couldn't get over the river"), and Dread grows 0.5 an hour while it's down.
+  - **The `Breach`** remembers the cells and what stood there, and is saved.
+- **The tinker mends it** (`TradeDef.MendsTown`, the tinker's new tip):
+  - **The game:** with 2 wood, F at the gap starts **bracing the span** (`SpanSession`, a cousin
+    of truing a wheel). Six stones sag off level. A level slides along them and back, reading low
+    where one sags and high where one rides up. F drives a wedge under the stone at the level, A
+    eases one out, and each nudges its neighbours.
+  - **When it's level:** the stones go back and the road is open.
+  - **The window** draws the span over the river, the band, the stones and the level's bubble.
+  - **The AI tinker** goes out and does it (`MendBreachJob`, no wood, like its wagons). The bot
+    fetches wood from the shop and plays it.
+- `RepairTests`. Bench state hashes unchanged; the full hashes moved for the new saved state: 1234
+  `5FFE13EAE6A878AC`, 99 `A322D5DFEEAF6181`.
+
+Known leftovers:
+- Raiders don't bash doors or gates yet. Only the bridge breaks.
+- The bracing window hasn't been seen in a running game. Nothing can break the bridge on demand
+  there yet (a dev button would).
+
 ## Next
 
 ### M3: A whole season

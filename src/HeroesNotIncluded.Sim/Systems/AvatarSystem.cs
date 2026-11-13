@@ -75,6 +75,9 @@ public enum AvatarActionKind
 
     /// <summary>A door's lock or a party's wagon (<see cref="Tinkering.Tinkers.ActionAt"/>): the game opens what can be done there.</summary>
     Tinker,
+
+    /// <summary>Brace a span a crisis broke (<see cref="Tinkering.SpanSession"/>), begun at once: the tinker's.</summary>
+    Mend,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -100,7 +103,8 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
     public bool Instant => Kind is AvatarActionKind.PutDown or AvatarActionKind.Deliver or AvatarActionKind.PickUp
         or AvatarActionKind.Store or AvatarActionKind.OpenStorage or AvatarActionKind.Tinker
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
-        or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean;
+        or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean
+        or AvatarActionKind.Mend;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
     public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker;
@@ -303,6 +307,10 @@ public sealed class AvatarSystem : ISimSystem
         // Game: shot from as far as the bow carries (or struck from beside it); a carcass in reach is butchered.
         if (tool == AvatarTool.Use && Ai.AvatarHunting.ActionAt(sim, avatar, cell, here) is { } hunting)
             return hunting;
+        // A gap a crisis tore (the bridge): the tinker braces it.
+        if (tool == AvatarTool.Use && sim.Repairs.At(cell) is { } breach && InReach(here, cell)
+            && w.TryGet<Trade>(avatar, out var mender) && mender.Def.MendsTown)
+            return new(AvatarActionKind.Mend, $"Brace the {breach.Label}", cell, Entity.Null);
         // A downed hatchling (or anyone small enough) to carry to its nest or bed.
         if (tool == AvatarTool.Use && held.IsNull && InReach(here, cell) && Rescues.DownedAt(sim, cell, avatar) is { IsNull: false } hurt
             && Rescues.CanCarry(sim, avatar, hurt))
@@ -697,6 +705,9 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.BarWork:
                 Work.BarWork.Start(sim, avatar, action.Target);
+                break;
+            case AvatarActionKind.Mend:
+                Tinkering.Repairs.StartMend(sim, avatar, sim.Repairs.At(action.Cell));
                 break;
             case AvatarActionKind.Clean:
                 if (Hospitality.ScrubSession.For(sim, avatar, action.Cell) is { } scrub)

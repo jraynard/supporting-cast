@@ -115,6 +115,9 @@ public sealed partial class VillageGame
             case Sim.Tinkering.TrueSession truing:
                 DrawTrue(truing);
                 return;
+            case Sim.Tinkering.SpanSession span:
+                DrawSpan(span);
+                return;
             case Sim.Tinkering.LoupeSession loupe:
                 DrawLoupe(loupe);
                 return;
