@@ -27,7 +27,26 @@ public static class RealtimeAttacks
             return null;
         var wasAlive = !w.Get<Creature>(target).Dead;
         var result = CombatRules.Resolve(sim, attacker, target, attack, accuracyBonus: accuracyBonus, damageScale: damageScale);
+        After(sim, attacker, target, attack, result, wasAlive);
+        return result;
+    }
 
+    /// <summary>
+    /// A blow that's reached its target lands, no roll (<see cref="CombatRules.Strike"/>, with
+    /// free movement), with all a blow's after-effects.
+    /// </summary>
+    public static AttackResult Strike(Simulation sim, Entity attacker, Entity target, AttackDef attack, float damageScale = 1f)
+    {
+        var wasAlive = !sim.World.Get<Creature>(target).Dead;
+        var result = CombatRules.Strike(sim, attacker, target, attack, damageScale);
+        After(sim, attacker, target, attack, result, wasAlive);
+        return result;
+    }
+
+    /// <summary>What every attack leaves: the shot for the renderer, a hunt counted, and the target (and its herd) provoked.</summary>
+    private static void After(Simulation sim, Entity attacker, Entity target, AttackDef attack, AttackResult result, bool wasAlive)
+    {
+        var w = sim.World;
         var now = sim.Clock.Tick;
         sim.RecentShots.RemoveAll(s => now - s.Tick > SimClock.TicksPerSecond * 5);
         sim.RecentShots.Add(new ShotEvent(now, w.Get<Position>(attacker).Pos, w.Get<Position>(target).Pos, attack.Ranged, result.Outcome == AttackOutcome.Hit));
@@ -46,7 +65,6 @@ public static class RealtimeAttacks
                 if (mate != target && w.Get<Herd>(mate).Id == herd.Id && Maps.Map.Distance(w.Get<Position>(mate).Cell, at) <= AlarmRadius)
                     Provoke(sim, mate, attacker);
         }
-        return result;
     }
 
     /// <summary>Remember who did it, and make an animal think again right away.</summary>

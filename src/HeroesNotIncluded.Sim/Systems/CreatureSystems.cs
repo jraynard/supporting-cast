@@ -31,6 +31,8 @@ public sealed class MovementSystem : ISimSystem
     {
         var w = sim.World;
         var map = sim.Map;
+        if (w.Has<Combat.FreeMover>(e))
+            return; // moves itself, off the grid (Combat.FreeMoveSystem)
         var mover = w.Get<Mover>(e);
         if (w.TryGet<Carried>(e, out var carried))
         {

@@ -293,7 +293,9 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         _cam = cam;
         _quads = quads;
         _anim.Advance(animDt);
+        _anim.LocalAim = LocalAim;
         _now = time;
+        UpdateSwings(sim);
         S(TextureAtlas.White); // picks up an atlas reload before the mesher runs
         var map = sim.Map;
         var w = sim.World;
@@ -485,6 +487,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         DrawBreaths(sim, time);
         DrawShots(sim, time);
         DrawWindups(sim);
+        DrawSwings(sim);
         DrawInhaling(sim);
         DrawBlowWords(sim);
         EmitSpeech(sim, InView);
@@ -658,11 +661,13 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             var shadowSize = Math.Clamp(sheet.FrameSize.X / (PixelsPerCell * sheet.Density) * 0.55f, 0.35f, 1.6f);
             Decal(S("fx/smoke"), new float3(feet.X, feet.Y, GroundBelow(map, p.Cell) + 0.02f), shadowSize, Rgba.Pack(0, 0, 0, 0.32f), level, translucent: true);
         }
-        BillboardFrame(sheet, pose.Frame, feet, pose.Facing, pose.Roll, color, level, aboutCenter: airborne);
+        // A dodge's tumble turns about their middle, as a flyer's bank does.
+        var tumbling = w.TryGet<Sim.Combat.FreeMover>(e, out var free) && sim.Clock.Tick < free.DashUntil;
+        BillboardFrame(sheet, pose.Frame, feet, pose.Facing, pose.Roll, color, level, aboutCenter: airborne || tumbling);
         var nudge = 0;
         foreach (var (layer, layerColor) in LookLayers(sim, e, color))
             if (HumanLook.LayerFrame(sheet, layer, pose.Frame) is { } lf)
-                BillboardFrame(layer, lf, feet - _cam.Forward * (++nudge * LayerStep), pose.Facing, pose.Roll, layerColor, level, aboutCenter: airborne);
+                BillboardFrame(layer, lf, feet - _cam.Forward * (++nudge * LayerStep), pose.Facing, pose.Roll, layerColor, level, aboutCenter: airborne || tumbling);
 
         if (sheet.Points.TryGetValue("mouth", out var m))
         {
@@ -741,7 +746,8 @@ public sealed class WorldRenderer(TextureAtlas atlas)
     public IEnumerable<(SpriteSheet Sheet, uint Color)> LookLayers(Simulation sim, Entity e, uint color) =>
         sim.World.Get<Creature>(e).Def.Race switch
         {
-            Race.Human => HumanLook.Layers(atlas, HumanLook.Of(sim, e), color, HumanLook.WornOf(sim, e), HeldOf(sim, e)),
+            // Mid-swing the weapon is drawn on its own, sweeping (DrawSwings): not in the hand as well.
+            Race.Human => HumanLook.Layers(atlas, HumanLook.Of(sim, e), color, HumanLook.WornOf(sim, e), _swings.ContainsKey(e.Index) ? null : HeldOf(sim, e)),
             _ => [],
         };
 
@@ -1012,6 +1018,129 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             // The goal it closes on.
             Decal(ring, at, 0.85f, Rgba.Pack(c.X, c.Y, c.Z, 0.25f), Quad.Unlit | Quad.Always, translucent: true);
         }
+    }
+
+    /// <summary>The local player's aim (radians on the map) and whose it is, drawn before the sim hears of it.</summary>
+    public (Entity E, float Aim)? LocalAim { get; set; }
+
+    /// <summary>A swing seen this frame or just landed: its windup, and the tick it landed (-1 while it's still coming).</summary>
+    private sealed class Swing
+    {
+        public Entity Who;
+        public Sim.Combat.Windup Blow;
+        public long Landed = -1;
+        public string Kind = "";
+        public Sprite Sprite;
+    }
+
+    private readonly Dictionary<int, Swing> _swings = [];
+    private readonly List<int> _swingsDone = [];
+
+    /// <summary>How long a landed blow's strike is drawn (ticks): the sweep, or the thrust out and back.</summary>
+    private const int StrikeTicks = 9;
+
+    /// <summary>
+    /// Who's swinging what this frame: every weapon being wound up (<see cref="Sim.Combat.Windup"/>)
+    /// that's a blade, a haft or a point (not a bow), and each for a moment after it lands.
+    /// </summary>
+    private void UpdateSwings(Simulation sim)
+    {
+        var w = sim.World;
+        var now = sim.Clock.Tick;
+        foreach (var e in w.Each<Sim.Combat.Windup>())
+        {
+            if (!w.TryGet<Equipment>(e, out var eq) || !w.IsAlive(eq.Weapon) || w.Get<Thing>(eq.Weapon).Def is not { Weapon.Ranged: false, Held: { } held } def)
+                continue;
+            if (!_swings.TryGetValue(e.Index, out var sw) || sw.Landed >= 0 || sw.Blow.Start != w.Get<Sim.Combat.Windup>(e).Start)
+                _swings[e.Index] = sw = new Swing { Who = e, Kind = held, Sprite = S(def.Sprite) };
+            sw.Blow = w.Get<Sim.Combat.Windup>(e);
+        }
+        _swingsDone.Clear();
+        foreach (var (index, sw) in _swings)
+        {
+            var still = false;
+            foreach (var x in w.Each<Sim.Combat.Windup>())
+                if (x.Index == index)
+                {
+                    still = w.Get<Sim.Combat.Windup>(x).Start == sw.Blow.Start;
+                    break;
+                }
+            if (!still && sw.Landed < 0)
+                sw.Landed = now;
+            if (sw.Landed >= 0 && now - sw.Landed > StrikeTicks)
+                _swingsDone.Add(index);
+        }
+        foreach (var i in _swingsDone)
+            _swings.Remove(i);
+    }
+
+    /// <summary>
+    /// The weapon in a swing, drawn on its own about the hand: a blade or a haft drawn back to one
+    /// side as it's wound up, then swept across the way it's aimed, with a smear; a spear drawn in,
+    /// then thrust out and back.
+    /// </summary>
+    private void DrawSwings(Simulation sim)
+    {
+        var w = sim.World;
+        var now = sim.Clock.Tick + (Interp?.Alpha ?? 1f);
+        foreach (var sw in _swings.Values)
+        {
+            var e = sw.Who;
+            if (!w.IsAlive(e) || !Seen(e) || !w.Has<Position>(e))
+                continue;
+            var blow = sw.Blow;
+            var feet = DrawPos(sim, e, w.Get<Position>(e).Pos);
+            var aim = LocalAim is { } mine && mine.E == e ? mine.Aim : blow.Aim;
+            var thrust = sw.Kind == "spear";
+            var heavy = blow.Heavy;
+            // Laid flat, the camera's tilt foreshortens it: drawn a size up from the item art.
+            var size = sw.Kind is "longsword" or "spear" ? 1.3f : sw.Kind == "knife" ? 0.7f : 1.0f;
+            if (sw.Landed < 0)
+            {
+                var p = Math.Clamp((now - blow.Start) / Math.Max(1f, blow.Impact - blow.Start), 0f, 1f);
+                if (thrust)
+                    DrawWeapon(sw.Sprite, feet, aim, size, 0.15f - 0.3f * p, 1f);
+                else
+                    DrawWeapon(sw.Sprite, feet, aim + (0.5f + (heavy ? 1.2f : 0.9f) * p), size, 0f, 1f);
+                continue;
+            }
+            var q = Math.Clamp((now - sw.Landed) / StrikeTicks, 0f, 1f);
+            if (thrust)
+            {
+                DrawWeapon(sw.Sprite, feet, aim, size, -0.15f + 1.1f * MathF.Sin(MathF.PI * q), 1f);
+                continue;
+            }
+            // Swept from the drawn-back side across the aim, fast at first: a smear behind it.
+            var from = aim + (heavy ? 1.7f : 1.4f);
+            var to = aim - (heavy ? 1.7f : 1.4f);
+            float At(float t) => from + (to - from) * (1f - (1f - t) * (1f - t));
+            for (var k = 3; k >= 1; k--)
+                DrawWeapon(sw.Sprite, feet, At(Math.Max(0f, q - k * 0.08f)), size, 0f, 0.5f - k * 0.13f);
+            DrawWeapon(sw.Sprite, feet, At(q), size, 0f, 1f);
+        }
+    }
+
+    /// <summary>
+    /// A weapon's item art (drawn corner to corner, grip at the bottom left) laid flat at hand height,
+    /// pointing along <paramref name="angle"/> on the map, pushed out along it by <paramref name="reach"/>.
+    /// </summary>
+    private void DrawWeapon(in Sprite sprite, float3 feet, float angle, float size, float reach, float alpha)
+    {
+        var dir = new float3(MathF.Cos(angle), MathF.Sin(angle), 0);
+        var a = angle - MathF.PI / 4;
+        var u = new float3(MathF.Cos(a), MathF.Sin(a), 0) * size;
+        var v = new float3(MathF.Sin(a), -MathF.Cos(a), 0) * size;
+        var hand = feet + new float3(0, 0, 0.5f) + dir * (0.12f + reach);
+        _quads.Add(new Quad
+        {
+            Origin = hand - v,
+            AxisU = u,
+            AxisV = v,
+            Flags = Quad.Unlit | Quad.Always,
+            Color = Rgba.Pack(1f, 1f, 1f, alpha),
+            Ao = Quad.NoAo,
+            Uv = sprite.Uv,
+        }, translucent: true);
     }
 
     /// <summary>

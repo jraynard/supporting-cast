@@ -1003,3 +1003,16 @@ shared); fights stay real time, Souls-lite.
   had nothing to fight with). A dragon's jaws come quicker, can't be parried, get through a guard at
   70% for twice the wind, and are dodged only by a late dodge; its breath is drawn first where it
   can be seen (a wide ember ring), and a guard or a late dodge takes only some of the fire.
+- **Free movement, the prototype** (`Combat/FreeMove`, the arena only): your character moves off
+  the grid (WASD relative to the camera, easing in and out, sliding along fences) and faces the
+  mouse. Left click strikes the way you aim, right click swings heavy, hold Q to guard (it must
+  face the blow), Space dashes about two cells with a moment blows pass through, drawn as a tumble.
+  With it on, blows land by reach and timing (`Combat/Reach`): each weapon sweeps its own shape the
+  way it's aimed (a sword a wide arc, a spear a long narrow line, a club a short wide one; an arrow
+  flies to the first in its line), and whoever's in it as it lands is struck, no roll. An AI's
+  blow is aimed as it starts, so stepping aside is a dodge. Armour takes a fixed share
+  (`CombatRules.Strike`); skill quickens the windup and adds weight. Weapons are drawn swinging, on
+  their own about the hand (a blade swept across with a smear, a spear thrust out and back).
+  Bench: state hashes unchanged; full hashes moved for the new saved switch (1234 `23418520B4927BD6`,
+  99 `9FBC73DE1A8F0D10`).
+

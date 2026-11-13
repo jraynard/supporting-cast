@@ -27,6 +27,13 @@ public struct Windup
 
     /// <summary>An AI target's answer to it, rolled when it began; players answer for themselves.</summary>
     public BlowResponse Response;
+
+    /// <summary>
+    /// Where it's aimed, radians (0 along +x, toward +y), fixed as it starts: with free movement
+    /// (<see cref="FreeMoveSystem"/>) it lands on whoever's in its sweep that way, so stepping
+    /// aside is a dodge.
+    /// </summary>
+    public float Aim;
 }
 
 /// <summary>
@@ -187,11 +194,14 @@ public static class Blows
     /// Start winding up a blow at <paramref name="target"/>. False if it can't now: already swinging,
     /// staggered, guarding, too tired, or the attack isn't one this attacker has.
     /// </summary>
-    public static bool Begin(Simulation sim, Entity attacker, Entity target, AttackDef attack, bool heavy = false)
+    public static bool Begin(Simulation sim, Entity attacker, Entity target, AttackDef attack, bool heavy = false, float? aim = null)
     {
         var w = sim.World;
-        if (!w.IsAlive(attacker) || !w.IsAlive(target) || attacker == target || w.Has<Windup>(attacker)
-            || !w.TryGet<Creature>(attacker, out var c) || !c.Able || !w.TryGet<Creature>(target, out var tc) || tc.Dead)
+        var free = sim.FreeMove.Enabled;
+        // With free movement a player may swing at the air (Target null): it lands on whoever's in its sweep.
+        var aimed = !target.IsNull || !free;
+        if (!w.IsAlive(attacker) || attacker == target || w.Has<Windup>(attacker) || !w.TryGet<Creature>(attacker, out var c) || !c.Able
+            || (aimed && (!w.IsAlive(target) || !w.TryGet<Creature>(target, out var tc) || tc.Dead)))
             return false;
         var index = CombatRules.Attacks(sim, attacker).IndexOf(attack);
         if (index < 0)
@@ -203,7 +213,9 @@ public static class Blows
         if (g.StaggeredUntil > now || g.RaisedAt >= 0 || g.Stamina < cost || (player && now < g.NextSwing))
             return false;
         g.Stamina -= cost;
-        var ticks = attack.WindupTicks * (heavy ? HeavyWindup : 1f) * (player ? PlayerWindup : 1f) * (IsDragon(sim, attacker) ? DragonWindup : 1f);
+        var ticks = attack.WindupTicks * (heavy ? HeavyWindup : 1f) * (player ? PlayerWindup : 1f) * (IsDragon(sim, attacker) ? DragonWindup : 1f)
+            * (free ? Reach.WindupFactor(sim, attacker, attack) : 1f);
+        var from = w.Get<Position>(attacker).Pos;
         var windup = new Windup
         {
             Target = target,
@@ -211,9 +223,13 @@ public static class Blows
             Heavy = heavy,
             Start = now,
             Impact = now + Math.Max(1, (int)ticks),
-            Response = w.Has<Avatar>(target) ? BlowResponse.None : AiResponse(sim, target, heavy, Parryable(sim, attacker, attack)),
+            Response = !aimed || w.Has<Avatar>(target) ? BlowResponse.None : AiResponse(sim, target, heavy, Parryable(sim, attacker, attack)),
+            Aim = aim is { } a && float.IsFinite(a) ? a
+                : aimed ? DetMath.Atan2(w.Get<Position>(target).Pos.Y - from.Y, w.Get<Position>(target).Pos.X - from.X) : 0f,
         };
         w.Add(attacker, windup);
+        if (w.Has<FreeMover>(attacker))
+            w.Get<FreeMover>(attacker).Aim = windup.Aim;
         // A player's next may start a moment after this one lands; after a shot, once the bow's ready again.
         if (player)
             g.NextSwing = windup.Impact + (attack.Ranged ? Math.Max(PlayerRecoveryTicks, attack.CooldownTicks - (int)ticks) : PlayerRecoveryTicks);
@@ -298,36 +314,60 @@ public static class Blows
 
     /// <summary>When a blow wound up now lands: its impact, and a moment more if it's at a player.</summary>
     public static long LandsAt(Simulation sim, in Windup windup) =>
-        windup.Impact + (sim.World.Has<Avatar>(windup.Target) ? LatencyGrace : 0);
+        windup.Impact + (!sim.FreeMove.Enabled && sim.World.Has<Avatar>(windup.Target) ? LatencyGrace : 0);
 
-    /// <summary>A blow lands (or doesn't): reach, a dodge, a guard, a parry, then the wound.</summary>
+    /// <summary>
+    /// A blow lands (or doesn't). On the town's grid it's at its target, if it's still in reach;
+    /// with free movement (<see cref="FreeMoveSystem"/>), on everyone in its sweep the way it was
+    /// aimed (<see cref="Reach"/>), and an arrow on the first one along its line.
+    /// </summary>
     internal static void Land(Simulation sim, Entity attacker, Windup windup)
     {
         var w = sim.World;
-        var target = windup.Target;
-        if (!w.IsAlive(target) || !w.Get<Creature>(attacker).Able || w.Get<Creature>(target).Dead)
+        if (!w.Get<Creature>(attacker).Able)
             return;
         var attacks = CombatRules.Attacks(sim, attacker);
         if (windup.Attack >= attacks.Count)
             return;
         var attack = attacks[windup.Attack];
-        var impact = windup.Impact;
-        ref var mine = ref GuardOf(sim, attacker);
-        ref var theirs = ref GuardOf(sim, target);
+        if (sim.FreeMove.Enabled)
+        {
+            var struck = Reach.Struck(sim, attacker, attack, windup.Aim);
+            if (struck.Count == 0)
+                Report(sim, attacker, windup.Target, BlowOutcome.Miss, windup.Heavy); // into the air, or they stepped out of it
+            foreach (var victim in struck)
+                Meet(sim, attacker, victim, windup, attack, free: true);
+            return;
+        }
+        var target = windup.Target;
+        if (!w.IsAlive(target) || w.Get<Creature>(target).Dead)
+            return;
         if (!CombatRules.Chance(sim, attacker, target, attack).Possible)
         {
             Report(sim, attacker, target, BlowOutcome.Miss, windup.Heavy); // stepped out of reach
             return;
         }
+        Meet(sim, attacker, target, windup, attack, free: false);
+    }
+
+    /// <summary>A blow that reaches <paramref name="target"/>: a dodge, a guard, a parry, then the wound.</summary>
+    private static void Meet(Simulation sim, Entity attacker, Entity target, in Windup windup, AttackDef attack, bool free)
+    {
+        var w = sim.World;
+        var impact = windup.Impact;
+        ref var mine = ref GuardOf(sim, attacker);
+        ref var theirs = ref GuardOf(sim, target);
         var dragon = IsDragon(sim, attacker);
         if (DodgedAt(theirs, impact, dragon))
         {
             Report(sim, attacker, target, BlowOutcome.Dodged, windup.Heavy);
             return;
         }
+        // A player's guard is up or not; free, it must also face the blow. An AI meets the blow
+        // aimed at it as it decided when it saw it coming, and is caught by any other.
         var guarding = w.Has<Avatar>(target)
-            ? theirs.UpAt(impact) && theirs.StaggeredUntil <= impact
-            : windup.Response != BlowResponse.None;
+            ? theirs.UpAt(impact) && theirs.StaggeredUntil <= impact && (!free || Reach.Facing(sim, target, attacker))
+            : target == windup.Target && windup.Response != BlowResponse.None;
         var parried = guarding && Parryable(sim, attacker, attack) && (w.Has<Avatar>(target)
             ? impact - theirs.LastRaise <= ParryTicks
             : windup.Response == BlowResponse.Parry);
@@ -337,6 +377,7 @@ public static class Blows
             mine.StaggeredUntil = sim.Clock.Tick + StaggerTicks;
             theirs.RiposteOn = attacker;
             theirs.RiposteUntil = sim.Clock.Tick + RiposteTicks;
+            Blows.Cancel(sim, attacker); // knocked out of whatever it was winding up next
             Report(sim, attacker, target, BlowOutcome.Parried, windup.Heavy);
             RealtimeAttacks.Provoke(sim, target, attacker);
             return;
@@ -363,6 +404,13 @@ public static class Blows
                 theirs.StaggeredUntil = sim.Clock.Tick + StaggerTicks;
                 outcome = BlowOutcome.GuardBroken;
             }
+        }
+        if (free)
+        {
+            // It reached them, so it lands: no roll. Skill and armour decide how much it hurts.
+            RealtimeAttacks.Strike(sim, attacker, target, attack, damage * Reach.SkillDamage(sim, attacker, attack));
+            Report(sim, attacker, target, outcome, windup.Heavy);
+            return;
         }
         var result = RealtimeAttacks.TryAttack(sim, attacker, target, attack, accuracy, damage);
         if (result is { Outcome: AttackOutcome.Miss } && outcome is BlowOutcome.Hit or BlowOutcome.Riposte)

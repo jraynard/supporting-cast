@@ -126,6 +126,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     stamped (`CombatInputCommand`) and blows at them land `LatencyGrace` late.
     Arrows (their draw is the windup) are blocked or dodged, never parried; a dragon's jaws and
     breath (`Inhaling`) are only partly blocked, and dodged only late.
+    The arena turns on free movement (`sim.FreeMove`, `FreeMover`): then blows land by reach and
+    timing (`Combat/Reach`), not by roll; the village still steps cell to cell.
   - Player input reaches the sim only as `ISimCommand`s, through `VillageGame.Issue`. `CommandCodec`
     serializes by constructor parameter. Commands declare `IActorCommand`, `ISubjectCommand`,
     `IPlayerCommand`, `IHostCommand` or `IDevCommand`; `CommandRules.Refusal` checks them on every peer.

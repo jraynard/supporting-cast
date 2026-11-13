@@ -173,10 +173,26 @@ internal static class ComponentCodecs
             w.Long(b.Start);
             w.Long(b.Impact);
             w.Int((int)b.Response);
+            w.Float(b.Aim);
         }, r => new Combat.Windup
         {
             Target = r.Entity(), Attack = Math.Max(0, r.Int()), Heavy = r.Bool(), Start = r.Long(), Impact = r.Long(),
-            Response = (Combat.BlowResponse)Math.Clamp(r.Int(), 0, 2),
+            Response = (Combat.BlowResponse)Math.Clamp(r.Int(), 0, 2), Aim = r.Float(),
+        }),
+        Codec("FreeMover", (w, m) =>
+        {
+            w.Float(m.Wish.X);
+            w.Float(m.Wish.Y);
+            w.Float(m.Vel.X);
+            w.Float(m.Vel.Y);
+            w.Float(m.Aim);
+            w.Float(m.DashDir.X);
+            w.Float(m.DashDir.Y);
+            w.Long(m.DashUntil);
+        }, r => new Combat.FreeMover
+        {
+            Wish = new float2(r.Float(), r.Float()), Vel = new float2(r.Float(), r.Float()), Aim = r.Float(),
+            DashDir = new float2(r.Float(), r.Float()), DashUntil = r.Long(),
         }),
         Codec("Inhaling", (w, i) =>
         {

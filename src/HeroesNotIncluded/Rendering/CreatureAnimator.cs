@@ -86,6 +86,9 @@ public sealed class CreatureAnimator
         return t >= SoarFlapSeconds;
     }
 
+    /// <summary>The local player's aim (radians on the map), which their character faces before the sim hears of it.</summary>
+    public (Entity E, float Aim)? LocalAim { get; set; }
+
     /// <summary>Animation time in seconds; advances with game speed.</summary>
     public float Clock { get; private set; }
 
@@ -234,6 +237,9 @@ public sealed class CreatureAnimator
         }
         var airborne = airStep || (map.InBounds(pos.Cell) && !map.Standable(map.Idx(pos.Cell)) && !map.IsSolid(map.Idx(pos.Cell)));
 
+        // A free mover (Combat.FreeMover) walks off the grid: moving by its speed, facing its aim.
+        var free = w.TryGet<Sim.Combat.FreeMover>(e, out var fm);
+        var freeMoving = free && fm.Vel.X * fm.Vel.X + fm.Vel.Y * fm.Vel.Y > 1e-6f;
         var job = mind.Job;
         // A player in a hands-on session (at the anvil, the tub, a stain on the floor) isn't in an AI
         // job, but works all the same, facing the work.
@@ -250,7 +256,7 @@ public sealed class CreatureAnimator
             job is SoarJob && GlidingNow(e),
             (job is BuildJob or DeconstructJob or HarvestJob or DigJob or Sim.Shops.CleanJob or Sim.Shops.MakeBedJob or Sim.Shops.WashJob
                 || station != null) && !mover.Moving,
-            mover.Moving,
+            mover.Moving || freeMoving,
             job is Sim.Hospitality.SavourJob { Seated: true }
         );
         var want = ChooseTag(inputs);
@@ -301,6 +307,11 @@ public sealed class CreatureAnimator
             var next = mover.Path![mover.PathIndex];
             look = new float3(next.X - mover.StepFrom.X, next.Y - mover.StepFrom.Y, 0);
         }
+        if (free)
+        {
+            var aim = LocalAim is { } mine && mine.E == e ? mine.Aim : fm.Aim;
+            look = new float3(MathF.Cos(aim), MathF.Sin(aim), 0);
+        }
         if (look is { } dir && !(tag is "sleep" or "downed"))
         {
             var side = dir.X * cam.Right.X + dir.Y * cam.Right.Y;
@@ -343,13 +354,21 @@ public sealed class CreatureAnimator
             st.LastHeading = float.NaN;
         }
         st.Roll += (targetRoll * st.Facing - st.Roll) * Math.Min(1f, _dt * 4f);
+        // A dodge's dash is a tumble: once round, the way they're going.
+        var roll = st.Roll;
+        if (free && sim.Clock.Tick < fm.DashUntil)
+        {
+            var t = 1f - (fm.DashUntil - sim.Clock.Tick) / (float)Sim.Combat.FreeMoveSystem.DashTicks;
+            var side = fm.DashDir.X * cam.Right.X + fm.DashDir.Y * cam.Right.Y;
+            roll = -MathF.Tau * Math.Clamp(t, 0f, 1f) * (side >= 0 ? 1 : -1);
+        }
 
         var frameIndex = anim?.FrameAt(st.TagTime) ?? 0;
         var frame = anim != null ? anim.Frames[frameIndex] : sheet.Frames[0];
         var fired = anim != null && anim.EventFrame >= 0 && frameIndex == anim.EventFrame && st.LastFrame != frameIndex;
         st.LastFrame = frameIndex;
         st.Shown = frame;
-        return new CreaturePose(sheet, anim, frame, tag, facing, st.Roll, fired, started);
+        return new CreaturePose(sheet, anim, frame, tag, facing, roll, fired, started);
     }
 
     /// <summary>True once per <paramref name="interval"/> seconds of animation time for this creature (Zzz, embers).</summary>

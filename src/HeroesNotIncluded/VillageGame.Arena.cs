@@ -32,6 +32,8 @@ public sealed partial class VillageGame
         var me = VillageRound.SpawnHero(_sim, new Hero(string.IsNullOrWhiteSpace(HeroName) ? "Arin" : HeroName, look, HeroTraits, clothes), center);
         _arenaFoe = ArenaFoe ?? Arena.DefaultFoe;
         _arenaWeapon = ArenaWeapon;
+        // The prototype: free movement and blows by reach and timing, in the ring only for now.
+        _sim.FreeMove.Enable(_sim);
         _boutFoe = Arena.Bout(_sim, me, _arenaFoe, _arenaWeapon ?? Arena.DefaultWeapon);
         if (_boutFoe.IsNull)
             Console.WriteLine($"warning: no raider kind called {_arenaFoe}; try one of {string.Join(", ", Arena.Foes(defs))}");

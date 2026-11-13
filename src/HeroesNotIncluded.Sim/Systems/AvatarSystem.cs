@@ -181,6 +181,8 @@ public sealed class AvatarSystem : ISimSystem
             }
             if (w.Has<Carried>(e))
                 continue;
+            if (w.Has<Combat.FreeMover>(e))
+                continue; // walks off the grid (Combat.FreeMoveSystem)
 
             ref var a = ref w.Get<Avatar>(e);
             if (a.HasPending && !w.Get<Mover>(e).Moving)

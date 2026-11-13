@@ -83,7 +83,7 @@ public sealed partial class VillageGame
     /// Keys the avatar's controls use.
     /// the toolbar's letter hotkeys skip them in Adventure mode.
     /// </summary>
-    private static readonly GlfwKey[] AvatarKeys = [GlfwKey.W, GlfwKey.A, GlfwKey.S, GlfwKey.D, GlfwKey.F, GlfwKey.Z, GlfwKey.X, GlfwKey.N, GlfwKey.V];
+    private static readonly GlfwKey[] AvatarKeys = [GlfwKey.W, GlfwKey.A, GlfwKey.S, GlfwKey.D, GlfwKey.F, GlfwKey.Z, GlfwKey.X, GlfwKey.N, GlfwKey.V, GlfwKey.Q];
 
     private bool _sentDig;
 
@@ -163,27 +163,33 @@ public sealed partial class VillageGame
             x = y = 0;
         else
             _moveKeysFromWork = false;
-        var dir = MapDirection(x, y);
-        if (dir != _heldDir)
-            (_heldDir, _heldFor) = (dir, 0f);
+        if (FreeMoving)
+            HandleFreeMove(input, x, y);
         else
-            _heldFor += dt;
-        // One key held, coming from nothing or from two: wait a moment for the other key.
-        var oneKey = (x != 0) != (y != 0);
-        var sentTwo = _sentKeys == 2;
-        if (oneKey && (_sentMoveDir == int2.Zero || sentTwo) && _heldFor < ChordGrace)
-            dir = _sentMoveDir;
-        if (dir != _sentMoveDir)
         {
-            _sentKeys = dir == int2.Zero ? 0 : oneKey ? 1 : 2;
-            // Co-op: walk on screen at once, and tell the sim where we turned or stopped so it
-            // ends up there too when the command comes back.
-            var at = _coop != null ? _predictor.DirectionChanged(_sim, _avatar, dir) : null;
-            Issue(new AvatarMoveCommand(_avatar, dir, at));
-            _sentMoveDir = dir;
+            var dir = MapDirection(x, y);
+            if (dir != _heldDir)
+                (_heldDir, _heldFor) = (dir, 0f);
+            else
+                _heldFor += dt;
+            // One key held, coming from nothing or from two: wait a moment for the other key.
+            var oneKey = (x != 0) != (y != 0);
+            var sentTwo = _sentKeys == 2;
+            if (oneKey && (_sentMoveDir == int2.Zero || sentTwo) && _heldFor < ChordGrace)
+                dir = _sentMoveDir;
+            if (dir != _sentMoveDir)
+            {
+                _sentKeys = dir == int2.Zero ? 0 : oneKey ? 1 : 2;
+                // Co-op: walk on screen at once, and tell the sim where we turned or stopped so it
+                // ends up there too when the command comes back.
+                var at = _coop != null ? _predictor.DirectionChanged(_sim, _avatar, dir) : null;
+                Issue(new AvatarMoveCommand(_avatar, dir, at));
+                _sentMoveDir = dir;
+            }
+            if (dir != int2.Zero)
+                _clickWindow = null; // walked off: the clicked wagon or bench stays shut
+
         }
-        if (dir != int2.Zero)
-            _clickWindow = null; // walked off: the clicked wagon or bench stays shut
 
         HandleInventoryKeys(input);
         HandleCombatKeys(input);
@@ -311,6 +317,8 @@ public sealed partial class VillageGame
     {
         if (!HasAvatar || _tool != ToolKind.Select)
             return false;
+        if (FreeMoving)
+            return HandleFreeMouse(input); // the buttons fight; nothing's walked to by clicking
         UpdateClickWindow(dt);
 
         var shift = input.IsKeyDown(GlfwKey.LeftShift) || input.IsKeyDown(GlfwKey.RightShift);

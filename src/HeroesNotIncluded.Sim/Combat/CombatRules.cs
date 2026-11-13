@@ -350,6 +350,39 @@ public static class CombatRules
     }
 
     /// <summary>
+    /// A blow that has reached its target (<see cref="Reach"/>, with free movement): no roll to hit
+    /// and none to glance or be turned. Where it lands is by coverage (higher from above), and the
+    /// armour there takes a fixed share of it, as much as it outmatches the weapon's bite, and wears
+    /// for it. Returns what got through.
+    /// </summary>
+    public static AttackResult Strike(Simulation sim, Entity attacker, Entity target, AttackDef attack, float damageScale = 1f)
+    {
+        var w = sim.World;
+        SkillRules.Learn(sim, attacker, SkillFor(attack), SkillRules.XpPerHit);
+        var dz = w.Get<Position>(attacker).Cell.Z - w.Get<Position>(target).Cell.Z;
+        PartHeight? bias = dz > 0 ? PartHeight.High : dz < 0 ? PartHeight.Low : null;
+        var health = w.TryGet<Health>(target, out var h) ? h : null;
+        var part = health != null ? HealthSystem.PickPart(sim, health, bias) : -1;
+        var damage = sim.Rand.Range(attack.DamageMin, attack.DamageMax) * damageScale;
+        var weapon = w.TryGet<Equipment>(attacker, out var wielded) && w.IsAlive(wielded.Weapon)
+            && w.Get<Thing>(wielded.Weapon).Def.Weapon == attack ? wielded.Weapon : Entity.Null;
+        if (!weapon.IsNull)
+            damage *= Crafting.QualityFactorOf(sim, weapon) * WeaponWear.DamageFactor(sim, weapon);
+        var (armor, item) = ArmorAt(sim, target, part, attack.DamageType);
+        var soaked = damage * Math.Clamp(Through(armor, attack), 0f, MaxSoak);
+        WearDown(sim, target, item, soaked);
+        if (!weapon.IsNull)
+            WeaponWear.Struck(sim, attacker, weapon, turned: false, soaked);
+        damage -= soaked;
+        HealthSystem.Damage(sim, target, damage, attack.DamageType, part);
+        var label = health != null && part >= 0 ? health.Body.Parts[part].Label : "body";
+        return new AttackResult(attacker, target, attack, 1f, AttackOutcome.Hit, label, damage);
+    }
+
+    /// <summary>The most of a blow armour takes (<see cref="Strike"/>): even plate lets something through.</summary>
+    public const float MaxSoak = 0.85f;
+
+    /// <summary>
     /// A dragon's breath in combat: the usual cone (which sets the ground alight, or frosts it, or
     /// leaves a cloud: <see cref="Breath"/>), plus a wound on every creature it passes over, friend
     /// or foe: burns. Fireproof creatures (a dragon's own kind) shrug it off. Loosed by a wild

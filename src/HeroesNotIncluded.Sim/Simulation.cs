@@ -89,6 +89,9 @@ public sealed partial class Simulation
     /// <summary>The call to arms ahead of a raid, the town purse that pays for them, and the muster at the rack.</summary>
     public Militia.MilitiaSystem Militia { get; } = new();
 
+    /// <summary>Free movement and blows by reach and timing (the arena's prototype; off in the village).</summary>
+    public Combat.FreeMoveSystem FreeMove { get; } = new();
+
     /// <summary>Who knows the way where, and who's asked.</summary>
     public Hospitality.DirectionsSystem Directions { get; } = new();
 
@@ -266,6 +269,7 @@ public sealed partial class Simulation
             .AddSystem(new Work.SmithingSystem())
             .AddSystem(new Work.CookingSystem())
             .AddSystem(new AvatarSystem())
+            .AddSystem(sim.FreeMove)
             .AddSystem(new Combat.BlowSystem())
             .AddSystem(new SettlerSystem())
             .AddSystem(sim.Ai)
