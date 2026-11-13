@@ -504,6 +504,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     {
         if (!e.IsOpen)
             return;
+        _served[(int)e.Kind.Kind]++;
         var paid = Coin.Pay(sim, e.Poster, by, e.Price);
         Close(sim, e, OrderStatus.Done);
         Learn(e, by);
@@ -991,6 +992,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     {
         var (a, b, c, d) = _rand.State;
         w.UInt(a); w.UInt(b); w.UInt(c); w.UInt(d);
+        w.Int(_served.Length);
+        foreach (var n in _served)
+            w.Int(n);
         w.Int(_nextId);
         var asked = _questAsked.Order().ToList();
         w.Int(asked.Count);
@@ -1036,9 +1040,22 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         }
     }
 
+    private readonly int[] _served = new int[Enum.GetValues<ServiceKind>().Length];
+
+    /// <summary>Orders of a kind done this round: the inn keeping its customers fed through a shortage.</summary>
+    public int Served(ServiceKind kind) => _served[(int)kind];
+
     public void Load(Saving.SaveReader r, Simulation sim)
     {
         _rand.State = (r.UInt(), r.UInt(), r.UInt(), r.UInt());
+        Array.Clear(_served);
+        if (r.Version >= 10)
+            for (int i = 0, n = r.Count(256); i < n; i++)
+            {
+                var v = r.Int();
+                if (i < _served.Length)
+                    _served[i] = v;
+            }
         _nextId = r.Int();
         _questAsked.Clear();
         for (var n = r.Count(1 << 16); n > 0; n--)

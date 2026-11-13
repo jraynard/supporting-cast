@@ -707,6 +707,34 @@ Known leftovers:
 - The bracing window hasn't been seen in a running game. Nothing can break the bridge on demand
   there yet (a dev button would).
 
+### M3.6: Fire, shortage and fever (2026-11-12)
+The Director's second-day crisis can now be any of the four (`Director.CanSend`; `Director/Crises.cs`).
+- **Fire** (`FireCrisis`):
+  - **It starts:** a building catches at a cell beside something that burns, and the nearest
+    villager shouts it.
+  - **Fighting it:** anyone can beat it out (F, and the AI's existing firefighting work; no
+    bucket line was needed).
+  - **Met:** the fire's out before the building loses a fifth of its parts.
+- **Shortage** (`ShortageCrisis`):
+  - **It starts:** rats spoil half of every food stack in the inn's larder, and the carter stays
+    away for its 24 hours ("The carter didn't come").
+  - **Met:** the inn serves 6 meals or drinks meanwhile, counted by `ShopSystem.Served`.
+- **Plague** (`PlagueCrisis`, `Healing/FeverSystem`):
+  - **The fever:** an adventurer in town comes down with it, a new `DamageType.Fever`: an injury
+    on the torso, with nothing to see.
+  - **How it goes:** untended it grows (1 an hour, to 12, short of killing). It passes to whoever
+    stays within two cells (5% a quarter hour). Bound, it stops growing.
+  - **Healing it:** the empath feels it as "a heat in the blood that comes and goes in waves" and
+    quells it, a new common mending (Rime and Still). Adventurers ask the healer about it like any
+    wound.
+  - **Met:** nobody in town is fevered within 12 hours, and nobody left town with it.
+- `CrisisTests`. Save format 10. Bench state hashes unchanged; the full hashes moved for the new
+  saved state: 1234 `6977970C16F19263`, 99 `CFBD91FACBA4EFA6`.
+
+Known leftovers:
+- A fever doesn't yet weaken a party on a quest.
+- The second-day crisis kinds have the same weight as each other. Tune in play.
+
 ## Next
 
 ### M3: A whole season

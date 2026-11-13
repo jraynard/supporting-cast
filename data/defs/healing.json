@@ -30,7 +30,8 @@
     { "name": "Burn", "pattern": "Drift" },
     { "name": "Frost", "pattern": "Numb" },
     { "name": "Venom", "pattern": "Grow" },
-    { "name": "Shock", "pattern": "Spike", "rate": 0.4, "strength": 2.2 }
+    { "name": "Shock", "pattern": "Spike", "rate": 0.4, "strength": 2.2 },
+    { "name": "Fever", "pattern": "Wave", "rate": 0.5, "strength": 1.3 }
   ],
 
   "mendings": [
@@ -51,6 +52,10 @@
       "runes": [ "Ember", "Flesh" ], "lead": "Ember",
       "heals": [ "Frost" ], "manaCost": 22, "heal": 14,
       "feels": { "Frost": "numbness, then needles" } },
+    { "name": "Quell", "label": "Quelling", "description": "Cools a fever out of the blood, and settles what it stirred.",
+      "runes": [ "Rime", "Still" ], "lead": "Rime",
+      "heals": [ "Fever" ], "manaCost": 20, "heal": 14,
+      "feels": { "Fever": "a heat in the blood that comes and goes in waves" } },
     { "name": "Cleanse", "label": "Cleansing", "description": "Burns out venom and festering.",
       "runes": [ "Salt", "Salt", "Flesh" ], "lead": "Salt",
       "heals": [ "Venom" ], "cleanses": true, "manaCost": 30, "heal": 10,

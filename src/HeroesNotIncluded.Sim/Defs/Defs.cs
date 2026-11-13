@@ -1072,7 +1072,7 @@ public sealed class ApparelProps
         DamageType.Blunt => Blunt,
         DamageType.Burn or DamageType.Frost => Heat, // what keeps out heat keeps out the cold
         DamageType.Shock => Heat * 0.5f,
-        DamageType.Venom => 0f,                       // poison gets in anywhere
+        DamageType.Venom or DamageType.Fever => 0f,   // poison and sickness get in anywhere
         _ => Sharp,
     };
 

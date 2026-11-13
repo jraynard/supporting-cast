@@ -20,6 +20,9 @@ public enum DamageType
 
     /// <summary>Poison eating at the flesh (breath, and the cloud's venom over time).</summary>
     Venom,
+
+    /// <summary>A fever caught from someone near (<c>Healing.Fever</c>): no wound to see, a heat in the blood.</summary>
+    Fever,
 }
 
 /// <summary>What a creature can still do, each 0..1, derived from its injuries (see <c>Components.Health</c>).</summary>
@@ -111,6 +114,7 @@ public static class DamageTypes
         DamageType.Burn => 0.1f,
         DamageType.Frost => 0.08f,
         DamageType.Venom => 0.12f,
+        DamageType.Fever => 0f,
         _ => 0.03f,
     };
 
@@ -123,6 +127,7 @@ public static class DamageTypes
         DamageType.Frost => "frostbite",
         DamageType.Shock => "lightning burn",
         DamageType.Venom => "poisoned wound",
+        DamageType.Fever => "fever",
         _ => "bite",
     };
 }
