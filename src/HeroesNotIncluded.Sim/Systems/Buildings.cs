@@ -38,18 +38,21 @@ public static class Buildings
     }
 
     /// <summary>Where a plan cell (column, row) of a storey lands on the map, or (-1, -1, -1) off it.</summary>
-    /// <summary>Every finished building's lamps (<see cref="BuildingDef.Lamps"/>): where they hang and what they are.</summary>
-    public static IEnumerable<(int3 Cell, ThingDef Def)> LitLamps(Simulation sim)
+    /// <summary>
+    /// Every finished building's lamps (<see cref="BuildingDef.Lamps"/>): where they are, what they
+    /// are, and for one on a wall, which way it faces on the map (its back to the wall; null: hung).
+    /// </summary>
+    public static IEnumerable<(int3 Cell, ThingDef Def, int? Facing)> LitLamps(Simulation sim)
     {
         var w = sim.World;
         foreach (var e in w.Query<PresetBuilding>())
         {
             var b = w.Get<PresetBuilding>(e);
-            if (b.Phase != BuildPhase.Done || b.Demolishing || b.Def.LampDef is not { } lamp)
+            if (b.Phase != BuildPhase.Done || b.Demolishing)
                 continue;
             foreach (var l in b.Def.Lamps)
-                if (CellOf(sim.Map, b.Def, b.Anchor, b.Facing, l.At[0], l.At[1], l.Level) is var c && c != Off)
-                    yield return (c, lamp);
+                if (l.LampDef is { } lamp && CellOf(sim.Map, b.Def, b.Anchor, b.Facing, l.At[0], l.At[1], l.Level) is var c && c != Off)
+                    yield return (c, lamp, l.Facing is { } f ? (f + b.Facing) & 3 : null);
         }
     }
 

@@ -126,6 +126,15 @@ public sealed class BuildingDef : Def
     [JsonIgnore] public int Depth { get; private set; }
 
     /// <summary>The plan symbol at a plan cell (column, row), ' ' outside.</summary>
+    /// <summary>The plan cell behind (col, row) for something facing <paramref name="facing"/> (0: its back to -Y).</summary>
+    public char Behind(int col, int row, int facing, int level)
+    {
+        var d = Footprint.Rotate(0, -1, facing);
+        return At(col + d.X, row + d.Y, level);
+    }
+
+    private static bool IsWallSymbol(char c) => c is 'W' or 'P';
+
     public char At(int col, int row) => col >= 0 && row >= 0 && col < Width && row < Depth ? Layout[row][col] : ' ';
 
     /// <summary>The plan symbol at a plan cell on a storey (0 the ground, 1 the upper), ' ' outside or with no such storey.</summary>
@@ -288,11 +297,16 @@ public sealed class BuildingDef : Def
         }
         EatThoughtDef = EatThought != null ? db.Thought(EatThought) : null;
         LampDef = Lamp != null ? db.Thing(Lamp) : null;
-        if (Lamps.Count > 0 && LampDef?.Building is not { LightRadius: > 0 })
-            throw new Exception($"Building '{Name}': lamps need a \"lamp\" def that gives light (building lightRadius)");
         foreach (var l in Lamps)
+        {
+            l.LampDef = l.Def != null ? db.Thing(l.Def) : LampDef;
+            if (l.LampDef?.Building is not { LightRadius: > 0 })
+                throw new Exception($"Building '{Name}': lamps need a \"lamp\" def that gives light (building lightRadius)");
             if (l.At.Length != 2 || l.Level < 0 || l.Level >= Storeys || At(l.At[0], l.At[1], l.Level) != '.')
                 throw new Exception($"Building '{Name}': a lamp at [{string.Join(", ", l.At)}] isn't over an open floor of its plan");
+            if (l.Facing is { } f && (f is < 0 or > 3 || !IsWallSymbol(Behind(l.At[0], l.At[1], f, l.Level))))
+                throw new Exception($"Building '{Name}': a wall lamp at [{string.Join(", ", l.At)}] has no wall behind it");
+        }
         foreach (var u in Upgrades)
         {
             u.OnDef = db.Thing(u.On);
@@ -429,11 +443,23 @@ public sealed class BuildingVariant
 }
 
 /// <summary>A piece of furniture the Furnish phase puts in.</summary>
-/// <summary>Where a building hangs a lamp (<see cref="BuildingDef.Lamps"/>): a plan cell, on a storey.</summary>
+/// <summary>
+/// Where a building hangs a lamp (<see cref="BuildingDef.Lamps"/>): a plan cell, on a storey. With a
+/// <see cref="Facing"/> it's mounted on the wall behind that cell (a torch in a bracket) instead of
+/// hung from the beams; <see cref="Def"/> picks another lamp than the building's own.
+/// </summary>
 public sealed class BuildingLampAt
 {
     public int[] At { get; set; } = [0, 0];
     public int Level { get; set; }
+
+    /// <summary>In plan terms: which way it faces, its back to the wall (0 faces +Y, as a model's front).</summary>
+    public int? Facing { get; set; }
+
+    /// <summary>The lamp's thing def, if not the building's <see cref="BuildingDef.Lamp"/>.</summary>
+    public string? Def { get; set; }
+
+    [JsonIgnore] public ThingDef? LampDef { get; internal set; }
 }
 
 public sealed class BuildingFurnishing

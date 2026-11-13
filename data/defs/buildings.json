@@ -161,7 +161,9 @@
       // Lanterns from the beams (the fires light only their own ends): over the tables, by the bar,
       // the kitchen, the storeroom and the hall upstairs.
       "lamp": "Lantern",
-      "lamps": [ { "at": [3, 7] }, { "at": [8, 8] }, { "at": [4, 10] }, { "at": [5, 2] }, { "at": [10, 3] }, { "at": [6, 6], "level": 1 } ],
+      // Torches on the walls by the front door, the stair and the far corner ("facing": their backs to the wall).
+      "lamps": [ { "at": [3, 7] }, { "at": [8, 8] }, { "at": [4, 10] }, { "at": [5, 2] }, { "at": [10, 3] }, { "at": [6, 6], "level": 1 },
+                 { "at": [5, 11], "facing": 2, "def": "WallTorch" }, { "at": [1, 5], "facing": 3, "def": "WallTorch" }, { "at": [11, 11], "facing": 1, "def": "WallTorch" } ],
       // Customers line up at the bar: the front at the counter, then back toward the door.
       "line": [ [10, 8], [11, 8], [11, 9], [10, 9], [9, 9], [8, 9], [8, 10], [7, 10] ],
       // Meals are ordered at the serving hatch in the kitchen wall, and collected from it (Shops.Hatch).
@@ -253,10 +255,12 @@
       // The forge between its bellows at the back, tools on the wall, fuel to hand. The anvil, tub
       // and grindstone are where the hot piece goes next: a step or two from the fire, clear of
       // the counter at the front.
+      // Torches on the side walls, so the smith isn't working by the forge's glow alone.
+      "lamps": [ { "at": [1, 2], "facing": 3, "def": "WallTorch" }, { "at": [5, 2], "facing": 1, "def": "WallTorch" } ],
       "furnish": [
         { "def": "Forge", "at": [3, 1] },
-        { "def": "Bellows", "at": [2, 1] },
-        { "def": "Bellows", "at": [4, 1] },
+        { "def": "Bellows", "at": [2, 1], "facing": 3 },
+        { "def": "Bellows", "at": [4, 1], "facing": 1 },
         { "def": "ToolRack", "at": [1, 1] },
         { "def": "FuelBin", "at": [5, 1] },
         { "def": "Anvil", "at": [2, 3] },
@@ -586,7 +590,7 @@
       "building": { "partOnly": true, "isFloor": true, "supportSpan": 4, "insulation": 0.92, "work": 30, "cost": [ { "def": "Wood", "count": 1 } ] }
     },
     {
-      "name": "InnStair", "label": "staircase", "category": "Building", "sprite": "buildings/stairs_wood",
+      "name": "InnStair", "label": "staircase", "category": "Building", "sprite": "buildings/stairs_wood", "steps": 4,
       "description": "A boxed stair up to the next storey.",
       "maxHp": 120, "flammability": 1.0, "pathCost": 1,
       "building": { "partOnly": true, "climb": "Ramp", "work": 150, "cost": [ { "def": "Wood", "count": 6 } ] }

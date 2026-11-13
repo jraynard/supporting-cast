@@ -50,6 +50,11 @@ The side's opaque part is the wedge, high end on the **left**, with the slope su
 top-left corner to the bottom-right (stairs: a stepped profile, four steps 8 px across and 16 down). Pixels outside it must be transparent (alpha below 0.5). Without a side sprite the
 ramp's sides stay open.
 
+A stair def with `steps` (`WoodStairs`, `InnStair`: 4) isn't drawn as a slope at all: the mesher
+builds that many solid steps (`WorldMesher.AddStairs`), each a box with a plank tread and sides and a
+dark riser, turned to the climb. Solid to the floor, it leaves no holes in a stairwell. Its sprite is
+then only the toolbar icon.
+
 ## Materials (wood types)
 
 Items and buildings can be made of a material (`materials` in the defs: Oak, Pine, Birch, all kinds
@@ -178,6 +183,10 @@ cell: its boxes use coordinates past 0..1 (a 3x3's run from -1 to 2) to cover th
 - **Lamps:** a building's `lamps` (plan cells) hang its `lamp` def's model from the beams, with a
   small steady flame at its `fireAt` (the inn's lanterns). They're not structures, so they take no
   floor, and they light once the building's finished, without fuel.
+- **Wall torches:** a lamp with a `facing` is mounted on the wall behind its cell (its back, the
+  model's -Y edge, to the wall; the plan must have a wall there), and a lamp's own `def` overrides
+  the building's `lamp` (`WallTorch`: an iron bracket and a pitch-wrapped head). It's left out while
+  the cutaway cuts its wall down to a stub.
 - **Set-in walls and the cutaway:** a plan gap filled by something built as a wall counts as wall,
   so the walls beside a fireplace aren't cut down for it.
 

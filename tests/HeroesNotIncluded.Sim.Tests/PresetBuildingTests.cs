@@ -498,4 +498,24 @@ public class LanternTests
             Assert.True(sim.Map.Light[sim.Map.Idx(cell)] > 0.4f, $"({col},{row}) is lit {sim.Map.Light[sim.Map.Idx(cell)]:F2}");
         }
     }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(3)]
+    public void WallTorchesHaveTheirBacksToAWallHoweverTheBuildingTurns(int facing)
+    {
+        var sim = TestWorld.Create(40, 40, depth: 6);
+        Buildings.SpawnFinished(sim, sim.Defs.Building("Inn"), C(20, 20), facing);
+        var torches = Buildings.LitLamps(sim).Where(l => l.Facing != null).ToList();
+        Assert.NotEmpty(torches);
+        foreach (var (cell, def, f) in torches)
+        {
+            Assert.Equal("WallTorch", def.Name);
+            var back = Footprint.Rotate(0, -1, f!.Value);
+            var behind = sim.Map.Structure[sim.Map.Idx(cell + new int3(back.X, back.Y, 0))];
+            Assert.False(behind.IsNull, $"the torch at {cell} faces {f} with nothing behind it");
+            Assert.True(sim.World.Get<Thing>(behind).Def.Building!.IsWall, $"the torch at {cell} has no wall behind it");
+        }
+    }
 }

@@ -36,7 +36,7 @@ public sealed class LightingSystem : ISimSystem
                 Splat(sim, Warmth.FireCell(thing), thing.Def.Building!.LightRadius, 1f);
         }
 
-        foreach (var (cell, lamp) in Systems.Buildings.LitLamps(sim))
+        foreach (var (cell, lamp, _) in Systems.Buildings.LitLamps(sim))
             Splat(sim, cell, lamp.Building!.LightRadius, LampStrength);
 
         foreach (var i in sim.Fire.BurningTiles)

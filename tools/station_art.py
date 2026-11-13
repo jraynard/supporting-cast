@@ -225,6 +225,22 @@ def icon_lantern():
     return selective_outline(img, keep=OUTLINE_KEEP + ((255, 196, 110, 255),))
 
 
+def icon_wall_torch():
+    img = canvas()
+    plate = mask_of(img.size, lambda d: d.rectangle([5, 12, 10, 22], fill=255))     # the bracket on the wall
+    shade_shape(img, plate, IRON, radius=0.5, slope=1.4)
+    arm = mask_of(img.size, lambda d: d.line([(10, 17), (17, 17)], fill=255, width=2))
+    shade_shape(img, arm, IRON, radius=0.3)
+    stick = mask_of(img.size, lambda d: d.line([(14, 28), (20, 12)], fill=255, width=3))
+    shade_shape(img, stick, WOODS[""].w[1:5], radius=0.5, slope=1.4)
+    ring = mask_of(img.size, lambda d: d.ellipse([14, 15, 20, 19], fill=255))
+    shade_shape(img, ring, IRON, radius=0.4)
+    head = mask_of(img.size, lambda d: d.rounded_rectangle([17, 9, 23, 14], radius=2, fill=255))
+    shade_shape(img, head, ramp((70, 50, 40), 4), radius=0.6, tex=lambda x, y: -0.5 if (x + y) % 3 == 0 else 0)
+    flame(img, 20, 10, 9, 4)
+    return selective_outline(img, keep=OUTLINE_KEEP)
+
+
 # ---------------------------------------------------------------- the village
 
 def icon_barrel():
@@ -399,7 +415,7 @@ def prop_suds():
 def generate():
     for name, make in (("ale_cask", icon_ale_cask), ("shelf", icon_shelf), ("larder", icon_larder), ("stew_pot", icon_stew_pot),
                        ("wash_tub", icon_wash_tub), ("bar_counter", icon_bar_counter), ("serving_hatch", icon_serving_hatch),
-                       ("fireplace", icon_fireplace), ("lantern", icon_lantern), ("barrel", icon_barrel), ("crate", icon_crate),
+                       ("fireplace", icon_fireplace), ("lantern", icon_lantern), ("wall_torch", icon_wall_torch), ("barrel", icon_barrel), ("crate", icon_crate),
                        ("barn", icon_barn), ("pyre", icon_pyre), ("meditation_stone", icon_meditation_stone)):
         save(make(), "buildings/" + name)
     save(icon_keg(), "items/keg")
@@ -409,7 +425,7 @@ def generate():
     save(prop_iron_pot(), "props/iron_pot")
     save(prop_washtub_side(), "props/washtub_side")
     save(prop_suds(), "props/suds")
-    print("stations: wrote 17 icons and 4 model faces")
+    print("stations: wrote 18 icons and 4 model faces")
 
 
 if __name__ == "__main__":

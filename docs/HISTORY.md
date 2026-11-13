@@ -926,3 +926,8 @@ dragon and the festival.
   meditation stone, herbs and the pyre have icons of their own (`tools/station_art.py`); the cask's
   hoops, the stew pot and the wash tub wear their own faces instead of stone and the quench tub's.
   The pig is drawn as a pig (`chibi_animals.py`), not the boar shaven and recoloured.
+- **Props, torches and stairs:** the bellows stand on a frame as a box model, turned to point at
+  the forge, instead of lying flat. Buildings can mount lamps on their walls (`facing`, per-lamp
+  `def`): wall torches by the inn's door, its stair and far corner, and in the smithy. Stairs are
+  four solid steps (`steps`) rather than a sloped face with stringers poking through it. The forge
+  and kiln stay textured blocks: their fronts already carry the art.

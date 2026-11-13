@@ -218,7 +218,7 @@
       "building": { "outdoor": true, "climb": "Ladder", "work": 80, "cost": [ { "def": "Wood", "count": 3 } ] }
     },
     {
-      "name": "WoodStairs", "label": "wooden stairs", "category": "Building", "sprite": "buildings/stairs_wood",
+      "name": "WoodStairs", "label": "wooden stairs", "category": "Building", "sprite": "buildings/stairs_wood", "steps": 4,
       "description": "Climb from here onto ground one level higher, in any of the four directions.",
       "maxHp": 120, "flammability": 1.0, "pathCost": 1,
       "building": { "outdoor": true, "climb": "Ramp", "work": 150, "cost": [ { "def": "Wood", "count": 6 } ] }

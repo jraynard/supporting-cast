@@ -159,13 +159,10 @@ Grouped by area; nothing here blocks a playtest.
 
 **Art and look**
 - A hands-on pass over each mini-game's window; some are still drawn plainly.
-- Check for other sprite props that should be box models (the wagon was one).
-- Wall torches.
 - More fantasy folk: our own takes on dwarves and halflings. Elves are in, as a look; they could
   have something of their own (keener sight at dusk, an aptitude).
 - The title's loading line shows for a frame while a village is made ready; a real loading screen
   would let it breathe, and work for joining and hosting too.
-- improve stair visuals
 
 **Map and movement**
 - Lanes cost the same to walk as grass, so villagers don't prefer them.

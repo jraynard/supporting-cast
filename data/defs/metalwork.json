@@ -87,7 +87,17 @@
       "description": "Leather lungs for a forge. Built beside one, the smith pumps them while working: on coal, hot enough for iron and steel.",
       "maxHp": 120, "flammability": 0.6,
       "building": { "work": 300, "cost": [ { "def": "Leather", "count": 4 }, { "def": "Wood", "count": 8 } ],
-                    "bellows": { "heat": 2000, "maxTempBonus": 140, "lift": 270 } }
+                    "bellows": { "heat": 2000, "maxTempBonus": 140, "lift": 270 } },
+      // On a low stand: two boards with the leather between, a handle at the back, the iron nozzle
+      // to the front (+Y), so a furnishing turns it to point at the forge.
+      "model": [
+        { "min": [0.32, 0.18, 0], "max": [0.68, 0.3, 0.3], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.24, 0.08, 0.3], "max": [0.76, 0.82, 0.36], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.28, 0.12, 0.36], "max": [0.72, 0.74, 0.56], "top": "props/hide", "side": "props/hide" },
+        { "min": [0.24, 0.08, 0.56], "max": [0.76, 0.82, 0.62], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.44, 0, 0.58], "max": [0.56, 0.1, 0.66], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.45, 0.82, 0.4], "max": [0.55, 1, 0.48], "top": "props/iron", "side": "props/iron" }
+      ]
     },
 
     // ---- The rest of a smithy: where the hot piece goes between heats (anvil), to harden (quench

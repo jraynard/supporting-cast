@@ -312,14 +312,18 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         int x1 = Math.Min(map.Width - 1, (int)max.X + 2), y1 = Math.Min(map.Height - 1, (int)max.Y + 2);
         bool InView(int3 c) => c.X >= x0 && c.X <= x1 && c.Y >= y0 && c.Y <= y1 && c.Z <= cut && !UnderDrawnFloor(map, c);
 
-        // Buildings' lamps, hung from the beams: the model and a small steady flame (no fuel to burn down).
-        foreach (var (lampCell, lamp) in Buildings.LitLamps(sim))
+        // Buildings' lamps, hung from the beams or set on a wall: the model and a small steady flame
+        // (no fuel to burn down). A wall's lamp goes when the cutaway cuts its wall down.
+        foreach (var (lampCell, lamp, wallFacing) in Buildings.LitLamps(sim))
         {
             if (!InView(lampCell) || lamp.Model is not { } lampModel)
                 continue;
-            AddModel(lampModel, lampCell, 0, null, Rgba.White, Quad.Level(lampCell.Z), heightScale: WorldScale.FurnitureHeight);
+            var facing = wallFacing ?? 0;
+            if (wallFacing is { } f && Footprint.Rotate(0, -1, f) is var back && IsStub(sim, lampCell + new int3(back.X, back.Y, 0)))
+                continue;
+            AddModel(lampModel, lampCell, facing, null, Rgba.White, Quad.Level(lampCell.Z), heightScale: WorldScale.FurnitureHeight);
             var flicker = 0.45f * lamp.FireSize * (1f + 0.04f * MathF.Sin(_anim.Clock * 3f + lampCell.X * 7 + lampCell.Y));
-            Billboard(S("fx/fire"), Position.CenterOf(lampCell) + FireOffset(lamp, 0), flicker * 0.7f, flicker, Rgba.Pack(1f, 0.9f, 0.7f, 0.95f),
+            Billboard(S("fx/fire"), Position.CenterOf(lampCell) + FireOffset(lamp, facing), flicker * 0.7f, flicker, Rgba.Pack(1f, 0.9f, 0.7f, 0.95f),
                 Quad.Level(lampCell.Z) | Quad.Unlit | Quad.Glow, translucent: true);
         }
 

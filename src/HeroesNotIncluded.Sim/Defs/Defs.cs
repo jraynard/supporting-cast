@@ -705,6 +705,12 @@ public sealed class ThingDef : Def
     public BridgeLook? Bridge { get; set; }
 
     /// <summary>
+    /// A ramp drawn as a stair of this many solid steps (plank treads, dark risers), turned to its
+    /// climb, instead of one sloped face. Pure presentation, like <see cref="Bridge"/>.
+    /// </summary>
+    public int Steps { get; set; }
+
+    /// <summary>
     /// Where a modelled fire's flames stand, in model units (default the cell's middle, on the
     /// floor), and how big: a fireplace's burn in its opening. Presentation only.
     /// </summary>
