@@ -34,6 +34,13 @@ public sealed record AvatarMoveCommand(Entity Avatar, int2 Direction, int3? At =
             return;
         ref var a = ref sim.World.Get<Avatar>(Avatar);
         var dir = new int2(Math.Sign(Direction.X), Math.Sign(Direction.Y));
+        // A free mover (Combat.FreeMoveSystem) takes a held direction as where its keys ask to go.
+        if (sim.World.Has<Combat.FreeMover>(Avatar))
+        {
+            sim.World.Get<Combat.FreeMover>(Avatar).Wish = dir == int2.Zero ? float2.Zero
+                : new float2(dir.X, dir.Y) * (dir.X != 0 && dir.Y != 0 ? 0.70710678f : 1f);
+            return;
+        }
         var here = sim.World.Get<Position>(Avatar).Cell;
         if (At is { } at && (a.MoveDir.X != 0 || a.MoveDir.Y != 0) && AvatarSystem.Distance(here, at) <= MaxLead)
         {

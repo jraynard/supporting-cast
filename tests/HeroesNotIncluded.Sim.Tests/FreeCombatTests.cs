@@ -20,6 +20,7 @@ public class FreeCombatTests
         var me = VillageRound.SpawnHero(sim, new Hero("Arin", null, null), center);
         sim.Equip(me, sim.Defs.Thing(weapon));
         sim.FreeMove.Enable(sim);
+        sim.ApplyNow(new DrawWeaponCommand(me, true));
         Place(sim, me, new float2(16.5f, 16.5f));
         sim.TickMany(SimClock.TicksPerSecond);
         return (sim, me);
@@ -203,4 +204,141 @@ public class FreeCombatTests
         Assert.Equal(sim.World.Get<FreeMover>(me).Aim, loaded.World.Get<FreeMover>(me).Aim);
         Assert.Equal(sim.World.Get<Position>(me).Pos, loaded.World.Get<Position>(me).Pos);
     }
+
+    // ---- In the village (the setting): the town's levels, its jobs, its people. ----
+
+    /// <summary>Millbrook with free movement on and you in the square, weapon sheathed.</summary>
+    private static (Simulation Sim, Entity Me) Village()
+    {
+        var (sim, center) = TestWorld.Millbrook(villagers: 3);
+        var me = VillageRound.SpawnHero(sim, new Hero("Arin", null, null), center);
+        sim.Equip(me, sim.Defs.Thing("ShortSword"));
+        sim.FreeMove.Enable(sim);
+        sim.TickMany(10);
+        return (sim, me);
+    }
+
+    [Fact]
+    public void AClickedWalkStillTakesYouThere()
+    {
+        var (sim, me) = Village();
+        var here = sim.World.Get<Position>(me).Cell;
+        var there = sim.SpiralFrom(here, 8).First(c => Maps.Map.Distance(c, here) >= 5 && sim.Map.Passable(c) && sim.Regions.CanReach(here, c, PathEnd.OnTile));
+        sim.ApplyNow(new AvatarGoToCommand(me, there));
+        for (var t = 0; t < SimClock.TicksPerSecond * 20 && sim.World.Get<Position>(me).Cell != there; t++)
+            sim.Tick();
+        Assert.Equal(there, sim.World.Get<Position>(me).Cell);
+    }
+
+    [Fact]
+    public void WalkingOntoAStairOrSlopeTakesYouUpOrDownIt()
+    {
+        var (sim, me) = Village();
+        var map = sim.Map;
+        // A level change the walking links allow, from the open ground: one cell to a neighbour a level up or down.
+        Span<Narsil.Sim.Grid.NavGraph.Step> steps = stackalloc Narsil.Sim.Grid.NavGraph.Step[Narsil.Sim.Grid.NavGraph.MaxSteps];
+        (int3 From, int3 To)? climb = null;
+        for (var i = 0; i < map.Block.Length && climb == null; i++)
+        {
+            var c = map.CellOf(i);
+            if (!map.Passable(c) || !map.Standable(i))
+                continue;
+            var n = Narsil.Sim.Grid.NavGraph.Neighbors(new Maps.MapNav(map), i, steps);
+            // Straight (not diagonal), with no step on the level that way: a step there must climb.
+            for (var k = 0; k < n && climb == null; k++)
+            {
+                var to = map.CellOf(steps[k].Index);
+                if (to.Z == c.Z || (to.X == c.X) == (to.Y == c.Y))
+                    continue;
+                var level = false;
+                for (var j = 0; j < n; j++)
+                    level |= map.CellOf(steps[j].Index) == to with { Z = c.Z };
+                if (!level)
+                    climb = (c, to);
+            }
+        }
+        Assert.True(climb != null, "Millbrook has a slope or stair somewhere");
+        var (from, dest) = climb!.Value;
+        sim.World.Get<Position>(me) = Position.At(from);
+        sim.ApplyNow(new AvatarMoveCommand(me, new int2(dest.X - from.X, dest.Y - from.Y)));
+        var trace = new List<string>();
+        for (var t = 0; t < SimClock.TicksPerSecond * 2 && sim.World.Get<Position>(me).Cell.Z == from.Z; t++)
+        {
+            sim.Tick();
+            if (t % 10 == 0)
+                trace.Add($"{sim.World.Get<Position>(me).Pos} {sim.World.Get<Position>(me).Cell} vel={sim.World.Get<FreeMover>(me).Vel}");
+        }
+        Assert.True(dest.Z == sim.World.Get<Position>(me).Cell.Z, $"{from} -> {dest}\n" + string.Join("\n", trace));
+        Assert.Equal(dest.Z, sim.World.Get<Position>(me).Pos.Z);
+    }
+
+    [Fact]
+    public void ASheathedWeaponDoesntStrikeAndABlowDrawsIt()
+    {
+        var (sim, me) = Village();
+        Assert.False(sim.World.Get<FreeMover>(me).Drawn);
+        sim.ApplyNow(new AttackCommand(me, false, 0f));
+        Assert.False(sim.World.Has<Windup>(me), "sheathed: nothing to swing");
+        var at = sim.World.Get<Position>(me).Pos;
+        var foe = Foe(sim, new float2(at.X + 1f, at.Y));
+        var attack = CombatRules.Attacks(sim, foe).First(a => !a.Ranged);
+        Assert.True(Blows.Begin(sim, foe, me, attack));
+        RunTo(sim, Blows.LandsAt(sim, sim.World.Get<Windup>(foe)) + 1);
+        Assert.True(sim.World.Get<FreeMover>(me).Drawn, "a blow landing draws your weapon");
+        sim.ApplyNow(new DrawWeaponCommand(me, false));
+        Assert.False(sim.World.Get<FreeMover>(me).Drawn);
+    }
+
+    [Fact]
+    public void AFreeSwingCutsWhoeverIsInItFriendOrFoe()
+    {
+        var (sim, me) = Village();
+        sim.ApplyNow(new DrawWeaponCommand(me, true));
+        var at = sim.World.Get<Position>(me).Pos;
+        // A neighbour standing in the way, and a hare.
+        var friend = sim.World.Query<Creature>().First(e => e != me && sim.World.Get<Creature>(e).Faction == Faction.Village);
+        sim.World.Get<Mind>(friend).Drafted = true;
+        Systems.AiSystem.EndJob(sim, friend, sim.World.Get<Mind>(friend), false);
+        sim.World.Get<Mover>(friend).Stop(); // stands where put, on your level
+        sim.World.Get<Position>(friend) = sim.World.Get<Position>(me);
+        Place(sim, friend, new float2(at.X + 1f, at.Y));
+        Swing(sim, me, 0f);
+        Assert.True(sim.RecentBlows.Any(b => b.Attacker == me && b.Target == friend && b.Outcome != BlowOutcome.Miss),
+            $"me {sim.World.Get<Position>(me).Pos} {sim.World.Get<Position>(me).Cell} friend {sim.World.Get<Position>(friend).Pos} {sim.World.Get<Position>(friend).Cell} aim {sim.World.Get<FreeMover>(me).Aim}");
+        Assert.NotEmpty(sim.World.Get<Health>(friend).Injuries);
+
+        var hare = sim.SpawnCreature(sim.Defs.Creature("Hare"), "Hare", sim.World.Get<Position>(me).Cell, Faction.Wild);
+        sim.World.Get<Mind>(hare).Drafted = true;
+        Place(sim, hare, new float2(at.X, at.Y - 1f));
+        sim.TickMany(Blows.PlayerRecoveryTicks + 1);
+        Swing(sim, me, -MathF.PI / 2);
+        Assert.Contains(sim.RecentBlows, b => b.Attacker == me && b.Target == hare);
+    }
+
+    [Fact]
+    public void AnAiHoldsItsBlowWhileAFriendIsInTheWay()
+    {
+        var (sim, me) = Village();
+        var at = sim.World.Get<Position>(me).Pos;
+        var foe = Foe(sim, new float2(at.X + 2f, at.Y));
+        var mate = Foe(sim, new float2(at.X + 1f, at.Y), "Brawler"); // between them
+        var attack = CombatRules.Attacks(sim, foe).First(a => !a.Ranged);
+        Assert.False(Blows.Begin(sim, foe, me, attack), "its own mate is in the sweep");
+        Place(sim, mate, new float2(at.X + 2f, at.Y + 2f));
+        Place(sim, foe, new float2(at.X + 1f, at.Y));
+        Assert.True(Blows.Begin(sim, foe, me, attack));
+    }
+
+    [Fact]
+    public void ACharacterWhoJoinsLaterMovesFreelyToo()
+    {
+        var (sim, _) = Village();
+        var late = VillageRound.SpawnHero(sim, new Hero("Bea", null, null), sim.World.Get<Position>(sim.World.Query<Avatar>()[0]).Cell);
+        sim.Tick();
+        Assert.True(sim.World.Has<FreeMover>(late));
+        sim.World.Remove<Avatar>(late); // they left: the AI has them again
+        sim.Tick();
+        Assert.False(sim.World.Has<FreeMover>(late));
+    }
 }
+

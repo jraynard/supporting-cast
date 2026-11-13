@@ -10,7 +10,7 @@ using HeroesNotIncluded.Ui;
 namespace HeroesNotIncluded;
 
 // The practice ring (--arena): you, a weapon, and one foe a bout. A panel picks the next foe and
-// weapon and keeps the tally; R (or its button) starts a new bout, both of you fresh. A dev tool,
+// weapon and keeps the tally; Enter (or its button) starts a new bout, both of you fresh. A dev tool,
 // so it reads the world freely: there are no secrets in a ring with two people in it.
 public sealed partial class VillageGame
 {
@@ -62,7 +62,7 @@ public sealed partial class VillageGame
             else if (!w.Get<Creature>(_avatar).Able)
                 (_boutOver, _arenaLosses) = (true, _arenaLosses + 1);
         }
-        if (Host.Input.WasKeyPressed(GlfwKey.R) && !ImGui.GetIO().WantTextInput && _tool == ToolKind.Select)
+        if (Host.Input.WasKeyPressed(GlfwKey.Enter) && !ImGui.GetIO().WantTextInput && _tool == ToolKind.Select)
             NewBout();
 
         _hud.Next(Anchor.TopRight, Gui.S(300));
@@ -96,7 +96,7 @@ public sealed partial class VillageGame
                     _arenaWeapon = t.Name;
             ImGui.EndCombo();
         }
-        if (ImGui.Button("New bout (R)"u8))
+        if (ImGui.Button("New bout (Enter)"u8))
             NewBout();
         Panel.End();
     }

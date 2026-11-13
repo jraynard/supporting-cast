@@ -769,7 +769,9 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             && Sim.Systems.Crafting.ToolInHand(sim, e, session is Sim.Work.HammerSession ? "Hammer" : "Mop") is { IsNull: false } tool2
             && HumanLook.HeldOf(w.Get<Thing>(tool2).Def) is { } h)
             return h;
-        if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon) && HumanLook.HeldOf(w.Get<Thing>(eq.Weapon).Def) is { } weapon)
+        // Free movement (Combat.FreeMover): a weapon's only in hand drawn, in combat mode.
+        if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon) && !(w.TryGet<Sim.Combat.FreeMover>(e, out var free) && !free.Drawn)
+            && HumanLook.HeldOf(w.Get<Thing>(eq.Weapon).Def) is { } weapon)
             return weapon;
         return null;
     }

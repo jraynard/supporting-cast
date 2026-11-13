@@ -307,7 +307,7 @@ public sealed class CreatureAnimator
             var next = mover.Path![mover.PathIndex];
             look = new float3(next.X - mover.StepFrom.X, next.Y - mover.StepFrom.Y, 0);
         }
-        if (free)
+        if (free && (fm.Drawn || !mover.Moving)) // sheathed, a clicked walk faces along its path
         {
             var aim = LocalAim is { } mine && mine.E == e ? mine.Aim : fm.Aim;
             look = new float3(MathF.Cos(aim), MathF.Sin(aim), 0);

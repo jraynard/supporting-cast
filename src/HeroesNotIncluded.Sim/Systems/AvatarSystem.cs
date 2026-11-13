@@ -181,10 +181,26 @@ public sealed class AvatarSystem : ISimSystem
             }
             if (w.Has<Carried>(e))
                 continue;
-            if (w.Has<Combat.FreeMover>(e))
-                continue; // walks off the grid (Combat.FreeMoveSystem)
-
             ref var a = ref w.Get<Avatar>(e);
+            if (w.TryGet<Combat.FreeMover>(e, out var free))
+            {
+                // Walks off the grid (Combat.FreeMoveSystem): the keys move it, and a job's walk
+                // (a click, the way to a station) follows its path there while they're let be.
+                if (free.Wish == float2.Zero)
+                {
+                    if (w.Get<Mind>(e).Job is AvatarWalkJob { ReadyToAct: true } arrived)
+                        ActOnArrival(sim, e, arrived);
+                    else
+                        ContinueChain(sim, e, ref a);
+                    continue;
+                }
+                a.Chain = AvatarActionKind.None;
+                var busy = w.Get<Mind>(e);
+                if (busy.Job != null && busy.Job is not AvatarHuntJob)
+                    AiSystem.EndJob(sim, e, busy, false); // walking off abandons the work (a fight goes on)
+                w.Get<Mover>(e).Stop();
+                continue;
+            }
             if (a.HasPending && !w.Get<Mover>(e).Moving)
                 ResolvePending(sim.Map, w.Get<Position>(e).Cell, ref a);
             if (a.MoveDir.X == 0 && a.MoveDir.Y == 0)

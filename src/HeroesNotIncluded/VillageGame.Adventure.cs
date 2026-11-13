@@ -83,7 +83,7 @@ public sealed partial class VillageGame
     /// Keys the avatar's controls use.
     /// the toolbar's letter hotkeys skip them in Adventure mode.
     /// </summary>
-    private static readonly GlfwKey[] AvatarKeys = [GlfwKey.W, GlfwKey.A, GlfwKey.S, GlfwKey.D, GlfwKey.F, GlfwKey.C, GlfwKey.G, GlfwKey.N, GlfwKey.V, GlfwKey.Q, GlfwKey.Z, GlfwKey.X];
+    private static readonly GlfwKey[] AvatarKeys = [GlfwKey.W, GlfwKey.A, GlfwKey.S, GlfwKey.D, GlfwKey.F, GlfwKey.C, GlfwKey.G, GlfwKey.N, GlfwKey.V, GlfwKey.Q, GlfwKey.Z, GlfwKey.X, GlfwKey.R];
 
     private bool _sentDig;
 
@@ -317,8 +317,8 @@ public sealed partial class VillageGame
     {
         if (!HasAvatar || _tool != ToolKind.Select)
             return false;
-        if (FreeMoving)
-            return HandleFreeMouse(input); // the buttons fight; nothing's walked to by clicking
+        if (HandleFreeMouse(input))
+            return true; // weapon drawn, the buttons fight
         UpdateClickWindow(dt);
 
         var shift = input.IsKeyDown(GlfwKey.LeftShift) || input.IsKeyDown(GlfwKey.RightShift);

@@ -58,7 +58,8 @@ seen coming, and met with a guard, a parry or a dodge. Prototyped in the practic
 HISTORY.md, "Combat: blows seen coming"). Each step lands with tests and keeps the season and
 village-day scenarios passing.
 
-1. **Free movement in the village, and combat mode** (in progress). Your character moves freely
+1. **Free movement in the village, and combat mode** (first pass in: the Free movement setting or
+   `--free-move`, solo). Your character moves freely
    everywhere (stairs, slopes and ladders by the walking links, doors, locks; perching, sitting and
    lying snap to the cell). A key (R) draws or sheathes your weapon: sheathed, clicks walk and act and
    F interacts; drawn, the weapon's in hand, left/right click strike light/heavy the way you aim, Q

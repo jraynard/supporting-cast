@@ -1015,4 +1015,12 @@ shared); fights stay real time, Souls-lite.
   their own about the hand (a blade swept across with a smear, a spear thrust out and back).
   Bench: state hashes unchanged; full hashes moved for the new saved switch (1234 `23418520B4927BD6`,
   99 `9FBC73DE1A8F0D10`).
+- **Free movement in the village** (the combat pass's step 1: docs/ROADMAP.md): the Free movement
+  setting (or `--free-move`) turns it on for solo games. A job's walk (a click, the way to a station)
+  follows its path cell to cell, so stairs, ladders, doors and furniture work as they did; the keys
+  change level only where the walking links do. R draws or sheathes your weapon: sheathed, clicks
+  walk and act and you face the way you walk; drawn, the mouse fights, Q guards, and you're a little
+  slower. A blow landing on you draws it. Free swings hit everyone in their sweep, friend or foe,
+  hares included; an AI holds a blow while a friend's in the way. A character handed back to the AI
+  walks the grid again. The practice ring's new bout moved to Enter.
 

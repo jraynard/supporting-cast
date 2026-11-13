@@ -22,6 +22,12 @@ public struct FreeMover
     /// <summary>A dodge's dash: its direction (unit) until <see cref="DashUntil"/>.</summary>
     public float2 DashDir;
     public long DashUntil;
+
+    /// <summary>
+    /// Weapon drawn: in combat mode. The mouse fights (light and heavy blows, the way you aim) and you
+    /// go a little slower; sheathed, clicks walk and act as ever (<see cref="DrawWeaponCommand"/>).
+    /// </summary>
+    public bool Drawn;
 }
 
 /// <summary>
@@ -53,8 +59,8 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
     public const float DashCells = 2.2f;
     public const int DashTicks = SimClock.TicksPerSecond * 3 / 10;
 
-    /// <summary>Slower while swinging and while guarding.</summary>
-    public const float SwingSlow = 0.45f, GuardSlow = 0.6f;
+    /// <summary>Slower while swinging and while guarding, and a little with a weapon drawn.</summary>
+    public const float SwingSlow = 0.45f, GuardSlow = 0.6f, DrawnSlow = 0.85f;
 
     /// <summary>Turn it on (the arena) and make every player's character a free mover.</summary>
     public void Enable(Simulation sim)
@@ -80,6 +86,13 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         if (!Enabled)
             return;
         var w = sim.World;
+        // Whoever's a player's character moves freely; one handed back to the AI walks the grid again.
+        foreach (var e in w.Query<Avatar>())
+            if (!w.Has<FreeMover>(e))
+                Join(sim, e);
+        foreach (var e in w.Query<FreeMover>())
+            if (!w.Has<Avatar>(e))
+                w.Remove<FreeMover>(e);
         foreach (var e in w.Each<FreeMover>())
             Step(sim, e);
     }
@@ -90,8 +103,20 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         ref var m = ref w.Get<FreeMover>(e);
         var c = w.Get<Creature>(e);
         var now = sim.Clock.Tick;
+        if (w.Has<Carried>(e))
+            return; // MovementSystem keeps them with whoever's carrying them
+        // A job's walk (a clicked walk, the way to a station): along its cells, as the pathfinder
+        // planned it, up stairs and ladders, through doors, onto furniture.
+        var mover = w.Get<Mover>(e);
+        if (m.Wish == float2.Zero && now >= m.DashUntil && mover.Moving && c.Able)
+        {
+            FollowPath(sim, e, mover);
+            m.Vel = float2.Zero;
+            return;
+        }
         float2 want;
-        if (!c.Able || w.Get<Mind>(e).Asleep)
+        // Standing still for work in hand (a mini-game), asleep or down.
+        if (!c.Able || w.Get<Mind>(e).Asleep || w.Has<Work.WorkSession>(e))
             want = float2.Zero;
         else if (now < m.DashUntil)
             want = m.DashDir * (DashCells / DashTicks);
@@ -102,37 +127,42 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
                 speed *= SwingSlow;
             else if (w.TryGet<Guard>(e, out var g) && g.RaisedAt >= 0)
                 speed *= GuardSlow;
+            else if (m.Drawn)
+                speed *= DrawnSlow;
             want = m.Wish * speed;
         }
         m.Vel = now < m.DashUntil ? want : m.Vel + (want - m.Vel) * Ease;
         // Easing never quite gets there: near enough standing still is standing still.
+        // Weapon sheathed, you face the way you walk; drawn, the way you aim.
+        if (!m.Drawn && now >= m.DashUntil && m.Wish != float2.Zero)
+            m.Aim = DetMath.Atan2(m.Wish.Y, m.Wish.X);
         if (want == float2.Zero && m.Vel.X * m.Vel.X + m.Vel.Y * m.Vel.Y < StopBelow * StopBelow)
         {
             m.Vel = float2.Zero;
             return;
         }
         ref var p = ref w.Get<Position>(e);
-        var z = p.Cell.Z;
         // Each axis on its own, so a wall stops one and you slide along it on the other.
         var at = new float2(p.Pos.X, p.Pos.Y);
-        var x = new float2(at.X + m.Vel.X, at.Y);
-        if (Fits(sim, x, z))
-            at = x;
+        var cell = p.Cell;
+        if (Into(sim, cell, new float2(at.X + m.Vel.X, at.Y)) is { } intoX)
+            (at, cell) = (new float2(at.X + m.Vel.X, at.Y), intoX);
         else
             m.Vel = new float2(0, m.Vel.Y);
-        var y = new float2(at.X, at.Y + m.Vel.Y);
-        if (Fits(sim, y, z))
-            at = y;
+        if (Into(sim, cell, new float2(at.X, at.Y + m.Vel.Y)) is { } intoY)
+            (at, cell) = (new float2(at.X, at.Y + m.Vel.Y), intoY);
         else
             m.Vel = new float2(m.Vel.X, 0);
-        p.Pos = new float3(at.X, at.Y, p.Pos.Z);
-        p.Cell = new int3((int)MathF.Floor(at.X), (int)MathF.Floor(at.Y), z);
+        if (cell != p.Cell && w.TryGet<Perched>(e, out var perch) && perch.Cell != cell)
+            w.Remove<Perched>(e); // stepped down off the furniture
+        p.Pos = new float3(at.X, at.Y, cell.Z);
+        p.Cell = cell;
         // F's "in front" is the way you face, to the nearest of eight.
         var (cx, cy) = (DetMath.Cos(m.Aim), DetMath.Sin(m.Aim));
         w.Get<Avatar>(e).Facing = new int2(cx > 0.38f ? 1 : cx < -0.38f ? -1 : 0, cy > 0.38f ? 1 : cy < -0.38f ? -1 : 0);
     }
 
-    /// <summary>Could a free mover stand with its middle at <paramref name="at"/>: every cell its circle touches passable?</summary>
+    /// <summary>Could a free mover stand with its middle at <paramref name="at"/>: every cell its circle touches passable (on the level, or a step up or down)?</summary>
     public static bool Fits(Simulation sim, float2 at, int z)
     {
         var map = sim.Map;
@@ -140,10 +170,71 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         for (var dx = -1; dx <= 1; dx += 2)
         {
             var cell = new int3((int)MathF.Floor(at.X + dx * Radius), (int)MathF.Floor(at.Y + dy * Radius), z);
-            if (!map.Passable(cell))
+            if (!map.Passable(cell) && !map.Passable(cell with { Z = z + 1 }) && !map.Passable(cell with { Z = z - 1 }))
                 return false;
         }
         return true;
+    }
+
+    /// <summary>
+    /// The cell a free mover in <paramref name="from"/> stands in with its middle moved to
+    /// <paramref name="at"/>, or null if it can't go there. Into a neighbouring cell only as the
+    /// walking links allow (<see cref="NavGraph"/>: on the level, else up or down a stair or slope),
+    /// so levels change just where walking would change them, and a drop or a wall stops you.
+    /// </summary>
+    public static int3? Into(Simulation sim, int3 from, float2 at)
+    {
+        var to = new int3((int)MathF.Floor(at.X), (int)MathF.Floor(at.Y), from.Z);
+        if (to.X == from.X && to.Y == from.Y)
+            return Fits(sim, at, from.Z) ? from : null;
+        var map = sim.Map;
+        if (!map.InBounds(from))
+            return null;
+        Span<NavGraph.Step> steps = stackalloc NavGraph.Step[NavGraph.MaxSteps];
+        var count = NavGraph.Neighbors(new Maps.MapNav(map), map.Idx(from), steps);
+        int3? found = null;
+        for (var k = 0; k < count; k++)
+        {
+            var c = map.CellOf(steps[k].Index);
+            if (c.X != to.X || c.Y != to.Y)
+                continue;
+            if (c.Z == from.Z)
+            {
+                found = c;
+                break;
+            }
+            found ??= c;
+        }
+        return found is { } next && Fits(sim, at, next.Z) ? next : null;
+    }
+
+    /// <summary>Walk a job's path, cell middle to cell middle, at walking pace.</summary>
+    private static void FollowPath(Simulation sim, Entity e, Mover mover)
+    {
+        var w = sim.World;
+        ref var p = ref w.Get<Position>(e);
+        var next = mover.Path![mover.PathIndex];
+        var goal = Position.CenterOf(next);
+        var d = goal - p.Pos;
+        var len = MathF.Sqrt(d.X * d.X + d.Y * d.Y + d.Z * d.Z);
+        var speed = MovementSystem.WalkSpeedPerTick(sim, e);
+        mover.StepFrom = p.Cell;
+        if (len <= speed)
+        {
+            p.Pos = goal;
+            if (w.TryGet<Perched>(e, out var perch) && perch.Cell != next)
+                w.Remove<Perched>(e);
+            p.Cell = next;
+            mover.PathIndex++;
+            mover.StepProgress = 0;
+            mover.StepFrom = next;
+            return;
+        }
+        p.Pos += d * (speed / len);
+        mover.StepProgress = Math.Clamp(1f - len, 0f, 0.99f);
+        // The cell under your feet: past halfway, the next one.
+        if (MathF.Abs(p.Pos.X - goal.X) < 0.5f && MathF.Abs(p.Pos.Y - goal.Y) < 0.5f)
+            p.Cell = next;
     }
 
     /// <summary>A dodge's dash along <paramref name="dir"/> (or straight back from the aim, standing still), from <paramref name="at"/>.</summary>

@@ -30,6 +30,12 @@ public sealed class Settings
     /// <summary>First-day tips for your trade, and markers on its stations till you've been to each.</summary>
     public bool ShowTips { get; set; } = true;
 
+    /// <summary>
+    /// The combat pass's prototype in the village (docs/ROADMAP.md): move freely and fight with the
+    /// mouse, R to draw your weapon. Solo games only for now; new games pick it up.
+    /// </summary>
+    public bool FreeMovement { get; set; }
+
     /// <summary>Multiplier on keyboard camera panning.</summary>
     public float CameraPanSpeed { get; set; } = 1f;
 

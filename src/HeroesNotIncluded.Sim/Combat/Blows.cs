@@ -216,6 +216,14 @@ public static class Blows
         var ticks = attack.WindupTicks * (heavy ? HeavyWindup : 1f) * (player ? PlayerWindup : 1f) * (IsDragon(sim, attacker) ? DragonWindup : 1f)
             * (free ? Reach.WindupFactor(sim, attacker, attack) : 1f);
         var from = w.Get<Position>(attacker).Pos;
+        var aimAt = aim is { } given && float.IsFinite(given) ? given
+            : aimed ? DetMath.Atan2(w.Get<Position>(target).Pos.Y - from.Y, w.Get<Position>(target).Pos.X - from.X) : 0f;
+        // Free, every blow lands on whoever's in its sweep: an AI won't swing through its own.
+        if (free && !player && aimed && Reach.FriendInTheWay(sim, attacker, attack, aimAt, target))
+        {
+            g.Stamina += cost; // not spent: it didn't swing
+            return false;
+        }
         var windup = new Windup
         {
             Target = target,
@@ -224,8 +232,7 @@ public static class Blows
             Start = now,
             Impact = now + Math.Max(1, (int)ticks),
             Response = !aimed || w.Has<Avatar>(target) ? BlowResponse.None : AiResponse(sim, target, heavy, Parryable(sim, attacker, attack)),
-            Aim = aim is { } a && float.IsFinite(a) ? a
-                : aimed ? DetMath.Atan2(w.Get<Position>(target).Pos.Y - from.Y, w.Get<Position>(target).Pos.X - from.X) : 0f,
+            Aim = aimAt,
         };
         w.Add(attacker, windup);
         if (w.Has<FreeMover>(attacker))
@@ -355,6 +362,9 @@ public static class Blows
     {
         var w = sim.World;
         var impact = windup.Impact;
+        // A blow reaching you in plain clothes draws your weapon (combat mode) for the next.
+        if (w.Has<FreeMover>(target))
+            w.Get<FreeMover>(target).Drawn = true;
         ref var mine = ref GuardOf(sim, attacker);
         ref var theirs = ref GuardOf(sim, target);
         var dragon = IsDragon(sim, attacker);

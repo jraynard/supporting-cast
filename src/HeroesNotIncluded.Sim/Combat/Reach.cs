@@ -49,21 +49,36 @@ public static class Reach
     }
 
     /// <summary>
-    /// Who a blow aimed along <paramref name="aim"/> strikes now: everyone hostile to the swinger in
-    /// its sweep (an arrow: the first one along its line, short of a wall), in entity order.
+    /// Who a blow aimed along <paramref name="aim"/> strikes now: everyone in its sweep, friend or
+    /// foe (an arrow: the first one along its line, short of a wall), in entity order. A blade
+    /// doesn't know whose side you're on.
     /// </summary>
-    public static List<Entity> Struck(Simulation sim, Entity attacker, AttackDef attack, float aim)
+    public static List<Entity> Struck(Simulation sim, Entity attacker, AttackDef attack, float aim) =>
+        InSweep(sim, attacker, attack, aim, _ => true);
+
+    /// <summary>
+    /// Anyone not hostile to <paramref name="attacker"/> (other than <paramref name="target"/>) in
+    /// the sweep of a blow aimed at <paramref name="target"/>: an AI holds its blow while there is
+    /// (<see cref="Blows.Begin"/>), rather than cut down its own.
+    /// </summary>
+    public static bool FriendInTheWay(Simulation sim, Entity attacker, AttackDef attack, float aim, Entity target)
+    {
+        var faction = sim.World.Get<Creature>(attacker).Faction;
+        return InSweep(sim, attacker, attack, aim,
+            e => e != target && !Factions.Hostile(faction, sim.World.Get<Creature>(e).Faction) && sim.World.Get<Creature>(e).Able).Count > 0;
+    }
+
+    private static List<Entity> InSweep(Simulation sim, Entity attacker, AttackDef attack, float aim, Func<Entity, bool> counts)
     {
         var w = sim.World;
         var me = w.Get<Position>(attacker);
-        var faction = w.Get<Creature>(attacker).Faction;
         var dir = new float2(DetMath.Cos(aim), DetMath.Sin(aim));
         var hit = new List<Entity>();
         var nearest = float.MaxValue;
         var shape = attack.Ranged ? default : ShapeOf(sim, attacker, attack);
         foreach (var e in sim.Creatures())
         {
-            if (e == attacker || w.Get<Creature>(e) is not { Dead: false } c || !Factions.Hostile(faction, c.Faction))
+            if (e == attacker || w.Get<Creature>(e).Dead || w.Has<Carried>(e) || !counts(e))
                 continue;
             var at = w.Get<Position>(e);
             if (Math.Abs(at.Cell.Z - me.Cell.Z) > 1)

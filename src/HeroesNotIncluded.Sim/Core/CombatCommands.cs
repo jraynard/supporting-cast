@@ -31,6 +31,8 @@ public sealed record CombatInputCommand(Entity Avatar, CombatInput Input, long A
         switch (Input)
         {
             case CombatInput.GuardUp:
+                if (w.TryGet<FreeMover>(Avatar, out var free) && !free.Drawn)
+                    break; // nothing to guard with, sheathed
                 Blows.SetGuard(sim, Avatar, true, at);
                 break;
             case CombatInput.GuardDown:
@@ -66,7 +68,8 @@ public sealed record FreeMoveCommand(Entity Avatar, float WishX, float WishY, fl
             return;
         ref var m = ref w.Get<FreeMover>(Avatar);
         m.Wish = Moves.Wish(WishX, WishY);
-        if (float.IsFinite(Aim))
+        // Sheathed, you face the way you walk (FreeMoveSystem); drawn, the way you aim.
+        if (m.Drawn && float.IsFinite(Aim))
             m.Aim = MathF.IEEERemainder(Aim, MathF.Tau);
     }
 }
@@ -79,7 +82,7 @@ public sealed record AttackCommand(Entity Avatar, bool Heavy, float Aim) : ISimC
     public void Apply(Simulation sim)
     {
         var w = sim.World;
-        if (!w.IsAlive(Avatar) || !w.Has<FreeMover>(Avatar) || !w.Get<Creature>(Avatar).Able || !float.IsFinite(Aim)
+        if (!w.IsAlive(Avatar) || !w.TryGet<FreeMover>(Avatar, out var free) || !free.Drawn || !w.Get<Creature>(Avatar).Able || !float.IsFinite(Aim)
             || CombatRules.Attacks(sim, Avatar).FirstOrDefault() is not { } attack)
             return;
         Blows.Begin(sim, Avatar, Entity.Null, attack, Heavy && !attack.Ranged, MathF.IEEERemainder(Aim, MathF.Tau));
@@ -111,5 +114,24 @@ internal static class Moves
             return float2.Zero;
         var len = MathF.Sqrt(x * x + y * y);
         return len > 1f ? new float2(x / len, y / len) : new float2(x, y);
+    }
+}
+
+/// <summary>
+/// Draw or sheathe your weapon (<see cref="FreeMover.Drawn"/>): combat mode, where the mouse fights,
+/// or not, where it walks and acts. Sheathing drops a guard.
+/// </summary>
+public sealed record DrawWeaponCommand(Entity Avatar, bool Drawn) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        var w = sim.World;
+        if (!w.IsAlive(Avatar) || !w.Has<FreeMover>(Avatar))
+            return;
+        w.Get<FreeMover>(Avatar).Drawn = Drawn;
+        if (!Drawn)
+            Blows.SetGuard(sim, Avatar, false, sim.Clock.Tick);
     }
 }

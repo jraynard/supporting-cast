@@ -29,8 +29,12 @@ public sealed partial class VillageGame
         var tick = _sim.Clock.Tick;
         var inFight = NearestFoe() != null;
         var free = FreeMoving;
-        // Q (or V) holds a guard; on the grid the right button does too, in a fight. Free, it's the heavy blow.
-        var guard = input.IsKeyDown(GlfwKey.Q) || input.IsKeyDown(GlfwKey.V)
+        // R draws or sheathes your weapon (free): combat mode, or the mouse walks and acts as ever.
+        if (free && input.WasKeyPressed(GlfwKey.R) && _tool == ToolKind.Select)
+            Issue(new DrawWeaponCommand(_avatar, !WeaponDrawn));
+        // Q (or V) holds a guard, free only with a weapon out; on the grid the right button does too,
+        // in a fight. Free, the right button is the heavy blow.
+        var guard = (!free || WeaponDrawn) && (input.IsKeyDown(GlfwKey.Q) || input.IsKeyDown(GlfwKey.V))
             || (!free && inFight && input.IsMouseDown(MouseButton.Right) && !ImGui.GetIO().WantCaptureMouse);
         if (guard != _guardSent)
         {
@@ -61,6 +65,14 @@ public sealed partial class VillageGame
         _hud.Next(Anchor.Bottom);
         Panel.Begin("##fight-hint", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs);
         _hud.Took();
+        if (FreeMoving && !WeaponDrawn)
+        {
+            TextC(Theme.Warn, armed ? "Press R to draw your weapon." : "Press R to put up your fists.");
+            ImGui.SameLine(0, Gui.S(10));
+            TextC(Theme.Dim, "Then the mouse fights: aim with it, left click to strike, right click to swing heavy.");
+            Panel.End();
+            return;
+        }
         if (FreeMoving)
         {
             TextC(Theme.Warn, armed ? "Left click strikes the way you aim, right click swings heavy." : "Fists only: left click to strike.");
@@ -87,8 +99,11 @@ public sealed partial class VillageGame
         Panel.End();
     }
 
-    /// <summary>Your character moves off the grid (<see cref="FreeMover"/>: the arena, for now).</summary>
+    /// <summary>Your character moves off the grid (<see cref="FreeMover"/>: the arena, and the village with the setting).</summary>
     private bool FreeMoving => HasAvatar && _sim.World.Has<FreeMover>(_avatar);
+
+    /// <summary>Free, with your weapon drawn: combat mode, where the mouse fights.</summary>
+    private bool WeaponDrawn => FreeMoving && _sim.World.Get<FreeMover>(_avatar).Drawn;
 
     /// <summary>Where the keys ask to go (on the map) and where the mouse points, as last told to the sim.</summary>
     private float2 _wish, _sentWish;
@@ -117,7 +132,8 @@ public sealed partial class VillageGame
             if ((at.X - me.X) * (at.X - me.X) + (at.Y - me.Y) * (at.Y - me.Y) > 0.04f)
                 _aim = MathF.Atan2(at.Y - me.Y, at.X - me.X);
         }
-        _renderer.LocalAim = (_avatar, _aim);
+        // Drawn, you face the mouse at once; sheathed, the way you walk (the sim's say).
+        _renderer.LocalAim = WeaponDrawn ? (_avatar, _aim) : null;
         var turned = float.IsNaN(_sentAim) || MathF.Abs(MathF.IEEERemainder(_aim - _sentAim, MathF.Tau)) > AimStep;
         if (_wish != _sentWish || (turned && _time - _aimSentAt > 0.05f))
         {
@@ -126,10 +142,13 @@ public sealed partial class VillageGame
         }
     }
 
-    /// <summary>Free movement's mouse: the left button a quick blow the way you aim, the right a heavy one. True if it took the click.</summary>
+    /// <summary>
+    /// Free movement's mouse, weapon drawn: the left button a quick blow the way you aim, the right a
+    /// heavy one. True if it took the click; sheathed, clicks walk and act as ever.
+    /// </summary>
     private bool HandleFreeMouse(Input input)
     {
-        if (!FreeMoving || ImGui.GetIO().WantCaptureMouse)
+        if (!WeaponDrawn || ImGui.GetIO().WantCaptureMouse)
             return false;
         var light = input.WasMousePressed(MouseButton.Left);
         var heavy = input.WasMousePressed(MouseButton.Right);

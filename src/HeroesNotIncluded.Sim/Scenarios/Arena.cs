@@ -56,6 +56,8 @@ public static class Arena
             sim.Depart(e);
         w.FlushDeferred();
         Freshen(sim, player);
+        if (w.Has<FreeMover>(player))
+            w.Get<FreeMover>(player).Drawn = true; // in the ring to fight
         if (weapon != null && sim.Defs.AllThings.FirstOrDefault(t => t.Name == weapon) is { Weapon: not null } arms)
             sim.Equip(player, arms);
         else if (!w.TryGet<Equipment>(player, out var eq) || !w.IsAlive(eq.Weapon))

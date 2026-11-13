@@ -31,8 +31,6 @@ public sealed class MovementSystem : ISimSystem
     {
         var w = sim.World;
         var map = sim.Map;
-        if (w.Has<Combat.FreeMover>(e))
-            return; // moves itself, off the grid (Combat.FreeMoveSystem)
         var mover = w.Get<Mover>(e);
         if (w.TryGet<Carried>(e, out var carried))
         {
@@ -41,6 +39,8 @@ public sealed class MovementSystem : ISimSystem
                 w.Get<Position>(e) = w.Get<Position>(carried.By);
             return;
         }
+        if (w.Has<Combat.FreeMover>(e))
+            return; // moves itself, off the grid (Combat.FreeMoveSystem)
         if (w.Get<Creature>(e).Downed)
             mover.Stop();
         if (!mover.Moving || w.Get<Mind>(e).Asleep)
