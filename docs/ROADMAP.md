@@ -798,9 +798,44 @@ Known leftovers:
 - Errands fetch only what's lying about or in common stores, not what a shop keeps.
 - Wood left lying on a cold day goes on the fires before a labourer gets to it.
 
-## Next
+### M3.10: A season played through (2026-11-12)
+- **The exit test** (`SeasonScenarioTests`): an Honest round on Millbrook, with bots as innkeeper,
+  cook, blacksmith, healer and tinker and the Director at Normal, played from the deal to the
+  reveal. It checks the round ends with an outcome, crises came and were each met or not, parties
+  came, and, if it reached the festival, the dragon came and the reckoning was called. It prints
+  how the round went. The seed-1234 run below took about 8 seconds.
+- **Bots look after themselves** the way a careful player would:
+  - **Hunger:** they eat when hungry, from a larder or a pile (they never used to, and starved).
+  - **Heat:** they step back from heat, hours at the forge's mouth having killed them.
+  - **Fire:** they leave a building that's alight, and get away from fire close by.
+  - **Danger:** they keep indoors, or get out of the way, when raiders, beasts or the dragon come.
+- The dragon lands only out of doors.
+- **One run, seed 1234:**
+  - **Parties:** 5 came and 8 adventurers had their say; one quest was cleared and one failed.
+  - **Crises:** a raid, a fire and the dragon, one of them met.
+  - **The end:** Renown 34 against 60 and Dread 72, so the season fell short. The labourer and
+    one bot (bled to death) were lost.
+  - **Earlier runs, the same seed,** before the bots ate and kept out of harm's way: two ended
+    with the town through at Renown 79 and 104, with bots dead.
+  - **What that says:** the numbers swing a lot on small things. That's for the playtest.
 
-### M3: A whole season
+Known leftovers:
+- Bots don't bind their own wounds or go to the healer, so a hurt bot can bleed out.
+- The scenario's outcome isn't asserted, only that the round plays through.
+
+### M3: A whole season (done)
+Slices M3.1–M3.10 above. What it set out to do is below, kept for the record; it all landed,
+with the leftovers each slice notes.
+
+*Exit: an Honest round is playable start to finish* (`SeasonScenarioTests`).
+**Playtest gate: is serving heroes fun with friends, without traitors?** Tune before going further:
+- the season's numbers (`data/defs/season.json`): the Renown target, the Dread rates, crisis
+  weights and raid size;
+- the dragon's toughness;
+- the night speed;
+- the need rates.
+
+#### The plan, as written
 A round has no shape yet: `RoundPhase` stops at Playing, nothing reads `Adventurer.Satisfaction`
 or the expedition tallies, the Storyteller's 5-day grace outlasts a round, villagers ignore
 raiders, and the dragon's breath has no caller. Decided: night skips only while every player
@@ -865,6 +900,8 @@ Bench hashes should hold except at slices 6 (passability) and 10 (a new prop). T
 dragon and the festival.
 *Exit: an Honest round is playable start to finish.*
 **Playtest gate: is serving heroes fun with friends, without traitors?** Tune before going further.
+
+## Next
 
 ### M4: Whispers
 - Allegiance, objectives, the hidden shop, evidence, player violence, Constable and jail, the bell,

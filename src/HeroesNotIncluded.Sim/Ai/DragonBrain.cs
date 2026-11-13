@@ -77,7 +77,8 @@ public sealed class DragonPassJob(int3 target) : Job
         Report = "Swooping on the town";
         var from = PawnCell;
         var spot = Sim.SpiralFrom(target, range - 2)
-            .Where(c => Map.Distance(c, target) >= 4 && Sim.Map.Passable(c) && Sim.Map.Standable(Sim.Map.Idx(c)))
+            .Where(c => Map.Distance(c, target) >= 4 && Sim.Map.Passable(c) && Sim.Map.Standable(Sim.Map.Idx(c))
+                && Sim.Rooms.RoomAt(c) is not { Indoors: true }) // it doesn't fit through a door
             .OrderBy(c => Map.Distance(c, from))
             .Select(c => (int3?)c)
             .FirstOrDefault();

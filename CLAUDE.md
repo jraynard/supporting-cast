@@ -12,6 +12,7 @@ git submodule update --init
 dotnet build HeroesNotIncluded.sln
 dotnet test -c Release                                     # sim, game and Narsil tests
 dotnet test --filter VillageDayScenario --logger "console;verbosity=detailed"
+dotnet test --filter SeasonScenario --logger "console;verbosity=detailed"   # a whole round, bots, to the reveal
 dotnet run --project src/HeroesNotIncluded                    # title screen
 dotnet run --project src/HeroesNotIncluded -- --new-game --name Arin        # straight into a solo round (--trade Blacksmith, --bots N, --map NAME)
 dotnet run --project src/HeroesNotIncluded -- --host --name Arin            # host (--port N, --relay HOST, --difficulty D)
@@ -54,7 +55,11 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     `Endless` keeps a test's round going. Players inhabit AI villagers.
   - `Director/`: `Reckoning` keeps Renown (adventurers leaving pleased, quests cleared) and Dread
     (quests unanswered or gone badly; its limit ends the round). Players see words for them,
-    through `PerceptionView.Standing`.
+    through `PerceptionView.Standing`. `Director` sends the season's crises (`season.json` beats:
+    raid, fire, shortage, plague, the dragon), each an `ICrisis` that's met or not. Off unless the
+    game enables it, so tests stay scripted; outside rounds the old `Storyteller` sends raids.
+    `Ai/Defence`: the armed fight raiders, the rest shelter; `Ai/DragonBrain`. The bridge a raid
+    breaks is a `Tinkering/Repairs` breach, braced whole by the tinker (`SpanSession`).
   - `Perception/`: what a character knows. Sight reads `Map.Light`, so it must never feed sim state.
   - `Speech/`: who heard what, decided when spoken from positions and rooms, and saved.
   - `Work/`: mini-games. `WorkSession.Advance` is pure, so `WorkPredictor` can run it ahead of the
@@ -63,7 +68,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     stopped early. Forging (`Smithing`) keeps the piece in the tongs as a `WorkPiece` between its
     sessions (fire, anvil, quench); its heat is shown only as colour. Cooking (`Cooking`) keeps
     its state on the `StewPot`, carried on by `CookingSystem` between sessions; a pot's rot and
-    the seasoning it wants are hidden (read pots through `PerceptionView.Pot`). Poured and
+    the seasoning it wants are hidden (read pots through `PerceptionView.Pot`). A fever
+    (`Healing/FeverSystem`) is an injury that spreads and is quelled by the empath. Poured and
     ladled things go in clean vessels (`Vessels`); a customer leaves them dirty.
   - `Hospitality/`: the inn beyond its counter. Rooms by the night (`Lodging`), mess on the floor
     (`MessSystem`, through `PerceptionView.Messes`: blood is only a "dark stain"), drink taking
@@ -80,8 +86,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     trades serve front first (`MendJob`, `ServeJob`, `HealOrders`). An AI work pack keeps coin and
     `Entrusted` items (and a few clean vessels) between jobs. The inn's meals go through its serving
     `Hatch` (their own line; dishes put up, taken by whoever's at the front). Gear marked `ForSale` and lying in its seller's shop is on show
-    (`Goods`); no job takes an item for sale (`IsAvailable`). `Favours/`: what players ask of each
-    other, for silver they name.
+    (`Goods`); no job takes an item for sale (`IsAvailable`). Villagers buy supper there of an
+    evening. `Favours/`: pinned to the notice board in the square and known by reading it, for
+    silver; errands (bring so many of a thing) are done by bringing, and the labourer takes them.
   - `Tinkering/`: the Tinker. Lockwork on strongboxes from quests: a box's trap is hidden item
     state, shown only through `PerceptionView.Strongbox`, which never says an armed one is there.
     Locks pinned at the bench (`PinSession`) and fitted to doors (`LockCut`), keys (`Key`);

@@ -444,7 +444,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
 
     private void Think(Simulation sim, Entity me, PerceptionView view, long now)
     {
-        if (Bedtime(sim, me, now))
+        if (Safety(sim, me, view, now) || Bedtime(sim, me, now) || Supper(sim, me, now))
             return;
         GoToWork(sim, me);
         Price(sim, me, view, now);
@@ -486,6 +486,126 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         }
         return true;
     }
+
+    /// <summary>
+    /// Out of harm's way, as a careful player would be: away from a fire close by, and from raiders,
+    /// beasts or a dragon it can see coming (indoors if there's a door near; a dragon, from anywhere
+    /// it's seen). It doesn't fight. True while it's getting clear or keeping its head down.
+    /// </summary>
+    private bool Safety(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        var w = sim.World;
+        var here = w.Get<Position>(me).Cell;
+        // Too hot where it stands (hours at the forge's mouth): a step back to cool off.
+        var tol = w.Get<Creature>(me).Tolerance(now);
+        if (Environment.Warmth.FeltAt(sim, here) > tol.SafeMax - 8 && Ai.AnimalBrain.FleeSpot(sim, me, here, 5) is { } cooler)
+        {
+            Doing = "stepping back from the heat";
+            Walk(sim, me, cooler, now);
+            return true;
+        }
+        // Fire close by, or anywhere in the building it's in (a roof alight overhead): out, and away.
+        var building = Buildings.At(sim, here);
+        foreach (var i in sim.Fire.BurningTiles)
+        {
+            var f = sim.Map.CellOf(i);
+            var near = Math.Abs(f.Z - here.Z) <= 3 && Maps.Map.Distance(f, here) <= 3;
+            if ((near || (!building.IsNull && Buildings.At(sim, f) == building)) && Ai.AnimalBrain.FleeSpot(sim, me, f, 10) is { } away)
+            {
+                Doing = "getting away from the fire";
+                if (now - _lastWalk >= ThinkTicks * 2)
+                {
+                    send(new AvatarGoToCommand(me, away));
+                    _lastWalk = now;
+                }
+                return true;
+            }
+        }
+        Entity? foe = null;
+        var nearest = int.MaxValue;
+        foreach (var e in view.Creatures())
+            if (w.Get<Creature>(e) is { Dead: false, Downed: false } c && Factions.Attacker(c.Faction) && !w.Has<Combat.Leaving>(e))
+            {
+                var d = Maps.Map.Distance(w.Get<Position>(e).Cell, here);
+                if ((d <= Ai.Defence.VillagerRange || c.Def.Race == Race.Dragon) && d < nearest)
+                    (foe, nearest) = (e, d);
+            }
+        if (foe is not { } threat)
+            return false;
+        var at = w.Get<Position>(threat).Cell;
+        if (sim.Rooms.RoomAt(here) is { Indoors: true } && nearest > 2)
+        {
+            Doing = "keeping indoors";
+            return true;
+        }
+        if ((Ai.Defence.Shelter(sim, me, at) ?? Ai.AnimalBrain.FleeSpot(sim, me, at, 12)) is { } safe)
+        {
+            Doing = "getting out of the way";
+            if (now - _lastWalk >= ThinkTicks * 2)
+            {
+                send(new AvatarGoToCommand(me, safe));
+                _lastWalk = now;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>Food below which a bot goes and eats.</summary>
+    private const float HungryBelow = 0.35f;
+
+    /// <summary>Hungry, with nothing in hand: something to eat from the nearest store or pile, eaten where it's kept.</summary>
+    private bool Supper(Simulation sim, Entity me, long now)
+    {
+        var w = sim.World;
+        if (_task != 0 || w.Get<Needs>(me).Get(sim.Defs.Need("Food")) >= HungryBelow)
+            return false;
+        if (w.Get<Mind>(me).Job is EatHeldJob)
+        {
+            Doing = "eating";
+            return true;
+        }
+        if (_food is { } chosen && (!w.IsAlive(chosen) || now - _foodSince > SimClock.TicksPerSecond * 60))
+        {
+            // Couldn't get at it in a minute: try something else for a while.
+            _noFood.Add(chosen);
+            _food = null;
+        }
+        if (now - _noFoodSince > SimClock.TicksPerHour)
+        {
+            _noFood.Clear();
+            _noFoodSince = now;
+        }
+        if (_food == null)
+        {
+            var here = w.Get<Position>(me).Cell;
+            var eater = w.Get<Creature>(me).Def;
+            var best = int.MaxValue;
+            foreach (var e in sim.AvailableItems())
+            {
+                var d = w.Get<Thing>(e).Def;
+                if (!d.IsFood || !d.EdibleBy(eater) || (d.IsMeat && !d.Cooked) || _noFood.Contains(e) || sim.Reservations.IsReservedByOther(e, me))
+                    continue;
+                var at = sim.LocationOf(e);
+                var dist = Maps.Map.Distance(at, here);
+                if (dist < best && dist <= 60 && Ai.Navigation.CanReach(sim, me, here, at, w.Get<Thing>(e).Spawned ? PathEnd.OnTile : PathEnd.Touch))
+                    (_food, best) = (e, dist);
+            }
+            _foodSince = now;
+        }
+        if (_food is not { } food)
+            return false;
+        Doing = "getting something to eat";
+        if (AvatarSystem.CanEat(sim, me, food))
+            send(new EatCommand(me, food));
+        else
+            Walk(sim, me, sim.LocationOf(food), now);
+        return true;
+    }
+
+    private Entity? _food;
+    private long _foodSince, _noFoodSince;
+    private readonly HashSet<Entity> _noFood = [];
 
     /// <summary>Rest below which a bot turns in at night.</summary>
     private const float BedtimeRest = 0.85f;

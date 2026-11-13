@@ -71,7 +71,7 @@ public static class Defence
     /// An indoor cell further from the foe than they are now, nearest them: behind walls, the
     /// raiders have to come through a door for them.
     /// </summary>
-    private static int3? Shelter(Simulation sim, Entity pawn, int3 foe)
+    public static int3? Shelter(Simulation sim, Entity pawn, int3 foe)
     {
         var tile = sim.World.Get<Position>(pawn).Cell;
         var from = Map.Distance(tile, foe);
