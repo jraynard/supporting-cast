@@ -1909,10 +1909,12 @@ def beard_layer(F, style):
     sx = d * 0.3
     bottom = 40.6 if big else 33.4
     if big:
-        outer = [(9.5, 19.6), (9.3, 23.6), (9.7, 28.0), (11.0, 32.4), (13.2, 36.4), (16.4, 39.4), (20.0, bottom)]
+        outer = [(9.6, 16.2), (9.4, 19.6), (9.3, 23.6), (9.7, 28.0), (11.0, 32.4), (13.2, 36.4), (16.4, 39.4), (20.0, bottom)]
     else:
-        outer = [(9.5, 19.6), (9.3, 23.4), (9.9, 27.0), (11.4, 30.0), (13.8, 32.2), (16.8, 33.2), (20.0, bottom)]
-    inner = [(10.7, 19.6), (10.9, 23.2), (11.5, 26.0), (12.8, 27.6), (14.6, 28.0), (cx - 3.6 - sx, 27.6)]
+        outer = [(9.6, 16.2), (9.4, 19.6), (9.3, 23.4), (9.9, 27.0), (11.4, 30.0), (13.8, 32.2), (16.8, 33.2), (20.0, bottom)]
+    # the sideburns start well up under the hair (drawn over them), so no sliver of skin opens between
+    # the two as the head bobs and the layers land a pixel apart
+    inner = [(10.8, 16.2), (10.8, 19.6), (10.9, 23.2), (11.5, 26.0), (12.8, 27.6), (14.6, 28.0), (cx - 3.6 - sx, 27.6)]
 
     def side(pts, s_):
         return [((x if s_ < 0 else 40 - x) + sx, y + hy) for x, y in pts]
@@ -1935,8 +1937,8 @@ def beard_layer(F, style):
     notch = ellipse([cx - 1.0, 29.4 + hy, cx + 1.0, 31.0 + hy])
     stache = []
     for s_ in (-1, 1):
-        if big:                                                        # sweeping out past the mouth, the tips curling up
-            pts = [(cx + s_ * 0.2, 26.9), (cx + s_ * 2.4, 27.2), (cx + s_ * 4.6, 28.2), (cx + s_ * 6.2, 28.0), (cx + s_ * 7.0, 26.8), (cx + s_ * 6.4, 25.8)]
+        if big:                                                        # sweeping out past the mouth, the tips curling down (well away from the eyes)
+            pts = [(cx + s_ * 0.2, 26.9), (cx + s_ * 2.4, 27.2), (cx + s_ * 4.4, 28.0), (cx + s_ * 5.8, 29.4), (cx + s_ * 6.2, 31.0), (cx + s_ * 5.4, 32.0)]
             stache.append(hwisp(F, pts, 2.2, 0.0, power=1.1))
         else:
             pts = [(cx + s_ * 0.2, 26.9), (cx + s_ * 2.2, 27.1), (cx + s_ * 3.8, 27.8), (cx + s_ * 4.4, 28.8)]
