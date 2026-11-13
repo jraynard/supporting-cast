@@ -109,6 +109,7 @@ public sealed partial class VillageGame
     {
         BeginWork(s.Title, ("F", "a pinch"), ("Space", "taste it"), ("Esc", "that'll do"));
         TextC(Theme.Dim, "Every pot wants its own. Taste as you go: it can't come back out.");
+        SeasonScene(s.StartTick, s.Pinches);
         ImGui.Spacing();
         ImGui.Text($"{s.Pinches} pinch{(s.Pinches == 1 ? "" : "es")} in.");
         if (s.TastedAt < 0)

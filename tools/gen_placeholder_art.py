@@ -28,6 +28,7 @@ import norse_buildings
 import norse_smithy
 import inn_art
 import station_art
+import work_ui_art
 import healer_art
 import tinker_art
 import norse_gear
@@ -512,6 +513,7 @@ if __name__ == "__main__":
     chibi_animals.generate()     # deer, boar, pig, hare, wolf, bear: chibi, 4x detail
     norse_plants.generate()      # berry bushes, wild flax, emberroot
     norse_ui.generate()          # toolbar icons, fire and ember fx
+    work_ui_art.generate()       # the mini-games' props (ui/work/*)
     norse_glow.generate()    # campfire, kiln, forge, ember crystal, standing stones, moonpetal
     norse_roofs.generate()   # turf, thatch and shingle roofs: replaces placeholder_roofs' drawings
     norse_fx.generate()      # selection, designation mark, need and chatter bubbles (white art the game tints), the breath core

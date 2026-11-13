@@ -190,6 +190,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>Debug/screenshots (<c>--furniture-demo</c>): wide furniture and roofs beside the landing (<see cref="FurnitureShowcase"/>).</summary>
     public bool FurnitureDemo { get; init; }
 
+    /// <summary>Debug/screenshots (<c>--work-scenes</c>): every mini-game's scene in one panel, played by stand-in values.</summary>
+    public bool WorkScenesDemo { get; init; }
+
     /// <summary>Debug/screenshots (<c>--building-demo</c>): every preset building, and one at each phase (<see cref="BuildingShowcase"/>).</summary>
     public bool BuildingDemo { get; init; }
 

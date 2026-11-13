@@ -220,6 +220,7 @@ else
         StartZoom = args.Contains("--zoom") ? ParseInt(args, "--zoom") : 0,
         IgniteForest = args.Contains("--ignite-forest"),
         FurnitureDemo = args.Contains("--furniture-demo"),
+        WorkScenesDemo = args.Contains("--work-scenes"),
         BuildingDemo = args.Contains("--building-demo"),
         MapName = ParseString(args, "--map") ?? HeroesNotIncluded.Sim.Scenarios.VillageRound.DefaultMap,
         Freeform = args.Contains("--freeform"),
@@ -266,7 +267,7 @@ SavedCharacter? PickedCharacter()
 
 static bool LaunchesDirectly(string[] args) =>
     args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--freeform" or "--show-roofs" or "--hide-roofs"
-        or "--ignite-forest" or "--yaw" or "--cutaway" or "--difficulty" or "--map");
+        or "--ignite-forest" or "--yaw" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
 
 // --load and --check-save take a path, or the name of a slot in the saves directory ("quicksave").
 static string ResolveSave(string pathOrSlot)

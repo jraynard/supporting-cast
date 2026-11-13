@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""The mini-games' props (``ui/work/*``), small pixel scenes the work windows are drawn from, in the
+anvil's style (norse_ui.work_anvil): side-on, lit from the top left, an ink outline. The game draws
+them at a whole-pixel scale and moves, turns and tints them from the session in hand.
+
+  whetstone, blade        the whetstone in its holder, and a blade (pale: tinted by its heat)
+  stew_pot, salt_crock    the pot over the fire and the salt crock the pinches come from
+  bed, sheet, hand        a bed side on, a clean sheet (laid on it), a hand (sweeps, tucks, draws)
+  forearm, wrap           a forearm to bind, and a turn of bandage
+  strongbox, probe        a strongbox's front with its lid seam, and the probe run along it
+
+Writes only its own files. Run alone (``python3 tools/work_ui_art.py``) or from gen_placeholder_art.py.
+"""
+import os
+
+from PIL import Image
+
+from norse_art import ramp
+from norse_ui import part, poly, stick, put, ink_outline, OAK, IRONR, WALNUT, ROOT
+from norse_buildings import LINEN, MADDER, WOAD, STRAW
+
+STONE = ramp((128, 134, 142), 5, dark=0.5, light=1.4)
+SKIN = ramp((222, 172, 140), 5, dark=0.55, light=1.12)
+CLAY = ramp((176, 110, 70), 5, dark=0.55, light=1.3)
+STEW = ramp((150, 92, 50), 4, dark=0.55, light=1.35)
+SALT = ramp((236, 234, 228), 3, main=1, dark=0.85, light=1.03)
+BLACK_IRON = ramp((64, 66, 76), 5, main=1, dark=0.55, light=2.0)
+
+
+def canvas(w, h):
+    return Image.new("RGBA", (w, h), (0, 0, 0, 0))
+
+
+def whetstone():
+    """The hone on its oak holder, the face it's worked on along the top."""
+    img = canvas(48, 14)
+    part(img, poly([(2, 8), (46, 8), (44, 13), (4, 13)]), OAK[1:], radius=0.8)
+    part(img, lambda d: d.rounded_rectangle([5, 2, 43, 8], radius=1, fill=255), STONE, radius=1.0,
+         tex=lambda x, y: -0.5 if (x * 3 + y) % 11 == 0 else 0)
+    for x in range(6, 43):
+        put(img, x, 2, STONE[4])
+    return ink_outline(img)
+
+
+def blade():
+    """A knife's blade and tang, the edge along the bottom: greyscale, tinted by its heat."""
+    img = canvas(44, 9)
+    grey = [(v, v, v, 255) for v in (130, 170, 205, 235, 255)]
+    part(img, poly([(0, 3), (12, 2), (36, 2), (43, 5), (36, 8), (12, 8), (0, 7)]), grey, radius=0.8)
+    for x in range(13, 41):
+        put(img, x, 7 if x < 37 else 7 - (x - 37) // 2, (255, 255, 255, 255))         # the bright edge
+    return ink_outline(img)
+
+
+def stew_pot():
+    """The iron pot side on, its stew showing at the rim."""
+    img = canvas(44, 30)
+    part(img, poly([(2, 7), (42, 7), (40, 22), (34, 28), (10, 28), (4, 22)]), BLACK_IRON, radius=1.4)
+    part(img, lambda d: d.ellipse([3, 4, 41, 10], fill=255), BLACK_IRON[1:], radius=0.5)
+    part(img, lambda d: d.ellipse([6, 5, 38, 9], fill=255), STEW, radius=0.6, line=None,
+         tex=lambda x, y: 0.6 if (x * 3 + y) % 7 == 0 else 0)
+    for x in (1, 42):                                                       # the lugs
+        part(img, lambda d, x=x: d.rectangle([x - 1, 9, x + 1, 13], fill=255), BLACK_IRON, radius=0.3)
+    return ink_outline(img)
+
+
+def salt_crock():
+    img = canvas(18, 20)
+    part(img, poly([(3, 4), (15, 4), (16, 10), (14, 19), (4, 19), (2, 10)]), CLAY, radius=1.0)
+    part(img, lambda d: d.ellipse([3, 2, 15, 6], fill=255), CLAY[1:], radius=0.4)
+    part(img, lambda d: d.ellipse([5, 3, 13, 5], fill=255), SALT, radius=0.3, line=None)
+    for x in range(3, 16):
+        put(img, x, 12, WOAD[2])                                            # a painted band
+    return ink_outline(img)
+
+
+def bed():
+    """A bed side on: posts, the frame, a straw mattress and the pillow at the head (left)."""
+    img = canvas(64, 26)
+    for x in (2, 59):
+        part(img, lambda d, x=x: d.rectangle([x, 6 if x == 2 else 12, x + 3, 25], fill=255), OAK[1:], radius=0.6)
+    part(img, lambda d: d.rectangle([4, 16, 60, 21], fill=255), OAK[1:], radius=0.8)
+    part(img, lambda d: d.rounded_rectangle([5, 11, 59, 17], radius=2, fill=255), STRAW, radius=1.0,
+         tex=lambda x, y: -0.5 if (x + y * 2) % 5 == 0 else 0)
+    part(img, lambda d: d.rounded_rectangle([6, 7, 18, 12], radius=3, fill=255), LINEN, radius=1.0)
+    return ink_outline(img)
+
+
+def sheet():
+    """A clean linen sheet, laid along the mattress (the game folds and shifts it)."""
+    img = canvas(46, 6)
+    part(img, lambda d: d.rounded_rectangle([0, 0, 45, 5], radius=1, fill=255), LINEN, radius=0.8)
+    for x in range(1, 45, 6):
+        put(img, x, 4, MADDER[2])                                           # a woven red stripe at the hem
+    return ink_outline(img)
+
+
+def hand():
+    """An open hand from the side, palm down, the fingers to the right."""
+    img = canvas(22, 14)
+    part(img, poly([(0, 5), (8, 3), (19, 4), (21, 6), (19, 8), (12, 9), (8, 12), (5, 11), (0, 9)]), SKIN, radius=1.0)
+    for x in range(12, 19, 2):
+        put(img, x, 6, SKIN[1])                                             # between the fingers
+    return ink_outline(img)
+
+
+def forearm():
+    """A forearm across the scene, the wrist and hand at the right."""
+    img = canvas(64, 16)
+    part(img, poly([(0, 2), (40, 3), (50, 4), (56, 3), (63, 6), (62, 11), (54, 13), (48, 12), (40, 13), (0, 14)]), SKIN, radius=1.4)
+    return ink_outline(img)
+
+
+def wrap():
+    """One turn of linen bandage, crossing the arm at a slant."""
+    img = canvas(8, 18)
+    part(img, poly([(2, 0), (7, 1), (6, 17), (1, 16)]), LINEN, radius=0.6)
+    return ink_outline(img)
+
+
+def strongbox():
+    """A strongbox's front: oak boards in iron straps, the lid's seam a third of the way down, the
+    hasp at the left and the hinge at the right (as the probe runs from hasp to hinge)."""
+    img = canvas(64, 30)
+    part(img, lambda d: d.rectangle([1, 1, 62, 28], fill=255), WALNUT, radius=1.2,
+         tex=lambda x, y: -0.5 if y in (6, 16, 23) else 0)
+    for x in (6, 31, 56):
+        part(img, lambda d, x=x: d.rectangle([x, 1, x + 2, 28], fill=255), IRONR[1:], radius=0.3)
+    part(img, lambda d: d.rectangle([0, 7, 5, 15], fill=255), IRONR[1:], radius=0.4)     # the hasp
+    part(img, lambda d: d.rectangle([59, 8, 63, 12], fill=255), IRONR[1:], radius=0.4)   # the hinge
+    img = ink_outline(img)
+    for x in range(6, 59):                                                  # the lid's seam, over it all
+        put(img, x, 10, (20, 13, 10, 255))
+        put(img, x, 11, WALNUT[3])
+    return img
+
+
+def probe():
+    """The probe: a fine steel pick on a walnut grip, the point at the bottom."""
+    img = canvas(6, 28)
+    part(img, stick((3, 1), (3, 12), 3.4, 3.0), WALNUT, radius=0.4)
+    part(img, stick((3, 12), (3, 27), 1.4, 0.6), IRONR[2:], radius=0.3)
+    return ink_outline(img)
+
+
+SPRITES = (("whetstone", whetstone), ("blade", blade), ("stew_pot", stew_pot), ("salt_crock", salt_crock),
+           ("bed", bed), ("sheet", sheet), ("hand", hand), ("forearm", forearm), ("wrap", wrap),
+           ("strongbox", strongbox), ("probe", probe))
+
+
+def generate():
+    out = os.path.join(ROOT, "ui", "work")
+    os.makedirs(out, exist_ok=True)
+    for name, make in SPRITES:
+        make().save(os.path.join(out, name + ".png"))
+    print(f"work ui: wrote {len(SPRITES)} props")
+
+
+if __name__ == "__main__":
+    generate()

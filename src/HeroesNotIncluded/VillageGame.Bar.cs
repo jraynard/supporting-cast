@@ -295,6 +295,7 @@ public sealed partial class VillageGame
     private void DrawMakeBed(Sim.Hospitality.MakeBedSession s)
     {
         BeginWork(s.Title, ("F", "as the hands come round"), ("Esc", "leave it"));
+        MakeBedScene(s.Movements, s.Sweep, s.OnCue);
         string[] moves = ["Strip it", "Smooth the sheet", "Tuck it in"];
         for (var i = 0; i < moves.Length; i++)
             TextC(i < s.Movements ? Theme.Good : i == s.Movements ? Theme.Accent : Theme.Dim, (i < s.Movements ? "Done: " : "") + moves[i]);

@@ -55,6 +55,8 @@ public sealed partial class VillageGame
         DrawToolbar();
         DrawHotbar();
         DrawWork();
+        if (WorkScenesDemo)
+            DrawWorkSceneGallery();
         // Free windows.
         DrawStorageWindow();
         DrawSignWindow();

@@ -931,3 +931,8 @@ dragon and the festival.
   `def`): wall torches by the inn's door, its stair and far corner, and in the smithy. Stairs are
   four solid steps (`steps`) rather than a sloped face with stringers poking through it. The forge
   and kiln stay textured blocks: their fronts already carry the art.
+- **Mini-games as scenes, the first batch:** seasoning (the pot steaming, pinches falling from the
+  salt crock), making a bed (the sheet as far as it's got, the hand coming round), binding (the
+  turns on the arm, the one being pulled tinted by how tight), drawing a hurt (its glow drawn up into
+  the hand), sharpening (the blade on the stone at your angle, warming, sparks) and probing a
+  strongbox (the pick along its seam). Props from `tools/work_ui_art.py`; `--work-scenes` shows them all.

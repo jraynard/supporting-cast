@@ -513,7 +513,13 @@ The interface is drawn by Narsil's UI kit (external/narsil/docs/UI.md) from spri
 - **Toast and errand icons** (24×24, like the order icons): `ui/icon_coin`, `ui/icon_quest`, `ui/icon_wound`, `ui/icon_good`.
 - **The hammering scene:** `ui/work/anvil`, `ui/work/hammer` (handle left, head right; the game swings it) and `ui/work/billet`. The billet is drawn pale, and the game tints it by heat.
 
-The other mini-games are still drawn plainly from the palette, until play settles them.
+- **The other scenes** (`tools/work_ui_art.py`): the whetstone and a blade (pale, tinted by its heat),
+  the stew pot and salt crock, a bed and a sheet, a hand, a forearm and a turn of bandage, a
+  strongbox's front and the probe. `VillageGame.WorkScenes` draws them as a small scene over each
+  game's gauges, moved and tinted from the session in hand. `--work-scenes` opens every scene in
+  one panel, played by stand-in values, to look the art over without playing each game.
+
+Some mini-games are still drawn plainly from the palette: they get their scenes batch by batch.
 
 ## Placeholder art
 

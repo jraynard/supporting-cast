@@ -235,6 +235,7 @@ public sealed partial class VillageGame
     private void DrawBandage(BandageSession s)
     {
         BeginWork(s.Title, ("F", "hold to pull the cloth tight, let go in the band"), ("Esc", "stop"));
+        BandageScene(s.Turns, s.TurnsDone, s.Tension, s.Low, s.High);
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 30);
         var min = ImGui.GetCursorScreenPos();
@@ -258,6 +259,7 @@ public sealed partial class VillageGame
     private void DrawDraw(DrawSession s)
     {
         BeginWork(s.Title, ("F", "hold to draw it in, let go to pause"), ("A/D", "keep your composure in the band"), ("Esc", "stop"));
+        DrawScene(s.Held, s.Calm, s.Drawn, s.Strain);
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 30);
         var min = ImGui.GetCursorScreenPos();
