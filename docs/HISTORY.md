@@ -972,3 +972,26 @@ dragon and the festival.
 - Beards after reference art: the short one is the jaw, with a clean cheek line and a notch under
   the lip; the full one hangs to ragged points under a curled moustache. The curly bob's dark shows
   only between its curls, not as a solid shape behind them.
+
+### Combat: blows seen coming (2026-11-13)
+The first raid with a player in it showed that fights didn't work: three raiders each swung every
+1.5 s at whoever they reached, so a player was down about 5 s after closing in, with nothing to do
+about it and no word on how to strike back. Turn-based was weighed and set aside (the day clock is
+shared); fights stay real time, Souls-lite.
+- **One at a time** (`Combat/Engagement`): only so many press one target at once, one on a player
+  and two on anyone else; the rest wait a step back (`Job.AwaitTurn`) or go for someone else.
+  Melee comes every 2.5 s, a little slower at a player.
+- **Blows seen coming** (`Combat/Blows`, `BlowSystem`): every melee blow is wound up first
+  (`Windup`, `AttackDef.windupSeconds`), drawn as a ring closing on its target (amber, ember for a
+  heavy one) that flashes as it lands. A raised guard blocks it (a third of the hurt, some wind);
+  raised just as it lands, it parries (none, and the attacker is staggered and open to a riposte).
+  Space dodges; a heavy blow (Shift+F) breaks a tired guard. Wind is a bar under your needs. AI
+  fighters block and parry by their Melee skill, rolled as the blow starts, so fights between them
+  run on the same rules.
+- **Co-op:** guard and dodge keys are stamped with the tick they were pressed on
+  (`CombatInputCommand`), and a blow at a player lands a fifth of a second after its impact
+  (`Blows.LatencyGrace`), so a parry pressed in time counts though it arrives late.
+- F strikes the foe beside you first, and a line over the hotbar says how to fight.
+- Ranged shots and the dragon still strike at once; trade and weapon techniques are next.
+- Bench baselines: seed 1234 state `853A200442B00386`, full `EFC778FFC76E0163`; seed 99 state
+  `9039CE5D8E55CCBD`, full `36736D4F7C3441D1`.

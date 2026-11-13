@@ -1,6 +1,8 @@
 using Brutal.ImGuiApi;
 using Narsil.Ui;
 using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Core;
+using Narsil.Platform;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Ecs;
 using HeroesNotIncluded.Sim.Systems;
@@ -13,6 +15,36 @@ namespace HeroesNotIncluded;
 // for what they are on sight (their names are drawn hostile), so this only asks what you can see.
 public sealed partial class VillageGame
 {
+    /// <summary>The guard the sim was last told of, and a Shift+F press spent on a heavy blow (so F's own swing waits for its release).</summary>
+    private bool _guardSent, _heavyKeyHeld;
+
+    /// <summary>
+    /// The fight's keys (<see cref="Sim.Combat.Blows"/>): hold V (or the right button with a foe
+    /// near) to guard, raised just as a blow lands to parry it; Space to dodge; Shift+F for a heavy
+    /// blow at the foe beside you. Each is stamped with the tick it was pressed on here, so in
+    /// co-op a parry counts from when you pressed it, not when it arrived.
+    /// </summary>
+    private void HandleCombatKeys(Input input)
+    {
+        var tick = _sim.Clock.Tick;
+        var inFight = NearestFoe() != null;
+        var guard = input.IsKeyDown(GlfwKey.V)
+            || (inFight && input.IsMouseDown(MouseButton.Right) && !ImGui.GetIO().WantCaptureMouse);
+        if (guard != _guardSent)
+        {
+            Issue(new CombatInputCommand(_avatar, guard ? CombatInput.GuardUp : CombatInput.GuardDown, tick));
+            _guardSent = guard;
+        }
+        if (input.WasKeyPressed(GlfwKey.Space))
+            Issue(new CombatInputCommand(_avatar, CombatInput.Dodge, tick));
+        var shift = input.IsKeyDown(GlfwKey.LeftShift) || input.IsKeyDown(GlfwKey.RightShift);
+        if (shift && input.WasKeyPressed(GlfwKey.F) && FoeBeside(_sim.World.Get<Position>(_avatar).Cell, _sim.World.Get<Avatar>(_avatar).Facing) is { Kind: AvatarActionKind.Hunt } strike)
+        {
+            Issue(new CombatInputCommand(_avatar, CombatInput.Heavy, tick, strike.Target));
+            _heavyKeyHeld = true;
+        }
+    }
+
     /// <summary>A foe this close (cells) and in sight is a fight.</summary>
     private const int FightHintRange = 5;
 
@@ -30,11 +62,11 @@ public sealed partial class VillageGame
         if (!armed)
             TextC(Theme.Warn, "You've nothing to fight with: get a weapon from the muster rack, or get indoors.");
         else if (beside)
-            TextC(Theme.Warn, $"Hold F to strike at {w.Get<Creature>(foe).Name}.");
+            TextC(Theme.Warn, $"F strikes at {w.Get<Creature>(foe).Name}, Shift+F swings heavy.");
         else
-            TextC(Theme.Warn, "Close in and hold F to strike.");
+            TextC(Theme.Warn, "Close in, then F to strike.");
         ImGui.SameLine(0, Gui.S(10));
-        TextC(Theme.Dim, "They come at you one at a time. Step out of reach to catch your breath.");
+        TextC(Theme.Dim, "Hold V or the right button to guard: raise it as their ring closes to parry. Space dodges.");
         Panel.End();
     }
 

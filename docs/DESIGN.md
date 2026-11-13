@@ -336,8 +336,11 @@ or perhaps by the traitor if they are a necromancer. They can come back in the n
 - **One knowledge layer (`Perception`).** The game may show other characters, allegiances and
   hidden item properties only through it, as Lifeline does with `Assessment`. If the game goes
   public, this layer becomes the server's replication filter.
-- **Real-time violence only.** DragonWorld's turn-based fights freeze the whole map, so one stabbing
-  would stop every player's game. Attacks go through `RealtimeAttacks`.
+- **Real-time violence, seen coming.** DragonWorld's turn-based fights freeze the whole map, so one
+  stabbing would stop every player's game, and even turns for the fighters alone would leave the
+  day's clock running for minutes. Fights are real time but readable: each blow is wound up where
+  it's seen coming, and met with a guard, a parry or a dodge (`Combat/Blows`); only so many press
+  one person at a time (`Combat/Engagement`). The wounds go through `RealtimeAttacks`.
 - **Speech is sim state.** `SayCommand` goes through the sim rather than Narsil's global chat, so
   hearing can depend on room and distance, with whispers, shouts, eavesdropping and disguised
   speakers. Text only for now.

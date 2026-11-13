@@ -119,7 +119,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     wounds from `CombatRules`. There's no turn-based combat, and nothing may stop the clock for one
     player's fight.
     Only so many press one target at a time (`Combat/Engagement`: one on a player); the rest
-    wait a step back (`Job.AwaitTurn`).
+    wait a step back (`Job.AwaitTurn`). Melee blows are wound up first (`Combat/Blows.Begin`, a
+    `Windup` the `BlowSystem` lands) and met by `Guard` (block, parry, dodge); a player's keys are
+    stamped (`CombatInputCommand`) and blows at them land `LatencyGrace` late.
   - Player input reaches the sim only as `ISimCommand`s, through `VillageGame.Issue`. `CommandCodec`
     serializes by constructor parameter. Commands declare `IActorCommand`, `ISubjectCommand`,
     `IPlayerCommand`, `IHostCommand` or `IDevCommand`; `CommandRules.Refusal` checks them on every peer.

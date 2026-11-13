@@ -83,7 +83,7 @@ public sealed partial class VillageGame
     /// Keys the avatar's controls use.
     /// the toolbar's letter hotkeys skip them in Adventure mode.
     /// </summary>
-    private static readonly GlfwKey[] AvatarKeys = [GlfwKey.W, GlfwKey.A, GlfwKey.S, GlfwKey.D, GlfwKey.F, GlfwKey.Z, GlfwKey.X, GlfwKey.N];
+    private static readonly GlfwKey[] AvatarKeys = [GlfwKey.W, GlfwKey.A, GlfwKey.S, GlfwKey.D, GlfwKey.F, GlfwKey.Z, GlfwKey.X, GlfwKey.N, GlfwKey.V];
 
     private bool _sentDig;
 
@@ -121,6 +121,7 @@ public sealed partial class VillageGame
         _predictor.Reset();
         _sentWork = false;
         _sentDig = false;
+        _guardSent = _heavyKeyHeld = false;
         _clickHold = ClickHold.None;
         _clickWindow = null;
         _seenWalkFailure = !_avatar.IsNull && _sim.Ai.LastFailure.TryGetValue(_avatar, out var failed) ? failed : null;
@@ -185,6 +186,7 @@ public sealed partial class VillageGame
             _clickWindow = null; // walked off: the clicked wagon or bench stays shut
 
         HandleInventoryKeys(input);
+        HandleCombatKeys(input);
 
         // N lies down where you stand (in the bed there, else on the ground): its own key, so F and clicks never put you to sleep.
         if (input.WasKeyPressed(GlfwKey.N))
@@ -196,10 +198,10 @@ public sealed partial class VillageGame
 
         // F uses, Z digs; both work only while held. A press starts the action, a release of both stops work.
         var use = input.IsKeyDown(GlfwKey.F);
-        if (_useKeyFromWork && use)
+        if ((_useKeyFromWork || _heavyKeyHeld) && use)
             use = false;
         else
-            _useKeyFromWork = false;
+            _useKeyFromWork = _heavyKeyHeld = false;
         var dig = input.IsKeyDown(GlfwKey.Z);
         if (use && !_sentWork && WorkTarget() is { OpensWindow: true } window)
             OpenWindowFor(window, toggle: true); // F again closes it
@@ -333,7 +335,8 @@ public sealed partial class VillageGame
             }
         }
 
-        if (input.WasMousePressed(MouseButton.Right) && ItemInReach() is { IsNull: false } menuItem)
+        // In a fight the right button is your guard (HandleCombatKeys), not the item menu.
+        if (input.WasMousePressed(MouseButton.Right) && NearestFoe() == null && ItemInReach() is { IsNull: false } menuItem)
         {
             _worldMenuItem = menuItem; // DrawWorldItemMenu opens it this frame
             _openWorldMenu = true;

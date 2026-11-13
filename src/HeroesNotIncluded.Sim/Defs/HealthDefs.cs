@@ -174,6 +174,15 @@ public sealed class AttackDef
     /// </summary>
     public float CooldownSeconds { get; set; }
 
+    /// <summary>
+    /// Seconds a blow is seen coming before it lands (<c>Combat.Blows</c>): the time there is to
+    /// block, parry or step aside. 0 means 0.8.
+    /// </summary>
+    public float WindupSeconds { get; set; }
+
+    [JsonIgnore]
+    public int WindupTicks => (int)((WindupSeconds > 0 ? WindupSeconds : 0.8f) * SimClock.TicksPerSecond);
+
     [JsonIgnore]
     public int CooldownTicks => (int)((CooldownSeconds > 0 ? CooldownSeconds : 2.5f) * SimClock.TicksPerSecond);
 

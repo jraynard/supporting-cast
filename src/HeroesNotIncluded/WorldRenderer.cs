@@ -484,6 +484,8 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         DrawSmoke(sim, InView, time);
         DrawBreaths(sim, time);
         DrawShots(sim, time);
+        DrawWindups(sim);
+        DrawBlowWords(sim);
         EmitSpeech(sim, InView);
         _particles.Update(animDt);
         _particles.Draw(this, cut);
@@ -983,6 +985,63 @@ public sealed class WorldRenderer(TextureAtlas atlas)
 
     /// <summary>The heart of a dragon's flame.</summary>
     private static readonly float4 FireColor = new(1f, 0x4A / 255f, 0x24 / 255f, 1f);
+
+    /// <summary>
+    /// Blows being wound up (<see cref="Sim.Combat.Windup"/>), for anyone who can see the one swinging:
+    /// a ring under whoever it's aimed at, closing as it comes (amber, ember for a heavy one), and a
+    /// white flash as it lands, which is the moment to raise a guard to parry it.
+    /// </summary>
+    private void DrawWindups(Simulation sim)
+    {
+        var w = sim.World;
+        var ring = S("ui/blow_ring");
+        var now = sim.Clock.Tick + (Interp?.Alpha ?? 1f);
+        foreach (var e in w.Each<Sim.Combat.Windup>())
+        {
+            var blow = w.Get<Sim.Combat.Windup>(e);
+            if (!Seen(e) || !w.IsAlive(blow.Target) || !w.Has<Position>(blow.Target))
+                continue;
+            var at = DrawPos(sim, blow.Target, w.Get<Position>(blow.Target).Pos) + new float3(0, 0, 0.06f);
+            var span = Math.Max(1f, blow.Impact - blow.Start);
+            var p = Math.Clamp((now - blow.Start) / span, 0f, 1f);
+            var landing = now >= blow.Impact;
+            var c = landing ? new float4(1f, 1f, 1f, 0.95f) : blow.Heavy ? HeavyBlowColor : BlowColor;
+            var size = landing ? 0.85f : 0.85f + 1.4f * (1f - p);
+            Decal(ring, at, size, Rgba.Pack(c.X, c.Y, c.Z, c.W * (0.35f + 0.65f * p)), Quad.Unlit | Quad.Always, translucent: true);
+            // The goal it closes on.
+            Decal(ring, at, 0.85f, Rgba.Pack(c.X, c.Y, c.Z, 0.25f), Quad.Unlit | Quad.Always, translucent: true);
+        }
+    }
+
+    private static readonly float4 BlowColor = new(0.99f, 0.77f, 0.33f, 0.9f);
+    private static readonly float4 HeavyBlowColor = new(1f, 0.33f, 0.16f, 0.95f);
+
+    /// <summary>A word over whoever met a blow: parried, blocked, stepped aside, guard broken, riposte.</summary>
+    private void DrawBlowWords(Simulation sim)
+    {
+        var w = sim.World;
+        foreach (var b in sim.RecentBlows)
+        {
+            if (_firstSeen.ContainsKey(b) || !w.IsAlive(b.Target) || !w.Has<Position>(b.Target) || !Seen(b.Target))
+                continue;
+            _firstSeen[b] = _now;
+            var (text, color) = b.Outcome switch
+            {
+                Sim.Combat.BlowOutcome.Parried => ("Parried!", new float4(1f, 0.95f, 0.6f, 1f)),
+                Sim.Combat.BlowOutcome.Blocked => ("Blocked", new float4(0.8f, 0.85f, 0.95f, 1f)),
+                Sim.Combat.BlowOutcome.Dodged => ("Dodged", new float4(0.75f, 0.95f, 0.75f, 1f)),
+                Sim.Combat.BlowOutcome.GuardBroken => ("Guard broken!", new float4(1f, 0.5f, 0.35f, 1f)),
+                Sim.Combat.BlowOutcome.Riposte => ("Riposte!", new float4(1f, 0.85f, 0.4f, 1f)),
+                Sim.Combat.BlowOutcome.Miss when !ShotRolled(sim, b) => ("Miss", new float4(0.8f, 0.8f, 0.8f, 1f)),
+                _ => ((string?)null, default(float4)),
+            };
+            if (text != null)
+                Float(w.Get<Position>(b.Target).Pos + WorldScale.Rise(1.45f), text, color);
+        }
+    }
+
+    /// <summary>A miss the attack itself rolled already has its word (<see cref="DrawShots"/>); one out of reach doesn't.</summary>
+    private static bool ShotRolled(Simulation sim, Sim.Combat.BlowEvent b) => sim.RecentShots.Any(s => s.Tick == b.Tick);
 
     /// <summary>Attacks: an arrow streaking to the target, then a flash (red for a wound, grey for a miss).</summary>
     private void DrawShots(Simulation sim, float time)

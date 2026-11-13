@@ -31,7 +31,7 @@ public sealed class SoundDirector(AudioEngine audio)
     private const float SurveySeconds = 0.25f;
 
     private Simulation? _sim;
-    private long _shotsSeen, _breathsSeen, _messagesSeen, _lineSeen;
+    private long _shotsSeen, _blowsSeen, _breathsSeen, _messagesSeen, _lineSeen;
     private int _coins = -1;
     private Entity _coinsOf = Entity.Null;
     private float _time, _survey, _dangerUntil = -1000f, _nextRoar;
@@ -68,6 +68,7 @@ public sealed class SoundDirector(AudioEngine audio)
         var me = !avatar.IsNull && sim.World.IsAlive(avatar) && sim.World.TryGet<Position>(avatar, out var p) ? p.Cell : (int3?)null;
 
         Shots(sim, view, me);
+        BlowsMet(sim, view, me);
         Breaths(sim, view, me);
         Dragons();
         Messages(sim);
@@ -88,7 +89,7 @@ public sealed class SoundDirector(AudioEngine audio)
     {
         _sim = sim;
         // What happened before we were listening is history.
-        _shotsSeen = _breathsSeen = sim.Clock.Tick;
+        _shotsSeen = _blowsSeen = _breathsSeen = sim.Clock.Tick;
         _messagesSeen = sim.Messages.Total;
         _lineSeen = sim.Speech.Kept.Count > 0 ? sim.Speech.Kept[^1].Id : 0;
         _coins = -1;
@@ -149,6 +150,32 @@ public sealed class SoundDirector(AudioEngine audio)
         }
         _shotsSeen = newest;
         _recentFight.RemoveAll(t => _time - t > 4f);
+    }
+
+    /// <summary>
+    /// Blows met without a wound, which have no shot of their own to sound (<see cref="Shots"/>):
+    /// a parry rings steel on steel, a dodge whistles past. Heard as the fight is, from where it is.
+    /// </summary>
+    private void BlowsMet(Simulation sim, PerceptionView view, int3? me)
+    {
+        var newest = _blowsSeen;
+        foreach (var b in sim.RecentBlows)
+        {
+            if (b.Tick <= _blowsSeen)
+                continue;
+            newest = Math.Max(newest, b.Tick);
+            if (b.Outcome is not (Sim.Combat.BlowOutcome.Parried or Sim.Combat.BlowOutcome.Dodged) || !sim.World.IsAlive(b.Target)
+                || !sim.World.Has<Position>(b.Target))
+                continue;
+            var at = sim.World.Get<Position>(b.Target).Pos;
+            if (Reach(sim, view, me, Cell(at)) is not { } muffle)
+                continue;
+            _recentFight.Add(_time);
+            audio.Play(Sounds.Swing, ToAudio(at), gain: 0.7f, muffle: muffle);
+            if (b.Outcome == Sim.Combat.BlowOutcome.Parried)
+                audio.Play(Sounds.Clash, ToAudio(at), gain: 1.2f, muffle: muffle, delay: 0.05f);
+        }
+        _blowsSeen = newest;
     }
 
     private void Breaths(Simulation sim, PerceptionView view, int3? me)

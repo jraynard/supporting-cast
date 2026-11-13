@@ -301,11 +301,15 @@ public static class CombatRules
 
     /// <summary>
     /// Roll the attack and apply any wound. Callers check <see cref="Chance"/> is possible first.
-    /// A <paramref name="reaction"/> is hurried (<see cref="ReactionFactor"/>).
+    /// A <paramref name="reaction"/> is hurried (<see cref="ReactionFactor"/>). A blow's timing
+    /// (<see cref="Blows"/>) adds to the odds (a riposte) and scales the damage (a heavy blow, a block).
     /// </summary>
-    public static AttackResult Resolve(Simulation sim, Entity attacker, Entity target, AttackDef attack, bool reaction = false)
+    public static AttackResult Resolve(Simulation sim, Entity attacker, Entity target, AttackDef attack, bool reaction = false,
+        float accuracyBonus = 0f, float damageScale = 1f)
     {
         var odds = Chance(sim, attacker, sim.World.Get<Position>(attacker).Cell, target, attack, reaction);
+        if (odds.Possible && accuracyBonus != 0f)
+            odds = odds with { Chance = Math.Clamp(odds.Chance + accuracyBonus, MinChance, MaxChance) };
         AttackResult Result(AttackOutcome o, string? part = null, float dmg = 0) => new(attacker, target, attack, odds.Chance, o, part, dmg);
 
         if (odds.Possible)
@@ -320,7 +324,7 @@ public static class CombatRules
         PartHeight? bias = dz > 0 ? PartHeight.High : dz < 0 ? PartHeight.Low : null;
         var health = sim.World.TryGet<Health>(target, out var h) ? h : null;
         var part = health != null ? HealthSystem.PickPart(sim, health, bias) : -1;
-        var damage = sim.Rand.Range(attack.DamageMin, attack.DamageMax);
+        var damage = sim.Rand.Range(attack.DamageMin, attack.DamageMax) * damageScale;
         // A well-made weapon bites deeper (natural attacks and uncrafted weapons count as plain).
         var weapon = sim.World.TryGet<Equipment>(attacker, out var wielded) && sim.World.IsAlive(wielded.Weapon)
             && sim.World.Get<Thing>(wielded.Weapon).Def.Weapon == attack ? wielded.Weapon : Entity.Null;

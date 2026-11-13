@@ -81,6 +81,15 @@ public sealed partial class VillageGame
                 });
         }
 
+        // Wind, in a fight or while it's coming back: what's left to swing, guard and dodge with.
+        if (w.TryGet<Sim.Combat.Guard>(_avatar, out var guard) && (guard.Stamina < 0.999f || NearestFoe() != null))
+        {
+            HudBar("Wind", guard.Stamina, guard.Stamina < Sim.Combat.Blows.DodgeCost ? Bad : guard.Stamina < 0.5f ? Warn : Good,
+                guard.Stamina < Sim.Combat.Blows.DodgeCost ? "spent" : guard.Stamina < 0.5f ? "winded" : "steady");
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip("Each swing, block and dodge takes breath; it comes back when you let your guard down. With none left, a heavy blow knocks your guard aside.");
+        }
+
         // Mood.
         if (w.TryGet<Mood>(_avatar, out var mood))
         {

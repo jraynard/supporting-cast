@@ -19,13 +19,14 @@ public static class RealtimeAttacks
     public const int AlarmRadius = 14;
 
     /// <summary>Roll an attack if it's possible from where the attacker stands. Null if it isn't.</summary>
-    public static AttackResult? TryAttack(Simulation sim, Entity attacker, Entity target, AttackDef attack)
+    public static AttackResult? TryAttack(Simulation sim, Entity attacker, Entity target, AttackDef attack,
+        float accuracyBonus = 0f, float damageScale = 1f)
     {
         var w = sim.World;
         if (!CombatRules.Chance(sim, attacker, target, attack).Possible)
             return null;
         var wasAlive = !w.Get<Creature>(target).Dead;
-        var result = CombatRules.Resolve(sim, attacker, target, attack);
+        var result = CombatRules.Resolve(sim, attacker, target, attack, accuracyBonus: accuracyBonus, damageScale: damageScale);
 
         var now = sim.Clock.Tick;
         sim.RecentShots.RemoveAll(s => now - s.Tick > SimClock.TicksPerSecond * 5);

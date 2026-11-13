@@ -112,6 +112,9 @@ public sealed partial class Simulation
     /// <summary>Attacks of the last moments, for the renderer. Not part of the sim state.</summary>
     public List<ShotEvent> RecentShots { get; } = [];
 
+    /// <summary>How the blows of the last moments ended (parried, blocked...), for the renderer and sounds. Not sim state.</summary>
+    public List<Combat.BlowEvent> RecentBlows { get; } = [];
+
     private readonly List<ISimSystem> _systems = [];
     private readonly List<Core.ISimCommand> _commands = [];
 
@@ -263,6 +266,7 @@ public sealed partial class Simulation
             .AddSystem(new Work.SmithingSystem())
             .AddSystem(new Work.CookingSystem())
             .AddSystem(new AvatarSystem())
+            .AddSystem(new Combat.BlowSystem())
             .AddSystem(new SettlerSystem())
             .AddSystem(sim.Ai)
             .AddSystem(sim.Movement);

@@ -796,14 +796,15 @@ public sealed class AssaultJob(Entity target) : Job
             // They've stepped off: the job ends, and the brain sends them after whoever's best now.
             if (!Pathfinder.Touches(PawnCell, Sim.LocationOf(target)))
                 yield break;
-            if (Sim.Clock.Tick >= nextAttack)
-            {
-                Combat.RealtimeAttacks.TryAttack(Sim, Pawn, target, attack);
+            // Wound up where it can be seen coming (Combat.Blows), a heavy one now and then.
+            if (Sim.Clock.Tick >= nextAttack && Combat.Blows.Begin(Sim, Pawn, target, attack, heavy: Sim.Rand.Chance(HeavyShare)))
                 nextAttack = Sim.Clock.Tick + Combat.Engagement.Cooldown(Sim, attack, target);
-            }
             yield return JobStatus.Running;
         }
     }
+
+    /// <summary>Of a raider's blows, the share that are heavy.</summary>
+    public const float HeavyShare = 0.25f;
 }
 
 /// <summary>
@@ -1025,11 +1026,8 @@ public sealed class AnimalAttackJob(Entity target) : Job
                     nextAttack = Math.Max(nextAttack, Sim.Clock.Tick + Combat.Engagement.FirstBlowTicks);
                     continue;
                 }
-                if (Sim.Clock.Tick >= nextAttack)
-                {
-                    Combat.RealtimeAttacks.TryAttack(Sim, Pawn, target, attack);
+                if (Sim.Clock.Tick >= nextAttack && Combat.Blows.Begin(Sim, Pawn, target, attack))
                     nextAttack = Sim.Clock.Tick + Combat.Engagement.Cooldown(Sim, attack, target);
-                }
             }
             else if (!mover.Moving || Sim.Clock.Tick >= nextPlan)
             {

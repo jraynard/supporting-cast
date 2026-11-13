@@ -165,6 +165,36 @@ internal static class ComponentCodecs
             w.Entity(p.Target);
             w.Long(p.Since);
         }, r => new Combat.Pressing { Target = r.Entity(), Since = r.Long() }),
+        Codec("Windup", (w, b) =>
+        {
+            w.Entity(b.Target);
+            w.Int(b.Attack);
+            w.Bool(b.Heavy);
+            w.Long(b.Start);
+            w.Long(b.Impact);
+            w.Int((int)b.Response);
+        }, r => new Combat.Windup
+        {
+            Target = r.Entity(), Attack = Math.Max(0, r.Int()), Heavy = r.Bool(), Start = r.Long(), Impact = r.Long(),
+            Response = (Combat.BlowResponse)Math.Clamp(r.Int(), 0, 2),
+        }),
+        Codec("Guard", (w, g) =>
+        {
+            w.Float(g.Stamina);
+            w.Long(g.RaisedAt);
+            w.Long(g.LoweredAt);
+            w.Long(g.LastRaise);
+            w.Long(g.DodgeFrom);
+            w.Long(g.DodgeUntil);
+            w.Long(g.StaggeredUntil);
+            w.Entity(g.RiposteOn);
+            w.Long(g.RiposteUntil);
+            w.Long(g.NextSwing);
+        }, r => new Combat.Guard
+        {
+            Stamina = Math.Clamp(r.Float(), 0f, 1f), RaisedAt = r.Long(), LoweredAt = r.Long(), LastRaise = r.Long(),
+            DodgeFrom = r.Long(), DodgeUntil = r.Long(), StaggeredUntil = r.Long(), RiposteOn = r.Entity(), RiposteUntil = r.Long(), NextSwing = r.Long(),
+        }),
         Codec("Herd", (w, h) =>
         {
             w.Int(h.Id);

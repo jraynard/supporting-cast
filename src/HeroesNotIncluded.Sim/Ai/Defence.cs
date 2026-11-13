@@ -104,7 +104,8 @@ public sealed class HideJob : Job
 
 /// <summary>
 /// Stand and fight a raider or predator that's come into town: close in and strike on the
-/// weapon's cooldown while it's in reach, when it's their turn to (<see cref="Engagement"/>). Ends when it falls, flees or steps away (the brain sends
+/// weapon's cooldown while it's in reach, when it's their turn to (<see cref="Engagement"/>), each
+/// blow wound up where it's seen coming (<see cref="Blows"/>). Ends when it falls, flees or steps away (the brain sends
 /// them after it again if it's still near), or when they're hurt enough to want out.
 /// </summary>
 public sealed class DefendJob(Entity foe) : Job
@@ -135,11 +136,8 @@ public sealed class DefendJob(Entity foe) : Job
                 nextAttack = Math.Max(nextAttack, Sim.Clock.Tick + Engagement.FirstBlowTicks);
                 continue;
             }
-            if (Sim.Clock.Tick >= nextAttack)
-            {
-                RealtimeAttacks.TryAttack(Sim, Pawn, foe, attack);
+            if (Sim.Clock.Tick >= nextAttack && Blows.Begin(Sim, Pawn, foe, attack, heavy: Sim.Rand.Chance(AssaultJob.HeavyShare)))
                 nextAttack = Sim.Clock.Tick + attack.CooldownTicks;
-            }
             yield return JobStatus.Running;
         }
     }

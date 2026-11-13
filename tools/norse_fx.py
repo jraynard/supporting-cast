@@ -59,6 +59,21 @@ def selection():
     return img
 
 
+def blow_ring():
+    """A plain round ring, two pixels thick, for a blow wound up at someone (the game shrinks it as
+    the blow comes and tints it amber, ember for a heavy one). Round, so it never reads as the
+    selection's corners."""
+    img = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+    for y in range(32):
+        for x in range(32):
+            r = math.hypot(x + 0.5 - 16, y + 0.5 - 16)
+            # Soft both sides of radius 14: a crisp line at any size it's drawn.
+            a = max(0.0, 1.0 - abs(r - 14.0) / 1.6)
+            if a > 0:
+                img.putpixel((x, y), (255, 255, 255, int(255 * min(1.0, a * 1.3))))
+    return img
+
+
 def designate_x():
     """The gebo rune: two strokes cut with a chisel, thick in the middle, tapering, with notched ends."""
     img = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
@@ -143,6 +158,7 @@ def breath_core():
 def generate():
     breath_core()
     save(selection(), "ui/selection")
+    save(blow_ring(), "ui/blow_ring")
     save(designate_x(), "ui/designate_x")
     save(bubble(), "ui/bubble")
     save(speech(), "fx/speech")
