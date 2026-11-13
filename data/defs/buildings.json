@@ -50,7 +50,7 @@
     },
     {
       // A long thatched cottage, timber-framed: the village's ordinary home (Millbrook's houses).
-      "name": "Cottage", "label": "cottage", "icon": "buildings/bed",
+      "name": "Cottage", "label": "cottage", "icon": "buildings/bed", "home": true,
       "description": "A long timber-framed cottage under thatch: a hearth, a table, and beds for a household.",
       "layout": [
         "WWWWWWWWW",

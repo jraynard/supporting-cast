@@ -174,14 +174,11 @@ public static class AiQueries
         var w = sim.World;
         if (w.TryGet<BedOwner>(pawn, out var owner) && w.IsAlive(owner.Bed))
             return owner.Bed;
-        HashSet<Entity>? owned = null;
-        if (prisoner)
-        {
-            owned = [];
-            foreach (var o in w.Each<BedOwner>())
-                if (o != pawn)
-                    owned.Add(w.Get<BedOwner>(o).Bed);
-        }
+        // A bed someone else owns (their home's, a prisoner's) is theirs alone.
+        var owned = new HashSet<Entity>();
+        foreach (var o in w.Each<BedOwner>())
+            if (o != pawn && !(w.TryGet<Creature>(o, out var c) && c.Dead))
+                owned.Add(w.Get<BedOwner>(o).Bed);
         var from = w.Get<Position>(pawn).Cell;
         var best = Entity.Null;
         var bestDist = int.MaxValue;
@@ -190,7 +187,7 @@ public static class AiQueries
             var thing = w.Get<Thing>(e);
             if (thing.Def.Building is not { IsBed: true } b || w.Has<Construction>(e))
                 continue;
-            if (w.Has<ForPrisoners>(e) != prisoner || owned?.Contains(e) == true)
+            if (w.Has<ForPrisoners>(e) != prisoner || owned.Contains(e))
                 continue;
             if (Shops.ShopSystem.IsLet(sim, e))
                 continue; // the inn's rooms: only for whoever's been given one

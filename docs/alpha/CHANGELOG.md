@@ -27,6 +27,8 @@ A round has a beginning, a middle and an end now.
 - No pausing once you're in town: the town doesn't wait.
 - Digging, mining, chopping and foraging are the labourer's work for now.
 - Every shop has a sign out front, like the inn's.
+- Everyone has a home: a cottage of their own near their work, and nobody else sleeps in your
+  bed. The tinker's shop has a little more room round it.
 - Old saves won't carry over into a season.
 
 ## 0.1.0-playtest.2

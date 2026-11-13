@@ -202,14 +202,13 @@ building("Barn", 51, 18, 0, variant="Timber")                    # A: the big ba
 building("Cottage", 40, 31, 3, role="Home")                     # B: the house by the pig pen
 building("Cottage", 50, 28, 0, role="Home")                     # C: top middle
 building("Woodshop", 70, 28, 1, role="Woodshop")                 # D: by the lake, the cart outside
-building("TinkerShop", 63, 67, 2, role="TinkerShop", variant="Timber")  # N: south of the square, between the east houses, its door to the north
+building("TinkerShop", 63, 64, 2, role="TinkerShop", variant="Timber")  # N: south of the square, its door to the north (cottage K stood by here; removed for room)
 building("Smithy", 20, 30, 3, role="Forge", variant="Stone")     # E: the west barn with the stone chimney
 building("Cottage", 28, 41, 0, role="Home")                     # F: west house with the yard
 building("Inn", 61, 45, 1, role="Tavern", variant="Timber")      # G: on the square, facing the well (its kitchen out the back)
 building("Cottage", 74, 44, 1, role="Home", variant="Shingle")  # H: east, the big brown roof (moved over for the inn's kitchen)
 building("Cottage", 30, 56, 0, role="Home")                     # I: south-west, with its garden
 building("Cottage", 43, 61, 2, role="Home")                     # J: south of the square
-building("Cottage", 69, 56, 1, role="Home")                     # K: east, by the cabbage field (moved off the tinker's shop)
 building("Shrine", 55, 73, 2, role="Shrine")                     # L: south, in its garden
 building("Cottage", 75, 70, 2, role="Home", variant="Shingle")  # M: the south-east corner
 

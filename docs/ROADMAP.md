@@ -732,11 +732,21 @@ The Director's second-day crisis can now be any of the four (`Director.CanSend`;
   included (dev mode aside). The controls card no longer offers a pause.
 - **Signs on every shop:** the smithy's hangs from its front post, the shrine's and tinker's on
   their front walls. A sign may now hang on a post as well as a wall.
-- **Cottage K moved** north-east off the tinker's shop (`village_map.py`).
+- **Cottage K is gone**, and the tinker's shop moved three cells north into its place, clear of
+  the road and the shrine (`village_map.py`). Seven cottages remain.
+- **Homes:** the deal gives everyone a bed of their own (`Systems/Homes`, `BedOwner`):
+  - **One each first:** a cottage to themselves (`BuildingDef.Home`), the nearest to their work,
+    while there are cottages to go round.
+  - **Then sharing:** anyone left over takes a spare bed in a cottage.
+  - **Inn staff choose last:** with no cottage bed left, they get a room at the inn, which is
+    never let.
+  - **Late joiners** get one too.
+  - **Held:** nobody else sleeps in a bed that's someone's (`FindFreeBed`), while its owner lives.
+    Before this, villagers took the nearest free bed, and the inn's beds were kept for guests only.
 - **Roadmap:** every milestone's leftovers are gathered into the polish pass.
-- `RoundTests.InARoundOnlyTheLabourerDigsChopsAndForages`. Bench baselines moved for cottage K:
-  seed 1234 state `EBF41849818741DD` full `577A4DE93229CF66`; seed 99 state `E002E776A79DC0E1`
-  full `87714F2EB525E133`.
+- `RoundTests.InARoundOnlyTheLabourerDigsChopsAndForages`; `NightTests` (homes). Bench baselines
+  moved for the map: seed 1234 state `B21A0A9DEA5BAFF1` full `51CF6D49C62A656B`; seed 99 state
+  `6F4F5C7500D2CD22` full `2C87E5DE1CF65026`.
 
 ### M3: A whole season (done)
 Slices M3.1–M3.10 above. What it set out to do is below, kept for the record; it all landed,
@@ -904,7 +914,6 @@ Grouped by area; nothing here blocks a playtest.
   the fires first.
 - A dev button to break the bridge or send a crisis. The bracing window and the dragon haven't
   been seen in a running game yet.
-- Homes: villagers sleep in whichever free bed is nearest; nobody has a house of their own.
 
 **Art and look**
 - Dragon-era art, tools and def fields are still in the tree; prune them in the art pass.
@@ -926,7 +935,6 @@ Grouped by area; nothing here blocks a playtest.
 **Map and movement**
 - Lanes cost the same to walk as grass, so villagers don't prefer them.
 - No turning mid-step: a turn waits for the step under way.
-- The shrine sits close by the tinker's shop; their roofs nearly meet.
 - `--building-demo` lays its showcase over the village.
 
 **Words and docs**

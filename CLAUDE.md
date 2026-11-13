@@ -52,7 +52,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
   - `Round/RoundSystem`: the lobby, the deal and the season (`season.json`): `Festival` on the last
     evening, then `Over` with a `RoundSummary` for the reveal. `Phase.None` means no round (tests,
     demos, bench); behaviour that belongs to rounds checks `Round.Live` (playing or festival).
-    `Endless` keeps a test's round going. Players inhabit AI villagers.
+    `Endless` keeps a test's round going. Players inhabit AI villagers. The deal also gives
+    everyone a home (`Systems/Homes`: a cottage bed of their own, held for them).
   - `Director/`: `Reckoning` keeps Renown (adventurers leaving pleased, quests cleared) and Dread
     (quests unanswered or gone badly; its limit ends the round). Players see words for them,
     through `PerceptionView.Standing`. `Director` sends the season's crises (`season.json` beats:

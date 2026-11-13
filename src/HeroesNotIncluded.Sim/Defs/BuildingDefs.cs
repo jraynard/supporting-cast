@@ -59,6 +59,9 @@ public sealed class BuildingDef : Def
     /// </summary>
     public bool LetsBeds { get; set; }
 
+    /// <summary>A home (the cottage): a round deals its beds out to the townsfolk (<c>Systems.Homes</c>).</summary>
+    public bool Home { get; set; }
+
     /// <summary>
     /// Its containers hold the keeper's stock (the tinker's iron and wood, the collector's crate):
     /// no villager's job takes from them, only someone opening them by hand.

@@ -341,6 +341,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             PlaceAtWork(sim, villager, trade);
         }
         _seats.Clear();
+        Homes.DealAll(sim);
         Phase = RoundPhase.Playing;
         StartTick = sim.Clock.Tick;
         _startCoin.Clear();
@@ -386,6 +387,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             Assign(sim, body, sim.Defs.AllTrades.Find(t => t.Unlimited));
         }
         Players.Inhabit(sim, player, body);
+        Homes.Give(sim, body);
         return body;
     }
 

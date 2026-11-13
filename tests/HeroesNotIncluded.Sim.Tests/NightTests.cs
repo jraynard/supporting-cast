@@ -124,4 +124,45 @@ public class NightTests
         Assert.Equal(OrderStatus.Done, supper.Status);
         Assert.Equal(purse - supper.Price, Coin.Count(sim, villager));
     }
+
+    [Fact]
+    public void EveryoneIsDealtAHomeOfTheirOwnNearTheirWork()
+    {
+        var sim = Round((Ana, "Healer"));
+        var w = sim.World;
+        var town = sim.Creatures().Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human }).ToList();
+        var homes = town.Select(e => Homes.HomeOf(sim, e)).ToList();
+        Assert.All(homes, h => Assert.True(!h.IsNull && w.Get<PresetBuilding>(h).Def.Home, "a cottage each"));
+        Assert.Equal(town.Count, homes.Distinct().Count()); // seven cottages for six: one each
+
+        // Nobody else lies down in a bed that's someone's.
+        var other = town.First(e => !w.Has<Avatar>(e));
+        foreach (var e in town.Where(e => e != other))
+            Assert.NotEqual(w.Get<BedOwner>(e).Bed, Ai.AiQueries.FindFreeBed(sim, other));
+        Assert.Equal(w.Get<BedOwner>(other).Bed, Ai.AiQueries.FindFreeBed(sim, other));
+    }
+
+    [Fact]
+    public void InnStaffWithNoCottageLeftGetARoomThatsNeverLet()
+    {
+        var sim = Round((Ana, "Healer"));
+        var w = sim.World;
+        var cook = sim.Creatures().Single(e => w.TryGet<Trade>(e, out var t) && t.Def.Name == "Cook");
+        // Every cottage bed spoken for by somebody else.
+        w.Remove<BedOwner>(cook);
+        foreach (var b in w.Query<PresetBuilding>().Where(b => w.Get<PresetBuilding>(b).Def.Home).ToList())
+            foreach (var bed in Buildings.Parts(sim, b).Where(p => w.Get<Thing>(p).Def.Building is { IsBed: true }))
+                if (!w.Query<BedOwner>().Any(o => w.Get<BedOwner>(o).Bed == bed))
+                {
+                    var lodger = sim.SpawnCreature(sim.Defs.Creature("Human"), "Lodger", w.Get<Thing>(bed).Cell);
+                    w.Add(lodger, new BedOwner { Bed = bed });
+                }
+        Assert.True(Homes.Give(sim, cook));
+        var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+        Assert.Equal(inn, Homes.HomeOf(sim, cook));
+        // That room isn't let to a guest.
+        var room = w.Get<BedOwner>(cook).Bed;
+        for (var guests = 0; guests < 12; guests++)
+            Assert.NotEqual(room, ShopSystem.FreeLetBed(sim, inn));
+    }
 }
