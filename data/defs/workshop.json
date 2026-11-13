@@ -413,8 +413,9 @@
       "products": [ { "def": "SimpleMeal", "count": 2 } ]
     },
     {
-      // Only over a hearth fitted with its cooking pot (a preset building's upgrade).
-      "name": "CookStew", "label": "stew", "station": "Hearth", "upgrade": "CookingPot", "skill": "Cooking", "work": 360,
+      // Only over a hearth or fireplace fitted with its cooking pot (a preset building's upgrade);
+      // a campfire's shapes all take it, but only a building's fire can have the pot.
+      "name": "CookStew", "label": "stew", "station": "Campfire", "upgrade": "CookingPot", "skill": "Cooking", "work": 360,
       "description": "Simmer 2 meat and 2 berries into 3 bowls of stew: more meals from less than a roast.",
       "ingredients": [ { "def": "Meat", "count": 2 }, { "def": "Berries", "count": 2 } ],
       "products": [ { "def": "Stew", "count": 3 } ]

@@ -14,8 +14,23 @@ public static class Warmth
     /// <summary>How far a fire's warmth reaches, in tiles (and one level up or down).</summary>
     public const int Range = 3;
 
-    /// <summary>A lit fire giving off radiant warmth, and the room it's in (null: open sky).</summary>
-    public readonly record struct Source(int3 Cell, float Warmth, Room? Room);
+    /// <summary>
+    /// A lit fire giving off radiant warmth from <paramref name="Cell"/>, and the room that's in
+    /// (null: open sky); <paramref name="Fire"/> is the fire's own cell (a fireplace's, in the wall).
+    /// </summary>
+    public readonly record struct Source(int3 Cell, float Warmth, Room? Room, int3 Fire);
+
+    /// <summary>
+    /// Where a fire gives off its heat, light and warmth: its own cell, or for one set in a wall
+    /// (<see cref="Defs.BuildingProps.SetInWall"/>) the cell in front of it, in the room.
+    /// </summary>
+    public static int3 FireCell(in Thing thing)
+    {
+        if (thing.Def.Building is not { SetInWall: true })
+            return thing.Cell;
+        var d = Maps.Footprint.Rotate(0, 1, thing.Facing);
+        return new int3(thing.Cell.X + d.X, thing.Cell.Y + d.Y, thing.Cell.Z);
+    }
 
     /// <summary>Every lit fire that radiates warmth, for checking many cells at once.</summary>
     public static List<Source> Sources(Simulation sim)
@@ -26,7 +41,7 @@ public static class Warmth
         {
             var thing = w.Get<Thing>(e);
             if (thing.Spawned && thing.Def.Building is { RadiantWarmth: > 0 } b && sim.Burning(e))
-                list.Add(new Source(thing.Cell, b.RadiantWarmth, null));
+                list.Add(new Source(FireCell(thing), b.RadiantWarmth, null, thing.Cell));
         }
         // Rooms only after the loop: looking one up may rebuild them.
         for (var k = 0; k < list.Count; k++)
@@ -78,7 +93,7 @@ public static class Warmth
     public static bool IsHearth(List<Source> sources, int3 cell)
     {
         foreach (var s in sources)
-            if (s.Cell == cell)
+            if (s.Fire == cell)
                 return true;
         return false;
     }

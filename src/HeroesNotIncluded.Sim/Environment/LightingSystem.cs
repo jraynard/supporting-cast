@@ -33,7 +33,7 @@ public sealed class LightingSystem : ISimSystem
         {
             var thing = sim.World.Get<Thing>(e);
             if (thing.Spawned && sim.Burning(e))
-                Splat(sim, thing.Cell, thing.Def.Building!.LightRadius, 1f);
+                Splat(sim, Warmth.FireCell(thing), thing.Def.Building!.LightRadius, 1f);
         }
 
         foreach (var i in sim.Fire.BurningTiles)

@@ -338,7 +338,7 @@ public class ShopTests
         for (var t = 0; t < SimClock.HoursToTicks(6) && DrinkPrice(sim, inn) == 50; t++)
         {
             if (t % SimClock.TicksPerHour == 0)
-                foreach (var a in party)
+                foreach (var a in party.Where(sim.World.IsAlive)) // not those already off on a quest
                     Thirsty(sim, a);
             sim.Tick();
             bot.Tick();

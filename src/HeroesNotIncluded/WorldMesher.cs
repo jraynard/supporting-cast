@@ -92,9 +92,6 @@ public sealed class WorldMesher(TextureAtlas atlas)
         }
     }
 
-    /// <summary>Model height (in its own units) of a serving hatch's counter: boxes from here up are its posts and lintel.</summary>
-    private const float HatchCounterTop = 0.86f;
-
     /// <summary>A part of the building you're in, above the level you're on: left out.</summary>
     private bool AboveYou(Simulation sim, Entity part, int z) => z > _openLevel && OfOpen(sim, part);
 
@@ -335,7 +332,7 @@ public sealed class WorldMesher(TextureAtlas atlas)
             var def = thing.Def;
             // Built from birch? Use the birch art (or tint the generic art).
             var (spriteName, tint) = _materials.Resolve(def.Sprite, thing.Material);
-            if (def.Building is { IsWall: true } or { IsDoor: true } && BuildingKit.Of(sim, s) is { } walls)
+            if ((def.Building is { IsWall: true } && def.Model == null || def.Building is { IsDoor: true }) && BuildingKit.Of(sim, s) is { } walls)
             {
                 // A preset building's wall, post or door frame, pieced together from its kit; cut
                 // down to a stub like any wall while the cutaway shows the room behind it.
@@ -351,9 +348,22 @@ public sealed class WorldMesher(TextureAtlas atlas)
             if (def.Model is { } model)
             {
                 var material = thing.Material;
-                // A serving hatch in a wall cut down to stubs: just its counter, not the posts and lintel standing above it.
-                if (def.Building is { Hatch: true } && (IsStub(sim, x - 1, y, z) || IsStub(sim, x + 1, y, z) || IsStub(sim, x, y - 1, z) || IsStub(sim, x, y + 1, z)))
-                    model = model.Where(b => b.Min[2] < HatchCounterTop).ToList();
+                // Set in a wall cut down to stubs (a serving hatch, a fireplace): just what stands
+                // low, not the posts, lintel or chimney breast above it.
+                if (def.ModelCutAt is { } cutAt && (IsStub(sim, x - 1, y, z) || IsStub(sim, x + 1, y, z) || IsStub(sim, x, y - 1, z) || IsStub(sim, x, y + 1, z)))
+                    model = model.Where(b => b.Min[2] < cutAt).ToList();
+                // A wall's model reaching up past the wall's top (a chimney stack) goes with the roof:
+                // hidden when roofs are, and left out under another storey or while you're inside.
+                var raised = def.Building is { IsWall: true } ? model.Where(b => b.Min[2] >= 1f).ToList() : [];
+                if (raised.Count > 0)
+                {
+                    model = model.Where(b => b.Min[2] < 1f).ToList();
+                    var above = new int3(x, y, z + 1);
+                    if (map.InBounds(above) && map.Structure[map.Idx(above)].IsNull && !OfOpen(sim, s))
+                        PropModel.Build(_quads, raised, new int3(x, y, z), thing.Facing,
+                            name => (S(_materials.Resolve(name, material).Sprite), _materials.Resolve(name, material).Tint),
+                            Rgba.White, Quad.Level(z) | Quad.Roof | Quad.Occluder);
+                }
                 PropModel.Build(_quads, model, new int3(x, y, z), thing.Facing,
                     name => (S(_materials.Resolve(name, material).Sprite), _materials.Resolve(name, material).Tint),
                     Rgba.White, Quad.Level(z), d => Occludes(sim, x + d.X, y + d.Y, z), heightScale: WorldScale.HeightOf(def));

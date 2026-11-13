@@ -401,6 +401,13 @@ public sealed class BuildingProps
     /// (<c>Shops.Hatch</c>), dividing rooms as a wall does but heard through, as a doorway is.
     /// </summary>
     public bool Hatch { get; set; }
+
+    /// <summary>
+    /// Built into a wall and open only at its front (a fireplace): worked, fed and tended from the
+    /// cell in front of it, never from the street behind, and a fire in it heats, lights and
+    /// warms that cell, the room's side (<see cref="Environment.Warmth.FireCell"/>), not the wall.
+    /// </summary>
+    public bool SetInWall { get; set; }
 }
 
 /// <summary>
@@ -696,6 +703,22 @@ public sealed class ThingDef : Def
     /// arches worked out from the run of it. Pure presentation, like <see cref="Model"/>.
     /// </summary>
     public BridgeLook? Bridge { get; set; }
+
+    /// <summary>
+    /// Where a modelled fire's flames stand, in model units (default the cell's middle, on the
+    /// floor), and how big: a fireplace's burn in its opening. Presentation only.
+    /// </summary>
+    public float[]? FireAt { get; set; }
+    public float FireSize { get; set; } = 1f;
+
+    /// <summary>Where a lit fire's smoke leaves it, in model units (a chimney's top). Presentation only.</summary>
+    public float[]? SmokeAt { get; set; }
+
+    /// <summary>
+    /// A model set in a wall (a serving hatch, a fireplace): while the walls beside it are cut
+    /// down to show the room, boxes starting this high or higher are left out. Presentation only.
+    /// </summary>
+    public float? ModelCutAt { get; set; }
 
     public float MaxHp { get; set; } = 100;
     public float Flammability { get; set; }

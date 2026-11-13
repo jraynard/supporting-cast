@@ -13,7 +13,7 @@
       "name": "Dwelling", "label": "dwelling", "icon": "buildings/bed",
       "description": "A small house of logs with a hearth and a bed. Spots inside for two more beds and two chests (or a stool): each bed brings a settler.",
       "layout": [
-        "WWWWWW",
+        "WWW.WW",
         "W....W",
         "W....W",
         "W....W",
@@ -22,7 +22,7 @@
       "parts": { "foundation": "Sill", "wall": "LogWall", "door": "PlankDoor", "roof": "TurfRoofPart" },
       "furnish": [
         { "def": "Bed", "at": [1, 1] },
-        { "def": "Hearth", "at": [3, 2] }
+        { "def": "Fireplace", "at": [3, 0] }
       ],
       "slots": [
         { "defs": ["Bed", "StrawPallet"], "at": [2, 1] },
@@ -32,13 +32,13 @@
       ],
       "upgrades": [
         {
-          "name": "CookingPot", "label": "cooking pot", "on": "Hearth", "work": 120,
-          "description": "An iron-banded pot hung over the hearth on a chain: stews go further than a roast.",
+          "name": "CookingPot", "label": "cooking pot", "on": "Fireplace", "work": 120,
+          "description": "An iron-banded pot hung in the fireplace on a chain: stews go further than a roast.",
           "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 6 } ],
           "model": [
-            { "min": [0.47, 0.47, 0.18], "max": [0.53, 0.53, 0.95], "top": "props/log_side", "side": "props/log_side" },
-            { "min": [0.3, 0.3, 0.2], "max": [0.7, 0.7, 0.5], "top": "props/stone_block", "side": "props/stone_block" },
-            { "min": [0.34, 0.34, 0.5], "max": [0.66, 0.66, 0.54], "top": "props/meal_top", "side": "props/stone_block" }
+            { "min": [0.485, 0.6, 0.34], "max": [0.515, 0.63, 0.62], "top": "props/timber_dark", "side": "props/timber_dark" },
+            { "min": [0.35, 0.47, 0.13], "max": [0.65, 0.77, 0.34], "top": "props/stone_block", "side": "props/stone_block" },
+            { "min": [0.38, 0.5, 0.34], "max": [0.62, 0.74, 0.37], "top": "props/meal_top", "side": "props/stone_block" }
           ]
         }
       ],
@@ -51,9 +51,9 @@
     {
       // A long thatched cottage, timber-framed: the village's ordinary home (Millbrook's houses).
       "name": "Cottage", "label": "cottage", "icon": "buildings/bed", "home": true,
-      "description": "A long timber-framed cottage under thatch: a hearth, a table, and beds for a household.",
+      "description": "A long timber-framed cottage under thatch: a fireplace, a table, and beds for a household.",
       "layout": [
-        "WWWWWWWWW",
+        "WWWWW.WWW",
         "W.......W",
         "W.......W",
         "W.......W",
@@ -63,7 +63,7 @@
       "parts": { "foundation": "Sill", "wall": "TimberWall", "door": "PlankDoor", "roof": "ThatchRoofPart" },
       "furnish": [
         { "def": "Bed", "at": [1, 1] },
-        { "def": "Hearth", "at": [5, 2] },
+        { "def": "Fireplace", "at": [5, 0] },
         { "def": "Table", "at": [7, 3] },
         { "def": "Stool", "at": [6, 3] },
         { "def": "Chest", "at": [7, 1], "facing": 2 }
@@ -75,13 +75,13 @@
       ],
       "upgrades": [
         {
-          "name": "CookingPot", "label": "cooking pot", "on": "Hearth", "work": 120,
-          "description": "An iron-banded pot hung over the hearth on a chain: stews go further than a roast.",
+          "name": "CookingPot", "label": "cooking pot", "on": "Fireplace", "work": 120,
+          "description": "An iron-banded pot hung in the fireplace on a chain: stews go further than a roast.",
           "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 6 } ],
           "model": [
-            { "min": [0.47, 0.47, 0.18], "max": [0.53, 0.53, 0.95], "top": "props/log_side", "side": "props/log_side" },
-            { "min": [0.3, 0.3, 0.2], "max": [0.7, 0.7, 0.5], "top": "props/stone_block", "side": "props/stone_block" },
-            { "min": [0.34, 0.34, 0.5], "max": [0.66, 0.66, 0.54], "top": "props/meal_top", "side": "props/stone_block" }
+            { "min": [0.485, 0.6, 0.34], "max": [0.515, 0.63, 0.62], "top": "props/timber_dark", "side": "props/timber_dark" },
+            { "min": [0.35, 0.47, 0.13], "max": [0.65, 0.77, 0.34], "top": "props/stone_block", "side": "props/stone_block" },
+            { "min": [0.38, 0.5, 0.34], "max": [0.62, 0.74, 0.37], "top": "props/meal_top", "side": "props/stone_block" }
           ]
         }
       ],
@@ -95,9 +95,9 @@
       // and a storeroom behind it; and rooms to let upstairs, reached by the stair by the hearth.
       // Where the innkeeper works.
       "name": "Inn", "label": "inn", "icon": "buildings/table",
-      "description": "A two-storey inn: a common room with a bar and a hearth, a kitchen and a storeroom behind, and rooms to let upstairs.",
+      "description": "A two-storey inn: a common room with a bar and a fireplace, a kitchen and a storeroom behind, and rooms to let upstairs.",
       "layout": [
-        "WWWWWWWWWWWWW",
+        "WW.WWWWWWWWWW",
         "W.......W...W",
         "W.......W...W",
         "W.......W...W",
@@ -106,7 +106,7 @@
         "W...........W",
         "WS..........W",
         "W...........W",
-        "W...........W",
+        "............W",
         "W...........W",
         "W...........W",
         "WWWWWWDWWWWWW"
@@ -130,21 +130,21 @@
         "foundation": "Sill", "wall": "TimberWall", "door": "PlankDoor", "roof": "ThatchRoofPart",
         "stair": "InnStair", "upperFloor": "Floorboards"
       },
-      // The kitchen (back left): its own fire with the stew pot hung beside it, and the larder; a
+      // The kitchen (back left): its own fireplace with the stew pot beside it, and the larder; a
       // serving hatch through its wall to the common room, where meals are ordered and collected.
       // The storeroom (back right) opens behind the bar. The bar runs across the common room's
-      // back right, the keeper's side behind it reached past its left end; the hearth and the
+      // back right, the keeper's side behind it reached past its left end; the fireplace and the
       // tables on the left, with an aisle from the door to the counter.
       "furnish": [
         { "def": "Larder", "at": [1, 1], "facing": 2 },
-        { "def": "Hearth", "at": [2, 1] },
+        { "def": "Fireplace", "at": [2, 0] },
         { "def": "StewPot", "at": [3, 1] },
         { "def": "WashTub", "at": [6, 1] },
         { "def": "ServingHatch", "at": [7, 4] },
         { "def": "Shelf", "at": [7, 1], "facing": 2 },
         { "def": "Chest", "at": [11, 1], "facing": 2 },
         { "def": "Shelf", "at": [11, 5], "facing": 2 },
-        { "def": "Hearth", "at": [2, 5] },
+        { "def": "Fireplace", "at": [0, 9], "facing": 3 },
         { "def": "AleCask", "at": [10, 5] },
         { "def": "BarCounter", "at": [10, 7] },
         { "def": "SquareTable", "at": [3, 8] },
@@ -176,13 +176,13 @@
       ],
       "upgrades": [
         {
-          "name": "CookingPot", "label": "cooking pot", "on": "Hearth", "work": 120,
-          "description": "An iron-banded pot hung over the hearth on a chain: stews go further than a roast.",
+          "name": "CookingPot", "label": "cooking pot", "on": "Fireplace", "work": 120,
+          "description": "An iron-banded pot hung in the fireplace on a chain: stews go further than a roast.",
           "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 6 } ],
           "model": [
-            { "min": [0.47, 0.47, 0.18], "max": [0.53, 0.53, 0.95], "top": "props/log_side", "side": "props/log_side" },
-            { "min": [0.3, 0.3, 0.2], "max": [0.7, 0.7, 0.5], "top": "props/stone_block", "side": "props/stone_block" },
-            { "min": [0.34, 0.34, 0.5], "max": [0.66, 0.66, 0.54], "top": "props/meal_top", "side": "props/stone_block" }
+            { "min": [0.485, 0.6, 0.34], "max": [0.515, 0.63, 0.62], "top": "props/timber_dark", "side": "props/timber_dark" },
+            { "min": [0.35, 0.47, 0.13], "max": [0.65, 0.77, 0.34], "top": "props/stone_block", "side": "props/stone_block" },
+            { "min": [0.38, 0.5, 0.34], "max": [0.62, 0.74, 0.37], "top": "props/meal_top", "side": "props/stone_block" }
           ]
         }
       ],
@@ -620,6 +620,36 @@
       "building": {
         "partOnly": true, "work": 80, "cost": [ { "def": "Stone", "count": 6 }, { "def": "Wood", "count": 4 } ], "workbench": { "bills": 4 },
         // Holds its cell at 22°C: a closed room settles a little under that, people beside it feel a few degrees more.
+        "heatOutput": 900, "maxHeatTemp": 22, "lightRadius": 6, "radiantWarmth": 5,
+        "fuel": { "def": "Wood", "capacity": 20, "burnPerDay": 12, "refuelAt": 0.5 }
+      }
+    },
+
+    {
+      // A fireplace set in a house's wall where the plan leaves a gap for it: a stone firebox under
+      // an oak mantel, its chimney breast to the wall's top and the stack up through the thatch.
+      // Cooks what a campfire does and keeps the room as a hearth does; it divides rooms as a wall
+      // does, and is worked, fed and warmed at from the room in front of it, never from outside.
+      // Model: front (+Y) into the room, the back flush with the wall's outer face.
+      "name": "Fireplace", "label": "fireplace", "category": "Building", "solid": true, "sprite": "buildings/campfire", "shapeOf": "Campfire",
+      "model": [
+        { "min": [-0.06, 0.3, 0], "max": [1.06, 1.12, 0.05], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.12, 0.12, 0], "max": [0.88, 0.42, 0.62], "top": "props/stone_block", "side": "props/stone_block", "front": "props/hearth_soot" },
+        { "min": [0, 0.12, 0], "max": [0.16, 0.95, 0.64], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.84, 0.12, 0], "max": [1, 0.95, 0.64], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [-0.06, 0.24, 0.62], "max": [1.06, 1.02, 0.72], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.04, 0.16, 0.72], "max": [0.96, 0.86, 1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.3, 0.52, 0.05], "max": [0.7, 0.64, 0.13], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" },
+        { "min": [0.36, 0.62, 0.05], "max": [0.64, 0.74, 0.12], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" },
+        { "min": [0.22, 0.14, 1], "max": [0.78, 0.6, 1.72], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.18, 0.1, 1.72], "max": [0.82, 0.64, 1.8], "top": "props/hearth_soot", "side": "props/stone_block" }
+      ],
+      "modelCutAt": 0.72, "fireAt": [0.5, 0.66, 0.06], "fireSize": 0.75, "smokeAt": [0.5, 0.37, 1.8],
+      "description": "A stone fireplace in the wall under an oak mantel: warms the room, lights it and cooks. Keep it fed with wood.",
+      "maxHp": 160, "flammability": 0,
+      "building": {
+        "partOnly": true, "isWall": true, "setInWall": true, "work": 120, "cost": [ { "def": "Stone", "count": 10 }, { "def": "Wood", "count": 2 } ], "workbench": { "bills": 4 },
+        // As the hearth: holds its cell at 22°C, so a closed room settles a little under that.
         "heatOutput": 900, "maxHeatTemp": 22, "lightRadius": 6, "radiantWarmth": 5,
         "fuel": { "def": "Wood", "capacity": 20, "burnPerDay": 12, "refuelAt": 0.5 }
       }

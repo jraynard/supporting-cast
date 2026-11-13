@@ -187,7 +187,7 @@ public sealed class TemperatureSystem : ISimSystem, Saving.ISaveState
             var b = thing.Def.Building!;
             // The fuel decides how hot: coal runs a forge hotter than charcoal.
             var burn = b.Fuel != null ? w.Get<Fueled>(e).Burn(b.Fuel) : null;
-            Heat(map.Idx(thing.Cell), b.HeatOutput * (burn?.HeatFactor ?? 1f) / UpdatesPerHour, b.MaxHeatTemp + (burn?.MaxTempBonus ?? 0f));
+            Heat(map.Idx(Warmth.FireCell(thing)), b.HeatOutput * (burn?.HeatFactor ?? 1f) / UpdatesPerHour, b.MaxHeatTemp + (burn?.MaxTempBonus ?? 0f));
         }
 
         // Bellows a smith is pumping: more heat, a little past the fire's own cap.

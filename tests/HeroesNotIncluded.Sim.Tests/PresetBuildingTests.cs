@@ -81,19 +81,19 @@ public class PresetBuildingTests
         FinishPhase(sim, b);
         Assert.Equal(BuildPhase.Roof, state.Phase);
         Assert.Equal(["Dwelling_Timber_Roof"], Sites(sim, b));
-        Assert.Equal(17, Buildings.Parts(sim, b).Count(p => sim.World.Get<Thing>(p).Def.Name == "TimberWall"));
+        Assert.Equal(16, Buildings.Parts(sim, b).Count(p => sim.World.Get<Thing>(p).Def.Name == "TimberWall")); // a gap left for the fireplace
 
         FinishPhase(sim, b);
         Assert.All(Buildings.Parts(sim, b).Where(p => sim.World.Get<Thing>(p).Def.IsRoof), p => Assert.Equal(2, sim.World.Get<Thing>(p).Cell.Z));
         Assert.Equal(BuildPhase.Furnish, state.Phase);
-        Assert.Equal(["Bed", "Hearth"], Sites(sim, b));
+        Assert.Equal(["Bed", "Fireplace"], Sites(sim, b));
 
         FinishPhase(sim, b);
         Assert.Equal(BuildPhase.Done, state.Phase);
         Assert.Empty(Sites(sim, b));
         sim.RebuildDerivedIfNeeded();
         var inside = Buildings.CellOf(sim.Map, state.Def, state.Anchor, 0, 2, 2);
-        Assert.True(sim.Rooms.RoomAt(inside)?.Indoors, "its walls and roof make a room");
+        Assert.True(sim.Rooms.RoomAt(inside)?.Indoors, "its walls, fireplace and roof make a room");
         Assert.True(sim.Map.Covered[sim.Map.Idx(inside)], "under its own roof");
         Assert.Contains(sim.Messages.Messages, m => m.Text == "The timber-framed dwelling is finished.");
     }
@@ -343,20 +343,20 @@ public class PresetBuildingTests
 public class PresetBuildingHeatTests
 {
     /// <summary>
-    /// A lit hearth keeps a dwelling comfortable: a campfire there once pushed the room to 44°C
+    /// A lit fireplace keeps a dwelling comfortable: a campfire there once pushed the room to 44°C
     /// (50 felt beside it, people's limit), and villagers fled it instead of building inside.
     /// </summary>
     [Theory]
     [InlineData(0f)]
     [InlineData(18f)]
-    public void AHearthKeepsADwellingComfortable(float outdoors)
+    public void AFireplaceKeepsADwellingComfortable(float outdoors)
     {
         var sim = TestWorld.Create(30, 30, depth: 5);
         sim.Climate.BaseTemperature = outdoors;
         sim.Climate.DailySwing = 0;
         Array.Fill(sim.Map.Temperature, outdoors);
         var b = Buildings.SpawnFinished(sim, sim.Defs.Building("Dwelling"), C(12, 12), 0);
-        var hearth = Buildings.Parts(sim, b).Single(p => sim.World.Get<Thing>(p).Def.Name == "Hearth");
+        var hearth = Buildings.Parts(sim, b).Single(p => sim.World.Get<Thing>(p).Def.Name == "Fireplace");
         sim.World.Get<Fueled>(hearth).Fuel = 20;
         sim.TickMany(SimClock.TicksPerHour * 12);
         sim.World.Get<Fueled>(hearth).Fuel = 20;
@@ -364,14 +364,38 @@ public class PresetBuildingHeatTests
 
         var state = sim.World.Get<PresetBuilding>(b);
         var human = sim.Defs.Creature("Human");
-        foreach (var (col, row) in new[] { (1, 3), (4, 3), (2, 2), (4, 2) }) // the room, and right beside the fire
+        foreach (var (col, row) in new[] { (1, 3), (4, 3), (3, 1), (2, 1) }) // the room, and right in front of the fire
         {
             var cell = Buildings.CellOf(sim.Map, state.Def, state.Anchor, 0, col, row);
             var felt = Environment.Warmth.FeltAt(sim, cell);
             Assert.InRange(felt, human.ComfortTempMin, human.ComfortTempMax);
         }
-        // ...and the hearth cooks what a campfire does.
+        // ...and the fireplace cooks what a campfire does.
         Assert.Subset(sim.World.Get<Thing>(hearth).Def.Recipes.ToHashSet(), sim.Thing("Campfire").Recipes.ToHashSet());
+    }
+
+    /// <summary>
+    /// A fireplace is set in the wall, open to the room: its heat, light and warmth go into the
+    /// room in front of it, and the street behind the wall gets none of it.
+    /// </summary>
+    [Fact]
+    public void AFireplaceWarmsTheRoomNotTheStreetBehindIt()
+    {
+        var sim = TestWorld.Create(30, 30, depth: 5);
+        sim.Climate.BaseTemperature = 0;
+        sim.Climate.DailySwing = 0;
+        Array.Fill(sim.Map.Temperature, 0f);
+        var b = Buildings.SpawnFinished(sim, sim.Defs.Building("Dwelling"), C(12, 12), 0);
+        var state = sim.World.Get<PresetBuilding>(b);
+        var fire = Buildings.Parts(sim, b).Single(p => sim.World.Get<Thing>(p).Def.Name == "Fireplace");
+        sim.World.Get<Fueled>(fire).Fuel = 20;
+        sim.TickMany(SimClock.TicksPerHour * 6);
+
+        var front = Buildings.CellOf(sim.Map, state.Def, state.Anchor, 0, 3, 1);
+        Assert.Equal(front, Environment.Warmth.FireCell(sim.World.Get<Thing>(fire)));
+        var behind = Buildings.CellOf(sim.Map, state.Def, state.Anchor, 0, 3, -1);
+        Assert.True(Environment.Warmth.FeltAt(sim, front) > Environment.Warmth.FeltAt(sim, behind) + 10, "warm in front, cold out back");
+        Assert.True(sim.Map.Light[sim.Map.Idx(front)] > sim.Map.Light[sim.Map.Idx(behind)] || sim.Clock.Daylight > 0.5f);
     }
 }
 
@@ -405,12 +429,12 @@ public class WoodshopTests
 public class BuildingUpgradeTests
 {
     [Fact]
-    public void ACookingPotOnTheHearthUnlocksStewAndSurvivesASave()
+    public void ACookingPotOnTheFireplaceUnlocksStewAndSurvivesASave()
     {
         var sim = TestWorld.Create(30, 30, depth: 5);
         sim.Presets.PresetMode = true;
         var b = Buildings.SpawnFinished(sim, sim.Defs.Building("Dwelling"), C(12, 12), 0);
-        var hearth = Buildings.Parts(sim, b).Single(p => sim.World.Get<Thing>(p).Def.Name == "Hearth");
+        var hearth = Buildings.Parts(sim, b).Single(p => sim.World.Get<Thing>(p).Def.Name == "Fireplace");
         var stew = sim.Defs.Recipe("CookStew");
         Assert.Contains(stew, sim.World.Get<Thing>(hearth).Def.Recipes);
         Assert.False(Crafting.Fitted(sim, hearth, stew), "no pot yet");
@@ -431,7 +455,7 @@ public class BuildingUpgradeTests
         var (loaded, _) = Saving.SaveGame.Read(Saving.SaveGame.Write(sim), sim.Defs);
         var again = loaded.World.Query<PresetBuilding>().Single(e => loaded.World.Get<PresetBuilding>(e).Phase == BuildPhase.Done);
         Assert.Equal(["CookingPot"], loaded.World.Get<PresetBuilding>(again).Upgrades);
-        var loadedHearth = Buildings.Parts(loaded, again).Single(p => loaded.World.Get<Thing>(p).Def.Name == "Hearth");
+        var loadedHearth = Buildings.Parts(loaded, again).Single(p => loaded.World.Get<Thing>(p).Def.Name == "Fireplace");
         Assert.True(Crafting.Fitted(loaded, loadedHearth, stew));
     }
 

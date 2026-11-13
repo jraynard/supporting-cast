@@ -169,6 +169,7 @@
       "description": "A window through the kitchen wall with a counter across it. Order here; your bowl comes up on the counter.",
       "maxHp": 120, "flammability": 1.0,
       "building": { "work": 120, "storageStacks": 4, "surfaceHeight": 0.86, "hatch": true, "cost": [ { "def": "Wood", "count": 8 } ] },
+      "modelCutAt": 0.86,
       "model": [
         { "min": [0.04, 0.06, 0], "max": [0.96, 0.94, 0.78], "top": "props/planks", "side": "props/planks" },
         { "min": [0, 0, 0.78], "max": [1, 1, 0.86], "top": "props/timber_dark", "side": "props/timber_dark" },

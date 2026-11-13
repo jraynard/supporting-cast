@@ -224,25 +224,28 @@ public abstract class Job
     /// <summary>
     /// Walk to work at a building: beside it, as <see cref="PathEnd.Touch"/> on its cell. One wider
     /// than a cell (a 2x1 bench, a bed) is worked from outside its footprint, from the front if
-    /// that side is open (<see cref="Footprint.Beside"/>), so nobody stands on half the bench.
+    /// that side is open (<see cref="Footprint.Beside"/>), so nobody stands on half the bench. One
+    /// worked only from the front (<see cref="BuildingProps.SetInWall"/>: a fireplace in an
+    /// outside wall) is reached only there, never from the street behind it.
     /// </summary>
     protected IEnumerable<JobStatus> GoToBeside(Entity building)
     {
         var thing = Get<Thing>(building);
-        if (!Footprint.IsWide(thing.Def))
+        var frontOnly = thing.Def.Building?.SetInWall == true;
+        if (!Footprint.IsWide(thing.Def) && !frontOnly)
         {
             foreach (var s in GoTo(thing.Cell, PathEnd.Touch)) yield return s;
             yield break;
         }
-        if (IsBeside(thing, PawnCell))
+        var map = Sim.Map;
+        var front = Footprint.Beside(map, thing.Def, thing.Cell, thing.Facing).Take(thing.Def.SizeX).ToHashSet();
+        if (frontOnly ? front.Contains(PawnCell) : IsBeside(thing, PawnCell))
             yield break;
 
         // Front cells first, then the nearest of the rest; take the first one there's a way to.
-        var map = Sim.Map;
         var here = PawnCell;
-        var front = Footprint.Beside(map, thing.Def, thing.Cell, thing.Facing).Take(thing.Def.SizeX).ToHashSet();
         var spots = Footprint.Beside(map, thing.Def, thing.Cell, thing.Facing)
-            .Where(c => map.Standable(map.Idx(c)) && map.Passable(c))
+            .Where(c => map.Standable(map.Idx(c)) && map.Passable(c) && (!frontOnly || front.Contains(c)))
             .OrderBy(c => front.Contains(c) ? 0 : 1)
             .ThenBy(c => Math.Abs(c.X - here.X) + Math.Abs(c.Y - here.Y))
             .ToList();
@@ -251,6 +254,11 @@ public abstract class Job
             if (Navigation.PlanRoute(Sim, Pawn, here, spot, PathEnd.OnTile) == null)
                 continue;
             foreach (var s in GoTo(spot, PathEnd.OnTile)) yield return s;
+            yield break;
+        }
+        if (frontOnly)
+        {
+            Fail("no way to its front");
             yield break;
         }
         // Boxed in on every side: lean in from wherever touches it.

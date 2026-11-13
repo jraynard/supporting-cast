@@ -51,8 +51,17 @@ public static class BuildingKit
     private static IEnumerable<(IReadOnlyList<ModelBox> Model, int Facing)> GroundPieces(BuildingKitDef kit, PresetBuilding b, int3 cell)
     {
         char At(int dx, int dy) => Buildings.SymbolAt(b.Def, b.Anchor, b.Facing, new int3(cell.X + dx, cell.Y + dy, cell.Z));
+        // A gap in the wall filled by something built as a wall with its own model (a fireplace):
+        // the walls either side run on into it, rather than ending at a post.
+        bool SetIn(int dx, int dy)
+        {
+            var d = Footprint.Rotate(cell.X + dx - b.Anchor.X, cell.Y + dy - b.Anchor.Y, (4 - b.Facing) & 3);
+            int col = d.X - Footprint.Lo(b.Def.Width), row = d.Y - Footprint.Lo(b.Def.Depth), level = cell.Z - b.Anchor.Z;
+            return b.Def.Furnish.Exists(f => f.Level == level && f.At[0] == col && f.At[1] == row && f.ThingDef.Building is { IsWall: true } && f.ThingDef.Model != null);
+        }
+        bool Joined(int dx, int dy) => Joins(At(dx, dy)) || SetIn(dx, dy);
         var symbol = At(0, 0);
-        bool e = Joins(At(1, 0)), w = Joins(At(-1, 0)), s = Joins(At(0, 1)), n = Joins(At(0, -1));
+        bool e = Joined(1, 0), w = Joined(-1, 0), s = Joined(0, 1), n = Joined(0, -1);
         if (symbol == 'D')
         {
             yield return (kit.Door, e || w ? 0 : 1);

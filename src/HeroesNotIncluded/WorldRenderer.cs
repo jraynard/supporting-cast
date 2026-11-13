@@ -1086,6 +1086,15 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         _sitesNow[site] = (b.Anchor, c.Target.Label, frac);
     }
 
+    /// <summary>Where a modelled fire's flames stand from its cell's floor centre (<see cref="ThingDef.FireAt"/>), turned with the thing.</summary>
+    private static float3 FireOffset(ThingDef def, int facing)
+    {
+        if (def.FireAt is not [var fx, var fy, var fz])
+            return new float3(0, 0, 0.08f);
+        var d = Footprint.Rotate(fx - 0.5f, fy - 0.5f, facing);
+        return new float3(d.X, d.Y, fz * WorldScale.HeightOf(def));
+    }
+
     private void DrawThing(Simulation sim, Entity e, in Thing thing)
     {
         var w = sim.World;
@@ -1193,8 +1202,21 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             {
                 // A modelled fire: flickering flames over the logs.
                 var t = _anim.Clock * 7f + e.Index;
-                var size = 0.45f + 0.25f * frac + 0.05f * MathF.Sin(t) + 0.03f * MathF.Sin(t * 2.3f);
-                Billboard(S("fx/fire"), floor + new float3(0, 0, 0.08f), size * 0.85f, size, Rgba.Pack(1f, 0.92f, 0.8f, 0.95f), level | Quad.Unlit | Quad.Glow, translucent: true);
+                var size = (0.45f + 0.25f * frac + 0.05f * MathF.Sin(t) + 0.03f * MathF.Sin(t * 2.3f)) * def.FireSize;
+                Billboard(S("fx/fire"), floor + FireOffset(def, thing.Facing), size * 0.85f, size, Rgba.Pack(1f, 0.92f, 0.8f, 0.95f), level | Quad.Unlit | Quad.Glow, translucent: true);
+                // A thin wisp from the chimney, gone with the roofs (it rises from the stack, which is drawn as roof).
+                if (def.SmokeAt is [var sx, var sy, var sz] && sim.Map.InBounds(cell + new int3(0, 0, 1)) && sim.Map.Structure[sim.Map.Idx(cell + new int3(0, 0, 1))].IsNull)
+                {
+                    var o = Footprint.Rotate(sx - 0.5f, sy - 0.5f, thing.Facing);
+                    for (var k = 0; k < 3; k++)
+                    {
+                        var rise = (_anim.Clock * 0.22f + k / 3f + e.Index * 0.137f) % 1f;
+                        var drift = MathF.Sin(_anim.Clock * 0.7f + k * 2.1f) * 0.12f + rise * 0.3f;
+                        var puff = 0.35f + 0.5f * rise;
+                        Billboard(S("fx/smoke"), floor + new float3(o.X + drift, o.Y, sz + rise * 1.2f), puff, puff,
+                            Rgba.Pack(0.6f, 0.6f, 0.62f, 0.4f * (1 - rise) * Math.Min(1, rise * 6)), level | Quad.Roof, translucent: true);
+                    }
+                }
             }
             Bar(floor + new float3(0, 0, 0.9f), frac, frac > props.RefuelAt ? Rgba.Pack(1f, 0.6f, 0.2f) : Rgba.Pack(1f, 0.2f, 0.2f), level);
         }

@@ -246,6 +246,26 @@ def bridge_pier():
     return img
 
 
+def hearth_soot():
+    """A fireplace's back and its chimney's mouth: stone gone black with soot, warmest low down."""
+    base = (74, 66, 60)
+    img = noise(base, 6, 59)
+    d = ImageDraw.Draw(img)
+    mortar = tint(base, 0.6)
+    for row, y in enumerate(range(0, S, 8)):
+        d.line([(0, y), (S, y)], fill=mortar)
+        off = 0 if row % 2 == 0 else 8
+        for x in range(off, S, 16):
+            d.line([(x, y), (x, y + 8)], fill=mortar)
+    for y in range(S):  # soot thickest at the top; an ember glow at the foot
+        for x in range(S):
+            r, g, b, a = img.getpixel((x, y))
+            k = 0.45 + 0.55 * (y / S)
+            glow = max(0.0, (y - S * 0.7) / (S * 0.3))
+            img.putpixel((x, y), (clamp(r * k + 60 * glow), clamp(g * k + 22 * glow), clamp(b * k), a))
+    return img
+
+
 # ---------------- Icons and billboards ----------------
 
 def well_icon():
@@ -408,6 +428,7 @@ def generate():
     save(crate_side(), "props/crate_side")
     save(cabbage_top(), "props/cabbage_top")
     save(bridge_stone(), "buildings/bridge_stone")
+    save(hearth_soot(), "props/hearth_soot")
     materials(bridge_stone(), "buildings/bridge_stone", STONES)
     for name, art in (("bridge_parapet", bridge_parapet), ("bridge_coping", bridge_coping), ("bridge_pier", bridge_pier)):
         save(art(), f"buildings/{name}")
