@@ -1,5 +1,6 @@
 using HeroesNotIncluded.Sim.Ai;
 using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Maps;
 
 namespace HeroesNotIncluded.Sim.Systems;
@@ -81,6 +82,9 @@ public enum AvatarActionKind
 
     /// <summary>Brace a span a crisis broke (<see cref="Tinkering.SpanSession"/>), begun at once: the tinker's.</summary>
     Mend,
+
+    /// <summary>Order a meal at a serving hatch (<see cref="Shops.ShopSystem.PlayerOrder"/>), or see where you are in its line.</summary>
+    OrderMeal,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -107,7 +111,7 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
         or AvatarActionKind.Store or AvatarActionKind.OpenStorage or AvatarActionKind.Tinker
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
         or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean
-        or AvatarActionKind.Mend;
+        or AvatarActionKind.Mend or AvatarActionKind.OrderMeal;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
     public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker
@@ -125,6 +129,27 @@ public sealed class AvatarSystem : ISimSystem
 {
     public string Name => "Avatar";
     public int Interval => 1;
+
+    /// <summary>
+    /// What F at a serving hatch says about a meal: the price to order one, or where you are in the
+    /// line for the one you ordered. Null where it isn't yours to order (the cook's, or none served).
+    /// </summary>
+    private static string? MealOrder(Simulation sim, Entity avatar, Entity hatch)
+    {
+        var inn = Shops.Hatch.ShopOf(sim, hatch);
+        var innDef = inn.IsNull ? null : sim.World.Get<PresetBuilding>(inn).Def;
+        if (innDef == null || !innDef.HatchServes.Contains(ServiceKind.Meal)
+            || sim.World.TryGet<Trade>(avatar, out var trade) && trade.Def.WorkplaceDef == innDef && trade.Def.Serving(ServiceKind.Meal))
+            return null;
+        if (sim.Shops.OpenOrderOf(avatar, ServiceKind.Meal) != null)
+        {
+            var place = sim.Shops.LineAt(sim, inn, hatch: true).IndexOf(avatar);
+            return place <= 0 ? "Your meal's ordered: wait here for it" : $"Your meal's ordered: {Ordinal(place + 1)} in line";
+        }
+        return Shops.ShopPrices.Posted(sim, inn, ServiceKind.Meal) is { Offered: true } sign ? $"Order a meal ({sign.Price} silver)" : null;
+    }
+
+    private static string Ordinal(int n) => n switch { 2 => "2nd", 3 => "3rd", _ => $"{n}th" };
 
     /// <summary>
     /// The player can command their dragon in combat once its affinity with them reaches this
@@ -419,6 +444,9 @@ public sealed class AvatarSystem : ISimSystem
             return new(AvatarActionKind.Store, w.Get<Thing>(site).Def.Building is { Hatch: true }
                 ? $"Put {w.Get<Thing>(held).Label} up on the {w.Get<Thing>(site).Label}"
                 : $"Put {w.Get<Thing>(held).Label} in the {w.Get<Thing>(site).Label}", cell, site);
+        // At the inn's serving hatch with empty hands: order a meal there (not the cook: they serve it).
+        if (held.IsNull && !site.IsNull && w.Get<Thing>(site).Def.Building is { Hatch: true } && MealOrder(sim, avatar, site) is { } meal)
+            return new(AvatarActionKind.OrderMeal, meal, cell, site);
         // A pack lying about opens like the wagon (you're already wearing one, or it'd go on).
         if (!item.IsNull && sim.IsPack(item))
             return new(AvatarActionKind.OpenStorage, $"Open the {w.Get<Thing>(item).Label}", cell, item);
@@ -714,6 +742,11 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.BarWork:
                 Work.BarWork.Start(sim, avatar, action.Target);
+                break;
+            case AvatarActionKind.OrderMeal:
+                if (Shops.Hatch.ShopOf(sim, action.Target) is { IsNull: false } inn && sim.Shops.OpenOrderOf(avatar, ServiceKind.Meal) == null
+                    && sim.Shops.PlayerOrder(sim, avatar, ServiceKind.Meal, inn) is { } why)
+                    sim.Messages.Add(MessageKind.Info, $"Can't order: {why}.", action.Cell);
                 break;
             case AvatarActionKind.Mend:
                 Tinkering.Repairs.StartMend(sim, avatar, sim.Repairs.At(action.Cell));

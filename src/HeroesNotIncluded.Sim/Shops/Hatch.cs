@@ -26,6 +26,10 @@ public static class Hatch
         return Entity.Null;
     }
 
+    /// <summary>The building a hatch is part of (the inn), or Entity.Null.</summary>
+    public static Entity ShopOf(Simulation sim, Entity hatch) =>
+        sim.World.IsAlive(hatch) && sim.World.Get<Thing>(hatch).Def.Building is { Hatch: true } ? Buildings.Of(sim, hatch) : Entity.Null;
+
     /// <summary>Does this order line up at its building's hatch rather than its counter?</summary>
     public static bool Takes(Simulation sim, Order e) =>
         sim.World.IsAlive(e.Where) && sim.World.TryGet<PresetBuilding>(e.Where, out var b) && b.Def.HatchServes.Contains(e.Kind.Kind);

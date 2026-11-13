@@ -641,7 +641,7 @@ public sealed partial class VillageGame
         AvatarActionKind.Cook or AvatarActionKind.BarWork => 5,
         AvatarActionKind.Clean => 1,
         AvatarActionKind.Craft => 4,
-        AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker => 3,
+        AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker or AvatarActionKind.OrderMeal => 3,
         AvatarActionKind.Pour => 2,
         AvatarActionKind.OpenStorage => 1,
         _ => 0,

@@ -373,6 +373,56 @@ public class InnKitchenTests
         Assert.Equal(Quality.Fine, sim.World.Get<Crafted>(savouring.Item).Quality);
     }
 
+    /// <summary>
+    /// A hungry player orders a meal as anyone does: F at the hatch, at the price on the inn's
+    /// sign. They wait in its line, and at the front, with a bowl up, they take it, pay whoever
+    /// cooked it and sit with it. The cook doesn't order from their own hatch.
+    /// </summary>
+    [Fact]
+    public void APlayerOrdersAMealAtTheHatchAndIsServed()
+    {
+        var (sim, party) = Tavern("Healer");
+        foreach (var e in party)
+            sim.World.Get<Needs>(e).Values[sim.Defs.Need("Food").Index] = 1f; // nobody else hungry: the bowl is ours
+        var me = Players.CharacterOf(sim, Ana);
+        var inn = Inn(sim);
+        var hatch = Hatch.Of(sim, inn);
+        var front = ShopSystem.LineCells(sim, inn, hatch: true)[0];
+        sim.World.Get<Position>(me) = Position.At(front);
+        var purse = Coin.Count(sim, me);
+
+        var action = AvatarSystem.ActionAt(sim, me, sim.World.Get<Thing>(hatch).Cell);
+        Assert.Equal(AvatarActionKind.OrderMeal, action.Kind);
+        Assert.StartsWith("Order a meal (", action.Label);
+        AvatarSystem.Perform(sim, me, action);
+        var order = Assert.Single(sim.Shops.All, e => e.IsOpen && e.Poster == me);
+        Assert.Equal(ServiceKind.Meal, order.Kind.Kind);
+        Assert.True(Hatch.Takes(sim, order));
+        Assert.Contains("ordered", AvatarSystem.ActionAt(sim, me, sim.World.Get<Thing>(hatch).Cell).Label);
+        AvatarSystem.Perform(sim, me, action); // asking twice orders nothing more
+        Assert.Single(sim.Shops.All, e => e.IsOpen && e.Poster == me);
+
+        // A bowl goes up: at the front, it's ours, paid to its cook.
+        var cook = sim.Creatures().First(c => sim.World.TryGet<Trade>(c, out var t) && t.Def.Serving(ServiceKind.Meal));
+        sim.Store(hatch, Stew(sim, cook));
+        for (var i = 0; i < 10 && order.IsOpen; i++)
+            sim.TickMany(60);
+        Assert.Equal(OrderStatus.Done, order.Status);
+        Assert.Equal(purse - order.Price, Coin.Count(sim, me));
+        Assert.True(sim.World.TryGet<Hospitality.Savouring>(me, out var savouring) && savouring.Meal);
+    }
+
+    [Fact]
+    public void TheCookDoesntOrderFromTheirOwnHatch()
+    {
+        var (sim, _) = Tavern("Cook");
+        var me = Players.CharacterOf(sim, Ana);
+        var inn = Inn(sim);
+        sim.World.Get<Position>(me) = Position.At(ShopSystem.LineCells(sim, inn, hatch: true)[0]);
+        Assert.NotEqual(AvatarActionKind.OrderMeal, AvatarSystem.ActionAt(sim, me, sim.World.Get<Thing>(Hatch.Of(sim, inn)).Cell).Kind);
+        Assert.NotNull(sim.Shops.PlayerOrder(sim, me, ServiceKind.Meal, inn));
+    }
+
     [Fact]
     public void WhatsUpOnTheHatchIsntAnyoneElsesToTake()
     {

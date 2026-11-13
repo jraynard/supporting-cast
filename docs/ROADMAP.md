@@ -75,7 +75,6 @@ Grouped by area; nothing here blocks a playtest.
   - casks don't refill and there's no brewing;
   - mess on tables, and a rag;
   - keys for the guest rooms;
-  - players can't order from the hatch;
   - villagers at supper sit but don't swap rumours.
 - **Healer:**
   - AI healers only bandage;

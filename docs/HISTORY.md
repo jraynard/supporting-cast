@@ -873,6 +873,11 @@ dragon and the festival.
 - **The inn's lanterns** (`BuildingDef.Lamps`): hung from the beams over the tables, by the bar, in
   the kitchen, the storeroom and the hall upstairs. No fuel and no floor taken; the dark corners of
   the common room are about half again as bright at night.
+- **Players order meals:** F at the inn's serving hatch orders one at the price on its sign
+  (`ShopSystem.PlayerOrder`, `AvatarActionKind.OrderMeal`). It's said aloud and waits in the hatch's
+  line like anyone's, and at the front, with a bowl up, it's taken, paid to its cook and sat with.
+  The cook doesn't order from their own hatch. F there again says where you are in the line.
+- **README** brought up to date.
 - **Docs:** the Done log moved here from the roadmap; dragon-era sections of ART.md pruned or
   condensed; the dragon-egg start message gone.
 - Starting herds are placed by `Map.Distance`, as sight measures, so none grazes in view of town.

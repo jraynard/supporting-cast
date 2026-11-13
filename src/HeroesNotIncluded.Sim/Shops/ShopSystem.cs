@@ -301,6 +301,34 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     }
 
     /// <summary>
+    /// A player orders for themselves at a shop (F at the inn's serving hatch): at the price on its
+    /// sign, if they have the silver to spare. Said aloud like anyone's order, and in its line like
+    /// anyone's: at the front of it, with a dish up, they take it, pay, and sit with it. Players
+    /// know the town, so there's no asking the way. Null if it's ordered; else why not.
+    /// </summary>
+    public string? PlayerOrder(Simulation sim, Entity who, ServiceKind kind, Entity shop)
+    {
+        var w = sim.World;
+        var def = sim.Defs.Service(kind);
+        if (!sim.Round.Live)
+            return "nobody's serving yet";
+        if (w.TryGet<Trade>(who, out var trade) && w.TryGet<PresetBuilding>(shop, out var b) && trade.Def.WorkplaceDef == b.Def && trade.Def.Serving(kind))
+            return "you'd be serving yourself";
+        if (_orders.Exists(e => e.IsOpen && e.Poster == who && e.Kind.Kind == kind))
+            return $"you've ordered {def.Label} already";
+        if (ShopPrices.Posted(sim, shop, kind) is not { Offered: true } sign)
+            return $"there's no {def.Label} to be had here";
+        var spare = Math.Max(0, Coin.Count(sim, who) - Promised(who));
+        if (sign.Price > spare)
+            return $"{def.Label} is {sign.Price} silver, and you have {spare} to spare";
+        Post(sim, who, def, Asking(def, sign.Price, null), sign.Price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), Entity.Null, shop, sign.Price);
+        return null;
+    }
+
+    /// <summary>A player's open order of a kind, if they have one.</summary>
+    public Order? OpenOrderOf(Entity who, ServiceKind kind) => _orders.Find(e => e.IsOpen && e.Poster == who && e.Kind.Kind == kind);
+
+    /// <summary>
     /// An adventurer looks over the gear on show in the town's shops (<see cref="Goods.OnShow"/>)
     /// for a piece they'd be better off with. Of those within what it's worth to them (per tier,
     /// times how well it's made) and what they can spare, they order the best, then the cheapest.

@@ -78,7 +78,7 @@ F (hold): use or work on what's in reach. Your trade's stations start their own 
 X: put down what you hold. N: sleep.
 Tab: inventory. 1-4: take a stack from your pack.
 Q/E or the mouse wheel: turn and zoom.  [ ]: look up or down a floor.  \: show or hide roofs.
-J: your shop's price sign.  F12: screenshot (Shift+F12 without the interface).
+J: your shop's price sign. Hungry: F at the inn's serving hatch orders a meal; wait in its line.  F12: screenshot (Shift+F12 without the interface).
 
 
 REPORTING BUGS
