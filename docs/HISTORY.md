@@ -1029,4 +1029,8 @@ shared); fights stay real time, Souls-lite.
   holding a little off and circling while it waits its turn, clear of anyone near, now and then
   stepping back after a blow. Archers hold their bow's range, give ground when you close and lead a
   moving target. An AI's telegraph is its sweep marked on the ground, so you can step out of it.
+- **Bots fight** (step 4): with free movement an armed, unhurt bot draws and takes on a raider or
+  predator it can see near, through commands only: to its reach, striking the way it aims,
+  stepping out of a blow's sweep (or guarding, winded). The season scenario runs with free movement
+  too (`SeasonScenarioTests`, both ways).
 

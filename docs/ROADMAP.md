@@ -73,7 +73,7 @@ village-day scenarios passing.
    smoothly in a fight: close to their weapon's reach, keep spacing, step in to strike, circle on the
    one-at-a-time turns, back off hurt. Archers hold range and lead a moving target. An AI's blow is
    telegraphed as its sweep on the ground (a wedge), not a ring under its target.
-4. **Bots** walk and fight the new way (steering along paths, aiming, clicking), so the season and
+4. **Bots** (first pass in) walk and fight the new way (steering along paths, aiming, clicking), so the season and
    village-day scenarios keep guarding the town.
 5. **Co-op.** Your own movement predicted and eased toward the host's; commands carry where you are.
    Blows at you keep a latency grace for your guard and dodge keys; a sweep is judged against where

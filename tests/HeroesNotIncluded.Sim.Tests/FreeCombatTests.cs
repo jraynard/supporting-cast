@@ -2,6 +2,7 @@ using HeroesNotIncluded.Sim.Combat;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Round;
 using HeroesNotIncluded.Sim.Scenarios;
 
 namespace HeroesNotIncluded.Sim.Tests;
@@ -436,6 +437,38 @@ public class FreeCombatTests
         }
         Assert.True(sawFree, "the fight was fought freely");
         Assert.Contains(band, r => !sim.World.IsAlive(r) || !sim.World.Get<Creature>(r).Able || sim.World.Get<Health>(r).Injuries.Count > 0);
+    }
+
+    [Fact]
+    public void BotsDrawAndFightARaidTheFreeWay()
+    {
+        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
+        sim.Presets.PresetMode = true;
+        VillageRound.Setup(sim);
+        sim.Round.OpenLobby();
+        var bots = new List<Bots.BotPlayer>();
+        for (var i = 0; i < 2; i++)
+        {
+            var id = new Guid(i + 1, 0, 0, new byte[8]);
+            sim.ApplyNow(new JoinLobbyCommand(id, $"Bot {i + 1}", default, []));
+            bots.Add(new Bots.BotPlayer(() => sim, id, c => sim.ApplyNow(c), 50 + (ulong)i));
+        }
+        sim.ApplyNow(new StartRoundCommand());
+        sim.FreeMove.Enable(sim);
+        var players = sim.World.Query<Avatar>();
+        foreach (var e in players)
+            sim.Equip(e, sim.Defs.Thing("ShortSword"));
+        var at = sim.World.Get<Position>(players[0]).Cell;
+        var band = Raids.Spawn(sim, [sim.Defs.AllRaiderKinds.First(k => k.Name == "Brawler")], sim.SpiralFrom(at, 6).First(c => Maps.Map.Distance(c, at) >= 4 && sim.Map.Passable(c)), at, sim.Rand);
+        var struck = false;
+        for (var t = 0; t < SimClock.TicksPerSecond * 60 && !struck; t++)
+        {
+            sim.Tick();
+            foreach (var b in bots)
+                b.Tick();
+            struck = sim.RecentBlows.Any(b => players.Contains(b.Attacker) && band.Contains(b.Target) && b.Outcome != BlowOutcome.Miss);
+        }
+        Assert.True(struck, "a bot drew and struck the raider");
     }
 }
 

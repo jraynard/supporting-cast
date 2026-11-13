@@ -134,6 +134,8 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             send(new StopWorkCommand(me));
         }
         _work.Update(sim, me, steps, press, held, axis, send, _axis2, _rune, _act);
+        if (_work.Session == null && !sim.World.Has<WorkSession>(me) && Fight(sim, me, _view, now))
+            return; // a fight's every tick: a dodge can't wait for the next think
         if (_work.Session != null || sim.World.Has<WorkSession>(me) || now < _nextThink)
             return;
         _nextThink = now + ThinkTicks;
@@ -442,6 +444,107 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     {
         var off = needle - 0.5f;
         return MathF.Abs(off) > halfWidth * 0.25f ? -Math.Sign(off) : 0;
+    }
+
+    // ---------------- Fighting (free movement) ----------------
+
+    private Entity _foe = Entity.Null;
+    private float2 _sentWish;
+    private bool _guarding;
+
+    /// <summary>A bot's foe this close is a fight it takes on, armed and on its feet.</summary>
+    private const int FightRange = 8;
+
+    /// <summary>
+    /// With free movement (<see cref="Combat.FreeMoveSystem"/>), an armed bot that isn't hurt stands
+    /// and fights a raider or predator it can see near, as a player would: weapon drawn, to its
+    /// reach, striking the way it aims; seeing a blow coming at it, it steps out of the sweep (or
+    /// guards, if it's too winded to dash). Hurt, it gets away (<see cref="Safety"/>). Only what it
+    /// can see, only through commands. True while it's fighting.
+    /// </summary>
+    private bool Fight(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Combat.FreeMover>(me, out var free) || !w.Get<Creature>(me).Able || Ai.RaiderBrain.WantsToFlee(sim, me)
+            || !w.TryGet<Equipment>(me, out var eq) || !w.IsAlive(eq.Weapon) || w.Get<Thing>(eq.Weapon).Def.Weapon is not { } weapon)
+            return StopFighting(me, free.Drawn);
+        var here = w.Get<Position>(me).Pos;
+        if (_foe.IsNull || !w.IsAlive(_foe) || !view.CanSee(_foe) || !w.Get<Creature>(_foe).Able)
+        {
+            _foe = Entity.Null;
+            var best = float.MaxValue;
+            foreach (var e in view.Creatures())
+                if (w.Get<Creature>(e) is { Dead: false, Downed: false } c && Factions.Attacker(c.Faction) && !w.Has<Combat.Leaving>(e)
+                    && c.Def.Race != Race.Dragon && w.Get<Position>(e).Cell.Z == w.Get<Position>(me).Cell.Z)
+                {
+                    var p = w.Get<Position>(e).Pos;
+                    var d = (p.X - here.X) * (p.X - here.X) + (p.Y - here.Y) * (p.Y - here.Y);
+                    if (d < FightRange * FightRange && d < best)
+                        (_foe, best) = (e, d);
+                }
+            if (_foe.IsNull)
+                return StopFighting(me, free.Drawn);
+        }
+        Doing = $"fighting {w.Get<Creature>(_foe).Name}";
+        if (!free.Drawn)
+            send(new DrawWeaponCommand(me, true));
+        var them = w.Get<Position>(_foe).Pos;
+        var to = new float2(them.X - here.X, them.Y - here.Y);
+        var dist = MathF.Sqrt(to.X * to.X + to.Y * to.Y);
+        var aim = DetMath.Atan2(to.Y, to.X);
+        var dir = dist > 1e-3f ? to * (1f / dist) : new float2(1, 0);
+        var reach = weapon.Ranged ? Math.Max(2f, weapon.OptimalRange) : Combat.Reach.ShapeOf(sim, me, weapon).Length * 0.75f;
+
+        // A blow coming at it: out of the sweep, to the side; winded, guard instead.
+        if (w.TryGet<Combat.Windup>(_foe, out var blow) && blow.Impact - now <= 14 && Combat.Reach.Struck(sim, _foe,
+                Combat.CombatRules.Attacks(sim, _foe)[Math.Min(blow.Attack, Combat.CombatRules.Attacks(sim, _foe).Count - 1)], blow.Aim).Contains(me))
+        {
+            var side = new float2(-DetMath.Sin(blow.Aim), DetMath.Cos(blow.Aim)) * (_rand.Chance(0.5f) ? 1f : -1f);
+            if (w.TryGet<Combat.Guard>(me, out var g) && g.Stamina >= Combat.Blows.DodgeCost && blow.Impact - now <= 8)
+                send(new DodgeCommand(me, side.X, side.Y, now));
+            else if (!_guarding)
+            {
+                send(new CombatInputCommand(me, CombatInput.GuardUp, now));
+                _guarding = true;
+            }
+            Move(me, side, aim);
+            return true;
+        }
+        if (_guarding)
+        {
+            send(new CombatInputCommand(me, CombatInput.GuardDown, now));
+            _guarding = false;
+        }
+        var wish = dir * Math.Clamp((dist - reach) * 2f, -1f, 1f);
+        Move(me, wish, aim);
+        if (dist - Combat.Reach.BodyRadius <= (weapon.Ranged ? weapon.Range : Combat.Reach.ShapeOf(sim, me, weapon).Length) && !w.Has<Combat.Windup>(me))
+            send(new AttackCommand(me, _rand.Chance(0.25f) && !weapon.Ranged, aim));
+        return true;
+    }
+
+    private void Move(Entity me, float2 wish, float aim)
+    {
+        var len = MathF.Sqrt(wish.X * wish.X + wish.Y * wish.Y);
+        var w = len < 0.1f ? float2.Zero : wish;
+        send(new FreeMoveCommand(me, w.X, w.Y, aim));
+        _sentWish = w;
+    }
+
+    /// <summary>The fight's done (or it won't take it on): feet still, weapon put away. False, so it gets on with its day.</summary>
+    private bool StopFighting(Entity me, bool drawn)
+    {
+        if (_foe.IsNull && _sentWish == float2.Zero && !_guarding)
+            return false;
+        _foe = Entity.Null;
+        if (_guarding)
+            send(new CombatInputCommand(me, CombatInput.GuardDown, 0));
+        _guarding = false;
+        if (_sentWish != float2.Zero)
+            send(new FreeMoveCommand(me, 0f, 0f, 0f));
+        _sentWish = float2.Zero;
+        if (drawn)
+            send(new DrawWeaponCommand(me, false));
+        return false;
     }
 
     // ---------------- Deciding ----------------

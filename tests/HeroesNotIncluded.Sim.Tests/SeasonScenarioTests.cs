@@ -16,8 +16,11 @@ namespace HeroesNotIncluded.Sim.Tests;
 /// </summary>
 public class SeasonScenarioTests(ITestOutputHelper output)
 {
-    [Fact]
-    public void AnHonestRoundIsPlayableStartToFinish()
+    /// <param name="free">With free movement (the combat pass): bots and fighters off the grid.</param>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AnHonestRoundIsPlayableStartToFinish(bool free)
     {
         var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
         sim.Presets.PresetMode = true;
@@ -34,6 +37,8 @@ public class SeasonScenarioTests(ITestOutputHelper output)
             bots.Add(new BotPlayer(() => sim, id, c => sim.ApplyNow(c), 100 + (ulong)i));
         }
         sim.ApplyNow(new StartRoundCommand());
+        if (free)
+            sim.FreeMove.Enable(sim);
 
         var festival = false;
         var deaths = new List<string>();
