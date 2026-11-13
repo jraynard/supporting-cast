@@ -15,10 +15,13 @@ using HeroesNotIncluded.Ui;
 namespace HeroesNotIncluded;
 
 /// <summary>
-/// The title screen: the game's name and main menu over a live, slowly orbiting view of a
-/// generated valley. Menu entries start a village
-/// (new, or continued from a save) or one of the demos through <see cref="GameHost.SwitchTo"/>, or
-/// open the settings; Credits is a placeholder for now. Exit closes the game.
+/// The title screen, dressed by the brand guide (art/brand/brand-guide.html): the stacked logo and
+/// tagline, and the menu flush left in the display face (Cinzel), each entry saying what it does
+/// with its line from the word bank underneath while it's picked, over Millbrook going about its
+/// day in golden-hour light, slowly orbited. Ember stays rare: the logo's "!" is the only ember
+/// thing on the screen. Entries start a village (new, hosted, joined or loaded) through
+/// <see cref="GameHost.SwitchTo"/>, behind a moment's loading line; or open the settings, the bug
+/// report or the credits.
 /// </summary>
 public sealed class TitleGame : Game
 {
@@ -40,10 +43,10 @@ public sealed class TitleGame : Game
     private float _accumulator;
     private float _fade;
 
-    /// <summary>Debug/screenshots (<c>--menu-pick "Dragon Demo"</c>): press this entry after a few seconds.</summary>
+    /// <summary>Debug/screenshots (<c>--menu-pick "Host game"</c>): press this entry after a few seconds.</summary>
     public string? AutoPick { get; set; }
 
-    /// <summary>Debug/screenshots (<c>--creator dragon|character</c>): open that Adventure creator step (an Escape start) at once.</summary>
+    /// <summary>Debug/screenshots (<c>--creator character</c>): open the character creator at once.</summary>
     public string? AutoCreator { get; init; }
 
     /// <summary>Debug/screenshots (<c>--creator character --preset Wanderer</c>): start the creator on a preset.</summary>
@@ -60,7 +63,23 @@ public sealed class TitleGame : Game
     /// <summary>Why the last load failed, shown under the menu.</summary>
     private string? _error;
 
-    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Coop, HostNew, HostSave, Join, BackToCreator, Report }
+    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Host, HostNew, HostSave, Join, BackToCreator, Report, Credits }
+
+    /// <summary>The Credits window (BRUTAL License 2.1: its copyright notice; and the fonts' licences).</summary>
+    private readonly CreditsWindow _credits = new(Title, "Somebody has to keep the lights on.");
+    private bool _showCredits;
+
+    /// <summary>An entry pressed that starts a game: drawn behind a loading line for a frame, then started.</summary>
+    private MenuItem? _starting;
+    private bool _startingShown;
+    private string _loadingLine = "";
+
+    /// <summary>The brand's loading lines (one at random while a village is made ready).</summary>
+    private static readonly string[] LoadingLines =
+    [
+        "Sweeping the common room...", "Hiding the good ale...", "Re-hanging the quest board...", "Practising our polite smile...",
+        "Polishing tankards nobody asked about...",
+    ];
 
     /// <summary>Adventure's character creator, shown instead of the menu while open.</summary>
     private CharacterCreator _creator = null!;
@@ -88,6 +107,7 @@ public sealed class TitleGame : Game
     /// <summary><c>--join address</c>: open the Join panel and connect straight away.</summary>
     public string? AutoJoin { get; set; }
 
+    /// <summary>An entry: a label saying what it does, and the line underneath (the word bank's, or what it'll do).</summary>
     private sealed record MenuItem(string Label, string Hint, Func<Game>? Start, MenuAction Action = MenuAction.Start);
 
     /// <summary>How many saves the Load Game list shows (the in-game Load window lists them all).</summary>
@@ -100,13 +120,14 @@ public sealed class TitleGame : Game
         [
             newest is { } last
                 ? new("Continue", $"{last.Name}: {last.Summary}", () => FromSave(last))
-                : new("Continue", "No saves yet.", null),
-            new("New Round", "Walk into the village on your own, with AI villagers in the other trades.", null, MenuAction.NewGame),
-            new("Multiplayer", "Open the doors to friends, or pull up a stool in their village.", null, MenuAction.Coop),
-            new("Load Game", newest == null ? "No saves yet." : "Pick a saved village.", null, newest == null ? MenuAction.Start : MenuAction.LoadGame),
-            new("Options", "Display, interface and gameplay settings.", null, MenuAction.Settings),
-            new("Report a Bug", "Where to tell us, and the files that help.", null, MenuAction.Report),
-            new("Credits", "Coming soon.", null),
+                : new("Continue", "Nothing saved yet.", null),
+            new("New round", "Just you and the regulars.", null, MenuAction.NewGame),
+            new("Host game", "Open the doors.", null, MenuAction.Host),
+            new("Join game", "Pull up a stool.", null, MenuAction.Join),
+            new("Load game", newest == null ? "Nothing saved yet." : "Pick up where you left off.", null, newest == null ? MenuAction.Start : MenuAction.LoadGame),
+            new("Settings", "House rules.", null, MenuAction.Settings),
+            new("Report a bug", "Something broke? Tell us how.", null, MenuAction.Report),
+            new("Credits", "Everyone who swept up.", null, MenuAction.Credits),
             new("Quit", "Close up for the night.", null, MenuAction.Exit),
         ];
     }
@@ -122,14 +143,13 @@ public sealed class TitleGame : Game
             .ToArray();
     }
 
-    private MenuItem[] CoopItems()
+    private MenuItem[] HostItems()
     {
         var anySave = SaveSlots.Newest() != null;
         return
         [
-            new("Host New Round", "Make your character and open a lobby. Friends join, say which trades they want, and you deal the round.", null, MenuAction.HostNew),
-            new("Host a Saved Village", anySave ? "Open one of your saved villages to friends." : "No saves yet.", null, anySave ? MenuAction.HostSave : MenuAction.Start),
-            new("Join a Game", "Find a village on your network, or type the host's address.", null, MenuAction.Join),
+            new("New round", "Open a lobby: friends say which trades they want, you deal.", null, MenuAction.HostNew),
+            new("A saved village", anySave ? "Open one of your saved villages to friends." : "Nothing saved yet.", null, anySave ? MenuAction.HostSave : MenuAction.Start),
             new("Back", "Back to the main menu.", null, MenuAction.Back),
         ];
     }
@@ -196,11 +216,10 @@ public sealed class TitleGame : Game
         if (_roster.Last is { } last)
             Prefill(last);
         _items = MainItems();
-        // The village behind the menu, its people not yet arrived.
-        var map = defs.Map(VillageRound.DefaultMap);
-        _sim = MapBuilder.CreateSimulation(defs, map, (ulong)Random.Shared.Next(1, 100_000));
+        // The village behind the menu, its people about their day (no round: nobody's dealt a trade).
+        _sim = VillageRound.NewSimulation(defs, (ulong)Random.Shared.Next(1, 100_000));
         _sim.StrictJobs = false; // a buggy job fails itself, not the game
-        var center = MapBuilder.Build(_sim, map, new MapGenerator.Options { SpawnStartingKit = false }).Center;
+        var center = VillageRound.Setup(_sim).Center;
         _sim.RebuildDerivedIfNeeded();
 
         _camera.Target = new float3(center.X + 0.5f, center.Y + 0.5f, center.Z);
@@ -220,6 +239,15 @@ public sealed class TitleGame : Game
             (_coopMenu ??= new CoopMenu(Host, _defs)).Connect(address);
         }
     }
+
+    /// <summary>
+    /// The light the title is drawn in, whatever the hour in its village: golden, a little low,
+    /// the brand's "common room at dusk" without a night falling on the menu.
+    /// </summary>
+    private const float TitleSky = 0.82f;
+
+    /// <summary>How far the title's grade leans gold past the player's own (the HD-2D grade's warmth).</summary>
+    private const float TitleGold = 1.6f;
 
     public override void Update(float dt)
     {
@@ -250,7 +278,9 @@ public sealed class TitleGame : Game
     public override void DrawScene(in FrameContext frame)
     {
         VisualStyle.Apply(Host, _quads);
-        _quads.Begin(_camera, _sim.Map.Depth - 1, _sim.Lighting.SkyLight(_sim), true);
+        if (Settings.Current.Hd2d)
+            Host.Post.Settings = Host.Post.Settings with { Warmth = Host.Post.Settings.Warmth + TitleGold, Vignette = Math.Max(Host.Post.Settings.Vignette, 0.4f) };
+        _quads.Begin(_camera, _sim.Map.Depth - 1, TitleSky, true);
         _renderer.Draw(_quads, _camera, _sim, Entity.Null, _time, Host.FrameTimeMs / 1000f);
         _quads.Render(frame);
     }
@@ -261,11 +291,11 @@ public sealed class TitleGame : Game
         var screen = io.DisplaySize;
         var bg = ImGui.GetBackgroundDrawList(ImGui.GetMainViewport());
 
-        // A dark wash from the left so the menu reads over the scenery, plus a fade-in.
+        // A cellar-dark wash from the left so the menu reads over the scenery, plus a fade-in.
         var a = float2.Zero;
         var b = new float2(screen.X * 0.55f, screen.Y);
-        uint dark = Theme.U8(new float4(0.06f, 0.04f, 0.03f, 0.88f));
-        uint clear = Theme.U8(new float4(0.06f, 0.04f, 0.03f, 0f));
+        uint dark = Theme.U8(Theme.Cellar with { W = 0.9f });
+        uint clear = Theme.U8(Theme.Cellar with { W = 0f });
         bg.AddRectFilledMultiColor(in a, in b, dark, clear, clear, dark);
         if (_fade < 1f)
         {
@@ -281,9 +311,9 @@ public sealed class TitleGame : Game
         ImGui.Begin("##title"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove);
 
         DrawLogo(screen);
-        var dim = Theme.Dim;
+        var dim = Theme.Parchment;
         ImGui.TextColored(dim, "Somebody has to keep the lights on."u8);
-        var gap = new float2(1, 34);
+        var gap = new float2(1, Gui.S(24));
         ImGui.Dummy(in gap);
 
         if (_joining && _coopMenu != null)
@@ -362,10 +392,12 @@ public sealed class TitleGame : Game
             ImGui.PopTextWrapPos();
         }
         ImGui.Dummy(in gap);
-        ImGui.TextColored(dim, $"Playtest build {BuildInfo.Label}. Built with BRUTAL.");
+        ImGui.TextColored(dim with { W = 0.7f }, $"Playtest build {BuildInfo.Label}. Built with BRUTAL.");
         ImGui.End();
         ImGui.PopStyleVar(1);
         _settings.Draw();
+        _credits.Draw(ref _showCredits, $"Playtest build {BuildInfo.Label}");
+        DrawStarting(screen);
 
         if (AutoPick != null && _time > 3f && (_submenu ?? _items).FirstOrDefault(i => i.Label.Equals(AutoPick, StringComparison.OrdinalIgnoreCase)) is { } pick)
         {
@@ -413,8 +445,11 @@ public sealed class TitleGame : Game
                 (_submenu, _submenuTitle) = (null, null);
                 _creating = true;
                 break;
-            case MenuAction.Coop:
-                (_submenu, _submenuTitle) = (CoopItems(), "Play together");
+            case MenuAction.Host:
+                (_submenu, _submenuTitle) = (HostItems(), "Open the doors");
+                break;
+            case MenuAction.Credits:
+                _showCredits = !_showCredits;
                 break;
             case MenuAction.HostNew:
                 _hostingNew = true;
@@ -445,19 +480,44 @@ public sealed class TitleGame : Game
                 _creating = true;
                 break;
             default:
-                if (item.Start == null)
+                if (item.Start == null || _starting != null)
                     break;
-                try
-                {
-                    _error = null;
-                    Host.SwitchTo(item.Start());
-                }
-                catch (Sim.Saving.SaveException ex)
-                {
-                    Log.Engine.Warning($"Couldn't load '{item.Label}': {ex.Message}");
-                    _error = ex.Message;
-                }
+                // A frame behind a loading line first: making a village ready takes a moment.
+                (_starting, _startingShown, _loadingLine) = (item, false, LoadingLines[Random.Shared.Next(LoadingLines.Length)]);
                 break;
+        }
+    }
+
+    /// <summary>The loading line over the screen, and once it's been seen, the start itself.</summary>
+    private void DrawStarting(float2 screen)
+    {
+        if (_starting is not { } item)
+            return;
+        var bg = ImGui.GetForegroundDrawList(ImGui.GetMainViewport());
+        var full = screen;
+        var zero = float2.Zero;
+        bg.AddRectFilled(in zero, in full, Theme.U8(Theme.Cellar with { W = 0.85f }), 0f, ImDrawFlags.None);
+        using (Gui.DisplayFont(30f))
+        {
+            var size = ImGui.CalcTextSize(_loadingLine);
+            var at = new float2((screen.X - size.X) * 0.5f, (screen.Y - size.Y) * 0.5f);
+            bg.AddText(in at, Theme.U8(Theme.Parchment), _loadingLine);
+        }
+        if (!_startingShown)
+        {
+            _startingShown = true;
+            return;
+        }
+        _starting = null;
+        try
+        {
+            _error = null;
+            Host.SwitchTo(item.Start!());
+        }
+        catch (Sim.Saving.SaveException ex)
+        {
+            Log.Engine.Warning($"Couldn't load '{item.Label}': {ex.Message}");
+            _error = ex.Message;
         }
     }
 
@@ -469,55 +529,51 @@ public sealed class TitleGame : Game
     {
         if (!Gui.TrySprite("ui/logo", out var logo) || logo.PixelSize.Y == 0)
         {
-            using (Gui.HeaderFont(76f))
-                ImGui.TextColored(Theme.Accent, Title);
+            using (Gui.DisplayFont(64f))
+                ImGui.TextColored(Theme.Text, Title); // the brand's lettering is bone; ember is the "!"'s
             return;
         }
-        var h = MathF.Min(Gui.S(280), screen.Y * 0.32f);
+        var h = MathF.Min(Gui.S(280), screen.Y * 0.3f);
         var size = new float2(h * logo.PixelSize.X / logo.PixelSize.Y, h);
         var min = ImGui.GetCursorScreenPos();
         Gui.Image(ImGui.GetWindowDrawList(), logo, min, min + size, new ImColor8(255, 255, 255, 255));
         ImGui.Dummy(in size);
     }
 
+    /// <summary>
+    /// A menu entry: its label in the display face, and while it's picked (hovered, or reached with
+    /// keys or a pad) its line underneath and a barrel-gold bar at its edge. Every entry is tall
+    /// enough for its line, so picking one doesn't shift the rest.
+    /// </summary>
     private void MenuButton(MenuItem item)
     {
         var enabled = item.Start != null || item.Action != MenuAction.Start;
-        var size = (float2?)new float2(Gui.S(340), Gui.S(48));
-        // Flush left, a fixed step in from the edge: aligning by a fraction of the leftover width
-        // indented short labels more than long ones.
-        var align = new float2(0f, 0.5f);
-        ImGui.PushStyleVar(ImGuiStyleVar.ButtonTextAlign, in align);
-        ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0f); // the theme rims frames; these entries are bare text
-        var padding = new float2(Gui.S(16), Gui.S(4)); // room for the hover bar before the label
-        ImGui.PushStyleVar(ImGuiStyleVar.FramePadding, in padding);
-        var clear = new float4(0, 0, 0, 0);
-        var hover = Theme.AccentSoft with { W = 0.85f };
-        var active = Theme.Accent with { W = 0.9f };
-        ImGui.PushStyleColor(ImGuiCol.Button, in clear);
-        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, in hover);
-        ImGui.PushStyleColor(ImGuiCol.ButtonActive, in active);
-        bool pressed;
-        using (Gui.HeaderFont(26f))
-        {
-            if (!enabled)
-                ImGui.BeginDisabled(true);
-            pressed = ImGui.Button(item.Label, in size);
-            if (!enabled)
-                ImGui.EndDisabled();
-        }
-        ImGui.PopStyleColor(3);
-        ImGui.PopStyleVar(3);
+        var size = new float2(Gui.S(360), Gui.S(46));
+        var min = ImGui.GetCursorScreenPos();
+        if (!enabled)
+            ImGui.BeginDisabled(true);
+        var pressed = ImGui.InvisibleButton($"##{item.Label}", in size, ImGuiButtonFlags.None);
+        if (!enabled)
+            ImGui.EndDisabled();
+        var picked = ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled) || ImGui.IsItemFocused();
+        var held = enabled && ImGui.IsItemActive();
 
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+        var dl = ImGui.GetWindowDrawList();
+        var max = min + size;
+        if (picked && enabled)
         {
-            // An amber bar marks the hovered entry; the hint explains it (or why it's not ready).
-            var dl = ImGui.GetWindowDrawList();
-            var min = ImGui.GetItemRectMin();
-            var max = new float2(min.X + 4, ImGui.GetItemRectMax().Y);
-            if (enabled)
-                dl.AddRectFilled(in min, in max, Theme.U8(Theme.Accent), 2f, ImDrawFlags.None);
-            Narsil.Ui.ImGuiText.Tooltip(item.Hint);
+            dl.AddRectFilled(in min, in max, Theme.U8(held ? Theme.OakLight : Theme.Oak, held ? 0.9f : 0.55f), Gui.S(3), ImDrawFlags.None);
+            var barMax = new float2(min.X + Gui.S(4), max.Y);
+            dl.AddRectFilled(in min, in barMax, Theme.U8(Theme.Barrel), Gui.S(2), ImDrawFlags.None);
+        }
+        var label = min + new float2(Gui.S(16), Gui.S(3));
+        using (Gui.DisplayFont(25f))
+            dl.AddText(in label, Theme.U8(enabled ? Theme.Text : Theme.Dim, enabled ? 1f : 0.6f), item.Label);
+        if (picked)
+        {
+            var line = min + new float2(Gui.S(17), Gui.S(28));
+            using (Gui.BodyFont(15f))
+                dl.AddText(in line, Theme.U8(Theme.Parchment, enabled ? 0.95f : 0.6f), item.Hint);
         }
         if (pressed)
             Press(item);

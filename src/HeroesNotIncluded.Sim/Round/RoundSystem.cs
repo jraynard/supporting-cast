@@ -344,6 +344,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         Homes.DealAll(sim);
         Phase = RoundPhase.Playing;
         StartTick = sim.Clock.Tick;
+        sim.Messages.Add(MessageKind.Good, "Doors open. Smile.", null); // the brand's round start
         _startCoin.Clear();
         var purse = sim.Defs.Season.StartingPurse;
         foreach (var e in sim.Creatures())

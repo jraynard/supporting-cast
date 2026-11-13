@@ -104,6 +104,8 @@ public sealed partial class VillageGame
             var state = seat == null ? "choosing a character" : seat.Ready ? "ready" : "not ready";
             TextC(seat is { Ready: true } ? Theme.Good : Theme.Dim, $"{p.Name}{(p.IsHost ? " (host)" : "")}: {state}");
         }
+        if (session.Players.Count <= 1)
+            TextC(Theme.Parchment, "Nobody's here yet. Suspicious.");
 
         if (round.SeatOf(session.Me.Id) is { } mine)
         {

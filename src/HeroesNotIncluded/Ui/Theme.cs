@@ -29,8 +29,14 @@ public static class Theme
     /// <summary>The brand's hearth red: warnings drawn in the world (an impatient customer).</summary>
     public static readonly float4 HearthRed = new(0.71f, 0.26f, 0.17f, 1f);
 
-    /// <summary>The background of a mini-game's scene and its tracks.</summary>
-    public static readonly float4 Well = new(0.07f, 0.055f, 0.045f, 1f);
+    // The brand's wood (art/brand/brand-guide.html): cellar dark, oak and oak light, barrel gold.
+    public static readonly float4 Cellar = new(0.078f, 0.055f, 0.039f, 1f);   // #140E0A
+    public static readonly float4 Oak = new(0.29f, 0.2f, 0.133f, 1f);          // #4A3322
+    public static readonly float4 OakLight = new(0.478f, 0.329f, 0.204f, 1f);  // #7A5434
+    public static readonly float4 Barrel = new(0.788f, 0.604f, 0.357f, 1f);    // #C99A5B
+
+    /// <summary>The background of a mini-game's scene and its tracks: the brand's cellar.</summary>
+    public static readonly float4 Well = Cellar;
 
     /// <summary>The empath's games: a dusk violet, the gift's colour.</summary>
     public static readonly float4 Spirit = new(0.12f, 0.1f, 0.16f, 1f);

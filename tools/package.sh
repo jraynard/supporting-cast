@@ -110,7 +110,7 @@ for rid in "${rids[@]}"; do
         [[ -d "$out/$need" ]] || fail "$rid: $need is missing"
     done
     # BRUTAL License: the notice, its license and the third-party notices must ship (docs/LICENSING.md).
-    for need in NOTICE.txt licenses/BRUTAL-LICENSE.txt licenses/FiraSans-OFL.txt; do
+    for need in NOTICE.txt licenses/BRUTAL-LICENSE.txt licenses/FiraSans-OFL.txt licenses/Cinzel-OFL.txt; do
         [[ -f "$out/$need" ]] || fail "$rid: $need is missing"
     done
     (( $(find "$out/licenses" -name '*.txt' | wc -l) >= 4 )) || fail "$rid: the BRUTAL third-party notices are missing from licenses/"

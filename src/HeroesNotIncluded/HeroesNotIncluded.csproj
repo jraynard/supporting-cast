@@ -22,6 +22,8 @@
     <None Include="..\..\NOTICE.txt" Link="NOTICE.txt" CopyToOutputDirectory="PreserveNewest" />
     <!-- Bundled UI font (SIL Open Font License 1.1): its license ships with the other third-party notices. -->
     <None Include="..\..\data\fonts\FiraSans-OFL.txt" Link="licenses\FiraSans-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The title's lettering (SIL Open Font License 1.1), the brand's display face. -->
+    <None Include="..\..\data\fonts\Cinzel-OFL.txt" Link="licenses\Cinzel-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- BRUTAL License 1.0 and 4.0: BRUTAL's license and third-party notices go to licenses/ on build and publish. -->

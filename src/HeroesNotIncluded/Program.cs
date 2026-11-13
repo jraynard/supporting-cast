@@ -129,6 +129,7 @@ using var host = new GameHost(new GameHostOptions
     Title = TitleGame.Title,
     AppName = TitleGame.DataFolder, // the config folder and shader cache
     AppId = TitleGame.AppId,
+    DisplayFont = "Cinzel-SemiBold.ttf", // the brand's display face (art/brand/brand-guide.html): the title's menu
     IconPath = Path.Combine(AppContext.BaseDirectory, "data", "icon.png"),
     Display = settings.Display,
     VSync = !stress && settings.VSync,
