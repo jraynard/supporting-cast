@@ -148,12 +148,51 @@ public class CrisisTests
     }
 
     [Fact]
+    public void ADragonComesDownBreathesFireAndIsGoneWithinItsHours()
+    {
+        var sim = Round(party: true);
+        var crisis = Assert.IsType<DragonCrisis>(sim.Director.Send(sim, CrisisKind.Dragon));
+        var w = sim.World;
+        Assert.Equal(Race.Dragon, w.Get<Creature>(crisis.Dragon).Def.Race);
+        Assert.Contains(sim.Speech.Kept, u => u.Text.StartsWith("Dragon!"));
+        var breathed = false;
+        var hurt = 0;
+        for (var t = 0; t < SimClock.HoursToTicks(DragonCrisis.Hours + 1) && sim.Director.Active.Contains(crisis); t++)
+        {
+            sim.Tick();
+            breathed |= sim.RecentBreaths.Any(b => b.Source == crisis.Dragon);
+            if (w.IsAlive(crisis.Dragon))
+                hurt = w.Get<Health>(crisis.Dragon).Injuries.Count;
+        }
+        Assert.True(breathed, "it breathed on the town");
+        Assert.DoesNotContain(crisis, sim.Director.Active);
+        var dead = sim.Creatures().Count(e => w.Get<Creature>(e) is { Faction: Faction.Village, Dead: true });
+        Console.WriteLine($"Dragon: met {sim.Director.Met}, unmet {sim.Director.Unmet}, village dead {dead}, dragon wounds {hurt}, renown {sim.Reckoning.Renown:0}, dread {sim.Reckoning.Dread:0}");
+    }
+
+    [Fact]
+    public void ADragonHurtEnoughIsDrivenOff()
+    {
+        var sim = Round();
+        var crisis = (DragonCrisis)sim.Director.Send(sim, CrisisKind.Dragon)!;
+        Assert.Null(crisis.Check(sim));
+        for (var i = 0; i < 12 && !Ai.DragonBrain.DrivenOff(sim, crisis.Dragon); i++)
+            HealthSystem.Damage(sim, crisis.Dragon, 12f, DamageType.Cut);
+        Assert.True(crisis.Check(sim));
+        Assert.IsType<Ai.LeaveMapJob>(new Ai.DragonBrain().Think(sim, crisis.Dragon));
+        var renown = sim.Reckoning.Renown;
+        sim.TickMany(SimClock.TicksPerHour / 6 + 1);
+        Assert.Equal(renown + sim.Defs.Season.DragonMetRenown, sim.Reckoning.Renown);
+    }
+
+    [Fact]
     public void CrisesUnderWaySurviveASave()
     {
         var sim = Round(party: true);
         sim.Director.Send(sim, CrisisKind.Fire);
         sim.Director.Send(sim, CrisisKind.Shortage);
         sim.Director.Send(sim, CrisisKind.Plague);
+        sim.Director.Send(sim, CrisisKind.Dragon);
         sim.TickMany(SimClock.TicksPerHour / 6);
         var kinds = sim.Director.Active.Select(c => c.Kind).ToList();
         var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);

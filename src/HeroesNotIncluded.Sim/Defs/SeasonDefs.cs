@@ -53,6 +53,10 @@ public sealed class SeasonDef : Def
     /// <summary>Dread for a crisis the town didn't meet.</summary>
     public float CrisisUnmetDread { get; set; } = 10;
 
+    /// <summary>The dragon's instead: driven off, the valley sings of it; not, it shudders.</summary>
+    public float DragonMetRenown { get; set; } = 20;
+    public float DragonUnmetDread { get; set; } = 20;
+
     /// <summary>
     /// A round's raids against the old storyteller's (<c>Raids.Points</c>, sized for an armed
     /// colony): the town is mostly tradesfolk, and the fighting is the adventurers'.

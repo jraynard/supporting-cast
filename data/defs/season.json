@@ -28,6 +28,8 @@
       "crisisMetRenown": 6,
       "crisisMetDread": -4,
       "crisisUnmetDread": 10,
+      "dragonMetRenown": 20,
+      "dragonUnmetDread": 20,
       "crisisHours": 6,
       "raidPointsFactor": 0.4,
       "raidBreaksBridge": 0.6,

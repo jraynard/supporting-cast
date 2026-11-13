@@ -80,10 +80,13 @@ public sealed class Reckoning : ISimSystem, ISaveState
     }
 
     /// <summary>A crisis is over: met, it's a story travellers tell; not, the valley's fear grows.</summary>
-    public void CrisisResolved(Simulation sim, bool met)
+    public void CrisisResolved(Simulation sim, Defs.CrisisKind kind, bool met)
     {
         var season = sim.Defs.Season;
-        if (met)
+        // The dragon is the season's great story, either way.
+        if (kind == Defs.CrisisKind.Dragon)
+            Add(sim, met ? season.DragonMetRenown : 0, met ? season.CrisisMetDread : season.DragonUnmetDread);
+        else if (met)
             Add(sim, season.CrisisMetRenown, season.CrisisMetDread);
         else
             Add(sim, 0, season.CrisisUnmetDread);

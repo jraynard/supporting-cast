@@ -268,3 +268,85 @@ public sealed class PlagueCrisis : ICrisis
         return c;
     }
 }
+
+/// <summary>
+/// The season's last crisis: a wild dragon comes down on the town (<see cref="Ai.DragonBrain"/>),
+/// burning what it breathes on. The town meets it if the dragon is driven off (hurt enough that it
+/// gives up) or killed before <see cref="Hours"/> are out; if it's still at it then, it leaves when
+/// it pleases, and the valley remembers.
+/// </summary>
+public sealed class DragonCrisis : ICrisis
+{
+    public CrisisKind Kind => CrisisKind.Dragon;
+    public long Started { get; private init; }
+    public Entity Dragon { get; private init; }
+    private long _deadline;
+    private bool _timedOut;
+
+    /// <summary>How long the town has to drive it off, in game hours.</summary>
+    public const float Hours = 2;
+
+    private static readonly string[] Names = ["Cinderwing", "Old Ashjaw", "Smokemaw", "the Red Widow", "Emberhide"];
+
+    internal static DragonCrisis? Begin(Simulation sim, SimRandom rand)
+    {
+        var w = sim.World;
+        var def = sim.Defs.AllCreatures.FirstOrDefault(c => c.Race == Race.Dragon);
+        var town = sim.Creatures().Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Dead: false }).Select(e => w.Get<Position>(e).Cell).ToList();
+        if (def == null || town.Count == 0)
+            return null;
+        var toward = town[0];
+        var first = rand.NextInt(4);
+        int3? entry = null;
+        for (var i = 0; i < 4 && entry == null; i++)
+            entry = Combat.Raids.EdgeEntry(sim, (first + i) % 4, toward);
+        if (entry is not { } at)
+            return null;
+        var adult = def.LifeStages.Count > 0 ? def.LifeStages[^1].MinAgeDays + 8 : 30;
+        var dragon = sim.SpawnCreature(def, Names[rand.NextInt(Names.Length)], at, Faction.Predator, ageDays: adult);
+        Array.Fill(w.Get<Needs>(dragon).Values, 1f);
+        var name = w.Get<Creature>(dragon).Name;
+        sim.Messages.Add(MessageKind.Danger, $"A dragon! {name} is coming from the {Combat.Raids.Direction(sim.Map, at)}!", at);
+        Alarm.Raise(sim, at, "Dragon! DRAGON! Get indoors!");
+        return new DragonCrisis { Started = sim.Clock.Tick, Dragon = dragon, _deadline = sim.Clock.Tick + SimClock.HoursToTicks(Hours) };
+    }
+
+    public bool? Check(Simulation sim)
+    {
+        var w = sim.World;
+        if (!w.IsAlive(Dragon))
+            return !_timedOut; // gone off the map
+        if (w.Get<Creature>(Dragon).Dead || w.Get<Creature>(Dragon).Downed)
+            return true;
+        if (Ai.DragonBrain.DrivenOff(sim, Dragon))
+            return true; // on its way, and not coming back
+        if (sim.Clock.Tick >= _deadline && !_timedOut)
+        {
+            _timedOut = true;
+            if (!w.Has<Combat.Leaving>(Dragon))
+                w.Add(Dragon, new Combat.Leaving());
+            return false;
+        }
+        return null;
+    }
+
+    public string Outcome(bool met) => met
+        ? "The dragon is driven off! The valley will sing of this."
+        : "The dragon has had its fill of the town, and flies off at its leisure.";
+
+    public void Save(SaveWriter w)
+    {
+        w.Long(Started);
+        w.Entity(Dragon);
+        w.Long(_deadline);
+        w.Bool(_timedOut);
+    }
+
+    internal static DragonCrisis Read(SaveReader r)
+    {
+        var c = new DragonCrisis { Started = r.Long(), Dragon = r.Entity() };
+        c._deadline = r.Long();
+        c._timedOut = r.Bool();
+        return c;
+    }
+}

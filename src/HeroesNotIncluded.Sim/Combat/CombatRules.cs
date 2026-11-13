@@ -348,9 +348,8 @@ public static class CombatRules
     /// <summary>
     /// A dragon's breath in combat: the usual cone (which sets the ground alight, or frosts it, or
     /// leaves a cloud: <see cref="Breath"/>), plus a wound on every creature it passes over, friend
-    /// or foe, of its element's damage type. Those who resist that (<see cref="Dragons.Resists"/>:
-    /// fireproof creatures and fire) shrug it off. Other elements also leave their status
-    /// (<see cref="Systems.Afflictions"/>), and lightning leaps on to whoever's nearest.
+    /// or foe: burns. Fireproof creatures (a dragon's own kind) shrug it off. Loosed by a wild
+    /// dragon on the town (<see cref="Ai.DragonPassJob"/>).
     /// </summary>
     public static (BreathEvent Breath, List<(Entity Who, float Damage)> Burned) Breathe(Simulation sim, Entity dragon, int3 target)
     {

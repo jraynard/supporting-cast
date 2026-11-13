@@ -17,7 +17,13 @@ public static class Defence
     /// <summary>The same for an adventurer: they go looking for the fight.</summary>
     public const int AdventurerRange = 16;
 
-    /// <summary>The nearest raider or predator on its feet within <paramref name="range"/> cells (and two levels), or null.</summary>
+    /// <summary>How far off a dragon is everyone's business: the whole town hears it.</summary>
+    public const int DragonRange = 96;
+
+    /// <summary>
+    /// The nearest raider or predator on its feet within <paramref name="range"/> cells (and two
+    /// levels), or null. A dragon on the ground counts from anywhere in town (<see cref="DragonRange"/>).
+    /// </summary>
     public static Entity? Threat(Simulation sim, Entity pawn, int range)
     {
         var w = sim.World;
@@ -33,7 +39,7 @@ public static class Defence
             if (Math.Abs(at.Z - tile.Z) > 2)
                 continue;
             var d = Map.Distance(tile, at);
-            if (d <= range && d < bestDist)
+            if (d <= (c.Def.Race == Defs.Race.Dragon ? Math.Max(range, DragonRange) : range) && d < bestDist)
             {
                 best = e;
                 bestDist = d;

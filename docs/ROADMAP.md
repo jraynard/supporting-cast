@@ -735,6 +735,30 @@ Known leftovers:
 - A fever doesn't yet weaken a party on a quest.
 - The second-day crisis kinds have the same weight as each other. Tune in play.
 
+### M3.7: The dragon (2026-11-12)
+- **The season's last crisis** (day three, 11:00–15:00): a wild adult dragon (`DragonCrisis`)
+  comes in from an edge with a name ("Cinderwing", "Old Ashjaw"...). The town shouts
+  "Dragon! DRAGON! Get indoors!"
+- **`Ai/DragonBrain`** makes passes (`DragonPassJob`):
+  - **Each pass:** it flies in and comes down within breath's reach of someone out in the open,
+    or of a building. It breathes (`CombatRules.Breathe`, so the town burns), then stays down
+    20 seconds snapping at anyone in reach.
+  - **Fighting it:** the town can hurt it on the ground. Bows reach it in the air.
+  - **Driven off:** hurt enough (pain over 0.3, or 30 damage), it leaves for good.
+  - **The breath code**, there since DragonWorld, finally has a caller. Its doc no longer names
+    classes that don't exist.
+- **Everyone answers a dragon:** `Defence.Threat` counts one on the ground from anywhere in town.
+  The armed go for it, and everyone else gets indoors.
+- **Met:** driven off or killed within 2 hours: +20 Renown (`dragonMetRenown`). Unmet: it leaves
+  when it pleases, +20 Dread.
+- **In a test on Millbrook,** a party in town drove it off with four wounds, nobody killed, and
+  several roofs burned.
+- `CrisisTests` (the dragon). Bench hashes unchanged.
+
+Known leftovers:
+- The dragon hasn't been seen in a running game yet. The art is DragonWorld's adult sprite.
+- It's likely too easy with a party in town and impossible without one. Tune in play.
+
 ## Next
 
 ### M3: A whole season

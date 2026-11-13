@@ -51,7 +51,7 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
     public int Unmet { get; private set; }
 
     /// <summary>Crisis kinds the game can send so far; the season's other kinds are passed over.</summary>
-    public static bool CanSend(CrisisKind kind) => kind is CrisisKind.Raid or CrisisKind.Fire or CrisisKind.Shortage or CrisisKind.Plague;
+    public static bool CanSend(CrisisKind kind) => kind is CrisisKind.Raid or CrisisKind.Fire or CrisisKind.Shortage or CrisisKind.Plague or CrisisKind.Dragon;
 
     public void Enable(DifficultyDef? difficulty)
     {
@@ -90,7 +90,7 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
                 Met++;
             else
                 Unmet++;
-            sim.Reckoning.CrisisResolved(sim, met);
+            sim.Reckoning.CrisisResolved(sim, crisis.Kind, met);
             sim.Messages.Add(met ? MessageKind.Good : MessageKind.Warning, crisis.Outcome(met), null);
         }
     }
@@ -144,6 +144,7 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
             CrisisKind.Fire => FireCrisis.Begin(sim, _rand),
             CrisisKind.Shortage => ShortageCrisis.Begin(sim),
             CrisisKind.Plague => PlagueCrisis.Begin(sim, _rand),
+            CrisisKind.Dragon => DragonCrisis.Begin(sim, _rand),
             _ => null,
         };
         if (crisis != null)
@@ -197,6 +198,7 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
                 CrisisKind.Fire => FireCrisis.Read(r),
                 CrisisKind.Shortage => ShortageCrisis.Read(r),
                 CrisisKind.Plague => PlagueCrisis.Read(r),
+                CrisisKind.Dragon => DragonCrisis.Read(r),
                 _ => throw new SaveException($"Unknown crisis kind {kind}"),
             });
         }
