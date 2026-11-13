@@ -1,0 +1,62 @@
+{
+  "cellar": {
+    "hex": "#140E0A",
+    "use": "Outlines, the deepest shadow, text on bone. Theme.Well."
+  },
+  "oak_deep": {
+    "hex": "#261B13",
+    "use": "Panels and the dark ground. Theme.Panel."
+  },
+  "oak": {
+    "hex": "#4A3322",
+    "use": "The signboard: the brand's main surface."
+  },
+  "oak_light": {
+    "hex": "#7A5434",
+    "use": "Plank trim, the hammer's haft, wood highlights."
+  },
+  "barrel": {
+    "hex": "#C99A5B",
+    "use": "Pale oak: tankard and anything that must pop off dark wood."
+  },
+  "iron_dark": {
+    "hex": "#50545C",
+    "use": "Iron shade and rim bevels."
+  },
+  "iron": {
+    "hex": "#808590",
+    "use": "The rim, hoops, hammer head. Theme.Iron."
+  },
+  "iron_light": {
+    "hex": "#B4B9C1",
+    "use": "Steel: the knife blade and metal highlights."
+  },
+  "bone": {
+    "hex": "#F2E6CF",
+    "use": "Foam, lettering, UI text. Theme.Text."
+  },
+  "parchment": {
+    "hex": "#D9C49B",
+    "use": "Notices, ribbons' paper, foam shading, secondary text."
+  },
+  "ember": {
+    "hex": "#FCA342",
+    "use": "The accent: the quest marker, the hearth, calls to action. Theme.Accent."
+  },
+  "ale": {
+    "hex": "#D98A26",
+    "use": "Warm amber: ale and gold highlights."
+  },
+  "hearth_red": {
+    "hex": "#B5432B",
+    "use": "The 'Not Included' ribbon, wax seals, warnings."
+  },
+  "moss": {
+    "hex": "#6F8F47",
+    "use": "Hops and herbs; Good states, the village."
+  },
+  "rumour": {
+    "hex": "#A894FF",
+    "use": "Whispers, intel and the healer's gift. Theme.Arcane."
+  }
+}

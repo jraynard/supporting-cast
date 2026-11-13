@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Heroes Not Included: brand sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&family=Fira+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--cellar:#140E0A;--deep:#261B13;--oak:#4A3322;--bone:#F2E6CF;--parch:#D9C49B;--ember:#FCA342}
+*{box-sizing:border-box}
+body{margin:0;background:var(--deep);color:var(--bone);font:16px/1.55 "Fira Sans",system-ui,sans-serif}
+main{max-width:1080px;margin:0 auto;padding:48px 16px 96px}
+h1,h2,h3{font-family:Cinzel,Georgia,serif;margin:0;letter-spacing:.04em}
+h2{font-size:1.6rem;margin:64px 0 6px;color:var(--ember)} h3{font-size:1.05rem;margin:28px 0 2px;color:var(--parch)}
+.lede{margin:0 0 14px;color:var(--parch)}
+.hero{display:grid;gap:32px;align-items:center;grid-template-columns:minmax(0,1fr)}
+@media(min-width:760px){.hero{grid-template-columns:1fr 1fr}}
+.hero img{width:100%;height:auto;display:block}
+.hero p.tag{font-family:Cinzel,Georgia,serif;font-size:1.3rem;color:var(--parch);margin:0 0 12px}
+.card{margin:0;border:2px solid var(--cellar);border-radius:8px;overflow:hidden}
+.card .pad{padding:24px;display:grid;place-items:center;min-width:0}
+.card figcaption{padding:10px 14px;background:var(--cellar);font-size:.85rem;color:var(--parch)}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card img{max-width:100%;height:auto;display:block}
+.sws{list-style:none;margin:0;padding:0;display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.sw{background:var(--c);color:var(--f);border:2px solid var(--cellar);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:2px;min-height:128px}
+.sw b{font-family:Cinzel,Georgia,serif;font-size:1.02rem} .sw code{font:600 .95rem ui-monospace,Consolas,monospace}
+.sw .use{font-size:.82rem;line-height:1.35;margin-top:4px} .sw .f4{font:.72rem ui-monospace,Consolas,monospace;opacity:.85;margin-top:auto;padding-top:6px}
+.chips{list-style:none;margin:0;padding:0;display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.chips li{border:2px solid var(--cellar);border-radius:8px;padding:12px 14px;display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center}
+.chips b{font:800 1.6rem Cinzel,Georgia,serif;grid-row:span 2} .chips span{font-size:.85rem} .chips em{font-style:normal;font-weight:600;font-size:.85rem}
+.rules{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.rules div{background:var(--cellar);border-radius:8px;padding:16px 18px} .rules h4{margin:0 0 6px;font:600 1rem "Fira Sans",sans-serif;color:var(--ember)} .rules p{margin:0;font-size:.92rem}
+.type{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.type div{background:var(--cellar);border-radius:8px;padding:18px 20px} .type small{color:var(--parch);display:block;margin-bottom:6px}
+</style></head><body><main>
+<header class="hero"><div><h1 style="font-size:.85rem;color:var(--parch);margin-bottom:10px">BRAND SHEET</h1>
+<p class="tag">The sign over the door of the people a hero walks past.</p>
+<p>The emblem is a tavern signboard. Where a hero's crest would carry crossed swords, ours carries a hammer and a chef's knife, the tools of the trades. The tankard is the innkeeper's, and above it hangs the marker every adventurer reads as <em>this one has work for me</em>. You are the NPC. You run the village, and you are the one who knows.</p>
+<p style="color:var(--parch)">Warm, comic and a little put-upon, until someone finds the blacksmith in the river.</p></div>
+<img src="emblem.svg" alt="Heroes Not Included emblem"></header>
+
+<h2>Logo</h2><p class="lede">Lettering is Cinzel Extra Bold, converted to outlines. The ribbon is the label on the box.</p>
+<div class="grid"><figure class="card" style="grid-column:1/-1"><div class="pad"><img src="logo-horizontal.svg" alt="Horizontal logo" style="width:min(100%,760px)"></div><figcaption>logo-horizontal.svg: headers, store pages, splash</figcaption></figure>
+<figure class="card"><div class="pad"><img src="logo-stacked.svg" alt="Stacked logo" style="width:min(100%,380px)"></div><figcaption>logo-stacked.svg: title screen, posters, loading</figcaption></figure>
+<figure class="card" style="background:var(--oak)"><div class="pad"><img src="emblem.svg" alt="Emblem" style="width:min(100%,300px)"></div><figcaption>emblem.svg: app icon, avatars, stickers</figcaption></figure>
+<figure class="card" style="background:#F2E6CF"><div class="pad"><img src="emblem-mono-ink.svg" alt="One colour emblem, ink" style="width:min(100%,240px)"></div><figcaption>emblem-mono-ink.svg: print, stamps, light backgrounds</figcaption></figure>
+<figure class="card" style="background:var(--cellar)"><div class="pad"><img src="emblem-mono-bone.svg" alt="One colour emblem, bone" style="width:min(100%,240px)"></div><figcaption>emblem-mono-bone.svg: engraved UI, dark backgrounds</figcaption></figure></div>
+
+<h2>Palette</h2><p class="lede">Oak, iron, bone and ember are the game's own colours from Ui/Theme.cs, so the logo and the chrome are one family. The last line on each swatch is ready to paste into C#.</p>
+<section><h3>Wood and iron</h3><p class="lede">The sign itself. The game's chrome is built from these.</p><ul class="sws"><li class="sw" style="--c:#140E0A;--f:#F2E6CF"><b>Cellar</b><code>#140E0A</code><span class="use">Outlines, the deepest shadow, text on bone. Theme.Well.</span><span class="f4">new(0.08f, 0.05f, 0.04f, 1f)</span></li><li class="sw" style="--c:#261B13;--f:#F2E6CF"><b>Oak Deep</b><code>#261B13</code><span class="use">Panels and the dark ground. Theme.Panel.</span><span class="f4">new(0.15f, 0.11f, 0.07f, 1f)</span></li><li class="sw" style="--c:#4A3322;--f:#F2E6CF"><b>Oak</b><code>#4A3322</code><span class="use">The signboard: the brand's main surface.</span><span class="f4">new(0.29f, 0.20f, 0.13f, 1f)</span></li><li class="sw" style="--c:#7A5434;--f:#F2E6CF"><b>Oak Light</b><code>#7A5434</code><span class="use">Plank trim, the hammer's haft, wood highlights.</span><span class="f4">new(0.48f, 0.33f, 0.20f, 1f)</span></li><li class="sw" style="--c:#C99A5B;--f:#140E0A"><b>Barrel</b><code>#C99A5B</code><span class="use">Pale oak: tankard and anything that must pop off dark wood.</span><span class="f4">new(0.79f, 0.60f, 0.36f, 1f)</span></li><li class="sw" style="--c:#50545C;--f:#F2E6CF"><b>Iron Dark</b><code>#50545C</code><span class="use">Iron shade and rim bevels.</span><span class="f4">new(0.31f, 0.33f, 0.36f, 1f)</span></li><li class="sw" style="--c:#808590;--f:#140E0A"><b>Iron</b><code>#808590</code><span class="use">The rim, hoops, hammer head. Theme.Iron.</span><span class="f4">new(0.50f, 0.52f, 0.56f, 1f)</span></li><li class="sw" style="--c:#B4B9C1;--f:#140E0A"><b>Iron Light</b><code>#B4B9C1</code><span class="use">Steel: the knife blade and metal highlights.</span><span class="f4">new(0.71f, 0.73f, 0.76f, 1f)</span></li></ul></section><section><h3>Paper and flame</h3><p class="lede">Lettering, notices and the one bright thing on any screen.</p><ul class="sws"><li class="sw" style="--c:#F2E6CF;--f:#140E0A"><b>Bone</b><code>#F2E6CF</code><span class="use">Foam, lettering, UI text. Theme.Text.</span><span class="f4">new(0.95f, 0.90f, 0.81f, 1f)</span></li><li class="sw" style="--c:#D9C49B;--f:#140E0A"><b>Parchment</b><code>#D9C49B</code><span class="use">Notices, ribbons' paper, foam shading, secondary text.</span><span class="f4">new(0.85f, 0.77f, 0.61f, 1f)</span></li><li class="sw" style="--c:#FCA342;--f:#140E0A"><b>Ember</b><code>#FCA342</code><span class="use">The accent: the quest marker, the hearth, calls to action. Theme.Accent.</span><span class="f4">new(0.99f, 0.64f, 0.26f, 1f)</span></li><li class="sw" style="--c:#D98A26;--f:#140E0A"><b>Ale</b><code>#D98A26</code><span class="use">Warm amber: ale and gold highlights.</span><span class="f4">new(0.85f, 0.54f, 0.15f, 1f)</span></li><li class="sw" style="--c:#B5432B;--f:#F2E6CF"><b>Hearth Red</b><code>#B5432B</code><span class="use">The 'Not Included' ribbon, wax seals, warnings.</span><span class="f4">new(0.71f, 0.26f, 0.17f, 1f)</span></li></ul></section><section><h3>The village</h3><p class="lede">Small doses: status, herbs and the whisper of intel.</p><ul class="sws"><li class="sw" style="--c:#6F8F47;--f:#140E0A"><b>Moss</b><code>#6F8F47</code><span class="use">Hops and herbs; Good states, the village.</span><span class="f4">new(0.44f, 0.56f, 0.28f, 1f)</span></li><li class="sw" style="--c:#A894FF;--f:#140E0A"><b>Rumour</b><code>#A894FF</code><span class="use">Whispers, intel and the healer's gift. Theme.Arcane.</span><span class="f4">new(0.66f, 0.58f, 1.00f, 1f)</span></li></ul></section>
+<h3>Pairings that pass</h3><p class="lede">WCAG contrast ratios. Bone on the red ribbon is for large lettering only.</p><ul class="chips"><li style="background:#261B13;color:#F2E6CF"><b>Aa</b><span>Bone on Oak Deep</span><em>13.6:1</em></li><li style="background:#261B13;color:#FCA342"><b>Aa</b><span>Ember on Oak Deep</span><em>8.4:1</em></li><li style="background:#261B13;color:#D9C49B"><b>Aa</b><span>Parchment on Oak Deep</span><em>9.9:1</em></li><li style="background:#F2E6CF;color:#140E0A"><b>Aa</b><span>Cellar on Bone</span><em>15.5:1</em></li><li style="background:#FCA342;color:#140E0A"><b>Aa</b><span>Cellar on Ember</span><em>9.5:1</em></li><li style="background:#B5432B;color:#F2E6CF"><b>Aa</b><span>Bone on Hearth Red</span><em>4.5:1</em></li></ul>
+
+<h2>Using it</h2><div class="rules">
+<div><h4>Ember is rare</h4><p>One ember thing per screen: the quest marker, the call to action, a lit window. If everything glows, nothing is hiring.</p></div>
+<div><h4>Dark ground, bone text</h4><p>The brand lives in the dark of the common room. Use Oak Deep or Cellar as the page and Bone for text, Parchment for the quieter lines.</p></div>
+<div><h4>Clear space and size</h4><p>Keep the height of the quest marker (about one fifth of the emblem) clear on every side. Full-colour emblem down to 32 px; below that, draw a simplified icon.</p></div>
+<div><h4>Never</h4><p>Put a hero on it. No swords, shields, helmets or dragons: the brand is the world around them. Don't recolour the ribbon, stretch the lettering, or put the emblem on a busy photo without the ink version.</p></div></div>
+
+<h2>Type</h2><div class="type"><div><small>Display: Cinzel 600 / 800 (SIL OFL)</small><span style="font:800 2rem Cinzel,Georgia,serif;letter-spacing:.06em">Heroes Not Included</span></div>
+<div><small>Text and UI: Fira Sans (already in data/fonts)</small><span style="font:600 1.4rem 'Fira Sans',sans-serif">Somebody has to keep the lights on.</span></div></div>
+</main></body></html>
