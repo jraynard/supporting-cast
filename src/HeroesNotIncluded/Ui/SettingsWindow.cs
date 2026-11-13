@@ -292,6 +292,12 @@ public sealed class SettingsWindow(GameHost host)
             _draft.FreeMovement = freeMove;
 
         ImGui.Dummy(in gap);
+        Row("Screen shake", "The camera shakes a little with heavy blows you deal or take.");
+        var shake = _draft.ScreenShake;
+        if (ImGui.Checkbox("##shake"u8, ref shake))
+            _draft.ScreenShake = shake;
+
+        ImGui.Dummy(in gap);
         Row("Tips", "First-day tips for your trade, and markers on its stations till you've been to each.");
         var tips = _draft.ShowTips;
         if (ImGui.Checkbox("##tips"u8, ref tips))

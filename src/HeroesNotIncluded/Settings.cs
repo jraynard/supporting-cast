@@ -36,6 +36,9 @@ public sealed class Settings
     /// </summary>
     public bool FreeMovement { get; set; }
 
+    /// <summary>The camera shakes a little with heavy blows you deal or take.</summary>
+    public bool ScreenShake { get; set; } = true;
+
     /// <summary>Multiplier on keyboard camera panning.</summary>
     public float CameraPanSpeed { get; set; } = 1f;
 

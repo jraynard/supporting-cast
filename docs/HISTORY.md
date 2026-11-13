@@ -1043,4 +1043,9 @@ shared); fights stay real time, Souls-lite.
   against where people were when it was pressed.
 - Archers hold their range (they walked in and backed off again, the jitter) and shoot at their
   bow's own pace.
+- **Feel** (step 6, first pass): hit-stop and a little camera shake for blows you deal or take,
+  presentation only (`VillageGame.HitFeel`; Settings, Screen shake); new synthesized sounds for a
+  parry, a block, a heavy swing and a spear's jab (`tools/sfx_synth.py`), played by how each blow
+  went (`SoundDirector.BlowsMet`); a sheathed weapon slung across the back (`DrawSlung`); a body
+  winding up a blow plays its work swing until it has frames of its own.
 

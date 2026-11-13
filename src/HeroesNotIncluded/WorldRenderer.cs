@@ -667,6 +667,10 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         }
         // A dodge's tumble turns about their middle, as a flyer's bank does.
         var tumbling = w.TryGet<Sim.Combat.FreeMover>(e, out var free) && sim.Clock.Tick < free.DashUntil;
+        // Weapon sheathed (free movement), it's slung across their back, just behind them.
+        if (w.Has<Sim.Combat.FreeMover>(e) && !free.Drawn && !tumbling && !c.Dead && !c.Downed
+            && w.TryGet<Equipment>(e, out var slung) && w.IsAlive(slung.Weapon) && w.Get<Thing>(slung.Weapon).Def is { Held: not null } slungDef)
+            DrawSlung(S(slungDef.Sprite), feet, slungDef.Held == "spear" || slungDef.Held == "longsword" ? 1.05f : 0.75f, pose.Facing, color, level);
         BillboardFrame(sheet, pose.Frame, feet, pose.Facing, pose.Roll, color, level, aboutCenter: airborne || tumbling);
         var nudge = 0;
         foreach (var (layer, layerColor) in LookLayers(sim, e, color))
@@ -743,6 +747,29 @@ public sealed class WorldRenderer(TextureAtlas atlas)
     /// at 20,58): at the lap, and lifted to the mouth for a sip.
     /// </summary>
     private static readonly float2 LapHand = new(25f, 47.2f), SipHand = new(23f, 36.5f);
+
+    /// <summary>
+    /// A sheathed weapon (<see cref="Sim.Combat.FreeMover.Drawn"/> off) across someone's back: its
+    /// item art upright to the camera, tilted over a shoulder, a hair behind them, so the body hides
+    /// most of it and the hilt and tip show.
+    /// </summary>
+    private void DrawSlung(in Sprite sprite, float3 feet, float size, int facing, uint color, uint level)
+    {
+        // Item art runs corner to corner, grip at the bottom left: upright, it leans one way; mirrored with the body.
+        var r = _cam.Right * (size * (facing >= 0 ? 1f : -1f));
+        var u = _cam.Up * size;
+        var middle = feet + _cam.Up * 0.62f + _cam.Forward * 0.03f;
+        _quads.Add(new Quad
+        {
+            Origin = middle - r * 0.5f + u * 0.5f,
+            AxisU = r,
+            AxisV = -u,
+            Flags = level | Quad.Billboard | Quad.Upright,
+            Color = color,
+            Ao = Quad.NoAo,
+            Uv = sprite.Uv,
+        });
+    }
 
     /// <summary>Where DrawAnimated put someone's hand this frame, if it moved it (sitting); else the held item goes beside them.</summary>
     private float3? _heldAt;

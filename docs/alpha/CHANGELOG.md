@@ -26,6 +26,9 @@ Fighting, reworked: you can see a blow coming now, and do something about it.
   Swings hit whoever's in the way, friend or foe, so mind the neighbours. Raiders move freely too:
   they circle while they wait their turn, step in to strike and back off, and you can see each
   blow's sweep on the ground and step out of it. Archers keep their distance.
+- Blows feel like blows: a heavy hit, a parry or a broken guard holds the picture for an instant and
+  shakes the camera a little (Settings, Screen shake). Parries ring, blocks knock, heavy swings and a
+  spear's jab sound like themselves. A sheathed weapon hangs across your back.
 - The camera turns on Z and X now (Q and E without a character). Dig is C, put down is G, and the
   empath's gift panel is Y. The controls card (H) has a Fighting section.
 - `--raid-test`: play as the smith with bandits coming down the north road at once.

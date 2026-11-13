@@ -385,6 +385,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     {
         _time += dt;
         _animDt = dt * Math.Min(RunMultiplier, 3);
+        _animDt = HitFeel(dt, _animDt);
         _artReloader ??= new ArtReloader(Host.Atlas, DevPaths.Watch("SC_WATCH_ART"));
         _artReloader.Update(Host.Input, dt);
         _defReloader ??= new DefReloader(DevPaths.Defs ?? Path.Combine(Host.DataDirectory, "defs"), DevPaths.Watch());

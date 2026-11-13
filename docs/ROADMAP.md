@@ -78,9 +78,11 @@ village-day scenarios passing.
 5. **Co-op** (first pass in; the sweep's position history still to come). Your own movement predicted and eased toward the host's; commands carry where you are.
    Blows at you keep a latency grace for your guard and dodge keys; a sweep is judged against where
    people were when it was pressed (a short position history).
-6. **Feel and art.** Real swing and dodge frames from the people pipeline (the drawn-on weapon is a
-   stand-in), a drawn weapon worn on the back or belt when sheathed, hit-stop and a little shake on a
-   heavy hit, a sound per weapon.
+6. **Feel and art** (first pass in: hit-stop and shake, a sheathed weapon slung on the back, sounds
+   for parry, block, guard broken, a heavy swing and a spear's jab, the body swinging with a blow on
+   its work frames). Still to come: swing and dodge frames of their own from the people pipeline
+   (`tools/chibi_people.py`: new tags after the rest, every layer regenerated), and the drawn-on
+   weapon then drawn in the hand on those frames.
 7. **Controls** (with the Control Pass below): rebinding, a controller (left stick moves, right
    stick aims), the Steam Deck layout.
 8. **One model.** The old rolls to hit, `Engagement.PaceOnPlayer` and the grid's dodge go once raids,

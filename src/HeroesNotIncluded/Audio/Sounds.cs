@@ -49,6 +49,10 @@ public static class Sounds
     public const string Bow = "combat.bow";
     public const string Miss = "combat.miss";
     public const string Din = "combat.din";
+    public const string Parry = "combat.parry";
+    public const string Block = "combat.block";
+    public const string Thrust = "combat.thrust";
+    public const string Heavy = "combat.heavy";
     public const string Roar = "dragon.roar";
     public const string Breath = "dragon.breath";
     public const string Wings = "dragon.wings";
@@ -71,7 +75,7 @@ public static class Sounds
         AnvilGood, AnvilFair, AnvilPoor, AnvilCold, ForgeFire, ForgeBellows, ForgeQuench, ForgeSteam, Grind,
         PotBubble, PotStir, Pinch, Pour, Fizz, Clink, Knock, Scrub, Cloth,
         Click, Ratchet, Rune, Weave, Hum,
-        Swing, Clash, Wound, Bow, Miss, Din, Roar, Breath, Wings,
+        Swing, Clash, Wound, Bow, Miss, Din, Parry, Block, Thrust, Heavy, Roar, Breath, Wings,
         Wind, Birds, Night, River, Hearth, Blaze, Crowd,
         Voice,
     ];

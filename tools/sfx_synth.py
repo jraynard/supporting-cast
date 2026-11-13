@@ -359,6 +359,35 @@ def clash(rng):
     return norm(band(at(0.9, (0, tone), (0, crack)), hi=6500), 0.9)
 
 
+def parry(rng):
+    """Steel on steel, struck square: brighter and longer than a clash, the moment a parry lands."""
+    f0 = rng.uniform(1400, 1800)
+    ratios = [1, 1.62, 2.27, 3.05, 4.1, 5.4]
+    tone = modes(rng, 1.3, [(f0 * r, rng.uniform(0.5, 1) / (1 + i * 0.25), rng.uniform(0.3, 0.7)) for i, r in enumerate(ratios)], jitter=0.01)
+    crack = band(noise(rng, 0.04), lo=2500, hi=11000) * env(0.04, 0.0002, 0.006) * 2.0
+    return norm(band(at(1.3, (0, tone), (0, crack)), hi=8000), 0.9)
+
+
+def block(rng):
+    """A blow taken on a guard: a dull knock and a short, damped ring."""
+    t = t_axis(0.3)
+    f = 160 * np.exp(-t * 20) + 90
+    knock_ = np.sin(2 * np.pi * np.cumsum(f) / RATE) * env(0.3, 0.001, 0.07)
+    ring = modes(rng, 0.3, [(rng.uniform(600, 800) * r, 0.4 / (1 + i), 0.06) for i, r in enumerate([1, 1.8, 2.7])])
+    thud = band(noise(rng, 0.3), lo=200, hi=2000) * env(0.3, 0.0005, 0.03)
+    return norm(fade_edges(knock_ + ring * 0.6 + thud * 0.6), 0.85)
+
+
+def thrust(rng):
+    """A spear's jab: short, tight and rising."""
+    return whoosh(rng, 0.16, 1200, 4200, peak=0.35, q=2.2) * 0.8
+
+
+def heavy_swing(rng):
+    """A heavy blow: slower, lower air."""
+    return whoosh(rng, 0.45, 260, 1300, peak=0.6, q=1.0)
+
+
 def flesh(rng):
     t = t_axis(0.25)
     f = 120 * np.exp(-t * 12) + 55
@@ -636,6 +665,10 @@ def catalogue():
         "combat_hit": ("sfx", v(flesh, 3)),
         "combat_bow": ("sfx", v(bow, 2)),
         "combat_miss": ("sfx", v(miss, 3)),
+        "combat_parry": ("sfx", v(parry, 3)),
+        "combat_block": ("sfx", v(block, 3)),
+        "combat_thrust": ("sfx", v(thrust, 3)),
+        "combat_heavy": ("sfx", v(heavy_swing, 3)),
         "combat_din": ("amb", [din_loop]),
         "dragon_roar": ("sfx", [lambda r: roar(r, 2.4, 70), lambda r: roar(r, 1.8, 85), lambda r: roar(r, 3.0, 60)]),
         "dragon_breath": ("sfx", v(breath, 2)),

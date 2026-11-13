@@ -860,7 +860,7 @@ public sealed partial class VillageGame
     {
         if (!HasAvatar || LookAt != null)
             return;
-        _camera.Target = AvatarDrawPos();
+        _camera.Target = AvatarDrawPos() + ShakeOffset();
     }
 
     /// <summary>Where the avatar is drawn this frame.</summary>

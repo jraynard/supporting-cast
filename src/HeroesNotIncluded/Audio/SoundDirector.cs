@@ -153,27 +153,48 @@ public sealed class SoundDirector(AudioEngine audio)
     }
 
     /// <summary>
-    /// Blows met without a wound, which have no shot of their own to sound (<see cref="Shots"/>):
-    /// a parry rings steel on steel, a dodge whistles past. Heard as the fight is, from where it is.
+    /// How each blow went, on top of its swing and wound (<see cref="Shots"/>): a parry rings steel
+    /// on steel, a block knocks dull, a broken guard knocks and clashes, a dodge whistles past; a
+    /// heavy blow carries its own slower air, a spear's jab its own. Heard as the fight is, from where it is.
     /// </summary>
     private void BlowsMet(Simulation sim, PerceptionView view, int3? me)
     {
+        var w = sim.World;
         var newest = _blowsSeen;
         foreach (var b in sim.RecentBlows)
         {
             if (b.Tick <= _blowsSeen)
                 continue;
             newest = Math.Max(newest, b.Tick);
-            if (b.Outcome is not (Sim.Combat.BlowOutcome.Parried or Sim.Combat.BlowOutcome.Dodged) || !sim.World.IsAlive(b.Target)
-                || !sim.World.Has<Position>(b.Target))
+            var where = w.IsAlive(b.Target) && w.Has<Position>(b.Target) ? b.Target : b.Attacker;
+            if (!w.IsAlive(where) || !w.Has<Position>(where))
                 continue;
-            var at = sim.World.Get<Position>(b.Target).Pos;
+            var at = w.Get<Position>(where).Pos;
             if (Reach(sim, view, me, Cell(at)) is not { } muffle)
                 continue;
             _recentFight.Add(_time);
-            audio.Play(Sounds.Swing, ToAudio(at), gain: 0.7f, muffle: muffle);
-            if (b.Outcome == Sim.Combat.BlowOutcome.Parried)
-                audio.Play(Sounds.Clash, ToAudio(at), gain: 1.2f, muffle: muffle, delay: 0.05f);
+            var pos = ToAudio(at);
+            var held = w.IsAlive(b.Attacker) && w.TryGet<Equipment>(b.Attacker, out var eq) && w.IsAlive(eq.Weapon) ? w.Get<Thing>(eq.Weapon).Def.Held : null;
+            if (held == "spear")
+                audio.Play(Sounds.Thrust, pos, muffle: muffle);
+            else if (b.Heavy)
+                audio.Play(Sounds.Heavy, pos, muffle: muffle);
+            switch (b.Outcome)
+            {
+                case Sim.Combat.BlowOutcome.Parried:
+                    audio.Play(Sounds.Parry, pos, muffle: muffle, delay: 0.04f);
+                    break;
+                case Sim.Combat.BlowOutcome.Blocked:
+                    audio.Play(Sounds.Block, pos, muffle: muffle, delay: 0.04f);
+                    break;
+                case Sim.Combat.BlowOutcome.GuardBroken:
+                    audio.Play(Sounds.Block, pos, muffle: muffle, delay: 0.03f);
+                    audio.Play(Sounds.Clash, pos, gain: 0.8f, muffle: muffle, delay: 0.07f);
+                    break;
+                case Sim.Combat.BlowOutcome.Dodged:
+                    audio.Play(Sounds.Miss, pos, gain: 0.9f, muffle: muffle);
+                    break;
+            }
         }
         _blowsSeen = newest;
     }

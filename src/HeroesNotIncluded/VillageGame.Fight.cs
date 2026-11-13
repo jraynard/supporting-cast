@@ -180,6 +180,52 @@ public sealed partial class VillageGame
         return light || heavy || input.IsMouseDown(MouseButton.Left) || input.IsMouseDown(MouseButton.Right);
     }
 
+    /// <summary>Seconds of hit-stop left (the animation holds), and the shake's strength (cells) and seed.</summary>
+    private float _hitStop, _shake;
+    private long _blowsFelt = -1;
+
+    /// <summary>A heavy hit holds this long; a light one less; a parry or broken guard as long as a heavy hit.</summary>
+    private const float HitStopHeavy = 0.09f, HitStopLight = 0.04f;
+
+    /// <summary>
+    /// Hit-stop and shake for blows you deal or take (<see cref="Sim.Combat.BlowEvent"/>): the
+    /// animation holds a few hundredths of a second as one lands, and the camera shakes with its
+    /// weight. Presentation only, and only yours: the sim's clock is everyone's and never stops.
+    /// Returns the frame's animation time, held or not.
+    /// </summary>
+    private float HitFeel(float dt, float animDt)
+    {
+        if (HasAvatar)
+            foreach (var b in _sim.RecentBlows)
+            {
+                if (b.Tick <= _blowsFelt || (b.Attacker != _avatar && b.Target != _avatar))
+                    continue;
+                var (stop, shake) = b.Outcome switch
+                {
+                    Sim.Combat.BlowOutcome.Parried or Sim.Combat.BlowOutcome.GuardBroken => (HitStopHeavy, 0.08f),
+                    Sim.Combat.BlowOutcome.Hit or Sim.Combat.BlowOutcome.Riposte => b.Heavy || b.Outcome == Sim.Combat.BlowOutcome.Riposte
+                        ? (HitStopHeavy, b.Target == _avatar ? 0.12f : 0.07f) : (HitStopLight, b.Target == _avatar ? 0.06f : 0.025f),
+                    Sim.Combat.BlowOutcome.Blocked => (HitStopLight, 0.04f),
+                    _ => (0f, 0f),
+                };
+                _hitStop = Math.Max(_hitStop, stop);
+                _shake = Math.Max(_shake, shake);
+            }
+        if (_sim.RecentBlows.Count > 0)
+            _blowsFelt = Math.Max(_blowsFelt, _sim.RecentBlows[^1].Tick);
+        _shake *= MathF.Exp(-dt * 14f);
+        if (_hitStop > 0)
+        {
+            _hitStop -= dt;
+            return 0f;
+        }
+        return animDt;
+    }
+
+    /// <summary>The camera's shake this frame: a jitter on the ground plane, fading.</summary>
+    private float3 ShakeOffset() => _shake < 0.003f || !Settings.Current.ScreenShake ? default
+        : new float3(MathF.Sin(_time * 91f) * _shake, MathF.Cos(_time * 77f) * _shake, 0);
+
     /// <summary>The nearest raider or predator on its feet that you can see, within <see cref="FightHintRange"/>.</summary>
     private Entity? NearestFoe()
     {

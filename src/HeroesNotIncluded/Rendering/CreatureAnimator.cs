@@ -244,6 +244,8 @@ public sealed class CreatureAnimator
         // A player in a hands-on session (at the anvil, the tub, a stain on the floor) isn't in an AI
         // job, but works all the same, facing the work.
         var station = w.TryGet<Sim.Work.WorkSession>(e, out var session) ? session.Focus(sim) : null;
+        // A blow being wound up: the body swings with it (the work swing, until there are frames of its own).
+        var swinging = c.Def.Race == Race.Human && w.Has<Sim.Combat.Windup>(e);
         var inputs = new AnimInputs(
             c.Dead,
             c.Downed,
@@ -255,7 +257,7 @@ public sealed class CreatureAnimator
             landing,
             job is SoarJob && GlidingNow(e),
             (job is BuildJob or DeconstructJob or HarvestJob or DigJob or Sim.Shops.CleanJob or Sim.Shops.MakeBedJob or Sim.Shops.WashJob
-                || station != null) && !mover.Moving,
+                || station != null) && !mover.Moving || swinging,
             mover.Moving || freeMoving,
             job is Sim.Hospitality.SavourJob { Seated: true }
         );

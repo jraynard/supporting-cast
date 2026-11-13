@@ -42,6 +42,10 @@
     "combat.hit":   { "files": ["sfx/combat_hit_rec_*.ogg"], "gain": 0.8, "pitch": [0.9, 1.1], "range": 30, "near": 6, "max": 6, "priority": 2 },
     "combat.bow":   { "files": ["sfx/combat_bow_rec.ogg", "sfx/combat_bow_?.ogg"], "gain": 0.7, "pitch": [0.95, 1.05], "range": 34, "near": 6, "max": 4 },
     "combat.miss":  { "files": ["sfx/combat_miss_*.ogg"], "gain": 0.5, "pitch": [0.9, 1.1], "range": 30, "near": 6, "max": 4 },
+    "combat.parry": { "files": ["sfx/combat_parry_*.ogg"], "gain": 0.8, "pitch": [0.95, 1.05], "range": 34, "near": 6, "max": 4, "priority": 2 },
+    "combat.block": { "files": ["sfx/combat_block_*.ogg"], "gain": 0.75, "pitch": [0.9, 1.1], "range": 30, "near": 6, "max": 4, "priority": 2 },
+    "combat.thrust": { "files": ["sfx/combat_thrust_*.ogg"], "gain": 0.55, "pitch": [0.92, 1.08], "range": 30, "near": 6, "max": 4 },
+    "combat.heavy": { "files": ["sfx/combat_heavy_*.ogg"], "gain": 0.65, "pitch": [0.9, 1.05], "range": 34, "near": 6, "max": 4 },
     "combat.din":   { "files": ["amb/combat_din_rec.ogg"], "bus": "ambience", "gain": 0.5, "priority": 2 },
 
     "dragon.roar":   { "files": ["sfx/dragon_roar_rec*.ogg"], "gain": 1.0, "pitch": [0.92, 1.05], "range": 110, "near": 25, "max": 2, "priority": 6 },
