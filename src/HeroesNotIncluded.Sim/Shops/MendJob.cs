@@ -113,7 +113,7 @@ public sealed class MendJob(int order) : Job
                 Report = $"Fetching {need.Material.ThingDef.Label}";
                 foreach (var s in GoTo(Get<Thing>(stock).Cell, PathEnd.OnTile)) yield return s;
                 if (HasFailed) yield break;
-                if (Sim.IsAvailable(stock))
+                if (Sim.IsAvailable(stock, Pawn))
                     Get<Carrying>(Pawn).Item = Inventory.PickUp(Sim, Pawn, stock, Get<Carrying>(Pawn).Item);
             }
             Report = $"Hammering out the {label}";

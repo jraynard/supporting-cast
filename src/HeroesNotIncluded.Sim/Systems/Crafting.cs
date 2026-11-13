@@ -300,7 +300,7 @@ public static class Crafting
             var need = ingredient.Count - (bench.Active == recipe ? bench.Staged[i] : 0);
             if (need <= 0)
                 continue;
-            foreach (var e in sim.AvailableItems())
+            foreach (var e in sim.AvailableItems(worker))
             {
                 var t = w.Get<Thing>(e);
                 if (!Accepts(ingredient, bill, t.Def, t.Material) || sim.Reservations.IsReservedByOther(e, worker)
@@ -515,7 +515,7 @@ public static class Crafting
         if (station is { IsNull: false } bench && w.IsAlive(bench))
         {
             var at = w.Get<Thing>(bench).Cell;
-            foreach (var e in sim.AvailableItems())
+            foreach (var e in sim.AvailableItems(worker))
                 if (w.Get<Thing>(e).Def.Tool?.Kind == kind && Maps.Map.Distance(w.Get<Thing>(e).Cell, at) <= ToolReach
                     && Math.Abs(w.Get<Thing>(e).Cell.Z - at.Z) <= 1)
                     Consider(e);

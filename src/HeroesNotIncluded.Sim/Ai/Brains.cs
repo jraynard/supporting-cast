@@ -17,7 +17,7 @@ public static class AiQueries
         var from = sim.World.Get<Position>(pawn).Cell;
         var best = Entity.Null;
         var bestDist = int.MaxValue;
-        foreach (var e in sim.AvailableItems())
+        foreach (var e in sim.AvailableItems(pawn)) // a shop's own stock too, to whoever works there
         {
             var thing = sim.World.Get<Thing>(e);
             if (!match(e, thing.Def) || sim.Reservations.IsReservedByOther(e, pawn))

@@ -495,11 +495,27 @@ public sealed partial class Simulation
         World.IsAlive(item) && !World.Has<Shops.ForSale>(item)
         && (World.Get<Thing>(item).Spawned || (World.TryGet<Stored>(item, out var s) && !OnSomeone(s.In)));
 
+    /// <summary>
+    /// <see cref="IsAvailable(Entity)"/> for one taker: also what's kept in the stock of a shop they
+    /// work at (<see cref="Defs.BuildingDef.KeepsStock"/>), as a smith takes iron from the smithy's chest.
+    /// </summary>
+    public bool IsAvailable(Entity item, Entity taker) =>
+        IsAvailable(item) || (World.IsAlive(item) && !World.Has<Shops.ForSale>(item) && World.TryGet<Stored>(item, out var s) && KeptFor(s.In, taker));
+
     /// <summary>Items lying on the map plus items kept in containers (anything a job could take), less what's up for sale.</summary>
     public IEnumerable<Entity> AvailableItems()
     {
         foreach (var e in World.Query<Stack>())
             if ((World.Get<Thing>(e).Spawned || (World.TryGet<Stored>(e, out var s) && !OnSomeone(s.In))) && !World.Has<Shops.ForSale>(e))
+                yield return e;
+    }
+
+    /// <summary><see cref="AvailableItems()"/> for one taker, with the kept stock of the shop they work at.</summary>
+    public IEnumerable<Entity> AvailableItems(Entity taker)
+    {
+        foreach (var e in World.Query<Stack>())
+            if (!World.Has<Shops.ForSale>(e) && (World.Get<Thing>(e).Spawned
+                || (World.TryGet<Stored>(e, out var s) && (!OnSomeone(s.In) || KeptFor(s.In, taker)))))
                 yield return e;
     }
 
@@ -511,7 +527,16 @@ public sealed partial class Simulation
     private bool OnSomeone(Entity container) => IsPack(container) || World.Has<Creature>(container)
         || (!Militia.Mustering && Sim.Militia.MilitiaSystem.IsRack(this, container)) // the town's arms, for the muster only
         || (World.TryGet<Thing>(container, out var t) && t.Def.Building is { Hatch: true })
-        || (World.TryGet<PartOf>(container, out var part) && World.TryGet<PresetBuilding>(part.Building, out var shop) && shop.Def.KeepsStock);
+        || KeptStockOf(container) != null;
+
+    /// <summary>The shop whose kept stock a container holds (<see cref="Defs.BuildingDef.KeepsStock"/>), or null.</summary>
+    private Defs.BuildingDef? KeptStockOf(Entity container) =>
+        World.TryGet<PartOf>(container, out var part) && World.TryGet<PresetBuilding>(part.Building, out var shop) && shop.Def.KeepsStock ? shop.Def : null;
+
+    /// <summary>A shop's kept stock, and the taker works there (their trade's workplace): it's theirs to use.</summary>
+    private bool KeptFor(Entity container, Entity taker) =>
+        !taker.IsNull && KeptStockOf(container) is { } shop && World.TryGet<Trade>(taker, out var trade) && trade.Def.WorkplaceDef == shop
+        && !IsPack(container) && !World.Has<Creature>(container);
 
     /// <summary>The stacks kept in a container, in entity order.</summary>
     public List<Entity> StoredIn(Entity container)

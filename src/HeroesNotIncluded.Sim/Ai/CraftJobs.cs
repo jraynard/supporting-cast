@@ -119,7 +119,7 @@ public sealed class CraftJob(Entity station, RecipeDef recipe) : Job
         if (!Reserve(item)) yield break;
         foreach (var s in GoTo(Get<Thing>(item).Cell, PathEnd.OnTile)) yield return s;
         if (HasFailed) yield break;
-        if (!Sim.IsAvailable(item))
+        if (!Sim.IsAvailable(item, Pawn))
         {
             Fail("the ingredient disappeared");
             yield break;

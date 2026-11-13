@@ -940,3 +940,6 @@ dragon and the festival.
   where the eye catches), feeling for wounds (the patient lying head to feet under the hands, only
   what's been felt glowing), truing a wheel (it turns on its stand, the rim swinging out and in at the
   gauge), bracing a span (dressed stones and a spirit level) and filing pins (the rasp at the pin).
+- **The smithy keeps its stock:** the chest by the forge (the carter's ore, the smith's wood and
+  bars) is the smith's, like the tinker's. No labourer's haul, refuel or errand takes from it; whoever
+  works at a shop that keeps its stock still uses it (`IsAvailable(item, taker)`).

@@ -182,13 +182,33 @@ public class MilitiaTests
     {
         var sim = Round(director: false);
         var w = sim.World;
-        // The smithy chest: a solid cell, reached from beside it.
+        // A cottage's chest: a solid cell, reached from beside it (the smithy's is the smith's stock).
         var chest = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "Chest" && Buildings.Of(sim, e) is { IsNull: false } b
-            && w.Get<PresetBuilding>(b).Def.Name == "Smithy");
+            && w.Get<PresetBuilding>(b).Def.Home);
         var spear = Spear(sim, Entity.Null);
         Assert.True(sim.Store(chest, spear).IsNull);
         for (var h = 0; h < 8 && w.Has<Stored>(spear); h++)
             sim.TickMany(SimClock.TicksPerHour);
         Assert.Contains(sim.Creatures(), e => w.TryGet<Equipment>(e, out var eq) && eq.Weapon == spear);
+    }
+
+    /// <summary>A shop that keeps its stock (<see cref="Defs.BuildingDef.KeepsStock"/>): the smithy's chest is the smith's.</summary>
+    [Fact]
+    public void TheSmithysWoodIsTheSmithsNotTheTownsFirewood()
+    {
+        var sim = Round(director: false);
+        var w = sim.World;
+        var chest = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "Chest" && Buildings.Of(sim, e) is { IsNull: false } b
+            && w.Get<PresetBuilding>(b).Def.Name == "Smithy");
+        var wood = sim.StoredIn(chest).First(e => w.Get<Thing>(e).Def.Name == "Wood");
+        var smith = sim.Creatures().First(e => w.TryGet<Trade>(e, out var t) && t.Def.WorkplaceDef?.Name == "Smithy");
+        var other = sim.Creatures().First(e => w.TryGet<Trade>(e, out var t) && t.Def.WorkplaceDef?.Name != "Smithy");
+        Assert.False(sim.IsAvailable(wood), "no job of the town's takes it");
+        Assert.False(sim.IsAvailable(wood, other), "nor anyone working elsewhere");
+        Assert.True(sim.IsAvailable(wood, smith), "the smith can use it");
+
+        var count = w.Get<Stack>(wood).Count;
+        sim.TickMany(SimClock.TicksPerHour * 6);
+        Assert.True(w.IsAlive(wood) && w.Has<Stored>(wood) && w.Get<Stack>(wood).Count == count, "still in the chest");
     }
 }
