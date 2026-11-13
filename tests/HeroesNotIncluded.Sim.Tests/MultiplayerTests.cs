@@ -9,7 +9,7 @@ using HeroesNotIncluded.Sim.Systems;
 namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>
-/// Co-op: players' characters, their own eggs and dragons, who may command what, and the join
+/// Co-op: players' characters, who may command what, and the join
 /// barrier (interrupt everyone, snapshot) that lets a newcomer step in without a desync.
 /// </summary>
 public class MultiplayerTests

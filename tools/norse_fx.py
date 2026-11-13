@@ -1,15 +1,21 @@
 """The white art the game tints, redrawn for the Norse pass: the selection brackets (knotwork corners),
 the designation mark (a rune-cut X, like the gebo rune), the need bubble (a round shield with rivets)
-and the chatter bubble (rune scratches instead of dots). They stay neutral (white and greys, the
-bubble cream) because the game multiplies them by a colour. Small effects (heart, Zzz, glints) and
+and the chatter bubble (rune scratches instead of dots), and the white core of the dragon's breath
+(fx/breath_core). They stay neutral (white and greys, the bubble cream) because the game multiplies
+them by a colour. Small effects (Zzz, glints) and
 the soft smoke puff (also the contact shadow) keep their older drawings.
 
 Runs after the older placeholder modules in gen_placeholder_art.py; also runs alone:
 ``python3 tools/norse_fx.py``.
 """
+import math
 import os
+import sys
 
 from PIL import Image, ImageDraw
+
+sys.path.insert(0, os.path.dirname(__file__))
+from placeholder_sheets import Sequencer, write_sheet  # noqa: E402
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "data", "textures")
 WHITE = (255, 255, 255, 255)
@@ -110,7 +116,32 @@ def speech():
     return img
 
 
+def core_fx(seed, s=32):
+    """One frame of the breath's core in white, a touch larger than the orange flipbook's yellow core
+    (fx/breath, same seed and wobble) so it covers it: the game draws it over each flame."""
+    img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+
+    def blob(cx, cy, r, col):
+        pts = []
+        for k in range(12):
+            a = k / 12 * math.tau
+            wob = 1 + 0.18 * math.sin(a * 3 + seed * 1.9) + 0.1 * math.sin(a * 5 + seed)
+            stretch = 1.35 if math.sin(a) < 0 else 1.0           # tongues lick upward
+            pts.append((cx + math.cos(a) * r * wob, cy + math.sin(a) * r * wob * stretch))
+        d.polygon(pts, fill=col)
+    blob(16, 20, 5.3, (255, 255, 255, 255))
+    return img
+
+
+def breath_core():
+    seq = Sequencer()
+    seq.add("burn", [core_fx(k) for k in range(4)], 60)
+    write_sheet("fx/breath_core", seq.frames, seq.tags, (16, 31))
+
+
 def generate():
+    breath_core()
     save(selection(), "ui/selection")
     save(designate_x(), "ui/designate_x")
     save(bubble(), "ui/bubble")

@@ -229,7 +229,7 @@ public sealed class WorkGivers
 
     /// <summary>
     /// A downed villager or dragon who can't feed themselves gets something they can eat brought to
-    /// them where they lie: an adult dragon too big to carry to its nest goes hungry otherwise.
+    /// them where they lie: someone too big to carry to a bed goes hungry otherwise.
     /// </summary>
     private static Job? FeedPatient(Simulation sim, Entity pawn)
     {
@@ -339,8 +339,6 @@ public sealed class WorkGivers
         return prisoner.IsNull ? null : new WardenVisitJob(prisoner);
     }
 
-    // ---------------- Tending eggs and dragons ----------------
-
     // ---------------- Construction ----------------
 
     private static Job? Construct(Simulation sim, Entity pawn)
@@ -366,7 +364,7 @@ public sealed class WorkGivers
             sites.Add((site, Dist(from, tile)));
         }
         // Nearest first (stable, so ties keep query order), skipping sites whose material isn't
-        // around yet: a nest waiting for stone mustn't hold up the campfire next to it.
+        // around yet: a wall waiting for stone mustn't hold up the campfire next to it.
         sites.Sort((a, b) => a.Dist.CompareTo(b.Dist));
         Dictionary<ThingDef, Entity>? found = null;
         foreach (var (site, _) in sites)
@@ -396,10 +394,6 @@ public sealed class WorkGivers
         }
         return null;
     }
-
-    // ---------------- Stoking (dragons) ----------------
-
-    // ---------------- The other elements' breath (dragons: ElementDef.Work) ----------------
 
     // ---------------- Crafting and cooking ----------------
 
@@ -619,7 +613,7 @@ public sealed class WorkGivers
     {
         var w = sim.World;
 
-        // Move loose items into stockpiles. Eggs are tended, not hauled; the inn's crockery is the
+        // Move loose items into stockpiles. The inn's crockery is the
         // innkeeper's to clear. Only items some stockpile cell can take: a full stockpile for the
         // nearest thing mustn't stop the rest being hauled.
         Dictionary<(ThingDef, MaterialDef?), bool>? room = null;

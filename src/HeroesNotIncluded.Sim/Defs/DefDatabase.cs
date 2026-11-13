@@ -383,6 +383,11 @@ public sealed class DefDatabase
             u.SiteDef = site;
             u.Building = b;
         }
+        // A recipe that needs an upgrade belongs only to stations it can be fitted to: a campfire
+        // shares the hearth's recipes, but never gets the pot a stew needs.
+        var fitsOn = AllBuildings.SelectMany(b => b.Upgrades).ToLookup(u => u.Name, u => u.OnDef);
+        foreach (var t in AllThings)
+            t.Recipes.RemoveAll(r => r.Upgrade != null && !fitsOn[r.Upgrade].Contains(t));
     }
 
     /// <summary>A tier as written in a def, as its number: a name is looked up among the <see cref="TierDef"/>s.</summary>

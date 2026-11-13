@@ -1,5 +1,5 @@
 """Norse HD-2D art for everything that glows: the campfire, kiln and forge (and their per-rock
-variants), the ember crystal, the ley stone and its plain sibling, moonpetal, and the dragonforged tools.
+variants), the ember crystal, the ley stone and its plain sibling, and moonpetal.
 
 The rule from docs/ART.md: glow colours stay separate and bright, outside any tint and outside the
 Nordic grade, so bloom catches them and they read at night. Everything else here is built from
@@ -53,8 +53,6 @@ def save(img, name):
 
 
 WALNUT = ramp((108, 80, 56), 5, dark=0.45, light=1.4)
-WRAP = ramp((128, 58, 46), 4, main=1, dark=0.5, light=1.35)                     # dragon-red leather grip
-DSTEEL = ramp((70, 66, 82), 6, main=2, dark=0.45, light=2.2, cool=18, warm=6)    # blackened dragonforged steel
 STEEL = ramp((150, 158, 176), 5, dark=0.45, light=1.35)
 BRONZE = ramp((178, 126, 64), 4)
 
@@ -429,82 +427,6 @@ def moonpetal(item=False):
     return img
 
 
-# ---------------------------------------------------------------- dragonforged tools
-
-def haft(img, a, z, wrap_from=0.62, width=3.0):
-    """A walnut haft from a (butt) to z (head) with a dragon-red leather grip and an iron butt cap."""
-    m = mask_of(img.size, lambda d: d.polygon(ribbon([a, ((a[0] + z[0]) / 2, (a[1] + z[1]) / 2), z], [width, width, width - 0.4]), fill=255))
-    shade_shape(img, m, WALNUT, radius=0.8, slope=1.5, tex=lambda x, y: 0.15 if (x + y * 2) % 5 == 0 else 0)
-    for k in range(9):                                                               # the grip, wound in a spiral
-        t = 0.08 + k * 0.035
-        x, y = a[0] + (z[0] - a[0]) * t, a[1] + (z[1] - a[1]) * t
-        put(img, round(x), round(y), WRAP[2] if k % 2 else WRAP[1])
-        put(img, round(x) + 1, round(y), WRAP[1] if k % 2 else WRAP[0])
-    put(img, a[0], a[1], STEEL[1]); put(img, a[0] + 1, a[1] - 1, STEEL[3])
-
-
-def ember_vein(img, pts):
-    """A rune-stepped ember vein: right-angled steps, glowing, hot at the joints."""
-    for i in range(len(pts) - 1):
-        (x0, y0), (x1, y1) = pts[i], pts[i + 1]
-        n = max(abs(x1 - x0), abs(y1 - y0))
-        for k in range(n + 1):
-            put(img, round(x0 + (x1 - x0) * k / max(1, n)), round(y0 + (y1 - y0) * k / max(1, n)), GLOW)
-        put(img, x1, y1, HOT)
-
-
-def dragon_axe():
-    img = canvas()
-    haft(img, (7, 29), (21, 6))
-    head = [(17, 7), (20, 4), (24, 4), (28, 2), (30, 8), (29, 15), (26, 20), (23, 15), (22, 11), (18, 11)]
-    shade_shape(img, mask_of(img.size, lambda d: d.polygon(head, fill=255)), DSTEEL, radius=1.0, slope=1.5, tex=lambda x, y: bayer(x, y) * 0.06)
-    for x, y in ((29, 4), (30, 7), (30, 10), (29, 13), (28, 16), (27, 18)):         # the honed edge
-        put(img, x, y, DSTEEL[5])
-    ember_vein(img, [(20, 7), (23, 7), (23, 10), (26, 10), (26, 14)])
-    return selective_outline(img, keep=(GLOW, HOT))
-
-
-def dragon_pick():
-    img = canvas()
-    haft(img, (9, 30), (17, 9))
-    spine = [(4, 13), (10, 8), (17, 6), (24, 7), (30, 12)]
-    shade_shape(img, mask_of(img.size, lambda d: d.polygon(ribbon(spine, [1, 3.5, 5, 3.5, 1]), fill=255)), DSTEEL, radius=1.0, slope=1.5)
-    put(img, 4, 13, DSTEEL[5]); put(img, 30, 12, DSTEEL[5])
-    ember_vein(img, [(9, 9), (13, 7), (13, 8), (21, 7), (21, 8), (25, 8)])
-    return selective_outline(img, keep=(GLOW, HOT))
-
-
-def dragon_hammer():
-    img = canvas()
-    haft(img, (8, 29), (19, 11))
-    head = [(13, 6), (14, 4), (27, 4), (29, 6), (29, 12), (27, 14), (14, 14), (13, 12)]
-    shade_shape(img, mask_of(img.size, lambda d: d.polygon(head, fill=255)), DSTEEL, radius=1.2, slope=1.6)
-    for x in range(15, 27):                                                          # a band of knotwork across the head
-        put(img, x, 8 + (1 if (x // 2) % 2 else 0), BRONZE[2])
-        put(img, x, 10 - (1 if (x // 2) % 2 else 0), BRONZE[1])
-    ember_vein(img, [(16, 12), (19, 12), (19, 6), (23, 6), (23, 12), (26, 12)])
-    return selective_outline(img, keep=(GLOW, HOT))
-
-
-def dragon_blade():
-    """A Norse sword reforged with dragon fire: dark blade with a glowing fuller, a short guard, a grip
-    bound in dragon-red leather and a lobed pommel."""
-    img = canvas()
-    blade = ribbon([(11, 21), (19, 13), (28, 4)], [4.2, 3.8, 1.2])
-    shade_shape(img, mask_of(img.size, lambda d: d.polygon(blade, fill=255)), DSTEEL, radius=0.9, slope=1.6)
-    for k in range(13):                                                              # the fuller, glowing
-        put(img, 13 + k, 19 - k, GLOW if k % 4 else HOT)
-    put(img, 26, 6, DSTEEL[5]); put(img, 27, 5, DSTEEL[5])
-    guard = [(6, 18), (8, 16), (15, 23), (13, 25)]
-    shade_shape(img, mask_of(img.size, lambda d: d.polygon(guard, fill=255)), BRONZE, radius=0.7, slope=1.4)
-    for k in range(5):                                                               # the grip
-        put(img, 9 - k, 22 + k, WRAP[2] if k % 2 else WRAP[1])
-        put(img, 10 - k, 22 + k, WRAP[1] if k % 2 else WRAP[0])
-    shade_shape(img, mask_of(img.size, lambda d: d.ellipse([1, 25, 6, 30], fill=255)), BRONZE, radius=0.7, slope=1.4)   # lobed pommel
-    put(img, 3, 27, BRONZE[0]); put(img, 4, 26, BRONZE[3])
-    return selective_outline(img, keep=(GLOW, HOT))
-
-
 # ---------------------------------------------------------------- generating
 
 def generate():
@@ -520,10 +442,6 @@ def generate():
     save(menhir(6, STANDING, moss=1.0), "things/standing_stone")
     save(moonpetal(), "things/moonpetal")
     save(moonpetal(item=True), "items/moonpetal")
-    save(dragon_axe(), "items/dragon_axe")
-    save(dragon_pick(), "items/dragon_pick")
-    save(dragon_hammer(), "items/dragon_hammer")
-    save(dragon_blade(), "items/dragon_blade")
 
 
 if __name__ == "__main__":

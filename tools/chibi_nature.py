@@ -18,7 +18,7 @@ import sys
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(__file__))
-from chibi_dragon import Canvas, K, union, minus, both, lerp, add  # noqa: E402
+from chibi_canvas import Canvas, K, union, minus, both, lerp, add  # noqa: E402
 from norse_art import ramp, bayer, contact_sheet  # noqa: E402
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "data", "textures"))

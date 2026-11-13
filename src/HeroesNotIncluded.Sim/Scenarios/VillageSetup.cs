@@ -6,7 +6,7 @@ namespace HeroesNotIncluded.Sim.Scenarios;
 
 /// <summary>
 /// Standard village setup plus the orders a player would give in the vertical slice: a wooden hall
-/// west of the landing site (campfire, stairs and nest below; a second storey with beds once the
+/// west of the landing site (campfire and stairs below; a second storey with beds once the
 /// fire is lit), a tunnel into the nearest hill for stone, and trees marked for chopping. Shared
 /// by the scenario test and the game's --demo flag.
 /// </summary>

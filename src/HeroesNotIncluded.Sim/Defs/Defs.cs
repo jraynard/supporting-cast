@@ -587,7 +587,7 @@ public enum RenderShape
     /// <summary>A thin slab forming the floor of its cell (floors).</summary>
     Slab,
 
-    /// <summary>Flat on the floor (beds, nests, campfires): the sprite is drawn top-down.</summary>
+    /// <summary>Flat on the floor (beds, campfires): the sprite is drawn top-down.</summary>
     Decal,
 
     /// <summary>An upright sprite facing the camera (plants, rocks, items, creatures).</summary>
@@ -660,7 +660,7 @@ public sealed class ThingDef : Def
     public float RenderSize { get; set; } = 1f;
 
     /// <summary>
-    /// Shorthand for a square <see cref="Size"/>: a dragon's nest is <c>"footprint": 3</c>.
+    /// Shorthand for a square <see cref="Size"/>: a 3x3 building is <c>"footprint": 3</c>.
     /// </summary>
     public int Footprint { get; set; } = 1;
 
@@ -745,7 +745,7 @@ public sealed class ThingDef : Def
     /// <summary>Weight in kg per unit; required for items, since packs carry by weight (<see cref="ContainerProps"/>).</summary>
     public float Mass { get; set; }
 
-    /// <summary>Too awkward for a pack: carried in the hands only (an egg, a pack itself).</summary>
+    /// <summary>Too awkward for a pack: carried in the hands only (a pack itself).</summary>
     public bool Bulky { get; set; }
 
     /// <summary>Food value per unit, as a fraction of a full food need.</summary>
@@ -1158,9 +1158,6 @@ public sealed class LifeStage
     /// <summary>How many times as much food this stage eats: each unit fills that much less of the Food bar.</summary>
     public float HungerFactor { get; set; } = 1f;
 
-    /// <summary>Chance per game hour of an involuntary fire sneeze (hatchlings).</summary>
-    public float FireSneezePerHour { get; set; }
-
     /// <summary>Body heat pushed into the occupied tile per game hour (dragons run hot).</summary>
     public float BodyHeat { get; set; }
 
@@ -1179,9 +1176,6 @@ public sealed class LifeStage
     /// <summary>Levels a flight cruises above the highest thing on its route.</summary>
     public int FlyAltitude { get; set; } = 2;
 
-    /// <summary>Chance, each time a content flyer idles, of circling overhead instead of wandering.</summary>
-    public float SoarChance { get; set; }
-
     /// <summary>Fire breath reach in cells; 0 means this stage can't breathe fire on command.</summary>
     public float BreathRange { get; set; }
 
@@ -1191,7 +1185,7 @@ public sealed class LifeStage
     /// <summary>Rays per puff of breath (more = denser flames).</summary>
     public int BreathRays { get; set; } = 10;
 
-    /// <summary>Natural attacks at this stage, on top of the creature's own (a juvenile's bite).</summary>
+    /// <summary>Natural attacks at this stage, on top of the creature's own (a dragon's bite).</summary>
     public List<AttackDef> Attacks { get; set; } = [];
 
     /// <summary>Natural armor (dragon scales), 0..1: chance to turn a blow that doesn't penetrate it.</summary>
@@ -1267,9 +1261,7 @@ public sealed class CreatureDef : Def
     private bool[] _allowed = [];
 
     /// <summary>
-    /// Whether a creature of this kind, at <paramref name="stage"/>, can do a type of work. Breath
-    /// work (<see cref="ElementDef.IsBreathWork"/>) takes breath, and only what its
-    /// <paramref name="element"/> lists (no element: fire's, Burn and Stoke).
+    /// Whether a creature of this kind, at <paramref name="stage"/>, can do a type of work.
     /// </summary>
     public bool CanDo(WorkType type, LifeStage stage) => (stage.Allowed ?? _allowed)[(int)type];
 

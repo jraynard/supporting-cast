@@ -95,7 +95,7 @@ public static class AiQueries
     {
         var map = sim.Map;
         var from = sim.World.Get<Position>(pawn).Cell;
-        // What a creature would feel there (a fire's warmth too, beside it rather than in it), or the bare air (for eggs).
+        // What a creature would feel there (a fire's warmth too, beside it rather than in it), or the bare air.
         var sources = felt ? Warmth.Sources(sim) : null;
         int3? best = null;
         var bestScore = float.MaxValue;
@@ -166,7 +166,7 @@ public static class AiQueries
     }
 
     /// <summary>
-    /// The creature's own bed, else the nearest free one of the right kind: a nest, a prisoner bed
+    /// The creature's own bed, else the nearest free one of the right kind: a prisoner bed
     /// nobody else owns (<paramref name="prisoner"/>), or an ordinary bed that isn't let (the inn's).
     /// </summary>
     public static Entity FindFreeBed(Simulation sim, Entity pawn, bool prisoner = false)
@@ -369,7 +369,6 @@ public sealed class HumanBrain : IBrain
     private static Entity FindFood(Simulation sim, Entity pawn, CreatureDef def, bool allowMeat, bool fresh)
     {
         // Omnivores prefer a cooked meal, then plant food, and leave the meat for the carnivores (the dragon!).
-        // Dragons eat meat while it lasts (it rots soonest), then their cakes (ThingDef.DragonFood).
         Func<Entity, ThingDef, bool> ok = fresh
             ? (e, d) => !FoodPoisoning.IsSpoiled(sim, e)
             : (_, _) => true;

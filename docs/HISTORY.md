@@ -910,3 +910,12 @@ dragon and the festival.
     record for that trade (rounds, survived, silver earned). Titles and unlocked cosmetics have
     their slots, empty until progression fills them.
   - `--character NAME` works with `--new-game` as well as `--host`.
+
+### The art pass (2026-11-13)
+
+- **The dragon era pruned:** the egg, the hatchling and juvenile, the Norse breed, the recolour
+  layers, the saddle, the care icons and gear, and their generators (`norse_dragon.py`,
+  `placeholder_dragoncare.py`) are gone. The dragon has one stage, the adult. The canvas the
+  side-on creatures share moved to `tools/chibi_canvas.py`, and the breath's core to `norse_fx.py`.
+- A campfire no longer offers stew: a recipe that needs an upgrade is listed only on stations that
+  can take it.

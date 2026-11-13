@@ -1,12 +1,12 @@
 """Norse HD-2D inventory icons: tools and weapons in every metal tier, bars, coins and jewellery, ores and
 fuel, building materials, logs and planks per wood, food, hides and leather, and the odds and ends (bow,
-club, rod, bandage, key, dragon scale gear).
+club, rod, bandage, key).
 
 Each shape is drawn once and painted with a metal's own hue-shifted ramp (copper, bronze, iron, steel,
 silver, gold, knapped stone), so the tiers differ in colour and in the ramp's shine rather than by a
 recolour of one sprite. 32x32, lit from the top left, selective outline, saved as is (no grade). This runs
 after placeholder_mining, whose recoloured gear it replaces. The worn-gear icons (helms, mail, jerkins,
-satchel) come from norse_items; the dragonforged tools and the ember crystal from norse_glow.
+satchel) come from norse_items; the ember crystal from norse_glow.
 """
 import math
 import os
@@ -263,17 +263,6 @@ def fishing_rod():
     for x, y in ((27, 21), (28, 22), (28, 23), (27, 24), (26, 23)):                          # a bone hook
         put(img, x, y, (232, 222, 196, 255))
     put(img, 27, 13, (186, 58, 50, 255)); put(img, 27, 12, (236, 230, 220, 255))             # a float
-    return done(img)
-
-
-def scale_brush():
-    img = canvas()
-    part(img, lambda d: d.rounded_rectangle([6, 9, 26, 16], radius=3, fill=255), WALNUT, radius=1.2)
-    for x in range(8, 25, 4):
-        put(img, x, 12, METAL["bronze"][3])                                                 # carved pegs
-    for x in range(7, 26):                                                                  # stiff bristles
-        for y in range(17, 23 + (x % 3 == 0)):
-            put(img, x, y, STRAW[3] if (x + y) % 3 else STRAW[1])
     return done(img)
 
 
@@ -557,22 +546,6 @@ def leather_pack():
     return done(img)
 
 
-def saddle():
-    """A dragon saddle seen from the side: a deep seat between a high cantle and the pommel, the girth and a saddlebag."""
-    img = canvas()
-    part(img, poly([(3, 12), (9, 16), (22, 16), (28, 9), (29, 14), (24, 21), (8, 21), (3, 17)]), LEATHER, radius=1.4)   # seat
-    part(img, poly([(2, 7), (6, 8), (7, 15), (3, 16)]), LEATHER[1:] + [LEATHER[4]], line=LEATHER[0], radius=0.8)          # cantle
-    part(img, poly([(26, 6), (30, 7), (29, 12), (26, 11)]), LEATHER[1:] + [LEATHER[4]], line=LEATHER[0], radius=0.8)      # pommel
-    part(img, lambda d: d.rounded_rectangle([10, 20, 21, 29], radius=2, fill=255), LEATHER, radius=1.2)                 # saddlebag
-    for x in range(12, 20, 2):                                                                                         # its stitching
-        put(img, x, 22, (214, 168, 56, 255))
-    for y in range(17, 30):                                                                                            # the girth
-        put(img, 23, y, LEATHER[0]); put(img, 24, y, LEATHER[1])
-    for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
-        put(img, 23 + dx, 25 + dy, METAL["bronze"][3])
-    return done(img)
-
-
 def emberroot():
     img = canvas()
     root = ramp(graded((196, 84, 52)), 5, dark=0.5, light=1.3)
@@ -583,19 +556,6 @@ def emberroot():
         put(img, x - 4, y - 2, (98, 140, 70, 255)); put(img, x - 5, y - 3, (98, 140, 70, 255))
         for k in (-2, 1, 3):
             put(img, x + k, y, root[0])
-    return done(img)
-
-
-def dragon_cake():
-    """A dense round cake of meat, blood and berries baked hard for a dragon, scored on top."""
-    img = canvas()
-    crust = ramp(graded((150, 90, 50)), 5, dark=0.5, light=1.3)
-    part(img, lambda d: d.ellipse([4, 11, 28, 27], fill=255), crust, radius=1.6)
-    part(img, lambda d: d.ellipse([6, 9, 26, 22], fill=255), crust, line=crust[0], radius=1.4)
-    for k in range(-6, 7):
-        put(img, 16 + k, 15 + k // 3, crust[0]); put(img, 16 + k, 15 - k // 3, crust[1])
-    for x, y in ((11, 13), (21, 17), (14, 19), (19, 12)):
-        put(img, x, y, (164, 26, 54, 255)); put(img, x + 1, y, (120, 18, 40, 255)); put(img, x, y - 1, (230, 110, 120, 255))
     return done(img)
 
 
@@ -636,42 +596,6 @@ def scale_shape(img, x, y, r=6):
         put(img, x, y - 2 + k, SCALE[1])
 
 
-def dragon_scale():
-    img = canvas()
-    for x, y in ((10, 18), (21, 18), (15, 9)):
-        scale_shape(img, x, y)
-    return done(img)
-
-
-def scale_helm():
-    img = canvas()
-    part(img, lambda d: (d.pieslice([5, 5, 27, 29], 180, 360, fill=255), d.rectangle([5, 17, 27, 21], fill=255)), LEATHER, radius=1.6)
-    for row, y in enumerate((8, 12, 16)):
-        for x in range(8 + (row % 2) * 3, 26, 6):
-            if img.getpixel((x, y))[3]:
-                for k in range(-2, 3):
-                    put(img, x + k, y + abs(k) // 2, SCALE[3] if k < 0 else SCALE[2])
-                put(img, x, y + 2, SCALE[1])
-    for x in range(5, 28):
-        put(img, x, 18, METAL["bronze"][3] if x % 2 else METAL["bronze"][2]); put(img, x, 19, METAL["bronze"][0])
-    part(img, lambda d: d.rectangle([15, 20, 16, 27], fill=255), METAL["iron"])                 # nasal
-    return done(img)
-
-
-def scale_mail():
-    img = canvas()
-    body = [(8, 4), (13, 3), (16, 7), (19, 3), (24, 4), (28, 10), (24, 13), (24, 29), (8, 29), (8, 13), (4, 10)]
-    part(img, poly(body), SCALE, radius=1.8)
-    for y in range(8, 28, 3):
-        for x in range(9 + (y // 3 % 2) * 2, 24, 4):
-            if img.getpixel((x, y))[3]:
-                put(img, x - 1, y, SCALE[4]); put(img, x, y, SCALE[3]); put(img, x + 1, y, SCALE[2]); put(img, x, y + 1, SCALE[0])
-    for x in range(9, 24):
-        put(img, x, 21, LEATHER[1])
-    put(img, 16, 21, METAL["bronze"][3])
-    return done(img)
-
-
 # ---------------------------------------------------------------- generating
 
 def generate():
@@ -695,7 +619,6 @@ def generate():
     out["items/saw"] = saw()
     out["items/chisel"] = chisel()
     out["items/fishing_rod"] = fishing_rod()
-    out["items/scale_brush"] = scale_brush()
     out["items/chain_key"] = chain_key()
     for metal in ("copper", "bronze", "steel", "silver", "gold", "iron"):
         out[f"items/{metal}_bar"] = bars(metal)
@@ -720,8 +643,8 @@ def generate():
         out["items/wood" + suffix] = log_pile(wood, seed + 6)
         out["items/planks" + suffix] = planks_item(wood, seed + 11)
     for name, make in (("berries", berries), ("meat", meat), ("fish", fish), ("meal", meal), ("hide", hide), ("leather", leather),
-                       ("leather_pack", leather_pack), ("saddle", saddle), ("emberroot", emberroot), ("dragon_cake", dragon_cake), ("fiber", fiber),
-                       ("bandage", bandage), ("dragon_scale", dragon_scale), ("scale_helm", scale_helm), ("scale_mail", scale_mail)):
+                       ("leather_pack", leather_pack), ("emberroot", emberroot), ("fiber", fiber),
+                       ("bandage", bandage)):
         out["items/" + name] = make()
     for name, img in out.items():
         save(img, name)

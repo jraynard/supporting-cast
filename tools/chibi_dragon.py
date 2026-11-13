@@ -26,7 +26,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 sys.path.insert(0, os.path.dirname(__file__))
 from norse_art import ribbon, catmull, shade_shape, bayer, contact_sheet  # noqa: E402
-from placeholder_sheets import Sequencer, write_sheet, egg_layer, split_egg  # noqa: E402
+from placeholder_sheets import write_sheet  # noqa: E402
 
 K = 4
 LAYERS = ("base", "scales", "belly", "wings", "horns", "eyes", "flame", "veins")
@@ -772,9 +772,6 @@ def sequence(stage):
     add_tag("breathe", [f("breathe", jaw=j) for j in (3, 5, 5)], 130, loop=False)
     add_tag("sleep", [f("sleep", bob=b, closed=True) for b in (0, 0.5)], 900)
     add_tag("downed", [f("sleep", closed=True)], 1000, loop=False)
-    add_tag("pet", [f(closed=True, happy=True, bob=b, pulse=p) for b, p in ((0.5, 0.3), (1, 0.6), (0.5, 0.3), (0, 0))], 260)
-    add_tag("play", [f(legs=l, bob=b, wing=wg, happy=True) for l, b, wg in ((2, -1, 120), (0, 0.5, None), (-2, -1, 140), (0, 0.5, None))], 120)
-    add_tag("groom", [f(wing=wg, closed=True, happy=True, bob=b) for wg, b in ((105, 0), (125, 0.5), (140, 0.5), (125, 0))], 360)
     return frames, tags
 
 
@@ -793,170 +790,6 @@ def composite(parts, look=None):
     return out
 
 
-# ---------------------------------------------------------------- the egg
-
-def egg(canvas, cx, bottom, ew=14, eh=20, glow=0.5, cracks=0, cold=False, tilt=0.0, seed=3):
-    """A dragon egg at full detail: a rust shell (blue-grey when cold) lit from the upper left, rows of
-    scale arcs, ember speckles that glow with its warmth (frost when cold), cracks glowing from
-    inside. ``tilt`` rocks it on its base (degrees)."""
-    import random
-    rnd = random.Random(seed)
-    cv = Canvas(*canvas)
-    cy = bottom - eh / 2
-    pts = []
-    for k in range(64):                                              # pointier at the top, rounder below
-        a = k / 64 * math.tau
-        x, y = math.cos(a), math.sin(a)
-        ry = eh / 2 * (0.92 if y < 0 else 1.0)
-        rx = ew / 2 * (1 - 0.12 * max(0, -y))
-        pts.append((cx + x * rx, cy + y * ry))
-    shell_m = cv.poly(pts)
-    shell = ramp_rgb((126, 58, 42) if not cold else (86, 92, 112), 5)
-    cv.paint(shell_m, shell, "base", radius=2.4, bias=0.08, depth=0.3)
-    for row in range(6):                                             # scale arcs, offset row by row
-        y = cy - eh * 0.38 + row * eh * 0.15
-        for col in range(-3, 4):
-            x = cx + col * 2.6 + (1.3 if row % 2 else 0)
-            arc = cv.mask(lambda d, x=x, y=y: d.arc([(x - 1.4) * K, (y - 1.2) * K, (x + 1.4) * K, (y + 1.2) * K], 20, 160, fill=255, width=2))
-            cv.fill(arc, shell[1], "base", only=shell_m)
-    hot = GLOW_HI if glow > 0.75 else GLOW if glow > 0.3 else GLOW_DIM
-    for k in range(9):                                               # speckles: embers, or frost
-        x = cx + rnd.uniform(-ew * 0.36, ew * 0.36)
-        y = cy + rnd.uniform(-eh * 0.34, eh * 0.38)
-        r = rnd.uniform(0.45, 0.8)
-        cv.fill(both(cv.ellipse(x, y, r, r * 0.9), shell_m), (230, 240, 255, 255) if cold else hot, "base")
-    sheen = cv.mask(lambda d: d.arc([(cx - ew * 0.34) * K, (cy - eh * 0.4) * K, (cx + ew * 0.1) * K, (cy + eh * 0.1) * K], 190, 250, fill=255, width=5))
-    cv.fill(both(sheen, shell_m), shell[4], "base")
-    for c in range(cracks * 2 + (1 if cracks else 0)):                # cracks: zigzags glowing from inside
-        x, y = cx + rnd.uniform(-ew * 0.3, ew * 0.3), cy - eh * 0.28 + c * 1.4
-        line = [(x, y)]
-        for _ in range(4 + cracks * 2):
-            x += rnd.choice((-1.2, 1.2))
-            y += rnd.uniform(0.6, 1.4)
-            line.append((x, y))
-        cv.curve(line, GLOW_DIM, "base", 4, only=shell_m)
-        cv.curve(line, GLOW_HI, "base", 2, only=shell_m)
-    img = cv.img
-    if tilt:
-        img = img.rotate(tilt, resample=Image.BICUBIC, center=(cx * K, bottom * K))
-    return img
-
-
-def ramp_rgb(base, n):
-    from norse_art import ramp as _ramp
-    return _ramp(base, n)
-
-
-def split_egg_hi(img, cut_y, seed=5):
-    """An egg split along a jagged line (world y): (lid above, cup below), the cup's rim glowing."""
-    import random
-    rnd = random.Random(seed)
-    w, h = img.size
-    edge_m = Image.new("L", (w, h), 0)
-    px = edge_m.load()
-    for x in range(w):
-        e = int((cut_y + (0.9 if (x // (2 * K)) % 2 else 0) + rnd.choice((0, 0, 0.3))) * K)
-        for y in range(min(h, max(0, e)), h):
-            px[x, y] = 255
-    cup = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    cup.paste(img, mask=edge_m)
-    lid = img.copy()
-    lid.paste((0, 0, 0, 0), mask=edge_m)
-    rim = ImageChops.subtract(edge_m, edge_m.filter(ImageFilter.MinFilter(5)).transform(edge_m.size, Image.AFFINE, (1, 0, 0, 0, 1, -2)))
-    rim = ImageChops.multiply(rim, cup.getchannel("A"))
-    cup.paste(GLOW_HI, mask=rim)
-    return lid, cup
-
-
-def egg_sheet():
-    canvas, cx, bottom = (32, 32), 16, 30
-    frames, tags = [], {}
-
-    def add_tag(name, imgs, ms):
-        tags[name] = (len(frames), len(frames) + len(imgs) - 1, True, -1)
-        frames.extend((im, ms) for im in imgs)
-    add_tag("idle", [egg(canvas, cx, bottom, glow=gl) for gl in (0.15, 0.35, 0.55, 0.35)], 300)
-    add_tag("cold", [egg(canvas, cx, bottom, cold=True)], 1000)
-    add_tag("wobble", [egg(canvas, cx, bottom, glow=0.6, tilt=t) for t in (0, -7, 0, 7, 0, -4)], 110)
-    add_tag("crack", [egg(canvas, cx, bottom, glow=1, cracks=1, tilt=t) for t in (0, -6, 0, 6)], 100)
-    write_sheet("creatures/dragon_egg", frames, tags, (16 * K, 31 * K), trim=True, force=True, density=K)
-
-
-def hatch(stage, canvas, pivot):
-    """Egg cracks, the lid pops (event frame 2), the hatchling peeks out, climbs free (as before):
-    the egg drawn at the world size and scaled up, the hatchling at full detail."""
-    w, h = canvas
-    cx, bottom = pivot
-    ew, eh = 14, 20
-
-    def big(img):
-        return img.resize((img.width * K, img.height * K), Image.NEAREST)
-
-    def dragon(dy=0, dx=0, closed=False):
-        cv, _ = draw(stage, Pose(closed=closed, happy=closed))
-        parts = cv.split()
-        if dy or dx:
-            for k, img in parts.items():
-                moved = Image.new("RGBA", img.size, (0, 0, 0, 0))
-                moved.paste(img, (dx * K, dy * K))
-                moved.paste((0, 0, 0, 0), (0, (bottom + 1) * K, moved.width, moved.height))   # still in the shell: nothing below it
-                parts[k] = moved
-        return parts
-
-    def only_base(img):
-        parts = {k: Image.new("RGBA", (w * K, h * K), (0, 0, 0, 0)) for k in LAYERS}
-        parts["base"] = big(img)
-        return parts
-
-    def over(*layer_sets):
-        out = {k: Image.new("RGBA", (w * K, h * K), (0, 0, 0, 0)) for k in LAYERS}
-        for ls in layer_sets:
-            for k in LAYERS:
-                out[k].alpha_composite(ls[k])
-        # a later set covers what's under it in every layer
-        return out
-
-    def cover(top, below):
-        """``top`` drawn over ``below`` across layers: below loses whatever top covers."""
-        m = Image.new("L", (w * K, h * K), 0)
-        for k in LAYERS:
-            m.paste(255, mask=top[k].getchannel("A"))
-        for k in LAYERS:
-            below[k].paste((0, 0, 0, 0), mask=m)
-        return over(below, top)
-
-    def layers_of(img):
-        parts = {k: Image.new("RGBA", (w * K, h * K), (0, 0, 0, 0)) for k in LAYERS}
-        parts["base"] = img
-        return parts
-
-    cracked = egg(canvas, cx, bottom, ew, eh, glow=1, cracks=2)
-    lid, cup = split_egg_hi(cracked, bottom - 11)
-    popped = Image.new("RGBA", (w * K, h * K), (0, 0, 0, 0))
-    popped.alpha_composite(lid.rotate(-25, resample=Image.BICUBIC, center=(cx * K, (bottom - 11) * K)), (4 * K, -7 * K) if False else (0, 0))
-    popped = popped.transform(popped.size, Image.AFFINE, (1, 0, -4 * K, 0, 1, 7 * K))
-    flash = Canvas(w, h)
-    flash.fill(flash.ellipse(cx, bottom - 12, 6, 4), GLOW_HI, "base")
-    shard_l = cup.copy()
-    shard_l.paste((0, 0, 0, 0), (cx * K, 0, w * K, h * K))
-    shard_r = cup.copy()
-    shard_r.paste((0, 0, 0, 0), (0, 0, cx * K, h * K))
-    halves = Image.new("RGBA", (w * K, h * K), (0, 0, 0, 0))
-    halves.alpha_composite(shard_l.rotate(30, resample=Image.BICUBIC, center=(cx * K, bottom * K)).transform(halves.size, Image.AFFINE, (1, 0, 8 * K, 0, 1, -3 * K)))
-    halves.alpha_composite(shard_r.rotate(-30, resample=Image.BICUBIC, center=(cx * K, bottom * K)).transform(halves.size, Image.AFFINE, (1, 0, -8 * K, 0, 1, -3 * K)))
-    flash_cup = flash.img.copy()
-    flash_cup.alpha_composite(cup)
-    flash_cup.alpha_composite(popped)
-    return [
-        (layers_of(egg(canvas, cx, bottom, ew, eh, glow=1, cracks=1, tilt=-6)), 180),
-        (layers_of(egg(canvas, cx, bottom, ew, eh, glow=1, cracks=2, tilt=6)), 180),
-        (layers_of(flash_cup), 220),
-        (cover(layers_of(cup), dragon(10, -8, True)), 320),
-        (cover(layers_of(cup), dragon(5, -5)), 320),
-        (cover(dragon(), layers_of(halves)), 480),
-    ]
-
-
 def mouth_point(stage):
     _, R = draw(stage, Pose("breathe", jaw=5))
     c = STAGES[stage]
@@ -967,79 +800,24 @@ def mouth_point(stage):
     return (snout_c[0] + sx * 1.1) * K, (snout_c[1] + sy * 0.2) * K
 
 
-def saddle_point(stage):
-    """On the back just behind the neck, in front of the folded wings: where a rider's feet go."""
-    _, R = draw(stage, Pose())
-    cx, cy, crx, cry = R.chest
-    return (cx - crx * 0.1) * K, (cy - cry + 1.5) * K
-
-
-SADDLE_LEATHER = [(92, 58, 36, 255), (134, 88, 52, 255), (170, 118, 70, 255), (202, 152, 98, 255), (228, 186, 132, 255)]
-SADDLE_GIRTH = [(52, 34, 26, 255), (78, 52, 36, 255), (100, 68, 46, 255)]
-BRASS = (214, 168, 56, 255)
-SADDLE_CLOTH = [(34, 52, 92, 255), (48, 74, 128, 255), (66, 98, 160, 255), (92, 126, 186, 255)]
-
-
-def saddle_frame(stage, R):
-    """The saddle over one frame (a sheet of its own, apparel/saddle_dragon_<stage>): seated where the
-    rider goes (saddle_point), it rides the chest's bob frame by frame; a dyed saddle cloth under it,
-    a girth round the chest and a saddlebag hanging behind."""
-    c = STAGES[stage]
-    cv = Canvas(*c["canvas"])
-    cx, cy, crx, cry = R.chest
-    sx, sy = cx - crx * 0.1, cy - cry + 1.5
-    cloth = cv.mask(lambda d: d.rounded_rectangle([(sx - crx * 0.95) * K, (sy - 0.6) * K, (sx + crx * 0.6) * K, (sy + 4.6) * K], radius=2 * K, fill=255))
-    cv.paint(cloth, SADDLE_CLOTH, "base", radius=1.0)
-    for x in range(int((sx - crx * 0.85) * K), int((sx + crx * 0.5) * K), 3 * K):                 # a woven border
-        cv.fill(cv.mask(lambda d, x=x: d.rectangle([x, (sy + 3.6) * K, x + K, (sy + 4.1) * K], fill=255)), BRASS, "base")
-    girth = cv.strip([(sx + crx * 0.2, sy + 1.0), (sx + crx * 0.28, cy + cry * 0.15), (sx + crx * 0.22, cy + cry * 0.8)], [1.3, 1.3, 1.2])
-    cv.paint(girth, SADDLE_GIRTH, "base", radius=0.5)
-    cv.fill(cv.mask(lambda d: d.rectangle([(sx + crx * 0.18) * K, (cy + cry * 0.3) * K, (sx + crx * 0.34) * K, (cy + cry * 0.3 + 1.2) * K], fill=255)), BRASS, "base")
-    bag = cv.mask(lambda d: d.rounded_rectangle([(sx - crx * 0.9) * K, (sy + 1.6) * K, (sx - crx * 0.3) * K, (sy + 6.4) * K], radius=K, fill=255))
-    cv.paint(bag, SADDLE_LEATHER, "base", radius=0.9)
-    cv.fill(cv.mask(lambda d: d.rectangle([(sx - crx * 0.64) * K, (sy + 3.4) * K, (sx - crx * 0.54) * K, (sy + 4.2) * K], fill=255)), BRASS, "base")
-    seat = cv.poly([(sx - crx * 0.78, sy - 3.4), (sx - crx * 0.58, sy - 0.6), (sx + crx * 0.3, sy - 0.6), (sx + crx * 0.52, sy - 2.6),
-                    (sx + crx * 0.6, sy + 0.4), (sx + crx * 0.36, sy + 2.0), (sx - crx * 0.6, sy + 2.0), (sx - crx * 0.86, sy - 0.4)])
-    cv.paint(seat, SADDLE_LEATHER, "base", radius=1.2)
-    return cv.img
-
 
 def stage_sheets(stage, out_root=None):
+    """The plain sheet the game draws, at world size (``creatures/dragon_<stage>``)."""
     c = STAGES[stage]
     frames, tags = sequence(stage)
-    rendered = []
-    saddles = []
-    for (st, pose), ms in frames:
-        cv, R = draw(st, pose)
-        rendered.append((cv.split(), ms))
-        if c.get("adult"):
-            saddles.append((saddle_frame(st, R), ms))
-    if stage == "hatchling":
-        start = len(rendered)
-        rendered.extend(hatch(stage, c["canvas"], c["pivot"]))
-        tags["hatch"] = (start, len(rendered) - 1, False, 2)
-    pivot = (c["pivot"][0] * K, c["pivot"][1] * K)
+    rendered = [(draw(st, pose)[0].split(), ms) for (st, pose), ms in frames]
     points = {"mouth": mouth_point(stage)}
-    if c.get("adult"):
-        points["saddle"] = saddle_point(stage)
-    name = f"creatures/dragon_{stage}"
-    # The plain composite is only the def's sprite and a fallback (the game draws the layers: see
-    # WorldRenderer.SheetOf), so it's written at the plain world size to keep the atlas small.
     small = lambda img: img.resize((img.width // K, img.height // K), Image.BOX)
-    write_sheet(name, [(small(composite(p)), ms) for p, ms in rendered], tags, c["pivot"],
+    write_sheet(f"creatures/dragon_{stage}", [(small(composite(p)), ms) for p, ms in rendered], tags, c["pivot"],
                 {k: (x / K, y / K) for k, (x, y) in points.items()}, trim=True, force=True, root=out_root)
-    for layer in LAYERS:
-        write_sheet(f"{name}_{layer}", [(p[layer], ms) for p, ms in rendered], tags, pivot, points, trim=True, force=True, root=out_root, density=K)
-    if saddles:
-        write_sheet(f"apparel/saddle_dragon_{stage}", saddles, tags, pivot, points, trim=True, force=True, root=out_root, density=K)
     return rendered, tags
 
 
-def preview(path, stages=("hatchling", "juvenile", "adult")):
+def preview(path, stages=("adult",)):
     imgs = []
     for stage in stages:
         frames, tags = sequence(stage)
-        for tag in ("idle", "walk", "fly", "breathe", "sleep", "pet"):
+        for tag in ("idle", "walk", "fly", "breathe", "sleep", "downed"):
             (st, pose), _ = frames[tags[tag][0] + (1 if tag == "walk" else 2 if tag in ("fly", "breathe") else 0)]
             cv, _ = draw(st, pose)
             bg = Image.new("RGBA", (cv.W, cv.H), (96, 120, 80, 255))
@@ -1049,17 +827,15 @@ def preview(path, stages=("hatchling", "juvenile", "adult")):
 
 
 def generate():
-    egg_sheet()
-    for stage in STAGES:
-        stage_sheets(stage)
-    print("dragons: wrote the egg and 3 stages")
+    stage_sheets("adult")
+    print("dragon: wrote the adult")
 
 
 if __name__ == "__main__":
     if "--preview" in sys.argv:
         out = os.path.join(os.path.dirname(__file__), "..", ".cache", "dragons.png")
         os.makedirs(os.path.dirname(out), exist_ok=True)
-        preview(out, tuple(a for a in sys.argv[2:] if a in STAGES) or ("hatchling", "juvenile", "adult"))
+        preview(out)
         print(out)
     else:
         generate()

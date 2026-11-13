@@ -150,12 +150,12 @@ full `frameSize` frame.
 
 ## Box models (furniture and item piles)
 
-Beds, campfires, nests, tables, stools, chests and item piles (wood, stone, food) are drawn as a
+Beds, campfires, tables, stools, chests and item piles (wood, stone, food) are drawn as a
 few textured boxes, listed in their def's `model` (see `ModelBox` in `Defs.cs`):
 `{ "min": [x, y, z], "max": [x, y, z], "top": ..., "side": ..., "front": ..., "minCount": n }`.
 
-A building with a `footprint` wider than a cell (the 3x3 dragon nest) is drawn once, from its centre
-cell: its boxes use coordinates past 0..1 (the nest's run from -1 to 2) to cover the cells round it.
+A building with a `footprint` wider than a cell (the wagon) is drawn once, from its centre
+cell: its boxes use coordinates past 0..1 (a 3x3's run from -1 to 2) to cover the cells round it.
 
 - **Coordinates:** 0..1 inside the cell with z up (boxes may stand taller than 1). The front is
   +Y (south), which faces the viewer at the default camera. R turns a building while you place it.
@@ -450,8 +450,9 @@ offset. The placeholder layers are trimmed to save atlas space; base sheets aren
 
 ## Nature, animals and piles
 
-The wild animals (deer, boar, hare) come from `tools/chibi_animals.py` in the people's style,
-untinted, on the same canvas helpers.
+The wild animals (deer, boar, hare, wolf, bear) come from `tools/chibi_animals.py` in the people's
+style, untinted, on the side-on creatures' canvas (`tools/chibi_canvas.py`, shared with the dragon
+and nature).
 
 Trees, bushes, boulders, the standing and ley stones and the wild plants (`things/*`, variants
 `_v2`/`_v3` and `_bare` included) come from `tools/chibi_nature.py`: puffy outlined foliage lobes (a
@@ -472,12 +473,11 @@ job works with (`Job.ToolKind`, found by `Crafting.ToolInHand`), else their weap
 
 ## The dragon
 
-The season's last crisis is a wild dragon, drawn from DragonWorld's adult sheet
-(`creatures/dragon_adult`, side-on, with the flight and breath tags above). The egg, the younger
-stages, the second breed and the dragon creator's recolouring went with the fork; what's left of
-their generators (`tools/chibi_dragon.py`, `tools/norse_dragon.py`) and sheets goes in the art pass
-(docs/ROADMAP.md, the polish pass). The dragon's breath is the orange `fx/breath` jet with the white `fx/breath_core`
-over its yellow core; ordinary fire (`fx/fire`, `fx/ember`, burning ground) is all orange.
+The season's last crisis is a wild dragon (`creatures/dragon_adult`, side-on, with the flight and
+breath tags above), drawn by `tools/chibi_dragon.py` (`--preview` writes `.cache/dragons.png`). It
+has one life stage, the adult: the egg, the young, the second breed and their recolouring went with
+DragonWorld. The dragon's breath is the orange `fx/breath` jet with the white `fx/breath_core`
+(`norse_fx.py`) over its yellow core; ordinary fire (`fx/fire`, `fx/ember`, burning ground) is all orange.
 
 ## UI chrome (carved wood and iron)
 
@@ -505,18 +505,16 @@ It needs Pillow (`pip install pillow`) and is deterministic, so a rerun leaves g
 The Norse art pass (below) lives in its own modules, which the generator calls: `norse_art.py` (palette
 ramps, the shaded-shape painter, the selective outline, the Nordic grade), `norse_people.py` (people and
 worn gear), `norse_items.py` (the gear's inventory icons), `norse_ground.py` (grass, flowers, dirt, sand and water tops),
-`norse_dragon.py` (DragonWorld's dragon stages; to prune),
 `norse_nature.py` (spruce, oak, birch and the burnt snag), `norse_stone.py` (every rock's top and strata
 side, ore seams, clay, slopes and their sides, the earth side faces, moss, boulders) and `norse_glow.py`
-(everything that glows: campfire, kiln, forge, ember crystal, the standing and ley stones, moonpetal, the
-dragonforged tools), `norse_buildings.py` (walls of wood and every rock, floors, doors, stairs, ladders, beds,
+(everything that glows: campfire, kiln, forge, ember crystal, the standing and ley stones, moonpetal), `norse_buildings.py` (walls of wood and every rock, floors, doors, stairs, ladders, beds,
 the box models' face textures in `props/`, furniture and workstation icons, the wagon), `norse_gear.py` (tools
 and weapons in every metal tier, bars, coins, jewellery, ores, fuel, building stock, logs and planks, food,
 hides), `norse_animals.py` (deer, boar, hare), `norse_plants.py` (berry bushes, wild flax, emberroot) and
-`norse_ui.py` (the toolbar and care icons, `fx/fire`, `fx/ember`), `norse_roofs.py` (turf, thatch and shingle
+`norse_ui.py` (the toolbar icons, `fx/fire`, `fx/ember`), `norse_roofs.py` (turf, thatch and shingle
 roofs) and `norse_fx.py` (the selection brackets, the rune-cut designation mark, the shield-shaped need bubble,
-the chatter bubble). These run after the older placeholder modules and replace their drawings of the same
-sprites; the old modules still draw the small white effects (`fx/heart`, `fx/zzz`, `fx/glint`, `fx/shell`)
+the chatter bubble, the breath's core). These run after the older placeholder modules and replace their drawings of the same
+sprites; the old modules still draw the small white effects (`fx/zzz`, `fx/glint`)
 and the soft `fx/smoke` puff (also the contact shadow under everyone). They draw a silhouette as a
 mask, shade it from a blurred copy of itself lit from the top left, then add texture and detail by
 hand. Preview with `norse_art.contact_sheet`.
@@ -528,10 +526,10 @@ real proportions, lit scenes, depth blur and bloom) in a cold Nordic world of wo
 spruce. **Redrawn from scratch: the dragon, the four trees, the grass (with
 Nordic wildflowers), dirt, sand and water tops, every rock, ore, slope and side face, boulders, people and
 everything they wear (sheets and inventory icons), everything that glows (campfire, kiln, forge, ember
-crystal, ley and standing stones, moonpetal, dragonforged tools), every building, model texture and
+crystal, ley and standing stones, moonpetal), every building, model texture and
 furniture icon, every item, the animals, the forage plants, the UI icons, the roofs (turf over enclosed
-rooms) and the selection, designation and bubble art.** Only the small white effects (`fx/heart`, `fx/zzz`,
-`fx/glint`, `fx/shell`) and the smoke puff keep their older drawing. The renderer's
+rooms) and the selection, designation and bubble art.** Only the small white effects (`fx/zzz`,
+`fx/glint`) and the smoke puff keep their older drawing. The renderer's
 colour grade is cool and slightly muted by default (`VisualStyle`).
 
 ### Norse HD-2D (new art follows this)

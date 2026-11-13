@@ -971,7 +971,7 @@ def icon_mint():
 
 
 def icon_nest():
-    """A dragon nest: a ring of woven boughs round a bed of straw and down."""
+    """A ring of woven boughs round a bed of straw (the pyre's icon, for now)."""
     img = canvas()
     w = WOODS[""]
     m = mask_of(img.size, lambda d: d.ellipse([2, 6, 30, 30], fill=255))
@@ -982,29 +982,6 @@ def icon_nest():
                 tex=lambda x, y: 0.25 if (x + y * 3) % 5 == 0 else 0)
     for x, y in ((13, 15), (18, 18), (15, 20), (20, 14)):                                           # tufts of down
         put(img, x, y, FLEECE[3]); put(img, x + 1, y, FLEECE[2])
-    return selective_outline(img)
-
-
-def icon_feeding_trough():
-    img = canvas()
-    w = WOODS[""]
-    rnd = random.Random(61)
-    m = mask_of(img.size, lambda d: d.polygon([(2, 12), (30, 12), (27, 24), (5, 24)], fill=255))
-    shade_shape(img, m, w.w[1:6], radius=1.0, slope=1.5)
-    for y in (16, 20):
-        for x in range(4, 29):
-            put(img, x, y, w.w[1])
-    for x in range(4, 29):                                                                          # meat heaped in it
-        h = 3 + round(1.5 * math.sin(x * 0.7))
-        for k in range(h):
-            put(img, x, 12 - k, (172, 62, 56, 255) if k < h - 1 else (204, 104, 92, 255))
-    for x in (7, 22):
-        put(img, x, 10, (236, 222, 200, 255)); put(img, x + 1, 9, (236, 222, 200, 255))
-    for x in (6, 24):
-        m = mask_of(img.size, lambda d, x=x: d.rectangle([x, 24, x + 2, 29], fill=255))
-        shade_over(img, m, w.w[1:6], w.w[0], radius=0.5, slope=1.5)
-    for y in (13, 23):
-        put(img, 3, y, IRON[3]); put(img, 28, y, IRON[1])
     return selective_outline(img)
 
 
@@ -1102,7 +1079,7 @@ def generate():
     for name, make in (("table", icon_table), ("stool", icon_stool), ("chest", icon_chest), ("sawhorse", icon_sawhorse),
                        ("carpenter_bench", icon_carpenter_bench), ("mason_bench", icon_mason_bench),
                        ("tanning_rack", icon_tanning_rack), ("mint", icon_mint), ("nest", icon_nest),
-                       ("feeding_trough", icon_feeding_trough), ("butcher_spot", icon_butcher_spot), ("wagon", wagon)):
+                       ("butcher_spot", icon_butcher_spot), ("wagon", wagon)):
         save(make(), "buildings/" + name)
 
 

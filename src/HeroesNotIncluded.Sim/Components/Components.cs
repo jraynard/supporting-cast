@@ -5,7 +5,7 @@ namespace HeroesNotIncluded.Sim.Components;
 
 /// <summary>
 /// Anything placed on (or carried off) the map that has a ThingDef: items, buildings, plants,
-/// boulders, eggs, construction sites.
+/// boulders, construction sites.
 /// </summary>
 public struct Thing
 {
@@ -705,19 +705,8 @@ public struct Creature
     public readonly float AgeDays(long now) => SimClock.TicksToDays(now - BornTick);
     public readonly LifeStage Stage(long now) => Def.StageForAge(AgeDays(now));
 
-    /// <summary>
-    /// Degrees lower its cold limits go, from a dragon's element (<c>ElementDef.ColdTolerance</c>:
-    /// an ice dragon is at home in the cold). Derived, not saved: <c>Systems.Dragons.SetElement</c>
-    /// sets it, and a load sets it again from <see cref="Dragon.Element"/>.
-    /// </summary>
-    public float ColdTolerance;
-
     /// <summary>The temperatures it's comfortable in and survives, at its age.</summary>
-    public readonly TempTolerance Tolerance(long now)
-    {
-        var t = Def.Tolerance(Stage(now));
-        return ColdTolerance == 0 ? t : t with { ComfortMin = t.ComfortMin - ColdTolerance, SafeMin = t.SafeMin - ColdTolerance };
-    }
+    public readonly TempTolerance Tolerance(long now) => Def.Tolerance(Stage(now));
 }
 
 /// <summary>One wound on one body part. Several hits of the same kind on a part merge into one.</summary>
@@ -1265,7 +1254,7 @@ public struct Trade
     public Defs.TradeDef Def;
 }
 
-/// <summary>A creature that owns a bed/nest.</summary>
+/// <summary>A creature that owns a bed.</summary>
 public struct BedOwner
 {
     public Entity Bed;

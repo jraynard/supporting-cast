@@ -6,7 +6,7 @@ namespace HeroesNotIncluded.Sim.Environment;
 /// <summary>Shape of one breath: how far it reaches, how wide, how many rays, how hot.</summary>
 /// <param name="SparesBuildings">
 /// A sneeze, not a real breath: it scorches, but won't set alight structures, floors or anything
-/// in an indoor room, so a hatchling in its nest doesn't burn the hall down.
+/// in an indoor room, so a breath indoors doesn't burn the hall down.
 /// </param>
 public readonly record struct BreathShape(float Range, float ConeDegrees, int Rays, float Intensity, float SplashRadius, bool SparesBuildings = false);
 

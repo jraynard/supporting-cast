@@ -6,7 +6,7 @@ eyes, clean outlines), side-on at four times the detail ("density": 4):
     python3 tools/chibi_animals.py --preview    # ...and .cache/animals.png
 
 Same frame sizes, pivots and tags as before (idle, walk, sleep, downed: a carcass is the animal
-lying on its side). Drawn as is, untinted. Shapes in world pixels on chibi_dragon's Canvas.
+lying on its side). Drawn as is, untinted. Shapes in world pixels on chibi_canvas's Canvas.
 """
 import math
 import os
@@ -15,7 +15,7 @@ import sys
 from PIL import Image
 
 sys.path.insert(0, os.path.dirname(__file__))
-from chibi_dragon import Canvas, K, INK, WHITE, PUPIL, union, minus, both, lerp, add  # noqa: E402
+from chibi_canvas import Canvas, K, INK, WHITE, PUPIL, union, minus, both, lerp, add  # noqa: E402
 from norse_art import ramp, contact_sheet  # noqa: E402
 from placeholder_sheets import write_sheet  # noqa: E402
 

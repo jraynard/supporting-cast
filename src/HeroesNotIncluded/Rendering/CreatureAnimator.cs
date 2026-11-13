@@ -22,8 +22,6 @@ public readonly record struct AnimInputs(
     bool Soaring,
     bool Working,
     bool Moving,
-    bool Hatching = false,
-    string? Care = null,
     bool Seated = false
 );
 
@@ -75,9 +73,6 @@ public sealed class CreatureAnimator
     private long _frame;
     private float _dt;
 
-    /// <summary>How long after birth a creature plays its <c>hatch</c> animation (game ticks; 4 s at 1x).</summary>
-    public const int HatchTicks = 240;
-
     /// <summary>
     /// A soaring flyer's rhythm (seconds): a few wingbeats, then a glide. The glide frames are a
     /// held pose, so soaring on them alone looked like frozen wings.
@@ -114,16 +109,12 @@ public sealed class CreatureAnimator
     {
         if (s.Dead || s.Downed)
             return "downed";
-        if (s.Hatching)
-            return "hatch";
         if (s.Asleep)
             return "sleep";
         if (s.Breathing)
             return "breathe";
         if (s.WindingUp)
             return "breathe_windup";
-        if (s.Care != null && !s.Airborne && !s.Moving)
-            return s.Care;
         if (s.Seated && !s.Moving)
             return "sit";
         if (s.Airborne)
@@ -139,9 +130,6 @@ public sealed class CreatureAnimator
         return s.Moving ? "walk" : "idle";
     }
 
-    /// <summary>How long (ticks) a dragon keeps leaning into a scratch or a meal from the hand after it.</summary>
-    private const int CareAfterglowTicks = 90;
-
     /// <summary>What to show when a sheet lacks a tag, or a one-shot tag has finished.</summary>
     public static string? Fallback(string tag) => tag switch
     {
@@ -149,7 +137,7 @@ public sealed class CreatureAnimator
         "fly" or "breathe_windup" or "work" or "walk" or "sleep" => "idle",
         "breathe" => "breathe_windup",
         "downed" => "sleep",
-        "hatch" or "pet" or "play" or "groom" or "ride" or "sit" => "idle",
+        "ride" or "sit" => "idle",
         _ => null,
     };
 
@@ -263,8 +251,6 @@ public sealed class CreatureAnimator
             (job is BuildJob or DeconstructJob or HarvestJob or DigJob or Sim.Shops.CleanJob or Sim.Shops.MakeBedJob or Sim.Shops.WashJob
                 || station != null) && !mover.Moving,
             mover.Moving,
-            sim.Clock.Tick - c.BornTick < HatchTicks,
-            null,
             job is Sim.Hospitality.SavourJob { Seated: true }
         );
         var want = ChooseTag(inputs);

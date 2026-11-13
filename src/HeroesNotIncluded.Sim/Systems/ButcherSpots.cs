@@ -61,7 +61,7 @@ public static class ButcherSpots
     private static bool IsSpot(Simulation sim, Entity e, in Thing t) =>
         t.Def.Building?.ButcherSpot != null && t.Spawned && !sim.World.Has<Construction>(e);
 
-    /// <summary>Whether <paramref name="carrier"/> can carry <paramref name="carcass"/> (people and big dragons can; a hatchling can't).</summary>
+    /// <summary>Whether <paramref name="carrier"/> can carry <paramref name="carcass"/> (people can; a hare can't carry a deer).</summary>
     public static bool CanCarry(Simulation sim, Entity carrier, Entity carcass)
     {
         var w = sim.World;

@@ -15,11 +15,11 @@ public static class ArtAudit
     /// <summary>Sprites the renderer asks for by name.</summary>
     public static readonly string[] EngineSprites =
     [
-        "fx/fire", "fx/smoke", "fx/breath", "fx/breath_core", "fx/ember", "fx/zzz", "fx/shell", "fx/glint",
+        "fx/fire", "fx/smoke", "fx/breath", "fx/breath_core", "fx/ember", "fx/zzz", "fx/glint",
         "ui/selection", "ui/designate_x", "ui/bubble", "buildings/bed_blanket",
         "ui/icon_select", "ui/icon_cancel", "ui/icon_chop", "ui/icon_mine", "ui/icon_dig", "ui/icon_harvest",
         "ui/icon_build", "ui/icon_deconstruct", "ui/icon_burn", "ui/icon_stockpile", "ui/icon_clearzone",
-        "ui/icon_sleep", "ui/icon_eat", "ui/icon_alert", "ui/icon_fight", "ui/icon_doctor", "ui/icon_haul", "ui/icon_bond",
+        "ui/icon_sleep", "ui/icon_eat", "ui/icon_alert", "ui/icon_fight", "ui/icon_doctor", "ui/icon_haul",
         "ui/icon_hunt", "ui/icon_fish", "ui/icon_butcher",
     ];
 

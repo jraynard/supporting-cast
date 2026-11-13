@@ -50,7 +50,7 @@ public enum AvatarActionKind
     Hunt,
     /// <summary>Cut up an animal's carcass into meat and hide (<see cref="Ai.ButcherJob"/>), while the key is held.</summary>
     Butcher,
-    /// <summary>Pick up a downed hatchling (or a carcass, for the butcher spot), or set down what's in your arms (<see cref="Rescues"/>), done at once.</summary>
+    /// <summary>Pick up someone downed (or a carcass, for the butcher spot), or set down what's in your arms (<see cref="Rescues"/>), done at once.</summary>
     Carry,
 
     /// <summary>Draw a drink from a cask (<see cref="Work.PourSession"/>), begun at once.</summary>
@@ -167,7 +167,7 @@ public sealed class AvatarSystem : ISimSystem
             var c = w.Get<Creature>(e);
             if (c.Dead || c.Downed)
             {
-                // Falling down drops what you hold (the egg included), and whoever's in your arms.
+                // Falling down drops what you hold, and whoever's in your arms.
                 Rescues.Drop(sim, e);
                 ref var carrying = ref w.Get<Carrying>(e);
                 if (carrying.HasItem)
@@ -330,7 +330,7 @@ public sealed class AvatarSystem : ISimSystem
         if ((site.IsNull || !w.Has<Construction>(site)) && Buildings.SiteAt(sim, cell) is { IsNull: false } raising)
             site = raising;
         var held = w.Get<Carrying>(avatar).Item;
-        // Arms full of a creature (a hatchling for its nest, a carcass for the butcher spot): set it down.
+        // Arms full of a creature (someone hurt for a bed, a carcass for the butcher spot): set it down.
         if (Rescues.CarriedBy(sim, avatar) is { IsNull: false } load)
             return tool is AvatarTool.Use or AvatarTool.Drop && InReach(here, cell) ? Rescues.SetDownAt(sim, load, cell) : AvatarAction.None;
         // Game: shot from as far as the bow carries (or struck from beside it); a carcass in reach is butchered.
@@ -340,7 +340,7 @@ public sealed class AvatarSystem : ISimSystem
         if (tool == AvatarTool.Use && sim.Repairs.At(cell) is { } breach && InReach(here, cell)
             && w.TryGet<Trade>(avatar, out var mender) && mender.Def.MendsTown)
             return new(AvatarActionKind.Mend, $"Brace the {breach.Label}", cell, Entity.Null);
-        // A downed hatchling (or anyone small enough) to carry to its nest or bed.
+        // Anyone downed and small enough to carry to a bed.
         if (tool == AvatarTool.Use && held.IsNull && InReach(here, cell) && Rescues.DownedAt(sim, cell, avatar) is { IsNull: false } hurt
             && Rescues.CanCarry(sim, avatar, hurt))
             return new(AvatarActionKind.Carry, $"Pick up {w.Get<Creature>(hurt).Name}", cell, hurt);
@@ -478,7 +478,7 @@ public sealed class AvatarSystem : ISimSystem
         if (sim.Mess.At(sim, cell) is { } mess && !w.Has<Work.WorkSession>(avatar))
             return new(AvatarActionKind.Clean, Hospitality.MessSystem.Verb(mess.Kind), cell, Entity.Null);
 
-        // Work on what's there: hands full or not (you can chop wood with the egg on your back).
+        // Work on what's there: hands full or not (you can chop wood with a sack on your back).
         if (!site.IsNull && !sim.Reservations.IsReservedByOther(site, avatar))
         {
             var thing = w.Get<Thing>(site);

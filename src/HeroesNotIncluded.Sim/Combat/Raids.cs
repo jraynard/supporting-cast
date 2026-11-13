@@ -48,7 +48,7 @@ public static class Raids
     /// <summary>Up to <paramref name="count"/> distinct passable cells near <paramref name="entry"/> that can reach <paramref name="target"/>.</summary>
     /// <summary>
     /// How big a raid the village has earned: it grows with the days survived, the people (armed
-    /// ones count extra) and how far the dragons have grown. Before any difficulty's factor.
+    /// ones count extra). Before any difficulty's factor.
     /// </summary>
     public static float Points(Simulation sim)
     {
@@ -65,10 +65,6 @@ public static class Raids
                 // The town's own arms (Militia) are handed out after the band is sized: they don't count.
                 if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon) && !w.Has<Militia.TownArms>(eq.Weapon))
                     points += 15f;
-            }
-            else if (c.Def.Race == Race.Dragon)
-            {
-                points += 40f * Math.Max(0, c.Def.LifeStages.IndexOf(c.Stage(sim.Clock.Tick)));
             }
         }
         return points;

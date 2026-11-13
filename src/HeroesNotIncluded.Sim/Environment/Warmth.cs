@@ -6,8 +6,8 @@ namespace HeroesNotIncluded.Sim.Environment;
 /// The temperature a creature feels: the air, plus warmth radiating from a lit fire close by
 /// (<see cref="Defs.BuildingProps.RadiantWarmth"/>). The heat model alone leaves an outdoor
 /// campfire barely warmer a few tiles off, since the open air carries the heat away. Sitting by
-/// one is still how you get through a cold night, and how a dragon sleeps out in a nest beside it.
-/// Only creatures feel this; eggs, food and crafting go by the air (<see cref="Simulation.TemperatureAt"/>).
+/// one is still how you get through a cold night.
+/// Only creatures feel this; food and crafting go by the air (<see cref="Simulation.TemperatureAt"/>).
 /// </summary>
 public static class Warmth
 {

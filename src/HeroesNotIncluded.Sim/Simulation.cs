@@ -423,7 +423,7 @@ public sealed partial class Simulation
 
     /// <summary>
     /// Every bit of state a save holds, hashed (<see cref="Saving.SaveGame.Hash"/>): what
-    /// <see cref="StateHash"/> leaves out (fuel, egg progress, what's carried...) counts too.
+    /// <see cref="StateHash"/> leaves out (fuel, what's carried...) counts too.
     /// </summary>
     public ulong FullHash(bool withMap = true) => Saving.SaveGame.Hash(this, withMap);
 

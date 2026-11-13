@@ -84,26 +84,6 @@ public sealed class Particles
         }
     }
 
-    /// <summary>Eggshell chips flung out when a hatchling breaks free.</summary>
-    public void Shells(float3 at, int count)
-    {
-        for (var i = 0; i < count; i++)
-        {
-            var a = Range(0, MathF.Tau);
-            Emit(new Particle
-            {
-                Sprite = "fx/shell",
-                Pos = at,
-                Vel = new float3(MathF.Cos(a) * Range(0.6f, 1.6f), MathF.Sin(a) * Range(0.6f, 1.6f), Range(1.2f, 2.6f)),
-                Gravity = 6f,
-                Drag = 0.8f,
-                Life = Range(0.6f, 1.0f),
-                Size = Range(0.12f, 0.2f),
-                Color = new float4(1, 1, 1, 1),
-            });
-        }
-    }
-
     /// <summary>A speech bubble rising from someone's head (an interaction), tinted by how it went.</summary>
     public void Speech(float3 at, float4 color)
     {
@@ -119,24 +99,6 @@ public sealed class Particles
             Unlit = true,
             FadeIn = true,
         });
-    }
-
-    /// <summary>Hearts rising off a dragon that's just been cared for: more for a bigger gain, a lone grey one when it's had enough of that.</summary>
-    public void Hearts(float3 at, int count, bool meh)
-    {
-        for (var k = 0; k < count; k++)
-            Emit(new Particle
-            {
-                Sprite = "fx/heart",
-                Pos = at + new float3(Range(-0.35f, 0.35f), Range(-0.35f, 0.35f), k * 0.12f),
-                Vel = new float3(Range(-0.15f, 0.15f), Range(-0.15f, 0.15f), 0.35f + k * 0.04f),
-                Life = 1.6f + k * 0.15f,
-                Size = 0.22f,
-                Grow = 0.05f,
-                Color = meh ? new float4(0.75f, 0.72f, 0.7f, 0.85f) : new float4(1f, 0.45f, 0.58f, 0.95f),
-                Unlit = true,
-                FadeIn = true,
-            });
     }
 
     public void Zzz(float3 at)

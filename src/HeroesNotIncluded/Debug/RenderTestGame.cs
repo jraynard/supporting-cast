@@ -74,15 +74,14 @@ public sealed class RenderTestGame : Game
         sb.DrawRect(atlas.Get("things/oak"), c + new float2(-3, -2), new float2(1, 1));
         sb.DrawRect(atlas.Get("things/boulder"), c + new float2(2, -2), new float2(1, 1));
         sb.DrawRect(atlas.Get("buildings/campfire"), c, new float2(1, 1));
-        sb.DrawRect(atlas.Get("creatures/dragon_egg"), c + new float2(1, 0), new float2(1, 1));
         sb.DrawRect(atlas.Get("creatures/human"), c + new float2(-1, 1), new float2(1, 1));
-        sb.Draw(atlas.Get("creatures/dragon_hatchling"), c + new float2(3.5f, 1.5f), new float2(1, 1), Rgba.White, MathF.Sin(_time) * 0.3f);
+        sb.Draw(atlas.Get("creatures/dragon_adult"), c + new float2(3.5f, 1.5f), new float2(1, 1), Rgba.White, MathF.Sin(_time) * 0.3f);
         sb.OutlineRect(c, new float2(1, 1), 0.05f, Rgba.Pack(1, 1, 0.3f));
         sb.DrawLine(c + new float2(-0.5f, 1.5f), c + new float2(3.5f, 1.5f), 0.06f, Rgba.Pack(1, 1, 1, 0.6f));
 
         if (_stress)
         {
-            var sprites = new[] { atlas.Get("creatures/human"), atlas.Get("creatures/dragon_hatchling"), atlas.Get("items/wood") };
+            var sprites = new[] { atlas.Get("creatures/human"), atlas.Get("creatures/dragon_adult"), atlas.Get("items/wood") };
             var rnd = new Random(42);
             for (var i = 0; i < _stressCount; i++)
             {

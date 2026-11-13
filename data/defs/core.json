@@ -64,10 +64,9 @@
     { "name": "Berries", "category": "Item", "mass": 0.1, "sprite": "items/berries", "stackLimit": 30, "nutrition": 0.1, "rotDays": 8, "flammability": 0.4, "maxHp": 20,
       "mixCue": "D", "drinkEffect": { "rousing": 0.3 },
       "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.28], "top": "props/berries_top", "side": "props/basket" } ] },
-    // Emberroot: a warm, peppery root dug from forest edges and hillsides. Not food on its own; baked
-    // with berries it makes the dragon cake (workshop.json), a dragon's food that isn't meat.
+    // Emberroot: a warm, peppery root dug from forest edges and hillsides. Not food on its own.
     { "name": "Emberroot", "label": "emberroot", "category": "Item", "mass": 0.2, "sprite": "items/emberroot", "stackLimit": 30, "rotDays": 12, "flammability": 0.3, "maxHp": 20,
-      "description": "A knobbly red root that smells of smoke and pepper. Dragons go mad for it, baked with berries." },
+      "description": "A knobbly red root that smells of smoke and pepper." },
     // Bandages: the player binds wounds with them (Systems/Bandaging.cs), one a wound.
     { "name": "Bandage", "label": "bandage", "category": "Item", "mass": 0.05, "sprite": "items/bandage", "stackLimit": 20, "flammability": 0.8, "maxHp": 10,
       "description": "Clean strips of woven flax. One binds a wound: it stops the bleeding and heals faster." },
@@ -289,27 +288,14 @@
     },
     {
       "name": "Dragon", "race": "Dragon", "body": "Dragon",
-      // The breed (DragonWorld's, kept for the dragon crisis): the lowest order is the default, which eggs hatch into.
+      // The season's last crisis (Director/Crises.cs): a wild dragon, only ever grown.
       "moveSpeed": 3.5, "maxHp": 150, "eatsPlants": false, "foodPoisonFactor": 0.15,
-      // Work they'll take on (Work tab), by stage: juveniles breathe, adults also haul and fell trees.
-      // Breath work is filtered by element (elements in dragons.json): fire burns and stokes, ice chills...
       "work": [],
       "comfortTempMin": 25, "comfortTempMax": 90, "safeTempMin": 8, "safeTempMax": 400,
       "needs": [ { "need": "Food", "decayPerDay": 1.4 }, { "need": "Rest", "decayPerDay": 1.0 }, ],
       "lifeStages": [
-        { "name": "Hatchling", "label": "hatchling", "minAgeDays": 0, "sprite": "creatures/dragon_hatchling", "size": 0.8, "speedFactor": 0.8, "hungerFactor": 1.0, "fireSneezePerHour": 0.06, "bodyHeat": 8, "armor": 0.1,
-          // Needs the most care (dragons.json): misses its keeper twice as fast, asks often, eats from a hand or a trough.
-          "wantEveryHours": 3, "handFed": true,
-          "attacks": [ { "name": "Bite", "label": "bite", "verb": "nips", "accuracy": 0.7, "damageMin": 3, "damageMax": 6, "damageType": "Bite" } ] },
-        { "name": "Juvenile", "label": "juvenile", "minAgeDays": 4, "sprite": "creatures/dragon_juvenile", "size": 1.3, "speedFactor": 1.1, "hungerFactor": 1.5, "fireSneezePerHour": 0.02, "bodyHeat": 15, "armor": 0.25, "wantEveryHours": 5, "canFly": true, "flySpeedFactor": 2.2, "flyAltitude": 2,
-          "breathRange": 7, "breathCone": 22, "breathRays": 10, "work": [  ],
-          "attacks": [
-            { "name": "Bite", "label": "bite", "verb": "bites", "accuracy": 0.75, "damageMin": 10, "damageMax": 16, "damageType": "Bite", "penetration": 0.3 },
-            { "name": "Claws", "label": "claws", "verb": "claws at", "accuracy": 0.8, "damageMin": 6, "damageMax": 11, "damageType": "Cut", "penetration": 0.15 }
-          ] },
-        { "name": "Adult", "label": "adult", "minAgeDays": 12, "sprite": "creatures/dragon_adult", "size": 2.2, "speedFactor": 1.3, "hungerFactor": 2.5, "bodyHeat": 25, "armor": 0.5, "wantEveryHours": 12,
-          // Hardier than the young: a night out in a nest a few tiles from a fire is cold, not dangerous.
-          "comfortTempMin": 15, "safeTempMin": 0, "canBeRidden": true, "canFly": true, "flySpeedFactor": 2.8, "flyAltitude": 3, "soarChance": 0.35, "huntsAlone": true,
+        { "name": "Adult", "label": "adult", "minAgeDays": 0, "sprite": "creatures/dragon_adult", "size": 2.2, "speedFactor": 1.3, "hungerFactor": 2.5, "bodyHeat": 25, "armor": 0.5,
+          "comfortTempMin": 15, "safeTempMin": 0, "canFly": true, "flySpeedFactor": 2.8, "flyAltitude": 3,
           "breathRange": 11, "breathCone": 26, "breathRays": 16, "work": [ "Haul", "Chop" ], "carryStacks": 4,
           "attacks": [
             { "name": "Bite", "label": "bite", "verb": "bites", "accuracy": 0.8, "damageMin": 20, "damageMax": 30, "damageType": "Bite", "penetration": 0.5 },

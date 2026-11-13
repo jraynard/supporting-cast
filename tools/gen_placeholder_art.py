@@ -15,7 +15,6 @@ import placeholder_nature
 import placeholder_wood
 import placeholder_sheets
 import placeholder_props
-import norse_dragon
 import chibi_dragon
 import norse_ground
 import norse_items
@@ -37,7 +36,6 @@ import chibi_nature
 import norse_plants
 import norse_ui
 import placeholder_mining
-import placeholder_dragoncare
 import placeholder_roofs
 import village_art
 
@@ -249,8 +247,8 @@ def industry():
     save(wall, "buildings/wall_cut_stone")
 
 
-def tools_and_scales():
-    """Tools (data/defs/workshop.json "tool") and dragon-scale gear."""
+def tools():
+    """Tools (data/defs/workshop.json "tool")."""
     wood, wood_dark, iron, iron_dark = (140, 98, 58, 255), (96, 64, 38, 255), (150, 154, 164, 255), (84, 86, 96, 255)
     img = blank(); d = ImageDraw.Draw(img)
     d.line([(9, 27), (19, 13)], fill=wood, width=3)
@@ -274,28 +272,10 @@ def tools_and_scales():
     d.line([(8, 28), (18, 10)], fill=wood, width=3)
     d.arc([5, 3, 31, 21], 200, 340, fill=iron, width=3)
     save(img, "items/pick")
-    scale, scale_dark, scale_light = (176, 52, 40, 255), (110, 28, 22, 255), (232, 120, 80, 255)
-    img = blank(); d = ImageDraw.Draw(img)
-    for x, y in ((10, 18), (20, 18), (15, 10)):
-        d.polygon([(x - 6, y - 4), (x + 6, y - 4), (x + 6, y + 2), (x, y + 8), (x - 6, y + 2)], fill=scale, outline=scale_dark)
-        d.line([(x - 4, y - 2), (x + 4, y - 2)], fill=scale_light)
-    save(img, "items/dragon_scale")
-    img = blank(); d = ImageDraw.Draw(img)
-    d.chord([5, 6, 27, 30], 180, 360, fill=scale, outline=scale_dark)
-    d.rectangle([5, 17, 27, 22], fill=(110, 72, 40, 255), outline=(70, 44, 24, 255))
-    for x in range(8, 26, 5):
-        d.arc([x - 3, 9, x + 3, 15], 0, 180, fill=scale_light)
-    save(img, "items/scale_helm")
-    img = blank(); d = ImageDraw.Draw(img)
-    d.polygon([(8, 4), (24, 4), (29, 10), (25, 12), (25, 29), (7, 29), (7, 12), (3, 10)], fill=scale, outline=scale_dark)
-    for y in range(8, 28, 4):
-        for x in range(9 + (y // 4 % 2) * 2, 24, 4):
-            d.arc([x - 2, y - 2, x + 2, y + 2], 0, 180, fill=scale_light)
-    save(img, "items/scale_mail")
 
 
 def forage_and_tools():
-    """Emberroot, the dragon cake, and the tool tiers (stone, iron in tools_and_scales, dragonforged)."""
+    """Emberroot and the stone tool tier (iron in tools)."""
     leaf, leaf_dark, root, root_dark = (150, 40, 34, 255), (96, 24, 22, 255), (196, 84, 52, 255), (120, 46, 30, 255)
     for name, bare in (("things/emberroot", False), ("things/emberroot_bare", True)):
         img = blank(); d = ImageDraw.Draw(img)
@@ -312,19 +292,10 @@ def forage_and_tools():
         d.polygon([(x - 6, y - 3), (x + 6, y - 1), (x + 4, y + 4), (x - 5, y + 3)], fill=root, outline=root_dark)
         d.line([(x + 5, y), (x + 9, y + 2 + a)], fill=root_dark)
     save(img, "items/emberroot")
-    img = blank(); d = ImageDraw.Draw(img)
-    d.ellipse([5, 12, 27, 26], fill=(150, 90, 50, 255), outline=(90, 50, 26, 255))
-    d.ellipse([7, 10, 25, 22], fill=(176, 108, 60, 255), outline=(110, 62, 32, 255))
-    for (x, y) in ((11, 14), (17, 13), (21, 17), (14, 18)):
-        d.ellipse([x - 2, y - 2, x + 2, y + 2], fill=(160, 30, 60, 255))
-    d.point([(19, 15), (12, 17)], fill=(210, 80, 40, 255))
-    save(img, "items/dragon_cake")
-
     flax_and_fiber()
 
     wood, wood_dark = (140, 98, 58, 255), (96, 64, 38, 255)
     stone, stone_dark = (150, 146, 136, 255), (92, 88, 82, 255)
-    drag, drag_dark, drag_glow = (60, 54, 62, 255), (30, 26, 34, 255), (236, 120, 60, 255)
     lash = (196, 170, 120, 255)
 
     def axe(name, head, dark, glow=None):
@@ -354,7 +325,6 @@ def forage_and_tools():
         save(img, name)
 
     axe("items/stone_axe", stone, stone_dark); pick("items/stone_pick", stone, stone_dark); hammer("items/stone_hammer", stone, stone_dark)
-    axe("items/dragon_axe", drag, drag_dark, drag_glow); pick("items/dragon_pick", drag, drag_dark, drag_glow); hammer("items/dragon_hammer", drag, drag_dark, drag_glow)
     img = blank(); d = ImageDraw.Draw(img)
     d.line([(6, 29), (26, 3)], fill=wood, width=2)
     d.line([(26, 3), (27, 20)], fill=(220, 220, 210, 255))
@@ -417,8 +387,7 @@ def wagon():
 
 
 def creatures():
-    # Humans (chibi_people.py) and dragons (chibi_dragon.py) are animated sheets.
-    # The dragon egg is a sheet from chibi_dragon.egg_sheet.
+    # Humans (chibi_people.py) and the dragon (chibi_dragon.py) are animated sheets.
     pass
 
 
@@ -522,13 +491,11 @@ def ui():
 
 
 if __name__ == "__main__":
-    terrain(); things(); crafting(); industry(); tools_and_scales(); forage_and_tools(); buildings(); creatures(); story(); ui()
+    terrain(); things(); crafting(); industry(); tools(); forage_and_tools(); buildings(); creatures(); story(); ui()
     placeholder_sheets.generate()
-    # The Norse art pass (docs/ART.md): people and their clothes, the adult dragon, the spruce.
+    # The Norse art pass (docs/ART.md): people and their clothes, the wild dragon, the spruce.
     chibi_people.generate()  # people: hi-res chibi layers (bodies, hair, faces, every garment), 4x detail
-    norse_dragon.fire_fx()   # the breath's element-coloured core
-    chibi_dragon.generate()  # the Hearth dragon and the egg: chibi hatchling and juvenile, a majestic adult, 4x detail
-    norse_dragon.generate()  # the Norse breed (creatures/dragon_norse_*), drawn a little larger
+    chibi_dragon.generate()  # the season's wild dragon, 4x detail
     norse_nature.generate()
     norse_items.generate()   # the worn gear's inventory icons
     placeholder_props.generate()
@@ -537,7 +504,6 @@ if __name__ == "__main__":
     placeholder_wood.generate()
     placeholder_mining.generate()
     norse_stone.generate()   # rock, ore, slopes, earth sides, boulders: replaces the drawings above
-    placeholder_dragoncare.generate()
     norse_buildings.generate()   # walls, floors, doors, stairs, ladders, beds, model textures, furniture icons
     norse_smithy.generate()      # anvil, quench tub, grindstone, tool rack, fuel bin: model textures and icons
     inn_art.generate()           # the inn's upkeep: the mop, and the mess on the floor
@@ -547,10 +513,10 @@ if __name__ == "__main__":
     norse_gear.generate()        # tools and weapons per metal, stock, ores, fuel, food, hides: replaces the recoloured gear
     chibi_animals.generate()     # deer, boar, hare: chibi, 4x detail
     norse_plants.generate()      # berry bushes, wild flax, emberroot
-    norse_ui.generate()          # toolbar and care icons, fire and ember fx
-    norse_glow.generate()    # campfire, kiln, forge, ember crystal, standing stones, moonpetal, dragonforged tools
+    norse_ui.generate()          # toolbar icons, fire and ember fx
+    norse_glow.generate()    # campfire, kiln, forge, ember crystal, standing stones, moonpetal
     norse_roofs.generate()   # turf, thatch and shingle roofs: replaces placeholder_roofs' drawings
-    norse_fx.generate()      # selection, designation mark, need and chatter bubbles (white art the game tints)
+    norse_fx.generate()      # selection, designation mark, need and chatter bubbles (white art the game tints), the breath core
     chibi_nature.generate()  # trees, bushes, boulders, standing stones, wild plants: chibi, 4x detail (replaces the drawings above)
     village_art.generate()   # lanes, gardens, half-timbering and straw thatch, well, bridge, fences, crates, cabbages, pig (after the boar)
     print("wooden buildings, wood and berry bushes: see placeholder_wood.py")

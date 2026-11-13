@@ -158,9 +158,6 @@ Grouped by area; nothing here blocks a playtest.
 - The bridge's parapets are drawn, not built: check nobody can step off its side.
 
 **Art and look**
-- Dragon-era art, tools and def fields are still in the tree; prune them in the art pass (the egg,
-  the young stages, the Norse breed, `chibi_dragon.py`, `norse_dragon.py`, egg comments in the AI).
-- A campfire's bills list stew, which needs the cooking pot only a building's fire has.
 - Borrowed art:
   - the whetstone, ale cask and inn stations borrow textures, and some use the chest's toolbar
     sprite;

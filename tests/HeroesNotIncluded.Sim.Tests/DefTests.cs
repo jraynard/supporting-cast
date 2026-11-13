@@ -18,6 +18,16 @@ public class DefTests
     }
 
     [Fact]
+    public void AnUpgradeRecipeIsOfferedOnlyWhereItsUpgradeFits()
+    {
+        var db = TestWorld.LoadDefs();
+        Assert.DoesNotContain(db.Thing("Campfire").Recipes, r => r.Name == "CookStew");
+        Assert.Contains(db.Thing("Campfire").Recipes, r => r.Name == "CookMeat");
+        Assert.Contains(db.Thing("Hearth").Recipes, r => r.Name == "CookStew");
+        Assert.Contains(db.Thing("Fireplace").Recipes, r => r.Name == "CookStew");
+    }
+
+    [Fact]
     public void UnknownReferenceThrowsClearError()
     {
         var ex = Assert.ThrowsAny<Exception>(() => DefDatabase.FromJson(

@@ -53,7 +53,7 @@ public sealed class SettlerSystem : ISimSystem
         }
     }
 
-    /// <summary>A finished, ordinary bed (not a nest or prisoner bed) indoors.</summary>
+    /// <summary>A finished, ordinary bed (not a prisoner bed) indoors.</summary>
     public static bool IsHomeBed(Simulation sim, Entity e)
     {
         var w = sim.World;

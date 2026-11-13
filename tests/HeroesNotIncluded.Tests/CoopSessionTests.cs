@@ -166,12 +166,12 @@ public class CoopSessionTests
         var heard = new List<string>();
         client.ChatReceived += (from, text) => heard.Add($"{from}: {text}");
 
-        client.SendChat("is the egg warm?");
+        client.SendChat("is the forge lit?");
         t.Run(0.5f);
         t.Host.SendChat("by the fire");
         t.Run(0.5f);
 
-        Assert.Equal(["Bea: is the egg warm?", "host: by the fire"], heard);
+        Assert.Equal(["Bea: is the forge lit?", "host: by the fire"], heard);
         Assert.Equal(heard, t.Host.ChatLog.Select(l => $"{l.From}: {l.Text}"));
         t.AssertInStep();
     }

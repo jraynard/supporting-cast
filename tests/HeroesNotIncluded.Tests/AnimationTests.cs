@@ -22,24 +22,10 @@ public class AnimationTests
     [InlineData("work", false, false, false, false, false, 0, false, false, true, false)]
     [InlineData("walk", false, false, false, false, false, 0, false, false, false, true)]
     [InlineData("idle", false, false, false, false, false, 0, false, false, false, false)]
-    [InlineData("hatch", false, false, false, false, false, 0, false, false, false, true, true)]
-    public void ChoosesTagByPriority(string expected, bool downed, bool asleep, bool breathing, bool windup, bool airborne, int vertical, bool landing, bool soaring, bool working, bool moving, bool hatching = false)
+    public void ChoosesTagByPriority(string expected, bool downed, bool asleep, bool breathing, bool windup, bool airborne, int vertical, bool landing, bool soaring, bool working, bool moving)
     {
-        var inputs = new AnimInputs(false, downed, asleep, breathing, windup, airborne, vertical, landing, soaring, working, moving, hatching);
+        var inputs = new AnimInputs(false, downed, asleep, breathing, windup, airborne, vertical, landing, soaring, working, moving);
         Assert.Equal(expected, CreatureAnimator.ChooseTag(inputs));
-    }
-
-    [Fact]
-    public void ADragonBeingCaredForShowsItUnlessItsAsleepOrOnTheMove()
-    {
-        AnimInputs Care(bool asleep = false, bool moving = false, bool airborne = false) =>
-            new(false, false, asleep, false, false, airborne, 0, false, false, false, moving, Care: "play");
-        Assert.Equal("play", CreatureAnimator.ChooseTag(Care()));
-        Assert.Equal("sleep", CreatureAnimator.ChooseTag(Care(asleep: true)));
-        Assert.Equal("walk", CreatureAnimator.ChooseTag(Care(moving: true)));
-        Assert.Equal("fly", CreatureAnimator.ChooseTag(Care(airborne: true)));
-        foreach (var tag in new[] { "pet", "play", "groom" })
-            Assert.Equal("idle", CreatureAnimator.Fallback(tag));
     }
 
     [Fact]

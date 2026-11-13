@@ -44,7 +44,7 @@ public class EnvironmentTests
         var farAway = sim.TemperatureAt(C(20, 30));
 
         Assert.InRange(roomTemp, 18f, 60f);
-        Assert.True(nextToInside > 28f, $"egg spot next to indoor fire should be hot, was {nextToInside:F1}");
+        Assert.True(nextToInside > 28f, $"spot next to indoor fire should be hot, was {nextToInside:F1}");
         Assert.True(nextToOutside < nextToInside - 10f, $"outdoor fire {nextToOutside:F1} vs indoor {nextToInside:F1}");
         Assert.InRange(farAway, -1f, 2f);
     }

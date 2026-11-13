@@ -357,14 +357,14 @@ public sealed class AiSystem : ISimSystem
                 carried = other;
                 break;
             }
-        // The avatar keeps who it carries in its arms (a hatchling, a carcass) until it sets them down.
+        // The avatar keeps who it carries in its arms (someone downed, a carcass) until it sets them down.
         if (!carried.IsNull && !w.Has<Avatar>(e))
         {
             w.Remove<Carried>(carried);
             w.Get<Position>(carried) = Position.At(w.Get<Position>(e).Cell);
         }
 
-        // The avatar keeps what it holds (the egg!) until the player puts it down; a customer, the
+        // The avatar keeps what it holds until the player puts it down; a customer, the
         // drink or the meal they're sat with (Hospitality.Table).
         ref var carrying = ref w.Get<Carrying>(e);
         if (carrying.HasItem && !w.Has<Avatar>(e) && !(w.TryGet<Hospitality.Savouring>(e, out var savouring) && savouring.Item == carrying.Item))
@@ -414,7 +414,6 @@ public sealed class NeedsSystem : ISimSystem
         var w = sim.World;
         var rest = sim.Defs.Need("Rest");
         var food = sim.Defs.Need("Food");
-        var bond = sim.Defs.AllNeeds.Find(n => n.Name == "Bond");
         var fires = Warmth.Sources(sim);
         foreach (var e in sim.Creatures())
         {

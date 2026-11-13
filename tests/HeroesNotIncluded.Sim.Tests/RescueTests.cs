@@ -7,7 +7,7 @@ using static HeroesNotIncluded.Sim.Tests.TestWorld;
 
 namespace HeroesNotIncluded.Sim.Tests;
 
-/// <summary>Rescuing downed dragons (<see cref="Rescues"/>): carried to a nest, or fed and tended where they lie.</summary>
+/// <summary>Rescuing the downed (<see cref="Rescues"/>): carried to a bed, or tended where they lie.</summary>
 public class RescueTests
 {
     private static Simulation Mild()

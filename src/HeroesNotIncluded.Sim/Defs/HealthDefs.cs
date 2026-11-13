@@ -10,7 +10,7 @@ public enum DamageType
     Burn,
     Bite,
 
-    // Dragon breaths of the other elements (ElementDef.DamageType). Saved by value: append only.
+    // Breaths of other elements, from DragonWorld (nothing deals them now). Saved by value: append only.
 
     /// <summary>Frostbite from ice breath.</summary>
     Frost,

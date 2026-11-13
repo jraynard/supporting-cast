@@ -4,7 +4,7 @@
 // memory count at once, each further one stackFalloff times the one before. races limits who has it.
 // "opinion" is for memories about someone: it moves the opinion of them (-100..100) the same way
 // (stacks counted per person). Opinion is that sum plus a fixed per-pair compatibility of +-10.
-// Mood scales human work speed (x1 from 35 to 65, x0.85 at 0, x1.1 at 100) and dragon obedience (+-0.1).
+// Mood scales human work speed (x1 from 35 to 65, x0.85 at 0, x1.1 at 100).
 {
   "thoughts": [
     // ---- situational ----

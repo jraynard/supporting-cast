@@ -96,7 +96,7 @@ public static class Players
             return;
         w.Remove<Avatar>(me);
         Work.WorkSystem.Stop(sim, me, null);
-        // Ending the avatar's job as a villager also sets down what it carried (an egg included),
+        // Ending the avatar's job as a villager also sets down what it carried,
         // where the village will tend it.
         AiSystem.EndJob(sim, me, w.Get<Mind>(me), false);
         sim.Messages.Add(MessageKind.Info, $"{w.Get<Creature>(me).Name} carries on with village life for now.", w.Get<Position>(me).Cell);

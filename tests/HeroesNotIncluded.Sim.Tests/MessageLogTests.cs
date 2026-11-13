@@ -29,13 +29,13 @@ public class MessageLogTests
     public void OldThrottlesAreForgottenWhenTheLogTrims()
     {
         var sim = TestWorld.Create();
-        sim.Messages.AddThrottled("egg:1", SimClock.TicksPerHour, MessageKind.Warning, "cold egg");
+        sim.Messages.AddThrottled("cold:1", SimClock.TicksPerHour, MessageKind.Warning, "cold hands");
         sim.TickMany((int)MessageLog.CooldownKeptTicks + 1);
         for (var i = 0; i < MessageLog.MaxKept + MessageLog.TrimBatch; i++)
             sim.Messages.Add(MessageKind.Info, "filler");
-        Assert.False(sim.Messages.Cooldowns.ContainsKey("egg:1"));
+        Assert.False(sim.Messages.Cooldowns.ContainsKey("cold:1"));
         // Its hour is long past either way, so it posts again as it would have.
-        sim.Messages.AddThrottled("egg:1", SimClock.TicksPerHour, MessageKind.Warning, "cold egg again");
-        Assert.Equal("cold egg again", sim.Messages.Messages[^1].Text);
+        sim.Messages.AddThrottled("cold:1", SimClock.TicksPerHour, MessageKind.Warning, "cold hands again");
+        Assert.Equal("cold hands again", sim.Messages.Messages[^1].Text);
     }
 }

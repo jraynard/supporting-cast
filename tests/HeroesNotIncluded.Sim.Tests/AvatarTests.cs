@@ -706,11 +706,7 @@ public class AdventureSettlementTests
     }
 }
 
-public class EggBearerStartTests
-{
-}
-
-/// <summary>Adventure mode: asking companions to follow you or guard the egg.</summary>
+/// <summary>Adventure mode: asking companions to follow you or stand guard.</summary>
 public class CompanionRequestTests
 {
     private static Simulation Warm()

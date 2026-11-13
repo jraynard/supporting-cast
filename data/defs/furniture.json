@@ -115,7 +115,7 @@
       "name": "Chest", "category": "Building", "solid": true, "sprite": "buildings/chest",
       "description": "Holds 8 stacks. F at it to store what you carry or to open it.",
       "maxHp": 120, "flammability": 1.0,
-      // An ice dragon breathes into it to keep food from rotting (Chill work): °C an hour, down to minTemp.
+      // Chill work cools it to keep food from rotting: °C an hour, down to minTemp.
       "building": { "work": 150, "storageStacks": 8, "surfaceHeight": 0.46, "cost": [ { "def": "Wood", "count": 12 } ], "chill": { "cold": 900, "minTemp": -4 } },
       "model": [
         { "min": [0.14, 0.24, 0], "max": [0.86, 0.76, 0.46], "top": "props/chest_top", "side": "props/planks", "front": "props/chest_front" }

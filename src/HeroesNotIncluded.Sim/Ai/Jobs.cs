@@ -136,7 +136,7 @@ public sealed class EatJob(Entity food) : Job
     }
 }
 
-/// <summary>Sleep in a bed/nest if given, else at <paramref name="spot"/> if given, else where we stand.</summary>
+/// <summary>Sleep in a bed if given, else at <paramref name="spot"/> if given, else where we stand.</summary>
 public sealed class SleepJob(Entity bed, int3? spot = null) : Job
 {
     public override Entity Focus => bed;
@@ -190,7 +190,7 @@ public sealed class SleepJob(Entity bed, int3? spot = null) : Job
     /// <summary>Rest a player needs to get up at dawn rather than sleep on.</summary>
     public const float DawnRest = 0.6f;
 
-    /// <summary>How the night went: on the ground or in a bed (a nest, for dragons), under the sky or a roof.</summary>
+    /// <summary>How the night went: on the ground or in a bed, under the sky or a roof.</summary>
     private void RememberNight()
     {
         var known = Sim.Defs.Thoughts;

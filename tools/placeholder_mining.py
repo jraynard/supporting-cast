@@ -310,7 +310,6 @@ def ores_and_metals():
     save(mint_icon(), "buildings/mint")
     save(ember_crystal(), "items/ember_crystal")
     save(lime(), "items/lime")
-    save_raw(graded_metal(Image.open(os.path.join(ROOT, "items/steel_sword.png")).convert("RGBA"), "copper"), "items/dragon_blade")
 
     for metal in ("copper", "bronze", "steel", "silver", "gold"):
         save(bar_item(metal), f"items/{metal}_bar")

@@ -5,9 +5,7 @@ Each sheet is a horizontal strip PNG plus a sibling .anim.json manifest:
       "frames": [{"x","y","w","h","ox","oy","ms"}...],
       "tags": {"fly": {"from": 0, "to": 5, "loop": true, "event": -1}} }
 
-The dragon follows the design brief in docs/ART.md: an original upright, heavy-set dragon in
-charcoal and rust with bone horns/belly and glowing ember veins; never a copy of an existing
-creature. Hand-made Aseprite art exported to the same names replaces these files.
+Hand-made Aseprite art exported to the same names replaces these files.
 """
 import json
 import math
@@ -140,382 +138,6 @@ def outline(img, color):
     return out
 
 
-# ---------------------------------------------------------------- dragon
-
-class DragonPen:
-    """Draws in the adult's 96x80 design space, scaled to the stage's canvas.
-
-    Points inside the head group are scaled about the head anchor by head_scale, so the
-    hatchling gets its oversized head from the same drawing code.
-    """
-
-    def __init__(self, img, stage, dy=0):
-        self.d = ImageDraw.Draw(img)
-        self.s = stage["scale"]
-        self.hs = stage["head"]
-        self.ws = stage["wing"]
-        self.horn = stage.get("horn", 1.0)
-        self.dy = dy + stage.get("drop", 0)
-        self.head = None  # anchor while drawing the head group
-        self.wing = None  # anchor while drawing a wing
-
-    def p(self, x, y):
-        y += self.dy
-        if self.head is not None:
-            hx, hy = self.head
-            x, y = hx + (x - hx) * self.hs, hy + (y - hy) * self.hs
-        if self.wing is not None:
-            wx, wy = self.wing
-            x, y = wx + (x - wx) * self.ws, wy + (y - wy) * self.ws
-        return (round(x * self.s), round(y * self.s))
-
-    def poly(self, pts, fill):
-        self.d.polygon([self.p(*q) for q in pts], fill=fill)
-
-    def line(self, pts, fill, width=1):
-        self.d.line([self.p(*q) for q in pts], fill=fill, width=max(1, round(width * self.s)))
-
-    def dot(self, x, y, r, fill):
-        cx, cy = self.p(x, y)
-        r = max(0.5, r * self.s)
-        self.d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=fill)
-
-
-def wing_points(shoulder, angle, reach):
-    """Membrane polygon for a wing raised `angle` degrees from straight back (180 = level back)."""
-    sx, sy = shoulder
-    a = math.radians(angle)
-    ex, ey = sx + 18 * reach * math.cos(a), sy - 18 * reach * math.sin(a)
-    tips = []
-    for da, length in ((-28, 26), (0, 24), (28, 19)):
-        b = math.radians(angle + da)
-        tips.append((ex + length * reach * math.cos(b), ey - length * reach * math.sin(b)))
-    return (ex, ey), tips
-
-
-def draw_wing(pen, shoulder, root, angle, far):
-    pen.wing = shoulder
-    elbow, tips = wing_points(shoulder, angle, 1.0)
-    membrane = MEMBRANE_DARK if far else MEMBRANE
-    pen.poly([shoulder, elbow] + tips + [root], membrane)
-    # Scalloped trailing edge: notch between fingers.
-    for a, b in zip(tips, tips[1:]):
-        mid = ((a[0] + b[0]) / 2 * 0.8 + root[0] * 0.2, (a[1] + b[1]) / 2 * 0.8 + root[1] * 0.2)
-        pen.poly([a, mid, b], (0, 0, 0, 0))
-    spar = SCALE_DARK if far else SPAR
-    pen.line([shoulder, elbow], spar, 2)
-    for t in tips:
-        pen.line([elbow, t], spar, 1)
-    pen.wing = None
-
-
-def draw_head(pen, hx, hy, jaw_open=0, eyes_closed=False, tilt=0):
-    """Head group anchored at the back of the skull (hx, hy). Faces right."""
-    pen.head = (hx, hy)
-    t = tilt
-    k = pen.horn
-    pen.poly([(hx - 3 * k, hy + 1), (hx + 6 * k, hy - 6 * k), (hx - 9 * k, hy - 10 * k), (hx - 6 * k, hy - 4 * k)], HORN)  # far horn
-    pen.poly([(hx, hy), (hx + 8, hy - 2), (hx + 18, hy + 1 + t), (hx + 25, hy + 5 + t), (hx + 25, hy + 8 + t),
-              (hx + 16, hy + 10 + t), (hx + 6, hy + 12), (hx, hy + 9)], SCALE)                      # skull + snout
-    pen.poly([(hx + 6, hy + 10 + jaw_open * 0.4), (hx + 22, hy + 9 + t + jaw_open),
-              (hx + 20, hy + 12 + t + jaw_open), (hx + 7, hy + 13 + jaw_open * 0.4)], BELLY_DARK)    # lower jaw
-    if jaw_open > 0:
-        pen.poly([(hx + 10, hy + 10), (hx + 24, hy + 8 + t), (hx + 21, hy + 9 + t + jaw_open)], GLOW)
-    pen.poly([(hx + 2, hy + 1), (hx - 9 * k, hy - 7 * k), (hx - 6 * k, hy - 8 * k), (hx + 6, hy - 1)], HORN)  # near horn
-    pen.line([(hx + 4, hy - 1), (hx + 16, hy + 1 + t)], SCALE_LIGHT, 1)                              # brow ridge
-    if eyes_closed:
-        pen.line([(hx + 9, hy + 3), (hx + 12, hy + 3)], OUTLINE, 1)
-    else:
-        pen.dot(hx + 10.5, hy + 3, 1.3, EYE)
-    pen.dot(hx + 23, hy + 5 + t, 0.6, OUTLINE)                                                       # nostril
-    pen.head = None
-
-
-def draw_dragon(img, stage, pose, phase=0.0, bob=0, wing_angle=None, jaw=0, legs=0, eyes_closed=False, glow=0.0, pulse=0.0):
-    """glow: chest fire building before a breath (0..1). pulse: ember veins brightening (idle)."""
-    pen = DragonPen(img, stage, dy=bob)
-    if pose == "fly":
-        shoulder, root = (52, 44), (36, 50)
-        far_wing = (shoulder[0] + 3, shoulder[1] - 2)
-        draw_wing(pen, far_wing, (root[0] + 3, root[1] - 2), (wing_angle or 140) + 8, far=True)
-        # Tail streams out behind, gently waving with the flap.
-        wave = math.sin(phase * math.tau) * 2
-        pen.poly([(34, 48), (22, 50 + wave), (8, 49 + wave * 1.5), (2, 51 + wave * 2), (8, 54 + wave * 1.5),
-                  (22, 56 + wave), (34, 56)], SCALE)
-        pen.dot(3, 51.5 + wave * 2, 1.6, GLOW)
-        pen.poly([(40, 56), (46, 56), (42, 64), (36, 62)], SCALE_DARK)                    # tucked legs
-        pen.poly([(30, 50), (40, 42), (56, 41), (66, 46), (63, 55), (46, 58), (32, 56)], SCALE)
-        pen.poly([(44, 55), (62, 50), (60, 55), (46, 58)], BELLY)
-        pen.poly([(60, 44), (70, 38), (76, 35), (79, 41), (70, 47), (63, 52)], SCALE)   # neck
-        for x, y in ((36, 44), (44, 41), (52, 40), (60, 41), (68, 37)):
-            pen.poly([(x - 2, y + 1), (x, y - 3), (x + 2, y + 1)], SCALE_DARK)
-        draw_head(pen, 74, 31, jaw_open=jaw, eyes_closed=eyes_closed)
-        pen.line([(42, 48), (46, 51), (44, 54)], GLOW, 1)
-        draw_wing(pen, shoulder, root, wing_angle or 140, far=False)
-        return
-
-    lying = pose == "sleep"
-    low = 10 if lying else 0
-    # Far legs and far wing behind the body.
-    if not lying:
-        pen.poly([(34 + legs, 56), (42 + legs, 55), (44 + legs, 70), (40 + legs, 77), (34 + legs, 77), (37 + legs, 70)], SCALE_DARK)
-    if wing_angle is None:
-        pen.poly([(45, 40 + low), (38, 22 + low), (47, 27 + low), (56, 38 + low)], MEMBRANE_DARK)
-    else:
-        draw_wing(pen, (49, 38), (37, 46), wing_angle + 8, far=True)
-    # Tail: thick at the hips, sweeping down and back to a glowing tip.
-    curl = 4 if lying else 0
-    pen.poly([(40, 60 + low * 0.5), (30, 66 + curl), (18, 72), (8, 74), (3, 72), (13, 67), (25, 60 + curl), (36, 53 + low)], SCALE)
-    hot = GLOW_HI if max(glow, pulse) >= 0.5 else GLOW
-    pen.dot(4.5, 72.5, 1.8, hot)
-    for x, y in ((32, 61), (22, 67), (13, 71)):
-        pen.poly([(x - 2, y), (x, y - 3), (x + 2, y)], SCALE_DARK)
-    # Body: heavy, leaning forward.
-    pen.poly([(32, 52 + low), (37, 41 + low), (50, 36 + low), (60, 40 + low), (63, 52 + low), (57, 62 + low * 0.6),
-              (43, 65 + low * 0.3), (34, 61 + low * 0.5)], SCALE)
-    pen.poly([(51, 40 + low), (60, 43 + low), (61, 53 + low), (55, 62 + low * 0.6), (49, 59 + low * 0.6)], BELLY)
-    for k in range(3):
-        y = 46 + low + k * 5
-        pen.line([(52, y), (60, y - 1)], BELLY_DARK, 1)
-    for x, y in ((37, 44), (43, 39), (49, 36)):
-        pen.poly([(x - 2, y + 2 + low), (x, y - 2 + low), (x + 2, y + 2 + low)], SCALE_DARK)
-    pen.line([(38, 48 + low), (43, 52 + low), (41, 57 + low)], hot, 1)  # ember vein
-    pen.line([(46, 43 + low), (50, 47 + low)], GLOW, 1)
-    if glow > 0:  # chest fire building up before a breath
-        pen.dot(57, 47 + low, 3 + 2 * glow, GLOW if glow < 0.8 else GLOW_HI)
-    # Near hind leg and foot.
-    if lying:
-        pen.poly([(40, 66), (54, 66), (56, 72), (40, 72)], SCALE)
-        pen.poly([(52, 70), (60, 70), (60, 73), (50, 73)], SCALE_DARK)
-    else:
-        pen.poly([(38 - legs, 54), (49 - legs, 52), (51 - legs, 64), (46 - legs, 70)], SCALE)
-        pen.poly([(42 - legs, 66), (48 - legs, 64), (50 - legs, 76), (44 - legs, 76)], SCALE)
-        pen.poly([(42 - legs, 74), (54 - legs, 74), (56 - legs, 77), (40 - legs, 77)], SCALE_DARK)
-        pen.poly([(57, 50), (61, 50), (65, 58), (63, 60), (59, 56)], SCALE)              # arm
-        pen.line([(63, 60), (66, 61)], HORN, 1)
-    # Neck and head.
-    if lying:
-        pen.poly([(54, 50), (62, 50), (70, 58), (68, 64), (58, 60)], SCALE)
-        for x, y in ((58, 50), (64, 53)):
-            pen.poly([(x - 2, y + 1), (x, y - 2), (x + 2, y + 1)], SCALE_DARK)
-        draw_head(pen, 66, 58, eyes_closed=True, tilt=2)
-    else:
-        lean = {"breathe": 5, "windup": -3}.get(pose, 0)
-        lift = {"breathe": 3, "windup": -2}.get(pose, 0)
-        hx, hy = 66 + lean, 16 + lift
-        pen.poly([(52, 42), (58, 34), (hx - 2, hy + 8), (hx + 4, hy + 6), (hx + 6, hy + 12), (64, 34), (62, 46)], SCALE)
-        for k in range(3):
-            x, y = 58 + (hx - 58) * k / 3, 34 + (hy + 6 - 34) * k / 3
-            pen.poly([(x - 2, y + 1), (x - 1, y - 3), (x + 1, y + 1)], SCALE_DARK)
-        pen.line([(62, 38), (hx + 2, hy + 12)], BELLY, 2)
-        draw_head(pen, hx, hy, jaw_open=jaw, eyes_closed=eyes_closed, tilt={"breathe": 2}.get(pose, 0))
-    # Near wing.
-    if wing_angle is None:
-        pen.poly([(47, 40 + low), (40, 21 + low), (50, 27 + low), (59, 39 + low)], MEMBRANE)  # folded
-        pen.line([(47, 40 + low), (40, 21 + low)], SPAR, 2)
-        pen.line([(40, 21 + low), (52, 31 + low)], SPAR, 1)
-    else:
-        draw_wing(pen, (47, 40), (35, 48), wing_angle, far=False)
-
-
-def dragon_sheet(name, canvas, stage, pivot, mouth, hatch=False, saddle=None):
-    """canvas: (w, h) in pixels; stage: scale, head/wing/horn proportions and a drop (design units) from the 96x80 adult."""
-
-    def frame(pose, **kw):
-        img = Image.new("RGBA", canvas, (0, 0, 0, 0))
-        draw_dragon(img, stage, pose, **kw)
-        return outline(img, OUTLINE)
-
-    seq = Sequencer()
-    seq.add("idle", [frame("stand", bob=b, pulse=g) for b, g in ((0, 0), (0, 0.3), (1, 0.6), (1, 0.3))], 220)
-    seq.add("walk", [frame("stand", legs=l, bob=b) for l, b in ((3, 0), (0, -1), (-3, 0), (0, -1))], 130)
-    flap = [80, 105, 145, 195, 170, 120]
-    seq.add("fly", [frame("fly", wing_angle=a, phase=i / 6, bob=[0, 0, -1, -2, -1, 0][i]) for i, a in enumerate(flap)], 80)
-    seq.add("glide", [frame("fly", wing_angle=a, phase=i / 2) for i, a in enumerate((168, 164))], 260)
-    seq.add("takeoff", [frame("stand", wing_angle=95, bob=3), frame("stand", wing_angle=200, bob=-3), frame("fly", wing_angle=110)], 110, loop=False)
-    seq.add("land", [frame("fly", wing_angle=100), frame("stand", wing_angle=130, bob=-2), frame("stand", bob=2)], 120, loop=False)
-    seq.add("breathe_windup", [frame("windup", glow=g) for g in (0.4, 0.9)], 180)
-    seq.add("breathe", [frame("breathe", jaw=j) for j in (3, 5, 5)], 130, loop=False)
-    seq.add("sleep", [frame("sleep", bob=b) for b in (0, 1)], 900)
-    seq.add("downed", [frame("sleep")], 1000, loop=False)
-    if hatch:
-        start = len(seq.frames)
-        seq.frames.extend(hatch_frames(canvas, stage, pivot))
-        seq.tags["hatch"] = (start, len(seq.frames) - 1, False, 2)
-    points = {"mouth": mouth}
-    if saddle:  # where a rider sits (rideable stages)
-        points["saddle"] = saddle
-    write_sheet(name, seq.frames, seq.tags, pivot, points)
-    # Dragon looks: a base sheet (outline, ember glow) plus greyscale scale, belly, wing, horn and
-    # eye layers the game tints (Rendering/DragonLooks.cs). The plain sheet above stays the
-    # default-coloured composite for anything drawn without a look.
-    split = [split_layers(img, DRAGON_LAYER_SHADES) for img, _ in seq.frames]
-    for layer in ["base", *DRAGON_LAYER_SHADES]:
-        frames = [(parts[layer], ms) for parts, (_, ms) in zip(split, seq.frames)]
-        write_sheet(f"{name}_{layer}", frames, seq.tags, pivot, points, trim=layer != "base")
-
-
-# Dragon colour groups and the grey each palette colour becomes. Main tones sit below white so
-# highlights can stay lighter than the chosen colour; the game's default look (DragonLooks.Default)
-# is each group's main colour scaled back up, so an untouched dragon matches the composite sheet.
-DRAGON_LAYER_SHADES = {
-    "scales": {SCALE: 200, SCALE_LIGHT: 255, SCALE_DARK: 110},
-    "belly": {BELLY: 230, BELLY_DARK: 180},
-    "wings": {MEMBRANE: 230, MEMBRANE_DARK: 160},
-    "horns": {HORN: 255, SPAR: 170},
-    "eyes": {EYE: 255},
-}
-
-
-def shade(c, k):
-    """Scale an RGB(A) colour's brightness, returning opaque RGBA."""
-    return tuple(max(0, min(255, int(v * k))) for v in c[:3]) + (255,)
-
-
-# ---------------------------------------------------------------- egg & hatching
-
-def egg_layer(canvas, cx, bottom, w, h, seed=3, glow=0.5, cracks=0, cold=False, tilt=0.0):
-    """A dragon egg in the dragon's colours: charcoal shell with rust scales and glowing ember
-    veins (dull when cold), lit from the top-left. cracks: 0 none, 1 a few, 2 many (glowing).
-    Tilt rocks it about its base (degrees)."""
-    rnd = random.Random(seed)
-    img = Image.new("RGBA", canvas, (0, 0, 0, 0))
-    px = img.load()
-    cy = bottom - h / 2
-    shell = (66, 46, 48) if not cold else (64, 62, 74)
-    scale = (124, 50, 36) if not cold else (92, 70, 74)
-    for y in range(canvas[1]):
-        for x in range(canvas[0]):
-            nx = (x + 0.5 - cx) / (w / 2)
-            ny = (y + 0.5 - cy) / (h / 2)
-            ny *= 0.92 if ny < 0 else 1.06  # pointier top, rounder bottom
-            r = nx * nx + ny * ny
-            if r > 1:
-                continue
-            light = -(nx * -0.55 + ny * -0.8) * 0.6 + 0.25 * (1 - r)
-            row = int((y - cy) // 3)
-            on_scale = (x + (row % 2) * 2) % 4 == 0 or (y % 3 == 0 and (x + row) % 4 < 2)
-            base = scale if on_scale else shell
-            k = 0.7 if light < -0.2 else 0.9 if light < 0.15 else 1.1 if light < 0.4 else 1.3
-            px[x, y] = shade(base, k)
-    # Ember veins: a few branching lines down the shell.
-    vein = GLOW_HI if glow > 0.75 else GLOW if glow > 0.3 else (170, 70, 30, 255)
-    if cold:
-        vein = (96, 52, 44, 255)
-    dim = (110, 50, 36, 255) if cold else (150, 64, 30, 255)
-    band = int(cy + 2)                                        # an engraved rune band round the middle
-    for x in range(canvas[0]):
-        if px[x, band][3]:
-            px[x, band] = shade(shell, 0.6)
-            if x % 3 == 0 and px[x, band + 1][3]:
-                px[x, band + 1] = dim
-    for v in range(3):                                        # veins step at right angles, like runes
-        x, y = int(cx + rnd.uniform(-w / 3, w / 3)), int(cy - h / 2 + rnd.uniform(3, 6))
-        dx = rnd.choice((-1, 1))
-        done = 0
-        while done < int(h * 0.7):
-            for _ in range(rnd.randint(2, 4)):
-                if px[x, y][3]:
-                    px[x, y] = vein
-                y += 1
-                done += 1
-            for _ in range(rnd.randint(1, 3)):
-                if px[x, min(y, canvas[1] - 1)][3]:
-                    px[x, min(y, canvas[1] - 1)] = vein
-                x += dx
-            dx = -dx if rnd.random() < 0.5 else dx
-            x = max(0, min(canvas[0] - 1, x))
-            y = min(y, canvas[1] - 1)
-    if cracks:
-        for c in range(1 + cracks * 2):
-            x, y = cx + rnd.uniform(-w / 3, w / 3), cy - h / 2 + 2 + c
-            for _ in range(rnd.randint(4, 6 + cracks * 3)):
-                if 0 <= int(x) < canvas[0] and 0 <= int(y) < canvas[1] and px[int(x), int(y)][3]:
-                    px[int(x), int(y)] = GLOW_HI
-                x += rnd.choice((-1, 1))
-                y += rnd.choice((0, 1))
-    img = selective_outline(img, keep=(GLOW, GLOW_HI, (110, 50, 36, 255), (150, 64, 30, 255), (170, 70, 30, 255), (96, 52, 44, 255)))
-    if tilt:
-        img = img.rotate(tilt, resample=Image.NEAREST, center=(cx, bottom))
-    return img
-
-
-def split_egg(egg, cut_y, seed=5):
-    """Split an egg image along a jagged line: (lid above, cup below)."""
-    rnd = random.Random(seed)
-    lid = egg.copy()
-    cup = egg.copy()
-    lp, cp = lid.load(), cup.load()
-    w, h = egg.size
-    for x in range(w):
-        edge = cut_y + (2 if (x // 2) % 2 else 0) + rnd.choice((0, 0, 1))
-        for y in range(h):
-            if y < edge:
-                cp[x, y] = (0, 0, 0, 0)
-            else:
-                lp[x, y] = (0, 0, 0, 0)
-        if 0 <= edge < h and cp[x, edge][3]:
-            cp[x, edge] = GLOW_HI  # the glowing broken rim
-    return lid, cup
-
-
-def egg_sheet():
-    canvas, cx, bottom, w, h = (32, 32), 16, 30, 14, 20
-    seq = Sequencer()
-    seq.add("idle", [egg_layer(canvas, cx, bottom, w, h, glow=g) for g in (0.15, 0.35, 0.55, 0.35)], 300)
-    seq.add("cold", [egg_layer(canvas, cx, bottom, w, h, cold=True)], 1000)
-    seq.add("wobble", [egg_layer(canvas, cx, bottom, w, h, glow=0.6, tilt=t) for t in (0, -7, 0, 7, 0, -4)], 110)
-    seq.add("crack", [egg_layer(canvas, cx, bottom, w, h, glow=1, cracks=1, tilt=t) for t in (0, -6, 0, 6)], 100)
-    write_sheet("creatures/dragon_egg", seq.frames, seq.tags, (16, 31))
-
-
-def hatch_frames(canvas, stage, pivot, draw=None):
-    """Egg cracks, lid pops (event frame 2: shell chips fly), the hatchling peeks out, climbs free.
-    ``draw(eyes_closed)`` returns the hatchling's frame; without it the old placeholder is drawn."""
-    cx, bottom = pivot[0], pivot[1]
-    w, h = 14, 20
-
-    def dragon(dy=0, dx=0):
-        """The hatchling, sunk dy pixels into the shell and shifted so its head rises out of it."""
-        if draw is not None:
-            img = draw(dy > 6)
-        else:
-            img = Image.new("RGBA", canvas, (0, 0, 0, 0))
-            draw_dragon(img, stage, "stand", eyes_closed=dy > 6)
-            img = outline(img, OUTLINE)
-        if dy or dx:
-            shifted = Image.new("RGBA", canvas, (0, 0, 0, 0))
-            shifted.paste(img, (dx, dy))
-            img = shifted
-        return img
-
-    def over(*layers):
-        out = Image.new("RGBA", canvas, (0, 0, 0, 0))
-        for layer in layers:
-            out.alpha_composite(layer)
-        return out
-
-    cracked = egg_layer(canvas, cx, bottom, w, h, glow=1, cracks=2)
-    lid, cup = split_egg(cracked, bottom - 11)
-    popped = Image.new("RGBA", canvas, (0, 0, 0, 0))
-    popped.paste(lid.rotate(-25, resample=Image.NEAREST, center=(cx, bottom - 11)), (4, -7))
-    flash = Image.new("RGBA", canvas, (0, 0, 0, 0))
-    ImageDraw.Draw(flash).ellipse([cx - 6, bottom - 16, cx + 6, bottom - 8], fill=GLOW_HI)
-    shard_l = cup.crop((0, 0, cx, canvas[1]))
-    shard_r = cup.crop((cx, 0, canvas[0], canvas[1]))
-    halves = Image.new("RGBA", canvas, (0, 0, 0, 0))
-    halves.paste(shard_l.rotate(30, resample=Image.NEAREST, center=(cx, bottom)), (-8, 3), shard_l.rotate(30, resample=Image.NEAREST, center=(cx, bottom)))
-    halves.paste(shard_r.rotate(-30, resample=Image.NEAREST, center=(0, bottom)), (cx + 8, 3), shard_r.rotate(-30, resample=Image.NEAREST, center=(0, bottom)))
-    return [
-        (egg_layer(canvas, cx, bottom, w, h, glow=1, cracks=1, tilt=-6), 180),
-        (egg_layer(canvas, cx, bottom, w, h, glow=1, cracks=2, tilt=6), 180),
-        (over(flash, cup, popped), 220),
-        (over(dragon(10, -8), cup), 320),
-        (over(dragon(5, -5), cup), 320),
-        (over(halves, dragon()), 480),
-    ]
-
-
 # ---------------------------------------------------------------- tint layers
 
 def split_layers(img, layer_shades=None):
@@ -584,12 +206,6 @@ def speech_bubble():
 
 
 def effects():
-    # Eggshell chip, thrown when a hatchling breaks out.
-    img = Image.new("RGBA", (6, 6), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    d.polygon([(0, 2), (3, 0), (5, 2), (4, 5), (1, 4)], fill=(70, 48, 50, 255))
-    d.line([(1, 4), (4, 5)], fill=(214, 196, 160, 255))
-    img.save(os.path.join(ROOT, "fx", "shell.png"))
     # Water glint: a sparkle that swells and fades (one loop, picked by phase per cell).
     frames = []
     for r in (0, 1, 2, 3, 2, 1):
@@ -700,11 +316,6 @@ def ui_icons():
     def haul(d):
         d.rectangle([5, 10, 18, 19], fill=(170, 120, 70, 255))
         d.polygon([(11, 3), (16, 8), (6, 8)], fill=(245, 240, 230, 255))
-    def heart(d):
-        d.ellipse([4, 5, 12, 13], fill=(230, 80, 110, 255))
-        d.ellipse([11, 5, 19, 13], fill=(230, 80, 110, 255))
-        d.polygon([(4, 10), (19, 10), (12, 20)], fill=(230, 80, 110, 255))
-
     def bow(d):  # hunt: a bow with an arrow nocked
         d.arc([3, 3, 17, 21], 280, 80, fill=HANDLE, width=3)
         d.line([(10, 4), (10, 20)], fill=(235, 230, 215, 255), width=1)
@@ -722,7 +333,7 @@ def ui_icons():
     for name, fn in (("select", select), ("cancel", cancel), ("chop", axe), ("mine", pick), ("dig", shovel),
                      ("harvest", berries), ("build", hammer), ("deconstruct", deconstruct), ("burn", flame),
                      ("stockpile", crate), ("clearzone", eraser), ("sleep", moon), ("eat", plate), ("alert", alert),
-                     ("fight", sword), ("doctor", cross), ("haul", haul), ("bond", heart),
+                     ("fight", sword), ("doctor", cross), ("haul", haul),
                      ("hunt", bow), ("fish", fish), ("butcher", cleaver)):
         icon(name, fn)
 
@@ -812,8 +423,6 @@ def animal_sheets():
 
 
 def generate():
-    # Proportions relative to the 96x80 adult design: the young have big heads, stubby wings, budding horns.
-    # the egg comes from chibi_dragon.egg_sheet now
     animal_sheets()
     effects()
     ui_icons()

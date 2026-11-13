@@ -37,7 +37,7 @@ public static class Requests
     /// <summary>
     /// How likely <paramref name="companion"/> is to agree to <paramref name="kind"/> from
     /// <paramref name="from"/>: likely by default, less when they're down or think little of the
-    /// asker, more for the egg (everyone cares about the egg). The reason names what weighs most.
+    /// asker. The reason names what weighs most.
     /// </summary>
     public static (float Chance, string Reason) Willingness(Simulation sim, Entity from, Entity companion, RequestKind kind)
     {
@@ -92,7 +92,7 @@ public static class Requests
         sim.World.IsAlive(e) && !(sim.World.TryGet<Creature>(e, out var c) && c.Dead);
 }
 
-/// <summary>Ask a companion to follow, guard the egg, or (with a null kind) go back to their own work.</summary>
+/// <summary>Ask a companion to follow, stand guard, or (with a null kind) go back to their own work.</summary>
 public sealed record RequestCommand(Entity From, Entity Companion, RequestKind? Kind) : ISimCommand, IActorCommand
 {
     public Entity Actor => From;
@@ -162,7 +162,7 @@ public sealed class EscortJob(Entity leader, int ticks) : Job
     }
 }
 
-/// <summary>Keep within a few cells of something precious (the egg wherever it is, or a young dragon), for a while.</summary>
+/// <summary>Keep within a few cells of something precious (someone hurt, a strongbox), for a while.</summary>
 public sealed class GuardJob(Entity ward, int ticks) : Job
 {
     public const int Radius = 3;

@@ -6,7 +6,7 @@ namespace HeroesNotIncluded.Sim.Maps;
 /// The cells a structure wider than one cell covers (<see cref="ThingDef.SizeX"/> ×
 /// <see cref="ThingDef.SizeY"/>), turned by its facing. Each axis runs from <see cref="Lo"/> to
 /// <c>Lo + n - 1</c> around the anchor (<c>Thing.Cell</c>): an odd size is centred on it (the 3x3
-/// nest), an even size grows towards +X and the front (+Y), so a 1x2 bed's headboard sits in the
+/// building), an even size grows towards +X and the front (+Y), so a 1x2 bed's headboard sits in the
 /// anchor and its foot one cell in front. Quarter turns use the same convention as the game's
 /// <c>PropModel.Rotate</c>, which calls <see cref="Rotate(float, float, int)"/>, so a model and the
 /// cells it stands on can't drift apart.

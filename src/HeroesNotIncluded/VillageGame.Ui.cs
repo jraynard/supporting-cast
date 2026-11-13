@@ -643,7 +643,7 @@ public sealed partial class VillageGame
         return string.Join("\n", lines);
     }
 
-    /// <summary>Keeper bond, breath orders, drafting: the things a player clicks on a creature.</summary>
+    /// <summary>Drafting: the things a player clicks on a creature.</summary>
     private void InspectCreatureRoles(Entity e, Creature c, Mind mind)
     {
         var w = _sim.World;
@@ -1000,7 +1000,7 @@ public sealed partial class VillageGame
             foreach (var t in types)
                 ImGui.TableSetupColumn(t.ToString(), ImGuiTableColumnFlags.None, 0, default);
             ImGui.TableHeadersRow();
-            // Villagers, then the dragons: they only take on what their life stage allows.
+            // The villagers, each taking on only what their life stage allows.
             var workers = WorkTabRows();
             foreach (var e in workers)
             {

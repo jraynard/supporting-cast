@@ -682,13 +682,6 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         if (pose.TagStarted && pose.Tag is "takeoff" or "land")
             _particles.Dust(new float3(feet.X, feet.Y, GroundBelow(map, p.Cell)), 10, width * 0.6f, Dirt, 0.25f + width * 0.15f);
 
-        if (pose.EventFired && pose.Tag == "hatch")
-        {
-            var at = feet + new float3(0, 0, 0.35f);
-            _particles.Shells(at, 12);
-            _particles.Embers(at, 6);
-        }
-
         if (pose.EventFired && pose.Tag == "work" && mind.Job is { } work)
         {
             float3? at = !work.Focus.IsNull && w.IsAlive(work.Focus) ? Position.CenterOf(sim.LocationOf(work.Focus))

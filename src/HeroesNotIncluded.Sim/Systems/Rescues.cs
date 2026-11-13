@@ -5,11 +5,9 @@ using HeroesNotIncluded.Sim.Defs;
 namespace HeroesNotIncluded.Sim.Systems;
 
 /// <summary>
-/// Who can carry whom to bed when they're down (<see cref="RescueJob"/>): a person carries another
-/// person, or a dragon no bigger than a person can drag (a hatchling or juvenile, up to
-/// <see cref="MaxCarrySize"/>); a grown dragon carries anyone up to its own size,
-/// its keeper above all. People go to a bed, dragons to a nest. A downed adult dragon is too big
-/// for anyone: it's tended and fed where it lies (Doctor work) and mends faster by a fire.
+/// Who can carry whom to bed when they're down (<see cref="RescueJob"/>): a person carries anyone
+/// no bigger than a person (up to <see cref="MaxCarrySize"/>) to a bed. Anything bigger (the dragon)
+/// is too big for anyone: it's tended where it lies.
 /// </summary>
 public static class Rescues
 {
@@ -55,8 +53,8 @@ public static class Rescues
     }
 
     /// <summary>
-    /// What the player's character can do with the creature in their arms at a cell: lay a dragon in a
-    /// nest (a person in a bed), set a carcass down by a butcher spot, or just put it down.
+    /// What the player's character can do with the creature in their arms at a cell: lay a person in a
+    /// bed, set a carcass down by a butcher spot, or just put it down.
     /// </summary>
     public static AvatarAction SetDownAt(Simulation sim, Entity carried, int3 cell)
     {

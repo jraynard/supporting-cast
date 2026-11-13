@@ -19,7 +19,7 @@ public static class Navigation
 
     /// <summary>
     /// Until a dragon has flown this many times it flies every trip long enough to take off for,
-    /// even when walking would be about as quick: a juvenile tries its new wings.
+    /// even when walking would be about as quick.
     /// </summary>
     public const int FledglingFlights = 3;
 
