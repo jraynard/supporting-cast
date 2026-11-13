@@ -328,7 +328,7 @@ public sealed partial class VillageGame
         var load = _sim.LoadOf(pack);
         var color = load >= capacity - 0.05f ? Warn : Good;
         ImGui.PushStyleColor(ImGuiCol.PlotHistogram, in color);
-        var size = (float2?)new float2(width, 0);
+        var size = (float2?)new float2(MathF.Min(Gui.S(width), ImGui.GetContentRegionAvail().X), 0);
         ImGui.ProgressBar(Math.Clamp(load / capacity, 0, 1), in size, $"{load:0.#}/{capacity:0.#} kg");
         ImGui.PopStyleColor(1);
     }
@@ -395,10 +395,8 @@ public sealed partial class VillageGame
         if (!_inventoryOpen || !HasAvatar)
             return;
         var w = _sim.World;
-        // Beside the avatar (the camera keeps them centred), not over them.
-        var beside = ImGui.GetIO().DisplaySize * 0.5f + new float2(60, 0);
-        float2? left = new float2(0f, 0.5f);
-        ImGui.SetNextWindowPos(in beside, ImGuiCond.Appearing, in left);
+        // Beside the avatar (the camera keeps them centred), not over them, but kept on screen.
+        PlaceBeside(2 * PackColumnWidth + Gui.S(60));
         var open = true;
         ScreenFit.Next();
         Narsil.Ui.Panel.Begin("Inventory###inventory", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
@@ -407,7 +405,11 @@ public sealed partial class VillageGame
             _showRecipeBook = !_showRecipeBook;
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
             Tip("What you know how to make, and things you can make by hand right here.");
-        ImGui.BeginGroup();
+        if (!BeginTwoColumns("##inventory-cols"))
+        {
+            Narsil.Ui.Panel.End();
+            return;
+        }
         Theme.Header(Host.ImGui, "Wearing");
         foreach (var slot in new[] { GearSlot.Head, GearSlot.Body, GearSlot.Tunic, GearSlot.Legs, GearSlot.Feet, GearSlot.Cloak, GearSlot.Back, GearSlot.Neck, GearSlot.Weapon })
         {
@@ -474,17 +476,47 @@ public sealed partial class VillageGame
                 EatButton(held);
         }
         ImGui.EndGroup();
-        DrawBelt();
-        ImGui.EndGroup();
 
-        ImGui.SameLine(0, 24);
-        ImGui.BeginGroup();
+        // The pack (and the belt under it) in the second column: it's what you open this for.
+        ImGui.TableSetColumnIndex(1);
         DrawPackList(_sim.PackOf(_avatar), _openStorage);
-        ImGui.EndGroup();
+        DrawBelt();
+        ImGui.EndTable();
 
         Narsil.Ui.Panel.End();
         if (!open)
             _inventoryOpen = false;
+    }
+
+    /// <summary>Width of each column in the inventory and storage windows, unscaled.</summary>
+    private const float PackColumn = 340f;
+
+    private static float PackColumnWidth => Gui.S(PackColumn);
+
+    /// <summary>
+    /// Two fixed-width columns side by side, starting in the first. Not groups on one line: a
+    /// header's rule takes all the width there is, so in an auto-sized window a second group never
+    /// fits and the window grows a little every frame until it fills the screen.
+    /// </summary>
+    private static bool BeginTwoColumns(string id)
+    {
+        if (!ImGui.BeginTable(id, 2, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.NoPadOuterX))
+            return false;
+        ImGui.TableSetupColumn("##a"u8, ImGuiTableColumnFlags.WidthFixed, PackColumnWidth, default);
+        ImGui.TableSetupColumn("##b"u8, ImGuiTableColumnFlags.WidthFixed, PackColumnWidth, default);
+        ImGui.TableNextRow();
+        ImGui.TableSetColumnIndex(0);
+        return true;
+    }
+
+    /// <summary>Open a window just right of the avatar (the camera keeps them centred), moved left if it would run off screen.</summary>
+    private static void PlaceBeside(float width)
+    {
+        var screen = ImGui.GetIO().DisplaySize;
+        var x = MathF.Max(Gui.S(10), MathF.Min(screen.X * 0.5f + Gui.S(60), screen.X - width - Gui.S(10)));
+        var at = new float2(x, screen.Y * 0.5f);
+        float2? left = new float2(0f, 0.5f);
+        ImGui.SetNextWindowPos(in at, ImGuiCond.Appearing, in left);
     }
 
     /// <summary>

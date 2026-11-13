@@ -3,6 +3,7 @@ using Narsil.Ui;
 using Narsil;
 using Narsil.Platform;
 using Narsil.Rendering;
+using HeroesNotIncluded.Characters;
 using HeroesNotIncluded.Net;
 using HeroesNotIncluded.Rendering;
 using HeroesNotIncluded.Sim.Ai;
@@ -28,17 +29,24 @@ public sealed partial class VillageGame
     /// <summary>Played as a character: the player inhabits a villager (their avatar), rather than overseeing the town.</summary>
     public bool Adventure { get; init; }
 
+    /// <summary>
+    /// The saved character played as (<see cref="CharacterRoster"/>), if any: the hero's name,
+    /// look, traits and clothes unless set apart, and whom the reveal credits with the round.
+    /// Game-side only; the sim sees what's sent from it.
+    /// </summary>
+    public SavedCharacter? Character { get; init; }
+
     /// <summary>Name for the avatar (from the character creator).</summary>
-    public string? HeroName { get; init; }
+    public string? HeroName { get => field ?? Character?.Name; init; }
 
     /// <summary>The avatar's look (from the character creator); null keeps a derived one.</summary>
-    public Appearance? HeroLook { get; init; }
+    public Appearance? HeroLook { get => field ?? Character?.Look; init; }
 
     /// <summary>The avatar's traits by name (from the character creator); null keeps rolled ones.</summary>
-    public IReadOnlyList<string>? HeroTraits { get; init; }
+    public IReadOnlyList<string>? HeroTraits { get => field ?? Character?.Traits; init; }
 
     /// <summary>The avatar's clothes (<c>"Def:Dye"</c>, from the character creator); null dresses them as a villager.</summary>
-    public IReadOnlyList<string>? HeroClothes { get; init; }
+    public IReadOnlyList<string>? HeroClothes { get => field ?? Character?.Clothes; init; }
 
     /// <summary>Debug/screenshots (<c>--preset Wanderer</c>): the avatar looks and dresses as a creator preset.</summary>
     public string? HeroPreset { get; init; }
@@ -665,13 +673,15 @@ public sealed partial class VillageGame
         var items = _sim.StoredIn(_openStorage);
         var handsFull = w.Get<Carrying>(_avatar).HasItem;
         var myPack = _sim.PackOf(_avatar);
-        var pos = ImGui.GetIO().DisplaySize * 0.5f + new float2(60, 0); // beside the avatar, not over them
-        float2? pivot = new float2(0f, 0.5f);
-        ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in pivot);
+        PlaceBeside(2 * PackColumnWidth + Narsil.Ui.Gui.S(60)); // beside the avatar, not over them
         var open = true;
         ScreenFit.Next();
         Narsil.Ui.Panel.Begin($"{char.ToUpper(thing.Label[0])}{thing.Label[1..]}###storage", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
-        ImGui.BeginGroup();
+        if (!BeginTwoColumns("##storage-cols"))
+        {
+            Narsil.Ui.Panel.End();
+            return;
+        }
         if (thing.Def.Container != null)
         {
             LoadBar(_openStorage, 220);
@@ -717,12 +727,10 @@ public sealed partial class VillageGame
             ImGui.TextDisabled("Empty."u8);
             DrawDismantle(thing);
         }
-        ImGui.EndGroup();
         // Your own pack beside it, to put things in.
-        ImGui.SameLine(0, 24);
-        ImGui.BeginGroup();
+        ImGui.TableSetColumnIndex(1);
         DrawPackList(myPack, _openStorage);
-        ImGui.EndGroup();
+        ImGui.EndTable();
         Narsil.Ui.Panel.End();
         if (!open)
             _openStorage = Entity.Null;

@@ -50,6 +50,9 @@ public sealed class CharacterCreator
 
     public Appearance Look => _look;
 
+    /// <summary>What the finishing button says: "Continue" on the way into a game, "Save" on the Characters screen.</summary>
+    public string ContinueLabel { get; set; } = "Continue";
+
     private readonly List<TraitDef> _traits = [];
 
     /// <summary>The picked traits, by name (at most <see cref="TraitRules.MaxTraits"/>, none conflicting).</summary>
@@ -61,7 +64,7 @@ public sealed class CharacterCreator
 
     public string Name => Narsil.Ui.ImGuiText.Value(_name).Trim() is { Length: > 0 } n ? n : "Arin";
 
-    /// <summary>Start from a saved character (<see cref="Net.SavedCharacter"/>): editing it, or making the next one like it.</summary>
+    /// <summary>Start from a saved character (<see cref="Characters.SavedCharacter"/>): editing it, or making the next one like it.</summary>
     public void Load(string name, Appearance look, IEnumerable<string> traits, IEnumerable<string>? clothes = null)
     {
         _name.SetValue(name.AsSpan());
@@ -117,7 +120,7 @@ public sealed class CharacterCreator
         if (ImGui.Button("Back"u8, in size))
             result = Result.Back;
         ImGui.SameLine(0, 8);
-        if (ImGui.Button("Continue"u8, in size))
+        if (ImGui.Button(ContinueLabel, in size))
             result = Result.Continue;
         ImGui.EndGroup();
 

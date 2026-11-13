@@ -138,6 +138,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
   `Gui.S`, colours from `Ui/Theme` (the brand's: keep ember rare). Mini-games open with
   `BeginWork(title, hints)`. Titles and the main menu use `Gui.DisplayFont` (Cinzel); words follow the
   brand guide's voice and word bank.
+- Saved characters: `Characters/CharacterRoster` (`characters.json` in the config folder) holds the
+  player's characters and their `CharacterProgress`, for every mode. Game-side only: the sim sees
+  just the name, look, traits and clothes sent from one; `VillageGame` credits the round at the reveal.
 - `src/HeroesNotIncluded`: `TitleGame`, `VillageGame` (partials by area), `WorldRenderer`, `WorldMesher`,
   `Net/CoopSession`. Draw creatures at `WorldRenderer.DrawPos`, never raw `Position.Pos`. Presentation
   that lives on defs (`model`, `bridge`, `fireAt`, `smokeAt`, `modelCutAt`) is never read by the sim.

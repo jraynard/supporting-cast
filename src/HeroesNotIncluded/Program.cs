@@ -1,4 +1,5 @@
 using HeroesNotIncluded;
+using HeroesNotIncluded.Characters;
 using HeroesNotIncluded.Debug;
 using HeroesNotIncluded.Net;
 using Narsil;
@@ -162,8 +163,11 @@ else if (args.Contains("--art-preview"))
     host.Run(new ArtPreviewGame());
 else if (args.Contains("--host"))
 {
-    // Co-op host: a saved village (--host <slot or path>), or a new round.
+    // Co-op host: a saved village (--host <slot or path>), or a new round; as --character if given.
+    var saved = PickedCharacter();
     var me = CoopIdentity.Load(host);
+    if (saved != null && CoopIdentity.NameOverride == null)
+        me = me with { Name = saved.Name };
     var hosting = new HostSettings(me, $"{me.Name}'s village", args.Contains("--port") ? ParseInt(args, "--port") : CoopSession.DefaultPort);
     if (ParseString(args, "--host") is { } hostPath && !hostPath.StartsWith("--"))
     {
@@ -180,14 +184,9 @@ else if (args.Contains("--host"))
     }
     else
     {
-        // --character: host as a saved character (the roster's), else --name.
-        var saved = CharacterRoster.PickOverride is { } pick
-            ? CharacterRoster.Load(host, DefDatabase.LoadDirectory(Path.Combine(AppContext.BaseDirectory, "data", "defs"))).Find(pick)
-            : null;
-        CharacterRoster.PickOverride = null;
         host.Run(new VillageGame(ParseSeed(args))
         {
-            Adventure = true, HeroName = saved?.Name ?? ParseString(args, "--name"), HeroLook = saved?.Look, HeroTraits = saved?.Traits, HeroClothes = saved?.Clothes,
+            Adventure = true, Character = saved, HeroName = saved == null ? ParseString(args, "--name") : null,
             Difficulty = ParseString(args, "--difficulty"), HostCoop = hosting, AutoPause = false,
             MapName = ParseString(args, "--map") ?? HeroesNotIncluded.Sim.Scenarios.VillageRound.DefaultMap,
         });
@@ -231,6 +230,8 @@ else
         Difficulty = ParseString(args, "--difficulty"),
         // The demos are for looking at; everything else walks in as a character.
         Adventure = !args.Contains("--furniture-demo") && !args.Contains("--building-demo"),
+        // --character: a saved character, credited at the reveal; without it, an unsaved one-off.
+        Character = PickedCharacter(),
         HeroName = ParseString(args, "--name"),
         HeroPreset = ParseString(args, "--preset"),
         HeroFolk = Enum.TryParse<HeroesNotIncluded.Sim.Components.Folk>(ParseString(args, "--folk"), true, out var folk) ? folk : null,
@@ -251,6 +252,18 @@ if (host.Display.Mode == WindowMode.Windowed && host.Window.GetAttribute(GlfwWin
 
 // Any flag that sets up a game skips the title screen, so scripts and the commands in CLAUDE.md
 // keep dropping straight into the village. --new-game does the same with no other changes.
+// --character NAME: the saved character of that name (--host, --new-game), once; null without it.
+SavedCharacter? PickedCharacter()
+{
+    if (CharacterRoster.PickOverride is not { } pick)
+        return null;
+    CharacterRoster.PickOverride = null;
+    var found = CharacterRoster.Load(host, DefDatabase.LoadDirectory(Path.Combine(AppContext.BaseDirectory, "data", "defs"))).Find(pick);
+    if (found == null)
+        Console.WriteLine($"warning: no saved character called {pick}");
+    return found;
+}
+
 static bool LaunchesDirectly(string[] args) =>
     args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--freeform" or "--show-roofs" or "--hide-roofs"
         or "--ignite-forest" or "--yaw" or "--cutaway" or "--difficulty" or "--map");

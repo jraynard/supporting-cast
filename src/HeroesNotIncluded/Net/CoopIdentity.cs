@@ -7,7 +7,9 @@ namespace HeroesNotIncluded.Net;
 
 /// <summary>
 /// This player's co-op identity, kept in the config directory so hosts recognise them next time.
-/// <c>--player-id</c>/<c>--name</c> override it for the session (two copies on one machine).
+/// Its name is only a fallback: in a game you go by your saved character's
+/// (<see cref="Characters.SavedCharacter"/>). <c>--player-id</c>/<c>--name</c> override it for the
+/// session (two copies on one machine).
 /// </summary>
 public static class CoopIdentity
 {
@@ -24,18 +26,6 @@ public static class CoopIdentity
         var saved = PlayerIdentity.LoadOrCreate(PathFor(host), DefaultName());
         var id = IdOverride is { } text ? Parse(text) : saved.Id;
         return new PlayerIdentity(id, NameOverride ?? saved.Name);
-    }
-
-    /// <summary>Remember a new display name (not when overridden on the command line).</summary>
-    public static PlayerIdentity Rename(GameHost host, PlayerIdentity me, string name)
-    {
-        name = name.Trim();
-        if (name.Length == 0 || name == me.Name)
-            return me;
-        var renamed = me with { Name = name };
-        if (IdOverride == null)
-            renamed.Save(PathFor(host));
-        return renamed;
     }
 
     public static Guid Parse(string text) =>

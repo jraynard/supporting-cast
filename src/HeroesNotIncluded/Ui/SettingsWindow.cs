@@ -370,7 +370,7 @@ public sealed class SettingsWindow(GameHost host)
     {
         var gap = new float2(1, S(4));
         ImGui.Dummy(in gap);
-        Row("Pause on danger", "Pause the game when a raid, fire or other danger is announced (single player only).");
+        Row("Pause on danger", "Pause the game when a raid, fire or other danger is announced (single player, without a character to play: a round never stops).");
         var pause = _draft.PauseOnDanger;
         if (ImGui.Checkbox("##pause"u8, ref pause))
             _draft.PauseOnDanger = pause;

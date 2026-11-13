@@ -131,4 +131,39 @@ public class BloomTests
         sim.TickMany(SimClock.TicksPerHour * 3);
         Assert.Equal(VillageRound.SmithyOre + delivered, Ore());
     }
+
+    [Fact]
+    public void CharcoalInYourPackGoesInTheBloomNotOnTheFire()
+    {
+        // In the smithy with the ore and charcoal packed: F at the forge opens it (the fire has fuel),
+        // and smelting takes the charcoal for the bloom.
+        var (sim, me, _) = ExpeditionTests.Round("Blacksmith");
+        var w = sim.World;
+        var forge = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "Forge");
+        var at = w.Get<Thing>(forge).Cell;
+        var stand = sim.SpiralFrom(at, 2).First(c => c != at && c.Z == at.Z && sim.Map.Passable(c) && AvatarSystem.InReach(sim, c, forge));
+        w.Get<Position>(me).Cell = stand;
+        w.Get<Position>(me).Pos = Position.CenterOf(stand);
+        // Nothing within reach but the pack: empty the smithy's chests.
+        foreach (var c in CraftCommandRules.ContainersInReach(sim, me))
+            foreach (var item in sim.StoredIn(c).ToList())
+                sim.DestroyThing(item);
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("IronOre"), 4));
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Charcoal"), 2));
+        Assert.True(w.Get<Fueled>(forge).Fuel > 0 && w.Get<Fueled>(forge).Fuel < sim.Thing("Forge").Building!.Fuel!.Capacity);
+
+        Assert.Equal(AvatarActionKind.OpenStation, AvatarSystem.ActionAt(sim, me, at).Kind);
+        sim.ApplyNow(new CraftCommand(me, forge, sim.Defs.Recipe("SmeltIron")));
+        Assert.True(Smithing.PieceOf(sim, me)?.IsBloom);
+
+        // Gone out, it's fed first, from the pack too.
+        var (sim2, me2, _) = ExpeditionTests.Round("Blacksmith");
+        var forge2 = sim2.World.Query<Thing>().First(e => sim2.World.Get<Thing>(e).Def.Name == "Forge");
+        var at2 = sim2.World.Get<Thing>(forge2).Cell;
+        var stand2 = sim2.SpiralFrom(at2, 2).First(c => c != at2 && c.Z == at2.Z && sim2.Map.Passable(c) && AvatarSystem.InReach(sim2, c, forge2));
+        sim2.World.Get<Position>(me2).Cell = stand2;
+        sim2.World.Get<Fueled>(forge2).Fuel = 0;
+        Inventory.Stow(sim2, me2, sim2.CreateItem(sim2.Thing("Charcoal"), 2));
+        Assert.Equal(AvatarActionKind.Refuel, AvatarSystem.ActionAt(sim2, me2, at2).Kind);
+    }
 }

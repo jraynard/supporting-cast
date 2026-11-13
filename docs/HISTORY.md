@@ -897,3 +897,16 @@ dragon and the festival.
     (`tools/fetch_music.py`).
   - **A Sound tab** in Settings: five volumes, babble, mute in background.
 
+- **Saved characters, every mode:** the roster (`Characters/CharacterRoster`, `characters.json`)
+  used to be co-op only. Now every way into a village (a solo round, hosting, joining) starts by
+  picking or making a character, who's saved.
+  - A **Characters** screen on the main menu: make, change and let go of them; each card shows the
+    trades they've played.
+  - **Joining** goes by your character's name: the Join panel's name box became "Playing as ...
+    Change", and you're seated as them without being asked again.
+  - The roster holds 16 and never drops anyone to make room. The file is versioned (old lists are
+    read and rewritten; one from a newer build is left alone).
+  - **Progress** (`CharacterProgress`): every round played to the end adds to the character's
+    record for that trade (rounds, survived, silver earned). Titles and unlocked cosmetics have
+    their slots, empty until progression fills them.
+  - `--character NAME` works with `--new-game` as well as `--host`.

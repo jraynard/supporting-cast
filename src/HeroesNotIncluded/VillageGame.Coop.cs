@@ -3,6 +3,7 @@ using Narsil.Ui;
 using Narsil;
 using Narsil.Net;
 using Narsil.Rendering;
+using HeroesNotIncluded.Characters;
 using HeroesNotIncluded.Net;
 using HeroesNotIncluded.Rendering;
 using HeroesNotIncluded.Sim;
@@ -42,7 +43,7 @@ public sealed partial class VillageGame
     private CharacterPicker? _coopPicker;
     private bool _coopPicking = true;
 
-    /// <summary>The saved character the creators are editing (or finishing a dragon for); null: a new one.</summary>
+    /// <summary>The saved character the creator is editing; null: a new one.</summary>
     private Guid? _coopEditing;
     private bool _showPlayers = true;
     private readonly ImInputString _chatInput = new(Narsil.Net.ChatRules.MaxLength + 1, ""u8);
@@ -313,6 +314,9 @@ public sealed partial class VillageGame
             CharacterRoster.PickOverride = null;
             UseSaved(session, forced);
         }
+        // Chosen on the Join panel: straight in as them.
+        else if (Character is { } chosen && _roster.Get(chosen.Id) is { } current)
+            UseSaved(session, current);
         else if (_coopPicking && _roster.Characters.Count > 0)
         {
             _coopPicker ??= new CharacterPicker(Host, _roster, _sim.Defs);
@@ -362,7 +366,7 @@ public sealed partial class VillageGame
     /// <summary>Arrive as a saved character.</summary>
     private void UseSaved(CoopSession session, SavedCharacter c)
     {
-        _roster!.Put(c); // most recently used
+        _arrivedAs = _roster!.Put(c) ?? c; // most recently used
         SendArrival(session, c.Name, c.Look, c.Traits, c.Clothes);
     }
 
@@ -370,12 +374,9 @@ public sealed partial class VillageGame
     private void SendCharacter(CoopSession session)
     {
         var creator = _coopCreator!;
-        var before = _coopEditing is { } id ? _roster?.Characters.Find(c => c.Id == id) : null;
-        _roster?.Put(new SavedCharacter
-        {
-            Id = before?.Id ?? Guid.NewGuid(),
-            Name = creator.Name, Look = creator.Look, Traits = creator.Traits.ToList(), Clothes = creator.Clothes.ToList(),
-        });
+        var made = (_coopEditing is { } id ? _roster?.Get(id) : null) ?? new SavedCharacter();
+        made = made with { Name = creator.Name, Look = creator.Look, Traits = creator.Traits.ToList(), Clothes = creator.Clothes.ToList() };
+        _arrivedAs = _roster?.Put(made); // null with the roster full: they play, unsaved
         SendArrival(session, creator.Name, creator.Look, creator.Traits, creator.Clothes);
     }
 

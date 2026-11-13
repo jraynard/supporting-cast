@@ -342,6 +342,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         var window = Host.Window.Size;
         _camera.ViewportSize = new float2(Math.Max(1, window.X), Math.Max(1, window.Y));
 
+        RecordRound();
+
         var input = Host.Input;
         HandleKeys(input);
         // WASD walks your character, not the camera: panning it here would also shift the cursor's cell.
@@ -562,8 +564,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     private void HandleKeys(Input input)
     {
-        // Space pauses, except at hands-on work, where it's the game's other action (UpdateWork).
-        if (input.WasKeyPressed(GlfwKey.Space) && !Working)
+        // Space pauses god mode and the demos. Never someone playing a character, dev mode
+        // included: the town doesn't wait (and at hands-on work Space is the game's other action).
+        if (input.WasKeyPressed(GlfwKey.Space) && !HasAvatar && !Working)
             SetSpeed(Paused ? _speedBeforePause : 0);
         // Ctrl+1–3: plain numbers are the Adventure hotbar (VillageGame.Inventory.cs).
         if (!HasAvatar && (input.IsKeyDown(GlfwKey.LeftControl) || input.IsKeyDown(GlfwKey.RightControl)))

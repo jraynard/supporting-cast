@@ -427,7 +427,7 @@ public sealed class AvatarSystem : ISimSystem
         if (!site.IsNull && w.TryGet<Construction>(site, out var construction)
             && Supply(sim, avatar, d => NeedsMaterial(construction, d)) is { IsNull: false } material)
             return new AvatarAction(AvatarActionKind.Deliver, $"Deliver {ItemLabel(sim, avatar, material)}", cell, site) { Item = material };
-        if (Supply(sim, avatar, d => FuelRoom(sim, site, d) > 0) is { IsNull: false } fuel)
+        if (Supply(sim, avatar, d => FuelRoom(sim, site, d) > 0) is { IsNull: false } fuel && FeedsFrom(sim, avatar, site, fuel))
         {
             var fire = w.Get<Thing>(site);
             var verb = w.Get<Fueled>(site).Fuel <= 0 ? "Relight" : "Feed";
@@ -577,6 +577,14 @@ public sealed class AvatarSystem : ISimSystem
             return 0;
         return (int)MathF.Ceiling(props.Capacity - fueled.Fuel);
     }
+
+    /// <summary>
+    /// Should F feed this fuel to the fire? Always from the hands. From the pack, a work station
+    /// (the forge) is fed only once it's gone out: otherwise the charcoal you brought for a bloom
+    /// goes on the fire, and F never gets as far as opening the station.
+    /// </summary>
+    private static bool FeedsFrom(Simulation sim, Entity avatar, Entity site, Entity fuel) =>
+        sim.World.Get<Carrying>(avatar).Item == fuel || !Crafting.IsStation(sim, site) || sim.World.Get<Fueled>(site).Fuel <= 0;
 
     private static bool IsContainer(Simulation sim, Entity e) =>
         !e.IsNull && sim.World.Get<Thing>(e).Def.Building is { StorageStacks: > 0 } && !sim.World.Has<Construction>(e);

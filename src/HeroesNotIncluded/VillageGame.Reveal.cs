@@ -1,6 +1,9 @@
 using Brutal.ImGuiApi;
 using Narsil.Ui;
+using HeroesNotIncluded.Characters;
+using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Round;
+using HeroesNotIncluded.Sim.Systems;
 using HeroesNotIncluded.Ui;
 
 namespace HeroesNotIncluded;
@@ -14,6 +17,13 @@ namespace HeroesNotIncluded;
 public sealed partial class VillageGame
 {
     private bool _revealHidden;
+
+    /// <summary>The saved character a co-op guest arrived as (the in-game picker or creator, or the Join panel's).</summary>
+    private SavedCharacter? _arrivedAs;
+
+    /// <summary>The round was under way here (started in this game, or seen live after a load): a save loaded already over isn't credited again.</summary>
+    private bool _sawRoundLive;
+    private bool _roundRecorded;
 
     private void DrawReveal()
     {
@@ -88,6 +98,32 @@ public sealed partial class VillageGame
     }
 
     /// <summary>Renown (gold) and Dread (red) hour by hour, with the target and the limit as faint lines.</summary>
+    /// <summary>
+    /// Once, when a round played here ends: one more round in their trade for the saved character
+    /// this player was. Each peer writes only its own roster. A guest who took over a villager
+    /// mid-round played as them, not as a saved character, so isn't credited.
+    /// </summary>
+    private void RecordRound()
+    {
+        if (_sim.Round.Live || Loaded == null)
+            _sawRoundLive = true;
+        if (_roundRecorded || !RoundOver || _sim.Round.Summary is not { } s)
+            return;
+        _roundRecorded = true;
+        var credited = _coop is { IsHost: false } ? _arrivedAs : _arrivedAs ?? Character;
+        if (!_sawRoundLive || credited == null)
+            return;
+        var w = _sim.World;
+        var me = LocalPlayer is { } id ? Players.CharacterOf(_sim, id) : _avatar;
+        if (me.IsNull || !w.IsAlive(me) || !w.TryGet<Trade>(me, out var trade) || !w.TryGet<Creature>(me, out var body))
+            return;
+        if (s.People.FirstOrDefault(p => p.Player && p.Name == body.Name) is not { } row)
+            return;
+        var roster = _roster ??= CharacterRoster.Load(Host, _sim.Defs);
+        if (roster.Get(credited.Id) is { } saved) // not if let go of mid-round
+            roster.Update(saved with { Progress = saved.Progress.With(trade.Def.Name, row.Earned, row.Alive) });
+    }
+
     private void DrawStandingGraph(RoundSummary s)
     {
         var hours = Math.Max(s.RenownByHour.Count, s.DreadByHour.Count);

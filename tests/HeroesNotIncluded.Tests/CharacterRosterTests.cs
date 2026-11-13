@@ -1,3 +1,4 @@
+using HeroesNotIncluded.Characters;
 using HeroesNotIncluded.Rendering;
 using HeroesNotIncluded.Net;
 using HeroesNotIncluded.Sim.Components;
@@ -5,7 +6,7 @@ using HeroesNotIncluded.Sim.Defs;
 
 namespace HeroesNotIncluded.Tests;
 
-/// <summary>The saved characters players bring into co-op games (<see cref="CharacterRoster"/>).</summary>
+/// <summary>The saved characters players play in every village, solo or co-op (<see cref="CharacterRoster"/>).</summary>
 public class CharacterRosterTests : IDisposable
 {
     private static readonly Lazy<DefDatabase> Defs = new(() => DefDatabase.LoadDirectory(DevPaths.Defs!));
@@ -95,20 +96,119 @@ public class CharacterRosterTests : IDisposable
     }
 
     [Fact]
-    public void TheLastUsedComesFirstAndTheOldestGoesPastTheLimit()
+    public void TheLastUsedComesFirstAndAFullRosterDropsNobody()
     {
         var roster = CharacterRoster.Load(File, Defs.Value);
-        var first = roster.Put(new SavedCharacter { Name = "First" });
-        for (var i = 0; i < CharacterRoster.Max; i++)
-            roster.Put(new SavedCharacter { Name = $"Next{i}" });
-        Assert.Equal(CharacterRoster.Max, roster.Characters.Count);
-        Assert.DoesNotContain(roster.Characters, c => c.Id == first.Id);
+        var first = roster.Put(new SavedCharacter { Name = "First" })!;
+        for (var i = 1; i < CharacterRoster.Max; i++)
+            Assert.NotNull(roster.Put(new SavedCharacter { Name = $"Next{i}" }));
+        Assert.True(roster.Full);
 
-        var picked = roster.Characters[^1];
-        roster.Put(picked); // used again
-        Assert.Equal(picked.Id, roster.Last!.Id);
-        Assert.Equal(CharacterRoster.Max, CharacterRoster.Load(File, Defs.Value).Characters.Count);
-        roster.Remove(picked.Id);
-        Assert.DoesNotContain(CharacterRoster.Load(File, Defs.Value).Characters, c => c.Id == picked.Id);
+        // One more is refused, and nobody makes way for them.
+        Assert.Null(roster.Put(new SavedCharacter { Name = "Late" }));
+        Assert.Equal(CharacterRoster.Max, roster.Characters.Count);
+        Assert.Contains(roster.Characters, c => c.Id == first.Id);
+
+        // Those already there can still be used and changed.
+        Assert.NotNull(roster.Put(first with { Name = "Firstborn" }));
+        Assert.Equal(first.Id, roster.Last!.Id);
+        Assert.Equal("Firstborn", CharacterRoster.Load(File, Defs.Value).Get(first.Id)!.Name);
+
+        roster.Remove(first.Id);
+        Assert.DoesNotContain(CharacterRoster.Load(File, Defs.Value).Characters, c => c.Id == first.Id);
+        Assert.NotNull(roster.Put(new SavedCharacter { Name = "Late" }));
+    }
+
+    [Fact]
+    public void AnUpdateKeepsTheOrder()
+    {
+        var roster = CharacterRoster.Load(File, Defs.Value);
+        var older = roster.Put(new SavedCharacter { Name = "Older" })!;
+        var newer = roster.Put(new SavedCharacter { Name = "Newer" })!;
+        roster.Update(older with { Name = "Older still" });
+        Assert.Equal(newer.Id, roster.Last!.Id);
+        Assert.Equal("Older still", roster.Get(older.Id)!.Name);
+    }
+
+    [Fact]
+    public void RoundsAreCountedByTradeAndKept()
+    {
+        var progress = new CharacterProgress()
+            .With("Blacksmith", earned: 40, survived: true)
+            .With("Blacksmith", earned: -5, survived: false)
+            .With("Healer", earned: 12, survived: true);
+        Assert.Equal(new TradeRecord(2, 1, 35), progress.Trades["Blacksmith"]);
+        Assert.Equal(new TradeRecord(1, 1, 12), progress.Trades["Healer"]);
+        Assert.Equal(3, progress.Rounds);
+
+        var roster = CharacterRoster.Load(File, Defs.Value);
+        var c = roster.Put(new SavedCharacter
+        {
+            Name = "Bram",
+            Progress = progress with { Titles = ["Smith", "Smith", " "], Title = "Smith", Unlocked = ["SmithApron"] },
+        })!;
+        var loaded = CharacterRoster.Load(File, Defs.Value).Get(c.Id)!;
+        Assert.Equal(progress.Trades, loaded.Progress.Trades);
+        Assert.Equal(["Smith"], loaded.Progress.Titles);
+        Assert.Equal("Smith", loaded.Progress.Title);
+        Assert.Equal(["SmithApron"], loaded.Progress.Unlocked);
+    }
+
+    [Fact]
+    public void ATradeSinceRemovedAndATitleNotEarnedAreDropped()
+    {
+        var roster = CharacterRoster.Load(File, Defs.Value);
+        var c = roster.Put(new SavedCharacter
+        {
+            Progress = new CharacterProgress { Title = "Archmage" }.With("Alchemist", 3, true).With("Cook", 7, true),
+        })!;
+        var loaded = CharacterRoster.Load(File, Defs.Value).Get(c.Id)!;
+        Assert.Equal(["Cook"], loaded.Progress.Trades.Keys);
+        Assert.Null(loaded.Progress.Title);
+    }
+
+    /// <summary>Rosters from before the version (a bare list, no progress) load as they were, and are saved anew.</summary>
+    [Fact]
+    public void AnOldListRosterIsReadAndWrittenAnew()
+    {
+        Directory.CreateDirectory(_dir);
+        var id = Guid.NewGuid();
+        System.IO.File.WriteAllText(File, $$"""
+            [
+              {
+                "Id": "{{id}}",
+                "Name": "Wren",
+                "Look": { "Body": 1, "Hair": 2, "HairColor": 4210752, "EyeColor": 0, "SkinColor": 15253142, "Beard": 0, "Eyes": 1, "Stance": 0, "Folk": 1, "Model": null },
+                "Traits": [],
+                "Clothes": ["Tunic:Orchil"],
+                "LastUsed": "2026-10-01T12:00:00Z"
+              }
+            ]
+            """);
+        var roster = CharacterRoster.Load(File, Defs.Value);
+        var wren = Assert.Single(roster.Characters);
+        Assert.Equal(id, wren.Id);
+        Assert.Equal(Folk.Elf, wren.Look.Folk);
+        Assert.Equal(HairStyle.Ponytail, wren.Look.Hair);
+        Assert.Empty(wren.Progress.Trades);
+        Assert.Equal(wren.LastUsed, wren.Created);
+
+        roster.Save();
+        Assert.Contains($"\"Version\": {CharacterRoster.Version}", System.IO.File.ReadAllText(File));
+        Assert.Equal(id, Assert.Single(CharacterRoster.Load(File, Defs.Value).Characters).Id);
+    }
+
+    /// <summary>A roster saved by a newer build is shown, but never overwritten with what this one understands of it.</summary>
+    [Fact]
+    public void ANewerRosterIsNeverOverwritten()
+    {
+        Directory.CreateDirectory(_dir);
+        var text = """{ "Version": 99, "Characters": [ { "Name": "Future", "Glamour": { "Wings": true } } ] }""";
+        System.IO.File.WriteAllText(File, text);
+        var roster = CharacterRoster.Load(File, Defs.Value);
+        Assert.True(roster.ReadOnly);
+        Assert.Equal("Future", Assert.Single(roster.Characters).Name);
+        roster.Put(new SavedCharacter { Name = "Now" });
+        Assert.Equal(text, System.IO.File.ReadAllText(File));
     }
 }

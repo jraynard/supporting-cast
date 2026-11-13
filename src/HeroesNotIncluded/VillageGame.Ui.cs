@@ -1063,8 +1063,9 @@ public sealed partial class VillageGame
     }
 
     /// <summary>
-    /// Pause on danger so the player can react, like RimWorld's letters, whether or not the log is
-    /// open. Not in co-op: one player's alert shouldn't stop everyone's game.
+    /// Pause on danger so the player can react, whether or not the log is open. Only in god mode:
+    /// someone playing a character is never stopped (the round runs in real time), and in co-op one
+    /// player's alert shouldn't stop everyone's game.
     /// </summary>
     private void WatchForDanger()
     {
@@ -1072,7 +1073,7 @@ public sealed partial class VillageGame
             return;
         _lastDangerCheck = _sim.Messages.Total;
         var messages = ShownMessages();
-        if (AutoPause && _coop is null && Settings.Current.PauseOnDanger && messages.Count > 0 && messages[^1].Kind == MessageKind.Danger && !Paused)
+        if (AutoPause && _coop is null && !HasAvatar && Settings.Current.PauseOnDanger && messages.Count > 0 && messages[^1].Kind == MessageKind.Danger && !Paused)
             SetSpeed(0);
     }
 

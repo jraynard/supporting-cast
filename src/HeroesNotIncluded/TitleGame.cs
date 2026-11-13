@@ -2,6 +2,7 @@ using Brutal.ImGuiApi;
 using Narsil.Ui;
 using Narsil;
 using Narsil.Rendering;
+using HeroesNotIncluded.Characters;
 using HeroesNotIncluded.Rendering;
 using HeroesNotIncluded.Sim;
 using HeroesNotIncluded.Sim.Components;
@@ -63,7 +64,7 @@ public sealed class TitleGame : Game
     /// <summary>Why the last load failed, shown under the menu.</summary>
     private string? _error;
 
-    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Host, HostNew, HostSave, Join, BackToCreator, Report, Credits }
+    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Host, HostNew, HostSave, Join, Characters, BackToCreator, Report, Credits }
 
     /// <summary>The Credits window (BRUTAL License 2.1: its copyright notice; and the fonts' licences).</summary>
     private readonly CreditsWindow _credits = new(Title, "Somebody has to keep the lights on.", GameCredits.People);
@@ -89,15 +90,17 @@ public sealed class TitleGame : Game
     private bool _reporting;
     private string? _logsError;
 
-    /// <summary>The character creator is for a village to host (no prologue; the difficulty is asked last, in <see cref="HostAs"/>).</summary>
-    private bool _hostingNew;
+    /// <summary>What the character being picked or made is for: every way into a village starts with who you are.</summary>
+    private enum Purpose { Solo, Host, Join, Manage }
 
-    /// <summary>Saved characters (<see cref="CharacterRoster"/>): picked from before hosting; solo starts begin from the last one.</summary>
+    private Purpose _purpose;
+
+    /// <summary>Saved characters (<see cref="CharacterRoster"/>): picked before any game, or looked after on the Characters screen.</summary>
     private CharacterRoster _roster = null!;
     private CharacterPicker _picker = null!;
-    private bool _pickingHost;
+    private bool _picking;
 
-    /// <summary>The saved character the creators are editing for hosting; null: a new one.</summary>
+    /// <summary>The saved character the creator is editing; null: a new one.</summary>
     private Guid? _editing;
 
     /// <summary>Co-op's Join panel, shown instead of the menu while open.</summary>
@@ -124,6 +127,7 @@ public sealed class TitleGame : Game
             new("New round", "Just you and the regulars.", null, MenuAction.NewGame),
             new("Host game", "Open the doors.", null, MenuAction.Host),
             new("Join game", "Pull up a stool.", null, MenuAction.Join),
+            new("Characters", "Who you've been.", null, MenuAction.Characters),
             new("Load game", newest == null ? "Nothing saved yet." : "Pick up where you left off.", null, newest == null ? MenuAction.Start : MenuAction.LoadGame),
             new("Settings", "House rules.", null, MenuAction.Settings),
             new("Report a bug", "Something broke? Tell us how.", null, MenuAction.Report),
@@ -170,23 +174,22 @@ public sealed class TitleGame : Game
     /// A solo round's last step: the trade to be dealt. The bots fill the others, so any choice
     /// leaves a full cast; "Any" lets the deal decide as before.
     /// </summary>
-    private MenuItem[] TradeItems()
+    private MenuItem[] TradeItems(SavedCharacter c)
     {
-        Game Start(string? trade) => new VillageGame(DefaultSeed)
-        {
-            Adventure = true, HeroName = _creator.Name, HeroLook = _creator.Look, HeroTraits = _creator.Traits, HeroClothes = _creator.Clothes,
-            HeroTrade = trade,
-        };
+        Game Start(string? trade) => new VillageGame(DefaultSeed) { Adventure = true, Character = c, HeroTrade = trade };
         return _defs.AllTrades
             .Select(t => new MenuItem(char.ToUpperInvariant(t.Label[0]) + t.Label[1..], t.Description, () => Start(t.Name)))
             .Append(new MenuItem("Any", "Let the deal pick a trade for you.", () => Start(null)))
-            .Append(new MenuItem("Back", "Back to your character.", null, MenuAction.BackToCreator))
+            .Append(new MenuItem("Back", "Back to who you'll be.", null, MenuAction.BackToCreator))
             .ToArray();
     }
 
-    private HostSettings HostSettingsFor()
+    /// <summary>Hosting as <paramref name="c"/>: friends see the character's name, and the village is theirs.</summary>
+    private HostSettings HostSettingsFor(SavedCharacter? c = null)
     {
         var me = CoopIdentity.Load(Host);
+        if (c != null && CoopIdentity.NameOverride == null)
+            me = me with { Name = c.Name };
         return new HostSettings(me, $"{me.Name}'s village");
     }
 
@@ -196,10 +199,57 @@ public sealed class TitleGame : Game
         _creator.Load(c.Name, c.Look, c.Traits, c.Clothes);
     }
 
+    /// <summary>
+    /// Who will you be, for <paramref name="purpose"/>: the picker when there's anyone saved, else
+    /// the creator. The Characters screen always opens on the picker.
+    /// </summary>
+    private void ChooseCharacter(Purpose purpose)
+    {
+        (_purpose, _editing, _submenu, _submenuTitle, _error) = (purpose, null, null, null, null);
+        _picker.Showing = purpose == Purpose.Manage ? CharacterPicker.Mode.Manage : CharacterPicker.Mode.Choose;
+        _creator.ContinueLabel = purpose == Purpose.Manage ? "Save" : "Continue";
+        if (_roster.Characters.Count > 0 || purpose == Purpose.Manage)
+            _picking = true;
+        else
+            _creating = true;
+    }
+
+    /// <summary>The creator's character, saved: the one being edited keeps its id and all it's done.</summary>
+    private SavedCharacter? SaveCreated()
+    {
+        var made = (_editing is { } id ? _roster.Get(id) : null) ?? new SavedCharacter();
+        made = made with { Name = _creator.Name, Look = _creator.Look, Traits = _creator.Traits.ToList(), Clothes = _creator.Clothes.ToList() };
+        var saved = _purpose == Purpose.Manage ? _roster.Update(made) : _roster.Put(made);
+        if (saved == null)
+            _error = $"The roster's full ({CharacterRoster.Max}): let someone go first.";
+        return saved;
+    }
+
+    /// <summary><paramref name="c"/> is who you'll be: on to what they were chosen for.</summary>
+    private void Chosen(SavedCharacter c)
+    {
+        (_picking, _creating) = (false, false);
+        c = _roster.Put(c) ?? c; // most recently used
+        Prefill(c);
+        switch (_purpose)
+        {
+            case Purpose.Solo:
+                (_submenu, _submenuTitle) = (TradeItems(c), "Which trade will you take?");
+                break;
+            case Purpose.Host:
+                HostAs(c);
+                break;
+            case Purpose.Join:
+                (_coopMenu ??= new CoopMenu(Host, _defs)).Playing = c;
+                _joining = true;
+                break;
+        }
+    }
+
     /// <summary>Host a new village as <paramref name="c"/>.</summary>
     private void HostAs(SavedCharacter c) => Host.SwitchTo(new VillageGame((ulong)Random.Shared.Next(1, 1_000_000))
     {
-        Adventure = true, HeroName = c.Name, HeroLook = c.Look, HeroTraits = c.Traits, HeroClothes = c.Clothes, HostCoop = HostSettingsFor(),
+        Adventure = true, Character = c, HostCoop = HostSettingsFor(c),
     });
 
     /// <summary>Load a save for <see cref="Press"/>; a <see cref="Sim.Saving.SaveException"/> keeps us on the title.</summary>
@@ -237,7 +287,11 @@ public sealed class TitleGame : Game
         if (AutoJoin is { } address)
         {
             _joining = true;
-            (_coopMenu ??= new CoopMenu(Host, _defs)).Connect(address);
+            _coopMenu ??= new CoopMenu(Host, _defs);
+            var wanted = CharacterRoster.PickOverride is { } pick ? _roster.Find(pick) : null;
+            CharacterRoster.PickOverride = null;
+            _coopMenu.Playing = wanted ?? _roster.Last;
+            _coopMenu.Connect(address);
         }
     }
 
@@ -326,7 +380,11 @@ public sealed class TitleGame : Game
             {
                 case CoopMenu.Result.Joined when _coopMenu.Joined is { Sim: { } joinedSim } session:
                     _joining = false;
-                    Host.SwitchTo(new VillageGame(joinedSim.Seed) { Coop = session });
+                    Host.SwitchTo(new VillageGame(joinedSim.Seed) { Coop = session, Character = _coopMenu.Playing });
+                    break;
+                case CoopMenu.Result.Change:
+                    _joining = false;
+                    ChooseCharacter(Purpose.Join);
                     break;
                 case CoopMenu.Result.Back:
                     _joining = false;
@@ -335,47 +393,44 @@ public sealed class TitleGame : Game
         }
         else if (_reporting)
             DrawReport(dim);
-        else if (_pickingHost)
+        else if (_picking)
         {
-            ImGui.TextColored(dim, "Who will you be?"u8);
+            ImGui.TextColored(dim, _purpose == Purpose.Manage ? "Your characters"u8 : "Who will you be?"u8);
             switch (_picker.Draw(_time))
             {
                 case CharacterPicker.Result.Use:
-                    _pickingHost = false;
-                    HostAs(_roster.Put(_picker.Picked!));
+                    Chosen(_picker.Picked!);
                     break;
                 case CharacterPicker.Result.Edit:
                     Prefill(_picker.Picked!);
-                    (_editing, _pickingHost, _creating) = (_picker.Picked!.Id, false, true);
+                    (_editing, _picking, _creating) = (_picker.Picked!.Id, false, true);
                     break;
                 case CharacterPicker.Result.New:
-                    (_editing, _pickingHost, _creating) = (null, false, true);
+                    (_editing, _picking, _creating) = (null, false, true);
                     break;
                 case CharacterPicker.Result.Back:
-                    _pickingHost = false;
+                    _picking = false;
+                    // Changing who you'll join as, and thinking better of it: back to the Join panel as you were.
+                    _joining = _purpose == Purpose.Join && _coopMenu?.Playing != null;
                     break;
             }
         }
         else if (_creating)
         {
-            ImGui.TextColored(dim, "Who are you?"u8);
+            ImGui.TextColored(dim, _editing != null && _roster.Get(_editing.Value) is { } edited ? edited.Name : "Who are you?");
             switch (_creator.Draw(_time))
             {
-                case CharacterCreator.Result.Continue when _hostingNew:
+                case CharacterCreator.Result.Continue when SaveCreated() is { } made:
                     _creating = false;
-                    HostAs(_roster.Put(new SavedCharacter
-                    {
-                        Id = _editing ?? Guid.NewGuid(), Name = _creator.Name, Look = _creator.Look, Traits = _creator.Traits.ToList(), Clothes = _creator.Clothes.ToList(),
-                    }));
-                    break;
-                case CharacterCreator.Result.Continue:
-                    _creating = false;
-                    (_submenu, _submenuTitle) = (TradeItems(), "Which trade will you take?");
+                    if (_purpose == Purpose.Manage)
+                        _picking = true;
+                    else
+                        Chosen(made);
                     break;
                 case CharacterCreator.Result.Back:
                     _creating = false;
-                    if (_hostingNew && _roster.Characters.Count > 0)
-                        _pickingHost = true;
+                    if (_roster.Characters.Count > 0 || _purpose == Purpose.Manage)
+                        _picking = true;
                     break;
             }
         }
@@ -444,9 +499,10 @@ public sealed class TitleGame : Game
                 Host.Window.ShouldClose = true;
                 break;
             case MenuAction.NewGame:
-                _hostingNew = false;
-                (_submenu, _submenuTitle) = (null, null);
-                _creating = true;
+                ChooseCharacter(Purpose.Solo);
+                break;
+            case MenuAction.Characters:
+                ChooseCharacter(Purpose.Manage);
                 break;
             case MenuAction.Host:
                 (_submenu, _submenuTitle) = (HostItems(), "Open the doors");
@@ -455,19 +511,17 @@ public sealed class TitleGame : Game
                 _showCredits = !_showCredits;
                 break;
             case MenuAction.HostNew:
-                _hostingNew = true;
-                _editing = null;
-                if (_roster.Characters.Count > 0)
-                    _pickingHost = true;
-                else
-                    _creating = true;
+                ChooseCharacter(Purpose.Host);
                 break;
             case MenuAction.HostSave:
                 (_submenu, _submenuTitle) = (HostSaveItems(), "Which village will you open to friends?");
                 break;
             case MenuAction.Join:
-                _joining = true;
                 _coopMenu ??= new CoopMenu(Host, _defs);
+                if ((_coopMenu.Playing ??= _roster.Last) != null)
+                    _joining = true;
+                else
+                    ChooseCharacter(Purpose.Join);
                 break;
             case MenuAction.LoadGame:
                 (_submenu, _submenuTitle) = (SaveItems(), "Which village?");
@@ -479,8 +533,7 @@ public sealed class TitleGame : Game
                 (_reporting, _logsError) = (true, null);
                 break;
             case MenuAction.BackToCreator:
-                (_submenu, _submenuTitle) = (null, null);
-                _creating = true;
+                ChooseCharacter(Purpose.Solo);
                 break;
             default:
                 if (item.Start == null || _starting != null)

@@ -56,10 +56,14 @@ public sealed class RaidCrisis : ICrisis
         return crisis;
     }
 
-    /// <summary>Whoever of the village is nearest the road they came by shouts it, so the town hears it from someone.</summary>
+    /// <summary>
+    /// Whoever of the village is nearest the road they came by shouts it, so the town hears it from
+    /// someone, and the bell goes: that's heard everywhere, so it's a message without a place.
+    /// </summary>
     private static void RaiseTheAlarm(Simulation sim, int3 from)
     {
         var w = sim.World;
+        sim.Messages.Add(MessageKind.Danger, $"The bell rings out: raiders on the {Raids.Direction(sim.Map, from)} road!", null);
         var lookout = sim.Creatures()
             .Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Dead: false } && SpeechSystem.CanAct(sim, e))
             .OrderBy(e => Maps.Map.Distance(w.Get<Position>(e).Cell, from))

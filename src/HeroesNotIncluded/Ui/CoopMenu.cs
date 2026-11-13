@@ -2,35 +2,43 @@ using Brutal.ImGuiApi;
 using Narsil;
 using Narsil.Net;
 using Narsil.Ui;
+using HeroesNotIncluded.Characters;
 using HeroesNotIncluded.Net;
 using HeroesNotIncluded.Sim.Defs;
 
 namespace HeroesNotIncluded.Ui;
 
 /// <summary>
-/// The title screen's Join panel: your name, villages found on the local network, a box for a
+/// The title screen's Join panel: who you're joining as (a saved character, whose name the
+/// others see), villages found on the local network, a box for a
 /// join code (through the relay, <see cref="CoopRelay"/>) or an address, and the wait while the
 /// host sends the village. Hands back a ready
 /// <see cref="CoopSession"/>; the title screen switches to it.
 /// </summary>
 public sealed class CoopMenu(GameHost host, DefDatabase defs) : IDisposable
 {
-    public enum Result { None, Back, Joined }
+    public enum Result { None, Back, Joined, Change }
 
     /// <summary>Optional size for ImGui overloads; null means "auto".</summary>
     private static readonly float2? _auto = null;
 
-    private readonly ImInputString _name = new(32, ""u8);
     private readonly ImInputString _address = new(128, "127.0.0.1"u8);
-    private PlayerIdentity _me = CoopIdentity.Load(host);
+    private readonly PlayerIdentity _saved = CoopIdentity.Load(host);
     private LanBrowser? _browser;
     private Task<INetConnection>? _connecting;
     private string? _connectingTo;
     private CoopSession? _session;
     private string? _error;
-    private bool _nameSet;
 
-    public PlayerIdentity Identity => _me;
+    /// <summary>The saved character you'll arrive as; the in-game creator asks if there's none.</summary>
+    public SavedCharacter? Playing { get; set; }
+
+    /// <summary>
+    /// Who the host is told you are: your own id always (so they know you next time), with your
+    /// character's name for this session; <c>--name</c> wins, for scripted runs.
+    /// </summary>
+    public PlayerIdentity Identity =>
+        Playing != null && CoopIdentity.NameOverride == null ? _saved with { Name = Playing.Name } : _saved;
 
     /// <summary>The joined session, once <see cref="Draw"/> returns <see cref="Result.Joined"/>; the caller owns it.</summary>
     public CoopSession? Joined { get; private set; }
@@ -51,7 +59,7 @@ public sealed class CoopMenu(GameHost host, DefDatabase defs) : IDisposable
         {
             _connecting = null;
             if (task.IsCompletedSuccessfully)
-                _session = CoopSession.Join(defs, _me, task.Result, _reconnect);
+                _session = CoopSession.Join(defs, Identity, task.Result, _reconnect);
             else
                 _error = $"Couldn't reach {_connectingTo}: {task.Exception?.GetBaseException().Message}";
         }
@@ -69,11 +77,6 @@ public sealed class CoopMenu(GameHost host, DefDatabase defs) : IDisposable
 
     public Result Draw()
     {
-        if (!_nameSet)
-        {
-            _name.SetValue(_me.Name.AsSpan());
-            _nameSet = true;
-        }
         if (_session is { Ready: true } ready)
         {
             Joined = ready;
@@ -84,11 +87,14 @@ public sealed class CoopMenu(GameHost host, DefDatabase defs) : IDisposable
         var busy = _connecting != null || _session != null;
         if (busy)
             ImGui.BeginDisabled(true);
-        ImGui.SetNextItemWidth(220);
-        ImGui.InputText("Your name"u8, _name, ImGuiInputTextFlags.None, null, IntPtr.Zero);
-        OnScreenKeyboard.AfterTextField();
-        if (ImGui.IsItemDeactivatedAfterEdit())
-            _me = CoopIdentity.Rename(host, _me, Narsil.Ui.ImGuiText.Value(_name));
+        var change = false;
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextColored(Theme.Dim, "Playing as"u8);
+        ImGui.SameLine(0, 6);
+        ImGui.Text(Narsil.Ui.ImGuiText.Escape(Playing?.Name ?? Identity.Name));
+        ImGui.SameLine(0, 10);
+        if (ImGui.Button("Change"u8, in _auto))
+            change = true;
 
         ImGui.Spacing();
         ImGui.TextColored(Theme.Dim, "On your network"u8);
@@ -115,6 +121,8 @@ public sealed class CoopMenu(GameHost host, DefDatabase defs) : IDisposable
             Begin(Narsil.Ui.ImGuiText.Value(_address));
         if (busy)
             ImGui.EndDisabled();
+        if (change)
+            return Result.Change;
 
         if (busy)
         {
@@ -148,7 +156,6 @@ public sealed class CoopMenu(GameHost host, DefDatabase defs) : IDisposable
         // so they're rarely a machine name; add a port to force an address).
         if (RelayClient.IsCode(address) && CoopRelay.TryGet(out var relay, out var relayPort))
         {
-            _me = CoopIdentity.Rename(host, _me, Narsil.Ui.ImGuiText.Value(_name));
             var code = address.Trim().ToUpperInvariant();
             _connectingTo = $"game {code}";
             _connecting = RelayClient.JoinAsync(relay, relayPort, CoopSession.GameId, code);
@@ -160,7 +167,6 @@ public sealed class CoopMenu(GameHost host, DefDatabase defs) : IDisposable
             _error = $"\"{address}\" isn't an address (try 192.168.1.20 or 192.168.1.20:{CoopSession.DefaultPort}).";
             return;
         }
-        _me = CoopIdentity.Rename(host, _me, Narsil.Ui.ImGuiText.Value(_name));
         _connectingTo = $"{hostName}:{port}";
         _connecting = TcpNetConnection.ConnectAsync(hostName, port);
         _reconnect = ct => TcpNetConnection.ConnectAsync(hostName, port, ct);
