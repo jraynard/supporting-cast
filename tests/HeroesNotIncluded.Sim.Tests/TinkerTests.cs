@@ -40,14 +40,18 @@ public class TinkerTests
     private static int Wounds(Simulation sim, Entity e) => sim.World.Get<Health>(e).Injuries.Count;
 
     /// <summary>Play a session through the predictor, as a player at the keys would, until it's over.</summary>
-    private static void Play(Simulation sim, Entity me, Func<WorkSession, (bool Press, bool Held, int Axis)> keys, int maxTicks = 60 * 120)
+    private static void Play(Simulation sim, Entity me, Func<WorkSession, (bool Press, bool Held, int Axis)> keys, int maxTicks = 60 * 120) =>
+        Play(sim, me, w => { var (p, h, a) = keys(w); return (p, h, a, 0); }, maxTicks);
+
+    /// <summary>As <see cref="Play(Simulation, Entity, Func{WorkSession, ValueTuple{bool, bool, int}}, int)"/>, with W/S too.</summary>
+    private static void Play(Simulation sim, Entity me, Func<WorkSession, (bool Press, bool Held, int Axis, int Axis2)> keys, int maxTicks = 60 * 120)
     {
         var predictor = new WorkPredictor();
         for (var t = 0; t < maxTicks && sim.World.Has<WorkSession>(me); t++)
         {
             sim.Tick();
-            var (press, held, axis) = predictor.Session is { } s ? keys(s) : (false, false, 0);
-            predictor.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c));
+            var (press, held, axis, axis2) = predictor.Session is { } s ? keys(s) : (false, false, 0, 0);
+            predictor.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c), axis2);
         }
         sim.Tick();
         Assert.False(sim.World.Has<WorkSession>(me), "the session should have ended");
@@ -107,7 +111,7 @@ public class TinkerTests
     }
 
     /// <summary>Set each pin where it sets, knowing the lock.</summary>
-    private static Func<WorkSession, (bool, bool, int)> Picker(Simulation sim, Entity box)
+    private static Func<WorkSession, (bool, bool, int, int)> Picker(Simulation sim, Entity box)
     {
         var b = sim.World.Get<Strongbox>(box);
         var heights = Lockwork.PinHeights(b.LockSeed, b.Pins);
@@ -115,9 +119,14 @@ public class TinkerTests
         {
             var s = (PickSession)w;
             var off = heights[Math.Min(s.Pin, heights.Length - 1)] - s.Lift;
-            return MathF.Abs(off) <= s.HalfWidth * 0.3f ? (true, false, 0) : (false, false, Math.Sign(off));
+            // Tension eased to the middle of the band (W/S); lift to the set point and set it there (F).
+            var there = !s.Turning && MathF.Abs(off) <= s.HalfWidth * 0.3f;
+            return (there && s.InBand, false, there || s.Turning ? 0 : Math.Sign(off), Tense(s, (s.Low + s.High) * 0.5f));
         };
     }
+
+    /// <summary>W or S to bring the tension toward <paramref name="to"/>, or neither once it's near.</summary>
+    internal static int Tense(PickSession s, float to) => s.Tension < to - 0.03f ? -1 : s.Tension > to + 0.03f ? 1 : 0;
 
     [Fact]
     public void PickingALockWithTheTrapStillArmedSetsItOffAsTheLidComesUp()
@@ -146,13 +155,197 @@ public class TinkerTests
     }
 
     [Fact]
+    public void TensionHoldsSetPinsTooLightDropsThemTooHeavyBinds()
+    {
+        var (sim, me, box) = AtTheBench(trapped: false);
+        var picker = Picker(sim, box);
+        sim.ApplyNow(new PickLockCommand(me, box));
+        var predictor = new WorkPredictor();
+        var heavy = 0f;
+        var phase = 0; // 0: pick two pins; 1: let go the tension; 2: lean on it hard
+        for (var t = 0; t < 60 * 60 && sim.World.Has<WorkSession>(me); t++)
+        {
+            sim.Tick();
+            if (predictor.Session is not PickSession s)
+            {
+                predictor.Update(sim, me, 1, false, false, 0, c => sim.ApplyNow(c));
+                continue;
+            }
+            // Phase 1 lets the tension right off (S); phase 2 leans on it (W).
+            if (phase == 0 && s.Pin >= 2)
+                phase = 1;
+            if (phase == 1 && s.Pin == 0)
+            {
+                Assert.True(s.DroppedAt >= 0, "with no tension the set pins dropped back");
+                phase = 2;
+                heavy = s.Lift;
+            }
+            if (phase == 2 && s.Tension >= 0.97f)
+            {
+                var from = s.Lift;
+                for (var k = 0; k < 30; k++)
+                {
+                    sim.Tick();
+                    predictor.Update(sim, me, 1, false, false, 1, c => sim.ApplyNow(c), -1);
+                }
+                var after = ((PickSession)predictor.Session!).Lift;
+                Assert.True(after - from < 30 * PickSession.LiftPerStep * 0.3f, "binding: the pin hardly lifts");
+                return;
+            }
+            var (press, held, axis, axis2) = phase switch
+            {
+                0 => picker(s),
+                1 => (false, false, 0, 1),
+                _ => (false, false, 0, -1),
+            };
+            predictor.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c), axis2);
+        }
+        Assert.Fail($"never got through the phases (phase {phase})");
+    }
+
+    [Fact]
+    public void TooMuchTensionFreezesThePinsAndTheSpringBackMustBeCaught()
+    {
+        // Twice: once letting the spring-back run (the pins drop), once holding against it (they stay).
+        foreach (var catchIt in new[] { false, true })
+        {
+            var (sim, me, box) = AtTheBench(trapped: false);
+            sim.ApplyNow(new PickLockCommand(me, box));
+            var predictor = new WorkPredictor();
+            var picker = Picker(sim, box);
+            var phase = 0; // 0: set two pins; 1: lean on it till it binds; 2: frozen a while; 3: come back down
+            var frozenAt = -1;
+            var liftWas = 0f;
+            for (var t = 0; t < 60 * 60 && sim.World.Has<WorkSession>(me); t++)
+            {
+                sim.Tick();
+                if (predictor.Session is not PickSession s)
+                {
+                    predictor.Update(sim, me, 1, false, false, 0, c => sim.ApplyNow(c));
+                    continue;
+                }
+                if (phase == 0 && s.Pin >= 2)
+                    phase = 1;
+                if (phase == 1 && s.Binding)
+                    (phase, frozenAt, liftWas) = (2, s.StepsDone, s.Lift);
+                if (phase == 2)
+                {
+                    Assert.Equal(2, s.Pin); // frozen, not dropped
+                    Assert.Equal(liftWas, s.Lift);
+                    if (s.StepsDone - frozenAt > 40)
+                        phase = 3;
+                }
+                if (phase == 3 && !s.Binding && !s.Hitching)
+                {
+                    if (catchIt)
+                        Assert.Equal(2, s.Pin);
+                    else
+                        Assert.Equal(0, s.Pin);
+                    break;
+                }
+                if (phase == 3 && !catchIt && s.Pin == 0)
+                {
+                    Assert.True(s.DroppedAt >= 0, "let run, the spring-back went slack and dropped every pin");
+                    break;
+                }
+                var (press, held, axis, axis2) = phase switch
+                {
+                    0 => picker(s),
+                    1 => (false, false, 0, -1),
+                    2 => (false, false, 1, -1), // lifting against frozen pins: nothing moves
+                    _ => catchIt ? (false, false, 0, s.Binding ? 0 : s.Tension < (s.Low + s.High) * 0.5f ? -1 : 0) : (false, false, 0, 0),
+                };
+                predictor.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c), axis2);
+            }
+            Assert.Equal(3, phase);
+        }
+    }
+
+    [Fact]
+    public void ThePlugPushesBackOnTheTensionNowAndThen()
+    {
+        var (sim, me, box) = AtTheBench(trapped: false);
+        sim.ApplyNow(new PickLockCommand(me, box));
+        var predictor = new WorkPredictor();
+        var set = false;
+        var pushes = 0;
+        var settled = 0f;
+        var furthest = 0f;
+        var last = 0;
+        for (var t = 0; t < 60 * 30 && sim.World.Has<WorkSession>(me); t++)
+        {
+            sim.Tick();
+            if (predictor.Session is not PickSession s)
+            {
+                predictor.Update(sim, me, 1, false, false, 0, c => sim.ApplyNow(c));
+                continue;
+            }
+            // Ease it to the middle of the band once, then leave the finger where it is.
+            if (!set && Tense(s, 0.5f) == 0)
+                (set, settled) = (true, s.Tension);
+            if (set)
+            {
+                if (s.Pushing != 0 && last == 0)
+                    pushes++;
+                last = s.Pushing;
+                furthest = Math.Max(furthest, MathF.Abs(s.Tension - settled));
+            }
+            predictor.Update(sim, me, 1, false, false, 0, c => sim.ApplyNow(c), set ? 0 : Tense(s, 0.5f));
+        }
+        Assert.True(pushes >= 3, $"the plug pushed {pushes} times in half a minute");
+        Assert.True(furthest > 0.1f, "left alone, the tension's pushed well off where it was set");
+    }
+
+    [Fact]
+    public void SettingAPinOffItsMarkDropsItBackWithoutASlip()
+    {
+        var (sim, me, box) = AtTheBench(trapped: false);
+        sim.ApplyNow(new PickLockCommand(me, box));
+        var missed = false;
+        var picker = Picker(sim, box);
+        Play(sim, me, w =>
+        {
+            var s = (PickSession)w;
+            // Once, with the pin still at the bottom: F misses, and it's where it started.
+            if (!missed && s.Pin == 0 && s.Lift < 0.1f)
+            {
+                missed = true;
+                return (true, false, 0, 0);
+            }
+            if (missed && s.Pin == 0 && s.MissedAt >= 0 && s.StepsDone - s.MissedAt < 2)
+                Assert.Equal(0.05f, s.Lift, 0.01f);
+            return picker(w);
+        });
+        Assert.True(missed);
+        Assert.False(sim.World.Get<Strongbox>(box).Locked);
+        Assert.Equal(sim.World.Get<Thing>(Lockwork.Picks(sim, me)).MaxHp, sim.World.Get<Thing>(Lockwork.Picks(sim, me)).Hp); // no slip: the picks unworn
+    }
+
+    [Fact]
+    public void WithTheLastPinSetThePlugTurnsOverBeforeItOpens()
+    {
+        var (sim, me, box) = AtTheBench(trapped: false);
+        sim.ApplyNow(new PickLockCommand(me, box));
+        var turning = false;
+        var picker = Picker(sim, box);
+        Play(sim, me, w =>
+        {
+            turning |= ((PickSession)w).Turning && ((PickSession)w).Turned is > 0f and < 1f;
+            return picker(w);
+        });
+        Assert.True(turning);
+        Assert.False(sim.World.Get<Strongbox>(box).Locked);
+    }
+
+    [Fact]
     public void SlipsDropPinsAndWearThePicksUntilOneSnaps()
     {
         var (sim, me, box) = AtTheBench(trapped: false);
         var picks = Lockwork.Picks(sim, me);
         var hp = sim.World.Get<Thing>(picks).Hp;
         sim.ApplyNow(new PickLockCommand(me, box));
-        Play(sim, me, w => (w.StepsDone % 20 == 0, false, 0)); // jabbing at the bottom of the lift
+        // Tension on, and lifting every pin hard right past where it sets.
+        Play(sim, me, w => (false, false, 1, Tense((PickSession)w, 0.5f)));
 
         Assert.True(sim.World.Get<Strongbox>(box).Locked);
         Assert.True(sim.World.Get<Thing>(picks).Hp < hp);

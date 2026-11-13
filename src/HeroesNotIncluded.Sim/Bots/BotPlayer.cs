@@ -305,29 +305,32 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         return (false, false, 1);
     }
 
-    /// <summary>Lift each pin through where it gives, back to the middle of that, and set it.</summary>
+    /// <summary>
+    /// A finger on the tension (W/S), kept in the middle of the band; lift the pin until it stiffens,
+    /// and set it there (F). Feeling it ease past the stiff point, it's gone too far: back down.
+    /// </summary>
     private (bool, bool, int) Pick(PickSession s)
     {
         if (s.Pin != _pin || s.Slips != _slips)
         {
             (_pin, _slips) = (s.Pin, s.Slips);
-            _rose = _middle = null;
             _feel = 0f;
             _dir = 1;
         }
-        _feel = _feel * 0.7f + s.Feel * 0.3f;
-        if (_middle is { } target)
-        {
-            var off = target - s.Lift;
-            return MathF.Abs(off) <= s.HalfWidth * 0.3f ? (true, false, 0) : (false, false, Math.Sign(off));
-        }
-        if (Middle(s.Lift, 0.45f) is { } found)
-            _middle = found;
-        if (s.Lift >= 0.99f || s.Lift <= 0.01f)
-        {
-            _dir = s.Lift >= 0.99f ? -1 : 1;
-            _rose = null;
-        }
+        // W/S to keep the tension near the middle of the band.
+        var mid = (s.Low + s.High) * 0.5f;
+        _axis2 = s.Tension < mid - 0.03f ? -1 : s.Tension > mid + 0.03f ? 1 : 0;
+        if (s.Turning || s.Tension < s.Low)
+            return (false, false, 0);
+        var easing = s.Feel < _feel - 0.01f && _feel > 0.5f;
+        _feel = s.Feel;
+        if (s.Feel > 0.85f)
+            return (s.InBand, false, 0); // there: set it
+
+        if (easing)
+            _dir = -1;
+        else if (s.Feel < 0.2f)
+            _dir = 1;
         return (false, false, _dir);
     }
 

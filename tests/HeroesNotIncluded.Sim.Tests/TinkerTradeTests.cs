@@ -39,14 +39,18 @@ public class TinkerTradeTests
     }
 
     /// <summary>Play a session through the predictor, as a player at the keys would, until it's over.</summary>
-    private static void Play(Simulation sim, Entity me, Func<WorkSession, (bool Press, bool Held, int Axis)> keys, int maxTicks = 60 * 180)
+    private static void Play(Simulation sim, Entity me, Func<WorkSession, (bool Press, bool Held, int Axis)> keys, int maxTicks = 60 * 180) =>
+        Play(sim, me, w => { var (p, h, a) = keys(w); return (p, h, a, 0); }, maxTicks);
+
+    /// <summary>As the other, with W/S too.</summary>
+    private static void Play(Simulation sim, Entity me, Func<WorkSession, (bool Press, bool Held, int Axis, int Axis2)> keys, int maxTicks = 60 * 180)
     {
         var predictor = new WorkPredictor();
         for (var t = 0; t < maxTicks && sim.World.Has<WorkSession>(me); t++)
         {
             sim.Tick();
-            var (press, held, axis) = predictor.Session is { } s ? keys(s) : (false, false, 0);
-            predictor.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c));
+            var (press, held, axis, axis2) = predictor.Session is { } s ? keys(s) : (false, false, 0, 0);
+            predictor.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c), axis2);
         }
         sim.Tick();
         Assert.False(sim.World.Has<WorkSession>(me), "the session should have ended");
@@ -159,7 +163,8 @@ public class TinkerTradeTests
         {
             var s = (PickSession)w;
             var off = heights[Math.Min(s.Pin, heights.Length - 1)] - s.Lift;
-            return MathF.Abs(off) <= s.HalfWidth * 0.3f ? (true, false, 0) : (false, false, Math.Sign(off));
+            var there = !s.Turning && MathF.Abs(off) <= s.HalfWidth * 0.3f;
+            return (there && s.InBand, false, there || s.Turning ? 0 : Math.Sign(off), TinkerTests.Tense(s, (s.Low + s.High) * 0.5f));
         });
         Assert.False(sim.IsLocked(door));
     }

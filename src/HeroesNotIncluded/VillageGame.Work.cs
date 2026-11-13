@@ -368,31 +368,6 @@ public sealed partial class VillageGame
         EndWork();
     }
 
-    /// <summary>The pins set so far, the one being lifted, and how much it gives.</summary>
-    private void DrawPick(Sim.Tinkering.PickSession s)
-    {
-        BeginWork(s.Title, ("A/D", "lift the pin"), ("F", "set it where it gives most"), ("Esc", "stop"));
-        var dl = ImGui.GetWindowDrawList();
-        var origin = ImGui.GetCursorScreenPos();
-        var W = Gui.S(36); var H = Gui.S(120);
-        ImGui.Dummy(new float2(420, H));
-        for (var i = 0; i < s.Pins; i++)
-        {
-            var colMin = new float2(origin.X + 10 + i * (W + 12), origin.Y);
-            var colMax = new float2(colMin.X + W, origin.Y + H);
-            dl.AddRectFilled(in colMin, in colMax, Theme.U8(Theme.Well), 3f, ImDrawFlags.None);
-            var lift = i < s.Pin ? 1f : i == s.Pin ? s.Lift : 0f;
-            var pinTop = colMax.Y - 10 - lift * (H - 20);
-            var pinMin = new float2(colMin.X + 8, pinTop);
-            var pinMax = new float2(colMax.X - 8, pinTop + 10);
-            var colour = i < s.Pin ? Theme.Good : i == s.Pin ? (s.Feel > 0.7f ? Theme.Warn : Theme.Accent) : Theme.Dim;
-            dl.AddRectFilled(in pinMin, in pinMax, Theme.U8(colour), 2f, ImDrawFlags.None);
-        }
-        Bar("Give", s.Feel, s.Feel > 0.7f ? Theme.Warn : Theme.Dim);
-        TextC(s.Slips > 0 ? Theme.Warn : Theme.Dim, $"Slips {s.Slips} of {Sim.Tinkering.PickSession.MaxSlips}");
-        EndWork();
-    }
-
     /// <summary>
     /// The work in hand's window, centred just above the hotbar: a title plate, the keys as caps,
     /// then the game. Every mini-game opens it this way; pair with <see cref="EndWork"/>.

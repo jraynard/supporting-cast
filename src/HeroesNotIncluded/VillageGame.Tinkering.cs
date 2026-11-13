@@ -305,6 +305,184 @@ public sealed partial class VillageGame
         EndWork();
     }
 
+    /// <summary>
+    /// The lock in section: the plug and housing, a chamber per pin with its key pin, driver and
+    /// spring, the shear line between them; the pick under the pin being lifted, the tension wrench in
+    /// the keyway with the finger's pressure on it; and an end view of the plug turning under it.
+    /// No noise: the pin stiffening near its set point shows as the pick slowing and shuddering and the
+    /// shear line glowing; a pin setting clicks, the plug jolting.
+    /// </summary>
+    private void DrawPick(PickSession s)
+    {
+        BeginWork(s.Title, ("W/S", "ease the tension on / off"), ("A/D", "lift the pin"), ("F", "set it"), ("Esc", "stop"));
+        var dl = ImGui.GetWindowDrawList();
+        var min = ImGui.GetCursorScreenPos();
+        var size = Gui.S(440, 190);
+        ImGui.Dummy(in size);
+        var steps = s.StepsDone;
+        bool Recent(int at, int within) => at >= 0 && steps - at < within;
+        var clicked = Recent(s.ClickedAt, 30);
+        var jolt = clicked ? (1f - (steps - s.ClickedAt) / 30f) * Gui.S(3) : 0f;
+        var shudder = s.Feel > 0.3f && !s.Turning ? MathF.Sin((float)ImGui.GetTime() * 90f) * (s.Feel - 0.3f) * Gui.S(1.5f) : 0f;
+
+        // The section: housing above, the plug below the shear line, the keyway through it.
+        var left = min.X + Gui.S(56);
+        var right = min.X + Gui.S(316);
+        var shear = min.Y + Gui.S(86);
+        var housingTop = min.Y + Gui.S(14);
+        var plugBottom = min.Y + Gui.S(150);
+        var steel = new float4(0.55f, 0.57f, 0.62f, 1f);
+        var brass = new float4(0.82f, 0.66f, 0.30f, 1f);
+        var housing0 = new float2(left, housingTop);
+        var housing1 = new float2(right, shear);
+        dl.AddRectFilled(in housing0, in housing1, Theme.U8(Theme.Iron), Gui.S(3), ImDrawFlags.None);
+        var plug0 = new float2(left + jolt, shear);
+        var plug1 = new float2(right + jolt, plugBottom);
+        dl.AddRectFilled(in plug0, in plug1, Gui.U8(brass * 0.55f + new float4(0, 0, 0, 0.45f)), Gui.S(3), ImDrawFlags.None);
+        var way0 = new float2(left + jolt, plugBottom - Gui.S(22));
+        var way1 = new float2(right + jolt, plugBottom - Gui.S(8));
+        dl.AddRectFilled(in way0, in way1, Theme.U8(Theme.Well), Gui.S(2), ImDrawFlags.None);
+
+        // The chambers and their pins.
+        var pitch = (right - left - Gui.S(30)) / Math.Max(1, s.Pins);
+        var pinW = Math.Min(Gui.S(18), pitch * 0.55f);
+        var travel = Gui.S(30);
+        float2 pickTip = default;
+        for (var i = 0; i < s.Pins; i++)
+        {
+            var cx = left + Gui.S(30) + pitch * (i + 0.5f) + jolt;
+            var c0 = new float2(cx - pinW * 0.5f - Gui.S(2), housingTop + Gui.S(4));
+            var c1 = new float2(cx + pinW * 0.5f + Gui.S(2), plugBottom - Gui.S(22));
+            dl.AddRectFilled(in c0, in c1, Theme.U8(Theme.Well, 0.8f), Gui.S(2), ImDrawFlags.None);
+            var set = i < s.Pin || s.Turning;
+            var current = i == s.Pin && !s.Turning;
+            // Set: the key pin's top at the shear line, the driver caught above it. Otherwise lifted as far as it's been.
+            var lift = set ? 0f : current ? s.Lift * travel : 0f;
+            var keyTop = set ? shear + Gui.S(1) : shear + Gui.S(12) - lift;
+            var keyBottom = keyTop + Gui.S(32);
+            var driverBottom = set ? shear - Gui.S(3) : keyTop;
+            var driverTop = driverBottom - Gui.S(24);
+            var k0 = new float2(cx - pinW * 0.5f, keyTop);
+            var k1 = new float2(cx + pinW * 0.5f, keyBottom);
+            dl.AddRectFilled(in k0, in k1, Gui.U8(brass), Gui.S(2), ImDrawFlags.None);
+            var d0 = new float2(cx - pinW * 0.5f, driverTop);
+            var d1 = new float2(cx + pinW * 0.5f, driverBottom);
+            dl.AddRectFilled(in d0, in d1, Gui.U8(steel), Gui.S(2), ImDrawFlags.None);
+            // The spring above, squeezed the higher the driver goes.
+            var top = housingTop + Gui.S(6);
+            var coils = 5;
+            var last = new float2(cx - pinW * 0.4f, top);
+            for (var k = 1; k <= coils * 2; k++)
+            {
+                var y = top + (driverTop - top) * k / (coils * 2f);
+                var p = new float2(cx + (k % 2 == 0 ? -1 : 1) * pinW * 0.4f, y);
+                dl.AddLine(in last, in p, Theme.U8(Theme.Dim), Gui.S(1.5f));
+                last = p;
+            }
+            // Where this pin meets the shear line: gold once set, glowing as the current one stiffens.
+            var s0 = new float2(cx - pinW * 0.5f - Gui.S(2), shear - Gui.S(1));
+            var s1 = new float2(cx + pinW * 0.5f + Gui.S(2), shear + Gui.S(1));
+            if (set)
+                dl.AddRectFilled(in s0, in s1, Gui.U8(new float4(1f, 0.85f, 0.35f, 1f)), 0f, ImDrawFlags.None);
+            else if (current && s.Feel > 0f)
+                dl.AddRectFilled(in s0, in s1, Theme.U8(Theme.Good, s.Feel), 0f, ImDrawFlags.None);
+            if (current)
+                pickTip = new float2(cx + shudder, keyBottom);
+            if (set && i == s.Pin - 1 && clicked)
+            {
+                var at = new float2(cx - Gui.S(14), housingTop - Gui.S(12));
+                dl.AddText(in at, Theme.U8(Theme.Good, 1f - (steps - s.ClickedAt) / 30f), "click"u8);
+            }
+        }
+        // The shear line itself, across the whole lock.
+        var l0 = new float2(left, shear);
+        var l1 = new float2(right, shear);
+        dl.AddLine(in l0, in l1, Theme.U8(Theme.Dim, 0.6f), Gui.S(1));
+
+        // The pick: in along the keyway, its hook up under the pin being lifted.
+        if (!s.Turning && pickTip != default)
+        {
+            var handle = new float2(right + Gui.S(40), plugBottom - Gui.S(14));
+            var under = new float2(pickTip.X + Gui.S(6), plugBottom - Gui.S(14));
+            dl.AddLine(in handle, in under, Gui.U8(steel), Gui.S(3));
+            dl.AddLine(in under, in pickTip, Gui.U8(steel), Gui.S(3));
+        }
+
+        // The tension wrench in the keyway's mouth, and the finger's pressure on it.
+        var wrench0 = new float2(left - Gui.S(30), plugBottom - Gui.S(18));
+        var wrench1 = new float2(left + Gui.S(14), plugBottom - Gui.S(12));
+        dl.AddRectFilled(in wrench0, in wrench1, Gui.U8(steel), Gui.S(1), ImDrawFlags.None);
+        var arm0 = new float2(left - Gui.S(30), plugBottom - Gui.S(18));
+        var arm1 = new float2(left - Gui.S(24), plugBottom + Gui.S(18));
+        dl.AddRectFilled(in arm0, in arm1, Gui.U8(steel), Gui.S(1), ImDrawFlags.None);
+        var tensionTone = s.Binding ? Theme.Bad : s.InBand ? Theme.Good : Theme.Dim;
+        if (s.Tension > 0.01f)
+        {
+            var len = Gui.S(8) + s.Tension * Gui.S(26);
+            var t0 = new float2(left - Gui.S(27), plugBottom + Gui.S(22) + len);
+            var t1 = new float2(left - Gui.S(27), plugBottom + Gui.S(24));
+            dl.AddLine(in t0, in t1, Theme.U8(tensionTone), Gui.S(2) + s.Tension * Gui.S(3));
+            var h1 = new float2(left - Gui.S(33), plugBottom + Gui.S(30));
+            var h2 = new float2(left - Gui.S(21), plugBottom + Gui.S(30));
+            var h3 = new float2(left - Gui.S(27), plugBottom + Gui.S(20));
+            dl.AddTriangleFilled(in h1, in h2, in h3, Theme.U8(tensionTone));
+        }
+
+        // The end view: the plug in its housing, turned a hair by the tension, and right over at the end.
+        var face = new float2(min.X + Gui.S(390), min.Y + Gui.S(72));
+        dl.AddCircleFilled(in face, Gui.S(36), Theme.U8(Theme.Iron), 32);
+        dl.AddCircleFilled(in face, Gui.S(26), Gui.U8(brass), 32);
+        var angle = -MathF.PI / 2f + s.Tension * 0.14f + s.Turned * MathF.PI / 2f;
+        var dir = new float2(MathF.Cos(angle), MathF.Sin(angle));
+        var across = new float2(-dir.Y, dir.X);
+        var slot0 = face - dir * Gui.S(18);
+        var slot1 = face + dir * Gui.S(18);
+        dl.AddLine(in slot0, in slot1, Theme.U8(Theme.Well), Gui.S(5));
+        var ward = face + dir * Gui.S(6) + across * Gui.S(4);
+        dl.AddLine(in face, in ward, Theme.U8(Theme.Well), Gui.S(3));
+        var gauge0 = new float2(face.X - Gui.S(40), face.Y + Gui.S(48));
+        var gauge1 = new float2(face.X + Gui.S(40), face.Y + Gui.S(56));
+        dl.AddRectFilled(in gauge0, in gauge1, Theme.U8(Theme.Well), Gui.S(2), ImDrawFlags.None);
+        var band0 = new float2(gauge0.X + s.Low * Gui.S(80), gauge0.Y);
+        var band1 = new float2(gauge0.X + s.High * Gui.S(80), gauge1.Y);
+        dl.AddRectFilled(in band0, in band1, Theme.U8(Theme.Good, 0.45f), Gui.S(2), ImDrawFlags.None);
+        var needle0 = new float2(gauge0.X + s.Tension * Gui.S(80), gauge0.Y - Gui.S(3));
+        var needle1 = new float2(gauge0.X + s.Tension * Gui.S(80), gauge1.Y + Gui.S(3));
+        dl.AddLine(in needle0, in needle1, Theme.U8(tensionTone), Gui.S(2));
+        if (s.Pushing != 0)
+        {
+            // The plug's shove, as a little arrow off the needle the way it's pushing.
+            var x = needle0.X + s.Pushing * Gui.S(10);
+            var a1 = new float2(x, gauge0.Y - Gui.S(8));
+            var a2 = new float2(x, gauge0.Y - Gui.S(2));
+            var big = s.Hitching ? 1.8f : 1f;
+            var a1b = new float2(a1.X, gauge0.Y - Gui.S(5) - Gui.S(3) * big);
+            var a2b = new float2(a2.X, gauge0.Y - Gui.S(5) + Gui.S(3) * big);
+            var a3 = new float2(x + s.Pushing * Gui.S(6) * big, gauge0.Y - Gui.S(5));
+            dl.AddTriangleFilled(in a1b, in a2b, in a3, Theme.U8(s.Hitching ? Theme.Bad : Theme.Warn));
+        }
+        var label = new float2(gauge0.X, gauge1.Y + Gui.S(4));
+        dl.AddText(in label, Theme.U8(Theme.Dim), "tension"u8);
+
+        var (tone, say) = s.Turning ? (Theme.Good, "The last pin sets... and the plug turns over.")
+            : Recent(s.SlippedAt, 60) ? (Theme.Bad, "Overset! The pin jumped the line, and one you'd set fell back.")
+            : Recent(s.MissedAt, 60) ? (Theme.Warn, "Not there: the pin falls back to the bottom. Lift it again.")
+            : Recent(s.DroppedAt, 90) ? (Theme.Bad, "Too slack: every pin you'd set has dropped back.")
+            : s.Binding ? (Theme.Warn, "Too much tension: the pins are frozen. Ease off, and catch it as it springs back.")
+            : s.Hitching ? (Theme.Warn, "The plug's springing back toward slack: hold it (W) before the pins drop.")
+            : s.Pin > 0 && s.Tension < s.Low + 0.04f ? (Theme.Warn, "Near the light edge: a touch more tension (W), or the pins drop.")
+            : s.Pin > 0 && s.Tension > s.High - 0.04f ? (Theme.Warn, "Near the heavy edge: ease off a touch (S), or the pins drop.")
+            : s.Tension < s.Low ? (Theme.Dim, "Ease the tension on with W till it's in the band, then lift the pin.")
+            : s.Pushing < 0 && s.InBand ? (Theme.Warn, "The plug's pushing back against your finger: hold the tension (W).")
+            : s.Pushing > 0 && s.InBand ? (Theme.Warn, "The plug gives under your finger: ease off a touch (S).")
+            : clicked ? (Theme.Good, "Click. That one's set.")
+            : s.Feel > 0.6f ? (Theme.Good, s.InBand ? "It's stiffening under the pick: set it (F)." : "It's stiffening under the pick, but the tension's off.")
+            : (Theme.Text, "Lift the pin slowly, feeling for where it stiffens.");
+        TextC(tone, say);
+        TextC(s.Slips > 0 ? Theme.Warn : Theme.Dim, $"Slips {s.Slips} of {PickSession.MaxSlips}");
+        EndWork();
+    }
+
     // ---------------- At a door or a wagon ----------------
 
     /// <summary>F at a door's lock or a wagon: its window.</summary>

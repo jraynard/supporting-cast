@@ -492,6 +492,23 @@ building and fletching make a trade of their own). Design: DESIGN.md, "Tinker". 
   unlocks it and goes on (`Locksmithing.KeyedDoor`, `Job.GoTo`; reachability counts it,
   `Navigation.CanReach`), and it's locked again behind them once they're clear (`RelockSystem`).
   Players turn their own keys. AI work packs keep keys between jobs.
+- **Picking with tension:** one finger keeps tension on the plug while the pick lifts the pin
+  (A/D). Tension is analog: W eases it on, S eases it off, and it stays where it's left,
+  wandering a little with an unsteady hand (it was F held to build and released to drain, which
+  playtesting found fiddly). Every 2 to 5 seconds the plug pushes back against the finger (or now
+  and then gives under it) for half a second or so, gently (a little harder on a tight lock), so
+  the tension wants correcting; the gauge shows the shove as an arrow. Too much tension freezes the
+  pins (set ones stay set; the pin won't lift and F does nothing); too little drops every pin set
+  at once. Coming back from too much is hitchy: while it's too tight and for ~1.7 s after, the plug
+  springs back toward slack, hard (just under W's strength), and has to be caught or it goes slack
+  and the pins drop. Too light and set pins drop back one by one;
+  too heavy and the pin binds and won't lift. Near its set point the pin stiffens under the pick
+  (it slows, the pick shudders, the shear line glows); there, with the tension in the band, F
+  sets it with a click (the plug jolts). F anywhere else and the pin falls back to the bottom (no
+  slip, no wear: just the lift to do again). Lifted past it, it oversets: a slip. With the last pin set
+  the plug turns over before it opens. Drawn as the lock in section (chambers, key and driver
+  pins, springs, the shear line, the pick, the tension wrench and the finger's pressure) beside an
+  end view of the plug turning; the old jittering needle is gone (`Feel` is smooth now).
 - **Narsil: no reaching through floors.** Touch (working on a cell from beside it) crossed a level
   anywhere, so a guest in the room over the storeroom could take from its chest through the
   floorboards. On a grid it now crosses a level only where the lower cell is open overhead
