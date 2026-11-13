@@ -23,6 +23,8 @@ Fighting, reworked: you can see a blow coming now, and do something about it.
 - Try it in the village: Settings, Free movement (solo games). You walk freely with WASD and
   still click to walk to things; R draws your weapon, and then the mouse fights. A blow landing on
   you draws it for you. Swings hit whoever's in the way, friend or foe, so mind the neighbours.
+  Raiders move freely too: they circle while they wait their turn, step in to strike and back off,
+  and you can see each blow's sweep on the ground and step out of it. Archers keep their distance.
 - The camera turns on Z and X now (Q and E without a character). Dig is C, put down is G, and the
   empath's gift panel is Y. The controls card (H) has a Fighting section.
 - `--raid-test`: play as the smith with bandits coming down the north road at once.

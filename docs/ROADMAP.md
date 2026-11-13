@@ -65,11 +65,11 @@ village-day scenarios passing.
    F interacts; drawn, the weapon's in hand, left/right click strike light/heavy the way you aim, Q
    guards, Space dodges, and you're a little slower. A blow landing on you draws it for you. Behind a
    setting at first, then the default; the old cell-stepping for players goes.
-2. **Friendly fire, always.** A swing hits everyone in its sweep, ally or not, players included.
+2. **Friendly fire, always** (in: the first pass). A swing hits everyone in its sweep, ally or not, players included.
    AI fighters hold a blow while a friend's in its sweep and step for a clearer angle. First pass:
    townsfolk are just hurt; what the town makes of it (memory, shouting, the reveal) comes with M4.
    Wild animals you attack count as foes, so hunting works with free swings.
-3. **AI fighters on the model.** Raiders, villagers, adventurers, animals and the dragon steer
+3. **AI fighters on the model** (first pass in: `Combat/FreeFight`). Raiders, villagers, adventurers, animals and the dragon steer
    smoothly in a fight: close to their weapon's reach, keep spacing, step in to strike, circle on the
    one-at-a-time turns, back off hurt. Archers hold range and lead a moving target. An AI's blow is
    telegraphed as its sweep on the ground (a wedge), not a ring under its target.

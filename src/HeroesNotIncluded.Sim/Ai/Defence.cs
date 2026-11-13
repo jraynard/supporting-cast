@@ -120,6 +120,13 @@ public sealed class DefendJob(Entity foe) : Job
             Fail("nothing to fight with");
             yield break;
         }
+        if (Sim.FreeMove.Enabled)
+        {
+            foreach (var s in FightFree(foe, attack, () => !Sim.World.Has<Leaving>(foe) && !RaiderBrain.WantsToFlee(Sim, Pawn), AssaultJob.HeavyShare,
+                giveUp: Defence.VillagerRange + 4))
+                yield return s;
+            yield break;
+        }
         foreach (var s in GoToEntity(foe, PathEnd.Touch, maxTicks: 300)) yield return s;
         if (HasFailed) yield break;
         long nextAttack = 0;

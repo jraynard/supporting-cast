@@ -354,6 +354,7 @@ public sealed class AiSystem : ISimSystem
         Combat.Engagement.Release(sim, e); // their turn at whoever they were fighting
         if (!w.Has<Avatar>(e))
             Combat.Blows.Cancel(sim, e); // a swing the job was behind (a player's lands though they've let go of F)
+        Combat.FreeFight.Leave(sim, e); // an AI that fought freely walks the grid again
 
         var carried = Entity.Null;
         foreach (var other in w.Each<Carried>())

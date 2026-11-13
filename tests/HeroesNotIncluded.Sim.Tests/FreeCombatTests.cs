@@ -340,5 +340,102 @@ public class FreeCombatTests
         sim.Tick();
         Assert.False(sim.World.Has<FreeMover>(late));
     }
+
+    // ---- AI fighters with free movement (Combat.FreeFight) ----
+
+    [Fact]
+    public void ARaiderClosesSmoothlyAndStrikesFromItsReach()
+    {
+        var (sim, me) = Ring();
+        var foe = Arena.Bout(sim, me, "Swordsman");
+        sim.World.Get<Mind>(me).Drafted = true;
+        var offGrid = false;
+        BlowEvent? first = null;
+        for (var t = 0; t < SimClock.TicksPerSecond * 20 && first == null; t++)
+        {
+            sim.Tick();
+            offGrid |= sim.World.TryGet<FreeMover>(foe, out var fm) && fm.Wish != float2.Zero; // steering, not stepping cells
+            first = sim.RecentBlows.FirstOrDefault(b => b.Attacker == foe);
+        }
+        Assert.NotNull(first);
+        Assert.True(sim.World.Has<FreeMover>(foe), "it fights off the grid");
+        Assert.True(offGrid, "it steered in close");
+        var d = Where(sim, foe) - Where(sim, me);
+        Assert.True(MathF.Sqrt(d.X * d.X + d.Y * d.Y) <= Reach.ShapeOf(sim, foe, CombatRules.Attacks(sim, foe)[0]).Length + Reach.BodyRadius + 0.2f);
+    }
+
+    [Fact]
+    public void YouCanSidestepAnAiBlow()
+    {
+        var (sim, me) = Ring();
+        var foe = Arena.Bout(sim, me, "Swordsman");
+        var dodged = 0;
+        for (var t = 0; t < SimClock.TicksPerSecond * 40 && dodged == 0; t++)
+        {
+            // Whenever it winds up, step smartly to the side of its aim.
+            if (sim.World.TryGet<Windup>(foe, out var blow))
+            {
+                var side = new float2(-MathF.Sin(blow.Aim), MathF.Cos(blow.Aim));
+                sim.ApplyNow(new FreeMoveCommand(me, side.X, side.Y, 0f));
+            }
+            else
+                sim.ApplyNow(new FreeMoveCommand(me, 0f, 0f, 0f));
+            sim.Tick();
+            dodged = sim.RecentBlows.Count(b => b.Attacker == foe && b.Outcome == BlowOutcome.Miss);
+        }
+        Assert.True(dodged > 0, "stepping out of its sweep makes it miss");
+    }
+
+    [Fact]
+    public void AnArcherKeepsItsRangeAndBacksOffWhenYouClose()
+    {
+        var (sim, me) = Ring();
+        var archer = Arena.Bout(sim, me, "Archer");
+        sim.TickMany(SimClock.TicksPerSecond * 4);
+        var d0 = Where(sim, archer) - Where(sim, me);
+        Assert.True(MathF.Sqrt(d0.X * d0.X + d0.Y * d0.Y) > 2.5f, "it stands off");
+        // Run at it: it gives ground.
+        var start = Where(sim, archer);
+        for (var t = 0; t < SimClock.TicksPerSecond * 2; t++)
+        {
+            var to = Where(sim, archer) - Where(sim, me);
+            sim.ApplyNow(new FreeMoveCommand(me, to.X, to.Y, 0f));
+            sim.Tick();
+        }
+        var moved = Where(sim, archer) - start;
+        Assert.True(MathF.Sqrt(moved.X * moved.X + moved.Y * moved.Y) > 0.5f, "it backed off");
+    }
+
+    [Fact]
+    public void ARaidWithFreeMovementIsFoughtFreelyAndOnlyFightersLeaveTheGrid()
+    {
+        var (sim, me) = Village();
+        var home = sim.World.Get<Position>(me).Cell;
+        var band = Raids.Spawn(sim, Enumerable.Repeat(sim.Defs.AllRaiderKinds.First(k => k.Name == "Swordsman"), 3).ToList(),
+            Raids.EdgeEntry(sim, 2, home)!.Value, home, sim.Rand);
+        var sawFree = false;
+        for (var t = 0; t < SimClock.TicksPerSecond * 120; t++)
+        {
+            sim.Tick();
+            foreach (var e in sim.World.Query<FreeMover>())
+            {
+                if (sim.World.Has<Avatar>(e))
+                    continue;
+                sawFree = true;
+                // Off the grid only while fighting: a fight job, else on its way back this tick.
+                Assert.True(sim.World.Get<Mind>(e).Job is Ai.AssaultJob or Ai.DefendJob or Ai.AnimalAttackJob,
+                    $"{sim.World.Get<Creature>(e).Name} is off the grid doing {sim.World.Get<Mind>(e).Job?.Report ?? "nothing"}");
+            }
+            if (t == SimClock.TicksPerSecond * 60)
+            {
+                // Jobs aren't saved: a load ends every fight, so the AI's back on the grid and only you move freely.
+                var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+                Assert.True(loaded.World.Has<FreeMover>(me));
+                Assert.DoesNotContain(loaded.World.Query<FreeMover>(), e => !loaded.World.Has<Avatar>(e));
+            }
+        }
+        Assert.True(sawFree, "the fight was fought freely");
+        Assert.Contains(band, r => !sim.World.IsAlive(r) || !sim.World.Get<Creature>(r).Able || sim.World.Get<Health>(r).Injuries.Count > 0);
+    }
 }
 

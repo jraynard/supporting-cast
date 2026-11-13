@@ -160,6 +160,44 @@ public abstract class Job
         return Sim.World.TryGet<Avatar>(Pawn, out var avatar) && !avatar.WorkHeld;
     }
 
+    /// <summary>
+    /// Fight <paramref name="target"/> with free movement on (<see cref="Combat.FreeFight"/>): steer,
+    /// take turns (<see cref="Combat.Engagement"/>), strike when in reach and ready. Ends when
+    /// <paramref name="keepOn"/> says so, the target's down or gone, it gets too far away, or a while
+    /// passes without a turn (the brain may find someone better).
+    /// </summary>
+    protected IEnumerable<JobStatus> FightFree(Entity target, AttackDef attack, Func<bool> keepOn, float heavyShare, float giveUp = 14f)
+    {
+        Combat.FreeFight.Join(Sim, Pawn);
+        var w = Sim.World;
+        long nextAttack = Sim.Clock.Tick + Combat.Engagement.FirstBlowTicks, backOffUntil = 0, waitedSince = Sim.Clock.Tick;
+        var swinging = false;
+        while (keepOn() && Alive(target) && Get<Creature>(target).Able)
+        {
+            var now = Sim.Clock.Tick;
+            var pressing = Combat.Engagement.TryPress(Sim, Pawn, target);
+            if (pressing)
+                waitedSince = now;
+            else if (now - waitedSince > Combat.Engagement.WaitTicks)
+                yield break;
+            var dist = Combat.FreeFight.Steer(Sim, Pawn, target, attack, pressing, backOffUntil);
+            if (dist > giveUp)
+                yield break;
+            // A blow just landed: now and then a step back before the next.
+            var winding = w.Has<Combat.Windup>(Pawn);
+            if (swinging && !winding && Sim.Rand.Chance(Combat.FreeFight.BackOffShare))
+                backOffUntil = now + Combat.FreeFight.BackOffTicks;
+            swinging = winding;
+            if (pressing && !winding && now >= nextAttack && now >= backOffUntil && Combat.FreeFight.InReach(Sim, Pawn, target, attack, dist)
+                && Combat.Blows.Begin(Sim, Pawn, target, attack, heavy: !attack.Ranged && Sim.Rand.Chance(heavyShare)))
+            {
+                nextAttack = now + Combat.Engagement.Cooldown(Sim, attack, target);
+                swinging = true;
+            }
+            yield return JobStatus.Running;
+        }
+    }
+
     /// <summary>Set by <see cref="AwaitTurn"/>: it got a turn pressing its target.</summary>
     protected bool GotTurn { get; private set; }
 

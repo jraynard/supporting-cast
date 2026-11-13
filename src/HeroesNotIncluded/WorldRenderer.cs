@@ -1008,6 +1008,12 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         foreach (var e in w.Each<Sim.Combat.Windup>())
         {
             var blow = w.Get<Sim.Combat.Windup>(e);
+            if (sim.FreeMove.Enabled)
+            {
+                if (Seen(e) && LocalAim?.E != e)
+                    DrawSweep(sim, e, blow, now, ring);
+                continue;
+            }
             if (!Seen(e) || !w.IsAlive(blow.Target) || !w.Has<Position>(blow.Target))
                 continue;
             var at = DrawPos(sim, blow.Target, w.Get<Position>(blow.Target).Pos) + new float3(0, 0, 0.06f);
@@ -1165,6 +1171,40 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             Decal(ring, at, 2.4f + 3f * (1f - p), Rgba.Pack(c.X, c.Y, c.Z, c.W * (0.35f + 0.65f * p)), Quad.Unlit | Quad.Always, translucent: true);
             Decal(ring, at, 2.4f, Rgba.Pack(c.X, c.Y, c.Z, 0.25f), Quad.Unlit | Quad.Always, translucent: true);
         }
+    }
+
+    /// <summary>
+    /// With free movement, a blow's telegraph is where it'll land (<see cref="Sim.Combat.Reach"/>):
+    /// marks along its sweep's edge and down its middle, filling in as it comes, white as it lands. An
+    /// arrow's is its line. Step out of it to be clear.
+    /// </summary>
+    private void DrawSweep(Simulation sim, Entity e, in Sim.Combat.Windup blow, float now, Sprite mark)
+    {
+        var w = sim.World;
+        var attacks = Sim.Combat.CombatRules.Attacks(sim, e);
+        if (blow.Attack >= attacks.Count || !w.Has<Position>(e))
+            return;
+        var attack = attacks[blow.Attack];
+        var from = DrawPos(sim, e, w.Get<Position>(e).Pos) + new float3(0, 0, 0.06f);
+        var p = Math.Clamp((now - blow.Start) / Math.Max(1f, blow.Impact - blow.Start), 0f, 1f);
+        var c = now >= blow.Impact ? new float4(1f, 1f, 1f, 0.95f) : blow.Heavy || Sim.Combat.Blows.IsDragon(sim, e) ? HeavyBlowColor : BlowColor;
+        var color = Rgba.Pack(c.X, c.Y, c.Z, c.W * (0.55f + 0.45f * p));
+        var size = 0.26f + 0.14f * p;
+        void Mark(float angle, float r) =>
+            Decal(mark, from + new float3(MathF.Cos(angle) * r, MathF.Sin(angle) * r, 0), size, color, Quad.Unlit | Quad.Always, translucent: true);
+        if (attack.Ranged)
+        {
+            var length = Math.Min(attack.Range, 9f);
+            for (var r = 1f; r <= length * p + 0.01f; r += 0.6f)
+                Mark(blow.Aim, r);
+            return;
+        }
+        var shape = Sim.Combat.Reach.ShapeOf(sim, e, attack);
+        var edge = Math.Max(2, (int)(shape.HalfArc * 2 * shape.Length / 0.35f));
+        for (var i = 0; i <= edge; i++)
+            Mark(blow.Aim - shape.HalfArc + 2 * shape.HalfArc * i / edge, shape.Length);
+        for (var r = 0.5f; r < shape.Length; r += 0.45f)
+            Mark(blow.Aim, r * p + 0.3f * (1 - p));
     }
 
     private static readonly float4 BlowColor = new(0.99f, 0.77f, 0.33f, 0.9f);

@@ -1023,4 +1023,10 @@ shared); fights stay real time, Souls-lite.
   slower. A blow landing on you draws it. Free swings hit everyone in their sweep, friend or foe,
   hares included; an AI holds a blow while a friend's in the way. A character handed back to the AI
   walks the grid again. The practice ring's new bout moved to Enter.
+- **AI fighters move freely** (step 3, `Combat/FreeFight`): with free movement on, a raider,
+  defender or cornered animal leaves the grid for its fight and comes back to its cell after. It
+  walks the path when far off or with something in the way, else steers: in to its weapon's reach,
+  holding a little off and circling while it waits its turn, clear of anyone near, now and then
+  stepping back after a blow. Archers hold their bow's range, give ground when you close and lead a
+  moving target. An AI's telegraph is its sweep marked on the ground, so you can step out of it.
 

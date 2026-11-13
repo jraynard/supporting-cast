@@ -23,6 +23,9 @@ public struct FreeMover
     public float2 DashDir;
     public long DashUntil;
 
+    /// <summary>An AI in a fight (<see cref="FreeFight"/>), not a player's character: it goes back to the grid when the fight's done.</summary>
+    public bool Fighting;
+
     /// <summary>
     /// Weapon drawn: in combat mode. The mouse fights (light and heavy blows, the way you aim) and you
     /// go a little slower; sheathed, clicks walk and act as ever (<see cref="DrawWeaponCommand"/>).
@@ -91,7 +94,7 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
             if (!w.Has<FreeMover>(e))
                 Join(sim, e);
         foreach (var e in w.Query<FreeMover>())
-            if (!w.Has<Avatar>(e))
+            if (!w.Has<Avatar>(e) && !w.Get<FreeMover>(e).Fighting)
                 w.Remove<FreeMover>(e);
         foreach (var e in w.Each<FreeMover>())
             Step(sim, e);
@@ -159,7 +162,8 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         p.Cell = cell;
         // F's "in front" is the way you face, to the nearest of eight.
         var (cx, cy) = (DetMath.Cos(m.Aim), DetMath.Sin(m.Aim));
-        w.Get<Avatar>(e).Facing = new int2(cx > 0.38f ? 1 : cx < -0.38f ? -1 : 0, cy > 0.38f ? 1 : cy < -0.38f ? -1 : 0);
+        if (w.Has<Avatar>(e))
+            w.Get<Avatar>(e).Facing = new int2(cx > 0.38f ? 1 : cx < -0.38f ? -1 : 0, cy > 0.38f ? 1 : cy < -0.38f ? -1 : 0);
     }
 
     /// <summary>Could a free mover stand with its middle at <paramref name="at"/>: every cell its circle touches passable (on the level, or a step up or down)?</summary>

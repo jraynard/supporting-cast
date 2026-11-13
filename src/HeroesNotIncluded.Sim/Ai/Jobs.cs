@@ -777,6 +777,13 @@ public sealed class AssaultJob(Entity target) : Job
             Fail("nothing to attack with");
             yield break;
         }
+        if (Sim.FreeMove.Enabled)
+        {
+            // Free movement: footwork, not cells (Combat.FreeFight).
+            foreach (var s in FightFree(target, attack, () => !RaiderBrain.WantsToFlee(Sim, Pawn) && !Sim.World.Has<Combat.Leaving>(Pawn), HeavyShare, giveUp: 40f))
+                yield return s;
+            yield break;
+        }
         foreach (var s in CloseIn(attack, 600)) yield return s;
         if (HasFailed) yield break;
         long nextAttack = 0;
@@ -1050,6 +1057,13 @@ public sealed class AnimalAttackJob(Entity target) : Job
         if (Combat.CombatRules.Attacks(Sim, Pawn).FirstOrDefault(a => !a.Ranged) is not { } attack)
         {
             Fail("nothing to attack with");
+            yield break;
+        }
+        if (Sim.FreeMove.Enabled)
+        {
+            var until = Sim.Clock.Tick + SimClock.TicksPerSecond * 20;
+            foreach (var s in FightFree(target, attack, () => Sim.Clock.Tick < until, 0f, GiveUpDistance))
+                yield return s;
             yield break;
         }
         var mover = Get<Mover>(Pawn);

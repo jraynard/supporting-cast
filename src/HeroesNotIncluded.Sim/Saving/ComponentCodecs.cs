@@ -190,10 +190,11 @@ internal static class ComponentCodecs
             w.Float(m.DashDir.Y);
             w.Long(m.DashUntil);
             w.Bool(m.Drawn);
+            w.Bool(m.Fighting);
         }, r => new Combat.FreeMover
         {
             Wish = new float2(r.Float(), r.Float()), Vel = new float2(r.Float(), r.Float()), Aim = r.Float(),
-            DashDir = new float2(r.Float(), r.Float()), DashUntil = r.Long(), Drawn = r.Bool(),
+            DashDir = new float2(r.Float(), r.Float()), DashUntil = r.Long(), Drawn = r.Bool(), Fighting = r.Bool(),
         }),
         Codec("Inhaling", (w, i) =>
         {
