@@ -79,7 +79,7 @@ public sealed partial class VillageGame
     }
 
     private bool _showCredits;
-    private readonly CreditsWindow _credits = new(TitleGame.Title, "The people the heroes walk past.");
+    private readonly CreditsWindow _credits = new(TitleGame.Title, "The people the heroes walk past.", GameCredits.People);
 
     /// <summary>Credits screen. BRUTAL License 2.1 requires its copyright notice here (<see cref="CreditsWindow"/>).</summary>
     private void DrawCredits() => _credits.Draw(ref _showCredits, $"{BuildInfo.Label}, build tag {BuildInfo.Tag(_sim.Defs)}");

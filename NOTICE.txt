@@ -4,8 +4,6 @@ This product is built with BRUTAL, a game development framework by Ahwoo Limited
 
 www.ahwoo.com/brutal
 
-The interface font is Fira Sans, Copyright (c) 2012-2018 The Mozilla Foundation, Telefonica S.A.,
-Carrois Corporate GbR and bBox Type GmbH, used under the SIL Open Font License 1.1 (licenses/FiraSans-OFL.txt).
+The interface font is Fira Sans, Copyright (c) 2012-2018 The Mozilla Foundation, Telefonica S.A., Carrois Corporate GbR and bBox Type GmbH, used under the SIL Open Font License 1.1 (licenses/FiraSans-OFL.txt).
 
-The title lettering is Cinzel, Copyright 2020 The Cinzel Project Authors (https://github.com/NDISCOVER/Cinzel),
-used under the SIL Open Font License 1.1 (licenses/Cinzel-OFL.txt).
+The title lettering is Cinzel, Copyright 2020 The Cinzel Project Authors (https://github.com/NDISCOVER/Cinzel), used under the SIL Open Font License 1.1 (licenses/Cinzel-OFL.txt).

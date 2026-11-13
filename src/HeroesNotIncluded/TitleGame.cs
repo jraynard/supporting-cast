@@ -66,7 +66,7 @@ public sealed class TitleGame : Game
     private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Host, HostNew, HostSave, Join, BackToCreator, Report, Credits }
 
     /// <summary>The Credits window (BRUTAL License 2.1: its copyright notice; and the fonts' licences).</summary>
-    private readonly CreditsWindow _credits = new(Title, "Somebody has to keep the lights on.");
+    private readonly CreditsWindow _credits = new(Title, "Somebody has to keep the lights on.", GameCredits.People);
     private bool _showCredits;
 
     /// <summary>An entry pressed that starts a game: drawn behind a loading line for a frame, then started.</summary>

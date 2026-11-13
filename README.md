@@ -84,6 +84,9 @@ docs/                        design, roadmap, history, art pipeline, Steam Deck,
 
 ## Credits & licensing
 
+Created by Justin Raynard and Tasha Raynard, made with the help of Claude, by Anthropic. The game's
+Credits window lists the same (`Ui/GameCredits.cs`).
+
 Built with BRUTAL, a game development framework by Ahwoo Limited, used under the BRUTAL License
 v1.0: the logo splash, the copyright notice in the Credits window, `NOTICE.txt` and the `licenses/`
 folder ship with every build (`external/narsil/docs/LICENSING.md`). The interface font is Fira
