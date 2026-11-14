@@ -423,6 +423,22 @@ public class AvatarTests
     }
 
     [Fact]
+    public void AFreeMoverTurnsAtOnceWhenTheClickGoesBehindIt()
+    {
+        var sim = Warm();
+        var me = Avatar(sim, C(5, 5));
+        FreeMoveSystem.Ensure(sim, me);
+        sim.Enqueue(new AvatarGoToCommand(me, C(20, 5)));
+        sim.Tick();
+        while (sim.World.Get<Mover>(me).StepProgress is < 0.2f or > 0.4f)
+            sim.Tick();
+        var before = sim.World.Get<Position>(me).Pos;
+        sim.Enqueue(new AvatarGoToCommand(me, C(1, 5)));
+        sim.TickMany(3);
+        Assert.True(sim.World.Get<Position>(me).Pos.X < before.X, $"carried on east from {before.X} to {sim.World.Get<Position>(me).Pos.X}");
+    }
+
+    [Fact]
     public void SwitchingAClickedWalkKeepsTheStepInProgress()
     {
         var sim = Warm();

@@ -80,7 +80,8 @@ public class SeasonScenarioTests(ITestOutputHelper output)
             Assert.Contains(CrisisKind.Dragon, crises);
         }
         Assert.NotEmpty(crises);
-        Assert.Equal(crises.Count, sim.Director.Met + sim.Director.Unmet);
+        // Each crisis was met or not, or was still under way when Dread ended the round.
+        Assert.Equal(crises.Count, sim.Director.Met + sim.Director.Unmet + sim.Director.Active.Count);
         Assert.True(summary.Parties > 0);
         Assert.Contains(summary.People, p => p.Player);
     }

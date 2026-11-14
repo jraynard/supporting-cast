@@ -852,11 +852,13 @@ public sealed class AvatarWalkJob(int3 target, bool interact) : Job
 
     /// <summary>
     /// Route to the target from the step under way (kept, so it finishes smoothly) or from where
-    /// the pawn stands. A plain walk to a cell nobody can stand in goes up to it instead.
+    /// the pawn stands. A free mover steers from where it really is (<see cref="Combat.FreeMoveSystem"/>),
+    /// so it turns at once rather than finishing the step. A plain walk to a cell nobody can stand
+    /// in goes up to it instead.
     /// </summary>
     private bool Replan(Mover mover)
     {
-        var midStep = mover.Moving && mover.StepProgress > 0;
+        var midStep = mover.Moving && mover.StepProgress > 0 && !Sim.World.Has<Combat.FreeMover>(Pawn);
         var from = midStep ? mover.Path![mover.PathIndex] : PawnCell;
         var route = Route(from, OnTile ? PathEnd.OnTile : PathEnd.Touch);
         if (route == null && OnTile && !Interact)
