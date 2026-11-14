@@ -43,12 +43,17 @@ public sealed class FeverSystem(ulong seed) : ISimSystem, ISaveState
             return;
         var grow = GrowthPerHour * Interval / SimClock.TicksPerHour;
         foreach (var e in sick)
-            foreach (var inj in w.Get<Health>(e).Injuries)
+        {
+            var h = w.Get<Health>(e);
+            foreach (var inj in h.Injuries)
                 if (inj.Type == DamageType.Fever && !inj.Tended)
                 {
+                    var before = inj.Damage;
                     inj.Damage = Math.Min(Worst, inj.Damage + grow);
                     inj.PeakDamage = Math.Max(inj.PeakDamage, inj.Damage);
+                    Empathy.Worsened(h, inj, before);
                 }
+        }
         foreach (var e in sick)
         {
             var at = w.Get<Position>(e).Cell;

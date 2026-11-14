@@ -232,8 +232,10 @@ public sealed class HealthSystem : ISimSystem
             injury = new Injury { Part = part, Type = type, Tick = sim.Clock.Tick };
             h.Injuries.Add(injury);
         }
+        var before = injury.Damage;
         injury.Damage += amount;
         injury.PeakDamage = Math.Max(injury.PeakDamage, injury.Damage);
+        Healing.Empathy.Worsened(h, injury, before);
         h.Changed();
 
         var def = h.Body.Parts[part];

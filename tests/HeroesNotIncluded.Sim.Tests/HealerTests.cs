@@ -566,6 +566,22 @@ public class HealerTests
     }
 
     [Fact]
+    public void AFeltWoundThatWorsensMustBeFeltAgain()
+    {
+        var (sim, me, patient, arm) = AtTheBedside(cut: 1f);
+        var h = sim.World.Get<Health>(patient);
+        var cut = h.Injuries.Single(i => i.Part == arm && i.Type == DamageType.Cut);
+        Assert.Equal(me, cut.FeltBy);
+        var was = Empathy.Severity(h, cut);
+        HealthSystem.Damage(sim, patient, 0.05f, DamageType.Cut, arm);
+        Assert.Equal(was, Empathy.Severity(h, cut));
+        Assert.Equal(me, cut.FeltBy); // a little worse, but the same wound to the hand
+        while (Empathy.Severity(h, cut) == was)
+            HealthSystem.Damage(sim, patient, 0.25f, DamageType.Cut, arm);
+        Assert.True(cut.FeltBy.IsNull);
+    }
+
+    [Fact]
     public void ThePalletsAreKeptForTheHurtNotForANightsSleep()
     {
         var sim = VillageRound.NewSimulation(LoadDefs(), 1234);

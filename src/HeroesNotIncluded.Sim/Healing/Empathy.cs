@@ -61,10 +61,26 @@ public static class Empathy
         return "a pain you can't place";
     }
 
-    public static string Severity(Health h, Injury inj)
+    public static string Severity(Health h, Injury inj) => Severities[Band(h, inj, inj.Damage)];
+
+    private static readonly string[] Severities = ["faint", "sharp", "heavy", "overwhelming"];
+
+    private static int Band(Health h, Injury inj, float damage)
     {
-        var share = inj.Damage / Math.Max(1f, h.PartMaxHp(inj.Part));
-        return share < 0.15f ? "faint" : share < 0.35f ? "sharp" : share < 0.6f ? "heavy" : "overwhelming";
+        var share = damage / Math.Max(1f, h.PartMaxHp(inj.Part));
+        return share < 0.15f ? 0 : share < 0.35f ? 1 : share < 0.6f ? 2 : 3;
+    }
+
+    /// <summary>
+    /// A wound grew from <paramref name="before"/>: past the severity it was felt at, it's no longer
+    /// the wound the empath's hands found, so it's to be felt over again (and drawn only then).
+    /// </summary>
+    public static void Worsened(Health h, Injury inj, float before)
+    {
+        if (inj.FeltBy.IsNull || Band(h, inj, inj.Damage) <= Band(h, inj, before))
+            return;
+        inj.FeltBy = Entity.Null;
+        inj.FeltFestering = false;
     }
 
     /// <summary>
