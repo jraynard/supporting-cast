@@ -271,6 +271,7 @@ internal static class ComponentCodecs
         Tag<NonViolent>("NonViolent"),
         Tag<Leaving>("Leaving"),
         Tag<Militia.TownArms>("TownArms"),
+        Tag<Combat.Loaded>("Loaded"),
         Tag<Escaping>("Escaping"),
         Codec("Equipment", (w, e) => w.Entity(e.Weapon), r => new Equipment { Weapon = r.Entity() }),
         Codec("Apparel", (w, a) =>

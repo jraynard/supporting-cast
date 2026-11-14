@@ -68,7 +68,9 @@ public sealed partial class VillageGame
             Panel.End();
             return;
         }
-        TextC(Theme.Warn, Archery.Bow(_sim, _avatar) != null ? $"Hold {heavy} to draw and aim, {strike} to loose once it's drawn."
+        TextC(Theme.Warn, !Archery.Crossbow(_sim, _avatar).IsNull
+                ? Archery.IsLoaded(_sim, _avatar) ? $"Loaded. {Cap(strike)} fires it the way you aim." : $"Hold {heavy} to crank it: it stays loaded once it's done."
+            : Archery.Bow(_sim, _avatar) != null ? $"Hold {heavy} to draw and aim, {strike} to loose once it's drawn."
             : armed ? $"{Cap(strike)} strikes the way you aim, {heavy} swings heavy." : $"Fists only: {strike} to strike.");
         ImGui.SameLine(0, Gui.S(10));
         var shoots = w.TryGet<Equipment>(foe, out var theirs) && w.IsAlive(theirs.Weapon) && w.Get<Thing>(theirs.Weapon).Def.Weapon is { Ranged: true };
@@ -183,7 +185,8 @@ public sealed partial class VillageGame
     /// <summary>
     /// A bow (<see cref="Archery"/>): hold the right button to draw and aim it (the aim line shows
     /// where it'll fly), and click the left to loose: at once if it's drawn, else the moment it is,
-    /// so long as it's still held. Hold on and the next is drawn.
+    /// so long as it's still held. Hold on and the next is drawn. A crossbow is cranked the same
+    /// way, but once it's cranked it stays loaded: a click fires it, right button held or not.
     /// </summary>
     private bool HandleBow()
     {
@@ -194,7 +197,8 @@ public sealed partial class VillageGame
             Issue(new BowCommand(_avatar, draw, false, _aim, tick));
             _bowSent = draw;
         }
-        if (!draw)
+        var loaded = Archery.IsLoaded(_sim, _avatar);
+        if (!draw && !loaded)
             _looseQueued = false;
         else if (Controls.Map.Pressed(Act.Strike))
             _looseQueued = true;
@@ -219,7 +223,9 @@ public sealed partial class VillageGame
     private (float3 From, float3 To, float Drawn, bool Ready, bool Winded)? AimLine()
     {
         var w = _sim.World;
-        if (!WeaponDrawn || !w.TryGet<Aiming>(_avatar, out var aiming) || Archery.Bow(_sim, _avatar) is not { } bow)
+        var loaded = Archery.IsLoaded(_sim, _avatar); // a crossbow cranked: aimed from the hip, ready to fire
+        var aiming = w.TryGet<Aiming>(_avatar, out var a) ? a : default;
+        if (!WeaponDrawn || !(loaded || w.Has<Aiming>(_avatar)) || Archery.Bow(_sim, _avatar) is not { } bow)
             return null;
         var from = _renderer.DrawPos(_sim, _avatar, w.Get<Position>(_avatar).Pos);
         var end = Reach.ArrowEnd(_sim, from, _aim, bow.Range);
@@ -235,7 +241,7 @@ public sealed partial class VillageGame
             if (along > 0.2f && along < reach && MathF.Abs(at.X * dir.Y - at.Y * dir.X) <= Reach.ArrowWidth)
                 reach = along;
         }
-        var drawn = Math.Clamp((_sim.Clock.Tick - aiming.Start) / (float)Archery.DrawTicks(_sim, _avatar, bow), 0f, 1f);
+        var drawn = loaded ? 1f : Math.Clamp((_sim.Clock.Tick - aiming.Start) / (float)Archery.DrawTicks(_sim, _avatar, bow), 0f, 1f);
         var winded = !(w.TryGet<Guard>(_avatar, out var g) && g.Stamina >= Blows.SwingCost);
         return (from, from + dir * reach, drawn, drawn >= 1f, winded);
     }

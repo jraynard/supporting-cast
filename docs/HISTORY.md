@@ -1180,6 +1180,12 @@ Small leftovers from the polish list and the pre-M4 sections, each its own commi
   probe has felt along the seam (a catch stands up as a hump to come back to), the pressure gauge's
   zones named (sweep, ease, springs) with the light-touch line marked, and a tick when it catches.
   The green band was never for sweeping: it's above the light touch that crosses a trigger safely.
+- **The crossbow's made by hand:** a recipe's `fit` sends it through the fitting game at the
+  tinker's bench (`RecipeDef.Fit`, `Tinkers.FitOf`): the stock, the steel bow and the trigger and nut
+  seated, then the string drawn back to the nut and latched (the window shows the bow spanning).
+  It's a weapon, not road gear: no `Contraption` on it.
+- **A crossbow stays loaded** (`holdsLoad`, `Combat.Loaded` on the weapon): hold the right button
+  to crank it; once it's done it's loaded, let go, sheathed or saved, and a click fires it.
 - **Shop signs:** a cogwheel over the tinker's shop (`props/sign_gear`), a mending bindrune over the
   healer's shrine (`props/sign_rune`), from `tools/inn_art.py`.
 - Bench baselines: seed 1234 unchanged (state `853A200442B00386`, full `12E0FA3E45392BBC`); seed 99

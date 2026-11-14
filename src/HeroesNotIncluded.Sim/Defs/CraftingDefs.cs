@@ -64,6 +64,13 @@ public sealed class RecipeDef : Def
     /// </summary>
     public string? Upgrade { get; set; }
 
+    /// <summary>
+    /// Made by hand at the tinker's bench as a fitting (<c>Tinkering.FitSession</c>): parts seated
+    /// true one by one, then (if it winds) its spring wound to the catch and latched. A contraption
+    /// is fitted without this; the crossbow says so here. Null: worked as any recipe is.
+    /// </summary>
+    public FitProps? Fit { get; set; }
+
     /// <summary>The kind of work bills for it are.</summary>
     [JsonIgnore] public WorkType WorkType => Skill == Skill.Cooking ? WorkType.Cook : WorkType.Craft;
 
@@ -72,6 +79,8 @@ public sealed class RecipeDef : Def
     internal override void Resolve(DefDatabase db)
     {
         ToolTier = db.ResolveTier(ToolTier, $"Recipe '{Name}'");
+        if (Fit is { Parts: < 2 or > 5 })
+            throw new Exception($"Recipe '{Name}': a fitting has 2 to 5 parts, not {Fit.Parts}");
         if (!string.IsNullOrEmpty(Station))
         {
             StationDef = db.Thing(Station);
@@ -124,4 +133,20 @@ public sealed class WorkbenchProps
 
     /// <summary>In a round, a player makes gear here by hand, as a mini-game (<see cref="Work.HammerSession"/>).</summary>
     public bool HandWork { get; set; }
+}
+
+/// <summary>How a recipe's fitted together by hand (<see cref="RecipeDef.Fit"/>).</summary>
+public sealed class FitProps
+{
+    /// <summary>Parts seated, 2 to 5.</summary>
+    public int Parts { get; set; } = 3;
+
+    /// <summary>Wound to the catch and latched once the parts are in (a spring, a crossbow's string).</summary>
+    public bool Winds { get; set; } = true;
+
+    /// <summary>What each part's called as it's fitted (presentation only); empty for a contraption's.</summary>
+    public List<string> PartNames { get; set; } = [];
+
+    /// <summary>What's wound, for the title ("the crossbow's string"); empty: its spring.</summary>
+    public string Wound { get; set; } = "";
 }

@@ -356,6 +356,21 @@ public class TinkerTradeTests
     }
 
     [Fact]
+    public void ACrossbowIsFittedAndSpannedByHand()
+    {
+        var (sim, me, bench) = AtTheBench();
+        sim.ApplyNow(new CraftCommand(me, bench, Recipe(sim, "MakeCrossbow")));
+        var fit = Assert.IsType<FitSession>(sim.World.Get<WorkSession>(me));
+        Assert.Equal(3, fit.Parts);
+        Assert.True(fit.Winds, "the string's drawn back to the nut");
+        Assert.Equal("crossbow", fit.What);
+        Play(sim, me, FitTrue);
+        var crossbow = Carried(sim, me).Single(e => sim.World.Get<Thing>(e).Def.Name == "Crossbow");
+        Assert.False(sim.World.Has<Contraption>(crossbow), "a weapon, not road gear");
+        Assert.True(sim.World.Get<Crafted>(crossbow).Quality >= Quality.Plain);
+    }
+
+    [Fact]
     public void ASeatedPartSitsHomeAMomentAndAnEarlyLatchSlips()
     {
         var (sim, me, bench) = AtTheBench();

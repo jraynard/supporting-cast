@@ -596,6 +596,41 @@ public class FreeCombatTests
     }
 
     [Fact]
+    public void ACrossbowStaysLoadedOnceCrankedUntilItsLoosed()
+    {
+        var (sim, me) = Ring("Crossbow");
+        var foe = Foe(sim, new float2(21.5f, 16.5f));
+        var crossbow = Archery.Bow(sim, me)!;
+        var item = Archery.Crossbow(sim, me);
+        Assert.False(item.IsNull);
+
+        // Let go halfway: nothing's held, and it isn't loaded.
+        sim.ApplyNow(new BowCommand(me, true, false, 0f, sim.Clock.Tick));
+        sim.TickMany(Archery.DrawTicks(sim, me, crossbow) / 2);
+        sim.ApplyNow(new BowCommand(me, false, false, 0f, sim.Clock.Tick));
+        Assert.False(Archery.IsLoaded(sim, me));
+
+        // Cranked all the way, then let go: it stays loaded, through a save too.
+        sim.ApplyNow(new BowCommand(me, true, false, 0f, sim.Clock.Tick));
+        sim.TickMany(Archery.DrawTicks(sim, me, crossbow));
+        sim.ApplyNow(new BowCommand(me, false, false, 0f, sim.Clock.Tick));
+        Assert.False(sim.World.Has<Aiming>(me));
+        Assert.True(Archery.IsLoaded(sim, me));
+        Assert.True(sim.World.Has<Loaded>(item));
+        var (loaded, _) = Saving.SaveGame.Read(Saving.SaveGame.Write(sim), sim.Defs);
+        Assert.True(loaded.World.Has<Loaded>(item));
+
+        // A click fires it, right button held or not; then it's empty.
+        sim.TickMany(30);
+        sim.ApplyNow(new BowCommand(me, false, true, 0f, sim.Clock.Tick));
+        sim.TickMany(2);
+        Assert.Contains(sim.RecentBlows, b => b.Attacker == me && b.Target == foe);
+        Assert.False(Archery.IsLoaded(sim, me));
+        sim.ApplyNow(new BowCommand(me, false, true, 0f, sim.Clock.Tick));
+        Assert.False(sim.World.Has<Windup>(me), "nothing to loose till it's cranked again");
+    }
+
+    [Fact]
     public void YouGoSlowerWithABowDrawn()
     {
         var (sim, me) = Ring("Bow");

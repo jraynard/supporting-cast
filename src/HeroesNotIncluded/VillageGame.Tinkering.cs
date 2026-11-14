@@ -163,7 +163,7 @@ public sealed partial class VillageGame
             dl.AddText(in at, Theme.U8(done ? Theme.Good : i == s.Part ? Theme.Text : Theme.Dim), PartName(s, i));
         }
 
-        var next = s.Part + 1 < s.Parts ? $"Next: the {PartName(s, s.Part + 1)}." : s.Winds ? "Next: wind the spring." : "That's the last.";
+        var next = s.Part + 1 < s.Parts ? $"Next: the {PartName(s, s.Part + 1)}." : s.Winds ? $"Next: {(FitOf(s)?.Wound is { Length: > 0 } wound ? $"draw the {wound} back" : "wind the spring")}." : "That's the last.";
         var (tone, say) = s.Settling > 0 ? (s.Jammed ? Theme.Warn : Theme.Good, s.Jammed ? $"It's in, but crooked: it'll bind. {next}" : $"Home, and square. {next}")
             : s.Bind > 0.5f ? (Theme.Bad, "It's binding on the edge! Ease off and square it up.")
             : s.Bind > 0.05f ? (Theme.Warn, "It's riding on the edge: off true.")
@@ -180,7 +180,9 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawWinding(FitSession s)
     {
-        BeginWork(s.Title, ("F", "tap to wind a click"), ("Space", "latch it"), ("Esc", "stop"));
+        var wound = FitOf(s)?.Wound is { Length: > 0 } w0 ? w0 : null;
+        BeginWork(wound != null ? $"Spanning the {s.What}: drawing the {wound} back" : s.Title,
+            ("F", "tap to wind a click"), ("Space", wound != null ? "latch it on the nut" : "latch it"), ("Esc", "stop"));
         var dl = ImGui.GetWindowDrawList();
         var min = ImGui.GetCursorScreenPos();
         var size = Gui.S(420, 180);
@@ -230,6 +232,10 @@ public sealed partial class VillageGame
         dl.AddLine(in pivot, in pawlTip, Theme.U8(s.Catching ? Theme.Good : s.Slipped > 0 ? Theme.Warn : Theme.Text), Gui.S(5));
         dl.AddCircleFilled(in pivot, Gui.S(5), Theme.U8(Theme.Text), 12);
 
+        if (wound != null)
+            DrawSpanned(dl, s, new float2(min.X + Gui.S(310) + shake, min.Y + Gui.S(100)));
+        else
+        {
         // The spring: more turns and tighter the more it's wound, warming to red past the catch.
         var centre = new float2(min.X + Gui.S(310) + shake, min.Y + Gui.S(100));
         var turns = 2.5f + s.Tension * 4f;
@@ -246,21 +252,61 @@ public sealed partial class VillageGame
             dl.AddLine(in last, in p, Theme.U8(tone), Gui.S(2) + s.Tension * Gui.S(2));
             last = p;
         }
+        }
 
         var (colour, say) = s.Strain > 0f ? (Theme.Bad, "Past the catch: it's straining! Let it creep back onto the brass, or latch it strained.")
             : s.Catching ? (Theme.Good, Controls.Keys("The pawl's in the brass teeth. Latch it now (~Space~)."))
             : s.Slipped > 0 ? (Theme.Warn, "It won't hold yet: the pawl slips. Wind on till the brass teeth reach it.")
-            : s.Clicks == 0 ? (Theme.Text, Controls.Keys("Tap ~F~ to wind the spring a click at a time."))
+            : s.Clicks == 0 ? (Theme.Text, Controls.Keys($"Tap ~F~ to wind the {wound ?? "spring"} a click at a time."))
             : (Theme.Text, $"Wind on: the brass teeth are coming round to the pawl. {s.Clicks} {(s.Clicks == 1 ? "click" : "clicks")}.");
         TextC(colour, say);
         EndWork();
     }
 
-    /// <summary>What each part of a contraption (or an axle) is called, as it's fitted.</summary>
-    private static string PartName(FitSession s, int i)
+    /// <summary>What each part of a contraption (or an axle, or the crossbow) is called, as it's fitted.</summary>
+    private string PartName(FitSession s, int i)
     {
-        string[] names = !s.Wagon.IsNull ? ["axle", "linchpins"] : ["frame", "gear train", "pawl", "spring barrel", "casing"];
-        return names[Math.Clamp(i, 0, names.Length - 1)];
+        IReadOnlyList<string> names = !s.Wagon.IsNull ? ["axle", "linchpins"]
+            : FitOf(s) is { PartNames.Count: > 0 } fit ? fit.PartNames
+            : ["frame", "gear train", "pawl", "spring barrel", "casing"];
+        return names[Math.Clamp(i, 0, names.Count - 1)];
+    }
+
+    /// <summary>The fitting the bench is set to (<see cref="Sim.Defs.RecipeDef.Fit"/>), if its recipe has one of its own.</summary>
+    private Sim.Defs.FitProps? FitOf(FitSession s) =>
+        _sim.World.IsAlive(s.Station) && _sim.World.TryGet<Workbench>(s.Station, out var bench) ? bench.Active?.Fit : null;
+
+    /// <summary>
+    /// A crossbow being spanned, seen from above: the steel bow bending back as the string's drawn
+    /// toward the nut, the nut's catch marked in brass and overdrawing in red.
+    /// </summary>
+    private void DrawSpanned(ImDrawListPtr dl, FitSession s, float2 centre)
+    {
+        var half = Gui.S(70);                                     // half the bow's span
+        var front = centre.Y - Gui.S(50);                         // where the bow sits on the stock
+        var travel = Gui.S(95);                                   // how far back the string can come
+        float Back(float t) => front + Math.Clamp(t, 0f, 1.2f) * travel;
+        // The stock down the middle, the nut's slot cut in it.
+        dl.AddRectFilled(new float2(centre.X - Gui.S(7), front - Gui.S(8)), new float2(centre.X + Gui.S(7), front + travel * 1.2f + Gui.S(10)),
+            Theme.U8(Theme.Oak), Gui.S(3), ImDrawFlags.None);
+        var lo = s.CatchAt - s.CatchHalfWidth;
+        var hi = s.CatchAt + s.CatchHalfWidth;
+        dl.AddRectFilled(new float2(centre.X - Gui.S(12), Back(lo)), new float2(centre.X + Gui.S(12), Back(hi)),
+            Theme.U8(new float4(0.86f, 0.68f, 0.30f, 1f)), Gui.S(2), ImDrawFlags.None);          // the nut: latch the string here
+        dl.AddRectFilled(new float2(centre.X - Gui.S(12), Back(hi)), new float2(centre.X + Gui.S(12), Back(hi + FitSession.SnapPast)),
+            Theme.U8(Theme.Bad, 0.8f), Gui.S(2), ImDrawFlags.None);                                  // overdrawn: the bow cracks
+        // The steel bow: its tips bend back with the draw.
+        var bend = Math.Clamp(s.Tension, 0f, 1.2f) * Gui.S(26);
+        var tone = s.Strain > 0f ? Lerp(Theme.Warn, Theme.Bad, s.Strain) : Theme.Iron;
+        var left = new float2(centre.X - half + bend * 0.4f, front + bend);
+        var right = new float2(centre.X + half - bend * 0.4f, front + bend);
+        var mid = new float2(centre.X, front - Gui.S(4));
+        dl.AddBezierQuadratic(in left, in mid, in right, Theme.U8(tone), Gui.S(5), 16);
+        // The string from tip to tip through where it's drawn to.
+        var drawn = new float2(centre.X, Back(s.Tension));
+        dl.AddLine(in left, in drawn, Theme.U8(Theme.Parchment), Gui.S(2));
+        dl.AddLine(in right, in drawn, Theme.U8(Theme.Parchment), Gui.S(2));
+        dl.AddCircleFilled(in drawn, Gui.S(3), Theme.U8(s.Catching ? Theme.Good : Theme.Text), 10);
     }
 
     private static float4 Lerp(float4 a, float4 b, float t) => a + (b - a) * Math.Clamp(t, 0f, 1f);

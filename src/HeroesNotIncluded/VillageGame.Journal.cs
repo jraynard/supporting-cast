@@ -169,7 +169,7 @@ public sealed partial class VillageGame
             ("@hotbar", "take a stack into your hands"), ("@" + Act.Drop, "put down what you hold"), ("@" + Act.Dig, "dig (the labourer)"),
             ("@" + Act.Sleep, "sleep where you stand"), ("@" + Act.Wheel, "held: the wheel (panels, stacks, put down, sleep)")]),
         ("Fighting", [("@" + Act.Draw, "draw or sheathe your weapon"), ("@aim", "weapon drawn: aim"), ("@" + Act.Strike, "weapon drawn: strike"),
-            ("@" + Act.Heavy, "swing heavy; a bow: hold to draw, strike looses"),
+            ("@" + Act.Heavy, "swing heavy; a bow: hold to draw, strike looses; a crossbow: hold to crank, it stays loaded"),
             ("@" + Act.Guard, "held: guard; raised as a blow lands, a parry"), ("@" + Act.Dash, "dash clear")]),
         ("The village", [("!Left-click", "walk there or act"), ("!Shift-click", "look at someone or something"), ("!Right-click", "an item's menu"), ("@" + Act.Back, "stop looking, close")]),
         ("Hands-on work", [("@" + Act.Use, "strike, pour, set, press"), ("@steer", "steer, tilt, lift"), ("@" + Act.WorkAct, "the other thing: taste, latch, draw out"),

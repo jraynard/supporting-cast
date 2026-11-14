@@ -104,7 +104,9 @@
       "products": [ { "def": "Lock", "count": 1 } ]
     },
     {
+      // By hand (a player, in a round): fitted like a contraption, then spanned: the string drawn back to the nut.
       "name": "MakeCrossbow", "label": "crossbow", "station": "TinkerBench", "skill": "Crafting", "work": 1800, "minSkill": 3,
+      "fit": { "parts": 3, "partNames": [ "stock", "steel bow", "trigger and nut" ], "wound": "string" },
       "description": "A stock, a steel-sprung bow and a trigger: something better than the dagger for when the bandits come.",
       "ingredients": [ { "def": "Wood", "count": 3 }, { "def": "IronBar", "count": 2 } ],
       "products": [ { "def": "Crossbow", "count": 1 } ]

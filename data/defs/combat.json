@@ -43,7 +43,7 @@
       // The tinker's own make (MakeCrossbow): slow to crank, but it puts a bolt through mail.
       "name": "Crossbow", "held": "crossbow", "label": "crossbow", "category": "Item", "mass": 2.5, "sprite": "items/crossbow", "flammability": 0.4, "maxHp": 110, "tier": "Iron",
       "weapon": { "verb": "shoots at", "ranged": true, "range": 16, "optimalRange": 8, "accuracy": 0.84, "accuracyFalloff": 0.03,
-                  "damageMin": 13, "damageMax": 20, "damageType": "Pierce", "penetration": 0.35, "glance": 0.06, "windupSeconds": 1.8, "cooldownSeconds": 3 },
+                  "damageMin": 13, "damageMax": 20, "damageType": "Pierce", "penetration": 0.35, "glance": 0.06, "windupSeconds": 1.8, "cooldownSeconds": 3, "holdsLoad": true },
       "description": "Wound by a crank, loosed by a trigger: no strength in the arm needed, only patience."
     },
     {

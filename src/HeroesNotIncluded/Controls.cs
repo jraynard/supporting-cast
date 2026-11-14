@@ -41,7 +41,7 @@ public static class Controls
 
         A(Act.Draw, "Draw or sheathe your weapon", "Fighting", Play, [K(GlfwKey.R)], P(PadButton.Y)),
         A(Act.Strike, "Strike; loose a drawn bow", "Fighting", Fight, [M(MouseButton.Left)], P(PadButton.RT)),
-        A(Act.Heavy, "Swing heavy; hold to draw a bow", "Fighting", Fight, [M(MouseButton.Right)], P(PadButton.LT)),
+        A(Act.Heavy, "Swing heavy; hold to draw a bow or crank a crossbow", "Fighting", Fight, [M(MouseButton.Right)], P(PadButton.LT)),
         A(Act.Guard, "Guard (hold); parry as it lands", "Fighting", Fight, [K(GlfwKey.Q), K(GlfwKey.V)], P(PadButton.LB)),
         A(Act.Dash, "Dash clear", "Fighting", Fight, [K(GlfwKey.Space)], P(PadButton.B)),
 

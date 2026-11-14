@@ -122,12 +122,11 @@ public sealed class FitSession : WorkSession
         sim.World.IsAlive(Station) ? sim.World.Get<Thing>(Station).Cell
         : sim.World.IsAlive(Wagon) && sim.World.TryGet<Thing>(Wagon, out var t) ? t.Cell : null;
 
-    /// <summary>Fit a contraption together at a stocked bench (from <see cref="Tinkers.WorkAt"/>).</summary>
-    public static void StartMaking(Simulation sim, Entity worker, Entity station, ContraptionProps c)
+    /// <summary>Fit a contraption (or the crossbow) together at a stocked bench (from <see cref="Tinkers.WorkAt"/>).</summary>
+    public static void StartMaking(Simulation sim, Entity worker, Entity station, RecipeDef recipe, FitProps fit)
     {
-        var bench = sim.World.Get<Workbench>(station);
-        var what = bench.Active?.Products.FirstOrDefault(p => p.ThingDef.Contraption != null)?.ThingDef.Label ?? "contraption";
-        WorkSystem.Start(sim, worker, new FitSession { Station = station, Parts = Math.Clamp(c.Parts, 2, 5), Winds = true, What = what });
+        var what = (recipe.Products.FirstOrDefault(p => p.ThingDef.Contraption != null) ?? recipe.Products.FirstOrDefault())?.ThingDef.Label ?? "contraption";
+        WorkSystem.Start(sim, worker, new FitSession { Station = station, Parts = Math.Clamp(fit.Parts, 2, 5), Winds = fit.Winds, What = what });
     }
 
     /// <summary>Fit a new axle to a wagon in reach (<see cref="Wagons"/>).</summary>
@@ -140,7 +139,7 @@ public sealed class FitSession : WorkSession
         if (!Wagon.IsNull)
             return Wagons.AxleProblem(sim, Worker, Wagon) == null;
         return Tinkers.IsBench(sim, Station) && AvatarSystem.InReach(sim, w.Get<Position>(Worker).Cell, Station)
-            && w.Get<Workbench>(Station) is { Active: { } r, Stocked: true } bench && bench.By == Worker && Tinkers.MakesContraption(r) != null;
+            && w.Get<Workbench>(Station) is { Active: { } r, Stocked: true } bench && bench.By == Worker && Tinkers.FitOf(r) != null;
     }
 
     protected internal override void Begin()

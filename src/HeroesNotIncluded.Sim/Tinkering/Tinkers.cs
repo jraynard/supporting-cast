@@ -33,10 +33,14 @@ public static class Tinkers
 
     public static ContraptionProps? MakesContraption(RecipeDef r) => r.Products.Find(p => p.ThingDef.Contraption != null)?.ThingDef.Contraption;
 
-    /// <summary>Should a player's work on this recipe at this station be done by hand? In a round, at the tinker's bench, for a lock or a contraption.</summary>
+    /// <summary>How a recipe's fitted by hand (<see cref="FitSession"/>): as it says (<see cref="RecipeDef.Fit"/>), or as a contraption is; null if it isn't.</summary>
+    public static FitProps? FitOf(RecipeDef r) =>
+        r.Fit ?? (MakesContraption(r) is { } c ? new FitProps { Parts = c.Parts, Winds = true } : null);
+
+    /// <summary>Should a player's work on this recipe at this station be done by hand? In a round, at the tinker's bench, for a lock or a fitting (a contraption, the crossbow).</summary>
     public static bool Applies(Simulation sim, Entity worker, Entity station, RecipeDef recipe) =>
         sim.Round.Live && sim.World.Has<Avatar>(worker) && IsBench(sim, station)
-        && (MakesLock(recipe) || MakesContraption(recipe) != null);
+        && (MakesLock(recipe) || FitOf(recipe) != null);
 
     /// <summary>A player works a stocked bench: the hand game for the recipe (<see cref="Applies"/>).</summary>
     public static void WorkAt(Simulation sim, Entity worker, Entity station, RecipeDef recipe)
@@ -45,8 +49,8 @@ public static class Tinkers
             return;
         if (MakesLock(recipe))
             PinSession.StartLock(sim, worker, station);
-        else if (MakesContraption(recipe) is { } c)
-            FitSession.StartMaking(sim, worker, station, c);
+        else if (FitOf(recipe) is { } fit)
+            FitSession.StartMaking(sim, worker, station, recipe, fit);
     }
 
     /// <summary>

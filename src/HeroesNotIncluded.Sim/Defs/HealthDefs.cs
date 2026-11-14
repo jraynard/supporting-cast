@@ -187,6 +187,12 @@ public sealed class AttackDef
     /// </summary>
     public bool Makeshift { get; set; }
 
+    /// <summary>
+    /// A crossbow: once its draw is done (cranked) it stays loaded, drawn or not, until it's loosed
+    /// (<c>Combat.Loaded</c>, on the weapon). A bow's draw is let down when it's let go.
+    /// </summary>
+    public bool HoldsLoad { get; set; }
+
     [JsonIgnore]
     public int WindupTicks => (int)((WindupSeconds > 0 ? WindupSeconds : Ranged ? 1f : 0.8f) * SimClock.TicksPerSecond);
 
