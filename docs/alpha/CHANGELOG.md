@@ -4,6 +4,74 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+## 0.1.0-playtest.8
+
+The festival, made a night to remember, and death that sticks.
+
+**The festival**
+- The season's last evening is a real festival now, from five in the afternoon to ten at night.
+  The bell rings, and the square fills with lanterns, bunting, two long feast tables and a
+  bonfire.
+- The town and its guests eat at the tables (the inn serves out to the square), warm themselves
+  at the bonfire and dance round it. Press F at the bonfire to join the dance.
+- The show table: lay your best work on it (F with it in hand, or put it in from your pack).
+  Guests still in town look it over and think better of the town for good work, and worse for
+  shoddy work.
+- Two games: the striker (swing the mallet as the needle tops the gauge; ring the bell) and the
+  archery butts (hold the swaying aim on the gold and loose). Three goes each, and the best score
+  of the night wins a purse of silver. Guests enjoy watching.
+- The ceremony: the bell calls everyone to the well. Each party still in town stands and gives
+  its toast, saying what it makes of the town, and that's the moment their opinion counts toward
+  Renown. So keep your guests happy right to the end. Then the honours (the games' winners, the
+  finest work on the show table, the busiest counter, anyone called back from the dead) and the
+  verdict. The reveal lists the honours.
+- Workers with orders waiting keep serving through the revels, and the night never fast-forwards
+  during the festival.
+
+**Death and ghosts**
+- Death sticks in a round. Your character leaves a ghost that drifts through walls, overhears the
+  living and talks with the other dead.
+- The empath can call you back from your body (the "Calling back" mending). Answer it at your
+  body with F.
+- Meanwhile you can haunt (a chill, a guttering light, a knock) and see to unfinished business for
+  a little Renown. The reveal says who died, on which day, and who came back.
+
+**Controls**
+- Every control can be rebound (Settings > Controls), keyboard and gamepad.
+- A gamepad plays the whole game: the left stick walks, the right aims, the triggers strike.
+- Hold RB for a quick wheel, and Start opens the menu. Menus and the title screen work from the
+  pad.
+
+**Trades and gear**
+- Each trade starts with its own weapon: the cook's knife, the healer's staff, the tinker's dagger
+  and the smith's hammer. The innkeeper's cudgel, Lucky Lou, lives under the bar. Reach for it
+  when trouble comes and put it back after; only the innkeeper knows it's there.
+- The tinker makes a crossbow at the bench, fitted by hand. Hold right click to crank it; once it's
+  loaded it stays loaded until you fire.
+- Feeling a strongbox for traps reads more clearly: a line saying what to do, a trace of what the
+  probe has felt, and the gauge's zones named.
+- Shop signs: an anvil for the smithy, a cogwheel for the tinker, a bindrune for the shrine. A
+  marker floats over your home.
+- Anyone but the healer gives only first aid: a bandage holds the bleeding off a while but heals
+  nothing.
+- Parties that hand over gear for mending wait for it before they set out on their quest.
+
+**Fixes and smaller changes**
+- The innkeeper's F at the bar no longer offers to "reach under the counter for stone bridge" once
+  the cudgel's out (pressing it threw an error).
+- Stairs: stepping off the top takes you to the floor above instead of dropping you back down.
+- Your character turns at once when you click behind them.
+- You wake to a shout nearby, smoke, raiders or the call to arms.
+- The difficulty scales the Renown you need and the Dread the valley will bear.
+- The town's arms go back on the muster rack after a raid. The healer's pallets are kept for the
+  hurt, not for a night's sleep.
+- The dragon lands somewhere new each pass, and not half inside a house.
+- Raiders go after whoever just hurt them.
+- A fever weakens a party on its quest. A wound that worsens must be felt again before it's drawn.
+- A warning the moment the forge's heat you feel turns dangerous.
+- The dead keep what they wear, and a ghost's knock creaks first.
+- An inventory window crash is fixed.
+
 ## 0.1.0-playtest.7
 
 One way to fight, everywhere.

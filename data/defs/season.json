@@ -11,8 +11,9 @@
       "name": "Season",
       "startingPurse": 12,
       "days": 3,
-      "festivalHour": 18,
-      "festivalHours": 2,
+      // From 17:00 to 22:00 on the last day (festival.json): about three and a half real minutes.
+      "festivalHour": 17,
+      "festivalHours": 5,
       "renownTarget": 60,
       "dreadLimit": 100,
       "renownPerSatisfaction": 1,

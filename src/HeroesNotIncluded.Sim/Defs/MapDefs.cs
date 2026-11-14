@@ -49,6 +49,12 @@ public sealed class MapDef : Def
     /// <summary>Animals kept in the village from the start (pigs in their pen).</summary>
     public List<MapLivestock> Livestock { get; set; } = [];
 
+    /// <summary>
+    /// What's put up in the square for the festival (<c>Round.FestivalSystem</c>): lanterns, the
+    /// bonfire, the feast tables, the show table and the games. Not there until the festival begins.
+    /// </summary>
+    public List<MapProp> Festival { get; set; } = [];
+
     /// <summary>Top block per column (y * Width + x).</summary>
     [JsonIgnore] public BlockDef[] Ground { get; private set; } = [];
 
@@ -112,6 +118,8 @@ public sealed class MapDef : Def
             bld.Resolve(db, this);
         foreach (var l in Livestock)
             l.Resolve(db, this);
+        foreach (var p in Festival)
+            p.Resolve(db, this);
     }
 
     internal bool Inside(int x, int y) => x >= 0 && y >= 0 && x < Width && y < Height;
@@ -175,5 +183,26 @@ public sealed class MapLivestock
         CreatureDef = db.Creature(Creature);
         if (At.Length != 2 || !map.Inside(At[0], At[1]))
             throw new Exception($"Map '{map.Name}': livestock '{Creature}' needs at: [x, y] on the map");
+    }
+}
+
+/// <summary>A structure a map puts up later rather than at the start (the festival's lanterns and tables).</summary>
+public sealed class MapProp
+{
+    public string Def { get; set; } = "";
+
+    /// <summary>The column (x, y); it stands on the ground there.</summary>
+    public int[] At { get; set; } = [];
+    public int Facing { get; set; }
+
+    [JsonIgnore] public ThingDef ThingDef { get; private set; } = null!;
+
+    internal void Resolve(DefDatabase db, MapDef map)
+    {
+        ThingDef = db.Thing(Def);
+        if (ThingDef.Building == null)
+            throw new Exception($"Map '{map.Name}': '{Def}' isn't a structure that can be put up");
+        if (At.Length != 2 || !map.Inside(At[0], At[1]))
+            throw new Exception($"Map '{map.Name}': '{Def}' needs at: [x, y] on the map");
     }
 }

@@ -66,6 +66,28 @@ public class TradeWeaponTests
     }
 
     [Fact]
+    public void AnEmptyStashOffersNothingToReachFor()
+    {
+        // Regression: with the cudgel out, F at the bar offered "Reach under the counter for stone
+        // bridge" (a default Entity is index 0, a real one) and pressing it threw.
+        var sim = Round("Innkeeper");
+        var w = sim.World;
+        var me = sim.Creatures().Single(e => w.Has<Avatar>(e));
+        var lou = Lou(sim);
+        var stash = w.Get<Stored>(lou).In;
+        var at = w.Get<Thing>(stash).Cell;
+        var beside = sim.SpiralFrom(at, 2).First(c => c != at && sim.Map.Passable(c) && AvatarSystem.InReach(c, at));
+        w.Get<Position>(me) = Position.At(beside);
+
+        Assert.Equal(AvatarActionKind.Equip, AvatarSystem.ActionAt(sim, me, at).Kind); // it's there: reach for it
+
+        sim.DestroyThing(lou);
+        var action = AvatarSystem.ActionAt(sim, me, at);
+        Assert.NotEqual(AvatarActionKind.Equip, action.Kind);
+        Assert.DoesNotContain("bridge", action.Label);
+    }
+
+    [Fact]
     public void AMakeshiftWeaponCountsAsUnarmedForTheMusterAndDoesntSwellARaid()
     {
         var sim = Round();

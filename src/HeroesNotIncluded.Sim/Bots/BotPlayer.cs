@@ -191,6 +191,12 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         }
         switch (s)
         {
+            // The festival's games: swing at the top of the gauge; hold the aim on the gold and loose.
+            case StrikerSession striker:
+                return (striker.Flight == 0 && striker.Needle >= 0.93f, false, 0);
+            case ButtsSession butts:
+                _axis2 = Steer(butts.AimY);
+                return (butts.Landing == 0 && butts.AimX * butts.AimX + butts.AimY * butts.AimY < 0.01f, false, Steer(butts.AimX));
             case HammerSession h:
                 return (h.Ready && MathF.Abs(h.Marker - h.Mark) <= h.HalfWidth * 0.5f, false, 0);
             case BloomSession bloom:
@@ -577,7 +583,9 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     {
         if (Safety(sim, me, view, now) || BindOwn(sim, me) || Bedtime(sim, me, now) || Supper(sim, me, now))
             return;
-        GoToWork(sim, me);
+        var festival = sim.Round.Phase == Round.RoundPhase.Festival;
+        if (!festival)
+            GoToWork(sim, me);
         Price(sim, me, view, now);
         if (Mend(sim, me, view))
             return;
@@ -585,12 +593,66 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             _task = 0;
         if (_task == 0)
             TakeOn(sim, me, view, now);
+        if (_task == 0 && festival)
+        {
+            Festival(sim, me, now);
+            return;
+        }
         if (_task == 0 && MendTown(sim, me, view, now))
             return;
         if (_task == 0 && Smith(sim, me, view, now))
             return;
         if (_task == 0 && !Upkeep(sim, me, view, now))
             Chat(view, me, now);
+    }
+
+    /// <summary>A steer back toward the middle: -1, 0 or +1.</summary>
+    private static int Steer(float off) => off > 0.04f ? -1 : off < -0.04f ? 1 : 0;
+
+    private bool _laidOut;
+    private readonly HashSet<string> _played = [];
+
+    /// <summary>
+    /// The festival, as a player would spend it between orders: a piece of their own work on the
+    /// show table, a go at each game, then to the well for the ceremony.
+    /// </summary>
+    private void Festival(Simulation sim, Entity me, long now)
+    {
+        var w = sim.World;
+        var f = sim.Festival;
+        if (f.Open)
+        {
+            var table = f.Prop(sim, Round.FestivalSystem.ShowTableDef);
+            var pack = sim.PackOf(me);
+            if (!_laidOut && !table.IsNull && !pack.IsNull
+                && sim.StoredIn(pack).FirstOrDefault(e => w.TryGet<Crafted>(e, out var c) && c.Maker == me, Entity.Null) is { IsNull: false } piece)
+            {
+                Doing = "laying out a piece on the show table";
+                AtStation(sim, me, table, now, t =>
+                {
+                    send(new StoreFromPackCommand(me, t, piece));
+                    _laidOut = true;
+                });
+                return;
+            }
+            if (f.Part == Round.FestivalPart.Revels)
+                foreach (var g in f.Games)
+                {
+                    var thing = f.Prop(sim, g.Game.Def);
+                    if (thing.IsNull || _played.Contains(g.Game.Name))
+                        continue;
+                    Doing = $"having a go at {g.Game.Label}";
+                    AtStation(sim, me, thing, now, t =>
+                    {
+                        send(new FestivalGameCommand(me, t));
+                        _played.Add(g.Game.Name);
+                    });
+                    return;
+                }
+        }
+        Doing = f.Part == Round.FestivalPart.Ceremony ? "gathered round the well" : "at the festival";
+        if (sim.Round.Square is { } square && Maps.Map.Distance(w.Get<Position>(me).Cell, square) > 5)
+            Walk(sim, me, square, now);
     }
 
     /// <summary>

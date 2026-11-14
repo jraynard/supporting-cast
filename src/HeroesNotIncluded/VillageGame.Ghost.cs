@@ -3,6 +3,7 @@ using Narsil.Ui;
 using HeroesNotIncluded.Sim.Afterlife;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Round;
 using HeroesNotIncluded.Ui;
 
 namespace HeroesNotIncluded;
@@ -42,6 +43,8 @@ public sealed partial class VillageGame
         NoticeSigns();
         if (DieAt >= 0 && _time >= DieAt && HasAvatar && InRound)
             Issue(new DevKillCommand(_avatar)); // --die-at: once; the avatar is gone after
+        if (FestivalAt >= 0 && _time >= FestivalAt && _sim.Round.Phase == RoundPhase.Playing)
+            Issue(new DevFestivalCommand()); // --festival-at: once; the round's in its festival after
         var was = _ghost;
         _ghost = HasAvatar ? Entity.Null : Ghosts.Of(_sim, LocalPlayer ?? Guid.Empty);
         if (_ghost.IsNull)

@@ -134,9 +134,14 @@ public static class Table
         }
     }
 
-    /// <summary>The nearest free seat in reach, in the room they're in if there's one there. Entity.Null if none.</summary>
+    /// <summary>
+    /// The nearest free seat in reach, in the room they're in if there's one there. Entity.Null if
+    /// none. At the festival, the feast in the square comes first: the inn serves outside.
+    /// </summary>
     public static Entity FreeSeat(Simulation sim, Entity who)
     {
+        if (sim.Festival.Open && Ai.Festival.FreeSeat(sim, who) is { IsNull: false } feast)
+            return feast;
         var w = sim.World;
         var map = sim.Map;
         var at = w.Get<Position>(who).Cell;

@@ -94,6 +94,7 @@ public static class MapBuilder
                 placed++;
             }
         }
+        sim.Festival.Plan(def);
         return new Built(center, buildings);
     }
 

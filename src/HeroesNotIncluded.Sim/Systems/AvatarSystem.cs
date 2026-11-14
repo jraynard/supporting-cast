@@ -85,6 +85,12 @@ public enum AvatarActionKind
 
     /// <summary>Order a meal at a serving hatch (<see cref="Shops.ShopSystem.PlayerOrder"/>), or see where you are in its line.</summary>
     OrderMeal,
+
+    /// <summary>Have a go at a festival game (<see cref="Work.FestivalGames"/>), begun at once.</summary>
+    FestivalGame,
+
+    /// <summary>Join the dance round the festival's bonfire (<see cref="Ai.FestivalJob"/>), at once.</summary>
+    Dance,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -111,7 +117,7 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
         or AvatarActionKind.Store or AvatarActionKind.OpenStorage or AvatarActionKind.Tinker
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
         or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean
-        or AvatarActionKind.Mend or AvatarActionKind.OrderMeal;
+        or AvatarActionKind.Mend or AvatarActionKind.OrderMeal or AvatarActionKind.FestivalGame or AvatarActionKind.Dance;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
     public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker
@@ -297,6 +303,12 @@ public sealed class AvatarSystem : ISimSystem
             return new(AvatarActionKind.Equip, $"{(gear.Def.Weapon != null ? "Wield" : "Wear")} {gear.Label}", cell, item);
         }
 
+        // The festival: a game to have a go at, the dance round the bonfire.
+        if (tool == AvatarTool.Use && Work.FestivalGames.StepAt(sim, avatar, site) is { } game)
+            return new(AvatarActionKind.FestivalGame, game, cell, site);
+        if (tool == AvatarTool.Use && held.IsNull && Ai.Festival.CanDance(sim, avatar, site))
+            return new(AvatarActionKind.Dance, "Dance round the bonfire", cell, site);
+
         // A piece in the tongs goes to the fire, the anvil or the tub; a blade to the grindstone.
         if (Work.Smithing.StepAt(sim, avatar, site) is { } step && !sim.Reservations.IsReservedByOther(site, avatar))
             return new(AvatarActionKind.Smith, step, cell, site);
@@ -356,7 +368,7 @@ public sealed class AvatarSystem : ISimSystem
         {
             if (!held.IsNull && sim.HasRoomFor(site, w.Get<Thing>(held).Def, w.Get<Thing>(held).Material))
                 return new(AvatarActionKind.Store, $"Put {w.Get<Thing>(held).Label} back under the {w.Get<Thing>(site).Label}", cell, site);
-            if (sim.StoredIn(site).FirstOrDefault(e => w.Get<Thing>(e).Def.Weapon != null) is { IsNull: false } kept
+            if (sim.StoredIn(site).FirstOrDefault(e => w.Get<Thing>(e).Def.Weapon != null, Entity.Null) is { IsNull: false } kept
                 && !sim.Reservations.IsReservedByOther(kept, avatar))
                 return new(AvatarActionKind.Equip, $"Reach under the {w.Get<Thing>(site).Label} for {w.Get<Thing>(kept).Label}", cell, kept);
         }
@@ -681,6 +693,13 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.BarWork:
                 Work.BarWork.Start(sim, avatar, action.Target);
+                break;
+            case AvatarActionKind.FestivalGame:
+                Work.FestivalGames.Start(sim, avatar, action.Target);
+                break;
+            case AvatarActionKind.Dance:
+                if (Ai.Festival.Dance(sim, avatar, action.Target) is { } dance)
+                    AiSystem.Order(sim, avatar, dance);
                 break;
             case AvatarActionKind.OrderMeal:
                 if (Shops.Hatch.ShopOf(sim, action.Target) is { IsNull: false } inn && sim.Shops.OpenOrderOf(avatar, ServiceKind.Meal) == null

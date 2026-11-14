@@ -247,6 +247,8 @@ public abstract class WorkSession
             nameof(Tinkering.TrueSession) => new Tinkering.TrueSession(),
             nameof(Tinkering.SpanSession) => new Tinkering.SpanSession(),
             nameof(Tinkering.LoupeSession) => new Tinkering.LoupeSession(),
+            nameof(StrikerSession) => new StrikerSession(),
+            nameof(ButtsSession) => new ButtsSession(),
             _ => throw new SaveException($"Corrupt save: unknown work session {name}"),
         };
         s.Worker = r.Entity();

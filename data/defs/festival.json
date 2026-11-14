@@ -1,0 +1,130 @@
+// The season's festival (Defs/FestivalDefs.cs, Round/FestivalSystem.cs): the last evening, from
+// season.json's festivalHour for its festivalHours. It opens with the bell (openingHours), then the
+// revels: the feast tables, dancing round the bonfire, the show table and the games. The last
+// ceremonyHours are the ceremony: the bell again, each party's toast (where what they think of the
+// town is counted), the honours, and the verdict, then the reveal.
+// What's put up in the square is the map's (maps/*.json "festival", from tools/village_map.py).
+{
+  "festivals": [
+    {
+      "name": "Festival",
+      "openingHours": 0.5,
+      "ceremonyHours": 1.25,
+      "bellMinutes": 10,
+      "toastMinutes": 6,
+      "honourMinutes": 4,
+      "verdictMinutes": 8,
+      "maxHonours": 5,
+      // What people do with the revels, by weight. Visitors look over the show table and watch the
+      // games more; the town eats and dances more.
+      "activities": { "Mill": 1, "Feast": 3, "Bonfire": 1.5, "Dance": 3, "Games": 1.5, "Show": 0.5 },
+      "visitorActivities": { "Mill": 0.5, "Feast": 2, "Bonfire": 1, "Dance": 1.5, "Games": 2.5, "Show": 2.5 },
+      // Each piece on the show table, by quality (crude, plain, fine, masterwork): a visitor's
+      // satisfaction for looking it over, once each.
+      "admireSatisfaction": [ -0.5, 0.25, 1, 2 ],
+      "admireReach": 3,
+      // A turn at a game, seen: satisfaction for each visitor near it, to a cap for the evening.
+      "watchSatisfaction": 0.3,
+      "watchCap": 1.5,
+      "watchReach": 6,
+      "tryChance": 0.25,
+      "prizeSilver": 8,
+      "gameRenown": 2,
+      "games": [
+        { "name": "Striker", "label": "the striker", "def": "HighStriker", "verb": "Swing at the striker", "skill": "Melee",
+          "honour": "the strongest arm in the valley" },
+        { "name": "Butts", "label": "the butts", "def": "ArcheryButt", "verb": "Shoot at the butts", "skill": "Shooting",
+          "honour": "the truest eye at the butts" }
+      ]
+    }
+  ],
+
+  "things": [
+    {
+      // A lantern on a pole, hung with bunting. Lit for the evening: filled at the festival's start
+      // and never topped up (refuelAt 0).
+      "name": "FestivalLantern", "label": "festival lantern", "category": "Building", "solid": true, "sprite": "buildings/lantern",
+      "description": "A lantern hung from a pole in the square, bunting strung from its top. Up for the festival.",
+      "maxHp": 40, "flammability": 0.3,
+      "building": { "buildable": false, "outdoor": true, "work": 30, "lightRadius": 5, "heatOutput": 0,
+        "fuel": { "def": "Wood", "capacity": 4, "burnPerDay": 4, "refuelAt": 0 }, "cost": [ { "def": "Wood", "count": 2 } ] },
+      "fireAt": [0.5, 0.5, 1.34], "fireSize": 0.42,
+      "model": [
+        { "min": [0.45, 0.45, 0], "max": [0.55, 0.55, 1.9], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.38, 0.38, 0], "max": [0.62, 0.62, 0.08], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.36, 0.36, 1.48], "max": [0.64, 0.64, 1.54], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.37, 0.37, 1.2], "max": [0.4, 0.4, 1.48], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.6, 0.37, 1.2], "max": [0.63, 0.4, 1.48], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.37, 0.6, 1.2], "max": [0.4, 0.63, 1.48], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.6, 0.6, 1.2], "max": [0.63, 0.63, 1.48], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.36, 0.36, 1.16], "max": [0.64, 0.64, 1.2], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.55, 0.47, 1.66], "max": [0.8, 0.53, 1.82], "top": "props/cloth_madder", "side": "props/cloth_madder" },
+        { "min": [0.2, 0.47, 1.62], "max": [0.45, 0.53, 1.78], "top": "props/cloth_ochre", "side": "props/cloth_ochre" },
+        { "min": [0.47, 0.2, 1.7], "max": [0.53, 0.45, 1.86], "top": "props/cloth_woad", "side": "props/cloth_woad" },
+        { "min": [0.47, 0.55, 1.58], "max": [0.53, 0.8, 1.74], "top": "props/cloth_madder", "side": "props/cloth_madder" }
+      ]
+    },
+    {
+      // The festival's fire, in the middle of the dancing. Lit for the evening and never fed.
+      "name": "Bonfire", "label": "bonfire", "category": "Building", "solid": true, "sprite": "buildings/campfire",
+      "description": "A great stack of logs blazing in the square. The town dances round it.",
+      "maxHp": 200, "flammability": 0,
+      "building": { "buildable": false, "outdoor": true, "work": 60, "cost": [ { "def": "Wood", "count": 20 } ],
+        "heatOutput": 1200, "maxHeatTemp": 45, "lightRadius": 10, "radiantWarmth": 10,
+        "fuel": { "def": "Wood", "capacity": 30, "burnPerDay": 30, "refuelAt": 0 } },
+      "fireAt": [0.5, 0.5, 0.3], "fireSize": 1.7,
+      "model": [
+        { "min": [0.02, 0.02, 0], "max": [0.22, 0.22, 0.2], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.78, 0.02, 0], "max": [0.98, 0.22, 0.2], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.02, 0.78, 0], "max": [0.22, 0.98, 0.2], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.78, 0.78, 0], "max": [0.98, 0.98, 0.2], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.4, 0.1, 0], "max": [0.6, 0.9, 0.18], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" },
+        { "min": [0.1, 0.4, 0.14], "max": [0.9, 0.6, 0.3], "top": "props/log_side", "side": "props/log_side" },
+        { "min": [0.3, 0.3, 0.26], "max": [0.7, 0.7, 0.42], "top": "props/log_end", "side": "props/log_side" }
+      ]
+    },
+    {
+      // Where the town lays out its best work for the visitors to look over (BuildingProps.Show).
+      "name": "ShowTable", "label": "show table", "size": [1, 2], "category": "Building", "solid": true, "sprite": "buildings/table",
+      "description": "A long table under a dyed cloth. Lay your best work on it: the visitors look over what the town can make.",
+      "maxHp": 140, "flammability": 1.0,
+      "building": { "buildable": false, "outdoor": true, "show": true, "storageStacks": 6, "surfaceHeight": 0.7, "work": 120,
+        "cost": [ { "def": "Wood", "count": 12 } ] },
+      "model": [
+        { "min": [0.02, 0.02, 0.6], "max": [0.98, 1.98, 0.7], "top": "props/cloth_woad", "side": "props/cloth_ochre" },
+        { "min": [0.08, 0.08, 0], "max": [0.18, 0.18, 0.6], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.82, 0.08, 0], "max": [0.92, 0.18, 0.6], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.08, 1.82, 0], "max": [0.18, 1.92, 0.6], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.82, 1.82, 0], "max": [0.92, 1.92, 0.6], "top": "props/planks", "side": "props/log_side" }
+      ]
+    },
+    {
+      // The test of strength: a mallet, a pad, and a bell to ring at the top of the post (Work/FestivalGames).
+      "name": "HighStriker", "label": "striker", "category": "Building", "solid": true, "sprite": "props/sign_board",
+      "description": "A tall post with a bell at its top and a pad at its foot. Swing the mallet: ring the bell.",
+      "maxHp": 120, "flammability": 0.6,
+      "building": { "buildable": false, "outdoor": true, "work": 120, "cost": [ { "def": "Wood", "count": 8 } ] },
+      "model": [
+        { "min": [0.2, 0.3, 0], "max": [0.8, 0.7, 0.08], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.42, 0.36, 0.08], "max": [0.58, 0.5, 2.3], "top": "props/timber_dark", "side": "props/sign_board" },
+        { "min": [0.46, 0.5, 0.2], "max": [0.54, 0.54, 2.2], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.36, 0.36, 2.3], "max": [0.64, 0.64, 2.52], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.3, 0.55, 0.08], "max": [0.7, 0.85, 0.16], "top": "props/hide", "side": "props/hide" },
+        { "min": [0.42, 0.28, 1.4], "max": [0.58, 0.36, 1.5], "top": "props/cloth_madder", "side": "props/cloth_madder" }
+      ]
+    },
+    {
+      // The archery butt: a straw boss with a painted face, on legs (Work/FestivalGames).
+      "name": "ArcheryButt", "label": "archery butt", "category": "Building", "solid": true, "sprite": "props/sign_board",
+      "description": "A straw boss on legs with rings painted on its face. Shoot at the butts: three arrows, nearest the gold.",
+      "maxHp": 100, "flammability": 1.0,
+      "building": { "buildable": false, "outdoor": true, "work": 100, "cost": [ { "def": "Wood", "count": 4 } ] },
+      "model": [
+        { "min": [0.12, 0.42, 0.25], "max": [0.88, 0.58, 1.15], "top": "props/straw", "side": "props/straw", "front": "props/target_face" },
+        { "min": [0.18, 0.36, 0], "max": [0.26, 0.44, 0.95], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.74, 0.36, 0], "max": [0.82, 0.44, 0.95], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.46, 0.05, 0], "max": [0.54, 0.4, 0.9], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ]
+    }
+  ]
+}

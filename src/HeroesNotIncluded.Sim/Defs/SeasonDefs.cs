@@ -14,10 +14,10 @@ public sealed class SeasonDef : Def
     public int Days { get; set; } = 3;
 
     /// <summary>The hour of the last day the festival starts.</summary>
-    public float FestivalHour { get; set; } = 18;
+    public float FestivalHour { get; set; } = 17;
 
-    /// <summary>How long the festival lasts, in game hours, before the reckoning ends the round.</summary>
-    public float FestivalHours { get; set; } = 2;
+    /// <summary>How long the festival lasts, in game hours, before the reckoning ends the round (<see cref="FestivalDef"/>).</summary>
+    public float FestivalHours { get; set; } = 5;
 
     /// <summary>Renown the town needs at the festival to come through the season.</summary>
     public float RenownTarget { get; set; } = 60;

@@ -709,6 +709,13 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         }
         if (pose.Tag == "glide")
             feet.Z += MathF.Sin(_anim.Clock * 2f + e.Index) * 0.05f;
+        // Dancing round the festival's bonfire: a hop to every step, and a sway (no frames of its own yet).
+        if (mind.Job is Sim.Ai.FestivalJob { Dancing: true })
+        {
+            var beat = _anim.Clock * 7f + e.Index * 0.7f;
+            feet.Z += MathF.Abs(MathF.Sin(beat)) * 0.12f;
+            feet += _cam.Right * (MathF.Sin(beat * 0.5f) * 0.05f);
+        }
         if (!airborne && !c.Dead)
         {
             // A soft contact shadow grounds standing figures (part of the diorama look).
@@ -1608,7 +1615,19 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             Bar(floor + new float3(0, 0, 0.9f), frac, frac > props.RefuelAt ? Rgba.Pack(1f, 0.6f, 0.2f) : Rgba.Pack(1f, 0.2f, 0.2f), level);
         }
 
-        // What's put up on a serving hatch stands on its counter, side by side (up to three shown).
+        // What's put up on a serving hatch stands on its counter, side by side (up to three shown);
+        // what's laid on the festival's show table, along its length (up to six).
+        if (def.Building is { Show: true })
+        {
+            var pieces = new List<ThingDef>();
+            foreach (var item in sim.StoredIn(e))
+                if (pieces.Count < 6)
+                    pieces.Add(w.Get<Thing>(item).Def);
+            var top = floor + new float3(0, 0, SurfaceUnder(sim.Map, w, cell));
+            var along = PropModel.Rotate(new float3(0, 1, 0), thing.Facing);
+            for (var k = 0; k < pieces.Count; k++)
+                Billboard(S(pieces[k].Sprite), top + along * ((k + 0.5f) / Math.Max(3, pieces.Count) * 2f - 0.5f), 0.38f, 0.38f, Rgba.White, level);
+        }
         if (def.Building is { Hatch: true })
         {
             var dishes = new List<ThingDef>();

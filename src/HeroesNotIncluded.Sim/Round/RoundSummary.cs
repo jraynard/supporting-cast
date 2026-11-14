@@ -25,6 +25,9 @@ public enum RoundOutcome : byte
 /// <param name="DiedOnDay">The day of the round they died (1 is the first), if they lie dead.</param>
 /// <param name="CameBack">Called back from the grave this round.</param>
 /// <param name="Errands">Unfinished business they saw to as a ghost.</param>
+/// <summary>Someone called up at the festival's ceremony (<see cref="FestivalSystem"/>), and what for.</summary>
+public sealed record HonourRow(string Name, string Title);
+
 public sealed record RevealRow(string Name, string Trade, bool Player, int Earned, bool Alive, int? DiedOnDay = null, bool CameBack = false, int Errands = 0);
 
 /// <summary>
@@ -51,6 +54,9 @@ public sealed class RoundSummary
     public int QuestsFailed;
     public int AdventurersLost;
     public List<RevealRow> People = [];
+
+    /// <summary>Who the festival's ceremony called up, in order.</summary>
+    public List<HonourRow> Honours = [];
 
     public string Headline => Outcome switch
     {
@@ -88,6 +94,12 @@ public sealed class RoundSummary
             w.Bool(p.CameBack);
             w.Int(p.Errands);
         }
+        w.Int(Honours.Count);
+        foreach (var h in Honours)
+        {
+            w.String(h.Name);
+            w.String(h.Title);
+        }
     }
 
     public static RoundSummary Read(SaveReader r)
@@ -105,6 +117,9 @@ public sealed class RoundSummary
                 row = row with { DiedOnDay = r.Int() is > 0 and var day ? day : null, CameBack = r.Bool(), Errands = r.Int() };
             s.People.Add(row);
         }
+        if (r.Version >= 20) // the festival's honours came with format 20
+            for (var n = r.Count(100); n > 0; n--)
+                s.Honours.Add(new HonourRow(r.String(), r.String()));
         return s;
     }
 

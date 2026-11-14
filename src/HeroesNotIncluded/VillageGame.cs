@@ -171,7 +171,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     private const int NightSpeed = 8;
 
     /// <summary>Everyone playing is asleep in a round, so the night is passing fast.</summary>
-    private bool NightPassing => _sim.Round.Live && Players.AllAsleep(_sim);
+    private bool NightPassing => _sim.Round.Phase == Sim.Round.RoundPhase.Playing && Players.AllAsleep(_sim); // never through the festival
 
     /// <summary>The speed time actually runs at: the chosen one, or the night's while everyone sleeps.</summary>
     private int RunMultiplier => Paused ? 0 : NightPassing ? NightSpeed : SpeedMultipliers[_speed];
@@ -197,6 +197,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     /// <summary>Debug (<c>--die-at SECONDS</c>): your character drops dead this long in, to try being a ghost. Negative: never.</summary>
     public float DieAt { get; init; } = -1f;
+
+    /// <summary>Debug (<c>--festival-at SECONDS</c>): the season's festival begins this long in, to see it. Negative: on the clock.</summary>
+    public float FestivalAt { get; init; } = -1f;
 
     /// <summary>Debug/screenshots (<c>--furniture-demo</c>): wide furniture and roofs beside the landing (<see cref="FurnitureShowcase"/>).</summary>
     public bool FurnitureDemo { get; init; }

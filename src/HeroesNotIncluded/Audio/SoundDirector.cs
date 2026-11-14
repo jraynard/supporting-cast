@@ -41,6 +41,13 @@ public sealed class SoundDirector(AudioEngine audio)
     private float _birds, _night, _wind, _crowd;
     private bool _indoors;
 
+    /// <summary>The listener's near enough the festival's square to hear its music (else the evening's own).</summary>
+    private bool _atFestival;
+    private long _bellHeard = -1;
+
+    /// <summary>How far from the well (cells) the festival's music carries.</summary>
+    public const int FestivalReach = 24;
+
     /// <summary>Babble lines older than this (a load, a join) are history and stay quiet.</summary>
     private const int FreshTicks = SimClock.TicksPerSecond * 3;
 
@@ -84,6 +91,21 @@ public sealed class SoundDirector(AudioEngine audio)
         }
         Ambience();
         PickMood(sim);
+        FestivalBell(sim, view, me);
+    }
+
+    /// <summary>The festival's bell (its opening, the ceremony's call), from the square, as far as it carries.</summary>
+    private void FestivalBell(Simulation sim, PerceptionView view, int3? me)
+    {
+        var rang = sim.Festival.BellTick;
+        if (rang == _bellHeard)
+            return;
+        var fresh = sim.Clock.Tick - rang <= FreshTicks;
+        _bellHeard = rang;
+        if (!fresh || sim.Round.Square is not { } square)
+            return;
+        if (Reach(sim, view, me, square) is { } muffle)
+            audio.Play(Sounds.UiBell, ToAudio(square), muffle: muffle);
     }
 
     private void Reset(Simulation sim)
@@ -97,6 +119,7 @@ public sealed class SoundDirector(AudioEngine audio)
         _water = WaterCells(sim);
         _recentFight.Clear();
         _dangerUntil = -1000f;
+        _bellHeard = sim.Festival.BellTick;
     }
 
     /// <summary>
@@ -383,8 +406,18 @@ public sealed class SoundDirector(AudioEngine audio)
         if (nearest < 40 * 40)
             _loops.Add(("river", river, 1f, _indoors ? 0.7f : 0f));
 
+        // The festival: its music near the square, and the crowd's murmur out in it.
+        _atFestival = sim.Round.Square is not { } sq || Dist2(sq, here) <= FestivalReach * FestivalReach;
         // A room with people in: the murmur of a full inn.
         _crowd = 0f;
+        if (sim.Round.Phase == RoundPhase.Festival && !_indoors && sim.Round.Square is { } square && Dist2(square, here) <= 12 * 12)
+        {
+            var people = 0;
+            foreach (var e in view.Creatures())
+                if (e != view.Viewer && sim.World.TryGet<Position>(e, out var pos) && Dist2(pos.Cell, square) <= 10 * 10)
+                    people++;
+            _crowd = Math.Clamp((people - 1) / 8f, 0f, 0.8f);
+        }
         if (room is { Indoors: true })
         {
             var people = 0;
@@ -421,7 +454,7 @@ public sealed class SoundDirector(AudioEngine audio)
         Mood = phase switch
         {
             RoundPhase.Over => Moods.Reveal,
-            RoundPhase.Festival => Moods.Festival,
+            RoundPhase.Festival when _atFestival => Moods.Festival,
             _ when _time < _dangerUntil => Moods.Danger,
             _ => sim.Clock.Daylight < 0.3f ? Moods.Night : Moods.Day,
         };

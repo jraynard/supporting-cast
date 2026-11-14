@@ -410,6 +410,12 @@ public sealed class BuildingProps
     public bool Hatch { get; set; }
 
     /// <summary>
+    /// The festival's show table (<c>Round.FestivalSystem</c>): what's laid on it is on show, for
+    /// the visitors to look over. Nobody's job takes from it; anyone can take a piece back by hand.
+    /// </summary>
+    public bool Show { get; set; }
+
+    /// <summary>
     /// Built into a wall and open only at its front (a fireplace): worked, fed and tended from the
     /// cell in front of it, never from the street behind, and a fire in it heats, lights and
     /// warms that cell, the room's side (<see cref="Environment.Warmth.FireCell"/>), not the wall.

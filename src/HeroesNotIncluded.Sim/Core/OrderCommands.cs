@@ -461,6 +461,18 @@ public sealed record DevCrisisCommand(CrisisKind Kind) : IDevCommand
     }
 }
 
+/// <summary>Dev: the season's festival now (<see cref="Round.RoundSystem.BeginFestival"/>), to see it without playing to it.</summary>
+public sealed record DevFestivalCommand : IDevCommand
+{
+    public void Apply(Simulation sim)
+    {
+        if (sim.Round.Phase != Round.RoundPhase.Playing)
+            sim.Messages.Add(MessageKind.Info, "The festival comes only in a round under way.");
+        else
+            sim.Round.BeginFestival(sim);
+    }
+}
+
 /// <summary>
 /// Dev: word of the season's next raid now, so the bracing window (the call for arms, the wait)
 /// can be seen without waiting on it (<see cref="Director.Director.WarnNext"/>).

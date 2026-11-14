@@ -260,7 +260,7 @@ public sealed class CreatureAnimator
             (job is BuildJob or DeconstructJob or HarvestJob or DigJob or Sim.Shops.CleanJob or Sim.Shops.MakeBedJob or Sim.Shops.WashJob
                 || station != null) && !mover.Moving || swinging,
             mover.Moving || freeMoving,
-            job is Sim.Hospitality.SavourJob { Seated: true }
+            job is Sim.Hospitality.SavourJob { Seated: true } or FestivalJob { Seated: true }
         );
         var want = ChooseTag(inputs);
         if (want != st.Want || newBreath)

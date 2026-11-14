@@ -60,6 +60,18 @@ public sealed partial class VillageGame
         TextC(Theme.Dim, $"{s.Parties} {(s.Parties == 1 ? "party" : "parties")} came to town; {s.AdventurersServed} adventurers had their say of it.");
         TextC(Theme.Dim, $"Quests cleared {s.QuestsCleared}, failed {s.QuestsFailed}; adventurers lost on the road {s.AdventurersLost}.");
 
+        if (s.Honours.Count > 0)
+        {
+            Gui.Rule();
+            TextC(Theme.Dim, "Called up at the festival:");
+            foreach (var h in s.Honours)
+            {
+                TextC(Theme.Accent, h.Name);
+                ImGui.SameLine(0, Gui.S(6));
+                ImGui.Text($"for {h.Title}");
+            }
+        }
+
         Gui.Rule();
         if (ImGui.BeginTable("##reveal-people"u8, 4, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg))
         {

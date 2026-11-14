@@ -87,6 +87,23 @@ def blanket():
     return img
 
 
+def cloth(color, seed):
+    """A dyed festival cloth (bunting, the show table's cover): linen with a hemmed edge."""
+    img = linen(color, seed)
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, S, 2], fill=tuple(max(0, v - 30) for v in color[:3]) + (255,))
+    return img
+
+
+def target_face():
+    """The archery butt's painted face: straw rings, a red gold."""
+    img = straw()
+    d = ImageDraw.Draw(img)
+    for r, c in ((15, (242, 230, 207, 255)), (12, (60, 72, 96, 255)), (8, (181, 67, 43, 255)), (4, (230, 180, 70, 255))):
+        d.ellipse([16 - r, 16 - r, 16 + r, 16 + r], fill=c)
+    return img
+
+
 def stone_block():
     img = tile((150, 146, 140, 255))
     d = ImageDraw.Draw(img)
@@ -205,7 +222,16 @@ def generate():
     save(heap((90, 40, 60, 255), [(170, 40, 70, 255), (120, 30, 90, 255), (200, 60, 80, 255)], 17), "props/berries_top")
     save(heap((120, 140, 150, 255), [(150, 170, 180, 255), (110, 130, 146, 255), (176, 190, 196, 255)], 19), "props/fish_top")
     save(meat_top(), "props/meat_top")
+    festival()
     icons()
+
+
+def festival():
+    """The festival's bunting, the show table's cloth and the archery butt (Round/FestivalSystem)."""
+    save(cloth((181, 67, 43, 255), 21), "props/cloth_madder")
+    save(cloth((214, 168, 72, 255), 22), "props/cloth_ochre")
+    save(cloth((66, 88, 128, 255), 23), "props/cloth_woad")
+    save(target_face(), "props/target_face")
 
 
 if __name__ == "__main__":

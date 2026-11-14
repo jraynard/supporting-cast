@@ -74,6 +74,28 @@
       {"def": "Shrine", "at": [55, 73], "facing": 2, "role": "Shrine"},
       {"def": "Cottage", "at": [75, 70], "facing": 2, "variant": "Shingle", "role": "Home"}
       ],
+      "festival": [
+      {"def": "Bonfire", "at": [43, 51], "facing": 0},
+      {"def": "LongTable", "at": [37, 42], "facing": 0},
+      {"def": "LongTable", "at": [37, 45], "facing": 0},
+      {"def": "Stool", "at": [36, 42], "facing": 0},
+      {"def": "Stool", "at": [36, 43], "facing": 0},
+      {"def": "Stool", "at": [36, 45], "facing": 0},
+      {"def": "Stool", "at": [36, 46], "facing": 0},
+      {"def": "Stool", "at": [38, 42], "facing": 0},
+      {"def": "Stool", "at": [38, 43], "facing": 0},
+      {"def": "Stool", "at": [38, 45], "facing": 0},
+      {"def": "Stool", "at": [38, 46], "facing": 0},
+      {"def": "ShowTable", "at": [48, 48], "facing": 0},
+      {"def": "HighStriker", "at": [49, 41], "facing": 0},
+      {"def": "ArcheryButt", "at": [36, 38], "facing": 0},
+      {"def": "FestivalLantern", "at": [39, 40], "facing": 0},
+      {"def": "FestivalLantern", "at": [47, 39], "facing": 0},
+      {"def": "FestivalLantern", "at": [34, 45], "facing": 0},
+      {"def": "FestivalLantern", "at": [50, 45], "facing": 0},
+      {"def": "FestivalLantern", "at": [38, 55], "facing": 0},
+      {"def": "FestivalLantern", "at": [48, 55], "facing": 0}
+      ],
       "ground": [
       "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggrrrrggggggggggggkwwwwwwwwwkgggggggggggg",
       "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggrrrrggggggggggggkkwwwwwwwwkgggggggggggg",

@@ -52,6 +52,20 @@ First pass done (docs/AUDIO.md, HISTORY.md). Next, as long-term items:
      (and players type theirs), so this can't be pre-recorded.
 5. **Steam Deck:** check the sound there (output switching, volume, CPU).
 
+### The festival
+Built (HISTORY.md, "The festival, made an event"). What's left:
+
+- **Playtest it:** the length, the activity weights, what the show table and the games are worth
+  to a guest (`festival.json`), and whether the toasts swing a season enough to matter.
+- **Art:** dance and cheer frames in the people pipeline (`tools/chibi_people.py`; the renderer
+  hops for now), a proper bunting string between the lantern posts.
+- **The butts with real arrows:** a target thing the ranged code can hit, shot from a mark.
+- **Music from the square:** truly positional music needs Narsil's audio to place a track; for now
+  the festival's music plays only near the well.
+- **Putting it up:** an AI labourer carrying the tables and lanterns out that afternoon, instead of
+  everything appearing at the bell.
+- **M4:** the ceremony's `Accusation` step, where the town can name a traitor before the verdict.
+
 ### Death and ghosts
 First pass done (HISTORY.md, "Death and ghosts"). What's left:
 
@@ -184,7 +198,6 @@ Grouped by area; nothing here blocks a playtest.
 - The bracing window and the dragon haven't been seen in a running game yet (the dev tools now
   send either).
 - Time passes fast only while everyone sleeps, not when the town is otherwise quiet.
-- The festival has no lanterns, tables or music, and the inn doesn't serve outside.
 - Errands fetch only what's lying about or in common stores. Wood left out on a cold day goes on
   the fires first.
 

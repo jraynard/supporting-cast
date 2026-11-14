@@ -1190,3 +1190,56 @@ Small leftovers from the polish list and the pre-M4 sections, each its own commi
   healer's shrine (`props/sign_rune`), from `tools/inn_art.py`.
 - Bench baselines: seed 1234 unchanged (state `853A200442B00386`, full `12E0FA3E45392BBC`); seed 99
   state `CEFFA4278018879C`, full `653B0922D876F08D`.
+
+### The festival, made an event (2026-11-13)
+The season's last evening (M3.8 was a crowd milling round the well) becomes the round's payoff
+and its last chance (`Round/FestivalSystem`, `data/defs/festival.json`, `Defs/FestivalDefs.cs`).
+- **Longer:** 17:00 to 22:00 on the last day (`season.json`), in three parts: the opening (the
+  bell, everyone to the square), the revels, and the ceremony (its last 1.25 hours). The night
+  never fast-forwards through it (`NightPassing`).
+- **Put up for it:** the map lists what goes up (`MapDef.Festival`, `MapProp`; placed by
+  `tools/village_map.py` and checked like the other features): six post lanterns hung with bunting,
+  the bonfire, two long tables and eight stools, the show table, the striker and the archery butt.
+  `FestivalSystem.PutUp` spawns them when the festival begins, on the nearest free cell nobody's
+  standing on. The lanterns and bonfire are fires filled at the start and never fed (`refuelAt` 0),
+  so the square's lit and warm through the fire and lighting code as it is. New textures:
+  `props/cloth_*`, `props/target_face` (`tools/placeholder_props.py festival()`).
+- **The revels** (`Ai/FestivalJob`): each villager and guest picks something, by weight (the
+  town's and the visitors' differ): sit at the feast, warm themselves at the bonfire, dance round
+  it (a square ring two cells out), watch a game, look over the show table, or mill about.
+  A job ends when the festival moves on to its next part, so the ceremony's bell brings everyone in.
+  - **The inn serves outside:** during the revels `Table.FreeSeat` prefers the festival's stools,
+    so whoever's served sits down in the square. Anyone with open orders at their workplace keeps
+    serving through the revels (`Festival.StillServing`).
+  - **The show table** (`BuildingProps.Show`): a container nobody's job takes from. Visitors near
+    it look over each crafted piece once, and their satisfaction moves by its quality
+    (`admireSatisfaction`); the maker's praised for it. Drawn on the table like the hatch's dishes.
+  - **The games** (`Work/FestivalGames`): F at the striker or the butts is a hand game
+    (`StrikerSession`: a needle sweeping a gauge, three swings, the top rings the bell;
+    `ButtsSession`: hold a swaying aim on the gold against the wind, three arrows, scored by ring).
+    AI turns are rolled from the skill now and then for whoever's watching. Visitors who see a
+    turn enjoy it, to a cap. The best score of the night takes `prizeSilver` when the games close,
+    and each game won adds a little Renown.
+  - **The dance:** F at the bonfire joins it (`AvatarActionKind.Dance`). The renderer gives
+    dancers a hop and a sway; there are no dance frames yet.
+- **The ceremony** (`CeremonyStep`): the bell; each party still in town's **toast**, a line from
+  its mean satisfaction, its members counted toward Renown at that moment (`FestivalSystem.Toasted`;
+  `Reckoning.FinalCount` passes over them); the **honours** (the games' winners, the finest work on
+  the show table, the busiest counter by silver earned (`RoundSystem.EarnedBy`), anyone called back
+  from the dead); `Accusation`, a no-op kept for M4's traitors; the **verdict**, read by the crier
+  (`RoundSystem.Crier`), which keeps its time whatever's left of the toasts. The round still ends at
+  `EndTick`; a clock that jumps past the ceremony runs its steps at once, and the festival starts at
+  its hour even when the clock jumped past it. The reveal lists the honours (`RoundSummary.Honours`,
+  save format 20).
+- **HUD and sound:** the clock names the part ("The festival: the toasts"). The festival's music
+  plays within 24 cells of the well (elsewhere the evening's own), with a crowd's murmur out in the
+  square; the bell rings from the square at the opening and the ceremony.
+- **Bots** lay a piece of their own work on the show table, have a go at each game (they play the
+  hand games), then gather for the ceremony.
+- **Dev:** "Festival now" in the debug window (`DevFestivalCommand`), and `--festival-at SECONDS`.
+- **Fix:** the innkeeper's F at the bar offered "Reach under the counter for stone bridge" once
+  the cudgel was out, and threw when pressed: `FirstOrDefault` on an empty stash gave a default
+  `Entity` (index 0, a real one). The AI's `Stashes.ArmFrom` had the same slip.
+- `FestivalTests`, `TradeWeaponTests.AnEmptyStashOffersNothingToReachFor`. Bench state hashes
+  unchanged; the full hashes moved for the festival's saved plan: 1234 `A3387098B3207AA8`, 99
+  `74315EC270163CE8`.

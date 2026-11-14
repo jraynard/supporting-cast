@@ -71,7 +71,7 @@ public static class Stashes
         var stash = Of(sim, trade.Def);
         if (stash.IsNull)
             return null;
-        var weapon = sim.StoredIn(stash).FirstOrDefault(e => w.Get<Thing>(e).Def.Weapon != null);
+        var weapon = sim.StoredIn(stash).FirstOrDefault(e => w.Get<Thing>(e).Def.Weapon != null, Entity.Null); // a default Entity is index 0, a real one
         if (weapon.IsNull || sim.Reservations.IsReservedByOther(weapon, pawn)
             || !Ai.Navigation.CanReach(sim, pawn, w.Get<Position>(pawn).Cell, w.Get<Thing>(stash).Cell, PathEnd.Touch))
             return null;

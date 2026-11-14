@@ -118,6 +118,12 @@ public sealed partial class VillageGame
             case Sim.Tinkering.LoupeSession loupe:
                 DrawLoupe(loupe);
                 return;
+            case StrikerSession striker:
+                DrawStriker(striker);
+                return;
+            case ButtsSession butts:
+                DrawButts(butts);
+                return;
         }
         switch (_work.Session)
         {

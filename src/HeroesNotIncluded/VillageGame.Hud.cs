@@ -202,7 +202,19 @@ public sealed partial class VillageGame
     {
         var round = _sim.Round;
         if (round.Phase == Sim.Round.RoundPhase.Festival)
-            return "The festival!";
+            return _sim.Festival.Part switch
+            {
+                Sim.Round.FestivalPart.Opening => "The festival: to the square!",
+                Sim.Round.FestivalPart.Revels => "The festival: feast, dance and games",
+                Sim.Round.FestivalPart.Ceremony => _sim.Festival.Step switch
+                {
+                    Sim.Round.CeremonyStep.Toasts => "The festival: the toasts",
+                    Sim.Round.CeremonyStep.Honours => "The festival: the honours",
+                    Sim.Round.CeremonyStep.Verdict or Sim.Round.CeremonyStep.Done => "The festival: the verdict",
+                    _ => "The festival: gather round the well",
+                },
+                _ => "The festival!",
+            };
         var (day, of) = round.SeasonDay(_sim);
         var hours = (int)Math.Ceiling((round.FestivalTick(_sim) - _sim.Clock.Tick) / (double)SimClock.TicksPerHour);
         var until = hours <= 1 ? "within the hour" : hours < 24 ? $"in {hours} hours" : $"in {(hours + 12) / 24} days";

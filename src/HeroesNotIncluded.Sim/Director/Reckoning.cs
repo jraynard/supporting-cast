@@ -100,12 +100,15 @@ public sealed class Reckoning : ISimSystem, ISaveState
             Add(sim, 0, season.CrisisUnmetDread);
     }
 
-    /// <summary>At the festival's end: everyone still in town has their say too.</summary>
-    public void FinalCount(Simulation sim)
+    /// <summary>
+    /// At the festival's end: everyone still in town has their say too, but for those already
+    /// counted at their party's toast (<paramref name="counted"/>, <see cref="Round.FestivalSystem"/>).
+    /// </summary>
+    public void FinalCount(Simulation sim, IReadOnlySet<Entity>? counted = null)
     {
         var w = sim.World;
         foreach (var e in w.Query<Adventurer>())
-            if (!w.Has<Leaving>(e) && !w.Get<Creature>(e).Dead)
+            if (!w.Has<Leaving>(e) && !w.Get<Creature>(e).Dead && counted?.Contains(e) != true)
                 AdventurerLeft(sim, w.Get<Adventurer>(e).Satisfaction);
     }
 

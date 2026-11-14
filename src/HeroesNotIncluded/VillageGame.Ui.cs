@@ -1306,6 +1306,9 @@ public sealed partial class VillageGame
             ImGui.SameLine(0, -1);
             if (ImGui.Button("Warn of a raid"u8, in _autoSize))
                 Issue(new DevRaidWarningCommand());
+            ImGui.SameLine(0, -1);
+            if (ImGui.Button("Festival now"u8, in _autoSize))
+                Issue(new DevFestivalCommand());
         }
 
         if (ImGui.CollapsingHeader("System timings (ms)"u8, ImGuiTreeNodeFlags.None))

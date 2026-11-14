@@ -65,6 +65,9 @@ public sealed partial class Simulation
     /// <summary>The round's lobby and deal. <see cref="Round.RoundPhase.None"/> until something opens one.</summary>
     public Round.RoundSystem Round { get; }
 
+    /// <summary>The season's last evening: the props, the revels and the ceremony (<see cref="Round.FestivalSystem"/>).</summary>
+    public Round.FestivalSystem Festival { get; }
+
     /// <summary>Adventuring parties coming to town during a round.</summary>
     public Adventurers.PartySystem Parties { get; }
 
@@ -211,6 +214,7 @@ public sealed partial class Simulation
         Wildlife = new WildlifeSystem(seed);
         Social = new SocialSystem(seed);
         Round = new Round.RoundSystem(seed);
+        Festival = new Round.FestivalSystem(seed);
         Parties = new Adventurers.PartySystem(seed);
         Shops = new Shops.ShopSystem(seed);
         Expeditions = new Expeditions.ExpeditionSystem(seed);
@@ -228,6 +232,7 @@ public sealed partial class Simulation
     {
         var sim = new Simulation(defs, width, height, seed, depth);
         sim.AddSystem(sim.Round)
+            .AddSystem(sim.Festival)
             .AddSystem(sim.Speech)
             .AddSystem(sim.Temperature)
             .AddSystem(sim.Fire)

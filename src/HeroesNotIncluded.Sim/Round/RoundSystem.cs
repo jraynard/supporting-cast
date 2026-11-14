@@ -103,9 +103,12 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         return (firstDay + day - 1) * SimClock.TicksPerDay + SimClock.HoursToTicks(hour) - startHour;
     }
 
-    /// <summary>The tick the festival ends and the town is reckoned. -1 before the deal.</summary>
+    /// <summary>
+    /// The tick the festival ends and the town is reckoned: its hours after it began (or is to
+    /// begin; a dev's jump starts it early). -1 before the deal.
+    /// </summary>
     public long EndTick(Simulation sim) =>
-        StartTick < 0 ? -1 : FestivalTick(sim) + SimClock.HoursToTicks(sim.Defs.Season.FestivalHours);
+        StartTick < 0 ? -1 : (sim.Festival.StartTick >= 0 ? sim.Festival.StartTick : FestivalTick(sim)) + SimClock.HoursToTicks(sim.Defs.Season.FestivalHours);
 
     /// <summary>The day of the season it is (1 on the day of the deal), and how many there are.</summary>
     public (int Day, int Of) SeasonDay(Simulation sim)
@@ -120,21 +123,36 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             return;
         var now = sim.Clock.Tick;
         if (Phase == RoundPhase.Playing && now >= FestivalTick(sim))
-        {
-            Phase = RoundPhase.Festival;
-            Square = FindSquare(sim);
-            sim.Messages.Add(MessageKind.Good, "The festival begins! Everyone's gathering in the square.", Square);
-        }
+            BeginFestival(sim, FestivalTick(sim));
         if (Phase == RoundPhase.Festival && now >= EndTick(sim))
         {
             var reckoning = sim.Reckoning;
-            reckoning.FinalCount(sim);
-            ReadTheReckoning(sim);
+            // The ceremony reads the verdict before the end; if it never got that far, it's read now.
+            if (!sim.Festival.VerdictRead)
+            {
+                reckoning.FinalCount(sim, sim.Festival.Toasted);
+                ReadTheReckoning(sim);
+            }
             End(sim, reckoning.Renown >= Director.Reckoning.RenownTarget(sim) ? RoundOutcome.Won : RoundOutcome.FellShort);
             return;
         }
         if (!AnyoneAlive(sim))
             End(sim, RoundOutcome.TownFell);
+    }
+
+    /// <summary>
+    /// The festival begins (on the clock, or now for a dev): the square's found, the props go up
+    /// (<see cref="FestivalSystem"/>) and everyone's called to it. Only from play.
+    /// </summary>
+    /// <param name="at">When it began: on the clock, its hour (even if the clock jumped past it); for a dev, now.</param>
+    public void BeginFestival(Simulation sim, long? at = null)
+    {
+        if (Phase != RoundPhase.Playing)
+            return;
+        Phase = RoundPhase.Festival;
+        Square = FindSquare(sim);
+        sim.Festival.Begin(sim, Math.Min(at ?? sim.Clock.Tick, sim.Clock.Tick));
+        sim.Messages.Add(MessageKind.Good, "The festival begins! Everyone to the square: there's a feast, dancing, games and a show of the town's work.", Square);
     }
 
     /// <summary>
@@ -156,6 +174,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             Parties = sim.Parties.PartiesSent, AdventurersServed = reckoning.AdventurersCounted,
             QuestsCleared = ex.Succeeded, QuestsFailed = ex.Failed, AdventurersLost = ex.Dead,
             People = RoundSummary.PeopleOf(sim, _startCoin),
+            Honours = sim.Festival.Honours.Select(h => new HonourRow(h.Name, h.Title)).ToList(),
         };
         Phase = RoundPhase.Over;
         sim.Messages.Add(outcome == RoundOutcome.Won ? MessageKind.Good : MessageKind.Danger, Summary.Headline, null);
@@ -174,18 +193,35 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         return null;
     }
 
-    /// <summary>
-    /// The festival's end: whoever of the town stands nearest the well calls out how the season
-    /// went, in the words everyone knows it by. The numbers are for the reveal.
-    /// </summary>
-    private void ReadTheReckoning(Simulation sim)
+    /// <summary>Whoever of the town stands nearest <paramref name="at"/> and can speak: the festival's crier. Entity.Null if nobody.</summary>
+    public static Entity Crier(Simulation sim, int3 at)
     {
         var w = sim.World;
-        var at = Square ?? default;
-        var crier = sim.Creatures()
+        return sim.Creatures()
             .Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Dead: false } && Speech.SpeechSystem.CanAct(sim, e))
             .OrderBy(e => Maps.Map.Distance(w.Get<Position>(e).Cell, at))
+            .ThenBy(e => e.Index)
             .FirstOrDefault(Entity.Null);
+    }
+
+    /// <summary>Silver someone's earned since the deal (what they hold now, less what they started with). 0 for anyone not dealt in.</summary>
+    public int EarnedBy(Simulation sim, Entity who)
+    {
+        foreach (var (e, coin) in _startCoin)
+            if (e == who)
+                return Shops.Coin.Count(sim, e) - coin;
+        return 0;
+    }
+
+    /// <summary>
+    /// The festival's end: the ceremony's crier (else whoever of the town stands nearest the well)
+    /// calls out how the season went, in the words everyone knows it by. The numbers are for the reveal.
+    /// </summary>
+    internal void ReadTheReckoning(Simulation sim)
+    {
+        var crier = sim.Festival.Crier;
+        if (crier.IsNull || !sim.World.IsAlive(crier) || !Speech.SpeechSystem.CanAct(sim, crier))
+            crier = Crier(sim, Square ?? default);
         if (crier.IsNull)
             return;
         var r = sim.Reckoning;
