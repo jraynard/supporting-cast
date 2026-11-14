@@ -37,6 +37,48 @@ public class RepairTests
         return alongX ? (span.MinBy(c => c.X)!, span.MaxBy(c => c.X)!) : (span.MinBy(c => c.Y)!, span.MaxBy(c => c.Y)!);
     }
 
+    [Fact]
+    public void NobodyStepsOffTheBridgesSides()
+    {
+        var (sim, me) = Round("Tinker");
+        var w = sim.World;
+        var map = sim.Map;
+        var span = w.Query<Thing>().Select(e => w.Get<Thing>(e)).Where(t => t.Def.Name == "StoneBridge").Select(t => t.Cell).ToHashSet();
+        var (a, b) = Ends(sim);
+        var alongX = a.Y == b.Y || Math.Abs(b.X - a.X) > Math.Abs(b.Y - a.Y);
+        int Along(int3 c) => alongX ? c.X : c.Y;
+        var (lo, hi) = (Math.Min(Along(a), Along(b)), Math.Max(Along(a), Along(b)));
+
+        // Walking links leave the deck only off its ends.
+        Span<Narsil.Sim.Grid.NavGraph.Step> steps = stackalloc Narsil.Sim.Grid.NavGraph.Step[Narsil.Sim.Grid.NavGraph.MaxSteps];
+        foreach (var c in span)
+        {
+            var n = Narsil.Sim.Grid.NavGraph.Neighbors(new Maps.MapNav(map), map.Idx(c), steps);
+            for (var k = 0; k < n; k++)
+            {
+                var to = map.CellOf(steps[k].Index);
+                Assert.True(span.Contains(to) || Along(to) < lo || Along(to) > hi, $"{c} links off the side to {to}");
+            }
+        }
+
+        // Nor can a co-op client claim to be standing off a side, on any level, anywhere along it.
+        HeroesNotIncluded.Sim.Combat.FreeMoveSystem.Ensure(sim, me);
+        var across = alongX ? new int3(0, 1, 0) : new int3(1, 0, 0);
+        foreach (var c in span)
+            foreach (var side in new[] { across, new int3(-across.X, -across.Y, 0) })
+            {
+                var beside = c + side;
+                if (span.Contains(beside) || span.Contains(beside with { Z = beside.Z - 1 }) || span.Contains(beside with { Z = beside.Z + 1 }))
+                    continue;
+                foreach (var dz in new[] { -1, 0, 1 })
+                {
+                    w.Get<Position>(me) = Position.At(c);
+                    HeroesNotIncluded.Sim.Combat.FreeMoveSystem.Claim(sim, me, beside.X + 0.5f, beside.Y + 0.5f, c.Z + dz, stopped: true);
+                    Assert.True(span.Contains(w.Get<Position>(me).Cell), $"from {c}, claimed off the side to {w.Get<Position>(me).Cell}");
+                }
+            }
+    }
+
     private static bool Across(Simulation sim, Entity who, int3 a, int3 b) => Navigation.CanReach(sim, who, a, b, PathEnd.OnTile);
 
     private static void Play(Simulation sim, Entity me, int maxTicks = 60 * 180)

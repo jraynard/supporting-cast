@@ -215,7 +215,7 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         if (dx * dx + dy * dy > MaxClaim * MaxClaim || Math.Abs(z - p.Cell.Z) > 1 || !w.Get<Creature>(e).Able)
             return;
         var cell = new int3((int)MathF.Floor(x), (int)MathF.Floor(y), z);
-        if (!sim.Map.Passable(cell) || !Fits(sim, new float2(x, y), z))
+        if (!sim.Map.Passable(cell) || !Fits(sim, new float2(x, y), z) || !Walkable(sim, p.Cell, cell))
             return;
         if (cell != p.Cell && w.TryGet<Perched>(e, out var perch) && perch.Cell != cell)
             w.Remove<Perched>(e);
@@ -223,6 +223,43 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         p.Cell = cell;
         if (stopped)
             w.Get<FreeMover>(e).Vel = float2.Zero;
+    }
+
+    /// <summary>
+    /// Can <paramref name="to"/> be walked to from <paramref name="from"/> in a few steps by the walking
+    /// links (<see cref="NavGraph"/>)? A claim within <see cref="MaxClaim"/> may have rounded a corner,
+    /// but never dropped off a ledge or a bridge's side.
+    /// </summary>
+    private static bool Walkable(Simulation sim, int3 from, int3 to)
+    {
+        if (from == to)
+            return true;
+        var map = sim.Map;
+        if (!map.InBounds(from) || !map.InBounds(to))
+            return false;
+        var goal = map.Idx(to);
+        Span<int> seen = stackalloc int[256]; // every cell three steps out, on three levels
+        seen[0] = map.Idx(from);
+        int count = 1, start = 0;
+        Span<NavGraph.Step> steps = stackalloc NavGraph.Step[NavGraph.MaxSteps];
+        for (var depth = 0; depth < 3; depth++)
+        {
+            var end = count;
+            for (var i = start; i < end; i++)
+            {
+                var n = NavGraph.Neighbors(new Maps.MapNav(map), seen[i], steps);
+                for (var k = 0; k < n; k++)
+                {
+                    var next = steps[k].Index;
+                    if (next == goal)
+                        return true;
+                    if (count < seen.Length && !seen[..count].Contains(next))
+                        seen[count++] = next;
+                }
+            }
+            start = end;
+        }
+        return false;
     }
 
     /// <summary>Could a free mover stand with its middle at <paramref name="at"/>: every cell its circle touches passable (on the level, or a step up or down)?</summary>
