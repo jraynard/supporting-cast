@@ -1440,3 +1440,14 @@ It wasn't clear what to do at first, then it was over too fast. Now:
 - Save format 31. `FestivalTests` (the tale, the crowd gathering for it, laying out work, the
   ceremony's pacing, saving mid-tale). Bench state hashes unchanged; full hashes moved: 1234
   `B0173335CD84DC78`, 99 `38895A58EC1B09A7`.
+- **The square, tidied; the feast, laid.** The town's starting stores (the valley's settlers' pile:
+  food for the first days, planks, the bow, the rod) had been dropped at the map's centre, which in
+  Millbrook is the square, and lay about it all season beside the feast tables. A built town puts
+  them in its stockpile in the barn (`MapGenerator.Options.PileAt`). An AI villager's trade kit
+  stock (the smith's bars, the healer's bandages) goes in their workplace's storage, not a pack
+  that's emptied after every job (`RoundSystem.WorkplaceStore`). The feast is on `FeastTable`s
+  now: clothed trestles laid with roasts, bread and pies (`festival.json` `feast`,
+  `FestivalSystem.LayTheFeast`), on show like the show table: no job clears them, anyone can help
+  themselves by hand. `FestivalTests` (the square, the feast). Bench hashes moved (the pile's
+  place): 1234 state `A6E67838D1ABD0A8`, full `03C9963BA8B970EA`; 99 state `FF8D045D36C9C535`, full
+  `24B36AB2CA3F1C41`.

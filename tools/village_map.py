@@ -246,7 +246,7 @@ else:
 festival = []
 FESTIVAL = [
     ("Bonfire", 43, 51, 0, [(0, 0)]),                                   # south of the well; the dance goes round it
-    ("LongTable", 37, 42, 0, [(0, 0), (0, 1)]), ("LongTable", 37, 45, 0, [(0, 0), (0, 1)]),   # the feast, west of the well
+    ("FeastTable", 37, 42, 0, [(0, 0), (0, 1)]), ("FeastTable", 37, 45, 0, [(0, 0), (0, 1)]),   # the feast, west of the well
     *[("Stool", x, y, 0, [(0, 0)]) for x in (36, 38) for y in (42, 43, 45, 46)],
     ("ShowTable", 48, 48, 0, [(0, 0), (0, 1)]),                         # the town's best work, by the inn
     ("HighStriker", 49, 41, 0, [(0, 0)]),                               # the test of strength, by the notice board

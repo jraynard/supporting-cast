@@ -73,10 +73,18 @@ public sealed class FestivalDef : Def
     /// <summary>The festival's games, each at a thing in the square.</summary>
     public List<FestivalGameDef> Games { get; set; } = [];
 
+    /// <summary>What's laid on each feast table when it goes up, stored on it (a <c>show</c> table: on view, taken by hand only).</summary>
+    public List<FeastDish> Feast { get; set; } = [];
+
+    /// <summary>The thing the feast is laid on (a festival prop of this def).</summary>
+    public string FeastTable { get; set; } = "FeastTable";
+
     internal override void Resolve(DefDatabase db)
     {
         foreach (var g in Games)
             g.Resolve(db);
+        foreach (var d in Feast)
+            d.ThingDef = db.Thing(d.Def);
         if (AdmireSatisfaction.Length != 4)
             throw new Exception($"Festival '{Name}': admireSatisfaction needs one value per quality (4)");
         TownWeights = Parse(Activities, "activities");
@@ -98,6 +106,14 @@ public sealed class FestivalDef : Def
 
     /// <summary>The game played at a thing of this def, or null.</summary>
     public FestivalGameDef? GameAt(ThingDef def) => Games.Find(g => g.ThingDef == def);
+}
+
+/// <summary>A dish on the feast tables: so many of a thing.</summary>
+public sealed class FeastDish
+{
+    public string Def { get; set; } = "";
+    public int Count { get; set; } = 1;
+    [JsonIgnore] public ThingDef ThingDef { get; internal set; } = null!;
 }
 
 /// <summary>A contest at the festival: played at its thing, with a hand game for a player and a roll of the skill for the AI.</summary>

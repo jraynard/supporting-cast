@@ -30,6 +30,9 @@
       "watchCap": 1.5,
       "watchReach": 6,
       "tryChance": 0.25,
+      // Laid on each feast table when the festival goes up (feastTable), in turn.
+      "feastTable": "FeastTable",
+      "feast": [ { "def": "Roast", "count": 4 }, { "def": "Bread", "count": 6 }, { "def": "Pie", "count": 4 } ],
       "prizeSilver": 8,
       "gameRenown": 2,
       "games": [
@@ -83,6 +86,23 @@
         { "min": [0.4, 0.1, 0], "max": [0.6, 0.9, 0.18], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" },
         { "min": [0.1, 0.4, 0.14], "max": [0.9, 0.6, 0.3], "top": "props/log_side", "side": "props/log_side" },
         { "min": [0.3, 0.3, 0.26], "max": [0.7, 0.7, 0.42], "top": "props/log_end", "side": "props/log_side" }
+      ]
+    },
+    {
+      // The feast's table: a long trestle with the town's spread laid along it (festival.json's
+      // "feast", FestivalSystem.LayTheFeast). Its dishes are on show like the show table's: nobody's
+      // job clears them away, and anyone can help themselves by hand.
+      "name": "FeastTable", "label": "feast table", "size": [1, 2], "category": "Building", "solid": true, "climbable": true, "sprite": "buildings/table",
+      "description": "A long trestle under a cloth, laid with roasts, bread and pies for the festival. Help yourself.",
+      "maxHp": 140, "flammability": 1.0,
+      "building": { "buildable": false, "outdoor": true, "show": true, "storageStacks": 4, "surfaceHeight": 0.66, "work": 180,
+        "cost": [ { "def": "Wood", "count": 12 } ] },
+      "model": [
+        { "min": [0.02, 0.02, 0.56], "max": [0.98, 1.98, 0.66], "top": "props/linen", "side": "props/cloth_madder" },
+        { "min": [0.08, 0.08, 0], "max": [0.18, 0.18, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.82, 0.08, 0], "max": [0.92, 0.18, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.08, 1.82, 0], "max": [0.18, 1.92, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.82, 1.82, 0], "max": [0.92, 1.92, 0.56], "top": "props/planks", "side": "props/log_side" }
       ]
     },
     {

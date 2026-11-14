@@ -521,7 +521,14 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             if (item.Count == 1 && item.ThingDef.Weapon != null && !(w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon)))
                 sim.EquipItem(e, made);
             else if (item.Count != 1 || item.ThingDef.Tool == null || Toolbelt.PutOn(sim, e, made).IsNull)
-                Inventory.Stow(sim, e, made);
+            {
+                // An AI villager's pack is emptied after every job, which would leave the kit's stock
+                // lying in the street: it goes in their workplace's storage instead. A player keeps it.
+                if (!w.Has<PlayerCharacter>(e) && WorkplaceStore(sim, trade, made) is { IsNull: false } store)
+                    made = sim.Store(store, made);
+                if (!made.IsNull)
+                    Inventory.Stow(sim, e, made);
+            }
         }
         Militia.Stashes.Fill(sim, trade);
         if (trade.HoldsKeys)
@@ -535,6 +542,20 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             w.Add(e, new Mana { Current = trade.Mana, Max = trade.Mana });
             w.Add(e, Healing.Weaving.NewBook(sim));
         }
+    }
+
+    /// <summary>A container in the trade's workplace (not a stash) with room for the item, or Entity.Null.</summary>
+    private static Entity WorkplaceStore(Simulation sim, TradeDef trade, Entity item)
+    {
+        if (trade.WorkplaceDef is not { } def || Shops.ShopSystem.BuildingOf(sim, def) is not { IsNull: false } building)
+            return Entity.Null;
+        var w = sim.World;
+        var t = w.Get<Thing>(item);
+        foreach (var e in w.Query<PartOf>())
+            if (w.Get<PartOf>(e).Building == building && sim.IsContainer(e) && !Militia.Stashes.IsStash(sim, e)
+                && sim.HasRoomFor(e, t.Def, t.Material))
+                return e;
+        return Entity.Null;
     }
 
     public void Save(SaveWriter w, Simulation sim)

@@ -211,6 +211,16 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
             _props.Add(e);
         }
         sim.Map.MarkStructureChanged();
+        LayTheFeast(sim);
+    }
+
+    /// <summary>The feast's dishes laid along each of its tables: the town's spread, on view, there to be helped to by hand.</summary>
+    private void LayTheFeast(Simulation sim)
+    {
+        foreach (var table in PropsOf(sim, sim.Defs.Festival.FeastTable).ToList())
+            foreach (var dish in sim.Defs.Festival.Feast)
+                if (sim.IsContainer(table) && sim.HasRoomFor(table, dish.ThingDef, null))
+                    sim.Store(table, sim.CreateItem(dish.ThingDef, dish.Count));
     }
 
     /// <summary>The cell nearest <paramref name="cell"/> it fits on, with nobody standing there; null if none close.</summary>

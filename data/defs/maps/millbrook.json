@@ -76,8 +76,8 @@
       ],
       "festival": [
       {"def": "Bonfire", "at": [43, 51], "facing": 0},
-      {"def": "LongTable", "at": [37, 42], "facing": 0},
-      {"def": "LongTable", "at": [37, 45], "facing": 0},
+      {"def": "FeastTable", "at": [37, 42], "facing": 0},
+      {"def": "FeastTable", "at": [37, 45], "facing": 0},
       {"def": "Stool", "at": [36, 42], "facing": 0},
       {"def": "Stool", "at": [36, 43], "facing": 0},
       {"def": "Stool", "at": [36, 45], "facing": 0},

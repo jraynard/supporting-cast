@@ -20,6 +20,13 @@ public static class MapBuilder
     public static Simulation CreateSimulation(DefDatabase defs, MapDef map, ulong seed) =>
         Simulation.CreateStandard(defs, map.Width, map.Height, seed, map.Depth);
 
+    /// <summary>The middle of the map's stockpile zone, on its ground.</summary>
+    private static int3 StockpileMiddle(MapDef def)
+    {
+        int x = def.Stockpile[0] + def.Stockpile[2] / 2, y = def.Stockpile[1] + def.Stockpile[3] / 2;
+        return new int3(x, y, def.StandZ(x, y));
+    }
+
     public static Built Build(Simulation sim, MapDef def, MapGenerator.Options? options = null)
     {
         options ??= new MapGenerator.Options();
@@ -77,7 +84,11 @@ public static class MapBuilder
                 if (map.InBounds(x, y, 0))
                     map.SetZone(map.Idx(x, y, def.StandZ(x, y)), 1);
 
-        MapGenerator.Settle(sim, center, options);
+        MapGenerator.Settle(sim, center, new MapGenerator.Options
+        {
+            Villagers = options.Villagers, SpawnStartingKit = options.SpawnStartingKit, Wildlife = options.Wildlife,
+            Forest = options.Forest, PileAt = def.Stockpile.Length == 4 ? StockpileMiddle(def) : null,
+        });
 
         foreach (var l in def.Livestock)
         {

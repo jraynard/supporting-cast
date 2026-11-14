@@ -388,4 +388,46 @@ public class FestivalTests
             loaded.TickMany(30);
         Assert.Equal(FestivalPart.Revels, loaded.Festival.Part);
     }
+
+    /// <summary>Loose items (not plants, not furniture) within reach of the square.</summary>
+    private static List<string> LooseInTheSquare(Simulation sim)
+    {
+        var w = sim.World;
+        var square = sim.Round.Square ?? new int3(40, 48, 0);
+        return w.Query<Thing>().Select(e => w.Get<Thing>(e))
+            .Where(t => t.Spawned && t.Def.Category == ThingCategory.Item && t.Cell.Z == square.Z
+                && Math.Abs(t.Cell.X - square.X) <= 10 && Math.Abs(t.Cell.Y - square.Y) <= 10
+                && Buildings.At(sim, t.Cell).IsNull && sim.Map.Structure[sim.Map.Idx(t.Cell)].IsNull
+                && t.Def.Name is not ("Bucket" or "WaterBucket"))
+            .Select(t => $"{t.Def.Name} at {t.Cell}").ToList();
+    }
+
+    [Fact]
+    public void TheSquareIsntLitteredWithTheTownsStores()
+    {
+        var sim = Round();
+        Assert.Empty(LooseInTheSquare(sim));
+        // An AI smith's kit stock is in the smithy, not dropped where they stood.
+        var w = sim.World;
+        var smith = sim.Creatures().First(e => !w.Has<PlayerCharacter>(e) && w.TryGet<Trade>(e, out var t) && t.Def.Kit.Any(k => k.Def == "IronBar"));
+        var smithy = Shops.ShopSystem.BuildingOf(sim, w.Get<Trade>(smith).Def.WorkplaceDef!);
+        Assert.Contains(w.Query<PartOf>(), e => w.Get<PartOf>(e).Building == smithy && sim.StoredIn(e).Any(i => w.Get<Thing>(i).Def.Name == "Leather"));
+    }
+
+    [Fact]
+    public void TheFeastIsLaidOnItsTables()
+    {
+        var sim = Round();
+        ToFestival(sim, 1);
+        var w = sim.World;
+        var tables = sim.Festival.PropsOf(sim, sim.Defs.Festival.FeastTable).ToList();
+        Assert.NotEmpty(tables);
+        var dishes = sim.Defs.Festival.Feast.Select(d => d.Def).ToHashSet();
+        foreach (var table in tables)
+        {
+            var on = sim.StoredIn(table).Select(e => w.Get<Thing>(e).Def.Name).ToHashSet();
+            Assert.True(dishes.SetEquals(on), $"laid with {string.Join(", ", on)}");
+            Assert.All(sim.StoredIn(table), e => Assert.False(sim.IsAvailable(e), "nobody's job clears the feast away"));
+        }
+    }
 }

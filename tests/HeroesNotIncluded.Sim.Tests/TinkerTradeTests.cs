@@ -232,11 +232,12 @@ public class TinkerTradeTests
         var shop = sim.World.Query<PresetBuilding>().Single(e => w.Get<PresetBuilding>(e).Def.Name == "TinkerShop");
         var chest = w.Query<PartOf>().Single(e => w.Get<PartOf>(e).Building == shop && w.Get<Thing>(e).Def.Name == "Chest");
         int Wood() => sim.StoredIn(chest).Where(e => w.Get<Thing>(e).Def.Name == "Wood").Sum(e => w.Get<Stack>(e).Count);
-        Assert.Equal(16, Wood());
+        var stocked = Wood(); // the shop's own, and the AI tinker's kit put by (RoundSystem.Assign)
+        Assert.True(stocked >= 16, $"{stocked} wood");
         Assert.DoesNotContain(sim.AvailableItems(), e => w.TryGet<Stored>(e, out var st) && st.In == chest);
         // Half a day of the town fetching wood and feeding fires: none of it from here.
         sim.TickMany(SimClock.TicksPerHour * 12);
-        Assert.Equal(16, Wood());
+        Assert.Equal(stocked, Wood());
 
         // By hand it's there for the taking.
         var wood = sim.StoredIn(chest).First(e => w.Get<Thing>(e).Def.Name == "Wood");
@@ -245,7 +246,7 @@ public class TinkerTradeTests
         w.Get<Position>(me).Cell = cell;
         w.Get<Position>(me).Pos = Position.CenterOf(cell);
         sim.ApplyNow(new TakeFromStorageCommand(me, wood, 2));
-        Assert.Equal(14, Wood());
+        Assert.Equal(stocked - 2, Wood());
     }
 
     // ---------------- The inn's storeroom ----------------

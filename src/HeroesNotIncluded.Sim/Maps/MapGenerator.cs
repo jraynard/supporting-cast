@@ -18,6 +18,13 @@ public static class MapGenerator
         public int Villagers { get; init; } = 3;
         public bool SpawnStartingKit { get; init; } = true;
 
+        /// <summary>
+        /// Where the settlers' pile of food, planks and gear goes; null, beside the villagers at the
+        /// centre. A built town (<see cref="MapBuilder"/>) puts it in its stockpile: its centre is
+        /// the square, and the pile would lie about there all season.
+        /// </summary>
+        public int3? PileAt { get; init; }
+
         /// <summary>Herds graze here from the start and more wander in (<see cref="Systems.WildlifeSystem"/>).</summary>
         public bool Wildlife { get; init; } = true;
 
@@ -197,7 +204,7 @@ public static class MapGenerator
         sim.Lighting.Update(sim);
 
         if (options.SpawnStartingKit)
-            SpawnStart(sim, center, options.Villagers);
+            SpawnStart(sim, center, options.Villagers, options.PileAt);
         if (options.Wildlife)
         {
             sim.Wildlife.PlaceStartingHerds(sim, center);
@@ -309,7 +316,7 @@ public static class MapGenerator
         }
     }
 
-    private static void SpawnStart(Simulation sim, int3 center, int villagers)
+    private static void SpawnStart(Simulation sim, int3 center, int villagers, int3? pileAt = null)
     {
         var human = sim.Defs.Creature("Human");
         var people = new List<Entity>();
@@ -321,17 +328,20 @@ public static class MapGenerator
             people.Add(villager);
         }
 
+        // The pile goes where it's kept (a town's stockpile, all of it from its middle out); in a
+        // valley, about the villagers as it always has.
+        int3 Pile(int dx, int dy) => pileAt ?? center + new int3(dx, dy, 0);
         // The settlers brought pine planks; everything later comes from what they fell.
-        sim.SpawnItem(sim.Defs.Thing("Wood"), 60, center + new int3(3, -2, 0), sim.Defs.Material("Pine"));
+        sim.SpawnItem(sim.Defs.Thing("Wood"), 60, Pile(3, -2), sim.Defs.Material("Pine"));
         // Food for the first days: after that it comes from hunting and fishing
         // (it rots, so there's no point bringing more). One hunting bow among them.
-        sim.SpawnItem(sim.Defs.Thing("Berries"), 120, center + new int3(-3, -2, 0));
-        sim.SpawnItem(sim.Defs.Thing("Meat"), 80, center + new int3(-4, 0, 0));
-        sim.SpawnItem(sim.Defs.Thing("Bow"), 1, center + new int3(1, -3, 0));
+        sim.SpawnItem(sim.Defs.Thing("Berries"), 120, Pile(-3, -2));
+        sim.SpawnItem(sim.Defs.Thing("Meat"), 80, Pile(-4, 0));
+        sim.SpawnItem(sim.Defs.Thing("Bow"), 1, Pile(1, -3));
         // Everyone has a stone axe and pick on their belt (GiveStartingPack); one rod for the fisher.
-        sim.SpawnItem(sim.Defs.Thing("FishingRod"), 1, center + new int3(2, -3, 0));
+        sim.SpawnItem(sim.Defs.Thing("FishingRod"), 1, Pile(2, -3));
         // One good jerkin among them: whoever is free first puts it on.
-        sim.SpawnItem(sim.Defs.Thing("LeatherJerkin"), 1, center + new int3(2, -3, 0));
+        sim.SpawnItem(sim.Defs.Thing("LeatherJerkin"), 1, Pile(2, -3));
         // Clothes last, so they don't shift the entities (and the rolls seeded by them) above.
         foreach (var villager in people)
             Systems.Clothing.DressVillager(sim, villager);
