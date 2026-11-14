@@ -511,6 +511,22 @@ public sealed class AvatarSystem : ISimSystem
         return Entity.Null;
     }
 
+    /// <summary>As <see cref="Supply"/>, judged by the item itself (its count, its state): hand first, then the pack.</summary>
+    public static Entity SupplyItem(Simulation sim, Entity avatar, Func<Entity, bool> fits)
+    {
+        var w = sim.World;
+        var held = w.Get<Carrying>(avatar).Item;
+        if (!held.IsNull && w.IsAlive(held) && fits(held))
+            return held;
+        var pack = sim.PackOf(avatar);
+        if (pack.IsNull)
+            return Entity.Null;
+        foreach (var e in sim.StoredIn(pack))
+            if (fits(e))
+                return e;
+        return Entity.Null;
+    }
+
     /// <summary>"12 oak wood", noting "(pack)" when it comes out of the pack rather than the hands.</summary>
     private static string ItemLabel(Simulation sim, Entity avatar, Entity item) =>
         sim.World.Get<Carrying>(avatar).Item == item ? sim.World.Get<Thing>(item).Label

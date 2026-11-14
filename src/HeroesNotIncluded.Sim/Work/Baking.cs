@@ -131,20 +131,13 @@ public static class Baking
         return false;
     }
 
-    /// <summary>Dough in hand, or Entity.Null.</summary>
-    private static Entity DoughIn(Simulation sim, Entity cook)
-    {
-        var held = sim.World.Get<Carrying>(cook).Item;
-        return !held.IsNull && sim.World.IsAlive(held) && sim.World.Has<Dough>(held) ? held : Entity.Null;
-    }
+    /// <summary>Dough on the cook (in hand, else in the pack), or Entity.Null.</summary>
+    public static Entity DoughIn(Simulation sim, Entity cook) =>
+        AvatarSystem.SupplyItem(sim, cook, e => sim.World.Has<Dough>(e));
 
-    /// <summary>Flour in hand, enough for a ball of dough, or Entity.Null.</summary>
-    public static Entity FlourIn(Simulation sim, Entity cook)
-    {
-        var held = sim.World.Get<Carrying>(cook).Item;
-        return !held.IsNull && sim.World.IsAlive(held) && sim.World.Get<Thing>(held).Def.Name == Flour
-            && sim.World.Get<Stack>(held).Count >= FlourPerDough ? held : Entity.Null;
-    }
+    /// <summary>Flour on the cook (in hand, else in the pack), enough for a ball of dough, or Entity.Null.</summary>
+    public static Entity FlourIn(Simulation sim, Entity cook) =>
+        AvatarSystem.SupplyItem(sim, cook, e => sim.World.Get<Thing>(e).Def.Name == Flour && sim.World.Get<Stack>(e).Count >= FlourPerDough);
 
     /// <summary>What the work key does at an oven: put the dough in, or see to what's baking. Null if nothing.</summary>
     public static string? StepAt(Simulation sim, Entity cook, Entity oven)

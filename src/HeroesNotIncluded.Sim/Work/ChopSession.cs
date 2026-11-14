@@ -66,7 +66,7 @@ public sealed class ChopSession : WorkSession
     };
 
     public override bool StillValid(Simulation sim) =>
-        Rations.IsPrepTable(sim, Table) && sim.World.IsAlive(Food) && sim.World.Get<Carrying>(Worker).Item == Food
+        Rations.IsPrepTable(sim, Table) && sim.World.IsAlive(Food) && AvatarSystem.SupplyItem(sim, Worker, e => e == Food) == Food
         && AvatarSystem.InReach(sim, sim.World.Get<Position>(Worker).Cell, Table);
 
     protected override void Press()
@@ -105,9 +105,14 @@ public sealed class ChopSession : WorkSession
         if (w.Has<Rot>(made))
             w.Get<Rot>(made).Progress = rot;
         ref var hands = ref w.Get<Carrying>(Worker);
-        if (hands.Item == Food)
-            hands.Item = made;
-        w.Destroy(Food);
+        var inHand = hands.Item == Food;
+        if (inHand)
+            hands.Item = Entity.Null;
+        w.Destroy(sim.TakeFromStack(Food, count)); // out of the pack, if it was there
+        if (inHand)
+            w.Get<Carrying>(Worker).Item = made;
+        else
+            Inventory.Stow(sim, Worker, made);
         sim.Messages.Add(MessageKind.Info, $"Chopped {count} {def.Label}: it'll go further, and cook quicker.", w.Get<Thing>(Table).Cell);
     }
 

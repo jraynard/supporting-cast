@@ -284,10 +284,41 @@ public class CookPassTests
     [Fact]
     public void WithoutThreePortionsThereIsNothingToPack()
     {
-        var (sim, me, table) = PrepKitchen(("Meat", 2));
+        var (sim, me, table) = PrepKitchen(("Berries", 2)); // nothing to chop or knead, either
         Assert.NotEqual(AvatarActionKind.Cook, AvatarSystem.ActionAt(sim, me, sim.World.Get<Thing>(table).Cell).Kind);
         Rations.Start(sim, me, table);
         Assert.False(sim.World.Has<WorkSession>(me));
+        sim.ApplyNow(new PrepCommand(me, table, PrepStep.Pack));
+        Assert.False(sim.World.Has<WorkSession>(me));
+    }
+
+    [Fact]
+    public void RawFoodInThePackIsChoppedAndGoesBackInIt()
+    {
+        var (sim, me, table) = PrepKitchen(("Cabbage", 2));
+        Assert.Equal("Chop the cabbage", AvatarSystem.ActionAt(sim, me, sim.World.Get<Thing>(table).Cell).Label);
+        sim.ApplyNow(new PrepCommand(me, table, PrepStep.Next));
+        var chop = Assert.IsType<ChopSession>(sim.World.Get<WorkSession>(me));
+        chop.Advance(Enumerable.Range(1, chop.Needed).Select(i => new WorkInput(i * ChopSession.Beat, WorkInputKind.Press)).ToList(), chop.Needed * ChopSession.Beat + 2);
+        Assert.True(chop.Done);
+        chop.Finish(sim);
+        Assert.True(sim.World.Get<Carrying>(me).Item.IsNull, "nothing came into the hands");
+        var pack = sim.StoredIn(sim.PackOf(me)).Select(e => sim.World.Get<Thing>(e).Def.Name).ToList();
+        Assert.Contains("ChoppedCabbage", pack);
+        Assert.DoesNotContain("Cabbage", pack);
+    }
+
+    [Fact]
+    public void ThePanelsStepsAreTakenByName()
+    {
+        // Three raw meat in the pack: the key would pack them, but chopping can be asked for.
+        var (sim, me, table) = PrepKitchen(("Meat", 3), ("Flour", 2));
+        Assert.Equal(PrepStep.Pack, Rations.NextStep(sim, me));
+        sim.ApplyNow(new PrepCommand(me, table, PrepStep.Chop));
+        Assert.IsType<ChopSession>(sim.World.Get<WorkSession>(me));
+        WorkSystem.Stop(sim, me, null);
+        sim.ApplyNow(new PrepCommand(me, table, PrepStep.Knead));
+        Assert.IsType<KneadSession>(sim.World.Get<WorkSession>(me));
     }
 
     [Fact]
@@ -605,6 +636,22 @@ public class CookPassTests
         sim.ApplyNow(new AvatarWorkCommand(me, false));
         Assert.True(sim.World.Get<Carrying>(me).Item.IsNull, "the meat went on");
         return (sim, me, spit, Assert.IsType<RoastSession>(sim.World.Get<WorkSession>(me)));
+    }
+
+    [Fact]
+    public void MeatInThePackGoesOnTheSpit()
+    {
+        var (sim, me, _) = InnKitchenTests.Kitchen();
+        var spit = sim.SpawnStructure(sim.Thing("Spit"), C(10, 10));
+        sim.RebuildDerivedIfNeeded();
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Meat"), 2));
+        Assert.True(sim.World.Get<Carrying>(me).Item.IsNull);
+        var at = sim.World.Get<Thing>(spit).Cell;
+        Assert.Equal("Put the meat on the spit", AvatarSystem.ActionAt(sim, me, at).Label);
+        sim.ApplyNow(new AvatarWorkCommand(me, true, at));
+        sim.ApplyNow(new AvatarWorkCommand(me, false));
+        Assert.Equal(2, sim.World.Get<SpitRoast>(spit).Count);
+        Assert.DoesNotContain(sim.StoredIn(sim.PackOf(me)), e => sim.World.Get<Thing>(e).Def.Name == "Meat");
     }
 
     private static Entity Lifted(Simulation sim, Entity me, RoastSession s, int turnEvery, int turns)

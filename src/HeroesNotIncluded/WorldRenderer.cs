@@ -1614,7 +1614,8 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         if (w.TryGet<Fueled>(e, out var fuel) && def.Building?.Fuel is { } props)
         {
             var frac = Math.Clamp(fuel.Fuel / props.Capacity, 0, 1);
-            if (def.Model != null && fuel.Fuel > 0)
+            // A forge fired only for work (OnDemand) shows flames only while it's burning.
+            if (def.Model != null && sim.Burning(e))
             {
                 // A modelled fire: flickering flames over the logs.
                 var t = _anim.Clock * 7f + e.Index;
@@ -1649,6 +1650,16 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             var along = PropModel.Rotate(new float3(0, 1, 0), thing.Facing);
             for (var k = 0; k < pieces.Count; k++)
                 Billboard(S(pieces[k].Sprite), top + along * ((k + 0.5f) / Math.Max(3, pieces.Count) * 2f - 0.5f), 0.38f, 0.38f, Rgba.White, level);
+        }
+        // Meat on a spit, over the rod: browner as it roasts (how it looks is plain to anyone).
+        if (def.Building is { Spit: true } && w.TryGet<Sim.Work.SpitRoast>(e, out var roast) && !roast.Empty)
+        {
+            var brown = 0f;
+            foreach (var b in roast.Brown)
+                brown += b;
+            var k = Math.Clamp(brown / roast.Brown.Length / 1.3f, 0f, 1f);
+            var crust = Rgba.Pack(1f - 0.45f * k, 1f - 0.6f * k, 1f - 0.75f * k);
+            Billboard(S(sim.Defs.Thing("Meat").Sprite), floor + new float3(0, 0, 0.36f * WorldScale.HeightOf(def)), 0.42f, 0.36f, crust, level);
         }
         if (def.Building is { Hatch: true })
         {

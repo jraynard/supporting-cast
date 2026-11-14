@@ -186,6 +186,7 @@ public sealed partial class VillageGame
                 DrawPotPanel();
                 DrawSpitPanel();
                 DrawOvenPanel();
+                DrawPrepPanel();
                 DrawBarPanel();
                 return;
         }

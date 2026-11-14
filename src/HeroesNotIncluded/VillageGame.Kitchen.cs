@@ -3,6 +3,7 @@ using Narsil.Sim.Core;
 using Narsil.Ui;
 using HeroesNotIncluded.Sim;
 using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Ecs;
 using HeroesNotIncluded.Sim.Systems;
 using HeroesNotIncluded.Sim.Work;
 using HeroesNotIncluded.Ui;
@@ -252,56 +253,99 @@ public sealed partial class VillageGame
         EndWork();
     }
 
-    /// <summary>The oven beside you, between times: whether there's bread in, and what it smells of.</summary>
-    private void DrawOvenPanel()
+    /// <summary>A station in reach of your character (the 3x3 round them), or Entity.Null.</summary>
+    private Entity StationBeside(Func<Entity, bool> isOne)
     {
         if (!HasAvatar)
-            return;
+            return Entity.Null;
         var at = _sim.World.Get<Position>(_avatar).Cell;
         var map = _sim.Map;
-        KnownOven? seen = null;
-        for (var dy = -1; dy <= 1 && seen == null; dy++)
-        for (var dx = -1; dx <= 1 && seen == null; dx++)
+        for (var dy = -1; dy <= 1; dy++)
+        for (var dx = -1; dx <= 1; dx++)
         {
             var cell = new int3(at.X + dx, at.Y + dy, at.Z);
-            if (map.InBounds(cell) && map.Structure[map.Idx(cell)] is { IsNull: false } st && Baking.IsOven(_sim, st))
-                seen = View.Oven(st);
+            if (map.InBounds(cell) && map.Structure[map.Idx(cell)] is { IsNull: false } st && isOne(st))
+                return st;
         }
-        if (seen is not { Loaves: > 0 } o)
+        return Entity.Null;
+    }
+
+    /// <summary>The oven beside you, between times: whether there's bread in and what it smells of, or how to start.</summary>
+    private void DrawOvenPanel()
+    {
+        if (StationBeside(e => Baking.IsOven(_sim, e)) is not { IsNull: false } oven || View.Oven(oven) is not { } o)
             return;
         _hud.Next(Anchor.Bottom);
-        Panel.Begin("The oven###oven", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
+        Panel.Begin("The bread oven###oven", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
         _hud.Took();
-        TextC(o.Smell == "burning!" ? Theme.Bad : Theme.Text, $"Bread's in. It smells of {o.Smell}.");
-        TextC(Theme.Dim, Controls.Keys("~F~ to stand by it and take it out."));
+        if (o.Loaves > 0)
+        {
+            TextC(o.Smell == "burning!" ? Theme.Bad : Theme.Text, $"Bread's in. It smells of {o.Smell}.");
+            TextC(Theme.Dim, Controls.Keys("~F~ to stand by it and take it out."));
+        }
+        else if (!o.Lit)
+            TextC(Theme.Warn, Controls.Keys("Cold. Feed it wood (~F~ with wood on you) before anything goes in."));
+        else if (!Baking.DoughIn(_sim, _avatar).IsNull)
+            TextC(Theme.Good, Controls.Keys("~F~ puts your dough in. Then it's all in the smell: out on a golden crust."));
+        else
+            Wrapped($"Empty. Bread starts at the prep table: knead {Baking.FlourPerDough} flour into dough, let it rise an hour or two, then bring it here.");
         Panel.End();
     }
 
-    /// <summary>The spit beside you, between times: what's on it and how it looks.</summary>
+    /// <summary>The spit beside you, between times: what's on it and how it looks, or how to start.</summary>
     private void DrawSpitPanel()
     {
-        if (!HasAvatar)
-            return;
-        var at = _sim.World.Get<Position>(_avatar).Cell;
-        var map = _sim.Map;
-        KnownSpit? seen = null;
-        for (var dy = -1; dy <= 1 && seen == null; dy++)
-        for (var dx = -1; dx <= 1 && seen == null; dx++)
-        {
-            var cell = new int3(at.X + dx, at.Y + dy, at.Z);
-            if (map.InBounds(cell) && map.Structure[map.Idx(cell)] is { IsNull: false } st && Roasting.IsSpit(_sim, st))
-                seen = View.Spit(st);
-        }
-        if (seen is not { Pieces: > 0 } p)
+        if (StationBeside(e => Roasting.IsSpit(_sim, e)) is not { IsNull: false } spit || View.Spit(spit) is not { } p)
             return;
         _hud.Next(Anchor.Bottom);
         Panel.Begin("The spit###spit", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
         _hud.Took();
-        Wrapped($"{p.Pieces} meat on the spit: {string.Join(", ", p.Sides.Select(Roasting.CrustLabel))}.");
-        if (p.Sides[p.Facing] >= Crust.Dark)
-            TextC(Theme.Bad, "The side to the fire is going dark.");
-        TextC(Theme.Dim, Controls.Keys("~F~ to turn it, or lift it off."));
+        if (p.Pieces > 0)
+        {
+            Wrapped($"{p.Pieces} meat on the spit: {string.Join(", ", p.Sides.Select(Roasting.CrustLabel))}.");
+            if (p.Sides[p.Facing] >= Crust.Dark)
+                TextC(Theme.Bad, "The side to the fire is going dark.");
+            TextC(Theme.Dim, Controls.Keys("~F~ to turn it, or lift it off."));
+        }
+        else if (!p.Lit)
+            TextC(Theme.Warn, "Nothing on it, and the fire beside it is out: light the hearth first.");
+        else if (!Roasting.Joint(_sim, _avatar).IsNull)
+            TextC(Theme.Good, Controls.Keys("~F~ puts your meat on (up to four). Turn it so every side goes golden."));
+        else
+            Wrapped("Nothing on it. Bring raw meat from the larder and put it on to roast.");
         Panel.End();
+    }
+
+    /// <summary>The prep table beside you: what you could do there with what's on you, each by name.</summary>
+    private void DrawPrepPanel()
+    {
+        if (StationBeside(e => Rations.IsPrepTable(_sim, e)) is not { IsNull: false } table)
+            return;
+        _hud.Next(Anchor.Bottom);
+        Panel.Begin("The prep table###prep", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
+        _hud.Took();
+        var chop = Rations.Choppable(_sim, _avatar);
+        var flour = !Baking.FlourIn(_sim, _avatar).IsNull;
+        var portions = Rations.PortionsOn(_sim, _avatar);
+        PrepButton(table, PrepStep.Chop, chop.IsNull ? "Chop" : $"Chop the {_sim.World.Get<Thing>(chop).Def.Label}", !chop.IsNull,
+            "Raw meat, fish or cabbage, cut on the knife's beat. Chopped food cooks quicker.");
+        ImGui.SameLine(0, 6);
+        PrepButton(table, PrepStep.Knead, "Knead dough", flour, $"{Baking.FlourPerDough} flour, pushed from either side on the beat. Then let it rise and bake it.");
+        ImGui.SameLine(0, 6);
+        PrepButton(table, PrepStep.Pack, "Pack rations", portions >= Rations.Portions, $"{Rations.Portions} portions of any food, wrapped and tied: sold to parties for the road.");
+        if (chop.IsNull && !flour && portions < Rations.Portions)
+            TextC(Theme.Dim, "Bring raw food, flour or a few portions of food from the larder.");
+        Panel.End();
+    }
+
+    private void PrepButton(Entity table, PrepStep step, string label, bool ready, string tip)
+    {
+        ImGui.BeginDisabled(!ready);
+        if (ImGui.SmallButton(label))
+            Issue(new PrepCommand(_avatar, table, step));
+        ImGui.EndDisabled();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            Tip(tip);
     }
 
     /// <summary>Chopping on the knife's beat: the knife rising and falling, the cuts so far, and what the last one did.</summary>

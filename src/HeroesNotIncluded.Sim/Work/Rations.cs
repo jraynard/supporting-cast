@@ -1,5 +1,6 @@
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Systems;
 
 namespace HeroesNotIncluded.Sim.Work;
@@ -189,48 +190,91 @@ public static class Rations
     public static bool IsPrepTable(Simulation sim, Entity e) =>
         !e.IsNull && sim.World.IsAlive(e) && sim.World.TryGet<Thing>(e, out var t) && t.Def.Building is { PrepTable: true } && !sim.World.Has<Construction>(e);
 
-    /// <summary>Raw food in hand that the prep table's knife can chop, or Entity.Null.</summary>
-    public static Entity Choppable(Simulation sim, Entity cook)
-    {
-        var held = sim.World.Get<Carrying>(cook).Item;
-        return !held.IsNull && sim.World.IsAlive(held) && sim.World.Get<Thing>(held).Def.ChopsInto != null ? held : Entity.Null;
-    }
+    /// <summary>Raw food on the cook (in hand, else in the pack) that the prep table's knife can chop, or Entity.Null.</summary>
+    public static Entity Choppable(Simulation sim, Entity cook) =>
+        AvatarSystem.SupplyItem(sim, cook, e => sim.World.Get<Thing>(e).Def.ChopsInto != null);
 
     /// <summary>
-    /// What the work key does at a prep table: chop the raw food in your hand, else pack rations if
-    /// you have the food. Null if nothing. (To pack with something choppable in hand, stow it first.)
+    /// What the work key does at a prep table: chop or knead what's in your hand; else pack rations
+    /// if you have the food on you; else chop or knead from the pack. The table's panel offers each
+    /// by name (<see cref="PrepStep"/>), so the key's choice never stands in the way.
     /// </summary>
+    public static PrepStep NextStep(Simulation sim, Entity cook)
+    {
+        var held = sim.World.Get<Carrying>(cook).Item;
+        var chop = Choppable(sim, cook);
+        var flour = Baking.FlourIn(sim, cook);
+        if (!chop.IsNull && chop == held)
+            return PrepStep.Chop;
+        if (!flour.IsNull && flour == held)
+            return PrepStep.Knead;
+        if (PortionsOn(sim, cook) >= Portions)
+            return PrepStep.Pack;
+        return !chop.IsNull ? PrepStep.Chop : !flour.IsNull ? PrepStep.Knead : PrepStep.Next;
+    }
+
+    /// <summary>The work key's prompt at a prep table (<see cref="NextStep"/>), null if there's nothing on you to work.</summary>
     public static string? StepAt(Simulation sim, Entity cook, Entity station)
     {
         if (!IsPrepTable(sim, station))
             return null;
-        if (Choppable(sim, cook) is { IsNull: false } food)
-            return $"Chop the {sim.World.Get<Thing>(food).Def.Label}";
-        if (!Baking.FlourIn(sim, cook).IsNull)
-            return "Knead some dough";
-        return PortionsOn(sim, cook) >= Portions ? "Pack rations for the road" : null;
+        return NextStep(sim, cook) switch
+        {
+            PrepStep.Chop => $"Chop the {sim.World.Get<Thing>(Choppable(sim, cook)).Def.Label}",
+            PrepStep.Knead => "Knead some dough",
+            PrepStep.Pack => "Pack rations for the road",
+            _ => null,
+        };
     }
 
-    /// <summary>Start chopping or packing at the table, or say why not.</summary>
-    public static void Start(Simulation sim, Entity cook, Entity table)
+    /// <summary>Chop, knead or pack at the table (the key's choice, or one asked for by name), or say why not.</summary>
+    public static void Start(Simulation sim, Entity cook, Entity table, PrepStep step = PrepStep.Next)
     {
         if (!IsPrepTable(sim, table) || !AvatarSystem.InReach(sim, sim.World.Get<Position>(cook).Cell, table))
             return;
-        if (Choppable(sim, cook) is { IsNull: false } food)
+        var cell = sim.World.Get<Thing>(table).Cell;
+        if (step == PrepStep.Next && (step = NextStep(sim, cook)) == PrepStep.Next)
         {
-            WorkSystem.Start(sim, cook, ChopSession.For(sim, table, food));
+            sim.Messages.Add(MessageKind.Info, $"Bring raw food to chop, {Baking.FlourPerDough} flour to knead, or {Portions} portions of food to pack: the larder has them.", cell);
             return;
         }
-        if (Baking.FlourIn(sim, cook) is { IsNull: false } flour)
+        switch (step)
         {
-            WorkSystem.Start(sim, cook, new KneadSession { Table = table, Flour = flour });
-            return;
+            case PrepStep.Chop:
+                if (Choppable(sim, cook) is { IsNull: false } food)
+                    WorkSystem.Start(sim, cook, ChopSession.For(sim, table, food));
+                else
+                    sim.Messages.Add(MessageKind.Info, "Nothing on you to chop: bring raw meat, fish or cabbage from the larder.", cell);
+                return;
+            case PrepStep.Knead:
+                if (Baking.FlourIn(sim, cook) is { IsNull: false } flour)
+                    WorkSystem.Start(sim, cook, new KneadSession { Table = table, Flour = flour });
+                else
+                    sim.Messages.Add(MessageKind.Info, $"Dough takes {Baking.FlourPerDough} flour: there's some in the larder.", cell);
+                return;
+            case PrepStep.Pack:
+                if (PortionsOn(sim, cook) >= Portions)
+                    WorkSystem.Start(sim, cook, new PackSession { Table = table });
+                else
+                    sim.Messages.Add(MessageKind.Info, $"A bundle takes {Portions} portions of food: bring them from the larder.", cell);
+                return;
         }
-        if (PortionsOn(sim, cook) < Portions)
-        {
-            sim.Messages.Add(MessageKind.Info, $"A bundle takes {Portions} portions of food: bring them from the larder.", sim.World.Get<Thing>(table).Cell);
-            return;
-        }
-        WorkSystem.Start(sim, cook, new PackSession { Table = table });
     }
 }
+
+/// <summary>What to do at a prep table: the key's choice, or chopping, kneading or packing by name.</summary>
+public enum PrepStep : byte { Next, Chop, Knead, Pack }
+
+/// <summary>The work key at a prep table, or one of its steps by name (<see cref="Rations.Start"/>).</summary>
+public sealed record PrepCommand(Entity Avatar, Entity Table, PrepStep Step) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (!InventoryCommand.Ready(sim, Avatar) || !Rations.IsPrepTable(sim, Table) || !Enum.IsDefined(Step))
+            return;
+        Rations.Start(sim, Avatar, Table, Step);
+    }
+}
+

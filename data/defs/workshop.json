@@ -366,6 +366,18 @@
     },
     {
       "name": "Forge", "category": "Building", "sprite": "buildings/forge",
+      // A smith's side hearth: a waist-high brick bed, the coals and the fire open on top (seen
+      // from any side), a narrow chimney at its back (-Y).
+      "fireAt": [0.5, 0.6, 0.48], "fireSize": 0.8, "smokeAt": [0.5, 0.2, 1.5],
+      "model": [
+        { "min": [0.04, 0.04, 0], "max": [0.96, 0.96, 0.4], "top": "buildings/wall_brick", "side": "buildings/wall_brick" },
+        { "min": [0.04, 0.30, 0.4], "max": [0.14, 0.96, 0.5], "top": "buildings/wall_brick", "side": "buildings/wall_brick" },
+        { "min": [0.86, 0.30, 0.4], "max": [0.96, 0.96, 0.5], "top": "buildings/wall_brick", "side": "buildings/wall_brick" },
+        { "min": [0.14, 0.86, 0.4], "max": [0.86, 0.96, 0.5], "top": "buildings/wall_brick", "side": "buildings/wall_brick" },
+        { "min": [0.14, 0.30, 0.4], "max": [0.86, 0.86, 0.44], "top": "props/coal", "side": "props/coal" },
+        { "min": [0.04, 0.04, 0.4], "max": [0.96, 0.30, 0.62], "top": "buildings/wall_brick", "side": "buildings/wall_brick", "front": "props/hearth_soot" },
+        { "min": [0.30, 0.04, 0.62], "max": [0.70, 0.36, 1.5], "top": "props/hearth_soot", "side": "buildings/wall_brick" }
+      ],
       "description": "A brick hearth with bellows. Charcoal brings it near iron's heat, slowly; a dragon breathing into it gets it there fast.",
       "maxHp": 400, "flammability": 0,
       "building": {
