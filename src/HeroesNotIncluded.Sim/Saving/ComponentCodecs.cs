@@ -139,6 +139,7 @@ internal static class ComponentCodecs
         Codec("PlayerCharacter", (w, p) => w.String(p.PlayerId.ToString("N")), r => new PlayerCharacter { PlayerId = Guid.ParseExact(r.String(), "N") }),
         Codec("Trade", (w, t) => w.Def(t.Def), r => new Trade { Def = r.Def<TradeDef>() }),
         Codec<Work.WorkSession>("WorkSession", Work.WorkSession.Write, Work.WorkSession.Read),
+        Codec<Combat.Trail>("Trail", Combat.Trails.Write, Combat.Trails.Read),
         Codec("WorkInput", (w, i) =>
         {
             w.Int(i.Step);
@@ -174,10 +175,12 @@ internal static class ComponentCodecs
             w.Long(b.Impact);
             w.Int((int)b.Response);
             w.Float(b.Aim);
+            w.Int(b.Lag);
         }, r => new Combat.Windup
         {
             Target = r.Entity(), Attack = Math.Max(0, r.Int()), Heavy = r.Bool(), Start = r.Long(), Impact = r.Long(),
-            Response = (Combat.BlowResponse)Math.Clamp(r.Int(), 0, 2), Aim = r.Float(),
+            Response = (Combat.BlowResponse)Math.Clamp(r.Int(), 0, 3), Aim = r.Float(),
+            Lag = Math.Clamp(r.Int(), 0, Combat.Blows.MaxStampAge),
         }),
         Codec("FreeMover", (w, m) =>
         {
@@ -519,26 +522,18 @@ internal static class ComponentCodecs
         Codec("AwaitingSettler", (w, a) => w.Long(a.ArriveTick), r => new AwaitingSettler { ArriveTick = r.Long() }),
         Codec("Avatar", (w, a) =>
         {
-            w.Int(a.MoveDir.X);
-            w.Int(a.MoveDir.Y);
             w.Bool(a.WorkHeld);
             w.Int(a.Facing.X);
             w.Int(a.Facing.Y);
             w.Int((int)a.Chain);
-            w.Bool(a.HasPending);
-            w.Int(a.PendingDir.X);
-            w.Int(a.PendingDir.Y);
-            w.Int3(a.PendingAt);
         }, r =>
         {
-            var a = new Avatar
-            {
-                MoveDir = new int2(r.Int(), r.Int()), WorkHeld = r.Bool(), Facing = new int2(r.Int(), r.Int()),
-                Chain = (Systems.AvatarActionKind)r.Int(), // chaining came with format 7
-            };
-            a.HasPending = r.Bool();
-            a.PendingDir = new int2(r.Int(), r.Int());
-            a.PendingAt = r.Int3();
+            // Before format 15 players walked cell to cell: a held direction, and a turn scheduled for a cell.
+            if (r.Version < 15)
+                (_, _) = (r.Int(), r.Int());
+            var a = new Avatar { WorkHeld = r.Bool(), Facing = new int2(r.Int(), r.Int()), Chain = (Systems.AvatarActionKind)r.Int() };
+            if (r.Version < 15)
+                (_, _, _, _) = (r.Bool(), r.Int(), r.Int(), r.Int3());
             return a;
         }),
         Codec("BedOwner", (w, b) => w.Entity(b.Bed), r => new BedOwner { Bed = r.Entity() }),

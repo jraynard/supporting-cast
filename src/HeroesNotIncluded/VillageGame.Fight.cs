@@ -11,53 +11,36 @@ using HeroesNotIncluded.Ui;
 namespace HeroesNotIncluded;
 
 // A line over the hotbar while you're in a fight, saying how to fight: nothing else does, and the
-// first raid shouldn't be where you find out F swings your sword. Raiders and predators are known
+// first raid shouldn't be where you find out R draws your sword. Raiders and predators are known
 // for what they are on sight (their names are drawn hostile), so this only asks what you can see.
 public sealed partial class VillageGame
 {
-    /// <summary>The guard the sim was last told of, and a Shift+F press spent on a heavy blow (so F's own swing waits for its release).</summary>
-    private bool _guardSent, _heavyKeyHeld;
+    /// <summary>The guard the sim was last told of.</summary>
+    private bool _guardSent;
 
     /// <summary>
-    /// The fight's keys (<see cref="Sim.Combat.Blows"/>): hold V (or the right button with a foe
-    /// near) to guard, raised just as a blow lands to parry it; Space to dodge; Shift+F for a heavy
-    /// blow at the foe beside you. Each is stamped with the tick it was pressed on here, so in
-    /// co-op a parry counts from when you pressed it, not when it arrived.
+    /// The fight's keys (<see cref="Sim.Combat.Blows"/>): R draws or sheathes your weapon; drawn,
+    /// hold Q (or V) to guard, raised just as a blow lands to parry it, and Space dashes clear. Each
+    /// is stamped with the tick it was pressed on here, so in co-op a parry counts from when you
+    /// pressed it, not when it arrived. The blows themselves are the mouse's (<see cref="HandleFreeMouse"/>).
     /// </summary>
     private void HandleCombatKeys(Input input)
     {
         var tick = _sim.Clock.Tick;
-        var inFight = NearestFoe() != null;
-        var free = FreeMoving;
-        // R draws or sheathes your weapon (free): combat mode, or the mouse walks and acts as ever.
-        if (free && input.WasKeyPressed(GlfwKey.R) && _tool == ToolKind.Select)
+        if (input.WasKeyPressed(GlfwKey.R) && _tool == ToolKind.Select)
             Issue(new DrawWeaponCommand(_avatar, !WeaponDrawn));
-        // Q (or V) holds a guard, free only with a weapon out; on the grid the right button does too,
-        // in a fight. Free, the right button is the heavy blow.
-        var guard = (!free || WeaponDrawn) && (input.IsKeyDown(GlfwKey.Q) || input.IsKeyDown(GlfwKey.V))
-            || (!free && inFight && input.IsMouseDown(MouseButton.Right) && !ImGui.GetIO().WantCaptureMouse);
+        var guard = WeaponDrawn && (input.IsKeyDown(GlfwKey.Q) || input.IsKeyDown(GlfwKey.V));
         if (guard != _guardSent)
         {
-            Issue(new CombatInputCommand(_avatar, guard ? CombatInput.GuardUp : CombatInput.GuardDown, tick));
+            Issue(new GuardCommand(_avatar, guard, tick));
             _guardSent = guard;
         }
-        if (input.WasKeyPressed(GlfwKey.Space))
+        if (WeaponDrawn && input.WasKeyPressed(GlfwKey.Space))
         {
-            if (free)
-            {
-                var (ax, ay, az) = Here();
-                Issue(new DodgeCommand(_avatar, _wish.X, _wish.Y, tick, ax, ay, az));
-                if (_coop != null)
-                    _freePredictor.Dash(_sim, _avatar, _wish);
-            }
-            else
-                Issue(new CombatInputCommand(_avatar, CombatInput.Dodge, tick));
-        }
-        var shift = input.IsKeyDown(GlfwKey.LeftShift) || input.IsKeyDown(GlfwKey.RightShift);
-        if (!free && shift && input.WasKeyPressed(GlfwKey.F) && FoeBeside(_sim.World.Get<Position>(_avatar).Cell, _sim.World.Get<Avatar>(_avatar).Facing) is { Kind: AvatarActionKind.Hunt } strike)
-        {
-            Issue(new CombatInputCommand(_avatar, CombatInput.Heavy, tick, strike.Target));
-            _heavyKeyHeld = true;
+            var (ax, ay, az) = Here();
+            Issue(new DodgeCommand(_avatar, _wish.X, _wish.Y, tick, ax, ay, az));
+            if (_coop != null)
+                _freePredictor.Dash(_sim, _avatar, _wish);
         }
     }
 
@@ -69,13 +52,11 @@ public sealed partial class VillageGame
         if (!HasAvatar || !(InRound || ArenaFoe != null) || !_sim.World.Get<Creature>(_avatar).Able || NearestFoe() is not { } foe)
             return;
         var w = _sim.World;
-        var at = w.Get<Position>(_avatar).Cell;
-        var beside = Sim.Ai.Pathfinder.Touches(at, w.Get<Position>(foe).Cell);
         var armed = w.TryGet<Equipment>(_avatar, out var eq) && w.IsAlive(eq.Weapon);
         _hud.Next(Anchor.Bottom);
         Panel.Begin("##fight-hint", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs);
         _hud.Took();
-        if (FreeMoving && !WeaponDrawn)
+        if (!WeaponDrawn)
         {
             TextC(Theme.Warn, armed ? "Press R to draw your weapon." : "Press R to put up your fists.");
             ImGui.SameLine(0, Gui.S(10));
@@ -83,36 +64,21 @@ public sealed partial class VillageGame
             Panel.End();
             return;
         }
-        if (FreeMoving)
-        {
-            TextC(Theme.Warn, armed ? "Left click strikes the way you aim, right click swings heavy." : "Fists only: left click to strike.");
-            ImGui.SameLine(0, Gui.S(10));
-            TextC(Theme.Dim, Sim.Combat.Blows.IsDragon(_sim, foe)
-                ? "Hold Q to guard (it takes only some of it). Space dashes clear: late, against a dragon."
-                : "Hold Q to guard, facing the blow; raise it as it lands to parry. Space dashes clear.");
-            Panel.End();
-            return;
-        }
-        if (!armed)
-            TextC(Theme.Warn, "You've nothing to fight with: get a weapon from the muster rack, or get indoors.");
-        else if (beside)
-            TextC(Theme.Warn, $"F strikes at {w.Get<Creature>(foe).Name}, Shift+F swings heavy.");
-        else
-            TextC(Theme.Warn, "Close in, then F to strike.");
+        TextC(Theme.Warn, armed ? "Left click strikes the way you aim, right click swings heavy." : "Fists only: left click to strike.");
         ImGui.SameLine(0, Gui.S(10));
         var shoots = w.TryGet<Equipment>(foe, out var theirs) && w.IsAlive(theirs.Weapon) && w.Get<Thing>(theirs.Weapon).Def.Weapon is { Ranged: true };
         TextC(Theme.Dim, Sim.Combat.Blows.IsDragon(_sim, foe)
-            ? "Its jaws and fire can't be parried: a guard (V) takes only some of it. Dodge (Space) late, just as the ring closes."
+            ? "Hold Q to guard (it takes only some of it). Space dashes clear: late, against a dragon."
             : shoots
-                ? "Arrows can't be parried: guard (V or the right button) or dodge (Space) as the ring closes."
-                : "Hold V or the right button to guard: raise it as their ring closes to parry. Space dodges.");
+                ? "Arrows can't be parried: hold Q to guard, facing them, or Space to dash clear."
+                : "Hold Q to guard, facing the blow; raise it as it lands to parry. Space dashes clear.");
         Panel.End();
     }
 
-    /// <summary>Your character moves off the grid (<see cref="FreeMover"/>: the arena, and the village with the setting).</summary>
+    /// <summary>Your character's moving freely (<see cref="FreeMover"/>): always, once the sim's had its first tick.</summary>
     private bool FreeMoving => HasAvatar && _sim.World.Has<FreeMover>(_avatar);
 
-    /// <summary>Free, with your weapon drawn: combat mode, where the mouse fights.</summary>
+    /// <summary>Weapon drawn: combat mode, where the mouse fights.</summary>
     private bool WeaponDrawn => FreeMoving && _sim.World.Get<FreeMover>(_avatar).Drawn;
 
     /// <summary>Where the keys ask to go (on the map) and where the mouse points, as last told to the sim.</summary>
@@ -130,7 +96,7 @@ public sealed partial class VillageGame
         _coop != null && _freePredictor.Active ? (_freePredictor.Pos.X, _freePredictor.Pos.Y, _freePredictor.Level) : (float.NaN, float.NaN, 0);
 
     /// <summary>
-    /// Free movement's keys and mouse (<see cref="FreeMoveSystem"/>): WASD to move, relative to
+    /// Movement's keys and mouse (<see cref="FreeMoveSystem"/>): WASD to move, relative to
     /// the camera; the mouse aims (your character faces it at once, here, before the sim hears).
     /// Changes are sent as they matter: the keys at once, the aim when it's turned a little.
     /// </summary>
@@ -163,7 +129,7 @@ public sealed partial class VillageGame
     }
 
     /// <summary>
-    /// Free movement's mouse, weapon drawn: the left button a quick blow the way you aim, the right a
+    /// The mouse, weapon drawn: the left button a quick blow the way you aim, the right a
     /// heavy one. True if it took the click; sheathed, clicks walk and act as ever.
     /// </summary>
     private bool HandleFreeMouse(Input input)
@@ -175,7 +141,7 @@ public sealed partial class VillageGame
         if (light || heavy)
         {
             var (ax, ay, az) = Here();
-            Issue(new AttackCommand(_avatar, heavy, _aim, ax, ay, az));
+            Issue(new AttackCommand(_avatar, heavy, _aim, ax, ay, az, _sim.Clock.Tick));
         }
         return light || heavy || input.IsMouseDown(MouseButton.Left) || input.IsMouseDown(MouseButton.Right);
     }

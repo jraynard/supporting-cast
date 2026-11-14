@@ -71,9 +71,9 @@ public sealed class WorkSystem : ISimSystem
         if (w.TryGet<Avatar>(worker, out _))
         {
             ref var avatar = ref w.Get<Avatar>(worker);
-            avatar.MoveDir = int2.Zero;
             avatar.WorkHeld = false;
-            avatar.HasPending = false;
+            if (w.Has<Combat.FreeMover>(worker))
+                w.Get<Combat.FreeMover>(worker).Wish = float2.Zero;
         }
         if (w.TryGet<WorkSession>(worker, out var before))
             before.Interrupted(sim);

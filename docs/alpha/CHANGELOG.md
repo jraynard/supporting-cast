@@ -4,6 +4,23 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+## 0.1.0-playtest.7
+
+One way to fight, everywhere.
+
+- You always move freely now: the Free movement setting is gone, because it's simply how you move.
+  Old saves load and pick it up.
+- F no longer starts a fight (or a hunt). Draw your weapon with R and use the mouse: aim, left
+  click to strike, right click to swing heavy, hold Q to guard, Space to dash clear. Hunting is the
+  same: draw your bow, aim at the hare, click. F still butchers what you bring down.
+- Raiders swing at you at their full pace now, not held back for you as before.
+- Blows land where they reach, for everyone: no more dice for whether a hit connects. Townsfolk
+  and raiders slip some blows (the more skilled, the more often), and armour takes its share of
+  every hit that lands.
+- In co-op a swing is judged against where everyone was when you pressed it, so what looked in
+  reach on your screen is.
+- Walking diagonally onto stairs climbs them.
+
 ## 0.1.0-playtest.6
 
 Fighting, reworked: you can see a blow coming now, and do something about it.

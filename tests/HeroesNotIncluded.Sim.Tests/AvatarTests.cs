@@ -49,7 +49,7 @@ public class AvatarTests
     }
 
     [Fact]
-    public void HeldDirectionWalksStepByStepAndStopsOnRelease()
+    public void HeldDirectionWalksAndStopsOnRelease()
     {
         var sim = Warm();
         var me = Avatar(sim, C(5, 5));
@@ -60,75 +60,11 @@ public class AvatarTests
         Assert.True(moved.X >= 9, $"walked east, at {moved}");
 
         sim.Enqueue(new AvatarMoveCommand(me, default));
-        sim.TickMany(SimClock.TicksPerSecond); // finishes the step it was on
+        sim.TickMany(SimClock.TicksPerSecond); // eases to a stop
         var stopped = Cell(sim, me);
         sim.TickMany(SimClock.TicksPerSecond * 2);
         Assert.Equal(stopped, Cell(sim, me));
         Assert.Equal(new int2(1, 0), sim.World.Get<Avatar>(me).Facing);
-    }
-
-    [Fact]
-    public void ALateStopLandsOnTheCellNamed()
-    {
-        var sim = Warm();
-        var me = Avatar(sim, C(5, 5));
-        sim.Enqueue(new AvatarMoveCommand(me, new int2(1, 0)));
-        sim.TickMany(SimClock.TicksPerSecond / 2);
-        // A co-op client let go two cells ahead of where the sim has got to (it predicts its walk).
-        var target = Cell(sim, me) + new int3(2, 0, 0);
-        sim.Enqueue(new AvatarMoveCommand(me, default, target));
-        sim.TickMany(SimClock.TicksPerSecond * 4);
-        Assert.Equal(target, Cell(sim, me));
-        Assert.False(sim.World.Get<Avatar>(me).HasPending);
-    }
-
-    [Fact]
-    public void ATurnWaitsForItsCell()
-    {
-        var sim = Warm();
-        var me = Avatar(sim, C(5, 5));
-        sim.Enqueue(new AvatarMoveCommand(me, new int2(1, 0)));
-        sim.TickMany(2);
-        var corner = Cell(sim, me) + new int3(3, 0, 0);
-        sim.Enqueue(new AvatarMoveCommand(me, new int2(0, 1), corner));
-        sim.TickMany(SimClock.TicksPerSecond * 4);
-        var at = Cell(sim, me);
-        Assert.Equal(corner.X, at.X); // turned north exactly at the corner
-        Assert.True(at.Y > corner.Y + 2, $"walked north from the corner, at {at}");
-    }
-
-    [Fact]
-    public void AStopAlreadyPassedAppliesAtOnce()
-    {
-        var sim = Warm();
-        var me = Avatar(sim, C(10, 5));
-        sim.Enqueue(new AvatarMoveCommand(me, new int2(1, 0)));
-        sim.TickMany(SimClock.TicksPerSecond);
-        var behind = Cell(sim, me) - new int3(2, 0, 0);
-        sim.Enqueue(new AvatarMoveCommand(me, default, behind));
-        sim.TickMany(SimClock.TicksPerSecond);
-        var stopped = Cell(sim, me);
-        sim.TickMany(SimClock.TicksPerSecond * 2);
-        Assert.Equal(stopped, Cell(sim, me)); // stopped (a step on at most), not walking on forever
-        Assert.True(stopped.X - behind.X <= 4, $"stopped near the named cell, at {stopped}");
-    }
-
-    [Fact]
-    public void AScheduledTurnSurvivesASave()
-    {
-        var sim = Warm();
-        var me = Avatar(sim, C(5, 5));
-        sim.Enqueue(new AvatarMoveCommand(me, new int2(1, 0)));
-        sim.TickMany(2);
-        sim.Enqueue(new AvatarMoveCommand(me, default, Cell(sim, me) + new int3(3, 0, 0)));
-        sim.Tick();
-        Assert.True(sim.World.Get<Avatar>(me).HasPending);
-        AiSystem.InterruptAll(sim);
-        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
-        Assert.Equal(sim.World.Get<Avatar>(me).PendingAt, loaded.World.Get<Avatar>(me).PendingAt);
-        sim.TickMany(SimClock.TicksPerSecond * 3);
-        loaded.TickMany(SimClock.TicksPerSecond * 3);
-        Assert.Equal(sim.StateHash(), loaded.StateHash());
     }
 
     [Fact]
@@ -179,14 +115,14 @@ public class AvatarTests
     }
 
     [Fact]
-    public void FacingIsTheStepTaken()
+    public void FacingIsTheWayYouHead()
     {
         var sim = Warm();
         sim.FillBlocks(new int3(0, 8, 1), new int3(39, 8, 1));
         var me = Avatar(sim, C(5, 7));
         sim.Enqueue(new AvatarMoveCommand(me, new int2(1, 1)));
         sim.TickMany(SimClock.TicksPerSecond);
-        Assert.Equal(new int2(1, 0), sim.World.Get<Avatar>(me).Facing);
+        Assert.Equal(new int2(1, 1), sim.World.Get<Avatar>(me).Facing); // weapon sheathed, you face the way you head
     }
 
     [Fact]
@@ -246,12 +182,12 @@ public class AvatarTests
         sim.TickMany(SimClock.TicksPerSecond * 5);
         Assert.Equal(C(6, 5), Cell(sim, me));
 
-        // Any step takes you down again, and then the table is solid once more.
+        // Walking off takes you down again, and then the table is solid once more.
         sim.Enqueue(new AvatarMoveCommand(me, new int2(1, 0)));
-        sim.Tick();
+        sim.TickMany(SimClock.TicksPerSecond / 3);
         sim.Enqueue(new AvatarMoveCommand(me, default));
         sim.TickMany(SimClock.TicksPerSecond);
-        Assert.Equal(C(7, 5), Cell(sim, me));
+        Assert.True(Cell(sim, me).X >= 7, $"stepped down east, at {Cell(sim, me)}");
         Assert.False(sim.World.Has<Perched>(me));
     }
 
@@ -522,7 +458,7 @@ public class AvatarTests
         sim.Enqueue(new AvatarGoToCommand(me, C(16, 6)));
         sim.TickMany(SimClock.TicksPerSecond * 10);
         var at = Cell(sim, me);
-        Assert.True(AvatarSystem.Distance(at, C(16, 6)) <= 3 && at.X < 14, $"stopped near the walls, at {at}");
+        Assert.True(Maps.Map.Distance(at, C(16, 6)) <= 3 && at.X < 14, $"stopped near the walls, at {at}");
         Assert.Null(sim.World.Get<Mind>(me).Job);
     }
 

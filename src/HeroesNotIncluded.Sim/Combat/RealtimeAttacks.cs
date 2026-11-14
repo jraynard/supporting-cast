@@ -9,27 +9,14 @@ namespace HeroesNotIncluded.Sim.Combat;
 public sealed record ShotEvent(long Tick, float3 From, float3 To, bool Ranged, bool Hit);
 
 /// <summary>
-/// Every attack in the game: hunters shooting game, a cornered boar goring back. Uses the
-/// odds and wounds of <see cref="CombatRules"/>, on a cooldown. The target is
+/// Every blow that lands (<see cref="Blows"/>): the wound (<see cref="CombatRules.Strike"/>), the shot for
+/// the renderer, a hunt counted. The target is
 /// <see cref="Provoked"/>, and an animal (with its herd-mates nearby) stops what it's doing to react.
 /// </summary>
 public static class RealtimeAttacks
 {
     /// <summary>Herd-mates this close notice one of them getting hurt.</summary>
     public const int AlarmRadius = 14;
-
-    /// <summary>Roll an attack if it's possible from where the attacker stands. Null if it isn't.</summary>
-    public static AttackResult? TryAttack(Simulation sim, Entity attacker, Entity target, AttackDef attack,
-        float accuracyBonus = 0f, float damageScale = 1f)
-    {
-        var w = sim.World;
-        if (!CombatRules.Chance(sim, attacker, target, attack).Possible)
-            return null;
-        var wasAlive = !w.Get<Creature>(target).Dead;
-        var result = CombatRules.Resolve(sim, attacker, target, attack, accuracyBonus: accuracyBonus, damageScale: damageScale);
-        After(sim, attacker, target, attack, result, wasAlive);
-        return result;
-    }
 
     /// <summary>
     /// A blow that's reached its target lands, no roll (<see cref="CombatRules.Strike"/>, with
@@ -56,7 +43,15 @@ public static class RealtimeAttacks
         {
             sim.Wildlife.Hunted++;
             w.Remove<HuntOrder>(target);
+            // A player's kill: the hunt's practice, and word of what to do with it.
+            if (w.Has<Avatar>(attacker))
+            {
+                Systems.SkillRules.Learn(sim, attacker, Skill.Hunting, Ai.AvatarHunting.XpPerKill);
+                sim.Messages.Add(MessageKind.Good, $"{w.Get<Creature>(attacker).Name} brought down the {c.Def.Label}. Butcher it for meat and hide.", sim.LocationOf(target));
+            }
         }
+        else if (w.Has<Avatar>(attacker) && c.Def.Race == Race.Animal)
+            Systems.SkillRules.Learn(sim, attacker, Skill.Hunting, Ai.AvatarHunting.XpPerAttack);
         Provoke(sim, target, attacker);
         if (w.TryGet<Herd>(target, out var herd))
         {

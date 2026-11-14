@@ -37,7 +37,7 @@ public static class FreeFight
     public static void Join(Simulation sim, Entity e)
     {
         var w = sim.World;
-        if (!sim.FreeMove.Enabled || w.Has<FreeMover>(e))
+        if (w.Has<FreeMover>(e))
             return;
         w.Get<Mover>(e).Stop();
         w.Add(e, new FreeMover { Drawn = true, Fighting = true });

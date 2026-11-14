@@ -3,22 +3,12 @@ using HeroesNotIncluded.Sim.Components;
 
 namespace HeroesNotIncluded.Sim.Core;
 
-/// <summary>A player's move in a fight beyond F's light blows (<see cref="Blows"/>).</summary>
-public enum CombatInput : byte
-{
-    GuardUp,
-    GuardDown,
-    Dodge,
-    Heavy,
-}
-
 /// <summary>
-/// Raise or lower a guard, dodge, or wind up a heavy blow at <paramref name="Target"/>.
-/// <paramref name="At"/> is the tick the key was pressed on the player's screen: in co-op it arrives
-/// late, and a parry is all in the timing (<see cref="Blows.LatencyGrace"/>). A stamp from the
-/// future or long past is taken as now.
+/// Raise or lower a guard (<see cref="Blows.SetGuard"/>), weapon drawn. <paramref name="At"/> is the
+/// tick the key was pressed on the player's screen: in co-op it arrives late, and a parry is all in
+/// the timing (<see cref="Blows.LatencyGrace"/>). A stamp from the future or long past is taken as now.
 /// </summary>
-public sealed record CombatInputCommand(Entity Avatar, CombatInput Input, long At, Entity Target = default) : ISimCommand, IActorCommand
+public sealed record GuardCommand(Entity Avatar, bool Up, long At) : ISimCommand, IActorCommand
 {
     public Entity Actor => Avatar;
 
@@ -27,28 +17,9 @@ public sealed record CombatInputCommand(Entity Avatar, CombatInput Input, long A
         var w = sim.World;
         if (!w.IsAlive(Avatar) || !w.Has<Avatar>(Avatar) || !w.Get<Creature>(Avatar).Able)
             return;
-        var at = Blows.Stamp(sim, At);
-        switch (Input)
-        {
-            case CombatInput.GuardUp:
-                if (w.TryGet<FreeMover>(Avatar, out var free) && !free.Drawn)
-                    break; // nothing to guard with, sheathed
-                Blows.SetGuard(sim, Avatar, true, at);
-                break;
-            case CombatInput.GuardDown:
-                Blows.SetGuard(sim, Avatar, false, at);
-                break;
-            case CombatInput.Dodge:
-                Blows.Dodge(sim, Avatar, at);
-                break;
-            case CombatInput.Heavy:
-                // Only at a foe beside you, with a blow you have to strike it with.
-                if (!w.IsAlive(Target) || !w.Has<Position>(Target) || Ai.AvatarHunting.FoeAt(sim, w.Get<Position>(Target).Cell) != Target
-                    || Ai.AvatarHunting.AttackOn(sim, Avatar, Target) is not { Ranged: false } attack)
-                    return;
-                Blows.Begin(sim, Avatar, Target, attack, heavy: true);
-                break;
-        }
+        if (Up && !(w.TryGet<FreeMover>(Avatar, out var free) && free.Drawn))
+            return; // nothing to guard with, sheathed
+        Blows.SetGuard(sim, Avatar, Up, Blows.Stamp(sim, At));
     }
 }
 
@@ -68,7 +39,7 @@ public sealed record FreeMoveCommand(Entity Avatar, float WishX, float WishY, fl
     public void Apply(Simulation sim)
     {
         var w = sim.World;
-        if (!w.IsAlive(Avatar) || !w.Has<FreeMover>(Avatar))
+        if (!FreeMoveSystem.Ensure(sim, Avatar))
             return;
         var wish = Moves.Wish(WishX, WishY);
         FreeMoveSystem.Claim(sim, Avatar, AtX, AtY, AtZ, stopped: wish == float2.Zero);
@@ -81,7 +52,8 @@ public sealed record FreeMoveCommand(Entity Avatar, float WishX, float WishY, fl
 }
 
 /// <summary>A swing with free movement, light or heavy, the way the mouse points: it lands on whoever's in its sweep (<see cref="Reach"/>).</summary>
-public sealed record AttackCommand(Entity Avatar, bool Heavy, float Aim, float AtX = float.NaN, float AtY = float.NaN, int AtZ = 0)
+/// <remarks><paramref name="Pressed"/>: the tick it was pressed on the player's screen (-1 for now): it's judged against where everyone was then (<see cref="Windup.Lag"/>).</remarks>
+public sealed record AttackCommand(Entity Avatar, bool Heavy, float Aim, float AtX = float.NaN, float AtY = float.NaN, int AtZ = 0, long Pressed = -1)
     : ISimCommand, IActorCommand
 {
     public Entity Actor => Avatar;
@@ -89,12 +61,14 @@ public sealed record AttackCommand(Entity Avatar, bool Heavy, float Aim, float A
     public void Apply(Simulation sim)
     {
         var w = sim.World;
+        if (!FreeMoveSystem.Ensure(sim, Avatar))
+            return;
         // Struck from where you were on your screen (co-op), if that's near.
         FreeMoveSystem.Claim(sim, Avatar, AtX, AtY, AtZ, stopped: false);
-        if (!w.IsAlive(Avatar) || !w.TryGet<FreeMover>(Avatar, out var free) || !free.Drawn || !w.Get<Creature>(Avatar).Able || !float.IsFinite(Aim)
+        if (!w.TryGet<FreeMover>(Avatar, out var free) || !free.Drawn || !w.Get<Creature>(Avatar).Able || !float.IsFinite(Aim)
             || CombatRules.Attacks(sim, Avatar).FirstOrDefault() is not { } attack)
             return;
-        Blows.Begin(sim, Avatar, Entity.Null, attack, Heavy && !attack.Ranged, MathF.IEEERemainder(Aim, MathF.Tau));
+        Blows.Begin(sim, Avatar, Entity.Null, attack, Heavy && !attack.Ranged, MathF.IEEERemainder(Aim, MathF.Tau), Pressed < 0 ? null : Pressed);
     }
 }
 
@@ -108,7 +82,7 @@ public sealed record DodgeCommand(Entity Avatar, float DirX, float DirY, long At
     {
         var w = sim.World;
         FreeMoveSystem.Claim(sim, Avatar, AtX, AtY, AtZ, stopped: false);
-        if (!w.IsAlive(Avatar) || !w.Has<FreeMover>(Avatar) || !w.Get<Creature>(Avatar).Able)
+        if (!FreeMoveSystem.Ensure(sim, Avatar) || !w.Get<Creature>(Avatar).Able)
             return;
         var at = Blows.Stamp(sim, At);
         if (Blows.Dodge(sim, Avatar, at))
@@ -139,7 +113,7 @@ public sealed record DrawWeaponCommand(Entity Avatar, bool Drawn) : ISimCommand,
     public void Apply(Simulation sim)
     {
         var w = sim.World;
-        if (!w.IsAlive(Avatar) || !w.Has<FreeMover>(Avatar))
+        if (!FreeMoveSystem.Ensure(sim, Avatar))
             return;
         w.Get<FreeMover>(Avatar).Drawn = Drawn;
         if (!Drawn)

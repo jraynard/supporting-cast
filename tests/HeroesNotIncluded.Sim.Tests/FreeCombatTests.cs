@@ -20,7 +20,6 @@ public class FreeCombatTests
         var center = Arena.Setup(sim);
         var me = VillageRound.SpawnHero(sim, new Hero("Arin", null, null), center);
         sim.Equip(me, sim.Defs.Thing(weapon));
-        sim.FreeMove.Enable(sim);
         sim.ApplyNow(new DrawWeaponCommand(me, true));
         Place(sim, me, new float2(16.5f, 16.5f));
         sim.TickMany(SimClock.TicksPerSecond);
@@ -182,7 +181,7 @@ public class FreeCombatTests
         var attack = CombatRules.Attacks(sim, foe).First(a => !a.Ranged);
         // Guard up, facing west: the blow comes from the east, behind you.
         sim.ApplyNow(new FreeMoveCommand(me, 0f, 0f, MathF.PI));
-        sim.ApplyNow(new CombatInputCommand(me, CombatInput.GuardUp, sim.Clock.Tick));
+        sim.ApplyNow(new GuardCommand(me, true, sim.Clock.Tick));
         Assert.True(Blows.Begin(sim, foe, me, attack));
         RunTo(sim, Blows.LandsAt(sim, sim.World.Get<Windup>(foe)) + 1);
         Assert.Equal(BlowOutcome.Hit, Outcome(sim, foe));
@@ -201,7 +200,6 @@ public class FreeCombatTests
         sim.ApplyNow(new FreeMoveCommand(me, 1f, 0f, 1.2f));
         sim.TickMany(7);
         var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
-        Assert.True(loaded.FreeMove.Enabled);
         Assert.Equal(sim.World.Get<FreeMover>(me).Aim, loaded.World.Get<FreeMover>(me).Aim);
         Assert.Equal(sim.World.Get<Position>(me).Pos, loaded.World.Get<Position>(me).Pos);
     }
@@ -214,7 +212,6 @@ public class FreeCombatTests
         var (sim, center) = TestWorld.Millbrook(villagers: 3);
         var me = VillageRound.SpawnHero(sim, new Hero("Arin", null, null), center);
         sim.Equip(me, sim.Defs.Thing("ShortSword"));
-        sim.FreeMove.Enable(sim);
         sim.TickMany(10);
         return (sim, me);
     }
@@ -454,7 +451,6 @@ public class FreeCombatTests
             bots.Add(new Bots.BotPlayer(() => sim, id, c => sim.ApplyNow(c), 50 + (ulong)i));
         }
         sim.ApplyNow(new StartRoundCommand());
-        sim.FreeMove.Enable(sim);
         var players = sim.World.Query<Avatar>();
         foreach (var e in players)
             sim.Equip(e, sim.Defs.Thing("ShortSword"));
@@ -487,6 +483,45 @@ public class FreeCombatTests
         Place(sim, me, new float2(25.5f, 16.5f)); // by the east fence
         sim.ApplyNow(new FreeMoveCommand(me, 0f, 0f, 0f, 27.2f, 16.5f, z));
         Assert.Equal(25.5f, Where(sim, me).X, 3);
+    }
+
+    [Fact]
+    public void ALateSwingIsJudgedAgainstWhereTheyWereWhenItWasPressed()
+    {
+        // In co-op the swing reaches the host a moment after it was pressed: a foe in reach then,
+        // who's stepped out of it since, is still struck. Without the lag, the same swing misses.
+        foreach (var lagged in new[] { true, false })
+        {
+            var (sim, me) = Ring();
+            var foe = Foe(sim, new float2(17.5f, 16.5f)); // a step east, in reach
+            sim.TickMany(TrailSystem.Every * 4); // its trail has it there
+            var pressed = sim.Clock.Tick;
+            sim.TickMany(20); // the command's on its way
+            sim.ApplyNow(new AttackCommand(me, false, 0f, Pressed: lagged ? pressed : -1));
+            var blow = sim.World.Get<Windup>(me);
+            // Still there when it would have landed, had it gone out as it was pressed; gone by the time it does.
+            RunTo(sim, blow.Impact - 8);
+            Place(sim, foe, new float2(16.5f, 19.5f));
+            RunTo(sim, Blows.LandsAt(sim, blow) + 1);
+            var outcome = sim.RecentBlows.Last(b => b.Attacker == me).Outcome;
+            if (lagged)
+                Assert.NotEqual(BlowOutcome.Miss, outcome);
+            else
+                Assert.Equal(BlowOutcome.Miss, outcome);
+        }
+    }
+
+    [Fact]
+    public void ATrailRemembersWhereSomeoneWas()
+    {
+        var (sim, me) = Ring();
+        var from = sim.World.Get<Position>(me).Pos;
+        sim.ApplyNow(new FreeMoveCommand(me, 1f, 0f, 0f));
+        sim.TickMany(40);
+        var now = sim.World.Get<Position>(me).Pos;
+        var then = Trails.At(sim, me, 40);
+        Assert.True(MathF.Abs(then.X - from.X) < 0.15f, $"40 ticks ago at {then}, started from {from}");
+        Assert.Equal(now, Trails.At(sim, me, 0));
     }
 }
 

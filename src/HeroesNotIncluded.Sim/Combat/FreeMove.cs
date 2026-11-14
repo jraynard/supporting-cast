@@ -34,20 +34,16 @@ public struct FreeMover
 }
 
 /// <summary>
-/// Free movement, the prototype (<c>--arena</c> turns it on; the village still walks cell to
-/// cell). A free mover's position is continuous: it eases toward the speed its keys ask for, slides
-/// along walls and fences (a small circle against the cells it may stand in, on its own level), and
-/// its cell is the one under its feet. A dodge is a short dash. The switch is on the sim
-/// (<see cref="Enabled"/>, saved): with it on, blows land by where they reach and when
-/// (<see cref="Blows"/>), not by a roll.
+/// How players move: freely, not cell to cell. A free mover's position is continuous: it eases
+/// toward the speed its keys ask for, slides along walls and fences (a small circle against the
+/// cells it may stand in), changes level where walking would, and its cell is the one under its
+/// feet; a job's walk follows its path. A dodge is a short dash. Every player's character is one;
+/// an AI is while it fights (<see cref="FreeFight"/>).
 /// </summary>
 public sealed class FreeMoveSystem : ISimSystem, ISaveState
 {
     public string Name => "FreeMove";
     public int Interval => 1;
-
-    /// <summary>Free movement and blows by reach and timing, for every player's character.</summary>
-    public bool Enabled { get; private set; }
 
     /// <summary>How wide a free mover is: the circle kept clear of walls.</summary>
     public const float Radius = 0.28f;
@@ -65,27 +61,15 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
     /// <summary>Slower while swinging and while guarding, and a little with a weapon drawn.</summary>
     public const float SwingSlow = 0.45f, GuardSlow = 0.6f, DrawnSlow = 0.85f;
 
-    /// <summary>Turn it on (the arena) and make every player's character a free mover.</summary>
-    public void Enable(Simulation sim)
+    /// <summary>A player's character's free movement, joined now if it hasn't been yet (a command can come before the first tick). False if it isn't a player's.</summary>
+    public static bool Ensure(Simulation sim, Entity e)
     {
-        Enabled = true;
-        foreach (var e in sim.World.Query<Avatar>())
-            Join(sim, e);
-    }
-
-    /// <summary>Turn it off: every player's character back on the grid, in the middle of its cell.</summary>
-    public void Disable(Simulation sim)
-    {
-        Enabled = false;
         var w = sim.World;
-        foreach (var e in w.Query<FreeMover>())
-        {
-            w.Remove<FreeMover>(e);
-            w.Get<Mover>(e).Stop();
-            var cell = w.Get<Position>(e).Cell;
-            if (sim.Map.Passable(cell) && !w.Has<Carried>(e))
-                w.Get<Position>(e) = Position.At(cell);
-        }
+        if (!w.IsAlive(e) || !w.Has<Avatar>(e))
+            return false;
+        if (!w.Has<FreeMover>(e))
+            Join(sim, e);
+        return true;
     }
 
     /// <summary>A player's character starts moving freely, facing the way it faced.</summary>
@@ -101,8 +85,6 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
 
     public void Update(Simulation sim)
     {
-        if (!Enabled)
-            return;
         var w = sim.World;
         // Whoever's a player's character moves freely; one handed back to the AI walks the grid again.
         foreach (var e in w.Query<Avatar>())
@@ -145,7 +127,7 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
             return;
         }
         ref var p = ref w.Get<Position>(e);
-        var (pos, cell, vel) = Slide(sim, p.Pos, p.Cell, m.Vel);
+        var (pos, cell, vel) = Slide(sim, p.Pos, p.Cell, m.Vel, w.TryGet<Perched>(e, out var up) ? up.Cell : null);
         m.Vel = vel;
         if (cell != p.Cell && w.TryGet<Perched>(e, out var perch) && perch.Cell != cell)
             w.Remove<Perched>(e); // stepped down off the furniture
@@ -183,19 +165,34 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
     /// <summary>
     /// One tick's move by <paramref name="vel"/> from <paramref name="pos"/>: each axis on its own,
     /// so a wall stops one and you slide along the other; levels change as the walking links allow
-    /// (<see cref="Into"/>). Returns where it ends up and what's left of the velocity. Pure.
+    /// (<see cref="Into"/>). Up on furniture (<paramref name="perch"/>), that cell's somewhere to
+    /// stand. Returns where it ends up and what's left of the velocity. Pure.
     /// </summary>
-    public static (float3 Pos, int3 Cell, float2 Vel) Slide(Simulation sim, float3 pos, int3 cell, float2 vel)
+    public static (float3 Pos, int3 Cell, float2 Vel) Slide(Simulation sim, float3 pos, int3 cell, float2 vel, int3? perch = null)
+    {
+        // Across and then along, or along and then across: whichever gets further (onto a stair
+        // met at an angle, through a doorway), across first when it's a tie.
+        var a = SlideAxes(sim, pos, cell, vel, perch, xFirst: true);
+        if (a.Vel == vel)
+            return a;
+        var b = SlideAxes(sim, pos, cell, vel, perch, xFirst: false);
+        return Travel(b.Pos, pos) > Travel(a.Pos, pos) + 1e-5f || (b.Cell.Z != cell.Z && a.Cell.Z == cell.Z) ? b : a;
+
+        static float Travel(float3 to, float3 from) => (to.X - from.X) * (to.X - from.X) + (to.Y - from.Y) * (to.Y - from.Y);
+    }
+
+    private static (float3 Pos, int3 Cell, float2 Vel) SlideAxes(Simulation sim, float3 pos, int3 cell, float2 vel, int3? perch, bool xFirst)
     {
         var at = new float2(pos.X, pos.Y);
-        if (Into(sim, cell, new float2(at.X + vel.X, at.Y)) is { } intoX)
-            (at, cell) = (new float2(at.X + vel.X, at.Y), intoX);
-        else
-            vel = new float2(0, vel.Y);
-        if (Into(sim, cell, new float2(at.X, at.Y + vel.Y)) is { } intoY)
-            (at, cell) = (new float2(at.X, at.Y + vel.Y), intoY);
-        else
-            vel = new float2(vel.X, 0);
+        for (var axis = 0; axis < 2; axis++)
+        {
+            var alongX = (axis == 0) == xFirst;
+            var to = alongX ? new float2(at.X + vel.X, at.Y) : new float2(at.X, at.Y + vel.Y);
+            if (Into(sim, cell, to, perch) is { } into)
+                (at, cell) = (to, into);
+            else
+                vel = alongX ? new float2(0, vel.Y) : new float2(vel.X, 0);
+        }
         return (new float3(at.X, at.Y, cell.Z), cell, vel);
     }
 
@@ -229,13 +226,15 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
     }
 
     /// <summary>Could a free mover stand with its middle at <paramref name="at"/>: every cell its circle touches passable (on the level, or a step up or down)?</summary>
-    public static bool Fits(Simulation sim, float2 at, int z)
+    public static bool Fits(Simulation sim, float2 at, int z, int3? perch = null)
     {
         var map = sim.Map;
         for (var dy = -1; dy <= 1; dy += 2)
         for (var dx = -1; dx <= 1; dx += 2)
         {
             var cell = new int3((int)MathF.Floor(at.X + dx * Radius), (int)MathF.Floor(at.Y + dy * Radius), z);
+            if (cell == perch)
+                continue;
             if (!map.Passable(cell) && !map.Passable(cell with { Z = z + 1 }) && !map.Passable(cell with { Z = z - 1 }))
                 return false;
         }
@@ -248,11 +247,11 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
     /// walking links allow (<see cref="NavGraph"/>: on the level, else up or down a stair or slope),
     /// so levels change just where walking would change them, and a drop or a wall stops you.
     /// </summary>
-    public static int3? Into(Simulation sim, int3 from, float2 at)
+    public static int3? Into(Simulation sim, int3 from, float2 at, int3? perch = null)
     {
         var to = new int3((int)MathF.Floor(at.X), (int)MathF.Floor(at.Y), from.Z);
         if (to.X == from.X && to.Y == from.Y)
-            return Fits(sim, at, from.Z) ? from : null;
+            return Fits(sim, at, from.Z, perch) ? from : null;
         var map = sim.Map;
         if (!map.InBounds(from))
             return null;
@@ -271,7 +270,7 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
             }
             found ??= c;
         }
-        return found is { } next && Fits(sim, at, next.Z) ? next : null;
+        return found is { } next && Fits(sim, at, next.Z, perch) ? next : null;
     }
 
     /// <summary>Walk a job's path, cell middle to cell middle, at walking pace.</summary>
@@ -315,7 +314,8 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         m.DashUntil = at + DashTicks;
     }
 
-    public void Save(SaveWriter w, Simulation sim) => w.Bool(Enabled);
+    // Saves from when it was a switch kept whether it was on; it always is now.
+    public void Save(SaveWriter w, Simulation sim) => w.Bool(true);
 
-    public void Load(SaveReader r, Simulation sim) => Enabled = r.Bool();
+    public void Load(SaveReader r, Simulation sim) => r.Bool();
 }

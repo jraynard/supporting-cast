@@ -42,7 +42,7 @@ public class ArmorTests
     }
 
     [Fact]
-    public void ArmorLowersTheChanceToHurtAndTheDamage()
+    public void ArmorTakesItsShareOfEveryBlow()
     {
         var sim = Field();
         var attacker = Human(sim, C(5, 5));
@@ -56,17 +56,20 @@ public class ArmorTests
 
         float Taken(Entity target)
         {
+            sim.Equip(attacker, sim.Thing("ShortSword")); // a fresh edge each time: a blade dulls as it's used
+            sword = CombatRules.Attacks(sim, attacker)[0];
             var total = 0f;
             for (var i = 0; i < 60; i++)
             {
                 var h = sim.World.Get<Health>(target);
                 h.Injuries.Clear();
                 h.Changed();
-                total += CombatRules.Resolve(sim, attacker, target, sword).Damage;
+                total += CombatRules.Strike(sim, attacker, target, sword).Damage; // it reached them: armour takes its share
             }
             return total;
         }
-        Assert.True(Taken(armored) < Taken(bare) * 0.85f);
+        var (a, b) = (Taken(armored), Taken(bare));
+        Assert.True(a < b * 0.85f, $"armored {a}, bare {b}");
     }
 
     [Fact]

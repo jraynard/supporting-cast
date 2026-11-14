@@ -129,7 +129,7 @@ public class SkillTests
     }
 
     [Fact]
-    public void ShootingSkillMovesTheOddsAndPracticeRaisesIt()
+    public void ShootingSkillQuickensTheDrawAndAddsWeightAndPracticeRaisesIt()
     {
         var sim = TestWorld.Create(40, 20);
         var archer = Person(sim, C(5, 10), Skills.Average);
@@ -138,14 +138,14 @@ public class SkillTests
         sim.Equip(archer, sim.Thing("Bow"));
         var bow = CombatRules.Attacks(sim, archer)[0];
 
-        var average = CombatRules.Chance(sim, archer, target, bow);
-        Assert.Equal(0, average.Skill, 3);
+        // No roll to hit (Combat.Reach): skill shows as a quicker draw and a harder blow.
+        var drawAverage = Reach.WindupFactor(sim, archer, bow);
+        var weightAverage = Reach.SkillDamage(sim, archer, bow);
         sim.SetSkills(archer, Skills.Average + 5);
-        var good = CombatRules.Chance(sim, archer, target, bow);
-        Assert.Equal(5 * SkillRules.AccuracyPerLevel, good.Skill, 3);
-        Assert.True(good.Chance > average.Chance);
+        Assert.True(Reach.WindupFactor(sim, archer, bow) < drawAverage);
+        Assert.True(Reach.SkillDamage(sim, archer, bow) > weightAverage);
 
-        CombatRules.Resolve(sim, archer, target, bow);
+        CombatRules.Strike(sim, archer, target, bow);
         Assert.True(sim.World.Get<Skills>(archer).Xp[(int)Skill.Shooting] >= SkillRules.XpPerAttack);
     }
 }

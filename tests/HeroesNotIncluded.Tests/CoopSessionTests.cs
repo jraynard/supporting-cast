@@ -122,31 +122,6 @@ public class CoopSessionTests
     }
 
     [Fact]
-    public void APredictedWalkStopsWhereThePlayerSawItStop()
-    {
-        var t = new Table();
-        t.Run(0.5f);
-        var sim = t.Host.Sim!;
-        var me = Players.CharacterOf(sim, t.Host.Me.Id);
-        var predictor = new AvatarPredictor();
-        void Frame() => predictor.Update(sim, me, 1 / 60f, 1);
-        var east = new int2(1, 0);
-        var start = sim.World.Get<Position>(me).Cell;
-        t.Host.Send(new AvatarMoveCommand(me, east, predictor.DirectionChanged(sim, me, east)));
-        Assert.True(predictor.Active);
-        t.Run(1.2f, Frame);
-        // Let go: the picture stops at once, and the command names the cell it stopped on.
-        var stop = predictor.DirectionChanged(sim, me, int2.Zero);
-        Assert.NotNull(stop);
-        Assert.True(stop!.Value.X > start.X + 1, $"walked east from {start} to {stop}");
-        t.Host.Send(new AvatarMoveCommand(me, int2.Zero, stop));
-        t.Run(2f, Frame);
-        Assert.Equal(stop, sim.World.Get<Position>(me).Cell);
-        Assert.False(predictor.Active); // handed back to the sim once it arrived
-        t.AssertInStep();
-    }
-
-    [Fact]
     public void HostAdoptsTheirAvatar()
     {
         var t = new Table();
@@ -180,7 +155,6 @@ public class CoopSessionTests
     public void AFreeWalkPredictedOnAClientStopsWhereThePlayerSawItStop()
     {
         var t = new Table();
-        t.Host.Sim!.FreeMove.Enable(t.Host.Sim);
         t.Run(1f);
         var bea = new PlayerIdentity(Guid.NewGuid(), "Bea");
         var client = t.Join(bea);
@@ -213,7 +187,7 @@ public class CoopSessionTests
         Assert.True(seen.X > start.X + 1f, $"walked east from {start} to {seen}");
         client.Send(new FreeMoveCommand(mine, 0f, 0f, 0f, seen.X, seen.Y, predictor.Level));
         t.Run(1.5f, () => predictor.Update(sim, mine, float2.Zero, 1 / 60f, 1));
-        var hostAt = t.Host.Sim.World.Get<Position>(Players.CharacterOf(t.Host.Sim, bea.Id)).Pos;
+        var hostAt = t.Host.Sim!.World.Get<Position>(Players.CharacterOf(t.Host.Sim, bea.Id)).Pos;
         Assert.True(MathF.Abs(hostAt.X - seen.X) < 0.4f && MathF.Abs(hostAt.Y - seen.Y) < 0.1f, $"the host has them at {hostAt}, they saw {seen}");
         Assert.False(predictor.Active, "handed back to the sim once it arrived");
         t.AssertInStep();
@@ -235,7 +209,7 @@ public class CoopSessionTests
 
         t.Link!.Close("wifi dropped");
         t.Run(0.2f);
-        Assert.Equal(int2.Zero, t.Host.Sim!.World.Get<Avatar>(mine).MoveDir); // not walking off unattended
+        Assert.Equal(float2.Zero, t.Host.Sim!.World.Get<Sim.Combat.FreeMover>(mine).Wish); // not walking off unattended
         Assert.True(t.Host.Sim.World.Has<Avatar>(mine), "the seat is held, not handed to the AI");
         var stoppedAt = t.Host.Sim.World.Get<Position>(mine).Cell;
         t.Run(3f);

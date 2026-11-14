@@ -129,7 +129,7 @@ public sealed partial class VillageGame
         _selected = Entity.Null;
         _lastSeenMessages = _sim.Messages.Total;
         _interp.Reset();
-        _predictor.Reset();
+        _freePredictor.Reset();
         FindAvatar();
     }
 

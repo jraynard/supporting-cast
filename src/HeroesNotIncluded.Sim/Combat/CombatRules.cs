@@ -300,56 +300,6 @@ public static class CombatRules
     }
 
     /// <summary>
-    /// Roll the attack and apply any wound. Callers check <see cref="Chance"/> is possible first.
-    /// A <paramref name="reaction"/> is hurried (<see cref="ReactionFactor"/>). A blow's timing
-    /// (<see cref="Blows"/>) adds to the odds (a riposte) and scales the damage (a heavy blow, a block).
-    /// </summary>
-    public static AttackResult Resolve(Simulation sim, Entity attacker, Entity target, AttackDef attack, bool reaction = false,
-        float accuracyBonus = 0f, float damageScale = 1f)
-    {
-        var odds = Chance(sim, attacker, sim.World.Get<Position>(attacker).Cell, target, attack, reaction);
-        if (odds.Possible && accuracyBonus != 0f)
-            odds = odds with { Chance = Math.Clamp(odds.Chance + accuracyBonus, MinChance, MaxChance) };
-        AttackResult Result(AttackOutcome o, string? part = null, float dmg = 0) => new(attacker, target, attack, odds.Chance, o, part, dmg);
-
-        if (odds.Possible)
-            SkillRules.Learn(sim, attacker, SkillFor(attack), SkillRules.XpPerAttack);
-        if (!odds.Possible || !sim.Rand.Chance(odds.Chance))
-            return Result(AttackOutcome.Miss);
-        SkillRules.Learn(sim, attacker, SkillFor(attack), SkillRules.XpPerHit);
-        if (sim.Rand.Chance(attack.Glance))
-            return Result(AttackOutcome.Glance);
-
-        var dz = sim.World.Get<Position>(attacker).Cell.Z - sim.World.Get<Position>(target).Cell.Z;
-        PartHeight? bias = dz > 0 ? PartHeight.High : dz < 0 ? PartHeight.Low : null;
-        var health = sim.World.TryGet<Health>(target, out var h) ? h : null;
-        var part = health != null ? HealthSystem.PickPart(sim, health, bias) : -1;
-        var damage = sim.Rand.Range(attack.DamageMin, attack.DamageMax) * damageScale;
-        // A well-made weapon bites deeper (natural attacks and uncrafted weapons count as plain).
-        var weapon = sim.World.TryGet<Equipment>(attacker, out var wielded) && sim.World.IsAlive(wielded.Weapon)
-            && sim.World.Get<Thing>(wielded.Weapon).Def.Weapon == attack ? wielded.Weapon : Entity.Null;
-        if (!weapon.IsNull)
-            damage *= Crafting.QualityFactorOf(sim, weapon) * WeaponWear.DamageFactor(sim, weapon);
-        var (armor, item) = ArmorAt(sim, target, part, attack.DamageType);
-        var through = Through(armor, attack);
-        if (through > 0 && sim.Rand.Chance(through))
-        {
-            WearDown(sim, target, item, damage);
-            if (!weapon.IsNull)
-                WeaponWear.Struck(sim, attacker, weapon, turned: true, damage);
-            return Result(AttackOutcome.Deflected, item.IsNull ? "scales" : sim.World.Get<Thing>(item).Label);
-        }
-        var blunted = damage * 0.5f * through;
-        WearDown(sim, target, item, blunted);
-        if (!weapon.IsNull)
-            WeaponWear.Struck(sim, attacker, weapon, turned: false, blunted);
-        damage -= blunted;
-        HealthSystem.Damage(sim, target, damage, attack.DamageType, part);
-        var label = health != null && part >= 0 ? health.Body.Parts[part].Label : "body";
-        return Result(AttackOutcome.Hit, label, damage);
-    }
-
-    /// <summary>
     /// A blow that has reached its target (<see cref="Reach"/>, with free movement): no roll to hit
     /// and none to glance or be turned. Where it lands is by coverage (higher from above), and the
     /// armour there takes a fixed share of it, as much as it outmatches the weapon's bite, and wears
@@ -369,7 +319,10 @@ public static class CombatRules
         if (!weapon.IsNull)
             damage *= Crafting.QualityFactorOf(sim, weapon) * WeaponWear.DamageFactor(sim, weapon);
         var (armor, item) = ArmorAt(sim, target, part, attack.DamageType);
-        var soaked = damage * Math.Clamp(Through(armor, attack), 0f, MaxSoak);
+        // What the old roll took off on average: turned outright as often as it outmatched the
+        // weapon, else half of that blunted; as a share, every time.
+        var t = Through(armor, attack);
+        var soaked = damage * Math.Clamp(t + (1f - t) * 0.5f * t, 0f, MaxSoak);
         WearDown(sim, target, item, soaked);
         if (!weapon.IsNull)
             WeaponWear.Struck(sim, attacker, weapon, turned: false, soaked);

@@ -924,13 +924,10 @@ public sealed class Health
 /// </summary>
 public struct Avatar
 {
-    /// <summary>Held movement direction on the map (each component -1, 0 or 1); zero when standing still.</summary>
-    public int2 MoveDir;
-
     /// <summary>The work key is held: jobs make progress only while this is true.</summary>
     public bool WorkHeld;
 
-    /// <summary>Last direction moved, for "the cell in front of me".</summary>
+    /// <summary>The way it faces, to the nearest of eight, for "the cell in front of me".</summary>
     public int2 Facing;
 
     /// <summary>
@@ -938,15 +935,6 @@ public struct Avatar
     /// of walls, beating out a spreading fire); None otherwise. Cleared on letting go or walking.
     /// </summary>
     public Systems.AvatarActionKind Chain;
-
-    /// <summary>
-    /// A direction change (or stop, when zero) waiting for the avatar to reach <see cref="PendingAt"/>.
-    /// In co-op a client shows its own walk straight away and says where it turned or stopped, so
-    /// the sim, which gets the command a little later, ends up on the same cell instead of overshooting.
-    /// </summary>
-    public bool HasPending;
-    public int2 PendingDir;
-    public int3 PendingAt;
 }
 
 /// <summary>

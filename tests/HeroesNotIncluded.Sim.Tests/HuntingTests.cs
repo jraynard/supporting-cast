@@ -47,7 +47,8 @@ public class HuntingTests
     {
         var (sim, hunter) = Setup();
         var hare = Animal(sim, "Hare", C(32, 30));
-        Assert.True(TickUntil(sim, () => sim.World.Get<Creature>(hare).Dead, SimClock.HoursToTicks(1)), "the hare should be shot");
+        // Shot, it bolts, and is run down: every arrow is drawn where it's seen, and a running hare leads well.
+        Assert.True(TickUntil(sim, () => sim.World.Get<Creature>(hare).Dead, SimClock.HoursToTicks(2)), "the hare should be shot");
         Assert.False(sim.World.Has<HuntOrder>(hare));
         Assert.Equal(1, sim.Wildlife.Hunted);
 
@@ -113,37 +114,21 @@ public class HuntingTests
     }
 
     [Fact]
-    public void FShootsAnAnimalInBowRangeOnlyWhileHeld()
+    public void ADrawnBowShootsTheHareYouAimAtAndFNeverHunts()
     {
         var (sim, me) = Player();
         // Beyond the hare's flee radius (9 cells) but inside the bow's 14: it hasn't noticed you.
         var hare = Animal(sim, "Hare", C(20, 30), hunt: false);
-        sim.World.Get<Mind>(hare).Drafted = true; // keeps still for the bow's draw (Combat.Blows), as a hare grazing might
-        var action = AvatarSystem.ActionAt(sim, me, C(20, 30));
-        Assert.Equal(AvatarActionKind.Hunt, action.Kind);
-        Assert.Equal("Shoot the hare", action.Label);
+        sim.World.Get<Mind>(hare).Drafted = true; // keeps still for the bow's draw, as a hare grazing might
+        Assert.NotEqual(AvatarActionKind.Hunt, AvatarSystem.ActionAt(sim, me, C(20, 30)).Kind);
 
-        AvatarSystem.Perform(sim, me, action); // started, but the key isn't held
-        Assert.IsType<AvatarHuntJob>(sim.World.Get<Mind>(me).Job);
-        sim.TickMany(20);
-        Assert.Empty(sim.RecentShots);
-
-        sim.ApplyNow(new AvatarWorkCommand(me, true));
-        Assert.True(TickUntil(sim, () => sim.RecentShots.Count > 0, SimClock.TicksPerSecond * 5), "holding F looses an arrow");
+        sim.Tick();
+        sim.ApplyNow(new DrawWeaponCommand(me, true));
+        sim.ApplyNow(new AttackCommand(me, false, 0f)); // east, at it
+        Assert.True(TickUntil(sim, () => sim.RecentShots.Count > 0, SimClock.TicksPerSecond * 3), "the arrow flies");
+        Assert.True(sim.World.Get<Health>(hare).Injuries.Count > 0 || sim.World.Get<Creature>(hare).Dead, "and finds the hare");
         Assert.True(sim.World.Get<Skills>(me).Xp[(int)Skill.Hunting] > 0, "it trains Hunting");
         Assert.True(sim.World.Has<Provoked>(hare), "the hare knows it's hunted");
-    }
-
-    [Fact]
-    public void BareHandsOnlyReachWhatsBesideYou()
-    {
-        var (sim, me) = Player(bow: false);
-        Animal(sim, "Hare", C(18, 30), hunt: false);
-        Assert.NotEqual(AvatarActionKind.Hunt, AvatarSystem.ActionAt(sim, me, C(18, 30)).Kind);
-        Animal(sim, "Hare", C(11, 30), hunt: false);
-        var action = AvatarSystem.ActionAt(sim, me, C(11, 30));
-        Assert.Equal(AvatarActionKind.Hunt, action.Kind);
-        Assert.StartsWith("Strike at", action.Label);
     }
 
     [Fact]
@@ -160,24 +145,5 @@ public class HuntingTests
         Assert.IsType<ButcherJob>(sim.World.Get<Mind>(me).Job);
         Assert.True(TickUntil(sim, () => !sim.World.IsAlive(deer), SimClock.TicksPerSecond * 60), "the deer is cut up");
         Assert.True(Meat(sim) > 0);
-    }
-
-    [Fact]
-    public void HoldingFKeepsShootingTheHare()
-    {
-        var (sim, me) = Player();
-        var hare = Animal(sim, "Hare", C(20, 30), hunt: false);
-        sim.ApplyNow(new AvatarWorkCommand(me, true, C(20, 30)));
-        // Hit, it bolts; the player keeps F held and presses it again whenever it's back in range.
-        var down = TickUntil(sim, () =>
-        {
-            if (sim.World.Get<Mind>(me).Job == null && sim.World.Get<Creature>(hare) is { Dead: false }
-                && AvatarSystem.ActionAt(sim, me, sim.World.Get<Position>(hare).Cell).Kind == AvatarActionKind.Hunt)
-                sim.ApplyNow(new AvatarWorkCommand(me, true, sim.World.Get<Position>(hare).Cell));
-            return sim.World.Get<Creature>(hare).Dead;
-        }, SimClock.TicksPerSecond * 30);
-        Assert.True(down || sim.World.Get<Health>(hare).Injuries.Count > 0, "the hare is shot (down, or wounded and away)");
-        if (down)
-            Assert.True(sim.Messages.Messages.Any(m => m.Text.Contains("brought down the hare")), string.Join(" | ", sim.Messages.Messages.Select(m => m.Text)));
     }
 }

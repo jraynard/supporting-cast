@@ -31,7 +31,15 @@ public class BlowTests
             sim.World.Get<Mind>(raider).Drafted = true; // held where it is: its own mind would take wing
         }
         else
+        {
             raider = Raids.SpawnRaider(sim, sim.Defs.AllRaiderKinds.First(k => k.Name == foe), "Mott", at, sim.Rand);
+            sim.World.Get<Mind>(raider).Drafted = true; // the one blow under test, nothing of its own besides
+        }
+        // Weapon drawn, facing them (a guard meets only a blow it faces).
+        sim.Tick();
+        var them = sim.World.Get<Position>(raider).Pos - sim.World.Get<Position>(me).Pos;
+        sim.ApplyNow(new DrawWeaponCommand(me, true));
+        sim.ApplyNow(new FreeMoveCommand(me, 0f, 0f, MathF.Atan2(them.Y, them.X)));
         var attack = foe == "Archer" ? CombatRules.Attacks(sim, raider).First(a => a.Ranged) : CombatRules.Attacks(sim, raider).First(a => !a.Ranged);
         Assert.True(Blows.Begin(sim, raider, me, attack, heavy));
         return (sim, me, raider, sim.World.Get<Windup>(raider));
@@ -48,7 +56,19 @@ public class BlowTests
         sim.RecentBlows.FirstOrDefault(b => b.Target == target)?.Outcome;
 
     private static void Guard(Simulation sim, Entity me, bool up, long at) =>
-        sim.ApplyNow(new CombatInputCommand(me, up ? CombatInput.GuardUp : CombatInput.GuardDown, at));
+        sim.ApplyNow(new GuardCommand(me, up, at));
+
+    /// <summary>A dodge at <paramref name="at"/>: a dash straight back from the way you face, or toward <paramref name="foe"/>.</summary>
+    private static void Dodge(Simulation sim, Entity me, long at, Entity? foe = null)
+    {
+        var dir = float2.Zero;
+        if (foe is { } f)
+        {
+            var d = sim.World.Get<Position>(f).Pos - sim.World.Get<Position>(me).Pos;
+            dir = new float2(d.X, d.Y);
+        }
+        sim.ApplyNow(new DodgeCommand(me, dir.X, dir.Y, at));
+    }
 
     [Fact]
     public void AGuardRaisedAsTheBlowLandsParriesItAndLeavesThemOpen()
@@ -125,7 +145,7 @@ public class BlowTests
     {
         var (sim, me, _, blow) = Duel();
         RunTo(sim, blow.Impact - 4);
-        sim.ApplyNow(new CombatInputCommand(me, CombatInput.Dodge, sim.Clock.Tick));
+        Dodge(sim, me, sim.Clock.Tick);
         RunTo(sim, Blows.LandsAt(sim, blow) + 1);
         Assert.Equal(BlowOutcome.Dodged, First(sim, me));
         Assert.Empty(sim.World.Get<Health>(me).Injuries);
@@ -178,7 +198,7 @@ public class BlowTests
     {
         var (sim, me, _, shot) = Duel(foe: "Archer");
         RunTo(sim, shot.Impact - 6);
-        sim.ApplyNow(new CombatInputCommand(me, CombatInput.Dodge, sim.Clock.Tick));
+        Dodge(sim, me, sim.Clock.Tick);
         RunTo(sim, Blows.LandsAt(sim, shot) + 1);
         Assert.Equal(BlowOutcome.Dodged, First(sim, me));
     }
@@ -198,16 +218,16 @@ public class BlowTests
     [Fact]
     public void ADragonIsDodgedOnlyLate()
     {
-        var (sim, me, _, bite) = Duel(foe: "Dragon");
-        // Early, as against a man: still within the dodge, but a dragon reaches you anyway.
+        var (sim, me, dragon, bite) = Duel(foe: "Dragon");
+        // Early, as against a man, and in toward it: a moment you'd be clear of a blade, but its jaws find you.
         RunTo(sim, bite.Impact - Blows.DodgeTicks + 3);
-        sim.ApplyNow(new CombatInputCommand(me, CombatInput.Dodge, sim.Clock.Tick));
+        Dodge(sim, me, sim.Clock.Tick, dragon);
         RunTo(sim, Blows.LandsAt(sim, bite) + 1);
         Assert.NotEqual(BlowOutcome.Dodged, First(sim, me));
 
         var (sim2, me2, _, bite2) = Duel(foe: "Dragon");
         RunTo(sim2, bite2.Impact - 3);
-        sim2.ApplyNow(new CombatInputCommand(me2, CombatInput.Dodge, sim2.Clock.Tick));
+        Dodge(sim2, me2, sim2.Clock.Tick);
         RunTo(sim2, Blows.LandsAt(sim2, bite2) + 1);
         Assert.Equal(BlowOutcome.Dodged, First(sim2, me2));
     }
@@ -227,7 +247,7 @@ public class BlowTests
         var (sim2, me2, dragon2, _) = Duel(foe: "Dragon");
         Blows.Cancel(sim2, dragon2);
         var drawn2 = sim2.Clock.Tick;
-        sim2.ApplyNow(new CombatInputCommand(me2, CombatInput.Dodge, drawn2 - 2));
+        Dodge(sim2, me2, drawn2 - 2);
         var (_, dodged) = CombatRules.Breathe(sim2, dragon2, sim2.World.Get<Position>(me2).Cell, drawn2);
         Assert.Contains(sim2.RecentBlows, b => b.Target == me2 && b.Outcome == BlowOutcome.Dodged);
         Assert.True(dodged.Single(b => b.Who == me2).Damage > 0, "nobody gets wholly clear of its fire");

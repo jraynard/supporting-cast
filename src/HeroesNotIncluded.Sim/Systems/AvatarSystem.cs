@@ -46,7 +46,7 @@ public enum AvatarActionKind
     /// <summary>Cast into the water beside the bank you stand on (<see cref="Ai.FishJob"/>), while the key is held.</summary>
     Fish,
 
-    /// <summary>Shoot or strike at a wild animal (<see cref="Ai.AvatarHuntJob"/>), while the key is held.</summary>
+    /// <summary>No longer offered: a fight (or a hunt) is the mouse's, weapon drawn (<see cref="Combat.Blows"/>). Kept for the enum's saved values.</summary>
     Hunt,
     /// <summary>Cut up an animal's carcass into meat and hide (<see cref="Ai.ButcherJob"/>), while the key is held.</summary>
     Butcher,
@@ -119,11 +119,10 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
 }
 
 /// <summary>
-/// Adventure mode: drives creatures marked <see cref="Avatar"/> from player input. A held direction
-/// walks one <see cref="NavGraph"/> step at a time (so slopes, stairs and the no-corner-cutting rule
-/// all apply, and nobody walks off a cliff); the work key starts an ordinary job on the cell in
-/// reach, which only progresses while the key is held (see <see cref="Job"/>.Work). Runs before
-/// <see cref="AiSystem"/> and movement, so a held key chains steps without a pause.
+/// Adventure mode: drives creatures marked <see cref="Avatar"/> from player input. They move freely
+/// (<see cref="Combat.FreeMoveSystem"/>); walking off abandons the work in hand, and the work key
+/// starts an ordinary job on the cell in reach, which only progresses while the key is held (see
+/// <see cref="Job"/>.Work). Runs before <see cref="AiSystem"/>.
 /// </summary>
 public sealed class AvatarSystem : ISimSystem
 {
@@ -157,8 +156,6 @@ public sealed class AvatarSystem : ISimSystem
     /// </summary>
     public const float CommandDragonAffinity = 0.5f;
 
-    private readonly NavGraph.Step[] _steps = new NavGraph.Step[NavGraph.MaxSteps];
-
     public void Update(Simulation sim)
     {
         var w = sim.World;
@@ -182,129 +179,23 @@ public sealed class AvatarSystem : ISimSystem
             if (w.Has<Carried>(e))
                 continue;
             ref var a = ref w.Get<Avatar>(e);
-            if (w.TryGet<Combat.FreeMover>(e, out var free))
+            if (!w.Has<Combat.FreeMover>(e))
+                Combat.FreeMoveSystem.Join(sim, e);
+            // The keys move it (Combat.FreeMoveSystem), and a job's walk (a click, the way to a
+            // station) follows its path there while they're let be.
+            if (w.Get<Combat.FreeMover>(e).Wish == float2.Zero)
             {
-                // Walks off the grid (Combat.FreeMoveSystem): the keys move it, and a job's walk
-                // (a click, the way to a station) follows its path there while they're let be.
-                if (free.Wish == float2.Zero)
-                {
-                    if (w.Get<Mind>(e).Job is AvatarWalkJob { ReadyToAct: true } arrived)
-                        ActOnArrival(sim, e, arrived);
-                    else
-                        ContinueChain(sim, e, ref a);
-                    continue;
-                }
-                a.Chain = AvatarActionKind.None;
-                var busy = w.Get<Mind>(e);
-                if (busy.Job != null && busy.Job is not AvatarHuntJob)
-                    AiSystem.EndJob(sim, e, busy, false); // walking off abandons the work (a fight goes on)
-                w.Get<Mover>(e).Stop();
-                continue;
-            }
-            if (a.HasPending && !w.Get<Mover>(e).Moving)
-                ResolvePending(sim.Map, w.Get<Position>(e).Cell, ref a);
-            if (a.MoveDir.X == 0 && a.MoveDir.Y == 0)
-            {
-                if (w.Get<Mind>(e).Job is AvatarWalkJob { ReadyToAct: true } walk)
-                    ActOnArrival(sim, e, walk);
+                if (w.Get<Mind>(e).Job is AvatarWalkJob { ReadyToAct: true } arrived)
+                    ActOnArrival(sim, e, arrived);
                 else
                     ContinueChain(sim, e, ref a);
                 continue;
             }
             a.Chain = AvatarActionKind.None; // walking off ends a run of work
-            var mind = w.Get<Mind>(e);
-            if (mind.Job != null)
-                AiSystem.EndJob(sim, e, mind, false); // walking off abandons the work
-            var mover = w.Get<Mover>(e);
-            if (mover.Moving)
-                continue;
-            var here = w.Get<Position>(e).Cell;
-            if (StepToward(sim.Map, here, a.MoveDir) is not { } next)
-                continue;
-            a.Facing = new int2(Math.Sign(next.X - here.X), Math.Sign(next.Y - here.Y)); // the step taken, so F's "in front" is where you went
-            mover.Path = [next];
-            mover.PathIndex = 0;
-            mover.StepProgress = 0;
-            mover.StepFrom = here;
-        }
-    }
-
-    /// <summary>Steps between two cells for scheduling a turn: diagonal moves count once, levels add.</summary>
-    public static int Distance(int3 a, int3 b) =>
-        Math.Max(Math.Abs(a.X - b.X), Math.Abs(a.Y - b.Y)) + Math.Abs(a.Z - b.Z);
-
-    /// <summary>
-    /// Standing on a cell between steps with a turn waiting: take it here if this is the cell, or
-    /// if walking on in the current direction wouldn't get any closer (blocked, or already past it).
-    /// </summary>
-    private void ResolvePending(Map map, int3 here, ref Avatar a)
-    {
-        var apply = here == a.PendingAt;
-        if (!apply)
-        {
-            var distance = Distance(here, a.PendingAt);
-            apply = StepToward(map, here, a.MoveDir) is not { } next || Distance(next, a.PendingAt) >= distance;
-        }
-        if (!apply)
-            return;
-        a.MoveDir = a.PendingDir;
-        a.HasPending = false;
-    }
-
-    /// <summary>How many steps ahead a blocked diagonal looks to choose which way to slide.</summary>
-    public const int SlideLookahead = 3;
-
-    /// <summary>
-    /// The walkable neighbor in a direction: on the level, else up or down a slope. A blocked
-    /// diagonal slides along an open axis, so walking into a wall at an angle follows it. When both
-    /// axes are open it takes the one that gets further in the held direction over the next few
-    /// steps: into a doorway or round a corner rather than along the wall past it. A climb breaks
-    /// a tie, so a diagonal at the foot of a stair goes up it. Pure, so a co-op client predicts the same steps.
-    /// </summary>
-    public int3? StepToward(Map map, int3 from, int2 dir) => StepToward(map, from, dir, SlideLookahead);
-
-    private int3? StepToward(Map map, int3 from, int2 dir, int lookahead)
-    {
-        if (!map.InBounds(from))
-            return null;
-        var count = NavGraph.Neighbors(new MapNav(map), map.Idx(from), _steps);
-        if (Find(dir) is { } straight)
-            return straight;
-        if (dir.X == 0 || dir.Y == 0)
-            return null;
-        var alongX = Find(new int2(dir.X, 0));
-        var alongY = Find(new int2(0, dir.Y));
-        if (alongX is not { } x || alongY is not { } y || lookahead == 0)
-            return alongX ?? alongY;
-        // (Find is done with _steps: the look ahead below refills it.)
-        return Progress(y) > Progress(x) ? y : x;
-
-        float Progress(int3 start)
-        {
-            var at = start;
-            for (var i = 0; i < lookahead; i++)
-            {
-                if (StepToward(map, at, dir, 0) is not { } next)
-                    break;
-                at = next;
-            }
-            var gained = (at.X - from.X) * dir.X + (at.Y - from.Y) * dir.Y;
-            return gained + (start.Z != from.Z ? 0.5f : 0f);
-        }
-
-        int3? Find(int2 d)
-        {
-            int3? climb = null;
-            for (var k = 0; k < count; k++)
-            {
-                var c = map.CellOf(_steps[k].Index);
-                if (c.X - from.X != d.X || c.Y - from.Y != d.Y)
-                    continue;
-                if (c.Z == from.Z)
-                    return c;
-                climb ??= c;
-            }
-            return climb;
+            var busy = w.Get<Mind>(e);
+            if (busy.Job != null)
+                AiSystem.EndJob(sim, e, busy, false); // walking off abandons the work
+            w.Get<Mover>(e).Stop();
         }
     }
 
@@ -802,9 +693,6 @@ public sealed class AvatarSystem : ISimSystem
             case AvatarActionKind.Dismantle:
                 sim.Map.Designate(sim.Map.Idx(w.Get<Thing>(action.Target).Cell), Designation.Deconstruct);
                 AiSystem.Order(sim, avatar, new DeconstructJob(action.Target));
-                break;
-            case AvatarActionKind.Hunt:
-                AiSystem.Order(sim, avatar, new AvatarHuntJob(action.Target));
                 break;
             case AvatarActionKind.Butcher:
                 AiSystem.Order(sim, avatar, new ButcherJob(action.Target));

@@ -6,11 +6,10 @@ using HeroesNotIncluded.Sim.Systems;
 namespace HeroesNotIncluded.Sim.Ai;
 
 /// <summary>
-/// Hunting for the player's character (Adventure mode): F at a wild animal shoots it from as far as
-/// the weapon reaches (a bow), or strikes it from beside it; F at a carcass butchers it. A first,
-/// simple pass: the same real-time attacks (<see cref="Combat.RealtimeAttacks"/>) and butchering
-/// (<see cref="ButcherJob"/>) the village's hunters use, so a herd scatters and a boar turns on you
-/// exactly as it would on them. Stalking, tracking and the rest are for later.
+/// Hunting for the player's character (Adventure mode): a live animal is hunted as anything is
+/// fought, weapon drawn, aimed and swung or shot (<see cref="Combat.Blows"/>), so a herd scatters and
+/// a boar turns on you as it would on the village's hunters; F at a carcass butchers it
+/// (<see cref="ButcherJob"/>). Stalking, tracking and the rest are for later.
 /// </summary>
 public static class AvatarHunting
 {
@@ -27,42 +26,11 @@ public static class AvatarHunting
         return Entity.Null;
     }
 
-    /// <summary>
-    /// A raider or predator on its feet in a cell, or Entity.Null: the only people a player can
-    /// strike at so far. Fighting the town's own (or adventurers) waits for M4.
-    /// </summary>
-    public static Entity FoeAt(Simulation sim, int3 cell)
-    {
-        var w = sim.World;
-        foreach (var e in w.Each<Creature>())
-            if (w.Get<Creature>(e) is { Dead: false, Downed: false } c && Factions.Attacker(c.Faction) && c.Def.Race != Race.Animal
-                && w.Get<Position>(e).Cell == cell)
-                return e;
-        return Entity.Null;
-    }
-
-    /// <summary>What to call a quarry in a prompt: "the boar", or a raider's name.</summary>
-    public static string Called(Simulation sim, Entity e) =>
-        sim.World.Get<Creature>(e) is { Def.Race: Race.Animal } c ? $"the {c.Def.Label}" : sim.World.Get<Creature>(e).Name;
-
-    /// <summary>The attack the hunter could make on the prey from where they stand now, or null (out of range, no line of fire, won't fight).</summary>
-    public static AttackDef? AttackOn(Simulation sim, Entity hunter, Entity prey)
-    {
-        foreach (var attack in Combat.CombatRules.Attacks(sim, hunter))
-            if (Combat.CombatRules.Chance(sim, hunter, prey, attack).Possible)
-                return attack;
-        return null;
-    }
-
-    /// <summary>What F does at an animal in this cell: hunt it, or butcher its carcass. Null if neither.</summary>
+    /// <summary>What F does at an animal in this cell: butcher its carcass (or carry it to the butcher spot). Null otherwise.</summary>
     public static AvatarAction? ActionAt(Simulation sim, Entity avatar, int3 cell, int3 here)
     {
         var w = sim.World;
         var animal = AnimalAt(sim, cell);
-        if (animal.IsNull && FoeAt(sim, cell) is { IsNull: false } foe)
-            return AttackOn(sim, avatar, foe) is { } swing
-                ? new(AvatarActionKind.Hunt, $"{(swing.Ranged ? "Shoot at" : "Strike at")} {Called(sim, foe)}", cell, foe)
-                : null;
         if (animal.IsNull || sim.Reservations.IsReservedByOther(animal, avatar))
             return null;
         var c = w.Get<Creature>(animal);
@@ -76,76 +44,6 @@ public static class AvatarHunting
                 return new(AvatarActionKind.Carry, $"Carry the {c.Def.Label} to the butcher spot", cell, animal);
             return new(AvatarActionKind.Butcher, $"Butcher the {c.Def.Label} carcass", cell, animal);
         }
-        if (AttackOn(sim, avatar, animal) is not { } attack)
-            return null;
-        var verb = attack.Ranged ? "Shoot" : "Strike at";
-        return new(AvatarActionKind.Hunt, $"{verb} the {c.Def.Label}", cell, animal);
-    }
-}
-
-/// <summary>
-/// The player's character attacks an animal or a foe while the work key is held: a blow wound up
-/// or a bow drawn, and loosed (<see cref="Combat.Blows"/>), and the next once it's ready. They don't move on their own (the
-/// player does the stalking), so the job ends when the prey falls or gets out of range or sight.
-/// </summary>
-public sealed class AvatarHuntJob(Entity prey) : Job, IFromTheSaddle
-{
-    public override Entity Focus => prey;
-
-    protected override IEnumerable<JobStatus> Run()
-    {
-        var animal = Get<Creature>(prey).Def.Race == Race.Animal;
-        var label = AvatarHunting.Called(Sim, prey);
-        Report = animal ? $"Hunting {label}" : $"Fighting {label}";
-        var struck = false;
-        while (true)
-        {
-            if (!Alive(prey))
-            {
-                Fail("prey is gone");
-                yield break;
-            }
-            if (Get<Creature>(prey).Dead || (!animal && Get<Creature>(prey).Downed))
-            {
-                if (struck)
-                {
-                    // It fell to us (a blow lands after its windup, so it's told here).
-                    SkillRules.Learn(Sim, Pawn, animal ? Skill.Hunting : Skill.Melee, AvatarHunting.XpPerKill);
-                    Sim.Messages.Add(MessageKind.Good, animal
-                        ? $"{Get<Creature>(Pawn).Name} brought down {label}. Butcher it for meat and hide."
-                        : $"{Get<Creature>(Pawn).Name} brought down {label}.", Sim.LocationOf(prey));
-                }
-                yield break;
-            }
-            if (WaitingForWorkKey())
-            {
-                yield return JobStatus.Running;
-                continue;
-            }
-            if (AvatarHunting.AttackOn(Sim, Pawn, prey) is not { } attack)
-            {
-                Fail($"{label} is out of reach");
-                yield break;
-            }
-            var skill = animal ? Skill.Hunting : attack.Ranged ? Skill.Shooting : Skill.Melee;
-            // A blow wound up, or a bow drawn, quick (Combat.Blows): F held looses again once it's ready.
-            if (!Combat.Blows.WindingUp(Sim, Pawn) && Combat.Blows.Begin(Sim, Pawn, prey, attack))
-            {
-                FacePrey();
-                SkillRules.Learn(Sim, Pawn, skill, AvatarHunting.XpPerAttack);
-                struck = true;
-            }
-            yield return JobStatus.Running;
-        }
-    }
-
-    /// <summary>Turn toward the prey, so the sprite looks where the arrow goes.</summary>
-    private void FacePrey()
-    {
-        if (!Sim.World.Has<Avatar>(Pawn))
-            return;
-        var d = Sim.LocationOf(prey) - PawnCell;
-        if (d.X != 0 || d.Y != 0)
-            Get<Avatar>(Pawn).Facing = new int2(Math.Sign(d.X), Math.Sign(d.Y));
+        return null; // a live one's hunted with your weapon drawn, aimed and swung (Combat.Blows)
     }
 }

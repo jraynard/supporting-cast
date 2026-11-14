@@ -270,6 +270,7 @@ public sealed partial class Simulation
             .AddSystem(new Work.CookingSystem())
             .AddSystem(new AvatarSystem())
             .AddSystem(sim.FreeMove)
+            .AddSystem(new Combat.TrailSystem())
             .AddSystem(new Combat.BlowSystem())
             .AddSystem(new SettlerSystem())
             .AddSystem(sim.Ai)

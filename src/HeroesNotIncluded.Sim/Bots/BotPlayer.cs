@@ -504,7 +504,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 send(new DodgeCommand(me, side.X, side.Y, now));
             else if (!_guarding)
             {
-                send(new CombatInputCommand(me, CombatInput.GuardUp, now));
+                send(new GuardCommand(me, true, now));
                 _guarding = true;
             }
             Move(me, side, aim);
@@ -512,7 +512,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         }
         if (_guarding)
         {
-            send(new CombatInputCommand(me, CombatInput.GuardDown, now));
+            send(new GuardCommand(me, false, now));
             _guarding = false;
         }
         var wish = dir * Math.Clamp((dist - reach) * 2f, -1f, 1f);
@@ -537,7 +537,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             return false;
         _foe = Entity.Null;
         if (_guarding)
-            send(new CombatInputCommand(me, CombatInput.GuardDown, 0));
+            send(new GuardCommand(me, false, 0));
         _guarding = false;
         if (_sentWish != float2.Zero)
             send(new FreeMoveCommand(me, 0f, 0f, 0f));

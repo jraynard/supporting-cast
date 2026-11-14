@@ -146,9 +146,6 @@ public sealed class WorldRenderer(TextureAtlas atlas)
     /// <summary>Draws creatures between ticks instead of at their latest tick (set by the game; null draws raw positions).</summary>
     public Interpolation? Interp { get; set; }
 
-    /// <summary>The local co-op player's predicted walk, drawn for <see cref="PredictedEntity"/> instead of the sim's position.</summary>
-    public AvatarPredictor? Predicted { get; set; }
-
     public Entity PredictedEntity { get; set; } = Entity.Null;
 
     /// <summary>The local co-op player's predicted free movement, drawn for <see cref="PredictedEntity"/> (<see cref="FreeMovePredictor"/>).</summary>
@@ -158,7 +155,6 @@ public sealed class WorldRenderer(TextureAtlas atlas)
     public float3 DrawPos(Simulation sim, Entity e, float3 simPos)
     {
         var p = Interp?.Smoothed(sim, e, simPos) ?? simPos;
-        p = Predicted != null && e == PredictedEntity ? Predicted.DrawPos(p) : p;
         p = FreePredicted != null && e == PredictedEntity ? FreePredicted.DrawPos(p) : p;
         // On a stair, on the tread under their feet (the sim has them at the floor until they step off).
         if (Stairs.FloorAt(sim, p) is { } floor)
@@ -800,7 +796,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             && Sim.Systems.Crafting.ToolInHand(sim, e, session is Sim.Work.HammerSession ? "Hammer" : "Mop") is { IsNull: false } tool2
             && HumanLook.HeldOf(w.Get<Thing>(tool2).Def) is { } h)
             return h;
-        // Free movement (Combat.FreeMover): a weapon's only in hand drawn, in combat mode.
+        // A player's weapon's only in hand drawn, in combat mode (Combat.FreeMover).
         if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon) && !(w.TryGet<Sim.Combat.FreeMover>(e, out var free) && !free.Drawn)
             && HumanLook.HeldOf(w.Get<Thing>(eq.Weapon).Def) is { } weapon)
             return weapon;
@@ -1027,9 +1023,8 @@ public sealed class WorldRenderer(TextureAtlas atlas)
     private static readonly float4 FireColor = new(1f, 0x4A / 255f, 0x24 / 255f, 1f);
 
     /// <summary>
-    /// Blows being wound up (<see cref="Sim.Combat.Windup"/>), for anyone who can see the one swinging:
-    /// a ring under whoever it's aimed at, closing as it comes (amber, ember for a heavy one), and a
-    /// white flash as it lands, which is the moment to raise a guard to parry it.
+    /// Blows being wound up (<see cref="Sim.Combat.Windup"/>), for anyone who can see the one swinging
+    /// (not your own: you know where you aimed): each one's sweep on the ground (<see cref="DrawSweep"/>).
     /// </summary>
     private void DrawWindups(Simulation sim)
     {
@@ -1039,23 +1034,8 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         foreach (var e in w.Each<Sim.Combat.Windup>())
         {
             var blow = w.Get<Sim.Combat.Windup>(e);
-            if (sim.FreeMove.Enabled)
-            {
-                if (Seen(e) && LocalAim?.E != e)
-                    DrawSweep(sim, e, blow, now, ring);
-                continue;
-            }
-            if (!Seen(e) || !w.IsAlive(blow.Target) || !w.Has<Position>(blow.Target))
-                continue;
-            var at = DrawPos(sim, blow.Target, w.Get<Position>(blow.Target).Pos) + new float3(0, 0, 0.06f);
-            var span = Math.Max(1f, blow.Impact - blow.Start);
-            var p = Math.Clamp((now - blow.Start) / span, 0f, 1f);
-            var landing = now >= blow.Impact;
-            var c = landing ? new float4(1f, 1f, 1f, 0.95f) : blow.Heavy ? HeavyBlowColor : BlowColor;
-            var size = landing ? 0.85f : 0.85f + 1.4f * (1f - p);
-            Decal(ring, at, size, Rgba.Pack(c.X, c.Y, c.Z, c.W * (0.35f + 0.65f * p)), Quad.Unlit | Quad.Always, translucent: true);
-            // The goal it closes on.
-            Decal(ring, at, 0.85f, Rgba.Pack(c.X, c.Y, c.Z, 0.25f), Quad.Unlit | Quad.Always, translucent: true);
+            if (Seen(e) && LocalAim?.E != e)
+                DrawSweep(sim, e, blow, now, ring);
         }
     }
 

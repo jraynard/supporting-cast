@@ -53,8 +53,9 @@ public static class Reach
     /// foe (an arrow: the first one along its line, short of a wall), in entity order. A blade
     /// doesn't know whose side you're on.
     /// </summary>
-    public static List<Entity> Struck(Simulation sim, Entity attacker, AttackDef attack, float aim) =>
-        InSweep(sim, attacker, attack, aim, _ => true);
+    /// <param name="lag">Judged against where the others were this many ticks ago (a player's late swing, <see cref="Windup.Lag"/>).</param>
+    public static List<Entity> Struck(Simulation sim, Entity attacker, AttackDef attack, float aim, int lag = 0) =>
+        InSweep(sim, attacker, attack, aim, _ => true, lag);
 
     /// <summary>
     /// Anyone not hostile to <paramref name="attacker"/> (other than <paramref name="target"/>) in
@@ -68,7 +69,7 @@ public static class Reach
             e => e != target && !Factions.Hostile(faction, sim.World.Get<Creature>(e).Faction) && sim.World.Get<Creature>(e).Able).Count > 0;
     }
 
-    private static List<Entity> InSweep(Simulation sim, Entity attacker, AttackDef attack, float aim, Func<Entity, bool> counts)
+    private static List<Entity> InSweep(Simulation sim, Entity attacker, AttackDef attack, float aim, Func<Entity, bool> counts, int lag = 0)
     {
         var w = sim.World;
         var me = w.Get<Position>(attacker);
@@ -83,7 +84,8 @@ public static class Reach
             var at = w.Get<Position>(e);
             if (Math.Abs(at.Cell.Z - me.Cell.Z) > 1)
                 continue;
-            var d = new float2(at.Pos.X - me.Pos.X, at.Pos.Y - me.Pos.Y);
+            var was = Trails.At(sim, e, lag); // where they stood when it was pressed
+            var d = new float2(was.X - me.Pos.X, was.Y - me.Pos.Y);
             var along = d.X * dir.X + d.Y * dir.Y;
             if (attack.Ranged)
             {

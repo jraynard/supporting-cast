@@ -16,46 +16,29 @@ public interface ISimCommand
 }
 
 /// <summary>
-/// Hold (or release, with a zero direction) a movement direction for an avatar. With
-/// <paramref name="At"/>, the change waits until the avatar walks onto that cell: a co-op client
-/// predicts its walk and names the cell where the player turned or let go, so the late-arriving
-/// command lands where they saw it. Too far away, or if walking on wouldn't get there, it applies at once.
+/// Hold (or let go, with a zero direction) one of eight directions for a player's character: where
+/// its keys ask it to go (<see cref="Combat.FreeMover.Wish"/>). The game sends <see cref="FreeMoveCommand"/>
+/// (any direction, and the aim); bots and tests use this.
 /// </summary>
-public sealed record AvatarMoveCommand(Entity Avatar, int2 Direction, int3? At = null) : ISimCommand, IActorCommand
+public sealed record AvatarMoveCommand(Entity Avatar, int2 Direction) : ISimCommand, IActorCommand
 {
     public Entity Actor => Avatar;
 
-    /// <summary>How far ahead (cells) a turn may be scheduled: more is a stale or bogus prediction.</summary>
-    public const int MaxLead = 4;
-
     public void Apply(Simulation sim)
     {
-        if (!sim.World.IsAlive(Avatar) || !sim.World.Has<Avatar>(Avatar))
+        var w = sim.World;
+        if (!w.IsAlive(Avatar) || !w.Has<Avatar>(Avatar))
             return;
-        ref var a = ref sim.World.Get<Avatar>(Avatar);
+        if (!w.Has<Combat.FreeMover>(Avatar))
+            Combat.FreeMoveSystem.Join(sim, Avatar);
         var dir = new int2(Math.Sign(Direction.X), Math.Sign(Direction.Y));
-        // A free mover (Combat.FreeMoveSystem) takes a held direction as where its keys ask to go.
-        if (sim.World.Has<Combat.FreeMover>(Avatar))
-        {
-            sim.World.Get<Combat.FreeMover>(Avatar).Wish = dir == int2.Zero ? float2.Zero
-                : new float2(dir.X, dir.Y) * (dir.X != 0 && dir.Y != 0 ? 0.70710678f : 1f);
-            return;
-        }
-        var here = sim.World.Get<Position>(Avatar).Cell;
-        if (At is { } at && (a.MoveDir.X != 0 || a.MoveDir.Y != 0) && AvatarSystem.Distance(here, at) <= MaxLead)
-        {
-            a.HasPending = true;
-            a.PendingDir = dir;
-            a.PendingAt = at;
-            return;
-        }
-        a.HasPending = false;
-        a.MoveDir = dir;
+        w.Get<Combat.FreeMover>(Avatar).Wish = dir == int2.Zero ? float2.Zero
+            : new float2(dir.X, dir.Y) * (dir.X != 0 && dir.Y != 0 ? 0.70710678f : 1f);
     }
 }
 
 /// <summary>
-/// Press or release a work key (<paramref name="Tool"/>: F to use, Z to dig): start the action at a
+/// Press or release a work key (<paramref name="Tool"/>: F to use, C to dig): start the action at a
 /// cell on press, and work only while held.
 /// </summary>
 public sealed record AvatarWorkCommand(Entity Avatar, bool Held, int3? Target = null, AvatarTool Tool = AvatarTool.Use) : ISimCommand, IActorCommand

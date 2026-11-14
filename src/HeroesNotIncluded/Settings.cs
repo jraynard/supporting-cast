@@ -30,12 +30,6 @@ public sealed class Settings
     /// <summary>First-day tips for your trade, and markers on its stations till you've been to each.</summary>
     public bool ShowTips { get; set; } = true;
 
-    /// <summary>
-    /// The combat pass's prototype in the village (docs/ROADMAP.md): move freely and fight with the
-    /// mouse, R to draw your weapon. Games you start or host pick it up; joiners get the host's.
-    /// </summary>
-    public bool FreeMovement { get; set; }
-
     /// <summary>The camera shakes a little with heavy blows you deal or take.</summary>
     public bool ScreenShake { get; set; } = true;
 

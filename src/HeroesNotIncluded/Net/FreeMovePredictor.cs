@@ -71,7 +71,7 @@ public sealed class FreeMovePredictor
             if (want == float2.Zero && _vel.X * _vel.X + _vel.Y * _vel.Y < FreeMoveSystem.StopBelow * FreeMoveSystem.StopBelow)
                 _vel = float2.Zero;
             else
-                (_pos, _cell, _vel) = FreeMoveSystem.Slide(sim, _pos, _cell, _vel);
+                (_pos, _cell, _vel) = FreeMoveSystem.Slide(sim, _pos, _cell, _vel, w.TryGet<Perched>(me, out var up) ? up.Cell : null);
         }
         var d = _pos - simPos;
         if (MathF.Abs(d.X) > MaxDivergence || MathF.Abs(d.Y) > MaxDivergence || MathF.Abs(d.Z) > 1.5f)

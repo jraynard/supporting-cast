@@ -1048,4 +1048,18 @@ shared); fights stay real time, Souls-lite.
   parry, a block, a heavy swing and a spear's jab (`tools/sfx_synth.py`), played by how each blow
   went (`SoundDirector.BlowsMet`); a sheathed weapon slung across the back (`DrawSlung`); a body
   winding up a blow plays its work swing until it has frames of its own.
+- **One model** (step 8): every player moves freely, always (`FreeMoveSystem` has no switch; the
+  grid walking, `AvatarPredictor`, the grid's dodge and Shift+F heavy, F-to-strike and its hunting
+  job are gone; the `Avatar` component dropped its held direction and scheduled turns, save format
+  15). There's no roll to hit anywhere (`CombatRules.Resolve` and `TryAttack` are gone): a blow
+  lands on whoever's in its sweep (`Reach`), armour soaking what the old roll took off on average
+  (`CombatRules.Strike`). An AI slips a blow aimed at it as often as the old roll would have missed
+  (`BlowResponse.Dodge`), so fights between AI stay as deadly as they were. Blows at a player come at
+  full pace (`Engagement.PaceOnPlayer` gone). Archers lead a moving target. Moving diagonally tries
+  both axes' orders, so a stair met at an angle is climbed.
+- **Late swings** (the rest of step 5): every creature keeps a short trail of where it's been
+  (`Combat/Trail`, saved); a player's swing carries the tick it was pressed on, and lands against
+  where everyone was then.
+- Bench baselines: seed 1234 state `853A200442B00386`, full `12E0FA3E45392BBC`; seed 99 state
+  `9039CE5D8E55CCBD`, full `2D4DFD010E59E7C8`.
 

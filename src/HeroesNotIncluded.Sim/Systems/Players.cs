@@ -113,10 +113,10 @@ public static class Players
         if (me.IsNull || !w.Has<Avatar>(me))
             return;
         ref var avatar = ref w.Get<Avatar>(me);
-        avatar.MoveDir = int2.Zero;
         avatar.WorkHeld = false;
         avatar.Chain = AvatarActionKind.None;
-        avatar.HasPending = false;
+        if (w.Has<Combat.FreeMover>(me))
+            w.Get<Combat.FreeMover>(me).Wish = float2.Zero;
         Work.WorkSystem.Stop(sim, me, null); // no one is there to play it
     }
 

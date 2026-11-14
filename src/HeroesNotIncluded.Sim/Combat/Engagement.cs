@@ -15,7 +15,7 @@ public struct Pressing
 /// <summary>
 /// Who may press whom. A band doesn't all hack at one person at once: only so many press a target
 /// at a time (one on a player's character, who has to be able to answer each of them; two on
-/// anyone else), and the rest hang back a step and wait their turn, or go for someone else.
+/// anyone else), and the rest circle a little way off and wait their turn (<see cref="FreeFight"/>), or go for someone else.
 /// </summary>
 public static class Engagement
 {
@@ -25,21 +25,14 @@ public static class Engagement
     /// <summary>How many may press anyone else at once.</summary>
     public const int OnOthers = 2;
 
-    /// <summary>How long one who's waiting stays waiting before it thinks again (another target).</summary>
+    /// <summary>How long one who's waiting (circling, <see cref="FreeFight"/>) stays waiting before it thinks again (another target).</summary>
     public const int WaitTicks = SimClock.TicksPerSecond * 6;
 
     /// <summary>The pause between taking a turn and the first blow: a beat to see them coming.</summary>
     public const int FirstBlowTicks = SimClock.TicksPerSecond * 3 / 4;
 
-    /// <summary>
-    /// Blows at a player's character come this much slower than the attack's own pace: until they
-    /// can block or step aside from a blow they see coming, a player needs the room to answer.
-    /// </summary>
-    public const float PaceOnPlayer = 1.4f;
-
-    /// <summary>Ticks between <paramref name="attacker"/>'s blows at <paramref name="target"/>.</summary>
-    public static int Cooldown(Simulation sim, Defs.AttackDef attack, Entity target) =>
-        sim.World.Has<Avatar>(target) && !attack.Ranged ? (int)(attack.CooldownTicks * PaceOnPlayer) : attack.CooldownTicks; // a bow keeps its own pace
+    /// <summary>Ticks between <paramref name="attacker"/>'s blows at <paramref name="target"/>: the attack's own pace.</summary>
+    public static int Cooldown(Simulation sim, Defs.AttackDef attack, Entity target) => attack.CooldownTicks;
 
     public static int Limit(Simulation sim, Entity target) => sim.World.Has<Avatar>(target) ? OnPlayer : OnOthers;
 
@@ -82,31 +75,5 @@ public static class Engagement
     {
         if (sim.World.Has<Pressing>(attacker))
             sim.World.Remove<Pressing>(attacker);
-    }
-
-    /// <summary>
-    /// Where to wait a turn: a standable cell two steps from <paramref name="target"/>, out of its
-    /// reach, nearest <paramref name="from"/>. Null if there's none.
-    /// </summary>
-    public static int3? HoldSpot(Simulation sim, int3 from, int3 target)
-    {
-        int3? best = null;
-        var bestDist = int.MaxValue;
-        for (var dy = -2; dy <= 2; dy++)
-        for (var dx = -2; dx <= 2; dx++)
-        {
-            if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != 2)
-                continue;
-            var c = new int3(target.X + dx, target.Y + dy, target.Z);
-            if (!sim.Map.Passable(c) || !sim.Regions.CanReach(from, c, PathEnd.OnTile))
-                continue;
-            var d = Maps.Map.Distance(from, c);
-            if (d < bestDist)
-            {
-                best = c;
-                bestDist = d;
-            }
-        }
-        return best;
     }
 }

@@ -75,24 +75,22 @@ public class DefenceTests
     }
 
     [Fact]
-    public void APlayerCanStrikeAtARaiderButNotAtAVillager()
+    public void FDoesntStartAFightAPlayersDrawnSwingDoes()
     {
         var sim = Create();
         var me = Person(sim, "Arin", C(5, 5));
         sim.World.Add(me, new Avatar());
         var raider = StandingRaider(sim, C(6, 5));
-        var villager = Person(sim, "Dagny", C(5, 6), weapon: null);
-        sim.World.Get<Mind>(villager).Drafted = true;
+        Assert.Null(AvatarHunting.ActionAt(sim, me, C(6, 5), C(5, 5))); // F at a raider: nothing (the mouse fights)
 
-        var strike = AvatarHunting.ActionAt(sim, me, C(6, 5), C(5, 5));
-        Assert.NotNull(strike);
-        Assert.Equal(AvatarActionKind.Hunt, strike.Value.Kind);
-        Assert.Equal(raider, strike.Value.Target);
-        Assert.Null(AvatarHunting.ActionAt(sim, me, C(5, 6), C(5, 5)));
-
-        AiSystem.Order(sim, me, new AvatarHuntJob(raider));
-        sim.World.Get<Avatar>(me).WorkHeld = true;
-        sim.TickMany(SimClock.TicksPerSecond * 20);
+        sim.Tick(); // moving freely from here
+        sim.ApplyNow(new DrawWeaponCommand(me, true));
+        for (var t = 0; t < SimClock.TicksPerSecond * 10 && sim.World.Get<Health>(raider).Injuries.Count == 0; t++)
+        {
+            if (!sim.World.Has<Windup>(me))
+                sim.ApplyNow(new AttackCommand(me, false, 0f)); // east, at it
+            sim.Tick();
+        }
         Assert.True(sim.World.Get<Health>(raider).Injuries.Count > 0 || sim.World.Get<Creature>(raider).Dead);
     }
 }

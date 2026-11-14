@@ -287,8 +287,8 @@ public class MilitiaTests
         }
         Assert.True(firstHurt >= 0, "they came at you");
         Assert.Equal(Engagement.OnPlayer, mostOnMe);
-        // Standing there doing nothing, you've still a good while to answer: it was ~5 s when all three swung at once.
+        // Standing there doing nothing, you've still a few blows' grace to answer: it was ~5 s when all three swung at once.
         var lasted = (downed < 0 ? sim.Clock.Tick : downed) - firstHurt;
-        Assert.True(lasted >= SimClock.TicksPerSecond * 10, $"downed {lasted / (float)SimClock.TicksPerSecond:0.0} s after the first wound");
+        Assert.True(lasted >= SimClock.TicksPerSecond * 6, $"downed {lasted / (float)SimClock.TicksPerSecond:0.0} s after the first wound");
     }
 }

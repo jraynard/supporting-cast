@@ -73,10 +73,8 @@ public sealed partial class VillageGame
     }
 
     private Entity _avatar = Entity.Null;
-    private int2 _sentMoveDir;
 
     /// <summary>Co-op only: the local walk drawn ahead of the round trip (see <see cref="AvatarPredictor"/>).</summary>
-    private readonly AvatarPredictor _predictor = new();
     private readonly FreeMovePredictor _freePredictor = new();
     private bool _sentWork;
 
@@ -117,28 +115,15 @@ public sealed partial class VillageGame
                 break;
             }
         }
-        _sentMoveDir = default;
-        _sentKeys = 0;
-        _predictor.Reset();
         _freePredictor.Reset();
         _sentWork = false;
         _sentDig = false;
-        _guardSent = _heavyKeyHeld = false;
+        _guardSent = false;
         _clickHold = ClickHold.None;
         _clickWindow = null;
         _seenWalkFailure = !_avatar.IsNull && _sim.Ai.LastFailure.TryGetValue(_avatar, out var failed) ? failed : null;
     }
 
-    /// <summary>
-    /// Seconds a direction that may be half a two-key press waits before it's sent: starting on one
-    /// key (the second often lands a frame later), or letting go of one of two (the other often
-    /// follows). Without it, those frames start a stray step the wrong way.
-    /// </summary>
-    private const float ChordGrace = 0.05f;
-
-    private int2 _heldDir;
-    private float _heldFor;
-    private int _sentKeys;
     private bool _moveKeysFromWork, _useKeyFromWork;
 
     /// <summary>Whether the pointer still says what F means, or the avatar has walked away from it.</summary>
@@ -165,33 +150,9 @@ public sealed partial class VillageGame
             x = y = 0;
         else
             _moveKeysFromWork = false;
-        if (FreeMoving)
-            HandleFreeMove(input, x, y);
-        else
-        {
-            var dir = MapDirection(x, y);
-            if (dir != _heldDir)
-                (_heldDir, _heldFor) = (dir, 0f);
-            else
-                _heldFor += dt;
-            // One key held, coming from nothing or from two: wait a moment for the other key.
-            var oneKey = (x != 0) != (y != 0);
-            var sentTwo = _sentKeys == 2;
-            if (oneKey && (_sentMoveDir == int2.Zero || sentTwo) && _heldFor < ChordGrace)
-                dir = _sentMoveDir;
-            if (dir != _sentMoveDir)
-            {
-                _sentKeys = dir == int2.Zero ? 0 : oneKey ? 1 : 2;
-                // Co-op: walk on screen at once, and tell the sim where we turned or stopped so it
-                // ends up there too when the command comes back.
-                var at = _coop != null ? _predictor.DirectionChanged(_sim, _avatar, dir) : null;
-                Issue(new AvatarMoveCommand(_avatar, dir, at));
-                _sentMoveDir = dir;
-            }
-            if (dir != int2.Zero)
-                _clickWindow = null; // walked off: the clicked wagon or bench stays shut
-
-        }
+        HandleFreeMove(input, x, y);
+        if (x != 0 || y != 0)
+            _clickWindow = null; // walked off: the clicked wagon or bench stays shut
 
         HandleInventoryKeys(input);
         HandleCombatKeys(input);
@@ -206,10 +167,10 @@ public sealed partial class VillageGame
 
         // F uses, C digs (not with a build tool out: C is theirs); both work only while held. A press starts the action, a release of both stops work.
         var use = input.IsKeyDown(GlfwKey.F);
-        if ((_useKeyFromWork || _heavyKeyHeld) && use)
+        if (_useKeyFromWork && use)
             use = false;
         else
-            _useKeyFromWork = _heavyKeyHeld = false;
+            _useKeyFromWork = false;
         var dig = input.IsKeyDown(GlfwKey.C) && _tool is not (ToolKind.Build or ToolKind.PlaceBuilding);
         if (use && !_sentWork && WorkTarget() is { OpensWindow: true } window)
             OpenWindowFor(window, toggle: true); // F again closes it
@@ -579,21 +540,6 @@ public sealed partial class VillageGame
         _clickWindow = null;
     }
 
-    /// <summary>Screen-relative input (x right, y up) as one of the 8 map directions.</summary>
-    private int2 MapDirection(float x, float y)
-    {
-        if (x == 0 && y == 0)
-            return int2.Zero;
-        var right = _camera.Right;
-        var up = _camera.Heading;
-        var vx = right.X * x + up.X * y;
-        var vy = right.Y * x + up.Y * y;
-        var len = MathF.Sqrt(vx * vx + vy * vy);
-        // Snap to the nearest of 8 directions: a component counts when it's past sin(22.5°).
-        const float Snap = 0.383f;
-        return new int2(vx / len > Snap ? 1 : vx / len < -Snap ? -1 : 0, vy / len > Snap ? 1 : vy / len < -Snap ? -1 : 0);
-    }
-
     /// <summary>
     /// What F would act on: the hovered cell (or the block under the cursor, or what a wall in the
     /// way hides) if it's in reach and you haven't walked since the pointer moved, else the cell in front
@@ -616,14 +562,11 @@ public sealed partial class VillageGame
             (_, false) => [_hoverCell, _hoverBlock, _hoverPastWalls, front, at],
             _ => [front, at],
         };
-        // An animal under the cursor comes first: its sprite stands over a cell other than the ground hovered.
+        // A carcass under the cursor comes first: its sprite lies over a cell other than the ground hovered.
         if (tool == AvatarTool.Use && !overUi && !Host.Input.MouseCaptured && PickCreature(Host.Input.MousePosition) is { IsNull: false } animal
             && _sim.World.Get<Creature>(animal).Def.Race == Race.Animal
-            && AvatarSystem.ActionAt(_sim, _avatar, _sim.World.Get<Position>(animal).Cell, tool) is { Kind: AvatarActionKind.Hunt or AvatarActionKind.Butcher } hunt)
-            return hunt;
-        // In a fight, F fights: a raider or predator beside you comes before whatever's under the cursor.
-        if (tool == AvatarTool.Use && FoeBeside(at, facing) is { Kind: AvatarActionKind.Hunt } strike)
-            return strike;
+            && AvatarSystem.ActionAt(_sim, _avatar, _sim.World.Get<Position>(animal).Cell, tool) is { Kind: AvatarActionKind.Butcher or AvatarActionKind.Carry } carcass)
+            return carcass;
         foreach (var c in candidates)
         {
             var action = AvatarSystem.ActionAt(_sim, _avatar, c, tool);
@@ -647,34 +590,6 @@ public sealed partial class VillageGame
             return best;
         }
         return AvatarAction.None;
-    }
-
-    /// <summary>
-    /// A strike at a foe on its feet beside you: the one you face, else the one pressing you
-    /// (<see cref="Sim.Combat.Engagement"/>), else any. <see cref="AvatarAction.None"/> if there's none.
-    /// </summary>
-    private AvatarAction FoeBeside(int3 at, int2 facing)
-    {
-        var w = _sim.World;
-        AvatarAction best = AvatarAction.None;
-        var bestRank = -1;
-        for (var dy = -1; dy <= 1; dy++)
-        for (var dx = -1; dx <= 1; dx++)
-        {
-            if (dx == 0 && dy == 0)
-                continue;
-            var cell = new int3(at.X + dx, at.Y + dy, at.Z);
-            var foe = Sim.Ai.AvatarHunting.FoeAt(_sim, cell);
-            if (foe.IsNull || !View.CanSee(foe) || AvatarSystem.ActionAt(_sim, _avatar, cell) is not { Kind: AvatarActionKind.Hunt } strike)
-                continue;
-            var rank = dx == facing.X && dy == facing.Y ? 2 : Sim.Combat.Engagement.Presses(_sim, foe, _avatar) ? 1 : 0;
-            if (rank > bestRank)
-            {
-                best = strike;
-                bestRank = rank;
-            }
-        }
-        return best;
     }
 
     /// <summary>

@@ -18,7 +18,7 @@ dotnet run --project src/HeroesNotIncluded -- --new-game --name Arin        # st
 dotnet run --project src/HeroesNotIncluded -- --host --name Arin            # host (--port N, --relay HOST, --difficulty D)
 dotnet run --project src/HeroesNotIncluded -- --join 127.0.0.1 --player-id bea --name Bea
 dotnet run --project src/HeroesNotIncluded -- --raid-test --name Arin          # as the smith, bandits down the north road
-dotnet run --project src/HeroesNotIncluded -- --arena Swordsman --weapon IronSpear  # the practice ring: one foe a bout (any raider kind, or Dragon)
+dotnet run --project src/HeroesNotIncluded -- --arena Swordsman --weapon IronSpear  # the practice ring: one foe a bout (any raider kind, or Dragon; Enter for the next)
 dotnet run --project src/HeroesNotIncluded -- --furniture-demo --zoom 80    # also --building-demo
 dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui, --look-at X,Y; any mode
 dotnet run --project src/HeroesNotIncluded -- --art-preview
@@ -117,20 +117,18 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     fireplace (`setInWall`) the room's cell in front of it, which is also the only place it's worked from.
   - `Appearance` is cosmetic and left out of the hash, its `Folk` (human, elf) included. AI villagers
     have none: `HumanLook.Derived` hashes their look (and folk) from the entity, the same on every peer.
-  - Fights are real time: every attack goes through `Combat/RealtimeAttacks.TryAttack`, odds and
-    wounds from `CombatRules`. There's no turn-based combat, and nothing may stop the clock for one
-    player's fight.
-    Only so many press one target at a time (`Combat/Engagement`: one on a player); the rest
-    wait a step back (`Job.AwaitTurn`). Melee blows are wound up first (`Combat/Blows.Begin`, a
-    `Windup` the `BlowSystem` lands) and met by `Guard` (block, parry, dodge); a player's keys are
-    stamped (`CombatInputCommand`) and blows at them land `LatencyGrace` late.
-    Arrows (their draw is the windup) are blocked or dodged, never parried; a dragon's jaws and
-    breath (`Inhaling`) are only partly blocked, and dodged only late.
-    Free movement (`sim.FreeMove`, `FreeMover`: the arena, and villages started or hosted with the
-    setting or `--free-move`; co-op predicts it with `Net/FreeMovePredictor`, commands carrying where
-    the player is, `FreeMoveSystem.Claim`): players move off the grid (a job's walk follows its path; levels change by the
-    `NavGraph` links), R draws a weapon (combat mode), and blows land by reach and timing
-    (`Combat/Reach`), on friend or foe, not by roll. The plan is docs/ROADMAP.md, "Combat pass".
+  - Fights are real time and readable (docs/ROADMAP.md, "Combat pass"): a melee blow is wound up
+    first (`Combat/Blows.Begin`, a `Windup` the `BlowSystem` lands) and lands on whoever's in its
+    sweep the way it was aimed (`Combat/Reach`), friend or foe, no roll to hit; armour soaks a share
+    (`CombatRules.Strike`). It's met by `Guard` (block, parry, dodge); an AI decides as it sees it
+    coming (`BlowResponse`). Only so many press one target at a time (`Combat/Engagement`). There's
+    no turn-based combat, and nothing may stop the clock for one player's fight.
+  - Players move freely (`Combat/FreeMove`, `FreeMover`): WASD and the mouse's aim through
+    `FreeMoveCommand`; a job's walk follows its path; levels change by the `NavGraph` links. R draws
+    a weapon (combat mode). An AI is a free mover while it fights (`Combat/FreeFight`). Co-op predicts
+    your own movement (`Net/FreeMovePredictor`), commands carry where you are (`FreeMoveSystem.Claim`),
+    and keys are stamped with the tick pressed: blows at a player land `LatencyGrace` late, and a
+    player's swing is judged against where everyone was then (`Combat/Trail`).
   - Player input reaches the sim only as `ISimCommand`s, through `VillageGame.Issue`. `CommandCodec`
     serializes by constructor parameter. Commands declare `IActorCommand`, `ISubjectCommand`,
     `IPlayerCommand`, `IHostCommand` or `IDevCommand`; `CommandRules.Refusal` checks them on every peer.

@@ -286,12 +286,6 @@ public sealed class SettingsWindow(GameHost host)
             _draft.UiScale = MathF.Round(percent / 5f) * 5f / 100f; // 5% steps
 
         ImGui.Dummy(in gap);
-        Row("Free movement", "Prototype: move freely and fight with the mouse (R draws your weapon). Takes effect when you next start, host or load a game.");
-        var freeMove = _draft.FreeMovement;
-        if (ImGui.Checkbox("##freemove"u8, ref freeMove))
-            _draft.FreeMovement = freeMove;
-
-        ImGui.Dummy(in gap);
         Row("Screen shake", "The camera shakes a little with heavy blows you deal or take.");
         var shake = _draft.ScreenShake;
         if (ImGui.Checkbox("##shake"u8, ref shake))
