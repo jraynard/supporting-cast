@@ -467,7 +467,7 @@ public sealed partial class VillageGame
         _hud.Took();
         if (o.Loaves > 0)
         {
-            TextC(o.Smell == "burning!" ? Theme.Bad : o.Smell == "a golden crust" ? Theme.Good : Theme.Text, $"Bread's in. It smells of {o.Smell}.");
+            TextC(o.Smell == "burning!" ? Theme.Bad : o.Smell == "a golden crust" ? Theme.Good : Theme.Text, $"{(o.Pie ? "A pie's" : "Bread's")} in. It smells of {o.Smell}.");
             SmellLadder(o.Smell);
             TextC(Theme.Dim, Controls.Keys("~F~ to stand by it and take it out."));
         }
@@ -475,6 +475,8 @@ public sealed partial class VillageGame
             TextC(Theme.Warn, Controls.Keys("Cold. Feed it wood (~F~ with wood on you) before anything goes in."));
         else if (!Baking.DoughIn(_sim, _avatar).IsNull)
             TextC(Theme.Good, Controls.Keys("~F~ puts your dough in. Then it's all in the smell: out on a golden crust."));
+        else if (!Pies.RawIn(_sim, _avatar).IsNull)
+            TextC(Theme.Good, Controls.Keys("~F~ puts your pie in. Out on a golden crust, as bread is."));
         else
             Wrapped($"Empty. Bread starts at the prep table: knead {Baking.FlourPerDough} flour into dough, let it rise an hour or two, then bring it here.");
         Panel.End();
@@ -521,9 +523,200 @@ public sealed partial class VillageGame
         PrepButton(table, PrepStep.Knead, "Knead dough", flour, $"{Baking.FlourPerDough} flour, pushed from either side on the beat. Then let it rise and bake it.");
         ImGui.SameLine(0, 6);
         PrepButton(table, PrepStep.Pack, "Pack rations", portions >= Rations.Portions, $"{Rations.Portions} portions of any food, wrapped and tied: sold to parties for the road.");
-        if (chop.IsNull && !flour && portions < Rations.Portions)
+        ImGui.SameLine(0, 6);
+        var pie = Pies.CanMake(_sim, _avatar);
+        PrepButton(table, PrepStep.Pie, "Make a pie", pie, $"A ball of dough and {Pies.Filling} portions of raw food, the rim crimped round. Then the oven.");
+        if (chop.IsNull && !flour && portions < Rations.Portions && !pie)
             TextC(Theme.Dim, "Bring raw food, flour or a few portions of food from the larder.");
         Panel.End();
+    }
+
+    /// <summary>The butcher block beside you: what it's for, and whether you've anything to dress.</summary>
+    private void DrawBlockPanel()
+    {
+        if (StationBeside(e => Butchery.IsBlock(_sim, e)).IsNull)
+            return;
+        _hud.Next(Anchor.Bottom);
+        Panel.Begin("The butcher block###block", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
+        _hud.Took();
+        if (Butchery.Side(_sim, _avatar) is { IsNull: false } side)
+            TextC(Theme.Good, Controls.Keys($"~F~ to joint the {_sim.World.Get<Thing>(side).Def.Label}: bring the cleaver down on the joints."));
+        else if (Butchery.Bird(_sim, _avatar) is { IsNull: false } bird)
+            TextC(Theme.Good, Controls.Keys($"~F~ to pluck the {_sim.World.Get<Thing>(bird).Def.Label}: short firm pulls, or the skin tears."));
+        else
+            Wrapped("Bring a side of pork or a bird in its feathers from the larder: they're dressed here.");
+        Panel.End();
+    }
+
+    /// <summary>Jointing: the side along the block, its joints marked, the cleaver sweeping over it.</summary>
+    private void DrawButcher(ButcherSession s)
+    {
+        BeginWork(s.Title, ("F", "bring the cleaver down"), ("Esc", "leave it"));
+        if (s.StartTick != _blockSession)
+        {
+            _blockSession = s.StartTick;
+            _blockBlows = 0;
+            _blockAt = -10f;
+        }
+        if (s.Blows != _blockBlows)
+        {
+            _blockBlows = s.Blows;
+            _blockAt = _time;
+        }
+        var since = _time - _blockAt;
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(420, 150);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var max = min + size;
+        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+        var blockA = new float2(min.X + Gui.S(24), max.Y - Gui.S(30));
+        var blockB = new float2(max.X - Gui.S(24), max.Y - Gui.S(12));
+        dl.AddRectFilled(in blockA, in blockB, new ImColor8(120, 86, 56, 255), Gui.S(3), ImDrawFlags.None);
+        var sideA = new float2(blockA.X + Gui.S(26), blockA.Y - Gui.S(34));
+        var sideB = new float2(blockB.X - Gui.S(26), blockA.Y);
+        var len = sideB.X - sideA.X;
+        // The side, its pieces parted at the joints cut so far.
+        var cuts = new List<float> { 0f };
+        for (var i = 0; i < ButcherSession.JointsAt.Length; i++)
+            if (s.Parted[i])
+                cuts.Add(ButcherSession.JointsAt[i]);
+        cuts.Add(1f);
+        cuts.Sort();
+        for (var i = 0; i + 1 < cuts.Count; i++)
+        {
+            var a = new float2(sideA.X + len * cuts[i] + (i > 0 ? Gui.S(3) : 0), sideA.Y);
+            var b = new float2(sideA.X + len * cuts[i + 1] - (i + 2 < cuts.Count ? Gui.S(3) : 0), sideB.Y);
+            dl.AddRectFilled(in a, in b, new ImColor8(196, 110, 100, 255), Gui.S(4), ImDrawFlags.None);
+            var fatA = new float2(a.X, a.Y);
+            var fatB = new float2(b.X, a.Y + Gui.S(7));
+            dl.AddRectFilled(in fatA, in fatB, new ImColor8(236, 222, 200, 255), Gui.S(3), ImDrawFlags.None);
+        }
+        // The joints still to part, marked where the knife should go.
+        for (var i = 0; i < ButcherSession.JointsAt.Length; i++)
+        {
+            if (s.Parted[i])
+                continue;
+            var x = sideA.X + len * ButcherSession.JointsAt[i];
+            for (var y = sideA.Y + Gui.S(2); y < sideB.Y - Gui.S(2); y += Gui.S(6))
+            {
+                var a = new float2(x, y);
+                var b = new float2(x, y + Gui.S(3));
+                dl.AddLine(in a, in b, new ImColor8(250, 240, 220, 230), Gui.S(2));
+            }
+        }
+        // The cleaver over the side: down for a moment after a blow.
+        var cx = sideA.X + len * s.Cleaver;
+        var drop = since < 0.15f ? Gui.S(26) : 0f;
+        var bladeA = new float2(cx - Gui.S(12), sideA.Y - Gui.S(40) + drop);
+        var bladeB = new float2(cx + Gui.S(12), sideA.Y - Gui.S(14) + drop);
+        var steel = since < 0.3f ? (s.LastMark == 1 ? Theme.U8(Theme.Good) : Theme.U8(Theme.Bad)) : new ImColor8(200, 204, 212, 255);
+        dl.AddRectFilled(in bladeA, in bladeB, steel, Gui.S(2), ImDrawFlags.None);
+        var handleA = new float2(cx - Gui.S(3), bladeA.Y - Gui.S(22));
+        var handleB = new float2(cx + Gui.S(3), bladeA.Y);
+        dl.AddRectFilled(in handleA, in handleB, new ImColor8(90, 60, 40, 255), Gui.S(2), ImDrawFlags.None);
+        ImGui.Spacing();
+        TextC(Theme.Dim, $"Joints parted: {s.Parted.Count(p => p)} of {ButcherSession.JointsAt.Length}. Through bone: {s.Hacks}. Blows left: {ButcherSession.MostBlows - s.Blows}.");
+        if (since < 0.8f && s.LastMark >= 0)
+            TextC(s.LastMark == 1 ? Theme.Good : Theme.Bad, s.LastMark == 1 ? "Clean through the joint." : "Through the bone: that's waste.");
+        else
+            TextC(Theme.Dim, "Bring it down as the cleaver's over a mark.");
+        EndWork();
+    }
+
+    private long _blockSession = -1;
+    private int _blockBlows;
+    private float _blockAt = -10f;
+
+    /// <summary>Plucking: the bird, its feathers thinning, and how hard the pull is.</summary>
+    private void DrawPluck(PluckSession s)
+    {
+        BeginWork(s.Title, ("F", "hold to pull, let go to take the handful"), ("Esc", "leave it"));
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(420, 150);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var max = min + size;
+        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+        // The bird: pale skin under a coat of feathers that thins as it's plucked.
+        var c = new float2((min.X + max.X) * 0.5f, min.Y + Gui.S(68));
+        var stretch = 1f + 0.12f * s.Pull;
+        dl.AddEllipseFilled(in c, new float2(Gui.S(70), Gui.S(40) * stretch), new ImColor8(236, 206, 176, 255), 0f, 32);
+        var feathers = (int)MathF.Round(48 * (1f - s.Plucked));
+        for (var i = 0; i < feathers; i++)
+        {
+            var a = i * 2.39996f; // golden angle: an even scatter, the same every frame
+            var r = MathF.Sqrt((i + 0.5f) / 48f);
+            var at = c + new float2(MathF.Cos(a) * r * Gui.S(64), MathF.Sin(a) * r * Gui.S(34) * stretch);
+            var tip = at + new float2(Gui.S(7), -Gui.S(3));
+            dl.AddLine(in at, in tip, new ImColor8(150, 120, 90, 255), Gui.S(3));
+        }
+        // How hard it's pulled: taut past the mark, and it'll tear somewhere beyond.
+        var barA = new float2(min.X + Gui.S(60), max.Y - Gui.S(22));
+        var barB = new float2(max.X - Gui.S(60), max.Y - Gui.S(12));
+        dl.AddRectFilled(in barA, in barB, Theme.U8(Theme.Inset), Gui.S(3), ImDrawFlags.None);
+        var fillB = new float2(barA.X + (barB.X - barA.X) * Math.Min(1f, s.Pull), barB.Y);
+        dl.AddRectFilled(in barA, in fillB, Theme.U8(s.Taut ? Theme.Warn : s.Pull >= 0.5f ? Theme.Good : Theme.Accent), Gui.S(3), ImDrawFlags.None);
+        var firmX = barA.X + (barB.X - barA.X) * 0.5f;
+        var tautX = barA.X + (barB.X - barA.X) * PluckSession.TautAt;
+        var fa = new float2(firmX, barA.Y - Gui.S(4));
+        var fb = new float2(firmX, barB.Y + Gui.S(4));
+        dl.AddLine(in fa, in fb, Theme.U8(Theme.Good), Gui.S(2));
+        var ta = new float2(tautX, barA.Y - Gui.S(4));
+        var tb = new float2(tautX, barB.Y + Gui.S(4));
+        dl.AddLine(in ta, in tb, Theme.U8(Theme.Warn), Gui.S(2));
+        ImGui.Spacing();
+        Bar("Plucked", s.Plucked, Theme.Accent);
+        var (col, say) = s.Taut ? (Theme.Warn, "The skin's pulling taut...")
+            : s.LastMark switch
+            {
+                -1 => (Theme.Bad, "It tore!"),
+                1 => (Theme.Good, "A good handful."),
+                0 => (Theme.Dim, "A few feathers. Pull firmer."),
+                _ => (Theme.Dim, "Grip and pull: let go past the green mark, before it's taut."),
+            };
+        TextC(col, say);
+        if (s.Tears > 0)
+            TextC(Theme.Bad, $"Torn {s.Tears} time{(s.Tears == 1 ? "" : "s")}.");
+        EndWork();
+    }
+
+    /// <summary>Crimping a pie: the rim from above, its marks, the pinch going round, and each crimp made.</summary>
+    private void DrawCrimp(CrimpSession s)
+    {
+        BeginWork(s.Title, ("F", "crimp as the pinch reaches a mark"), ("Esc", "leave it"));
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(420, 170);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var max = min + size;
+        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+        var c = (min + max) * 0.5f;
+        var r = Gui.S(62);
+        dl.AddCircleFilled(in c, r + Gui.S(8), new ImColor8(222, 196, 150, 255), 48);
+        dl.AddCircleFilled(in c, r - Gui.S(6), new ImColor8(170, 90, 70, 255), 48);
+        var window = CrimpSession.Window * s.Hands.Tolerance;
+        float2 Rim(float marks, float radius)
+        {
+            var a = marks / CrimpSession.Marks * MathF.Tau - MathF.PI / 2f;
+            return c + new float2(MathF.Cos(a), MathF.Sin(a)) * radius;
+        }
+        // The marks: crimped ones pinched (green tight, amber loose), the next one ringed.
+        for (var i = 0; i < CrimpSession.Marks; i++)
+        {
+            var at = Rim(i, r + Gui.S(1));
+            if (i < s.Crimped)
+                dl.AddCircleFilled(in at, Gui.S(6), Theme.U8(s.Crimps[i] == 1 ? Theme.Good : Theme.Warn), 12);
+            else
+                dl.AddCircle(in at, Gui.S(6), Theme.U8(Theme.Dim), 12, Gui.S(1.5f));
+        }
+        // The pinch, going round: bright as it's on a mark.
+        var onMark = s.Off <= window;
+        var pinch = Rim(s.At, r + Gui.S(1));
+        dl.AddCircle(in pinch, Gui.S(10), Theme.U8(onMark ? Theme.Good : Theme.Text), 16, Gui.S(3));
+        ImGui.Spacing();
+        TextC(onMark ? Theme.Good : Theme.Dim, onMark ? Controls.Keys("Now: ~F~!") : $"Crimped {s.Crimped} of {CrimpSession.Marks}. On the marks, or it leaks.");
+        EndWork();
     }
 
     private void PrepButton(Entity table, PrepStep step, string label, bool ready, string tip)

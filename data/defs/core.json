@@ -80,7 +80,7 @@
     { "name": "Fiber", "label": "plant fiber", "category": "Item", "mass": 0.05, "sprite": "items/fiber", "stackLimit": 50, "flammability": 0.9, "maxHp": 10,
       "description": "Pale, tough strands stripped from wild flax. Twisted and woven, it makes bandages." },
     { "name": "Meat", "label": "raw meat", "category": "Item", "mass": 0.4, "sprite": "items/meat", "stackLimit": 30, "nutrition": 0.15, "isMeat": true, "rotDays": 4, "flammability": 0.4, "maxHp": 20,
-      "flavour": { "savoury": 1 }, "chopsInto": "ChoppedMeat",
+      "flavour": { "savoury": 1 }, "chopsInto": "ChoppedMeat", "roasts": true,
       "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.28], "top": "props/meat_top", "side": "props/basket" } ] },
     { "name": "RawFish", "label": "raw fish", "category": "Item", "mass": 0.3, "sprite": "items/fish", "stackLimit": 30, "nutrition": 0.15, "isMeat": true, "rotDays": 2.5, "flammability": 0.3, "maxHp": 15,
       "flavour": { "savoury": 0.7, "fresh": 0.3 }, "chopsInto": "ChoppedFish",
@@ -112,10 +112,10 @@
         { "min": [0.42, 0.22, 0], "max": [0.58, 0.78, 0.12], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" },
         { "min": [0.22, 0.42, 0.06], "max": [0.78, 0.58, 0.18], "top": "props/log_side", "side": "props/log_side" }
       ],
-      "description": "Burns wood for heat and light, and cooks while it's lit. Keep it fueled.",
+      "description": "Burns wood for heat and light. Keep it fueled.",
       "maxHp": 80, "flammability": 0,
       "building": { "outdoor": true,
-        "work": 60, "cost": [ { "def": "Wood", "count": 10 } ], "workbench": { "bills": 4 },
+        "work": 60, "cost": [ { "def": "Wood", "count": 10 } ],
         "heatOutput": 900, "maxHeatTemp": 50, "lightRadius": 7,
         // Felt by creatures beside it while lit, on top of the air: °C, a quarter less per tile, gone past 3.
         "radiantWarmth": 8,

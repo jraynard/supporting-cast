@@ -405,6 +405,9 @@ public sealed class BuildingProps
     /// <summary>A spit by the fire, meat roasted on it (<c>Work.Roasting</c>).</summary>
     public bool Spit { get; set; }
 
+    /// <summary>The kitchen's butcher block: sides jointed and birds plucked on it (<c>Work.Butchery</c>).</summary>
+    public bool ButcherBlock { get; set; }
+
     /// <summary>A bar: mixed drinks are made at it (<c>Work.MixSession</c>).</summary>
     public bool Bar { get; set; }
 
@@ -490,6 +493,19 @@ public sealed class MenuProps
 
     /// <summary>What a diner says asking for it, {0} the price.</summary>
     public string Asks { get; set; } = "{0} silver for one, if you've any.";
+
+    /// <summary>A breakfast dish (porridge): asked for only before noon, and first, at breakfast.</summary>
+    public bool Morning { get; set; }
+}
+
+/// <summary>What something is dressed into at the butcher block (<c>Work.Butchery</c>), and how much of it at best.</summary>
+public sealed class DressProps
+{
+    /// <summary>The thing def it comes apart into.</summary>
+    public string Into { get; set; } = "Meat";
+
+    /// <summary>How many of it, done cleanly.</summary>
+    public int Yield { get; set; } = 6;
 }
 
 /// <summary>How much of each flavour something brings to a pot, 0..1 apiece (<c>Work.Flavour</c>).</summary>
@@ -515,6 +531,9 @@ public sealed class StewPotProps
 
     /// <summary>The most ingredients' nutrition it holds.</summary>
     public float Holds { get; set; } = 6f;
+
+    /// <summary>What it serves instead when it's mostly grain (<see cref="ThingDef.Grain"/>): porridge.</summary>
+    public string? Grains { get; set; }
 }
 
 /// <summary>What a cask pours and how many it holds when full.</summary>
@@ -861,6 +880,18 @@ public sealed class ThingDef : Def
 
     /// <summary>Chopped already: it cooks faster in a pot (<c>Work.Cooking.SpeedOf</c>).</summary>
     public bool Chopped { get; set; }
+
+    /// <summary>Jointed at the kitchen's butcher block (<c>Work.ButcherSession</c>): a side of pork into meat.</summary>
+    public DressProps? Joints { get; set; }
+
+    /// <summary>Plucked at the kitchen's butcher block (<c>Work.PluckSession</c>): a bird into dressed fowl.</summary>
+    public DressProps? Plucks { get; set; }
+
+    /// <summary>A grain: a pot that's mostly grain serves porridge (<see cref="StewPotProps.Grains"/>).</summary>
+    public bool Grain { get; set; }
+
+    /// <summary>Goes on the spit to roast (<c>Work.Roasting</c>).</summary>
+    public bool Roasts { get; set; }
 
     /// <summary>A seasoner: it flavours a pot without adding a bowl to it.</summary>
     [JsonIgnore] public bool IsSeasoner => Flavour != null && Nutrition <= 0;

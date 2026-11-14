@@ -24,6 +24,9 @@ public enum DishFault : byte
 
     /// <summary>A loaf that didn't rise: badly kneaded, or proved too little or too long.</summary>
     Heavy,
+
+    /// <summary>A pie whose rim was crimped loose: the filling ran out in the oven.</summary>
+    Leaked,
 }
 
 /// <summary>

@@ -343,8 +343,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         Work.FlavourKind? craving = null;
         var house = false;
         ThingDef? named = null;
-        if (kind == ServiceKind.Meal && sim.World.Has<Adventurer>(who) && Menu.Offered(sim, shop).ToList() is { Count: > 0 } menu
-            && _rand.NextFloat() < Menu.AskChance)
+        if (kind == ServiceKind.Meal && sim.World.Has<Adventurer>(who) && Menu.Asked(sim, shop) is { Count: > 0 } menu
+            && _rand.NextFloat() < (menu[0].Dish.Menu!.Morning ? Menu.BreakfastAskChance : Menu.AskChance))
         {
             var pick = menu[_rand.NextInt(menu.Count)];
             if (pick.Price <= Math.Min((int)MathF.Round(worth * pick.Dish.Menu!.Worth), spare))

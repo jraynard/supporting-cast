@@ -210,6 +210,7 @@ public static class Cooking
         DishFault.Underdone => "This isn't cooked through.",
         DishFault.Flat => "Filling. Tastes of one thing, mind.",
         DishFault.Heavy => "Heavy as a brick, this bread.",
+        DishFault.Leaked => "Half the filling's run out of this pie.",
         _ => "Burnt, or bland, or both. I've eaten worse. Not often.",
     };
 
@@ -278,7 +279,19 @@ public static class Cooking
     public static bool IsIngredient(ThingDef def) => !def.Drink && !def.Cooked && !def.Rations && (def.IsFood || def.IsSeasoner);
 
     /// <summary>The food one bowl of what the pot serves holds.</summary>
-    public static ThingDef Serves(Simulation sim, Entity pot) => sim.Defs.Thing(sim.World.Get<Thing>(pot).Def.Building!.StewPot!.Serves);
+    public static ThingDef Serves(Simulation sim, Entity pot)
+    {
+        var props = sim.World.Get<Thing>(pot).Def.Building!.StewPot!;
+        return props.Grains is { } grains && sim.World.TryGet<StewPot>(pot, out var p) && GrainShare(p) >= PorridgeFrom
+            ? sim.Defs.Thing(grains) : sim.Defs.Thing(props.Serves);
+    }
+
+    /// <summary>A pot at least this much grain (by what it feeds) is porridge, not stew.</summary>
+    public const float PorridgeFrom = 0.5f;
+
+    /// <summary>How much of what's in a pot is grain, by what it feeds, 0..1.</summary>
+    public static float GrainShare(StewPot p) =>
+        p.Nutrition <= 0f ? 0f : Math.Clamp(p.In.Where(i => i.Def.Grain).Sum(i => i.Count * i.Def.Nutrition) / p.Nutrition, 0f, 1f);
 
     /// <summary>Bowls the pot holds in all, from what's gone in.</summary>
     public static int ServingsOf(Simulation sim, Entity pot, StewPot p)

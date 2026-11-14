@@ -618,11 +618,30 @@ internal static class ComponentCodecs
             w.Float(o.Proved);
             w.Float(o.Bake);
             w.Entity(o.Maker);
-        }, r => new Work.OvenLoad
+            w.Bool(o.Pie);
+            WriteFlavour(w, o.Filling);
+            w.Float(o.Rot);
+        }, r =>
         {
-            Loaves = Math.Clamp(r.Int(), 0, Work.Baking.LoavesPerDough), Knead = Math.Clamp(r.Float(), 0f, 1f),
-            Proved = Math.Clamp(r.Float(), 0f, 1000f), Bake = Math.Clamp(r.Float(), 0f, 2f), Maker = r.Entity(),
+            var o = new Work.OvenLoad
+            {
+                Loaves = Math.Clamp(r.Int(), 0, Math.Max(Work.Baking.LoavesPerDough, Work.Pies.Slices)), Knead = Math.Clamp(r.Float(), 0f, 1f),
+                Proved = Math.Clamp(r.Float(), 0f, 1000f), Bake = Math.Clamp(r.Float(), 0f, 2f), Maker = r.Entity(),
+            };
+            if (r.Version >= 30) // pies came with format 30
+            {
+                o.Pie = r.Bool();
+                o.Filling = ReadFlavour(r);
+                o.Rot = Math.Clamp(r.Float(), 0f, 1f);
+            }
+            return o;
         }),
+        Codec("RawPie", (w, p) =>
+        {
+            WriteFlavour(w, p.Filling);
+            w.Float(p.Crimp);
+            w.Entity(p.Maker);
+        }, r => new Work.RawPie { Filling = ReadFlavour(r), Crimp = Math.Clamp(r.Float(), 0f, 1f), Maker = r.Entity() }),
         Codec("Flawed", (w, f) => w.Int((int)f.Flaw), r => new Work.Flawed { Flaw = (Work.PieceFlaw)r.Int() }),
         Codec("Stored", (w, s) =>
         {

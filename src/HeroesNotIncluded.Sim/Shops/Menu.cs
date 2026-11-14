@@ -45,6 +45,24 @@ public static class Menu
     /// <summary>The dishes offered on a building's sign.</summary>
     public static IEnumerable<PostedDish> Offered(Simulation sim, Entity building) => Of(sim, building).Where(d => d.Offered);
 
+    /// <summary>The chance a diner asks for a breakfast dish by name, of a morning, when one's offered.</summary>
+    public const float BreakfastAskChance = 0.6f;
+
+    /// <summary>Breakfast dishes are asked for until this hour.</summary>
+    public const float MorningUntilHour = 12f;
+
+    /// <summary>
+    /// What a diner might ask for by name now: of a morning, the breakfast dishes if any are
+    /// offered (porridge), else the rest; a breakfast dish never after the morning.
+    /// </summary>
+    public static List<PostedDish> Asked(Simulation sim, Entity building)
+    {
+        var morning = sim.Clock.HourOfDay < MorningUntilHour;
+        var offered = Offered(sim, building).Where(d => morning || !d.Dish.Menu!.Morning).ToList();
+        var breakfast = offered.Where(d => d.Dish.Menu!.Morning).ToList();
+        return breakfast.Count > 0 ? breakfast : offered;
+    }
+
     /// <summary>
     /// The cook prices a dish, or takes it off. False (and nothing changes) unless they keep the
     /// shop, see to its meals, and the dish is one it can make.

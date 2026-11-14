@@ -51,7 +51,7 @@ public readonly record struct KnownPot(Entity Pot, string Contents, Work.Surface
 public readonly record struct KnownSpit(Entity Spit, int Pieces, Work.Crust[] Sides, int Facing, bool Lit);
 
 /// <summary>An oven as anyone close knows it: whether there's bread in, and what it smells of (all a baker has to go on).</summary>
-public readonly record struct KnownOven(Entity Oven, int Loaves, string Smell, bool Lit);
+public readonly record struct KnownOven(Entity Oven, int Loaves, string Smell, bool Lit, bool Pie = false);
 
 /// <summary>A shop's house dish as posted with its prices: its name and how it tastes (<see cref="Work.HouseDish"/>).</summary>
 public readonly record struct KnownHouseDish(string Name, string Tastes);
@@ -339,7 +339,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         foreach (var e in sim.World.Each<Work.WorkSession>())
             if (sim.World.Get<Work.WorkSession>(e) is Work.BakeSession s && s.Oven == oven)
                 bake = s.Bake;
-        return new KnownOven(oven, o.Loaves, Work.Baking.SmellOf(bake), Work.Baking.Lit(sim, oven));
+        return new KnownOven(oven, o.Loaves, Work.Baking.SmellOf(bake), Work.Baking.Lit(sim, oven), o.Pie);
     }
 
     /// <summary>How a ball of dough looks: how far it's risen (slack, rising, well risen, puffed up, sunk). Null for anything else.</summary>

@@ -121,11 +121,24 @@
       "description": "Meat and berries simmered over the hearth in its pot. Filling, and warming going down.",
       "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.2], "top": "props/meal_top", "side": "props/stone_block" } ]
     },
+    // Porridge (Work.Cooking): oats in the stew pot of a morning. A pot that's mostly grain serves it
+    // instead of stew; on the menu as the breakfast dish, asked for before noon (Shops.Menu).
+    {
+      "name": "Porridge", "label": "porridge", "category": "Item", "mass": 0.5, "sprite": "items/meal", "stackLimit": 20,
+      "nutrition": 0.35, "cooked": true, "rotDays": 1, "leaves": "DirtyBowl", "flammability": 0.2, "maxHp": 20,
+      "menu": { "price": 2, "worth": 0.8, "madeAt": "StewPot", "morning": true, "asks": "A bowl of porridge to start the day. {0} silver, is it?" },
+      "description": "Oats simmered soft in the pot. What the road wants of a morning.",
+      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.2], "top": "props/linen", "side": "props/stone_block" } ]
+    },
     // Bread (Work.Baking): flour kneaded into dough at the prep table, proved, baked in the oven by
     // smell. Bread is on the menu, and keeps: rations with bread in them turn half as fast.
     { "name": "Flour", "label": "flour", "category": "Item", "mass": 0.5, "sprite": "items/fiber", "stackLimit": 20, "flammability": 0.5, "maxHp": 15,
       "description": "Milled flour in a sack. Two scoops knead into a ball of dough at the prep table.",
       "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.3], "top": "props/linen", "side": "props/linen" } ] },
+    { "name": "Oats", "label": "oats", "category": "Item", "mass": 0.4, "sprite": "items/fiber", "stackLimit": 30,
+      "nutrition": 0.12, "grain": true, "rotDays": 60, "flavour": { "savoury": 0.4, "sweet": 0.6 }, "flammability": 0.5, "maxHp": 15,
+      "description": "Rolled oats in a sack. Mostly oats in the pot, and it's porridge.",
+      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.3], "top": "props/straw", "side": "props/linen" } ] },
     { "name": "Dough", "label": "dough", "category": "Item", "mass": 0.6, "sprite": "items/clay", "stackLimit": 1, "rotDays": 1, "flammability": 0.3, "maxHp": 10,
       "description": "A ball of kneaded dough, proving. An hour or two, then into the oven before it sinks.",
       "model": [ { "min": [0.3, 0.3, 0], "max": [0.7, 0.7, 0.2], "top": "props/linen", "side": "props/linen" } ] },
@@ -141,6 +154,30 @@
       "menu": { "price": 5, "worth": 1.6, "madeAt": "Spit", "asks": "A slice off the roast, if there's one turning. {0} silver." },
       "description": "A thick slice off the spit, crackling and all.",
       "model": [ { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.18], "top": "props/meat_top", "side": "props/planks" } ] },
+    // Pies (Work.Pies): a ball of dough filled with two portions of raw food and crimped round at the
+    // prep table, then baked in the oven by smell into slices tasting of the filling.
+    { "name": "RawPie", "label": "unbaked pie", "category": "Item", "mass": 0.9, "sprite": "items/clay", "stackLimit": 1, "rotDays": 1.5, "flammability": 0.3, "maxHp": 10,
+      "description": "A pie, filled and crimped, waiting for the oven.",
+      "model": [ { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.16], "top": "props/linen", "side": "props/linen" } ] },
+    { "name": "Pie", "label": "pie", "category": "Item", "mass": 0.35, "sprite": "items/meal", "stackLimit": 10,
+      "nutrition": 0.3, "cooked": true, "rotDays": 3, "flammability": 0.4, "maxHp": 15,
+      "menu": { "price": 4, "worth": 1.3, "madeAt": "Oven", "asks": "A slice of pie, whatever's in it. {0} silver." },
+      "description": "A slice of pie from the inn's oven, the filling still warm.",
+      "model": [ { "min": [0.24, 0.24, 0], "max": [0.76, 0.76, 0.18], "top": "props/planks", "side": "props/basket" } ] },
+    // Brought whole by the carter and dressed at the kitchen's butcher block (Work.Butchery): no use
+    // to anyone till then. A side is jointed into meat; a bird plucked into dressed fowl.
+    { "name": "PorkSide", "label": "side of pork", "category": "Item", "mass": 12, "sprite": "items/meat", "stackLimit": 1, "rotDays": 4, "flammability": 0.4, "maxHp": 60,
+      "joints": { "into": "Meat", "yield": 7 },
+      "description": "Half a pig, from the farm up the valley. Jointed at the butcher block, it's meat for a week.",
+      "model": [ { "min": [0.1, 0.25, 0], "max": [0.9, 0.75, 0.3], "top": "props/meat_top", "side": "props/meat_top" } ] },
+    { "name": "Fowl", "label": "fowl", "category": "Item", "mass": 1.6, "sprite": "items/hide", "stackLimit": 4, "rotDays": 3, "flammability": 0.6, "maxHp": 15,
+      "plucks": { "into": "DressedFowl", "yield": 2 },
+      "description": "A bird with all its feathers on. Plucked at the butcher block, it roasts or goes in the pot.",
+      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.3], "top": "props/straw", "side": "props/hide" } ] },
+    { "name": "DressedFowl", "label": "dressed fowl", "category": "Item", "mass": 0.6, "sprite": "items/meat", "stackLimit": 20,
+      "nutrition": 0.18, "isMeat": true, "roasts": true, "rotDays": 3, "flavour": { "savoury": 0.7, "sweet": 0.3 }, "flammability": 0.4, "maxHp": 15,
+      "description": "A plucked bird, ready for the spit or the pot.",
+      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.26], "top": "props/meat_top", "side": "props/linen" } ] },
     // Chopped at the prep table (Work.ChopSession): a little further for the cutting, quicker in the
     // pot, and quicker to turn. Same flavour as whole.
     { "name": "ChoppedMeat", "label": "chopped meat", "category": "Item", "mass": 0.4, "sprite": "items/meat", "stackLimit": 30,
@@ -453,30 +490,6 @@
       "unlock": { "skill": "Crafting", "level": 5 },
       "ingredients": [ { "def": "Leather", "count": 8 } ],
       "products": [ { "def": "LeatherPack", "count": 1 } ]
-    },
-    {
-      "name": "CookMeat", "label": "simple meal (meat)", "station": "Campfire", "skill": "Cooking", "work": 300,
-      "description": "Roast 3 raw meat into 2 meals.",
-      "ingredients": [ { "def": "Meat", "count": 3 } ],
-      "products": [ { "def": "SimpleMeal", "count": 2 } ]
-    },
-    {
-      "name": "CookFish", "label": "simple meal (fish)", "station": "Campfire", "skill": "Cooking", "work": 300,
-      "ingredients": [ { "def": "RawFish", "count": 3 } ],
-      "products": [ { "def": "SimpleMeal", "count": 2 } ]
-    },
-    {
-      "name": "CookBerries", "label": "simple meal (berries)", "station": "Campfire", "skill": "Cooking", "work": 240,
-      "ingredients": [ { "def": "Berries", "count": 5 } ],
-      "products": [ { "def": "SimpleMeal", "count": 2 } ]
-    },
-    {
-      // Only over a hearth or fireplace fitted with its cooking pot (a preset building's upgrade):
-      // the campfire itself never lists it, since it can't take the pot.
-      "name": "CookStew", "label": "stew", "station": "Campfire", "upgrade": "CookingPot", "skill": "Cooking", "work": 360,
-      "description": "Simmer 2 meat and 2 berries into 3 bowls of stew: more meals from less than a roast.",
-      "ingredients": [ { "def": "Meat", "count": 2 }, { "def": "Berries", "count": 2 } ],
-      "products": [ { "def": "Stew", "count": 3 } ]
     },
     {
       "name": "SquareStone", "label": "cut stone", "station": "MasonBench", "skill": "Construction", "work": 700, "helpedBy": [ "Chisel" ],

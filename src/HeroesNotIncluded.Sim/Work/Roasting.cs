@@ -134,9 +134,9 @@ public static class Roasting
         return false;
     }
 
-    /// <summary>Whole raw meat on the cook (in hand, else in the pack), for the spit; or Entity.Null.</summary>
+    /// <summary>Whole raw meat or a dressed bird on the cook (in hand, else in the pack), for the spit; or Entity.Null.</summary>
     public static Entity Joint(Simulation sim, Entity cook) =>
-        AvatarSystem.Supply(sim, cook, d => d.Name == "Meat");
+        AvatarSystem.Supply(sim, cook, d => d.Roasts);
 
     /// <summary>What the work key does at a spit: put meat on it, or turn what's on it. Null if nothing.</summary>
     public static string? StepAt(Simulation sim, Entity cook, Entity spit)

@@ -689,6 +689,9 @@ public class HealerTests
         var order = sim.Shops.All.Single(e => e.Poster == hurt && e.Kind.Kind == ServiceKind.Healing);
         Assert.Equal(OrderStatus.Done, order.Status);
         Assert.Equal(healer, order.Assignee);
+        // It may be part way through the next of the party (they come in bruised): let it finish.
+        for (var i = 0; i < 8 && sim.World.Get<Health>(healer).Injuries.Where(i => i.Absorbed).Sum(i => i.Damage) >= LayOnHands.MendFrom; i++)
+            sim.TickMany(SimClock.TicksPerHour / 4);
         var log = string.Join("\n", sim.Messages.Messages.TakeLast(8).Select(m => m.Text));
         // Not bound and left to close over days: drawn out of them, and woven away.
         Assert.DoesNotContain(sim.World.Get<Health>(hurt).Injuries, i => i.Type == DamageType.Cut && i.Damage >= LayOnHands.MendFrom);

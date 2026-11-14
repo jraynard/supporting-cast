@@ -82,10 +82,12 @@ public class InnHoursTests
     public void AtBreakfastThePeckishOrderAMeal()
     {
         var (sim, party) = Staying();
+        // Fed in the small hours, before anyone's up to ask: not hungry, but ready for it by breakfast.
+        TickTill(sim, ShopSystem.SmallHoursUntil - 0.5f);
+        foreach (var e in party)
+            sim.World.Get<Needs>(e).Values[sim.Defs.Need("Food").Index] = 0.8f;
         TickTill(sim, ShopSystem.BreakfastFromHour - 0.25f);
         Assert.False(ShopSystem.Mealtime(sim));
-        foreach (var e in party)
-            sim.World.Get<Needs>(e).Values[sim.Defs.Need("Food").Index] = 0.8f; // not hungry, but ready for it
         var before = sim.Shops.All.Select(o => o.Id).ToHashSet();
         TickTill(sim, ShopSystem.BreakfastUntilHour - 0.1f); // any who ate as the night ended can ask again by now
         Assert.True(ShopSystem.Mealtime(sim));

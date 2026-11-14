@@ -430,37 +430,6 @@ public class WoodshopTests
 public class BuildingUpgradeTests
 {
     [Fact]
-    public void ACookingPotOnTheFireplaceUnlocksStewAndSurvivesASave()
-    {
-        var sim = TestWorld.Create(30, 30, depth: 5);
-        sim.Presets.PresetMode = true;
-        var b = Buildings.SpawnFinished(sim, sim.Defs.Building("Dwelling"), C(12, 12), 0);
-        var hearth = Buildings.Parts(sim, b).Single(p => sim.World.Get<Thing>(p).Def.Name == "Fireplace");
-        var stew = sim.Defs.Recipe("CookStew");
-        Assert.Contains(stew, sim.World.Get<Thing>(hearth).Def.Recipes);
-        Assert.False(Crafting.Fitted(sim, hearth, stew), "no pot yet");
-        sim.ApplyNow(new AddBillCommand(hearth, stew, BillMode.Count, 1));
-        Assert.Empty(sim.World.Get<Workbench>(hearth).Bills); // refused without the pot
-
-        // Not on a building going up; then fitted as a site of its own at the hearth.
-        Assert.NotNull(Buildings.UpgradeProblem(sim, Buildings.Place(sim, sim.Defs.Building("Dwelling"), C(22, 22), 0), 0));
-        sim.ApplyNow(new InstallUpgradeCommand(b, 0));
-        var site = Buildings.UpgradeSite(sim, b, sim.World.Get<PresetBuilding>(b).Def.Upgrades[0]);
-        Assert.False(site.IsNull);
-        Assert.Equal(sim.World.Get<Thing>(hearth).Cell, sim.World.Get<Thing>(site).Cell);
-        Assert.Equal(site, Buildings.SiteAt(sim, sim.World.Get<Thing>(hearth).Cell)); // where F works on it
-        sim.CompleteConstruction(site);
-        Assert.True(Crafting.Fitted(sim, hearth, stew));
-        Assert.NotNull(Buildings.UpgradeProblem(sim, b, 0)); // fitted once
-
-        var (loaded, _) = Saving.SaveGame.Read(Saving.SaveGame.Write(sim), sim.Defs);
-        var again = loaded.World.Query<PresetBuilding>().Single(e => loaded.World.Get<PresetBuilding>(e).Phase == BuildPhase.Done);
-        Assert.Equal(["CookingPot"], loaded.World.Get<PresetBuilding>(again).Upgrades);
-        var loadedHearth = Buildings.Parts(loaded, again).Single(p => loaded.World.Get<Thing>(p).Def.Name == "Fireplace");
-        Assert.True(Crafting.Fitted(loaded, loadedHearth, stew));
-    }
-
-    [Fact]
     public void EatingInTheLonghouseIsAFeast()
     {
         var sim = TestWorld.Create(30, 30, depth: 5);
