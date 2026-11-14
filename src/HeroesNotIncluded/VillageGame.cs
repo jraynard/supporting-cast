@@ -186,6 +186,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// </summary>
     public const float AdventureZoom = 72f;
 
+    /// <summary>How far out the view goes with a character (or ghost), and without one.</summary>
+    private const float EmbodiedMinZoom = 32f, FreeMinZoom = 8f;
+
     /// <summary>Debug/screenshots: starting zoom (screen pixels per cell); 0 keeps the default.</summary>
     public float StartZoom { get; init; }
 
@@ -366,6 +369,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         {
             Bounds = (float2.Zero, new float2(_sim.Map.Width, _sim.Map.Height)),
             // Zoom without a scroll wheel comes from the zoom actions (HandleCameraActions).
+            // Eased, and a flick capped: a touchpad's stream of small deltas otherwise jerks it about.
+            ZoomSmoothing = 14f,
+            MaxPendingZoomSteps = 3f,
         };
         _basePanSpeed = _cameraController.PanSpeed;
         _renderer = new WorldRenderer(Host.Atlas) { CutawayZ = Math.Clamp(StartCutaway, 1, _sim.Map.Depth - 1), Interp = _interp };
@@ -403,6 +409,11 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         // Q is a guard for a character: the view turns on its own actions (Z/X, the d-pad). Without
         // one (god mode, the demos) Z and X are the toolbar's, and the view turns on Q/E as before.
         (_cameraController.RotateLeftKey, _cameraController.RotateRightKey) = embodied ? ((GlfwKey?)null, (GlfwKey?)null) : (GlfwKey.Q, GlfwKey.E);
+        // With a character, the view stays on them and the town around: far enough out to see a
+        // street, not the whole map (which also hides who's who). Without one, all of it.
+        _camera.MinZoom = embodied ? EmbodiedMinZoom : FreeMinZoom;
+        if (_camera.Zoom < _camera.MinZoom)
+            _camera.Zoom = _camera.MinZoom;
         HandleCameraActions();
         _cameraController.Update(input, dt);
 

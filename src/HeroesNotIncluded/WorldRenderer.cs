@@ -285,9 +285,19 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         return string.IsNullOrEmpty(stage.Sprite) ? c.Def.Sprite : stage.Sprite;
     }
 
-    /// <summary>Height of a creature's sprite above its feet, in cells (labels, bubbles).</summary>
-    public float VisualHeight(Simulation sim, Entity e) =>
-        SheetOf(sim, e) is { } sheet ? sheet.Pivot.Y / (PixelsPerCell * sheet.Density) * 0.95f : sim.World.Get<Creature>(e).Stage(sim.Clock.Tick).Size;
+    /// <summary>
+    /// Height of a creature's sprite above its feet, in cells (labels, bubbles). A ghost has no
+    /// creature parts: it's the top of its wisp (talking as a ghost puts a bubble over it).
+    /// </summary>
+    public float VisualHeight(Simulation sim, Entity e)
+    {
+        if (!sim.World.Has<Creature>(e))
+            return GhostWispHeight;
+        return SheetOf(sim, e) is { } sheet ? sheet.Pivot.Y / (PixelsPerCell * sheet.Density) * 0.95f : sim.World.Get<Creature>(e).Stage(sim.Clock.Tick).Size;
+    }
+
+    /// <summary>Where a ghost's wisp tops out (<see cref="Draw"/>), for bubbles over it.</summary>
+    private const float GhostWispHeight = 1.1f;
 
     /// <param name="time">Real seconds, for flicker that should never stop.</param>
     /// <param name="animDt">Animation seconds since last frame: real time scaled by game speed (0 when paused).</param>

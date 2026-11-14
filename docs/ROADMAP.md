@@ -21,6 +21,21 @@ raid size), the dragon's toughness, the night speed and the need rates.
 
 ## Next
 
+### From the second playtest
+Notes from playing; the healer first.
+- **The healer, AI and asked for.** A wound you can't treat yourself has nowhere to go: AI healers
+  only bandage, and a villager or player can't ask for healing. Let anyone (players by F at the
+  healer's line, as at the hatch; the wounded AI on their own) put in a healing order, and teach the
+  AI healer the empath's real work: drawing wounds in, weaving mendings, quelling fevers. Then
+  bots go to the healer, and the wounded don't lie where they fell (both under Polish).
+- **Buckets against fire,** so there's something to do about the dragon's burning: fill at the
+  well, hold F to charge the throw's reach, a spray where it lands, back to the well to refill.
+  The AI joins a bucket line when a fire's called.
+- **A trade's training,** in solo: a walk through one trade's games and what each reading means,
+  before a round asks for them under pressure.
+- Done: the ghost's speech crashed the game (a bubble over a speaker with no body); touchpad zoom
+  eases in, and the view stops short of the whole map with a character.
+
 ### The cook pass
 Bring the cook up to the other trades (docs/DESIGN.md, "Cook"). The smith, healer and tinker each
 have five to seven hands-on games, a hidden state read by feel, and work that goes out on quests;
@@ -203,7 +218,6 @@ Grouped by area; nothing here blocks a playtest.
   - villagers at supper sit but don't swap rumours;
   - the cook's own list is "The cook pass" under Next.
 - **Healer:**
-  - AI healers only bandage;
   - adventurers never tear a charm in town;
 - **Tinker:**
   - no lockboxes or locked chests (locks go on doors only);
@@ -223,7 +237,6 @@ Grouped by area; nothing here blocks a playtest.
 
 **Crises and the town**
 - Raiders don't bash doors or gates; only the bridge breaks.
-- buckets to fight fire (throw should be like hold F to charge how far it goes then sprays out the water, then run back to well to refill)
 - The unarmed don't mob a raider together. Without adventurers in town, two raiders put every
   villager down.
 - The wounded lie where they fell until someone thinks to help.
