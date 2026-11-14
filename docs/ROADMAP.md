@@ -26,29 +26,6 @@ provide some purely non-combat options but i think that will be later once we ha
 
 ## Next
 
-### From the second playtest
-Notes from playing; the healer first.
-- **The healer, AI and asked for.** Done: the AI empath lays on hands (`Healing/LayOnHands`):
-  it draws what its mana will mend, weaves it away on itself and binds the rest; it sees to badly
-  hurt villagers unasked and mends what it carries as its mana comes back. Players ask with F at a
-  shrine pallet, and that order waits on the wounds, not the bleeding; the HUD says so when you're
-  hurt, and bots ask too. Left: the AI healer weaving charms, and tuning the mana (a busy day
-  empties it).
-- **Buckets against fire.** Done (`Environment/Buckets`): four hang at the well; F there fills
-  one; with a full one, point and hold F to swing it back, let go to throw (the swing decides how
-  far). The water knocks a patch's fire down and soaks it, so it won't catch for two hours: soak
-  the roofs ahead of the dragon. The AI fights fire with buckets when there's one to be had, and
-  takes them back to the well. Left: bots throwing water, seeing it against the dragon in a
-  running game, a sound for the splash, and the water drawn in flight.
-- **The practice yard.** Done (`Scenarios/Practice`, from the title menu or `--practice TRADE`):
-  Millbrook in your trade with no season, Renown, Dread or crises, and no autosave. Its panel
-  lists the trade's tips and sends customers set up for the trade (hurt, worn blades, a strongbox
-  and a curio, hungry), restocks the workplace, freshens you up, and brings the healer a patient
-  with the wound asked for. Left: a step-by-step walk through each game, and the cook's and
-  innkeeper's own setups (a pot already going, a named drink asked for).
-- Done: the ghost's speech crashed the game (a bubble over a speaker with no body); touchpad zoom
-  eases in, and the view stops short of the whole map with a character. Also steam deck d-pad fix.
-
 ### The cook pass
 Bring the cook up to the other trades (docs/DESIGN.md, "Cook"). The smith, healer and tinker each
 have five to seven hands-on games, a hidden state read by feel, and work that goes out on quests;
