@@ -80,7 +80,7 @@ make_app() {
     # Only Mach-O stays in Contents/MacOS. codesign signs anything else there through extended
     # attributes, which the trip to itch (Linux tar, butler) drops, leaving a broken signature.
     # Everything else moves to Contents/Resources, sealed by hash in CodeResources, with a symlink
-    # left in its place so the game still finds it beside its executable (AppContext.BaseDirectory).
+    # left in its place so the launcher still finds HeroesNotIncluded.dll beside it.
     local entry base
     for entry in "$app/Contents/MacOS"/*; do
         base="$(basename "$entry")"
@@ -90,6 +90,15 @@ make_app() {
         [[ ! -e "$app/Contents/Resources/$base" ]] || fail "make_app: Contents/Resources/$base already exists"
         mv "$entry" "$app/Contents/Resources/$base"
         ln -s "../Resources/$base" "$entry"
+    done
+    # The .NET host resolves HeroesNotIncluded.dll's link and takes Contents/Resources as the app's
+    # folder, looking there for libhostfxr and the other native libraries: link them back too, so
+    # every file is found from either folder.
+    for entry in "$app/Contents/MacOS"/*; do
+        [[ -L "$entry" ]] && continue
+        base="$(basename "$entry")"
+        [[ ! -e "$app/Contents/Resources/$base" ]] || fail "make_app: Contents/Resources/$base already exists"
+        ln -s "../MacOS/$base" "$app/Contents/Resources/$base"
     done
     is_macho "$app/Contents/MacOS/HeroesNotIncluded" || fail "make_app: the executable isn't Mach-O"
     for entry in "$app/Contents/MacOS"/*; do
