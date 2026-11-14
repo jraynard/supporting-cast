@@ -121,6 +121,7 @@ public class InnkeeperTests
         foreach (var e in party)
         {
             sim.World.Get<Health>(e).Injuries.Clear(); // nothing to take them off to the shrine
+            sim.World.Get<Needs>(e).Values[sim.Defs.Need("Food").Index] = 1f; // nor to the hatch: they've eaten on the road
             Thirsty(sim, e);
         }
         sim.TickMany(SimClock.TicksPerHour / 6);

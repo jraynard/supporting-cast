@@ -37,7 +37,7 @@ public static class Hatch
     /// <summary>Would this dish do for this order?</summary>
     public static bool Fits(Simulation sim, Order e, ThingDef dish) => e.Kind.Kind switch
     {
-        ServiceKind.Meal => dish.Cooked && dish.Nutrition > 0 && sim.World.IsAlive(e.Poster) && dish.EdibleBy(sim.World.Get<Creature>(e.Poster).Def),
+        ServiceKind.Meal => dish.Cooked && dish.Nutrition > 0 && (e.Dish == null || e.Dish == dish) && sim.World.IsAlive(e.Poster) && dish.EdibleBy(sim.World.Get<Creature>(e.Poster).Def),
         ServiceKind.Drink or ServiceKind.MixedDrink => dish.Drink,
         _ => false,
     };

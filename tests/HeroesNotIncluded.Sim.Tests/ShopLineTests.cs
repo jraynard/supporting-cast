@@ -27,7 +27,10 @@ public class ShopLineTests
         TestWorld.AleOnly(sim); // drink orders here are for ale
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
         foreach (var e in party)
+        {
             Hospitality.DirectionsSystem.KnowsTheTown(sim, e); // finding the way is InnTalkTests'
+            sim.World.Get<Needs>(e).Values[sim.Defs.Need("Food").Index] = 1f; // fed on the road: the hatch's line is InnKitchenTests'
+        }
         Assert.NotEmpty(party);
         return (sim, Players.CharacterOf(sim, Ana), party);
     }

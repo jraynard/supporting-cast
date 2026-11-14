@@ -547,7 +547,7 @@ public class TinkerTradeTests
             sim.TickMany(SimClock.TicksPerHour);
         Assert.False(Wagons.Damaged(sim, wagon), $"{sim.Ai.LastFailure.GetValueOrDefault(tinker)} / {sim.World.Get<Mind>(tinker).Job?.Report}");
         sim.TickMany(SimClock.TicksPerHour / 4);
-        var order = sim.Shops.All.Single(e => e.Kind.Kind == ServiceKind.WagonRepair);
+        var order = sim.Shops.All.Single(e => e.Kind.Kind == ServiceKind.WagonRepair && e.Subject == wagon); // another party's may be in by now
         Assert.Equal(OrderStatus.Done, order.Status);
         Assert.Equal(tinker, order.Assignee);
     }

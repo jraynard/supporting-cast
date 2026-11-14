@@ -148,7 +148,7 @@ public static class AiQueries
         return best;
     }
 
-    public static int3? RandomReachableNear(Simulation sim, Entity pawn, int3 center, int radius, SimRandom? rand = null)
+    public static int3? RandomReachableNear(Simulation sim, Entity pawn, int3 center, int radius, SimRandom? rand = null, bool publicOnly = false)
     {
         rand ??= sim.Rand;
         var from = sim.World.Get<Position>(pawn).Cell;
@@ -159,10 +159,24 @@ public static class AiQueries
             var i = sim.Map.Idx(t);
             if (sim.Map.PathCost[i] <= 0 || sim.Map.Fire[i] > 0)
                 continue;
+            if (publicOnly && StaffOnly(sim, t))
+                continue;
             if (Navigation.CanReach(sim, pawn, from, t, PathEnd.OnTile))
                 return t;
         }
         return null;
+    }
+
+    /// <summary>Is this cell in a staff-only room: an indoor room with a staff-only piece of furniture in it (a kitchen)?</summary>
+    public static bool StaffOnly(Simulation sim, int3 cell)
+    {
+        if (sim.Rooms.RoomAt(cell) is not { Indoors: true } room)
+            return false;
+        var w = sim.World;
+        foreach (var i in room.Tiles)
+            if (sim.Map.Structure[i] is { IsNull: false } s && w.TryGet<Thing>(s, out var t) && t.Def.Building is { StaffOnly: true })
+                return true;
+        return false;
     }
 
     /// <summary>

@@ -25,6 +25,30 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// <summary>Hunger (the Food need) below which an adventurer asks for a meal.</summary>
     public const float MealBelow = 0.6f;
 
+    /// <summary>Satisfaction off when a meal they only half wanted (a mealtime's) never comes.</summary>
+    public const float PeckishGiveUpMood = 0.25f;
+
+    /// <summary>At a mealtime they'll eat if they're under this: not starving, just ready for it.</summary>
+    public const float MealtimeBelow = 0.85f;
+
+    /// <summary>Breakfast and supper, game hours: when adventurers come to the hatch all at once.</summary>
+    public const float BreakfastFromHour = 7f, BreakfastUntilHour = 9.5f;
+
+    /// <summary>The small hours, when adventurers order nothing but a room or a bad hurt seen to.</summary>
+    public const float SmallHoursFrom = 23f, SmallHoursUntil = 6f;
+
+    public static bool Mealtime(Simulation sim)
+    {
+        var h = sim.Clock.HourOfDay;
+        return h is >= BreakfastFromHour and < BreakfastUntilHour or >= SupperFromHour and < SupperUntilHour;
+    }
+
+    public static bool SmallHours(Simulation sim)
+    {
+        var h = sim.Clock.HourOfDay;
+        return h >= SmallHoursFrom || h < SmallHoursUntil;
+    }
+
     /// <summary>Wear (fraction of max HP) below which an adventurer wants a piece of gear mended.</summary>
     public const float RepairBelow = 0.75f;
 
@@ -73,10 +97,14 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (!sim.Round.Live)
             return;
         var now = sim.Clock.Tick;
+        // The small hours don't count against anyone's patience: an order asked late waits for the morning.
+        var night = SmallHours(sim);
         foreach (var e in _orders)
         {
             if (!e.IsOpen)
                 continue;
+            if (night)
+                e.Deadline += Interval;
             if (!sim.World.IsAlive(e.Poster) || sim.World.Get<Creature>(e.Poster).Dead || sim.World.Has<Leaving>(e.Poster))
             {
                 Close(sim, e, OrderStatus.Cancelled);
@@ -165,7 +193,17 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             // Sat with a drink or a meal, they don't order another till it's finished.
             var savouring = Hospitality.Table.IsSavouring(sim, who);
             var hunger = w.Get<Needs>(who).Get(food);
-            if (hunger < MealBelow && !savouring)
+            // In the small hours the town's abed: only a room (till it's late) or a bad hurt seen to.
+            if (SmallHours(sim))
+            {
+                if (WantsARoom(sim, who, a))
+                    Want(sim, who, ServiceKind.Lodging, Entity.Null);
+                if (w.TryGet<Health>(who, out var hurt) && hurt.Injuries.Where(i => !i.Tended).Sum(i => i.Damage) >= 8f)
+                    Want(sim, who, ServiceKind.Healing, Entity.Null, 1.75f);
+                continue;
+            }
+            // Hungry, or peckish at a mealtime (breakfast, supper): the rushes at the hatch.
+            if (!savouring && (hunger < MealBelow || (Mealtime(sim) && hunger < MealtimeBelow)))
                 Want(sim, who, ServiceKind.Meal, Entity.Null, hunger < food.UrgentBelow ? 1.5f : 1f);
             if (sim.Clock.Tick >= a.NextDrink && !savouring && MayAsk(sim, who, ServiceKind.Drink)
                 && !_orders.Exists(e => e.IsOpen && e.Poster == who && e.Kind.Kind == ServiceKind.MixedDrink))
@@ -300,10 +338,23 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             return false;
         }
         var text = Asking(def, price, SubjectLabel(sim, subject) ?? WoundLabel(sim, who));
-        // A meal: they may ask for the house dish by name, or say what they fancy, in the same breath (Hospitality.Tastes).
+        // A meal: they may ask for a dish on the menu by name (at its price), or the house dish, or
+        // say what they fancy, in the same breath (Shops.Menu, Hospitality.Tastes).
         Work.FlavourKind? craving = null;
         var house = false;
-        if (kind == ServiceKind.Meal && sim.World.Has<Adventurer>(who))
+        ThingDef? named = null;
+        if (kind == ServiceKind.Meal && sim.World.Has<Adventurer>(who) && Menu.Offered(sim, shop).ToList() is { Count: > 0 } menu
+            && _rand.NextFloat() < Menu.AskChance)
+        {
+            var pick = menu[_rand.NextInt(menu.Count)];
+            if (pick.Price <= Math.Min((int)MathF.Round(worth * pick.Dish.Menu!.Worth), spare))
+            {
+                named = pick.Dish;
+                price = pick.Price;
+                text = string.Format(pick.Dish.Menu.Asks, price);
+            }
+        }
+        if (kind == ServiceKind.Meal && named == null && sim.World.Has<Adventurer>(who))
         {
             if (Work.HouseDish.Of(sim, shop) is { } dish && _rand.NextFloat() < Work.HouseDish.AskChance)
             {
@@ -318,6 +369,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         }
         var order = Post(sim, who, def, text, price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), subject, shop, worth, craving);
         order.WantsHouse = house;
+        order.Dish = named;
         return true;
     }
 
@@ -823,6 +875,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             sim.Speech.Say(sim, who, line, Volume.Say);
     }
 
+    /// <summary>Satisfaction off for being handed something other than the dish they asked for.</summary>
+    public const float WrongDishMood = 0.3f;
+
     /// <summary>Silver over the price for quick, fine service: a coin for fine, two for masterwork, if it came within a third of their patience.</summary>
     public const int FineTip = 1, MasterworkTip = 2;
 
@@ -849,6 +904,14 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     {
         Close(sim, e, OrderStatus.Expired);
         LostTheirGear(sim, e);
+        // Only peckish (it was a mealtime): they shrug it off, more or less.
+        if (e.Kind.Kind == ServiceKind.Meal && sim.World.TryGet<Adventurer>(e.Poster, out _) && sim.World.TryGet<Needs>(e.Poster, out var needs)
+            && needs.Get(sim.Defs.Need("Food")) >= MealBelow)
+        {
+            sim.World.Get<Adventurer>(e.Poster).Satisfaction -= PeckishGiveUpMood;
+            sim.Speech.Say(sim, e.Poster, "Never mind the food. I'll eat later.", Volume.Say);
+            return;
+        }
         if (sim.World.Has<Adventurer>(e.Poster))
         {
             sim.World.Get<Adventurer>(e.Poster).Satisfaction -= 1f;
@@ -913,6 +976,12 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var meal = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Meal);
         if (meal != null && def.EdibleBy(w.Get<Creature>(to).Def))
         {
+            // Asked for a dish by name, and handed something else: they eat it, and say so.
+            if (meal.Dish is { } wanted && wanted != def && w.Has<Adventurer>(to))
+            {
+                w.Get<Adventurer>(to).Satisfaction -= WrongDishMood;
+                sim.Speech.Say(sim, to, $"I asked for {wanted.Label}.", Volume.Say);
+            }
             var count = Math.Min(EatJob.Wanted(sim, to, def), w.Get<Stack>(item).Count);
             var eaten = sim.TakeFromStack(item, count);
             if (eaten != item)
@@ -1120,6 +1189,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             w.Long(e.LastAsked);
             w.Int(e.Craving is { } craving ? (int)craving : -1);
             w.Bool(e.WantsHouse);
+            w.String(e.Dish?.Name ?? "");
             w.Int(e.KnownBy.Count);
             foreach (var k in e.KnownBy)
                 w.Entity(k);
@@ -1175,6 +1245,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 e.Craving = r.Int() is var c && Enum.IsDefined((Work.FlavourKind)c) && c >= 0 ? (Work.FlavourKind)c : null;
             if (r.Version >= 22)
                 e.WantsHouse = r.Bool();
+            if (r.Version >= 24 && r.String() is { Length: > 0 } dishName && sim.Defs.TryThing(dishName, out var dishDef) && dishDef.Menu != null)
+                e.Dish = dishDef;
             for (var k = r.Count(1 << 16); k > 0; k--)
                 e.KnownBy.Add(r.Entity());
             _orders.Add(e);

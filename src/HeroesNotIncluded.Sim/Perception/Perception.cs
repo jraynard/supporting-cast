@@ -47,6 +47,9 @@ public readonly record struct KnownPiece(string Label, Work.Glow Glow, float Tem
 public readonly record struct KnownPot(Entity Pot, string Contents, Work.Surface Surface, float Heat, float Flame, bool Lit, float Doneness,
     bool Cooked, string? Caught, int Bowls, bool Empty, string Tastes = "", string? House = null);
 
+/// <summary>A spit and what's on it, as anyone close sees it: each side's crust and which is to the fire. Never how far it's cooked through.</summary>
+public readonly record struct KnownSpit(Entity Spit, int Pieces, Work.Crust[] Sides, int Facing, bool Lit);
+
 /// <summary>A shop's house dish as posted with its prices: its name and how it tastes (<see cref="Work.HouseDish"/>).</summary>
 public readonly record struct KnownHouseDish(string Name, string Tastes);
 
@@ -303,6 +306,26 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
             return dish.Flavour.Words() + (dish.House ? ": the house dish" : "");
         return w.TryGet<Work.Ration>(item, out var ration) ? ration.Flavour.Words() : null;
     }
+
+    /// <summary>A spit close enough to look at (<see cref="KnownSpit"/>); null if it isn't one, or is too far.</summary>
+    public KnownSpit? Spit(Entity spit)
+    {
+        if (blind || !Work.Roasting.IsSpit(sim, spit))
+            return null;
+        if (!Omniscient && !Within(sim.World.Get<Thing>(spit).Cell, 2))
+            return null;
+        var r = sim.World.TryGet<Work.SpitRoast>(spit, out var sr) ? sr : new Work.SpitRoast();
+        float[] brown = r.Brown;
+        var facing = r.Facing;
+        // A session in hand has the roast's newest state.
+        foreach (var e in sim.World.Each<Work.WorkSession>())
+            if (sim.World.Get<Work.WorkSession>(e) is Work.RoastSession s && s.Spit == spit)
+                (brown, facing) = (s.Brown, s.Facing);
+        return new KnownSpit(spit, r.Count, brown.Select(Work.Roasting.CrustOf).ToArray(), facing, Work.Cooking.Lit(sim, spit));
+    }
+
+    /// <summary>The dishes on a shop's sign beyond its plain meal (<see cref="Shops.Menu"/>), posted for anyone to read.</summary>
+    public List<Shops.PostedDish> Menu(Entity shop) => Shops.Menu.Of(sim, shop);
 
     /// <summary>A shop's house dish, as it's posted with its prices for anyone to read. Null if it has none.</summary>
     public KnownHouseDish? HouseDish(Entity shop) =>

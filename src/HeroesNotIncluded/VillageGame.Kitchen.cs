@@ -154,6 +154,89 @@ public sealed partial class VillageGame
         EndWork();
     }
 
+    private static float4 CrustColour(Crust c) => c switch
+    {
+        Crust.Pale => new(0.86f, 0.70f, 0.66f, 1f),
+        Crust.Colouring => new(0.80f, 0.55f, 0.36f, 1f),
+        Crust.Golden => new(0.74f, 0.47f, 0.18f, 1f),
+        Crust.Dark => new(0.45f, 0.26f, 0.12f, 1f),
+        _ => new(0.16f, 0.12f, 0.10f, 1f),
+    };
+
+    /// <summary>The roast from the end, its four sides round it, the fire under the one to it, flaring when the fat drips.</summary>
+    private void DrawRoast(RoastSession s)
+    {
+        BeginWork(s.Title, ("F", "turn it"), ("Space", "lift it off"), ("Esc", "leave it on the spit"));
+        TextC(Theme.Dim, "Golden all round, and through. When the fat flares, turn it away.");
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(420, 170);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var max = min + size;
+        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+        var c = new float2((min.X + max.X) * 0.5f, min.Y + size.Y * 0.42f);
+        var r = Gui.S(34);
+        // Each side as a quarter round the rod; the one to the fire at the bottom.
+        for (var i = 0; i < SpitRoast.Sides; i++)
+        {
+            var slot = (i - s.Facing + SpitRoast.Sides) % SpitRoast.Sides; // 0: down, to the fire
+            float2 off = slot switch { 0 => new(0, 1), 1 => new(1, 0), 2 => new(0, -1), _ => new(-1, 0) };
+            var a = c + off * r * 0.55f - new float2(r * 0.5f, r * 0.5f);
+            var b = a + new float2(r, r);
+            dl.AddRectFilled(in a, in b, Gui.U8(CrustColour(Roasting.CrustOf(s.Brown[i]))), Gui.S(8), ImDrawFlags.None);
+        }
+        var rodA = new float2(min.X + Gui.S(30), c.Y);
+        var rodB = new float2(max.X - Gui.S(30), c.Y);
+        dl.AddLine(in rodA, in rodB, new ImColor8(90, 90, 96, 255), Gui.S(3));
+        // The fire under it, leaping when it flares.
+        var fireY = max.Y - Gui.S(10);
+        for (var i = 0; i < 7; i++)
+        {
+            var x = c.X - Gui.S(54) + i * Gui.S(18);
+            var flicker = 0.7f + 0.3f * MathF.Sin(_time * (6f + i % 3) + i * 2.1f);
+            var h = Gui.S(s.Flaring > 0 ? 64 : 26) * flicker;
+            var a = new float2(x - Gui.S(7), fireY);
+            var b = new float2(x + Gui.S(7), fireY);
+            var tip = new float2(x, fireY - h);
+            dl.AddTriangleFilled(in a, in b, in tip, Gui.U8(new float4(0.95f, s.Flaring > 0 ? 0.8f : 0.5f, 0.1f, 0.85f)));
+        }
+        ImGui.Spacing();
+        var faces = string.Join(", ", s.Brown.Select((b, i) => (i == s.Facing ? "*" : "") + Roasting.CrustLabel(Roasting.CrustOf(b))));
+        Wrapped($"Its sides: {faces} (* to the fire).");
+        if (s.Flaring > 0)
+            TextC(Theme.Bad, "The fat's caught: it's flaring!");
+        if (!s.Lit)
+            TextC(Theme.Bad, "The fire's out.");
+        EndWork();
+    }
+
+    /// <summary>The spit beside you, between times: what's on it and how it looks.</summary>
+    private void DrawSpitPanel()
+    {
+        if (!HasAvatar)
+            return;
+        var at = _sim.World.Get<Position>(_avatar).Cell;
+        var map = _sim.Map;
+        KnownSpit? seen = null;
+        for (var dy = -1; dy <= 1 && seen == null; dy++)
+        for (var dx = -1; dx <= 1 && seen == null; dx++)
+        {
+            var cell = new int3(at.X + dx, at.Y + dy, at.Z);
+            if (map.InBounds(cell) && map.Structure[map.Idx(cell)] is { IsNull: false } st && Roasting.IsSpit(_sim, st))
+                seen = View.Spit(st);
+        }
+        if (seen is not { Pieces: > 0 } p)
+            return;
+        _hud.Next(Anchor.Bottom);
+        Panel.Begin("The spit###spit", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
+        _hud.Took();
+        Wrapped($"{p.Pieces} meat on the spit: {string.Join(", ", p.Sides.Select(Roasting.CrustLabel))}.");
+        if (p.Sides[p.Facing] >= Crust.Dark)
+            TextC(Theme.Bad, "The side to the fire is going dark.");
+        TextC(Theme.Dim, Controls.Keys("~F~ to turn it, or lift it off."));
+        Panel.End();
+    }
+
     /// <summary>Chopping on the knife's beat: the knife rising and falling, the cuts so far, and what the last one did.</summary>
     private void DrawChop(ChopSession s)
     {

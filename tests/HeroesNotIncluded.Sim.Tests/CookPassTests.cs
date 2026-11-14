@@ -589,4 +589,142 @@ public class CookPassTests
         sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("Berries"), 2);
         Assert.Equal("Pack rations for the road", AvatarSystem.ActionAt(sim, me, at).Label);
     }
+
+    // ---------------- Phase 3: the spit and the menu ----------------
+
+    /// <summary>The kitchen test's hearth with a spit beside it at (10, 10), meat in hand, and the roast started.</summary>
+    private static (Simulation Sim, Entity Me, Entity Spit, RoastSession Roast) Spit(int meat = 3)
+    {
+        var (sim, me, _) = InnKitchenTests.Kitchen();
+        var spit = sim.SpawnStructure(sim.Thing("Spit"), C(10, 10));
+        sim.RebuildDerivedIfNeeded();
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("Meat"), meat);
+        var at = sim.World.Get<Thing>(spit).Cell;
+        Assert.Equal("Put the meat on the spit", AvatarSystem.ActionAt(sim, me, at).Label);
+        sim.ApplyNow(new AvatarWorkCommand(me, true, at));
+        sim.ApplyNow(new AvatarWorkCommand(me, false));
+        Assert.True(sim.World.Get<Carrying>(me).Item.IsNull, "the meat went on");
+        return (sim, me, spit, Assert.IsType<RoastSession>(sim.World.Get<WorkSession>(me)));
+    }
+
+    private static Entity Lifted(Simulation sim, Entity me, RoastSession s, int turnEvery, int turns)
+    {
+        var inputs = Enumerable.Range(1, turns).Select(i => new WorkInput(i * turnEvery, WorkInputKind.Press)).ToList();
+        var lift = turns * turnEvery + 1;
+        inputs.Add(new WorkInput(lift, WorkInputKind.Act));
+        s.Advance(inputs, lift + 2);
+        Assert.True(s.Done);
+        sim.Tick();
+        var roast = sim.World.Get<Carrying>(me).Item;
+        Assert.Equal(Roasting.Dish, sim.World.Get<Thing>(roast).Def.Name);
+        return roast;
+    }
+
+    [Fact]
+    public void ARoastTurnedEvenlyComesOffGolden()
+    {
+        var (sim, me, _, s) = Spit();
+        // A careful cook: turn when the side's golden, or sooner when the fat flares under it; lift
+        // once every side's golden and it's had its time.
+        for (var t = 0; t < 60 * 60 && !s.Done; t++)
+        {
+            var at = s.StepsDone;
+            var b = s.Brown[s.Facing];
+            if (s.Brown.All(x => x >= 0.8f) && at >= 31 * SimClock.TicksPerSecond)
+                s.Advance([new WorkInput(at, WorkInputKind.Act)], at + 1);
+            else if (b >= 0.92f || (s.Flaring > 0 && b >= 0.6f))
+                s.Advance([new WorkInput(at, WorkInputKind.Press)], at + 1);
+            else
+                s.Advance([], at + 1);
+        }
+        Assert.True(s.Done);
+        sim.Tick();
+        var roast = sim.World.Get<Carrying>(me).Item;
+        Assert.Equal(3, sim.World.Get<Stack>(roast).Count);
+        Assert.True(sim.World.Get<Crafted>(roast).Quality >= Quality.Fine, $"{sim.World.Get<Crafted>(roast).Quality}");
+        Assert.Equal(DishFault.None, sim.World.Get<Dish>(roast).Fault);
+    }
+
+    [Fact]
+    public void ARoastLiftedEarlyIsUnderdone()
+    {
+        var (sim, me, _, s) = Spit();
+        var roast = Lifted(sim, me, s, 3 * SimClock.TicksPerSecond, SpitRoast.Sides);
+        Assert.Equal(DishFault.Underdone, sim.World.Get<Dish>(roast).Fault);
+        Assert.True(sim.World.Get<Crafted>(roast).Quality <= Quality.Plain);
+    }
+
+    [Fact]
+    public void ARoastLeftOnTheSpitCharsOnOneSide()
+    {
+        var (sim, me, spit, _) = Spit();
+        sim.ApplyNow(new StopWorkCommand(me));
+        sim.TickMany(SimClock.TicksPerSecond * 30);
+        var seen = Perception.For(sim, me).Spit(spit)!.Value;
+        Assert.Equal(Crust.Charred, seen.Sides[seen.Facing]);
+        Assert.Equal(Crust.Pale, seen.Sides[(seen.Facing + 2) % SpitRoast.Sides]);
+        // F turns it again, and Space lifts it: burnt.
+        sim.ApplyNow(new AvatarWorkCommand(me, true, sim.World.Get<Thing>(spit).Cell));
+        sim.ApplyNow(new AvatarWorkCommand(me, false));
+        var s = Assert.IsType<RoastSession>(sim.World.Get<WorkSession>(me));
+        s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Act)], s.StepsDone + 2);
+        sim.Tick();
+        Assert.Equal(DishFault.Caught, sim.World.Get<Dish>(sim.World.Get<Carrying>(me).Item).Fault);
+    }
+
+    [Fact]
+    public void ARoastOnTheSpitSurvivesASave()
+    {
+        var (sim, me, spit, s) = Spit();
+        s.Advance([new WorkInput(100, WorkInputKind.Press)], 300);
+        sim.ApplyNow(new StopWorkCommand(me));
+        sim.Tick();
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        var (a, b) = (sim.World.Get<SpitRoast>(spit), loaded.World.Get<SpitRoast>(spit));
+        Assert.Equal((a.Count, a.Facing, a.Inside), (b.Count, b.Facing, b.Inside));
+        Assert.Equal(a.Brown, b.Brown);
+    }
+
+    [Fact]
+    public void ARoastIsOnTheSignOnlyOnceTheCookOffersIt()
+    {
+        var (sim, me, _, _, _) = Inn();
+        var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+        var roast = sim.Thing(Roasting.Dish);
+        var posted = Assert.Single(Perception.For(sim, me).Menu(inn));
+        Assert.Equal(roast, posted.Dish);
+        Assert.False(posted.Offered);
+        Assert.Empty(Menu.Offered(sim, inn));
+        sim.ApplyNow(new SetDishPriceCommand(me, inn, roast, 6, true));
+        Assert.Equal(6, Menu.Offered(sim, inn).Single().Price);
+        // Only the cook prices the kitchen's dishes.
+        var keeper = sim.Creatures().First(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
+        Assert.False(Menu.Set(sim, keeper, inn, roast, 1, true));
+    }
+
+    [Fact]
+    public void ADinerAsksForARoastByNameAndOnlyARoastWillDo()
+    {
+        var (sim, me, _, _, _) = Inn();
+        var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+        var roast = sim.Thing(Roasting.Dish);
+        sim.ApplyNow(new SetDishPriceCommand(me, inn, roast, 5, true));
+        // Nobody sent off on a quest, and everyone hungry.
+        if (!sim.World.Has<ShopPrices>(inn))
+            sim.World.Add(inn, ShopPrices.Defaults(sim.Defs));
+        sim.World.Get<ShopPrices>(inn).Offered[(int)ServiceKind.Quest] = false;
+        for (var h = 0; h < 30 && !sim.Shops.All.Any(o => o.Dish == roast && o.IsOpen); h++)
+        {
+            foreach (var e in sim.Creatures().Where(e => sim.World.Has<Adventurer>(e)))
+                sim.World.Get<Needs>(e).Values[sim.Defs.Need("Food").Index] = 0.4f;
+            sim.TickMany(SimClock.TicksPerHour);
+        }
+        var order = sim.Shops.All.First(o => o.Dish == roast && o.IsOpen);
+        Assert.Equal(5, order.Price);
+        Assert.Contains("roast", order.Text);
+        Assert.False(Hatch.Fits(sim, order, sim.Thing("Stew")));
+        Assert.True(Hatch.Fits(sim, order, roast));
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        Assert.Equal(roast.Name, loaded.Shops.All.Single(o => o.Id == order.Id).Dish!.Name);
+    }
 }

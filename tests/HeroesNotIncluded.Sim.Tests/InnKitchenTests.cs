@@ -265,6 +265,8 @@ public class InnKitchenTests
         var (sim, party) = Tavern("Healer");
         var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Cook");
         var pot = Cooking.PotIn(sim, ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn")));
+        foreach (var e in party)
+            sim.World.Get<Needs>(e).Values[sim.Defs.Need("Food").Index] = 1f; // fed on the road: one diner's order, below, is the test
         for (var i = 0; i < 24 && !Cooking.PotOf(sim, pot).Cooked; i++)
             sim.TickMany(SimClock.TicksPerHour / 4);
         Assert.True(Cooking.PotOf(sim, pot).Cooked, $"cooked {Cooking.PotOf(sim, pot).Doneness:0.00}");

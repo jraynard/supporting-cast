@@ -24,28 +24,30 @@ raid size), the dragon's toughness, the night speed and the need rates.
 ### The cook pass
 Bring the cook up to the other trades (docs/DESIGN.md, "Cook"). The smith, healer and tinker each
 have five to seven hands-on games, a hidden state read by feel, and work that goes out on quests;
-the cook had two games and nothing that left town. Phases 1 and 2 are built (HISTORY.md, "Cook
-pass"): flavours, diners' tastes, sniffing, rations for the road; the house dish, diners saying
-what was wrong, tips; and chopping at the prep table, the first of phase 3. Next, in order:
+the cook had two games and nothing that left town. Built so far (HISTORY.md, "Cook pass"):
+flavours, diners' tastes, sniffing, rations for the road; the house dish, diners saying what was
+wrong, tips; chopping, the spit and dishes priced apart on the sign; and fixes from the first
+playtest (the mealtime rushes, the town's hours, customers kept out of the kitchen). Next, in order:
 
-1. **A menu beyond stew:** the spit (a roast turned on cue, read by its crust); the oven (knead, prove, bake by smell; bread for better
-   rations); porridge in the morning. Priced apart on the sign.
-2. **Pressure in the kitchen:** rushes at breakfast and supper, a second pot, the kitchen fire fed
-   by hand; a grease fire (a fatty pot at a boil; clap the lid on or it's a real fire); rats in the
+1. **The rest of the menu:** the oven (knead, prove, bake by smell; bread for better rations);
+   porridge in the morning; butchering and plucking.
+2. **Pressure in the kitchen:** a second pot, the kitchen fire fed by hand; a grease fire (a fatty pot at a boil; clap the lid on or it's a real fire); rats in the
    larder in the shortage crisis, as creatures the cook chases down.
 3. **The kitchen and the town:** feasts for a triumphant party (several dishes against the clock,
    the room's mood and tongues); broths with the healer; keeping the larder (salt, smoke, the cold
    store); word of the food bringing parties.
 
-Left from phases 1 and 2:
-- Bots and AI cooks never chop or name a house dish; the house dish brings no more parties yet (word of the
+Left so far:
+- Bots and AI cooks never chop, roast or name a house dish (an AI cook never offers the roast); the house dish brings no more parties yet (word of the
   food, phase 3).
 - Rations are sold at the bar's line like any gear in the inn; the hatch would suit them better.
-- Placeholder art: rations are a bolt of cloth, the prep table is a table's sprite.
+- Placeholder art: rations are a bolt of cloth, the prep table is a table's sprite, the spit wears
+  the butcher spot's, roast slices a meat sprite.
 - Tune in play: the fold cue and the cord's band (`PackSession`), the craving chance and moods
   (`Tastes`), the fed and sick factors (`Rations`), seasoner weight and cap (`Cooking`), how near
   a pot must taste to be the house dish and how often it's asked for (`HouseDish`), the tips
-  (`ShopSystem.FineTip`).
+  (`ShopSystem.FineTip`), the spit's browning and flares (`Roasting`), the mealtimes and small
+  hours (`ShopSystem.Mealtime`, `SmallHours`), arrival hunger (`PartySystem.Send`).
 
 ### SOUND
 

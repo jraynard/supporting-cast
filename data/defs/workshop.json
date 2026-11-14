@@ -121,6 +121,13 @@
       "description": "Meat and berries simmered over the hearth in its pot. Filling, and warming going down.",
       "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.2], "top": "props/meal_top", "side": "props/stone_block" } ]
     },
+    // A roast off the spit (Work.Roasting), by the slice: a dish of its own on the menu (Shops.Menu),
+    // asked for by name at its own price once the cook offers it. No bowl: a slice on a trencher.
+    { "name": "Roast", "label": "roast", "category": "Item", "mass": 0.4, "sprite": "items/meat", "stackLimit": 10,
+      "nutrition": 0.3, "cooked": true, "rotDays": 2, "flammability": 0.4, "maxHp": 20,
+      "menu": { "price": 5, "worth": 1.6, "madeAt": "Spit", "asks": "A slice off the roast, if there's one turning. {0} silver." },
+      "description": "A thick slice off the spit, crackling and all.",
+      "model": [ { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.18], "top": "props/meat_top", "side": "props/planks" } ] },
     // Chopped at the prep table (Work.ChopSession): a little further for the cutting, quicker in the
     // pot, and quicker to turn. Same flavour as whole.
     { "name": "ChoppedMeat", "label": "chopped meat", "category": "Item", "mass": 0.4, "sprite": "items/meat", "stackLimit": 30,

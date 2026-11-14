@@ -393,6 +393,15 @@ public sealed class BuildingProps
     /// <summary>The kitchen's prep table: rations for the road are packed on it (<c>Work.PackSession</c>).</summary>
     public bool PrepTable { get; set; }
 
+    /// <summary>
+    /// Marks its room as staff-only (a kitchen's pot, spit, table, larder, tub): customers idling
+    /// about the place don't wander in (<c>Ai.AiQueries.RandomReachableNear</c>).
+    /// </summary>
+    public bool StaffOnly { get; set; }
+
+    /// <summary>A spit by the fire, meat roasted on it (<c>Work.Roasting</c>).</summary>
+    public bool Spit { get; set; }
+
     /// <summary>A bar: mixed drinks are made at it (<c>Work.MixSession</c>).</summary>
     public bool Bar { get; set; }
 
@@ -462,6 +471,22 @@ public sealed class MixProps
 
     /// <summary>The house mix: any combination that isn't a named one.</summary>
     public bool House { get; set; }
+}
+
+/// <summary>A dish on the menu (<c>Shops.Menu</c>): asked for by name, at its own price.</summary>
+public sealed class MenuProps
+{
+    /// <summary>What it costs on the sign until the cook sets a price.</summary>
+    public int Price { get; set; } = 5;
+
+    /// <summary>What it's worth to a diner, against a plain meal.</summary>
+    public float Worth { get; set; } = 1.5f;
+
+    /// <summary>The furniture def it's made at: a kitchen without one doesn't put it on the sign.</summary>
+    public string MadeAt { get; set; } = "";
+
+    /// <summary>What a diner says asking for it, {0} the price.</summary>
+    public string Asks { get; set; } = "{0} silver for one, if you've any.";
 }
 
 /// <summary>How much of each flavour something brings to a pot, 0..1 apiece (<c>Work.Flavour</c>).</summary>
@@ -825,6 +850,9 @@ public sealed class ThingDef : Def
 
     /// <summary>A seasoner: it flavours a pot without adding a bowl to it.</summary>
     [JsonIgnore] public bool IsSeasoner => Flavour != null && Nutrition <= 0;
+
+    /// <summary>A dish on a kitchen's menu beyond its plain meal (<c>Shops.Menu</c>): its price, and where it's made.</summary>
+    public MenuProps? Menu { get; set; }
 
     /// <summary>Rations for the road, packed by the cook (<c>Work.Rations</c>): carried on a quest, eaten on the way.</summary>
     public bool Rations { get; set; }

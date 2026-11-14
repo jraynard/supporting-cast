@@ -154,6 +154,9 @@ public sealed partial class VillageGame
             case ChopSession chop:
                 DrawChop(chop);
                 return;
+            case RoastSession roast:
+                DrawRoast(roast);
+                return;
             case WashSession wash:
                 DrawWash(wash);
                 return;
@@ -172,6 +175,7 @@ public sealed partial class VillageGame
             case null:
                 DrawTongs();
                 DrawPotPanel();
+                DrawSpitPanel();
                 DrawBarPanel();
                 return;
         }

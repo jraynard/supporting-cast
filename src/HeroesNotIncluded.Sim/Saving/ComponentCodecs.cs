@@ -550,6 +550,43 @@ internal static class ComponentCodecs
             }
             return d;
         }),
+        Codec("SpitRoast", (w, x) =>
+        {
+            w.Int(x.Count);
+            w.Float(x.Rot);
+            foreach (var b in x.Brown)
+                w.Float(b);
+            w.Float(x.Inside);
+            w.Int(x.Facing);
+        }, r =>
+        {
+            var x = new Work.SpitRoast { Count = Math.Clamp(r.Int(), 0, Work.Roasting.MostPieces), Rot = Math.Clamp(r.Float(), 0f, 1f) };
+            for (var i = 0; i < Work.SpitRoast.Sides; i++)
+                x.Brown[i] = Math.Clamp(r.Float(), 0f, 2f);
+            x.Inside = Math.Clamp(r.Float(), 0f, 1.5f);
+            x.Facing = Math.Clamp(r.Int(), 0, Work.SpitRoast.Sides - 1);
+            return x;
+        }),
+        Codec("DishPrices", (w, p) =>
+        {
+            w.Int(p.Dishes.Count);
+            foreach (var (name, (price, offered)) in p.Dishes)
+            {
+                w.String(name);
+                w.Int(price);
+                w.Bool(offered);
+            }
+        }, r =>
+        {
+            var p = new Shops.DishPrices();
+            for (var n = r.Count(256); n > 0; n--)
+            {
+                var name = r.String();
+                var price = Math.Clamp(r.Int(), 0, Shops.ShopPrices.MaxPrice);
+                p.Dishes[name] = (price, r.Bool());
+            }
+            return p;
+        }),
         Codec("HouseDish", (w, h) =>
         {
             w.String(h.Name);

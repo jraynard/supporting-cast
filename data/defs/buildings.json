@@ -130,16 +130,18 @@
         "foundation": "Sill", "wall": "TimberWall", "door": "PlankDoor", "roof": "ThatchRoofPart",
         "stair": "InnStair", "upperFloor": "Floorboards"
       },
-      // The kitchen (back left): its own fireplace with the stew pot beside it, and the larder; a
+      // The kitchen (back left): its own fireplace with the spit and the stew pot either side of it,
+      // the prep table and the larder; a
       // serving hatch through its wall to the common room, where meals are ordered and collected.
       // The storeroom (back right) opens behind the bar. The bar runs across the common room's
       // back right, the keeper's side behind it reached past its left end; the fireplace and the
       // tables on the left, with an aisle from the door to the counter.
       "furnish": [
-        { "def": "Larder", "at": [1, 1], "facing": 2 },
+        { "def": "Spit", "at": [1, 1] },
         { "def": "Fireplace", "at": [2, 0] },
         { "def": "StewPot", "at": [3, 1] },
         { "def": "PrepTable", "at": [4, 1] },
+        { "def": "Larder", "at": [5, 1], "facing": 2 },
         { "def": "WashTub", "at": [6, 1] },
         { "def": "ServingHatch", "at": [7, 4] },
         { "def": "Shelf", "at": [7, 1], "facing": 2 },

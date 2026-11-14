@@ -213,8 +213,9 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         }
         Report(sim);
         SetOutWhenReady(sim);
+        // Back after dark, they camp out and come in with the morning.
         for (var i = 0; i < _out.Count; i++)
-            if (now >= _out[i].ReturnTick)
+            if (now >= _out[i].ReturnTick && !Ai.AiQueries.IsNight(sim))
             {
                 var ex = _out[i];
                 _out.RemoveAt(i--);

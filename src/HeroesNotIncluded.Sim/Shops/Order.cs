@@ -59,6 +59,9 @@ public sealed class Order
     /// <summary>For a meal: the flavour they said they fancied, if they said (<c>Hospitality.Tastes</c>).</summary>
     public Work.FlavourKind? Craving { get; set; }
 
+    /// <summary>For a meal: the dish they asked for by name, at its price (<c>Shops.Menu</c>); null for whatever's up.</summary>
+    public ThingDef? Dish { get; set; }
+
     /// <summary>For a meal: they asked for the house dish by name (<c>Work.HouseDish</c>).</summary>
     public bool WantsHouse { get; set; }
 

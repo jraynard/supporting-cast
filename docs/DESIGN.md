@@ -239,15 +239,29 @@ the rest follows in the order it's planned (docs/ROADMAP.md, "The cook pass").
   it goes a little further, turns a little sooner, and a pot of it cooks up to half again as fast.
   A cut off the beat does nothing; one wildly off may slip, and a slip is a real cut on the cook's
   arm, work for the healer.
-- *Then: a menu beyond stew.* Each dish its own small game, priced apart on the sign.
+- *Built: the spit* (`Work/Roasting`). Beside the kitchen fire. Raw meat goes on (up to four), F
+  turns the next side to the fire, Space lifts it off. Each side's crust shows as colour (pale,
+  colouring, golden, dark, charred); how far it's cooked through doesn't. Fat drips and the fire
+  flares now and then, browning the side over it twice as fast: turn it away. Golden all round and
+  cooked through is a fine roast; a charred side tastes burnt, a quick one comes off pink. Left on
+  the spit, the side to the fire chars. It comes off as slices, no bowl needed.
+- *Built: the menu* (`Shops/Menu`). Dishes beyond the plain meal go on the sign with their own
+  price, once the cook ticks them on (they start off, so a kitchen nobody roasts in is never asked
+  for a roast). A plain meal order takes whatever's up on the hatch at the meal's price; about a
+  third of diners ask for a dish on the menu by name instead, at its price, and only it will do.
+- *Then: more of the menu.*
   - **Prep, more of it:** butchering what the hunters bring in, plucking.
-  - **The spit:** a roast turned on cue, its crust read by colour like iron. Fat dripping on the
-    coals flares the fire.
   - **The oven:** bread and pies. Knead (rhythm), prove (a wait), bake by smell. Bread keeps: the
     base for better rations. Porridge in the morning.
+- *Built: the rushes, and the town's hours* (from the first playtest). Adventurers want a meal at
+  breakfast (7 to 9:30) and supper (6 to 9) whenever they're at all peckish, not only when
+  starving, and come into town hungry from the road. They keep the town's hours: nobody rides in
+  or comes back from a quest in the dark, nothing's asked between 11 and 6 but a room or a bad
+  hurt seen to, they turn in at night unless well rested, and the small hours don't count against
+  anyone's patience. A meal only half wanted that never comes is shrugged off. Customers idling
+  about the inn keep out of the kitchen (`staffOnly` furniture marks a room so).
 - *Then: pressure in the kitchen.*
-  - **Rushes:** breakfast and supper come all at once. Two pots on the go, the kitchen fire kept
-    fed, the hatch line growing.
+  - **Rushes, more of them:** two pots on the go, the kitchen fire kept fed.
   - **A grease fire:** a fatty pot left at a boil flares up. Clap the lid on within a breath (a
     quick cue), or it's a real fire, through the fire the town already fights.
   - **Rats you chase:** the shortage crisis brings rats into the larder as creatures. Each one left

@@ -1299,3 +1299,37 @@ depth.
   each slip lands as a cut on an arm when the knife's put down. With choppable food in hand the
   table chops; otherwise it packs rations.
 - Save format 23 (a stew session keeps its pace). `CookPassTests` (prep). Bench hashes unchanged.
+
+### Cook pass, phase 3: the spit and the menu; playtest fixes (2026-11-13)
+- **The spit** (`Work/Roasting`): a new piece of kitchen furniture beside the fire (the larder
+  moves along the wall to make room). Raw meat in hand goes on with F, up to four; F turns it, Space
+  lifts it off (`RoastSession`). Four sides brown one at a time, read only as crust colour; the
+  inside cooks unseen. Fat flares now and then and browns the side over it twice as fast. Scored
+  by the crust each side shows and whether it's cooked through (`Roasting.QualityOf`, `FaultOf`).
+  Left on the spit (`SpitRoast` on the spit, `RoastSystem`), the side to the fire chars. A roast
+  comes off as slices (`Roast`), no bowl.
+- **The menu** (`Shops/Menu`, `DishPrices`): dishes with `"menu"` props go on the sign once their
+  kitchen has what makes them and the cook ticks them on (`SetDishPriceCommand`, the sign window).
+  About a third of diners ask for one by name, at its price (`Order.Dish`, saved); only that dish
+  fits at the hatch, and handed something else they say so.
+- **From the first playtest:**
+  - *People wandering into the kitchen:* idle adventurers (and those waiting on an order) loiter
+    within a few cells of the inn's middle, which takes in the kitchen. Furniture marked
+    `"staffOnly"` (the pot, spit, prep table, larder, wash tub) makes its room staff-only, and
+    loiterers never pick a spot in one (`AiQueries.StaffOnly`).
+  - *Drinks but hardly any food:* a meal was asked for only below 0.6 food, and parties came in
+    fed; a two-day round with an idle cook saw no meal orders at all. Now they arrive hungry from
+    the road and want a meal at breakfast and supper when under 0.85 (`ShopSystem.Mealtime`): the
+    same round sees a dozen. A mealtime meal that never comes costs them little.
+  - *Orders at 3 or 4 in the morning:* nothing kept adventurers to the town's hours. Now parties
+    don't ride in after dark, a party back from a quest at night camps till morning, adventurers
+    ask for nothing in the small hours (11 to 6) but a room (till 2) or a bad hurt seen to, they
+    turn in at night unless well rested (`AdventurerBrain.NightRestBelow`), and open orders'
+    patience doesn't run in the small hours.
+- **Tests:** `CookPassTests` (spit, menu), `InnHoursTests` (staff-only rooms, the small hours,
+  patience overnight, breakfast). Several older tests assumed fed arrivals or a party leaving the
+  moment a quest's offered; they now feed the party or give it time to set out
+  (`ExpeditionTests.SendAndWait`). Arrival hunger is set without the party's random stream, so who
+  arrives is unchanged.
+- Save format 24. Bench hashes moved (the inn's new spit): 1234 state `7FBCA1D753F545A2`, full
+  `2A7A081628943F5F`; 99 state `631948CD2DBEA002`, full `D9EA76D2C36AAFC7`.

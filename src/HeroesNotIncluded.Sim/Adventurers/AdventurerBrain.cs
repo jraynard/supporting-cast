@@ -15,6 +15,9 @@ namespace HeroesNotIncluded.Sim.Adventurers;
 /// </summary>
 public sealed class AdventurerBrain : IBrain
 {
+    /// <summary>At night they turn in unless they're more rested than this.</summary>
+    public const float NightRestBelow = 0.85f;
+
     public Job? Think(Simulation sim, Entity pawn)
     {
         var w = sim.World;
@@ -44,7 +47,8 @@ public sealed class AdventurerBrain : IBrain
         var rest = sim.Defs.Need("Rest");
         if (needs.Get(food) < food.UrgentBelow && HumanBrain.EatSomething(sim, pawn, creature.Def) is { } eat)
             return eat;
-        if (needs.Get(rest) < rest.UrgentBelow || (AiQueries.IsNight(sim) && needs.Get(rest) < 0.5f))
+        // Abed at night unless they're fresh: the town's asleep, and so should they be.
+        if (needs.Get(rest) < rest.UrgentBelow || (AiQueries.IsNight(sim) && needs.Get(rest) < NightRestBelow))
             return HumanBrain.Sleep(sim, pawn);
 
         // In line for something, take their place in it; waiting on a piece they've handed over (or
@@ -68,7 +72,8 @@ public sealed class AdventurerBrain : IBrain
             return party;
         var center = WaitingAt(sim, pawn)
             ?? (w.TryGet<Adventurer>(pawn, out var a) && PartySystem.HauntOf(sim, a.PartyDef) is { } haunt ? haunt.Anchor : tile);
-        return AiQueries.RandomReachableNear(sim, pawn, center, 4) is { } spot
+        // Never into the kitchen: customers keep to the public rooms.
+        return AiQueries.RandomReachableNear(sim, pawn, center, 4, publicOnly: true) is { } spot
             ? new WanderJob(spot, sim.Rand.Range(120, 480))
             : null;
     }
