@@ -609,7 +609,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         if (_task != 0 || !Ai.AiQueries.IsNight(sim) || w.Get<Needs>(me).Get(sim.Defs.Need("Rest")) > BedtimeRest)
             return false;
         Doing = "going to bed";
-        var bed = Ai.AiQueries.FindFreeBed(sim, me);
+        var bed = Ai.AiQueries.FindFreeBed(sim, me, forTheNight: true);
         if (bed.IsNull || w.Get<Position>(me).Cell == w.Get<Thing>(bed).Cell)
             send(new SleepCommand(me));
         else if (now - _lastWalk >= ThinkTicks * 2)

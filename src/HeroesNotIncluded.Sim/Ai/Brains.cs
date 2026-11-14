@@ -168,8 +168,9 @@ public static class AiQueries
     /// <summary>
     /// The creature's own bed, else the nearest free one of the right kind: a prisoner bed
     /// nobody else owns (<paramref name="prisoner"/>), or an ordinary bed that isn't let (the inn's).
+    /// <paramref name="forTheNight"/>: to sleep in, so not a pallet the sick are seen to on.
     /// </summary>
-    public static Entity FindFreeBed(Simulation sim, Entity pawn, bool prisoner = false)
+    public static Entity FindFreeBed(Simulation sim, Entity pawn, bool prisoner = false, bool forTheNight = false)
     {
         var w = sim.World;
         if (w.TryGet<BedOwner>(pawn, out var owner) && w.IsAlive(owner.Bed))
@@ -191,6 +192,8 @@ public static class AiQueries
                 continue;
             if (Shops.ShopSystem.IsLet(sim, e))
                 continue; // the inn's rooms: only for whoever's been given one
+            if (forTheNight && Shops.ShopSystem.IsForPatients(sim, e))
+                continue; // the healer's pallets are kept for the hurt
             if (sim.Reservations.IsReservedByOther(e, pawn))
                 continue;
             var d = Dist(from, thing.Cell);
@@ -399,7 +402,7 @@ public sealed class HumanBrain : IBrain
 
     internal static Job Sleep(Simulation sim, Entity pawn)
     {
-        var bed = AiQueries.FindFreeBed(sim, pawn);
+        var bed = AiQueries.FindFreeBed(sim, pawn, forTheNight: true);
         if (!bed.IsNull)
             return new SleepJob(bed);
         // No bed: find somewhere comfortable to lie down rather than wherever we happen to be.

@@ -566,6 +566,23 @@ public class HealerTests
     }
 
     [Fact]
+    public void ThePalletsAreKeptForTheHurtNotForANightsSleep()
+    {
+        var sim = VillageRound.NewSimulation(LoadDefs(), 1234);
+        sim.Presets.PresetMode = true;
+        var town = VillageRound.Setup(sim);
+        var w = sim.World;
+        var pallet = w.Query<PartOf>().First(e => w.Get<PartOf>(e).Building == town.Shrine && w.Get<Thing>(e).Def.Name == "StrawPallet");
+        // Someone with no bed of their own, by the shrine at bedtime.
+        var drifter = sim.Creatures().First(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human });
+        w.Remove<BedOwner>(drifter);
+        w.Get<Position>(drifter) = Position.At(w.Get<Thing>(pallet).Cell);
+        Assert.False(Ai.AiQueries.FindFreeBed(sim, drifter, forTheNight: true) is var bed && w.IsAlive(bed) && ShopSystem.IsForPatients(sim, bed));
+        // Carried in hurt, though, a pallet is just the place.
+        Assert.True(ShopSystem.IsForPatients(sim, Ai.AiQueries.FindFreeBed(sim, drifter)));
+    }
+
+    [Fact]
     public void ManaComesBackOnItsOwnButSlowerInPain()
     {
         var (sim, me, patient, arm) = AtTheBedside();

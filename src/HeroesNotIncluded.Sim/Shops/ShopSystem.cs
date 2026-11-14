@@ -264,6 +264,10 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     public static bool IsLet(Simulation sim, Entity bed) =>
         Buildings.Of(sim, bed) is { IsNull: false } b && sim.World.Get<PresetBuilding>(b).Def.LetsBeds;
 
+    /// <summary>A bed the sick are seen to on (<see cref="BuildingDef.LineOnBeds"/>: the shrine's pallets), not one to spend the night in.</summary>
+    public static bool IsForPatients(Simulation sim, Entity bed) =>
+        Buildings.Of(sim, bed) is { IsNull: false } b && sim.World.Get<PresetBuilding>(b).Def.LineOnBeds;
+
     /// <summary>
     /// An adventurer wants something: what's it worth to them (<see cref="Worth"/>), and what can
     /// they spare? They order from the cheapest shop offering it within that, the nearest of equals,
