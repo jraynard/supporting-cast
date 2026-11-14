@@ -5,7 +5,8 @@ using HeroesNotIncluded.Sim.Systems;
 namespace HeroesNotIncluded.Sim.Scenarios;
 
 /// <summary>
-/// Debug/screenshots (<c>--building-demo</c>): the preset buildings beside the landing. A row to
+/// Debug/screenshots (<c>--building-demo</c>): the preset buildings beside the landing, in the old
+/// open valley (<see cref="NewValley"/>, then <see cref="Maps.MapGenerator.Generate"/>), where there's room. A row to
 /// the north has every building in every look, finished, a couple with extras added (a second
 /// bed, bellows by the forge); a row to the south has the inn stopped at each phase, its next
 /// phase laid out as blueprints, so the villagers carry on raising them. Plots that won't fit the
@@ -15,6 +16,9 @@ public static class BuildingShowcase
 {
     /// <summary>How wide a row of plots runs before the next starts beside it, kept to the flat ground round the landing.</summary>
     private const int RowWidth = 60;
+
+    /// <summary>A simulation sized for the old valley: wide open ground round a landing, with a few villagers.</summary>
+    public static Simulation NewValley(DefDatabase defs, ulong seed) => Simulation.CreateStandard(defs, 128, 128, seed, 12);
 
     public static int3 Setup(Simulation sim, int3 center)
     {

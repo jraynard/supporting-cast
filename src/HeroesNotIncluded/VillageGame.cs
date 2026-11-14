@@ -306,10 +306,11 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     {
         if (ArenaFoe != null)
             return StartArena(defs);
-        _sim = VillageRound.NewSimulation(defs, seed, MapName);
+        // The building showcase needs open ground, which Millbrook doesn't leave: it gets the old valley.
+        _sim = BuildingDemo ? BuildingShowcase.NewValley(defs, seed) : VillageRound.NewSimulation(defs, seed, MapName);
         _sim.StrictJobs = false; // a buggy job fails itself, not the game
         _sim.Presets.PresetMode = !Freeform; // preset buildings replace freeform walls (the trial; --freeform for the old way)
-        var center = VillageRound.Setup(_sim, MapName).Center;
+        var center = BuildingDemo ? Sim.Maps.MapGenerator.Generate(_sim) : VillageRound.Setup(_sim, MapName).Center;
 
         if (Difficulty is { } difficulty && !difficulty.Equals("Off", StringComparison.OrdinalIgnoreCase))
             _sim.Storyteller.SetDifficulty(_sim, defs.Difficulty(difficulty));
