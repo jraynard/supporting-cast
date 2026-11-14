@@ -430,4 +430,28 @@ public class FestivalTests
             Assert.All(sim.StoredIn(table), e => Assert.False(sim.IsAvailable(e), "nobody's job clears the feast away"));
         }
     }
+
+    [Fact]
+    public void APlayerSitsOnAFeastStoolUntilTheyMove()
+    {
+        var sim = Round();
+        ToRevels(sim);
+        var w = sim.World;
+        var me = Me(sim);
+        var stool = sim.Festival.PropsOf(sim, "Stool").First(s => !sim.Reservations.IsReservedByOther(s, me)
+            && !sim.Creatures().Any(c => w.Get<Position>(c).Cell == w.Get<Thing>(s).Cell));
+        w.Get<Position>(me) = Position.At(Beside(sim, stool));
+        var action = AvatarSystem.ActionAt(sim, me, w.Get<Thing>(stool).Cell);
+        Assert.Equal(AvatarActionKind.Sit, action.Kind);
+        AvatarSystem.Perform(sim, me, action);
+        sim.TickMany(SimClock.TicksPerSecond * 3);
+        Assert.True(w.Get<Mind>(me).Job is SitJob { Seated: true }, $"{w.Get<Mind>(me).Job?.GetType().Name}");
+        Assert.Equal(w.Get<Thing>(stool).Cell, w.Get<Position>(me).Cell);
+        Assert.False(SitJob.CanSit(sim, sim.Creatures().First(e => e != me && w.Has<Mind>(e)), stool), "nobody else takes the seat");
+
+        // Walking off stands them up.
+        w.Get<Combat.FreeMover>(me).Wish = new float2(1, 0);
+        sim.TickMany(10);
+        Assert.False(w.Get<Mind>(me).Job is SitJob);
+    }
 }

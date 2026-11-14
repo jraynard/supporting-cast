@@ -885,7 +885,36 @@ public sealed partial class VillageGame
     {
         if (!HasAvatar || LookAt != null)
             return;
+        // A look elsewhere (a festival card's line, a toast) holds until you move, or a while passes.
+        if (_lookingAt is { } look)
+        {
+            if (_time - _lookingSince < LookHold && _sim.World.Get<Position>(_avatar).Cell == _lookingFrom)
+            {
+                _camera.Target = look;
+                return;
+            }
+            _lookingAt = null;
+        }
         _camera.Target = AvatarDrawPos() + ShakeOffset();
+    }
+
+    /// <summary>Seconds a look elsewhere holds the camera before it comes back to your character.</summary>
+    private const float LookHold = 8f;
+
+    private float3? _lookingAt;
+    private float _lookingSince;
+    private int3 _lookingFrom;
+
+    /// <summary>Show a cell: the camera goes there and stays, in a round until your character moves (or <see cref="LookHold"/> passes).</summary>
+    private void LookAtCell(int3 cell)
+    {
+        var at = new float3(cell.X + 0.5f, cell.Y + 0.5f, cell.Z);
+        _camera.Target = at;
+        if (!HasAvatar)
+            return;
+        _lookingAt = at;
+        _lookingSince = _time;
+        _lookingFrom = _sim.World.Get<Position>(_avatar).Cell;
     }
 
     /// <summary>Where the avatar is drawn this frame.</summary>

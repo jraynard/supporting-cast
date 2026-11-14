@@ -103,6 +103,9 @@ public enum AvatarActionKind
 
     /// <summary>Lay a piece of your own work from your pack out on the festival's show table, at once.</summary>
     ShowPiece,
+
+    /// <summary>Sit on a seat in reach (a stool, a bench: <see cref="Defs.BuildingProps.Seat"/>) until you move (<see cref="SitJob"/>).</summary>
+    Sit,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -130,7 +133,7 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
         or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean
         or AvatarActionKind.Mend or AvatarActionKind.OrderMeal or AvatarActionKind.OrderHealing or AvatarActionKind.FillBucket or AvatarActionKind.ThrowWater or AvatarActionKind.FestivalGame or AvatarActionKind.Dance
-        or AvatarActionKind.ShowPiece;
+        or AvatarActionKind.ShowPiece or AvatarActionKind.Sit;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
     public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker
@@ -371,6 +374,8 @@ public sealed class AvatarSystem : ISimSystem
             return new(AvatarActionKind.Dance, "Dance round the bonfire", cell, site);
         if (tool == AvatarTool.Use && ShowAt(sim, avatar, site, cell, held) is { } show)
             return show;
+        if (tool == AvatarTool.Use && SitJob.CanSit(sim, avatar, site))
+            return new(AvatarActionKind.Sit, $"Sit on the {w.Get<Thing>(site).Label}", cell, site);
 
         // A piece in the tongs goes to the fire, the anvil or the tub; a blade to the grindstone.
         if (Work.Smithing.StepAt(sim, avatar, site) is { } step && !sim.Reservations.IsReservedByOther(site, avatar))
@@ -855,6 +860,10 @@ public sealed class AvatarSystem : ISimSystem
             case AvatarActionKind.Climb:
                 AiSystem.Order(sim, avatar, new ClimbJob(action.Cell));
                 break;
+            case AvatarActionKind.Sit:
+                if (SitJob.CanSit(sim, avatar, action.Target))
+                    AiSystem.Order(sim, avatar, new SitJob(action.Target));
+                break;
             case AvatarActionKind.Dig:
                 sim.Map.Designate(sim.Map.Idx(action.Cell), Designation.Dig);
                 AiSystem.Order(sim, avatar, new DigJob(action.Cell));
@@ -1093,5 +1102,45 @@ public sealed class ClimbJob(int3 cell) : Job
             Sim.World.Remove<Perched>(Pawn);
             Fail("couldn't climb up");
         }
+    }
+}
+
+/// <summary>
+/// A player sits on a seat in reach (<see cref="AvatarActionKind.Sit"/>): onto it, and there until
+/// they move off (walking ends a player's job). The seat's held for them while they're on it.
+/// </summary>
+public sealed class SitJob(Entity seat) : Job
+{
+    /// <summary>On the seat (for the pose).</summary>
+    public bool Seated { get; private set; }
+
+    public override Entity Focus => seat;
+
+    /// <summary>A seat that's free (nobody on it or holding it) and not being built, within reach of them, and they're not up on something.</summary>
+    public static bool CanSit(Simulation sim, Entity who, Entity seat)
+    {
+        var w = sim.World;
+        if (seat.IsNull || !w.IsAlive(seat) || w.Get<Thing>(seat).Def.Building is not { Seat: true } || w.Has<Construction>(seat)
+            || w.Has<Perched>(who) || sim.Reservations.IsReservedByOther(seat, who) || w.Get<Mind>(who).Job is SitJob { Seated: true })
+            return false;
+        var cell = w.Get<Thing>(seat).Cell;
+        var at = w.Get<Position>(who).Cell;
+        if (cell.Z != at.Z || !AvatarSystem.InReach(at, cell))
+            return false;
+        foreach (var e in sim.Creatures())
+            if (e != who && w.Get<Position>(e).Cell == cell)
+                return false;
+        return true;
+    }
+
+    protected override IEnumerable<JobStatus> Run()
+    {
+        if (!Alive(seat) || !Reserve(seat)) yield break;
+        Report = $"Sitting on the {Get<Thing>(seat).Label}";
+        foreach (var s in GoTo(Get<Thing>(seat).Cell, PathEnd.OnTile)) yield return s;
+        if (HasFailed) yield break;
+        Seated = true;
+        while (Alive(seat))
+            yield return JobStatus.Running;
     }
 }

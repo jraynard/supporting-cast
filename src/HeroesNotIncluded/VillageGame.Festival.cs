@@ -162,7 +162,6 @@ public sealed partial class VillageGame
         Panel.End();
     }
 
-    private void LookAtCell(int3 cell) => _camera.Target = new float3(cell.X + 0.5f, cell.Y + 0.5f, cell.Z);
 
     /// <summary>The striker: a needle sweeping the gauge; F brings the mallet down. The puck flies as high as the needle stood.</summary>
     private void DrawStriker(StrikerSession s)

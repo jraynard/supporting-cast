@@ -1124,7 +1124,7 @@ public sealed partial class VillageGame
             ImGui.PushStyleColor(ImGuiCol.Text, in color);
             ImGui.PushID(i);
             if (ImGui.Selectable($"[{when:00}h] {m.Text}", false, ImGuiSelectableFlags.None, in _autoSize) && m.Location is { } loc)
-                _camera.Target = new float3(loc.X + 0.5f, loc.Y + 0.5f, loc.Z);
+                LookAtCell(loc);
             ImGui.PopID();
             ImGui.PopStyleColor(1);
         }

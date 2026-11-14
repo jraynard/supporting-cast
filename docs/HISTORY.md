@@ -1451,3 +1451,7 @@ It wasn't clear what to do at first, then it was over too fast. Now:
   themselves by hand. `FestivalTests` (the square, the feast). Bench hashes moved (the pile's
   place): 1234 state `A6E67838D1ABD0A8`, full `03C9963BA8B970EA`; 99 state `FF8D045D36C9C535`, full
   `24B36AB2CA3F1C41`.
+- **Sitting, and looking.** F at a free seat in reach (a stool, anything `seat`) sits you on it
+  (`AvatarActionKind.Sit`, `SitJob`, the seated pose) until you walk off. "Look at" (the festival
+  card, a toast, the message log) holds the camera there until your character moves or eight
+  seconds pass (`VillageGame.LookAtCell`); before, the follow snapped it straight back.

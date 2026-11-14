@@ -305,7 +305,7 @@ public sealed partial class VillageGame
             MessageKind.Good => "ui/icon_good",
             _ => null,
         };
-        Action? look = m.Location is { } loc ? () => _camera.Target = new float3(loc.X + 0.5f, loc.Y + 0.5f, loc.Z) : null;
+        Action? look = m.Location is { } loc ? () => LookAtCell(loc) : null;
         _toastStack.Push(m.Text, KindColor(m.Kind), icon, _time, look);
     }
 
