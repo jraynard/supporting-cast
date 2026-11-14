@@ -4,6 +4,49 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+## 0.1.0-playtest.9
+
+The cook gets a real kitchen, and the inn keeps the town's hours.
+
+**The pot**
+- Ingredients taste of something now: savoury, sweet, hot or fresh, and a stew tastes of what went
+  in. A pot of one thing is flat; meat with something green and a little heat is a stew.
+- Emberroot, herbs and honey are seasoners: up to three in a pot, for flavour, not more bowls.
+- Diners say what they fancy when they order ("Something with a bit of heat to it"), and are
+  pleased when the bowl matches.
+- Served a poor bowl, a diner tells you what was wrong with it: too salty, bland, caught on the
+  bottom, not cooked through, or all one taste.
+- Smell food before it goes in (the Smell button in the larder and your pack, or on the pot). A
+  practised nose can tell fresh from turned. A pot only ever smells "not quite right".
+- Name a fine pot the house dish. It goes on the sign, and any pot that tastes like it is the
+  same dish. Some diners ask for it by name.
+
+**The kitchen**
+- A prep table: chop raw meat, fish or cabbage on the knife's beat (it cooks quicker and goes a
+  little further; mind your fingers), and knead flour into dough.
+- The spit by the fire: put meat on, turn it (F) as each side goes golden, and turn it away when
+  the fat flares. Lift it off (Space) golden all round. Left alone, it chars.
+- The bread oven in the corner: let your dough prove an hour or two, then bake it by smell alone.
+  Out on the golden crust; left in, it burns.
+- Roast and bread go on the sign at their own prices. Tick them on once you can make them, and
+  some diners will ask for them by name.
+- Rations for the road: three portions of food, folded and tied at the prep table, sold like
+  gear. Good rations make a party stronger on its quest; turned ones make them sick, and they'll
+  say so when they're back. Rations with bread in them keep longer.
+
+**The inn's day**
+- Guests come in hungry and want feeding at breakfast and supper: expect a rush at the hatch.
+- Nobody rides into town or comes back from a quest after dark. Guests turn in for the night and
+  ask for nothing between eleven and six but a room or a bad wound seen to, and nobody's patience
+  runs out while the town's asleep.
+- Customers idling about the inn keep out of the kitchen.
+- Quick, fine service earns a tip, at the bar and the hatch.
+
+**Steam Deck**
+- Under Steam's gamescope the game no longer thinks it's in the background, so the pad isn't
+  ignored and the frame rate isn't held down.
+- An input log for chasing controller trouble: add NARSIL_INPUT_LOG=1 to Steam's launch options.
+
 ## 0.1.0-playtest.8
 
 The festival, made a night to remember, and death that sticks.
