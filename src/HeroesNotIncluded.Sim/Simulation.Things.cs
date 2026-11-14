@@ -399,7 +399,10 @@ public sealed partial class Simulation
         made.Hp = made.MaxHp;
         if (made.Material != null)
             Map.MarkStructureChanged(Map.Idx(thing.Cell)); // its material changes how well it insulates
-        Messages.Add(MessageKind.Info, $"Built {made.Label}.", thing.Cell);
+        if (Festival.IsSite(site))
+            Festival.SiteBuilt(this, site, built); // the festival's going up: no word for every stool
+        else
+            Messages.Add(MessageKind.Info, $"Built {made.Label}.", thing.Cell);
         RecipeBooks.Discover(this, Entity.Null, "built:" + def.Name);
         if (!partOf.IsNull)
             Buildings.OnPartBuilt(this, partOf); // may lay the next phase
@@ -412,7 +415,10 @@ public sealed partial class Simulation
         var thing = World.Get<Thing>(site);
         var c = World.Get<Construction>(site);
         var cost = c.Target.Building!.Cost;
+        var stored = Festival.IsSite(site); // the festival's, from store: nothing was brought to give back
         DestroyThing(site);
+        if (stored)
+            return;
         for (var i = 0; i < cost.Count; i++)
             if (c.Delivered[i] > 0)
                 SpawnItem(cost[i].ThingDef, c.Delivered[i], thing.Cell, MaterialFor(cost[i].ThingDef, c.MainMaterial));

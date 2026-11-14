@@ -1475,3 +1475,18 @@ It wasn't clear what to do at first, then it was over too fast. Now:
   tracks (music not fetched), the `festival` playlist plays near the well as before.
 - `--check-art` treats a streamed music-bus sound with no files like a playlist with none: a
   warning, not an error. The band lists only the free tracks until ours exist (docs/AUDIO.md).
+
+### The festival: the labourers put it up (2026-11-14)
+- **Setting up that afternoon.** From `festivalSetupHour` on the last day (`season.json`, 11:00),
+  everything the map lists becomes a construction site in the square, with a message
+  (`FestivalSystem.LayOut`, `Sites`). The festival's things come out of store, not the town's
+  woodpile: each site starts with its materials and wants only the work.
+- **The labourers' job.** Only a trade that gathers takes a festival site (`FestivalSystem.PutsUp`,
+  `WorkGivers.Construct`), so the shops stay open until the bell. A built site goes back to the
+  festival (`SiteBuilt`) with no "Built" message, and unlit.
+- **The bell is the backstop.** `PutUp` finishes any site still going, and places anything with no
+  site where it goes, then lights it all as before. Cancelling a festival site refunds nothing.
+- Save format 32 (the sites). `FestivalTests`: the sites go up at the hour; a town with its
+  labourer gets most of it up before the bell, unlit; only labourers build them; a save mid-build
+  ends with each prop up once and lit. Bench state hashes unchanged; full hashes 1234
+  `0628FB9242D11B2C`, 99 `FF4AE94FB3201EAB`.

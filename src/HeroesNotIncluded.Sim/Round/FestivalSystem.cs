@@ -69,6 +69,18 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
     private readonly List<(ThingDef Def, int3 Cell, int Facing)> _layout = [];
 
     private readonly List<Entity> _props = [];
+
+    /// <summary>
+    /// One per <see cref="_layout"/> entry once the afternoon's setting up begins: its construction
+    /// site, then what was built there (<see cref="SiteBuilt"/>); Entity.Null where none could go.
+    /// </summary>
+    private readonly List<Entity> _sites = [];
+
+    /// <summary>The afternoon's sites, or what they became, one per thing the map lists.</summary>
+    public IReadOnlyList<Entity> Sites => _sites;
+
+    /// <summary>The setting up has begun (the sites are laid out), once a season.</summary>
+    public bool SettingUp { get; private set; }
     private readonly List<GameStanding> _games = [];
     private readonly HashSet<Entity> _toasted = [];
     private readonly HashSet<(Entity Who, Entity Piece)> _admired = [];
@@ -169,6 +181,54 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
     /// <summary>A prop of the festival's (put up for it), not the town's own.</summary>
     public bool IsProp(Entity e) => _props.Contains(e);
 
+    /// <summary>A site, or a thing built from one, for the festival this afternoon.</summary>
+    public bool IsSite(Entity e) => !e.IsNull && _sites.Contains(e);
+
+    /// <summary>
+    /// Only the trades that labour (<see cref="Defs.TradeDef.Gathers"/>) put the festival up: the
+    /// smith and the innkeeper keep their shops open till the bell. Whatever's left is put up then.
+    /// </summary>
+    public static bool PutsUp(Simulation sim, Entity who) =>
+        sim.World.TryGet<Trade>(who, out var trade) && trade.Def.Gathers;
+
+    /// <summary>
+    /// The afternoon before the bell: a site for everything the map lists, for the labourers to
+    /// put up. The festival's things come out of store, not the town's woodpile: each site has
+    /// what it's made of already, and wants only the work. Nothing's lit yet.
+    /// </summary>
+    private void LayOut(Simulation sim)
+    {
+        SettingUp = true;
+        _sites.Clear();
+        foreach (var (def, cell, facing) in _layout)
+        {
+            var site = Free(sim, def, cell, facing) is { } place ? sim.PlaceBlueprint(def, place, facing) : Entity.Null;
+            if (!site.IsNull)
+            {
+                var c = sim.World.Get<Construction>(site);
+                for (var i = 0; i < c.Delivered.Length; i++)
+                    c.Delivered[i] = def.Building!.Cost[i].Count;
+            }
+            _sites.Add(site);
+        }
+        if (_sites.Exists(e => !e.IsNull))
+            sim.Messages.Add(MessageKind.Info, "The labourers are putting up the festival in the square.", sim.Round.Square);
+    }
+
+    /// <summary>
+    /// A festival site's been built (<see cref="Simulation.CompleteConstruction"/>): keep track of
+    /// what it became, and leave it unlit till the bell.
+    /// </summary>
+    internal void SiteBuilt(Simulation sim, Entity site, Entity built)
+    {
+        var i = _sites.IndexOf(site);
+        if (i < 0)
+            return;
+        _sites[i] = built;
+        if (sim.World.Has<Fueled>(built))
+            sim.World.Get<Fueled>(built).Fuel = 0;
+    }
+
     /// <summary>The game played at a thing, if it's one of the festival's.</summary>
     public GameStanding? GameAt(Simulation sim, Entity thing)
     {
@@ -196,16 +256,26 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         Crier = RoundSystem.Crier(sim, sim.Round.Square ?? default);
     }
 
-    /// <summary>Everything the map lists, where it goes (or the nearest free cell): lit, if it burns.</summary>
+    /// <summary>
+    /// Everything the map lists: what the labourers put up this afternoon, any site of theirs
+    /// still unfinished built now, and the rest put where it goes (or the nearest free cell).
+    /// Lit, if it burns.
+    /// </summary>
     private void PutUp(Simulation sim)
     {
         var w = sim.World;
-        foreach (var (def, cell, facing) in _layout)
+        for (var i = 0; i < _layout.Count; i++)
         {
-            var at = Free(sim, def, cell, facing);
-            if (at is not { } place)
-                continue;
-            var e = sim.SpawnStructure(def, place, facing);
+            var (def, cell, facing) = _layout[i];
+            var e = i < _sites.Count ? _sites[i] : Entity.Null;
+            if (!e.IsNull && w.IsAlive(e) && w.Has<Construction>(e))
+                e = sim.CompleteConstruction(e);
+            if (e.IsNull || !w.IsAlive(e) || w.Get<Thing>(e).Def != def || !w.Get<Thing>(e).Spawned)
+            {
+                if (Free(sim, def, cell, facing) is not { } place)
+                    continue;
+                e = sim.SpawnStructure(def, place, facing);
+            }
             if (def.Building?.Fuel is { } fuel && w.Has<Fueled>(e))
                 w.Get<Fueled>(e).Fuel = fuel.Capacity;
             _props.Add(e);
@@ -244,6 +314,9 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
 
     public void Update(Simulation sim)
     {
+        if (sim.Round.Phase == RoundPhase.Playing && !SettingUp && StartTick < 0 && _layout.Count > 0
+            && sim.Clock.Tick >= sim.Round.SetupTick(sim) && sim.Round.SetupTick(sim) < sim.Round.FestivalTick(sim))
+            LayOut(sim);
         if (sim.Round.Phase != RoundPhase.Festival || StartTick < 0)
             return;
         var now = sim.Clock.Tick;
@@ -840,6 +913,8 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
             w.Int(cell.X); w.Int(cell.Y); w.Int(cell.Z);
             w.Int(facing);
         }
+        w.Bool(SettingUp);
+        Entities(w, _sites);
         w.Long(StartTick);
         if (StartTick < 0)
             return; // nothing more until the festival's begun
@@ -899,6 +974,14 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         _layout.Clear();
         for (var n = r.Count(10_000); n > 0; n--)
             _layout.Add((r.Def<ThingDef>(), new int3(r.Int(), r.Int(), r.Int()), r.Int()));
+        _sites.Clear();
+        SettingUp = false;
+        if (r.Version >= 32)
+        {
+            SettingUp = r.Bool();
+            for (var n = r.Count(10_000); n > 0; n--)
+                _sites.Add(r.Entity());
+        }
         StartTick = r.Long();
         _props.Clear();
         _games.Clear();

@@ -16,6 +16,13 @@ public sealed class SeasonDef : Def
     /// <summary>The hour of the last day the festival starts.</summary>
     public float FestivalHour { get; set; } = 17;
 
+    /// <summary>
+    /// The hour of the last day the festival's things start going up in the square: each a site
+    /// the labourers build that afternoon (<c>Round.FestivalSystem</c>). Whatever isn't up by the
+    /// bell is put up then. At or after <see cref="FestivalHour"/>, everything appears at the bell.
+    /// </summary>
+    public float FestivalSetupHour { get; set; } = 11;
+
     /// <summary>How long the festival lasts, in game hours, before the reckoning ends the round (<see cref="FestivalDef"/>).</summary>
     public float FestivalHours { get; set; } = 5;
 

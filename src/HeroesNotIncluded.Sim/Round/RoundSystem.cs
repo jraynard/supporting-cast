@@ -99,6 +99,13 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     public long FestivalTick(Simulation sim) =>
         StartTick < 0 ? -1 : Math.Max(StartTick, TickAt(sim, Math.Max(1, sim.Defs.Season.Days), sim.Defs.Season.FestivalHour));
 
+    /// <summary>
+    /// The tick the festival starts going up (<see cref="SeasonDef.FestivalSetupHour"/> on the
+    /// last day): never before the deal, never after the festival. -1 before the deal.
+    /// </summary>
+    public long SetupTick(Simulation sim) =>
+        StartTick < 0 ? -1 : Math.Clamp(TickAt(sim, Math.Max(1, sim.Defs.Season.Days), sim.Defs.Season.FestivalSetupHour), StartTick, FestivalTick(sim));
+
     /// <summary>The tick at <paramref name="hour"/> on the season's <paramref name="day"/> (1 is the day of the deal). -1 before the deal.</summary>
     public long TickAt(Simulation sim, int day, float hour)
     {

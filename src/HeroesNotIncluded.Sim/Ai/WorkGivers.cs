@@ -372,6 +372,8 @@ public sealed class WorkGivers
                 continue;
             if (!sim.CanBuildNow(site))
                 continue; // waiting for the floor or wall that will hold it up
+            if (sim.Festival.IsSite(site) && !Round.FestivalSystem.PutsUp(sim, pawn))
+                continue; // the festival's for the labourers to put up; the shops stay open
             if (!sim.Regions.CanReach(from, tile, PathEnd.Touch))
                 continue;
             // Don't wall in someone standing on the site.

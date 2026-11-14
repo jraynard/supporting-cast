@@ -58,7 +58,7 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     holds shared helpers. `MapGenerator` (the old valley) remains for the helpers `MapBuilder`
     borrows and the open ground `--building-demo` needs; tests that need a town use `TestWorld.Millbrook`.
   - `Round/RoundSystem`: the lobby, the deal and the season (`season.json`): `Festival` on the last
-    evening, then `Over` with a `RoundSummary` for the reveal. `Phase.None` means no round (tests,
+    evening (put up that afternoon by the labourers, `FestivalSystem.Sites`), then `Over` with a `RoundSummary` for the reveal. `Phase.None` means no round (tests,
     demos, bench); behaviour that belongs to rounds checks `Round.Live` (playing or festival).
     `Endless` keeps a test's round going. Players inhabit AI villagers. The deal also gives
     everyone a home (`Systems/Homes`: a cottage bed of their own, held for them).

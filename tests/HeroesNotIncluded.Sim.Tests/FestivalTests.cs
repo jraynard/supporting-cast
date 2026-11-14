@@ -436,6 +436,100 @@ public class FestivalTests
         Assert.Equal(sim.Festival.Tale(sim)[0], sim.Festival.Told.First());
     }
 
+    /// <summary>A round with the town's usual villagers: the named trades and a labourer.</summary>
+    private static Simulation FullRound(ulong seed = 7)
+    {
+        var (sim, _) = TestWorld.Millbrook(seed);
+        sim.Round.OpenLobby();
+        sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default, []));
+        sim.ApplyNow(new StartRoundCommand());
+        Assert.Contains(sim.Creatures(), e => FestivalSystem.PutsUp(sim, e) && !sim.World.Has<Avatar>(e));
+        return sim;
+    }
+
+    /// <summary>Jump to just before the afternoon's setting up.</summary>
+    private static void ToSetup(Simulation sim)
+    {
+        sim.Clock.Tick = sim.Round.SetupTick(sim) - 1;
+        sim.TickMany(2);
+        Assert.True(sim.Festival.SettingUp);
+    }
+
+    private static int BuiltSites(Simulation sim) =>
+        sim.Festival.Sites.Count(e => !e.IsNull && sim.World.IsAlive(e) && !sim.World.Has<Construction>(e));
+
+    [Fact]
+    public void TheFestivalGoesUpAsSitesThatAfternoon()
+    {
+        var sim = Round();
+        sim.Clock.Tick = sim.Round.SetupTick(sim) - 10;
+        sim.TickMany(5);
+        Assert.False(sim.Festival.SettingUp, "not before the hour");
+        sim.TickMany(10);
+        Assert.True(sim.Festival.SettingUp);
+        var w = sim.World;
+        Assert.Equal(sim.Defs.Map("Millbrook").Festival.Count, sim.Festival.Sites.Count);
+        Assert.True(sim.Festival.Sites.Count(e => !e.IsNull && w.Has<Construction>(e)) >= sim.Festival.Sites.Count - 2,
+            "nearly everything has its site (a cell or two may be taken)");
+        Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("putting up the festival"));
+    }
+
+    [Fact]
+    public void TheLabourersPutItUpBeforeTheBellAndLeaveItUnlit()
+    {
+        var sim = FullRound();
+        ToSetup(sim);
+        var w = sim.World;
+        sim.TickMany((int)(sim.Round.FestivalTick(sim) - sim.Clock.Tick) - 2);
+        Assert.Equal(RoundPhase.Playing, sim.Round.Phase);
+        var built = BuiltSites(sim);
+        Assert.True(built * 2 >= sim.Festival.Sites.Count,
+            $"most of it's up by the bell: {built} of {sim.Festival.Sites.Count}\n{string.Join("\n", sim.Messages.Messages.TakeLast(30).Select(m => m.Text))}");
+        foreach (var e in sim.Festival.Sites.Where(e => !e.IsNull && w.IsAlive(e) && w.Has<Fueled>(e) && !w.Has<Construction>(e)))
+            Assert.Equal(0f, w.Get<Fueled>(e).Fuel);
+        Assert.DoesNotContain(sim.Messages.Messages, m => m.Text.StartsWith("Built festival") || m.Text == "Built bonfire.");
+    }
+
+    [Fact]
+    public void OnlyTheLabourersPutItUp()
+    {
+        var sim = FullRound();
+        ToSetup(sim);
+        var w = sim.World;
+        foreach (var e in sim.Creatures())
+            if (w.TryGet<Trade>(e, out var t))
+                Assert.Equal(t.Def.Gathers, FestivalSystem.PutsUp(sim, e));
+        var builders = new HashSet<Entity>();
+        for (var t = 0; t < SimClock.TicksPerHour * 2; t += 60)
+        {
+            sim.TickMany(60);
+            foreach (var e in sim.Creatures())
+                if (w.Get<Mind>(e).Job is BuildJob job && sim.Festival.IsSite(job.Site))
+                    builders.Add(e);
+        }
+        Assert.NotEmpty(builders);
+        Assert.All(builders, e => Assert.True(FestivalSystem.PutsUp(sim, e), $"{e} isn't a labourer"));
+    }
+
+    [Fact]
+    public void TheBellPutsUpWhatTheLabourersDidnt()
+    {
+        var sim = Round();
+        ToSetup(sim);
+        sim.TickMany(SimClock.TicksPerHour / 2);
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        Assert.True(loaded.Festival.SettingUp);
+        Assert.Equal(sim.Festival.Sites, loaded.Festival.Sites);
+        ToFestival(loaded);
+        var w = loaded.World;
+        Assert.Equal(loaded.Defs.Map("Millbrook").Festival.Count, loaded.Festival.Props.Count);
+        Assert.DoesNotContain(loaded.Festival.Props, e => w.Has<Construction>(e));
+        Assert.DoesNotContain(w.Query<Construction>(), e => loaded.Festival.IsSite(e));
+        Assert.Equal(loaded.Festival.Props.Count, loaded.Festival.Props.Distinct().Count());
+        foreach (var lantern in loaded.Festival.PropsOf(loaded, "FestivalLantern"))
+            Assert.True(w.Get<Fueled>(lantern).Fuel > 0, "lit at the bell");
+    }
+
     [Fact]
     public void ASaveMidTaleCarriesOnTheTale()
     {
