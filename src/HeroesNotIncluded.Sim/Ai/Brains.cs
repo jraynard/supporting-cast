@@ -279,7 +279,7 @@ public sealed class HumanBrain : IBrain
             return party;
 
         // 3. Gear lying around (a quick order between jobs), then work by the pawn's priorities.
-        if ((FindGear(sim, pawn) ?? FindTool(sim, pawn)) is { } gear)
+        if ((Militia.Muster.ReturnArms(sim, pawn) ?? FindGear(sim, pawn) ?? FindTool(sim, pawn)) is { } gear)
             return gear;
         if (_work.TryGiveJob(sim, pawn) is { } job)
             return job;

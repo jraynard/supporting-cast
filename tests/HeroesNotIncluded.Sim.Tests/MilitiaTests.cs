@@ -160,6 +160,12 @@ public class MilitiaTests
             sim.TickMany(SimClock.TicksPerHour);
         var w = sim.World;
         Assert.All(spears, s => Assert.Contains(sim.Creatures(), e => !w.Has<Avatar>(e) && w.TryGet<Equipment>(e, out var eq) && eq.Weapon == s));
+
+        // The muster stands down: the town's arms go back on the rack.
+        sim.Militia.StandDown(sim);
+        for (var h = 0; h < 8 && spears.Any(s => !w.Has<Stored>(s)); h++)
+            sim.TickMany(SimClock.TicksPerHour);
+        Assert.All(spears, s => Assert.Equal(rack, w.Get<Stored>(s).In));
     }
 
     [Fact]

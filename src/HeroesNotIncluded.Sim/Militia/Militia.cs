@@ -203,4 +203,53 @@ public static class Muster
             (e, d) => d.Weapon != null && w.TryGet<Stored>(e, out var s) && MilitiaSystem.IsRack(sim, s.In));
         return item.IsNull ? null : new Ai.EquipJob(item);
     }
+
+    /// <summary>
+    /// The muster's over and they still hold one of the town's weapons: hang it back on the rack
+    /// (the nearest with room they can reach). Null otherwise.
+    /// </summary>
+    public static Ai.Job? ReturnArms(Simulation sim, Entity pawn)
+    {
+        var w = sim.World;
+        if (sim.Militia.Open || !w.TryGet<Equipment>(pawn, out var eq) || !w.IsAlive(eq.Weapon) || !w.Has<TownArms>(eq.Weapon))
+            return null;
+        var weapon = w.Get<Thing>(eq.Weapon);
+        var at = w.Get<Position>(pawn).Cell;
+        var rack = w.Query<Thing>()
+            .Where(e => MilitiaSystem.IsRack(sim, e) && w.Get<Thing>(e).Spawned && sim.HasRoomFor(e, weapon.Def, weapon.Material)
+                && Ai.Navigation.CanReach(sim, pawn, at, w.Get<Thing>(e).Cell, PathEnd.Touch))
+            .OrderBy(e => Maps.Map.Distance(at, w.Get<Thing>(e).Cell)).ThenBy(e => e.Index)
+            .FirstOrDefault(Entity.Null);
+        return rack.IsNull ? null : new ReturnArmsJob(rack);
+    }
+}
+
+/// <summary>Hang the town's weapon in hand back on the muster rack once the muster's stood down.</summary>
+public sealed class ReturnArmsJob(Entity rack) : Ai.Job
+{
+    public override Entity Focus => rack;
+
+    protected override IEnumerable<Ai.JobStatus> Run()
+    {
+        Report = "Hanging the town's arms back up";
+        foreach (var s in GoTo(Get<Thing>(rack).Cell, PathEnd.Touch)) yield return s;
+        if (HasFailed) yield break;
+        foreach (var s in Wait(45)) yield return s;
+        if (!Alive(rack))
+        {
+            Fail("the rack's gone");
+            yield break;
+        }
+        var w = Sim.World;
+        if (!w.TryGet<Equipment>(Pawn, out var eq) || !w.IsAlive(eq.Weapon) || !w.Has<TownArms>(eq.Weapon))
+            yield break;
+        var t = w.Get<Thing>(eq.Weapon);
+        if (!Sim.HasRoomFor(rack, t.Def, t.Material))
+        {
+            Fail("the rack's full");
+            yield break;
+        }
+        w.Remove<Equipment>(Pawn);
+        Sim.Store(rack, eq.Weapon);
+    }
 }
