@@ -50,6 +50,11 @@ public sealed class HealthSystem : ISimSystem
             for (var i = h.Injuries.Count - 1; i >= 0; i--)
             {
                 var inj = h.Injuries[i];
+                if (inj.Stanched && sim.Clock.Tick >= inj.StanchedUntil)
+                {
+                    inj.Tended = false; // first aid gives out: it bleeds again
+                    inj.StanchedUntil = 0;
+                }
                 Fester(sim, e, c, h, inj, inBed);
                 if (inj.Infection != null)
                     continue; // a festering wound doesn't close
@@ -77,9 +82,9 @@ public sealed class HealthSystem : ISimSystem
         }
     }
 
-    /// <summary>Damage healed per day per 100 max HP: tending helps, and good tending more (12 at quality 0.5).</summary>
+    /// <summary>Damage healed per day per 100 max HP: tending helps, and good tending more (12 at quality 0.5). First aid doesn't.</summary>
     public static float HealRate(Injury inj) =>
-        inj.Tended ? HealPerDay + (TendedHealPerDay - HealPerDay) * (0.4f + 0.8f * inj.Quality) : HealPerDay;
+        inj.Tended && !inj.Stanched ? HealPerDay + (TendedHealPerDay - HealPerDay) * (0.4f + 0.8f * inj.Quality) : HealPerDay;
 
     /// <summary>Roll a wound's one chance to get infected, then run any infection's race.</summary>
     private static void Fester(Simulation sim, Entity e, Creature c, Health h, Injury inj, bool inBed)
@@ -139,7 +144,13 @@ public sealed class HealthSystem : ISimSystem
         if (!c.Downed && (h.Blood < 0.45f || h.Pain > 0.8f || conscious < 0.3f))
             SetDowned(sim, e, ref c, true);
         else if (c.Downed && h.Blood >= 0.5f && h.Pain <= 0.7f && conscious >= 0.35f)
+        {
+            // Beaten once is enough: a raider who comes to leaves town (until there's a constable
+            // and a jail to keep them).
+            if (c.Faction == Faction.Raider && !sim.World.Has<Combat.Leaving>(e))
+                sim.World.Add(e, new Combat.Leaving());
             SetDowned(sim, e, ref c, false);
+        }
     }
 
     public static void SetDowned(Simulation sim, Entity e, ref Creature c, bool downed)
@@ -155,6 +166,10 @@ public sealed class HealthSystem : ISimSystem
             mind.Asleep = false;
             sim.World.Get<Mover>(e).Stop();
             sim.Messages.Add(c.Faction == Faction.Village ? MessageKind.Danger : MessageKind.Info, $"{c.Name} has collapsed.", cell);
+        }
+        else if (c.Faction == Faction.Raider && sim.World.Has<Combat.Leaving>(e))
+        {
+            sim.Messages.Add(MessageKind.Info, $"{c.Name} comes to and slinks off out of town.", cell);
         }
         else
         {

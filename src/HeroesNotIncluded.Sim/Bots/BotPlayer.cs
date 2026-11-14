@@ -1566,7 +1566,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             }
         }
         // Short of mana with a drawn wound bleeding: bind it while the mana comes back.
-        if (Bandaging.WoundsToBind(sim, me) > 0 && Bandaging.CantBind(sim, me, me) == null
+        if (Bandaging.WoundsToBind(sim, me, me) > 0 && Bandaging.CantBind(sim, me, me) == null
             && (view.FeltWounds(me) ?? []).Any(f => f.Absorbed) && !(view.FeltWounds(me) ?? []).Any(f => f.Absorbed && CanWeave(sim, me, f, mana)))
         {
             send(new BandageCommand(me, me));

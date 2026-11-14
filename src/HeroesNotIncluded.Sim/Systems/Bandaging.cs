@@ -10,6 +10,8 @@ namespace HeroesNotIncluded.Sim.Systems;
 /// heals faster, like a doctor's dressing, a little worse done on yourself. It's done by hand
 /// (<see cref="Healing.BandageSession"/>), from the item's menu or a healer's hands. Bandages come
 /// from the binder's hands, their pack, or a chest within reach (the shrine's supplies).
+/// Dressing wounds is the healer's: anyone whose trade doesn't doctor gives only first aid
+/// (<see cref="Stanch"/>), which holds the bleeding off a while and heals nothing.
 /// </summary>
 public static class Bandaging
 {
@@ -56,9 +58,47 @@ public static class Bandaging
 
     public static bool IsBandage(Simulation sim, Entity item) => sim.World.Get<Thing>(item).Def.Name == BandageDef;
 
-    /// <summary>Wounds on the patient that want a dressing now.</summary>
-    public static int WoundsToBind(Simulation sim, Entity patient) =>
-        sim.World.TryGet<Health>(patient, out var h) ? h.Injuries.Count(i => i.NeedsTending(sim.Clock.Tick)) : 0;
+    /// <summary>How long first aid holds a wound's bleeding off, in game hours.</summary>
+    public const float StanchHours = 2f;
+
+    /// <summary>
+    /// Only first aid from this one: they hold a trade that doesn't doctor (a labourer, a smith). No
+    /// trade (outside a round) doctors as before.
+    /// </summary>
+    public static bool FirstAidOnly(Simulation sim, Entity who) =>
+        sim.World.TryGet<Trade>(who, out var t) && !(t.Def.WorkPriorities.TryGetValue(Defs.WorkType.Doctor, out var p) && p > 0);
+
+    /// <summary>A wound first aid can do something for: open and bleeding.</summary>
+    public static bool Stanchable(Health h, Injury inj) => !inj.Tended && h.BleedOf(inj) > 0;
+
+    /// <summary>Hold a wound's bleeding off for <see cref="StanchHours"/>: no faster healing, and it still wants the healer.</summary>
+    public static void Stanch(Simulation sim, Injury inj)
+    {
+        inj.Tended = true;
+        inj.Quality = 0f;
+        inj.TendedTick = sim.Clock.Tick;
+        inj.StanchedUntil = sim.Clock.Tick + SimClock.HoursToTicks(StanchHours);
+    }
+
+    /// <summary>A proper dressing at this quality, over first aid if there was any.</summary>
+    public static void Dress(Simulation sim, Injury inj, float quality)
+    {
+        inj.Quality = inj.Tended && !inj.Stanched ? Math.Max(inj.Quality, quality) : quality;
+        inj.Tended = true;
+        inj.StanchedUntil = 0;
+        inj.TendedTick = sim.Clock.Tick;
+    }
+
+    /// <summary>
+    /// Wounds on the patient that want a dressing now; with a <paramref name="binder"/> who gives
+    /// only first aid, the ones they can stanch.
+    /// </summary>
+    public static int WoundsToBind(Simulation sim, Entity patient, Entity? binder = null)
+    {
+        if (!sim.World.TryGet<Health>(patient, out var h))
+            return 0;
+        return binder is { IsNull: false } b && FirstAidOnly(sim, b) ? h.Injuries.Count(i => Stanchable(h, i)) : h.Injuries.Count(i => i.NeedsTending(sim.Clock.Tick));
+    }
 
     /// <summary>Why <paramref name="binder"/> can't bind <paramref name="patient"/>'s wounds now, or null if they can.</summary>
     public static string? CantBind(Simulation sim, Entity binder, Entity patient)
@@ -68,8 +108,8 @@ public static class Bandaging
             return "no one to bandage";
         if (!w.Get<Creature>(binder).Able)
             return "can't do it now";
-        if (WoundsToBind(sim, patient) == 0)
-            return "no wounds to bandage";
+        if (WoundsToBind(sim, patient, binder) == 0)
+            return WoundsToBind(sim, patient) > 0 ? "the bleeding's stopped; the rest is the healer's" : "no wounds to bandage";
         if (BandagesOn(sim, binder) == 0)
             return "no bandages";
         if (binder != patient && !Pathfinder.Touches(w.Get<Position>(binder).Cell, w.Get<Position>(patient).Cell))
@@ -79,7 +119,8 @@ public static class Bandaging
 
     /// <summary>
     /// Bind as many of the patient's wounds as there are bandages for, at a dressing quality (by
-    /// the binder's Medicine if not given). Returns how many were bound.
+    /// the binder's Medicine if not given), or only stanched if the binder gives first aid.
+    /// Returns how many were bound.
     /// </summary>
     public static int Bind(Simulation sim, Entity binder, Entity patient, float? dressing = null)
     {
@@ -88,24 +129,27 @@ public static class Bandaging
         var w = sim.World;
         var health = w.Get<Health>(patient);
         var medicine = SkillRules.LevelOf(sim, binder, Skill.Medicine);
+        var firstAid = FirstAidOnly(sim, binder);
         var bound = 0;
         foreach (var inj in health.Injuries)
         {
-            if (!inj.NeedsTending(sim.Clock.Tick) || !TakeBandage(sim, binder))
+            if (!(firstAid ? Stanchable(health, inj) : inj.NeedsTending(sim.Clock.Tick)) || !TakeBandage(sim, binder))
                 continue;
-            var quality = Math.Clamp((dressing ?? 0.35f + 0.03f * medicine + sim.Rand.Range(-0.1f, 0.1f)) - (binder == patient ? SelfPenalty : 0f), 0.05f, 1f);
-            inj.Quality = inj.Tended ? Math.Max(inj.Quality, quality) : quality;
-            inj.Tended = true;
-            inj.TendedTick = sim.Clock.Tick;
+            if (firstAid)
+                Stanch(sim, inj);
+            else
+                Dress(sim, inj, Math.Clamp((dressing ?? 0.35f + 0.03f * medicine + sim.Rand.Range(-0.1f, 0.1f)) - (binder == patient ? SelfPenalty : 0f), 0.05f, 1f));
             bound++;
         }
         health.Changed();
-        if (bound > 0 && binder != patient)
+        if (bound > 0 && binder != patient && !firstAid)
             sim.Shops.Treated(sim, patient, binder);
         if (bound > 0)
         {
             var who = binder == patient ? "their own" : $"{w.Get<Creature>(patient).Name}'s";
-            sim.Messages.Add(MessageKind.Good, $"{w.Get<Creature>(binder).Name} bandaged {who} wounds ({bound}).", w.Get<Position>(patient).Cell);
+            sim.Messages.Add(MessageKind.Good, firstAid
+                ? $"{w.Get<Creature>(binder).Name} stopped the bleeding on {who} wounds ({bound}) for now. The healer should see to them."
+                : $"{w.Get<Creature>(binder).Name} bandaged {who} wounds ({bound}).", w.Get<Position>(patient).Cell);
         }
         return bound;
     }

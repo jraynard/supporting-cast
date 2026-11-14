@@ -144,9 +144,10 @@ public static class Empathy
             return did;
         if (cleansed)
             wound.Infection = null;
-        if (fits && mending.Staunches && !wound.Tended)
+        if (fits && mending.Staunches && (!wound.Tended || wound.Stanched))
         {
             wound.Tended = true;
+            wound.StanchedUntil = 0;
             wound.TendedTick = sim.Clock.Tick;
             wound.Quality = Math.Max(wound.Quality, 0.3f + 0.4f * quality);
         }

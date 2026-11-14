@@ -57,6 +57,64 @@ public class BandagingTests
         Assert.Equal("no bandages", Bandaging.CantBind(sim, me, me));
     }
 
+    [Fact]
+    public void ALabourerOnlyStopsTheBleedingForAWhile()
+    {
+        var (sim, me) = Wounded(bandages: 5, cuts: 2);
+        sim.World.Add(me, new Trade { Def = sim.Defs.Trade("Labourer") });
+        var h = sim.World.Get<Health>(me);
+        Assert.True(Bandaging.FirstAidOnly(sim, me));
+
+        Assert.Equal(2, Bandaging.Bind(sim, me, me));
+        Assert.All(h.Injuries, i => Assert.True(i.Stanched && i.Quality == 0));
+        Assert.Equal(0f, h.BleedPerHour, 3);
+        Assert.Equal(2, Bandaging.WoundsToBind(sim, me)); // the healer still has them to dress
+        Assert.Equal(0, Bandaging.WoundsToBind(sim, me, me));
+        Assert.NotNull(Bandaging.CantBind(sim, me, me));
+        Assert.All(h.Injuries, i => Assert.Equal(HealthSystem.HealPerDay, HealthSystem.HealRate(i)));
+
+        sim.TickMany(SimClock.HoursToTicks(Bandaging.StanchHours) + 120);
+        Assert.All(h.Injuries, i => Assert.False(i.Tended));
+        Assert.True(h.BleedPerHour > 0, "first aid gives out");
+    }
+
+    [Fact]
+    public void TheHealersDressingReplacesFirstAid()
+    {
+        var (sim, me) = Wounded(bandages: 5, cuts: 1);
+        var inj = sim.World.Get<Health>(me).Injuries.Single();
+        Bandaging.Stanch(sim, inj);
+        sim.World.Add(me, new Trade { Def = sim.Defs.Trade("Healer") });
+        Assert.False(Bandaging.FirstAidOnly(sim, me));
+        Assert.Equal(1, Bandaging.Bind(sim, me, me));
+        Assert.True(inj.Tended && !inj.Stanched && inj.Quality > 0);
+        Assert.False(inj.NeedsTending(sim.Clock.Tick));
+    }
+
+    [Fact]
+    public void AnAiLabourerStanchesADownedVillagerButDoesNotDressThem()
+    {
+        var (sim, patient) = Wounded(bandages: 0, cuts: 2);
+        sim.World.Remove<Avatar>(patient);
+        var h = sim.World.Get<Health>(patient);
+        foreach (var i in h.Injuries)
+            i.InfectionRolled = true;
+        h.Blood = 0.4f;
+        sim.TickMany(60);
+        Assert.True(sim.World.Get<Creature>(patient).Downed);
+
+        var labourer = sim.SpawnCreature(sim.Defs.Creature("Human"), "Hob", C(15, 5), ageDays: 25 * 365);
+        Array.Fill(sim.World.Get<Needs>(labourer).Values, 1f);
+        sim.World.Add(labourer, new Trade { Def = sim.Defs.Trade("Labourer") });
+        var mind = sim.World.Get<Mind>(labourer);
+        Array.Fill(mind.WorkPriority, 0);
+        mind.WorkPriority[(int)WorkType.Doctor] = 1;
+        sim.TickMany(SimClock.HoursToTicks(0.5f));
+
+        Assert.All(h.Injuries, i => Assert.True(i.Stanched, "first aid stops the bleeding"));
+        Assert.All(h.Injuries, i => Assert.True(i.NeedsTending(sim.Clock.Tick), "and leaves the dressing to the healer"));
+    }
+
     /// <summary>
     /// Bind by hand: each turn of cloth pulled to <paramref name="pullTo"/> of the way from the
     /// band's bottom (0) to its top (1), then let go. Returns the dressings' quality.

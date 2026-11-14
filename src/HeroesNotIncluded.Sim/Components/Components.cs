@@ -728,6 +728,15 @@ public sealed class Injury
     /// <summary>When it was last tended; infected wounds want tending again daily.</summary>
     public long TendedTick;
 
+    /// <summary>
+    /// First aid only (<c>Bandaging.Stanch</c>): <see cref="Tended"/> holds the bleeding off until
+    /// this tick, with none of a dressing's healing, and the wound still wants the healer. 0 if not.
+    /// </summary>
+    public long StanchedUntil;
+
+    /// <summary>Held by first aid, not dressed.</summary>
+    public bool Stanched => StanchedUntil > 0;
+
     public long Tick;
 
     /// <summary>Drawn out of someone else by an empath (<c>Healing.Empathy</c>): they feel it rather than see it.</summary>
@@ -747,8 +756,8 @@ public sealed class Injury
 
     public Infection? Infection;
 
-    /// <summary>Untended, or infected and due a fresh dressing.</summary>
-    public bool NeedsTending(long now) => !Tended || (Infection != null && now - TendedTick >= SimClock.TicksPerDay);
+    /// <summary>Untended, only stanched, or infected and due a fresh dressing.</summary>
+    public bool NeedsTending(long now) => !Tended || Stanched || (Infection != null && now - TendedTick >= SimClock.TicksPerDay);
 }
 
 /// <summary>

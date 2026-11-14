@@ -468,7 +468,9 @@ public sealed class RaiderBrain : IBrain
             return sim.NearestEdge(tile) is { } edge ? new LeaveMapJob(edge) : null;
 
         // The nearest they can get at: someone with room for another attacker (Engagement) before
-        // someone who's already pressed as hard as they can be.
+        // someone who's already pressed as hard as they can be, and whoever's just hurt them before
+        // either.
+        var hurtBy = HurtBy(sim, pawn);
         var best = Entity.Null;
         var bestScore = int.MaxValue;
         foreach (var e in sim.Creatures())
@@ -477,7 +479,7 @@ public sealed class RaiderBrain : IBrain
             if (!Factions.Hostile(Faction.Raider, c.Faction) || c.Downed)
                 continue;
             var at = w.Get<Position>(e).Cell;
-            var score = Map.Distance(tile, at) + (Combat.Engagement.HasRoom(sim, pawn, e) ? 0 : CrowdedPenalty);
+            var score = Map.Distance(tile, at) + (Combat.Engagement.HasRoom(sim, pawn, e) ? 0 : CrowdedPenalty) - (e == hurtBy ? RetaliateBonus : 0);
             if (score < bestScore && sim.Regions.CanReach(tile, at, PathEnd.Touch))
             {
                 best = e;
@@ -498,6 +500,22 @@ public sealed class RaiderBrain : IBrain
 
     /// <summary>How much further a raider will go for someone not already pressed by as many as can be.</summary>
     public const int CrowdedPenalty = 12;
+
+    /// <summary>How much further a raider will go for whoever's just hurt them: past the crowding, too.</summary>
+    public const int RetaliateBonus = 20;
+
+    /// <summary>How long a raider remembers who hurt them, for picking a target.</summary>
+    public const int RetaliateTicks = SimClock.TicksPerSecond * 6;
+
+    /// <summary>
+    /// Whoever hurt <paramref name="pawn"/> in the last <see cref="RetaliateTicks"/> and can still
+    /// fight, if they're a foe; Entity.Null otherwise.
+    /// </summary>
+    public static Entity HurtBy(Simulation sim, Entity pawn)
+    {
+        var by = Combat.RealtimeAttacks.ProvokedBy(sim, pawn, RetaliateTicks);
+        return !by.IsNull && sim.World.TryGet<Creature>(pawn, out var me) && Factions.Hostile(me.Faction, sim.World.Get<Creature>(by).Faction) ? by : Entity.Null;
+    }
 
     /// <summary>How far an escaping prisoner will go out of their way for a weapon.</summary>
     public const int EscapeWeaponReach = 15;

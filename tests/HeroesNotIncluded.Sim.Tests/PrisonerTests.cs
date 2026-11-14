@@ -81,6 +81,23 @@ public class PrisonerTests
     }
 
     [Fact]
+    public void ARaiderWhoComesToLeavesTown()
+    {
+        var sim = Warm();
+        var bandit = DownedBandit(sim, C(15, 15));
+        sim.World.Remove<Leaving>(bandit); // downed mid-fight, not yet given up
+        var h = sim.World.Get<Health>(bandit);
+        foreach (var i in h.Injuries)
+            Bandaging.Stanch(sim, i);
+        h.Blood = 0.9f;
+        sim.TickMany(120);
+
+        Assert.False(sim.World.Get<Creature>(bandit).Downed);
+        Assert.True(sim.World.Has<Leaving>(bandit));
+        Assert.IsType<LeaveMapJob>(new RaiderBrain().Think(sim, bandit));
+    }
+
+    [Fact]
     public void VillagersDoNotSleepInPrisonerBeds()
     {
         var sim = Warm();

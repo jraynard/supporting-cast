@@ -777,13 +777,25 @@ public sealed class AssaultJob(Entity target) : Job
             Fail("nothing to attack with");
             yield break;
         }
-        // Footwork, not cells (Combat.FreeFight).
-        foreach (var s in FightFree(target, attack, () => !RaiderBrain.WantsToFlee(Sim, Pawn) && !Sim.World.Has<Combat.Leaving>(Pawn), HeavyShare, giveUp: 40f))
+        // Footwork, not cells (Combat.FreeFight). Someone else cutting into them turns them round
+        // (once they've been at this one a moment, so two attackers don't spin them on the spot).
+        var since = Sim.Clock.Tick;
+        bool TurnsOn()
+        {
+            if (Sim.Clock.Tick - since < CommitTicks)
+                return false;
+            var by = RaiderBrain.HurtBy(Sim, Pawn);
+            return !by.IsNull && by != target && Sim.Regions.CanReach(PawnCell, Sim.LocationOf(by), PathEnd.Touch);
+        }
+        foreach (var s in FightFree(target, attack, () => !RaiderBrain.WantsToFlee(Sim, Pawn) && !Sim.World.Has<Combat.Leaving>(Pawn) && !TurnsOn(), HeavyShare, giveUp: 40f))
             yield return s;
     }
 
     /// <summary>Of a raider's blows, the share that are heavy.</summary>
     public const float HeavyShare = 0.25f;
+
+    /// <summary>How long a raider keeps at one target before turning on someone else who's hurting them.</summary>
+    public const int CommitTicks = SimClock.TicksPerSecond * 3;
 }
 
 /// <summary>
@@ -1150,22 +1162,26 @@ public sealed class WardenVisitJob(Entity prisoner) : Job
 
 /// <summary>
 /// Bandage a villager's (or dragon's) untended wounds, and re-dress infected ones: they stop
-/// bleeding and heal faster, by how good the doctor's Medicine is.
+/// bleeding and heal faster, by how good the doctor's Medicine is. With <paramref name="firstAid"/>
+/// (anyone whose trade doesn't doctor, <see cref="Systems.Bandaging.FirstAidOnly"/>), only the
+/// bleeding wounds are stanched, for a couple of hours: dressing them is the healer's.
 /// </summary>
-public sealed class TendJob(Entity patient) : Job
+public sealed class TendJob(Entity patient, bool firstAid = false) : Job
 {
     public override Entity Focus => patient;
 
     /// <summary>Work per wound.</summary>
     public const int TicksPerInjury = 150;
 
+    private bool Wants(Health h, Injury inj) => firstAid ? Systems.Bandaging.Stanchable(h, inj) : inj.NeedsTending(Sim.Clock.Tick);
+
     protected override IEnumerable<JobStatus> Run()
     {
         var name = Get<Creature>(patient).Name;
-        Report = $"Tending {name}";
+        Report = firstAid ? $"Stopping {name}'s bleeding" : $"Tending {name}";
         if (!Reserve(patient)) yield break;
         var health = Get<Health>(patient);
-        var work = TicksPerInjury * Math.Max(1, health.Injuries.Count(i => i.NeedsTending(Sim.Clock.Tick)));
+        var work = TicksPerInjury * Math.Max(1, health.Injuries.Count(i => Wants(health, i)));
 
         // The patient may be up and about: follow them until the work is done.
         for (var done = 0f; done < work;)
@@ -1187,14 +1203,19 @@ public sealed class TendJob(Entity patient) : Job
         var medicine = SkillRules.LevelOf(Sim, Pawn, Skill.Medicine);
         foreach (var inj in health.Injuries)
         {
-            if (!inj.NeedsTending(Sim.Clock.Tick))
+            if (!Wants(health, inj))
                 continue;
-            var quality = Math.Clamp(0.35f + 0.03f * medicine + Sim.Rand.Range(-0.1f, 0.1f), 0.05f, 1f);
-            inj.Quality = inj.Tended ? Math.Max(inj.Quality, quality) : quality;
-            inj.Tended = true;
-            inj.TendedTick = Sim.Clock.Tick;
+            if (firstAid)
+                Systems.Bandaging.Stanch(Sim, inj);
+            else
+                Systems.Bandaging.Dress(Sim, inj, Math.Clamp(0.35f + 0.03f * medicine + Sim.Rand.Range(-0.1f, 0.1f), 0.05f, 1f));
         }
         health.Changed();
+        if (firstAid)
+        {
+            Sim.Messages.Add(MessageKind.Info, $"{Get<Creature>(Pawn).Name} stopped {name}'s bleeding for now.", Sim.LocationOf(patient));
+            yield break;
+        }
         Sim.Shops.Treated(Sim, patient, Pawn);
         MoodSystem.Remember(Sim, patient, Sim.Defs.Thoughts.TendedMe, Pawn);
         Sim.Messages.Add(MessageKind.Good, $"{Get<Creature>(Pawn).Name} bandaged {name}'s wounds.", Sim.LocationOf(patient));

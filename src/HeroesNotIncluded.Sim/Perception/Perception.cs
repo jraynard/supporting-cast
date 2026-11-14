@@ -489,7 +489,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         {
             if (h.Capacity(Capacity.Moving) < 0.7f)
                 return "Limping badly.";
-            if (h.Injuries.Exists(i => !i.Tended))
+            if (h.Injuries.Exists(i => !i.Tended || i.Stanched))
                 return "Hurt.";
         }
         return "Looks well enough.";

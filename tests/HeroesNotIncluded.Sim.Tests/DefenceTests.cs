@@ -44,6 +44,37 @@ public class DefenceTests
     }
 
     [Fact]
+    public void ARaiderTurnsOnWhoeverHurtsThem()
+    {
+        var sim = Create();
+        var raider = Raids.SpawnRaider(sim, sim.Defs.AllRaiderKinds[0], "Skarn", C(10, 5), sim.Rand);
+        var near = Person(sim, "Near", C(12, 5), weapon: null);
+        var far = Person(sim, "Far", C(18, 5));
+        Assert.Equal(near, Assert.IsType<AssaultJob>(new RaiderBrain().Think(sim, raider)).Focus);
+
+        RealtimeAttacks.Provoke(sim, raider, far);
+        Assert.Equal(far, Assert.IsType<AssaultJob>(new RaiderBrain().Think(sim, raider)).Focus);
+    }
+
+    [Fact]
+    public void ARaiderBreaksOffToFaceSomeoneCuttingIntoThem()
+    {
+        var sim = Create();
+        var raider = Raids.SpawnRaider(sim, sim.Defs.AllRaiderKinds[0], "Skarn", C(10, 5), sim.Rand);
+        var near = Person(sim, "Near", C(12, 5), weapon: null);
+        sim.World.Get<Mind>(near).Drafted = true;
+        var far = Person(sim, "Far", C(18, 5));
+        sim.World.Get<Mind>(far).Drafted = true;
+        sim.TickMany(10);
+        Assert.Equal(near, sim.World.Get<Mind>(raider).Job?.Focus);
+
+        sim.TickMany(AssaultJob.CommitTicks);
+        RealtimeAttacks.Provoke(sim, raider, far);
+        sim.TickMany(30);
+        Assert.Equal(far, sim.World.Get<Mind>(raider).Job?.Focus);
+    }
+
+    [Fact]
     public void AnUnarmedVillagerGetsAway()
     {
         var sim = Create();

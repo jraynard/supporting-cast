@@ -33,7 +33,9 @@ public sealed class WorkGivers
                 var job = type switch
                 {
                     WorkType.Firefight => Firefight(sim, pawn),
-                    WorkType.Doctor => TendCritical(sim, pawn) ?? Rescue(sim, pawn) ?? TendWounds(sim, pawn) ?? FeedPatient(sim, pawn) ?? Shops.HealOrders.For(sim, pawn) ?? Capture(sim, pawn) ?? TendWounds(sim, pawn, enemies: true),
+                    WorkType.Doctor => Systems.Bandaging.FirstAidOnly(sim, pawn)
+                        ? TendCritical(sim, pawn, firstAid: true) ?? FirstAid(sim, pawn) ?? Rescue(sim, pawn) ?? FeedPatient(sim, pawn) ?? Capture(sim, pawn)
+                        : TendCritical(sim, pawn) ?? Rescue(sim, pawn) ?? TendWounds(sim, pawn) ?? FeedPatient(sim, pawn) ?? Shops.HealOrders.For(sim, pawn) ?? Capture(sim, pawn) ?? TendWounds(sim, pawn, enemies: true),
                     WorkType.Warden => FeedPrisoner(sim, pawn) ?? VisitPrisoner(sim, pawn),
                     WorkType.Refuel => Refuel(sim, pawn),
                     WorkType.Construct => Shops.SellJob.For(sim, pawn) ?? Construct(sim, pawn) ?? Deconstruct(sim, pawn),
@@ -263,6 +265,18 @@ public sealed class WorkGivers
         return patient.IsNull ? null : new TendJob(patient);
     }
 
+    /// <summary>
+    /// First aid, from those whose trade doesn't doctor: a villager lying downed and bleeding gets
+    /// it stanched where they lie, to hold them till the healer comes.
+    /// </summary>
+    private static Job? FirstAid(Simulation sim, Entity pawn)
+    {
+        var w = sim.World;
+        var patient = NearestPatient(sim, pawn, (e, c) => c.Downed && !w.Has<Carried>(e) && w.TryGet<Health>(e, out var h)
+            && h.Injuries.Exists(i => Systems.Bandaging.Stanchable(h, i)), triage: true);
+        return patient.IsNull ? null : new TendJob(patient, firstAid: true);
+    }
+
     /// <summary>Bleeding out within this many game hours, a downed patient is bandaged before anything else.</summary>
     public const float CriticalHours = 3f;
 
@@ -271,16 +285,16 @@ public sealed class WorkGivers
     /// villagers, or raiders once the fight's over. A doctor otherwise sees to every villager's
     /// scratches first, and a raider who could have walked off dies where he fell.
     /// </summary>
-    private static Job? TendCritical(Simulation sim, Entity pawn)
+    private static Job? TendCritical(Simulation sim, Entity pawn, bool firstAid = false)
     {
         var w = sim.World;
         var now = sim.Clock.Tick;
         bool Critical(Entity e, Creature c) => c.Downed && !w.Has<Carried>(e) && w.TryGet<Health>(e, out var h)
-            && h.Injuries.Exists(i => i.NeedsTending(now)) && HoursToBleedOut(w, e) <= CriticalHours;
+            && h.Injuries.Exists(i => firstAid ? Systems.Bandaging.Stanchable(h, i) : i.NeedsTending(now)) && HoursToBleedOut(w, e) <= CriticalHours;
         var ours = NearestPatient(sim, pawn, Critical, triage: true);
         var theirs = NearestPatient(sim, pawn, Critical, enemies: true, triage: true);
         var patient = theirs.IsNull || (!ours.IsNull && HoursToBleedOut(w, ours) <= HoursToBleedOut(w, theirs)) ? ours : theirs;
-        return patient.IsNull ? null : new TendJob(patient);
+        return patient.IsNull ? null : new TendJob(patient, firstAid);
     }
 
     /// <summary>Carry a downed raider the player marked for capture to a free prisoner bed.</summary>

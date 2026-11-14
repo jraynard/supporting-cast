@@ -55,7 +55,7 @@ public sealed class BandageSession : WorkSession
             sim.Messages.Add(MessageKind.Info, $"Can't bandage: {why}.", sim.LocationOf(binder));
             return;
         }
-        var wounds = Math.Min(Bandaging.WoundsToBind(sim, patient), Bandaging.BandagesOn(sim, binder));
+        var wounds = Math.Min(Bandaging.WoundsToBind(sim, patient, binder), Bandaging.BandagesOn(sim, binder));
         WorkSystem.Start(sim, binder, new BandageSession
         {
             Patient = patient, PatientName = sim.World.Get<Creature>(patient).Name,

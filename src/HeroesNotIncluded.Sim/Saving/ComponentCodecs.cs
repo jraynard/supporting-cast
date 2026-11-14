@@ -812,6 +812,7 @@ internal static class ComponentCodecs
             w.Bool(inj.Absorbed);
             w.Entity(inj.FeltBy);
             w.Bool(inj.FeltFestering);
+            w.Long(inj.StanchedUntil);
             w.Bool(inj.Infection != null);
             if (inj.Infection is { } inf)
             {
@@ -850,6 +851,8 @@ internal static class ComponentCodecs
                 inj.FeltBy = r.Entity();
                 inj.FeltFestering = r.Bool();
             }
+            if (r.Version >= 17)
+                inj.StanchedUntil = Math.Max(0, r.Long()); // first aid came with format 17
             if (r.Bool())
                 inj.Infection = new Infection { Severity = r.Float(), Immunity = r.Float(), ImmunityRate = r.Float() };
             if (inj.Part < 0 || inj.Part >= h.Body.Parts.Count)

@@ -202,7 +202,7 @@ public sealed partial class VillageGame
             any = true;
             foreach (var patient in BandagePatients())
             {
-                var wounds = Bandaging.WoundsToBind(_sim, patient);
+                var wounds = Bandaging.WoundsToBind(_sim, patient, _avatar);
                 var label = patient == _avatar ? $"Bandage your wounds ({wounds})" : $"Bandage {w.Get<Creature>(patient).Name} ({wounds} wounds)";
                 var why = Bandaging.CantBind(_sim, _avatar, patient);
                 ImGui.BeginDisabled(why != null);
@@ -210,7 +210,8 @@ public sealed partial class VillageGame
                     Later(new BandageCommand(_avatar, patient));
                 ImGui.EndDisabled();
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                    Tip(why ?? Controls.Keys("For each turn of cloth, hold ~F~ to pull it tight and let go in the band."));
+                    Tip(why ?? (Bandaging.FirstAidOnly(_sim, _avatar) ? "First aid: it stops the bleeding for a couple of hours. The healer has to dress it properly.\n" : "")
+                        + Controls.Keys("For each turn of cloth, hold ~F~ to pull it tight and let go in the band."));
             }
         }
         if (packed)
@@ -298,7 +299,7 @@ public sealed partial class VillageGame
         var here = w.Get<Position>(_avatar).Cell;
         foreach (var e in View.Creatures())
             if (e != _avatar && w.Get<Creature>(e) is { Faction: Faction.Village, Dead: false }
-                && Sim.Ai.Pathfinder.Touches(here, w.Get<Position>(e).Cell) && Bandaging.WoundsToBind(_sim, e) > 0)
+                && Sim.Ai.Pathfinder.Touches(here, w.Get<Position>(e).Cell) && Bandaging.WoundsToBind(_sim, e, _avatar) > 0)
                 list.Add(e);
         return list;
     }
