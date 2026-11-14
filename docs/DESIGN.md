@@ -223,12 +223,17 @@ the rest follows in the order it's planned (docs/ROADMAP.md, "The cook pass").
   - **On the road:** eaten halfway out. Sound, the traveller is a little stronger for the quest and
     comes home less hungry; turned (it left half gone, or tied slack on a long road), they're
     weaker for it and come home sick. The party's tale says which: the cook's only word of it.
-- *Next: a name for the kitchen.*
-  - **The house dish:** a Fine or better pot can be named by the cook. Its name and flavour go on
-    the sign, and word spreads: adventurers ask for it by name, like a named drink.
-  - **Diners say what was wrong:** "too salty", "caught on the bottom", "bland", from the hidden
-    seasoning target and the scorch, so the cook learns from the room as well as the spoon.
-  - **Tips** for quick, fine service (with the keeper's "Money").
+- *Built: a name for the kitchen.*
+  - **The house dish** (`Work/HouseDish`): a cooked pot good enough to put a name to (Fine or
+    better) can be named by the cook from the pot. The name and how it tastes go on the sign. The
+    recipe is the flavour: any later pot that tastes near enough the same is the house dish again,
+    so it has to be hit from the larder each time. About a third of diners ask for it by name, and
+    know it when they get it (or don't).
+  - **Diners say what was wrong:** a bowl remembers what most let its pot down (salty, bland,
+    caught on the bottom, underdone, all one note), and a diner served a poor one says so. The cook
+    learns from the room as well as the spoon.
+  - **Tips:** a drink or meal served Fine or better, and quickly (within a third of their
+    patience), earns its server a coin over the price; masterwork, two. The keeper's too.
 - *Then: a menu beyond stew.* Each dish its own small game, priced apart on the sign.
   - **Prep:** chopping on rhythm at the prep table, done ahead in a quiet hour. Chopped food cooks
     faster and counts for more. A slip cuts a finger: a real wound, work for the healer. Butchering

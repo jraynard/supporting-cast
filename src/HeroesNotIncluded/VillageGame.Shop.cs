@@ -175,6 +175,13 @@ public sealed partial class VillageGame
         if (sign.Count == 0)
             return;
         DrawShopName(shop, workplace, trade.Def.NamesShop);
+        if (trade.Def.Serving(Sim.Defs.ServiceKind.Meal))
+        {
+            if (View.HouseDish(shop) is { } house)
+                Wrapped($"House dish: the {house.Name} ({house.Tastes}). Some ask for it by name.");
+            else
+                TextC(Theme.Dim, "No house dish yet. Name a fine pot at the pot.");
+        }
         TextC(Theme.Dim, "Adventurers who think it's too dear go without.");
         foreach (var p in sign)
         {

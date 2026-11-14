@@ -377,4 +377,139 @@ public class CookPassTests
             ?? sim.Speech.Kept.Last(u => back.Contains(u.Speaker) && u.Text.Contains("rations")).Text;
         Assert.Contains("rations had turned", tale);
     }
+
+    // ---------------- Phase 2: a name for the kitchen ----------------
+
+    [Fact]
+    public void WhatMostLetsAPotDownIsWhatTheDinerTastes()
+    {
+        StewPot Pot(float season = 0.45f, float scorch = 0f, float done = 1f, Flavour? f = null) =>
+            new() { Seasoning = season, SeasonTarget = 0.45f, Scorch = scorch, Doneness = done, Flavour = f ?? new Flavour(0.6f, 0.2f, 0.2f, 0) };
+        Assert.Equal(DishFault.None, Cooking.FaultOf(Pot()));
+        Assert.Equal(DishFault.Salty, Cooking.FaultOf(Pot(season: 0.9f)));
+        Assert.Equal(DishFault.Bland, Cooking.FaultOf(Pot(season: 0.1f)));
+        Assert.Equal(DishFault.Caught, Cooking.FaultOf(Pot(scorch: 0.6f)));
+        Assert.Equal(DishFault.Underdone, Cooking.FaultOf(Pot(done: 0.6f)));
+        Assert.Equal(DishFault.Flat, Cooking.FaultOf(Pot(f: new Flavour(1f, 0, 0, 0))));
+    }
+
+    /// <summary>The cook (the player) at the inn, beside its pot, with a meal order from an adventurer.</summary>
+    private static (Simulation Sim, Entity Me, Entity Pot, Entity Diner, Order Meal) Inn(bool house = false)
+    {
+        var (sim, me, party) = ExpeditionTests.Round("Cook");
+        var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+        var pot = Cooking.PotIn(sim, inn);
+        var at = sim.World.Get<Thing>(pot).Cell;
+        var by = sim.SpiralFrom(at, 2).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z && AvatarSystem.InReach(sim, c, pot));
+        sim.World.Get<Position>(me).Cell = by;
+        sim.World.Get<Position>(me).Pos = Position.CenterOf(by);
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Bowl"), 6));
+        var diner = party[0];
+        var order = sim.Shops.Post(sim, diner, sim.Defs.Service(ServiceKind.Meal), "Food!", 3, sim.Clock.Tick + SimClock.HoursToTicks(2), where: inn);
+        order.WantsHouse = house;
+        return (sim, me, pot, diner, order);
+    }
+
+    /// <summary>A cooked pot of meat and cabbage (or what's given), seasoned to its taste unless told otherwise.</summary>
+    private static void Cook(Simulation sim, Entity pot, float seasonOff = 0f, params (string Def, int Count)[] food)
+    {
+        var p = Cooking.PotOf(sim, pot);
+        p.Nutrition = 0f;
+        foreach (var (def, n) in food.Length > 0 ? food : [("Meat", 6), ("Cabbage", 4), ("Berries", 4)])
+            Cooking.Add(sim, pot, sim.CreateItem(sim.Thing(def), n));
+        p.Doneness = 1f;
+        p.Scorch = 0f;
+        p.Seasoning = p.SeasonTarget + seasonOff;
+    }
+
+    [Fact]
+    public void ADinerServedAPoorBowlSaysWhatsWrongWithIt()
+    {
+        var (sim, me, pot, diner, meal) = Inn();
+        Cook(sim, pot, seasonOff: 0.5f);
+        var bowl = Cooking.Ladle(sim, me, pot);
+        Assert.Equal(DishFault.Salty, sim.World.Get<Dish>(bowl).Fault);
+        sim.World.Get<Carrying>(me).Item = Entity.Null;
+        var purse = Coin.Count(sim, me);
+        sim.Shops.Received(sim, me, diner, bowl);
+        Assert.Equal(OrderStatus.Done, meal.Status);
+        Assert.Contains(sim.Speech.Kept, u => u.Speaker == diner && u.Text == Cooking.FaultLine(DishFault.Salty));
+        Assert.Equal(purse + meal.Price, Coin.Count(sim, me)); // no tip for that
+    }
+
+    [Fact]
+    public void QuickFineServiceIsTipped()
+    {
+        var (sim, me, pot, diner, meal) = Inn();
+        Cook(sim, pot);
+        var bowl = Cooking.Ladle(sim, me, pot, Quality.Masterwork);
+        sim.World.Get<Carrying>(me).Item = Entity.Null;
+        var purse = Coin.Count(sim, me);
+        sim.Shops.Received(sim, me, diner, bowl);
+        Assert.Equal(purse + meal.Price + ShopSystem.MasterworkTip, Coin.Count(sim, me));
+        Assert.Contains(sim.Speech.Kept, u => u.Speaker == diner && u.Text.Contains("for yourself"));
+    }
+
+    [Fact]
+    public void OnlyAFinePotCanBeNamedTheHouseDish()
+    {
+        var (sim, me, pot, _, _) = Inn();
+        Cook(sim, pot, seasonOff: 0.5f);
+        Assert.NotNull(HouseDish.Christen(sim, me, pot, "Miller's Pot"));
+        Cook(sim, pot);
+        Assert.Equal("it wants a name", HouseDish.Christen(sim, me, pot, "  "));
+        sim.ApplyNow(new NameDishCommand(me, pot, "Miller's Pot"));
+        var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+        Assert.Equal("Miller's Pot", Perception.For(sim, me).HouseDish(inn)!.Value.Name);
+        Assert.Equal("Miller's Pot", Perception.For(sim, me).Pot(pot)!.Value.House);
+        // Someone who doesn't keep the kitchen can't.
+        var stranger = sim.Creatures().First(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
+        Assert.NotNull(HouseDish.Christen(sim, stranger, pot, "Healer's Broth"));
+    }
+
+    [Fact]
+    public void APotThatTastesLikeTheHouseDishIsTheHouseDish()
+    {
+        var (sim, me, pot, _, _) = Inn();
+        Cook(sim, pot);
+        Assert.Null(HouseDish.Christen(sim, me, pot, "Miller's Pot"));
+        // Made again from the same larder, it's the same dish; all sweet, it isn't.
+        Cook(sim, pot, 0f, ("Meat", 6), ("Cabbage", 4), ("Berries", 4));
+        Assert.True(sim.World.Get<Dish>(Cooking.Ladle(sim, me, pot)).House);
+        sim.World.Get<Carrying>(me).Item = Entity.Null;
+        Cook(sim, pot, 0f, ("Berries", 12));
+        var other = Cooking.Ladle(sim, me, pot);
+        Assert.False(sim.World.Get<Dish>(other).House);
+        Assert.Null(Perception.For(sim, me).Pot(pot)!.Value.House);
+    }
+
+    [Fact]
+    public void ADinerWhoAskedForTheHouseDishKnowsIt()
+    {
+        var (sim, me, pot, diner, meal) = Inn(house: true);
+        Cook(sim, pot);
+        Assert.Null(HouseDish.Christen(sim, me, pot, "Miller's Pot"));
+        var before = sim.World.Get<Adventurer>(diner).Satisfaction;
+        Tastes.Served(sim, diner, null, meal, house: true);
+        Assert.Equal(before + HouseDish.RightMood, sim.World.Get<Adventurer>(diner).Satisfaction, 0.001f);
+        Tastes.Served(sim, diner, null, meal, house: false);
+        Assert.Equal(before + HouseDish.RightMood - HouseDish.WrongMood, sim.World.Get<Adventurer>(diner).Satisfaction, 0.001f);
+        Assert.Contains(sim.Speech.Kept, u => u.Speaker == diner && u.Text.Contains("isn't the Miller's Pot"));
+    }
+
+    [Fact]
+    public void WithAHouseDishSomeAskForItByNameAndItSurvivesASave()
+    {
+        var (sim, me, pot, _, _) = Inn();
+        Cook(sim, pot);
+        Assert.Null(HouseDish.Christen(sim, me, pot, "Miller's Pot"));
+        for (var h = 0; h < 30 && !sim.Shops.All.Any(o => o.WantsHouse); h++)
+            sim.TickMany(SimClock.TicksPerHour);
+        var order = sim.Shops.All.First(o => o.WantsHouse);
+        Assert.Contains("Miller's Pot", order.Text);
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        Assert.True(loaded.Shops.All.Single(o => o.Id == order.Id).WantsHouse);
+        var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+        Assert.Equal("Miller's Pot", HouseDish.Of(loaded, inn)!.Name);
+    }
 }

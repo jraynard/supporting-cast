@@ -118,8 +118,13 @@ public readonly record struct Flavour(float Savoury, float Sweet, float Hot, flo
     };
 }
 
-/// <summary>A dish's flavour, carried from the pot into each bowl ladled from it (<see cref="Cooking.Ladle"/>).</summary>
+/// <summary>
+/// A bowl as it came out of its pot (<see cref="Cooking.Ladle"/>): its flavour, what most let it down
+/// (tasted by whoever eats it), and whether it was the house dish (<see cref="HouseDish"/>).
+/// </summary>
 public struct Dish
 {
     public Flavour Flavour;
+    public DishFault Fault;
+    public bool House;
 }

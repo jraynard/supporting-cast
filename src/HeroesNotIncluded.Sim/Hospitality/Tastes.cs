@@ -35,10 +35,20 @@ public static class Tastes
     /// Served their meal: if they said what they fancied, does it taste of it? They say so. A bowl
     /// with no flavour to it (from no pot at all) disappoints a craving like any other miss.
     /// </summary>
-    public static void Served(Simulation sim, Entity who, Flavour? flavour, Order meal)
+    public static void Served(Simulation sim, Entity who, Flavour? flavour, Order meal, bool house = false)
     {
         var w = sim.World;
-        if (meal.Craving is not { } wanted || !w.Has<Adventurer>(who))
+        if (!w.Has<Adventurer>(who))
+            return;
+        // Asked for the house dish by name: is this it?
+        if (meal.WantsHouse)
+        {
+            var name = HouseDish.Of(sim, meal.Where)?.Name ?? "house dish";
+            w.Get<Adventurer>(who).Satisfaction += house ? HouseDish.RightMood : -HouseDish.WrongMood;
+            sim.Speech.Say(sim, who, house ? $"So that's the {name}. They weren't wrong." : $"This isn't the {name}. Not as I heard it told.", Volume.Say);
+            return;
+        }
+        if (meal.Craving is not { } wanted)
             return;
         var right = flavour is { } f && f.Has(wanted);
         w.Get<Adventurer>(who).Satisfaction += right ? RightMood : -WrongMood;

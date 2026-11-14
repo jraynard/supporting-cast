@@ -237,6 +237,8 @@ public sealed partial class VillageGame
         else
         {
             Wrapped($"In it: {p.Contents}. It tastes {p.Tastes}.");
+            if (p.House is { } house)
+                TextC(Theme.Good, $"It tastes like your {house}: it's the house dish.");
             TextC(p.Surface == Surface.Simmer ? Theme.Good : Theme.Dim, $"It's {Cooking.SurfaceLabel(p.Surface)}{(p.Lit ? "" : ", and the fire beside it is out")}.");
             if (p.Caught is { } caught)
                 TextC(Theme.Bad, Cap(caught) + ".");
@@ -260,8 +262,38 @@ public sealed partial class VillageGame
                 if (ImGui.SmallButton("Ladle a bowl"u8))
                     Issue(new PotCommand(_avatar, p.Pot, PotStep.Ladle));
             }
+            if (p.Cooked && _sim.World.TryGet<Trade>(_avatar, out var trade) && trade.Def.Serving(Sim.Defs.ServiceKind.Meal))
+                DrawNameDish(p);
         }
         Panel.End();
+    }
+
+    private ImInputString? _dishNameInput;
+
+    /// <summary>Name a cooked pot the house dish: a button, then the name. The sim says if it isn't good enough.</summary>
+    private void DrawNameDish(KnownPot p)
+    {
+        if (_dishNameInput == null)
+        {
+            if (ImGui.SmallButton(p.House != null ? "Rename the house dish"u8 : "Make it the house dish"u8))
+                _dishNameInput = new ImInputString(Sim.Shops.ShopName.MaxLength + 8, ""u8);
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip("Put a name to a fine pot. It goes on the sign, and any pot that tastes like it is the same dish. Some will ask for it.");
+            return;
+        }
+        ImGui.SetNextItemWidth(Gui.S(200));
+        var done = ImGui.InputTextWithHint("##dishname"u8, "What's it called?"u8, _dishNameInput, ImGuiInputTextFlags.EnterReturnsTrue, null, IntPtr.Zero);
+        OnScreenKeyboard.AfterTextField();
+        ImGui.SameLine(0, 6);
+        done |= ImGui.SmallButton("Name it"u8);
+        ImGui.SameLine(0, 6);
+        if (ImGui.SmallButton("Cancel"u8))
+            _dishNameInput = null;
+        else if (done)
+        {
+            Issue(new NameDishCommand(_avatar, p.Pot, Narsil.Ui.ImGuiText.Value(_dishNameInput)));
+            _dishNameInput = null;
+        }
     }
 
     /// <summary>A stew pot in arm's reach of you, as you see it.</summary>

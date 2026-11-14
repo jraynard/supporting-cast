@@ -181,6 +181,37 @@ public static class Cooking
         return sim.World.TryGet<StewPot>(pot, out var p) && !p.Empty && SeasonersIn(p) < MaxSeasoners;
     }
 
+    /// <summary>
+    /// What most lets a pot down, as a diner would taste it: too salty or bland against what it
+    /// wants, caught on the bottom, not cooked through, or tasting of one thing only. None when
+    /// nothing much is wrong.
+    /// </summary>
+    public static DishFault FaultOf(StewPot p)
+    {
+        var off = p.Seasoning - p.SeasonTarget;
+        (DishFault Fault, float How)[] faults =
+        [
+            (DishFault.Salty, (off - 0.06f) * 4f),
+            (DishFault.Bland, (-off - 0.06f) * 4f),
+            (DishFault.Caught, p.Scorch * 1.5f),
+            (DishFault.Underdone, (1f - Math.Clamp(p.Doneness, 0f, 1f)) * 2f),
+            (DishFault.Flat, (0.5f - p.Flavour.Balance) * 1.2f),
+        ];
+        var worst = faults.MaxBy(f => f.How);
+        return worst.How > 0.15f ? worst.Fault : DishFault.None;
+    }
+
+    /// <summary>What a diner says of a poor bowl, by what's wrong with it.</summary>
+    public static string FaultLine(DishFault f) => f switch
+    {
+        DishFault.Salty => "Gods, the salt. Did someone tip the cellar in?",
+        DishFault.Bland => "It wants salt. A lot of salt.",
+        DishFault.Caught => "Tastes of the bottom of the pot.",
+        DishFault.Underdone => "This isn't cooked through.",
+        DishFault.Flat => "Filling. Tastes of one thing, mind.",
+        _ => "Burnt, or bland, or both. I've eaten worse. Not often.",
+    };
+
     /// <summary>Seasoners in a pot so far.</summary>
     public static int SeasonersIn(StewPot p) => p.In.Where(i => i.Def.IsSeasoner).Sum(i => i.Count);
 
@@ -339,7 +370,7 @@ public static class Cooking
         var p = PotOf(sim, pot);
         var bowl = sim.CreateItem(Serves(sim, pot), 1);
         w.Add(bowl, new Crafted { Quality = quality ?? Crafting.QualityFrom(QualityOf(p)), Maker = server });
-        w.Add(bowl, new Dish { Flavour = p.Flavour.Shares });
+        w.Add(bowl, new Dish { Flavour = p.Flavour.Shares, Fault = FaultOf(p), House = HouseDish.Served(sim, pot, p) != null });
         if (w.Has<Rot>(bowl))
             w.Get<Rot>(bowl).Progress = p.Rot;
         p.Ladled++;

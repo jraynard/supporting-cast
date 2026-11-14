@@ -1244,7 +1244,7 @@ and its last chance (`Round/FestivalSystem`, `data/defs/festival.json`, `Defs/Fe
   unchanged; the full hashes moved for the festival's saved plan: 1234 `A3387098B3207AA8`, 99
   `74315EC270163CE8`.
 
-### Cook pass, phase 1 (2026-11-13)
+### Cook pass, phase 1: flavours, tastes, sniffing, rations (2026-11-13)
 The cook had two games and nothing that left town; the other trades five to seven, and work that
 goes out on quests. Phase 1 of the plan (DESIGN.md, "Cook"; ROADMAP.md, "The cook pass"): reach and
 depth.
@@ -1275,3 +1275,18 @@ depth.
   mid-walk, and the walk carried them off; it now ends their job first.
 - Save format 21. `CookPassTests`. Bench hashes moved (behaviour): 1234 state `777B62DF500687D2`,
   full `7A4D703E6E889E7A`; 99 state `4B144711DB024EDD`, full `9067BDE801CF11E2`.
+
+### Cook pass, phase 2: a name for the kitchen (2026-11-13)
+- **The house dish** (`Work/HouseDish`): at a cooked pot, the cook can "Make it the house dish"
+  and name it (`NameDishCommand`): only a pot that would ladle Fine or better, and only the inn's
+  meal-server. The name and its flavour are kept on the inn and posted on the sign
+  (`PerceptionView.HouseDish`). Any later pot whose flavour is near enough the same is the house
+  dish again (the pot panel says so), and its bowls are marked (`Dish.House`). About a third of
+  diners ask for it by name with their order (`Order.WantsHouse`, saved) and say whether they got
+  it.
+- **What was wrong:** each bowl remembers what most let its pot down (`Dish.Fault`: salty, bland,
+  caught, underdone, flat), and a diner served a Plain or Crude one says it.
+- **Tips:** served Fine or better within a third of their patience, an adventurer tips the server
+  a coin (two for masterwork), drinks and meals alike (`ShopSystem.FineTip`, `MasterworkTip`).
+- Save format 22. `CookPassTests` (phase 2); `InnKitchenTests`' hatch test counts the tip. Bench
+  hashes unchanged (the bench runs no round).

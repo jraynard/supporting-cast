@@ -367,7 +367,7 @@ public class InnKitchenTests
         for (var i = 0; i < 10 && order.IsOpen; i++)
             sim.TickMany(60);
         Assert.Equal(OrderStatus.Done, order.Status);
-        Assert.Equal(purse + order.Price, Coin.Count(sim, me));
+        Assert.Equal(purse + order.Price + ShopSystem.FineTip, Coin.Count(sim, me)); // a fine bowl, quickly: tipped
         Assert.Empty(sim.StoredIn(hatch));
         Assert.True(sim.World.TryGet<Hospitality.Savouring>(diner, out var savouring) && savouring.Meal);
         Assert.Equal(Quality.Fine, sim.World.Get<Crafted>(savouring.Item).Quality);

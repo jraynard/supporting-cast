@@ -534,7 +534,28 @@ internal static class ComponentCodecs
                 p.Flavour = ReadFlavour(r);
             return p;
         }),
-        Codec("Dish", (w, d) => WriteFlavour(w, d.Flavour), r => new Work.Dish { Flavour = ReadFlavour(r) }),
+        Codec("Dish", (w, d) =>
+        {
+            WriteFlavour(w, d.Flavour);
+            w.Byte((byte)d.Fault);
+            w.Bool(d.House);
+        }, r =>
+        {
+            var d = new Work.Dish { Flavour = ReadFlavour(r) };
+            if (r.Version >= 22) // what was wrong with it, and the house dish, came with format 22
+            {
+                var f = r.Byte();
+                d.Fault = Enum.IsDefined((Work.DishFault)f) ? (Work.DishFault)f : Work.DishFault.None;
+                d.House = r.Bool();
+            }
+            return d;
+        }),
+        Codec("HouseDish", (w, h) =>
+        {
+            w.String(h.Name);
+            WriteFlavour(w, h.Flavour);
+            w.Entity(h.Maker);
+        }, r => new Work.HouseDish { Name = Shops.ShopName.Clean(r.String()), Flavour = ReadFlavour(r), Maker = r.Entity() }),
         Codec("Ration", (w, x) =>
         {
             w.Float(x.Quality);

@@ -82,7 +82,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     the seasoning it wants are hidden (read pots through `PerceptionView.Pot`). A pot tastes of what went in
     (`Flavour`, plain to anyone; diners may crave one, `Hospitality/Tastes`); rot is read only by a
     noisy sniff (`SniffSession`). Rations (`Work/Rations`, packed in `PackSession`) go out on quests
-    like charms; a slack tie (`Ration.LooseWrap`) is hidden. A fever
+    like charms; a slack tie (`Ration.LooseWrap`) is hidden. A named pot's flavour is the inn's
+    `HouseDish`: later pots that taste like it are it. A fever
     (`Healing/FeverSystem`) is an injury that spreads and is quelled by the empath. Poured and
     ladled things go in clean vessels (`Vessels`); a customer leaves them dirty.
   - `Hospitality/`: the inn beyond its counter. Rooms by the night (`Lodging`), mess on the floor

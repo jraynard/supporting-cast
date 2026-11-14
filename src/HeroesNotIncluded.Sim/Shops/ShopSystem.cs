@@ -300,11 +300,24 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             return false;
         }
         var text = Asking(def, price, SubjectLabel(sim, subject) ?? WoundLabel(sim, who));
-        // A meal: they may say what they fancy, in the same breath (Hospitality.Tastes).
-        var craving = kind == ServiceKind.Meal ? Hospitality.Tastes.Crave(sim, who, _rand) : null;
-        if (craving is { } c)
-            text += " " + Work.Flavour.Craving(c);
-        Post(sim, who, def, text, price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), subject, shop, worth, craving);
+        // A meal: they may ask for the house dish by name, or say what they fancy, in the same breath (Hospitality.Tastes).
+        Work.FlavourKind? craving = null;
+        var house = false;
+        if (kind == ServiceKind.Meal && sim.World.Has<Adventurer>(who))
+        {
+            if (Work.HouseDish.Of(sim, shop) is { } dish && _rand.NextFloat() < Work.HouseDish.AskChance)
+            {
+                house = true;
+                text += $" The {dish.Name}, if there's any. I've heard about it.";
+            }
+            else if (Hospitality.Tastes.Crave(sim, who, _rand) is { } c)
+            {
+                craving = c;
+                text += " " + Work.Flavour.Craving(c);
+            }
+        }
+        var order = Post(sim, who, def, text, price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), subject, shop, worth, craving);
+        order.WantsHouse = house;
         return true;
     }
 
@@ -789,7 +802,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     }
 
     /// <summary>They can taste how it was poured (or cooked), and say so.</summary>
-    private static void Tasted(Simulation sim, Entity who, Quality quality, bool meal = false)
+    private static void Tasted(Simulation sim, Entity who, Quality quality, bool meal = false, Work.DishFault fault = Work.DishFault.None)
     {
         var (mood, line) = (quality, meal) switch
         {
@@ -801,10 +814,35 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             (Quality.Masterwork, true) => (0.5f, "Gods, that's a stew. My compliments to whoever's at the pot!"),
             _ => (0f, (string?)null),
         };
+        // A poor bowl: they say what's wrong with it, which is the cook's best lesson.
+        if (meal && quality <= Quality.Plain && fault != Work.DishFault.None)
+            line = Work.Cooking.FaultLine(fault);
         if (sim.World.Has<Adventurer>(who))
             sim.World.Get<Adventurer>(who).Satisfaction += mood;
         if (line != null)
             sim.Speech.Say(sim, who, line, Volume.Say);
+    }
+
+    /// <summary>Silver over the price for quick, fine service: a coin for fine, two for masterwork, if it came within a third of their patience.</summary>
+    public const int FineTip = 1, MasterworkTip = 2;
+
+    /// <summary>What an adventurer would tip for this order served now at this quality (0 for none).</summary>
+    private static int TipFor(Simulation sim, Order e, Quality quality)
+    {
+        if (!e.IsOpen || !sim.World.Has<Adventurer>(e.Poster) || quality < Quality.Fine)
+            return 0;
+        var quick = sim.Clock.Tick - e.PostedTick < (e.Deadline - e.PostedTick) / 3;
+        return !quick ? 0 : quality >= Quality.Masterwork ? MasterworkTip : FineTip;
+    }
+
+    /// <summary>A tip, if they've the silver once they've paid: to whoever served them.</summary>
+    private static void Tip(Simulation sim, Entity who, Entity to, int tip)
+    {
+        if (tip <= 0 || who == to || Coin.Count(sim, who) <= 0)
+            return;
+        var paid = Coin.Pay(sim, who, to, tip);
+        if (paid > 0)
+            sim.Speech.Say(sim, who, paid == 1 ? "And one for yourself. That was quick." : $"Have {paid} for yourself. Quick, and good.", Volume.Say);
     }
 
     private static void GiveUp(Simulation sim, Order e)
@@ -866,7 +904,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             var quality = w.TryGet<Crafted>(item, out var made) ? made.Quality : Quality.Plain;
             sim.Drinking.Served(sim, to, item, drink);
             Tasted(sim, to, quality);
+            var tip = TipFor(sim, drink, quality);
             Complete(sim, drink, giver);
+            Tip(sim, to, giver, tip);
             Hospitality.Table.Begin(sim, to, item, meal: false, 1, 0f, _rand);
             return;
         }
@@ -878,10 +918,16 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             if (eaten != item)
                 Inventory.Stow(sim, giver, item); // the rest back to the server
             var rot = FoodPoisoning.RotOf(sim, eaten);
+            Work.Dish? dish = w.TryGet<Work.Dish>(item, out var d) ? d : null;
+            var tip = 0;
             if (w.TryGet<Crafted>(eaten, out var made) && made.Quality is var q)
-                Tasted(sim, to, q, meal: true);
-            Hospitality.Tastes.Served(sim, to, w.TryGet<Work.Dish>(item, out var dish) ? dish.Flavour : null, meal);
+            {
+                Tasted(sim, to, q, meal: true, dish?.Fault ?? Work.DishFault.None);
+                tip = TipFor(sim, meal, q);
+            }
+            Hospitality.Tastes.Served(sim, to, dish?.Flavour, meal, dish?.House ?? false);
             Complete(sim, meal, giver);
+            Tip(sim, to, giver, tip);
             Hospitality.Table.Begin(sim, to, eaten, meal: true, count, rot, _rand);
             return;
         }
@@ -1073,6 +1119,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             w.Long(e.ClosedTick);
             w.Long(e.LastAsked);
             w.Int(e.Craving is { } craving ? (int)craving : -1);
+            w.Bool(e.WantsHouse);
             w.Int(e.KnownBy.Count);
             foreach (var k in e.KnownBy)
                 w.Entity(k);
@@ -1126,6 +1173,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             e.LastAsked = r.Long();
             if (r.Version >= 21) // cravings came with format 21
                 e.Craving = r.Int() is var c && Enum.IsDefined((Work.FlavourKind)c) && c >= 0 ? (Work.FlavourKind)c : null;
+            if (r.Version >= 22)
+                e.WantsHouse = r.Bool();
             for (var k = r.Count(1 << 16); k > 0; k--)
                 e.KnownBy.Add(r.Entity());
             _orders.Add(e);
