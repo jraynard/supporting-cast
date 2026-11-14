@@ -45,7 +45,7 @@ public readonly record struct KnownPiece(string Label, Work.Glow Glow, float Tem
 /// seasoning it wants.
 /// </summary>
 public readonly record struct KnownPot(Entity Pot, string Contents, Work.Surface Surface, float Heat, float Flame, bool Lit, float Doneness,
-    bool Cooked, string? Caught, int Bowls, bool Empty, string Tastes = "", string? House = null);
+    bool Cooked, string? Caught, int Bowls, bool Empty, string Tastes = "", string? House = null, bool Flaring = false);
 
 /// <summary>A spit and what's on it, as anyone close sees it: each side's crust and which is to the fire. Never how far it's cooked through.</summary>
 public readonly record struct KnownSpit(Entity Spit, int Pieces, Work.Crust[] Sides, int Facing, bool Lit);
@@ -293,7 +293,8 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         var contents = string.Join(", ", p.In.Select(i => $"{i.Count} {i.Def.Label}"));
         var caught = p.Scorch > 0.35f ? "it's caught on the bottom" : p.Scorch > 0.12f ? "a little caught" : null;
         return new KnownPot(pot, contents, Work.Cooking.SurfaceOf(p.Heat), p.Heat, p.Flame, Work.Cooking.Lit(sim, pot), Math.Clamp(p.Doneness, 0f, 1f),
-            p.Cooked, caught, Work.Cooking.ServingsLeft(sim, pot), p.Empty, p.Flavour.Words(), Work.HouseDish.Served(sim, pot, p)?.Name);
+            p.Cooked, caught, Work.Cooking.ServingsLeft(sim, pot), p.Empty, p.Flavour.Words(), Work.HouseDish.Served(sim, pot, p)?.Name,
+            Work.Cooking.Flaring(sim, pot));
     }
 
     /// <summary>

@@ -1099,6 +1099,12 @@ shared); fights stay real time, Souls-lite.
 - The controls card is two columns and fits 1280x800.
 - `BindingsTests` (Narsil), `ControlsTests`. No sim change: bench hashes as before.
 
+### Control Pass: on the Deck
+- Built (HISTORY.md, "Control pass: rebinding and the gamepad"). Left for the device: play a round
+  on a Deck from the pad alone; check every mini-game and window navigates (ImGui focus quirks show
+  only in play); tune the stick deadzone and the wheel; export the Steam Input layout to
+  `tools/steamdeck/`.
+
 
 ### Death and ghosts (2026-11-13)
 Death sticks in a round (DESIGN.md, "Death"); everything is in `Sim/Afterlife/`.

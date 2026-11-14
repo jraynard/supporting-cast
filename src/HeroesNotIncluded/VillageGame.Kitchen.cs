@@ -20,8 +20,11 @@ public sealed partial class VillageGame
     /// <summary>The pot over the fire: the flames as the fire's set, the surface as hot as it is, the spoon when you stir.</summary>
     private void DrawStew(StewSession s)
     {
-        BeginWork(s.Title, ("F", "hold to stir"), ("A/D", "bank or feed the fire"), ("Esc", "leave it"));
-        TextC(Theme.Dim, "Keep it at a simmer, and stir before it catches.");
+        if (s.Flaring > 0)
+            BeginWork(s.Title, ("Space", "clap the lid on!"), ("F", "hold to stir"), ("A/D", "bank or feed the fire"), ("Esc", "leave it"));
+        else
+            BeginWork(s.Title, ("F", "hold to stir"), ("A/D", "bank or feed the fire"), ("Esc", "leave it"));
+        TextC(Theme.Dim, s.Fatty ? "Keep it at a simmer, and stir before it catches. It's fatty: a hard boil spits." : "Keep it at a simmer, and stir before it catches.");
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 180);
         var min = ImGui.GetCursorScreenPos();
@@ -103,7 +106,25 @@ public sealed partial class VillageGame
         var handle = tip + new float2(Gui.S(46), -Gui.S(70));
         dl.AddLine(in tip, in handle, new ImColor8(150, 110, 70, 255), Gui.S(4));
 
+        // The fat's caught: flames leaping off the surface, higher as the time runs out.
+        if (s.Flaring > 0)
+        {
+            var urgency = 1f - s.Flaring / (float)Cooking.FlareSteps;
+            for (var i = 0; i < 7; i++)
+            {
+                var x = surfMin.X + Gui.S(10) + i * (surfMax.X - surfMin.X - Gui.S(20)) / 6f;
+                var flicker = 0.6f + 0.4f * MathF.Sin(_time * (9f + i % 4) + i * 1.7f);
+                var h = Gui.S(30 + 50 * urgency) * flicker;
+                var a = new float2(x - Gui.S(9), surfMin.Y);
+                var b = new float2(x + Gui.S(9), surfMin.Y);
+                var t2 = new float2(x, surfMin.Y - h);
+                dl.AddTriangleFilled(in a, in b, in t2, Gui.U8(new float4(0.98f, 0.55f + 0.3f * flicker, 0.1f, 0.9f)));
+            }
+        }
+
         ImGui.Spacing();
+        if (s.Flaring > 0)
+            TextC(Theme.Bad, Controls.Keys("The fat's caught! Clap the lid on (~Space~)!"));
         TextC(s.Surface is Surface.Simmer ? Theme.Good : s.Surface == Surface.Boil ? Theme.Warn : Theme.Dim,
             $"It's {Cooking.SurfaceLabel(s.Surface)}.");
         if (s.Catching)
@@ -888,6 +909,12 @@ public sealed partial class VillageGame
         _hud.Next(Anchor.Bottom);
         Panel.Begin("The stew pot###pot", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
         _hud.Took();
+        if (p.Flaring)
+        {
+            TextC(Theme.Bad, Controls.Keys("The fat's caught: flames over the pot! ~F~ to clap the lid on."));
+            if (ImGui.SmallButton("Clap the lid on"u8))
+                Issue(new PotCommand(_avatar, p.Pot, PotStep.Lid));
+        }
         if (p.Empty)
             TextC(Theme.Dim, Controls.Keys("Empty. Bring it food from the larder: ~F~ at the pot puts in what you carry."));
         else

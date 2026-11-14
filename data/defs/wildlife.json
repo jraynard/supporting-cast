@@ -30,6 +30,17 @@
       "lifeStages": [ { "name": "Adult", "label": "hare", "sprite": "creatures/hare", "size": 0.6 } ],
       "animal": { "plural": "hares", "meatYield": 4, "mass": 3, "hideYield": 1, "butcherWork": 120, "herdMin": 1, "herdMax": 3, "commonness": 3, "fleeRadius": 9, "stayHours": [ 18, 36 ] }
     },
+    // Rats never wander in with the herds (commonness 0): the shortage crisis looses them in the
+    // inn's larder (Hospitality.RatSystem), where they keep about it, dart off from anyone close and
+    // gnaw the food while they live. Small and quick: the cook chases them down with the knife.
+    {
+      "name": "Rat", "label": "rat", "race": "Animal", "body": "Quadruped",
+      "moveSpeed": 5.5, "maxHp": 6,
+      "comfortTempMin": -10, "comfortTempMax": 35, "safeTempMin": -30, "safeTempMax": 45,
+      "work": [],
+      "lifeStages": [ { "name": "Adult", "label": "rat", "sprite": "creatures/hare", "size": 0.32 } ],
+      "animal": { "plural": "rats", "meatYield": 0, "mass": 0.4, "hideYield": 0, "butcherWork": 30, "herdMin": 1, "herdMax": 1, "commonness": 0, "fleeRadius": 2.5, "stayHours": [ 1, 1 ] }
+    },
     // Predators (predator: true) never wander in with the herds (commonness 0): the storyteller sends
     // them as a pack that comes for the village and fights turn by turn (Systems/WildEvents), each
     // animal costing "points" of the raid points, from "minDay". A pack runs once half of it is down.

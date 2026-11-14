@@ -11,7 +11,7 @@ public static class AiQueries
 {
     private static int Dist(int3 a, int3 b) => Map.Distance(a, b);
 
-    /// <summary>Nearest spawned, unreserved, reachable item matching a predicate.</summary>
+    /// <summary>Nearest spawned, unreserved, reachable item matching a predicate (not what's kept in a kitchen that isn't theirs).</summary>
     public static Entity FindNearestItem(Simulation sim, Entity pawn, Func<Entity, ThingDef, bool> match, int maxDistance = 200)
     {
         var from = sim.World.Get<Position>(pawn).Cell;
@@ -23,6 +23,11 @@ public static class AiQueries
             if (!match(e, thing.Def) || sim.Reservations.IsReservedByOther(e, pawn))
                 continue;
             var d = Dist(from, thing.Cell);
+            if (d >= bestDist || d > maxDistance)
+                continue;
+            // What's kept in a kitchen (the larder, the log basket) is its staff's alone.
+            if (WorkGivers.KitchenStock(sim, pawn, e))
+                continue;
             if (d >= bestDist || d > maxDistance)
                 continue;
             if (sim.Map.Fire[sim.Map.Idx(thing.Cell)] > 0)
@@ -575,12 +580,21 @@ public sealed class AnimalBrain : IBrain
                 return new FleeJob(run);
         }
 
-        if (Threat(sim, pawn) is { } threat && FleeSpot(sim, pawn, threat, 10) is { } away)
+        // A rat darts a few steps off; anything else runs well clear.
+        var vermin = w.TryGet<Hospitality.Vermin>(pawn, out var v) ? v : (Hospitality.Vermin?)null;
+        if (Threat(sim, pawn) is { } threat && FleeSpot(sim, pawn, threat, vermin != null ? 4 : 10) is { } away)
             return new FleeJob(away);
 
         // A migrating herd keeps on across the valley and leaves by the far edge.
         if (w.TryGet<Migrating>(pawn, out var migrating))
             return new LeaveMapJob(migrating.To);
+
+        // A rat keeps about the larder it's got into.
+        if (vermin is { } rat && w.IsAlive(rat.Larder))
+        {
+            var r = sim.Wildlife.Rand;
+            return AiQueries.RandomReachableNear(sim, pawn, w.Get<Thing>(rat.Larder).Cell, 3, r) is { } near ? new GrazeJob(near, r.Range(120, 420)) : null;
+        }
 
         var rand = sim.Wildlife.Rand;
         var spot = AiQueries.RandomReachableNear(sim, pawn, HerdCenter(sim, pawn), 5, rand);

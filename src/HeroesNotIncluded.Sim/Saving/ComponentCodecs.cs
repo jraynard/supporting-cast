@@ -341,6 +341,11 @@ internal static class ComponentCodecs
         Codec("Mind", WriteMind, ReadMind),
         Codec("Carrying", (w, c) => w.Entity(c.Item), r => new Carrying { Item = r.Entity() }),
         Codec("Migrating", (w, m) => w.Int3(m.To), r => new Migrating { To = r.Int3() }),
+        Codec("Vermin", (w, v) =>
+        {
+            w.Entity(v.Larder);
+            w.Long(v.NextGnaw);
+        }, r => new Hospitality.Vermin { Larder = r.Entity(), NextGnaw = r.Long() }),
         Codec("Adventurer", (w, a) =>
         {
             w.Int(a.Party);
@@ -515,6 +520,7 @@ internal static class ComponentCodecs
             w.Int(p.Ladled);
             w.Long(p.TendedUntil);
             WriteFlavour(w, p.Flavour);
+            w.Long(p.FlareUntil);
         }, r =>
         {
             var p = new Work.StewPot();
@@ -532,6 +538,8 @@ internal static class ComponentCodecs
             p.TendedUntil = r.Long();
             if (r.Version >= 21) // flavours came with format 21
                 p.Flavour = ReadFlavour(r);
+            if (r.Version >= 30) // grease fires came with format 30
+                p.FlareUntil = Math.Max(0L, r.Long());
             return p;
         }),
         Codec("Dish", (w, d) =>

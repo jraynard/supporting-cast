@@ -29,6 +29,18 @@ public sealed class StewSession : WorkSession
     /// <summary>Steps since the spoon last went round.</summary>
     public int SinceStir { get; private set; } = Cooking.Untended;
 
+    /// <summary>A fatty pot (<see cref="Cooking.Fatty"/>): at a rolling boil its fat may catch.</summary>
+    public bool Fatty { get; private set; }
+
+    /// <summary>Steps left before a flare's a real fire, unless the lid goes on (Space); 0 when it isn't flaring.</summary>
+    public int Flaring { get; private set; }
+
+    /// <summary>The flare was left: the session ends, and <see cref="Finish"/> sets the kitchen alight.</summary>
+    public bool Caught { get; private set; }
+
+    /// <summary>Lids clapped on, for the drawing.</summary>
+    public int Lidded { get; private set; }
+
     private int _flameDir;
 
     public Surface Surface => Cooking.SurfaceOf(Heat);
@@ -49,7 +61,8 @@ public sealed class StewSession : WorkSession
         return new StewSession
         {
             Pot = pot, Lit = Cooking.Lit(sim, pot), Heat = p.Heat, Flame = p.Flame, Doneness = p.Doneness, Scorch = p.Scorch,
-            Speed = Cooking.SpeedOf(p),
+            Speed = Cooking.SpeedOf(p), Fatty = Cooking.Fatty(p),
+            Flaring = p.FlareUntil > sim.Clock.Tick ? (int)Math.Min(Cooking.FlareSteps, p.FlareUntil - sim.Clock.Tick) : 0,
         };
     }
 
@@ -59,6 +72,17 @@ public sealed class StewSession : WorkSession
 
     protected override void Axis(int value) => _flameDir = value;
 
+    /// <summary>The lid on a flare: the flames gutter out, a little caught for it.</summary>
+    protected override void Act()
+    {
+        if (Flaring <= 0)
+            return;
+        Flaring = 0;
+        Lidded++;
+        Scorch = Math.Min(1f, Scorch + 0.04f);
+        Heat = Math.Max(0f, Heat - 0.15f);
+    }
+
     protected override void Step()
     {
         Flame = Math.Clamp(Flame + _flameDir * Cooking.FlameStep, 0f, 1f);
@@ -66,6 +90,17 @@ public sealed class StewSession : WorkSession
         Cooking.Step(ref heat, Flame, Lit, ref done, ref scorch, SinceStir, Held, 1f, Speed);
         (Heat, Doneness, Scorch) = (heat, done, scorch);
         SinceStir = Held ? 0 : Math.Min(SinceStir + 1, Cooking.Untended);
+        if (Flaring > 0)
+        {
+            if (--Flaring == 0)
+            {
+                Caught = true;
+                Done = true;
+                return;
+            }
+        }
+        else if (Cooking.Flares(Heat, Fatty, Rand.NextFloat()))
+            Flaring = Cooking.FlareSteps;
         if (Doneness >= 1f)
             Done = true;
     }
@@ -75,6 +110,11 @@ public sealed class StewSession : WorkSession
         var p = WriteBack(sim);
         if (p == null)
             return;
+        if (Caught)
+        {
+            Cooking.Catch(sim, Pot);
+            return;
+        }
         // Cooked through: bank the fire to keep it warm without catching.
         p.Flame = Math.Min(p.Flame, (Cooking.SteamingAt + Cooking.SimmerAt) * 0.5f);
         var burnt = p.Scorch > 0.35f ? " It's caught on the bottom: you can taste it." : p.Scorch > 0.12f ? " A little caught on the bottom." : "";
@@ -91,6 +131,8 @@ public sealed class StewSession : WorkSession
         if (p.Empty)
             return null;
         (p.Heat, p.Flame, p.Doneness, p.Scorch) = (Heat, Flame, Doneness, Scorch);
+        // A flare still going when the cook steps away carries on over the pot.
+        p.FlareUntil = Flaring > 0 ? sim.Clock.Tick + Flaring : 0;
         return p;
     }
 
@@ -105,6 +147,10 @@ public sealed class StewSession : WorkSession
         w.Int(SinceStir);
         w.Int(_flameDir);
         w.Float(Speed);
+        w.Bool(Fatty);
+        w.Int(Flaring);
+        w.Bool(Caught);
+        w.Int(Lidded);
     }
 
     protected override void ReadState(SaveReader r)
@@ -118,6 +164,13 @@ public sealed class StewSession : WorkSession
         SinceStir = r.Int();
         _flameDir = Math.Sign(r.Int());
         Speed = r.Version >= 23 ? Math.Clamp(r.Float(), 1f, 1f + Cooking.ChoppedSpeed) : 1f; // chopping came with format 23
+        if (r.Version >= 30) // grease fires came with format 30
+        {
+            Fatty = r.Bool();
+            Flaring = Math.Clamp(r.Int(), 0, Cooking.FlareSteps);
+            Caught = r.Bool();
+            Lidded = Math.Clamp(r.Int(), 0, 1000);
+        }
     }
 }
 

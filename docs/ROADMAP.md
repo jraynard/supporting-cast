@@ -128,11 +128,7 @@ Fights are free movement and blows by reach and timing, Souls-lite, everywhere (
 - **Friendly fire's consequences** (with M4): townsfolk you cut are only hurt; the town remembering
   it, shouting it, and it counting at the reveal.
 
-### Control Pass: on the Deck
-- Built (HISTORY.md, "Control pass: rebinding and the gamepad"). Left for the device: play a round
-  on a Deck from the pad alone; check every mini-game and window navigates (ImGui focus quirks show
-  only in play); tune the stick deadzone and the wheel; export the Steam Input layout to
-  `tools/steamdeck/`.
+### Steam Deck Controls
 - Building and area tools still need the trackpad (a pad cursor would cover them).
 
 ### Internet play
@@ -142,6 +138,7 @@ Fights are free movement and blows by reach and timing, Souls-lite, everywhere (
 ### M4: Whispers
 - Allegiance, objectives, the hidden shop, evidence, player violence, Constable and jail, the bell,
   meetings and exile, ghosts.
+- discord integrations like among us (or probably better examples i dont know)
 
 *Exit: a Whispers round.* **Playtest gate: can traitors act and be caught?**
 

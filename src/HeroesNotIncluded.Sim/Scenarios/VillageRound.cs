@@ -145,6 +145,7 @@ public static class VillageRound
             return;
         var w = sim.World;
         Shops.InnSupplySystem.Deliver(sim, inn, "Larder", LarderStock);
+        Shops.InnSupplySystem.Deliver(sim, inn, "LogBasket", Shops.InnSupplySystem.Logs);
         Shops.InnSupplySystem.Deliver(sim, inn, "Chest", [("Keg", StoreroomKegs)]);
         var parts = Buildings.Parts(sim, inn);
         Entity Near(string def, Func<Defs.ThingDef, bool> by)

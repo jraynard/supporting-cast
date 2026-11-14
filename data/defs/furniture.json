@@ -202,6 +202,18 @@
       ]
     },
     {
+      // The kitchen's log basket: wood for its fires, brought by the carter (Shops.InnSupplySystem).
+      // Only the kitchen's cook feeds its fires, so in a rush it's a hand off the pot.
+      "name": "LogBasket", "label": "log basket", "category": "Building", "solid": true, "sprite": "buildings/crate",
+      "description": "A wicker basket of split logs for the kitchen's fires. Holds 2 stacks.",
+      "maxHp": 60, "flammability": 1.0,
+      "building": { "staffOnly": true, "work": 60, "storageStacks": 2, "surfaceHeight": 0.5, "cost": [ { "def": "Wood", "count": 4 } ] },
+      "model": [
+        { "min": [0.14, 0.14, 0], "max": [0.86, 0.86, 0.42], "top": "props/woodpile_top", "side": "props/basket" },
+        { "min": [0.22, 0.22, 0.42], "max": [0.78, 0.78, 0.56], "top": "props/woodpile_top", "side": "props/woodpile_side" }
+      ]
+    },
+    {
       // A cool bin in the inn's kitchen for what the pot needs: a chest by another name, kept
       // stocked at the start of a round (Scenarios/VillageRound).
       "name": "Larder", "label": "larder", "category": "Building", "solid": true, "sprite": "buildings/larder",

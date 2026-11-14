@@ -58,7 +58,8 @@ public class CrisisTests
         int Food() => sim.StoredIn(larder).Where(e => sim.World.Get<Thing>(e).Def.Nutrition > 0).Sum(e => sim.World.Get<Stack>(e).Count);
         var before = Food();
         var shortage = Assert.IsType<ShortageCrisis>(sim.Director.Send(sim, CrisisKind.Shortage));
-        Assert.True(Food() <= before / 2 + 1, $"{Food()} of {before} left");
+        Assert.True(Food() < before && Food() >= before / 2, $"{Food()} of {before} left: a quarter spoiled");
+        Assert.Equal(ShortageCrisis.Rats, sim.World.Query<Hospitality.Vermin>().Count(e => sim.World.Get<Hospitality.Vermin>(e).Larder == larder));
 
         sim.Clock.Tick = sim.Round.TickAt(sim, 2, InnSupplySystem.DeliveryHour) - 1;
         sim.TickMany(SimClock.TicksPerHour / 2);

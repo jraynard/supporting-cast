@@ -207,6 +207,9 @@ public sealed class InnSupplySystem : ISimSystem, Saving.ISaveState
     public const float DeliveryHour = 6;
 
     public static readonly (string Def, int Count)[] Kegs = [("Keg", 2), ("Spirits", 4), ("Honey", 4), ("Herbs", 4), ("Berries", 6)];
+    /// <summary>Wood for the kitchen's fires a day, into its log basket: a day's burning and a little over.</summary>
+    public static readonly (string Def, int Count)[] Logs = [("Wood", 16)];
+
     public static readonly (string Def, int Count)[] Food = [("Cabbage", 6), ("Meat", 5), ("Berries", 8), ("Emberroot", 3), ("Herbs", 3), ("Flour", 6), ("Oats", 4), ("PorkSide", 1), ("Fowl", 1)];
 
     private int _lastDay;
@@ -237,7 +240,8 @@ public sealed class InnSupplySystem : ISimSystem, Saving.ISaveState
         }
         Deliver(sim, inn, "Chest", Kegs);
         Deliver(sim, inn, "Larder", Food);
-        sim.Messages.Add(MessageKind.Info, "The carter's been by the inn: kegs and bar stock for the storeroom, and a sack of food for the larder.",
+        Deliver(sim, inn, "LogBasket", Logs);
+        sim.Messages.Add(MessageKind.Info, "The carter's been by the inn: kegs and bar stock for the storeroom, food for the larder and wood for the kitchen.",
             sim.World.Get<PresetBuilding>(inn).Anchor);
     }
 

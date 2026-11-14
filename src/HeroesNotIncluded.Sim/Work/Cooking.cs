@@ -63,6 +63,12 @@ public sealed class StewPot
     /// <summary>A villager stirring it now and then (<see cref="Shops.CookPotJob"/>), until this tick.</summary>
     public long TendedUntil;
 
+    /// <summary>
+    /// The fat's caught (<see cref="Cooking.Fatty"/>, at a rolling boil): flames over the pot until
+    /// this tick, when it's a real fire unless the lid's clapped on first. 0 when it isn't flaring.
+    /// </summary>
+    public long FlareUntil;
+
     public bool Empty => Nutrition <= 0f;
     public bool Cooked => Doneness >= 1f;
 }
@@ -128,6 +134,70 @@ public static class Cooking
         Surface.Simmer => "simmering",
         _ => "at a rolling boil",
     };
+
+    /// <summary>A pot at least this savoury (mostly meat) is fatty: at a rolling boil its fat spits into the fire.</summary>
+    public const float FattyFrom = 0.6f;
+
+    /// <summary>The chance a step, for a fatty pot at a rolling boil, that the fat catches: about once in 45 seconds of it.</summary>
+    public const float FlarePerStep = 1f / (45f * SimClock.TicksPerSecond);
+
+    /// <summary>How long a flare burns over the pot before it's a real fire: a breath or two to clap the lid on.</summary>
+    public const int FlareSteps = 5 * SimClock.TicksPerSecond;
+
+    public static bool Fatty(StewPot p) => !p.Empty && p.Flavour.Shares.Savoury >= FattyFrom;
+
+    /// <summary>Whether the fat catches this step: a fatty pot, at a rolling boil, and the roll under the chance.</summary>
+    public static bool Flares(float heat, bool fatty, float roll) => fatty && SurfaceOf(heat) == Surface.Boil && roll < FlarePerStep;
+
+    /// <summary>
+    /// How hard a fire's being worked by the pots over it: a pot's fire set roaring burns wood half
+    /// again as fast, banked right down half as fast (the kitchen fire wants feeding in a rush).
+    /// 1 with no pot by it.
+    /// </summary>
+    public static float FireDraw(Simulation sim, int3 fire)
+    {
+        var w = sim.World;
+        var most = -1f;
+        foreach (var d in Maps.Map.Neighbors8)
+        {
+            var c = new int3(fire.X + d.X, fire.Y + d.Y, fire.Z);
+            if (sim.Map.InBounds(c) && sim.Map.Structure[sim.Map.Idx(c)] is { IsNull: false } s && w.TryGet<StewPot>(s, out var p) && !p.Empty)
+                most = Math.Max(most, p.Flame);
+        }
+        return most < 0f ? 1f : 0.5f + most;
+    }
+
+    /// <summary>The pot's flared up and the lid's not on it yet (plain to anyone: there are flames).</summary>
+    public static bool Flaring(Simulation sim, Entity pot) =>
+        sim.World.TryGet<StewPot>(pot, out var p) && p.FlareUntil > sim.Clock.Tick;
+
+    /// <summary>The lid clapped on a flaring pot: the flames gutter out, and it's caught a little for it.</summary>
+    public static bool Lid(Simulation sim, Entity cook, Entity pot)
+    {
+        if (!Flaring(sim, pot))
+            return false;
+        var p = PotOf(sim, pot);
+        p.FlareUntil = 0;
+        p.Scorch = Math.Min(1f, p.Scorch + 0.04f);
+        p.Heat = Math.Max(0f, p.Heat - 0.15f);
+        sim.Messages.Add(MessageKind.Info, $"{sim.World.Get<Creature>(cook).Name} claps the lid on the pot: the flames gutter out.", sim.World.Get<Thing>(pot).Cell);
+        return true;
+    }
+
+    /// <summary>A flare left too long: the fat's a real fire in the kitchen, through the fire the town fights.</summary>
+    public static void Catch(Simulation sim, Entity pot)
+    {
+        var p = PotOf(sim, pot);
+        p.FlareUntil = 0;
+        p.Scorch = Math.Min(1f, p.Scorch + 0.3f);
+        var at = sim.World.Get<Thing>(pot).Cell;
+        if (!sim.Fire.Ignite(sim, at, 0.5f))
+            foreach (var d in Maps.Map.Neighbors8)
+                if (sim.Fire.Ignite(sim, new int3(at.X + d.X, at.Y + d.Y, at.Z), 0.5f))
+                    break;
+        sim.Messages.Add(MessageKind.Danger, "The fat in the stew pot's caught, and the kitchen with it!", at);
+        Director.Alarm.Raise(sim, at, "Fire in the kitchen!");
+    }
 
     /// <summary>
     /// One step of a pot: the heat follows the fire (or falls without one), it cooks while it's hot
@@ -421,6 +491,8 @@ public static class Cooking
         if (!IsPot(sim, station))
             return null;
         var w = sim.World;
+        if (Flaring(sim, station))
+            return "Clap the lid on!";
         if (AvatarSystem.Supply(sim, cook, d => Takes(sim, station, d)) is { IsNull: false } food)
             return $"Put the {w.Get<Thing>(food).Def.Label} in the pot";
         if (!w.TryGet<StewPot>(station, out var p) || p.Empty)
@@ -438,6 +510,8 @@ public static class Cooking
             return;
         var cell = w.Get<Thing>(station).Cell;
         var p = PotOf(sim, station);
+        if (step == PotStep.Next && Flaring(sim, station))
+            step = PotStep.Lid;
         if (step == PotStep.Next)
         {
             if (AvatarSystem.Supply(sim, cook, d => Takes(sim, station, d)) is { IsNull: false })
@@ -472,6 +546,9 @@ public static class Cooking
                 if (p.Empty)
                     return;
                 WorkSystem.Start(sim, cook, SeasonSession.For(sim, station));
+                return;
+            case PotStep.Lid:
+                Lid(sim, cook, station);
                 return;
             case PotStep.Sniff:
                 if (SniffSession.For(sim, station) is { } sniff)
@@ -510,6 +587,9 @@ public enum PotStep : byte
 
     /// <summary>Smell it for whether something in it has turned (<see cref="SniffSession"/>).</summary>
     Sniff,
+
+    /// <summary>Clap the lid on a pot that's flared up (<see cref="Cooking.Lid"/>).</summary>
+    Lid,
 }
 
 /// <summary>
@@ -539,8 +619,20 @@ public sealed class CookingSystem : ISimSystem
             var lit = Cooking.Lit(sim, e);
             var speed = Cooking.SpeedOf(p);
             var tended = p.TendedUntil > now;
+            var fatty = Cooking.Fatty(p);
             for (var i = 0; i < Interval; i++)
+            {
                 Cooking.Step(ref p.Heat, p.Flame, lit, ref p.Doneness, ref p.Scorch, Cooking.Untended, false, tended ? Cooking.TendedCatch : 1f, speed);
+                // Left at a rolling boil, a fatty pot spits into the fire. The roll is a hash of the
+                // pot and the tick, so it shifts nobody else's.
+                if (p.FlareUntil == 0 && Cooking.Flares(p.Heat, fatty, SimRandom.Hash(e.Index, (int)(now + i), (uint)sim.Seed + 0x6EA5Eu) / (float)uint.MaxValue))
+                {
+                    p.FlareUntil = now + i + Cooking.FlareSteps;
+                    sim.Messages.Add(MessageKind.Danger, "The fat's caught in the stew pot: flames over it!", w.Get<Thing>(e).Cell);
+                }
+            }
+            if (p.FlareUntil != 0 && now >= p.FlareUntil)
+                Cooking.Catch(sim, e);
             if (p.Empty)
             {
                 p.Doneness = p.Scorch = 0f;

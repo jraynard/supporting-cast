@@ -198,3 +198,43 @@ public sealed class DressJob(Entity block, Entity larder) : Job
         Butchery.DressAll(Sim, larder);
     }
 }
+
+/// <summary>
+/// An AI cook goes after a rat in its larder with whatever's in its hand (the kitchen knife): free
+/// movement and blows, as a player would, and the rat darting off.
+/// </summary>
+public sealed class RatJob(Entity rat) : Job
+{
+    /// <summary>How long it chases one before giving it up for now.</summary>
+    public const int ChaseTicks = SimClock.TicksPerSecond * 30;
+
+    public override Entity Focus => rat;
+
+    public static Job? For(Simulation sim, Entity pawn)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace || !trade.Def.Serving(ServiceKind.Meal))
+            return null;
+        var inn = ShopSystem.BuildingOf(sim, workplace);
+        if (inn.IsNull || !Combat.CombatRules.Attacks(sim, pawn).Any(a => !a.Ranged))
+            return null;
+        var at = w.Get<Position>(pawn).Cell;
+        foreach (var rat in Hospitality.RatSystem.In(sim, inn, at))
+            if (!sim.Reservations.IsReservedByOther(rat, pawn) && Navigation.CanReach(sim, pawn, at, w.Get<Position>(rat).Cell, PathEnd.Touch))
+                return new RatJob(rat);
+        return null;
+    }
+
+    protected override IEnumerable<JobStatus> Run()
+    {
+        Report = "Chasing a rat";
+        if (Combat.CombatRules.Attacks(Sim, Pawn).FirstOrDefault(a => !a.Ranged) is not { } attack || !Reserve(rat))
+        {
+            Fail("can't go after it");
+            yield break;
+        }
+        var until = Sim.Clock.Tick + ChaseTicks;
+        foreach (var s in FightFree(rat, attack, () => Sim.Clock.Tick < until && Alive(rat) && !Get<Creature>(rat).Dead, 0f, 16f))
+            yield return s;
+    }
+}

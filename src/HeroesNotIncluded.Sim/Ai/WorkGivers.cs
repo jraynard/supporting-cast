@@ -40,7 +40,7 @@ public sealed class WorkGivers
                     WorkType.Refuel => Refuel(sim, pawn),
                     WorkType.Construct => Shops.SellJob.For(sim, pawn) ?? Construct(sim, pawn) ?? Deconstruct(sim, pawn),
                     WorkType.Craft => Shops.SellJob.For(sim, pawn) ?? Shops.MendJob.For(sim, pawn) ?? Tinkering.OpenBoxJob.For(sim, pawn) ?? Tinkering.AppraiseJob.For(sim, pawn) ?? Tinkering.WagonJob.For(sim, pawn) ?? Tinkering.MendBreachJob.For(sim, pawn) ?? Craft(sim, pawn, type), // a sale is quick, a mend is not
-                    WorkType.Cook => Shops.ServeJob.For(sim, pawn) ?? Shops.LodgeJob.For(sim, pawn) ?? Shops.SellJob.For(sim, pawn) ?? Shops.TapJob.For(sim, pawn) ?? Shops.WashJob.For(sim, pawn) ?? Shops.CookPotJob.For(sim, pawn) ?? Shops.DressJob.For(sim, pawn) ?? Shops.MakeBedJob.For(sim, pawn) ?? Shops.CleanJob.For(sim, pawn) ?? Craft(sim, pawn, type),
+                    WorkType.Cook => Shops.RatJob.For(sim, pawn) ?? Shops.ServeJob.For(sim, pawn) ?? Shops.LodgeJob.For(sim, pawn) ?? Shops.SellJob.For(sim, pawn) ?? Shops.TapJob.For(sim, pawn) ?? Shops.WashJob.For(sim, pawn) ?? Shops.CookPotJob.For(sim, pawn) ?? Shops.DressJob.For(sim, pawn) ?? Shops.MakeBedJob.For(sim, pawn) ?? Shops.CleanJob.For(sim, pawn) ?? Craft(sim, pawn, type),
                     WorkType.Hunt => Butcher(sim, pawn) ?? Hunt(sim, pawn),
                     WorkType.Fish => Fish(sim, pawn),
                     WorkType.Mine => Harvest(sim, pawn, type) ?? Dig(sim, pawn),
@@ -578,6 +578,32 @@ public sealed class WorkGivers
 
     // ---------------- Hauling & refueling ----------------
 
+    /// <summary>
+    /// Whether <paramref name="pawn"/> keeps this fire: anyone, unless it's in a staff-only room (the
+    /// inn's kitchen), where only those who cook there do. A player cook feeds it by hand.
+    /// </summary>
+    public static bool FeedsHere(Simulation sim, Entity pawn, Entity fire, in Thing thing)
+    {
+        if (!AiQueries.StaffOnly(sim, Environment.Warmth.FireCell(thing)))
+            return true;
+        return CooksAt(sim, pawn, Buildings.Of(sim, fire));
+    }
+
+    /// <summary>Whether <paramref name="pawn"/> is the cook of <paramref name="building"/>: its kitchen's fires and stores are theirs.</summary>
+    public static bool CooksAt(Simulation sim, Entity pawn, Entity building) =>
+        !building.IsNull && sim.World.TryGet<Trade>(pawn, out var trade) && trade.Def.Serving(ServiceKind.Meal)
+        && trade.Def.WorkplaceDef is { } workplace && Shops.ShopSystem.BuildingOf(sim, workplace) == building;
+
+    /// <summary>Kept in a staff-only room (the kitchen's larder, its log basket) and <paramref name="pawn"/> isn't its cook: not theirs to take.</summary>
+    public static bool KitchenStock(Simulation sim, Entity pawn, Entity item)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Stored>(item, out var st) || !w.IsAlive(st.In) || !w.TryGet<Thing>(st.In, out var box)
+            || !AiQueries.StaffOnly(sim, box.Cell))
+            return false;
+        return !CooksAt(sim, pawn, Buildings.Of(sim, st.In));
+    }
+
     private static Job? Refuel(Simulation sim, Entity pawn)
     {
         var w = sim.World;
@@ -590,6 +616,8 @@ public sealed class WorkGivers
                 continue;
             if (props.OnDemand && !Crafting.WantsFiring(sim, e))
                 continue; // a cold kiln with nothing to make stays cold
+            if (!FeedsHere(sim, pawn, e, thing))
+                continue; // the kitchen's fires are its cook's to keep
             // A kiln whose fuel can't reach what's wanted (bronze needs more than a wood fire) gets a
             // hotter one put in, however full it is; otherwise only when it runs low.
             var wanted = props.OnDemand ? Crafting.HeatToMake(sim, e, pawn) : 0f;
