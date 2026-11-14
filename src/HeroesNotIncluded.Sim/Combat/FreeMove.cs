@@ -245,7 +245,9 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
     /// The cell a free mover in <paramref name="from"/> stands in with its middle moved to
     /// <paramref name="at"/>, or null if it can't go there. Into a neighbouring cell only as the
     /// walking links allow (<see cref="NavGraph"/>: on the level, else up or down a stair or slope),
-    /// so levels change just where walking would change them, and a drop or a wall stops you.
+    /// so levels change just where walking would change them, and a drop or a wall stops you. Where
+    /// both levels are open, you stay on yours, except stepping off the top of a stair the way it
+    /// climbs (<see cref="Map.ClimbOf"/>): that's the floor above, not the room under it.
     /// </summary>
     public static int3? Into(Simulation sim, int3 from, float2 at, int3? perch = null)
     {
@@ -255,6 +257,7 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         var map = sim.Map;
         if (!map.InBounds(from))
             return null;
+        var upward = map.Climb[map.Idx(from)] == ClimbKind.Ramp && map.ClimbOf(from.X, from.Y, from.Z) == new int2(to.X - from.X, to.Y - from.Y);
         Span<NavGraph.Step> steps = stackalloc NavGraph.Step[NavGraph.MaxSteps];
         var count = NavGraph.Neighbors(new Maps.MapNav(map), map.Idx(from), steps);
         int3? found = null;
@@ -263,7 +266,7 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
             var c = map.CellOf(steps[k].Index);
             if (c.X != to.X || c.Y != to.Y)
                 continue;
-            if (c.Z == from.Z)
+            if (upward ? c.Z == from.Z + 1 : c.Z == from.Z)
             {
                 found = c;
                 break;

@@ -18,14 +18,8 @@ public static class Stairs
     /// <summary>How far past its low edge a flight reaches into the cell at its foot, when that's clear.</summary>
     public const float Lead = 0.5f;
 
-    /// <summary>The way a ramp climbs: towards the first neighbour one level up that can be stood on.</summary>
-    public static int2 ClimbOf(Map map, int x, int y, int z)
-    {
-        foreach (var d in Map.Neighbors4)
-            if (map.InBounds(x + d.X, y + d.Y, z + 1) && map.Standable(map.Idx(x + d.X, y + d.Y, z + 1)))
-                return d;
-        return new int2(0, -1);
-    }
+    /// <summary>The way a ramp climbs (<see cref="Map.ClimbOf"/>, which free movement follows too).</summary>
+    public static int2 ClimbOf(Map map, int x, int y, int z) => map.ClimbOf(x, y, z);
 
     /// <summary>The ramp's def at a cell, or null.</summary>
     public static ThingDef? RampAt(Simulation sim, int x, int y, int z)

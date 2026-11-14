@@ -274,6 +274,34 @@ public class FreeCombatTests
     }
 
     [Fact]
+    public void OffTheTopOfAStairIsTheFloorAboveNotTheRoomUnderIt()
+    {
+        var (sim, me) = Village();
+        var map = sim.Map;
+        // A stair whose climb has the room below open too: walking on, the floor above is where you go.
+        int3? stair = null;
+        for (var i = 0; i < map.Block.Length && stair == null; i++)
+        {
+            if (map.Climb[i] != Narsil.Sim.Grid.ClimbKind.Ramp)
+                continue;
+            var c = map.CellOf(i);
+            var d = map.ClimbOf(c.X, c.Y, c.Z);
+            var ahead = new int3(c.X + d.X, c.Y + d.Y, c.Z);
+            if (map.Passable(ahead) && map.Standable(map.Idx(ahead)) && map.Standable(map.Idx(ahead with { Z = c.Z + 1 })))
+                stair = c;
+        }
+        Assert.True(stair != null, "Millbrook has a stair up from a room");
+        var from = stair!.Value;
+        var climb = map.ClimbOf(from.X, from.Y, from.Z);
+        sim.World.Get<Position>(me) = Position.At(from);
+        sim.ApplyNow(new AvatarMoveCommand(me, climb));
+        for (var t = 0; t < SimClock.TicksPerSecond * 2 && sim.World.Get<Position>(me).Cell.Z == from.Z; t++)
+            sim.Tick();
+        Assert.Equal(from.Z + 1, sim.World.Get<Position>(me).Cell.Z);
+        Assert.Equal(from.Z + 1, sim.World.Get<Position>(me).Pos.Z);
+    }
+
+    [Fact]
     public void ASheathedWeaponDoesntStrikeAndABlowDrawsIt()
     {
         var (sim, me) = Village();

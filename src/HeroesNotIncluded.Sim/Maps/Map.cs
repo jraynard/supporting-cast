@@ -434,6 +434,18 @@ public sealed class Map
 
     public static readonly int2[] Neighbors4 = [new(1, 0), new(-1, 0), new(0, 1), new(0, -1)];
 
+    /// <summary>
+    /// The way a ramp at a cell climbs: towards the first neighbour one level up that can be stood
+    /// on (north if none). Walking off it that way takes you up; the renderer draws its steps that way.
+    /// </summary>
+    public int2 ClimbOf(int x, int y, int z)
+    {
+        foreach (var d in Neighbors4)
+            if (InBounds(x + d.X, y + d.Y, z + 1) && Standable(Idx(x + d.X, y + d.Y, z + 1)))
+                return d;
+        return new int2(0, -1);
+    }
+
     public static readonly int2[] Neighbors8 =
     [
         new(1, 0), new(-1, 0), new(0, 1), new(0, -1),
