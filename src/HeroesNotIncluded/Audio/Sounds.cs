@@ -35,6 +35,9 @@ public static class Sounds
     public const string Scrub = "work.scrub";
     public const string Cloth = "work.cloth";
 
+    // A ghost's sign: something gives under no one's weight.
+    public const string Creak = "ghost.creak";
+
     // The tinker and the empath.
     public const string Click = "tinker.click";
     public const string Ratchet = "tinker.ratchet";
@@ -73,7 +76,7 @@ public static class Sounds
     [
         UiOpen, UiClose, UiCoin, UiBell, UiGood,
         AnvilGood, AnvilFair, AnvilPoor, AnvilCold, ForgeFire, ForgeBellows, ForgeQuench, ForgeSteam, Grind,
-        PotBubble, PotStir, Pinch, Pour, Fizz, Clink, Knock, Scrub, Cloth,
+        PotBubble, PotStir, Pinch, Pour, Fizz, Clink, Knock, Scrub, Cloth, Creak,
         Click, Ratchet, Rune, Weave, Hum,
         Swing, Clash, Wound, Bow, Miss, Din, Parry, Block, Thrust, Heavy, Roar, Breath, Wings,
         Wind, Birds, Night, River, Hearth, Blaze, Crowd,

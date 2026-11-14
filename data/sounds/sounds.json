@@ -28,6 +28,7 @@
     "bar.fizz":   { "files": ["amb/bar_fizz.ogg"], "gain": 0.35 },
     "bar.clink":  { "files": ["sfx/bar_clink_rec_*.ogg"], "gain": 0.6, "pitch": [0.95, 1.05] },
     "bar.knock":  { "files": ["sfx/bar_knock_rec_*.ogg"], "gain": 0.8, "pitch": [0.95, 1.05] },
+    "ghost.creak": { "files": ["sfx/ghost_creak_*.ogg"], "gain": 0.8, "pitch": [0.9, 1.05] },
     "work.scrub": { "files": ["sfx/work_scrub_*.ogg"], "gain": 0.6, "pitch": [0.9, 1.1], "max": 2 },
     "work.cloth": { "files": ["sfx/work_cloth_rec_*.ogg"], "gain": 0.7, "pitch": [0.9, 1.1], "max": 2 },
 

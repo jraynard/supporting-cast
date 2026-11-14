@@ -293,6 +293,24 @@ def knock(rng):
     return norm(fade_edges(s), 0.8)
 
 
+
+def creak(rng):
+    """A slow door or floorboard: stick-slip pulses, their rate gliding up and wavering, through wood's resonances."""
+    seconds = rng.uniform(0.8, 1.2)
+    n = int(seconds * RATE)
+    t = np.linspace(0, 1, n)
+    f0 = rng.uniform(45, 70)
+    rate = f0 + f0 * rng.uniform(0.6, 1.2) * t ** 1.4 + f0 * 0.15 * np.sin(2 * np.pi * rng.uniform(2, 4) * t)
+    phase = np.cumsum(rate / RATE)
+    hits = np.flatnonzero(np.diff(np.floor(phase)) > 0)
+    x = np.zeros(n)
+    x[hits] = rng.uniform(0.5, 1.0, len(hits))
+    x = band(x, lo=200)
+    body = sum(a * resonate(x, np.full(n, f), f / q) for f, a, q in
+               [(rng.uniform(380, 460), 1.0, 9), (rng.uniform(900, 1100), 0.7, 10), (rng.uniform(1700, 2000), 0.4, 12), (rng.uniform(2700, 3100), 0.2, 14)])
+    body += band(noise(rng, seconds), lo=600, hi=4000) * 0.02
+    return norm(fade_edges(body * np.sin(np.pi * t) ** 0.7), 0.7)
+
 def rustle(rng, seconds=0.35):
     n = noise(rng, seconds)
     grains = (rng.uniform(0, 1, len(n)) > 0.985) * rng.uniform(0.3, 1, len(n))
@@ -653,6 +671,7 @@ def catalogue():
         "bar_fizz": ("amb", [fizz_loop]),
         "bar_clink": ("sfx", v(clink, 4)),
         "bar_knock": ("sfx", v(knock, 3)),
+        "ghost_creak": ("sfx", v(creak, 3)),
         "work_scrub": ("sfx", v(scrub, 3)),
         "work_cloth": ("sfx", v(rustle, 3)),
         "tinker_click": ("sfx", v(click, 4)),

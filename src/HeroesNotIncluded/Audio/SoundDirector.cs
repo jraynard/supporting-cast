@@ -279,8 +279,9 @@ public sealed class SoundDirector(AudioEngine audio)
             switch (sign.Kind)
             {
                 case HeroesNotIncluded.Sim.Afterlife.HauntKind.Knock:
-                    audio.Play(Sounds.Knock, at, gain: 0.9f, pitch: 0.75f);
-                    audio.Play(Sounds.Knock, at, gain: 0.7f, pitch: 0.7f, delay: 0.35f);
+                    // A creak, as of a weight shifting, then one dull knock.
+                    audio.Play(Sounds.Creak, at, gain: 0.8f);
+                    audio.Play(Sounds.Knock, at, gain: 0.8f, pitch: 0.7f, delay: 0.9f);
                     break;
                 case HeroesNotIncluded.Sim.Afterlife.HauntKind.Chill:
                     audio.Play(Sounds.Wind, at, gain: 0.35f, pitch: 1.4f);
