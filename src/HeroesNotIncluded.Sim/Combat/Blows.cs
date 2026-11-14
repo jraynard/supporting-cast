@@ -393,6 +393,9 @@ public static class Blows
             // Into the air, or they stepped out of it: dashed clear, it's a dodge.
             var dodged = w.IsAlive(windup.Target) && w.TryGet<Guard>(windup.Target, out var tg) && DodgedAt(tg, windup.Impact, IsDragon(sim, attacker));
             Report(sim, attacker, windup.Target, dodged ? BlowOutcome.Dodged : BlowOutcome.Miss, windup.Heavy);
+            // An arrow that finds nobody still flies, to the first wall or as far as it carries (seen and heard).
+            if (attack.Ranged)
+                RealtimeAttacks.Flew(sim, attacker, Reach.ArrowEnd(sim, w.Get<Position>(attacker).Pos, windup.Aim, attack.Range));
         }
         foreach (var victim in struck)
             Meet(sim, attacker, victim, windup, attack);

@@ -576,5 +576,19 @@ public class FreeCombatTests
         var drawn = FreeMoveSystem.Wanted(sim, me, new float2(1, 0), true, null);
         Assert.True(drawn.X < free.X * 0.8f);
     }
+
+    [Fact]
+    public void AnArrowThatFindsNobodyStillFlies()
+    {
+        var (sim, me) = Ring("Bow");
+        sim.ApplyNow(new BowCommand(me, true, false, 0f, sim.Clock.Tick));
+        sim.TickMany(Archery.DrawTicks(sim, me, Archery.Bow(sim, me)!));
+        sim.ApplyNow(new BowCommand(me, true, true, 0f, sim.Clock.Tick));
+        sim.TickMany(2);
+        // Seen and heard flying, to the fence east.
+        var shot = Assert.Single(sim.RecentShots);
+        Assert.True(shot.Ranged && !shot.Hit);
+        Assert.True(shot.To.X > 24f && shot.To.X < 28f, $"stopped at {shot.To}");
+    }
 }
 

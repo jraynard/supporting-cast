@@ -23,8 +23,10 @@ One way to fight, everywhere.
 - The parry window is fairer: from a fifth of a second before a blow's flash to a moment after it,
   so throwing your guard up as you see the flash counts, and the result shows at once rather than a
   beat later.
-- Bows: hold right click to draw and aim (a line shows where the arrow will fly, turning amber
-  once the bow's fully drawn), then left click to loose. Hold on and the next arrow's drawn.
+- Bows: hold right click to draw and aim (a line on the ground shows where the arrow will fly,
+  turning ember once the bow's fully drawn, grey if you're too winded), then left click to loose.
+  Click a moment early and it looses as soon as it's drawn. Hold on and the next arrow's drawn.
+  Every arrow is seen flying now, including the ones that hit nothing.
 - Raiders with nobody left to fight give up and go, instead of standing in the square for hours
   while the hurt bleed out indoors.
 - Mac: the app opens once you've cleared the quarantine flag (README-ALPHA). Its signature was

@@ -30,6 +30,14 @@ public static class RealtimeAttacks
         return result;
     }
 
+    /// <summary>An arrow that struck nobody, flying from <paramref name="attacker"/> to <paramref name="to"/>: for the renderer and the sound.</summary>
+    public static void Flew(Simulation sim, Entity attacker, float3 to)
+    {
+        var now = sim.Clock.Tick;
+        sim.RecentShots.RemoveAll(s => now - s.Tick > SimClock.TicksPerSecond * 5);
+        sim.RecentShots.Add(new ShotEvent(now, sim.World.Get<Position>(attacker).Pos, to, Ranged: true, Hit: false));
+    }
+
     /// <summary>What every attack leaves: the shot for the renderer, a hunt counted, and the target (and its herd) provoked.</summary>
     private static void After(Simulation sim, Entity attacker, Entity target, AttackDef attack, AttackResult result, bool wasAlive)
     {

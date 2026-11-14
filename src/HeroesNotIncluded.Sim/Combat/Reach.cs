@@ -112,6 +112,23 @@ public static class Reach
         return hit;
     }
 
+    /// <summary>Where an arrow loosed from <paramref name="from"/> along <paramref name="aim"/> stops, striking nobody: the first wall, or <paramref name="range"/> on.</summary>
+    public static float3 ArrowEnd(Simulation sim, float3 from, float aim, float range)
+    {
+        var map = sim.Map;
+        var dir = new float3(DetMath.Cos(aim), DetMath.Sin(aim), 0);
+        var eye = from + new float3(0, 0, 0.6f);
+        for (var d = 0.3f; d < range; d += 0.2f)
+        {
+            var p = eye + dir * d;
+            var c = new int3((int)MathF.Floor(p.X), (int)MathF.Floor(p.Y), (int)MathF.Floor(p.Z));
+            if (!map.InBounds(c) || map.IsSolid(map.Idx(c))
+                || map.Structure[map.Idx(c)] is { IsNull: false } s && sim.World.Get<Thing>(s).Def.Building?.IsWall == true)
+                return from + dir * d;
+        }
+        return from + dir * range;
+    }
+
     /// <summary>Does <paramref name="e"/> face <paramref name="from"/>, near enough for its guard to meet a blow from there?</summary>
     public static bool Facing(Simulation sim, Entity e, Entity from)
     {

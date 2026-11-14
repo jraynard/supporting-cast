@@ -1040,36 +1040,53 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         }
     }
 
-    /// <summary>The local player's bow, drawn and aimed: where an arrow would fly, how far drawn, and whether it's ready.</summary>
-    public (float3 From, float3 To, float Drawn, bool Ready)? AimLine { get; set; }
+    /// <summary>The local player's bow, drawn and aimed: where an arrow would fly, how far drawn, whether it's ready, and whether they're too winded to loose it.</summary>
+    public (float3 From, float3 To, float Drawn, bool Ready, bool Winded)? AimLine { get; set; }
 
     /// <summary>
-    /// The aim line (<see cref="AimLine"/>): dots from the bow to where the arrow would stop,
-    /// filling out as the bow's drawn, parchment while drawing and amber once it's ready, with a
-    /// ring where it'd strike.
+    /// The aim line (<see cref="AimLine"/>): a ribbon on the ground from your feet to where the arrow
+    /// would stop, edged dark so it reads on sand or grass. It reaches out as the bow's drawn (pale),
+    /// turns ember once it's ready, with a ring where it'd strike; grey if you've no wind to loose it.
     /// </summary>
     private void DrawAimLine()
     {
         if (AimLine is not { } line)
             return;
         var white = S(TextureAtlas.White);
-        var d = line.To - line.From;
-        var length = MathF.Sqrt(d.X * d.X + d.Y * d.Y);
+        var flat = new float3(line.To.X - line.From.X, line.To.Y - line.From.Y, 0);
+        var length = MathF.Sqrt(flat.X * flat.X + flat.Y * flat.Y);
         if (length < 0.05f)
             return;
-        var dir = d * (1f / length);
-        var c = line.Ready ? BlowColor : new float4(0.85f, 0.77f, 0.61f, 0.6f);
-        var shown = length * (0.35f + 0.65f * line.Drawn);
-        for (var r = 0.45f; r < shown; r += 0.32f)
+        var dir = flat * (1f / length);
+        var side = new float3(-dir.Y, dir.X, 0);
+        var c = line.Winded ? new float4(0.6f, 0.6f, 0.6f, 0.85f) : line.Ready ? HeavyBlowColor : new float4(1f, 1f, 1f, 0.95f);
+        var start = 0.35f;
+        var shown = start + (length - start) * (line.Ready ? 1f : 0.25f + 0.75f * line.Drawn);
+        var ground = new float3(line.From.X, line.From.Y, line.From.Z + 0.06f);
+        void Ribbon(float width, uint color)
         {
-            var fade = 1f - 0.5f * r / Math.Max(1f, length);
-            Billboard(white, line.From + dir * r - new float3(0, 0, 0.05f), 0.07f, 0.07f, Rgba.Pack(c.X, c.Y, c.Z, c.W * fade), Quad.Unlit | Quad.Always, translucent: true);
+            var o = ground + dir * start - side * (width * 0.5f);
+            _quads.Add(new Quad
+            {
+                Origin = o,
+                AxisU = dir * (shown - start),
+                AxisV = side * width,
+                Flags = Quad.Unlit | Quad.Always,
+                Color = color,
+                Ao = Quad.NoAo,
+                Uv = white.Uv,
+            }, translucent: true);
         }
+        Ribbon(0.22f, Rgba.Pack(0.08f, 0.05f, 0.03f, line.Ready ? 0.55f : 0.8f)); // the dark edge
+        Ribbon(line.Ready ? 0.1f : 0.08f, Rgba.Pack(c.X, c.Y, c.Z, c.W));
+        var end = ground + dir * shown;
         if (line.Ready)
         {
-            var end = new float3(line.To.X, line.To.Y, MathF.Floor(line.From.Z - 0.5f) + 0.06f);
-            Decal(S("ui/blow_ring"), end, 0.55f, Rgba.Pack(c.X, c.Y, c.Z, 0.9f), Quad.Unlit | Quad.Always, translucent: true);
+            var pulse = 0.8f + 0.2f * MathF.Sin(_now * 10f);
+            Decal(S("ui/blow_ring"), end, 0.75f * pulse, Rgba.Pack(c.X, c.Y, c.Z, 0.95f), Quad.Unlit | Quad.Always, translucent: true);
         }
+        else
+            Decal(S("ui/blow_ring"), end, 0.4f, Rgba.Pack(c.X, c.Y, c.Z, 0.6f), Quad.Unlit | Quad.Always, translucent: true);
     }
 
     /// <summary>The local player's aim (radians on the map) and whose it is, drawn before the sim hears of it.</summary>
