@@ -140,19 +140,25 @@ public class SpeechTests
     }
 
     [Fact]
-    public void TheSleepingAndTheDownedHearNothing()
+    public void TheSleepingAndTheSenselessHearNothing()
     {
         var sim = World();
         var a = Person(sim, 10, 10);
         var asleep = Person(sim, 11, 10);
-        var downed = Person(sim, 10, 11);
+        var senseless = Person(sim, 10, 11);
+        var collapsed = Person(sim, 9, 10);
         sim.World.Get<Mind>(asleep).Asleep = true;
-        sim.World.Get<Creature>(downed).Downed = true;
+        sim.World.Get<Creature>(senseless).Downed = true;
+        var h = sim.World.Get<Health>(senseless);
+        h.Blood = 0.25f; // too little to stay awake
+        h.Changed();
+        sim.World.Get<Creature>(collapsed).Downed = true; // down, but with their wits
 
         var u = sim.Speech.Say(sim, a, "wake up", Volume.Say)!;
 
         Assert.Null(HeardBy(u, asleep));
-        Assert.Null(HeardBy(u, downed));
+        Assert.Null(HeardBy(u, senseless));
+        Assert.NotNull(HeardBy(u, collapsed));
     }
 
     [Fact]

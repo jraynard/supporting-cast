@@ -125,7 +125,10 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     /// <summary>The preset building your character's standing in and the level they're on (its roof's off, and what's above them), or Entity.Null.</summary>
     private (Entity Building, int Level) InsideBuilding() =>
-        HasAvatar && _sim.World.TryGet<Position>(_avatar, out var p) ? (Buildings.At(_sim, p.Cell), p.Cell.Z) : (Entity.Null, int.MaxValue);
+        !Eye.IsNull && _sim.World.TryGet<Position>(Eye, out var p) ? (Buildings.At(_sim, p.Cell), p.Cell.Z) : (Entity.Null, int.MaxValue);
+
+    /// <summary>Who the view is about: your character, or your ghost; null for the overseer.</summary>
+    private Entity Eye => HasAvatar ? _avatar : Ghosting ? _ghost : Entity.Null;
 
     /// <summary>How wide (cells, on screen) the x-ray circle is.</summary>
     private const float XrayRadius = 1.7f;
@@ -138,6 +141,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     {
         if (HasAvatar && _sim.World.IsAlive(_avatar))
             return (_renderer.DrawPos(_sim, _avatar, _sim.World.Get<Position>(_avatar).Pos), XrayRadius);
+        if (Ghosting)
+            return (_ghostPos, XrayRadius);
         if (!_sim.Map.InBounds(_hoverPastWalls) || Host.Input.MouseCaptured)
             return null;
         return (Position.CenterOf(_hoverPastWalls), XrayRadius);
@@ -189,6 +194,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     /// <summary>Debug (<c>--raid-test</c>): arm your character and the muster rack, and bandits come by the north road at once (<see cref="RaidDrill"/>).</summary>
     public bool RaidTest { get; init; }
+
+    /// <summary>Debug (<c>--die-at SECONDS</c>): your character drops dead this long in, to try being a ghost. Negative: never.</summary>
+    public float DieAt { get; init; } = -1f;
 
     /// <summary>Debug/screenshots (<c>--furniture-demo</c>): wide furniture and roofs beside the landing (<see cref="FurnitureShowcase"/>).</summary>
     public bool FurnitureDemo { get; init; }
@@ -385,16 +393,18 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         UpdatePadUi();
         HandleWheel();
         HandleKeys(input);
-        // WASD walks your character, not the camera: panning it here would also shift the cursor's cell.
-        _cameraController.PanSpeed = HasAvatar ? 0f : _basePanSpeed * Settings.Current.CameraPanSpeed;
+        // WASD walks your character (or drifts your ghost), not the camera: panning it here would also shift the cursor's cell.
+        var embodied = HasAvatar || Ghosting;
+        _cameraController.PanSpeed = embodied ? 0f : _basePanSpeed * Settings.Current.CameraPanSpeed;
         // Q is a guard for a character: the view turns on its own actions (Z/X, the d-pad). Without
         // one (god mode, the demos) Z and X are the toolbar's, and the view turns on Q/E as before.
-        (_cameraController.RotateLeftKey, _cameraController.RotateRightKey) = HasAvatar ? ((GlfwKey?)null, (GlfwKey?)null) : (GlfwKey.Q, GlfwKey.E);
+        (_cameraController.RotateLeftKey, _cameraController.RotateRightKey) = embodied ? ((GlfwKey?)null, (GlfwKey?)null) : (GlfwKey.Q, GlfwKey.E);
         HandleCameraActions();
         _cameraController.Update(input, dt);
 
         UpdateHover(input.MousePosition);
         HandleAvatarInput(input, dt);
+        HandleGhostInput(dt);
         _buildUp = input.IsKeyDown(GlfwKey.LeftControl) || input.IsKeyDown(GlfwKey.RightControl);
         HandleMouse(input, dt);
         if (_coop != null)
@@ -415,6 +425,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         UpdateWork(dt);
         RunBots();
         FollowAvatar(); // after the ticks, so the camera shows this frame's position
+        UpdateGhost();
         UpdateSound(dt);
     }
 
@@ -599,8 +610,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     {
         if (IsCoopClient)
             return; // the host keeps the clock
-        if (HasAvatar && !_devMode)
-            speed = 1; // one speed for whoever plays a character, and no pausing: the town doesn't wait
+        if ((HasAvatar || (Spectating && _coop != null)) && !_devMode)
+            speed = 1; // one speed for whoever plays a character, and no pausing: the town doesn't wait (nor for the dead, with company)
         if (speed == 0 && _speed != 0)
             _speedBeforePause = _speed;
         _speed = speed;
@@ -679,7 +690,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         var map = Controls.Map;
         var free = !Working;
         _cameraController.ZoomHeld = free ? (map.Down(Act.ZoomIn) ? 1f : 0f) - (map.Down(Act.ZoomOut) ? 1f : 0f) : 0f;
-        if (HasAvatar && free)
+        if ((HasAvatar || Ghosting) && free)
             _cameraController.Turn = (map.Pressed(Act.TurnRight) ? 1 : 0) - (map.Pressed(Act.TurnLeft) ? 1 : 0);
     }
 
@@ -715,7 +726,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             return;
         var map = _sim.Map;
         var cut = map.Depth - 1;
-        if (HasAvatar && _sim.World.TryGet<Position>(_avatar, out var pos) && InsideBuilding().Building.IsNull)
+        if (!Eye.IsNull && _sim.World.TryGet<Position>(Eye, out var pos) && InsideBuilding().Building.IsNull)
         {
             var c = pos.Cell;
             for (var z = c.Z + 1; z < map.Depth && cut == map.Depth - 1; z++)
@@ -741,8 +752,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     private void HandleMouse(Input input, float dt)
     {
-        if (HandleAdventureMouse(input, dt))
-            return;
+        if (HandleAdventureMouse(input, dt) || Spectating)
+            return; // the dead and the waiting give no orders
         if (input.WasMousePressed(MouseButton.Right))
         {
             if (_tool != ToolKind.Select)

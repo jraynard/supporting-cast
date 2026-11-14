@@ -191,7 +191,8 @@ public sealed partial class VillageGame
             return;
         }
 
-        if (session.Ready && Players.CharacterOf(_sim, session.Me.Id).IsNull)
+        // The dead don't take up another trade: they're ghosts until someone brings them back.
+        if (session.Ready && Players.CharacterOf(_sim, session.Me.Id).IsNull && Sim.Afterlife.Ghosts.Of(_sim, session.Me.Id).IsNull)
         {
             if (_sim.Round.Live)
                 DrawTakeTrade(session, center, middle);

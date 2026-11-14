@@ -249,8 +249,8 @@ public sealed partial class VillageGame
             TextC(Theme.Dim, standing.Dread);
             Gui.ItemTip("How the dungeon weighs on the valley. Quests left unanswered, or gone badly, feed it; if it grips the valley completely, the season is lost.");
         }
-        // Time runs at one speed for whoever plays a character; only god mode and the demos change it.
-        if (!HasAvatar)
+        // Time runs at one speed for whoever plays a character; only god mode, the demos and a lone ghost change it.
+        if (!HasAvatar && !(Spectating && _coop != null))
             for (var s = 0; s < SpeedLabels.Length; s++)
             {
                 if (s > 0)
@@ -260,7 +260,7 @@ public sealed partial class VillageGame
                 Gui.ItemTip(s == 0 ? "Pause [Space]" : $"Speed {s} [Ctrl+{s}]");
             }
         ImGui.EndGroup();
-        if (HasAvatar)
+        if (HasAvatar || Ghosting)
         {
             Gui.Rule();
             DrawJournalStrip();

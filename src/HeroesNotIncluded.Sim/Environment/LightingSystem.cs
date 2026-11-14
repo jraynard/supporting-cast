@@ -37,7 +37,8 @@ public sealed class LightingSystem : ISimSystem
         }
 
         foreach (var (cell, lamp, _) in Systems.Buildings.LitLamps(sim))
-            Splat(sim, cell, lamp.Building!.LightRadius, LampStrength);
+            if (!Afterlife.Hauntings.Guttered(sim, cell)) // a ghost has it dark a while
+                Splat(sim, cell, lamp.Building!.LightRadius, LampStrength);
 
         foreach (var i in sim.Fire.BurningTiles)
             Splat(sim, map.CellOf(i), 2f + 3f * map.Fire[i], map.Fire[i]);

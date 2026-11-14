@@ -327,6 +327,8 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             if (wallFacing is { } f && Footprint.Rotate(0, -1, f) is var back && IsStub(sim, lampCell + new int3(back.X, back.Y, 0)))
                 continue;
             AddModel(lampModel, lampCell, facing, null, Rgba.White, Quad.Level(lampCell.Z), heightScale: WorldScale.FurnitureHeight);
+            if (Viewer?.Dark(lampCell) == true)
+                continue; // guttered: a ghost has it dark a while
             var flicker = 0.45f * lamp.FireSize * (1f + 0.04f * MathF.Sin(_anim.Clock * 3f + lampCell.X * 7 + lampCell.Y));
             Billboard(S("fx/fire"), Position.CenterOf(lampCell) + FireOffset(lamp, facing), flicker * 0.7f, flicker, Rgba.Pack(1f, 0.9f, 0.7f, 0.95f),
                 Quad.Level(lampCell.Z) | Quad.Unlit | Quad.Glow, translucent: true);
@@ -393,6 +395,34 @@ public sealed class WorldRenderer(TextureAtlas atlas)
                 Billboard(S(DesignationIcon(d)), new float3(x + 0.5f, y + 0.5f, floor + 0.22f + bob), 0.4f, 0.4f, Rgba.White, Quad.Level(z) | Quad.Unlit);
             }
         }
+
+        // Signs of the dead, as perceived: a chill's breath hangs in the air.
+        foreach (var sign in (Viewer ?? Perception.For(sim, Entity.Null)).Signs())
+        {
+            if (sign.Kind != Sim.Afterlife.HauntKind.Chill || !InView(sign.Cell))
+                continue;
+            var t = (sim.Clock.Tick - sign.Tick) * 0.03f;
+            for (var k = 0; k < 3; k++)
+            {
+                var drift = new float3(0.25f * MathF.Sin(t + k * 2.1f), 0.25f * MathF.Cos(t * 0.7f + k * 1.3f), 0.5f + 0.15f * k + 0.1f * MathF.Sin(t * 1.3f + k));
+                Billboard(S("fx/breath"), Position.CenterOf(sign.Cell) + drift, 0.6f, 0.45f, Rgba.Pack(0.85f, 0.92f, 1f, 0.35f),
+                    Quad.Level(sign.Cell.Z), translucent: true);
+            }
+        }
+
+        // The dead, seen only by the dead: a pale wisp each, bobbing where it floats.
+        if (Viewer is { Ghostly: true })
+            foreach (var e in w.Each<Sim.Afterlife.Ghost>())
+            {
+                var p = w.Get<Position>(e);
+                if (!InView(p.Cell) || !Seen(e))
+                    continue;
+                var bob = 0.12f * MathF.Sin(sim.Clock.Tick * 0.05f + e.Index);
+                var mine = e == Viewer.Viewer;
+                var tint = mine ? Rgba.Pack(0.7f, 0.85f, 1f, 0.6f) : Rgba.Pack(0.65f, 0.8f, 1f, 0.45f);
+                Billboard(S("fx/breath_core"), p.Pos + new float3(0, 0, 0.55f + bob), 0.45f, 0.6f, tint, Quad.Level(p.Cell.Z) | Quad.Unlit, translucent: true);
+                Billboard(S("fx/breath"), p.Pos + new float3(0, 0, 0.4f + bob), 0.8f, 1.1f, tint, Quad.Level(p.Cell.Z) | Quad.Unlit, translucent: true);
+            }
 
         // Creatures
         foreach (var e in w.Each<Creature>())

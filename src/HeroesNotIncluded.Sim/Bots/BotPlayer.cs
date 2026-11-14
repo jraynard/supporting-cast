@@ -103,11 +103,35 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     /// <summary>The order the bot is seeing to, if any (for tests).</summary>
     public int Task => _task;
 
+    /// <summary>Dead: when someone calls it back, the bot goes to its body and answers.</summary>
+    private void Haunt(Simulation sim, Entity ghost)
+    {
+        var view = Perception.For(sim, ghost);
+        var body = view.MyBody();
+        if (body?.CallingFor is null)
+        {
+            // Nothing calling: see to some unfinished business, if any's in sight.
+            if (view.Business().FirstOrDefault() is { Errand: not null } b && b.Progress is null)
+            {
+                Doing = $"lingering: {b.Errand.Label}";
+                send(new Afterlife.GhostMoveCommand(ghost, b.Cell.X + 0.5f, b.Cell.Y + 0.5f, b.Cell.Z));
+            }
+            return;
+        }
+        Doing = "answering the calling";
+        send(body.CanAnswer ? new Afterlife.AnswerCommand(ghost) : new Afterlife.GhostMoveCommand(ghost, 0, 0, 0, ToBody: true));
+    }
+
     /// <summary>Call once per frame or tick. Does nothing until the bot has a character.</summary>
     public void Tick()
     {
         var sim = world();
         var me = Players.CharacterOf(sim, player);
+        if (me.IsNull && Afterlife.Ghosts.Of(sim, player) is { IsNull: false } ghost)
+        {
+            Haunt(sim, ghost);
+            return;
+        }
         if (me.IsNull || !sim.World.Has<Avatar>(me))
             return;
         var now = sim.Clock.Tick;

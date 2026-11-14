@@ -490,6 +490,7 @@ public sealed class NeedsSystem : ISimSystem
         AiSystem.EndJob(sim, e, sim.World.Get<Mind>(e), false);
         sim.World.Get<Mover>(e).Stop();
         sim.DropGear(e);
+        Afterlife.Ghosts.OnDeath(sim, e, cause);
         MoodSystem.OnDeath(sim, e);
         if (c.Def.Animal != null && !sim.World.Has<Rot>(e))
             sim.World.Add(e, new Rot()); // a carcass to butcher before it goes off

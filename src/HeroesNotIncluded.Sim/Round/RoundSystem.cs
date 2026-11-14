@@ -363,7 +363,8 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     /// </summary>
     public Entity TakeTrade(Simulation sim, Guid player, IReadOnlyList<TradeDef>? wanted, IReadOnlyList<TradeDef>? never)
     {
-        if (!Live || !Players.CharacterOf(sim, player).IsNull)
+        // The dead don't come back as someone else: they're ghosts until they're brought back.
+        if (!Live || !Players.CharacterOf(sim, player).IsNull || !Afterlife.Ghosts.Of(sim, player).IsNull)
             return Entity.Null;
         var (yes, no) = CleanPreferences(wanted, never);
         var w = sim.World;

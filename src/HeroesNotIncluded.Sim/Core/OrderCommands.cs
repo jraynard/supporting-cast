@@ -426,6 +426,18 @@ public sealed record DevRaidCommand(RaiderKindDef Kind, int Count, int3? At = nu
     }
 }
 
+/// <summary>Dev: someone dies where they stand (to try out death and ghosts without waiting on the dragon).</summary>
+public sealed record DevKillCommand(Entity Who) : IDevCommand
+{
+    public void Apply(Simulation sim)
+    {
+        if (!sim.World.IsAlive(Who) || !sim.World.Has<Creature>(Who))
+            return;
+        ref var c = ref sim.World.Get<Creature>(Who);
+        NeedsSystem.Kill(sim, Who, ref c, "died");
+    }
+}
+
 /// <summary>Dev: bring the town's bridge down now, as a strong raid might (<see cref="Tinkering.Repairs.BreakBridge"/>).</summary>
 public sealed record DevBreakBridgeCommand : IDevCommand
 {

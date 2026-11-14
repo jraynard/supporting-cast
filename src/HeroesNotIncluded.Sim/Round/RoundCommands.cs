@@ -36,7 +36,7 @@ public sealed record StartRoundCommand : ISimCommand, IHostCommand
     public void Apply(Simulation sim) => sim.Round.Start(sim);
 }
 
-/// <summary>A player arriving mid-round (or whose character died) takes over an AI villager.</summary>
+/// <summary>A player arriving mid-round takes over an AI villager (not one whose character died: they're a ghost).</summary>
 public sealed record TakeTradeCommand(Guid Player, IReadOnlyList<TradeDef> Wanted, IReadOnlyList<TradeDef> Never)
     : ISimCommand, IPlayerCommand
 {

@@ -64,9 +64,11 @@ public static class Rescues
             return AvatarAction.None;
         var c = w.Get<Creature>(carried);
         var site = map.Structure[map.Idx(cell)];
-        if (!c.Dead && !site.IsNull && !w.Has<Construction>(site) && w.Get<Thing>(site).Def.Building is { IsBed: true } b
-            && !w.Has<ForPrisoners>(site))
-            return new(AvatarActionKind.Carry, $"Lay {c.Name} in the {w.Get<Thing>(site).Label}", cell, carried);
+        if (!site.IsNull && !w.Has<Construction>(site) && w.Get<Thing>(site).Def.Building is { IsBed: true } b
+            && !w.Has<ForPrisoners>(site) && (!c.Dead || (w.Has<Afterlife.Death>(carried) && Buildings.At(sim, cell) is { IsNull: false } at
+                && w.Get<PresetBuilding>(at).Def.Name == "Shrine")))
+            // The dead too, on a shrine's pallet: a body keeps longer there for the empath (Afterlife.Revival).
+            return new(AvatarActionKind.Carry, c.Dead ? $"Lay {c.Name} out on the {w.Get<Thing>(site).Label}" : $"Lay {c.Name} in the {w.Get<Thing>(site).Label}", cell, carried);
         if (!map.Standable(map.Idx(cell)) || !map.Passable(cell))
             return AvatarAction.None;
         if (c.Dead && !ButcherSpots.SpotAt(sim, cell).IsNull)

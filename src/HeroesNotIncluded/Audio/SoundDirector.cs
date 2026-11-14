@@ -73,6 +73,7 @@ public sealed class SoundDirector(AudioEngine audio)
         Dragons();
         Messages(sim);
         Speech(sim, view);
+        Signs(sim, view);
 
         _survey -= dt;
         if (_survey <= 0)
@@ -89,7 +90,7 @@ public sealed class SoundDirector(AudioEngine audio)
     {
         _sim = sim;
         // What happened before we were listening is history.
-        _shotsSeen = _blowsSeen = _breathsSeen = sim.Clock.Tick;
+        _shotsSeen = _blowsSeen = _breathsSeen = _signsSeen = sim.Clock.Tick;
         _messagesSeen = sim.Messages.Total;
         _lineSeen = sim.Speech.Kept.Count > 0 ? sim.Speech.Kept[^1].Id : 0;
         _coins = -1;
@@ -262,6 +263,32 @@ public sealed class SoundDirector(AudioEngine audio)
 
     private readonly List<(float Until, float Distance)> _talking = [];
 
+
+    private long _signsSeen;
+
+    /// <summary>The dead's signs as you perceive them (Sim.Afterlife): a knock where it was, a cold gust for a chill.</summary>
+    private void Signs(Simulation sim, PerceptionView view)
+    {
+        var newest = _signsSeen;
+        foreach (var sign in view.Signs())
+        {
+            if (sign.Tick <= _signsSeen)
+                continue;
+            newest = Math.Max(newest, sign.Tick);
+            var at = ToAudio(new float3(sign.Cell.X + 0.5f, sign.Cell.Y + 0.5f, sign.Cell.Z + 0.5f));
+            switch (sign.Kind)
+            {
+                case HeroesNotIncluded.Sim.Afterlife.HauntKind.Knock:
+                    audio.Play(Sounds.Knock, at, gain: 0.9f, pitch: 0.75f);
+                    audio.Play(Sounds.Knock, at, gain: 0.7f, pitch: 0.7f, delay: 0.35f);
+                    break;
+                case HeroesNotIncluded.Sim.Afterlife.HauntKind.Chill:
+                    audio.Play(Sounds.Wind, at, gain: 0.35f, pitch: 1.4f);
+                    break;
+            }
+        }
+        _signsSeen = newest;
+    }
 
     private void Speech(Simulation sim, PerceptionView view)
     {

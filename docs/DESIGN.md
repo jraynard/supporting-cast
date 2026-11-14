@@ -325,8 +325,22 @@ A traitor serves the Thing Below. They get secret objectives and buy tools from 
 Whisper) with favour earned by completing them. Everything leaves evidence: maker's marks, residue,
 wounds, witnesses. A limited town bell calls a meeting to accuse, vote and exile.
 
-**Death.** Ghosts watch and can be revived. They can only re-enter the round by being revived somehow,
-or perhaps by the traitor if they are a necromancer. They can come back in the next round as a new character.
+**Death.** It sticks. A player whose character dies is a ghost for the rest of the round unless
+someone brings them back; they can come back in the next round as a new character. Taking over a
+villager mid-round is for late joiners only.
+- *Dying.* The downed bleed out unless someone binds them or carries them to bed, and can still
+  speak, weakly, to call for help.
+- *Ghosts* see only what's around them (no allegiances, no hidden properties), through walls and
+  in the dark, and talk among themselves where the living can't hear. A ghost knows where its body
+  lies and who's at it.
+- *Haunting.* A ghost can spend its presence on small signs: a sudden chill, a light that gutters
+  (and a weak one goes out), a knock. The living perceive them but not who made them.
+- *Unfinished business.* Small errands for the dead (sit with the grieving, watch over a sleeper,
+  show a lost party the way), each worth a little Renown.
+- *Coming back.* The empath's rite, "Calling back", woven at a fresh body: most of their mana, and
+  the grave's chill taken on. A body keeps longer on a shrine pallet. The ghost must come and
+  answer. The revived come back downed and weak, once a round. Later, a traitor necromancer
+  (M4), and the Undertaker (M5) for the bodies nobody brings back.
 
 ## Technical decisions
 
@@ -373,7 +387,7 @@ or perhaps by the traitor if they are a necromancer. They can come back in the n
 
 Built, all in `src/HeroesNotIncluded.Sim`, driven only by commands and headless-testable:
 `Round/`, `Perception/`, `Speech/`, `Work/`, `Adventurers/`, `Shops/`, `Favours/`, `Healing/`, `Expeditions/`, `Hospitality/`,
-`Tinkering/`, `Director/` (Renown and Dread so far).
+`Tinkering/`, `Director/` (Renown and Dread so far), `Afterlife/` (death, ghosts, the Calling back).
 Still to come: `Secrets/`, `Reagents/`.
 
 ## Reuse

@@ -1099,3 +1099,36 @@ shared); fights stay real time, Souls-lite.
 - The controls card is two columns and fits 1280x800.
 - `BindingsTests` (Narsil), `ControlsTests`. No sim change: bench hashes as before.
 
+
+### Death and ghosts (2026-11-13)
+Death sticks in a round (DESIGN.md, "Death"); everything is in `Sim/Afterlife/`.
+- **Dying:** a body keeps how and when it died (`Death`). A player's character loses its `Avatar`
+  and leaves a `Ghost`, its own entity with a `Position` and no creature parts, so no creature or
+  avatar query sees it. The dead can't take up another trade (`TakeTrade` is for late joiners);
+  with no player alive, time runs fast (`Players.AllAsleep`). Outside rounds (the practice ring,
+  the demos) nothing changes. The downed can still speak, weakly, while they have their wits
+  (`SpeechSystem.CanSpeak`), and the HUD says they're bleeding out.
+- **Ghosts** drift with the walk keys, see a radius around them through walls and in the dark
+  (`PerceptionView.Ghostly`: no light read, no packs, no secrets), overhear the living
+  (`Utterance.Ghosts`, kept apart from the listeners the living act on) and talk among the dead
+  (`Volume.Ghost`). "You have died", then where your body lies and who's with it (`MyBody`). Ghosts
+  are pale wisps seen only by ghosts. No god-mode toolbar or orders for anyone in a round without
+  a character (`Spectating`).
+- **Coming back:** the empath's "Calling back" (Thread, Ember, Still, Flesh; 70 mana) woven kneeling
+  at a body puts a `Calling` on it; the ghost comes to its body and presses F (`AnswerCommand`)
+  within half a game hour. Fresh for 4 game hours, 12 on a shrine pallet (bodies can be laid out
+  there now); once a round (`Revived`); back downed, the fatal wound eased. The caster takes the
+  grave's chill (an absorbed frost wound). A ghost whose player is away, or a villager, comes back
+  by itself. An AI empath does it for bodies laid out in their shrine (`CallBackJob`).
+- **Haunting:** presence gathers (half a pool an hour) and buys a chill (breath in the air), a
+  guttering light (a lamp really dark an hour; a low fire goes out) or a knock, perceived only
+  through `PerceptionView.Signs` and never saying whose. Hotbar keys 1 to 3 while dead.
+- **Unfinished business** (`data/defs/afterlife.json`, `GhostErrandDef`): linger by a mourner, a
+  sleeper or a lost adventurer (`DirectionsSystem.Feel`) and it's done, for a little Renown; the
+  dead sense who needs them (`PerceptionView.Business`). Bots answer callings and do errands.
+- **The reckoning:** a town death adds Dread (`dreadPerTownDeath`), a calling back lifts some
+  (`dreadPerRevival`); a dead townsperson's trade is taken up by a labourer at the next dawn
+  (`Vacancies`); the reveal says who died on which day, who came back, and the errands done.
+- `--die-at SECONDS` drops your character dead to try it (`DevKillCommand`). Save format 18.
+- `GhostTests`, `RevivalTests`, `HauntingTests`, `GhostErrandTests`, `DeathReckoningTests`. Bench
+  hashes unchanged (rounds only).

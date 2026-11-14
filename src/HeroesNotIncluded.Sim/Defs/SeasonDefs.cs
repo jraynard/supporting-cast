@@ -40,6 +40,10 @@ public sealed class SeasonDef : Def
     public float DreadPerQuestFailed { get; set; } = 12;
     public float DreadPerAdventurerLost { get; set; } = 3;
 
+    /// <summary>Dread when one of the town's own dies (Afterlife), and what's lifted when they're called back.</summary>
+    public float DreadPerTownDeath { get; set; } = 5;
+    public float DreadPerRevival { get; set; } = -3;
+
     /// <summary>Dread a cleared quest lifts.</summary>
     public float DreadPerQuestCleared { get; set; } = -12;
 

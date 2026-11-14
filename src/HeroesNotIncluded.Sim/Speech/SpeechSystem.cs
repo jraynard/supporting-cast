@@ -10,6 +10,9 @@ public enum Volume : byte
     Whisper,
     Say,
     Shout,
+
+    /// <summary>Among the dead: every ghost hears it, wherever they are, and none of the living.</summary>
+    Ghost,
 }
 
 /// <summary>How well a listener made it out.</summary>
@@ -33,6 +36,12 @@ public sealed class Utterance
     public string Text { get; init; } = "";
     public int3 At { get; init; }
     public List<Hearing> Listeners { get; init; } = [];
+
+    /// <summary>
+    /// Ghosts who heard it. Kept apart from <see cref="Listeners"/>, which the living act on
+    /// (orders taken, rumours learned): the dead only listen.
+    /// </summary>
+    public List<Hearing> Ghosts { get; init; } = [];
 }
 
 /// <summary>
@@ -80,11 +89,18 @@ public sealed class SpeechSystem : ISimSystem, ISaveState
         return (Volume.Say, s);
     }
 
-    /// <summary>Say something. Null if they can't speak, it's empty, or they've said too much too fast.</summary>
+    /// <summary>
+    /// Say something. Null if they can't speak, it's empty, or they've said too much too fast. A
+    /// ghost speaks only among the dead (<see cref="Volume.Ghost"/>, whatever it asked for); the
+    /// living can't speak that way.
+    /// </summary>
     public Utterance? Say(Simulation sim, Entity speaker, string? text, Volume volume)
     {
         var w = sim.World;
-        if (!Enum.IsDefined(volume) || !CanAct(sim, speaker))
+        var ghost = w.IsAlive(speaker) && w.Has<Afterlife.Ghost>(speaker);
+        if (ghost)
+            volume = Volume.Ghost;
+        if (!Enum.IsDefined(volume) || (!ghost && (volume == Volume.Ghost || !CanSpeak(sim, speaker))))
             return null;
         var line = Clean(text);
         if (line.Length == 0)
@@ -94,17 +110,32 @@ public sealed class SpeechSystem : ISimSystem, ISaveState
             return null;
 
         var at = w.Get<Position>(speaker).Cell;
-        // Drink makes a voice carry.
-        var reach = volume == Volume.Say && Hospitality.DrinkingSystem.LevelOf(sim, speaker) >= Hospitality.DrinkingSystem.LoudAt ? Hospitality.DrinkingSystem.LoudReach : 1f;
         var utterance = new Utterance
         {
-            Id = _nextId++, Tick = sim.Clock.Tick, Speaker = speaker, SpeakerName = w.Get<Creature>(speaker).Name,
+            Id = _nextId++, Tick = sim.Clock.Tick, Speaker = speaker,
+            SpeakerName = ghost ? w.Get<Afterlife.Ghost>(speaker).Name : w.Get<Creature>(speaker).Name,
             Volume = volume, Text = line, At = at,
         };
-        foreach (var e in w.Query<Creature>())
-            if (e == speaker || (CanAct(sim, e) && w.Get<Creature>(e).Def.Race == Race.Human))
+        if (ghost)
+        {
+            foreach (var e in w.Each<Afterlife.Ghost>())
+                utterance.Ghosts.Add(new Hearing(e, Clarity.Clear, true));
+        }
+        else
+        {
+            // Drink makes a voice carry; someone collapsed can barely raise theirs.
+            var reach = w.Get<Creature>(speaker).Downed && volume != Volume.Whisper ? DownedReach
+                : volume == Volume.Say && Hospitality.DrinkingSystem.LevelOf(sim, speaker) >= Hospitality.DrinkingSystem.LoudAt ? Hospitality.DrinkingSystem.LoudReach
+                : 1f;
+            foreach (var e in w.Query<Creature>())
+                if (e == speaker || (CanSpeak(sim, e) && w.Get<Creature>(e).Def.Race == Race.Human))
+                    if (Hear(sim, at, w.Get<Position>(e).Cell, volume, reach) is { } clarity)
+                        utterance.Listeners.Add(new Hearing(e, clarity, e == speaker || Recognised(at, w.Get<Position>(e).Cell, clarity)));
+            // The dead overhear the living as anyone standing there would.
+            foreach (var e in w.Each<Afterlife.Ghost>())
                 if (Hear(sim, at, w.Get<Position>(e).Cell, volume, reach) is { } clarity)
-                    utterance.Listeners.Add(new Hearing(e, clarity, e == speaker || Recognised(at, w.Get<Position>(e).Cell, clarity)));
+                    utterance.Ghosts.Add(new Hearing(e, clarity, Recognised(at, w.Get<Position>(e).Cell, clarity)));
+        }
 
         _kept.Add(utterance);
         if (_kept.Count > MaxKept)
@@ -148,7 +179,27 @@ public sealed class SpeechSystem : ISimSystem, ISaveState
         return MathF.Sqrt(dx * dx + dy * dy + dz * dz);
     }
 
-    /// <summary>Awake, conscious and on the map: able to speak and to hear.</summary>
+    /// <summary>How far a downed voice carries, as a share of its volume's range.</summary>
+    public const float DownedReach = 0.5f;
+
+    /// <summary>Consciousness a downed person needs to speak (and to follow what's said).</summary>
+    public const float DownedSpeaksAt = 0.3f;
+
+    /// <summary>
+    /// Able to speak and to hear: as <see cref="CanAct"/>, but someone collapsed and still
+    /// conscious can call for help, weakly, and hear the answer.
+    /// </summary>
+    public static bool CanSpeak(Simulation sim, Entity e)
+    {
+        var w = sim.World;
+        if (!w.IsAlive(e) || !w.TryGet<Creature>(e, out var c) || c.Dead || !c.Downed)
+            return CanAct(sim, e);
+        return w.Has<Position>(e) && sim.Map.InBounds(w.Get<Position>(e).Cell)
+            && !(w.TryGet<Mind>(e, out var mind) && mind.Asleep)
+            && (!w.TryGet<Health>(e, out var h) || h.Capacity(Capacity.Consciousness) >= DownedSpeaksAt);
+    }
+
+    /// <summary>Awake, conscious, on their feet and on the map: able to act on what's said.</summary>
     public static bool CanAct(Simulation sim, Entity e)
     {
         var w = sim.World;
@@ -235,13 +286,8 @@ public sealed class SpeechSystem : ISimSystem, ISaveState
             w.Int((int)u.Volume);
             w.String(u.Text);
             w.Int3(u.At);
-            w.Int(u.Listeners.Count);
-            foreach (var h in u.Listeners)
-            {
-                w.Entity(h.Listener);
-                w.Int((int)h.Clarity);
-                w.Bool(h.Identified);
-            }
+            WriteHearings(w, u.Listeners);
+            WriteHearings(w, u.Ghosts);
         }
     }
 
@@ -256,10 +302,28 @@ public sealed class SpeechSystem : ISimSystem, ISaveState
                 Id = r.Long(), Tick = r.Long(), Speaker = r.Entity(), SpeakerName = r.String(),
                 Volume = (Volume)r.Int(), Text = r.String(), At = r.Int3(),
             };
-            for (var k = r.Count(100000); k > 0; k--)
-                u.Listeners.Add(new Hearing(r.Entity(), (Clarity)r.Int(), r.Bool()));
+            ReadHearings(r, u.Listeners);
+            if (r.Version >= 18) // ghosts came with format 18
+                ReadHearings(r, u.Ghosts);
             _kept.Add(u);
         }
+    }
+
+    private static void WriteHearings(SaveWriter w, List<Hearing> hearings)
+    {
+        w.Int(hearings.Count);
+        foreach (var h in hearings)
+        {
+            w.Entity(h.Listener);
+            w.Int((int)h.Clarity);
+            w.Bool(h.Identified);
+        }
+    }
+
+    private static void ReadHearings(SaveReader r, List<Hearing> into)
+    {
+        for (var k = r.Count(100000); k > 0; k--)
+            into.Add(new Hearing(r.Entity(), (Clarity)r.Int(), r.Bool()));
     }
 }
 

@@ -61,6 +61,9 @@
       "heals": [ "Venom" ], "cleanses": true, "manaCost": 30, "heal": 10,
       "feels": { "Venom": "a sick, spreading heat under the skin" } },
 
+    { "name": "CallBack", "label": "Calling back", "description": "Woven kneeling at someone newly dead: it holds the way back open, a little while, for them to come home. Most of a full pool of mana, and the grave's cold comes back with the caster. A body keeps longer on a shrine pallet; nobody comes back twice.",
+      "runes": [ "Thread", "Ember", "Still", "Flesh" ], "lead": "Thread", "callsBack": true, "manaCost": 70, "heal": 1 },
+
     // ---- Found by weaving ----
     { "name": "Sear", "label": "Searing", "description": "Seals a wound shut with heat: it stops bleeding at once and heals a little, but it burns.",
       "runes": [ "Ember", "Thread" ], "lead": "Thread", "knownAtStart": false,

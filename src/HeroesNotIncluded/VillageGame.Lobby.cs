@@ -36,8 +36,9 @@ public sealed partial class VillageGame
         get
         {
             var phase = _sim.Round.Phase;
-            var blind = phase >= RoundPhase.Playing && !HasAvatar;
-            var who = phase != RoundPhase.None && HasAvatar ? _avatar : Entity.Null;
+            // A ghost sees as the dead do; anyone else in a round without a character sees nothing.
+            var blind = phase >= RoundPhase.Playing && !HasAvatar && !Ghosting;
+            var who = phase == RoundPhase.None ? Entity.Null : HasAvatar ? _avatar : Ghosting ? _ghost : Entity.Null;
             if (_view == null || !_view.IsFor(_sim, who) || _view.Blind != blind)
                 _view = blind ? Perception.Blind(_sim) : Perception.For(_sim, who);
             return _view;

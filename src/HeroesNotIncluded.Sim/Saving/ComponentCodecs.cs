@@ -138,6 +138,43 @@ internal static class ComponentCodecs
         }),
         Codec("PlayerCharacter", (w, p) => w.String(p.PlayerId.ToString("N")), r => new PlayerCharacter { PlayerId = Guid.ParseExact(r.String(), "N") }),
         Codec("Trade", (w, t) => w.Def(t.Def), r => new Trade { Def = r.Def<TradeDef>() }),
+        Codec("Death", (w, d) =>
+        {
+            w.Long(d.Tick);
+            w.String(d.Cause);
+        }, r => new Afterlife.Death { Tick = r.Long(), Cause = r.String() }),
+        Codec("Ghost", (w, g) =>
+        {
+            w.String(g.PlayerId.ToString("N"));
+            w.Entity(g.Body);
+            w.String(g.Name);
+            w.Bool(g.Away);
+            w.Float(g.Presence);
+            w.Int(g.Errand);
+            w.Entity(g.ErrandTarget);
+            w.Int(g.ErrandTicks);
+            w.Long(g.RestUntil);
+            w.Int(g.Done);
+            w.String(g.LastDone ?? "");
+        }, r => new Afterlife.Ghost
+        {
+            PlayerId = Guid.ParseExact(r.String(), "N"), Body = r.Entity(), Name = r.String(), Away = r.Bool(), Presence = Math.Clamp(r.Float(), 0f, 1f),
+            Errand = r.Int(), ErrandTarget = r.Entity(), ErrandTicks = r.Int(), RestUntil = r.Long(), Done = r.Int(), LastDone = r.String(),
+        }),
+        Codec("Unfinished", (w, u) => w.Int(u.Done), r => new Afterlife.Unfinished { Done = r.Int() }),
+        Codec("Haunting", (w, h) =>
+        {
+            w.Int((int)h.Kind);
+            w.Long(h.Tick);
+            w.Long(h.Until);
+        }, r => new Afterlife.Haunting { Kind = (Afterlife.HauntKind)r.Int(), Tick = r.Long(), Until = r.Long() }),
+        Codec("Calling", (w, c) =>
+        {
+            w.Entity(c.Caster);
+            w.Long(c.Until);
+            w.Float(c.Quality);
+        }, r => new Afterlife.Calling { Caster = r.Entity(), Until = r.Long(), Quality = r.Float() }),
+        Codec("Revived", (w, v) => w.Int(v.Count), r => new Afterlife.Revived { Count = r.Int() }),
         Codec<Work.WorkSession>("WorkSession", Work.WorkSession.Write, Work.WorkSession.Read),
         Codec<Combat.Trail>("Trail", Combat.Trails.Write, Combat.Trails.Read),
         Codec("WorkInput", (w, i) =>

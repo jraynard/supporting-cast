@@ -35,7 +35,7 @@ public sealed class WorkGivers
                     WorkType.Firefight => Firefight(sim, pawn),
                     WorkType.Doctor => Systems.Bandaging.FirstAidOnly(sim, pawn)
                         ? TendCritical(sim, pawn, firstAid: true) ?? FirstAid(sim, pawn) ?? Rescue(sim, pawn) ?? FeedPatient(sim, pawn) ?? Capture(sim, pawn)
-                        : TendCritical(sim, pawn) ?? Rescue(sim, pawn) ?? TendWounds(sim, pawn) ?? FeedPatient(sim, pawn) ?? Shops.HealOrders.For(sim, pawn) ?? Capture(sim, pawn) ?? TendWounds(sim, pawn, enemies: true),
+                        : TendCritical(sim, pawn) ?? Rescue(sim, pawn) ?? Afterlife.CallBackJob.For(sim, pawn) ?? TendWounds(sim, pawn) ?? FeedPatient(sim, pawn) ?? Shops.HealOrders.For(sim, pawn) ?? Capture(sim, pawn) ?? TendWounds(sim, pawn, enemies: true),
                     WorkType.Warden => FeedPrisoner(sim, pawn) ?? VisitPrisoner(sim, pawn),
                     WorkType.Refuel => Refuel(sim, pawn),
                     WorkType.Construct => Shops.SellJob.For(sim, pawn) ?? Construct(sim, pawn) ?? Deconstruct(sim, pawn),

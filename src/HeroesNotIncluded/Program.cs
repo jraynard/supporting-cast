@@ -245,6 +245,8 @@ else
         // --raid-test: the raid drill (RaidDrill), as the smith unless --trade says otherwise.
         HeroTrade = ParseString(args, "--trade") ?? (args.Contains("--raid-test") ? "Blacksmith" : null),
         RaidTest = args.Contains("--raid-test"),
+        // --die-at SECONDS: your character drops dead then, to try being a ghost.
+        DieAt = args.Contains("--die-at") ? ParseFloat(args, "--die-at") : -1f,
         Bots = args.Contains("--bots") ? ParseInt(args, "--bots") : 0,
     }, error => new TitleGame { StartError = error }));
 

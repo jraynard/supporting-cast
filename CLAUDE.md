@@ -18,6 +18,7 @@ dotnet run --project src/HeroesNotIncluded -- --new-game --name Arin        # st
 dotnet run --project src/HeroesNotIncluded -- --host --name Arin            # host (--port N, --relay HOST, --difficulty D)
 dotnet run --project src/HeroesNotIncluded -- --join 127.0.0.1 --player-id bea --name Bea
 dotnet run --project src/HeroesNotIncluded -- --raid-test --name Arin          # as the smith, bandits down the north road
+dotnet run --project src/HeroesNotIncluded -- --new-game --die-at 5            # your character drops dead: try being a ghost
 dotnet run --project src/HeroesNotIncluded -- --arena Swordsman --weapon IronSpear  # the practice ring: one foe a bout (any raider kind, or Dragon; Enter for the next)
 dotnet run --project src/HeroesNotIncluded -- --furniture-demo --zoom 80    # also --building-demo
 dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui, --look-at X,Y; any mode
@@ -65,6 +66,10 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     game enables it, so tests stay scripted; outside rounds the old `Storyteller` sends raids.
     `Ai/Defence`: the armed fight raiders, the rest shelter; `Ai/DragonBrain`. The bridge a raid
     breaks is a `Tinkering/Repairs` breach, braced whole by the tinker (`SpanSession`).
+  - `Afterlife/`: death in a round. A body keeps its `Death`; a player's character leaves a `Ghost`
+    (its own entity, no creature parts) that sees through `PerceptionView.Ghostly`, talks on
+    `Volume.Ghost`, haunts (`Hauntings`, signs read through `PerceptionView.Signs`) and does errands
+    (`afterlife.json`) until an empath's Calling back is answered at the body (`Revival`).
   - `Perception/`: what a character knows. Sight reads `Map.Light`, so it must never feed sim state.
   - `Speech/`: who heard what, decided when spoken from positions and rooms, and saved.
   - `Work/`: mini-games. `WorkSession.Advance` is pure, so `WorkPredictor` can run it ahead of the

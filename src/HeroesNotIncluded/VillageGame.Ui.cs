@@ -48,6 +48,7 @@ public sealed partial class VillageGame
         DrawNeedsPanel();
         DrawTips();
         DrawVillagerBar();
+        DrawGhostBanner();
         DrawCallToArms();
         DrawToasts();
         // Bottom left, before the centre so the centre keeps clear of it.
@@ -1083,7 +1084,7 @@ public sealed partial class VillageGame
             return;
         _lastDangerCheck = _sim.Messages.Total;
         var messages = ShownMessages();
-        if (AutoPause && _coop is null && !HasAvatar && Settings.Current.PauseOnDanger && messages.Count > 0 && messages[^1].Kind == MessageKind.Danger && !Paused)
+        if (AutoPause && _coop is null && !HasAvatar && !Spectating && Settings.Current.PauseOnDanger && messages.Count > 0 && messages[^1].Kind == MessageKind.Danger && !Paused)
             SetSpeed(0);
     }
 

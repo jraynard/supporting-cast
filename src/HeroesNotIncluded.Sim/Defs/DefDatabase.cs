@@ -6,7 +6,7 @@ namespace HeroesNotIncluded.Sim.Defs;
 /// <summary>
 /// All loaded defs. Each JSON file under the defs directory is an object with any of the keys
 /// "blocks", "things", "creatures", "needs", "bodies", "materials", "difficulties", "raiderKinds", "wildlife", "seasons", "thoughts", "interactions", "traits", "recipes", "tiers", "veins",
-/// "dragonInteractions", "trustLevels", "tricks", "outfits", "elements", "buildings", "kits", "trades", "adventurerKinds", "parties", "services", "mendings", "quests",
+/// "dragonInteractions", "trustLevels", "tricks", "outfits", "elements", "buildings", "kits", "trades", "adventurerKinds", "parties", "services", "mendings", "ghostErrands", "quests",
 /// each an array of defs. Files are merged in name
 /// order so later files (mods) can add content.
 /// </summary>
@@ -38,6 +38,7 @@ public sealed class DefDatabase
     private readonly ServiceDef?[] _byServiceKind = new ServiceDef?[Enum.GetValues<ServiceKind>().Length];
 
     private readonly Dictionary<string, MendingDef> _mendings = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, GhostErrandDef> _ghostErrands = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, RuneDef> _runes = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, DrawFeelDef> _drawFeels = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, QuestDef> _quests = new(StringComparer.OrdinalIgnoreCase);
@@ -51,6 +52,7 @@ public sealed class DefDatabase
 
     /// <summary>What an empath can cast (data/defs/healing.json), in def order.</summary>
     public List<MendingDef> AllMendings { get; } = [];
+    public List<GhostErrandDef> AllGhostErrands { get; } = [];
 
     /// <summary>What mendings are woven from (data/defs/healing.json), in def order: keys 1 to 9.</summary>
     public List<RuneDef> AllRunes { get; } = [];
@@ -151,6 +153,7 @@ public sealed class DefDatabase
         public List<PartyDef> Parties { get; set; } = [];
         public List<ServiceDef> Services { get; set; } = [];
         public List<MendingDef> Mendings { get; set; } = [];
+        public List<GhostErrandDef> GhostErrands { get; set; } = [];
         public List<RuneDef> Runes { get; set; } = [];
         public List<DrawFeelDef> DrawFeels { get; set; } = [];
         public List<QuestDef> Quests { get; set; } = [];
@@ -215,6 +218,7 @@ public sealed class DefDatabase
         AddAll(file.Parties, _parties, AllParties, source);
         AddAll(file.Services, _services, AllServices, source);
         AddAll(file.Mendings, _mendings, AllMendings, source);
+        AddAll(file.GhostErrands, _ghostErrands, AllGhostErrands, source);
         AddAll(file.Runes, _runes, AllRunes, source);
         AddAll(file.DrawFeels, _drawFeels, AllDrawFeels, source);
         AddAll(file.Quests, _quests, AllQuests, source);
@@ -270,6 +274,7 @@ public sealed class DefDatabase
         if (AllRunes.Count > 9)
             throw new Exception("At most 9 runes: they're keyed 1 to 9");
         foreach (var d in AllMendings) d.Resolve(this);
+        foreach (var d in AllGhostErrands) d.Resolve(this);
         Healing.Weaving.Validate(this);
         foreach (var d in AllDrawFeels) d.Resolve(this);
         foreach (var d in AllQuests) d.Resolve(this);

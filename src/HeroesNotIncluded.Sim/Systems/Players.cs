@@ -28,9 +28,11 @@ public static class Players
     }
 
     /// <summary>
-    /// Every character a player is steering right now is asleep (and there's at least one). While
-    /// that's so the host runs time fast, so nobody watches their character sleep; anyone awake holds
-    /// it at the usual speed. A sim read, so every peer agrees on it. Someone downed isn't asleep.
+    /// Every character a player is steering right now is asleep (and there's at least one), or no
+    /// player is alive at all and the dead are watching. While that's so the host runs time fast,
+    /// so nobody watches their character sleep, or a table of ghosts the season play out; anyone
+    /// awake holds it at the usual speed. A sim read, so every peer agrees on it. Someone downed
+    /// isn't asleep.
     /// </summary>
     public static bool AllAsleep(Simulation sim)
     {
@@ -44,12 +46,15 @@ public static class Players
                 return false;
             any = true;
         }
-        return any;
+        return any || Afterlife.Ghosts.Any(sim);
     }
 
-    /// <summary>The player a character belongs to, if any.</summary>
+    /// <summary>The player a character (or a ghost) belongs to, if any.</summary>
     public static Guid? OwnerOf(Simulation sim, Entity e) =>
-        sim.World.IsAlive(e) && sim.World.TryGet<PlayerCharacter>(e, out var p) ? p.PlayerId : null;
+        !sim.World.IsAlive(e) ? null
+        : sim.World.TryGet<PlayerCharacter>(e, out var p) ? p.PlayerId
+        : sim.World.TryGet<Afterlife.Ghost>(e, out var g) ? g.PlayerId
+        : null;
 
     /// <summary>
     /// A player arrives. If they have a character, it becomes theirs to steer again (true);
@@ -60,6 +65,11 @@ public static class Players
     {
         var w = sim.World;
         var me = CharacterOf(sim, player);
+        if (me.IsNull && Afterlife.Ghosts.Of(sim, player) is { IsNull: false } ghost)
+        {
+            w.Get<Afterlife.Ghost>(ghost).Away = false; // back among the dead
+            return true;
+        }
         if (me.IsNull && adoptLooseAvatar)
         {
             foreach (var e in w.Query<Avatar>())
@@ -92,6 +102,8 @@ public static class Players
     {
         var w = sim.World;
         var me = CharacterOf(sim, player);
+        if (me.IsNull && Afterlife.Ghosts.Of(sim, player) is { IsNull: false } ghost)
+            w.Get<Afterlife.Ghost>(ghost).Away = true; // called back while gone, they come by themselves
         if (me.IsNull || !w.Has<Avatar>(me))
             return;
         w.Remove<Avatar>(me);

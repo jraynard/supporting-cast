@@ -39,7 +39,7 @@ public sealed partial class VillageGame
     private bool InRound => _sim.Round.Live;
 
     /// <summary>The build drawer is open, or there's no avatar (god mode always has the toolbar).</summary>
-    private bool ToolbarOpen => !HasAvatar || _showBuild;
+    private bool ToolbarOpen => (!HasAvatar && !Spectating) || (HasAvatar && _showBuild);
 
     private readonly record struct JournalTab(string Action, string Label, Func<VillageGame, bool> Shown, Action<VillageGame> Toggle);
 
@@ -55,19 +55,20 @@ public sealed partial class VillageGame
     /// <summary>Which journal tabs apply now: the gift only to an empath, quests once any are known.</summary>
     private bool TabApplies(JournalTab tab) => tab.Label switch
     {
-        "Shop" or "Heard" => InRound,
-        "Quests" => InRound && View.Quests().Any(),
-        "Gift" => InRound && _sim.World.Has<Mana>(_avatar),
+        "Heard" => InRound && (HasAvatar || Ghosting),
+        "Shop" => InRound && HasAvatar,
+        "Quests" => InRound && HasAvatar && View.Quests().Any(),
+        "Gift" => InRound && HasAvatar && _sim.World.Has<Mana>(_avatar),
         _ => true,
     };
 
     /// <summary>Journal and HUD keys in Adventure: J/T/K/Y/L panels, B the build drawer, H the controls.</summary>
     private void HandleJournalKeys(Input input)
     {
-        if (!HasAvatar || Working)
+        if ((!HasAvatar && !Ghosting) || Working)
             return;
         var map = Controls.Map;
-        if (map.Pressed(Act.Build))
+        if (map.Pressed(Act.Build) && HasAvatar)
             _showBuild = !_showBuild;
         if (map.Pressed(Act.ControlsCard) && !_showBuild)
             _showControls = !_showControls;
@@ -105,7 +106,7 @@ public sealed partial class VillageGame
     /// <summary>The strip of journal toggles under the clock: a key cap and a name each, lit when open.</summary>
     private void DrawJournalStrip()
     {
-        if (!HasAvatar)
+        if (!HasAvatar && !Ghosting)
             return;
         var first = true;
         foreach (var tab in JournalTabs)
@@ -137,10 +138,13 @@ public sealed partial class VillageGame
         }
         if (!first)
             ImGui.SameLine(0, Gui.S(4));
-        if (ImGui.Button(_showBuild ? "Build##drawer"u8 : "Build##drawer"u8, in _autoSize))
-            _showBuild = !_showBuild;
-        Gui.ItemTip((_showBuild ? "Close the build tools" : "Build, zones and orders") + KeyTip(Act.Build));
-        ImGui.SameLine(0, Gui.S(4));
+        if (HasAvatar)
+        {
+            if (ImGui.Button("Build##drawer"u8, in _autoSize))
+                _showBuild = !_showBuild;
+            Gui.ItemTip((_showBuild ? "Close the build tools" : "Build, zones and orders") + KeyTip(Act.Build));
+            ImGui.SameLine(0, Gui.S(4));
+        }
         if (ImGui.Button("?##controls"u8, in _autoSize))
             _showControls = !_showControls;
         Gui.ItemTip("Controls" + KeyTip(Act.ControlsCard));

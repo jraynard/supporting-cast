@@ -178,6 +178,11 @@ public sealed class CastSession : WorkSession
                     : $"You knot the {label} into a charm. Some strands are loose.", at);
             return;
         }
+        if (m.CallsBack)
+        {
+            Afterlife.Revival.Call(sim, Worker, Quality); // it says how it went
+            return;
+        }
         if (!Empathy.Cast(sim, Worker, Wound, m, Quality, made.Extra))
             sim.Messages.Add(MessageKind.Warning, $"The {label} finds nothing to take hold of. The mana's spent.", at);
         else if (m.Targetless)

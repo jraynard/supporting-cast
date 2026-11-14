@@ -22,7 +22,10 @@ public enum RoundOutcome : byte
 }
 
 /// <summary>One of the town in the reveal: who they were, what they did, what they made of it.</summary>
-public sealed record RevealRow(string Name, string Trade, bool Player, int Earned, bool Alive);
+/// <param name="DiedOnDay">The day of the round they died (1 is the first), if they lie dead.</param>
+/// <param name="CameBack">Called back from the grave this round.</param>
+/// <param name="Errands">Unfinished business they saw to as a ghost.</param>
+public sealed record RevealRow(string Name, string Trade, bool Player, int Earned, bool Alive, int? DiedOnDay = null, bool CameBack = false, int Errands = 0);
 
 /// <summary>
 /// The end-of-round reveal, built once when the round ends and saved with it, so every peer and a
@@ -81,6 +84,9 @@ public sealed class RoundSummary
             w.Bool(p.Player);
             w.Int(p.Earned);
             w.Bool(p.Alive);
+            w.Int(p.DiedOnDay ?? 0);
+            w.Bool(p.CameBack);
+            w.Int(p.Errands);
         }
     }
 
@@ -93,7 +99,12 @@ public sealed class RoundSummary
             Parties = r.Int(), AdventurersServed = r.Int(), QuestsCleared = r.Int(), QuestsFailed = r.Int(), AdventurersLost = r.Int(),
         };
         for (var n = r.Count(RoundSystem.MaxSeats * 4); n > 0; n--)
-            s.People.Add(new RevealRow(r.String(), r.String(), r.Bool(), r.Int(), r.Bool()));
+        {
+            var row = new RevealRow(r.String(), r.String(), r.Bool(), r.Int(), r.Bool());
+            if (r.Version >= 18) // the dead's day, the returned and their errands came with format 18
+                row = row with { DiedOnDay = r.Int() is > 0 and var day ? day : null, CameBack = r.Bool(), Errands = r.Int() };
+            s.People.Add(row);
+        }
         return s;
     }
 
@@ -112,6 +123,13 @@ public sealed class RoundSummary
         return list;
     }
 
+    /// <summary>The day of the round a tick fell on: 1 is the day of the deal.</summary>
+    private static int DayOfRound(Simulation sim, long tick)
+    {
+        var startHour = sim.Clock.StartHour * (long)SimClock.TicksPerHour;
+        return (int)((tick + startHour) / SimClock.TicksPerDay - (Math.Max(0, sim.Round.StartTick) + startHour) / SimClock.TicksPerDay) + 1;
+    }
+
     /// <summary>The town as it stands: everyone of the village, players first, and what they earned since the deal.</summary>
     internal static List<RevealRow> PeopleOf(Simulation sim, IReadOnlyList<(Entity Who, int Coin)> startCoin)
     {
@@ -124,7 +142,9 @@ public sealed class RoundSummary
             var trade = w.TryGet<Trade>(e, out var t) ? t.Def.Label : "villager";
             // A co-op player keeps PlayerCharacter after leaving; a solo hero has only the Avatar.
             var player = w.Has<PlayerCharacter>(e) || w.Has<Avatar>(e);
-            rows.Add((new RevealRow(c.Name, trade, player, Shops.Coin.Count(sim, e) - start, !c.Dead), player ? 0 : 1));
+            int? died = c.Dead && w.TryGet<Afterlife.Death>(e, out var d) ? DayOfRound(sim, d.Tick) : null;
+            var errands = w.TryGet<Afterlife.Unfinished>(e, out var u) ? u.Done : 0;
+            rows.Add((new RevealRow(c.Name, trade, player, Shops.Coin.Count(sim, e) - start, !c.Dead, died, w.Has<Afterlife.Revived>(e), errands), player ? 0 : 1));
         }
         return rows.OrderBy(r => r.Order).Select(r => r.Row).ToList();
     }

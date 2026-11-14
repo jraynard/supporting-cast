@@ -78,8 +78,12 @@ public sealed partial class VillageGame
                 ImGui.TableNextColumn();
                 TextC(p.Earned > 0 ? Theme.Good : Theme.Dim, $"{p.Earned:+0;-0;0} silver");
                 ImGui.TableNextColumn();
-                if (!p.Alive)
-                    TextC(Theme.Bad, "dead");
+                var fate = !p.Alive ? (p.DiedOnDay is { } day ? $"died on day {day}" : "dead")
+                    : p.CameBack ? "came back from the grave" : "";
+                if (p.Errands > 0)
+                    fate += $"{(fate.Length > 0 ? "; " : "")}saw to {p.Errands} errand{(p.Errands == 1 ? "" : "s")} for the dead";
+                if (fate.Length > 0)
+                    TextC(p.Alive ? Theme.Dim : Theme.Bad, fate);
             }
             ImGui.EndTable();
         }

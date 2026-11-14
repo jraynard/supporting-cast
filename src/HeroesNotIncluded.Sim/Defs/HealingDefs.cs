@@ -60,6 +60,12 @@ public sealed class MendingDef : Def
     public float? ManaPerLead { get; set; }
     public float? HealPerLead { get; set; }
 
+    /// <summary>
+    /// Calls the dead back (<see cref="Afterlife.Revival"/>): it lands on the fresh body the caster
+    /// kneels at, not on their own wounds.
+    /// </summary>
+    public bool CallsBack { get; set; }
+
     /// <summary>Written in a new empath's book. The rest are found by weaving them.</summary>
     public bool KnownAtStart { get; set; } = true;
 
@@ -74,7 +80,7 @@ public sealed class MendingDef : Def
     public RuneDef LeadRune { get; private set; } = null!;
 
     /// <summary>Lands with no wound to take hold of (it only steadies).</summary>
-    public bool Targetless => Heals.Count == 0 && !Cleanses && !Staunches && Steadies > 0;
+    public bool Targetless => Heals.Count == 0 && !Cleanses && !Staunches && Steadies > 0 && !CallsBack;
 
     /// <summary>Mana for a cast with <paramref name="extra"/> copies of the lead rune past the base.</summary>
     public float CostAt(int extra) => ManaCost + (ManaPerLead ?? ManaCost * 0.5f) * extra;
@@ -84,7 +90,7 @@ public sealed class MendingDef : Def
 
     internal override void Resolve(DefDatabase db)
     {
-        if (Heals.Count == 0 && !Cleanses && !Staunches && Steadies <= 0)
+        if (Heals.Count == 0 && !Cleanses && !Staunches && Steadies <= 0 && !CallsBack)
             throw new Exception($"Mending '{Name}' does nothing");
         if (Runes.Count is < 1 || Runes.Count > MaxRunes)
             throw new Exception($"Mending '{Name}': 1 to {MaxRunes} runes");

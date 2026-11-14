@@ -52,6 +52,18 @@ First pass done (docs/AUDIO.md, HISTORY.md). Next, as long-term items:
      (and players type theirs), so this can't be pre-recorded.
 5. **Steam Deck:** check the sound there (output switching, volume, CPU).
 
+### Death and ghosts
+First pass done (HISTORY.md, "Death and ghosts"). What's left:
+
+- **Playtest it:** the Calling's cost and windows (`Revival`), presence and sign costs
+  (`Hauntings`), errand times and Renown (`afterlife.json`), and Dread per death (`season.json`).
+- **Gear on the dead:** `NeedsSystem.Kill` drops everything, clothes included, so the returned
+  come back stripped. Keep what's worn on the body.
+- **Art and sound:** a proper ghost (a pale, see-through take on the character), the Calling's
+  glow, a creak for the knock instead of the keg's tap.
+- **AI carrying the dead** to the shrine, so an AI empath gets a chance without a player's help.
+- Later: the necromancer (M4) and the Undertaker (M5) on `Death`, `Ghost` and the answer.
+
 ### Combat pass
 Fights are free movement and blows by reach and timing, Souls-lite, everywhere (done: HISTORY.md,
 "Combat: blows seen coming"). What's left:
@@ -75,9 +87,6 @@ Fights are free movement and blows by reach and timing, Souls-lite, everywhere (
   only in play); tune the stick deadzone and the wheel; export the Steam Input layout to
   `tools/steamdeck/`.
 - Building and area tools still need the trackpad (a pad cursor would cover them).
-
-### Death and ghosts
-- need to move this up most likely as people can and should die when the dragon attacks, or other dangers added in the crisis system.
 
 ### M4: Whispers
 - Allegiance, objectives, the hidden shop, evidence, player violence, Constable and jail, the bell,

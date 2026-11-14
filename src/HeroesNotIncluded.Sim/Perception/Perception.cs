@@ -126,6 +126,15 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
     /// <summary>Has no character to see through (<see cref="Perception.Blind"/>).</summary>
     public bool Blind => blind;
 
+    /// <summary>
+    /// Sees as the dead do (<see cref="Afterlife.Ghost"/>): all around, near enough, in the dark and
+    /// through walls; but with no hands, nothing in a pack or a chest, and none of the living's secrets.
+    /// </summary>
+    public bool Ghostly => !viewer.IsNull && sim.World.Has<Afterlife.Ghost>(viewer);
+
+    /// <summary>The viewer is someone with a body (not a ghost, not the overseer).</summary>
+    private bool Embodied => !viewer.IsNull && sim.World.Has<Creature>(viewer);
+
     /// <summary>This view belongs to this game and character, so a cached one is still good.</summary>
     public bool IsFor(Simulation other, Entity who) => ReferenceEquals(sim, other) && viewer == who;
 
@@ -188,7 +197,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         if (!w.IsAlive(item) || !w.TryGet<Thing>(item, out var t) || (t.Def.Weapon == null && t.Def.Apparel == null))
             return null;
         // On your own person you can always look it over; anything else has to be within reach.
-        var onMe = !viewer.IsNull && Inventory.OnPerson(sim, viewer, item);
+        var onMe = Embodied && Inventory.OnPerson(sim, viewer, item);
         if (!Omniscient && !onMe && !Within(t.Spawned ? t.Cell : sim.LocationOf(item), 1))
             return null;
         return Combat.WeaponWear.Describe(sim, item);
@@ -292,7 +301,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         var w = sim.World;
         if (!w.IsAlive(item) || !w.TryGet<Components.Strongbox>(item, out var b) || !w.TryGet<Thing>(item, out var t))
             return null;
-        var onMe = !viewer.IsNull && Inventory.OnPerson(sim, viewer, item);
+        var onMe = Embodied && Inventory.OnPerson(sim, viewer, item);
         if (!Omniscient && !onMe && !Within(t.Spawned ? t.Cell : sim.LocationOf(item), 1))
             return null;
         var spent = b.Trap != TrapKind.None && !b.Armed ? Tinkering.Lockwork.TrapLabel(b.Trap) : null;
@@ -305,7 +314,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         var w = sim.World;
         if (!w.IsAlive(doorOrLock) || !w.TryGet<Tinkering.LockCut>(doorOrLock, out var c))
             return null;
-        var haveKey = !viewer.IsNull && !Tinkering.Locksmithing.KeyFor(sim, viewer, c.Seed).IsNull;
+        var haveKey = Embodied && !Tinkering.Locksmithing.KeyFor(sim, viewer, c.Seed).IsNull;
         return new KnownLock(sim.IsLocked(doorOrLock), c.Pins, haveKey, Omniscient || (!viewer.IsNull && c.Maker == viewer) ? c.Tightness : null);
     }
 
@@ -315,7 +324,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         var w = sim.World;
         if (!Tinkering.Curios.IsCurio(sim, item) || !w.TryGet<Thing>(item, out var t))
             return null;
-        var onMe = !viewer.IsNull && Inventory.OnPerson(sim, viewer, item);
+        var onMe = Embodied && Inventory.OnPerson(sim, viewer, item);
         if (!Omniscient && !onMe && !Within(t.Spawned ? t.Cell : sim.LocationOf(item), 1))
             return null;
         var mine = w.TryGet<Tinkering.Appraisal>(item, out var a) && (Omniscient || (!viewer.IsNull && a.By == viewer));
@@ -457,6 +466,95 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
                     r.AssigneeName, r.Status, r.Poster == viewer, r.Assignee == viewer, r.Poster, r.Wants, r.Count);
     }
 
+    /// <summary>
+    /// A ghost's own death: how it came, as they'd tell it ("bled to death"), and their body.
+    /// Null for anyone not dead. Only ever your own: how anyone else died is for those who look.
+    /// </summary>
+    public (string Cause, Entity Body)? OwnDeath()
+    {
+        var w = sim.World;
+        if (!Ghostly)
+            return null;
+        var body = w.Get<Afterlife.Ghost>(viewer).Body;
+        if (!w.IsAlive(body))
+            return null;
+        return (w.TryGet<Afterlife.Death>(body, out var d) ? d.Cause : "died", body);
+    }
+
+    /// <summary>
+    /// A ghost's own body, as it can tell: which way it lies, who's beside it (only those in the
+    /// ghost's sight), and whether someone's calling them back, with the game seconds left to
+    /// answer. Null for anyone not dead.
+    /// </summary>
+    public KnownBody? MyBody()
+    {
+        if (OwnDeath() is not { Body: var body })
+            return null;
+        var w = sim.World;
+        var lies = w.Get<Position>(body).Cell;
+        var here = w.Get<Position>(viewer).Cell;
+        var beside = new List<string>();
+        foreach (var e in Creatures())
+            if (e != body && w.Get<Creature>(e) is { Dead: false } c && c.Def.Race == Race.Human
+                && Math.Abs(w.Get<Position>(e).Cell.X - lies.X) <= 2 && Math.Abs(w.Get<Position>(e).Cell.Y - lies.Y) <= 2 && w.Get<Position>(e).Cell.Z == lies.Z)
+                beside.Add(c.Name);
+        float? calling = w.TryGet<Afterlife.Calling>(body, out var call) && call.Until >= sim.Clock.Tick
+            ? (call.Until - sim.Clock.Tick) / (float)SimClock.TicksPerSecond : null;
+        return new KnownBody(Hospitality.DirectionsSystem.Way(here, lies), beside, calling, Afterlife.Revival.AnswerProblem(sim, viewer) == null,
+            Afterlife.Revival.Fresh(sim, body), Afterlife.Revival.OnShrinePallet(sim, body));
+    }
+
+    /// <summary>
+    /// The signs of the dead this viewer perceives (<see cref="Afterlife.Haunting"/>): a chill or a
+    /// guttering light in sight, a knock in earshot. Never who left them.
+    /// </summary>
+    public IEnumerable<KnownSign> Signs()
+    {
+        var w = sim.World;
+        if (blind || w.Count<Afterlife.Haunting>() == 0)
+            yield break;
+        int3? ear = Omniscient || !w.IsAlive(viewer) ? null : w.Get<Position>(viewer).Cell;
+        foreach (var e in w.Each<Afterlife.Haunting>())
+        {
+            var h = w.Get<Afterlife.Haunting>(e);
+            var cell = w.Get<Position>(e).Cell;
+            var perceived = h.Kind == Afterlife.HauntKind.Knock
+                ? ear is not { } at || Speech.SpeechSystem.Hear(sim, cell, at, Speech.Volume.Say) != null
+                : CanSeeCell(cell);
+            if (perceived)
+                yield return new KnownSign(h.Kind, cell, h.Tick, h.Kind switch
+                {
+                    Afterlife.HauntKind.Chill => "A sudden chill. Breath shows here.",
+                    Afterlife.HauntKind.Gutter => "The light gutters and goes dark.",
+                    _ => "A knock, from nowhere you can see.",
+                });
+        }
+    }
+
+    /// <summary>A lamp at this cell, in sight, has guttered dark. Out of sight, as far as you know, it burns.</summary>
+    public bool Dark(int3 lampCell) => !blind && CanSeeCell(lampCell) && Afterlife.Hauntings.Guttered(sim, lampCell);
+
+    /// <summary>
+    /// The dead's sense of who needs them (<see cref="Afterlife.Errands"/>): in a ghost's sight,
+    /// who grieves, who sleeps, who's lost, and how far along its lingering is. Nothing for the living.
+    /// </summary>
+    public IEnumerable<KnownBusiness> Business()
+    {
+        if (!Ghostly)
+            yield break;
+        var w = sim.World;
+        var g = w.Get<Afterlife.Ghost>(viewer);
+        var defs = sim.Defs.AllGhostErrands;
+        foreach (var e in Creatures())
+            for (var i = 0; i < defs.Count; i++)
+                if (e != g.Body && Afterlife.Errands.Qualifies(sim, defs[i], e))
+                {
+                    var progress = g.ErrandTarget == e && g.Errand == i ? Math.Clamp(g.ErrandTicks / (float)defs[i].Ticks, 0f, 1f) : (float?)null;
+                    yield return new KnownBusiness(defs[i], w.Get<Creature>(e).Name, e, w.Get<Position>(e).Cell, progress);
+                    break;
+                }
+    }
+
     /// <summary>Everything this character has heard that's still remembered, oldest first.</summary>
     public IEnumerable<HeardLine> Heard()
     {
@@ -469,7 +567,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
                 yield return new HeardLine(u.Id, u.Tick, u.SpeakerName, u.Text, u.Volume, Speech.Clarity.Clear, u.Speaker, u.At);
                 continue;
             }
-            foreach (var h in u.Listeners)
+            foreach (var h in Ghostly ? u.Ghosts : u.Listeners)
                 if (h.Listener == viewer)
                     yield return new HeardLine(u.Id, u.Tick, h.Identified ? u.SpeakerName : "Someone",
                         Speech.SpeechSystem.TextFor(u, h), u.Volume, h.Clarity, h.Identified ? u.Speaker : null, u.At);
@@ -507,7 +605,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
 
     private bool Within(int3 cell, int cells)
     {
-        if (!sim.World.IsAlive(viewer))
+        if (!Embodied)
             return false;
         var here = sim.World.Get<Position>(viewer).Cell;
         return cell.Z == here.Z && Math.Abs(cell.X - here.X) <= cells && Math.Abs(cell.Y - here.Y) <= cells;
@@ -547,6 +645,11 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
                 _openDoors.Add(map.Idx(cell));
         }
 
+        if (Ghostly)
+        {
+            BuildGhostly(here);
+            return;
+        }
         const int r = Perception.SightRadius;
         var z0 = Math.Max(0, here.Z - Perception.SightLevels);
         var z1 = Math.Min(map.Depth - 1, here.Z + Perception.SightLevels);
@@ -559,6 +662,24 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
                 continue;
             var target = new int3(x, y, z);
             if (InRange(here, target, i) && Clear(here, target, i))
+                _visible.Add(i);
+        }
+    }
+
+    // A ghost's sight: a ball around it, light or dark, walls or none. It never reads the light.
+    private void BuildGhostly(int3 here)
+    {
+        var map = sim.Map;
+        const int r = Afterlife.Ghosts.SightRadius;
+        var z0 = Math.Max(0, here.Z - Afterlife.Ghosts.SightLevels);
+        var z1 = Math.Min(map.Depth - 1, here.Z + Afterlife.Ghosts.SightLevels);
+        for (var z = z0; z <= z1; z++)
+        for (var y = Math.Max(0, here.Y - r); y <= Math.Min(map.Height - 1, here.Y + r); y++)
+        for (var x = Math.Max(0, here.X - r); x <= Math.Min(map.Width - 1, here.X + r); x++)
+        {
+            int dx = x - here.X, dy = y - here.Y;
+            var i = map.Idx(x, y, z);
+            if (dx * dx + dy * dy <= r * r && !map.IsSolid(i))
                 _visible.Add(i);
         }
     }
@@ -612,3 +733,16 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         return building.IsWall || (building.IsDoor && !_openDoors.Contains(i));
     }
 }
+
+/// <summary>
+/// A ghost's body as the ghost knows it (<see cref="PerceptionView.MyBody"/>): which way, who's at it,
+/// and the calling back if there is one (game seconds left; <see cref="CanAnswer"/> at the body now).
+/// <see cref="Fresh"/>: it can still be called back; <see cref="OnPallet"/>: laid out in the shrine.
+/// </summary>
+public sealed record KnownBody(string Way, IReadOnlyList<string> Beside, float? CallingFor, bool CanAnswer, bool Fresh, bool OnPallet);
+
+/// <summary>A sign of the dead as perceived (<see cref="PerceptionView.Signs"/>): what, where, since when, and in words.</summary>
+public readonly record struct KnownSign(Afterlife.HauntKind Kind, int3 Cell, long Tick, string Words);
+
+/// <summary>Someone a ghost could see to (<see cref="PerceptionView.Business"/>): the errand, who and where, and how far along if it's lingering there.</summary>
+public readonly record struct KnownBusiness(Defs.GhostErrandDef Errand, string Name, Entity Who, int3 Cell, float? Progress);

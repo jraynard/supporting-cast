@@ -1,0 +1,15 @@
+// The dead's unfinished business (Sim/Afterlife/Errands.cs): small things a ghost can do for the
+// town by lingering near someone a while, each worth a little Renown. "kind" says who it's for
+// (Grieving: a villager mourning a death; Sleeper: someone asleep; Lost: an adventurer asking the
+// way), "reach" how near the ghost must stay (cells), "seconds" how long (real seconds at 1x), and
+// "renown" what it's worth. After one, a ghost rests a while ("restHours") before the next counts.
+{
+  "ghostErrands": [
+    { "name": "SitWithGrieving", "label": "sit with the grieving", "kind": "Grieving", "reach": 2, "seconds": 20, "renown": 1.5,
+      "description": "Stay by someone mourning a death a while: their grief lifts." },
+    { "name": "WatchSleeper", "label": "watch over a sleeper", "kind": "Sleeper", "reach": 2, "seconds": 25, "renown": 1,
+      "description": "Keep watch by someone asleep: they wake better rested." },
+    { "name": "ShowTheWay", "label": "show a lost traveller the way", "kind": "Lost", "reach": 3, "seconds": 8, "renown": 1,
+      "description": "Linger by an adventurer asking the way: of a sudden, they know it." }
+  ]
+}

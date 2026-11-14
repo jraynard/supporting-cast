@@ -150,6 +150,26 @@ public sealed class DirectionsSystem : ISimSystem, ISaveState
         return true;
     }
 
+    /// <summary>
+    /// The way comes to the asker, with no word said: a ghost lingered by them (Afterlife.Errands).
+    /// They know the nearest such building now, and are glad of it, if puzzled.
+    /// </summary>
+    public bool Feel(Simulation sim, int id)
+    {
+        var w = sim.World;
+        if (_asks.Find(x => x.Id == id) is not { } ask || !w.IsAlive(ask.Asker))
+            return false;
+        var shop = Nearest(sim, ask.To, w.Get<Position>(ask.Asker).Cell);
+        if (shop.IsNull)
+            return false;
+        _asks.Remove(ask);
+        Learn(sim, ask.Asker, shop);
+        if (w.Has<Adventurer>(ask.Asker))
+            w.Get<Adventurer>(ask.Asker).Satisfaction += ShownMood * 0.5f;
+        sim.Speech.Say(sim, ask.Asker, "Never mind. Somehow I know the way.", Volume.Say);
+        return true;
+    }
+
     /// <summary>The way from one cell to another, as a villager would put it.</summary>
     public static string Way(int3 from, int3 to)
     {

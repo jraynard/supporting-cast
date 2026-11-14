@@ -22,6 +22,9 @@
       "dreadPerOpenQuestHour": 0.4,
       "dreadPerQuestFailed": 12,
       "dreadPerAdventurerLost": 3,
+      // One of the town's own dying, and coming back (Afterlife/).
+      "dreadPerTownDeath": 5,
+      "dreadPerRevival": -3,
       "dreadPerQuestCleared": -12,
       // The Director's crises (Director/Director.cs): one per beat, at a time in the window (sooner
       // the more Dread), of a kind picked by weight. Kinds not built yet are passed over.

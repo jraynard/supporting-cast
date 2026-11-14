@@ -62,6 +62,17 @@ public sealed partial class VillageGame
             Tip("Click for your full inspector: mood, health, skills, gear.");
         Gui.Rule();
 
+        // Collapsed: no bar for it, just what it means. You can still call for help, weakly.
+        if (c.Downed && w.TryGet<Health>(_avatar, out var health))
+        {
+            var bleeding = health.BleedPerHour > 0;
+            TextC(Bad, health.Blood < 0.2f ? "You're slipping away." : bleeding ? "You've collapsed, bleeding out." : "You've collapsed.");
+            TextC(Ui.Theme.Dim, bleeding
+                ? $"Call for help ({Controls.Glyph(Act.Heard)}, /s to shout): someone has to bind you, or carry you to a bed."
+                : $"Call for help ({Controls.Glyph(Act.Heard)}, /s to shout), or lie still until you can stand.");
+            Gui.Rule();
+        }
+
         // Needs.
         var needs = w.Get<Needs>(_avatar);
         foreach (var rate in c.Def.Needs)
