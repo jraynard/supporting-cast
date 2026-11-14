@@ -109,6 +109,7 @@ An authoritative server filtered by `Perception`, moderation, voice.
   - Builds on `CharacterProgress` (`Characters/CharacterRoster.cs`): rounds, survivals and silver per
     trade are already kept; `Titles`, `Title` and `Unlocked` wait to be filled.
 - if you master a trade you get a cool outfit and title related to that trade
+- shop customization - pick your icon, get upgraded looks based on your skill and renown.
 
 ### Polish pass (timing uncertain)
 What's been left behind along the way, gathered from each milestone's leftovers, plus wishes.
