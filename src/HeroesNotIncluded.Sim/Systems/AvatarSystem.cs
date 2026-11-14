@@ -86,6 +86,9 @@ public enum AvatarActionKind
     /// <summary>Order a meal at a serving hatch (<see cref="Shops.ShopSystem.PlayerOrder"/>), or see where you are in its line.</summary>
     OrderMeal,
 
+    /// <summary>Ask to be healed at a shrine pallet (<see cref="Shops.ShopSystem.PlayerOrder"/>).</summary>
+    OrderHealing,
+
     /// <summary>Have a go at a festival game (<see cref="Work.FestivalGames"/>), begun at once.</summary>
     FestivalGame,
 
@@ -117,7 +120,7 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
         or AvatarActionKind.Store or AvatarActionKind.OpenStorage or AvatarActionKind.Tinker
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
         or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean
-        or AvatarActionKind.Mend or AvatarActionKind.OrderMeal or AvatarActionKind.FestivalGame or AvatarActionKind.Dance;
+        or AvatarActionKind.Mend or AvatarActionKind.OrderMeal or AvatarActionKind.OrderHealing or AvatarActionKind.FestivalGame or AvatarActionKind.Dance;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
     public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker
@@ -152,6 +155,22 @@ public sealed class AvatarSystem : ISimSystem
             return place <= 0 ? "Your meal's ordered: wait here for it" : $"Your meal's ordered: {Ordinal(place + 1)} in line";
         }
         return Shops.ShopPrices.Posted(sim, inn, ServiceKind.Meal) is { Offered: true } sign ? $"Order a meal ({sign.Price} silver)" : null;
+    }
+
+    /// <summary>
+    /// The prompt at a shrine pallet for someone hurt (not its own healer): ask to be healed, at
+    /// the price on the shrine's sign. Null once asked (the pallet's then for lying on to wait),
+    /// unhurt, or with nothing on offer.
+    /// </summary>
+    private static string? HealingOrder(Simulation sim, Entity avatar, Entity pallet)
+    {
+        if (!Shops.ShopSystem.IsForPatients(sim, pallet) || Buildings.Of(sim, pallet) is not { IsNull: false } shrine
+            || sim.Shops.OpenOrderOf(avatar, ServiceKind.Healing) != null || !Healing.LayOnHands.Hurt(sim, avatar))
+            return null;
+        var def = sim.World.Get<PresetBuilding>(shrine).Def;
+        if (sim.World.TryGet<Trade>(avatar, out var trade) && trade.Def.WorkplaceDef == def)
+            return null;
+        return Shops.ShopPrices.Posted(sim, shrine, ServiceKind.Healing) is { Offered: true } sign ? $"Ask to be healed ({sign.Price} silver)" : null;
     }
 
     private static string Ordinal(int n) => n switch { 2 => "2nd", 3 => "3rd", _ => $"{n}th" };
@@ -389,6 +408,9 @@ public sealed class AvatarSystem : ISimSystem
         // At the inn's serving hatch with empty hands: order a meal there (not the cook: they serve it).
         if (held.IsNull && !site.IsNull && w.Get<Thing>(site).Def.Building is { Hatch: true } && MealOrder(sim, avatar, site) is { } meal)
             return new(AvatarActionKind.OrderMeal, meal, cell, site);
+        // At a shrine pallet, hurt: ask the healer to see to you (then lie there to wait your turn).
+        if (held.IsNull && !site.IsNull && HealingOrder(sim, avatar, site) is { } heal)
+            return new(AvatarActionKind.OrderHealing, heal, cell, site);
         // A pack lying about opens like the wagon (you're already wearing one, or it'd go on).
         if (!item.IsNull && sim.IsPack(item))
             return new(AvatarActionKind.OpenStorage, $"Open the {w.Get<Thing>(item).Label}", cell, item);
@@ -718,6 +740,11 @@ public sealed class AvatarSystem : ISimSystem
                 if (Shops.Hatch.ShopOf(sim, action.Target) is { IsNull: false } inn && sim.Shops.OpenOrderOf(avatar, ServiceKind.Meal) == null
                     && sim.Shops.PlayerOrder(sim, avatar, ServiceKind.Meal, inn) is { } why)
                     sim.Messages.Add(MessageKind.Info, $"Can't order: {why}.", action.Cell);
+                break;
+            case AvatarActionKind.OrderHealing:
+                if (Buildings.Of(sim, action.Target) is { IsNull: false } shrine && sim.Shops.OpenOrderOf(avatar, ServiceKind.Healing) == null
+                    && sim.Shops.PlayerOrder(sim, avatar, ServiceKind.Healing, shrine) is { } refused)
+                    sim.Messages.Add(MessageKind.Info, $"Can't ask: {refused}.", action.Cell);
                 break;
             case AvatarActionKind.Mend:
                 Tinkering.Repairs.StartMend(sim, avatar, sim.Repairs.At(action.Cell));

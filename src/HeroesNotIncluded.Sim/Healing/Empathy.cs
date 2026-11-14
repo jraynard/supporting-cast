@@ -88,8 +88,13 @@ public static class Empathy
     /// burden, capped so it never kills them outright. A link that snapped leaves a backlash.
     /// An infection comes across with a wound drawn whole. Returns the damage taken off the patient.
     /// </summary>
-    public static float Draw(Simulation sim, Entity healer, Entity patient, int key, float fraction, bool snapped)
+    public static float Draw(Simulation sim, Entity healer, Entity patient, int key, float fraction, bool snapped) =>
+        Draw(sim, healer, patient, key, fraction, snapped, out _);
+
+    /// <summary><inheritdoc cref="Draw(Simulation, Entity, Entity, int, float, bool)"/> <paramref name="carried"/> is the key of the wound it became on the healer (0 if none).</summary>
+    public static float Draw(Simulation sim, Entity healer, Entity patient, int key, float fraction, bool snapped, out int carried)
     {
+        carried = 0;
         var w = sim.World;
         if (Find(sim, patient, key) is not { } wound || !w.TryGet<Health>(healer, out var mine) || !w.TryGet<Health>(patient, out var theirs))
             return 0f;
@@ -117,6 +122,7 @@ public static class Empathy
         var taken = HealthSystem.Damage(sim, healer, drawn * burden, wound.Type, part);
         if (taken != null)
         {
+            carried = KeyOf(taken);
             taken.Absorbed = true;
             if (infection != null && taken.Infection == null)
             {

@@ -114,7 +114,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             }
             else if (e.Kind.Kind == ServiceKind.Goods && (!sim.World.IsAlive(e.Subject) || !sim.World.Has<ForSale>(e.Subject)))
                 Close(sim, e, OrderStatus.Cancelled); // sold to someone else, or taken off sale
-            else if (e.Kind.Kind == ServiceKind.Healing && !Untended(sim, e.Poster))
+            else if (e.Kind.Kind == ServiceKind.Healing && (e.Mend ? !Healing.LayOnHands.Hurt(sim, e.Poster) : !Untended(sim, e.Poster)))
                 Healed(sim, e);
             else if (e.Kind.Kind == ServiceKind.WagonRepair && !Tinkering.Wagons.Damaged(sim, e.Subject))
                 WagonMended(sim, e);
@@ -394,7 +394,10 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var spare = Math.Max(0, Coin.Count(sim, who) - Promised(who));
         if (sign.Price > spare)
             return $"{def.Label} is {sign.Price} silver, and you have {spare} to spare";
-        Post(sim, who, def, Asking(def, sign.Price, null), sign.Price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), Entity.Null, shop, sign.Price);
+        if (kind == ServiceKind.Healing && !Healing.LayOnHands.Hurt(sim, who))
+            return "you've nothing that wants healing";
+        var order = Post(sim, who, def, Asking(def, sign.Price, null), sign.Price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), Entity.Null, shop, sign.Price);
+        order.Mend = kind == ServiceKind.Healing;
         return null;
     }
 
@@ -1190,6 +1193,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             w.Int(e.Craving is { } craving ? (int)craving : -1);
             w.Bool(e.WantsHouse);
             w.String(e.Dish?.Name ?? "");
+            w.Bool(e.Mend);
             w.Int(e.KnownBy.Count);
             foreach (var k in e.KnownBy)
                 w.Entity(k);
@@ -1247,6 +1251,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 e.WantsHouse = r.Bool();
             if (r.Version >= 24 && r.String() is { Length: > 0 } dishName && sim.Defs.TryThing(dishName, out var dishDef) && dishDef.Menu != null)
                 e.Dish = dishDef;
+            if (r.Version >= 26)
+                e.Mend = r.Bool();
             for (var k = r.Count(1 << 16); k > 0; k--)
                 e.KnownBy.Add(r.Entity());
             _orders.Add(e);

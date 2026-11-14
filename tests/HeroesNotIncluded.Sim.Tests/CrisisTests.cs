@@ -97,6 +97,10 @@ public class CrisisTests
         var sick = sim.Creatures().Single(e => FeverSystem.Has(sim, e));
         Assert.True(w.Has<Adventurer>(sick));
         Assert.Equal("fever", DamageTypes.Wound(DamageType.Fever));
+        // The town's empath would draw the fever out and quell it before it spread: this is the
+        // spreading, so their mana's spent (they still bind, as any healer would).
+        foreach (var e in w.Query<Mana>())
+            w.Get<Mana>(e).Current = 0f;
 
         // Someone stays close by them for a few hours.
         var near = sim.Creatures().First(e => w.Get<Creature>(e) is { Faction: Faction.Village, Dead: false } && !w.Has<Avatar>(e));

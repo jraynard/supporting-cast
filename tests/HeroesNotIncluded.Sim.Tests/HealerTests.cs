@@ -679,7 +679,7 @@ public class HealerTests
     }
 
     [Fact]
-    public void AnAIHealerBandagesAnAdventurerAndIsPaid()
+    public void AnAIHealerDrawsAnAdventurersWoundMendsItAndIsPaid()
     {
         var (sim, hurt) = ShrineWithAHurtAdventurer("Blacksmith");
         var healer = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
@@ -689,6 +689,99 @@ public class HealerTests
         var order = sim.Shops.All.Single(e => e.Poster == hurt && e.Kind.Kind == ServiceKind.Healing);
         Assert.Equal(OrderStatus.Done, order.Status);
         Assert.Equal(healer, order.Assignee);
+        var log = string.Join("\n", sim.Messages.Messages.TakeLast(8).Select(m => m.Text));
+        // Not bound and left to close over days: drawn out of them, and woven away.
+        Assert.DoesNotContain(sim.World.Get<Health>(hurt).Injuries, i => i.Type == DamageType.Cut && i.Damage >= LayOnHands.MendFrom);
+        Assert.True(sim.World.Get<Mana>(healer).Current < sim.World.Get<Mana>(healer).Max, "it cost mana: " + log);
+        Assert.True(sim.World.Get<Health>(healer).Injuries.Where(i => i.Absorbed).Sum(i => i.Damage) < LayOnHands.MendFrom, "it mended what it took: " + log);
+    }
+
+    /// <summary>A healer's shrine with its AI healer, a player in another trade cut and bandaged, and the shrine's pallets.</summary>
+    private static (Simulation Sim, Entity Me, Entity Healer, Entity Pallet) HurtPlayerAtTheShrine()
+    {
+        var (sim, adventurer) = ShrineWithAHurtAdventurer("Blacksmith");
+        sim.World.Get<Health>(adventurer).Injuries.Clear(); // it's the player's turn
+        sim.World.Get<Health>(adventurer).Changed();
+        var me = Players.CharacterOf(sim, Ana);
+        var healer = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
+        var h = sim.World.Get<Health>(me);
+        var leg = h.Body.Parts.FindIndex(p => p.Label.Contains("leg") && !p.Vital);
+        HealthSystem.Damage(sim, me, 14f, DamageType.Cut, leg);
+        foreach (var inj in h.Injuries)
+            Bandaging.Dress(sim, inj, 0.5f); // bound: no longer bleeding, still hurt
+        h.Changed();
+        var shrine = sim.Shops.All.Single(e => e.Poster == adventurer && e.Kind.Kind == ServiceKind.Healing).Where;
+        var pallet = ShopSystem.BedsOf(sim, shrine)[0];
+        var at = sim.World.Get<Thing>(pallet).Cell;
+        var cell = sim.SpiralFrom(at, 2).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z && Ai.Pathfinder.Touches(c, at)
+            && sim.Map.Structure[sim.Map.Idx(c)].IsNull);
+        sim.World.Get<Position>(me).Cell = cell;
+        sim.World.Get<Position>(me).Pos = Position.CenterOf(cell);
+        return (sim, me, healer, pallet);
+    }
+
+    [Fact]
+    public void AHurtPlayerAsksAtAShrinePalletAndIsMendedNotJustBound()
+    {
+        var (sim, me, healer, pallet) = HurtPlayerAtTheShrine();
+        var at = sim.World.Get<Thing>(pallet).Cell;
+        var ask = AvatarSystem.ActionAt(sim, me, at);
+        Assert.Equal(AvatarActionKind.OrderHealing, ask.Kind);
+        Assert.Contains("healed", ask.Label);
+        var purse = Coin.Count(sim, me);
+        Assert.Null(sim.Shops.PlayerOrder(sim, me, ServiceKind.Healing, Buildings.Of(sim, pallet)));
+        var order = sim.Shops.OpenOrderOf(me, ServiceKind.Healing)!;
+        Assert.True(order.Mend);
+        Assert.NotEqual(AvatarActionKind.OrderHealing, AvatarSystem.ActionAt(sim, me, at).Kind); // asked: the pallet's for lying on now
+
+        // Bound already, so nothing needs tending: an order only for bleeding would close at once, unpaid.
+        sim.TickMany(SimClock.TicksPerHour / 12);
+        Assert.Equal(OrderStatus.Open, order.Status);
+        for (var i = 0; i < 16 && order.IsOpen; i++)
+            sim.TickMany(SimClock.TicksPerHour / 4);
+
+        var log = string.Join("\n", sim.Messages.Messages.TakeLast(8).Select(m => m.Text));
+        Assert.True(order.Status == OrderStatus.Done, $"{order.Status}: {log}");
+        Assert.Equal(healer, order.Assignee);
+        Assert.False(LayOnHands.Hurt(sim, me), log);
+        Assert.Equal(purse - order.Price, Coin.Count(sim, me));
+    }
+
+    [Fact]
+    public void AnUnhurtPlayerIsntOfferedHealing()
+    {
+        var (sim, me, _, pallet) = HurtPlayerAtTheShrine();
+        sim.World.Get<Health>(me).Injuries.Clear();
+        sim.World.Get<Health>(me).Changed();
+        Assert.NotEqual(AvatarActionKind.OrderHealing, AvatarSystem.ActionAt(sim, me, sim.World.Get<Thing>(pallet).Cell).Kind);
+        Assert.NotNull(sim.Shops.PlayerOrder(sim, me, ServiceKind.Healing, Buildings.Of(sim, pallet)));
+    }
+
+    [Fact]
+    public void AnAIHealerSeesToABadlyHurtVillagerUnaskedAndMendsWhatItCarries()
+    {
+        var (sim, adventurer) = ShrineWithAHurtAdventurer("Blacksmith");
+        sim.World.Get<Health>(adventurer).Injuries.Clear();
+        sim.World.Get<Health>(adventurer).Changed();
+        var me = Players.CharacterOf(sim, Ana);
+        var healer = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
+        var villager = sim.Creatures().First(e => e != me && e != healer && sim.World.Get<Creature>(e).Faction == Faction.Village
+            && sim.World.Has<Trade>(e) && !sim.World.Has<Adventurer>(e));
+        var h = sim.World.Get<Health>(villager);
+        HealthSystem.Damage(sim, villager, 12f, DamageType.Blunt, h.Body.Parts.FindIndex(p => p.Label.Contains("arm") && !p.Vital));
+        foreach (var inj in h.Injuries)
+            Bandaging.Dress(sim, inj, 0.5f);
+        h.Changed();
+
+        for (var i = 0; i < 24 && LayOnHands.Hurt(sim, villager); i++)
+            sim.TickMany(SimClock.TicksPerHour / 4);
+        var log = string.Join("\n", sim.Messages.Messages.TakeLast(8).Select(m => m.Text));
+        Assert.False(LayOnHands.Hurt(sim, villager), log);
+
+        // Anything the casts left on the healer, it weaves away as the mana comes.
+        for (var i = 0; i < 24 && sim.World.Get<Health>(healer).Injuries.Exists(x => x.Absorbed && x.Damage >= LayOnHands.MendFrom); i++)
+            sim.TickMany(SimClock.TicksPerHour / 2);
+        Assert.DoesNotContain(sim.World.Get<Health>(healer).Injuries, x => x.Absorbed && x.Damage >= LayOnHands.MendFrom);
     }
 
     [Fact]

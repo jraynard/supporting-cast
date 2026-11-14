@@ -23,11 +23,11 @@ raid size), the dragon's toughness, the night speed and the need rates.
 
 ### From the second playtest
 Notes from playing; the healer first.
-- **The healer, AI and asked for.** A wound you can't treat yourself has nowhere to go: AI healers
-  only bandage, and a villager or player can't ask for healing. Let anyone (players by F at the
-  healer's line, as at the hatch; the wounded AI on their own) put in a healing order, and teach the
-  AI healer the empath's real work: drawing wounds in, weaving mendings, quelling fevers. Then
-  bots go to the healer, and the wounded don't lie where they fell (both under Polish).
+- **The healer, AI and asked for.** Done: the AI empath lays on hands (`Healing/LayOnHands`):
+  it draws what its mana will mend, weaves it away on itself and binds the rest; it sees to badly
+  hurt villagers unasked and mends what it carries as its mana comes back. Players ask with F at a
+  shrine pallet, and that order waits on the wounds, not the bleeding. Left: bots asking for it,
+  the AI healer weaving charms, and tuning the mana (a busy day empties it).
 - **Buckets against fire,** so there's something to do about the dragon's burning: fill at the
   well, hold F to charge the throw's reach, a spray where it lands, back to the well to refill.
   The AI joins a bucket line when a fire's called.

@@ -65,6 +65,12 @@ public sealed class Order
     /// <summary>For a meal: they asked for the house dish by name (<c>Work.HouseDish</c>).</summary>
     public bool WantsHouse { get; set; }
 
+    /// <summary>
+    /// For healing: asked to be mended, not just bound (a player's, at a shrine pallet), so it's
+    /// done when the wounds are, not when the bleeding stops (<c>Healing.LayOnHands.Hurt</c>).
+    /// </summary>
+    public bool Mend { get; set; }
+
     /// <summary>Who knows of it, in the order they learned.</summary>
     public List<Entity> KnownBy { get; } = [];
 

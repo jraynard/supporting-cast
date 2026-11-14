@@ -118,7 +118,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
   - `Healing/`: the empath. Wounds drawn in are `Injury.Absorbed` and known only by feel
     (`PerceptionView.FeltWounds`); never show their kind by name. A patient's wounds are known
     only once felt over (`Injury.FeltBy`). Mendings are woven from runes, the mix deciding which
-    (`Weaving`); the book (`Spellbook`) is what the empath knows of them.
+    (`Weaving`); the book (`Spellbook`) is what the empath knows of them. An AI empath works the gift without the games (`LayOnHands`): it
+    draws only what its mana will mend at once. Players ask for healing with F at a shrine pallet.
   - `Expeditions/`: quests with hidden truth, per-person `Intel`, parties off the map as
     `MemberRecord`s, the resolver, the return.
   - `Bots/BotPlayer` plays only through commands and `Perception`, a trade's whole game included.
