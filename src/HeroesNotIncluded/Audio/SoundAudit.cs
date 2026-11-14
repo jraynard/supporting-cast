@@ -27,8 +27,10 @@ public static class SoundAudit
         }
         // A playlist with nothing there yet is a warning: our songs come later, and the free ones
         // are fetched (tools/fetch_music.py), not kept in git.
+        // So is a streamed sound on the music bus (the festival's band): it plays the same tracks.
+        bool IsMusic(string id) => manifest.Music.ContainsKey(id) || manifest.Sounds.TryGetValue(id, out var d) && d.Stream && d.Bus == AudioBus.Music;
         foreach (var m in manifest.MissingFiles)
-            if (manifest.Music.ContainsKey(m[..Math.Max(0, m.IndexOf(':'))]))
+            if (IsMusic(m[..Math.Max(0, m.IndexOf(':'))]))
                 warnings.Add($"music {m}");
             else
                 errors.Add($"sound {m}");
@@ -36,7 +38,7 @@ public static class SoundAudit
             if (!manifest.Sounds.TryGetValue(id, out var def))
                 errors.Add($"sound '{id}' is named by the game but not in sounds.json");
             else if (def.Files.Count == 0)
-                errors.Add($"sound '{id}' has no files");
+                (IsMusic(id) ? warnings : errors).Add($"sound '{id}' has no files");
         foreach (var id in manifest.Sounds.Keys.Except(Sounds.All))
             warnings.Add($"sound '{id}' is in sounds.json but the game never plays it");
         foreach (var mood in Moods.All)

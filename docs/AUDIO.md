@@ -107,6 +107,12 @@ tracks with a quiet `gap` (seconds, `[low, high]`) between them, and crossfades 
 changes. To replace the placeholders, drop your songs in `music/` with a mood prefix. Then
 remove the free ones (the folder or the script's entries) and their credits: no code changes.
 
+The festival's music is placed in the world. A band (`festival.band` in `sounds`, a festival track
+streamed and looped on the music bus) is held at the well (`SoundDirector`), so it fades with
+distance (`range` 40, `near` 8). Within 24 cells of the well the mood music gives way to it. The
+band lists only the free tracks for now; add `music/festival_*.ogg` to its `files` once ours
+exist. Without any band tracks, the `festival` playlist plays near the well as before.
+
 ## Voices
 
 Speech is babble for now (`Audio/Babble.cs`). Its syllables come from a small formant synthesizer

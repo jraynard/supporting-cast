@@ -60,6 +60,7 @@
     "amb.fire":  { "files": ["amb/amb_fire_rec.ogg"],  "bus": "ambience", "gain": 0.55, "range": 12, "near": 2 },
     "amb.blaze": { "files": ["amb/amb_blaze.ogg"], "bus": "ambience", "gain": 0.8, "range": 40, "near": 6, "priority": 3 },
     "amb.crowd": { "files": ["amb/amb_crowd.ogg"], "bus": "ambience", "gain": 0.45 },
+    "festival.band": { "files": ["music/free/festival_*.ogg"], "bus": "music", "gain": 0.7, "range": 40, "near": 8, "stream": true },
 
     "voice.blip": { "files": ["voice/blip_*.ogg"], "bus": "voice", "gain": 0.6, "range": 26, "near": 4, "max": 16, "priority": 2 }
   },

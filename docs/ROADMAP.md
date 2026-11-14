@@ -27,23 +27,19 @@ provide some purely non-combat options but i think that will be later once we ha
 ## Next
 
 ### The festival
-Built (HISTORY.md, "The festival, made an event"). What's left:
+Built (HISTORY.md, "The festival, made an event", and the passes after it). What's left, in order:
 
-- **Playtest it again:** the first playtest's fixes are in (HISTORY.md, "The festival, from its
-  first playtest"). Still to judge: the length of the tale and the revels, the activity weights,
-  what the show table and the games are worth to a guest (`festival.json`), and whether the toasts
-  swing a season enough to matter.
-- **Hearing the tale from afar:** a player who's slow to the square misses the crier's opening
-  lines. Maybe keep them in the Heard panel for anyone at the festival, or hold the tale until the
-  players are near.
-- **Art:** dance and cheer frames in the people pipeline (`tools/chibi_people.py`; the renderer
-  hops for now), a proper bunting string between the lantern posts.
-- **The butts with real arrows:** a target thing the ranged code can hit, shot from a mark.
-- **Music from the square:** truly positional music needs Narsil's audio to place a track; for now
-  the festival's music plays only near the well.
-- **Putting it up:** an AI labourer carrying the tables and lanterns out that afternoon, instead of
-  everything appearing at the bell.
-- **M4:** the ceremony's `Accusation` step, where the town can name a traitor before the verdict.
+1. **Putting it up:** from `setupHour` on the last day, each prop is a `Construction` site that the
+   labourer builds (cheap costs, festival sites first). `PutUp` at the bell finishes whatever's
+   still missing.
+2. **The butts with real arrows:** the butt is a `target` that `Reach.InSweep` can hit, shot from a
+   mark with real bow controls (a festival bow is lent at the mark). It's scored by ring from
+   where the arrow lands, and the arrows stay in the face until the ceremony. `ButtsSession`'s
+   maths stays for AI turns.
+3. **Bunting:** strung between neighbouring lantern posts by the renderer, a sagging line of
+   pennants.
+4. **Playtest it again:** the first playtest's fixes are in (HISTORY.md, "The festival, from its
+   first playtest"). The festival's numbers are under Polish → Tuning.
 
 ### Death and ghosts
 First pass done (HISTORY.md, "Death and ghosts"). What's left:
@@ -58,9 +54,10 @@ First pass done (HISTORY.md, "Death and ghosts"). What's left:
 Fights are free movement and blows by reach and timing, Souls-lite, everywhere (done: HISTORY.md,
 "Combat: blows seen coming"). What's left:
 
-- **Swing and dodge frames** from the people pipeline (`tools/chibi_people.py`: new tags after the
-  rest, every layer regenerated). For now a blow plays the work swing and the weapon is drawn on
-  its own about the hand; a dodge is a tumble.
+- **Swing, dodge, dance and cheer frames** from the people pipeline (`tools/chibi_people.py`: new
+  tags after the rest, every layer regenerated, all four in one pass). For now a blow plays the
+  work swing and the weapon is drawn on its own about the hand; a dodge is a tumble; a festival
+  dancer hops and sways (`WorldRenderer`), and nobody cheers.
 - **Balance.** The town drives off fewer raids than it did (1 of 8 seeds in a sample against 3 of
   8 before the one model): AI defenders, armour soak, AI dodge odds, stamina (`Blows.Regen`,
   `RegenDelay`, costs) and the parry window (`ParryBefore`, `ParryAfter`) want tuning in the
@@ -81,6 +78,8 @@ Fights are free movement and blows by reach and timing, Souls-lite, everywhere (
 ### M4: Whispers
 - Allegiance, objectives, the hidden shop, evidence, player violence, Constable and jail, the bell,
   meetings and exile, ghosts.
+- The festival ceremony's `Accusation` step (`CeremonyStep`, a no-op for now): the town can name a
+  traitor before the verdict.
 - discord integrations like among us (or probably better examples i dont know)
 
 *Exit: a Whispers round.* **Playtest gate: can traitors act and be caught?**
@@ -121,6 +120,11 @@ Grouped by area; nothing here blocks a playtest.
   - the raid warning's lead, the town purse and the price of arms, the carter's load;
 - The dragon: likely too easy with a party in town, and impossible without one.
 - Night speed and the need rates.
+- The festival (`festival.json`, `season.json`):
+  - the length of the tale and the revels;
+  - the activity weights;
+  - what the show table and the games are worth to a guest;
+  - whether the toasts swing a season enough to matter.
 - Every mini-game's timing, none of it tuned in play yet:
   - **Forge:** the heat and quench windows; the bloom's band, how long it takes and its yield.
   - **Kitchen:** the pot, the seasoning.

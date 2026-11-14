@@ -15,6 +15,12 @@ public sealed class FestivalDef : Def
     /// <summary>Game minutes from the bell before the crier starts the tale: time to get to the square.</summary>
     public float GatherMinutes { get; set; } = 20;
 
+    /// <summary>
+    /// Game minutes past the gathering the crier will wait for players still out of earshot
+    /// (<c>FestivalSystem.PlayersInEarshot</c>) before starting the tale without them.
+    /// </summary>
+    public float TaleWaitMinutes { get; set; } = 30;
+
     /// <summary>Game hours at the festival's end given to the ceremony (toasts, honours, the verdict); it ends sooner if it's said its piece.</summary>
     public float CeremonyHours { get; set; } = 2.5f;
 

@@ -69,6 +69,9 @@ public static class Sounds
     public const string Blaze = "amb.blaze";
     public const string Crowd = "amb.crowd";
 
+    /// <summary>The festival's band, held at the well and heard fading with distance (a festival track, looped, on the music bus).</summary>
+    public const string Band = "festival.band";
+
     /// <summary>Speech babble: one syllable per play, its variant picked from the letters.</summary>
     public const string Voice = "voice.blip";
 
@@ -79,7 +82,7 @@ public static class Sounds
         PotBubble, PotStir, Pinch, Pour, Fizz, Clink, Knock, Scrub, Cloth, Creak,
         Click, Ratchet, Rune, Weave, Hum,
         Swing, Clash, Wound, Bow, Miss, Din, Parry, Block, Thrust, Heavy, Roar, Breath, Wings,
-        Wind, Birds, Night, River, Hearth, Blaze, Crowd,
+        Wind, Birds, Night, River, Hearth, Blaze, Crowd, Band,
         Voice,
     ];
 }

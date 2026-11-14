@@ -1455,3 +1455,23 @@ It wasn't clear what to do at first, then it was over too fast. Now:
   (`AvatarActionKind.Sit`, `SitJob`, the seated pose) until you walk off. "Look at" (the festival
   card, a toast, the message log) holds the camera there until your character moves or eight
   seconds pass (`VillageGame.LookAtCell`); before, the follow snapped it straight back.
+
+### The festival: the tale waits for the players (2026-11-14)
+- **Nobody misses the start.** After the gathering the crier holds the tale until every player
+  who's up and about would hear it plainly from where they stand
+  (`FestivalSystem.PlayersInEarshot`). Players asleep, downed or dead aren't waited for, and the
+  crier gives up after `taleWaitMinutes` (`festival.json`, 30). Meanwhile the festival card says
+  the crier's waiting.
+- **The tale so far.** The card has a fold with the lines told so far (`FestivalSystem.Told`, from
+  the tale already saved), for anyone who came late or missed a line. The tale is all public.
+- `FestivalTests`: the crier waits for a player out of earshot, starts when they come, and waits
+  only so long; a save mid-tale keeps what's been told. No new save state. Bench hashes unchanged.
+
+### The festival: the band at the well (2026-11-14)
+- **Music from the square.** Narsil could already place a looped sound, so the festival's music is
+  now a band held at the well (`festival.band`: a festival track streamed, looped and downmixed to
+  mono on the music bus, `range` 40, `near` 8). It's heard fading as you walk away and muffled
+  indoors. Within 24 cells the evening's own music fades out and leaves the band. Without band
+  tracks (music not fetched), the `festival` playlist plays near the well as before.
+- `--check-art` treats a streamed music-bus sound with no files like a playlist with none: a
+  warning, not an error. The band lists only the free tracks until ours exist (docs/AUDIO.md).

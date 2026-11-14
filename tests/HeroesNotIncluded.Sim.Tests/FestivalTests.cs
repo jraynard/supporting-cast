@@ -373,6 +373,69 @@ public class FestivalTests
                     $"\"{said[k - 1].Text}\" was given time to be read");
     }
 
+    /// <summary>Puts someone somewhere standable well out of shouting range of the well.</summary>
+    private static void SendFarAway(Simulation sim, Entity who)
+    {
+        var square = sim.Round.Square!.Value;
+        for (var y = 0; y < sim.Map.Height; y++)
+            for (var x = 0; x < sim.Map.Width; x++)
+            {
+                var c = new int3(x, y, square.Z);
+                var dx = x - square.X;
+                var dy = y - square.Y;
+                if (dx * dx + dy * dy > 50 * 50 && sim.Map.Passable(c) && sim.Map.Standable(sim.Map.Idx(c)) && sim.Map.Structure[sim.Map.Idx(c)].IsNull)
+                {
+                    sim.World.Get<Position>(who) = Position.At(c);
+                    return;
+                }
+            }
+        Assert.Fail("nowhere far from the well");
+    }
+
+    /// <summary>Stands someone beside the well, among the crowd.</summary>
+    private static void BringToTheWell(Simulation sim, Entity who)
+    {
+        var square = sim.Round.Square!.Value;
+        var w = sim.World;
+        var cell = sim.SpiralFrom(square, 4).First(c => c.Z == square.Z && c != square && sim.Map.Passable(c)
+            && sim.Map.Structure[sim.Map.Idx(c)].IsNull && !sim.Creatures().Any(o => o != who && w.Get<Position>(o).Cell == c));
+        w.Get<Position>(who) = Position.At(cell);
+    }
+
+    [Fact]
+    public void TheCrierWaitsForAPlayerStillOnTheirWay()
+    {
+        var sim = Round();
+        ToFestival(sim, 1);
+        var me = Me(sim);
+        SendFarAway(sim, me);
+        var gathered = sim.Festival.StartTick + SimClock.HoursToTicks(sim.Defs.Festival.GatherMinutes / 60f);
+        sim.TickMany((int)(gathered - sim.Clock.Tick) + SimClock.TicksPerHour / 6);
+        Assert.False(sim.Festival.Telling, "the tale waits for the player");
+        Assert.True(sim.Festival.WaitingForPlayers(sim));
+        Assert.Empty(sim.Festival.Told);
+
+        BringToTheWell(sim, me);
+        sim.TickMany(SimClock.TicksPerSecond * 2);
+        Assert.True(sim.Festival.Telling, "the player's come: on with the tale");
+        sim.TickMany(SimClock.TicksPerSecond * 2);
+        Assert.NotEmpty(sim.Festival.Told);
+    }
+
+    [Fact]
+    public void TheCrierWaitsOnlySoLong()
+    {
+        var sim = Round();
+        ToFestival(sim, 1);
+        SendFarAway(sim, Me(sim));
+        var f = sim.Defs.Festival;
+        var until = sim.Festival.StartTick + SimClock.HoursToTicks((f.GatherMinutes + f.TaleWaitMinutes) / 60f);
+        sim.TickMany((int)(until - sim.Clock.Tick) + SimClock.TicksPerSecond * 30);
+        Assert.True(sim.Festival.Telling, "the tale starts without them in the end");
+        Assert.NotEmpty(sim.Festival.Told);
+        Assert.Equal(sim.Festival.Tale(sim)[0], sim.Festival.Told.First());
+    }
+
     [Fact]
     public void ASaveMidTaleCarriesOnTheTale()
     {
@@ -384,6 +447,8 @@ public class FestivalTests
         var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
         Assert.True(loaded.Festival.Telling);
         Assert.Equal(sim.Festival.Crier, loaded.Festival.Crier);
+        Assert.NotEmpty(loaded.Festival.Told);
+        Assert.Equal(sim.Festival.Told, loaded.Festival.Told);
         for (var t = 0; t < SimClock.TicksPerHour * 4 && loaded.Festival.Part == FestivalPart.Opening; t += 30)
             loaded.TickMany(30);
         Assert.Equal(FestivalPart.Revels, loaded.Festival.Part);

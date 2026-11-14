@@ -43,6 +43,9 @@ public sealed class SoundDirector(AudioEngine audio)
 
     /// <summary>The listener's near enough the festival's square to hear its music (else the evening's own).</summary>
     private bool _atFestival;
+
+    /// <summary>Where the festival's band plays (the well), while there's a festival; null otherwise.</summary>
+    private float3? _bandAt;
     private long _bellHeard = -1;
 
     /// <summary>How far from the well (cells) the festival's music carries.</summary>
@@ -406,8 +409,10 @@ public sealed class SoundDirector(AudioEngine audio)
         if (nearest < 40 * 40)
             _loops.Add(("river", river, 1f, _indoors ? 0.7f : 0f));
 
-        // The festival: its music near the square, and the crowd's murmur out in it.
+        // The festival: the band at the well, heard fading with distance; near it the evening's own
+        // music gives way. The crowd's murmur out in the square.
         _atFestival = sim.Round.Square is not { } sq || Dist2(sq, here) <= FestivalReach * FestivalReach;
+        _bandAt = sim.Round.Phase == RoundPhase.Festival && sim.Round.Square is { } well ? ToAudio(well) + new float3(0, 0, 1.5f) : null;
         // A room with people in: the murmur of a full inn.
         _crowd = 0f;
         if (sim.Round.Phase == RoundPhase.Festival && !_indoors && sim.Round.Square is { } square && Dist2(square, here) <= 12 * 12)
@@ -444,9 +449,14 @@ public sealed class SoundDirector(AudioEngine audio)
         audio.Hold("bed:night", Sounds.Night, _night);
         audio.Hold("bed:crowd", Sounds.Crowd, _crowd);
         audio.Hold("bed:din", Sounds.Din, Math.Clamp(_recentFight.Count / 6f, 0f, 1f));
+        if (_bandAt is { } band && HasBand)
+            audio.Hold("festival:band", Sounds.Band, 1f, band, muffle: _indoors ? 0.6f : 0f);
         foreach (var (key, at, gain, muffle) in _loops)
             audio.Hold(key, key.StartsWith("hearth", StringComparison.Ordinal) ? Sounds.Hearth : key.StartsWith("blaze", StringComparison.Ordinal) ? Sounds.Blaze : Sounds.River, gain, at, muffle);
     }
+
+    /// <summary>The band has tracks to play (the free ones are fetched, not kept in git).</summary>
+    private bool HasBand => audio.Manifest.Sounds.TryGetValue(Sounds.Band, out var band) && band.Files.Count > 0;
 
     private void PickMood(Simulation sim)
     {
@@ -454,7 +464,8 @@ public sealed class SoundDirector(AudioEngine audio)
         Mood = phase switch
         {
             RoundPhase.Over => Moods.Reveal,
-            RoundPhase.Festival when _atFestival => Moods.Festival,
+            // Near the square the band (placed, in Ambience) is the music; without its tracks, the playlist.
+            RoundPhase.Festival when _atFestival => HasBand ? null : Moods.Festival,
             _ when _time < _dangerUntil => Moods.Danger,
             _ => sim.Clock.Daylight < 0.3f ? Moods.Night : Moods.Day,
         };

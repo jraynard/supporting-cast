@@ -117,7 +117,9 @@ public sealed partial class VillageGame
         switch (f.Part)
         {
             case FestivalPart.Opening:
-                TextC(Theme.Text, f.Telling ? "Gather round the well and listen: then the revels begin." : "Down tools: everyone to the well in the square.");
+                TextC(Theme.Text, f.Telling ? "Gather round the well and listen: then the revels begin."
+                    : f.WaitingForPlayers(_sim) ? "The crier's waiting for everyone to reach the well before the tale."
+                    : "Down tools: everyone to the well in the square.");
                 if (_sim.Round.Square is { } sq && ImGui.SmallButton("Look at the square"u8))
                     LookAtCell(sq);
                 break;
@@ -159,7 +161,23 @@ public sealed partial class VillageGame
                 });
                 break;
         }
+        DrawTaleSoFar(f);
         Panel.End();
+    }
+
+    /// <summary>
+    /// The crier's tale as far as it's got, folded away: for anyone who came late or missed a line.
+    /// The tale is public (who came, the crises, the dead), so it's read from the sim as it is.
+    /// </summary>
+    private void DrawTaleSoFar(FestivalSystem f)
+    {
+        var told = f.Told.ToList();
+        if (told.Count == 0)
+            return;
+        if (!ImGui.CollapsingHeader("The tale so far"u8, ImGuiTreeNodeFlags.None))
+            return;
+        foreach (var line in told)
+            WrappedC(Theme.Dim, line);
     }
 
 

@@ -1,6 +1,7 @@
 // The season's festival (Defs/FestivalDefs.cs, Round/FestivalSystem.cs): the last evening, from
 // season.json's festivalHour for its festivalHours. It opens with the bell; gatherMinutes later the
-// crier tells the season at the well, a line at a time, and says what's on. Then the revels: the
+// crier tells the season at the well (waiting up to taleWaitMinutes more for players still out of
+// earshot), a line at a time, and says what's on. Then the revels: the
 // feast tables, dancing round the bonfire, the show table and the games, the crier calling folk to
 // them every callMinutes. The last ceremonyHours are the ceremony: the bell again, each party's
 // toast (where what they think of the town is counted), the honours, and the verdict, then the
@@ -11,6 +12,7 @@
     {
       "name": "Festival",
       "gatherMinutes": 25,
+      "taleWaitMinutes": 30,
       "ceremonyHours": 2.5,
       "beatSeconds": 1.5,
       "verdictSeconds": 22,

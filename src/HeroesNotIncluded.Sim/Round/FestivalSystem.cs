@@ -285,7 +285,10 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         var now = sim.Clock.Tick;
         if (_taleIndex < 0)
         {
-            if (now < StartTick + SimClock.HoursToTicks(sim.Defs.Festival.GatherMinutes / 60f))
+            var gathered = StartTick + SimClock.HoursToTicks(sim.Defs.Festival.GatherMinutes / 60f);
+            if (now < gathered)
+                return;
+            if (now < gathered + SimClock.HoursToTicks(sim.Defs.Festival.TaleWaitMinutes / 60f) && !PlayersInEarshot(sim))
                 return;
             _tale.Clear();
             _tale.AddRange(Tale(sim));
@@ -303,6 +306,33 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         }
         BeginRevels(sim);
     }
+
+    /// <summary>
+    /// Every player steering a character (an <see cref="Avatar"/>) who's up and about would hear the crier plainly from where they
+    /// stand, so nobody slow to the square misses the start. Those asleep, downed or dead aren't
+    /// waited for. True with no players at all.
+    /// </summary>
+    public bool PlayersInEarshot(Simulation sim)
+    {
+        var w = sim.World;
+        var crier = CrierNow(sim);
+        if (!w.IsAlive(crier) || !w.Has<Position>(crier))
+            return true;
+        var from = w.Get<Position>(crier).Cell;
+        foreach (var e in w.Each<Avatar>())
+            if (SpeechSystem.CanAct(sim, e)
+                && SpeechSystem.Hear(sim, from, w.Get<Position>(e).Cell, Volume.Shout) != Clarity.Clear)
+                return false;
+        return true;
+    }
+
+    /// <summary>The lines of the tale said so far, in order: the festival card keeps them for anyone who missed one. It's all public.</summary>
+    public IEnumerable<string> Told => _tale.Take(Math.Clamp(_taleIndex, 0, _tale.Count));
+
+    /// <summary>The tale's been held past the gathering for someone still on their way.</summary>
+    public bool WaitingForPlayers(Simulation sim) =>
+        Part == FestivalPart.Opening && _taleIndex < 0
+        && sim.Clock.Tick >= StartTick + SimClock.HoursToTicks(sim.Defs.Festival.GatherMinutes / 60f);
 
     private void BeginRevels(Simulation sim)
     {
