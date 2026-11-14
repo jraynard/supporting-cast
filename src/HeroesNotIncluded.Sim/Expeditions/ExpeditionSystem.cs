@@ -319,8 +319,22 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         var health = Math.Clamp(1f - 0.8f * m.Pain - (1f - m.Blood), 0.2f, 1f);
         var morale = 1f + 0.08f * Math.Clamp(m.Satisfaction, -4f, 4f);
         var fed = m.Food < 0.3f ? 0.85f : 1f;
+        var fever = Fevered(m);
         var kit = quest == null ? 1f : Tinkering.Contraptions.StrengthFactor(Working(m, jammed), quest);
-        return skill * weapon * armor * health * morale * fed * Healing.Charms.StrengthFactor(m.Charms) * kit;
+        return skill * weapon * armor * health * morale * fed * fever * Healing.Charms.StrengthFactor(m.Charms) * kit;
+    }
+
+    /// <summary>
+    /// A fever taken on the road saps them, whatever pain it gave as they left: less once it's seen
+    /// to (bound and resting, the body's throwing it off), more left to grow.
+    /// </summary>
+    private static float Fevered(MemberRecord m)
+    {
+        var worst = 1f;
+        foreach (var w in m.Wounds)
+            if (w.Type == DamageType.Fever)
+                worst = Math.Min(worst, w.Tended ? 0.92f : 0.8f);
+        return worst;
     }
 
     /// <summary>The contraptions someone carries that haven't jammed.</summary>

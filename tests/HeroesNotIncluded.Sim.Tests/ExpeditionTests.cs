@@ -172,4 +172,17 @@ public class ExpeditionTests
         Assert.True(ExpeditionSystem.Strength(neglected) < ExpeditionSystem.Strength(fresh) * 0.6f);
         Assert.True(ExpeditionSystem.Strength(master) > ExpeditionSystem.Strength(fresh));
     }
+
+    [Fact]
+    public void AFeverWeakensThemOnTheRoadLessOnceItsSeenTo()
+    {
+        var (sim, _, party) = Round("Healer");
+        var fresh = ExpeditionSystem.Record(sim, party[0]);
+        var fevered = ExpeditionSystem.Record(sim, party[0]);
+        fevered.Wounds.Add(new WoundRecord(0, DamageType.Fever, Healing.FeverSystem.Caught, false, 0f, false));
+        var tended = ExpeditionSystem.Record(sim, party[0]);
+        tended.Wounds.Add(new WoundRecord(0, DamageType.Fever, Healing.FeverSystem.Caught, true, 0.5f, false));
+        Assert.True(ExpeditionSystem.Strength(fevered) < ExpeditionSystem.Strength(tended));
+        Assert.True(ExpeditionSystem.Strength(tended) < ExpeditionSystem.Strength(fresh));
+    }
 }
