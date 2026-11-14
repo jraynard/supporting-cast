@@ -712,6 +712,7 @@ public sealed partial class VillageGame
         {
             ImGui.PushID(item.Index);
             var t = w.Get<Thing>(item);
+            var count = w.Get<Stack>(item).Count;
             var packRoom = myPack.IsNull ? 0 : _sim.ContainerRoom(myPack, t.Def, t.Material);
             var canTake = !handsFull || packRoom > 0;
             if (!canTake)
@@ -720,7 +721,8 @@ public sealed partial class VillageGame
                 Issue(new TakeFromStorageCommand(_avatar, item));
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 Tip(!canTake ? "Your hands are full and it won't fit in your pack." : packRoom > 0 ? "One, into your pack." : "One, into your hands.");
-            var many = w.Get<Stack>(item).Count > 1;
+            // Solo applies commands at once, so a Take or All can leave the item gone (or merged) this frame.
+            var many = count > 1;
             if (many)
             {
                 ImGui.SameLine(0, 4);
@@ -733,7 +735,7 @@ public sealed partial class VillageGame
                 ImGui.EndDisabled();
             EatButton(item);
             ImGui.SameLine(0, 8);
-            ImGui.Text($"{w.Get<Stack>(item).Count} {t.Label}");
+            ImGui.Text($"{(w.IsAlive(item) ? w.Get<Stack>(item).Count : 0)} {t.Label}");
             ImGui.PopID();
         }
         if (items.Count == 0)
