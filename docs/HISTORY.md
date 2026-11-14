@@ -1358,6 +1358,36 @@ depth.
   `7759FA059B13F494`, full `CEBC1389C7C3AF05`; 99 state `262A4AEE206A5686`, full
   `85B38CBD45E13729`.
 
+### Cook pass, phases 4 to 6: the menu, the pressure, the town (2026-11-14)
+- **The rest of the menu.** Porridge: a pot that's mostly grain (`ThingDef.Grain`, oats) serves
+  it (`StewPotProps.Grains`); the breakfast dish on the menu (`MenuProps.Morning`, `Menu.Asked`),
+  asked for before noon only. Pies (`Work/Pies`, `CrimpSession`, `RawPie`): dough and two portions
+  of raw food crimped at the prep table, baked by smell into slices of the filling's flavour
+  (`OvenLoad.Pie`; a new fault, leaked). The butcher block (`Work/Butchery`): a side of pork jointed
+  (`ButcherSession`), a fowl plucked (`PluckSession`, its tear point hidden); an AI cook dresses
+  without the games (`DressJob`). Dressed fowl roasts (`ThingDef.Roasts`). The spit, oven and prep
+  table take what's in the pack, and show panels saying what they want; the prep table's steps
+  are buttons (`PrepCommand`).
+- **The fire's old recipes are gone:** simple meals, stew over a hearth, the cooking pot upgrade
+  (the `upgrades` mechanism stays, unused). The shrine's fire is a hearth, not a campfire that
+  baked the room.
+- **Pressure in the kitchen.** A second pot, over the oven. Kitchen fires are fed only by the
+  kitchen's cook (`WorkGivers.FeedsHere`), and what's kept in a staff-only room is the cook's alone
+  (`WorkGivers.KitchenStock`, in `AiQueries.FindNearestItem`); a pot's flame sets its fire's burn
+  (`Cooking.FireDraw`); a log basket, stocked by the carter. Grease fires (`StewPot.FlareUntil`,
+  `Cooking.Flares`/`Lid`/`Catch`, in the stew as `StewSession.Flaring`). Rats (`Hospitality/Rats`:
+  `Vermin`, `RatSystem`, a `Rat` creature; `RatJob` for an AI cook); the shortage spoils a quarter.
+- **The kitchen and the town.** Feasts (`Hospitality/Feasts`, `FeastDue` from a triumphant
+  `ExpeditionSystem.Return`, a `Feasted` thought). Broths (`Work/Broths`, `Nourished`, in
+  `HealthSystem`). Keeping the larder (`Work/Larder`: `BuildingProps.KeepsAt` in
+  `RotSystem.KeptAt`, salting as a prep step, `SmokeSystem` and the smoking rack; `ThingDef.Salty`
+  seasons a pot). Word of the food (`ShopSystem.Fare`, brought into `PartySystem`'s arrivals).
+- Also: the oven and forge show their fires (an open mouth, an open-topped hearth); the chopping,
+  kneading and baking windows give more to go on.
+- Save format 30. `KitchenMenuTests`, `KitchenPressureTests`, `KitchenTownTests`. Bench hashes
+  moved: 1234 state `BA24F56CFFF133BF`, full `08017AFC6BAB552C`; 99 state `2DE3D58EF6E57094`, full
+  `55E942DFA8C0D5A3`.
+
 ### From the second playtest
 Notes from playing; the healer first.
 - **The healer, AI and asked for.** Done: the AI empath lays on hands (`Healing/LayOnHands`):
