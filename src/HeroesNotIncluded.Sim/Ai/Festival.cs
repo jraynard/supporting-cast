@@ -73,7 +73,7 @@ public static class Festival
     }
 
     private static Job? Mill(Simulation sim, Entity pawn, int3 square) =>
-        AiQueries.RandomReachableNear(sim, pawn, square, Spread) is { } spot
+        AiQueries.RandomReachableNear(sim, pawn, square, Spread, reject: c => sim.Festival.InLane(sim, c)) is { } spot
             ? new FestivalJob(FestivalActivity.Mill, Entity.Null, [spot], sim.Rand.Range(240, 720))
             : null;
 
@@ -91,7 +91,7 @@ public static class Festival
             case FestivalActivity.Bonfire:
             {
                 var fire = f.Prop(sim, FestivalSystem.BonfireDef);
-                return !fire.IsNull && AiQueries.RandomReachableNear(sim, pawn, w.Get<Thing>(fire).Cell, 3) is { } spot
+                return !fire.IsNull && AiQueries.RandomReachableNear(sim, pawn, w.Get<Thing>(fire).Cell, 3, reject: c => f.InLane(sim, c)) is { } spot
                     ? new FestivalJob(activity, fire, [spot], sim.Rand.Range(600, 1200))
                     : null;
             }
@@ -119,14 +119,19 @@ public static class Festival
                 if (games.Count == 0)
                     return null;
                 var thing = games[sim.Rand.NextInt(games.Count)];
-                return AiQueries.RandomReachableNear(sim, pawn, w.Get<Thing>(thing).Cell, 3) is { } spot
+                // A game shot from a mark (the butts) is watched from beside the mark, out of the line.
+                var standing = f.GameAt(sim, thing);
+                var from = standing == null ? thing : f.PlayedAt(sim, standing);
+                if (from.IsNull)
+                    from = thing;
+                return AiQueries.RandomReachableNear(sim, pawn, w.Get<Thing>(from).Cell, 3, reject: c => f.InLane(sim, c)) is { } spot
                     ? new FestivalJob(activity, thing, [spot], sim.Rand.Range(900, 1500))
                     : null;
             }
             case FestivalActivity.Show:
             {
                 var table = f.Prop(sim, FestivalSystem.ShowTableDef);
-                return !table.IsNull && AiQueries.RandomReachableNear(sim, pawn, w.Get<Thing>(table).Cell, 2) is { } spot
+                return !table.IsNull && AiQueries.RandomReachableNear(sim, pawn, w.Get<Thing>(table).Cell, 2, reject: c => f.InLane(sim, c)) is { } spot
                     ? new FestivalJob(activity, table, [spot], sim.Rand.Range(300, 600))
                     : null;
             }

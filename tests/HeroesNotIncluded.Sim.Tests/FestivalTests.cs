@@ -74,7 +74,7 @@ public class FestivalTests
         Assert.True(sim.World.Query<Thing>().All(e => sim.World.Get<Thing>(e).Def.Name != FestivalSystem.BonfireDef), "not before the festival");
 
         ToFestival(sim, 1);
-        Assert.Equal(map.Festival.Count, sim.Festival.Props.Count);
+        Assert.Equal(map.Festival.Count + sim.Defs.Festival.Games.Count(g => g.MarkDef != null), sim.Festival.Props.Count);
         var bonfire = sim.Festival.Prop(sim, FestivalSystem.BonfireDef);
         Assert.False(bonfire.IsNull);
         Assert.True(sim.Burning(bonfire), "the bonfire's lit");
@@ -166,10 +166,175 @@ public class FestivalTests
     [Fact]
     public void TheButtsScoreByTheRings()
     {
-        Assert.Equal(10, ButtsSession.RingScore(0f));
-        Assert.Equal(8, ButtsSession.RingScore(0.2f));
-        Assert.Equal(1, ButtsSession.RingScore(0.9f));
-        Assert.Equal(0, ButtsSession.RingScore(1.2f));
+        Assert.Equal(10, FestivalGames.RingScore(0f));
+        Assert.Equal(8, FestivalGames.RingScore(0.2f));
+        Assert.Equal(8, FestivalGames.RingScore(-0.2f));
+        Assert.Equal(1, FestivalGames.RingScore(0.9f));
+        Assert.Equal(0, FestivalGames.RingScore(1.2f));
+    }
+
+    /// <summary>Stands someone on the butts' mark and starts their turn there with F.</summary>
+    private static (Entity Me, Entity Butt, Entity Mark) AtTheMark(Simulation sim)
+    {
+        var w = sim.World;
+        var me = Me(sim);
+        var butts = sim.Festival.Games.Single(g => g.Game.Name == "Butts");
+        var mark = sim.Festival.PlayedAt(sim, butts);
+        var butt = sim.Festival.Prop(sim, butts.Game.Def);
+        Assert.False(mark.IsNull, "the mark's put up with the butts");
+        Assert.NotEqual(butt, mark);
+        var cell = w.Get<Thing>(mark).Cell;
+        foreach (var e in sim.Creatures().Where(e => e != me && w.Get<Position>(e).Cell == cell).ToList())
+            w.Get<Position>(e) = Position.At(cell + new int3(3, 3, 0));
+        w.Get<Position>(me) = Position.At(cell);
+        var action = AvatarSystem.ActionAt(sim, me, cell);
+        Assert.Equal(AvatarActionKind.FestivalGame, action.Kind);
+        AvatarSystem.Perform(sim, me, action);
+        Assert.True(w.Has<ButtsTurn>(me), "F at the mark starts a turn");
+        return (me, butt, mark);
+    }
+
+    /// <summary>Clears the lane between the butt and the mark of everyone but the shooter.</summary>
+    private static void ClearTheLane(Simulation sim, Entity me)
+    {
+        var w = sim.World;
+        foreach (var e in sim.Creatures().Where(e => e != me && sim.Festival.InLane(sim, w.Get<Position>(e).Cell)).ToList())
+            w.Get<Position>(e) = Position.At(sim.Round.Square!.Value + new int3(2, 2, 0));
+    }
+
+    private static float AimAt(Simulation sim, Entity me, Entity thing, float off = 0f)
+    {
+        var from = sim.World.Get<Position>(me).Pos;
+        var at = sim.World.Get<Thing>(thing).Cell;
+        return Narsil.Sim.Core.DetMath.Atan2(at.Y + 0.5f - from.Y, at.X + 0.5f - from.X) + off;
+    }
+
+    /// <summary>Draw, hold till it's drawn, and loose along <paramref name="aim"/>.</summary>
+    private static void Shoot(Simulation sim, Entity me, float aim, Action? atTheLoose = null)
+    {
+        var w = sim.World;
+        sim.ApplyNow(new BowCommand(me, true, false, aim, sim.Clock.Tick));
+        sim.TickMany(Combat.Archery.DrawTicks(sim, me, Combat.Archery.Bow(sim, me)!) + 2);
+        atTheLoose?.Invoke();
+        var pos = w.Get<Position>(me);
+        sim.ApplyNow(new BowCommand(me, true, true, aim, sim.Clock.Tick, pos.Pos.X, pos.Pos.Y, pos.Cell.Z));
+        sim.TickMany(SimClock.TicksPerSecond * 2);
+    }
+
+    [Fact]
+    public void TheButtsLaneIsClearOfTheRestOfTheFestival()
+    {
+        var sim = Round();
+        ToFestival(sim, 1);
+        var w = sim.World;
+        var butts = sim.Festival.Games.Single(g => g.Game.Name == "Butts");
+        var butt = sim.Festival.Prop(sim, butts.Game.Def);
+        var mark = sim.Festival.PlayedAt(sim, butts);
+        Assert.Equal(butts.Game.MarkCells, Maps.Map.Distance(w.Get<Thing>(butt).Cell, w.Get<Thing>(mark).Cell));
+        foreach (var e in sim.Festival.Props.Where(e => e != butt && e != mark))
+            Assert.False(sim.Festival.InLane(sim, w.Get<Thing>(e).Cell), $"{w.Get<Thing>(e).Def.Name} at {w.Get<Thing>(e).Cell} is in the line of fire");
+    }
+
+    [Fact]
+    public void ThreeArrowsFromTheMarkWithALentBowAreScoredWhereTheyLand()
+    {
+        var sim = Round();
+        ToRevels(sim);
+        var w = sim.World;
+        var (me, butt, _) = AtTheMark(sim);
+        var lent = w.Get<ButtsTurn>(me).Lent;
+        Assert.False(lent.IsNull, "the festival lends a bow to someone without one");
+        Assert.NotNull(Combat.Archery.Bow(sim, me));
+        for (var k = 0; k < FestivalGames.Turns; k++)
+        {
+            ClearTheLane(sim, me);
+            Shoot(sim, me, AimAt(sim, me, butt));
+            if (k < FestivalGames.Turns - 1)
+                Assert.Equal(10 * (k + 1), w.Get<ButtsTurn>(me).Points);
+        }
+        Assert.False(w.Has<ButtsTurn>(me), "three arrows and the turn's done");
+        Assert.False(w.IsAlive(lent), "the bow's handed back");
+        var standing = sim.Festival.Games.Single(g => g.Game.Name == "Butts");
+        Assert.Equal(me, standing.Best);
+        Assert.Equal(100, standing.BestScore);
+        Assert.Equal(FestivalGames.Turns, sim.Festival.Stuck.Count(s => s.Target == butt));
+    }
+
+    [Fact]
+    public void AnArrowOffTheGoldScoresByItsRing()
+    {
+        var sim = Round();
+        ToRevels(sim);
+        var (me, butt, mark) = AtTheMark(sim);
+        ClearTheLane(sim, me);
+        var from = sim.World.Get<Position>(me).Pos;
+        var length = Maps.Map.Distance(sim.World.Get<Thing>(butt).Cell, sim.World.Get<Thing>(mark).Cell);
+        // Off by an angle that lands it about 0.4 of the face out from the middle: the third ring.
+        var off = MathF.Asin(0.4f * Combat.Reach.FaceRadius / length);
+        var shot = Combat.Reach.TargetAlong(sim, from, AimAt(sim, me, butt, off), 14f);
+        Assert.NotNull(shot);
+        Assert.Equal(butt, shot.Value.Target);
+        Assert.Equal(5, FestivalGames.RingScore(shot.Value.Across));
+        Assert.Null(Combat.Reach.TargetAlong(sim, from, AimAt(sim, me, butt, 0.4f), 14f)); // well wide
+        Shoot(sim, me, AimAt(sim, me, butt, off));
+        Assert.Equal(5, sim.World.Get<ButtsTurn>(me).Points);
+    }
+
+    [Fact]
+    public void SomeoneInTheLaneTakesTheArrow()
+    {
+        var sim = Round();
+        ToRevels(sim);
+        var w = sim.World;
+        var (me, butt, mark) = AtTheMark(sim);
+        ClearTheLane(sim, me);
+        var a = w.Get<Thing>(butt).Cell;
+        var b = w.Get<Thing>(mark).Cell;
+        var between = new int3((int)MathF.Floor((a.X + b.X + 1) / 2f), (int)MathF.Floor((a.Y + b.Y + 1) / 2f), a.Z);
+        Assert.True(a.X == b.X || a.Y == b.Y, "the mark's straight out in front of the butt");
+        Assert.True(sim.Festival.InLane(sim, between));
+        Assert.False(sim.Festival.InLane(sim, b + (b - a) / Math.Max(1, Maps.Map.Distance(a, b)) * 2), "behind the mark is clear");
+        var unlucky = sim.Creatures().First(e => e != me && !w.Has<Avatar>(e) && w.Get<Creature>(e).Faction == Faction.Village);
+        Shoot(sim, me, AimAt(sim, me, butt), () =>
+        {
+            AiSystem.EndJob(sim, unlucky, w.Get<Mind>(unlucky), false);
+            w.Get<Position>(unlucky) = Position.At(between);
+        });
+        var turn = w.Get<ButtsTurn>(me);
+        Assert.Equal(1, turn.Shots);
+        Assert.Equal(0, turn.Points);
+    }
+
+    [Fact]
+    public void WalkingOffTheMarkEndsTheTurnAndTheBowGoesBack()
+    {
+        var sim = Round();
+        ToRevels(sim);
+        var w = sim.World;
+        var (me, butt, mark) = AtTheMark(sim);
+        var lent = w.Get<ButtsTurn>(me).Lent;
+        ClearTheLane(sim, me);
+        Shoot(sim, me, AimAt(sim, me, butt));
+        w.Get<Position>(me) = Position.At(sim.Round.Square!.Value + new int3(1, 1, 0));
+        sim.TickMany(SimClock.TicksPerSecond);
+        Assert.False(w.Has<ButtsTurn>(me));
+        Assert.False(w.IsAlive(lent));
+        var standing = sim.Festival.Games.Single(g => g.Game.Name == "Butts");
+        Assert.Equal(me, standing.Best); // scored on the one arrow: 10 of 30
+        Assert.Equal(33, standing.BestScore);
+    }
+
+    [Fact]
+    public void AnArrowInTheButtsSurvivesASaveAndTheTurnGoesOn()
+    {
+        var sim = Round();
+        ToRevels(sim);
+        var (me, butt, _) = AtTheMark(sim);
+        ClearTheLane(sim, me);
+        Shoot(sim, me, AimAt(sim, me, butt));
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        Assert.Equal(sim.Festival.Stuck, loaded.Festival.Stuck);
+        Assert.Equal(sim.World.Get<ButtsTurn>(me), loaded.World.Get<ButtsTurn>(me));
     }
 
     [Fact]
@@ -522,7 +687,7 @@ public class FestivalTests
         Assert.Equal(sim.Festival.Sites, loaded.Festival.Sites);
         ToFestival(loaded);
         var w = loaded.World;
-        Assert.Equal(loaded.Defs.Map("Millbrook").Festival.Count, loaded.Festival.Props.Count);
+        Assert.Equal(loaded.Defs.Map("Millbrook").Festival.Count + loaded.Defs.Festival.Games.Count(g => g.MarkDef != null), loaded.Festival.Props.Count);
         Assert.DoesNotContain(loaded.Festival.Props, e => w.Has<Construction>(e));
         Assert.DoesNotContain(w.Query<Construction>(), e => loaded.Festival.IsSite(e));
         Assert.Equal(loaded.Festival.Props.Count, loaded.Festival.Props.Distinct().Count());

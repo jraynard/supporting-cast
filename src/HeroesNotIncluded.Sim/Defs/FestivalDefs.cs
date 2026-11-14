@@ -141,13 +141,30 @@ public sealed class FestivalGameDef
     /// <summary>The honour its winner is called up for: "the strongest arm in the valley".</summary>
     public string Honour { get; set; } = "";
 
+    /// <summary>
+    /// Where it's played from, if not at the thing itself: a mark put up <see cref="MarkCells"/> out
+    /// in front of it (the butts' shooting mark). F there starts a turn with the real thing
+    /// (<c>Work.FestivalGames</c>): real arrows, scored where they land.
+    /// </summary>
+    public string Mark { get; set; } = "";
+
+    /// <summary>How far in front of the thing its mark goes, in cells.</summary>
+    public int MarkCells { get; set; } = 8;
+
+    /// <summary>What the mark lends anyone who comes without one (the butts' bow), taken back after.</summary>
+    public string Lends { get; set; } = "";
+
     [JsonIgnore] public ThingDef ThingDef { get; private set; } = null!;
+    [JsonIgnore] public ThingDef? MarkDef { get; private set; }
+    [JsonIgnore] public ThingDef? LendsDef { get; private set; }
 
     internal void Resolve(DefDatabase db)
     {
         if (string.IsNullOrEmpty(Name))
             throw new Exception("A festival game needs a name");
         ThingDef = db.Thing(Def);
+        MarkDef = string.IsNullOrEmpty(Mark) ? null : db.Thing(Mark);
+        LendsDef = string.IsNullOrEmpty(Lends) ? null : db.Thing(Lends);
     }
 }
 

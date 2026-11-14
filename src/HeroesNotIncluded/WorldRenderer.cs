@@ -547,6 +547,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         DrawSmoke(sim, InView, time);
         DrawBreaths(sim, time);
         DrawShots(sim, time);
+        DrawStuckArrows(sim);
         DrawWindups(sim);
         DrawAimLine();
         DrawSwings(sim);
@@ -1401,6 +1402,32 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     /// <summary>A miss the attack itself rolled already has its word (<see cref="DrawShots"/>); one out of reach doesn't.</summary>
     private static bool ShotRolled(Simulation sim, Sim.Combat.BlowEvent b) => sim.RecentShots.Any(s => s.Tick == b.Tick);
 
+    /// <summary>
+    /// The arrows in the butts' face (<see cref="Sim.Round.FestivalSystem.Stuck"/>): a shaft standing
+    /// out of the straw where each landed, across the face as scored, at a height of its own.
+    /// </summary>
+    private void DrawStuckArrows(Simulation sim)
+    {
+        var w = sim.World;
+        var white = S(TextureAtlas.White);
+        var k = 0;
+        foreach (var (target, across) in sim.Festival.Stuck)
+        {
+            k++;
+            if (!w.IsAlive(target) || !w.TryGet<Thing>(target, out var t) || !SeenAt(Sim.Components.Position.CenterOf(t.Cell)))
+                continue;
+            var height = WorldScale.HeightOf(t.Def);
+            // Across the face as scored; up and down a little, just for the look.
+            var up = ((k * 37 % 11) / 10f - 0.5f) * 0.3f;
+            var lateral = Sim.Maps.Footprint.Rotate(across * Sim.Combat.Reach.FaceRadius, 0.09f, t.Facing);
+            var normal = Sim.Maps.Footprint.Rotate(0f, 1f, t.Facing);
+            var face = Sim.Components.Position.CenterOf(t.Cell) + new float3(lateral.X, lateral.Y, (0.7f + up) * height);
+            for (var s = 0; s < 4; s++)
+                Billboard(white, face + new float3(normal.X, normal.Y, 0) * (s * 0.08f), 0.05f, 0.05f, Rgba.Pack(0.45f, 0.3f, 0.18f, 1f), Quad.Level(t.Cell.Z));
+            Billboard(white, face + new float3(normal.X, normal.Y, 0) * 0.32f, 0.09f, 0.09f, Rgba.Pack(0.9f, 0.88f, 0.8f, 1f), Quad.Level(t.Cell.Z));
+        }
+    }
+
     /// <summary>Attacks: an arrow streaking to the target, then a flash (red for a wound, grey for a miss).</summary>
     private void DrawShots(Simulation sim, float time)
     {
@@ -1410,7 +1437,8 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             if (!SeenAt(shot.From) && !SeenAt(shot.To))
                 continue;
             if (!_firstSeen.ContainsKey(shot))
-                Float(shot.To + WorldScale.Rise(1.1f), shot.Hit ? "Hit!" : "Miss", shot.Hit ? new float4(1f, 0.43f, 0.35f, 1f) : new float4(0.8f, 0.8f, 0.8f, 1f));
+                Float(shot.To + WorldScale.Rise(1.1f), shot.Word ?? (shot.Hit ? "Hit!" : "Miss"),
+                    shot.Word != null ? new float4(0.95f, 0.8f, 0.4f, 1f) : shot.Hit ? new float4(1f, 0.43f, 0.35f, 1f) : new float4(0.8f, 0.8f, 0.8f, 1f));
             var age = Age(shot, time, 0.8f);
             if (age > 1f)
                 continue;
@@ -1426,6 +1454,8 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 }
                 continue;
             }
+            if (shot.Word != null)
+                continue; // in the straw: it stays there (DrawStuckArrows)
             var flash = 1f - age;
             var color = shot.Hit ? Rgba.Pack(1f, 0.15f, 0.1f, 0.8f * flash) : Rgba.Pack(0.8f, 0.8f, 0.8f, 0.6f * flash);
             Billboard(S(shot.Hit ? "fx/fire" : "fx/smoke"), to - new float3(0, 0, 0.3f), 0.5f + 0.4f * age, 0.5f + 0.4f * age, color, Quad.Unlit | Quad.Always, translucent: true);

@@ -29,13 +29,9 @@ provide some purely non-combat options but i think that will be later once we ha
 ### The festival
 Built (HISTORY.md, "The festival, made an event", and the passes after it). What's left, in order:
 
-1. **The butts with real arrows:** the butt is a `target` that `Reach.InSweep` can hit, shot from a
-   mark with real bow controls (a festival bow is lent at the mark). It's scored by ring from
-   where the arrow lands, and the arrows stay in the face until the ceremony. `ButtsSession`'s
-   maths stays for AI turns.
-2. **Bunting:** strung between neighbouring lantern posts by the renderer, a sagging line of
+1. **Bunting:** strung between neighbouring lantern posts by the renderer, a sagging line of
    pennants.
-3. **Playtest it again:** the first playtest's fixes are in (HISTORY.md, "The festival, from its
+2. **Playtest it again:** the first playtest's fixes are in (HISTORY.md, "The festival, from its
    first playtest"). The festival's numbers are under Polish → Tuning.
 
 ### Death and ghosts

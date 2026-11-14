@@ -440,6 +440,12 @@ public sealed class BuildingProps
     public bool Show { get; set; }
 
     /// <summary>
+    /// Something to shoot at (the festival's butts): an arrow along its line stops in it
+    /// (<c>Combat.Reach.TargetAlong</c>) rather than flying on, and lands somewhere on its face.
+    /// </summary>
+    public bool Target { get; set; }
+
+    /// <summary>
     /// Built into a wall and open only at its front (a fireplace): worked, fed and tended from the
     /// cell in front of it, never from the street behind, and a fire in it heats, lights and
     /// warms that cell, the room's side (<see cref="Environment.Warmth.FireCell"/>), not the wall.

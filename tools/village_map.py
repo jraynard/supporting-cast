@@ -250,7 +250,7 @@ FESTIVAL = [
     *[("Stool", x, y, 0, [(0, 0)]) for x in (36, 38) for y in (42, 43, 45, 46)],
     ("ShowTable", 48, 48, 0, [(0, 0), (0, 1)]),                         # the town's best work, by the inn
     ("HighStriker", 49, 41, 0, [(0, 0)]),                               # the test of strength, by the notice board
-    ("ArcheryButt", 36, 38, 0, [(0, 0)]),                               # the butts, its face to the square
+    ("ArcheryButt", 31, 49, 3, [(0, 0)]),                               # the butts, facing east up a clear lane
     *[("FestivalLantern", x, y, 0, [(0, 0)]) for x, y in [(39, 40), (47, 39), (34, 45), (50, 45), (38, 55), (48, 55)]],
 ]
 for name, x, y, facing, cells in FESTIVAL:
@@ -261,6 +261,14 @@ for name, x, y, facing, cells in FESTIVAL:
     for cx, cy in spots:
         reserved[cy][cx] = True
     festival.append({"def": name, "at": [x, y], "facing": facing})
+# The butts' shooting mark: festival.json's markCells (8) east of the butt (facing 3), on open
+# town ground and kept so. The lane between holds nothing taller than a plant (FestivalTests checks it).
+BUTTS_LANE = 8
+bx, by = next((x, y) for name, x, y, _, _ in FESTIVAL if name == "ArcheryButt")
+mx, my = bx + BUTTS_LANE, by
+if not inside(mx, my) or reserved[my][mx] or level[my][mx] != TOWN or feature[my][mx] != "." or ground[my][mx] in "wk~":
+    raise SystemExit(f"no room for the butts' mark at {mx},{my}")
+reserved[my][mx] = True
 # Carts are 3 cells long and 2 wide (the Wagon def's size, facing 0: x-1..x+1, y..y+1): placed only
 # where the whole of one fits on open town ground, and kept clear of trees and props.
 CART = [(dx, dy) for dy in (0, 1) for dx in (-1, 0, 1)]

@@ -121,9 +121,6 @@ public sealed partial class VillageGame
             case StrikerSession striker:
                 DrawStriker(striker);
                 return;
-            case ButtsSession butts:
-                DrawButts(butts);
-                return;
             case Sim.Environment.ThrowSession throwing:
                 DrawThrow(throwing);
                 return;

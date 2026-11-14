@@ -156,6 +156,13 @@ public sealed class SoundDirector(AudioEngine audio)
             if ((Reach(sim, view, me, Cell(shot.To)) ?? Reach(sim, view, me, Cell(shot.From))) is not { } muffle)
                 continue;
             var to = ToAudio(shot.To);
+            if (shot.Word != null)
+            {
+                // A game's arrow (the butts): the bow and the thump into the straw, no fight.
+                audio.Play(Sounds.Bow, ToAudio(shot.From), muffle: muffle);
+                audio.Play(Sounds.Knock, to, muffle: muffle, delay: 0.18f);
+                continue;
+            }
             _recentFight.Add(_time);
             _dangerUntil = Math.Max(_dangerUntil, _time + DangerHoldSeconds * 0.5f);
             if (shot.Ranged)

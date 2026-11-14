@@ -112,6 +112,43 @@ public static class Reach
         return hit;
     }
 
+    /// <summary>Half the width of a target's painted face (<see cref="Defs.BuildingDef.Target"/>), in cells.</summary>
+    public const float FaceRadius = 0.38f;
+
+    /// <summary>
+    /// The first target (<see cref="Defs.BuildingDef.Target"/>: the butts) an arrow loosed from
+    /// <paramref name="from"/> along <paramref name="aim"/> meets short of a wall: how far along it
+    /// is, where on its face the arrow lands (how far across from its middle, in face radii: within
+    /// 1 is on the face), and the point it stops. Null if none's in the way. Arrows fly flat and
+    /// true, so it's the aim alone that puts one in the gold.
+    /// </summary>
+    public static (Entity Target, float Along, float Across, float3 Point)? TargetAlong(Simulation sim, float3 from, float aim, float range)
+    {
+        var map = sim.Map;
+        var w = sim.World;
+        var dir = new float3(DetMath.Cos(aim), DetMath.Sin(aim), 0);
+        var eye = from + new float3(0, 0, 0.6f);
+        for (var d = 0.3f; d < range; d += 0.1f)
+        {
+            var p = eye + dir * d;
+            var c = new int3((int)MathF.Floor(p.X), (int)MathF.Floor(p.Y), (int)MathF.Floor(p.Z));
+            if (!map.InBounds(c) || map.IsSolid(map.Idx(c)))
+                return null;
+            if (map.Structure[map.Idx(c)] is not { IsNull: false } s || !w.TryGet<Thing>(s, out var t))
+                continue;
+            if (t.Def.Building?.IsWall == true)
+                return null;
+            if (t.Def.Building is not { Target: true })
+                continue;
+            // How far the line passes from the target's middle, across the shot.
+            var mid = new float2(t.Cell.X + 0.5f - from.X, t.Cell.Y + 0.5f - from.Y);
+            var across = (mid.X * dir.Y - mid.Y * dir.X) / FaceRadius;
+            var along = mid.X * dir.X + mid.Y * dir.Y;
+            return (s, along, across, from + dir * Math.Max(0.3f, along - 0.1f));
+        }
+        return null;
+    }
+
     /// <summary>Where an arrow loosed from <paramref name="from"/> along <paramref name="aim"/> stops, striking nobody: the first wall, or <paramref name="range"/> on.</summary>
     public static float3 ArrowEnd(Simulation sim, float3 from, float aim, float range)
     {

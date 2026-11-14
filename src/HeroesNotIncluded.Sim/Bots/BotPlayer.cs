@@ -191,12 +191,9 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         }
         switch (s)
         {
-            // The festival's games: swing at the top of the gauge; hold the aim on the gold and loose.
+            // The festival's striker: swing at the top of the gauge.
             case StrikerSession striker:
                 return (striker.Flight == 0 && striker.Needle >= 0.93f, false, 0);
-            case ButtsSession butts:
-                _axis2 = Steer(butts.AimY);
-                return (butts.Landing == 0 && butts.AimX * butts.AimX + butts.AimY * butts.AimY < 0.01f, false, Steer(butts.AimX));
             case HammerSession h:
                 return (h.Ready && MathF.Abs(h.Marker - h.Mark) <= h.HalfWidth * 0.5f, false, 0);
             case BloomSession bloom:
@@ -606,9 +603,6 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             Chat(view, me, now);
     }
 
-    /// <summary>A steer back toward the middle: -1, 0 or +1.</summary>
-    private static int Steer(float off) => off > 0.04f ? -1 : off < -0.04f ? 1 : 0;
-
     private bool _laidOut;
     private readonly HashSet<string> _played = [];
 
@@ -620,6 +614,19 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     {
         var w = sim.World;
         var f = sim.Festival;
+        // At the butts' mark: draw, aim at the gold and loose, three times.
+        if (w.TryGet<Work.ButtsTurn>(me, out var turn) && w.IsAlive(turn.Target))
+        {
+            Doing = "shooting at the butts";
+            var from = w.Get<Position>(me).Pos;
+            var at = w.Get<Thing>(turn.Target).Cell;
+            var aim = DetMath.Atan2(at.Y + 0.5f - from.Y, at.X + 0.5f - from.X);
+            if (!w.Has<Combat.Aiming>(me))
+                send(new BowCommand(me, true, false, aim, now));
+            else if (Combat.Archery.Ready(sim, me))
+                send(new BowCommand(me, true, true, aim, now, from.X, from.Y, w.Get<Position>(me).Cell.Z));
+            return;
+        }
         if (f.Open)
         {
             var table = f.Prop(sim, Round.FestivalSystem.ShowTableDef);
@@ -638,7 +645,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             if (f.Part == Round.FestivalPart.Revels)
                 foreach (var g in f.Games)
                 {
-                    var thing = f.Prop(sim, g.Game.Def);
+                    var thing = f.PlayedAt(sim, g);
                     if (thing.IsNull || _played.Contains(g.Game.Name))
                         continue;
                     Doing = $"having a go at {g.Game.Label}";

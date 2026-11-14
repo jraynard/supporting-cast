@@ -141,7 +141,7 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     have none: `HumanLook.Derived` hashes their look (and folk) from the entity, the same on every peer.
   - Fights are real time and readable (docs/ROADMAP.md, "Combat pass"): a melee blow is wound up
     first (`Combat/Blows.Begin`, a `Windup` the `BlowSystem` lands) and lands on whoever's in its
-    sweep the way it was aimed (`Combat/Reach`), friend or foe, no roll to hit; armour soaks a share
+    sweep the way it was aimed (`Combat/Reach`), friend or foe, no roll to hit (an arrow stops in a `target` building first: the festival's butts); armour soaks a share
     (`CombatRules.Strike`). It's met by `Guard` (block, parry, dodge); an AI decides as it sees it
     coming (`BlowResponse`). Only so many press one target at a time (`Combat/Engagement`). There's
     no turn-based combat, and nothing may stop the clock for one player's fight.

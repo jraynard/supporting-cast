@@ -95,9 +95,6 @@ public sealed class WorkSounds(AudioEngine audio)
                     audio.Play(Sounds.UiBell, delay: 0.25f);
                 Count(s.Swings, Sounds.Knock);
                 break;
-            case ButtsSession s:
-                Count(s.Shots, Sounds.Bow);
-                break;
             case MixSession s:
                 Count(s.Hits, Sounds.Clink);
                 break;

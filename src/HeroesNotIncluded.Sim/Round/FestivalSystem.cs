@@ -229,13 +229,60 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
             sim.World.Get<Fueled>(built).Fuel = 0;
     }
 
-    /// <summary>The game played at a thing, if it's one of the festival's.</summary>
+    /// <summary>The game played at a thing (or shot from it, its mark), if it's one of the festival's.</summary>
     public GameStanding? GameAt(Simulation sim, Entity thing)
     {
         if (!sim.World.IsAlive(thing) || !IsProp(thing))
             return null;
         var def = sim.World.Get<Thing>(thing).Def;
-        return _games.Find(g => g.Game.ThingDef == def);
+        return _games.Find(g => g.Game.ThingDef == def || g.Game.MarkDef == def);
+    }
+
+    /// <summary>Where a game's played from: its mark if it has one (the butts'), else the thing itself; Entity.Null if neither's up.</summary>
+    public Entity PlayedAt(Simulation sim, GameStanding game) =>
+        game.Game.MarkDef is { } mark ? Prop(sim, mark.Name) : Prop(sim, game.Game.Def);
+
+    /// <summary>
+    /// In the way of the butts: between a target and its mark, within a cell or so of the line.
+    /// The revels keep out of it (<c>Ai.Festival</c>); anyone who walks into it is in the line.
+    /// </summary>
+    public bool InLane(Simulation sim, int3 cell)
+    {
+        var w = sim.World;
+        foreach (var g in _games)
+        {
+            if (g.Game.MarkDef == null)
+                continue;
+            var target = Prop(sim, g.Game.Def);
+            var mark = Prop(sim, g.Game.MarkDef.Name);
+            if (target.IsNull || mark.IsNull)
+                continue;
+            var a = w.Get<Thing>(target).Cell;
+            var b = w.Get<Thing>(mark).Cell;
+            if (cell.Z != a.Z)
+                continue;
+            float lx = b.X - a.X, ly = b.Y - a.Y, px = cell.X - a.X, py = cell.Y - a.Y;
+            var len2 = lx * lx + ly * ly;
+            if (len2 <= 0)
+                continue;
+            var along = (px * lx + py * ly) / len2;
+            var across = MathF.Abs(px * ly - py * lx) / MathF.Sqrt(len2);
+            if (along > 0f && along < 1f && across <= 1.5f)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>Arrows in a target's face (how far across from its middle), till the ceremony: for the drawing.</summary>
+    private readonly List<(Entity Target, float Across)> _stuck = [];
+
+    public IReadOnlyList<(Entity Target, float Across)> Stuck => _stuck;
+
+    /// <summary>An arrow's stopped in a target (<see cref="Work.FestivalGames.Loosed"/>).</summary>
+    internal void Stick(Entity target, float across)
+    {
+        if (_stuck.Count < 200)
+            _stuck.Add((target, across));
     }
 
     /// <summary>
@@ -280,8 +327,44 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
                 w.Get<Fueled>(e).Fuel = fuel.Capacity;
             _props.Add(e);
         }
+        PutUpMarks(sim);
         sim.Map.MarkStructureChanged();
         LayTheFeast(sim);
+    }
+
+    /// <summary>
+    /// Each game shot from a mark (<see cref="FestivalGameDef.Mark"/>) gets one, its cells out in
+    /// front of the thing (the way its face looks), or the nearest free cell to there.
+    /// </summary>
+    private void PutUpMarks(Simulation sim)
+    {
+        var w = sim.World;
+        foreach (var g in sim.Defs.Festival.Games)
+        {
+            if (g.MarkDef is not { } markDef)
+                continue;
+            var thing = Prop(sim, g.Def);
+            if (thing.IsNull)
+                continue;
+            var t = w.Get<Thing>(thing);
+            int3 Ahead(int cells)
+            {
+                var d = Maps.Footprint.Rotate(0, cells, t.Facing);
+                return new int3(t.Cell.X + d.X, t.Cell.Y + d.Y, t.Cell.Z);
+            }
+            // Straight out in front first (a cell nearer or further), so the lane runs true; then anywhere near.
+            int3? place = null;
+            for (var k = 0; k <= 4 && place == null; k++)
+                foreach (var cells in k == 0 ? [g.MarkCells] : new[] { g.MarkCells - k, g.MarkCells + k })
+                    if (cells > 2 && sim.Map.InBounds(Ahead(cells)) && Free(sim, markDef, Ahead(cells), t.Facing) is { } c && c == Ahead(cells))
+                    {
+                        place = c;
+                        break;
+                    }
+            place ??= sim.Map.InBounds(Ahead(g.MarkCells)) ? Free(sim, markDef, Ahead(g.MarkCells), t.Facing) : null;
+            if (place is { } at)
+                _props.Add(sim.SpawnStructure(markDef, at, t.Facing));
+        }
     }
 
     /// <summary>The feast's dishes laid along each of its tables: the town's spread, on view, there to be helped to by hand.</summary>
@@ -324,6 +407,7 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
             BeginCeremony(sim);
         if (Part == FestivalPart.Opening)
             TellTheSeason(sim);
+        Work.FestivalGames.Watch(sim);
         if (Open)
         {
             Admire(sim);
@@ -699,6 +783,10 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
 
     private void BeginCeremony(Simulation sim)
     {
+        // Anyone still at the mark is scored on what they've shot; then the butts are cleared.
+        foreach (var e in sim.World.Query<Work.ButtsTurn>())
+            Work.FestivalGames.EndTurn(sim, e);
+        _stuck.Clear();
         Part = FestivalPart.Ceremony;
         var w = sim.World;
         var def = sim.Defs.Festival;
@@ -966,6 +1054,12 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         w.Int(_callIndex);
         w.Long(RevelsTick);
         w.Long(DoneTick);
+        w.Int(_stuck.Count);
+        foreach (var (target, across) in _stuck)
+        {
+            w.Entity(target);
+            w.Float(across);
+        }
     }
 
     public void Load(SaveReader r, Simulation sim)
@@ -991,6 +1085,7 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         _praise.Clear();
         _parties.Clear();
         _honours.Clear();
+        _stuck.Clear();
         _tale.Clear();
         (_taleIndex, _nextLineAt, _nextCall, _callIndex, RevelsTick, DoneTick) = (-1, 0, 0, 0, -1, -1);
         if (StartTick < 0)
@@ -1043,6 +1138,9 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         _callIndex = r.Int();
         RevelsTick = r.Long();
         DoneTick = r.Long();
+        if (r.Version >= 33)
+            for (var n = r.Count(1000); n > 0; n--)
+                _stuck.Add((r.Entity(), r.Float()));
     }
 
     private static void Entities(SaveWriter w, IEnumerable<Entity> list)

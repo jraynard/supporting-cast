@@ -88,7 +88,7 @@
       {"def": "Stool", "at": [38, 46], "facing": 0},
       {"def": "ShowTable", "at": [48, 48], "facing": 0},
       {"def": "HighStriker", "at": [49, 41], "facing": 0},
-      {"def": "ArcheryButt", "at": [36, 38], "facing": 0},
+      {"def": "ArcheryButt", "at": [31, 49], "facing": 3},
       {"def": "FestivalLantern", "at": [39, 40], "facing": 0},
       {"def": "FestivalLantern", "at": [47, 39], "facing": 0},
       {"def": "FestivalLantern", "at": [34, 45], "facing": 0},

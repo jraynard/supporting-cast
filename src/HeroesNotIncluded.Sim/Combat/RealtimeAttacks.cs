@@ -5,8 +5,11 @@ using HeroesNotIncluded.Sim.Systems;
 
 namespace HeroesNotIncluded.Sim.Combat;
 
-/// <summary>An attack of the last moments, for the renderer. Not part of the sim state.</summary>
-public sealed record ShotEvent(long Tick, float3 From, float3 To, bool Ranged, bool Hit);
+/// <summary>
+/// An attack of the last moments, for the renderer. Not part of the sim state. <paramref name="Word"/>:
+/// an arrow at a game's target (the butts) says how it scored, and isn't a fight.
+/// </summary>
+public sealed record ShotEvent(long Tick, float3 From, float3 To, bool Ranged, bool Hit, string? Word = null);
 
 /// <summary>
 /// Every blow that lands (<see cref="Blows"/>): the wound (<see cref="CombatRules.Strike"/>), the shot for
@@ -31,11 +34,11 @@ public static class RealtimeAttacks
     }
 
     /// <summary>An arrow that struck nobody, flying from <paramref name="attacker"/> to <paramref name="to"/>: for the renderer and the sound.</summary>
-    public static void Flew(Simulation sim, Entity attacker, float3 to)
+    public static void Flew(Simulation sim, Entity attacker, float3 to, string? word = null)
     {
         var now = sim.Clock.Tick;
         sim.RecentShots.RemoveAll(s => now - s.Tick > SimClock.TicksPerSecond * 5);
-        sim.RecentShots.Add(new ShotEvent(now, sim.World.Get<Position>(attacker).Pos, to, Ranged: true, Hit: false));
+        sim.RecentShots.Add(new ShotEvent(now, sim.World.Get<Position>(attacker).Pos, to, Ranged: true, Hit: false, word));
     }
 
     /// <summary>What every attack leaves: the shot for the renderer, a hunt counted, and the target (and its herd) provoked.</summary>

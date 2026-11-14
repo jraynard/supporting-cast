@@ -31,13 +31,19 @@ public sealed partial class VillageGame
         var use = Controls.Glyph(Act.Use);
         foreach (var g in f.Games)
         {
-            var thing = f.Prop(_sim, g.Game.Def);
+            var thing = f.PlayedAt(_sim, g);
             if (thing.IsNull)
                 continue;
             var status = g.BestScore < 0 ? "Nobody's had a go yet"
                 : g.Best == _avatar ? $"You lead with {g.BestScore}!"
                 : $"Best tonight: {g.BestName}, {g.BestScore}";
-            spots.Add(new(thing, Cap(g.Game.Label), $"{use}: three goes; the night's best wins {_sim.Defs.Festival.PrizeSilver} silver and an honour",
+            // At the mark now: how the turn's going, arrow by arrow.
+            if (HasAvatar && w.TryGet<ButtsTurn>(_avatar, out var turn) && turn.Mark == thing)
+                status = $"Arrow {Math.Min(turn.Shots + 1, FestivalGames.Turns)} of {FestivalGames.Turns}, {turn.Points} points";
+            var how = g.Game.MarkDef != null
+                ? $"{use} at the red mark, then hold {Controls.Glyph(Act.Heavy)} to draw and aim, {Controls.Glyph(Act.Strike)} to loose: three arrows"
+                : $"{use}: three goes";
+            spots.Add(new(thing, Cap(g.Game.Label), $"{how}; the night's best wins {_sim.Defs.Festival.PrizeSilver} silver and an honour",
                 status, _festivalDone.Contains(g.Game.Name)));
         }
         var fire = f.Prop(_sim, FestivalSystem.BonfireDef);
@@ -70,8 +76,9 @@ public sealed partial class VillageGame
         if (w.TryGet<WorkSession>(_avatar, out var ws))
         {
             if (ws is StrikerSession st) _festivalDone.Add(st.Game);
-            if (ws is ButtsSession bt) _festivalDone.Add(bt.Game);
         }
+        if (w.TryGet<ButtsTurn>(_avatar, out var turn) && _sim.Festival.GameAt(_sim, turn.Mark) is { } shooting)
+            _festivalDone.Add(shooting.Game.Name);
         if (w.Get<Mind>(_avatar).Job is Sim.Ai.FestivalJob { Dancing: true })
             _festivalDone.Add("Dance");
         // Markers over each thing to do, while the revels are open.
@@ -249,47 +256,6 @@ public sealed partial class VillageGame
             ImGui.SameLine(0, 10);
             TextC(s.Best >= StrikerSession.Bell ? Theme.Good : Theme.Dim, s.Best >= StrikerSession.Bell ? "You rang the bell!" : $"Best: {s.Best * 100:F0}");
         }
-        EndWork();
-    }
-
-    /// <summary>The butts: the painted face, the aim swaying over it, the arrows where they landed.</summary>
-    private void DrawButts(ButtsSession s)
-    {
-        BeginWork(s.Title, ("WASD", "hold the aim on the gold"), ("F", "loose"), ("Esc", "leave it"));
-        var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(260, 260);
-        var min = ImGui.GetCursorScreenPos();
-        ImGui.Dummy(in size);
-        var max = min + size;
-        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
-        var c = (min + max) * 0.5f;
-        var r = Gui.S(110);
-        ImColor8[] colours = [new(230, 180, 70, 255), new(181, 67, 43, 255), new(60, 72, 96, 255), new(30, 30, 34, 255), new(242, 230, 207, 255)];
-        for (var k = ButtsSession.Rings.Length - 1; k >= 0; k--)
-            dl.AddCircleFilled(in c, r * ButtsSession.Rings[k], colours[k], 40);
-        for (var k = 0; k < s.Shots; k++)
-        {
-            var at = c + new float2(s.HitX(k), s.HitY(k)) * r;
-            var a = at - Gui.S(4, 4);
-            var b = at + Gui.S(4, 4);
-            dl.AddLine(in a, in b, Theme.U8(Theme.Text), Gui.S(2));
-            dl.AddCircleFilled(in at, Gui.S(3), new ImColor8(90, 60, 30, 255), 8);
-        }
-        if (s.Landing == 0 && s.Shots < FestivalGames.Turns)
-        {
-            var aim = c + new float2(s.AimX, s.AimY) * r;
-            dl.AddCircle(in aim, Gui.S(9), Theme.U8(Theme.Text), 16, Gui.S(2));
-            var h0 = aim - new float2(Gui.S(14), 0);
-            var h1 = aim + new float2(Gui.S(14), 0);
-            var v0 = aim - new float2(0, Gui.S(14));
-            var v1 = aim + new float2(0, Gui.S(14));
-            dl.AddLine(in h0, in h1, Theme.U8(Theme.Text), Gui.S(1));
-            dl.AddLine(in v0, in v1, Theme.U8(Theme.Text), Gui.S(1));
-        }
-        ImGui.Spacing();
-        ImGui.Text($"Arrow {Math.Min(s.Shots + 1, FestivalGames.Turns)} of {FestivalGames.Turns}.");
-        ImGui.SameLine(0, 10);
-        TextC(Theme.Dim, $"{s.Points} points");
         EndWork();
     }
 }

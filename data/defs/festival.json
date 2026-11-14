@@ -40,8 +40,9 @@
       "games": [
         { "name": "Striker", "label": "the striker", "def": "HighStriker", "verb": "Swing at the striker", "skill": "Melee",
           "honour": "the strongest arm in the valley" },
+        // Shot from its mark, markCells in front of the butt, with real arrows (a bow lent there).
         { "name": "Butts", "label": "the butts", "def": "ArcheryButt", "verb": "Shoot at the butts", "skill": "Shooting",
-          "honour": "the truest eye at the butts" }
+          "honour": "the truest eye at the butts", "mark": "ShootingMark", "markCells": 8, "lends": "Bow" }
       ]
     }
   ],
@@ -142,12 +143,24 @@
       "name": "ArcheryButt", "label": "archery butt", "category": "Building", "solid": true, "sprite": "props/sign_board",
       "description": "A straw boss on legs with rings painted on its face. Shoot at the butts: three arrows, nearest the gold.",
       "maxHp": 100, "flammability": 1.0,
-      "building": { "buildable": false, "outdoor": true, "work": 100, "cost": [ { "def": "Wood", "count": 4 } ] },
+      "building": { "buildable": false, "outdoor": true, "target": true, "work": 100, "cost": [ { "def": "Wood", "count": 4 } ] },
       "model": [
         { "min": [0.12, 0.42, 0.25], "max": [0.88, 0.58, 1.15], "top": "props/straw", "side": "props/straw", "front": "props/target_face" },
         { "min": [0.18, 0.36, 0], "max": [0.26, 0.44, 0.95], "top": "props/timber_dark", "side": "props/timber_dark" },
         { "min": [0.74, 0.36, 0], "max": [0.82, 0.44, 0.95], "top": "props/timber_dark", "side": "props/timber_dark" },
         { "min": [0.46, 0.05, 0], "max": [0.54, 0.4, 0.9], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ]
+    },
+    {
+      // Where the butts are shot from: a cord pegged across the grass (FestivalGameDef.mark). Walked over.
+      "name": "ShootingMark", "label": "shooting mark", "category": "Building", "sprite": "props/cloth_madder",
+      "description": "A red cord pegged across the grass. Stand here to shoot at the butts.",
+      "maxHp": 20, "flammability": 0.5,
+      "building": { "buildable": false, "outdoor": true, "work": 10, "cost": [] },
+      "model": [
+        { "min": [0.06, 0.46, 0], "max": [0.94, 0.54, 0.02], "top": "props/cloth_madder", "side": "props/cloth_madder" },
+        { "min": [0.02, 0.44, 0], "max": [0.08, 0.56, 0.12], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.92, 0.44, 0], "max": [0.98, 0.56, 0.12], "top": "props/timber_dark", "side": "props/timber_dark" }
       ]
     }
   ]

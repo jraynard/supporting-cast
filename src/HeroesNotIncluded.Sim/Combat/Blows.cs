@@ -401,6 +401,19 @@ public static class Blows
             return;
         var attack = attacks[windup.Attack];
         var struck = Reach.Struck(sim, attacker, attack, windup.Aim, windup.Lag);
+        if (attack.Ranged)
+        {
+            // A target (the butts) nearer than anyone in the line takes the arrow: it stops in it.
+            var from = w.Get<Position>(attacker).Pos;
+            if (Reach.TargetAlong(sim, from, windup.Aim, attack.Range) is { } shot
+                && (struck.Count == 0 || shot.Along < Planar(w.Get<Position>(struck[0]).Pos - from)))
+            {
+                RealtimeAttacks.Flew(sim, attacker, shot.Point, Work.FestivalGames.Called(shot.Across));
+                Work.FestivalGames.Loosed(sim, attacker, shot.Target, shot.Across);
+                return;
+            }
+            Work.FestivalGames.Loosed(sim, attacker, Entity.Null, 0f); // wide, or into someone: a wasted arrow
+        }
         if (struck.Count == 0)
         {
             // Into the air, or they stepped out of it: dashed clear, it's a dodge.
@@ -413,6 +426,8 @@ public static class Blows
         foreach (var victim in struck)
             Meet(sim, attacker, victim, windup, attack);
     }
+
+    private static float Planar(float3 v) => MathF.Sqrt(v.X * v.X + v.Y * v.Y);
 
     /// <summary>A blow that reaches <paramref name="target"/>: a dodge, a guard, a parry, then the wound.</summary>
     private static void Meet(Simulation sim, Entity attacker, Entity target, in Windup windup, AttackDef attack)

@@ -1490,3 +1490,28 @@ It wasn't clear what to do at first, then it was over too fast. Now:
   labourer gets most of it up before the bell, unlit; only labourers build them; a save mid-build
   ends with each prop up once and lit. Bench state hashes unchanged; full hashes 1234
   `0628FB9242D11B2C`, 99 `FF4AE94FB3201EAB`.
+
+### The festival: real arrows at the butts (2026-11-14)
+- **Shot from a mark.** The butts are now played with real arrows. A shooting mark (a red cord,
+  `ShootingMark`) goes up `markCells` out in front of the butt (festival.json, 8), tried straight
+  out first so the lane runs true. F there starts a turn (`ButtsTurn`); the festival lends its bow
+  (`lends`) to anyone without one and takes it back after. Draw and loose as ever; three arrows.
+- **Scored where they land.** A building with `target` (the butt) stops an arrow nearer than anyone
+  in its line (`Reach.TargetAlong`, from `Blows.Land`). Arrows fly flat and true, so the score is
+  how far across the face it lands, by the old rings (`FestivalGames.RingScore`). An arrow wide,
+  or into someone in the lane, is a wasted arrow, and that someone is hit as in any fight.
+  Walking off the mark, being felled, or the ceremony's bell ends a turn, scored on what's been
+  shot.
+- **Seen and heard.** The landing floats its word ("Gold!", "8", "On the straw") with the bow and
+  a thump, not a fight's din or the danger music. Arrows stay in the face (`FestivalSystem.Stuck`,
+  saved) until the ceremony. The festival card says how, and counts your arrows while you shoot.
+- **The lane.** The butt moved to the square's open south-west (31,49, facing east), off the feast
+  tables (`tools/village_map.py` checks the mark's cell). The revels keep out of the lane
+  (`FestivalSystem.InLane`, an optional reject on `AiQueries.RandomReachableNear`), and the butts
+  are watched from beside the mark.
+- **Bots** walk to the mark and shoot at the gold through `BowCommand`. `ButtsSession`, the old
+  hand game, is gone; a save made in the middle of one won't load.
+- Save format 33. `FestivalTests`: the rings; three arrows with a lent bow scored where they land;
+  a ring off the gold; someone in the lane takes the arrow; walking off ends the turn and the bow
+  goes back; arrows survive a save; the lane is clear of the rest of the festival. Bench state
+  hashes unchanged; full hashes 1234 `BC3A3396F6D11B2C`, 99 `1CC070DAD1201EAB`.

@@ -1,25 +1,71 @@
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Round;
 using HeroesNotIncluded.Sim.Systems;
 
 namespace HeroesNotIncluded.Sim.Work;
 
 /// <summary>
-/// The festival's games for a player (<see cref="Round.FestivalSystem"/>): F at the striker or the
-/// butts starts a turn, and its score is the player's entry. The AI's turns are rolled instead.
+/// A turn at the butts from the shooting mark (<see cref="FestivalGames.StartTurn"/>): arrows
+/// loosed with the bow in hand (lent at the mark, <see cref="Lent"/>, if there wasn't one) and
+/// scored by where each lands on the face. Over after <see cref="FestivalGames.Turns"/> arrows, or
+/// on walking off the mark (scored on what's been shot).
+/// </summary>
+public struct ButtsTurn
+{
+    public Entity Target;
+    public Entity Mark;
+    public int Shots;
+    public int Points;
+
+    /// <summary>The festival's bow, lent at the mark and taken back at the end; Entity.Null if they brought their own.</summary>
+    public Entity Lent;
+}
+
+/// <summary>
+/// The festival's games for a player (<see cref="Round.FestivalSystem"/>): F at the striker starts a
+/// hand game, and F at the butts' mark a turn with real arrows (<see cref="ButtsTurn"/>). Either
+/// way the score out of 100 is the player's entry. The AI's turns are rolled instead.
 /// </summary>
 public static class FestivalGames
 {
     /// <summary>Turns at a game: three swings, three arrows.</summary>
     public const int Turns = 3;
 
-    /// <summary>What F does at a festival game, or null where there's none (or it's closed).</summary>
+    /// <summary>The rings' edges (as a share of the face's radius) and what each scores, gold first.</summary>
+    public static readonly float[] Rings = [0.12f, 0.3f, 0.5f, 0.75f, 1f];
+    public static readonly int[] RingScores = [10, 8, 5, 3, 1];
+
+    /// <summary>How far from its mark a turn may wander before it's given up, in cells.</summary>
+    public const float MarkReach = 1.6f;
+
+    /// <summary>What an arrow this far from the middle (in face radii) scores.</summary>
+    public static int RingScore(float distance)
+    {
+        distance = MathF.Abs(distance);
+        for (var k = 0; k < Rings.Length; k++)
+            if (distance <= Rings[k])
+                return RingScores[k];
+        return 0;
+    }
+
+    /// <summary>What's called out where an arrow lands in a target, this far across (in face radii).</summary>
+    public static string Called(float across) => RingScore(across) switch
+    {
+        10 => "Gold!",
+        0 => "On the straw",
+        var score => score.ToString(System.Globalization.CultureInfo.InvariantCulture),
+    };
+
+    /// <summary>What F does at a festival game (or its mark), or null where there's none (or it's closed).</summary>
     public static string? StepAt(Simulation sim, Entity who, Entity thing)
     {
-        if (sim.Festival.GameAt(sim, thing) is not { } standing || sim.World.Has<WorkSession>(who))
+        if (sim.Festival.GameAt(sim, thing) is not { } standing || sim.World.Has<WorkSession>(who) || !sim.Festival.Open)
             return null;
-        return sim.Festival.Open ? standing.Game.Verb : null;
+        if (standing.Game.MarkDef is { } mark)
+            return sim.World.Get<Thing>(thing).Def == mark && !sim.World.Has<ButtsTurn>(who) ? standing.Game.Verb : null;
+        return standing.Game.Verb;
     }
 
     public static void Start(Simulation sim, Entity who, Entity thing)
@@ -28,12 +74,106 @@ public static class FestivalGames
         if (sim.Festival.GameAt(sim, thing) is not { } standing || !sim.Festival.Open
             || !AvatarSystem.InReach(sim, w.Get<Position>(who).Cell, thing))
             return;
-        WorkSession session = standing.Game.Name switch
+        if (standing.Game.MarkDef != null)
         {
-            "Butts" => new ButtsSession { Thing = thing, Game = standing.Game.Name },
-            _ => new StrikerSession { Thing = thing, Game = standing.Game.Name },
-        };
-        WorkSystem.Start(sim, who, session);
+            if (w.Get<Thing>(thing).Def == standing.Game.MarkDef)
+                StartTurn(sim, who, standing, thing);
+            return;
+        }
+        WorkSystem.Start(sim, who, new StrikerSession { Thing = thing, Game = standing.Game.Name });
+    }
+
+    /// <summary>
+    /// A turn at the butts begins at the mark: the festival's bow lent if there's none in hand, and
+    /// drawn out ready (combat mode). Shoot with the bow as ever: aim, draw, loose.
+    /// </summary>
+    public static void StartTurn(Simulation sim, Entity who, GameStanding standing, Entity mark)
+    {
+        var w = sim.World;
+        var target = sim.Festival.Prop(sim, standing.Game.Def);
+        if (w.Has<ButtsTurn>(who) || target.IsNull || !w.Get<Creature>(who).Able)
+            return;
+        var lent = Entity.Null;
+        if (Combat.Archery.Bow(sim, who) is null)
+        {
+            if (standing.Game.LendsDef is not { } bow)
+                return;
+            lent = sim.CreateItem(bow, 1, Simulation.MaterialFor(bow, null));
+            Inventory.PutOn(sim, who, lent);
+            if (Combat.Archery.Bow(sim, who) is null)
+            {
+                Return(sim, who, lent);
+                return;
+            }
+        }
+        w.Add(who, new ButtsTurn { Target = target, Mark = mark, Lent = lent });
+        if (Combat.FreeMoveSystem.Ensure(sim, who))
+            w.Get<Combat.FreeMover>(who).Drawn = true; // the bow out, ready to draw
+        sim.Messages.Add(MessageKind.Info, lent.IsNull ? "At the mark: three arrows at the butts." : "At the mark, with the festival's bow: three arrows at the butts.",
+            w.Get<Position>(who).Cell);
+    }
+
+    /// <summary>
+    /// An arrow's flown (<see cref="Combat.Blows"/>): into a target, <paramref name="across"/> face
+    /// radii from its middle, or (Entity.Null) wide or into someone. Counted on a turn at that target.
+    /// </summary>
+    public static void Loosed(Simulation sim, Entity who, Entity target, float across)
+    {
+        var w = sim.World;
+        if (!w.TryGet<ButtsTurn>(who, out var turn))
+            return;
+        if (!target.IsNull)
+            sim.Festival.Stick(target, across);
+        turn.Shots++;
+        if (target == turn.Target)
+            turn.Points += RingScore(across);
+        w.Get<ButtsTurn>(who) = turn;
+        if (turn.Shots >= Turns)
+            EndTurn(sim, who);
+    }
+
+    /// <summary>
+    /// The turn's over (its arrows shot, or the mark left): scored on what's been shot, and the
+    /// festival's bow taken back.
+    /// </summary>
+    public static void EndTurn(Simulation sim, Entity who)
+    {
+        var w = sim.World;
+        if (!w.TryGet<ButtsTurn>(who, out var turn))
+            return;
+        w.Remove<ButtsTurn>(who);
+        Return(sim, who, turn.Lent);
+        if (turn.Shots > 0 && sim.Festival.GameAt(sim, turn.Mark) is { } standing)
+            Score(sim, who, standing.Game.Name, (int)MathF.Round(turn.Points * 100f / (Turns * RingScores[0])));
+    }
+
+    /// <summary>The festival's bow back from whoever had it, wherever it's got to.</summary>
+    private static void Return(Simulation sim, Entity who, Entity lent)
+    {
+        var w = sim.World;
+        if (lent.IsNull || !w.IsAlive(lent))
+            return;
+        if (w.TryGet<Equipment>(who, out var eq) && eq.Weapon == lent)
+        {
+            w.Get<Equipment>(who).Weapon = Entity.Null;
+            if (w.Has<Combat.Aiming>(who))
+                w.Remove<Combat.Aiming>(who);
+        }
+        sim.DestroyThing(lent);
+    }
+
+    /// <summary>Turns given up: walked off the mark, felled, or the games closed.</summary>
+    internal static void Watch(Simulation sim)
+    {
+        var w = sim.World;
+        foreach (var e in w.Query<ButtsTurn>())
+        {
+            var turn = w.Get<ButtsTurn>(e);
+            var stay = sim.Festival.Open && w.IsAlive(turn.Mark) && w.Get<Creature>(e).Able
+                && Maps.Map.Distance(w.Get<Position>(e).Cell, w.Get<Thing>(turn.Mark).Cell) <= MarkReach;
+            if (!stay)
+                EndTurn(sim, e);
+        }
     }
 
     internal static bool Valid(Simulation sim, Entity worker, Entity thing) =>
@@ -147,148 +287,5 @@ public sealed class StrikerSession : WorkSession
         Last = r.Float();
         Needle = r.Float();
         Flight = r.Int();
-    }
-}
-
-/// <summary>
-/// The archery butts: the aim sways (the breath, the wind, the hands), and the walk keys hold it
-/// on the gold against the sway; F looses. Three arrows, scored by the rings they land in. A
-/// practised archer's sway is smaller.
-/// </summary>
-public sealed class ButtsSession : WorkSession
-{
-    /// <summary>Steps an arrow's shown landing between shots.</summary>
-    public const int LandSteps = SimClock.TicksPerSecond * 3 / 4;
-
-    /// <summary>The rings' edges (as a share of the face's radius) and what each scores, gold first.</summary>
-    public static readonly float[] Rings = [0.12f, 0.3f, 0.5f, 0.75f, 1f];
-    public static readonly int[] RingScores = [10, 8, 5, 3, 1];
-
-    /// <summary>How fast the walk keys move the aim (face radii a step).</summary>
-    public const float SteerSpeed = 0.012f;
-
-    public Entity Thing { get; set; }
-    public string Game { get; set; } = "";
-
-    /// <summary>Where the aim is on the face (-1..1 each way; 0 is the gold's middle).</summary>
-    public float AimX { get; private set; }
-    public float AimY { get; private set; }
-
-    private float _steerX, _steerY;
-    private int _dx, _dy;
-    private float _windX, _windY;
-    private float[] _hitX = new float[FestivalGames.Turns], _hitY = new float[FestivalGames.Turns];
-
-    public int Shots { get; private set; }
-    public int Points { get; private set; }
-    public int Landing { get; private set; }
-
-    public float HitX(int k) => _hitX[k];
-    public float HitY(int k) => _hitY[k];
-
-    /// <summary>What an arrow at this distance from the middle scores.</summary>
-    public static int RingScore(float distance)
-    {
-        for (var k = 0; k < Rings.Length; k++)
-            if (distance <= Rings[k])
-                return RingScores[k];
-        return 0;
-    }
-
-    public override Skill Skill => Skill.Shooting;
-    public override float Xp => 2f;
-    public override string Title => "The archery butts";
-
-    public override int3? Focus(Simulation sim) => sim.World.IsAlive(Thing) && sim.World.TryGet<Thing>(Thing, out var t) ? t.Cell : null;
-
-    public override bool StillValid(Simulation sim) => FestivalGames.Valid(sim, Worker, Thing);
-
-    protected internal override void Begin() => Gust();
-
-    protected override void Cloned()
-    {
-        _hitX = (float[])_hitX.Clone();
-        _hitY = (float[])_hitY.Clone();
-    }
-
-    /// <summary>The wind for the next arrow: a steady push the aim has to be held against.</summary>
-    private void Gust()
-    {
-        _windX = Rand.Range(-1f, 1f) * 0.004f;
-        _windY = Rand.Range(-1f, 1f) * 0.002f;
-    }
-
-    /// <summary>How far the breath and the hands sway the aim: less for a practised archer.</summary>
-    private float Sway => (0.18f + Hands.Tremor * 0.4f) / Hands.Tolerance;
-
-    protected override void Axis(int value) => _dx = value;
-    protected override void Axis2(int value) => _dy = value;
-
-    protected override void Step()
-    {
-        if (Landing > 0)
-        {
-            if (--Landing == 0 && Shots >= FestivalGames.Turns)
-                Done = true;
-            return;
-        }
-        _steerX = Math.Clamp(_steerX + _dx * SteerSpeed + _windX, -1.5f, 1.5f);
-        _steerY = Math.Clamp(_steerY + _dy * SteerSpeed + _windY, -1.5f, 1.5f);
-        var sway = Sway;
-        AimX = _steerX + (Triangle(StepsDone, 2.3f) - 0.5f) * sway;
-        AimY = _steerY + (Triangle(StepsDone, 1.7f) - 0.5f) * sway;
-    }
-
-    protected override void Press()
-    {
-        if (Landing > 0 || Shots >= FestivalGames.Turns)
-            return;
-        _hitX[Shots] = AimX;
-        _hitY[Shots] = AimY;
-        var score = RingScore(MathF.Sqrt(AimX * AimX + AimY * AimY));
-        Points += score;
-        Sample(score / 10f);
-        Shots++;
-        Landing = LandSteps;
-        Gust();
-    }
-
-    public override void Finish(Simulation sim) =>
-        FestivalGames.Score(sim, Worker, Game, (int)MathF.Round(Points * 100f / (FestivalGames.Turns * RingScores[0])));
-
-    protected override void WriteState(SaveWriter w)
-    {
-        w.Entity(Thing);
-        w.String(Game);
-        w.Float(AimX); w.Float(AimY);
-        w.Float(_steerX); w.Float(_steerY);
-        w.Int(_dx); w.Int(_dy);
-        w.Float(_windX); w.Float(_windY);
-        for (var k = 0; k < FestivalGames.Turns; k++)
-        {
-            w.Float(_hitX[k]);
-            w.Float(_hitY[k]);
-        }
-        w.Int(Shots);
-        w.Int(Points);
-        w.Int(Landing);
-    }
-
-    protected override void ReadState(SaveReader r)
-    {
-        Thing = r.Entity();
-        Game = r.String();
-        AimX = r.Float(); AimY = r.Float();
-        _steerX = r.Float(); _steerY = r.Float();
-        _dx = r.Int(); _dy = r.Int();
-        _windX = r.Float(); _windY = r.Float();
-        for (var k = 0; k < FestivalGames.Turns; k++)
-        {
-            _hitX[k] = r.Float();
-            _hitY[k] = r.Float();
-        }
-        Shots = r.Int();
-        Points = r.Int();
-        Landing = r.Int();
     }
 }

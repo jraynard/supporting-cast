@@ -153,7 +153,7 @@ public static class AiQueries
         return best;
     }
 
-    public static int3? RandomReachableNear(Simulation sim, Entity pawn, int3 center, int radius, SimRandom? rand = null, bool publicOnly = false)
+    public static int3? RandomReachableNear(Simulation sim, Entity pawn, int3 center, int radius, SimRandom? rand = null, bool publicOnly = false, Func<int3, bool>? reject = null)
     {
         rand ??= sim.Rand;
         var from = sim.World.Get<Position>(pawn).Cell;
@@ -165,6 +165,8 @@ public static class AiQueries
             if (sim.Map.PathCost[i] <= 0 || sim.Map.Fire[i] > 0)
                 continue;
             if (publicOnly && StaffOnly(sim, t))
+                continue;
+            if (reject != null && reject(t))
                 continue;
             if (Navigation.CanReach(sim, pawn, from, t, PathEnd.OnTile))
                 return t;

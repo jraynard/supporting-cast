@@ -243,6 +243,14 @@ internal static class ComponentCodecs
             w.Long(i.At);
         }, r => new Combat.Inhaling { Target = r.Int3(), Start = r.Long(), At = r.Long() }),
         Codec("Aiming", (w, a) => w.Long(a.Start), r => new Combat.Aiming { Start = r.Long() }),
+        Codec("ButtsTurn", (w, t) =>
+        {
+            w.Entity(t.Target);
+            w.Entity(t.Mark);
+            w.Int(t.Shots);
+            w.Int(t.Points);
+            w.Entity(t.Lent);
+        }, r => new Work.ButtsTurn { Target = r.Entity(), Mark = r.Entity(), Shots = r.Int(), Points = r.Int(), Lent = r.Entity() }),
         Codec("Guard", (w, g) =>
         {
             w.Float(g.Stamina);
