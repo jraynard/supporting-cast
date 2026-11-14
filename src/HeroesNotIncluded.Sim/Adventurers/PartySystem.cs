@@ -100,6 +100,9 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
             var a = w.Get<Adventurer>(e);
             if (now < a.LeaveTick || w.Has<Leaving>(e) || w.Get<Creature>(e).Dead)
                 continue;
+            // Taken a quest and waiting on their gear to set out: the quest sends them (Expeditions).
+            if (a.Quest != 0)
+                continue;
             // Nobody leaves town with their sword still at the smith's, if they can help it.
             if (sim.Shops.GearOut(sim, e) && now < a.LeaveTick + SimClock.HoursToTicks(Shops.ShopSystem.HandedOverHours))
                 continue;

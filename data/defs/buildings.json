@@ -274,6 +274,7 @@
       // Customers line up at the open front, out into the street.
       "line": [ [3, 4], [3, 5], [3, 6], [3, 7], [3, 8], [3, 9] ],
       "sign": [0, 4], // on the front post, over the open forge-front
+      "signFace": "props/sign_anvil",
       "slots": [
         { "defs": ["Mint", "Chest"], "at": [1, 2], "facing": 1 }
       ],

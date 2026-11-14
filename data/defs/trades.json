@@ -30,7 +30,7 @@
                 "The carter leaves iron ore in the chest. Smelt it at the forge: keep the fire orange, then beat the bloom on the anvil.",
                 "A dull edge goes to the grindstone. A chipped one to the forge, then the anvil. F does the work.",
                 "Your prices are on the sign (J)." ],
-      "kit": [ { "def": "Hammer" }, { "def": "Whetstone" }, { "def": "IronBar", "count": 2 }, { "def": "Wood", "count": 4 } ] },
+      "kit": [ { "def": "Hammer" }, { "def": "Whetstone" }, { "def": "IronBar", "count": 2 }, { "def": "Leather", "count": 2 }, { "def": "Wood", "count": 4 } ] },
     { "name": "Healer", "label": "healer", "description": "An empath: lays on hands to take others' wounds into themselves, then mends them with the gift.",
       "workplace": "Shrine", "workPriorities": { "Doctor": 1 }, "skills": { "Medicine": 6 }, "mana": 100,
       "stations": [ "StrawPallet", "MeditationStone" ],

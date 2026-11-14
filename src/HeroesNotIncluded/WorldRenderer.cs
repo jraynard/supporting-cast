@@ -125,6 +125,9 @@ public sealed class WorldRenderer(TextureAtlas atlas)
     /// <summary>Cells of the player's trade's stations they haven't been to yet: a soft ring on each.</summary>
     public List<int3> StationMarks { get; } = [];
 
+    /// <summary>Over the player's own home (<c>VillageGame.Home</c>), a house in a bubble; null while they're inside, or have none.</summary>
+    public float3? HomeMark { get; set; }
+
     private readonly Dictionary<string, Sprite> _spriteCache = [];
     private readonly WorldMesher _mesher = new(atlas);
     private readonly DoorAnimator _doors = new();
@@ -350,7 +353,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             // It hangs outside the wall, so the storey above doesn't hide it, as it would something in the cell.
             if (Sim.Shops.Signs.CellOf(sim, e) is { } signAt && signAt.X >= x0 && signAt.X <= x1 && signAt.Y >= y0 && signAt.Y <= y1 && signAt.Z <= cut
                 && Sim.Shops.Signs.At(sim, signAt) == e && !_mesher.IsStub(sim, signAt.X, signAt.Y, signAt.Z))
-                AddModel(SignModel, signAt, w.Get<PresetBuilding>(e).Facing, null, Rgba.White, Quad.Level(signAt.Z));
+                AddModel(SignModelOf(w.Get<PresetBuilding>(e).Def), signAt, w.Get<PresetBuilding>(e).Facing, null, Rgba.White, Quad.Level(signAt.Z));
 
         // Mess on the floor, as the viewer sees it.
         foreach (var m in (Viewer ?? Perception.For(sim, Entity.Null)).Messes())
@@ -553,6 +556,11 @@ public sealed class WorldRenderer(TextureAtlas atlas)
                 Rgba.Pack(Ui.Theme.Parchment.X, Ui.Theme.Parchment.Y, Ui.Theme.Parchment.Z), Quad.Level(cell.Z) | Quad.Unlit, translucent: true);
         }
 
+        // Your home: a house in a bubble over the roof, through anything in the way, so it's found from across town.
+        if (HomeMark is { } home)
+            DrawBubble("ui/icon_home", home, Quad.Always, time,
+                Rgba.Pack(Ui.Theme.Parchment.X, Ui.Theme.Parchment.Y, Ui.Theme.Parchment.Z, 0.95f), 1.4f);
+
         if (w.IsAlive(selected))
         {
             var t = sim.LocationOf(selected);
@@ -577,6 +585,21 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         new() { Min = [0.48f, 1.72f, 0.8f], Max = [0.52f, 1.76f, 0.86f], Top = "props/stone_block", Side = "props/stone_block" },
         new() { Min = [0.475f, 1.0f, 0.28f], Max = [0.525f, 1.8f, 0.8f], Top = "props/planks", Side = "props/sign_board", Front = "props/planks" },
     ];
+
+    private readonly Dictionary<string, List<ModelBox>> _signModels = [];
+
+    /// <summary>The sign with this building's face painted on it (<see cref="BuildingDef.SignFace"/>), or the plain one.</summary>
+    private List<ModelBox> SignModelOf(BuildingDef def)
+    {
+        if (def.SignFace is not { } face)
+            return SignModel;
+        if (!_signModels.TryGetValue(face, out var model))
+        {
+            var board = SignModel[^1];
+            _signModels[face] = model = [.. SignModel[..^1], new() { Min = board.Min, Max = board.Max, Top = board.Top, Side = face, Front = board.Front }];
+        }
+        return model;
+    }
 
     private static string MessSprite(MessLook look) => look switch
     {

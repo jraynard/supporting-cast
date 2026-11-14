@@ -263,4 +263,45 @@ public class BlacksmithTests
         Assert.Equal(OrderStatus.Done, order.Status);
         Assert.Equal(purse + order.Price, Coin.Count(sim, me));
     }
+
+    [Fact]
+    public void APartyTakingAQuestWaitsForTheBladeAtTheSmiths()
+    {
+        var (sim, owner, sword) = TownWithAWornSword("Blacksmith");
+        var me = Players.CharacterOf(sim, Ana);
+        var party = sim.World.Get<Adventurer>(owner).Party;
+        for (var t = 0; t < 40 && (Expeditions.ExpeditionSystem.QuestOrder(sim, party) == null
+            || !sim.Shops.All.Any(e => e.IsOpen && e.Poster == owner && e.Kind.Kind == ServiceKind.Repair)); t++)
+            sim.TickMany(SimClock.TicksPerHour / 4);
+        var order = sim.Shops.All.Single(e => e.IsOpen && e.Poster == owner && e.Kind.Kind == ServiceKind.Repair);
+        sim.ApplyNow(new TakeOrderCommand(me, order.Id));
+        var at = sim.World.Get<Position>(owner).Cell;
+        var cell = sim.SpiralFrom(at, 3).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z);
+        sim.World.Get<Position>(me).Cell = cell;
+        sim.World.Get<Position>(me).Pos = Position.CenterOf(cell);
+        Assert.True(sim.Shops.TryHandOver(sim, order));
+
+        // The innkeeper sends them off on a quest while the blade's still with the smith.
+        var broker = sim.Creatures().First(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Brokers);
+        var q = sim.Expeditions.Quests[0];
+        sim.Expeditions.Hear(broker, q.Id, Expeditions.ExpeditionSystem.PartyStrength(sim, party) * 0.9f, null, 1f);
+        sim.World.Get<Position>(broker).Cell = cell;
+        sim.World.Get<Position>(broker).Pos = Position.CenterOf(cell);
+        Assert.True(sim.Expeditions.Offer(sim, broker, owner, q.Id));
+        Assert.False(sim.World.Has<Leaving>(owner), "they wait for the blade");
+        sim.TickMany(SimClock.TicksPerHour);
+        Assert.False(sim.World.Has<Leaving>(owner));
+        Assert.True(order.IsOpen);
+
+        // Mended and handed back: paid, and then they set out with it.
+        sim.World.Get<Thing>(sword).Hp = sim.World.Get<Thing>(sword).MaxHp;
+        WeaponWear.SetDullness(sim, sword, 0f);
+        sim.World.Get<Position>(owner).Cell = at;
+        sim.ApplyNow(new GiveCommand(me, owner, sword, 1));
+        Assert.Equal(OrderStatus.Done, order.Status);
+        sim.TickMany(SimClock.TicksPerHour / 6);
+        Assert.True(sim.World.Has<Leaving>(owner));
+        Assert.Equal(sword, sim.World.Get<Equipment>(owner).Weapon);
+        Assert.DoesNotContain(sim.Speech.Kept, u => u.Speaker == owner && u.Text.Contains("Keep my"));
+    }
 }

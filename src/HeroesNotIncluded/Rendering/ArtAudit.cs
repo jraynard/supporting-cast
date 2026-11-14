@@ -20,7 +20,7 @@ public static class ArtAudit
         "ui/icon_select", "ui/icon_cancel", "ui/icon_chop", "ui/icon_mine", "ui/icon_dig", "ui/icon_harvest",
         "ui/icon_build", "ui/icon_deconstruct", "ui/icon_burn", "ui/icon_stockpile", "ui/icon_clearzone",
         "ui/icon_sleep", "ui/icon_eat", "ui/icon_alert", "ui/icon_fight", "ui/icon_doctor", "ui/icon_haul",
-        "ui/icon_hunt", "ui/icon_fish", "ui/icon_butcher",
+        "ui/icon_hunt", "ui/icon_fish", "ui/icon_butcher", "ui/icon_home",
     ];
 
     public sealed record Report(List<string> Errors, List<string> Warnings);
@@ -53,6 +53,8 @@ public static class ArtAudit
         }
         foreach (var r in defs.AllRunes)
             Need(r.Icon, $"rune {r.Name}");
+        foreach (var b in defs.AllBuildings)
+            Need(b.SignFace ?? "", $"building {b.Name} sign");
         foreach (var sv in defs.AllServices)
             Need(sv.Icon, $"service {sv.Name} icon");
         foreach (var kit in defs.AllKits)

@@ -397,6 +397,14 @@ def marker(img):
     part(img, ell([9, 17, 15, 23]), QUEST_EMBER)
 
 
+def home(img):
+    """A cottage, thatched, with its door: over your own home, so you know which is yours."""
+    part(img, lambda d: d.rectangle([5, 11, 18, 21], fill=255), LINEN, radius=1.0)       # the walls
+    part(img, poly([(1, 12), (11.5, 2), (22, 12)]), STRAW, radius=1.0)                  # the thatch
+    part(img, lambda d: d.rectangle([10, 15, 13, 21], fill=255), WALNUT, radius=0.6)     # the door
+    put(img, 12, 18, GOLD[4])
+
+
 def good(img):
     """A tick, carved."""
     part(img, poly([(3, 12), (7, 9), (10, 13), (19, 3), (22, 6), (10, 20)]), GREEN, radius=1.0)
@@ -440,7 +448,7 @@ WORK = (("anvil", work_anvil), ("hammer", work_hammer), ("billet", work_billet))
 
 CHROME = (("frame_panel", frame_panel), ("frame_title", frame_title), ("frame_inset", frame_inset),
           ("bar_trough", bar_trough), ("keycap", keycap))
-TOAST_ICONS = (("coin", coin), ("quest", quest), ("wound", wound), ("good", good), ("marker", marker))
+TOAST_ICONS = (("coin", coin), ("quest", quest), ("wound", wound), ("good", good), ("marker", marker), ("home", home))
 
 
 def icons():

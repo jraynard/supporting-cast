@@ -113,6 +113,9 @@ public sealed class BuildingDef : Def
     /// </summary>
     public int[]? Sign { get; set; }
 
+    /// <summary>The picture painted on the sign, a texture (presentation only; the sim never reads it). Null: the plain board.</summary>
+    public string? SignFace { get; set; }
+
     /// <summary>A memory its people get from eating inside it (feasting in the longhouse). Null: none.</summary>
     public string? EatThought { get; set; }
 

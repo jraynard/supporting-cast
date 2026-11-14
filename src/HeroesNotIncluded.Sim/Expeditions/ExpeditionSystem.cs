@@ -92,6 +92,12 @@ public sealed class Expedition
 
     /// <summary>They've a sound wagon to bring home what they find, or none to worry about (<see cref="Tinkering.Wagons"/>).</summary>
     public bool Hauls = true;
+
+    /// <summary>
+    /// Nonzero while they've taken the quest but are still in town, waiting on gear they handed
+    /// over to be mended: they set out once it's back, or at this tick without it.
+    /// </summary>
+    public long SetOutBy;
 }
 
 /// <summary>
@@ -189,6 +195,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             _nextRumour = now + SimClock.HoursToTicks(RumourHours * _rand.Range(0.7f, 1.3f));
         }
         Report(sim);
+        SetOutWhenReady(sim);
         for (var i = 0; i < _out.Count; i++)
             if (now >= _out[i].ReturnTick)
             {
@@ -375,18 +382,63 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             sim.Speech.Say(sim, member, "And the wagon's still broken. Whatever we find out there stays there, then.", Volume.Say);
         }
         foreach (var e in party)
-        {
             w.Get<Adventurer>(e).Quest = questId;
+        var ex = new Expedition
+        {
+            Quest = questId, Party = a.Party, PartyDef = a.PartyDef, Stated = intel.Danger, BrokerName = w.Get<Creature>(broker).Name, Hauls = hauls,
+        };
+        _out.Add(ex);
+        // Nobody sets out with their sword still at the smith's, if they can help it.
+        if (party.FindIndex(e => sim.Shops.GearOut(sim, e)) is var i and >= 0)
+        {
+            var waiting = party[i];
+            ex.SetOutBy = sim.Clock.Tick + SimClock.HoursToTicks(Shops.ShopSystem.HandedOverHours);
+            ex.ReturnTick = long.MaxValue;
+            sim.Speech.Say(sim, waiting, "Soon as I've my gear back from mending, we're off.", Volume.Say);
+        }
+        else
+            SetOut(sim, ex, party);
+        return true;
+    }
+
+    /// <summary>The party leaves for its quest: the clock on it starts now.</summary>
+    private static void SetOut(Simulation sim, Expedition ex, List<Entity> party)
+    {
+        var w = sim.World;
+        ex.SetOutBy = 0;
+        ex.ReturnTick = sim.Clock.Tick + SimClock.HoursToTicks(sim.Expeditions.Find(ex.Quest)!.Def.Hours + 2 * TravelHours);
+        foreach (var e in party)
+        {
             w.Add(e, new Leaving());
             AiSystem.EndJob(sim, e, w.Get<Mind>(e), false);
         }
-        _out.Add(new Expedition
+        sim.Messages.Add(MessageKind.Info, $"{Capital(ex.PartyDef.Label)} set out for {sim.Expeditions.Find(ex.Quest)!.Def.Label}.",
+            party.Count > 0 ? w.Get<Position>(party[0]).Cell : default);
+    }
+
+    /// <summary>
+    /// Parties that took a quest while gear of theirs was out for mending: off once it's all back,
+    /// or once they've waited long enough. If nobody's left in town to go, the quest's open again.
+    /// </summary>
+    private void SetOutWhenReady(Simulation sim)
+    {
+        var now = sim.Clock.Tick;
+        for (var i = 0; i < _out.Count; i++)
         {
-            Quest = questId, Party = a.Party, PartyDef = a.PartyDef, Stated = intel.Danger, BrokerName = w.Get<Creature>(broker).Name,
-            ReturnTick = sim.Clock.Tick + SimClock.HoursToTicks(quest.Def.Hours + 2 * TravelHours), Hauls = hauls,
-        });
-        sim.Messages.Add(MessageKind.Info, $"{Capital(a.PartyDef.Label)} set out for {label}.", w.Get<Position>(member).Cell);
-        return true;
+            var ex = _out[i];
+            if (ex.SetOutBy == 0)
+                continue;
+            var party = PartyInTown(sim, ex.Party).FindAll(e => !sim.World.Get<Creature>(e).Dead);
+            if (party.Count == 0)
+            {
+                if (Find(ex.Quest) is { } quest)
+                    quest.Status = QuestStatus.Open;
+                _out.RemoveAt(i--);
+                continue;
+            }
+            if (now >= ex.SetOutBy || !party.Exists(e => sim.Shops.GearOut(sim, e)))
+                SetOut(sim, ex, party);
+        }
     }
 
     /// <summary>
@@ -735,6 +787,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             w.String(ex.BrokerName);
             w.Long(ex.ReturnTick);
             w.Bool(ex.Hauls);
+            w.Long(ex.SetOutBy);
             w.Int(ex.Members.Count);
             foreach (var m in ex.Members)
                 WriteMember(w, m);
@@ -769,6 +822,8 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             var ex = new Expedition { Quest = r.Int(), Party = r.Int(), PartyDef = r.Def<PartyDef>(), Stated = r.Float(), BrokerName = r.String(), ReturnTick = r.Long() };
             if (r.Version >= 7)
                 ex.Hauls = r.Bool();
+            if (r.Version >= 19)
+                ex.SetOutBy = r.Long(); // waiting on mended gear to set out came with format 19
             for (var k = r.Count(64); k > 0; k--)
                 ex.Members.Add(ReadMember(r));
             _out.Add(ex);

@@ -106,11 +106,11 @@ def item_mop():
     return img
 
 
-def prop_sign_board():
-    """A hanging inn sign: a dark frame round a painted face, a gilt rule, and a bear's head in the middle."""
+def sign_blank(seed):
+    """A sign's board: a dark frame round a painted face, with gilt rules top and bottom."""
     img = canvas()
     px = img.load()
-    rnd = random.Random(46)
+    rnd = random.Random(seed)
     for y in range(S):
         for x in range(S):
             edge = min(x, y, S - 1 - x, S - 1 - y)
@@ -123,6 +123,13 @@ def prop_sign_board():
     for x in range(5, S - 5):                                               # gilt rules
         px[x, 5] = (236, 178, 74, 255)
         px[x, S - 6] = (236, 178, 74, 255)
+    return img
+
+
+def prop_sign_board():
+    """A hanging inn sign: the board with a bear's head in the middle."""
+    img = sign_blank(46)
+    px = img.load()
     # A bear's head: round face, two ears, a pale muzzle.
     dark = (44, 28, 20, 255)
     for y in range(S):
@@ -139,6 +146,28 @@ def prop_sign_board():
     return img
 
 
+def prop_sign_anvil():
+    """The smithy's sign: the board with a black iron anvil on it, a glint along its face."""
+    img = sign_blank(47)
+    px = img.load()
+    iron, lit = (34, 32, 34, 255), (150, 146, 150, 255)
+    # The face and its horn, tapering to a point on the left.
+    for y in range(11, 15):
+        for x in range(5, 25):
+            horn = 13 - x                                                     # how far into the horn
+            if horn <= 0 or (y - 11) < 4 - horn * 0.45:
+                px[x, y] = iron
+    for x in range(6, 25):                                                  # the glint along the top
+        px[x, 11] = lit
+    for y in range(15, 19):                                                 # the waist
+        for x in range(13, 21):
+            px[x, y] = iron
+    for y in range(19, 23):                                                 # the foot, splaying out
+        for x in range(11 - (y - 19), 23 + (y - 19)):
+            px[x, y] = iron
+    return img
+
+
 def generate():
     save(mess_puddle(), "ui/mess_puddle")
     save(mess_mud(), "ui/mess_mud")
@@ -146,6 +175,7 @@ def generate():
     save(mess_stain(), "ui/mess_stain")
     save(item_mop(), "items/mop")
     save(prop_sign_board(), "props/sign_board")
+    save(prop_sign_anvil(), "props/sign_anvil")
 
 
 if __name__ == "__main__":
