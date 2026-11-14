@@ -33,8 +33,10 @@ macOS: unpack it and drag HeroesNotIncluded.app wherever you like. It isn't nota
   yet, so the first launch of a downloaded copy is blocked: open Terminal and run
       xattr -dr com.apple.quarantine /path/to/HeroesNotIncluded.app
   (type the first part, then drag the app onto the Terminal window for its path), then open it
-  as usual. Or try to open it once, then go to System Settings -> Privacy & Security and click
-  "Open Anyway".
+  as usual. If it's still blocked, run the same with sudo in front (it asks for your Mac
+  password): sudo xattr -cr /path/to/HeroesNotIncluded.app
+  Or try to open it once, then go straight to System Settings -> Privacy & Security and click
+  "Open Anyway". Builds before 0.1.0-playtest.7 won't open this way: download a new one.
 
 If the game won't start, run it from a terminal with --check-gpu and send us what it prints:
   Windows: HeroesNotIncluded.exe --check-gpu

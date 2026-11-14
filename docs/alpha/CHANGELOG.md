@@ -27,6 +27,8 @@ One way to fight, everywhere.
   once the bow's fully drawn), then left click to loose. Hold on and the next arrow's drawn.
 - Raiders with nobody left to fight give up and go, instead of standing in the square for hours
   while the hurt bleed out indoors.
+- Mac: the app opens once you've cleared the quarantine flag (README-ALPHA). Its signature was
+  broken in every earlier build, so a Mac copy from before this one needs a fresh download.
 
 ## 0.1.0-playtest.6
 

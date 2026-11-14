@@ -22,6 +22,11 @@ and posts to #builds. Pushes to `main` without a tag only test and package (the 
 the run's page for a day or so, as artifacts). To republish from a branch: Actions -> Playtest
 release -> Run workflow, tick "publish".
 
+The Mac app keeps only native code in `Contents/MacOS` and everything else in `Contents/Resources`
+behind symlinks (`tools/package.sh`, `make_app`). Anything else there would be signed through
+extended attributes, which the trip through Linux and butler drops; the `macos-sign` job checks a
+copy without them.
+
 ## One-time setup
 
 ### itch.io

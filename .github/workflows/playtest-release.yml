@@ -129,6 +129,7 @@ jobs:
     # The Mac package is built on Linux too: here it gets an ad-hoc signature over the whole .app
     # (Apple Silicon refuses broken or partial signatures), then the same headless checks. Signing
     # seals the bundle without touching the DLLs, so the build tag stays the Linux package's.
+    # A copy without extended attributes is checked too: that's how it reaches testers.
     # Only for a publish: macOS runner minutes cost ten times Linux's on a private repo.
     needs: package
     if: needs.package.outputs.publish == 'true'
@@ -154,8 +155,15 @@ jobs:
           tag="$("$exe" --version | grep 'build tag')"
           linux="$(grep 'build tag' version.txt)"
           [[ "$tag" == "$linux" ]] || { echo "::error::build tag differs: '$tag' vs '$linux'"; exit 1; }
+          # The app as testers get it: the itch job unpacks it on Linux and butler keeps only file
+          # contents, so no extended attributes. The signature must hold without them.
+          ditto --noextattr --noqtn --noacl "$app" travelled/HeroesNotIncluded.app
+          codesign --verify --deep --strict --verbose=2 travelled/HeroesNotIncluded.app
+          travelled/HeroesNotIncluded.app/Contents/MacOS/HeroesNotIncluded --version
+          rm -rf travelled
           rm "$tarball"
-          tar -czf "$tarball" "$folder"
+          # No AppleDouble ._ files: unpacked on Linux they'd be stray files inside the sealed bundle.
+          COPYFILE_DISABLE=1 tar -czf "$tarball" "$folder"
       - uses: actions/upload-artifact@v4
         with:
           name: package-macos
@@ -193,6 +201,10 @@ jobs:
           unzip -q *-win-x64.zip -d up/windows
           tar -xzf *-linux-x64.tar.gz -C up/linux
           tar -xzf *-osx-arm64.tar.gz -C up/mac
+          # The Mac signature needs its symlinks intact and nothing extra in the bundle (tools/package.sh).
+          [[ -z "$(find up/mac -name '._*')" ]] || { echo "::error::AppleDouble ._ files in the Mac package"; exit 1; }
+          [[ -L "$(find up/mac -maxdepth 2 -name HeroesNotIncluded.app)/Contents/MacOS/data" ]] \
+            || { echo "::error::the Mac app's Contents/MacOS/data isn't a symlink"; exit 1; }
           for channel in windows linux mac; do
             # Each archive holds one folder; push its contents.
             dir="$(find "up/$channel" -mindepth 1 -maxdepth 1 -type d | head -1)"

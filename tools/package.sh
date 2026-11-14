@@ -19,7 +19,8 @@
 # .cache/ from its pinned GitHub release and checked against MOLTENVK_SHA256. It goes in as
 # libvulkan.1.dylib, the name BRUTAL's libVulkanEx.dylib links (Narsil's Platform/MacVulkan.cs).
 # The .app is ad-hoc signed when rcodesign is on PATH (CI signs it on a Mac); unsigned, testers
-# clear the quarantine flag first (README-ALPHA).
+# clear the quarantine flag first (README-ALPHA). Only Mach-O files sit in Contents/MacOS (see
+# make_app): that keeps the whole signature in ordinary files, so it survives Linux and butler.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -57,8 +58,17 @@ moltenvk() {
     echo "$cache"
 }
 
-# The Mac build as HeroesNotIncluded.app: everything in Contents/MacOS (the game finds data/ beside its
-# executable), plus an Info.plist so Finder launches it with a proper name and menu bar.
+# True when a file starts with a Mach-O magic number (thin 64/32-bit either byte order, or fat).
+is_macho() {
+    case "$(head -c4 "$1" 2> /dev/null | od -An -tx1 | tr -d ' \n')" in
+        cffaedfe | feedfacf | cefaedfe | feedface | cafebabe | bebafeca) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# The Mac build as HeroesNotIncluded.app: native code in Contents/MacOS, the rest in
+# Contents/Resources behind symlinks (the game finds data/ beside its executable), plus an
+# Info.plist so Finder launches it with a proper name and menu bar.
 make_app() {
     local out="$1" app="$1/HeroesNotIncluded.app"
     local stage="$out.stage"
@@ -67,6 +77,25 @@ make_app() {
     mv "$stage"/* "$app/Contents/MacOS/"
     rmdir "$stage"
     cp "$root/packaging/icon.icns" "$app/Contents/Resources/icon.icns"
+    # Only Mach-O stays in Contents/MacOS. codesign signs anything else there through extended
+    # attributes, which the trip to itch (Linux tar, butler) drops, leaving a broken signature.
+    # Everything else moves to Contents/Resources, sealed by hash in CodeResources, with a symlink
+    # left in its place so the game still finds it beside its executable (AppContext.BaseDirectory).
+    local entry base
+    for entry in "$app/Contents/MacOS"/*; do
+        base="$(basename "$entry")"
+        if [[ -f "$entry" && ! -L "$entry" ]] && is_macho "$entry"; then
+            continue
+        fi
+        [[ ! -e "$app/Contents/Resources/$base" ]] || fail "make_app: Contents/Resources/$base already exists"
+        mv "$entry" "$app/Contents/Resources/$base"
+        ln -s "../Resources/$base" "$entry"
+    done
+    is_macho "$app/Contents/MacOS/HeroesNotIncluded" || fail "make_app: the executable isn't Mach-O"
+    for entry in "$app/Contents/MacOS"/*; do
+        [[ -L "$entry" ]] || is_macho "$entry" || fail "make_app: non-Mach-O $(basename "$entry") left in Contents/MacOS"
+        [[ -e "$entry" ]] || fail "make_app: broken link $(basename "$entry")"
+    done
     cat > "$app/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
