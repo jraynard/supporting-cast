@@ -35,7 +35,7 @@ public sealed class Reckoning : ISimSystem, ISaveState
 
     public void Update(Simulation sim)
     {
-        if (!sim.Round.Live)
+        if (!sim.Round.Live || sim.Round.Practice)
             return;
         var season = sim.Defs.Season;
         var ex = sim.Expeditions;

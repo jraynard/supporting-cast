@@ -56,8 +56,8 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
             return;
         var now = sim.Clock.Tick;
         SendOff(sim, now);
-        if (sim.Round.Phase == RoundPhase.Festival)
-            return;
+        if (sim.Round.Phase == RoundPhase.Festival || sim.Round.Practice)
+            return; // in the practice yard, only when sent for
         if (NextArrivalTick < 0)
         {
             NextArrivalTick = now + SimClock.HoursToTicks(FirstArrivalHours);

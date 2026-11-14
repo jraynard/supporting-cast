@@ -38,6 +38,7 @@ public sealed partial class VillageGame
         _hud.BeginFrame(Screen, ImGui.GetFrameHeight());
         // Top right: the clock and its journal strip, then the open journal panels, stacked.
         DrawArena();
+        DrawPractice();
         DrawClock();
         DrawGift();
         DrawShop();

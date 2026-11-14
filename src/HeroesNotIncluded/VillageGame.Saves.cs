@@ -37,7 +37,7 @@ public sealed partial class VillageGame
     private bool _openedSaves;
 
     /// <summary>Demos don't autosave over the player's village.</summary>
-    private bool AutosaveEnabled => SaveSlots.Directory != null;
+    private bool AutosaveEnabled => SaveSlots.Directory != null && !_sim.Round.Practice; // practice leaves nothing to come back to
 
     private void OnSavedOrLoaded(string? slot)
     {

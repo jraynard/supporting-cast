@@ -219,6 +219,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// </summary>
     public string? ArenaFoe { get; init; }
 
+    /// <summary>The practice yard (<see cref="Practice"/>): a round in <see cref="HeroTrade"/> with no season to it.</summary>
+    public bool Practice { get; init; }
+
     /// <summary>Debug (<c>--weapon NAME</c>, with <c>--arena</c>): what you fight with in the ring.</summary>
     public string? ArenaWeapon { get; init; }
 
@@ -321,13 +324,15 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         if (Difficulty is { } difficulty && !difficulty.Equals("Off", StringComparison.OrdinalIgnoreCase))
             _sim.Storyteller.SetDifficulty(_sim, defs.Difficulty(difficulty));
         // A round's season brings its crises, at Normal unless asked otherwise ("Off" for none).
-        if (Adventure && !string.Equals(Difficulty, "Off", StringComparison.OrdinalIgnoreCase))
+        if (Adventure && !Practice && !string.Equals(Difficulty, "Off", StringComparison.OrdinalIgnoreCase))
             _sim.Director.Enable(defs.Difficulty(Difficulty ?? "Normal"));
         if (Adventure)
         {
             _sim.Round.OpenLobby();
             if (HostCoop == null)
                 center = StartSoloRound(center);
+            if (Practice)
+                _sim.Round.Practice = true; // set before the first tick: every peer (there's only one) starts with it
             if (RaidTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } me)
                 RaidDrill.Stage(_sim, me);
         }

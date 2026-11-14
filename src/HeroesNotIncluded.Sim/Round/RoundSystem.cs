@@ -75,6 +75,12 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     /// </summary>
     public bool Endless { get; set; }
 
+    /// <summary>
+    /// The practice yard (<see cref="Scenarios.Practice"/>): a round with no season to it. No
+    /// festival or end, no Renown or Dread, no party unless sent for. Saved.
+    /// </summary>
+    public bool Practice { get; set; }
+
     /// <summary>Where the festival gathers (the well in the square), once it's begun.</summary>
     public int3? Square { get; private set; }
 
@@ -119,7 +125,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
 
     public void Update(Simulation sim)
     {
-        if (!Live || Endless)
+        if (!Live || Endless || Practice)
             return;
         var now = sim.Clock.Tick;
         if (Phase == RoundPhase.Playing && now >= FestivalTick(sim))
@@ -561,6 +567,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             w.Int(sq.Y);
             w.Int(sq.Z);
         }
+        w.Bool(Practice);
     }
 
     public void Load(SaveReader r, Simulation sim)
@@ -581,6 +588,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             _seats.Add(seat);
         }
         _startCoin.Clear();
+        Practice = false;
         Summary = null;
         StartTick = -1;
         Square = null;
@@ -597,6 +605,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         if (r.Bool())
             Summary = RoundSummary.Read(r);
         Square = r.Version >= 10 && r.Bool() ? new int3(r.Int(), r.Int(), r.Int()) : null;
+        Practice = r.Version >= 28 && r.Bool();
     }
 
     private static void WriteStrings(SaveWriter w, List<string> list)

@@ -48,6 +48,20 @@ public static class VillageRound
         return new Town(built.Center, Role("Tavern"), Role("Forge"), shrine, Role("TinkerShop"));
     }
 
+    /// <summary>A trade's workplace stocked again, as it was at the start (the practice yard's Restock).</summary>
+    public static void Restock(Simulation sim, Entity building)
+    {
+        if (!sim.World.IsAlive(building) || !sim.World.TryGet<PresetBuilding>(building, out var b))
+            return;
+        switch (b.Def.Name)
+        {
+            case "Inn": StockInn(sim, building); break;
+            case "Smithy": StockSmithy(sim, building); break;
+            case "Shrine": StockShrine(sim, building); break;
+            case "TinkerShop": StockTinkerShop(sim, building); break;
+        }
+    }
+
     /// <summary>Charcoal in the smithy's fuel bin: a working day's firing, for whoever keeps the forge fed.</summary>
     public const int SmithyCharcoal = 30;
 

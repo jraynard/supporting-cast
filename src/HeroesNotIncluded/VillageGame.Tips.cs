@@ -29,7 +29,7 @@ public sealed partial class VillageGame
 
     private void DrawTips()
     {
-        if (!TipsShowing)
+        if (!TipsShowing || _sim.Round.Practice) // the practice yard lists them all in its own panel
             return;
         var tips = _sim.World.Get<Trade>(_avatar).Def.Tips;
         _tipIndex = Math.Clamp(_tipIndex, 0, tips.Count - 1);

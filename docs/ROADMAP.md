@@ -40,8 +40,12 @@ Notes from playing; the healer first.
   the roofs ahead of the dragon. The AI fights fire with buckets when there's one to be had, and
   takes them back to the well. Left: bots throwing water, seeing it against the dragon in a
   running game, a sound for the splash, and the water drawn in flight.
-- **A trade's training,** in solo: a walk through one trade's games and what each reading means,
-  before a round asks for them under pressure.
+- **The practice yard.** Done (`Scenarios/Practice`, from the title menu or `--practice TRADE`):
+  Millbrook in your trade with no season, Renown, Dread or crises, and no autosave. Its panel
+  lists the trade's tips and sends customers set up for the trade (hurt, worn blades, a strongbox
+  and a curio, hungry), restocks the workplace, freshens you up, and brings the healer a patient
+  with the wound asked for. Left: a step-by-step walk through each game, and the cook's and
+  innkeeper's own setups (a pot already going, a named drink asked for).
 - Done: the ghost's speech crashed the game (a bubble over a speaker with no body); touchpad zoom
   eases in, and the view stops short of the whole map with a character. Also steam deck d-pad fix.
 

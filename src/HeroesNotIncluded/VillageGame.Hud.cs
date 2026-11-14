@@ -253,7 +253,9 @@ public sealed partial class VillageGame
             ImGui.Text(_sim.Clock.TimeString());
         var outdoor = _sim.Climate.OutdoorTemperature;
         TextC(outdoor < 5 ? Theme.Warn : Theme.Dim, $"Outside {outdoor:F0}°C");
-        if (View.Standing() is { } standing)
+        if (_sim.Round.Practice)
+            TextC(Theme.Dim, "The practice yard: no season");
+        else if (View.Standing() is { } standing)
         {
             TextC(Theme.Dim, SeasonLine());
             TextC(Theme.Dim, standing.Renown);

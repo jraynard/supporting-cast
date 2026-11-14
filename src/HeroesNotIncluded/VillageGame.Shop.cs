@@ -175,7 +175,7 @@ public sealed partial class VillageGame
         if (sign.Count == 0)
             return;
         DrawShopName(shop, workplace, trade.Def.NamesShop);
-        if (trade.Def.Serving(Sim.Defs.ServiceKind.Meal))
+        if (trade.Def.Serves.Contains(Sim.Defs.ServiceKind.Meal)) // named, not "serves anything": the cook's, not the tinker's
         {
             if (View.HouseDish(shop) is { } house)
                 Wrapped($"House dish: the {house.Name} ({house.Tastes}). Some ask for it by name.");

@@ -245,8 +245,11 @@ else
         HeroPreset = ParseString(args, "--preset"),
         HeroFolk = Enum.TryParse<HeroesNotIncluded.Sim.Components.Folk>(ParseString(args, "--folk"), true, out var folk) ? folk : null,
         // --raid-test: the raid drill (RaidDrill), as the smith unless --trade says otherwise.
-        HeroTrade = ParseString(args, "--trade") ?? (args.Contains("--raid-test") ? "Blacksmith" : null),
+        HeroTrade = ParseString(args, "--trade") ?? (ParseString(args, "--practice") is { } practising && !practising.StartsWith("--") ? practising
+            : args.Contains("--raid-test") ? "Blacksmith" : null),
         RaidTest = args.Contains("--raid-test"),
+        // --practice TRADE: the practice yard (Practice): your trade's games, no season, customers when sent for.
+        Practice = args.Contains("--practice"),
         // --die-at SECONDS: your character drops dead then, to try being a ghost.
         DieAt = args.Contains("--die-at") ? ParseFloat(args, "--die-at") : -1f,
         // --festival-at SECONDS: the festival begins then, to see it without playing to it.
@@ -281,7 +284,7 @@ SavedCharacter? PickedCharacter()
 
 static bool LaunchesDirectly(string[] args) =>
     args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--freeform" or "--show-roofs" or "--hide-roofs"
-        or "--ignite-forest" or "--raid-test" or "--arena" or "--yaw" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
+        or "--ignite-forest" or "--raid-test" or "--arena" or "--practice" or "--yaw" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
 
 // --load and --check-save take a path, or the name of a slot in the saves directory ("quicksave").
 static string ResolveSave(string pathOrSlot)

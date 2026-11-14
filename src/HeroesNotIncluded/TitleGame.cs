@@ -64,7 +64,7 @@ public sealed class TitleGame : Game
     /// <summary>Why the last load failed, shown under the menu.</summary>
     private string? _error;
 
-    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Host, HostNew, HostSave, Join, Characters, BackToCreator, Report, Credits }
+    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Host, HostNew, HostSave, Join, Characters, BackToCreator, Report, Credits, Practice }
 
     /// <summary>The Credits window (BRUTAL License 2.1: its copyright notice; and the fonts' licences).</summary>
     private readonly CreditsWindow _credits = new(Title, "Somebody has to keep the lights on.", GameCredits.People);
@@ -85,7 +85,7 @@ public sealed class TitleGame : Game
     private string? _logsError;
 
     /// <summary>What the character being picked or made is for: every way into a village starts with who you are.</summary>
-    private enum Purpose { Solo, Host, Join, Manage }
+    private enum Purpose { Solo, Host, Join, Manage, Practice }
 
     private Purpose _purpose;
 
@@ -119,6 +119,7 @@ public sealed class TitleGame : Game
                 ? new("Continue", $"{last.Name}: {last.Summary}", () => FromSave(last))
                 : new("Continue", "Nothing saved yet.", null),
             new("New round", "Just you and the regulars.", null, MenuAction.NewGame),
+            new("Practice yard", "Learn a trade with nobody waiting.", null, MenuAction.Practice),
             new("Host game", "Open the doors.", null, MenuAction.Host),
             new("Join game", "Pull up a stool.", null, MenuAction.Join),
             new("Characters", "Who you've been.", null, MenuAction.Characters),
@@ -178,6 +179,20 @@ public sealed class TitleGame : Game
             .ToArray();
     }
 
+    /// <summary>
+    /// The practice yard's trades: those with a workplace and games of their own. No bots, no
+    /// season: the town's other trades are the AI's.
+    /// </summary>
+    private MenuItem[] PracticeItems(SavedCharacter c)
+    {
+        Game Start(string trade) => new VillageGame(DefaultSeed) { Adventure = true, Practice = true, Character = c, HeroTrade = trade };
+        return _defs.AllTrades
+            .Where(t => t.WorkplaceDef != null)
+            .Select(t => new MenuItem(char.ToUpperInvariant(t.Label[0]) + t.Label[1..], t.Description, () => Start(t.Name)))
+            .Append(new MenuItem("Back", "Back to the main menu.", null, MenuAction.Back))
+            .ToArray();
+    }
+
     /// <summary>Hosting as <paramref name="c"/>: friends see the character's name, and the village is theirs.</summary>
     private HostSettings HostSettingsFor(SavedCharacter? c = null)
     {
@@ -229,6 +244,9 @@ public sealed class TitleGame : Game
         {
             case Purpose.Solo:
                 (_submenu, _submenuTitle) = (TradeItems(c), "Which trade will you take?");
+                break;
+            case Purpose.Practice:
+                (_submenu, _submenuTitle) = (PracticeItems(c), "Which trade will you practise?");
                 break;
             case Purpose.Host:
                 HostAs(c);
@@ -532,6 +550,9 @@ public sealed class TitleGame : Game
                 break;
             case MenuAction.Characters:
                 ChooseCharacter(Purpose.Manage);
+                break;
+            case MenuAction.Practice:
+                ChooseCharacter(Purpose.Practice);
                 break;
             case MenuAction.Host:
                 (_submenu, _submenuTitle) = (HostItems(), "Open the doors");
