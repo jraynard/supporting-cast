@@ -57,10 +57,7 @@ First pass done (HISTORY.md, "Death and ghosts"). What's left:
 
 - **Playtest it:** the Calling's cost and windows (`Revival`), presence and sign costs
   (`Hauntings`), errand times and Renown (`afterlife.json`), and Dread per death (`season.json`).
-- **Gear on the dead:** `NeedsSystem.Kill` drops everything, clothes included, so the returned
-  come back stripped. Keep what's worn on the body.
-- **Art and sound:** a proper ghost (a pale, see-through take on the character), the Calling's
-  glow, a creak for the knock instead of the keg's tap.
+- **Art:** a proper ghost (a pale, see-through take on the character), the Calling's glow.
 - **AI carrying the dead** to the shrine, so an AI empath gets a chance without a player's help.
 - Later: the necromancer (M4) and the Undertaker (M5) on `Death`, `Ghost` and the answer.
 
@@ -123,7 +120,6 @@ Grouped by area; nothing here blocks a playtest.
   - the weights of the day-two crises (equal for now);
   - raid size;
   - the raid warning's lead, the town purse and the price of arms, the carter's load;
-  - Difficulty doesn't scale the target or the limit yet.
 - The dragon: likely too easy with a party in town, and impossible without one.
 - Night speed and the need rates.
 - Every mini-game's timing, none of it tuned in play yet:
@@ -134,8 +130,6 @@ Grouped by area; nothing here blocks a playtest.
     sitting and centre burst.
   - **Tinkering:** truing a wheel, bracing a span.
 - Some jobs easier, some harder, to suit different players and styles.
-- The forge can heat the smith's spot past 80°C. Bots step back from it now; AI smiths and
-  players don't.
 
 **The trades, deeper** (docs/DESIGN.md, "Trade notes")
 - **Blacksmith:**
@@ -146,20 +140,16 @@ Grouped by area; nothing here blocks a playtest.
   - AI smiths still forge and smelt with a plain `CraftJob`, and don't answer a call to arms
     (bots do);
   - the town purse is a number, not coin in a strongbox: it wants the Mayor;
-  - villagers keep the town's arms after a muster, and nobody hangs them back on the rack;
   - only iron is smelted by hand; copper, tin and the Kiln aren't in Millbrook.
 - **Innkeeper and cook:**
   - the AI innkeeper doesn't mix (asked for a named drink, it pours an ale);
-  - casks don't refill and there's no brewing;
   - mess on tables, and a rag;
+  - no brewing: casks are refilled only from the carter's kegs;
   - keys for the guest rooms;
   - villagers at supper sit but don't swap rumours.
 - **Healer:**
   - AI healers only bandage;
-  - a wound stays felt once found, however it changes;
-  - pallets aren't kept from villagers who sleep there;
   - adventurers never tear a charm in town;
-  - a fever doesn't weaken a party on a quest.
 - **Tinker:**
   - no lockboxes or locked chests (locks go on doors only);
   - AI tinkers don't buy curios.
@@ -173,7 +163,7 @@ Grouped by area; nothing here blocks a playtest.
   - weave charms or put goods on show;
   - pin locks, make contraptions or haggle over curios;
   - use the notice board;
-  - bind their own wounds or go to the healer, so a hurt bot can bleed out.
+  - go to the healer (they stanch their own bleeding with a bandage to hand, nothing more).
 - `SeasonScenarioTests` checks only that a round plays through, not how it comes out.
 
 **Crises and the town**
@@ -181,14 +171,12 @@ Grouped by area; nothing here blocks a playtest.
 - The unarmed don't mob a raider together. Without adventurers in town, two raiders put every
   villager down.
 - The wounded lie where they fell until someone thinks to help.
-- A sleeping player is woken only by walking. A shout, a fire or a raid should rouse them.
+- The bracing window and the dragon haven't been seen in a running game yet (the dev tools now
+  send either).
 - Time passes fast only while everyone sleeps, not when the town is otherwise quiet.
 - The festival has no lanterns, tables or music, and the inn doesn't serve outside.
 - Errands fetch only what's lying about or in common stores. Wood left out on a cold day goes on
   the fires first.
-- A dev button to send a crisis (the bridge has one). The bracing window and the dragon haven't
-  been seen in a running game yet.
-- The bridge's parapets are drawn, not built: check nobody can step off its side.
 
 **Art and look**
 - The folk (elves, dwarves, halflings) are looks; they could have something of their own (an elf's
@@ -197,8 +185,8 @@ Grouped by area; nothing here blocks a playtest.
 
 **Map and movement**
 - Lanes cost the same to walk as grass, so villagers don't prefer them.
-- No turning mid-step: a turn waits for the step under way.
-- `--building-demo` lays its showcase over the village.
+- An AI re-planning a walk snaps back to the cell it left rather than turning mid-step (players
+  turn at once).
 
 **Steam Deck**
 - Placing buildings and dragging areas from the pad (a cursor on the right stick while a tool's out).

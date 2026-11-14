@@ -1132,3 +1132,36 @@ Death sticks in a round (DESIGN.md, "Death"); everything is in `Sim/Afterlife/`.
 - `--die-at SECONDS` drops your character dead to try it (`DevKillCommand`). Save format 18.
 - `GhostTests`, `RevivalTests`, `HauntingTests`, `GhostErrandTests`, `DeathReckoningTests`. Bench
   hashes unchanged (rounds only).
+
+### Polish: low-hanging fruit (2026-11-13)
+Small leftovers from the polish list and the pre-M4 sections, each its own commit.
+- **Dev tools:** send any crisis (`DevCrisisCommand`, through `Director.Send`), and warn of the
+  season's next raid now (`DevRaidWarningCommand`, `Director.WarnNext`), to see the town brace.
+- **The dead keep what they wear** (`DropGear(keepWorn)`): the called back come back dressed;
+  raiders, captors and prisoners are still stripped where they fall.
+- **A ghost's knock creaks first:** a synthesized creak (`creak()` in `tools/sfx_synth.py`,
+  `ghost.creak`), then one knock, instead of the keg's tap twice.
+- **A sleeping player wakes** (`Players.Wake`) to a shout heard clearly or from just outside (news
+  called across the square to a shut cottage doesn't), to smoke or raiders near, and to the call
+  to arms.
+- **Difficulty scales the season:** `renownFactor` and `dreadFactor` on difficulties
+  (`Reckoning.RenownTarget(sim)`, `DreadLimit(sim)`); Hard wants more Renown with less Dread to spare.
+- **The town's arms go back on the rack** after a muster (`Muster.ReturnArms`, `ReturnArmsJob`).
+- **The healer's pallets are kept for the hurt:** a bed for the night (`FindFreeBed(forTheNight)`)
+  passes them over (`ShopSystem.IsForPatients`); the wounded are still carried there.
+- **The bridge's sides:** a test that its walking links leave only off the ends. A co-op claim
+  could land on the bank a level down by an end: `FreeMove.Claim` now wants the cell a few
+  walking links away.
+- **`--building-demo`** builds the old open valley (`MapGenerator.Generate`) instead of laying
+  its showcase over Millbrook.
+- **Bots bind their own bleeding** with a bandage to hand, rather than bleed out (`BotPlayer.BindOwn`).
+- **A fever weakens a party on a quest** (0.8, 0.92 once seen to; `ExpeditionSystem.Strength`).
+- **The forge's heat:** a toast the moment the heat a player feels turns dangerous. AI smiths
+  never forge in a round, so they never stood in it.
+- **A felt wound that worsens a band** (`Empathy.Worsened`) must be felt again before it's drawn.
+- **A player turns mid-step** when a click goes behind them (`AvatarWalkJob.Replan`: a free mover
+  steers from where it is).
+- Casks already refilled (`TapJob`, the carter's kegs): the roadmap line was stale.
+- `SeasonScenarioTests` counts a crisis still under way when Dread ends the round.
+- Bench baselines: seed 1234 unchanged (state `853A200442B00386`, full `12E0FA3E45392BBC`); seed 99
+  state `CEFFA4278018879C`, full `653B0922D876F08D`.

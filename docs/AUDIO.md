@@ -88,8 +88,9 @@ packs unpacked outside the repo. It trims, levels, loops and converts each file,
 - Downloaded packs are untrusted data: unpack them outside the repo, and only the converted
   files come in.
 
-Still synthesized because nothing CC0 was good enough: the inn's murmur, the bell, a blaze, and
-an arrow's impact. The roadmap lists freesound candidates to fetch by hand.
+Still synthesized because nothing CC0 was good enough: the inn's murmur, the bell, a blaze, an
+arrow's impact, and the creak before a ghost's knock (`ghost.creak`: stick-slip pulses through
+wood's resonances). The roadmap lists freesound candidates to fetch by hand.
 
 ## Music
 
