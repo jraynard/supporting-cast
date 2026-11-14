@@ -4,6 +4,56 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+## 0.1.0-playtest.10
+
+The healer works without you, fires can be fought, and there's a yard to practise in.
+
+**The healer**
+- The town's healer, when nobody's playing one, lays on hands: they see to badly hurt villagers
+  without being asked, and mend what they've taken on as their strength comes back.
+- Hurt? Press F at a shrine pallet to ask to be healed. The HUD points you there when you're
+  wounded, and bots ask too.
+
+**Fighting fire**
+- Four buckets hang at each well. F at the well fills one. With a full bucket, point, hold F to
+  swing it back and let go to throw: the further back, the further it goes.
+- Water knocks a fire down and soaks the ground, so it won't catch again for a couple of hours.
+  Soak the roofs before the dragon comes. Villagers grab buckets too, and take them back.
+
+**The practice yard**
+- Practice yard on the main menu: Millbrook in the trade you pick, with no season, no Renown or
+  Dread and no crises. Its panel has the trade's tips and sends customers set up for it (the
+  wounded, worn blades, a locked strongbox, hungry guests), restocks your workplace and freshens
+  you up.
+
+**Your pack**
+- Chests, bins and your pack show their contents as tiles. Click to take one, right click for the
+  whole stack (A and Y on a pad).
+- Click a stack in your pack to pick it up and move it: the places it can go light up (elsewhere
+  in the pack, the hotbar, the open chest, your hands, a gear slot, your belt). Your pack keeps the
+  order you put things in.
+- The hotbar no longer flickers at narrow window sizes.
+
+**The kitchen**
+- The prep table works from your pack as well as your hands, and its panel lets you pick chopping,
+  kneading or packing rations by name.
+- Kneading shows a timing strip: push as the tick crosses the mark.
+- Baking shows the smells in order, with the golden crust marked as the one to take it out on.
+- Meat on the spit browns as it roasts, and the bread oven glows with its fire inside.
+
+**The smithy**
+- The grindstone looks like one now, a wheel turning in a wet trough with sparks off the blade,
+  and the sharpening game at the wheel shows the wheel.
+- The quench tub has water you can see down into, and the anvil has a proper shape.
+- You can see what a smith is working on: the piece glows in their tongs, in the forge's coals and
+  on the anvil, and steams in the tub. The coals glow brighter while the bellows work.
+
+**Fixes**
+- A ghost talking no longer crashes the game.
+- Touchpad zoom eases in, and the camera stops short of showing the whole map.
+- The d-pad moves through the title menu, inventory slots and the character creator, and works
+  in open menus instead of zooming the camera.
+
 ## 0.1.0-playtest.9
 
 The cook gets a real kitchen, and the inn keeps the town's hours.
