@@ -144,6 +144,8 @@ public static class Controls
             .Replace("~N~", UsingPad && Map.Bindings(Act.Sleep).All(b => !b.IsPad) ? "the wheel" : Glyph(Act.Sleep))
             .Replace("~G~", UsingPad && Map.Bindings(Act.Drop).All(b => !b.IsPad) ? "the wheel" : Glyph(Act.Drop))
             .Replace("~C~", Glyph(Act.Dig))
+            .Replace("~J~", Glyph(Act.Shop))
+            .Replace("~Y~", Glyph(Act.Gift))
             .Replace("~1-4~", UsingPad ? "the wheel" : $"{Glyph(Act.Hotbar1)}–{Glyph(Act.Hotbar4)}");
     }
 

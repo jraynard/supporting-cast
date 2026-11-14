@@ -39,7 +39,7 @@ public sealed partial class VillageGame
         _hud.Took();
         if (visible)
         {
-            Wrapped(tips[_tipIndex]);
+            Wrapped(Controls.Keys(tips[_tipIndex]));
             if (tips.Count > 1)
             {
                 ImGui.BeginDisabled(_tipIndex == 0);

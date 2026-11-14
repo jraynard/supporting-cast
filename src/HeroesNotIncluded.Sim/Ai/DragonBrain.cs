@@ -76,17 +76,19 @@ public sealed class DragonPassJob(int3 target) : Job
         var range = (int)Environment.Breath.RangeOf(Sim, Pawn);
         Report = "Swooping on the town";
         var from = PawnCell;
-        var spot = Sim.SpiralFrom(target, range - 2)
-            .Where(c => Map.Distance(c, target) >= 4 && Sim.Map.Passable(c) && Sim.Map.Standable(Sim.Map.Idx(c))
-                && Sim.Rooms.RoomAt(c) is not { Indoors: true }) // it doesn't fit through a door
-            .OrderBy(c => Map.Distance(c, from))
-            .Select(c => (int3?)c)
-            .FirstOrDefault();
-        if (spot is not { } landing)
+        var spots = Sim.SpiralFrom(target, range - 2)
+            .Where(c => Map.Distance(c, target) >= 4 && Clear(c))
+            .ToList();
+        // A pass is a pass: it comes down somewhere new each time, not where it already stands.
+        var away = spots.FindAll(c => Map.Distance(c, from) >= MinHop);
+        if (away.Count > 0)
+            spots = away;
+        if (spots.Count == 0)
         {
             Fail("nowhere to come down");
             yield break;
         }
+        var landing = spots[Sim.Rand.NextInt(spots.Count)];
         foreach (var s in GoTo(landing, PathEnd.OnTile)) yield return s;
         if (HasFailed) yield break;
 
@@ -105,9 +107,13 @@ public sealed class DragonPassJob(int3 target) : Job
         Report = "Snapping at the town";
         var attack = CombatRules.Attacks(Sim, Pawn).FirstOrDefault(a => !a.Ranged);
         long next = 0;
-        for (var t = 0; t < GroundTicks && !DragonBrain.DrivenOff(Sim, Pawn); t++)
+        var idle = 0;
+        for (var t = 0; t < GroundTicks && idle < RestlessTicks && !DragonBrain.DrivenOff(Sim, Pawn); t++)
         {
-            if (attack != null && Sim.Clock.Tick >= next && Beside() is { IsNull: false } foe)
+            var foe = Beside();
+            // Nobody comes at it: it soon takes to the air again for another pass.
+            idle = foe.IsNull ? idle + 1 : 0;
+            if (attack != null && Sim.Clock.Tick >= next && !foe.IsNull)
             {
                 // Its jaws are wound up like any blow (Combat.Blows), quick and hard to dodge.
                 if (Blows.Begin(Sim, Pawn, foe, attack))
@@ -115,6 +121,29 @@ public sealed class DragonPassJob(int3 target) : Job
             }
             yield return JobStatus.Running;
         }
+    }
+
+    /// <summary>Cells it moves at least, from one landing to the next.</summary>
+    public const int MinHop = 8;
+
+    /// <summary>How long it stays down with nobody in reach of its jaws before it takes off, in ticks.</summary>
+    public const int RestlessTicks = SimClock.TicksPerSecond * 8;
+
+    /// <summary>
+    /// Room to come down: open ground around the cell as well as under it, clear of any building
+    /// (a burnt-out shell included), so a beast that size isn't left standing half in a house.
+    /// </summary>
+    private bool Clear(int3 c)
+    {
+        for (var dy = -1; dy <= 1; dy++)
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                var n = new int3(c.X + dx, c.Y + dy, c.Z);
+                if (!Sim.Map.InBounds(n) || !Sim.Map.Passable(n) || !Sim.Map.Standable(Sim.Map.Idx(n))
+                    || Sim.Rooms.RoomAt(n) is { Indoors: true } || !Systems.Buildings.At(Sim, n).IsNull)
+                    return false;
+            }
+        return true;
     }
 
     /// <summary>Someone of the town on their feet within reach of its jaws.</summary>
