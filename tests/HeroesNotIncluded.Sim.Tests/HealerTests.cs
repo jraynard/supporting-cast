@@ -748,6 +748,26 @@ public class HealerTests
     }
 
     [Fact]
+    public void AHurtBotGoesToTheShrineAndAsks()
+    {
+        var (sim, me, healer, _) = HurtPlayerAtTheShrine();
+        var bot = new Bots.BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 11);
+        Order? asked = null;
+        for (var t = 0; t < SimClock.TicksPerHour * 4 && (asked == null || asked.IsOpen); t++)
+        {
+            sim.Tick();
+            bot.Tick();
+            asked ??= sim.Shops.All.FirstOrDefault(e => e.Poster == me && e.Kind.Kind == ServiceKind.Healing);
+        }
+        var log = $"bot {bot.Doing}\n" + string.Join("\n", sim.Messages.Messages.TakeLast(8).Select(m => m.Text));
+        Assert.True(asked != null, "it asked: " + log);
+        Assert.True(asked!.Mend, log);
+        Assert.True(asked.Status == OrderStatus.Done, $"{asked.Status}: {log}");
+        Assert.Equal(healer, asked.Assignee);
+        Assert.False(LayOnHands.Hurt(sim, me), log);
+    }
+
+    [Fact]
     public void AnUnhurtPlayerIsntOfferedHealing()
     {
         var (sim, me, _, pallet) = HurtPlayerAtTheShrine();

@@ -581,7 +581,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
 
     private void Think(Simulation sim, Entity me, PerceptionView view, long now)
     {
-        if (Safety(sim, me, view, now) || BindOwn(sim, me) || Bedtime(sim, me, now) || Supper(sim, me, now))
+        if (Safety(sim, me, view, now) || BindOwn(sim, me) || SeeTheHealer(sim, me, now) || Bedtime(sim, me, now) || Supper(sim, me, now))
             return;
         var festival = sim.Round.Phase == Round.RoundPhase.Festival;
         if (!festival)
@@ -665,6 +665,58 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             return false;
         send(new BandageCommand(me, me));
         return true;
+    }
+
+    /// <summary>Wounds adding up to this, a bot goes to the healer rather than carry them about.</summary>
+    public const float SeeTheHealerFrom = 6f;
+
+    private long _healerRefusedAt = long.MinValue / 2;
+
+    /// <summary>
+    /// Hurt enough to be slowed by it (and not a healer itself): to the shrine, F at a pallet to
+    /// ask, as a player would, then wait in its place in line till it's seen to. Only with the
+    /// silver for it; turned away, it leaves it an hour.
+    /// </summary>
+    private bool SeeTheHealer(Simulation sim, Entity me, long now)
+    {
+        var w = sim.World;
+        if (_task != 0 || !sim.Round.Live || Healing.Empathy.Gifted(sim, me) || !w.TryGet<Health>(me, out var h)
+            || h.Injuries.Sum(i => i.Damage) < SeeTheHealerFrom || !Healing.LayOnHands.Hurt(sim, me))
+            return false;
+        if (sim.Shops.OpenOrderOf(me, ServiceKind.Healing) != null)
+        {
+            Doing = "waiting on the healer";
+            if (sim.Shops.PlaceOf(sim, me) is { Cell: { } spot } && w.Get<Position>(me).Cell != spot)
+                Walk(sim, me, spot, now);
+            return true;
+        }
+        if (now - _healerRefusedAt < SimClock.TicksPerHour)
+            return false;
+        var healing = sim.Defs.Service(ServiceKind.Healing);
+        var here = w.Get<Position>(me).Cell;
+        var pallet = Entity.Null;
+        var best = int.MaxValue;
+        foreach (var b in w.Query<PresetBuilding>())
+        {
+            if (w.Get<PresetBuilding>(b).Def != healing.AtDef || Shops.ShopPrices.Posted(sim, b, ServiceKind.Healing) is not { Offered: true } sign
+                || sign.Price > Shops.Coin.Count(sim, me))
+                continue;
+            foreach (var bed in Shops.ShopSystem.BedsOf(sim, b))
+                if (Maps.Map.Distance(here, w.Get<Thing>(bed).Cell) is var d && d < best)
+                    (pallet, best) = (bed, d);
+        }
+        if (pallet.IsNull)
+        {
+            _healerRefusedAt = now;
+            return false;
+        }
+        Doing = "going to the healer";
+        return AtStation(sim, me, pallet, now, p =>
+        {
+            send(new AvatarWorkCommand(me, true, w.Get<Thing>(p).Cell));
+            send(new AvatarWorkCommand(me, false));
+            _healerRefusedAt = now; // if that didn't take, not again for a while
+        });
     }
 
     /// <summary>

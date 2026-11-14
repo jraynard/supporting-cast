@@ -161,8 +161,13 @@ public sealed partial class VillageGame
             if (parts.Count == 0)
                 parts.Add($"{h.Injuries.Count} wound{(h.Injuries.Count == 1 ? "" : "s")}");
             TextC(bleed > 0 || h.Pain > 0.4f ? Bad : Warn, $"Hurt: {string.Join(", ", parts)}");
+            var shrineHelps = !Sim.Healing.Empathy.Gifted(_sim, _avatar) && Sim.Healing.LayOnHands.Hurt(_sim, _avatar);
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip(bleed > 0 ? "A bandage binds a wound and stops the bleeding (its item menu, on yourself)." : "Your inspector's Health tab lists the wounds.");
+                Tip((bleed > 0 ? "A bandage binds a wound and stops the bleeding (its item menu, on yourself)." : "Your inspector's Health tab lists the wounds.")
+                    + (shrineHelps ? $"\nA bound wound takes days to close. The healer can draw it out: {Controls.Glyph(Act.Use)} at a pallet in their shrine asks." : ""));
+            // Where to go with it: a bandage only stops the bleeding.
+            if (shrineHelps)
+                TextC(Ui.Theme.Dim, _sim.Shops.OpenOrderOf(_avatar, Sim.Defs.ServiceKind.Healing) != null ? "Waiting on the healer" : "The healer's shrine can mend it");
         }
 
         Panel.End();

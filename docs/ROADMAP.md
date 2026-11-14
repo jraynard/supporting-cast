@@ -26,8 +26,9 @@ Notes from playing; the healer first.
 - **The healer, AI and asked for.** Done: the AI empath lays on hands (`Healing/LayOnHands`):
   it draws what its mana will mend, weaves it away on itself and binds the rest; it sees to badly
   hurt villagers unasked and mends what it carries as its mana comes back. Players ask with F at a
-  shrine pallet, and that order waits on the wounds, not the bleeding. Left: bots asking for it,
-  the AI healer weaving charms, and tuning the mana (a busy day empties it).
+  shrine pallet, and that order waits on the wounds, not the bleeding; the HUD says so when you're
+  hurt, and bots ask too. Left: the AI healer weaving charms, and tuning the mana (a busy day
+  empties it).
 - **Buckets against fire,** so there's something to do about the dragon's burning: fill at the
   well, hold F to charge the throw's reach, a spray where it lands, back to the well to refill.
   The AI joins a bucket line when a fire's called.
@@ -232,7 +233,6 @@ Grouped by area; nothing here blocks a playtest.
   - weave charms, pack rations or put goods on show (AI cooks don't pack rations either);
   - pin locks, make contraptions or haggle over curios;
   - use the notice board;
-  - go to the healer (they stanch their own bleeding with a bandage to hand, nothing more).
 - `SeasonScenarioTests` checks only that a round plays through, not how it comes out.
 
 **Crises and the town**
