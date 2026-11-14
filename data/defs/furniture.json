@@ -85,7 +85,7 @@
     },
     {
       // The tavern's cask on its cradle: F at it pours a drink (Work.PourSession). It holds
-      // "servings" drinks; refilling it (and brewing) comes later.
+      // "servings" drinks; a keg knocked in refills it (TapSession, TapJob). Brewing comes later.
       "name": "AleCask", "label": "ale cask", "category": "Building", "solid": true, "sprite": "buildings/ale_cask",
       "description": "A great oak cask on a cradle, with a tap. F at it to pour.",
       "maxHp": 120, "flammability": 0.8,
