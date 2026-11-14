@@ -125,7 +125,7 @@ public sealed partial class VillageGame
         var c = min + new float2(Gui.S(3), Gui.S(1));
         dl.AddText(in c, Theme.U8(Theme.Dim), corner.Length <= 2 ? corner : "");
         // A button, not just a box, so a gamepad's navigation can land on it (A opens its menu).
-        var pressed = ImGui.InvisibleButton($"##slot-{id}", in box, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.MouseButtonRight);
+        var pressed = ImGui.InvisibleButton($"##slot-{id}", in box, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.MouseButtonRight | ImGuiButtonFlags.EnableNav);
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
             Tip(alive ? $"{ItemLine(item)}\n{ItemDetails(item)}{(menu ? "\nClick for what you can do with it." : "")}" : emptyTip);
         if (!menu || !alive)

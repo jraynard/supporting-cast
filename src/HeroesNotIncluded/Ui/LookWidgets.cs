@@ -69,7 +69,7 @@ public static class LookWidgets
     {
         var size = new float2(Slot, Slot);
         var min = ImGui.GetCursorScreenPos();
-        var pressed = ImGui.InvisibleButton("##swatch"u8, in size, ImGuiButtonFlags.None);
+        var pressed = ImGui.InvisibleButton("##swatch"u8, in size, ImGuiButtonFlags.EnableNav);
         var hovered = ImGui.IsItemHovered(ImGuiHoveredFlags.None);
         var dl = ImGui.GetWindowDrawList();
         var center = min + new float2(Slot / 2, Slot / 2);

@@ -39,9 +39,11 @@ public sealed partial class VillageGame
         foreach (var (id, _) in shown)
             if (!_padOrder.Contains(id))
                 _padOrder.Add(id);
-        var nav = _padOrder.Count > 0 && !Working && !_settings.Capturing;
+        // A popup (the top bar's menus, opened from the trackpad) has the pad too: ImGui focuses it.
+        var popup = ImGui.IsPopupOpen(""u8, ImGuiPopupFlags.AnyPopup);
+        var nav = (_padOrder.Count > 0 || popup) && !Working && !_settings.Capturing;
         Host.ImGui.GamepadNav = nav;
-        if (!nav)
+        if (!nav || _padOrder.Count == 0)
         {
             _padFocused = null;
             return;

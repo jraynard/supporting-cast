@@ -604,7 +604,8 @@ public sealed class TitleGame : Game
         var min = ImGui.GetCursorScreenPos();
         if (!enabled)
             ImGui.BeginDisabled(true);
-        var pressed = ImGui.InvisibleButton($"##{item.Label}", in size, ImGuiButtonFlags.None);
+        // EnableNav: ImGui leaves invisible buttons out of pad and keyboard navigation unless asked.
+        var pressed = ImGui.InvisibleButton($"##{item.Label}", in size, ImGuiButtonFlags.EnableNav);
         if (!enabled)
             ImGui.EndDisabled();
         var picked = ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled) || ImGui.IsItemFocused();
