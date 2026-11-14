@@ -72,12 +72,41 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 | Forager, Miner | Risky trips beyond the walls | Harvest, Mining, Hunting, Fishing | Alone out there, in both directions |
 | Tinker | Pick the locks and disarm the traps on chests adventurers bring back; pin locks and cut keys; fit contraptions together for the road; mend wagons; appraise curios and buy them for a collector | `Tinkering/`, doors, `Work/`, expeditions, loot | A spare key, a chest opened early, a trap left armed, a contraption that jams, a curio talked down |
 | Carpenter | *Benched for now.* Building, mending furniture, fletching and bows | Construction, Rooms, the woodshop | Comes back as a trade of its own later |
-| Bard | Rhythm performance, morale, rumours | Mood, Social | Spreading lies |
+| Bard | Rhythm performance, morale, rumours. | Mood, Social | Spreading lies |
 | Mayor | Treasury, laws, chairs town meetings | New | Corruption |
+| Animal Handler / Druid | taming wild animals, ancient forest rituals | new | forest spirts, "wild" animal attacks
 
 ### Trade notes
 
 Ideas for depth, to build when each trade's milestone comes round.
+
+**Bard**
+- musical performance obviously - allow some instrutment customization if possible
+- stretch goal would be full ocarina of time remake style playing where a real life musician could actually recreate songs in game
+- insstrument care should be part of the trade, and instrument crafting.
+- perhaps poetry and writing as well somehow? tough to make that into a mechanic though, but something symbolic perhaps.
+- dealing with writers block maybe
+
+**Animal Handler / Druid**
+- gets a druid circle out in the forest as their work area
+- can talk to wild animals and tame them
+- maybe some limited shapeshifting with effort or some side effects
+- perhaps they could provide an alternate route for dealing with the dragon
+
+**Hunter**
+- can collect like lizards and small animals that can be kept as pets and sold / given to other players as well
+- skill shot based hunting - aim for the correct part for a sure kill, otherwise you'll have to chase
+- skinning and prepping - don't make it too gruesome or anything but hunter should have to prep their kill.
+- carrying it back should be cumbersome and perhaps a mini game while carrying it
+- butchering and then restocking the larder for payment
+- uses for the rest of the animal besides just the meat
+
+**Foraging**
+- identifying plants in the wild
+- collecting useful herbs for cooking and medicine
+- studying poisonous plants, mild and dangerous
+- collecting seeds to grow your own herb garden
+- packaging herbs and berries to sell
 
 **Blacksmith.**
 - *Built: forging a heat at a time* (`Work/Smithing`).
@@ -384,6 +413,14 @@ villager mid-round is for late joiners only.
   no rules of their own. Dwarves are short and broad, bearded (the women too, some of them) and
   ruddy; halflings are small, slight and quick, in warm browns. Each has a build of its own, not a
   shrunk human. All three are looks for now.
+
+## Other village ideas
+
+- an underground dwarven fortress as nod to dwarf fortress
+- a mountain town
+- village built on a lake like Esgaroth in the hobbit
+- beach or island town
+- howl's moving castle inspired moving city
 
 ## Sim folders
 

@@ -145,6 +145,8 @@ using var host = new GameHost(new GameHostOptions
     UnfocusedMaxFps = stress ? 0 : FrameCap.DefaultUnfocused,
     SkipSplash = args.Contains("--no-splash"), // Debug builds only
     Profile = Environment.GetEnvironmentVariable("SC_PROFILE") == "1" || Environment.GetEnvironmentVariable("NARSIL_PROFILE") == "1",
+    // Joysticks, focus and clicks to the log, for a Steam Deck's input (or NARSIL_INPUT_LOG=1 in Steam's launch options).
+    InputLog = args.Contains("--input-log") || Environment.GetEnvironmentVariable("NARSIL_INPUT_LOG") == "1",
     // Scripted screenshots: --screenshot shot.png [--screenshot-at 5] [--screenshot-no-ui] [--quit].
     AutoScreenshot = ParseString(args, "--screenshot") is { } shotPath
         ? new AutoScreenshot(shotPath, args.Contains("--screenshot-at") ? ParseFloat(args, "--screenshot-at") : 3f,

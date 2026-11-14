@@ -26,6 +26,7 @@ dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png -
 dotnet run --project src/HeroesNotIncluded -- --art-preview
 dotnet run --project src/HeroesNotIncluded -- --check-art     # headless: every sprite and tag exists
 dotnet run --project src/HeroesNotIncluded -- --check-gpu
+dotnet run --project src/HeroesNotIncluded -- --input-log     # joysticks, focus and clicks to the log (on a Deck: NARSIL_INPUT_LOG=1 %command%)
 dotnet run --project src/HeroesNotIncluded -c Release -- --bench --seed 1234   # per-system cost and hashes
 dotnet run --project external/narsil/src/Narsil.Relay -- --port 47050       # relay for online play
 python3 tools/chibi_people.py --preview                    # art generators: see docs/ART.md
