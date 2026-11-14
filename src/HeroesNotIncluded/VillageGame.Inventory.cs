@@ -78,7 +78,7 @@ public sealed partial class VillageGame
                     k < items.Count ? $"[{Controls.Glyph(Act.Hotbar[k])}] Take in hand (what you hold goes in the pack)" : $"[{Controls.Glyph(Act.Hotbar[k])}] Put what you hold in the pack", menu: true);
             }
             ImGui.SameLine(0, Gui.S(8));
-            LoadBar(pack, Gui.S(90));
+            LoadBar(pack, 90);
         }
         else
         {
@@ -359,7 +359,9 @@ public sealed partial class VillageGame
         var load = _sim.LoadOf(pack);
         var color = load >= capacity - 0.05f ? Warn : Good;
         ImGui.PushStyleColor(ImGuiCol.PlotHistogram, in color);
-        var size = (float2?)new float2(MathF.Min(Gui.S(width), ImGui.GetContentRegionAvail().X), 0);
+        // A set width, not the room left: these windows size themselves to their content, so a bar
+        // sized to the room it's given chases the window's own edge and flickers every frame.
+        var size = (float2?)new float2(Gui.S(width), 0);
         ImGui.ProgressBar(Math.Clamp(load / capacity, 0, 1), in size, $"{load:0.#}/{capacity:0.#} kg");
         ImGui.PopStyleColor(1);
     }
