@@ -19,6 +19,11 @@ everything built so far, slice by slice, is in [HISTORY.md](HISTORY.md).
 further: the season's numbers (`season.json`: the Renown target, the Dread rates, crisis weights,
 raid size), the dragon's toughness, the night speed and the need rates.
 
+Playtesting notes: this is progressing well and becoming quite fun. we are still tuning things but
+play modes without traitors are definitely viable, and a good option for players who don't want any
+PVP in their games (we should allow turning off friendly fire too). i am also thinking we should
+provide some purely non-combat options but i think that will be later once we have more variety.
+
 ## Next
 
 ### From the second playtest
@@ -29,9 +34,12 @@ Notes from playing; the healer first.
   shrine pallet, and that order waits on the wounds, not the bleeding; the HUD says so when you're
   hurt, and bots ask too. Left: the AI healer weaving charms, and tuning the mana (a busy day
   empties it).
-- **Buckets against fire,** so there's something to do about the dragon's burning: fill at the
-  well, hold F to charge the throw's reach, a spray where it lands, back to the well to refill.
-  The AI joins a bucket line when a fire's called.
+- **Buckets against fire.** Done (`Environment/Buckets`): four hang at the well; F there fills
+  one; with a full one, point and hold F to swing it back, let go to throw (the swing decides how
+  far). The water knocks a patch's fire down and soaks it, so it won't catch for two hours: soak
+  the roofs ahead of the dragon. The AI fights fire with buckets when there's one to be had, and
+  takes them back to the well. Left: bots throwing water, seeing it against the dragon in a
+  running game, a sound for the splash, and the water drawn in flight.
 - **A trade's training,** in solo: a walk through one trade's games and what each reading means,
   before a round asks for them under pressure.
 - Done: the ghost's speech crashed the game (a bubble over a speaker with no body); touchpad zoom

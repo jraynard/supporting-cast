@@ -371,6 +371,18 @@ public sealed class WorldRenderer(TextureAtlas atlas)
                 Decal(S(MessSprite(m.Look)), new float3(m.Cell.X + 0.5f, m.Cell.Y + 0.5f, m.Cell.Z + 0.02f), 0.6f + 0.35f * m.Amount,
                     Rgba.Pack(1f, 1f, 1f, 0.4f + 0.6f * m.Amount), Quad.Level(m.Cell.Z), translucent: true);
 
+        // Ground wet from a bucket's water (it won't catch till it dries): darker, fading as it does.
+        var soakTicks = SimClock.HoursToTicks(Sim.Environment.Buckets.SoakHours);
+        foreach (var (i, until) in sim.Fire.SoakedCells)
+        {
+            var c = map.CellOf(i);
+            var left = (until - sim.Clock.Tick) / (float)soakTicks;
+            if (left <= 0f || !InView(c) || !map.Standable(i))
+                continue;
+            Decal(S("ui/mess_puddle"), new float3(c.X + 0.5f, c.Y + 0.5f, c.Z + 0.015f), 1.1f,
+                Rgba.Pack(0.45f, 0.62f, 0.85f, 0.15f + 0.3f * Math.Min(1f, left)), Quad.Level(c.Z), translucent: true);
+        }
+
         _doors.Draw(quads, sim, InView, animDt, t => ArtOf(t), (at, level) => Billboard(S("props/padlock"), at - new float3(0, 0, 0.1f), 0.22f, 0.22f, Rgba.White, level));
 
         foreach (var (site, info) in _sites)

@@ -38,12 +38,63 @@ public sealed class FireSystem : ISimSystem, Saving.ISaveState
 
     private readonly HashSet<int> _burning = [];
 
-    public void Save(Saving.SaveWriter w, Simulation sim) => w.Ints(_burning.Order().ToArray());
+    /// <summary>Cells soaked with water (<see cref="Soak"/>), until the tick each dries.</summary>
+    private readonly Dictionary<int, long> _soaked = [];
+
+    public void Save(Saving.SaveWriter w, Simulation sim)
+    {
+        w.Ints(_burning.Order().ToArray());
+        w.Int(_soaked.Count);
+        foreach (var (i, until) in _soaked.OrderBy(kv => kv.Key))
+        {
+            w.Int(i);
+            w.Long(until);
+        }
+    }
 
     public void Load(Saving.SaveReader r, Simulation sim)
     {
         _burning.Clear();
         _burning.UnionWith(r.Ints());
+        _soaked.Clear();
+        if (r.Version >= 27)
+            for (var n = r.Count(1 << 24); n > 0; n--)
+            {
+                var i = r.Int();
+                _soaked[i] = r.Long();
+            }
+    }
+
+    /// <summary>
+    /// Wet a cell (water thrown, <see cref="Buckets"/>): it won't catch until it dries, and a fire
+    /// in it has nothing to feed on and dies down. A longer soak wins over a shorter.
+    /// </summary>
+    public void Soak(Simulation sim, int i, long ticks)
+    {
+        var until = sim.Clock.Tick + ticks;
+        if (!_soaked.TryGetValue(i, out var was) || was < until)
+            _soaked[i] = until;
+    }
+
+    /// <summary>Still wet from a bucket's water (anyone can see wet ground: no secret).</summary>
+    public bool Soaked(Simulation sim, int i) => _soaked.TryGetValue(i, out var until) && until > sim.Clock.Tick;
+
+    /// <summary>Every soaked cell, for drawing.</summary>
+    public IReadOnlyDictionary<int, long> SoakedCells => _soaked;
+
+    private readonly List<int> _dried = [];
+
+    /// <summary>Forget cells that have dried.</summary>
+    private void Dry(Simulation sim)
+    {
+        if (_soaked.Count == 0)
+            return;
+        _dried.Clear();
+        foreach (var (i, until) in _soaked)
+            if (until <= sim.Clock.Tick)
+                _dried.Add(i);
+        foreach (var i in _dried)
+            _soaked.Remove(i);
     }
     private readonly List<int> _snapshot = [];
 
@@ -67,7 +118,7 @@ public sealed class FireSystem : ISimSystem, Saving.ISaveState
     public static float Fuel(Simulation sim, int i)
     {
         var map = sim.Map;
-        if (map.IsSolid(i))
+        if (map.IsSolid(i) || sim.Fire.Soaked(sim, i))
             return 0;
         float fuel;
         if (!map.Floor[i].IsNull)
@@ -91,6 +142,7 @@ public sealed class FireSystem : ISimSystem, Saving.ISaveState
 
     public void Update(Simulation sim)
     {
+        Dry(sim);
         if (_burning.Count == 0)
             return;
 

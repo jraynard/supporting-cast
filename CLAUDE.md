@@ -128,6 +128,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     job does to the world. "Job" here is an AI task; a player's role is a **`Trade`**.
   - Brains (`Ai/Brains.cs`): emergencies, urgent needs, gear, work by priority, comfort, idle.
   - Health: injuries on body parts; hurt bodies only through `HealthSystem.Damage`.
+  - Buckets (`Environment/Buckets`) are filled at the well and thrown (`ThrowSession`); water soaks
+    cells (`FireSystem.Soak`), which then have no fuel till they dry. The AI's firefighting uses them.
   - Fires give off heat, light and radiant warmth from `Warmth.FireCell`: their own cell, or for a
     fireplace (`setInWall`) the room's cell in front of it, which is also the only place it's worked from.
   - `Appearance` is cosmetic and left out of the hash, its `Folk` (human, elf) included. AI villagers

@@ -89,6 +89,12 @@ public enum AvatarActionKind
     /// <summary>Ask to be healed at a shrine pallet (<see cref="Shops.ShopSystem.PlayerOrder"/>).</summary>
     OrderHealing,
 
+    /// <summary>Fill the empty bucket in hand at the well (<see cref="Environment.Buckets"/>), at once.</summary>
+    FillBucket,
+
+    /// <summary>Throw a full bucket's water where you point (<see cref="Environment.ThrowSession"/>), begun at once.</summary>
+    ThrowWater,
+
     /// <summary>Have a go at a festival game (<see cref="Work.FestivalGames"/>), begun at once.</summary>
     FestivalGame,
 
@@ -120,7 +126,7 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
         or AvatarActionKind.Store or AvatarActionKind.OpenStorage or AvatarActionKind.Tinker
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
         or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean
-        or AvatarActionKind.Mend or AvatarActionKind.OrderMeal or AvatarActionKind.OrderHealing or AvatarActionKind.FestivalGame or AvatarActionKind.Dance;
+        or AvatarActionKind.Mend or AvatarActionKind.OrderMeal or AvatarActionKind.OrderHealing or AvatarActionKind.FillBucket or AvatarActionKind.ThrowWater or AvatarActionKind.FestivalGame or AvatarActionKind.Dance;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
     public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker
@@ -270,6 +276,9 @@ public sealed class AvatarSystem : ISimSystem
         // Game: shot from as far as the bow carries (or struck from beside it); a carcass in reach is butchered.
         if (tool == AvatarTool.Use && Ai.AvatarHunting.ActionAt(sim, avatar, cell, here) is { } hunting)
             return hunting;
+        // A full bucket: thrown where you point, out of arm's reach as much as in it.
+        if (tool == AvatarTool.Use && Environment.Buckets.ThrowAt(sim, avatar, cell, here) is { } throwing)
+            return throwing;
         // A gap a crisis tore (the bridge): the tinker braces it.
         if (tool == AvatarTool.Use && sim.Repairs.At(cell) is { } breach && InReach(here, cell)
             && w.TryGet<Trade>(avatar, out var mender) && mender.Def.MendsTown)
@@ -301,6 +310,10 @@ public sealed class AvatarSystem : ISimSystem
             return Round.RoundSystem.MayGather(sim, avatar) && map.IsSolid(i) && sim.CanDig(cell) && Mining.CanBreak(sim, avatar, map.Block[i])
                 ? new(AvatarActionKind.Dig, $"Dig {Mining.ShownBlock(sim, i).Label}", cell, Entity.Null)
                 : AvatarAction.None;
+
+        // An empty bucket at the well: fill it.
+        if (tool == AvatarTool.Use && Environment.Buckets.FillAt(sim, avatar, site, cell) is { } fill)
+            return fill;
 
         // A fire comes before anything else there: you can't chop a burning tree or pick up a burning stack.
         if (map.Fire[i] > 0 && !sim.Reservations.IsTileReservedByOther(cell, avatar))
@@ -740,6 +753,14 @@ public sealed class AvatarSystem : ISimSystem
                 if (Shops.Hatch.ShopOf(sim, action.Target) is { IsNull: false } inn && sim.Shops.OpenOrderOf(avatar, ServiceKind.Meal) == null
                     && sim.Shops.PlayerOrder(sim, avatar, ServiceKind.Meal, inn) is { } why)
                     sim.Messages.Add(MessageKind.Info, $"Can't order: {why}.", action.Cell);
+                break;
+            case AvatarActionKind.FillBucket:
+                if (Environment.Buckets.Fill(sim, avatar))
+                    sim.Messages.Add(MessageKind.Info, "You draw up a bucket of water.", action.Cell);
+                break;
+            case AvatarActionKind.ThrowWater:
+                if (!w.Has<Work.WorkSession>(avatar))
+                    Work.WorkSystem.Start(sim, avatar, new Environment.ThrowSession { From = w.Get<Position>(avatar).Cell, Aim = action.Cell });
                 break;
             case AvatarActionKind.OrderHealing:
                 if (Buildings.Of(sim, action.Target) is { IsNull: false } shrine && sim.Shops.OpenOrderOf(avatar, ServiceKind.Healing) == null

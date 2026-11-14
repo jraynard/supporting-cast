@@ -124,6 +124,9 @@ public sealed partial class VillageGame
             case ButtsSession butts:
                 DrawButts(butts);
                 return;
+            case Sim.Environment.ThrowSession throwing:
+                DrawThrow(throwing);
+                return;
         }
         switch (_work.Session)
         {

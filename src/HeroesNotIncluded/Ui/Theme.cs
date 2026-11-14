@@ -44,6 +44,9 @@ public static class Theme
     /// <summary>The gift's own glow: an empath's weave, its rings and strands.</summary>
     public static readonly float4 Arcane = new(0.66f, 0.58f, 1f, 1f);
 
+    /// <summary>Water: a bucket's swing, where it'll land, wet ground.</summary>
+    public static readonly float4 Water = new(0.47f, 0.72f, 0.94f, 1f);
+
     // Names under people's feet in the world, by who they are.
     public static readonly float4 NameHostile = new(1f, 0.43f, 0.39f, 1f);
     public static readonly float4 NamePrisoner = new(1f, 0.8f, 0.47f, 1f);

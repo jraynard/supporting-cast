@@ -170,7 +170,9 @@ public sealed class WorkGivers
             best = t;
             bestDist = d;
         }
-        return best is { } b ? new FightFireJob(b) : null;
+        // Water when there's a bucket to be had (it soaks the ground so it won't catch again);
+        // else beat at the flames.
+        return best is { } b ? Environment.BucketJob.For(sim, pawn, b) ?? new FightFireJob(b) : null;
     }
 
     // ---------------- Doctoring ----------------
@@ -642,10 +644,11 @@ public sealed class WorkGivers
         var item = AiQueries.FindNearestItem(
             sim,
             pawn,
-            (e, d) => !w.Has<Stored>(e) && !d.Vessel && d.WashesInto == null && !AiQueries.InStockpile(sim, w.Get<Thing>(e).Cell) && Storable(e, d)
+            (e, d) => !w.Has<Stored>(e) && !d.Vessel && d.WashesInto == null && d.Name is not (Environment.Buckets.Empty or Environment.Buckets.Full)
+                && !AiQueries.InStockpile(sim, w.Get<Thing>(e).Cell) && Storable(e, d)
         );
         if (item.IsNull)
-            return null;
+            return Environment.Buckets.ReturnStray(sim, pawn); // the well's buckets go back to the well, not to storage
         var thing = w.Get<Thing>(item);
         if (AiQueries.FindStockpileTile(sim, pawn, thing.Def, thing.Cell, thing.Material) is not { } dest)
             return null;

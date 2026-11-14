@@ -39,6 +39,7 @@ public static class VillageRound
         StockInn(sim, Role("Tavern"));
         LockStoreroom(sim, Role("Tavern"));
         StockTinkerShop(sim, Role("TinkerShop"));
+        Environment.Buckets.HangAtWells(sim); // for fighting fire
         // Beds for everyone, or the first night sends them all out to sleep in the cold.
         foreach (var (spec, home) in built.Buildings)
             if (spec.Role == "Home")

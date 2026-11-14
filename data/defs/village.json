@@ -49,6 +49,17 @@
       ]
     },
     {
+      // Fighting fire (Environment/Buckets): they hang at the well, F there fills one, and a full one
+      // is thrown (hold F to swing it back, let go). Water soaks the ground so it won't catch for a
+      // while. Both arms: art from tools/bucket_art.py.
+      "name": "Bucket", "label": "bucket", "category": "Item", "mass": 1.5, "bulky": true, "sprite": "items/bucket", "maxHp": 60, "flammability": 0.4,
+      "description": "A stave bucket on a rope bail, kept at the well for fire. F at the well fills it."
+    },
+    {
+      "name": "WaterBucket", "label": "bucket of water", "category": "Item", "mass": 10, "bulky": true, "sprite": "items/bucket_full", "maxHp": 60, "flammability": 0.0,
+      "description": "Water to the brim. Point where it should go, then hold F to swing it back and let go to throw: the further back, the further it goes. Wet ground won't catch for a while."
+    },
+    {
       "name": "Well", "label": "well", "category": "Building", "solid": true, "sprite": "buildings/well",
       "description": "A stone-ringed well with a windlass and a bucket, the middle of the village.",
       "maxHp": 400, "flammability": 0.1,
