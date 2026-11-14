@@ -45,7 +45,16 @@ public readonly record struct KnownPiece(string Label, Work.Glow Glow, float Tem
 /// seasoning it wants.
 /// </summary>
 public readonly record struct KnownPot(Entity Pot, string Contents, Work.Surface Surface, float Heat, float Flame, bool Lit, float Doneness,
-    bool Cooked, string? Caught, int Bowls, bool Empty);
+    bool Cooked, string? Caught, int Bowls, bool Empty, string Tastes = "", string? House = null);
+
+/// <summary>A spit and what's on it, as anyone close sees it: each side's crust and which is to the fire. Never how far it's cooked through.</summary>
+public readonly record struct KnownSpit(Entity Spit, int Pieces, Work.Crust[] Sides, int Facing, bool Lit);
+
+/// <summary>An oven as anyone close knows it: whether there's bread in, and what it smells of (all a baker has to go on).</summary>
+public readonly record struct KnownOven(Entity Oven, int Loaves, string Smell, bool Lit);
+
+/// <summary>A shop's house dish as posted with its prices: its name and how it tastes (<see cref="Work.HouseDish"/>).</summary>
+public readonly record struct KnownHouseDish(string Name, string Tastes);
 
 /// <summary>How a spot of mess looks: blood is just a dark stain.</summary>
 public enum MessLook : byte
@@ -280,12 +289,69 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         // A session in hand has the pot's newest state.
         foreach (var e in sim.World.Each<Work.WorkSession>())
             if (sim.World.Get<Work.WorkSession>(e) is Work.StewSession s && s.Pot == pot)
-                p = new Work.StewPot { In = p.In, Nutrition = p.Nutrition, Heat = s.Heat, Flame = s.Flame, Doneness = s.Doneness, Scorch = s.Scorch, Ladled = p.Ladled };
+                p = new Work.StewPot { In = p.In, Nutrition = p.Nutrition, Heat = s.Heat, Flame = s.Flame, Doneness = s.Doneness, Scorch = s.Scorch, Ladled = p.Ladled, Flavour = p.Flavour };
         var contents = string.Join(", ", p.In.Select(i => $"{i.Count} {i.Def.Label}"));
         var caught = p.Scorch > 0.35f ? "it's caught on the bottom" : p.Scorch > 0.12f ? "a little caught" : null;
         return new KnownPot(pot, contents, Work.Cooking.SurfaceOf(p.Heat), p.Heat, p.Flame, Work.Cooking.Lit(sim, pot), Math.Clamp(p.Doneness, 0f, 1f),
-            p.Cooked, caught, Work.Cooking.ServingsLeft(sim, pot), p.Empty);
+            p.Cooked, caught, Work.Cooking.ServingsLeft(sim, pot), p.Empty, p.Flavour.Words(), Work.HouseDish.Served(sim, pot, p)?.Name);
     }
+
+    /// <summary>
+    /// What a bowl or a bundle of rations tastes of, in words (<see cref="Work.Flavour.Words"/>): plain
+    /// to anyone. Never whether it's turned, or how a bundle was tied. Null for anything else.
+    /// </summary>
+    public string? Tastes(Entity item)
+    {
+        var w = sim.World;
+        if (!w.IsAlive(item))
+            return null;
+        if (w.TryGet<Work.Dish>(item, out var dish))
+            return dish.Flavour.Words() + (dish.House ? ": the house dish" : "");
+        return w.TryGet<Work.Ration>(item, out var ration) ? ration.Flavour.Words() : null;
+    }
+
+    /// <summary>A spit close enough to look at (<see cref="KnownSpit"/>); null if it isn't one, or is too far.</summary>
+    public KnownSpit? Spit(Entity spit)
+    {
+        if (blind || !Work.Roasting.IsSpit(sim, spit))
+            return null;
+        if (!Omniscient && !Within(sim.World.Get<Thing>(spit).Cell, 2))
+            return null;
+        var r = sim.World.TryGet<Work.SpitRoast>(spit, out var sr) ? sr : new Work.SpitRoast();
+        float[] brown = r.Brown;
+        var facing = r.Facing;
+        // A session in hand has the roast's newest state.
+        foreach (var e in sim.World.Each<Work.WorkSession>())
+            if (sim.World.Get<Work.WorkSession>(e) is Work.RoastSession s && s.Spit == spit)
+                (brown, facing) = (s.Brown, s.Facing);
+        return new KnownSpit(spit, r.Count, brown.Select(Work.Roasting.CrustOf).ToArray(), facing, Work.Cooking.Lit(sim, spit));
+    }
+
+    /// <summary>An oven close enough to smell (<see cref="KnownOven"/>); null if it isn't one, or is too far.</summary>
+    public KnownOven? Oven(Entity oven)
+    {
+        if (blind || !Work.Baking.IsOven(sim, oven))
+            return null;
+        if (!Omniscient && !Within(sim.World.Get<Thing>(oven).Cell, 2))
+            return null;
+        var o = sim.World.TryGet<Work.OvenLoad>(oven, out var ol) ? ol : new Work.OvenLoad();
+        var bake = o.Bake;
+        foreach (var e in sim.World.Each<Work.WorkSession>())
+            if (sim.World.Get<Work.WorkSession>(e) is Work.BakeSession s && s.Oven == oven)
+                bake = s.Bake;
+        return new KnownOven(oven, o.Loaves, Work.Baking.SmellOf(bake), Work.Baking.Lit(sim, oven));
+    }
+
+    /// <summary>How a ball of dough looks: how far it's risen (slack, rising, well risen, puffed up, sunk). Null for anything else.</summary>
+    public string? Dough(Entity item) =>
+        sim.World.IsAlive(item) && sim.World.TryGet<Work.Dough>(item, out var d) ? Work.Baking.RiseOf(Work.Baking.ProvedHours(sim, d)) : null;
+
+    /// <summary>The dishes on a shop's sign beyond its plain meal (<see cref="Shops.Menu"/>), posted for anyone to read.</summary>
+    public List<Shops.PostedDish> Menu(Entity shop) => Shops.Menu.Of(sim, shop);
+
+    /// <summary>A shop's house dish, as it's posted with its prices for anyone to read. Null if it has none.</summary>
+    public KnownHouseDish? HouseDish(Entity shop) =>
+        Work.HouseDish.Of(sim, shop) is { } h ? new KnownHouseDish(h.Name, h.Flavour.Words()) : null;
 
     /// <summary>A charm, as this character can tell it (<see cref="KnownCharm"/>). Null if it isn't one.</summary>
     public KnownCharm? Charm(Entity item)

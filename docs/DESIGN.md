@@ -62,7 +62,7 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 | Trade | The game it plays | Built from | Betrayal it enables |
 | --- | --- | --- | --- |
 | Innkeeper | Order juggling at the bar, drink mixing, letting rooms, keeping the common room, hearing gossip; matching parties to quests on partial intel | Social, `Expeditions/` | Spiked drinks, selling secrets, sending a party to its death |
-| Cook | The inn's kitchen: the stew pot by taste, the larder, the bowls | Larder, cooking | A turned ingredient left in the pot, or something worse |
+| Cook | The inn's kitchen: the stew pot by taste and flavour, sniffing the larder, the bowls, rations for the road | Larder, cooking, `Expeditions/` | A turned ingredient left in the pot, rations that turn on the road, or something worse |
 | Blacksmith | Heat, hammer and quench timing | Forge, bellows, tiers, `Crafted` quality | A hidden flaw in a blade |
 | Healer | Take a patient's wounds into yourself with focus, cast the right mending on yourself, meditate back your mana | Health, `Work/`, new mana | Taking only part of a wound, or handing one back |
 | Constable | Patrol, evidence, arrests, jail | `Prisoners`, locks | Framing, abuse of authority |
@@ -165,18 +165,6 @@ do it.
     tub, brush moved over the grime until the piece shines. Run out of clean ones and the line stalls.
   - **Casks and kegs:** a cask runs dry. Tap a new keg from the store by knocking the tap in on
     cue; a miss sprays foam and wastes servings.
-- *The pot.* Cooking is one stew pot by the kitchen's fire, cooked by taste (`Work/Cooking`).
-  - **The ingredients:** whatever's in the larder.
-  - **The heat:** keep it at a simmer, read only from the surface (still, a simmer, a rolling
-    boil), as the forge is read from its colour. Stir so it doesn't catch.
-  - **The seasoning:** season a pinch at a time, tasting as you go. It can't be taken back out.
-  - **The result:** a pot gives many bowls, ladled out, each with a quality the diner tastes. A
-    spoiled ingredient spoils the pot, and nobody can taste it until the diner is sick.
-- *The hatch.* Meals are ordered at a serving hatch in the kitchen wall, not the bar (`Shops/Hatch`).
-  Diners line up at it from the common room and say what they want through it. The cook puts
-  bowls up on its counter, no more than are waiting for one, and whoever's at the front takes one,
-  pays the cook and goes to sit with it. First come, first served: a bowl up on the hatch is
-  anyone's at the front, and nobody else can take it.
 - *Rooms.* Let by the night: the guest pays each evening, keeps the same room while they're in
   town, and checks out when they move on or let a night go unpaid. A slept-in bed is stripped
   and remade before it can be let again, and a guest shown to an unmade one says so.
@@ -216,36 +204,116 @@ do it.
     read them.
   - **Supplies:** bought from the Forager, the Miner's hunting trips and the farms by favour,
     so an empty larder is everyone's problem.
-- Cook, later (ideas to give the kitchen more to do):
-  - **A menu beyond stew:** a roast on the spit (turned on cue), bread and pies from an oven
-    (knead, prove, bake by smell), porridge in the morning. Each dish is its own small game, and
-    the sign prices them apart.
-  - **Prep:** chopping on rhythm, butchering what the hunters bring in, plucking. Done ahead in
-    a quiet hour, it makes the rush go faster.
-  - **Rushes:** breakfast and supper come all at once. Two pots on the go, the fire kept fed
-    (the Woodcutter's wood), the hatch line growing.
-  - **Diners who want something:** "something hot", "no meat", a party's own tastes. Get it
-    right and they tip; a rich party asks for something special.
-  - **Rations for the road:** a party setting out orders provisions. How well they're packed,
-    and whether they've turned, tells on the expedition (`Expeditions/`): fed well, they fare
-    better; spoiled, they sicken on the road.
-  - **Feasts:** a party back in triumph orders a feast for the whole room. A big, many-dish job
-    that lifts everyone's mood and loosens tongues.
-  - **Keeping the larder:** rot runs faster in a warm kitchen. Salt, smoke or pickle to keep
-    meat, and keep the cold store cold.
-  - **With the Healer:** broths that speed healing and teas from shared herbs; the Healer sends
-    patients to eat.
-  - **Trouble in the kitchen:** a grease fire if the pot's left, rats in the larder.
-  - **Word of the food:** a good table gets talked about, and more parties come to eat.
-- Betrayal later (M4/M5):
-  - one bowl poisoned for one diner (the hatch is first come, so a target has to be handed it);
-  - a party's rations drugged or spoiled to weaken them on the road;
+- Betrayal later (M4/M5), the keeper's (the cook's are under **Cook.**):
   - a drink spiked or watered, or a short measure;
   - a guest's room rifled while they're out;
   - what was overheard sold to the highest bidder;
   - directions to the wrong place;
   - a party sent to its death;
   - a floor scrubbed clean of evidence.
+
+**Cook.** The inn's kitchen, behind the common room: the pot by its fire, the larder, the prep
+table, the wash tub and the serving hatch. The cook's game is taste: what goes in, how it's kept,
+and whether it's turned, none of which the diner sees until they eat. What's built comes first;
+the rest follows in the order it's planned (docs/ROADMAP.md, "The cook pass").
+- *Built: the pot.* One stew pot by the kitchen's fire, cooked by taste (`Work/Cooking`).
+  - **The heat:** keep it at a simmer, read only from the surface (still, a simmer, a rolling
+    boil), as the forge is read from its colour. Stir so it doesn't catch.
+  - **The seasoning:** season a pinch at a time, tasting as you go. It can't be taken back out.
+  - **The result:** a pot gives many bowls, ladled out, each with a quality the diner tastes. A
+    spoiled ingredient spoils the pot, and nobody can taste it until the diner is sick.
+- *Built: the hatch.* Meals are ordered at a serving hatch in the kitchen wall, not the bar
+  (`Shops/Hatch`). Diners line up at it from the common room and say what they want through it.
+  The cook puts bowls up on its counter, no more than are waiting for one, and whoever's at the
+  front takes one, pays the cook and goes to sit with it. First come, first served: a bowl up on
+  the hatch is anyone's at the front, and nobody else can take it.
+- *Built: flavours* (`Work/Flavour`). Ingredients taste of something: savoury, sweet, hot or
+  fresh. A pot tastes of the blend of what went in, by how much (food by its nutrition), as a
+  drink is the sum of its adds. Emberroot (hot), herbs (fresh) and honey (sweet) are seasoners:
+  three at most to a pot, they flavour what's there and add no bowls. A rounded pot (two or three
+  flavours, none swamping it) is better than a pot of one thing. Anyone looking in, or eating, can
+  tell what it tastes of: "savoury, with some heat".
+- *Built: diners' tastes* (`Hospitality/Tastes`). Each kind of adventurer likes the taste of
+  something. Ordering a meal, about half say what they fancy, in the same breath, so whoever hears
+  the order hears the craving. A bowl that tastes of it pleases them; one that doesn't, a little
+  less. So what goes in the pot is a guess at the room.
+- *Built: sniffing* (`Work/SniffSession`). The cook's way into hidden rot, as feeling a wound over
+  is the healer's: smell a stack (in the larder, in hand) and it's fresh, fine, on the turn or off,
+  roughly, rougher the less practised the nose. A pot only ever smells good or "not quite right":
+  what turned in it can't be picked out, so the time to smell is before it goes in.
+- *Built: rations for the road* (`Work/Rations`, `Work/PackSession`). The cook's work that leaves
+  town, as charms and contraptions do.
+  - **Packing:** at the kitchen's prep table, three portions of food (raw or cooked). Fold the
+    cloth's four corners on cue, each from its own side (A, D, A, D), then hold F to draw the cord
+    and let go to tie it. The cord reads only as slack, snug or biting, and snug isn't all one
+    thing: tied at its slack end it looks fine and lets the air in, turning twice as fast on the
+    road. That never shows.
+  - **Selling:** set down in the inn and put up for sale like any gear. An adventurer carries one.
+  - **On the road:** eaten halfway out. Sound, the traveller is a little stronger for the quest and
+    comes home less hungry; turned (it left half gone, or tied slack on a long road), they're
+    weaker for it and come home sick. The party's tale says which: the cook's only word of it.
+- *Built: a name for the kitchen.*
+  - **The house dish** (`Work/HouseDish`): a cooked pot good enough to put a name to (Fine or
+    better) can be named by the cook from the pot. The name and how it tastes go on the sign. The
+    recipe is the flavour: any later pot that tastes near enough the same is the house dish again,
+    so it has to be hit from the larder each time. About a third of diners ask for it by name, and
+    know it when they get it (or don't).
+  - **Diners say what was wrong:** a bowl remembers what most let its pot down (salty, bland,
+    caught on the bottom, underdone, all one note), and a diner served a poor one says so. The cook
+    learns from the room as well as the spoon.
+  - **Tips:** a drink or meal served Fine or better, and quickly (within a third of their
+    patience), earns its server a coin over the price; masterwork, two. The keeper's too.
+- *Built: prep* (`Work/ChopSession`). Raw meat, fish or cabbage in hand at the prep table, cut on
+  the knife's beat (F as it comes down), done ahead in a quiet hour. Chopped food is its own item:
+  it goes a little further, turns a little sooner, and a pot of it cooks up to half again as fast.
+  A cut off the beat does nothing; one wildly off may slip, and a slip is a real cut on the cook's
+  arm, work for the healer.
+- *Built: the spit* (`Work/Roasting`). Beside the kitchen fire. Raw meat goes on (up to four), F
+  turns the next side to the fire, Space lifts it off. Each side's crust shows as colour (pale,
+  colouring, golden, dark, charred); how far it's cooked through doesn't. Fat drips and the fire
+  flares now and then, browning the side over it twice as fast: turn it away. Golden all round and
+  cooked through is a fine roast; a charred side tastes burnt, a quick one comes off pink. Left on
+  the spit, the side to the fire chars. It comes off as slices, no bowl needed.
+- *Built: the menu* (`Shops/Menu`). Dishes beyond the plain meal go on the sign with their own
+  price, once the cook ticks them on (they start off, so a kitchen nobody roasts in is never asked
+  for a roast). A plain meal order takes whatever's up on the hatch at the meal's price; about a
+  third of diners ask for a dish on the menu by name instead, at its price, and only it will do.
+- *Built: the oven* (`Work/Baking`). A domed bread oven with its own small fire in the kitchen's
+  corner, fed with wood like any hearth. Two flour at the prep table are kneaded on the beat, from
+  one side then the other (A, D, ...): smooth and springy, or lumpy. The dough proves by itself,
+  read by eye: slack, rising, well risen (an hour or two), puffed up tall, sunk back on itself. Into
+  the oven, it's baked by smell alone, the door shut: raw dough, warm and yeasty, bread baking, a
+  golden crust, toasty, burning. Take it out on the golden crust; left in, it burns. Two loaves a
+  ball. Bread is on the menu, and it keeps: rations with a loaf in them turn half as fast.
+- *Then: more of the menu.*
+  - **Prep, more of it:** butchering what the hunters bring in, plucking.
+  - **Pies** from the oven; porridge in the pot of a morning.
+- *Built: the rushes, and the town's hours* (from the first playtest). Adventurers want a meal at
+  breakfast (7 to 9:30) and supper (6 to 9) whenever they're at all peckish, not only when
+  starving, and come into town hungry from the road. They keep the town's hours: nobody rides in
+  or comes back from a quest in the dark, nothing's asked between 11 and 6 but a room or a bad
+  hurt seen to, they turn in at night unless well rested, and the small hours don't count against
+  anyone's patience. A meal only half wanted that never comes is shrugged off. Customers idling
+  about the inn keep out of the kitchen (`staffOnly` furniture marks a room so).
+- *Then: pressure in the kitchen.*
+  - **Rushes, more of them:** two pots on the go, the kitchen fire kept fed.
+  - **A grease fire:** a fatty pot left at a boil flares up. Clap the lid on within a breath (a
+    quick cue), or it's a real fire, through the fire the town already fights.
+  - **Rats you chase:** the shortage crisis brings rats into the larder as creatures. Each one left
+    alive spoils more. The cook goes after them with the kitchen knife or a broom, through free
+    movement and blows: a fight at the smallest scale.
+- *Later: the kitchen and the town.*
+  - **Feasts:** a party back in triumph orders one for the whole room. Several dishes against the
+    clock; everyone's mood lifts, tongues loosen, Renown rises.
+  - **With the healer:** broths that speed healing, a broth for the empath's mana, teas from shared
+    herbs. The healer sends patients to eat.
+  - **Keeping the larder:** rot runs faster in a warm kitchen. Salt, a smoking rack over the hearth,
+    pickling, and the cold store kept cold.
+  - **Word of the food:** a good table gets talked about, and more parties come to eat.
+- Betrayal later (M4/M5):
+  - one bowl poisoned for one diner (the hatch is first come, so a target has to be handed it);
+  - a party's rations drugged, or left to turn (the rot already rides out with them);
+  - a turned ingredient left in the pot, knowing.
 
 **Healer (empathic).** Magical in flavour rather than clinical, but grounded in the health
 model: wounds sit on body parts, have a kind, and bleed, hurt and fester.

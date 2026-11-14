@@ -1243,3 +1243,111 @@ and its last chance (`Round/FestivalSystem`, `data/defs/festival.json`, `Defs/Fe
 - `FestivalTests`, `TradeWeaponTests.AnEmptyStashOffersNothingToReachFor`. Bench state hashes
   unchanged; the full hashes moved for the festival's saved plan: 1234 `A3387098B3207AA8`, 99
   `74315EC270163CE8`.
+
+### Cook pass, phase 1: flavours, tastes, sniffing, rations (2026-11-13)
+The cook had two games and nothing that left town; the other trades five to seven, and work that
+goes out on quests. Phase 1 of the plan (DESIGN.md, "Cook"; ROADMAP.md, "The cook pass"): reach and
+depth.
+- **Flavours** (`Work/Flavour`): savoury, sweet, hot, fresh, on the ingredients' defs
+  (`"flavour"`). A pot tastes of the blend of what went in (food by its nutrition), as a drink is
+  the sum of its adds; a bowl carries it (`Dish`). Emberroot, herbs and honey are seasoners: up to
+  three to a pot, they flavour what's there and add no bowls, and the work key offers them only
+  where they'll go in. Quality's "variety" (how many kinds) is now how rounded the flavour is. The
+  pot panel, the inspector and `PerceptionView.Tastes` say it in words ("savoury, with some heat").
+- **Diners' tastes** (`Hospitality/Tastes`): each adventurer kind likes something
+  (`adventurers.json` `"tastes"`). About half say what they fancy with the order, in its words, so
+  whoever hears the order hears that too (`Order.Craving`, saved). A bowl that tastes of it pleases
+  them; one that doesn't, a little less.
+- **Sniffing** (`Work/SniffSession`): Space smells a stack (the larder's and the pack's Smell
+  buttons) or the pot ("Smell it"): fresh, fine, on the turn or off, as rough as the nose is
+  unpractised. A pot only smells good or "not quite right".
+- **Rations for the road** (`Work/Rations`, `Work/PackSession`): at the new prep table in the inn's
+  kitchen, three portions of food folded into a cloth on cue (A, D, A, D) and tied with a cord
+  drawn by holding F. The cord reads slack, snug or biting; tied at snug's slack end it lets the
+  air in and turns twice as fast on the road, which never shows (`Ration.LooseWrap`). Rations sell
+  like gear, one to an adventurer, and go out on quests as `RationRecord`s: sound, the traveller is
+  a little stronger and comes home less hungry; turned, weaker, and home sick
+  (`FoodPoisoning.Sicken`). The party's tale says which.
+- **The AI cook** puts one seasoner from the larder in each fill (never the keeper's bar stock);
+  the bot does too, and no longer sticks holding something the pot won't take. The larder opens
+  with emberroot and herbs, and the carter brings more with the food. Neither packs rations.
+- **Fix (test):** `CrisisTests.AFeverComesWithAPartyAndSpreadsToThoseNearby` moved its villager
+  mid-walk, and the walk carried them off; it now ends their job first.
+- Save format 21. `CookPassTests`. Bench hashes moved (behaviour): 1234 state `777B62DF500687D2`,
+  full `7A4D703E6E889E7A`; 99 state `4B144711DB024EDD`, full `9067BDE801CF11E2`.
+
+### Cook pass, phase 2: a name for the kitchen (2026-11-13)
+- **The house dish** (`Work/HouseDish`): at a cooked pot, the cook can "Make it the house dish"
+  and name it (`NameDishCommand`): only a pot that would ladle Fine or better, and only the inn's
+  meal-server. The name and its flavour are kept on the inn and posted on the sign
+  (`PerceptionView.HouseDish`). Any later pot whose flavour is near enough the same is the house
+  dish again (the pot panel says so), and its bowls are marked (`Dish.House`). About a third of
+  diners ask for it by name with their order (`Order.WantsHouse`, saved) and say whether they got
+  it.
+- **What was wrong:** each bowl remembers what most let its pot down (`Dish.Fault`: salty, bland,
+  caught, underdone, flat), and a diner served a Plain or Crude one says it.
+- **Tips:** served Fine or better within a third of their patience, an adventurer tips the server
+  a coin (two for masterwork), drinks and meals alike (`ShopSystem.FineTip`, `MasterworkTip`).
+- Save format 22. `CookPassTests` (phase 2); `InnKitchenTests`' hatch test counts the tip. Bench
+  hashes unchanged (the bench runs no round).
+
+### Cook pass, phase 3 begun: chopping (2026-11-13)
+- **Chopping** (`Work/ChopSession`): F at the prep table with raw meat, fish or cabbage in hand
+  (`"chopsInto"`) cuts it on the knife's beat, a few cuts plus one per piece. It becomes chopped
+  meat, fish or cabbage (`"chopped"`): a little more food each, quicker to turn, and a pot cooks
+  faster for its share of chopped food (`Cooking.SpeedOf`, up to half again). A wild cut may slip;
+  each slip lands as a cut on an arm when the knife's put down. With choppable food in hand the
+  table chops; otherwise it packs rations.
+- Save format 23 (a stew session keeps its pace). `CookPassTests` (prep). Bench hashes unchanged.
+
+### Cook pass, phase 3: the spit and the menu; playtest fixes (2026-11-13)
+- **The spit** (`Work/Roasting`): a new piece of kitchen furniture beside the fire (the larder
+  moves along the wall to make room). Raw meat in hand goes on with F, up to four; F turns it, Space
+  lifts it off (`RoastSession`). Four sides brown one at a time, read only as crust colour; the
+  inside cooks unseen. Fat flares now and then and browns the side over it twice as fast. Scored
+  by the crust each side shows and whether it's cooked through (`Roasting.QualityOf`, `FaultOf`).
+  Left on the spit (`SpitRoast` on the spit, `RoastSystem`), the side to the fire chars. A roast
+  comes off as slices (`Roast`), no bowl.
+- **The menu** (`Shops/Menu`, `DishPrices`): dishes with `"menu"` props go on the sign once their
+  kitchen has what makes them and the cook ticks them on (`SetDishPriceCommand`, the sign window).
+  About a third of diners ask for one by name, at its price (`Order.Dish`, saved); only that dish
+  fits at the hatch, and handed something else they say so.
+- **From the first playtest:**
+  - *People wandering into the kitchen:* idle adventurers (and those waiting on an order) loiter
+    within a few cells of the inn's middle, which takes in the kitchen. Furniture marked
+    `"staffOnly"` (the pot, spit, prep table, larder, wash tub) makes its room staff-only, and
+    loiterers never pick a spot in one (`AiQueries.StaffOnly`).
+  - *Drinks but hardly any food:* a meal was asked for only below 0.6 food, and parties came in
+    fed; a two-day round with an idle cook saw no meal orders at all. Now they arrive hungry from
+    the road and want a meal at breakfast and supper when under 0.85 (`ShopSystem.Mealtime`): the
+    same round sees a dozen. A mealtime meal that never comes costs them little.
+  - *Orders at 3 or 4 in the morning:* nothing kept adventurers to the town's hours. Now parties
+    don't ride in after dark, a party back from a quest at night camps till morning, adventurers
+    ask for nothing in the small hours (11 to 6) but a room (till 2) or a bad hurt seen to, they
+    turn in at night unless well rested (`AdventurerBrain.NightRestBelow`), and open orders'
+    patience doesn't run in the small hours.
+- **Tests:** `CookPassTests` (spit, menu), `InnHoursTests` (staff-only rooms, the small hours,
+  patience overnight, breakfast). Several older tests assumed fed arrivals or a party leaving the
+  moment a quest's offered; they now feed the party or give it time to set out
+  (`ExpeditionTests.SendAndWait`). Arrival hunger is set without the party's random stream, so who
+  arrives is unchanged.
+- Save format 24. Bench hashes moved (the inn's new spit): 1234 state `7FBCA1D753F545A2`, full
+  `2A7A081628943F5F`; 99 state `631948CD2DBEA002`, full `D9EA76D2C36AAFC7`.
+
+### Cook pass, phase 4 begun: the oven (2026-11-14)
+- **The oven** (`Work/Baking`): a bread oven with its own small wood fire (`"oven"`, `"fuel"`), in
+  the kitchen's corner, refuelled like any hearth. Flour comes with the carter and opens in the
+  larder.
+- **Kneading** (`KneadSession`): two flour in hand at the prep table, pushed from one side then the
+  other on the beat, eight times. Makes a ball of dough (`Dough`: how well kneaded, and when).
+- **Proving:** the dough rises on its own, read by eye in the inspector (`PerceptionView.Dough`):
+  well risen after an hour or two, sunk after three.
+- **Baking** (`BakeSession`, `OvenLoad`, `OvenSystem`): into the oven with F, then nothing but the
+  smell (`PerceptionView.Oven`). Space takes it out: two loaves, scored by the kneading, the
+  proving and the bake (`Baking.QualityOf`); a new fault, heavy (`DishFault.Heavy`), for dough
+  that didn't rise right. Left in, it burns.
+- **Bread** is on the menu where there's an oven, and keeps: a bundle of rations with bread in it
+  (`Ration.Keeps`, carried on the quest record) turns half as fast on the road.
+- Save format 25. `CookPassTests` (the oven). Bench hashes moved (the oven): 1234 state
+  `7759FA059B13F494`, full `CEBC1389C7C3AF05`; 99 state `262A4AEE206A5686`, full
+  `85B38CBD45E13729`.

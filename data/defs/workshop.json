@@ -81,13 +81,13 @@
     },
     {
       "name": "Honey", "label": "honey", "category": "Item", "mass": 0.2, "sprite": "items/berries", "stackLimit": 20,
-      "mixCue": "A", "drinkEffect": { "warming": 0.3, "rousing": 0.1 }, "flammability": 0.2, "maxHp": 10,
-      "description": "A spoon of honey from the comb."
+      "mixCue": "A", "drinkEffect": { "warming": 0.3, "rousing": 0.1 }, "flavour": { "sweet": 1 }, "flammability": 0.2, "maxHp": 10,
+      "description": "A spoon of honey from the comb. Sweetens a mix, or a stew."
     },
     {
       "name": "Herbs", "label": "herbs", "category": "Item", "mass": 0.1, "sprite": "items/herbs", "stackLimit": 20,
-      "mixCue": "D", "drinkEffect": { "numbing": 0.4, "rousing": 0.2 }, "flammability": 0.4, "maxHp": 10,
-      "description": "Bitter sprigs, dried. Numbing, and good for a headache."
+      "mixCue": "D", "drinkEffect": { "numbing": 0.4, "rousing": 0.2 }, "flavour": { "fresh": 1 }, "flammability": 0.4, "maxHp": 10,
+      "description": "Bitter sprigs, dried. Numbing, good for a headache, and they freshen a stew."
     },
     {
       // The inn's crockery (Work/Vessels): a drink is poured into a clean tankard, a bowl of stew
@@ -120,6 +120,49 @@
       "nutrition": 0.35, "cooked": true, "rotDays": 2, "leaves": "DirtyBowl", "flammability": 0.2, "maxHp": 20,
       "description": "Meat and berries simmered over the hearth in its pot. Filling, and warming going down.",
       "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.2], "top": "props/meal_top", "side": "props/stone_block" } ]
+    },
+    // Bread (Work.Baking): flour kneaded into dough at the prep table, proved, baked in the oven by
+    // smell. Bread is on the menu, and keeps: rations with bread in them turn half as fast.
+    { "name": "Flour", "label": "flour", "category": "Item", "mass": 0.5, "sprite": "items/fiber", "stackLimit": 20, "flammability": 0.5, "maxHp": 15,
+      "description": "Milled flour in a sack. Two scoops knead into a ball of dough at the prep table.",
+      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.3], "top": "props/linen", "side": "props/linen" } ] },
+    { "name": "Dough", "label": "dough", "category": "Item", "mass": 0.6, "sprite": "items/clay", "stackLimit": 1, "rotDays": 1, "flammability": 0.3, "maxHp": 10,
+      "description": "A ball of kneaded dough, proving. An hour or two, then into the oven before it sinks.",
+      "model": [ { "min": [0.3, 0.3, 0], "max": [0.7, 0.7, 0.2], "top": "props/linen", "side": "props/linen" } ] },
+    { "name": "Bread", "label": "bread", "category": "Item", "mass": 0.3, "sprite": "items/meal", "stackLimit": 10,
+      "nutrition": 0.2, "cooked": true, "rotDays": 6, "flavour": { "savoury": 0.5, "sweet": 0.5 }, "flammability": 0.5, "maxHp": 15,
+      "menu": { "price": 2, "worth": 0.7, "madeAt": "Oven", "asks": "A loaf of your bread, if it's fresh. {0} silver." },
+      "description": "A round loaf from the inn's oven. Keeps for days, and packs well for the road.",
+      "model": [ { "min": [0.26, 0.26, 0], "max": [0.74, 0.74, 0.22], "top": "props/planks", "side": "props/basket" } ] },
+    // A roast off the spit (Work.Roasting), by the slice: a dish of its own on the menu (Shops.Menu),
+    // asked for by name at its own price once the cook offers it. No bowl: a slice on a trencher.
+    { "name": "Roast", "label": "roast", "category": "Item", "mass": 0.4, "sprite": "items/meat", "stackLimit": 10,
+      "nutrition": 0.3, "cooked": true, "rotDays": 2, "flammability": 0.4, "maxHp": 20,
+      "menu": { "price": 5, "worth": 1.6, "madeAt": "Spit", "asks": "A slice off the roast, if there's one turning. {0} silver." },
+      "description": "A thick slice off the spit, crackling and all.",
+      "model": [ { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.18], "top": "props/meat_top", "side": "props/planks" } ] },
+    // Chopped at the prep table (Work.ChopSession): a little further for the cutting, quicker in the
+    // pot, and quicker to turn. Same flavour as whole.
+    { "name": "ChoppedMeat", "label": "chopped meat", "category": "Item", "mass": 0.4, "sprite": "items/meat", "stackLimit": 30,
+      "nutrition": 0.17, "isMeat": true, "chopped": true, "rotDays": 3, "flavour": { "savoury": 1 }, "flammability": 0.4, "maxHp": 15,
+      "description": "Meat cut small for the pot. Cooks quicker, and goes a little further.",
+      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.2], "top": "props/meat_top", "side": "props/basket" } ] },
+    { "name": "ChoppedFish", "label": "chopped fish", "category": "Item", "mass": 0.3, "sprite": "items/fish", "stackLimit": 30,
+      "nutrition": 0.17, "isMeat": true, "chopped": true, "rotDays": 2, "flavour": { "savoury": 0.7, "fresh": 0.3 }, "flammability": 0.3, "maxHp": 12,
+      "description": "Fish cut into chunks for the pot.",
+      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.2], "top": "props/fish_top", "side": "props/basket" } ] },
+    { "name": "ChoppedCabbage", "label": "chopped cabbage", "category": "Item", "mass": 0.4, "sprite": "items/cabbage", "stackLimit": 20,
+      "nutrition": 0.14, "chopped": true, "rotDays": 7, "flavour": { "fresh": 0.7, "sweet": 0.3 }, "flammability": 0.2, "maxHp": 15,
+      "description": "Shredded cabbage, ready for the pot.",
+      "model": [ { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.25], "top": "props/cabbage_top", "side": "props/basket" } ] },
+    {
+      // Rations for the road (Work.Rations): three portions of food wrapped in a cloth and tied at
+      // the kitchen's prep table. Sold like gear; carried on a quest and eaten on the way. Not eaten
+      // in town (no nutrition of its own): it's for the road. How well it was tied doesn't show.
+      "name": "Rations", "label": "rations", "category": "Item", "mass": 0.8, "sprite": "items/cloth_undyed", "stackLimit": 1,
+      "rations": true, "rotDays": 5, "flammability": 0.6, "maxHp": 20,
+      "description": "Food for the road, wrapped in a cloth and tied off. What's inside, and how it keeps, you'll find out on the way.",
+      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.22], "top": "props/linen", "side": "props/linen" } ]
     },
     {
       "name": "SimpleMeal", "label": "simple meal", "category": "Item", "mass": 0.4, "sprite": "items/meal", "stackLimit": 20,

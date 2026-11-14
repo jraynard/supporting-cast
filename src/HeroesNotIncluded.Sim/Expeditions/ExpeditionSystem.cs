@@ -75,6 +75,23 @@ public sealed class MemberRecord
 
     /// <summary>The tinker's contraptions they carry (<see cref="Tinkering.Contraptions"/>).</summary>
     public List<Tinkering.ContraptionRecord> Contraptions = [];
+
+    /// <summary>The cook's rations they carry (<see cref="Work.Rations"/>): eaten on the way, and gone.</summary>
+    public List<Work.RationRecord> Rations = [];
+
+    /// <summary>How the food on the road went, set when the quest is resolved: none, fed, or sick.</summary>
+    public RoadFood Fed;
+}
+
+/// <summary>How a member ate on the road (<see cref="Work.Rations"/>).</summary>
+public enum RoadFood : byte
+{
+    /// <summary>No rations: what they could find.</summary>
+    None,
+    Fed,
+
+    /// <summary>The rations had turned.</summary>
+    Sick,
 }
 
 /// <summary>A party out on a quest.</summary>
@@ -196,8 +213,9 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         }
         Report(sim);
         SetOutWhenReady(sim);
+        // Back after dark, they camp out and come in with the morning.
         for (var i = 0; i < _out.Count; i++)
-            if (now >= _out[i].ReturnTick)
+            if (now >= _out[i].ReturnTick && !Ai.AiQueries.IsNight(sim))
             {
                 var ex = _out[i];
                 _out.RemoveAt(i--);
@@ -307,7 +325,10 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
     /// How strong one person is for this quest, with the contraptions they carry that work there
     /// (none of the <paramref name="jammed"/> ones).
     /// </summary>
-    public static float Strength(MemberRecord m, QuestDef? quest, ISet<Tinkering.ContraptionRecord>? jammed)
+    public static float Strength(MemberRecord m, QuestDef? quest, ISet<Tinkering.ContraptionRecord>? jammed) => Strength(m, quest, jammed, 1f);
+
+    /// <summary>As <see cref="Strength(MemberRecord, QuestDef?, ISet{Tinkering.ContraptionRecord}?)"/>, with how their rations served them on the road (<see cref="Work.Rations.StrengthFactor"/>).</summary>
+    public static float Strength(MemberRecord m, QuestDef? quest, ISet<Tinkering.ContraptionRecord>? jammed, float rations)
     {
         var skill = Math.Clamp(Math.Max(m.Melee, m.Shooting) / 9f, 0.3f, 2f);
         var weapon = m.Weapon is not { } wpn ? 0.4f
@@ -321,7 +342,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         var fed = m.Food < 0.3f ? 0.85f : 1f;
         var fever = Fevered(m);
         var kit = quest == null ? 1f : Tinkering.Contraptions.StrengthFactor(Working(m, jammed), quest);
-        return skill * weapon * armor * health * morale * fed * fever * Healing.Charms.StrengthFactor(m.Charms) * kit;
+        return skill * weapon * armor * health * morale * fed * fever * Healing.Charms.StrengthFactor(m.Charms) * kit * rations;
     }
 
     /// <summary>
@@ -495,6 +516,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         }
         m.Charms = Healing.Charms.Records(sim, e);
         m.Contraptions = Tinkering.Contraptions.Records(sim, e);
+        m.Rations = Work.Rations.Records(sim, e);
         return m;
     }
 
@@ -523,7 +545,17 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         // Contraptions that bind may jam on the road, and do nothing all the way (they still come home).
         var jammed = new HashSet<Tinkering.ContraptionRecord>(
             Tinkering.Contraptions.Jam(ex.Members.SelectMany(m => m.Contraptions), _rand.NextFloat), ReferenceEqualityComparer.Instance);
-        var strength = ex.Members.Sum(m => Strength(m, quest.Def, jammed));
+        // Rations are eaten on the way: how they served each traveller, then they're gone.
+        var hoursOut = quest.Def.Hours + 2 * TravelHours;
+        var fedBy = new Dictionary<MemberRecord, float>(ReferenceEqualityComparer.Instance);
+        foreach (var m in ex.Members)
+        {
+            fedBy[m] = Work.Rations.StrengthFactor(sim, m.Rations, hoursOut);
+            m.Fed = m.Rations.Count == 0 ? RoadFood.None : Work.Rations.Turned(sim, m.Rations[0], hoursOut) ? RoadFood.Sick : RoadFood.Fed;
+            if (m.Rations.Count > 0)
+                m.Rations.RemoveAt(0);
+        }
+        var strength = ex.Members.Sum(m => Strength(m, quest.Def, jammed, fedBy[m]));
         var ratio = strength / quest.Danger * _rand.Range(0.85f, 1.15f);
         var success = ratio >= 0.9f;
         var hit = Math.Clamp(ratio, 0.5f, 2f);
@@ -568,7 +600,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             if (m.Weapon is { } wpn)
                 m.Weapon = wpn with { Hp = Math.Max(0.05f, wpn.Hp - _rand.Range(0.1f, 0.3f) / hit), Dullness = WeaponWear.Edged(wpn.Def) ? Math.Min(1f, wpn.Dullness + _rand.Range(0.2f, 0.5f)) : 0f };
             m.Apparel = m.Apparel.Select(a => a with { Hp = Math.Max(0.05f, a.Hp - _rand.Range(0.05f, 0.25f) / hit) }).ToList();
-            m.Food = 0.35f;
+            m.Food = m.Fed == RoadFood.Fed ? Work.Rations.FedOnReturn : 0.35f;
             survivors.Add(m);
         }
         if (success)
@@ -658,6 +690,15 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         }
         else if (success && !ex.Hauls)
             tale += " We had to leave what we found: the wagon wouldn't carry it.";
+        // What they ate on the way: the cook's only word of how the rations did.
+        var sick = survivors.Count(m => m.Fed == RoadFood.Sick);
+        var fed = survivors.Count(m => m.Fed == RoadFood.Fed);
+        if (sick > 0)
+            tale += sick == survivors.Count
+                ? " And something in the inn's rations had turned: we were sick half the way."
+                : " Something in the inn's rations had turned, too: some of us were sick half the way.";
+        else if (fed > 0)
+            tale += " The inn's rations kept us going.";
         if (back.Count > 0)
             w.Add(back[0], new ReportPending { Quest = quest.Id, Danger = quest.Danger, Text = tale });
         // How the broker's word held up counts with them.
@@ -693,6 +734,9 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             Inventory.Stow(sim, e, sim.CreateItem(sim.Defs.Thing(Shops.Coin.Silver), m.Coin));
         Healing.Charms.Restore(sim, e, m.Charms);
         Tinkering.Contraptions.Restore(sim, e, m.Contraptions);
+        Work.Rations.Restore(sim, e, m.Rations);
+        if (m.Fed == RoadFood.Sick)
+            FoodPoisoning.Sicken(sim, e, 0.6f);
         foreach (var wound in m.Wounds)
             if (HealthSystem.Damage(sim, e, wound.Damage, wound.Type, wound.Part) is { } inj)
             {
@@ -913,6 +957,16 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             w.Bool(c.Binding);
             w.Entity(c.Maker);
         }
+        w.Int(m.Rations.Count);
+        foreach (var x in m.Rations)
+        {
+            w.Float(x.Quality);
+            w.Float(x.Rot);
+            w.Bool(x.LooseWrap);
+            w.Entity(x.Maker);
+            w.Bool(x.Keeps);
+        }
+        w.Byte((byte)m.Fed);
     }
 
     private static MemberRecord ReadMember(SaveReader r)
@@ -945,6 +999,13 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
                     throw new SaveException($"Corrupt save: contraption {def.Name}, quality {q}");
                 m.Contraptions.Add(new Tinkering.ContraptionRecord(def, (Quality)q, r.Bool(), r.Entity()));
             }
+        if (r.Version >= 21)
+        {
+            for (var n = r.Count(64); n > 0; n--)
+                m.Rations.Add(new Work.RationRecord(Math.Clamp(r.Float(), 0f, 1f), Math.Clamp(r.Float(), 0f, 1f), r.Bool(), r.Entity(), r.Version >= 25 && r.Bool()));
+            var fed = r.Byte();
+            m.Fed = Enum.IsDefined((RoadFood)fed) ? (RoadFood)fed : RoadFood.None;
+        }
         return m;
     }
 }

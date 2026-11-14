@@ -135,6 +135,285 @@ public sealed partial class VillageGame
         EndWork();
     }
 
+    /// <summary>Smelling food (or the pot): a sniff at a time, and what the last one said. Never the rot itself.</summary>
+    private void DrawSniff(SniffSession s)
+    {
+        BeginWork(s.Title, ("Space", "sniff"), ("Esc", "that'll do"));
+        TextC(Theme.Dim, s.IsPot ? "A pot hides what's in it. At best you'll know something's off." : "Fresh, fine, on the turn, or off. A practised nose is surer.");
+        ImGui.Spacing();
+        if (s.Sniffs == 0)
+            TextC(Theme.Dim, Controls.Keys("You haven't smelt it yet: ~Space~."));
+        else
+        {
+            var bad = s.Smell is "off" or "not quite right";
+            var colour = bad ? Theme.Bad : s.Smell == "on the turn" ? Theme.Warn : Theme.Good;
+            TextC(colour, $"It smells {s.Smell}.");
+            if (s.Sniffs > 1)
+                TextC(Theme.Dim, $"({s.Sniffs} sniffs.)");
+        }
+        EndWork();
+    }
+
+    private static float4 CrustColour(Crust c) => c switch
+    {
+        Crust.Pale => new(0.86f, 0.70f, 0.66f, 1f),
+        Crust.Colouring => new(0.80f, 0.55f, 0.36f, 1f),
+        Crust.Golden => new(0.74f, 0.47f, 0.18f, 1f),
+        Crust.Dark => new(0.45f, 0.26f, 0.12f, 1f),
+        _ => new(0.16f, 0.12f, 0.10f, 1f),
+    };
+
+    /// <summary>The roast from the end, its four sides round it, the fire under the one to it, flaring when the fat drips.</summary>
+    private void DrawRoast(RoastSession s)
+    {
+        BeginWork(s.Title, ("F", "turn it"), ("Space", "lift it off"), ("Esc", "leave it on the spit"));
+        TextC(Theme.Dim, "Golden all round, and through. When the fat flares, turn it away.");
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(420, 170);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var max = min + size;
+        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+        var c = new float2((min.X + max.X) * 0.5f, min.Y + size.Y * 0.42f);
+        var r = Gui.S(34);
+        // Each side as a quarter round the rod; the one to the fire at the bottom.
+        for (var i = 0; i < SpitRoast.Sides; i++)
+        {
+            var slot = (i - s.Facing + SpitRoast.Sides) % SpitRoast.Sides; // 0: down, to the fire
+            float2 off = slot switch { 0 => new(0, 1), 1 => new(1, 0), 2 => new(0, -1), _ => new(-1, 0) };
+            var a = c + off * r * 0.55f - new float2(r * 0.5f, r * 0.5f);
+            var b = a + new float2(r, r);
+            dl.AddRectFilled(in a, in b, Gui.U8(CrustColour(Roasting.CrustOf(s.Brown[i]))), Gui.S(8), ImDrawFlags.None);
+        }
+        var rodA = new float2(min.X + Gui.S(30), c.Y);
+        var rodB = new float2(max.X - Gui.S(30), c.Y);
+        dl.AddLine(in rodA, in rodB, new ImColor8(90, 90, 96, 255), Gui.S(3));
+        // The fire under it, leaping when it flares.
+        var fireY = max.Y - Gui.S(10);
+        for (var i = 0; i < 7; i++)
+        {
+            var x = c.X - Gui.S(54) + i * Gui.S(18);
+            var flicker = 0.7f + 0.3f * MathF.Sin(_time * (6f + i % 3) + i * 2.1f);
+            var h = Gui.S(s.Flaring > 0 ? 64 : 26) * flicker;
+            var a = new float2(x - Gui.S(7), fireY);
+            var b = new float2(x + Gui.S(7), fireY);
+            var tip = new float2(x, fireY - h);
+            dl.AddTriangleFilled(in a, in b, in tip, Gui.U8(new float4(0.95f, s.Flaring > 0 ? 0.8f : 0.5f, 0.1f, 0.85f)));
+        }
+        ImGui.Spacing();
+        var faces = string.Join(", ", s.Brown.Select((b, i) => (i == s.Facing ? "*" : "") + Roasting.CrustLabel(Roasting.CrustOf(b))));
+        Wrapped($"Its sides: {faces} (* to the fire).");
+        if (s.Flaring > 0)
+            TextC(Theme.Bad, "The fat's caught: it's flaring!");
+        if (!s.Lit)
+            TextC(Theme.Bad, "The fire's out.");
+        EndWork();
+    }
+
+    /// <summary>Kneading on the beat: the dough, pushed from one side then the other, and how the last push went.</summary>
+    private void DrawKnead(KneadSession s)
+    {
+        BeginWork(s.Title, ("A/D", "push from that side, on the beat"), ("Esc", "leave it"));
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(420, 110);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var max = min + size;
+        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+        // The dough squashes on the beat and springs back between.
+        var squash = 1f - (float)s.Off / (KneadSession.Beat / 2f);
+        var c = (min + max) * 0.5f;
+        var rx = Gui.S(48 + 18 * squash);
+        var ry = Gui.S(30 - 10 * squash);
+        dl.AddEllipseFilled(in c, new float2(rx, ry), new ImColor8(232, 214, 176, 255), 0f, 32);
+        var side = s.NextSide < 0 ? "~A~" : "~D~";
+        ImGui.Spacing();
+        TextC(s.Off <= KneadSession.Window ? Theme.Good : Theme.Dim, Controls.Keys($"Push {s.Pushed + 1} of {KneadSession.Pushes}: {side}"));
+        Bar("", s.Pushed / (float)KneadSession.Pushes, Theme.Accent);
+        EndWork();
+    }
+
+    /// <summary>Baking: the oven door's shut, so all there is is the smell.</summary>
+    private void DrawBake(BakeSession s)
+    {
+        BeginWork(s.Title, ("Space", "take it out"), ("Esc", "leave it in"));
+        TextC(Theme.Dim, "The door's shut. Go by the smell: out on a golden crust.");
+        ImGui.Spacing();
+        var colour = s.Smell switch
+        {
+            "a golden crust" => Theme.Good,
+            "toasty, getting dark" => Theme.Warn,
+            "burning!" => Theme.Bad,
+            _ => Theme.Text,
+        };
+        TextC(colour, $"It smells of {s.Smell}.");
+        if (!s.Lit)
+            TextC(Theme.Bad, "The oven's gone cold.");
+        EndWork();
+    }
+
+    /// <summary>The oven beside you, between times: whether there's bread in, and what it smells of.</summary>
+    private void DrawOvenPanel()
+    {
+        if (!HasAvatar)
+            return;
+        var at = _sim.World.Get<Position>(_avatar).Cell;
+        var map = _sim.Map;
+        KnownOven? seen = null;
+        for (var dy = -1; dy <= 1 && seen == null; dy++)
+        for (var dx = -1; dx <= 1 && seen == null; dx++)
+        {
+            var cell = new int3(at.X + dx, at.Y + dy, at.Z);
+            if (map.InBounds(cell) && map.Structure[map.Idx(cell)] is { IsNull: false } st && Baking.IsOven(_sim, st))
+                seen = View.Oven(st);
+        }
+        if (seen is not { Loaves: > 0 } o)
+            return;
+        _hud.Next(Anchor.Bottom);
+        Panel.Begin("The oven###oven", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
+        _hud.Took();
+        TextC(o.Smell == "burning!" ? Theme.Bad : Theme.Text, $"Bread's in. It smells of {o.Smell}.");
+        TextC(Theme.Dim, Controls.Keys("~F~ to stand by it and take it out."));
+        Panel.End();
+    }
+
+    /// <summary>The spit beside you, between times: what's on it and how it looks.</summary>
+    private void DrawSpitPanel()
+    {
+        if (!HasAvatar)
+            return;
+        var at = _sim.World.Get<Position>(_avatar).Cell;
+        var map = _sim.Map;
+        KnownSpit? seen = null;
+        for (var dy = -1; dy <= 1 && seen == null; dy++)
+        for (var dx = -1; dx <= 1 && seen == null; dx++)
+        {
+            var cell = new int3(at.X + dx, at.Y + dy, at.Z);
+            if (map.InBounds(cell) && map.Structure[map.Idx(cell)] is { IsNull: false } st && Roasting.IsSpit(_sim, st))
+                seen = View.Spit(st);
+        }
+        if (seen is not { Pieces: > 0 } p)
+            return;
+        _hud.Next(Anchor.Bottom);
+        Panel.Begin("The spit###spit", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
+        _hud.Took();
+        Wrapped($"{p.Pieces} meat on the spit: {string.Join(", ", p.Sides.Select(Roasting.CrustLabel))}.");
+        if (p.Sides[p.Facing] >= Crust.Dark)
+            TextC(Theme.Bad, "The side to the fire is going dark.");
+        TextC(Theme.Dim, Controls.Keys("~F~ to turn it, or lift it off."));
+        Panel.End();
+    }
+
+    /// <summary>Chopping on the knife's beat: the knife rising and falling, the cuts so far, and what the last one did.</summary>
+    private void DrawChop(ChopSession s)
+    {
+        BeginWork(s.Title, ("F", "cut as the knife comes down"), ("Esc", "put the knife down"));
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(420, 120);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var max = min + size;
+        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+        // The board, the food on it shrinking into pieces as the cuts go in.
+        var boardA = new float2(min.X + Gui.S(40), max.Y - Gui.S(30));
+        var boardB = new float2(max.X - Gui.S(40), max.Y - Gui.S(14));
+        dl.AddRectFilled(in boardA, in boardB, new ImColor8(150, 110, 70, 255), Gui.S(3), ImDrawFlags.None);
+        var pieces = Math.Max(1, s.Cuts + 1);
+        var span = (boardB.X - boardA.X - Gui.S(40)) / pieces;
+        for (var i = 0; i < pieces; i++)
+        {
+            var a = new float2(boardA.X + Gui.S(20) + i * span + Gui.S(2), boardA.Y - Gui.S(16));
+            var b = new float2(a.X + span - Gui.S(4), boardA.Y);
+            dl.AddRectFilled(in a, in b, new ImColor8(170, 70, 60, 255), Gui.S(3), ImDrawFlags.None);
+        }
+        // The knife: high between beats, down on the beat.
+        var lift = (float)s.Off / (ChopSession.Beat / 2f);
+        var x = boardA.X + Gui.S(20) + Math.Min(s.Cuts + 1, pieces) * span;
+        var bladeTop = new float2(x, boardA.Y - Gui.S(24) - lift * Gui.S(50));
+        var bladeEnd = new float2(x, boardA.Y - Gui.S(2) - lift * Gui.S(50));
+        dl.AddLine(in bladeTop, in bladeEnd, new ImColor8(210, 214, 220, 255), Gui.S(5));
+        ImGui.Spacing();
+        Bar("Cuts", s.Needed == 0 ? 0f : s.Cuts / (float)s.Needed, Theme.Accent);
+        var (colour, said) = s.LastMark switch
+        {
+            1 => (Theme.Good, "Clean."),
+            -1 => (Theme.Bad, "The knife slips!"),
+            _ => (Theme.Dim, s.StepsDone > 0 && s.Cuts > 0 ? "Off the beat: wait for it." : "Wait for the knife to come down."),
+        };
+        TextC(colour, said);
+        EndWork();
+    }
+
+    /// <summary>
+    /// Packing rations: the cloth's four corners folded on cue, each from its side, then the cord
+    /// drawn and tied. The cord reads only as slack, snug or biting: how snug is the packer's own
+    /// judgement, and a slack-ish knot never shows.
+    /// </summary>
+    private void DrawPack(PackSession s)
+    {
+        if (s.Wrapped)
+            BeginWork(s.Title, ("F", "hold to draw the cord, let go to tie"), ("Esc", "leave it"));
+        else
+            BeginWork(s.Title, ("A/D", "fold the corner from its side, as the hand comes round"), ("Esc", "leave it"));
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(420, 150);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var max = min + size;
+        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+
+        // The cloth from above, its corners folding in, and the food in the middle.
+        var c = (min + max) * 0.5f;
+        var half = Gui.S(46);
+        var cloth = new float4(0.86f, 0.82f, 0.72f, 1f);
+        var a = c + new float2(-half, -half);
+        var b = c + new float2(half, half);
+        dl.AddRectFilled(in a, in b, Gui.U8(cloth), Gui.S(3), ImDrawFlags.None);
+        var food = Gui.S(16);
+        var fa = c - new float2(food, food);
+        var fb = c + new float2(food, food);
+        dl.AddRectFilled(in fa, in fb, Gui.U8(new float4(0.55f, 0.42f, 0.25f, 1f)), Gui.S(6), ImDrawFlags.None);
+        // Folded corners: a triangle over the middle, crisp or crumpled as it landed.
+        float2[] corners = [new(-1, -1), new(1, -1), new(1, 1), new(-1, 1)];
+        for (var i = 0; i < PackSession.Folds; i++)
+        {
+            if (i >= s.Folded)
+                continue;
+            var k = corners[i];
+            var side1 = c + new float2(k.X * half, -k.Y * half);
+            var side2 = c + new float2(-k.X * half, k.Y * half);
+            var shade = 0.7f + 0.25f * s.FoldMarks[i];
+            var crumple = (1f - s.FoldMarks[i]) * Gui.S(10);
+            var inward = c + k * crumple;
+            dl.AddTriangleFilled(in side1, in side2, in inward, Gui.U8(new float4(cloth.X * shade, cloth.Y * shade, cloth.Z * shade, 1f)));
+        }
+        // The cord, once it's wrapped: drawn tighter as it's pulled.
+        if (s.Wrapped)
+        {
+            var sag = Gui.S(18) * Math.Max(0f, 1f - s.Tension);
+            var l = c + new float2(-half - Gui.S(30), sag);
+            var r = c + new float2(half + Gui.S(30), sag);
+            var cord = new ImColor8(120, 84, 50, 255);
+            dl.AddLine(in l, in c, cord, Gui.S(3));
+            dl.AddLine(in c, in r, cord, Gui.S(3));
+        }
+        else
+        {
+            // The hand coming round: a mark sweeping toward the cue at the top.
+            var dir = s.NextSide < 0 ? "A" : "D";
+            var cueA = new float2(min.X + Gui.S(12), min.Y + Gui.S(12));
+            ImGui.SetCursorScreenPos(cueA);
+            TextC(s.OnCue ? Theme.Good : Theme.Dim, Controls.Keys($"Corner {s.Folded + 1} of {PackSession.Folds}: ~{dir}~"));
+            ImGui.SetCursorScreenPos(new float2(min.X, max.Y));
+        }
+        ImGui.Spacing();
+        if (!s.Wrapped)
+            Bar("", s.Sweep, s.OnCue ? Theme.Good : Theme.Dim);
+        else
+            TextC(s.Feel == "snug" ? Theme.Good : s.Feel == "biting" ? Theme.Bad : Theme.Dim, $"The cord feels {s.Feel}.");
+        EndWork();
+    }
+
     /// <summary>The stew pot beside you, between times: what's in it, how it looks, and its steps.</summary>
     private void DrawPotPanel()
     {
@@ -147,7 +426,9 @@ public sealed partial class VillageGame
             TextC(Theme.Dim, Controls.Keys("Empty. Bring it food from the larder: ~F~ at the pot puts in what you carry."));
         else
         {
-            Wrapped($"In it: {p.Contents}.");
+            Wrapped($"In it: {p.Contents}. It tastes {p.Tastes}.");
+            if (p.House is { } house)
+                TextC(Theme.Good, $"It tastes like your {house}: it's the house dish.");
             TextC(p.Surface == Surface.Simmer ? Theme.Good : Theme.Dim, $"It's {Cooking.SurfaceLabel(p.Surface)}{(p.Lit ? "" : ", and the fire beside it is out")}.");
             if (p.Caught is { } caught)
                 TextC(Theme.Bad, Cap(caught) + ".");
@@ -160,14 +441,49 @@ public sealed partial class VillageGame
             ImGui.SameLine(0, 6);
             if (ImGui.SmallButton("Season it"u8))
                 Issue(new PotCommand(_avatar, p.Pot, PotStep.Season));
+            ImGui.SameLine(0, 6);
+            if (ImGui.SmallButton("Smell it"u8))
+                Issue(new PotCommand(_avatar, p.Pot, PotStep.Sniff));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip("Has anything in it turned? You can't pick out what. Better to smell it before it goes in.");
             if (p.Doneness >= Cooking.LadleFrom && p.Bowls > 0)
             {
                 ImGui.SameLine(0, 6);
                 if (ImGui.SmallButton("Ladle a bowl"u8))
                     Issue(new PotCommand(_avatar, p.Pot, PotStep.Ladle));
             }
+            if (p.Cooked && _sim.World.TryGet<Trade>(_avatar, out var trade) && trade.Def.Serving(Sim.Defs.ServiceKind.Meal))
+                DrawNameDish(p);
         }
         Panel.End();
+    }
+
+    private ImInputString? _dishNameInput;
+
+    /// <summary>Name a cooked pot the house dish: a button, then the name. The sim says if it isn't good enough.</summary>
+    private void DrawNameDish(KnownPot p)
+    {
+        if (_dishNameInput == null)
+        {
+            if (ImGui.SmallButton(p.House != null ? "Rename the house dish"u8 : "Make it the house dish"u8))
+                _dishNameInput = new ImInputString(Sim.Shops.ShopName.MaxLength + 8, ""u8);
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip("Put a name to a fine pot. It goes on the sign, and any pot that tastes like it is the same dish. Some will ask for it.");
+            return;
+        }
+        ImGui.SetNextItemWidth(Gui.S(200));
+        var done = ImGui.InputTextWithHint("##dishname"u8, "What's it called?"u8, _dishNameInput, ImGuiInputTextFlags.EnterReturnsTrue, null, IntPtr.Zero);
+        OnScreenKeyboard.AfterTextField();
+        ImGui.SameLine(0, 6);
+        done |= ImGui.SmallButton("Name it"u8);
+        ImGui.SameLine(0, 6);
+        if (ImGui.SmallButton("Cancel"u8))
+            _dishNameInput = null;
+        else if (done)
+        {
+            Issue(new NameDishCommand(_avatar, p.Pot, Narsil.Ui.ImGuiText.Value(_dishNameInput)));
+            _dishNameInput = null;
+        }
     }
 
     /// <summary>A stew pot in arm's reach of you, as you see it.</summary>

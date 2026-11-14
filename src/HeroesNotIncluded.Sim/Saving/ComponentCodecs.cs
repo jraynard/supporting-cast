@@ -514,6 +514,7 @@ internal static class ComponentCodecs
             w.Float(p.Rot);
             w.Int(p.Ladled);
             w.Long(p.TendedUntil);
+            WriteFlavour(w, p.Flavour);
         }, r =>
         {
             var p = new Work.StewPot();
@@ -529,7 +530,98 @@ internal static class ComponentCodecs
             p.Rot = r.Float();
             p.Ladled = r.Int();
             p.TendedUntil = r.Long();
+            if (r.Version >= 21) // flavours came with format 21
+                p.Flavour = ReadFlavour(r);
             return p;
+        }),
+        Codec("Dish", (w, d) =>
+        {
+            WriteFlavour(w, d.Flavour);
+            w.Byte((byte)d.Fault);
+            w.Bool(d.House);
+        }, r =>
+        {
+            var d = new Work.Dish { Flavour = ReadFlavour(r) };
+            if (r.Version >= 22) // what was wrong with it, and the house dish, came with format 22
+            {
+                var f = r.Byte();
+                d.Fault = Enum.IsDefined((Work.DishFault)f) ? (Work.DishFault)f : Work.DishFault.None;
+                d.House = r.Bool();
+            }
+            return d;
+        }),
+        Codec("SpitRoast", (w, x) =>
+        {
+            w.Int(x.Count);
+            w.Float(x.Rot);
+            foreach (var b in x.Brown)
+                w.Float(b);
+            w.Float(x.Inside);
+            w.Int(x.Facing);
+        }, r =>
+        {
+            var x = new Work.SpitRoast { Count = Math.Clamp(r.Int(), 0, Work.Roasting.MostPieces), Rot = Math.Clamp(r.Float(), 0f, 1f) };
+            for (var i = 0; i < Work.SpitRoast.Sides; i++)
+                x.Brown[i] = Math.Clamp(r.Float(), 0f, 2f);
+            x.Inside = Math.Clamp(r.Float(), 0f, 1.5f);
+            x.Facing = Math.Clamp(r.Int(), 0, Work.SpitRoast.Sides - 1);
+            return x;
+        }),
+        Codec("DishPrices", (w, p) =>
+        {
+            w.Int(p.Dishes.Count);
+            foreach (var (name, (price, offered)) in p.Dishes)
+            {
+                w.String(name);
+                w.Int(price);
+                w.Bool(offered);
+            }
+        }, r =>
+        {
+            var p = new Shops.DishPrices();
+            for (var n = r.Count(256); n > 0; n--)
+            {
+                var name = r.String();
+                var price = Math.Clamp(r.Int(), 0, Shops.ShopPrices.MaxPrice);
+                p.Dishes[name] = (price, r.Bool());
+            }
+            return p;
+        }),
+        Codec("HouseDish", (w, h) =>
+        {
+            w.String(h.Name);
+            WriteFlavour(w, h.Flavour);
+            w.Entity(h.Maker);
+        }, r => new Work.HouseDish { Name = Shops.ShopName.Clean(r.String()), Flavour = ReadFlavour(r), Maker = r.Entity() }),
+        Codec("Ration", (w, x) =>
+        {
+            w.Float(x.Quality);
+            WriteFlavour(w, x.Flavour);
+            w.Entity(x.Maker);
+            w.Bool(x.LooseWrap);
+            w.Bool(x.Keeps);
+        }, r => new Work.Ration
+        {
+            Quality = Math.Clamp(r.Float(), 0f, 1f), Flavour = ReadFlavour(r), Maker = r.Entity(), LooseWrap = r.Bool(),
+            Keeps = r.Version >= 25 && r.Bool(), // bread in rations came with format 25
+        }),
+        Codec("Dough", (w, d) =>
+        {
+            w.Float(d.Knead);
+            w.Long(d.MadeAt);
+            w.Entity(d.Maker);
+        }, r => new Work.Dough { Knead = Math.Clamp(r.Float(), 0f, 1f), MadeAt = r.Long(), Maker = r.Entity() }),
+        Codec("OvenLoad", (w, o) =>
+        {
+            w.Int(o.Loaves);
+            w.Float(o.Knead);
+            w.Float(o.Proved);
+            w.Float(o.Bake);
+            w.Entity(o.Maker);
+        }, r => new Work.OvenLoad
+        {
+            Loaves = Math.Clamp(r.Int(), 0, Work.Baking.LoavesPerDough), Knead = Math.Clamp(r.Float(), 0f, 1f),
+            Proved = Math.Clamp(r.Float(), 0f, 1000f), Bake = Math.Clamp(r.Float(), 0f, 2f), Maker = r.Entity(),
         }),
         Codec("Flawed", (w, f) => w.Int((int)f.Flaw), r => new Work.Flawed { Flaw = (Work.PieceFlaw)r.Int() }),
         Codec("Stored", (w, s) => w.Entity(s.In), r => new Stored { In = r.Entity() }),
@@ -650,6 +742,18 @@ internal static class ComponentCodecs
             n += BuildPhase.Roof - BuildPhase.UpperFloor;
         return (BuildPhase)Math.Clamp(n, 0, (int)BuildPhase.Done);
     }
+
+    internal static void WriteFlavour(SaveWriter w, Work.Flavour f)
+    {
+        w.Float(f.Savoury);
+        w.Float(f.Sweet);
+        w.Float(f.Hot);
+        w.Float(f.Fresh);
+    }
+
+    /// <summary>A flavour, each part kept to a sane range (a pot's sums stay well under this).</summary>
+    internal static Work.Flavour ReadFlavour(SaveReader r) =>
+        new(Math.Clamp(r.Float(), 0f, 100f), Math.Clamp(r.Float(), 0f, 100f), Math.Clamp(r.Float(), 0f, 100f), Math.Clamp(r.Float(), 0f, 100f));
 
     private static ComponentCodec<T> Codec<T>(string name, Action<SaveWriter, T> write, Func<SaveReader, T> read) => new(name, write, read);
 

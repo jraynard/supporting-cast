@@ -67,6 +67,20 @@ public static class FoodPoisoning
         w.Add(eater, new Components.FoodPoisoned { Until = until, Severity = severity });
     }
 
+    /// <summary>
+    /// Ill already, at <paramref name="severity"/>, with the worst of it behind them: back from the
+    /// road on rations that turned (<see cref="Work.Rations"/>). No roll: they were sick out there.
+    /// </summary>
+    public static void Sicken(Simulation sim, Entity who, float severity)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Creature>(who, out var c) || c.Dead)
+            return;
+        severity = Math.Clamp(severity, 0f, 1f);
+        var until = sim.Clock.Tick + (long)(MaxHours * 0.5f * severity * SimClock.TicksPerHour);
+        w.Add(who, new Components.FoodPoisoned { Until = until, Severity = severity });
+    }
+
     /// <summary>How ill a creature is now, 0..1 (0 when well).</summary>
     public static float Severity(Simulation sim, Entity e) =>
         sim.World.TryGet<Components.FoodPoisoned>(e, out var p) && p.Until > sim.Clock.Tick ? p.Severity : 0f;

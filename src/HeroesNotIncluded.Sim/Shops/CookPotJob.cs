@@ -40,9 +40,13 @@ public sealed class CookPotJob(Entity pot) : Job
         return Navigation.CanReach(sim, pawn, w.Get<Position>(pawn).Cell, w.Get<Thing>(pot).Cell, PathEnd.Touch) ? new CookPotJob(pot) : null;
     }
 
-    /// <summary>The nearest raw food fit for the pot: a villager can smell when it's turned.</summary>
-    private static Entity Ingredient(Simulation sim, Entity pawn) =>
-        AiQueries.FindNearestItem(sim, pawn, (e, def) => Cooking.IsIngredient(def) && !FoodPoisoning.IsSpoiled(sim, e), 80);
+    /// <summary>
+    /// The nearest raw food fit for the pot (or a seasoner for it): a villager can smell when it's
+    /// turned. Seasoners only from a larder: the honey and herbs behind the bar are the keeper's.
+    /// </summary>
+    private static Entity Ingredient(Simulation sim, Entity pawn, bool seasoner = false) =>
+        AiQueries.FindNearestItem(sim, pawn, (e, def) => Cooking.IsIngredient(def) && def.IsSeasoner == seasoner && !FoodPoisoning.IsSpoiled(sim, e)
+            && (!seasoner || (sim.World.TryGet<Stored>(e, out var st) && sim.World.Get<Thing>(st.In).Def.Name == "Larder")), 80);
 
     protected override IEnumerable<JobStatus> Run()
     {
@@ -83,6 +87,29 @@ public sealed class CookPotJob(Entity pot) : Job
         {
             Fail("nothing to cook");
             yield break;
+        }
+        // Something to give it a taste, if the larder has it: one seasoner a fill.
+        if (Cooking.SeasonersIn(p) == 0 && !p.Cooked && Ingredient(Sim, Pawn, seasoner: true) is { IsNull: false } seasoner && Reserve(seasoner))
+        {
+            Report = "Fetching something for the pot";
+            foreach (var s in GoTo(Get<Thing>(seasoner).Cell, PathEnd.OnTile)) yield return s;
+            if (HasFailed) yield break;
+            if (Sim.IsAvailable(seasoner))
+            {
+                var pinch = Sim.TakeFromStack(seasoner, 1);
+                if (Get<Carrying>(Pawn).Item.IsNull)
+                    Get<Carrying>(Pawn).Item = pinch;
+                else
+                    Inventory.Stow(Sim, Pawn, pinch);
+                foreach (var s in GoTo(Get<Thing>(pot).Cell, PathEnd.Touch)) yield return s;
+                if (HasFailed) yield break;
+                if (Alive(pinch))
+                {
+                    Cooking.Add(Sim, pot, pinch);
+                    if (Alive(pinch) && Inventory.OnPerson(Sim, Pawn, pinch))
+                        Sim.PlaceItemNear(Inventory.TakeFromPerson(Sim, Pawn, pinch, Get<Stack>(pinch).Count), Get<Position>(Pawn).Cell);
+                }
+            }
         }
         if (p.Cooked)
             yield break;

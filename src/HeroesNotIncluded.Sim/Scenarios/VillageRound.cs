@@ -115,7 +115,7 @@ public static class VillageRound
     }
 
     /// <summary>What the inn's larder starts a round with: a day or two of stew for a busy common room.</summary>
-    public static readonly (string Def, int Count)[] LarderStock = [("Cabbage", 12), ("Meat", 10), ("Berries", 20)];
+    public static readonly (string Def, int Count)[] LarderStock = [("Cabbage", 12), ("Meat", 10), ("Berries", 20), ("Emberroot", 6), ("Herbs", 6), ("Flour", 8)];
 
     /// <summary>Kegs in the inn's storeroom at the start, and the clean crockery on its shelves.</summary>
     public const int StoreroomKegs = 3, Tankards = 10, Bowls = 10;

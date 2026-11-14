@@ -37,7 +37,7 @@ public static class Hatch
     /// <summary>Would this dish do for this order?</summary>
     public static bool Fits(Simulation sim, Order e, ThingDef dish) => e.Kind.Kind switch
     {
-        ServiceKind.Meal => dish.Cooked && dish.Nutrition > 0 && sim.World.IsAlive(e.Poster) && dish.EdibleBy(sim.World.Get<Creature>(e.Poster).Def),
+        ServiceKind.Meal => dish.Cooked && dish.Nutrition > 0 && (e.Dish == null || e.Dish == dish) && sim.World.IsAlive(e.Poster) && dish.EdibleBy(sim.World.Get<Creature>(e.Poster).Def),
         ServiceKind.Drink or ServiceKind.MixedDrink => dish.Drink,
         _ => false,
     };
@@ -94,10 +94,13 @@ public static class Hatch
             return false;
         var def = w.Get<Thing>(dish).Def;
         var made = w.TryGet<Crafted>(dish, out var c) ? c : (Crafted?)null;
+        var flavoured = w.TryGet<Work.Dish>(dish, out var d0) ? d0 : (Work.Dish?)null;
         var count = e.Kind.Kind == ServiceKind.Meal ? Math.Min(EatJob.Wanted(sim, e.Poster, def), w.Get<Stack>(dish).Count) : 1;
         var portion = sim.TakeFromStack(dish, count);
         if (made is { } m && !w.Has<Crafted>(portion))
             w.Add(portion, m);
+        if (flavoured is { } fl && !w.Has<Work.Dish>(portion))
+            w.Add(portion, fl);
         sim.Shops.Received(sim, PaidTo(sim, e, made?.Maker ?? Entity.Null), e.Poster, portion);
         return true;
     }

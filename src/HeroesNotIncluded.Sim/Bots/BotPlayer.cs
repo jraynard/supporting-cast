@@ -1511,7 +1511,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             _pot = seen;
         if (_pot is not { } p || p.Pot != pot)
             return AtStation(sim, me, pot, now, _ => { });
-        if (AvatarSystem.Supply(sim, me, Cooking.IsIngredient) is { IsNull: false } food && (p.Empty || !p.Cooked))
+        if (AvatarSystem.Supply(sim, me, d => Cooking.Takes(sim, pot, d)) is { IsNull: false } food && (p.Empty || !p.Cooked))
         {
             Doing = "filling the pot";
             _potSeasoned = false;
@@ -1523,8 +1523,13 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             _potSeasoned = false;
             return AtStation(sim, me, Nearest(sim, me, "Larder"), now, larder =>
             {
-                if (view.InContainer(larder).FirstOrDefault(e => Cooking.IsIngredient(w.Get<Thing>(e).Def), Entity.Null) is { IsNull: false } stack)
+                var stores = view.InContainer(larder).ToList();
+                if (stores.FirstOrDefault(e => Cooking.IsIngredient(w.Get<Thing>(e).Def) && !w.Get<Thing>(e).Def.IsSeasoner, Entity.Null) is { IsNull: false } stack)
                     send(new TakeFromStorageCommand(me, stack, 8)); // an armful for the pot
+                // And something to give it a taste, once it's got food in.
+                if (stores.FirstOrDefault(e => w.Get<Thing>(e).Def.IsSeasoner, Entity.Null) is { IsNull: false } seasoner
+                    && AvatarSystem.Supply(sim, me, d => d.IsSeasoner).IsNull)
+                    send(new TakeFromStorageCommand(me, seasoner, 1));
             });
         }
         if (!p.Cooked)

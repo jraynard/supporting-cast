@@ -51,6 +51,12 @@ public sealed class StewPot
     /// <summary>Hidden: how far gone it is (<see cref="FoodPoisoning"/>), carried in by its ingredients and gained sitting cold.</summary>
     public float Rot;
 
+    /// <summary>
+    /// What it tastes of, as the sum of what went in (food by its nutrition, seasoners a fixed
+    /// weight a unit): read through <see cref="Flavour.Shares"/>. Plain to anyone looking in.
+    /// </summary>
+    public Flavour Flavour;
+
     /// <summary>Bowls ladled since it was filled.</summary>
     public int Ladled;
 
@@ -101,6 +107,12 @@ public static class Cooking
     /// <summary>A pinch of seasoning, before its own small variation.</summary>
     public const float Pinch = 0.07f;
 
+    /// <summary>The most seasoners (emberroot, herbs, honey) a pot takes, one at a time.</summary>
+    public const int MaxSeasoners = 3;
+
+    /// <summary>How much a unit of a seasoner weighs in a pot's flavour, against food's nutrition.</summary>
+    public const float SeasonerWeight = 0.25f;
+
     public static Surface SurfaceOf(float heat) => heat switch
     {
         < SteamingAt => Surface.Still,
@@ -122,7 +134,7 @@ public static class Cooking
     /// enough, and past a simmer it catches on the bottom the longer it goes unstirred. The one
     /// model for the cook's session and the pot left to itself.
     /// </summary>
-    public static void Step(ref float heat, float flame, bool lit, ref float doneness, ref float scorch, int sinceStir, bool stirring, float catchFactor = 1f)
+    public static void Step(ref float heat, float flame, bool lit, ref float doneness, ref float scorch, int sinceStir, bool stirring, float catchFactor = 1f, float speed = 1f)
     {
         var target = lit ? flame : 0f;
         heat += Math.Clamp(target - heat, -HeatFollow, HeatFollow);
@@ -134,7 +146,7 @@ public static class Cooking
             _ => 1.15f,
         };
         // Stirring all the time lets the heat out: it cooks slower while the spoon's going.
-        doneness = Math.Min(1.5f, doneness + CookPerStep * rate * (stirring ? 0.8f : 1f));
+        doneness = Math.Min(1.5f, doneness + CookPerStep * rate * speed * (stirring ? 0.8f : 1f));
         if (heat > SimmerAt)
         {
             var unstirred = stirring ? 0f : Math.Clamp((sinceStir - CatchSteps) / (float)CatchSteps, 0f, 1f) * catchFactor;
@@ -142,14 +154,84 @@ public static class Cooking
         }
     }
 
-    /// <summary>A pot's quality, 0..1: seasoned to its taste, not scorched, cooked through, and a mix of things in it.</summary>
+    /// <summary>
+    /// A pot's quality, 0..1: seasoned to its taste, not scorched, cooked through, and rounded in
+    /// flavour (<see cref="Flavour.Balance"/>): a pot of meat alone is flat, meat with something
+    /// green and a little heat is a stew.
+    /// </summary>
     public static float QualityOf(StewPot p)
     {
         var season = Math.Clamp(1f - MathF.Abs(p.Seasoning - p.SeasonTarget) * 4f, 0f, 1f);
-        var variety = Math.Min(1f, 0.55f + 0.15f * p.In.Count);
+        var rounded = 0.5f + 0.5f * p.Flavour.Balance;
         var done = Math.Clamp(p.Doneness, 0f, 1f);
-        return (0.45f * season + 0.35f * (1f - p.Scorch) + 0.2f * variety) * (0.3f + 0.7f * done * done);
+        return (0.45f * season + 0.35f * (1f - p.Scorch) + 0.2f * rounded) * (0.3f + 0.7f * done * done);
     }
+
+    /// <summary>
+    /// Would the work key put this in the pot? Food always (a full pot says so); a seasoner only
+    /// into a pot with food in it and room for more flavour, so a pocket of emberroot doesn't keep
+    /// the cook from tending.
+    /// </summary>
+    public static bool Takes(Simulation sim, Entity pot, ThingDef def)
+    {
+        if (!IsIngredient(def))
+            return false;
+        if (!def.IsSeasoner)
+            return true;
+        return sim.World.TryGet<StewPot>(pot, out var p) && !p.Empty && SeasonersIn(p) < MaxSeasoners;
+    }
+
+    /// <summary>
+    /// What most lets a pot down, as a diner would taste it: too salty or bland against what it
+    /// wants, caught on the bottom, not cooked through, or tasting of one thing only. None when
+    /// nothing much is wrong.
+    /// </summary>
+    public static DishFault FaultOf(StewPot p)
+    {
+        var off = p.Seasoning - p.SeasonTarget;
+        (DishFault Fault, float How)[] faults =
+        [
+            (DishFault.Salty, (off - 0.06f) * 4f),
+            (DishFault.Bland, (-off - 0.06f) * 4f),
+            (DishFault.Caught, p.Scorch * 1.5f),
+            (DishFault.Underdone, (1f - Math.Clamp(p.Doneness, 0f, 1f)) * 2f),
+            (DishFault.Flat, (0.5f - p.Flavour.Balance) * 1.2f),
+        ];
+        var worst = faults.MaxBy(f => f.How);
+        return worst.How > 0.15f ? worst.Fault : DishFault.None;
+    }
+
+    /// <summary>What a diner says of a poor bowl, by what's wrong with it.</summary>
+    public static string FaultLine(DishFault f) => f switch
+    {
+        DishFault.Salty => "Gods, the salt. Did someone tip the cellar in?",
+        DishFault.Bland => "It wants salt. A lot of salt.",
+        DishFault.Caught => "Tastes of the bottom of the pot.",
+        DishFault.Underdone => "This isn't cooked through.",
+        DishFault.Flat => "Filling. Tastes of one thing, mind.",
+        DishFault.Heavy => "Heavy as a brick, this bread.",
+        _ => "Burnt, or bland, or both. I've eaten worse. Not often.",
+    };
+
+    /// <summary>How much faster a pot of nothing but chopped food cooks than one of whole.</summary>
+    public const float ChoppedSpeed = 0.5f;
+
+    /// <summary>How fast a pot cooks for what's in it: faster the more of its food went in chopped.</summary>
+    public static float SpeedOf(StewPot p)
+    {
+        float all = 0f, chopped = 0f;
+        foreach (var i in p.In)
+        {
+            var n = i.Def.Nutrition * i.Count;
+            all += n;
+            if (i.Def.Chopped)
+                chopped += n;
+        }
+        return all <= 0f ? 1f : 1f + ChoppedSpeed * chopped / all;
+    }
+
+    /// <summary>Seasoners in a pot so far.</summary>
+    public static int SeasonersIn(StewPot p) => p.In.Where(i => i.Def.IsSeasoner).Sum(i => i.Count);
 
     /// <summary>What a taste of it says about the seasoning, given how far off it is (noise and all).</summary>
     public static string TasteWord(float off) => off switch
@@ -192,8 +274,8 @@ public static class Cooking
         return p;
     }
 
-    /// <summary>Food that can go in a pot: raw, not a drink, not already a meal.</summary>
-    public static bool IsIngredient(ThingDef def) => def.IsFood && !def.Cooked && !def.Drink;
+    /// <summary>What can go in a pot: raw food (not a drink, not already a meal), or a seasoner.</summary>
+    public static bool IsIngredient(ThingDef def) => !def.Drink && !def.Cooked && !def.Rations && (def.IsFood || def.IsSeasoner);
 
     /// <summary>The food one bowl of what the pot serves holds.</summary>
     public static ThingDef Serves(Simulation sim, Entity pot) => sim.Defs.Thing(sim.World.Get<Thing>(pot).Def.Building!.StewPot!.Serves);
@@ -229,6 +311,8 @@ public static class Cooking
         var w = sim.World;
         var p = PotOf(sim, pot);
         var t = w.Get<Thing>(food);
+        if (t.Def.IsSeasoner)
+            return AddSeasoner(sim, pot, p, food);
         var props = t.Def.Building?.StewPot ?? w.Get<Thing>(pot).Def.Building!.StewPot!;
         var room = (int)MathF.Floor((props.Holds - p.Nutrition) / t.Def.Nutrition + 0.001f);
         var count = Math.Min(w.Get<Stack>(food).Count, room);
@@ -244,18 +328,38 @@ public static class Cooking
         p.Doneness *= p.Nutrition / total;
         p.Seasoning *= p.Nutrition / total;
         p.Nutrition = total;
-        var i = p.In.FindIndex(x => x.Def == t.Def);
+        p.Flavour += Flavour.Of(t.Def.Flavour) * added;
+        Used(sim, p, food, count);
+        return count;
+    }
+
+    /// <summary>A seasoner goes in one at a time, into a pot with food in it already: it flavours what's there and adds no bowls.</summary>
+    private static int AddSeasoner(Simulation sim, Entity pot, StewPot p, Entity seasoner)
+    {
+        var def = sim.World.Get<Thing>(seasoner).Def;
+        if (p.Empty || SeasonersIn(p) >= MaxSeasoners)
+            return 0;
+        p.Flavour += Flavour.Of(def.Flavour) * SeasonerWeight;
+        Used(sim, p, seasoner, 1);
+        return 1;
+    }
+
+    /// <summary>So many of a stack gone into the pot: listed in it, and out of whoever's hands (or pack).</summary>
+    private static void Used(Simulation sim, StewPot p, Entity food, int count)
+    {
+        var w = sim.World;
+        var def = w.Get<Thing>(food).Def;
+        var i = p.In.FindIndex(x => x.Def == def);
         if (i >= 0)
             p.In[i] = p.In[i] with { Count = p.In[i].Count + count };
         else
-            p.In.Add(new PotIngredient(t.Def, count));
-        // Out of whoever's hands (TakeFromStack hands back the same entity when it takes the lot) or pack.
+            p.In.Add(new PotIngredient(def, count));
+        // TakeFromStack hands back the same entity when it takes the lot.
         var used = sim.TakeFromStack(food, count);
         foreach (var e in w.Query<Carrying>())
             if (w.Get<Carrying>(e).Item == used)
                 w.Get<Carrying>(e).Item = Entity.Null;
         w.Destroy(used);
-        return count;
     }
 
     /// <summary>An empty pot starts over: nothing in it, and a new taste to find.</summary>
@@ -263,6 +367,7 @@ public static class Cooking
     {
         p.In.Clear();
         p.Nutrition = p.Doneness = p.Scorch = p.Seasoning = p.Rot = 0f;
+        p.Flavour = default;
         p.Ladled = 0;
         p.SeasonTarget = sim.Rand.Range(0.3f, 0.6f);
     }
@@ -283,6 +388,7 @@ public static class Cooking
         var p = PotOf(sim, pot);
         var bowl = sim.CreateItem(Serves(sim, pot), 1);
         w.Add(bowl, new Crafted { Quality = quality ?? Crafting.QualityFrom(QualityOf(p)), Maker = server });
+        w.Add(bowl, new Dish { Flavour = p.Flavour.Shares, Fault = FaultOf(p), House = HouseDish.Served(sim, pot, p) != null });
         if (w.Has<Rot>(bowl))
             w.Get<Rot>(bowl).Progress = p.Rot;
         p.Ladled++;
@@ -302,7 +408,7 @@ public static class Cooking
         if (!IsPot(sim, station))
             return null;
         var w = sim.World;
-        if (AvatarSystem.Supply(sim, cook, IsIngredient) is { IsNull: false } food)
+        if (AvatarSystem.Supply(sim, cook, d => Takes(sim, station, d)) is { IsNull: false } food)
             return $"Put the {w.Get<Thing>(food).Def.Label} in the pot";
         if (!w.TryGet<StewPot>(station, out var p) || p.Empty)
             return null;
@@ -321,7 +427,7 @@ public static class Cooking
         var p = PotOf(sim, station);
         if (step == PotStep.Next)
         {
-            if (AvatarSystem.Supply(sim, cook, IsIngredient) is { IsNull: false })
+            if (AvatarSystem.Supply(sim, cook, d => Takes(sim, station, d)) is { IsNull: false })
                 step = PotStep.Add;
             else if (p.Empty)
             {
@@ -337,8 +443,12 @@ public static class Cooking
                 if (AvatarSystem.Supply(sim, cook, IsIngredient) is not { IsNull: false } food)
                     return;
                 var label = w.Get<Thing>(food).Def.Label;
+                var seasoner = w.Get<Thing>(food).Def.IsSeasoner;
                 var n = Add(sim, station, food);
-                sim.Messages.Add(MessageKind.Info, n > 0 ? $"Put {n} {label} in the pot." : "The pot's full.", cell);
+                sim.Messages.Add(MessageKind.Info, n > 0 ? $"Put {n} {label} in the pot. It tastes {p.Flavour.Words()} now."
+                    : !seasoner ? "The pot's full."
+                    : p.Empty ? $"Put some food in first: {label} only flavours what's there."
+                    : $"That's flavour enough: any more {label} and it's all you'll taste.", cell);
                 return;
             case PotStep.Tend:
                 if (p.Empty)
@@ -349,6 +459,10 @@ public static class Cooking
                 if (p.Empty)
                     return;
                 WorkSystem.Start(sim, cook, SeasonSession.For(sim, station));
+                return;
+            case PotStep.Sniff:
+                if (SniffSession.For(sim, station) is { } sniff)
+                    WorkSystem.Start(sim, cook, sniff);
                 return;
             case PotStep.Ladle:
                 if (p.Doneness < LadleFrom)
@@ -380,6 +494,9 @@ public enum PotStep : byte
     Tend,
     Season,
     Ladle,
+
+    /// <summary>Smell it for whether something in it has turned (<see cref="SniffSession"/>).</summary>
+    Sniff,
 }
 
 /// <summary>
@@ -407,9 +524,10 @@ public sealed class CookingSystem : ISimSystem
             if (worked?.Contains(e) == true || !w.Has<Thing>(e))
                 continue;
             var lit = Cooking.Lit(sim, e);
+            var speed = Cooking.SpeedOf(p);
             var tended = p.TendedUntil > now;
             for (var i = 0; i < Interval; i++)
-                Cooking.Step(ref p.Heat, p.Flame, lit, ref p.Doneness, ref p.Scorch, Cooking.Untended, false, tended ? Cooking.TendedCatch : 1f);
+                Cooking.Step(ref p.Heat, p.Flame, lit, ref p.Doneness, ref p.Scorch, Cooking.Untended, false, tended ? Cooking.TendedCatch : 1f, speed);
             if (p.Empty)
             {
                 p.Doneness = p.Scorch = 0f;

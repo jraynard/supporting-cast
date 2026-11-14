@@ -70,6 +70,9 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
             NextArrivalTick = now + SimClock.HoursToTicks(1); // one party at a time
             return;
         }
+        // Nobody rides in after dark: they make camp and come in the morning.
+        if (Ai.AiQueries.IsNight(sim))
+            return;
         var parties = sim.Defs.AllParties;
         if (parties.Count == 0)
             return;
@@ -152,6 +155,9 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
                 Party = id, Kind = kind, PartyDef = def, LeaveTick = sim.Clock.Tick + stay, Arrived = sim.Clock.Tick,
                 NextDrink = sim.Clock.Tick + SimClock.HoursToTicks(_rand.Range(0.3f, 1.2f)), // the road's thirsty work
             });
+            // And hungry work: they come in wanting feeding. Not from _rand, which rolls who they are.
+            if (sim.World.TryGet<Needs>(e, out var needs))
+                needs.Values[sim.Defs.Need("Food").Index] = 0.45f + 0.1f * (i % 3);
             members.Add(e);
         }
         if (members.Count > 0)

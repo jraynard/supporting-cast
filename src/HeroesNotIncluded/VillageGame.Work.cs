@@ -145,6 +145,24 @@ public sealed partial class VillageGame
             case SeasonSession season:
                 DrawSeason(season);
                 return;
+            case SniffSession sniff:
+                DrawSniff(sniff);
+                return;
+            case PackSession pack:
+                DrawPack(pack);
+                return;
+            case ChopSession chop:
+                DrawChop(chop);
+                return;
+            case RoastSession roast:
+                DrawRoast(roast);
+                return;
+            case KneadSession knead:
+                DrawKnead(knead);
+                return;
+            case BakeSession bake:
+                DrawBake(bake);
+                return;
             case WashSession wash:
                 DrawWash(wash);
                 return;
@@ -163,6 +181,8 @@ public sealed partial class VillageGame
             case null:
                 DrawTongs();
                 DrawPotPanel();
+                DrawSpitPanel();
+                DrawOvenPanel();
                 DrawBarPanel();
                 return;
         }

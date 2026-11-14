@@ -62,7 +62,7 @@ public enum AvatarActionKind
     /// <summary>The next step with the piece in your tongs at a smithy station (<see cref="Work.Smithing.Start"/>), begun at once.</summary>
     Smith,
 
-    /// <summary>At a stew pot: put food in, tend it, or ladle a bowl (<see cref="Work.Cooking.Start"/>), begun at once.</summary>
+    /// <summary>At a stew pot: put food in, tend it, or ladle a bowl (<see cref="Work.Cooking.Start"/>); at the prep table, pack rations (<see cref="Work.Rations.Start"/>). Begun at once.</summary>
     Cook,
 
     /// <summary>Wash dirty crockery at the tub, knock a keg into a cask or make up a bed (<see cref="Work.BarWork.Start"/>), begun at once.</summary>
@@ -316,6 +316,12 @@ public sealed class AvatarSystem : ISimSystem
         // A stew pot takes the food you carry, wants tending, or gives a bowl.
         if (Work.Cooking.StepAt(sim, avatar, site) is { } cooking && !sim.Reservations.IsReservedByOther(site, avatar))
             return new(AvatarActionKind.Cook, cooking, cell, site);
+        if (Work.Rations.StepAt(sim, avatar, site) is { } packing && !sim.Reservations.IsReservedByOther(site, avatar))
+            return new(AvatarActionKind.Cook, packing, cell, site);
+        if (Work.Roasting.StepAt(sim, avatar, site) is { } roasting && !sim.Reservations.IsReservedByOther(site, avatar))
+            return new(AvatarActionKind.Cook, roasting, cell, site);
+        if (Work.Baking.StepAt(sim, avatar, site) is { } baking && !sim.Reservations.IsReservedByOther(site, avatar))
+            return new(AvatarActionKind.Cook, baking, cell, site);
 
         // Dirty crockery to the wash tub; a keg in your arms to a dry cask.
         if (Work.BarWork.StepAt(sim, avatar, site) is { } upkeep && !sim.Reservations.IsReservedByOther(site, avatar))
@@ -689,7 +695,14 @@ public sealed class AvatarSystem : ISimSystem
                 Work.Smithing.Start(sim, avatar, action.Target);
                 break;
             case AvatarActionKind.Cook:
-                Work.Cooking.Start(sim, avatar, action.Target);
+                if (Work.Rations.IsPrepTable(sim, action.Target))
+                    Work.Rations.Start(sim, avatar, action.Target);
+                else if (Work.Roasting.IsSpit(sim, action.Target))
+                    Work.Roasting.Start(sim, avatar, action.Target);
+                else if (Work.Baking.IsOven(sim, action.Target))
+                    Work.Baking.Start(sim, avatar, action.Target);
+                else
+                    Work.Cooking.Start(sim, avatar, action.Target);
                 break;
             case AvatarActionKind.BarWork:
                 Work.BarWork.Start(sim, avatar, action.Target);

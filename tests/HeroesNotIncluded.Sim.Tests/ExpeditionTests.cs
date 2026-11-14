@@ -15,7 +15,7 @@ public class ExpeditionTests
 {
     private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
 
-    internal static (Simulation Sim, Entity Me, List<Entity> Party) Round(string trade, ulong seed = 1234)
+    internal static (Simulation Sim, Entity Me, List<Entity> Party) Round(string trade, ulong seed = 1234, bool tillTheyAsk = true)
     {
         var sim = VillageRound.NewSimulation(LoadDefs(), seed);
         sim.Presets.PresetMode = true;
@@ -28,7 +28,7 @@ public class ExpeditionTests
         Assert.NotEmpty(party);
         Tinkering.Wagons.Leave(sim, sim.World.Get<Adventurer>(party[0]).Party); // no wagon to see to (TinkerTests' wagons have their own)
         // Until they've asked for work.
-        for (var t = 0; t < 40 && ExpeditionSystem.QuestOrder(sim, sim.World.Get<Adventurer>(party[0]).Party) == null; t++)
+        for (var t = 0; t < 40 && tillTheyAsk && ExpeditionSystem.QuestOrder(sim, sim.World.Get<Adventurer>(party[0]).Party) == null; t++)
             sim.TickMany(SimClock.TicksPerHour / 4);
         return (sim, Players.CharacterOf(sim, Ana), party);
     }
@@ -46,7 +46,8 @@ public class ExpeditionTests
     [Fact]
     public void ARoundRollsQuestsAndOnlyTheBrokerStartsWithAGuess()
     {
-        var (sim, me, _) = Round("Innkeeper");
+        var (sim, me, _) = Round("Innkeeper", tillTheyAsk: false); // before any rumours go round
+        sim.TickMany(SimClock.TicksPerHour / 4); // the quests are rolled on the system's first update
         Assert.Equal(ExpeditionSystem.QuestsPerRound, sim.Expeditions.Quests.Count);
         var known = Perception.For(sim, me).Quests().ToList();
         Assert.Equal(ExpeditionSystem.QuestsPerRound, known.Count);
@@ -84,7 +85,10 @@ public class ExpeditionTests
         Assert.True(sim.Expeditions.Offer(sim, me, party[0], q.Id));
         Assert.True(Coin.Count(sim, me) > purse, "the broker is paid for the match");
         Assert.Equal(QuestStatus.Taken, q.Status);
-        Assert.All(party, e => Assert.True(sim.World.Has<Combat.Leaving>(e)));
+        // They set out at once, or once gear they've handed in for mending is back.
+        for (var t = 0; t < 48 && party.Any(e => sim.World.IsAlive(e) && !sim.World.Has<Combat.Leaving>(e)); t++)
+            sim.TickMany(SimClock.TicksPerHour / 4);
+        Assert.All(party, e => Assert.True(!sim.World.IsAlive(e) || sim.World.Has<Combat.Leaving>(e)));
 
         for (var h = 0; h < 30 && sim.Expeditions.Succeeded + sim.Expeditions.Failed == 0 && !sim.Messages.Messages.Any(m => m.Text.StartsWith("No one")); h++)
             sim.TickMany(SimClock.TicksPerHour);

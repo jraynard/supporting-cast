@@ -62,10 +62,12 @@
     { "name": "Stone", "label": "stone blocks", "category": "Item", "mass": 2, "sprite": "items/stone", "stackLimit": 50,
       "model": [ { "min": [0.10, 0.10, 0.00], "max": [0.48, 0.48, 0.36], "top": "props/stone_block", "side": "props/stone_block", "minCount": 1 }, { "min": [0.52, 0.10, 0.00], "max": [0.90, 0.48, 0.36], "top": "props/stone_block", "side": "props/stone_block", "minCount": 10 }, { "min": [0.10, 0.52, 0.00], "max": [0.48, 0.90, 0.36], "top": "props/stone_block", "side": "props/stone_block", "minCount": 20 }, { "min": [0.52, 0.52, 0.00], "max": [0.90, 0.90, 0.36], "top": "props/stone_block", "side": "props/stone_block", "minCount": 30 }, { "min": [0.30, 0.30, 0.36], "max": [0.68, 0.68, 0.72], "top": "props/stone_block", "side": "props/stone_block", "minCount": 40 } ] },
     { "name": "Berries", "category": "Item", "mass": 0.1, "sprite": "items/berries", "stackLimit": 30, "nutrition": 0.1, "rotDays": 8, "flammability": 0.4, "maxHp": 20,
-      "mixCue": "D", "drinkEffect": { "rousing": 0.3 },
+      "flavour": { "sweet": 1 }, "mixCue": "D", "drinkEffect": { "rousing": 0.3 },
       "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.28], "top": "props/berries_top", "side": "props/basket" } ] },
-    // Emberroot: a warm, peppery root dug from forest edges and hillsides. Not food on its own.
+    // Emberroot: a warm, peppery root dug from forest edges and hillsides. Not food on its own, but
+    // a seasoner: it puts heat in a stew pot (Work.Flavour).
     { "name": "Emberroot", "label": "emberroot", "category": "Item", "mass": 0.2, "sprite": "items/emberroot", "stackLimit": 30, "rotDays": 12, "flammability": 0.3, "maxHp": 20,
+      "flavour": { "hot": 1 },
       "description": "A knobbly red root that smells of smoke and pepper." },
     // Bandages: the player binds wounds with them (Systems/Bandaging.cs), one a wound.
     { "name": "Bandage", "label": "bandage", "category": "Item", "mass": 0.05, "sprite": "items/bandage", "stackLimit": 20, "flammability": 0.8, "maxHp": 10,
@@ -78,8 +80,10 @@
     { "name": "Fiber", "label": "plant fiber", "category": "Item", "mass": 0.05, "sprite": "items/fiber", "stackLimit": 50, "flammability": 0.9, "maxHp": 10,
       "description": "Pale, tough strands stripped from wild flax. Twisted and woven, it makes bandages." },
     { "name": "Meat", "label": "raw meat", "category": "Item", "mass": 0.4, "sprite": "items/meat", "stackLimit": 30, "nutrition": 0.15, "isMeat": true, "rotDays": 4, "flammability": 0.4, "maxHp": 20,
+      "flavour": { "savoury": 1 }, "chopsInto": "ChoppedMeat",
       "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.28], "top": "props/meat_top", "side": "props/basket" } ] },
     { "name": "RawFish", "label": "raw fish", "category": "Item", "mass": 0.3, "sprite": "items/fish", "stackLimit": 30, "nutrition": 0.15, "isMeat": true, "rotDays": 2.5, "flammability": 0.3, "maxHp": 15,
+      "flavour": { "savoury": 0.7, "fresh": 0.3 }, "chopsInto": "ChoppedFish",
       "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.28], "top": "props/fish_top", "side": "props/basket" } ] },
 
     // ---- Buildings ----

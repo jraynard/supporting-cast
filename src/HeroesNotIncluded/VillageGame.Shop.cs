@@ -175,6 +175,41 @@ public sealed partial class VillageGame
         if (sign.Count == 0)
             return;
         DrawShopName(shop, workplace, trade.Def.NamesShop);
+        if (trade.Def.Serving(Sim.Defs.ServiceKind.Meal))
+        {
+            if (View.HouseDish(shop) is { } house)
+                Wrapped($"House dish: the {house.Name} ({house.Tastes}). Some ask for it by name.");
+            else
+                TextC(Theme.Dim, "No house dish yet. Name a fine pot at the pot.");
+            // Dishes beyond the plain meal: asked for by name, at their own price, once offered.
+            foreach (var d in View.Menu(shop))
+            {
+                ImGui.PushID(d.Dish.Name);
+                var offered = d.Offered;
+                if (ImGui.Checkbox("##dish"u8, ref offered))
+                    Issue(new SetDishPriceCommand(_avatar, shop, d.Dish, d.Price, offered));
+                if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                    Tip(offered ? $"Some will ask for {d.Dish.Label} by name, at this price. Untick to stop." : $"Not offering {d.Dish.Label}. Tick it once you can make it.");
+                ImGui.SameLine(0, Gui.S(6));
+                ImGui.BeginDisabled(!offered);
+                var price = _dishPriceDrafts.TryGetValue(d.Dish.Name, out var draft) ? draft : d.Price;
+                ImGui.SetNextItemWidth(Gui.S(150));
+                ImGui.SliderInt("##dishprice"u8, ref price, 0, Math.Max(PriceSliderMax, d.Price), "%d silver"u8, ImGuiSliderFlags.AlwaysClamp);
+                if (ImGui.IsItemDeactivatedAfterEdit())
+                {
+                    Issue(new SetDishPriceCommand(_avatar, shop, d.Dish, price, offered));
+                    _dishPriceDrafts.Remove(d.Dish.Name);
+                }
+                else if (ImGui.IsItemActive())
+                    _dishPriceDrafts[d.Dish.Name] = price;
+                else
+                    _dishPriceDrafts.Remove(d.Dish.Name);
+                ImGui.SameLine(0, Gui.S(8));
+                TextC(offered ? Theme.Text : Theme.Dim, Capital(d.Dish.Label));
+                ImGui.EndDisabled();
+                ImGui.PopID();
+            }
+        }
         TextC(Theme.Dim, "Adventurers who think it's too dear go without.");
         foreach (var p in sign)
         {
@@ -205,6 +240,9 @@ public sealed partial class VillageGame
         }
         Gui.Rule();
     }
+
+    /// <summary>Dish prices being dragged on the sign, by dish def name.</summary>
+    private readonly Dictionary<string, int> _dishPriceDrafts = [];
 
     /// <summary>The price being set for a piece in the inspector, and which piece it's for.</summary>
     private int _salePrice = 10;
