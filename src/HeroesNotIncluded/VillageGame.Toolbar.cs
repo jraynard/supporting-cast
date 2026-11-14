@@ -56,7 +56,7 @@ public sealed partial class VillageGame
     [
         OrderEntries[0],
         OrderEntries[1],
-        OrderEntries[6] with { Hint = "Drag to mark buildings to take apart, top-down. Then hold F at each one." },
+        OrderEntries[6] with { Hint = "Drag to mark buildings to take apart, top-down. Then work at each one (hold use)." },
     ];
 
     private static readonly ToolEntry[] ZoneEntries =
@@ -105,8 +105,9 @@ public sealed partial class VillageGame
     {
         if (input.WasKeyPressed(GlfwKey.Tab) && !HasAvatar) // Adventure mode: Tab is the inventory
             _toolTab = (ToolTab)(((int)_toolTab + 1) % Enum.GetValues<ToolTab>().Length);
+        var avatarKeys = AvatarKeys();
         foreach (var entry in Entries(_toolTab))
-            if (entry.Key != GlfwKey.Unknown && input.WasKeyPressed(entry.Key) && !(HasAvatar && AvatarKeys.Contains(entry.Key)))
+            if (entry.Key != GlfwKey.Unknown && input.WasKeyPressed(entry.Key) && !(HasAvatar && avatarKeys.Contains(entry.Key)))
                 ActivateTool(entry);
     }
 
@@ -195,6 +196,7 @@ public sealed partial class VillageGame
         ImGui.BeginGroup();
         var dl = ImGui.GetWindowDrawList();
         var first = true;
+        var avatarKeys = AvatarKeys();
         foreach (var entry in Entries(_toolTab))
         {
             if (!first)
@@ -208,17 +210,17 @@ public sealed partial class VillageGame
             if (active)
                 dl.AddRect(in min, in max, Theme.U8(Theme.Accent), 5f, ImDrawFlags.None, 2.5f);
             // Adventure mode gives the avatar's keys to the avatar, so don't advertise them here.
-            var key = HasAvatar && AvatarKeys.Contains(entry.Key) ? "" : KeyName(entry.Key);
+            var key = HasAvatar && avatarKeys.Contains(entry.Key) ? "" : KeyName(entry.Key);
             DrawKeyLabel(dl, max, key);
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                 Tip(key.Length > 0 ? $"{entry.Label}  [{key}]\n{entry.Hint}" : $"{entry.Label}\n{entry.Hint}");
         }
         var hint = _tool switch
         {
-            ToolKind.Select => $"{(HasAvatar ? "Tab: inventory" : "Tab: next category")} · {(HasAvatar ? "Z/X" : "Q/E")} rotate · [ ] level {_renderer.CutawayZ}{(_followLevel ? " (following)" : "")} · Home: follow · \\ roofs",
+            ToolKind.Select => $"{(HasAvatar ? $"{Controls.Glyph(Act.Inventory)}: inventory" : "Tab: next category")} · {(HasAvatar ? Controls.Pair(Act.TurnLeft, Act.TurnRight) : "Q/E")} rotate · {Controls.Glyph(Act.LevelDown)} {Controls.Glyph(Act.LevelUp)} level {_renderer.CutawayZ}{(_followLevel ? " (following)" : "")} · {Controls.Glyph(Act.LevelFollow)}: follow · {Controls.Glyph(Act.Roofs)} roofs",
             ToolKind.PlaceBuilding when _toolPlan != null => $"Placing a {_toolPlan.Variant(PlanVariant(_toolPlan)).Label.ToLowerInvariant()} {_toolPlan.Label}: click to lay it out · R: turn · {(_toolPlan.Variants.Count > 1 ? "C: look · " : "")}right-click to stop",
             ToolKind.Build when _toolDef != null => $"Placing {_toolDef.Label}{(Footprint.IsWide(_toolDef) ? $" ({SizeLabel(_toolDef)})" : "")}: drag to place · {(_toolDef.Model != null ? "R: turn · " : "")}{(ShapesOf(_toolDef).Count > 1 ? "C: shape · " : "")}Ctrl: one level up · right-click to stop",
-            _ => "Drag an area · Ctrl: one level up · right-click or Esc to stop",
+            _ => $"Drag an area · Ctrl: one level up · right-click or {Controls.Glyph(Act.Back)} to stop",
         };
         TextC(Theme.Dim, hint);
         ImGui.SameLine(0, 10);
@@ -226,8 +228,8 @@ public sealed partial class VillageGame
             ToggleRoofs();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
             Tip(HideRoofs
-                ? "Every roof is cut away so you can see into all the rooms. Show them again, but for the building you're in.  [\\]"
-                : "Roofs are on, but for the building you're in. Cut them all away to see into every room.  [\\]");
+                ? $"Every roof is cut away so you can see into all the rooms. Show them again, but for the building you're in.  [{Controls.Glyph(Act.Roofs)}]"
+                : $"Roofs are on, but for the building you're in. Cut them all away to see into every room.  [{Controls.Glyph(Act.Roofs)}]");
         if (_tool == ToolKind.PlaceBuilding && _toolPlan is { Variants.Count: > 1 } plan)
         {
             // The looks to pick from, the current one lit.

@@ -32,7 +32,7 @@ public sealed partial class VillageGame
             return;
         var w = _sim.World;
         if (!HasAvatar || !w.IsAlive(_readingSign) || Signs.CellOf(_sim, _readingSign) is not { } at
-            || !AvatarSystem.InReach(w.Get<Position>(_avatar).Cell, at) || Host.Input.WasKeyPressed(GlfwKey.Escape))
+            || !AvatarSystem.InReach(w.Get<Position>(_avatar).Cell, at) || Controls.Map.Pressed(Act.Back))
         {
             _readingSign = Entity.Null;
             return;
@@ -47,13 +47,13 @@ public sealed partial class VillageGame
         pos.Y = MathF.Max(pos.Y, Gui.S(10)); // a long price list still starts on screen
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Always, default);
         ImGui.SetNextWindowSize(in size, ImGuiCond.Always);
-        var flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings
-            | ImGuiWindowFlags.NoNav;
+        var flags = ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBackground | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoSavedSettings;
         if (!ImGui.Begin("###shopsign"u8, flags))
         {
             ImGui.End();
             return;
         }
+        PadWindow("###shopsign", () => _readingSign = Entity.Null);
         var dl = ImGui.GetWindowDrawList();
         var min = ImGui.GetWindowPos();
         var max = min + size;
@@ -140,7 +140,7 @@ public sealed partial class VillageGame
             }
             y0 += rowH;
         }
-        var hint = "F or Esc to step back";
+        var hint = Controls.Keys("~F~ or ~Esc~ to step back");
         var hs = ImGui.CalcTextSize(hint);
         var hp = new float2(mid - hs.X * 0.5f, inner1.Y - hs.Y - Gui.S(6));
         dl.AddText(in hp, Gui.U8(SignPaint, 0.4f), hint);

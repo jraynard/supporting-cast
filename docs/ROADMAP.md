@@ -69,6 +69,13 @@ Fights are free movement and blows by reach and timing, Souls-lite, everywhere (
 - **Friendly fire's consequences** (with M4): townsfolk you cut are only hurt; the town remembering
   it, shouting it, and it counting at the reveal.
 
+### Control Pass: on the Deck
+- Built (HISTORY.md, "Control pass: rebinding and the gamepad"). Left for the device: play a round
+  on a Deck from the pad alone; check every mini-game and window navigates (ImGui focus quirks show
+  only in play); tune the stick deadzone and the wheel; export the Steam Input layout to
+  `tools/steamdeck/`.
+- Building and area tools still need the trackpad (a pad cursor would cover them).
+
 ### Death and ghosts
 - need to move this up most likely as people can and should die when the dragon attacks, or other dangers added in the crisis system.
 
@@ -86,12 +93,6 @@ Remaining trades, more maps (authored like Millbrook), crisis variety, personal 
 
 ### M7: Playing with strangers
 An authoritative server filtered by `Perception`, moderation, voice.
-
-### Control Pass
-- Control customization / keybind window (add at the engine level).
-- Controller support: left stick moves, right stick aims; combat on the triggers and face buttons.
-- The Steam Deck layout (docs/STEAM-DECK.md) for the new controls: R to draw, the mouse's aim, Q to
-  guard, Space to dash, Z/X to turn the camera, C to dig, G to put down.
 
 ### Character customization
 - The roster is one for every mode, with its own Characters screen (done: HISTORY.md). Next, more to
@@ -191,9 +192,7 @@ Grouped by area; nothing here blocks a playtest.
 - `--building-demo` lays its showcase over the village.
 
 **Steam Deck**
-- Native gamepad support (an action layer over `Input`, ImGui gamepad navigation), so menus work
-  from the d-pad and nothing needs the trackpad.
-- Tooltips reachable without hovering.
+- Placing buildings and dragging areas from the pad (a cursor on the right stick while a tool's out).
 
 **Words and docs**
 - Watch a child and a non-gamer play the first ten minutes.

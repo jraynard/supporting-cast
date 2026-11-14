@@ -25,33 +25,34 @@ public sealed partial class VillageGame
     /// <summary>Hotbar slots: the pack's first stacks, in pack order.</summary>
     private const int HotbarSlots = 4;
 
-    private static readonly GlfwKey[] HotbarKeys = [GlfwKey.Number1, GlfwKey.Number2, GlfwKey.Number3, GlfwKey.Number4];
-
     /// <summary>An item slot's icon, before UI scale: big enough to tell a tankard from a bowl at a glance.</summary>
     private const float IconSize = 40;
 
-    /// <summary>Tab toggles the window; 1–4 take a pack stack in hand (an empty slot's key puts what you hold away).</summary>
+    /// <summary>Inventory (Tab, View) toggles the window; 1–4 take a pack stack in hand (an empty slot's key puts what you hold away).</summary>
     private void HandleInventoryKeys(Input input)
     {
-        if (input.WasKeyPressed(GlfwKey.Tab))
+        if (Controls.Map.Pressed(Act.Inventory))
             _inventoryOpen = !_inventoryOpen;
         if (input.IsKeyDown(GlfwKey.LeftControl) || input.IsKeyDown(GlfwKey.RightControl))
             return; // Ctrl+1–3 is game speed
         if (Working)
             return; // numbers belong to the work in hand (an empath's runes)
+        for (var k = 0; k < Act.Hotbar.Length; k++)
+            if (Controls.Map.Pressed(Act.Hotbar[k]))
+                TakeInHand(k);
+    }
+
+    /// <summary>A hotbar slot's stack into your hands, or what you hold put away if the slot's empty.</summary>
+    private void TakeInHand(int slot)
+    {
         var pack = _sim.PackOf(_avatar);
         if (pack.IsNull)
             return;
         var items = _sim.StoredIn(pack);
-        for (var k = 0; k < HotbarKeys.Length; k++)
-        {
-            if (!input.WasKeyPressed(HotbarKeys[k]))
-                continue;
-            if (k < items.Count)
-                Issue(new HoldCommand(_avatar, items[k]));
-            else
-                Issue(new StowCommand(_avatar));
-        }
+        if (slot < items.Count)
+            Issue(new HoldCommand(_avatar, items[slot]));
+        else
+            Issue(new StowCommand(_avatar));
     }
 
     /// <summary>The pack's first stacks and what's in hand, bottom left, with the pack's load.</summary>
@@ -66,7 +67,7 @@ public sealed partial class VillageGame
         Narsil.Ui.Panel.Begin("##hotbar", Narsil.Ui.Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
         _hud.Took();
         var held = w.Get<Carrying>(_avatar).Item;
-        SlotBox("hands", held, "In hand", "Empty hands. 1–4 take a stack from your pack; G puts down what you hold.", menu: true);
+        SlotBox("hands", held, "In hand", $"Empty hands. {HotbarKeys()} take a stack from your pack; {Controls.Glyph(Act.Drop)} puts down what you hold.", menu: true);
         if (!pack.IsNull)
         {
             var items = _sim.StoredIn(pack);
@@ -74,7 +75,7 @@ public sealed partial class VillageGame
             {
                 ImGui.SameLine(0, Gui.S(4));
                 SlotBox($"hot{k}", k < items.Count ? items[k] : Entity.Null, $"{k + 1}",
-                    k < items.Count ? $"[{k + 1}] Take in hand (what you hold goes in the pack)" : $"[{k + 1}] Put what you hold in the pack", menu: true);
+                    k < items.Count ? $"[{Controls.Glyph(Act.Hotbar[k])}] Take in hand (what you hold goes in the pack)" : $"[{Controls.Glyph(Act.Hotbar[k])}] Put what you hold in the pack", menu: true);
             }
             ImGui.SameLine(0, Gui.S(8));
             LoadBar(pack, Gui.S(90));
@@ -82,10 +83,14 @@ public sealed partial class VillageGame
         else
         {
             ImGui.SameLine(0, 8);
-            TextC(Dim, "No pack: Tab for gear");
+            TextC(Dim, $"No pack: {Controls.Glyph(Act.Inventory)} for gear");
         }
         Narsil.Ui.Panel.End();
     }
+
+    /// <summary>The hotbar's keys for a hint: "1–4", or the wheel on a pad.</summary>
+    private static string HotbarKeys() =>
+        Controls.UsingPad ? $"the wheel ({Controls.Glyph(Act.Wheel)})" : string.Join("/", Act.Hotbar.Select(Controls.Glyph));
 
     /// <summary>
     /// A framed slot showing an item (icon and count) or nothing, with a corner label and a tooltip.
@@ -119,12 +124,13 @@ public sealed partial class VillageGame
         }
         var c = min + new float2(Gui.S(3), Gui.S(1));
         dl.AddText(in c, Theme.U8(Theme.Dim), corner.Length <= 2 ? corner : "");
-        ImGui.Dummy(in box);
+        // A button, not just a box, so a gamepad's navigation can land on it (A opens its menu).
+        var pressed = ImGui.InvisibleButton($"##slot-{id}", in box, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.MouseButtonRight);
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
             Tip(alive ? $"{ItemLine(item)}\n{ItemDetails(item)}{(menu ? "\nClick for what you can do with it." : "")}" : emptyTip);
         if (!menu || !alive)
             return;
-        if (ImGui.IsItemClicked(ImGuiMouseButton.Left) || ImGui.IsItemClicked(ImGuiMouseButton.Right))
+        if (pressed)
             ImGui.OpenPopup(id);
         if (ImGui.BeginPopup(id))
         {
@@ -204,7 +210,7 @@ public sealed partial class VillageGame
                     Later(new BandageCommand(_avatar, patient));
                 ImGui.EndDisabled();
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                    Tip(why ?? "For each turn of cloth, hold F to pull it tight and let go in the band.");
+                    Tip(why ?? Controls.Keys("For each turn of cloth, hold ~F~ to pull it tight and let go in the band."));
             }
         }
         if (packed)
@@ -228,7 +234,7 @@ public sealed partial class VillageGame
                 Later(new Sim.Work.SharpenCommand(_avatar, item));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(why != null ? Cap(why) + "." : "Hold F to grind, A/D to keep the angle. Ease off before the steel overheats.");
+                Tip(why != null ? Cap(why) + "." : Controls.Keys("Hold ~F~ to grind, ~AD~ to keep the angle. Ease off before the steel overheats."));
         }
         if ((held || packed) && View.Strongbox(item) is { } box)
         {
@@ -240,14 +246,14 @@ public sealed partial class VillageGame
                 Later(new Sim.Tinkering.ProbeBoxCommand(_avatar, item));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(why != null ? Cap(why) + "." : "A/D run the probe along the seam; sweep light. Where it catches, stop and hold F to ease the spring out. The far end finishes.");
+                Tip(why != null ? Cap(why) + "." : Controls.Keys("~AD~ run the probe along the seam; sweep light. Where it catches, stop and hold ~F~ to ease the spring out. The far end finishes."));
             ImGui.BeginDisabled(why != null);
             if (ImGui.MenuItem($"Pick the lock ({box.Pins} pins)"))
                 Later(new Sim.Tinkering.PickLockCommand(_avatar, item));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 Tip(why != null ? Cap(why) + "." : box.SearchedByMe
-                    ? "A/D lift the pin; F sets it where it gives most. A slip drops a pin and wears the picks."
+                    ? Controls.Keys("~AD~ lift the pin; ~F~ sets it where it gives most. A slip drops a pin and wears the picks.")
                     : "You haven't felt it over for traps. A trap still armed goes off when the lid comes up.");
         }
         if ((held || packed) && TinkerMenuEntries(item, Later))
@@ -400,6 +406,7 @@ public sealed partial class VillageGame
         var open = true;
         ScreenFit.Next();
         Narsil.Ui.Panel.Begin("Inventory###inventory", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
+        PadWindow("###inventory", () => _inventoryOpen = false);
 
         if (ImGui.SmallButton("Recipe book"u8))
             _showRecipeBook = !_showRecipeBook;
@@ -439,7 +446,7 @@ public sealed partial class VillageGame
                     if (ImGui.SmallButton("Sharpen##weapon"u8))
                         Issue(new Sim.Work.SharpenCommand(_avatar, item));
                     if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                        Tip($"It's {View.Condition(item)}. Hold F to grind, A/D to keep the angle.");
+                        Tip(Controls.Keys($"It's {View.Condition(item)}. Hold ~F~ to grind, ~AD~ to keep the angle."));
                 }
             }
             ImGui.EndGroup();
@@ -571,7 +578,7 @@ public sealed partial class VillageGame
         LoadBar(pack, 220);
         var items = _sim.StoredIn(pack);
         if (items.Count == 0)
-            TextC(Dim, "Empty. F picks things up into it.");
+            TextC(Dim, Controls.Keys("Empty. ~F~ picks things up into it."));
         var into = !container.IsNull && w.IsAlive(container) ? container : Entity.Null;
         // Solo, a command applies at once, so the list can go stale mid-way (a stack held, merged or
         // dropped): skip what's gone, and stop after the first button that acts.

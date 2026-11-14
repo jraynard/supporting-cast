@@ -78,11 +78,26 @@ public sealed partial class VillageGame
     private readonly FreeMovePredictor _freePredictor = new();
     private bool _sentWork;
 
+    /// <summary>Actions still live while the build drawer's open (the panels' keys are the drawer's then).</summary>
+    private static readonly string[] AvatarActions =
+    [
+        Act.WalkUp, Act.WalkDown, Act.WalkLeft, Act.WalkRight, Act.Use, Act.Dig, Act.Drop, Act.Sleep,
+        Act.Draw, Act.Guard, Act.TurnLeft, Act.TurnRight,
+    ];
+
     /// <summary>
-    /// Keys the avatar's controls use.
-    /// the toolbar's letter hotkeys skip them in Adventure mode.
+    /// Keys those actions are bound to now (<see cref="Controls"/>): the build drawer's letter
+    /// hotkeys skip them while you play a character.
     /// </summary>
-    private static readonly GlfwKey[] AvatarKeys = [GlfwKey.W, GlfwKey.A, GlfwKey.S, GlfwKey.D, GlfwKey.F, GlfwKey.C, GlfwKey.G, GlfwKey.N, GlfwKey.V, GlfwKey.Q, GlfwKey.Z, GlfwKey.X, GlfwKey.R];
+    private static HashSet<GlfwKey> AvatarKeys()
+    {
+        var keys = new HashSet<GlfwKey>();
+        foreach (var id in AvatarActions)
+            foreach (var b in Controls.Map.Bindings(id))
+                if (b.Kind == Narsil.Platform.BindingKind.Key)
+                    keys.Add((GlfwKey)b.Code);
+        return keys;
+    }
 
     private bool _sentDig;
 
@@ -133,17 +148,13 @@ public sealed partial class VillageGame
     private void HandleAvatarInput(Input input, float dt)
     {
         if (HasAvatar)
-            _pointer.Update(input.MouseDelta != float2.Zero, _sim.World.Get<Position>(_avatar).Cell);
+            _pointer.Update(input.MouseDelta != float2.Zero && !Controls.UsingPad, _sim.World.Get<Position>(_avatar).Cell);
         if (!HasAvatar || Working) // at a mini-game the keys are the mini-game's (UpdateWork)
         {
             _moveKeysFromWork = _useKeyFromWork = Working;
             return;
         }
-        float x = 0, y = 0;
-        if (input.IsKeyDown(GlfwKey.W)) y += 1;
-        if (input.IsKeyDown(GlfwKey.S)) y -= 1;
-        if (input.IsKeyDown(GlfwKey.D)) x += 1;
-        if (input.IsKeyDown(GlfwKey.A)) x -= 1;
+        var (x, y) = WalkAxes();
         // A key that ended a mini-game (F the last blow, A/D steering as it ended) doesn't walk off or
         // use the station again once it's over: nothing till the keys held then come up.
         if (_moveKeysFromWork && (x != 0 || y != 0))
@@ -157,21 +168,21 @@ public sealed partial class VillageGame
         HandleInventoryKeys(input);
         HandleCombatKeys(input);
 
-        // N lies down where you stand (in the bed there, else on the ground): its own key, so F and clicks never put you to sleep.
-        if (input.WasKeyPressed(GlfwKey.N))
-            Issue(new SleepCommand(_avatar));
+        // Sleep (N) lies down where you stand (in the bed there, else on the ground): its own key, so F and clicks never put you to sleep.
+        if (Controls.Map.Pressed(Act.Sleep))
+            Sleep();
 
-        // G puts down what you hold: its own key, so F never drops anything by accident.
-        if (input.WasKeyPressed(GlfwKey.G) && WorkTarget(AvatarTool.Drop) is { Kind: AvatarActionKind.PutDown } drop)
-            Issue(new AvatarDropCommand(_avatar, drop.Cell));
+        // Drop (G) puts down what you hold: its own key, so F never drops anything by accident.
+        if (Controls.Map.Pressed(Act.Drop))
+            Drop();
 
         // F uses, C digs (not with a build tool out: C is theirs); both work only while held. A press starts the action, a release of both stops work.
-        var use = input.IsKeyDown(GlfwKey.F);
+        var use = Controls.Map.Down(Act.Use) && !WheelOpen;
         if (_useKeyFromWork && use)
             use = false;
         else
             _useKeyFromWork = false;
-        var dig = input.IsKeyDown(GlfwKey.C) && _tool is not (ToolKind.Build or ToolKind.PlaceBuilding);
+        var dig = Controls.Map.Down(Act.Dig) && !WheelOpen && _tool is not (ToolKind.Build or ToolKind.PlaceBuilding);
         if (use && !_sentWork && WorkTarget() is { OpensWindow: true } window)
             OpenWindowFor(window, toggle: true); // F again closes it
         else if (use && !_sentWork)
@@ -182,6 +193,44 @@ public sealed partial class VillageGame
             Issue(new AvatarWorkCommand(_avatar, false)); // (a mouse button still held keeps working)
         _sentWork = use;
         _sentDig = dig;
+    }
+
+    private void Sleep() => Issue(new SleepCommand(_avatar));
+
+    private void Drop()
+    {
+        if (WorkTarget(AvatarTool.Drop) is { Kind: AvatarActionKind.PutDown } drop)
+            Issue(new AvatarDropCommand(_avatar, drop.Cell));
+    }
+
+    /// <summary>
+    /// Where the walk actions point, screen-wise (x right, y up): the keys as -1/0/1, or a stick's
+    /// own lean when the walk's bound to one (so a pad steers in any direction, not just eight).
+    /// </summary>
+    private static (float X, float Y) WalkAxes()
+    {
+        var map = Controls.Map;
+        if (map.Pad is { } pad && StickOf(Act.WalkUp) is { } left)
+        {
+            var stick = left ? pad.LeftStick : pad.RightStick;
+            if (stick != float2.Zero)
+                return (stick.X, stick.Y);
+        }
+        float x = 0, y = 0;
+        if (map.Down(Act.WalkUp)) y += 1;
+        if (map.Down(Act.WalkDown)) y -= 1;
+        if (map.Down(Act.WalkRight)) x += 1;
+        if (map.Down(Act.WalkLeft)) x -= 1;
+        return (x, y);
+    }
+
+    /// <summary>Whether an action's on a stick direction: true for the left, false the right, null for neither.</summary>
+    private static bool? StickOf(string id)
+    {
+        foreach (var b in Controls.Map.Bindings(id))
+            if (b.IsPad && (Narsil.Platform.PadButton)b.Code is >= Narsil.Platform.PadButton.LeftUp and <= Narsil.Platform.PadButton.RightLeft)
+                return (Narsil.Platform.PadButton)b.Code <= Narsil.Platform.PadButton.LeftLeft;
+        return null;
     }
 
     /// <summary>The game's side of an action that opens something: a window, the dialogue, the "set out?" question.</summary>
@@ -553,7 +602,7 @@ public sealed partial class VillageGame
         // Digging: the hovered block, else the face in front, else the ground in front (a way down).
         // With the pointer over a window, what's behind it isn't what you mean: only what's in front. The same once
         // you've walked away from where the pointer rests (a stick and an idle trackpad on a Steam Deck).
-        var overUi = ImGui.GetIO().WantCaptureMouse || _pointer.Stale;
+        var overUi = ImGui.GetIO().WantCaptureMouse || _pointer.Stale || Controls.UsingPad;
         ReadOnlySpan<int3> candidates = (tool, overUi) switch
         {
             (AvatarTool.Dig, false) => [_hoverBlock, front, new int3(front.X, front.Y, front.Z - 1)],
@@ -640,6 +689,7 @@ public sealed partial class VillageGame
         var open = true;
         ScreenFit.Next();
         Narsil.Ui.Panel.Begin($"{char.ToUpper(thing.Label[0])}{thing.Label[1..]}###storage", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
+        PadWindow("###storage", () => _openStorage = Entity.Null);
         if (!BeginTwoColumns("##storage-cols"))
         {
             Narsil.Ui.Panel.End();
@@ -744,11 +794,11 @@ public sealed partial class VillageGame
             if (ImGui.Button("Take it apart"u8, in _autoSize))
                 Issue(new DeconstructOrderCommand(thing.Cell, true));
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip($"Mark the {thing.Label} to be broken up for {salvage}. Then hold F at it (companions on Construct work help).");
+                Tip(Controls.Keys($"Mark the {thing.Label} to be broken up for {salvage}. Then hold ~F~ at it (companions on Construct work help)."));
         }
         else
         {
-            TextC(Warn, $"Marked to take apart for {salvage}: hold F at it.");
+            TextC(Warn, Controls.Keys($"Marked to take apart for {salvage}: hold ~F~ at it."));
             if (ImGui.Button("Keep it"u8, in _autoSize))
                 Issue(new DeconstructOrderCommand(thing.Cell, false));
         }
@@ -806,16 +856,16 @@ public sealed partial class VillageGame
             // Only hands-on work waits for the key; walking to a bed or eating just happens.
             text = mind.Job.Report;
             if (!w.Get<Avatar>(_avatar).WorkHeld && mind.Job.IsWorking(_sim.Clock.Tick))
-                (key, hold) = (mind.Job is DigJob ? "C" : "F", true);
+                (key, hold) = (CapFor(mind.Job is DigJob ? Act.Dig : Act.Use), true);
         }
         else if (WorkTarget() is { Kind: not AvatarActionKind.None } action)
-            (key, text) = ("F", action.Label);
-        else if (_tool == ToolKind.Select && !Host.Input.MouseCaptured && ClickTarget() is { Action.Kind: not AvatarActionKind.None } click)
+            (key, text) = (CapFor(Act.Use), action.Label);
+        else if (_tool == ToolKind.Select && !Controls.UsingPad && !Host.Input.MouseCaptured && ClickTarget() is { Action.Kind: not AvatarActionKind.None } click)
             (key, text) = ("Click", click.Action.Label); // out of reach: a click walks over
         else if (WorkTarget(AvatarTool.Drop) is { Kind: AvatarActionKind.PutDown } drop)
-            (key, text) = ("G", drop.Label);
+            (key, text) = (CapFor(Act.Drop), drop.Label);
         else if (_sim.Map.InBounds(_hoverBlock) && AvatarSystem.ActionAt(_sim, _avatar, _hoverBlock, AvatarTool.Dig) is { Kind: not AvatarActionKind.None } dig)
-            (key, text) = ("C", dig.Label); // only when pointing at a block in reach, so it isn't offered everywhere
+            (key, text) = (CapFor(Act.Dig), dig.Label); // only when pointing at a block in reach, so it isn't offered everywhere
         else if (_sim.Map.InBounds(_hoverBlock) && _sim.Map.IsSolid(_sim.Map.Idx(_hoverBlock))
                  && Mining.ShownBlock(_sim, _sim.Map.Idx(_hoverBlock)) is var rock && Mining.BreakProblem(_sim, _avatar, rock) is { } why
                  && Map.Distance(_sim.World.Get<Position>(_avatar).Cell, _hoverBlock) <= 2)

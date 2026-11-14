@@ -64,6 +64,12 @@ public sealed class Settings
     /// <summary>Hosting also opens the village through the relay, with a join code to share.</summary>
     public bool HostOnline { get; set; } = true;
 
+    /// <summary>
+    /// Rebound controls, by action id (<see cref="Controls"/>): each action's whole list, as text
+    /// ("Key:Q", "Pad:LB"). Only what differs from the defaults; null for none.
+    /// </summary>
+    public Dictionary<string, string[]>? Bindings { get; set; }
+
     public const float MinUiScale = 0.75f, MaxUiScale = 2f;
     public const float MinPanSpeed = 0.25f, MaxPanSpeed = 3f;
 
@@ -94,7 +100,12 @@ public sealed class Settings
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public Settings Clone() => (Settings)MemberwiseClone();
+    public Settings Clone()
+    {
+        var copy = (Settings)MemberwiseClone();
+        copy.Bindings = Bindings?.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray());
+        return copy;
+    }
 
     /// <summary>Keep values in range, whatever a hand-edited file says.</summary>
     public Settings Sanitized()
@@ -117,6 +128,7 @@ public sealed class Settings
         s.EffectsVolume = Unit(s.EffectsVolume, 1f);
         s.AmbienceVolume = Unit(s.AmbienceVolume, 0.8f);
         s.VoiceVolume = Unit(s.VoiceVolume, 0.8f);
+        s.Bindings = Controls.Sanitize(s.Bindings);
         s.RelayServer = (s.RelayServer ?? "").Trim();
         if (s.RelayServer.Length > 200)
             s.RelayServer = "";

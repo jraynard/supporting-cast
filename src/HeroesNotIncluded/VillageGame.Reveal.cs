@@ -46,6 +46,7 @@ public sealed partial class VillageGame
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in middle);
         ScreenFit.Next();
         Panel.Begin("The season's end###reveal", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse);
+        PadWindow("###reveal", () => _revealHidden = true);
 
         using (Gui.HeaderFont())
             TextC(s.Outcome == RoundOutcome.Won ? Theme.Good : Theme.Bad, s.Headline);

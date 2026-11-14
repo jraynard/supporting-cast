@@ -183,6 +183,7 @@ public sealed partial class VillageGame
             ImGui.SetNextWindowPos(in center, ImGuiCond.Always, in middle);
             ScreenFit.Next();
             Narsil.Ui.Panel.Begin("Disconnected###coop-ended", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
+            PadWindow("###coop-ended", null);
             Wrapped($"The game with {session.SessionName} ended: {reason}.");
             if (ImGui.Button("Back to the title screen"u8, in _autoSize))
                 Host.SwitchTo(new TitleGame());
@@ -299,6 +300,7 @@ public sealed partial class VillageGame
         ImGui.SetNextWindowPos(in center, ImGuiCond.Always, in middle);
         ScreenFit.Next();
         Narsil.Ui.Panel.Begin("Who are you?###coop-creator", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
+        PadWindow("###coop-creator", null);
         if (_characterRequested)
         {
             TextC(Theme.Dim, "Arriving...");

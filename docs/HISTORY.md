@@ -1075,3 +1075,27 @@ shared); fights stay real time, Souls-lite.
   heard flying, a miss included; an early click looses once the bow's drawn; the aim line is a
   ribbon on the ground.
 
+### Control pass: rebinding and the gamepad (2026-11-13)
+- **Actions, not keys** (Narsil `Platform/Bindings`): `ActionMap` answers "is guard held?" over keys,
+  mouse and pad; `ActionDef`s carry a context so a key may mean two things where they're never live
+  together (Space dashes in a fight and works a mini-game), and `Conflicts` reports only real clashes.
+  The game's actions are `Controls` (`Act` ids): the keyboard defaults are the old keys. Every in-world
+  read went over to them, and every prompt, hint and the controls card show what's bound, for the
+  device last touched (`Controls.Glyph`, `Keys` for prose with `~F~` marks, `WorkKeys` for the
+  mini-games' hint rows, `Cue` for the mix game's letters).
+- **Rebinding:** Settings has a Controls tab (Narsil `Ui/BindingsEditor`): a keyboard-and-mouse and a
+  gamepad column, click and press. Saved as text in `settings.json` (`Bindings`, only what differs).
+  The god-mode toolbar's letters, Ctrl+speed and the F-keys stay fixed.
+- **The gamepad** (Narsil `Platform/Gamepad`, GLFW's mapped pads), Souls-style: the left stick walks
+  (any direction, not eight), the right stick aims; RT strikes, LT swings heavy or draws a bow, LB
+  guards, B dashes, Y draws, A uses, X digs. At hands-on work A works, the stick steers, X is the other
+  action and the runes are the d-pad and shoulders.
+- **The wheel:** hold RB, lean the right stick, let go: the panels, the hotbar's stacks, put down,
+  sleep, build. **Start** opens a menu of the top bar's things.
+- **Menus from the pad:** while a window that takes input is open, ImGui's gamepad navigation has the
+  pad (`ImGuiLayer.GamepadNav`; the world hears nothing meanwhile), the newest takes the focus and B
+  closes it. Inventory slots are buttons now, so the d-pad lands on them; tooltips show on focus. The
+  title screen is navigable throughout.
+- The controls card is two columns and fits 1280x800.
+- `BindingsTests` (Narsil), `ControlsTests`. No sim change: bench hashes as before.
+

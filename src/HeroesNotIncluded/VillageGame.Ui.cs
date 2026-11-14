@@ -82,6 +82,9 @@ public sealed partial class VillageGame
         DrawReveal();
         DrawControls();
         _settings.Draw();
+        DrawPadMenu();
+        DrawWheel();
+        EndPadUi();
         WatchForDanger();
     }
 
@@ -742,13 +745,13 @@ public sealed partial class VillageGame
             var drafted = mind.Drafted;
             if (w.Has<Avatar>(e))
             {
-                ImGui.TextDisabled("You (WASD to walk, hold F to work, C to dig, G to put down, N to sleep, Tab: inventory, 1–4: pack to hand)"u8);
+                ImGui.TextDisabled(Controls.Keys("You (~WASD~ to walk, hold ~F~ to work, ~C~ to dig, ~G~ to put down, ~N~ to sleep, ~Tab~: inventory, ~1-4~: pack to hand)"));
                 // Lie down where you stand: in the bed there, else on the ground.
                 var site = _sim.Map.Structure[_sim.Map.Idx(w.Get<Position>(e).Cell)];
                 var inBed = !site.IsNull && w.Get<Thing>(site).Def.Building is { IsBed: true };
                 if (mind.Asleep)
                     TextC(Dim, "Asleep (walk to wake up).");
-                else if (ImGui.Button(inBed ? $"Sleep in the {w.Get<Thing>(site).Label} (N)" : "Sleep here, on the ground (N)", in _autoSize))
+                else if (ImGui.Button(inBed ? Controls.Keys($"Sleep in the {w.Get<Thing>(site).Label} (~N~)") : Controls.Keys("Sleep here, on the ground (~N~)"), in _autoSize))
                     Issue(new SleepCommand(e));
             }
             else if (HasAvatar)

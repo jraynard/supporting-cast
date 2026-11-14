@@ -28,7 +28,7 @@ public sealed partial class VillageGame
             Issue(new FeelCommand(_avatar, patient));
         ImGui.EndDisabled();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            Tip(cantFeel != null ? Cap(cantFeel) + "." : "A/D run your hands from head to feet; linger where it hurts to make it out. Hold F to press in: slower, but it finds festering under a dressing.");
+            Tip(cantFeel != null ? Cap(cantFeel) + "." : Controls.Keys("~AD~ run your hands from head to feet; linger where it hurts to make it out. Hold ~F~ to press in: slower, but it finds festering under a dressing."));
         var cantBind = Bandaging.CantBind(_sim, _avatar, patient);
         if (Bandaging.WoundsToBind(_sim, patient) > 0)
         {
@@ -38,7 +38,7 @@ public sealed partial class VillageGame
                 Issue(new BandageCommand(_avatar, patient));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(cantBind != null ? Cap(cantBind) + "." : $"No mana needed: {Bandaging.BandagesOn(_sim, _avatar)} bandages to hand (yours, and any chest in reach). For each turn of cloth, hold F to pull it tight and let go in the band.");
+                Tip(cantBind != null ? Cap(cantBind) + "." : $"No mana needed: {Bandaging.BandagesOn(_sim, _avatar)} bandages to hand (yours, and any chest in reach). For each turn of cloth, hold {Controls.Glyph(Act.Use)} to pull it tight and let go in the band.");
         }
         if (wounds.Count == 0)
             return;
@@ -49,7 +49,7 @@ public sealed partial class VillageGame
             if (ImGui.SmallButton("Draw"u8))
                 Issue(new LayOnHandsCommand(_avatar, patient, wound.Key));
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip("Hold F to draw it into yourself, A/D to keep your composure in the band. It lands on your own body.");
+                Tip(Controls.Keys("Hold ~F~ to draw it into yourself, ~AD~ to keep your composure in the band. It lands on your own body."));
             ImGui.SameLine(0, 6);
             TextC(wound.Festering ? Theme.Bad : Theme.Text, $"{Cap(wound.Severity)} {wound.Feels} in the {wound.Part}{(wound.Festering ? ", festering" : "")}");
             ImGui.PopID();
@@ -117,7 +117,7 @@ public sealed partial class VillageGame
                     Issue(new WeaveCommand(_avatar, wound.Key));
                 ImGui.EndDisabled();
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                    Tip(why != null ? Cap(why) + "." : "Key the runes of the mending it wants (your book has them), each on a beat of your heart. F lets it go.");
+                    Tip(why != null ? Cap(why) + "." : Controls.Keys("Key the runes of the mending it wants (your book has them), each on a beat of your heart. ~F~ lets it go."));
                 ImGui.SameLine(0, 6);
                 TextC(wound.Festering ? Theme.Bad : wound.Absorbed ? Theme.Warn : Theme.Dim,
                     $"{Cap(wound.Severity)} {wound.Feels} in your {wound.Part}{(wound.Festering ? ", festering" : "")}");

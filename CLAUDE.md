@@ -144,6 +144,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
   only as the player perceives it (`PerceptionView`, `SpeechSystem.Hear`), `WorkSounds` the
   mini-games from the session in hand. Never key a sound to hidden state. `--check-art` audits
   sounds; `--mute` (or `NARSIL_AUDIO=0`) runs silent; `SC_SOUND_LOG=1` logs each sound.
+- Input: in-world controls are actions (`Controls`, ids in `Act`, over Narsil's `ActionMap`), never
+  `GlfwKey` literals, so they rebind and work from a gamepad; name keys in text through
+  `Controls.Glyph`/`Keys`. Windows the pad should drive call `PadWindow` after their Begin.
 - UI: the Narsil.Ui kit (`external/narsil/docs/UI.md`). Panels go through `Panel.Begin/End`, anything
   on screen in a round through `_hud` (`Hud`, anchored, stacked, nothing overlaps), sizes through
   `Gui.S`, colours from `Ui/Theme` (the brand's: keep ember rare). Mini-games open with

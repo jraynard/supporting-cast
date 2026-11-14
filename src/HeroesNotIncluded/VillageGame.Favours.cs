@@ -93,7 +93,7 @@ public sealed partial class VillageGame
 
         if (FavourBoard.BoardBy(_sim, _avatar).IsNull)
         {
-            TextC(Theme.Dim, "To ask a favour, pin a note to the notice board in the square (F at it).");
+            TextC(Theme.Dim, Controls.Keys("To ask a favour, pin a note to the notice board in the square (~F~ at it)."));
             return;
         }
         Gui.Rule();

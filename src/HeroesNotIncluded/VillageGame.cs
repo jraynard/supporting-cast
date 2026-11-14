@@ -353,8 +353,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         _cameraController = new Camera3DController(_camera)
         {
             Bounds = (float2.Zero, new float2(_sim.Map.Width, _sim.Map.Height)),
-            ZoomInKey = GlfwKey.Equal, // zoom without a scroll wheel: a Steam Deck button, say
-            ZoomOutKey = GlfwKey.Minus,
+            // Zoom without a scroll wheel comes from the zoom actions (HandleCameraActions).
         };
         _basePanSpeed = _cameraController.PanSpeed;
         _renderer = new WorldRenderer(Host.Atlas) { CutawayZ = Math.Clamp(StartCutaway, 1, _sim.Map.Depth - 1), Interp = _interp };
@@ -382,12 +381,16 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         RecordRound();
 
         var input = Host.Input;
+        Controls.Map.Update();
+        UpdatePadUi();
+        HandleWheel();
         HandleKeys(input);
         // WASD walks your character, not the camera: panning it here would also shift the cursor's cell.
         _cameraController.PanSpeed = HasAvatar ? 0f : _basePanSpeed * Settings.Current.CameraPanSpeed;
-        // Q is a guard and E a technique for a character: they turn the view on Z/X. Without one
-        // (god mode, the demos) Z and X are the toolbar's, and the view turns on Q/E as before.
-        (_cameraController.RotateLeftKey, _cameraController.RotateRightKey) = HasAvatar ? (GlfwKey.Z, GlfwKey.X) : (GlfwKey.Q, GlfwKey.E);
+        // Q is a guard for a character: the view turns on its own actions (Z/X, the d-pad). Without
+        // one (god mode, the demos) Z and X are the toolbar's, and the view turns on Q/E as before.
+        (_cameraController.RotateLeftKey, _cameraController.RotateRightKey) = HasAvatar ? ((GlfwKey?)null, (GlfwKey?)null) : (GlfwKey.Q, GlfwKey.E);
+        HandleCameraActions();
         _cameraController.Update(input, dt);
 
         UpdateHover(input.MousePosition);
@@ -616,8 +619,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             if (input.WasKeyPressed(GlfwKey.Number2)) SetSpeed(2);
             if (input.WasKeyPressed(GlfwKey.Number3)) SetSpeed(3);
         }
-        // Esc puts work down (VillageGame.Work.cs) before it does anything else.
-        if (input.WasKeyPressed(GlfwKey.Escape) && !Working)
+        // Back (Esc, B) puts work down (VillageGame.Work.cs) and closes a menu (VillageGame.Pad.cs)
+        // before it does anything else; with a weapon out, the pad's B is a dash.
+        if (Controls.Map.Pressed(Act.Back) && !Working && !(WeaponDrawn && Controls.Map.PadPressed(Act.Dash)))
         {
             if (_tool != ToolKind.Select)
                 SetTool(ToolKind.Select);
@@ -633,10 +637,11 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             if (input.WasKeyPressed(GlfwKey.F3)) _renderer.ShowPaths = !_renderer.ShowPaths;
             if (input.WasKeyPressed(GlfwKey.F4)) _renderer.ShowDarkness = !_renderer.ShowDarkness;
         }
-        if (input.WasKeyPressed(GlfwKey.RightBracket) || input.WasKeyPressed(GlfwKey.PageUp)) SetCutaway(_renderer.CutawayZ + 1);
-        if (input.WasKeyPressed(GlfwKey.LeftBracket) || input.WasKeyPressed(GlfwKey.PageDown)) SetCutaway(_renderer.CutawayZ - 1);
-        if (input.WasKeyPressed(GlfwKey.Home)) FollowLevel();
-        if (input.WasKeyPressed(GlfwKey.Backslash)) ToggleRoofs();
+        var map = Controls.Map;
+        if (map.Pressed(Act.LevelUp)) SetCutaway(_renderer.CutawayZ + 1);
+        if (map.Pressed(Act.LevelDown)) SetCutaway(_renderer.CutawayZ - 1);
+        if (map.Pressed(Act.LevelFollow)) FollowLevel();
+        if (map.Pressed(Act.Roofs)) ToggleRoofs();
         if (input.WasKeyPressed(GlfwKey.F10))
         {
             Settings.Current.Hd2d = !Settings.Current.Hd2d;
@@ -663,6 +668,19 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             CycleShape();
         if (_tool == ToolKind.PlaceBuilding && _toolPlan != null && input.WasKeyPressed(GlfwKey.C))
             _planVariant[_toolPlan] = (PlanVariant(_toolPlan) + 1) % _toolPlan.Variants.Count;
+    }
+
+    /// <summary>
+    /// The camera's actions: zoom in any mode, and with a character the quarter turns (without one,
+    /// Q/E turn it as ever). Not at hands-on work, where the d-pad's runes are.
+    /// </summary>
+    private void HandleCameraActions()
+    {
+        var map = Controls.Map;
+        var free = !Working;
+        _cameraController.ZoomHeld = free ? (map.Down(Act.ZoomIn) ? 1f : 0f) - (map.Down(Act.ZoomOut) ? 1f : 0f) : 0f;
+        if (HasAvatar && free)
+            _cameraController.Turn = (map.Pressed(Act.TurnRight) ? 1 : 0) - (map.Pressed(Act.TurnLeft) ? 1 : 0);
     }
 
     /// <summary>Pick a level by hand: the view stays there until Home hands it back to <see cref="FollowLevel"/>.</summary>

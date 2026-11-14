@@ -19,23 +19,25 @@ public sealed partial class VillageGame
     private bool _guardSent;
 
     /// <summary>
-    /// The fight's keys (<see cref="Sim.Combat.Blows"/>): R draws or sheathes your weapon; drawn,
-    /// hold Q (or V) to guard, raised just as a blow lands to parry it, and Space dashes clear. Each
-    /// is stamped with the tick it was pressed on here, so in co-op a parry counts from when you
-    /// pressed it, not when it arrived. The blows themselves are the mouse's (<see cref="HandleFreeMouse"/>).
+    /// The fight's actions (<see cref="Sim.Combat.Blows"/>): Draw (R, Y) draws or sheathes your
+    /// weapon; drawn, hold Guard (Q or V, LB), raised just as a blow lands to parry it, and Dash
+    /// (Space, B) dashes clear. Each is stamped with the tick it was pressed on here, so in co-op a
+    /// parry counts from when you pressed it, not when it arrived. The blows themselves are
+    /// <see cref="HandleFreeMouse"/>'s.
     /// </summary>
     private void HandleCombatKeys(Input input)
     {
         var tick = _sim.Clock.Tick;
-        if (input.WasKeyPressed(GlfwKey.R) && _tool == ToolKind.Select)
+        var map = Controls.Map;
+        if (map.Pressed(Act.Draw) && _tool == ToolKind.Select)
             Issue(new DrawWeaponCommand(_avatar, !WeaponDrawn));
-        var guard = WeaponDrawn && (input.IsKeyDown(GlfwKey.Q) || input.IsKeyDown(GlfwKey.V));
+        var guard = WeaponDrawn && map.Down(Act.Guard);
         if (guard != _guardSent)
         {
             Issue(new GuardCommand(_avatar, guard, tick));
             _guardSent = guard;
         }
-        if (WeaponDrawn && input.WasKeyPressed(GlfwKey.Space))
+        if (WeaponDrawn && map.Pressed(Act.Dash))
         {
             var (ax, ay, az) = Here();
             Issue(new DodgeCommand(_avatar, _wish.X, _wish.Y, tick, ax, ay, az));
@@ -56,25 +58,36 @@ public sealed partial class VillageGame
         _hud.Next(Anchor.Bottom);
         Panel.Begin("##fight-hint", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs);
         _hud.Took();
+        var (draw, strike, heavy, guard, dash) = (Controls.Glyph(Act.Draw), Press(Act.Strike), Press(Act.Heavy), Controls.Glyph(Act.Guard), Controls.Glyph(Act.Dash));
+        var aim = Controls.UsingPad ? "the right stick" : "the mouse";
         if (!WeaponDrawn)
         {
-            TextC(Theme.Warn, armed ? "Press R to draw your weapon." : "Press R to put up your fists.");
+            TextC(Theme.Warn, armed ? $"Press {draw} to draw your weapon." : $"Press {draw} to put up your fists.");
             ImGui.SameLine(0, Gui.S(10));
-            TextC(Theme.Dim, "Then the mouse fights: aim with it, left click to strike, right click to swing heavy.");
+            TextC(Theme.Dim, $"Then aim with {aim}, {strike} to strike, {heavy} to swing heavy.");
             Panel.End();
             return;
         }
-        TextC(Theme.Warn, Archery.Bow(_sim, _avatar) != null ? "Hold right click to draw and aim, left click to loose once it's drawn."
-            : armed ? "Left click strikes the way you aim, right click swings heavy." : "Fists only: left click to strike.");
+        TextC(Theme.Warn, Archery.Bow(_sim, _avatar) != null ? $"Hold {heavy} to draw and aim, {strike} to loose once it's drawn."
+            : armed ? $"{Cap(strike)} strikes the way you aim, {heavy} swings heavy." : $"Fists only: {strike} to strike.");
         ImGui.SameLine(0, Gui.S(10));
         var shoots = w.TryGet<Equipment>(foe, out var theirs) && w.IsAlive(theirs.Weapon) && w.Get<Thing>(theirs.Weapon).Def.Weapon is { Ranged: true };
         TextC(Theme.Dim, Sim.Combat.Blows.IsDragon(_sim, foe)
-            ? "Hold Q to guard (it takes only some of it). Space dashes clear: late, against a dragon."
+            ? $"Hold {guard} to guard (it takes only some of it). {dash} dashes clear: late, against a dragon."
             : shoots
-                ? "Arrows can't be parried: hold Q to guard, facing them, or Space to dash clear."
-                : "Hold Q to guard, facing the blow; raise it as it lands to parry. Space dashes clear.");
+                ? $"Arrows can't be parried: hold {guard} to guard, facing them, or {dash} to dash clear."
+                : $"Hold {guard} to guard, facing the blow; raise it as it lands to parry. {dash} dashes clear.");
         Panel.End();
     }
+
+    /// <summary>An action's binding as it reads in a sentence: "left click" for the mouse, else its key cap.</summary>
+    private static string Press(string id) => Controls.Glyph(id) switch
+    {
+        "LMB" => "left click",
+        "RMB" => "right click",
+        "MMB" => "middle click",
+        var g => g,
+    };
 
     /// <summary>Your character's moving freely (<see cref="FreeMover"/>): always, once the sim's had its first tick.</summary>
     private bool FreeMoving => HasAvatar && _sim.World.Has<FreeMover>(_avatar);
@@ -109,7 +122,17 @@ public sealed partial class VillageGame
         var wish = new float2(right.X * x + ahead.X * y, right.Y * x + ahead.Y * y);
         var len = MathF.Sqrt(wish.X * wish.X + wish.Y * wish.Y);
         _wish = len > 0.01f ? wish * (1f / len) : float2.Zero;
-        if (!ImGui.GetIO().WantCaptureMouse && !Host.Input.MouseCaptured)
+        if (Controls.UsingPad)
+        {
+            // The right stick aims, turned with the camera as the walk is; let go, you keep facing
+            // where you last aimed, or where you walk.
+            var stick = Host.Gamepad.RightStick;
+            if (!WheelOpen && stick != float2.Zero)
+                _aim = MathF.Atan2(right.Y * stick.X + ahead.Y * stick.Y, right.X * stick.X + ahead.X * stick.Y);
+            else if (_wish != float2.Zero)
+                _aim = MathF.Atan2(_wish.Y, _wish.X);
+        }
+        else if (!ImGui.GetIO().WantCaptureMouse && !Host.Input.MouseCaptured)
         {
             var me = w.Get<Position>(_avatar).Pos;
             var at = _camera.ScreenToPlane(input.MousePosition, me.Z + 0.5f);
@@ -130,25 +153,28 @@ public sealed partial class VillageGame
     }
 
     /// <summary>
-    /// The mouse, weapon drawn: the left button a quick blow the way you aim, the right a
-    /// heavy one. True if it took the click; sheathed, clicks walk and act as ever.
+    /// Blows, weapon drawn: Strike (left click, RT) a quick one the way you aim, Heavy (right
+    /// click, LT) a heavy one. True if it took the mouse: drawn, clicks never walk or act;
+    /// sheathed, they do as ever.
     /// </summary>
     private bool HandleFreeMouse(Input input)
     {
         if (!WeaponDrawn)
             _bowSent = false; // sheathed lets it down (DrawWeaponCommand)
-        if (!WeaponDrawn || ImGui.GetIO().WantCaptureMouse)
+        if (!WeaponDrawn)
             return false;
+        var mouse = input.IsMouseDown(MouseButton.Left) || input.IsMouseDown(MouseButton.Right)
+            || input.WasMousePressed(MouseButton.Left) || input.WasMousePressed(MouseButton.Right);
         if (Archery.Bow(_sim, _avatar) != null)
-            return HandleBow(input);
-        var light = input.WasMousePressed(MouseButton.Left);
-        var heavy = input.WasMousePressed(MouseButton.Right);
+            return HandleBow() || mouse;
+        var light = Controls.Map.Pressed(Act.Strike);
+        var heavy = Controls.Map.Pressed(Act.Heavy);
         if (light || heavy)
         {
             var (ax, ay, az) = Here();
             Issue(new AttackCommand(_avatar, heavy, _aim, ax, ay, az, _sim.Clock.Tick));
         }
-        return light || heavy || input.IsMouseDown(MouseButton.Left) || input.IsMouseDown(MouseButton.Right);
+        return light || heavy || mouse;
     }
 
     /// <summary>The bow drawn, as last told to the sim; a click while it was still drawing, to loose once it's ready.</summary>
@@ -159,10 +185,10 @@ public sealed partial class VillageGame
     /// where it'll fly), and click the left to loose: at once if it's drawn, else the moment it is,
     /// so long as it's still held. Hold on and the next is drawn.
     /// </summary>
-    private bool HandleBow(Input input)
+    private bool HandleBow()
     {
         var tick = _sim.Clock.Tick;
-        var draw = input.IsMouseDown(MouseButton.Right);
+        var draw = Controls.Map.Down(Act.Heavy);
         if (draw != _bowSent)
         {
             Issue(new BowCommand(_avatar, draw, false, _aim, tick));
@@ -170,7 +196,7 @@ public sealed partial class VillageGame
         }
         if (!draw)
             _looseQueued = false;
-        else if (input.WasMousePressed(MouseButton.Left))
+        else if (Controls.Map.Pressed(Act.Strike))
             _looseQueued = true;
         if (_looseQueued && CanLoose())
         {
@@ -178,7 +204,7 @@ public sealed partial class VillageGame
             Issue(new BowCommand(_avatar, true, true, _aim, tick, ax, ay, az));
             _looseQueued = false;
         }
-        return draw || input.IsMouseDown(MouseButton.Left);
+        return draw || Controls.Map.Down(Act.Strike);
     }
 
     /// <summary>Your bow's fully drawn and you've the wind to loose it.</summary>

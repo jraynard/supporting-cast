@@ -216,9 +216,10 @@ public sealed partial class VillageGame
         var open = true;
         ScreenFit.Next();
         Narsil.Ui.Panel.Begin($"{Cap(thing.Label)}###station", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
+        PadWindow("###station", () => _openStation = Entity.Null);
         DrawCraftUnderWay(_openStation, bench);
         if (bench.Active != null && bench.Stocked)
-            TextC(Good, "Everything's here: hold F at it to work.");
+            TextC(Good, Controls.Keys("Everything's here: hold ~F~ at it to work."));
         ImGui.Separator();
         var busy = !bench.Untouched && (bench.By != _avatar || bench.Active == null);
         foreach (var r in thing.Def.Recipes)
@@ -265,7 +266,7 @@ public sealed partial class VillageGame
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             Tip(blocker != null ? $"You can't yet: {blocker}."
                 : busy && !mine ? $"The {station.Label} is busy with {bench.Active!.Label}; call that off first."
-                : "Brings what you have of it from your hands, pack and any chest or wagon in reach; once it's all here, hold F to work.");
+                : "Brings what you have of it from your hands, pack and any chest or wagon in reach; once it's all here, hold " + Controls.Glyph(Act.Use) + " to work.");
         ImGui.SameLine(0, 8);
         ImGui.Text($"{Cap(r.Label)}");
         ImGui.SameLine(0, 6);
@@ -306,6 +307,7 @@ public sealed partial class VillageGame
         ImGui.SetNextWindowSizeConstraints(in size, in most, (ImGuiSizeCallback?)null, default);
         var open = true;
         Narsil.Ui.Panel.Begin($"{Cap(thing.Label)}###station", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
+        PadWindow("###station", () => _openStation = Entity.Null);
         if (bench.Active != null && bench.By != _avatar)
         {
             DrawCraftUnderWay(_openStation, bench);
@@ -413,7 +415,7 @@ public sealed partial class VillageGame
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 Tip(blocker != null ? $"You can't yet: {blocker}."
                     : busy ? $"The {thing.Def.Label} is busy with {bench.Active!.Label}; call that off first."
-                    : stocked ? "Takes what it needs from your hands, pack and any chest in reach and puts the billet in your tongs. Then F at the fire."
+                    : stocked ? "Takes what it needs from your hands, pack and any chest in reach and puts the billet in your tongs. Then " + Controls.Glyph(Act.Use) + " at the fire."
                     : "Brings what you have of it to the forge; the rest can follow.");
         }
 
@@ -458,7 +460,7 @@ public sealed partial class VillageGame
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             Tip(blocker != null ? $"You can't yet: {blocker}."
                 : busy ? $"The {station.Label} is busy with {bench.Active!.Label}; call that off first."
-                : stocked ? "Takes the ore and charcoal from your hands, pack and any chest in reach and puts them in the forge. Then F at the fire."
+                : stocked ? "Takes the ore and charcoal from your hands, pack and any chest in reach and puts them in the forge. Then " + Controls.Glyph(Act.Use) + " at the fire."
                 : "Brings what you have of it to the forge; the rest can follow.");
     }
 
@@ -513,7 +515,7 @@ public sealed partial class VillageGame
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                 Tip(Sim.Work.Smithing.AppliesToRepair(_sim, _avatar, _openStation)
                     ? "Take it in your tongs: heat it, then hammer out the chips on the anvil. It comes off dull: grind it after."
-                    : "Hold F at the station to work; the material is used once it's done.");
+                    : Controls.Keys("Hold ~F~ at the station to work; the material is used once it's done."));
             ImGui.SameLine(0, 8);
             var t = w.Get<Thing>(item);
             var whose = w.TryGet<Entrusted>(item, out var e) && w.IsAlive(e.Owner) && w.TryGet<Creature>(e.Owner, out var owner) ? $"{owner.Name}'s " : "";
@@ -537,6 +539,7 @@ public sealed partial class VillageGame
         var bookSize = new float2(Narsil.Ui.Gui.S(520), Narsil.Ui.Gui.S(460));
         ImGui.SetNextWindowSize(in bookSize, ImGuiCond.FirstUseEver);
         Narsil.Ui.Panel.Begin(HasAvatar ? "Your recipe book###recipes" : "The village's recipe book###recipes", ref open, ImGuiWindowFlags.NoCollapse);
+        PadWindow("###recipes", () => _showRecipeBook = false);
         var groups = _sim.Defs.AllRecipes.GroupBy(r => r.StationDef).OrderBy(g => g.Key == null ? -1 : g.Key.Index);
         foreach (var group in groups)
         {

@@ -310,6 +310,7 @@ public sealed class TitleGame : Game
         Audio.GameAudio.Update(Host, dt);
         if (Host.Input.WasKeyPressed(GlfwKey.F7))
             _error = ShaderReload.Reload(Host, _quads) is { } shaderError ? $"Shader error: {shaderError}" : null;
+        UpdatePad();
 
         if (_joining)
             _coopMenu?.Update(dt);
@@ -318,6 +319,37 @@ public sealed class TitleGame : Game
         _accumulator -= ticks;
         for (var i = 0; i < ticks; i++)
             _sim.Tick();
+    }
+
+    private string? _padFocused;
+
+    /// <summary>
+    /// The title is all menus: a pad drives them (ImGui's navigation) unless the controls page is
+    /// waiting for a button. The newest window takes the focus, and B closes it or leaves a submenu.
+    /// </summary>
+    private void UpdatePad()
+    {
+        Controls.Map.Update();
+        Host.ImGui.GamepadNav = !_settings.Capturing;
+        var top = _settings.IsOpen ? "Settings" : _showCredits ? "###credits" : "##title";
+        if (top != _padFocused)
+        {
+            ImGui.SetWindowFocus(top);
+            _padFocused = top;
+        }
+        var back = false;
+        foreach (var b in Controls.Map.Bindings(Act.Back))
+            back |= b.IsPad && Host.Gamepad.WasPressedRaw((Narsil.Platform.PadButton)b.Code);
+        if (!back || _settings.Capturing || ImGui.IsPopupOpen(""u8, ImGuiPopupFlags.AnyPopup))
+            return;
+        if (_settings.IsOpen)
+            _settings.Close();
+        else if (_showCredits)
+            _showCredits = false;
+        else if (_submenu != null && !_joining && !_picking && !_creating && !_reporting)
+            (_submenu, _submenuTitle) = (null, null);
+        else if (_reporting)
+            _reporting = false;
     }
 
     // Light uploads are transfers, recorded before the render pass opens.

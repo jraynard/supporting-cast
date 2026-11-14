@@ -96,6 +96,7 @@ public sealed partial class VillageGame
         ImGui.SetNextWindowPos(in pos, ImGuiCond.FirstUseEver, in middle);
         ScreenFit.Next();
         Narsil.Ui.Panel.Begin("The round is about to start###lobby", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse);
+        PadWindow("###lobby", null);
         var round = _sim.Round;
 
         foreach (var p in session.Players)
@@ -180,6 +181,7 @@ public sealed partial class VillageGame
         ImGui.SetNextWindowPos(in center, ImGuiCond.Always, in middle);
         ScreenFit.Next();
         Narsil.Ui.Panel.Begin("Who are you?###take-trade", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
+        PadWindow("###take-trade", null);
         if (_tradeRequested)
         {
             TextC(Theme.Dim, "Arriving...");

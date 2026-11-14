@@ -1,8 +1,9 @@
 # Playing on a Steam Deck
 
-The Linux build runs on the Deck as a non-Steam game. There's no native controller support yet:
-you play through a Steam Input layout that turns the Deck's controls into keys and a mouse. Every
-mini-game uses only F, W/A/S/D, Space and 1–9, so they map cleanly to buttons.
+The Linux build runs on the Deck as a non-Steam game. The game reads the Deck's controls as a
+gamepad, and the right trackpad stays a mouse. Every control can be rebound in **Settings →
+Controls**, for the keyboard and the pad alike, and every prompt shows what you've bound for the
+device you last touched.
 
 ## Installing
 
@@ -39,37 +40,41 @@ These flags never touch your settings file.
 
 ## The controller layout
 
-Open the game's controller settings (the controller icon on its library page) and build this,
-starting from the **Keyboard (WASD) and Mouse** template:
+In the game's controller settings (the controller icon on its library page), start from Steam's
+**Gamepad with Mouse Trackpad** template, so the Deck is a gamepad and the right trackpad is a mouse.
+The game does the rest:
 
-| Deck control | Sends | Does |
-|---|---|---|
-| Left stick | W A S D | walk |
-| Right trackpad | mouse (as a trackpad) | point |
-| Right trackpad click, or R2 | left click | walk there or act; select |
-| L2 | right click | an item's menu |
-| A | F | use, talk, work; hold for the mini-games |
-| B | Esc | stop, close, put the work down |
-| X | Space | the mini-game's other action |
-| Y | Tab | inventory |
-| L1 / R1 | Z / X | turn the camera |
-| D-pad up / down | = / − | zoom in / out |
-| D-pad left / right | [ / ] | level down / up |
-| L4 | Left Shift | held: Shift-click looks at someone |
-| R4 | Left Ctrl | held: one level up while building |
-| L5 / R5 | J / T | shop / talk |
-| View button | H | the controls card |
-| Menu button | Esc | |
-| Left trackpad | radial menu: 1 2 3 4 5 6, K, L, Y, N, C, G | hotbar and runes, quests, log, gift, sleep, dig, drop |
+| Deck control | Does |
+|---|---|
+| Left stick | walk (any direction); at work: steer |
+| Right stick | aim (weapon drawn); pick from the wheel |
+| A | use, talk, work; hold for the mini-games |
+| B | dash clear (weapon drawn); otherwise back, stop, close |
+| X | dig; at work: the mini-game's other action |
+| Y | draw or sheathe your weapon |
+| R2 (RT) | strike; loose a drawn bow |
+| L2 (LT) | swing heavy; held, draw a bow |
+| L1 (LB) | guard (hold); raised as a blow lands, a parry |
+| R1 (RB) | held: the action wheel (panels, your stacks, put down, sleep, build) |
+| D-pad left / right | turn the camera |
+| D-pad up / down | zoom in / out |
+| At work: d-pad, L1, R1 | the empath's six runes |
+| View | inventory |
+| Menu | the game menu (save, load, settings, controls, back to title) |
+| L3 | the controls card |
+| Right trackpad | the mouse: point, click to walk there or act |
 
-When you walk with the stick, F acts on what's in front of you, not on the spot where the
-trackpad cursor was left. Touch the trackpad again and F goes back to what's under the pointer.
+With a window open (inventory, a chest, a bench, the sign, settings, the menu), the d-pad moves
+through it, A picks and B closes it; tooltips show on whatever's picked. The title screen works
+the same way.
 
-Once the layout plays well, export it from the controller settings and commit it to
+With the pad, A acts on what's in front of you; touch the trackpad and the pointer counts again.
+The back buttons are free: put anything else on them in Steam Input, as keys (Left Shift for
+Shift-click looking, say; the controls card lists the rest). Once the layout plays well, export it from the controller settings and commit it to
 `tools/steamdeck/`. We can't produce a working file without a Deck.
 
 ## Known gaps
 
-- There's no native gamepad support or menu navigation with the d-pad. Menus need the trackpad.
-- Tooltips only show on hover. With the trackpad that works, but it's slow.
-- Placing buildings and area tools need a trackpad drag (hold R2).
+- Placing buildings and area tools need a trackpad drag.
+- Not yet played on a Deck: the stick deadzone, the wheel and each window's navigation want a
+  session on the device.

@@ -152,6 +152,8 @@ using var host = new GameHost(new GameHostOptions
         : null,
 });
 
+Controls.Attach(host);
+
 // Sound for every mode; silent with no device, or with --mute (screenshot runs, scripts).
 if (args.Contains("--mute"))
     Environment.SetEnvironmentVariable("NARSIL_AUDIO", "0");

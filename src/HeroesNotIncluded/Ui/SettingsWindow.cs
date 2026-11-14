@@ -30,10 +30,19 @@ public sealed class SettingsWindow(GameHost host)
     /// <summary>Passed by ref to ImGui overloads that take an optional size; null means "auto".</summary>
     private static float2? _autoSize = null;
 
+    /// <summary>The draft's controls, edited on the Controls tab and written back to the draft as they change.</summary>
+    private readonly ActionMap _controls = new(Controls.Defs) { Overlap = Controls.Overlaps, Input = host.Input, Pad = host.Gamepad };
+    private readonly BindingsEditor _bindings = new(host.Input, host.Gamepad);
+
+    /// <summary>The Controls tab is waiting for a key or button: the pad and Esc are its, not the menus'.</summary>
+    public bool Capturing => IsOpen && _bindings.Capturing;
+
     public void Open()
     {
         IsOpen = true;
         _draft = Settings.Current.Clone();
+        _controls.Load(_draft.Bindings);
+        _bindings.Cancel();
         _monitors = Display.Monitors(); // re-query: monitors come and go
     }
 
@@ -98,6 +107,13 @@ public sealed class SettingsWindow(GameHost host)
                 GameplayTab();
                 ImGui.EndTabItem();
             }
+            if (ImGui.BeginTabItem("Controls"u8, ImGuiTabItemFlags.None))
+            {
+                ControlsTab();
+                ImGui.EndTabItem();
+            }
+            else
+                _bindings.Cancel();
             if (ImGui.BeginTabItem("Network"u8, ImGuiTabItemFlags.None))
             {
                 NetworkTab();
@@ -111,7 +127,7 @@ public sealed class SettingsWindow(GameHost host)
         ImGui.Separator();
         Footer(ref open);
 
-        if (ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows) && ImGui.IsKeyPressed(ImGuiKey.Escape, false))
+        if (!_bindings.Capturing && ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows) && ImGui.IsKeyPressed(ImGuiKey.Escape, false))
             open = false;
         Narsil.Ui.Panel.End();
         if (!open && IsOpen)
@@ -123,7 +139,10 @@ public sealed class SettingsWindow(GameHost host)
     {
         var dirty = Settings.Serialize(_draft.Sanitized()) != Settings.Serialize(Settings.Current);
         if (ImGui.Button("Defaults"u8, in _autoSize))
+        {
             _draft = new Settings { Monitor = _draft.Monitor };
+            _controls.Load(null);
+        }
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
             ImGuiText.Tooltip("Reset every option on all tabs (press Apply to use them)");
 
@@ -412,11 +431,27 @@ public sealed class SettingsWindow(GameHost host)
             _draft.HostOnline = online;
     }
 
+    /// <summary>Every action's keys and gamepad buttons (<see cref="Controls"/>), rebindable.</summary>
+    private void ControlsTab()
+    {
+        var gap = new float2(1, S(4));
+        ImGui.Dummy(in gap);
+        ImGuiText.Colored(Narsil.Ui.Gui.Palette.Dim, "Click a key or button, then press the new one. With a pad, the left stick walks and the right stick aims.");
+        // As much as the screen has room for, so the footer stays on a Steam Deck's.
+        var screen = ImGui.GetIO().DisplaySize;
+        float2? size = new float2(MathF.Min(S(640), screen.X - S(80)), Math.Clamp(screen.Y - S(330), S(160), S(420)));
+        if (ImGui.BeginChild("controls"u8, in size, ImGuiChildFlags.None, ImGuiWindowFlags.None))
+            _bindings.Draw(_controls, ImGui.GetIO().DeltaTime);
+        ImGui.EndChild();
+        _draft.Bindings = _controls.Overrides.Count == 0 ? null : _controls.Save();
+    }
+
     private void Apply()
     {
         var before = Settings.Current;
         var next = _draft.Sanitized();
         Settings.Current = next;
+        Controls.Map.Load(next.Bindings);
         Audio.GameAudio.Apply(next);
         host.Renderer.SetVSync(next.VSync);
         host.MaxFps = next.MaxFps;

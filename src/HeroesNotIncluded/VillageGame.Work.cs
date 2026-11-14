@@ -26,18 +26,15 @@ public sealed partial class VillageGame
 
     private bool Working => HasAvatar && _sim.World.Has<WorkSession>(_avatar);
 
-    /// <summary>Numbered keys, for work that takes them (the empath's runes); the hotbar's while not working.</summary>
-    private static readonly GlfwKey[] RuneKeys =
-    [
-        GlfwKey.Number1, GlfwKey.Number2, GlfwKey.Number3, GlfwKey.Number4, GlfwKey.Number5,
-        GlfwKey.Number6, GlfwKey.Number7, GlfwKey.Number8, GlfwKey.Number9,
-    ];
-
     // Whether F has come up since the session in hand began (see UpdateWork).
     private long _fArmedFor = -1;
     private bool _fArmed;
 
-    /// <summary>A frame of hands-on work: F strikes, A/D and W/S steer, Space is the game's other action, Esc puts it down.</summary>
+    /// <summary>
+    /// A frame of hands-on work, through the actions (<see cref="Controls"/>): Use (F, A) strikes,
+    /// the walk (A/D and W/S, the left stick) steers, Work act (Space, X) is the game's other
+    /// action, the runes (1–9, the d-pad and shoulders) weave, and Back (Esc, B) puts it down.
+    /// </summary>
     private void UpdateWork(float dt)
     {
         if (!HasAvatar)
@@ -49,26 +46,26 @@ public sealed partial class VillageGame
         _workSteps += dt * SimClock.TicksPerSecond * speed;
         var steps = (int)_workSteps;
         _workSteps -= steps;
-        var input = Host.Input;
-        if (Working && input.WasKeyPressed(GlfwKey.Escape))
+        var map = Controls.Map;
+        if (Working && map.Pressed(Act.Back))
             Issue(new StopWorkCommand(_avatar));
         var live = speed > 0 && Working;
-        var axis = !live ? 0 : (input.IsKeyDown(GlfwKey.D) ? 1 : 0) - (input.IsKeyDown(GlfwKey.A) ? 1 : 0);
-        var axis2 = !live ? 0 : (input.IsKeyDown(GlfwKey.S) ? 1 : 0) - (input.IsKeyDown(GlfwKey.W) ? 1 : 0);
+        var axis = !live ? 0 : (map.Down(Act.WalkRight) ? 1 : 0) - (map.Down(Act.WalkLeft) ? 1 : 0);
+        var axis2 = !live ? 0 : (map.Down(Act.WalkDown) ? 1 : 0) - (map.Down(Act.WalkUp) ? 1 : 0);
         // The F that started a job doesn't also work it: a new session waits for F to come up
         // before a press or hold counts (else a long press to start the quench plunges the piece).
         var session = Working ? _sim.World.Get<WorkSession>(_avatar).StartTick : -1;
         if (session != _fArmedFor)
             (_fArmedFor, _fArmed) = (session, false);
-        if (!input.IsKeyDown(GlfwKey.F))
+        if (!map.Down(Act.Use))
             _fArmed = true;
         var f = _fArmed && speed > 0;
         var rune = -1;
-        for (var k = 0; live && k < RuneKeys.Length; k++)
-            if (input.WasKeyPressed(RuneKeys[k]))
+        for (var k = 0; live && k < Act.Runes.Length; k++)
+            if (map.Pressed(Act.Runes[k]))
                 rune = k;
-        var act = live && input.WasKeyPressed(GlfwKey.Space);
-        _work.Update(_sim, _avatar, steps, f && input.WasKeyPressed(GlfwKey.F), f && live && input.IsKeyDown(GlfwKey.F), axis, Issue, axis2, rune, act);
+        var act = live && map.Pressed(Act.WorkAct);
+        _work.Update(_sim, _avatar, steps, f && map.Pressed(Act.Use), f && live && map.Down(Act.Use), axis, Issue, axis2, rune, act);
     }
 
     private void DrawWork()
@@ -383,8 +380,51 @@ public sealed partial class VillageGame
         _hud.Next(Anchor.Bottom);
         Panel.Begin($"{title}###work", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
         _hud.Took();
-        Gui.Hints(hints);
+        Gui.Hints([.. hints.Select(h => (WorkKeys(h.Keys), h.Does))]);
         ImGui.Spacing();
+    }
+
+    /// <summary>
+    /// A mini-game's hint keys as the player has them bound: the games name the default keys
+    /// ("F", "A/D", "Space", "Esc", "1-6"), and this turns them into the bound caps for the device in use.
+    /// </summary>
+    private static string WorkKeys(string keys) => keys switch
+    {
+        "F" => Controls.Glyph(Act.Use),
+        "A" => Controls.Glyph(Act.WalkLeft),
+        "D" => Controls.Glyph(Act.WalkRight),
+        "A/D" => Controls.Pair(Act.WalkLeft, Act.WalkRight),
+        "W/S" => Controls.Pair(Act.WalkUp, Act.WalkDown),
+        "WASD" => Controls.Walk(),
+        "Space" => Controls.Glyph(Act.WorkAct),
+        "Esc" => Controls.Glyph(Act.Back),
+        "F A D" => $"{Controls.Cue('F')} {Controls.Cue('A')} {Controls.Cue('D')}",
+        _ when keys.Length == 3 && keys[1] == '-' && char.IsDigit(keys[0]) && char.IsDigit(keys[2]) => RuneKeys(keys[0] - '1', keys[2] - '1'),
+        _ => keys,
+    };
+
+    /// <summary>
+    /// Runes first..last as caps: "1-6" while they're the number keys, "D-pad" for four on the
+    /// d-pad's four ways, else each as bound (runes with nothing on the device in use left out).
+    /// </summary>
+    private static string RuneKeys(int first, int last)
+    {
+        var pad = Controls.UsingPad;
+        var caps = Act.Runes[first..(last + 1)]
+            .Select(r => Controls.Map.Bindings(r).FirstOrDefault(b => b.IsPad == pad) is { Kind: not Narsil.Platform.BindingKind.None } b ? b.Glyph : "")
+            .Where(c => c.Length > 0).ToList();
+        if (caps.Count == 0)
+            return "";
+        if (caps.Count == last - first + 1 && caps.Select((c, i) => c == (first + i + 1).ToString()).All(x => x))
+            return $"{caps[0]}-{caps[^1]}";
+        var dpad = caps.FindIndex(c => c.StartsWith('D') && c.Length == 2);
+        if (dpad >= 0 && caps.Skip(dpad).Take(4).Count(c => c.StartsWith('D') && c.Length == 2) == 4)
+            caps.RemoveRange(dpad, 4);
+        else
+            dpad = -1;
+        if (dpad >= 0)
+            caps.Insert(dpad, "D-pad");
+        return string.Join("/", caps);
     }
 
     private static void EndWork() => Panel.End();

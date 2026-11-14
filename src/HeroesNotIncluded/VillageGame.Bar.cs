@@ -355,7 +355,7 @@ public sealed partial class VillageGame
                 break;
             var c = new float2(x, midY);
             dl.AddCircleFilled(in c, Gui.S(14), Theme.U8(Theme.Accent, 0.85f), 20);
-            var label = s.Cues[i].ToString();
+            var label = Controls.Cue(s.Cues[i]);
             var ts = ImGui.CalcTextSize(label);
             var tp = c - ts * 0.5f;
             dl.AddText(in tp, Theme.U8(Theme.Text), label);

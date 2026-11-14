@@ -144,7 +144,7 @@ public sealed partial class VillageGame
         Panel.Begin("The stew pot###pot", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
         _hud.Took();
         if (p.Empty)
-            TextC(Theme.Dim, "Empty. Bring it food from the larder: F at the pot puts in what you carry.");
+            TextC(Theme.Dim, Controls.Keys("Empty. Bring it food from the larder: ~F~ at the pot puts in what you carry."));
         else
         {
             Wrapped($"In it: {p.Contents}.");

@@ -289,6 +289,7 @@ public sealed partial class VillageGame
             if (!open) _saveWindow = SaveWindow.None;
             return;
         }
+        PadWindow("###saves", () => _saveWindow = SaveWindow.None);
 
         if (_saveWindow == SaveWindow.Save)
             DrawSaveForm();

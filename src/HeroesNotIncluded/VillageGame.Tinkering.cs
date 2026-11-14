@@ -248,9 +248,9 @@ public sealed partial class VillageGame
         }
 
         var (colour, say) = s.Strain > 0f ? (Theme.Bad, "Past the catch: it's straining! Let it creep back onto the brass, or latch it strained.")
-            : s.Catching ? (Theme.Good, "The pawl's in the brass teeth. Latch it now (Space).")
+            : s.Catching ? (Theme.Good, Controls.Keys("The pawl's in the brass teeth. Latch it now (~Space~)."))
             : s.Slipped > 0 ? (Theme.Warn, "It won't hold yet: the pawl slips. Wind on till the brass teeth reach it.")
-            : s.Clicks == 0 ? (Theme.Text, "Tap F to wind the spring a click at a time.")
+            : s.Clicks == 0 ? (Theme.Text, Controls.Keys("Tap ~F~ to wind the spring a click at a time."))
             : (Theme.Text, $"Wind on: the brass teeth are coming round to the pawl. {s.Clicks} {(s.Clicks == 1 ? "click" : "clicks")}.");
         TextC(colour, say);
         EndWork();
@@ -530,7 +530,7 @@ public sealed partial class VillageGame
             : s.Pushing < 0 && s.InBand ? (Theme.Warn, "The plug's pushing back against your finger: hold the tension (W).")
             : s.Pushing > 0 && s.InBand ? (Theme.Warn, "The plug gives under your finger: ease off a touch (S).")
             : clicked ? (Theme.Good, "Click. That one's set.")
-            : s.Feel > 0.6f ? (Theme.Good, s.InBand ? "It's stiffening under the pick: set it (F)." : "It's stiffening under the pick, but the tension's off.")
+            : s.Feel > 0.6f ? (Theme.Good, s.InBand ? Controls.Keys("It's stiffening under the pick: set it (~F~).") : "It's stiffening under the pick, but the tension's off.")
             : (Theme.Text, "Lift the pin slowly, feeling for where it stiffens.");
         TextC(tone, say);
         TextC(s.Slips > 0 ? Theme.Warn : Theme.Dim, $"Slips {s.Slips} of {PickSession.MaxSlips}");
@@ -553,7 +553,7 @@ public sealed partial class VillageGame
             return;
         var w = _sim.World;
         if (!HasAvatar || !w.IsAlive(_tinkerAt) || !AvatarSystem.InReach(_sim, w.Get<Position>(_avatar).Cell, _tinkerAt)
-            || Host.Input.WasKeyPressed(GlfwKey.Escape))
+            || Controls.Map.Pressed(Act.Back))
         {
             _tinkerAt = Entity.Null;
             return;
@@ -565,6 +565,7 @@ public sealed partial class VillageGame
         var label = w.Get<Thing>(_tinkerAt).Label;
         ScreenFit.Next();
         Panel.Begin($"{Cap(label)}###tinker", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
+        PadWindow("###tinker", () => _tinkerAt = Entity.Null);
         if (View.Wagon(_tinkerAt) is { } wagon)
             DrawWagonInside(wagon);
         else
@@ -606,7 +607,7 @@ public sealed partial class VillageGame
                 Issue(new PickDoorCommand(_avatar, door));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(why != null ? Cap(why) + "." : "A/D lift the pin; F sets it where it gives most. A tight lock gives little room.");
+                Tip(why != null ? Cap(why) + "." : Controls.Keys("~AD~ lift the pin; ~F~ sets it where it gives most. A tight lock gives little room."));
         }
     }
 
@@ -621,7 +622,7 @@ public sealed partial class VillageGame
                 Issue(new TrueWheelCommand(_avatar, _tinkerAt));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(why != null ? Cap(why) + "." : "As each spoke comes past the gauge: F tightens it (where the rim bulges out), A slackens it (where it dips in).");
+                Tip(why != null ? Cap(why) + "." : Controls.Keys("As each spoke comes past the gauge: ~F~ tightens it (where the rim bulges out), ~A~ slackens it (where it dips in)."));
         }
         if ((wagon.Damage & WagonDamage.Axle) != 0)
         {
@@ -631,7 +632,7 @@ public sealed partial class VillageGame
                 Issue(new FitAxleCommand(_avatar, _tinkerAt));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(why != null ? Cap(why) + "." : "Hold F to file each part while it binds; D seats it at the fit.");
+                Tip(why != null ? Cap(why) + "." : Controls.Keys("Hold ~F~ to file each part while it binds; ~D~ seats it at the fit."));
         }
         if (wagon.Damage == WagonDamage.None)
             TextC(Theme.Good, "It's sound.");
@@ -654,7 +655,7 @@ public sealed partial class VillageGame
                 Later(new CopyKeyCommand(_avatar, bench, item));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(why != null ? Cap(why) + "." : "File a blank from an iron bar to this key's bits: hold F to file, Space to set each.");
+                Tip(why != null ? Cap(why) + "." : Controls.Keys("File a blank from an iron bar to this key's bits: hold ~F~ to file, ~Space~ to set each."));
         }
         if (View.Curio(item) is { } curio)
         {
@@ -665,7 +666,7 @@ public sealed partial class VillageGame
                 Later(new AppraiseCommand(_avatar, item));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip("A/D move the loupe along it; where the eye catches, hold F still to study it. The far end finishes.");
+                Tip(Controls.Keys("~AD~ move the loupe along it; where the eye catches, hold ~F~ still to study it. The far end finishes."));
             if (curio.Mine)
             {
                 if (ImGui.MenuItem("Talk over its worth..."u8))
@@ -701,7 +702,7 @@ public sealed partial class VillageGame
             return;
         var w = _sim.World;
         if (!HasAvatar || View.Curio(_curioTalk) is not { Mine: true } curio || !Inventory.OnPerson(_sim, _avatar, _curioTalk)
-            || Host.Input.WasKeyPressed(GlfwKey.Escape))
+            || Controls.Map.Pressed(Act.Back))
         {
             _curioTalk = Entity.Null;
             return;
@@ -712,6 +713,7 @@ public sealed partial class VillageGame
         var open = true;
         ScreenFit.Next();
         Panel.Begin($"{Cap(curio.Label)}###curio", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
+        PadWindow("###curio", () => _curioTalk = Entity.Null);
         TextC(curio.Doubts ? Theme.Warn : Theme.Text, curio.Doubts
             ? $"A fake, you'd say: worth {curio.Low} to {curio.High} silver as a curiosity."
             : $"You'd put it at {curio.Low} to {curio.High} silver.");
