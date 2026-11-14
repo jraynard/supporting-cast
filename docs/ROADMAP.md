@@ -43,7 +43,7 @@ Notes from playing; the healer first.
 - **A trade's training,** in solo: a walk through one trade's games and what each reading means,
   before a round asks for them under pressure.
 - Done: the ghost's speech crashed the game (a bubble over a speaker with no body); touchpad zoom
-  eases in, and the view stops short of the whole map with a character.
+  eases in, and the view stops short of the whole map with a character. Also steam deck d-pad fix.
 
 ### The cook pass
 Bring the cook up to the other trades (docs/DESIGN.md, "Cook"). The smith, healer and tinker each
