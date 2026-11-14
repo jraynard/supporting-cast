@@ -964,6 +964,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             w.Float(x.Rot);
             w.Bool(x.LooseWrap);
             w.Entity(x.Maker);
+            w.Bool(x.Keeps);
         }
         w.Byte((byte)m.Fed);
     }
@@ -1001,7 +1002,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         if (r.Version >= 21)
         {
             for (var n = r.Count(64); n > 0; n--)
-                m.Rations.Add(new Work.RationRecord(Math.Clamp(r.Float(), 0f, 1f), Math.Clamp(r.Float(), 0f, 1f), r.Bool(), r.Entity()));
+                m.Rations.Add(new Work.RationRecord(Math.Clamp(r.Float(), 0f, 1f), Math.Clamp(r.Float(), 0f, 1f), r.Bool(), r.Entity(), r.Version >= 25 && r.Bool()));
             var fed = r.Byte();
             m.Fed = Enum.IsDefined((RoadFood)fed) ? (RoadFood)fed : RoadFood.None;
         }

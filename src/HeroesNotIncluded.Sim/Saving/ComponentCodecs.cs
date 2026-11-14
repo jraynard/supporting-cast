@@ -599,7 +599,30 @@ internal static class ComponentCodecs
             WriteFlavour(w, x.Flavour);
             w.Entity(x.Maker);
             w.Bool(x.LooseWrap);
-        }, r => new Work.Ration { Quality = Math.Clamp(r.Float(), 0f, 1f), Flavour = ReadFlavour(r), Maker = r.Entity(), LooseWrap = r.Bool() }),
+            w.Bool(x.Keeps);
+        }, r => new Work.Ration
+        {
+            Quality = Math.Clamp(r.Float(), 0f, 1f), Flavour = ReadFlavour(r), Maker = r.Entity(), LooseWrap = r.Bool(),
+            Keeps = r.Version >= 25 && r.Bool(), // bread in rations came with format 25
+        }),
+        Codec("Dough", (w, d) =>
+        {
+            w.Float(d.Knead);
+            w.Long(d.MadeAt);
+            w.Entity(d.Maker);
+        }, r => new Work.Dough { Knead = Math.Clamp(r.Float(), 0f, 1f), MadeAt = r.Long(), Maker = r.Entity() }),
+        Codec("OvenLoad", (w, o) =>
+        {
+            w.Int(o.Loaves);
+            w.Float(o.Knead);
+            w.Float(o.Proved);
+            w.Float(o.Bake);
+            w.Entity(o.Maker);
+        }, r => new Work.OvenLoad
+        {
+            Loaves = Math.Clamp(r.Int(), 0, Work.Baking.LoavesPerDough), Knead = Math.Clamp(r.Float(), 0f, 1f),
+            Proved = Math.Clamp(r.Float(), 0f, 1000f), Bake = Math.Clamp(r.Float(), 0f, 2f), Maker = r.Entity(),
+        }),
         Codec("Flawed", (w, f) => w.Int((int)f.Flaw), r => new Work.Flawed { Flaw = (Work.PieceFlaw)r.Int() }),
         Codec("Stored", (w, s) => w.Entity(s.In), r => new Stored { In = r.Entity() }),
         Codec("Request", (w, q) =>

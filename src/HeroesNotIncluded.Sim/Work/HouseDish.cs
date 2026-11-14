@@ -21,6 +21,9 @@ public enum DishFault : byte
 
     /// <summary>Tastes of one thing only.</summary>
     Flat,
+
+    /// <summary>A loaf that didn't rise: badly kneaded, or proved too little or too long.</summary>
+    Heavy,
 }
 
 /// <summary>

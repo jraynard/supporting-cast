@@ -249,10 +249,16 @@ the rest follows in the order it's planned (docs/ROADMAP.md, "The cook pass").
   price, once the cook ticks them on (they start off, so a kitchen nobody roasts in is never asked
   for a roast). A plain meal order takes whatever's up on the hatch at the meal's price; about a
   third of diners ask for a dish on the menu by name instead, at its price, and only it will do.
+- *Built: the oven* (`Work/Baking`). A domed bread oven with its own small fire in the kitchen's
+  corner, fed with wood like any hearth. Two flour at the prep table are kneaded on the beat, from
+  one side then the other (A, D, ...): smooth and springy, or lumpy. The dough proves by itself,
+  read by eye: slack, rising, well risen (an hour or two), puffed up tall, sunk back on itself. Into
+  the oven, it's baked by smell alone, the door shut: raw dough, warm and yeasty, bread baking, a
+  golden crust, toasty, burning. Take it out on the golden crust; left in, it burns. Two loaves a
+  ball. Bread is on the menu, and it keeps: rations with a loaf in them turn half as fast.
 - *Then: more of the menu.*
   - **Prep, more of it:** butchering what the hunters bring in, plucking.
-  - **The oven:** bread and pies. Knead (rhythm), prove (a wait), bake by smell. Bread keeps: the
-    base for better rations. Porridge in the morning.
+  - **Pies** from the oven; porridge in the pot of a morning.
 - *Built: the rushes, and the town's hours* (from the first playtest). Adventurers want a meal at
   breakfast (7 to 9:30) and supper (6 to 9) whenever they're at all peckish, not only when
   starving, and come into town hungry from the road. They keep the town's hours: nobody rides in

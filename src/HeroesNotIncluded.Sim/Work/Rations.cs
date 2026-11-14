@@ -16,10 +16,13 @@ public struct Ration
     public Flavour Flavour;
     public Entity Maker;
     public bool LooseWrap;
+
+    /// <summary>There's bread in it: it keeps, turning half as fast on the road.</summary>
+    public bool Keeps;
 }
 
 /// <summary>Rations as they went out on a quest with their bearer (<c>Expeditions.MemberRecord</c>).</summary>
-public sealed record RationRecord(float Quality, float Rot, bool LooseWrap, Entity Maker);
+public sealed record RationRecord(float Quality, float Rot, bool LooseWrap, Entity Maker, bool Keeps = false);
 
 /// <summary>
 /// Rations for the road (docs/DESIGN.md, "Cook"): the cook's work that leaves town, as the healer's
@@ -86,12 +89,14 @@ public static class Rations
         var flavour = default(Flavour);
         var rot = 0f;
         var left = Portions;
+        var bread = false;
         foreach (var food in FoodOn(sim, packer))
         {
             if (left <= 0)
                 break;
             var def = w.Get<Thing>(food).Def;
             var n = Math.Min(left, w.Get<Stack>(food).Count);
+            bread |= def.Name == Baking.Bread;
             flavour += Flavour.Of(def.Flavour) * (def.Nutrition * n);
             rot += FoodPoisoning.RotOf(sim, food) * n;
             left -= n;
@@ -104,7 +109,7 @@ public static class Rations
         // How well it's made: mostly the packing, a little the food (a bundle of one thing is dull going).
         var quality = Math.Clamp(0.8f * handiwork + 0.2f * flavour.Balance, 0f, 1f);
         var item = sim.CreateItem(sim.Defs.Thing(Def), 1);
-        w.Add(item, new Ration { Quality = quality, Flavour = flavour.Shares, Maker = packer, LooseWrap = loose });
+        w.Add(item, new Ration { Quality = quality, Flavour = flavour.Shares, Maker = packer, LooseWrap = loose, Keeps = bread });
         w.Add(item, new Crafted { Quality = Crafting.QualityFrom(quality), Maker = packer });
         if (w.Has<Rot>(item))
             w.Get<Rot>(item).Progress = rot / Portions;
@@ -137,7 +142,7 @@ public static class Rations
         Carried(sim, who).Select(e =>
         {
             var r = sim.World.Get<Ration>(e);
-            return new RationRecord(r.Quality, FoodPoisoning.RotOf(sim, e), r.LooseWrap, r.Maker);
+            return new RationRecord(r.Quality, FoodPoisoning.RotOf(sim, e), r.LooseWrap, r.Maker, r.Keeps);
         }).ToList();
 
     /// <summary>
@@ -147,7 +152,7 @@ public static class Rations
     public static float RotWhenEaten(Simulation sim, RationRecord r, float hoursOut)
     {
         var days = sim.Defs.Thing(Def).RotDays;
-        var gained = days <= 0 ? 0f : hoursOut * 0.5f / 24f / days * (r.LooseWrap ? 2f : 1f);
+        var gained = days <= 0 ? 0f : hoursOut * 0.5f / 24f / days * (r.LooseWrap ? 2f : 1f) * (r.Keeps ? 0.5f : 1f);
         return Math.Min(1f, r.Rot + gained);
     }
 
@@ -172,7 +177,7 @@ public static class Rations
         foreach (var r in rations)
         {
             var item = sim.CreateItem(sim.Defs.Thing(Def), 1);
-            sim.World.Add(item, new Ration { Quality = r.Quality, Maker = r.Maker, LooseWrap = r.LooseWrap });
+            sim.World.Add(item, new Ration { Quality = r.Quality, Maker = r.Maker, LooseWrap = r.LooseWrap, Keeps = r.Keeps });
             sim.World.Add(item, new Crafted { Quality = Crafting.QualityFrom(r.Quality), Maker = r.Maker });
             if (sim.World.Has<Rot>(item))
                 sim.World.Get<Rot>(item).Progress = r.Rot;
@@ -201,6 +206,8 @@ public static class Rations
             return null;
         if (Choppable(sim, cook) is { IsNull: false } food)
             return $"Chop the {sim.World.Get<Thing>(food).Def.Label}";
+        if (!Baking.FlourIn(sim, cook).IsNull)
+            return "Knead some dough";
         return PortionsOn(sim, cook) >= Portions ? "Pack rations for the road" : null;
     }
 
@@ -212,6 +219,11 @@ public static class Rations
         if (Choppable(sim, cook) is { IsNull: false } food)
         {
             WorkSystem.Start(sim, cook, ChopSession.For(sim, table, food));
+            return;
+        }
+        if (Baking.FlourIn(sim, cook) is { IsNull: false } flour)
+        {
+            WorkSystem.Start(sim, cook, new KneadSession { Table = table, Flour = flour });
             return;
         }
         if (PortionsOn(sim, cook) < Portions)

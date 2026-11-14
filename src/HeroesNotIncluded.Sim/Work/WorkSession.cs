@@ -234,6 +234,8 @@ public abstract class WorkSession
             nameof(PackSession) => new PackSession(),
             nameof(ChopSession) => new ChopSession(),
             nameof(RoastSession) => new RoastSession(),
+            nameof(KneadSession) => new KneadSession(),
+            nameof(BakeSession) => new BakeSession(),
             nameof(WashSession) => new WashSession(),
             nameof(TapSession) => new TapSession(),
             nameof(MixSession) => new MixSession(),

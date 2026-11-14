@@ -209,6 +209,7 @@ public static class Cooking
         DishFault.Caught => "Tastes of the bottom of the pot.",
         DishFault.Underdone => "This isn't cooked through.",
         DishFault.Flat => "Filling. Tastes of one thing, mind.",
+        DishFault.Heavy => "Heavy as a brick, this bread.",
         _ => "Burnt, or bland, or both. I've eaten worse. Not often.",
     };
 

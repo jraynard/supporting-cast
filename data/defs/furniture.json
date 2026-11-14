@@ -152,6 +152,20 @@
       ]
     },
     {
+      // The kitchen's bread oven (Work.Baking): a domed brick oven with its own small fire, fed
+      // with wood like any hearth. Bread's baked in it by smell.
+      "name": "Oven", "label": "bread oven", "category": "Building", "solid": true, "sprite": "buildings/fireplace",
+      "description": "A domed brick oven with its own small fire. F with dough in hand puts it in to bake; after that, it's all in the smell.",
+      "maxHp": 160, "flammability": 0,
+      "building": { "staffOnly": true, "oven": true, "work": 150, "surfaceHeight": 0.7, "cost": [ { "def": "Stone", "count": 8 } ],
+                    "heatOutput": 200, "maxHeatTemp": 22, "lightRadius": 2,
+                    "fuel": { "def": "Wood", "capacity": 8, "burnPerDay": 6, "refuelAt": 0.5 } },
+      "model": [
+        { "min": [0.08, 0.08, 0], "max": [0.92, 0.92, 0.45], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.16, 0.16, 0.45], "max": [0.84, 0.84, 0.85], "top": "props/stone_block", "side": "props/stone_block", "front": "props/hearth_soot" }
+      ]
+    },
+    {
       // The kitchen's prep table (Work.PackSession): rations for the road are packed on it, three
       // portions of food wrapped and tied.
       "name": "PrepTable", "label": "prep table", "category": "Building", "solid": true, "sprite": "buildings/table",

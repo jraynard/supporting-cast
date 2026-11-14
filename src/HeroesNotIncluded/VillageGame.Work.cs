@@ -157,6 +157,12 @@ public sealed partial class VillageGame
             case RoastSession roast:
                 DrawRoast(roast);
                 return;
+            case KneadSession knead:
+                DrawKnead(knead);
+                return;
+            case BakeSession bake:
+                DrawBake(bake);
+                return;
             case WashSession wash:
                 DrawWash(wash);
                 return;
@@ -176,6 +182,7 @@ public sealed partial class VillageGame
                 DrawTongs();
                 DrawPotPanel();
                 DrawSpitPanel();
+                DrawOvenPanel();
                 DrawBarPanel();
                 return;
         }

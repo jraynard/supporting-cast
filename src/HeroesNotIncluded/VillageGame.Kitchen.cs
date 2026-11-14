@@ -210,6 +210,73 @@ public sealed partial class VillageGame
         EndWork();
     }
 
+    /// <summary>Kneading on the beat: the dough, pushed from one side then the other, and how the last push went.</summary>
+    private void DrawKnead(KneadSession s)
+    {
+        BeginWork(s.Title, ("A/D", "push from that side, on the beat"), ("Esc", "leave it"));
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(420, 110);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var max = min + size;
+        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+        // The dough squashes on the beat and springs back between.
+        var squash = 1f - (float)s.Off / (KneadSession.Beat / 2f);
+        var c = (min + max) * 0.5f;
+        var rx = Gui.S(48 + 18 * squash);
+        var ry = Gui.S(30 - 10 * squash);
+        dl.AddEllipseFilled(in c, new float2(rx, ry), new ImColor8(232, 214, 176, 255), 0f, 32);
+        var side = s.NextSide < 0 ? "~A~" : "~D~";
+        ImGui.Spacing();
+        TextC(s.Off <= KneadSession.Window ? Theme.Good : Theme.Dim, Controls.Keys($"Push {s.Pushed + 1} of {KneadSession.Pushes}: {side}"));
+        Bar("", s.Pushed / (float)KneadSession.Pushes, Theme.Accent);
+        EndWork();
+    }
+
+    /// <summary>Baking: the oven door's shut, so all there is is the smell.</summary>
+    private void DrawBake(BakeSession s)
+    {
+        BeginWork(s.Title, ("Space", "take it out"), ("Esc", "leave it in"));
+        TextC(Theme.Dim, "The door's shut. Go by the smell: out on a golden crust.");
+        ImGui.Spacing();
+        var colour = s.Smell switch
+        {
+            "a golden crust" => Theme.Good,
+            "toasty, getting dark" => Theme.Warn,
+            "burning!" => Theme.Bad,
+            _ => Theme.Text,
+        };
+        TextC(colour, $"It smells of {s.Smell}.");
+        if (!s.Lit)
+            TextC(Theme.Bad, "The oven's gone cold.");
+        EndWork();
+    }
+
+    /// <summary>The oven beside you, between times: whether there's bread in, and what it smells of.</summary>
+    private void DrawOvenPanel()
+    {
+        if (!HasAvatar)
+            return;
+        var at = _sim.World.Get<Position>(_avatar).Cell;
+        var map = _sim.Map;
+        KnownOven? seen = null;
+        for (var dy = -1; dy <= 1 && seen == null; dy++)
+        for (var dx = -1; dx <= 1 && seen == null; dx++)
+        {
+            var cell = new int3(at.X + dx, at.Y + dy, at.Z);
+            if (map.InBounds(cell) && map.Structure[map.Idx(cell)] is { IsNull: false } st && Baking.IsOven(_sim, st))
+                seen = View.Oven(st);
+        }
+        if (seen is not { Loaves: > 0 } o)
+            return;
+        _hud.Next(Anchor.Bottom);
+        Panel.Begin("The oven###oven", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
+        _hud.Took();
+        TextC(o.Smell == "burning!" ? Theme.Bad : Theme.Text, $"Bread's in. It smells of {o.Smell}.");
+        TextC(Theme.Dim, Controls.Keys("~F~ to stand by it and take it out."));
+        Panel.End();
+    }
+
     /// <summary>The spit beside you, between times: what's on it and how it looks.</summary>
     private void DrawSpitPanel()
     {

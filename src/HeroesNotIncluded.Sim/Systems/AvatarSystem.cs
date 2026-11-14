@@ -320,6 +320,8 @@ public sealed class AvatarSystem : ISimSystem
             return new(AvatarActionKind.Cook, packing, cell, site);
         if (Work.Roasting.StepAt(sim, avatar, site) is { } roasting && !sim.Reservations.IsReservedByOther(site, avatar))
             return new(AvatarActionKind.Cook, roasting, cell, site);
+        if (Work.Baking.StepAt(sim, avatar, site) is { } baking && !sim.Reservations.IsReservedByOther(site, avatar))
+            return new(AvatarActionKind.Cook, baking, cell, site);
 
         // Dirty crockery to the wash tub; a keg in your arms to a dry cask.
         if (Work.BarWork.StepAt(sim, avatar, site) is { } upkeep && !sim.Reservations.IsReservedByOther(site, avatar))
@@ -697,6 +699,8 @@ public sealed class AvatarSystem : ISimSystem
                     Work.Rations.Start(sim, avatar, action.Target);
                 else if (Work.Roasting.IsSpit(sim, action.Target))
                     Work.Roasting.Start(sim, avatar, action.Target);
+                else if (Work.Baking.IsOven(sim, action.Target))
+                    Work.Baking.Start(sim, avatar, action.Target);
                 else
                     Work.Cooking.Start(sim, avatar, action.Target);
                 break;

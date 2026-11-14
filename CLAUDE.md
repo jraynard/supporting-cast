@@ -84,7 +84,7 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     noisy sniff (`SniffSession`). Rations (`Work/Rations`, packed in `PackSession`) go out on quests
     like charms; a slack tie (`Ration.LooseWrap`) is hidden. A named pot's flavour is the inn's
     `HouseDish`: later pots that taste like it are it. Chopped food (`ChopSession`) cooks faster. The spit
-    (`Roasting`) roasts by crust colour; dishes beyond the meal are priced on the sign (`Shops/Menu`).
+    (`Roasting`) roasts by crust colour, the oven (`Baking`) bakes by smell; dishes beyond the meal are priced on the sign (`Shops/Menu`).
     Adventurers keep the town's hours (`ShopSystem.SmallHours`, `Mealtime`); `staffOnly` furniture
     keeps idlers out of a room. A fever
     (`Healing/FeverSystem`) is an injury that spreads and is quelled by the empath. Poured and

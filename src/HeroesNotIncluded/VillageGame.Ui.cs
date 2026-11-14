@@ -935,6 +935,8 @@ public sealed partial class VillageGame
         Bar("Condition", thing.Hp / thing.MaxHp, thing.Hp < thing.MaxHp * 0.5f ? Bad : Good);
         if (View.Tastes(e) is { } tastes)
             TextC(Dim, $"It tastes {tastes}.");
+        if (View.Dough(e) is { } rise)
+            TextC(Dim, $"It's {rise}.");
         DrawForSale(e, thing);
 
         var tile = _sim.LocationOf(e);

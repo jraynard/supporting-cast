@@ -399,6 +399,9 @@ public sealed class BuildingProps
     /// </summary>
     public bool StaffOnly { get; set; }
 
+    /// <summary>A bread oven with its own fire: dough baked in it by smell (<c>Work.Baking</c>).</summary>
+    public bool Oven { get; set; }
+
     /// <summary>A spit by the fire, meat roasted on it (<c>Work.Roasting</c>).</summary>
     public bool Spit { get; set; }
 

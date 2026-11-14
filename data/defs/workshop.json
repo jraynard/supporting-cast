@@ -121,6 +121,19 @@
       "description": "Meat and berries simmered over the hearth in its pot. Filling, and warming going down.",
       "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.2], "top": "props/meal_top", "side": "props/stone_block" } ]
     },
+    // Bread (Work.Baking): flour kneaded into dough at the prep table, proved, baked in the oven by
+    // smell. Bread is on the menu, and keeps: rations with bread in them turn half as fast.
+    { "name": "Flour", "label": "flour", "category": "Item", "mass": 0.5, "sprite": "items/fiber", "stackLimit": 20, "flammability": 0.5, "maxHp": 15,
+      "description": "Milled flour in a sack. Two scoops knead into a ball of dough at the prep table.",
+      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.3], "top": "props/linen", "side": "props/linen" } ] },
+    { "name": "Dough", "label": "dough", "category": "Item", "mass": 0.6, "sprite": "items/clay", "stackLimit": 1, "rotDays": 1, "flammability": 0.3, "maxHp": 10,
+      "description": "A ball of kneaded dough, proving. An hour or two, then into the oven before it sinks.",
+      "model": [ { "min": [0.3, 0.3, 0], "max": [0.7, 0.7, 0.2], "top": "props/linen", "side": "props/linen" } ] },
+    { "name": "Bread", "label": "bread", "category": "Item", "mass": 0.3, "sprite": "items/meal", "stackLimit": 10,
+      "nutrition": 0.2, "cooked": true, "rotDays": 6, "flavour": { "savoury": 0.5, "sweet": 0.5 }, "flammability": 0.5, "maxHp": 15,
+      "menu": { "price": 2, "worth": 0.7, "madeAt": "Oven", "asks": "A loaf of your bread, if it's fresh. {0} silver." },
+      "description": "A round loaf from the inn's oven. Keeps for days, and packs well for the road.",
+      "model": [ { "min": [0.26, 0.26, 0], "max": [0.74, 0.74, 0.22], "top": "props/planks", "side": "props/basket" } ] },
     // A roast off the spit (Work.Roasting), by the slice: a dish of its own on the menu (Shops.Menu),
     // asked for by name at its own price once the cook offers it. No bowl: a slice on a trencher.
     { "name": "Roast", "label": "roast", "category": "Item", "mass": 0.4, "sprite": "items/meat", "stackLimit": 10,

@@ -691,8 +691,7 @@ public class CookPassTests
         var (sim, me, _, _, _) = Inn();
         var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
         var roast = sim.Thing(Roasting.Dish);
-        var posted = Assert.Single(Perception.For(sim, me).Menu(inn));
-        Assert.Equal(roast, posted.Dish);
+        var posted = Perception.For(sim, me).Menu(inn).Single(d => d.Dish == roast);
         Assert.False(posted.Offered);
         Assert.Empty(Menu.Offered(sim, inn));
         sim.ApplyNow(new SetDishPriceCommand(me, inn, roast, 6, true));
@@ -726,5 +725,156 @@ public class CookPassTests
         Assert.True(Hatch.Fits(sim, order, roast));
         var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
         Assert.Equal(roast.Name, loaded.Shops.All.Single(o => o.Id == order.Id).Dish!.Name);
+    }
+
+    // ---------------- Phase 4: the oven ----------------
+
+    private static List<Entity> OnMe(Simulation sim, Entity me)
+    {
+        var list = new List<Entity>();
+        if (sim.World.Get<Carrying>(me).Item is { IsNull: false } held)
+            list.Add(held);
+        if (sim.PackOf(me) is { IsNull: false } pack)
+            list.AddRange(sim.StoredIn(pack));
+        return list;
+    }
+
+    /// <summary>Knead flour in hand at the prep table, each push on the beat (or not), and return the dough.</summary>
+    private static Entity Knead(Simulation sim, Entity me, Entity table, bool onBeat = true)
+    {
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing(Baking.Flour), 3);
+        var at = sim.World.Get<Thing>(table).Cell;
+        Assert.Equal("Knead some dough", AvatarSystem.ActionAt(sim, me, at).Label);
+        sim.ApplyNow(new AvatarWorkCommand(me, true, at));
+        sim.ApplyNow(new AvatarWorkCommand(me, false));
+        var s = Assert.IsType<KneadSession>(sim.World.Get<WorkSession>(me));
+        var inputs = new List<WorkInput>();
+        for (var i = 0; i < KneadSession.Pushes; i++)
+        {
+            var step = (i + 1) * KneadSession.Beat + (onBeat ? 0 : KneadSession.Beat / 2);
+            inputs.Add(new WorkInput(step, WorkInputKind.Axis, i % 2 == 0 ? -1 : 1));
+            inputs.Add(new WorkInput(step + 1, WorkInputKind.Axis, 0));
+        }
+        s.Advance(inputs, inputs[^1].Step + 2);
+        Assert.True(s.Done);
+        sim.Tick();
+        var dough = OnMe(sim, me).Single(e => sim.World.Has<Dough>(e));
+        Assert.Equal(1, sim.World.Get<Stack>(OnMe(sim, me).Single(e => sim.World.Get<Thing>(e).Def.Name == Baking.Flour)).Count);
+        return dough;
+    }
+
+    private static (Simulation Sim, Entity Me, Entity Table, Entity Oven) Bakery()
+    {
+        var (sim, me, table) = PrepKitchen();
+        var oven = sim.SpawnStructure(sim.Thing("Oven"), C(9, 11));
+        sim.RebuildDerivedIfNeeded();
+        Assert.True(Baking.Lit(sim, oven));
+        return (sim, me, table, oven);
+    }
+
+    /// <summary>Put the dough in and stand by the oven till it smells as given, then take it out.</summary>
+    private static Entity Bake(Simulation sim, Entity me, Entity oven, Entity dough, string outOn = "a golden crust")
+    {
+        var at = sim.World.Get<Thing>(oven).Cell;
+        if (!dough.IsNull)
+        {
+            sim.World.Get<Carrying>(me).Item = Inventory.TakeFromPerson(sim, me, dough, 1);
+            Assert.Equal("Put the dough in the oven", AvatarSystem.ActionAt(sim, me, at).Label);
+        }
+        sim.ApplyNow(new AvatarWorkCommand(me, true, at));
+        sim.ApplyNow(new AvatarWorkCommand(me, false));
+        var s = Assert.IsType<BakeSession>(sim.World.Get<WorkSession>(me));
+        for (var t = 0; t < 60 * 60 && s.Smell != outOn; t++)
+            s.Advance([], s.StepsDone + 1);
+        s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Act)], s.StepsDone + 2);
+        sim.Tick();
+        return sim.World.Get<Carrying>(me).Item;
+    }
+
+    [Fact]
+    public void FlourKneadedOnTheBeatProvesAndBakesIntoFineBread()
+    {
+        var (sim, me, table, oven) = Bakery();
+        var dough = Knead(sim, me, table);
+        Assert.True(sim.World.Get<Dough>(dough).Knead >= 0.75f);
+        Assert.Equal("slack", Perception.For(sim, me).Dough(dough));
+        sim.TickMany(SimClock.HoursToTicks(1.4f));
+        Assert.Equal("well risen", Perception.For(sim, me).Dough(dough));
+        var bread = Bake(sim, me, oven, dough);
+        Assert.Equal(Baking.Bread, sim.World.Get<Thing>(bread).Def.Name);
+        Assert.Equal(Baking.LoavesPerDough, sim.World.Get<Stack>(bread).Count);
+        Assert.True(sim.World.Get<Crafted>(bread).Quality >= Quality.Fine, $"{sim.World.Get<Crafted>(bread).Quality}");
+        Assert.Equal(DishFault.None, sim.World.Get<Dish>(bread).Fault);
+    }
+
+    [Fact]
+    public void DoughBakedStraightAwayComesOutHeavy()
+    {
+        var (sim, me, table, oven) = Bakery();
+        var bread = Bake(sim, me, oven, Knead(sim, me, table));
+        Assert.Equal(DishFault.Heavy, sim.World.Get<Dish>(bread).Fault);
+    }
+
+    [Fact]
+    public void DoughLeftTooLongSinks()
+    {
+        var (sim, me, table, _) = Bakery();
+        var dough = Knead(sim, me, table);
+        sim.TickMany(SimClock.HoursToTicks(Baking.SunkAt + 0.2f));
+        Assert.Equal("sunk back on itself", Perception.For(sim, me).Dough(dough));
+    }
+
+    [Fact]
+    public void BreadLeftInTheOvenBurns()
+    {
+        var (sim, me, table, oven) = Bakery();
+        var dough = Knead(sim, me, table);
+        sim.TickMany(SimClock.HoursToTicks(1.4f));
+        sim.World.Get<Carrying>(me).Item = Inventory.TakeFromPerson(sim, me, dough, 1);
+        Baking.Start(sim, me, oven);
+        sim.ApplyNow(new StopWorkCommand(me));
+        sim.TickMany(SimClock.TicksPerSecond * 40);
+        Assert.Equal("burning!", Perception.For(sim, me).Oven(oven)!.Value.Smell);
+        var bread = Bake(sim, me, oven, Entity.Null, "burning!");
+        Assert.Equal(DishFault.Caught, sim.World.Get<Dish>(bread).Fault);
+    }
+
+    [Fact]
+    public void RationsWithBreadInThemKeep()
+    {
+        var (sim, me, table) = PrepKitchen(("Meat", 2));
+        var bread = sim.CreateItem(sim.Thing(Baking.Bread), 1);
+        Inventory.Stow(sim, me, bread);
+        var ration = Pack(sim, me, table, Packing(70));
+        Assert.True(sim.World.Get<Ration>(ration).Keeps);
+        var plain = new RationRecord(0.8f, 0.3f, false, Entity.Null);
+        var keeps = plain with { Keeps = true };
+        Assert.True(Rations.RotWhenEaten(sim, keeps, 48f) < Rations.RotWhenEaten(sim, plain, 48f));
+        Assert.False(Rations.Turned(sim, keeps, 48f));
+        Assert.True(Rations.Turned(sim, plain, 48f));
+    }
+
+    [Fact]
+    public void DoughAndBreadInTheOvenSurviveASave()
+    {
+        var (sim, me, table, oven) = Bakery();
+        var dough = Knead(sim, me, table);
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        Assert.Equal(sim.World.Get<Dough>(dough).MadeAt, loaded.World.Get<Dough>(dough).MadeAt);
+        sim.World.Get<Carrying>(me).Item = Inventory.TakeFromPerson(sim, me, dough, 1);
+        Baking.Start(sim, me, oven);
+        sim.ApplyNow(new StopWorkCommand(me));
+        sim.TickMany(600);
+        (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        Assert.Equal(sim.World.Get<OvenLoad>(oven).Bake, loaded.World.Get<OvenLoad>(oven).Bake);
+        Assert.Equal(Baking.LoavesPerDough, loaded.World.Get<OvenLoad>(oven).Loaves);
+    }
+
+    [Fact]
+    public void BreadIsOnTheMenuWhereThereIsAnOven()
+    {
+        var (sim, me, _, _, _) = Inn();
+        var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+        Assert.Contains(Perception.For(sim, me).Menu(inn), d => d.Dish.Name == Baking.Bread);
     }
 }

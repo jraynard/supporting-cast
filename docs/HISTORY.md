@@ -1333,3 +1333,21 @@ depth.
   arrives is unchanged.
 - Save format 24. Bench hashes moved (the inn's new spit): 1234 state `7FBCA1D753F545A2`, full
   `2A7A081628943F5F`; 99 state `631948CD2DBEA002`, full `D9EA76D2C36AAFC7`.
+
+### Cook pass, phase 4 begun: the oven (2026-11-14)
+- **The oven** (`Work/Baking`): a bread oven with its own small wood fire (`"oven"`, `"fuel"`), in
+  the kitchen's corner, refuelled like any hearth. Flour comes with the carter and opens in the
+  larder.
+- **Kneading** (`KneadSession`): two flour in hand at the prep table, pushed from one side then the
+  other on the beat, eight times. Makes a ball of dough (`Dough`: how well kneaded, and when).
+- **Proving:** the dough rises on its own, read by eye in the inspector (`PerceptionView.Dough`):
+  well risen after an hour or two, sunk after three.
+- **Baking** (`BakeSession`, `OvenLoad`, `OvenSystem`): into the oven with F, then nothing but the
+  smell (`PerceptionView.Oven`). Space takes it out: two loaves, scored by the kneading, the
+  proving and the bake (`Baking.QualityOf`); a new fault, heavy (`DishFault.Heavy`), for dough
+  that didn't rise right. Left in, it burns.
+- **Bread** is on the menu where there's an oven, and keeps: a bundle of rations with bread in it
+  (`Ration.Keeps`, carried on the quest record) turns half as fast on the road.
+- Save format 25. `CookPassTests` (the oven). Bench hashes moved (the oven): 1234 state
+  `7759FA059B13F494`, full `CEBC1389C7C3AF05`; 99 state `262A4AEE206A5686`, full
+  `85B38CBD45E13729`.

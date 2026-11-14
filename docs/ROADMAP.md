@@ -26,11 +26,11 @@ Bring the cook up to the other trades (docs/DESIGN.md, "Cook"). The smith, heale
 have five to seven hands-on games, a hidden state read by feel, and work that goes out on quests;
 the cook had two games and nothing that left town. Built so far (HISTORY.md, "Cook pass"):
 flavours, diners' tastes, sniffing, rations for the road; the house dish, diners saying what was
-wrong, tips; chopping, the spit and dishes priced apart on the sign; and fixes from the first
-playtest (the mealtime rushes, the town's hours, customers kept out of the kitchen). Next, in order:
+wrong, tips; chopping, the spit, the oven and dishes priced apart on the sign; and fixes from the
+first playtest (the mealtime rushes, the town's hours, customers kept out of the kitchen). Next, in
+order:
 
-1. **The rest of the menu:** the oven (knead, prove, bake by smell; bread for better rations);
-   porridge in the morning; butchering and plucking.
+1. **The rest of the menu:** pies; porridge in the morning; butchering and plucking.
 2. **Pressure in the kitchen:** a second pot, the kitchen fire fed by hand; a grease fire (a fatty pot at a boil; clap the lid on or it's a real fire); rats in the
    larder in the shortage crisis, as creatures the cook chases down.
 3. **The kitchen and the town:** feasts for a triumphant party (several dishes against the clock,
@@ -38,16 +38,19 @@ playtest (the mealtime rushes, the town's hours, customers kept out of the kitch
    store); word of the food bringing parties.
 
 Left so far:
-- Bots and AI cooks never chop, roast or name a house dish (an AI cook never offers the roast); the house dish brings no more parties yet (word of the
+- Bots and AI cooks never chop, roast, bake or name a house dish (an AI cook never offers the roast
+  or bread); the house dish brings no more parties yet (word of the
   food, phase 3).
 - Rations are sold at the bar's line like any gear in the inn; the hatch would suit them better.
 - Placeholder art: rations are a bolt of cloth, the prep table is a table's sprite, the spit wears
-  the butcher spot's, roast slices a meat sprite.
+  the butcher spot's, roast slices a meat sprite; the oven wears the fireplace's, flour the
+  fiber's, dough the clay's, bread the meal's.
 - Tune in play: the fold cue and the cord's band (`PackSession`), the craving chance and moods
   (`Tastes`), the fed and sick factors (`Rations`), seasoner weight and cap (`Cooking`), how near
   a pot must taste to be the house dish and how often it's asked for (`HouseDish`), the tips
   (`ShopSystem.FineTip`), the spit's browning and flares (`Roasting`), the mealtimes and small
-  hours (`ShopSystem.Mealtime`, `SmallHours`), arrival hunger (`PartySystem.Send`).
+  hours (`ShopSystem.Mealtime`, `SmallHours`), arrival hunger (`PartySystem.Send`), kneading's beat, proving's
+  hours and the oven's smells (`Baking`).
 
 ### SOUND
 

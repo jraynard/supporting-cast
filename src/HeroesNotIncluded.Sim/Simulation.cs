@@ -275,6 +275,7 @@ public sealed partial class Simulation
             .AddSystem(new Work.SmithingSystem())
             .AddSystem(new Work.CookingSystem())
             .AddSystem(new Work.RoastSystem())
+            .AddSystem(new Work.OvenSystem())
             .AddSystem(new AvatarSystem())
             .AddSystem(sim.FreeMove)
             .AddSystem(new Combat.TrailSystem())

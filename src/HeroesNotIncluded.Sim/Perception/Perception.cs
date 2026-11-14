@@ -50,6 +50,9 @@ public readonly record struct KnownPot(Entity Pot, string Contents, Work.Surface
 /// <summary>A spit and what's on it, as anyone close sees it: each side's crust and which is to the fire. Never how far it's cooked through.</summary>
 public readonly record struct KnownSpit(Entity Spit, int Pieces, Work.Crust[] Sides, int Facing, bool Lit);
 
+/// <summary>An oven as anyone close knows it: whether there's bread in, and what it smells of (all a baker has to go on).</summary>
+public readonly record struct KnownOven(Entity Oven, int Loaves, string Smell, bool Lit);
+
 /// <summary>A shop's house dish as posted with its prices: its name and how it tastes (<see cref="Work.HouseDish"/>).</summary>
 public readonly record struct KnownHouseDish(string Name, string Tastes);
 
@@ -323,6 +326,25 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
                 (brown, facing) = (s.Brown, s.Facing);
         return new KnownSpit(spit, r.Count, brown.Select(Work.Roasting.CrustOf).ToArray(), facing, Work.Cooking.Lit(sim, spit));
     }
+
+    /// <summary>An oven close enough to smell (<see cref="KnownOven"/>); null if it isn't one, or is too far.</summary>
+    public KnownOven? Oven(Entity oven)
+    {
+        if (blind || !Work.Baking.IsOven(sim, oven))
+            return null;
+        if (!Omniscient && !Within(sim.World.Get<Thing>(oven).Cell, 2))
+            return null;
+        var o = sim.World.TryGet<Work.OvenLoad>(oven, out var ol) ? ol : new Work.OvenLoad();
+        var bake = o.Bake;
+        foreach (var e in sim.World.Each<Work.WorkSession>())
+            if (sim.World.Get<Work.WorkSession>(e) is Work.BakeSession s && s.Oven == oven)
+                bake = s.Bake;
+        return new KnownOven(oven, o.Loaves, Work.Baking.SmellOf(bake), Work.Baking.Lit(sim, oven));
+    }
+
+    /// <summary>How a ball of dough looks: how far it's risen (slack, rising, well risen, puffed up, sunk). Null for anything else.</summary>
+    public string? Dough(Entity item) =>
+        sim.World.IsAlive(item) && sim.World.TryGet<Work.Dough>(item, out var d) ? Work.Baking.RiseOf(Work.Baking.ProvedHours(sim, d)) : null;
 
     /// <summary>The dishes on a shop's sign beyond its plain meal (<see cref="Shops.Menu"/>), posted for anyone to read.</summary>
     public List<Shops.PostedDish> Menu(Entity shop) => Shops.Menu.Of(sim, shop);
