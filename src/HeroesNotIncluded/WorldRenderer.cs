@@ -122,6 +122,12 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     /// </summary>
     public Dictionary<Entity, OrderBubble> OrderBubbles { get; } = [];
 
+    /// <summary>A label over something to do (the festival's games, the dance, the show table): set by the game each frame.</summary>
+    public readonly record struct WorldMarker(float3 At, string Text, bool Done);
+
+    /// <summary>What's marked this frame; the game fills it (presentation only, never sim state).</summary>
+    public List<WorldMarker> Markers { get; } = [];
+
     /// <summary>Cells of the player's trade's stations they haven't been to yet: a soft ring on each.</summary>
     public List<int3> StationMarks { get; } = [];
 
@@ -2126,35 +2132,66 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 : Ui.Theme.NamePerson);
             Text(dl, p, name, color);
         }
+        DrawMarkers(dl, cam);
         DrawSpokenLines(dl, cam, sim);
     }
 
-    /// <summary>How long (ticks) a line stays over its speaker's head.</summary>
-    private const int SpokenLineTicks = SimClock.TicksPerSecond * 5;
+    /// <summary>The game's markers: a small plate with a gentle bob, its parchment rim green once it's done.</summary>
+    private void DrawMarkers(ImDrawListPtr dl, Camera3D cam)
+    {
+        var bob = MathF.Sin((float)ImGui.GetTime() * 2.4f) * Narsil.Ui.Gui.S(3);
+        foreach (var m in Markers)
+        {
+            var tail = cam.WorldToScreen(m.At) + new float2(0, bob);
+            var lineH = ImGui.GetTextLineHeight();
+            var width = ImGui.CalcTextSize(m.Text, false, -1).X;
+            var pad = Narsil.Ui.Gui.S(7, 3);
+            var size = new float2(width, lineH) + pad * 2;
+            var tailH = Narsil.Ui.Gui.S(5);
+            var min = new float2(tail.X - size.X * 0.5f, tail.Y - tailH - size.Y);
+            var max = min + size;
+            var back = Ui.Theme.U8(Ui.Theme.Panel, m.Done ? 0.6f : 0.9f);
+            var rim = Ui.Theme.U8(m.Done ? Ui.Theme.Good : Ui.Theme.Parchment, m.Done ? 0.6f : 1f);
+            dl.AddRectFilled(in min, in max, back, Narsil.Ui.Gui.S(4), ImDrawFlags.None);
+            dl.AddRect(in min, in max, rim, Narsil.Ui.Gui.S(4), ImDrawFlags.None, Narsil.Ui.Gui.S(m.Done ? 1 : 2));
+            var t1 = new float2(tail.X - tailH, max.Y);
+            var t2 = new float2(tail.X + tailH, max.Y);
+            dl.AddTriangleFilled(in t1, in t2, in tail, back);
+            var tp = min + pad;
+            dl.AddText(in tp, Ui.Theme.U8(m.Done ? Ui.Theme.Dim : Ui.Theme.Text), m.Text);
+        }
+    }
 
-    /// <summary>What's just been said, over the heads of those the viewer can see and could make out.</summary>
+    /// <summary>How long (ticks) a line stays over its speaker's head: long enough to read it.</summary>
+    private static int SpokenLineTicks(string text) => SpeechSystem.ReadingTicks(text);
+
+    private readonly HashSet<Entity> _spoke = [];
+
+    /// <summary>What's just been said, over the heads of those the viewer can see and could make out: each speaker's latest line.</summary>
     private void DrawSpokenLines(ImDrawListPtr dl, Camera3D cam, Simulation sim)
     {
         if (Viewer == null)
             return;
         var w = sim.World;
-        foreach (var line in Viewer.Heard())
+        _spoke.Clear();
+        foreach (var line in Viewer.Heard().Reverse())
         {
-            if (sim.Clock.Tick - line.Tick > SpokenLineTicks || line.Speaker is not { } who || !w.IsAlive(who) || !Seen(who)
+            var lasts = SpokenLineTicks(line.Text);
+            if (sim.Clock.Tick - line.Tick > lasts || line.Speaker is not { } who || !_spoke.Add(who) || !w.IsAlive(who) || !Seen(who)
                 || UnderDrawnFloor(sim.Map, w.Get<Position>(who).Cell))
                 continue;
             // Above the status bubble (+0.2), so the two never sit on each other.
             var at = cam.WorldToScreen(DrawPos(sim, who, w.Get<Position>(who).Pos) + WorldScale.Rise(VisualHeight(sim, who) + 0.75f));
-            var age = (sim.Clock.Tick - line.Tick) / (float)SpokenLineTicks;
+            var age = (sim.Clock.Tick - line.Tick) / (float)lasts;
             SpeechPlate(dl, at, line.Text, Math.Clamp((1f - age) * 5f, 0f, 1f), line.Volume);
         }
     }
 
-    /// <summary>A said line on a small dark plate with a tail toward the speaker, wrapped to a few lines.</summary>
+    /// <summary>A said line on a small dark plate with a tail toward the speaker, wrapped (a shout is given room to be read whole).</summary>
     private static void SpeechPlate(ImDrawListPtr dl, float2 tail, string text, float alpha, Volume volume)
     {
-        var maxW = Narsil.Ui.Gui.S(240);
-        var lines = Wrap(text, maxW, 3);
+        var maxW = Narsil.Ui.Gui.S(volume == Volume.Shout ? 300 : 240);
+        var lines = Narsil.Ui.Gui.WrapLines(text, maxW, volume == Volume.Shout ? 6 : 4);
         var lineH = ImGui.GetTextLineHeight();
         var width = lines.Max(l => ImGui.CalcTextSize(l, false, -1).X);
         var pad = Narsil.Ui.Gui.S(7, 4);
@@ -2176,32 +2213,6 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             var p = new float2(min.X + (size.X - lw) * 0.5f, min.Y + pad.Y + i * lineH);
             dl.AddText(in p, ink, lines[i]);
         }
-    }
-
-    /// <summary>Words into lines no wider than <paramref name="width"/> pixels; past <paramref name="most"/> lines, the last is cut with an ellipsis.</summary>
-    private static List<string> Wrap(string text, float width, int most)
-    {
-        var lines = new List<string>();
-        var line = "";
-        foreach (var word in text.Split(' '))
-        {
-            var next = line.Length == 0 ? word : line + " " + word;
-            if (line.Length > 0 && ImGui.CalcTextSize(next, false, -1).X > width)
-            {
-                lines.Add(line);
-                line = word;
-            }
-            else
-                line = next;
-        }
-        if (line.Length > 0)
-            lines.Add(line);
-        if (lines.Count > most)
-        {
-            lines = lines.Take(most).ToList();
-            lines[^1] = Narsil.Ui.Gui.Fit(lines[^1] + " …", width);
-        }
-        return lines.Count == 0 ? [""] : lines;
     }
 
     private static void Text(ImDrawListPtr dl, float2 pos, string text, ImColor8 color)

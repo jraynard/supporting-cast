@@ -27,9 +27,9 @@ public static class Festival
         // Orders waiting at their counter keep a trade at work through the revels: the inn serves on.
         if (f.Part != FestivalPart.Ceremony && StillServing(sim, pawn))
             return null;
-        if (f.Part == FestivalPart.Ceremony)
+        if (f.Part == FestivalPart.Ceremony || f.Telling)
         {
-            // The crier stands by the well; everyone else round it, close enough to hear.
+            // The crier stands by the well; everyone else round it, close enough to hear (the tale, the ceremony).
             var spot = AiQueries.RandomReachableNear(sim, pawn, square, pawn == f.Crier ? 1 : 4);
             return spot is { } at ? new FestivalJob(FestivalActivity.Gather, Entity.Null, [at], sim.Rand.Range(600, 1200)) : null;
         }
@@ -210,7 +210,9 @@ public sealed class FestivalJob(FestivalActivity activity, Entity focus, List<in
     protected override IEnumerable<JobStatus> Run()
     {
         var part = Sim.Festival.Part;
-        bool Over() => Sim.Festival.Part != part || Sim.Round.Phase != RoundPhase.Festival;
+        var telling = Sim.Festival.Telling;
+        // The festival moving on (or the crier starting the tale) brings everyone to what's next.
+        bool Over() => Sim.Festival.Part != part || Sim.Festival.Telling != telling || Sim.Round.Phase != RoundPhase.Festival;
         if (activity == FestivalActivity.Dance)
         {
             Report = "Dancing";

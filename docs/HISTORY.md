@@ -1410,3 +1410,33 @@ Notes from playing; the healer first.
   innkeeper's own setups (a pot already going, a named drink asked for).
 - Done: the ghost's speech crashed the game (a bubble over a speaker with no body); touchpad zoom
   eases in, and the view stops short of the whole map with a character. Also steam deck d-pad fix.
+
+### The festival, from its first playtest (2026-11-14)
+It wasn't clear what to do at first, then it was over too fast. Now:
+- **The crier tells the season.** The festival begins at 15:00 on the last day. The bell's heard
+  everywhere, and the crier (an AI villager, never a player's character: `RoundSystem.Crier`) is
+  chosen then. After `gatherMinutes` the town stands round the well (`Ai/Festival`, `Telling`) and
+  hears the season a line at a time (`FestivalSystem.Tale`): the parties, their quests, each crisis
+  met or not (`Reckoning.Crises`, saved), the town's dead and those called back. Then what's on and
+  where, and the revels begin with a message to everyone.
+- **What to do, shown.** A festival card at the top (`VillageGame.Festival`): the gathering, the
+  tale, then each game, the dance and the show table on a line (how, and how you're getting on;
+  click to look at it), and when the toasts come. Markers over each in the square
+  (`WorldRenderer.Markers`), green once done. Through the revels the crier calls folk to each thing
+  in turn (`callMinutes`), and a new leader at a game is news (a message).
+- **The show table.** F there lays out your best piece from your pack (`AvatarActionKind.ShowPiece`)
+  or what you hold that you made. Empty-handed with nothing to show, it says what it's for. A
+  visitor's first look at a piece is always remarked on, with a message naming the maker.
+- **Time to read.** A line said aloud stays over its speaker's head for as long as it takes to read
+  (`SpeechSystem.ReadingTicks`: 4 s plus a little a letter, up to 16), only each speaker's latest
+  line shows, and shouts wrap to six lines rather than being cut. The tale and each step of the
+  ceremony wait for their line to be read (`beatSeconds` between), and the round ends a few seconds
+  after the verdict's been read (`FestivalSystem.DoneTick`, `Finished`), not on a fixed clock. The
+  festival can run 7.5 hours, so up to five real minutes.
+- **Toasts wrap.** Narsil's `ToastStack` wraps a long notice to four lines (`Gui.WrapLines`) and
+  keeps it up longer for each character past sixty.
+- `--festival-at` stands you by the well (`DevFestivalCommand(Bring)`), where you'd otherwise start
+  the festival shut in your shop seeing nobody.
+- Save format 31. `FestivalTests` (the tale, the crowd gathering for it, laying out work, the
+  ceremony's pacing, saving mid-tale). Bench state hashes unchanged; full hashes moved: 1234
+  `B0173335CD84DC78`, 99 `38895A58EC1B09A7`.

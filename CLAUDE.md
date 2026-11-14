@@ -19,7 +19,7 @@ dotnet run --project src/HeroesNotIncluded -- --host --name Arin            # ho
 dotnet run --project src/HeroesNotIncluded -- --join 127.0.0.1 --player-id bea --name Bea
 dotnet run --project src/HeroesNotIncluded -- --raid-test --name Arin          # as the smith, bandits down the north road
 dotnet run --project src/HeroesNotIncluded -- --new-game --die-at 5            # your character drops dead: try being a ghost
-dotnet run --project src/HeroesNotIncluded -- --new-game --festival-at 5       # the season's festival, now
+dotnet run --project src/HeroesNotIncluded -- --new-game --festival-at 5       # the season's festival, now, you by the well
 dotnet run --project src/HeroesNotIncluded -- --practice Healer          # the practice yard: a trade's games, no season, customers on request
 dotnet run --project src/HeroesNotIncluded -- --arena Swordsman --weapon IronSpear  # the practice ring: one foe a bout (any raider kind, or Dragon; Enter for the next)
 dotnet run --project src/HeroesNotIncluded -- --furniture-demo --zoom 80    # also --building-demo

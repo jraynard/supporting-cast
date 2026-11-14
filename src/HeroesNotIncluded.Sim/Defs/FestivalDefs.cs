@@ -4,30 +4,31 @@ namespace HeroesNotIncluded.Sim.Defs;
 
 /// <summary>
 /// How the season's last evening runs (data/defs/festival.json, <c>Round.FestivalSystem</c>): an
-/// opening while the town gathers, the revels (the feast, the dancing, the show table and the
-/// games), then the ceremony that ends the round. The festival is the season's payoff and the town's
-/// last chance: what the visitors still in town think is counted at their toast, not before.
-/// The last one loaded is in effect.
+/// opening while the town gathers and the crier tells the season, the revels (the feast, the
+/// dancing, the show table and the games), then the ceremony that ends the round. The festival is
+/// the season's payoff and the town's last chance: what the visitors still in town think is counted
+/// at their toast, not before. What's said aloud is given the time it takes to read
+/// (<c>Speech.SpeechSystem.ReadingTicks</c>), not a fixed slot. The last one loaded is in effect.
 /// </summary>
 public sealed class FestivalDef : Def
 {
-    /// <summary>Game hours from the festival's start before the revels: the bell, and everyone to the square.</summary>
-    public float OpeningHours { get; set; } = 0.5f;
+    /// <summary>Game minutes from the bell before the crier starts the tale: time to get to the square.</summary>
+    public float GatherMinutes { get; set; } = 20;
 
-    /// <summary>Game hours at the festival's end given to the ceremony (toasts, honours, the verdict).</summary>
-    public float CeremonyHours { get; set; } = 1.25f;
+    /// <summary>Game hours at the festival's end given to the ceremony (toasts, honours, the verdict); it ends sooner if it's said its piece.</summary>
+    public float CeremonyHours { get; set; } = 2.5f;
 
-    /// <summary>Game minutes for the ceremony's bell: the crowd gathers round the well.</summary>
-    public float BellMinutes { get; set; } = 10;
+    /// <summary>Real seconds (at 1x) of quiet between one line and the next, on top of each line's reading time.</summary>
+    public float BeatSeconds { get; set; } = 1.5f;
 
-    /// <summary>Game minutes each party's toast is given.</summary>
-    public float ToastMinutes { get; set; } = 6;
+    /// <summary>Real seconds (at 1x) kept for the verdict at the very end, to be read and sink in before the reveal.</summary>
+    public float VerdictSeconds { get; set; } = 22;
 
-    /// <summary>Game minutes each honour is given.</summary>
-    public float HonourMinutes { get; set; } = 4;
+    /// <summary>Real seconds (at 1x) after the verdict's been read before the reveal.</summary>
+    public float VerdictPauseSeconds { get; set; } = 4;
 
-    /// <summary>Game minutes left at the end for the verdict to be heard before the reveal.</summary>
-    public float VerdictMinutes { get; set; } = 8;
+    /// <summary>Game minutes between the crier's calls to the revels' games, dance and show table.</summary>
+    public float CallMinutes { get; set; } = 25;
 
     /// <summary>At most this many honours are called.</summary>
     public int MaxHonours { get; set; } = 5;

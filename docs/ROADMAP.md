@@ -29,8 +29,13 @@ provide some purely non-combat options but i think that will be later once we ha
 ### The festival
 Built (HISTORY.md, "The festival, made an event"). What's left:
 
-- **Playtest it:** the length, the activity weights, what the show table and the games are worth
-  to a guest (`festival.json`), and whether the toasts swing a season enough to matter.
+- **Playtest it again:** the first playtest's fixes are in (HISTORY.md, "The festival, from its
+  first playtest"). Still to judge: the length of the tale and the revels, the activity weights,
+  what the show table and the games are worth to a guest (`festival.json`), and whether the toasts
+  swing a season enough to matter.
+- **Hearing the tale from afar:** a player who's slow to the square misses the crier's opening
+  lines. Maybe keep them in the Heard panel for anyone at the festival, or hold the tale until the
+  players are near.
 - **Art:** dance and cheer frames in the people pipeline (`tools/chibi_people.py`; the renderer
   hops for now), a proper bunting string between the lantern posts.
 - **The butts with real arrows:** a target thing the ranged code can hit, shot from a mark.

@@ -30,6 +30,11 @@ public sealed class Reckoning : ISimSystem, ISaveState
     public IReadOnlyList<float> RenownByHour => _renownByHour;
     public IReadOnlyList<float> DreadByHour => _dreadByHour;
 
+    private readonly List<(Defs.CrisisKind Kind, bool Met)> _crises = [];
+
+    /// <summary>The season's crises as they ended, in order, and whether the town met them: the festival's tale tells them.</summary>
+    public IReadOnlyList<(Defs.CrisisKind Kind, bool Met)> Crises => _crises;
+
     // The expedition tallies as of the last update: what's new since is reckoned.
     private int _cleared, _failed, _lost;
 
@@ -91,6 +96,7 @@ public sealed class Reckoning : ISimSystem, ISaveState
     public void CrisisResolved(Simulation sim, Defs.CrisisKind kind, bool met)
     {
         var season = sim.Defs.Season;
+        _crises.Add((kind, met));
         // The dragon is the season's great story, either way.
         if (kind == Defs.CrisisKind.Dragon)
             Add(sim, met ? season.DragonMetRenown : 0, met ? season.CrisisMetDread : season.DragonUnmetDread);
@@ -143,6 +149,12 @@ public sealed class Reckoning : ISimSystem, ISaveState
         w.Int(_lost);
         RoundSummary.Floats(w, _renownByHour);
         RoundSummary.Floats(w, _dreadByHour);
+        w.Int(_crises.Count);
+        foreach (var (kind, met) in _crises)
+        {
+            w.Int((int)kind);
+            w.Bool(met);
+        }
     }
 
     public void Load(SaveReader r, Simulation sim)
@@ -157,5 +169,9 @@ public sealed class Reckoning : ISimSystem, ISaveState
         _renownByHour.AddRange(RoundSummary.Floats(r));
         _dreadByHour.Clear();
         _dreadByHour.AddRange(RoundSummary.Floats(r));
+        _crises.Clear();
+        if (r.Version >= 31)
+            for (var n = r.Count(10_000); n > 0; n--)
+                _crises.Add(((Defs.CrisisKind)r.Int(), r.Bool()));
     }
 }

@@ -100,6 +100,9 @@ public enum AvatarActionKind
 
     /// <summary>Join the dance round the festival's bonfire (<see cref="Ai.FestivalJob"/>), at once.</summary>
     Dance,
+
+    /// <summary>Lay a piece of your own work from your pack out on the festival's show table, at once.</summary>
+    ShowPiece,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -126,7 +129,8 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
         or AvatarActionKind.Store or AvatarActionKind.OpenStorage or AvatarActionKind.Tinker
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
         or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean
-        or AvatarActionKind.Mend or AvatarActionKind.OrderMeal or AvatarActionKind.OrderHealing or AvatarActionKind.FillBucket or AvatarActionKind.ThrowWater or AvatarActionKind.FestivalGame or AvatarActionKind.Dance;
+        or AvatarActionKind.Mend or AvatarActionKind.OrderMeal or AvatarActionKind.OrderHealing or AvatarActionKind.FillBucket or AvatarActionKind.ThrowWater or AvatarActionKind.FestivalGame or AvatarActionKind.Dance
+        or AvatarActionKind.ShowPiece;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
     public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker
@@ -254,7 +258,32 @@ public sealed class AvatarSystem : ISimSystem
     /// <summary>
     /// What the work key would do at a cell right now, or <see cref="AvatarAction.None"/>.
     /// <paramref name="from"/> asks as if the avatar stood there instead (the game passes the cell
-    /// itself to ask what a click would walk over and do).
+    /// itself to ask what a click would walk over and do).    /// <summary>
+    /// At the festival's show table: what you hold that you made goes on it, or the best piece of your
+    /// own work from your pack; failing either, it's looked over. Null anywhere else, or once the revels close.
+    /// </summary>
+    private static AvatarAction? ShowAt(Simulation sim, Entity avatar, Entity site, int3 cell, Entity held)
+    {
+        var w = sim.World;
+        if (site.IsNull || !sim.Festival.Open || site != sim.Festival.Prop(sim, Round.FestivalSystem.ShowTableDef))
+            return null;
+        if (!held.IsNull)
+            return w.TryGet<Crafted>(held, out _) && sim.HasRoomFor(site, w.Get<Thing>(held).Def, w.Get<Thing>(held).Material)
+                ? new(AvatarActionKind.Store, $"Lay {w.Get<Thing>(held).Label} out on the show table", cell, site)
+                : null;
+        var pack = sim.PackOf(avatar);
+        var best = Entity.Null;
+        if (!pack.IsNull)
+            foreach (var e in sim.StoredIn(pack))
+                if (w.TryGet<Crafted>(e, out var made) && made.Maker == avatar && sim.HasRoomFor(site, w.Get<Thing>(e).Def, w.Get<Thing>(e).Material)
+                    && (best.IsNull || made.Quality > w.Get<Crafted>(best).Quality))
+                    best = e;
+        if (!best.IsNull)
+            return new AvatarAction(AvatarActionKind.ShowPiece, $"Lay your {w.Get<Thing>(best).Label} out on the show table", cell, site) { Item = best };
+        return new(AvatarActionKind.OpenStorage, "Look over the show table (lay out work you've made)", cell, site);
+    }
+
+
     /// </summary>
     public static AvatarAction ActionAt(Simulation sim, Entity avatar, int3 cell, AvatarTool tool = AvatarTool.Use, int3? from = null)
     {
@@ -340,6 +369,8 @@ public sealed class AvatarSystem : ISimSystem
             return new(AvatarActionKind.FestivalGame, game, cell, site);
         if (tool == AvatarTool.Use && held.IsNull && Ai.Festival.CanDance(sim, avatar, site))
             return new(AvatarActionKind.Dance, "Dance round the bonfire", cell, site);
+        if (tool == AvatarTool.Use && ShowAt(sim, avatar, site, cell, held) is { } show)
+            return show;
 
         // A piece in the tongs goes to the fire, the anvil or the tub; a blade to the grindstone.
         if (Work.Smithing.StepAt(sim, avatar, site) is { } step && !sim.Reservations.IsReservedByOther(site, avatar))
@@ -768,6 +799,13 @@ public sealed class AvatarSystem : ISimSystem
             case AvatarActionKind.Dance:
                 if (Ai.Festival.Dance(sim, avatar, action.Target) is { } dance)
                     AiSystem.Order(sim, avatar, dance);
+                break;
+            case AvatarActionKind.ShowPiece:
+                if (ShowAt(sim, avatar, action.Target, action.Cell, Entity.Null) is { Kind: AvatarActionKind.ShowPiece } still && still.Item == action.Item)
+                {
+                    Inventory.StoreFromPack(sim, avatar, action.Target, action.Item);
+                    sim.Messages.Add(MessageKind.Info, $"You lay your {w.Get<Thing>(action.Item).Label} out on the show table. The visitors will look it over.", action.Cell);
+                }
                 break;
             case AvatarActionKind.OrderMeal:
                 if (Shops.Hatch.ShopOf(sim, action.Target) is { IsNull: false } inn && sim.Shops.OpenOrderOf(avatar, ServiceKind.Meal) == null

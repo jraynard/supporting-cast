@@ -1,19 +1,21 @@
 // The season's festival (Defs/FestivalDefs.cs, Round/FestivalSystem.cs): the last evening, from
-// season.json's festivalHour for its festivalHours. It opens with the bell (openingHours), then the
-// revels: the feast tables, dancing round the bonfire, the show table and the games. The last
-// ceremonyHours are the ceremony: the bell again, each party's toast (where what they think of the
-// town is counted), the honours, and the verdict, then the reveal.
+// season.json's festivalHour for its festivalHours. It opens with the bell; gatherMinutes later the
+// crier tells the season at the well, a line at a time, and says what's on. Then the revels: the
+// feast tables, dancing round the bonfire, the show table and the games, the crier calling folk to
+// them every callMinutes. The last ceremonyHours are the ceremony: the bell again, each party's
+// toast (where what they think of the town is counted), the honours, and the verdict, then the
+// reveal (sooner, once it's all been said). Each line said is given its reading time and beatSeconds.
 // What's put up in the square is the map's (maps/*.json "festival", from tools/village_map.py).
 {
   "festivals": [
     {
       "name": "Festival",
-      "openingHours": 0.5,
-      "ceremonyHours": 1.25,
-      "bellMinutes": 10,
-      "toastMinutes": 6,
-      "honourMinutes": 4,
-      "verdictMinutes": 8,
+      "gatherMinutes": 25,
+      "ceremonyHours": 2.5,
+      "beatSeconds": 1.5,
+      "verdictSeconds": 22,
+      "verdictPauseSeconds": 4,
+      "callMinutes": 25,
       "maxHonours": 5,
       // What people do with the revels, by weight. Visitors look over the show table and watch the
       // games more; the town eats and dances more.

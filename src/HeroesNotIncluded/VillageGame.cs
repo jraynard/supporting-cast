@@ -442,6 +442,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         _renderer.Viewer = View.Omniscient ? null : View;
         UpdateOrderBubbles();
         UpdateStationMarks();
+        UpdateFestival();
         UpdateHomeMark();
         UpdateWork(dt);
         RunBots();

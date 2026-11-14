@@ -1,13 +1,169 @@
 using Brutal.ImGuiApi;
 using Narsil.Ui;
+using HeroesNotIncluded.Rendering;
+using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Round;
 using HeroesNotIncluded.Sim.Work;
 using HeroesNotIncluded.Ui;
 
 namespace HeroesNotIncluded;
 
-// The festival's games (Sim/Work/FestivalGames): the striker's gauge and the butts' painted face.
+// The festival for a player: a card saying what's on and where (the games, the dance, the show
+// table), markers over each in the square, and the games' own windows (Sim/Work/FestivalGames).
 public sealed partial class VillageGame
 {
+    /// <summary>What you've done at the festival this evening, for the card's ticks (presentation only).</summary>
+    private readonly HashSet<string> _festivalDone = [];
+
+    /// <summary>The festival part whose card was put away; it comes back when the festival moves on.</summary>
+    private (FestivalPart Part, bool Telling)? _festivalCardHidden;
+
+    /// <summary>One thing to do at the festival: where it is, what it's called, how it's done, how you're getting on.</summary>
+    private readonly record struct FestivalSpot(Entity Thing, string Name, string How, string Status, bool Done);
+
+    private List<FestivalSpot> FestivalSpots()
+    {
+        var spots = new List<FestivalSpot>();
+        var f = _sim.Festival;
+        var w = _sim.World;
+        var use = Controls.Glyph(Act.Use);
+        foreach (var g in f.Games)
+        {
+            var thing = f.Prop(_sim, g.Game.Def);
+            if (thing.IsNull)
+                continue;
+            var status = g.BestScore < 0 ? "Nobody's had a go yet"
+                : g.Best == _avatar ? $"You lead with {g.BestScore}!"
+                : $"Best tonight: {g.BestName}, {g.BestScore}";
+            spots.Add(new(thing, Cap(g.Game.Label), $"{use}: three goes; the night's best wins {_sim.Defs.Festival.PrizeSilver} silver and an honour",
+                status, _festivalDone.Contains(g.Game.Name)));
+        }
+        var fire = f.Prop(_sim, FestivalSystem.BonfireDef);
+        if (!fire.IsNull)
+            spots.Add(new(fire, "The dance", $"{use} at the bonfire, hands empty",
+                _festivalDone.Contains("Dance") ? "You've danced!" : "", _festivalDone.Contains("Dance")));
+        var table = f.Prop(_sim, FestivalSystem.ShowTableDef);
+        if (!table.IsNull)
+        {
+            var mine = _sim.StoredIn(table).FirstOrDefault(e => w.TryGet<Crafted>(e, out var c) && c.Maker == _avatar, Entity.Null);
+            spots.Add(new(table, "The show table", $"{use}: lay out something you made for the visitors to judge",
+                mine.IsNull ? "" : $"Your {w.Get<Thing>(mine).Label} is on show", !mine.IsNull));
+        }
+        return spots;
+    }
+
+    /// <summary>Notes what you're doing at the festival: a game's window open, the dance under way.</summary>
+    private void UpdateFestival()
+    {
+        _renderer.Markers.Clear();
+        if (_sim.Round.Phase != RoundPhase.Festival)
+        {
+            if (_sim.Round.Phase != RoundPhase.Over)
+                _festivalDone.Clear();
+            return;
+        }
+        if (!HasAvatar)
+            return;
+        var w = _sim.World;
+        if (w.TryGet<WorkSession>(_avatar, out var ws))
+        {
+            if (ws is StrikerSession st) _festivalDone.Add(st.Game);
+            if (ws is ButtsSession bt) _festivalDone.Add(bt.Game);
+        }
+        if (w.Get<Mind>(_avatar).Job is Sim.Ai.FestivalJob { Dancing: true })
+            _festivalDone.Add("Dance");
+        // Markers over each thing to do, while the revels are open.
+        if (!_sim.Festival.Open || _sim.Festival.Telling)
+            return;
+        foreach (var spot in FestivalSpots())
+        {
+            var t = w.Get<Thing>(spot.Thing);
+            var top = (t.Def.Model?.Max(b => b.Max[2]) ?? 1f) * WorldScale.HeightOf(t.Def);
+            var at = Sim.Components.Position.CenterOf(t.Cell) + WorldScale.Rise(top + 0.5f);
+            if (_sim.Map.InBounds(t.Cell))
+                _renderer.Markers.Add(new(at, spot.Name, spot.Done));
+        }
+    }
+
+    /// <summary>
+    /// Top: the festival card. While the town gathers and the crier tells the season, where to go
+    /// and to listen; through the revels, everything there is to do (click one to look at it);
+    /// at the ceremony, to the well.
+    /// </summary>
+    private void DrawFestivalCard()
+    {
+        var f = _sim.Festival;
+        if (_sim.Round.Phase != RoundPhase.Festival || (!HasAvatar && !Ghosting))
+            return;
+        var key = (f.Part, f.Telling);
+        if (_festivalCardHidden == key)
+            return;
+        _hud.Next(Anchor.Top);
+        Panel.Begin("##festival-card", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoDecoration);
+        _hud.Took();
+        using (Gui.DisplayFont(20f))
+            TextC(Theme.Parchment, f.Part switch
+            {
+                FestivalPart.Opening when f.Telling => "The festival: the crier tells the season",
+                FestivalPart.Opening => "The festival bell!",
+                FestivalPart.Revels => "The festival: the revels",
+                _ => "The festival: the ceremony",
+            });
+        ImGui.SameLine(0, 16);
+        if (ImGui.SmallButton("Hide"u8))
+            _festivalCardHidden = key;
+        switch (f.Part)
+        {
+            case FestivalPart.Opening:
+                TextC(Theme.Text, f.Telling ? "Gather round the well and listen: then the revels begin." : "Down tools: everyone to the well in the square.");
+                if (_sim.Round.Square is { } sq && ImGui.SmallButton("Look at the square"u8))
+                    LookAtCell(sq);
+                break;
+            case FestivalPart.Revels:
+            {
+                // One line each: what (click to look at it), how, and how it's going.
+                var spots = FestivalSpots();
+                var nameW = spots.Count == 0 ? 0f : spots.Max(p => ImGui.CalcTextSize($"· {p.Name}", false, -1).X) + Gui.S(10);
+                var howW = spots.Count == 0 ? 0f : spots.Max(p => ImGui.CalcTextSize(p.How, false, -1).X) + Gui.S(14);
+                foreach (var spot in spots)
+                {
+                    ImGui.PushID(spot.Thing.Index);
+                    var x = ImGui.GetCursorPosX();
+                    TextC(spot.Done ? Theme.Good : Theme.Parchment, $"· {spot.Name}");
+                    if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
+                        LookAtCell(_sim.World.Get<Thing>(spot.Thing).Cell);
+                    Gui.ItemTip("Click to look at it");
+                    ImGui.SameLine(x + nameW, 0);
+                    TextC(Theme.Text, spot.How);
+                    if (spot.Status.Length > 0)
+                    {
+                        ImGui.SameLine(x + nameW + howW, 0);
+                        TextC(spot.Done ? Theme.Good : Theme.Dim, spot.Status);
+                    }
+                    ImGui.PopID();
+                }
+                var toasts = (f.CeremonyTick(_sim) - _sim.Clock.Tick) / (double)SimClock.TicksPerHour;
+                TextC(Theme.Dim, toasts > 1 ? $"And the feast tables. The toasts at the well in about {Math.Round(toasts)} hours."
+                    : "And the feast tables. The toasts at the well within the hour.");
+                break;
+            }
+            default:
+                TextC(Theme.Text, f.Step switch
+                {
+                    CeremonyStep.Toasts => "The guests' toasts: hear what they made of the town.",
+                    CeremonyStep.Honours => "The honours: who the town calls up tonight.",
+                    CeremonyStep.Verdict or CeremonyStep.Done => "The verdict: how the season went.",
+                    _ => "The bell again: gather round the well for the toasts.",
+                });
+                break;
+        }
+        Panel.End();
+    }
+
+    private void LookAtCell(int3 cell) => _camera.Target = new float3(cell.X + 0.5f, cell.Y + 0.5f, cell.Z);
+
     /// <summary>The striker: a needle sweeping the gauge; F brings the mallet down. The puck flies as high as the needle stood.</summary>
     private void DrawStriker(StrikerSession s)
     {

@@ -68,6 +68,14 @@ public sealed class SpeechSystem : ISimSystem, ISaveState
     /// <summary>How far a spoken voice carries through a wall or shut door.</summary>
     public const float MuffledSayRange = 5f;
 
+    /// <summary>
+    /// Ticks a line takes to read (at 1x, real time): a few seconds, and a little more for each
+    /// character, up to 16 s. The game keeps a line over its speaker's head this long, and the
+    /// festival gives each line it says this long before the next.
+    /// </summary>
+    public static int ReadingTicks(string text) =>
+        Math.Clamp(SimClock.TicksPerSecond * 4 + text.Length * SimClock.TicksPerSecond * 65 / 1000, SimClock.TicksPerSecond * 4, SimClock.TicksPerSecond * 16);
+
     private readonly List<Utterance> _kept = [];
     private long _nextId = 1;
 

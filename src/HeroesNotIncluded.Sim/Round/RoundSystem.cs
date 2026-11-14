@@ -130,7 +130,8 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         var now = sim.Clock.Tick;
         if (Phase == RoundPhase.Playing && now >= FestivalTick(sim))
             BeginFestival(sim, FestivalTick(sim));
-        if (Phase == RoundPhase.Festival && now >= EndTick(sim))
+        // The festival ends on its clock, or sooner once the ceremony's said its piece and the verdict's sunk in.
+        if (Phase == RoundPhase.Festival && (now >= EndTick(sim) || sim.Festival.Finished(sim)))
         {
             var reckoning = sim.Reckoning;
             // The ceremony reads the verdict before the end; if it never got that far, it's read now.
@@ -158,7 +159,8 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         Phase = RoundPhase.Festival;
         Square = FindSquare(sim);
         sim.Festival.Begin(sim, Math.Min(at ?? sim.Clock.Tick, sim.Clock.Tick));
-        sim.Messages.Add(MessageKind.Good, "The festival begins! Everyone to the square: there's a feast, dancing, games and a show of the town's work.", Square);
+        // Everyone hears the bell, wherever they are.
+        sim.Messages.Add(MessageKind.Good, "The festival bell! Everyone to the well in the square: the crier tells the season, then the feast, the dance and the games.", null);
     }
 
     /// <summary>
@@ -203,9 +205,11 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     public static Entity Crier(Simulation sim, int3 at)
     {
         var w = sim.World;
+        // One the town runs, if there's any: a player shouldn't find their character making speeches.
         return sim.Creatures()
             .Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Dead: false } && Speech.SpeechSystem.CanAct(sim, e))
-            .OrderBy(e => Maps.Map.Distance(w.Get<Position>(e).Cell, at))
+            .OrderBy(e => w.Has<PlayerCharacter>(e))
+            .ThenBy(e => Maps.Map.Distance(w.Get<Position>(e).Cell, at))
             .ThenBy(e => e.Index)
             .FirstOrDefault(Entity.Null);
     }
@@ -223,18 +227,21 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     /// The festival's end: the ceremony's crier (else whoever of the town stands nearest the well)
     /// calls out how the season went, in the words everyone knows it by. The numbers are for the reveal.
     /// </summary>
-    internal void ReadTheReckoning(Simulation sim)
+    /// <returns>What was said; empty if nobody could say it.</returns>
+    internal string ReadTheReckoning(Simulation sim)
     {
         var crier = sim.Festival.Crier;
         if (crier.IsNull || !sim.World.IsAlive(crier) || !Speech.SpeechSystem.CanAct(sim, crier))
             crier = Crier(sim, Square ?? default);
         if (crier.IsNull)
-            return;
+            return "";
         var r = sim.Reckoning;
         var renown = Director.Reckoning.RenownWord(r.Renown, Director.Reckoning.RenownTarget(sim));
         var dread = Director.Reckoning.DreadWord(r.Dread, Director.Reckoning.DreadLimit(sim));
         var verdict = r.Renown >= Director.Reckoning.RenownTarget(sim) ? "We've done it, friends: the season's ours!" : "It wasn't enough, friends. Not this season.";
-        sim.Speech.Say(sim, crier, $"Friends! The season's over. {renown}, and {char.ToLowerInvariant(dread[0])}{dread[1..]}. {verdict}", Speech.Volume.Shout);
+        var line = $"Friends! The season's over. {renown}, and {char.ToLowerInvariant(dread[0])}{dread[1..]}. {verdict}";
+        sim.Speech.Say(sim, crier, line, Speech.Volume.Shout);
+        return line;
     }
 
     /// <summary>Is anyone of the village still alive? Someone down may yet get up, or be got up.</summary>

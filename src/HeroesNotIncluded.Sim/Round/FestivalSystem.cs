@@ -13,7 +13,7 @@ public enum FestivalPart : byte
     /// <summary>No festival yet (or no round).</summary>
     None,
 
-    /// <summary>The bell's rung: down tools, and to the square.</summary>
+    /// <summary>The bell's rung: down tools, to the square, and the crier tells the season.</summary>
     Opening,
 
     /// <summary>The feast, the dancing, the show table and the games.</summary>
@@ -53,10 +53,12 @@ public sealed class GameStanding
 }
 
 /// <summary>
-/// The season's last evening, made an event: the props go up in the square, the town and its
-/// visitors feast and dance and look over the show table and try the games, then the ceremony
-/// gives each party still in town its toast (counted there, aloud, so the town watches its
-/// Renown move), calls the honours and reads the verdict. <see cref="RoundSystem"/> owns the
+/// The season's last evening, made an event: the props go up in the square, the crier tells the
+/// season's story at the well and says what's on, the town and its visitors feast and dance and
+/// look over the show table and try the games (the crier calling them to each now and then), then
+/// the ceremony gives each party still in town its toast (counted there, aloud, so the town watches
+/// its Renown move), calls the honours and reads the verdict. Everything said aloud is given time
+/// to be read (<see cref="SpeechSystem.ReadingTicks"/>), and the round ends once the verdict's sunk in. <see cref="RoundSystem"/> owns the
 /// festival's start and the round's end; this owns everything in between.
 /// </summary>
 public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
@@ -90,6 +92,26 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
 
     private long _stepUntil;
     private int _stepIndex;
+
+    /// <summary>The crier's tale of the season, built when it starts; the next line to say; when.</summary>
+    private readonly List<string> _tale = [];
+    private int _taleIndex = -1;
+    private long _nextLineAt;
+
+    private long _nextCall;
+    private int _callIndex;
+
+    /// <summary>When the revels began; -1 before.</summary>
+    public long RevelsTick { get; private set; } = -1;
+
+    /// <summary>When the ceremony's done with, the verdict read and sunk in; -1 till then.</summary>
+    public long DoneTick { get; private set; } = -1;
+
+    /// <summary>The crier's telling the season at the well (the opening, after the gathering).</summary>
+    public bool Telling => Part == FestivalPart.Opening && _taleIndex >= 0;
+
+    /// <summary>The ceremony's said its piece and the verdict's had time to sink in: the round can end.</summary>
+    public bool Finished(Simulation sim) => VerdictRead && DoneTick >= 0 && sim.Clock.Tick >= DoneTick;
 
     /// <summary>Who's leading the ceremony from the well: chosen when it begins.</summary>
     public Entity Crier { get; private set; } = Entity.Null;
@@ -169,8 +191,9 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         _games.Clear();
         foreach (var g in sim.Defs.Festival.Games)
             if (_props.Exists(e => sim.World.IsAlive(e) && sim.World.Get<Thing>(e).Def == g.ThingDef))
-                _games.Add(new GameStanding { Game = g, NextAiTurn = StartTick + SimClock.HoursToTicks(sim.Defs.Festival.OpeningHours) });
+                _games.Add(new GameStanding { Game = g });
         BellTick = sim.Clock.Tick;
+        Crier = RoundSystem.Crier(sim, sim.Round.Square ?? default);
     }
 
     /// <summary>Everything the map lists, where it goes (or the nearest free cell): lit, if it burns.</summary>
@@ -214,18 +237,207 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         if (sim.Round.Phase != RoundPhase.Festival || StartTick < 0)
             return;
         var now = sim.Clock.Tick;
-        var def = sim.Defs.Festival;
-        if (Part == FestivalPart.Opening && now >= StartTick + SimClock.HoursToTicks(def.OpeningHours))
-            Part = FestivalPart.Revels;
         if (Part != FestivalPart.Ceremony && now >= CeremonyTick(sim))
             BeginCeremony(sim);
+        if (Part == FestivalPart.Opening)
+            TellTheSeason(sim);
         if (Open)
         {
             Admire(sim);
             AiTurns(sim);
         }
+        if (Part == FestivalPart.Revels)
+            CallToTheRevels(sim);
         if (Part == FestivalPart.Ceremony)
             RunCeremony(sim);
+    }
+
+    /// <summary>Ticks a line's given before the next: its reading time and a beat.</summary>
+    public static long LineTicks(Simulation sim, string text) =>
+        SpeechSystem.ReadingTicks(text) + (long)(sim.Defs.Festival.BeatSeconds * SimClock.TicksPerSecond);
+
+    /// <summary>Whoever's crying the festival, chosen again if they can't speak now.</summary>
+    private Entity CrierNow(Simulation sim)
+    {
+        if (Crier.IsNull || !sim.World.IsAlive(Crier) || !SpeechSystem.CanAct(sim, Crier))
+            Crier = RoundSystem.Crier(sim, sim.Round.Square ?? default);
+        return Crier;
+    }
+
+    // ---------------- The opening: the season, told ----------------
+
+    /// <summary>
+    /// Once the town's had time to gather, the crier tells the season at the well, a line at a
+    /// time with room to read each, then says what's on: and the revels begin.
+    /// </summary>
+    private void TellTheSeason(Simulation sim)
+    {
+        var now = sim.Clock.Tick;
+        if (_taleIndex < 0)
+        {
+            if (now < StartTick + SimClock.HoursToTicks(sim.Defs.Festival.GatherMinutes / 60f))
+                return;
+            _tale.Clear();
+            _tale.AddRange(Tale(sim));
+            _taleIndex = 0;
+            _nextLineAt = now;
+        }
+        if (now < _nextLineAt)
+            return;
+        if (_taleIndex < _tale.Count)
+        {
+            var line = _tale[_taleIndex++];
+            Say(sim, CrierNow(sim), line);
+            _nextLineAt = now + LineTicks(sim, line);
+            return;
+        }
+        BeginRevels(sim);
+    }
+
+    private void BeginRevels(Simulation sim)
+    {
+        Part = FestivalPart.Revels;
+        RevelsTick = sim.Clock.Tick;
+        foreach (var g in _games)
+            g.NextAiTurn = RevelsTick;
+        _nextCall = RevelsTick + SimClock.HoursToTicks(sim.Defs.Festival.CallMinutes / 60f);
+        var what = new List<string>();
+        foreach (var g in _games)
+            what.Add(g.Game.Label);
+        if (!Prop(sim, BonfireDef).IsNull)
+            what.Add("the dance round the bonfire");
+        if (PropsOf(sim, "Stool").Any())
+            what.Add("the feast tables");
+        var show = Prop(sim, ShowTableDef).IsNull ? "" : ", and the show table for your best work";
+        // Everyone hears it, wherever they are: the square's loud tonight.
+        sim.Messages.Add(MessageKind.Good, $"The revels are open: {string.Join(", ", what)}{show}. The toasts come later.", null);
+    }
+
+    /// <summary>The season, as the crier tells it: who came, how their quests went, the crises, the town's own losses.</summary>
+    public List<string> Tale(Simulation sim)
+    {
+        var w = sim.World;
+        var ex = sim.Expeditions;
+        var lines = new List<string> { "Friends! Neighbours! Gather close. Before we eat, let's remember the season we've had." };
+
+        var parties = sim.Parties.PartiesSent;
+        lines.Add(parties switch
+        {
+            0 => "Hardly a traveller found their way to us this season.",
+            1 => "One band of adventurers came through our gates this season.",
+            _ => $"{Cap(Num(parties))} bands of adventurers came through our gates this season.",
+        });
+
+        int cleared = ex.Succeeded, failed = ex.Failed, lost = ex.Dead;
+        var quests = cleared + failed;
+        var gone = lost > 0 ? $" We lost {Num(lost)} of them out there." : "";
+        if (quests > 0)
+            lines.Add((cleared, failed) switch
+            {
+                (_, 0) => $"They set out on {Num(quests)} {Plural(quests, "quest")}, and came back in triumph every time!{gone}",
+                (0, _) => $"They set out on {Num(quests)} {Plural(quests, "quest")}, and not one went well.{gone}",
+                _ => $"They set out on {Num(quests)} quests: {Num(cleared)} came back in triumph, {Num(failed)} came to grief.{gone}",
+            });
+        else if (parties > 0)
+            lines.Add("None of them has come back from the hills with a tale to tell. Not yet.");
+
+        var crises = sim.Reckoning.Crises;
+        if (crises.Count == 0)
+            lines.Add("It was a quiet season, for the valley. We'll take it.");
+        else
+        {
+            foreach (var (kind, met) in crises.Take(3))
+                lines.Add(CrisisLine(kind, met));
+            if (crises.Count > 3)
+                lines.Add($"And more trouble besides: {Num(crises.Count)} times it came, and {Num(crises.Count(c => c.Met))} times we met it.");
+        }
+
+        var town = sim.Creatures().Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human }).ToList();
+        var dead = town.Where(e => w.Get<Creature>(e).Dead).Select(e => w.Get<Creature>(e).Name).ToList();
+        if (dead.Count > 0)
+            lines.Add($"We lost {Names(dead)} this season. Raise a cup to them tonight.");
+        var back = town.Where(e => !w.Get<Creature>(e).Dead && w.Has<Afterlife.Revived>(e)).Select(e => w.Get<Creature>(e).Name).ToList();
+        if (back.Count > 0)
+            lines.Add($"And {Names(back)} came back to us from beyond. Welcome home!");
+
+        lines.Add("Our guests will toast us at the end of the evening, and tell us what they made of the town.");
+        lines.Add(WhatsOn(sim));
+        return lines;
+    }
+
+    /// <summary>The crier's last word before the revels: everything there is to do, and where.</summary>
+    private string WhatsOn(Simulation sim)
+    {
+        var bits = new List<string>();
+        if (!Prop(sim, BonfireDef).IsNull)
+            bits.Add("dance round the bonfire");
+        foreach (var g in _games)
+            bits.Add(g.Game.Name switch
+            {
+                "Striker" => "ring the bell at the striker",
+                "Butts" => "shoot for the gold at the butts",
+                _ => $"try {g.Game.Label}",
+            });
+        if (!Prop(sim, ShowTableDef).IsNull)
+            bits.Add("lay your best work on the show table for our guests to see");
+        return bits.Count == 0 ? "Now: eat, drink, and be glad!" : $"Now: eat and drink, {Names(bits)}!";
+    }
+
+    private static string CrisisLine(CrisisKind kind, bool met) => (kind, met) switch
+    {
+        (CrisisKind.Raid, true) => "When raiders came down the road, we drove them off.",
+        (CrisisKind.Raid, false) => "When raiders came down the road, they had the better of us.",
+        (CrisisKind.Fire, true) => "When fire took hold, we beat it out.",
+        (CrisisKind.Fire, false) => "When fire took hold, it burned what it would.",
+        (CrisisKind.Shortage, true) => "When the stores ran low, we made do.",
+        (CrisisKind.Shortage, false) => "When the stores ran low, we went hungry.",
+        (CrisisKind.Plague, true) => "When the fever came, we nursed each other through it.",
+        (CrisisKind.Plague, false) => "When the fever came, it took its toll.",
+        (CrisisKind.Dragon, true) => "And the dragon! We stood up to a dragon, friends!",
+        (CrisisKind.Dragon, false) => "And the dragon... we'll not speak of the dragon.",
+        _ => met ? "Trouble came, and we met it." : "Trouble came, and it got the better of us.",
+    };
+
+    private static readonly string[] Numbers = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+
+    private static string Num(int n) => n >= 0 && n < Numbers.Length ? Numbers[n] : n.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    private static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
+
+    private static string Plural(int n, string word) => n == 1 ? word : word + "s";
+
+    /// <summary>"a", "a and b", "a, b and c".</summary>
+    private static string Names(IReadOnlyList<string> names) => names.Count switch
+    {
+        0 => "",
+        1 => names[0],
+        _ => $"{string.Join(", ", names.Take(names.Count - 1))} and {names[^1]}",
+    };
+
+    // ---------------- The revels: the crier's calls ----------------
+
+    /// <summary>Now and then the crier calls the crowd to something: a game, the dance, the show table, the tables.</summary>
+    private void CallToTheRevels(Simulation sim)
+    {
+        var now = sim.Clock.Tick;
+        if (now < _nextCall)
+            return;
+        _nextCall = now + SimClock.HoursToTicks(sim.Defs.Festival.CallMinutes / 60f);
+        var calls = new List<string>();
+        foreach (var g in _games)
+            calls.Add(g.Game.Name switch
+            {
+                "Striker" => "Who'll try the striker? Ring the bell and the purse is yours!",
+                "Butts" => "Three arrows at the butts! Nearest the gold takes the purse!",
+                _ => $"Who'll try {g.Game.Label}? There's a purse for the best!",
+            });
+        if (!Prop(sim, BonfireDef).IsNull)
+            calls.Add("Come and dance, all of you! Round the bonfire!");
+        if (!Prop(sim, ShowTableDef).IsNull)
+            calls.Add("Have you seen the show table? Lay out your best work, friends: our guests are looking!");
+        if (calls.Count == 0)
+            return;
+        Say(sim, CrierNow(sim), calls[_callIndex++ % calls.Count]);
     }
 
     /// <summary>When the ceremony begins: its hours before the round's end, and not before the festival.</summary>
@@ -264,8 +476,14 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
                 w.Get<Adventurer>(who).Satisfaction += liking;
                 if (!made.Maker.IsNull)
                     _praise[made.Maker] = _praise.GetValueOrDefault(made.Maker) + liking;
-                if (_rand.NextFloat() < 0.4f)
+                // The first look at a piece is always remarked on, so its maker hears how it's taken.
+                var first = !_admired.Any(p => p.Piece == piece && p.Who != who);
+                if (first || _rand.NextFloat() < 0.4f)
                     sim.Speech.Say(sim, who, Remark(made.Quality, w.Get<Thing>(piece).Label), Volume.Say);
+                if (first && w.TryGet<Creature>(made.Maker, out var maker))
+                    sim.Messages.Add(liking > 0 ? MessageKind.Good : MessageKind.Info,
+                        $"A visitor looks over {maker.Name}'s {w.Get<Thing>(piece).Label} on the show table: {(liking > 0 ? "they like it" : "they're not taken with it")}.",
+                        cells[0]);
                 break; // one piece a look: they take their time over it
             }
         }
@@ -292,13 +510,18 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
             return;
         score = Math.Clamp(score, 0, 100);
         standing.Turns++;
+        var thing = Prop(sim, game.Def);
         if (score > standing.BestScore)
         {
+            var was = standing.Best;
             standing.Best = who;
             standing.BestName = c.Name;
             standing.BestScore = score;
+            // A new leader's news: whoever's watching hears of it (a player's own turn tells them itself).
+            if (was != who && !sim.World.Has<Avatar>(who))
+                sim.Messages.Add(MessageKind.Info, $"{c.Name} leads at {game.Label} with {score} of 100.",
+                    thing.IsNull ? null : sim.World.Get<Thing>(thing).Cell);
         }
-        var thing = Prop(sim, game.Def);
         if (thing.IsNull)
             return;
         var at = sim.World.Get<Thing>(thing).Cell;
@@ -380,7 +603,7 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
                 _parties.Add(a.Party);
         _parties.Sort();
         ChooseHonours(sim);
-        Crier = RoundSystem.Crier(sim, sim.Round.Square ?? default);
+        CrierNow(sim);
         Enter(sim, CeremonyStep.Bell);
     }
 
@@ -388,7 +611,7 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
     {
         var now = sim.Clock.Tick;
         // The verdict keeps its time: whatever's left of the toasts and honours gives way to it.
-        var verdictAt = sim.Round.EndTick(sim) - SimClock.HoursToTicks(sim.Defs.Festival.VerdictMinutes / 60f);
+        var verdictAt = sim.Round.EndTick(sim) - (long)(sim.Defs.Festival.VerdictSeconds * SimClock.TicksPerSecond);
         while (Step != CeremonyStep.Done && (now >= _stepUntil || (now >= verdictAt && Step < CeremonyStep.Verdict)))
         {
             if (now >= verdictAt && Step < CeremonyStep.Verdict)
@@ -401,7 +624,7 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
                 case CeremonyStep.Bell:
                     Enter(sim, CeremonyStep.Toasts);
                     break;
-                case CeremonyStep.Toasts when _stepIndex + 1 < _parties.Count:
+                case CeremonyStep.Toasts when _stepIndex + 1 < _parties.Count && _stepIndex >= -1:
                     _stepIndex++;
                     Toast(sim);
                     break;
@@ -425,30 +648,35 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         }
     }
 
-    private long Minutes(Simulation sim, float minutes) => sim.Clock.Tick + SimClock.HoursToTicks(minutes / 60f);
+    /// <summary>The crier says a line, and the step holds for it to be read.</summary>
+    private void Announce(Simulation sim, string line)
+    {
+        Say(sim, CrierNow(sim), line);
+        _stepUntil = sim.Clock.Tick + LineTicks(sim, line);
+    }
 
     private void Enter(Simulation sim, CeremonyStep step)
     {
         Step = step;
         _stepIndex = 0;
-        var def = sim.Defs.Festival;
         switch (step)
         {
             case CeremonyStep.Bell:
                 BellTick = sim.Clock.Tick;
-                Say(sim, Crier, "Gather round, everyone! Round the well! Before the night's out, we raise our cups.");
-                _stepUntil = Minutes(sim, def.BellMinutes);
+                // A few seconds more than the line: time to come in from the revels.
+                Announce(sim, "Gather round, everyone! Round the well! Before the night's out, we raise our cups.");
+                _stepUntil += SimClock.TicksPerSecond * 4;
                 break;
             case CeremonyStep.Toasts:
                 if (_parties.Count == 0)
                 {
-                    Say(sim, Crier, "No travellers left in town to drink with. Well. We'll drink to them anyway.");
-                    _stepUntil = Minutes(sim, def.ToastMinutes / 2);
+                    Announce(sim, "No travellers left in town to drink with. Well. We'll drink to them anyway.");
                     _stepIndex = int.MaxValue - 1;
                     break;
                 }
-                Say(sim, Crier, "Our guests first! Let's hear what they make of us.");
-                Toast(sim);
+                // The crier's word, then each party's toast in turn (from index 0).
+                Announce(sim, "Our guests first! Let's hear what they make of us.");
+                _stepIndex = -1;
                 break;
             case CeremonyStep.Honours:
                 if (_honours.Count == 0)
@@ -467,10 +695,12 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
                 if (!VerdictRead)
                 {
                     sim.Reckoning.FinalCount(sim, _toasted);
-                    sim.Round.ReadTheReckoning(sim);
+                    var said = sim.Round.ReadTheReckoning(sim);
                     VerdictRead = true;
+                    // Read it, let it sink in, then the reveal.
+                    DoneTick = sim.Clock.Tick + SpeechSystem.ReadingTicks(said) + (long)(sim.Defs.Festival.VerdictPauseSeconds * SimClock.TicksPerSecond);
                 }
-                _stepUntil = sim.Round.EndTick(sim);
+                _stepUntil = DoneTick;
                 break;
         }
     }
@@ -487,8 +717,8 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
     /// </summary>
     private void Toast(Simulation sim)
     {
-        _stepUntil = Minutes(sim, sim.Defs.Festival.ToastMinutes);
-        if (_stepIndex >= _parties.Count)
+        _stepUntil = sim.Clock.Tick;
+        if (_stepIndex < 0 || _stepIndex >= _parties.Count)
             return;
         var w = sim.World;
         var party = _parties[_stepIndex];
@@ -499,7 +729,9 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
             return;
         var mean = members.Average(e => w.Get<Adventurer>(e).Satisfaction);
         var speaker = members.FirstOrDefault(e => SpeechSystem.CanAct(sim, e), Entity.Null);
-        Say(sim, speaker, ToastLine(mean));
+        var line = ToastLine(mean);
+        Say(sim, speaker, line);
+        _stepUntil = sim.Clock.Tick + LineTicks(sim, line);
         foreach (var e in members)
         {
             sim.Reckoning.AdventurerLeft(sim, w.Get<Adventurer>(e).Satisfaction);
@@ -519,9 +751,9 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
 
     private void CallHonour(Simulation sim)
     {
-        _stepUntil = Minutes(sim, sim.Defs.Festival.HonourMinutes);
+        _stepUntil = sim.Clock.Tick;
         if (_stepIndex < _honours.Count)
-            Say(sim, Crier, $"And for {_honours[_stepIndex].Title}: {_honours[_stepIndex].Name}!");
+            Announce(sim, $"And for {_honours[_stepIndex].Title}: {_honours[_stepIndex].Name}!");
     }
 
     /// <summary>
@@ -610,6 +842,15 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
             w.String(h.Name);
             w.Entity(h.Who);
         }
+        w.Int(_tale.Count);
+        foreach (var line in _tale)
+            w.String(line);
+        w.Int(_taleIndex);
+        w.Long(_nextLineAt);
+        w.Long(_nextCall);
+        w.Int(_callIndex);
+        w.Long(RevelsTick);
+        w.Long(DoneTick);
     }
 
     public void Load(SaveReader r, Simulation sim)
@@ -627,6 +868,8 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         _praise.Clear();
         _parties.Clear();
         _honours.Clear();
+        _tale.Clear();
+        (_taleIndex, _nextLineAt, _nextCall, _callIndex, RevelsTick, DoneTick) = (-1, 0, 0, 0, -1, -1);
         if (StartTick < 0)
             return;
         Part = (FestivalPart)r.Int();
@@ -660,6 +903,23 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
             _parties.Add(r.Int());
         for (var n = r.Count(100); n > 0; n--)
             _honours.Add(new Honour(r.String(), r.String(), r.Entity()));
+        if (r.Version < 31)
+        {
+            // Before the tale: a festival saved in its opening goes straight on to the revels.
+            if (Part == FestivalPart.Opening)
+                _taleIndex = 0;
+            if (Part != FestivalPart.Opening)
+                RevelsTick = StartTick;
+            return;
+        }
+        for (var n = r.Count(1000); n > 0; n--)
+            _tale.Add(r.String());
+        _taleIndex = r.Int();
+        _nextLineAt = r.Long();
+        _nextCall = r.Long();
+        _callIndex = r.Int();
+        RevelsTick = r.Long();
+        DoneTick = r.Long();
     }
 
     private static void Entities(SaveWriter w, IEnumerable<Entity> list)
@@ -686,3 +946,4 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
             map[r.Entity()] = r.Float();
     }
 }
+

@@ -51,6 +51,7 @@ public sealed partial class VillageGame
         DrawVillagerBar();
         DrawGhostBanner();
         DrawCallToArms();
+        DrawFestivalCard();
         DrawToasts();
         // Bottom left, before the centre so the centre keeps clear of it.
         DrawInspector();

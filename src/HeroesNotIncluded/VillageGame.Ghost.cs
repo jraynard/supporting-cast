@@ -44,7 +44,7 @@ public sealed partial class VillageGame
         if (DieAt >= 0 && _time >= DieAt && HasAvatar && InRound)
             Issue(new DevKillCommand(_avatar)); // --die-at: once; the avatar is gone after
         if (FestivalAt >= 0 && _time >= FestivalAt && _sim.Round.Phase == RoundPhase.Playing)
-            Issue(new DevFestivalCommand()); // --festival-at: once; the round's in its festival after
+            Issue(new DevFestivalCommand(_avatar)); // --festival-at: once, you by the well; the round's in its festival after
         var was = _ghost;
         _ghost = HasAvatar ? Entity.Null : Ghosts.Of(_sim, LocalPlayer ?? Guid.Empty);
         if (_ghost.IsNull)

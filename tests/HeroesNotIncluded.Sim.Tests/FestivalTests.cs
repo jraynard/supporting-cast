@@ -34,10 +34,12 @@ public class FestivalTests
         Assert.Equal(RoundPhase.Festival, sim.Round.Phase);
     }
 
+    /// <summary>On through the gathering and the crier's tale to the revels.</summary>
     private static void ToRevels(Simulation sim)
     {
         ToFestival(sim);
-        sim.TickMany(SimClock.HoursToTicks(sim.Defs.Festival.OpeningHours));
+        for (var t = 0; t < SimClock.TicksPerHour * 4 && sim.Festival.Part == FestivalPart.Opening; t += 30)
+            sim.TickMany(30);
         Assert.Equal(FestivalPart.Revels, sim.Festival.Part);
     }
 
@@ -135,11 +137,13 @@ public class FestivalTests
         var guest = party[0];
         w.Get<Mind>(guest).Job = null;
         w.Get<Position>(guest) = Position.At(Beside(sim, table));
+        var before = w.Get<Adventurer>(guest).Satisfaction; // the evening's moved it already
         sim.Festival.Update(sim);
         var liking = sim.Defs.Festival.AdmireSatisfaction[(int)Quality.Masterwork];
-        Assert.Equal(liking, w.Get<Adventurer>(guest).Satisfaction, 3);
+        Assert.Equal(before + liking, w.Get<Adventurer>(guest).Satisfaction, 3);
         sim.Festival.Update(sim);
-        Assert.Equal(liking, w.Get<Adventurer>(guest).Satisfaction, 3); // each piece once
+        Assert.Equal(before + liking, w.Get<Adventurer>(guest).Satisfaction, 3); // each piece once
+        Assert.Contains(sim.Messages.Messages, m => m.Text.Contains($"{w.Get<Creature>(maker).Name}'s") && m.Text.Contains("show table"));
     }
 
     [Fact]
@@ -260,5 +264,128 @@ public class FestivalTests
         sim.Shops.Post(sim, guest, sim.Defs.Service(ServiceKind.Drink), "An ale.", 0, sim.Clock.Tick + 1000, Entity.Null, inn, 0);
         Assert.True(Festival.StillServing(sim, cook));
         Assert.Null(Festival.Gathering(sim, cook));
+    }
+
+    [Fact]
+    public void TheCrierTellsTheSeasonAtTheWellBeforeTheRevels()
+    {
+        var sim = Round();
+        SendParty(sim, 2f);
+        sim.Reckoning.CrisisResolved(sim, CrisisKind.Raid, true);
+        sim.Reckoning.CrisisResolved(sim, CrisisKind.Fire, false);
+        ToFestival(sim, 1);
+        Assert.False(sim.Festival.Telling, "the town gathers first");
+        var crier = sim.Festival.Crier;
+        Assert.False(crier.IsNull);
+        Assert.False(sim.World.Has<PlayerCharacter>(crier), "a player's character isn't made to make speeches");
+
+        var tale = sim.Festival.Tale(sim);
+        Assert.Contains(tale, l => l.Contains("drove them off"));
+        Assert.Contains(tale, l => l.Contains("burned what it would"));
+        Assert.Contains(tale, l => l.Contains("show table"));
+
+        // Every line's said, in order, each given its reading time before the next; then the revels.
+        var heardAt = new Dictionary<string, long>();
+        while (sim.Festival.Part == FestivalPart.Opening)
+        {
+            sim.TickMany(10);
+            foreach (var u in sim.Speech.Kept)
+                if (u.Speaker == sim.Festival.Crier || tale.Contains(u.Text))
+                    heardAt.TryAdd(u.Text, u.Tick);
+            Assert.True(sim.Clock.Tick < sim.Festival.CeremonyTick(sim), "the tale's over well before the ceremony");
+        }
+        Assert.Equal(FestivalPart.Revels, sim.Festival.Part);
+        var said = tale.Where(heardAt.ContainsKey).ToList();
+        Assert.Equal(tale, said);
+        for (var k = 1; k < tale.Count; k++)
+            Assert.True(heardAt[tale[k]] - heardAt[tale[k - 1]] >= Speech.SpeechSystem.ReadingTicks(tale[k - 1]),
+                $"\"{tale[k - 1]}\" was given time to be read");
+        Assert.Contains(sim.Messages.Messages, m => m.Text.StartsWith("The revels are open") && m.Location == null);
+    }
+
+    [Fact]
+    public void TheCrowdGathersCloseForTheTale()
+    {
+        var sim = Round();
+        ToFestival(sim, 1);
+        while (!sim.Festival.Telling)
+            sim.TickMany(30);
+        sim.TickMany(SimClock.TicksPerSecond * 10);
+        var w = sim.World;
+        var square = sim.Round.Square!.Value;
+        var listening = sim.Creatures().Count(e => !w.Has<Avatar>(e) && w.Get<Mind>(e).Job is FestivalJob { Activity: FestivalActivity.Gather });
+        Assert.True(listening > 0, "the town gathers round the well to hear it");
+    }
+
+    [Fact]
+    public void APlayerLaysTheirOwnWorkOnTheShowTableFromTheirPack()
+    {
+        var sim = Round();
+        ToRevels(sim);
+        var w = sim.World;
+        var me = Me(sim);
+        var table = sim.Festival.Prop(sim, FestivalSystem.ShowTableDef);
+        w.Get<Position>(me) = Position.At(Beside(sim, table));
+        var cell = w.Get<Thing>(table).Cell;
+        Assert.Equal(AvatarActionKind.OpenStorage, AvatarSystem.ActionAt(sim, me, cell).Kind); // nothing of mine to show yet
+
+        var plain = sim.CreateItem(sim.Defs.Thing("IronSpear"), 1);
+        w.Add(plain, new Crafted { Quality = Quality.Plain, Maker = me });
+        var fine = sim.CreateItem(sim.Defs.Thing("IronSpear"), 1);
+        w.Add(fine, new Crafted { Quality = Quality.Fine, Maker = me });
+        Assert.True(sim.Store(sim.PackOf(me), plain).IsNull);
+        Assert.True(sim.Store(sim.PackOf(me), fine).IsNull);
+
+        var action = AvatarSystem.ActionAt(sim, me, cell);
+        Assert.Equal(AvatarActionKind.ShowPiece, action.Kind);
+        Assert.Equal(fine, action.Item); // the best of it
+        Assert.Contains("show table", action.Label);
+        AvatarSystem.Perform(sim, me, action);
+        Assert.Contains(fine, sim.StoredIn(table));
+    }
+
+    [Fact]
+    public void TheCeremonyGivesEachLineItsTimeAndEndsOnceTheVerdictsSunkIn()
+    {
+        var sim = Round();
+        SendParty(sim, 4f);
+        ToFestival(sim);
+        sim.Clock.Tick = sim.Festival.CeremonyTick(sim) - 1;
+        long? verdictAt = null;
+        string verdict = "";
+        while (sim.Round.Phase == RoundPhase.Festival)
+        {
+            sim.TickMany(10);
+            if (verdictAt == null && sim.Speech.Kept.LastOrDefault(u => u.Text.StartsWith("Friends! The season's over.")) is { } v)
+                (verdictAt, verdict) = (v.Tick, v.Text);
+        }
+        Assert.Equal(RoundPhase.Over, sim.Round.Phase);
+        Assert.NotNull(verdictAt);
+        Assert.True(sim.Round.Summary!.EndedTick - verdictAt >= Speech.SpeechSystem.ReadingTicks(verdict), "the verdict's read before the reveal");
+        Assert.True(sim.Round.Summary.EndedTick < sim.Round.EndTick(sim), "with one party and a few honours, it's over sooner than the clock");
+
+        string[] ceremony = ["Gather round", "Our guests first", "No travellers", "And for ", "Friends! The season's over"];
+        var said = sim.Speech.Kept.Where(u => u.Tick >= sim.Festival.CeremonyTick(sim) && ceremony.Any(u.Text.StartsWith)).ToList();
+        Assert.True(said.Count >= 3, "the bell, the guests' turn and the verdict");
+        for (var k = 1; k < said.Count; k++)
+            if (said[k - 1].Speaker == said[k].Speaker)
+                Assert.True(said[k].Tick - said[k - 1].Tick >= Speech.SpeechSystem.ReadingTicks(said[k - 1].Text),
+                    $"\"{said[k - 1].Text}\" was given time to be read");
+    }
+
+    [Fact]
+    public void ASaveMidTaleCarriesOnTheTale()
+    {
+        var sim = Round();
+        ToFestival(sim, 1);
+        while (!sim.Festival.Telling)
+            sim.TickMany(30);
+        sim.TickMany(SimClock.TicksPerSecond * 3);
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        Assert.True(loaded.Festival.Telling);
+        Assert.Equal(sim.Festival.Crier, loaded.Festival.Crier);
+        for (var t = 0; t < SimClock.TicksPerHour * 4 && loaded.Festival.Part == FestivalPart.Opening; t += 30)
+            loaded.TickMany(30);
+        Assert.Equal(FestivalPart.Revels, loaded.Festival.Part);
     }
 }

@@ -204,7 +204,7 @@ public sealed partial class VillageGame
         if (round.Phase == Sim.Round.RoundPhase.Festival)
             return _sim.Festival.Part switch
             {
-                Sim.Round.FestivalPart.Opening => "The festival: to the square!",
+                Sim.Round.FestivalPart.Opening => _sim.Festival.Telling ? "The festival: the crier tells the season" : "The festival: to the square!",
                 Sim.Round.FestivalPart.Revels => "The festival: feast, dance and games",
                 Sim.Round.FestivalPart.Ceremony => _sim.Festival.Step switch
                 {
