@@ -701,6 +701,9 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             tale += " The inn's rations kept us going.";
         if (back.Count > 0)
             w.Add(back[0], new ReportPending { Quest = quest.Id, Danger = quest.Danger, Text = tale });
+        // Back in triumph, every one of them: they'll want a feast at the inn.
+        if (success && lost == 0 && back.Count >= 2 && w.TryGet<Adventurer>(back[0], out var leader))
+            w.Add(back[0], new Hospitality.FeastDue { Party = leader.Party });
         // How the broker's word held up counts with them.
         if (told.Length > 0)
             foreach (var e in back)

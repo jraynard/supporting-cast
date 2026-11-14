@@ -473,6 +473,8 @@ public sealed class DefDatabase
 
     public bool TryThing(string name, out ThingDef def) => _things.TryGetValue(name, out def!);
 
+    public bool TryCreature(string name, out CreatureDef def) => _creatures.TryGetValue(name, out def!);
+
     public bool TryBlock(string name, out BlockDef def) => _blocks.TryGetValue(name, out def!);
 
     private static T Lookup<T>(Dictionary<string, T> map, string name)

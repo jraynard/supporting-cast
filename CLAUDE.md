@@ -86,7 +86,11 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     noisy sniff (`SniffSession`). Rations (`Work/Rations`, packed in `PackSession`) go out on quests
     like charms; a slack tie (`Ration.LooseWrap`) is hidden. A named pot's flavour is the inn's
     `HouseDish`: later pots that taste like it are it. Chopped food (`ChopSession`) cooks faster. The spit
-    (`Roasting`) roasts by crust colour, the oven (`Baking`) bakes by smell; dishes beyond the meal are priced on the sign (`Shops/Menu`).
+    (`Roasting`) roasts by crust colour, the oven (`Baking`) bakes bread and pies (`Pies`) by smell; dishes beyond the meal are priced on the sign (`Shops/Menu`).
+    The butcher block (`Butchery`) dresses what the carter brings whole; a pluck's tear point is hidden. A fatty pot
+    at a boil flares (`StewPot.FlareUntil`): lid it or it's a real fire. The kitchen's fires and stores are its cook's
+    alone (`WorkGivers.FeedsHere`, `KitchenStock`). Rats in a shortage (`Hospitality/Rats`), feasts for a triumphant
+    party (`Hospitality/Feasts`), broths (`Broths`), salting and smoking (`Larder`), word of the food (`ShopSystem.Fare`).
     Adventurers keep the town's hours (`ShopSystem.SmallHours`, `Mealtime`); `staffOnly` furniture
     keeps idlers out of a room. A fever
     (`Healing/FeverSystem`) is an injury that spreads and is quelled by the empath. Poured and

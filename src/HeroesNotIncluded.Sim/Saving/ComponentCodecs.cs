@@ -341,6 +341,11 @@ internal static class ComponentCodecs
         Codec("Mind", WriteMind, ReadMind),
         Codec("Carrying", (w, c) => w.Entity(c.Item), r => new Carrying { Item = r.Entity() }),
         Codec("Migrating", (w, m) => w.Int3(m.To), r => new Migrating { To = r.Int3() }),
+        Codec("Vermin", (w, v) =>
+        {
+            w.Entity(v.Larder);
+            w.Long(v.NextGnaw);
+        }, r => new Hospitality.Vermin { Larder = r.Entity(), NextGnaw = r.Long() }),
         Codec("Adventurer", (w, a) =>
         {
             w.Int(a.Party);
@@ -387,6 +392,9 @@ internal static class ComponentCodecs
             w.Long(s.Until);
         }, r => new Steadied { Band = r.Float(), Until = r.Long() }),
         Codec("LookedAs", (w, l) => w.Int(l.Id), r => new LookedAs { Id = r.Int() }),
+        Codec("FeastDue", (w, f) => w.Int(f.Party), r => new Hospitality.FeastDue { Party = r.Int() }),
+        Codec("Nourished", (w, n) => w.Long(n.Until), r => new Work.Nourished { Until = r.Long() }),
+        Codec("Smoking", (w, s) => w.Float(s.Hours), r => new Work.Smoking { Hours = Math.Clamp(r.Float(), 0f, 1000f) }),
         Codec("ReportPending", (w, p) =>
         {
             w.Int(p.Quest);
@@ -515,6 +523,7 @@ internal static class ComponentCodecs
             w.Int(p.Ladled);
             w.Long(p.TendedUntil);
             WriteFlavour(w, p.Flavour);
+            w.Long(p.FlareUntil);
         }, r =>
         {
             var p = new Work.StewPot();
@@ -532,6 +541,8 @@ internal static class ComponentCodecs
             p.TendedUntil = r.Long();
             if (r.Version >= 21) // flavours came with format 21
                 p.Flavour = ReadFlavour(r);
+            if (r.Version >= 30) // grease fires came with format 30
+                p.FlareUntil = Math.Max(0L, r.Long());
             return p;
         }),
         Codec("Dish", (w, d) =>
@@ -618,11 +629,30 @@ internal static class ComponentCodecs
             w.Float(o.Proved);
             w.Float(o.Bake);
             w.Entity(o.Maker);
-        }, r => new Work.OvenLoad
+            w.Bool(o.Pie);
+            WriteFlavour(w, o.Filling);
+            w.Float(o.Rot);
+        }, r =>
         {
-            Loaves = Math.Clamp(r.Int(), 0, Work.Baking.LoavesPerDough), Knead = Math.Clamp(r.Float(), 0f, 1f),
-            Proved = Math.Clamp(r.Float(), 0f, 1000f), Bake = Math.Clamp(r.Float(), 0f, 2f), Maker = r.Entity(),
+            var o = new Work.OvenLoad
+            {
+                Loaves = Math.Clamp(r.Int(), 0, Math.Max(Work.Baking.LoavesPerDough, Work.Pies.Slices)), Knead = Math.Clamp(r.Float(), 0f, 1f),
+                Proved = Math.Clamp(r.Float(), 0f, 1000f), Bake = Math.Clamp(r.Float(), 0f, 2f), Maker = r.Entity(),
+            };
+            if (r.Version >= 30) // pies came with format 30
+            {
+                o.Pie = r.Bool();
+                o.Filling = ReadFlavour(r);
+                o.Rot = Math.Clamp(r.Float(), 0f, 1f);
+            }
+            return o;
         }),
+        Codec("RawPie", (w, p) =>
+        {
+            WriteFlavour(w, p.Filling);
+            w.Float(p.Crimp);
+            w.Entity(p.Maker);
+        }, r => new Work.RawPie { Filling = ReadFlavour(r), Crimp = Math.Clamp(r.Float(), 0f, 1f), Maker = r.Entity() }),
         Codec("Flawed", (w, f) => w.Int((int)f.Flaw), r => new Work.Flawed { Flaw = (Work.PieceFlaw)r.Int() }),
         Codec("Stored", (w, s) =>
         {

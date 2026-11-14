@@ -554,7 +554,7 @@ public sealed class FuelSystem : ISimSystem
             if (!sim.Burning(e))
                 continue;
             var fuelProps = thing.Def.Building!.Fuel!;
-            fueled.Fuel = Math.Max(0, fueled.Fuel - fuelProps.BurnPerDay * fueled.Burn(fuelProps).BurnFactor / UpdatesPerDay);
+            fueled.Fuel = Math.Max(0, fueled.Fuel - fuelProps.BurnPerDay * fueled.Burn(fuelProps).BurnFactor * Work.Cooking.FireDraw(sim, thing.Cell) / UpdatesPerDay);
             if (fueled.Fuel <= 0)
                 sim.Messages.Add(MessageKind.Warning, $"The {thing.Def.Label} has burned out.", thing.Cell);
         }

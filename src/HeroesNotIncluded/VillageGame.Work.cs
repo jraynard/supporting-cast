@@ -166,6 +166,15 @@ public sealed partial class VillageGame
             case BakeSession bake:
                 DrawBake(bake);
                 return;
+            case CrimpSession crimp:
+                DrawCrimp(crimp);
+                return;
+            case ButcherSession butcher:
+                DrawButcher(butcher);
+                return;
+            case PluckSession pluck:
+                DrawPluck(pluck);
+                return;
             case WashSession wash:
                 DrawWash(wash);
                 return;
@@ -187,6 +196,7 @@ public sealed partial class VillageGame
                 DrawSpitPanel();
                 DrawOvenPanel();
                 DrawPrepPanel();
+                DrawBlockPanel();
                 DrawBarPanel();
                 return;
         }

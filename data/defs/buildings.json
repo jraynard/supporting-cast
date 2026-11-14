@@ -30,18 +30,6 @@
         { "defs": ["Chest"], "at": [1, 3], "facing": 2 },
         { "defs": ["Chest", "Stool"], "at": [4, 3], "facing": 2 }
       ],
-      "upgrades": [
-        {
-          "name": "CookingPot", "label": "cooking pot", "on": "Fireplace", "work": 120,
-          "description": "An iron-banded pot hung in the fireplace on a chain: stews go further than a roast.",
-          "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 6 } ],
-          "model": [
-            { "min": [0.485, 0.6, 0.34], "max": [0.515, 0.63, 0.62], "top": "props/timber_dark", "side": "props/timber_dark" },
-            { "min": [0.35, 0.47, 0.13], "max": [0.65, 0.77, 0.34], "top": "props/stone_block", "side": "props/stone_block" },
-            { "min": [0.38, 0.5, 0.34], "max": [0.62, 0.74, 0.37], "top": "props/meal_top", "side": "props/stone_block" }
-          ]
-        }
-      ],
       "variants": [
         { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster", "parts": { "wall": "TimberWall", "roof": "ThatchRoofPart" } },
         { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
@@ -72,18 +60,6 @@
         { "defs": ["Bed", "StrawPallet"], "at": [2, 1] },
         { "defs": ["Bed", "StrawPallet"], "at": [3, 1] },
         { "defs": ["Chest", "Stool"], "at": [1, 4], "facing": 1 }
-      ],
-      "upgrades": [
-        {
-          "name": "CookingPot", "label": "cooking pot", "on": "Fireplace", "work": 120,
-          "description": "An iron-banded pot hung in the fireplace on a chain: stews go further than a roast.",
-          "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 6 } ],
-          "model": [
-            { "min": [0.485, 0.6, 0.34], "max": [0.515, 0.63, 0.62], "top": "props/timber_dark", "side": "props/timber_dark" },
-            { "min": [0.35, 0.47, 0.13], "max": [0.65, 0.77, 0.34], "top": "props/stone_block", "side": "props/stone_block" },
-            { "min": [0.38, 0.5, 0.34], "max": [0.62, 0.74, 0.37], "top": "props/meal_top", "side": "props/stone_block" }
-          ]
-        }
       ],
       "variants": [
         { "name": "Timber", "label": "thatched", "kit": "timber_plaster" },
@@ -142,6 +118,10 @@
         { "def": "StewPot", "at": [3, 1] },
         { "def": "PrepTable", "at": [4, 1] },
         { "def": "Oven", "at": [1, 3], "facing": 3 },
+        { "def": "ButcherBlock", "at": [5, 3] },
+        { "def": "LogBasket", "at": [6, 3] },
+        { "def": "SmokingRack", "at": [3, 3] },
+        { "def": "StewPot", "at": [1, 2] },
         { "def": "Larder", "at": [5, 1], "facing": 2 },
         { "def": "WashTub", "at": [6, 1] },
         { "def": "ServingHatch", "at": [7, 4] },
@@ -184,18 +164,6 @@
         { "defs": ["Bed", "StrawPallet"], "at": [11, 1], "level": 1 },
         { "defs": ["Bed", "StrawPallet"], "at": [11, 9], "level": 1 }
       ],
-      "upgrades": [
-        {
-          "name": "CookingPot", "label": "cooking pot", "on": "Fireplace", "work": 120,
-          "description": "An iron-banded pot hung in the fireplace on a chain: stews go further than a roast.",
-          "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 6 } ],
-          "model": [
-            { "min": [0.485, 0.6, 0.34], "max": [0.515, 0.63, 0.62], "top": "props/timber_dark", "side": "props/timber_dark" },
-            { "min": [0.35, 0.47, 0.13], "max": [0.65, 0.77, 0.34], "top": "props/stone_block", "side": "props/stone_block" },
-            { "min": [0.38, 0.5, 0.34], "max": [0.62, 0.74, 0.37], "top": "props/meal_top", "side": "props/stone_block" }
-          ]
-        }
-      ],
       "eatThought": "AteAtTheInn", "letsBeds": true, "defaultName": "The Wild Bear",
       "variants": [
         { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster" },
@@ -226,18 +194,6 @@
         { "defs": ["Bed", "StrawPallet"], "at": [7, 3], "facing": 1 },
         { "defs": ["Chest"], "at": [1, 3], "facing": 2 },
         { "defs": ["Stool"], "at": [5, 3], "facing": 2 }
-      ],
-      "upgrades": [
-        {
-          "name": "CookingPot", "label": "cooking pot", "on": "Hearth", "work": 120,
-          "description": "An iron-banded pot hung over the hearth on a chain: stews go further than a roast.",
-          "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 6 } ],
-          "model": [
-            { "min": [0.47, 0.47, 0.18], "max": [0.53, 0.53, 0.95], "top": "props/log_side", "side": "props/log_side" },
-            { "min": [0.3, 0.3, 0.2], "max": [0.7, 0.7, 0.5], "top": "props/stone_block", "side": "props/stone_block" },
-            { "min": [0.34, 0.34, 0.5], "max": [0.66, 0.66, 0.54], "top": "props/meal_top", "side": "props/stone_block" }
-          ]
-        }
       ],
       "eatThought": "FeastedInTheHall",
       "variants": [
@@ -299,7 +255,7 @@
       ],
       "parts": { "foundation": "Sill", "wall": "LogWall", "door": "PlankDoor", "roof": "TurfRoofPart" },
       "furnish": [
-        { "def": "Campfire", "at": [1, 1] },
+        { "def": "Hearth", "at": [1, 1] },
         { "def": "MeditationStone", "at": [5, 2] },
         { "def": "StrawPallet", "at": [2, 3], "facing": 1 },
         { "def": "StrawPallet", "at": [4, 3], "facing": 1 },
@@ -633,10 +589,10 @@
         { "min": [0.42, 0.28, 0], "max": [0.58, 0.72, 0.12], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" },
         { "min": [0.28, 0.42, 0.06], "max": [0.72, 0.58, 0.18], "top": "props/log_side", "side": "props/log_side" }
       ],
-      "description": "A stone-ringed fire in the middle of the floor: warms the house, lights it and cooks. Keep it fed with wood.",
+      "description": "A stone-ringed fire in the middle of the floor: warms the house and lights it. Keep it fed with wood.",
       "maxHp": 120, "flammability": 0,
       "building": {
-        "partOnly": true, "work": 80, "cost": [ { "def": "Stone", "count": 6 }, { "def": "Wood", "count": 4 } ], "workbench": { "bills": 4 },
+        "partOnly": true, "work": 80, "cost": [ { "def": "Stone", "count": 6 }, { "def": "Wood", "count": 4 } ],
         // Holds its cell at 22°C: a closed room settles a little under that, people beside it feel a few degrees more.
         "heatOutput": 900, "maxHeatTemp": 22, "lightRadius": 6, "radiantWarmth": 5,
         "fuel": { "def": "Wood", "capacity": 20, "burnPerDay": 12, "refuelAt": 0.5 }
@@ -664,10 +620,10 @@
         { "min": [0.18, 0.1, 1.72], "max": [0.82, 0.64, 1.8], "top": "props/hearth_soot", "side": "props/stone_block" }
       ],
       "modelCutAt": 0.72, "fireAt": [0.5, 0.66, 0.06], "fireSize": 0.75, "smokeAt": [0.5, 0.37, 1.8],
-      "description": "A stone fireplace in the wall under an oak mantel: warms the room, lights it and cooks. Keep it fed with wood.",
+      "description": "A stone fireplace in the wall under an oak mantel: warms the room and lights it. Keep it fed with wood.",
       "maxHp": 160, "flammability": 0,
       "building": {
-        "partOnly": true, "isWall": true, "setInWall": true, "work": 120, "cost": [ { "def": "Stone", "count": 10 }, { "def": "Wood", "count": 2 } ], "workbench": { "bills": 4 },
+        "partOnly": true, "isWall": true, "setInWall": true, "work": 120, "cost": [ { "def": "Stone", "count": 10 }, { "def": "Wood", "count": 2 } ],
         // As the hearth: holds its cell at 22°C, so a closed room settles a little under that.
         "heatOutput": 900, "maxHeatTemp": 22, "lightRadius": 6, "radiantWarmth": 5,
         "fuel": { "def": "Wood", "capacity": 20, "burnPerDay": 12, "refuelAt": 0.5 }

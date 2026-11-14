@@ -100,6 +100,7 @@ public sealed class EatJob(Entity food) : Job
         }
 
         var count = Math.Min(Wanted(Sim, Pawn, def), Get<Stack>(food).Count);
+        HeroesNotIncluded.Sim.Work.Broths.Eaten(Sim, Pawn, food);
         var eaten = Sim.TakeFromStack(food, count);
         var rot = FoodPoisoning.RotOf(Sim, eaten);
         Sim.World.Destroy(eaten);
@@ -974,7 +975,8 @@ public sealed class ButcherJob(Entity carcass, Entity? toSpot = null) : Job
         Sim.World.DestroyDeferred(carcass);
         // A practised butcher wastes less: the full yield at average skill, a fifth less for a novice.
         var share = ButcherYield(Sim, Pawn) + (bonus?.Yield ?? 0f);
-        Sim.SpawnItem(Sim.Defs.Thing("Meat"), Math.Max(1, (int)MathF.Round(def.Animal.MeatYield * share)), cell, rot: rot);
+        if (def.Animal.MeatYield > 0)
+            Sim.SpawnItem(Sim.Defs.Thing("Meat"), Math.Max(1, (int)MathF.Round(def.Animal.MeatYield * share)), cell, rot: rot);
         if (def.Animal.HideYield > 0 && Sim.Defs.TryThing("Hide", out var hide))
             Sim.SpawnItem(hide, Math.Max(1, (int)MathF.Round(def.Animal.HideYield * share)), cell, rot: rot);
     }

@@ -208,6 +208,9 @@ public static class Rations
             return PrepStep.Chop;
         if (!flour.IsNull && flour == held)
             return PrepStep.Knead;
+        var dough = Baking.DoughIn(sim, cook);
+        if (!dough.IsNull && dough == held && Pies.FillingPortionsOn(sim, cook) >= Pies.Filling)
+            return PrepStep.Pie;
         if (PortionsOn(sim, cook) >= Portions)
             return PrepStep.Pack;
         return !chop.IsNull ? PrepStep.Chop : !flour.IsNull ? PrepStep.Knead : PrepStep.Next;
@@ -223,6 +226,7 @@ public static class Rations
             PrepStep.Chop => $"Chop the {sim.World.Get<Thing>(Choppable(sim, cook)).Def.Label}",
             PrepStep.Knead => "Knead some dough",
             PrepStep.Pack => "Pack rations for the road",
+            PrepStep.Pie => "Make a pie",
             _ => null,
         };
     }
@@ -252,6 +256,22 @@ public static class Rations
                 else
                     sim.Messages.Add(MessageKind.Info, $"Dough takes {Baking.FlourPerDough} flour: there's some in the larder.", cell);
                 return;
+            case PrepStep.Salt:
+                if (!Larder.CanSalt(sim, cook))
+                    sim.Messages.Add(MessageKind.Info, Larder.SaltOn(sim, cook).IsNull
+                        ? "There's salt in the larder: bring a scoop or two."
+                        : "Salt's for raw meat and fish: bring some from the larder.", cell);
+                else
+                    Larder.SaltAll(sim, cook, cell);
+                return;
+            case PrepStep.Pie:
+                if (Pies.CanMake(sim, cook))
+                    WorkSystem.Start(sim, cook, new CrimpSession { Table = table });
+                else
+                    sim.Messages.Add(MessageKind.Info, Baking.DoughIn(sim, cook).IsNull
+                        ? "A pie wants a ball of dough: knead some first."
+                        : $"A pie wants {Pies.Filling} portions of raw food to fill it: meat, fowl, berries, cabbage.", cell);
+                return;
             case PrepStep.Pack:
                 if (PortionsOn(sim, cook) >= Portions)
                     WorkSystem.Start(sim, cook, new PackSession { Table = table });
@@ -262,8 +282,8 @@ public static class Rations
     }
 }
 
-/// <summary>What to do at a prep table: the key's choice, or chopping, kneading or packing by name.</summary>
-public enum PrepStep : byte { Next, Chop, Knead, Pack }
+/// <summary>What to do at a prep table: the key's choice, or chopping, kneading, packing or making a pie by name.</summary>
+public enum PrepStep : byte { Next, Chop, Knead, Pack, Pie, Salt }
 
 /// <summary>The work key at a prep table, or one of its steps by name (<see cref="Rations.Start"/>).</summary>
 public sealed record PrepCommand(Entity Avatar, Entity Table, PrepStep Step) : ISimCommand, IActorCommand

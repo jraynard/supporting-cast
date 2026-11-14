@@ -130,7 +130,7 @@
       "description": "A black iron pot on a trivet by the fire. Whatever goes in comes out as stew, if it's watched.",
       "maxHp": 150, "flammability": 0,
       "building": { "staffOnly": true, "work": 120, "surfaceHeight": 0.55, "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 2 } ],
-                    "stewPot": { "serves": "Stew", "yield": 1.5, "holds": 6 } },
+                    "stewPot": { "serves": "Stew", "grains": "Porridge", "yield": 1.5, "holds": 6 } },
       "model": [
         { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.08], "top": "props/stone_block", "side": "props/stone_block" },
         { "min": [0.16, 0.16, 0.08], "max": [0.84, 0.84, 0.5], "top": "props/iron_pot", "side": "props/iron_pot" },
@@ -188,12 +188,52 @@
       ]
     },
     {
+      // The kitchen's butcher block (Work.Butchery): a side of pork jointed on it with the cleaver, a
+      // bird plucked. What the carter brings whole is dressed here.
+      "name": "ButcherBlock", "label": "butcher block", "category": "Building", "solid": true, "sprite": "buildings/table",
+      "description": "A thick end of oak scarred by the cleaver. F here with a side of pork joints it; with a bird, plucks it.",
+      "maxHp": 120, "flammability": 0.8,
+      "building": { "staffOnly": true, "work": 100, "surfaceHeight": 0.62, "butcherBlock": true, "cost": [ { "def": "Wood", "count": 10 } ] },
+      "model": [
+        { "min": [0.14, 0.14, 0], "max": [0.86, 0.86, 0.56], "top": "props/log_end", "side": "props/log_side" },
+        { "min": [0.10, 0.10, 0.56], "max": [0.90, 0.90, 0.62], "top": "props/log_end", "side": "props/timber_dark" },
+        { "min": [0.56, 0.20, 0.62], "max": [0.82, 0.30, 0.66], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.40, 0.21, 0.62], "max": [0.56, 0.29, 0.65], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ]
+    },
+    {
+      // The kitchen's log basket: wood for its fires, brought by the carter (Shops.InnSupplySystem).
+      // Only the kitchen's cook feeds its fires, so in a rush it's a hand off the pot.
+      "name": "LogBasket", "label": "log basket", "category": "Building", "solid": true, "sprite": "buildings/crate",
+      "description": "A wicker basket of split logs for the kitchen's fires. Holds 2 stacks.",
+      "maxHp": 60, "flammability": 1.0,
+      "building": { "staffOnly": true, "work": 60, "storageStacks": 2, "surfaceHeight": 0.5, "cost": [ { "def": "Wood", "count": 4 } ] },
+      "model": [
+        { "min": [0.14, 0.14, 0], "max": [0.86, 0.86, 0.42], "top": "props/woodpile_top", "side": "props/basket" },
+        { "min": [0.22, 0.22, 0.42], "max": [0.78, 0.78, 0.56], "top": "props/woodpile_top", "side": "props/woodpile_side" }
+      ]
+    },
+    {
+      // A smoking rack (Work.Larder): raw meat or fish hung on it cures in the smoke while a fire
+      // burns within two cells (the bread oven's, in the inn), and keeps for weeks after.
+      "name": "SmokingRack", "label": "smoking rack", "category": "Building", "solid": true, "sprite": "buildings/tool_rack",
+      "description": "Rails and hooks by the oven's fire. Hang raw meat or fish on it and the smoke cures it in a few hours. Holds 2 stacks.",
+      "maxHp": 80, "flammability": 0.8,
+      "building": { "staffOnly": true, "work": 80, "storageStacks": 2, "smokingRack": true, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "model": [
+        { "min": [0.10, 0.40, 0], "max": [0.18, 0.60, 1.0], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.82, 0.40, 0], "max": [0.90, 0.60, 1.0], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.10, 0.46, 0.92], "max": [0.90, 0.54, 0.98], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.10, 0.46, 0.62], "max": [0.90, 0.54, 0.68], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ]
+    },
+    {
       // A cool bin in the inn's kitchen for what the pot needs: a chest by another name, kept
       // stocked at the start of a round (Scenarios/VillageRound).
       "name": "Larder", "label": "larder", "category": "Building", "solid": true, "sprite": "buildings/larder",
-      "description": "Slatted bins and a crock or two: where the kitchen keeps its food. Holds 8 stacks.",
+      "description": "Slatted bins and a crock or two, kept cool: what's in it keeps longer than what's left out in a warm kitchen. Holds 12 stacks.",
       "maxHp": 120, "flammability": 1.0,
-      "building": { "staffOnly": true, "work": 150, "storageStacks": 8, "surfaceHeight": 0.6, "cost": [ { "def": "Wood", "count": 12 } ] },
+      "building": { "staffOnly": true, "work": 150, "storageStacks": 12, "keepsAt": 6, "surfaceHeight": 0.6, "cost": [ { "def": "Wood", "count": 12 } ] },
       "model": [
         { "min": [0.1, 0.18, 0], "max": [0.9, 0.82, 0.6], "top": "props/basket", "side": "props/planks", "front": "props/chest_front" }
       ]

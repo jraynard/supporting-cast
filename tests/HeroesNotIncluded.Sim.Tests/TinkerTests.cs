@@ -446,7 +446,10 @@ public class TinkerTests
         Assert.Equal(purse + order.Price, Coin.Count(sim, tinker));
         // The silver inside went to its owner, less what they paid for (this and whatever else they ordered meanwhile).
         var spent = sim.Shops.All.Where(e => e.Poster == owner && e.Status == OrderStatus.Done).Sum(e => e.Price);
-        Assert.Equal(theirs + 25 - spent, Coin.Count(sim, owner));
+        // ...and any tip for a meal or a drink served them well and quickly.
+        var tipped = sim.Shops.All.Count(e => e.Poster == owner && e.Status == OrderStatus.Done
+            && e.Kind.Kind is ServiceKind.Meal or ServiceKind.Drink or ServiceKind.MixedDrink) * ShopSystem.MasterworkTip;
+        Assert.InRange(Coin.Count(sim, owner), theirs + 25 - spent - tipped, theirs + 25 - spent);
     }
 
     [Fact]

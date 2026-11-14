@@ -27,35 +27,29 @@ provide some purely non-combat options but i think that will be later once we ha
 ## Next
 
 ### The cook pass
-Bring the cook up to the other trades (docs/DESIGN.md, "Cook"). The smith, healer and tinker each
-have five to seven hands-on games, a hidden state read by feel, and work that goes out on quests;
-the cook had two games and nothing that left town. Built so far (HISTORY.md, "Cook pass"):
+Bring the cook up to the other trades (docs/DESIGN.md, "Cook"). Done (HISTORY.md, "Cook pass"):
 flavours, diners' tastes, sniffing, rations for the road; the house dish, diners saying what was
-wrong, tips; chopping, the spit, the oven and dishes priced apart on the sign; and fixes from the
-first playtest (the mealtime rushes, the town's hours, customers kept out of the kitchen). Next, in
-order:
-
-1. **The rest of the menu:** pies; porridge in the morning; butchering and plucking.
-2. **Pressure in the kitchen:** a second pot, the kitchen fire fed by hand; a grease fire (a fatty pot at a boil; clap the lid on or it's a real fire); rats in the
-   larder in the shortage crisis, as creatures the cook chases down.
-3. **The kitchen and the town:** feasts for a triumphant party (several dishes against the clock,
-   the room's mood and tongues); broths with the healer; keeping the larder (salt, smoke, the cold
-   store); word of the food bringing parties.
-
-Left so far:
-- Bots and AI cooks never chop, roast, bake or name a house dish (an AI cook never offers the roast
-  or bread); the house dish brings no more parties yet (word of the
-  food, phase 3).
+wrong, tips; chopping, the spit, the oven and dishes priced apart; porridge, pies, the butcher
+block; two pots, the fire fed by hand, grease fires, rats; feasts, broths, keeping the larder, word
+of the food. Left:
+- Bots and AI cooks never chop, roast, bake, make pies, salt, smoke or name a house dish (an AI
+  cook never offers the roast, bread or pies). Bots don't joint, pluck, lid a flare or chase rats.
 - Rations are sold at the bar's line like any gear in the inn; the hatch would suit them better.
-- Placeholder art: rations are a bolt of cloth, the prep table is a table's sprite, the spit wears
-  the butcher spot's, roast slices a meat sprite; the oven wears the fireplace's, flour the
-  fiber's, dough the clay's, bread the meal's.
+- The healer sending the hurt to eat a broth; teas from shared herbs; pickling.
+- Placeholder art: rations are a bolt of cloth, the prep table and butcher block are a table's
+  sprite, the spit wears the butcher spot's, roast slices and the side of pork a meat sprite; the
+  oven wears the fireplace's, flour and oats the fiber's, dough and the unbaked pie the clay's,
+  bread, porridge and pie the meal's; the fowl is hide, salt is lime, the log basket a crate, the
+  smoking rack the tool rack; rats are small hares.
 - Tune in play: the fold cue and the cord's band (`PackSession`), the craving chance and moods
   (`Tastes`), the fed and sick factors (`Rations`), seasoner weight and cap (`Cooking`), how near
   a pot must taste to be the house dish and how often it's asked for (`HouseDish`), the tips
   (`ShopSystem.FineTip`), the spit's browning and flares (`Roasting`), the mealtimes and small
-  hours (`ShopSystem.Mealtime`, `SmallHours`), arrival hunger (`PartySystem.Send`), kneading's beat, proving's
-  hours and the oven's smells (`Baking`).
+  hours (`ShopSystem.Mealtime`, `SmallHours`), arrival hunger (`PartySystem.Send`), kneading's
+  beat, proving's hours and the oven's smells (`Baking`), the cleaver's sweep and the pluck's tear
+  (`Butchery`), the crimp (`Pies`), how often a fatty pot flares (`Cooking.FlarePerStep`), the rats'
+  appetite (`RatSystem`), the feast's clock and reward (`FeastSystem`), the broth's line and help
+  (`Broths`), how fast word of the food builds and fades (`ShopSystem.Fare`).
 
 ### SOUND
 
@@ -128,11 +122,7 @@ Fights are free movement and blows by reach and timing, Souls-lite, everywhere (
 - **Friendly fire's consequences** (with M4): townsfolk you cut are only hurt; the town remembering
   it, shouting it, and it counting at the reveal.
 
-### Control Pass: on the Deck
-- Built (HISTORY.md, "Control pass: rebinding and the gamepad"). Left for the device: play a round
-  on a Deck from the pad alone; check every mini-game and window navigates (ImGui focus quirks show
-  only in play); tune the stick deadzone and the wheel; export the Steam Input layout to
-  `tools/steamdeck/`.
+### Steam Deck Controls
 - Building and area tools still need the trackpad (a pad cursor would cover them).
 
 ### Internet play
@@ -142,6 +132,7 @@ Fights are free movement and blows by reach and timing, Souls-lite, everywhere (
 ### M4: Whispers
 - Allegiance, objectives, the hidden shop, evidence, player violence, Constable and jail, the bell,
   meetings and exile, ghosts.
+- discord integrations like among us (or probably better examples i dont know)
 
 *Exit: a Whispers round.* **Playtest gate: can traitors act and be caught?**
 

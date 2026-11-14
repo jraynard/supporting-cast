@@ -130,7 +130,7 @@ public static class VillageRound
     }
 
     /// <summary>What the inn's larder starts a round with: a day or two of stew for a busy common room.</summary>
-    public static readonly (string Def, int Count)[] LarderStock = [("Cabbage", 12), ("Meat", 10), ("Berries", 20), ("Emberroot", 6), ("Herbs", 6), ("Flour", 8)];
+    public static readonly (string Def, int Count)[] LarderStock = [("Cabbage", 12), ("Meat", 10), ("Berries", 20), ("Emberroot", 6), ("Herbs", 6), ("Flour", 8), ("Oats", 8), ("PorkSide", 1), ("Fowl", 2), ("CoarseSalt", 6)];
 
     /// <summary>Kegs in the inn's storeroom at the start, and the clean crockery on its shelves.</summary>
     public const int StoreroomKegs = 3, Tankards = 10, Bowls = 10;
@@ -145,6 +145,7 @@ public static class VillageRound
             return;
         var w = sim.World;
         Shops.InnSupplySystem.Deliver(sim, inn, "Larder", LarderStock);
+        Shops.InnSupplySystem.Deliver(sim, inn, "LogBasket", Shops.InnSupplySystem.Logs);
         Shops.InnSupplySystem.Deliver(sim, inn, "Chest", [("Keg", StoreroomKegs)]);
         var parts = Buildings.Parts(sim, inn);
         Entity Near(string def, Func<Defs.ThingDef, bool> by)

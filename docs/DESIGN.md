@@ -285,9 +285,21 @@ the rest follows in the order it's planned (docs/ROADMAP.md, "The cook pass").
   the oven, it's baked by smell alone, the door shut: raw dough, warm and yeasty, bread baking, a
   golden crust, toasty, burning. Take it out on the golden crust; left in, it burns. Two loaves a
   ball. Bread is on the menu, and it keeps: rations with a loaf in them turn half as fast.
-- *Then: more of the menu.*
-  - **Prep, more of it:** butchering what the hunters bring in, plucking.
-  - **Pies** from the oven; porridge in the pot of a morning.
+- *Built: the rest of the menu.*
+  - **Porridge** (`Work/Cooking`): oats in the stew pot; a pot that's mostly grain serves porridge,
+    not stew. On the menu as the breakfast dish: asked for only before noon, and first at
+    breakfast. The AI cook puts oats on of an early morning.
+  - **Pies** (`Work/Pies`): a ball of dough and two portions of raw food at the prep table, the rim
+    crimped round on the marks (`CrimpSession`). Baked in the oven by smell, as bread is, into three
+    slices tasting of the filling. A rim crimped loose lets the filling run out (a leaked pie).
+  - **The butcher block** (`Work/Butchery`): the carter brings pork by the side and birds in their
+    feathers, no use to anyone till they're dressed. A side is jointed with the cleaver as it
+    sweeps over the joints (`ButcherSession`): off a joint it hacks through bone and there's waste.
+    A bird is plucked with short firm pulls (`PluckSession`): hang on and the skin tears, at a
+    point a little different every bird and never shown. Dressed fowl roasts on the spit. An AI
+    cook dresses what's whole in the larder without the games.
+  - The fire's old recipes (simple meals, stew over the hearth, its cooking pot) are gone: the
+    kitchen cooks.
 - *Built: the rushes, and the town's hours* (from the first playtest). Adventurers want a meal at
   breakfast (7 to 9:30) and supper (6 to 9) whenever they're at all peckish, not only when
   starving, and come into town hungry from the road. They keep the town's hours: nobody rides in
@@ -295,21 +307,35 @@ the rest follows in the order it's planned (docs/ROADMAP.md, "The cook pass").
   hurt seen to, they turn in at night unless well rested, and the small hours don't count against
   anyone's patience. A meal only half wanted that never comes is shrugged off. Customers idling
   about the inn keep out of the kitchen (`staffOnly` furniture marks a room so).
-- *Then: pressure in the kitchen.*
-  - **Rushes, more of them:** two pots on the go, the kitchen fire kept fed.
-  - **A grease fire:** a fatty pot left at a boil flares up. Clap the lid on within a breath (a
-    quick cue), or it's a real fire, through the fire the town already fights.
-  - **Rats you chase:** the shortage crisis brings rats into the larder as creatures. Each one left
-    alive spoils more. The cook goes after them with the kitchen knife or a broom, through free
-    movement and blows: a fight at the smallest scale.
-- *Later: the kitchen and the town.*
-  - **Feasts:** a party back in triumph orders one for the whole room. Several dishes against the
-    clock; everyone's mood lifts, tongues loosen, Renown rises.
-  - **With the healer:** broths that speed healing, a broth for the empath's mana, teas from shared
-    herbs. The healer sends patients to eat.
-  - **Keeping the larder:** rot runs faster in a warm kitchen. Salt, a smoking rack over the hearth,
-    pickling, and the cold store kept cold.
-  - **Word of the food:** a good table gets talked about, and more parties come to eat.
+- *Built: pressure in the kitchen.*
+  - **Two pots:** a second over the bread oven's fire.
+  - **The fire fed by hand:** only the kitchen's cook feeds its fires, and what's kept in the
+    kitchen (the larder, the log basket) is theirs alone. A pot's fire set roaring burns wood half
+    again as fast. The carter brings the wood to a log basket by the door.
+  - **A grease fire:** a fatty pot (mostly meat) left at a rolling boil spits into the fire and
+    flares. Clap the lid on within five seconds (Space in the stew, F at the pot), or it's a real
+    fire, through the fire the town already fights.
+  - **Rats you chase** (`Hospitality/Rats`): the shortage crisis looses four into the larder (a
+    quarter of it spoiled already, not half). They keep about it, dart off from anyone close, and
+    each gnaws a portion every hour and a half while it lives. The cook goes after them with the
+    kitchen knife, through free movement and blows; an AI cook does too. When the hard times pass,
+    the rest scurry off.
+- *Built: the kitchen and the town.*
+  - **Feasts** (`Hospitality/Feasts`): a party back from a quest cleared with nobody lost calls for
+    one as they come into the inn: a dish each at the hatch (a different one off the menu where
+    there's a choice), paid over the odds, against a two-hour clock. Laid on, the room's merry, the
+    party's pleased and Renown rises; left bare, they grumble.
+  - **Broths** (`Work/Broths`): a bowl that tastes fresh enough (herbs, greens) is a broth, and the
+    pot says so. Eaten, wounds close half again as fast for half a day, and an empath gets a little
+    mana back.
+  - **Keeping the larder** (`Work/Larder`): the larder keeps cool, so what's left out in a warm
+    kitchen turns first. Salt at the prep table, a scoop to four portions: salt meat and fish keep
+    for weeks and season a pot by themselves. The smoking rack by the oven cures meat and fish in
+    six hours of smoke.
+  - **Word of the food** (`ShopSystem.Fare`): fine meals and the house dish get the table talked
+    of, and the sign says how much. Parties come up to a third sooner for it; the talk fades with
+    each new party, so it has to be kept up.
+- *Later:* teas from the herbs the healer uses, and the healer sending the hurt to eat; pickling.
 - Betrayal later (M4/M5):
   - one bowl poisoned for one diner (the hatch is first come, so a target has to be handed it);
   - a party's rations drugged, or left to turn (the rot already rides out with them);

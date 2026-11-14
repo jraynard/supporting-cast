@@ -126,7 +126,8 @@ public sealed class FireCrisis : ICrisis
 }
 
 /// <summary>
-/// Hard times at the inn: rats have been at the larder (half its food spoiled) and the carter
+/// Hard times at the inn: rats have got into the larder (a quarter of its food spoiled already,
+/// and more each hour a rat's left alive, <see cref="Hospitality.RatSystem"/>) and the carter
 /// won't come while it lasts. The town meets it if the inn keeps its customers served anyway:
 /// enough meals and drinks done before it's over (<see cref="Served"/>).
 /// </summary>
@@ -140,6 +141,9 @@ public sealed class ShortageCrisis : ICrisis
     /// <summary>Meals and drinks the inn has to serve while it lasts.</summary>
     public const int Served = 6;
 
+    /// <summary>Rats got into each larder.</summary>
+    public const int Rats = 4;
+
     /// <summary>How long the carter stays away, in game hours.</summary>
     public const float Hours = 24;
 
@@ -152,20 +156,23 @@ public sealed class ShortageCrisis : ICrisis
         var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
         if (inn.IsNull)
             return null;
-        // Rats in the larder: half of every stack of food spoiled.
+        // Rats in the larder: a quarter of every stack of food spoiled, and the rats still in there.
         foreach (var store in Buildings.Parts(sim, inn).Where(e => w.Get<Thing>(e).Def.Name == "Larder").ToList())
+        {
             foreach (var item in sim.StoredIn(store).ToList())
                 if (w.Get<Thing>(item).Def.Nutrition > 0 && w.TryGet<Stack>(item, out var stack))
                 {
-                    var lose = (stack.Count + 1) / 2;
+                    var lose = (stack.Count + 3) / 4;
                     if (lose >= stack.Count)
                         sim.DestroyThing(item);
                     else
                         w.Get<Stack>(item).Count -= lose;
                 }
+            Hospitality.RatSystem.Loose(sim, store, Rats);
+        }
         var at = w.Get<PresetBuilding>(inn).Anchor;
-        sim.Messages.Add(MessageKind.Danger, "Rats have been at the inn's larder, and word is the carter won't come while there's trouble on the road.", at);
-        Alarm.Raise(sim, at, "Rats in the larder! Half of it's spoiled!");
+        sim.Messages.Add(MessageKind.Danger, "Rats have got into the inn's larder, and word is the carter won't come while there's trouble on the road.", at);
+        Alarm.Raise(sim, at, "Rats in the larder! Get them before they get the rest!");
         return new ShortageCrisis
         {
             Started = sim.Clock.Tick, _servedBefore = Count(sim), _deadline = sim.Clock.Tick + SimClock.HoursToTicks(Hours),

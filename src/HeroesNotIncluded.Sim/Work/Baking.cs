@@ -30,6 +30,15 @@ public sealed class OvenLoad
 
     public Entity Maker;
 
+    /// <summary>A pie (<see cref="Pies"/>) rather than bread: <see cref="Knead"/> is then how well its rim was crimped.</summary>
+    public bool Pie;
+
+    /// <summary>A pie's filling, as it tastes.</summary>
+    public Flavour Filling;
+
+    /// <summary>Hidden: how far gone a pie's filling was going in (bread's flour doesn't turn).</summary>
+    public float Rot;
+
     public bool Empty => Loaves <= 0;
 }
 
@@ -81,7 +90,7 @@ public static class Baking
     /// <summary>Hours a ball of dough has proved by now.</summary>
     public static float ProvedHours(Simulation sim, Dough d) => (sim.Clock.Tick - d.MadeAt) / (float)SimClock.TicksPerHour;
 
-    /// <summary>How good a bake is, 0..1: kneaded well, proved well (an hour or two), and out on the golden crust.</summary>
+    /// <summary>How good a bake is, 0..1: kneaded well, proved well (an hour or two), and out on the golden crust; a pie, crimped well and out on the crust.</summary>
     public static float QualityOf(OvenLoad o)
     {
         var prove = o.Proved switch
@@ -100,13 +109,15 @@ public static class Baking
             < BurningAt => 0.55f,
             _ => 0f,
         };
-        return 0.3f * Math.Clamp(o.Knead, 0f, 1f) + 0.3f * prove + 0.4f * bake;
+        return o.Pie ? 0.45f * Math.Clamp(o.Knead, 0f, 1f) + 0.55f * bake
+            : 0.3f * Math.Clamp(o.Knead, 0f, 1f) + 0.3f * prove + 0.4f * bake;
     }
 
     /// <summary>What most lets a loaf down, as whoever eats it can taste.</summary>
     public static DishFault FaultOf(OvenLoad o) =>
         o.Bake >= BurningAt || o.Bake >= ToastyAt + 0.1f ? DishFault.Caught
         : o.Bake < GoldenAt - 0.1f ? DishFault.Underdone
+        : o.Pie ? (o.Knead < 0.45f ? DishFault.Leaked : DishFault.None)
         : o.Proved >= SunkAt || o.Proved < RisingAt || o.Knead < 0.4f ? DishFault.Heavy
         : DishFault.None;
 
@@ -145,8 +156,8 @@ public static class Baking
         if (!IsOven(sim, oven))
             return null;
         if (sim.World.TryGet<OvenLoad>(oven, out var o) && !o.Empty)
-            return "Smell the bread";
-        return DoughIn(sim, cook).IsNull ? null : "Put the dough in the oven";
+            return o.Pie ? "Smell the pie" : "Smell the bread";
+        return !DoughIn(sim, cook).IsNull ? "Put the dough in the oven" : !Pies.RawIn(sim, cook).IsNull ? "Put the pie in the oven" : null;
     }
 
     /// <summary>Put the dough in hand in the oven and stand by it, or stand by what's in it.</summary>
@@ -164,15 +175,27 @@ public static class Baking
         var o = LoadOf(sim, oven);
         if (o.Empty)
         {
-            if (DoughIn(sim, cook) is not { IsNull: false } dough)
-                return;
-            var d = w.Get<Dough>(dough);
-            (o.Loaves, o.Knead, o.Proved, o.Bake, o.Maker) = (LoavesPerDough, d.Knead, ProvedHours(sim, d), 0f, cook);
             ref var hands = ref w.Get<Carrying>(cook);
-            if (hands.Item == dough)
-                hands.Item = Entity.Null;
-            sim.DestroyThing(dough);
-            sim.Messages.Add(MessageKind.Info, $"The dough goes in, {RiseOf(o.Proved)}.", cell);
+            if (DoughIn(sim, cook) is { IsNull: false } dough)
+            {
+                var d = w.Get<Dough>(dough);
+                (o.Loaves, o.Knead, o.Proved, o.Bake, o.Maker, o.Pie, o.Filling, o.Rot) = (LoavesPerDough, d.Knead, ProvedHours(sim, d), 0f, cook, false, default, 0f);
+                if (hands.Item == dough)
+                    hands.Item = Entity.Null;
+                w.Destroy(sim.TakeFromStack(dough, 1));
+                sim.Messages.Add(MessageKind.Info, $"The dough goes in, {RiseOf(o.Proved)}.", cell);
+            }
+            else if (Pies.RawIn(sim, cook) is { IsNull: false } pie)
+            {
+                var raw = w.Get<RawPie>(pie);
+                (o.Loaves, o.Knead, o.Proved, o.Bake, o.Maker, o.Pie, o.Filling, o.Rot) = (Pies.Slices, raw.Crimp, RisenAt, 0f, raw.Maker.IsNull ? cook : raw.Maker, true, raw.Filling, FoodPoisoning.RotOf(sim, pie));
+                if (hands.Item == pie)
+                    hands.Item = Entity.Null;
+                w.Destroy(sim.TakeFromStack(pie, 1));
+                sim.Messages.Add(MessageKind.Info, "The pie goes in.", cell);
+            }
+            else
+                return;
         }
         WorkSystem.Start(sim, cook, BakeSession.For(sim, oven));
     }
@@ -184,9 +207,11 @@ public static class Baking
         var o = LoadOf(sim, oven);
         if (o.Empty)
             return Entity.Null;
-        var item = sim.CreateItem(sim.Defs.Thing(Bread), o.Loaves);
+        var item = sim.CreateItem(sim.Defs.Thing(o.Pie ? Pies.Pie : Bread), o.Loaves);
         w.Add(item, new Crafted { Quality = Crafting.QualityFrom(QualityOf(o)), Maker = o.Maker.IsNull ? cook : o.Maker });
-        w.Add(item, new Dish { Flavour = Flavour.Of(sim.Defs.Thing(Bread).Flavour).Shares, Fault = FaultOf(o) });
+        w.Add(item, new Dish { Flavour = o.Pie ? Pies.Baked(o.Filling) : Flavour.Of(sim.Defs.Thing(Bread).Flavour).Shares, Fault = FaultOf(o) });
+        if (o.Pie && w.Has<Rot>(item))
+            w.Get<Rot>(item).Progress = o.Rot * 0.5f; // the oven halves it, as cooking does
         o.Loaves = 0;
         ref var hands = ref w.Get<Carrying>(cook);
         if (hands.Item.IsNull)
@@ -331,9 +356,10 @@ public sealed class BakeSession : WorkSession
             DishFault.Caught => " The crust's burnt.",
             DishFault.Underdone => " It's doughy in the middle.",
             DishFault.Heavy => " It's come out heavy.",
+            DishFault.Leaked => " The filling's run out of it.",
             _ => "",
         };
-        sim.Messages.Add(MessageKind.Info, $"Out of the oven: {w.Get<Stack>(item).Count} {Crafting.QualityLabel(w.Get<Crafted>(item).Quality)} loaves.{said}", w.Get<Thing>(Oven).Cell);
+        sim.Messages.Add(MessageKind.Info, $"Out of the oven: {w.Get<Stack>(item).Count} {Crafting.QualityLabel(w.Get<Crafted>(item).Quality)} {(w.Get<Thing>(item).Def.Name == Pies.Pie ? "slices of pie" : "loaves")}.{said}", w.Get<Thing>(Oven).Cell);
     }
 
     public override void Interrupted(Simulation sim) => WriteBack(sim);

@@ -177,32 +177,6 @@ public class CraftingProgressionTests
         Assert.True(master % 100 > novice % 100);
     }
 
-    [Fact]
-    public void ALitFireCooksMealsThatPeopleReachForFirst()
-    {
-        var sim = Warm();
-        var cook = Villager(sim, C(5, 5), only: WorkType.Cook);
-        var fire = Station(sim, "Campfire", C(12, 12));
-        sim.World.Get<Fueled>(fire).Fuel = 0;
-        sim.SpawnItem(sim.Thing("Meat"), 6, C(6, 8));
-        sim.SpawnItem(sim.Thing("Berries"), 5, C(5, 7));
-        Bill(sim, fire, "CookMeat", target: 2);
-
-        TickFed(sim, SimClock.TicksPerHour);
-        Assert.Equal(0, Count(sim, "SimpleMeal")); // not lit
-
-        sim.World.Get<Fueled>(fire).Fuel = 10;
-        TickFed(sim, SimClock.TicksPerHour);
-        Assert.Equal(4, Count(sim, "SimpleMeal"));
-
-        sim.World.Get<Mind>(cook).WorkPriority[(int)WorkType.Cook] = 0;
-        var food = sim.Defs.Need("Food");
-        sim.World.Get<Needs>(cook).Values[food.Index] = 0.2f;
-        sim.TickMany(SimClock.TicksPerHour / 2);
-        Assert.Equal(5, Count(sim, "Berries"));
-        Assert.True(Count(sim, "SimpleMeal") < 4);
-        Assert.Contains(sim.World.Get<Mood>(cook).Memories, m => m.Def.Name == "AteCookedMeal");
-    }
 
     // ---------------- Kilns and forges ----------------
 

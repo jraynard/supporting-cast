@@ -45,13 +45,13 @@ public readonly record struct KnownPiece(string Label, Work.Glow Glow, float Tem
 /// seasoning it wants.
 /// </summary>
 public readonly record struct KnownPot(Entity Pot, string Contents, Work.Surface Surface, float Heat, float Flame, bool Lit, float Doneness,
-    bool Cooked, string? Caught, int Bowls, bool Empty, string Tastes = "", string? House = null);
+    bool Cooked, string? Caught, int Bowls, bool Empty, string Tastes = "", string? House = null, bool Flaring = false, bool Mends = false);
 
 /// <summary>A spit and what's on it, as anyone close sees it: each side's crust and which is to the fire. Never how far it's cooked through.</summary>
 public readonly record struct KnownSpit(Entity Spit, int Pieces, Work.Crust[] Sides, int Facing, bool Lit);
 
 /// <summary>An oven as anyone close knows it: whether there's bread in, and what it smells of (all a baker has to go on).</summary>
-public readonly record struct KnownOven(Entity Oven, int Loaves, string Smell, bool Lit);
+public readonly record struct KnownOven(Entity Oven, int Loaves, string Smell, bool Lit, bool Pie = false);
 
 /// <summary>A shop's house dish as posted with its prices: its name and how it tastes (<see cref="Work.HouseDish"/>).</summary>
 public readonly record struct KnownHouseDish(string Name, string Tastes);
@@ -293,7 +293,8 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         var contents = string.Join(", ", p.In.Select(i => $"{i.Count} {i.Def.Label}"));
         var caught = p.Scorch > 0.35f ? "it's caught on the bottom" : p.Scorch > 0.12f ? "a little caught" : null;
         return new KnownPot(pot, contents, Work.Cooking.SurfaceOf(p.Heat), p.Heat, p.Flame, Work.Cooking.Lit(sim, pot), Math.Clamp(p.Doneness, 0f, 1f),
-            p.Cooked, caught, Work.Cooking.ServingsLeft(sim, pot), p.Empty, p.Flavour.Words(), Work.HouseDish.Served(sim, pot, p)?.Name);
+            p.Cooked, caught, Work.Cooking.ServingsLeft(sim, pot), p.Empty, p.Flavour.Words(), Work.HouseDish.Served(sim, pot, p)?.Name,
+            Work.Cooking.Flaring(sim, pot), !p.Empty && Work.Broths.IsBroth(p.Flavour));
     }
 
     /// <summary>
@@ -339,7 +340,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         foreach (var e in sim.World.Each<Work.WorkSession>())
             if (sim.World.Get<Work.WorkSession>(e) is Work.BakeSession s && s.Oven == oven)
                 bake = s.Bake;
-        return new KnownOven(oven, o.Loaves, Work.Baking.SmellOf(bake), Work.Baking.Lit(sim, oven));
+        return new KnownOven(oven, o.Loaves, Work.Baking.SmellOf(bake), Work.Baking.Lit(sim, oven), o.Pie);
     }
 
     /// <summary>How a ball of dough looks: how far it's risen (slack, rising, well risen, puffed up, sunk). Null for anything else.</summary>
