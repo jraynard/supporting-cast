@@ -575,7 +575,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
 
     private void Think(Simulation sim, Entity me, PerceptionView view, long now)
     {
-        if (Safety(sim, me, view, now) || Bedtime(sim, me, now) || Supper(sim, me, now))
+        if (Safety(sim, me, view, now) || BindOwn(sim, me) || Bedtime(sim, me, now) || Supper(sim, me, now))
             return;
         GoToWork(sim, me);
         Price(sim, me, view, now);
@@ -591,6 +591,18 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             return;
         if (_task == 0 && !Upkeep(sim, me, view, now))
             Chat(view, me, now);
+    }
+
+    /// <summary>
+    /// Bleeding, with a bandage on it: stanch it, as anyone would, rather than bleed out waiting on
+    /// the healer. (The healer's own bleeding is <see cref="Mend"/>'s, among the mendings.)
+    /// </summary>
+    private bool BindOwn(Simulation sim, Entity me)
+    {
+        if (!Bandaging.FirstAidOnly(sim, me) || Bandaging.WoundsToBind(sim, me, me) == 0 || Bandaging.CantBind(sim, me, me) != null)
+            return false;
+        send(new BandageCommand(me, me));
+        return true;
     }
 
     /// <summary>

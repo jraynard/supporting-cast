@@ -48,6 +48,34 @@ public class BandagingTests
     }
 
     [Fact]
+    public void ABotThatsBleedingBindsItself()
+    {
+        var ana = new Guid("00000000-0000-0000-0000-00000000000a");
+        var sim = VillageRound.NewSimulation(LoadDefs(), 1234);
+        sim.Presets.PresetMode = true;
+        VillageRound.Setup(sim);
+        sim.Round.OpenLobby();
+        sim.ApplyNow(new Round.JoinLobbyCommand(ana, "Ana", default, []));
+        sim.ApplyNow(new Round.SetTradePreferencesCommand(ana, [sim.Defs.Trade("Blacksmith")], []));
+        sim.ApplyNow(new Round.StartRoundCommand());
+        var me = Players.CharacterOf(sim, ana);
+        var body = sim.World.Get<Health>(me).Body;
+        HealthSystem.Damage(sim, me, 6, DamageType.Cut, body.PartIndex("LeftArm"));
+        sim.Store(sim.PackOf(me), sim.CreateItem(sim.Thing("Bandage"), 2));
+        Assert.True(Bandaging.WoundsToBind(sim, me, me) > 0);
+
+        // Its own bandage, not the healer's coming by.
+        var bot = new Bots.BotPlayer(() => sim, ana, c => sim.ApplyNow(c), 3);
+        for (var t = 0; t < SimClock.TicksPerHour / 2 && Bandaging.BandagesOn(sim, me) == 2; t++)
+        {
+            sim.Tick();
+            bot.Tick();
+        }
+        Assert.Equal(1, Bandaging.BandagesOn(sim, me));
+        Assert.Equal(0, Bandaging.WoundsToBind(sim, me, me));
+    }
+
+    [Fact]
     public void YouBindAsManyAsYouHaveBandagesFor()
     {
         var (sim, me) = Wounded(bandages: 1, cuts: 2);
