@@ -448,6 +448,32 @@ public sealed record DevBreakBridgeCommand : IDevCommand
     }
 }
 
+/// <summary>
+/// Dev: a crisis of a kind now, as the Director would send it (<see cref="Director.Director.Send"/>).
+/// Outside a round it starts but nobody judges it met or not.
+/// </summary>
+public sealed record DevCrisisCommand(CrisisKind Kind) : IDevCommand
+{
+    public void Apply(Simulation sim)
+    {
+        if (!Director.Director.CanSend(Kind) || sim.Director.Send(sim, Kind) == null)
+            sim.Messages.Add(MessageKind.Info, $"No {Kind.ToString().ToLowerInvariant()} could come now.");
+    }
+}
+
+/// <summary>
+/// Dev: word of the season's next raid now, so the bracing window (the call for arms, the wait)
+/// can be seen without waiting on it (<see cref="Director.Director.WarnNext"/>).
+/// </summary>
+public sealed record DevRaidWarningCommand : IDevCommand
+{
+    public void Apply(Simulation sim)
+    {
+        if (!sim.Director.WarnNext(sim))
+            sim.Messages.Add(MessageKind.Info, "No raid is left in this season to warn of.");
+    }
+}
+
 /// <summary>Debug: a wild event now (<see cref="WildEventKind"/>: a wolf pack, a migration).</summary>
 public sealed record DevWildEventCommand(WildEventKind Kind) : IDevCommand
 {

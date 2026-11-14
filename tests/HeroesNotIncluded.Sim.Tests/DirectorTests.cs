@@ -65,6 +65,20 @@ public class DirectorTests
     }
 
     [Fact]
+    public void TheDevPanelCanSendAnyCrisisAndWarnOfARaid()
+    {
+        var sim = Round();
+        sim.TickMany(SimClock.TicksPerHour);
+        sim.ApplyNow(new DevCrisisCommand(CrisisKind.Fire));
+        Assert.Contains(sim.Director.Active, c => c.Kind == CrisisKind.Fire);
+
+        Assert.Null(sim.Director.Coming);
+        sim.ApplyNow(new DevRaidWarningCommand());
+        Assert.NotNull(sim.Director.Coming);
+        Assert.True(sim.Militia.Mustering || sim.Militia.Open);
+    }
+
+    [Fact]
     public void RaidersDrivenOffIsACrisisMet()
     {
         var sim = Round();

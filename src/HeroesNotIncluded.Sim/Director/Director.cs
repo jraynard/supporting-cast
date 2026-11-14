@@ -174,6 +174,30 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
         sim.Militia.Call(sim, when);
     }
 
+    /// <summary>
+    /// The season's next raid, warned of now and due a warning's lead from now (the dev panel).
+    /// False if there's no round under way or no raid left in it unwarned.
+    /// </summary>
+    public bool WarnNext(Simulation sim)
+    {
+        if (!Enabled || sim.Round.Phase != Round.RoundPhase.Playing || Difficulty is { Peaceful: true })
+            return false;
+        var season = sim.Defs.Season;
+        if (_beatAt.Count == 0 && season.Beats.Count > 0)
+            Plan(sim, season);
+        for (var i = 0; i < _beatAt.Count && i < season.Beats.Count; i++)
+        {
+            if (_fired[i] || _kind[i] != CrisisKind.Raid || _planned[i] != null)
+                continue;
+            // A warning's lead from now (never before its window opens); Dread can still bring it sooner, as it does any beat.
+            var lead = SimClock.HoursToTicks(season.RaidWarningHours);
+            _beatAt[i] = Math.Max(sim.Round.TickAt(sim, season.Beats[i].Day, season.Beats[i].FromHour), sim.Clock.Tick + lead);
+            Warn(sim, season, i);
+            return true;
+        }
+        return false;
+    }
+
     /// <summary>When a beat is due: its planned moment, pulled toward the start of its window by Dread.</summary>
     private long Due(Simulation sim, SeasonDef season, int i)
     {
