@@ -109,9 +109,17 @@
       "maxHp": 600, "flammability": 0.1,
       "building": { "work": 300, "surfaceHeight": 0.5, "smithy": "Anvil", "cost": [ { "def": "IronBar", "count": 6 }, { "def": "Wood", "count": 4 } ] },
       "model": [
+        // The stump, bound with two iron hoops.
         { "min": [0.30, 0.30, 0.00], "max": [0.70, 0.70, 0.34], "top": "props/log_end", "side": "props/log_side" },
-        { "min": [0.22, 0.38, 0.34], "max": [0.82, 0.62, 0.50], "top": "props/iron", "side": "props/iron" },
-        { "min": [0.08, 0.43, 0.40], "max": [0.22, 0.57, 0.50], "top": "props/iron", "side": "props/iron" }
+        { "min": [0.29, 0.29, 0.06], "max": [0.71, 0.71, 0.09], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.29, 0.29, 0.25], "max": [0.71, 0.71, 0.28], "top": "props/iron", "side": "props/iron" },
+        // The anvil: a flared foot, a waist, the face (fitted, with its hardy hole), heel and a tapering horn.
+        { "min": [0.27, 0.36, 0.34], "max": [0.73, 0.64, 0.38], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.35, 0.42, 0.38], "max": [0.65, 0.58, 0.44], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.24, 0.38, 0.44], "max": [0.80, 0.62, 0.50], "top": "props/anvil_face", "side": "props/iron", "fit": true },
+        { "min": [0.80, 0.42, 0.45], "max": [0.87, 0.58, 0.50], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.14, 0.43, 0.45], "max": [0.24, 0.57, 0.50], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.06, 0.46, 0.46], "max": [0.14, 0.54, 0.49], "top": "props/iron", "side": "props/iron" }
       ]
     },
     {
@@ -120,7 +128,12 @@
       "maxHp": 140, "flammability": 0.3,
       "building": { "work": 160, "surfaceHeight": 0.36, "smithy": "Quench", "cost": [ { "def": "Wood", "count": 10 }, { "def": "IronBar", "count": 1 } ] },
       "model": [
-        { "min": [0.14, 0.14, 0.00], "max": [0.86, 0.86, 0.36], "top": "props/water", "side": "props/tub_side" }
+        // Staves around sunken water, so there's a rim and the inside of the tub above the surface.
+        { "min": [0.20, 0.20, 0.00], "max": [0.80, 0.80, 0.24], "top": "props/water_deep", "side": "props/tub_inner" },
+        { "min": [0.14, 0.14, 0.00], "max": [0.86, 0.20, 0.36], "top": "props/tub_side", "side": "props/tub_side", "front": "props/tub_inner" },
+        { "min": [0.14, 0.80, 0.00], "max": [0.86, 0.86, 0.36], "top": "props/tub_side", "side": "props/tub_side" },
+        { "min": [0.14, 0.20, 0.00], "max": [0.20, 0.80, 0.36], "top": "props/tub_side", "side": "props/tub_inner" },
+        { "min": [0.80, 0.20, 0.00], "max": [0.86, 0.80, 0.36], "top": "props/tub_side", "side": "props/tub_side" }
       ]
     },
     {
@@ -129,8 +142,19 @@
       "maxHp": 200, "flammability": 0.4,
       "building": { "work": 200, "smithy": "Grind", "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 6 } ] },
       "model": [
-        { "min": [0.18, 0.34, 0.00], "max": [0.82, 0.66, 0.22], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.25, 0.44, 0.10], "max": [0.75, 0.56, 0.50], "top": "props/grindstone", "side": "props/grindstone" }
+        // A wet trough under the wheel (a stone runs wet), between the posts the axle turns in.
+        { "min": [0.38, 0.20, 0.00], "max": [0.62, 0.80, 0.10], "top": "props/water_deep", "side": "props/tub_inner" },
+        { "min": [0.34, 0.16, 0.00], "max": [0.66, 0.20, 0.16], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.34, 0.80, 0.00], "max": [0.66, 0.84, 0.16], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.34, 0.20, 0.00], "max": [0.38, 0.80, 0.16], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.62, 0.20, 0.00], "max": [0.66, 0.80, 0.16], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.26, 0.42, 0.00], "max": [0.32, 0.58, 0.29], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.68, 0.42, 0.00], "max": [0.74, 0.58, 0.29], "top": "props/planks", "side": "props/planks" },
+        // The wheel, a whole disc on its face (fit); the axle through it and the crank on the near end.
+        { "min": [0.48, 0.22, 0.04], "max": [0.52, 0.78, 0.47], "side": "props/grindwheel", "front": "none", "back": "none", "fit": true },
+        { "min": [0.24, 0.48, 0.23], "max": [0.76, 0.52, 0.28], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.76, 0.47, 0.13], "max": [0.79, 0.53, 0.28], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.79, 0.47, 0.12], "max": [0.88, 0.53, 0.16], "top": "props/log_side", "side": "props/log_side" }
       ]
     },
     {

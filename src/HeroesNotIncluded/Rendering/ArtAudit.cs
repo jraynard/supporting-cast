@@ -31,7 +31,7 @@ public static class ArtAudit
         var warnings = new List<string>();
         void Need(string sprite, string who)
         {
-            if (!string.IsNullOrEmpty(sprite) && !sprites.ContainsKey(sprite))
+            if (!string.IsNullOrEmpty(sprite) && sprite != "none" && !sprites.ContainsKey(sprite)) // "none": a model face left out
                 errors.Add($"{who}: missing sprite '{sprite}'");
         }
 
@@ -49,6 +49,7 @@ public static class ArtAudit
                 Need(box.Top, $"thing {t.Name} model");
                 Need(box.Side, $"thing {t.Name} model");
                 Need(box.Front, $"thing {t.Name} model");
+                Need(box.Back, $"thing {t.Name} model");
             }
         }
         foreach (var r in defs.AllRunes)
@@ -64,6 +65,7 @@ public static class ArtAudit
                 Need(box.Top, $"kit {kit.Name}");
                 Need(box.Side, $"kit {kit.Name}");
                 Need(box.Front, $"kit {kit.Name}");
+                Need(box.Back, $"kit {kit.Name}");
             }
             Need(kit.Floor, $"kit {kit.Name} floor");
             if (kit.Roof is { } roof)

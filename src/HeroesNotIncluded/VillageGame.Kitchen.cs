@@ -211,47 +211,234 @@ public sealed partial class VillageGame
         EndWork();
     }
 
-    /// <summary>Kneading on the beat: the dough, pushed from one side then the other, and how the last push went.</summary>
+    /// <summary>
+    /// Kneading on the beat: the dough, a hand drawing back and pushing in from the side the next
+    /// push comes from, a timing strip whose tick crosses the mark on each beat, and each push's
+    /// mark once it's made.
+    /// </summary>
     private void DrawKnead(KneadSession s)
     {
         BeginWork(s.Title, ("A/D", "push from that side, on the beat"), ("Esc", "leave it"));
+        if (s.StartTick != _kneadSession)
+        {
+            _kneadSession = s.StartTick;
+            _kneadPushed = 0;
+            _kneadAt = -10f;
+            _kneadMarks.Clear();
+        }
+        if (s.Pushed > _kneadPushed)
+        {
+            for (var i = _kneadPushed; i < s.Pushed; i++)
+                _kneadMarks.Add(s.LastMark);
+            _kneadPushed = s.Pushed;
+            _kneadAt = _time;
+        }
+        var since = _time - _kneadAt;
+        var half = KneadSession.Beat / 2f;
+        var window = KneadSession.Window * s.Hands.Tolerance;
+        var onBeat = s.Off <= window;
+        // Steps to the nearest beat, negative before it: the strip's tick crosses the mark at 0.
+        var t = s.Phase < half ? s.Phase : s.Phase - KneadSession.Beat;
+
         var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(420, 110);
+        var size = Gui.S(420, 150);
         var min = ImGui.GetCursorScreenPos();
         ImGui.Dummy(in size);
         var max = min + size;
         Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
-        // The dough squashes on the beat and springs back between.
-        var squash = 1f - (float)s.Off / (KneadSession.Beat / 2f);
-        var c = (min + max) * 0.5f;
-        var rx = Gui.S(48 + 18 * squash);
-        var ry = Gui.S(30 - 10 * squash);
-        dl.AddEllipseFilled(in c, new float2(rx, ry), new ImColor8(232, 214, 176, 255), 0f, 32);
-        var side = s.NextSide < 0 ? "~A~" : "~D~";
+
+        // The board, and the dough on it: squashed by a push, smoother the cleaner they've been.
+        var c = new float2((min.X + max.X) * 0.5f, min.Y + Gui.S(62));
+        var boardA = new float2(min.X + Gui.S(70), c.Y + Gui.S(20));
+        var boardB = new float2(max.X - Gui.S(70), c.Y + Gui.S(34));
+        dl.AddRectFilled(in boardA, in boardB, new ImColor8(150, 110, 70, 255), Gui.S(3), ImDrawFlags.None);
+        var squash = since < 0.3f ? 1f - since / 0.3f : 0f;
+        var rx = Gui.S(50 + 22 * squash);
+        var ry = Gui.S(28 - 10 * squash);
+        var centre = new float2(c.X, c.Y + Gui.S(20) - ry);
+        if (onBeat)
+            dl.AddEllipseFilled(in centre, new float2(rx + Gui.S(7), ry + Gui.S(7)), Theme.U8(Theme.Good, 0.35f), 0f, 32);
+        var clean = _kneadMarks.Count == 0 ? 1f : _kneadMarks.Count(m => m == 1) / (float)_kneadMarks.Count;
+        var dough = new float4(0.86f + 0.05f * clean, 0.78f + 0.06f * clean, 0.60f + 0.08f * clean, 1f);
+        dl.AddEllipseFilled(in centre, new float2(rx, ry), Gui.U8(dough), 0f, 32);
+        // Lumps for the pushes that went in badly.
+        var lumps = _kneadMarks.Count(m => m != 1);
+        for (var i = 0; i < lumps; i++)
+        {
+            var at = centre + new float2((i % 2 == 0 ? -1 : 1) * rx * (0.25f + 0.12f * (i / 2)), ry * (i % 3 - 1) * 0.35f);
+            dl.AddCircleFilled(in at, Gui.S(4), Gui.U8(dough * new float4(0.88f, 0.86f, 0.82f, 1f)), 12);
+        }
+
+        // The hand, on the side the next push comes from: drawn back between beats, pressing in on it.
+        if (!s.Done)
+        {
+            var side = s.NextSide;
+            var reach = 1f - Math.Min(1f, s.Off / half);
+            var handX = centre.X + side * (rx + Gui.S(16) + (1f - reach) * Gui.S(56));
+            var hA = new float2(handX - Gui.S(14), centre.Y - Gui.S(11));
+            var hB = new float2(handX + Gui.S(14), centre.Y + Gui.S(11));
+            dl.AddRectFilled(in hA, in hB, onBeat ? new ImColor8(240, 196, 150, 255) : new ImColor8(200, 160, 125, 255), Gui.S(8), ImDrawFlags.None);
+            var key = Controls.Glyph(side < 0 ? Act.WalkLeft : Act.WalkRight);
+            var ks = ImGui.CalcTextSize(key);
+            var kp = new float2(handX - ks.X * 0.5f, hA.Y - ks.Y - Gui.S(4));
+            dl.AddText(in kp, Theme.U8(onBeat ? Theme.Good : Theme.Dim), key);
+        }
+
+        // The timing strip: the tick runs left to right and crosses the mark on the beat.
+        var stripC = new float2(c.X, max.Y - Gui.S(16));
+        var stripHalf = Gui.S(150);
+        var sA = new float2(stripC.X - stripHalf, stripC.Y - Gui.S(3));
+        var sB = new float2(stripC.X + stripHalf, stripC.Y + Gui.S(3));
+        dl.AddRectFilled(in sA, in sB, Theme.U8(Theme.Inset), Gui.S(3), ImDrawFlags.None);
+        var zw = window / half * stripHalf;
+        var zA = new float2(stripC.X - zw, stripC.Y - Gui.S(6));
+        var zB = new float2(stripC.X + zw, stripC.Y + Gui.S(6));
+        dl.AddRectFilled(in zA, in zB, Theme.U8(Theme.Good, onBeat ? 0.8f : 0.4f), Gui.S(3), ImDrawFlags.None);
+        var tickX = stripC.X + t / half * stripHalf;
+        var tA = new float2(tickX, stripC.Y - Gui.S(9));
+        var tB = new float2(tickX, stripC.Y + Gui.S(9));
+        dl.AddLine(in tA, in tB, Theme.U8(onBeat ? Theme.Good : Theme.Text), Gui.S(3));
+
+        // Each push so far: green clean, amber lumpy, hollow still to come.
+        for (var i = 0; i < KneadSession.Pushes; i++)
+        {
+            var at = new float2(min.X + Gui.S(16) + i * Gui.S(14), min.Y + Gui.S(14));
+            if (i < _kneadMarks.Count)
+                dl.AddCircleFilled(in at, Gui.S(5), Theme.U8(_kneadMarks[i] == 1 ? Theme.Good : Theme.Warn), 12);
+            else
+                dl.AddCircle(in at, Gui.S(5), Theme.U8(Theme.Dim), 12, Gui.S(1.5f));
+        }
+
         ImGui.Spacing();
-        TextC(s.Off <= KneadSession.Window ? Theme.Good : Theme.Dim, Controls.Keys($"Push {s.Pushed + 1} of {KneadSession.Pushes}: {side}"));
-        Bar("", s.Pushed / (float)KneadSession.Pushes, Theme.Accent);
+        if (since < 0.8f && _kneadMarks.Count > 0)
+            TextC(_kneadMarks[^1] == 1 ? Theme.Good : Theme.Warn, _kneadMarks[^1] == 1 ? "Smooth." : "Lumpy: on the beat, from the hand's side.");
+        else
+            TextC(onBeat ? Theme.Good : Theme.Dim, onBeat ? Controls.Keys($"Now: {(s.NextSide < 0 ? "~A~" : "~D~")}!") : "Wait for the tick to cross the mark.");
         EndWork();
     }
 
-    /// <summary>Baking: the oven door's shut, so all there is is the smell.</summary>
+    private long _kneadSession = -1;
+    private int _kneadPushed;
+    private float _kneadAt = -10f;
+    private readonly List<int> _kneadMarks = [];
+
+    /// <summary>What baking smells of, in the order it goes: the golden crust is when it comes out.</summary>
+    private static readonly string[] BakeSmells = ["raw dough", "warm and yeasty", "bread baking", "a golden crust", "toasty, getting dark", "burning!"];
+
+    private static readonly float4[] BakeColours =
+    [
+        new(0.91f, 0.84f, 0.69f, 1f), new(0.89f, 0.77f, 0.55f, 1f), new(0.84f, 0.64f, 0.36f, 1f),
+        new(0.81f, 0.55f, 0.16f, 1f), new(0.51f, 0.31f, 0.14f, 1f), new(0.19f, 0.14f, 0.12f, 1f),
+    ];
+
+    /// <summary>
+    /// The smells in order, those it's been through lit and the one it's at now marked, the golden
+    /// crust picked out as the one to take it out on. Only the smell: how far it's baked stays hidden.
+    /// </summary>
+    private void SmellLadder(string smell)
+    {
+        var now = Array.IndexOf(BakeSmells, smell);
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(420, 40);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var w = size.X / BakeSmells.Length;
+        for (var i = 0; i < BakeSmells.Length; i++)
+        {
+            var a = new float2(min.X + i * w + Gui.S(2), min.Y + Gui.S(4));
+            var b = new float2(min.X + (i + 1) * w - Gui.S(2), min.Y + Gui.S(16));
+            var col = BakeColours[i];
+            dl.AddRectFilled(in a, in b, Gui.U8(col, i <= now ? 1f : 0.25f), Gui.S(3), ImDrawFlags.None);
+            if (i == 3)
+                dl.AddRect(in a, in b, Theme.U8(Theme.Good), Gui.S(3), ImDrawFlags.None, Gui.S(i == now ? 3 : 1.5f));
+            if (i == now)
+            {
+                var tip = new float2((a.X + b.X) * 0.5f, b.Y + Gui.S(2));
+                var l = new float2(tip.X - Gui.S(6), tip.Y + Gui.S(8));
+                var r = new float2(tip.X + Gui.S(6), tip.Y + Gui.S(8));
+                dl.AddTriangleFilled(in tip, in r, in l, Theme.U8(Theme.Text));
+            }
+        }
+        var label = "out here";
+        var ls = ImGui.CalcTextSize(label);
+        var lp = new float2(min.X + 3.5f * w - ls.X * 0.5f, min.Y + Gui.S(26) - Gui.S(2));
+        if (now != 3)
+            dl.AddText(in lp, Theme.U8(Theme.Good, 0.8f), label);
+    }
+
+    /// <summary>
+    /// Baking: the oven door's shut, so all there is is the smell. The oven glows; what it gives off
+    /// from round the door is the smell made visible (its colour the stage, never how far through).
+    /// </summary>
     private void DrawBake(BakeSession s)
     {
         BeginWork(s.Title, ("Space", "take it out"), ("Esc", "leave it in"));
-        TextC(Theme.Dim, "The door's shut. Go by the smell: out on a golden crust.");
-        ImGui.Spacing();
-        var colour = s.Smell switch
+        var now = Array.IndexOf(BakeSmells, s.Smell);
+        if (now != _bakeStage)
         {
-            "a golden crust" => Theme.Good,
-            "toasty, getting dark" => Theme.Warn,
-            "burning!" => Theme.Bad,
-            _ => Theme.Text,
+            _bakeStage = now;
+            _bakeChangedAt = _time;
+        }
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(420, 150);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var max = min + size;
+        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+        // The oven: a domed front, the shut door, the fire glowing under it.
+        var c = new float2((min.X + max.X) * 0.5f, max.Y - Gui.S(14));
+        var domeR = Gui.S(62);
+        var domeC = new float2(c.X, c.Y - Gui.S(38));
+        dl.AddCircleFilled(in domeC, domeR, new ImColor8(118, 112, 120, 255), 40);
+        var baseA = new float2(c.X - domeR - Gui.S(10), c.Y - Gui.S(40));
+        var baseB = new float2(c.X + domeR + Gui.S(10), c.Y);
+        dl.AddRectFilled(in baseA, in baseB, new ImColor8(100, 96, 104, 255), Gui.S(3), ImDrawFlags.None);
+        var glow = s.Lit ? 0.55f + 0.2f * MathF.Sin(_time * 5f) : 0f;
+        var fA = new float2(c.X - Gui.S(30), c.Y - Gui.S(14));
+        var fB = new float2(c.X + Gui.S(30), c.Y - Gui.S(4));
+        dl.AddRectFilled(in fA, in fB, Gui.U8(new float4(0.95f, 0.5f, 0.15f, glow)), Gui.S(3), ImDrawFlags.None);
+        var dA = new float2(c.X - Gui.S(26), c.Y - Gui.S(66));
+        var dB = new float2(c.X + Gui.S(26), c.Y - Gui.S(22));
+        dl.AddRectFilled(in dA, in dB, new ImColor8(70, 52, 40, 255), Gui.S(10), ImDrawFlags.None);
+        // What comes from round the door: wisps the colour of the smell, rising.
+        if (now >= 1)
+        {
+            var colour = BakeColours[Math.Max(0, now)];
+            var thick = now >= 4 ? 1f : 0.6f;
+            for (var k = 0; k < 6; k++)
+            {
+                var rise = (_time * 0.35f + k / 6f) % 1f;
+                var x = c.X + (k % 2 == 0 ? -1 : 1) * Gui.S(18) + MathF.Sin(_time * 1.3f + k * 1.7f) * Gui.S(8);
+                var y = dA.Y - rise * Gui.S(60);
+                var at = new float2(x, y);
+                dl.AddCircleFilled(in at, Gui.S(5 + 7 * rise), Gui.U8(colour, 0.8f * thick * (1f - rise)), 16);
+            }
+        }
+        // A pulse when the smell turns: something to notice.
+        var turned = _time - _bakeChangedAt;
+        if (turned < 1.2f && now > 0)
+        {
+            var pa = min + Gui.S(3, 3);
+            var pb = max - Gui.S(3, 3);
+            dl.AddRect(in pa, in pb, Theme.U8(now == 3 ? Theme.Good : now >= 4 ? Theme.Bad : Theme.Accent, 1f - turned / 1.2f), Gui.S(6), ImDrawFlags.None, Gui.S(3));
+        }
+        ImGui.Spacing();
+        SmellLadder(s.Smell);
+        var (say, col) = now switch
+        {
+            3 => (Controls.Keys("A golden crust: take it out now (~Space~)."), Theme.Good),
+            4 => (Controls.Keys("Toasty, getting dark: out with it (~Space~)!"), Theme.Warn),
+            5 => ("Burning!", Theme.Bad),
+            _ => ($"It smells of {s.Smell}. Out on a golden crust.", Theme.Text),
         };
-        TextC(colour, $"It smells of {s.Smell}.");
+        TextC(col, say);
         if (!s.Lit)
             TextC(Theme.Bad, "The oven's gone cold.");
         EndWork();
     }
+
+    private int _bakeStage = -1;
+    private float _bakeChangedAt = -10f;
 
     /// <summary>A station in reach of your character (the 3x3 round them), or Entity.Null.</summary>
     private Entity StationBeside(Func<Entity, bool> isOne)
@@ -280,7 +467,8 @@ public sealed partial class VillageGame
         _hud.Took();
         if (o.Loaves > 0)
         {
-            TextC(o.Smell == "burning!" ? Theme.Bad : Theme.Text, $"Bread's in. It smells of {o.Smell}.");
+            TextC(o.Smell == "burning!" ? Theme.Bad : o.Smell == "a golden crust" ? Theme.Good : Theme.Text, $"Bread's in. It smells of {o.Smell}.");
+            SmellLadder(o.Smell);
             TextC(Theme.Dim, Controls.Keys("~F~ to stand by it and take it out."));
         }
         else if (!o.Lit)
@@ -348,34 +536,71 @@ public sealed partial class VillageGame
             Tip(tip);
     }
 
-    /// <summary>Chopping on the knife's beat: the knife rising and falling, the cuts so far, and what the last one did.</summary>
+    /// <summary>Chopping on the knife's beat: the knife rising and falling over the food, cutting its way along it, and what the last cut did.</summary>
     private void DrawChop(ChopSession s)
     {
         BeginWork(s.Title, ("F", "cut as the knife comes down"), ("Esc", "put the knife down"));
+        if (s.StartTick != _chopSession)
+        {
+            _chopSession = s.StartTick;
+            _chopCuts = 0;
+            _chopAt = -10f;
+        }
+        if (s.Cuts + s.Slips != _chopCuts)
+        {
+            _chopCuts = s.Cuts + s.Slips;
+            _chopAt = _time;
+        }
         var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(420, 120);
+        var size = Gui.S(420, 150);
         var min = ImGui.GetCursorScreenPos();
         ImGui.Dummy(in size);
         var max = min + size;
         Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
-        // The board, the food on it shrinking into pieces as the cuts go in.
-        var boardA = new float2(min.X + Gui.S(40), max.Y - Gui.S(30));
-        var boardB = new float2(max.X - Gui.S(40), max.Y - Gui.S(14));
+        // The board, and the food lying along it.
+        var boardA = new float2(min.X + Gui.S(40), max.Y - Gui.S(28));
+        var boardB = new float2(max.X - Gui.S(40), max.Y - Gui.S(12));
         dl.AddRectFilled(in boardA, in boardB, new ImColor8(150, 110, 70, 255), Gui.S(3), ImDrawFlags.None);
-        var pieces = Math.Max(1, s.Cuts + 1);
-        var span = (boardB.X - boardA.X - Gui.S(40)) / pieces;
-        for (var i = 0; i < pieces; i++)
+        var food = s.Label switch
         {
-            var a = new float2(boardA.X + Gui.S(20) + i * span + Gui.S(2), boardA.Y - Gui.S(16));
-            var b = new float2(a.X + span - Gui.S(4), boardA.Y);
-            dl.AddRectFilled(in a, in b, new ImColor8(170, 70, 60, 255), Gui.S(3), ImDrawFlags.None);
+            "cabbage" => new ImColor8(120, 170, 80, 255),
+            "raw fish" => new ImColor8(150, 160, 170, 255),
+            _ => new ImColor8(170, 70, 60, 255),
+        };
+        var foodA = new float2(boardA.X + Gui.S(50), boardA.Y - Gui.S(26));
+        var foodB = new float2(boardB.X - Gui.S(50), boardA.Y);
+        // Cut from the left: the slices already off it set a little apart.
+        var width = foodB.X - foodA.X;
+        float CutX(int i) => foodA.X + width * i / (float)(s.Needed + 1);
+        var prev = foodA.X;
+        for (var i = 1; i <= s.Cuts + 1; i++)
+        {
+            var end = i <= s.Cuts ? CutX(i) : foodB.X;
+            var shift = (s.Cuts + 1 - i) * -Gui.S(3);
+            var a = new float2(prev + shift + Gui.S(1), foodA.Y);
+            var b = new float2(end + shift - Gui.S(1), foodB.Y);
+            dl.AddRectFilled(in a, in b, food, Gui.S(3), ImDrawFlags.None);
+            prev = end;
         }
-        // The knife: high between beats, down on the beat.
+        // The knife over where the next cut goes: high between beats, down to the food on the beat.
         var lift = (float)s.Off / (ChopSession.Beat / 2f);
-        var x = boardA.X + Gui.S(20) + Math.Min(s.Cuts + 1, pieces) * span;
-        var bladeTop = new float2(x, boardA.Y - Gui.S(24) - lift * Gui.S(50));
-        var bladeEnd = new float2(x, boardA.Y - Gui.S(2) - lift * Gui.S(50));
-        dl.AddLine(in bladeTop, in bladeEnd, new ImColor8(210, 214, 220, 255), Gui.S(5));
+        var x = CutX(Math.Min(s.Cuts + 1, s.Needed));
+        var edge = foodA.Y - lift * Gui.S(44);
+        var bladeA = new float2(x - Gui.S(3), edge - Gui.S(30));
+        var bladeB = new float2(x + Gui.S(3), edge);
+        var flash = _time - _chopAt < 0.25f;
+        var steel = s.LastMark == -1 && flash ? new ImColor8(230, 90, 80, 255) : new ImColor8(210, 214, 220, 255);
+        dl.AddRectFilled(in bladeA, in bladeB, steel, Gui.S(1), ImDrawFlags.None);
+        var handleA = new float2(x - Gui.S(4), bladeA.Y - Gui.S(16));
+        var handleB = new float2(x + Gui.S(4), bladeA.Y);
+        dl.AddRectFilled(in handleA, in handleB, new ImColor8(90, 60, 40, 255), Gui.S(2), ImDrawFlags.None);
+        if (flash && s.LastMark == 1)
+        {
+            var cx = CutX(s.Cuts);
+            var ca = new float2(cx - Gui.S(1), foodA.Y - Gui.S(4));
+            var cb = new float2(cx + Gui.S(1), foodB.Y + Gui.S(2));
+            dl.AddRectFilled(in ca, in cb, Theme.U8(Theme.Good), 0f, ImDrawFlags.None);
+        }
         ImGui.Spacing();
         Bar("Cuts", s.Needed == 0 ? 0f : s.Cuts / (float)s.Needed, Theme.Accent);
         var (colour, said) = s.LastMark switch
@@ -387,6 +612,10 @@ public sealed partial class VillageGame
         TextC(colour, said);
         EndWork();
     }
+
+    private long _chopSession = -1;
+    private int _chopCuts; // cuts and slips seen, to flash each as it lands
+    private float _chopAt = -10f;
 
     /// <summary>
     /// Packing rations: the cloth's four corners folded on cue, each from its side, then the cord

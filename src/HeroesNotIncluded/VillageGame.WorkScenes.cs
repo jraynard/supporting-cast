@@ -208,8 +208,13 @@ public sealed partial class VillageGame
     // ---------------- The smith: the edge ----------------
 
     /// <summary>The blade on the stone at the angle you hold it, warming as you grind; sparks as the edge comes back.</summary>
-    private void SharpenScene(long session, bool held, float angle, float heat, float progress)
+    private void SharpenScene(long session, bool held, float angle, float heat, float progress, bool onWheel = false)
     {
+        if (onWheel)
+        {
+            GrindScene(session, held, angle, heat, progress);
+            return;
+        }
         var state = SceneFor("sharpen", session, 0, progress);
         var (dl, min, max, px) = WorkScene(84);
         var floor = max.Y - Gui.S(8);
@@ -231,6 +236,57 @@ public sealed partial class VillageGame
         }
         DrawMotes(dl, state, Theme.Accent, px);
     }
+
+    /// <summary>How far the grindstone in the scene has turned (degrees), and when it was last drawn.</summary>
+    private float _wheelTurn, _wheelDrawn;
+
+    /// <summary>Degrees a second the wheel turns cranked (while you bear down) and idling between.</summary>
+    private const float WheelCranked = 420f, WheelIdle = 60f;
+
+    /// <summary>
+    /// The smithy's grindstone side on, turning in its trough: the blade laid across the top of the
+    /// wheel at the angle you hold it, sparks thrown off the rim the way it turns.
+    /// </summary>
+    private void GrindScene(long session, bool held, float angle, float heat, float progress)
+    {
+        var state = SceneFor("grind", session, 0, progress);
+        var (dl, min, max, px) = WorkScene(136);
+        var floor = max.Y - Gui.S(8);
+        var midX = (min.X + max.X) * 0.5f;
+        var dt = Math.Clamp(_time - _wheelDrawn, 0f, 0.1f);
+        _wheelDrawn = _time;
+        _wheelTurn = (_wheelTurn + dt * (held ? WheelCranked : WheelIdle)) % 360f;
+
+        Prop(dl, "grind_posts", new float2(midX, floor), px);
+        if (!Gui.TrySprite("ui/work/grindwheel", out var wheel))
+            return;
+        var radius = wheel.PixelSize.Y * 0.5f * px;
+        var hub = new float2(midX, floor - 4 * px - radius); // its foot down in the trough
+        PropTurned(dl, "grindwheel", hub, new float2(0.5f, 0.5f), _wheelTurn, px);
+        Prop(dl, "grind_trough", new float2(midX, floor), px);
+
+        // The blade rides the top of the rim, a little toward you, at the angle you hold it.
+        var contact = hub + new float2(-2 * px, -radius + px);
+        var tilt = (angle - 0.5f) * 50f;
+        var warm = Math.Clamp(heat, 0f, 1f);
+        var tint = new float4(1f, 1f - 0.45f * warm, 1f - 0.75f * warm, 1f);
+        var stroke = held ? MathF.Sin(_time * 7f) * 3f * px : 0f;
+        PropTurned(dl, "blade", contact + new float2(stroke, 0), new float2(0.55f, 0.85f), -8f + tilt, px, Gui.U8(tint));
+        // Sparks leave the rim along its turn (clockwise: over the top and away to the right), whenever you bear down.
+        if (held && (progress > state.Progress + 0.001f || ((int)(_time * 20f) & 1) == 0))
+        {
+            for (var k = 0; k < 2; k++)
+            {
+                var spread = (k + (_time * 13f % 1f)) * 0.5f;
+                state.Motes.Add(new Mote(contact, contact + new float2(Gui.S(50 + 40 * spread), Gui.S(10 + 30 * spread)), _time, 0.3f));
+            }
+            state.Progress = progress;
+        }
+        DrawMotes(dl, state, WheelSpark, px);
+    }
+
+    /// <summary>Sparks off the wheel: hot and pale, so they show against a blade warming orange.</summary>
+    private static readonly float4 WheelSpark = new(1f, 0.92f, 0.6f, 1f);
 
     // ---------------- The tinker: the strongbox's seam ----------------
 
@@ -386,6 +442,7 @@ public sealed partial class VillageGame
             Cell("Bandage", () => BandageScene(5, beat % 5, Wave(1.5f), 0.55f, 0.75f));
             Cell("Draw", () => DrawScene(true, Wave(0.7f) > 0.3f, (_time * 0.1f) % 1f, Wave(0.9f)));
             Cell("Sharpen", () => SharpenScene(1, true, Wave(0.8f), Wave(0.3f), _time * 0.05f));
+            Cell("Grind", () => SharpenScene(1, true, Wave(0.8f), Wave(0.3f), _time * 0.05f, onWheel: true));
             Cell("Probe", () => ProbeScene(Wave(0.4f), Wave(3f) > 0.85f ? 0.8f : 0.1f, Wave(1.1f)));
             Cell("Loupe", () => LoupeScene(Wave(0.3f), Wave(1.3f), Wave(0.6f) > 0.5f));
             Cell("Cask, tap and mallet", () =>

@@ -340,7 +340,7 @@ public sealed partial class VillageGame
     {
         BeginWork(s.Title, ("F", "hold to grind"), ("A/D", "keep the angle in the band"), ("Esc", "stop"));
         TextC(Theme.Dim, "Ease off before the steel overheats.");
-        SharpenScene(s.StartTick, s.Held, s.Angle, s.Heat, s.Progress);
+        SharpenScene(s.StartTick, s.Held, s.Angle, s.Heat, s.Progress, s.OnWheel);
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 30);
         var min = ImGui.GetCursorScreenPos();

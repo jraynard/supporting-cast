@@ -4,6 +4,8 @@ anvil's style (norse_ui.work_anvil): side-on, lit from the top left, an ink outl
 them at a whole-pixel scale and moves, turns and tints them from the session in hand.
 
   whetstone, blade        the whetstone in its holder, and a blade (pale: tinted by its heat)
+  grindwheel              the smithy's grindstone wheel, side on (turned by the game as it spins)
+  grind_posts, grind_trough  its trestle posts (behind the wheel) and the wet trough (in front)
   stew_pot, salt_crock    the pot over the fire and the salt crock the pinches come from
   bed, sheet, hand        a bed side on, a clean sheet (laid on it), a hand (sweeps, tucks, draws)
   forearm, wrap           a forearm to bind, and a turn of bandage
@@ -21,7 +23,7 @@ import os
 from PIL import Image
 
 from norse_art import ramp
-from norse_ui import part, poly, stick, put, ink_outline, OAK, IRONR, WALNUT, ROOT
+from norse_ui import part, poly, stick, ell, put, ink_outline, OAK, IRONR, WALNUT, ROOT
 from norse_buildings import LINEN, MADDER, WOAD, STRAW
 
 STONE = ramp((128, 134, 142), 5, dark=0.5, light=1.4)
@@ -54,6 +56,48 @@ def blade():
     part(img, poly([(0, 3), (12, 2), (36, 2), (43, 5), (36, 8), (12, 8), (0, 7)]), grey, radius=0.8)
     for x in range(13, 41):
         put(img, x, 7 if x < 37 else 7 - (x - 37) // 2, (255, 255, 255, 255))         # the bright edge
+    return ink_outline(img)
+
+
+GRIT = ramp((176, 156, 120), 5, dark=0.55, light=1.3)
+WATER = ramp((54, 84, 98), 4, main=2, dark=0.6, light=1.6)
+
+
+def grindwheel():
+    """The grindstone side on: a sandstone disc, a worn darker rim, flecks and a pale chip so its turn
+    shows, and the iron hub. Square, centred, so the game can spin it about its middle."""
+    img = canvas(26, 26)
+    part(img, ell([0, 0, 25, 25]), GRIT, radius=1.6)
+    for x in range(26):
+        for y in range(26):
+            r = ((x - 12.5) ** 2 + (y - 12.5) ** 2) ** 0.5
+            if 10.2 < r < 11.8:
+                put(img, x, y, GRIT[1])                                          # the worn rim
+    for x, y in ((7, 9), (16, 6), (18, 16), (9, 18), (13, 11), (5, 14), (20, 11)):
+        put(img, x, y, GRIT[0])                                                  # flecks, to see it turn
+    for x, y in ((14, 3), (15, 3), (15, 4)):
+        put(img, x, y, GRIT[4])                                                  # a pale chip in the rim
+    part(img, ell([10, 10, 15, 15]), IRONR[1:], radius=0.6)                      # the hub
+    return ink_outline(img)
+
+
+def grind_posts():
+    """The trestle the wheel turns in: the post up to the axle (side on, the two overlap) behind the
+    wheel, and its braces splayed out past the trough's ends."""
+    img = canvas(52, 26)
+    part(img, poly([(23, 0), (29, 0), (30, 25), (22, 25)]), OAK[1:], radius=0.8)
+    part(img, poly([(1, 25), (23, 5), (25, 8), (6, 25)]), OAK[1:], radius=0.6)
+    part(img, poly([(51, 25), (29, 5), (27, 8), (46, 25)]), OAK[1:], radius=0.6)
+    return ink_outline(img)
+
+
+def grind_trough():
+    """The trough the wheel's foot runs in, in front of it: staves, an iron band, the water's edge."""
+    img = canvas(36, 10)
+    part(img, poly([(0, 2), (35, 2), (33, 9), (2, 9)]), OAK[1:], radius=0.8)
+    for x in range(2, 34):
+        put(img, x, 2, WATER[3]); put(img, x, 3, WATER[1])                        # the waterline
+        put(img, x, 6, IRONR[2])
     return ink_outline(img)
 
 
@@ -253,6 +297,7 @@ def mallet():
 
 SPRITES = (("whetstone", whetstone), ("blade", blade), ("stew_pot", stew_pot), ("salt_crock", salt_crock),
            ("bed", bed), ("sheet", sheet), ("hand", hand), ("forearm", forearm), ("wrap", wrap),
+           ("grindwheel", grindwheel), ("grind_posts", grind_posts), ("grind_trough", grind_trough),
            ("strongbox", strongbox), ("probe", probe), ("curio", curio), ("loupe", loupe), ("patient", patient),
            ("stone", stone), ("spirit_level", spirit_level), ("rasp", rasp),
            ("cask_end", cask_end), ("spigot", spigot), ("mallet", mallet))

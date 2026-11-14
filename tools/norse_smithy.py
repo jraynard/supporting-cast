@@ -99,6 +99,79 @@ def prop_grindstone():
     return img
 
 
+def prop_water_deep():
+    """Water sunk below a rim, seen from above: darker towards the walls that shade it, a slow
+    swell across it and a pale glint near the lit edge (no rings: rings read as a target)."""
+    img = canvas()
+    px = img.load()
+    for y in range(S):
+        for x in range(S):
+            edge = min(x, y, S - 1 - x, S - 1 - y)
+            v = 1.2 + bayer(x, y) * 0.5 + math.sin(x * 0.35 + y * 0.6) * 0.3 - (0.7 if edge < 2 else 0.3 if edge < 4 else 0)
+            px[x, y] = WATER[clampi(v, 5)]
+    for x, y in ((20, 6), (21, 6), (22, 7), (8, 19), (9, 19)):
+        put(img, x, y, WATER[4])
+    return img
+
+
+def prop_tub_inner():
+    """The inside of a tub's staves: the same boards, in their own shadow and darkened by the wet."""
+    img = canvas()
+    rnd = random.Random(34)
+    for i in range(4):
+        board(img, i * 8, 0, i * 8 + 7, S - 1, PALE, rnd, False, tone=1.7 + (i % 2) * 0.3)
+    for y in range(S - 6, S):                              # the waterline's dark band
+        for x in range(S):
+            r, g, b, a = img.getpixel((x, y))
+            put(img, x, y, (r * 3 // 4, g * 3 // 4, b * 4 // 5, a))
+    return img
+
+
+WHEEL = 18   # the wheel's face, in pixels at the 32-per-cell scale (a 0.56-wide face; see ModelBox.Fit)
+
+
+def prop_grindwheel():
+    """A grindstone's wheel face, whole, on a clear ground (a fitted face): coarse sandstone inside a
+    dark worn rim (the outline is what makes it read round at this size), a dressed ring, the wet
+    lower part dark from the trough, and the square iron axle."""
+    img = canvas(WHEEL, WHEEL)
+    c = (WHEEL - 1) / 2
+    for y in range(WHEEL):
+        for x in range(WHEEL):
+            r = math.hypot(x - c, y - c)
+            if r > c + 0.5:
+                continue
+            v = 4.2 + bayer(x, y) * 0.8 - (x - c + y - c) * 0.07       # lit from the upper left
+            if r > c - 0.6:
+                v = 0.4                                              # the outline
+            elif r > c - 1.7:
+                v -= 1.6                                             # the worn rim
+            elif 4.6 < r < 5.4:
+                v -= 0.9                                             # a dressed ring
+            if y > c + 3.5 and r <= c - 0.6:
+                v -= 1.1                                             # wet from the trough
+            if (x * 7 + y * 13) % 11 == 0:
+                v -= 0.6
+            put(img, x, y, GRIT[clampi(v, 7)])
+    for dy in (-1, 0, 1):
+        for dx in (-1, 0, 1):
+            put(img, round(c) + dx, round(c) + dy, IRON[3 if dx + dy < 0 else 1])
+    return img
+
+def prop_anvil_face():
+    """The anvil's working face from above, whole (a fitted face): hammer-polished steel brightest
+    down the middle, the edges dark, and the hardy and pritchel holes at the heel end (+X)."""
+    img = canvas(19, 8)
+    for y in range(8):
+        for x in range(19):
+            edge = min(y, 7 - y)
+            v = 2.4 + bayer(x, y) * 0.6 + (1.2 if edge >= 2 else 0.4 if edge == 1 else -0.6)
+            put(img, x, y, IRON[clampi(v, 5)])
+    for x, y in ((15, 3), (16, 3), (15, 4), (16, 4), (12, 4)):           # the hardy hole, and the pritchel
+        put(img, x, y, IRON[0])
+    return img
+
+
 def prop_tool_rack():
     """A board hung with the smith's tools: tongs, two hammers, a file and a set hammer on pegs."""
     img = prop_planks()
@@ -226,6 +299,10 @@ def generate():
     save(prop_tub_side(), "props/tub_side")
     save(prop_coal(), "props/coal")
     save(prop_grindstone(), "props/grindstone")
+    save(prop_grindwheel(), "props/grindwheel")
+    save(prop_anvil_face(), "props/anvil_face")
+    save(prop_water_deep(), "props/water_deep")
+    save(prop_tub_inner(), "props/tub_inner")
     save(prop_tool_rack(), "props/tool_rack")
     for name, make in (("anvil", icon_anvil), ("quench_tub", icon_quench_tub), ("grindstone", icon_grindstone),
                        ("tool_rack", icon_tool_rack), ("fuel_bin", icon_fuel_bin)):

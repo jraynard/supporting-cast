@@ -94,6 +94,7 @@ public class BlacksmithTests
         var (sim, me, _, sword) = AtTheBench(dullness: 0.8f);
         sim.ApplyNow(new SharpenCommand(me, sword));
         Assert.True(sim.World.Has<WorkSession>(me));
+        Assert.Null(sim.World.Get<WorkSession>(me).Focus(sim)); // a whetstone's in hand: no one place to face
         Grind(sim, me);
 
         Assert.False(sim.World.Has<WorkSession>(me));
@@ -150,6 +151,7 @@ public class BlacksmithTests
         Assert.Equal("Grind an edge on the " + sim.LabelOf(sword), Smithing.StepAt(sim, me, kit.Grindstone));
         sim.ApplyNow(new SmithCommand(me, kit.Grindstone));
         Assert.True(sim.World.Get<WorkSession>(me) is SharpenSession { OnWheel: true });
+        Assert.Equal(sim.World.Get<Thing>(kit.Grindstone).Cell, sim.World.Get<WorkSession>(me).Focus(sim)); // bent to the wheel
         sim.ApplyNow(new StopWorkCommand(me));
         kit.Grind(sim, me);
         Assert.True(WeaponWear.Mended(sim, sword));

@@ -2529,16 +2529,19 @@ WOOD = ramp((150, 104, 62), 5)
 GRIP = ramp((96, 62, 44), 4)
 STRING = (236, 226, 200, 255)
 METAL = [grey(v) for v in DYE_GREYS]           # tinted by the item's tier (HumanLook.MetalTint)
+PIECE = [grey(v) for v in (196, 222, 240, 252)]  # the work in the tongs: near white, tinted by its heat (Rendering/ForgeGlow)
+HELD_PIECES = ("tongs",)                          # shapes that hold a piece of work (their _piece layers)
 HELD_SHAPES = ("sword", "longsword", "knife", "axe", "pick", "hammer", "mace", "club", "spear", "bow", "rod", "tongs", "saw", "chisel", "brush",
                "staff", "crossbow")
 
 
 def held_layers(F, shape):
-    """(plain, metal) images of a weapon or tool in the working hand: its axis runs along the forearm
-    (elbow to hand), so it follows every pose and the work swing; the fist is cut out of its grip."""
-    plain, metal = blank(), blank()
+    """(plain, metal, piece) images of a weapon or tool in the working hand: its axis runs along the
+    forearm (elbow to hand), so it follows every pose and the work swing; the fist is cut out of its
+    grip. The piece is what tongs grip, pale so the game tints it by its heat (empty for the rest)."""
+    plain, metal, piece = blank(), blank(), blank()
     if F.pose.anim in ("sleep", "downed") or F.pose.lying:
-        return plain, metal
+        return plain, metal, piece
     sh, el, hand, _ = F.arms[F.role_side(0)]
     ux, uy = hand[0] - el[0], hand[1] - el[1]
     ul = math.hypot(ux, uy) or 1
@@ -2615,6 +2618,7 @@ def held_layers(F, shape):
         for sgn in (-1, 1):
             p(metal, wstrip([at(-1, sgn * 0.6), at(3, sgn * 0.5), at(6, sgn * 0.15)], [0.6, 0.6, 0.4], steps=3), METAL)
         p(plain, wstrip([at(-1.6), at(1.2)], [1.4, 1.3], steps=2), GRIP)                  # the leather-wrapped handles
+        p(piece, wstrip([at(5.4), at(9.8)], [1.3, 1.2], steps=2), PIECE)                # the bar in the jaws
     elif shape == "saw":
         p(plain, wstrip([at(-1.2), at(1.4)], [1.4, 1.4], steps=2), WOOD)
         blade = poly([at(1.4, -1.3), at(7, -0.8), at(7, 0.8), at(1.4, 1.3)])
@@ -2632,7 +2636,7 @@ def held_layers(F, shape):
     fist = ellipse([hand[0] - 1.6, hand[1] - 1.4, hand[0] + 1.6, hand[1] + 1.6])
     cut(plain, fist)
     cut(metal, fist)
-    return plain, metal
+    return plain, metal, piece
 
 # ---------------------------------------------------------------- frames to sheets
 
@@ -2692,8 +2696,8 @@ def job_frames(job):
         elif kind == "held":
             shape, body, part_ = args
             F = Fig(body, pose)
-            plain, metal = held_layers(F, shape)
-            img = metal if part_.endswith("metal") else plain
+            plain, metal, piece = held_layers(F, shape)
+            img = metal if part_.endswith("metal") else piece if part_.endswith("piece") else plain
             back_view = not F.front
             if part_.startswith("_back") != back_view:                # front views: over the body; back views: behind it
                 img = blank()
@@ -2719,7 +2723,7 @@ def jobs():
             for part_ in ("", "_dye", "_back", "_back_dye"):
                 out.append((f"apparel/{item}{part_}_{body}", ("worn", (item, body, part_))))
         for shape in HELD_SHAPES:
-            for part_ in ("", "_metal", "_back", "_back_metal"):
+            for part_ in ("", "_metal", "_back", "_back_metal") + (("_piece", "_back_piece") if shape in HELD_PIECES else ()):
                 out.append((f"apparel/held_{shape}{part_}_{body}", ("held", (shape, body, part_))))
     for style in HAIR_STYLES:
         out.append((f"creatures/person_hair_{style}", ("hair", (style, "front"))))

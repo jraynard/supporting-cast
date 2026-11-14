@@ -665,8 +665,19 @@ public sealed class ModelBox
     /// <summary>The +Y face, if it differs from <see cref="Side"/> (a chest's lock, a bed's foot).</summary>
     public string Front { get; set; } = "";
 
+    /// <summary>The -Y face, if it differs from <see cref="Side"/>. Any face named <c>"none"</c> is left
+    /// out: a wheel's thin rim ends, where its fitted disc would show as a sliver.</summary>
+    public string Back { get; set; } = "";
+
     /// <summary>Items: shown only once the stack holds at least this many (a log pile growing).</summary>
     public int MinCount { get; set; }
+
+    /// <summary>
+    /// Each face shows its whole sprite stretched over it once, rather than the part matching its
+    /// size: for pictures that must stay whole on a small face (a grindstone's wheel, a hoop). Pair
+    /// it with art cut out on a clear ground for round or ragged shapes; presentation only.
+    /// </summary>
+    public bool Fit { get; set; }
 }
 
 /// <summary>

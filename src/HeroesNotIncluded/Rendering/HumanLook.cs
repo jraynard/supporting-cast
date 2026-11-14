@@ -380,8 +380,18 @@ public static class HumanLook
     /// Worn things are drawn as is (times <paramref name="color"/>), darker once battered, with their
     /// dyed cloth tinted by the dye.
     /// </summary>
-    /// <summary>A weapon or tool in the working hand: its held shape (<see cref="ThingDef.Held"/>) and the 0xRRGGBB its metal is tinted.</summary>
-    public readonly record struct HeldItem(string Shape, uint Metal);
+    /// <summary>
+    /// A weapon or tool in the working hand: its held shape (<see cref="ThingDef.Held"/>) and the
+    /// 0xRRGGBB its metal is tinted; for tongs, the colour of the piece in their jaws (none when
+    /// <see cref="Piece"/>'s alpha is 0), which is drawn as it glows, not as the light falls on it.
+    /// </summary>
+    public readonly record struct HeldItem(string Shape, uint Metal, float4 Piece = default)
+    {
+        public bool HasPiece => Piece.W > 0f;
+    }
+
+    /// <summary>A held piece's layer (<see cref="HeldItem.Piece"/>): drawn unlit, glowing while it's hot.</summary>
+    public static bool IsPieceLayer(SpriteSheet sheet) => sheet.Name.Contains("_piece_", StringComparison.Ordinal);
 
     /// <summary>What a thing def looks like in hand, or null if it isn't drawn there.</summary>
     public static HeldItem? HeldOf(ThingDef def) => def.Held is { Length: > 0 } shape ? new HeldItem(shape, MetalTint(def.GearTier)) : null;
@@ -397,13 +407,21 @@ public static class HumanLook
         _ => 0x6A2E34,
     };
 
-    private static readonly Dictionary<string, (string Plain, string Metal, string Back, string BackMetal)> HeldNames = [];
+    private static readonly Dictionary<string, (string Plain, string Metal, string Back, string BackMetal, string Piece, string BackPiece)> HeldNames = [];
 
-    private static (string Plain, string Metal, string Back, string BackMetal) HeldNamesOf(string shape)
+    private static (string Plain, string Metal, string Back, string BackMetal, string Piece, string BackPiece) HeldNamesOf(string shape)
     {
         if (!HeldNames.TryGetValue(shape, out var n))
-            HeldNames[shape] = n = ($"apparel/held_{shape}", $"apparel/held_{shape}_metal", $"apparel/held_{shape}_back", $"apparel/held_{shape}_back_metal");
+            HeldNames[shape] = n = ($"apparel/held_{shape}", $"apparel/held_{shape}_metal", $"apparel/held_{shape}_back", $"apparel/held_{shape}_back_metal",
+                $"apparel/held_{shape}_piece", $"apparel/held_{shape}_back_piece");
         return n;
+    }
+
+    /// <summary>The piece in a held tool's grip, its own colour (it glows; the light on it doesn't matter), faded as the person is.</summary>
+    private static void AddPiece(TextureAtlas atlas, List<(SpriteSheet, uint)> list, in Appearance a, uint color, string piece, in HeldItem h, ModelSheets? model)
+    {
+        if (h.HasPiece && WornSheet(atlas, piece, a, model) is { } s)
+            list.Add((s, Rgba.Pack(h.Piece.X, h.Piece.Y, h.Piece.Z, (color >> 24) / 255f)));
     }
 
     private static void AddHeld(TextureAtlas atlas, List<(SpriteSheet, uint)> list, in Appearance a, uint color, string plain, string metal, uint tint, ModelSheets? model)
@@ -424,6 +442,7 @@ public static class HumanLook
         {
             var hn = HeldNamesOf(h.Shape);
             AddHeld(atlas, list, a, color, hn.Back, hn.BackMetal, h.Metal, model);
+            AddPiece(atlas, list, a, color, hn.BackPiece, h, model);
         }
         // Long hair falls behind the body (its _back half): drawn first, under everything but a cloak's back.
         var hairBack = atlas.TryGetSheet(model?.HairBack ?? HairBackSheet(a), out var hb) ? hb : null;
@@ -458,6 +477,7 @@ public static class HumanLook
         {
             var hn = HeldNamesOf(h2.Shape);
             AddHeld(atlas, list, a, color, hn.Plain, hn.Metal, h2.Metal, model);
+            AddPiece(atlas, list, a, color, hn.Piece, h2, model);
         }
         if (a.Beard != BeardStyle.None && atlas.TryGetSheet(model?.Beard ?? BeardSheet(a), out var beard))   // a model has at most one beard
             list.Add((beard, hairColor));

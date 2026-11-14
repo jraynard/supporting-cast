@@ -41,6 +41,7 @@ public static class PropModel
     )
     {
         var origin = new float3(cell.X, cell.Y, cell.Z + lift);
+        var fit = false; // the box in hand stretches its art over each face (ModelBox.Fit)
         foreach (var box in model)
         {
             if (count < box.MinCount)
@@ -54,19 +55,21 @@ public static class PropModel
             var down = new float3(0, 0, -dz);
             var side = string.IsNullOrEmpty(box.Side) ? box.Top : box.Side;
             var front = string.IsNullOrEmpty(box.Front) ? side : box.Front;
+            var back = string.IsNullOrEmpty(box.Back) ? side : box.Back;
 
+            fit = box.Fit;
             Face(box.Top, new float3(m.X, m.Y, M.Z), new float3(dx, 0, 0), new float3(0, dy, 0), dx, dy, top: true);
             Face(side, new float3(M.X, M.Y, M.Z), new float3(0, -dy, 0), down, dy, dz, edge: OnEdge(M.X));   // +X
             Face(side, new float3(m.X, m.Y, M.Z), new float3(0, dy, 0), down, dy, dz, edge: OnEdge(m.X));    // -X
             Face(front, new float3(m.X, M.Y, M.Z), new float3(dx, 0, 0), down, dx, dz, edge: OnEdge(M.Y));   // +Y, the front
-            Face(side, new float3(M.X, m.Y, M.Z), new float3(-dx, 0, 0), down, dx, dz, edge: OnEdge(m.Y));   // -Y
+            Face(back, new float3(M.X, m.Y, M.Z), new float3(-dx, 0, 0), down, dx, dz, edge: OnEdge(m.Y));   // -Y
         }
 
         static bool OnEdge(float v) => MathF.Abs(v - MathF.Round(v)) < 0.001f;
 
         void Face(string name, float3 p, float3 u, float3 v, float w, float h, bool top = false, bool edge = false)
         {
-            if (string.IsNullOrEmpty(name))
+            if (string.IsNullOrEmpty(name) || name == "none")
                 return;
             var local = Normal(Cross(u, v));
             var n = Rotate(local, facing);
@@ -81,6 +84,8 @@ public static class PropModel
             }
             var (art, tint) = sprite(name);
             var uv = art.Uv;
+            if (fit) // the whole picture, once, however big the face is
+                w = h = 1f;
             var shade = top ? Top : n.X > 0.5f ? East : n.X < -0.5f ? West : n.Y > 0.5f ? South : North;
             var b = (uint)(shade * 255f);
             if (top)
@@ -102,6 +107,17 @@ public static class PropModel
             var bottom = (uint)(shade * 0.8f * 255f); // sides darken towards the floor
             var across = new float4(uv.X, uv.Y, uv.X + (uv.Z - uv.X) * Math.Min(w, 1f), uv.W);
             var template = new Quad { Flags = flags, Color = Multiply(color, tint) };
+            if (fit)
+            {
+                var whole = template;
+                whole.Origin = origin + RotatePoint(p, facing);
+                whole.AxisU = Rotate(u, facing);
+                whole.AxisV = Rotate(v, facing);
+                whole.Uv = uv;
+                whole.Ao = b | b << 8 | bottom << 16 | bottom << 24;
+                output.Add(whole);
+                return;
+            }
             var tiles = WorldScale.TilesPerLevel(art);
             var count = WorldScale.TileCount(h, tiles);
             for (var k = 0; k < count; k++)

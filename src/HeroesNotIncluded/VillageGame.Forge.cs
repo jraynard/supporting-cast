@@ -1,6 +1,7 @@
 using Brutal.ImGuiApi;
 using Narsil.Sim.Core;
 using Narsil.Ui;
+using HeroesNotIncluded.Rendering;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Systems;
 using HeroesNotIncluded.Sim.Work;
@@ -18,36 +19,11 @@ public sealed partial class VillageGame
     private readonly List<Puff> _steam = [];
     private float _steamDue;
 
-    // Black through dull red, cherry, orange and yellow to white: what hot iron looks like.
-    private static readonly (float Temp, float4 Colour)[] GlowRamp =
-    [
-        (430f, new float4(0.27f, 0.26f, 0.28f, 1f)),
-        (520f, new float4(0.36f, 0.09f, 0.07f, 1f)),
-        (650f, new float4(0.58f, 0.11f, 0.06f, 1f)),
-        (760f, new float4(0.82f, 0.17f, 0.08f, 1f)),
-        (870f, new float4(0.96f, 0.38f, 0.10f, 1f)),
-        (1000f, new float4(1f, 0.62f, 0.17f, 1f)),
-        (1150f, new float4(1f, 0.86f, 0.42f, 1f)),
-        (1300f, new float4(1f, 0.97f, 0.88f, 1f)),
-    ];
-
-    /// <summary>The colour iron glows at a heat.</summary>
-    private static float4 GlowColour(float temp)
-    {
-        if (temp <= GlowRamp[0].Temp)
-            return GlowRamp[0].Colour;
-        for (var i = 1; i < GlowRamp.Length; i++)
-            if (temp <= GlowRamp[i].Temp)
-            {
-                var (t0, c0) = GlowRamp[i - 1];
-                var (t1, c1) = GlowRamp[i];
-                return c0 + (c1 - c0) * ((temp - t0) / (t1 - t0));
-            }
-        return GlowRamp[^1].Colour;
-    }
+    /// <summary>The colour iron glows at a heat (<see cref="ForgeGlow"/>, shared with the world).</summary>
+    private static float4 GlowColour(float temp) => ForgeGlow.Colour(temp);
 
     /// <summary>How much light hot iron throws, 0..1.</summary>
-    private static float GlowStrength(float temp) => Math.Clamp((temp - 480f) / 700f, 0f, 1f);
+    private static float GlowStrength(float temp) => ForgeGlow.Strength(temp);
 
     /// <summary>A small square of a heat's colour, inline with text.</summary>
     private static void Swatch(float temp)

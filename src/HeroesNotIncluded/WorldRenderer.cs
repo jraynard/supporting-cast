@@ -31,7 +31,7 @@ public enum Overlay
 /// <see cref="CreatureAnimator"/> and drawn at their native pixel size (<see cref="PixelsPerCell"/>);
 /// cosmetic dust, embers and Zzz come from <see cref="Particles"/>.
 /// </summary>
-public sealed class WorldRenderer(TextureAtlas atlas)
+public sealed partial class WorldRenderer(TextureAtlas atlas)
 {
     public Overlay Overlay { get; set; }
     public bool ShowPaths { get; set; }
@@ -757,7 +757,8 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         var nudge = 0;
         foreach (var (layer, layerColor) in LookLayers(sim, e, color))
             if (HumanLook.LayerFrame(sheet, layer, pose.Frame) is { } lf)
-                BillboardFrame(layer, lf, feet - _cam.Forward * (++nudge * LayerStep), pose.Facing, pose.Roll, layerColor, level, aboutCenter: airborne || tumbling);
+                BillboardFrame(layer, lf, feet - _cam.Forward * (++nudge * LayerStep), pose.Facing, pose.Roll, layerColor,
+                    HumanLook.IsPieceLayer(layer) ? level | PieceFlags(layerColor) : level, aboutCenter: airborne || tumbling);
         if (slungDef != null && backToUs) // the strap over the other shoulder, seen from behind
             DrawSlung(S(slungDef.Sprite), feet - _cam.Forward * ((nudge + 1) * LayerStep + 0.01f), SlungSize(slungDef), -pose.Facing, color, level);
 
@@ -796,6 +797,8 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             if (at is { } site)
                 _particles.Dust(site + (feet - site) * 0.35f + new float3(0, 0, 0.3f), 3, 0.5f, Dirt, 0.3f);
         }
+        if (!c.Dead && !c.Downed)
+            DrawWorkLife(sim, e);
 
         if (airborne)
         {
@@ -872,9 +875,10 @@ public sealed class WorldRenderer(TextureAtlas atlas)
 
     /// <summary>
     /// What a person has in hand: the tool their job works with (the axe while felling, the pick
-    /// while mining), else their weapon; nothing when they're down.
+    /// while mining), else their tongs with the piece in them (WorldRenderer.Smithy), else their
+    /// weapon; nothing when they're down.
     /// </summary>
-    public static HumanLook.HeldItem? HeldOf(Simulation sim, Entity e)
+    public HumanLook.HeldItem? HeldOf(Simulation sim, Entity e)
     {
         var w = sim.World;
         var c = w.Get<Creature>(e);
@@ -888,6 +892,8 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             && Sim.Systems.Crafting.ToolInHand(sim, e, session is Sim.Work.HammerSession ? "Hammer" : "Mop") is { IsNull: false } tool2
             && HumanLook.HeldOf(w.Get<Thing>(tool2).Def) is { } h)
             return h;
+        if (TongsOf(sim, e, session) is { } tongs)
+            return tongs;
         // A player's weapon's only in hand drawn, in combat mode (Combat.FreeMover).
         if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon) && !(w.TryGet<Sim.Combat.FreeMover>(e, out var free) && !free.Drawn)
             && HumanLook.HeldOf(w.Get<Thing>(eq.Weapon).Def) is { } weapon)
@@ -1621,6 +1627,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
                 var t = _anim.Clock * 7f + e.Index;
                 var size = (0.45f + 0.25f * frac + 0.05f * MathF.Sin(t) + 0.03f * MathF.Sin(t * 2.3f)) * def.FireSize;
                 Billboard(S("fx/fire"), floor + FireOffset(def, thing.Facing), size * 0.85f, size, Rgba.Pack(1f, 0.92f, 0.8f, 0.95f), level | Quad.Unlit | Quad.Glow, translucent: true);
+                DrawCoalBed(sim, e, def, floor, thing.Facing, level);
                 // A thin wisp from the chimney, gone with the roofs (it rises from the stack, which is drawn as roof).
                 if (def.SmokeAt is [var sx, var sy, var sz] && sim.Map.InBounds(cell + new int3(0, 0, 1)) && sim.Map.Structure[sim.Map.Idx(cell + new int3(0, 0, 1))].IsNull)
                 {

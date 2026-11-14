@@ -111,6 +111,10 @@ public sealed class SharpenSession : WorkSession
         });
     }
 
+    /// <summary>At a grindstone, the wheel: the worker faces it, bent to the work. A whetstone's in hand.</summary>
+    public override int3? Focus(Simulation sim) =>
+        OnWheel && Smithing.GrindstoneInReach(sim, Worker) is { IsNull: false } wheel ? sim.World.Get<Thing>(wheel).Cell : null;
+
     public override bool StillValid(Simulation sim) =>
         sim.World.IsAlive(Item) && Inventory.OnPerson(sim, Worker, Item) && !Whetstone(sim, Worker).IsNull;
 

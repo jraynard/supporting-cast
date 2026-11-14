@@ -170,6 +170,16 @@ cell: its boxes use coordinates past 0..1 (a 3x3's run from -1 to 2) to cover th
 - **Face textures** (`props/*`, from `tools/placeholder_props.py`) are 32×32 tiles drawn as if
   they covered a whole cell. A face shows only the part matching its size, so thin boxes keep the
   pixel scale instead of squashing the art.
+- **Whole pictures (`fit`):** a box with `"fit": true` stretches each face's whole sprite over it
+  once instead (the grindstone's wheel, the anvil's face), so the art can be any size. Keep pixels
+  square: a 32 px-per-cell texture on a fitted vertical face wants it `dy / (2 × 0.65)` tall for
+  furniture (vertical faces look twice as tall; furniture stands 0.65 high). Cut a round or ragged
+  shape out on a clear ground; model faces drop clear pixels.
+- **Back and none:** `back` is the -Y face, when it differs from `side`. Any face named `"none"`
+  is left out: a wheel's rim ends, where its fitted disc would show as a sliver.
+- **Depth:** something sunk in (water in a tub, coals in a forge) is a lower box inside thin walls
+  that stand above it (the quench tub, the grindstone's trough): the rim and a darker inner wall
+  (`props/tub_inner`) show over the surface.
 - **Wood:** wood faces are tinted by the material (oak, pine, birch), or use `<name>_<wood>` art if
   it exists.
 - **Item piles:** `minCount` makes them grow, with a box appearing once the stack reaches that
@@ -288,6 +298,7 @@ through every stance.
 | `apparel/<worn>_dye_<body>` | its dyed cloth, greyscale (main shade grey 200) | the dye |
 | `apparel/<cloak>_back_<body>` (+ `_dye`) | a cloak's back panel, cut under the base | first |
 | `apparel/held_<shape>_<body>` (+ `_metal`, `_back`, `_back_metal`) | a weapon or tool in the working hand, along the forearm through every pose and swing (front views over the body, back views behind it); the metal is tinted by the item's tier (`HumanLook.MetalTint`) | in hand |
+| `apparel/held_tongs_piece_<body>` (+ `_back_piece`) | the bar in the tongs' jaws, near white: drawn unlit in the colour its heat shows (`Rendering/ForgeGlow`), glowing once it's hot | a smith with a piece on the go |
 
 **Folk** (`Appearance.Folk`, `HumanLook.Folks`: each its label, swatches, how often bearded and its build):
 humans, our dwarves (ruddy, bearded, the dwarf build), our halflings (warm browns, the halfling build), and our elves, whose skin sheet has long ears swept up and
@@ -524,7 +535,10 @@ repeat every 8 px: one log end, one log's curve of bark.
 
 An item def's `held` names its shape in hand (`sword`, `longsword`, `knife`, `axe`, `pick`, `hammer`,
 `mace`, `club`, `spear`, `bow`, `rod`, `tongs`, `saw`, `chisel`, `brush`, `staff`, `crossbow`). A person holds the tool their
-job works with (`Job.ToolKind`, found by `Crafting.ToolInHand`), else their weapon.
+job works with (`Job.ToolKind`, found by `Crafting.ToolInHand`), else (a smith with a piece on the go,
+away from the anvil) their tongs with the piece glowing in them, else their weapon. At the anvil the
+piece lies on its face; in the forge, in the coals; quenched, dark under the water with steam off it
+(`WorldRenderer.Smithy`).
 
 ## The dragon
 
@@ -550,6 +564,7 @@ The interface is drawn by Narsil's UI kit (external/narsil/docs/UI.md) from spri
 - **The hammering scene:** `ui/work/anvil`, `ui/work/hammer` (handle left, head right; the game swings it) and `ui/work/billet`. The billet is drawn pale, and the game tints it by heat.
 
 - **The other scenes** (`tools/work_ui_art.py`): the whetstone and a blade (pale, tinted by its heat),
+  the grindstone's wheel (spun by the game), its trestle and trough,
   the stew pot and salt crock, a bed and a sheet, a hand, a forearm and a turn of bandage, a
   strongbox's front and the probe, a curio and the loupe, a patient on a pallet, the span's dressed
   stone and spirit level, the rasp, and the cask's head, its tap and the mallet (pouring, tapping). `VillageGame.WorkScenes` draws them as a small scene over each

@@ -84,6 +84,52 @@ public sealed class Particles
         }
     }
 
+    /// <summary>
+    /// Sparks off steel on a turning grindstone: bright specks thrown from <paramref name="at"/>
+    /// mostly along <paramref name="along"/> (the way the wheel's rim runs) and down, falling fast.
+    /// </summary>
+    public void Sparks(float3 at, float3 along, int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            var side = new float3(-along.Y, along.X, 0) * Range(-0.35f, 0.35f);
+            Emit(new Particle
+            {
+                Sprite = "fx/ember",
+                Pos = at,
+                Vel = along * Range(0.9f, 1.8f) + side + new float3(0, 0, Range(-0.5f, 0.4f)),
+                Gravity = 4f,
+                Drag = 1.2f,
+                Life = Range(0.18f, 0.4f),
+                Size = Range(0.04f, 0.08f),
+                Color = new float4(1f, 0.85f, 0.5f, 1f),
+                Unlit = true,
+                Glow = true,
+            });
+        }
+    }
+
+    /// <summary>Steam off a quench: pale puffs rising and spreading from the water, more and thicker the hotter the steel (<paramref name="strength"/> 0..1).</summary>
+    public void Steam(float3 at, float strength)
+    {
+        var count = 1 + (int)(strength * 2.5f);
+        for (var i = 0; i < count; i++)
+        {
+            Emit(new Particle
+            {
+                Sprite = "fx/smoke",
+                Pos = at + new float3(Range(-0.15f, 0.15f), Range(-0.15f, 0.15f), 0.02f),
+                Vel = new float3(Range(-0.1f, 0.1f), Range(-0.1f, 0.1f), Range(0.9f, 1.6f)),
+                Drag = 1.4f,
+                Life = Range(0.7f, 1.3f),
+                Size = Range(0.18f, 0.3f),
+                Grow = 0.5f,
+                Color = new float4(0.94f, 0.95f, 0.97f, 0.35f + 0.35f * strength),
+                Unlit = true,
+            });
+        }
+    }
+
     /// <summary>A speech bubble rising from someone's head (an interaction), tinted by how it went.</summary>
     public void Speech(float3 at, float4 color)
     {
