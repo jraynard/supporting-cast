@@ -96,6 +96,7 @@ public sealed class MilitiaSystem : ISimSystem, ISaveState
         Price = Math.Max(0, season.ArmsPrice);
         Wanted = Math.Min(Math.Max(0, season.ArmsWanted), Unarmed(sim));
         When = when;
+        Players.WakeAll(sim); // the shepherd's news goes door to door
         var rack = sim.World.Query<Thing>().Where(e => IsRack(sim, e)).OrderBy(e => e.Index).DefaultIfEmpty(Entity.Null).First();
         int3? at = rack.IsNull ? null : sim.World.Get<Thing>(rack).Cell;
         if (Wanted == 0)

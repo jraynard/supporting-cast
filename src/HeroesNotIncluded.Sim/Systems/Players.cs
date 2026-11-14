@@ -49,6 +49,28 @@ public static class Players
         return any || Afterlife.Ghosts.Any(sim);
     }
 
+    /// <summary>
+    /// A sleeping player's character wakes (a shout, smoke, raiders near, the call to arms): their
+    /// sleep ends as walking off would end it. Nothing if they're awake.
+    /// </summary>
+    public static void Wake(Simulation sim, Entity e)
+    {
+        var w = sim.World;
+        if (!w.IsAlive(e) || !w.TryGet<Mind>(e, out var mind) || !mind.Asleep)
+            return;
+        AiSystem.EndJob(sim, e, mind, false);
+        mind.Asleep = false;
+    }
+
+    /// <summary>Every sleeping player's character wakes (news for the whole town).</summary>
+    public static void WakeAll(Simulation sim)
+    {
+        var w = sim.World;
+        foreach (var e in w.Query<Avatar>())
+            if (w.TryGet<Creature>(e, out var c) && !c.Dead)
+                Wake(sim, e);
+    }
+
     /// <summary>The player a character (or a ghost) belongs to, if any.</summary>
     public static Guid? OwnerOf(Simulation sim, Entity e) =>
         !sim.World.IsAlive(e) ? null

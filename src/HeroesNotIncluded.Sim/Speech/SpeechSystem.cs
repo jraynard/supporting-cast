@@ -1,6 +1,7 @@
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Systems;
 
 namespace HeroesNotIncluded.Sim.Speech;
 
@@ -127,6 +128,14 @@ public sealed class SpeechSystem : ISimSystem, ISaveState
             var reach = w.Get<Creature>(speaker).Downed && volume != Volume.Whisper ? DownedReach
                 : volume == Volume.Say && Hospitality.DrinkingSystem.LevelOf(sim, speaker) >= Hospitality.DrinkingSystem.LoudAt ? Hospitality.DrinkingSystem.LoudReach
                 : 1f;
+            // A shout wakes a sleeping player who'd hear it clearly, or through the wall from close by;
+            // not news called across the square to a shut cottage. They then hear it.
+            if (volume == Volume.Shout)
+                foreach (var e in w.Query<Avatar>())
+                    if (e != speaker && w.TryGet<Mind>(e, out var sleeper) && sleeper.Asleep && w.Has<Position>(e)
+                        && Hear(sim, at, w.Get<Position>(e).Cell, volume, reach) is { } loud
+                        && (loud == Clarity.Clear || Distance(at, w.Get<Position>(e).Cell) / reach <= SayRange))
+                        Players.Wake(sim, e);
             foreach (var e in w.Query<Creature>())
                 if (e == speaker || (CanSpeak(sim, e) && w.Get<Creature>(e).Def.Race == Race.Human))
                     if (Hear(sim, at, w.Get<Position>(e).Cell, volume, reach) is { } clarity)

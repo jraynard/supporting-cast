@@ -227,6 +227,9 @@ public sealed class AiSystem : ISimSystem
             // The player's avatar runs only the jobs its commands start; its brain never chooses.
             if (w.Has<Avatar>(e))
             {
+                // Asleep, a player wakes to smoke or raiders near, as anyone would; not to the cold.
+                if (mind.Asleep && (now + e.Index) % 60 == 0 && Alarmed(sim, e))
+                    Players.Wake(sim, e);
                 if (mind.Job != null)
                     RunJob(sim, e, mind, now);
                 continue;
@@ -297,13 +300,8 @@ public sealed class AiSystem : ISimSystem
         if (!fireproof && sim.Map.Fire[sim.Map.Idx(tile)] > 0)
             return true;
         // Sleepers wake to the smell of smoke.
-        if (!fireproof && sim.World.Get<Mind>(e).Asleep)
-            foreach (var i in sim.Fire.BurningTiles)
-            {
-                var f = sim.Map.CellOf(i);
-                if (Math.Abs(f.X - tile.X) <= 8 && Math.Abs(f.Y - tile.Y) <= 8 && Math.Abs(f.Z - tile.Z) <= 2)
-                    return true;
-            }
+        if (!fireproof && sim.World.Get<Mind>(e).Asleep && SmellsSmoke(sim, tile))
+            return true;
         // Charged by an animal: get out of the way, unless it's what they're hunting.
         if (def.Race == Race.Human && sim.World.Get<Mind>(e).Job is not (HuntJob or FleeJob) && AnimalBrain.Charger(sim, e) != null)
             return true;
@@ -318,6 +316,27 @@ public sealed class AiSystem : ISimSystem
         if (t < tol.SafeMin)
             return sim.World.Get<Mind>(e).Job is not EatJob;
         return t > tol.SafeMax;
+    }
+
+    private static bool SmellsSmoke(Simulation sim, int3 tile)
+    {
+        foreach (var i in sim.Fire.BurningTiles)
+        {
+            var f = sim.Map.CellOf(i);
+            if (Math.Abs(f.X - tile.X) <= 8 && Math.Abs(f.Y - tile.Y) <= 8 && Math.Abs(f.Z - tile.Z) <= 2)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>What wakes a sleeping player: fire on them or smoke near, or raiders or predators close.</summary>
+    private static bool Alarmed(Simulation sim, Entity e)
+    {
+        var tile = sim.World.Get<Position>(e).Cell;
+        if (sim.Map.Fire[sim.Map.Idx(tile)] > 0 || SmellsSmoke(sim, tile))
+            return true;
+        var faction = sim.World.Get<Creature>(e).Faction;
+        return faction is Faction.Village or Faction.Adventurer && Defence.Threat(sim, e, Defence.VillagerRange) != null;
     }
 
     /// <summary>A player order: drop whatever the creature is doing and do this instead.</summary>

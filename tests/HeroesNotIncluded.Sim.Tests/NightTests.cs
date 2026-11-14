@@ -68,6 +68,49 @@ public class NightTests
         Assert.False(Players.AllAsleep(sim));
     }
 
+    private static Entity Sleeping(Simulation sim, Guid player)
+    {
+        var e = Players.CharacterOf(sim, player);
+        sim.ApplyNow(new SleepCommand(e));
+        sim.TickMany(10);
+        Assert.True(sim.World.Get<Mind>(e).Asleep, sim.World.Get<Mind>(e).Job?.Report ?? "no job");
+        return e;
+    }
+
+    [Fact]
+    public void AShoutNearbyWakesASleepingPlayer()
+    {
+        var sim = Round((Ana, "Healer"), (Bea, "Blacksmith"));
+        var ana = Sleeping(sim, Ana);
+        var bea = Players.CharacterOf(sim, Bea);
+        sim.World.Get<Position>(bea) = Position.At(sim.World.Get<Position>(ana).Cell);
+        sim.Speech.Say(sim, bea, "Psst", Speech.Volume.Whisper);
+        Assert.True(sim.World.Get<Mind>(ana).Asleep, "a whisper doesn't wake anyone");
+        var heard = sim.Speech.Say(sim, bea, "Fire at the mill!", Speech.Volume.Shout)!;
+        Assert.False(sim.World.Get<Mind>(ana).Asleep);
+        Assert.Contains(heard.Listeners, h => h.Listener == ana);
+    }
+
+    [Fact]
+    public void TheCallToArmsWakesEverySleepingPlayer()
+    {
+        var sim = Round((Ana, "Healer"));
+        var ana = Sleeping(sim, Ana);
+        sim.Militia.Call(sim, "tonight");
+        Assert.False(sim.World.Get<Mind>(ana).Asleep);
+    }
+
+    [Fact]
+    public void FireNearbyWakesASleepingPlayer()
+    {
+        var sim = Round((Ana, "Healer"));
+        var ana = Sleeping(sim, Ana);
+        var at = sim.World.Get<Position>(ana).Cell;
+        Assert.True(sim.Fire.Ignite(sim, at, 0.6f) || sim.Fire.Ignite(sim, at + new int3(1, 0, 0), 0.6f) || sim.Fire.Ignite(sim, at + new int3(0, 1, 0), 0.6f));
+        sim.TickMany(61);
+        Assert.False(sim.World.Get<Mind>(ana).Asleep);
+    }
+
     [Fact]
     public void APlayerGetsUpAtDawnOnceRestedEnough()
     {
