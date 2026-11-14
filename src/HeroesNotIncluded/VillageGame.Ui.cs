@@ -72,6 +72,7 @@ public sealed partial class VillageGame
         DrawStationWindow();
         DrawRecipeBook();
         DrawInventoryWindow();
+        DrawCarried(); // after every window a carried item could be put in
         DrawHoverInfo();
         if (_showWorkTab && !OrdersLocked)
             DrawWorkTab();

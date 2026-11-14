@@ -1085,6 +1085,12 @@ public struct Request
 public struct Stored
 {
     public Entity In;
+
+    /// <summary>
+    /// Its place among what's in there, lowest first (<see cref="Simulation.StoredIn"/>): a pack's
+    /// order is the player's (the hotbar is its first stacks), so it's kept, not left to the store's.
+    /// </summary>
+    public int Slot;
 }
 
 /// <summary>

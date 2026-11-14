@@ -184,10 +184,14 @@ public static class Inventory
             if (h.Def.Bulky || h.Def.Container != null || sim.MassOf(held) > spare + 1e-4f)
                 return false;
         }
+        var slot = w.Get<Stored>(item).Slot;
         var count = Math.Min(w.Get<Stack>(item).Count, w.Get<Thing>(item).Def.StackLimit);
         var taken = sim.TakeFromStack(item, count);
         if (!held.IsNull && !sim.Store(pack, held).IsNull)
             throw new InvalidOperationException("the swap was weighed, so it must fit");
+        // A new stack takes the place of the one emptied out (a hotbar key swaps, it doesn't shuffle).
+        if (!InOwnPack(sim, creature, item) && InOwnPack(sim, creature, held))
+            w.Get<Stored>(held).Slot = slot;
         w.Get<Carrying>(creature).Item = taken;
         return true;
     }

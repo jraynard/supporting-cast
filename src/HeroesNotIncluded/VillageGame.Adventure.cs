@@ -708,37 +708,7 @@ public sealed partial class VillageGame
         }
         else
             ImGui.TextDisabled($"{items.Count}/{thing.Def.Building!.StorageStacks} stacks");
-        foreach (var item in items)
-        {
-            ImGui.PushID(item.Index);
-            var t = w.Get<Thing>(item);
-            var count = w.Get<Stack>(item).Count;
-            var packRoom = myPack.IsNull ? 0 : _sim.ContainerRoom(myPack, t.Def, t.Material);
-            var canTake = !handsFull || packRoom > 0;
-            if (!canTake)
-                ImGui.BeginDisabled(true);
-            if (ImGui.Button("Take"u8, in _autoSize))
-                Issue(new TakeFromStorageCommand(_avatar, item));
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(!canTake ? "Your hands are full and it won't fit in your pack." : packRoom > 0 ? "One, into your pack." : "One, into your hands.");
-            // Solo applies commands at once, so a Take or All can leave the item gone (or merged) this frame.
-            var many = count > 1;
-            if (many)
-            {
-                ImGui.SameLine(0, 4);
-                if (ImGui.Button("All"u8, in _autoSize))
-                    Issue(new TakeFromStorageCommand(_avatar, item, TakeFromStorageCommand.All));
-                if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                    Tip(packRoom <= 0 ? "The whole stack, into your hands." : handsFull ? "The whole stack, as much as fits in your pack." : "The whole stack: what fits in your pack, the rest in your hands.");
-            }
-            if (!canTake)
-                ImGui.EndDisabled();
-            EatButton(item);
-            SmellButton(item);
-            ImGui.SameLine(0, 8);
-            ImGui.Text($"{(w.IsAlive(item) ? w.Get<Stack>(item).Count : 0)} {t.Label}");
-            ImGui.PopID();
-        }
+        DrawStorageTiles(items, handsFull, myPack);
         if (items.Count == 0)
         {
             ImGui.TextDisabled("Empty."u8);
@@ -746,11 +716,98 @@ public sealed partial class VillageGame
         }
         // Your own pack beside it, to put things in.
         ImGui.TableSetColumnIndex(1);
-        DrawPackList(myPack, _openStorage);
+        DrawPackTiles(myPack);
         ImGui.EndTable();
         Narsil.Ui.Panel.End();
         if (!open)
             _openStorage = Entity.Null;
+    }
+
+    /// <summary>
+    /// What's in the open container as a grid of tiles, icons only: left click (or A) takes one,
+    /// right click (or Y) the whole stack, into your pack if it fits, else your hands. With a pack
+    /// item picked up (<see cref="CarriedItem"/>), the tiles (and a free one after them) take it in.
+    /// </summary>
+    private void DrawStorageTiles(List<Entity> items, bool handsFull, Entity myPack)
+    {
+        var w = _sim.World;
+        var carried = CarriedItem;
+        ISimCommand? store = null;
+        if (!carried.IsNull && w.Get<Thing>(carried) is var ct && _sim.ContainerRoom(_openStorage, ct.Def, ct.Material) > 0)
+            store = new StoreFromPackCommand(_avatar, _openStorage, carried);
+        var gap = Gui.S(4);
+        var tile = Gui.S(IconSize) + 2 * Gui.S(5);
+        var across = Math.Max(1, (int)((ImGui.GetContentRegionAvail().X + gap) / (tile + gap)));
+        // Solo applies a command at once, so a take can leave the item gone (or merged) this frame:
+        // stop drawing after the first one.
+        for (var k = 0; k < items.Count; k++)
+        {
+            var item = items[k];
+            if (!w.IsAlive(item))
+                continue;
+            if (k % across != 0)
+                ImGui.SameLine(0, gap);
+            var t = w.Get<Thing>(item);
+            var count = w.TryGet<Stack>(item, out var stack) ? stack.Count : 1;
+            var packRoom = myPack.IsNull ? 0 : _sim.ContainerRoom(myPack, t.Def, t.Material);
+            var canTake = !handsFull || packRoom > 0;
+            ImGui.PushID(item.Index);
+            var min = ImGui.GetCursorScreenPos();
+            var box = DrawSlotArt(item, "", dim: !canTake && carried.IsNull);
+            var one = ImGui.InvisibleButton("##take"u8, in box, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.EnableNav);
+            if (!carried.IsNull)
+            {
+                // Carrying a pack item: every tile here is the container, to put it in.
+                if (store != null)
+                {
+                    MarkDropTarget(min, box, ImGui.IsItemHovered(ImGuiHoveredFlags.None));
+                    if (one)
+                    {
+                        ImGui.PopID();
+                        PutCarried(store);
+                        return;
+                    }
+                }
+                ImGui.PopID();
+                continue;
+            }
+            var all = ImGui.IsItemClicked(ImGuiMouseButton.Right)
+                || (ImGui.IsItemFocused() && ImGui.IsKeyPressed(ImGuiKey.GamepadFaceUp, false));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip($"{ItemLine(item)}\n{ItemDetails(item)}\n{TakeTip(canTake, packRoom, handsFull, count)}");
+            ImGui.PopID();
+            if (canTake && (one || all))
+            {
+                Issue(all && count > 1
+                    ? new TakeFromStorageCommand(_avatar, item, TakeFromStorageCommand.All)
+                    : new TakeFromStorageCommand(_avatar, item));
+                break;
+            }
+        }
+        if (store != null)
+        {
+            // A free place after what's there (all there is, in an empty chest).
+            if (items.Count % across != 0)
+                ImGui.SameLine(0, gap);
+            var min = ImGui.GetCursorScreenPos();
+            var box = DrawSlotArt(Entity.Null, "");
+            var put = ImGui.InvisibleButton("##put"u8, in box, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.EnableNav);
+            MarkDropTarget(min, box, ImGui.IsItemHovered(ImGuiHoveredFlags.None));
+            if (put)
+                PutCarried(store);
+        }
+    }
+
+    /// <summary>A storage tile's tooltip line: what a click and a right click would do.</summary>
+    private static string TakeTip(bool canTake, int packRoom, bool handsFull, int count)
+    {
+        if (!canTake)
+            return "Your hands are full and it won't fit in your pack.";
+        var one = $"{(Controls.UsingPad ? "A" : "Click")}: take one, into your {(packRoom > 0 ? "pack" : "hands")}.";
+        if (count <= 1)
+            return one;
+        var all = packRoom <= 0 ? "into your hands" : handsFull ? "as much as fits in your pack" : "what fits in your pack, the rest in your hands";
+        return $"{one}\n{(Controls.UsingPad ? "Y" : "Right click")}: take them all, {all}.";
     }
 
     /// <summary>The inspector's request buttons for a companion: what you've asked of them, and what you could.</summary>

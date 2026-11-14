@@ -67,15 +67,17 @@ public sealed partial class VillageGame
         Narsil.Ui.Panel.Begin("##hotbar", Narsil.Ui.Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
         _hud.Took();
         var held = w.Get<Carrying>(_avatar).Item;
-        SlotBox("hands", held, "In hand", $"Empty hands. {HotbarKeys()} take a stack from your pack; {Controls.Glyph(Act.Drop)} puts down what you hold.", menu: true);
+        SlotBox("hands", held, "In hand", $"Empty hands. {HotbarKeys()} take a stack from your pack; {Controls.Glyph(Act.Drop)} puts down what you hold.", menu: true, accepts: HoldIt);
         if (!pack.IsNull)
         {
             var items = _sim.StoredIn(pack);
             for (var k = 0; k < HotbarSlots; k++)
             {
                 ImGui.SameLine(0, Gui.S(4));
+                var slot = k;
                 SlotBox($"hot{k}", k < items.Count ? items[k] : Entity.Null, $"{k + 1}",
-                    k < items.Count ? $"[{Controls.Glyph(Act.Hotbar[k])}] Take in hand (what you hold goes in the pack)" : $"[{Controls.Glyph(Act.Hotbar[k])}] Put what you hold in the pack", menu: true);
+                    k < items.Count ? $"[{Controls.Glyph(Act.Hotbar[k])}] Take in hand (what you hold goes in the pack)" : $"[{Controls.Glyph(Act.Hotbar[k])}] Put what you hold in the pack", menu: true,
+                    accepts: it => it == (slot < items.Count ? items[slot] : Entity.Null) ? null : new ReorderPackCommand(_avatar, it, slot));
             }
             ImGui.SameLine(0, Gui.S(8));
             LoadBar(pack, 90);
@@ -94,9 +96,48 @@ public sealed partial class VillageGame
 
     /// <summary>
     /// A framed slot showing an item (icon and count) or nothing, with a corner label and a tooltip.
-    /// With <paramref name="menu"/>, clicking the item opens its <see cref="ItemMenu"/>.
+    /// With <paramref name="menu"/>, clicking the item opens its <see cref="ItemMenu"/>. While a
+    /// pack item is picked up (<see cref="CarriedItem"/>), a slot whose <paramref name="accepts"/>
+    /// gives a command for it is lit, and a click there puts it in.
     /// </summary>
-    private void SlotBox(string id, Entity item, string corner, string emptyTip, bool menu = false)
+    private void SlotBox(string id, Entity item, string corner, string emptyTip, bool menu = false, Func<Entity, ISimCommand?>? accepts = null)
+    {
+        var min = ImGui.GetCursorScreenPos();
+        var box = DrawSlotArt(item, corner);
+        var alive = !item.IsNull && _sim.World.IsAlive(item);
+        // A button, not just a box, so a gamepad's navigation can land on it (A opens its menu).
+        var pressed = ImGui.InvisibleButton($"##slot-{id}", in box, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.MouseButtonRight | ImGuiButtonFlags.EnableNav);
+        var carried = CarriedItem;
+        if (!carried.IsNull)
+        {
+            // Carrying: the slot is a place to put it, or nothing (a click elsewhere puts it back).
+            if (accepts?.Invoke(carried) is { } command)
+            {
+                var hovered = ImGui.IsItemHovered(ImGuiHoveredFlags.None);
+                MarkDropTarget(min, box, hovered);
+                if (pressed) // a right click put it back on its press, so this is the left (or A)
+                    PutCarried(command);
+            }
+            return;
+        }
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+            Tip(alive ? $"{ItemLine(item)}\n{ItemDetails(item)}{(menu ? "\nClick for what you can do with it." : "")}" : emptyTip);
+        if (!menu || !alive)
+            return;
+        if (pressed)
+            ImGui.OpenPopup(id);
+        if (ImGui.BeginPopup(id))
+        {
+            ItemMenu(item);
+            ImGui.EndPopup();
+        }
+    }
+
+    /// <summary>
+    /// A slot's frame, icon, count and corner label drawn at the cursor, without taking the space:
+    /// the caller lays an invisible button of the returned size over it. Dimmed when <paramref name="dim"/>.
+    /// </summary>
+    private float2 DrawSlotArt(Entity item, string corner, bool dim = false)
     {
         var w = _sim.World;
         var dl = ImGui.GetWindowDrawList();
@@ -124,19 +165,9 @@ public sealed partial class VillageGame
         }
         var c = min + new float2(Gui.S(3), Gui.S(1));
         dl.AddText(in c, Theme.U8(Theme.Dim), corner.Length <= 2 ? corner : "");
-        // A button, not just a box, so a gamepad's navigation can land on it (A opens its menu).
-        var pressed = ImGui.InvisibleButton($"##slot-{id}", in box, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.MouseButtonRight | ImGuiButtonFlags.EnableNav);
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-            Tip(alive ? $"{ItemLine(item)}\n{ItemDetails(item)}{(menu ? "\nClick for what you can do with it." : "")}" : emptyTip);
-        if (!menu || !alive)
-            return;
-        if (pressed)
-            ImGui.OpenPopup(id);
-        if (ImGui.BeginPopup(id))
-        {
-            ItemMenu(item);
-            ImGui.EndPopup();
-        }
+        if (dim)
+            dl.AddRectFilled(in min, in max, Theme.U8(new float4(0, 0, 0, 0.55f)), Gui.S(4), ImDrawFlags.None);
+        return box;
     }
 
     /// <summary>
@@ -289,6 +320,13 @@ public sealed partial class VillageGame
             if (ImGui.MenuItem("Put down"u8))
                 Later(new AvatarDropCommand(_avatar, w.Get<Position>(_avatar).Cell));
         }
+        if (packed && !_openStorage.IsNull && Inventory.CanReachContainer(_sim, _avatar, _openStorage)
+            && _sim.ContainerRoom(_openStorage, def, w.Get<Thing>(item).Material) > 0)
+        {
+            any = true;
+            if (ImGui.MenuItem($"Put in {w.Get<Thing>(_openStorage).Label}"))
+                Later(new StoreFromPackCommand(_avatar, _openStorage, item));
+        }
         if (packed)
         {
             any = true;
@@ -320,23 +358,11 @@ public sealed partial class VillageGame
             + (food >= 0.95f ? "\nYou're not hungry." : "");
     }
 
-    /// <summary>An "Eat" button for a food stack (in hand, packed or in reach), or nothing if it isn't one you can eat.</summary>
     /// <summary>Food (or anything that turns) a nose can tell something from.</summary>
     private bool SmellsOfSomething(Entity item) =>
         _sim.World.IsAlive(item) && _sim.World.Has<Rot>(item);
 
-    /// <summary>A Smell button beside a stack of food: has it turned? (Sim.Work.SniffSession)</summary>
-    private void SmellButton(Entity item)
-    {
-        if (!SmellsOfSomething(item))
-            return;
-        ImGui.SameLine(0, 4);
-        if (ImGui.SmallButton("Smell"u8))
-            Issue(new Sim.Work.SniffCommand(_avatar, item));
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-            Tip("Has it turned? A practised nose can tell, roughly.");
-    }
-
+    /// <summary>An "Eat" button for a food stack (in hand, packed or in reach), or nothing if it isn't one you can eat.</summary>
     private void EatButton(Entity item)
     {
         // Gone this very frame (a command already applied: stowed into a stack, eaten, put down).
@@ -452,7 +478,7 @@ public sealed partial class VillageGame
                 : (w.TryGet<Apparel>(_avatar, out var worn) ? worn[Outfit.ApparelOf(slot)!.Value] : Entity.Null);
             if (!item.IsNull && !w.IsAlive(item))
                 item = Entity.Null;
-            SlotBox($"gear{slot}", item, "", $"Nothing on your {slot.ToString().ToLowerInvariant()}");
+            SlotBox($"gear{slot}", item, "", $"Nothing on your {slot.ToString().ToLowerInvariant()}", accepts: it => Fits(it, slot) ? new EquipCommand(_avatar, it) : null);
             ImGui.SameLine(0, 6);
             ImGui.BeginGroup();
             ImGui.TextDisabled(slot.ToString());
@@ -481,7 +507,7 @@ public sealed partial class VillageGame
         ImGui.Spacing();
         Theme.Header(Host.ImGui, "In hand");
         var held = w.Get<Carrying>(_avatar).Item;
-        SlotBox("hand", held, "", "Empty hands", menu: true);
+        SlotBox("hand", held, "", "Empty hands", menu: true, accepts: HoldIt);
         ImGui.SameLine(0, 6);
         ImGui.BeginGroup();
         if (held.IsNull || !w.IsAlive(held))
@@ -513,7 +539,7 @@ public sealed partial class VillageGame
 
         // The pack (and the belt under it) in the second column: it's what you open this for.
         ImGui.TableSetColumnIndex(1);
-        DrawPackList(_sim.PackOf(_avatar), _openStorage);
+        DrawPackTiles(_sim.PackOf(_avatar));
         DrawBelt();
         ImGui.EndTable();
 
@@ -568,7 +594,8 @@ public sealed partial class VillageGame
             if (k > 0)
                 ImGui.SameLine(0, 4);
             SlotBox($"belt{k}", k < belt.Count ? belt[k] : Entity.Null, "",
-                "An empty loop: pick up a tool (or use Put on belt) to hang it here. Without an axe or a pick, chopping and mining go slowly.");
+                "An empty loop: pick up a tool (or use Put on belt) to hang it here. Without an axe or a pick, chopping and mining go slowly.",
+                accepts: it => _sim.World.Get<Thing>(it).Def.Tool != null && Toolbelt.HasRoom(_sim, _avatar) ? new BeltCommand(_avatar, it, On: true) : null);
         }
         foreach (var tool in belt)
         {
@@ -588,11 +615,23 @@ public sealed partial class VillageGame
             TextC(Dim, $"No tools: chopping, mining and fishing go at {Crafting.BareHands * 100:F0}% bare-handed.");
     }
 
+    /// <summary>A carried item into your hands (what you held goes in the pack).</summary>
+    private ISimCommand? HoldIt(Entity item) => new HoldCommand(_avatar, item);
+
+    /// <summary>Whether an item is worn (or wielded) in this gear slot.</summary>
+    private bool Fits(Entity item, GearSlot slot)
+    {
+        var def = _sim.World.Get<Thing>(item).Def;
+        return slot == GearSlot.Weapon ? def.Weapon != null : def.Apparel is { } a && Outfit.Of(a.Slot) == slot;
+    }
+
     /// <summary>
-    /// The pack's stacks with what can be done with each: hold, wear or wield, drop, or (with a
-    /// container open beside it) put in there.
+    /// The pack's stacks as a grid of tiles, numbered for the hotbar: click one to pick it up and
+    /// move it (to another place in the pack, into a container open beside it, your hands, a gear
+    /// slot, the belt), right click
+    /// (Y on a pad) for everything else that can be done with it (<see cref="ItemMenu"/>).
     /// </summary>
-    private void DrawPackList(Entity pack, Entity container)
+    private void DrawPackTiles(Entity pack)
     {
         var w = _sim.World;
         if (pack.IsNull)
@@ -606,49 +645,52 @@ public sealed partial class VillageGame
         var items = _sim.StoredIn(pack);
         if (items.Count == 0)
             TextC(Dim, Controls.Keys("Empty. ~F~ picks things up into it."));
-        var into = !container.IsNull && w.IsAlive(container) ? container : Entity.Null;
-        // Solo, a command applies at once, so the list can go stale mid-way (a stack held, merged or
-        // dropped): skip what's gone, and stop after the first button that acts.
-        var acted = false;
-        void Act(ISimCommand command)
-        {
-            Issue(command);
-            acted = true;
-        }
-        for (var k = 0; k < items.Count && !acted; k++)
+        var gap = Gui.S(4);
+        var tile = Gui.S(IconSize) + 2 * Gui.S(5);
+        var across = Math.Max(1, (int)((ImGui.GetContentRegionAvail().X + gap) / (tile + gap)));
+        var carried = CarriedItem;
+        for (var k = 0; k < items.Count; k++)
         {
             var item = items[k];
             if (!w.IsAlive(item))
                 continue;
-            var t = w.Get<Thing>(item);
+            if (k % across != 0)
+                ImGui.SameLine(0, gap);
             ImGui.PushID(item.Index);
-            SlotBox("pack", item, k < HotbarSlots ? $"{k + 1}" : "", "", menu: true);
-            ImGui.SameLine(0, 6);
-            ImGui.BeginGroup();
-            ImGui.Text(ItemLine(item));
-            if (ImGui.SmallButton("Hold"u8))
-                Act(new HoldCommand(_avatar, item));
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip(k < HotbarSlots ? $"Take it in hand [{k + 1}]" : "Take it in hand");
-            if (w.IsAlive(item))
-                EatButton(item);
-            if (t.Def.Apparel != null || t.Def.Weapon != null)
+            var min = ImGui.GetCursorScreenPos();
+            var box = DrawSlotArt(item, k < HotbarSlots ? $"{k + 1}" : "", dim: item == carried);
+            var pressed = ImGui.InvisibleButton("##pack"u8, in box, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.EnableNav);
+            var menu = carried.IsNull && (ImGui.IsItemClicked(ImGuiMouseButton.Right)
+                || (ImGui.IsItemFocused() && ImGui.IsKeyPressed(ImGuiKey.GamepadFaceUp, false)));
+            if (item == carried)
+                ImGui.GetWindowDrawList().AddRect(in min, min + box, Theme.U8(Theme.Barrel), Gui.S(4), ImDrawFlags.None, Gui.S(2));
+            else if (!carried.IsNull)
+                MarkDropTarget(min, box, ImGui.IsItemHovered(ImGuiHoveredFlags.None));
+            if (carried.IsNull && ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip($"{ItemLine(item)}\n{ItemDetails(item)}\n{(Controls.UsingPad ? "A" : "Click")}: pick it up to move it. {(Controls.UsingPad ? "Y" : "Right click")}: what you can do with it.");
+            if (pressed && carried.IsNull)
+                PickUp(item);
+            else if (pressed && item == carried)
+                PickUp(Entity.Null); // its own tile again puts it back
+            else if (pressed)
             {
-                ImGui.SameLine(0, 4);
-                if (ImGui.SmallButton(t.Def.Weapon != null ? "Wield"u8 : "Wear"u8))
-                    Act(new EquipCommand(_avatar, item));
+                PutCarried(new ReorderPackCommand(_avatar, carried, k)); // into this one's place
+                ImGui.PopID();
+                break;
             }
-            if (!into.IsNull && _sim.ContainerRoom(into, t.Def, t.Material) > 0)
+            if (menu)
+                ImGui.OpenPopup("pack-menu"u8);
+            var acted = false;
+            if (ImGui.BeginPopup("pack-menu"u8))
             {
-                ImGui.SameLine(0, 4);
-                if (ImGui.SmallButton($"Put in {w.Get<Thing>(into).Label}"))
-                    Act(new StoreFromPackCommand(_avatar, into, item));
+                ItemMenu(item);
+                acted = !w.IsAlive(item) || !Inventory.InOwnPack(_sim, _avatar, item);
+                ImGui.EndPopup();
             }
-            ImGui.SameLine(0, 4);
-            if (ImGui.SmallButton("Drop"u8))
-                Act(new DropFromPackCommand(_avatar, item));
-            ImGui.EndGroup();
             ImGui.PopID();
+            // Solo applies a command at once, so the list can go stale mid-way: stop once it has.
+            if (acted)
+                break;
         }
     }
 }

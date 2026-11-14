@@ -45,7 +45,7 @@ public static class Toolbelt
             w.Get<Carrying>(creature).Item = Entity.Null;
         var one = sim.TakeFromStack(item, 1); // off the map or out of its container
         w.Get<Thing>(one).Cell = w.Get<Position>(creature).Cell;
-        w.Add(one, new Stored { In = creature });
+        w.Add(one, new Stored { In = creature, Slot = sim.NextSlot(creature) });
         return one;
     }
 

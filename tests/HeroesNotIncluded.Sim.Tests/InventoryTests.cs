@@ -1,6 +1,7 @@
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Saving;
 using HeroesNotIncluded.Sim.Systems;
 
 namespace HeroesNotIncluded.Sim.Tests;
@@ -147,6 +148,30 @@ public class InventoryTests
         Assert.Equal(keg, sim.World.Get<Carrying>(me).Item); // refused: the keg doesn't go in a pack
         Do(sim, new StowCommand(me));
         Assert.Equal(keg, sim.World.Get<Carrying>(me).Item);
+    }
+
+    [Fact]
+    public void ThePackKeepsTheOrderItsPutIn()
+    {
+        var (sim, me) = Setup();
+        var pack = sim.PackOf(me);
+        foreach (var def in new[] { "Stone", "Berries", "LeatherCap" })
+            sim.Store(pack, sim.CreateItem(sim.Thing(def), 1));
+        string[] Order(Simulation s) => s.StoredIn(s.PackOf(me)).Select(e => s.World.Get<Thing>(e).Def.Name).ToArray();
+        Assert.Equal(["Stone", "Berries", "LeatherCap"], Order(sim));
+
+        Do(sim, new ReorderPackCommand(me, sim.StoredIn(pack)[2], 0));
+        Assert.Equal(["LeatherCap", "Stone", "Berries"], Order(sim));
+        Do(sim, new ReorderPackCommand(me, sim.StoredIn(pack)[0], 99)); // clamped to the end
+        Assert.Equal(["Stone", "Berries", "LeatherCap"], Order(sim));
+
+        // Taking a stack in hand swaps what was held into its place, not onto the end.
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("IronHelm"), 1);
+        Do(sim, new HoldCommand(me, sim.StoredIn(pack)[1]));
+        Assert.Equal(["Stone", "IronHelm", "LeatherCap"], Order(sim));
+
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        Assert.Equal(Order(sim), Order(loaded));
     }
 
     [Fact]

@@ -624,7 +624,11 @@ internal static class ComponentCodecs
             Proved = Math.Clamp(r.Float(), 0f, 1000f), Bake = Math.Clamp(r.Float(), 0f, 2f), Maker = r.Entity(),
         }),
         Codec("Flawed", (w, f) => w.Int((int)f.Flaw), r => new Work.Flawed { Flaw = (Work.PieceFlaw)r.Int() }),
-        Codec("Stored", (w, s) => w.Entity(s.In), r => new Stored { In = r.Entity() }),
+        Codec("Stored", (w, s) =>
+        {
+            w.Entity(s.In);
+            w.Int(s.Slot);
+        }, r => new Stored { In = r.Entity(), Slot = r.Version >= 29 ? r.Int() : 0 }), // a pack's order came with format 29
         Codec("Request", (w, q) =>
         {
             w.Int((int)q.Kind);

@@ -78,6 +78,18 @@ public sealed record StoreFromPackCommand(Entity Avatar, Entity Container, Entit
     }
 }
 
+/// <summary>Move a stack to another place in the pack (<paramref name="Index"/> in its order): the hotbar is its first stacks.</summary>
+public sealed record ReorderPackCommand(Entity Avatar, Entity Item, int Index) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (InventoryCommand.Ready(sim, Avatar) && InventoryCommand.IsItem(sim, Item) && Inventory.InOwnPack(sim, Avatar, Item))
+            sim.MoveInContainer(Item, Index);
+    }
+}
+
 internal static class InventoryCommand
 {
     /// <summary>A living, conscious player character outside a fight (gear doesn't change mid-battle).</summary>

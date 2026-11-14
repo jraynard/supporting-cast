@@ -541,13 +541,42 @@ public sealed partial class Simulation
         && !IsPack(container) && !World.Has<Creature>(container);
 
     /// <summary>The stacks kept in a container, in entity order.</summary>
+    /// <summary>What's in a container, in its order (<see cref="Stored.Slot"/>; ties by entity, so every peer agrees).</summary>
     public List<Entity> StoredIn(Entity container)
     {
         var items = new List<Entity>();
         foreach (var e in World.Query<Stored>())
             if (World.Get<Stored>(e).In == container)
                 items.Add(e);
+        items.Sort((a, b) => World.Get<Stored>(a).Slot != World.Get<Stored>(b).Slot
+            ? World.Get<Stored>(a).Slot.CompareTo(World.Get<Stored>(b).Slot)
+            : a.Index.CompareTo(b.Index));
         return items;
+    }
+
+    /// <summary>The slot after everything in a container: where a new stack goes.</summary>
+    public int NextSlot(Entity container)
+    {
+        var next = 0;
+        foreach (var e in World.Query<Stored>())
+            if (World.Get<Stored>(e) is var s && s.In == container && s.Slot >= next)
+                next = s.Slot + 1;
+        return next;
+    }
+
+    /// <summary>
+    /// Move a stack to another place among what's in its container (<paramref name="index"/> in
+    /// <see cref="StoredIn"/>'s order, clamped): the rest close up around it.
+    /// </summary>
+    public void MoveInContainer(Entity item, int index)
+    {
+        if (!World.IsAlive(item) || !World.TryGet<Stored>(item, out var stored) || stored.In.IsNull)
+            return;
+        var items = StoredIn(stored.In);
+        items.Remove(item);
+        items.Insert(Math.Clamp(index, 0, items.Count), item);
+        for (var k = 0; k < items.Count; k++)
+            World.Get<Stored>(items[k]).Slot = k;
     }
 
     /// <summary>Holds items: a storage building (the wagon) or a pack.</summary>
@@ -655,7 +684,7 @@ public sealed partial class Simulation
             ref var thing = ref World.Get<Thing>(part);
             thing.Cell = cell;
             thing.Spawned = false;
-            World.Add(part, new Stored { In = container });
+            World.Add(part, new Stored { In = container, Slot = NextSlot(container) });
             if (part == item)
                 return rest;
         }
