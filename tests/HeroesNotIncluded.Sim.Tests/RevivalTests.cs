@@ -118,6 +118,22 @@ public class RevivalTests
     }
 
     [Fact]
+    public void TheDeadAreLaidOutInTheirClothesAndComeBackDressed()
+    {
+        var (sim, _) = TestWorld.Millbrook(7, 2);
+        sim.Round.OpenLobby();
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+        sim.ApplyNow(new StartRoundCommand());
+        var body = Players.CharacterOf(sim, Ana);
+        var worn = sim.Worn(body).ToList();
+        Assert.NotEmpty(worn);
+        Kill(sim, body);
+        Assert.Equal(worn, sim.Worn(body).ToList());
+        Revival.Revive(sim, body);
+        Assert.Equal(worn, sim.Worn(body).ToList());
+    }
+
+    [Fact]
     public void AGhostMustBeAtItsBodyToAnswer()
     {
         var (sim, body, ghost, empath) = Deathbed();

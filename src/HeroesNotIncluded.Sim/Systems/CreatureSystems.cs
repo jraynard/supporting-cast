@@ -489,7 +489,8 @@ public sealed class NeedsSystem : ISimSystem
         c.Hp = 0;
         AiSystem.EndJob(sim, e, sim.World.Get<Mind>(e), false);
         sim.World.Get<Mover>(e).Stop();
-        sim.DropGear(e);
+        // Foes are stripped where they fall (their arms are the town's loot); the town's own keep what they wear.
+        sim.DropGear(e, keepWorn: c.Faction is not (Faction.Raider or Faction.Captors or Faction.Prisoner));
         Afterlife.Ghosts.OnDeath(sim, e, cause);
         MoodSystem.OnDeath(sim, e);
         if (c.Def.Animal != null && !sim.World.Has<Rot>(e))

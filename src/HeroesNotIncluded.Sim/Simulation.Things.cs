@@ -1125,12 +1125,16 @@ public sealed partial class Simulation
                 yield return worn[slot];
     }
 
-    /// <summary>Drop everything a creature holds and wears (on death).</summary>
-    public void DropGear(Entity creature)
+    /// <summary>
+    /// Drop what a creature holds (on death), and what it wears unless <paramref name="keepWorn"/>:
+    /// townsfolk are laid out in their clothes, so someone called back comes back dressed.
+    /// </summary>
+    public void DropGear(Entity creature, bool keepWorn = false)
     {
         DropWeapon(creature);
-        foreach (var slot in Enum.GetValues<ApparelSlot>())
-            TakeOff(creature, slot);
+        if (!keepWorn)
+            foreach (var slot in ApparelSlots)
+                TakeOff(creature, slot);
         Toolbelt.DropAll(this, creature);
     }
 
