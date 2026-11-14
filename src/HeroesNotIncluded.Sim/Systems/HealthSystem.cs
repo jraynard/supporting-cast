@@ -46,7 +46,7 @@ public sealed class HealthSystem : ISimSystem
 
             var inBed = InBed(sim, e);
             // In bed, or (too big to carry to one) lying downed by a fire: they mend faster.
-            var bed = inBed ? 1.5f : c.Downed && h.Injuries.Count > 0 && ByAFire(sim, e) ? ByFireFactor : 1f;
+            var bed = (inBed ? 1.5f : c.Downed && h.Injuries.Count > 0 && ByAFire(sim, e) ? ByFireFactor : 1f) * Work.Broths.HealFactorOf(sim, e);
             for (var i = h.Injuries.Count - 1; i >= 0; i--)
             {
                 var inj = h.Injuries[i];

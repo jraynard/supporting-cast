@@ -547,6 +547,8 @@ public sealed partial class VillageGame
         ImGui.SameLine(0, 6);
         var pie = Pies.CanMake(_sim, _avatar);
         PrepButton(table, PrepStep.Pie, "Make a pie", pie, $"A ball of dough and {Pies.Filling} portions of raw food, the rim crimped round. Then the oven.");
+        ImGui.SameLine(0, 6);
+        PrepButton(table, PrepStep.Salt, "Salt it", Larder.CanSalt(_sim, _avatar), $"Raw meat or fish rubbed with salt, a scoop to {Larder.PerScoop}: keeps for weeks, and seasons a pot by itself.");
         if (chop.IsNull && !flour && portions < Rations.Portions && !pie)
             TextC(Theme.Dim, "Bring raw food, flour or a few portions of food from the larder.");
         Panel.End();
@@ -922,6 +924,8 @@ public sealed partial class VillageGame
             Wrapped($"In it: {p.Contents}. It tastes {p.Tastes}.");
             if (p.House is { } house)
                 TextC(Theme.Good, $"It tastes like your {house}: it's the house dish.");
+            if (p.Mends)
+                TextC(Theme.Good, "Fresh enough to be a broth: good for the hurt, and for a healer's gift.");
             TextC(p.Surface == Surface.Simmer ? Theme.Good : Theme.Dim, $"It's {Cooking.SurfaceLabel(p.Surface)}{(p.Lit ? "" : ", and the fire beside it is out")}.");
             if (p.Caught is { } caught)
                 TextC(Theme.Bad, Cap(caught) + ".");

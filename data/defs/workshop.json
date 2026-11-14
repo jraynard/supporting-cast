@@ -192,6 +192,27 @@
       "nutrition": 0.14, "chopped": true, "rotDays": 7, "flavour": { "fresh": 0.7, "sweet": 0.3 }, "flammability": 0.2, "maxHp": 15,
       "description": "Shredded cabbage, ready for the pot.",
       "model": [ { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.25], "top": "props/cabbage_top", "side": "props/basket" } ] },
+    // Keeping the larder (Work.Larder): salt at the prep table, a scoop to four portions, or the smoking
+    // rack near a fire. Both keep for weeks; salt meat seasons a pot by itself.
+    { "name": "CoarseSalt", "label": "salt", "category": "Item", "mass": 0.3, "sprite": "items/lime", "stackLimit": 30, "flammability": 0, "maxHp": 20,
+      "description": "Coarse grey salt in a crock. Rubbed into raw meat or fish at the prep table, it keeps them for weeks.",
+      "model": [ { "min": [0.3, 0.3, 0], "max": [0.7, 0.7, 0.3], "top": "props/linen", "side": "props/stone_block" } ] },
+    { "name": "SaltMeat", "label": "salt meat", "category": "Item", "mass": 0.4, "sprite": "items/meat", "stackLimit": 30,
+      "nutrition": 0.15, "isMeat": true, "rotDays": 40, "salty": 0.35, "flavour": { "savoury": 1 }, "flammability": 0.3, "maxHp": 20,
+      "description": "Meat rubbed with salt and packed down. Keeps for weeks, and seasons a stew by itself.",
+      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.26], "top": "props/meat_top", "side": "props/linen" } ] },
+    { "name": "SaltFish", "label": "salt fish", "category": "Item", "mass": 0.3, "sprite": "items/fish", "stackLimit": 30,
+      "nutrition": 0.15, "isMeat": true, "rotDays": 40, "salty": 0.35, "flavour": { "savoury": 0.8, "fresh": 0.2 }, "flammability": 0.3, "maxHp": 12,
+      "description": "Fish split and salted stiff. Keeps for weeks; soak it, or the stew's all salt.",
+      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.2], "top": "props/fish_top", "side": "props/linen" } ] },
+    { "name": "SmokedMeat", "label": "smoked meat", "category": "Item", "mass": 0.35, "sprite": "items/meat", "stackLimit": 30,
+      "nutrition": 0.15, "isMeat": true, "rotDays": 30, "flavour": { "savoury": 0.85, "hot": 0.15 }, "flammability": 0.4, "maxHp": 20,
+      "description": "Meat cured in the smoke over a kitchen fire. Keeps for weeks, and tastes of the fire.",
+      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.24], "top": "props/meat_top", "side": "props/timber_dark" } ] },
+    { "name": "SmokedFish", "label": "smoked fish", "category": "Item", "mass": 0.25, "sprite": "items/fish", "stackLimit": 30,
+      "nutrition": 0.15, "isMeat": true, "rotDays": 30, "flavour": { "savoury": 0.7, "hot": 0.1, "fresh": 0.2 }, "flammability": 0.4, "maxHp": 12,
+      "description": "Fish cured golden in the smoke. Keeps for weeks.",
+      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.18], "top": "props/fish_top", "side": "props/timber_dark" } ] },
     {
       // Rations for the road (Work.Rations): three portions of food wrapped in a cloth and tied at
       // the kitchen's prep table. Sold like gear; carried on a quest and eaten on the way. Not eaten

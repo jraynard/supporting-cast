@@ -256,6 +256,14 @@ public static class Rations
                 else
                     sim.Messages.Add(MessageKind.Info, $"Dough takes {Baking.FlourPerDough} flour: there's some in the larder.", cell);
                 return;
+            case PrepStep.Salt:
+                if (!Larder.CanSalt(sim, cook))
+                    sim.Messages.Add(MessageKind.Info, Larder.SaltOn(sim, cook).IsNull
+                        ? "There's salt in the larder: bring a scoop or two."
+                        : "Salt's for raw meat and fish: bring some from the larder.", cell);
+                else
+                    Larder.SaltAll(sim, cook, cell);
+                return;
             case PrepStep.Pie:
                 if (Pies.CanMake(sim, cook))
                     WorkSystem.Start(sim, cook, new CrimpSession { Table = table });
@@ -275,7 +283,7 @@ public static class Rations
 }
 
 /// <summary>What to do at a prep table: the key's choice, or chopping, kneading, packing or making a pie by name.</summary>
-public enum PrepStep : byte { Next, Chop, Knead, Pack, Pie }
+public enum PrepStep : byte { Next, Chop, Knead, Pack, Pie, Salt }
 
 /// <summary>The work key at a prep table, or one of its steps by name (<see cref="Rations.Start"/>).</summary>
 public sealed record PrepCommand(Entity Avatar, Entity Table, PrepStep Step) : ISimCommand, IActorCommand

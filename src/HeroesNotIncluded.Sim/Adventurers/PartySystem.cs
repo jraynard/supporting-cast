@@ -77,7 +77,9 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (parties.Count == 0)
             return;
         Send(sim, parties[_rand.NextInt(parties.Count)]);
-        NextArrivalTick = now + SimClock.HoursToTicks(HoursBetweenParties * _rand.Range(0.7f, 1.3f));
+        // A table that's talked of brings the next lot sooner; the talk fades with each new party.
+        NextArrivalTick = now + SimClock.HoursToTicks(HoursBetweenParties * _rand.Range(0.7f, 1.3f) * (1f - sim.Shops.FareFactor));
+        sim.Shops.TalkFades();
     }
 
     /// <summary>Is any adventurer still in town (alive and not on their way out)?</summary>

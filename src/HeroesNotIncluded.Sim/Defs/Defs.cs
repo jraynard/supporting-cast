@@ -408,6 +408,12 @@ public sealed class BuildingProps
     /// <summary>The kitchen's butcher block: sides jointed and birds plucked on it (<c>Work.Butchery</c>).</summary>
     public bool ButcherBlock { get; set; }
 
+    /// <summary>A store that keeps what's in it no warmer than this, °C (the larder, a cold store): null keeps at the air.</summary>
+    public float? KeepsAt { get; set; }
+
+    /// <summary>A smoking rack: what's hung on it cures while a fire burns close by (<c>Work.Larder</c>).</summary>
+    public bool SmokingRack { get; set; }
+
     /// <summary>A bar: mixed drinks are made at it (<c>Work.MixSession</c>).</summary>
     public bool Bar { get; set; }
 
@@ -892,6 +898,15 @@ public sealed class ThingDef : Def
 
     /// <summary>Goes on the spit to roast (<c>Work.Roasting</c>).</summary>
     public bool Roasts { get; set; }
+
+    /// <summary>What it is once salted at the prep table (<c>Work.Larder</c>), a thing def name; null if it isn't salted.</summary>
+    public string? SaltsInto { get; set; }
+
+    /// <summary>What it is once cured on the smoking rack (<c>Work.Larder</c>), a thing def name; null if it isn't smoked.</summary>
+    public string? SmokesInto { get; set; }
+
+    /// <summary>Salted already: it seasons a pot by itself, this much for its share of what's in it.</summary>
+    public float Salty { get; set; }
 
     /// <summary>A seasoner: it flavours a pot without adding a bowl to it.</summary>
     [JsonIgnore] public bool IsSeasoner => Flavour != null && Nutrition <= 0;

@@ -21,8 +21,14 @@ public sealed class RotSystem : ISimSystem
         : celsius <= 30 ? 1f
         : Math.Min(2f, 1f + (celsius - 30f) / 30f);
 
-    /// <summary>The temperature food keeps at: the air where it is.</summary>
-    public static float KeptAt(Simulation sim, Entity item, int3 cell) => sim.TemperatureAt(cell);
+    /// <summary>The temperature food keeps at: the air where it is, or no warmer than a cool store it's in (the larder).</summary>
+    public static float KeptAt(Simulation sim, Entity item, int3 cell)
+    {
+        var air = sim.TemperatureAt(cell);
+        var w = sim.World;
+        return w.TryGet<Stored>(item, out var st) && w.IsAlive(st.In) && w.TryGet<Thing>(st.In, out var box) && box.Def.Building?.KeepsAt is { } cool
+            ? Math.Min(air, cool) : air;
+    }
 
     public void Update(Simulation sim)
     {

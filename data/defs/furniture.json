@@ -214,12 +214,26 @@
       ]
     },
     {
+      // A smoking rack (Work.Larder): raw meat or fish hung on it cures in the smoke while a fire
+      // burns within two cells (the bread oven's, in the inn), and keeps for weeks after.
+      "name": "SmokingRack", "label": "smoking rack", "category": "Building", "solid": true, "sprite": "buildings/tool_rack",
+      "description": "Rails and hooks by the oven's fire. Hang raw meat or fish on it and the smoke cures it in a few hours. Holds 2 stacks.",
+      "maxHp": 80, "flammability": 0.8,
+      "building": { "staffOnly": true, "work": 80, "storageStacks": 2, "smokingRack": true, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "model": [
+        { "min": [0.10, 0.40, 0], "max": [0.18, 0.60, 1.0], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.82, 0.40, 0], "max": [0.90, 0.60, 1.0], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.10, 0.46, 0.92], "max": [0.90, 0.54, 0.98], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.10, 0.46, 0.62], "max": [0.90, 0.54, 0.68], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ]
+    },
+    {
       // A cool bin in the inn's kitchen for what the pot needs: a chest by another name, kept
       // stocked at the start of a round (Scenarios/VillageRound).
       "name": "Larder", "label": "larder", "category": "Building", "solid": true, "sprite": "buildings/larder",
-      "description": "Slatted bins and a crock or two: where the kitchen keeps its food. Holds 12 stacks.",
+      "description": "Slatted bins and a crock or two, kept cool: what's in it keeps longer than what's left out in a warm kitchen. Holds 12 stacks.",
       "maxHp": 120, "flammability": 1.0,
-      "building": { "staffOnly": true, "work": 150, "storageStacks": 12, "surfaceHeight": 0.6, "cost": [ { "def": "Wood", "count": 12 } ] },
+      "building": { "staffOnly": true, "work": 150, "storageStacks": 12, "keepsAt": 6, "surfaceHeight": 0.6, "cost": [ { "def": "Wood", "count": 12 } ] },
       "model": [
         { "min": [0.1, 0.18, 0], "max": [0.9, 0.82, 0.6], "top": "props/basket", "side": "props/planks", "front": "props/chest_front" }
       ]

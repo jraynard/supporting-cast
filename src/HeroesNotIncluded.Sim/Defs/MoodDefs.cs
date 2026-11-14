@@ -96,6 +96,7 @@ public sealed class KnownThoughts
     public ThoughtDef? AteCookedMeal;
     public ThoughtDef? UsesTheirWork;
     public ThoughtDef? AteSpoiledFood;
+    public ThoughtDef? Feasted;
     private static readonly FieldInfo[] Fields = typeof(KnownThoughts).GetFields(BindingFlags.Public | BindingFlags.Instance);
 
     /// <summary>Every def name code refers to.</summary>

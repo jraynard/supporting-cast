@@ -411,6 +411,7 @@ public static class Cooking
         p.Doneness *= p.Nutrition / total;
         p.Seasoning *= p.Nutrition / total;
         p.Nutrition = total;
+        p.Seasoning += t.Def.Salty * added / total; // salt meat seasons the pot by itself
         p.Flavour += Flavour.Of(t.Def.Flavour) * added;
         Used(sim, p, food, count);
         return count;

@@ -94,6 +94,7 @@ public static class Table
         if (s.Meal)
         {
             EatJob.Nourish(sim, who, def, s.Count, s.Rot);
+            Broths.Eaten(sim, who, s.Item);
             if (rand.NextFloat() < 0.5f)
                 sim.Mess.Spill(sim, MessKind.Crumbs, w.Get<Position>(who).Cell, 0.4f);
         }

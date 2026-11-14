@@ -60,6 +60,8 @@
     { "name": "TaughtACraft", "label": "showed someone a craft", "mood": 2, "opinion": 4, "durationHours": 72, "stackLimit": 3, "stackFalloff": 0.7, "races": [ "Human" ] },
     { "name": "LearnedACraft", "label": "taught me a craft", "mood": 3, "opinion": 8, "durationHours": 120, "stackLimit": 3, "stackFalloff": 0.7, "races": [ "Human" ] },
     { "name": "AteCookedMeal", "label": "ate a cooked meal", "mood": 3, "durationHours": 8, "stackLimit": 2, "stackFalloff": 0.5, "races": [ "Human" ] },
+    // A feast laid on at the inn for a party back in triumph (Hospitality.FeastSystem): the whole room's merrier.
+    { "name": "Feasted", "label": "was there for a feast", "mood": 6, "durationHours": 12, "stackLimit": 1, "races": [ "Human" ] },
     { "name": "UsesTheirWork", "label": "made the gear I use", "mood": 1, "opinion": 10, "durationHours": 240, "stackLimit": 3, "stackFalloff": 0.6, "races": [ "Human" ] },
     // Treasure (mining.json, metalwork.json): finery for people, a hoard for dragons.
     { "name": "WearingFinery", "label": "wearing finery", "description": "Silver or gold at the neck.", "mood": 3, "races": [ "Human" ], "when": "WearingFinery" },

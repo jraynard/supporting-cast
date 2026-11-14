@@ -83,6 +83,9 @@ public sealed partial class Simulation
     /// <summary>The town's Renown and Dread over a round.</summary>
     public Director.Reckoning Reckoning { get; } = new();
 
+    /// <summary>Feasts called for at the inn (<see cref="Hospitality.FeastSystem"/>).</summary>
+    public Hospitality.FeastSystem Feasts { get; } = new();
+
     /// <summary>What crises broke in town (the bridge), and their mending.</summary>
     public Tinkering.Repairs Repairs { get; } = new();
 
@@ -242,8 +245,10 @@ public sealed partial class Simulation
             .AddSystem(new HealthSystem())
             .AddSystem(new PlantSystem())
             .AddSystem(new RotSystem())
+            .AddSystem(new Work.SmokeSystem())
             .AddSystem(new FoodPoisoningSystem())
             .AddSystem(new Hospitality.RatSystem())
+            .AddSystem(sim.Feasts)
             .AddSystem(new FuelSystem())
             .AddSystem(sim.Parties)
             .AddSystem(sim.Shops)

@@ -100,6 +100,7 @@ public sealed class EatJob(Entity food) : Job
         }
 
         var count = Math.Min(Wanted(Sim, Pawn, def), Get<Stack>(food).Count);
+        HeroesNotIncluded.Sim.Work.Broths.Eaten(Sim, Pawn, food);
         var eaten = Sim.TakeFromStack(food, count);
         var rot = FoodPoisoning.RotOf(Sim, eaten);
         Sim.World.Destroy(eaten);

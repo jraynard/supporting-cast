@@ -882,6 +882,7 @@ public sealed class EatHeldJob(Entity food) : Job
         }
         var inHand = Get<Carrying>(Pawn).Item == food;
         var count = Math.Min(EatJob.Wanted(Sim, Pawn, def), Get<Stack>(food).Count);
+        HeroesNotIncluded.Sim.Work.Broths.Eaten(Sim, Pawn, food);
         var eaten = Sim.TakeFromStack(food, count);
         if (inHand && eaten == food)
             Get<Carrying>(Pawn).Item = Entity.Null;

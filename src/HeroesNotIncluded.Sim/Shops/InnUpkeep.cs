@@ -210,7 +210,7 @@ public sealed class InnSupplySystem : ISimSystem, Saving.ISaveState
     /// <summary>Wood for the kitchen's fires a day, into its log basket: a day's burning and a little over.</summary>
     public static readonly (string Def, int Count)[] Logs = [("Wood", 16)];
 
-    public static readonly (string Def, int Count)[] Food = [("Cabbage", 6), ("Meat", 5), ("Berries", 8), ("Emberroot", 3), ("Herbs", 3), ("Flour", 6), ("Oats", 4), ("PorkSide", 1), ("Fowl", 1)];
+    public static readonly (string Def, int Count)[] Food = [("Cabbage", 6), ("Meat", 5), ("Berries", 8), ("Emberroot", 3), ("Herbs", 3), ("Flour", 6), ("Oats", 4), ("PorkSide", 1), ("Fowl", 1), ("CoarseSalt", 2)];
 
     private int _lastDay;
 

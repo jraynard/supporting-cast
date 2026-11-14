@@ -181,6 +181,7 @@ public sealed partial class VillageGame
                 Wrapped($"House dish: the {house.Name} ({house.Tastes}). Some ask for it by name.");
             else
                 TextC(Theme.Dim, "No house dish yet. Name a fine pot at the pot.");
+            TextC(Theme.Dim, ShopSystem.FareWord(_sim.Shops.Fare));
             // Dishes beyond the plain meal: asked for by name, at their own price, once offered.
             foreach (var d in View.Menu(shop))
             {

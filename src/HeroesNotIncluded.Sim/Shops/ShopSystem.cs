@@ -881,6 +881,38 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// <summary>Satisfaction off for being handed something other than the dish they asked for.</summary>
     public const float WrongDishMood = 0.3f;
 
+    /// <summary>
+    /// Word of the food (docs/DESIGN.md, "Cook"): fine meals served, and the house dish, get the
+    /// inn's table talked of on the road; a poor one, the other way. The more it's talked of, the
+    /// sooner the next party comes (<see cref="Adventurers.PartySystem"/>), and the talk fades as
+    /// each new party rides in, so it has to be kept up.
+    /// </summary>
+    public float Fare { get; private set; }
+
+    public const float FareMost = 20f;
+
+    /// <summary>How much sooner parties come at the most, for a table everyone's talking of.</summary>
+    public const float FareSooner = 0.3f;
+
+    /// <summary>How much of the talk is still going when the next party rides in.</summary>
+    public const float FareKept = 0.85f;
+
+    internal void HeardOfTheFood(float by) => Fare = Math.Clamp(Fare + by, 0f, FareMost);
+
+    internal void TalkFades() => Fare *= FareKept;
+
+    /// <summary>The share by which the next party's coming is brought forward, 0..<see cref="FareSooner"/>.</summary>
+    public float FareFactor => FareSooner * Fare / FareMost;
+
+    /// <summary>What's said of the inn's table on the road, for the sign.</summary>
+    public static string FareWord(float fare) => fare switch
+    {
+        < 2f => "Nobody's said much about the food.",
+        < 6f => "The food's spoken of, here and there.",
+        < 12f => "Travellers talk of the inn's table.",
+        _ => "The inn's table is famous up and down the road.",
+    };
+
     /// <summary>Silver over the price for quick, fine service: a coin for fine, two for masterwork, if it came within a third of their patience.</summary>
     public const int FineTip = 1, MasterworkTip = 2;
 
@@ -996,6 +1028,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             {
                 Tasted(sim, to, q, meal: true, dish?.Fault ?? Work.DishFault.None);
                 tip = TipFor(sim, meal, q);
+                // Word of the food: they'll talk of it on the road.
+                HeardOfTheFood(q switch { Quality.Masterwork => 2f, Quality.Fine => 1f, Quality.Crude => -1f, _ => 0f } + (dish?.House == true ? 0.5f : 0f));
             }
             Hospitality.Tastes.Served(sim, to, dish?.Flavour, meal, dish?.House ?? false);
             Complete(sim, meal, giver);
@@ -1198,6 +1232,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             foreach (var k in e.KnownBy)
                 w.Entity(k);
         }
+        w.Float(Fare);
     }
 
     private readonly int[] _served = new int[Enum.GetValues<ServiceKind>().Length];
@@ -1257,5 +1292,6 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 e.KnownBy.Add(r.Entity());
             _orders.Add(e);
         }
+        Fare = r.Version >= 30 ? Math.Clamp(r.Float(), 0f, FareMost) : 0f; // word of the food came with format 30
     }
 }
