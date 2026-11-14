@@ -53,42 +53,21 @@ First pass done (docs/AUDIO.md, HISTORY.md). Next, as long-term items:
 5. **Steam Deck:** check the sound there (output switching, volume, CPU).
 
 ### Combat pass
-Fights move to free movement and blows by reach and timing (no roll to hit), Souls-lite: blows are
-seen coming, and met with a guard, a parry or a dodge. Prototyped in the practice ring (`--arena`:
-HISTORY.md, "Combat: blows seen coming"). Each step lands with tests and keeps the season and
-village-day scenarios passing.
+Fights are free movement and blows by reach and timing, Souls-lite, everywhere (done: HISTORY.md,
+"Combat: blows seen coming"). What's left:
 
-1. **Free movement in the village, and combat mode** (first pass in: the Free movement setting or
-   `--free-move`, solo). Your character moves freely
-   everywhere (stairs, slopes and ladders by the walking links, doors, locks; perching, sitting and
-   lying snap to the cell). A key (R) draws or sheathes your weapon: sheathed, clicks walk and act and
-   F interacts; drawn, the weapon's in hand, left/right click strike light/heavy the way you aim, Q
-   guards, Space dodges, and you're a little slower. A blow landing on you draws it for you. Behind a
-   setting at first, then the default; the old cell-stepping for players goes.
-2. **Friendly fire, always** (in: the first pass). A swing hits everyone in its sweep, ally or not, players included.
-   AI fighters hold a blow while a friend's in its sweep and step for a clearer angle. First pass:
-   townsfolk are just hurt; what the town makes of it (memory, shouting, the reveal) comes with M4.
-   Wild animals you attack count as foes, so hunting works with free swings.
-3. **AI fighters on the model** (first pass in: `Combat/FreeFight`). Raiders, villagers, adventurers, animals and the dragon steer
-   smoothly in a fight: close to their weapon's reach, keep spacing, step in to strike, circle on the
-   one-at-a-time turns, back off hurt. Archers hold range and lead a moving target. An AI's blow is
-   telegraphed as its sweep on the ground (a wedge), not a ring under its target.
-4. **Bots** (first pass in) walk and fight the new way (steering along paths, aiming, clicking), so the season and
-   village-day scenarios keep guarding the town.
-5. **Co-op** (in: prediction, claimed positions, and a late swing judged against where everyone
-   was when it was pressed, `Combat/Trail`). Your own movement predicted and eased toward the host's; commands carry where you are.
-   Blows at you keep a latency grace for your guard and dodge keys; a sweep is judged against where
-   people were when it was pressed (a short position history).
-6. **Feel and art** (first pass in: hit-stop and shake, a sheathed weapon slung on the back, sounds
-   for parry, block, guard broken, a heavy swing and a spear's jab, the body swinging with a blow on
-   its work frames). Still to come: swing and dodge frames of their own from the people pipeline
-   (`tools/chibi_people.py`: new tags after the rest, every layer regenerated), and the drawn-on
-   weapon then drawn in the hand on those frames.
-7. **Controls** (with the Control Pass below): rebinding, a controller (left stick moves, right
-   stick aims), the Steam Deck layout.
-8. **One model** (in: free movement for every player, always; no rolls to hit, the grid's player
-   walking and dodge, F-to-strike and the old predictor gone; AI slip blows by the old odds). The old rolls to hit, `Engagement.PaceOnPlayer` and the grid's dodge go once raids,
-   hunting, the dragon and defence are all on it; then tuning, in the ring and in `--raid-test`.
+- **Swing and dodge frames** from the people pipeline (`tools/chibi_people.py`: new tags after the
+  rest, every layer regenerated). For now a blow plays the work swing and the weapon is drawn on
+  its own about the hand; a dodge is a tumble.
+- **Balance.** The town drives off fewer raids than it did (1 of 8 seeds in a sample against 3 of
+  8 before the one model): AI defenders, armour soak, AI dodge odds, stamina (`Blows.Regen`,
+  `RegenDelay`, costs) and the parry window (`ParryBefore`, `ParryAfter`) want tuning in the
+  practice ring (`--arena`) and `--raid-test`.
+- **AI footwork.** Fighters hold a blow while a friend's in its sweep but don't yet step round for a
+  clearer angle, and don't back off when hurt beyond giving up the fight. The dragon still lands
+  and bites from the grid rather than circling (`Ai/DragonBrain`).
+- **Friendly fire's consequences** (with M4): townsfolk you cut are only hurt; the town remembering
+  it, shouting it, and it counting at the reveal.
 
 ### Death and ghosts
 - need to move this up most likely as people can and should die when the dragon attacks, or other dangers added in the crisis system.
@@ -109,8 +88,10 @@ Remaining trades, more maps (authored like Millbrook), crisis variety, personal 
 An authoritative server filtered by `Perception`, moderation, voice.
 
 ### Control Pass
-- control customization / keybind window (add at the engine level)
-- controller support
+- Control customization / keybind window (add at the engine level).
+- Controller support: left stick moves, right stick aims; combat on the triggers and face buttons.
+- The Steam Deck layout (docs/STEAM-DECK.md) for the new controls: R to draw, the mouse's aim, Q to
+  guard, Space to dash, Z/X to turn the camera, C to dig, G to put down.
 
 ### Character customization
 - The roster is one for every mode, with its own Characters screen (done: HISTORY.md). Next, more to

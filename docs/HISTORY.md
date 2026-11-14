@@ -1070,4 +1070,8 @@ shared); fights stay real time, Souls-lite.
   left to loose once fully drawn; the aim line shows where it'll fly. Slower on your feet drawn.
 - Raiders with nobody left to get at give up and leave (`RaiderBrain`): standing about, they kept
   the town indoors while its wounded bled out (a round of DirectorTests fell to it).
+- **Wind** comes back only `Blows.RegenDelay` (0.8 s) after it was last spent (`Guard.SpentAt`), then
+  at 0.18 a second (0.05 guarding): a flurry runs you dry. Save format 16. Every arrow is seen and
+  heard flying, a miss included; an early click looses once the bow's drawn; the aim line is a
+  ribbon on the ground.
 
