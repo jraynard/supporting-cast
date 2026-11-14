@@ -27,12 +27,10 @@ provide some purely non-combat options but i think that will be later once we ha
 ## Next
 
 ### The festival
-Built (HISTORY.md, "The festival, made an event", and the passes after it). What's left, in order:
+Built (HISTORY.md, "The festival, made an event", and the passes after it). What's left:
 
-1. **Bunting:** strung between neighbouring lantern posts by the renderer, a sagging line of
-   pennants.
-2. **Playtest it again:** the first playtest's fixes are in (HISTORY.md, "The festival, from its
-   first playtest"). The festival's numbers are under Polish → Tuning.
+- **Playtest it again:** the first playtest's fixes are in (HISTORY.md, "The festival, from its
+  first playtest"). The festival's numbers are under Polish → Tuning.
 
 ### Death and ghosts
 First pass done (HISTORY.md, "Death and ghosts"). What's left:

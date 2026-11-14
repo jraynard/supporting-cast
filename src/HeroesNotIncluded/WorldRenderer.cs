@@ -548,6 +548,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         DrawBreaths(sim, time);
         DrawShots(sim, time);
         DrawStuckArrows(sim);
+        DrawBunting(sim);
         DrawWindups(sim);
         DrawAimLine();
         DrawSwings(sim);
@@ -1402,6 +1403,58 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     /// <summary>A miss the attack itself rolled already has its word (<see cref="DrawShots"/>); one out of reach doesn't.</summary>
     private static bool ShotRolled(Simulation sim, Sim.Combat.BlowEvent b) => sim.RecentShots.Any(s => s.Tick == b.Tick);
 
+    /// <summary>Lantern posts further apart than this (cells) aren't strung together.</summary>
+    private const float BuntingSpan = 12f;
+
+    private static readonly uint[] PennantColours =
+    [
+        Rgba.Pack(0.71f, 0.26f, 0.17f, 1f), // madder
+        Rgba.Pack(0.85f, 0.65f, 0.25f, 1f), // ochre
+        Rgba.Pack(0.24f, 0.33f, 0.52f, 1f), // woad
+    ];
+
+    /// <summary>
+    /// Bunting strung between the festival's lantern posts, round the square: each post to the next
+    /// in a ring about their middle (if it's near enough), a cord sagging between their tops with
+    /// pennants hung along it. Presentation only, from where the posts stand.
+    /// </summary>
+    private void DrawBunting(Simulation sim)
+    {
+        var w = sim.World;
+        var posts = sim.Festival.PropsOf(sim, "FestivalLantern").Select(e => w.Get<Thing>(e)).ToList();
+        if (posts.Count < 2)
+            return;
+        float cx = 0, cy = 0;
+        foreach (var p in posts)
+            (cx, cy) = (cx + p.Cell.X, cy + p.Cell.Y);
+        (cx, cy) = (cx / posts.Count, cy / posts.Count);
+        posts.Sort((a, b) => MathF.Atan2(a.Cell.Y - cy, a.Cell.X - cx).CompareTo(MathF.Atan2(b.Cell.Y - cy, b.Cell.X - cx)));
+        var cord = Rgba.Pack(0.3f, 0.24f, 0.18f, 1f);
+        for (var i = 0; i < posts.Count; i++)
+        {
+            var a = posts[i];
+            var b = posts[(i + 1) % posts.Count];
+            if (posts.Count == 2 && i == 1)
+                break;
+            var top = 1.82f * WorldScale.HeightOf(a.Def);
+            var from = Sim.Components.Position.CenterOf(a.Cell) + WorldScale.Rise(top);
+            var to = Sim.Components.Position.CenterOf(b.Cell) + WorldScale.Rise(top);
+            var span = MathF.Sqrt((to.X - from.X) * (to.X - from.X) + (to.Y - from.Y) * (to.Y - from.Y));
+            if (span > BuntingSpan || a.Cell.Z != b.Cell.Z || (!SeenAt(from) && !SeenAt(to)))
+                continue;
+            var steps = Math.Max(4, (int)(span * 4));
+            var sag = WorldScale.Rise(0.18f * span / 4f);
+            for (var k = 0; k <= steps; k++)
+            {
+                var t = k / (float)steps;
+                var at = from + (to - from) * t - sag * (4f * t * (1f - t)); // a parabola, near enough a hanging cord
+                Billboard(S(TextureAtlas.White), at, 0.04f, 0.04f, cord, Quad.Level(a.Cell.Z));
+                if (k % 2 == 1 && k < steps)
+                    Billboard(S(TextureAtlas.White), at - WorldScale.Rise(0.16f), 0.12f, 0.16f, PennantColours[(k / 2 + i) % PennantColours.Length], Quad.Level(a.Cell.Z));
+            }
+        }
+    }
+
     /// <summary>
     /// The arrows in the butts' face (<see cref="Sim.Round.FestivalSystem.Stuck"/>): a shaft standing
     /// out of the straw where each landed, across the face as scored, at a height of its own.
@@ -1421,7 +1474,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             var up = ((k * 37 % 11) / 10f - 0.5f) * 0.3f;
             var lateral = Sim.Maps.Footprint.Rotate(across * Sim.Combat.Reach.FaceRadius, 0.09f, t.Facing);
             var normal = Sim.Maps.Footprint.Rotate(0f, 1f, t.Facing);
-            var face = Sim.Components.Position.CenterOf(t.Cell) + new float3(lateral.X, lateral.Y, (0.7f + up) * height);
+            var face = Sim.Components.Position.CenterOf(t.Cell) + new float3(lateral.X, lateral.Y, 0) + WorldScale.Rise((0.7f + up) * height);
             for (var s = 0; s < 4; s++)
                 Billboard(white, face + new float3(normal.X, normal.Y, 0) * (s * 0.08f), 0.05f, 0.05f, Rgba.Pack(0.45f, 0.3f, 0.18f, 1f), Quad.Level(t.Cell.Z));
             Billboard(white, face + new float3(normal.X, normal.Y, 0) * 0.32f, 0.09f, 0.09f, Rgba.Pack(0.9f, 0.88f, 0.8f, 1f), Quad.Level(t.Cell.Z));

@@ -49,10 +49,10 @@
 
   "things": [
     {
-      // A lantern on a pole, hung with bunting. Lit for the evening: filled at the festival's start
-      // and never topped up (refuelAt 0).
+      // A lantern on a pole, a red cap on its top. Lit for the evening: filled at the festival's start
+      // and never topped up (refuelAt 0). The renderer strings bunting between the posts.
       "name": "FestivalLantern", "label": "festival lantern", "category": "Building", "solid": true, "sprite": "buildings/lantern",
-      "description": "A lantern hung from a pole in the square, bunting strung from its top. Up for the festival.",
+      "description": "A lantern hung from a pole in the square, bunting strung from its top to the next. Up for the festival.",
       "maxHp": 40, "flammability": 0.3,
       "building": { "buildable": false, "outdoor": true, "work": 30, "lightRadius": 5, "heatOutput": 0,
         "fuel": { "def": "Wood", "capacity": 4, "burnPerDay": 4, "refuelAt": 0 }, "cost": [ { "def": "Wood", "count": 2 } ] },
@@ -66,10 +66,7 @@
         { "min": [0.37, 0.6, 1.2], "max": [0.4, 0.63, 1.48], "top": "props/iron", "side": "props/iron" },
         { "min": [0.6, 0.6, 1.2], "max": [0.63, 0.63, 1.48], "top": "props/iron", "side": "props/iron" },
         { "min": [0.36, 0.36, 1.16], "max": [0.64, 0.64, 1.2], "top": "props/iron", "side": "props/iron" },
-        { "min": [0.55, 0.47, 1.66], "max": [0.8, 0.53, 1.82], "top": "props/cloth_madder", "side": "props/cloth_madder" },
-        { "min": [0.2, 0.47, 1.62], "max": [0.45, 0.53, 1.78], "top": "props/cloth_ochre", "side": "props/cloth_ochre" },
-        { "min": [0.47, 0.2, 1.7], "max": [0.53, 0.45, 1.86], "top": "props/cloth_woad", "side": "props/cloth_woad" },
-        { "min": [0.47, 0.55, 1.58], "max": [0.53, 0.8, 1.74], "top": "props/cloth_madder", "side": "props/cloth_madder" }
+        { "min": [0.42, 0.42, 1.86], "max": [0.58, 0.58, 1.94], "top": "props/cloth_madder", "side": "props/cloth_madder" }
       ]
     },
     {

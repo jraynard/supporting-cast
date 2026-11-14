@@ -1515,3 +1515,11 @@ It wasn't clear what to do at first, then it was over too fast. Now:
   a ring off the gold; someone in the lane takes the arrow; walking off ends the turn and the bow
   goes back; arrows survive a save; the lane is clear of the rest of the festival. Bench state
   hashes unchanged; full hashes 1234 `BC3A3396F6D11B2C`, 99 `1CC070DAD1201EAB`.
+
+### The festival: bunting (2026-11-14)
+- **Strung round the square.** The renderer strings bunting between the lantern posts
+  (`WorldRenderer.DrawBunting`): each post to the next in a ring about their middle, if within 12
+  cells, as a sagging cord hung with madder, ochre and woad pennants. It's presentation only, from
+  where the posts stand. The posts' cloth flags are now a red cap on top.
+- With that, the festival's list on the roadmap is down to its playtest. The dance and cheer frames
+  went to the Combat pass's frames, and the ceremony's Accusation to M4.
