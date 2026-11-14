@@ -26,62 +26,6 @@ provide some purely non-combat options but i think that will be later once we ha
 
 ## Next
 
-### The cook pass
-Bring the cook up to the other trades (docs/DESIGN.md, "Cook"). Done (HISTORY.md, "Cook pass"):
-flavours, diners' tastes, sniffing, rations for the road; the house dish, diners saying what was
-wrong, tips; chopping, the spit, the oven and dishes priced apart; porridge, pies, the butcher
-block; two pots, the fire fed by hand, grease fires, rats; feasts, broths, keeping the larder, word
-of the food. Left:
-- Bots and AI cooks never chop, roast, bake, make pies, salt, smoke or name a house dish (an AI
-  cook never offers the roast, bread or pies). Bots don't joint, pluck, lid a flare or chase rats.
-- Rations are sold at the bar's line like any gear in the inn; the hatch would suit them better.
-- The healer sending the hurt to eat a broth; teas from shared herbs; pickling.
-- Placeholder art: rations are a bolt of cloth, the prep table and butcher block are a table's
-  sprite, the spit wears the butcher spot's, roast slices and the side of pork a meat sprite; the
-  oven wears the fireplace's, flour and oats the fiber's, dough and the unbaked pie the clay's,
-  bread, porridge and pie the meal's; the fowl is hide, salt is lime, the log basket a crate, the
-  smoking rack the tool rack; rats are small hares.
-- Tune in play: the fold cue and the cord's band (`PackSession`), the craving chance and moods
-  (`Tastes`), the fed and sick factors (`Rations`), seasoner weight and cap (`Cooking`), how near
-  a pot must taste to be the house dish and how often it's asked for (`HouseDish`), the tips
-  (`ShopSystem.FineTip`), the spit's browning and flares (`Roasting`), the mealtimes and small
-  hours (`ShopSystem.Mealtime`, `SmallHours`), arrival hunger (`PartySystem.Send`), kneading's
-  beat, proving's hours and the oven's smells (`Baking`), the cleaver's sweep and the pluck's tear
-  (`Butchery`), the crimp (`Pies`), how often a fatty pot flares (`Cooking.FlarePerStep`), the rats'
-  appetite (`RatSystem`), the feast's clock and reward (`FeastSystem`), the broth's line and help
-  (`Broths`), how fast word of the food builds and fades (`ShopSystem.Fare`).
-
-### SOUND
-
-First pass done (docs/AUDIO.md, HISTORY.md). Next, as long-term items:
-
-1. **Music, ours:** a theme song (at least the start of one), then a score to replace the free
-   placeholder tracks mood by mood (`title`, `day`, `night`, `danger`, `festival`, `reveal`).
-   Later, adaptive layers (danger drums over the day track), festival songs, and a bard.
-2. **Coverage:** audio feedback for just about every part of the game:
-   - footsteps by surface, doors, animals and weather
-   - hammering heard from other smithies, every trade action seen from outside
-   - room reverb (EFX) for the inn, cottages and caves
-   - a mix pass from playtest notes
-3. **Recorded sounds:** most thin spots now have CC0 recordings (AUDIO.md).
-   - **Still synthesized:** the inn's murmur, a town bell, a burning building and an arrow's
-     impact. There's nothing good on OpenGameArt; these CC0 freesound pages need a login to
-     download:
-     - murmur: freesound.org/people/ivolipa/sounds/326313, squareal/sounds/237398
-     - bell: dsp9000/sounds/76405, Audeption/sounds/425172
-     - house fire: 7778/sounds/196619
-     - arrow hit: plantmonkey/sounds/410751
-     - a babbling stream: BurghRecords/sounds/415151
-     - a beer pour: Kinoton/sounds/347006
-   - Bring them in through `tools/import_sounds.py`.
-4. **Voices (text to speech):** NPC lines spoken aloud.
-   - Local neural TTS through sherpa-onnx (NuGet) running Kokoro or Piper voices, a voice per
-     character derived like their look.
-   - Synthesized off the main thread, cached, opt-in in Settings; babble stays the fallback.
-   - Watch the model size (about 100 MB) and the CPU on a Steam Deck. Lines are made at runtime
-     (and players type theirs), so this can't be pre-recorded.
-5. **Steam Deck:** check the sound there (output switching, volume, CPU).
-
 ### The festival
 Built (HISTORY.md, "The festival, made an event"). What's left:
 
@@ -241,3 +185,59 @@ Grouped by area; nothing here blocks a playtest.
 
 **Words and docs**
 - Watch a child and a non-gamer play the first ten minutes.
+
+**The cook pass**
+Bring the cook up to the other trades (docs/DESIGN.md, "Cook"). Done (HISTORY.md, "Cook pass"):
+flavours, diners' tastes, sniffing, rations for the road; the house dish, diners saying what was
+wrong, tips; chopping, the spit, the oven and dishes priced apart; porridge, pies, the butcher
+block; two pots, the fire fed by hand, grease fires, rats; feasts, broths, keeping the larder, word
+of the food. Left:
+- Bots and AI cooks never chop, roast, bake, make pies, salt, smoke or name a house dish (an AI
+  cook never offers the roast, bread or pies). Bots don't joint, pluck, lid a flare or chase rats.
+- Rations are sold at the bar's line like any gear in the inn; the hatch would suit them better.
+- The healer sending the hurt to eat a broth; teas from shared herbs; pickling.
+- Placeholder art: rations are a bolt of cloth, the prep table and butcher block are a table's
+  sprite, the spit wears the butcher spot's, roast slices and the side of pork a meat sprite; the
+  oven wears the fireplace's, flour and oats the fiber's, dough and the unbaked pie the clay's,
+  bread, porridge and pie the meal's; the fowl is hide, salt is lime, the log basket a crate, the
+  smoking rack the tool rack; rats are small hares.
+- Tune in play: the fold cue and the cord's band (`PackSession`), the craving chance and moods
+  (`Tastes`), the fed and sick factors (`Rations`), seasoner weight and cap (`Cooking`), how near
+  a pot must taste to be the house dish and how often it's asked for (`HouseDish`), the tips
+  (`ShopSystem.FineTip`), the spit's browning and flares (`Roasting`), the mealtimes and small
+  hours (`ShopSystem.Mealtime`, `SmallHours`), arrival hunger (`PartySystem.Send`), kneading's
+  beat, proving's hours and the oven's smells (`Baking`), the cleaver's sweep and the pluck's tear
+  (`Butchery`), the crimp (`Pies`), how often a fatty pot flares (`Cooking.FlarePerStep`), the rats'
+  appetite (`RatSystem`), the feast's clock and reward (`FeastSystem`), the broth's line and help
+  (`Broths`), how fast word of the food builds and fades (`ShopSystem.Fare`).
+
+**Sound**
+
+First pass done (docs/AUDIO.md, HISTORY.md). Next, as long-term items:
+
+1. **Music, ours:** a theme song (at least the start of one), then a score to replace the free
+   placeholder tracks mood by mood (`title`, `day`, `night`, `danger`, `festival`, `reveal`).
+   Later, adaptive layers (danger drums over the day track), festival songs, and a bard.
+2. **Coverage:** audio feedback for just about every part of the game:
+   - footsteps by surface, doors, animals and weather
+   - hammering heard from other smithies, every trade action seen from outside
+   - room reverb (EFX) for the inn, cottages and caves
+   - a mix pass from playtest notes
+3. **Recorded sounds:** most thin spots now have CC0 recordings (AUDIO.md).
+   - **Still synthesized:** the inn's murmur, a town bell, a burning building and an arrow's
+     impact. There's nothing good on OpenGameArt; these CC0 freesound pages need a login to
+     download:
+     - murmur: freesound.org/people/ivolipa/sounds/326313, squareal/sounds/237398
+     - bell: dsp9000/sounds/76405, Audeption/sounds/425172
+     - house fire: 7778/sounds/196619
+     - arrow hit: plantmonkey/sounds/410751
+     - a babbling stream: BurghRecords/sounds/415151
+     - a beer pour: Kinoton/sounds/347006
+   - Bring them in through `tools/import_sounds.py`.
+4. **Voices (text to speech):** NPC lines spoken aloud.
+   - Local neural TTS through sherpa-onnx (NuGet) running Kokoro or Piper voices, a voice per
+     character derived like their look.
+   - Synthesized off the main thread, cached, opt-in in Settings; babble stays the fallback.
+   - Watch the model size (about 100 MB) and the CPU on a Steam Deck. Lines are made at runtime
+     (and players type theirs), so this can't be pre-recorded.
+5. **Steam Deck:** check the sound there (output switching, volume, CPU).
