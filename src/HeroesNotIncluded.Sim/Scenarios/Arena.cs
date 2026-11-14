@@ -102,6 +102,7 @@ public static class Arena
         if (w.Has<Guard>(e))
             w.Get<Guard>(e) = Guard.Fresh;
         Blows.Cancel(sim, e);
+        Archery.Draw(sim, e, false, sim.Clock.Tick);
     }
 }
 

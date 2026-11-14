@@ -155,8 +155,8 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         var speed = MovementSystem.WalkSpeedPerTick(sim, e);
         if (w.Has<Windup>(e))
             speed *= SwingSlow;
-        else if (w.TryGet<Guard>(e, out var g) && g.RaisedAt >= 0)
-            speed *= GuardSlow;
+        else if ((w.TryGet<Guard>(e, out var g) && g.RaisedAt >= 0) || w.Has<Aiming>(e))
+            speed *= GuardSlow; // guarding, or a bow drawn
         else if (drawn)
             speed *= DrawnSlow;
         return wish * speed;

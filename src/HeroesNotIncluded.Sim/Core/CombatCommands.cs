@@ -6,7 +6,7 @@ namespace HeroesNotIncluded.Sim.Core;
 /// <summary>
 /// Raise or lower a guard (<see cref="Blows.SetGuard"/>), weapon drawn. <paramref name="At"/> is the
 /// tick the key was pressed on the player's screen: in co-op it arrives late, and a parry is all in
-/// the timing (<see cref="Blows.LatencyGrace"/>). A stamp from the future or long past is taken as now.
+/// the timing (<see cref="Blows.Grace"/>). A stamp from the future or long past is taken as now.
 /// </summary>
 public sealed record GuardCommand(Entity Avatar, bool Up, long At) : ISimCommand, IActorCommand
 {
@@ -68,7 +68,9 @@ public sealed record AttackCommand(Entity Avatar, bool Heavy, float Aim, float A
         if (!w.TryGet<FreeMover>(Avatar, out var free) || !free.Drawn || !w.Get<Creature>(Avatar).Able || !float.IsFinite(Aim)
             || CombatRules.Attacks(sim, Avatar).FirstOrDefault() is not { } attack)
             return;
-        Blows.Begin(sim, Avatar, Entity.Null, attack, Heavy && !attack.Ranged, MathF.IEEERemainder(Aim, MathF.Tau), Pressed < 0 ? null : Pressed);
+        if (attack.Ranged)
+            return; // a bow's drawn and loosed (BowCommand), not swung
+        Blows.Begin(sim, Avatar, Entity.Null, attack, Heavy, MathF.IEEERemainder(Aim, MathF.Tau), Pressed < 0 ? null : Pressed);
     }
 }
 
@@ -117,6 +119,37 @@ public sealed record DrawWeaponCommand(Entity Avatar, bool Drawn) : ISimCommand,
             return;
         w.Get<FreeMover>(Avatar).Drawn = Drawn;
         if (!Drawn)
+        {
             Blows.SetGuard(sim, Avatar, false, sim.Clock.Tick);
+            Archery.Draw(sim, Avatar, false, sim.Clock.Tick);
+        }
+    }
+}
+
+/// <summary>
+/// A player's bow (<see cref="Archery"/>): draw it and hold it (<paramref name="Draw"/> true, the right
+/// button down), let it down (false), or <paramref name="Loose"/> along <paramref name="Aim"/> once it's
+/// fully drawn (the left button). <paramref name="At"/> is the tick it was pressed on the player's
+/// screen; with a loose, where they were too (co-op), as for a swing.
+/// </summary>
+public sealed record BowCommand(Entity Avatar, bool Draw, bool Loose, float Aim, long At, float AtX = float.NaN, float AtY = float.NaN, int AtZ = 0)
+    : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (!FreeMoveSystem.Ensure(sim, Avatar) || !sim.World.Get<Creature>(Avatar).Able)
+            return;
+        var at = Blows.Stamp(sim, At);
+        if (!Loose)
+        {
+            Archery.Draw(sim, Avatar, Draw, at);
+            return;
+        }
+        if (!float.IsFinite(Aim))
+            return;
+        FreeMoveSystem.Claim(sim, Avatar, AtX, AtY, AtZ, stopped: false);
+        Archery.Loose(sim, Avatar, MathF.IEEERemainder(Aim, MathF.Tau), At);
     }
 }

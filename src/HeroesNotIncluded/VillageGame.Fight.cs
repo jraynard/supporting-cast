@@ -64,7 +64,8 @@ public sealed partial class VillageGame
             Panel.End();
             return;
         }
-        TextC(Theme.Warn, armed ? "Left click strikes the way you aim, right click swings heavy." : "Fists only: left click to strike.");
+        TextC(Theme.Warn, Archery.Bow(_sim, _avatar) != null ? "Hold right click to draw and aim, left click to loose once it's drawn."
+            : armed ? "Left click strikes the way you aim, right click swings heavy." : "Fists only: left click to strike.");
         ImGui.SameLine(0, Gui.S(10));
         var shoots = w.TryGet<Equipment>(foe, out var theirs) && w.IsAlive(theirs.Weapon) && w.Get<Thing>(theirs.Weapon).Def.Weapon is { Ranged: true };
         TextC(Theme.Dim, Sim.Combat.Blows.IsDragon(_sim, foe)
@@ -134,8 +135,12 @@ public sealed partial class VillageGame
     /// </summary>
     private bool HandleFreeMouse(Input input)
     {
+        if (!WeaponDrawn)
+            _bowSent = false; // sheathed lets it down (DrawWeaponCommand)
         if (!WeaponDrawn || ImGui.GetIO().WantCaptureMouse)
             return false;
+        if (Archery.Bow(_sim, _avatar) != null)
+            return HandleBow(input);
         var light = input.WasMousePressed(MouseButton.Left);
         var heavy = input.WasMousePressed(MouseButton.Right);
         if (light || heavy)
@@ -144,6 +149,70 @@ public sealed partial class VillageGame
             Issue(new AttackCommand(_avatar, heavy, _aim, ax, ay, az, _sim.Clock.Tick));
         }
         return light || heavy || input.IsMouseDown(MouseButton.Left) || input.IsMouseDown(MouseButton.Right);
+    }
+
+    /// <summary>The bow drawn, as last told to the sim.</summary>
+    private bool _bowSent;
+
+    /// <summary>
+    /// A bow (<see cref="Archery"/>): hold the right button to draw and aim it (the aim line shows
+    /// where it'll fly), and click the left to loose once it's drawn; hold on and the next is drawn.
+    /// </summary>
+    private bool HandleBow(Input input)
+    {
+        var tick = _sim.Clock.Tick;
+        var draw = input.IsMouseDown(MouseButton.Right);
+        if (draw != _bowSent)
+        {
+            Issue(new BowCommand(_avatar, draw, false, _aim, tick));
+            _bowSent = draw;
+        }
+        if (draw && input.WasMousePressed(MouseButton.Left))
+        {
+            var (ax, ay, az) = Here();
+            Issue(new BowCommand(_avatar, true, true, _aim, tick, ax, ay, az));
+        }
+        return draw || input.IsMouseDown(MouseButton.Left);
+    }
+
+    /// <summary>
+    /// Where an arrow loosed now would go, for the aim line (<see cref="WorldRenderer.AimLine"/>):
+    /// from you along your aim, to the first wall, the first one in its path you can see, or as far
+    /// as the bow carries. Null without a bow drawn.
+    /// </summary>
+    private (float3 From, float3 To, float Drawn, bool Ready)? AimLine()
+    {
+        var w = _sim.World;
+        if (!WeaponDrawn || !w.TryGet<Aiming>(_avatar, out var aiming) || Archery.Bow(_sim, _avatar) is not { } bow)
+            return null;
+        var from = _renderer.DrawPos(_sim, _avatar, w.Get<Position>(_avatar).Pos) + new float3(0, 0, 0.55f);
+        var dir = new float3(MathF.Cos(_aim), MathF.Sin(_aim), 0);
+        var reach = bow.Range;
+        // The first wall.
+        for (var d = 0.3f; d < reach; d += 0.2f)
+        {
+            var p = from + dir * d;
+            var c = new int3((int)MathF.Floor(p.X), (int)MathF.Floor(p.Y), (int)MathF.Floor(p.Z));
+            if (!_sim.Map.InBounds(c) || _sim.Map.IsSolid(_sim.Map.Idx(c))
+                || _sim.Map.Structure[_sim.Map.Idx(c)] is { IsNull: false } s && w.Get<Thing>(s).Def.Building?.IsWall == true)
+            {
+                reach = d;
+                break;
+            }
+        }
+        // The first one in its path.
+        foreach (var e in View.Creatures())
+        {
+            if (e == _avatar || w.Get<Creature>(e).Dead)
+                continue;
+            var at = w.Get<Position>(e).Pos - from;
+            var along = at.X * dir.X + at.Y * dir.Y;
+            if (along > 0.2f && along < reach && MathF.Abs(at.X * dir.Y - at.Y * dir.X) <= Reach.ArrowWidth)
+                reach = along;
+        }
+        var drawTicks = Archery.DrawTicks(_sim, _avatar, bow);
+        var drawn = Math.Clamp((_sim.Clock.Tick - aiming.Start) / (float)drawTicks, 0f, 1f);
+        return (from, from + dir * reach, drawn, drawn >= 1f);
     }
 
     /// <summary>Seconds of hit-stop left (the animation holds), and the shake's strength (cells) and seed.</summary>

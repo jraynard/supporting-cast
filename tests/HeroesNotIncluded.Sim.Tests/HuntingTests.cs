@@ -124,7 +124,10 @@ public class HuntingTests
 
         sim.Tick();
         sim.ApplyNow(new DrawWeaponCommand(me, true));
-        sim.ApplyNow(new AttackCommand(me, false, 0f)); // east, at it
+        // Drawn and held, then loosed east, at it.
+        sim.ApplyNow(new BowCommand(me, true, false, 0f, sim.Clock.Tick));
+        sim.TickMany(Combat.Archery.DrawTicks(sim, me, Combat.Archery.Bow(sim, me)!));
+        sim.ApplyNow(new BowCommand(me, true, true, 0f, sim.Clock.Tick));
         Assert.True(TickUntil(sim, () => sim.RecentShots.Count > 0, SimClock.TicksPerSecond * 3), "the arrow flies");
         Assert.True(sim.World.Get<Health>(hare).Injuries.Count > 0 || sim.World.Get<Creature>(hare).Dead, "and finds the hare");
         Assert.True(sim.World.Get<Skills>(me).Xp[(int)Skill.Hunting] > 0, "it trains Hunting");

@@ -99,7 +99,10 @@ public class BlowTests
     public void AParryPressedInTimeCountsThoughItArrivesLate()
     {
         var (sim, me, _, blow) = Duel();
-        // Pressed just before impact on the player's screen; reaches the sim after it (co-op latency).
+        // Co-op: someone else is playing, so blows at players wait for keys coming over the network.
+        VillageRound.SpawnHero(sim, new Hero("Bea", null, null), sim.World.Get<Position>(me).Cell);
+        Assert.Equal(Blows.LatencyGrace, Blows.Grace(sim));
+        // Pressed just before impact on the player's screen; reaches the sim after the window (latency).
         RunTo(sim, blow.Impact + Blows.LatencyGrace / 2);
         Guard(sim, me, true, blow.Impact - 3);
         RunTo(sim, Blows.LandsAt(sim, blow) + 1);
@@ -107,12 +110,22 @@ public class BlowTests
     }
 
     [Fact]
-    public void AGuardRaisedAfterTheBlowLandsIsTooLate()
+    public void AGuardThrownUpAtTheFlashStillParries()
     {
         var (sim, me, _, blow) = Duel();
         RunTo(sim, blow.Impact + 2);
-        Guard(sim, me, true, blow.Impact + 1);
+        Guard(sim, me, true, sim.Clock.Tick);
         RunTo(sim, Blows.LandsAt(sim, blow) + 1);
+        Assert.Equal(BlowOutcome.Parried, First(sim, me));
+    }
+
+    [Fact]
+    public void AGuardRaisedOnceItsLandedIsTooLate()
+    {
+        var (sim, me, _, blow) = Duel();
+        Assert.Equal(blow.Impact + Blows.ParryAfter, Blows.LandsAt(sim, blow)); // alone, settled just after the window
+        RunTo(sim, Blows.LandsAt(sim, blow) + 1);
+        Guard(sim, me, true, sim.Clock.Tick);
         Assert.NotEqual(BlowOutcome.Parried, First(sim, me));
         Assert.NotEqual(BlowOutcome.Blocked, First(sim, me));
     }

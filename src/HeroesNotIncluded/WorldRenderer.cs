@@ -487,6 +487,7 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         DrawBreaths(sim, time);
         DrawShots(sim, time);
         DrawWindups(sim);
+        DrawAimLine();
         DrawSwings(sim);
         DrawInhaling(sim);
         DrawBlowWords(sim);
@@ -1036,6 +1037,38 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             var blow = w.Get<Sim.Combat.Windup>(e);
             if (Seen(e) && LocalAim?.E != e)
                 DrawSweep(sim, e, blow, now, ring);
+        }
+    }
+
+    /// <summary>The local player's bow, drawn and aimed: where an arrow would fly, how far drawn, and whether it's ready.</summary>
+    public (float3 From, float3 To, float Drawn, bool Ready)? AimLine { get; set; }
+
+    /// <summary>
+    /// The aim line (<see cref="AimLine"/>): dots from the bow to where the arrow would stop,
+    /// filling out as the bow's drawn, parchment while drawing and amber once it's ready, with a
+    /// ring where it'd strike.
+    /// </summary>
+    private void DrawAimLine()
+    {
+        if (AimLine is not { } line)
+            return;
+        var white = S(TextureAtlas.White);
+        var d = line.To - line.From;
+        var length = MathF.Sqrt(d.X * d.X + d.Y * d.Y);
+        if (length < 0.05f)
+            return;
+        var dir = d * (1f / length);
+        var c = line.Ready ? BlowColor : new float4(0.85f, 0.77f, 0.61f, 0.6f);
+        var shown = length * (0.35f + 0.65f * line.Drawn);
+        for (var r = 0.45f; r < shown; r += 0.32f)
+        {
+            var fade = 1f - 0.5f * r / Math.Max(1f, length);
+            Billboard(white, line.From + dir * r - new float3(0, 0, 0.05f), 0.07f, 0.07f, Rgba.Pack(c.X, c.Y, c.Z, c.W * fade), Quad.Unlit | Quad.Always, translucent: true);
+        }
+        if (line.Ready)
+        {
+            var end = new float3(line.To.X, line.To.Y, MathF.Floor(line.From.Z - 0.5f) + 0.06f);
+            Decal(S("ui/blow_ring"), end, 0.55f, Rgba.Pack(c.X, c.Y, c.Z, 0.9f), Quad.Unlit | Quad.Always, translucent: true);
         }
     }
 

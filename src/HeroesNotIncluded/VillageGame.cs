@@ -404,6 +404,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         if (_coop != null && FreeMoving)
             _freePredictor.Update(_sim, _avatar, _wish, dt, Paused ? 0 : RunMultiplier);
         _renderer.FreePredicted = _coop != null && FreeMoving ? _freePredictor : null;
+        _renderer.AimLine = HasAvatar ? AimLine() : null;
         _renderer.PredictedEntity = _avatar;
         _renderer.Viewer = View.Omniscient ? null : View;
         UpdateOrderBubbles();

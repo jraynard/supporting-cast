@@ -463,6 +463,7 @@ public sealed class RaiderBrain : IBrain
             if (!weapon.IsNull)
                 return new EquipJob(weapon);
         }
+        var creature = w.Get<Creature>(pawn);
         if (WantsToFlee(sim, pawn) || w.Has<Combat.Leaving>(pawn) || w.Has<Escaping>(pawn))
             return sim.NearestEdge(tile) is { } edge ? new LeaveMapJob(edge) : null;
 
@@ -483,7 +484,16 @@ public sealed class RaiderBrain : IBrain
                 bestScore = score;
             }
         }
-        return best.IsNull ? null : new AssaultJob(best);
+        if (!best.IsNull)
+            return new AssaultJob(best);
+        // Nobody left to get at (indoors, down, gone): a raider doesn't stand about the square for
+        // hours keeping the town from tending its hurt. It gives up and goes.
+        if (creature.Faction == Faction.Raider && sim.NearestEdge(tile) is { } way)
+        {
+            w.Add(pawn, new Combat.Leaving());
+            return new LeaveMapJob(way, "Giving up");
+        }
+        return null;
     }
 
     /// <summary>How much further a raider will go for someone not already pressed by as many as can be.</summary>

@@ -205,6 +205,7 @@ internal static class ComponentCodecs
             w.Long(i.Start);
             w.Long(i.At);
         }, r => new Combat.Inhaling { Target = r.Int3(), Start = r.Long(), At = r.Long() }),
+        Codec("Aiming", (w, a) => w.Long(a.Start), r => new Combat.Aiming { Start = r.Long() }),
         Codec("Guard", (w, g) =>
         {
             w.Float(g.Stamina);

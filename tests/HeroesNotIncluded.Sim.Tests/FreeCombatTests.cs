@@ -167,7 +167,10 @@ public class FreeCombatTests
         var (sim, me) = Ring("Bow");
         var near = Foe(sim, new float2(20.5f, 16.5f));
         var far = Foe(sim, new float2(23.5f, 16.5f));
-        Swing(sim, me, 0f);
+        sim.ApplyNow(new BowCommand(me, true, false, 0f, sim.Clock.Tick));
+        sim.TickMany(Archery.DrawTicks(sim, me, Archery.Bow(sim, me)!));
+        sim.ApplyNow(new BowCommand(me, true, true, 0f, sim.Clock.Tick));
+        sim.TickMany(2);
         var shot = sim.RecentBlows.Last(b => b.Attacker == me);
         Assert.Equal(near, shot.Target);
         Assert.DoesNotContain(sim.RecentBlows, b => b.Target == far);
@@ -522,6 +525,56 @@ public class FreeCombatTests
         var then = Trails.At(sim, me, 40);
         Assert.True(MathF.Abs(then.X - from.X) < 0.15f, $"40 ticks ago at {then}, started from {from}");
         Assert.Equal(now, Trails.At(sim, me, 0));
+    }
+
+    // ---- A player's bow (Combat.Archery) ----
+
+    [Fact]
+    public void ABowIsDrawnHeldAndLoosedOnlyOnceFullyDrawn()
+    {
+        var (sim, me) = Ring("Bow");
+        var foe = Foe(sim, new float2(21.5f, 16.5f)); // five cells east
+        var bow = Archery.Bow(sim, me)!;
+        // A left click alone does nothing with a bow.
+        sim.ApplyNow(new AttackCommand(me, false, 0f));
+        Assert.False(sim.World.Has<Windup>(me));
+
+        sim.ApplyNow(new BowCommand(me, true, false, 0f, sim.Clock.Tick));
+        Assert.True(sim.World.Has<Aiming>(me));
+        // Too soon: the string's not back yet.
+        sim.TickMany(3);
+        sim.ApplyNow(new BowCommand(me, true, true, 0f, sim.Clock.Tick));
+        Assert.False(sim.World.Has<Windup>(me));
+        // Fully drawn: it flies, at once, and the next is drawn while it's held.
+        sim.TickMany(Archery.DrawTicks(sim, me, bow));
+        Assert.True(Archery.Ready(sim, me));
+        sim.ApplyNow(new BowCommand(me, true, true, 0f, sim.Clock.Tick));
+        sim.TickMany(2);
+        Assert.Contains(sim.RecentBlows, b => b.Attacker == me && b.Target == foe && b.Outcome != BlowOutcome.Miss);
+        Assert.True(sim.World.Has<Aiming>(me) && !Archery.Ready(sim, me), "drawing the next");
+
+        // Aimed wide, it misses.
+        sim.TickMany(Archery.DrawTicks(sim, me, bow));
+        sim.ApplyNow(new BowCommand(me, true, true, MathF.PI / 2, sim.Clock.Tick));
+        sim.TickMany(2);
+        Assert.Equal(BlowOutcome.Miss, Outcome(sim, me));
+
+        // Let down, or a guard: no longer drawn.
+        sim.ApplyNow(new BowCommand(me, false, false, 0f, sim.Clock.Tick));
+        Assert.False(sim.World.Has<Aiming>(me));
+        sim.ApplyNow(new BowCommand(me, true, false, 0f, sim.Clock.Tick));
+        sim.ApplyNow(new GuardCommand(me, true, sim.Clock.Tick));
+        Assert.False(sim.World.Has<Aiming>(me));
+    }
+
+    [Fact]
+    public void YouGoSlowerWithABowDrawn()
+    {
+        var (sim, me) = Ring("Bow");
+        var free = FreeMoveSystem.Wanted(sim, me, new float2(1, 0), true, null);
+        sim.ApplyNow(new BowCommand(me, true, false, 0f, sim.Clock.Tick));
+        var drawn = FreeMoveSystem.Wanted(sim, me, new float2(1, 0), true, null);
+        Assert.True(drawn.X < free.X * 0.8f);
     }
 }
 

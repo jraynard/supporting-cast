@@ -20,6 +20,13 @@ One way to fight, everywhere.
 - In co-op a swing is judged against where everyone was when you pressed it, so what looked in
   reach on your screen is.
 - Walking diagonally onto stairs climbs them.
+- The parry window is fairer: from a fifth of a second before a blow's flash to a moment after it,
+  so throwing your guard up as you see the flash counts, and the result shows at once rather than a
+  beat later.
+- Bows: hold right click to draw and aim (a line shows where the arrow will fly, turning amber
+  once the bow's fully drawn), then left click to loose. Hold on and the next arrow's drawn.
+- Raiders with nobody left to fight give up and go, instead of standing in the square for hours
+  while the hurt bleed out indoors.
 
 ## 0.1.0-playtest.6
 

@@ -122,21 +122,32 @@ public sealed record BlowEvent(long Tick, Entity Attacker, Entity Target, BlowOu
 /// A blow lands on whoever's in its sweep the way it was aimed (<see cref="Reach"/>), no roll; the
 /// wounds are <see cref="CombatRules.Strike"/>'s, armour taking its share.
 /// <para>
-/// A blow at a player's character lands <see cref="LatencyGrace"/> after its impact: in co-op the
-/// player's key reaches the sim late, stamped with when it was pressed, and this lets a parry
-/// pressed in time count, as the mini-games replay stamped inputs (<c>WorkPredictor</c>).
+/// The parry window straddles the impact, the moment its telegraph flashes: from <see cref="ParryBefore"/>
+/// before to <see cref="ParryAfter"/> after, so a guard thrown up at the flash counts. A blow at a
+/// player is settled just after that window; in co-op, <see cref="LatencyGrace"/> after impact, for
+/// keys pressed in time (stamped with when) that reach the sim late, as the mini-games replay
+/// stamped inputs (<c>WorkPredictor</c>).
 /// </para>
 /// </summary>
 public static class Blows
 {
-    /// <summary>A guard raised this soon before a blow lands parries it.</summary>
-    public const int ParryTicks = SimClock.TicksPerSecond / 5;
+    /// <summary>A guard raised from this long before a blow's impact to <see cref="ParryAfter"/> after it parries it.</summary>
+    public const int ParryBefore = SimClock.TicksPerSecond / 5;
+
+    /// <summary>How long after the impact (its flash) a guard thrown up still parries: reacting to it counts.</summary>
+    public const int ParryAfter = SimClock.TicksPerSecond / 15;
 
     /// <summary>How long a dodge has blows pass through.</summary>
     public const int DodgeTicks = SimClock.TicksPerSecond * 2 / 5;
 
-    /// <summary>How late a blow at a player lands after its impact, for their keys to arrive.</summary>
+    /// <summary>In co-op, how late a blow at a player is settled after its impact, for their keys to arrive.</summary>
     public const int LatencyGrace = SimClock.TicksPerSecond / 5;
+
+    /// <summary>
+    /// How long after impact a blow at a player is settled: just past the parry window alone, and
+    /// <see cref="LatencyGrace"/> with others playing (whose keys come over the network).
+    /// </summary>
+    public static int Grace(Simulation sim) => sim.World.Query<Avatar>().Count > 1 ? LatencyGrace : ParryAfter;
 
     /// <summary>The oldest a player's stamped key may be: older, and it's taken as now.</summary>
     public const int MaxStampAge = SimClock.TicksPerSecond;
@@ -337,6 +348,7 @@ public static class Blows
         {
             g.RaisedAt = g.LastRaise = at;
             Cancel(sim, e);
+            Archery.Draw(sim, e, false, at); // a guard lets a drawn bow down
         }
         else if (!up && g.RaisedAt >= 0)
         {
@@ -360,7 +372,7 @@ public static class Blows
 
     /// <summary>When a blow wound up now lands: its impact, and a moment more if it's at a player.</summary>
     public static long LandsAt(Simulation sim, in Windup windup) =>
-        windup.Impact + (sim.World.Has<Avatar>(windup.Target) ? LatencyGrace : 0);
+        windup.Impact + (sim.World.Has<Avatar>(windup.Target) ? Grace(sim) : 0);
 
     /// <summary>
     /// A blow lands (or doesn't): on everyone in its sweep the way it was aimed (<see cref="Reach"/>),
@@ -404,11 +416,12 @@ public static class Blows
         }
         // A player's guard is up or not, and must face the blow. An AI meets the blow
         // aimed at it as it decided when it saw it coming, and is caught by any other.
+        // (Up by the end of the parry window: one thrown up at the flash meets it.)
         var guarding = w.Has<Avatar>(target)
-            ? theirs.UpAt(impact) && theirs.StaggeredUntil <= impact && Reach.Facing(sim, target, attacker)
+            ? theirs.UpAt(impact + ParryAfter) && theirs.StaggeredUntil <= impact && Reach.Facing(sim, target, attacker)
             : target == windup.Target && windup.Response != BlowResponse.None;
         var parried = guarding && Parryable(sim, attacker, attack) && (w.Has<Avatar>(target)
-            ? impact - theirs.LastRaise <= ParryTicks
+            ? theirs.LastRaise >= impact - ParryBefore && theirs.LastRaise <= impact + ParryAfter
             : windup.Response == BlowResponse.Parry);
         if (parried)
         {

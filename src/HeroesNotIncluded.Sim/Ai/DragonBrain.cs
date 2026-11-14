@@ -94,8 +94,8 @@ public sealed class DragonPassJob(int3 target) : Job
         Report = "Drawing breath";
         var at = Sim.Clock.Tick + Blows.InhaleTicks;
         Sim.World.Add(Pawn, new Inhaling { Target = target, Start = Sim.Clock.Tick, At = at });
-        // A moment more, as for any blow at a player (Blows.LatencyGrace), for their keys to arrive.
-        foreach (var s in Wait(Blows.InhaleTicks + Blows.LatencyGrace)) yield return s;
+        // A moment more, as for any blow at a player (Blows.Grace), for their keys to arrive.
+        foreach (var s in Wait(Blows.InhaleTicks + Blows.Grace(Sim))) yield return s;
         if (Sim.World.Has<Inhaling>(Pawn))
             Sim.World.Remove<Inhaling>(Pawn);
         Report = "Breathing fire";

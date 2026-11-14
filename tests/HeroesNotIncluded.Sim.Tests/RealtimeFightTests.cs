@@ -21,6 +21,7 @@ public class RealtimeFightTests
 
         Assert.Equal(before + SimClock.TicksPerSecond * 60, sim.Clock.Tick);
         Assert.True(w.Get<Creature>(victim).Dead || w.Get<Health>(victim).Injuries.Count > 0, "a minute beside a raider should leave a mark");
-        Assert.True(w.IsAlive(raider));
+        // With nobody left on their feet to fight, it gives up and goes rather than stand about.
+        Assert.True(!w.IsAlive(raider) || w.Has<Leaving>(raider) || w.Get<Creature>(victim).Able);
     }
 }

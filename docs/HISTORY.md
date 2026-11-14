@@ -1062,4 +1062,12 @@ shared); fights stay real time, Souls-lite.
   where everyone was then.
 - Bench baselines: seed 1234 state `853A200442B00386`, full `12E0FA3E45392BBC`; seed 99 state
   `9039CE5D8E55CCBD`, full `2D4DFD010E59E7C8`.
+- **The parry window** straddles the flash: `Blows.ParryBefore` (0.2 s) before impact to
+  `ParryAfter` (0.07 s) after. A blow at a player is settled just past it, alone; with others
+  playing, `LatencyGrace` after impact (`Blows.Grace`). Before, it closed at the flash and the
+  result came 0.2 s later.
+- **A player's bow** (`Combat/Archery`, `BowCommand`): hold the right button to draw and aim, the
+  left to loose once fully drawn; the aim line shows where it'll fly. Slower on your feet drawn.
+- Raiders with nobody left to get at give up and leave (`RaiderBrain`): standing about, they kept
+  the town indoors while its wounded bled out (a round of DirectorTests fell to it).
 

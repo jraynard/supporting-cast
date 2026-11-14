@@ -153,6 +153,7 @@ public sealed partial class VillageGame
         ("Getting about", [("W/A/S/D", "walk"), ("F", "use, talk to, work at what's in front of you"), ("Tab", "inventory"), ("1/2/3/4", "take a stack into your hands"),
             ("G", "put down what you hold"), ("C", "dig (the labourer)"), ("N", "sleep where you stand")]),
         ("Fighting", [("R", "draw or sheathe your weapon"), ("Mouse", "weapon drawn: aim"), ("Left / right click", "weapon drawn: strike / swing heavy"),
+            ("Right click (held), left click", "a bow: draw and aim, then loose"),
             ("Q or V (held)", "guard, facing the blow; raised as it lands, a parry"), ("Space", "dash clear")]),
         ("The village", [("Left-click", "walk there or act"), ("Shift-click", "look at someone or something"), ("Right-click", "an item's menu"), ("Esc", "stop looking")]),
         ("Hands-on work", [("F", "strike, pour, set, press"), ("A/D", "steer, tilt, lift"), ("Space", "the other thing: taste, latch, draw out"), ("Esc", "put the work down")]),
