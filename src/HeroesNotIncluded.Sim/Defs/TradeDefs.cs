@@ -49,6 +49,12 @@ public sealed class TradeDef : Def
     public List<ThingCount> Kit { get; set; } = [];
 
     /// <summary>
+    /// What's kept for the holder at the workplace rather than carried: put in its stash (a
+    /// <see cref="BuildingDef.Stash"/>, under the inn's bar) and fetched when trouble comes.
+    /// </summary>
+    public List<ThingCount> Stash { get; set; } = [];
+
+    /// <summary>
     /// The services at its workplace this trade sees to, when it shares one (the inn: the
     /// innkeeper the bar, rooms and quests, the cook the meals). Empty: everything served there.
     /// It's what its AI takes on, and the prices on the sign its holder sets.
@@ -93,6 +99,8 @@ public sealed class TradeDef : Def
         foreach (var station in Stations)
             StationDefs.Add(db.Thing(station));
         foreach (var item in Kit)
+            item.ThingDef = db.Thing(item.Def);
+        foreach (var item in Stash)
             item.ThingDef = db.Thing(item.Def);
         foreach (var (skill, level) in Skills)
             if (level is < 0 or > Components.Skills.Max)

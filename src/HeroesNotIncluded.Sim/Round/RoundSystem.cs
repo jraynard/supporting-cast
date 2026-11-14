@@ -451,8 +451,11 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         foreach (var (work, priority) in trade.WorkPriorities)
             mind.WorkPriority[(int)work] = priority;
         if (!trade.Gathers)
+        {
             foreach (var work in GatheringWork)
                 mind.WorkPriority[(int)work] = 0;
+            Toolbelt.TakeStartingTools(sim, e); // the stone axe and pick are the labourer's
+        }
 
         if (w.TryGet<Skills>(e, out var skills))
             foreach (var (skill, least) in trade.Skills)
@@ -460,14 +463,18 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         foreach (var station in trade.KnownStations)
             foreach (var recipe in station.Recipes)
                 RecipeBooks.Learn(sim, e, recipe);
-        // Tools of the trade go on the belt: they work from there, and an AI villager's work pack
-        // is emptied at the end of every job.
+        // The trade's own weapon goes in hand (the smith's hammer too: it works from there as from
+        // the belt); tools of the trade go on the belt: they work from there, and an AI villager's
+        // work pack is emptied at the end of every job.
         foreach (var item in trade.Kit)
         {
             var made = sim.CreateItem(item.ThingDef, item.Count, Simulation.MaterialFor(item.ThingDef, null));
-            if (item.Count != 1 || item.ThingDef.Tool == null || Toolbelt.PutOn(sim, e, made).IsNull)
+            if (item.Count == 1 && item.ThingDef.Weapon != null && !(w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon)))
+                sim.EquipItem(e, made);
+            else if (item.Count != 1 || item.ThingDef.Tool == null || Toolbelt.PutOn(sim, e, made).IsNull)
                 Inventory.Stow(sim, e, made);
         }
+        Militia.Stashes.Fill(sim, trade);
         if (trade.HoldsKeys)
             Tinkering.Locksmithing.GiveWorkplaceKeys(sim, e, trade);
         if (w.Has<Mana>(e))

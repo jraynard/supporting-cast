@@ -160,6 +160,9 @@ public sealed record TakeFromStorageCommand(Entity Avatar, Entity Item, int Coun
             sim.Messages.Add(MessageKind.Info, "The muster rack's arms are for the call to arms.", w.Get<Thing>(stored.In).Cell);
             return;
         }
+        // A trade's stash is its holder's alone (Militia.Stashes).
+        if (Militia.Stashes.IsStash(sim, stored.In) && !Militia.Stashes.Reaches(sim, Avatar, stored.In))
+            return;
         // One at a time unless more is asked for: a stack's not grabbed whole by accident.
         var count = Math.Clamp(Count, 1, Math.Min(w.Get<Stack>(Item).Count, w.Get<Thing>(Item).Def.StackLimit));
         // The pack first, the hands only for what won't go in. Something left in hand changes what

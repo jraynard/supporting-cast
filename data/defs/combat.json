@@ -17,6 +17,35 @@
       "name": "Club", "held": "club", "label": "spiked club", "category": "Item", "mass": 1.5, "sprite": "items/club", "flammability": 0.6, "maxHp": 60, "tier": "Stone",
       "weapon": { "verb": "swings at", "accuracy": 0.8, "damageMin": 9, "damageMax": 15, "damageType": "Blunt", "penetration": 0.1, "glance": 0.1 }
     },
+    // ---- A trade's own: something to hold off a raider with, not to win a war ("makeshift": the
+    // muster still arms whoever holds one, and an AI with nothing better fights only when cornered).
+    {
+      "name": "Dagger", "held": "knife", "label": "tinker's dagger", "category": "Item", "mass": 0.4, "sprite": "items/dagger", "maxHp": 70, "tier": "Stone",
+      "weapon": { "verb": "stabs at", "accuracy": 0.82, "damageMin": 6, "damageMax": 10, "damageType": "Cut", "penetration": 0.12, "glance": 0.12, "makeshift": true },
+      "description": "Thin enough for a lock's wards, sharp enough for anyone who tries the shop door at night."
+    },
+    {
+      "name": "KitchenKnife", "held": "knife", "label": "kitchen knife", "category": "Item", "mass": 0.4, "sprite": "items/kitchen_knife", "maxHp": 60, "tier": "Stone",
+      "weapon": { "verb": "slashes at", "accuracy": 0.8, "damageMin": 5, "damageMax": 10, "damageType": "Cut", "penetration": 0.08, "glance": 0.12, "makeshift": true },
+      "description": "Meant for onions. Bandits are mostly onion, if you think about it."
+    },
+    {
+      "name": "LuckyLou", "held": "club", "label": "Lucky Lou", "category": "Item", "mass": 1.2, "sprite": "items/lucky_lou", "flammability": 0.6, "maxHp": 90, "tier": "Stone",
+      "weapon": { "verb": "swings at", "accuracy": 0.8, "damageMin": 7, "damageMax": 12, "damageType": "Blunt", "penetration": 0.08, "glance": 0.1, "makeshift": true },
+      "description": "A turned ash cudgel that lives under the bar. It has settled more arguments than the innkeeper."
+    },
+    {
+      "name": "Staff", "held": "staff", "label": "walking staff", "category": "Item", "mass": 1.5, "sprite": "items/staff", "flammability": 0.6, "maxHp": 80, "tier": "Stone",
+      "weapon": { "verb": "swings at", "accuracy": 0.8, "damageMin": 6, "damageMax": 11, "damageType": "Blunt", "penetration": 0.05, "glance": 0.12, "windupSeconds": 0.9, "makeshift": true },
+      "description": "For the long walk to the sick, and for keeping the angry at a staff's length."
+    },
+    {
+      // The tinker's own make (MakeCrossbow): slow to crank, but it puts a bolt through mail.
+      "name": "Crossbow", "held": "crossbow", "label": "crossbow", "category": "Item", "mass": 2.5, "sprite": "items/crossbow", "flammability": 0.4, "maxHp": 110, "tier": "Iron",
+      "weapon": { "verb": "shoots at", "ranged": true, "range": 16, "optimalRange": 8, "accuracy": 0.84, "accuracyFalloff": 0.03,
+                  "damageMin": 13, "damageMax": 20, "damageType": "Pierce", "penetration": 0.35, "glance": 0.06, "windupSeconds": 1.8, "cooldownSeconds": 3 },
+      "description": "Wound by a crank, loosed by a trigger: no strength in the arm needed, only patience."
+    },
     {
       "name": "ShortSword", "held": "sword", "label": "short sword", "category": "Item", "mass": 1.5, "sprite": "items/sword", "maxHp": 120, "tier": "Iron",
       "weapon": { "verb": "slashes at", "accuracy": 0.75, "damageMin": 10, "damageMax": 16, "damageType": "Cut", "penetration": 0.2, "glance": 0.08 }

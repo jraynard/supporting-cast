@@ -329,14 +329,63 @@ public sealed partial class VillageGame
         EndWork();
     }
 
-    /// <summary>The lid's seam with the probe on it, what the probe tells the fingers, and the pressure on it.</summary>
+    /// <summary>What the probe has felt along the seam this search, bin by bin (the player's own memory of it).</summary>
+    private readonly float[] _probeTrace = new float[96];
+    private long _probeTraceFor = -1;
+
+    /// <summary>
+    /// The lid's seam with the probe on it, what the probe has told the fingers along it, the
+    /// pressure against the zones that matter, and a line saying what to do now. All of it reads
+    /// what the player feels and does (the feel, the pressure, the probe's motion), never the trap.
+    /// </summary>
     private void DrawProbe(Sim.Tinkering.ProbeSession s)
     {
-        BeginWork(s.Title, ("A/D", "run the probe along the seam"), ("F", "hold to press in"), ("Esc", "stop"));
-        TextC(Theme.Dim, "Sweep light. Where it catches, stop and ease the spring out. The far end finishes.");
+        BeginWork(s.Title, ("A/D", "run the probe (F let go)"), ("F", "hold, still, to press in"), ("Esc", "stop"));
+        if (_probeTraceFor != s.StartTick)
+        {
+            _probeTraceFor = s.StartTick;
+            Array.Clear(_probeTrace);
+        }
+        var bin = Math.Clamp((int)(s.Probe * _probeTrace.Length), 0, _probeTrace.Length - 1);
+        _probeTrace[bin] += (s.Feel - _probeTrace[bin]) * 0.2f; // smoothed: the noise settles, a catch stands up
+        var caught = _probeTrace[bin] > CatchFelt;
+
+        // What to do now, from what the fingers know.
+        var (colour, line) =
+            s.Moving != 0 && s.TooHeavyToSweep ? (Theme.Bad, "Too heavy to sweep! Let go of F before you move.")
+            : s.Pressure > s.High ? (Theme.Bad, "Too hard: ease off a little, or it'll spring.")
+            : s.Held && s.InBand && s.Progress > 0f ? (Theme.Good, "That's it: hold it steady in the green.")
+            : s.Held && s.InBand ? (Theme.Good, "Steady in the green. If something's there, it's coming loose.")
+            : s.Held ? (Theme.Text, "Pressing in... bring it up into the green.")
+            : caught ? (Theme.Warn, "It catches here. Stop, then hold F to press it into the green.")
+            : (Theme.Dim, "Sweep along the seam with F let go, and feel for a catch. The hinge end finishes.");
+        TextC(colour, line);
         ProbeScene(s.Probe, s.Feel, s.Pressure);
+
         var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(420, 26);
+        // The feel trace over the seam: how hard it caught at each point the probe has been.
+        var width = Gui.S(420);
+        var traceSize = new float2(width, Gui.S(34));
+        var tMin = ImGui.GetCursorScreenPos();
+        var tMax = tMin + traceSize;
+        ImGui.Dummy(in traceSize);
+        dl.AddRectFilled(in tMin, in tMax, Theme.U8(Theme.Inset), 3f, ImDrawFlags.None);
+        var catchY = tMax.Y - CatchFelt * traceSize.Y;
+        dl.AddLine(new float2(tMin.X, catchY), new float2(tMax.X, catchY), Theme.U8(Theme.Warn, 0.35f), 1f);
+        var step = (traceSize.X - 8) / _probeTrace.Length;
+        for (var i = 0; i < _probeTrace.Length; i++)
+        {
+            var v = _probeTrace[i];
+            if (v <= 0.01f)
+                continue;
+            var x0 = tMin.X + 4 + i * step;
+            var top = new float2(x0, tMax.Y - 2 - v * (traceSize.Y - 4));
+            var bottom = new float2(x0 + MathF.Max(1f, step - 1f), tMax.Y - 2);
+            dl.AddRectFilled(in top, in bottom, Theme.U8(v > CatchFelt ? Theme.Warn : Theme.Dim, v > CatchFelt ? 0.95f : 0.55f), 0f, ImDrawFlags.None);
+        }
+
+        // The seam, with the probe on it.
+        var size = Gui.S(420, 22);
         var min = ImGui.GetCursorScreenPos();
         var max = min + size;
         ImGui.Dummy(in size);
@@ -345,30 +394,46 @@ public sealed partial class VillageGame
         var seamMax = new float2(max.X - 4, min.Y + size.Y * 0.5f + 1);
         dl.AddRectFilled(in seamMin, in seamMax, new ImColor8(30, 22, 16, 255), 0f, ImDrawFlags.None);
         var x = min.X + 4 + s.Probe * (size.X - 8);
-        var probeMin = new float2(x - 2, min.Y - 3);
+        var probeMin = new float2(x - 2, tMin.Y);
         var probeMax = new float2(x + 2, max.Y + 3);
-        dl.AddRectFilled(in probeMin, in probeMax, Theme.U8(Theme.Accent), 1f, ImDrawFlags.None);
+        dl.AddRectFilled(in probeMin, in probeMax, Theme.U8(caught ? Theme.Warn : Theme.Accent, 0.9f), 1f, ImDrawFlags.None);
         TextC(Theme.Dim, "hasp");
-        ImGui.SameLine(size.X - 24, 0);
+        ImGui.SameLine(size.X - Gui.S(24), 0);
         TextC(Theme.Dim, "hinge");
-        Bar("Feel", s.Feel, s.Feel > 0.6f ? Theme.Warn : Theme.Dim);
-        // The pressure gauge, with the band that eases a spring out marked on it.
+
+        // The pressure gauge: light enough to sweep, the green that eases a spring out, and too much.
+        var gSize = Gui.S(420, 22);
         var gMin = ImGui.GetCursorScreenPos();
-        var gSize = Gui.S(420, 16);
         var gMax = gMin + gSize;
         ImGui.Dummy(in gSize);
+        float At(float f) => gMin.X + f * gSize.X;
         dl.AddRectFilled(in gMin, in gMax, Theme.U8(Theme.Well), 3f, ImDrawFlags.None);
-        var bandMin = new float2(gMin.X + s.Low * gSize.X, gMin.Y);
-        var bandMax = new float2(gMin.X + s.High * gSize.X, gMax.Y);
-        dl.AddRectFilled(in bandMin, in bandMax, Theme.U8(Theme.Good, 0.6f), 2f, ImDrawFlags.None);
-        var dangerMin = new float2(gMin.X + Sim.Tinkering.ProbeSession.SpringAbove * gSize.X, gMin.Y);
-        dl.AddRectFilled(in dangerMin, in gMax, Theme.U8(Theme.Bad, 0.6f), 2f, ImDrawFlags.None);
-        var pMin = new float2(gMin.X, gMin.Y + 4);
-        var pMax = new float2(gMin.X + s.Pressure * gSize.X, gMax.Y - 4);
-        dl.AddRectFilled(in pMin, in pMax, Theme.U8(s.Pressure > Sim.Tinkering.ProbeSession.LightTouch ? Theme.Accent : Theme.Text), 1f, ImDrawFlags.None);
+        Zone(dl, gMin.X, At(Sim.Tinkering.ProbeSession.LightTouch), gMin.Y, gMax.Y, Theme.Iron, 0.45f, "sweep");
+        Zone(dl, At(s.Low), At(s.High), gMin.Y, gMax.Y, Theme.Good, 0.6f, "ease");
+        Zone(dl, At(Sim.Tinkering.ProbeSession.SpringAbove), gMax.X, gMin.Y, gMax.Y, Theme.Bad, 0.6f, "springs");
+        var light = At(Sim.Tinkering.ProbeSession.LightTouch);
+        dl.AddLine(new float2(light, gMin.Y - Gui.S(3)), new float2(light, gMax.Y + Gui.S(3)), Theme.U8(Theme.Text, 0.8f), Gui.S(1.5f));
+        var needle = At(s.Pressure);
+        var needleColour = s.Pressure > s.High ? Theme.Bad : s.InBand ? Theme.Good : s.TooHeavyToSweep ? Theme.Warn : Theme.Text;
+        dl.AddRectFilled(new float2(needle - Gui.S(2), gMin.Y - Gui.S(4)), new float2(needle + Gui.S(2), gMax.Y + Gui.S(4)), Theme.U8(needleColour), 1f, ImDrawFlags.None);
         if (s.Progress > 0f)
-            Bar("Spring", s.Progress, Theme.Good);
+            Bar("Spring", s.Progress, Theme.Good, "easing it out");
         EndWork();
+    }
+
+    /// <summary>How hard the smoothed feel has to catch to count as a catch, on the trace and in the advice.</summary>
+    private const float CatchFelt = 0.55f;
+
+    /// <summary>A labelled stretch of a gauge.</summary>
+    private static void Zone(ImDrawListPtr dl, float x0, float x1, float y0, float y1, float4 colour, float alpha, string label)
+    {
+        dl.AddRectFilled(new float2(x0, y0), new float2(x1, y1), Theme.U8(colour, alpha), 2f, ImDrawFlags.None);
+        var textSize = ImGui.CalcTextSize(label);
+        if (textSize.X > x1 - x0 - 2)
+            return;
+        var at = new float2((x0 + x1 - textSize.X) * 0.5f, (y0 + y1 - textSize.Y) * 0.5f);
+        dl.AddText(at + new float2(1, 1), new ImColor8(0, 0, 0, 200), label);
+        dl.AddText(in at, Theme.U8(Theme.Text), label);
     }
 
     /// <summary>

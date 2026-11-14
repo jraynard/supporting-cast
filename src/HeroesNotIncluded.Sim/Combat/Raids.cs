@@ -62,8 +62,9 @@ public static class Raids
             if (c.Def.Race == Race.Human)
             {
                 points += 20f;
-                // The town's own arms (Militia) are handed out after the band is sized: they don't count.
-                if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon) && !w.Has<Militia.TownArms>(eq.Weapon))
+                // The town's own arms (Militia) are handed out after the band is sized: they don't
+                // count, and nor does a trade's makeshift weapon (the cook's knife).
+                if (Militia.MilitiaSystem.ArmedProperly(sim, e) && !w.Has<Militia.TownArms>(w.Get<Equipment>(e).Weapon))
                     points += 15f;
             }
         }

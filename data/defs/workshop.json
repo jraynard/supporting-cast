@@ -201,7 +201,10 @@
     },
     {
       "name": "Hammer", "held": "hammer", "label": "smith's hammer", "category": "Item", "mass": 1.5, "sprite": "items/hammer", "maxHp": 120,
-      "tool": { "kind": "Hammer", "speed": 1.25, "tier": "Iron" }, "description": "An iron hammer: fine work at the forge (blades, helms, mail) needs one."
+      "tool": { "kind": "Hammer", "speed": 1.25, "tier": "Iron" },
+      // The smith's own weapon too, until they make themselves a better one.
+      "weapon": { "verb": "swings at", "accuracy": 0.78, "damageMin": 8, "damageMax": 13, "damageType": "Blunt", "penetration": 0.12, "glance": 0.1, "makeshift": true },
+      "description": "An iron hammer: fine work at the forge (blades, helms, mail) needs one. It does other work too, in a pinch."
     },
     {
       "name": "Tongs", "held": "tongs", "label": "tongs", "category": "Item", "mass": 1, "sprite": "items/tongs", "maxHp": 120,

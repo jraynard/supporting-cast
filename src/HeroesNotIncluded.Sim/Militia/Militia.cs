@@ -74,14 +74,25 @@ public sealed class MilitiaSystem : ISimSystem, ISaveState
     public static bool IsWeapon(Simulation sim, Entity item) =>
         sim.World.IsAlive(item) && sim.World.TryGet<Thing>(item, out var t) && t.Def.Weapon != null;
 
-    /// <summary>Folk of the village who'd fight if they had something to fight with.</summary>
+    /// <summary>
+    /// A real weapon in hand: not nothing, and not a trade's makeshift one (<see cref="AttackDef.Makeshift"/>),
+    /// which is for holding off a raider, not for the muster.
+    /// </summary>
+    public static bool ArmedProperly(Simulation sim, Entity e) =>
+        sim.World.TryGet<Equipment>(e, out var eq) && sim.World.IsAlive(eq.Weapon) && sim.World.Get<Thing>(eq.Weapon).Def.Weapon is { Makeshift: false };
+
+    /// <summary>The weapon in hand is a trade's makeshift one.</summary>
+    public static bool ArmedMakeshift(Simulation sim, Entity e) =>
+        sim.World.TryGet<Equipment>(e, out var eq) && sim.World.IsAlive(eq.Weapon) && sim.World.Get<Thing>(eq.Weapon).Def.Weapon is { Makeshift: true };
+
+    /// <summary>Folk of the village who'd fight if they had something proper to fight with.</summary>
     public static int Unarmed(Simulation sim)
     {
         var w = sim.World;
         var n = 0;
         foreach (var e in sim.Creatures())
             if (w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Dead: false } && !w.Has<NonViolent>(e)
-                && !w.Has<Adventurer>(e) && (!w.TryGet<Equipment>(e, out var eq) || !w.IsAlive(eq.Weapon)))
+                && !w.Has<Adventurer>(e) && !ArmedProperly(sim, e))
                 n++;
         return n;
     }
@@ -191,12 +202,15 @@ public sealed class MilitiaSystem : ISimSystem, ISaveState
 /// <summary>What the village's AI folk do in a muster (<see cref="MilitiaSystem.Mustering"/>).</summary>
 public static class Muster
 {
-    /// <summary>Unarmed and willing, with the raid here: fetch a weapon from the rack. Null otherwise.</summary>
+    /// <summary>
+    /// Unarmed (or holding only a makeshift weapon) and willing, with the raid here: fetch a weapon
+    /// from the rack; their own is put away for it (<see cref="Inventory.PutOn"/>). Null otherwise.
+    /// </summary>
     public static Ai.Job? ArmFromRack(Simulation sim, Entity pawn)
     {
         var w = sim.World;
         if (!sim.Militia.Mustering || w.Has<NonViolent>(pawn) || w.Has<Adventurer>(pawn) || !w.Get<Creature>(pawn).Able
-            || (w.TryGet<Equipment>(pawn, out var eq) && w.IsAlive(eq.Weapon))
+            || MilitiaSystem.ArmedProperly(sim, pawn)
             || (w.TryGet<Outfit>(pawn, out var outfit) && outfit.Unarmed))
             return null;
         var item = Ai.AiQueries.FindNearestItem(sim, pawn,
@@ -221,6 +235,39 @@ public static class Muster
             .OrderBy(e => Maps.Map.Distance(at, w.Get<Thing>(e).Cell)).ThenBy(e => e.Index)
             .FirstOrDefault(Entity.Null);
         return rack.IsNull ? null : new ReturnArmsJob(rack);
+    }
+
+    /// <summary>
+    /// Empty-handed after the muster: take up their own weapon again, put away in the pack (the
+    /// cook's knife) or on the belt (the smith's hammer), the best of them if there's more than one.
+    /// </summary>
+    public static void Rearm(Simulation sim, Entity pawn)
+    {
+        var w = sim.World;
+        if (w.TryGet<Equipment>(pawn, out var eq) && w.IsAlive(eq.Weapon))
+            return;
+        var best = Entity.Null;
+        var bestScore = float.MinValue;
+        void Consider(Entity item)
+        {
+            if (w.Get<Thing>(item).Def.Weapon is not { } weapon || w.Has<TownArms>(item))
+                return;
+            var score = (weapon.Makeshift ? 0f : 1000f) + weapon.DamageMin + weapon.DamageMax;
+            if (score > bestScore)
+            {
+                best = item;
+                bestScore = score;
+            }
+        }
+        // On the belt, only a trade's own (the smith's hammer): the stone axe there is for wood.
+        foreach (var item in Toolbelt.Of(sim, pawn))
+            if (w.Get<Thing>(item).Def.Weapon is { Makeshift: true })
+                Consider(item);
+        if (sim.PackOf(pawn) is { IsNull: false } pack)
+            foreach (var item in sim.StoredIn(pack))
+                Consider(item);
+        if (!best.IsNull)
+            sim.EquipItem(pawn, sim.TakeFromStack(best, 1));
     }
 }
 
@@ -251,5 +298,6 @@ public sealed class ReturnArmsJob(Entity rack) : Ai.Job
         }
         w.Remove<Equipment>(Pawn);
         Sim.Store(rack, eq.Weapon);
+        Muster.Rearm(Sim, Pawn);
     }
 }

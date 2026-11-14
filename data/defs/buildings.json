@@ -306,6 +306,7 @@
       "lineOnBeds": true,
       "line": [ [2, 2], [3, 2], [4, 2], [2, 1], [3, 1], [4, 1] ],
       "sign": [1, 4], // on the front wall, by the corner its door is round
+      "signFace": "props/sign_rune",
       "variants": [
         { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster", "parts": { "wall": "TimberWall", "roof": "ThatchRoofPart" } },
         { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
@@ -335,6 +336,7 @@
       // Customers come in at the door and wait in front of the bench, the rest out of the door.
       "line": [ [3, 3], [3, 4], [3, 5], [3, 6], [3, 7], [3, 8] ],
       "sign": [2, 5], // on the front wall beside the door
+      "signFace": "props/sign_gear",
       "variants": [
         { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster", "parts": { "wall": "TimberWall", "roof": "ThatchRoofPart" } },
         { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },

@@ -85,6 +85,10 @@ Fights are free movement and blows by reach and timing, Souls-lite, everywhere (
   `tools/steamdeck/`.
 - Building and area tools still need the trackpad (a pad cursor would cover them).
 
+### Internet play
+- test over an actual internet connection to verify it works
+- test relay servertaw
+
 ### M4: Whispers
 - Allegiance, objectives, the hidden shop, evidence, player violence, Constable and jail, the bell,
   meetings and exile, ghosts.
@@ -110,6 +114,10 @@ An authoritative server filtered by `Perception`, moderation, voice.
     trade are already kept; `Titles`, `Title` and `Unlocked` wait to be filled.
 - if you master a trade you get a cool outfit and title related to that trade
 - shop customization - pick your icon, get upgraded looks based on your skill and renown.
+
+### Mods
+- ability to add mods (new maps, new buildings, new trades, new game modes, character customization options, whatever's possible)
+- steam workshop integration eventually
 
 ### Polish pass (timing uncertain)
 What's been left behind along the way, gathered from each milestone's leftovers, plus wishes.
@@ -169,6 +177,7 @@ Grouped by area; nothing here blocks a playtest.
 
 **Crises and the town**
 - Raiders don't bash doors or gates; only the bridge breaks.
+- buckets to fight fire (throw should be like hold F to charge how far it goes then sprays out the water, then run back to well to refill)
 - The unarmed don't mob a raider together. Without adventurers in town, two raiders put every
   villager down.
 - The wounded lie where they fell until someone thinks to help.

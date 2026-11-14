@@ -57,6 +57,12 @@ public sealed class ProbeSession : WorkSession
 
     private int _move;
 
+    /// <summary>Which way the probe's being run (-1 toward the hasp, 1 toward the hinge), 0 if it's held still.</summary>
+    public int Moving => _move;
+
+    /// <summary>Pressing harder than a sweep can take: running the probe now would set off a trigger it crossed.</summary>
+    public bool TooHeavyToSweep => Pressure > LightTouch;
+
     public float Low => Math.Max(LightTouch + 0.05f, (BandLow + BandHigh) * 0.5f - (BandHigh - BandLow) * 0.5f * Hands.Tolerance);
     public float High => Math.Min(SpringAbove - 0.05f, (BandLow + BandHigh) * 0.5f + (BandHigh - BandLow) * 0.5f * Hands.Tolerance);
     public bool InBand => Pressure >= Low && Pressure <= High;

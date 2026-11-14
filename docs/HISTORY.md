@@ -1163,5 +1163,24 @@ Small leftovers from the polish list and the pre-M4 sections, each its own commi
   steers from where it is).
 - Casks already refilled (`TapJob`, the carter's kegs): the roadmap line was stale.
 - `SeasonScenarioTests` counts a crisis still under way when Dread ends the round.
+- **Each trade's own weapon** (`kit`, held from the deal): the tinker's dagger, the cook's kitchen
+  knife, the healer's walking staff, the smith's hammer (a tool and a weapon). The innkeeper's
+  cudgel, **Lucky Lou**, lives under the bar (`TradeDef.Stash`, `BuildingProps.Stash`,
+  `Militia.Stashes`): fetched when trouble comes, put back after, and nobody else knows it's there.
+  They're `makeshift`: the muster still arms their holders from the rack (their own put away, taken
+  up again after), raids don't size up against them, and an AI with nothing better fights only
+  when cornered (`Defence.CorneredRange`). A weapon swapped out goes to the pack or belt, not the
+  floor (`Inventory.PutOn`). The tinker makes a **crossbow** at the bench (`MakeCrossbow`): slow to
+  crank, hard-hitting. New held shapes `staff` and `crossbow`.
+- **A slung weapon shows over the back** of someone walking away (`CreaturePose.View`); it hid
+  behind them in every view.
+- **The stone axe and pick are the labourer's:** every other trade has them taken off the belt at
+  the deal (`Toolbelt.TakeStartingTools`).
+- **Feeling a strongbox for traps reads clearly:** a line saying what to do now, a trace of what the
+  probe has felt along the seam (a catch stands up as a hump to come back to), the pressure gauge's
+  zones named (sweep, ease, springs) with the light-touch line marked, and a tick when it catches.
+  The green band was never for sweeping: it's above the light touch that crosses a trigger safely.
+- **Shop signs:** a cogwheel over the tinker's shop (`props/sign_gear`), a mending bindrune over the
+  healer's shrine (`props/sign_rune`), from `tools/inn_art.py`.
 - Bench baselines: seed 1234 unchanged (state `853A200442B00386`, full `12E0FA3E45392BBC`); seed 99
   state `CEFFA4278018879C`, full `653B0922D876F08D`.

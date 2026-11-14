@@ -521,12 +521,13 @@ public sealed partial class Simulation
 
     /// <summary>
     /// A container whose contents aren't up for grabs: one someone carries (a pack, or a creature's
-    /// own tool belt), the muster rack outside a call to arms, a serving hatch (what's put up there is for the customer at it), or one in a
+    /// own tool belt), the muster rack outside a call to arms, a serving hatch (what's put up there is for the customer at it), a
+    /// trade's stash (<see cref="Militia.Stashes"/>), or one in a
     /// shop that keeps its stock (<see cref="Defs.BuildingDef.KeepsStock"/>: it's taken by hand).
     /// </summary>
     private bool OnSomeone(Entity container) => IsPack(container) || World.Has<Creature>(container)
         || (!Militia.Mustering && Sim.Militia.MilitiaSystem.IsRack(this, container)) // the town's arms, for the muster only
-        || (World.TryGet<Thing>(container, out var t) && t.Def.Building is { Hatch: true })
+        || (World.TryGet<Thing>(container, out var t) && t.Def.Building is { Hatch: true } or { Stash: true }) // a stash: its trade's, by hand
         || KeptStockOf(container) != null;
 
     /// <summary>The shop whose kept stock a container holds (<see cref="Defs.BuildingDef.KeepsStock"/>), or null.</summary>
@@ -591,8 +592,10 @@ public sealed partial class Simulation
             // A hair of slack so a load that's exactly full doesn't round down a unit.
             return Math.Max(0, (int)MathF.Floor((pack.Capacity - LoadOf(container)) / unit + 1e-4f));
         }
-        // The muster rack holds weapons and nothing else.
+        // The muster rack holds weapons and nothing else; a stash, only what a trade keeps there.
         if (cdef.Name == Sim.Militia.MilitiaSystem.RackDef && def.Weapon == null)
+            return 0;
+        if (cdef.Building is { Stash: true } && !Sim.Militia.Stashes.Stashed(this, def))
             return 0;
         var held = StoredIn(container);
         var room = Math.Max(0, (cdef.Building?.StorageStacks ?? 0) - held.Count) * def.StackLimit;

@@ -217,6 +217,76 @@ def club():
     return done(img)
 
 
+def dagger():
+    """The tinker's dagger: a slim double-edged blade, a brass cross and a cord-wrapped grip."""
+    m = METAL["steel"]
+    img = canvas()
+    part(img, stick((6, 26), (11, 21), 3.0, 2.8), WALNUT, radius=0.6)
+    for k in range(4):
+        put(img, 7 + k, 25 - k, OAT[2] if k % 2 else OAT[0])                               # the cord
+    part(img, poly([(10, 19), (24, 6), (26, 5), (25, 8), (12, 21)]), m, radius=0.7, slope=1.7)
+    for k in range(10):
+        put(img, 13 + k, 18 - k, m[5] if k % 2 else m[4])
+    part(img, poly([(7, 18), (9, 16), (15, 22), (13, 24)]), METAL["bronze"])
+    put(img, 5, 27, METAL["bronze"][3])
+    return done(img)
+
+
+def kitchen_knife():
+    """A cook's knife: a broad, belly-curved blade on a riveted wooden handle."""
+    m = METAL["iron"]
+    img = canvas()
+    part(img, stick((4, 28), (11, 21), 3.4), WALNUT, radius=0.6)
+    for x, y in ((6, 26), (9, 23)):
+        put(img, x, y, METAL["silver"][4])
+    part(img, poly([(10, 19), (24, 5), (27, 4), (26, 9), (20, 17), (13, 23)]), m, radius=0.9, slope=1.6)
+    for k in range(9):
+        put(img, 15 + k, 20 - k * 1.3, m[5])                                                # the honed edge
+    return done(img)
+
+
+def lucky_lou():
+    """Lucky Lou: a turned ash cudgel, smooth and swelling to a rounded end, a leather wrap and a nick or two."""
+    img = canvas()
+    part(img, lambda d: (d.polygon(ribbon([(7, 29), (14, 20), (21, 11)], [2.4, 3.8, 6.0]), fill=255),
+                         d.ellipse([18, 4, 27, 13], fill=255)), ASH, radius=1.6)
+    for k in range(5):
+        put(img, 7 + k, 28 - k * 1.3, LEATHER[3] if k % 2 else LEATHER[1])
+        put(img, 8 + k, 28 - k * 1.3, LEATHER[2] if k % 2 else LEATHER[0])
+    for x, y in ((20, 11), (24, 7)):                                                        # the nicks
+        put(img, x, y, ASH[0]); put(img, x + 1, y, ASH[1])
+    return done(img)
+
+
+def staff():
+    """A walking staff: a long knotted pole, a knob at the top and a leather grip near it."""
+    img = canvas()
+    part(img, stick((3, 31), (26, 5), 2.4, 2.6), ASH, radius=0.7, tex=lambda x, y: 0.2 if (x + 2 * y) % 7 == 0 else 0)
+    part(img, lambda d: d.ellipse([23, 1, 30, 8], fill=255), WALNUT, radius=1.2)
+    for k in range(4):
+        put(img, 18 + k, 14 - k, LEATHER[3] if k % 2 else LEATHER[1])
+    for x, y in ((10, 23), (15, 17)):                                                       # knots
+        put(img, x, y, WALNUT[1])
+    return done(img)
+
+
+def crossbow():
+    """The tinker's crossbow: a walnut stock, a steel-sprung bow square across its head, the string drawn
+    back to the nut, a trigger beneath and the crank at the butt."""
+    m = METAL["steel"]
+    img = canvas()
+    nut = (15, 18)
+    for tip in ((13, 6), (28, 21)):                                                         # the string, tip to nut
+        n = max(abs(tip[0] - nut[0]), abs(tip[1] - nut[1]))
+        for k in range(n + 1):
+            put(img, round(tip[0] + (nut[0] - tip[0]) * k / n), round(tip[1] + (nut[1] - tip[1]) * k / n), OAT[3] if k % 2 else OAT[1])
+    part(img, stick((4, 29), (25, 8), 3.4, 2.4), WALNUT, radius=0.7)                       # the stock
+    part(img, lambda d: d.polygon(ribbon([(13, 6), (19, 9), (22, 12), (25, 15), (28, 21)], [1.0, 2.0, 2.6, 2.0, 1.0]), fill=255), m, radius=0.6)
+    part(img, poly([(11, 23), (13, 22), (13, 27)]), METAL["iron"])                          # the trigger
+    part(img, lambda d: d.ellipse([2, 26, 7, 31], fill=255), METAL["iron"], radius=0.6)      # the crank
+    return done(img)
+
+
 def tongs():
     m = METAL["iron"]
     img = canvas()
@@ -615,6 +685,11 @@ def generate():
     out["items/copper_knife"] = seax("copper")
     out["items/bow"] = bow()
     out["items/club"] = club()
+    out["items/dagger"] = dagger()
+    out["items/kitchen_knife"] = kitchen_knife()
+    out["items/lucky_lou"] = lucky_lou()
+    out["items/staff"] = staff()
+    out["items/crossbow"] = crossbow()
     out["items/tongs"] = tongs()
     out["items/saw"] = saw()
     out["items/chisel"] = chisel()

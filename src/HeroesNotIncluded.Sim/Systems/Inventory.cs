@@ -24,9 +24,14 @@ public static class Inventory
         sim.World.Has<Avatar>(creature) || sim.World.Has<PlayerCharacter>(creature) || sim.World.Has<Adventurer>(creature)
             ? Entity.Null : sim.PackOf(creature);
 
-    /// <summary>Kept in a work pack when a job ends: coin, keys, what someone handed over to be seen to, and a few clean tankards or bowls for the next order.</summary>
+    /// <summary>
+    /// Kept in a work pack when a job ends: coin, keys, what someone handed over to be seen to, a
+    /// few clean tankards or bowls for the next order, and their own makeshift weapon put away for
+    /// a better one (the cook's knife while they hold a spear from the rack).
+    /// </summary>
     public static bool KeptBetweenJobs(Simulation sim, Entity item) =>
-        Shops.Coin.IsSilver(sim, item) || sim.World.Has<Entrusted>(item) || sim.World.Has<Tinkering.Key>(item) || sim.World.Get<Thing>(item).Def.Vessel;
+        Shops.Coin.IsSilver(sim, item) || sim.World.Has<Entrusted>(item) || sim.World.Has<Tinkering.Key>(item)
+        || sim.World.Get<Thing>(item).Def is { Vessel: true } or { Weapon.Makeshift: true };
 
     /// <summary>Is this item a stack in the creature's own pack?</summary>
     public static bool InOwnPack(Simulation sim, Entity creature, Entity item) =>
@@ -94,8 +99,8 @@ public static class Inventory
     }
 
     /// <summary>
-    /// Put on or wield an unspawned gear item. What it replaces goes into the pack, or to the ground
-    /// when it won't fit (a pack you take off keeps its contents, and lands in empty hands if it can).
+    /// Put on or wield an unspawned gear item. What it replaces goes into the pack (a tool onto the
+    /// belt), or to the ground when it won't fit (a pack you take off keeps its contents, and lands in empty hands if it can).
     /// </summary>
     public static void PutOn(Simulation sim, Entity avatar, Entity item)
     {
@@ -121,6 +126,9 @@ public static class Inventory
             // Trading up packs: what fits moves across, the rest stays in the old one.
             if (def.Container != null && sim.IsPack(old))
                 sim.TransferContents(old, item);
+            // A weapon that's a tool too (the smith's hammer) goes back on the belt, where it still works.
+            if (def.Apparel == null && w.Get<Thing>(old).Def.Tool != null && !Toolbelt.PutOn(sim, avatar, old).IsNull)
+                return;
             Stow(sim, avatar, old);
         }
     }

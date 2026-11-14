@@ -1,7 +1,8 @@
 // Trades: the roles a round deals out. workPriorities change the AI's defaults for whoever holds
 // the trade (1 highest, 4 lowest); only what the trade puts first is listed, so the town's other
 // work still gets done. knows: stations whose recipes the holder knows; skills: the least they
-// have; kit: what they start with; holdsKeys: a key to every lock at the workplace (the inn's storeroom). Labourer is unlimited: it's what's left when the named trades run out.
+// have; kit: what they start with (a weapon goes in hand); stash: what's kept for them at the workplace
+// (under the bar), fetched when trouble comes; holdsKeys: a key to every lock at the workplace (the inn's storeroom). Labourer is unlimited: it's what's left when the named trades run out.
 // stations: the trade's furniture at its workplace, marked for a new player till they've been to each;
 // tips: first-day lines for a player new to it (short, plain, the innkeeper's voice: docs in art/brand).
 {
@@ -10,18 +11,20 @@
     // the kitchen. "serves": the services at the workplace a trade sees to (and prices on the sign).
     { "name": "Innkeeper", "label": "innkeeper", "description": "Keeps the bar and the rooms, hears everything said over the counter, and points adventuring parties at work, on whatever that's worth.",
       "workplace": "Inn", "workPriorities": { "Cook": 1 }, "brokers": true, "serves": [ "Drink", "MixedDrink", "Lodging", "Quest" ], "holdsKeys": true,
-      "stations": [ "AleCask", "Shelf" ],
+      "stations": [ "AleCask", "Shelf", "BarCounter" ],
       "tips": [ "Thirsty adventurers come to the bar. The bubble over a head says what they're after; a ! means it's yours to pour.",
                 "Hold ~F~ at the ale cask to pour. ~AD~ tilts the tankard: less foam, more patience.",
-                "Your prices hang on the sign (~J~). Too dear and they go thirsty. Too cheap and so do you." ],
-      "kit": [ { "def": "Mop" } ] },
+                "Your prices hang on the sign (~J~). Too dear and they go thirsty. Too cheap and so do you.",
+                "Lucky Lou's under the bar. You'll know when. ~F~ at the counter." ],
+      "kit": [ { "def": "Mop" } ], "stash": [ { "def": "LuckyLou" } ] },
     { "name": "Cook", "label": "cook", "description": "Keeps the inn's kitchen: the stew pot by taste, the larder, the bowls, and the meals out to the tables.",
       "workplace": "Inn", "workPriorities": { "Cook": 1 }, "serves": [ "Meal" ], "namesShop": false, "skills": { "Cooking": 5 },
       "stations": [ "StewPot", "Larder", "ServingHatch", "WashTub" ],
       "tips": [ "The kitchen's yours. Fill the pot from the larder, then hold ~F~ at it to stir. A simmer, not a boil.",
                 "Season a pinch at a time (~F~) and taste with ~Space~. Salt doesn't come back out.",
-                "Bowls go out through the hatch and come back dirty. Heroes don't wash up. The wash tub's for that." ],
-      "kit": [ { "def": "Mop" } ] },
+                "Bowls go out through the hatch and come back dirty. Heroes don't wash up. The wash tub's for that.",
+                "The kitchen knife's on you. If bandits come, it does more than onions. Not much more." ],
+      "kit": [ { "def": "Mop" }, { "def": "KitchenKnife" } ] },
     { "name": "Blacksmith", "label": "blacksmith", "description": "Works the forge: blades, tools and repairs.",
       "workplace": "Smithy", "workPriorities": { "Craft": 1 },
       "knows": [ "Forge" ], "skills": { "Crafting": 6 },
@@ -30,15 +33,17 @@
                 "A dull edge goes to the grindstone. A chipped one to the forge, then the anvil. ~F~ does the work.",
                 "The carter leaves iron ore in the chest. Smelt it at the forge: keep the fire orange, then beat the bloom on the anvil.",
                 "Three iron bars and a strip of leather make a short sword. Some hero will name it. You won't get a mention.",
-                "Your prices hang on the sign (~J~). Every hero calls it robbery. Most pay anyway." ],
+                "Your prices hang on the sign (~J~). Every hero calls it robbery. Most pay anyway.",
+                "Your hammer's a weapon in a pinch. You can make yourself a better one. Nobody's stopping you." ],
       "kit": [ { "def": "Hammer" }, { "def": "Whetstone" }, { "def": "IronBar", "count": 2 }, { "def": "Leather", "count": 2 }, { "def": "Wood", "count": 4 } ] },
     { "name": "Healer", "label": "healer", "description": "An empath: lays on hands to take others' wounds into themselves, then mends them with the gift.",
       "workplace": "Shrine", "workPriorities": { "Doctor": 1 }, "skills": { "Medicine": 6 }, "mana": 100,
       "stations": [ "StrawPallet", "MeditationStone" ],
       "tips": [ "The wounded find their way to the shrine, each with a heroic story. A bandage over a head means they want healing.",
                 "Feel a wound over before you mend it. You'll know it by feel, and only by feel.",
-                "Your gift runs on mana (~Y~). Sit a while at the meditation stone to fill it back up." ],
-      "kit": [ { "def": "Bandage", "count": 4 } ] },
+                "Your gift runs on mana (~Y~). Sit a while at the meditation stone to fill it back up.",
+                "The staff's for walking. And for keeping a raider at arm's length, plus a staff." ],
+      "kit": [ { "def": "Staff" }, { "def": "Bandage", "count": 4 } ] },
     // The Carpenter is benched for now: building and fletching come back as a trade of its own later.
     { "name": "Tinker", "label": "tinker", "description": "Locks and clockwork: opens what adventurers drag home, fits locks and cuts keys, builds contraptions for the road, mends wagons and knows what a curio's worth.",
       "workplace": "TinkerShop", "workPriorities": { "Craft": 1 }, "skills": { "Crafting": 6, "Construction": 4 }, "mendsTown": true,
@@ -47,8 +52,9 @@
       "tips": [ "Strongboxes, wagons and curios end up on your bench. Hold ~F~ there to start.",
                 "Feel a strongbox over for traps before you pick it. Fingers don't grow back.",
                 "When raiders bring the bridge down, it's yours to mend: take 2 wood to the gap and press ~F~.",
-                "Your prices hang on the sign (~J~). A curio's worth what you say it is. Mostly." ],
-      "kit": [ { "def": "Lockpicks" }, { "def": "IronBar", "count": 4 }, { "def": "Wood", "count": 2 } ] },
+                "Your prices hang on the sign (~J~). A curio's worth what you say it is. Mostly.",
+                "A dagger won't hold off a raid. A crossbow from your bench might: two iron bars and some wood." ],
+      "kit": [ { "def": "Dagger" }, { "def": "Lockpicks" }, { "def": "IronBar", "count": 4 }, { "def": "Wood", "count": 2 } ] },
     { "name": "Labourer", "label": "labourer", "description": "Hauls, chops and digs for anyone who'll pay.", "unlimited": true, "gathers": true }
   ]
 }

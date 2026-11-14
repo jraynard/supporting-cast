@@ -523,7 +523,7 @@ faces show the top-left of their texture at the face's size, they don't stretch 
 repeat every 8 px: one log end, one log's curve of bark.
 
 An item def's `held` names its shape in hand (`sword`, `longsword`, `knife`, `axe`, `pick`, `hammer`,
-`mace`, `club`, `spear`, `bow`, `rod`, `tongs`, `saw`, `chisel`, `brush`). A person holds the tool their
+`mace`, `club`, `spear`, `bow`, `rod`, `tongs`, `saw`, `chisel`, `brush`, `staff`, `crossbow`). A person holds the tool their
 job works with (`Job.ToolKind`, found by `Crafting.ToolInHand`), else their weapon.
 
 ## The dragon

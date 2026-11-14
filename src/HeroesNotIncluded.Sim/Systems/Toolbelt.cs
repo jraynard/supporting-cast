@@ -77,6 +77,17 @@ public static class Toolbelt
     /// <summary>The kit everyone starts with: a stone axe and a stone pick (see <c>Simulation.GiveStartingPack</c>).</summary>
     public static readonly string[] StartingTools = ["StoneAxe", "StonePick"];
 
+    /// <summary>
+    /// Take the <see cref="StartingTools"/> off the belt: a trade that doesn't gather (all but the
+    /// labourer) has no use for them, and they'd only clutter the belt.
+    /// </summary>
+    public static void TakeStartingTools(Simulation sim, Entity creature)
+    {
+        foreach (var e in Of(sim, creature))
+            if (Array.IndexOf(StartingTools, sim.World.Get<Thing>(e).Def.Name) >= 0)
+                sim.DestroyThing(e);
+    }
+
     /// <summary>Put the <see cref="StartingTools"/> on an empty belt.</summary>
     public static void GiveStartingTools(Simulation sim, Entity creature)
     {

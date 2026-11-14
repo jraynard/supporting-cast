@@ -168,6 +168,53 @@ def prop_sign_anvil():
     return img
 
 
+def prop_sign_gear():
+    """The tinker's sign: a black iron cogwheel on the board, eight teeth round a hub with its axle hole,
+    a glint along its upper left."""
+    img = sign_blank(48)
+    px = img.load()
+    iron, lit = (34, 32, 34, 255), (150, 146, 150, 255)
+    cx, cy = 16, 16.5
+    for y in range(S):
+        for x in range(S):
+            dx, dy = x + 0.5 - cx, y + 0.5 - cy
+            r = math.hypot(dx, dy)
+            a = math.atan2(dy, dx)
+            tooth = math.cos(a * 8) > 0.35                                     # eight square-ish teeth
+            if r < 2.2:
+                continue                                                      # the axle hole: the board shows through
+            if r < 6.6 or (tooth and r < 8.6):
+                if 3.6 < r < 4.6 and math.cos(a * 4) > 0.2:
+                    continue                                                  # spokes: four windows in the web
+                px[x, y] = lit if (dx + dy < -7.0 and r > 6.0) else iron
+    return img
+
+
+def prop_sign_rune():
+    """The healer's sign: a mending bindrune painted in pale gold on the board, a stave with its arms
+    raised to ward, and a diamond bound on below it."""
+    img = sign_blank(49)
+    px = img.load()
+    gold, deep = (232, 204, 120, 255), (150, 110, 52, 255)
+
+    def dot(x, y, c=gold):
+        if 0 <= x < S and 0 <= y < S:
+            px[x, y] = c
+
+    def stroke(x0, y0, x1, y1):
+        n = int(max(abs(x1 - x0), abs(y1 - y0)) * 2) + 1
+        for k in range(n + 1):
+            t = k / n
+            x, y = x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
+            dot(round(x), round(y) + 1, deep)                                 # the painted stroke's shadow
+            dot(round(x), round(y))
+    stroke(16, 8, 16, 24)                                                   # the stave
+    stroke(16, 13, 11, 8); stroke(16, 13, 21, 8)                           # arms raised, warding
+    stroke(16, 16, 12, 20); stroke(12, 20, 16, 24)                         # a diamond bound on below: kept whole
+    stroke(16, 16, 20, 20); stroke(20, 20, 16, 24)
+    return img
+
+
 def generate():
     save(mess_puddle(), "ui/mess_puddle")
     save(mess_mud(), "ui/mess_mud")
@@ -176,6 +223,8 @@ def generate():
     save(item_mop(), "items/mop")
     save(prop_sign_board(), "props/sign_board")
     save(prop_sign_anvil(), "props/sign_anvil")
+    save(prop_sign_gear(), "props/sign_gear")
+    save(prop_sign_rune(), "props/sign_rune")
 
 
 if __name__ == "__main__":

@@ -34,7 +34,8 @@ public readonly record struct CreaturePose(
     int Facing,
     float Roll,
     bool EventFired,
-    bool TagStarted
+    bool TagStarted,
+    string View = "down"
 );
 
 /// <summary>
@@ -370,7 +371,7 @@ public sealed class CreatureAnimator
         var fired = anim != null && anim.EventFrame >= 0 && frameIndex == anim.EventFrame && st.LastFrame != frameIndex;
         st.LastFrame = frameIndex;
         st.Shown = frame;
-        return new CreaturePose(sheet, anim, frame, tag, facing, roll, fired, started);
+        return new CreaturePose(sheet, anim, frame, tag, facing, roll, fired, started, st.View);
     }
 
     /// <summary>True once per <paramref name="interval"/> seconds of animation time for this creature (Zzz, embers).</summary>

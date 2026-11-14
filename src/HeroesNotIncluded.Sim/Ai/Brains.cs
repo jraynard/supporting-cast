@@ -253,8 +253,9 @@ public sealed class HumanBrain : IBrain
             && Defence.Respond(sim, pawn, foe) is { } defend)
             return defend;
 
-        // 1b. The raid is here: the unarmed take a weapon from the muster rack.
-        if (creature.Faction == Faction.Village && Militia.Muster.ArmFromRack(sim, pawn) is { } arm)
+        // 1b. The raid is here: the unarmed reach for what they keep at work (the innkeeper's
+        // cudgel under the bar), and anyone without a proper weapon takes one from the muster rack.
+        if (creature.Faction == Faction.Village && (Militia.Stashes.ArmFrom(sim, pawn) ?? Militia.Muster.ArmFromRack(sim, pawn)) is { } arm)
             return arm;
 
         // 2. Urgent needs. 
@@ -282,7 +283,7 @@ public sealed class HumanBrain : IBrain
             return party;
 
         // 3. Gear lying around (a quick order between jobs), then work by the pawn's priorities.
-        if ((Militia.Muster.ReturnArms(sim, pawn) ?? FindGear(sim, pawn) ?? FindTool(sim, pawn)) is { } gear)
+        if ((Militia.Muster.ReturnArms(sim, pawn) ?? Militia.Stashes.PutBack(sim, pawn) ?? FindGear(sim, pawn) ?? FindTool(sim, pawn)) is { } gear)
             return gear;
         if (_work.TryGiveJob(sim, pawn) is { } job)
             return job;
@@ -325,10 +326,11 @@ public sealed class HumanBrain : IBrain
             if ((!dressed || !w.IsAlive(worn[slot])) && !outfit.KeepBare(Outfit.Of(slot)))
                 need |= 1 << i;
         }
-        var needWeapon = !w.Has<NonViolent>(pawn) && !outfit.Unarmed && (!w.TryGet<Equipment>(pawn, out var eq) || !w.IsAlive(eq.Weapon));
+        // A trade's makeshift weapon is traded up for a proper one lying about (it's put away, not dropped).
+        var needWeapon = !w.Has<NonViolent>(pawn) && !outfit.Unarmed && !Militia.MilitiaSystem.ArmedProperly(sim, pawn);
         if (need == 0 && !needWeapon)
             return null;
-        var item = AiQueries.FindNearestItem(sim, pawn, (_, d) => d.Apparel is { } a ? (need & (1 << (int)a.Slot)) != 0 : needWeapon && d.Weapon != null, 40);
+        var item = AiQueries.FindNearestItem(sim, pawn, (_, d) => d.Apparel is { } a ? (need & (1 << (int)a.Slot)) != 0 : needWeapon && d.Weapon is { Makeshift: false }, 40);
         return item.IsNull ? null : new EquipJob(item);
     }
 

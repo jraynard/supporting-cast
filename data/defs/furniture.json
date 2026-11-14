@@ -47,7 +47,8 @@
       "name": "BarCounter", "label": "bar counter", "shapeOf": "Table", "size": [3, 1], "category": "Building", "solid": true, "climbable": true, "sprite": "buildings/bar_counter",
       "description": "A long counter three cells wide, where the drinks are poured and the talk is heard.",
       "maxHp": 200, "flammability": 1.0, 
-      "building": { "work": 260, "surfaceHeight": 0.86, "bar": true, "cost": [ { "def": "Wood", "count": 18 } ] },
+      // Under it, the innkeeper's stash (trades.json "stash"): Lucky Lou, and nothing else.
+      "building": { "work": 260, "surfaceHeight": 0.86, "bar": true, "storageStacks": 1, "stash": true, "cost": [ { "def": "Wood", "count": 18 } ] },
       "model": [
         { "min": [0.04, 0.3, 0], "max": [2.96, 0.8, 0.08], "top": "props/timber_dark", "side": "props/timber_dark" },
         { "min": [0.06, 0.34, 0.08], "max": [2.94, 0.76, 0.8], "top": "props/planks", "side": "props/planks" },

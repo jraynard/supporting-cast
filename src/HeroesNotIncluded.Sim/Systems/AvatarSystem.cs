@@ -349,11 +349,22 @@ public sealed class AvatarSystem : ISimSystem
             return new(AvatarActionKind.Pour, Work.PourSession.ServingsLeft(sim, site) <= 0 ? $"The {w.Get<Thing>(site).Label} is dry"
                 : Work.Vessels.CleanOn(sim, avatar, cask.Into).IsNull ? $"Pour {sim.Defs.Thing(cask.Pours).Label} (no clean {sim.Defs.Thing(cask.Into).Label})"
                 : $"Pour {sim.Defs.Thing(cask.Pours).Label}", cell, site);
+        // A trade's stash (the innkeeper's cudgel under the bar) is theirs alone: anyone else doesn't
+        // know it's there. Its holder reaches in for what's kept there, or puts it back.
+        var stash = Militia.Stashes.IsStash(sim, site);
+        if (stash && Militia.Stashes.Reaches(sim, avatar, site))
+        {
+            if (!held.IsNull && sim.HasRoomFor(site, w.Get<Thing>(held).Def, w.Get<Thing>(held).Material))
+                return new(AvatarActionKind.Store, $"Put {w.Get<Thing>(held).Label} back under the {w.Get<Thing>(site).Label}", cell, site);
+            if (sim.StoredIn(site).FirstOrDefault(e => w.Get<Thing>(e).Def.Weapon != null) is { IsNull: false } kept
+                && !sim.Reservations.IsReservedByOther(kept, avatar))
+                return new(AvatarActionKind.Equip, $"Reach under the {w.Get<Thing>(site).Label} for {w.Get<Thing>(kept).Label}", cell, kept);
+        }
         // The muster rack takes weapons only, and the town may pay for them.
         var rack = Militia.MilitiaSystem.IsRack(sim, site);
         if (!held.IsNull && rack && Militia.MilitiaSystem.IsWeapon(sim, held) && sim.HasRoomFor(site, w.Get<Thing>(held).Def, w.Get<Thing>(held).Material))
             return new(AvatarActionKind.Store, sim.Militia.RackLabel(sim, held), cell, site);
-        if (!held.IsNull && !rack && IsContainer(sim, site) && sim.HasRoomFor(site, w.Get<Thing>(held).Def, w.Get<Thing>(held).Material))
+        if (!held.IsNull && !rack && !stash && IsContainer(sim, site) && sim.HasRoomFor(site, w.Get<Thing>(held).Def, w.Get<Thing>(held).Material))
             return new(AvatarActionKind.Store, w.Get<Thing>(site).Def.Building is { Hatch: true }
                 ? $"Put {w.Get<Thing>(held).Label} up on the {w.Get<Thing>(site).Label}"
                 : $"Put {w.Get<Thing>(held).Label} in the {w.Get<Thing>(site).Label}", cell, site);
@@ -379,7 +390,7 @@ public sealed class AvatarSystem : ISimSystem
         {
             if (rack)
                 return new(AvatarActionKind.OpenStorage, sim.Militia.Mustering ? "Take up arms from the muster rack" : "Look over the muster rack", cell, site);
-            if (IsContainer(sim, site))
+            if (IsContainer(sim, site) && !stash)
                 return new(AvatarActionKind.OpenStorage, $"Open the {w.Get<Thing>(site).Label}", cell, site);
         }
 

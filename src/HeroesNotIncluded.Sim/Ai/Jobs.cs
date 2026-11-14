@@ -227,7 +227,7 @@ public sealed class EquipJob(Entity item) : Job
         if (Get<Thing>(one).Def.Apparel != null)
             Sim.WearItem(Pawn, one);
         else
-            Sim.EquipItem(Pawn, one);
+            Inventory.PutOn(Sim, Pawn, one); // their own weapon (a trade's makeshift one) is put away, not dropped
     }
 }
 

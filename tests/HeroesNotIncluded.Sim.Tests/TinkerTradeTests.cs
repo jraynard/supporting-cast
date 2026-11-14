@@ -253,11 +253,23 @@ public class TinkerTradeTests
     private static Entity StoreroomDoor(Simulation sim) =>
         sim.World.Query<LockCut>().Single(e => Locksmithing.IsDoor(sim, e));
 
+    /// <summary>
+    /// The storeroom door, once the innkeeper's done with it: the round's been running a while, and
+    /// they may just have let themselves through (locked again once they're clear, <see cref="RelockSystem"/>).
+    /// </summary>
+    private static Entity SettledStoreroomDoor(Simulation sim)
+    {
+        var door = StoreroomDoor(sim);
+        for (var t = 0; t < SimClock.TicksPerHour && sim.World.Has<Relock>(door); t += 20)
+            sim.TickMany(20);
+        return door;
+    }
+
     [Fact]
     public void TheStoreroomStartsLockedAndTheInnkeeperHoldsTheKey()
     {
         var (sim, me, _) = ExpeditionTests.Round("Healer");
-        var door = StoreroomDoor(sim);
+        var door = SettledStoreroomDoor(sim);
         Assert.True(sim.IsLocked(door));
         Assert.Equal("Inn", sim.World.Get<PresetBuilding>(Buildings.Of(sim, door)).Def.Name);
         var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
@@ -302,7 +314,7 @@ public class TinkerTradeTests
     {
         var (sim, me, _) = ExpeditionTests.Round("Healer");
         var w = sim.World;
-        var door = StoreroomDoor(sim);
+        var door = SettledStoreroomDoor(sim);
         var keeper = sim.Creatures().Single(e => w.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
         var keg = sim.AvailableItems().First(e => w.Get<Thing>(e).Def.Name == "Keg");
         var stranger = sim.Creatures().First(e => e != keeper && e != me && w.Has<Trade>(e) && !w.Has<Adventurer>(e));

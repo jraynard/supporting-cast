@@ -180,6 +180,13 @@ public sealed class AttackDef
     /// </summary>
     public float WindupSeconds { get; set; }
 
+    /// <summary>
+    /// Something to hold off a raider with, not to fight a war: a trade's own (the cook's knife,
+    /// the smith's hammer). The muster counts its holder as unarmed (<c>Militia</c>), raids don't
+    /// size up against it, and an AI with nothing better shelters unless the foe is on top of them.
+    /// </summary>
+    public bool Makeshift { get; set; }
+
     [JsonIgnore]
     public int WindupTicks => (int)((WindupSeconds > 0 ? WindupSeconds : Ranged ? 1f : 0.8f) * SimClock.TicksPerSecond);
 

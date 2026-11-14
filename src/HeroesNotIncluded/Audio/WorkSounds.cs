@@ -127,6 +127,12 @@ public sealed class WorkSounds(AudioEngine audio)
             case LoupeSession s:
                 Count(s.ReadCount, Sounds.Click);
                 break;
+            case ProbeSession s:
+                // A tick in the fingers when the probe catches (the feel it shows), not again till it's let go.
+                if (!_flag && s.Feel > 0.7f)
+                    audio.Play(Sounds.Click, gain: 0.6f, pitch: 0.8f);
+                _flag = s.Feel > 0.7f || (_flag && s.Feel > 0.45f);
+                break;
         }
     }
 

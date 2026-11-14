@@ -105,7 +105,9 @@ Ideas for depth, to build when each trade's milestone comes round.
   its unarmed folk and pays the smith from a town purse for each new one hung on the muster rack
   by the well. When the raiders actually arrive the bell rings and the town musters: villagers
   without a weapon take one from the rack (players by hand), and the armed fight. The rack is left alone
-  otherwise. The town's arms don't count toward a raid's size.
+  otherwise. The town's arms don't count toward a raid's size. Each trade starts with a makeshift
+  weapon of its own (the cook's knife, the smith's hammer, the innkeeper's Lucky Lou under the bar):
+  enough to hold off a raider when cornered, not enough to skip the muster.
 - Running the forge is play in its own right: the bellows are, so far. Still to come: lighting
   and banking it by hand. It lights itself for the work now, and the smith feeds it from the bin.
 - Repair starts from what's actually wrong with the piece. A dull edge goes to the sharpening

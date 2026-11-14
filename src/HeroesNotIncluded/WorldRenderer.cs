@@ -717,15 +717,20 @@ public sealed class WorldRenderer(TextureAtlas atlas)
         }
         // A dodge's tumble turns about their middle, as a flyer's bank does.
         var tumbling = w.TryGet<Sim.Combat.FreeMover>(e, out var free) && sim.Clock.Tick < free.DashUntil;
-        // Weapon sheathed (free movement), it's slung across their back, just behind them.
-        if (w.Has<Sim.Combat.FreeMover>(e) && !free.Drawn && !tumbling && !c.Dead && !c.Downed
-            && w.TryGet<Equipment>(e, out var slung) && w.IsAlive(slung.Weapon) && w.Get<Thing>(slung.Weapon).Def is { Held: not null } slungDef)
-            DrawSlung(S(slungDef.Sprite), feet, slungDef.Held == "spear" || slungDef.Held == "longsword" ? 1.05f : 0.75f, pose.Facing, color, level);
+        // Weapon sheathed (free movement), it's slung across their back: behind them as they face
+        // us, over their back (and hair, and cloak) as they walk away.
+        var slungDef = w.Has<Sim.Combat.FreeMover>(e) && !free.Drawn && !tumbling && !c.Dead && !c.Downed
+            && w.TryGet<Equipment>(e, out var slung) && w.IsAlive(slung.Weapon) && w.Get<Thing>(slung.Weapon).Def is { Held: not null } sd ? sd : null;
+        var backToUs = pose.View is "up" or "upside";
+        if (slungDef != null && !backToUs)
+            DrawSlung(S(slungDef.Sprite), feet + _cam.Forward * 0.03f, SlungSize(slungDef), pose.Facing, color, level);
         BillboardFrame(sheet, pose.Frame, feet, pose.Facing, pose.Roll, color, level, aboutCenter: airborne || tumbling);
         var nudge = 0;
         foreach (var (layer, layerColor) in LookLayers(sim, e, color))
             if (HumanLook.LayerFrame(sheet, layer, pose.Frame) is { } lf)
                 BillboardFrame(layer, lf, feet - _cam.Forward * (++nudge * LayerStep), pose.Facing, pose.Roll, layerColor, level, aboutCenter: airborne || tumbling);
+        if (slungDef != null && backToUs) // the strap over the other shoulder, seen from behind
+            DrawSlung(S(slungDef.Sprite), feet - _cam.Forward * ((nudge + 1) * LayerStep + 0.01f), SlungSize(slungDef), -pose.Facing, color, level);
 
         if (sheet.Points.TryGetValue("mouth", out var m))
         {
@@ -800,15 +805,16 @@ public sealed class WorldRenderer(TextureAtlas atlas)
 
     /// <summary>
     /// A sheathed weapon (<see cref="Sim.Combat.FreeMover.Drawn"/> off) across someone's back: its
-    /// item art upright to the camera, tilted over a shoulder, a hair behind them, so the body hides
-    /// most of it and the hilt and tip show.
+    /// item art upright to the camera, tilted over a shoulder, at <paramref name="at"/>: a hair
+    /// behind them as they face us (the body hides most of it and the hilt and tip show), over
+    /// their back as they face away.
     /// </summary>
-    private void DrawSlung(in Sprite sprite, float3 feet, float size, int facing, uint color, uint level)
+    private void DrawSlung(in Sprite sprite, float3 at, float size, int facing, uint color, uint level)
     {
         // Item art runs corner to corner, grip at the bottom left: upright, it leans one way; mirrored with the body.
         var r = _cam.Right * (size * (facing >= 0 ? 1f : -1f));
         var u = _cam.Up * size;
-        var middle = feet + _cam.Up * 0.62f + _cam.Forward * 0.03f;
+        var middle = at + _cam.Up * 0.62f;
         _quads.Add(new Quad
         {
             Origin = middle - r * 0.5f + u * 0.5f,
@@ -820,6 +826,9 @@ public sealed class WorldRenderer(TextureAtlas atlas)
             Uv = sprite.Uv,
         });
     }
+
+    /// <summary>How big a slung weapon is drawn: the long ones reach past the head.</summary>
+    private static float SlungSize(ThingDef def) => def.Held is "spear" or "longsword" or "staff" or "crossbow" ? 1.05f : 0.75f;
 
     /// <summary>Where DrawAnimated put someone's hand this frame, if it moved it (sitting); else the held item goes beside them.</summary>
     private float3? _heldAt;

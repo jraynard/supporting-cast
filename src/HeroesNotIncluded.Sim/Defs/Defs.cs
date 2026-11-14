@@ -393,6 +393,13 @@ public sealed class BuildingProps
     /// <summary>A bar: mixed drinks are made at it (<c>Work.MixSession</c>).</summary>
     public bool Bar { get; set; }
 
+    /// <summary>
+    /// A hiding place for what a trade keeps at its workplace (<see cref="TradeDef.Stash"/>: the
+    /// innkeeper's cudgel under the bar). It holds only that, no job takes from it, and only the
+    /// holder of a trade that stashes there reaches in (<c>Militia.Stashes</c>).
+    /// </summary>
+    public bool Stash { get; set; }
+
     /// <summary>Somewhere to sit: a customer served a drink or a meal takes it to one (<c>Hospitality.SavourJob</c>).</summary>
     public bool Seat { get; set; }
 

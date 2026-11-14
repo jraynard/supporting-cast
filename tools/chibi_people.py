@@ -2529,7 +2529,8 @@ WOOD = ramp((150, 104, 62), 5)
 GRIP = ramp((96, 62, 44), 4)
 STRING = (236, 226, 200, 255)
 METAL = [grey(v) for v in DYE_GREYS]           # tinted by the item's tier (HumanLook.MetalTint)
-HELD_SHAPES = ("sword", "longsword", "knife", "axe", "pick", "hammer", "mace", "club", "spear", "bow", "rod", "tongs", "saw", "chisel", "brush")
+HELD_SHAPES = ("sword", "longsword", "knife", "axe", "pick", "hammer", "mace", "club", "spear", "bow", "rod", "tongs", "saw", "chisel", "brush",
+               "staff", "crossbow")
 
 
 def held_layers(F, shape):
@@ -2594,6 +2595,17 @@ def held_layers(F, shape):
         p(plain, limb, WOOD)
         line(plain, P(*tips[0]), P(*tips[1]), STRING)
         p(plain, wstrip([at(-0.9, 2.3), at(0.9, 2.3)], [1.4, 1.4], steps=2), GRIP, radius=0.3)
+    elif shape == "staff":                                                    # a long walking staff, a knob at its head
+        p(plain, wstrip([at(-6), at(13)], [1.0, 1.0], steps=2), WOOD)
+        c = at(13.6)
+        p(plain, ellipse([c[0] - 1.3 * Z, c[1] - 1.3 * Z, c[0] + 1.3 * Z, c[1] + 1.3 * Z]), GRIP, radius=0.6)
+    elif shape == "crossbow":                                                 # the stock along the forearm, the bow square across its head
+        p(plain, wstrip([at(-3), at(7)], [1.4, 1.1], steps=2), WOOD)
+        tips = (at(6.2, -4.2), at(6.2, 4.2))
+        line(plain, P(*tips[0]), P(*at(2.6)), STRING)
+        line(plain, P(*tips[1]), P(*at(2.6)), STRING)
+        p(metal, wstrip([tips[0], at(7.2), tips[1]], [0.5, 0.9, 0.5], steps=5), METAL)
+        p(metal, wstrip([at(0.6, -0.9), at(0.6, -2.0)], [0.6, 0.6], steps=2), METAL)       # the latch
     elif shape == "rod":
         rod = wstrip([at(-1.5), at(8), at(16, -1.0)], [0.9, 0.6, 0.3], steps=5)
         p(plain, rod, WOOD)

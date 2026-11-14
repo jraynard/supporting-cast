@@ -17,6 +17,9 @@ public static class Defence
     /// <summary>The same for an adventurer: they go looking for the fight.</summary>
     public const int AdventurerRange = 16;
 
+    /// <summary>How near a foe has to be before someone with only a makeshift weapon stands and fights it, in cells.</summary>
+    public const int CorneredRange = 2;
+
     /// <summary>How far off a dragon is everyone's business: the whole town hears it.</summary>
     public const int DragonRange = 96;
 
@@ -58,7 +61,9 @@ public static class Defence
         var w = sim.World;
         var tile = w.Get<Position>(pawn).Cell;
         var at = w.Get<Position>(foe).Cell;
-        if (CanFight(sim, pawn) && sim.Regions.CanReach(tile, at, PathEnd.Touch))
+        // A trade's makeshift weapon is for when they're cornered: further off, they get away.
+        if (CanFight(sim, pawn) && sim.Regions.CanReach(tile, at, PathEnd.Touch)
+            && (!Militia.MilitiaSystem.ArmedMakeshift(sim, pawn) || Map.Distance(tile, at) <= CorneredRange))
             return new DefendJob(foe);
         if (sim.Rooms.RoomAt(tile) is { Indoors: true } && Map.Distance(tile, at) > 2)
             return new HideJob();
