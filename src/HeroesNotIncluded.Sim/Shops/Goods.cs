@@ -71,9 +71,9 @@ public static class Goods
         return true;
     }
 
-    /// <summary>What adventurers buy: weapons, armor (apparel that turns a blade or a blow), the empath's charms and the tinker's contraptions.</summary>
+    /// <summary>What adventurers buy: weapons, armor (apparel that turns a blade or a blow), the empath's charms, the tinker's contraptions and the cook's rations.</summary>
     public static bool IsGear(ThingDef def) =>
-        def.Weapon != null || def.Apparel is { } a && (a.Sharp > 0 || a.Blunt > 0) || def.Charm || def.Contraption != null;
+        def.Weapon != null || def.Apparel is { } a && (a.Sharp > 0 || a.Blunt > 0) || def.Charm || def.Contraption != null || def.Rations;
 
     /// <summary>
     /// Would they be better off with this? A weapon of the kind they fight with (in hand or at
@@ -91,6 +91,9 @@ public static class Goods
             return w.TryGet<Charm>(item, out var c) && mine.Count < Healing.Charms.MostCarried
                 && !mine.Exists(e => w.Get<Charm>(e).Mending == c.Mending);
         }
+        if (def.Rations)
+            // Food for the road: one bundle, judged by how it's made (it can't be smelt through the cloth).
+            return Work.Rations.Carried(sim, who).Count < Work.Rations.MostCarried;
         if (def.Contraption is { } contraption)
         {
             // Kit for the road: a couple, and not two that do the same.
@@ -119,7 +122,8 @@ public static class Goods
         if (sim.World.TryGet<Charm>(item, out var charm))
             return Healing.Charms.Worth * (1f + 0.5f * charm.Extra);
         var quality = QualityWorth(sim.World.TryGet<Crafted>(item, out var made) ? made.Quality : Quality.Plain);
-        return sim.World.Get<Thing>(item).Def.Contraption != null ? Tinkering.Contraptions.Worth * quality : quality;
+        var def = sim.World.Get<Thing>(item).Def;
+        return def.Contraption != null ? Tinkering.Contraptions.Worth * quality : def.Rations ? Work.Rations.Worth * quality : quality;
     }
 
     /// <summary>How much better made pieces are worth, by quality.</summary>
@@ -138,7 +142,7 @@ public static class Goods
         if (w.Has<ForSale>(item))
             w.Remove<ForSale>(item);
         var def = w.Get<Thing>(item).Def;
-        if (def.Charm || def.Contraption != null)
+        if (def.Charm || def.Contraption != null || def.Rations)
         {
             Inventory.Stow(sim, who, item);
             return;

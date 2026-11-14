@@ -734,6 +734,7 @@ public sealed partial class VillageGame
             if (!canTake)
                 ImGui.EndDisabled();
             EatButton(item);
+            SmellButton(item);
             ImGui.SameLine(0, 8);
             ImGui.Text($"{(w.IsAlive(item) ? w.Get<Stack>(item).Count : 0)} {t.Label}");
             ImGui.PopID();

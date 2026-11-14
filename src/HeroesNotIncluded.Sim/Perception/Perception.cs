@@ -45,7 +45,7 @@ public readonly record struct KnownPiece(string Label, Work.Glow Glow, float Tem
 /// seasoning it wants.
 /// </summary>
 public readonly record struct KnownPot(Entity Pot, string Contents, Work.Surface Surface, float Heat, float Flame, bool Lit, float Doneness,
-    bool Cooked, string? Caught, int Bowls, bool Empty);
+    bool Cooked, string? Caught, int Bowls, bool Empty, string Tastes = "");
 
 /// <summary>How a spot of mess looks: blood is just a dark stain.</summary>
 public enum MessLook : byte
@@ -280,11 +280,25 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         // A session in hand has the pot's newest state.
         foreach (var e in sim.World.Each<Work.WorkSession>())
             if (sim.World.Get<Work.WorkSession>(e) is Work.StewSession s && s.Pot == pot)
-                p = new Work.StewPot { In = p.In, Nutrition = p.Nutrition, Heat = s.Heat, Flame = s.Flame, Doneness = s.Doneness, Scorch = s.Scorch, Ladled = p.Ladled };
+                p = new Work.StewPot { In = p.In, Nutrition = p.Nutrition, Heat = s.Heat, Flame = s.Flame, Doneness = s.Doneness, Scorch = s.Scorch, Ladled = p.Ladled, Flavour = p.Flavour };
         var contents = string.Join(", ", p.In.Select(i => $"{i.Count} {i.Def.Label}"));
         var caught = p.Scorch > 0.35f ? "it's caught on the bottom" : p.Scorch > 0.12f ? "a little caught" : null;
         return new KnownPot(pot, contents, Work.Cooking.SurfaceOf(p.Heat), p.Heat, p.Flame, Work.Cooking.Lit(sim, pot), Math.Clamp(p.Doneness, 0f, 1f),
-            p.Cooked, caught, Work.Cooking.ServingsLeft(sim, pot), p.Empty);
+            p.Cooked, caught, Work.Cooking.ServingsLeft(sim, pot), p.Empty, p.Flavour.Words());
+    }
+
+    /// <summary>
+    /// What a bowl or a bundle of rations tastes of, in words (<see cref="Work.Flavour.Words"/>): plain
+    /// to anyone. Never whether it's turned, or how a bundle was tied. Null for anything else.
+    /// </summary>
+    public string? Tastes(Entity item)
+    {
+        var w = sim.World;
+        if (!w.IsAlive(item))
+            return null;
+        if (w.TryGet<Work.Dish>(item, out var dish))
+            return dish.Flavour.Words();
+        return w.TryGet<Work.Ration>(item, out var ration) ? ration.Flavour.Words() : null;
     }
 
     /// <summary>A charm, as this character can tell it (<see cref="KnownCharm"/>). Null if it isn't one.</summary>

@@ -26,6 +26,9 @@ public sealed class AdventurerKindDef : Def
     /// <summary>How free they are with coin: what a service is worth to them is its def's worth times this.</summary>
     public float Spend { get; set; } = 1f;
 
+    /// <summary>What they like the taste of: ordering a meal, they may say they fancy one of these (<c>Hospitality.Tastes</c>).</summary>
+    public List<Work.FlavourKind> Tastes { get; set; } = [];
+
     [JsonIgnore] public OutfitDef? OutfitDef { get; private set; }
     [JsonIgnore] public ThingDef? WeaponDef { get; private set; }
     [JsonIgnore] public List<ThingDef> ApparelDefs { get; } = [];

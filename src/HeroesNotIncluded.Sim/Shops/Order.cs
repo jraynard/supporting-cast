@@ -56,6 +56,9 @@ public sealed class Order
     /// <summary>When the asker last said it aloud (they repeat themselves while nobody takes it).</summary>
     public long LastAsked { get; set; }
 
+    /// <summary>For a meal: the flavour they said they fancied, if they said (<c>Hospitality.Tastes</c>).</summary>
+    public Work.FlavourKind? Craving { get; set; }
+
     /// <summary>Who knows of it, in the order they learned.</summary>
     public List<Entity> KnownBy { get; } = [];
 

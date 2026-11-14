@@ -81,13 +81,13 @@
     },
     {
       "name": "Honey", "label": "honey", "category": "Item", "mass": 0.2, "sprite": "items/berries", "stackLimit": 20,
-      "mixCue": "A", "drinkEffect": { "warming": 0.3, "rousing": 0.1 }, "flammability": 0.2, "maxHp": 10,
-      "description": "A spoon of honey from the comb."
+      "mixCue": "A", "drinkEffect": { "warming": 0.3, "rousing": 0.1 }, "flavour": { "sweet": 1 }, "flammability": 0.2, "maxHp": 10,
+      "description": "A spoon of honey from the comb. Sweetens a mix, or a stew."
     },
     {
       "name": "Herbs", "label": "herbs", "category": "Item", "mass": 0.1, "sprite": "items/herbs", "stackLimit": 20,
-      "mixCue": "D", "drinkEffect": { "numbing": 0.4, "rousing": 0.2 }, "flammability": 0.4, "maxHp": 10,
-      "description": "Bitter sprigs, dried. Numbing, and good for a headache."
+      "mixCue": "D", "drinkEffect": { "numbing": 0.4, "rousing": 0.2 }, "flavour": { "fresh": 1 }, "flammability": 0.4, "maxHp": 10,
+      "description": "Bitter sprigs, dried. Numbing, good for a headache, and they freshen a stew."
     },
     {
       // The inn's crockery (Work/Vessels): a drink is poured into a clean tankard, a bowl of stew
@@ -120,6 +120,15 @@
       "nutrition": 0.35, "cooked": true, "rotDays": 2, "leaves": "DirtyBowl", "flammability": 0.2, "maxHp": 20,
       "description": "Meat and berries simmered over the hearth in its pot. Filling, and warming going down.",
       "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.2], "top": "props/meal_top", "side": "props/stone_block" } ]
+    },
+    {
+      // Rations for the road (Work.Rations): three portions of food wrapped in a cloth and tied at
+      // the kitchen's prep table. Sold like gear; carried on a quest and eaten on the way. Not eaten
+      // in town (no nutrition of its own): it's for the road. How well it was tied doesn't show.
+      "name": "Rations", "label": "rations", "category": "Item", "mass": 0.8, "sprite": "items/cloth_undyed", "stackLimit": 1,
+      "rations": true, "rotDays": 5, "flammability": 0.6, "maxHp": 20,
+      "description": "Food for the road, wrapped in a cloth and tied off. What's inside, and how it keeps, you'll find out on the way.",
+      "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.22], "top": "props/linen", "side": "props/linen" } ]
     },
     {
       "name": "SimpleMeal", "label": "simple meal", "category": "Item", "mass": 0.4, "sprite": "items/meal", "stackLimit": 20,

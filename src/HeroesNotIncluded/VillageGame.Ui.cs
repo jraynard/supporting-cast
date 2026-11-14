@@ -933,6 +933,8 @@ public sealed partial class VillageGame
         if (w.TryGet<Stack>(e, out var stack) && stack.Count > 1)
             ImGui.Text($"Count: {stack.Count}");
         Bar("Condition", thing.Hp / thing.MaxHp, thing.Hp < thing.MaxHp * 0.5f ? Bad : Good);
+        if (View.Tastes(e) is { } tastes)
+            TextC(Dim, $"It tastes {tastes}.");
         DrawForSale(e, thing);
 
         var tile = _sim.LocationOf(e);

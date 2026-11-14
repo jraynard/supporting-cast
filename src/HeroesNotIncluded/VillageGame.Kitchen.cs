@@ -135,6 +135,95 @@ public sealed partial class VillageGame
         EndWork();
     }
 
+    /// <summary>Smelling food (or the pot): a sniff at a time, and what the last one said. Never the rot itself.</summary>
+    private void DrawSniff(SniffSession s)
+    {
+        BeginWork(s.Title, ("Space", "sniff"), ("Esc", "that'll do"));
+        TextC(Theme.Dim, s.IsPot ? "A pot hides what's in it. At best you'll know something's off." : "Fresh, fine, on the turn, or off. A practised nose is surer.");
+        ImGui.Spacing();
+        if (s.Sniffs == 0)
+            TextC(Theme.Dim, Controls.Keys("You haven't smelt it yet: ~Space~."));
+        else
+        {
+            var bad = s.Smell is "off" or "not quite right";
+            var colour = bad ? Theme.Bad : s.Smell == "on the turn" ? Theme.Warn : Theme.Good;
+            TextC(colour, $"It smells {s.Smell}.");
+            if (s.Sniffs > 1)
+                TextC(Theme.Dim, $"({s.Sniffs} sniffs.)");
+        }
+        EndWork();
+    }
+
+    /// <summary>
+    /// Packing rations: the cloth's four corners folded on cue, each from its side, then the cord
+    /// drawn and tied. The cord reads only as slack, snug or biting: how snug is the packer's own
+    /// judgement, and a slack-ish knot never shows.
+    /// </summary>
+    private void DrawPack(PackSession s)
+    {
+        if (s.Wrapped)
+            BeginWork(s.Title, ("F", "hold to draw the cord, let go to tie"), ("Esc", "leave it"));
+        else
+            BeginWork(s.Title, ("A/D", "fold the corner from its side, as the hand comes round"), ("Esc", "leave it"));
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(420, 150);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var max = min + size;
+        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+
+        // The cloth from above, its corners folding in, and the food in the middle.
+        var c = (min + max) * 0.5f;
+        var half = Gui.S(46);
+        var cloth = new float4(0.86f, 0.82f, 0.72f, 1f);
+        var a = c + new float2(-half, -half);
+        var b = c + new float2(half, half);
+        dl.AddRectFilled(in a, in b, Gui.U8(cloth), Gui.S(3), ImDrawFlags.None);
+        var food = Gui.S(16);
+        var fa = c - new float2(food, food);
+        var fb = c + new float2(food, food);
+        dl.AddRectFilled(in fa, in fb, Gui.U8(new float4(0.55f, 0.42f, 0.25f, 1f)), Gui.S(6), ImDrawFlags.None);
+        // Folded corners: a triangle over the middle, crisp or crumpled as it landed.
+        float2[] corners = [new(-1, -1), new(1, -1), new(1, 1), new(-1, 1)];
+        for (var i = 0; i < PackSession.Folds; i++)
+        {
+            if (i >= s.Folded)
+                continue;
+            var k = corners[i];
+            var side1 = c + new float2(k.X * half, -k.Y * half);
+            var side2 = c + new float2(-k.X * half, k.Y * half);
+            var shade = 0.7f + 0.25f * s.FoldMarks[i];
+            var crumple = (1f - s.FoldMarks[i]) * Gui.S(10);
+            var inward = c + k * crumple;
+            dl.AddTriangleFilled(in side1, in side2, in inward, Gui.U8(new float4(cloth.X * shade, cloth.Y * shade, cloth.Z * shade, 1f)));
+        }
+        // The cord, once it's wrapped: drawn tighter as it's pulled.
+        if (s.Wrapped)
+        {
+            var sag = Gui.S(18) * Math.Max(0f, 1f - s.Tension);
+            var l = c + new float2(-half - Gui.S(30), sag);
+            var r = c + new float2(half + Gui.S(30), sag);
+            var cord = new ImColor8(120, 84, 50, 255);
+            dl.AddLine(in l, in c, cord, Gui.S(3));
+            dl.AddLine(in c, in r, cord, Gui.S(3));
+        }
+        else
+        {
+            // The hand coming round: a mark sweeping toward the cue at the top.
+            var dir = s.NextSide < 0 ? "A" : "D";
+            var cueA = new float2(min.X + Gui.S(12), min.Y + Gui.S(12));
+            ImGui.SetCursorScreenPos(cueA);
+            TextC(s.OnCue ? Theme.Good : Theme.Dim, Controls.Keys($"Corner {s.Folded + 1} of {PackSession.Folds}: ~{dir}~"));
+            ImGui.SetCursorScreenPos(new float2(min.X, max.Y));
+        }
+        ImGui.Spacing();
+        if (!s.Wrapped)
+            Bar("", s.Sweep, s.OnCue ? Theme.Good : Theme.Dim);
+        else
+            TextC(s.Feel == "snug" ? Theme.Good : s.Feel == "biting" ? Theme.Bad : Theme.Dim, $"The cord feels {s.Feel}.");
+        EndWork();
+    }
+
     /// <summary>The stew pot beside you, between times: what's in it, how it looks, and its steps.</summary>
     private void DrawPotPanel()
     {
@@ -147,7 +236,7 @@ public sealed partial class VillageGame
             TextC(Theme.Dim, Controls.Keys("Empty. Bring it food from the larder: ~F~ at the pot puts in what you carry."));
         else
         {
-            Wrapped($"In it: {p.Contents}.");
+            Wrapped($"In it: {p.Contents}. It tastes {p.Tastes}.");
             TextC(p.Surface == Surface.Simmer ? Theme.Good : Theme.Dim, $"It's {Cooking.SurfaceLabel(p.Surface)}{(p.Lit ? "" : ", and the fire beside it is out")}.");
             if (p.Caught is { } caught)
                 TextC(Theme.Bad, Cap(caught) + ".");
@@ -160,6 +249,11 @@ public sealed partial class VillageGame
             ImGui.SameLine(0, 6);
             if (ImGui.SmallButton("Season it"u8))
                 Issue(new PotCommand(_avatar, p.Pot, PotStep.Season));
+            ImGui.SameLine(0, 6);
+            if (ImGui.SmallButton("Smell it"u8))
+                Issue(new PotCommand(_avatar, p.Pot, PotStep.Sniff));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip("Has anything in it turned? You can't pick out what. Better to smell it before it goes in.");
             if (p.Doneness >= Cooking.LadleFrom && p.Bowls > 0)
             {
                 ImGui.SameLine(0, 6);

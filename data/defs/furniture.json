@@ -138,6 +138,21 @@
       ]
     },
     {
+      // The kitchen's prep table (Work.PackSession): rations for the road are packed on it, three
+      // portions of food wrapped and tied.
+      "name": "PrepTable", "label": "prep table", "category": "Building", "solid": true, "sprite": "buildings/table",
+      "description": "A scrubbed board on trestles, a roll of cloth and a ball of cord. F here with three portions of food packs rations for the road.",
+      "maxHp": 100, "flammability": 1.0,
+      "building": { "work": 100, "surfaceHeight": 0.66, "prepTable": true, "cost": [ { "def": "Wood", "count": 8 } ] },
+      "model": [
+        { "min": [0.04, 0.12, 0.56], "max": [0.96, 0.88, 0.66], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.10, 0.18, 0], "max": [0.18, 0.82, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.82, 0.18, 0], "max": [0.90, 0.82, 0.56], "top": "props/planks", "side": "props/log_side" },
+        { "min": [0.14, 0.24, 0.66], "max": [0.46, 0.60, 0.70], "top": "props/linen", "side": "props/linen" },
+        { "min": [0.58, 0.40, 0.66], "max": [0.80, 0.62, 0.80], "top": "props/cabbage_top", "side": "props/cabbage_top" }
+      ]
+    },
+    {
       // A cool bin in the inn's kitchen for what the pot needs: a chest by another name, kept
       // stocked at the start of a round (Scenarios/VillageRound).
       "name": "Larder", "label": "larder", "category": "Building", "solid": true, "sprite": "buildings/larder",

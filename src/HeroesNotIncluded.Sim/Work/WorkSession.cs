@@ -230,6 +230,8 @@ public abstract class WorkSession
             nameof(PourSession) => new PourSession(),
             nameof(StewSession) => new StewSession(),
             nameof(SeasonSession) => new SeasonSession(),
+            nameof(SniffSession) => new SniffSession(),
+            nameof(PackSession) => new PackSession(),
             nameof(WashSession) => new WashSession(),
             nameof(TapSession) => new TapSession(),
             nameof(MixSession) => new MixSession(),

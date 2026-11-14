@@ -1243,3 +1243,35 @@ and its last chance (`Round/FestivalSystem`, `data/defs/festival.json`, `Defs/Fe
 - `FestivalTests`, `TradeWeaponTests.AnEmptyStashOffersNothingToReachFor`. Bench state hashes
   unchanged; the full hashes moved for the festival's saved plan: 1234 `A3387098B3207AA8`, 99
   `74315EC270163CE8`.
+
+### Cook pass, phase 1 (2026-11-13)
+The cook had two games and nothing that left town; the other trades five to seven, and work that
+goes out on quests. Phase 1 of the plan (DESIGN.md, "Cook"; ROADMAP.md, "The cook pass"): reach and
+depth.
+- **Flavours** (`Work/Flavour`): savoury, sweet, hot, fresh, on the ingredients' defs
+  (`"flavour"`). A pot tastes of the blend of what went in (food by its nutrition), as a drink is
+  the sum of its adds; a bowl carries it (`Dish`). Emberroot, herbs and honey are seasoners: up to
+  three to a pot, they flavour what's there and add no bowls, and the work key offers them only
+  where they'll go in. Quality's "variety" (how many kinds) is now how rounded the flavour is. The
+  pot panel, the inspector and `PerceptionView.Tastes` say it in words ("savoury, with some heat").
+- **Diners' tastes** (`Hospitality/Tastes`): each adventurer kind likes something
+  (`adventurers.json` `"tastes"`). About half say what they fancy with the order, in its words, so
+  whoever hears the order hears that too (`Order.Craving`, saved). A bowl that tastes of it pleases
+  them; one that doesn't, a little less.
+- **Sniffing** (`Work/SniffSession`): Space smells a stack (the larder's and the pack's Smell
+  buttons) or the pot ("Smell it"): fresh, fine, on the turn or off, as rough as the nose is
+  unpractised. A pot only smells good or "not quite right".
+- **Rations for the road** (`Work/Rations`, `Work/PackSession`): at the new prep table in the inn's
+  kitchen, three portions of food folded into a cloth on cue (A, D, A, D) and tied with a cord
+  drawn by holding F. The cord reads slack, snug or biting; tied at snug's slack end it lets the
+  air in and turns twice as fast on the road, which never shows (`Ration.LooseWrap`). Rations sell
+  like gear, one to an adventurer, and go out on quests as `RationRecord`s: sound, the traveller is
+  a little stronger and comes home less hungry; turned, weaker, and home sick
+  (`FoodPoisoning.Sicken`). The party's tale says which.
+- **The AI cook** puts one seasoner from the larder in each fill (never the keeper's bar stock);
+  the bot does too, and no longer sticks holding something the pot won't take. The larder opens
+  with emberroot and herbs, and the carter brings more with the food. Neither packs rations.
+- **Fix (test):** `CrisisTests.AFeverComesWithAPartyAndSpreadsToThoseNearby` moved its villager
+  mid-walk, and the walk carried them off; it now ends their job first.
+- Save format 21. `CookPassTests`. Bench hashes moved (behaviour): 1234 state `777B62DF500687D2`,
+  full `7A4D703E6E889E7A`; 99 state `4B144711DB024EDD`, full `9067BDE801CF11E2`.

@@ -139,6 +139,7 @@
         { "def": "Larder", "at": [1, 1], "facing": 2 },
         { "def": "Fireplace", "at": [2, 0] },
         { "def": "StewPot", "at": [3, 1] },
+        { "def": "PrepTable", "at": [4, 1] },
         { "def": "WashTub", "at": [6, 1] },
         { "def": "ServingHatch", "at": [7, 4] },
         { "def": "Shelf", "at": [7, 1], "facing": 2 },

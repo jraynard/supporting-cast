@@ -145,6 +145,12 @@ public sealed partial class VillageGame
             case SeasonSession season:
                 DrawSeason(season);
                 return;
+            case SniffSession sniff:
+                DrawSniff(sniff);
+                return;
+            case PackSession pack:
+                DrawPack(pack);
+                return;
             case WashSession wash:
                 DrawWash(wash);
                 return;

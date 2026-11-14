@@ -514,6 +514,7 @@ internal static class ComponentCodecs
             w.Float(p.Rot);
             w.Int(p.Ladled);
             w.Long(p.TendedUntil);
+            WriteFlavour(w, p.Flavour);
         }, r =>
         {
             var p = new Work.StewPot();
@@ -529,8 +530,18 @@ internal static class ComponentCodecs
             p.Rot = r.Float();
             p.Ladled = r.Int();
             p.TendedUntil = r.Long();
+            if (r.Version >= 21) // flavours came with format 21
+                p.Flavour = ReadFlavour(r);
             return p;
         }),
+        Codec("Dish", (w, d) => WriteFlavour(w, d.Flavour), r => new Work.Dish { Flavour = ReadFlavour(r) }),
+        Codec("Ration", (w, x) =>
+        {
+            w.Float(x.Quality);
+            WriteFlavour(w, x.Flavour);
+            w.Entity(x.Maker);
+            w.Bool(x.LooseWrap);
+        }, r => new Work.Ration { Quality = Math.Clamp(r.Float(), 0f, 1f), Flavour = ReadFlavour(r), Maker = r.Entity(), LooseWrap = r.Bool() }),
         Codec("Flawed", (w, f) => w.Int((int)f.Flaw), r => new Work.Flawed { Flaw = (Work.PieceFlaw)r.Int() }),
         Codec("Stored", (w, s) => w.Entity(s.In), r => new Stored { In = r.Entity() }),
         Codec("Request", (w, q) =>
@@ -650,6 +661,18 @@ internal static class ComponentCodecs
             n += BuildPhase.Roof - BuildPhase.UpperFloor;
         return (BuildPhase)Math.Clamp(n, 0, (int)BuildPhase.Done);
     }
+
+    internal static void WriteFlavour(SaveWriter w, Work.Flavour f)
+    {
+        w.Float(f.Savoury);
+        w.Float(f.Sweet);
+        w.Float(f.Hot);
+        w.Float(f.Fresh);
+    }
+
+    /// <summary>A flavour, each part kept to a sane range (a pot's sums stay well under this).</summary>
+    internal static Work.Flavour ReadFlavour(SaveReader r) =>
+        new(Math.Clamp(r.Float(), 0f, 100f), Math.Clamp(r.Float(), 0f, 100f), Math.Clamp(r.Float(), 0f, 100f), Math.Clamp(r.Float(), 0f, 100f));
 
     private static ComponentCodec<T> Codec<T>(string name, Action<SaveWriter, T> write, Func<SaveReader, T> read) => new(name, write, read);
 

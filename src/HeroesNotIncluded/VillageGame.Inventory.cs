@@ -184,6 +184,14 @@ public sealed partial class VillageGame
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                 Tip(EatTip(def));
         }
+        if ((held || packed) && SmellsOfSomething(item))
+        {
+            any = true;
+            if (ImGui.MenuItem("Smell it"u8))
+                Later(new Sim.Work.SniffCommand(_avatar, item));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip("Has it turned? A practised nose can tell, roughly.");
+        }
         if ((held || packed) && View.Charm(item) is { } charm)
         {
             any = true;
@@ -313,6 +321,22 @@ public sealed partial class VillageGame
     }
 
     /// <summary>An "Eat" button for a food stack (in hand, packed or in reach), or nothing if it isn't one you can eat.</summary>
+    /// <summary>Food (or anything that turns) a nose can tell something from.</summary>
+    private bool SmellsOfSomething(Entity item) =>
+        _sim.World.IsAlive(item) && _sim.World.Has<Rot>(item);
+
+    /// <summary>A Smell button beside a stack of food: has it turned? (Sim.Work.SniffSession)</summary>
+    private void SmellButton(Entity item)
+    {
+        if (!SmellsOfSomething(item))
+            return;
+        ImGui.SameLine(0, 4);
+        if (ImGui.SmallButton("Smell"u8))
+            Issue(new Sim.Work.SniffCommand(_avatar, item));
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+            Tip("Has it turned? A practised nose can tell, roughly.");
+    }
+
     private void EatButton(Entity item)
     {
         // Gone this very frame (a command already applied: stowed into a stack, eaten, put down).

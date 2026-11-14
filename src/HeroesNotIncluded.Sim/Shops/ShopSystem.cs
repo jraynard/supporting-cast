@@ -300,7 +300,11 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             return false;
         }
         var text = Asking(def, price, SubjectLabel(sim, subject) ?? WoundLabel(sim, who));
-        Post(sim, who, def, text, price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), subject, shop, worth);
+        // A meal: they may say what they fancy, in the same breath (Hospitality.Tastes).
+        var craving = kind == ServiceKind.Meal ? Hospitality.Tastes.Crave(sim, who, _rand) : null;
+        if (craving is { } c)
+            text += " " + Work.Flavour.Craving(c);
+        Post(sim, who, def, text, price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), subject, shop, worth, craving);
         return true;
     }
 
@@ -473,10 +477,11 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
 
     /// <summary>Put an order on the books and say it aloud. Those who hear it clearly know of it.</summary>
     public Order Post(Simulation sim, Entity poster, ServiceDef kind, string text, int price, long deadline, Entity? subject = null,
-        Entity? where = null, int worth = 0)
+        Entity? where = null, int worth = 0, Work.FlavourKind? craving = null)
     {
         var order = new Order
         {
+            Craving = craving,
             Id = _nextId++, Kind = kind, Poster = poster, PosterName = sim.World.Get<Creature>(poster).Name, Text = text,
             Where = where ?? (kind.AtDef is { } at ? BuildingOf(sim, at) : Entity.Null), Subject = subject ?? Entity.Null, Price = price,
             Worth = worth, PostedTick = sim.Clock.Tick, Deadline = deadline,
@@ -875,6 +880,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             var rot = FoodPoisoning.RotOf(sim, eaten);
             if (w.TryGet<Crafted>(eaten, out var made) && made.Quality is var q)
                 Tasted(sim, to, q, meal: true);
+            Hospitality.Tastes.Served(sim, to, w.TryGet<Work.Dish>(item, out var dish) ? dish.Flavour : null, meal);
             Complete(sim, meal, giver);
             Hospitality.Table.Begin(sim, to, eaten, meal: true, count, rot, _rand);
             return;
@@ -1066,6 +1072,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             w.Byte((byte)e.Status);
             w.Long(e.ClosedTick);
             w.Long(e.LastAsked);
+            w.Int(e.Craving is { } craving ? (int)craving : -1);
             w.Int(e.KnownBy.Count);
             foreach (var k in e.KnownBy)
                 w.Entity(k);
@@ -1117,6 +1124,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             e.Status = (OrderStatus)status;
             e.ClosedTick = r.Long();
             e.LastAsked = r.Long();
+            if (r.Version >= 21) // cravings came with format 21
+                e.Craving = r.Int() is var c && Enum.IsDefined((Work.FlavourKind)c) && c >= 0 ? (Work.FlavourKind)c : null;
             for (var k = r.Count(1 << 16); k > 0; k--)
                 e.KnownBy.Add(r.Entity());
             _orders.Add(e);

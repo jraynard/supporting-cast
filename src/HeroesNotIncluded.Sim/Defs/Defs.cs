@@ -390,6 +390,9 @@ public sealed class BuildingProps
     /// <summary>A tub of hot water dirty tankards and bowls are washed in (<c>Work.WashSession</c>).</summary>
     public bool WashTub { get; set; }
 
+    /// <summary>The kitchen's prep table: rations for the road are packed on it (<c>Work.PackSession</c>).</summary>
+    public bool PrepTable { get; set; }
+
     /// <summary>A bar: mixed drinks are made at it (<c>Work.MixSession</c>).</summary>
     public bool Bar { get; set; }
 
@@ -459,6 +462,15 @@ public sealed class MixProps
 
     /// <summary>The house mix: any combination that isn't a named one.</summary>
     public bool House { get; set; }
+}
+
+/// <summary>How much of each flavour something brings to a pot, 0..1 apiece (<c>Work.Flavour</c>).</summary>
+public sealed class FlavourProps
+{
+    public float Savoury { get; set; }
+    public float Sweet { get; set; }
+    public float Hot { get; set; }
+    public float Fresh { get; set; }
 }
 
 /// <summary>What a stew pot ladles out, and how far its ingredients stretch.</summary>
@@ -798,6 +810,18 @@ public sealed class ThingDef : Def
 
     /// <summary>Days until it rots away at 10–30°C (cold slows it, freezing stops it); 0 never rots.</summary>
     public float RotDays { get; set; }
+
+    /// <summary>
+    /// What it tastes of in a pot (<c>Work.Flavour</c>). On food it blends by how much went in; on
+    /// something that isn't food (emberroot, herbs, honey) it makes it a seasoner: flavour and no bowls.
+    /// </summary>
+    public FlavourProps? Flavour { get; set; }
+
+    /// <summary>A seasoner: it flavours a pot without adding a bowl to it.</summary>
+    [JsonIgnore] public bool IsSeasoner => Flavour != null && Nutrition <= 0;
+
+    /// <summary>Rations for the road, packed by the cook (<c>Work.Rations</c>): carried on a quest, eaten on the way.</summary>
+    public bool Rations { get; set; }
 
     public BuildingProps? Building { get; set; }
 
