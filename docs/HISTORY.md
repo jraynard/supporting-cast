@@ -1290,3 +1290,12 @@ depth.
   a coin (two for masterwork), drinks and meals alike (`ShopSystem.FineTip`, `MasterworkTip`).
 - Save format 22. `CookPassTests` (phase 2); `InnKitchenTests`' hatch test counts the tip. Bench
   hashes unchanged (the bench runs no round).
+
+### Cook pass, phase 3 begun: chopping (2026-11-13)
+- **Chopping** (`Work/ChopSession`): F at the prep table with raw meat, fish or cabbage in hand
+  (`"chopsInto"`) cuts it on the knife's beat, a few cuts plus one per piece. It becomes chopped
+  meat, fish or cabbage (`"chopped"`): a little more food each, quicker to turn, and a pot cooks
+  faster for its share of chopped food (`Cooking.SpeedOf`, up to half again). A wild cut may slip;
+  each slip lands as a cut on an arm when the knife's put down. With choppable food in hand the
+  table chops; otherwise it packs rations.
+- Save format 23 (a stew session keeps its pace). `CookPassTests` (prep). Bench hashes unchanged.

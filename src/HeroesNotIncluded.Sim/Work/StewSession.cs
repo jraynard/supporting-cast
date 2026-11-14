@@ -23,6 +23,9 @@ public sealed class StewSession : WorkSession
     public float Doneness { get; private set; }
     public float Scorch { get; private set; }
 
+    /// <summary>How fast it cooks for what's in it (<see cref="Cooking.SpeedOf"/>): fixed for the session.</summary>
+    public float Speed { get; private set; } = 1f;
+
     /// <summary>Steps since the spoon last went round.</summary>
     public int SinceStir { get; private set; } = Cooking.Untended;
 
@@ -46,6 +49,7 @@ public sealed class StewSession : WorkSession
         return new StewSession
         {
             Pot = pot, Lit = Cooking.Lit(sim, pot), Heat = p.Heat, Flame = p.Flame, Doneness = p.Doneness, Scorch = p.Scorch,
+            Speed = Cooking.SpeedOf(p),
         };
     }
 
@@ -59,7 +63,7 @@ public sealed class StewSession : WorkSession
     {
         Flame = Math.Clamp(Flame + _flameDir * Cooking.FlameStep, 0f, 1f);
         float heat = Heat, done = Doneness, scorch = Scorch;
-        Cooking.Step(ref heat, Flame, Lit, ref done, ref scorch, SinceStir, Held);
+        Cooking.Step(ref heat, Flame, Lit, ref done, ref scorch, SinceStir, Held, 1f, Speed);
         (Heat, Doneness, Scorch) = (heat, done, scorch);
         SinceStir = Held ? 0 : Math.Min(SinceStir + 1, Cooking.Untended);
         if (Doneness >= 1f)
@@ -100,6 +104,7 @@ public sealed class StewSession : WorkSession
         w.Float(Scorch);
         w.Int(SinceStir);
         w.Int(_flameDir);
+        w.Float(Speed);
     }
 
     protected override void ReadState(SaveReader r)
@@ -112,6 +117,7 @@ public sealed class StewSession : WorkSession
         Scorch = r.Float();
         SinceStir = r.Int();
         _flameDir = Math.Sign(r.Int());
+        Speed = r.Version >= 23 ? Math.Clamp(r.Float(), 1f, 1f + Cooking.ChoppedSpeed) : 1f; // chopping came with format 23
     }
 }
 

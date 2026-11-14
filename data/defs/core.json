@@ -80,10 +80,10 @@
     { "name": "Fiber", "label": "plant fiber", "category": "Item", "mass": 0.05, "sprite": "items/fiber", "stackLimit": 50, "flammability": 0.9, "maxHp": 10,
       "description": "Pale, tough strands stripped from wild flax. Twisted and woven, it makes bandages." },
     { "name": "Meat", "label": "raw meat", "category": "Item", "mass": 0.4, "sprite": "items/meat", "stackLimit": 30, "nutrition": 0.15, "isMeat": true, "rotDays": 4, "flammability": 0.4, "maxHp": 20,
-      "flavour": { "savoury": 1 },
+      "flavour": { "savoury": 1 }, "chopsInto": "ChoppedMeat",
       "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.28], "top": "props/meat_top", "side": "props/basket" } ] },
     { "name": "RawFish", "label": "raw fish", "category": "Item", "mass": 0.3, "sprite": "items/fish", "stackLimit": 30, "nutrition": 0.15, "isMeat": true, "rotDays": 2.5, "flammability": 0.3, "maxHp": 15,
-      "flavour": { "savoury": 0.7, "fresh": 0.3 },
+      "flavour": { "savoury": 0.7, "fresh": 0.3 }, "chopsInto": "ChoppedFish",
       "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.28], "top": "props/fish_top", "side": "props/basket" } ] },
 
     // ---- Buildings ----

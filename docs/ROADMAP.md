@@ -26,10 +26,9 @@ Bring the cook up to the other trades (docs/DESIGN.md, "Cook"). The smith, heale
 have five to seven hands-on games, a hidden state read by feel, and work that goes out on quests;
 the cook had two games and nothing that left town. Phases 1 and 2 are built (HISTORY.md, "Cook
 pass"): flavours, diners' tastes, sniffing, rations for the road; the house dish, diners saying
-what was wrong, tips. Next, in order:
+what was wrong, tips; and chopping at the prep table, the first of phase 3. Next, in order:
 
-1. **A menu beyond stew:** prep on rhythm at the prep table (a slip cuts a finger); the spit (a
-   roast turned on cue, read by its crust); the oven (knead, prove, bake by smell; bread for better
+1. **A menu beyond stew:** the spit (a roast turned on cue, read by its crust); the oven (knead, prove, bake by smell; bread for better
    rations); porridge in the morning. Priced apart on the sign.
 2. **Pressure in the kitchen:** rushes at breakfast and supper, a second pot, the kitchen fire fed
    by hand; a grease fire (a fatty pot at a boil; clap the lid on or it's a real fire); rats in the
@@ -39,7 +38,7 @@ what was wrong, tips. Next, in order:
    store); word of the food bringing parties.
 
 Left from phases 1 and 2:
-- Bots and AI cooks never name a house dish; the house dish brings no more parties yet (word of the
+- Bots and AI cooks never chop or name a house dish; the house dish brings no more parties yet (word of the
   food, phase 3).
 - Rations are sold at the bar's line like any gear in the inn; the hatch would suit them better.
 - Placeholder art: rations are a bolt of cloth, the prep table is a table's sprite.

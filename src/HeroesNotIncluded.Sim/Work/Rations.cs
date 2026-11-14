@@ -184,15 +184,36 @@ public static class Rations
     public static bool IsPrepTable(Simulation sim, Entity e) =>
         !e.IsNull && sim.World.IsAlive(e) && sim.World.TryGet<Thing>(e, out var t) && t.Def.Building is { PrepTable: true } && !sim.World.Has<Construction>(e);
 
-    /// <summary>What the work key does at a prep table: pack rations, if you have the food. Null if nothing.</summary>
-    public static string? StepAt(Simulation sim, Entity cook, Entity station) =>
-        IsPrepTable(sim, station) && PortionsOn(sim, cook) >= Portions ? "Pack rations for the road" : null;
+    /// <summary>Raw food in hand that the prep table's knife can chop, or Entity.Null.</summary>
+    public static Entity Choppable(Simulation sim, Entity cook)
+    {
+        var held = sim.World.Get<Carrying>(cook).Item;
+        return !held.IsNull && sim.World.IsAlive(held) && sim.World.Get<Thing>(held).Def.ChopsInto != null ? held : Entity.Null;
+    }
 
-    /// <summary>Start packing at the table, or say why not.</summary>
+    /// <summary>
+    /// What the work key does at a prep table: chop the raw food in your hand, else pack rations if
+    /// you have the food. Null if nothing. (To pack with something choppable in hand, stow it first.)
+    /// </summary>
+    public static string? StepAt(Simulation sim, Entity cook, Entity station)
+    {
+        if (!IsPrepTable(sim, station))
+            return null;
+        if (Choppable(sim, cook) is { IsNull: false } food)
+            return $"Chop the {sim.World.Get<Thing>(food).Def.Label}";
+        return PortionsOn(sim, cook) >= Portions ? "Pack rations for the road" : null;
+    }
+
+    /// <summary>Start chopping or packing at the table, or say why not.</summary>
     public static void Start(Simulation sim, Entity cook, Entity table)
     {
         if (!IsPrepTable(sim, table) || !AvatarSystem.InReach(sim, sim.World.Get<Position>(cook).Cell, table))
             return;
+        if (Choppable(sim, cook) is { IsNull: false } food)
+        {
+            WorkSystem.Start(sim, cook, ChopSession.For(sim, table, food));
+            return;
+        }
         if (PortionsOn(sim, cook) < Portions)
         {
             sim.Messages.Add(MessageKind.Info, $"A bundle takes {Portions} portions of food: bring them from the larder.", sim.World.Get<Thing>(table).Cell);

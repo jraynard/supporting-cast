@@ -512,4 +512,81 @@ public class CookPassTests
         var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
         Assert.Equal("Miller's Pot", HouseDish.Of(loaded, inn)!.Name);
     }
+
+    // ---------------- Phase 3: prep ----------------
+
+    /// <summary>Raw food in hand at the prep table, and the chopping started with the work key.</summary>
+    private static (Simulation Sim, Entity Me, ChopSession Chop, Entity Food) Chopping(string def = "Meat", int count = 4)
+    {
+        var (sim, me, table) = PrepKitchen();
+        var food = sim.CreateItem(sim.Thing(def), count);
+        sim.World.Get<Rot>(food).Progress = 0.2f;
+        sim.World.Get<Carrying>(me).Item = food;
+        var at = sim.World.Get<Thing>(table).Cell;
+        Assert.Equal($"Chop the {sim.Thing(def).Label}", AvatarSystem.ActionAt(sim, me, at).Label);
+        sim.ApplyNow(new AvatarWorkCommand(me, true, at));
+        sim.ApplyNow(new AvatarWorkCommand(me, false));
+        return (sim, me, Assert.IsType<ChopSession>(sim.World.Get<WorkSession>(me)), food);
+    }
+
+    [Fact]
+    public void ChoppingOnTheBeatTurnsWholeFoodToChopped()
+    {
+        var (sim, me, chop, _) = Chopping();
+        Assert.Equal(ChopSession.CutsFor(4), chop.Needed);
+        var inputs = Enumerable.Range(1, chop.Needed).Select(i => new WorkInput(i * ChopSession.Beat, WorkInputKind.Press)).ToList();
+        chop.Advance(inputs, inputs[^1].Step + 2);
+        Assert.True(chop.Done);
+        Assert.Equal(0, chop.Slips);
+        sim.Tick();
+        var held = sim.World.Get<Carrying>(me).Item;
+        Assert.Equal("ChoppedMeat", sim.World.Get<Thing>(held).Def.Name);
+        Assert.Equal(4, sim.World.Get<Stack>(held).Count);
+        Assert.Equal(0.2f, FoodPoisoning.RotOf(sim, held), 0.001f);
+        Assert.Empty(sim.World.Get<Health>(me).Injuries);
+    }
+
+    [Fact]
+    public void WildCutsCanSlipAndASlipIsARealCut()
+    {
+        var (sim, me, chop, _) = Chopping();
+        // Hacking away halfway between beats, over and over.
+        var inputs = Enumerable.Range(0, 30).Select(i => new WorkInput(i * ChopSession.Beat + ChopSession.Beat / 2, WorkInputKind.Press)).ToList();
+        chop.Advance(inputs, inputs[^1].Step + 2);
+        Assert.Equal(0, chop.Cuts);
+        Assert.True(chop.Slips > 0, "thirty wild cuts and not one slip");
+        sim.ApplyNow(new StopWorkCommand(me));
+        sim.Tick();
+        Assert.Contains(sim.World.Get<Health>(me).Injuries, i => i.Type == DamageType.Cut);
+        Assert.Equal("Meat", sim.World.Get<Thing>(sim.World.Get<Carrying>(me).Item).Def.Name); // still whole
+    }
+
+    [Fact]
+    public void ChoppedFoodCooksFaster()
+    {
+        var whole = new StewPot { In = [new PotIngredient(LoadDefs().Thing("Meat"), 6)] };
+        var chopped = new StewPot { In = [new PotIngredient(LoadDefs().Thing("ChoppedMeat"), 6)] };
+        Assert.Equal(1f, Cooking.SpeedOf(whole));
+        Assert.Equal(1f + Cooking.ChoppedSpeed, Cooking.SpeedOf(chopped), 0.001f);
+        float h1 = 0.6f, d1 = 0f, s1 = 0f, h2 = 0.6f, d2 = 0f, s2 = 0f;
+        for (var i = 0; i < 600; i++)
+        {
+            Cooking.Step(ref h1, 0.6f, true, ref d1, ref s1, 0, true, 1f, Cooking.SpeedOf(whole));
+            Cooking.Step(ref h2, 0.6f, true, ref d2, ref s2, 0, true, 1f, Cooking.SpeedOf(chopped));
+        }
+        Assert.True(d2 > d1 * 1.4f, $"{d2:0.000} against {d1:0.000}");
+    }
+
+    [Fact]
+    public void WithFoodInHandTheTableChopsAndOtherwiseItPacks()
+    {
+        var (sim, me, table) = PrepKitchen(("Berries", 3));
+        var at = sim.World.Get<Thing>(table).Cell;
+        Assert.Equal("Pack rations for the road", AvatarSystem.ActionAt(sim, me, at).Label);
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("Cabbage"), 2);
+        Assert.Equal("Chop the cabbage", AvatarSystem.ActionAt(sim, me, at).Label);
+        // Berries aren't chopped.
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("Berries"), 2);
+        Assert.Equal("Pack rations for the road", AvatarSystem.ActionAt(sim, me, at).Label);
+    }
 }

@@ -141,7 +141,7 @@
       // The kitchen's prep table (Work.PackSession): rations for the road are packed on it, three
       // portions of food wrapped and tied.
       "name": "PrepTable", "label": "prep table", "category": "Building", "solid": true, "sprite": "buildings/table",
-      "description": "A scrubbed board on trestles, a roll of cloth and a ball of cord. F here with three portions of food packs rations for the road.",
+      "description": "A scrubbed board on trestles, a knife, a roll of cloth and a ball of cord. F here with raw food in hand chops it; with three portions of food on you, packs rations for the road.",
       "maxHp": 100, "flammability": 1.0,
       "building": { "work": 100, "surfaceHeight": 0.66, "prepTable": true, "cost": [ { "def": "Wood", "count": 8 } ] },
       "model": [

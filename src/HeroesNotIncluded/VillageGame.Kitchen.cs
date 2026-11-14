@@ -154,6 +154,46 @@ public sealed partial class VillageGame
         EndWork();
     }
 
+    /// <summary>Chopping on the knife's beat: the knife rising and falling, the cuts so far, and what the last one did.</summary>
+    private void DrawChop(ChopSession s)
+    {
+        BeginWork(s.Title, ("F", "cut as the knife comes down"), ("Esc", "put the knife down"));
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(420, 120);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var max = min + size;
+        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+        // The board, the food on it shrinking into pieces as the cuts go in.
+        var boardA = new float2(min.X + Gui.S(40), max.Y - Gui.S(30));
+        var boardB = new float2(max.X - Gui.S(40), max.Y - Gui.S(14));
+        dl.AddRectFilled(in boardA, in boardB, new ImColor8(150, 110, 70, 255), Gui.S(3), ImDrawFlags.None);
+        var pieces = Math.Max(1, s.Cuts + 1);
+        var span = (boardB.X - boardA.X - Gui.S(40)) / pieces;
+        for (var i = 0; i < pieces; i++)
+        {
+            var a = new float2(boardA.X + Gui.S(20) + i * span + Gui.S(2), boardA.Y - Gui.S(16));
+            var b = new float2(a.X + span - Gui.S(4), boardA.Y);
+            dl.AddRectFilled(in a, in b, new ImColor8(170, 70, 60, 255), Gui.S(3), ImDrawFlags.None);
+        }
+        // The knife: high between beats, down on the beat.
+        var lift = (float)s.Off / (ChopSession.Beat / 2f);
+        var x = boardA.X + Gui.S(20) + Math.Min(s.Cuts + 1, pieces) * span;
+        var bladeTop = new float2(x, boardA.Y - Gui.S(24) - lift * Gui.S(50));
+        var bladeEnd = new float2(x, boardA.Y - Gui.S(2) - lift * Gui.S(50));
+        dl.AddLine(in bladeTop, in bladeEnd, new ImColor8(210, 214, 220, 255), Gui.S(5));
+        ImGui.Spacing();
+        Bar("Cuts", s.Needed == 0 ? 0f : s.Cuts / (float)s.Needed, Theme.Accent);
+        var (colour, said) = s.LastMark switch
+        {
+            1 => (Theme.Good, "Clean."),
+            -1 => (Theme.Bad, "The knife slips!"),
+            _ => (Theme.Dim, s.StepsDone > 0 && s.Cuts > 0 ? "Off the beat: wait for it." : "Wait for the knife to come down."),
+        };
+        TextC(colour, said);
+        EndWork();
+    }
+
     /// <summary>
     /// Packing rations: the cloth's four corners folded on cue, each from its side, then the cord
     /// drawn and tied. The cord reads only as slack, snug or biting: how snug is the packer's own

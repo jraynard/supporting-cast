@@ -121,6 +121,20 @@
       "description": "Meat and berries simmered over the hearth in its pot. Filling, and warming going down.",
       "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.2], "top": "props/meal_top", "side": "props/stone_block" } ]
     },
+    // Chopped at the prep table (Work.ChopSession): a little further for the cutting, quicker in the
+    // pot, and quicker to turn. Same flavour as whole.
+    { "name": "ChoppedMeat", "label": "chopped meat", "category": "Item", "mass": 0.4, "sprite": "items/meat", "stackLimit": 30,
+      "nutrition": 0.17, "isMeat": true, "chopped": true, "rotDays": 3, "flavour": { "savoury": 1 }, "flammability": 0.4, "maxHp": 15,
+      "description": "Meat cut small for the pot. Cooks quicker, and goes a little further.",
+      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.2], "top": "props/meat_top", "side": "props/basket" } ] },
+    { "name": "ChoppedFish", "label": "chopped fish", "category": "Item", "mass": 0.3, "sprite": "items/fish", "stackLimit": 30,
+      "nutrition": 0.17, "isMeat": true, "chopped": true, "rotDays": 2, "flavour": { "savoury": 0.7, "fresh": 0.3 }, "flammability": 0.3, "maxHp": 12,
+      "description": "Fish cut into chunks for the pot.",
+      "model": [ { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.2], "top": "props/fish_top", "side": "props/basket" } ] },
+    { "name": "ChoppedCabbage", "label": "chopped cabbage", "category": "Item", "mass": 0.4, "sprite": "items/cabbage", "stackLimit": 20,
+      "nutrition": 0.14, "chopped": true, "rotDays": 7, "flavour": { "fresh": 0.7, "sweet": 0.3 }, "flammability": 0.2, "maxHp": 15,
+      "description": "Shredded cabbage, ready for the pot.",
+      "model": [ { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.25], "top": "props/cabbage_top", "side": "props/basket" } ] },
     {
       // Rations for the road (Work.Rations): three portions of food wrapped in a cloth and tied at
       // the kitchen's prep table. Sold like gear; carried on a quest and eaten on the way. Not eaten

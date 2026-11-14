@@ -817,6 +817,12 @@ public sealed class ThingDef : Def
     /// </summary>
     public FlavourProps? Flavour { get; set; }
 
+    /// <summary>What it is once chopped at the prep table (<c>Work.ChopSession</c>), a thing def name; null if it isn't chopped.</summary>
+    public string? ChopsInto { get; set; }
+
+    /// <summary>Chopped already: it cooks faster in a pot (<c>Work.Cooking.SpeedOf</c>).</summary>
+    public bool Chopped { get; set; }
+
     /// <summary>A seasoner: it flavours a pot without adding a bowl to it.</summary>
     [JsonIgnore] public bool IsSeasoner => Flavour != null && Nutrition <= 0;
 

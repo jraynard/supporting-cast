@@ -151,6 +151,9 @@ public sealed partial class VillageGame
             case PackSession pack:
                 DrawPack(pack);
                 return;
+            case ChopSession chop:
+                DrawChop(chop);
+                return;
             case WashSession wash:
                 DrawWash(wash);
                 return;

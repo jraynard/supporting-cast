@@ -11,7 +11,7 @@
   ],
 
   "things": [
-    { "name": "Cabbage", "label": "cabbage", "category": "Item", "mass": 0.4, "sprite": "items/cabbage", "stackLimit": 20, "nutrition": 0.12, "rotDays": 10, "flavour": { "fresh": 0.7, "sweet": 0.3 },
+    { "name": "Cabbage", "label": "cabbage", "category": "Item", "mass": 0.4, "sprite": "items/cabbage", "stackLimit": 20, "nutrition": 0.12, "rotDays": 10, "flavour": { "fresh": 0.7, "sweet": 0.3 }, "chopsInto": "ChoppedCabbage",
       "flammability": 0.2, "maxHp": 20, "description": "A tight green head from the village gardens. Better in a stew, but it'll do raw.",
       "model": [ { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.4], "top": "props/cabbage_top", "side": "props/cabbage_top" } ] },
     {

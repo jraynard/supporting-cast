@@ -234,10 +234,13 @@ the rest follows in the order it's planned (docs/ROADMAP.md, "The cook pass").
     learns from the room as well as the spoon.
   - **Tips:** a drink or meal served Fine or better, and quickly (within a third of their
     patience), earns its server a coin over the price; masterwork, two. The keeper's too.
+- *Built: prep* (`Work/ChopSession`). Raw meat, fish or cabbage in hand at the prep table, cut on
+  the knife's beat (F as it comes down), done ahead in a quiet hour. Chopped food is its own item:
+  it goes a little further, turns a little sooner, and a pot of it cooks up to half again as fast.
+  A cut off the beat does nothing; one wildly off may slip, and a slip is a real cut on the cook's
+  arm, work for the healer.
 - *Then: a menu beyond stew.* Each dish its own small game, priced apart on the sign.
-  - **Prep:** chopping on rhythm at the prep table, done ahead in a quiet hour. Chopped food cooks
-    faster and counts for more. A slip cuts a finger: a real wound, work for the healer. Butchering
-    what the hunters bring in, plucking.
+  - **Prep, more of it:** butchering what the hunters bring in, plucking.
   - **The spit:** a roast turned on cue, its crust read by colour like iron. Fat dripping on the
     coals flares the fire.
   - **The oven:** bread and pies. Knead (rhythm), prove (a wait), bake by smell. Bread keeps: the

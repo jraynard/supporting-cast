@@ -134,7 +134,7 @@ public static class Cooking
     /// enough, and past a simmer it catches on the bottom the longer it goes unstirred. The one
     /// model for the cook's session and the pot left to itself.
     /// </summary>
-    public static void Step(ref float heat, float flame, bool lit, ref float doneness, ref float scorch, int sinceStir, bool stirring, float catchFactor = 1f)
+    public static void Step(ref float heat, float flame, bool lit, ref float doneness, ref float scorch, int sinceStir, bool stirring, float catchFactor = 1f, float speed = 1f)
     {
         var target = lit ? flame : 0f;
         heat += Math.Clamp(target - heat, -HeatFollow, HeatFollow);
@@ -146,7 +146,7 @@ public static class Cooking
             _ => 1.15f,
         };
         // Stirring all the time lets the heat out: it cooks slower while the spoon's going.
-        doneness = Math.Min(1.5f, doneness + CookPerStep * rate * (stirring ? 0.8f : 1f));
+        doneness = Math.Min(1.5f, doneness + CookPerStep * rate * speed * (stirring ? 0.8f : 1f));
         if (heat > SimmerAt)
         {
             var unstirred = stirring ? 0f : Math.Clamp((sinceStir - CatchSteps) / (float)CatchSteps, 0f, 1f) * catchFactor;
@@ -211,6 +211,23 @@ public static class Cooking
         DishFault.Flat => "Filling. Tastes of one thing, mind.",
         _ => "Burnt, or bland, or both. I've eaten worse. Not often.",
     };
+
+    /// <summary>How much faster a pot of nothing but chopped food cooks than one of whole.</summary>
+    public const float ChoppedSpeed = 0.5f;
+
+    /// <summary>How fast a pot cooks for what's in it: faster the more of its food went in chopped.</summary>
+    public static float SpeedOf(StewPot p)
+    {
+        float all = 0f, chopped = 0f;
+        foreach (var i in p.In)
+        {
+            var n = i.Def.Nutrition * i.Count;
+            all += n;
+            if (i.Def.Chopped)
+                chopped += n;
+        }
+        return all <= 0f ? 1f : 1f + ChoppedSpeed * chopped / all;
+    }
 
     /// <summary>Seasoners in a pot so far.</summary>
     public static int SeasonersIn(StewPot p) => p.In.Where(i => i.Def.IsSeasoner).Sum(i => i.Count);
@@ -506,9 +523,10 @@ public sealed class CookingSystem : ISimSystem
             if (worked?.Contains(e) == true || !w.Has<Thing>(e))
                 continue;
             var lit = Cooking.Lit(sim, e);
+            var speed = Cooking.SpeedOf(p);
             var tended = p.TendedUntil > now;
             for (var i = 0; i < Interval; i++)
-                Cooking.Step(ref p.Heat, p.Flame, lit, ref p.Doneness, ref p.Scorch, Cooking.Untended, false, tended ? Cooking.TendedCatch : 1f);
+                Cooking.Step(ref p.Heat, p.Flame, lit, ref p.Doneness, ref p.Scorch, Cooking.Untended, false, tended ? Cooking.TendedCatch : 1f, speed);
             if (p.Empty)
             {
                 p.Doneness = p.Scorch = 0f;
