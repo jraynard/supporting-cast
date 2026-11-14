@@ -378,7 +378,7 @@ public static class CombatRules
                 else if (g.UpAt(when) && g.StaggeredUntil <= when)
                 {
                     share = Blows.DragonBlocked;
-                    g.Stamina = Math.Max(0f, g.Stamina - Blows.BlockCost * 2f);
+                    g.Spend(Blows.BlockCost * 2f, when);
                     Blows.Report(sim, dragon, e, BlowOutcome.Blocked, heavy: true);
                 }
             }

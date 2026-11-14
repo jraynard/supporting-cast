@@ -61,7 +61,7 @@ public static class Archery
         ref var g = ref Blows.GuardOf(sim, e);
         if (g.Stamina < Blows.SwingCost)
             return false;
-        g.Stamina -= Blows.SwingCost;
+        g.Spend(Blows.SwingCost, sim.Clock.Tick);
         var now = sim.Clock.Tick;
         var windup = new Windup
         {

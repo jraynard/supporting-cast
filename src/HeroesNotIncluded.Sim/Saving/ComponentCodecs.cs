@@ -218,10 +218,12 @@ internal static class ComponentCodecs
             w.Entity(g.RiposteOn);
             w.Long(g.RiposteUntil);
             w.Long(g.NextSwing);
+            w.Long(g.SpentAt);
         }, r => new Combat.Guard
         {
             Stamina = Math.Clamp(r.Float(), 0f, 1f), RaisedAt = r.Long(), LoweredAt = r.Long(), LastRaise = r.Long(),
             DodgeFrom = r.Long(), DodgeUntil = r.Long(), StaggeredUntil = r.Long(), RiposteOn = r.Entity(), RiposteUntil = r.Long(), NextSwing = r.Long(),
+            SpentAt = r.Version >= 16 ? r.Long() : 0, // the pause before wind comes back came with format 16
         }),
         Codec("Herd", (w, h) =>
         {

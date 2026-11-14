@@ -590,5 +590,18 @@ public class FreeCombatTests
         Assert.True(shot.Ranged && !shot.Hit);
         Assert.True(shot.To.X > 24f && shot.To.X < 28f, $"stopped at {shot.To}");
     }
+
+    [Fact]
+    public void WindComesBackOnlyAWhileAfterItsSpentAndSlowly()
+    {
+        var (sim, me) = Ring();
+        sim.ApplyNow(new DodgeCommand(me, 1f, 0f, sim.Clock.Tick));
+        var after = sim.World.Get<Guard>(me).Stamina;
+        sim.TickMany(Blows.RegenDelay - 2);
+        Assert.Equal(after, sim.World.Get<Guard>(me).Stamina); // still catching your breath
+        sim.TickMany(SimClock.TicksPerSecond);
+        var back = sim.World.Get<Guard>(me).Stamina - after;
+        Assert.True(back > 0.05f && back < 0.25f, $"a second's breath brought back {back}");
+    }
 }
 

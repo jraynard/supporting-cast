@@ -27,6 +27,8 @@ One way to fight, everywhere.
   turning ember once the bow's fully drawn, grey if you're too winded), then left click to loose.
   Click a moment early and it looses as soon as it's drawn. Hold on and the next arrow's drawn.
   Every arrow is seen flying now, including the ones that hit nothing.
+- Your wind (stamina) comes back slower, and only once you've stopped spending it for a moment, so
+  a flurry of swings, dodges and blocks can run you dry.
 - Raiders with nobody left to fight give up and go, instead of standing in the square for hours
   while the hurt bleed out indoors.
 - Mac: the app opens once you've cleared the quarantine flag (README-ALPHA). Its signature was

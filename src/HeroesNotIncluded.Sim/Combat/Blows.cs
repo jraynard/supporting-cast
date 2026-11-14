@@ -72,6 +72,16 @@ public struct Guard
     /// <summary>A player's next swing may start at this tick (recovery after the last).</summary>
     public long NextSwing;
 
+    /// <summary>When wind was last spent: it starts to come back only a while after (<see cref="Blows.RegenDelay"/>).</summary>
+    public long SpentAt;
+
+    /// <summary>Spend <paramref name="cost"/> of its wind (never below none), as of <paramref name="now"/>.</summary>
+    public void Spend(float cost, long now)
+    {
+        Stamina = Math.Max(0f, Stamina - cost);
+        SpentAt = now;
+    }
+
     public static Guard Fresh => new() { Stamina = 1f, RaisedAt = -1, LoweredAt = -1, LastRaise = -1, DodgeFrom = -1, DodgeUntil = -1, StaggeredUntil = -1, RiposteUntil = -1 };
 
     /// <summary>When the guard last went up, kept once it's lowered again; -1 if never.</summary>
@@ -194,8 +204,11 @@ public static class Blows
     /// <summary>An AI's odds of parrying a blow it sees coming, and of blocking it, with Melee skill (0..20) on top.</summary>
     public const float AiParry = 0.02f, AiParryPerSkill = 0.008f, AiBlock = 0.12f, AiBlockPerSkill = 0.015f;
 
-    /// <summary>Stamina back per second with the guard down, and with it up.</summary>
-    public const float Regen = 0.3f, RegenGuarding = 0.08f;
+    /// <summary>Stamina back per second with the guard down, and with it up, once it's coming back.</summary>
+    public const float Regen = 0.18f, RegenGuarding = 0.05f;
+
+    /// <summary>Wind starts to come back only this long after it was last spent: a flurry runs you dry.</summary>
+    public const int RegenDelay = SimClock.TicksPerSecond * 4 / 5;
 
     /// <summary>A fighter's footing, fresh if they've not fought yet.</summary>
     public static ref Guard GuardOf(Simulation sim, Entity e)
@@ -231,7 +244,7 @@ public static class Blows
         var cost = heavy ? HeavyCost : SwingCost;
         if (g.StaggeredUntil > now || g.RaisedAt >= 0 || g.Stamina < cost || (player && now < g.NextSwing))
             return false;
-        g.Stamina -= cost;
+        g.Spend(cost, now);
         var ticks = attack.WindupTicks * (heavy ? HeavyWindup : 1f) * (player ? PlayerWindup : 1f) * (IsDragon(sim, attacker) ? DragonWindup : 1f)
             * Reach.WindupFactor(sim, attacker, attack);
         var from = w.Get<Position>(attacker).Pos;
@@ -363,7 +376,7 @@ public static class Blows
         ref var g = ref GuardOf(sim, e);
         if (g.Stamina < DodgeCost || g.StaggeredUntil > sim.Clock.Tick || g.DodgeUntil > at)
             return false;
-        g.Stamina -= DodgeCost;
+        g.Spend(DodgeCost, sim.Clock.Tick);
         g.DodgeFrom = at;
         g.DodgeUntil = at + DodgeTicks;
         Cancel(sim, e);
@@ -428,7 +441,7 @@ public static class Blows
             : windup.Response == BlowResponse.Parry);
         if (parried)
         {
-            theirs.Stamina = Math.Max(0f, theirs.Stamina - ParryCost);
+            theirs.Spend(ParryCost, sim.Clock.Tick);
             mine.StaggeredUntil = sim.Clock.Tick + StaggerTicks;
             theirs.RiposteOn = attacker;
             theirs.RiposteUntil = sim.Clock.Tick + RiposteTicks;
@@ -447,14 +460,14 @@ public static class Blows
             var cost = BlockCost * (windup.Heavy || dragon ? 2f : 1f);
             if (theirs.Stamina >= cost)
             {
-                theirs.Stamina -= cost;
+                theirs.Spend(cost, sim.Clock.Tick);
                 damage *= dragon ? DragonBlocked : BlockedDamage;
                 outcome = BlowOutcome.Blocked;
             }
             else
             {
                 // Too tired to hold it: the guard's knocked aside, and the blow lands whole.
-                theirs.Stamina = 0f;
+                theirs.Spend(1f, sim.Clock.Tick);
                 theirs.StaggeredUntil = sim.Clock.Tick + StaggerTicks;
                 outcome = BlowOutcome.GuardBroken;
             }
@@ -505,6 +518,8 @@ public sealed class BlowSystem : ISimSystem
             ref var g = ref w.Get<Guard>(e);
             if (g.Stamina >= 1f || w.Has<Windup>(e))
                 continue;
+            if (sim.Clock.Tick - g.SpentAt < Blows.RegenDelay)
+                continue; // still catching it
             var rate = g.RaisedAt >= 0 ? Blows.RegenGuarding : Blows.Regen;
             g.Stamina = Math.Min(1f, g.Stamina + rate / SimClock.TicksPerSecond);
         }
