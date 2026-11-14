@@ -2,13 +2,15 @@
 // meanDaysBetween apart (±40%). A raid is bought with points = pointsFactor × (40 + 10 per day
 // + 20 per villager + 15 per armed villager), spent on
 // raider kinds by cost, at most maxRaiders. "Off" (no def) sends nothing; tests and demos use it.
+// In a round, renownFactor and dreadFactor scale the season's Renown target and Dread limit.
 {
   "difficulties": [
-    { "name": "Peaceful", "label": "Peaceful", "description": "No raids. Build and explore in peace.", "peaceful": true },
+    { "name": "Peaceful", "label": "Peaceful", "description": "No raids. Build and explore in peace.", "peaceful": true, "renownFactor": 0.85 },
     { "name": "Normal", "label": "Normal", "description": "Bandits come every few days once you're settled, growing bolder as the village does.",
       "graceDays": 5, "meanDaysBetween": 4, "pointsFactor": 1.0, "maxRaiders": 5 },
     { "name": "Hard", "label": "Hard", "description": "Earlier, more frequent and better-armed raids.",
-      "graceDays": 3, "meanDaysBetween": 2.5, "pointsFactor": 1.6, "maxRaiders": 8 }
+      "graceDays": 3, "meanDaysBetween": 2.5, "pointsFactor": 1.6, "maxRaiders": 8,
+      "renownFactor": 1.15, "dreadFactor": 0.85 }
   ],
   // Who a raid is made of. skill is the Melee/Shooting range they come with; tier is their gear's
   // (mining.json): only kinds at most one tier past the village's best gear come.

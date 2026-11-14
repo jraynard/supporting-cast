@@ -151,7 +151,7 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
     /// <summary>A beat's strength now: its own, more with Dread.</summary>
     private static float StrengthOf(Simulation sim, SeasonDef season, CrisisBeat beat)
     {
-        var dread = Math.Clamp(sim.Reckoning.Dread / Math.Max(1f, season.DreadLimit), 0f, 1f);
+        var dread = Math.Clamp(sim.Reckoning.Dread / Math.Max(1f, Reckoning.DreadLimit(sim)), 0f, 1f);
         return beat.Strength * (1f + 0.5f * dread);
     }
 
@@ -202,7 +202,7 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
     private long Due(Simulation sim, SeasonDef season, int i)
     {
         var from = sim.Round.TickAt(sim, season.Beats[i].Day, season.Beats[i].FromHour);
-        var dread = Math.Clamp(sim.Reckoning.Dread / Math.Max(1f, season.DreadLimit), 0f, 1f);
+        var dread = Math.Clamp(sim.Reckoning.Dread / Math.Max(1f, Reckoning.DreadLimit(sim)), 0f, 1f);
         return _beatAt[i] - (long)((_beatAt[i] - from) * dread);
     }
 

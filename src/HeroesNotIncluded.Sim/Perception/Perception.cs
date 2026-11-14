@@ -447,9 +447,8 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
     {
         if (!sim.Round.Live)
             return null;
-        var season = sim.Defs.Season;
         var r = sim.Reckoning;
-        return (Director.Reckoning.RenownWord(r.Renown, season.RenownTarget), Director.Reckoning.DreadWord(r.Dread, season.DreadLimit));
+        return (Director.Reckoning.RenownWord(r.Renown, Director.Reckoning.RenownTarget(sim)), Director.Reckoning.DreadWord(r.Dread, Director.Reckoning.DreadLimit(sim)));
     }
 
     /// <summary>

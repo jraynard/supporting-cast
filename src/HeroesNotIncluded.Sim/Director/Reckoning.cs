@@ -43,29 +43,37 @@ public sealed class Reckoning : ISimSystem, ISaveState
         foreach (var q in ex.Quests)
             if (q.Status == QuestStatus.Open)
                 open++;
-        AddDread(season, open * season.DreadPerOpenQuestHour);
+        AddDread(sim, open * season.DreadPerOpenQuestHour);
 
         var cleared = ex.Succeeded - _cleared;
         var failed = ex.Failed - _failed;
         var lost = ex.Dead - _lost;
         (_cleared, _failed, _lost) = (ex.Succeeded, ex.Failed, ex.Dead);
         Renown += cleared * season.RenownPerQuestCleared + lost * season.RenownPerAdventurerLost;
-        AddDread(season, cleared * season.DreadPerQuestCleared + failed * season.DreadPerQuestFailed + lost * season.DreadPerAdventurerLost);
+        AddDread(sim, cleared * season.DreadPerQuestCleared + failed * season.DreadPerQuestFailed + lost * season.DreadPerAdventurerLost);
 
         _renownByHour.Add(Renown);
         _dreadByHour.Add(Dread);
-        if (Dread >= season.DreadLimit)
+        if (Dread >= DreadLimit(sim))
             sim.Round.End(sim, RoundOutcome.Dread);
     }
 
-    private void AddDread(Defs.SeasonDef season, float amount) =>
-        Dread = Math.Clamp(Dread + amount, 0f, season.DreadLimit);
+    /// <summary>The Renown this round needs by the festival: the season's, scaled by the difficulty.</summary>
+    public static float RenownTarget(Simulation sim) =>
+        sim.Defs.Season.RenownTarget * (sim.Director.Difficulty?.RenownFactor ?? 1f);
+
+    /// <summary>The Dread that ends this round early: the season's, scaled by the difficulty.</summary>
+    public static float DreadLimit(Simulation sim) =>
+        sim.Defs.Season.DreadLimit * (sim.Director.Difficulty?.DreadFactor ?? 1f);
+
+    private void AddDread(Simulation sim, float amount) =>
+        Dread = Math.Clamp(Dread + amount, 0f, DreadLimit(sim));
 
     /// <summary>Move the town's standing by hand: crises reckon themselves through this, and tests.</summary>
     internal void Add(Simulation sim, float renown, float dread)
     {
         Renown += renown;
-        AddDread(sim.Defs.Season, dread);
+        AddDread(sim, dread);
     }
 
     /// <summary>An adventurer leaves town for good: what they thought of it goes into the town's name.</summary>

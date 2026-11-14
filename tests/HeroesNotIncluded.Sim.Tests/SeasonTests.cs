@@ -83,6 +83,23 @@ public class SeasonTests
     }
 
     [Fact]
+    public void TheDifficultyScalesTheRenownTargetAndTheDreadLimit()
+    {
+        var sim = Round();
+        var season = sim.Defs.Season;
+        Assert.Equal(season.RenownTarget, Director.Reckoning.RenownTarget(sim));
+        sim.Director.Enable(sim.Defs.Difficulty("Hard"));
+        Assert.True(Director.Reckoning.RenownTarget(sim) > season.RenownTarget);
+        Assert.True(Director.Reckoning.DreadLimit(sim) < season.DreadLimit);
+
+        sim.Reckoning.Add(sim, 0, season.DreadLimit * 2);
+        sim.TickMany(SimClock.TicksPerHour);
+        Assert.Equal(RoundOutcome.Dread, sim.Round.Outcome);
+        Assert.Equal(Director.Reckoning.DreadLimit(sim), sim.Round.Summary!.Dread);
+        Assert.Equal(Director.Reckoning.RenownTarget(sim), sim.Round.Summary!.RenownTarget);
+    }
+
+    [Fact]
     public void QuestsLeftUnansweredFeedDread()
     {
         var sim = Round();

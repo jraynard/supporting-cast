@@ -15,6 +15,12 @@ public sealed class DifficultyDef : Def
 
     /// <summary>Days between wild events (predators, migrations, dragon visitors), ±40%.</summary>
     public float EventsMeanDays { get; set; } = 3;
+
+    /// <summary>A round's Renown target, as a share of the season's (<see cref="SeasonDef.RenownTarget"/>).</summary>
+    public float RenownFactor { get; set; } = 1;
+
+    /// <summary>A round's Dread limit, as a share of the season's (<see cref="SeasonDef.DreadLimit"/>): less ends it sooner.</summary>
+    public float DreadFactor { get; set; } = 1;
 }
 
 /// <summary>A sort of raider a raid can be made of, and what it costs in raid points.</summary>

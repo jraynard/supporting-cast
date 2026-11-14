@@ -130,7 +130,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             var reckoning = sim.Reckoning;
             reckoning.FinalCount(sim);
             ReadTheReckoning(sim);
-            End(sim, reckoning.Renown >= sim.Defs.Season.RenownTarget ? RoundOutcome.Won : RoundOutcome.FellShort);
+            End(sim, reckoning.Renown >= Director.Reckoning.RenownTarget(sim) ? RoundOutcome.Won : RoundOutcome.FellShort);
             return;
         }
         if (!AnyoneAlive(sim))
@@ -146,13 +146,12 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         if (!Live || outcome == RoundOutcome.None)
             return;
         var reckoning = sim.Reckoning;
-        var season = sim.Defs.Season;
         var ex = sim.Expeditions;
         Summary = new RoundSummary
         {
             Outcome = outcome, EndedTick = sim.Clock.Tick,
             Renown = reckoning.Renown, Dread = reckoning.Dread,
-            RenownTarget = season.RenownTarget, DreadLimit = season.DreadLimit,
+            RenownTarget = Director.Reckoning.RenownTarget(sim), DreadLimit = Director.Reckoning.DreadLimit(sim),
             RenownByHour = reckoning.RenownByHour.ToList(), DreadByHour = reckoning.DreadByHour.ToList(),
             Parties = sim.Parties.PartiesSent, AdventurersServed = reckoning.AdventurersCounted,
             QuestsCleared = ex.Succeeded, QuestsFailed = ex.Failed, AdventurersLost = ex.Dead,
@@ -189,11 +188,10 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             .FirstOrDefault(Entity.Null);
         if (crier.IsNull)
             return;
-        var season = sim.Defs.Season;
         var r = sim.Reckoning;
-        var renown = Director.Reckoning.RenownWord(r.Renown, season.RenownTarget);
-        var dread = Director.Reckoning.DreadWord(r.Dread, season.DreadLimit);
-        var verdict = r.Renown >= season.RenownTarget ? "We've done it, friends: the season's ours!" : "It wasn't enough, friends. Not this season.";
+        var renown = Director.Reckoning.RenownWord(r.Renown, Director.Reckoning.RenownTarget(sim));
+        var dread = Director.Reckoning.DreadWord(r.Dread, Director.Reckoning.DreadLimit(sim));
+        var verdict = r.Renown >= Director.Reckoning.RenownTarget(sim) ? "We've done it, friends: the season's ours!" : "It wasn't enough, friends. Not this season.";
         sim.Speech.Say(sim, crier, $"Friends! The season's over. {renown}, and {char.ToLowerInvariant(dread[0])}{dread[1..]}. {verdict}", Speech.Volume.Shout);
     }
 
