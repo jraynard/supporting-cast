@@ -428,6 +428,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         RunBots();
         FollowAvatar(); // after the ticks, so the camera shows this frame's position
         UpdateGhost();
+        WarnOfHeat(dt);
         UpdateSound(dt);
     }
 

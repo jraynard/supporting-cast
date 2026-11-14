@@ -16,6 +16,29 @@ public sealed partial class VillageGame
 {
     private const float NeedsBarWidth = 120f;
 
+    private float _heatCheckIn;
+    private bool _heatWarned;
+
+    /// <summary>
+    /// A word the moment the heat you feel turns dangerous (hours at the forge's mouth), since the
+    /// needs panel's "overheating" is easy to miss with a mini-game open. Once, until you've cooled off.
+    /// </summary>
+    private void WarnOfHeat(float dt)
+    {
+        if ((_heatCheckIn -= dt) > 0 || !HasAvatar)
+            return;
+        _heatCheckIn = 0.5f;
+        var felt = Warmth.Felt(_sim, _avatar);
+        var tol = _sim.World.Get<Creature>(_avatar).Tolerance(_sim.Clock.Tick);
+        if (!_heatWarned && felt > tol.SafeMax)
+        {
+            _heatWarned = true;
+            Notify(MessageKind.Warning, $"It's {felt:F0}°C where you stand: step back from the heat before it does you harm.");
+        }
+        else if (felt < tol.SafeMax - 5)
+            _heatWarned = false;
+    }
+
     private void DrawNeedsPanel()
     {
         if (!HasAvatar || !_sim.World.IsAlive(_avatar))
