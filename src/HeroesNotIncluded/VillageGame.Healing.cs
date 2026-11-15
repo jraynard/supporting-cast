@@ -311,6 +311,15 @@ public sealed partial class VillageGame
     private void DrawCast(CastSession s)
     {
         BeginWork(s.Title, ("1-6", "key a rune as the ring meets the circle"), ("F", "let the weave go"), ("Esc", "let it unravel (nothing spent)"));
+        // Begun at a body: the Calling's runes, in order, so nobody has to go looking in the book.
+        if (s.CallingFor.Length > 0 && Sim.Afterlife.Revival.CallMending(_sim) is { } calling)
+        {
+            TextC(Theme.Dim, "Key, in order:");
+            ImGui.SameLine(0, 6);
+            RuneGlyphs(calling.RuneDefs, 22, keys: true);
+            ImGui.SameLine(0, 8);
+            TextC(Theme.Dim, Controls.Keys($"then ~F~. {calling.CostAt(0):F0} mana."));
+        }
         var dl = ImGui.GetWindowDrawList();
         // As wide as the window (its hints may make it wider than the circle), so it all sits centred.
         var size = new float2(Math.Max(Gui.S(420), ImGui.GetContentRegionAvail().X), Gui.S(300));

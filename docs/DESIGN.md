@@ -468,7 +468,19 @@ villager mid-round is for late joiners only.
 - *Haunting.* A ghost can spend its presence on small signs: a sudden chill, a light that gutters
   (and a weak one goes out), a knock. The living perceive them but not who made them.
 - *Unfinished business.* Small errands for the dead (sit with the grieving, watch over a sleeper,
-  show a lost party the way), each worth a little Renown.
+  show a lost party the way), each worth a little Renown. A ring round whoever needs you shows how
+  near is near enough; they may step out of it a few seconds and the lingering only pauses.
+- *The beasts* feel the dead as people don't: a ghost can startle them (a rat at a larder leaves
+  it for good) or beckon the timid to graze about it.
+- *Possession.* A ghost can get into a wild beast near it, a hare to a boar (never a raid's wolves
+  or bears), and run, bite and gore with it while its presence lasts, a bigger beast spending it
+  faster. To the town's people it's on their side (friendly fire off, it passes through them);
+  to anyone looking, its eyes are wrong.
+- *Frost and dreams.* A ghost can spend all its presence to write a few words in frost, there for
+  anyone to read until it melts, or whisper a few into a sleeper's dream, remembered on waking.
+  Never who wrote them, and kept short: the dead hint, they don't testify.
+- *Unnerving.* A chill, knock or startle near raiders shakes them: their blows come slower and
+  they break sooner. The dead help defend the town without striking a blow (unless they're in a boar).
 - *Coming back.* The empath's rite, "Calling back", woven at a fresh body: most of their mana, and
   the grave's chill taken on. A body keeps longer on a shrine pallet. The ghost must come and
   answer. The revived come back downed and weak, once a round. Later, a traitor necromancer

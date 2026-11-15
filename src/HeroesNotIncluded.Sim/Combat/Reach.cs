@@ -76,10 +76,12 @@ public static class Reach
     {
         if (sim.Round.FriendlyFire)
             return true;
-        var w = sim.World;
-        return !(w.TryGet<Creature>(attacker, out var a) && a.Faction == Faction.Village
-            && w.TryGet<Creature>(victim, out var v) && v.Faction == Faction.Village);
+        return !(TownSide(sim, attacker) && TownSide(sim, victim));
     }
+
+    /// <summary>The town's, for friendly fire: a villager, or a beast one of the town's dead is in.</summary>
+    private static bool TownSide(Simulation sim, Entity e) =>
+        sim.World.TryGet<Creature>(e, out var c) && (c.Faction == Faction.Village || sim.World.Has<Afterlife.Possessed>(e));
 
     /// <summary>
     /// Anyone not hostile to <paramref name="attacker"/> (other than <paramref name="target"/>) in

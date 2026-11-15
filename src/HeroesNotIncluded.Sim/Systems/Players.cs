@@ -72,6 +72,13 @@ public static class Players
     }
 
     /// <summary>The player a character (or a ghost) belongs to, if any.</summary>
+    /// <summary>
+    /// Is this steered by a player rather than the AI: a player's character, or a beast a ghost is in
+    /// (<see cref="Afterlife.Possessed"/>)? Blows treat both alike: no AI guard, a player's windup.
+    /// </summary>
+    public static bool Steered(Simulation sim, Entity e) =>
+        sim.World.Has<Avatar>(e) || sim.World.Has<Afterlife.Possessed>(e);
+
     public static Guid? OwnerOf(Simulation sim, Entity e) =>
         !sim.World.IsAlive(e) ? null
         : sim.World.TryGet<PlayerCharacter>(e, out var p) ? p.PlayerId

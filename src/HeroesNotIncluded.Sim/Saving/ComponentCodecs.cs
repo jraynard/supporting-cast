@@ -160,18 +160,34 @@ internal static class ComponentCodecs
             w.Long(g.RestUntil);
             w.Int(g.Done);
             w.String(g.LastDone ?? "");
+            w.Int(g.ErrandAwayTicks);
+            w.Entity(g.Riding);
         }, r => new Afterlife.Ghost
         {
             PlayerId = Guid.ParseExact(r.String(), "N"), Body = r.Entity(), Name = r.String(), Away = r.Bool(), Presence = Math.Clamp(r.Float(), 0f, 1f),
             Errand = r.Int(), ErrandTarget = r.Entity(), ErrandTicks = r.Int(), RestUntil = r.Long(), Done = r.Int(), LastDone = r.String(),
+            ErrandAwayTicks = r.Version >= 40 ? r.Int() : 0, Riding = r.Version >= 40 ? r.Entity() : Entity.Null, // came with format 40
         }),
+        Codec("Possessed", (w, p) =>
+        {
+            w.Entity(p.Ghost);
+            w.Long(p.Since);
+        }, r => new Afterlife.Possessed { Ghost = r.Entity(), Since = r.Long() }),
+        Codec("Dream", (w, d) =>
+        {
+            w.String(d.Text ?? "");
+            w.Long(d.Tick);
+            w.Long(d.WokeTick);
+        }, r => new Afterlife.Dream { Text = r.String(), Tick = r.Long(), WokeTick = r.Long() }),
+        Codec("Unnerved", (w, u) => w.Long(u.Until), r => new Afterlife.Unnerved { Until = r.Long() }),
         Codec("Unfinished", (w, u) => w.Int(u.Done), r => new Afterlife.Unfinished { Done = r.Int() }),
         Codec("Haunting", (w, h) =>
         {
             w.Int((int)h.Kind);
             w.Long(h.Tick);
             w.Long(h.Until);
-        }, r => new Afterlife.Haunting { Kind = (Afterlife.HauntKind)r.Int(), Tick = r.Long(), Until = r.Long() }),
+            w.String(h.Text ?? "");
+        }, r => new Afterlife.Haunting { Kind = (Afterlife.HauntKind)r.Int(), Tick = r.Long(), Until = r.Long(), Text = r.Version >= 40 ? r.String() : "" }),
         Codec("Calling", (w, c) =>
         {
             w.Entity(c.Caster);

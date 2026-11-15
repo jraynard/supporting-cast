@@ -60,21 +60,30 @@ public static class Errands
         foreach (var ghost in w.Query<Ghost>())
         {
             ref var g = ref w.Get<Ghost>(ghost);
-            if (sim.Clock.Tick < g.RestUntil)
+            if (sim.Clock.Tick < g.RestUntil || !g.Riding.IsNull) // resting, or in a beast
             {
                 g.ErrandTarget = Entity.Null;
                 continue;
             }
-            if (!g.ErrandTarget.IsNull && g.Errand >= 0 && g.Errand < defs.Count
-                && Qualifies(sim, defs[g.Errand], g.ErrandTarget) && Near(sim, ghost, g.ErrandTarget, defs[g.Errand].Reach))
+            if (!g.ErrandTarget.IsNull && g.Errand >= 0 && g.Errand < defs.Count && Qualifies(sim, defs[g.Errand], g.ErrandTarget))
             {
-                g.ErrandTicks += ticks;
-                if (g.ErrandTicks >= defs[g.Errand].Ticks)
-                    Complete(sim, ghost, ref g, defs[g.Errand]);
-                continue;
+                var def = defs[g.Errand];
+                if (Near(sim, ghost, g.ErrandTarget, def.Reach))
+                {
+                    g.ErrandAwayTicks = 0;
+                    g.ErrandTicks += ticks;
+                    if (g.ErrandTicks >= def.Ticks)
+                        Complete(sim, ghost, ref g, def);
+                    continue;
+                }
+                // They've stepped out of reach: the lingering only pauses, a while, for the ghost to catch up.
+                g.ErrandAwayTicks += ticks;
+                if (g.ErrandAwayTicks <= def.GraceTicks)
+                    continue;
             }
             g.ErrandTarget = Entity.Null;
             g.ErrandTicks = 0;
+            g.ErrandAwayTicks = 0;
             for (var i = 0; i < defs.Count && g.ErrandTarget.IsNull; i++)
                 foreach (var e in sim.Creatures())
                     if (e != g.Body && Near(sim, ghost, e, defs[i].Reach) && Qualifies(sim, defs[i], e))
@@ -115,6 +124,7 @@ public static class Errands
         };
         g.ErrandTarget = Entity.Null;
         g.ErrandTicks = 0;
+        g.ErrandAwayTicks = 0;
         g.RestUntil = sim.Clock.Tick + SimClock.HoursToTicks(def.RestHours);
         if (w.IsAlive(g.Body))
         {

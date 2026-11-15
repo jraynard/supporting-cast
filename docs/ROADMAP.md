@@ -99,7 +99,9 @@ HISTORY.md, "Solo playtest notes".
   activity weights, what the show table and the games are worth to a guest, whether the toasts
   swing a season enough to matter.
 - **Death and ghosts:** the Calling's cost and windows (`Revival`), presence and sign costs
-  (`Hauntings`), errand times and Renown (`afterlife.json`).
+  (`Hauntings`), errand times, reaches, grace and Renown (`afterlife.json`); what a beast costs to
+  ride (`Possession.DrainPerHour`, by mass) and whether a ridden boar is too strong a fighter; how
+  hard the dead's unnerving bites (`Hauntings.Unnerved*`).
 
 *Exit: friends play a whole round from their own homes, and the numbers have had a pass.*
 
@@ -108,7 +110,9 @@ HISTORY.md, "Solo playtest notes".
 The traitors: the game's hook, and what makes it a game people tell others about.
 - Allegiance, objectives, the hidden shop, evidence, player violence, Constable and jail, the bell,
   meetings and exile.
-- Ghosts in it: what the dead can tell, and what a traitor does about a Calling.
+- Ghosts in it: what the dead can tell, and what a traitor does about a Calling. Frost and dream
+  whispers are kept to a few words so a ghost can't name its killer at length; decide whether
+  even that's too much once there are killers to name.
 - The festival ceremony's `Accusation` step (`CeremonyStep`, a no-op for now): the town can name a
   traitor before the verdict.
 - **The lobby's Traitors toggle** (`RoundOptions.Traitors`, forced off by `RoundSystem.SetOptions` for
@@ -254,7 +258,11 @@ items into "Now" when a playtest says they matter.
   tags after the rest, every layer regenerated, all four in one pass). For now a blow plays the
   work swing with the weapon drawn about the hand, a dodge is a tumble, a dancer hops and sways
   (`WorldRenderer`), and a cheer is a hop.
-- A proper ghost (a pale, see-through take on the character), and the Calling's glow.
+- A proper ghost (a pale, see-through take on the character), and the Calling's glow. A ridden
+  beast's look (a pale glint in its eyes), frost drawn on the ground rather than a tag, and a
+  startle sound for the beasts (spook and frost borrow the chill's for now; docs/AUDIO.md).
+- Co-op: a ridden beast isn't predicted on its rider's screen (`FreeMovePredictor` is the
+  character's), so it lags a round trip behind the keys.
 - The bucket's water drawn in flight.
 - Placeholder art in the kitchen: rations are a bolt of cloth, the prep table and butcher block a
   table, the spit the butcher spot, roast slices and the side of pork a meat sprite; the oven

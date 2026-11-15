@@ -1068,6 +1068,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         }
         if (HasAvatar)
             DrawAvatarBeacon();
+        DrawBusinessRings();
         if (!map.InBounds(_hoverCell) || _tool == ToolKind.Select)
             return;
 

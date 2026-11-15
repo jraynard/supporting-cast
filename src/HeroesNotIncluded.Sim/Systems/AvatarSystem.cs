@@ -109,6 +109,9 @@ public enum AvatarActionKind
 
     /// <summary>Eat from your home's bread crock when hungry (<see cref="Homes.Crock"/>), at once.</summary>
     EatFromCrock,
+
+    /// <summary>An empath at a fresh body: weave a Calling back for it (<see cref="Afterlife.Revival.BeginCalling"/>), begun at once.</summary>
+    CallBack,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -136,7 +139,7 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
         or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean
         or AvatarActionKind.Mend or AvatarActionKind.OrderMeal or AvatarActionKind.OrderHealing or AvatarActionKind.FillBucket or AvatarActionKind.ThrowWater or AvatarActionKind.FestivalGame or AvatarActionKind.Dance
-        or AvatarActionKind.ShowPiece or AvatarActionKind.Sit;
+        or AvatarActionKind.ShowPiece or AvatarActionKind.Sit or AvatarActionKind.CallBack;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
     public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker
@@ -318,6 +321,15 @@ public sealed class AvatarSystem : ISimSystem
         if (tool == AvatarTool.Use && sim.Repairs.At(cell) is { } breach && InReach(here, cell)
             && w.TryGet<Trade>(avatar, out var mender) && mender.Def.MendsTown)
             return new(AvatarActionKind.Mend, $"Brace the {breach.Label}", cell, Entity.Null);
+        // The dead: an empath with the mana calls them back from beside the body (or the bed it lies
+        // in); anyone else (or an empath short of it) can carry it to a shrine pallet, where it keeps.
+        if (tool == AvatarTool.Use && InReach(here, cell) && Afterlife.Revival.BodyAt(sim, cell) is { IsNull: false } dead)
+        {
+            if (w.Has<Mana>(avatar) && Afterlife.Revival.Fresh(sim, dead) && Afterlife.Revival.CallProblem(sim, avatar, dead) == null)
+                return new(AvatarActionKind.CallBack, $"Call {w.Get<Creature>(dead).Name} back", cell, dead);
+            if (held.IsNull && Rescues.CanCarry(sim, avatar, dead) && !Afterlife.Revival.OnShrinePallet(sim, dead))
+                return new(AvatarActionKind.Carry, $"Pick up {w.Get<Creature>(dead).Name}'s body", cell, dead);
+        }
         // Anyone downed and small enough to carry to a bed.
         if (tool == AvatarTool.Use && held.IsNull && InReach(here, cell) && Rescues.DownedAt(sim, cell, avatar) is { IsNull: false } hurt
             && Rescues.CanCarry(sim, avatar, hurt))
@@ -859,13 +871,22 @@ public sealed class AvatarSystem : ISimSystem
                 AiSystem.Order(sim, avatar, new ButcherJob(action.Target));
                 break;
             case AvatarActionKind.Carry:
+                var lifting = !w.Has<Carried>(action.Target);
                 Rescues.Carry(sim, avatar, action.Target, action.Cell);
+                // An empath lifting someone they can't call back yet hears why (most likely the mana).
+                if (lifting && w.Has<Carried>(action.Target) && w.Has<Mana>(avatar) && Afterlife.Revival.Fresh(sim, action.Target)
+                    && w.TryGet<Mana>(avatar, out var pool) && pool.Current < Afterlife.Revival.CallCost(sim) - 0.01f)
+                    sim.Messages.Tell(avatar, MessageKind.Info,
+                        $"You've {pool.Current:F0} mana; calling them back takes {Afterlife.Revival.CallCost(sim):F0}. Meditate first. On a shrine pallet the body keeps {Afterlife.Revival.PalletHours:F0} hours.", action.Cell);
                 break;
             case AvatarActionKind.Fish:
                 AiSystem.Order(sim, avatar, new FishJob(action.Cell, ordered: false));
                 break;
             case AvatarActionKind.Climb:
                 AiSystem.Order(sim, avatar, new ClimbJob(action.Cell));
+                break;
+            case AvatarActionKind.CallBack:
+                Afterlife.Revival.BeginCalling(sim, avatar, action.Target);
                 break;
             case AvatarActionKind.EatFromCrock:
                 if (Homes.FromCrock(sim, avatar, action.Target) is { IsNull: false } food && CanEat(sim, avatar, food))

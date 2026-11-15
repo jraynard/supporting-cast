@@ -98,10 +98,12 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
             if (!w.Has<FreeMover>(e))
                 Join(sim, e);
         foreach (var e in w.Query<FreeMover>())
-            if (!w.Has<Avatar>(e) && !w.Get<FreeMover>(e).Fighting)
+            if (!w.Has<Avatar>(e) && !w.Get<FreeMover>(e).Fighting && !w.Has<Afterlife.Possessed>(e))
                 w.Remove<FreeMover>(e);
         foreach (var e in w.Each<FreeMover>())
             Step(sim, e);
+        if (w.Count<Afterlife.Possessed>() > 0)
+            Afterlife.Possession.Follow(sim); // a riding ghost sees from where its beast is
     }
 
     private static void Step(Simulation sim, Entity e)

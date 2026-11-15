@@ -53,6 +53,7 @@ public sealed partial class VillageGame
         DrawHeadline();
         DrawVillagerBar();
         DrawGhostBanner();
+        DrawGhostWords();
         DrawCallToArms();
         DrawFestivalCard();
         DrawToasts();
@@ -330,9 +331,12 @@ public sealed partial class VillageGame
                 ? Rendering.HumanLook.FolkOf(folk).Label.ToLowerInvariant() : $"{c.Def.Label}", e);
         if (!c.Dead && Sim.Systems.FoodPoisoning.Describe(_sim, e) is { } sick)
             TextC(Warn, sick);
+        if (!c.Dead && View.Strange(e) is { } odd)
+            TextC(Warn, odd);
         if (c.Dead)
         {
             TextC(Bad, "Dead");
+            InspectCallingBack(e);
             if (w.TryGet<Rot>(e, out var carcass))
             {
                 SpoilageBar(carcass.Progress, _sim.TemperatureAt(_sim.LocationOf(e)));

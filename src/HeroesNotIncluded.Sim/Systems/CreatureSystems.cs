@@ -234,6 +234,13 @@ public sealed class AiSystem : ISimSystem
                     RunJob(sim, e, mind, now);
                 continue;
             }
+            // A beast a ghost is in goes only where it's steered (Afterlife.Possession).
+            if (w.Has<Afterlife.Possessed>(e))
+            {
+                if (mind.Job != null)
+                    RunJob(sim, e, mind, now);
+                continue;
+            }
             var creature = w.Get<Creature>(e);
             // Raiders, and anyone else on their way out (released prisoners, herds moving on), think like raiders.
             // Adventurers keep their own counsel, leaving included.

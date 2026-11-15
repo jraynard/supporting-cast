@@ -551,9 +551,10 @@ public sealed class RaiderBrain : IBrain
     public static bool Armed(Simulation sim, Entity pawn) =>
         sim.World.TryGet<Equipment>(pawn, out var eq) && sim.World.IsAlive(eq.Weapon);
 
-    /// <summary>Hurting or hobbled raiders give up.</summary>
+    /// <summary>Hurting or hobbled raiders give up; shaken by the dead (<see cref="Afterlife.Unnerved"/>), sooner.</summary>
     public static bool WantsToFlee(Simulation sim, Entity pawn) =>
-        sim.World.TryGet<Health>(pawn, out var h) && (h.Pain > 0.5f || h.Capacity(Capacity.Moving) < 0.4f);
+        sim.World.TryGet<Health>(pawn, out var h)
+        && (h.Pain > (Afterlife.Hauntings.IsUnnerved(sim, pawn) ? Afterlife.Hauntings.UnnervedBreaksAt : 0.5f) || h.Capacity(Capacity.Moving) < 0.4f);
 }
 
 /// <summary>
@@ -584,8 +585,18 @@ public sealed class AnimalBrain : IBrain
                 return new FleeJob(run);
         }
 
-        // A rat darts a few steps off; anything else runs well clear.
+        // Something of the dead it can feel and nobody else can (Afterlife.Hauntings): it bolts, and a
+        // rat at a larder gives it up for good.
         var vermin = w.TryGet<Hospitality.Vermin>(pawn, out var v) ? v : (Hospitality.Vermin?)null;
+        if (Afterlife.Hauntings.Nearest(sim, tile, Afterlife.HauntKind.Spook, Afterlife.Hauntings.SpookReach) is { } spook)
+        {
+            if (vermin != null && !w.Has<Migrating>(pawn) && sim.NearestEdge(tile) is { } edge)
+                w.Add(pawn, new Migrating { To = edge });
+            if (FleeSpot(sim, pawn, spook, 12) is { } bolt)
+                return new FleeJob(bolt);
+        }
+
+        // A rat darts a few steps off; anything else runs well clear.
         if (Threat(sim, pawn) is { } threat && FleeSpot(sim, pawn, threat, vermin != null ? 4 : 10) is { } away)
             return new FleeJob(away);
 
@@ -601,7 +612,10 @@ public sealed class AnimalBrain : IBrain
         }
 
         var rand = sim.Wildlife.Rand;
-        var spot = AiQueries.RandomReachableNear(sim, pawn, HerdCenter(sim, pawn), 5, rand);
+        // A timid beast feels the dead's beckoning and comes to graze about it instead of its herd.
+        var beckon = def.Animal is not { Aggressive: true } && vermin == null
+            ? Afterlife.Hauntings.Nearest(sim, tile, Afterlife.HauntKind.Beckon, Afterlife.Hauntings.BeckonReach) : null;
+        var spot = AiQueries.RandomReachableNear(sim, pawn, beckon ?? HerdCenter(sim, pawn), beckon != null ? 2 : 5, rand);
         return spot is { } t ? new GrazeJob(t, rand.Range(300, 900)) : null;
     }
 

@@ -625,7 +625,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         float? calling = w.TryGet<Afterlife.Calling>(body, out var call) && call.Until >= sim.Clock.Tick
             ? (call.Until - sim.Clock.Tick) / (float)SimClock.TicksPerSecond : null;
         return new KnownBody(Hospitality.DirectionsSystem.Way(here, lies), beside, calling, Afterlife.Revival.AnswerProblem(sim, viewer) == null,
-            Afterlife.Revival.Fresh(sim, body), Afterlife.Revival.OnShrinePallet(sim, body));
+            Afterlife.Revival.Fresh(sim, body), Afterlife.Revival.OnShrinePallet(sim, body), Afterlife.Revival.HoursLeft(sim, body), Afterlife.Revival.AnyEmpath(sim));
     }
 
     /// <summary>
@@ -650,8 +650,11 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
                 {
                     Afterlife.HauntKind.Chill => "A sudden chill. Breath shows here.",
                     Afterlife.HauntKind.Gutter => "The light gutters and goes dark.",
+                    Afterlife.HauntKind.Spook => "Something unseen startles the beasts here.",
+                    Afterlife.HauntKind.Beckon => "The beasts here lift their heads, as if called.",
+                    Afterlife.HauntKind.Frost => $"Frost on the ground spells: \"{h.Text}\"",
                     _ => "A knock, from nowhere you can see.",
-                });
+                }, h.Text ?? "");
         }
     }
 
@@ -673,10 +676,37 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
             for (var i = 0; i < defs.Count; i++)
                 if (e != g.Body && Afterlife.Errands.Qualifies(sim, defs[i], e))
                 {
-                    var progress = g.ErrandTarget == e && g.Errand == i ? Math.Clamp(g.ErrandTicks / (float)defs[i].Ticks, 0f, 1f) : (float?)null;
-                    yield return new KnownBusiness(defs[i], w.Get<Creature>(e).Name, e, w.Get<Position>(e).Cell, progress);
+                    var mine = g.ErrandTarget == e && g.Errand == i;
+                    var progress = mine ? Math.Clamp(g.ErrandTicks / (float)defs[i].Ticks, 0f, 1f) : (float?)null;
+                    yield return new KnownBusiness(defs[i], w.Get<Creature>(e).Name, e, w.Get<Position>(e).Cell, progress, defs[i].Reach, mine && g.ErrandAwayTicks > 0);
                     break;
                 }
+    }
+
+    /// <summary>
+    /// What this character dreamt, once they've woken (<see cref="Afterlife.Dreams"/>): words a ghost
+    /// whispered, never whose. Null while they sleep on, for anyone else, and for the dead.
+    /// </summary>
+    public KnownDream? Dream()
+    {
+        var w = sim.World;
+        if (Ghostly || !w.IsAlive(viewer) || !w.TryGet<Afterlife.Dream>(viewer, out var d) || d.WokeTick == 0)
+            return null;
+        return new KnownDream(d.WokeTick, $"You dreamt someone whispered: \"{d.Text}\"");
+    }
+
+    /// <summary>
+    /// A beast a ghost is in, as anyone who sees it knows it: only that it isn't right. Never whose
+    /// ghost, nor that it's a ghost at all. Null if it's an ordinary beast or out of sight.
+    /// </summary>
+    public string? Strange(Entity animal)
+    {
+        var w = sim.World;
+        if (blind || !w.IsAlive(animal) || !w.Has<Afterlife.Possessed>(animal) || !w.Has<Position>(animal))
+            return null;
+        if (!Omniscient && !Ghostly && !CanSeeCell(w.Get<Position>(animal).Cell))
+            return null;
+        return "Its eyes are wrong. It moves like something that has never been a beast.";
     }
 
     /// <summary>Everything this character has heard that's still remembered, oldest first.</summary>
@@ -913,10 +943,14 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
 /// and the calling back if there is one (game seconds left; <see cref="CanAnswer"/> at the body now).
 /// <see cref="Fresh"/>: it can still be called back; <see cref="OnPallet"/>: laid out in the shrine.
 /// </summary>
-public sealed record KnownBody(string Way, IReadOnlyList<string> Beside, float? CallingFor, bool CanAnswer, bool Fresh, bool OnPallet);
+public sealed record KnownBody(string Way, IReadOnlyList<string> Beside, float? CallingFor, bool CanAnswer, bool Fresh, bool OnPallet,
+    float HoursLeft = 0f, bool EmpathAlive = true);
 
-/// <summary>A sign of the dead as perceived (<see cref="PerceptionView.Signs"/>): what, where, since when, and in words.</summary>
-public readonly record struct KnownSign(Afterlife.HauntKind Kind, int3 Cell, long Tick, string Words);
+/// <summary>A sign of the dead as perceived (<see cref="PerceptionView.Signs"/>): what, where, since when, and in words; <paramref name="Text"/> is what frost spells (empty otherwise).</summary>
+public readonly record struct KnownSign(Afterlife.HauntKind Kind, int3 Cell, long Tick, string Words, string Text = "");
+
+/// <summary>A dream remembered on waking (<see cref="PerceptionView.Dream"/>).</summary>
+public readonly record struct KnownDream(long WokeTick, string Words);
 
 /// <summary>Someone a ghost could see to (<see cref="PerceptionView.Business"/>): the errand, who and where, and how far along if it's lingering there.</summary>
-public readonly record struct KnownBusiness(Defs.GhostErrandDef Errand, string Name, Entity Who, int3 Cell, float? Progress);
+public readonly record struct KnownBusiness(Defs.GhostErrandDef Errand, string Name, Entity Who, int3 Cell, float? Progress, float Reach = 0, bool Paused = false);

@@ -31,8 +31,12 @@ public struct Revived
 /// </summary>
 public static class Revival
 {
-    /// <summary>How long a body can still be called back, game hours: lying anywhere, or on a shrine pallet.</summary>
-    public const float FreshHours = 4f, PalletHours = 12f;
+    /// <summary>
+    /// How long a body can still be called back, game hours: lying anywhere, or on a shrine pallet.
+    /// Eight and sixteen minutes at 1x: four hours was under three minutes, gone before a playtest's
+    /// empath had found out how.
+    /// </summary>
+    public const float FreshHours = 12f, PalletHours = 24f;
 
     /// <summary>How long a calling holds for the dead to answer, ticks (half a game hour: twenty seconds).</summary>
     public const int AnswerTicks = SimClock.TicksPerHour / 2;
@@ -70,8 +74,129 @@ public static class Revival
         var w = sim.World;
         if (!w.IsAlive(body) || !w.TryGet<Death>(body, out var d) || w.Has<Revived>(body))
             return false;
+        return sim.Clock.Tick - d.Tick <= SimClock.HoursToTicks(OnShrinePallet(sim, body) ? PalletHours : FreshHours);
+    }
+
+    /// <summary>Game hours left to call this body back (0 once it's cold, or it's been back once).</summary>
+    public static float HoursLeft(Simulation sim, Entity body)
+    {
+        if (!Fresh(sim, body))
+            return 0f;
         var hours = OnShrinePallet(sim, body) ? PalletHours : FreshHours;
-        return sim.Clock.Tick - d.Tick <= SimClock.HoursToTicks(hours);
+        return Math.Max(0f, hours - (sim.Clock.Tick - sim.World.Get<Death>(body).Tick) / (float)SimClock.TicksPerHour);
+    }
+
+    /// <summary>What a Calling back costs (the mending's mana).</summary>
+    public static float CallCost(Simulation sim) =>
+        sim.Defs.AllMendings.FirstOrDefault(m => m.CallsBack) is { } m ? m.CostAt(0) : 70f;
+
+    /// <summary>The Calling back mending, if the defs have one.</summary>
+    public static MendingDef? CallMending(Simulation sim) => sim.Defs.AllMendings.FirstOrDefault(m => m.CallsBack);
+
+    /// <summary>
+    /// The cells a body can be knelt at from: its own, and, laid in a bed, every cell of the bed (a
+    /// body half under the covers is reached from any side of it).
+    /// </summary>
+    public static IEnumerable<int3> LiesAcross(Simulation sim, Entity body)
+    {
+        var w = sim.World;
+        var cell = w.Get<Position>(body).Cell;
+        yield return cell;
+        if (!sim.Map.InBounds(cell))
+            yield break;
+        var site = sim.Map.Structure[sim.Map.Idx(cell)];
+        if (site.IsNull || !w.TryGet<Thing>(site, out var t) || t.Def.Building is not { IsBed: true })
+            yield break;
+        foreach (var c in sim.FootprintCells(site))
+            if (c != cell)
+                yield return c;
+    }
+
+    /// <summary>The freshest dead person lying at (or in a bed across) a cell, or Entity.Null.</summary>
+    public static Entity BodyAt(Simulation sim, int3 cell)
+    {
+        var w = sim.World;
+        var best = Entity.Null;
+        var bestTick = long.MinValue;
+        foreach (var e in w.Each<Death>())
+        {
+            if (w.Has<Carried>(e) || !w.TryGet<Creature>(e, out var c) || !c.Dead || w.Get<Death>(e).Tick <= bestTick)
+                continue;
+            foreach (var at in LiesAcross(sim, e))
+                if (at == cell)
+                {
+                    (best, bestTick) = (e, w.Get<Death>(e).Tick);
+                    break;
+                }
+        }
+        return best;
+    }
+
+    /// <summary>
+    /// Why <paramref name="caster"/> can't call <paramref name="body"/> back now, in words for them
+    /// (null if they can): the gift, the body's freshness, being beside it, and the mana.
+    /// </summary>
+    public static string? CallProblem(Simulation sim, Entity caster, Entity body)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Mana>(caster, out var mana))
+            return "only an empath can call the dead back";
+        if (!w.IsAlive(body) || !w.Has<Death>(body) || !w.Has<Creature>(body) || !w.Has<Position>(body))
+            return "there's nobody here to call back";
+        var name = w.Get<Creature>(body).Name;
+        if (w.Has<Revived>(body))
+            return $"the way back has opened for {name} once already; it won't again";
+        if (!Fresh(sim, body))
+            return $"{name} is too long gone";
+        if (BodyBeside(sim, caster) != body)
+            return $"kneel right beside {name} first";
+        var cost = CallCost(sim);
+        if (mana.Current < cost - 0.01f)
+            return $"a calling takes {cost:F0} mana and you have {mana.Current:F0}; meditate first (it'll keep {HoursLeft(sim, body):F0} more hours{(OnShrinePallet(sim, body) ? "" : ", longer on a shrine pallet")})";
+        return null;
+    }
+
+    /// <summary>
+    /// The empath starts weaving a Calling back for the body beside them (F at the body): the weave's
+    /// the same as any, keyed from the book, but the scene shows the runes it wants. Says why not if it can't.
+    /// </summary>
+    public static void BeginCalling(Simulation sim, Entity caster, Entity body)
+    {
+        if (!sim.World.IsAlive(caster) || !sim.World.Has<Creature>(caster) || sim.World.Has<Work.WorkSession>(caster))
+            return;
+        if (CallProblem(sim, caster, body) is { } why)
+        {
+            sim.Messages.Tell(caster, MessageKind.Info, $"You can't: {why}.", sim.LocationOf(caster));
+            return;
+        }
+        Healing.CastSession.TryStart(sim, caster, 0, callingFor: sim.World.Get<Creature>(body).Name);
+    }
+
+    /// <summary>
+    /// Someone's died who could be called back: each empath alive in the town hears how, and how
+    /// long they have, so the way back isn't something to stumble on.
+    /// </summary>
+    internal static void TellEmpaths(Simulation sim, Entity body)
+    {
+        var w = sim.World;
+        if (!w.Has<Death>(body) || CallMending(sim) is null)
+            return;
+        var name = w.Get<Creature>(body).Name;
+        foreach (var e in w.Query<Mana>())
+            if (e != body && w.TryGet<Creature>(e, out var c) && !c.Dead && (w.Has<Avatar>(e) || w.Has<PlayerCharacter>(e)))
+                sim.Messages.Tell(e, MessageKind.Warning,
+                    $"{name} has died. You can still call them back: go to the body within {FreshHours:F0} hours ({PalletHours:F0} on a shrine pallet), "
+                    + $"with {CallCost(sim):F0} mana, and kneel at it: it'll offer you the Calling.", w.Get<Position>(body).Cell);
+    }
+
+    /// <summary>Is anyone with the gift alive to call the dead back?</summary>
+    public static bool AnyEmpath(Simulation sim)
+    {
+        var w = sim.World;
+        foreach (var e in w.Each<Mana>())
+            if (w.TryGet<Creature>(e, out var c) && !c.Dead)
+                return true;
+        return false;
     }
 
     /// <summary>The dead person the caster is kneeling at (touching), if any, nearest first and the freshest among those.</summary>
@@ -85,8 +210,14 @@ public static class Revival
         {
             if (w.Has<Carried>(e) || !w.TryGet<Creature>(e, out var c) || !c.Dead)
                 continue;
-            var at = w.Get<Position>(e).Cell;
-            if (at != here && !Ai.Pathfinder.Touches(here, at))
+            var touching = false;
+            foreach (var at in LiesAcross(sim, e))
+                if (at == here || Ai.Pathfinder.Touches(here, at))
+                {
+                    touching = true;
+                    break;
+                }
+            if (!touching)
                 continue;
             var tick = w.Get<Death>(e).Tick;
             if (tick > bestTick)
@@ -240,13 +371,23 @@ public static class Revival
     }
 }
 
+/// <summary>An empath beside a fresh body starts weaving its Calling back (<see cref="Revival.BeginCalling"/>).</summary>
+public sealed record CallBackCommand(Entity Actor, Entity Body) : ISimCommand, IActorCommand
+{
+    public void Apply(Simulation sim)
+    {
+        if (Core.InventoryCommand.Ready(sim, Actor, downed: false) && !sim.World.Has<Carried>(Actor) && !sim.World.Has<Work.WorkSession>(Actor))
+            Revival.BeginCalling(sim, Actor, Body);
+    }
+}
+
 /// <summary>A ghost answers the calling at its body (<see cref="Revival.Answer"/>).</summary>
 public sealed record AnswerCommand(Entity Actor) : ISimCommand, IActorCommand
 {
     public void Apply(Simulation sim) => Revival.Answer(sim, Actor);
 }
 
-/// <summary>The dead's business each second: callings that close unanswered, presence gathering, signs fading.</summary>
+/// <summary>The dead's business each second: callings that close unanswered, presence gathering and spent in beasts, signs fading, dreams remembered.</summary>
 public sealed class AfterlifeSystem : ISimSystem
 {
     public string Name => "Afterlife";
@@ -260,6 +401,10 @@ public sealed class AfterlifeSystem : ISimSystem
             Hauntings.Update(sim, Interval);
         if (sim.World.Count<Ghost>() > 0)
             Errands.Update(sim, Interval);
+        if (sim.World.Count<Possessed>() > 0 || sim.World.Count<Ghost>() > 0)
+            Possession.Update(sim, Interval);
+        if (sim.World.Count<Dream>() > 0)
+            Dreams.Update(sim);
         if (sim.World.Count<Death>() > 0 && sim.Round.Live)
             Vacancies.Update(sim);
     }

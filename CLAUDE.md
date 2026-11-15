@@ -79,8 +79,11 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     breaks is a `Tinkering/Repairs` breach, braced whole by the tinker (`SpanSession`).
   - `Afterlife/`: death in a round. A body keeps its `Death`; a player's character leaves a `Ghost`
     (its own entity, no creature parts) that sees through `PerceptionView.Ghostly`, talks on
-    `Volume.Ghost`, haunts (`Hauntings`, signs read through `PerceptionView.Signs`) and does errands
-    (`afterlife.json`) until an empath's Calling back is answered at the body (`Revival`).
+    `Volume.Ghost`, haunts (`Hauntings`, signs read through `PerceptionView.Signs`: frost's words,
+    the beasts startled or beckoned, raiders `Unnerved`), whispers dreams (`Dreams`), rides a beast
+    (`Possession`) and does errands (`afterlife.json`) until an empath's Calling back is answered at
+    the body (`Revival`). A `Possessed` beast is steered like a player's character: where code means
+    "a player steers this", ask `Players.Steered`, not `Has<Avatar>`.
   - `Perception/`: what a character knows. Sight reads `Map.Light`, so it must never feed sim state.
   - `Speech/`: who heard what, decided when spoken from positions and rooms, and saved.
   - `Work/`: mini-games. `WorkSession.Advance` is pure, so `WorkPredictor` can run it ahead of the

@@ -240,13 +240,13 @@ public static class Blows
             return false;
         var now = sim.Clock.Tick;
         ref var g = ref GuardOf(sim, attacker);
-        var player = w.Has<Avatar>(attacker);
+        var player = Systems.Players.Steered(sim, attacker);
         var cost = heavy ? HeavyCost : SwingCost;
         if (g.StaggeredUntil > now || g.RaisedAt >= 0 || g.Stamina < cost || (player && now < g.NextSwing))
             return false;
         g.Spend(cost, now);
         var ticks = attack.WindupTicks * (heavy ? HeavyWindup : 1f) * (player ? PlayerWindup : 1f) * (IsDragon(sim, attacker) ? DragonWindup : 1f)
-            * Reach.WindupFactor(sim, attacker, attack);
+            * Reach.WindupFactor(sim, attacker, attack) * (Afterlife.Hauntings.IsUnnerved(sim, attacker) ? Afterlife.Hauntings.UnnervedWindup : 1f);
         var from = w.Get<Position>(attacker).Pos;
         var aimAt = aim is { } given && float.IsFinite(given) ? given
             : aimed ? AimAt(sim, from, target, attack.Ranged ? (int)ticks : 0) : 0f;
@@ -263,7 +263,7 @@ public static class Blows
             Heavy = heavy,
             Start = now,
             Impact = now + Math.Max(1, (int)ticks),
-            Response = !aimed || w.Has<Avatar>(target) ? BlowResponse.None : AiResponse(sim, attacker, target, attack, heavy),
+            Response = !aimed || Systems.Players.Steered(sim, target) ? BlowResponse.None : AiResponse(sim, attacker, target, attack, heavy),
             Aim = aimAt,
             Lag = pressed is { } at ? (int)(now - Stamp(sim, at)) : 0,
         };
@@ -394,7 +394,7 @@ public static class Blows
 
     /// <summary>When a blow wound up now lands: its impact, and a moment more if it's at a player.</summary>
     public static long LandsAt(Simulation sim, in Windup windup) =>
-        windup.Impact + (sim.World.Has<Avatar>(windup.Target) ? Grace(sim) : 0);
+        windup.Impact + (Systems.Players.Steered(sim, windup.Target) ? Grace(sim) : 0);
 
     /// <summary>
     /// A blow lands (or doesn't): on everyone in its sweep the way it was aimed (<see cref="Reach"/>),
@@ -449,7 +449,7 @@ public static class Blows
         ref var mine = ref GuardOf(sim, attacker);
         ref var theirs = ref GuardOf(sim, target);
         var dragon = IsDragon(sim, attacker);
-        if (DodgedAt(theirs, impact, dragon) || (target == windup.Target && windup.Response == BlowResponse.Dodge && !w.Has<Avatar>(target)))
+        if (DodgedAt(theirs, impact, dragon) || (target == windup.Target && windup.Response == BlowResponse.Dodge && !Systems.Players.Steered(sim, target)))
         {
             Report(sim, attacker, target, BlowOutcome.Dodged, windup.Heavy);
             return;

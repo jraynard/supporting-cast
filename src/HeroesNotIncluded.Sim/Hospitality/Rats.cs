@@ -53,6 +53,8 @@ public sealed class RatSystem : ISimSystem
                     w.Add(rat, new Migrating { To = edge });
                 continue;
             }
+            if (w.Has<Migrating>(rat))
+                continue; // on its way out (scared off: Afterlife.Hauntings' spook)
             if (now < v.NextGnaw || Maps.Map.Distance(w.Get<Position>(rat).Cell, w.Get<Thing>(v.Larder).Cell) > Reach)
                 continue;
             v.NextGnaw = now + SimClock.HoursToTicks(GnawHours);

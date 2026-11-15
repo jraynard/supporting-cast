@@ -80,10 +80,58 @@ public class GhostErrandTests
         Linger(sim, ghost, mourner, SimClock.TicksPerSecond * 3);
         Assert.Equal(mourner, w.Get<Ghost>(ghost).ErrandTarget);
 
+        var grief = sim.Defs.AllGhostErrands.First(d => d.Kind == GhostErrandKind.Grieving);
         w.Get<Position>(ghost) = Position.At(new int3(1, 1, w.Get<Position>(mourner).Cell.Z));
-        sim.TickMany(SimClock.TicksPerSecond * 2);
+        sim.TickMany(grief.GraceTicks + SimClock.TicksPerSecond * 2); // longer than they may be out of reach
 
         Assert.Equal(0, w.Get<Ghost>(ghost).ErrandTicks);
+        Assert.True(w.Get<Ghost>(ghost).ErrandTarget.IsNull);
+    }
+
+    [Fact]
+    public void SteppingOutBrieflyOnlyPausesTheLingering()
+    {
+        var (sim, ghost, mourner) = Mourned();
+        var w = sim.World;
+        Linger(sim, ghost, mourner, SimClock.TicksPerSecond * 3);
+        var before = w.Get<Ghost>(ghost).ErrandTicks;
+        Assert.True(before > 0);
+
+        // Out of reach but still in sight of them, a little while.
+        var away = w.Get<Position>(mourner).Pos;
+        var ax = away.X + 8f < sim.Map.Width - 1 ? away.X + 8f : away.X - 8f;
+        w.Get<Position>(ghost) = new Position { Pos = new float3(ax, away.Y, away.Z), Cell = new int3((int)ax, (int)away.Y, (int)away.Z) };
+        sim.TickMany(SimClock.TicksPerSecond * 2); // within the grace
+
+        var g = w.Get<Ghost>(ghost);
+        Assert.Equal(mourner, g.ErrandTarget);
+        Assert.Equal(before, g.ErrandTicks); // paused, not lost
+        Assert.True(g.ErrandAwayTicks > 0);
+        Assert.Contains(Perception.For(sim, ghost).Business(), b => b.Who == mourner && b.Paused);
+
+        Linger(sim, ghost, mourner, SimClock.TicksPerSecond * 2);
+        Assert.True(w.Get<Ghost>(ghost).ErrandTicks > before); // and back by them, it goes on
+        Assert.Equal(0, w.Get<Ghost>(ghost).ErrandAwayTicks);
+    }
+
+    [Fact]
+    public void LingeringWorksFromAcrossTheRing()
+    {
+        var (sim, ghost, mourner) = Mourned();
+        var w = sim.World;
+        var grief = sim.Defs.AllGhostErrands.First(d => d.Kind == GhostErrandKind.Grieving);
+        Assert.True(grief.Reach >= 4.5f);
+
+        for (var t = 0; t < grief.Ticks + SimClock.TicksPerSecond * 4 && w.Get<Ghost>(ghost).Done == 0; t += 10)
+        {
+            // Four cells off them, not at their side: no chasing.
+            var at = w.Get<Position>(mourner).Pos;
+            var x = at.X + 4f < sim.Map.Width - 1 ? at.X + 4f : at.X - 4f;
+            w.Get<Position>(ghost) = new Position { Pos = new float3(x, at.Y, at.Z), Cell = new int3((int)x, (int)at.Y, (int)at.Z) };
+            sim.TickMany(10);
+        }
+
+        Assert.Equal(1, w.Get<Ghost>(ghost).Done);
     }
 
     [Fact]

@@ -26,6 +26,9 @@ public sealed class GrazeJob(int3 target, int grazeTicks) : Job
 {
     public override bool Interruptible => true;
 
+    /// <summary>Where it's wandering to graze.</summary>
+    public int3 Target => target;
+
     protected override IEnumerable<JobStatus> Run()
     {
         Report = "Wandering";

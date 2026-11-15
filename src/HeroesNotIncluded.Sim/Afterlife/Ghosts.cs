@@ -44,8 +44,14 @@ public struct Ghost
     public Entity ErrandTarget;
     public int ErrandTicks;
 
+    /// <summary>How long the one it's lingering for has been out of reach: within the errand's grace the lingering only pauses.</summary>
+    public int ErrandAwayTicks;
+
     /// <summary>After an errand the dead rest a while: none counts before this tick.</summary>
     public long RestUntil;
+
+    /// <summary>The beast it's possessing (<see cref="Possession"/>), or null: it goes where that goes.</summary>
+    public Entity Riding;
 
     /// <summary>Errands seen to, and the last, in words, for the ghost.</summary>
     public int Done;
@@ -79,6 +85,7 @@ public static class Ghosts
             w.Add(body, new Death { Tick = sim.Clock.Tick, Cause = cause });
         if (w.Get<Creature>(body).Faction == Faction.Village)
             sim.Reckoning.Add(sim, 0f, sim.Defs.Season.DreadPerTownDeath); // the valley feels it
+        Revival.TellEmpaths(sim, body);
 
         Guid player;
         if (w.TryGet<PlayerCharacter>(body, out var pc))
@@ -96,7 +103,7 @@ public static class Ghosts
             return;
         var ghost = w.Create();
         w.Add(ghost, w.Get<Position>(body));
-        w.Add(ghost, new Ghost { PlayerId = player, Body = body, Name = w.Get<Creature>(body).Name, Presence = Hauntings.StartPresence, ErrandTarget = Entity.Null, LastDone = "" });
+        w.Add(ghost, new Ghost { PlayerId = player, Body = body, Name = w.Get<Creature>(body).Name, Presence = Hauntings.StartPresence, ErrandTarget = Entity.Null, Riding = Entity.Null, LastDone = "" });
     }
 
     /// <summary>The player's ghost, or null if they aren't dead.</summary>
@@ -120,8 +127,8 @@ public static class Ghosts
     public static void Move(Simulation sim, Entity ghost, float x, float y, int z, bool toBody)
     {
         var w = sim.World;
-        if (!w.IsAlive(ghost) || !w.TryGet<Ghost>(ghost, out var g))
-            return;
+        if (!w.IsAlive(ghost) || !w.TryGet<Ghost>(ghost, out var g) || !g.Riding.IsNull)
+            return; // in a beast, it goes where the beast goes (Possession)
         ref var pos = ref w.Get<Position>(ghost);
         float3 to;
         if (toBody)

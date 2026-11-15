@@ -82,6 +82,7 @@ public sealed class KnownThoughts
     public ThoughtDef? WonFight;
     public ThoughtDef? LostFight;
     public ThoughtDef? FriendDied;
+    public ThoughtDef? DreamtOfTheDead;
     public ThoughtDef? RivalDied;
     public ThoughtDef? RescuedMe;
     public ThoughtDef? TendedMe;

@@ -15,6 +15,9 @@ public static class Controls
     /// <summary>When an action's live, for clashes: a fight happens in play, the rest apart.</summary>
     public const string Play = "Play", Fight = "Fight", Work = "Work", Menu = "Menu";
 
+    /// <summary>Dead: a ghost's own keys (the number row, as the living's hotbar), never live with a character's.</summary>
+    public const string Dead = "Dead";
+
     private static Binding K(GlfwKey k) => Binding.Key(k);
     private static Binding M(MouseButton b) => Binding.Mouse(b);
     private static Binding P(PadButton b) => Binding.Pad(b);
@@ -57,6 +60,15 @@ public static class Controls
         A(Act.Rune8, "Rune 8", "Hands-on work", Work, [K(GlfwKey.Number8)]),
         A(Act.Rune9, "Rune 9", "Hands-on work", Work, [K(GlfwKey.Number9)]),
         A(Act.Back, "Back: stop, close, put the work down", "Hands-on work", Menu, [K(GlfwKey.Escape)], P(PadButton.B)),
+
+        A(Act.GhostChill, "A sudden chill", "Among the dead", Dead, [K(GlfwKey.Number1)]),
+        A(Act.GhostGutter, "Gutter a light", "Among the dead", Dead, [K(GlfwKey.Number2)]),
+        A(Act.GhostKnock, "A knock", "Among the dead", Dead, [K(GlfwKey.Number3)]),
+        A(Act.GhostSpook, "Startle the beasts", "Among the dead", Dead, [K(GlfwKey.Number4)]),
+        A(Act.GhostBeckon, "Beckon the beasts", "Among the dead", Dead, [K(GlfwKey.Number5)]),
+        A(Act.GhostFrost, "Write in frost", "Among the dead", Dead, [K(GlfwKey.Number6)]),
+        A(Act.GhostWhisper, "Whisper into a sleeper's dream", "Among the dead", Dead, [K(GlfwKey.Number7)]),
+        A(Act.GhostPossess, "Get into a beast", "Among the dead", Dead, [K(GlfwKey.Number8)], P(PadButton.X)),
 
         A(Act.Shop, "Shop and favours", "Panels", Play, [K(GlfwKey.J)]),
         A(Act.Heard, "Talk (what you've heard)", "Panels", Play, [K(GlfwKey.T)]),
@@ -175,6 +187,8 @@ public static class Act
     public const string Hotbar1 = "hotbar_1", Hotbar2 = "hotbar_2", Hotbar3 = "hotbar_3", Hotbar4 = "hotbar_4";
     public const string Draw = "draw", Strike = "strike", Heavy = "heavy", Guard = "guard", Dash = "dash";
     public const string WorkAct = "work_act", Back = "back";
+    public const string GhostChill = "ghost_chill", GhostGutter = "ghost_gutter", GhostKnock = "ghost_knock", GhostSpook = "ghost_spook",
+        GhostBeckon = "ghost_beckon", GhostFrost = "ghost_frost", GhostWhisper = "ghost_whisper", GhostPossess = "ghost_possess";
     public const string Rune1 = "rune_1", Rune2 = "rune_2", Rune3 = "rune_3", Rune4 = "rune_4", Rune5 = "rune_5",
         Rune6 = "rune_6", Rune7 = "rune_7", Rune8 = "rune_8", Rune9 = "rune_9";
     public const string Shop = "shop", Heard = "heard", Quests = "quests", Gift = "gift", Log = "log", Build = "build",

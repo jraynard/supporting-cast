@@ -1,5 +1,6 @@
 using Brutal.ImGuiApi;
 using Narsil.Ui;
+using Narsil.Rendering;
 using HeroesNotIncluded.Sim.Afterlife;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Ecs;
@@ -41,6 +42,7 @@ public sealed partial class VillageGame
     private void UpdateGhost()
     {
         NoticeSigns();
+        MarkFrost(); // the living read it as well as the dead
         if (DieAt >= 0 && _time >= DieAt && HasAvatar && InRound)
             Issue(new DevKillCommand(_avatar)); // --die-at: once; the avatar is gone after
         if (FestivalAt >= 0 && _time >= FestivalAt && _sim.Round.Phase == RoundPhase.Playing)
@@ -54,6 +56,12 @@ public sealed partial class VillageGame
             return;
         }
         var at = _sim.World.Get<Position>(_ghost).Pos;
+        var ridden = Possession.Ridden(_sim, _ghost);
+        if (!ridden.IsNull)
+            _ghostPos = _renderer.DrawPos(_sim, ridden, _sim.World.Get<Position>(ridden).Pos); // you go where it goes
+        else if (!_wasRiding.IsNull)
+            _ghostPos = at; // thrown out, or let go: from where the beast stood
+        _wasRiding = ridden;
         if (was != _ghost)
         {
             // Just died (or loaded a game as a ghost): see where you fell, and how.
@@ -65,6 +73,46 @@ public sealed partial class VillageGame
             _selected = Entity.Null;
         }
         _camera.Target = new float3(_ghostPos.X, _ghostPos.Y, _ghostPos.Z);
+    }
+
+    /// <summary>
+    /// On a dead person's inspector: whether they can still be called back and for how long, and for
+    /// an empath a button to begin (or why not yet: too far, too little mana). Freshness isn't hidden.
+    /// </summary>
+    private void InspectCallingBack(Entity body)
+    {
+        if (!_sim.World.Has<Death>(body))
+            return;
+        if (!Revival.Fresh(_sim, body))
+        {
+            TextC(Theme.Dim, _sim.World.Has<Revived>(body) ? "Already brought back once: the way won't open again." : "Gone cold: no calling can reach them now.");
+            return;
+        }
+        var left = Math.Max(1, (int)MathF.Round(Revival.HoursLeft(_sim, body)));
+        TextC(Theme.Arcane, $"An empath could still call them back: about {left} hours{(Revival.OnShrinePallet(_sim, body) ? " (on a shrine pallet)" : ", longer on a shrine pallet")}.");
+        if (!HasAvatar || !_sim.World.Has<Mana>(_avatar))
+            return;
+        var why = Revival.CallProblem(_sim, _avatar, body);
+        ImGui.BeginDisabled(why != null || Working);
+        if (ImGui.Button("Call them back"u8, in _autoSize))
+            Issue(new CallBackCommand(_avatar, body));
+        ImGui.EndDisabled();
+        GuideGlow(why == null && !Working);
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            Tip(why != null ? Cap(why) + "." : Controls.Keys("Weave the Calling back: its runes are shown as you weave. ~F~ lets it go, and then they must come to their body and answer."));
+    }
+
+    /// <summary>The beast you were in last frame: letting go puts your ghost where it stood.</summary>
+    private Entity _wasRiding = Entity.Null;
+
+    /// <summary>Frost words in sight, over where they're written, for the living and the dead alike.</summary>
+    private void MarkFrost()
+    {
+        if (!_sim.Round.Live || (!HasAvatar && !Ghosting))
+            return;
+        foreach (var sign in View.Signs())
+            if (sign.Kind == HauntKind.Frost && sign.Text.Length > 0)
+                _renderer.Markers.Add(new(new float3(sign.Cell.X + 0.5f, sign.Cell.Y + 0.5f, sign.Cell.Z) + Rendering.WorldScale.Rise(0.6f), $"\u201c{sign.Text}\u201d", false));
     }
 
     private long _signsNoticed = -1;
@@ -85,7 +133,14 @@ public sealed partial class VillageGame
                 newest = Math.Max(newest, sign.Tick);
             }
         _signsNoticed = newest;
+        if (View.Dream() is { } dream && dream.WokeTick != _dreamNoticed)
+        {
+            Notify(MessageKind.Info, dream.Words);
+            _dreamNoticed = dream.WokeTick;
+        }
     }
+
+    private long _dreamNoticed;
 
     /// <summary>Called back and answered: your character again, where your body lay, at the one speed.</summary>
     private void CameBack()
@@ -109,6 +164,14 @@ public sealed partial class VillageGame
         if (!Ghosting)
             return;
         var w = _sim.World;
+        if (_ghostWords != null)
+            return; // writing frost or a whisper: the keys are the text box's
+        var ridden = Possession.Ridden(_sim, _ghost);
+        if (!ridden.IsNull)
+        {
+            HandleRiding(ridden);
+            return;
+        }
         var there = w.Get<Position>(_ghost).Pos;
         if (Controls.Map.Pressed(Act.Use) && !ImGui.GetIO().WantTextInput)
         {
@@ -124,6 +187,7 @@ public sealed partial class VillageGame
             return;
         }
         if (!ImGui.GetIO().WantTextInput)
+        {
             foreach (var (act, kind) in HauntKeys)
                 if (Controls.Map.Pressed(act))
                 {
@@ -132,6 +196,29 @@ public sealed partial class VillageGame
                     else
                         Issue(new HauntCommand(_ghost, kind));
                 }
+            if (Controls.Map.Pressed(Act.GhostFrost))
+                BeginGhostWords(Entity.Null);
+            if (Controls.Map.Pressed(Act.GhostWhisper))
+            {
+                var sleeper = Dreams.NearestSleeper(_sim, _ghost);
+                if (sleeper.IsNull)
+                    Notify(MessageKind.Info, "You can't: there's nobody asleep near enough to whisper to.");
+                else
+                    BeginGhostWords(sleeper);
+            }
+            if (Controls.Map.Pressed(Act.GhostPossess))
+            {
+                var beast = Possession.Nearest(_sim, _ghost);
+                if ((beast.IsNull ? "there's no beast near enough to get into" : Possession.Problem(_sim, _ghost, beast)) is { } why)
+                    Notify(MessageKind.Info, $"You can't: {why}.");
+                else
+                {
+                    Issue(new PossessCommand(_ghost, beast));
+                    _rideWish = float2.Zero;
+                    _rideAim = float.NaN;
+                }
+            }
+        }
         var (x, y) = ImGui.GetIO().WantTextInput ? (0f, 0f) : WalkAxes();
         var right = _camera.Right;
         var ahead = _camera.Heading;
@@ -157,9 +244,137 @@ public sealed partial class VillageGame
         }
     }
 
-    /// <summary>The hotbar's keys, dead: the signs a ghost can leave.</summary>
+    /// <summary>The dead's keys (the number row) for the signs a ghost leaves where it is.</summary>
     private static readonly (string Act, HauntKind Kind)[] HauntKeys =
-        [(Act.Hotbar1, HauntKind.Chill), (Act.Hotbar2, HauntKind.Gutter), (Act.Hotbar3, HauntKind.Knock)];
+        [(Act.GhostChill, HauntKind.Chill), (Act.GhostGutter, HauntKind.Gutter), (Act.GhostKnock, HauntKind.Knock),
+         (Act.GhostSpook, HauntKind.Spook), (Act.GhostBeckon, HauntKind.Beckon)];
+
+    /// <summary>Steering a beast, as last told to the sim.</summary>
+    private float2 _rideWish;
+    private float _rideAim = float.NaN;
+
+    /// <summary>
+    /// In a beast (<see cref="Possession"/>): the walk keys steer it (relative to the camera), the
+    /// mouse or right stick aims, Strike bites, Heavy bites hard, Dash springs aside, and the use
+    /// key lets go. No prediction in co-op: a beast's yours only a while.
+    /// </summary>
+    private void HandleRiding(Entity beast)
+    {
+        if (ImGui.GetIO().WantTextInput)
+            return;
+        var map = Controls.Map;
+        if (map.Pressed(Act.Use))
+        {
+            Issue(new ReleaseCommand(_ghost));
+            return;
+        }
+        var (x, y) = WalkAxes();
+        var right = _camera.Right;
+        var ahead = _camera.Heading;
+        var wish = new float2(right.X * x + ahead.X * y, right.Y * x + ahead.Y * y);
+        var len = MathF.Sqrt(wish.X * wish.X + wish.Y * wish.Y);
+        wish = len > 0.01f ? wish * (1f / len) : float2.Zero;
+        var me = _sim.World.Get<Position>(beast).Pos;
+        var aim = _rideAim;
+        if (Controls.UsingPad)
+        {
+            var stick = Host.Gamepad.RightStick;
+            aim = stick != float2.Zero ? MathF.Atan2(right.Y * stick.X + ahead.Y * stick.Y, right.X * stick.X + ahead.X * stick.Y)
+                : wish != float2.Zero ? MathF.Atan2(wish.Y, wish.X) : aim;
+        }
+        else if (!ImGui.GetIO().WantCaptureMouse)
+        {
+            var at = _camera.ScreenToPlane(Host.Input.MousePosition, me.Z + 0.5f);
+            if ((at.X - me.X) * (at.X - me.X) + (at.Y - me.Y) * (at.Y - me.Y) > 0.04f)
+                aim = MathF.Atan2(at.Y - me.Y, at.X - me.X);
+        }
+        if (wish != _rideWish)
+        {
+            Issue(new RideMoveCommand(_ghost, wish.X, wish.Y));
+            _rideWish = wish;
+        }
+        _rideAim = aim;
+        var light = map.Pressed(Act.Strike);
+        var heavy = map.Pressed(Act.Heavy);
+        if ((light || heavy) && float.IsFinite(aim))
+            Issue(new RideAttackCommand(_ghost, heavy, aim, Pressed: _sim.Clock.Tick));
+        if (map.Pressed(Act.Dash))
+            Issue(new RideDodgeCommand(_ghost, wish.X, wish.Y, _sim.Clock.Tick));
+    }
+
+    /// <summary>Writing frost (null sleeper) or a whisper for a sleeper: the text box is open while this isn't null.</summary>
+    private ImInputString? _ghostWords;
+    private Entity _ghostWordsFor = Entity.Null;
+    private int _ghostWordsFrames;
+
+    private void BeginGhostWords(Entity sleeper)
+    {
+        if (sleeper.IsNull && _sim.World.Get<Ghost>(_ghost).Presence < Hauntings.Cost(HauntKind.Frost) - 0.0001f)
+        {
+            Notify(MessageKind.Info, "You can't: frost takes all your presence; it gathers in time.");
+            return;
+        }
+        _ghostWords = new ImInputString(80, ""u8);
+        _ghostWordsFor = sleeper;
+        _ghostWordsFrames = 0;
+    }
+
+    /// <summary>The little box for frost's words, or a whisper's: Enter writes, Esc or Leave it forgets.</summary>
+    private void DrawGhostWords()
+    {
+        if (_ghostWords == null)
+            return;
+        if (!Ghosting)
+        {
+            _ghostWords = null;
+            return;
+        }
+        var frost = _ghostWordsFor.IsNull;
+        var screen = ImGui.GetIO().DisplaySize;
+        var pos = new float2(screen.X * 0.5f, screen.Y * 0.7f);
+        float2? middle = new float2(0.5f, 0.5f);
+        ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in middle);
+        Panel.Begin(frost ? "Write in frost###ghost-words" : "Whisper into a dream###ghost-words", ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse);
+        TextC(Theme.Dim, frost
+            ? $"A few words where you are, for anyone to read till it melts (at most {Hauntings.FrostWords} words). It takes all your presence."
+            : $"A few words for {_sim.World.Get<Creature>(_ghostWordsFor).Name} to wake remembering (at most {Dreams.MaxWords} words).");
+        ImGui.SetNextItemWidth(Gui.S(320));
+        if (++_ghostWordsFrames == 2)
+            ImGui.SetKeyboardFocusHere(0);
+        var done = ImGui.InputTextWithHint("##ghost-words"u8, frost ? "What the frost spells"u8 : "What they dream"u8, _ghostWords, ImGuiInputTextFlags.EnterReturnsTrue, null, IntPtr.Zero);
+        OnScreenKeyboard.AfterTextField();
+        done |= ImGui.Button(frost ? "Write it"u8 : "Whisper it"u8, in _autoSize);
+        ImGui.SameLine(0, Gui.S(8));
+        var leave = ImGui.Button("Leave it"u8, in _autoSize) || Controls.Map.Pressed(Act.Back);
+        if (done)
+        {
+            var text = ImGuiText.Value(_ghostWords);
+            var why = frost ? Hauntings.Problem(_sim, _ghost, HauntKind.Frost, text) : Dreams.Problem(_sim, _ghost, _ghostWordsFor, text);
+            if (why != null)
+                Notify(MessageKind.Info, $"You can't: {why}.");
+            else
+                Issue(frost ? new HauntCommand(_ghost, HauntKind.Frost, text) : new WhisperCommand(_ghost, _ghostWordsFor, text));
+        }
+        if (done || leave)
+            _ghostWords = null;
+        Panel.End();
+    }
+
+    /// <summary>Drawn with the world: a faint ring round each soul in sight who needs you, as far as your lingering reaches; brighter round the one you're by.</summary>
+    private void DrawBusinessRings()
+    {
+        if (!Ghosting || !InRound)
+            return;
+        var ring = Host.Atlas.Get("ui/selection");
+        foreach (var b in View.Business())
+        {
+            if (!_sim.World.TryGet<Position>(b.Who, out var pos))
+                continue;
+            var alpha = b.Progress != null ? (b.Paused ? 0.45f + 0.25f * MathF.Sin(_time * 6f) : 0.7f) : 0.3f;
+            _renderer.Decal(ring, _renderer.DrawPos(_sim, b.Who, pos.Pos) + new float3(0, 0, 0.05f), b.Reach * 2f,
+                Rgba.Pack(0.7f, 0.85f, 1f, alpha), Quad.Unlit | Quad.Always, translucent: true);
+        }
+    }
 
     /// <summary>A ghost's presence, in words: no numbers for the dead either.</summary>
     private static string PresenceWords(float p) =>
@@ -198,18 +413,33 @@ public sealed partial class VillageGame
             };
             var keeps = !body.Fresh ? " It's gone cold: no calling can reach it now." : body.OnPallet ? " It lies on a shrine pallet." : "";
             TextC(Theme.Dim, $"{where} {who}{keeps}");
+            // Whether, and for how long, you can still be brought back: the way back shouldn't be a secret.
+            if (body.Fresh)
+                TextC(body.EmpathAlive ? Theme.Arcane : Theme.Warn, !body.EmpathAlive
+                    ? "There's no empath left alive to call you back."
+                    : $"An empath can call you back for about {Math.Max(1, (int)MathF.Round(body.HoursLeft))} more hours{(body.OnPallet ? "" : " (longer if you're laid on a shrine pallet)")}: they kneel at your body, then you come to it and answer.");
+        }
+        var riding = Possession.Ridden(_sim, _ghost);
+        if (!riding.IsNull)
+        {
+            var label = _sim.World.Get<Creature>(riding).Def.Label;
+            TextC(Theme.Arcane, $"You're in the {label}. {PresenceWords(_sim.World.Get<Ghost>(_ghost).Presence)} It drains while you stay.");
+            TextC(Theme.Dim, Controls.Keys($"~WASD~ run · {Press(Act.Strike)} bite · {Press(Act.Heavy)} bite hard · {Controls.Glyph(Act.Dash)} spring aside · ~F~ let go"));
+            Panel.End();
+            return;
         }
         TextC(Theme.Dim, Controls.Keys($"Among the dead · ~WASD~ drift · ~F~ back to your body · {Controls.Glyph(Act.Heard)} speak with the dead"));
         // Unfinished business: who near you needs you, and how your lingering's going.
         var g = _sim.World.Get<Ghost>(_ghost);
         foreach (var b in View.Business().Take(3))
-            TextC(b.Progress is { } p ? Theme.Good : Theme.Dim, b.Progress is { } done
-                ? $"Lingering: {b.Errand.Label} ({b.Name}) {new string('●', (int)(done * 5))}{new string('○', 5 - (int)(done * 5))}"
-                : $"Unfinished business: {b.Errand.Label} ({b.Name}). Stay near them a while.");
+            TextC(b.Paused ? Theme.Warn : b.Progress != null ? Theme.Good : Theme.Dim, b.Progress is { } done
+                ? $"Lingering: {b.Errand.Label} ({b.Name}) {new string('●', (int)(done * 5))}{new string('○', 5 - (int)(done * 5))}{(b.Paused ? " · paused: get back within the ring" : "")}"
+                : $"Unfinished business: {b.Errand.Label} ({b.Name}). Stay within the ring round them a while.");
         if (!string.IsNullOrEmpty(g.LastDone))
             TextC(Theme.Dim, g.Done == 1 ? $"Done: {g.LastDone}" : $"Done: {g.LastDone} ({g.Done} in all)");
         var presence = g.Presence;
-        TextC(Theme.Dim, $"{PresenceWords(presence)} {Controls.Glyph(Act.Hotbar1)} a chill · {Controls.Glyph(Act.Hotbar2)} gutter a light · {Controls.Glyph(Act.Hotbar3)} a knock");
+        TextC(Theme.Dim, $"{PresenceWords(presence)} {Controls.Glyph(Act.GhostChill)} a chill · {Controls.Glyph(Act.GhostGutter)} gutter a light · {Controls.Glyph(Act.GhostKnock)} a knock · {Controls.Glyph(Act.GhostFrost)} write in frost · {Controls.Glyph(Act.GhostWhisper)} whisper to a sleeper");
+        TextC(Theme.Dim, $"The beasts: {Controls.Glyph(Act.GhostSpook)} startle them · {Controls.Glyph(Act.GhostBeckon)} beckon them · {Controls.Glyph(Act.GhostPossess)} get into one near you");
         Panel.End();
     }
 }

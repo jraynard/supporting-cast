@@ -35,6 +35,9 @@ public sealed class CastSession : WorkSession
     /// <summary>The pain carried when the weave began, 0..1: the heart races and stumbles with it.</summary>
     public float Pain { get; set; }
 
+    /// <summary>Begun at a body to call it back (F at the body, <see cref="Afterlife.Revival.BeginCalling"/>): whose. The scene shows the runes it wants.</summary>
+    public string CallingFor { get; set; } = "";
+
     /// <summary>Begun lying downed: the beat's window narrows to <see cref="DownedWindow"/> of itself.</summary>
     public bool Downed { get; set; }
 
@@ -70,7 +73,7 @@ public sealed class CastSession : WorkSession
 
     public override Skill Skill => Skill.Medicine;
     public override float Xp => 25f;
-    public override string Title => IntoCharm ? "Weaving a charm" : Wound == 0 || Feels.Length == 0 ? "Weaving" : $"Weaving: {Feels}";
+    public override string Title => CallingFor.Length > 0 ? $"Calling {CallingFor} back" : IntoCharm ? "Weaving a charm" : Wound == 0 || Feels.Length == 0 ? "Weaving" : $"Weaving: {Feels}";
 
     public static string? Problem(Simulation sim, Entity caster, int wound, bool intoCharm = false)
     {
@@ -98,7 +101,7 @@ public sealed class CastSession : WorkSession
         return best;
     }
 
-    public static void TryStart(Simulation sim, Entity caster, int wound, bool intoCharm = false)
+    public static void TryStart(Simulation sim, Entity caster, int wound, bool intoCharm = false, string callingFor = "")
     {
         if (intoCharm)
             wound = 0;
@@ -112,7 +115,7 @@ public sealed class CastSession : WorkSession
         // At the rune altar the heart steadies: the pain carried stirs the beat less.
         pain *= 1f - AltarHelp(sim, caster);
         var downed = sim.World.TryGet<Creature>(caster, out var c) && c.Downed;
-        WorkSystem.Start(sim, caster, new CastSession { Wound = wound, Feels = feels, Pain = pain, Palette = sim.Defs.AllRunes, IntoCharm = intoCharm, Downed = downed });
+        WorkSystem.Start(sim, caster, new CastSession { Wound = wound, Feels = feels, Pain = pain, Palette = sim.Defs.AllRunes, IntoCharm = intoCharm, Downed = downed, CallingFor = callingFor });
     }
 
     public override bool StillValid(Simulation sim) => sim.World.Has<Mana>(Worker);
@@ -250,6 +253,7 @@ public sealed class CastSession : WorkSession
         w.Int(_usedBeat);
         w.Bool(IntoCharm);
         w.Bool(Downed);
+        w.String(CallingFor);
     }
 
     protected override void ReadState(SaveReader r)
@@ -292,5 +296,7 @@ public sealed class CastSession : WorkSession
             IntoCharm = r.Bool();
         if (r.Version >= 39)
             Downed = r.Bool();
+        if (r.Version >= 40)
+            CallingFor = r.String(); // came with format 40
     }
 }

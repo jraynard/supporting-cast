@@ -60,9 +60,10 @@ public class RevivalTests
     }
 
     /// <summary>Weave these runes, each on the beat, and let it go (as the healer tests do).</summary>
-    private static void Weave(Simulation sim, Entity me, string[] runes, int maxTicks = 60 * 60)
+    private static void Weave(Simulation sim, Entity me, string[] runes, int maxTicks = 60 * 60, bool start = true)
     {
-        sim.ApplyNow(new WeaveCommand(me, 0));
+        if (start)
+            sim.ApplyNow(new WeaveCommand(me, 0));
         var keys = runes.Select(n => sim.Defs.Rune(n).Index).ToList();
         var predictor = new WorkPredictor();
         for (var t = 0; t < maxTicks && sim.World.Has<WorkSession>(me); t++)
@@ -272,5 +273,103 @@ public class RevivalTests
 
         Assert.True(loaded.World.Has<Calling>(body));
         Assert.Equal(0.8f, loaded.World.Get<Calling>(body).Quality, 3);
+    }
+
+    [Fact]
+    public void AnEmpathAtAFreshBodyIsOfferedTheCallingAndItsRunes()
+    {
+        var (sim, body, ghost, empath) = Deathbed();
+        var w = sim.World;
+        var at = w.Get<Position>(body).Cell;
+
+        var action = AvatarSystem.ActionAt(sim, empath, at);
+        Assert.Equal(AvatarActionKind.CallBack, action.Kind);
+        Assert.Contains("Ana", action.Label);
+
+        AvatarSystem.Perform(sim, empath, action);
+        var cast = Assert.IsType<CastSession>(w.Get<WorkSession>(empath));
+        Assert.Equal("Ana", cast.CallingFor);
+
+        Weave(sim, empath, CallingRunes, start: false);
+        Assert.True(w.Has<Calling>(body));
+        sim.World.Get<Position>(ghost) = w.Get<Position>(body);
+        sim.ApplyNow(new AnswerCommand(ghost));
+        Assert.False(w.Get<Creature>(body).Dead);
+    }
+
+    [Fact]
+    public void ShortOfManaTheEmpathIsToldWhyAndCanCarryTheBodyToTheShrine()
+    {
+        var (sim, body, _, empath) = Deathbed();
+        var w = sim.World;
+        w.Get<Mana>(empath).Current = 30;
+
+        var why = Revival.CallProblem(sim, empath, body);
+        Assert.NotNull(why);
+        Assert.Contains("mana", why);
+        var action = AvatarSystem.ActionAt(sim, empath, w.Get<Position>(body).Cell);
+        Assert.Equal(AvatarActionKind.Carry, action.Kind); // pick up the body instead
+        AvatarSystem.Perform(sim, empath, action);
+        Assert.True(w.Has<Carried>(body));
+    }
+
+    [Fact]
+    public void AnyoneCanPickUpABody()
+    {
+        var (sim, body, _, _) = Deathbed();
+        var w = sim.World;
+        var smith = sim.Creatures().First(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human } && w.Get<Creature>(e).Able && !w.Has<Mana>(e));
+        Beside(sim, smith, body);
+        if (!w.Has<Avatar>(smith))
+            w.Add(smith, new Avatar());
+
+        var action = AvatarSystem.ActionAt(sim, smith, w.Get<Position>(body).Cell);
+
+        Assert.Equal(AvatarActionKind.Carry, action.Kind);
+        Assert.Contains("body", action.Label);
+    }
+
+    [Fact]
+    public void ABodyInABedIsReachedFromAnySideOfIt()
+    {
+        var (sim, body, _, empath) = Deathbed();
+        var w = sim.World;
+        var bed = w.Query<Thing>().First(e => w.Get<Thing>(e) is { Spawned: true, Def.Building.IsBed: true } && sim.FootprintCells(e).Count() >= 2
+            && !w.Has<Construction>(e) && w.Get<Thing>(e).Cell.Z == w.Get<Position>(empath).Cell.Z);
+        var cells = sim.FootprintCells(bed).ToList();
+        var lies = w.Get<Thing>(bed).Cell;
+        w.Get<Position>(body) = Position.At(lies);
+        // Beside the bed's far end, not touching the cell the body's in.
+        var far = cells.First(c => c != lies);
+        var kneel = sim.SpiralFrom(far, 1).FirstOrDefault(c => c.Z == far.Z && !cells.Contains(c) && sim.Map.Passable(c)
+            && Maps.Map.Distance(c, lies) > 1);
+        if (kneel == default)
+            Assert.Fail("no bed with room at its far end");
+        w.Get<Position>(empath) = Position.At(kneel);
+
+        Assert.Equal(body, Revival.BodyBeside(sim, empath));
+        Assert.Equal(body, Revival.BodyAt(sim, far));
+        Assert.Null(Revival.CallProblem(sim, empath, body));
+    }
+
+    [Fact]
+    public void ADeathTellsTheEmpathHowAndHowLong()
+    {
+        var (sim, _, _, empath) = Deathbed();
+        Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("call them back") && m.Text.Contains("Ana"));
+        Assert.True(Revival.FreshHours >= 12); // eight real minutes, not under three
+    }
+
+    [Fact]
+    public void TheGhostKnowsHowLongItHasAndWhetherAnyoneCanCallIt()
+    {
+        var (sim, body, ghost, empath) = Deathbed();
+        var mine = Perception.For(sim, ghost).MyBody()!;
+        Assert.True(mine.EmpathAlive);
+        Assert.InRange(mine.HoursLeft, Revival.FreshHours - 1, Revival.FreshHours);
+
+        foreach (var e in sim.World.Query<Mana>().Where(e => !sim.World.Get<Creature>(e).Dead).ToList())
+            Kill(sim, e); // every empath in the town, the AI's own included
+        Assert.False(Perception.For(sim, ghost).MyBody()!.EmpathAlive);
     }
 }
