@@ -14,6 +14,12 @@ namespace HeroesNotIncluded.Sim.Systems;
 /// <summary>A charm as someone sees it: the mending in it and how strong (anyone), how well woven (its maker only).</summary>
 public readonly record struct KnownCharm(Defs.MendingDef Mending, int Extra, float? Quality);
 
+/// <summary>
+/// The key board and its book, read at the board: <see cref="Hung"/>[n] is room n's key on its hook,
+/// <see cref="Lines"/>[n] the latest line written for it (what the keeper wrote, not the truth).
+/// </summary>
+public sealed record KnownRoomBoard(Entity Board, int Rooms, bool[] Hung, Hospitality.LedgerLine?[] Lines, int Tonight);
+
 public readonly record struct KnownStrongbox(bool Locked, int Pins, bool SearchedByMe, string? SpentTrap, int? Silver, string From);
 
 /// <summary>
@@ -394,6 +400,28 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
     }
 
     /// <summary>A strongbox within reach or on your person, as you can see it (<see cref="KnownStrongbox"/>). Null if it isn't one, or is out of reach.</summary>
+    /// <summary>
+    /// The inn's book of rooms and the keys hanging on its board, as read standing at it: what was
+    /// written (not who's really where) and which rooms' keys are on their hooks. Null out of reach.
+    /// </summary>
+    public KnownRoomBoard? RoomBoard(Entity board)
+    {
+        var w = sim.World;
+        if (blind || Hospitality.Ledger.Of(sim, board) is not { } book || !w.TryGet<Thing>(board, out var t))
+            return null;
+        if (!Omniscient && !Within(t.Cell, 2))
+            return null;
+        var rooms = Hospitality.Ledger.Rooms(sim);
+        var hung = new bool[rooms + 1];
+        foreach (var k in sim.StoredIn(board))
+            if (Hospitality.InnRooms.RoomOfKey(sim, k) is > 0 and var n && n <= rooms)
+                hung[n] = true;
+        var lines = new Hospitality.LedgerLine?[rooms + 1];
+        for (var r = 1; r <= rooms; r++)
+            lines[r] = Hospitality.Ledger.Latest(book, r);
+        return new KnownRoomBoard(board, rooms, hung, lines, Hospitality.Lodging.Tonight(sim));
+    }
+
     public KnownStrongbox? Strongbox(Entity item)
     {
         var w = sim.World;

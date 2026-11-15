@@ -768,6 +768,7 @@ internal static class ComponentCodecs
             w.Entity(k.Key);
             w.Entity(k.Inn);
         }, r => new Hospitality.ReturningKey { Key = r.Entity(), Inn = r.Entity() }),
+        Codec<Hospitality.InnLedger>("InnLedger", Hospitality.Ledger.WriteState, Hospitality.Ledger.ReadState),
         Codec("WalkIn", (w, k) => w.Entity(k.Bed), r => new Hospitality.WalkIn { Bed = r.Entity() }),
         Codec("OwedRoom", (w, k) =>
         {

@@ -246,6 +246,12 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             case Hospitality.ScrubSession sc:
                 // Back and forth, a stroke every few steps.
                 return (false, false, (sc.StepsDone / 8) % 2 == 0 ? -1 : 1);
+            case Hospitality.SignInSession si:
+            {
+                var press = si.OnCue && !_struck;
+                _struck = si.OnCue;
+                return (press, false, 0);
+            }
             case Hospitality.MakeBedSession mb:
             {
                 var press = mb.OnCue && !_struck;
@@ -935,7 +941,39 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         if (!bed.IsNull)
         {
             Doing = "making up a bed";
+            // A locked room: its key off the board (or the spare from the storeroom), then the door.
+            if (w.TryGet<Hospitality.GuestRoom>(bed, out var room) && sim.IsLocked(room.Door))
+            {
+                if (Hospitality.InnRooms.KeyOn(sim, me, bed).IsNull)
+                {
+                    var seed = Hospitality.InnRooms.SeedOf(sim, bed);
+                    var store = Hospitality.InnRooms.OnBoard(sim, inn, seed).IsNull ? Hospitality.InnRooms.SpareBox(sim, inn) : Hospitality.InnRooms.Board(sim, inn);
+                    if (Hospitality.InnRooms.KeyIn(sim, store, seed).IsNull)
+                        return false; // no key to be had: leave it
+                    Doing = "fetching a room key";
+                    return AtStation(sim, me, store, now, s =>
+                    {
+                        if (view.InContainer(s).FirstOrDefault(k => Hospitality.InnRooms.RoomOfKey(sim, k) == room.Number, Entity.Null) is { IsNull: false } key)
+                            send(new TakeFromStorageCommand(me, key));
+                    });
+                }
+                Doing = "unlocking a room";
+                return AtStation(sim, me, room.Door, now, d => send(new Tinkering.TurnKeyCommand(me, d, false)));
+            }
             return AtStation(sim, me, bed, now, b => send(new BarWorkCommand(me, b)));
+        }
+        // A room key carried with nothing doing: back on the board if it's short of it, else with the spares.
+        if (trade.Def.Serving(ServiceKind.Lodging) && Tinkering.Locksmithing.Keys(sim, me).FirstOrDefault(k => Hospitality.InnRooms.IsRoomKey(sim, k), Entity.Null) is { IsNull: false } spare
+            && _task == 0)
+        {
+            var seed = w.Get<Tinkering.Key>(spare).Seed;
+            var board = Hospitality.InnRooms.Board(sim, inn);
+            var to = Hospitality.InnRooms.KeyIn(sim, board, seed).IsNull ? board : Hospitality.InnRooms.SpareBox(sim, inn);
+            if (!to.IsNull && sim.ContainerRoom(to, w.Get<Thing>(spare).Def, null) > 0)
+            {
+                Doing = "putting a room key back";
+                return AtStation(sim, me, to, now, s => send(new StoreFromPackCommand(me, s, spare)));
+            }
         }
         var anchor = w.Get<PresetBuilding>(inn).Anchor;
         var mess = view.Messes().Where(m => Maps.Map.Distance(m.Cell, anchor) <= CleanJob.InnReach && CleanJob.Mine(sim, trade.Def, inn, m.Cell))
@@ -1003,7 +1041,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             ServiceKind.Drink => Pour(sim, me, view, poster, now),
             ServiceKind.MixedDrink => view.WantedDrink(_task) is { Mix: not null } named ? MixFor(sim, me, view, poster, named, now) : Pour(sim, me, view, poster, now),
             ServiceKind.Meal => Serve(sim, me, view, poster, now),
-            ServiceKind.Lodging => ShowUp(sim, me, poster, now),
+            ServiceKind.Lodging => ShowUp(sim, me, view, poster, now),
             ServiceKind.Healing => Heal(sim, me, view, poster, now),
             ServiceKind.Quest => Broker(sim, me, view, poster, now),
             ServiceKind.Unlock => OpenBox(sim, me, view, poster, now),
@@ -1557,12 +1595,69 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     }
 
     /// <summary>A room: walk up to the guest, and the order system shows them up to a bed.</summary>
-    private bool ShowUp(Simulation sim, Entity me, Entity guest, long now)
+    /// <summary>
+    /// A room: written into the book at the key board for a room whose key is on its hook and that
+    /// the book has nobody in tonight, then that key off the board, then handed over. Another night
+    /// for someone the book had in last night, they only need seeing to in person.
+    /// </summary>
+    private bool ShowUp(Simulation sim, Entity me, PerceptionView view, Entity guest, long now)
     {
         Doing = "letting a room";
-        Reach(sim, me, guest, now);
-        return true;
+        var board = Nearest(sim, me, Hospitality.InnRooms.BoardDef);
+        if (board.IsNull)
+        {
+            Reach(sim, me, guest, now);
+            return true;
+        }
+        // The book, as last read at the board (it can't be read from across the room).
+        if (view.RoomBoard(board) is { } read)
+            _roomBoard = read;
+        if (_roomBoard is not { } book || book.Board != board)
+            return AtStation(sim, me, board, now, _ => { });
+        int RoomOf(Func<Hospitality.LedgerLine, bool> match)
+        {
+            for (var r = 1; r <= book.Rooms; r++)
+                if (book.Lines[r] is { } l && l.Guest == guest && match(l))
+                    return r;
+            return 0;
+        }
+        var signed = RoomOf(l => l.Night == book.Tonight && !l.Out);
+        if (signed == 0 && RoomOf(l => l.Night == book.Tonight - 1 && !l.Out) > 0)
+        {
+            Doing = "another night for a guest";
+            Reach(sim, me, guest, now); // they have their key: paying for another night is all
+            return true;
+        }
+        if (signed == 0)
+        {
+            var free = 0;
+            for (var r = 1; r <= book.Rooms && free == 0; r++)
+                if (book.Hung[r] && !(book.Lines[r] is { Out: false } l && l.Night == book.Tonight))
+                    free = r; // its key on the hook, and nobody written in tonight
+            if (free == 0)
+                return false; // every room taken, as far as the book goes
+            Doing = $"writing a guest into room {free}";
+            return AtStation(sim, me, board, now, b => send(new Hospitality.SignInCommand(me, b, _task, free)));
+        }
+        // A key to the room on them: the one off the board.
+        var mine = Tinkering.Locksmithing.Keys(sim, me).Where(k => Hospitality.InnRooms.RoomOfKey(sim, k) == signed).ToList();
+        if (mine.Count >= 1)
+        {
+            Doing = $"handing over room {signed}'s key";
+            if (Reach(sim, me, guest, now, returning: true))
+                send(new GiveCommand(me, guest, mine[^1], 1));
+            return true;
+        }
+        Doing = $"taking room {signed}'s key down";
+        return AtStation(sim, me, board, now, b =>
+        {
+            if (view.InContainer(b).FirstOrDefault(k => Hospitality.InnRooms.RoomOfKey(sim, k) == signed, Entity.Null) is { IsNull: false } key)
+                send(new TakeFromStorageCommand(me, key));
+        });
     }
+
+    /// <summary>The key board and its book as last read standing at it.</summary>
+    private KnownRoomBoard? _roomBoard;
 
     /// <summary>
     /// A meal from the pot: ladle a bowl and hand it over; with the pot not ready, cook it (fill it

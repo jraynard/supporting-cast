@@ -130,6 +130,9 @@ public static class Locksmithing
             if (!IsDoor(sim, door) || Buildings.Of(sim, door) is not { IsNull: false } b || w.Get<PresetBuilding>(b).Def != workplace)
                 continue;
             var cut = w.Get<LockCut>(door);
+            // The inn's rooms keep their keys on the board, and spares in the storeroom (Hospitality.InnRooms).
+            if (Hospitality.InnRooms.RoomNumber(sim, cut.Seed) > 0)
+                continue;
             if (KeyFor(sim, who, cut.Seed).IsNull)
                 Inventory.Stow(sim, who, MakeKey(sim, cut.Seed, cut.Pins, 1f));
         }

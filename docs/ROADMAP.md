@@ -26,79 +26,74 @@ internet, with the weakest trade brought up and the numbers tuned.
 What's left before M4 is a tuning playtest that covers everything still to be tested or reviewed.
 
 ### The tuning playtest
-Rounds with friends over the internet, aimed at proving the round and tuning its numbers, then a
-pass on what they show. Some of it can be checked alone first. How to run it, with the commands:
-[PLAYTEST.md](PLAYTEST.md). Each round leaves its numbers and the testers' notes (F11) under the
-logs folder's `rounds/`; `--season-sweep` gives the bots' baseline for the season pass. Mini-game
-timings come after, trade by trade (Backlog, "Tuning the mini-games").
+Rounds with friends over the internet, to prove the round and tune its numbers, then a pass on
+what they show. How to run it: [PLAYTEST.md](PLAYTEST.md). Each round leaves its numbers and the
+testers' notes (F11) under the logs folder's `rounds/`; `--season-sweep` gives the bots' baseline.
+Mini-game timings come after, trade by trade (Backlog, "Tuning the mini-games"). What's been
+answered so far is in HISTORY.md, "Solo playtest notes" and "From two multiplayer rounds".
 
-**Alone first** (dev flags, no friends needed): done but for the lessons. What came of it is in
-HISTORY.md, "Solo playtest notes".
-- Passed: the healer's games (`--practice Healer`), bracing the bridge (`--bridge-test`), the
-  dragon in a round (`--dragon-test`: passes from the air, a stand by the well, buckets against
-  it) and in the ring (`--arena Dragon`), and the Veteran (`--arena Veteran`: fair; a practised
-  action-game player finds it a little easy, so leave it unless friends say the same).
-- **Still to do: the lessons,** rewritten in plain words (the healer's merged to four). One trade at
-  a time: the words, and whether the step shown is the one you're on (PLAYTEST.md, "The lessons").
+**Settled, leave alone**
+- **The dragon:** in a multiplayer round, two or three players throwing water drove it off easily
+  enough and it felt good. Left as it is, and so is the dragon with no party in town (the town
+  alone almost never sees it off: it's meant for players). Villagers with buckets stays in the
+  Backlog.
+- **The Veteran** (`--arena Veteran`): fair, a little easy for a practised action-game player.
+  Left unless friends say the same.
+- **Join snapshots:** 54 KB, built in 3 to 48 ms, with no stall seen. No need to chunk them.
 
-**With friends, over the internet**
-- **First multiplayer notes, answered; check them next round.** A downed healer, bandaged, still
-  couldn't get up: a downed empath now weaves a mending on themselves (a narrower beat) and can
-  meditate. Truing a wheel was unclear and hard: it now stands still, A/D to a spoke, W/S to
-  tighten or slacken it, F to spin it and chalk the rim.
-  Villagers took the barn's wood before players could: the round's spare beds were blueprints that
-  ate ~140 logs in its first hours (now built at the deal), the barn starts with more
-  (`season.json` `barnWood`) and the woodcutter brings `woodDelivery` each morning; a player's take
-  beats a villager's fetch (`Ai/Claims`), and what's put down by hand lies two hours before it's
-  hauled. Tinker games "left unfinished" in co-op: the work predictor ran ahead of a lagging sim and
-  its batches were dropped; it now keeps near the sim's clock and resends what wasn't played.
-  A second party couldn't be sent on a quest: its ask lapsed overnight and a party only ever asked
-  once; now it asks again, and the board says why there's no button. Flickering at wall corners
-  (dark spots, worst upstairs in the inn with the walls cut down): a corner post and its arms
-  shared faces; the post now stands proud and each arm a hair apart, cut down or not
-  (`BuildingKit`). Walking along outside the inn cut every upper storey away a step at a time
-  (`UpdateFollowedLevel` counted building floors); fixed, and the open building settles before
-  it switches. Build tools hidden for players till building's in a round (`BuildTools`). Guide
-  highlights (Settings) glow on what needs doing, for the healer so far; lay on hands is an
-  ability in the gift: click it, then someone.
-  From the two rounds' logs (both through the relay, ~100 ms, no desyncs): eleven adventurers and
-  four townsfolk bled out where they fell, with nobody but a player tending them. AI first aid,
-  bandaging and rescue now take downed adventurers too, and a blow at someone standing goes over
-  the downed at their feet (they were being mangled by the fighting over them). Net notices
-  (joins, drops, reconnects) now go to the log: a player vanished from round two with no trace.
-  Furniture models drew boxes flush with each other (a shelf's boards and uprights, a keg's
-  hoops), which flickered; each box is now drawn a hair proud of the one before (`PropModel`).
-  Still to watch: whether players and AI keep the downed alive now, and Dread (16-seed sweep:
-  peak 69 against 61 before, within noise).
-- **The connection.** Readied in code (Narsil relay protocol 3, keepalive, host reclaims its join
-  code after a blip, relay fan-out and limits; a 200 ms jitter buffer cap, pad commands throttled,
-  a claim budget on free movement). The relay runs on an Oracle Cloud free instance
-  (`CoopRelay.Default`, 129.153.122.49:47050); redeploy with
-  `external/narsil/deploy/relay/publish.sh ubuntu@129.153.122.49 linux-arm64`.
-  - Done: a Steam Deck joined a laptop through the relay by join code, on the same network.
-  - Still to do: a joiner on another network (a phone hotspot will do). Watch the Players window's buffer,
-    jitter and starvations over a whole round, join mid-round, and pull the host's network for a
-    few seconds (the session should carry on, not split).
-  - Read the host's `net: snapshot … KB` log line: if joins visibly stall the others, chunk
-    snapshots.
-- **The healer in a round:** the AI empath's meditation (`MeditateJob.Gathers`) and the charms it
-  puts out (`LayOnHands.CharmsOnShow`, price).
-- **Heroes die often:** about one in two raids with a party in town costs one. Watch what it does
-  to Renown before blunting raids.
-- **The dragon without a party:** the town drives it off once in 48 sweep seeds, and someone dies
-  about every other visit (30 dead in 48; HISTORY.md, "Solo playtest notes"). It's meant for
-  players: check friends can see it off, with weapons or with buckets (four soakings,
-  `DragonBrain.Douse`). Villagers doing it too is in the Backlog, "Crises and the town".
+**For you to look at, alone** (dev flags)
+- [ ] **The lessons:** one trade at a time, check the words and whether the step shown is the one
+  you're on (PLAYTEST.md, "The lessons").
 
-**The numbers** (defaults not yet tuned in play)
-- **The season** (`season.json`): the Renown target and Dread rates (Dread per death included),
+**For you to look at, next round with friends.** These were fixed after the last two rounds and
+haven't been played since:
+- [ ] **The downed:** do players and the AI keep them alive now? AI first aid, bandaging and rescue
+  now reach downed adventurers, and blows go over the downed. A downed healer weaves on themselves.
+- [ ] **Wood:** the barn should hold out and the fires stay lit. In round two the inn's fireplaces,
+  the oven and the forge kept burning out.
+- [ ] **Truing a wheel** (new controls), **tinker games finishing in co-op**, and **a second party
+  sent on a quest**.
+- [ ] **Flicker** at wall corners and on furniture, and the upper floors when walking past the inn.
+- [ ] **Net notices:** if someone drops, it now shows up in `net.log`.
+
+**For you to look at, the connection** (the relay: `CoopRelay.Default`, 129.153.122.49:47050;
+redeploy with `external/narsil/deploy/relay/publish.sh ubuntu@129.153.122.49 linux-arm64`)
+- [ ] A joiner on another network (a phone hotspot will do).
+- [ ] Over a whole round, watch the Players window's buffer, jitter and starvations.
+- [ ] Join mid-round.
+- [ ] Pull the host's network for a few seconds: the session should carry on, not split.
+
+**Found in the last two rounds' logs, not yet done (proposed)**
+- **Adventurers dying in town cost nothing.** Eight bled to death in round one, but the summary
+  says "adventurers lost 0": it only counts deaths on the road. A death in town takes no Renown and
+  adds no Dread (`Ghosts.OnDeath` counts the town's own), and the dead never leave, so they never
+  have their say either. That makes a dead adventurer cheaper than one who leaves unhappy (−5).
+  Proposed: count them as lost (`renownPerAdventurerLost`, `dreadPerAdventurerLost`) and in the
+  summary. Do it before reading "heroes die often" against Renown.
+- **Feasts: none of three laid on.** `Feasts.Hours` gives the kitchen 2 game hours, about 80 real
+  seconds, to put up three or four dishes, and two of the three came at dawn. Proposed: 5 or 6
+  hours, or start the clock when the cook hears it.
+- **Too few parties.** There are only two party defs, so in round two the Gilded Spurs came three
+  times, with two Osrics and two Tamsins. Proposed: four to six parties, or the same party coming
+  back as the same people.
+- **Renown is far short:** round one peaked at 20 and ended at 12 of 60. Most of that was the
+  deaths. Tune `renownTarget` only after a round with the fixes, against a fresh `--season-sweep`.
+- Small: clients keep sending move commands once the season's over, which floods the host's log
+  with refusals. They should stop.
+
+**For you to decide: the numbers** (defaults not yet tuned in play)
+- [ ] **The season** (`season.json`): the Renown target and Dread rates (Dread per death included),
   the day-two crisis weights (equal for now), raid size, the raid warning's lead, the town purse,
   the price of arms, the carter's load.
-- **Night speed and the need rates.**
-- **The festival** (`festival.json`, `season.json`): the tale's and the revels' length, the
-  activity weights, what the show table and the games are worth to a guest, whether the toasts
+- [ ] **Heroes die often:** about one raid in two with a party in town costs one. Watch what that
+  does to Renown (after the change above) before making raids gentler.
+- [ ] **Night speed and the need rates.**
+- [ ] **The healer in a round:** the AI empath's meditation (`MeditateJob.Gathers`) and the charms
+  it puts out (`LayOnHands.CharmsOnShow`, price).
+- [ ] **The festival** (`festival.json`, `season.json`): how long the tale and the revels run, the
+  activity weights, what the show table and the games are worth to a guest, and whether the toasts
   swing a season enough to matter.
-- **Death and ghosts:** the Calling's cost and windows (`Revival`), presence and sign costs
+- [ ] **Death and ghosts:** the Calling's cost and windows (`Revival`), presence and sign costs
   (`Hauntings`), errand times, reaches, grace and Renown (`afterlife.json`); what a beast costs to
   ride (`Possession.DrainPerHour`, by mass) and whether a ridden boar is too strong a fighter; how
   hard the dead's unnerving bites (`Hauntings.Unnerved*`).

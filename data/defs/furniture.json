@@ -336,6 +336,17 @@
       ]
     },
     {
+      // In the inn's storeroom: a spare key to each room upstairs, for when one's lost or locked in.
+      "name": "KeyBox", "label": "key box", "category": "Building", "solid": true, "sprite": "buildings/chest",
+      "description": "A small iron-bound box of spare room keys. Lose a room's key and the spare goes up on the board, or to the tinker to be copied.",
+      "maxHp": 80, "flammability": 0.5,
+      "building": { "work": 60, "storageStacks": 8, "storageOnly": [ "Key" ], "surfaceHeight": 0.32, "cost": [ { "def": "Wood", "count": 2 }, { "def": "IronBar", "count": 1 } ] },
+      "model": [
+        { "min": [0.26, 0.3, 0], "max": [0.74, 0.7, 0.32], "top": "props/chest_top", "side": "props/planks", "front": "props/chest_front" },
+        { "min": [0.24, 0.28, 0.12], "max": [0.76, 0.72, 0.16], "top": "props/iron", "side": "props/iron" }
+      ]
+    },
+    {
       // Behind the bar and in the kitchen: where the clean tankards and bowls are kept.
       "name": "Shelf", "label": "shelf", "category": "Building", "solid": true, "sprite": "buildings/shelf",
       "description": "Plank shelves on brackets. Holds 6 stacks: the clean crockery lives here, and behind the bar what goes into a mix.",

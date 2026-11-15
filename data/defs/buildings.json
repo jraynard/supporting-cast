@@ -133,6 +133,7 @@
         { "def": "AleCask", "at": [10, 5] },
         { "def": "BarCounter", "at": [10, 7] },
         { "def": "KeyBoard", "at": [11, 6], "facing": 1 },
+        { "def": "KeyBox", "at": [9, 1], "facing": 2 },
         { "def": "SquareTable", "at": [3, 8] },
         { "def": "Stool", "at": [2, 8] }, { "def": "Stool", "at": [2, 9] }, { "def": "Stool", "at": [5, 8] }, { "def": "Stool", "at": [5, 9] },
         { "def": "LongTable", "at": [5, 5] },

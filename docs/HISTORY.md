@@ -1792,3 +1792,39 @@ The tuning playtest's "alone first" pass (PLAYTEST.md), and what came of it.
   shimmers (pale puffs: the post pass has no distortion). Nearby, the camera rumbles, on the
   Screen shake setting. `Particles` gained a colour ramp over life, a floor for droplets, a
   per-second emission helper (`PerFrame`), and room for 4096.
+
+
+### From two multiplayer rounds (2026-11-15)
+Four players through the relay (~100 ms, no desyncs). Round one went to the reveal; in round two a
+player vanished on day two and it ended on day three.
+- **A downed healer**, bandaged, still couldn't get up. A downed empath now weaves a mending on
+  themselves (a narrower beat) and can meditate.
+- **Truing a wheel** was unclear and hard. It now stands still: A/D move to a spoke, W/S tighten or
+  slacken it, F spins it and chalks the rim.
+- **Wood:** villagers took the barn's wood before players could. The round's spare beds were
+  blueprints that ate ~140 logs in its first hours; they're now built at the deal. The barn
+  starts with more (`season.json` `barnWood`), the woodcutter brings `woodDelivery` each morning,
+  a player's take beats a villager's fetch (`Ai/Claims`), and what's put down by hand lies two
+  hours before it's hauled.
+- **Tinker games "left unfinished" in co-op:** the work predictor ran ahead of a lagging sim and
+  its batches were dropped. It now stays near the sim's clock and resends what wasn't played.
+- **A second party couldn't be sent on a quest:** its ask lapsed overnight and a party only ever
+  asked once. Now it asks again, and the board says why there's no button.
+- **Flicker at wall corners** (dark spots, worst upstairs in the inn with the walls cut down): a
+  corner post and its arms shared faces. The post now stands proud and each arm a hair apart, cut
+  down or not (`BuildingKit`). Furniture models drew boxes flush with each other (a shelf's boards
+  and uprights, a keg's hoops); each box is now drawn a hair proud of the one before (`PropModel`).
+- **Walking along outside the inn** cut every upper storey away a step at a time
+  (`UpdateFollowedLevel` counted building floors). Fixed, and the open building settles before it
+  switches.
+- Build tools are hidden for players until building's in a round (`BuildTools`). Guide highlights
+  (Settings) glow on what needs doing, for the healer so far. Lay on hands is an ability in the
+  gift: click it, then someone.
+- **The downed bled out:** eleven adventurers and four townsfolk died where they fell, tended by
+  nobody but a player. AI first aid, bandaging and rescue now take downed adventurers too, and a
+  blow at someone standing goes over the downed at their feet (they were being mangled by the
+  fighting over them). A 16-seed sweep's Dread peaked at 69, against 61 before: within noise.
+- **Net notices** (joins, drops, reconnects) now go to the log: a player vanished from round two
+  without a trace.
+- **The dragon,** met by two or three players with buckets, went down easily enough and felt good.
+  Left as it is.

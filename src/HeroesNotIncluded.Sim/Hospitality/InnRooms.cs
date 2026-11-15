@@ -50,7 +50,7 @@ public struct OwedRoom
 /// </summary>
 public static class InnRooms
 {
-    public const string BoardDef = "KeyBoard";
+    public const string BoardDef = "KeyBoard", SpareBoxDef = "KeyBox";
 
     /// <summary>Pins in a room door's lock.</summary>
     public const int RoomPins = 3;
@@ -73,6 +73,9 @@ public static class InnRooms
         sim.RebuildDerivedIfNeeded();
         var parts = Buildings.Parts(sim, inn);
         var board = parts.FirstOrDefault(e => w.Get<Thing>(e).Def.Name == BoardDef, Entity.Null);
+        var spares = parts.FirstOrDefault(e => w.Get<Thing>(e).Def.Name == SpareBoxDef, Entity.Null);
+        if (!board.IsNull && !w.Has<InnLedger>(board))
+            w.Add(board, new InnLedger());
         var doors = parts.Where(e => w.Get<Thing>(e).Def.Building is { IsDoor: true }).ToList();
         var numbered = new Dictionary<Entity, int>();
         foreach (var bed in parts.Where(e => w.Get<Thing>(e).Def.Building is { IsBed: true } && !w.Has<GuestRoom>(e)))
@@ -93,6 +96,8 @@ public static class InnRooms
                 var cut = w.Get<LockCut>(door);
                 if (!board.IsNull)
                     sim.Store(board, Locksmithing.MakeKey(sim, cut.Seed, cut.Pins, 1f));
+                if (!spares.IsNull)
+                    sim.Store(spares, Locksmithing.MakeKey(sim, cut.Seed, cut.Pins, 1f)); // a spare, in the storeroom
             }
             w.Add(bed, new GuestRoom { Number = number, Door = door });
         }
@@ -167,17 +172,27 @@ public static class InnRooms
     public static Entity Board(Simulation sim, Entity inn) =>
         sim.World.IsAlive(inn) ? Buildings.Parts(sim, inn).FirstOrDefault(e => sim.World.Get<Thing>(e).Def.Name == BoardDef, Entity.Null) : Entity.Null;
 
-    /// <summary>The key to a room hanging on the inn's board, or Entity.Null.</summary>
-    public static Entity OnBoard(Simulation sim, Entity inn, uint seed)
+    /// <summary>The box of spare room keys in the inn's storeroom, or Entity.Null.</summary>
+    public static Entity SpareBox(Simulation sim, Entity inn) =>
+        sim.World.IsAlive(inn) ? Buildings.Parts(sim, inn).FirstOrDefault(e => sim.World.Get<Thing>(e).Def.Name == SpareBoxDef, Entity.Null) : Entity.Null;
+
+    /// <summary>A key to a room kept in a container (the board, the spare box), or Entity.Null.</summary>
+    public static Entity KeyIn(Simulation sim, Entity container, uint seed)
     {
-        var board = Board(sim, inn);
-        if (board.IsNull || seed == 0)
+        if (container.IsNull || seed == 0)
             return Entity.Null;
-        foreach (var k in sim.StoredIn(board))
+        foreach (var k in sim.StoredIn(container))
             if (sim.World.TryGet<Key>(k, out var key) && key.Seed == seed)
                 return k;
         return Entity.Null;
     }
+
+    /// <summary>The key to a room hanging on the inn's board, or Entity.Null.</summary>
+    public static Entity OnBoard(Simulation sim, Entity inn, uint seed) => KeyIn(sim, Board(sim, inn), seed);
+
+    /// <summary>The room a let bed is in has its door locked.</summary>
+    public static bool LockedIn(Simulation sim, Entity bed) =>
+        sim.World.IsAlive(bed) && sim.World.TryGet<GuestRoom>(bed, out var r) && sim.IsLocked(r.Door);
 
     /// <summary>The key to this bed's room on someone (in hand or pack), or Entity.Null.</summary>
     public static Entity KeyOn(Simulation sim, Entity who, Entity bed)

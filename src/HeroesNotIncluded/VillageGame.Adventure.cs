@@ -721,6 +721,8 @@ public sealed partial class VillageGame
             ImGui.TextDisabled("Empty."u8);
             DrawDismantle(thing);
         }
+        if (thing.Def.Name == Sim.Hospitality.InnRooms.BoardDef)
+            DrawRoomBook(_openStorage);
         // Your own pack beside it, to put things in.
         ImGui.TableSetColumnIndex(1);
         DrawPackTiles(myPack);

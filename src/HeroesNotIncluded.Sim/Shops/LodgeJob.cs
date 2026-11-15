@@ -59,6 +59,8 @@ public sealed class LodgeJob(int order) : Job
                 Fail("the key's gone");
                 yield break;
             }
+            // Written into the book as the key comes down: an AI keeper keeps it straight.
+            Hospitality.Ledger.Write(Sim, board, Hospitality.InnRooms.Number(Sim, bed), e.Poster);
             var held = Sim.TakeFromStack(key, 1);
             Systems.Inventory.Stow(Sim, Pawn, held);
             foreach (var s in GoToEntity(e.Poster, PathEnd.Touch, 1500)) yield return s;

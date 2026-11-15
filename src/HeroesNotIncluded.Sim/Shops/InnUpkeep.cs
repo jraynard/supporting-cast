@@ -341,8 +341,69 @@ public sealed class CleanJob(int3 cell) : Job
     }
 }
 
-/// <summary>An AI innkeeper makes up the beds guests have left.</summary>
-public sealed class MakeBedJob(Entity bed) : Job
+/// <summary>
+/// An inn job that goes into a guest room: fetches the room's key first if its door's locked (off
+/// the board, else the spare from the storeroom), and puts it back after: on the board if the
+/// board's short of it, else back with the spares.
+/// </summary>
+public abstract class RoomKeyJob : Job
+{
+    private Entity _key = Entity.Null;
+
+    /// <summary>The innkeeper's inn, by their trade's workplace.</summary>
+    protected Entity Inn => Pawn.IsNull || !Sim.World.TryGet<Trade>(Pawn, out var t) || t.Def.WorkplaceDef is not { } wp ? Entity.Null : ShopSystem.BuildingOf(Sim, wp);
+
+    /// <summary>Have a key to this bed's room on them, if its door's locked. Fails the job if there's none to be had.</summary>
+    protected IEnumerable<JobStatus> KeyFor(Entity bed)
+    {
+        if (!Hospitality.InnRooms.LockedIn(Sim, bed) || !Hospitality.InnRooms.KeyOn(Sim, Pawn, bed).IsNull)
+            yield break;
+        var seed = Hospitality.InnRooms.SeedOf(Sim, bed);
+        var from = Hospitality.InnRooms.OnBoard(Sim, Inn, seed);
+        if (from.IsNull)
+            from = Hospitality.InnRooms.KeyIn(Sim, Hospitality.InnRooms.SpareBox(Sim, Inn), seed);
+        if (from.IsNull || !Sim.World.TryGet<Stored>(from, out var st))
+        {
+            Fail("no key to the room");
+            yield break;
+        }
+        var box = st.In;
+        foreach (var s in GoToEntity(box, PathEnd.Touch, 1500)) yield return s;
+        if (HasFailed)
+            yield break;
+        if (!Alive(from) || !Sim.World.TryGet<Stored>(from, out var still) || still.In != box)
+        {
+            Fail("the key's gone");
+            yield break;
+        }
+        _key = Sim.TakeFromStack(from, 1);
+        Inventory.Stow(Sim, Pawn, _key);
+    }
+
+    /// <summary>The key fetched for the room, back where it's wanted.</summary>
+    protected IEnumerable<JobStatus> PutKeyBack()
+    {
+        if (_key.IsNull || !Alive(_key) || !Inventory.OnPerson(Sim, Pawn, _key))
+            yield break;
+        var seed = Sim.World.Get<Tinkering.Key>(_key).Seed;
+        var board = Hospitality.InnRooms.Board(Sim, Inn);
+        var to = !board.IsNull && Hospitality.InnRooms.KeyIn(Sim, board, seed).IsNull ? board : Hospitality.InnRooms.SpareBox(Sim, Inn);
+        if (to.IsNull)
+            to = board;
+        if (to.IsNull)
+            yield break;
+        foreach (var s in GoToEntity(to, PathEnd.Touch, 1500)) yield return s;
+        if (HasFailed || !Alive(_key) || !Inventory.OnPerson(Sim, Pawn, _key))
+            yield break;
+        var rest = Sim.Store(to, Inventory.TakeFromPerson(Sim, Pawn, _key, 1));
+        if (!rest.IsNull)
+            Inventory.Stow(Sim, Pawn, rest);
+        _key = Entity.Null;
+    }
+}
+
+/// <summary>An AI innkeeper makes up the beds guests have left (with the room's key, if it's locked).</summary>
+public sealed class MakeBedJob(Entity bed) : RoomKeyJob
 {
     public override Entity Focus => bed;
 
@@ -358,10 +419,19 @@ public sealed class MakeBedJob(Entity bed) : Job
             return null;
         var from = w.Get<Position>(pawn).Cell;
         foreach (var part in Buildings.Parts(sim, inn))
-            if (w.Has<Hospitality.Unmade>(part) && !sim.Reservations.IsReservedByOther(part, pawn)
-                && Navigation.CanReach(sim, pawn, from, w.Get<Thing>(part).Cell, PathEnd.Touch))
+            if (w.Has<Hospitality.Unmade>(part) && !sim.Reservations.IsReservedByOther(part, pawn) && Gettable(sim, pawn, inn, part)
+                && (Hospitality.InnRooms.LockedIn(sim, part) || Navigation.CanReach(sim, pawn, from, w.Get<Thing>(part).Cell, PathEnd.Touch)))
                 return new MakeBedJob(part);
         return null;
+    }
+
+    /// <summary>Not let to anyone tonight, and if its room's locked, there's a key to be had for it.</summary>
+    private static bool Gettable(Simulation sim, Entity pawn, Entity inn, Entity bed)
+    {
+        if (!Hospitality.InnRooms.LockedIn(sim, bed) || !Hospitality.InnRooms.KeyOn(sim, pawn, bed).IsNull)
+            return true;
+        var seed = Hospitality.InnRooms.SeedOf(sim, bed);
+        return !Hospitality.InnRooms.OnBoard(sim, inn, seed).IsNull || !Hospitality.InnRooms.KeyIn(sim, Hospitality.InnRooms.SpareBox(sim, inn), seed).IsNull;
     }
 
     protected override IEnumerable<JobStatus> Run()
@@ -369,11 +439,14 @@ public sealed class MakeBedJob(Entity bed) : Job
         if (!Reserve(bed))
             yield break;
         Report = "Making up a bed";
+        foreach (var s in KeyFor(bed)) yield return s;
+        if (HasFailed) yield break;
         foreach (var s in GoTo(Get<Thing>(bed).Cell, PathEnd.Touch)) yield return s;
         if (HasFailed) yield break;
         foreach (var s in Wait(Ticks)) yield return s;
         if (Alive(bed))
             Sim.World.Remove<Hospitality.Unmade>(bed);
+        foreach (var s in PutKeyBack()) yield return s;
     }
 }
 
@@ -392,7 +465,7 @@ public sealed class HangKeyJob(Entity key, Entity board) : Job
             return null;
         var inn = ShopSystem.BuildingOf(sim, workplace);
         var board = Hospitality.InnRooms.Board(sim, inn);
-        if (board.IsNull || sim.ContainerRoom(board, sim.Defs.Thing(Tinkering.Locksmithing.KeyDef), null) <= 0)
+        if (board.IsNull)
             return null;
         var from = w.Get<Position>(pawn).Cell;
         var seen = new HashSet<uint>();
@@ -403,9 +476,10 @@ public sealed class HangKeyJob(Entity key, Entity board) : Job
             var seed = w.Get<Tinkering.Key>(k).Seed;
             if (Inventory.OnPerson(sim, pawn, k))
             {
-                // Their own set is one of each; a second is a guest's.
-                if (!seen.Add(seed) && Hospitality.InnRooms.OnBoard(sim, inn, seed).IsNull)
-                    return new HangKeyJob(k, board);
+                // Left on them from a job that fell through: where it belongs.
+                if (seen.Add(seed))
+                    return new HangKeyJob(k, Hospitality.InnRooms.OnBoard(sim, inn, seed).IsNull ? board
+                        : Hospitality.InnRooms.SpareBox(sim, inn) is { IsNull: false } box ? box : board);
                 continue;
             }
             // Loose in the inn: on the counter, or on a room's floor upstairs.
@@ -413,7 +487,8 @@ public sealed class HangKeyJob(Entity key, Entity board) : Job
                 || Map.Distance(w.Get<Thing>(k).Cell, w.Get<PresetBuilding>(inn).Anchor) > CleanJob.InnReach)
                 continue;
             if (Navigation.CanReach(sim, pawn, from, w.Get<Thing>(k).Cell, PathEnd.Touch))
-                return new HangKeyJob(k, board);
+                return new HangKeyJob(k, Hospitality.InnRooms.OnBoard(sim, inn, seed).IsNull ? board
+                    : Hospitality.InnRooms.SpareBox(sim, inn) is { IsNull: false } box ? box : board);
         }
         return null;
     }
@@ -421,7 +496,7 @@ public sealed class HangKeyJob(Entity key, Entity board) : Job
     protected override IEnumerable<JobStatus> Run()
     {
         var w = Sim.World;
-        Report = "Hanging a key on the board";
+        Report = Sim.World.Get<Thing>(board).Def.Name == Hospitality.InnRooms.BoardDef ? "Hanging a key on the board" : "Putting a spare key away";
         if (!Inventory.OnPerson(Sim, Pawn, key))
         {
             if (!Reserve(key))

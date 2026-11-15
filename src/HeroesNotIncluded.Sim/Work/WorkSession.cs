@@ -257,6 +257,7 @@ public abstract class WorkSession
             nameof(MixSession) => new MixSession(),
             nameof(Hospitality.ScrubSession) => new Hospitality.ScrubSession(),
             nameof(Hospitality.MakeBedSession) => new Hospitality.MakeBedSession(),
+            nameof(Hospitality.SignInSession) => new Hospitality.SignInSession(),
             nameof(Healing.HandsOnSession) => new Healing.HandsOnSession(),
             "DrawSession" or "FeelSession" => new Healing.RetiredSession(name),
             nameof(Healing.BandageSession) => new Healing.BandageSession(),

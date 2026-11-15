@@ -208,6 +208,9 @@ public sealed partial class VillageGame
             case Sim.Hospitality.MakeBedSession bed:
                 DrawMakeBed(bed);
                 return;
+            case Sim.Hospitality.SignInSession sign:
+                DrawSignIn(sign);
+                return;
             case null:
                 DrawTongs();
                 DrawPotPanel();

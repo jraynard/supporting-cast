@@ -302,6 +302,13 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var bed = Hospitality.InnRooms.BedFor(sim, seed, e.Poster);
         if (bed.IsNull || Buildings.Of(sim, bed) != e.Where)
             return false;
+        // The inn keeps a book: they want their name in it before they'll take a key.
+        if (!Hospitality.Ledger.SignedIn(sim, Hospitality.InnRooms.Board(sim, e.Where), e.Poster))
+        {
+            Inventory.Stow(sim, giver, key);
+            sim.Speech.Say(sim, e.Poster, "Aren't you going to write me in?", Volume.Say);
+            return true;
+        }
         Inventory.Stow(sim, e.Poster, key);
         if (w.TryGet<Hospitality.OwedRoom>(e.Poster, out var owed))
         {
