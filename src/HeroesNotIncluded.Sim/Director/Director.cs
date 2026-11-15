@@ -76,6 +76,18 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
         Difficulty = difficulty;
     }
 
+    /// <summary>
+    /// Every beat of the season counted as come and gone, so only crises sent by hand arrive: the
+    /// combat sweep (<see cref="Scenarios.CombatSweep"/>) measures one raid at a time, alone.
+    /// </summary>
+    public void PassOverBeats(Simulation sim)
+    {
+        if (_beatAt.Count == 0)
+            Plan(sim, sim.Defs.Season);
+        for (var i = 0; i < _fired.Count; i++)
+            _fired[i] = true;
+    }
+
     public void Update(Simulation sim)
     {
         if (!Enabled || !sim.Round.Live || Difficulty is { Peaceful: true })

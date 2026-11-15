@@ -82,6 +82,9 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         sim.Shops.TalkFades();
     }
 
+    /// <summary>No party rides in unless one is sent (<see cref="Send"/>): the combat sweep, with or without heroes as it asks.</summary>
+    public void HoldArrivals() => NextArrivalTick = long.MaxValue;
+
     /// <summary>Is any adventurer still in town (alive and not on their way out)?</summary>
     public static bool Present(Simulation sim)
     {

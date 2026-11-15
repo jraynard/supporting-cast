@@ -12,7 +12,7 @@ using HeroesNotIncluded.Sim.Saving;
 using HeroesNotIncluded.Sim.Scenarios;
 
 // Headless runs (bench, checks) log to the console only; the game also writes a file testers can send.
-var headless = args.Any(a => a is "--bench" or "--check-art" or "--check-save" or "--check-gpu" or "--version");
+var headless = args.Any(a => a is "--bench" or "--combat-sweep" or "--check-art" or "--check-save" or "--check-gpu" or "--version");
 Log.Initialize(logDirectory: headless ? null : BuildInfo.LogDirectory, appName: TitleGame.AppId);
 string? buildTag = null;
 Log.CrashContext = () => BuildInfo.Describe(buildTag);
@@ -48,6 +48,12 @@ if (args.Contains("--check-gpu"))
 if (args.Contains("--bench"))
 {
     Bench.Run(ParseSeed(args));
+    return;
+}
+
+if (args.Contains("--combat-sweep"))
+{
+    CombatSweepRun.Run(args);
     return;
 }
 
