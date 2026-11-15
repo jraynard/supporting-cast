@@ -347,7 +347,7 @@ public sealed class BulkHaulJob(Entity item, int stacks) : Job
             var t = Get<Thing>(e);
             if (e == item || t.Def != def || t.Material != material || Maps.Map.Distance(t.Cell, near) > GatherRadius)
                 continue;
-            if (AiQueries.InStockpile(Sim, t.Cell) || Sim.Map.Fire[Sim.Map.Idx(t.Cell)] > 0 || Sim.Reservations.IsReservedByOther(e, Pawn))
+            if (AiQueries.InStockpile(Sim, t.Cell) || !WorkGivers.Settled(Sim, e) || Sim.Map.Fire[Sim.Map.Idx(t.Cell)] > 0 || Sim.Reservations.IsReservedByOther(e, Pawn))
                 continue;
             if (!Navigation.CanReach(Sim, Pawn, near, t.Cell, PathEnd.OnTile) || !Sim.Reservations.TryReserve(e, Pawn))
                 continue;

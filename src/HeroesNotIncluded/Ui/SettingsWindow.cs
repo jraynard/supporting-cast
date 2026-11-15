@@ -317,6 +317,12 @@ public sealed class SettingsWindow(GameHost host)
             _draft.ShowTips = tips;
 
         ImGui.Dummy(in gap);
+        Row("Guide highlights", "A glow round the button for what needs doing now: the gift when someone needs healing, lay on hands, a weave for your own wounds.");
+        var guide = _draft.GuideHighlights;
+        if (ImGui.Checkbox("##guide"u8, ref guide))
+            _draft.GuideHighlights = guide;
+
+        ImGui.Dummy(in gap);
         Row("HD-2D look", "Tilt-shift blur, glowing fire, a vignette and warmer colours. F10 toggles it in game.");
         var hd2d = _draft.Hd2d;
         if (ImGui.Checkbox("##hd2d"u8, ref hd2d))

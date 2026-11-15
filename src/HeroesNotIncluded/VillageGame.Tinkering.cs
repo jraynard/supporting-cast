@@ -311,31 +311,54 @@ public sealed partial class VillageGame
 
     private static float4 Lerp(float4 a, float4 b, float t) => a + (b - a) * Math.Clamp(t, 0f, 1f);
 
-    /// <summary>The wheel turning past the gauge: the needle out for a bulge, in for a dip; the band it must run within.</summary>
+    /// <summary>
+    /// The wheel on its stand with a spoke at the key, and the chalk its last spin left: a gauge per
+    /// spoke, the band true lies in, the mark where the rim ran, and the turns of the key put in since.
+    /// </summary>
     private void DrawTrue(TrueSession s)
     {
-        BeginWork(s.Title, ("F", "tighten the spoke at the gauge"), ("A", "slacken it"), ("Esc", "stop"));
-        TextC(Theme.Dim, "Tighten where the needle swings out, slacken where it swings in. Get it running within the band.");
-        TrueScene(s.Turn, s.Gauge, s.BandWidth);
+        BeginWork(s.Title, ("A/D", "turn the wheel to a spoke"), ("W", "tighten it: pulls the rim in"), ("S", "slacken it: lets it out"),
+            ("F", "spin it past the gauge"), ("Esc", "stop"));
+        TextC(Theme.Dim, s.Spinning ? "The gauge chalks the rim at each spoke as it goes by."
+            : s.Turns == 0 ? "Spin it first: the gauge chalks where the rim runs out or in."
+            : "Tighten the spokes chalked out, slacken those chalked in, then spin again. It's true when a spin runs within the band.");
+        TrueScene(s);
         var dl = ImGui.GetWindowDrawList();
         var min = ImGui.GetCursorScreenPos();
-        var size = Gui.S(420, 60);
+        var size = Gui.S(420, 86);
         var max = min + size;
         ImGui.Dummy(in size);
         dl.AddRectFilled(in min, in max, Theme.U8(Theme.Well), Gui.S(3), ImDrawFlags.None);
-        var mid = (min.X + max.X) * 0.5f;
-        var scale = size.X * 0.5f / 0.4f;
-        var bandMin = new float2(mid - s.BandWidth * scale, min.Y);
-        var bandMax = new float2(mid + s.BandWidth * scale, max.Y);
-        dl.AddRectFilled(in bandMin, in bandMax, Theme.U8(Theme.Good, 0.45f), Gui.S(2), ImDrawFlags.None);
-        var x = Math.Clamp(mid + s.Gauge * scale, min.X + 2, max.X - 2);
-        var a = new float2(x, min.Y + Gui.S(4));
-        var b = new float2(x, max.Y - Gui.S(4));
-        dl.AddLine(in a, in b, Theme.U8(MathF.Abs(s.Gauge) <= s.BandWidth ? Theme.Text : Theme.Accent), Gui.S(3));
-        TextC(Theme.Dim, "in");
-        ImGui.SameLine(size.X - Gui.S(20), 0);
-        TextC(Theme.Dim, "out");
-        Bar("Wheel", s.Turn, Theme.Dim, $"spoke {s.AtGauge + 1} of {TrueSession.Spokes}");
+        var w = size.X / TrueSession.Spokes;
+        var gaugeTop = min.Y + Gui.S(6);
+        var gaugeH = size.Y - Gui.S(28);
+        var mid = gaugeTop + gaugeH * 0.5f;
+        var scale = gaugeH * 0.5f / 0.36f;
+        var bandA = new float2(min.X, mid - s.BandWidth * scale);
+        var bandB = new float2(max.X, mid + s.BandWidth * scale);
+        dl.AddRectFilled(in bandA, in bandB, Theme.U8(Theme.Good, 0.3f), 0f, ImDrawFlags.None);
+        for (var i = 0; i < TrueSession.Spokes; i++)
+        {
+            var x0 = min.X + i * w;
+            var cx = x0 + w * 0.5f;
+            if (i == s.Selected)
+                dl.AddRect(new float2(x0 + Gui.S(2), min.Y + Gui.S(2)), new float2(x0 + w - Gui.S(2), max.Y - Gui.S(2)),
+                    Theme.U8(Theme.Accent), Gui.S(3), ImDrawFlags.None, Gui.S(2));
+            if (s.Chalked[i])
+            {
+                // Out is up, in is down.
+                var y = Math.Clamp(mid - s.Chalk[i] * scale, gaugeTop, gaugeTop + gaugeH);
+                var within = MathF.Abs(s.Chalk[i]) <= s.BandWidth;
+                var a = new float2(cx - w * 0.3f, y);
+                var b = new float2(cx + w * 0.3f, y);
+                dl.AddLine(in a, in b, Theme.U8(within ? Theme.Text : Theme.Accent, s.Worked[i] != 0 ? 0.45f : 1f), Gui.S(3));
+            }
+            var label = s.Worked[i] == 0 ? $"{i + 1}" : $"{i + 1} {(s.Worked[i] > 0 ? "+" : "-")}{Math.Abs(s.Worked[i])}";
+            var tsize = ImGui.CalcTextSize(label);
+            var at = new float2(cx - tsize.X * 0.5f, max.Y - Gui.S(20));
+            dl.AddText(in at, Theme.U8(i == s.Selected ? Theme.Text : Theme.Dim), label);
+        }
+        TextC(Theme.Dim, "Chalk: up is out, down is in. +/-: turns of the key since it was chalked.");
         EndWork();
     }
 

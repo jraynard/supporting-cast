@@ -394,6 +394,31 @@ public class HealerTests
     }
 
     [Fact]
+    public void ADownedEmpathCanStillMendThemselvesButNotKnotACharm()
+    {
+        var (sim, me, patient, arm) = AtTheBedside();
+        Empathy.Draw(sim, me, patient, CutKey(sim, patient, arm), 1f, snapped: false);
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Bandage"), 2));
+        var key = CutKey(sim, me, arm);
+        var before = Empathy.Find(sim, me, key)!.Damage;
+        ref var c = ref sim.World.Get<Creature>(me);
+        HealthSystem.SetDowned(sim, me, ref c, true);
+
+        sim.ApplyNow(new WeaveCharmCommand(me));
+        Assert.False(sim.World.Has<WorkSession>(me), "a charm waits till you're up");
+
+        sim.ApplyNow(new WeaveCommand(me, key));
+        var cast = Assert.IsType<CastSession>(sim.World.Get<WorkSession>(me));
+        Assert.True(cast.Downed);
+        Assert.True(cast.WindowSteps < (int)(CastSession.Window * cast.Hands.Tolerance), "the beat is harder to keep on the ground");
+        sim.World.Remove<WorkSession>(me);
+
+        Weave(sim, me, key, ["Flesh", "Thread"]); // knitting
+        var after = Empathy.Find(sim, me, key)?.Damage ?? 0f;
+        Assert.True(after < before - 10f, $"{before} -> {after}");
+    }
+
+    [Fact]
     public void AnExtraLeadRuneHealsMoreForMoreMana()
     {
         float Mend(string[] runes, out float spent)

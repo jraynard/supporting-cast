@@ -426,8 +426,9 @@ Millbrook, south of the square, with a bench, a stock chest and the collector's 
   adventurers carry two, not two alike, and judge them only by what shows.
 - *Wagons.* Some parties ride in with a wagon, often the worse for the road: a buckled wheel or a
   cracked axle. It's parked outside near their haunt, and its owner asks for it mended. Truing a
-  wheel: it turns past a gauge; F tightens the spoke at the gauge where the rim bulges out, A
-  slackens it where it dips in. A new axle is fitted like a contraption's parts, from two wood. A
+  wheel: it stands on its stand; A/D turn it to a spoke, W tightens that spoke (pulling a bulge
+  in), S slackens it (letting a dip out), and F spins it past a gauge, which chalks how far the rim
+  runs out or in at every spoke. It's true when a spin runs within the band. A new axle is fitted like a contraption's parts, from two wood. A
   party that sets out with its wagon still broken brings nothing home: no strongbox, no curios.
 - *Curios and the collector.* A cleared quest sometimes sends a curio home (an idol, a clockwork
   bird, an old seal), on a sound wagon. What it's really worth is hidden, and some are fakes. The
@@ -459,7 +460,8 @@ wounds, witnesses. A limited town bell calls a meeting to accuse, vote and exile
 someone brings them back; they can come back in the next round as a new character. Taking over a
 villager mid-round is for late joiners only.
 - *Dying.* The downed bleed out unless someone binds them or carries them to bed, and can still
-  speak, weakly, to call for help.
+  speak, weakly, to call for help. A downed empath can still weave a mending on themselves (and
+  meditate for the mana), with a narrower beat: bound but in pain, they'd otherwise lie there for hours.
 - *Ghosts* see only what's around them (no allegiances, no hidden properties), through walls and
   in the dark, and talk among themselves where the living can't hear. A ghost knows where its body
   lies and who's at it.

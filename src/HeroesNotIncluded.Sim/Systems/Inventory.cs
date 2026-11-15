@@ -161,7 +161,7 @@ public static class Inventory
         if (carrying.Item.IsNull)
             carrying.Item = left;
         else
-            sim.PlaceItemNear(left, w.Get<Position>(avatar).Cell);
+            sim.PlaceItemNear(left, w.Get<Position>(avatar).Cell, byHand: true);
     }
 
 
@@ -255,7 +255,7 @@ public static class Inventory
     {
         if (!InOwnPack(sim, creature, item))
             return;
-        sim.PlaceItemNear(sim.TakeFromStack(item, sim.World.Get<Stack>(item).Count), sim.World.Get<Position>(creature).Cell);
+        sim.PlaceItemNear(sim.TakeFromStack(item, sim.World.Get<Stack>(item).Count), sim.World.Get<Position>(creature).Cell, byHand: sim.World.Has<Avatar>(creature));
     }
 
     /// <summary>Move a pack stack into a container in reach (as much as fits).</summary>

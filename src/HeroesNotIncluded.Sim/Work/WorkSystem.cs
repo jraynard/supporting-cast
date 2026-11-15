@@ -25,7 +25,7 @@ public sealed class WorkSystem : ISimSystem
         foreach (var e in w.Query<WorkSession>())
         {
             var session = w.Get<WorkSession>(e);
-            if (!Able(sim, e))
+            if (!Able(sim, e, session))
             {
                 Stop(sim, e, null);
             }
@@ -55,10 +55,11 @@ public sealed class WorkSystem : ISimSystem
         }
     }
 
-    private static bool Able(Simulation sim, Entity e)
+    private static bool Able(Simulation sim, Entity e, WorkSession session)
     {
         var w = sim.World;
-        return w.Has<Avatar>(e) && w.TryGet<Creature>(e, out var c) && !c.Dead && !c.Downed && !w.Has<Carried>(e) && !w.Get<Mind>(e).Asleep;
+        return w.Has<Avatar>(e) && w.TryGet<Creature>(e, out var c) && !c.Dead && (!c.Downed || session.WhileDowned)
+            && !w.Has<Carried>(e) && !w.Get<Mind>(e).Asleep;
     }
 
     /// <summary>Begin a job, replacing any other: the worker stops whatever else they were doing.</summary>
@@ -100,6 +101,8 @@ public sealed class WorkSystem : ISimSystem
 /// <summary>
 /// A batch of a worker's inputs, replayed onto their session. Off the network, so a batch that's
 /// out of order, for another job, or claims to be further along than time allows is dropped whole.
+/// A batch may start with inputs an earlier one carried (the predictor sends what the sim hasn't
+/// played yet, again, so a dropped batch is made good): those already played are passed over.
 /// </summary>
 public sealed record WorkInputBatchCommand(Entity Actor, long SessionId, IReadOnlyList<WorkInput> Inputs, int UpToStep) : ISimCommand, IActorCommand
 {
@@ -113,14 +116,18 @@ public sealed record WorkInputBatchCommand(Entity Actor, long SessionId, IReadOn
             return;
         if (UpToStep <= session.StepsDone || UpToStep > sim.Clock.Tick - session.StartTick + SlackSteps)
             return;
+        // Those at the front already played go by; the rest must be in order and inside the batch.
+        var skip = 0;
+        while (skip < Inputs.Count && Inputs[skip].Step < session.StepsDone)
+            skip++;
         var last = session.StepsDone;
-        foreach (var input in Inputs)
+        for (var i = skip; i < Inputs.Count; i++)
         {
-            if (input.Step < last || input.Step >= UpToStep)
+            if (Inputs[i].Step < last || Inputs[i].Step >= UpToStep)
                 return;
-            last = input.Step;
+            last = Inputs[i].Step;
         }
-        session.Advance(Inputs, UpToStep);
+        session.Advance(skip == 0 ? Inputs : Inputs.Skip(skip).ToList(), UpToStep);
         session.LastInputTick = sim.Clock.Tick;
     }
 }

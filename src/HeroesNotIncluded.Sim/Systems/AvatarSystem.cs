@@ -213,7 +213,7 @@ public sealed class AvatarSystem : ISimSystem
                     var item = carrying.Item;
                     carrying.Item = Entity.Null;
                     if (w.IsAlive(item))
-                        sim.PlaceItemNear(item, w.Get<Position>(e).Cell);
+                        sim.PlaceItemNear(item, w.Get<Position>(e).Cell, byHand: true);
                 }
                 continue;
             }
@@ -359,7 +359,7 @@ public sealed class AvatarSystem : ISimSystem
             return new(AvatarActionKind.ReadSign, "Read the sign", cell, signed);
 
         var item = map.Item[i];
-        if (item.IsNull || sim.Reservations.IsReservedByOther(item, avatar))
+        if (item.IsNull || !Ai.Claims.Free(sim, item, avatar))
             item = Entity.Null;
         var pack = sim.PackOf(avatar);
 
@@ -736,13 +736,14 @@ public sealed class AvatarSystem : ISimSystem
                 Toolbelt.PutOn(sim, avatar, action.Target);
                 break;
             case AvatarActionKind.PickUp:
+                Ai.Claims.TakeOver(sim, action.Target, avatar); // a villager only fetching it lets it go
                 carrying.Item = Inventory.PickUp(sim, avatar, action.Target, carrying.Item);
                 break;
             case AvatarActionKind.Equip:
                 Inventory.PutOn(sim, avatar, sim.TakeFromStack(action.Target, 1));
                 break;
             case AvatarActionKind.PutDown:
-                sim.PlaceItemNear(carrying.Item, action.Cell);
+                sim.PlaceItemNear(carrying.Item, action.Cell, byHand: true);
                 carrying.Item = Entity.Null;
                 break;
             case AvatarActionKind.Store:

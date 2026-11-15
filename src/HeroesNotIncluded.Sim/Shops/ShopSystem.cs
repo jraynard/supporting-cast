@@ -186,7 +186,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             // Work comes after the road's been washed down: fed, served, mended, then a quest.
             // Once one of the party has a quest on order, the rest leave it to them.
             // Nobody sets out on the festival's night.
-            if (!_questAsked.Contains(a.Party) && sim.Round.Phase != Round.RoundPhase.Festival
+            if (!SeekingOrSentOnQuest(sim, a.Party) && sim.Round.Phase != Round.RoundPhase.Festival
                 && sim.Clock.Tick - a.Arrived >= SimClock.HoursToTicks(QuestAfterHours)
                 && Want(sim, who, ServiceKind.Quest, Entity.Null))
                 _questAsked.Add(a.Party);
@@ -531,6 +531,31 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         else
             line = spare <= 0 ? $"I'd want {def.Label}, if I had the silver." : $"{price} silver? I haven't got it to spare.";
         sim.Speech.Say(sim, who, line, Volume.Say);
+    }
+
+    /// <summary>
+    /// Whether a party has work in hand: asked and still waiting, or sent off once already. One whose
+    /// ask lapsed with nobody answering asks again after <see cref="CooldownHours"/>: a party that asked
+    /// at night, while the innkeeper was at the stew, used never to ask again, and there was no
+    /// sending them anywhere in the morning.
+    /// </summary>
+    private bool SeekingOrSentOnQuest(Simulation sim, int party)
+    {
+        if (!_questAsked.Contains(party))
+            return false;
+        var lapsed = false;
+        foreach (var e in _orders)
+        {
+            if (e.Kind.Kind != ServiceKind.Quest || !sim.World.TryGet<Adventurer>(e.Poster, out var a) || a.Party != party)
+                continue;
+            if (e.IsOpen || e.Status == OrderStatus.Done || sim.Clock.Tick - e.ClosedTick < SimClock.HoursToTicks(CooldownHours))
+                return true;
+            lapsed = true;
+        }
+        // Closed orders are let go after a while (a sent party's too), so only a lapse seen frees them.
+        if (lapsed)
+            _questAsked.Remove(party);
+        return !lapsed;
     }
 
     /// <summary>Has nothing of this kind open, didn't just have one close, and didn't just go without one?</summary>

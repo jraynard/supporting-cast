@@ -9,7 +9,8 @@ namespace HeroesNotIncluded.Sim.Shops;
 /// <see cref="DeliveryHour"/>, leaves what <see cref="Defs.SeasonDef.OreDelivery"/> lists (ore to
 /// smelt, and charcoal) in the smithy's chest, and beside it what won't fit. The smith starts a
 /// round with only a couple of bars, so the morning's ore is what keeps the forge busy before the
-/// first adventurers come in. Nothing happens outside a round.
+/// first adventurers come in. The woodcutter comes with it, with logs for the barn
+/// (<see cref="DeliverWood"/>). Nothing happens outside a round.
 /// </summary>
 public sealed class OreCarterSystem : ISimSystem, ISaveState
 {
@@ -60,6 +61,19 @@ public sealed class OreCarterSystem : ISimSystem, ISaveState
             }
             sim.Messages.Add(MessageKind.Info, "The carter's left a load of ore at the smithy.", cell);
         }
+        DeliverWood(sim);
+    }
+
+    /// <summary>The woodcutter's morning load (<see cref="Defs.SeasonDef.WoodDelivery"/>), stacked in the barn's stockpile.</summary>
+    public static void DeliverWood(Simulation sim)
+    {
+        var load = sim.Defs.Season.WoodDelivery;
+        if (load.Count == 0 || sim.Map.ZonedCells.Count == 0)
+            return;
+        var at = Scenarios.VillageRound.StockpileMiddle(sim);
+        foreach (var t in load)
+            sim.PlaceItemNear(sim.CreateItem(t.ThingDef, t.Count, t.MaterialDef), at);
+        sim.Messages.Add(MessageKind.Info, "The woodcutter's stacked a load of logs in the barn.", at);
     }
 
     public void Save(SaveWriter w, Simulation sim) => w.Int(_lastDay);

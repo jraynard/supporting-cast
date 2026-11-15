@@ -155,7 +155,7 @@ public sealed class WorkSounds(AudioEngine audio)
                 Count(s.Part, Sounds.Ratchet);
                 break;
             case TrueSession s:
-                Count(s.Turns, Sounds.Ratchet);
+                Count(s.Keyed, Sounds.Ratchet);
                 break;
             case LoupeSession s:
                 Count(s.ReadCount, Sounds.Click);

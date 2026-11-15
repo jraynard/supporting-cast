@@ -509,20 +509,107 @@ public class TinkerTradeTests
         Assert.Equal("Look the wagon over", Tinkers.ActionAt(sim, me, wagon));
         var purse = Coin.Count(sim, me);
         sim.ApplyNow(new TrueWheelCommand(me, wagon));
-        var spoke = -1;
-        Play(sim, me, w =>
-        {
-            var s = (TrueSession)w;
-            if (s.AtGauge == spoke)
-                return (false, false, 0);
-            spoke = s.AtGauge;
-            var o = s.Offsets[spoke];
-            return o > s.BandWidth * 0.5f ? (true, false, 0) : o < -s.BandWidth * 0.5f ? (false, false, -1) : (false, false, 0);
-        });
+        Play(sim, me, TrueByTheChalk);
         Assert.False(Wagons.Damaged(sim, wagon));
         sim.TickMany(SimClock.TicksPerHour / 4);
         Assert.Equal(OrderStatus.Done, order.Status);
         Assert.True(Coin.Count(sim, me) >= purse + order.Price);
+    }
+
+    /// <summary>Read the wheel as a player does, by the chalk: spin, then key each spoke chalked out back toward true, then spin again.</summary>
+    private static (bool, bool, int, int) TrueByTheChalk(WorkSession w)
+    {
+        var s = (TrueSession)w;
+        if (s.Spinning || s.StepsDone % 4 != 0)
+            return (false, false, 0, 0); // a key let go between presses
+        var worst = TrueSession.Worst(s, s.BandWidth * 0.5f);
+        if (s.Turns == 0 || worst < 0)
+            return (true, false, 0, 0);
+        if (worst != s.Selected)
+            return (false, false, (worst - s.Selected + TrueSession.Spokes) % TrueSession.Spokes <= TrueSession.Spokes / 2 ? 1 : -1, 0);
+        return (false, false, 0, TrueSession.Reckoned(s, worst) > 0 ? -1 : 1);
+    }
+
+    [Fact]
+    public void AWorkBatchTheSimCouldNotTakeIsMadeGoodByTheNext()
+    {
+        var (sim, me, _, wagon) = WithAWagon("Tinker", WagonDamage.Wheel);
+        Beside(sim, me, wagon);
+        sim.ApplyNow(new TrueWheelCommand(me, wagon));
+        var predictor = new WorkPredictor();
+        var carried = 0;
+        void Send(ISimCommand c)
+        {
+            // The first batch carrying the spin is lost on the way.
+            if (c is WorkInputBatchCommand b && b.Inputs.Any(i => i.Kind == WorkInputKind.Press) && carried++ == 0)
+                return;
+            sim.ApplyNow(c);
+        }
+        for (var t = 0; t < 60; t++)
+        {
+            sim.Tick();
+            predictor.Update(sim, me, 1, t == 5, false, 0, Send);
+        }
+        Assert.True(carried >= 2, "the spin went again");
+        var real = (TrueSession)sim.World.Get<WorkSession>(me);
+        Assert.True(real.Spinning || real.Turns > 0, "the spin arrived with a later batch");
+        Assert.InRange(predictor.Session!.StepsDone - real.StepsDone, 0, WorkPredictor.SendEvery);
+    }
+
+    [Fact]
+    public void AWorkSessionsCopyKeepsNearTheSimsClock()
+    {
+        var (sim, me, _, wagon) = WithAWagon("Tinker", WagonDamage.Wheel);
+        Beside(sim, me, wagon);
+        sim.ApplyNow(new TrueWheelCommand(me, wagon));
+        var predictor = new WorkPredictor();
+        var sent = new List<WorkInputBatchCommand>();
+        // Frames racing on while the sim stands still (a co-op hitch): the copy waits for it.
+        for (var f = 0; f < 20; f++)
+            predictor.Update(sim, me, 10, f == 3, false, 0, c => sent.Add((WorkInputBatchCommand)c));
+        var session = sim.World.Get<WorkSession>(me);
+        Assert.True(predictor.Session!.StepsDone <= sim.Clock.Tick - session.StartTick + WorkPredictor.Lead);
+        foreach (var b in sent)
+            sim.ApplyNow(b);
+        Assert.True(session.StepsDone > 0, "batches from a copy kept near the clock are taken");
+    }
+
+    [Fact]
+    public void AWheelIsOnlyTrueWhenASpinShowsIt()
+    {
+        var (sim, me, _, wagon) = WithAWagon("Tinker", WagonDamage.Wheel);
+        Beside(sim, me, wagon);
+        sim.ApplyNow(new TrueWheelCommand(me, wagon));
+        var predictor = new WorkPredictor();
+        void Run(bool press, int axis, int axis2)
+        {
+            sim.Tick();
+            predictor.Update(sim, me, 1, press, false, axis, c => sim.ApplyNow(c), axis2);
+        }
+        // Before a spin nothing's chalked, and A/D move the key a spoke at a time.
+        Run(false, 0, 0);
+        var s = (TrueSession)predictor.Session!;
+        Assert.Equal(0, s.Selected);
+        Assert.DoesNotContain(true, s.Chalked);
+        Run(false, 1, 0);
+        Run(false, 0, 0);
+        Assert.Equal(1, predictor.Session is TrueSession t1 ? t1.Selected : -1);
+        // Tightening a spoke is remembered against it, and changes no chalk.
+        Run(false, 0, -1);
+        Run(false, 0, 0);
+        var t = (TrueSession)predictor.Session!;
+        Assert.Equal(1, t.Worked[1]);
+        Assert.DoesNotContain(true, t.Chalked);
+        // A spin chalks every spoke and clears what was worked.
+        Run(true, 0, 0);
+        for (var i = 0; i < (int)(TrueSession.SpinSeconds * SimClock.TicksPerSecond) + 4; i++)
+            Run(false, 0, 0);
+        t = (TrueSession)predictor.Session!;
+        Assert.False(t.Spinning);
+        Assert.All(t.Chalked, Assert.True);
+        Assert.All(t.Worked, n => Assert.Equal(0, n));
+        Assert.Equal(1, t.Turns);
+        Assert.True(Wagons.Damaged(sim, wagon), "a buckled wheel isn't true after one spin");
     }
 
     [Fact]

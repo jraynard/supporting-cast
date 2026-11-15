@@ -21,14 +21,14 @@ public static class VillageSetup
             map.SetZone(map.Idx(center.X + x, center.Y + y, center.Z), 1);
     }
 
-    /// <summary>The dwelling's spare beds, once it's up: what a player adds for more settlers.</summary>
+    /// <summary>The dwelling's spare beds, made already: built as blueprints, they took ten score logs from the barn in a round's first hours.</summary>
     public static void FillSpareBeds(Simulation sim, Entity dwelling)
     {
         if (!sim.World.IsAlive(dwelling) || !sim.World.TryGet<PresetBuilding>(dwelling, out var b))
             return;
         foreach (var spot in Systems.Buildings.Slots(sim, b))
             if (spot.Slot.Accepts(sim.Defs.Thing("Bed")))
-                Systems.Buildings.FillSlot(sim, dwelling, spot.Index, sim.Defs.Thing("Bed"));
+                Systems.Buildings.FillSlot(sim, dwelling, spot.Index, sim.Defs.Thing("Bed"), built: true);
     }
 
     /// <summary>A preset building at the nearest spot to <paramref name="preferred"/> its plot fits, on the ground there; Entity.Null if none within reach.</summary>

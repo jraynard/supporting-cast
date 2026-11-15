@@ -143,6 +143,30 @@ public class BandagingTests
         Assert.All(h.Injuries, i => Assert.True(i.NeedsTending(sim.Clock.Tick), "and leaves the dressing to the healer"));
     }
 
+    [Fact]
+    public void AnAiLabourerStanchesADownedAdventurerToo()
+    {
+        var (sim, patient) = Wounded(bandages: 0, cuts: 2);
+        sim.World.Remove<Avatar>(patient);
+        sim.World.Get<Creature>(patient).Faction = Faction.Adventurer;
+        var h = sim.World.Get<Health>(patient);
+        foreach (var i in h.Injuries)
+            i.InfectionRolled = true;
+        h.Blood = 0.4f;
+        sim.TickMany(60);
+        Assert.True(sim.World.Get<Creature>(patient).Downed);
+
+        var labourer = sim.SpawnCreature(sim.Defs.Creature("Human"), "Hob", C(15, 5), ageDays: 25 * 365);
+        Array.Fill(sim.World.Get<Needs>(labourer).Values, 1f);
+        sim.World.Add(labourer, new Trade { Def = sim.Defs.Trade("Labourer") });
+        var mind = sim.World.Get<Mind>(labourer);
+        Array.Fill(mind.WorkPriority, 0);
+        mind.WorkPriority[(int)WorkType.Doctor] = 1;
+        sim.TickMany(SimClock.HoursToTicks(0.5f));
+
+        Assert.All(h.Injuries, i => Assert.True(i.Stanched, "an adventurer lying in the street is the town's to see to"));
+    }
+
     /// <summary>
     /// Bind by hand: each turn of cloth pulled to <paramref name="pullTo"/> of the way from the
     /// band's bottom (0) to its top (1), then let go. Returns the dressings' quality.

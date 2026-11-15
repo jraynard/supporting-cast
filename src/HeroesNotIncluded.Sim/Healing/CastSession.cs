@@ -35,6 +35,12 @@ public sealed class CastSession : WorkSession
     /// <summary>The pain carried when the weave began, 0..1: the heart races and stumbles with it.</summary>
     public float Pain { get; set; }
 
+    /// <summary>Begun lying downed: the beat's window narrows to <see cref="DownedWindow"/> of itself.</summary>
+    public bool Downed { get; set; }
+
+    /// <summary>The share of the beat's window left to an empath weaving on the ground.</summary>
+    public const float DownedWindow = 0.6f;
+
     /// <summary>The runes there are to key (the defs' runes, in key order).</summary>
     public IReadOnlyList<RuneDef> Palette { get; set; } = [];
 
@@ -57,7 +63,10 @@ public sealed class CastSession : WorkSession
 
     private int _usedBeat = int.MinValue;
 
-    public int WindowSteps => (int)(Window * Hands.Tolerance);
+    public int WindowSteps => (int)(Window * Hands.Tolerance * (Downed ? DownedWindow : 1f));
+
+    /// <summary>A mending on yourself goes on downed, harder (<see cref="Downed"/>); a charm waits till you're up.</summary>
+    public override bool WhileDowned => !IntoCharm;
 
     public override Skill Skill => Skill.Medicine;
     public override float Xp => 25f;
@@ -68,6 +77,8 @@ public sealed class CastSession : WorkSession
         var w = sim.World;
         if (!w.TryGet<Mana>(caster, out var mana))
             return "you haven't the gift";
+        if (intoCharm && w.TryGet<Creature>(caster, out var c) && c.Downed)
+            return "not lying down; mend yourself first";
         if (intoCharm && Systems.Bandaging.BandagesOn(sim, caster) == 0)
             return "you need a strip of linen to knot it into (a bandage)";
         if (wound != 0 && Empathy.Find(sim, caster, wound) == null)
@@ -100,7 +111,8 @@ public sealed class CastSession : WorkSession
         var pain = sim.World.TryGet<Health>(caster, out var h) ? Math.Clamp(h.Pain, 0f, 1f) : 0f;
         // At the rune altar the heart steadies: the pain carried stirs the beat less.
         pain *= 1f - AltarHelp(sim, caster);
-        WorkSystem.Start(sim, caster, new CastSession { Wound = wound, Feels = feels, Pain = pain, Palette = sim.Defs.AllRunes, IntoCharm = intoCharm });
+        var downed = sim.World.TryGet<Creature>(caster, out var c) && c.Downed;
+        WorkSystem.Start(sim, caster, new CastSession { Wound = wound, Feels = feels, Pain = pain, Palette = sim.Defs.AllRunes, IntoCharm = intoCharm, Downed = downed });
     }
 
     public override bool StillValid(Simulation sim) => sim.World.Has<Mana>(Worker);
@@ -237,6 +249,7 @@ public sealed class CastSession : WorkSession
         w.Bool(Released);
         w.Int(_usedBeat);
         w.Bool(IntoCharm);
+        w.Bool(Downed);
     }
 
     protected override void ReadState(SaveReader r)
@@ -277,5 +290,7 @@ public sealed class CastSession : WorkSession
         _usedBeat = r.Int();
         if (r.Version >= 5)
             IntoCharm = r.Bool();
+        if (r.Version >= 39)
+            Downed = r.Bool();
     }
 }

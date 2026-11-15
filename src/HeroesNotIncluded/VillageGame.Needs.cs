@@ -93,6 +93,8 @@ public sealed partial class VillageGame
             TextC(Ui.Theme.Dim, bleeding
                 ? $"Call for help ({Controls.Glyph(Act.Heard)}, /s to shout): someone has to bind you, or carry you to a bed."
                 : $"Call for help ({Controls.Glyph(Act.Heard)}, /s to shout), or lie still until you can stand.");
+            if (w.Has<Sim.Components.Mana>(_avatar))
+                TextC(Ui.Theme.Dim, $"Your gift still answers, though the beat's harder to keep: weave a mending on yourself ({Controls.Glyph(Act.Gift)}, the gift).");
             Gui.Rule();
         }
 

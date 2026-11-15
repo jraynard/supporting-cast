@@ -6,14 +6,23 @@ namespace HeroesNotIncluded.Sim.Work;
 /// Runs a copy of the worker's session ahead of the sim, for instant feedback, and sends the
 /// inputs that drove it in batches for the sim to replay. Used by the game and by
 /// <see cref="Bots.BotPlayer"/> alike. The copy only ever shows; if the sim ends the job, it goes.
+/// It's kept within <see cref="Lead"/> steps of the sim's clock, and each batch carries every input
+/// the sim hasn't played yet: a co-op player whose sim fell behind the wall clock once sent batches
+/// too far ahead to be taken, so their last press never arrived and the job was "left unfinished".
 /// </summary>
 public sealed class WorkPredictor
 {
     /// <summary>Steps between batches when nothing is being pressed, so the sim knows the worker is still there.</summary>
     public const int SendEvery = 6;
 
-    private readonly List<WorkInput> _unsent = [];
-    private readonly List<WorkInput> _frame = [];
+    /// <summary>How far the copy may run ahead of the sim's clock (well inside <see cref="WorkInputBatchCommand.SlackSteps"/>).</summary>
+    public const int Lead = WorkInputBatchCommand.SlackSteps * 2 / 3;
+
+    /// <summary>Inputs kept for sending again until the sim has played past them (a cap against a sim that's gone for good).</summary>
+    public const int MaxKept = 256;
+
+    private readonly List<WorkInput> _kept = [];
+    private readonly List<WorkInput> _pending = [];
     private WorkSession? _local;
     private int _sentUpTo;
     private bool _held;
@@ -25,7 +34,8 @@ public sealed class WorkPredictor
     public void Reset()
     {
         _local = null;
-        _unsent.Clear();
+        _kept.Clear();
+        _pending.Clear();
         _held = false;
         _axis = _axis2 = 0;
     }
@@ -49,34 +59,48 @@ public sealed class WorkPredictor
             _sentUpTo = real.StepsDone;
         }
         var local = _local;
-        if (local.Done || local.Failed != null)
-            return;
-
-        var at = local.StepsDone;
-        _frame.Clear();
-        if (press)
-            _frame.Add(new WorkInput(at, WorkInputKind.Press));
-        if (held != _held)
-            _frame.Add(new WorkInput(at, WorkInputKind.Hold, held ? 1 : 0));
-        if (axis != _axis)
-            _frame.Add(new WorkInput(at, WorkInputKind.Axis, axis));
-        if (axis2 != _axis2)
-            _frame.Add(new WorkInput(at, WorkInputKind.Axis2, axis2));
-        if (rune >= 0)
-            _frame.Add(new WorkInput(at, WorkInputKind.Rune, rune));
-        if (act)
-            _frame.Add(new WorkInput(at, WorkInputKind.Act));
-        (_held, _axis, _axis2) = (held, axis, axis2);
-        if (_frame.Count > 0 && steps == 0)
-            steps = 1; // an input needs a step to land on
-        local.Advance(_frame, at + steps);
-        _unsent.AddRange(_frame);
-
-        var finished = local.Done || local.Failed != null;
-        if (local.StepsDone > _sentUpTo && (_unsent.Count > 0 || finished || local.StepsDone - _sentUpTo >= SendEvery))
+        if (!local.Done && local.Failed == null)
         {
-            send(new WorkInputBatchCommand(worker, local.StartTick, _unsent.ToArray(), local.StepsDone));
-            _unsent.Clear();
+            // Inputs wait here for a step to land on (the copy may be held at the sim's clock).
+            var at = local.StepsDone;
+            if (press)
+                _pending.Add(new WorkInput(at, WorkInputKind.Press));
+            if (held != _held)
+                _pending.Add(new WorkInput(at, WorkInputKind.Hold, held ? 1 : 0));
+            if (axis != _axis)
+                _pending.Add(new WorkInput(at, WorkInputKind.Axis, axis));
+            if (axis2 != _axis2)
+                _pending.Add(new WorkInput(at, WorkInputKind.Axis2, axis2));
+            if (rune >= 0)
+                _pending.Add(new WorkInput(at, WorkInputKind.Rune, rune));
+            if (act)
+                _pending.Add(new WorkInput(at, WorkInputKind.Act));
+            (_held, _axis, _axis2) = (held, axis, axis2);
+            if (_pending.Count > 0 && steps == 0)
+                steps = 1; // an input needs a step to land on
+            var room = (int)Math.Min(int.MaxValue, sim.Clock.Tick - real.StartTick) + Lead - at;
+            steps = Math.Min(steps, Math.Max(0, room));
+            if (steps > 0)
+            {
+                local.Advance(_pending, at + steps);
+                _kept.AddRange(_pending);
+                _pending.Clear();
+            }
+        }
+
+        // What the sim has played needn't go again.
+        _kept.RemoveAll(i => i.Step < real.StepsDone);
+        if (_kept.Count > MaxKept)
+            _kept.RemoveRange(0, _kept.Count - MaxKept);
+        var finished = local.Done || local.Failed != null;
+        var fresh = local.StepsDone > _sentUpTo;
+        // Sent again, with all the sim hasn't played, while it's behind: a batch it couldn't take is
+        // made good by the next. Once the copy's finished, about every SendEvery steps of the clock.
+        var behind = real.StepsDone < local.StepsDone && sim.Clock.Tick % SendEvery == 0;
+        var newInput = _kept.Count > 0 && _kept[^1].Step >= _sentUpTo;
+        if ((fresh && (newInput || finished || local.StepsDone - _sentUpTo >= SendEvery)) || (finished && behind))
+        {
+            send(new WorkInputBatchCommand(worker, local.StartTick, _kept.ToArray(), local.StepsDone));
             _sentUpTo = local.StepsDone;
         }
     }

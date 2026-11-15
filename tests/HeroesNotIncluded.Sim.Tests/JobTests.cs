@@ -7,6 +7,24 @@ namespace HeroesNotIncluded.Sim.Tests;
 
 public class JobTests
 {
+    [Fact]
+    public void WhatsPutDownByHandLiesAWhileBeforeItsHauled()
+    {
+        var sim = TestWorld.Create();
+        Warm(sim);
+        Villager(sim, C(5, 5), WorkType.Haul);
+        sim.PlaceItemNear(sim.CreateItem(sim.Thing("Wood"), 30), C(8, 8), byHand: true);
+        for (var x = 20; x < 23; x++)
+        for (var y = 20; y < 23; y++)
+            sim.Map.SetZone(sim.Map.Idx(C(x, y)), 1);
+        Entity Wood() => sim.SpawnedItems().Single(e => sim.World.Get<Thing>(e).Def.Name == "Wood");
+
+        sim.TickMany(WorkGivers.HaulDelayTicks - SimClock.TicksPerHour / 4);
+        Assert.Equal(C(8, 8), sim.World.Get<Thing>(Wood()).Cell);
+        sim.TickMany(SimClock.TicksPerHour * 2);
+        Assert.Equal(1, sim.Map.Zone[sim.Map.Idx(sim.World.Get<Thing>(Wood()).Cell)]);
+    }
+
     private static Entity Villager(Simulation sim, int3 at, params WorkType[] only)
     {
         var e = sim.SpawnCreature(sim.Defs.Creature("Human"), "Worker", at);

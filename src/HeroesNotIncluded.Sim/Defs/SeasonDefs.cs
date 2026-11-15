@@ -98,9 +98,20 @@ public sealed class SeasonDef : Def
     /// <summary>What the carter leaves at the smithy each morning from the second day: ore to smelt, and fuel.</summary>
     public List<ThingCount> OreDelivery { get; set; } = [];
 
+    /// <summary>
+    /// Wood laid in the barn's stockpile at the deal, on top of the settlers' pile: the town's fires
+    /// burn about ten score logs a day, and players fetching fuel by hand need some left to fetch.
+    /// </summary>
+    public int BarnWood { get; set; }
+
+    /// <summary>What the woodcutter leaves in the barn each morning from the second day.</summary>
+    public List<ThingCount> WoodDelivery { get; set; } = [];
+
     internal override void Resolve(DefDatabase db)
     {
         foreach (var t in OreDelivery)
+            t.Resolve(db);
+        foreach (var t in WoodDelivery)
             t.Resolve(db);
     }
 }

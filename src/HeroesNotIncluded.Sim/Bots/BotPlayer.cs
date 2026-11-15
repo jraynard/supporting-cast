@@ -384,16 +384,27 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         return (false, false, _dir);
     }
 
-    /// <summary>As each spoke comes past the gauge: a bulge tightened in, a dip slackened out, once a pass.</summary>
+    /// <summary>Spin it to chalk the rim; to each spoke the chalk (less the key's turns since) says is out of the band, a turn the way it wants; then spin again.</summary>
     private (bool, bool, int) True(TrueSession s)
     {
-        var at = s.Turn * TrueSession.Spokes;
-        var frac = at - MathF.Floor(at);
-        if (frac is > 0.12f and < 0.88f || s.AtGauge == _spoke)
+        if (s.Spinning)
             return (false, false, 0);
-        _spoke = s.AtGauge;
-        var mark = s.BandWidth * 0.8f;
-        return s.Gauge > mark ? (true, false, 0) : s.Gauge < -mark ? (false, false, -1) : (false, false, 0);
+        if (_working > 0)
+        {
+            _working--; // let the last key go before the next
+            return (false, false, 0);
+        }
+        var worst = TrueSession.Worst(s, s.BandWidth * 0.5f);
+        if (s.Turns == 0 || worst < 0)
+            return (true, false, 0);
+        if (worst != s.Selected)
+        {
+            var ahead = (worst - s.Selected + TrueSession.Spokes) % TrueSession.Spokes;
+            return (false, false, ahead <= TrueSession.Spokes / 2 ? 1 : -1);
+        }
+        _axis2 = TrueSession.Reckoned(s, worst) > 0 ? -1 : 1; // W tightens a bulge in, S lets a dip out
+        _working = 3;
+        return (false, false, 0);
     }
 
     /// <summary>Stone by stone along the span and back: carry the level to it, let it settle, then wedge a sag up or ease a high one down till it reads level.</summary>

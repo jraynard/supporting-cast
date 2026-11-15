@@ -52,7 +52,8 @@ public sealed record LayOnHandsCommand(Entity Avatar, Entity Patient, int Wound)
 
 /// <summary>
 /// Begin weaving a mending, meant for a wound you carry (0 for none). The runes come as the
-/// weave's own input (<see cref="CastSession"/>), so what it makes is decided as it's woven.
+/// weave's own input (<see cref="CastSession"/>), so what it makes is decided as it's woven. An
+/// empath lying downed can still weave, if harder: bandaged and down, they'd otherwise wait hours.
 /// </summary>
 public sealed record WeaveCommand(Entity Avatar, int Wound) : ISimCommand, IActorCommand
 {
@@ -60,7 +61,7 @@ public sealed record WeaveCommand(Entity Avatar, int Wound) : ISimCommand, IActo
 
     public void Apply(Simulation sim)
     {
-        if (InventoryCommand.Ready(sim, Avatar) && !sim.World.Has<WorkSession>(Avatar))
+        if (InventoryCommand.Ready(sim, Avatar, downed: true) && !sim.World.Has<Carried>(Avatar) && !sim.World.Has<WorkSession>(Avatar))
             CastSession.TryStart(sim, Avatar, Wound);
     }
 }
@@ -89,14 +90,14 @@ public sealed record TearCharmCommand(Entity Avatar, Entity Item) : ISimCommand,
     }
 }
 
-/// <summary>Sit and meditate your mana back.</summary>
+/// <summary>Sit and meditate your mana back (or lie, downed: there's mana to find for a weave on yourself).</summary>
 public sealed record MeditateCommand(Entity Avatar) : ISimCommand, IActorCommand
 {
     public Entity Actor => Avatar;
 
     public void Apply(Simulation sim)
     {
-        if (InventoryCommand.Ready(sim, Avatar) && !sim.World.Has<WorkSession>(Avatar))
+        if (InventoryCommand.Ready(sim, Avatar, downed: true) && !sim.World.Has<Carried>(Avatar) && !sim.World.Has<WorkSession>(Avatar))
             MeditateSession.TryStart(sim, Avatar);
     }
 }

@@ -38,8 +38,15 @@ public sealed partial class VillageGame
 
     private bool InRound => _sim.Round.Live;
 
+    /// <summary>
+    /// Whether players get the build drawer (B, the Build button, the wheel's Build). Off until
+    /// building's a part of the round: playtesters opened it and found tools that did nothing useful.
+    /// The overseer's demos (<c>--building-demo</c>, <c>--furniture-demo</c>) keep their toolbar.
+    /// </summary>
+    private static bool BuildTools { get; } = false;
+
     /// <summary>The build drawer is open, or there's no avatar (god mode always has the toolbar).</summary>
-    private bool ToolbarOpen => (!HasAvatar && !Spectating) || (HasAvatar && _showBuild);
+    private bool ToolbarOpen => (!HasAvatar && !Spectating) || (BuildTools && HasAvatar && _showBuild);
 
     private readonly record struct JournalTab(string Action, string Label, Func<VillageGame, bool> Shown, Action<VillageGame> Toggle);
 
@@ -68,7 +75,7 @@ public sealed partial class VillageGame
         if ((!HasAvatar && !Ghosting) || Working)
             return;
         var map = Controls.Map;
-        if (map.Pressed(Act.Build) && HasAvatar)
+        if (map.Pressed(Act.Build) && HasAvatar && BuildTools)
             _showBuild = !_showBuild;
         if (map.Pressed(Act.ControlsCard) && !_showBuild)
             _showControls = !_showControls;
@@ -134,6 +141,7 @@ public sealed partial class VillageGame
             }
             if (ImGui.Button($"{tab.Label}##journal-{tab.Action}", in _autoSize))
                 tab.Toggle(this);
+            GuideGlow(!open && tab.Action == Act.Gift && GiftWanted());
             if (open)
                 ImGui.PopStyleColor(1);
             var unread = !open && Unread(tab);
@@ -148,7 +156,7 @@ public sealed partial class VillageGame
         }
         if (!first)
             ImGui.SameLine(0, Gui.S(4));
-        if (HasAvatar)
+        if (HasAvatar && BuildTools)
         {
             if (ImGui.Button("Build##drawer"u8, in _autoSize))
                 _showBuild = !_showBuild;
@@ -190,7 +198,7 @@ public sealed partial class VillageGame
         ("Hands-on work", [("@" + Act.Use, "strike, pour, set, press"), ("@steer", "steer, tilt, lift"), ("@" + Act.WorkAct, "the other thing: taste, latch, draw out"),
             ("@runes", "weave a rune"), ("@" + Act.Back, "put the work down")]),
         ("Panels", [("@" + Act.Shop, "shop and favours"), ("@" + Act.Heard, "talk (what you've heard)"), ("@" + Act.Quests, "quests"), ("@" + Act.Gift, "the gift"),
-            ("@" + Act.Log, "message log"), ("@" + Act.Build, "build tools"), ("@" + Act.ControlsCard, "this card"), ("@" + Act.Menu, "the game menu")]),
+            ("@" + Act.Log, "message log"), ("@" + Act.ControlsCard, "this card"), ("@" + Act.Menu, "the game menu")]),
         ("Camera and time", [("@turn", "turn the view"), ("@zoom", "zoom (or the wheel)"), ("@levels", "level down / up"),
             ("@" + Act.LevelFollow, "all levels"), ("@" + Act.Roofs, "roofs"), ("F12", "screenshot"), ("Shift+F12", "screenshot without the UI"),
             ("@" + Act.PlaytestNote, "a playtest note, with a screenshot")]),

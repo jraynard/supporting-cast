@@ -36,6 +36,11 @@ public sealed partial class VillageGame
             WrappedC(Theme.Accent, $"{Cap(a.PartyDef.Label)} want work. They look {ExpeditionSystem.StrengthWord(looks ?? 0)}.");
             ImGui.Separator();
         }
+        else if (w.IsAlive(_selected) && w.TryGet<Adventurer>(_selected, out var picked))
+            // Why there's no sending them: say it, rather than leave the buttons missing.
+            WrappedC(Theme.Warn, !Handing.InReach(_sim, _avatar, _selected)
+                ? $"{w.Get<Creature>(_selected).Name} is too far off: go up to them to put a quest to them."
+                : $"You haven't heard {Cap(picked.PartyDef.Label)} ask for work. A party asks a few hours after riding in, and asks again a while after if nobody answers.");
         else
             WrappedC(Theme.Dim, "Select a party member in reach who's asked for work to send them.");
 

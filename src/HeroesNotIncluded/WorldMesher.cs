@@ -332,11 +332,12 @@ public sealed class WorldMesher(TextureAtlas atlas)
                 // down to a stub like any wall while the cutaway shows the room behind it.
                 var material = thing.Material;
                 var stub = IsStub(sim, x, y, z);
+                var index = 0;
                 foreach (var (piece, facing) in BuildingKit.WallPieces(walls.Kit, walls.Building, new int3(x, y, z)))
                     PropModel.Build(_quads, piece, new int3(x, y, z), facing,
                         name => (S(_materials.Resolve(name, material).Sprite), _materials.Resolve(name, material).Tint),
                         Rgba.White, Quad.Level(z) | Quad.Occluder, d => Occludes(sim, x + d.X, y + d.Y, z) && !IsStub(sim, x + d.X, y + d.Y, z),
-                        cutAt: stub ? StubHeight : float.MaxValue);
+                        cutAt: stub ? StubHeight + BuildingKit.CutLift(index++, facing) : float.MaxValue);
                 continue; // a door's leaf still swings on its own (Rendering/DoorAnimator)
             }
             if (def.Model is { } model)

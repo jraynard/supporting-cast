@@ -92,14 +92,14 @@ public sealed record ReorderPackCommand(Entity Avatar, Entity Item, int Index) :
 
 internal static class InventoryCommand
 {
-    /// <summary>A living, conscious player character outside a fight (gear doesn't change mid-battle).</summary>
-    public static bool Ready(Simulation sim, Entity avatar)
+    /// <summary>A living, conscious player character outside a fight (gear doesn't change mid-battle); <paramref name="downed"/> lets one lying downed through.</summary>
+    public static bool Ready(Simulation sim, Entity avatar, bool downed = false)
     {
         var w = sim.World;
         if (!w.IsAlive(avatar) || !w.Has<Avatar>(avatar))
             return false;
         var c = w.Get<Creature>(avatar);
-        return !c.Dead && !c.Downed;
+        return !c.Dead && (!c.Downed || downed);
     }
 
     /// <summary>A stack of something (commands come off the network: the entity may be anything, or gone).</summary>

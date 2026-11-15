@@ -555,13 +555,13 @@ public static class Buildings
         return null;
     }
 
-    /// <summary>Put a blueprint of <paramref name="def"/> in a slot; Entity.Null if it can't go.</summary>
-    public static Entity FillSlot(Simulation sim, Entity building, int index, ThingDef def)
+    /// <summary>Put a blueprint of <paramref name="def"/> in a slot (<paramref name="built"/>: the thing itself, already made); Entity.Null if it can't go.</summary>
+    public static Entity FillSlot(Simulation sim, Entity building, int index, ThingDef def, bool built = false)
     {
         if (SlotProblem(sim, building, index, def) != null)
             return Entity.Null;
         var spot = Slots(sim, sim.World.Get<PresetBuilding>(building)).ElementAt(index);
-        var site = sim.PlaceBlueprint(def, spot.Cell, spot.Facing);
+        var site = built ? sim.SpawnStructure(def, spot.Cell, spot.Facing) : sim.PlaceBlueprint(def, spot.Cell, spot.Facing);
         if (!site.IsNull)
             sim.World.Add(site, new PartOf { Building = building });
         return site;

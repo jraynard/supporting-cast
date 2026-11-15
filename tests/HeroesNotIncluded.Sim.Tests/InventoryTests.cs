@@ -9,6 +9,26 @@ namespace HeroesNotIncluded.Sim.Tests;
 /// <summary>The player's hands, pack and gear: F on the ground, and the inventory commands.</summary>
 public class InventoryTests
 {
+    [Fact]
+    public void AVillagerOnlyFetchingAStackLetsAPlayerTakeIt()
+    {
+        var (sim, me) = Setup();
+        sim.SpawnItem(sim.Thing("Wood"), 20, C(11, 10));
+        var wood = sim.World.Get<Thing>(sim.SpawnedItems().Single(e => sim.World.Get<Thing>(e).Def.Name == "Wood")).Cell;
+        var stack = sim.Map.Item[sim.Map.Idx(wood)];
+        var villager = sim.SpawnCreature(sim.Defs.Creature("Human"), "Hauler", C(26, 10), ageDays: 25 * 365);
+        Array.Fill(sim.World.Get<Needs>(villager).Values, 1f);
+        AiSystem.Order(sim, villager, new Ai.HaulJob(stack, C(27, 15)));
+        sim.Tick();
+        Assert.Equal(villager, sim.Reservations.ReservedBy(stack));
+
+        Assert.Equal(AvatarActionKind.PickUp, AvatarSystem.ActionAt(sim, me, wood).Kind);
+        Press(sim, me, wood);
+        Assert.True(Packed(sim, me, "Wood") > 0 || sim.World.Get<Carrying>(me).HasItem, "the player has the wood");
+        Assert.IsNotType<Ai.HaulJob>(sim.World.Get<Mind>(villager).Job);
+        Assert.NotEqual(villager, sim.Reservations.ReservedBy(stack));
+    }
+
     private static (Simulation Sim, Entity Me) Setup(bool pack = true)
     {
         var sim = TestWorld.Create(30, 20, 1, 4);

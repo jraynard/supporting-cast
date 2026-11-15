@@ -39,6 +39,8 @@ public static class VillageRound
         StockInn(sim, Role("Tavern"));
         LockStoreroom(sim, Role("Tavern"));
         StockTinkerShop(sim, Role("TinkerShop"));
+        if (sim.Defs.Season.BarnWood > 0)
+            sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing("Wood"), sim.Defs.Season.BarnWood, sim.Defs.Material("Pine")), StockpileMiddle(sim));
         Environment.Buckets.HangAtWells(sim); // for fighting fire
         // Beds for everyone, or the first night sends them all out to sleep in the cold.
         foreach (var (spec, home) in built.Buildings)
@@ -46,6 +48,23 @@ public static class VillageRound
                 VillageSetup.FillSpareBeds(sim, home);
         sim.RebuildDerivedIfNeeded();
         return new Town(built.Center, Role("Tavern"), Role("Forge"), shrine, Role("TinkerShop"));
+    }
+
+    /// <summary>The stockpile cell nearest the middle of the town's stockpile (the barn's): where its stock is laid and delivered.</summary>
+    public static int3 StockpileMiddle(Simulation sim)
+    {
+        var map = sim.Map;
+        if (map.ZonedCells.Count == 0)
+            return new int3(map.Width / 2, map.Height / 2, 0);
+        long x = 0, y = 0, z = 0;
+        foreach (var i in map.ZonedCells)
+        {
+            var c = map.CellOf(i);
+            (x, y, z) = (x + c.X, y + c.Y, z + c.Z);
+        }
+        var n = map.ZonedCells.Count;
+        var mid = new int3((int)(x / n), (int)(y / n), (int)(z / n));
+        return map.ZonedCells.Select(map.CellOf).OrderBy(c => Maps.Map.Distance(c, mid)).First();
     }
 
     /// <summary>A trade's workplace stocked again, as it was at the start (the practice yard's Restock).</summary>

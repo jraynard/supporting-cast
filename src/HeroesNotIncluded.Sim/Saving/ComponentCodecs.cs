@@ -76,7 +76,11 @@ internal static class ComponentCodecs
             Def = r.Def<ThingDef>(), Material = r.DefOrNull<MaterialDef>(), Cell = r.Int3(), Hp = r.Float(), Spawned = r.Bool(),
             Facing = (byte)r.Int(), // facing came with format 3
         }),
-        Codec("Stack", (w, s) => w.Int(s.Count), r => new Stack { Count = r.Int() }),
+        Codec("Stack", (w, s) =>
+        {
+            w.Int(s.Count);
+            w.Long(s.Laid);
+        }, r => new Stack { Count = r.Int(), Laid = r.Version >= 39 ? r.Long() : 0 }), // when it was put down came with format 39
         Codec("Fueled", (w, f) =>
         {
             w.Float(f.Fuel);

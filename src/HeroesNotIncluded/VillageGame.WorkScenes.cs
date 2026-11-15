@@ -305,16 +305,20 @@ public sealed partial class VillageGame
     }
 
     /// <summary>
-    /// The wheel on its stand, side on: it turns with the session, its rim swinging out and in at
-    /// the gauge (the right) by what the gauge reads, the spoke there picked out.
+    /// The wheel on its stand, side on: the spoke at the key (the right) picked out, the rim
+    /// swinging out and in at the gauge by what it reads while it spins, and the last spin's chalk
+    /// on the rim at each spoke, outside it for out and inside for in.
     /// </summary>
-    private void TrueScene(float turn, float gauge, float band)
+    private void TrueScene(TrueSession s) => TrueScene(s.Turn, s.Spinning, s.Gauge, s.BandWidth, s.Selected, s.Chalk, s.Chalked, s.Worked);
+
+    private void TrueScene(float turn, bool spinning, float reading, float band, int selected, float[] chalk, bool[] chalked, int[] worked)
     {
         var (dl, min, max, px) = WorkScene(130);
         var centre = new float2((min.X + max.X) * 0.5f, min.Y + Gui.S(62));
         var r = Gui.S(52);
         var oak = Theme.U8(Theme.OakLight);
         var dark = Theme.U8(Theme.Oak);
+        var gauge = spinning ? reading : 0f;
         foreach (var dx in new[] { -1f, 1f }) // the stand's legs
         {
             var top = centre + new float2(dx * Gui.S(6), 0);
@@ -327,7 +331,7 @@ public sealed partial class VillageGame
             var a = (i / (float)TrueSession.Spokes - turn) * MathF.Tau;
             var dir = new float2(MathF.Cos(a), MathF.Sin(a));
             var tip = centre + dir * r + new float2(MathF.Max(0f, dir.X) * lean, 0);
-            var picked = MathF.Abs(MathF.IEEERemainder(a, MathF.Tau)) < MathF.PI / TrueSession.Spokes;
+            var picked = !spinning && i == selected;
             dl.AddLine(in centre, in tip, picked ? Theme.U8(Theme.Accent) : oak, Gui.S(picked ? 4 : 3));
         }
         for (var k = 0; k < 32; k++) // the rim, its right side out of true by the reading
@@ -343,14 +347,32 @@ public sealed partial class VillageGame
             dl.AddLine(in p0, in p1, dark, Gui.S(7));
             dl.AddLine(in p0, in p1, oak, Gui.S(4));
         }
+        for (var i = 0; i < TrueSession.Spokes; i++) // the chalk where each spoke meets the rim
+        {
+            if (i >= chalked.Length || !chalked[i])
+                continue;
+            var a = (i / (float)TrueSession.Spokes - turn) * MathF.Tau;
+            var dir = new float2(MathF.Cos(a), MathF.Sin(a));
+            var rim = centre + dir * r + new float2(MathF.Max(0f, dir.X) * lean, 0);
+            var off = MathF.Abs(chalk[i]) <= band ? 0f : MathF.Sign(chalk[i]);
+            var c = Gui.U8(new float4(0.95f, 0.93f, 0.86f, worked[i] != 0 ? 0.45f : 1f));
+            if (off == 0f)
+                dl.AddCircleFilled(in rim, Gui.S(2), c, 8);
+            else
+            {
+                var a0 = rim + dir * off * Gui.S(5);
+                var a1 = rim + dir * off * Gui.S(12);
+                dl.AddLine(in a0, in a1, c, Gui.S(3));
+            }
+        }
         dl.AddCircleFilled(in centre, Gui.S(9), dark, 16);
         dl.AddCircleFilled(in centre, Gui.S(5), Theme.U8(Theme.Iron), 12);
-        // The gauge's finger at the rim, and where true lies.
+        // The gauge's finger at the rim, and where true lies; swung clear while the key's at work.
         var gx = centre.X + r + Gui.S(14);
         var trueA = new float2(gx, centre.Y - Gui.S(16));
         var trueB = new float2(gx, centre.Y + Gui.S(16));
-        dl.AddLine(in trueA, in trueB, Theme.U8(MathF.Abs(gauge) <= band ? Theme.Good : Theme.Dim), Gui.S(2));
-        var finger = new float2(centre.X + r + lean + Gui.S(4), centre.Y);
+        dl.AddLine(in trueA, in trueB, Theme.U8(spinning && MathF.Abs(gauge) <= band ? Theme.Good : Theme.Dim), Gui.S(2));
+        var finger = new float2(centre.X + r + lean + Gui.S(spinning ? 4 : 12), centre.Y);
         var post = new float2(gx + Gui.S(18), centre.Y);
         dl.AddLine(in finger, in post, Theme.U8(Theme.Iron), Gui.S(3));
     }
@@ -581,7 +603,7 @@ public sealed partial class VillageGame
                 HandsOnScene(new HandsView(1, ["head", "neck", "chest", "belly", "arms", "legs", "feet"], spots, spots[1].At, true, true, Wave(0.7f) > 0.3f,
                     Wave(0.9f), HandsOnSession.PulseShape(kinds[1], step, spots[1].Drawn), 1, step, -1, -1000, -1000, Wave(0.4f)));
             });
-            Cell("True", () => TrueScene(_time * 0.1f, (Wave(0.63f) - 0.5f) * 0.6f, 0.06f));
+            Cell("True", () => TrueScene(_time * 0.1f % 1f, true, (Wave(0.63f) - 0.5f) * 0.6f, 0.06f, 0, [0.2f, -0.03f, 0f, -0.15f, 0.1f, 0f, 0.02f, -0.25f], [true, true, true, true, true, true, true, true], [0, 0, 0, 0, 0, 0, 0, 0]));
             ImGui.EndTable();
         }
         Panel.End();

@@ -124,6 +124,26 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     private bool HideRoofs { get; set; }
 
     /// <summary>The preset building your character's standing in and the level they're on (its roof's off, and what's above them), or Entity.Null.</summary>
+    /// <summary>Seconds the building you're in must stay the same before the view opens it (or closes it again).</summary>
+    private const float OpenSettleSeconds = 0.2f;
+
+    private (Entity Building, int Level) _insideSeen;
+    private float _insideSince;
+
+    /// <summary>
+    /// The building the view opens, once where you are has settled: in a doorway, or with co-op's
+    /// corrections nudging you across a cell edge, it flipped the whole inn between roofed and cut
+    /// away frame by frame.
+    /// </summary>
+    private void SettleOpenBuilding()
+    {
+        var inside = InsideBuilding();
+        if (inside != _insideSeen)
+            (_insideSeen, _insideSince) = (inside, _time);
+        if (inside != _renderer.OpenBuilding && _time - _insideSince >= OpenSettleSeconds)
+            _renderer.OpenBuilding = inside;
+    }
+
     private (Entity Building, int Level) InsideBuilding() =>
         !Eye.IsNull && _sim.World.TryGet<Position>(Eye, out var p) ? (Rendering.BuildingPlanIndex.For(_sim).At(p.Cell), p.Cell.Z) : (Entity.Null, int.MaxValue);
 
@@ -780,7 +800,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             return;
         var map = _sim.Map;
         var cut = map.Depth - 1;
-        if (!Eye.IsNull && _sim.World.TryGet<Position>(Eye, out var pos) && InsideBuilding().Building.IsNull)
+        if (!Eye.IsNull && _sim.World.TryGet<Position>(Eye, out var pos) && _renderer.OpenBuilding.Building.IsNull)
         {
             var c = pos.Cell;
             for (var z = c.Z + 1; z < map.Depth && cut == map.Depth - 1; z++)
@@ -788,7 +808,11 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
                     for (var dx = -1; dx <= 1; dx++)
                     {
                         int x = c.X + dx, y = c.Y + dy;
-                        if (x >= 0 && y >= 0 && x < map.Width && y < map.Height && map.HasFloor[map.Idx(x, y, z)])
+                        // A building's floor doesn't count: the inn's upper boards reach out under its
+                        // walls, so walking along outside it cut the whole town's upper storeys and
+                        // roofs away a step at a time (playtest: the inn's second floor flashing).
+                        if (x >= 0 && y >= 0 && x < map.Width && y < map.Height && map.HasFloor[map.Idx(x, y, z)]
+                            && Buildings.Of(_sim, map.Floor[map.Idx(x, y, z)]).IsNull)
                             cut = c.Z;
                     }
         }
@@ -933,7 +957,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         ApplyVisualStyle();
         _quads.HideRoofs = HideRoofs;
         _renderer.HideRoofs = HideRoofs;
-        _renderer.OpenBuilding = InsideBuilding();
+        SettleOpenBuilding();
         // With the roofs off, the walls in front of rooms come down too; whatever still stands
         // between the camera and you (or the cursor) thins out round you.
         _renderer.CutawayWalls = HideRoofs;
@@ -1038,7 +1062,10 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         if (_tool == ToolKind.Select && _sim.World.IsAlive(_selected) && !Buildings.Of(_sim, _selected).IsNull)
             DrawSlotMarkers(null); // the selected building's free spots
         if (_tool == ToolKind.Select && HasAvatar)
+        {
             DrawWalkMarkers();
+            DrawHandsAimRing();
+        }
         if (HasAvatar)
             DrawAvatarBeacon();
         if (!map.InBounds(_hoverCell) || _tool == ToolKind.Select)

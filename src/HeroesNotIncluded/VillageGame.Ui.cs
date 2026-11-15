@@ -56,6 +56,7 @@ public sealed partial class VillageGame
         DrawCallToArms();
         DrawFestivalCard();
         DrawToasts();
+        DrawHandsAimHint();
         // Bottom left, before the centre so the centre keeps clear of it.
         DrawInspector();
         // Bottom right: which way north is.

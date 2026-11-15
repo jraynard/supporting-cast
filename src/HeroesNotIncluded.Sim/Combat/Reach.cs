@@ -55,8 +55,17 @@ public static class Reach
     /// the town's passes through the town, and an arrow flies on past them.
     /// </summary>
     /// <param name="lag">Judged against where the others were this many ticks ago (a player's late swing, <see cref="Windup.Lag"/>).</param>
-    public static List<Entity> Struck(Simulation sim, Entity attacker, AttackDef attack, float aim, int lag = 0) =>
-        InSweep(sim, attacker, attack, aim, e => Harms(sim, attacker, e), lag);
+    public static List<Entity> Struck(Simulation sim, Entity attacker, AttackDef attack, float aim, int lag = 0)
+    {
+        var hit = InSweep(sim, attacker, attack, aim, e => Harms(sim, attacker, e), lag);
+        // A blow at someone standing goes over whoever lies at their feet: a playtest's downed were
+        // mangled where they lay by the fighting over them. Aimed at no one standing, it lands
+        // (finishing a downed raider is still a choice).
+        var w = sim.World;
+        if (hit.Exists(e => !w.Get<Creature>(e).Downed))
+            hit.RemoveAll(e => w.Get<Creature>(e).Downed);
+        return hit;
+    }
 
     /// <summary>
     /// Whether a blow from <paramref name="attacker"/> can hurt <paramref name="victim"/>: always,

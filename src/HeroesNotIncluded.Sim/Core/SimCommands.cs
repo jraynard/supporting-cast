@@ -152,7 +152,7 @@ public sealed record TakeFromStorageCommand(Entity Avatar, Entity Item, int Coun
         var w = sim.World;
         if (!w.IsAlive(Avatar) || !w.Has<Avatar>(Avatar) || !w.IsAlive(Item) || !w.TryGet<Stored>(Item, out var stored))
             return;
-        if (sim.Reservations.IsReservedByOther(Item, Avatar) || !Inventory.CanReachContainer(sim, Avatar, stored.In))
+        if (!Ai.Claims.Free(sim, Item, Avatar) || !Inventory.CanReachContainer(sim, Avatar, stored.In))
             return;
         // The town's arms come down only for the muster.
         if (Militia.MilitiaSystem.IsRack(sim, stored.In) && !sim.Militia.Mustering)
@@ -163,6 +163,7 @@ public sealed record TakeFromStorageCommand(Entity Avatar, Entity Item, int Coun
         // A trade's stash is its holder's alone (Militia.Stashes).
         if (Militia.Stashes.IsStash(sim, stored.In) && !Militia.Stashes.Reaches(sim, Avatar, stored.In))
             return;
+        Ai.Claims.TakeOver(sim, Item, Avatar); // a villager only fetching it lets it go
         // One at a time unless more is asked for: a stack's not grabbed whole by accident.
         var count = Math.Clamp(Count, 1, Math.Min(w.Get<Stack>(Item).Count, w.Get<Thing>(Item).Def.StackLimit));
         // The pack first, the hands only for what won't go in. Something left in hand changes what

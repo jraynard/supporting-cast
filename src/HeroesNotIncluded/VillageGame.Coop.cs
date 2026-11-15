@@ -92,7 +92,13 @@ public sealed partial class VillageGame
     private void AttachCoop()
     {
         var session = _coop!;
-        session.Notice += text => Notify(MessageKind.Info, text);
+        session.Notice += text =>
+        {
+            Notify(MessageKind.Info, text);
+            // Joins, drops, reconnects and refusals into the log too: a playtest lost a player
+            // mid-round and the log never said when or why.
+            Log.Engine.Info($"net: {text} ({_sim.Clock.TimeString()}, turn {_sim.Clock.Tick})");
+        };
         // With the Players window shut, chat would go unseen: show it as a toast instead.
         session.ChatReceived += (from, text) =>
         {

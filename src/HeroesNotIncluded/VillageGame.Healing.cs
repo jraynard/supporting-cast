@@ -23,10 +23,12 @@ public sealed partial class VillageGame
             return;
         ImGui.Separator();
         var cant = HandsOnSession.Problem(_sim, _avatar, patient);
-        ImGui.BeginDisabled(cant != null || Working);
+        var collapsed = _sim.World.TryGet<Creature>(patient, out var pc) && pc.Downed && !pc.Dead;
+        ImGui.BeginDisabled(Working || !Empathy.Gifted(_sim, _avatar));
         if (ImGui.SmallButton("Lay on hands"u8))
-            Issue(new FeelCommand(_avatar, patient));
+            LayHandsOn(patient); // walking over first if they're out of reach
         ImGui.EndDisabled();
+        GuideGlow(collapsed && !Working && (cant == null || cant == "you need to be able to touch them"));
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             Tip(cant != null ? Cap(cant) + "." : Controls.Keys("~AD~ run your hands over them, head to feet: a warmth is a hurt. Stop on it and hold ~F~ to read it; keep holding to draw it into yourself. Pressing while your hands move is rough on them."));
         var cantBind = Bandaging.CantBind(_sim, _avatar, patient);
@@ -37,6 +39,7 @@ public sealed partial class VillageGame
             if (ImGui.SmallButton("Bind their wounds"u8))
                 Issue(new BandageCommand(_avatar, patient));
             ImGui.EndDisabled();
+            GuideGlow(collapsed && cantBind == null && !Working);
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 Tip(cantBind != null ? Cap(cantBind) + "." : $"No mana needed: {Bandaging.BandagesOn(_sim, _avatar)} bandages to hand (yours, and any chest in reach). For each turn of cloth, hold {Controls.Glyph(Act.Use)} to pull it tight and let go in the band.");
         }
@@ -54,11 +57,30 @@ public sealed partial class VillageGame
             return;
         BeginJournal("The gift###gift", ref _showGift, side: Anchor.TopLeft);
         Bar("Mana", mana.Current / Math.Max(1f, mana.Max), Theme.Accent, $"{mana.Current:F0} / {mana.Max:F0}");
+        // Lay on hands, as an ability: click it, then click someone.
+        var waiting = PatientsWaiting();
+        if (_aimingHands)
+        {
+            var c = Theme.AccentSoft;
+            ImGui.PushStyleColor(ImGuiCol.Button, in c);
+        }
+        ImGui.BeginDisabled(Working);
+        if (ImGui.Button("Lay on hands"u8, in _autoSize))
+            AimHands();
+        ImGui.EndDisabled();
+        if (_aimingHands)
+            ImGui.PopStyleColor(1);
+        GuideGlow(waiting && !_aimingHands && !Working);
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            Tip("Click this, then click someone: you go to them and lay your hands on them, to feel what hurts and draw it into yourself. Right-click or Esc to put it away.");
+        ImGui.SameLine(0, 6);
         var cantMeditate = MeditateSession.Problem(_sim, _avatar);
         ImGui.BeginDisabled(cantMeditate != null || Working);
         if (ImGui.Button("Meditate"u8, in _autoSize))
             Issue(new MeditateCommand(_avatar));
         ImGui.EndDisabled();
+        // Out of mana with healing to do: find it first.
+        GuideGlow(cantMeditate == null && mana.Current < 1f && (waiting || View.FeltWounds(_avatar) is { Count: > 0 }));
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             Tip(cantMeditate != null ? Cap(cantMeditate) + "." : "Find your way inward, through a labyrinth to the still centre: each new place gathers mana, the centre most of all. Pain narrows your sight and scatters your thoughts; it's calmer at the shrine's meditation stone.");
         ImGui.SameLine(0, 6);
@@ -107,6 +129,7 @@ public sealed partial class VillageGame
                 if (ImGui.SmallButton("Weave"u8))
                     Issue(new WeaveCommand(_avatar, wound.Key));
                 ImGui.EndDisabled();
+                GuideGlow(why == null && !Working && wound.Key == carried[0].Key); // the first wound: one glow, not a column
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                     Tip(why != null ? Cap(why) + "." : Controls.Keys("Key the runes of the mending it wants (your book has them), each on a beat of your heart. ~F~ lets it go."));
                 ImGui.SameLine(0, 6);

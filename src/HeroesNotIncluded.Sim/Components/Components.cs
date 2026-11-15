@@ -45,6 +45,9 @@ public struct Thing
 public struct Stack
 {
     public int Count;
+
+    /// <summary>The tick it was last put down on the map: nobody hauls it off until it's lain a while (<see cref="Ai.WorkGivers.HaulDelayTicks"/>).</summary>
+    public long Laid;
 }
 
 /// <summary>A building that consumes fuel (campfire).</summary>

@@ -40,6 +40,40 @@ public static class BuildingKit
     private static IReadOnlyList<ModelBox> WithoutFooting(IReadOnlyList<ModelBox> model) =>
         Raised.GetValue(model, m => m.Where(box => box.Max[2] > FootingHeight).ToList());
 
+    /// <summary>
+    /// Where a corner or post meets its arms, their footings and rails are made to the same heights,
+    /// so faces lay over one another in the same plane and flickered as the camera moved (playtest:
+    /// the inn's corners). The post is drawn a hair fatter and taller than its arms, so it's always
+    /// in front, and each arm a hair higher than the last by its turn, so no two ever share a plane.
+    /// </summary>
+    public const float PostProud = 0.008f, ArmStep = 0.0015f;
+
+    /// <summary>
+    /// How much higher than the stub's height the <paramref name="index"/>th piece of a cell is cut
+    /// (in <see cref="WallPieces"/> order: the post first, then its arms), for the same reason: cut
+    /// down to one height, the post's dark top and its arms' tops lay in one plane and flickered
+    /// (playtest: dark spots at the inn's corners upstairs, walls cut away).
+    /// </summary>
+    public static float CutLift(int index, int facing) => index == 0 ? PostProud : ArmStep * ((facing & 3) + 1);
+
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<IReadOnlyList<ModelBox>, IReadOnlyList<ModelBox>> Proud = new();
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<IReadOnlyList<ModelBox>, IReadOnlyList<ModelBox>[]> Stepped = new();
+
+    private static ModelBox Resized(ModelBox b, float grow, float lift) => new()
+    {
+        Min = [b.Min[0] - grow, b.Min[1] - grow, b.Min[2]],
+        Max = [b.Max[0] + grow, b.Max[1] + grow, b.Max[2] + lift],
+        Top = b.Top, Side = b.Side, Front = b.Front, Back = b.Back, MinCount = b.MinCount, Fit = b.Fit,
+    };
+
+    /// <summary>A corner or post, proud of the arms round it (<see cref="PostProud"/>).</summary>
+    private static IReadOnlyList<ModelBox> ProudOf(IReadOnlyList<ModelBox> model) =>
+        Proud.GetValue(model, m => m.Select(b => Resized(b, PostProud * 0.5f, PostProud)).ToList());
+
+    /// <summary>An arm raised by its turn (<see cref="ArmStep"/>), all four below a post's <see cref="PostProud"/>.</summary>
+    private static IReadOnlyList<ModelBox> StepFor(IReadOnlyList<ModelBox> model, int facing) =>
+        Stepped.GetValue(model, m => [.. Enumerable.Range(0, 4).Select(f => (IReadOnlyList<ModelBox>)m.Select(b => Resized(b, 0f, ArmStep * (f + 1))).ToList())])[facing & 3];
+
     /// <summary>The kit's models for a wall, post or door cell, each with its turn (made along X).</summary>
     public static IEnumerable<(IReadOnlyList<ModelBox> Model, int Facing)> WallPieces(BuildingKitDef kit, PresetBuilding b, int3 cell)
     {
@@ -78,12 +112,12 @@ public static class BuildingKit
             yield break;
         }
         // Each post's end grain turned its own way, so a row of them doesn't look stamped.
-        yield return (symbol == 'P' ? kit.Post : kit.Corner, (int)(Variation.Hash(cell.X, cell.Y, 0xB057) & 3));
+        yield return (ProudOf(symbol == 'P' ? kit.Post : kit.Corner), (int)(Variation.Hash(cell.X, cell.Y, 0xB057) & 3));
         // Facings turn the +X arm: 1 to +Y, 2 to -X, 3 to -Y (PropModel.Rotate).
-        if (e) yield return (kit.Arm, 0);
-        if (s) yield return (kit.Arm, 1);
-        if (w) yield return (kit.Arm, 2);
-        if (n) yield return (kit.Arm, 3);
+        if (e) yield return (StepFor(kit.Arm, 0), 0);
+        if (s) yield return (StepFor(kit.Arm, 1), 1);
+        if (w) yield return (StepFor(kit.Arm, 2), 2);
+        if (n) yield return (StepFor(kit.Arm, 3), 3);
     }
 
     /// <summary>Fixed light per direction, as <see cref="PropModel"/> and the terrain use: east, west, south, north.</summary>

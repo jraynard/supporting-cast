@@ -97,6 +97,12 @@ public abstract class WorkSession
     /// </summary>
     public virtual int3? Focus(Simulation sim) => null;
 
+    /// <summary>
+    /// Goes on while the worker lies downed: the few things a body on the ground can still do (an
+    /// empath mending themselves). Everything else stops when they collapse.
+    /// </summary>
+    public virtual bool WhileDowned => false;
+
     /// <summary>The target is still there and in reach. Sim-only; checked before every tick.</summary>
     public abstract bool StillValid(Simulation sim);
 

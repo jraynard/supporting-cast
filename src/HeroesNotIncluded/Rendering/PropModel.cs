@@ -27,6 +27,11 @@ public static class PropModel
     /// down to a stub: what starts above it isn't drawn at all, so no sliver of a wall plate floats
     /// over the cut); <paramref name="heightScale"/> squashes it up the way (furniture).
     /// </summary>
+    /// <summary>How much bigger each box of a model is drawn than the one before it (up to <see cref="MaxStepped"/> of them), so none share a face.</summary>
+    public const float BoxStep = 0.0004f;
+
+    public const int MaxStepped = 24;
+
     public static void Build(
         List<Quad> output,
         IReadOnlyList<ModelBox> model,
@@ -45,8 +50,10 @@ public static class PropModel
     {
         var origin = new float3(cell.X, cell.Y, cell.Z + lift);
         var fit = false; // the box in hand stretches its art over each face (ModelBox.Fit)
+        var index = -1;
         foreach (var box in model)
         {
+            index++;
             if (count < box.MinCount)
                 continue;
             // Up the way, scaled (furniture stands lower than it's modelled: WorldScale.FurnitureHeight).
@@ -56,6 +63,14 @@ public static class PropModel
             var M = new float3(box.Max[0], box.Max[1], Math.Min(Math.Min(box.Max[2], cutAt), box.Min[2] + (box.Max[2] - box.Min[2]) * rise) * heightScale);
             if (M.Z <= m.Z)
                 continue;
+            // Each box a hair bigger than the one before, so no two share a face: a shelf's boards
+            // ended flush with its uprights, a keg's hoops with its staves, and the lines flickered
+            // as the camera moved (playtest). Faces on the cell's edge stay put (they're culled
+            // against the neighbour), and so does what stands on the ground. Tops rise at most
+            // MaxStepped * BoxStep, under an upper floor's boards (WorldMesher's slab, 0.01 up).
+            var grow = Math.Min(index, MaxStepped) * BoxStep;
+            m = new float3(Out(m.X, -grow), Out(m.Y, -grow), MathF.Abs(m.Z) < 0.001f ? m.Z : m.Z - grow);
+            M = new float3(Out(M.X, grow), Out(M.Y, grow), M.Z + grow);
             float dx = M.X - m.X, dy = M.Y - m.Y, dz = M.Z - m.Z;
             var down = new float3(0, 0, -dz);
             var side = string.IsNullOrEmpty(box.Side) ? box.Top : box.Side;
@@ -71,6 +86,7 @@ public static class PropModel
         }
 
         static bool OnEdge(float v) => MathF.Abs(v - MathF.Round(v)) < 0.001f;
+        static float Out(float v, float by) => OnEdge(v) ? v : v + by;
 
         void Face(string name, float3 p, float3 u, float3 v, float w, float h, bool top = false, bool edge = false)
         {

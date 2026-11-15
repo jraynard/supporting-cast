@@ -308,6 +308,21 @@ public class ShopTests
     }
 
     [Fact]
+    public void APartyWhoseAskForWorkLapsedAsksAgain()
+    {
+        var (sim, _, _, party) = Inn();
+        foreach (var e in party)
+            sim.World.Get<Adventurer>(e).LeaveTick = long.MaxValue; // staying the night
+        sim.TickMany(SimClock.HoursToTicks(ShopSystem.QuestAfterHours) + SimClock.TicksPerHour / 6);
+        var asked = sim.Shops.All.Single(o => o.Kind.Kind == ServiceKind.Quest && o.IsOpen && party.Contains(o.Poster));
+
+        // Nobody answers it (the innkeeper's at the stew all night): it lapses, and they ask again.
+        sim.TickMany(SimClock.HoursToTicks(sim.Defs.Service(ServiceKind.Quest).PatienceHours + ShopSystem.CooldownHours) + SimClock.TicksPerHour / 2);
+        Assert.False(asked.IsOpen);
+        Assert.Contains(sim.Shops.All, o => o.Kind.Kind == ServiceKind.Quest && o.IsOpen && o.Id != asked.Id && party.Contains(o.Poster));
+    }
+
+    [Fact]
     public void WhoWentWithoutAndWhatOrdersWereWorthSurviveASave()
     {
         var (sim, keeper, inn, party) = Inn();

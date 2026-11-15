@@ -42,6 +42,34 @@ HISTORY.md, "Solo playtest notes".
   a time: the words, and whether the step shown is the one you're on (PLAYTEST.md, "The lessons").
 
 **With friends, over the internet**
+- **First multiplayer notes, answered; check them next round.** A downed healer, bandaged, still
+  couldn't get up: a downed empath now weaves a mending on themselves (a narrower beat) and can
+  meditate. Truing a wheel was unclear and hard: it now stands still, A/D to a spoke, W/S to
+  tighten or slacken it, F to spin it and chalk the rim.
+  Villagers took the barn's wood before players could: the round's spare beds were blueprints that
+  ate ~140 logs in its first hours (now built at the deal), the barn starts with more
+  (`season.json` `barnWood`) and the woodcutter brings `woodDelivery` each morning; a player's take
+  beats a villager's fetch (`Ai/Claims`), and what's put down by hand lies two hours before it's
+  hauled. Tinker games "left unfinished" in co-op: the work predictor ran ahead of a lagging sim and
+  its batches were dropped; it now keeps near the sim's clock and resends what wasn't played.
+  A second party couldn't be sent on a quest: its ask lapsed overnight and a party only ever asked
+  once; now it asks again, and the board says why there's no button. Flickering at wall corners
+  (dark spots, worst upstairs in the inn with the walls cut down): a corner post and its arms
+  shared faces; the post now stands proud and each arm a hair apart, cut down or not
+  (`BuildingKit`). Walking along outside the inn cut every upper storey away a step at a time
+  (`UpdateFollowedLevel` counted building floors); fixed, and the open building settles before
+  it switches. Build tools hidden for players till building's in a round (`BuildTools`). Guide
+  highlights (Settings) glow on what needs doing, for the healer so far; lay on hands is an
+  ability in the gift: click it, then someone.
+  From the two rounds' logs (both through the relay, ~100 ms, no desyncs): eleven adventurers and
+  four townsfolk bled out where they fell, with nobody but a player tending them. AI first aid,
+  bandaging and rescue now take downed adventurers too, and a blow at someone standing goes over
+  the downed at their feet (they were being mangled by the fighting over them). Net notices
+  (joins, drops, reconnects) now go to the log: a player vanished from round two with no trace.
+  Furniture models drew boxes flush with each other (a shelf's boards and uprights, a keg's
+  hoops), which flickered; each box is now drawn a hair proud of the one before (`PropModel`).
+  Still to watch: whether players and AI keep the downed alive now, and Dread (16-seed sweep:
+  peak 69 against 61 before, within noise).
 - **The connection.** Readied in code (Narsil relay protocol 3, keepalive, host reclaims its join
   code after a blip, relay fan-out and limits; a 200 ms jitter buffer cap, pad commands throttled,
   a claim budget on free movement). The relay runs on an Oracle Cloud free instance
@@ -167,7 +195,7 @@ items into "Now" when a playtest says they matter.
 - **Kitchen:** the pot, the seasoning; and the cook's list below.
 - **Bar:** washing up, tapping a keg, mixing.
 - **Healing:** after the tuning playtest (Now, 2).
-- **Tinkering:** truing a wheel. (Bracing a span had its pass: A/D carry the level.)
+- **Tinkering:** truing a wheel had its pass (a spoke at a time, a spin to chalk it); its pull and band in play.
 - Some jobs easier and some harder, to suit different players and styles.
 
 **The trades, deeper** (DESIGN.md, "Trade notes")

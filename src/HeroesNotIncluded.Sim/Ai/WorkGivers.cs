@@ -179,7 +179,7 @@ public sealed class WorkGivers
 
     /// <summary>
     /// The nearest creature (not us) matching a predicate, unreserved and reachable: one of ours
-    /// (villagers and prisoners), or with <paramref name="enemies"/> a downed raider once the
+    /// (villagers and prisoners, and adventurers lying downed), or with <paramref name="enemies"/> a downed raider once the
     /// fighting is over.
     /// </summary>
     /// <remarks>
@@ -196,7 +196,11 @@ public sealed class WorkGivers
         foreach (var e in sim.Creatures())
         {
             var c = w.Get<Creature>(e);
-            var ours = enemies ? c.Faction == Faction.Raider && c.Downed : c.Faction is Faction.Village or Faction.Prisoner;
+            // An adventurer lying downed in town is the town's to see to as well: in a playtest's two
+            // rounds eleven of them bled out where a raid or the dragon dropped them, nobody but a
+            // player stopping to help. On their feet, their hurts are the healer's trade (they pay).
+            var ours = enemies ? c.Faction == Faction.Raider && c.Downed
+                : c.Faction is Faction.Village or Faction.Prisoner || (c.Faction == Faction.Adventurer && c.Downed);
             if (e == pawn || !ours || !match(e, c) || sim.Reservations.IsReservedByOther(e, pawn))
                 continue;
             var at = sim.LocationOf(e);
@@ -655,6 +659,16 @@ public sealed class WorkGivers
             yield return o;
     }
 
+    /// <summary>
+    /// How long something put down lies before anyone hauls it off to store: a player who sets logs
+    /// by a hearth or lays out their materials gets to use them, rather than watch a villager walk
+    /// off with them the moment they're down.
+    /// </summary>
+    public const int HaulDelayTicks = SimClock.TicksPerHour * 2;
+
+    /// <summary>Whether a stack on the ground has lain long enough to be hauled (<see cref="HaulDelayTicks"/>).</summary>
+    public static bool Settled(Simulation sim, Entity item) => sim.Clock.Tick - sim.World.Get<Stack>(item).Laid >= HaulDelayTicks;
+
     private static Job? Haul(Simulation sim, Entity pawn)
     {
         var w = sim.World;
@@ -674,7 +688,7 @@ public sealed class WorkGivers
         var item = AiQueries.FindNearestItem(
             sim,
             pawn,
-            (e, d) => !w.Has<Stored>(e) && !d.Vessel && d.WashesInto == null && d.Name is not (Environment.Buckets.Empty or Environment.Buckets.Full)
+            (e, d) => !w.Has<Stored>(e) && Settled(sim, e) && !d.Vessel && d.WashesInto == null && d.Name is not (Environment.Buckets.Empty or Environment.Buckets.Full)
                 && !AiQueries.InStockpile(sim, w.Get<Thing>(e).Cell) && Storable(e, d)
         );
         if (item.IsNull)

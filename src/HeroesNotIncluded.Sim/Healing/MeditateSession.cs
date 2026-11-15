@@ -87,6 +87,9 @@ public sealed class MeditateSession : WorkSession
     public override float Xp => 15f;
     public override string Title => "Meditating";
 
+    /// <summary>Lying downed, there's still the way inward (the pain makes it hard enough).</summary>
+    public override bool WhileDowned => true;
+
     public static string? Problem(Simulation sim, Entity who)
     {
         if (!sim.World.TryGet<Mana>(who, out var mana))

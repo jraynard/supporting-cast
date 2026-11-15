@@ -91,7 +91,7 @@ public sealed partial class VillageGame
         new(Act.Hotbar4, g => g.HotbarLabel(3), g => g.TakeInHand(3)),
         new(Act.Drop, g => g._sim.World.IsAlive(g._sim.World.Get<Carrying>(g._avatar).Item) ? "Put down" : null, g => g.Drop()),
         new(Act.Sleep, g => "Sleep", g => g.Sleep()),
-        new(Act.Build, g => "Build", g => g._showBuild = !g._showBuild),
+        new(Act.Build, g => BuildTools ? "Build" : null, g => g._showBuild = BuildTools && !g._showBuild),
         new(Act.Cheer, g => g.CanCheer ? "Cheer!" : null, g => g.Cheer()),
     ];
 

@@ -329,8 +329,11 @@ public sealed partial class VillageGame
     {
         if (!HasAvatar || _tool != ToolKind.Select)
             return false;
+        UpdateHandsFor(dt);
         if (HandleFreeMouse(input))
             return true; // weapon drawn, the buttons fight
+        if (HandleHandsAim(input))
+            return true; // the next click lays hands on someone
         UpdateClickWindow(dt);
 
         var shift = input.IsKeyDown(GlfwKey.LeftShift) || input.IsKeyDown(GlfwKey.RightShift);

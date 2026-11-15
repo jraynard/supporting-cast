@@ -798,9 +798,13 @@ public sealed partial class Simulation
     /// <summary>
     /// Put an unspawned item entity on the map at or near a cell. Merges into a matching stack
     /// when possible (destroying the merged entity). Returns the entity that now holds the items.
+    /// <paramref name="byHand"/>: someone set it down, so it's left lying a while before anyone hauls
+    /// it off (<see cref="Ai.WorkGivers.HaulDelayTicks"/>); what the world makes (a felled tree's
+    /// logs, a delivery) is fair game at once.
     /// </summary>
-    public Entity PlaceItemNear(Entity item, int3 near)
+    public Entity PlaceItemNear(Entity item, int3 near, bool byHand = false)
     {
+        var laid = byHand ? Clock.Tick : long.MinValue / 2;
         ref var thing = ref World.Get<Thing>(item);
         var def = thing.Def;
         var material = thing.Material;
@@ -819,12 +823,12 @@ public sealed partial class Simulation
                     // Split off what fits and keep looking for the rest.
                     var part = CreateItem(def, def.StackLimit, material);
                     CopyRot(item, part);
-                    PlaceAt(part, tile);
+                    PlaceAt(part, tile, laid);
                     remaining -= def.StackLimit;
                     World.Get<Stack>(item).Count = remaining;
                     continue;
                 }
-                PlaceAt(item, tile);
+                PlaceAt(item, tile, laid);
                 return item;
             }
 
@@ -837,6 +841,8 @@ public sealed partial class Simulation
                 rot.Progress = (rot.Progress * had + adding.Progress * moved) / (had + moved);
             }
             World.Get<Stack>(existing).Count += moved;
+            if (byHand)
+                World.Get<Stack>(existing).Laid = laid; // added to by hand: it's just been put down
             remaining -= moved;
             if (remaining == 0)
             {
@@ -852,12 +858,14 @@ public sealed partial class Simulation
         return Entity.Null;
     }
 
-    private void PlaceAt(Entity item, int3 tile)
+    private void PlaceAt(Entity item, int3 tile, long laid)
     {
         ref var thing = ref World.Get<Thing>(item);
         thing.Cell = tile;
         thing.Spawned = true;
         Map.Item[Map.Idx(tile)] = item;
+        if (World.Has<Stack>(item))
+            World.Get<Stack>(item).Laid = laid;
     }
 
     /// <summary>

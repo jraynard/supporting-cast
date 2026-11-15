@@ -22,6 +22,85 @@ public class BuildingKitTests
         return (sim, sim.World.Get<PresetBuilding>(e));
     }
 
+    /// <summary>A model box in the cell, turned as it's drawn.</summary>
+    private static (float3 Min, float3 Max) Turned(ModelBox b, int facing)
+    {
+        var a = PropModel.RotatePoint(new float3(b.Min[0], b.Min[1], b.Min[2]), facing);
+        var c = PropModel.RotatePoint(new float3(b.Max[0], b.Max[1], b.Max[2]), facing);
+        return (new float3(MathF.Min(a.X, c.X), MathF.Min(a.Y, c.Y), a.Z), new float3(MathF.Max(a.X, c.X), MathF.Max(a.Y, c.Y), c.Z));
+    }
+
+    /// <summary>
+    /// No two pieces of a wall cell (a corner's post and its arms) have faces lying in the same
+    /// plane, the same way, over each other where nothing covers them: those flicker as the camera
+    /// moves (playtest: the inn's corners).
+    /// </summary>
+    [Theory]
+    [InlineData("Inn", false)]
+    [InlineData("Inn", true)]
+    [InlineData("Cottage", false)]
+    [InlineData("Cottage", true)]
+    [InlineData("Dwelling", false)]
+    [InlineData("Shrine", false)]
+    [InlineData("Shrine", true)]
+    [InlineData("Barn", false)]
+    public void WallPiecesNeverShareAFace(string building, bool cutDown)
+    {
+        var (sim, b) = Finished(building, 0);
+        var kit = b.VariantDef.KitDef!;
+        const float e = 1e-5f;
+        foreach (var p in Buildings.Plot(sim.Map, b.Def, b.Anchor, b.Facing))
+        {
+            // Cut down to a stub as the cutaway draws it (WorldMesher): each piece at its own height.
+            var boxes = BuildingKit.WallPieces(kit, b, p.Cell).SelectMany((piece, i) =>
+            {
+                var cut = cutDown ? WorldMesher.StubHeight + BuildingKit.CutLift(i, piece.Facing) : float.MaxValue;
+                return piece.Model.Where(box => box.Min[2] < cut).Select(box =>
+                {
+                    var t = Turned(box, piece.Facing);
+                    return (Piece: i, Box: (Min: t.Min, Max: new float3(t.Max.X, t.Max.Y, MathF.Min(t.Max.Z, cut))));
+                });
+            }).ToList();
+            bool Covered(float3 at, int axis) => boxes.Any(o =>
+            {
+                for (var k = 0; k < 3; k++)
+                    if (at[k] < o.Box.Min[k] - e || at[k] > o.Box.Max[k] + e || (k == axis && (MathF.Abs(at[k] - o.Box.Min[k]) < e || MathF.Abs(at[k] - o.Box.Max[k]) < e)))
+                        return false;
+                return true;
+            });
+            foreach (var (pa, a) in boxes)
+            foreach (var (pb, c) in boxes)
+            {
+                if (pa >= pb)
+                    continue;
+                for (var axis = 0; axis < 3; axis++)
+                foreach (var high in new[] { true, false })
+                {
+                    if (axis == 2 && !high)
+                        continue; // undersides are never seen
+                    var pa0 = high ? a.Max[axis] : a.Min[axis];
+                    var pb0 = high ? c.Max[axis] : c.Min[axis];
+                    if (MathF.Abs(pa0 - pb0) > e)
+                        continue;
+                    int u = (axis + 1) % 3, v = (axis + 2) % 3;
+                    float u0 = MathF.Max(a.Min[u], c.Min[u]), u1 = MathF.Min(a.Max[u], c.Max[u]);
+                    float v0 = MathF.Max(a.Min[v], c.Min[v]), v1 = MathF.Min(a.Max[v], c.Max[v]);
+                    if (u1 - u0 < e || v1 - v0 < e)
+                        continue;
+                    for (var i = 1; i < 8; i++)
+                    for (var j = 1; j < 8; j++)
+                    {
+                        var at = new float3();
+                        at[axis] = pa0;
+                        at[u] = u0 + (u1 - u0) * i / 8f;
+                        at[v] = v0 + (v1 - v0) * j / 8f;
+                        Assert.True(Covered(at, axis), $"{building}{(cutDown ? " cut down" : "")} at {p.Cell} ({p.Symbol}): pieces {pa} and {pb} share a face on axis {axis} at {pa0}");
+                    }
+                }
+            }
+        }
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(1)]
@@ -42,7 +121,7 @@ public class BuildingKitTests
                     break;
                 case 'W' when corner:
                     // A corner post and an arm along each of its two walls.
-                    Assert.Equal([kit.Corner, kit.Arm, kit.Arm], pieces.Select(x => x.Model));
+                    Assert.Equal([kit.Corner.Count, kit.Arm.Count, kit.Arm.Count], pieces.Select(x => x.Model.Count));
                     break;
                 case 'W':
                     var span = Assert.Single(pieces);

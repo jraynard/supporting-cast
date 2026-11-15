@@ -154,6 +154,24 @@ public class FreeCombatTests
     }
 
     [Fact]
+    public void ABlowAtSomeoneStandingGoesOverWhoeverLiesAtTheirFeet()
+    {
+        var (sim, me) = Ring();
+        var foe = Foe(sim, new float2(17.6f, 16.5f));
+        var fallen = Foe(sim, new float2(17.3f, 16.7f));
+        ref var c = ref sim.World.Get<Creature>(fallen);
+        HealthSystem.SetDowned(sim, fallen, ref c, true);
+        var attack = CombatRules.Attacks(sim, me).First(a => !a.Ranged);
+        var struck = Reach.Struck(sim, me, attack, 0f);
+        Assert.Contains(foe, struck);
+        Assert.DoesNotContain(fallen, struck);
+
+        // With nobody standing in it, a blow at the fallen lands.
+        Place(sim, foe, new float2(16.5f, 19.5f));
+        Assert.Equal([fallen], Reach.Struck(sim, me, attack, 0f));
+    }
+
+    [Fact]
     public void ABlowCommittedOneWayMissesWhoeverStepsOutOfIt()
     {
         var (sim, me) = Ring();
