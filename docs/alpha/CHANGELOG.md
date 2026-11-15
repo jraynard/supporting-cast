@@ -4,6 +4,46 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+## 0.1.0-playtest.15
+
+The dragon reworked, the healer easier to read, and fixes from the first solo playtest.
+
+**The dragon**
+- In a round it now harries the town from the air first: three passes over roofs and trees,
+  breathing fire as it goes over. Then it lands by the well and stays down, going after anyone out
+  in the open and setting buildings alight when nobody comes out. Hurt it, or gather a crowd in the
+  open, and it comes down early.
+- It won't follow you indoors (it doesn't fit through doors): it burns the building instead.
+- You can see it flying overhead from anywhere outdoors.
+- A "Dragon!" banner announces it, for the whole town.
+- Water works on it: a bucket on or beside it puts its fire out for a while (it can only bite), and
+  four soakings drive it off. Only once it's landed: it flies out of a bucket's reach.
+- Its breath looks and sounds the part: a jet of flame that cools as it goes, smoke, scorches, and
+  the screen rumbles when it's close (Settings, Screen shake).
+- In the practice ring it stays inside the fence, keeps after you instead of waiting, and mixes
+  bites, claw rakes and breaths. Tell us whether it's still a fair fight.
+
+**Water**
+- A thrown bucket flies in an arc, splashes, and steams where it hits fire.
+
+**The healer**
+- Laying on hands: your palms glow and the hum rises as you near a wound, and a warmth blooms when
+  you find one.
+- The gift's window no longer gets squeezed by the inspector, so the wounds you carry stay in view.
+- Weave (the button at the top of the gift) now mends the worst wound you carry that it fits,
+  instead of finding nothing.
+
+**The practice yard**
+- Six healer lessons are now four, and every trade's lessons are plain step-by-step instructions.
+- The panel is shorter: the intro text is gone.
+
+**The tinker**
+- Bracing the bridge: you move the level yourself (A/D) and lift or lower the stone under it.
+
+**Co-op and crises**
+- You no longer see the other player's messages ("You draw the wound…") as your own pop-ups.
+- The "Fire!" banner reaches the whole town; "Rats in the larder" goes to the cook.
+
 ## 0.1.0-playtest.14
 
 Smarter footwork in a fight, for townsfolk, raiders and the dragon alike.
