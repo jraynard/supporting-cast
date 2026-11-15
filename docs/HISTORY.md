@@ -1406,7 +1406,7 @@ Notes from playing; the healer first.
   Millbrook in your trade with no season, Renown, Dread or crises, and no autosave. Its panel
   lists the trade's tips and sends customers set up for the trade (hurt, worn blades, a strongbox
   and a curio, hungry), restocks the workplace, freshens you up, and brings the healer a patient
-  with the wound asked for. Left: a step-by-step walk through each game, and the cook's and
+  with the wound asked for. Left: a step-by-step walk through each game (the smith's since done, below), and the cook's and
   innkeeper's own setups (a pot already going, a named drink asked for).
 - Done: the ghost's speech crashed the game (a bubble over a speaker with no body); touchpad zoom
   eases in, and the view stops short of the whole map with a character. Also steam deck d-pad fix.
@@ -1538,3 +1538,37 @@ It wasn't clear what to do at first, then it was over too fast. Now:
 - Save format 34. `FestivalTests`: a cheer for each toast, once; the town cheering a glowing one;
   F at the butt walks you to the mark and starts there, facing the butt; your own weapon back
   and put away after. Bench hashes unchanged.
+
+### Lessons in the practice yard: the blacksmith (2026-11-14)
+- **Guided lessons** (`Scenarios/Lessons`, words in `trades.json`'s `lessons`): pick one from the
+  practice panel and it sets the scene (`PracticeAction.Lesson`: customers worn to order, the
+  workplace restocked, materials in the pack), names the step at hand, rings its station or flags
+  the customer, and ticks the steps off. The step is read every frame from what the player knows
+  (`Lessons.Stage`, through `Perception` only), never advanced by a cursor, so a lesson follows
+  you back: a blade still chipped after the anvil goes back to the fire, a refused one back to
+  taking the order, a forge gone out to the fuel bin. Steps marked `aside` show only when they
+  come up. `--lesson ID` (with `--practice`) starts one.
+- The blacksmith's four: a dull blade (grindstone), a chipped blade (forge, anvil, grindstone),
+  something new (choose, heat, hammer, quench, edge), and ore and prices (a bloom, then the sign).
+- Practice customers for the smith come only with what the smithy can mend: the Vanguard's bronze
+  spear (a bronze bar the smithy never has) arrives sound. `SendCustomers` takes a `CustomerWear`.
+- Finished lessons are kept on the saved character (`CharacterProgress.Lessons`).
+- `SmithLessonTests` play each through in Millbrook's smithy with a careful hand; `SmithyKit.Drive`
+  can step between stations. Bench hashes unchanged.
+- **Finding your customer.** A customer you owe a visit (you took the job, and have yet to collect
+  their blade, box or curio, or it's ready to go back) gets an ember tag over them, through walls,
+  or an arrow at the screen's edge when they're off it (`VillageGame.Errands`, `WorldRenderer.Pointers`).
+  Where they are comes through `PerceptionView.Awaiting` (`KnownErrand`): you keep an eye on your
+  customers. The order (~J~) has "Go and collect it" and "Take it back to them": a walk that
+  follows them and does the handing (`SeeToCustomerCommand`, `SeeToCustomerJob`); moving calls it
+  off. `SeeToCustomerTests`.
+
+### From a multiplayer playtest (2026-11-14)
+- **Sleeping through the night.** A player who lies down from 20:00 to dawn sleeps till dawn,
+  rested or not (`SleepJob.IsBedtime`), so a full night's rest no longer gets them up at midnight
+  and holds the night up for everyone. A rested nap in the day still ends at once. `NightTests`.
+- **Aiming a bucket.** The throw no longer locks to where you pointed when you lifted it: the mouse
+  points it as it swings (`AimThrowCommand`), and A/D turn it any way, not just the eight you face
+  (`ThrowSession.Facing`; D turns clockwise as seen on screen). Save format 35. `BucketTests`.
+- The healer's games are noted for a pass of their own (ROADMAP.md).
+

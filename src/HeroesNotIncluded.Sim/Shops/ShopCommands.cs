@@ -2,6 +2,7 @@ using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Maps;
 using HeroesNotIncluded.Sim.Speech;
+using HeroesNotIncluded.Sim.Systems;
 
 namespace HeroesNotIncluded.Sim.Shops;
 
@@ -43,6 +44,24 @@ public sealed record GiveCommand(Entity Avatar, Entity To, Entity Item, int Coun
             return;
         var taken = Systems.Inventory.TakeFromPerson(sim, Avatar, Item, Math.Min(Count, w.Get<Stack>(Item).Count));
         sim.Shops.Received(sim, Avatar, To, taken);
+    }
+}
+
+/// <summary>
+/// Go to the customer of an order you're seeing to, wherever they've got to: they hand their thing
+/// over when you're in reach, or, if you have it, you hand it back (<see cref="SeeToCustomerJob"/>).
+/// Walking off (any movement key) calls it off.
+/// </summary>
+public sealed record SeeToCustomerCommand(Entity Avatar, int Order) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (!InventoryCommand.Ready(sim, Avatar) || sim.Shops.Find(Order) is not { IsOpen: true } order || order.Assignee != Avatar
+            || !ShopSystem.HandsOver(order.Kind.Kind) || !sim.World.IsAlive(order.Poster) || sim.World.Has<Carried>(Avatar))
+            return;
+        AiSystem.Order(sim, Avatar, new SeeToCustomerJob(Order));
     }
 }
 

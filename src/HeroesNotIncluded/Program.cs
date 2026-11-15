@@ -250,6 +250,8 @@ else
         RaidTest = args.Contains("--raid-test"),
         // --practice TRADE: the practice yard (Practice): your trade's games, no season, customers when sent for.
         Practice = args.Contains("--practice"),
+        // --lesson ID (with --practice): straight into one of the trade's lessons (trades.json "lessons").
+        StartLesson = ParseString(args, "--lesson"),
         // --die-at SECONDS: your character drops dead then, to try being a ghost.
         DieAt = args.Contains("--die-at") ? ParseFloat(args, "--die-at") : -1f,
         // --festival-at SECONDS: the festival begins then, to see it without playing to it.

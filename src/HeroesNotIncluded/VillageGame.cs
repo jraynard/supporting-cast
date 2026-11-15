@@ -222,6 +222,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>The practice yard (<see cref="Practice"/>): a round in <see cref="HeroTrade"/> with no season to it.</summary>
     public bool Practice { get; init; }
 
+    /// <summary>Debug (<c>--lesson ID</c>, with <c>--practice</c>): the lesson begun as soon as you're in the yard.</summary>
+    public string? StartLesson { get; init; }
+
     /// <summary>Debug (<c>--weapon NAME</c>, with <c>--arena</c>): what you fight with in the ring.</summary>
     public string? ArenaWeapon { get; init; }
 
@@ -443,6 +446,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         UpdateOrderBubbles();
         UpdateStationMarks();
         UpdateFestival();
+        UpdateErrandPointers();
+        UpdateLesson(); // after the festival's and the tips' marks are cleared: its own go on top
         UpdateHomeMark();
         UpdateWork(dt);
         RunBots();

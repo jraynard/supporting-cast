@@ -129,6 +129,33 @@ public class NightTests
     }
 
     [Fact]
+    public void ARestedPlayerWhoGoesToBedAtNightSleepsTillDawn()
+    {
+        var sim = Round((Ana, "Healer"));
+        var ana = Players.CharacterOf(sim, Ana);
+        PlayUntilHour(sim, 22f);
+        SetRest(sim, ana, 1f);
+        sim.ApplyNow(new SleepCommand(ana));
+        sim.TickMany(SimClock.TicksPerHour);
+        Assert.True(sim.World.Get<Mind>(ana).Asleep, "fully rested, but it's night: sleeping on");
+        Assert.True(Players.AllAsleep(sim));
+        PlayUntilHour(sim, SleepJob.DawnHour + 0.25f);
+        Assert.False(sim.World.Get<Mind>(ana).Asleep, "up at dawn");
+    }
+
+    [Fact]
+    public void ARestedNapInTheDayEndsAtOnce()
+    {
+        var sim = Round((Ana, "Healer"));
+        var ana = Players.CharacterOf(sim, Ana);
+        PlayUntilHour(sim, 13f);
+        SetRest(sim, ana, 1f);
+        sim.ApplyNow(new SleepCommand(ana));
+        sim.TickMany(60);
+        Assert.False(sim.World.Get<Mind>(ana).Asleep);
+    }
+
+    [Fact]
     public void ABotGoesToBedAtNightSoTheNightCanPass()
     {
         var sim = Round((Ana, "Healer"));

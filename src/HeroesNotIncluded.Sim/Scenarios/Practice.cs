@@ -9,7 +9,7 @@ namespace HeroesNotIncluded.Sim.Scenarios;
 /// <summary>What the practice yard can set up (<see cref="PracticeCommand"/>).</summary>
 public enum PracticeAction : byte
 {
-    /// <summary>A party rides in now, with what the player's trade works on.</summary>
+    /// <summary>A party rides in now, with what the player's trade works on (<see cref="PracticeCommand.Arg"/>, a <see cref="CustomerWear"/>).</summary>
     SendCustomers,
 
     /// <summary>The player's workplace stocked again.</summary>
@@ -20,6 +20,9 @@ public enum PracticeAction : byte
 
     /// <summary>The healer's: someone on a shrine pallet with a wound of a kind (<see cref="PracticeCommand.Arg"/>, a <see cref="DamageType"/>).</summary>
     Patient,
+
+    /// <summary>A lesson's setup (<see cref="LessonDef"/>, by index in the player's trade's lessons): stock, supplies, customers.</summary>
+    Lesson,
 }
 
 /// <summary>
@@ -56,7 +59,8 @@ public static class Practice
         switch (action)
         {
             case PracticeAction.SendCustomers:
-                SendCustomers(sim, player);
+                if (Enum.IsDefined((CustomerWear)arg))
+                    SendCustomers(sim, player, (CustomerWear)arg);
                 break;
             case PracticeAction.Restock:
                 VillageRound.Restock(sim, Workplace(sim, player));
@@ -71,14 +75,29 @@ public static class Practice
                 if (Enum.IsDefined((DamageType)arg) && PatientWounds.Contains((DamageType)arg))
                     BringPatient(sim, player, (DamageType)arg);
                 break;
+            case PracticeAction.Lesson:
+                if (w.TryGet<Trade>(player, out var trade) && arg >= 0 && arg < trade.Def.Lessons.Count)
+                    SetUp(sim, player, trade.Def.Lessons[arg]);
+                break;
         }
     }
 
+    /// <summary>What a lesson needs to be there when it begins: the workplace stocked, materials in the pack, customers on their way.</summary>
+    public static void SetUp(Simulation sim, Entity player, LessonDef lesson)
+    {
+        if (lesson.Restock)
+            VillageRound.Restock(sim, Workplace(sim, player));
+        foreach (var item in lesson.Supply)
+            Inventory.Stow(sim, player, sim.CreateItem(item.ThingDef, item.Count, Simulation.MaterialFor(item.ThingDef, null)));
+        if (lesson.Customers is { } wear)
+            SendCustomers(sim, player, wear);
+    }
+
     /// <summary>
-    /// A party now, the way the player's trade wants it: hurt for a healer, their gear worn for a
-    /// smith, a locked strongbox and a curio for a tinker; hungry, for the inn.
+    /// A party now, the way the player's trade wants it: hurt for a healer, their blades worn for a
+    /// smith (chipped, or only dull), a locked strongbox and a curio for a tinker; hungry, for the inn.
     /// </summary>
-    public static List<Entity> SendCustomers(Simulation sim, Entity player)
+    public static List<Entity> SendCustomers(Simulation sim, Entity player, CustomerWear wear = CustomerWear.Trade)
     {
         var w = sim.World;
         var parties = sim.Defs.AllParties;
@@ -100,10 +119,30 @@ public static class Practice
                     }
                     break;
                 case "Blacksmith":
-                    if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon))
+                    if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon) && !SmithyMends(sim, player, eq.Weapon))
                     {
-                        ref var weapon = ref w.Get<Thing>(eq.Weapon);
-                        weapon.Hp = weapon.MaxHp * 0.4f;
+                        // Sound and keen, so they don't ask for what the smithy can't do.
+                        ref var sound = ref w.Get<Thing>(eq.Weapon);
+                        sound.Hp = sound.MaxHp;
+                        Combat.WeaponWear.SetDullness(sim, eq.Weapon, 0f);
+                    }
+                    else if (w.TryGet<Equipment>(e, out eq) && w.IsAlive(eq.Weapon))
+                    {
+                        if (wear == CustomerWear.Dull)
+                        {
+                            // Sound but dull: a grindstone's work alone. An edged blade only (a mace has no edge to lose).
+                            if (Combat.WeaponWear.Edged(w.Get<Thing>(eq.Weapon).Def))
+                            {
+                                ref var whole = ref w.Get<Thing>(eq.Weapon);
+                                whole.Hp = whole.MaxHp;
+                                Combat.WeaponWear.SetDullness(sim, eq.Weapon, DullBlade);
+                            }
+                        }
+                        else
+                        {
+                            ref var weapon = ref w.Get<Thing>(eq.Weapon);
+                            weapon.Hp = weapon.MaxHp * ChippedBlade;
+                        }
                     }
                     break;
                 case "Tinker":
@@ -120,6 +159,28 @@ public static class Practice
         }
         sim.Messages.Add(MessageKind.Info, "Adventurers ride into town.", party.Count > 0 ? w.Get<Position>(party[0]).Cell : null);
         return party;
+    }
+
+    /// <summary>How worn a practice customer's blade is: this much of its HP left, chipped; or this dull, only dull.</summary>
+    public const float ChippedBlade = 0.4f, DullBlade = 0.7f;
+
+    /// <summary>
+    /// Can the smith mend this weapon with what the trade can make? A bronze spear needs a bronze
+    /// bar the smithy never has, so a practice customer with one would wait for nothing.
+    /// </summary>
+    public static bool SmithyMends(Simulation sim, Entity player, Entity weapon)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Trade>(player, out var trade))
+            return false;
+        foreach (var station in trade.Def.KnownStations)
+        {
+            if (Crafting.RepairRecipe(station, w.Get<Thing>(weapon).Def) is not { } recipe)
+                continue;
+            var material = recipe.Ingredients[0].ThingDef;
+            return trade.Def.KnownStations.Any(s => s.Recipes.Any(r => r.Products.Exists(p => p.ThingDef == material)));
+        }
+        return false;
     }
 
     /// <summary>A limb, not something vital: a practice wound shouldn't kill.</summary>

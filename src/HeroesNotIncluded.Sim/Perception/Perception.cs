@@ -486,6 +486,33 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
                     e.PostedTick, e.Deadline, e.AssigneeName, e.Status, e.Poster == viewer, e.Assignee == viewer, e.Poster);
     }
 
+    /// <summary>
+    /// The customers the viewer owes a visit (<see cref="Shops.KnownErrand"/>): for each open order
+    /// they took on whose thing changes hands, who and where, and the thing if it's with them now.
+    /// </summary>
+    public IEnumerable<Shops.KnownErrand> Awaiting()
+    {
+        if (blind || viewer.IsNull)
+            yield break;
+        var w = sim.World;
+        foreach (var e in sim.Shops.All)
+        {
+            if (!e.IsOpen || e.Assignee != viewer || !Shops.ShopSystem.HandsOver(e.Kind.Kind) || !w.IsAlive(e.Poster)
+                || !w.TryGet<Creature>(e.Poster, out var c) || c.Dead)
+                continue;
+            var item = w.IsAlive(e.Subject) && Inventory.OnPerson(sim, viewer, e.Subject) && w.TryGet<Entrusted>(e.Subject, out var t) && t.Owner == e.Poster
+                ? e.Subject : Entity.Null;
+            var ready = !item.IsNull && e.Kind.Kind switch
+            {
+                ServiceKind.Repair => Combat.WeaponWear.Mended(sim, item), // as it looks in your hands
+                ServiceKind.Unlock => Strongbox(item) is { Locked: false },
+                ServiceKind.Appraise => Curio(item) is { Low: not null },
+                _ => true,
+            };
+            yield return new Shops.KnownErrand(e.Id, e.Kind.Kind, e.Poster, c.Name, sim.LocationOf(e.Poster), item, ready);
+        }
+    }
+
     /// <summary>The named drink a drink order the viewer knows of asked for, if it asked for one.</summary>
     public Defs.ThingDef? WantedDrink(int order) =>
         !blind && sim.Shops.Find(order) is { } e && (Omniscient || e.KnownBy.Contains(viewer)) && sim.Drinking.Wanted(order) is { } name

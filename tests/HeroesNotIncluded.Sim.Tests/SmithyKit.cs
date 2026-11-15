@@ -41,7 +41,8 @@ public sealed record SmithyKit(Entity Forge, Entity Anvil, Entity Tub, Entity Gr
     }
 
     /// <summary>Work the piece in the smith's tongs to the end (or until <paramref name="maxTicks"/>): the fire, the anvil, the tub, as it needs.</summary>
-    public void Drive(Simulation sim, Entity me, SmithStyle style = SmithStyle.Careful, int maxTicks = 60 * 60 * 10)
+    /// <remarks><paramref name="goTo"/> steps the smith over to each station first, where they aren't all in reach (a real smithy).</remarks>
+    public void Drive(Simulation sim, Entity me, SmithStyle style = SmithStyle.Careful, int maxTicks = 60 * 60 * 10, Action<Entity>? goTo = null)
     {
         var predictor = new WorkPredictor();
         var stopped = -1L;
@@ -59,12 +60,16 @@ public sealed record SmithyKit(Entity Forge, Entity Anvil, Entity Tub, Entity Gr
                 if (style == SmithStyle.HammerCold && !p.Shaped && p.Temp >= lo * 0.62f)
                 {
                     if (p.Temp < lo * 0.78f)
+                    {
+                        goTo?.Invoke(Anvil);
                         sim.ApplyNow(new SmithCommand(me, Anvil));
+                    }
                     continue;
                 }
                 // A bloom stays in the fire till it's grown (or barely holds, for the hasty).
                 var grown = !p.IsBloom || p.Reduced >= (style == SmithStyle.BloomEarly ? Smithing.BloomMinReduced : 1f);
                 var station = !hot || !grown ? Forge : !p.Shaped ? Anvil : Tub;
+                goTo?.Invoke(station);
                 sim.ApplyNow(new SmithCommand(me, station));
                 continue;
             }

@@ -65,7 +65,7 @@ public sealed partial class VillageGame
     {
         var marks = _renderer.StationMarks;
         marks.Clear();
-        if (!TipsShowing)
+        if (!TipsShowing || _lesson != null) // a lesson rings only its step's station
             return;
         var w = _sim.World;
         var trade = w.Get<Trade>(_avatar).Def;

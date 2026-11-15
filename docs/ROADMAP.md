@@ -26,6 +26,24 @@ provide some purely non-combat options but i think that will be later once we ha
 
 ## Next
 
+### The healer's games, refined
+A multiplayer playtest found the healer's games the weakest of the trades: they need a pass of
+their own, played through in the practice yard (`--practice Healer`) before anything is tuned.
+Revisit each for whether it reads, whether it's fun, and whether it asks the empath to *feel*
+rather than read numbers:
+- **Feeling a wound over** (`FeelSession`): what the feel tells you, and how you learn the kinds.
+- **Drawing a wound in** (`DrawSession`): the draw's feel and the heartbeat window.
+- **Weaving a mending** (`CastSession`, `Weaving`, the spellbook): choosing runes and the mix.
+- **Binding** (`BandageSession`): the wrap band.
+- **Meditating** (`MeditateSession`): the labyrinth's size, sitting, the centre burst.
+- Then the healer's lessons in the practice yard, on the same frame as the blacksmith's
+  (`Scenarios/Lessons`), once the games settle.
+
+### Lessons for the other trades
+The blacksmith's lessons are in (HISTORY.md, "Lessons in the practice yard"). The tinker and the
+innkeeper and cook next, on the same frame; the healer's after its games are refined (above).
+Notice-board errands could get the customer pointer too (`VillageGame.Errands`).
+
 ### The festival
 Built (HISTORY.md, "The festival, made an event", and the passes after it). What's left:
 
