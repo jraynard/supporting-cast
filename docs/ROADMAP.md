@@ -47,16 +47,19 @@ it through in the practice yard (`--practice Healer`) and in a round with friend
 - Still to look at: the bandage band, the weave's beat window, the labyrinth's size.
 - The AI empath's meditation (`MeditateJob.Gathers`) and the charms it puts out (`LayOnHands.CharmsOnShow`, price).
 
-### 3. Combat balance
-The town drives off fewer raids than it did (1 of 8 seeds in a sample against 3 of 8 before the
-one model). Tune in the practice ring (`--arena`) and `--raid-test`: AI defenders, armour soak, AI
-dodge odds, stamina (`Blows.Regen`, `RegenDelay`, costs) and the parry window (`ParryBefore`,
-`ParryAfter`). The dragon: likely too easy with a party in town, impossible without one. Related:
-- **AI footwork.** Fighters hold a blow while a friend's in its sweep but don't step round for a
-  clearer angle, and don't back off when hurt beyond giving up the fight. The dragon still lands
-  and bites from the grid rather than circling (`Ai/DragonBrain`).
-- The unarmed don't mob a raider together; without adventurers in town, two raiders put every
-  villager down. The wounded lie where they fell until someone thinks to help.
+### 3. Combat, what the sweep can't settle
+The numbers are tuned against the headless sweep (HISTORY.md, "Combat balance"; `--combat-sweep`).
+What's left wants hands and eyes:
+- **By hand in the ring** (`--arena`, `--raid-test`): the parry window (`ParryBefore`,
+  `ParryAfter`), stamina (`Blows.Regen`, `RegenDelay`, costs), and whether a Veteran (6% for a
+  skill-6 villager with a sword) and the dragon feel fair to a player.
+- **Heroes die often:** about one in two raids with a party in town costs one. Watch what it does
+  to Renown in play before blunting raids.
+- **The dragon without a party** is met by nobody: the town hides and it leaves unhurt. It's
+  meant for players; check a round with friends can drive it off.
+- **AI footwork still to do:** a hurt fighter gives up the fight all at once rather than dropping
+  back; the dragon lands and bites from the grid rather than circling (`Ai/DragonBrain`); the
+  unarmed don't mob a raider together.
 
 ### 4. A tuning playtest
 One round with friends aimed only at the numbers, then a pass on what it shows. Everything here

@@ -1647,3 +1647,36 @@ From a multiplayer playtest that found the healer the weakest trade.
   everyone as before. `--friendly-fire` turns it on from the command line.
 - **Traitors**: in the lobby as a greyed-out choice, "Coming with Whispers"; always off until M4.
 - At the festival's butts, someone in the lane only takes the arrow with friendly fire on.
+
+### Combat balance (2026-11-14)
+- **The sweep:** `--combat-sweep [--seeds N] [--seed S] [--party|--no-party|--dragon|--duels] [--log]`
+  runs `Scenarios/CombatSweep` headlessly. It covers a day-two raid on the unattended town with
+  and without a party, the dragon both ways, and AI-against-AI duels in the ring.
+  `Director.PassOverBeats` and `PartySystem.HoldArrivals` keep a trial to the one crisis it sends.
+  `--log` shows who went down doing what. `CombatBalanceTests` holds the band over 16 seeds.
+- **Read from the log:** most raid deaths were villagers bleeding out an hour or two after they
+  fell, while everyone near a raider kept hiding. Now someone hiding goes out to stanch a downed
+  villager's bleeding when no raider is within 6 cells of them (`Defence.Aid`, a braving
+  `TendJob`), and gets back under cover when one comes within 4.
+- **Cornered while hiding:** anyone hiding or running with something in hand fights back once a
+  raider's on them (`Defence.Reconsider`). Before, they were cut down without lifting the knife
+  in their hand.
+- **Bowmen shoot:** a defender fights with what they hold (`DefendJob`), so a bowman no longer
+  punches.
+- **Footwork:** an AI stepping in to strike sidesteps round a friend in its blow's way
+  (`FreeFight.Steer`, `Reach.FirstFriendInTheWay`).
+- **Dodging by skill:** an AI dodges at the old miss odds times its Melee over average (0.3 to 2),
+  halved with nothing in hand (`Blows.DodgeSkill*`). This is what makes heroes in town matter.
+- **Raids and the dragon:** raids are bigger (`raidPointsFactor` 0.85 to 1.3). The dragon is
+  driven off at pain 0.5 or 60 damage (was 0.3 and 30).
+- **Tried and dropped:** fetching a weapon before fleeing (no difference: the muster arms people
+  at the bell), and hurt hiders charging or running further (slightly worse).
+- **Seeds 1–48, Normal, before and after:**
+
+  | | Before | After |
+  |---|---|---|
+  | Raids, party in town (seeds 1–8) | met 2/8, town dead 12 | met 30/48 (62%), town dead 23 |
+  | Raids, no party (seeds 1–8) | met 2/8, town dead 12 | met 14/48 (29%), town dead 58 |
+  | Dragon, party in town | 0/8 | 27/48 |
+  | Dragon, no party | 0/8 | 0/48 (nobody's hurt either) |
+
