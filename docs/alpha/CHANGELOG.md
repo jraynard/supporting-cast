@@ -4,6 +4,40 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+## 0.1.0-playtest.13
+
+A tuning build: the healer reworked, fights that hold up, and a way to tell us how the season feels.
+
+**Telling us how it went**
+- Press **F11** whenever something feels off, too hard, too easy, broken, or good. It takes a
+  screenshot and asks for a line about it. Rebind it in Settings, Controls (on a Steam Deck, a back
+  button in Steam Input works well).
+- Each round now keeps a log of how it went: Renown and Dread, the crises, and the connection. At
+  the season's end, press "Open playtest folder", zip it up and send it to us with your notes. Turn
+  it off in Settings, "Playtest logs".
+
+**The healer**
+- Laying on hands is one sitting: skim the patient for warmth, press still to read the wound
+  through your hand, keep pressing to draw it out. Move while pressing and they flinch.
+- The shrine is rebuilt, with an altar that steadies a weave, herb racks for dressings, and a wash
+  basin that keeps a bound wound from festering. New practice-yard lessons for each.
+- With no player healer, the town's empath meditates at the stone and puts out charms to sell.
+- Nobody goes hungry without a cook: there's bread in every cottage, and spare bowls at the hatch.
+
+**Fights**
+- Heroes dodge like they've done this before; a frightened cook doesn't. A party in town makes a
+  real difference now.
+- Raids are bigger, and the dragon is harder to drive off.
+- Bowmen shoot when they defend. Fighters step round a friend who's in the way.
+- While the town hides from a raid, someone braves it to bind up the fallen. People cornered
+  indoors fight back with whatever's in their hands.
+- **Friendly fire** is a lobby option, off by default: with it off, the town's blows pass through
+  the town.
+
+**Windows**
+- Shop orders and favours are tidy cards with prices as coins. Recipe windows show what you have
+  and what you need as tiles. Hovering over furniture or an item says what it's for.
+
 ## 0.1.0-playtest.12
 
 Play with friends anywhere: online co-op is ready to try. Plus lessons for every trade.
