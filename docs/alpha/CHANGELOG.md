@@ -4,6 +4,19 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+## 0.1.0-playtest.14
+
+Smarter footwork in a fight, for townsfolk, raiders and the dragon alike.
+
+**Fights**
+- A hurt fighter drops back and lets a friend take a turn, unless they're the last one standing or
+  the foe is on them. One who's broken backs away facing the foe before turning to run.
+- The dragon no longer just sits there between breaths: on the ground it circles whoever comes at
+  it and lunges in when it's ready to bite. It's harder to drive off; tell us how it feels.
+- Up to four can press the dragon at once.
+- Unarmed townsfolk out in the street gang up on a raider with their fists when there are enough
+  of them. Alone or in twos they still run; indoors they stay put.
+
 ## 0.1.0-playtest.13
 
 A tuning build: the healer reworked, fights that hold up, and a way to tell us how the season feels.
