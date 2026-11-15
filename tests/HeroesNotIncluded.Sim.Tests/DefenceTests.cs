@@ -179,4 +179,20 @@ public class DefenceTests
         var bare = Person(sim, "Hilde", C(5, 6), weapon: null);
         Assert.False(Defence.Reconsider(sim, bare, new HideJob()), "nothing to fight with: keep running");
     }
+
+    [Fact]
+    public void ABowmanDefendsWithTheBowFromWhereTheyStand()
+    {
+        var sim = Create();
+        var archer = Person(sim, "Fenna", C(5, 5), weapon: "Bow");
+        var raider = StandingRaider(sim, C(13, 5));
+        var closest = int.MaxValue;
+        for (var t = 0; t < SimClock.TicksPerSecond * 30 && sim.World.Get<Health>(raider).Injuries.Count == 0; t++)
+        {
+            sim.Tick();
+            closest = Math.Min(closest, Map.Distance(sim.World.Get<Position>(archer).Cell, sim.World.Get<Position>(raider).Cell));
+        }
+        Assert.True(sim.World.Get<Health>(raider).Injuries.Count > 0, "the raider was shot");
+        Assert.True(closest > 2, $"came within {closest} cells: shot from range, not punched");
+    }
 }

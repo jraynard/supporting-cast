@@ -168,7 +168,8 @@ public sealed class DefendJob(Entity foe) : Job
     protected override IEnumerable<JobStatus> Run()
     {
         Report = $"Fighting {Get<Creature>(foe).Name}";
-        if (Combat.CombatRules.Attacks(Sim, Pawn).FirstOrDefault(a => !a.Ranged) is not { } attack)
+        // What they hold, as a raider fights (AssaultJob): a bowman keeps their distance and shoots.
+        if (Combat.CombatRules.Attacks(Sim, Pawn).FirstOrDefault() is not { } attack)
         {
             Fail("nothing to fight with");
             yield break;
