@@ -58,7 +58,7 @@ public sealed class Settings
     /// <summary>Speech heard as a babble of syllables, each voice its own.</summary>
     public bool Babble { get; set; } = true;
 
-    /// <summary>Relay server for online co-op ("host" or "host:port"); empty turns join codes off.</summary>
+    /// <summary>Relay server for online co-op ("host" or "host:port"); empty uses the game's own (<see cref="Net.CoopRelay.Default"/>).</summary>
     public string RelayServer { get; set; } = "";
 
     /// <summary>Hosting also opens the village through the relay, with a join code to share.</summary>

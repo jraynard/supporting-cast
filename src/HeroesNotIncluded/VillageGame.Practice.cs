@@ -14,8 +14,6 @@ namespace HeroesNotIncluded;
 // the yard.
 public sealed partial class VillageGame
 {
-    private bool _practiceTipsOpen = true;
-
     private void DrawPractice()
     {
         if (!_sim.Round.Practice || !HasAvatar || !_sim.World.TryGet<Trade>(_avatar, out var trade))
@@ -57,12 +55,13 @@ public sealed partial class VillageGame
             }
         }
 
+        DrawLessons(def);
+
         if (def.Tips.Count > 0)
         {
             Gui.Rule();
-            ImGui.SetNextItemOpen(_practiceTipsOpen, ImGuiCond.Once);
-            _practiceTipsOpen = ImGui.CollapsingHeader("How the trade works"u8);
-            if (_practiceTipsOpen)
+            ImGui.SetNextItemOpen(def.Lessons.Count == 0, ImGuiCond.Once); // folded away under lessons
+            if (ImGui.CollapsingHeader("How the trade works"u8))
                 foreach (var tip in def.Tips)
                     Wrapped("· " + Controls.Keys(tip));
         }

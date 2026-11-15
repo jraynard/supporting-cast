@@ -168,8 +168,19 @@ public sealed class SleepJob(Entity bed, int3? spot = null) : Job
         var slept = 0;
         // A player's character gets up with the sun once they've had a fair night: nobody waits
         // in bed for the last of their rest while the town opens.
-        var dawn = Sim.World.Has<Avatar>(Pawn) ? NextDawn(Sim.Clock) : long.MaxValue;
-        for (; slept < maxTicks && needs.Get(rest) < 0.99f && !(Sim.Clock.Tick >= dawn && needs.Get(rest) >= DawnRest); slept++)
+        var player = Sim.World.Has<Avatar>(Pawn);
+        var dawn = player ? NextDawn(Sim.Clock) : long.MaxValue;
+        // A player who lies down at night sleeps till dawn, rested or not: waking them at a full
+        // night's rest would stop the night passing for everyone (Players.AllAsleep).
+        var tillDawn = player && IsBedtime(Sim.Clock);
+        bool SleepOn()
+        {
+            var rested = needs.Get(rest);
+            if (tillDawn && Sim.Clock.Tick < dawn)
+                return true;
+            return slept < maxTicks && rested < 0.99f && !(Sim.Clock.Tick >= dawn && rested >= DawnRest);
+        }
+        for (; SleepOn(); slept++)
             yield return JobStatus.Running;
         if (slept >= SimClock.HoursToTicks(2))
             RememberNight();
@@ -184,6 +195,12 @@ public sealed class SleepJob(Entity bed, int3? spot = null) : Job
             dawn += SimClock.TicksPerDay;
         return dawn - clock.StartHour * (long)SimClock.TicksPerHour;
     }
+
+    /// <summary>From this hour to dawn, a player who goes to bed stays there till morning (<see cref="IsBedtime"/>).</summary>
+    public const float BedtimeHour = 20f;
+
+    /// <summary>Evening or night: a player lying down now sleeps through to dawn.</summary>
+    public static bool IsBedtime(SimClock clock) => clock.HourOfDay >= BedtimeHour || clock.HourOfDay < DawnHour;
 
     /// <summary>The hour sleeping players wake, if rested enough.</summary>
     public const float DawnHour = 6f;

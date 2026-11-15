@@ -58,10 +58,53 @@ public class PracticeTests
     {
         var (sim, me) = Yard("Blacksmith");
         sim.ApplyNow(new PracticeCommand(me, PracticeAction.SendCustomers));
-        var armed = Adventurers(sim).Where(e => sim.World.TryGet<Equipment>(e, out var eq) && sim.World.IsAlive(eq.Weapon)).ToList();
-        Assert.NotEmpty(armed);
-        Assert.All(armed, e => Assert.True(Combat.WeaponWear.HpFraction(sim, sim.World.Get<Equipment>(e).Weapon) < 0.5f));
+        var armed = Weapons(sim);
+        Assert.Contains(armed, w => Practice.SmithyMends(sim, me, w));
+        foreach (var weapon in armed)
+            if (Practice.SmithyMends(sim, me, weapon))
+                Assert.True(Combat.WeaponWear.HpFraction(sim, weapon) < 0.5f);
+            else
+                Assert.False(Combat.WeaponWear.NeedsMending(sim, weapon), $"{sim.LabelOf(weapon)}: nothing the smithy can mend, so nothing to ask for");
     }
+
+    [Fact]
+    public void DullCustomersWantOnlyTheGrindstoneAndAskForIt()
+    {
+        var (sim, me) = Yard("Blacksmith");
+        sim.ApplyNow(new PracticeCommand(me, PracticeAction.SendCustomers, (int)CustomerKind.Dull));
+        var dull = Weapons(sim).Where(w => Practice.SmithyMends(sim, me, w)).ToList();
+        Assert.NotEmpty(dull);
+        Assert.All(dull, w => Assert.True(Combat.WeaponWear.HpFraction(sim, w) >= Combat.WeaponWear.MendedHp && Combat.WeaponWear.Dullness(sim, w) > Combat.WeaponWear.WantsMendDullness));
+        for (var t = 0; t < 12 * 12 && !sim.Shops.All.Any(o => o.Kind.Kind == ServiceKind.Repair); t++)
+            sim.TickMany(SimClock.TicksPerHour / 12);
+        Assert.Contains(sim.Shops.All, o => o.Kind.Kind == ServiceKind.Repair && Practice.SmithyMends(sim, me, sim.World.Get<Equipment>(o.Poster).Weapon));
+    }
+
+    [Fact]
+    public void ALessonSetsUpWhatItNeeds()
+    {
+        var (sim, me) = Yard("Blacksmith");
+        var lessons = sim.Defs.Trade("Blacksmith").Lessons;
+        int Bars() => sim.StoredIn(sim.PackOf(me)).Where(i => sim.World.Get<Thing>(i).Def.Name == "IronBar").Sum(i => sim.World.Get<Stack>(i).Count);
+        var bars = Bars();
+        sim.ApplyNow(new PracticeCommand(me, PracticeAction.Lesson, lessons.FindIndex(l => l.Id == "forge")));
+        Assert.Equal(bars + 3, Bars());
+        Assert.Empty(Adventurers(sim));
+
+        sim.ApplyNow(new PracticeCommand(me, PracticeAction.Lesson, lessons.FindIndex(l => l.Id == "mend")));
+        Assert.NotEmpty(Adventurers(sim));
+
+        // A lesson the trade hasn't got sets up nothing.
+        var count = sim.Creatures().Count();
+        sim.ApplyNow(new PracticeCommand(me, PracticeAction.Lesson, lessons.Count));
+        sim.ApplyNow(new PracticeCommand(me, PracticeAction.Lesson, -1));
+        sim.ApplyNow(new PracticeCommand(me, PracticeAction.SendCustomers, 99));
+        Assert.Equal(count, sim.Creatures().Count());
+    }
+
+    private static List<Entity> Weapons(Simulation sim) => Adventurers(sim)
+        .Where(e => sim.World.TryGet<Equipment>(e, out var eq) && sim.World.IsAlive(eq.Weapon))
+        .Select(e => sim.World.Get<Equipment>(e).Weapon).ToList();
 
     [Fact]
     public void CustomersComeForATinkerWithAStrongboxAndACurio()

@@ -397,10 +397,14 @@ Millbrook, south of the square, with a bench, a stock chest and the collector's 
 - *Strongboxes (since M2).* A party that clears a quest brings back a strongbox holding part of
   the reward, and asks at the tinker's to have it opened. The harder the place, the more pins and
   the likelier a trap (a poisoned needle, a spring blade, burning powder).
-  - *Feeling for the trap.* Run a probe along the lid's seam, light. The feel twitches as it goes
+  - *Feeling for the trap.* Run a probe along the lid's seam, lightly to feel for explosive traps. 
+    The feel twitches as it goes
     and catches hard near a trigger. Dragging weight across a trigger sets it off; stopped over
     one, press in and hold the pressure in the band to ease the spring out, too hard and it fires.
     Reaching the hinge ends the search, so finishing never tells you whether there was one.
+    don't notice (or ignore it) and it explodes in the adventurer's hand when they open it.
+  - also should have to inspect the keyhole to see if there are any poison needle traps and disarm
+    them too or suffer an unfortunate injury while lockpicking.
   - *Picking the lock.* Lift each pin until it gives most and set it there. A slip drops a pin,
     wears the picks and can jar an armed trap; enough slips snap the pick. Opening a box with its
     trap still armed sets it off. A sprung trap wounds the hand, which is work for the healer.

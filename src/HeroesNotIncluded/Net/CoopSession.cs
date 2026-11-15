@@ -157,7 +157,7 @@ public sealed class CoopSession : ILockstepGame, IDisposable
     /// </summary>
     public static CoopSession StartHost(Simulation sim, PlayerIdentity me, string sessionName, int port = DefaultPort, bool online = false)
     {
-        var tcp = new TcpNetListener(port);
+        var tcp = new TcpNetListener(port, maxFrame: MaxIncomingFrame);
         var listener = new CompositeListener(tcp);
         var session = StartHost(sim, me, sessionName, listener, tcp.Port, advertise: true);
         if (online && CoopRelay.TryGet(out var relay, out var relayPort))
@@ -183,8 +183,19 @@ public sealed class CoopSession : ILockstepGame, IDisposable
     /// <summary>
     /// Session settings. Turns are sealed 30 times a second (two ticks each at normal speed):
     /// half of a turn is the average wait for a client's command, and a turn is a few bytes.
+    /// A client keeps only as many turns queued as the jitter it measures needs (none on a LAN),
+    /// up to six (200 ms) for a choppy internet link, where two would keep running dry.
     /// </summary>
-    public static LockstepOptions Options(DefDatabase defs) => new() { GameId = GameId, BuildTag = BuildTag(defs), TurnInterval = 1f / 30f, MaxPlayers = MaxPlayers };
+    public static LockstepOptions Options(DefDatabase defs) => new()
+    {
+        GameId = GameId, BuildTag = BuildTag(defs), TurnInterval = 1f / 30f, MaxPlayers = MaxPlayers, BufferTurns = 6,
+    };
+
+    /// <summary>
+    /// Largest message the host takes from anyone connecting directly: players send hellos,
+    /// commands and chat (snapshots only go the other way), so a stranger can't send a huge one.
+    /// </summary>
+    public const int MaxIncomingFrame = 1 << 20;
 
     private static string? _buildTag;
 
@@ -401,8 +412,22 @@ public sealed class CoopSession : ILockstepGame, IDisposable
         }
         if (_relay is { Connected: false } lost && RelayStatus == null)
         {
-            RelayStatus = $"Lost the relay ({lost.CloseReason}); players on your network can still join.";
+            RelayStatus = lost.Reclaiming
+                ? "Lost the relay for a moment; getting the join code back..."
+                : $"Lost the relay ({lost.CloseReason}); players on your network can still join.";
             Log.Engine.Warning(RelayStatus);
+        }
+        else if (_relay is { Connected: false, Reclaiming: false } gone && RelayStatus?.StartsWith("Lost the relay for a moment") == true)
+        {
+            // It couldn't take the code back in time: the session's online players are gone for good.
+            RelayStatus = $"Lost the relay ({gone.CloseReason}); players on your network can still join.";
+            Log.Engine.Warning(RelayStatus);
+        }
+        else if (_relay is { Connected: true } && RelayStatus?.StartsWith("Lost the relay") == true)
+        {
+            // RelayHost took its code back by itself; online players reconnect to it.
+            RelayStatus = null;
+            Notice?.Invoke($"Online again: the join code is still {_relay.Code}.");
         }
     }
 

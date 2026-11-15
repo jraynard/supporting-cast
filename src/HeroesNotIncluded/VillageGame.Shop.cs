@@ -79,10 +79,10 @@ public sealed partial class VillageGame
                 var (share, color, words) = TimeLeft(e.PostedTick, e.Deadline, now);
                 Gui.Bar(e.AssigneeName.Length > 0 ? (e.MineToDo ? "You're on it" : $"{e.AssigneeName} is on it") : "Nobody's taken it",
                     share, color, words, 170f);
-                if (e.MineToDo && e.Kind == Sim.Defs.ServiceKind.Repair)
-                    WrappedC(Theme.Dim, $"Mended, give it back from {e.PosterName}'s inspector, in reach.");
                 if (e.MineToDo && e.Kind == Sim.Defs.ServiceKind.Unlock)
-                    WrappedC(Theme.Dim, $"From your pack: feel the box over for traps, pick it, then give it back from {e.PosterName}'s inspector.");
+                    WrappedC(Theme.Dim, "From your pack: feel the box over for traps and pick it.");
+                if (e.MineToDo && View.Awaiting().Cast<KnownErrand?>().FirstOrDefault(a => a!.Value.Order == e.Id) is { } errand)
+                    DrawErrandButton(errand);
                 if (!e.Mine && e.AssigneeName.Length == 0)
                 {
                     if (ImGui.Button("I'll do it"u8, in _autoSize))

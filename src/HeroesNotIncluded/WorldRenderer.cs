@@ -128,6 +128,15 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     /// <summary>What's marked this frame; the game fills it (presentation only, never sim state).</summary>
     public List<WorldMarker> Markers { get; } = [];
 
+    /// <summary>
+    /// Someone the player has to go to (a customer to collect from or hand back to): a tag over
+    /// them, through walls, or an arrow at the screen's edge pointing their way when they're off it.
+    /// </summary>
+    public readonly record struct Pointer(float3 At, Entity Who, string Text);
+
+    /// <summary>Who's pointed to this frame; the game fills it from Perception (presentation only).</summary>
+    public List<Pointer> Pointers { get; } = [];
+
     /// <summary>Cells of the player's trade's stations they haven't been to yet: a soft ring on each.</summary>
     public List<int3> StationMarks { get; } = [];
 
@@ -2219,7 +2228,77 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             Text(dl, p, name, color);
         }
         DrawMarkers(dl, cam);
+        DrawPointers(dl, cam);
         DrawSpokenLines(dl, cam, sim);
+    }
+
+    /// <summary>
+    /// The game's pointers: an ember-rimmed tag over whoever it is while they're on screen (seen
+    /// through roofs and walls), else pinned to the screen's edge with an arrow their way.
+    /// </summary>
+    private readonly List<float4> _placedTags = [];
+
+    private void DrawPointers(ImDrawListPtr dl, Camera3D cam)
+    {
+        if (Pointers.Count == 0)
+            return;
+        var view = cam.ViewportSize;
+        var margin = Narsil.Ui.Gui.S(28);
+        var bob = MathF.Sin((float)ImGui.GetTime() * 3f) * Narsil.Ui.Gui.S(3);
+        var lineH = ImGui.GetTextLineHeight();
+        var pad = Narsil.Ui.Gui.S(7, 3);
+        var back = Ui.Theme.U8(Ui.Theme.Panel, 0.92f);
+        var rim = Ui.Theme.U8(Ui.Theme.Accent);
+        var top = margin + ImGui.GetFrameHeight(); // clear of the menu bar
+        _placedTags.Clear();
+        foreach (var p in Pointers)
+        {
+            var screen = cam.WorldToScreen(p.At);
+            var size = new float2(ImGui.CalcTextSize(p.Text, false, -1).X, lineH) + pad * 2;
+            var onScreen = screen.X >= margin && screen.X <= view.X - margin && screen.Y >= top && screen.Y <= view.Y - margin;
+            float2 min;
+            if (onScreen)
+            {
+                // A tag over their head, with a tail down to them.
+                var tail = screen + new float2(0, bob);
+                var tailH = Narsil.Ui.Gui.S(6);
+                min = new float2(tail.X - size.X * 0.5f, tail.Y - tailH - size.Y);
+                var t1 = new float2(tail.X - tailH, min.Y + size.Y);
+                var t2 = new float2(tail.X + tailH, min.Y + size.Y);
+                dl.AddTriangleFilled(in t1, in t2, in tail, rim);
+            }
+            else
+            {
+                // Pinned where the line from the middle of the screen to them leaves it, an arrow out their way.
+                var mid = new float2(view.X * 0.5f, (view.Y + top - margin) * 0.5f);
+                var d = screen - mid;
+                var len = MathF.Max(1e-3f, MathF.Sqrt(d.X * d.X + d.Y * d.Y));
+                var dir = d / len;
+                var half = new float2(view.X * 0.5f - margin, (view.Y - margin - top) * 0.5f);
+                var k = MathF.Min(MathF.Abs(dir.X) > 1e-4f ? half.X / MathF.Abs(dir.X) : float.MaxValue, MathF.Abs(dir.Y) > 1e-4f ? half.Y / MathF.Abs(dir.Y) : float.MaxValue);
+                var edge = mid + dir * k + dir * bob;
+                var arrow = Narsil.Ui.Gui.S(12);
+                var side = new float2(-dir.Y, dir.X);
+                var tip = edge + dir * arrow;
+                var a1 = edge + side * arrow * 0.6f;
+                var a2 = edge - side * arrow * 0.6f;
+                dl.AddTriangleFilled(in tip, in a1, in a2, rim);
+                // The tag sits inward of the arrow, kept on screen.
+                var centre = edge - dir * (Narsil.Ui.Gui.S(6) + MathF.Abs(dir.X) * size.X * 0.5f + MathF.Abs(dir.Y) * size.Y * 0.5f);
+                min = centre - size * 0.5f;
+                min = new float2(Math.Clamp(min.X, Narsil.Ui.Gui.S(4), view.X - size.X - Narsil.Ui.Gui.S(4)), Math.Clamp(min.Y, top - margin + Narsil.Ui.Gui.S(4), view.Y - size.Y - Narsil.Ui.Gui.S(4)));
+                // Two people off the same way: the later tag steps in past the earlier one.
+                for (var tries = 0; tries < 8 && _placedTags.Exists(r => min.X < r.Z && min.X + size.X > r.X && min.Y < r.W && min.Y + size.Y > r.Y); tries++)
+                    min -= (MathF.Abs(dir.Y) >= MathF.Abs(dir.X) ? new float2(0, MathF.Sign(dir.Y) * (size.Y + Narsil.Ui.Gui.S(3)))
+                        : new float2(0, size.Y + Narsil.Ui.Gui.S(3)));
+                _placedTags.Add(new float4(min.X, min.Y, min.X + size.X, min.Y + size.Y));
+            }
+            var max = min + size;
+            dl.AddRectFilled(in min, in max, back, Narsil.Ui.Gui.S(4), ImDrawFlags.None);
+            dl.AddRect(in min, in max, rim, Narsil.Ui.Gui.S(4), ImDrawFlags.None, Narsil.Ui.Gui.S(2));
+            var tp = min + pad;
+            dl.AddText(in tp, Ui.Theme.U8(Ui.Theme.Text), p.Text);
+        }
     }
 
     /// <summary>The game's markers: a small plate with a gentle bob, its parchment rim green once it's done.</summary>

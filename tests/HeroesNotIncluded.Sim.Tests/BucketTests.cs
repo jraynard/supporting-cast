@@ -79,7 +79,7 @@ public class BucketTests
     }
 
     /// <summary>Swing it back (F held) until it'd land this far out, then let go.</summary>
-    private static void ThrowTo(Simulation sim, Entity me, float cells)
+    private static void ThrowTo(Simulation sim, Entity me, float cells, int turn = 0, int turnSteps = 0)
     {
         var predictor = new WorkPredictor();
         var let = false;
@@ -89,7 +89,7 @@ public class BucketTests
             var hold = !let;
             if (predictor.Session is ThrowSession s && s.Swing > 0f && 1f + s.Swing * (Buckets.MaxRange - 1) >= cells)
                 let = true;
-            predictor.Update(sim, me, 1, false, hold && !let, 0, c => sim.ApplyNow(c));
+            predictor.Update(sim, me, 1, false, hold && !let, t < turnSteps ? turn : 0, c => sim.ApplyNow(c));
         }
         sim.Tick();
     }
@@ -118,6 +118,47 @@ public class BucketTests
         Assert.Equal(0f, sim.Map.Fire[sim.Map.Idx(C(14, 10))]);
         Assert.True(sim.Fire.Soaked(sim, sim.Map.Idx(C(14, 10))));
         Assert.False(sim.Fire.Soaked(sim, sim.Map.Idx(C(11, 10))), "it went out to the fire, not down at your feet");
+    }
+
+    [Fact]
+    public void TheThrowTurnsAsItSwingsAndFollowsWhereYouPoint()
+    {
+        var sim = Warm();
+        var me = Avatar(sim, C(10, 10));
+        Hold(sim, me, Buckets.Full);
+        AvatarSystem.Perform(sim, me, AvatarSystem.ActionAt(sim, me, C(14, 10))); // east, four out
+
+        // Pointed elsewhere (the mouse): the throw goes that way instead.
+        sim.ApplyNow(new AimThrowCommand(me, C(10, 14)));
+        var s = (ThrowSession)sim.World.Get<WorkSession>(me);
+        Assert.Equal(C(10, 14), s.Aim);
+        ThrowTo(sim, me, 4f);
+        Assert.True(sim.Fire.Soaked(sim, sim.Map.Idx(C(10, 14))), "thrown where it was last pointed");
+        Assert.False(sim.Fire.Soaked(sim, sim.Map.Idx(C(14, 10))));
+
+        // Turned with A/D through a quarter turn while swinging: off the way it was first aimed.
+        var sim2 = Warm();
+        var me2 = Avatar(sim2, C(10, 10));
+        Hold(sim2, me2, Buckets.Full);
+        AvatarSystem.Perform(sim2, me2, AvatarSystem.ActionAt(sim2, me2, C(14, 10)));
+        var quarter = (int)(MathF.PI / 2 / (ThrowSession.TurnPerSecond / SimClock.TicksPerSecond));
+        ThrowTo(sim2, me2, 4f, turn: 1, turnSteps: quarter);
+        Assert.False(sim2.Fire.Soaked(sim2, sim2.Map.Idx(C(14, 10))), "turned away from where it was first aimed");
+        Assert.True(sim2.Fire.Soaked(sim2, sim2.Map.Idx(C(10, 14))) || sim2.Fire.Soaked(sim2, sim2.Map.Idx(C(10, 6))), "a quarter turn round");
+    }
+
+    [Fact]
+    public void ATurnedThrowSurvivesASave()
+    {
+        var sim = Warm();
+        var me = Avatar(sim, C(10, 10));
+        Hold(sim, me, Buckets.Full);
+        AvatarSystem.Perform(sim, me, AvatarSystem.ActionAt(sim, me, C(14, 10)));
+        sim.ApplyNow(new AimThrowCommand(me, C(13, 13)));
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        var s = (ThrowSession)loaded.World.Get<WorkSession>(me);
+        Assert.Equal(C(13, 13), s.Aim);
+        Assert.Equal(((ThrowSession)sim.World.Get<WorkSession>(me)).Heading, s.Heading);
     }
 
     [Fact]

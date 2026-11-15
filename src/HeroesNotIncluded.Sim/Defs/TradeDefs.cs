@@ -33,6 +33,9 @@ public sealed class TradeDef : Def
     /// <summary>A few short first-day lines for a player new to the trade, shown one at a time.</summary>
     public List<string> Tips { get; set; } = [];
 
+    /// <summary>The practice yard's guided lessons in the trade (<c>Scenarios/Lessons</c>), one game loop each.</summary>
+    public List<LessonDef> Lessons { get; set; } = [];
+
     /// <summary>The least the holder has in a skill: a smith can smith.</summary>
     public Dictionary<Components.Skill, int> Skills { get; set; } = [];
 
@@ -102,6 +105,13 @@ public sealed class TradeDef : Def
             item.ThingDef = db.Thing(item.Def);
         foreach (var item in Stash)
             item.ThingDef = db.Thing(item.Def);
+        foreach (var lesson in Lessons)
+        {
+            foreach (var item in lesson.Supply)
+                item.ThingDef = db.Thing(item.Def);
+            if (lesson.Steps.Count == 0 || lesson.Steps.Select(s => s.Id).Distinct().Count() != lesson.Steps.Count)
+                throw new Exception($"Trade '{Name}': lesson '{lesson.Id}' needs steps, each with its own id");
+        }
         foreach (var (skill, level) in Skills)
             if (level is < 0 or > Components.Skills.Max)
                 throw new Exception($"Trade '{Name}': {skill} {level} is out of range");
@@ -109,4 +119,71 @@ public sealed class TradeDef : Def
             if (priority is < 0 or > 4)
                 throw new Exception($"Trade '{Name}': priority {priority} for {work} isn't between 0 and 4");
     }
+}
+
+/// <summary>Customers the practice yard sends, wanting what a lesson needs (<c>Scenarios.Practice</c>).</summary>
+public enum CustomerKind : byte
+{
+    /// <summary>As the trade wants them: hurt for a healer, chipped blades for a smith, and so on.</summary>
+    Trade,
+
+    /// <summary>Their blades whole but dull: a grindstone's work.</summary>
+    Dull,
+
+    /// <summary>Their blades chipped and bent: the forge's.</summary>
+    Chipped,
+
+    /// <summary>Thirsty from the road: a drink at the bar straight off.</summary>
+    Thirsty,
+
+    /// <summary>Here long enough to want work: one of them asks the innkeeper for a quest.</summary>
+    Questing,
+}
+
+/// <summary>
+/// One guided lesson in the practice yard: what it sets up (customers, a restocked workplace,
+/// materials in the pack) and the words for each step. Which step the player is on is worked out
+/// from what they know, in code (<c>Scenarios.Lessons</c>); the words live here so they read in the
+/// game's voice and can be changed without a build.
+/// </summary>
+public sealed class LessonDef
+{
+    /// <summary>Unique within the trade; with it, the id progress is kept under (<c>Blacksmith/sharpen</c>).</summary>
+    public string Id { get; set; } = "";
+
+    public string Title { get; set; } = "";
+
+    /// <summary>A line on what it teaches, shown before it's begun.</summary>
+    public string Blurb { get; set; } = "";
+
+    /// <summary>Customers sent when it begins, if any.</summary>
+    public CustomerKind? Customers { get; set; }
+
+    /// <summary>The workplace stocked again when it begins.</summary>
+    public bool Restock { get; set; }
+
+    /// <summary>The healer's: someone on a shrine pallet with this wound when it begins.</summary>
+    public DamageType? Patient { get; set; }
+
+    /// <summary>The healer's: their mana spent when it begins, to be won back.</summary>
+    public bool Spent { get; set; }
+
+    /// <summary>Put in the player's pack when it begins: what the work needs that the workplace doesn't keep.</summary>
+    public List<ThingCount> Supply { get; set; } = [];
+
+    /// <summary>Its steps in the usual order; a step can come round again (a blade still chipped goes back to the fire).</summary>
+    public List<LessonStepDef> Steps { get; set; } = [];
+
+    /// <summary>The step's index by id, -1 if this lesson doesn't list it.</summary>
+    public int IndexOf(string step) => Steps.FindIndex(s => s.Id == step);
+}
+
+/// <summary>A step of a lesson: an id the code returns, and what the player is told to do (key glyphs as in tips).</summary>
+public sealed class LessonStepDef
+{
+    public string Id { get; set; } = "";
+    public string Text { get; set; } = "";
+
+    /// <summary>Only comes up when something's gone a way it needn't (the forge gone out): listed only while it's the step at hand.</summary>
+    public bool Aside { get; set; }
 }

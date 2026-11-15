@@ -186,7 +186,8 @@ public static class Buckets
 /// Throwing a bucket of water (<see cref="Buckets"/>): hold F to swing it back, let go to throw.
 /// How far it goes is how far back it was swung when let go, and the swing comes forward again if
 /// held too long: catch it at the right moment to land it on the fire you aimed at. Aimed where
-/// you pointed when you lifted it; unsteady hands throw a little short or long.
+/// you pointed when you lifted it, and turned as it swings: A/D (or a stick) turn it any way, and
+/// the mouse points it (<see cref="AimThrowCommand"/>). Unsteady hands throw a little short or long.
 /// </summary>
 public sealed class ThrowSession : WorkSession
 {
@@ -194,7 +195,17 @@ public sealed class ThrowSession : WorkSession
     public const float SwingSeconds = 1.6f;
 
     public int3 From { get; set; }
+
+    /// <summary>The cell aimed at: its distance is the mark on the swing.</summary>
     public int3 Aim { get; set; }
+
+    /// <summary>The way it's thrown, radians; NaN until first aimed (then it's toward <see cref="Aim"/>).</summary>
+    public float Facing { get; set; } = float.NaN;
+
+    /// <summary>How fast A/D turn the aim, radians a second.</summary>
+    public const float TurnPerSecond = MathF.PI * 0.75f;
+
+    private int _turn;
 
     /// <summary>How far back it's swung, 0..1 (to <see cref="Buckets.MaxRange"/>).</summary>
     public float Swing { get; private set; }
@@ -211,7 +222,29 @@ public sealed class ThrowSession : WorkSession
     public override int3? Focus(Simulation sim) => Aim;
 
     /// <summary>Where it'd land if let go now.</summary>
-    public int3 LandsAt => Buckets.Landing(From, Aim, Thrown >= 0 ? Thrown : Distance(Swing));
+    public int3 LandsAt
+    {
+        get
+        {
+            var distance = Thrown >= 0 ? Thrown : Distance(Swing);
+            var facing = Heading;
+            return new int3(From.X + (int)MathF.Round(DetMath.Cos(facing) * distance), From.Y + (int)MathF.Round(DetMath.Sin(facing) * distance), From.Z);
+        }
+    }
+
+    /// <summary>The way it's thrown: as turned, or toward the cell aimed at.</summary>
+    public float Heading => float.IsFinite(Facing) ? Facing : DetMath.Atan2(Aim.Y - From.Y, Aim.X - From.X);
+
+    /// <summary>Point it at a cell (the mouse): the way, and the distance marked on the swing. Not your own cell.</summary>
+    public void AimAt(int3 cell)
+    {
+        if (cell.X == From.X && cell.Y == From.Y)
+            return;
+        Aim = new int3(cell.X, cell.Y, From.Z);
+        Facing = DetMath.Atan2(cell.Y - From.Y, cell.X - From.X);
+    }
+
+    protected override void Axis(int value) => _turn = value;
 
     /// <summary>How far the aimed cell is, as a share of the swing.</summary>
     public float AimShare => Math.Clamp(DistanceTo(Aim) / Buckets.MaxRange, 0f, 1f);
@@ -229,6 +262,13 @@ public sealed class ThrowSession : WorkSession
 
     protected override void Step()
     {
+        if (_turn != 0 && Thrown < 0)
+        {
+            // Turned on the spot; the aimed distance goes round with it.
+            Facing = MathF.IEEERemainder(Heading + _turn * TurnPerSecond / SimClock.TicksPerSecond, MathF.Tau);
+            var reach = DistanceTo(Aim);
+            Aim = new int3(From.X + (int)MathF.Round(DetMath.Cos(Facing) * reach), From.Y + (int)MathF.Round(DetMath.Sin(Facing) * reach), From.Z);
+        }
         if (Held)
         {
             _swinging = true;
@@ -267,6 +307,8 @@ public sealed class ThrowSession : WorkSession
         w.Float(Thrown);
         w.Int(_swingSteps);
         w.Bool(_swinging);
+        w.Float(Facing);
+        w.Int(_turn);
     }
 
     protected override void ReadState(SaveReader r)
@@ -277,6 +319,12 @@ public sealed class ThrowSession : WorkSession
         Thrown = r.Float();
         _swingSteps = Math.Max(0, r.Int());
         _swinging = r.Bool();
+        if (r.Version >= 35)
+        {
+            var facing = r.Float();
+            Facing = float.IsFinite(facing) ? facing : float.NaN;
+            _turn = Math.Sign(r.Int());
+        }
     }
 }
 
@@ -399,5 +447,18 @@ public sealed class BucketJob(int3 fire, Entity bucket, Entity well) : Job
                 (best, bestD) = (i, d);
         }
         return best < 0 ? null : Sim.Map.CellOf(best);
+    }
+}
+
+/// <summary>Point the bucket you're swinging at a cell (where the mouse is): it turns that way, and the mark moves to that distance.</summary>
+public sealed record AimThrowCommand(Entity Avatar, int3 Cell) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (sim.World.IsAlive(Avatar) && sim.World.TryGet<Work.WorkSession>(Avatar, out var s) && s is ThrowSession throwing && !throwing.Done
+            && sim.Map.InBounds(Cell))
+            throwing.AimAt(Cell);
     }
 }

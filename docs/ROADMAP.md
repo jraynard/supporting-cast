@@ -26,6 +26,27 @@ provide some purely non-combat options but i think that will be later once we ha
 
 ## Next
 
+### The healer's games, refined
+A multiplayer playtest found the healer's games the weakest of the trades: they need a pass of
+their own, played through in the practice yard (`--practice Healer`) before anything is tuned.
+Revisit each for whether it reads, whether it's fun, and whether it asks the empath to *feel*
+rather than read numbers:
+- **Feeling a wound over** (`FeelSession`): what the feel tells you, and how you learn the kinds.
+- **Drawing a wound in** (`DrawSession`): the draw's feel and the heartbeat window.
+- **Weaving a mending** (`CastSession`, `Weaving`, the spellbook): choosing runes and the mix.
+- **Binding** (`BandageSession`): the wrap band.
+- **Meditating** (`MeditateSession`): the labyrinth's size, sitting, the centre burst.
+- Then the healer's lessons in the practice yard, on the same frame as the blacksmith's
+  (`Scenarios/Lessons`), once the games settle.
+
+### Lessons, after a playtest
+Every trade with a workplace has its lessons now (HISTORY.md, "Lessons for every trade"). Left:
+- **Playtest them**, one trade at a time: the words, and whether the step shown is the one you're on.
+- The healer's want rewriting once its games are refined (above).
+- Handing over a drink, a dish or a box from the order (as "Take it back" does for a mend), and the
+  customer pointer for notice-board errands (`VillageGame.Errands`).
+- A wagon lesson for the tinker (practice customers' wagons aren't damaged yet).
+
 ### The festival
 Built (HISTORY.md, "The festival, made an event", and the passes after it). What's left:
 
@@ -63,8 +84,16 @@ Fights are free movement and blows by reach and timing, Souls-lite, everywhere (
 - Building and area tools still need the trackpad (a pad cursor would cover them).
 
 ### Internet play
-- test over an actual internet connection to verify it works
-- test relay servertaw
+Readied in code (Narsil relay protocol 3, keepalive, host reclaims its join code after a blip,
+relay fan-out and limits; a 200 ms jitter buffer cap, pad commands throttled, a claim budget on
+free movement). Still to do:
+- The relay runs on an Oracle Cloud free instance (`CoopRelay.Default`, 129.153.122.49:47050),
+  checked end to end with a session, a host link blip and reclaim. Redeploy with
+  `external/narsil/deploy/relay/publish.sh ubuntu@129.153.122.49 linux-arm64`.
+- Test over a real internet connection: home host, a joiner on a phone hotspot and a Steam Deck;
+  watch the Players window's buffer, jitter and starvations over a whole round, join mid-round,
+  and pull the host's network for a few seconds (the session should carry on, not split).
+- Read the host's `net: snapshot … KB` log line: if joins visibly stall the others, chunk snapshots.
 
 ### M4: Whispers
 - Allegiance, objectives, the hidden shop, evidence, player violence, Constable and jail, the bell,

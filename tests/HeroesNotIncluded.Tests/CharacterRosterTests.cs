@@ -155,6 +155,17 @@ public class CharacterRosterTests : IDisposable
     }
 
     [Fact]
+    public void LessonsLearnedAreKeptOnce()
+    {
+        var progress = new CharacterProgress().Learned("Blacksmith/sharpen").Learned("Blacksmith/mend").Learned("Blacksmith/sharpen");
+        Assert.Equal(["Blacksmith/sharpen", "Blacksmith/mend"], progress.Lessons);
+
+        var roster = CharacterRoster.Load(File, Defs.Value);
+        var c = roster.Put(new SavedCharacter { Name = "Bram", Progress = progress with { Lessons = [.. progress.Lessons, " "] } })!;
+        Assert.Equal(["Blacksmith/sharpen", "Blacksmith/mend"], CharacterRoster.Load(File, Defs.Value).Get(c.Id)!.Progress.Lessons);
+    }
+
+    [Fact]
     public void ATradeSinceRemovedAndATitleNotEarnedAreDropped()
     {
         var roster = CharacterRoster.Load(File, Defs.Value);

@@ -78,6 +78,19 @@ public sealed class Order
 }
 
 /// <summary>
+/// A customer you owe a visit (<c>PerceptionView.Awaiting</c>): an order you took on whose thing
+/// changes hands, the customer still to hand it over or waiting to have it back. <see cref="At"/>
+/// is where they are now: they said where they'd be, and you keep an eye out for your customers.
+/// <see cref="Ready"/>: you have it and it looks done to you (a blade keen and sound, a box open,
+/// a curio you've looked over), so it's time to take it back.
+/// </summary>
+public readonly record struct KnownErrand(int Order, ServiceKind Kind, Entity Who, string Name, int3 At, Entity Item, bool Ready)
+{
+    /// <summary>You have their thing: what's left is taking it back.</summary>
+    public bool Returning => !Item.IsNull;
+}
+
+/// <summary>
 /// An order as someone who knows of it sees it (<c>PerceptionView.Shops</c>). <see cref="Poster"/>
 /// is who asked: they heard the voice, so they know whom to go to.
 /// </summary>
