@@ -38,6 +38,7 @@ public static class VillageRound
         StockSmithy(sim, Role("Forge"));
         StockInn(sim, Role("Tavern"));
         LockStoreroom(sim, Role("Tavern"));
+        Hospitality.InnRooms.FitLocks(sim, Role("Tavern"));
         StockTinkerShop(sim, Role("TinkerShop"));
         if (sim.Defs.Season.BarnWood > 0)
             sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing("Wood"), sim.Defs.Season.BarnWood, sim.Defs.Material("Pine")), StockpileMiddle(sim));

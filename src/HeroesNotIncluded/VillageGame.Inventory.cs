@@ -375,7 +375,8 @@ public sealed partial class VillageGame
         var w = _sim.World;
         var t = w.Get<Thing>(item);
         var count = w.TryGet<Stack>(item, out var s) ? s.Count : 1;
-        return $"{(count > 1 ? $"{count} " : "")}{t.Label} ({_sim.MassOf(item):0.#} kg)";
+        var label = Sim.Hospitality.InnRooms.KeyLabel(_sim, item) ?? t.Label; // a room key's fob says which
+        return $"{(count > 1 ? $"{count} " : "")}{label} ({_sim.MassOf(item):0.#} kg)";
     }
 
     /// <summary>What a piece of gear does, compared with what the avatar wears in its slot.</summary>

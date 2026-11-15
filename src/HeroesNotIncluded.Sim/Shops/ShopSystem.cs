@@ -196,7 +196,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             // In the small hours the town's abed: only a room (till it's late) or a bad hurt seen to.
             if (SmallHours(sim))
             {
-                if (WantsARoom(sim, who, a))
+                if (w.TryGet<Hospitality.OwedRoom>(who, out var owedNow))
+                    AskForTheRightKey(sim, who, owedNow);
+                else if (WantsARoom(sim, who, a))
                     Want(sim, who, ServiceKind.Lodging, Entity.Null);
                 if (w.TryGet<Health>(who, out var hurt) && hurt.Injuries.Where(i => !i.Tended).Sum(i => i.Damage) >= 8f)
                     Want(sim, who, ServiceKind.Healing, Entity.Null, 1.75f);
@@ -226,10 +228,22 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 Want(sim, who, ServiceKind.WagonRepair, wagon);
             if (Tinkering.Curios.UnvaluedOf(sim, who) is { IsNull: false } curio)
                 Want(sim, who, ServiceKind.Appraise, curio);
-            if (WantsARoom(sim, who, a))
+            if (w.TryGet<Hospitality.OwedRoom>(who, out var owed))
+                AskForTheRightKey(sim, who, owed);
+            else if (WantsARoom(sim, who, a))
                 Want(sim, who, ServiceKind.Lodging, Entity.Null);
             ShopForGear(sim, who);
         }
+    }
+
+    /// <summary>Back down from walking in on someone: another key, and they've paid already.</summary>
+    private void AskForTheRightKey(Simulation sim, Entity who, Hospitality.OwedRoom owed)
+    {
+        if (_orders.Exists(e => e.IsOpen && e.Poster == who && e.Kind.Kind == ServiceKind.Lodging) || !sim.World.IsAlive(owed.Inn))
+            return;
+        var def = sim.Defs.Service(ServiceKind.Lodging);
+        Post(sim, who, def, "You gave me someone else's room! Another key, and I'm not paying twice.", 0,
+            sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), Entity.Null, owed.Inn, def.WorthMax);
     }
 
     /// <summary>Evening, staying the night, and no room paid for tonight: they'll want one (another night, if they had one last night).</summary>
@@ -238,7 +252,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var hour = sim.Clock.HourOfDay;
         if (hour is < LodgingFromHour and >= LodgingUntilHour || a.LeaveTick - sim.Clock.Tick < SimClock.HoursToTicks(6))
             return false;
-        if (Hospitality.Lodging.Lodged(sim, who))
+        if (Hospitality.Lodging.Lodged(sim, who) || sim.World.Has<Hospitality.WalkIn>(who))
             return false;
         // A bed of their own that isn't a let one (a villager's): no need of a room.
         return !(sim.World.TryGet<BedOwner>(who, out var own) && sim.World.IsAlive(own.Bed) && !IsLet(sim, own.Bed));
@@ -256,6 +270,10 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (e.Kind.Kind != ServiceKind.Lodging || e.Assignee.IsNull || !Handing.InReach(sim, e.Assignee, e.Poster))
             return;
         var kept = Hospitality.Lodging.Kept(sim, e.Poster);
+        // Rooms with keys are let by handing over the key (Received): only another night in the
+        // room they hold the key to is settled here.
+        if (kept.IsNull && Hospitality.InnRooms.Board(sim, e.Where) is { IsNull: false })
+            return;
         var bed = kept.IsNull ? FreeLetBed(sim, e.Where) : kept;
         if (bed.IsNull)
             return;
@@ -269,6 +287,54 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             sim.Speech.Say(sim, e.Poster, "Somebody else's sheets? Lovely.", Volume.Say);
         }
         Complete(sim, e, e.Assignee);
+    }
+
+    /// <summary>
+    /// A guest who asked for a room is handed a key: that's their room tonight, whichever it is, and
+    /// they pay. Someone else's (it's let tonight), and they go up and walk in on them
+    /// (<see cref="Hospitality.WalkInJob"/>). Owed a room for a wrong key before, they hand that one
+    /// back and don't pay again. False if the key opens nothing here.
+    /// </summary>
+    private bool TakeKey(Simulation sim, Order e, Entity giver, Entity key)
+    {
+        var w = sim.World;
+        var seed = w.Get<Tinkering.Key>(key).Seed;
+        var bed = Hospitality.InnRooms.BedFor(sim, seed, e.Poster);
+        if (bed.IsNull || Buildings.Of(sim, bed) != e.Where)
+            return false;
+        Inventory.Stow(sim, e.Poster, key);
+        if (w.TryGet<Hospitality.OwedRoom>(e.Poster, out var owed))
+        {
+            w.Remove<Hospitality.OwedRoom>(e.Poster);
+            var wrong = Hospitality.InnRooms.KeyOn(sim, e.Poster, owed.WrongBed);
+            if (!wrong.IsNull && wrong != key)
+                Inventory.Stow(sim, giver, Inventory.TakeFromPerson(sim, e.Poster, wrong, 1));
+        }
+        var number = Hospitality.InnRooms.Number(sim, bed);
+        if (!Hospitality.InnRooms.LodgedIn(sim, seed, e.Poster).IsNull)
+        {
+            // They don't know it yet: up they go.
+            if (w.Has<Hospitality.WalkIn>(e.Poster))
+                w.Remove<Hospitality.WalkIn>(e.Poster);
+            w.Add(e.Poster, new Hospitality.WalkIn { Bed = bed });
+            if (w.Has<BedOwner>(e.Poster))
+                w.Remove<BedOwner>(e.Poster);
+            if (w.Has<Hospitality.LodgeStay>(e.Poster))
+                w.Remove<Hospitality.LodgeStay>(e.Poster);
+        }
+        else
+        {
+            Hospitality.Lodging.Let(sim, e.Poster, bed);
+            if (Hospitality.Lodging.IsUnmade(sim, bed))
+            {
+                if (w.Has<Adventurer>(e.Poster))
+                    w.Get<Adventurer>(e.Poster).Satisfaction -= UnmadeMood;
+                sim.Speech.Say(sim, e.Poster, "Will the bed be made up by the time I turn in?", Volume.Say);
+            }
+        }
+        sim.Speech.Say(sim, giver, $"Room {number}, up the stairs.{(ShopName.Of(sim, e.Where) is { } called ? $" Welcome to {called}." : "")}", Volume.Say);
+        Complete(sim, e, giver);
+        return true;
     }
 
     /// <summary>Satisfaction lost by a guest shown to a bed nobody's made up.</summary>
@@ -287,8 +353,10 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         foreach (var o in w.Each<BedOwner>())
             taken.Add(w.Get<BedOwner>(o).Bed);
         var unmade = Entity.Null;
+        var keyed = !Hospitality.InnRooms.Board(sim, building).IsNull;
         foreach (var part in Buildings.Parts(sim, building))
-            if (w.Get<Thing>(part).Def.Building is { IsBed: true } && !w.Has<Construction>(part) && !taken.Contains(part))
+            if (w.Get<Thing>(part).Def.Building is { IsBed: true } && !w.Has<Construction>(part) && !taken.Contains(part)
+                && (!keyed || !Hospitality.InnRooms.OnBoard(sim, building, Hospitality.InnRooms.SeedOf(sim, part)).IsNull))
             {
                 if (!w.Has<Hospitality.Unmade>(part))
                     return part;
@@ -1035,6 +1103,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             Hospitality.Table.Begin(sim, to, item, meal: false, 1, 0f, _rand);
             return;
         }
+        var room = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Lodging);
+        if (room != null && Hospitality.InnRooms.IsRoomKey(sim, item) && TakeKey(sim, room, giver, item))
+            return;
         var meal = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Meal);
         if (meal != null && def.EdibleBy(w.Get<Creature>(to).Def))
         {

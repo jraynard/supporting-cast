@@ -26,6 +26,9 @@ public sealed class AdventurerBrain : IBrain
 
         if (Healing.Empathy.DrawnBy(sim, pawn) is { IsNull: false } healer)
             return new Healing.HoldStillJob(healer);
+        // Checked out: the key goes back on the counter first, if the bar's on the way.
+        if (w.Has<Hospitality.ReturningKey>(pawn))
+            return new Hospitality.HandInKeyJob();
         if (w.Has<Leaving>(pawn))
             return sim.NearestEdge(tile) is { } edge
                 ? new LeaveMapJob(edge, w.TryGet<Adventurer>(pawn, out var setting) && setting.Quest != 0
@@ -35,6 +38,10 @@ public sealed class AdventurerBrain : IBrain
         // Trouble in town is what they're for: anyone armed goes for it.
         if (Defence.Threat(sim, pawn, Defence.AdventurerRange) is { } foe && Defence.Respond(sim, pawn, foe) is { } defend)
             return defend;
+
+        // Handed a key: up to put their things down (and, given someone else's, walk in on them).
+        if (w.TryGet<Hospitality.WalkIn>(pawn, out var walkIn))
+            return new Hospitality.WalkInJob(walkIn.Bed);
 
         var temp = Warmth.FeltAt(sim, tile);
         var tol = creature.Tolerance(sim.Clock.Tick);

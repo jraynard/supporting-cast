@@ -319,6 +319,23 @@
       ]
     },
     {
+      // Behind the bar: a hook for each room's key upstairs (Hospitality.InnRooms). A key on its
+      // hook is a room nobody's been given; the keeper takes it down and hands it to the guest.
+      "name": "KeyBoard", "label": "key board", "category": "Building", "solid": true, "sprite": "buildings/tool_rack",
+      "description": "A board of hooks behind the bar, one for each room's key. F at it to take a key down or hang one up.",
+      "maxHp": 60, "flammability": 0.8,
+      "building": { "work": 60, "storageStacks": 8, "storageOnly": [ "Key" ], "cost": [ { "def": "Wood", "count": 3 } ] },
+      "model": [
+        { "min": [0.1, 0.00, 0.7], "max": [0.9, 0.08, 1.4], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.2, 0.08, 1.2], "max": [0.26, 0.14, 1.26], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.47, 0.08, 1.2], "max": [0.53, 0.14, 1.26], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.74, 0.08, 1.2], "max": [0.8, 0.14, 1.26], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.2, 0.08, 0.9], "max": [0.26, 0.14, 0.96], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.47, 0.08, 0.9], "max": [0.53, 0.14, 0.96], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.74, 0.08, 0.9], "max": [0.8, 0.14, 0.96], "top": "props/iron", "side": "props/iron" }
+      ]
+    },
+    {
       // Behind the bar and in the kitchen: where the clean tankards and bowls are kept.
       "name": "Shelf", "label": "shelf", "category": "Building", "solid": true, "sprite": "buildings/shelf",
       "description": "Plank shelves on brackets. Holds 6 stacks: the clean crockery lives here, and behind the bar what goes into a mix.",

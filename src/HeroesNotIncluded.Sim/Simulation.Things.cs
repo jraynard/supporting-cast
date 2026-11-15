@@ -499,7 +499,8 @@ public sealed partial class Simulation
     /// </summary>
     public bool IsAvailable(Entity item) =>
         World.IsAlive(item) && !World.Has<Shops.ForSale>(item)
-        && (World.Get<Thing>(item).Spawned || (World.TryGet<Stored>(item, out var s) && !OnSomeone(s.In)));
+        && (World.Get<Thing>(item).Spawned || (World.TryGet<Stored>(item, out var s) && !OnSomeone(s.In)))
+        && !(World.Has<Tinkering.Key>(item) && Hospitality.InnRooms.IsRoomKey(this, item));
 
     /// <summary>
     /// <see cref="IsAvailable(Entity)"/> for one taker: also what's kept in the stock of a shop they
@@ -638,6 +639,9 @@ public sealed partial class Simulation
         if (cdef.Name == Sim.Militia.MilitiaSystem.RackDef && def.Weapon == null)
             return 0;
         if (cdef.Building is { Stash: true } && !Sim.Militia.Stashes.Stashed(this, def))
+            return 0;
+        // A store for one kind of thing (the inn's key board) takes nothing else.
+        if (cdef.Building is { StorageOnly.Count: > 0 } only && !only.StorageOnly.Contains(def.Name))
             return 0;
         var held = StoredIn(container);
         var room = Math.Max(0, (cdef.Building?.StorageStacks ?? 0) - held.Count) * def.StackLimit;

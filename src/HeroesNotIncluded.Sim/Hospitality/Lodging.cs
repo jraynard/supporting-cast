@@ -1,6 +1,7 @@
 using HeroesNotIncluded.Sim.Combat;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Saving;
+using HeroesNotIncluded.Sim.Speech;
 using HeroesNotIncluded.Sim.Systems;
 using HeroesNotIncluded.Sim.Work;
 
@@ -53,7 +54,10 @@ public static class Lodging
         sim.World.TryGet<LodgeStay>(guest, out var stay) && sim.World.IsAlive(stay.Bed)
         && sim.World.TryGet<BedOwner>(guest, out var own) && own.Bed == stay.Bed ? stay.Bed : Entity.Null;
 
-    /// <summary>Out: the bed's free again, and needs making up.</summary>
+    /// <summary>
+    /// Out: the bed's free again, and needs making up. The key goes back to the bar, or is left in
+    /// the room, or leaves with them (<see cref="InnRooms.OnCheckOut"/>).
+    /// </summary>
     public static void CheckOut(Simulation sim, Entity guest)
     {
         var w = sim.World;
@@ -64,6 +68,37 @@ public static class Lodging
             w.Remove<BedOwner>(guest);
         if (w.IsAlive(stay.Bed) && !w.Has<Unmade>(stay.Bed))
             w.Add(stay.Bed, new Unmade());
+        if (w.TryGet<Creature>(guest, out var c) && !c.Dead)
+            InnRooms.OnCheckOut(sim, guest, stay.Bed);
+    }
+
+    /// <summary>
+    /// A guest let in by someone else's key has walked in on them: both put out, the one with the
+    /// wrong key owed another room (<see cref="OwedRoom"/>).
+    /// </summary>
+    public static void WalkedIn(Simulation sim, Entity guest, Entity bed)
+    {
+        var w = sim.World;
+        if (!w.Has<WalkIn>(guest))
+            return;
+        w.Remove<WalkIn>(guest);
+        var there = InnRooms.LodgedIn(sim, InnRooms.SeedOf(sim, bed), guest);
+        var inn = Buildings.Of(sim, bed);
+        if (there.IsNull)
+        {
+            // Whoever had it has gone: it's theirs after all.
+            Let(sim, guest, bed);
+            return;
+        }
+        if (w.Has<OwedRoom>(guest))
+            w.Remove<OwedRoom>(guest);
+        w.Add(guest, new OwedRoom { Inn = inn, WrongBed = bed });
+        foreach (var who in new[] { guest, there })
+            if (w.TryGet<Adventurer>(who, out _))
+                w.Get<Adventurer>(who).Satisfaction -= WalkInJob.Mood;
+        sim.Speech.Say(sim, there, "Oi! This room's taken. Get out!", Volume.Shout);
+        sim.Speech.Say(sim, guest, "Sorry, sorry. That keeper gave me the wrong key.", Volume.Say);
+        sim.Messages.Add(MessageKind.Info, $"{w.Get<Creature>(guest).Name} walks in on {w.Get<Creature>(there).Name}: the wrong key.", w.Get<Thing>(bed).Cell);
     }
 
     public static bool IsUnmade(Simulation sim, Entity bed) => sim.World.IsAlive(bed) && sim.World.Has<Unmade>(bed);

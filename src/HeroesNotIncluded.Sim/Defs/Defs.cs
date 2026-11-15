@@ -375,6 +375,9 @@ public sealed class BuildingProps
     /// </summary>
     public int StorageStacks { get; set; }
 
+    /// <summary>The only things (by def name) its storage takes, if any are named: the key board holds keys.</summary>
+    public List<string> StorageOnly { get; set; } = [];
+
     /// <summary>
     /// An empath meditating within reach of it does better (<c>Healing.MeditateSession</c>): pain
     /// unsettles them less by this share, and they gather more mana by half as much again.

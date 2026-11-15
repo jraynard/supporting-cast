@@ -758,6 +758,22 @@ internal static class ComponentCodecs
             w.Int(s.Night);
         }, r => new Hospitality.LodgeStay { Bed = r.Entity(), Night = r.Int() }),
         Tag<Hospitality.Unmade>("Unmade"),
+        Codec("GuestRoom", (w, g) =>
+        {
+            w.Int(g.Number);
+            w.Entity(g.Door);
+        }, r => new Hospitality.GuestRoom { Number = r.Int(), Door = r.Entity() }),
+        Codec("ReturningKey", (w, k) =>
+        {
+            w.Entity(k.Key);
+            w.Entity(k.Inn);
+        }, r => new Hospitality.ReturningKey { Key = r.Entity(), Inn = r.Entity() }),
+        Codec("WalkIn", (w, k) => w.Entity(k.Bed), r => new Hospitality.WalkIn { Bed = r.Entity() }),
+        Codec("OwedRoom", (w, k) =>
+        {
+            w.Entity(k.Inn);
+            w.Entity(k.WrongBed);
+        }, r => new Hospitality.OwedRoom { Inn = r.Entity(), WrongBed = r.Entity() }),
         Codec("KnowsTheWay", (w, k) =>
         {
             w.Int(k.Shops.Count);

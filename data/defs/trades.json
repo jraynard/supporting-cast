@@ -11,7 +11,7 @@
     // the kitchen. "serves": the services at the workplace a trade sees to (and prices on the sign).
     { "name": "Innkeeper", "label": "innkeeper", "description": "Keeps the bar and the rooms, hears everything said over the counter, and points adventuring parties at work, on whatever that's worth.",
       "workplace": "Inn", "workPriorities": { "Cook": 1 }, "brokers": true, "serves": [ "Drink", "MixedDrink", "Lodging", "Quest" ], "holdsKeys": true,
-      "stations": [ "AleCask", "Shelf", "BarCounter" ],
+      "stations": [ "AleCask", "Shelf", "BarCounter", "KeyBoard" ],
       "tips": [ "Thirsty adventurers come to the bar. The bubble over a head says what they're after; a ! means it's yours to pour.",
                 "Hold ~F~ at the ale cask to pour. ~AD~ tilts the tankard: less foam, more patience.",
                 "Your prices hang on the sign (~J~). Too dear and they go thirsty. Too cheap and so do you.",

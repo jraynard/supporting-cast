@@ -376,3 +376,66 @@ public sealed class MakeBedJob(Entity bed) : Job
             Sim.World.Remove<Hospitality.Unmade>(bed);
     }
 }
+
+/// <summary>
+/// An AI innkeeper hangs room keys back on the board: one handed in on the counter, one left in a
+/// room, or a guest's key they're still carrying from a letting that fell through.
+/// </summary>
+public sealed class HangKeyJob(Entity key, Entity board) : Job
+{
+    public override Entity Focus => key;
+
+    public static Job? For(Simulation sim, Entity pawn)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace || !trade.Def.Serving(ServiceKind.Lodging))
+            return null;
+        var inn = ShopSystem.BuildingOf(sim, workplace);
+        var board = Hospitality.InnRooms.Board(sim, inn);
+        if (board.IsNull || sim.ContainerRoom(board, sim.Defs.Thing(Tinkering.Locksmithing.KeyDef), null) <= 0)
+            return null;
+        var from = w.Get<Position>(pawn).Cell;
+        var seen = new HashSet<uint>();
+        foreach (var k in w.Query<Tinkering.Key>().OrderBy(e => e.Index))
+        {
+            if (!Hospitality.InnRooms.IsRoomKey(sim, k))
+                continue;
+            var seed = w.Get<Tinkering.Key>(k).Seed;
+            if (Inventory.OnPerson(sim, pawn, k))
+            {
+                // Their own set is one of each; a second is a guest's.
+                if (!seen.Add(seed) && Hospitality.InnRooms.OnBoard(sim, inn, seed).IsNull)
+                    return new HangKeyJob(k, board);
+                continue;
+            }
+            // Loose in the inn: on the counter, or on a room's floor upstairs.
+            if (!w.Get<Thing>(k).Spawned || sim.Reservations.IsReservedByOther(k, pawn)
+                || Map.Distance(w.Get<Thing>(k).Cell, w.Get<PresetBuilding>(inn).Anchor) > CleanJob.InnReach)
+                continue;
+            if (Navigation.CanReach(sim, pawn, from, w.Get<Thing>(k).Cell, PathEnd.Touch))
+                return new HangKeyJob(k, board);
+        }
+        return null;
+    }
+
+    protected override IEnumerable<JobStatus> Run()
+    {
+        var w = Sim.World;
+        Report = "Hanging a key on the board";
+        if (!Inventory.OnPerson(Sim, Pawn, key))
+        {
+            if (!Reserve(key))
+                yield break;
+            foreach (var s in GoTo(Get<Thing>(key).Cell, PathEnd.Touch)) yield return s;
+            if (HasFailed || !Alive(key) || !w.Get<Thing>(key).Spawned)
+                yield break;
+            Inventory.Stow(Sim, Pawn, Sim.TakeFromStack(key, 1));
+        }
+        foreach (var s in GoToEntity(board, PathEnd.Touch, 1500)) yield return s;
+        if (HasFailed || !Alive(key) || !Inventory.OnPerson(Sim, Pawn, key))
+            yield break;
+        var rest = Sim.Store(board, Inventory.TakeFromPerson(Sim, Pawn, key, 1));
+        if (!rest.IsNull)
+            Inventory.Stow(Sim, Pawn, rest);
+    }
+}

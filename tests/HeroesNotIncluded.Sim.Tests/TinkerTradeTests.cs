@@ -252,7 +252,7 @@ public class TinkerTradeTests
     // ---------------- The inn's storeroom ----------------
 
     private static Entity StoreroomDoor(Simulation sim) =>
-        sim.World.Query<LockCut>().Single(e => Locksmithing.IsDoor(sim, e));
+        sim.World.Query<LockCut>().Single(e => Locksmithing.IsDoor(sim, e) && Hospitality.InnRooms.RoomNumber(sim, sim.World.Get<LockCut>(e).Seed) == 0);
 
     /// <summary>
     /// The storeroom door, once the innkeeper's done with it: the round's been running a while, and
