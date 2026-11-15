@@ -4,6 +4,37 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+## 0.1.0-playtest.12
+
+Play with friends anywhere: online co-op is ready to try. Plus lessons for every trade.
+
+**Playing online**
+- Hosting online uses the game's own relay now, with nothing to set up. Tick "Host online" in
+  Settings, host, and give your friends the join code. They type it in to join from anywhere.
+- Steadier over the internet: the game smooths out a laggy connection, and if the host's
+  connection drops for a moment, the village carries on and keeps its join code. The Players
+  window says when the code is being taken back, and when it's back.
+- Playing on a gamepad sends far less over the network.
+- **Please try it:** host from home, have someone join from a phone hotspot or a Steam Deck,
+  play a whole round, and join partway through. If anything stutters, freezes or splits, tell us
+  what happened and roughly when.
+
+**Big moments**
+- Raids, fires, the dragon, the festival and the season's end are announced on a red ribbon
+  across the top of the screen. Click it to look at where it's happening.
+
+**Learning a trade**
+- The practice yard has lessons for every trade: the blacksmith, tinker, innkeeper, cook and
+  healer. Pick one and it sets the scene, tells you the step you're on, and ticks it off. Get
+  something wrong and it walks you back.
+- A customer you owe a visit gets a tag over them (or an arrow at the edge of the screen). The
+  order's "Go and collect it" and "Take it back to them" walk you there and do the handing over.
+
+**Fixes**
+- Going to bed at night sleeps you through till dawn, so nobody wakes at midnight and holds up
+  the night for everyone.
+- A thrown bucket turns as you swing it: the mouse aims it, and A/D turn it any way.
+
 ## 0.1.0-playtest.11
 
 The festival becomes an evening to remember, and the cook's kitchen fills out.
