@@ -205,6 +205,44 @@ public class RoundTests
     }
 
     [Fact]
+    public void OnlyTheHostSetsTheRoundsOptions()
+    {
+        var sim = Town();
+        Assert.NotNull(CommandRules.Refusal(sim, new SetRoundOptionsCommand(true, false), Ana, isHost: false));
+        Assert.Null(CommandRules.Refusal(sim, new SetRoundOptionsCommand(true, false), Ana, isHost: true));
+    }
+
+    [Fact]
+    public void ARoundHasNoFriendlyFireOrTraitorsUnlessTheHostSaysSo()
+    {
+        var sim = Town();
+        Assert.Equal(RoundOptions.Default, sim.Round.Options);
+        sim.ApplyNow(new SetRoundOptionsCommand(true, true));
+        Assert.True(sim.Round.Options.FriendlyFire);
+        Assert.False(sim.Round.Options.Traitors); // not until Whispers
+        Sit(sim, Ana, "Ana", "Healer");
+        sim.ApplyNow(new StartRoundCommand());
+        sim.ApplyNow(new SetRoundOptionsCommand(false, false));
+        Assert.True(sim.Round.Options.FriendlyFire, "the options are settled once the round's dealt");
+        Assert.True(sim.Round.FriendlyFire);
+    }
+
+    [Fact]
+    public void TheRoundsOptionsSurviveASave()
+    {
+        var sim = Town();
+        sim.ApplyNow(new SetRoundOptionsCommand(true, false));
+        Sit(sim, Ana, "Ana", "Healer");
+        sim.ApplyNow(new StartRoundCommand());
+
+        var (loaded, _) = SaveGame.Read(SaveGame.Snapshot(sim), sim.Defs);
+
+        Assert.Equal(sim.Round.Options, loaded.Round.Options);
+        Assert.True(loaded.Round.FriendlyFire);
+        Assert.Equal(sim.FullHash(), loaded.FullHash());
+    }
+
+    [Fact]
     public void ALobbyAndItsPreferencesSurviveASave()
     {
         var sim = Town();

@@ -249,6 +249,12 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>The storyteller's difficulty by def name ("Normal", "Hard"...); null or "Off" sends no raids.</summary>
     public string? Difficulty { get; init; }
 
+    /// <summary>
+    /// <c>--friendly-fire</c>: a round where the town's blows hurt the town (off by default). The
+    /// host can still change it in the lobby.
+    /// </summary>
+    public bool FriendlyFire { get; init; }
+
     /// <summary>Pause when a danger message arrives (off for demos and screenshots; the player can also turn it off in Settings).</summary>
     public bool AutoPause { get; init; } = true;
 
@@ -335,6 +341,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         if (Adventure)
         {
             _sim.Round.OpenLobby();
+            if (FriendlyFire)
+                _sim.Round.SetOptions(_sim.Round.Options with { FriendlyFire = true }); // before the first tick, like Practice
             if (HostCoop == null)
                 center = StartSoloRound(center);
             if (Practice)

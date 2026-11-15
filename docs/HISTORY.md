@@ -1636,3 +1636,14 @@ From a multiplayer playtest that found the healer the weakest trade.
   dressing" (the long press), and "The shrine's help" (bind at the corner, weave a charm at the
   altar, put it out for sale).
 
+### Round options: friendly fire (2026-11-14)
+- `Round/RoundOptions`: the host chooses the kind of round in the lobby (`SetRoundOptionsCommand`,
+  host only, lobby only), saved with the round (format 38; older saves keep friendly fire on).
+- **Friendly fire**, off by default: the town's blows pass through the town (players and
+  townsfolk alike), and an arrow flies on past them to whoever's behind. Settled where a blow lands
+  (`Reach.Harms`, used by `Reach.Struck` and as a guard in `CombatRules.Strike`), so every peer
+  agrees. An AI villager no longer holds its blow for a friend who can't be hurt. Raiders, beasts
+  and the dragon are untouched, and outside a round (tests, demos, the arena, the bench) blows hurt
+  everyone as before. `--friendly-fire` turns it on from the command line.
+- **Traitors**: in the lobby as a greyed-out choice, "Coming with Whispers"; always off until M4.
+- At the festival's butts, someone in the lane only takes the arrow with friendly fire on.

@@ -307,6 +307,8 @@ public static class CombatRules
     /// </summary>
     public static AttackResult Strike(Simulation sim, Entity attacker, Entity target, AttackDef attack, float damageScale = 1f)
     {
+        if (!Reach.Harms(sim, attacker, target)) // friendly fire's off; Reach already leaves them out of a sweep
+            return new AttackResult(attacker, target, attack, 0f, AttackOutcome.Miss, "body", 0f);
         var w = sim.World;
         SkillRules.Learn(sim, attacker, SkillFor(attack), SkillRules.XpPerHit);
         var dz = w.Get<Position>(attacker).Cell.Z - w.Get<Position>(target).Cell.Z;

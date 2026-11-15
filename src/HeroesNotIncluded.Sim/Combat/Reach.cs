@@ -49,13 +49,28 @@ public static class Reach
     }
 
     /// <summary>
-    /// Who a blow aimed along <paramref name="aim"/> strikes now: everyone in its sweep, friend or
-    /// foe (an arrow: the first one along its line, short of a wall), in entity order. A blade
-    /// doesn't know whose side you're on.
+    /// Who a blow aimed along <paramref name="aim"/> strikes now: everyone in its sweep it can harm
+    /// (<see cref="Harms"/>), friend or foe (an arrow: the first one along its line, short of a
+    /// wall), in entity order. A blade doesn't know whose side you're on; with friendly fire off,
+    /// the town's passes through the town, and an arrow flies on past them.
     /// </summary>
     /// <param name="lag">Judged against where the others were this many ticks ago (a player's late swing, <see cref="Windup.Lag"/>).</param>
     public static List<Entity> Struck(Simulation sim, Entity attacker, AttackDef attack, float aim, int lag = 0) =>
-        InSweep(sim, attacker, attack, aim, _ => true, lag);
+        InSweep(sim, attacker, attack, aim, e => Harms(sim, attacker, e), lag);
+
+    /// <summary>
+    /// Whether a blow from <paramref name="attacker"/> can hurt <paramref name="victim"/>: always,
+    /// unless the round has friendly fire off (<see cref="Round.RoundSystem.FriendlyFire"/>) and both
+    /// are the village's own (players and townsfolk alike).
+    /// </summary>
+    public static bool Harms(Simulation sim, Entity attacker, Entity victim)
+    {
+        if (sim.Round.FriendlyFire)
+            return true;
+        var w = sim.World;
+        return !(w.TryGet<Creature>(attacker, out var a) && a.Faction == Faction.Village
+            && w.TryGet<Creature>(victim, out var v) && v.Faction == Faction.Village);
+    }
 
     /// <summary>
     /// Anyone not hostile to <paramref name="attacker"/> (other than <paramref name="target"/>) in
@@ -66,7 +81,8 @@ public static class Reach
     {
         var faction = sim.World.Get<Creature>(attacker).Faction;
         return InSweep(sim, attacker, attack, aim,
-            e => e != target && !Factions.Hostile(faction, sim.World.Get<Creature>(e).Faction) && sim.World.Get<Creature>(e).Able).Count > 0;
+            e => e != target && !Factions.Hostile(faction, sim.World.Get<Creature>(e).Faction) && sim.World.Get<Creature>(e).Able
+                && Harms(sim, attacker, e)).Count > 0;
     }
 
     private static List<Entity> InSweep(Simulation sim, Entity attacker, AttackDef attack, float aim, Func<Entity, bool> counts, int lag = 0)

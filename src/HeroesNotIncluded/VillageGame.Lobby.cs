@@ -109,6 +109,9 @@ public sealed partial class VillageGame
         if (session.Players.Count <= 1)
             TextC(Theme.Parchment, "Nobody's here yet. Suspicious.");
 
+        ImGui.Separator();
+        DrawRoundOptions(session, round.Options);
+
         if (round.SeatOf(session.Me.Id) is { } mine)
         {
             ImGui.Separator();
@@ -140,6 +143,30 @@ public sealed partial class VillageGame
         }
         DrawChat(session);
         Narsil.Ui.Panel.End();
+    }
+
+    /// <summary>The kind of round: the host chooses, everyone else sees what was chosen.</summary>
+    private void DrawRoundOptions(CoopSession session, RoundOptions options)
+    {
+        if (session.IsHost)
+        {
+            var friendlyFire = options.FriendlyFire;
+            if (ImGui.Checkbox("Friendly fire"u8, ref friendlyFire))
+                session.Send(new SetRoundOptionsCommand(friendlyFire, options.Traitors));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip(friendlyFire ? "Your blades and arrows can hurt other players and the townsfolk." : "Your blades and arrows pass through other players and the townsfolk.");
+            ImGui.BeginDisabled(true);
+            var traitors = false;
+            ImGui.Checkbox("Traitors"u8, ref traitors);
+            ImGui.EndDisabled();
+            ImGui.SameLine();
+            TextC(Theme.Dim, "Coming with Whispers.");
+        }
+        else
+        {
+            TextC(Theme.Dim, options.FriendlyFire ? "Friendly fire: on. Mind where you swing." : "Friendly fire: off. Your blades pass through your neighbours.");
+            TextC(Theme.Dim, "Traitors: none this round.");
+        }
     }
 
     private void DrawPreferences(CoopSession session, LobbySeat seat)

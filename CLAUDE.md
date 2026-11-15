@@ -14,7 +14,7 @@ dotnet test -c Release                                     # sim, game and Narsi
 dotnet test --filter VillageDayScenario --logger "console;verbosity=detailed"
 dotnet test --filter SeasonScenario --logger "console;verbosity=detailed"   # a whole round, bots, to the reveal
 dotnet run --project src/HeroesNotIncluded                    # title screen
-dotnet run --project src/HeroesNotIncluded -- --new-game --name Arin        # straight into a solo round (--trade Blacksmith, --bots N, --map NAME, --folk Elf)
+dotnet run --project src/HeroesNotIncluded -- --new-game --name Arin        # straight into a solo round (--trade Blacksmith, --bots N, --map NAME, --folk Elf, --friendly-fire)
 dotnet run --project src/HeroesNotIncluded -- --host --name Arin            # host (--port N, --relay HOST, --difficulty D)
 dotnet run --project src/HeroesNotIncluded -- --join 127.0.0.1 --player-id bea --name Bea
 dotnet run --project src/HeroesNotIncluded -- --raid-test --name Arin          # as the smith, bandits down the north road
@@ -64,7 +64,7 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
   - `Round/RoundSystem`: the lobby, the deal and the season (`season.json`): `Festival` on the last
     evening (put up that afternoon by the labourers, `FestivalSystem.Sites`), then `Over` with a `RoundSummary` for the reveal. `Phase.None` means no round (tests,
     demos, bench); behaviour that belongs to rounds checks `Round.Live` (playing or festival).
-    `Endless` keeps a test's round going. Players inhabit AI villagers. The deal also gives
+    `Endless` keeps a test's round going. The host's choices are `RoundOptions` (friendly fire; traitors, off till M4). Players inhabit AI villagers. The deal also gives
     everyone a home (`Systems/Homes`: a cottage bed of their own, held for them).
   - `Director/`: `Reckoning` keeps Renown (adventurers leaving pleased, quests cleared) and Dread
     (quests unanswered or gone badly; its limit ends the round). Players see words for them,
@@ -146,7 +146,7 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
   - Fights are real time and readable (docs/ROADMAP.md, "Combat pass"): a melee blow is wound up
     first (`Combat/Blows.Begin`, a `Windup` the `BlowSystem` lands) and lands on whoever's in its
     sweep the way it was aimed (`Combat/Reach`), friend or foe, no roll to hit (an arrow stops in a `target` building first: the festival's butts); armour soaks a share
-    (`CombatRules.Strike`). It's met by `Guard` (block, parry, dodge); an AI decides as it sees it
+    (`CombatRules.Strike`). With friendly fire off in a round, the town's blows pass through the town (`Reach.Harms`). It's met by `Guard` (block, parry, dodge); an AI decides as it sees it
     coming (`BlowResponse`). Only so many press one target at a time (`Combat/Engagement`). There's
     no turn-based combat, and nothing may stop the clock for one player's fight.
   - Players move freely (`Combat/FreeMove`, `FreeMover`): WASD and the mouse's aim through

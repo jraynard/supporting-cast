@@ -47,14 +47,7 @@ it through in the practice yard (`--practice Healer`) and in a round with friend
 - Still to look at: the bandage band, the weave's beat window, the labyrinth's size.
 - The AI empath's meditation (`MeditateJob.Gathers`) and the charms it puts out (`LayOnHands.CharmsOnShow`, price).
 
-### 3. Round options: no traitors, no friendly fire
-Rounds without traitors are a mode in their own right. Make the choice explicit in the lobby
-(traitors on or off, once M4 brings them), and add a **friendly fire** toggle: off, a blow's sweep
-passes through other players (and maybe all townsfolk) harmlessly. Settle it in the sim
-(`CombatRules.Strike`, `Combat/Reach`) as a round setting every peer reads, never a client-side
-filter.
-
-### 4. Combat balance
+### 3. Combat balance
 The town drives off fewer raids than it did (1 of 8 seeds in a sample against 3 of 8 before the
 one model). Tune in the practice ring (`--arena`) and `--raid-test`: AI defenders, armour soak, AI
 dodge odds, stamina (`Blows.Regen`, `RegenDelay`, costs) and the parry window (`ParryBefore`,
@@ -65,7 +58,7 @@ dodge odds, stamina (`Blows.Regen`, `RegenDelay`, costs) and the parry window (`
 - The unarmed don't mob a raider together; without adventurers in town, two raiders put every
   villager down. The wounded lie where they fell until someone thinks to help.
 
-### 5. A tuning playtest
+### 4. A tuning playtest
 One round with friends aimed only at the numbers, then a pass on what it shows. Everything here
 has defaults that haven't been tuned in play:
 - **The season** (`season.json`): the Renown target and Dread rates (Dread per death included),
@@ -89,6 +82,8 @@ The traitors: the game's hook, and what makes it a game people tell others about
 - Ghosts in it: what the dead can tell, and what a traitor does about a Calling.
 - The festival ceremony's `Accusation` step (`CeremonyStep`, a no-op for now): the town can name a
   traitor before the verdict.
+- **The lobby's Traitors toggle** (`RoundOptions.Traitors`, forced off by `RoundSystem.SetOptions` for
+  now): let it through and deal allegiances from it.
 - **Friendly fire's consequences:** townsfolk you cut are only hurt for now; the town remembering
   it, shouting it, and it counting at the reveal.
 - Discord integration for meetings and reveals, in the spirit of the bots Among Us groups use

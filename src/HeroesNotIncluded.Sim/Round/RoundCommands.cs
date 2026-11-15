@@ -36,6 +36,12 @@ public sealed record StartRoundCommand : ISimCommand, IHostCommand
     public void Apply(Simulation sim) => sim.Round.Start(sim);
 }
 
+/// <summary>The host chooses the kind of round in the lobby: friendly fire, and (from M4) traitors.</summary>
+public sealed record SetRoundOptionsCommand(bool FriendlyFire, bool Traitors) : ISimCommand, IHostCommand
+{
+    public void Apply(Simulation sim) => sim.Round.SetOptions(new RoundOptions(FriendlyFire, Traitors));
+}
+
 /// <summary>A player arriving mid-round takes over an AI villager (not one whose character died: they're a ghost).</summary>
 public sealed record TakeTradeCommand(Guid Player, IReadOnlyList<TradeDef> Wanted, IReadOnlyList<TradeDef> Never)
     : ISimCommand, IPlayerCommand

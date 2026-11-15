@@ -15,10 +15,11 @@ namespace HeroesNotIncluded.Sim.Tests;
 /// </summary>
 public class FestivalTests
 {
-    private static Simulation Round(ulong seed = 7)
+    private static Simulation Round(ulong seed = 7, bool friendlyFire = false)
     {
         var (sim, _) = TestWorld.Millbrook(seed, 4);
         sim.Round.OpenLobby();
+        sim.ApplyNow(new SetRoundOptionsCommand(friendlyFire, false));
         sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default, []));
         sim.ApplyNow(new StartRoundCommand());
         return sim;
@@ -280,10 +281,12 @@ public class FestivalTests
         Assert.Equal(5, sim.World.Get<ButtsTurn>(me).Points);
     }
 
-    [Fact]
-    public void SomeoneInTheLaneTakesTheArrow()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SomeoneInTheLaneTakesTheArrowUnlessFriendlyFiresOff(bool friendlyFire)
     {
-        var sim = Round();
+        var sim = Round(friendlyFire: friendlyFire);
         ToRevels(sim);
         var w = sim.World;
         var (me, butt, mark) = AtTheMark(sim);
@@ -302,7 +305,13 @@ public class FestivalTests
         });
         var turn = w.Get<ButtsTurn>(me);
         Assert.Equal(1, turn.Shots);
-        Assert.Equal(0, turn.Points);
+        if (friendlyFire)
+            Assert.Equal(0, turn.Points);
+        else
+        {
+            Assert.True(turn.Points > 0, "with friendly fire off, the arrow flies past them to the butt");
+            Assert.Empty(w.Get<Health>(unlucky).Injuries);
+        }
     }
 
     [Fact]

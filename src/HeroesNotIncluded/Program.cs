@@ -191,7 +191,7 @@ else if (args.Contains("--host"))
         host.Run(new VillageGame(ParseSeed(args))
         {
             Adventure = true, Character = saved, HeroName = saved == null ? ParseString(args, "--name") : null,
-            Difficulty = ParseString(args, "--difficulty"), HostCoop = hosting, AutoPause = false,
+            Difficulty = ParseString(args, "--difficulty"), HostCoop = hosting, AutoPause = false, FriendlyFire = args.Contains("--friendly-fire"),
             MapName = ParseString(args, "--map") ?? HeroesNotIncluded.Sim.Scenarios.VillageRound.DefaultMap,
         });
     }
@@ -234,6 +234,7 @@ else
             ? new int2(x, y) : null,
         AutoPause = !args.Contains("--no-autopause"),
         Difficulty = ParseString(args, "--difficulty"),
+        FriendlyFire = args.Contains("--friendly-fire"),
         // The demos are for looking at, and the arena has no round; everything else walks in as a character.
         Adventure = !args.Contains("--furniture-demo") && !args.Contains("--building-demo") && !args.Contains("--arena"),
         // --arena [FOE]: the practice ring, one raider kind at a time (--weapon NAME to fight with).

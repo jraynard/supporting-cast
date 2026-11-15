@@ -1,9 +1,11 @@
 using HeroesNotIncluded.Sim.Combat;
+using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Saving;
 using HeroesNotIncluded.Sim.Round;
 using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Systems;
 
 namespace HeroesNotIncluded.Sim.Tests;
 
@@ -382,6 +384,132 @@ public class FreeCombatTests
         sim.TickMany(Blows.PlayerRecoveryTicks + 1);
         Swing(sim, me, -MathF.PI / 2);
         Assert.Contains(sim.RecentBlows, b => b.Attacker == me && b.Target == hare);
+    }
+
+    // ---- Friendly fire (RoundOptions): settled where the blow lands, the same on every peer. ----
+
+    private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
+    private static readonly Guid Bea = new("00000000-0000-0000-0000-00000000000b");
+
+    /// <summary>A round under way in Millbrook, Ana and Bea dealt in, Ana's sword drawn; friendly fire as asked.</summary>
+    private static (Simulation Sim, Entity Me, Entity Other) Round(bool friendlyFire) => Round(friendlyFire, out _);
+
+    private static (Simulation Sim, Entity Me, Entity Other) Round(bool friendlyFire, out int3 square)
+    {
+        var (sim, center) = TestWorld.Millbrook(villagers: 4);
+        square = center;
+        sim.Round.OpenLobby();
+        sim.ApplyNow(new SetRoundOptionsCommand(friendlyFire, false));
+        foreach (var (who, name) in new[] { (Ana, "Ana"), (Bea, "Bea") })
+            sim.ApplyNow(new JoinLobbyCommand(who, name, default, []));
+        sim.ApplyNow(new StartRoundCommand());
+        Assert.True(sim.Round.Live);
+        var me = Players.CharacterOf(sim, Ana);
+        var other = Players.CharacterOf(sim, Bea);
+        sim.Equip(me, sim.Defs.Thing("ShortSword"));
+        sim.ApplyNow(new DrawWeaponCommand(me, true));
+        sim.TickMany(10);
+        return (sim, me, other);
+    }
+
+    /// <summary>Holds <paramref name="e"/> still at <paramref name="offset"/> from <paramref name="me"/>, on their level.</summary>
+    private static void StandBy(Simulation sim, Entity me, Entity e, float2 offset)
+    {
+        sim.World.Get<Mind>(e).Drafted = true;
+        Systems.AiSystem.EndJob(sim, e, sim.World.Get<Mind>(e), false);
+        sim.World.Get<Mover>(e).Stop();
+        sim.World.Get<Position>(e) = sim.World.Get<Position>(me);
+        var at = sim.World.Get<Position>(me).Pos;
+        Place(sim, e, new float2(at.X + offset.X, at.Y + offset.Y));
+    }
+
+    private static Entity Townsfolk(Simulation sim, params Entity[] not) =>
+        sim.Creatures().First(e => !not.Contains(e) && !sim.World.Has<PlayerCharacter>(e)
+            && sim.World.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Dead: false });
+
+    [Fact]
+    public void WithFriendlyFireOffYourSwingPassesThroughTheTownButNotARaider()
+    {
+        var (sim, me, other) = Round(friendlyFire: false);
+        var folk = Townsfolk(sim, me, other);
+        StandBy(sim, me, other, new float2(1f, 0.3f));
+        StandBy(sim, me, folk, new float2(1f, -0.3f));
+        var at = sim.World.Get<Position>(me).Pos;
+        var foe = Foe(sim, new float2(at.X + 1.2f, at.Y));
+        Swing(sim, me, 0f);
+        Assert.Empty(sim.World.Get<Health>(other).Injuries);
+        Assert.Empty(sim.World.Get<Health>(folk).Injuries);
+        Assert.DoesNotContain(sim.RecentBlows, b => b.Attacker == me && (b.Target == other || b.Target == folk));
+        Assert.Contains(sim.RecentBlows, b => b.Attacker == me && b.Target == foe);
+    }
+
+    [Fact]
+    public void WithFriendlyFireOnYourSwingCutsAnotherPlayer()
+    {
+        var (sim, me, other) = Round(friendlyFire: true);
+        StandBy(sim, me, other, new float2(1f, 0f));
+        Swing(sim, me, 0f);
+        Assert.Contains(sim.RecentBlows, b => b.Attacker == me && b.Target == other && b.Outcome != BlowOutcome.Miss);
+    }
+
+    [Fact]
+    public void WithFriendlyFireOffAnArrowFliesPastANeighbourToTheRaiderBehind()
+    {
+        var (sim, me, other) = Round(friendlyFire: false, out var square);
+        sim.Equip(me, sim.Defs.Thing("Bow"));
+        // Out into the open: a row of five clear cells east from somewhere near the square.
+        var here = sim.World.Get<Position>(me);
+        var start = sim.SpiralFrom(square, 30)
+            .First(c => Enumerable.Range(0, 6).All(dx => sim.Map.Passable(c + new int3(dx, 0, 0))));
+        var meAt = here;
+        meAt.Cell = start;
+        meAt.Pos = new float3(start.X + 0.5f, start.Y + 0.5f, here.Pos.Z - here.Cell.Z + start.Z);
+        sim.World.Get<Position>(me) = meAt;
+        sim.TickMany(2);
+        StandBy(sim, me, other, new float2(2f, 0f));
+        var at = sim.World.Get<Position>(me).Pos;
+        var foe = Foe(sim, new float2(at.X + 4f, at.Y));
+        Assert.True(CombatRules.LineOfFire(sim, at + new float3(0, 0, 0.7f), sim.World.Get<Position>(foe).Pos + new float3(0, 0, 0.5f)),
+            "the test needs a clear line down the square");
+        sim.ApplyNow(new BowCommand(me, true, false, 0f, sim.Clock.Tick));
+        sim.TickMany(Archery.DrawTicks(sim, me, Archery.Bow(sim, me)!));
+        sim.ApplyNow(new BowCommand(me, true, true, 0f, sim.Clock.Tick));
+        sim.TickMany(2);
+        Assert.Equal(foe, sim.RecentBlows.Last(b => b.Attacker == me).Target);
+        Assert.Empty(sim.World.Get<Health>(other).Injuries);
+    }
+
+    [Fact]
+    public void WithFriendlyFireOffARaiderStillCutsTheTown()
+    {
+        var (sim, me, _) = Round(friendlyFire: false);
+        var at = sim.World.Get<Position>(me).Pos;
+        var foe = Foe(sim, new float2(at.X + 1f, at.Y));
+        var attack = CombatRules.Attacks(sim, foe).First(a => !a.Ranged);
+        Assert.True(Blows.Begin(sim, foe, me, attack));
+        RunTo(sim, Blows.LandsAt(sim, sim.World.Get<Windup>(foe)) + 1);
+        Assert.Equal(BlowOutcome.Hit, Outcome(sim, foe));
+    }
+
+    [Fact]
+    public void WithFriendlyFireOffAVillagerDoesntHoldItsBlowForAFriend()
+    {
+        var (sim, me, other) = Round(friendlyFire: false);
+        StandBy(sim, me, other, new float2(1f, 0f));
+        var at = sim.World.Get<Position>(me).Pos;
+        var foe = Foe(sim, new float2(at.X + 2f, at.Y));
+        var attack = CombatRules.Attacks(sim, me).First(a => !a.Ranged);
+        Assert.False(Reach.FriendInTheWay(sim, me, attack, 0f, foe));
+        sim.ApplyNow(new SetRoundOptionsCommand(true, false)); // too late: the lobby's closed
+        Assert.False(Reach.FriendInTheWay(sim, me, attack, 0f, foe));
+    }
+
+    [Fact]
+    public void OutsideARoundTheTownsBlowsStillHurtTheTown()
+    {
+        var (sim, _) = TestWorld.Millbrook(villagers: 2);
+        Assert.False(sim.Round.Options.FriendlyFire);
+        Assert.True(sim.Round.FriendlyFire, "tests, demos and the bench play as they always have");
     }
 
     [Fact]

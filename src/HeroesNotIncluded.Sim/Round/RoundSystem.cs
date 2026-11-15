@@ -81,6 +81,22 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     /// </summary>
     public bool Practice { get; set; }
 
+    /// <summary>The host's choices for the round (<see cref="SetRoundOptionsCommand"/>). Saved.</summary>
+    public RoundOptions Options { get; set; } = RoundOptions.Default;
+
+    /// <summary>
+    /// The town's blows hurt the town. Always, outside a round (tests, demos, the arena, the bench
+    /// play as they always have); in one, as the host chose.
+    /// </summary>
+    public bool FriendlyFire => !Live || Options.FriendlyFire;
+
+    /// <summary>The host sets the round's options; only while the lobby's open. Traitors stay off until M4.</summary>
+    public void SetOptions(RoundOptions options)
+    {
+        if (Phase == RoundPhase.Lobby)
+            Options = options with { Traitors = false };
+    }
+
     /// <summary>Where the festival gathers (the well in the square), once it's begun.</summary>
     public int3? Square { get; private set; }
 
@@ -604,6 +620,8 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             w.Int(sq.Z);
         }
         w.Bool(Practice);
+        w.Bool(Options.FriendlyFire);
+        w.Bool(Options.Traitors);
     }
 
     public void Load(SaveReader r, Simulation sim)
@@ -625,6 +643,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         }
         _startCoin.Clear();
         Practice = false;
+        Options = new RoundOptions(FriendlyFire: true, Traitors: false); // saves from before options were played with it on
         Summary = null;
         StartTick = -1;
         Square = null;
@@ -642,6 +661,8 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             Summary = RoundSummary.Read(r);
         Square = r.Version >= 10 && r.Bool() ? new int3(r.Int(), r.Int(), r.Int()) : null;
         Practice = r.Version >= 28 && r.Bool();
+        if (r.Version >= 38)
+            Options = new RoundOptions(r.Bool(), r.Bool());
     }
 
     private static void WriteStrings(SaveWriter w, List<string> list)
