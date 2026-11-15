@@ -439,13 +439,23 @@ public class FreeCombatTests
     public void ARaidWithFreeMovementIsFoughtFreelyAndOnlyFightersLeaveTheGrid()
     {
         var (sim, me) = Village();
-        var home = sim.World.Get<Position>(me).Cell;
-        var band = Raids.Spawn(sim, Enumerable.Repeat(sim.Defs.AllRaiderKinds.First(k => k.Name == "Swordsman"), 3).ToList(),
+        var w = sim.World;
+        // The town's people armed, so they go out to meet it (Ai/Defence), and a band they can
+        // stand up to: the test is the fight's shape, not its odds (the game's raids are harder).
+        var defenders = sim.Creatures().Where(e => e != me && w.Get<Creature>(e).Faction == Faction.Village && w.Get<Creature>(e).Def.Name == "Human").ToList();
+        Assert.NotEmpty(defenders);
+        foreach (var e in defenders)
+            sim.Equip(e, sim.Defs.Thing("ShortSword"));
+        var home = w.Get<Position>(me).Cell;
+        var band = Raids.Spawn(sim, Enumerable.Repeat(sim.Defs.AllRaiderKinds.First(k => k.Name == "Swordsman"), 2).ToList(),
             Raids.EdgeEntry(sim, 2, home)!.Value, home, sim.Rand);
+        var defended = false;
         var sawFree = false;
         for (var t = 0; t < SimClock.TicksPerSecond * 120; t++)
         {
             sim.Tick();
+            defended |= sim.RecentBlows.Any(b => defenders.Contains(b.Attacker) && band.Contains(b.Target)
+                && b.Outcome is not (BlowOutcome.Miss or BlowOutcome.Dodged or BlowOutcome.Blocked or BlowOutcome.Parried));
             foreach (var e in sim.World.Query<FreeMover>())
             {
                 if (sim.World.Has<Avatar>(e))
@@ -464,6 +474,7 @@ public class FreeCombatTests
             }
         }
         Assert.True(sawFree, "the fight was fought freely");
+        Assert.True(defended, "the town's armed went out and landed blows on the band\n" + string.Join("\n", sim.Messages.Messages.TakeLast(15).Select(m => m.Text)));
         Assert.Contains(band, r => !sim.World.IsAlive(r) || !sim.World.Get<Creature>(r).Able || sim.World.Get<Health>(r).Injuries.Count > 0);
     }
 
