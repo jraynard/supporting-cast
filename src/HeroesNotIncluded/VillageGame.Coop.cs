@@ -258,8 +258,6 @@ public sealed partial class VillageGame
             }
             if (_sim.Round.Phase == RoundPhase.None) // the lobby has its own; a round has speech
                 DrawChat(session);
-            if (session.IsHost)
-                TextC(Theme.Dim, "Peaceful: raids are off in co-op for now.");
             TextC(Theme.Dim, $"{BuildInfo.Label}, build {BuildInfo.Tag(_sim.Defs)}");
         }
         Panel.End();

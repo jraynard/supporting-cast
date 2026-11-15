@@ -65,7 +65,31 @@ public sealed partial class VillageGame
             if (map.Pressed(Act.Runes[k]))
                 rune = k;
         var act = live && map.Pressed(Act.WorkAct);
+        if (_work.Session is Sim.Environment.ThrowSession throwing)
+            axis = AimThrow(throwing, axis);
         _work.Update(_sim, _avatar, steps, f && map.Pressed(Act.Use), f && live && map.Down(Act.Use), axis, Issue, axis2, rune, act);
+    }
+
+    private int3 _thrownAt;
+
+    /// <summary>
+    /// A bucket being swung: the mouse points it (sent as it moves, and set on the local copy so the
+    /// landing shown follows at once), and A/D turn it the way they read on screen: D clockwise.
+    /// </summary>
+    private int AimThrow(Sim.Environment.ThrowSession throwing, int axis)
+    {
+        var pointing = !ImGui.GetIO().WantCaptureMouse && !_pointer.Stale && !Controls.UsingPad && !Host.Input.MouseCaptured;
+        if (pointing && axis == 0 && _hoverCell != _thrownAt && (_hoverCell.X != throwing.From.X || _hoverCell.Y != throwing.From.Y))
+        {
+            _thrownAt = _hoverCell;
+            throwing.AimAt(_hoverCell);
+            Issue(new Sim.Environment.AimThrowCommand(_avatar, _hoverCell));
+        }
+        // World angles turn the other way on screen when the view is mirrored: keep D clockwise as you see it.
+        var o = _camera.WorldToScreen(new float3(0, 0, 0));
+        var x = _camera.WorldToScreen(new float3(1, 0, 0)) - o;
+        var y = _camera.WorldToScreen(new float3(0, 1, 0)) - o;
+        return x.X * y.Y - x.Y * y.X > 0 ? axis : -axis;
     }
 
     private void DrawWork()

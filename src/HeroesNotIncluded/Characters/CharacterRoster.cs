@@ -47,6 +47,13 @@ public sealed record CharacterProgress
     /// <summary>Cosmetics earned, by id (outfits, dyes, hair).</summary>
     public List<string> Unlocked { get; init; } = [];
 
+    /// <summary>Practice-yard lessons finished, by <c>Trade/lesson</c> (<c>"Blacksmith/sharpen"</c>).</summary>
+    public List<string> Lessons { get; init; } = [];
+
+    /// <summary>This progress with a lesson finished (unchanged if it already was).</summary>
+    public CharacterProgress Learned(string lesson) =>
+        Lessons.Contains(lesson) ? this : this with { Lessons = [.. Lessons, lesson] };
+
     /// <summary>All rounds played to the end, in any trade.</summary>
     [System.Text.Json.Serialization.JsonIgnore]
     public int Rounds => Trades.Values.Sum(t => t.Rounds);
@@ -164,6 +171,7 @@ public sealed class CharacterRoster
                 Titles = titles,
                 Title = progress.Title != null && titles.Contains(progress.Title) ? progress.Title : null,
                 Unlocked = (progress.Unlocked ?? []).Where(u => !string.IsNullOrWhiteSpace(u)).Distinct().ToList(),
+                Lessons = (progress.Lessons ?? []).Where(l => !string.IsNullOrWhiteSpace(l)).Distinct().ToList(),
             },
         };
     }

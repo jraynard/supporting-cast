@@ -231,10 +231,13 @@ internal static class ComponentCodecs
             w.Long(m.DashUntil);
             w.Bool(m.Drawn);
             w.Bool(m.Fighting);
+            w.Float(m.ClaimBudget);
         }, r => new Combat.FreeMover
         {
             Wish = new float2(r.Float(), r.Float()), Vel = new float2(r.Float(), r.Float()), Aim = r.Float(),
             DashDir = new float2(r.Float(), r.Float()), DashUntil = r.Long(), Drawn = r.Bool(), Fighting = r.Bool(),
+            // Co-op's claim budget came with format 36.
+            ClaimBudget = r.Version >= 36 ? Math.Clamp(r.Float(), 0f, Combat.FreeMoveSystem.MaxClaim) : Combat.FreeMoveSystem.MaxClaim,
         }),
         Codec("Inhaling", (w, i) =>
         {

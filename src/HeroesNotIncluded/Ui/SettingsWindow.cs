@@ -413,14 +413,14 @@ public sealed class SettingsWindow(GameHost host)
     {
         var gap = new float2(1, S(4));
         ImGui.Dummy(in gap);
-        Row("Relay server", "For co-op over the internet: hosts get a join code, friends type it to join. Address or address:port; empty turns it off.");
+        Row("Relay server", "For co-op over the internet: hosts get a join code, friends type it to join. Address or address:port; leave it empty for the game's own.");
         if (_relayShown != _draft.RelayServer)
         {
             _relay.SetValue(_draft.RelayServer.AsSpan());
             _relayShown = _draft.RelayServer;
         }
         ImGui.SetNextItemWidth(S(240));
-        var edited = ImGui.InputTextWithHint("##relay"u8, "relay.example.com"u8, _relay, ImGuiInputTextFlags.None, null, IntPtr.Zero);
+        var edited = ImGui.InputTextWithHint("##relay"u8, "the game's own"u8, _relay, ImGuiInputTextFlags.None, null, IntPtr.Zero);
         OnScreenKeyboard.AfterTextField();
         if (edited)
             _relayShown = _draft.RelayServer = Narsil.Ui.ImGuiText.Value(_relay);

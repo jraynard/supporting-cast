@@ -198,6 +198,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>Debug (<c>--raid-test</c>): arm your character and the muster rack, and bandits come by the north road at once (<see cref="RaidDrill"/>).</summary>
     public bool RaidTest { get; init; }
 
+    /// <summary>Debug (<c>--fire-test</c>): the fire drill (<see cref="FireDrill"/>), the inn alight and you at the well.</summary>
+    public bool FireTest { get; init; }
+
     /// <summary>Debug (<c>--die-at SECONDS</c>): your character drops dead this long in, to try being a ghost. Negative: never.</summary>
     public float DieAt { get; init; } = -1f;
 
@@ -221,6 +224,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     /// <summary>The practice yard (<see cref="Practice"/>): a round in <see cref="HeroTrade"/> with no season to it.</summary>
     public bool Practice { get; init; }
+
+    /// <summary>Debug (<c>--lesson ID</c>, with <c>--practice</c>): the lesson begun as soon as you're in the yard.</summary>
+    public string? StartLesson { get; init; }
 
     /// <summary>Debug (<c>--weapon NAME</c>, with <c>--arena</c>): what you fight with in the ring.</summary>
     public string? ArenaWeapon { get; init; }
@@ -335,6 +341,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
                 _sim.Round.Practice = true; // set before the first tick: every peer (there's only one) starts with it
             if (RaidTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } me)
                 RaidDrill.Stage(_sim, me);
+            if (FireTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } burning)
+                FireDrill.Stage(_sim, burning);
         }
         var focus = center;
         if (IgniteForest)
@@ -443,6 +451,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         UpdateOrderBubbles();
         UpdateStationMarks();
         UpdateFestival();
+        UpdateErrandPointers();
+        UpdateLesson(); // after the festival's and the tips' marks are cleared: its own go on top
         UpdateHomeMark();
         UpdateWork(dt);
         RunBots();

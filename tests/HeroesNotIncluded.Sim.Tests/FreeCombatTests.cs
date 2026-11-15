@@ -78,6 +78,46 @@ public class FreeCombatTests
     }
 
     [Fact]
+    public void ClaimingToBeAheadCantOutrunWalking()
+    {
+        // A modified co-op client claims to be 2.4 cells ahead in every turn's command.
+        var (sim, me) = Ring();
+        var from = Where(sim, me);
+        var speed = FreeMoveSystem.Wanted(sim, me, new float2(1, 0), true, null).X;
+        const int ticks = SimClock.TicksPerSecond / 2;
+        for (var t = 0; t < ticks; t += 2)
+        {
+            var at = Where(sim, me);
+            sim.ApplyNow(new FreeMoveCommand(me, 1f, 0f, 0f, at.X + 2.4f, at.Y, sim.World.Get<Position>(me).Cell.Z));
+            sim.TickMany(2);
+        }
+        var walked = speed * ticks;
+        var gained = Where(sim, me).X - from.X - walked;
+        Assert.True(gained <= FreeMoveSystem.MaxClaim + FreeMoveSystem.ClaimRefill * ticks + 0.05f,
+            $"walking goes {walked:F2} cells in half a second; claims took it {gained:F2} further");
+    }
+
+    [Fact]
+    public void AnHonestClientsClaimsAreTakenWhole()
+    {
+        // A client predicting its own walk runs 150 ms ahead of the sim, and says where it is every 0.2 s.
+        var (sim, me) = Ring();
+        var speed = FreeMoveSystem.Wanted(sim, me, new float2(1, 0), true, null).X;
+        var client = Where(sim, me).X + speed * 9;
+        sim.ApplyNow(new FreeMoveCommand(me, 1f, 0f, 0f));
+        for (var t = 0; t < SimClock.TicksPerSecond * 2; t++)
+        {
+            if (t % 12 == 0)
+            {
+                sim.ApplyNow(new FreeMoveCommand(me, 1f, 0f, 0f, client, Where(sim, me).Y, sim.World.Get<Position>(me).Cell.Z));
+                Assert.Equal(client, Where(sim, me).X, 3);
+            }
+            sim.Tick();
+            client += speed;
+        }
+    }
+
+    [Fact]
     public void TheFenceStopsYouAndYouSlideAlongIt()
     {
         var (sim, me) = Ring();
