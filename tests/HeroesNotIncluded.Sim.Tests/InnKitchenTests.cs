@@ -279,15 +279,18 @@ public class InnKitchenTests
         }
         var diner = party[0];
         sim.World.Get<Needs>(diner).Values[sim.Defs.Need("Food").Index] = 0.5f;
-        var bowls = Cooking.ServingsLeft(sim, pot);
+        var hatch = Hatch.Of(sim, ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn")));
+        int Up() => Hatch.DishesOn(sim, hatch, ServiceKind.Meal).Sum(d => sim.World.Get<Stack>(d).Count);
+        var bowls = Cooking.ServingsLeft(sim, pot) + Up();
+        var purse = Coin.Count(sim, keeper);
         for (var i = 0; i < 12 && !sim.Shops.All.Any(e => e.Kind.Kind == ServiceKind.Meal && e.Poster == diner && e.Status == OrderStatus.Done); i++)
             sim.TickMany(SimClock.TicksPerHour / 4);
 
         var meal = sim.Shops.All.First(e => e.Kind.Kind == ServiceKind.Meal && e.Poster == diner);
         Assert.Equal(OrderStatus.Done, meal.Status);
-        Assert.Equal(keeper, meal.Assignee);
-        Assert.True(Cooking.ServingsLeft(sim, pot) < bowls, "it came out of the pot");
-        Assert.Contains(sim.Speech.Kept, u => u.Speaker == keeper && u.Text.EndsWith("'s up!")); // through the hatch
+        Assert.True(Coin.Count(sim, keeper) >= purse + meal.Price, "the cook was paid for it");
+        // Ladled from the pot, onto the hatch (a spare bowl kept up there, or one put up for the order).
+        Assert.True(Cooking.ServingsLeft(sim, pot) + Up() < bowls, "it came out of the pot");
     }
 
     [Fact]

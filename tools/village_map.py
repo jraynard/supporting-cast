@@ -28,7 +28,7 @@ TOWN = 2        # the village's level; a river bank is one down, its bed two
 rnd = random.Random(1234)
 
 # Plan sizes (width across, depth front to back) of the preset buildings, as buildings.json.
-PLANS = {"Inn": (13, 13), "Dwelling": (6, 5), "Cottage": (9, 6), "Smithy": (7, 5), "Shrine": (7, 5), "Woodshop": (7, 5), "TinkerShop": (7, 6), "Barn": (10, 6)}
+PLANS = {"Inn": (13, 13), "Dwelling": (6, 5), "Cottage": (9, 6), "Smithy": (7, 5), "Shrine": (11, 7), "Woodshop": (7, 5), "TinkerShop": (7, 6), "Barn": (10, 6)}
 
 GROUND_LEGEND = {"g": "Grass", "d": "Dirt", "r": "Road", "t": "TilledSoil", "k": "Stone", "s": "Sand", "~": "ShallowWater", "w": "Water"}
 FEATURE_LEGEND = {
@@ -211,7 +211,7 @@ building("Inn", 61, 45, 1, role="Tavern", variant="Timber")      # G: on the squ
 building("Cottage", 74, 44, 1, role="Home", variant="Shingle")  # H: east, the big brown roof (moved over for the inn's kitchen)
 building("Cottage", 30, 56, 0, role="Home")                     # I: south-west, with its garden
 building("Cottage", 43, 61, 2, role="Home")                     # J: south of the square
-building("Shrine", 55, 73, 2, role="Shrine")                     # L: south, in its garden
+building("Shrine", 57, 73, 2, role="Shrine")                     # L: south, in its garden
 building("Cottage", 75, 70, 2, role="Home", variant="Shingle")  # M: the south-east corner
 
 # ---------------- Yards, gardens, the pen ----------------

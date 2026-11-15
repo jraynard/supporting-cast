@@ -35,12 +35,12 @@ public sealed class WorkGivers
                     WorkType.Firefight => Firefight(sim, pawn),
                     WorkType.Doctor => Systems.Bandaging.FirstAidOnly(sim, pawn)
                         ? TendCritical(sim, pawn, firstAid: true) ?? FirstAid(sim, pawn) ?? Rescue(sim, pawn) ?? FeedPatient(sim, pawn) ?? Capture(sim, pawn)
-                        : TendCritical(sim, pawn) ?? Rescue(sim, pawn) ?? Afterlife.CallBackJob.For(sim, pawn) ?? TendWounds(sim, pawn) ?? FeedPatient(sim, pawn) ?? Healing.LayOnHands.ForOrder(sim, pawn) ?? Healing.LayOnHands.ForVillager(sim, pawn) ?? Healing.LayOnHands.ForSelf(sim, pawn) ?? Capture(sim, pawn) ?? TendWounds(sim, pawn, enemies: true),
+                        : TendCritical(sim, pawn) ?? Rescue(sim, pawn) ?? Afterlife.CallBackJob.For(sim, pawn) ?? TendWounds(sim, pawn) ?? FeedPatient(sim, pawn) ?? Healing.LayOnHands.ForOrder(sim, pawn) ?? Healing.LayOnHands.ForVillager(sim, pawn) ?? Healing.LayOnHands.ForSelf(sim, pawn) ?? Healing.LayOnHands.Meditate(sim, pawn) ?? Healing.LayOnHands.WeaveCharm(sim, pawn) ?? Capture(sim, pawn) ?? TendWounds(sim, pawn, enemies: true),
                     WorkType.Warden => FeedPrisoner(sim, pawn) ?? VisitPrisoner(sim, pawn),
                     WorkType.Refuel => Refuel(sim, pawn),
                     WorkType.Construct => Shops.SellJob.For(sim, pawn) ?? Construct(sim, pawn) ?? Deconstruct(sim, pawn),
                     WorkType.Craft => Shops.SellJob.For(sim, pawn) ?? Shops.MendJob.For(sim, pawn) ?? Tinkering.OpenBoxJob.For(sim, pawn) ?? Tinkering.AppraiseJob.For(sim, pawn) ?? Tinkering.WagonJob.For(sim, pawn) ?? Tinkering.MendBreachJob.For(sim, pawn) ?? Craft(sim, pawn, type), // a sale is quick, a mend is not
-                    WorkType.Cook => Shops.RatJob.For(sim, pawn) ?? Shops.ServeJob.For(sim, pawn) ?? Shops.LodgeJob.For(sim, pawn) ?? Shops.SellJob.For(sim, pawn) ?? Shops.TapJob.For(sim, pawn) ?? Shops.WashJob.For(sim, pawn) ?? Shops.CookPotJob.For(sim, pawn) ?? Shops.DressJob.For(sim, pawn) ?? Shops.MakeBedJob.For(sim, pawn) ?? Shops.CleanJob.For(sim, pawn) ?? Craft(sim, pawn, type),
+                    WorkType.Cook => Shops.RatJob.For(sim, pawn) ?? Shops.ServeJob.For(sim, pawn) ?? Shops.LodgeJob.For(sim, pawn) ?? Shops.ServeJob.SpareFor(sim, pawn) ?? Shops.SellJob.For(sim, pawn) ?? Shops.TapJob.For(sim, pawn) ?? Shops.WashJob.For(sim, pawn) ?? Shops.CookPotJob.For(sim, pawn) ?? Shops.DressJob.For(sim, pawn) ?? Shops.MakeBedJob.For(sim, pawn) ?? Shops.CleanJob.For(sim, pawn) ?? Craft(sim, pawn, type),
                     WorkType.Hunt => Butcher(sim, pawn) ?? Hunt(sim, pawn),
                     WorkType.Fish => Fish(sim, pawn),
                     WorkType.Mine => Harvest(sim, pawn, type) ?? Dig(sim, pawn),

@@ -26,7 +26,7 @@ public sealed class ManaSystem : ISimSystem
     }
 }
 
-/// <summary>Lay hands on someone in reach and feel them over, to find what hurts (<see cref="FeelSession"/>).</summary>
+/// <summary>Lay hands on someone in reach: feel them over, read what hurts, draw it in (<see cref="HandsOnSession"/>).</summary>
 public sealed record FeelCommand(Entity Avatar, Entity Patient) : ISimCommand, IActorCommand
 {
     public Entity Actor => Avatar;
@@ -34,11 +34,11 @@ public sealed record FeelCommand(Entity Avatar, Entity Patient) : ISimCommand, I
     public void Apply(Simulation sim)
     {
         if (InventoryCommand.Ready(sim, Avatar) && !sim.World.Has<WorkSession>(Avatar))
-            FeelSession.TryStart(sim, Avatar, Patient);
+            HandsOnSession.TryStart(sim, Avatar, Patient);
     }
 }
 
-/// <summary>Lay hands on someone in reach and draw one of their wounds into yourself.</summary>
+/// <summary>Lay hands on someone in reach with the hands already on one of their wounds (a key), to draw it in.</summary>
 public sealed record LayOnHandsCommand(Entity Avatar, Entity Patient, int Wound) : ISimCommand, IActorCommand
 {
     public Entity Actor => Avatar;
@@ -46,7 +46,7 @@ public sealed record LayOnHandsCommand(Entity Avatar, Entity Patient, int Wound)
     public void Apply(Simulation sim)
     {
         if (InventoryCommand.Ready(sim, Avatar) && !sim.World.Has<WorkSession>(Avatar))
-            DrawSession.TryStart(sim, Avatar, Patient, Wound);
+            HandsOnSession.TryStart(sim, Avatar, Patient, Wound);
     }
 }
 

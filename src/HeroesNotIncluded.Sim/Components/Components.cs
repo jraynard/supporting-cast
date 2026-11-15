@@ -743,7 +743,7 @@ public sealed class Injury
     public bool Absorbed;
 
     /// <summary>
-    /// The empath who's felt this wound with their hands (<c>Healing.FeelSession</c>), Entity.Null if
+    /// The empath who's felt this wound with their hands (<c>Healing.HandsOnSession</c>), Entity.Null if
     /// none: only they know it's there, and can draw it.
     /// </summary>
     public Entity FeltBy = Entity.Null;

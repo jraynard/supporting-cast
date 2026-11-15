@@ -169,6 +169,65 @@ public static class LayOnHands
         return null;
     }
 
+    /// <summary>Mana (a share of the most) below which a shrine's AI empath goes to sit at its stone.</summary>
+    public const float MeditateBelow = 0.4f;
+
+    /// <summary>Mana (a share of the most) at which an AI empath with nothing else to do weaves a charm to sell.</summary>
+    public const float CharmsFrom = 0.8f;
+
+    /// <summary>Charms an AI empath keeps on show at once, and the price it asks for each.</summary>
+    public const int CharmsOnShow = 2, CharmPrice = 4;
+
+    /// <summary>The meditation stone at an empath's shrine, Entity.Null if none.</summary>
+    private static Entity StoneOf(Simulation sim, BuildingDef shrine)
+    {
+        var b = Shops.ShopSystem.BuildingOf(sim, shrine);
+        if (b.IsNull)
+            return Entity.Null;
+        foreach (var part in Buildings.Parts(sim, b))
+            if (sim.World.Get<Thing>(part).Def.Building is { Meditation: > 0 } && !sim.World.Has<Construction>(part))
+                return part;
+        return Entity.Null;
+    }
+
+    /// <summary>
+    /// Mana run low (a busy day empties it): the shrine's empath sits at its meditation stone a
+    /// while to win it back, rather than turning the hurt away all afternoon. After the orders and
+    /// their own wounds, which still come first while there's mana for them.
+    /// </summary>
+    public static Job? Meditate(Simulation sim, Entity pawn)
+    {
+        if (!ShrineEmpath(sim, pawn, out var shrine) || !sim.World.TryGet<Mana>(pawn, out var mana) || mana.Current >= mana.Max * MeditateBelow)
+            return null;
+        var stone = StoneOf(sim, shrine);
+        if (stone.IsNull || sim.Reservations.IsReservedByOther(stone, pawn)
+            || !Navigation.CanReach(sim, pawn, sim.World.Get<Position>(pawn).Cell, sim.World.Get<Thing>(stone).Cell, PathEnd.Touch))
+            return null;
+        return new MeditateJob(stone);
+    }
+
+    /// <summary>
+    /// A quiet hour with mana to spare: weave a charm into a strip of linen and put it out at the
+    /// shrine for the parties to buy, a different mending each time, while fewer than
+    /// <see cref="CharmsOnShow"/> of theirs are on show. The players' empath does it by hand.
+    /// </summary>
+    public static Job? WeaveCharm(Simulation sim, Entity pawn)
+    {
+        var w = sim.World;
+        if (!sim.Round.Live || Shops.ShopSystem.SmallHours(sim) || !ShrineEmpath(sim, pawn, out var shrine)
+            || !w.TryGet<Mana>(pawn, out var mana) || mana.Current < mana.Max * CharmsFrom || Bandaging.BandagesOn(sim, pawn) <= 0)
+            return null;
+        var shop = Shops.ShopSystem.BuildingOf(sim, shrine);
+        var shown = Shops.Goods.OnShow(sim).Where(g => g.Shop == shop && w.TryGet<Charm>(g.Item, out _)).Select(g => w.Get<Charm>(g.Item).Mending).ToList();
+        if (shop.IsNull || shown.Count >= CharmsOnShow)
+            return null;
+        // A healing mending in their book, not one already on show: wards for the road.
+        var pick = sim.Defs.AllMendings.FirstOrDefault(m => !m.CallsBack && m.Heals.Count > 0 && m.Sears <= 0 && Weaving.Knows(sim, pawn, m)
+            && !shown.Contains(m) && m.CostAt(0) <= mana.Current);
+        var altar = StoneOf(sim, shrine);
+        return pick == null || altar.IsNull ? null : new WeaveCharmJob(pick, altar);
+    }
+
     /// <summary>
     /// Weave a mending on yourself, paying its mana; a roll either side of the expected quality.
     /// False if the mana's short (nothing spent).
@@ -307,5 +366,61 @@ public sealed class MendSelfJob(int wound) : Job
         if (Empathy.Find(Sim, Pawn, wound) is not { } inj || LayOnHands.MendingFor(Sim, Pawn, inj.Type) is not { } m)
             yield break;
         LayOnHands.CastOnSelf(Sim, Pawn, wound, m);
+    }
+}
+
+/// <summary>
+/// An AI empath sits at the meditation stone and gathers their mana back: about what a player's
+/// sitting that finds the centre gathers, over half an hour. Up and about again once it's full or
+/// someone needs them badly (a higher priority job takes over).
+/// </summary>
+public sealed class MeditateJob(Entity stone) : Job
+{
+    /// <summary>How long a sitting lasts, and the share of the most mana it gathers over it (more at a better stone).</summary>
+    public const int SittingTicks = SimClock.TicksPerHour / 2;
+    public const float Gathers = 0.5f;
+
+    public override Entity Focus => stone;
+
+    protected override IEnumerable<JobStatus> Run()
+    {
+        Report = "Meditating";
+        if (!Reserve(stone)) yield break;
+        foreach (var s in GoTo(Get<Thing>(stone).Cell, PathEnd.Touch)) yield return s;
+        if (HasFailed) yield break;
+        var still = MeditateSession.StillnessAt(Sim, Pawn);
+        for (var t = 0; t < SittingTicks; t += 60)
+        {
+            foreach (var s in Wait(60)) yield return s;
+            ref var mana = ref Sim.World.Get<Mana>(Pawn);
+            var pain = Sim.World.TryGet<Health>(Pawn, out var h) ? Math.Clamp(h.Pain, 0f, 1f) : 0f;
+            mana.Current = Math.Min(mana.Max, mana.Current + mana.Max * Gathers * (1f + still) / (SittingTicks / 60f) * (1f - 0.6f * pain));
+            if (mana.Current >= mana.Max)
+                yield break;
+        }
+    }
+}
+
+/// <summary>An AI empath weaves a mending into linen at the shrine and puts the charm out for sale there.</summary>
+public sealed class WeaveCharmJob(MendingDef mending, Entity at) : Job
+{
+    protected override IEnumerable<JobStatus> Run()
+    {
+        Report = "Weaving a charm";
+        foreach (var s in GoTo(Get<Thing>(at).Cell, PathEnd.Touch)) yield return s;
+        if (HasFailed) yield break;
+        foreach (var s in Wait(LayOnHandsJob.CastTicks * 2)) yield return s;
+        ref var mana = ref Sim.World.Get<Mana>(Pawn);
+        if (mana.Current < mending.CostAt(0))
+            yield break;
+        var quality = Math.Clamp(LayOnHands.ExpectedQuality(Sim, Pawn) + Sim.Rand.Range(-0.1f, 0.1f), 0.05f, 1f);
+        var charm = Charms.Make(Sim, Pawn, mending, 0, quality);
+        if (charm.IsNull)
+            yield break; // no linen after all
+        mana.Current = Math.Max(0f, mana.Current - mending.CostAt(0));
+        // Laid out in the shrine where the parties will see it, at the price they ask for one.
+        var item = Inventory.TakeFromPerson(Sim, Pawn, charm, 1);
+        Sim.PlaceItemNear(item, PawnCell);
+        Shops.Goods.Set(Sim, Pawn, item, LayOnHands.CharmPrice, true);
     }
 }

@@ -42,37 +42,58 @@ public class HealerTests
         return (sim, me, patient, arm);
     }
 
-    /// <summary>Run the hands from head to feet, pressing in (slow and thorough) or skimming.</summary>
-    private static void FeelOver(Simulation sim, Entity me, Entity patient, bool pressed = true)
+    /// <summary>
+    /// Lay hands on them and read them over without drawing: skim head to feet, stopping on each
+    /// warmth to press it until it's read (or for at most <paramref name="press"/> steps), then on.
+    /// <paramref name="read"/> false: a skim only, never pressing.
+    /// </summary>
+    private static void FeelOver(Simulation sim, Entity me, Entity patient, bool read = true, int press = int.MaxValue)
     {
         sim.ApplyNow(new FeelCommand(me, patient));
-        Assert.IsType<FeelSession>(sim.World.Get<WorkSession>(me));
+        Assert.IsType<HandsOnSession>(sim.World.Get<WorkSession>(me));
         var predictor = new WorkPredictor();
+        var pressed = new Dictionary<int, int>();
         for (var t = 0; t < 60 * 60 && sim.World.Has<WorkSession>(me); t++)
         {
             sim.Tick();
-            predictor.Update(sim, me, 1, false, pressed, 1, c => sim.ApplyNow(c));
+            var hold = false;
+            if (read && predictor.Session is HandsOnSession h && h.Under >= 0 && h.Spots[h.Under] is var s && !h.Read(s) && s.Sensed > 0f)
+            {
+                pressed[s.Key] = pressed.GetValueOrDefault(s.Key) + 1;
+                hold = pressed[s.Key] <= press;
+            }
+            predictor.Update(sim, me, 1, false, hold, hold ? 0 : 1, c => sim.ApplyNow(c));
         }
+        if (sim.World.Has<WorkSession>(me)) // warmths left unread at the feet: take the hands away
+            sim.ApplyNow(new StopWorkCommand(me));
         sim.Tick();
     }
 
     private static int CutKey(Simulation sim, Entity who, int part) =>
         Empathy.KeyOf(sim.World.Get<Health>(who).Injuries.Single(i => i.Part == part && i.Type == DamageType.Cut));
 
-    /// <summary>Draw as a steady hand would (steering for the middle), or as a panicking one (pushing it out).</summary>
+    /// <summary>
+    /// Lay on hands as a steady hand would (reading each warmth, drawing it while steering for the
+    /// middle, then on to the next), or as a panicking one (pushing the needle out once linked).
+    /// </summary>
     private static void Draw(Simulation sim, Entity me, bool steady, int maxTicks = 60 * 120)
     {
         var predictor = new WorkPredictor();
         for (var t = 0; t < maxTicks && sim.World.Has<WorkSession>(me); t++)
         {
             sim.Tick();
-            var axis = 1;
-            if (steady && predictor.Session is DrawSession d)
+            var (held, axis) = (false, 1);
+            if (predictor.Session is HandsOnSession h)
             {
-                var off = d.Composure - 0.5f;
-                axis = MathF.Abs(off) > d.HalfWidth * 0.25f ? -Math.Sign(off) : 0;
+                if (h.Linked)
+                {
+                    var off = h.Link.Composure - 0.5f;
+                    (held, axis) = (true, !steady ? 1 : MathF.Abs(off) > h.Link.HalfWidth * 0.25f ? -Math.Sign(off) : 0);
+                }
+                else if (h.Under >= 0 && h.Spots[h.Under] is { Sensed: > 0f, Drawn: < 1f })
+                    (held, axis) = (!h.Held || h.Reading, 0);
             }
-            predictor.Update(sim, me, 1, false, true, axis, c => sim.ApplyNow(c));
+            predictor.Update(sim, me, 1, false, held, axis, c => sim.ApplyNow(c));
         }
         sim.Tick();
     }
@@ -148,19 +169,17 @@ public class HealerTests
         Assert.True(mine > drawn * Empathy.Burden(sim, me), $"the backlash adds to it: mine {mine}, drawn {drawn}, burden {Empathy.Burden(sim, me)}; {string.Join("; ", sim.Messages.Messages.Select(m => m.Text))}");
     }
 
-    /// <summary>A draw of this kind held for <paramref name="steps"/>, the keys as given, its jolts all but gone (to see the pattern's own push).</summary>
+    /// <summary>A draw of this kind held open for <paramref name="steps"/>, the keys as given, its jolts all but gone (to see the pattern's own push).</summary>
     private static List<float> DrawPath(DrawPattern pattern, int steps, bool held, int steer, float gravity = 1f)
     {
-        var s = new DrawSession { Pattern = pattern, Rate = 1e-6f, Gravity = gravity, Hands = new Hands(1f, 1.25f, 10) };
-        s.Begin();
-        var inputs = new List<WorkInput> { new(0, WorkInputKind.Hold, held ? 1 : 0) };
-        if (steer != 0)
-            inputs.Add(new WorkInput(0, WorkInputKind.Axis, steer));
+        var rand = new SimRandom(1);
+        var link = new DrawLink { Tolerance = 1.25f };
+        link.Take(pattern, 1e-6f, 1f, gravity, rand);
         var path = new List<float>();
-        for (var i = 0; i < steps && !s.Done; i++)
+        for (var i = 0; i < steps && !link.Snapped; i++)
         {
-            s.Advance(i == 0 ? inputs : [], i + 1);
-            path.Add(s.Composure);
+            link.Step(rand, held, steer, 0f, 0f, i);
+            path.Add(link.Composure);
         }
         return path;
     }
@@ -168,8 +187,8 @@ public class HealerTests
     [Fact]
     public void FrostNumbsTheHandsSoSteeringAnswersLate()
     {
-        var plain = DrawPath(DrawPattern.Spike, 12, held: false, steer: 1);
-        var numb = DrawPath(DrawPattern.Numb, 12, held: false, steer: 1);
+        var plain = DrawPath(DrawPattern.Spike, 12, held: true, steer: 1);
+        var numb = DrawPath(DrawPattern.Numb, 12, held: true, steer: 1);
         Assert.True(plain[^1] - 0.5f > 0.1f, $"plain hands move it ({plain[^1]})");
         Assert.True(numb[^1] - 0.5f < (plain[^1] - 0.5f) * 0.5f, $"numb ones barely ({numb[^1]} vs {plain[^1]})");
     }
@@ -195,9 +214,9 @@ public class HealerTests
     public void ABedOrASteadyingMendingWidensTheCalm()
     {
         var hands = new Hands(1f, 1f, 0);
-        var plain = new DrawSession { Hands = hands }.HalfWidth;
-        Assert.True(new DrawSession { Hands = hands, Bedside = true }.HalfWidth > plain * 1.2f);
-        Assert.True(new DrawSession { Hands = hands, Steady = 0.5f }.HalfWidth > plain * 1.4f);
+        var plain = new DrawLink { Tolerance = hands.Tolerance }.HalfWidth;
+        Assert.True(new DrawLink { Tolerance = hands.Tolerance, Bedside = true }.HalfWidth > plain * 1.2f);
+        Assert.True(new DrawLink { Tolerance = hands.Tolerance, Steady = 0.5f }.HalfWidth > plain * 1.4f);
     }
 
     [Fact]
@@ -208,62 +227,140 @@ public class HealerTests
         var burn = Empathy.KeyOf(sim.World.Get<Health>(patient).Injuries.Single(i => i.Type == DamageType.Burn));
         FeelOver(sim, me, patient);
         sim.ApplyNow(new LayOnHandsCommand(me, patient, burn));
-        var s = (DrawSession)sim.World.Get<WorkSession>(me);
-        Assert.Equal(DrawPattern.Drift, s.Pattern);
+        var s = (HandsOnSession)sim.World.Get<WorkSession>(me);
         s.Advance([new WorkInput(0, WorkInputKind.Hold, 1)], 30);
+        Assert.True(s.Linked, "the hands start on the burn, read before: pressing opens the link");
+        Assert.Equal(DrawPattern.Drift, s.Link.Pattern);
 
         var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
-        var copy = (DrawSession)loaded.World.Get<WorkSession>(me);
-        Assert.Equal((s.Pattern, s.Composure, s.Bedside, s.Steady), (copy.Pattern, copy.Composure, copy.Bedside, copy.Steady));
+        var copy = (HandsOnSession)loaded.World.Get<WorkSession>(me);
+        Assert.Equal((s.Link.Pattern, s.Link.Composure, s.Link.Bedside, s.Link.Steady, s.Linked, s.Spots[s.Under].Drawn),
+            (copy.Link.Pattern, copy.Link.Composure, copy.Link.Bedside, copy.Link.Steady, copy.Linked, copy.Spots[copy.Under].Drawn));
     }
 
     [Fact]
-    public void AWoundIsKnownAndDrawnOnlyOnceItsBeenFelt()
+    public void ASkimSensesAWarmthButOnlyAStillPressReadsIt()
     {
-        var (sim, me, patient, arm) = AtTheBedside(felt: false);
-        var view = Perception.For(sim, me);
-        Assert.Empty(view.FeltWounds(patient)!);
+        var (sim, me, patient, _) = AtTheBedside(felt: false);
+        Assert.Empty(Perception.For(sim, me).FeltWounds(patient)!);
         var key = Empathy.KeyOf(sim.World.Get<Health>(patient).Injuries.Single());
-        Assert.NotNull(DrawSession.Problem(sim, me, patient, key)); // no drawing what you haven't felt
 
-        FeelOver(sim, me, patient, pressed: false);
+        FeelOver(sim, me, patient, read: false);
+        Assert.Empty(Perception.For(sim, me).FeltWounds(patient)!); // a warmth, no more
+
+        FeelOver(sim, me, patient);
         var felt = Perception.For(sim, me).FeltWounds(patient)!;
         Assert.Equal(key, felt.Single().Key);
         Assert.Equal("arm", felt.Single().Part.Split(' ')[^1]);
-        Assert.Null(DrawSession.Problem(sim, me, patient, key));
     }
 
     [Fact]
-    public void OnlyAPressedPassFindsFesteringUnderADressing()
+    public void AWoundNotYetReadCantBeDrawn()
     {
-        bool Finds(bool pressed)
+        var (sim, me, patient, arm) = AtTheBedside(felt: false);
+        sim.ApplyNow(new LayOnHandsCommand(me, patient, CutKey(sim, patient, arm)));
+        var s = (HandsOnSession)sim.World.Get<WorkSession>(me);
+        s.Advance([new WorkInput(0, WorkInputKind.Hold, 1)], HandsOnSession.ReadSteps / 2);
+        Assert.True(s.Reading);
+        Assert.False(s.Linked);
+        s.Advance([], HandsOnSession.ReadSteps + 5);
+        Assert.True(s.Linked, "read through, the press opens the link");
+    }
+
+    [Fact]
+    public void PressingAWoundBeatsInItsOwnWay()
+    {
+        // A cut jolts and lets go; frost is a dull steady numbness; a bruise swells and ebbs.
+        var cut = Enumerable.Range(0, 120).Select(i => HandsOnSession.PulseShape(DrawPattern.Spike, i, 1f)).ToList();
+        var frost = Enumerable.Range(0, 120).Select(i => HandsOnSession.PulseShape(DrawPattern.Numb, i, 1f)).ToList();
+        var bruise = Enumerable.Range(0, 160).Select(i => HandsOnSession.PulseShape(DrawPattern.Wave, i, 1f)).ToList();
+        Assert.True(cut.Max() > 0.9f && cut.Min() < 0.05f);
+        Assert.True(frost.Max() < 0.35f && frost.Min() > 0.15f);
+        Assert.True(bruise.Max() > 0.9f && bruise.Min() < 0.1f);
+        Assert.True(HandsOnSession.PulseShape(DrawPattern.Grow, 10, 0.9f) > HandsOnSession.PulseShape(DrawPattern.Grow, 10, 0.1f)); // venom grows as you read it
+    }
+
+    [Fact]
+    public void OnlyALongerPressFindsFesteringUnderADressing()
+    {
+        bool Finds(int press)
         {
             var (sim, me, patient, _) = AtTheBedside(felt: false);
             var inj = sim.World.Get<Health>(patient).Injuries.Single();
             inj.Tended = true;
             inj.Infection = new Infection { Severity = 0.3f };
-            FeelOver(sim, me, patient, pressed);
-            var felt = Perception.For(sim, me).FeltWounds(patient)!.Single();
-            return felt.Festering;
+            FeelOver(sim, me, patient, press: press);
+            return Perception.For(sim, me).FeltWounds(patient)!.Single().Festering;
         }
-        Assert.False(Finds(pressed: false));
-        Assert.True(Finds(pressed: true));
+        Assert.False(Finds(HandsOnSession.ReadSteps + 5));
+        Assert.True(Finds(int.MaxValue));
     }
 
     [Fact]
-    public void APatientKeepsStillWhileFeltOverAndAFeelSurvivesASave()
+    public void PressingWhileTheHandsMoveOverAWoundMakesThePatientFlinch()
+    {
+        var (sim, me, patient, arm) = AtTheBedside(felt: false);
+        sim.ApplyNow(new FeelCommand(me, patient));
+        var s = (HandsOnSession)sim.World.Get<WorkSession>(me);
+        // Pressed all the way down the body, never stopping.
+        s.Advance([new WorkInput(0, WorkInputKind.Hold, 1), new WorkInput(0, WorkInputKind.Axis, 1)], 600);
+        Assert.True(s.Flinches > 0, "a rough hand dragged over a cut");
+        Assert.All(s.Spots, p => Assert.True(p.Found < 1f, "and nothing was read pressing on the move"));
+        sim.Tick();
+        Assert.Contains(sim.World.Get<Mood>(patient).Memories, m => m.Def == sim.Defs.Thoughts.RoughHands);
+    }
+
+    [Fact]
+    public void OneSittingReadsAndDrawsEveryWoundInTurn()
+    {
+        var (sim, me, patient, arm) = AtTheBedside(cut: 8f, felt: false);
+        var h = sim.World.Get<Health>(patient);
+        var leg = h.Body.Parts.FindIndex(p => p.Label.Contains("leg") && !p.Vital);
+        HealthSystem.Damage(sim, patient, 6f, DamageType.Blunt, leg);
+        Assert.Equal(2, h.Injuries.Count);
+
+        sim.ApplyNow(new FeelCommand(me, patient));
+        Draw(sim, me, steady: true);
+
+        Assert.Empty(h.Injuries);
+        Assert.Equal(2, sim.World.Get<Health>(me).Injuries.Count(i => i.Absorbed));
+    }
+
+    [Fact]
+    public void AWoundDrawnWholeLandsWhileTheHandsGoOn()
+    {
+        var (sim, me, patient, arm) = AtTheBedside(cut: 8f);
+        var h = sim.World.Get<Health>(patient);
+        HealthSystem.Damage(sim, patient, 6f, DamageType.Blunt, h.Body.Parts.FindIndex(p => p.Label.Contains("leg") && !p.Vital)); // another, not yet read
+        sim.ApplyNow(new LayOnHandsCommand(me, patient, CutKey(sim, patient, arm)));
+        var s = (HandsOnSession)sim.World.Get<WorkSession>(me);
+        var predictor = new WorkPredictor();
+        for (var t = 0; t < 60 * 60 && !s.Spots.All(p => p.Applied); t++)
+        {
+            sim.Tick();
+            var axis = predictor.Session is HandsOnSession x && MathF.Abs(x.Link.Composure - 0.5f) > x.Link.HalfWidth * 0.25f ? -Math.Sign(x.Link.Composure - 0.5f) : 0;
+            predictor.Update(sim, me, 1, false, true, axis, c => sim.ApplyNow(c));
+        }
+        Assert.True(sim.World.Has<WorkSession>(me), "the hands are still on them");
+        Assert.DoesNotContain(sim.World.Get<Health>(patient).Injuries, i => i.Type == DamageType.Cut);
+        Assert.Contains(sim.World.Get<Health>(me).Injuries, i => i.Absorbed);
+    }
+
+    [Fact]
+    public void APatientKeepsStillWhileFeltOverAndHandsOnSurvivesASave()
     {
         var (sim, me, patient, _) = AtTheBedside(felt: false);
         sim.World.Get<Mind>(patient).Drafted = false;
         sim.ApplyNow(new FeelCommand(me, patient));
         sim.TickMany(30);
         Assert.Equal(me, Empathy.DrawnBy(sim, patient));
-        var s = (FeelSession)sim.World.Get<WorkSession>(me);
-        s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Hold, 1), new WorkInput(s.StepsDone, WorkInputKind.Axis, 1)], s.StepsDone + 40);
+        var s = (HandsOnSession)sim.World.Get<WorkSession>(me);
+        s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Axis, 1)], s.StepsDone + 40);
 
         var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
-        var copy = (FeelSession)loaded.World.Get<WorkSession>(me);
-        Assert.Equal((s.Hands01, s.Spots.Count, s.Spots[0].Found, s.Parts.Count), (copy.Hands01, copy.Spots.Count, copy.Spots[0].Found, copy.Parts.Count));
+        var copy = (HandsOnSession)loaded.World.Get<WorkSession>(me);
+        Assert.Equal((s.Hands01, s.Spots.Count, s.Spots[0].Sensed, s.Parts.Count, s.Link.Composure),
+            (copy.Hands01, copy.Spots.Count, copy.Spots[0].Sensed, copy.Parts.Count, copy.Link.Composure));
     }
 
     [Fact]
@@ -550,7 +647,7 @@ public class HealerTests
     }
 
     [Fact]
-    public void TheShrineHasPalletsAStoneAndSupplies()
+    public void TheShrineHasPalletsAStoneAnAltarAndSupplies()
     {
         var sim = VillageRound.NewSimulation(LoadDefs(), 1234);
         sim.Presets.PresetMode = true;
@@ -559,9 +656,12 @@ public class HealerTests
         var parts = sim.World.Query<PartOf>().Where(e => sim.World.Get<PartOf>(e).Building == town.Shrine).ToList();
         int Count(string def) => parts.Count(e => sim.World.Get<Thing>(e).Def.Name == def);
         Assert.Equal(1, Count("MeditationStone"));
-        Assert.Equal(2, Count("StrawPallet"));
-        var chest = parts.Single(e => sim.World.Get<Thing>(e).Def.Name == "Chest");
-        Assert.Equal(VillageRound.ShrineBandages, sim.StoredIn(chest).Where(i => sim.World.Get<Thing>(i).Def.Name == "Bandage").Sum(i => sim.World.Get<Stack>(i).Count));
+        Assert.Equal(3, Count("StrawPallet"));
+        Assert.Equal(1, Count("RuneAltar"));
+        Assert.Equal(2, Count("HerbRack"));
+        var basket = parts.Single(e => sim.World.Get<Thing>(e).Def.Name == "LinenBasket");
+        Assert.Equal(VillageRound.ShrineBandages, sim.StoredIn(basket).Where(i => sim.World.Get<Thing>(i).Def.Name == "Bandage").Sum(i => sim.World.Get<Stack>(i).Count));
+        Assert.Single(parts, e => sim.World.Get<Thing>(e).Def.Name == "Chest"); // and a chest for the rest
         Assert.Equal("Shrine", sim.Defs.Trade("Healer").Workplace);
     }
 
@@ -831,13 +931,33 @@ public class HealerTests
     }
 
     [Fact]
+    public void ASpentAIEmpathMeditatesItsManaBackAtTheStone()
+    {
+        var (sim, hurt) = ShrineWithAHurtAdventurer("Blacksmith");
+        sim.World.Get<Health>(hurt).Injuries.Clear(); // nobody waiting on them
+        var healer = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
+        ref var mana = ref sim.World.Get<Mana>(healer);
+        mana.Current = 0f;
+        var sat = false;
+        for (var t = 0; t < SimClock.TicksPerHour && !sat; t += 60)
+        {
+            sim.TickMany(60);
+            sat = sim.World.Get<Mind>(healer).Job is MeditateJob;
+        }
+        Assert.True(sat, "off to the meditation stone");
+        sim.TickMany(MeditateJob.SittingTicks + SimClock.TicksPerHour / 4);
+        // Far more than an hour's rest gives back (Empathy.RegenPerHour).
+        Assert.True(sim.World.Get<Mana>(healer).Current > sim.World.Get<Mana>(healer).Max * 0.3f, $"mana {sim.World.Get<Mana>(healer).Current}");
+    }
+
+    [Fact]
     public void TheWoundedLieOnTheShrinesPalletsAndAreDrawnFromAtTheBedside()
     {
         var (sim, hurt) = ShrineWithAHurtAdventurer("Healer");
         var order = sim.Shops.All.Single(e => e.IsOpen && e.Poster == hurt && e.Kind.Kind == ServiceKind.Healing);
-        Assert.Equal(2, ShopSystem.BedsOf(sim, order.Where).Count);
+        Assert.Equal(3, ShopSystem.BedsOf(sim, order.Where).Count);
         var cells = ShopSystem.LineCells(sim, order.Where);
-        Assert.Equal(ShopSystem.BedsOf(sim, order.Where).Select(b => sim.World.Get<Thing>(b).Cell), cells.Take(2));
+        Assert.Equal(ShopSystem.BedsOf(sim, order.Where).Select(b => sim.World.Get<Thing>(b).Cell), cells.Take(3));
 
         for (var t = 0; t < SimClock.TicksPerHour * 2 && !HealthSystem.InBed(sim, hurt); t++)
             sim.Tick();
@@ -854,6 +974,6 @@ public class HealerTests
         FeelOver(sim, me, hurt);
         var wound = Perception.For(sim, me).FeltWounds(hurt)!.First();
         sim.ApplyNow(new LayOnHandsCommand(me, hurt, wound.Key));
-        Assert.True(((DrawSession)sim.World.Get<WorkSession>(me)).Bedside);
+        Assert.True(((HandsOnSession)sim.World.Get<WorkSession>(me)).Link.Bedside);
     }
 }

@@ -64,6 +64,56 @@ public static class Homes
         return true;
     }
 
+    /// <summary>
+    /// The bread crock in every cottage: plain food for whoever lives there, topped up by the carter
+    /// each morning, eaten by hand (F at it). No job takes from it (<see cref="Simulation.IsAvailable(Entity)"/>):
+    /// it's not the cook's to serve or a hauler's to carry off.
+    /// </summary>
+    public const string Crock = "BreadCrock";
+
+    /// <summary>What the carter leaves in each crock, topped up to (not added to) each morning.</summary>
+    public static readonly (string Def, int Count)[] CrockFood = [("Bread", 3), ("Berries", 8)];
+
+    /// <summary>Hungrier than this (the food need), and F at the crock eats.</summary>
+    public const float CrockBelow = 0.8f;
+
+    public static bool IsCrock(Simulation sim, Entity e) =>
+        !e.IsNull && sim.World.IsAlive(e) && sim.World.TryGet<Thing>(e, out var t) && t.Def.Name == Crock && !sim.World.Has<Construction>(e);
+
+    /// <summary>Something to eat from their own home's crock for someone peckish enough, or Entity.Null: bread first.</summary>
+    public static Entity FromCrock(Simulation sim, Entity who, Entity crock)
+    {
+        var w = sim.World;
+        if (!IsCrock(sim, crock) || HomeOf(sim, who) != Buildings.Of(sim, crock)
+            || !w.TryGet<Needs>(who, out var needs) || needs.Get(sim.Defs.Need("Food")) >= CrockBelow)
+            return Entity.Null;
+        var eater = w.Get<Creature>(who).Def;
+        return sim.StoredIn(crock)
+            .Where(e => w.Get<Thing>(e).Def is { IsFood: true } d && d.EdibleBy(eater) && !sim.Reservations.IsReservedByOther(e, who))
+            .OrderByDescending(e => w.Get<Thing>(e).Def.Cooked).FirstOrDefault(Entity.Null);
+    }
+
+    /// <summary>Top every cottage's crock up to <see cref="CrockFood"/>: at the deal, and with the carter each morning.</summary>
+    public static void StockCrocks(Simulation sim)
+    {
+        var w = sim.World;
+        foreach (var e in w.Query<Thing>())
+        {
+            if (!IsCrock(sim, e) || !w.Get<Thing>(e).Spawned)
+                continue;
+            foreach (var (def, count) in CrockFood)
+            {
+                var thing = sim.Defs.Thing(def);
+                var have = sim.StoredIn(e).Where(i => w.Get<Thing>(i).Def == thing).Sum(i => w.Get<Stack>(i).Count);
+                if (have >= count)
+                    continue;
+                var left = sim.Store(e, sim.CreateItem(thing, count - have));
+                if (!left.IsNull)
+                    sim.DestroyThing(left); // full of something else: the carter takes it back
+            }
+        }
+    }
+
     /// <summary>The cottage (or inn room) someone sleeps in, or Entity.Null.</summary>
     public static Entity HomeOf(Simulation sim, Entity who) =>
         sim.World.TryGet<BedOwner>(who, out var own) && sim.World.IsAlive(own.Bed) ? Buildings.Of(sim, own.Bed) : Entity.Null;

@@ -106,6 +106,9 @@ public enum AvatarActionKind
 
     /// <summary>Sit on a seat in reach (a stool, a bench: <see cref="Defs.BuildingProps.Seat"/>) until you move (<see cref="SitJob"/>).</summary>
     Sit,
+
+    /// <summary>Eat from your home's bread crock when hungry (<see cref="Homes.Crock"/>), at once.</summary>
+    EatFromCrock,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -459,6 +462,9 @@ public sealed class AvatarSystem : ISimSystem
         // At the inn's serving hatch with empty hands: order a meal there (not the cook: they serve it).
         if (held.IsNull && !site.IsNull && w.Get<Thing>(site).Def.Building is { Hatch: true } && MealOrder(sim, avatar, site) is { } meal)
             return new(AvatarActionKind.OrderMeal, meal, cell, site);
+        // At a cottage's bread crock with empty hands and an appetite: eat from it.
+        if (held.IsNull && Homes.IsCrock(sim, site) && Homes.FromCrock(sim, avatar, site) is { IsNull: false } bite)
+            return new(AvatarActionKind.EatFromCrock, $"Eat some {w.Get<Thing>(bite).Def.Label} from the crock", cell, site);
         // At a shrine pallet, hurt: ask the healer to see to you (then lie there to wait your turn).
         if (held.IsNull && !site.IsNull && HealingOrder(sim, avatar, site) is { } heal)
             return new(AvatarActionKind.OrderHealing, heal, cell, site);
@@ -859,6 +865,10 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.Climb:
                 AiSystem.Order(sim, avatar, new ClimbJob(action.Cell));
+                break;
+            case AvatarActionKind.EatFromCrock:
+                if (Homes.FromCrock(sim, avatar, action.Target) is { IsNull: false } food && CanEat(sim, avatar, food))
+                    AiSystem.Order(sim, avatar, new EatHeldJob(food));
                 break;
             case AvatarActionKind.Sit:
                 if (SitJob.CanSit(sim, avatar, action.Target))

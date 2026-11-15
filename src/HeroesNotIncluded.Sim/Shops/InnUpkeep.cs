@@ -222,6 +222,9 @@ public sealed class InnSupplySystem : ISimSystem, Saving.ISaveState
         if (!sim.Round.Live || sim.Clock.HourOfDay < DeliveryHour || sim.Clock.Day <= _lastDay)
             return;
         _lastDay = sim.Clock.Day;
+        // The cottages' bread crocks: plain food at home, for anyone with no cook to feed them.
+        if (!sim.Director.Active.Any(c => c.Kind == Defs.CrisisKind.Shortage) && !sim.Repairs.RoadCut)
+            Systems.Homes.StockCrocks(sim);
         // The round's first morning is what it was stocked with.
         if (sim.Clock.Tick < SimClock.TicksPerHour * 6)
             return;

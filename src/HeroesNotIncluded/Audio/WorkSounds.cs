@@ -114,7 +114,24 @@ public sealed class WorkSounds(AudioEngine audio)
                 _b = s.LastWovenAt;
                 audio.Hold("work:hum", Sounds.Hum, 0.5f);
                 break;
-            case FeelSession or DrawSession or MeditateSession:
+            case HandsOnSession s:
+                // The gift's hum, up while the link's open and climbing as the strain does.
+                audio.Hold("work:hum", Sounds.Hum, s.Linked ? 0.75f : 0.4f, pitch: 1f + 0.25f * Math.Clamp(s.Link.Strain, 0f, 1f), fade: 0.2f);
+                // A wound's beat under a pressing hand, each time it swells (its kind's way, as the scene shows it).
+                if (s.Pulse > 0.6f && !_flag)
+                    audio.Play(Sounds.Pulse, gain: 0.4f + 0.6f * s.Pulse, pitch: s.Linked ? 1.1f : 1f);
+                _flag = s.Pulse > 0.6f || (_flag && s.Pulse > 0.35f);
+                if (s.LastDrawnAt > _a && !fresh)
+                    audio.Play(Sounds.Drawn);
+                _a = Math.Max(_a, s.LastDrawnAt);
+                if (s.Flinches > _b && !fresh)
+                    audio.Play(Sounds.Pulse, gain: 0.9f, pitch: 0.7f);
+                _b = s.Flinches;
+                if (s.Link.Snapped && _q == 0f)
+                    audio.Play(Sounds.Snap);
+                _q = s.Link.Snapped ? 1f : 0f;
+                break;
+            case MeditateSession:
                 audio.Hold("work:hum", Sounds.Hum, 0.6f);
                 break;
             case PinSession s:

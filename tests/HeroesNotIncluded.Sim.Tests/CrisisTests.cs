@@ -114,7 +114,11 @@ public class CrisisTests
         w.Get<Position>(near).Cell = beside;
         w.Get<Position>(near).Pos = Position.CenterOf(beside);
         for (var i = 0; i < 96 && !FeverSystem.Has(sim, near); i++) // 5% a quarter hour: a day all but makes it sure
+        {
             sim.TickMany(SimClock.TicksPerHour / 4);
+            foreach (var e in w.Query<Mana>()) // and kept spent: an empath meditates it back
+                w.Get<Mana>(e).Current = 0f;
+        }
         Assert.True(FeverSystem.Has(sim, near), "a fever passes to whoever sits close");
 
         // Seen off: nobody fevered any more, and nobody carried it away.

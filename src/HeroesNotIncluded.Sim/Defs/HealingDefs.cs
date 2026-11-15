@@ -106,7 +106,7 @@ public sealed class MendingDef : Def
     }
 }
 
-/// <summary>How a wound's pain moves an empath's composure while they draw it (<c>Healing.DrawSession</c>).</summary>
+/// <summary>How a wound's pain moves an empath's composure while they draw it (<c>Healing.DrawLink</c>).</summary>
 public enum DrawPattern
 {
     /// <summary>Sharp single jolts, either way.</summary>

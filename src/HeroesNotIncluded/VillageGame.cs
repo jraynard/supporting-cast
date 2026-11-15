@@ -452,6 +452,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         UpdateStationMarks();
         UpdateFestival();
         UpdateErrandPointers();
+        UpdateFoodPointer();
         UpdateLesson(); // after the festival's and the tips' marks are cleared: its own go on top
         UpdateHomeMark();
         UpdateWork(dt);

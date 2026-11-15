@@ -173,12 +173,12 @@ public static class VillageRound
     {
         if (shrine.IsNull)
             return;
-        foreach (var e in sim.World.Query<PartOf>())
-            if (sim.World.Get<PartOf>(e).Building == shrine && sim.World.Get<Thing>(e).Def.Building is { StorageStacks: > 0 })
-            {
-                sim.Store(e, sim.CreateItem(sim.Defs.Thing(Systems.Bandaging.BandageDef), ShrineBandages));
-                return;
-            }
+        // Into the linen basket, else the first chest.
+        var boxes = sim.World.Query<PartOf>()
+            .Where(e => sim.World.Get<PartOf>(e).Building == shrine && sim.World.Get<Thing>(e).Def.Building is { StorageStacks: > 0 })
+            .OrderBy(e => sim.World.Get<Thing>(e).Def.Name == "LinenBasket" ? 0 : 1).ToList();
+        if (boxes.Count > 0)
+            sim.Store(boxes[0], sim.CreateItem(sim.Defs.Thing(Systems.Bandaging.BandageDef), ShrineBandages));
     }
 
     /// <summary>A player's character walking into town near <paramref name="near"/>. Co-op's host claims it on joining (<see cref="Players.Join"/>).</summary>

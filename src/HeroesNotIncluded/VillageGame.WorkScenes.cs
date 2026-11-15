@@ -183,28 +183,6 @@ public sealed partial class VillageGame
         }
     }
 
-    /// <summary>The hand over the hurt, the hurt drawn up into it as light; the hand trembles as the strain builds.</summary>
-    private void DrawScene(bool held, bool calm, float drawn, float strain)
-    {
-        var (dl, min, max, px) = WorkScene(84, Theme.Arcane);
-        var mid = (min + max) * 0.5f;
-        if (Prop(dl, "forearm", new float2(mid.X, max.Y - Gui.S(6)), px) is not { } arm)
-            return;
-        var hurt = new float2(mid.X, arm.Min.Y + 6 * px);
-        var shake = strain * 2f * px;
-        var palm = new float2(mid.X + MathF.Sin(_time * 40f) * shake, arm.Min.Y - 5 * px);
-        // What you feel of it: a glow, its brightness only how much is left to draw.
-        dl.AddCircleFilled(in hurt, (5f + 6f * (1f - drawn)) * px, Gui.U8(Theme.Arcane, 0.18f * (1f - drawn) + 0.05f), 20);
-        if (held)
-            for (var k = 0; k < 5; k++)
-            {
-                var t = (_time * 1.2f + k / 5f) % 1f;
-                var at = hurt + (palm - hurt) * t + new float2(MathF.Sin(t * 9f + k) * 2f * px, 0);
-                dl.AddCircleFilled(in at, px * (1.4f - t * 0.6f), Gui.U8(calm ? Theme.Arcane : Theme.Bad, 0.8f * (1f - t * 0.5f)), 8);
-            }
-        Prop(dl, "hand", palm + new float2(-4 * px, 4 * px), px);
-    }
-
     // ---------------- The smith: the edge ----------------
 
     /// <summary>The blade on the stone at the angle you hold it, warming as you grind; sparks as the edge comes back.</summary>
@@ -374,31 +352,147 @@ public sealed partial class VillageGame
         dl.AddLine(in finger, in post, Theme.U8(Theme.Iron), Gui.S(3));
     }
 
+    /// <summary>A wound as the hands know it, for the scene: its kind's look only once it's read, festering only once found.</summary>
+    private readonly record struct HandsSpot(float At, float Gravity, Sim.Defs.DrawPattern Pattern, float Sensed, float Found, float Drawn, bool Festering);
+
+    /// <summary>What the laying-on-of-hands scene draws: the session as the empath has it.</summary>
+    private readonly record struct HandsView(long Session, IReadOnlyList<string> Parts, IReadOnlyList<HandsSpot> Spots, float Hands, bool Held,
+        bool Linked, bool Calm, float Strain, float Pulse, int Under, int Step, int LastDrawn, int LastDrawnAt, int LastFlinch);
+
+    private static HandsView HandsViewOf(HandsOnSession s) => new(s.StartTick, s.Parts,
+        [.. s.Spots.Select(p => new HandsSpot(p.At, p.Gravity, p.Pattern, p.Sensed, p.Found, p.Drawn, s.FoundFestering(p)))],
+        s.Hands01, s.Held, s.Linked, s.Link.Calm, s.Link.Strain, s.Pulse, s.Under, s.StepsDone, s.LastDrawn, s.LastDrawnAt, s.LastFlinch);
+
+    /// <summary>Frost's pale blue, venom's sick green, a burn's scorch: the marks' own colours.</summary>
+    private static readonly float4 FrostBlue = new(0.72f, 0.88f, 1f, 1f), VenomGreen = new(0.55f, 0.8f, 0.35f, 1f), Scorch = new(0.95f, 0.5f, 0.2f, 1f), Bruise = new(0.5f, 0.3f, 0.6f, 1f);
+
     /// <summary>
-    /// The patient lying head to feet across it, the parts named over them; what the hands have made
-    /// out glows where it lies (the worse the redder, festering found sickly), and the hands over them,
-    /// pressing in as you press. Only what's been felt is drawn.
+    /// The patient lying head to feet, the parts named over them. A warmth where the hands have
+    /// sensed something; once read, the wound's own mark, beating in its pulse (a cut's bright slash,
+    /// a bite's two, a bruise swelling, a burn's scorch, frost's rime, venom spreading), fading as
+    /// it's drawn. The hands over them, pressing as you press; while the link's open a thread of
+    /// light from the wound into the palms, fraying red off balance and shaking with strain. A
+    /// flash as a wound comes across; the body jerks when they flinch.
     /// </summary>
-    private void FeelScene(IReadOnlyList<string> parts, IEnumerable<(float At, float Gravity, float Found, bool Festering)> found, float hands, bool held)
+    private void HandsOnScene(HandsView v)
     {
-        var (dl, min, max, px) = WorkScene(104, Theme.Arcane);
-        if (Prop(dl, "patient", new float2((min.X + max.X) * 0.5f, max.Y - Gui.S(6)), px) is not { } body)
+        var st = SceneFor("handson", v.Session);
+        var (dl, min, max, px) = WorkScene(120, Theme.Arcane);
+        var flinch = v.Step - v.LastFlinch is >= 0 and < 20 ? (1f - (v.Step - v.LastFlinch) / 20f) : 0f;
+        var jerk = MathF.Sin(_time * 60f) * flinch * 3f * px;
+        if (Prop(dl, "patient", new float2((min.X + max.X) * 0.5f + jerk, max.Y - Gui.S(6)), px) is not { } body)
             return;
         float AlongBody(float f) => body.Min.X + 4 * px + f * (body.Max.X - body.Min.X - 8 * px);
         var bodyY = body.Min.Y + 12 * px;
-        for (var i = 0; i < parts.Count; i++)
+        for (var i = 0; i < v.Parts.Count; i++)
         {
-            var label = parts[i];
-            var at = new float2(AlongBody(FeelSession.PartAt(i, parts.Count)) - ImGui.CalcTextSize(label).X / 2, min.Y + Gui.S(4));
+            var label = v.Parts[i];
+            var at = new float2(AlongBody(HandsOnSession.PartAt(i, v.Parts.Count)) - ImGui.CalcTextSize(label).X / 2, min.Y + Gui.S(4));
             dl.AddText(in at, Theme.U8(Theme.Dim), label);
         }
-        foreach (var (at, gravity, amount, festering) in found)
+
+        for (var i = 0; i < v.Spots.Count; i++)
         {
-            var centre = new float2(AlongBody(at), bodyY);
-            dl.AddCircleFilled(in centre, Gui.S(4f + 6f * gravity), Theme.U8(festering ? Theme.Warn : Theme.Bad, 0.25f + 0.65f * amount), 20);
+            var sp = v.Spots[i];
+            if (sp.Sensed <= 0f || sp.Drawn >= 1f && v.Step - v.LastDrawnAt > 40)
+                continue;
+            var centre = new float2(AlongBody(sp.At), bodyY);
+            var left = 1f - sp.Drawn;
+            // The warmth: all a skim tells you.
+            dl.AddCircleFilled(in centre, Gui.S(7f + 7f * sp.Gravity), Theme.U8(Theme.Warn, 0.12f + 0.18f * sp.Sensed * left), 24);
+            if (sp.Found >= 1f)
+                WoundMark(dl, centre, sp, i == v.Under ? v.Pulse : 0f, left, px);
+            else if (i == v.Under && v.Pulse > 0f)
+                dl.AddCircle(in centre, Gui.S(5f + 9f * v.Pulse), Theme.U8(Theme.Text, 0.25f + 0.5f * v.Pulse * sp.Found), 24, Gui.S(1.5f));
+            if (sp.Festering)
+                dl.AddCircle(in centre, Gui.S(9f + 6f * sp.Gravity), Theme.U8(VenomGreen, 0.6f * left), 20, Gui.S(2f));
         }
-        var press = held ? 3f * px : 0f;
-        Prop(dl, "hand", new float2(MathF.Min(AlongBody(hands) + 6 * px, max.X - 13 * px), bodyY - 2 * px + press), px, held ? Gui.White : Gui.U8(new float4(0.88f, 0.84f, 0.8f, 1f)));
+
+        // The hands: both, side by side, pressing in as you press, trembling with the strain.
+        var shake = v.Strain * 2f * px * MathF.Sin(_time * 40f);
+        var handX = MathF.Min(AlongBody(v.Hands), max.X - 13 * px);
+        var press = v.Held ? 3f * px : 0f;
+        var palm = new float2(handX + shake, bodyY - 2 * px + press);
+        var tint = v.Held ? Gui.White : Gui.U8(new float4(0.88f, 0.84f, 0.8f, 1f));
+        Prop(dl, "hand", palm + new float2(-5 * px, 0), px, tint);
+        Prop(dl, "hand", palm + new float2(5 * px, -px), px, tint);
+
+        // The link: light drawn up out of the wound into the palms.
+        if (v.Linked && v.Under >= 0)
+        {
+            var from = new float2(AlongBody(v.Spots[v.Under].At), bodyY);
+            var to = palm - new float2(0, 9 * px);
+            var colour = v.Calm ? Theme.Arcane : Theme.Bad;
+            for (var k = 0; k < 6; k++)
+            {
+                var t = (_time * 1.3f + k / 6f) % 1f;
+                var fray = v.Calm ? 1f : 3f;
+                var at = from + (to - from) * t + new float2(MathF.Sin(t * 9f + k) * fray * px, 0);
+                dl.AddCircleFilled(in at, px * (1.4f - t * 0.6f), Gui.U8(colour, 0.85f * (1f - t * 0.4f)), 8);
+            }
+            dl.AddLine(in from, in to, Gui.U8(colour, 0.25f), Gui.S(1.5f));
+        }
+
+        // A wound come across: a flash where it was, rising into the hands.
+        if (v.LastDrawn >= 0 && v.LastDrawn < v.Spots.Count && v.Step - v.LastDrawnAt is >= 0 and < 40)
+        {
+            var t = (v.Step - v.LastDrawnAt) / 40f;
+            var at = new float2(AlongBody(v.Spots[v.LastDrawn].At), bodyY - t * 10 * px);
+            dl.AddCircleFilled(in at, Gui.S(6f + 18f * t), Gui.U8(Theme.Arcane, 0.5f * (1f - t)), 24);
+            if (st.Count != v.LastDrawnAt)
+            {
+                st.Count = v.LastDrawnAt;
+                for (var k = 0; k < 10; k++)
+                    st.Motes.Add(new Mote(at, palm + new float2((k - 5) * px, -8 * px), _time + k * 0.03f, 0.5f));
+            }
+        }
+        DrawMotes(dl, st, Theme.Arcane, px);
+    }
+
+    /// <summary>A read wound's mark by how it feels, beating with <paramref name="pulse"/>, faded to <paramref name="left"/> of it.</summary>
+    private void WoundMark(ImDrawListPtr dl, float2 c, HandsSpot sp, float pulse, float left, float px)
+    {
+        var a = (0.35f + 0.55f * sp.Gravity) * left + 0.3f * pulse;
+        var r = Gui.S(3f + 5f * sp.Gravity) * (1f + 0.35f * pulse);
+        switch (sp.Pattern)
+        {
+            case Sim.Defs.DrawPattern.Double: // a bite: two tears
+                for (var k = -1; k <= 1; k += 2)
+                {
+                    var o = new float2(k * 2.5f * px, 0);
+                    dl.AddLine(c + o + new float2(-r, -r * 0.4f), c + o + new float2(r, r * 0.4f), Gui.U8(Theme.Bad, a), Gui.S(2f));
+                }
+                break;
+            case Sim.Defs.DrawPattern.Wave: // a bruise: a dark swelling that breathes
+                dl.AddCircleFilled(in c, r * (1f + 0.2f * MathF.Sin(_time * 2.4f)), Gui.U8(Bruise, a), 24);
+                break;
+            case Sim.Defs.DrawPattern.Drift: // a burn: a scorch, its heat streaming off one way
+                dl.AddCircleFilled(in c, r, Gui.U8(Scorch, a * 0.8f), 20);
+                for (var k = 0; k < 3; k++)
+                {
+                    var t = (_time * 0.8f + k / 3f) % 1f;
+                    var at = c + new float2(t * r * 2f, -t * r);
+                    dl.AddCircleFilled(in at, px * (1.2f - t), Gui.U8(Scorch, a * (1f - t)), 8);
+                }
+                break;
+            case Sim.Defs.DrawPattern.Numb: // frost: a pale rime ringed in spikes
+                dl.AddCircle(in c, r, Gui.U8(FrostBlue, a), 20, Gui.S(1.5f));
+                for (var k = 0; k < 6; k++)
+                {
+                    var ang = k * MathF.Tau / 6f;
+                    var d = new float2(MathF.Cos(ang), MathF.Sin(ang));
+                    dl.AddLine(c + d * r, c + d * r * 1.5f, Gui.U8(FrostBlue, a * 0.8f), Gui.S(1f));
+                }
+                break;
+            case Sim.Defs.DrawPattern.Grow: // venom: a sick stain spreading
+                dl.AddCircleFilled(in c, r * (0.8f + 0.4f * pulse), Gui.U8(VenomGreen, a * 0.7f), 20);
+                dl.AddCircleFilled(in c, r * 0.4f, Gui.U8(Theme.Bad, a), 12);
+                break;
+            default: // a cut, a stab, a shock: one bright slash
+                dl.AddLine(c + new float2(-r, -r * 0.5f), c + new float2(r, r * 0.5f), Gui.U8(Theme.Bad, a), Gui.S(2.5f));
+                dl.AddLine(c + new float2(-r, -r * 0.5f), c + new float2(r, r * 0.5f), Gui.U8(Theme.Text, a * 0.5f * pulse), Gui.S(1f));
+                break;
+        }
     }
 
     /// <summary>The cask's head end at <paramref name="centre"/> and the tap in its side; where the spout is.</summary>
@@ -440,7 +534,6 @@ public sealed partial class VillageGame
             Cell("Season", () => SeasonScene(1, beat));
             Cell("Make bed", () => MakeBedScene(beat % 4, Wave(2f), Wave(2f) > 0.8f));
             Cell("Bandage", () => BandageScene(5, beat % 5, Wave(1.5f), 0.55f, 0.75f));
-            Cell("Draw", () => DrawScene(true, Wave(0.7f) > 0.3f, (_time * 0.1f) % 1f, Wave(0.9f)));
             Cell("Sharpen", () => SharpenScene(1, true, Wave(0.8f), Wave(0.3f), _time * 0.05f));
             Cell("Grind", () => SharpenScene(1, true, Wave(0.8f), Wave(0.3f), _time * 0.05f, onWheel: true));
             Cell("Probe", () => ProbeScene(Wave(0.4f), Wave(3f) > 0.85f ? 0.8f : 0.1f, Wave(1.1f)));
@@ -457,7 +550,15 @@ public sealed partial class VillageGame
                     Gui.Image(dl, mallet, mMin, mMin + new float2(40, 16) * px, Gui.White);
                 }
             });
-            Cell("Feel", () => FeelScene(["head", "chest", "belly", "arms", "legs"], [(0.3f, 0.6f, 0.9f, false), (0.75f, 0.3f, Wave(0.5f), true)], Wave(0.35f), Wave(1f) > 0.5f));
+            Cell("Hands on", () =>
+            {
+                // Every kind of wound read, one being drawn; the hands sweeping back and forth.
+                var step = (int)(_time * 60f);
+                var kinds = Enum.GetValues<Sim.Defs.DrawPattern>();
+                var spots = kinds.Select((k, i) => new HandsSpot(0.08f + 0.84f * i / Math.Max(1, kinds.Length - 1), 0.3f + 0.1f * i, k, 1f, 1f, i == 1 ? (_time * 0.15f) % 1f : 0f, i == kinds.Length - 1)).ToList();
+                HandsOnScene(new HandsView(1, ["head", "neck", "chest", "belly", "arms", "legs", "feet"], spots, spots[1].At, true, true, Wave(0.7f) > 0.3f,
+                    Wave(0.9f), HandsOnSession.PulseShape(kinds[1], step, spots[1].Drawn), 1, step, -1, -1000, -1000));
+            });
             Cell("True", () => TrueScene(_time * 0.1f, (Wave(0.63f) - 0.5f) * 0.6f, 0.06f));
             ImGui.EndTable();
         }

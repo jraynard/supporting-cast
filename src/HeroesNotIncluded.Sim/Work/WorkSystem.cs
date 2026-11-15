@@ -48,6 +48,10 @@ public sealed class WorkSystem : ISimSystem
             {
                 Stop(sim, e, $"{session.Title}: left unfinished.");
             }
+            else
+            {
+                session.Settle(sim);
+            }
         }
     }
 

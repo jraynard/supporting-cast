@@ -14,7 +14,7 @@ public static class HealerLessons
 {
     public const string Trade = "Healer";
 
-    private static readonly string[] Mending = ["feel", "draw", "meditate", "weave"];
+    private static readonly string[] Mending = ["feel", "read", "draw", "meditate", "weave"];
 
     public static readonly Lesson[] All =
     [
@@ -34,8 +34,8 @@ public static class HealerLessons
         var patient = PatientOf(sim, run);
         switch (Session(sim, me))
         {
-            case FeelSession: return new LessonStage("feel", patient);
-            case DrawSession: return new LessonStage("draw", patient);
+            case HandsOnSession h:
+                return new LessonStage(h.Linked || h.Spots.Exists(h.Drawable) ? "draw" : h.Spots.Exists(s => s.Sensed > 0f) ? "read" : "feel", patient);
             case CastSession: return new LessonStage("weave", Entity.Null);
             case MeditateSession: return new LessonStage("meditate", run.Station(sim, "MeditationStone"));
         }

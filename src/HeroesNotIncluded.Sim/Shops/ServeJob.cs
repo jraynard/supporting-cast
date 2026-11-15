@@ -12,8 +12,11 @@ namespace HeroesNotIncluded.Sim.Shops;
 /// allows, a basic hand next to a player's <see cref="PourSession"/>) or ladles a bowl from the
 /// inn's stew pot (else fetches a cooked meal from the stores), and takes it to whoever asked.
 /// </summary>
-public sealed class ServeJob(int order) : Job
+public sealed class ServeJob(int order, Entity spareAt = default) : Job
 {
+    /// <summary>The order number a spare bowl for the hatch goes by (<see cref="SpareFor"/>).</summary>
+    public const int SpareOrder = -1;
+
     /// <summary>Ticks it takes an AI innkeeper to pour.</summary>
     public const int PourTicks = 120;
 
@@ -47,6 +50,25 @@ public sealed class ServeJob(int order) : Job
                 return new ServeJob(e.Id);
         }
         return null;
+    }
+
+    /// <summary>
+    /// A bowl to put up on the hatch with no order for it (<see cref="Hatch.Spare"/>): for a cook
+    /// serving meals at a hatch, with the pot cooked and a clean bowl to be had.
+    /// </summary>
+    public static Job? SpareFor(Simulation sim, Entity pawn)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace || !trade.Def.Serving(ServiceKind.Meal))
+            return null;
+        var shop = ShopSystem.BuildingOf(sim, workplace);
+        if (shop.IsNull || !w.Get<PresetBuilding>(shop).Def.HatchServes.Contains(ServiceKind.Meal) || !Hatch.WantsSpare(sim, shop)
+            || Pot(sim, shop) is not { IsNull: false } pot)
+            return null;
+        var bowl = Cooking.BowlOf(sim, pot);
+        if (Vessels.CleanOn(sim, pawn, bowl).IsNull && CleanVessel(sim, pawn, bowl).IsNull)
+            return null;
+        return Navigation.CanReach(sim, pawn, w.Get<Position>(pawn).Cell, w.Get<Thing>(pot).Cell, PathEnd.Touch) ? new ServeJob(SpareOrder, shop) : null;
     }
 
     /// <summary>The clean vessel what comes from a cask or pot goes in; null for a meal from the stores.</summary>
@@ -124,6 +146,11 @@ public sealed class ServeJob(int order) : Job
 
     protected override IEnumerable<JobStatus> Run()
     {
+        if (order == SpareOrder)
+        {
+            foreach (var s in PutUpSpare()) yield return s;
+            yield break;
+        }
         var orders = Sim.Shops;
         if (orders.Find(order) is not { IsOpen: true } e || (e.Assignee != Pawn && !orders.Accept(Sim, Pawn, order)))
         {
@@ -231,6 +258,40 @@ public sealed class ServeJob(int order) : Job
             yield break;
         }
         orders.Received(Sim, Pawn, e.Poster, Inventory.TakeFromPerson(Sim, Pawn, served, Get<Stack>(served).Count));
+    }
+
+    /// <summary>A bowl ladled and put up on the hatch for whoever comes hungry.</summary>
+    private IEnumerable<JobStatus> PutUpSpare()
+    {
+        var hatch = Hatch.Of(Sim, spareAt);
+        if (hatch.IsNull || !Hatch.WantsSpare(Sim, spareAt) || Pot(Sim, spareAt) is not { IsNull: false } pot || !Reserve(pot))
+        {
+            Fail("no bowl wanted");
+            yield break;
+        }
+        foreach (var s in FetchVessel(Cooking.BowlOf(Sim, pot))) yield return s;
+        if (HasFailed) yield break;
+        Report = "Ladling a bowl for the hatch";
+        foreach (var s in GoTo(Get<Thing>(pot).Cell, PathEnd.Touch)) yield return s;
+        if (HasFailed) yield break;
+        foreach (var s in Wait(LadleTicks)) yield return s;
+        var served = Cooking.Ladle(Sim, Pawn, pot);
+        if (served.IsNull)
+        {
+            Fail("the pot's empty");
+            yield break;
+        }
+        Report = "Putting a dish up on the hatch";
+        foreach (var s in GoToBeside(hatch)) yield return s;
+        if (HasFailed) yield break;
+        if (!Alive(served) || !Inventory.OnPerson(Sim, Pawn, served) || !Inventory.CanReachContainer(Sim, Pawn, hatch))
+        {
+            Fail("couldn't put it up");
+            yield break;
+        }
+        var left = Sim.Store(hatch, Inventory.TakeFromPerson(Sim, Pawn, served, Get<Stack>(served).Count));
+        if (!left.IsNull)
+            Inventory.Stow(Sim, Pawn, left);
     }
 
     private static string Capital(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];

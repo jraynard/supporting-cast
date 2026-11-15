@@ -34,6 +34,7 @@
     { "name": "RivalDied", "label": "my rival died", "mood": 3, "durationHours": 48, "races": [ "Human" ] },
     { "name": "RescuedMe", "label": "rescued me", "opinion": 15, "durationHours": 240 },
     { "name": "TendedMe", "label": "tended my wounds", "mood": 1, "opinion": 5, "durationHours": 120, "stackLimit": 3, "stackFalloff": 0.6 },
+    { "name": "RoughHands", "label": "pressed on my hurts", "mood": -1, "opinion": -3, "durationHours": 24, "stackLimit": 2, "stackFalloff": 0.6 },
     { "name": "CapturedMe", "label": "took me prisoner", "mood": -5, "opinion": -30, "durationHours": 480, "races": [ "Human" ] },
     { "name": "RecruitedMe", "label": "talked me into joining", "opinion": 15, "durationHours": 240, "races": [ "Human" ] },
     { "name": "FoughtBesideMe", "label": "fought beside me", "opinion": 8, "durationHours": 168, "stackLimit": 2 },

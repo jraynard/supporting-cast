@@ -314,7 +314,7 @@ public class TradeLessonTests
             injury.FeltBy = y.Me; // felt over
         Assert.Equal("draw", y.Stage.Step);
 
-        // Drawn across (DrawSession's outcome): gone from them, carried by the healer.
+        // Drawn across (laying on hands' outcome): gone from them, carried by the healer.
         var drawn = y.W.Get<Health>(patient).Injuries.ToList();
         y.W.Get<Health>(patient).Injuries.Clear();
         HealthSystem.Damage(y.Sim, y.Me, Practice.WoundDamage, DamageType.Cut, y.W.Get<Health>(y.Me).Body.Parts.FindIndex(p => !p.Vital));

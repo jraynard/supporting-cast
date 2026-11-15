@@ -107,8 +107,8 @@ public sealed partial class VillageGame
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                 Tip(def.Name switch
                 {
-                    "Food" => v < def.UrgentBelow ? Controls.Keys("Starving: eat now (pick Eat on some food, or ~F~ at the inn's serving hatch for a meal), or you'll start to waste away.")
-                        : v < def.SeekBelow ? Controls.Keys("Hungry: time to eat something. The inn serves meals at its hatch (~F~ there to order).") : "Fed.",
+                    "Food" => v < def.UrgentBelow ? Controls.Keys("Starving: eat now (pick Eat on some food, ~F~ at the bread crock at home, or ~F~ at the inn's serving hatch for a meal), or you'll start to waste away.")
+                        : v < def.SeekBelow ? Controls.Keys("Hungry: time to eat something. There's bread in the crock at home (~F~ there), and the inn serves hot meals at its hatch (~F~ there to order). The tag points the way.") : "Fed.",
                     "Rest" => v < def.UrgentBelow ? Controls.Keys("Exhausted: sleep (a bed with ~F~, or ~N~ on the ground).")
                         : v < def.SeekBelow ? "Tired: find a bed soon." : "Rested.",
                     _ => $"{Capitalized(def.Label)}: {v * 100:F0}%",

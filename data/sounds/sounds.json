@@ -37,6 +37,9 @@
     "heal.rune":  { "files": ["sfx/heal_rune_*.ogg"], "gain": 0.6 },
     "heal.weave": { "files": ["sfx/heal_weave.ogg"], "gain": 0.6, "priority": 3 },
     "heal.hum":   { "files": ["amb/heal_hum.ogg"], "gain": 0.35 },
+    "heal.pulse": { "files": ["sfx/heal_pulse_*.ogg"], "gain": 0.7, "pitch": [0.95, 1.05] },
+    "heal.drawn": { "files": ["sfx/heal_drawn.ogg"], "gain": 0.6, "priority": 3 },
+    "heal.snap":  { "files": ["sfx/heal_snap.ogg"], "gain": 0.75, "priority": 3 },
 
     "combat.swing": { "files": ["sfx/combat_swing_rec_*.ogg"], "gain": 0.6, "pitch": [0.9, 1.1], "range": 34, "near": 6, "max": 6 },
     "combat.clash": { "files": ["sfx/combat_clash_rec_*.ogg"], "gain": 0.75, "pitch": [0.92, 1.08], "range": 34, "near": 6, "max": 6, "priority": 2 },

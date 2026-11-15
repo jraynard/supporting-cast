@@ -38,17 +38,14 @@ free movement). The relay runs on an Oracle Cloud free instance (`CoopRelay.Defa
 
 *Why first:* every other playtest depends on friends being able to play from their own homes.
 
-### 2. The healer's games, refined
-A multiplayer playtest found them the weakest of the trades. Play each through in the practice
-yard (`--practice Healer`) before tuning anything, asking whether it reads, whether it's fun, and
-whether it asks the empath to *feel* rather than read numbers:
-- **Feeling a wound over** (`FeelSession`): what the feel tells you, and how you learn the kinds.
-- **Drawing a wound in** (`DrawSession`): the draw's feel and the heartbeat window.
-- **Weaving a mending** (`CastSession`, `Weaving`, the spellbook): choosing runes and the mix.
-- **Binding** (`BandageSession`): the wrap band.
-- **Meditating** (`MeditateSession`): the labyrinth's size, sitting, the centre burst.
-- Then rewrite the healer's lessons (`Scenarios/Lessons`, `trades.json`) to match.
-- Also left: the AI healer weaving charms, and its mana (a busy day empties it).
+### 2. The healer's games, playtested
+The pass is in (HISTORY.md, "The healer's pass"): laying on hands is one sitting (skim, press to
+read, keep pressing to draw), the shrine is rebuilt, and nobody goes hungry without a cook. Play
+it through in the practice yard (`--practice Healer`) and in a round with friends:
+- Does reading by the pulse teach the kinds? Is the flinch fair? Tune `HandsOnSession` (read and
+  rough steps) and `DrawLink` (the band, the snap).
+- Still to look at: the bandage band, the weave's beat window, the labyrinth's size.
+- The AI empath's meditation (`MeditateJob.Gathers`) and the charms it puts out (`LayOnHands.CharmsOnShow`, price).
 
 ### 3. Round options: no traitors, no friendly fire
 Rounds without traitors are a mode in their own right. Make the choice explicit in the lobby
@@ -171,7 +168,7 @@ items into "Now" when a playtest says they matter.
 - **Forge:** the heat and quench windows; the bloom's band, how long it takes and its yield.
 - **Kitchen:** the pot, the seasoning; and the cook's list below.
 - **Bar:** washing up, tapping a keg, mixing.
-- **Healing:** after the healer's pass (Now, 2).
+- **Healing:** after the healer's playtest (Now, 2).
 - **Tinkering:** truing a wheel, bracing a span.
 - Some jobs easier and some harder, to suit different players and styles.
 

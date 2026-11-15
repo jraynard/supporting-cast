@@ -16,19 +16,19 @@ namespace HeroesNotIncluded;
 // meditating. Wounds come through View.FeltWounds, which names what you've drawn only by its feel.
 public sealed partial class VillageGame
 {
-    /// <summary>For an empath with hands on someone: feeling them over, then the wounds they found, each to draw across.</summary>
+    /// <summary>For an empath beside someone: lay hands on them (feel, read and draw in one sitting), bind them, and what you've read of them.</summary>
     private void DrawLayOnHands(Entity patient)
     {
         if (!HasAvatar || patient == _avatar || !Empathy.Gifted(_sim, _avatar) || View.FeltWounds(patient) is not { } wounds)
             return;
         ImGui.Separator();
-        var cantFeel = FeelSession.Problem(_sim, _avatar, patient);
-        ImGui.BeginDisabled(cantFeel != null || Working);
-        if (ImGui.SmallButton(wounds.Count == 0 ? "Feel them over"u8 : "Feel them over again"u8))
+        var cant = HandsOnSession.Problem(_sim, _avatar, patient);
+        ImGui.BeginDisabled(cant != null || Working);
+        if (ImGui.SmallButton("Lay on hands"u8))
             Issue(new FeelCommand(_avatar, patient));
         ImGui.EndDisabled();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            Tip(cantFeel != null ? Cap(cantFeel) + "." : Controls.Keys("~AD~ run your hands from head to feet; linger where it hurts to make it out. Hold ~F~ to press in: slower, but it finds festering under a dressing."));
+            Tip(cant != null ? Cap(cant) + "." : Controls.Keys("~AD~ run your hands over them, head to feet: a warmth is a hurt. Stop on it and hold ~F~ to read it; keep holding to draw it into yourself. Pressing while your hands move is rough on them."));
         var cantBind = Bandaging.CantBind(_sim, _avatar, patient);
         if (Bandaging.WoundsToBind(_sim, patient) > 0)
         {
@@ -42,18 +42,9 @@ public sealed partial class VillageGame
         }
         if (wounds.Count == 0)
             return;
-        TextC(Theme.Accent, "Under your hands you feel:");
+        TextC(Theme.Accent, "Under your hands you've felt:");
         foreach (var wound in wounds)
-        {
-            ImGui.PushID(wound.Key);
-            if (ImGui.SmallButton("Draw"u8))
-                Issue(new LayOnHandsCommand(_avatar, patient, wound.Key));
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip(Controls.Keys("Hold ~F~ to draw it into yourself, ~AD~ to keep your composure in the band. It lands on your own body."));
-            ImGui.SameLine(0, 6);
-            TextC(wound.Festering ? Theme.Bad : Theme.Text, $"{Cap(wound.Severity)} {wound.Feels} in the {wound.Part}{(wound.Festering ? ", festering" : "")}");
-            ImGui.PopID();
-        }
+            TextC(wound.Festering ? Theme.Bad : Theme.Text, $"  {Cap(wound.Severity)} {wound.Feels} in the {wound.Part}{(wound.Festering ? ", festering" : "")}");
     }
 
     /// <summary>The gift's window: mana and meditating, what you carry (each to weave a mending for), and your book.</summary>
@@ -121,6 +112,15 @@ public sealed partial class VillageGame
                 ImGui.SameLine(0, 6);
                 TextC(wound.Festering ? Theme.Bad : wound.Absorbed ? Theme.Warn : Theme.Dim,
                     $"{Cap(wound.Severity)} {wound.Feels} in your {wound.Part}{(wound.Festering ? ", festering" : "")}");
+                // What your own book says answers that feeling (your knowledge, never the wound's kind).
+                if (_sim.Defs.AllMendings.FirstOrDefault(m => m.Feels.ContainsValue(wound.Feels) && Weaving.Knows(_sim, _avatar, m)) is { } answer)
+                {
+                    ImGui.Indent(Gui.S(18));
+                    RuneGlyphs(answer.RuneDefs, 18);
+                    ImGui.SameLine(0, 6);
+                    TextC(Theme.Dim, $"your book: {answer.Label}");
+                    ImGui.Unindent(Gui.S(18));
+                }
                 ImGui.PopID();
             }
             ImGui.EndTabItem();
@@ -197,14 +197,6 @@ public sealed partial class VillageGame
         }
     }
 
-    private void DrawFeel(FeelSession s)
-    {
-        BeginWork(s.Title, ("A/D", "run your hands along them"), ("F", "hold to press in (slower, deeper)"), ("Esc", "stop (what you found stays found)"));
-        FeelScene(s.Parts, s.Spots.Where(p => p.Found > 0.05f).Select(p => (p.At, p.Gravity, p.Found, s.FoundFestering(p))), s.Hands01, s.Held);
-        Bar("Feel", s.Feel, s.Feel > 0.6f ? Theme.Bad : Theme.Warn);
-        EndWork();
-    }
-
     private void DrawBandage(BandageSession s)
     {
         BeginWork(s.Title, ("F", "hold to pull the cloth tight, let go in the band"), ("Esc", "stop"));
@@ -229,25 +221,62 @@ public sealed partial class VillageGame
         EndWork();
     }
 
-    private void DrawDraw(DrawSession s)
+    /// <summary>
+    /// Laying on hands: the body and the hands over it, the wounds read (their feel and how bad),
+    /// and while the link is open the composure band, the draw and the strain.
+    /// </summary>
+    private void DrawHandsOn(HandsOnSession s)
     {
-        BeginWork(s.Title, ("F", "hold to draw it in, let go to pause"), ("A/D", "keep your composure in the band"), ("Esc", "stop"));
-        DrawScene(s.Held, s.Calm, s.Drawn, s.Strain);
+        if (s.Linked)
+            BeginWork(s.Title, ("A/D", "keep your composure in the band"), ("F", "hold to draw, let go to rest"), ("Esc", "take your hands away"));
+        else
+            BeginWork(s.Title, ("A/D", "run your hands along them"), ("W/S", "to the next warmth"), ("F", "hold still on a warmth: read it, then draw it"), ("Esc", "take your hands away"));
+        HandsOnScene(HandsViewOf(s));
+
+        // What you've read of them, the one under your hands marked.
+        var wounds = View.FeltWounds(s.Patient) ?? [];
+        var under = s.Under >= 0 ? s.Spots[s.Under].Key : -1;
+        foreach (var wound in wounds)
+        {
+            var here = wound.Key == under;
+            TextC(wound.Festering ? Theme.Bad : here ? Theme.Accent : Theme.Dim,
+                $"{(here ? "> " : "  ")}{Cap(wound.Severity)} {wound.Feels} in the {wound.Part}{(wound.Festering ? ", festering" : "")}");
+        }
+
         var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(420, 30);
+        var size = Gui.S(420, 22);
         var min = ImGui.GetCursorScreenPos();
         var max = min + size;
         ImGui.Dummy(in size);
+        var link = s.Link;
+        var open = s.Linked;
         dl.AddRectFilled(in min, in max, Theme.U8(Theme.Spirit), 4f, ImDrawFlags.None);
-        var bandMin = new float2(min.X + (0.5f - s.HalfWidth) * size.X, min.Y);
-        var bandMax = new float2(min.X + (0.5f + s.HalfWidth) * size.X, max.Y);
-        dl.AddRectFilled(in bandMin, in bandMax, Theme.U8(Theme.Good, 0.55f), 2f, ImDrawFlags.None);
-        var x = min.X + s.Composure * size.X;
+        var bandMin = new float2(min.X + (0.5f - link.HalfWidth) * size.X, min.Y);
+        var bandMax = new float2(min.X + (0.5f + link.HalfWidth) * size.X, max.Y);
+        dl.AddRectFilled(in bandMin, in bandMax, Theme.U8(Theme.Good, open ? 0.55f : 0.2f), 2f, ImDrawFlags.None);
+        var x = min.X + link.Composure * size.X;
         var nMin = new float2(x - 2, min.Y - 3);
         var nMax = new float2(x + 2, max.Y + 3);
-        dl.AddRectFilled(in nMin, in nMax, Theme.U8(s.Calm ? Theme.Accent : Theme.Bad), 1f, ImDrawFlags.None);
-        Bar("Drawn", s.Drawn, Theme.Good);
-        Bar("Strain", s.Strain, s.Strain > 0.6f ? Theme.Bad : Theme.Warn);
+        dl.AddRectFilled(in nMin, in nMax, Theme.U8(link.Calm ? Theme.Accent : Theme.Bad, open ? 1f : 0.4f), 1f, ImDrawFlags.None);
+        if (s.Under >= 0 && s.Spots[s.Under] is { Drawn: > 0f } spot)
+            Bar("Drawn", spot.Drawn, Theme.Good);
+        if (link.Strain > 0.02f)
+            Bar("Strain", link.Strain, link.Strain > 0.6f ? Theme.Bad : Theme.Warn);
+
+        if (s.StepsDone - s.LastFlinch < 90)
+            TextC(Theme.Bad, $"{s.PatientName} flinches away from your hands.");
+        else if (s.Rough > 0.35f)
+            TextC(Theme.Warn, "Too rough: they wince as your hands drag over it. Stop, then press.");
+        else if (s.Linked)
+            TextC(link.Calm ? Theme.Arcane : Theme.Bad, link.Calm ? "It comes across, into you." : "Its pain pulls you off balance.");
+        else if (s.Reading)
+            TextC(Theme.Text, "You press in, and it comes through your hands...");
+        else if (s.Under >= 0 && s.Drawable(s.Spots[s.Under]))
+            TextC(Theme.Dim, Controls.Keys("You know this one. Hold ~F~ to draw it in."));
+        else if (s.Under >= 0)
+            TextC(Theme.Dim, Controls.Keys("A warmth under your hands. Stop, and hold ~F~ to read it."));
+        else
+            TextC(Theme.Dim, s.Feel > 0.2f ? "Something, near." : "Nothing under your hands.");
         EndWork();
     }
 

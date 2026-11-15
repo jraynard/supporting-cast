@@ -353,6 +353,29 @@ def weave(rng):
     return norm(c + swell, 0.6)
 
 
+def pulse(rng, f=62.0):
+    """A wound felt under a pressing hand: a soft, low thump, like a heartbeat heard through the palm."""
+    seconds = 0.45
+    t = t_axis(seconds)
+    body = np.sin(2 * np.pi * f * t * (1 - 0.25 * t)) * env(seconds, 0.004, 0.16, 1.4)
+    skin = band(noise(rng, seconds), lo=120, hi=600) * env(seconds, 0.002, 0.05) * 0.25
+    return norm(body + skin, 0.7)
+
+
+def drawn(rng):
+    """A wound come across: the weave's notes falling, soft, as it settles in."""
+    notes = [PENTATONIC[i] * 0.5 for i in (5, 4, 2, 0)]
+    c = chime(rng, notes, seconds=1.4, decay=0.55, gap=0.06)
+    return norm(c, 0.5)
+
+
+def snap(rng):
+    """The link snapping back: a dry crack and a sour, glassy ring cut short."""
+    crack = band(noise(rng, 0.25), lo=1500, hi=9000) * env(0.25, 0.001, 0.04, 1.5)
+    ring = chime(rng, [PENTATONIC[1] * 1.06, PENTATONIC[3] * 0.97], seconds=0.7, decay=0.2, gap=0.0)
+    return norm(at(max(len(crack), len(ring)) / RATE, (0.0, crack), (0.01, ring * 0.6)), 0.75)
+
+
 def hum_loop(rng, seconds=6.0):
     t = t_axis(seconds + 0.5)
     lfo = 0.8 + 0.2 * np.sin(2 * np.pi * 0.25 * t)
@@ -679,6 +702,9 @@ def catalogue():
         "heal_rune": ("sfx", [lambda r, i=i: rune(r, i) for i in range(6)]),
         "heal_weave": ("sfx", [weave]),
         "heal_hum": ("amb", [hum_loop]),
+        "heal_pulse": ("sfx", [lambda r: pulse(r, 62.0), lambda r: pulse(r, 74.0)]),
+        "heal_drawn": ("sfx", [drawn]),
+        "heal_snap": ("sfx", [snap]),
         "combat_swing": ("sfx", v(swing, 3)),
         "combat_clash": ("sfx", v(clash, 5)),
         "combat_hit": ("sfx", v(flesh, 3)),

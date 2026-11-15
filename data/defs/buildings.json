@@ -54,7 +54,8 @@
         { "def": "Fireplace", "at": [5, 0] },
         { "def": "Table", "at": [7, 3] },
         { "def": "Stool", "at": [6, 3] },
-        { "def": "Chest", "at": [7, 1], "facing": 2 }
+        { "def": "Chest", "at": [7, 1], "facing": 2 },
+        { "def": "BreadCrock", "at": [7, 4] }
       ],
       "slots": [
         { "defs": ["Bed", "StrawPallet"], "at": [2, 1] },
@@ -244,34 +245,41 @@
       ]
     },
     {
-      "name": "Shrine", "label": "healer's shrine", "icon": "buildings/campfire",
-      "description": "The empath's house: pallets for the wounded, a fire to keep them warm, a stone to meditate at and a chest of supplies.",
+      "name": "Shrine", "label": "healer's shrine", "icon": "buildings/shrine",
+      "description": "The empath's house, built apart in pale stone under a steep turf roof, its gables horned and a band of runes cut round its walls: pallets for the wounded, a fire to keep them warm, the rune altar and a stone to meditate at, herbs drying and linen for binding.",
       "layout": [
-        "WWWWWWW",
-        "W.....W",
-        "D.....W",
-        "W.....W",
-        "WWWWWWW"
+        "WWWWWWWWWWW",
+        "W.........W",
+        "W.........W",
+        "D.........W",
+        "W.........W",
+        "W.........W",
+        "WWWWWWWWWWW"
       ],
-      "parts": { "foundation": "Sill", "wall": "LogWall", "door": "PlankDoor", "roof": "TurfRoofPart" },
+      "parts": { "foundation": "Sill", "wall": "StoneWallPart", "door": "PlankDoor", "roof": "TurfRoofPart" },
       "furnish": [
         { "def": "Hearth", "at": [1, 1] },
-        { "def": "MeditationStone", "at": [5, 2] },
-        { "def": "StrawPallet", "at": [2, 3], "facing": 1 },
-        { "def": "StrawPallet", "at": [4, 3], "facing": 1 },
-        { "def": "Chest", "at": [5, 1], "facing": 2 }
+        { "def": "HerbRack", "at": [3, 1], "facing": 2 },
+        { "def": "RuneAltar", "at": [5, 1], "facing": 2 },
+        { "def": "HerbRack", "at": [7, 1], "facing": 2 },
+        { "def": "LinenBasket", "at": [9, 1] },
+        { "def": "Chest", "at": [9, 2], "facing": 3 },
+        { "def": "StrawPallet", "at": [2, 5], "facing": 1 },
+        { "def": "StrawPallet", "at": [4, 5], "facing": 1 },
+        { "def": "StrawPallet", "at": [6, 5], "facing": 1 },
+        { "def": "WashBasin", "at": [8, 5] },
+        { "def": "MeditationStone", "at": [9, 4] }
       ],
+      // Candles either side of the altar, and over the pallets: a warm, low light.
+      "lamps": [ { "at": [4, 1], "facing": 0, "def": "WallCandles" }, { "at": [6, 1], "facing": 0, "def": "WallCandles" },
+                 { "at": [1, 5], "facing": 3, "def": "WallCandles" }, { "at": [9, 3], "facing": 1, "def": "WallCandles" } ],
       // The wounded lie on the pallets first (lineOnBeds), then wait inside, out of the weather,
       // the first by the fire.
       "lineOnBeds": true,
-      "line": [ [2, 2], [3, 2], [4, 2], [2, 1], [3, 1], [4, 1] ],
-      "sign": [1, 4], // on the front wall, by the corner its door is round
+      "line": [ [2, 4], [3, 4], [4, 4], [5, 4], [6, 4], [7, 4], [2, 3], [3, 3], [4, 3], [5, 3] ],
+      "sign": [1, 6], // on the front wall, by the corner its door is round
       "signFace": "props/sign_rune",
-      "variants": [
-        { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster", "parts": { "wall": "TimberWall", "roof": "ThatchRoofPart" } },
-        { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
-        { "name": "Thatch", "label": "thatched", "kit": "stave_thatch", "parts": { "wall": "StaveWall", "roof": "ThatchRoofPart" } }
-      ]
+      "variants": [ { "name": "Stone", "label": "stone", "kit": "shrine_stone" } ]
     },
     {
       "name": "TinkerShop", "label": "tinker's shop", "icon": "buildings/tinker_bench",
@@ -469,6 +477,41 @@
         "sprite": "buildings/roof_thatch", "pitch": 0.42, "eave": 0.8, "overhang": 0.55, "thickness": 0.2,
         "gable": "buildings/gable_boards", "gableFill": "buildings/wall_planks", "trim": "props/planks", "horns": 0.25,
         "ridge": "buildings/roof_thatch"
+      }
+    },
+    {
+      // The healer's shrine, built apart: pale limestone on a dark footing, a band of runes cut
+      // round it and painted violet, dark oak at the corners and door, under a steep turf roof
+      // whose gables end in tall carved horns. Nothing else in Millbrook looks like it.
+      "name": "shrine_stone",
+      "span": [
+        { "min": [0, 0.18, 0], "max": [1, 0.82, 0.14], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0, 0.24, 0.14], "max": [1, 0.76, 1], "top": "props/stone_block", "side": "buildings/wall_shrine" }
+      ],
+      "arm": [
+        { "min": [0.5, 0.18, 0], "max": [1, 0.82, 0.14], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.5, 0.24, 0.14], "max": [1, 0.76, 1], "top": "props/stone_block", "side": "buildings/wall_shrine" }
+      ],
+      "corner": [
+        { "min": [0.12, 0.12, 0], "max": [0.88, 0.88, 0.14], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.2, 0.2, 0.14], "max": [0.8, 0.8, 1.08], "top": "props/timber_dark", "side": "buildings/trim_carved" }
+      ],
+      "post": [
+        { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.14], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.28, 0.28, 0.14], "max": [0.72, 0.72, 1.04], "top": "props/timber_dark", "side": "buildings/trim_carved" }
+      ],
+      "door": [
+        { "min": [0, 0.18, 0], "max": [1, 0.82, 0.04], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0, 0.22, 0], "max": [0.14, 0.78, 1], "top": "props/timber_dark", "side": "buildings/trim_carved" },
+        { "min": [0.86, 0.22, 0], "max": [1, 0.78, 1], "top": "props/timber_dark", "side": "buildings/trim_carved" },
+        { "min": [0, 0.22, 0.86], "max": [1, 0.78, 1], "top": "props/timber_dark", "side": "buildings/lintel_rune" }
+      ],
+      "floor": "buildings/floor_planks",
+      "roof": {
+        "sprite": "buildings/roof_turf", "pitch": 0.5, "eave": 0.75, "overhang": 0.55, "thickness": 0.18,
+        "eaveTrim": "buildings/turf_edge", "lip": 0.1,
+        "gable": "buildings/gable_shrine", "gableFill": "buildings/wall_shrine_plain", "trim": "buildings/trim_carved", "horns": 0.7,
+        "ridge": "props/log_side"
       }
     },
     {

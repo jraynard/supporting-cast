@@ -136,6 +136,7 @@ public static class Controls
         return text
             .Replace("~F~", Glyph(Act.Use))
             .Replace("~AD~", Pair(Act.WalkLeft, Act.WalkRight))
+            .Replace("~WS~", Pair(Act.WalkUp, Act.WalkDown))
             .Replace("~A~", Glyph(Act.WalkLeft))
             .Replace("~D~", Glyph(Act.WalkRight))
             .Replace("~WASD~", Walk())

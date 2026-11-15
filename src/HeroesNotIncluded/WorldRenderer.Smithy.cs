@@ -55,6 +55,7 @@ public sealed partial class WorldRenderer
         var w = sim.World;
         if (!w.TryGet<Work.WorkSession>(e, out var session))
             return;
+        DrawHealingLife(sim, e, session);
         if (session is Work.SharpenSession { OnWheel: true, Held: true, Burned: false }
             && Sim.Work.Smithing.GrindstoneInReach(sim, e) is { IsNull: false } wheel)
             GrindSparks(sim, e, wheel);

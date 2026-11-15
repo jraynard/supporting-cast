@@ -23,7 +23,9 @@ public static class PropModel
     /// offset from <paramref name="cell"/> hides faces flush against it (a wide model's far end asks
     /// about its own neighbours); <paramref name="count"/> filters boxes by
     /// <see cref="ModelBox.MinCount"/>; <paramref name="rise"/> (0..1) shows only the bottom part,
-    /// for buildings going up; <paramref name="heightScale"/> squashes it up the way (furniture).
+    /// for buildings going up; <paramref name="cutAt"/> cuts it off flat at that height (a wall cut
+    /// down to a stub: what starts above it isn't drawn at all, so no sliver of a wall plate floats
+    /// over the cut); <paramref name="heightScale"/> squashes it up the way (furniture).
     /// </summary>
     public static void Build(
         List<Quad> output,
@@ -37,7 +39,8 @@ public static class PropModel
         int count = int.MaxValue,
         float rise = 1f,
         float lift = 0f,
-        float heightScale = 1f
+        float heightScale = 1f,
+        float cutAt = float.MaxValue
     )
     {
         var origin = new float3(cell.X, cell.Y, cell.Z + lift);
@@ -48,7 +51,9 @@ public static class PropModel
                 continue;
             // Up the way, scaled (furniture stands lower than it's modelled: WorldScale.FurnitureHeight).
             var m = new float3(box.Min[0], box.Min[1], box.Min[2] * heightScale);
-            var M = new float3(box.Max[0], box.Max[1], Math.Min(box.Max[2], box.Min[2] + (box.Max[2] - box.Min[2]) * rise) * heightScale);
+            if (box.Min[2] >= cutAt)
+                continue;
+            var M = new float3(box.Max[0], box.Max[1], Math.Min(Math.Min(box.Max[2], cutAt), box.Min[2] + (box.Max[2] - box.Min[2]) * rise) * heightScale);
             if (M.Z <= m.Z)
                 continue;
             float dx = M.X - m.X, dy = M.Y - m.Y, dz = M.Z - m.Z;

@@ -103,6 +103,13 @@ public abstract class WorkSession
     /// <summary>Apply the result, once <see cref="Done"/>. Sim-only.</summary>
     public abstract void Finish(Simulation sim);
 
+    /// <summary>
+    /// Every tick the session's still valid, before it's finished: land on the world what play has
+    /// settled so far (a wound drawn whole while the hands go on to the next). Sim-only; must not
+    /// change anything <see cref="Step"/> reads.
+    /// </summary>
+    public virtual void Settle(Simulation sim) { }
+
     /// <summary>Stopped before it was done (walked off, Esc, gone quiet): keep what lasts, such as a piece's heat. Sim-only.</summary>
     public virtual void Interrupted(Simulation sim) { }
 
@@ -244,8 +251,8 @@ public abstract class WorkSession
             nameof(MixSession) => new MixSession(),
             nameof(Hospitality.ScrubSession) => new Hospitality.ScrubSession(),
             nameof(Hospitality.MakeBedSession) => new Hospitality.MakeBedSession(),
-            nameof(Healing.DrawSession) => new Healing.DrawSession(),
-            nameof(Healing.FeelSession) => new Healing.FeelSession(),
+            nameof(Healing.HandsOnSession) => new Healing.HandsOnSession(),
+            "DrawSession" or "FeelSession" => new Healing.RetiredSession(name),
             nameof(Healing.BandageSession) => new Healing.BandageSession(),
             nameof(Healing.CastSession) => new Healing.CastSession(),
             nameof(Healing.MeditateSession) => new Healing.MeditateSession(),

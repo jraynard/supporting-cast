@@ -40,7 +40,7 @@ public static class Empathy
 
     /// <summary>This session is an empath's hands on this patient.</summary>
     public static bool HandsOn(Work.WorkSession? s, Entity patient) =>
-        s is DrawSession d && d.Patient == patient || s is FeelSession f && f.Patient == patient
+        s is HandsOnSession d && d.Patient == patient
         || s is BandageSession b && b.Patient == patient && b.Worker != patient;
 
     public static int KeyOf(Injury inj) => inj.Part * 64 + (int)inj.Type;

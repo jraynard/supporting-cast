@@ -62,6 +62,36 @@ public static class Hatch
         sim.Shops.All.Count(e => e.IsOpen && e.Where == shop && e.Kind.Kind == kind && Takes(sim, e));
 
     /// <summary>
+    /// Bowls the cook keeps up on the hatch beyond the orders waiting, once the pot's cooked: so
+    /// whoever's hungry (a player with no cook among them, most of all) walks up, pays and eats,
+    /// with no wait for a ladle. Orders waiting still take them first.
+    /// </summary>
+    public const int Spare = 2;
+
+    /// <summary>
+    /// The hatch wants a bowl put up beyond the orders: a player's character (not its cook) is
+    /// hungry, fewer than <see cref="Spare"/> are spare, in a round, out of the small hours. Only
+    /// for players: kept up for everyone, the parties ate every time they were peckish and had no
+    /// silver left for their rooms.
+    /// </summary>
+    public static bool WantsSpare(Simulation sim, Entity shop) =>
+        sim.Round.Live && !ShopSystem.SmallHours(sim) && !Of(sim, shop).IsNull && APlayerHungry(sim, shop)
+        && DishesOn(sim, Of(sim, shop), ServiceKind.Meal).Sum(d => sim.World.Get<Stack>(d).Count) < Waiting(sim, shop, ServiceKind.Meal) + Spare;
+
+    /// <summary>A player's character who doesn't cook here is hungry enough to want feeding.</summary>
+    private static bool APlayerHungry(Simulation sim, Entity shop)
+    {
+        var w = sim.World;
+        var food = sim.Defs.Need("Food");
+        var here = w.Get<PresetBuilding>(shop).Def;
+        foreach (var e in w.Query<PlayerCharacter>())
+            if (w.TryGet<Needs>(e, out var n) && n.Get(food) < food.SeekBelow && w.Get<Creature>(e) is { Dead: false }
+                && !(w.TryGet<Trade>(e, out var t) && t.Def.WorkplaceDef == here && t.Def.Serving(ServiceKind.Meal)))
+                return true;
+        return false;
+    }
+
+    /// <summary>
     /// Enough is up already: as many dishes on the hatch as orders waiting for one. Cooks don't put
     /// up more than are asked for.
     /// </summary>

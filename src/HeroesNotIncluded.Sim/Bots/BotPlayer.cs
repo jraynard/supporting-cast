@@ -271,10 +271,8 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 // Stop where the settled head will bring it to the line.
                 _stopped |= p.Level + p.Foam * 0.73f >= p.Line;
                 return (false, !_stopped, 1);
-            case DrawSession d:
-                return (false, true, Steer(d.Composure, d.HalfWidth));
-            case FeelSession f:
-                return (false, true, 1); // a slow, pressed pass from head to feet: it misses nothing
+            case HandsOnSession h:
+                return HandsOn(h);
             case BandageSession b:
                 return (false, b.Tension < (b.Low + b.High) / 2f, 0); // pull to the middle of the band, then let go
             case CastSession c:
@@ -464,6 +462,20 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 if (s.GrimeAt(x, y) > most)
                     (best, most) = ((x, y), s.GrimeAt(x, y));
         return best;
+    }
+
+    /// <summary>
+    /// Laying on hands: skim toward the feet until there's a warmth under them, stop and press it
+    /// till it's read, keep pressing to draw it (steering for the band's middle), then let go and
+    /// skim on to the next.
+    /// </summary>
+    private (bool Press, bool Held, int Axis) HandsOn(HandsOnSession h)
+    {
+        if (h.Linked)
+            return (false, true, Steer(h.Link.Composure, h.Link.HalfWidth));
+        if (h.Under >= 0 && h.Spots[h.Under] is var s && s.Sensed > 0f && s.Drawn < 1f)
+            return (false, !h.Held || h.Reading, 0); // press; let go a moment if pressing does nothing (a wound just came across)
+        return (false, false, 1);
     }
 
     /// <summary>Steer a needle back toward the middle of its band.</summary>

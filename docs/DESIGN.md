@@ -343,16 +343,17 @@ the rest follows in the order it's planned (docs/ROADMAP.md, "The cook pass").
 
 **Healer (empathic).** Magical in flavour rather than clinical, but grounded in the health
 model: wounds sit on body parts, have a kind, and bleed, hurt and fester.
-- *Feeling them over.* Touch is the diagnosis. The healer runs their hands from head to feet;
-  the feel rises near a wound, and lingering there makes it out. Only a wound they've felt can
-  be drawn. Pressing in is slower, but it's the only way to find festering under a dressing.
-- *Laying on hands.* They draw a wound across, holding their composure against its pain; lose
-  it and the link snaps, with a backlash. Each kind of wound pulls on the composure its own way:
-  a cut jolts, a bite tears twice, a bruise swells and ebbs, a burn pulls steadily one way, frost
-  numbs the hands so they answer late, venom grows worse the more comes across. So the draw
-  teaches what each feeling is. A patient lying on a pallet is calmer to draw from. The wound
-  lands on the same part of the healer, lighter the more skilled they are. An infection comes
-  with a fully drawn wound.
+- *Laying on hands.* One sitting, from the first touch to the last wound drawn. Touch is the
+  diagnosis: the healer runs their hands from head to feet, and near a wound there's a warmth.
+  Stopping on it and pressing reads it: its kind comes through the hand the way it'll pull when
+  drawn, and how bad it is. A dressed wound takes a longer press to find festering under it.
+  Pressing while the hands move is rough, and the patient flinches. Keep pressing on a wound read
+  and it's drawn across, the healer holding their composure against its pain; lose it and the link
+  snaps, with a backlash. Each kind pulls on the composure its own way: a cut jolts, a bite tears
+  twice, a bruise swells and ebbs, a burn pulls steadily one way, frost numbs the hands so they
+  answer late, venom grows worse the more comes across. Composure and strain carry from one wound
+  to the next. A patient lying on a pallet is calmer to draw from. The wound lands on the same part
+  of the healer, lighter the more skilled they are. An infection comes with a fully drawn wound.
 - *Carrying it.* What the healer takes on is real. It bleeds and hurts, and a healer who takes
   too much collapses.
 - *Weaving.* Mendings are woven from six runes (Thread, Flesh, Ember, Rime, Salt, Still), keyed

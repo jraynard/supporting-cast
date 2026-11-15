@@ -71,7 +71,7 @@
       {"def": "Cottage", "at": [74, 44], "facing": 1, "variant": "Shingle", "role": "Home"},
       {"def": "Cottage", "at": [30, 56], "facing": 0, "role": "Home"},
       {"def": "Cottage", "at": [43, 61], "facing": 2, "role": "Home"},
-      {"def": "Shrine", "at": [55, 73], "facing": 2, "role": "Shrine"},
+      {"def": "Shrine", "at": [57, 73], "facing": 2, "role": "Shrine"},
       {"def": "Cottage", "at": [75, 70], "facing": 2, "variant": "Shingle", "role": "Home"}
       ],
       "festival": [
@@ -166,8 +166,8 @@
       "gggggggggggggggggkkwwwwwwwwwwwwwwwwwkggggggggggggggggggggggggggggggggggrrrrrrrrrgggggggggggggggg",
       "ggggggggggggggggggkkwwwwwwwwwwwwwwwwkkgggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
       "gggggggggggggggggggkwwwwwwwwwwwwwwwwwkgggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
-      "gggggggggggggggggggkkwwwwwwwwwwwwwwwwkgggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
-      "ggggggggggggggggggggkwwwwwwwwwwwwwwwwkkgggggggggggggrrrrrrrggggggggggggggggggggggggggggggggggggg",
+      "gggggggggggggggggggkkwwwwwwwwwwwwwwwwkggggggggggggggrrrrrrrrrrrggggggggggggggggggggggggggggggggg",
+      "ggggggggggggggggggggkwwwwwwwwwwwwwwwwkkggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
       "ggggggggggggggggggggkkkkkkkkkkkkwwwwwwkggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
       "ggggggggggggggggggggggggggrrrrgkkwwwwwkggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",
       "gggggggggggggggggggrgggggrrrrrggkwwwwwkggggggggggggggggggggggggggggggggggggggggggggggggggggggggg",

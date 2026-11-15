@@ -398,6 +398,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             return "you've nothing that wants healing";
         var order = Post(sim, who, def, Asking(def, sign.Price, null), sign.Price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), Entity.Null, shop, sign.Price);
         order.Mend = kind == ServiceKind.Healing;
+        // A bowl already up and nobody ahead: paid for and in hand at once.
+        Hatch.TryCollect(sim, order);
         return null;
     }
 

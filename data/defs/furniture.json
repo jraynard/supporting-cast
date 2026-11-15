@@ -6,7 +6,7 @@
     {
       // The poorest bed: a heap of straw and a rolled blanket. Quick to make, and still better than
       // the bare ground (the Escape cage has one).
-      "name": "StrawPallet", "label": "straw pallet", "category": "Building", "sprite": "buildings/bed", "size": [1, 2],
+      "name": "StrawPallet", "label": "straw pallet", "category": "Building", "sprite": "buildings/straw_pallet", "size": [1, 2],
       "description": "A heap of straw and a rolled blanket, two cells long. Better than the bare ground.",
       "model": [
         { "min": [0.1, 0.06, 0], "max": [0.9, 1.94, 0.12], "top": "props/straw", "side": "props/straw" },
@@ -225,6 +225,86 @@
         { "min": [0.82, 0.40, 0], "max": [0.90, 0.60, 1.0], "top": "props/timber_dark", "side": "props/timber_dark" },
         { "min": [0.10, 0.46, 0.92], "max": [0.90, 0.54, 0.98], "top": "props/timber_dark", "side": "props/timber_dark" },
         { "min": [0.10, 0.46, 0.62], "max": [0.90, 0.54, 0.68], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ]
+    },
+    {
+      // The shrine's (tools/shrine_art.py): herbs hung to dry over a shelf with a basket on it.
+      "name": "HerbRack", "label": "herb rack", "category": "Building", "solid": true, "sprite": "buildings/herb_rack",
+      "description": "Bundles of yarrow, sage and feverfew hung to dry on a rack against the wall. The shrine smells of them.",
+      "maxHp": 60, "flammability": 1.0,
+      "building": { "work": 80, "surfaceHeight": 0.46, "cost": [ { "def": "Wood", "count": 4 } ] },
+      "model": [
+        { "min": [0.08, 0.06, 0], "max": [0.16, 0.18, 1.3], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.84, 0.06, 0], "max": [0.92, 0.18, 1.3], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.08, 0.06, 1.22], "max": [0.92, 0.2, 1.3], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.18, 0.08, 0.74], "max": [0.82, 0.22, 1.22], "top": "props/herb_bundles", "side": "props/herb_bundles", "front": "props/herb_bundles" },
+        { "min": [0.08, 0.06, 0.4], "max": [0.92, 0.42, 0.46], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.26, 0.12, 0.46], "max": [0.6, 0.38, 0.62], "top": "props/herb_bundles", "side": "props/basket" }
+      ]
+    },
+    {
+      // The shrine's heart: a carved stone under a cloth, candle stubs at its corners.
+      "name": "RuneAltar", "label": "rune altar", "category": "Building", "solid": true, "sprite": "buildings/rune_altar",
+      "description": "A block of grey stone cut with the six runes of mending, a linen cloth over it and candle stubs at its corners.",
+      "maxHp": 400, "flammability": 0.1,
+      "building": { "work": 200, "surfaceHeight": 0.64, "cost": [ { "def": "Stone", "count": 10 } ] },
+      "model": [
+        { "min": [0.1, 0.22, 0], "max": [0.9, 0.8, 0.08], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.14, 0.26, 0.08], "max": [0.86, 0.76, 0.6], "top": "props/altar_cloth", "side": "props/altar_stone", "front": "props/altar_stone" },
+        { "min": [0.12, 0.24, 0.6], "max": [0.88, 0.78, 0.64], "top": "props/altar_cloth", "side": "props/altar_cloth" },
+        { "min": [0.17, 0.29, 0.64], "max": [0.23, 0.35, 0.74], "top": "props/candle", "side": "props/candle" },
+        { "min": [0.77, 0.29, 0.64], "max": [0.83, 0.35, 0.72], "top": "props/candle", "side": "props/candle" },
+        { "min": [0.42, 0.42, 0.64], "max": [0.58, 0.58, 0.69], "top": "props/basin_water", "side": "props/stone_block" }
+      ]
+    },
+    {
+      // Linen for binding: the shrine's bandages, rolled and ready (Healing/BandageSession).
+      "name": "LinenBasket", "label": "linen basket", "category": "Building", "solid": true, "sprite": "buildings/linen_basket",
+      "description": "A wicker basket of rolled linen: bandages for binding. Holds 3 stacks.",
+      "maxHp": 40, "flammability": 1.0,
+      "building": { "work": 60, "storageStacks": 3, "surfaceHeight": 0.42, "cost": [ { "def": "Wood", "count": 2 } ] },
+      "model": [
+        { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.38], "top": "props/linen_rolls", "side": "props/basket" },
+        { "min": [0.17, 0.17, 0.34], "max": [0.83, 0.83, 0.42], "top": "props/linen_rolls", "side": "props/basket" }
+      ]
+    },
+    {
+      // Clean water for washing a wound before it's bound: a stone basin on a short pillar.
+      "name": "WashBasin", "label": "wash basin", "category": "Building", "solid": true, "sprite": "buildings/wash_basin",
+      "description": "A stone basin of clean water on a short pillar, for washing a wound before it's bound.",
+      "maxHp": 200, "flammability": 0.0,
+      "building": { "work": 120, "surfaceHeight": 0.76, "cost": [ { "def": "Stone", "count": 6 } ] },
+      "model": [
+        { "min": [0.36, 0.36, 0], "max": [0.64, 0.64, 0.56], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.18, 0.18, 0.56], "max": [0.82, 0.82, 0.76], "top": "props/basin_water", "side": "props/stone_block" }
+      ]
+    },
+    {
+      // Candles on a little shelf on the wall: the shrine's warm, low light (a building's lamp).
+      "name": "WallCandles", "label": "wall candles", "category": "Building", "sprite": "buildings/wall_candles",
+      "description": "A plank shelf on the wall with three candles burning on it.",
+      "maxHp": 20, "flammability": 0.4,
+      "building": { "partOnly": true, "work": 20, "lightRadius": 3, "cost": [ { "def": "Wood", "count": 1 } ] },
+      "fireAt": [0.5, 0.11, 1.12], "fireSize": 0.22,
+      "model": [
+        { "min": [0.22, 0, 0.92], "max": [0.78, 0.2, 0.96], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.3, 0, 0.84], "max": [0.34, 0.16, 0.92], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.66, 0, 0.84], "max": [0.7, 0.16, 0.92], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.28, 0.06, 0.96], "max": [0.35, 0.13, 1.06], "top": "props/candle", "side": "props/candle" },
+        { "min": [0.46, 0.07, 0.96], "max": [0.54, 0.15, 1.1], "top": "props/candle", "side": "props/candle" },
+        { "min": [0.65, 0.06, 0.96], "max": [0.72, 0.13, 1.03], "top": "props/candle", "side": "props/candle" }
+      ]
+    },
+    {
+      // A cottage's bread crock (Systems/Homes): plain food for whoever lives there, topped up by
+      // the carter each morning, so nobody goes hungry with no cook in town. F at it, hungry, eats.
+      "name": "BreadCrock", "label": "bread crock", "category": "Building", "solid": true, "sprite": "buildings/bread_crock",
+      "description": "A lidded stoneware crock: a loaf or two and a handful of berries, left by the carter of a morning. F at it when you're hungry. Holds 2 stacks.",
+      "maxHp": 60, "flammability": 0.2,
+      "building": { "work": 60, "storageStacks": 2, "keepsAt": 10, "surfaceHeight": 0.5, "cost": [ { "def": "Stone", "count": 4 } ] },
+      "model": [
+        { "min": [0.3, 0.3, 0], "max": [0.7, 0.7, 0.42], "top": "props/crock_lid", "side": "props/crock_side" },
+        { "min": [0.42, 0.42, 0.42], "max": [0.58, 0.58, 0.48], "top": "props/crock_lid", "side": "props/crock_lid" }
       ]
     },
     {

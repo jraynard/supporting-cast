@@ -31,6 +31,7 @@ import bucket_art
 import station_art
 import work_ui_art
 import healer_art
+import shrine_art
 import tinker_art
 import norse_gear
 import chibi_people
@@ -510,6 +511,7 @@ if __name__ == "__main__":
     bucket_art.generate()        # the well's buckets, empty and full
     station_art.generate()       # icons of their own for the inn's stations, the barrel, crate, barn, whetstone, pyre...
     healer_art.generate()        # the empath's rune glyphs
+    shrine_art.generate()        # the shrine furnished (altar, herb rack, linen basket, basin, candles, pallet) and the cottages' bread crock
     tinker_art.generate()        # the tinker's bench, locks, keys, contraptions and curios
     placeholder_roofs.generate()     # roof thatch and shingles
     norse_gear.generate()        # tools and weapons per metal, stock, ores, fuel, food, hides: replaces the recoloured gear

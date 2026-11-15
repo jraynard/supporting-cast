@@ -44,6 +44,9 @@ public static class Sounds
     public const string Rune = "heal.rune";
     public const string Weave = "heal.weave";
     public const string Hum = "heal.hum";
+    public const string Pulse = "heal.pulse";
+    public const string Drawn = "heal.drawn";
+    public const string Snap = "heal.snap";
 
     // Fights and the dragon.
     public const string Swing = "combat.swing";
@@ -80,7 +83,7 @@ public static class Sounds
         UiOpen, UiClose, UiCoin, UiBell, UiGood,
         AnvilGood, AnvilFair, AnvilPoor, AnvilCold, ForgeFire, ForgeBellows, ForgeQuench, ForgeSteam, Grind,
         PotBubble, PotStir, Pinch, Pour, Fizz, Clink, Knock, Scrub, Cloth, Creak,
-        Click, Ratchet, Rune, Weave, Hum,
+        Click, Ratchet, Rune, Weave, Hum, Pulse, Drawn, Snap,
         Swing, Clash, Wound, Bow, Miss, Din, Parry, Block, Thrust, Heavy, Roar, Breath, Wings,
         Wind, Birds, Night, River, Hearth, Blaze, Crowd, Band,
         Voice,

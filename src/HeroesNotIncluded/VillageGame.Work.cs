@@ -106,14 +106,11 @@ public sealed partial class VillageGame
         }
         switch (_work.Session)
         {
-            case Sim.Healing.FeelSession feel:
-                DrawFeel(feel);
+            case Sim.Healing.HandsOnSession hands:
+                DrawHandsOn(hands);
                 return;
             case Sim.Healing.BandageSession bandage:
                 DrawBandage(bandage);
-                return;
-            case Sim.Healing.DrawSession draw:
-                DrawDraw(draw);
                 return;
             case Sim.Healing.CastSession cast:
                 DrawCast(cast);

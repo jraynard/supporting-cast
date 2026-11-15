@@ -1585,3 +1585,42 @@ It wasn't clear what to do at first, then it was over too fast. Now:
 - Fixed: the order panel showed a stray "With you" line on orders with nothing to hand over.
 - `TradeLessonTests`: every lesson begins on a step with words, and each is walked through.
 
+### The healer's pass (2026-11-14)
+From a multiplayer playtest that found the healer the weakest trade.
+- **Laying on hands is one sitting** (`Healing/HandsOnSession`, replacing the feel and draw sessions):
+  - **Skim to find.** A/D run the hands head to feet; near a wound there's only a warmth. W/S jump
+    to the next warmth.
+  - **Press to read.** F held with the hands still makes a wound out: its kind beats through the
+    hand the way it'll pull when drawn (`PulseShape`: a cut's jolt, a bite's double tear, a
+    bruise's swell, a burn's pull, frost's numbness, venom growing), and how bad it is. A dressed
+    wound takes a longer press to find festering under it. Pressing while the hands move is rough:
+    the patient flinches (`RoughHands` thought), the hands are thrown off and a half-read wound is lost.
+  - **Keep pressing to draw.** On a wound read, the link opens (`DrawLink`, the old draw's physics):
+    A/D steer composure, letting go rests it, and composure and strain carry from wound to wound.
+    A wound drawn whole lands as it comes across (`WorkSession.Settle`, sim-only, each tick).
+  - The inspector has one "Lay on hands" button; the window lists what's been read. The Carried
+    tab shows the mending your book says answers each feeling. Save format 37 (an old feel or draw
+    in a save is dropped on load, `RetiredSession`). Bots and the lessons play the new flow.
+- **The AI empath** sits at the meditation stone when its mana runs low (`MeditateJob`), and in
+  quiet hours weaves charms and puts two out for sale at the shrine (`WeaveCharmJob`).
+- **The shrine, rebuilt** (`tools/shrine_art.py`): 11x7 in pale limestone on its own kit
+  (`shrine_stone`: a carved band of violet runes, dark carved oak at the corners, a steep turf roof
+  with tall gable horns), so it looks like nothing else in Millbrook. Inside: the rune altar, two
+  herb racks, a linen basket (where the shrine's bandages start), a wash basin, three pallets, and
+  candles on the walls. The shrine and the straw pallet have icons of their own.
+- **The healer's scenes**: one scene for laying on hands (warmths, each read wound's own mark
+  beating in its pulse, both hands, the link's thread of light fraying red off balance, a flash
+  as a wound comes across). In the world, light drawn from patient into healer, runes flaring
+  over the hands as they're woven, a stillness round a meditating empath (`WorldRenderer.Shrine`).
+  Sounds: a pulse under the pressing hand, a chime as a wound comes across, the link's snap
+  (`heal.pulse`, `heal.drawn`, `heal.snap`).
+- **Food with nobody playing the cook:**
+  - Every cottage has a **bread crock** (`Homes.Crock`), stocked at the deal and topped up by the
+    carter each morning. F at it, hungry, eats. No job takes from it.
+  - With a player's character hungry, the AI cook keeps **two bowls up on the hatch**
+    (`Hatch.Spare`), and a player's order there takes one at once.
+  - Hungry with no food on you, a **tag points to the nearest food** you know of (`VillageGame.Food`).
+- **Cutaway walls** are cut off flat (`PropModel.Build`'s `cutAt`): no sliver of a wall plate
+  floats over the cut any more.
+- Behaviour changed, so `--bench` hashes moved.
+
