@@ -84,8 +84,14 @@ Fights are free movement and blows by reach and timing, Souls-lite, everywhere (
 - Building and area tools still need the trackpad (a pad cursor would cover them).
 
 ### Internet play
-- test over an actual internet connection to verify it works
-- test relay servertaw
+Readied in code (Narsil relay protocol 3, keepalive, host reclaims its join code after a blip,
+relay fan-out and limits; a 200 ms jitter buffer cap, pad commands throttled, a claim budget on
+free movement). Still to do:
+- Deploy the relay (`external/narsil/deploy/relay/publish.sh`) and make it the default `RelayServer`.
+- Test over a real internet connection: home host, a joiner on a phone hotspot and a Steam Deck;
+  watch the Players window's buffer, jitter and starvations over a whole round, join mid-round,
+  and pull the host's network for a few seconds (the session should carry on, not split).
+- Read the host's `net: snapshot … KB` log line: if joins visibly stall the others, chunk snapshots.
 
 ### M4: Whispers
 - Allegiance, objectives, the hidden shop, evidence, player violence, Constable and jail, the bell,

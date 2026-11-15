@@ -31,6 +31,13 @@ public struct FreeMover
     /// go a little slower; sheathed, clicks walk and act as ever (<see cref="DrawWeaponCommand"/>).
     /// </summary>
     public bool Drawn;
+
+    /// <summary>
+    /// Co-op: how far (cells) a claimed position may still move this character (<see cref="FreeMoveSystem.Claim"/>).
+    /// Spent by each claim and refilled with time, so a client can correct for lag but not
+    /// claim its way across the map faster than it walks.
+    /// </summary>
+    public float ClaimBudget;
 }
 
 /// <summary>
@@ -80,7 +87,7 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
             return;
         var f = w.Get<Avatar>(e).Facing;
         w.Get<Mover>(e).Stop();
-        w.Add(e, new FreeMover { Aim = f == int2.Zero ? 0f : DetMath.Atan2(f.Y, f.X) });
+        w.Add(e, new FreeMover { Aim = f == int2.Zero ? 0f : DetMath.Atan2(f.Y, f.X), ClaimBudget = MaxClaim });
     }
 
     public void Update(Simulation sim)
@@ -103,6 +110,7 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         ref var m = ref w.Get<FreeMover>(e);
         var c = w.Get<Creature>(e);
         var now = sim.Clock.Tick;
+        m.ClaimBudget = MathF.Min(MaxClaim, m.ClaimBudget + ClaimRefill);
         if (w.Has<Carried>(e))
             return; // MovementSystem keeps them with whoever's carrying them
         // A job's walk (a clicked walk, the way to a station): along its cells, as the pathfinder
@@ -200,9 +208,18 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
     public const float MaxClaim = 2.5f;
 
     /// <summary>
+    /// Cells of <see cref="FreeMover.ClaimBudget"/> regained per tick (1.5 a second). An honest
+    /// client only claims the lag at a start or stop (well under a cell); this bounds what a
+    /// dishonest one gains over walking.
+    /// </summary>
+    public const float ClaimRefill = 1.5f / SimClock.TicksPerSecond;
+
+    /// <summary>
     /// Co-op: a player says where they are (<see cref="Core.FreeMoveCommand"/>'s At, from their own
     /// screen, where their walk is predicted). Taken if it's near where the sim has them, on their level
     /// or one off, and somewhere they could stand; else ignored. <paramref name="stopped"/> also stops them dead there.
+    /// A claim moves them at most their <see cref="FreeMover.ClaimBudget"/>: a longer one goes only that
+    /// far toward it.
     /// </summary>
     public static void Claim(Simulation sim, Entity e, float x, float y, int z, bool stopped)
     {
@@ -214,6 +231,15 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         var dy = y - p.Pos.Y;
         if (dx * dx + dy * dy > MaxClaim * MaxClaim || Math.Abs(z - p.Cell.Z) > 1 || !w.Get<Creature>(e).Able)
             return;
+        ref var budget = ref w.Get<FreeMover>(e).ClaimBudget;
+        var dist = MathF.Sqrt(dx * dx + dy * dy);
+        if (dist > budget)
+        {
+            if (budget < 0.01f)
+                return;
+            var part = budget / dist;
+            (x, y, dist) = (p.Pos.X + dx * part, p.Pos.Y + dy * part, budget);
+        }
         var cell = new int3((int)MathF.Floor(x), (int)MathF.Floor(y), z);
         if (!sim.Map.Passable(cell) || !Fits(sim, new float2(x, y), z) || !Walkable(sim, p.Cell, cell))
             return;
@@ -221,6 +247,7 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
             w.Remove<Perched>(e);
         p.Pos = new float3(x, y, z);
         p.Cell = cell;
+        budget -= dist;
         if (stopped)
             w.Get<FreeMover>(e).Vel = float2.Zero;
     }

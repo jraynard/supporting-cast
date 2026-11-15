@@ -104,6 +104,9 @@ public sealed partial class VillageGame
     /// <summary>How far the aim turns (radians) before the sim is told: what others see you face, and nothing more.</summary>
     private const float AimStep = 0.06f;
 
+    /// <summary>How far (radians) the walk's direction turns before the sim is told: under the keys' 45°, over a stick's wobble.</summary>
+    private const float WishStep = 0.1f;
+
     /// <summary>Co-op: how often (seconds) your predicted position goes to the host while you move.</summary>
     private const float PositionEvery = 0.2f;
 
@@ -146,7 +149,12 @@ public sealed partial class VillageGame
         var turned = float.IsNaN(_sentAim) || MathF.Abs(MathF.IEEERemainder(_aim - _sentAim, MathF.Tau)) > AimStep;
         // In co-op, where you are goes too, now and then while you move, so the host keeps up with your screen.
         var drift = _coop != null && _freePredictor.Active && _time - _aimSentAt > PositionEvery;
-        if (_wish != _sentWish || (turned && _time - _aimSentAt > 0.05f) || drift)
+        // Starting and stopping go at once; a stick's direction wanders a little every frame, so
+        // turning goes when it's turned a step, no more often than the aim (else a pad sends a command a frame).
+        var startStop = (_wish == float2.Zero) != (_sentWish == float2.Zero);
+        var steered = _wish != _sentWish && (!Controls.UsingPad || (_time - _aimSentAt > 0.05f
+            && _wish.X * _sentWish.X + _wish.Y * _sentWish.Y < MathF.Cos(WishStep)));
+        if (startStop || steered || (turned && _time - _aimSentAt > 0.05f) || drift)
         {
             var (ax, ay, az) = Here();
             Issue(new FreeMoveCommand(_avatar, _wish.X, _wish.Y, _aim, ax, ay, az));
