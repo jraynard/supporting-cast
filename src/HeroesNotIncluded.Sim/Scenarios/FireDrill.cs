@@ -32,14 +32,38 @@ public static class FireDrill
             if (lit < Spread && c != fire.Origin && Buildings.At(sim, c) == inn && sim.Fire.Ignite(sim, c, 1f))
                 lit++;
 
-        // The nearest well, and the player beside it with a full bucket.
-        var well = Buckets.Wells(sim).OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, fire.Origin)).FirstOrDefault(Entity.Null);
+        StandAtWell(sim, player, fire.Origin);
+        return fire;
+    }
+
+    /// <summary>
+    /// Stand the player beside the well nearest <paramref name="near"/>, a full bucket in hand
+    /// (what they held goes to their pack). False if the town has no well.
+    /// </summary>
+    public static bool StandAtWell(Simulation sim, Entity player, int3 near)
+    {
+        var w = sim.World;
+        var well = Buckets.Wells(sim).OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, near)).FirstOrDefault(Entity.Null);
         if (well.IsNull)
-            return fire;
+            return false;
         var at = w.Get<Thing>(well).Cell;
         var stand = sim.SpiralFrom(at, 2).First(c => c != at && c.Z == at.Z && sim.Map.Passable(c) && AvatarSystem.InReach(sim, c, well));
-        w.Get<Position>(player).Cell = stand;
-        w.Get<Position>(player).Pos = Position.CenterOf(stand);
+        MoveTo(sim, player, stand);
+        PutInHand(sim, player, sim.CreateItem(sim.Defs.Thing(Buckets.Full), 1));
+        return true;
+    }
+
+    /// <summary>Put the player on a cell (staging only: no walk).</summary>
+    public static void MoveTo(Simulation sim, Entity player, int3 cell)
+    {
+        sim.World.Get<Position>(player).Cell = cell;
+        sim.World.Get<Position>(player).Pos = Position.CenterOf(cell);
+    }
+
+    /// <summary>Hand the player an item; what they held goes to their pack, or is set down if there's no room.</summary>
+    public static void PutInHand(Simulation sim, Entity player, Entity item)
+    {
+        var w = sim.World;
         if (w.Get<Carrying>(player).Item is { IsNull: false } held)
         {
             w.Get<Carrying>(player).Item = Entity.Null;
@@ -47,10 +71,9 @@ public static class FireDrill
             if (w.Get<Carrying>(player).Item is { IsNull: false } left) // no room in the pack: set down
             {
                 w.Get<Carrying>(player).Item = Entity.Null;
-                sim.PlaceItemNear(left, stand);
+                sim.PlaceItemNear(left, w.Get<Position>(player).Cell);
             }
         }
-        w.Get<Carrying>(player).Item = sim.CreateItem(sim.Defs.Thing(Buckets.Full), 1);
-        return fire;
+        w.Get<Carrying>(player).Item = item;
     }
 }

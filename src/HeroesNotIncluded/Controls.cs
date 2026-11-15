@@ -66,6 +66,7 @@ public static class Controls
         A(Act.Build, "Build tools", "Panels", Play, [K(GlfwKey.B)]),
         A(Act.ControlsCard, "The controls card", "Panels", Play, [K(GlfwKey.H)], P(PadButton.L3)),
         A(Act.Menu, "Game menu", "Panels", Play, [], P(PadButton.Menu)),
+        A(Act.PlaytestNote, "Playtest note (with a screenshot)", "Panels", Play, [K(GlfwKey.F11)]),
 
         A(Act.TurnLeft, "Turn the view left", "Camera", Play, [K(GlfwKey.Z)], P(PadButton.DpadLeft)),
         A(Act.TurnRight, "Turn the view right", "Camera", Play, [K(GlfwKey.X)], P(PadButton.DpadRight)),
@@ -177,7 +178,7 @@ public static class Act
     public const string Rune1 = "rune_1", Rune2 = "rune_2", Rune3 = "rune_3", Rune4 = "rune_4", Rune5 = "rune_5",
         Rune6 = "rune_6", Rune7 = "rune_7", Rune8 = "rune_8", Rune9 = "rune_9";
     public const string Shop = "shop", Heard = "heard", Quests = "quests", Gift = "gift", Log = "log", Build = "build",
-        ControlsCard = "controls", Menu = "menu";
+        ControlsCard = "controls", Menu = "menu", PlaytestNote = "playtest_note";
     public const string TurnLeft = "turn_left", TurnRight = "turn_right", ZoomIn = "zoom_in", ZoomOut = "zoom_out",
         LevelUp = "level_up", LevelDown = "level_down", LevelFollow = "level_follow", Roofs = "roofs";
 

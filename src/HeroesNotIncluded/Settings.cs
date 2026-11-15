@@ -64,6 +64,9 @@ public sealed class Settings
     /// <summary>Hosting also opens the village through the relay, with a join code to share.</summary>
     public bool HostOnline { get; set; } = true;
 
+    /// <summary>Keep each round's messages, crises, link health and summary under logs/rounds, for the tuning playtests.</summary>
+    public bool KeepPlaytestLogs { get; set; } = true;
+
     /// <summary>
     /// Rebound controls, by action id (<see cref="Controls"/>): each action's whole list, as text
     /// ("Key:Q", "Pad:LB"). Only what differs from the defaults; null for none.

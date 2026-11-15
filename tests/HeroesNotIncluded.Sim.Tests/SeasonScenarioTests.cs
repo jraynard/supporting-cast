@@ -1,10 +1,6 @@
-using HeroesNotIncluded.Sim.Bots;
-using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Defs;
-using HeroesNotIncluded.Sim.Director;
 using HeroesNotIncluded.Sim.Round;
 using HeroesNotIncluded.Sim.Scenarios;
-using HeroesNotIncluded.Sim.Systems;
 using Xunit.Abstractions;
 
 namespace HeroesNotIncluded.Sim.Tests;
@@ -19,46 +15,8 @@ public class SeasonScenarioTests(ITestOutputHelper output)
     [Fact]
     public void AnHonestRoundIsPlayableStartToFinish()
     {
-        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
-        sim.Presets.PresetMode = true;
-        VillageRound.Setup(sim);
-        sim.Director.Enable(sim.Defs.Difficulty("Normal"));
-        sim.Round.OpenLobby();
-        var trades = new[] { "Innkeeper", "Cook", "Blacksmith", "Healer", "Tinker" };
-        var bots = new List<BotPlayer>();
-        for (var i = 0; i < trades.Length; i++)
-        {
-            var id = new Guid(i + 1, 0, 0, new byte[8]);
-            sim.ApplyNow(new JoinLobbyCommand(id, $"Bot {i + 1}", default, []));
-            sim.ApplyNow(new SetTradePreferencesCommand(id, [sim.Defs.Trade(trades[i])], []));
-            bots.Add(new BotPlayer(() => sim, id, c => sim.ApplyNow(c), 100 + (ulong)i));
-        }
-        sim.ApplyNow(new StartRoundCommand());
-
-        var festival = false;
-        var deaths = new List<string>();
-        var doing = new Dictionary<string, int>();
-        var dead = new HashSet<Entity>();
-        var crises = new List<CrisisKind>();
-        var limit = sim.Round.EndTick(sim) + SimClock.TicksPerHour;
-        while (sim.Round.Phase != RoundPhase.Over && sim.Clock.Tick < limit)
-        {
-            sim.Tick();
-            foreach (var bot in bots)
-                bot.Tick();
-            festival |= sim.Round.Phase == RoundPhase.Festival;
-            if (sim.Clock.Tick % 600 == 0)
-                foreach (var b in bots)
-                    doing[b.Doing.Split(' ')[0] + " " + (b.Doing.Split(' ').ElementAtOrDefault(1) ?? "")] = doing.GetValueOrDefault(b.Doing.Split(' ')[0] + " " + (b.Doing.Split(' ').ElementAtOrDefault(1) ?? "")) + 1;
-            if (sim.Clock.Tick % 60 == 0)
-                foreach (var e in sim.World.Query<Avatar>())
-                    if (sim.World.Get<Creature>(e).Dead && dead.Add(e))
-                        deaths.Add($"[{sim.Clock.TimeString()}] {sim.World.Get<Creature>(e).Name}: "
-                            + string.Join(" | ", sim.Messages.Messages.TakeLast(6).Select(m => m.Text)));
-            foreach (var c in sim.Director.Active)
-                if (c.Started == sim.Clock.Tick)
-                    crises.Add(c.Kind);
-        }
+        var played = SeasonSweep.Play(TestWorld.LoadDefs(), 1234, botSeed: 100);
+        var (sim, festival, deaths, doing, crises) = (played.Sim, played.Festival, played.Deaths, played.Doing, played.Crises);
 
         var summary = sim.Round.Summary;
         var log = string.Join("\n", sim.Messages.Messages.TakeLast(25).Select(m => m.Text));

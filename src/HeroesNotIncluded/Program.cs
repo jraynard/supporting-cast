@@ -12,7 +12,7 @@ using HeroesNotIncluded.Sim.Saving;
 using HeroesNotIncluded.Sim.Scenarios;
 
 // Headless runs (bench, checks) log to the console only; the game also writes a file testers can send.
-var headless = args.Any(a => a is "--bench" or "--combat-sweep" or "--check-art" or "--check-save" or "--check-gpu" or "--version");
+var headless = args.Any(a => a is "--bench" or "--combat-sweep" or "--season-sweep" or "--check-art" or "--check-save" or "--check-gpu" or "--version");
 Log.Initialize(logDirectory: headless ? null : BuildInfo.LogDirectory, appName: TitleGame.AppId);
 string? buildTag = null;
 Log.CrashContext = () => BuildInfo.Describe(buildTag);
@@ -54,6 +54,12 @@ if (args.Contains("--bench"))
 if (args.Contains("--combat-sweep"))
 {
     CombatSweepRun.Run(args);
+    return;
+}
+
+if (args.Contains("--season-sweep"))
+{
+    SeasonSweepRun.Run(args);
     return;
 }
 
@@ -251,12 +257,16 @@ else
         HeroName = ParseString(args, "--name"),
         HeroPreset = ParseString(args, "--preset"),
         HeroFolk = Enum.TryParse<HeroesNotIncluded.Sim.Components.Folk>(ParseString(args, "--folk"), true, out var folk) ? folk : null,
-        // --raid-test: the raid drill (RaidDrill), as the smith unless --trade says otherwise.
+        // --raid-test: the raid drill (RaidDrill), as the smith unless --trade says otherwise; --bridge-test as the tinker.
         HeroTrade = ParseString(args, "--trade") ?? (ParseString(args, "--practice") is { } practising && !practising.StartsWith("--") ? practising
-            : args.Contains("--raid-test") ? "Blacksmith" : null),
+            : args.Contains("--raid-test") ? "Blacksmith" : args.Contains("--bridge-test") ? "Tinker" : null),
         RaidTest = args.Contains("--raid-test"),
         // --fire-test: the fire drill (FireDrill): the inn alight, you at the well with a full bucket.
         FireTest = args.Contains("--fire-test"),
+        // --dragon-test: the dragon drill (DragonDrill): the dragon coming, you at the well with a full bucket.
+        DragonTest = args.Contains("--dragon-test"),
+        // --bridge-test: the bridge drill (BridgeDrill): the bridge down, you at the gap with wood to mend it.
+        BridgeTest = args.Contains("--bridge-test"),
         // --practice TRADE: the practice yard (Practice): your trade's games, no season, customers when sent for.
         Practice = args.Contains("--practice"),
         // --lesson ID (with --practice): straight into one of the trade's lessons (trades.json "lessons").
@@ -295,7 +305,7 @@ SavedCharacter? PickedCharacter()
 
 static bool LaunchesDirectly(string[] args) =>
     args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--freeform" or "--show-roofs" or "--hide-roofs"
-        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--arena" or "--practice" or "--yaw" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
+        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--dragon-test" or "--bridge-test" or "--arena" or "--practice" or "--yaw" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
 
 // --load and --check-save take a path, or the name of a slot in the saves directory ("quicksave").
 static string ResolveSave(string pathOrSlot)

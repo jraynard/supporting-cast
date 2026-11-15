@@ -91,6 +91,7 @@ public sealed partial class VillageGame
         DrawSaveWindows();
         DrawCoop();
         DrawReveal();
+        DrawPlaytestNote();
         DrawControls();
         _settings.Draw();
         DrawPadMenu();

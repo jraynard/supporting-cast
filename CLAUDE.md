@@ -19,6 +19,8 @@ dotnet run --project src/HeroesNotIncluded -- --host --name Arin            # ho
 dotnet run --project src/HeroesNotIncluded -- --join 127.0.0.1 --player-id bea --name Bea
 dotnet run --project src/HeroesNotIncluded -- --raid-test --name Arin          # as the smith, bandits down the north road
 dotnet run --project src/HeroesNotIncluded -- --fire-test --name Arin          # the inn alight, you at the well with a full bucket
+dotnet run --project src/HeroesNotIncluded -- --dragon-test --name Arin        # the dragon coming, you at the well with a full bucket
+dotnet run --project src/HeroesNotIncluded -- --bridge-test --name Arin        # the bridge down, you the tinker at the gap with wood
 dotnet run --project src/HeroesNotIncluded -- --new-game --die-at 5            # your character drops dead: try being a ghost
 dotnet run --project src/HeroesNotIncluded -- --new-game --festival-at 5       # the season's festival, now, you by the well
 dotnet run --project src/HeroesNotIncluded -- --practice Healer          # the practice yard: a trade's games, no season, customers on request (--lesson ID: straight into a lesson)
@@ -30,6 +32,7 @@ dotnet run --project src/HeroesNotIncluded -- --check-art     # headless: every 
 dotnet run --project src/HeroesNotIncluded -- --check-gpu
 dotnet run --project src/HeroesNotIncluded -- --input-log     # joysticks, focus and clicks to the log (on a Deck: NARSIL_INPUT_LOG=1 %command%)
 dotnet run --project src/HeroesNotIncluded -c Release -- --bench --seed 1234   # per-system cost and hashes
+dotnet run --project src/HeroesNotIncluded -c Release -- --season-sweep --seeds 8   # bot-played seasons: the baseline for tuning season.json (also --combat-sweep)
 dotnet run --project external/narsil/src/Narsil.Relay -- --port 47050       # relay for online play
 python3 tools/chibi_people.py --preview                    # art generators: see docs/ART.md
 python3 tools/sfx_synth.py --preview                       # synthesized sound effects: see docs/AUDIO.md
@@ -38,7 +41,8 @@ python3 tools/fetch_music.py                               # placeholder music (
 
 Data files are copied to the output on build. From a checkout, `data/defs` edits reload by
 themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 saves a screenshot (Shift+F12 without the UI) to
-`~/.config/Heroes Not Included/screenshots`.
+`~/.config/Heroes_Not_Included/screenshots`. F11 takes a playtest note; each round's playtest log
+(`Playtest/PlaytestRecorder`) goes to `logs/rounds/` there. Running a playtest: docs/PLAYTEST.md.
 
 ## Architecture
 

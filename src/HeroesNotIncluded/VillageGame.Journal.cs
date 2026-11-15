@@ -190,7 +190,8 @@ public sealed partial class VillageGame
         ("Panels", [("@" + Act.Shop, "shop and favours"), ("@" + Act.Heard, "talk (what you've heard)"), ("@" + Act.Quests, "quests"), ("@" + Act.Gift, "the gift"),
             ("@" + Act.Log, "message log"), ("@" + Act.Build, "build tools"), ("@" + Act.ControlsCard, "this card"), ("@" + Act.Menu, "the game menu")]),
         ("Camera and time", [("@turn", "turn the view"), ("@zoom", "zoom (or the wheel)"), ("@levels", "level down / up"),
-            ("@" + Act.LevelFollow, "all levels"), ("@" + Act.Roofs, "roofs"), ("F12", "screenshot"), ("Shift+F12", "screenshot without the UI")]),
+            ("@" + Act.LevelFollow, "all levels"), ("@" + Act.Roofs, "roofs"), ("F12", "screenshot"), ("Shift+F12", "screenshot without the UI"),
+            ("@" + Act.PlaytestNote, "a playtest note, with a screenshot")]),
     ];
 
     /// <summary>

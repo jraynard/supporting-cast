@@ -23,47 +23,53 @@ internet, with the weakest trade brought up and the numbers tuned.
 
 ## Now: the co-op round, solid
 
-In priority order. Each is small enough to finish and playtest on its own.
+Two pieces of work before M4: a little left to build, then a tuning playtest that covers
+everything still to be tested or reviewed.
 
-### 1. Internet play, proven
-Readied in code (Narsil relay protocol 3, keepalive, host reclaims its join code after a blip,
-relay fan-out and limits; a 200 ms jitter buffer cap, pad commands throttled, a claim budget on
-free movement). The relay runs on an Oracle Cloud free instance (`CoopRelay.Default`,
-129.153.122.49:47050); redeploy with
-`external/narsil/deploy/relay/publish.sh ubuntu@129.153.122.49 linux-arm64`.
-- Test over a real internet connection: home host, a joiner on a phone hotspot and a Steam Deck.
-  Watch the Players window's buffer, jitter and starvations over a whole round, join mid-round,
-  and pull the host's network for a few seconds (the session should carry on, not split).
-- Read the host's `net: snapshot … KB` log line: if joins visibly stall the others, chunk snapshots.
+### 1. Still to build
+- **AI footwork:** a hurt fighter gives up the fight all at once rather than dropping back; the
+  dragon lands and bites from the grid rather than circling (`Ai/DragonBrain`); the unarmed don't
+  mob a raider together.
 
-*Why first:* every other playtest depends on friends being able to play from their own homes.
+### 2. The tuning playtest
+Rounds with friends over the internet, aimed at proving the round and tuning its numbers, then a
+pass on what they show. Some of it can be checked alone first. How to run it, with the commands:
+[PLAYTEST.md](PLAYTEST.md). Each round leaves its numbers and the testers' notes (F11) under the
+logs folder's `rounds/`; `--season-sweep` gives the bots' baseline for the season pass. Mini-game
+timings come after, trade by trade (Backlog, "Tuning the mini-games").
 
-### 2. The healer's games, playtested
-The pass is in (HISTORY.md, "The healer's pass"): laying on hands is one sitting (skim, press to
-read, keep pressing to draw), the shrine is rebuilt, and nobody goes hungry without a cook. Play
-it through in the practice yard (`--practice Healer`) and in a round with friends:
-- Does reading by the pulse teach the kinds? Is the flinch fair? Tune `HandsOnSession` (read and
-  rough steps) and `DrawLink` (the band, the snap).
-- Still to look at: the bandage band, the weave's beat window, the labyrinth's size.
-- The AI empath's meditation (`MeditateJob.Gathers`) and the charms it puts out (`LayOnHands.CharmsOnShow`, price).
+**Alone first** (dev flags, no friends needed)
+- **The healer** in the practice yard (`--practice Healer`; the pass is in HISTORY.md, "The
+  healer's pass"). Does reading by the pulse teach the kinds? Is the flinch fair? Tune
+  `HandsOnSession` (read and rough steps) and `DrawLink` (the band, the snap). Also look at the
+  bandage band, the weave's beat window and the labyrinth's size.
+- **The ring** (`--arena Veteran`, `--arena Dragon`): whether a Veteran (6% for a skill-6 villager
+  with a sword) and the dragon feel fair to a player. The rest of combat is tuned against the
+  headless sweep (HISTORY.md, "Combat balance"; `--combat-sweep`); parry and stamina feel right.
+- **Not yet seen running:** the bracing window (`--bridge-test`), buckets against the dragon and the
+  dragon in a round (`--dragon-test`).
+- **The lessons:** one trade at a time, the words and whether the step shown is the one you're on.
 
-### 3. Combat, what the sweep can't settle
-The numbers are tuned against the headless sweep (HISTORY.md, "Combat balance"; `--combat-sweep`).
-What's left wants hands and eyes:
-- **By hand in the ring** (`--arena`, `--raid-test`): the parry window (`ParryBefore`,
-  `ParryAfter`), stamina (`Blows.Regen`, `RegenDelay`, costs), and whether a Veteran (6% for a
-  skill-6 villager with a sword) and the dragon feel fair to a player.
+**With friends, over the internet**
+- **The connection.** Readied in code (Narsil relay protocol 3, keepalive, host reclaims its join
+  code after a blip, relay fan-out and limits; a 200 ms jitter buffer cap, pad commands throttled,
+  a claim budget on free movement). The relay runs on an Oracle Cloud free instance
+  (`CoopRelay.Default`, 129.153.122.49:47050); redeploy with
+  `external/narsil/deploy/relay/publish.sh ubuntu@129.153.122.49 linux-arm64`.
+  - Done: a Steam Deck joined a laptop through the relay by join code, on the same network.
+  - Still to do: a joiner on another network (a phone hotspot will do). Watch the Players window's buffer,
+    jitter and starvations over a whole round, join mid-round, and pull the host's network for a
+    few seconds (the session should carry on, not split).
+  - Read the host's `net: snapshot … KB` log line: if joins visibly stall the others, chunk
+    snapshots.
+- **The healer in a round:** the AI empath's meditation (`MeditateJob.Gathers`) and the charms it
+  puts out (`LayOnHands.CharmsOnShow`, price).
 - **Heroes die often:** about one in two raids with a party in town costs one. Watch what it does
-  to Renown in play before blunting raids.
-- **The dragon without a party** is met by nobody: the town hides and it leaves unhurt. It's
-  meant for players; check a round with friends can drive it off.
-- **AI footwork still to do:** a hurt fighter gives up the fight all at once rather than dropping
-  back; the dragon lands and bites from the grid rather than circling (`Ai/DragonBrain`); the
-  unarmed don't mob a raider together.
+  to Renown before blunting raids.
+- **The dragon without a party** is met by nobody: the town hides and it leaves unhurt. It's meant
+  for players; check friends can drive it off.
 
-### 4. A tuning playtest
-One round with friends aimed only at the numbers, then a pass on what it shows. Everything here
-has defaults that haven't been tuned in play:
+**The numbers** (defaults not yet tuned in play)
 - **The season** (`season.json`): the Renown target and Dread rates (Dread per death included),
   the day-two crisis weights (equal for now), raid size, the raid warning's lead, the town purse,
   the price of arms, the carter's load.
@@ -73,9 +79,8 @@ has defaults that haven't been tuned in play:
   swing a season enough to matter.
 - **Death and ghosts:** the Calling's cost and windows (`Revival`), presence and sign costs
   (`Hauntings`), errand times and Renown (`afterlife.json`).
-- **The lessons:** one trade at a time, the words and whether the step shown is the one you're on.
 
-Mini-game timings come after this, trade by trade (Backlog, "Tuning the mini-games").
+*Exit: friends play a whole round from their own homes, and the numbers have had a pass.*
 
 ## Then: M4, Whispers
 
@@ -87,6 +92,8 @@ The traitors: the game's hook, and what makes it a game people tell others about
   traitor before the verdict.
 - **The lobby's Traitors toggle** (`RoundOptions.Traitors`, forced off by `RoundSystem.SetOptions` for
   now): let it through and deal allegiances from it.
+- **The playtest logs keep to secrets** (`PlaytestRecorder`): they write every message as it comes,
+  which is fine without traitors; with them, only what the player's entitled to until the reveal.
 - **Friendly fire's consequences:** townsfolk you cut are only hurt for now; the town remembering
   it, shouting it, and it counting at the reveal.
 - Discord integration for meetings and reveals, in the spirit of the bots Among Us groups use
@@ -102,8 +109,8 @@ Don't wait for breadth (M6) to start; do wait for M4 to launch.
 - **Store page: now-ish, during M4.** A "Coming soon" page costs little and is how wishlists
   accumulate, and wishlists at launch decide how much Steam shows the game. Pages usually want
   six months or more of lead time. What it needs is a capsule, a trailer and screenshots that
-  sell the pitch, so get the co-op round looking and sounding good first (Now, 1 to 5, and a theme
-  for the trailer).
+  sell the pitch, so get the co-op round looking and sounding good first (Now, and a theme for the
+  trailer).
 - **Steam Playtest: once Whispers plays.** Use it to grow beyond friends and family and to see
   whether traitors land with groups who don't know you.
 - **Early Access launch: after M4, with a little breadth.** The traitors are what make this
@@ -166,7 +173,7 @@ items into "Now" when a playtest says they matter.
 - **Forge:** the heat and quench windows; the bloom's band, how long it takes and its yield.
 - **Kitchen:** the pot, the seasoning; and the cook's list below.
 - **Bar:** washing up, tapping a keg, mixing.
-- **Healing:** after the healer's playtest (Now, 2).
+- **Healing:** after the tuning playtest (Now, 2).
 - **Tinkering:** truing a wheel, bracing a span.
 - Some jobs easier and some harder, to suit different players and styles.
 
@@ -209,8 +216,6 @@ items into "Now" when a playtest says they matter.
 **Crises and the town**
 - Raiders don't bash doors or gates; only the bridge breaks.
 - AI carrying the dead to the shrine, so an AI empath gets a chance without a player's help.
-- The bracing window, buckets against the dragon and the dragon itself haven't been seen in a
-  running game yet (the dev tools send either).
 - Time passes fast only while everyone sleeps, not when the town is otherwise quiet.
 - Errands fetch only what's lying about or in common stores. Wood left out on a cold day goes on
   the fires first.

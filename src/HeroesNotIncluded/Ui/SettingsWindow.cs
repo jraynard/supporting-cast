@@ -331,6 +331,12 @@ public sealed class SettingsWindow(GameHost host)
             ImGui.EndDisabled();
 
         ImGui.Dummy(in gap);
+        Row("Playtest logs", "Keep each round's messages, crises, link health and summary in the logs folder's rounds, for tuning. F11 (or its rebinding) takes a note with a screenshot either way.");
+        var playtest = _draft.KeepPlaytestLogs;
+        if (ImGui.Checkbox("##playtestlogs"u8, ref playtest))
+            _draft.KeepPlaytestLogs = playtest;
+
+        ImGui.Dummy(in gap);
         Row("Logs", "Log files, crash reports and co-op desync dumps. Attach the newest to a bug report.");
         if (ImGui.Button("Open logs folder"u8))
             _logsError = OpenFolder(BuildInfo.LogDirectory);

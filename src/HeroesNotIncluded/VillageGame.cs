@@ -201,6 +201,12 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>Debug (<c>--fire-test</c>): the fire drill (<see cref="FireDrill"/>), the inn alight and you at the well.</summary>
     public bool FireTest { get; init; }
 
+    /// <summary>Debug (<c>--dragon-test</c>): the dragon drill (<see cref="DragonDrill"/>), the dragon coming and you at the well.</summary>
+    public bool DragonTest { get; init; }
+
+    /// <summary>Debug (<c>--bridge-test</c>): the bridge drill (<see cref="BridgeDrill"/>), the bridge down and you at the gap with wood.</summary>
+    public bool BridgeTest { get; init; }
+
     /// <summary>Debug (<c>--die-at SECONDS</c>): your character drops dead this long in, to try being a ghost. Negative: never.</summary>
     public float DieAt { get; init; } = -1f;
 
@@ -351,6 +357,10 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
                 RaidDrill.Stage(_sim, me);
             if (FireTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } burning)
                 FireDrill.Stage(_sim, burning);
+            if (DragonTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } watching)
+                DragonDrill.Stage(_sim, watching);
+            if (BridgeTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } mending)
+                BridgeDrill.Stage(_sim, mending);
         }
         var focus = center;
         if (IgniteForest)
@@ -418,6 +428,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         _camera.ViewportSize = new float2(Math.Max(1, window.X), Math.Max(1, window.Y));
 
         RecordRound();
+        UpdatePlaytest();
 
         var input = Host.Input;
         Controls.Map.Update();
@@ -713,6 +724,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             else QuickLoad();
         }
         HandleJournalKeys(input);
+        HandlePlaytestNoteKey();
         if (ToolbarOpen)
             HandleToolHotkeys(input);
         if (_tool is ToolKind.Build or ToolKind.PlaceBuilding && input.WasKeyPressed(GlfwKey.R))

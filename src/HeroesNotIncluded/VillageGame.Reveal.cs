@@ -111,10 +111,10 @@ public sealed partial class VillageGame
             else
                 Host.SwitchTo(new TitleGame());
         }
+        DrawPlaytestFolderButton();
         Panel.End();
     }
 
-    /// <summary>Renown (gold) and Dread (red) hour by hour, with the target and the limit as faint lines.</summary>
     /// <summary>
     /// Once, when a round played here ends: one more round in their trade for the saved character
     /// this player was. Each peer writes only its own roster. A guest who took over a villager
@@ -141,6 +141,7 @@ public sealed partial class VillageGame
             roster.Update(saved with { Progress = saved.Progress.With(trade.Def.Name, row.Earned, row.Alive) });
     }
 
+    /// <summary>Renown (gold) and Dread (red) hour by hour, with the target and the limit as faint lines.</summary>
     private void DrawStandingGraph(RoundSummary s)
     {
         var hours = Math.Max(s.RenownByHour.Count, s.DreadByHour.Count);
