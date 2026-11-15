@@ -221,7 +221,7 @@ public sealed partial class VillageGame
         return $"Day {day} of {of}: the festival {until}";
     }
 
-    /// <summary>Top-right: a day/night dial, the time, outdoor temperature and speed buttons.</summary>
+    /// <summary>Top-right, always first in its column: a day/night dial, the time, outdoor temperature, the season and speed buttons.</summary>
     private void DrawClock()
     {
         _hud.Next(Anchor.TopRight, HasAvatar && InRound ? ScreenFit.Width(JournalWidth, JournalShare) : 0f);
@@ -274,24 +274,26 @@ public sealed partial class VillageGame
                 Gui.ItemTip(s == 0 ? "Pause [Space]" : $"Speed {s} [Ctrl+{s}]");
             }
         ImGui.EndGroup();
-        if (HasAvatar || Ghosting)
-        {
-            Gui.Rule();
-            DrawJournalStrip();
-        }
         Panel.End();
 
         static float4 Lerp(float4 a, float4 b, float t) => a + (b - a) * Math.Clamp(t, 0, 1);
     }
 
-    /// <summary>New messages slide in at the top of the screen for a few seconds; click one to look at it.</summary>
+    /// <summary>New messages slide in at the top of the screen for a few seconds; click one to look at it. Headlines go on the ribbon instead.</summary>
     private void DrawToasts()
     {
         var messages = _sim.Messages.Messages;
         if (_toastedMessages < 0)
-            _toastedMessages = _sim.Messages.Total; // don't replay setup history
+        {
+            // Don't replay setup history, but a headline from this very moment (a raid staged at the
+            // start) is news.
+            foreach (var m in messages)
+                if (m.Headline != null && m.Tick == _sim.Clock.Tick && Witnessed(m))
+                    QueueHeadline(m);
+            _toastedMessages = _sim.Messages.Total;
+        }
         for (var i = _sim.Messages.IndexAfter(_toastedMessages); i < messages.Count; i++)
-            if (Witnessed(messages[i]))
+            if (Witnessed(messages[i]) && !(messages[i].Headline != null && QueueHeadline(messages[i])))
                 Toast(messages[i]);
         _toastedMessages = _sim.Messages.Total;
         _toastStack.Draw(_hud, Anchor.Top, _time);

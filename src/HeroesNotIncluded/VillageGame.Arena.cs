@@ -63,7 +63,7 @@ public sealed partial class VillageGame
         if (Host.Input.WasKeyPressed(GlfwKey.Enter) && !ImGui.GetIO().WantTextInput && _tool == ToolKind.Select)
             NewBout();
 
-        _hud.Next(Anchor.TopRight, Gui.S(300));
+        _hud.Next(Anchor.TopLeft, Gui.S(300));
         Panel.Begin("The practice ring###arena", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize);
         _hud.Took();
         Creature? foe = _boutFoe.IsNull ? null : w.Get<Creature>(_boutFoe);

@@ -42,7 +42,7 @@ public sealed partial class VillageGame
     {
         if (!_sim.Round.Live || !HasAvatar || !_showShop)
             return;
-        BeginJournal("Shop###orders", ref _showShop);
+        BeginJournal("Shop###orders", ref _showShop, side: Anchor.TopLeft);
         DrawSign();
         ImGui.Checkbox("Show closed"u8, ref _showClosedOrders);
         Gui.Rule();
@@ -80,9 +80,9 @@ public sealed partial class VillageGame
                 Gui.Bar(e.AssigneeName.Length > 0 ? (e.MineToDo ? "You're on it" : $"{e.AssigneeName} is on it") : "Nobody's taken it",
                     share, color, words, 170f);
                 if (e.MineToDo && e.Kind == Sim.Defs.ServiceKind.Repair)
-                    TextC(Theme.Dim, $"Mended, give it back from {e.PosterName}'s inspector, in reach.");
+                    WrappedC(Theme.Dim, $"Mended, give it back from {e.PosterName}'s inspector, in reach.");
                 if (e.MineToDo && e.Kind == Sim.Defs.ServiceKind.Unlock)
-                    TextC(Theme.Dim, $"From your pack: feel the box over for traps, pick it, then give it back from {e.PosterName}'s inspector.");
+                    WrappedC(Theme.Dim, $"From your pack: feel the box over for traps, pick it, then give it back from {e.PosterName}'s inspector.");
                 if (!e.Mine && e.AssigneeName.Length == 0)
                 {
                     if (ImGui.Button("I'll do it"u8, in _autoSize))
@@ -259,7 +259,7 @@ public sealed partial class VillageGame
             return;
         var sale = View.Sale(item);
         if (sale is { } s)
-            TextC(Theme.Warn, s.OnShow ? $"For sale: {s.Price} silver." : $"Marked for sale at {s.Price} silver, but not on show in its seller's shop.");
+            WrappedC(Theme.Warn, s.OnShow ? $"For sale: {s.Price} silver." : $"Marked for sale at {s.Price} silver, but not on show in its seller's shop.");
         if (!HasAvatar || !Goods.IsGear(thing.Def))
             return;
         var inMyShop = thing.Spawned && Sim.Systems.Buildings.At(_sim, thing.Cell) is { IsNull: false } shop && ShopPrices.Keeps(_sim, _avatar, shop);

@@ -64,7 +64,7 @@ public sealed class RaidCrisis : ICrisis
     private static void RaiseTheAlarm(Simulation sim, int3 from)
     {
         var w = sim.World;
-        sim.Messages.Add(MessageKind.Danger, $"The bell rings out: raiders on the {Raids.Direction(sim.Map, from)} road!", null);
+        sim.Messages.Add(MessageKind.Danger, $"The bell rings out: raiders on the {Raids.Direction(sim.Map, from)} road!", null, "Raid!");
         var lookout = sim.Creatures()
             .Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Dead: false } && SpeechSystem.CanAct(sim, e))
             .OrderBy(e => Maps.Map.Distance(w.Get<Position>(e).Cell, from))

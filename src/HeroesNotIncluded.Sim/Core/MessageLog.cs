@@ -8,7 +8,11 @@ public enum MessageKind
     Danger,
 }
 
-public readonly record struct Message(long Tick, MessageKind Kind, string Text, int3? Location);
+/// <summary>
+/// One line in the log. A <paramref name="Headline"/> marks the season's big moments (a raid, the
+/// dragon, the festival, the end): a few words the game shows large, the text under them.
+/// </summary>
+public readonly record struct Message(long Tick, MessageKind Kind, string Text, int3? Location, string? Headline = null);
 
 /// <summary>
 /// Player-facing event log ("The stone bridge is down!"). Keeps the newest <see cref="MaxKept"/>:
@@ -51,9 +55,10 @@ public sealed class MessageLog
         Total = Math.Max(total ?? _messages.Count, _messages.Count);
     }
 
-    public void Add(MessageKind kind, string text, int3? location = null)
+    /// <summary>Add a line; with a <paramref name="headline"/>, it's announced large (<see cref="Message.Headline"/>).</summary>
+    public void Add(MessageKind kind, string text, int3? location = null, string? headline = null)
     {
-        _messages.Add(new Message(Now(), kind, text, location));
+        _messages.Add(new Message(Now(), kind, text, location, headline));
         Total++;
         if (_messages.Count < MaxKept + TrimBatch)
             return;

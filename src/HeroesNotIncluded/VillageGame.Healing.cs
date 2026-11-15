@@ -61,7 +61,7 @@ public sealed partial class VillageGame
     {
         if (!_sim.Round.Live || !HasAvatar || !_showGift || !_sim.World.TryGet<Mana>(_avatar, out var mana))
             return;
-        BeginJournal("The gift###gift", ref _showGift);
+        BeginJournal("The gift###gift", ref _showGift, side: Anchor.TopLeft);
         Bar("Mana", mana.Current / Math.Max(1f, mana.Max), Theme.Accent, $"{mana.Current:F0} / {mana.Max:F0}");
         var cantMeditate = MeditateSession.Problem(_sim, _avatar);
         ImGui.BeginDisabled(cantMeditate != null || Working);
@@ -167,7 +167,7 @@ public sealed partial class VillageGame
                 TextC(Theme.Dim, $"  for {feels}");
         }
         if (unknown > 0)
-            TextC(Theme.Dim, unknown == 1 ? "One mending isn't in your book yet. Try a new mix of runes."
+            WrappedC(Theme.Dim, unknown == 1 ? "One mending isn't in your book yet. Try a new mix of runes."
                 : $"{unknown} mendings aren't in your book yet. Try new mixes of runes.");
     }
 

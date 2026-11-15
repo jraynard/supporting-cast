@@ -167,7 +167,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         Square = FindSquare(sim);
         sim.Festival.Begin(sim, Math.Min(at ?? sim.Clock.Tick, sim.Clock.Tick));
         // Everyone hears the bell, wherever they are.
-        sim.Messages.Add(MessageKind.Good, "The festival bell! Everyone to the well in the square: the crier tells the season, then the feast, the dance and the games.", null);
+        sim.Messages.Add(MessageKind.Good, "The festival bell! Everyone to the well in the square: the crier tells the season, then the feast, the dance and the games.", null, "The festival");
     }
 
     /// <summary>
@@ -192,7 +192,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             Honours = sim.Festival.Honours.Select(h => new HonourRow(h.Name, h.Title)).ToList(),
         };
         Phase = RoundPhase.Over;
-        sim.Messages.Add(outcome == RoundOutcome.Won ? MessageKind.Good : MessageKind.Danger, Summary.Headline, null);
+        sim.Messages.Add(outcome == RoundOutcome.Won ? MessageKind.Good : MessageKind.Danger, Summary.Headline, null, outcome == RoundOutcome.Won ? "The season is won" : "The season is lost");
     }
 
     /// <summary>The town's well, where a festival gathers; failing one, wherever the first villager stands.</summary>

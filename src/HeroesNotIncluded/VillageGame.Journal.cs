@@ -8,9 +8,9 @@ using HeroesNotIncluded.Ui;
 namespace HeroesNotIncluded;
 
 // The anchored HUD (Narsil.Ui.Hud): everything on screen hangs from an edge and stacks, so nothing
-// overlaps at any resolution or UI scale. The journal panels (orders, what you've heard, quests,
-// the gift, the message log, co-op players) share the right-hand column under the clock; each one
-// toggles with a key, shown on the strip under the clock.
+// overlaps at any resolution or UI scale. Your trade's panels (the shop, the gift) stack in the left
+// column under your card; the rest (what you've heard, quests, the message log, co-op players) share
+// the right-hand column under the clock. Each one toggles with a key, shown on the bar above the hotbar.
 public sealed partial class VillageGame
 {
     private readonly Hud _hud = new();
@@ -103,11 +103,21 @@ public sealed partial class VillageGame
         _ => false,
     };
 
-    /// <summary>The strip of journal toggles under the clock: a key cap and a name each, lit when open.</summary>
-    private void DrawJournalStrip()
+    /// <summary>The panel buttons in a bar of their own, bottom centre just above the hotbar.</summary>
+    private void DrawJournalBar()
     {
         if (!HasAvatar && !Ghosting)
             return;
+        _hud.Next(Anchor.Bottom);
+        Panel.Begin("##journal-bar", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
+        _hud.Took();
+        DrawJournalStrip();
+        Panel.End();
+    }
+
+    /// <summary>The row of journal toggles: a name each, lit when open, marked when there's something new.</summary>
+    private void DrawJournalStrip()
+    {
         var first = true;
         foreach (var tab in JournalTabs)
         {
@@ -150,10 +160,13 @@ public sealed partial class VillageGame
         Gui.ItemTip("Controls" + KeyTip(Act.ControlsCard));
     }
 
-    /// <summary>A journal panel in the right-hand column, under the clock. Pair with <see cref="Panel.End"/>.</summary>
-    private bool BeginJournal(string title, ref bool open, float height = 0f)
+    /// <summary>
+    /// A journal panel: in the right-hand column under the clock, or, for your trade's panels, the
+    /// left under your card (<paramref name="side"/>). Pair with <see cref="Panel.End"/>.
+    /// </summary>
+    private bool BeginJournal(string title, ref bool open, float height = 0f, Anchor side = Anchor.TopRight)
     {
-        _hud.Next(Anchor.TopRight, ScreenFit.Width(JournalWidth, JournalShare), height > 0 ? Gui.S(height) : 0f);
+        _hud.Next(side, ScreenFit.Width(JournalWidth, JournalShare), height > 0 ? Gui.S(height) : 0f);
         var visible = Panel.Begin(title, ref open, Hud.Flags);
         _hud.Took();
         return visible;

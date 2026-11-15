@@ -37,18 +37,20 @@ public sealed partial class VillageGame
         DrawAvatarPrompt();
         DrawTopBar();
         _hud.BeginFrame(Screen, ImGui.GetFrameHeight());
-        // Top right: the clock and its journal strip, then the open journal panels, stacked.
-        DrawArena();
-        DrawPractice();
+        // Top right: the day, always first, then the journal panels that aren't your trade's, stacked.
         DrawClock();
-        DrawGift();
-        DrawShop();
         DrawQuestBoard();
         DrawSpeech();
         DrawMessages();
-        // Top left: you. Top centre: the village (god mode) and the toasts.
+        // Top left: you, then your trade: its tips, the practice yard or ring, the gift, your shop.
+        // Top centre: a headline's ribbon, the village (god mode) and the toasts.
         DrawNeedsPanel();
         DrawTips();
+        DrawPractice();
+        DrawArena();
+        DrawGift();
+        DrawShop();
+        DrawHeadline();
         DrawVillagerBar();
         DrawGhostBanner();
         DrawCallToArms();
@@ -58,9 +60,10 @@ public sealed partial class VillageGame
         DrawInspector();
         // Bottom right: which way north is.
         DrawCompass();
-        // Bottom centre, stacking upward: the build tools, the hotbar, and the work in hand.
+        // Bottom centre, stacking upward: the build tools, the hotbar, the panel buttons, and the work in hand.
         DrawToolbar();
         DrawHotbar();
+        DrawJournalBar();
         if (HasAvatar && _sim.World.Has<ButtsTurn>(_avatar))
             DrawButtsHint();
         else
@@ -813,7 +816,7 @@ public sealed partial class VillageGame
     {
         Bar("Spoilage", progress, progress > 0.7f ? Bad : progress > 0.4f ? Warn : Good);
         if (FoodPoisoning.Spoiled(progress))
-            TextC(Bad, "Spoiled: eating it may cause food poisoning. Cooking it makes it safer.");
+            WrappedC(Bad, "Spoiled: eating it may cause food poisoning. Cooking it makes it safer.");
         var rate = RotSystem.RateAt(celsius);
         TextC(Dim, rate <= 0 ? "Frozen: it keeps." : rate < 1 ? "Cool here: it keeps longer." : rate > 1 ? "Hot here: it spoils fast." : "Spoiling at the usual pace.");
     }
@@ -852,11 +855,11 @@ public sealed partial class VillageGame
                         for (var i = 0; i < cost.Count; i++)
                             TextC(Dim, $"    {cost[i].ThingDef.Label}: {c.Delivered[i]}/{cost[i].Count}");
                         var builders = Buildings.Builders(_sim, site, Entity.Null);
-                        TextC(Dim, builders > 0 ? $"    {builders} at work (up to {Buildings.MaxBuilders})" : "    Haulers bring materials; builders work as far as they go.");
+                        WrappedC(Dim, builders > 0 ? $"    {builders} at work (up to {Buildings.MaxBuilders})" : "    Haulers bring materials; builders work as far as they go.");
                     }
                 }
                 if (p.Blocked > 0)
-                    TextC(Bad, $"  {p.Blocked} part{(p.Blocked == 1 ? "" : "s")} can't go up yet: something is in the way (trees to fell, rocks to mine?).");
+                    WrappedC(Bad, $"  {p.Blocked} part{(p.Blocked == 1 ? "" : "s")} can't go up yet: something is in the way (trees to fell, rocks to mine?).");
             }
             else
                 TextC(Dim, $"    {name}");

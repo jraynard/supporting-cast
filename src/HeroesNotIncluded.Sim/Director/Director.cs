@@ -170,7 +170,7 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
         var when = hour >= 18 || hour < 5 ? "tonight" : hour >= 12 ? "by evening" : "before noon";
         var many = plan.Kinds.Count == 1 ? "one of them" : plan.Kinds.Count <= 3 ? $"{plan.Kinds.Count} of them" : $"{plan.Kinds.Count} or so";
         sim.Messages.Add(MessageKind.Danger,
-            $"A shepherd runs in from the {Combat.Raids.SideName(plan.Side)} road: bandits camped in the hills, {many}. They'll come {when}.", null);
+            $"A shepherd runs in from the {Combat.Raids.SideName(plan.Side)} road: bandits camped in the hills, {many}. They'll come {when}.", null, "Bandits in the hills");
         sim.Militia.Call(sim, when);
     }
 

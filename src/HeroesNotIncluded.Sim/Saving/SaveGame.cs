@@ -380,13 +380,19 @@ public static class SaveGame
         }
     }
 
+    /// <summary>Set on a saved message's kind when a headline follows it.</summary>
+    private const int HeadlineBit = 0x100;
+
     private static void WriteMessages(SaveWriter w, MessageLog log)
     {
         w.Int(log.Messages.Count);
         foreach (var m in log.Messages)
         {
             w.Long(m.Tick);
-            w.Int((int)m.Kind);
+            // A headline rides on a spare bit of the kind, so older saves (never with it) read as before.
+            w.Int((int)m.Kind | (m.Headline != null ? HeadlineBit : 0));
+            if (m.Headline != null)
+                w.String(m.Headline);
             w.String(m.Text);
             w.Bool(m.Location.HasValue);
             if (m.Location is { } at)
@@ -408,10 +414,12 @@ public static class SaveGame
         for (var i = 0; i < n; i++)
         {
             var tick = r.Long();
-            var kind = (MessageKind)r.Int();
+            var bits = r.Int();
+            var kind = (MessageKind)(bits & ~HeadlineBit);
+            var headline = (bits & HeadlineBit) != 0 ? r.String() : null;
             var text = r.String();
             int3? at = r.Bool() ? r.Int3() : null;
-            messages.Add(new Message(tick, kind, text, at));
+            messages.Add(new Message(tick, kind, text, at, headline));
         }
         log.Cooldowns.Clear();
         n = r.Count();

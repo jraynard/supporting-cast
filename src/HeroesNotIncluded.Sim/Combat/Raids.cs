@@ -117,7 +117,7 @@ public static class Raids
         if (raiders.Count == 0)
             return raiders;
         var who = raiders.Count == 1 ? "A bandit is" : $"{raiders.Count} bandits are";
-        sim.Messages.Add(MessageKind.Danger, $"{who} coming from the {Direction(sim.Map, at)}!", at);
+        sim.Messages.Add(MessageKind.Danger, $"{who} coming from the {Direction(sim.Map, at)}!", at, "Raid!");
         return raiders;
     }
 

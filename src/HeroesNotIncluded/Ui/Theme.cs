@@ -15,7 +15,8 @@ public static class Theme
     public static readonly float4 Good = new(0.58f, 0.86f, 0.42f, 1f);
     public static readonly float4 Warn = new(0.99f, 0.77f, 0.33f, 1f);
     public static readonly float4 Bad = new(0.97f, 0.43f, 0.35f, 1f);
-    public static readonly float4 Dim = new(0.72f, 0.65f, 0.55f, 1f);
+    /// <summary>Secondary text: quieter than <see cref="Text"/>, still well clear of the panels' shaded wood.</summary>
+    public static readonly float4 Dim = new(0.79f, 0.72f, 0.61f, 1f);
     public static readonly float4 Text = new(0.95f, 0.9f, 0.81f, 1f);
     public static readonly float4 Accent = new(0.99f, 0.64f, 0.26f, 1f);
     public static readonly float4 AccentSoft = new(0.56f, 0.34f, 0.17f, 1f);
@@ -66,6 +67,8 @@ public static class Theme
         {
             Text = Text, Dim = Dim, Accent = Accent, AccentSoft = AccentSoft, Good = Good, Warn = Warn, Bad = Bad,
             Panel = Panel, Inset = Inset, Rim = Iron,
+            // The oak planks sit back behind the text: cellar dark, most of the way.
+            PanelShade = new float4(Cellar.X, Cellar.Y, Cellar.Z, 0.62f),
         },
         Frames = new UiFrames
         {

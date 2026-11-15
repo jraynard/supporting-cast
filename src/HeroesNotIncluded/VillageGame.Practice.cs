@@ -21,7 +21,7 @@ public sealed partial class VillageGame
         if (!_sim.Round.Practice || !HasAvatar || !_sim.World.TryGet<Trade>(_avatar, out var trade))
             return;
         var def = trade.Def;
-        _hud.Next(Anchor.TopRight, ScreenFit.Width(320, 0.3f));
+        _hud.Next(Anchor.TopLeft, ScreenFit.Width(320, 0.3f));
         Panel.Begin("The practice yard###practice", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize);
         _hud.Took();
         WrappedC(Theme.Parchment, $"The {def.Label}'s games, with nobody waiting.");

@@ -41,6 +41,21 @@ public class SaveLoadTests
 
 
     [Fact]
+    public void HeadlinesSurvive()
+    {
+        var (live, _) = TestWorld.Millbrook(5);
+        live.Messages.Add(Core.MessageKind.Danger, "A dragon! Ash is coming from the north!", new int3(3, 4, 1), "Dragon!");
+        live.Messages.Add(Core.MessageKind.Info, "An ordinary line.");
+
+        var loaded = RoundTrip(live);
+        var kept = loaded.Messages.Messages.TakeLast(2).ToList();
+        Assert.Equal(live.Messages.Messages.TakeLast(2), kept);
+        Assert.Equal("Dragon!", kept[0].Headline);
+        Assert.Equal(Core.MessageKind.Danger, kept[0].Kind);
+        Assert.Null(kept[1].Headline);
+    }
+
+    [Fact]
     public void StorytellerStateSurvives()
     {
         var (live, _) = TestWorld.Millbrook(5);
