@@ -13,10 +13,10 @@ namespace HeroesNotIncluded.Sim.Ai;
 public sealed class DragonBrain : IBrain
 {
     /// <summary>Pain past which it's had enough and goes.</summary>
-    public const float FleePain = 0.3f;
+    public const float FleePain = 0.5f;
 
     /// <summary>Damage from wounds past which it's had enough and goes, whatever the pain.</summary>
-    public const float FleeDamage = 30f;
+    public const float FleeDamage = 60f;
 
     public Job? Think(Simulation sim, Entity pawn)
     {

@@ -301,6 +301,12 @@ public static class Blows
     }
 
     /// <summary>
+    /// How much an AI's Melee skill sways its dodging (skill over average, clamped to this), and what
+    /// the unarmed keep of it: a fighter reads a blow coming, a frightened cook doesn't.
+    /// </summary>
+    public const float DodgeSkillMin = 0.3f, DodgeSkillMax = 2f, UnarmedDodge = 0.5f;
+
+    /// <summary>
     /// How an AI meets a blow it sees coming, rolled once: armed folk block or parry by their
     /// skill, the unarmed and animals take it. A heavy blow is harder to parry.
     /// </summary>
@@ -308,13 +314,16 @@ public static class Blows
     {
         var w = sim.World;
         var parryable = Parryable(sim, attacker, attack);
-        // An AI can't step out of a sweep as a player would: it slips a blow as often as the old roll
-        // to hit would have missed (the attacker's skill and wounds, cover, how big a target it is).
+        // An AI can't step out of a sweep as a player would: it slips a blow about as often as the
+        // old roll to hit would have missed (the attacker's skill and wounds, cover, how big a target
+        // it is), more often the better a fighter it is, and half as often with nothing in hand.
+        var armed = w.TryGet<Equipment>(target, out var eq) && w.IsAlive(eq.Weapon);
+        var hasSkills = w.TryGet<Skills>(target, out var skills);
         var odds = CombatRules.Chance(sim, attacker, target, attack);
-        if (odds.Possible && sim.Rand.Chance(1f - odds.Chance))
+        var nimble = hasSkills ? Math.Clamp(skills[Skill.Melee] / (float)Skills.Average, DodgeSkillMin, DodgeSkillMax) * (armed ? 1f : UnarmedDodge) : 1f;
+        if (odds.Possible && sim.Rand.Chance((1f - odds.Chance) * nimble))
             return BlowResponse.Dodge;
-        if (!w.TryGet<Equipment>(target, out var eq) || !w.IsAlive(eq.Weapon) || w.Get<Thing>(eq.Weapon).Def.Weapon is not { Ranged: false }
-            || !w.TryGet<Skills>(target, out var skills) || !w.Get<Creature>(target).Able)
+        if (!armed || w.Get<Thing>(eq.Weapon).Def.Weapon is not { Ranged: false } || !hasSkills || !w.Get<Creature>(target).Able)
             return BlowResponse.None;
         var skill = skills[Skill.Melee];
         var parry = (AiParry + AiParryPerSkill * skill) * (heavy ? 0.5f : 1f);
