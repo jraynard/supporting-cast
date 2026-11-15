@@ -307,9 +307,13 @@ public sealed class AiSystem : ISimSystem
             return true;
         // Raiders or predators near: drop what they're doing to fight or get away (Ai/Defence).
         var faction = sim.World.Get<Creature>(e).Faction;
-        if (def.Race == Race.Human && faction is Faction.Village or Faction.Adventurer && !Defence.Responding(sim.World.Get<Mind>(e).Job)
-            && Defence.Threat(sim, e, faction == Faction.Adventurer ? Defence.AdventurerRange : Defence.VillagerRange) != null)
-            return true;
+        if (def.Race == Race.Human && faction is Faction.Village or Faction.Adventurer)
+        {
+            var job = sim.World.Get<Mind>(e).Job;
+            if (Defence.Responding(job) ? Defence.Reconsider(sim, e, job)
+                : Defence.Threat(sim, e, faction == Faction.Adventurer ? Defence.AdventurerRange : Defence.VillagerRange) != null)
+                return true;
+        }
         var t = Warmth.FeltAt(sim, tile);
         var tol = sim.World.Get<Creature>(e).Tolerance(sim.Clock.Tick);
         // A meal is quick: a hungry creature braves the cold for it (it warms up after).

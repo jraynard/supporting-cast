@@ -15,7 +15,8 @@ public class CombatBalanceTests(ITestOutputHelper output)
         var defs = TestWorld.LoadDefs();
         var a = CombatSweep.RaidTrial(defs, 3, party: true);
         var b = CombatSweep.RaidTrial(defs, 3, party: true);
-        Assert.Equal(a with { RaiderBlows = null!, TownBlows = null! }, b with { RaiderBlows = null!, TownBlows = null! });
+        Assert.Equal(a with { RaiderBlows = null!, TownBlows = null!, Log = null! }, b with { RaiderBlows = null!, TownBlows = null!, Log = null! });
+        Assert.Equal(a.Log, b.Log);
         Assert.Equal(a.RaiderBlows.ByOutcome, b.RaiderBlows.ByOutcome);
         Assert.Equal(a.TownBlows.ByOutcome, b.TownBlows.ByOutcome);
     }

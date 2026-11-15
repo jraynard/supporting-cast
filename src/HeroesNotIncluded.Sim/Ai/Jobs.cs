@@ -1185,9 +1185,12 @@ public sealed class WardenVisitJob(Entity prisoner) : Job
 /// (anyone whose trade doesn't doctor, <see cref="Systems.Bandaging.FirstAidOnly"/>), only the
 /// bleeding wounds are stanched, for a couple of hours: dressing them is the healer's.
 /// </summary>
-public sealed class TendJob(Entity patient, bool firstAid = false) : Job
+public sealed class TendJob(Entity patient, bool firstAid = false, bool braving = false) : Job
 {
     public override Entity Focus => patient;
+
+    /// <summary>Gone out to them with raiders about (<see cref="Defence.Aid"/>): dropped if one comes near.</summary>
+    public bool Braving => braving;
 
     /// <summary>Work per wound.</summary>
     public const int TicksPerInjury = 150;

@@ -124,4 +124,59 @@ public class DefenceTests
         }
         Assert.True(sim.World.Get<Health>(raider).Injuries.Count > 0 || sim.World.Get<Creature>(raider).Dead);
     }
+
+    /// <summary>A villager lying downed and bleeding where they fell.</summary>
+    private static Entity Fallen(Simulation sim, string name, int3 cell)
+    {
+        var e = Person(sim, name, cell, weapon: null);
+        var body = sim.World.Get<Health>(e).Body;
+        HealthSystem.Damage(sim, e, 8, Defs.DamageType.Cut, body.PartIndex("LeftLeg"));
+        HealthSystem.SetDowned(sim, e, ref sim.World.Get<Creature>(e), true);
+        return e;
+    }
+
+    [Fact]
+    public void WithTheRaidersElsewhereSomeoneGoesOutToStopTheFallensBleeding()
+    {
+        var sim = Create();
+        var fallen = Fallen(sim, "Dagny", C(12, 5));
+        var hider = Person(sim, "Gareth", C(5, 5), weapon: null);
+        var raider = StandingRaider(sim, C(5, 13)); // near Gareth, well clear of Dagny
+        var job = Defence.Respond(sim, hider, raider);
+        Assert.True(job is TendJob { Braving: true }, $"got {job?.GetType().Name}");
+        Assert.Equal(fallen, job!.Focus);
+
+        // A raider standing over her: nobody goes out.
+        sim.World.Get<Position>(raider).Cell = C(14, 5);
+        sim.World.Get<Position>(raider).Pos = new float3(14.5f, 5.5f, sim.World.Get<Position>(raider).Pos.Z);
+        Assert.False(Defence.Respond(sim, hider, raider) is TendJob);
+    }
+
+    [Fact]
+    public void SomeoneOutToTheFallenGetsBackUnderCoverWhenARaiderComesNear()
+    {
+        var sim = Create();
+        Fallen(sim, "Dagny", C(12, 5));
+        var helper = Person(sim, "Gareth", C(11, 5), weapon: null);
+        var raider = StandingRaider(sim, C(11, 15));
+        var job = new TendJob(Entity.Null, firstAid: true, braving: true);
+        Assert.True(Defence.Responding(job));
+        Assert.False(Defence.Reconsider(sim, helper, job));
+        sim.World.Get<Position>(raider).Cell = C(11, 8);
+        Assert.True(Defence.Reconsider(sim, helper, job));
+    }
+
+    [Fact]
+    public void HidingWithAKnifeTheyFightBackWhenTheRaiderIsOnThem()
+    {
+        var sim = Create();
+        var cook = Person(sim, "Corin", C(5, 5), weapon: "KitchenKnife");
+        var raider = StandingRaider(sim, C(9, 5));
+        Assert.False(Defence.Reconsider(sim, cook, new HideJob()), "a raider across the room: keep hidden");
+        sim.World.Get<Position>(raider).Cell = C(6, 5);
+        Assert.True(Defence.Reconsider(sim, cook, new HideJob()), "at their elbow: think again");
+        Assert.IsType<DefendJob>(Defence.Respond(sim, cook, raider));
+        var bare = Person(sim, "Hilde", C(5, 6), weapon: null);
+        Assert.False(Defence.Reconsider(sim, bare, new HideJob()), "nothing to fight with: keep running");
+    }
 }

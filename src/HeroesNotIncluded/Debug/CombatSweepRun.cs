@@ -10,14 +10,17 @@ namespace HeroesNotIncluded.Debug;
 /// </summary>
 public static class CombatSweepRun
 {
+    private static bool _log;
+
     public static void Run(string[] args)
     {
+        _log = args.Contains("--log");
         var defs = DefDatabase.LoadDirectory(Path.Combine(AppContext.BaseDirectory, "data", "defs"));
         var n = Value(args, "--seeds") is { } s && int.TryParse(s, out var count) ? count : 8;
         var first = Value(args, "--seed") is { } f && ulong.TryParse(f, out var seed) ? seed : 1ul;
         var seeds = Enumerable.Range(0, n).Select(i => first + (ulong)i).ToArray();
         var all = !args.Any(a => a is "--party" or "--no-party" or "--dragon" or "--duels");
-        var parties = args.Contains("--party") ? [true] : args.Contains("--no-party") ? [false] : new[] { true, false };
+        var parties = args.Contains("--party") == args.Contains("--no-party") ? new[] { true, false } : [args.Contains("--party")];
 
         if (all || args.Contains("--party") || args.Contains("--no-party"))
             foreach (var party in parties)
@@ -38,6 +41,9 @@ public static class CombatSweepRun
                 + $" | town {r.TownDead} dead {r.TownDowned} downed | heroes {r.HeroesDead} dead {r.HeroesDowned} downed");
         foreach (var r in results)
             Console.WriteLine($"  seed {r.Seed,3} raiders: {r.RaiderBlows}\n  seed {r.Seed,3} town:    {r.TownBlows}");
+        if (_log)
+            foreach (var r in results)
+                Console.WriteLine($"-- seed {r.Seed}\n{string.Join("\n", r.Log)}");
         Console.WriteLine($"MET {results.Count(r => r.Met == true)}/{results.Length} ({results.Count(r => r.RoundLost)} lost the round); town dead {results.Sum(r => r.TownDead)}, heroes dead {results.Sum(r => r.HeroesDead)}, "
             + $"raiders down {results.Sum(r => r.RaidersDown)}/{results.Sum(r => r.Raiders)}, fled {results.Sum(r => r.RaidersFled)}");
     }

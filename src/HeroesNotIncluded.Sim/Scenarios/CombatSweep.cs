@@ -29,7 +29,11 @@ public sealed class BlowTally
 public sealed record RaidResult(
     ulong Seed, bool Party, bool? Met, int Raiders, string Band,
     int RaidersDown, int RaidersFled, int TownDead, int TownDowned, int HeroesDead, int HeroesDowned,
-    float Hours, BlowTally RaiderBlows, BlowTally TownBlows, bool RoundLost = false);
+    float Hours, BlowTally RaiderBlows, BlowTally TownBlows, bool RoundLost = false)
+{
+    /// <summary>Who stood where at the start, and who went down doing what: for reading one trial closely.</summary>
+    public List<string> Log { get; init; } = [];
+}
 
 /// <summary>How one dragon's visit went (<see cref="CombatSweep.DragonTrial"/>).</summary>
 public sealed record DragonResult(
@@ -91,15 +95,18 @@ public static class CombatSweep
         var raiders = new BlowTally();
         var town = new BlowTally();
         var downed = new Dictionary<Entity, Faction>();
+        var log = new List<string>();
+        foreach (var e in sim.Creatures().Where(e => w.Get<Creature>(e) is { Faction: Faction.Village or Faction.Adventurer, Def.Race: Race.Human, Dead: false }))
+            log.Add($"  {w.Get<Creature>(e).Name} ({w.Get<Creature>(e).Faction}): {Arms(sim, e)}");
         var met = Run(sim, start, SimClock.HoursToTicks(sim.Defs.Season.CrisisHours + 1), downed, b =>
-            (raid.Raiders.Contains(b.Attacker) ? raiders : town).Add(b.Outcome));
+            (raid.Raiders.Contains(b.Attacker) ? raiders : town).Add(b.Outcome), log: log);
         var after = Counts(sim);
         var down = raid.Raiders.Count(e => w.IsAlive(e) && w.Get<Creature>(e) is { Dead: true } or { Downed: true });
         var fled = raid.Raiders.Count(e => !w.IsAlive(e) || (w.Get<Creature>(e).Able && w.Has<Leaving>(e))); // off the map, or on their way
         return new RaidResult(seed, party, met, raid.Raiders.Count, band, down, fled,
             after.TownDead - before.TownDead, downed.Values.Count(f => f == Faction.Village),
             after.HeroesDead - before.HeroesDead, downed.Values.Count(f => f == Faction.Adventurer),
-            (sim.Clock.Tick - start) / (float)SimClock.TicksPerHour, raiders, town, sim.Round.Phase == RoundPhase.Over);
+            (sim.Clock.Tick - start) / (float)SimClock.TicksPerHour, raiders, town, sim.Round.Phase == RoundPhase.Over) { Log = log };
     }
 
     /// <summary>The dragon comes to town, to its end.</summary>
@@ -176,8 +183,10 @@ public static class CombatSweep
         !sim.World.IsAlive(e) || !sim.World.Get<Creature>(e).Able || sim.World.Has<Leaving>(e) || RaiderBrain.WantsToFlee(sim, e);
 
     /// <summary>Tick until the crisis resolves (or <paramref name="limit"/>), noting every blow and everyone who went down.</summary>
-    private static bool? Run(Simulation sim, long start, long limit, Dictionary<Entity, Faction> downed, Action<BlowEvent> blow, Action? each = null)
+    private static bool? Run(Simulation sim, long start, long limit, Dictionary<Entity, Faction> downed, Action<BlowEvent> blow, Action? each = null, List<string>? log = null)
     {
+        var doing = new Dictionary<Entity, string>();
+        var hitBy = new Dictionary<Entity, Entity>();
         var w = sim.World;
         var met = sim.Director.Met;
         var unmet = sim.Director.Unmet;
@@ -187,18 +196,41 @@ public static class CombatSweep
             sim.Tick();
             foreach (var b in sim.RecentBlows)
                 if (b.Tick > seen)
+                {
                     blow(b);
+                    if (b.Outcome is BlowOutcome.Hit or BlowOutcome.Riposte or BlowOutcome.GuardBroken or BlowOutcome.Blocked)
+                        hitBy[b.Target] = b.Attacker;
+                }
             if (sim.RecentBlows.Count > 0)
                 seen = Math.Max(seen, sim.RecentBlows[^1].Tick);
             if (sim.Clock.Tick % 30 != 0)
                 continue;
             each?.Invoke();
             foreach (var e in sim.Creatures())
-                if (w.Get<Creature>(e) is { Faction: Faction.Village or Faction.Adventurer, Def.Race: Race.Human, Able: false } c)
-                    downed[e] = c.Faction;
+            {
+                if (w.Get<Creature>(e) is not { Faction: Faction.Village or Faction.Adventurer, Def.Race: Race.Human } c)
+                    continue;
+                if (c.Able)
+                {
+                    if (w.Get<Mind>(e).Job is { } job)
+                        doing[e] = job.Report ?? job.GetType().Name;
+                    continue;
+                }
+                if (downed.TryAdd(e, c.Faction) && log != null)
+                {
+                    var by = hitBy.TryGetValue(e, out var a) && w.IsAlive(a) ? $"{w.Get<Creature>(a).Name} ({Arms(sim, a)})" : "?";
+                    log.Add($"+{(sim.Clock.Tick - start) / (float)SimClock.TicksPerHour * 60,3:F0}m {c.Name} ({c.Faction}, {Arms(sim, e)}) {(c.Dead ? "DIED" : "down")}, last hit by {by}, was: {doing.GetValueOrDefault(e, "-")}");
+                }
+            }
         }
+        if (log != null)
+            log.AddRange(sim.Messages.Messages.Where(m => m.Tick >= start && m.Kind is MessageKind.Danger or MessageKind.Good or MessageKind.Warning).Select(m => $"  [{(m.Tick - start) / (float)SimClock.TicksPerHour * 60,3:F0}m] {m.Text}"));
         return sim.Director.Met > met ? true : sim.Director.Unmet > unmet ? false : null;
     }
+
+    /// <summary>What they hold, or "unarmed".</summary>
+    private static string Arms(Simulation sim, Entity e) =>
+        sim.World.TryGet<Equipment>(e, out var eq) && sim.World.IsAlive(eq.Weapon) ? sim.World.Get<Thing>(eq.Weapon).Def.Name : "unarmed";
 
     private static (int TownDead, int HeroesDead) Counts(Simulation sim)
     {

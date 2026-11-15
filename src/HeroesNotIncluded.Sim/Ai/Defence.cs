@@ -20,6 +20,15 @@ public static class Defence
     /// <summary>How near a foe has to be before someone with only a makeshift weapon stands and fights it, in cells.</summary>
     public const int CorneredRange = 2;
 
+    /// <summary>How clear of raiders a downed neighbour has to lie before someone goes out to stop their bleeding, in cells.</summary>
+    public const int AidClear = 6;
+
+    /// <summary>How far someone hiding will go to a downed neighbour, in cells.</summary>
+    public const int AidRange = 24;
+
+    /// <summary>How near a raider comes before someone gone out to a neighbour (<see cref="AidClear"/>) gets back under cover.</summary>
+    public const int AidAbandon = 4;
+
     /// <summary>How far off a dragon is everyone's business: the whole town hears it.</summary>
     public const int DragonRange = 96;
 
@@ -65,6 +74,9 @@ public static class Defence
         if (CanFight(sim, pawn) && sim.Regions.CanReach(tile, at, PathEnd.Touch)
             && (!Militia.MilitiaSystem.ArmedMakeshift(sim, pawn) || Map.Distance(tile, at) <= CorneredRange))
             return new DefendJob(foe);
+        // Not fighting it: but a neighbour lying bleeding where no raider is gets seen to.
+        if (Map.Distance(tile, at) > AidAbandon && Aid(sim, pawn) is { } aid)
+            return aid;
         if (sim.Rooms.RoomAt(tile) is { Indoors: true } && Map.Distance(tile, at) > 2)
             return new HideJob();
         if (Shelter(sim, pawn, at) is { } inside)
@@ -92,8 +104,45 @@ public static class Defence
         return null;
     }
 
-    /// <summary>Is this job already the answer to trouble (fighting, or getting away)?</summary>
-    public static bool Responding(Job? job) => job is DefendJob or FleeJob or HideJob;
+    /// <summary>
+    /// First aid with raiders about: a villager lying downed and bleeding, no raider within
+    /// <see cref="AidClear"/> cells of them, gets their bleeding stopped where they lie. Without it
+    /// the downed bleed out while the town hides, however long the raiders linger.
+    /// </summary>
+    public static Job? Aid(Simulation sim, Entity pawn)
+    {
+        var w = sim.World;
+        var from = w.Get<Position>(pawn).Cell;
+        var best = Entity.Null;
+        var bestDist = AidRange + 1;
+        foreach (var e in sim.Creatures())
+        {
+            if (e == pawn || w.Get<Creature>(e) is not { Faction: Faction.Village, Downed: true, Dead: false } || w.Has<Carried>(e)
+                || sim.Reservations.IsReservedByOther(e, pawn) || !w.TryGet<Health>(e, out var h) || !h.Injuries.Exists(i => Systems.Bandaging.Stanchable(h, i)))
+                continue;
+            var at = sim.LocationOf(e);
+            var d = Map.Distance(from, at);
+            if (d >= bestDist || Threat(sim, e, AidClear) != null || !sim.Regions.CanReach(from, at, PathEnd.Touch))
+                continue;
+            best = e;
+            bestDist = d;
+        }
+        return best.IsNull ? null : new TendJob(best, firstAid: true, braving: true);
+    }
+
+    /// <summary>Is this job already the answer to trouble (fighting, getting away, or seeing to the fallen)?</summary>
+    public static bool Responding(Job? job) => job is DefendJob or FleeJob or HideJob or TendJob { Braving: true };
+
+    /// <summary>
+    /// Should this answer to trouble be thought again now: hiding or running with a raider at their
+    /// elbow and something in hand to fight with, or out to a neighbour with a raider coming near?
+    /// </summary>
+    public static bool Reconsider(Simulation sim, Entity pawn, Job? job) => job switch
+    {
+        HideJob or FleeJob => Threat(sim, pawn, CorneredRange) != null && CanFight(sim, pawn),
+        TendJob { Braving: true } => Threat(sim, pawn, AidAbandon) != null,
+        _ => false,
+    };
 }
 
 /// <summary>Indoors with trouble outside: keep still and out of sight a while, then look again.</summary>
