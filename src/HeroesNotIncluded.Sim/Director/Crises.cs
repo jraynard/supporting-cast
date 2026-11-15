@@ -42,11 +42,13 @@ public sealed class FireCrisis : ICrisis
     /// <summary>A fire this far from where it started still counts as this one.</summary>
     public const int Spread = 10;
 
-    internal static FireCrisis? Begin(Simulation sim, SimRandom rand)
+    /// <remarks><paramref name="only"/>: that building and no other (the fire drill); else one at random.</remarks>
+    internal static FireCrisis? Begin(Simulation sim, SimRandom rand, Entity? only = null)
     {
         var w = sim.World;
         var buildings = w.Query<PresetBuilding>()
-            .Where(b => w.Get<PresetBuilding>(b) is { Phase: BuildPhase.Done, Demolishing: false } && Buildings.Parts(sim, b).Any())
+            .Where(b => w.Get<PresetBuilding>(b) is { Phase: BuildPhase.Done, Demolishing: false } && Buildings.Parts(sim, b).Any()
+                && (only is not { } one || b == one))
             .ToList();
         while (buildings.Count > 0)
         {

@@ -253,6 +253,15 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
         return raid;
     }
 
+    /// <summary>A fire now in this building (the fire drill). Null if nothing in it will burn.</summary>
+    public FireCrisis? SendFire(Simulation sim, Entity building)
+    {
+        var fire = FireCrisis.Begin(sim, _rand, building);
+        if (fire != null)
+            _active.Add(fire);
+        return fire;
+    }
+
     public void Save(SaveWriter w, Simulation sim)
     {
         var (a, b, c, d) = _rand.State;

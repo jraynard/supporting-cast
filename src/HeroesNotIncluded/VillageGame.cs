@@ -198,6 +198,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>Debug (<c>--raid-test</c>): arm your character and the muster rack, and bandits come by the north road at once (<see cref="RaidDrill"/>).</summary>
     public bool RaidTest { get; init; }
 
+    /// <summary>Debug (<c>--fire-test</c>): the fire drill (<see cref="FireDrill"/>), the inn alight and you at the well.</summary>
+    public bool FireTest { get; init; }
+
     /// <summary>Debug (<c>--die-at SECONDS</c>): your character drops dead this long in, to try being a ghost. Negative: never.</summary>
     public float DieAt { get; init; } = -1f;
 
@@ -338,6 +341,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
                 _sim.Round.Practice = true; // set before the first tick: every peer (there's only one) starts with it
             if (RaidTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } me)
                 RaidDrill.Stage(_sim, me);
+            if (FireTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } burning)
+                FireDrill.Stage(_sim, burning);
         }
         var focus = center;
         if (IgniteForest)

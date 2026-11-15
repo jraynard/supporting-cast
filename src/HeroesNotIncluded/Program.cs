@@ -248,6 +248,8 @@ else
         HeroTrade = ParseString(args, "--trade") ?? (ParseString(args, "--practice") is { } practising && !practising.StartsWith("--") ? practising
             : args.Contains("--raid-test") ? "Blacksmith" : null),
         RaidTest = args.Contains("--raid-test"),
+        // --fire-test: the fire drill (FireDrill): the inn alight, you at the well with a full bucket.
+        FireTest = args.Contains("--fire-test"),
         // --practice TRADE: the practice yard (Practice): your trade's games, no season, customers when sent for.
         Practice = args.Contains("--practice"),
         // --lesson ID (with --practice): straight into one of the trade's lessons (trades.json "lessons").
@@ -286,7 +288,7 @@ SavedCharacter? PickedCharacter()
 
 static bool LaunchesDirectly(string[] args) =>
     args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--freeform" or "--show-roofs" or "--hide-roofs"
-        or "--ignite-forest" or "--raid-test" or "--arena" or "--practice" or "--yaw" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
+        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--arena" or "--practice" or "--yaw" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
 
 // --load and --check-save take a path, or the name of a slot in the saves directory ("quicksave").
 static string ResolveSave(string pathOrSlot)

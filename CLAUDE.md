@@ -18,6 +18,7 @@ dotnet run --project src/HeroesNotIncluded -- --new-game --name Arin        # st
 dotnet run --project src/HeroesNotIncluded -- --host --name Arin            # host (--port N, --relay HOST, --difficulty D)
 dotnet run --project src/HeroesNotIncluded -- --join 127.0.0.1 --player-id bea --name Bea
 dotnet run --project src/HeroesNotIncluded -- --raid-test --name Arin          # as the smith, bandits down the north road
+dotnet run --project src/HeroesNotIncluded -- --fire-test --name Arin          # the inn alight, you at the well with a full bucket
 dotnet run --project src/HeroesNotIncluded -- --new-game --die-at 5            # your character drops dead: try being a ghost
 dotnet run --project src/HeroesNotIncluded -- --new-game --festival-at 5       # the season's festival, now, you by the well
 dotnet run --project src/HeroesNotIncluded -- --practice Healer          # the practice yard: a trade's games, no season, customers on request (--lesson ID: straight into a lesson)
