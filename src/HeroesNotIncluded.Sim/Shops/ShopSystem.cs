@@ -338,6 +338,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                     w.Get<Adventurer>(e.Poster).Satisfaction -= UnmadeMood;
                 sim.Speech.Say(sim, e.Poster, "Will the bed be made up by the time I turn in?", Volume.Say);
             }
+            Hospitality.RoomChores.Grumble(sim, e.Poster, bed);
         }
         sim.Speech.Say(sim, giver, $"Room {number}, up the stairs.{(ShopName.Of(sim, e.Where) is { } called ? $" Welcome to {called}." : "")}", Volume.Say);
         Complete(sim, e, giver);
@@ -360,17 +361,24 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         foreach (var o in w.Each<BedOwner>())
             taken.Add(w.Get<BedOwner>(o).Bed);
         var unmade = Entity.Null;
+        var unready = Entity.Null;
         var keyed = !Hospitality.InnRooms.Board(sim, building).IsNull;
         foreach (var part in Buildings.Parts(sim, building))
             if (w.Get<Thing>(part).Def.Building is { IsBed: true } && !w.Has<Construction>(part) && !taken.Contains(part)
                 && (!keyed || !Hospitality.InnRooms.OnBoard(sim, building, Hospitality.InnRooms.SeedOf(sim, part)).IsNull))
             {
-                if (!w.Has<Hospitality.Unmade>(part))
+                if (Hospitality.RoomChores.Ready(sim, part))
                     return part;
+                if (!w.Has<Hospitality.Unmade>(part))
+                {
+                    if (unready.IsNull)
+                        unready = part;
+                    continue;
+                }
                 if (unmade.IsNull)
                     unmade = part;
             }
-        return unmade;
+        return unready.IsNull ? unmade : unready;
     }
 
     /// <summary>A bed let out (in a building that lets them): only whoever's been given it sleeps there.</summary>
@@ -1070,6 +1078,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     {
         var w = sim.World;
         var def = w.Get<Thing>(item).Def;
+        if (Hospitality.RoomChores.HandedBack(sim, giver, to, item))
+            return;
         var repair = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Repair && e.Subject == item);
         if (repair != null)
         {

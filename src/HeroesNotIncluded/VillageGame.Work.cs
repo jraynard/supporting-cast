@@ -211,6 +211,9 @@ public sealed partial class VillageGame
             case Sim.Hospitality.SignInSession sign:
                 DrawSignIn(sign);
                 return;
+            case Sim.Hospitality.SlopSession slop:
+                DrawSlop(slop);
+                return;
             case null:
                 DrawTongs();
                 DrawPotPanel();

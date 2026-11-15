@@ -769,6 +769,14 @@ internal static class ComponentCodecs
             w.Entity(k.Inn);
         }, r => new Hospitality.ReturningKey { Key = r.Entity(), Inn = r.Entity() }),
         Codec<Hospitality.InnLedger>("InnLedger", Hospitality.Ledger.WriteState, Hospitality.Ledger.ReadState),
+        Tag<Hospitality.Slops>("Slops"),
+        Tag<Hospitality.JugEmpty>("JugEmpty"),
+        Codec("LeftBy", (w, l) =>
+        {
+            w.Entity(l.Owner);
+            w.String(l.Name);
+        }, r => new Hospitality.LeftBy { Owner = r.Entity(), Name = r.String() }),
+        Codec("Tucked", (w, t) => w.Entity(t.Item), r => new Hospitality.Tucked { Item = r.Entity() }),
         Codec("WalkIn", (w, k) => w.Entity(k.Bed), r => new Hospitality.WalkIn { Bed = r.Entity() }),
         Codec("OwedRoom", (w, k) =>
         {

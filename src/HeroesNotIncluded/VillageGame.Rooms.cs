@@ -116,4 +116,43 @@ public sealed partial class VillageGame
         Bar("", s.Sweep, s.OnCue ? Theme.Good : Theme.Dim);
         EndWork();
     }
+
+    /// <summary>Emptying a chamber pot into a bucket: the pot tipping over the bucket as the pour sways round, a splash on the floor for each one off the beat.</summary>
+    private void DrawSlop(SlopSession s)
+    {
+        BeginWork(s.Title, ("F", "as the pour comes round"), ("Esc", "leave it"));
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(300, 120);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var max = min + size;
+        dl.AddRectFilled(in min, in max, new ImColor8(70, 56, 44, 255), Gui.S(4), ImDrawFlags.None);
+        // The bucket on the floor.
+        var b0 = new float2(min.X + size.X * 0.55f, max.Y - Gui.S(50));
+        var b1 = new float2(min.X + size.X * 0.8f, max.Y - Gui.S(8));
+        dl.AddRectFilled(in b0, in b1, new ImColor8(120, 92, 60, 255), Gui.S(3), ImDrawFlags.None);
+        var fill = Math.Clamp(s.Poured / (float)SlopSession.Pours, 0f, 1f);
+        var f0 = new float2(b0.X + Gui.S(3), b1.Y - Gui.S(3) - (b1.Y - b0.Y - Gui.S(6)) * fill);
+        var f1 = new float2(b1.X - Gui.S(3), b1.Y - Gui.S(3));
+        if (fill > 0)
+            dl.AddRectFilled(in f0, in f1, new ImColor8(96, 88, 52, 255), Gui.S(2), ImDrawFlags.None);
+        // The pot, tilting further as the sway comes round.
+        var pivot = new float2(min.X + size.X * 0.42f, min.Y + Gui.S(40));
+        var tilt = s.Sweep * 1.1f;
+        float2 Rot(float x, float y) => pivot + new float2(x * MathF.Cos(tilt) - y * MathF.Sin(tilt), x * MathF.Sin(tilt) + y * MathF.Cos(tilt));
+        var p0 = Rot(-Gui.S(22), -Gui.S(16));
+        var p1 = Rot(Gui.S(22), -Gui.S(16));
+        var p2 = Rot(Gui.S(18), Gui.S(16));
+        var p3 = Rot(-Gui.S(18), Gui.S(16));
+        dl.AddQuadFilled(in p0, in p1, in p2, in p3, s.OnCue ? Theme.U8(Theme.Good) : new ImColor8(214, 204, 184, 255));
+        // Spills, on the boards.
+        for (var i = 0; i < s.Spills; i++)
+        {
+            var c = new float2(min.X + Gui.S(40 + 22 * i), max.Y - Gui.S(10));
+            dl.AddCircleFilled(in c, Gui.S(7), new ImColor8(96, 88, 52, 200), 12);
+        }
+        ImGui.Text($"{s.Poured} of {SlopSession.Pours} poured{(s.Spills > 0 ? $", {s.Spills} on the floor" : "")}.");
+        Bar("", s.Sweep, s.OnCue ? Theme.Good : Theme.Dim);
+        EndWork();
+    }
 }

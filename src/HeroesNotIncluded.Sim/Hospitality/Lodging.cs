@@ -66,8 +66,7 @@ public static class Lodging
         w.Remove<LodgeStay>(guest);
         if (w.TryGet<BedOwner>(guest, out var own) && own.Bed == stay.Bed)
             w.Remove<BedOwner>(guest);
-        if (w.IsAlive(stay.Bed) && !w.Has<Unmade>(stay.Bed))
-            w.Add(stay.Bed, new Unmade());
+        RoomChores.Vacated(sim, guest, stay.Bed);
         if (w.TryGet<Creature>(guest, out var c) && !c.Dead)
             InnRooms.OnCheckOut(sim, guest, stay.Bed);
     }
@@ -155,7 +154,7 @@ public sealed class MakeBedSession : WorkSession
     public override string Title => "Making the bed";
 
     public override bool StillValid(Simulation sim) =>
-        Lodging.IsUnmade(sim, Bed) && AvatarSystem.InReach(sim, sim.World.Get<Position>(Worker).Cell, Bed);
+        Lodging.IsUnmade(sim, Bed) && AvatarSystem.InReach(sim, sim.World.Get<Position>(Worker).Cell, Bed) && !RoomChores.LinenOn(sim, Worker).IsNull;
 
     protected override void Press()
     {
@@ -168,10 +167,29 @@ public sealed class MakeBedSession : WorkSession
 
     protected override void Step() { }
 
+    /// <summary>
+    /// Made up: a clean sheet on, last night's off (into the worker's pack, for the wash), and
+    /// whatever was in the sheets in their hands.
+    /// </summary>
     public override void Finish(Simulation sim)
     {
-        sim.World.Remove<Unmade>(Bed);
+        MakeUp(sim, Bed, Worker);
         sim.Messages.Add(MessageKind.Info, "The bed's made up fresh.", sim.World.Get<Thing>(Bed).Cell);
+    }
+
+    /// <summary>The bed made up by someone with clean linen on them (an AI keeper's too, without the game).</summary>
+    public static void MakeUp(Simulation sim, Entity bed, Entity by)
+    {
+        var w = sim.World;
+        w.Remove<Unmade>(bed);
+        RoomChores.Untuck(sim, bed, by);
+        if (RoomChores.LinenOn(sim, by) is { IsNull: false } linen)
+            sim.World.Destroy(Inventory.TakeFromPerson(sim, by, linen, 1));
+        var soiled = sim.CreateItem(sim.Defs.Thing(RoomChores.SoiledDef), 1);
+        if (sim.PackOf(by) is { IsNull: false } pack && sim.ContainerRoom(pack, sim.Defs.Thing(RoomChores.SoiledDef), null) > 0)
+            sim.Store(pack, soiled);
+        else
+            sim.PlaceItemNear(soiled, w.Get<Thing>(bed).Cell, byHand: true);
     }
 
     protected override void WriteState(SaveWriter w)

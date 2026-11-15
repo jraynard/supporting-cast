@@ -50,6 +50,9 @@ public sealed class WashJob(Entity tub) : Job
             if (b?.StewPot is { } pot && trade.Def.Serving(ServiceKind.Meal))
                 kinds.Add(pot.Into);
         }
+        // Whoever lets the rooms washes the sheets that come off the beds.
+        if (trade.Def.Serving(ServiceKind.Lodging))
+            kinds.Add(Hospitality.RoomChores.LinenDef);
         return kinds;
     }
 
@@ -368,7 +371,7 @@ public abstract class RoomKeyJob : Job
             yield break;
         }
         var box = st.In;
-        foreach (var s in GoToEntity(box, PathEnd.Touch, 1500)) yield return s;
+        foreach (var s in GoTo(Get<Thing>(box).Cell, PathEnd.Touch)) yield return s;
         if (HasFailed)
             yield break;
         if (!Alive(from) || !Sim.World.TryGet<Stored>(from, out var still) || still.In != box)
@@ -392,7 +395,7 @@ public abstract class RoomKeyJob : Job
             to = board;
         if (to.IsNull)
             yield break;
-        foreach (var s in GoToEntity(to, PathEnd.Touch, 1500)) yield return s;
+        foreach (var s in GoTo(Get<Thing>(to).Cell, PathEnd.Touch)) yield return s;
         if (HasFailed || !Alive(_key) || !Inventory.OnPerson(Sim, Pawn, _key))
             yield break;
         var rest = Sim.Store(to, Inventory.TakeFromPerson(Sim, Pawn, _key, 1));
@@ -402,12 +405,17 @@ public abstract class RoomKeyJob : Job
     }
 }
 
-/// <summary>An AI innkeeper makes up the beds guests have left (with the room's key, if it's locked).</summary>
+/// <summary>
+/// An AI innkeeper turns a room round once its guest has gone (with the room's key, if it's
+/// locked): clean linen from the inn's stores, the bed stripped and made, the pot emptied and the
+/// jug filled (without the games or a trip to the well: as the empath's AI works the gift), and
+/// anything left behind picked up for the lost property box. The soiled sheets are left for the wash.
+/// </summary>
 public sealed class MakeBedJob(Entity bed) : RoomKeyJob
 {
     public override Entity Focus => bed;
 
-    public const int Ticks = 150;
+    public const int Ticks = 150, ChoreTicks = 90;
 
     public static Job? For(Simulation sim, Entity pawn)
     {
@@ -415,14 +423,38 @@ public sealed class MakeBedJob(Entity bed) : RoomKeyJob
         if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace || !trade.Def.Serving(ServiceKind.Lodging))
             return null;
         var inn = ShopSystem.BuildingOf(sim, workplace);
-        if (inn.IsNull || w.Count<Hospitality.Unmade>() == 0)
+        if (inn.IsNull || (w.Count<Hospitality.Unmade>() == 0 && w.Count<Hospitality.Slops>() == 0 && w.Count<Hospitality.JugEmpty>() == 0))
             return null;
         var from = w.Get<Position>(pawn).Cell;
         foreach (var part in Buildings.Parts(sim, inn))
-            if (w.Has<Hospitality.Unmade>(part) && !sim.Reservations.IsReservedByOther(part, pawn) && Gettable(sim, pawn, inn, part)
+            if (w.Get<Thing>(part).Def.Building is { IsBed: true } && !Hospitality.RoomChores.Ready(sim, part) && !Hospitality.Lodging.Lodged(sim, Occupant(sim, part))
+                && !sim.Reservations.IsReservedByOther(part, pawn) && Gettable(sim, pawn, inn, part)
+                && (!w.Has<Hospitality.Unmade>(part) || !Linen(sim, pawn, inn).IsNull)
                 && (Hospitality.InnRooms.LockedIn(sim, part) || Navigation.CanReach(sim, pawn, from, w.Get<Thing>(part).Cell, PathEnd.Touch)))
                 return new MakeBedJob(part);
         return null;
+    }
+
+    /// <summary>Whoever's been given this bed, if anyone.</summary>
+    private static Entity Occupant(Simulation sim, Entity bed)
+    {
+        foreach (var o in sim.World.Each<BedOwner>())
+            if (sim.World.Get<BedOwner>(o).Bed == bed)
+                return o;
+        return Entity.Null;
+    }
+
+    /// <summary>Clean linen on them, or kept in the inn, or Entity.Null.</summary>
+    private static Entity Linen(Simulation sim, Entity pawn, Entity inn)
+    {
+        if (Hospitality.RoomChores.LinenOn(sim, pawn) is { IsNull: false } on)
+            return on;
+        foreach (var part in Buildings.Parts(sim, inn))
+            if (sim.IsContainer(part))
+                foreach (var item in sim.StoredIn(part))
+                    if (sim.World.Get<Thing>(item).Def.Name == Hospitality.RoomChores.LinenDef)
+                        return item;
+        return Entity.Null;
     }
 
     /// <summary>Not let to anyone tonight, and if its room's locked, there's a key to be had for it.</summary>
@@ -438,15 +470,95 @@ public sealed class MakeBedJob(Entity bed) : RoomKeyJob
     {
         if (!Reserve(bed))
             yield break;
-        Report = "Making up a bed";
+        var w = Sim.World;
+        Report = "Turning a room round";
+        // Clean linen first, from wherever the inn keeps it.
+        if (w.Has<Hospitality.Unmade>(bed) && Hospitality.RoomChores.LinenOn(Sim, Pawn).IsNull)
+        {
+            var linen = Linen(Sim, Pawn, Inn);
+            if (linen.IsNull || !w.TryGet<Stored>(linen, out var st))
+            {
+                Fail("no clean linen");
+                yield break;
+            }
+            foreach (var s in GoTo(Get<Thing>(st.In).Cell, PathEnd.Touch)) yield return s;
+            if (HasFailed) yield break;
+            if (!Alive(linen) || !w.Has<Stored>(linen))
+            {
+                Fail("the linen's gone");
+                yield break;
+            }
+            Inventory.Stow(Sim, Pawn, Sim.TakeFromStack(linen, 1));
+        }
         foreach (var s in KeyFor(bed)) yield return s;
         if (HasFailed) yield break;
         foreach (var s in GoTo(Get<Thing>(bed).Cell, PathEnd.Touch)) yield return s;
         if (HasFailed) yield break;
-        foreach (var s in Wait(Ticks)) yield return s;
-        if (Alive(bed))
-            Sim.World.Remove<Hospitality.Unmade>(bed);
+        if (w.Has<Hospitality.Unmade>(bed) && !Hospitality.RoomChores.LinenOn(Sim, Pawn).IsNull)
+        {
+            foreach (var s in Wait(Ticks)) yield return s;
+            if (!Alive(bed))
+                yield break;
+            Hospitality.MakeBedSession.MakeUp(Sim, bed, Pawn);
+        }
+        foreach (var fixture in new[] { Hospitality.RoomChores.FixtureOf(Sim, bed, Hospitality.RoomChores.PotDef), Hospitality.RoomChores.FixtureOf(Sim, bed, Hospitality.RoomChores.StandDef) })
+        {
+            if (fixture.IsNull || !(w.Has<Hospitality.Slops>(fixture) || w.Has<Hospitality.JugEmpty>(fixture)))
+                continue;
+            foreach (var s in GoTo(Get<Thing>(fixture).Cell, PathEnd.Touch)) yield return s;
+            if (HasFailed) yield break;
+            foreach (var s in Wait(ChoreTicks)) yield return s;
+            if (!Alive(fixture))
+                continue;
+            w.Remove<Hospitality.Slops>(fixture);
+            w.Remove<Hospitality.JugEmpty>(fixture);
+        }
+        // Anything left on the floor, to the lost property box.
+        var room = Sim.Rooms.RoomAt(Get<Thing>(bed).Cell);
+        var found = new List<Entity>();
+        foreach (var item in w.Query<Hospitality.LeftBy>().OrderBy(e => e.Index))
+            if (Get<Thing>(item).Spawned && Sim.Rooms.RoomAt(Get<Thing>(item).Cell) == room)
+                found.Add(item);
+        foreach (var item in found)
+        {
+            foreach (var s in GoTo(Get<Thing>(item).Cell, PathEnd.Touch)) yield return s;
+            if (HasFailed) yield break;
+            if (Alive(item) && Get<Thing>(item).Spawned)
+                Inventory.Stow(Sim, Pawn, Sim.TakeFromStack(item, Get<Stack>(item).Count));
+        }
         foreach (var s in PutKeyBack()) yield return s;
+        foreach (var s in PutAwayLeftThings()) yield return s;
+        // The sheets down to the wash tub, to be washed with the crockery (WashJob).
+        if (Hospitality.RoomChores.SoiledOn(Sim, Pawn) is { IsNull: false } soiled
+            && Buildings.Parts(Sim, Inn).FirstOrDefault(e => BarWork.IsTub(Sim, e), Entity.Null) is { IsNull: false } tub)
+        {
+            foreach (var s in GoTo(Get<Thing>(tub).Cell, PathEnd.Touch)) yield return s;
+            if (!HasFailed && Alive(soiled) && Inventory.OnPerson(Sim, Pawn, soiled))
+                Sim.PlaceItemNear(Inventory.TakeFromPerson(Sim, Pawn, soiled, Get<Stack>(soiled).Count), PawnCell, byHand: true);
+        }
+    }
+
+    /// <summary>What guests left, off to the lost property box.</summary>
+    private IEnumerable<JobStatus> PutAwayLeftThings()
+    {
+        var w = Sim.World;
+        var box = Buildings.Parts(Sim, Inn).FirstOrDefault(e => w.Get<Thing>(e).Def.Name == Hospitality.RoomChores.LostPropertyDef, Entity.Null);
+        var carried = new List<Entity>();
+        if (w.Get<Carrying>(Pawn).Item is { IsNull: false } held && w.Has<Hospitality.LeftBy>(held))
+            carried.Add(held);
+        if (Sim.PackOf(Pawn) is { IsNull: false } pack)
+            carried.AddRange(Sim.StoredIn(pack).Where(e => w.Has<Hospitality.LeftBy>(e)));
+        if (box.IsNull || carried.Count == 0)
+            yield break;
+        foreach (var s in GoTo(Get<Thing>(box).Cell, PathEnd.Touch)) yield return s;
+        if (HasFailed) yield break;
+        foreach (var item in carried)
+            if (Alive(item) && Inventory.OnPerson(Sim, Pawn, item))
+            {
+                var rest = Sim.Store(box, Inventory.TakeFromPerson(Sim, Pawn, item, Get<Stack>(item).Count));
+                if (!rest.IsNull)
+                    Sim.PlaceItemNear(rest, Get<Thing>(box).Cell, byHand: true);
+            }
     }
 }
 
@@ -506,7 +618,7 @@ public sealed class HangKeyJob(Entity key, Entity board) : Job
                 yield break;
             Inventory.Stow(Sim, Pawn, Sim.TakeFromStack(key, 1));
         }
-        foreach (var s in GoToEntity(board, PathEnd.Touch, 1500)) yield return s;
+        foreach (var s in GoTo(Get<Thing>(board).Cell, PathEnd.Touch)) yield return s;
         if (HasFailed || !Alive(key) || !Inventory.OnPerson(Sim, Pawn, key))
             yield break;
         var rest = Sim.Store(board, Inventory.TakeFromPerson(Sim, Pawn, key, 1));

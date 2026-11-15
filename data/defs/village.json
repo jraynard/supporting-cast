@@ -60,6 +60,22 @@
       "description": "Water to the brim. Point where it should go, then hold F to swing it back and let go to throw: the further back, the further it goes. Wet ground won't catch for a while."
     },
     {
+      // The inn's rooms (Hospitality/InnRooms): a slept-in bed is stripped and made up with clean
+      // linen; what comes off is washed at the tub like the crockery.
+      "name": "Linen", "label": "clean linen", "category": "Item", "mass": 0.8, "sprite": "props/linen", "stackLimit": 8, "maxHp": 30, "flammability": 1.0,
+      "description": "A folded sheet and pillow slip, fresh from the wash. F at a slept-in bed to make it up."
+    },
+    {
+      "name": "SoiledLinen", "label": "soiled linen", "category": "Item", "mass": 0.8, "sprite": "props/linen", "stackLimit": 8, "maxHp": 30, "flammability": 1.0,
+      "washesInto": "Linen",
+      "description": "Last night's sheets, balled up. Wash them in the tub and they're clean linen again."
+    },
+    {
+      // A chamber pot emptied into an empty bucket; tipped out at the midden behind the inn.
+      "name": "SlopBucket", "label": "bucket of slops", "category": "Item", "mass": 6, "bulky": true, "sprite": "items/bucket_full", "maxHp": 60, "flammability": 0.0,
+      "description": "Don't spill it. Out to the midden behind the inn, and F there to tip it."
+    },
+    {
       "name": "Well", "label": "well", "category": "Building", "solid": true, "sprite": "buildings/well",
       "description": "A stone-ringed well with a windlass and a bucket, the middle of the village.",
       "maxHp": 400, "flammability": 0.1,

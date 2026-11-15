@@ -34,7 +34,7 @@ GROUND_LEGEND = {"g": "Grass", "d": "Dirt", "r": "Road", "t": "TilledSoil", "k":
 FEATURE_LEGEND = {
     "O": "Oak", "P": "Pine", "B": "Birch", "b": "BerryBush", "o": "Boulder", "x": "WildFlax",
     "f": "Fence", "G": "Gate!", "c": "CabbagePlant", "W": "Well", "N": "NoticeBoard", "=": "StoneBridge@2",
-    "u": "Barrel", "X": "Crate", "C": "Wagon", "/": "Slope", "R": "WeaponRack",
+    "u": "Barrel", "X": "Crate", "C": "Wagon", "/": "Slope", "R": "WeaponRack", "M": "Midden",
 }
 
 ground = [["g"] * N for _ in range(N)]
@@ -241,6 +241,13 @@ for x, y in [(44, 43), (44, 44), (46, 45), (45, 45), (42, 43), (46, 42)]:   # th
         break
 else:
     raise SystemExit("no room for the muster rack by the well")
+for x, y in [(69, 50), (69, 51), (70, 50), (69, 49), (70, 51)]:    # the midden, behind the inn's storeroom
+    if not reserved[y][x] and level[y][x] == TOWN and feature[y][x] == "." and ground[y][x] not in "wk~":
+        feature[y][x] = "M"
+        reserved[y][x] = True
+        break
+else:
+    raise SystemExit("no room for the midden behind the inn")
 # The festival's things (Round/FestivalSystem): put up in the square when the festival begins, so
 # they're not features but a list of their own. Checked like the rest: town ground, nothing there.
 festival = []

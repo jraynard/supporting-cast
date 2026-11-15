@@ -40,8 +40,8 @@ public static class BarWork
         if (sim.World.Get<Thing>(station).Def.Building?.Cask != null && !KegFor(sim, who, station).IsNull)
             return PourSession.ServingsLeft(sim, station) <= TapBelow ? "Knock in the new keg" : "The cask isn't low enough to change yet";
         if (Hospitality.Lodging.IsUnmade(sim, station))
-            return "Make the bed";
-        return null;
+            return Hospitality.RoomChores.LinenOn(sim, who).IsNull ? "The bed wants clean linen (the storeroom chest)" : "Strip and make the bed";
+        return Hospitality.RoomChores.StepAt(sim, who, station);
     }
 
     public static void Start(Simulation sim, Entity who, Entity station)
@@ -52,9 +52,14 @@ public static class BarWork
         var cell = w.Get<Thing>(station).Cell;
         if (Hospitality.Lodging.IsUnmade(sim, station))
         {
-            WorkSystem.Start(sim, who, new Hospitality.MakeBedSession { Bed = station });
+            if (Hospitality.RoomChores.LinenOn(sim, who).IsNull)
+                sim.Messages.Tell(who, MessageKind.Info, "You'll need clean linen to make it up: there's some in the storeroom chest.", cell);
+            else
+                WorkSystem.Start(sim, who, new Hospitality.MakeBedSession { Bed = station });
             return;
         }
+        if (Hospitality.RoomChores.Start(sim, who, station))
+            return;
         if (IsTub(sim, station))
         {
             if (DirtyOn(sim, who) is { IsNull: false } dirty)

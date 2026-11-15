@@ -93,12 +93,13 @@ public class InnKeysTests
         var bot = new BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 5);
         var bed = Rooms(sim).First(b => InnRooms.Number(sim, b) == 6);
         sim.World.Add(bed, new Unmade());
-        for (var t = 0; t < SimClock.TicksPerHour * 2 && Lodging.IsUnmade(sim, bed); t++)
+        for (var t = 0; t < SimClock.TicksPerHour * 5 && Lodging.IsUnmade(sim, bed); t++)
         {
             sim.Tick();
             bot.Tick();
         }
-        Assert.False(Lodging.IsUnmade(sim, bed), $"bot {bot.Doing}");
+        var me = sim.World.Get<Position>(player).Cell;
+        Assert.False(Lodging.IsUnmade(sim, bed), $"bot {bot.Doing} at {me} bed {sim.World.Get<Thing>(bed).Cell} linen {!RoomChores.LinenOn(sim, player).IsNull} locked {InnRooms.LockedIn(sim, bed)} key {!InnRooms.KeyOn(sim, player, bed).IsNull} session {(sim.World.Has<WorkSession>(player) ? sim.World.Get<WorkSession>(player).GetType().Name : "none")} held {sim.World.Get<Carrying>(player).Item} reach {AvatarSystem.InReach(sim, me, bed)}");
         for (var t = 0; t < SimClock.TicksPerHour && InnRooms.OnBoard(sim, Inn(sim), InnRooms.SeedOf(sim, bed)).IsNull; t++)
         {
             sim.Tick();

@@ -252,6 +252,12 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 _struck = si.OnCue;
                 return (press, false, 0);
             }
+            case Hospitality.SlopSession sl:
+            {
+                var press = sl.OnCue && !_struck;
+                _struck = sl.OnCue;
+                return (press, false, 0);
+            }
             case Hospitality.MakeBedSession mb:
             {
                 var press = mb.OnCue && !_struck;
@@ -960,6 +966,24 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 Doing = "unlocking a room";
                 return AtStation(sim, me, room.Door, now, d => send(new Tinkering.TurnKeyCommand(me, d, false)));
             }
+            // Clean linen from the storeroom first.
+            if (Hospitality.RoomChores.LinenOn(sim, me).IsNull)
+            {
+                // Where it can see some; else the storeroom chest, to look (it's kept there).
+                var store = Buildings.Parts(sim, inn).FirstOrDefault(p => sim.IsContainer(p)
+                    && view.InContainer(p).Any(i => w.Get<Thing>(i).Def.Name == Hospitality.RoomChores.LinenDef), Entity.Null);
+                if (store.IsNull)
+                    store = Buildings.Parts(sim, inn).FirstOrDefault(p => w.Get<Thing>(p) is { Def.Name: "Chest" } c && c.Cell.Z == w.Get<PresetBuilding>(inn).Anchor.Z
+                        && !AvatarSystem.InReach(sim, w.Get<Position>(me).Cell, p), Entity.Null);
+                if (store.IsNull)
+                    return false;
+                Doing = "fetching clean linen";
+                return AtStation(sim, me, store, now, s =>
+                {
+                    if (view.InContainer(s).FirstOrDefault(i => w.Get<Thing>(i).Def.Name == Hospitality.RoomChores.LinenDef, Entity.Null) is { IsNull: false } linen)
+                        send(new TakeFromStorageCommand(me, linen));
+                });
+            }
             return AtStation(sim, me, bed, now, b => send(new BarWorkCommand(me, b)));
         }
         // A room key carried with nothing doing: back on the board if it's short of it, else with the spares.
@@ -1238,10 +1262,25 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     {
         if (station.IsNull)
             return false;
-        if (!AvatarSystem.InReach(sim, sim.World.Get<Position>(me).Cell, station))
-            Walk(sim, me, sim.World.Get<Thing>(station).Cell, now);
-        else
+        var here = sim.World.Get<Position>(me).Cell;
+        var at = sim.World.Get<Thing>(station).Cell;
+        if (AvatarSystem.InReach(sim, here, station))
+        {
             use(station);
+            return true;
+        }
+        // Behind a locked door it has the key to (the storeroom, a room upstairs): unlock it first.
+        if (!sim.Regions.CanReach(here, at, PathEnd.Touch)
+            && Tinkering.Locksmithing.KeyedDoor(sim, me, here, at, PathEnd.Touch, player: true) is { IsNull: false } door)
+        {
+            Doing = $"unlocking the {sim.World.Get<Thing>(door).Label}";
+            if (AvatarSystem.InReach(sim, here, door))
+                send(new Tinkering.TurnKeyCommand(me, door, false));
+            else
+                Walk(sim, me, sim.World.Get<Thing>(door).Cell, now);
+            return true;
+        }
+        Walk(sim, me, at, now);
         return true;
     }
 

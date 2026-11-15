@@ -128,7 +128,9 @@ public class InnRoomsTests
         sim.World.Add(bed, new Unmade());
         var at = sim.World.Get<Thing>(bed).Cell;
         Put(sim, me, sim.SpiralFrom(at, 2).First(c => c != at && c.Z == at.Z && sim.Map.Passable(c) && AvatarSystem.InReach(sim, c, bed)));
-        Assert.Equal("Make the bed", AvatarSystem.ActionAt(sim, me, at).Label);
+        Assert.StartsWith("The bed wants clean linen", AvatarSystem.ActionAt(sim, me, at).Label);
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing(RoomChores.LinenDef), 1));
+        Assert.Equal("Strip and make the bed", AvatarSystem.ActionAt(sim, me, at).Label);
         sim.ApplyNow(new BarWorkCommand(me, bed));
         var predictor = new WorkPredictor();
         var was = false;
@@ -145,6 +147,8 @@ public class InnRoomsTests
         }
         sim.Tick();
         Assert.False(Lodging.IsUnmade(sim, bed));
+        Assert.True(RoomChores.LinenOn(sim, me).IsNull, "the clean sheet went on");
+        Assert.False(RoomChores.SoiledOn(sim, me).IsNull, "and last night's came off");
     }
 
     // ---------------- Mess ----------------

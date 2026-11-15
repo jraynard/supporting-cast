@@ -500,7 +500,8 @@ public sealed partial class Simulation
     public bool IsAvailable(Entity item) =>
         World.IsAlive(item) && !World.Has<Shops.ForSale>(item)
         && (World.Get<Thing>(item).Spawned || (World.TryGet<Stored>(item, out var s) && !OnSomeone(s.In)))
-        && !(World.Has<Tinkering.Key>(item) && Hospitality.InnRooms.IsRoomKey(this, item));
+        && !(World.Has<Tinkering.Key>(item) && Hospitality.InnRooms.IsRoomKey(this, item))
+        && !World.Has<Hospitality.LeftBy>(item); // a guest's, for the keeper to see to
 
     /// <summary>
     /// <see cref="IsAvailable(Entity)"/> for one taker: also what's kept in the stock of a shop they

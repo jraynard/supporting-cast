@@ -375,7 +375,8 @@ public sealed partial class VillageGame
         var w = _sim.World;
         var t = w.Get<Thing>(item);
         var count = w.TryGet<Stack>(item, out var s) ? s.Count : 1;
-        var label = Sim.Hospitality.InnRooms.KeyLabel(_sim, item) ?? t.Label; // a room key's fob says which
+        // A room key's fob says which room; something a guest left is known by whose it was.
+        var label = Sim.Hospitality.InnRooms.KeyLabel(_sim, item) ?? Sim.Hospitality.RoomChores.Label(_sim, item) ?? t.Label;
         return $"{(count > 1 ? $"{count} " : "")}{label} ({_sim.MassOf(item):0.#} kg)";
     }
 

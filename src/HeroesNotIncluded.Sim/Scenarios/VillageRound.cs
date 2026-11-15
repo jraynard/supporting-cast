@@ -82,6 +82,9 @@ public static class VillageRound
         }
     }
 
+    /// <summary>Clean linen in the inn's storeroom: a change for every room, and a few over.</summary>
+    public const int RoomLinen = 8;
+
     /// <summary>Charcoal in the smithy's fuel bin: a working day's firing, for whoever keeps the forge fed.</summary>
     public const int SmithyCharcoal = 30;
 
@@ -167,6 +170,8 @@ public static class VillageRound
         Shops.InnSupplySystem.Deliver(sim, inn, "Larder", LarderStock);
         Shops.InnSupplySystem.Deliver(sim, inn, "LogBasket", Shops.InnSupplySystem.Logs);
         Shops.InnSupplySystem.Deliver(sim, inn, "Chest", [("Keg", StoreroomKegs)]);
+        // The rooms' clean linen, and a bucket for the slops and the jugs (Hospitality.InnRooms).
+        Shops.InnSupplySystem.Deliver(sim, inn, "Chest", [("Linen", RoomLinen), (Environment.Buckets.Empty, 1)]);
         var parts = Buildings.Parts(sim, inn);
         Entity Near(string def, Func<Defs.ThingDef, bool> by)
         {

@@ -143,10 +143,11 @@ public static class Locksmithing
     /// a locked door they hold the key to, that they can reach and that opens the way. Entity.Null if
     /// there's none (or it's a player's character: players turn their own keys).
     /// </summary>
-    public static Entity KeyedDoor(Simulation sim, Entity pawn, int3 from, int3 to, PathEnd end)
+    /// <remarks><paramref name="player"/>: look for one for a player's character too (a bot deciding which door to unlock).</remarks>
+    public static Entity KeyedDoor(Simulation sim, Entity pawn, int3 from, int3 to, PathEnd end, bool player = false)
     {
         var w = sim.World;
-        if (w.Count<LockCut>() == 0 || w.Has<Avatar>(pawn) || w.Has<PlayerCharacter>(pawn))
+        if (w.Count<LockCut>() == 0 || (!player && (w.Has<Avatar>(pawn) || w.Has<PlayerCharacter>(pawn))))
             return Entity.Null;
         var keys = Keys(sim, pawn);
         if (keys.Count == 0)

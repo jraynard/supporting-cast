@@ -318,6 +318,7 @@ public sealed partial class VillageGame
     {
         BeginWork(s.Title, ("F", "as the hands come round"), ("Esc", "leave it"));
         MakeBedScene(s.Movements, s.Sweep, s.OnCue);
+        TextC(Theme.Dim, "Clean linen on, last night's into your pack for the wash tub.");
         string[] moves = ["Strip it", "Smooth the sheet", "Tuck it in"];
         for (var i = 0; i < moves.Length; i++)
             TextC(i < s.Movements ? Theme.Good : i == s.Movements ? Theme.Accent : Theme.Dim, (i < s.Movements ? "Done: " : "") + moves[i]);
