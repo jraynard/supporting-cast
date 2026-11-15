@@ -38,6 +38,7 @@ public static class Controls
         A(Act.Hotbar3, "Take stack 3 in hand", "Getting about", Play, [K(GlfwKey.Number3)]),
         A(Act.Hotbar4, "Take stack 4 in hand", "Getting about", Play, [K(GlfwKey.Number4)]),
         A(Act.Wheel, "Action wheel (hold)", "Getting about", Play, [], P(PadButton.RB)),
+        A(Act.Cheer, "Cheer a toast at the festival", "Getting about", Play, [K(GlfwKey.E)]),
 
         A(Act.Draw, "Draw or sheathe your weapon", "Fighting", Play, [K(GlfwKey.R)], P(PadButton.Y)),
         A(Act.Strike, "Strike; loose a drawn bow", "Fighting", Fight, [M(MouseButton.Left)], P(PadButton.RT)),
@@ -167,7 +168,7 @@ public static class Controls
 public static class Act
 {
     public const string WalkUp = "walk_up", WalkDown = "walk_down", WalkLeft = "walk_left", WalkRight = "walk_right";
-    public const string Use = "use", Dig = "dig", Drop = "drop", Sleep = "sleep", Inventory = "inventory", Wheel = "wheel";
+    public const string Use = "use", Dig = "dig", Drop = "drop", Sleep = "sleep", Inventory = "inventory", Wheel = "wheel", Cheer = "cheer";
     public const string Hotbar1 = "hotbar_1", Hotbar2 = "hotbar_2", Hotbar3 = "hotbar_3", Hotbar4 = "hotbar_4";
     public const string Draw = "draw", Strike = "strike", Heavy = "heavy", Guard = "guard", Dash = "dash";
     public const string WorkAct = "work_act", Back = "back";

@@ -21,6 +21,12 @@ public struct ButtsTurn
 
     /// <summary>The festival's bow, lent at the mark and taken back at the end; Entity.Null if they brought their own.</summary>
     public Entity Lent;
+
+    /// <summary>The weapon they had in hand before the lent bow, put back in hand after.</summary>
+    public Entity Before;
+
+    /// <summary>Their weapon was out (combat mode) before the turn: after it, it's left as it was.</summary>
+    public bool WasDrawn;
 }
 
 /// <summary>
@@ -50,6 +56,20 @@ public static class FestivalGames
         return 0;
     }
 
+    /// <summary>A festival game's mark (the butts') on <paramref name="who"/>'s cell or the next, while the games are open; Entity.Null if none.</summary>
+    public static Entity MarkBeside(Simulation sim, Entity who)
+    {
+        var w = sim.World;
+        if (!sim.Festival.Open || !w.Has<Position>(who))
+            return Entity.Null;
+        var at = w.Get<Position>(who).Cell;
+        foreach (var g in sim.Festival.Games)
+            if (g.Game.MarkDef != null && sim.Festival.PlayedAt(sim, g) is { IsNull: false } mark
+                && Maps.Map.Distance(w.Get<Thing>(mark).Cell, at) <= 1)
+                return mark;
+        return Entity.Null;
+    }
+
     /// <summary>What's called out where an arrow lands in a target, this far across (in face radii).</summary>
     public static string Called(float across) => RingScore(across) switch
     {
@@ -64,22 +84,28 @@ public static class FestivalGames
         if (sim.Festival.GameAt(sim, thing) is not { } standing || sim.World.Has<WorkSession>(who) || !sim.Festival.Open)
             return null;
         if (standing.Game.MarkDef is { } mark)
-            return sim.World.Get<Thing>(thing).Def == mark && !sim.World.Has<ButtsTurn>(who) ? standing.Game.Verb : null;
+            return sim.World.Has<ButtsTurn>(who) ? null
+                : sim.World.Get<Thing>(thing).Def == mark ? standing.Game.Verb
+                : $"{standing.Game.Verb} (from the red mark)";
         return standing.Game.Verb;
     }
 
     public static void Start(Simulation sim, Entity who, Entity thing)
     {
         var w = sim.World;
-        if (sim.Festival.GameAt(sim, thing) is not { } standing || !sim.Festival.Open
-            || !AvatarSystem.InReach(sim, w.Get<Position>(who).Cell, thing))
+        if (sim.Festival.GameAt(sim, thing) is not { } standing || !sim.Festival.Open)
             return;
         if (standing.Game.MarkDef != null)
         {
-            if (w.Get<Thing>(thing).Def == standing.Game.MarkDef)
-                StartTurn(sim, who, standing, thing);
+            var mark = sim.Festival.PlayedAt(sim, standing);
+            if (thing == mark && AvatarSystem.InReach(sim, w.Get<Position>(who).Cell, mark))
+                StartTurn(sim, who, standing, mark);
+            else if (!mark.IsNull && thing != mark && w.Has<Avatar>(who) && !w.Has<ButtsTurn>(who))
+                AiSystem.Order(sim, who, new AvatarWalkJob(w.Get<Thing>(mark).Cell, true)); // at the butt: off to the mark, and the turn starts there
             return;
         }
+        if (!AvatarSystem.InReach(sim, w.Get<Position>(who).Cell, thing))
+            return;
         WorkSystem.Start(sim, who, new StrikerSession { Thing = thing, Game = standing.Game.Name });
     }
 
@@ -94,6 +120,8 @@ public static class FestivalGames
         if (w.Has<ButtsTurn>(who) || target.IsNull || !w.Get<Creature>(who).Able)
             return;
         var lent = Entity.Null;
+        var before = w.TryGet<Equipment>(who, out var had) ? had.Weapon : Entity.Null;
+        var wasDrawn = w.TryGet<Combat.FreeMover>(who, out var mover) && mover.Drawn;
         if (Combat.Archery.Bow(sim, who) is null)
         {
             if (standing.Game.LendsDef is not { } bow)
@@ -106,9 +134,19 @@ public static class FestivalGames
                 return;
             }
         }
-        w.Add(who, new ButtsTurn { Target = target, Mark = mark, Lent = lent });
+        w.Add(who, new ButtsTurn { Target = target, Mark = mark, Lent = lent, Before = lent.IsNull ? Entity.Null : before, WasDrawn = wasDrawn });
+        // The bow out, ready to draw, and turned to face the butt.
+        var from = w.Get<Position>(who).Pos;
+        var at = w.Get<Thing>(target).Cell;
+        var aim = DetMath.Atan2(at.Y + 0.5f - from.Y, at.X + 0.5f - from.X);
         if (Combat.FreeMoveSystem.Ensure(sim, who))
-            w.Get<Combat.FreeMover>(who).Drawn = true; // the bow out, ready to draw
+        {
+            ref var free = ref w.Get<Combat.FreeMover>(who);
+            free.Drawn = true;
+            free.Aim = aim;
+        }
+        if (w.Has<Avatar>(who))
+            w.Get<Avatar>(who).Facing = new int2((int)MathF.Round(DetMath.Cos(aim)), (int)MathF.Round(DetMath.Sin(aim)));
         sim.Messages.Add(MessageKind.Info, lent.IsNull ? "At the mark: three arrows at the butts." : "At the mark, with the festival's bow: three arrows at the butts.",
             w.Get<Position>(who).Cell);
     }
@@ -143,6 +181,11 @@ public static class FestivalGames
             return;
         w.Remove<ButtsTurn>(who);
         Return(sim, who, turn.Lent);
+        // Their own weapon back in hand, and put away again if it was away: no accidents after.
+        if (!turn.Before.IsNull && w.IsAlive(turn.Before) && w.TryGet<Equipment>(who, out var eq) && eq.Weapon.IsNull)
+            Inventory.Equip(sim, who, turn.Before);
+        if (w.Has<Combat.FreeMover>(who))
+            w.Get<Combat.FreeMover>(who).Drawn = turn.WasDrawn;
         if (turn.Shots > 0 && sim.Festival.GameAt(sim, turn.Mark) is { } standing)
             Score(sim, who, standing.Game.Name, (int)MathF.Round(turn.Points * 100f / (Turns * RingScores[0])));
     }
@@ -188,6 +231,18 @@ public static class FestivalGames
         var leading = best != null && best.Best == worker;
         sim.Messages.Add(MessageKind.Info, $"{char.ToUpperInvariant(def.Label[0])}{def.Label[1..]}: {score} of 100{(leading ? ", the best tonight so far!" : $". The best tonight is {best?.BestName}'s {best?.BestScore}.")}",
             sim.World.Get<Position>(worker).Cell);
+    }
+}
+
+/// <summary>Cheer the toast just said (<see cref="Round.FestivalSystem.Cheer"/>): once a toast, if you like.</summary>
+public sealed record CheerCommand(Entity Avatar) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (sim.World.IsAlive(Avatar) && sim.World.Has<Creature>(Avatar) && sim.World.Has<Position>(Avatar))
+            sim.Festival.Cheer(sim, Avatar);
     }
 }
 

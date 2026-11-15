@@ -273,6 +273,53 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         return false;
     }
 
+    // ---------------- Cheering the toasts ----------------
+
+    /// <summary>Toasts said so far tonight: each opens a moment to cheer it.</summary>
+    private int _toastsSaid;
+
+    /// <summary>Who cheered which toast (its number), and when: once a toast each, and the hop it gives them.</summary>
+    private readonly Dictionary<Entity, (int Toast, long Tick)> _cheers = [];
+
+    /// <summary>How long a cheer shows (the hop), in ticks.</summary>
+    public const int CheerTicks = SimClock.TicksPerSecond * 2;
+
+    /// <summary>What a cheer shouts, picked by who and which toast.</summary>
+    public static readonly IReadOnlyList<string> CheerLines = ["Hear, hear!", "Huzzah!", "To the guests!", "Cheers to that!", "Well said!", "Raise them up!"];
+
+    /// <summary>A toast's just been said and <paramref name="who"/> hasn't cheered it yet: they may.</summary>
+    public bool CanCheer(Simulation sim, Entity who) =>
+        Part == FestivalPart.Ceremony && Step == CeremonyStep.Toasts && _toastsSaid > 0
+        && !(_cheers.TryGetValue(who, out var c) && c.Toast == _toastsSaid) && SpeechSystem.CanAct(sim, who);
+
+    /// <summary>
+    /// A cheer for the toast just said: shouted, and a hop for everyone to see. Only as the players
+    /// please: it changes nothing in the reckoning.
+    /// </summary>
+    public void Cheer(Simulation sim, Entity who)
+    {
+        if (!CanCheer(sim, who))
+            return;
+        _cheers[who] = (_toastsSaid, sim.Clock.Tick);
+        sim.Speech.Say(sim, who, CheerLines[(who.Index + _toastsSaid) % CheerLines.Count], Volume.Shout);
+    }
+
+    /// <summary>When someone last cheered, for the hop; -1 never.</summary>
+    public long CheeredAt(Entity who) => _cheers.TryGetValue(who, out var c) ? c.Tick : -1;
+
+    /// <summary>The town round the well cheers a warm toast on its own: some of them, or everyone at a glowing one. No words, just the hop.</summary>
+    private void CrowdCheers(Simulation sim, float satisfaction)
+    {
+        if (satisfaction < 3f || sim.Round.Square is not { } square)
+            return;
+        var w = sim.World;
+        var share = satisfaction >= 6f ? 1f : 0.5f;
+        foreach (var e in sim.Creatures())
+            if (!w.Has<Avatar>(e) && !w.Has<Adventurer>(e) && w.Get<Creature>(e).Faction == Faction.Village && w.Has<Mind>(e)
+                && SpeechSystem.CanAct(sim, e) && Maps.Map.Distance(w.Get<Position>(e).Cell, square) <= 8 && _rand.NextFloat() < share)
+                _cheers[e] = (_toastsSaid, sim.Clock.Tick + _rand.Range(0, SimClock.TicksPerSecond / 2));
+    }
+
     /// <summary>Arrows in a target's face (how far across from its middle), till the ceremony: for the drawing.</summary>
     private readonly List<(Entity Target, float Across)> _stuck = [];
 
@@ -933,6 +980,8 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         var line = ToastLine(mean);
         Say(sim, speaker, line);
         _stepUntil = sim.Clock.Tick + LineTicks(sim, line);
+        _toastsSaid++;
+        CrowdCheers(sim, mean);
         foreach (var e in members)
         {
             sim.Reckoning.AdventurerLeft(sim, w.Get<Adventurer>(e).Satisfaction);
@@ -1060,6 +1109,14 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
             w.Entity(target);
             w.Float(across);
         }
+        w.Int(_toastsSaid);
+        w.Int(_cheers.Count);
+        foreach (var (who, (toast, tick)) in _cheers.OrderBy(c => c.Key.Index))
+        {
+            w.Entity(who);
+            w.Int(toast);
+            w.Long(tick);
+        }
     }
 
     public void Load(SaveReader r, Simulation sim)
@@ -1086,6 +1143,8 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         _parties.Clear();
         _honours.Clear();
         _stuck.Clear();
+        _cheers.Clear();
+        _toastsSaid = 0;
         _tale.Clear();
         (_taleIndex, _nextLineAt, _nextCall, _callIndex, RevelsTick, DoneTick) = (-1, 0, 0, 0, -1, -1);
         if (StartTick < 0)
@@ -1141,6 +1200,12 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         if (r.Version >= 33)
             for (var n = r.Count(1000); n > 0; n--)
                 _stuck.Add((r.Entity(), r.Float()));
+        if (r.Version >= 34)
+        {
+            _toastsSaid = r.Int();
+            for (var n = r.Count(100_000); n > 0; n--)
+                _cheers[r.Entity()] = (r.Int(), r.Long());
+        }
     }
 
     private static void Entities(SaveWriter w, IEnumerable<Entity> list)

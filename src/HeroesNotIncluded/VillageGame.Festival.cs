@@ -64,6 +64,7 @@ public sealed partial class VillageGame
     private void UpdateFestival()
     {
         _renderer.Markers.Clear();
+        HandleCheer();
         if (_sim.Round.Phase != RoundPhase.Festival)
         {
             if (_sim.Round.Phase != RoundPhase.Over)
@@ -166,9 +167,55 @@ public sealed partial class VillageGame
                     CeremonyStep.Verdict or CeremonyStep.Done => "The verdict: how the season went.",
                     _ => "The bell again: gather round the well for the toasts.",
                 });
+                if (CanCheer)
+                {
+                    if (ImGui.Button($"Cheer! ({CheerKey})"))
+                        Cheer();
+                    ImGui.SameLine(0, Gui.S(8));
+                    TextC(Theme.Dim, "if you'd like to raise one for that toast");
+                }
                 break;
         }
         DrawTaleSoFar(f);
+        Panel.End();
+    }
+
+    /// <summary>A toast's just been said and you haven't cheered it.</summary>
+    private bool CanCheer => HasAvatar && _sim.Festival.CanCheer(_sim, _avatar);
+
+    private static string CheerKey => Controls.UsingPad ? $"{Controls.Glyph(Act.Wheel)}, then Cheer" : Controls.Glyph(Act.Cheer);
+
+    private void Cheer()
+    {
+        if (CanCheer)
+            Issue(new CheerCommand(_avatar));
+    }
+
+    /// <summary>E cheers the toast just said (on a pad, it's on the wheel).</summary>
+    private void HandleCheer()
+    {
+        if (CanCheer && Controls.Map.Pressed(Act.Cheer) && !ImGui.GetIO().WantTextInput)
+            Cheer();
+    }
+
+    /// <summary>
+    /// At the butts' mark: how it's going and how it's done, at the bottom of the screen where the
+    /// fight hint goes (this takes its place), so it's plain the turn's begun.
+    /// </summary>
+    private void DrawButtsHint()
+    {
+        if (!HasAvatar || !_sim.World.TryGet<ButtsTurn>(_avatar, out var turn))
+            return;
+        _hud.Next(Anchor.Bottom);
+        Panel.Begin("##butts-hint", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs);
+        _hud.Took();
+        using (Gui.DisplayFont(18f))
+            TextC(Theme.Parchment, $"At the butts: arrow {Math.Min(turn.Shots + 1, FestivalGames.Turns)} of {FestivalGames.Turns}");
+        ImGui.SameLine(0, Gui.S(10));
+        TextC(Theme.Good, $"{turn.Points} points");
+        var aim = Controls.UsingPad ? "the right stick" : "the mouse";
+        TextC(Theme.Warn, $"Hold {Press(Act.Heavy)} to draw, aim at the gold with {aim}, then {Press(Act.Strike)} to loose.");
+        TextC(Theme.Dim, "Walk off the mark to stop: you're scored on what you've shot.");
         Panel.End();
     }
 

@@ -250,7 +250,13 @@ internal static class ComponentCodecs
             w.Int(t.Shots);
             w.Int(t.Points);
             w.Entity(t.Lent);
-        }, r => new Work.ButtsTurn { Target = r.Entity(), Mark = r.Entity(), Shots = r.Int(), Points = r.Int(), Lent = r.Entity() }),
+            w.Entity(t.Before);
+            w.Bool(t.WasDrawn);
+        }, r => new Work.ButtsTurn
+        {
+            Target = r.Entity(), Mark = r.Entity(), Shots = r.Int(), Points = r.Int(), Lent = r.Entity(),
+            Before = r.Version >= 34 ? r.Entity() : Entity.Null, WasDrawn = r.Version >= 34 && r.Bool(), // came with format 34
+        }),
         Codec("Guard", (w, g) =>
         {
             w.Float(g.Stamina);

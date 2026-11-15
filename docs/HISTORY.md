@@ -1523,3 +1523,18 @@ It wasn't clear what to do at first, then it was over too fast. Now:
   where the posts stand. The posts' cloth flags are now a red cap on top.
 - With that, the festival's list on the roadmap is down to its playtest. The dance and cheer frames
   went to the Combat pass's frames, and the ceremony's Accusation to M4.
+
+### The festival, from its second playtest (2026-11-14)
+- **The butts, easier to start.** F on or beside the shooting mark starts a turn whichever way
+  you face (`FestivalGames.MarkBeside`). F at the butt itself ("from the red mark") walks you to
+  the mark and starts it there. You're turned to face the butt, and a panel at the bottom (in
+  place of the fight hint) says which arrow it is, your points, and how to draw and loose.
+- **No accidents after.** Your own weapon goes back in hand when the lent bow's taken back, and
+  combat mode is left as it was before the turn (`ButtsTurn.Before`, `WasDrawn`).
+- **Cheering the toasts.** After each party's toast a player may cheer it once (E, or the pad's
+  wheel; a button on the festival card): a shout and a couple of hops
+  (`FestivalSystem.Cheer`, `CheerCommand`). The town round the well cheers a warm toast on its
+  own. It changes nothing in the reckoning.
+- Save format 34. `FestivalTests`: a cheer for each toast, once; the town cheering a glowing one;
+  F at the butt walks you to the mark and starts there, facing the butt; your own weapon back
+  and put away after. Bench hashes unchanged.

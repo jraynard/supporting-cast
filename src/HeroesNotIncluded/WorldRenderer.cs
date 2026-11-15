@@ -746,6 +746,9 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             feet.Z += MathF.Abs(MathF.Sin(beat)) * 0.12f;
             feet += _cam.Right * (MathF.Sin(beat * 0.5f) * 0.05f);
         }
+        // Cheering a toast: a couple of quick hops (no cheer frames yet).
+        if (sim.Festival.CheeredAt(e) is var cheered and >= 0 && sim.Clock.Tick - cheered is var since and >= 0 and < Sim.Round.FestivalSystem.CheerTicks)
+            feet.Z += MathF.Abs(MathF.Sin(since / (float)SimClock.TicksPerSecond * 9f)) * 0.16f;
         if (!airborne && !c.Dead)
         {
             // A soft contact shadow grounds standing figures (part of the diorama look).

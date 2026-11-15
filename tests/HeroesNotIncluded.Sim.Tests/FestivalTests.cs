@@ -397,6 +397,91 @@ public class FestivalTests
     }
 
     [Fact]
+    public void APlayerMayCheerEachToastOnceAndAWarmToastGetsTheTownCheering()
+    {
+        var sim = Round();
+        var w = sim.World;
+        SendParty(sim, 7f);
+        SendParty(sim, 7f);
+        ToFestival(sim);
+        var me = Me(sim);
+        BringToTheWell(sim, me);
+        Assert.False(sim.Festival.CanCheer(sim, me), "nothing to cheer before the toasts");
+        sim.Clock.Tick = sim.Festival.CeremonyTick(sim) - 1;
+        var toasts = new[] { 6f, 3f, 0f, -3f, -6f }.Select(FestivalSystem.ToastLine).ToHashSet();
+        var cheered = 0;
+        var crowd = false;
+        while (sim.Round.Phase == RoundPhase.Festival && sim.Festival.Step <= CeremonyStep.Toasts)
+        {
+            sim.TickMany(10);
+            crowd |= sim.Creatures().Any(e => e != me && !w.Has<Adventurer>(e) && sim.Festival.CheeredAt(e) >= 0);
+            if (!sim.Festival.CanCheer(sim, me))
+                continue;
+            Assert.Contains(sim.Speech.Kept, u => toasts.Contains(u.Text)); // a toast's been said
+            sim.ApplyNow(new CheerCommand(me));
+            Assert.False(sim.Festival.CanCheer(sim, me), "once a toast");
+            Assert.True(sim.Festival.CheeredAt(me) == sim.Clock.Tick);
+            sim.ApplyNow(new CheerCommand(me)); // again: nothing more
+            cheered++;
+        }
+        Assert.Equal(2, cheered); // a cheer for each party's toast
+        Assert.Equal(2, sim.Speech.Kept.Count(u => u.Speaker == me && FestivalSystem.CheerLines.Contains(u.Text)));
+        Assert.True(crowd, "the town cheers a glowing toast too");
+        var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
+        Assert.Equal(sim.Festival.CheeredAt(me), loaded.Festival.CheeredAt(me));
+    }
+
+    [Fact]
+    public void FAtTheButtWalksYouToTheMarkAndTheTurnStartsThere()
+    {
+        var sim = Round();
+        ToRevels(sim);
+        var w = sim.World;
+        var me = Me(sim);
+        var butts = sim.Festival.Games.Single(g => g.Game.Name == "Butts");
+        var butt = sim.Festival.Prop(sim, butts.Game.Def);
+        var mark = sim.Festival.PlayedAt(sim, butts);
+        w.Get<Position>(me) = Position.At(Beside(sim, butt));
+        var action = AvatarSystem.ActionAt(sim, me, w.Get<Thing>(butt).Cell);
+        Assert.Equal(AvatarActionKind.FestivalGame, action.Kind);
+        Assert.Contains("red mark", action.Label);
+        AvatarSystem.Perform(sim, me, action);
+        for (var t = 0; t < SimClock.TicksPerSecond * 30 && !w.Has<ButtsTurn>(me); t++)
+            sim.Tick();
+        Assert.True(w.Has<ButtsTurn>(me), "walked to the mark and began");
+        Assert.True(Maps.Map.Distance(w.Get<Position>(me).Cell, w.Get<Thing>(mark).Cell) <= 1);
+        Assert.Equal(mark, Work.FestivalGames.MarkBeside(sim, me));
+        // Turned to face the butt, bow out.
+        var face = w.Get<Avatar>(me).Facing;
+        var to = w.Get<Thing>(butt).Cell - w.Get<Position>(me).Cell;
+        Assert.True(face.X * to.X + face.Y * to.Y > 0, $"faces {face}, the butt's {to} away");
+        Assert.True(w.Get<Combat.FreeMover>(me).Drawn);
+    }
+
+    [Fact]
+    public void AfterATurnYourOwnWeaponsBackInHandAndPutAway()
+    {
+        var sim = Round();
+        ToRevels(sim);
+        var w = sim.World;
+        var me = Me(sim);
+        sim.Equip(me, sim.Defs.Thing("ShortSword"));
+        var sword = w.Get<Equipment>(me).Weapon;
+        Combat.FreeMoveSystem.Ensure(sim, me);
+        w.Get<Combat.FreeMover>(me).Drawn = false;
+        var (_, butt, _) = AtTheMark(sim);
+        Assert.NotEqual(sword, w.Get<Equipment>(me).Weapon); // the festival's bow in hand
+        for (var k = 0; k < FestivalGames.Turns; k++)
+        {
+            ClearTheLane(sim, me);
+            Shoot(sim, me, AimAt(sim, me, butt));
+        }
+        Assert.False(w.Has<ButtsTurn>(me));
+        Assert.Equal(sword, w.Get<Equipment>(me).Weapon);
+        Assert.False(w.Get<Combat.FreeMover>(me).Drawn, "put away again, as it was: no accidents after");
+    }
+
+    [Fact]
     public void TheFestivalSurvivesASave()
     {
         var sim = Round();

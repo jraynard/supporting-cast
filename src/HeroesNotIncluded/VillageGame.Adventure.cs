@@ -611,6 +611,10 @@ public sealed partial class VillageGame
             (_, false) => [_hoverCell, _hoverBlock, _hoverPastWalls, front, at],
             _ => [front, at],
         };
+        // Beside the butts' mark (on it, or a step off): F starts the turn, whichever way you face.
+        if (tool == AvatarTool.Use && Sim.Work.FestivalGames.MarkBeside(_sim, _avatar) is { IsNull: false } mark
+            && AvatarSystem.ActionAt(_sim, _avatar, _sim.World.Get<Thing>(mark).Cell, tool) is { Kind: AvatarActionKind.FestivalGame } shoot)
+            return shoot;
         // A carcass under the cursor comes first: its sprite lies over a cell other than the ground hovered.
         if (tool == AvatarTool.Use && !overUi && !Host.Input.MouseCaptured && PickCreature(Host.Input.MousePosition) is { IsNull: false } animal
             && _sim.World.Get<Creature>(animal).Def.Race == Race.Animal

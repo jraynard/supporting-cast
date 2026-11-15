@@ -2,6 +2,7 @@ using Brutal.ImGuiApi;
 using Narsil.Rendering;
 using Narsil.Ui;
 using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Work;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Defs;
@@ -60,7 +61,10 @@ public sealed partial class VillageGame
         // Bottom centre, stacking upward: the build tools, the hotbar, and the work in hand.
         DrawToolbar();
         DrawHotbar();
-        DrawFightHint();
+        if (HasAvatar && _sim.World.Has<ButtsTurn>(_avatar))
+            DrawButtsHint();
+        else
+            DrawFightHint();
         DrawWork();
         if (WorkScenesDemo)
             DrawWorkSceneGallery();
