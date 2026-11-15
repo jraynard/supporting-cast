@@ -23,15 +23,9 @@ internet, with the weakest trade brought up and the numbers tuned.
 
 ## Now: the co-op round, solid
 
-Two pieces of work before M4: a little left to build, then a tuning playtest that covers
-everything still to be tested or reviewed.
+What's left before M4 is a tuning playtest that covers everything still to be tested or reviewed.
 
-### 1. Still to build
-- **AI footwork:** a hurt fighter gives up the fight all at once rather than dropping back; the
-  dragon lands and bites from the grid rather than circling (`Ai/DragonBrain`); the unarmed don't
-  mob a raider together.
-
-### 2. The tuning playtest
+### The tuning playtest
 Rounds with friends over the internet, aimed at proving the round and tuning its numbers, then a
 pass on what they show. Some of it can be checked alone first. How to run it, with the commands:
 [PLAYTEST.md](PLAYTEST.md). Each round leaves its numbers and the testers' notes (F11) under the
@@ -46,6 +40,8 @@ timings come after, trade by trade (Backlog, "Tuning the mini-games").
 - **The ring** (`--arena Veteran`, `--arena Dragon`): whether a Veteran (6% for a skill-6 villager
   with a sword) and the dragon feel fair to a player. The rest of combat is tuned against the
   headless sweep (HISTORY.md, "Combat balance"; `--combat-sweep`); parry and stamina feel right.
+  The dragon got harder with AI footwork (HISTORY.md, "AI footwork": met 12/48 with a party, was
+  27/48): bring it back with `DragonBrain.FleeDamage`/`FleePain` and the footwork levers.
 - **Not yet seen running:** the bracing window (`--bridge-test`), buckets against the dragon and the
   dragon in a round (`--dragon-test`).
 - **The lessons:** one trade at a time, the words and whether the step shown is the one you're on.

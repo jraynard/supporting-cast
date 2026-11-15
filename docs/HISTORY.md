@@ -1680,3 +1680,36 @@ From a multiplayer playtest that found the healer the weakest trade.
   | Dragon, party in town | 0/8 | 27/48 |
   | Dragon, no party | 0/8 | 0/48 (nobody's hurt either) |
 
+### AI footwork (2026-11-15)
+- **The hurt drop back:** past pain 0.3 (or moving below 0.7) a fighter is wary
+  (`FreeFight.Wary`): it hands its turn (`Engagement`) to a friend still pressing the same foe and
+  hangs back at `WaryHold`, unless it's the last one at them or the foe is pressing it. Broken
+  (`RaiderBrain.WantsToFlee`), it backs off facing the foe for up to `WithdrawTicks`
+  (`FreeFight.BackAway`) before it turns and runs. Raiders and the town alike (`Job.FightFree`).
+- **The dragon circles:** on the ground after its breath it fights freely (`DragonPassJob`): it
+  circles whoever comes at it between bites and lunges in when its jaws are ready, going after
+  people within `GroundReach` of it and `Leash` of where it landed, and takes off from the grid.
+  Something big holds further off while it waits (`FreeFight.HoldFor`). Four may press a dragon
+  at once (`Engagement.OnDragon`).
+- **The unarmed mob a raider:** unarmed townsfolk out in the street within `MobRange` of a raider
+  gang up on it with their fists when the town there makes `MobSize` (those already fighting it
+  and those who'd join, `Defence.Mob`); someone running rethinks when it does. Alone or two, they
+  still get away; indoors, they stay in. Not the dragon, not beasts.
+- **Tried and dropped:** a size-scaled wall circle for the dragon (under half a cell, it still
+  fits a one-cell gap: the leash keeps it in the open instead); a tighter circle and a 1 to 2 s
+  stand after each bite (12 to 14 of 48 met, no real gain). A wary fighter first gave up its turn
+  even with the foe on it, and was cut down without swinging (raids with a party: 39 town dead);
+  now it fights back.
+- **Seeds 1–48, Normal, before and after** (`--combat-sweep --seeds 48`; duels unchanged):
+
+  | | Before | After |
+  |---|---|---|
+  | Raids, party in town | met 30/48, town dead 23 | met 30/48, town dead 30 |
+  | Raids, no party | met 14/48, town dead 58 | met 18/48, town dead 75 |
+  | Dragon, party in town | met 27/48, town dead 0 | met 12/48, town dead 5 |
+  | Dragon, no party | 0/48 | 0/48, town dead 5 |
+
+  Seasons (`--season-sweep --seeds 8`): won 4 to 2, the dragon met 3/8 to 1/8, raids 9/10 to 8/10,
+  deaths 1.9 a round either way. The dragon is harder: a moving target makes blows miss. Left to
+  the tuning pass, with these levers: `WaryPain`, `WaryHold`, `WithdrawTicks`, `GroundReach`,
+  `Leash`, `OnDragon`, `MobRange`, `MobSize`, and the dragon's `FleeDamage`/`FleePain`.

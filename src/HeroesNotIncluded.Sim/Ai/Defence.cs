@@ -6,7 +6,8 @@ namespace HeroesNotIncluded.Sim.Ai;
 
 /// <summary>
 /// What the town does when raiders or predators come at it: whoever's armed and fit stands and
-/// fights, and everyone else gets indoors, away from them. Adventurers, who fight for a living,
+/// fights, the unarmed out in the street gang up on a raider when there are enough of them
+/// (<see cref="Mob"/>), and everyone else gets indoors, away from them. Adventurers, who fight for a living,
 /// see trouble from further off. Players decide for themselves; this is for the AI.
 /// </summary>
 public static class Defence
@@ -28,6 +29,12 @@ public static class Defence
 
     /// <summary>How near a raider comes before someone gone out to a neighbour (<see cref="AidClear"/>) gets back under cover.</summary>
     public const int AidAbandon = 4;
+
+    /// <summary>How near a raider the unarmed have to be to gang up on it (<see cref="Mob"/>), in cells.</summary>
+    public const int MobRange = 5;
+
+    /// <summary>How many of the town (the unarmed who'd join in and those already fighting it) it takes before the unarmed gang up on a raider.</summary>
+    public const int MobSize = 3;
 
     /// <summary>How far off a dragon is everyone's business: the whole town hears it.</summary>
     public const int DragonRange = 96;
@@ -74,6 +81,9 @@ public static class Defence
         if (CanFight(sim, pawn) && sim.Regions.CanReach(tile, at, PathEnd.Touch)
             && (!Militia.MilitiaSystem.ArmedMakeshift(sim, pawn) || Map.Distance(tile, at) <= CorneredRange))
             return new DefendJob(foe);
+        // Unarmed, but not alone: enough of the town round a raider gang up on it with their fists.
+        if (Mob(sim, pawn, foe) && sim.Regions.CanReach(tile, at, PathEnd.Touch))
+            return new DefendJob(foe);
         // Not fighting it: but a neighbour lying bleeding where no raider is gets seen to.
         if (Map.Distance(tile, at) > AidAbandon && Aid(sim, pawn) is { } aid)
             return aid;
@@ -82,6 +92,48 @@ public static class Defence
         if (Shelter(sim, pawn, at) is { } inside)
             return new FleeJob(inside);
         return AnimalBrain.FleeSpot(sim, pawn, at, 12) is { } away ? new FleeJob(away) : null;
+    }
+
+    /// <summary>
+    /// Would <paramref name="pawn"/>, unarmed, gang up on the raider <paramref name="foe"/>: out in
+    /// the open within <see cref="MobRange"/> of it, and with enough of the town there to make
+    /// <see cref="MobSize"/>, counting those already fighting it and the others who'd join in? A lone
+    /// villager still gets away; a crowd doesn't all run from one raider. Not the dragon, not beasts.
+    /// </summary>
+    public static bool Mob(Simulation sim, Entity pawn, Entity foe)
+    {
+        if (!WouldMob(sim, pawn, foe))
+            return false;
+        var n = 1;
+        foreach (var e in sim.Creatures())
+            if (e != pawn && (FightingIt(sim, e, foe) || WouldMob(sim, e, foe)) && ++n >= MobSize)
+                return true;
+        return false;
+    }
+
+    /// <summary>Unarmed, unhurt and out in the street near the raider: one who'd join a mob on it.</summary>
+    private static bool WouldMob(Simulation sim, Entity e, Entity foe)
+    {
+        var w = sim.World;
+        if (w.Get<Creature>(e) is not { Able: true, Faction: Faction.Village or Faction.Adventurer } c || c.Def.Race != Defs.Race.Human
+            || w.Has<Avatar>(e) || w.Has<NonViolent>(e) || RaiderBrain.Armed(sim, e) || FreeFight.Wary(sim, e) || RaiderBrain.WantsToFlee(sim, e))
+            return false;
+        if (w.Get<Creature>(foe) is not { Faction: Faction.Raider, Dead: false, Downed: false } || w.Has<Leaving>(foe))
+            return false;
+        var at = w.Get<Position>(e).Cell;
+        var them = w.Get<Position>(foe).Cell;
+        return Math.Abs(at.Z - them.Z) <= 1 && Map.Distance(at, them) <= MobRange && sim.Rooms.RoomAt(at) is not { Indoors: true };
+    }
+
+    /// <summary>On their feet near the raider and fighting it already: at it with a <see cref="DefendJob"/>, or a player with a weapon drawn.</summary>
+    private static bool FightingIt(Simulation sim, Entity e, Entity foe)
+    {
+        var w = sim.World;
+        if (w.Get<Creature>(e) is not { Able: true } c || !Factions.Defends(c.Faction)
+            || Map.Distance(w.Get<Position>(e).Cell, w.Get<Position>(foe).Cell) > MobRange)
+            return false;
+        return w.Has<Avatar>(e) ? w.TryGet<FreeMover>(e, out var m) && m.Drawn
+            : w.Get<Mind>(e).Job is DefendJob d && d.Focus == foe;
     }
 
     /// <summary>
@@ -135,11 +187,15 @@ public static class Defence
 
     /// <summary>
     /// Should this answer to trouble be thought again now: hiding or running with a raider at their
-    /// elbow and something in hand to fight with, or out to a neighbour with a raider coming near?
+    /// elbow and something in hand to fight with, running from a raider the town's ganging up on
+    /// (<see cref="Mob"/>), or out to a neighbour with a raider coming near?
     /// </summary>
     public static bool Reconsider(Simulation sim, Entity pawn, Job? job) => job switch
     {
-        HideJob or FleeJob => Threat(sim, pawn, CorneredRange) != null && CanFight(sim, pawn),
+        HideJob => Threat(sim, pawn, CorneredRange) != null && CanFight(sim, pawn),
+        // Out in the street running: back to join the rest if enough of the town is at the raider.
+        FleeJob => (Threat(sim, pawn, CorneredRange) != null && CanFight(sim, pawn))
+            || (Threat(sim, pawn, MobRange) is { } foe && Mob(sim, pawn, foe)),
         TendJob { Braving: true } => Threat(sim, pawn, AidAbandon) != null,
         _ => false,
     };

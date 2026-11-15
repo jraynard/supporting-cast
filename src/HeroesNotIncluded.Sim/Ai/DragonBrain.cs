@@ -7,8 +7,8 @@ namespace HeroesNotIncluded.Sim.Ai;
 /// <summary>
 /// A wild dragon come down on the town (the season's last crisis, <c>Director.DragonCrisis</c>).
 /// It makes passes: flies in, comes down within breath's reach of something (a building, or
-/// whoever's out in the open), breathes, and stays on the ground a while snapping at anyone who
-/// closes on it. That's when the town can hurt it. Hurt enough, it leaves for good.
+/// whoever's out in the open), breathes, and stays on the ground a while, circling anyone who
+/// closes on it and lunging in to bite (<see cref="FreeFight"/>), never far from where it landed. That's when the town can hurt it. Hurt enough, it leaves for good.
 /// </summary>
 public sealed class DragonBrain : IBrain
 {
@@ -64,7 +64,7 @@ public sealed class DragonBrain : IBrain
 
 /// <summary>
 /// One pass: to the ground within breath's reach of the target, breathe on it, then stay down a
-/// while, biting at anyone in reach. Ends early if it's had enough.
+/// while, fighting freely: circling whoever comes at it near where it landed, lunging in to bite. Ends early if it's had enough.
 /// </summary>
 public sealed class DragonPassJob(int3 target) : Job
 {
@@ -106,21 +106,34 @@ public sealed class DragonPassJob(int3 target) : Job
 
         Report = "Snapping at the town";
         var attack = CombatRules.Attacks(Sim, Pawn).FirstOrDefault(a => !a.Ranged);
+        // On the ground it fights freely (FreeFight): it circles whoever's come at it between bites
+        // and lunges in when its jaws are ready, rather than biting from its cell.
+        if (attack != null)
+            FreeFight.Join(Sim, Pawn);
         long next = 0;
         var idle = 0;
         for (var t = 0; t < GroundTicks && idle < RestlessTicks && !DragonBrain.DrivenOff(Sim, Pawn); t++)
         {
-            var foe = Beside();
+            var foe = attack == null ? Entity.Null : Foe(landing);
             // Nobody comes at it: it soon takes to the air again for another pass.
             idle = foe.IsNull ? idle + 1 : 0;
-            if (attack != null && Sim.Clock.Tick >= next && !foe.IsNull)
+            if (foe.IsNull)
             {
-                // Its jaws are wound up like any blow (Combat.Blows), quick and hard to dodge.
-                if (Blows.Begin(Sim, Pawn, foe, attack))
-                    next = Sim.Clock.Tick + attack.CooldownTicks;
+                if (Sim.World.Has<FreeMover>(Pawn))
+                    Sim.World.Get<FreeMover>(Pawn).Wish = float2.Zero;
+                yield return JobStatus.Running;
+                continue;
             }
+            var ready = Sim.Clock.Tick >= next;
+            var dist = FreeFight.Steer(Sim, Pawn, foe, attack!, pressing: ready, backOffUntil: 0);
+            // Its jaws are wound up like any blow (Combat.Blows), quick and hard to dodge.
+            if (ready && !Sim.World.Has<Windup>(Pawn) && FreeFight.InReach(Sim, Pawn, foe, attack!, dist)
+                && Blows.Begin(Sim, Pawn, foe, attack!))
+                next = Sim.Clock.Tick + attack!.CooldownTicks;
             yield return JobStatus.Running;
         }
+        // Back on the grid to take off.
+        FreeFight.Leave(Sim, Pawn);
     }
 
     /// <summary>Cells it moves at least, from one landing to the next.</summary>
@@ -146,14 +159,28 @@ public sealed class DragonPassJob(int3 target) : Job
         return true;
     }
 
-    /// <summary>Someone of the town on their feet within reach of its jaws.</summary>
-    private Entity Beside()
+    /// <summary>How far from it someone has to be for it to go for them on the ground, in cells.</summary>
+    public const int GroundReach = 5;
+
+    /// <summary>How far from where it came down it'll go after anyone, in cells: it fights where it lands, not down the streets.</summary>
+    public const int Leash = 5;
+
+    /// <summary>The nearest of the town on their feet within <see cref="GroundReach"/> of it and <see cref="Leash"/> of <paramref name="landing"/>.</summary>
+    private Entity Foe(int3 landing)
     {
         var w = Sim.World;
+        var here = PawnCell;
+        var best = Entity.Null;
+        var bestDist = int.MaxValue;
         foreach (var e in Sim.Creatures())
-            if (w.Get<Creature>(e) is { Dead: false, Downed: false } c && Factions.Defends(c.Faction)
-                && Pathfinder.Touches(PawnCell, w.Get<Position>(e).Cell))
-                return e;
-        return Entity.Null;
+        {
+            if (w.Get<Creature>(e) is not { Dead: false, Downed: false } c || !Factions.Defends(c.Faction))
+                continue;
+            var at = w.Get<Position>(e).Cell;
+            var d = Map.Distance(here, at);
+            if (Math.Abs(at.Z - here.Z) <= 1 && d <= GroundReach && d < bestDist && Map.Distance(landing, at) <= Leash)
+                (best, bestDist) = (e, d);
+        }
+        return best;
     }
 }

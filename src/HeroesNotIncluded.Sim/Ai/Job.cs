@@ -162,9 +162,10 @@ public abstract class Job
 
     /// <summary>
     /// Fight <paramref name="target"/> with free movement on (<see cref="Combat.FreeFight"/>): steer,
-    /// take turns (<see cref="Combat.Engagement"/>), strike when in reach and ready. Ends when
+    /// take turns (<see cref="Combat.Engagement"/>), strike when in reach and ready. Hurt
+    /// (<see cref="Combat.FreeFight.Wary"/>), it gives its turn to a friend still pressing them. Ends when
     /// <paramref name="keepOn"/> says so, the target's down or gone, it gets too far away, or a while
-    /// passes without a turn (the brain may find someone better).
+    /// passes without a turn (the brain may find someone better); broken, it first backs off facing them.
     /// </summary>
     protected IEnumerable<JobStatus> FightFree(Entity target, AttackDef attack, Func<bool> keepOn, float heavyShare, float giveUp = 14f)
     {
@@ -175,7 +176,18 @@ public abstract class Job
         while (keepOn() && Alive(target) && Get<Creature>(target).Able)
         {
             var now = Sim.Clock.Tick;
-            var pressing = Combat.Engagement.TryPress(Sim, Pawn, target);
+            // Hurt, it hands its turn to a fresher friend and hangs back (the last one at them fights
+            // on, and so does one they're coming at: backing off with them on you is just being hit).
+            bool pressing;
+            if (Combat.FreeFight.Wary(Sim, Pawn) && Combat.Engagement.Pressers(Sim, target, Pawn) > 0
+                && !Combat.Engagement.Presses(Sim, target, Pawn))
+            {
+                Combat.Engagement.Release(Sim, Pawn);
+                pressing = false;
+                waitedSince = now; // standing by on purpose, not waiting to be let in
+            }
+            else
+                pressing = Combat.Engagement.TryPress(Sim, Pawn, target);
             if (pressing)
                 waitedSince = now;
             else if (now - waitedSince > Combat.Engagement.WaitTicks)
@@ -195,6 +207,15 @@ public abstract class Job
                 swinging = true;
             }
             yield return JobStatus.Running;
+        }
+        // Broken: it backs off facing them a moment before it turns and runs, rather than turning its back at arm's length.
+        if (RaiderBrain.WantsToFlee(Sim, Pawn) && Get<Creature>(Pawn).Able && Alive(target) && Get<Creature>(target).Able)
+        {
+            Combat.Engagement.Release(Sim, Pawn);
+            var until = Sim.Clock.Tick + Combat.FreeFight.WithdrawTicks;
+            while (Sim.Clock.Tick < until && Alive(target)
+                && Combat.FreeFight.BackAway(Sim, Pawn, target) < Combat.FreeFight.HoldFor(Sim, Pawn) + 2f)
+                yield return JobStatus.Running;
         }
     }
 

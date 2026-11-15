@@ -8,8 +8,10 @@ namespace HeroesNotIncluded.Sim.Combat;
 /// for the fight (<see cref="Join"/>) and steers each tick (<see cref="Steer"/>). It closes to its
 /// weapon's reach and keeps it, holds a little way off circling while it waits its turn
 /// (<see cref="Engagement"/>), stands clear of anyone else near, and now and then steps back after a
-/// blow, and steps round a friend in its blow's way. An archer keeps to its bow's best range and backs off from anyone who closes, and leads a
-/// moving target. Far off, or with something in the way, it walks the path there instead. When the
+/// blow, and steps round a friend in its blow's way. Hurt (<see cref="Wary"/>), it gives its turn
+/// to a fresher friend and hangs back; broken, it backs off facing the foe (<see cref="BackAway"/>)
+/// before it turns and runs. Something big (the dragon) holds further off. An archer keeps to its
+/// bow's best range and backs off from anyone who closes, and leads a moving target. Far off, or with something in the way, it walks the path there instead. When the
 /// fight's over it's put back on its cell and walks the grid again (<see cref="Leave"/>).
 /// </summary>
 public static class FreeFight
@@ -30,11 +32,29 @@ public static class FreeFight
     public const float BackOffShare = 0.35f;
     public const int BackOffTicks = SimClock.TicksPerSecond / 2;
 
+    /// <summary>
+    /// Hurt past this pain (or moving below <see cref="WaryMoving"/>), a fighter is wary: it gives its
+    /// turn to a fresher friend and hangs back at <see cref="WaryHold"/>. Short of breaking
+    /// (<c>RaiderBrain.WantsToFlee</c>), so a fight winds down rather than ending all at once.
+    /// </summary>
+    public const float WaryPain = 0.3f, WaryMoving = 0.7f, WaryHold = 3.5f;
+
+    /// <summary>Broken, how long it backs off facing the foe (<see cref="BackAway"/>) before it turns to run.</summary>
+    public const int WithdrawTicks = SimClock.TicksPerSecond * 3 / 2;
+
     /// <summary>An archer backs away from anyone nearer than this.</summary>
     public const float ArcherTooClose = 3f;
 
     /// <summary>An arrow's flight, cells per tick, for leading a moving target.</summary>
     public const float ArrowSpeed = 0.5f;
+
+    /// <summary>Hurt enough to hang back, short of running (<see cref="WaryPain"/>).</summary>
+    public static bool Wary(Simulation sim, Entity e) =>
+        sim.World.TryGet<Health>(e, out var h) && (h.Pain > WaryPain || h.Capacity(Capacity.Moving) < WaryMoving);
+
+    /// <summary>How far off it holds while waiting its turn: further for something big (a dragon's half again its size).</summary>
+    public static float HoldFor(Simulation sim, Entity e) =>
+        HoldDistance + 0.5f * Math.Max(0f, sim.World.Get<Creature>(e).Stage(sim.Clock.Tick).Size - 1f);
 
     /// <summary>An AI starts fighting freely: off the grid till <see cref="Leave"/>, weapon out.</summary>
     public static void Join(Simulation sim, Entity e)
@@ -114,11 +134,11 @@ public static class FreeFight
         if (attack.Ranged)
             want = dist < ArcherTooClose ? ArcherTooClose + 1f : Math.Max(2f, attack.OptimalRange);
         else if (!pressing)
-            want = HoldDistance;
+            want = Wary(sim, e) ? Math.Max(WaryHold, HoldFor(sim, e)) : HoldFor(sim, e);
         else
             want = Reach.ShapeOf(sim, e, attack).Length * 0.8f;
         if (sim.Clock.Tick < backOffUntil)
-            want = Math.Max(want, HoldDistance);
+            want = Math.Max(want, HoldFor(sim, e));
         var radial = Math.Clamp((dist - want) * 2f, -1f, 1f);
         var wish = toward * radial;
         // A friend in the blow's way (Blows.Begin holds it): step round them, to the far side from them.
@@ -136,7 +156,43 @@ public static class FreeFight
             var side = (e.Index & 1) == 0 ? 1f : -1f;
             wish += side2 * (Circle * side * (attack.Ranged ? 0.5f : 1f));
         }
-        // Room: away from anyone else close by.
+        wish += Room(sim, e, target, me);
+        var len = MathF.Sqrt(wish.X * wish.X + wish.Y * wish.Y);
+        m.Wish = len > 1f ? wish * (1f / len) : len < 0.08f ? float2.Zero : wish;
+        return dist;
+    }
+
+    /// <summary>
+    /// One tick of a broken fighter's withdrawal: stepping back from <paramref name="foe"/> while
+    /// still facing it (its guard toward the blows), rather than turning its back at arm's length.
+    /// Mid-swing it stands. Returns the distance between them.
+    /// </summary>
+    public static float BackAway(Simulation sim, Entity e, Entity foe)
+    {
+        var w = sim.World;
+        ref var m = ref w.Get<FreeMover>(e);
+        var me = w.Get<Position>(e);
+        var them = w.Get<Position>(foe).Pos;
+        var d = new float2(them.X - me.Pos.X, them.Y - me.Pos.Y);
+        var dist = MathF.Sqrt(d.X * d.X + d.Y * d.Y);
+        if (w.Has<Windup>(e))
+        {
+            m.Wish = float2.Zero;
+            return dist;
+        }
+        w.Get<Mover>(e).Stop();
+        m.Aim = DetMath.Atan2(d.Y, d.X);
+        var wish = (dist > 1e-3f ? d * (-1f / dist) : new float2(-1, 0)) + Room(sim, e, foe, me);
+        var len = MathF.Sqrt(wish.X * wish.X + wish.Y * wish.Y);
+        m.Wish = len > 1e-3f ? wish * (1f / len) : float2.Zero;
+        return dist;
+    }
+
+    /// <summary>Room: a push away from anyone else close by (not <paramref name="target"/>), so a band doesn't pile up.</summary>
+    private static float2 Room(Simulation sim, Entity e, Entity target, Position me)
+    {
+        var w = sim.World;
+        var wish = float2.Zero;
         foreach (var other in sim.Creatures())
         {
             if (other == e || other == target || w.Get<Creature>(other).Dead)
@@ -149,9 +205,7 @@ public static class FreeFight
             if (gap < Personal && gap > 1e-3f)
                 wish += away * ((Personal - gap) / (gap * Personal));
         }
-        var len = MathF.Sqrt(wish.X * wish.X + wish.Y * wish.Y);
-        m.Wish = len > 1f ? wish * (1f / len) : len < 0.08f ? float2.Zero : wish;
-        return dist;
+        return wish;
     }
 
     /// <summary>Is <paramref name="target"/> where a blow from <paramref name="e"/> aimed at it now would reach?</summary>

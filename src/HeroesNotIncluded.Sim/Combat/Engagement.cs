@@ -14,8 +14,8 @@ public struct Pressing
 
 /// <summary>
 /// Who may press whom. A band doesn't all hack at one person at once: only so many press a target
-/// at a time (one on a player's character, who has to be able to answer each of them; two on
-/// anyone else), and the rest circle a little way off and wait their turn (<see cref="FreeFight"/>), or go for someone else.
+/// at a time (one on a player's character, who has to be able to answer each of them; four on a
+/// dragon; two on anyone else), and the rest circle a little way off and wait their turn (<see cref="FreeFight"/>), or go for someone else.
 /// </summary>
 public static class Engagement
 {
@@ -24,6 +24,9 @@ public static class Engagement
 
     /// <summary>How many may press anyone else at once.</summary>
     public const int OnOthers = 2;
+
+    /// <summary>How many may press a dragon at once: a beast that size has room round it.</summary>
+    public const int OnDragon = 4;
 
     /// <summary>How long one who's waiting (circling, <see cref="FreeFight"/>) stays waiting before it thinks again (another target).</summary>
     public const int WaitTicks = SimClock.TicksPerSecond * 6;
@@ -34,7 +37,10 @@ public static class Engagement
     /// <summary>Ticks between <paramref name="attacker"/>'s blows at <paramref name="target"/>: the attack's own pace.</summary>
     public static int Cooldown(Simulation sim, Defs.AttackDef attack, Entity target) => attack.CooldownTicks;
 
-    public static int Limit(Simulation sim, Entity target) => sim.World.Has<Avatar>(target) ? OnPlayer : OnOthers;
+    public static int Limit(Simulation sim, Entity target) =>
+        sim.World.Has<Avatar>(target) ? OnPlayer
+        : sim.World.TryGet<Creature>(target, out var c) && c.Def.Race == Defs.Race.Dragon ? OnDragon
+        : OnOthers;
 
     /// <summary>Is <paramref name="attacker"/> pressing <paramref name="target"/> already?</summary>
     public static bool Presses(Simulation sim, Entity attacker, Entity target) =>

@@ -151,7 +151,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     first (`Combat/Blows.Begin`, a `Windup` the `BlowSystem` lands) and lands on whoever's in its
     sweep the way it was aimed (`Combat/Reach`), friend or foe, no roll to hit (an arrow stops in a `target` building first: the festival's butts); armour soaks a share
     (`CombatRules.Strike`). With friendly fire off in a round, the town's blows pass through the town (`Reach.Harms`). It's met by `Guard` (block, parry, dodge); an AI decides as it sees it
-    coming (`BlowResponse`). Only so many press one target at a time (`Combat/Engagement`). There's
+    coming (`BlowResponse`). A hurt AI hands its turn on and hangs back, and backs off facing the foe
+    before it runs (`FreeFight.Wary`, `BackAway`); the unarmed gang up on a raider when there are enough (`Defence.Mob`). Only so many press one target at a time (`Combat/Engagement`). There's
     no turn-based combat, and nothing may stop the clock for one player's fight.
   - Players move freely (`Combat/FreeMove`, `FreeMover`): WASD and the mouse's aim through
     `FreeMoveCommand`; a job's walk follows its path; levels change by the `NavGraph` links. R draws
