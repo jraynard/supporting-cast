@@ -43,6 +43,23 @@ public class DeathReckoningTests
     }
 
     [Fact]
+    public void AnAdventurerDyingInTownCostsWhatOneLostOnTheRoadDoes()
+    {
+        var sim = Round();
+        var season = sim.Defs.Season;
+        var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));
+        var (renown, dread) = (sim.Reckoning.Renown, sim.Reckoning.Dread);
+
+        Kill(sim, party[0]);
+
+        Assert.Equal(renown + season.RenownPerAdventurerLost, sim.Reckoning.Renown, 3);
+        Assert.Equal(dread + season.DreadPerAdventurerLost, sim.Reckoning.Dread, 3);
+        Assert.Equal(1, sim.Reckoning.AdventurersDiedInTown);
+        sim.Round.End(sim, RoundOutcome.FellShort);
+        Assert.Equal(1, sim.Round.Summary!.AdventurersLost); // the reveal counts them too
+    }
+
+    [Fact]
     public void ADeadSmithsWorkIsTakenUpAtTheNextDawnNotBefore()
     {
         var sim = Round("Blacksmith");

@@ -20,6 +20,9 @@ public class PartyLoopScenarioTests(ITestOutputHelper output)
 {
     private static readonly string[] Trades = ["Blacksmith", "Innkeeper", "Healer", "Tinker"];
 
+    // What every loop must have seen a bot serve: it plays on till it has.
+    private static readonly ServiceKind[] Wanted = [ServiceKind.Drink, ServiceKind.Repair, ServiceKind.Quest];
+
     [Theory]
     [InlineData(1234UL)]
     [InlineData(99UL)]
@@ -45,7 +48,7 @@ public class PartyLoopScenarioTests(ITestOutputHelper output)
         // Served by a bot, per kind; and how the round went.
         var served = new HashSet<ServiceKind>();
         var log = new List<string>();
-        var end = SimClock.TicksPerDay * 3 / 2;
+        var end = SimClock.TicksPerDay * 2; // long enough for a second party, should the first want no mending or no quest
         for (var t = 0; t < end; t++)
         {
             sim.Tick();
@@ -56,7 +59,7 @@ public class PartyLoopScenarioTests(ITestOutputHelper output)
             foreach (var e in sim.Shops.All)
                 if (e.Status == OrderStatus.Done && players.Contains(e.Assignee) && served.Add(e.Kind.Kind))
                     log.Add($"{SimClock.TicksToDays(t) * 24:F1}h: {e.AssigneeName} did {e.Kind.Label} for {e.PosterName}");
-            if (served.Count >= 4 && sim.Expeditions.Succeeded + sim.Expeditions.Failed > 0
+            if (served.Count >= 4 && Wanted.All(served.Contains) && sim.Expeditions.Succeeded + sim.Expeditions.Failed > 0
                 && (sim.Expeditions.Succeeded == 0 || served.Contains(ServiceKind.Unlock)))
                 break;
         }
@@ -69,7 +72,7 @@ public class PartyLoopScenarioTests(ITestOutputHelper output)
         output.WriteLine(summary);
 
         Assert.True(sim.Parties.PartiesSent >= 1, summary);
-        foreach (var kind in new[] { ServiceKind.Drink, ServiceKind.Repair, ServiceKind.Quest })
+        foreach (var kind in Wanted)
             Assert.True(served.Contains(kind), $"no bot served {kind}\n{summary}");
         Assert.True(sim.Expeditions.Succeeded + sim.Expeditions.Failed >= 1, $"no party came back from a quest\n{summary}");
         Assert.True(sim.Messages.Messages.Any(m => m.Text.Contains("return from") || m.Text.StartsWith("No one comes back")), summary);

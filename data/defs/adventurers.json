@@ -23,6 +23,18 @@
       "stayHours": 14, "names": [ "Aldric", "Fenna", "Osric", "Merrow", "Tamsin" ] },
     { "name": "IronLantern", "label": "the Iron Lantern Company", "members": [ "Vanguard", "Sellsword", "Bowman", "Hedgewise" ],
       "description": "Professionals, or so their invoices say.",
-      "stayHours": 18, "names": [ "Brannagh", "Corvin", "Ilse", "Jory", "Petronel", "Wystan" ] }
+      "stayHours": 18, "names": [ "Brannagh", "Corvin", "Ilse", "Jory", "Petronel", "Wystan" ] },
+    { "name": "BrassKettle", "label": "the Brass Kettle Band", "members": [ "Sellsword", "Hedgewise" ],
+      "description": "Two old friends who have been nearly famous for twenty years.",
+      "stayHours": 14, "names": [ "Haskel", "Odile", "Prewitt", "Rook" ] },
+    { "name": "FenwatchWardens", "label": "the Fenwatch Wardens", "members": [ "Vanguard", "Sellsword", "Bowman" ],
+      "description": "Wardens of a marsh that no longer needs them, looking for somewhere that does.",
+      "stayHours": 16, "names": [ "Ansel", "Briony", "Edda", "Lorne", "Sorrel" ] },
+    { "name": "SecondSons", "label": "the Second Sons", "members": [ "Vanguard", "Sellsword", "Sellsword", "Hedgewise" ],
+      "description": "Younger brothers of better-known men, out to settle the matter.",
+      "stayHours": 16, "names": [ "Bastian", "Cuthbert", "Garrick", "Hamish", "Lucan", "Tobin" ] },
+    { "name": "LarkspurThree", "label": "the Larkspur Three", "members": [ "Bowman", "Hedgewise", "Sellsword" ],
+      "description": "They were five when they set out. They'd rather not discuss it.",
+      "stayHours": 14, "names": [ "Clemence", "Dorian", "Maude", "Pell", "Wren" ] }
   ]
 }

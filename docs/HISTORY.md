@@ -1826,5 +1826,19 @@ player vanished on day two and it ended on day three.
   fighting over them). A 16-seed sweep's Dread peaked at 69, against 61 before: within noise.
 - **Net notices** (joins, drops, reconnects) now go to the log: a player vanished from round two
   without a trace.
+- **Adventurers dying in town cost nothing:** six bled to death in round one, and the summary said
+  "adventurers lost 0", since it counted only those lost on the road. The dead never leave, so they
+  never had their say either: a death cost less than leaving unhappy. A death in town now costs
+  what one on the road does (`renownPerAdventurerLost`, `dreadPerAdventurerLost`,
+  `Reckoning.AdventurerDied`) and counts in the reveal.
+- **Feasts:** none of three was laid on. The kitchen had 2 game hours (80 real seconds) for three
+  or four dishes, and two of the calls came at dawn. Now it has 6 (`FeastSystem.Hours`).
+- **Parties:** there were only two, so in round two the Gilded Spurs came three times, with two
+  Osrics and two Tamsins. Four more (`adventurers.json`), and the next party is one sent least
+  this round (`PartySystem.NextParty`), so none comes twice before all have come.
+- Once the season's over, players' games stop sending move commands that every peer refuses (they
+  filled the host's log through the reveal).
+- 8-seed `--season-sweep` with all four: won 2 to 3, Renown mean 43.0 to 58.0, Dread peak 67.8 to
+  63.5, adventurers lost (now counting the town) 2.0 a round.
 - **The dragon,** met by two or three players with buckets, went down easily enough and felt good.
   Left as it is.

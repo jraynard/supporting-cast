@@ -203,7 +203,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             RenownTarget = Director.Reckoning.RenownTarget(sim), DreadLimit = Director.Reckoning.DreadLimit(sim),
             RenownByHour = reckoning.RenownByHour.ToList(), DreadByHour = reckoning.DreadByHour.ToList(),
             Parties = sim.Parties.PartiesSent, AdventurersServed = reckoning.AdventurersCounted,
-            QuestsCleared = ex.Succeeded, QuestsFailed = ex.Failed, AdventurersLost = ex.Dead,
+            QuestsCleared = ex.Succeeded, QuestsFailed = ex.Failed, AdventurersLost = ex.Dead + reckoning.AdventurersDiedInTown,
             People = RoundSummary.PeopleOf(sim, _startCoin),
             Honours = sim.Festival.Honours.Select(h => new HonourRow(h.Name, h.Title)).ToList(),
         };

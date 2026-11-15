@@ -25,6 +25,12 @@ public sealed class Reckoning : ISimSystem, ISaveState
     /// <summary>Adventurers whose opinion of the town has been counted, as they left or at the festival.</summary>
     public int AdventurersCounted { get; private set; }
 
+    /// <summary>
+    /// Adventurers who died in town (a raid, a fire, the dragon). Lost on the road is the
+    /// expeditions' tally; this is the other half, so a death here costs what one there does.
+    /// </summary>
+    public int AdventurersDiedInTown { get; private set; }
+
     private readonly List<float> _renownByHour = [];
     private readonly List<float> _dreadByHour = [];
     public IReadOnlyList<float> RenownByHour => _renownByHour;
@@ -92,6 +98,19 @@ public sealed class Reckoning : ISimSystem, ISaveState
         AdventurersCounted++;
     }
 
+    /// <summary>
+    /// An adventurer has died in town: it costs what losing one on the road does. The dead never
+    /// leave, so without this a death cost less than leaving unhappy.
+    /// </summary>
+    public void AdventurerDied(Simulation sim)
+    {
+        if (!sim.Round.Live || sim.Round.Practice)
+            return;
+        var season = sim.Defs.Season;
+        AdventurersDiedInTown++;
+        Add(sim, season.RenownPerAdventurerLost, season.DreadPerAdventurerLost);
+    }
+
     /// <summary>A crisis is over: met, it's a story travellers tell; not, the valley's fear grows.</summary>
     public void CrisisResolved(Simulation sim, Defs.CrisisKind kind, bool met)
     {
@@ -155,6 +174,7 @@ public sealed class Reckoning : ISimSystem, ISaveState
             w.Int((int)kind);
             w.Bool(met);
         }
+        w.Int(AdventurersDiedInTown);
     }
 
     public void Load(SaveReader r, Simulation sim)
@@ -173,5 +193,6 @@ public sealed class Reckoning : ISimSystem, ISaveState
         if (r.Version >= 31)
             for (var n = r.Count(10_000); n > 0; n--)
                 _crises.Add(((Defs.CrisisKind)r.Int(), r.Bool()));
+        AdventurersDiedInTown = r.Version >= 41 ? r.Int() : 0; // came with format 41
     }
 }

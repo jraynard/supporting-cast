@@ -176,6 +176,7 @@ public class NightTests
     public void VillagersBuyTheirSupperAtTheInn()
     {
         var sim = Round((Ana, "Healer"));
+        sim.Parties.HoldArrivals(); // the town's own supper: no party at the hatch ahead of them
         // Someone the AI runs who doesn't cook: the town's labourer, or the tinker.
         var w = sim.World;
         var villager = sim.Creatures().First(e => !w.Has<Avatar>(e) && w.TryGet<Trade>(e, out var t) && !t.Def.Serving(ServiceKind.Meal)

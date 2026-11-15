@@ -66,8 +66,11 @@ public class KitchenTownTests
     {
         var (sim, _, party, inn) = PartyInTheInn();
         sim.Feasts.Call(sim, party[0], sim.World.Get<Adventurer>(party[0]).Party, inn);
+        // Just before the clock runs out, then past it: the long wait has its own ups and downs.
+        sim.TickMany(SimClock.HoursToTicks(FeastSystem.Hours) - sim.Feasts.Interval * 2);
+        Assert.NotEmpty(sim.Feasts.Active);
         var pleased = sim.World.Get<Adventurer>(party[0]).Satisfaction;
-        sim.TickMany(SimClock.HoursToTicks(FeastSystem.Hours) + sim.Feasts.Interval * 2);
+        sim.TickMany(sim.Feasts.Interval * 4);
         Assert.Empty(sim.Feasts.Active);
         Assert.True(sim.World.Get<Adventurer>(party[0]).Satisfaction < pleased);
         Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("feast fell flat"));

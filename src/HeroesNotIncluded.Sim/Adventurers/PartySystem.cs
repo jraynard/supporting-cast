@@ -33,6 +33,10 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
 
     private int _nextId = 1;
 
+    // The party defs sent this round, in order: the next is one sent least, so a season doesn't
+    // see the same party (and the same names) twice while others haven't come.
+    private readonly List<string> _sent = [];
+
     public void Save(Saving.SaveWriter w, Simulation sim)
     {
         var (a, b, c, d) = _rand.State;
@@ -40,6 +44,9 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         w.Long(NextArrivalTick);
         w.Int(PartiesSent);
         w.Int(_nextId);
+        w.Int(_sent.Count);
+        foreach (var name in _sent)
+            w.String(name);
     }
 
     public void Load(Saving.SaveReader r, Simulation sim)
@@ -48,6 +55,10 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         NextArrivalTick = r.Long();
         PartiesSent = r.Int();
         _nextId = r.Int();
+        _sent.Clear();
+        if (r.Version >= 41) // came with format 41
+            for (var n = r.Count(10_000); n > 0; n--)
+                _sent.Add(r.String());
     }
 
     public void Update(Simulation sim)
@@ -76,10 +87,18 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         var parties = sim.Defs.AllParties;
         if (parties.Count == 0)
             return;
-        Send(sim, parties[_rand.NextInt(parties.Count)]);
+        Send(sim, NextParty(parties));
         // A table that's talked of brings the next lot sooner; the talk fades with each new party.
         NextArrivalTick = now + SimClock.HoursToTicks(HoursBetweenParties * _rand.Range(0.7f, 1.3f) * (1f - sim.Shops.FareFactor));
         sim.Shops.TalkFades();
+    }
+
+    /// <summary>One of the parties sent least this round (<see cref="Send"/> counts them), at random.</summary>
+    internal PartyDef NextParty(IReadOnlyList<PartyDef> parties)
+    {
+        var least = parties.Min(p => _sent.Count(n => n == p.Name));
+        var fewest = parties.Where(p => _sent.Count(n => n == p.Name) == least).ToList();
+        return fewest[_rand.NextInt(fewest.Count)];
     }
 
     /// <summary>No party rides in unless one is sent (<see cref="Send"/>): the combat sweep, with or without heroes as it asks.</summary>
@@ -147,6 +166,7 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
             return members;
 
         var id = _nextId++;
+        _sent.Add(def.Name);
         var stay = SimClock.HoursToTicks(def.StayHours * _rand.Range(0.75f, 1.25f));
         var names = def.Names.ToList();
         Shuffle(names);
