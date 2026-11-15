@@ -9,7 +9,7 @@ namespace HeroesNotIncluded.Sim.Scenarios;
 /// <summary>What the practice yard can set up (<see cref="PracticeCommand"/>).</summary>
 public enum PracticeAction : byte
 {
-    /// <summary>A party rides in now, with what the player's trade works on (<see cref="PracticeCommand.Arg"/>, a <see cref="CustomerWear"/>).</summary>
+    /// <summary>A party rides in now, with what the player's trade works on (<see cref="PracticeCommand.Arg"/>, a <see cref="CustomerKind"/>).</summary>
     SendCustomers,
 
     /// <summary>The player's workplace stocked again.</summary>
@@ -59,8 +59,8 @@ public static class Practice
         switch (action)
         {
             case PracticeAction.SendCustomers:
-                if (Enum.IsDefined((CustomerWear)arg))
-                    SendCustomers(sim, player, (CustomerWear)arg);
+                if (Enum.IsDefined((CustomerKind)arg))
+                    SendCustomers(sim, player, (CustomerKind)arg);
                 break;
             case PracticeAction.Restock:
                 VillageRound.Restock(sim, Workplace(sim, player));
@@ -91,13 +91,17 @@ public static class Practice
             Inventory.Stow(sim, player, sim.CreateItem(item.ThingDef, item.Count, Simulation.MaterialFor(item.ThingDef, null)));
         if (lesson.Customers is { } wear)
             SendCustomers(sim, player, wear);
+        if (lesson.Patient is { } wound && PatientWounds.Contains(wound))
+            BringPatient(sim, player, wound);
+        if (lesson.Spent && sim.World.Has<Mana>(player))
+            sim.World.Get<Mana>(player).Current = 0f;
     }
 
     /// <summary>
     /// A party now, the way the player's trade wants it: hurt for a healer, their blades worn for a
     /// smith (chipped, or only dull), a locked strongbox and a curio for a tinker; hungry, for the inn.
     /// </summary>
-    public static List<Entity> SendCustomers(Simulation sim, Entity player, CustomerWear wear = CustomerWear.Trade)
+    public static List<Entity> SendCustomers(Simulation sim, Entity player, CustomerKind wear = CustomerKind.Trade)
     {
         var w = sim.World;
         var parties = sim.Defs.AllParties;
@@ -128,7 +132,7 @@ public static class Practice
                     }
                     else if (w.TryGet<Equipment>(e, out eq) && w.IsAlive(eq.Weapon))
                     {
-                        if (wear == CustomerWear.Dull)
+                        if (wear == CustomerKind.Dull)
                         {
                             // Sound but dull: a grindstone's work alone. An edged blade only (a mace has no edge to lose).
                             if (Combat.WeaponWear.Edged(w.Get<Thing>(eq.Weapon).Def))
@@ -152,7 +156,11 @@ public static class Practice
                         Inventory.Stow(sim, e, curio);
                     break;
                 default:
-                    if (w.TryGet<Needs>(e, out var needs))
+                    if (wear == CustomerKind.Thirsty)
+                        w.Get<Adventurer>(e).NextDrink = sim.Clock.Tick; // the road's dust in their throats
+                    else if (wear == CustomerKind.Questing)
+                        w.Get<Adventurer>(e).Arrived = sim.Clock.Tick - SimClock.HoursToTicks(Shops.ShopSystem.QuestAfterHours); // settled in, and wanting work
+                    else if (w.TryGet<Needs>(e, out var needs))
                         needs.Set(sim.Defs.Need("Food"), 0.3f);
                     break;
             }
@@ -190,6 +198,9 @@ public static class Practice
         return arm >= 0 ? arm : h.Body.Parts.FindIndex(p => !p.Vital);
     }
 
+    /// <summary>Who the practice patient is, every time: the town's most accident-prone.</summary>
+    public const string PatientName = "Torvi";
+
     /// <summary>The practice patient: someone lying on a shrine pallet with a wound (or a fever), keeping still for the healer.</summary>
     public static Entity BringPatient(Simulation sim, Entity player, DamageType wound)
     {
@@ -198,14 +209,14 @@ public static class Practice
         var pallets = shrine.IsNull ? [] : Shops.ShopSystem.BedsOf(sim, shrine);
         var at = pallets.Select(p => w.Get<Thing>(p).Cell).FirstOrDefault(c => !sim.Creatures().Any(e => w.Get<Position>(e).Cell == c),
             w.Get<Position>(player).Cell);
-        var patient = sim.SpawnCreature(sim.Defs.Creature("Human"), "Torvi", at, ageDays: 30 * 365);
+        var patient = sim.SpawnCreature(sim.Defs.Creature("Human"), PatientName, at, ageDays: 30 * 365);
         Array.Fill(w.Get<Needs>(patient).Values, 1f);
         w.Get<Mind>(patient).Drafted = true; // lying still for it, as in a bed
         if (wound == DamageType.Fever)
             FeverSystem.Catch(sim, patient);
         else
             HealthSystem.Damage(sim, patient, WoundDamage, wound, PartFor(w.Get<Health>(patient)));
-        sim.Messages.Add(MessageKind.Info, $"Torvi is brought in, {DamageTypes.Wound(wound)} and all.", at);
+        sim.Messages.Add(MessageKind.Info, $"{PatientName} is brought in, {DamageTypes.Wound(wound)} and all.", at);
         return patient;
     }
 }

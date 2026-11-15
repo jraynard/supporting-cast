@@ -121,8 +121,8 @@ public sealed class TradeDef : Def
     }
 }
 
-/// <summary>Customers the practice yard sends, worn the way a lesson needs them (<c>Scenarios.Practice</c>).</summary>
-public enum CustomerWear : byte
+/// <summary>Customers the practice yard sends, wanting what a lesson needs (<c>Scenarios.Practice</c>).</summary>
+public enum CustomerKind : byte
 {
     /// <summary>As the trade wants them: hurt for a healer, chipped blades for a smith, and so on.</summary>
     Trade,
@@ -132,6 +132,12 @@ public enum CustomerWear : byte
 
     /// <summary>Their blades chipped and bent: the forge's.</summary>
     Chipped,
+
+    /// <summary>Thirsty from the road: a drink at the bar straight off.</summary>
+    Thirsty,
+
+    /// <summary>Here long enough to want work: one of them asks the innkeeper for a quest.</summary>
+    Questing,
 }
 
 /// <summary>
@@ -151,10 +157,16 @@ public sealed class LessonDef
     public string Blurb { get; set; } = "";
 
     /// <summary>Customers sent when it begins, if any.</summary>
-    public CustomerWear? Customers { get; set; }
+    public CustomerKind? Customers { get; set; }
 
     /// <summary>The workplace stocked again when it begins.</summary>
     public bool Restock { get; set; }
+
+    /// <summary>The healer's: someone on a shrine pallet with this wound when it begins.</summary>
+    public DamageType? Patient { get; set; }
+
+    /// <summary>The healer's: their mana spent when it begins, to be won back.</summary>
+    public bool Spent { get; set; }
 
     /// <summary>Put in the player's pack when it begins: what the work needs that the workplace doesn't keep.</summary>
     public List<ThingCount> Supply { get; set; } = [];

@@ -1572,3 +1572,16 @@ It wasn't clear what to do at first, then it was over too fast. Now:
   (`ThrowSession.Facing`; D turns clockwise as seen on screen). Save format 35. `BucketTests`.
 - The healer's games are noted for a pass of their own (ROADMAP.md).
 
+### Lessons for every trade (2026-11-14)
+- **The rest of the trades' lessons**, on the blacksmith's frame (`Scenarios/Lessons`, words in
+  `trades.json`). Tinker: a strongbox felt over and picked, a curio looked over, a lock pinned,
+  fitted and turned, a crossbow. Innkeeper: an ale poured and handed over, a named drink mixed, a
+  party sent on a quest. Cook: a stew from the larder to the hatch, a roast, bread. Healer: a
+  wound felt, drawn in and woven, a fever, mana won back at the stone.
+- The customer loop (wait, take, collect, the work, give back) is shared (`Lessons.Customer`), as
+  are feeding a fire and "made since the lesson began".
+- Lesson setups: `CustomerKind` adds thirsty customers and a party wanting work; a lesson can bring
+  in a patient or spend the healer's mana. `~K~` names the quests key in text.
+- Fixed: the order panel showed a stray "With you" line on orders with nothing to hand over.
+- `TradeLessonTests`: every lesson begins on a step with words, and each is walked through.
+

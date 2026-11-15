@@ -31,31 +31,17 @@ public static class SmithLessons
     public static LessonStage Repair(Simulation sim, Entity me, LessonRun run)
     {
         var view = Perception.For(sim, me);
-        KnownOrder? focus = null;
-        foreach (var o in view.Orders())
+        return Customer(sim, me, run, view, ServiceKind.Repair, blade =>
         {
-            if (o.Kind != ServiceKind.Repair || o.PostedTick < run.StartTick)
-                continue;
-            if (o.Status == OrderStatus.Done && o.MineToDo)
-                return new LessonStage("giveback", o.Poster, Done: true);
-            if (o.Status == OrderStatus.Open && (focus == null || (o.MineToDo && !focus.Value.MineToDo)))
-                focus = o;
-        }
-        if (focus is not { } order)
-            return new LessonStage("wait", Entity.Null);
-        if (!order.MineToDo)
-            return new LessonStage("take", order.Poster);
-        var blade = EntrustedBy(sim, me, order.Poster);
-        if (blade.IsNull)
-            return new LessonStage("handover", order.Poster);
-        if (Tongs(sim, me, run, view) is { } working)
-            return working;
-        var condition = view.Condition(blade) ?? "";
-        if (LooksChipped(condition))
-            return Cold(sim, me, run, view) ?? new LessonStage("mend", run.Station(sim, "Forge"));
-        if (LooksDull(condition))
-            return new LessonStage("grind", run.Station(sim, "Grindstone"));
-        return new LessonStage("giveback", order.Poster);
+            if (Tongs(sim, me, run, view) is { } working)
+                return working;
+            var condition = view.Condition(blade) ?? "";
+            if (LooksChipped(condition))
+                return Cold(sim, me, run, view) ?? new LessonStage("mend", run.Station(sim, "Forge"));
+            if (LooksDull(condition))
+                return new LessonStage("grind", run.Station(sim, "Grindstone"));
+            return null;
+        });
     }
 
     /// <summary>Something new: chosen at the forge, worked to shape, quenched, and an edge put on it.</summary>
@@ -64,7 +50,7 @@ public static class SmithLessons
         var view = Perception.For(sim, me);
         if (Tongs(sim, me, run, view) is { } working)
             return working;
-        if (Made(sim, me, run) is { IsNull: false } made)
+        if (Made(sim, me, run, d => d.Weapon != null || d.Apparel != null) is { IsNull: false } made)
         {
             var edged = Combat.WeaponWear.Edged(sim.World.Get<Thing>(made).Def);
             return edged && LooksDull(view.Condition(made) ?? "")
@@ -82,7 +68,7 @@ public static class SmithLessons
         {
             if (Tongs(sim, me, run, view) is { } working)
                 return working;
-            if (OnMe(sim, me, "IronBar") > run.CountsAtStart.GetValueOrDefault("IronBar"))
+            if (Gained(sim, me, run, "IronBar"))
                 run.Passed.Add("smelted");
             else
             {
@@ -140,20 +126,5 @@ public static class SmithLessons
         if (forge.IsNull || view.FuelIn(forge) is not <= 0f)
             return null;
         return new LessonStage("fuel", OnMe(sim, me, "Charcoal") > 0 ? forge : run.Station(sim, "FuelBin"));
-    }
-
-    /// <summary>Gear the player made since the lesson began, now in hand or pack.</summary>
-    private static Entity Made(Simulation sim, Entity me, LessonRun run)
-    {
-        var w = sim.World;
-        bool Mine(Entity e) => w.IsAlive(e) && !run.Had.Contains(e) && w.TryGet<Crafted>(e, out var c) && c.Maker == me
-            && !w.Has<Entrusted>(e) && w.Get<Thing>(e).Def is { Weapon: not null } or { Apparel: not null };
-        if (Mine(w.Get<Carrying>(me).Item))
-            return w.Get<Carrying>(me).Item;
-        if (sim.PackOf(me) is { IsNull: false } pack)
-            foreach (var item in sim.StoredIn(pack))
-                if (Mine(item))
-                    return item;
-        return Entity.Null;
     }
 }

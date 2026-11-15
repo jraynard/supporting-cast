@@ -29,7 +29,7 @@ public class SeeToCustomerTests
         sim.ApplyNow(new StartRoundCommand());
         sim.Round.Practice = true; // nobody else rides in
         var me = Players.CharacterOf(sim, Ana);
-        sim.ApplyNow(new PracticeCommand(me, PracticeAction.SendCustomers, (int)CustomerWear.Dull));
+        sim.ApplyNow(new PracticeCommand(me, PracticeAction.SendCustomers, (int)CustomerKind.Dull));
         Order? order = null;
         for (var t = 0; t < 12 * 12 && order == null; t++)
         {

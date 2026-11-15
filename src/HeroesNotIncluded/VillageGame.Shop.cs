@@ -81,7 +81,7 @@ public sealed partial class VillageGame
                     share, color, words, 170f);
                 if (e.MineToDo && e.Kind == Sim.Defs.ServiceKind.Unlock)
                     TextC(Theme.Dim, "From your pack: feel the box over for traps and pick it.");
-                if (e.MineToDo && View.Awaiting().FirstOrDefault(a => a.Order == e.Id) is { Who.IsNull: false } errand)
+                if (e.MineToDo && View.Awaiting().Cast<KnownErrand?>().FirstOrDefault(a => a!.Value.Order == e.Id) is { } errand)
                     DrawErrandButton(errand);
                 if (!e.Mine && e.AssigneeName.Length == 0)
                 {

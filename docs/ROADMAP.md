@@ -39,10 +39,13 @@ rather than read numbers:
 - Then the healer's lessons in the practice yard, on the same frame as the blacksmith's
   (`Scenarios/Lessons`), once the games settle.
 
-### Lessons for the other trades
-The blacksmith's lessons are in (HISTORY.md, "Lessons in the practice yard"). The tinker and the
-innkeeper and cook next, on the same frame; the healer's after its games are refined (above).
-Notice-board errands could get the customer pointer too (`VillageGame.Errands`).
+### Lessons, after a playtest
+Every trade with a workplace has its lessons now (HISTORY.md, "Lessons for every trade"). Left:
+- **Playtest them**, one trade at a time: the words, and whether the step shown is the one you're on.
+- The healer's want rewriting once its games are refined (above).
+- Handing over a drink, a dish or a box from the order (as "Take it back" does for a mend), and the
+  customer pointer for notice-board errands (`VillageGame.Errands`).
+- A wagon lesson for the tinker (practice customers' wagons aren't damaged yet).
 
 ### The festival
 Built (HISTORY.md, "The festival, made an event", and the passes after it). What's left:

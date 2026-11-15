@@ -63,6 +63,24 @@ public sealed class LessonRun
 
     private readonly Dictionary<string, Entity> _stations = [];
 
+    /// <summary>The workplace's station of this kind nearest another (the shelf behind the bar, not the kitchen's).</summary>
+    public Entity Station(Simulation sim, string def, Entity near)
+    {
+        var key = $"{def}@{near.Index}";
+        if (_stations.TryGetValue(key, out var found) && sim.World.IsAlive(found))
+            return found;
+        if (!sim.World.TryGet<Thing>(near, out var by))
+            return Station(sim, def);
+        found = Entity.Null;
+        var best = int.MaxValue;
+        foreach (var e in sim.World.Query<PartOf>())
+            if (sim.World.Get<PartOf>(e).Building == Workplace && sim.World.TryGet<Thing>(e, out var t) && t.Def.Name == def
+                && Maps.Map.Distance(t.Cell, by.Cell) < best)
+                (found, best) = (e, Maps.Map.Distance(t.Cell, by.Cell));
+        _stations[key] = found;
+        return found;
+    }
+
     /// <summary>The workplace's station of this kind, Entity.Null if it has none.</summary>
     public Entity Station(Simulation sim, string def)
     {
@@ -91,7 +109,7 @@ public sealed record Lesson(string Trade, string Id, string[] Steps, Func<Simula
 /// <summary>Every trade's lessons, by trade and id (the words are in trades.json's <c>lessons</c>).</summary>
 public static class Lessons
 {
-    public static readonly Lesson[] All = [.. SmithLessons.All];
+    public static readonly Lesson[] All = [.. SmithLessons.All, .. TinkerLessons.All, .. InnLessons.All, .. KitchenLessons.All, .. HealerLessons.All];
 
     public static Lesson? For(string trade, string id) => Array.Find(All, l => l.Trade == trade && l.Id == id);
 
@@ -139,4 +157,62 @@ public static class Lessons
 
     /// <summary>The kind of work session the player is in, if any.</summary>
     public static WorkSession? Session(Simulation sim, Entity me) => sim.World.TryGet<WorkSession>(me, out var s) ? s : null;
+
+    /// <summary>
+    /// A customer's thing, from their order to their paying for it: "wait" for the order, "take"
+    /// it, "handover" (go to them), then the work on it (<paramref name="work"/>, given the thing:
+    /// null once it's ready to go back), and "giveback". Done when an order of this kind posted since
+    /// the lesson began is done by the player.
+    /// </summary>
+    public static LessonStage Customer(Simulation sim, Entity me, LessonRun run, PerceptionView view, ServiceKind kind, Func<Entity, LessonStage?> work)
+    {
+        KnownOrder? focus = null;
+        foreach (var o in view.Orders())
+        {
+            if (o.Kind != kind || o.PostedTick < run.StartTick)
+                continue;
+            if (o.Status == OrderStatus.Done && o.MineToDo)
+                return new LessonStage("giveback", o.Poster, Done: true);
+            if (o.Status == OrderStatus.Open && (focus == null || (o.MineToDo && !focus.Value.MineToDo)))
+                focus = o;
+        }
+        if (focus is not { } order)
+            return new LessonStage("wait", Entity.Null);
+        if (!order.MineToDo)
+            return new LessonStage("take", order.Poster);
+        var thing = EntrustedBy(sim, me, order.Poster);
+        if (thing.IsNull)
+            return new LessonStage("handover", order.Poster);
+        return work(thing) ?? new LessonStage("giveback", order.Poster);
+    }
+
+    /// <summary>The newest order of a kind posted since the lesson began that the player knows of, open or done; null if none.</summary>
+    public static KnownOrder? OrderSince(PerceptionView view, LessonRun run, ServiceKind kind) =>
+        view.Orders().Where(o => o.Kind == kind && o.PostedTick >= run.StartTick).OrderByDescending(o => o.Status == OrderStatus.Done).ThenBy(o => o.PostedTick)
+            .Cast<KnownOrder?>().FirstOrDefault();
+
+    /// <summary>Something the player has made since the lesson began (by its maker's mark), in hand or pack; Entity.Null if nothing yet.</summary>
+    public static Entity Made(Simulation sim, Entity me, LessonRun run, Func<ThingDef, bool> what)
+    {
+        var w = sim.World;
+        bool Mine(Entity e) => w.IsAlive(e) && !run.Had.Contains(e) && w.TryGet<Crafted>(e, out var c) && c.Maker == me
+            && !w.Has<Entrusted>(e) && what(w.Get<Thing>(e).Def);
+        if (Mine(w.Get<Carrying>(me).Item))
+            return w.Get<Carrying>(me).Item;
+        if (sim.PackOf(me) is { IsNull: false } pack)
+            foreach (var item in sim.StoredIn(pack))
+                if (Mine(item))
+                    return item;
+        return Entity.Null;
+    }
+
+    /// <summary>More of a thing in hand and pack than when the lesson began.</summary>
+    public static bool Gained(Simulation sim, Entity me, LessonRun run, string def) => OnMe(sim, me, def) > run.CountsAtStart.GetValueOrDefault(def);
+
+    /// <summary>
+    /// A fire gone out: <paramref name="fuel"/> from <paramref name="store"/>, then into
+    /// <paramref name="fire"/> (the "fuel" step, pointing at whichever's next).
+    /// </summary>
+    public static LessonStage Feed(Simulation sim, Entity me, Entity fire, string fuel, Entity store) =>
+        new("fuel", OnMe(sim, me, fuel) > 0 ? fire : store);
 }

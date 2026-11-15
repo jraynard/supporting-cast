@@ -71,7 +71,7 @@ public class PracticeTests
     public void DullCustomersWantOnlyTheGrindstoneAndAskForIt()
     {
         var (sim, me) = Yard("Blacksmith");
-        sim.ApplyNow(new PracticeCommand(me, PracticeAction.SendCustomers, (int)CustomerWear.Dull));
+        sim.ApplyNow(new PracticeCommand(me, PracticeAction.SendCustomers, (int)CustomerKind.Dull));
         var dull = Weapons(sim).Where(w => Practice.SmithyMends(sim, me, w)).ToList();
         Assert.NotEmpty(dull);
         Assert.All(dull, w => Assert.True(Combat.WeaponWear.HpFraction(sim, w) >= Combat.WeaponWear.MendedHp && Combat.WeaponWear.Dullness(sim, w) > Combat.WeaponWear.WantsMendDullness));
