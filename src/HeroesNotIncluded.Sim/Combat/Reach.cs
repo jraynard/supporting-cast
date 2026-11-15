@@ -77,12 +77,17 @@ public static class Reach
     /// the sweep of a blow aimed at <paramref name="target"/>: an AI holds its blow while there is
     /// (<see cref="Blows.Begin"/>), rather than cut down its own.
     /// </summary>
-    public static bool FriendInTheWay(Simulation sim, Entity attacker, AttackDef attack, float aim, Entity target)
+    public static bool FriendInTheWay(Simulation sim, Entity attacker, AttackDef attack, float aim, Entity target) =>
+        !FirstFriendInTheWay(sim, attacker, attack, aim, target).IsNull;
+
+    /// <summary>The first of those in <see cref="FriendInTheWay"/>, or Entity.Null: who to step round (<see cref="FreeFight.Steer"/>).</summary>
+    public static Entity FirstFriendInTheWay(Simulation sim, Entity attacker, AttackDef attack, float aim, Entity target)
     {
         var faction = sim.World.Get<Creature>(attacker).Faction;
-        return InSweep(sim, attacker, attack, aim,
+        var friends = InSweep(sim, attacker, attack, aim,
             e => e != target && !Factions.Hostile(faction, sim.World.Get<Creature>(e).Faction) && sim.World.Get<Creature>(e).Able
-                && Harms(sim, attacker, e)).Count > 0;
+                && Harms(sim, attacker, e));
+        return friends.Count > 0 ? friends[0] : Entity.Null;
     }
 
     private static List<Entity> InSweep(Simulation sim, Entity attacker, AttackDef attack, float aim, Func<Entity, bool> counts, int lag = 0)

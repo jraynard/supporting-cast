@@ -8,7 +8,7 @@ namespace HeroesNotIncluded.Sim.Combat;
 /// for the fight (<see cref="Join"/>) and steers each tick (<see cref="Steer"/>). It closes to its
 /// weapon's reach and keeps it, holds a little way off circling while it waits its turn
 /// (<see cref="Engagement"/>), stands clear of anyone else near, and now and then steps back after a
-/// blow. An archer keeps to its bow's best range and backs off from anyone who closes, and leads a
+/// blow, and steps round a friend in its blow's way. An archer keeps to its bow's best range and backs off from anyone who closes, and leads a
 /// moving target. Far off, or with something in the way, it walks the path there instead. When the
 /// fight's over it's put back on its cell and walks the grid again (<see cref="Leave"/>).
 /// </summary>
@@ -16,6 +16,9 @@ public static class FreeFight
 {
     /// <summary>How far off one waiting its turn holds, and how hard it circles meanwhile (share of its speed).</summary>
     public const float HoldDistance = 2.6f, Circle = 0.55f;
+
+    /// <summary>How hard it steps sideways round a friend in its blow's way (share of its speed).</summary>
+    public const float Sidestep = 0.9f;
 
     /// <summary>Beyond this (cells), or with no clear line, it walks the path rather than steering straight.</summary>
     public const float SteerWithin = 3.5f;
@@ -118,11 +121,20 @@ public static class FreeFight
             want = Math.Max(want, HoldDistance);
         var radial = Math.Clamp((dist - want) * 2f, -1f, 1f);
         var wish = toward * radial;
+        // A friend in the blow's way (Blows.Begin holds it): step round them, to the far side from them.
+        var side2 = new float2(-toward.Y, toward.X);
+        if (pressing && Reach.FirstFriendInTheWay(sim, e, attack, aim, target) is { IsNull: false } friend)
+        {
+            var fp = w.Get<Position>(friend).Pos;
+            var rel = new float2(fp.X - me.Pos.X, fp.Y - me.Pos.Y);
+            var friendSide = toward.X * rel.Y - toward.Y * rel.X >= 0 ? 1f : -1f;
+            wish += side2 * (-friendSide * Sidestep);
+        }
         // Waiting its turn (or keeping a bow's distance), it circles: one way or the other by who it is.
-        if (!pressing || attack.Ranged)
+        else if (!pressing || attack.Ranged)
         {
             var side = (e.Index & 1) == 0 ? 1f : -1f;
-            wish += new float2(-toward.Y, toward.X) * (Circle * side * (attack.Ranged ? 0.5f : 1f));
+            wish += side2 * (Circle * side * (attack.Ranged ? 0.5f : 1f));
         }
         // Room: away from anyone else close by.
         foreach (var other in sim.Creatures())

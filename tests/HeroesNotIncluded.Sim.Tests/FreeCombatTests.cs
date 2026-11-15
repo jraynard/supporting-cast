@@ -845,5 +845,23 @@ public class FreeCombatTests
         var back = sim.World.Get<Guard>(me).Stamina - after;
         Assert.True(back > 0.05f && back < 0.25f, $"a second's breath brought back {back}");
     }
-}
 
+    [Fact]
+    public void AFriendInTheWayIsSteppedRoundNotWaitedBehind()
+    {
+        var (sim, me) = Ring();
+        // Mott between: the second raider, coming for you, has him in the line of its blow.
+        var mott = Foe(sim, new float2(15.3f, 16.5f));
+        var cell = sim.World.Get<Position>(me).Cell;
+        var brute = Raids.SpawnRaider(sim, sim.Defs.AllRaiderKinds.First(k => k.Name == "Swordsman"), "Grimsby", cell with { X = 13 }, sim.Rand);
+        Place(sim, brute, new float2(14.2f, 16.5f));
+        var wide = 0f;
+        for (var t = 0; t < SimClock.TicksPerSecond * 3; t++)
+        {
+            sim.Tick();
+            wide = Math.Max(wide, MathF.Abs(Where(sim, brute).Y - 16.5f));
+        }
+        Assert.True(wide > 0.5f, $"stepped only {wide:F2} off the line");
+        Assert.Empty(sim.World.Get<Components.Health>(mott).Injuries);
+    }
+}
