@@ -140,34 +140,11 @@ public sealed partial class VillageGame
     private float2 DrawSlotArt(Entity item, string corner, bool dim = false)
     {
         var w = _sim.World;
-        var dl = ImGui.GetWindowDrawList();
-        var min = ImGui.GetCursorScreenPos();
-        var icon = Gui.S(IconSize);
-        var pad = Gui.S(5);
-        var box = new float2(icon + 2 * pad, icon + 2 * pad);
-        var max = min + box;
-        dl.AddRectFilled(in min, in max, Theme.U8(new float4(0, 0, 0, 0.35f)), Gui.S(4), ImDrawFlags.None);
-        dl.AddRect(in min, in max, Theme.U8(Theme.Dim), Gui.S(4), ImDrawFlags.None, 1f);
-        var alive = !item.IsNull && w.IsAlive(item);
-        if (alive)
-        {
-            var (sprite, tint) = _renderer.ArtOf(w.Get<Thing>(item));
-            DrawSprite(dl, sprite, min + new float2(pad, pad), new float2(icon, icon), Color8(tint));
-            if (w.TryGet<Stack>(item, out var stack) && stack.Count > 1)
-            {
-                var text = stack.Count.ToString();
-                var size = ImGui.CalcTextSize(text, false, -1f);
-                var at = max - new float2(Gui.S(4) + size.X, size.Y + Gui.S(2));
-                var shadow = at + new float2(1, 1);
-                dl.AddText(in shadow, new ImColor8(0, 0, 0, 220), text);
-                dl.AddText(in at, Theme.U8(Theme.Text), text);
-            }
-        }
-        var c = min + new float2(Gui.S(3), Gui.S(1));
-        dl.AddText(in c, Theme.U8(Theme.Dim), corner.Length <= 2 ? corner : "");
-        if (dim)
-            dl.AddRectFilled(in min, in max, Theme.U8(new float4(0, 0, 0, 0.55f)), Gui.S(4), ImDrawFlags.None);
-        return box;
+        if (item.IsNull || !w.IsAlive(item))
+            return DrawTile(null, Gui.White, "", Theme.Text, corner, dim);
+        var (sprite, tint) = _renderer.ArtOf(w.Get<Thing>(item));
+        var count = w.TryGet<Stack>(item, out var stack) && stack.Count > 1 ? stack.Count.ToString() : "";
+        return DrawTile(sprite, Color8(tint), count, Theme.Text, corner, dim);
     }
 
     /// <summary>

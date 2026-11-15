@@ -44,69 +44,88 @@ public sealed partial class VillageGame
             return;
         BeginJournal("Shop###orders", ref _showShop, side: Anchor.TopLeft);
         DrawSign();
-        ImGui.Checkbox("Show closed"u8, ref _showClosedOrders);
-        Gui.Rule();
-
         var now = _sim.Clock.Tick;
         var any = false;
+        var closed = 0;
         foreach (var e in View.Orders().OrderBy(e => e.Status != OrderStatus.Open).ThenBy(e => e.Deadline))
         {
             var open = e.Status == OrderStatus.Open;
+            if (!open)
+                closed++;
             if (!open && !_showClosedOrders)
                 continue;
             any = true;
             ImGui.PushID(e.Id);
-            var who = e.Mine ? "You" : e.PosterName;
-            // A card: the kind's icon, who wants what for how much, their words, and the time left as a bar.
-            var dl = ImGui.GetWindowDrawList();
-            var icon = ImGui.GetTextLineHeight() * 1.6f;
-            var at = ImGui.GetCursorScreenPos();
-            if (Gui.TrySprite(ServiceIcon(e.Kind), out var sprite))
-                Gui.Sprite(dl, sprite, at, new float2(icon, icon), open ? Gui.White : Gui.U8(Theme.Dim));
-            ImGui.Dummy(new float2(icon, icon));
-            ImGui.SameLine(0, Gui.S(8));
-            ImGui.BeginGroup();
-            TextC(open ? (e.Mine ? Theme.Good : Theme.Text) : Theme.Dim, $"{who} want{(e.Mine ? "" : "s")} {e.KindLabel}");
-            TextC(open ? Theme.Warn : Theme.Dim, $"{e.Price} silver");
-            if (open && e.Kind == Sim.Defs.ServiceKind.MixedDrink && View.WantedDrink(e.Id) is { } named)
-                TextC(Theme.Accent, $"Asked for a {named.Label}");
-            ImGui.EndGroup();
-            ImGui.PushTextWrapPos(0f);
-            TextC(Theme.Dim, $"\u201C{e.Text}\u201D");
-            ImGui.PopTextWrapPos();
-            if (open)
-            {
-                var (share, color, words) = TimeLeft(e.PostedTick, e.Deadline, now);
-                Gui.Bar(e.AssigneeName.Length > 0 ? (e.MineToDo ? "You're on it" : $"{e.AssigneeName} is on it") : "Nobody's taken it",
-                    share, color, words, 170f);
-                if (e.MineToDo && e.Kind == Sim.Defs.ServiceKind.Unlock)
-                    WrappedC(Theme.Dim, "From your pack: feel the box over for traps and pick it.");
-                if (e.MineToDo && View.Awaiting().Cast<KnownErrand?>().FirstOrDefault(a => a!.Value.Order == e.Id) is { } errand)
-                    DrawErrandButton(errand);
-                if (!e.Mine && e.AssigneeName.Length == 0)
-                {
-                    if (ImGui.Button("I'll do it"u8, in _autoSize))
-                        Issue(new TakeOrderCommand(_avatar, e.Id));
-                    if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                        Tip("Say aloud that you'll see to it. They pay whoever gets it done.");
-                }
-            }
-            else
-                TextC(Theme.Dim, e.Status switch
-                {
-                    OrderStatus.Done => e.AssigneeName.Length > 0 ? $"Done by {e.AssigneeName}." : "Done.",
-                    OrderStatus.Expired => "They gave up waiting.",
-                    _ => "Called off.",
-                });
-            Gui.Rule();
+            DrawOrderCard(e, open, now);
             ImGui.PopID();
         }
         if (!any)
-            TextC(Theme.Dim, "You haven't heard anyone ask for anything.");
+            TextC(Theme.Dim, closed > 0 ? "Nobody's waiting on anything." : "You haven't heard anyone ask for anything.");
+        ClosedToggle(closed, "orders");
 
         DrawWaysAsked();
         DrawFavours();
         Panel.End();
+    }
+
+    /// <summary>
+    /// One order as a card: who wants what and for how much on one line, the time left (and who's
+    /// on it) as a bar under it with the button that's yours to press. Their words, the drink they
+    /// named and any hint sit in the tooltip on the first line. A closed one is a single dim line.
+    /// </summary>
+    private void DrawOrderCard(KnownOrder e, bool open, long now)
+    {
+        var who = e.Mine ? "You" : e.PosterName;
+        var title = $"{who} want{(e.Mine ? "" : "s")} {e.KindLabel}";
+        var tip = $"\u201C{e.Text}\u201D";
+        if (open && e.Kind == Sim.Defs.ServiceKind.MixedDrink && View.WantedDrink(e.Id) is { } named)
+        {
+            title += $": {named.Label}";
+            tip += $"\nAsked for a {named.Label}.";
+        }
+        if (open && e.MineToDo && e.Kind == Sim.Defs.ServiceKind.Unlock)
+            tip += "\nFrom your pack: feel the box over for traps and pick it.";
+        if (!open)
+            tip += "\n" + e.Status switch
+            {
+                OrderStatus.Done => e.AssigneeName.Length > 0 ? $"Done by {e.AssigneeName}." : "Done.",
+                OrderStatus.Expired => "They gave up waiting.",
+                _ => "Called off.",
+            };
+        CardHead(ServiceIcon(e.Kind), open, open ? (e.Mine ? Theme.Good : Theme.Text) : Theme.Dim, title, e.Price, tip);
+        if (open)
+        {
+            var (share, color, words) = TimeLeft(e.PostedTick, e.Deadline, now);
+            var take = !e.Mine && e.AssigneeName.Length == 0;
+            CardBar(e.AssigneeName.Length > 0 ? (e.MineToDo ? "You're on it" : $"{e.AssigneeName} is on it") : "Nobody's taken it",
+                share, color, words, take ? SmallButtonWidth("I'll do it") : 0f);
+            if (take)
+            {
+                ImGui.SameLine(0, Gui.S(8));
+                if (ImGui.SmallButton("I'll do it"u8))
+                    Issue(new TakeOrderCommand(_avatar, e.Id));
+                if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                    Tip("Say aloud that you'll see to it. They pay whoever gets it done.");
+            }
+            if (e.MineToDo && View.Awaiting().Cast<KnownErrand?>().FirstOrDefault(a => a!.Value.Order == e.Id) is { } errand)
+                DrawErrandButton(errand);
+        }
+        CardEnd();
+    }
+
+    /// <summary>
+    /// Under the orders (and the favours), how many are over with, and a link to show or hide them:
+    /// nothing at all while none are.
+    /// </summary>
+    private void ClosedToggle(int closed, string what)
+    {
+        if (closed == 0)
+            return;
+        ImGui.PushStyleColor(ImGuiCol.Text, in Theme.Dim);
+        var label = _showClosedOrders ? $"Hide the {closed} done with##closed-{what}" : $"{closed} done with: show##closed-{what}";
+        if (ImGui.Selectable(label, false, ImGuiSelectableFlags.None, default))
+            _showClosedOrders = !_showClosedOrders;
+        ImGui.PopStyleColor(1);
     }
 
     /// <summary>Strangers who've asked the way within your hearing: point them to it, and they'll thank you for it.</summary>
@@ -135,12 +154,10 @@ public sealed partial class VillageGame
         var name = ShopName.Of(_sim, shop);
         if (_shopNameInput == null || !mayRename)
         {
-            ImGui.AlignTextToFramePadding();
-            TextC(Theme.Text, name != null ? $"Your sign at {name}" : $"Your sign at the {workplace.Label}");
+            // The name's on the header above: here only the brush to paint a new one.
             if (!mayRename)
                 return;
-            ImGui.SameLine(0, 8);
-            if (ImGui.SmallButton("Rename"u8))
+            if (ImGui.SmallButton("Rename the shop"u8))
             {
                 _shopNameInput = new ImInputString(ShopName.MaxLength + 8, ""u8);
                 _shopNameInput.SetValue((name ?? "").AsSpan());
@@ -173,6 +190,17 @@ public sealed partial class VillageGame
         // Only your trade's lines: the cook prices the meals, the innkeeper the rest.
         var sign = shop.IsNull ? [] : View.Prices(shop).Where(p => trade.Def.Serving(p.Kind)).ToList();
         if (sign.Count == 0)
+            return;
+        // Folded away once set: prices are set now and then, orders watched all day. The smith's
+        // lesson on prices opens it.
+        if (_lessonStage.Step == "prices")
+            ImGui.SetNextItemOpen(true, ImGuiCond.Always);
+        var name = ShopName.Of(_sim, shop) ?? $"the {workplace.Label}";
+        var onOffer = sign.Count(p => p.Offered);
+        var open = ImGui.CollapsingHeader($"Your sign at {name}###sign", ImGuiTreeNodeFlags.None);
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+            Tip($"{onOffer} of {sign.Count} on offer. What you charge: adventurers who think it's too dear go without.");
+        if (!open)
             return;
         DrawShopName(shop, workplace, trade.Def.NamesShop);
         if (trade.Def.Serves.Contains(Sim.Defs.ServiceKind.Meal)) // named, not "serves anything": the cook's, not the tinker's
@@ -211,10 +239,15 @@ public sealed partial class VillageGame
                 ImGui.PopID();
             }
         }
-        TextC(Theme.Dim, "Adventurers who think it's too dear go without.");
         foreach (var p in sign)
         {
             ImGui.PushID((int)p.Kind);
+            // The service's icon, as over a customer's head when they ask for it.
+            var line = ImGui.GetFrameHeight();
+            if (Gui.TrySprite(ServiceIcon(p.Kind), out var mark))
+                DrawSprite(ImGui.GetWindowDrawList(), mark, ImGui.GetCursorScreenPos(), new float2(line, line), p.Offered ? Gui.White : Theme.U8(Theme.Dim));
+            ImGui.Dummy(new float2(line, line));
+            ImGui.SameLine(0, Gui.S(4));
             var offered = p.Offered;
             if (ImGui.Checkbox("##offered"u8, ref offered))
                 Issue(new SetPriceCommand(_avatar, shop, p.Kind, p.Price, offered));

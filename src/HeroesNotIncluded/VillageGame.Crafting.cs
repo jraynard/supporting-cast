@@ -163,11 +163,8 @@ public sealed partial class VillageGame
         }
         var by = !bench.By.IsNull && _sim.World.IsAlive(bench.By) ? $" by {_sim.World.Get<Creature>(bench.By).Name}" : "";
         ImGui.Text($"Making {r.Label}{by}");
-        for (var i = 0; i < r.Ingredients.Count; i++)
-        {
-            var x = r.Ingredients[i];
-            TextC(bench.Staged[i] >= x.Count ? Good : Warn, $"  {x.ThingDef.Label}: {bench.Staged[i]}/{x.Count}");
-        }
+        var staged = bench.Staged;
+        IngredientTiles($"staged-{e.Index}", r.Ingredients, x => r.Ingredients.IndexOf(x) is var k && k >= 0 && k < staged.Length ? staged[k] : 0);
         Bar("Work", bench.Progress / r.Work, Good);
         if (r.MinTemp > 0)
         {
@@ -214,16 +211,21 @@ public sealed partial class VillageGame
         float2? pivot = new float2(0f, 0.5f);
         ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in pivot);
         var open = true;
-        ScreenFit.Next();
+        // A fixed width, so the picker's tiles wrap rather than the window stretching to its words.
+        var size = new float2(ScreenFit.Width(380, 0.45f), 0f);
+        var most = new float2(size.X, ImGui.GetIO().DisplaySize.Y * 0.8f);
+        ImGui.SetNextWindowSizeConstraints(in size, in most, (ImGuiSizeCallback?)null, default);
         Narsil.Ui.Panel.Begin($"{Cap(thing.Label)}###station", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
         PadWindow("###station", () => _openStation = Entity.Null);
-        DrawCraftUnderWay(_openStation, bench);
-        if (bench.Active != null && bench.Stocked)
-            TextC(Good, Controls.Keys("Everything's here: hold ~F~ at it to work."));
-        ImGui.Separator();
+        if (bench.Active != null)
+        {
+            DrawCraftUnderWay(_openStation, bench);
+            if (bench.Stocked)
+                TextC(Good, Controls.Keys("Everything's here: hold ~F~ at it to work."));
+            ImGui.Separator();
+        }
         var busy = !bench.Untouched && (bench.By != _avatar || bench.Active == null);
-        foreach (var r in thing.Def.Recipes)
-            DrawRecipeRow(r, bench, busy, thing.Def);
+        DrawRecipePicker(thing.Def.Recipes, bench, busy, thing.Def, HaveToHand());
         DrawRepairs(thing.Def);
         Narsil.Ui.Panel.End();
         if (!open)
@@ -243,38 +245,54 @@ public sealed partial class VillageGame
         return x => have.Where(kv => kv.Key.Item1 == x.ThingDef && (x.MaterialDef == null || kv.Key.Item2 == x.MaterialDef)).Sum(kv => kv.Value);
     }
 
-    /// <summary>One recipe as a row: Make / Bring more, its name, and what you have toward it.</summary>
-    private void DrawRecipeRow(RecipeDef r, Workbench bench, bool busy, ThingDef station, Func<ThingCount, int>? has = null)
+    /// <summary>The recipe picked in a station's picker (kept while it's among the station's recipes).</summary>
+    private RecipeDef? _recipePick;
+
+    /// <summary>
+    /// A station's recipes as tiles, each its product's picture (dimmed while you're short of what
+    /// it takes, a "?" while you don't know it), and under them the one picked: what it takes as
+    /// have/need tiles, and Make (or Bring more, once begun).
+    /// </summary>
+    private void DrawRecipePicker(IReadOnlyList<RecipeDef> recipes, Workbench bench, bool busy, ThingDef station, Func<ThingCount, int> has)
     {
-        has ??= HaveToHand();
-        ImGui.PushID(r.Name);
-        if (!RecipeBooks.Knows(_sim, _avatar, r))
-        {
-            TextC(Dim, $"??? ({UnlockHint(r)})");
-            ImGui.PopID();
+        if (recipes.Count == 0)
             return;
+        bool Knows(RecipeDef r) => RecipeBooks.Knows(_sim, _avatar, r);
+        bool Ready(RecipeDef r) => Knows(r) && RecipeBlocker(_avatar, _openStation, r) == null && r.Ingredients.TrueForAll(x => has(x) >= x.Count);
+        if (_recipePick == null || !recipes.Contains(_recipePick))
+            _recipePick = bench.Active is { } active && recipes.Contains(active) ? active
+                : recipes.FirstOrDefault(Ready) ?? recipes.FirstOrDefault(Knows);
+        var across = TilesAcross();
+        for (var i = 0; i < recipes.Count; i++)
+        {
+            var r = recipes[i];
+            TileFlow(i, across);
+            var known = Knows(r);
+            var product = known && r.Products.Count > 0 ? r.Products[0].ThingDef : null;
+            var tip = known ? $"{Cap(r.Label)}: {string.Join(", ", r.Ingredients.Select(x => $"{x.Count} {x.ThingDef.Label}"))}" : $"??? ({UnlockHint(r)})";
+            if (DefTile($"recipe-{r.Name}", product, tip, selected: r == _recipePick, dim: known && !Ready(r), enabled: known))
+                _recipePick = r;
         }
-        var blocker = RecipeBlocker(_avatar, _openStation, r);
-        var mine = bench.Active == r && (bench.By == _avatar || bench.By.IsNull);
+        if (_recipePick is not { } pick || !Knows(pick))
+            return;
+        ImGui.Spacing();
+        var blocker = RecipeBlocker(_avatar, _openStation, pick);
+        var mine = bench.Active == pick && (bench.By == _avatar || bench.By.IsNull);
         var enabled = blocker == null && (!busy || mine);
+        ImGui.Text(Cap(pick.Label));
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+            Tip($"Makes {Products(pick)}. About {pick.Work / SimClock.TicksPerHour:0.#} h of {pick.Skill} work.");
+        IngredientTiles($"pick-{pick.Name}", pick.Ingredients, x => mine && bench.Stocked ? x.Count : has(x));
         if (!enabled)
             ImGui.BeginDisabled(true);
         if (ImGui.Button(mine ? "Bring more" : "Make", in _autoSize))
-            Issue(new CraftCommand(_avatar, _openStation, r));
+            Issue(new CraftCommand(_avatar, _openStation, pick));
         if (!enabled)
             ImGui.EndDisabled();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             Tip(blocker != null ? $"You can't yet: {blocker}."
                 : busy && !mine ? $"The {station.Label} is busy with {bench.Active!.Label}; call that off first."
                 : "Brings what you have of it from your hands, pack and any chest or wagon in reach; once it's all here, hold " + Controls.Glyph(Act.Use) + " to work.");
-        ImGui.SameLine(0, 8);
-        ImGui.Text($"{Cap(r.Label)}");
-        ImGui.SameLine(0, 6);
-        var parts = r.Ingredients.Select(x => $"{Math.Min(has(x), x.Count)}/{x.Count} {x.ThingDef.Label}");
-        TextC(r.Ingredients.TrueForAll(x => has(x) >= x.Count) ? Good : Dim, $"({string.Join(", ", parts)})");
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-            Tip($"Makes {Products(r)}. About {r.Work / SimClock.TicksPerHour:0.#} h of {r.Skill} work.");
-        ImGui.PopID();
     }
 
     // The forge window's picks: a metal, then a shape in it.
@@ -399,10 +417,7 @@ public sealed partial class VillageGame
             var busy = !bench.Untouched && (bench.By != _avatar || bench.Active == null) && !mine;
             var stocked = pick.Ingredients.TrueForAll(x => has(x) >= x.Count) || (mine && bench.Stocked);
             ImGui.Text(Cap(pick.Label));
-            foreach (var x in pick.Ingredients)
-            {
-                TextC(has(x) >= x.Count || (mine && bench.Stocked) ? Good : Bad, $"{Math.Min(has(x), x.Count)}/{x.Count} {x.ThingDef.Label}");
-            }
+            IngredientTiles($"shape-{pick.Name}", pick.Ingredients, x => mine && bench.Stocked ? x.Count : has(x));
             Wrapped($"Work it {Sim.Work.Smithing.WorkingColours(pick)}; about {Sim.Work.Smithing.BlowsFor(pick)} good blows"
                 + (Sim.Work.Smithing.NeedsQuench(pick) ? ", then the quench." : "."));
             var enabled = blocker == null && !busy;
@@ -427,8 +442,7 @@ public sealed partial class VillageGame
             if (ImGui.CollapsingHeader("Smelting"u8, ImGuiTreeNodeFlags.None))
             {
                 var busyOther = !bench.Untouched && (bench.By != _avatar || bench.Active == null);
-                foreach (var r in other)
-                    DrawRecipeRow(r, bench, busyOther, thing.Def, has);
+                DrawRecipePicker(other, bench, busyOther, thing.Def, has);
             }
         }
         DrawRepairs(thing.Def, folded: true);
@@ -446,10 +460,11 @@ public sealed partial class VillageGame
         var busy = !bench.Untouched && (bench.By != _avatar || bench.Active == null) && !mine;
         var stocked = r.Ingredients.TrueForAll(x => has(x) >= x.Count) || (mine && bench.Stocked);
         TextC(Dim, "Smelt");
+        ImGui.SameLine(0, Gui.S(6));
         ImGui.Text($"{Cap(r.Label)} from {ore.ThingDef.Label}");
-        foreach (var x in r.Ingredients)
-            TextC(has(x) >= x.Count || (mine && bench.Stocked) ? Good : Bad, $"{Math.Min(has(x), x.Count)}/{x.Count} {x.ThingDef.Label}  ({has(x)} to hand)");
-        Wrapped("Keep the fire orange while the bloom comes together, then beat the slag out on the anvil. A good bloom gives a bar more; too hot and the iron runs to slag.");
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+            Tip("Keep the fire orange while the bloom comes together, then beat the slag out on the anvil. A good bloom gives a bar more; too hot and the iron runs to slag.");
+        IngredientTiles($"bloom-{r.Name}", r.Ingredients, x => mine && bench.Stocked ? x.Count : has(x));
         var enabled = blocker == null && !busy;
         if (!enabled)
             ImGui.BeginDisabled(true);
@@ -567,19 +582,28 @@ public sealed partial class VillageGame
                         Tip(skill ? "Made where you stand from what you carry; walking off stops it." : $"Needs {r.Skill} {r.MinSkill}.");
                     ImGui.SameLine(0, 6);
                 }
+                // One line a recipe: what it makes (its picture and name) and from what; what it
+                // needs and what speeds it in the tooltip.
+                var line = ImGui.GetTextLineHeight();
+                if (DefSprite(r.Products.Count > 0 ? r.Products[0].ThingDef : null) is { } art)
+                    DrawSprite(ImGui.GetWindowDrawList(), art, ImGui.GetCursorScreenPos(), new float2(line, line));
+                ImGui.Dummy(new float2(line, line));
+                ImGui.SameLine(0, 6);
+                ImGui.BeginGroup();
                 ImGui.Text($"{Cap(r.Label)}");
                 ImGui.SameLine(0, 6);
                 TextC(Dim, $"{Ingredients(r)} → {Products(r)}");
+                ImGui.EndGroup();
                 var needs = new List<string>();
                 if (r.MinSkill > 0)
                     needs.Add($"{r.Skill} {r.MinSkill}");
                 if (r.MinTemp > 0)
                     needs.Add($"{r.MinTemp:F0}°C");
                 needs.AddRange(r.Tools.Select(t => $"a {t.ToLowerInvariant()}"));
-                if (needs.Count > 0 || r.HelpedBy.Count > 0)
+                if ((needs.Count > 0 || r.HelpedBy.Count > 0) && ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                 {
                     var faster = r.HelpedBy.Count > 0 ? $"{(needs.Count > 0 ? "; " : "")}quicker with a {string.Join(" or ", r.HelpedBy.Select(t => t.ToLowerInvariant()))}" : "";
-                    TextC(Dim, $"      {(needs.Count > 0 ? "needs " + string.Join(", ", needs) : "")}{faster}");
+                    Tip(Cap($"{(needs.Count > 0 ? "needs " + string.Join(", ", needs) : "")}{faster}."));
                 }
                 ImGui.PopID();
             }

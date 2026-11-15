@@ -3,6 +3,7 @@ using Narsil.Sim.Core;
 using Narsil.Ui;
 using HeroesNotIncluded.Sim;
 using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Ecs;
 using HeroesNotIncluded.Sim.Systems;
 using HeroesNotIncluded.Sim.Work;
@@ -538,17 +539,20 @@ public sealed partial class VillageGame
         var chop = Rations.Choppable(_sim, _avatar);
         var flour = !Baking.FlourIn(_sim, _avatar).IsNull;
         var portions = Rations.PortionsOn(_sim, _avatar);
-        PrepButton(table, PrepStep.Chop, chop.IsNull ? "Chop" : $"Chop the {_sim.World.Get<Thing>(chop).Def.Label}", !chop.IsNull,
+        // What each step makes, as a tile: lit when you've what it takes, its name and needs in the tooltip.
+        var things = _sim.Defs;
+        PrepButton(table, PrepStep.Chop, chop.IsNull ? things.Thing("ChoppedMeat") : _sim.World.Get<Thing>(chop).Def,
+            chop.IsNull ? "Chop" : $"Chop the {_sim.World.Get<Thing>(chop).Def.Label}", !chop.IsNull,
             "Raw meat, fish or cabbage, cut on the knife's beat. Chopped food cooks quicker.");
-        ImGui.SameLine(0, 6);
-        PrepButton(table, PrepStep.Knead, "Knead dough", flour, $"{Baking.FlourPerDough} flour, pushed from either side on the beat. Then let it rise and bake it.");
-        ImGui.SameLine(0, 6);
-        PrepButton(table, PrepStep.Pack, "Pack rations", portions >= Rations.Portions, $"{Rations.Portions} portions of any food, wrapped and tied: sold to parties for the road.");
-        ImGui.SameLine(0, 6);
+        ImGui.SameLine(0, Gui.S(TileGap));
+        PrepButton(table, PrepStep.Knead, things.Thing("Dough"), "Knead dough", flour, $"{Baking.FlourPerDough} flour, pushed from either side on the beat. Then let it rise and bake it.");
+        ImGui.SameLine(0, Gui.S(TileGap));
+        PrepButton(table, PrepStep.Pack, things.Thing("Rations"), "Pack rations", portions >= Rations.Portions, $"{Rations.Portions} portions of any food, wrapped and tied: sold to parties for the road.");
+        ImGui.SameLine(0, Gui.S(TileGap));
         var pie = Pies.CanMake(_sim, _avatar);
-        PrepButton(table, PrepStep.Pie, "Make a pie", pie, $"A ball of dough and {Pies.Filling} portions of raw food, the rim crimped round. Then the oven.");
-        ImGui.SameLine(0, 6);
-        PrepButton(table, PrepStep.Salt, "Salt it", Larder.CanSalt(_sim, _avatar), $"Raw meat or fish rubbed with salt, a scoop to {Larder.PerScoop}: keeps for weeks, and seasons a pot by itself.");
+        PrepButton(table, PrepStep.Pie, things.Thing("RawPie"), "Make a pie", pie, $"A ball of dough and {Pies.Filling} portions of raw food, the rim crimped round. Then the oven.");
+        ImGui.SameLine(0, Gui.S(TileGap));
+        PrepButton(table, PrepStep.Salt, things.Thing("SaltMeat"), "Salt it", Larder.CanSalt(_sim, _avatar), $"Raw meat or fish rubbed with salt, a scoop to {Larder.PerScoop}: keeps for weeks, and seasons a pot by itself.");
         if (chop.IsNull && !flour && portions < Rations.Portions && !pie)
             TextC(Theme.Dim, "Bring raw food, flour or a few portions of food from the larder.");
         Panel.End();
@@ -742,14 +746,10 @@ public sealed partial class VillageGame
         EndWork();
     }
 
-    private void PrepButton(Entity table, PrepStep step, string label, bool ready, string tip)
+    private void PrepButton(Entity table, PrepStep step, ThingDef makes, string label, bool ready, string tip)
     {
-        ImGui.BeginDisabled(!ready);
-        if (ImGui.SmallButton(label))
+        if (DefTile($"prep-{step}", makes, $"{label}{(ready ? "" : " (not with what you have)")}\n{tip}", dim: !ready, enabled: ready, iconSize: 32))
             Issue(new PrepCommand(_avatar, table, step));
-        ImGui.EndDisabled();
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            Tip(tip);
     }
 
     /// <summary>Chopping on the knife's beat: the knife rising and falling over the food, cutting its way along it, and what the last cut did.</summary>
