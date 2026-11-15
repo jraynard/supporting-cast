@@ -1828,3 +1828,25 @@ player vanished on day two and it ended on day three.
   without a trace.
 - **The dragon,** met by two or three players with buckets, went down easily enough and felt good.
   Left as it is.
+
+### Inn rooms: keys, the book and turning a room round (2026-11-15)
+- **Keys** (`Hospitality/InnRooms`): the six rooms upstairs are locked, their keys on a board behind
+  the bar and spares in a key box in the storeroom. A room is let by handing its key over
+  (`ShopSystem.TakeKey`); the guest goes to whatever room the key opens. Given a taken room's key
+  they walk in on its guest (`WalkInJob`): both lose satisfaction, and the next key's free.
+  Leaving, a guest hands the key in on the counter, leaves it in the room, or walks off with it.
+  The AI keeper takes the right key down, hangs loose keys back up, and fetches a locked room's key
+  to work in it. Room keys aren't the hauler's (`IsAvailable`). Lock seeds come from a hash of the
+  door and the round's seed, so fitting them leaves `sim.Rand` where it was.
+- **The book** (`Hospitality/Ledger`): kept on the key board and read through
+  `PerceptionView.RoomBoard`. A guest won't take a key till they're written in (`SignInSession`).
+  The F window at the board lists the rooms, their keys and the book, with Write in and Strike out.
+- **Turnover** (`Hospitality/RoomChores`): a guest's going leaves the bed unmade (clean linen to
+  make it, the soiled sheets washed at the tub), the chamber pot full (`SlopSession` into an empty
+  bucket, off the beat spills; tipped at the new midden behind the inn) and the jug empty (filled
+  from a bucket of water). Ready rooms are let first. Left-behind things (`LeftBy`, `Tucked` in
+  the sheets till it's stripped) are handed back for satisfaction or boxed as lost property.
+- **The bot keeper** signs guests in, takes the key down and hands it over, and unlocks doors it
+  has the key to (`Locksmithing.KeyedDoor(..., player: true)`).
+- Bench hashes move: a behaviour change.
+

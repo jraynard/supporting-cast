@@ -15,7 +15,9 @@
       "tips": [ "Thirsty adventurers come to the bar. The bubble over a head says what they're after; a ! means it's yours to pour.",
                 "Hold ~F~ at the ale cask to pour. ~AD~ tilts the tankard: less foam, more patience.",
                 "Your prices hang on the sign (~J~). Too dear and they go thirsty. Too cheap and so do you.",
-                "Lucky Lou's under the bar. You'll know when. ~F~ at the counter." ],
+                "Lucky Lou's under the bar. You'll know when. ~F~ at the counter.",
+                "A room: ~F~ at the key board behind the bar, write the guest into the book, take that room's key down and hand it over. The wrong key sends them in on someone.",
+                "When a guest's gone, their room wants turning round: clean linen from the storeroom on the bed, the pot into a bucket and out to the midden, water in the jug." ],
       "lessons": [
         { "id": "ale", "title": "Pour an ale", "customers": "Thirsty",
           "blurb": "Serve a customer an ale and get paid.",

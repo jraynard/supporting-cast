@@ -166,8 +166,19 @@ do it.
   - **Casks and kegs:** a cask runs dry. Tap a new keg from the store by knocking the tap in on
     cue; a miss sprays foam and wastes servings.
 - *Rooms.* Let by the night: the guest pays each evening, keeps the same room while they're in
-  town, and checks out when they move on or let a night go unpaid. A slept-in bed is stripped
-  and remade before it can be let again, and a guest shown to an unmade one says so.
+  town, and checks out when they move on or let a night go unpaid (`Hospitality/InnRooms`).
+  - **Keys and the book:** each room's door is locked; its key hangs on the board behind the bar,
+    with a spare in the storeroom. The keeper writes the guest into the book on the board (a
+    stroke on each beat), takes a room's key down and hands it over: whatever key they're given is
+    the room they go to. The book holds what was written, not who's where. The wrong key sends the
+    guest in on whoever has the room; both are put out, and they come back down for another.
+  - **Checking out:** the key's left on the counter, or in the room, or now and then walks off with
+    them, and the spare goes up on the board (or to the tinker to be copied).
+  - **Turning a room round** (`Hospitality/RoomChores`): the bed stripped and made with clean linen
+    (the sheets washed at the tub with the crockery), the chamber pot emptied into a bucket and
+    tipped at the midden behind the inn, the jug filled from a bucket of water. A guest given a
+    room that isn't ready says so. Now and then they leave something, on the floor or in the
+    sheets: handed back, they're pleased; the AI keeper boxes it as lost property.
 - *Mess.* Spilled ale, mud off the road, crumbs and blood are things on the floor
   (`Hospitality/MessSystem`), and anyone can see them; dirty dishes lie where they were left.
   Customers think less of a dirty room. Scrub it up, faster with the mop in the keeper's kit.
@@ -198,8 +209,7 @@ do it.
   - **Money:** a tab for parties good for it, and tips for quick, fine service.
   - **Bar fights:** drunk adventurers start brawls that break furniture (work for the
     Carpenter, when it's back). The keeper throws them out, or calls the Constable.
-  - **Rooms:** keys (the Tinker fits locks to the room doors; built), and a chest per room for a
-    guest's things while they're out.
+  - **Rooms:** a chest per room for a guest's things while they're out.
   - **A notice board:** at the inn, for shop signs, favours and quests posted where anyone can
     read them.
   - **Supplies:** bought from the Forager, the Miner's hunting trips and the farms by favour,

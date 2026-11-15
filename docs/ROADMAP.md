@@ -53,6 +53,9 @@ haven't been played since:
   the oven and the forge kept burning out.
 - [ ] **Truing a wheel** (new controls), **tinker games finishing in co-op**, and **a second party
   sent on a quest**.
+- [ ] **Inn rooms:** keys, the book and turning rooms round are new (HISTORY.md, "Inn rooms").
+  Is letting a room busy in a good way next to the bar's line? Watch for rooms stuck unready, keys
+  lost for good, and guests walking in on each other more than a careless keeper earns.
 - [ ] **Flicker** at wall corners and on furniture, and the upper floors when walking past the inn.
 - [ ] **Net notices:** if someone drops, it now shows up in `net.log`.
 
