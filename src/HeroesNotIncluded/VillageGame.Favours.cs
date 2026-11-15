@@ -33,63 +33,22 @@ public sealed partial class VillageGame
             return;
         var now = _sim.Clock.Tick;
         var any = false;
+        var closed = 0;
         foreach (var f in View.Favours().OrderBy(f => f.Status != FavourStatus.Open).ThenBy(f => f.Deadline))
         {
             var open = f.Status == FavourStatus.Open;
+            if (!open)
+                closed++;
             if (!open && !_showClosedOrders)
                 continue;
             any = true;
             ImGui.PushID(f.Id);
-            TextC(open ? (f.Mine ? Theme.Good : Theme.Text) : Theme.Dim, $"{(f.Mine ? "You ask" : f.PosterName + " asks")}, {f.Price} silver");
-            ImGui.PushTextWrapPos(0f);
-            TextC(Theme.Dim, $"“{f.Text}”");
-            ImGui.PopTextWrapPos();
-            if (open)
-            {
-                var (share, color, words) = TimeLeft(f.PostedTick, f.Deadline, now);
-                Gui.Bar(f.AssigneeName.Length > 0 ? (f.MineToDo ? "You're on it" : $"{f.AssigneeName} is on it") : "Nobody's taken it",
-                    share, color, words, 170f);
-                if (!f.Mine && f.AssigneeName.Length == 0)
-                {
-                    if (ImGui.Button("I'll do it"u8, in _autoSize))
-                        Issue(new AcceptFavourCommand(_avatar, f.Id));
-                    if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                        Tip(f.Wants != null ? "Take it on. Bring them what they want and they'll pay you on the spot."
-                            : "Say aloud that you'll see to it. They pay you when they say it's done.");
-                }
-                if (f.MineToDo && f.Wants is { } wants)
-                {
-                    if (ImGui.Button("Hand it over"u8, in _autoSize))
-                        Issue(new DeliverFavourCommand(_avatar, f.Id));
-                    if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                        Tip($"Give {f.PosterName} the {f.Count} {wants.Label} from your hands and pack. They have to be within reach.");
-                }
-                if (f.Mine)
-                {
-                    if (f.AssigneeName.Length > 0)
-                    {
-                        if (ImGui.Button("Done: pay them"u8, in _autoSize))
-                            Issue(new CompleteFavourCommand(_avatar, f.Id));
-                        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                            Tip($"Hand {f.AssigneeName} the {f.Price} silver. They have to be within reach.");
-                        ImGui.SameLine(0, 6);
-                    }
-                    if (ImGui.Button("Call it off"u8, in _autoSize))
-                        Issue(new CancelFavourCommand(_avatar, f.Id));
-                }
-            }
-            else
-                TextC(Theme.Dim, f.Status switch
-                {
-                    FavourStatus.Done => f.AssigneeName.Length > 0 ? $"Done by {f.AssigneeName}." : "Done.",
-                    FavourStatus.Expired => "Nobody got to it in time.",
-                    _ => "Called off.",
-                });
-            Gui.Rule();
+            DrawFavourCard(f, open, now);
             ImGui.PopID();
         }
         if (!any)
             TextC(Theme.Dim, "You haven't read of any favours. They're pinned to the notice board in the square.");
+        ClosedToggle(closed, "favours");
 
         if (FavourBoard.BoardBy(_sim, _avatar).IsNull)
         {
@@ -138,5 +97,63 @@ public sealed partial class VillageGame
             ImGui.EndDisabled();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             Tip("Ask for so many of a thing, brought to you, for the silver above. Bringing it is doing it: they're paid when they hand it over. The town's labourer takes these on.");
+    }
+    /// <summary>
+    /// A favour as a card, like an order's: who asks and for how much, the time left as a bar,
+    /// and the buttons that are yours to press. Their words are in the first line's tooltip.
+    /// </summary>
+    private void DrawFavourCard(KnownFavour f, bool open, long now)
+    {
+        var tip = $"\u201C{f.Text}\u201D";
+        if (!open)
+            tip += "\n" + f.Status switch
+            {
+                FavourStatus.Done => f.AssigneeName.Length > 0 ? $"Done by {f.AssigneeName}." : "Done.",
+                FavourStatus.Expired => "Nobody got to it in time.",
+                _ => "Called off.",
+            };
+        var title = $"{(f.Mine ? "You ask" : f.PosterName + " asks")}: {f.Text}";
+        CardHead(f.Wants != null ? "ui/icon_haul" : "ui/icon_call", open, open ? (f.Mine ? Theme.Good : Theme.Text) : Theme.Dim, title, f.Price, tip);
+        if (open)
+        {
+            var (share, color, words) = TimeLeft(f.PostedTick, f.Deadline, now);
+            var take = !f.Mine && f.AssigneeName.Length == 0;
+            var hand = f.MineToDo && f.Wants != null;
+            var pay = f.Mine && f.AssigneeName.Length > 0;
+            var keep = take ? SmallButtonWidth("I'll do it") : hand ? SmallButtonWidth("Hand it over") : 0f;
+            CardBar(f.AssigneeName.Length > 0 ? (f.MineToDo ? "You're on it" : $"{f.AssigneeName} is on it") : "Nobody's taken it",
+                share, color, words, keep);
+            if (take)
+            {
+                ImGui.SameLine(0, Gui.S(8));
+                if (ImGui.SmallButton("I'll do it"u8))
+                    Issue(new AcceptFavourCommand(_avatar, f.Id));
+                if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                    Tip(f.Wants != null ? "Take it on. Bring them what they want and they'll pay you on the spot."
+                        : "Say aloud that you'll see to it. They pay you when they say it's done.");
+            }
+            if (hand && f.Wants is { } wants)
+            {
+                ImGui.SameLine(0, Gui.S(8));
+                if (ImGui.SmallButton("Hand it over"u8))
+                    Issue(new DeliverFavourCommand(_avatar, f.Id));
+                if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                    Tip($"Give {f.PosterName} the {f.Count} {wants.Label} from your hands and pack. They have to be within reach.");
+            }
+            if (f.Mine)
+            {
+                if (pay)
+                {
+                    if (ImGui.SmallButton("Done: pay them"u8))
+                        Issue(new CompleteFavourCommand(_avatar, f.Id));
+                    if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                        Tip($"Hand {f.AssigneeName} the {f.Price} silver. They have to be within reach.");
+                    ImGui.SameLine(0, Gui.S(6));
+                }
+                if (ImGui.SmallButton("Call it off"u8))
+                    Issue(new CancelFavourCommand(_avatar, f.Id));
+            }
+        }
+        CardEnd();
     }
 }

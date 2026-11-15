@@ -156,7 +156,6 @@ public sealed partial class VillageGame
         _cardIcon = size;
         var indent = size + Gui.S(8);
         ImGui.Indent(indent);
-        var lineX = ImGui.GetCursorPosX();
         var avail = ImGui.GetContentRegionAvail().X;
         ImGui.BeginGroup();
         var chip = price >= 0 ? CoinChipWidth(price) : 0f;
@@ -164,7 +163,7 @@ public sealed partial class VillageGame
         TextC(titleColor, Narsil.Ui.Gui.Fit(title, room));
         if (price >= 0)
         {
-            ImGui.SameLine(lineX + avail - chip, 0);
+            ImGui.SameLine(avail - chip, 0); // inside the group: from where the group starts
             CoinChip(price, open ? Theme.Warn : Theme.Dim);
         }
         ImGui.EndGroup();
