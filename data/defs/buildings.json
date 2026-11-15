@@ -689,6 +689,18 @@
       "building": { "outdoor": true, "fence": true, "seeThrough": true, "isWall": true, "work": 40, "cost": [ { "def": "Wood", "count": 2 } ] }
     },
     {
+      "name": "RingFence", "label": "ring fence", "category": "Building", "sprite": "buildings/fence",
+      "description": "The practice ring's rails, soaked and bound in iron: a dragon's fire won't take them, so a bout stays in the ring.",
+      "maxHp": 300, "flammability": 0,
+      // A post with rails running through it along X (turned along the run when placed).
+      "model": [
+        { "min": [0.42, 0.42, 0], "max": [0.58, 0.58, 0.72], "top": "props/log_end", "side": "props/fence_post" },
+        { "min": [0, 0.46, 0.5], "max": [1, 0.54, 0.6], "top": "props/fence_rail", "side": "props/fence_rail" },
+        { "min": [0, 0.46, 0.24], "max": [1, 0.54, 0.34], "top": "props/fence_rail", "side": "props/fence_rail" }
+      ],
+      "building": { "outdoor": true, "fence": true, "seeThrough": true, "isWall": true, "work": 40, "cost": [ { "def": "Wood", "count": 2 }, { "def": "IronBar" } ] }
+    },
+    {
       "name": "Palisade", "label": "palisade", "category": "Building", "sprite": "buildings/wall_wood",
       "description": "Sharpened logs set upright, side by side: a wall round the village. It never makes a room.",
       "maxHp": 240, "flammability": 1.0,

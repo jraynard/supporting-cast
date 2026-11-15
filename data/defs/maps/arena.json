@@ -15,7 +15,7 @@
         "s": "Sand"
       },
       "featureLegend": {
-        "f": "Fence",
+        "f": "RingFence",
         "P": "Pine",
         "B": "Birch",
         "u": "Barrel",

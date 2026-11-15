@@ -1731,7 +1731,12 @@ The tuning playtest's "alone first" pass (PLAYTEST.md), and what came of it.
   test. Now A/D carry it (let go and it settles on the nearest stone); F or W lifts, Space or S
   eases (`SpanSession`).
 - **The dragon in the ring** sometimes came down outside the fence and sat there. A landing has to
-  be somewhere its target can be reached from on foot (`DragonPassJob`).
+  be somewhere its target can be reached from on foot (`DragonPassJob`), and the ring's rails are
+  a `RingFence` its fire won't take (the wooden fence burned through and opened the ring). It no
+  longer waits out 8 s after each breath with the player more than 5 cells off: in the ring it comes
+  after you anywhere (`GroundReach`/`Leash` 14) and takes off again after 3 s alone. On the ground,
+  in the ring and on the town, it varies its blows (bite or claws, at random) and breathes mid-fight
+  at anyone 3 or more cells off with a clear line, every `BreathEvery` (6 s; 8 s on the town).
 - **The dragon in a round** made a pass, breathed once and waited. Set on the town now (`Rampage`):
   three passes over roofs and trees in one flight, never touching down between them, breathing
   from the air as it crosses each (`DragonStrafeJob`, legs from `Navigation.AloftRoute`), then
@@ -1743,8 +1748,8 @@ The tuning playtest's "alone first" pass (PLAYTEST.md), and what came of it.
 
   | | Before | After |
   |---|---|---|
-  | Dragon, party in town | met 27/48 → 12/48 (footwork), town dead 5 | met 14/48, town dead 10, heroes dead 21 |
-  | Dragon, no party | 0/48, town dead 5 | met 1/48, town dead 21 |
+  | Dragon, party in town | met 27/48 → 12/48 (footwork), town dead 5 | met 15/48, town dead 17, heroes dead 15 |
+  | Dragon, no party | 0/48, town dead 5 | met 1/48, town dead 30 |
 
   It does real harm now. If that's too much, the levers are `DragonBrain.Passes`, `Crowd`,
   `Hunts`, `DragonPassJob.RampageReach`/`RampageLeash`, and `FleeDamage`/`FleePain`.

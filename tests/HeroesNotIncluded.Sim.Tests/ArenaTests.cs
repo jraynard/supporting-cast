@@ -19,6 +19,33 @@ public class ArenaTests
         sim.Creatures().Where(e => sim.World.Get<Creature>(e).Faction == Faction.Raider).ToList();
 
     [Fact]
+    public void TheDragonFightsInsideTheRingAndBreathesBetweenBlows()
+    {
+        var (sim, me) = Ring();
+        var dragon = Arena.Bout(sim, me, Arena.Dragon);
+        var w = sim.World;
+        var center = w.Get<Position>(me).Cell;
+        int Fence() => w.Query<Thing>().Count(e => w.Get<Thing>(e).Def.Name == "RingFence");
+        var fence = Fence();
+        Assert.True(fence > 0);
+        var breaths = 0;
+        var farthest = 0f;
+        for (var t = 0; t < 60 * 60 && w.IsAlive(dragon); t++)
+        {
+            if (t % 600 == 0)
+                Arena.Freshen(sim, me); // kept on their feet, to be fought
+            sim.Tick();
+            if (sim.RecentBreaths.Any(b => b.Source == dragon && b.Tick == sim.Clock.Tick))
+                breaths++;
+            var p = w.Get<Position>(dragon).Pos;
+            farthest = Math.Max(farthest, MathF.Sqrt((p.X - center.X - 0.5f) * (p.X - center.X - 0.5f) + (p.Y - center.Y - 0.5f) * (p.Y - center.Y - 0.5f)));
+        }
+        Assert.Equal(fence, Fence()); // its fire doesn't take the ring's rails
+        Assert.True(farthest < 10.5f, $"it got {farthest:F1} from the middle");
+        Assert.True(breaths >= 4, $"{breaths} breaths in a minute"); // between blows, not only as it lands
+    }
+
+    [Fact]
     public void TheRingIsEmptyButForTheTwoOfYou()
     {
         var (sim, me) = Ring();

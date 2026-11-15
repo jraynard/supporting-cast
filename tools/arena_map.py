@@ -53,7 +53,7 @@ arena = {
     "depth": 8,
     "baseZ": 2,
     "groundLegend": {"g": "Grass", "d": "Dirt", "s": "Sand"},
-    "featureLegend": {"f": "Fence", "P": "Pine", "B": "Birch", "u": "Barrel", "X": "Crate", "R": "WeaponRack"},
+    "featureLegend": {"f": "RingFence", "P": "Pine", "B": "Birch", "u": "Barrel", "X": "Crate", "R": "WeaponRack"},
     "center": [CX, CY],
     "ground": ground,
     "levels": levels,

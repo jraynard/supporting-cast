@@ -340,19 +340,22 @@ public sealed class DragonPassJob(int3 target, bool rampage = false) : Job
                 Sim.World.Remove<Inhaling>(Pawn);
                 Report = "Breathing fire";
                 CombatRules.Breathe(Sim, Pawn, target, at);
-                foreach (var s in Wait(SimClock.TicksPerSecond)) yield return s;
+                foreach (var s in Wait(SimClock.TicksPerSecond / 3)) yield return s; // a beat, then at them
             }
         }
 
         Report = "Snapping at the town";
-        var attack = CombatRules.Attacks(Sim, Pawn).FirstOrDefault(a => !a.Ranged);
-        // On the ground it fights freely (FreeFight): it circles whoever's come at it between bites
-        // and lunges in when its jaws are ready, rather than biting from its cell.
+        // Its jaws and its claws, one or the other each time: it doesn't fight one way.
+        var melee = CombatRules.Attacks(Sim, Pawn).Where(a => !a.Ranged).ToList();
+        var attack = melee.Count > 0 ? melee[Sim.Rand.NextInt(melee.Count)] : null;
+        // On the ground it fights freely (FreeFight): it circles whoever's come at it between blows
+        // and lunges in when it's ready, rather than biting from its cell.
         if (attack != null)
             FreeFight.Join(Sim, Pawn);
         long next = 0;
+        var breathAgain = Sim.Clock.Tick + (rampage ? BreathEveryRampage : BreathEvery);
         var idle = 0;
-        var restless = rampage ? RestlessTicks / 2 : RestlessTicks;
+        var restless = rampage ? RestlessTicks / 2 : RingRestlessTicks;
         for (var t = 0; t < GroundTicks && idle < restless && !DragonBrain.DrivenOff(Sim, Pawn); t++)
         {
             var foe = attack == null ? Entity.Null : Foe(landing);
@@ -365,31 +368,89 @@ public sealed class DragonPassJob(int3 target, bool rampage = false) : Job
                 yield return JobStatus.Running;
                 continue;
             }
+            // Fire again, at someone keeping their distance, once it's drawn breath enough since.
+            if (Sim.Clock.Tick >= breathAgain && CanBreatheAt(foe))
+            {
+                var started = Sim.Clock.Tick;
+                foreach (var s in BreatheAt(foe)) yield return s;
+                t += (int)(Sim.Clock.Tick - started);
+                breathAgain = Sim.Clock.Tick + (rampage ? BreathEveryRampage : BreathEvery);
+                Report = "Snapping at the town";
+                continue;
+            }
             var ready = Sim.Clock.Tick >= next;
             var dist = FreeFight.Steer(Sim, Pawn, foe, attack!, pressing: ready, backOffUntil: 0);
-            // Its jaws are wound up like any blow (Combat.Blows), quick and hard to dodge.
+            // Its jaws or claws are wound up like any blow (Combat.Blows), quick and hard to dodge.
             if (ready && !Sim.World.Has<Windup>(Pawn) && FreeFight.InReach(Sim, Pawn, foe, attack!, dist)
                 && Blows.Begin(Sim, Pawn, foe, attack!))
+            {
                 next = Sim.Clock.Tick + attack!.CooldownTicks;
+                attack = melee[Sim.Rand.NextInt(melee.Count)]; // the next one, bite or claws
+            }
             yield return JobStatus.Running;
         }
         // Back on the grid to take off.
         FreeFight.Leave(Sim, Pawn);
     }
 
+    /// <summary>Least time between its breaths once it's down and fighting: in the ring, and on the town.</summary>
+    public const int BreathEvery = SimClock.TicksPerSecond * 6, BreathEveryRampage = SimClock.TicksPerSecond * 8;
+
+    /// <summary>How near (cells) someone has to be for a breath rather than a bite: too close and it uses its jaws.</summary>
+    public const int BreathMin = 3;
+
+    /// <summary>Someone it can breathe on from here: off at a distance, level with it, nothing in the way, and its fire lit.</summary>
+    private bool CanBreatheAt(Entity foe)
+    {
+        if (DragonBrain.FireOut(Sim, Pawn) || Sim.World.Has<Windup>(Pawn))
+            return false;
+        var me = Sim.World.Get<Position>(Pawn);
+        var them = Sim.World.Get<Position>(foe);
+        var d = Map.Distance(me.Cell, them.Cell);
+        return d >= BreathMin && d <= Environment.Breath.RangeOf(Sim, Pawn) - 3 && Math.Abs(me.Cell.Z - them.Cell.Z) <= 1
+            && CombatRules.LineOfFire(Sim, me.Pos + new float3(0, 0, 0.5f), them.Pos + new float3(0, 0, 0.5f));
+    }
+
+    /// <summary>
+    /// A breath mid-fight: it stops and rears where it's seen (<see cref="Inhaling"/>), aimed where
+    /// they stood when it began, so stepping aside or guarding is the answer. Soaked meanwhile, it
+    /// goes up in steam.
+    /// </summary>
+    private IEnumerable<JobStatus> BreatheAt(Entity foe)
+    {
+        Report = "Drawing breath";
+        if (Sim.World.Has<FreeMover>(Pawn))
+            Sim.World.Get<FreeMover>(Pawn).Wish = float2.Zero;
+        var aim = Sim.World.Get<Position>(foe).Cell;
+        var at = Sim.Clock.Tick + Blows.InhaleTicks;
+        Sim.World.Add(Pawn, new Inhaling { Target = aim, Start = Sim.Clock.Tick, At = at });
+        for (var t = 0; t < Blows.InhaleTicks + Blows.Grace(Sim); t++)
+        {
+            if (Sim.World.Has<FreeMover>(Pawn))
+                Sim.World.Get<FreeMover>(Pawn).Wish = float2.Zero;
+            yield return JobStatus.Running;
+        }
+        if (!Sim.World.Has<Inhaling>(Pawn))
+            yield break;
+        Sim.World.Remove<Inhaling>(Pawn);
+        Report = "Breathing fire";
+        CombatRules.Breathe(Sim, Pawn, aim, at);
+    }
+
     /// <summary>Cells it moves at least, from one landing to the next.</summary>
     public const int MinHop = 8;
 
-    /// <summary>How long it stays down with nobody in reach of its jaws before it takes off, in ticks.</summary>
-    public const int RestlessTicks = SimClock.TicksPerSecond * 8;
+    /// <summary>How long it stays down with nobody in reach of its jaws before it takes off, in ticks (in the ring, sooner).</summary>
+    public const int RestlessTicks = SimClock.TicksPerSecond * 8, RingRestlessTicks = SimClock.TicksPerSecond * 3;
 
     private bool Clear(int3 c) => DragonBrain.RoomToLand(Sim, c);
 
-    /// <summary>How far from it someone has to be for it to go for them on the ground, in cells.</summary>
-    public const int GroundReach = 5;
-
-    /// <summary>How far from where it came down it'll go after anyone, in cells: it fights where it lands, not down the streets.</summary>
-    public const int Leash = 5;
+    /// <summary>
+    /// In the ring (not on a <see cref="Rampage"/>): how far from it someone has to be for it to go
+    /// for them, and from where it came down, in cells. The whole ring: it comes after you rather than
+    /// wait, and the fence holds it in.
+    /// </summary>
+    public const int GroundReach = 14, Leash = 14;
 
     /// <summary>How far it reaches for someone, and ranges from where it came down, on a rampage.</summary>
     public const int RampageReach = 8, RampageLeash = 10;
