@@ -127,8 +127,10 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
     /// <summary>How often (ticks) the field is rebuilt for doors and light, if nothing else prompts it.</summary>
     private const int RefreshTicks = 6;
 
-    private readonly HashSet<int> _visible = [];
-    private readonly HashSet<int> _openDoors = [];
+    // Both kept as flags over a box round the viewer: what's seen, within sight's reach, and the
+    // doors stood open, as far as any line of sight runs (Overhead's included).
+    private readonly CellBox _visible = new();
+    private readonly CellBox _openDoors = new();
     private int3 _builtAt;
     private int _builtVersion = -1;
     private long _builtSlice = -1;
@@ -160,7 +162,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         if (!sim.Map.InBounds(cell))
             return false;
         Refresh();
-        return _visible.Contains(sim.Map.Idx(cell));
+        return _visible.Contains(cell);
     }
 
     /// <summary>
@@ -737,7 +739,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
     {
         if (!sim.World.IsAlive(viewer))
         {
-            _visible.Clear();
+            _visible.Empty();
             return;
         }
         var map = sim.Map;
@@ -753,21 +755,22 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
     {
         var map = sim.Map;
         var w = sim.World;
-        _visible.Clear();
         if (!map.InBounds(here))
+        {
+            _visible.Empty();
             return;
+        }
+        var ghostly = Ghostly;
+        var (reach, levels) = ghostly ? (Afterlife.Ghosts.SightRadius, Afterlife.Ghosts.SightLevels) : (Perception.SightRadius, Perception.SightLevels);
+        _visible.Reset(map, here, reach, levels);
 
         // A door has no open state in the sim: it stands open while someone is in the doorway,
-        // which is also how it's drawn.
-        _openDoors.Clear();
+        // which is also how it's drawn. Over the sky's reach too, every level: Overhead looks that far.
+        _openDoors.Reset(map, here, Math.Max(reach, Perception.SkySight), map.Depth);
         foreach (var e in w.Each<Creature>())
-        {
-            var cell = w.Get<Position>(e).Cell;
-            if (map.InBounds(cell))
-                _openDoors.Add(map.Idx(cell));
-        }
+            _openDoors.Add(w.Get<Position>(e).Cell);
 
-        if (Ghostly)
+        if (ghostly)
         {
             BuildGhostly(here);
             return;
@@ -784,7 +787,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
                 continue;
             var target = new int3(x, y, z);
             if (InRange(here, target, i) && Clear(here, target, i))
-                _visible.Add(i);
+                _visible.Add(target);
         }
     }
 
@@ -802,7 +805,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
             int dx = x - here.X, dy = y - here.Y;
             var i = map.Idx(x, y, z);
             if (dx * dx + dy * dy <= r * r && !map.IsSolid(i))
-                _visible.Add(i);
+                _visible.Add(new int3(x, y, z));
         }
     }
 
@@ -832,13 +835,20 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         var from = new float3(here.X + 0.5f, here.Y + 0.5f, here.Z + 0.5f);
         var d = new float3(target.X - here.X, target.Y - here.Y, target.Z - here.Z);
         var length = MathF.Sqrt(d.X * d.X + d.Y * d.Y + d.Z * d.Z);
-        return !map.Raycast(from, d * (1f / length), length, i =>
+        var stop = new SightStop(this, map, hereIdx, targetIdx, lowest, crossesLevels);
+        return !map.Raycast(from, d * (1f / length), length, ref stop, out _, out _);
+    }
+
+    /// <summary>What stops a line of sight (<see cref="Clear"/>), as a struct: thousands are cast per rebuild.</summary>
+    private readonly struct SightStop(PerceptionView view, Maps.Map map, int hereIdx, int targetIdx, int lowest, bool crossesLevels) : Maps.ICellStop
+    {
+        public bool Stops(int i)
         {
             // Stepping between levels goes through the floor of the upper cell, at either end of the line.
             if (crossesLevels && map.CellOf(i).Z > lowest && map.Ceiling(i))
                 return true;
-            return i != hereIdx && i != targetIdx && Blocks(i);
-        }, out _, out _);
+            return i != hereIdx && i != targetIdx && view.Blocks(i);
+        }
     }
 
     private bool Blocks(int i)
@@ -852,7 +862,49 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         var building = sim.World.Get<Thing>(s).Def.Building;
         if (building == null || building.SeeThrough)
             return false;
-        return building.IsWall || (building.IsDoor && !_openDoors.Contains(i));
+        return building.IsWall || (building.IsDoor && !_openDoors.Contains(map.CellOf(i)));
+    }
+
+    /// <summary>
+    /// A set of cells within a box of the map (the reach of someone's sight round where they stand),
+    /// as flags: cheap to clear, to fill and to ask, and small enough for a view made for one question.
+    /// </summary>
+    private sealed class CellBox
+    {
+        private bool[] _in = [];
+        private int3 _min;
+        private int _w, _h, _d;
+
+        /// <summary>Hold nothing, over the box <paramref name="reach"/> across and <paramref name="levels"/> up and down from <paramref name="here"/>.</summary>
+        public void Reset(Maps.Map map, int3 here, int reach, int levels)
+        {
+            _min = new int3(Math.Max(0, here.X - reach), Math.Max(0, here.Y - reach), Math.Max(0, here.Z - levels));
+            _w = Math.Min(map.Width - 1, here.X + reach) - _min.X + 1;
+            _h = Math.Min(map.Height - 1, here.Y + reach) - _min.Y + 1;
+            _d = Math.Min(map.Depth - 1, here.Z + levels) - _min.Z + 1;
+            var size = Math.Max(0, _w) * Math.Max(0, _h) * Math.Max(0, _d);
+            if (_in.Length < size)
+                _in = new bool[size];
+            else
+                Array.Clear(_in, 0, size);
+        }
+
+        /// <summary>Hold nothing, anywhere.</summary>
+        public void Empty() => _w = _h = _d = 0;
+
+        private int Slot(int3 c)
+        {
+            int x = c.X - _min.X, y = c.Y - _min.Y, z = c.Z - _min.Z;
+            return (uint)x < (uint)_w && (uint)y < (uint)_h && (uint)z < (uint)_d ? (z * _h + y) * _w + x : -1;
+        }
+
+        public void Add(int3 c)
+        {
+            if (Slot(c) is var i and >= 0)
+                _in[i] = true;
+        }
+
+        public bool Contains(int3 c) => Slot(c) is var i and >= 0 && _in[i];
     }
 }
 

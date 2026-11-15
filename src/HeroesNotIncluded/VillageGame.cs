@@ -125,7 +125,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     /// <summary>The preset building your character's standing in and the level they're on (its roof's off, and what's above them), or Entity.Null.</summary>
     private (Entity Building, int Level) InsideBuilding() =>
-        !Eye.IsNull && _sim.World.TryGet<Position>(Eye, out var p) ? (Buildings.At(_sim, p.Cell), p.Cell.Z) : (Entity.Null, int.MaxValue);
+        !Eye.IsNull && _sim.World.TryGet<Position>(Eye, out var p) ? (Rendering.BuildingPlanIndex.For(_sim).At(p.Cell), p.Cell.Z) : (Entity.Null, int.MaxValue);
 
     /// <summary>Who the view is about: your character, or your ghost; null for the overseer.</summary>
     private Entity Eye => HasAvatar ? _avatar : Ghosting ? _ghost : Entity.Null;

@@ -104,6 +104,30 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
 
     private bool Seen(Entity e) => Viewer == null || Viewer.CanSee(e);
 
+    /// <summary>This frame's culling box and cutaway level (<see cref="InViewNow"/>).</summary>
+    private (int X0, int Y0, int X1, int Y1, int Cut) _view;
+    private Func<int3, bool>? _inView;
+    private Func<int3, bool>? _canSeeCell;
+    private Func<Thing, (Sprite, uint)>? _artOfThing;
+    private Action<float3, uint>? _padlock;
+    private Func<int3, float>? _doorHeight;
+
+    /// <summary>In this frame's culling box, at or under the cutaway, and not under a floor that's drawn.</summary>
+    private bool InViewNow(int3 c) =>
+        c.X >= _view.X0 && c.X <= _view.X1 && c.Y >= _view.Y0 && c.Y <= _view.Y1 && c.Z <= _view.Cut && !UnderDrawnFloor(_sim!.Map, c);
+
+    private PerceptionView? _omniscient;
+
+    /// <summary>The viewer's senses, or (no viewer) one all-seeing view kept for this game rather than made anew each frame.</summary>
+    private PerceptionView Sees(Simulation sim)
+    {
+        if (Viewer != null)
+            return Viewer;
+        if (_omniscient == null || !_omniscient.IsFor(sim, Entity.Null))
+            _omniscient = Perception.For(sim, Entity.Null);
+        return _omniscient;
+    }
+
     private bool SeenAt(float3 at) => Viewer == null
         || Viewer.CanSeeCell(new int3((int)MathF.Floor(at.X), (int)MathF.Floor(at.Y), (int)MathF.Floor(at.Z)));
 
@@ -287,12 +311,35 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     /// <summary>The sheet a creature is drawn with, if its sprite is animated.</summary>
     public SpriteSheet? SheetOf(Simulation sim, Entity e)
     {
+        if (_looksThisFrame && _looks.TryGetValue(e.Index, out var known))
+            return known.Sheet;
         var c = sim.World.Get<Creature>(e);
         // People are drawn in layers from their look (HumanLook); this is the base layer.
-        if (c.Def.Race == Race.Human && HumanLook.Sheet(atlas, HumanLook.Of(sim, e)) is { } look)
-            return look;
-        var name = SpriteNameOf(sim, e);
-        return atlas.TryGetSheet(name, out var sheet) ? sheet : null;
+        var human = c.Def.Race == Race.Human;
+        var look = human ? HumanLook.Of(sim, e) : default;
+        var sheet = human && HumanLook.Sheet(atlas, look) is { } layered ? layered
+            : atlas.TryGetSheet(SpriteNameOf(sim, e), out var plain) ? plain : null;
+        if (_looksThisFrame)
+            _looks[e.Index] = (look, sheet);
+        return sheet;
+    }
+
+    /// <summary>
+    /// Each person's look and sheet, worked out once a frame while <see cref="Draw"/> runs: the
+    /// sheet, the bubble's height, the layers and a sitter's hand all want them.
+    /// </summary>
+    private readonly Dictionary<int, (Appearance Look, SpriteSheet? Sheet)> _looks = [];
+    private bool _looksThisFrame;
+
+    /// <summary>A person's look (<see cref="HumanLook.Of"/>), from this frame's cache while drawing.</summary>
+    private Appearance LookOf(Simulation sim, Entity e)
+    {
+        if (_looksThisFrame)
+        {
+            SheetOf(sim, e);
+            return _looks[e.Index].Look;
+        }
+        return HumanLook.Of(sim, e);
     }
 
     /// <summary>The creature's sprite for its life stage (the plain sheet's name; layered looks add suffixes).</summary>
@@ -323,6 +370,20 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     {
         _cam = cam;
         _quads = quads;
+        _looks.Clear();
+        _looksThisFrame = true;
+        try
+        {
+            DrawWorld(quads, cam, sim, selected, time, animDt);
+        }
+        finally
+        {
+            _looksThisFrame = false;
+        }
+    }
+
+    private void DrawWorld(QuadRenderer quads, Camera3D cam, Simulation sim, Entity selected, float time, float animDt)
+    {
         _anim.Advance(animDt);
         _animDt = animDt;
         _anim.LocalAim = LocalAim;
@@ -336,8 +397,13 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         _sim = sim;
         _mesher.OpenBuilding = HideRoofs ? (Entity.Null, int.MaxValue) : (_open, _openLevel);
         _mesher.CutHeading = CutawayWalls || (!_open.IsNull && !HideRoofs) ? WorldMesher.SnapHeading(cam.Heading) : null;
-        _doors.HeightOf = c => _mesher.IsStub(sim, c.X, c.Y, c.Z) ? WorldMesher.StubHeight : 1f;
-        _doors.CanSee = Viewer == null ? null : Viewer.CanSeeCell;
+        // DoorAnimator starts with a full-height default, so this is set (once made), not ??= on its property.
+        _doors.HeightOf = _doorHeight ??= c => _mesher.IsStub(_sim!, c.X, c.Y, c.Z) ? WorldMesher.StubHeight : 1f;
+        if (Viewer == null)
+            _canSeeCell = null;
+        else if (_canSeeCell?.Target != Viewer)
+            _canSeeCell = Viewer.CanSeeCell;
+        _doors.CanSee = _canSeeCell;
         _mesher.Draw(quads, sim);
 
         // Horizontal culling box: what's visible at the bottom and top of the map, plus a margin.
@@ -347,13 +413,14 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         var max = float2.Max(a1, b1);
         int x0 = Math.Max(0, (int)min.X - 2), y0 = Math.Max(0, (int)min.Y - 2);
         int x1 = Math.Min(map.Width - 1, (int)max.X + 2), y1 = Math.Min(map.Height - 1, (int)max.Y + 2);
-        bool InView(int3 c) => c.X >= x0 && c.X <= x1 && c.Y >= y0 && c.Y <= y1 && c.Z <= cut && !UnderDrawnFloor(map, c);
+        _view = (x0, y0, x1, y1, cut);
+        var inView = _inView ??= InViewNow;
 
         // Buildings' lamps, hung from the beams or set on a wall: the model and a small steady flame
         // (no fuel to burn down). A wall's lamp goes when the cutaway cuts its wall down.
         foreach (var (lampCell, lamp, wallFacing) in Buildings.LitLamps(sim))
         {
-            if (!InView(lampCell) || lamp.Model is not { } lampModel)
+            if (!InViewNow(lampCell) || lamp.Model is not { } lampModel)
                 continue;
             var facing = wallFacing ?? 0;
             if (wallFacing is { } f && Footprint.Rotate(0, -1, f) is var back && IsStub(sim, lampCell + new int3(back.X, back.Y, 0)))
@@ -370,23 +437,23 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         foreach (var e in w.Each<Thing>())
         {
             var thing = w.Get<Thing>(e);
-            if (!thing.Spawned || !InView(thing.Cell) || !Seen(e))
+            if (!thing.Spawned || !InViewNow(thing.Cell) || !Seen(e))
                 continue;
             DrawThing(sim, e, thing);
         }
         foreach (var e in w.Each<PresetBuilding>())
-            DrawRaising(sim, e, InView);
-
-        // Shop signs, hung out over the street from their front walls (not while the wall's cut down).
-        foreach (var e in w.Each<PresetBuilding>())
+        {
+            DrawRaising(sim, e, inView);
+            // Its shop sign, hung out over the street from its front wall (not while the wall's cut down).
             // It hangs outside the wall, so the storey above doesn't hide it, as it would something in the cell.
             if (Sim.Shops.Signs.CellOf(sim, e) is { } signAt && signAt.X >= x0 && signAt.X <= x1 && signAt.Y >= y0 && signAt.Y <= y1 && signAt.Z <= cut
                 && Sim.Shops.Signs.At(sim, signAt) == e && !_mesher.IsStub(sim, signAt.X, signAt.Y, signAt.Z))
                 AddModel(SignModelOf(w.Get<PresetBuilding>(e).Def), signAt, w.Get<PresetBuilding>(e).Facing, null, Rgba.White, Quad.Level(signAt.Z));
+        }
 
         // Mess on the floor, as the viewer sees it.
-        foreach (var m in (Viewer ?? Perception.For(sim, Entity.Null)).Messes())
-            if (InView(m.Cell))
+        foreach (var m in Sees(sim).Messes())
+            if (InViewNow(m.Cell))
                 Decal(S(MessSprite(m.Look)), new float3(m.Cell.X + 0.5f, m.Cell.Y + 0.5f, m.Cell.Z + 0.02f), 0.6f + 0.35f * m.Amount,
                     Rgba.Pack(1f, 1f, 1f, 0.4f + 0.6f * m.Amount), Quad.Level(m.Cell.Z), translucent: true);
 
@@ -396,13 +463,14 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         {
             var c = map.CellOf(i);
             var left = (until - sim.Clock.Tick) / (float)soakTicks;
-            if (left <= 0f || !InView(c) || !map.Standable(i))
+            if (left <= 0f || !InViewNow(c) || !map.Standable(i))
                 continue;
             Decal(S("ui/mess_puddle"), new float3(c.X + 0.5f, c.Y + 0.5f, c.Z + 0.015f), 1.1f,
                 Rgba.Pack(0.45f, 0.62f, 0.85f, 0.15f + 0.3f * Math.Min(1f, left)), Quad.Level(c.Z), translucent: true);
         }
 
-        _doors.Draw(quads, sim, InView, animDt, t => ArtOf(t), (at, level) => Billboard(S("props/padlock"), at - new float3(0, 0, 0.1f), 0.22f, 0.22f, Rgba.White, level));
+        _doors.Draw(quads, sim, inView, animDt, _artOfThing ??= t => ArtOf(t),
+            _padlock ??= (at, level) => Billboard(S("props/padlock"), at - new float3(0, 0, 0.1f), 0.22f, 0.22f, Rgba.White, level));
 
         foreach (var (site, info) in _sites)
             if (!_sitesNow.ContainsKey(site) && !w.IsAlive(site) && info.Done > 0.97f)
@@ -441,9 +509,9 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         }
 
         // Signs of the dead, as perceived: a chill's breath hangs in the air.
-        foreach (var sign in (Viewer ?? Perception.For(sim, Entity.Null)).Signs())
+        foreach (var sign in Sees(sim).Signs())
         {
-            if (sign.Kind != Sim.Afterlife.HauntKind.Chill || !InView(sign.Cell))
+            if (sign.Kind != Sim.Afterlife.HauntKind.Chill || !InViewNow(sign.Cell))
                 continue;
             var t = (sim.Clock.Tick - sign.Tick) * 0.03f;
             for (var k = 0; k < 3; k++)
@@ -459,7 +527,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             foreach (var e in w.Each<Sim.Afterlife.Ghost>())
             {
                 var p = w.Get<Position>(e);
-                if (!InView(p.Cell) || !Seen(e))
+                if (!InViewNow(p.Cell) || !Seen(e))
                     continue;
                 var bob = 0.12f * MathF.Sin(sim.Clock.Tick * 0.05f + e.Index);
                 var mine = e == Viewer.Viewer;
@@ -472,7 +540,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         foreach (var e in w.Each<Creature>())
         {
             var p = w.Get<Position>(e);
-            if (!InView(p.Cell) || !Seen(e))
+            if (!InViewNow(p.Cell) || !Seen(e))
                 continue;
             p.Pos = DrawPos(sim, e, p.Pos); // a copy: the sim's Position is untouched
             var c = w.Get<Creature>(e);
@@ -543,12 +611,12 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         foreach (var i in sim.Fire.BurningTiles)
         {
             var t = map.CellOf(i);
-            if (InView(t))
+            if (InViewNow(t))
                 DrawFlames(i, t, map.Fire[i], time);
         }
 
-        DrawSmoke(sim, InView, time);
-        DrawSplashes(sim, InView, time);
+        DrawSmoke(sim, inView, time);
+        DrawSplashes(sim, inView, time);
         DrawBreaths(sim, time);
         DrawShots(sim, time);
         DrawStuckArrows(sim);
@@ -558,7 +626,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         DrawSwings(sim);
         DrawInhaling(sim);
         DrawBlowWords(sim);
-        EmitSpeech(sim, InView);
+        EmitSpeech(sim, inView);
         _particles.Update(animDt);
         _particles.Draw(this, cut);
 
@@ -582,7 +650,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         // A newcomer's stations: a parchment ring, breathing slowly, on the floor under each.
         foreach (var cell in StationMarks)
         {
-            if (!InView(cell))
+            if (!InViewNow(cell))
                 continue;
             // Wide enough that the ring's corners show past the furniture standing in it.
             var ring = 1.8f * (1f + 0.08f * MathF.Sin(time * 2.5f));
@@ -677,7 +745,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             var f = (CreatureAnimator.Resolve(sheet, "downed", out _)?.Frames[0]) ?? pose.Frame;
             FrameDecal(sheet, f, p.Pos + new float3(0, 0, 0.75f), 0.8f, color, level);
             var k = 0;
-            foreach (var (layer, layerColor) in LookLayers(sim, e, color))
+            foreach (var (layer, layerColor) in FrameLayers(sim, e, color))
                 if (HumanLook.LayerFrame(sheet, layer, f) is { } lf)
                     FrameDecal(layer, lf, p.Pos + new float3(0, 0, 0.75f + ++k * LayerStep), 0.8f, layerColor, level);
             return;
@@ -708,7 +776,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             var lyingColor = bed.IsNull && mind.Asleep ? Rgba.Pack(0.85f, 0.85f, 0.85f) : color;
             FrameDecal(sheet, pose.Frame, center + new float3(0, 0, 0.02f), scale, lyingColor, level, facing);
             var k = 0;
-            foreach (var (layer, layerColor) in LookLayers(sim, e, lyingColor))
+            foreach (var (layer, layerColor) in FrameLayers(sim, e, lyingColor))
                 if (HumanLook.LayerFrame(sheet, layer, pose.Frame) is { } lf)
                     FrameDecal(layer, lf, center + new float3(0, 0, 0.02f + ++k * LayerStep), scale, layerColor, level, facing);
             if (!bed.IsNull)
@@ -737,7 +805,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             if (len > 1e-4f)
                 feet += toward * (SitForward / len);
             var sip = pose.Anim is { Frames.Length: > 2 } a && pose.Frame.Index == a.Frames[2].Index;
-            var hand = HumanLook.BuildPoint(HumanLook.Of(sim, e), sip ? SipHand : LapHand); // a dwarf's lap is lower
+            var hand = HumanLook.BuildPoint(LookOf(sim, e), sip ? SipHand : LapHand); // a dwarf's lap is lower
             var unit = sheet.FrameSize.Y / 60f / (PixelsPerCell * sheet.Density); // the generator's 40x60 design units
             _heldAt = feet + _cam.Right * ((hand.X - 20f) * unit * pose.Facing) + _cam.Up * ((58f - hand.Y) * unit) - _cam.Forward * 0.02f;
         }
@@ -770,7 +838,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             DrawSlung(S(slungDef.Sprite), feet + _cam.Forward * 0.03f, SlungSize(slungDef), pose.Facing, color, level);
         BillboardFrame(sheet, pose.Frame, feet, pose.Facing, pose.Roll, color, level, aboutCenter: airborne || tumbling);
         var nudge = 0;
-        foreach (var (layer, layerColor) in LookLayers(sim, e, color))
+        foreach (var (layer, layerColor) in FrameLayers(sim, e, color))
             if (HumanLook.LayerFrame(sheet, layer, pose.Frame) is { } lf)
                 BillboardFrame(layer, lf, feet - _cam.Forward * (++nudge * LayerStep), pose.Facing, pose.Roll, layerColor,
                     HumanLook.IsPieceLayer(layer) ? level | PieceFlags(layerColor) : level, aboutCenter: airborne || tumbling);
@@ -893,6 +961,24 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             Race.Human => HumanLook.Layers(atlas, HumanLook.Of(sim, e), color, HumanLook.WornOf(sim, e), _swings.ContainsKey(e.Index) ? null : HeldOf(sim, e)),
             _ => [],
         };
+
+    private readonly List<(SpriteSheet Sheet, uint Color)> _layers = new(16);
+    private readonly List<HumanLook.WornItem> _worn = new(8);
+
+    /// <summary>
+    /// <see cref="LookLayers"/> for drawing, into lists kept from frame to frame. Good until the next
+    /// call: each person's layers are drawn before the next person's are asked for.
+    /// </summary>
+    private List<(SpriteSheet Sheet, uint Color)> FrameLayers(Simulation sim, Entity e, uint color)
+    {
+        if (sim.World.Get<Creature>(e).Def.Race != Race.Human)
+        {
+            _layers.Clear();
+            return _layers;
+        }
+        return HumanLook.LayersInto(_layers, atlas, LookOf(sim, e), color, HumanLook.WornInto(_worn, sim, e),
+            _swings.ContainsKey(e.Index) ? null : HeldOf(sim, e));
+    }
 
     /// <summary>
     /// What a person has in hand: the tool their job works with (the axe while felling, the pick

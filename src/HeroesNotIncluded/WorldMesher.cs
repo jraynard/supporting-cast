@@ -152,17 +152,7 @@ public sealed class WorldMesher(TextureAtlas atlas)
     }
 
     /// <summary>An open floor cell of a preset building's plan ('.').</summary>
-    private static bool InsideBuilding(Simulation sim, int3 cell)
-    {
-        var w = sim.World;
-        foreach (var e in w.Each<PresetBuilding>())
-        {
-            var b = w.Get<PresetBuilding>(e);
-            if (Buildings.SymbolAt(b.Def, b.Anchor, b.Facing, cell) == '.')
-                return true;
-        }
-        return false;
-    }
+    private static bool InsideBuilding(Simulation sim, int3 cell) => BuildingPlanIndex.For(sim).IsPlanFloor(cell);
 
     private static readonly float[] AoShades = [0.55f, 0.7f, 0.85f, 1f];
 
@@ -325,7 +315,7 @@ public sealed class WorldMesher(TextureAtlas atlas)
                 }
             }
             // An enclosed room's roof, on its walls (not a preset building's: it gets its own when its roof goes on).
-            if (AutoRoofOver(map, i) && z + 1 < map.Depth && Buildings.At(sim, new int3(x, y, z)).IsNull)
+            if (AutoRoofOver(map, i) && z + 1 < map.Depth && BuildingPlanIndex.For(sim).At(new int3(x, y, z)).IsNull)
                 AddRoof(sim, x, y, z + 1, S(AutoRoofSprite), Rgba.White);
             var s = map.Structure[i];
             if (s.IsNull || sim.World.Has<Construction>(s) || AboveYou(sim, s, z))

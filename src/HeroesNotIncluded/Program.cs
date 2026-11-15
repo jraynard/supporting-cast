@@ -47,7 +47,7 @@ if (args.Contains("--check-gpu"))
 
 if (args.Contains("--bench"))
 {
-    Bench.Run(ParseSeed(args));
+    Bench.Run(ParseSeed(args), round: args.Contains("--round"));
     return;
 }
 

@@ -5,24 +5,62 @@ using HeroesNotIncluded.Sim.Maps;
 
 namespace HeroesNotIncluded.Debug;
 
-/// <summary>Headless sim benchmark: run a generated village for a game day and report per-system cost.</summary>
+/// <summary>
+/// Headless sim benchmark: run a generated village for a game day and report per-system cost. With
+/// <c>--round</c>, a whole season instead, as <see cref="Sim.Scenarios.SeasonSweep"/> plays it: the
+/// Director's crises, the parties and a bot in each trade, the load a real round puts on the sim.
+/// Only the plain run's hashes are the refactoring baseline (CLAUDE.md).
+/// </summary>
 public static class Bench
 {
-    public static void Run(ulong seed, int ticks = SimClock.TicksPerDay)
+    public static void Run(ulong seed, bool round = false)
     {
         var defs = DefDatabase.LoadDirectory(Path.Combine(AppContext.BaseDirectory, "data", "defs"));
         var sim = Sim.Scenarios.VillageRound.NewSimulation(defs, seed);
-        Sim.Scenarios.VillageRound.Setup(sim);
+        var bots = new List<Sim.Bots.BotPlayer>();
+        if (round)
+        {
+            sim.Presets.PresetMode = true;
+            Sim.Scenarios.VillageRound.Setup(sim);
+            sim.Director.Enable(sim.Defs.Difficulty("Normal"));
+            sim.Round.OpenLobby();
+            var trades = Sim.Scenarios.SeasonSweep.Trades;
+            for (var i = 0; i < trades.Length; i++)
+            {
+                var id = new Guid(i + 1, 0, 0, new byte[8]);
+                sim.ApplyNow(new Sim.Round.JoinLobbyCommand(id, $"Bot {i + 1}", default, []));
+                sim.ApplyNow(new Sim.Round.SetTradePreferencesCommand(id, [sim.Defs.Trade(trades[i])], []));
+                bots.Add(new Sim.Bots.BotPlayer(() => sim, id, c => sim.ApplyNow(c), seed * 16 + 100 + (ulong)i));
+            }
+            sim.ApplyNow(new Sim.Round.StartRoundCommand());
+        }
+        else
+            Sim.Scenarios.VillageRound.Setup(sim);
+        var ticks = round ? (int)(sim.Round.EndTick(sim) + SimClock.TicksPerHour - sim.Clock.Tick) : SimClock.TicksPerDay;
 
         // Per-tick times too: frames hitch on the slowest ticks, which the average hides.
         var times = new double[ticks];
         var worst = new List<(double Ms, long Tick, string Systems)>();
+        double botMs = 0;
         var sw = Stopwatch.StartNew();
         for (var i = 0; i < ticks; i++)
         {
             var start = Stopwatch.GetTimestamp();
             sim.Tick();
             times[i] = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+            if (bots.Count > 0)
+            {
+                var botStart = Stopwatch.GetTimestamp();
+                foreach (var bot in bots)
+                    bot.Tick();
+                botMs += Stopwatch.GetElapsedTime(botStart).TotalMilliseconds;
+            }
+            if (round && sim.Round.Phase == Sim.Round.RoundPhase.Over)
+            {
+                ticks = i + 1;
+                Array.Resize(ref times, ticks);
+                break;
+            }
             if (worst.Count < 5 || times[i] > worst[^1].Ms)
             {
                 worst.Add((times[i], sim.Clock.Tick, RanOn(sim)));
@@ -35,6 +73,9 @@ public static class Bench
 
         Console.WriteLine($"{ticks} ticks in {sw.Elapsed.TotalMilliseconds:F0} ms = {sw.Elapsed.TotalMilliseconds / ticks:F4} ms/tick");
         Console.WriteLine($"6x speed needs {6 * SimClock.TicksPerSecond} ticks/s -> {sw.Elapsed.TotalMilliseconds / ticks * 360:F1} ms per real second");
+        if (round)
+            Console.WriteLine($"Round: {sim.Round.Summary?.Outcome.ToString() ?? sim.Round.Phase.ToString()} after {ticks / (float)SimClock.TicksPerHour:F1} h;"
+                + $" {bots.Count} bots {botMs:F0} ms total ({botMs / ticks * 1000:F2} us/tick: in the total above, not the per-tick figures)");
         foreach (var (name, ms) in sim.SystemTotals.OrderByDescending(kv => kv.Value))
             Console.WriteLine($"  {name,-15} {ms,9:F1} ms total  {ms / ticks * 1000,8:F2} us/tick  {ms / Math.Max(1, sim.SystemRuns.GetValueOrDefault(name)),7:F3} ms/run x{sim.SystemRuns.GetValueOrDefault(name)}");
         var sorted = (double[])times.Clone();

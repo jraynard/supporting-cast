@@ -206,6 +206,51 @@ public class PerceptionTests
     }
 
     [Fact]
+    public void SightReachesExactlyItsRadiusAndNoFurther()
+    {
+        var (sim, me) = Round();
+        var view = Perception.For(sim, me);
+        Assert.True(view.CanSeeCell(C(10 + Perception.SightRadius, 10)));
+        Assert.False(view.CanSeeCell(C(10 + Perception.SightRadius + 1, 10)));
+        Assert.True(view.CanSeeCell(C(10, 10 + Perception.SightRadius)));
+        Assert.False(view.CanSeeCell(C(10, 10 + Perception.SightRadius + 1)));
+    }
+
+    [Fact]
+    public void AViewerInTheCornerSeesAlongTheEdges()
+    {
+        var (sim, me) = Round();
+        var corner = C(0, 0);
+        sim.World.Get<Position>(me).Cell = corner;
+        sim.World.Get<Position>(me).Pos = Position.CenterOf(corner);
+        var near = Person(sim, 3, 1);
+        var view = Perception.For(sim, me);
+        Assert.True(view.CanSee(near));
+        Assert.True(view.CanSeeCell(C(Perception.SightRadius, 0)));
+        Assert.False(view.CanSeeCell(new int3(-1, 0, corner.Z)));
+        Assert.False(view.CanSeeCell(C(30, 30)));
+    }
+
+    [Fact]
+    public void LevelsPastSightsReachAreUnseen()
+    {
+        var (sim, me) = Round(depth: 12);
+        var here = sim.World.Get<Position>(me).Cell;
+        var view = Perception.For(sim, me);
+        Assert.False(view.CanSeeCell(here + new int3(1, 0, Perception.SightLevels + 1)));
+    }
+
+    [Fact]
+    public void AViewWhoseViewerIsGoneSeesNothing()
+    {
+        var (sim, me) = Round();
+        var view = Perception.For(sim, me);
+        Assert.True(view.CanSeeCell(C(11, 10)));
+        sim.World.Destroy(me);
+        Assert.False(view.CanSeeCell(C(11, 10)));
+    }
+
+    [Fact]
     public void BuildingTheFieldIsCheap()
     {
         var (sim, me) = Round(depth: 8);

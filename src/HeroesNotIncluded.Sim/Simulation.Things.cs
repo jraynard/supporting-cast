@@ -547,17 +547,22 @@ public sealed partial class Simulation
         !taker.IsNull && KeptStockOf(container) is { } shop && World.TryGet<Trade>(taker, out var trade) && trade.Def.WorkplaceDef == shop
         && !IsPack(container) && !World.Has<Creature>(container);
 
-    /// <summary>The stacks kept in a container, in entity order.</summary>
     /// <summary>What's in a container, in its order (<see cref="Stored.Slot"/>; ties by entity, so every peer agrees).</summary>
     public List<Entity> StoredIn(Entity container)
     {
+        // Straight off the store's arrays: asked often (the UI every frame, the bots, packing), and
+        // a snapshot of everything stored anywhere for each answer was most of its cost.
+        var store = World.Store<Stored>();
+        var entities = store.Entities;
+        var stored = store.Components;
         var items = new List<Entity>();
-        foreach (var e in World.Query<Stored>())
-            if (World.Get<Stored>(e).In == container)
-                items.Add(e);
-        items.Sort((a, b) => World.Get<Stored>(a).Slot != World.Get<Stored>(b).Slot
-            ? World.Get<Stored>(a).Slot.CompareTo(World.Get<Stored>(b).Slot)
-            : a.Index.CompareTo(b.Index));
+        for (var k = 0; k < entities.Length; k++)
+            if (stored[k].In == container)
+                items.Add(entities[k]);
+        if (items.Count > 1)
+            items.Sort((a, b) => store.Get(a.Index).Slot is var sa && store.Get(b.Index).Slot is var sb && sa != sb
+                ? sa.CompareTo(sb)
+                : a.Index.CompareTo(b.Index));
         return items;
     }
 

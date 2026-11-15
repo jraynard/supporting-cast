@@ -37,7 +37,7 @@ public sealed partial class WorldRenderer
         var w = sim.World;
         if (!w.Has<Work.WorkPiece>(e) || session is Work.HammerSession)
             return null;
-        if ((Viewer ?? Sim.Systems.Perception.For(sim, Entity.Null)).Piece(e) is not { } piece)
+        if (Sees(sim).Piece(e) is not { } piece)
             return null;
         var tongs = Sim.Systems.Crafting.ToolInHand(sim, e, "Tongs") is { IsNull: false } own ? w.Get<Thing>(own).Def : sim.Defs.Thing("Tongs");
         return HumanLook.HeldOf(tongs) is { } held ? held with { Piece = ForgeGlow.Colour(piece.Temp) } : null;
@@ -69,7 +69,7 @@ public sealed partial class WorldRenderer
             _ => (Entity.Null, null),
         };
         if (station.IsNull || !w.IsAlive(station)
-            || (Viewer ?? Sim.Systems.Perception.For(sim, Entity.Null)).Piece(e) is not { } piece)
+            || Sees(sim).Piece(e) is not { } piece)
             return;
         DrawPiece(sim, station, ForgeGlow.Colour(piece.Temp), quench?.Dunked == true, quench?.Steam ?? 0f, e.Index);
     }

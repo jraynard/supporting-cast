@@ -833,6 +833,26 @@ public class WagonTests
     }
 
     [Fact]
+    public void WhatsStoredComesInSlotOrderThenByEntity()
+    {
+        var sim = Warm();
+        var wagon = Wagon(sim, C(10, 10));
+        var other = Wagon(sim, C(20, 20));
+        foreach (var def in new[] { "Berries", "Stone", "Wood", "Clay" })
+            Stash(sim, wagon, def, 5);
+        Stash(sim, other, "Stone", 5);
+        var items = sim.StoredIn(wagon);
+        Assert.Equal(4, items.Count);
+        // Shuffle the slots, with a tie: slot first, then the entity's index.
+        int[] slots = [2, 0, 2, 1];
+        for (var k = 0; k < items.Count; k++)
+            sim.World.Get<Stored>(items[k]).Slot = slots[k];
+        var expected = items.Select((e, k) => (e, Slot: slots[k])).OrderBy(p => p.Slot).ThenBy(p => p.e.Index).Select(p => p.e).ToList();
+        Assert.Equal(expected, sim.StoredIn(wagon));
+        Assert.Single(sim.StoredIn(other));
+    }
+
+    [Fact]
     public void AvatarStoresWhatItHoldsAndTakesItBack()
     {
         var sim = Warm();

@@ -315,9 +315,12 @@ public static class HumanLook
     public const float BatteredBelow = 0.3f;
 
     /// <summary>Everything a creature wears, in slot order (<see cref="Layers"/> sorts out the drawing order).</summary>
-    public static List<WornItem> WornOf(Simulation sim, Entity e)
+    public static List<WornItem> WornOf(Simulation sim, Entity e) => WornInto(new List<WornItem>(4), sim, e);
+
+    /// <summary><see cref="WornOf(Simulation, Entity)"/> into a list the caller keeps (emptied first).</summary>
+    public static List<WornItem> WornInto(List<WornItem> list, Simulation sim, Entity e)
     {
-        var list = new List<WornItem>(4);
+        list.Clear();
         foreach (var item in sim.Worn(e))
         {
             var t = sim.World.Get<Thing>(item);
@@ -432,10 +435,15 @@ public static class HumanLook
             list.Add((m, Multiply(color, Dye(tint))));
     }
 
-    public static List<(SpriteSheet Sheet, uint Color)> Layers(TextureAtlas atlas, in Appearance a, uint color, IReadOnlyList<WornItem>? worn = null, HeldItem? held = null)
+    public static List<(SpriteSheet Sheet, uint Color)> Layers(TextureAtlas atlas, in Appearance a, uint color, IReadOnlyList<WornItem>? worn = null, HeldItem? held = null) =>
+        LayersInto(new List<(SpriteSheet, uint)>(12), atlas, a, color, worn, held);
+
+    /// <summary><see cref="Layers"/> into a list the caller keeps (emptied first): the renderer asks for every person every frame.</summary>
+    public static List<(SpriteSheet Sheet, uint Color)> LayersInto(List<(SpriteSheet Sheet, uint Color)> list, TextureAtlas atlas, in Appearance a, uint color,
+        IReadOnlyList<WornItem>? worn = null, HeldItem? held = null)
     {
+        list.Clear();
         var model = ModelOf(atlas, a);
-        var list = new List<(SpriteSheet, uint)>(12);
         var hairColor = Multiply(color, Lift(a.HairColor, HairLift));
         // What's in hand, from behind: under everything (its frames are empty in the views facing us).
         if (held is { } h)

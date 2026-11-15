@@ -351,6 +351,17 @@ public sealed class Map
     /// </summary>
     public bool Raycast(float3 origin, float3 dir, float maxDistance, Func<int, bool> hit, out int3 cell, out int3 normal)
     {
+        var stop = new FuncStop(hit);
+        return Raycast(origin, dir, maxDistance, ref stop, out cell, out normal);
+    }
+
+    /// <summary>
+    /// <see cref="Raycast(float3, float3, float, Func{int, bool}, out int3, out int3)"/> with the test
+    /// as a struct: no delegate or closure per ray, for callers that cast thousands a frame (sight).
+    /// </summary>
+    public bool Raycast<TStop>(float3 origin, float3 dir, float maxDistance, ref TStop stop, out int3 cell, out int3 normal)
+        where TStop : struct, ICellStop
+    {
         cell = default;
         normal = default;
 
@@ -397,7 +408,7 @@ public sealed class Map
 
         while (true)
         {
-            if (hit(Idx(x, y, z)))
+            if (stop.Stops(Idx(x, y, z)))
             {
                 cell = new int3(x, y, z);
                 return true;
@@ -427,6 +438,11 @@ public sealed class Map
             if (t > tMax || !InBounds(x, y, z))
                 return false;
         }
+    }
+
+    private readonly struct FuncStop(Func<int, bool> hit) : ICellStop
+    {
+        public bool Stops(int idx) => hit(idx);
     }
 
     private static int3 AxisNormal(int axis, int sign) =>
@@ -474,4 +490,10 @@ public sealed class Map
                 yield return c;
         }
     }
+}
+
+/// <summary>Where a <see cref="Map.Raycast{TStop}"/> stops: the first cell (index) this accepts.</summary>
+public interface ICellStop
+{
+    bool Stops(int idx);
 }

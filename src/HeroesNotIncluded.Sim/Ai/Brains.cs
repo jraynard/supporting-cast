@@ -17,8 +17,12 @@ public static class AiQueries
         var from = sim.World.Get<Position>(pawn).Cell;
         var best = Entity.Null;
         var bestDist = int.MaxValue;
-        foreach (var e in sim.AvailableItems(pawn)) // a shop's own stock too, to whoever works there
+        // Every stack, without a snapshot (nothing here adds or removes one), that the pawn may take:
+        // a shop's own stock too, to whoever works there (AvailableItems(pawn), in the same order).
+        foreach (var e in sim.World.Each<Stack>())
         {
+            if (!sim.IsAvailable(e, pawn))
+                continue;
             var thing = sim.World.Get<Thing>(e);
             if (!match(e, thing.Def) || sim.Reservations.IsReservedByOther(e, pawn))
                 continue;
@@ -27,8 +31,6 @@ public static class AiQueries
                 continue;
             // What's kept in a kitchen (the larder, the log basket) is its staff's alone.
             if (WorkGivers.KitchenStock(sim, pawn, e))
-                continue;
-            if (d >= bestDist || d > maxDistance)
                 continue;
             if (sim.Map.Fire[sim.Map.Idx(thing.Cell)] > 0)
                 continue;
