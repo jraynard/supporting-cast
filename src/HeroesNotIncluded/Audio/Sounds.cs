@@ -63,6 +63,10 @@ public static class Sounds
     public const string Breath = "dragon.breath";
     public const string Wings = "dragon.wings";
 
+    // Firefighting.
+    public const string Splash = "water.splash";
+    public const string Douse = "water.douse";
+
     // The world around.
     public const string Wind = "amb.wind";
     public const string Birds = "amb.birds";
@@ -85,6 +89,7 @@ public static class Sounds
         PotBubble, PotStir, Pinch, Pour, Fizz, Clink, Knock, Scrub, Cloth, Creak,
         Click, Ratchet, Rune, Weave, Hum, Pulse, Drawn, Snap,
         Swing, Clash, Wound, Bow, Miss, Din, Parry, Block, Thrust, Heavy, Roar, Breath, Wings,
+        Splash, Douse,
         Wind, Birds, Night, River, Hearth, Blaze, Crowd, Band,
         Voice,
     ];

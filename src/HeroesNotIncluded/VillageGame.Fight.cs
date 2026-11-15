@@ -287,7 +287,9 @@ public sealed partial class VillageGame
             }
         if (_sim.RecentBlows.Count > 0)
             _blowsFelt = Math.Max(_blowsFelt, _sim.RecentBlows[^1].Tick);
+        BreathRumble();
         _shake *= MathF.Exp(-dt * 14f);
+        _rumble *= MathF.Exp(-dt * 3.5f);
         if (_hitStop > 0)
         {
             _hitStop -= dt;
@@ -296,9 +298,39 @@ public sealed partial class VillageGame
         return animDt;
     }
 
-    /// <summary>The camera's shake this frame: a jitter on the ground plane, fading.</summary>
-    private float3 ShakeOffset() => _shake < 0.003f || !Settings.Current.ScreenShake ? default
-        : new float3(MathF.Sin(_time * 91f) * _shake, MathF.Cos(_time * 77f) * _shake, 0);
+    /// <summary>A dragon's breath shaking the ground: strength (cells), slower and longer than a blow's.</summary>
+    private float _rumble;
+    private long _breathsFelt = -1;
+
+    /// <summary>Breath within this many cells of you rumbles, the more the closer.</summary>
+    private const float RumbleRange = 28f, RumbleMax = 0.22f;
+
+    /// <summary>A new breath near you: the ground rumbles, hardest where it struck closest.</summary>
+    private void BreathRumble()
+    {
+        if (!HasAvatar)
+            return;
+        var me = _sim.World.Get<Position>(_avatar).Pos;
+        foreach (var b in _sim.RecentBreaths)
+        {
+            if (b.Tick <= _breathsFelt)
+                continue;
+            var near = Distance(me, b.Mouth);
+            foreach (var end in b.RayEnds)
+                near = Math.Min(near, Distance(me, end));
+            var strength = RumbleMax * Math.Clamp(1f - near / RumbleRange, 0f, 1f);
+            _rumble = Math.Max(_rumble, strength);
+        }
+        if (_sim.RecentBreaths.Count > 0)
+            _breathsFelt = Math.Max(_breathsFelt, _sim.RecentBreaths[^1].Tick);
+
+        static float Distance(float3 a, float3 b) => MathF.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
+    }
+
+    /// <summary>The camera's shake this frame: a jitter on the ground plane, fading, and a breath's slower rumble under it.</summary>
+    private float3 ShakeOffset() => (_shake < 0.003f && _rumble < 0.003f) || !Settings.Current.ScreenShake ? default
+        : new float3(MathF.Sin(_time * 91f) * _shake + (MathF.Sin(_time * 31f) + 0.5f * MathF.Sin(_time * 53f)) * _rumble,
+            MathF.Cos(_time * 77f) * _shake + (MathF.Cos(_time * 27f) + 0.5f * MathF.Sin(_time * 47f)) * _rumble, 0);
 
     /// <summary>The nearest raider or predator on its feet that you can see, within <see cref="FightHintRange"/>.</summary>
     private Entity? NearestFoe()

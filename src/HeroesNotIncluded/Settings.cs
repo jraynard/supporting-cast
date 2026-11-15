@@ -30,7 +30,7 @@ public sealed class Settings
     /// <summary>First-day tips for your trade, and markers on its stations till you've been to each.</summary>
     public bool ShowTips { get; set; } = true;
 
-    /// <summary>The camera shakes a little with heavy blows you deal or take.</summary>
+    /// <summary>The camera shakes a little with heavy blows you deal or take, and rumbles with dragon fire nearby.</summary>
     public bool ScreenShake { get; set; } = true;
 
     /// <summary>Multiplier on keyboard camera panning.</summary>

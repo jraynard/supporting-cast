@@ -26,15 +26,37 @@ public sealed class Particles
         /// <summary>Emissive (embers): feeds the bloom.</summary>
         public bool Glow;
         public bool FadeIn;
+
+        /// <summary>
+        /// Colour over its life (a flame cooling to smoke): <see cref="Color"/> at birth, through
+        /// <see cref="MidColor"/> at <see cref="MidAt"/> (when that's above zero), to
+        /// <see cref="EndColor"/> at its end.
+        /// </summary>
+        public bool Ramp;
+        public float4 MidColor;
+        public float MidAt;
+        public float4 EndColor;
+
+        /// <summary>Dies on falling below <see cref="Floor"/> (world z): droplets stop at the ground.</summary>
+        public bool HasFloor;
+        public float Floor;
     }
 
-    private const int Max = 2048;
+    private const int Max = 4096;
     private readonly List<Particle> _live = [];
     private readonly Random _rand = new(7);
 
     public int Count => _live.Count;
 
     public float Range(float a, float b) => a + (float)_rand.NextDouble() * (b - a);
+
+    /// <summary>How many to emit this frame for <paramref name="perSecond"/> over <paramref name="dt"/> seconds (the fraction by chance), so a stream's thickness doesn't hang on the frame rate.</summary>
+    public int PerFrame(float perSecond, float dt)
+    {
+        var n = perSecond * Math.Max(0f, dt);
+        var whole = (int)n;
+        return whole + (Range(0f, 1f) < n - whole ? 1 : 0);
+    }
 
     public void Emit(in Particle p)
     {
@@ -211,6 +233,250 @@ public sealed class Particles
         });
     }
 
+    /// <summary>Pale water-blue, for droplets and spray.</summary>
+    public static readonly float4 Water = new(0.72f, 0.86f, 1f, 0.9f);
+
+    /// <summary>
+    /// Drops shed from a thrown bucket's water as it flies, at <paramref name="at"/>, going
+    /// <paramref name="vel"/> (cells a second, z in sprite cells as every particle's is): they
+    /// scatter a little, fall, and stop at <paramref name="floor"/>.
+    /// </summary>
+    public void WaterTrail(float3 at, float3 vel, float floor, int count)
+    {
+        for (var i = 0; i < count; i++)
+            Emit(new Particle
+            {
+                Sprite = "fx/droplet",
+                Pos = at + new float3(Range(-0.08f, 0.08f), Range(-0.08f, 0.08f), Range(-0.04f, 0.04f)),
+                Vel = vel * Range(0.3f, 0.7f) + new float3(Range(-0.5f, 0.5f), Range(-0.5f, 0.5f), Range(-0.3f, 0.6f)),
+                Gravity = 9f,
+                Drag = 0.4f,
+                Life = Range(0.4f, 0.8f),
+                Size = Range(0.06f, 0.12f),
+                Color = Water,
+                Unlit = true,
+                HasFloor = true,
+                Floor = floor,
+            });
+    }
+
+    /// <summary>
+    /// Water landing at <paramref name="at"/>: a crown of drops thrown up and out, falling back,
+    /// and a low mist rolling off. <paramref name="size"/> 1 for a bucketful.
+    /// </summary>
+    public void SplashBurst(float3 at, float size)
+    {
+        var count = (int)(26 * size);
+        for (var i = 0; i < count; i++)
+        {
+            var a = Range(0, MathF.Tau);
+            var dir = new float3(MathF.Cos(a), MathF.Sin(a), 0);
+            Emit(new Particle
+            {
+                Sprite = "fx/droplet",
+                Pos = at + dir * Range(0.05f, 0.35f) + new float3(0, 0, 0.03f),
+                Vel = dir * Range(0.8f, 2.4f) * size + new float3(0, 0, Range(2.2f, 4.5f)),
+                Gravity = 11f,
+                Drag = 0.5f,
+                Life = Range(0.5f, 0.9f),
+                Size = Range(0.07f, 0.15f),
+                Color = Water,
+                Unlit = true,
+                HasFloor = true,
+                Floor = at.Z,
+            });
+        }
+        for (var i = 0; i < 6 * size; i++)
+        {
+            var a = Range(0, MathF.Tau);
+            var dir = new float3(MathF.Cos(a), MathF.Sin(a), 0);
+            Emit(new Particle
+            {
+                Sprite = "fx/smoke",
+                Pos = at + dir * Range(0.1f, 0.4f) + new float3(0, 0, 0.05f),
+                Vel = dir * Range(0.6f, 1.2f) + new float3(0, 0, Range(0.1f, 0.4f)),
+                Drag = 2.5f,
+                Life = Range(0.6f, 1.0f),
+                Size = Range(0.35f, 0.55f),
+                Grow = 0.9f,
+                Color = new float4(0.85f, 0.92f, 1f, 0.35f),
+                Unlit = true,
+            });
+        }
+    }
+
+    /// <summary>
+    /// Fire put out by water at <paramref name="at"/>, burning <paramref name="fire"/> (0..1) hard:
+    /// a thick white plume of steam boiling up, and a puff of dark smoke as the flames die.
+    /// </summary>
+    public void DouseSteam(float3 at, float fire)
+    {
+        var count = 4 + (int)(fire * 6);
+        for (var i = 0; i < count; i++)
+            Emit(new Particle
+            {
+                Sprite = "fx/smoke",
+                Pos = at + new float3(Range(-0.3f, 0.3f), Range(-0.3f, 0.3f), Range(0f, 0.15f)),
+                Vel = new float3(Range(-0.25f, 0.25f), Range(-0.25f, 0.25f), Range(1.6f, 3.2f)),
+                Drag = 1.1f,
+                Life = Range(1.1f, 2f),
+                Size = Range(0.4f, 0.7f) * (0.7f + 0.5f * fire),
+                Grow = 0.9f,
+                Color = new float4(0.96f, 0.97f, 1f, 0.55f + 0.25f * fire),
+                Unlit = true,
+                FadeIn = true,
+            });
+        for (var i = 0; i < 2; i++)
+            Emit(new Particle
+            {
+                Sprite = "fx/smoke",
+                Pos = at + new float3(Range(-0.2f, 0.2f), Range(-0.2f, 0.2f), 0.1f),
+                Vel = new float3(Range(-0.15f, 0.15f), Range(-0.15f, 0.15f), Range(1f, 1.8f)),
+                Drag = 1.2f,
+                Life = Range(1f, 1.5f),
+                Size = Range(0.35f, 0.5f),
+                Grow = 0.6f,
+                Color = new float4(0.25f, 0.24f, 0.24f, 0.5f),
+            });
+    }
+
+    /// <summary>A last wisp of steam off a doused cell, as it settles.</summary>
+    public void SteamWisp(float3 at)
+    {
+        Emit(new Particle
+        {
+            Sprite = "fx/smoke",
+            Pos = at + new float3(Range(-0.35f, 0.35f), Range(-0.35f, 0.35f), 0.05f),
+            Vel = new float3(Range(-0.1f, 0.1f), Range(-0.1f, 0.1f), Range(0.8f, 1.4f)),
+            Drag = 0.8f,
+            Life = Range(1f, 1.6f),
+            Size = Range(0.25f, 0.4f),
+            Grow = 0.5f,
+            Color = new float4(0.94f, 0.96f, 1f, 0.35f),
+            Unlit = true,
+            FadeIn = true,
+        });
+    }
+
+    /// <summary>
+    /// A tongue of dragon fire from <paramref name="from"/> along <paramref name="to"/>: born white-hot,
+    /// cooling through <paramref name="heart"/> to a dark red as it billows out, gone at the far end.
+    /// </summary>
+    public void FlameJet(float3 from, float3 to, float4 heart, float jitter)
+    {
+        var d = to - from;
+        var life = Range(0.28f, 0.42f);
+        var side = new float3(Range(-jitter, jitter), Range(-jitter, jitter), Range(-jitter, jitter) * 0.5f);
+        var v = (d + side) / life;
+        // Mostly soft billows (a gush of burning gas), now and then a licking flame among them.
+        var tongue = Range(0f, 1f) < 0.25f;
+        Emit(new Particle
+        {
+            Sprite = tongue ? "fx/fire" : "fx/smoke",
+            Pos = from + d * Range(0f, 0.1f),
+            Vel = new float3(v.X, v.Y, v.Z * WorldScale.LevelHeight),
+            Life = life,
+            Size = tongue ? Range(0.2f, 0.3f) : Range(0.22f, 0.34f),
+            Grow = tongue ? Range(1.2f, 1.8f) : Range(1.6f, 2.4f),
+            Color = new float4(1f, 0.88f, 0.6f, tongue ? 0.8f : 0.55f),
+            MidColor = new float4(heart.X, heart.Y, heart.Z, tongue ? 0.7f : 0.5f),
+            MidAt = 0.3f,
+            EndColor = new float4(0.35f, 0.06f, 0.03f, 0.25f),
+            Ramp = true,
+            Unlit = true,
+            Glow = true,
+        });
+    }
+
+    /// <summary>Black smoke rolling up off a breath's path at <paramref name="at"/>, after the fire.</summary>
+    public void BreathSmoke(float3 at, float size = 1f)
+    {
+        Emit(new Particle
+        {
+            Sprite = "fx/smoke",
+            Pos = at + new float3(Range(-0.25f, 0.25f), Range(-0.25f, 0.25f), Range(0f, 0.2f)),
+            Vel = new float3(Range(-0.3f, 0.3f), Range(-0.3f, 0.3f), Range(0.8f, 1.6f)),
+            Drag = 0.9f,
+            Life = Range(1.4f, 2.4f),
+            Size = Range(0.45f, 0.75f) * size,
+            Grow = 0.8f,
+            Color = new float4(0.16f, 0.14f, 0.13f, 0.55f),
+            EndColor = new float4(0.35f, 0.34f, 0.34f, 0.3f),
+            Ramp = true,
+            FadeIn = true,
+        });
+    }
+
+    /// <summary>Flame bursting out where a breath strikes, in a ring along the ground.</summary>
+    public void FlameBurst(float3 at, float4 heart, int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            var a = Range(0, MathF.Tau);
+            var dir = new float3(MathF.Cos(a), MathF.Sin(a), 0);
+            Emit(new Particle
+            {
+                Sprite = "fx/fire",
+                Pos = at + new float3(0, 0, 0.05f),
+                Vel = dir * Range(1.5f, 3f) + new float3(0, 0, Range(0.5f, 1.8f)),
+                Drag = 3.5f,
+                Life = Range(0.35f, 0.6f),
+                Size = Range(0.3f, 0.5f),
+                Grow = 1.2f,
+                Color = new float4(1f, 0.9f, 0.65f, 1f),
+                EndColor = new float4(heart.X * 0.6f, heart.Y * 0.4f, heart.Z * 0.4f, 0.4f),
+                Ramp = true,
+                Unlit = true,
+                Glow = true,
+            });
+        }
+    }
+
+    /// <summary>A dragon drawing breath: hot specks pulled in from round <paramref name="mouth"/> into it.</summary>
+    public void Inhale(float3 mouth, float4 color)
+    {
+        var a = Range(0, MathF.Tau);
+        var e = Range(-0.6f, 0.9f);
+        var r = Range(0.7f, 1.2f);
+        var start = mouth + new float3(MathF.Cos(a) * MathF.Cos(e) * r, MathF.Sin(a) * MathF.Cos(e) * r, MathF.Sin(e) * r / WorldScale.LevelHeight);
+        var life = Range(0.35f, 0.55f);
+        var v = (mouth - start) / life;
+        Emit(new Particle
+        {
+            Sprite = "fx/ember",
+            Pos = start,
+            Vel = new float3(v.X, v.Y, v.Z * WorldScale.LevelHeight),
+            Life = life,
+            Size = Range(0.06f, 0.11f),
+            Grow = -0.1f,
+            Color = color,
+            Unlit = true,
+            Glow = true,
+            FadeIn = true,
+        });
+    }
+
+    /// <summary>
+    /// Air shimmering over great heat: faint, warm-pale puffs wobbling up from <paramref name="at"/>.
+    /// Not true refraction (the post pass has no distortion), but it reads as the air going thick.
+    /// </summary>
+    public void HeatHaze(float3 at, float size = 1f)
+    {
+        Emit(new Particle
+        {
+            Sprite = "fx/smoke",
+            Pos = at + new float3(Range(-0.2f, 0.2f), Range(-0.2f, 0.2f), 0),
+            Vel = new float3(Range(-0.35f, 0.35f), Range(-0.35f, 0.35f), Range(1f, 1.8f)),
+            Drag = 1.5f,
+            Life = Range(0.5f, 0.8f),
+            Size = Range(0.35f, 0.55f) * size,
+            Grow = 0.6f,
+            Color = new float4(1f, 0.85f, 0.65f, 0.12f),
+            Unlit = true,
+            FadeIn = true,
+        });
+    }
+
     public void Zzz(float3 at)
     {
         Emit(new Particle
@@ -246,9 +512,24 @@ public sealed class Particles
             // Heights are in sprite cells, not world levels (taller-looking levels, WorldScale).
             p.Pos += new float3(p.Vel.X, p.Vel.Y, p.Vel.Z / WorldScale.LevelHeight) * dt;
             p.Size += p.Grow * dt;
+            if ((p.HasFloor && p.Pos.Z < p.Floor) || p.Size <= 0f)
+            {
+                _live[i] = _live[^1];
+                _live.RemoveAt(_live.Count - 1);
+                continue;
+            }
             _live[i] = p;
         }
     }
+
+    private static float4 Ramped(in Particle p, float t)
+    {
+        if (p.MidAt <= 0f)
+            return Lerp(p.Color, p.EndColor, t);
+        return t < p.MidAt ? Lerp(p.Color, p.MidColor, t / p.MidAt) : Lerp(p.MidColor, p.EndColor, (t - p.MidAt) / (1f - p.MidAt));
+    }
+
+    private static float4 Lerp(float4 a, float4 b, float t) => a + (b - a) * Math.Clamp(t, 0f, 1f);
 
     public void Draw(WorldRenderer r, int cut)
     {
@@ -260,7 +541,7 @@ public sealed class Particles
             var fade = 1f - t * t;
             if (p.FadeIn)
                 fade *= Math.Min(1f, t * 6f);
-            var c = p.Color;
+            var c = p.Ramp ? Ramped(p, t) : p.Color;
             var flags = Quad.Level(Math.Max(0, (int)p.Pos.Z)) | (p.Unlit ? Quad.Unlit : 0u) | (p.Glow ? Quad.Glow : 0u);
             r.Billboard(r.Sprite(p.Sprite), p.Pos - WorldScale.Rise(p.Size * 0.5f), p.Size, p.Size, Rgba.Pack(c.X, c.Y, c.Z, c.W * fade), flags, translucent: true);
         }

@@ -60,7 +60,7 @@ reload). `SC_SOUND_LOG=1` logs every sound as it starts: handy for checking a ho
 ## Synthesized sounds
 
 `python3 tools/sfx_synth.py` writes the first set from scratch with numpy and ffmpeg: anvil
-strikes by modal synthesis, coins, the bell, hisses, the pot, clicks, chimes, the babble syllables
+strikes by modal synthesis, coins, the bell, hisses, a bucket's splash and the hiss of it on fire, the pot, clicks, chimes, the babble syllables
 and the ambience beds. `--preview` adds `.cache/sounds/preview.ogg` with every sound in a row, and
 `--only anvil` makes just those. Retune a sound there and run it again; it's seeded, so unchanged
 sounds come out the same. These are ours outright.

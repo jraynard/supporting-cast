@@ -212,6 +212,9 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         _floats.Add(new FloatingText { Pos = pos, Text = text, Color = color, Born = _now });
     public Particles Particles => _particles;
     private Camera3D _cam = null!;
+
+    /// <summary>This frame's animation seconds (0 when paused), for effects that emit at a rate.</summary>
+    private float _animDt;
     private QuadRenderer _quads = null!;
 
     private byte[] _light = [];
@@ -321,6 +324,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         _cam = cam;
         _quads = quads;
         _anim.Advance(animDt);
+        _animDt = animDt;
         _anim.LocalAim = LocalAim;
         _now = time;
         UpdateSwings(sim);
@@ -536,24 +540,15 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         }
 
         // Fire: two flickering flames per burning cell, offset a little so a burning area looks full.
-        var fireSprite = S("fx/fire");
         foreach (var i in sim.Fire.BurningTiles)
         {
             var t = map.CellOf(i);
-            if (!InView(t))
-                continue;
-            var f = map.Fire[i];
-            for (var k = 0; k < 2; k++)
-            {
-                var h = SimRandom.Hash(i, k, 5);
-                var jitter = new float3((h & 255) / 255f - 0.5f, (h >> 8 & 255) / 255f - 0.5f, 0) * 0.5f;
-                var flicker = 0.8f + 0.2f * MathF.Sin(time * (11f + k * 4f) + i * 1.7f);
-                var s = (0.45f + 0.6f * f) * flicker * (k == 0 ? 1f : 0.7f);
-                Billboard(fireSprite, new float3(t.X + 0.5f, t.Y + 0.5f, t.Z) + jitter, s, s * 1.25f, Rgba.Pack(1, 1, 1, 0.9f), Quad.Level(t.Z) | Quad.Unlit | Quad.Glow, translucent: true);
-            }
+            if (InView(t))
+                DrawFlames(i, t, map.Fire[i], time);
         }
 
         DrawSmoke(sim, InView, time);
+        DrawSplashes(sim, InView, time);
         DrawBreaths(sim, time);
         DrawShots(sim, time);
         DrawStuckArrows(sim);
@@ -800,6 +795,12 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 }
                 if (_anim.Every(e, 0.35f))
                     _particles.Embers(mouth, 1);
+                // Drawing the heat in: specks pulled into its jaws, the air over them going thick.
+                var big = Math.Clamp(sheet.FrameSize.X / 96f, 0.5f, 1.5f);
+                for (var n = _particles.PerFrame(26f * big, _animDt); n > 0; n--)
+                    _particles.Inhale(mouth, new float4(1f, 0.75f + 0.2f * pulse, 0.45f, 0.9f));
+                for (var n = _particles.PerFrame(9f, _animDt); n > 0; n--)
+                    _particles.HeatHaze(mouth + WorldScale.Rise(0.15f), big);
             }
         }
 
@@ -999,6 +1000,20 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     /// Soft grey puffs for every smoky cell in view, drifting upward and wobbling so the column
     /// reads as moving. Each cell's puffs loop within the cell, so nothing pops when cells change.
     /// </summary>
+    /// <summary>A burning cell's flames (map index <paramref name="i"/>, burning <paramref name="f"/> hard): two flickering, offset a little so a burning area looks full.</summary>
+    private void DrawFlames(int i, int3 t, float f, float time)
+    {
+        var fireSprite = S("fx/fire");
+        for (var k = 0; k < 2; k++)
+        {
+            var h = SimRandom.Hash(i, k, 5);
+            var jitter = new float3((h & 255) / 255f - 0.5f, (h >> 8 & 255) / 255f - 0.5f, 0) * 0.5f;
+            var flicker = 0.8f + 0.2f * MathF.Sin(time * (11f + k * 4f) + i * 1.7f);
+            var s = (0.45f + 0.6f * f) * flicker * (k == 0 ? 1f : 0.7f);
+            Billboard(fireSprite, new float3(t.X + 0.5f, t.Y + 0.5f, t.Z) + jitter, s, s * 1.25f, Rgba.Pack(1, 1, 1, 0.9f), Quad.Level(t.Z) | Quad.Unlit | Quad.Glow, translucent: true);
+        }
+    }
+
     private void DrawSmoke(Simulation sim, Func<int3, bool> inView, float time)
     {
         var map = sim.Map;
@@ -1087,6 +1102,11 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             foreach (var k in _firstSeen.Keys.ToList())
                 if (!sim.RecentBreaths.Contains(k) && !sim.RecentShots.Contains(k))
                     _firstSeen.Remove(k);
+        if (_breathFlash.Count > 0)
+            foreach (var k in _breathFlash.Keys.ToList())
+                if (!sim.RecentBreaths.Contains(k))
+                    _breathFlash.Remove(k);
+        DrawScorches(sim, cut);
         foreach (var ev in sim.RecentBreaths)
         {
             var first = !_firstSeen.ContainsKey(ev);
@@ -1098,16 +1118,39 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 continue;
             var alpha = 0.9f * (1f - age);
             var flame = FireColor;
-            var body = Rgba.Pack(1, 1, 1, alpha);
+            var body = Rgba.Pack(1f, 0.86f, 0.62f, alpha * 0.8f); // warm, not white: bloom bleaches white to nothing
             var mouth = !ev.Source.IsNull && _anim.TryGetMouth(ev.Source, out var drawn) ? drawn : ev.Mouth;
             var reach = Math.Min(1f, 0.15f + age * 5f);
-            if (first)
+            if (first && sim.Clock.Tick - ev.Tick < Sim.Environment.Breath.ShowTicks / 2)
                 foreach (var end in ev.RayEnds)
-                    _particles.Embers(end, 3);
+                {
+                    // Where it strikes: flame thrown out along the ground, embers, a black billow, a scorch left behind.
+                    _particles.FlameBurst(end, flame, 7);
+                    _particles.Embers(end, 6);
+                    for (var k = 0; k < 2; k++)
+                        _particles.BreathSmoke(end, 1.3f);
+                    Scorch(end);
+                }
+            // The moment it comes: a white-hot flash at the jaws.
+            var flashAge = (_anim.Clock - (_breathFlash.TryGetValue(ev, out var f0) ? f0 : _breathFlash[ev] = _anim.Clock)) / 0.18f;
+            if (flashAge < 1f && mouth.Z <= cut + 1)
+            {
+                var fs = 1.4f * (1f - flashAge * 0.5f);
+                Billboard(fire, mouth - WorldScale.Rise(fs * 0.5f), fs, fs, Rgba.Pack(1f, 0.95f, 0.85f, 0.9f * (1f - flashAge)), Quad.Level(Math.Max(0, (int)mouth.Z)) | Quad.Unlit | Quad.Glow, translucent: true);
+            }
+            // While it pours out, a stream of flame along each ray, cooling as it goes, and smoke rolling off behind.
+            var pouring = age < 0.65f;
             for (var r = 0; r < ev.RayEnds.Count; r++)
             {
                 var d = ev.RayEnds[r] - mouth;
                 var len = MathF.Sqrt(d.X * d.X + d.Y * d.Y + d.Z * d.Z);
+                if (pouring)
+                {
+                    for (var n = _particles.PerFrame(Math.Min(36f, 14f + len * 2f), _animDt); n > 0; n--)
+                        _particles.FlameJet(mouth, ev.RayEnds[r], flame, 0.12f * len);
+                    for (var n = _particles.PerFrame(5f + len * 0.6f, _animDt); n > 0; n--)
+                        _particles.BreathSmoke(mouth + d * _particles.Range(0.35f, 1f) * reach + WorldScale.Rise(0.2f));
+                }
                 var steps = Math.Max(1, (int)(len / 0.6f));
                 for (var k = 1; k <= steps; k++)
                 {
@@ -1118,7 +1161,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                     if (p.Z > cut + 1)
                         continue;
                     var flicker = 0.85f + 0.15f * MathF.Sin(time * 20f + r * 3.1f + k);
-                    var size = (0.3f + 0.65f * t) * flicker;
+                    var size = (0.24f + 0.5f * t) * flicker; // a hot core: the particles give the jet its body
                     var frame = (int)(time * 16f + r * 2 - k + 1000);
                     var sprite = flipbook?.Find("burn") is { } burn ? burn.Frames[frame % burn.Frames.Length].Sprite : fire;
                     var at = p - WorldScale.Rise(size * 0.45f);
@@ -1134,6 +1177,43 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                     Decal(glow, new float3(end.X, end.Y, MathF.Floor(end.Z) + 0.04f), 1.1f, tint, Quad.Level((int)end.Z) | Quad.Unlit, translucent: true);
                 }
             }
+        }
+    }
+
+    /// <summary>When each breath's flash was first drawn (animation clock).</summary>
+    private readonly Dictionary<Sim.Environment.BreathEvent, float> _breathFlash = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>Ground blackened where breath struck: (where, when, animation clock). Only for the eye; it fades.</summary>
+    private readonly List<(float3 At, float Start)> _scorches = [];
+
+    private const float ScorchSeconds = 10f;
+    private const int MaxScorches = 64;
+
+    private void Scorch(float3 at)
+    {
+        if (_scorches.Count >= MaxScorches)
+            _scorches.RemoveAt(0);
+        _scorches.Add((at, _anim.Clock));
+    }
+
+    /// <summary>The fading black marks breath leaves on the ground.</summary>
+    private void DrawScorches(Simulation sim, int cut)
+    {
+        var mark = S("fx/smoke");
+        for (var i = _scorches.Count - 1; i >= 0; i--)
+        {
+            var (at, start) = _scorches[i];
+            var age = (_anim.Clock - start) / ScorchSeconds;
+            if (age >= 1f || age < 0f)
+            {
+                _scorches.RemoveAt(i);
+                continue;
+            }
+            var ground = MathF.Floor(at.Z);
+            if (ground > cut)
+                continue;
+            var h = SimRandom.Hash((int)(at.X * 8), (int)(at.Y * 8), 11);
+            Decal(mark, new float3(at.X, at.Y, ground + 0.035f), 1.1f + (h & 15) * 0.03f, Rgba.Pack(0.07f, 0.05f, 0.04f, 0.6f * (1f - age * age)), Quad.Level((int)ground), translucent: true);
         }
     }
 

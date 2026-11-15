@@ -1,7 +1,7 @@
 """The white art the game tints, redrawn for the Norse pass: the selection brackets (knotwork corners),
 the designation mark (a rune-cut X, like the gebo rune), the need bubble (a round shield with rivets)
 and the chatter bubble (rune scratches instead of dots), and the white core of the dragon's breath
-(fx/breath_core). They stay neutral (white and greys, the bubble cream) because the game multiplies
+(fx/breath_core), and the thrown water's drop and ripple (fx/droplet, fx/splash_ring). They stay neutral (white and greys, the bubble cream) because the game multiplies
 them by a colour. Small effects (Zzz, glints) and
 the soft smoke puff (also the contact shadow) keep their older drawings.
 
@@ -149,6 +149,40 @@ def core_fx(seed, s=32):
     return img
 
 
+def droplet():
+    """A drop of thrown water, 8x8: a soft white bead with a bright fleck high on one side (the game
+    tints it water-blue). Small and round so a spray of them reads as water, not sparks."""
+    img = Image.new("RGBA", (8, 8), (0, 0, 0, 0))
+    for y in range(8):
+        for x in range(8):
+            r = math.hypot(x + 0.5 - 4, (y + 0.5 - 4.4) * 1.1)
+            a = max(0.0, min(1.0, (3.4 - r) / 1.2))
+            if a > 0:
+                v = int(200 + 40 * (1 - r / 3.4))
+                img.putpixel((x, y), (v, v, min(255, v + 15), int(235 * a)))
+    for x, y, c in ((3, 2, WHITE), (2, 3, WHITE), (3, 3, WHITE)):
+        img.putpixel((x, y), c)
+    return img
+
+
+def splash_ring():
+    """The ripple where a bucket's water hits the ground, 32x32: a thin bright ring with a broken,
+    splashy outer edge and a faint wet fill inside (the game grows and fades it, tinted blue)."""
+    img = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+    for y in range(32):
+        for x in range(32):
+            dx, dy = x + 0.5 - 16, y + 0.5 - 16
+            r = math.hypot(dx, dy)
+            ang = math.atan2(dy, dx)
+            edge = 13.0 + 1.1 * math.sin(ang * 7.0) + 0.6 * math.sin(ang * 13.0 + 1.3)
+            ring = max(0.0, 1.0 - abs(r - edge) / 1.4)
+            fill = 0.18 if r < edge - 1.0 else 0.0
+            a = max(ring, fill)
+            if a > 0:
+                img.putpixel((x, y), (255, 255, 255, int(255 * min(1.0, a))))
+    return img
+
+
 def breath_core():
     seq = Sequencer()
     seq.add("burn", [core_fx(k) for k in range(4)], 60)
@@ -162,6 +196,8 @@ def generate():
     save(designate_x(), "ui/designate_x")
     save(bubble(), "ui/bubble")
     save(speech(), "fx/speech")
+    save(droplet(), "fx/droplet")
+    save(splash_ring(), "fx/splash_ring")
 
 
 if __name__ == "__main__":

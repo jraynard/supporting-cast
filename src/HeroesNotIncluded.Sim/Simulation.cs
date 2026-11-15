@@ -118,6 +118,9 @@ public sealed partial class Simulation
     /// <summary>Fire breaths of the last moments, for the renderer. Not part of the sim state.</summary>
     public List<Environment.BreathEvent> RecentBreaths { get; } = [];
 
+    /// <summary>Buckets of water thrown in the last moments, for the renderer and sounds. Not part of the sim state.</summary>
+    public List<Environment.SplashEvent> RecentSplashes { get; } = [];
+
     /// <summary>Attacks of the last moments, for the renderer. Not part of the sim state.</summary>
     public List<ShotEvent> RecentShots { get; } = [];
 

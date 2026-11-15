@@ -221,6 +221,32 @@ def hiss(rng, seconds, attack=0.02, decay=0.6, lo=2500, hi=12000):
     return norm(s + bubbles * env(seconds, attack, decay * 1.5), 0.75)
 
 
+def splash(rng, seconds=0.9):
+    """A bucket of water slapping down: a low thump, a broad slosh, and drops pattering after."""
+    t = t_axis(seconds)
+    thump = np.sin(2 * np.pi * rng.uniform(70, 95) * t * (1 - 0.3 * t)) * np.exp(-t / 0.06)
+    slosh = band(noise(rng, seconds), lo=250, hi=3200) * env(seconds, 0.004, 0.22, 1.4)
+    wash = band(noise(rng, seconds), lo=1200, hi=7000) * env(seconds, 0.02, 0.4) * 0.35
+    drops = np.zeros_like(t)
+    for _ in range(int(rng.uniform(14, 22))):
+        i = int(rng.uniform(0.08, seconds - 0.06) * RATE)
+        k = int(rng.uniform(0.008, 0.02) * RATE)
+        f = rng.uniform(900, 2400)
+        drops[i:i + k] += np.sin(2 * np.pi * f * np.arange(k) / RATE * (1 + np.linspace(0, 0.6, k))) * np.hanning(k) * rng.uniform(0.15, 0.4)
+    return norm(thump * 0.9 + slosh + wash + drops * np.exp(-t / 0.35), 0.85)
+
+
+def douse_hiss(rng, seconds=2.6):
+    """Water on burning timber: a hard hiss that boils off, sputtering as it goes."""
+    s = hiss(rng, seconds, 0.03, 0.9, lo=1800, hi=11000)
+    pops = np.zeros_like(s)
+    for _ in range(int(seconds * 12)):
+        i = int(rng.uniform(0, len(s) - 400))
+        k = int(rng.uniform(40, 160))
+        pops[i:i + k] += rng.standard_normal(k) * np.hanning(k) * rng.uniform(0.2, 0.6)
+    return norm(s + band(pops, lo=1500) * env(seconds, 0.01, 0.7), 0.75)
+
+
 def bubble_loop(rng, seconds=5.0):
     out = np.zeros(int((seconds + 0.5) * RATE))
     for _ in range(int(seconds * 18)):
@@ -685,6 +711,8 @@ def catalogue():
         "forge_fire": ("amb", [lambda r: fire_loop(r, 6, roar=1.4, crackle=0.6)]),
         "forge_bellows": ("sfx", v(lambda r: whoosh(r, 0.9, 250, 900, peak=0.45, q=1.0), 2)),
         "forge_quench": ("sfx", v(lambda r: hiss(r, 2.2, 0.01, 0.7), 2)),
+        "water_splash": ("sfx", v(splash, 3)),
+        "water_douse": ("sfx", v(douse_hiss, 2)),
         "forge_steam": ("amb", [lambda r: norm(loopable(band(noise(r, 4.5), lo=3000, hi=12000)), 0.5)]),
         "work_grind": ("amb", [grind_loop]),
         "kitchen_bubble": ("amb", [bubble_loop]),

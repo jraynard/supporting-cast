@@ -31,7 +31,7 @@ public sealed class SoundDirector(AudioEngine audio)
     private const float SurveySeconds = 0.25f;
 
     private Simulation? _sim;
-    private long _shotsSeen, _blowsSeen, _breathsSeen, _messagesSeen, _lineSeen;
+    private long _shotsSeen, _blowsSeen, _breathsSeen, _splashesSeen, _messagesSeen, _lineSeen;
     private int _coins = -1;
     private Entity _coinsOf = Entity.Null;
     private float _time, _survey, _dangerUntil = -1000f, _nextRoar;
@@ -80,6 +80,7 @@ public sealed class SoundDirector(AudioEngine audio)
         Shots(sim, view, me);
         BlowsMet(sim, view, me);
         Breaths(sim, view, me);
+        Splashes(sim, view, me);
         Dragons();
         Messages(sim);
         Speech(sim, view);
@@ -115,7 +116,7 @@ public sealed class SoundDirector(AudioEngine audio)
     {
         _sim = sim;
         // What happened before we were listening is history.
-        _shotsSeen = _blowsSeen = _breathsSeen = _signsSeen = sim.Clock.Tick;
+        _shotsSeen = _blowsSeen = _breathsSeen = _splashesSeen = _signsSeen = sim.Clock.Tick;
         _messagesSeen = sim.Messages.Total;
         _lineSeen = sim.Speech.Kept.Count > 0 ? sim.Speech.Kept[^1].Id : 0;
         _coins = -1;
@@ -254,6 +255,31 @@ public sealed class SoundDirector(AudioEngine audio)
             _dangerUntil = _time + DangerHoldSeconds;
         }
         _breathsSeen = newest;
+    }
+
+    /// <summary>
+    /// A bucket's water landing, where it lands: the splash as it hits (after its flight, as the
+    /// renderer draws it), and a hiss if it put fire out. Seen, or heard as a shout would be.
+    /// </summary>
+    private void Splashes(Simulation sim, PerceptionView view, int3? me)
+    {
+        var newest = _splashesSeen;
+        foreach (var s in sim.RecentSplashes)
+        {
+            if (s.Tick <= _splashesSeen)
+                continue;
+            newest = Math.Max(newest, s.Tick);
+            if (Reach(sim, view, me, s.At) is not { } muffle)
+                continue;
+            var dx = s.At.X + 0.5f - s.From.X;
+            var dy = s.At.Y + 0.5f - s.From.Y;
+            var flight = 0.22f + 0.035f * MathF.Sqrt(dx * dx + dy * dy);
+            var at = ToAudio(s.At);
+            audio.Play(Sounds.Splash, at, muffle: muffle, delay: flight);
+            if (s.Doused.Count > 0)
+                audio.Play(Sounds.Douse, at, gain: Math.Min(1f, 0.6f + 0.1f * s.Doused.Count), muffle: muffle, delay: flight + 0.05f);
+        }
+        _splashesSeen = newest;
     }
 
     private float3? _dragonAt;

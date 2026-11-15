@@ -56,6 +56,9 @@
     "dragon.breath": { "files": ["sfx/dragon_breath_rec_*.ogg"], "gain": 0.9, "range": 70, "near": 15, "max": 2, "priority": 5 },
     "dragon.wings":  { "files": ["amb/dragon_wings_rec.ogg"], "gain": 0.8, "range": 60, "near": 10, "priority": 4 },
 
+    "water.splash":  { "files": ["sfx/water_splash_*.ogg"], "gain": 0.8, "range": 30, "near": 6, "pitch": [0.92, 1.08], "max": 3, "priority": 3 },
+    "water.douse":   { "files": ["sfx/water_douse_*.ogg"], "gain": 0.75, "range": 34, "near": 6, "pitch": [0.95, 1.05], "max": 2, "priority": 3 },
+
     "amb.wind":  { "files": ["amb/amb_wind_rec.ogg"],  "bus": "ambience", "gain": 0.5 },
     "amb.birds": { "files": ["amb/amb_birds_rec.ogg"], "bus": "ambience", "gain": 0.45 },
     "amb.night": { "files": ["amb/amb_night_rec.ogg"], "bus": "ambience", "gain": 0.4 },

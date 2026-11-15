@@ -63,6 +63,32 @@ public class BucketTests
     }
 
     [Fact]
+    public void ASplashIsRecordedForTheRendererWithTheFlamesItPutOut()
+    {
+        var sim = Warm();
+        sim.SpawnStructure(sim.Thing("WoodWall"), C(10, 10));
+        sim.RebuildDerivedIfNeeded();
+        Assert.True(sim.Fire.Ignite(sim, C(10, 10), 1f));
+        var fire = sim.Map.Fire[sim.Map.Idx(C(10, 10))];
+        var me = Avatar(sim, C(7, 10));
+
+        Buckets.Splash(sim, C(10, 10), me);
+        var ev = Assert.Single(sim.RecentSplashes);
+        Assert.Equal(me, ev.Thrower);
+        Assert.Equal(C(10, 10), ev.At);
+        Assert.Equal(sim.World.Get<Position>(me).Pos, ev.From);
+        Assert.Contains((sim.Map.Idx(C(10, 10)), fire), ev.Doused);
+
+        // Gone after a few seconds, and never saved: it's only for the eye.
+        Assert.Empty(SaveGame.Read(SaveGame.Write(sim), sim.Defs).Item1.RecentSplashes);
+        sim.TickMany(Buckets.SplashShowTicks + 1);
+        Buckets.Splash(sim, C(20, 20));
+        var dry = Assert.Single(sim.RecentSplashes);
+        Assert.Empty(dry.Doused);
+        Assert.True(dry.Thrower.IsNull);
+    }
+
+    [Fact]
     public void AnEmptyBucketIsFilledAtTheWell()
     {
         var sim = Warm();

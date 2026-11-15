@@ -1770,3 +1770,20 @@ The tuning playtest's "alone first" pass (PLAYTEST.md), and what came of it.
   instructions now, out of character; the flavour stays in the game.
 - **The Veteran** felt easy-ish to a practised action-game player. Left as it is.
 
+
+### Water and dragon-fire effects (2026-11-15)
+- **A bucket's throw is seen:** the water used to vanish and the fire just go out. Now it flies from
+  the thrower's hands in an arc, shedding drops, and lands in a splash and a spreading ripple
+  (`fx/droplet`, `fx/splash_ring`, `WorldRenderer.Water`). Where it hits fire, steam boils up and
+  settles over a couple of seconds, and the flames burn on till the water arrives (the sim puts
+  them out at the throw; the renderer holds them for the flight). `Buckets.Splash` records a
+  `SplashEvent` in `Simulation.RecentSplashes`, render-only like `RecentBreaths`: not saved or
+  hashed, and nothing in the sim reads it. Heard too: `water.splash` and `water.douse`
+  (`sfx_synth.py`), as it lands.
+- **Dragon fire:** the breath's jet is now a stream of particles that come out white-hot and cool
+  through the flame's colour to dark red, with black smoke rolling off behind. A flash shows at
+  the jaws, and fire, embers and a billow burst where each ray strikes, leaving a scorch that fades
+  over ten seconds. While it draws breath, hot specks are pulled into its jaws and the air over them
+  shimmers (pale puffs: the post pass has no distortion). Nearby, the camera rumbles, on the
+  Screen shake setting. `Particles` gained a colour ramp over life, a floor for droplets, a
+  per-second emission helper (`PerFrame`), and room for 4096.

@@ -133,13 +133,17 @@ public static class Buckets
     /// Water lands here: fire knocked down and the ground soaked, in the cell and round it, from
     /// the level below to the eaves above (a bucket thrown up wets a roof's edge), and a dragon
     /// caught in it (its bulk reaching a cell further) soaked (<see cref="DragonBrain.Douse"/>).
-    /// Returns how many burning cells it put out.
+    /// Returns how many burning cells it put out. Recorded in <see cref="Simulation.RecentSplashes"/>
+    /// for the renderer and sounds (thrown by <paramref name="thrower"/>, if anyone).
     /// </summary>
-    public static int Splash(Simulation sim, int3 at)
+    public static int Splash(Simulation sim, int3 at, Entity? thrower = null)
     {
         var map = sim.Map;
         var soak = SimClock.HoursToTicks(SoakHours);
         var put = 0;
+        var by = thrower ?? Entity.Null;
+        var from = !by.IsNull && sim.World.IsAlive(by) && sim.World.TryGet<Position>(by, out var tp) ? tp.Pos : Position.CenterOf(at);
+        var ev = new SplashEvent(sim.Clock.Tick, by, from, at, []);
         for (var dz = -1; dz <= 2; dz++)
             for (var dy = -1; dy <= 1; dy++)
                 for (var dx = -1; dx <= 1; dx++)
@@ -151,6 +155,7 @@ public static class Buckets
                     var middle = dx == 0 && dy == 0;
                     if (map.Fire[i] > 0)
                     {
+                        ev.Doused.Add((i, map.Fire[i]));
                         map.Fire[i] = Math.Max(0f, map.Fire[i] - (middle ? Douse : DouseAround));
                         if (map.Fire[i] <= 0)
                             put++;
@@ -165,8 +170,13 @@ public static class Buckets
             if (Math.Abs(c.X - at.X) <= 2 && Math.Abs(c.Y - at.Y) <= 2 && c.Z - at.Z is >= -1 and <= 2)
                 DragonBrain.Douse(sim, e);
         }
+        sim.RecentSplashes.RemoveAll(s => sim.Clock.Tick - s.Tick > SplashShowTicks);
+        sim.RecentSplashes.Add(ev);
         return put;
     }
+
+    /// <summary>How long a splash stays in <see cref="Simulation.RecentSplashes"/>.</summary>
+    public const int SplashShowTicks = SimClock.TicksPerSecond * 4;
 
     /// <summary>
     /// With a full bucket in hand, pointing somewhere within a throw (not the well, not where you
@@ -190,6 +200,13 @@ public static class Buckets
             : null;
     }
 }
+
+/// <summary>
+/// A bucket's water landing, for the renderer and sounds (not sim state): who threw it and from
+/// where, where it came down, and the cells that were burning there with how hard (<c>Doused</c>:
+/// map index, fire before), so the flames can be seen to go out when the water arrives.
+/// </summary>
+public sealed record SplashEvent(long Tick, Entity Thrower, float3 From, int3 At, List<(int Cell, float Fire)> Doused);
 
 /// <summary>
 /// Throwing a bucket of water (<see cref="Buckets"/>): hold F to swing it back, let go to throw.
@@ -299,7 +316,7 @@ public sealed class ThrowSession : WorkSession
         var at = LandsAt;
         if (sim.Map.InBounds(at))
         {
-            var put = Buckets.Splash(sim, at);
+            var put = Buckets.Splash(sim, at, Worker);
             sim.Messages.Add(MessageKind.Info, put > 0 ? "The water hisses on the flames." : "The water splashes down.", at);
         }
         var held = w.Get<Carrying>(Worker).Item;
@@ -409,7 +426,7 @@ public sealed class BucketJob(int3 fire, Entity bucket, Entity well) : Job
                 if (HasFailed) yield break;
             }
             foreach (var s in Wait(45)) yield return s; // the swing
-            Buckets.Splash(Sim, target);
+            Buckets.Splash(Sim, target, Pawn);
             var full = Get<Carrying>(Pawn).Item;
             Get<Carrying>(Pawn).Item = Entity.Null;
             Sim.DestroyThing(full);

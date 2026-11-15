@@ -599,7 +599,7 @@ and weapons in every metal tier, bars, coins, jewellery, ores, fuel, building st
 hides), `norse_animals.py` (deer, boar, hare), `norse_plants.py` (berry bushes, wild flax, emberroot) and
 `norse_ui.py` (the toolbar icons, `fx/fire`, `fx/ember`), `norse_roofs.py` (turf, thatch and shingle
 roofs) and `norse_fx.py` (the selection brackets, the rune-cut designation mark, the shield-shaped need bubble,
-the chatter bubble, the breath's core). These run after the older placeholder modules and replace their drawings of the same
+the chatter bubble, the breath's core, the thrown water's `fx/droplet` and `fx/splash_ring`). These run after the older placeholder modules and replace their drawings of the same
 sprites; the old modules still draw the small white effects (`fx/zzz`, `fx/glint`)
 and the soft `fx/smoke` puff (also the contact shadow under everyone). They draw a silhouette as a
 mask, shade it from a blurred copy of itself lit from the top left, then add texture and detail by
