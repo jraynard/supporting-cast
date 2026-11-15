@@ -32,22 +32,14 @@ pass on what they show. Some of it can be checked alone first. How to run it, wi
 logs folder's `rounds/`; `--season-sweep` gives the bots' baseline for the season pass. Mini-game
 timings come after, trade by trade (Backlog, "Tuning the mini-games").
 
-**Alone first** (dev flags, no friends needed)
-- **The healer** in the practice yard (`--practice Healer`; the pass is in HISTORY.md, "The
-  healer's pass"). Does reading by the pulse teach the kinds? Is the flinch fair? Tune
-  `HandsOnSession` (read and rough steps) and `DrawLink` (the band, the snap). Also look at the
-  bandage band, the weave's beat window and the labyrinth's size.
-- **The ring** (`--arena Veteran`, `--arena Dragon`): whether a Veteran (6% for a skill-6 villager
-  with a sword) and the dragon feel fair to a player. The rest of combat is tuned against the
-  headless sweep (HISTORY.md, "Combat balance"; `--combat-sweep`); parry and stamina feel right.
-  The dragon got harder with AI footwork (HISTORY.md, "AI footwork": met 12/48 with a party, was
-  27/48): bring it back with `DragonBrain.FleeDamage`/`FleePain` and the footwork levers.
-- **Seen once, changed since (HISTORY.md, "Solo playtest notes"):** the bracing window
-  (`--bridge-test`, now a level you carry) and the dragon in a round (`--dragon-test`, now passes
-  from the air, then a stand in the square). Look again, and at buckets against it.
-- **The Veteran** felt easy-ish to a practised action-game player; probably right for most. Leave it
-  unless friends say the same.
-- **The lessons:** one trade at a time, the words and whether the step shown is the one you're on.
+**Alone first** (dev flags, no friends needed): done but for the lessons. What came of it is in
+HISTORY.md, "Solo playtest notes".
+- Passed: the healer's games (`--practice Healer`), bracing the bridge (`--bridge-test`), the
+  dragon in a round (`--dragon-test`: passes from the air, a stand by the well, buckets against
+  it) and in the ring (`--arena Dragon`), and the Veteran (`--arena Veteran`: fair; a practised
+  action-game player finds it a little easy, so leave it unless friends say the same).
+- **Still to do: the lessons,** rewritten in plain words (the healer's merged to four). One trade at
+  a time: the words, and whether the step shown is the one you're on (PLAYTEST.md, "The lessons").
 
 **With friends, over the internet**
 - **The connection.** Readied in code (Narsil relay protocol 3, keepalive, host reclaims its join
@@ -65,9 +57,10 @@ timings come after, trade by trade (Backlog, "Tuning the mini-games").
   puts out (`LayOnHands.CharmsOnShow`, price).
 - **Heroes die often:** about one in two raids with a party in town costs one. Watch what it does
   to Renown before blunting raids.
-- **The dragon without a party** is met by nobody: the town hides and it leaves unhurt. It's meant
-  for players; check friends can drive it off. Water now puts its fire out and four soakings see it
-  off (`DragonBrain.Douse`); see Backlog, "Crises and the town", for villagers doing it too.
+- **The dragon without a party:** the town drives it off once in 48 sweep seeds, and someone dies
+  about every other visit (30 dead in 48; HISTORY.md, "Solo playtest notes"). It's meant for
+  players: check friends can see it off, with weapons or with buckets (four soakings,
+  `DragonBrain.Douse`). Villagers doing it too is in the Backlog, "Crises and the town".
 
 **The numbers** (defaults not yet tuned in play)
 - **The season** (`season.json`): the Renown target and Dread rates (Dread per death included),
@@ -174,7 +167,7 @@ items into "Now" when a playtest says they matter.
 - **Kitchen:** the pot, the seasoning; and the cook's list below.
 - **Bar:** washing up, tapping a keg, mixing.
 - **Healing:** after the tuning playtest (Now, 2).
-- **Tinkering:** truing a wheel, bracing a span.
+- **Tinkering:** truing a wheel. (Bracing a span had its pass: A/D carry the level.)
 - Some jobs easier and some harder, to suit different players and styles.
 
 **The trades, deeper** (DESIGN.md, "Trade notes")
