@@ -157,7 +157,10 @@ for rid in "${rids[@]}"; do
     done
     (( $(find "$out/data/sounds/music/free" -name '*.ogg' 2>/dev/null | wc -l) == music_count )) || fail "$rid: the music is missing"
     # BRUTAL License: the notice, its license and the third-party notices must ship (docs/LICENSING.md).
-    for need in NOTICE.txt licenses/BRUTAL-LICENSE.txt licenses/FiraSans-OFL.txt licenses/Cinzel-OFL.txt; do
+    # The other components that ship: sound (OpenAL Soft, NVorbis), the .NET runtime, CommunityToolkit.
+    for need in NOTICE.txt licenses/BRUTAL-LICENSE.txt licenses/FiraSans-OFL.txt licenses/Cinzel-OFL.txt \
+        licenses/OpenAL-Soft-LGPL-2.0.txt licenses/NVorbis-MIT.txt licenses/dotnet-runtime-LICENSE.txt \
+        licenses/dotnet-runtime-THIRD-PARTY-NOTICES.txt licenses/CommunityToolkit.HighPerformance-License.txt; do
         [[ -f "$out/$need" ]] || fail "$rid: $need is missing"
     done
     (( $(find "$out/licenses" -name '*.txt' | wc -l) >= 4 )) || fail "$rid: the BRUTAL third-party notices are missing from licenses/"
