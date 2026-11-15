@@ -87,7 +87,9 @@ Fights are free movement and blows by reach and timing, Souls-lite, everywhere (
 Readied in code (Narsil relay protocol 3, keepalive, host reclaims its join code after a blip,
 relay fan-out and limits; a 200 ms jitter buffer cap, pad commands throttled, a claim budget on
 free movement). Still to do:
-- Deploy the relay (`external/narsil/deploy/relay/publish.sh`) and make it the default `RelayServer`.
+- The relay runs on an Oracle Cloud free instance (`CoopRelay.Default`, 129.153.122.49:47050),
+  checked end to end with a session, a host link blip and reclaim. Redeploy with
+  `external/narsil/deploy/relay/publish.sh ubuntu@129.153.122.49 linux-arm64`.
 - Test over a real internet connection: home host, a joiner on a phone hotspot and a Steam Deck;
   watch the Players window's buffer, jitter and starvations over a whole round, join mid-round,
   and pull the host's network for a few seconds (the session should carry on, not split).
