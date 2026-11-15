@@ -381,6 +381,18 @@ public sealed class BuildingProps
     /// </summary>
     public float Meditation { get; set; }
 
+    /// <summary>
+    /// The shrine's rune altar: an empath weaving within reach of it (<c>Healing.CastSession</c>)
+    /// feels the pain they carry this share less, so it stirs the heartbeat less.
+    /// </summary>
+    public float Weaving { get; set; }
+
+    /// <summary>The shrine's herb rack: a wound bound within reach of it gets a poultice under the cloth, a dressing this much better (<c>Systems.Bandaging</c>).</summary>
+    public float Poultice { get; set; }
+
+    /// <summary>The shrine's wash basin: a wound bound within reach of it is washed first, and won't fester (<c>Systems.Bandaging</c>).</summary>
+    public bool Washes { get; set; }
+
     /// <summary>A cask drinks are poured from (<c>Work.PourSession</c>).</summary>
     public CaskProps? Cask { get; set; }
 

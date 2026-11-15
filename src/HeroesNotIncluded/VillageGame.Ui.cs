@@ -1163,7 +1163,8 @@ public sealed partial class VillageGame
     /// <summary>
     /// What the cursor is over. For players, only what matters (fire, rock their pick can't break, why
     /// a placement won't go), so nothing trails the cursor over ordinary ground; dev mode shows the
-    /// cell, its block and its temperature too.
+    /// cell, its block and its temperature too. Otherwise, resting on furniture, an item or a
+    /// building names it and says what it's for (<see cref="DrawThingInfo"/>).
     /// </summary>
     private void DrawHoverInfo()
     {
@@ -1189,8 +1190,7 @@ public sealed partial class VillageGame
         if (map.InBounds(_hoverBlock) && map.IsSolid(map.Idx(_hoverBlock))
             && Mining.DigNote(_sim, map.Idx(_hoverBlock), HasAvatar ? _avatar : null) is { } dig)
             lines.Add(dig);
-        if (lines.Count > 0)
-            Tip(string.Join("\n", lines));
+        DrawThingInfo(lines);
     }
 
     private ThingDef? _spawnDef;

@@ -53,6 +53,15 @@ public sealed partial class VillageGame
                 if (ImGui.Button($"{Capitalized(DamageTypes.Wound(kind))}##patient-{kind}"))
                     Issue(new PracticeCommand(_avatar, PracticeAction.Patient, (int)kind));
             }
+            if (ImGui.Button("Several wounds##patient-many"u8))
+                Issue(new PracticeCommand(_avatar, PracticeAction.PatientCase, (int)PatientCase.Many));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip("Cut, bruised and burned: draw them all in one sitting (W/S to the next).");
+            ImGui.SameLine(0, Gui.S(6));
+            if (ImGui.Button("Festering##patient-festering"u8))
+                Issue(new PracticeCommand(_avatar, PracticeAction.PatientCase, (int)PatientCase.Festering));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip("A cut bound days ago, festering out of sight: only a long press finds it.");
         }
 
         DrawLessons(def);

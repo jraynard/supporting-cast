@@ -1,6 +1,7 @@
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Healing;
 using HeroesNotIncluded.Sim.Round;
 using HeroesNotIncluded.Sim.Scenarios;
 using HeroesNotIncluded.Sim.Scenarios.Lessons;
@@ -299,6 +300,105 @@ public class TradeLessonTests
     }
 
     // ---------------- Healer ----------------
+
+    [Fact]
+    public void ManyHurtsAreDrawnInOneSitting()
+    {
+        var y = Begin("Healer", "many");
+        y.Sim.Tick();
+        Assert.Equal("feel", y.Stage.Step);
+        var patient = y.Stage.Point;
+        var h = y.W.Get<Health>(patient);
+        Assert.Equal(3, h.Injuries.Count); // cut, bruised and burned
+
+        y.StandBy(patient);
+        y.Sim.ApplyNow(new FeelCommand(y.Me, patient));
+        var s = (HandsOnSession)y.W.Get<WorkSession>(y.Me);
+        // One drawn whole, the others still on them: on to the next, hands still on.
+        s.Spots[0].Sensed = s.Spots[0].Found = s.Spots[0].Drawn = 1f;
+        s.Spots[1].Sensed = 1f;
+        Assert.Equal("next", y.Stage.Step);
+
+        y.Sim.ApplyNow(new StopWorkCommand(y.Me));
+        h.Injuries.Clear(); // all drawn
+        Assert.True(y.Stage.Done);
+    }
+
+    [Fact]
+    public void FesteringUnderADressingIsFoundByALongerPress()
+    {
+        var y = Begin("Healer", "festering");
+        y.Sim.Tick();
+        var patient = y.Stage.Point;
+        var cut = y.W.Get<Health>(patient).Injuries.Single();
+        Assert.True(cut.Tended && cut.Infection != null);
+
+        y.StandBy(patient);
+        y.Sim.ApplyNow(new FeelCommand(y.Me, patient));
+        var s = (HandsOnSession)y.W.Get<WorkSession>(y.Me);
+        Assert.True(s.Spots.Single().Hidden);
+        s.Hands01 = s.Spots[0].At;
+        s.Advance([new WorkInput(0, WorkInputKind.Hold, 1)], HandsOnSession.ReadSteps + 5);
+        Assert.Equal("deep", y.Stage.Step); // read, but there's more under the dressing
+        s.Advance([], s.StepsDone + HandsOnSession.DeepSteps + 5);
+        Assert.Equal("draw", y.Stage.Step);
+    }
+
+    [Fact]
+    public void TheShrineWashesAndPoulticesAWoundAndACharmIsPutOutForSale()
+    {
+        var y = Begin("Healer", "shrine");
+        y.Sim.Tick();
+        var patient = y.Stage.Point;
+        Assert.Equal("corner", y.Stage.Step);
+
+        // The foot of the pallet: the patient, the basin and the herbs all in reach.
+        var basin = y.Station("WashBasin");
+        var at = y.Sim.SpiralFrom(y.W.Get<Position>(patient).Cell, 2).First(c => y.Sim.Map.Passable(c)
+            && Ai.Pathfinder.Touches(c, y.W.Get<Position>(patient).Cell) && AvatarSystem.InReach(y.Sim, c, basin)
+            && Bandaging.ShrineHelp(y.Sim, y.Me) is var _ && Reaches(y, c));
+        y.W.Get<Position>(y.Me).Cell = at;
+        y.W.Get<Position>(y.Me).Pos = Position.CenterOf(at);
+        Assert.Equal("bind", y.Stage.Step);
+
+        var cut = y.W.Get<Health>(patient).Injuries.Single();
+        var plain = 0.35f + 0.03f * SkillRules.LevelOf(y.Sim, y.Me, Skill.Medicine);
+        Assert.True(Bandaging.Bind(y.Sim, y.Me, patient, null) > 0);
+        Assert.True(cut.InfectionRolled, "washed: it won't fester");
+        Assert.True(cut.Quality > plain + 0.05f, $"poulticed: {cut.Quality} against {plain}");
+        Assert.Equal("altar", y.Stage.Step);
+
+        Charms.Make(y.Sim, y.Me, y.Sim.Defs.AllMendings.First(m => m.Heals.Count > 0), 0, 0.8f);
+        Assert.Equal("show", y.Stage.Step);
+        var charm = Charms.Carried(y.Sim, y.Me).Single();
+        var item = Inventory.TakeFromPerson(y.Sim, y.Me, charm, 1);
+        y.Sim.PlaceItemNear(item, y.W.Get<Position>(y.Me).Cell);
+        Assert.True(Goods.Set(y.Sim, y.Me, item, 4, true));
+        Assert.True(y.Stage.Done);
+
+        static bool Reaches(Yard y, int3 c)
+        {
+            var was = y.W.Get<Position>(y.Me).Cell;
+            y.W.Get<Position>(y.Me).Cell = c;
+            var (poultice, washes) = Bandaging.ShrineHelp(y.Sim, y.Me);
+            y.W.Get<Position>(y.Me).Cell = was;
+            return poultice > 0f && washes;
+        }
+    }
+
+    [Fact]
+    public void WeavingAtTheRuneAltarTheCarriedPainStirsTheHeartLess()
+    {
+        var y = Begin("Healer", "wound");
+        HealthSystem.Damage(y.Sim, y.Me, 10f, DamageType.Cut, y.W.Get<Health>(y.Me).Body.Parts.FindIndex(p => !p.Vital));
+        y.StandBy(y.Station("Hearth"));
+        Assert.Equal(0f, CastSession.AltarHelp(y.Sim, y.Me));
+        y.StandBy(y.Station("RuneAltar"));
+        Assert.True(CastSession.AltarHelp(y.Sim, y.Me) >= 0.5f);
+        y.Sim.ApplyNow(new WeaveCommand(y.Me, 0));
+        var pain = y.W.Get<Health>(y.Me).Pain;
+        Assert.True(((CastSession)y.W.Get<WorkSession>(y.Me)).Pain < pain * 0.6f);
+    }
 
     [Fact]
     public void AWoundIsFeltDrawnAndMended()

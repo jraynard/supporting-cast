@@ -261,14 +261,16 @@
         { "def": "Hearth", "at": [1, 1] },
         { "def": "HerbRack", "at": [3, 1], "facing": 2 },
         { "def": "RuneAltar", "at": [5, 1], "facing": 2 },
-        { "def": "HerbRack", "at": [7, 1], "facing": 2 },
         { "def": "LinenBasket", "at": [9, 1] },
         { "def": "Chest", "at": [9, 2], "facing": 3 },
-        { "def": "StrawPallet", "at": [2, 5], "facing": 1 },
-        { "def": "StrawPallet", "at": [4, 5], "facing": 1 },
-        { "def": "StrawPallet", "at": [6, 5], "facing": 1 },
-        { "def": "WashBasin", "at": [8, 5] },
-        { "def": "MeditationStone", "at": [9, 4] }
+        { "def": "StrawPallet", "at": [3, 5], "facing": 1 },
+        { "def": "StrawPallet", "at": [5, 5], "facing": 1 },
+        { "def": "StrawPallet", "at": [7, 5], "facing": 1 },
+        // The healer's corner, by the head of the end pallet: standing there, the patient, the
+        // wash basin, a rack of herbs and the meditation stone are all in reach.
+        { "def": "WashBasin", "at": [9, 5] },
+        { "def": "HerbRack", "at": [9, 4], "facing": 3 },
+        { "def": "MeditationStone", "at": [9, 3] }
       ],
       // Candles either side of the altar, and over the pallets: a warm, low light.
       "lamps": [ { "at": [4, 1], "facing": 0, "def": "WallCandles" }, { "at": [6, 1], "facing": 0, "def": "WallCandles" },
@@ -276,7 +278,7 @@
       // The wounded lie on the pallets first (lineOnBeds), then wait inside, out of the weather,
       // the first by the fire.
       "lineOnBeds": true,
-      "line": [ [2, 4], [3, 4], [4, 4], [5, 4], [6, 4], [7, 4], [2, 3], [3, 3], [4, 3], [5, 3] ],
+      "line": [ [3, 4], [4, 4], [5, 4], [6, 4], [2, 4], [2, 3], [3, 3], [4, 3], [5, 3] ],
       "sign": [1, 6], // on the front wall, by the corner its door is round
       "signFace": "props/sign_rune",
       "variants": [ { "name": "Stone", "label": "stone", "kit": "shrine_stone" } ]

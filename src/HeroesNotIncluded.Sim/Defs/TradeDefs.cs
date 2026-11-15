@@ -165,6 +165,9 @@ public sealed class LessonDef
     /// <summary>The healer's: someone on a shrine pallet with this wound when it begins.</summary>
     public DamageType? Patient { get; set; }
 
+    /// <summary>The healer's: the patient comes in with several wounds, or one festering under a dressing, instead of one plain one (<see cref="Patient"/>).</summary>
+    public Scenarios.PatientCase? PatientCase { get; set; }
+
     /// <summary>The healer's: their mana spent when it begins, to be won back.</summary>
     public bool Spent { get; set; }
 

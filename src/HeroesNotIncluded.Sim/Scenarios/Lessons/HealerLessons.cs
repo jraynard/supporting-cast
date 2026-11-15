@@ -21,6 +21,9 @@ public static class HealerLessons
         new(Trade, "wound", Mending, Patient),
         new(Trade, "fever", Mending, Patient),
         new(Trade, "meditate", ["stone", "meditate"], Meditate),
+        new(Trade, "many", ["feel", "read", "draw", "next"], Many),
+        new(Trade, "festering", ["feel", "deep", "draw", "meditate", "weave"], Patient),
+        new(Trade, "shrine", ["corner", "bind", "altar", "show"], Shrine),
     ];
 
     /// <summary>Mana won back this far (a share of the most) finishes the meditation lesson.</summary>
@@ -35,7 +38,7 @@ public static class HealerLessons
         switch (Session(sim, me))
         {
             case HandsOnSession h:
-                return new LessonStage(h.Linked || h.Spots.Exists(h.Drawable) ? "draw" : h.Spots.Exists(s => s.Sensed > 0f) ? "read" : "feel", patient);
+                return new LessonStage(HandsStep(h), patient);
             case CastSession: return new LessonStage("weave", Entity.Null);
             case MeditateSession: return new LessonStage("meditate", run.Station(sim, "MeditationStone"));
         }
@@ -53,6 +56,70 @@ public static class HealerLessons
         if (run.Passed.Contains("drawn") && felt is not { Count: > 0 })
             return new LessonStage("weave", Entity.Null, Done: true);
         return new LessonStage(felt is { Count: > 0 } ? "draw" : "feel", patient);
+    }
+
+    /// <summary>
+    /// Where hands laid on someone have got to: drawing (the link open, or a wound read to draw),
+    /// pressing long on a dressed wound to find what's under it, reading a warmth, or still skimming.
+    /// </summary>
+    private static string HandsStep(HandsOnSession h)
+    {
+        if (h.Under >= 0 && h.Spots[h.Under] is { Hidden: true, Found: >= 1f, Deep: < 1f })
+            return "deep";
+        if (h.Linked || h.Spots.Exists(h.Drawable))
+            return "draw";
+        return h.Spots.Exists(s => s.Sensed > 0f) ? "read" : "feel";
+    }
+
+    /// <summary>A patient with three hurts, all drawn in one sitting: after the first, on to the next (W/S).</summary>
+    public static LessonStage Many(Simulation sim, Entity me, LessonRun run)
+    {
+        var w = sim.World;
+        var patient = PatientOf(sim, run);
+        if (!patient.IsNull && w.TryGet<Health>(patient, out var h) && h.Injuries.Count > 0)
+            run.Passed.Add("hurt");
+        if (run.Passed.Contains("hurt") && (patient.IsNull || !w.TryGet<Health>(patient, out var left) || left.Injuries.Count == 0))
+            return new LessonStage("next", Entity.Null, Done: true);
+        if (Session(sim, me) is HandsOnSession s)
+        {
+            var step = HandsStep(s);
+            // One drawn and more to go: the hands move on, not off.
+            if (s.Spots.Exists(p => p.Drawn >= 1f) && !s.Linked && step != "draw")
+                return new LessonStage("next", patient);
+            return new LessonStage(step, patient);
+        }
+        return new LessonStage("feel", patient);
+    }
+
+    /// <summary>
+    /// The shrine's help: a cut bound by the healer's corner (the wash basin and the herbs in reach,
+    /// so it's washed and poulticed), then a charm woven at the rune altar and put out for sale.
+    /// </summary>
+    public static LessonStage Shrine(Simulation sim, Entity me, LessonRun run)
+    {
+        var w = sim.World;
+        var patient = PatientOf(sim, run);
+        if (Session(sim, me) is CastSession)
+            return new LessonStage("altar", Entity.Null);
+        if (Session(sim, me) is BandageSession)
+            return new LessonStage("bind", patient);
+        if (!run.Passed.Contains("bound"))
+        {
+            if (!patient.IsNull && w.TryGet<Health>(patient, out var h) && h.Injuries.Count > 0 && h.Injuries.TrueForAll(i => i.Tended && !i.Stanched))
+                run.Passed.Add("bound");
+            else
+            {
+                var (poultice, washes) = Bandaging.ShrineHelp(sim, me);
+                var touching = !patient.IsNull && Ai.Pathfinder.Touches(w.Get<Position>(me).Cell, w.Get<Position>(patient).Cell);
+                return poultice > 0f && washes && touching ? new LessonStage("bind", patient) : new LessonStage("corner", patient);
+            }
+        }
+        var shrine = run.Workplace;
+        if (Shops.Goods.OnShow(sim).Exists(g => g.Shop == shrine && w.Has<Charm>(g.Item) && w.Get<Charm>(g.Item).Maker == me))
+            return new LessonStage("show", Entity.Null, Done: true);
+        if (Charms.Carried(sim, me).Exists(c => w.Get<Charm>(c).Maker == me))
+            return new LessonStage("show", Entity.Null);
+        return new LessonStage("altar", run.Station(sim, "RuneAltar"));
     }
 
     /// <summary>Mana spent, and won back by meditating, best at the shrine's stone.</summary>

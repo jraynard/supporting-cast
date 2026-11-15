@@ -147,6 +147,7 @@
       "tips": [ "The wounded find their way to the shrine, each with a heroic story. A bandage over a head means they want healing.",
                 "Lay on hands: skim for a warmth, stop and press to read it, keep pressing to draw it. Several hurts? One sitting does them all: ~WS~ jumps to the next.",
                 "Your gift runs on mana (~Y~). Sit a while at the meditation stone to fill it back up.",
+                "The shrine helps: weave at the rune altar (pain stirs your heart less), bind by the herb rack and the wash basin (a better dressing that won't fester). Point at anything to see what it's for.",
                 "The staff's for walking. And for keeping a raider at arm's length, plus a staff." ],
       "lessons": [
         { "id": "wound", "title": "A wound", "patient": "Cut",
@@ -165,6 +166,29 @@
             { "id": "draw", "text": "Keep holding ~F~ to draw it in, and keep your composure in the band (~AD~) as it swells." },
             { "id": "meditate", "text": "Too little mana to mend it. At the meditation stone, open the gift (~Y~) and Meditate.", "aside": true },
             { "id": "weave", "text": "Open the gift (~Y~) and Weave it. The fever's feel wants its own runes: the book has them." } ] },
+        { "id": "many", "title": "Many hurts", "patientCase": "Many",
+          "blurb": "Torvi's had a bad day: cut, bruised and burned. Draw it all in one sitting, wound after wound.",
+          "steps": [
+            { "id": "feel", "text": "Stand by Torvi, click them, and \"Lay on hands\". Run your hands along them (~AD~) to the first warmth." },
+            { "id": "read", "text": "Stop on it and hold ~F~ to read it. Each kind beats its own way: a cut jolts, a bruise swells, a burn pulls." },
+            { "id": "draw", "text": "Keep holding ~F~ to draw it, your composure in the band (~AD~). Let go to rest if it's slipping." },
+            { "id": "next", "text": "One's in. Don't take your hands away: ~WS~ jumps to the next warmth. The strain you've built carries over, so rest a moment first." } ] },
+        { "id": "festering", "title": "Under a dressing", "patientCase": "Festering",
+          "blurb": "Torvi's cut was bound days ago, and it smells wrong. A dressing hides festering from a quick touch.",
+          "steps": [
+            { "id": "feel", "text": "Click Torvi and \"Lay on hands\". Find the warmth on the arm (~AD~)." },
+            { "id": "read", "text": "Stop on it and hold ~F~ to read it." },
+            { "id": "deep", "text": "Keep pressing. Under the dressing there's more: it takes a longer press to find the festering." },
+            { "id": "draw", "text": "Found. Keep holding ~F~ to draw it in, festering and all (~AD~ for your composure)." },
+            { "id": "meditate", "text": "Too little mana to mend it. At the meditation stone, open the gift (~Y~) and Meditate.", "aside": true },
+            { "id": "weave", "text": "Open the gift (~Y~) and Weave what you carry. Festering wants cleansing too: your book has the runes." } ] },
+        { "id": "shrine", "title": "The shrine's help", "patient": "Cut",
+          "blurb": "The shrine works with you. Bind a wound by the basin and the herbs, then weave a charm at the altar and put it out for the parties.",
+          "steps": [
+            { "id": "corner", "text": "Stand at the foot of Torvi's pallet, by the wash basin and the herb rack (point at them to see what they do)." },
+            { "id": "bind", "text": "Click Torvi and \"Bind their wounds\". Washed at the basin it won't fester; the herbs make a better dressing." },
+            { "id": "altar", "text": "Go to the rune altar: weaving there, the pain you carry stirs your heart less. Open the gift (~Y~) and \"Weave a charm\"." },
+            { "id": "show", "text": "Put the charm down in the shrine (~G~), click it, and set a price: parties buy charms as wards for the road." } ] },
         { "id": "meditate", "title": "Mana", "spent": true,
           "blurb": "The gift runs dry. Win it back at the meditation stone: a labyrinth inward, every new place a little more.",
           "steps": [

@@ -130,6 +130,7 @@ public static class Bandaging
         var health = w.Get<Health>(patient);
         var medicine = SkillRules.LevelOf(sim, binder, Skill.Medicine);
         var firstAid = FirstAidOnly(sim, binder);
+        var (poultice, washes) = firstAid ? (0f, false) : ShrineHelp(sim, binder);
         var bound = 0;
         foreach (var inj in health.Injuries)
         {
@@ -138,7 +139,12 @@ public static class Bandaging
             if (firstAid)
                 Stanch(sim, inj);
             else
-                Dress(sim, inj, Math.Clamp((dressing ?? 0.35f + 0.03f * medicine + sim.Rand.Range(-0.1f, 0.1f)) - (binder == patient ? SelfPenalty : 0f), 0.05f, 1f));
+            {
+                Dress(sim, inj, Math.Clamp((dressing ?? 0.35f + 0.03f * medicine + sim.Rand.Range(-0.1f, 0.1f)) - (binder == patient ? SelfPenalty : 0f) + poultice, 0.05f, 1f));
+                // Washed clean at the basin first: it won't take a fever now (one already festering stays).
+                if (washes)
+                    inj.InfectionRolled = true;
+            }
             bound++;
         }
         health.Changed();
@@ -152,6 +158,40 @@ public static class Bandaging
                 : $"{w.Get<Creature>(binder).Name} bandaged {who} wounds ({bound}).", w.Get<Position>(patient).Cell);
         }
         return bound;
+    }
+
+    /// <summary>
+    /// What the shrine's furniture within reach of the binder adds to a dressing: the herb rack's
+    /// poultice (better quality) and the wash basin (the wound washed, so it won't fester).
+    /// </summary>
+    public static (float Poultice, bool Washes) ShrineHelp(Simulation sim, Entity binder)
+    {
+        var at = sim.World.Get<Position>(binder).Cell;
+        var poultice = 0f;
+        var washes = false;
+        foreach (var e in Reachable(sim, at))
+            if (sim.World.Get<Thing>(e).Def.Building is { } b)
+            {
+                poultice = Math.Max(poultice, b.Poultice);
+                washes |= b.Washes;
+            }
+        return (poultice, washes);
+    }
+
+    /// <summary>Finished furniture in reach of a cell, each once.</summary>
+    internal static IEnumerable<Entity> Reachable(Simulation sim, Brutal.Numerics.int3 at)
+    {
+        var seen = new HashSet<Entity>();
+        for (var dy = -1; dy <= 1; dy++)
+            for (var dx = -1; dx <= 1; dx++)
+            {
+                var c = at + new Brutal.Numerics.int3(dx, dy, 0);
+                if (!sim.Map.InBounds(c))
+                    continue;
+                var s = sim.Map.Structure[sim.Map.Idx(c)];
+                if (!s.IsNull && !sim.World.Has<Construction>(s) && seen.Add(s))
+                    yield return s;
+            }
     }
 
     /// <summary>Use up one bandage: from the binder's hands first, then the pack, then a chest within reach.</summary>

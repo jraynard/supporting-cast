@@ -77,6 +77,16 @@ public sealed class CastSession : WorkSession
         return null;
     }
 
+    /// <summary>How much a rune altar within reach steadies a weave (0 if none): the share of the caster's pain it takes off.</summary>
+    public static float AltarHelp(Simulation sim, Entity caster)
+    {
+        var best = 0f;
+        foreach (var e in Systems.Bandaging.Reachable(sim, sim.World.Get<Position>(caster).Cell))
+            if (sim.World.Get<Thing>(e).Def.Building is { Weaving: > 0 } b)
+                best = Math.Max(best, Math.Clamp(b.Weaving, 0f, 0.9f));
+        return best;
+    }
+
     public static void TryStart(Simulation sim, Entity caster, int wound, bool intoCharm = false)
     {
         if (intoCharm)
@@ -88,6 +98,8 @@ public sealed class CastSession : WorkSession
         }
         var feels = wound != 0 && Empathy.Find(sim, caster, wound) is { } inj ? Empathy.Feel(sim, inj.Type) : "";
         var pain = sim.World.TryGet<Health>(caster, out var h) ? Math.Clamp(h.Pain, 0f, 1f) : 0f;
+        // At the rune altar the heart steadies: the pain carried stirs the beat less.
+        pain *= 1f - AltarHelp(sim, caster);
         WorkSystem.Start(sim, caster, new CastSession { Wound = wound, Feels = feels, Pain = pain, Palette = sim.Defs.AllRunes, IntoCharm = intoCharm });
     }
 

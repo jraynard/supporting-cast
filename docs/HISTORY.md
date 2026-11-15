@@ -1623,4 +1623,16 @@ From a multiplayer playtest that found the healer the weakest trade.
 - **Cutaway walls** are cut off flat (`PropModel.Build`'s `cutAt`): no sliver of a wall plate
   floats over the cut any more.
 - Behaviour changed, so `--bench` hashes moved.
+- **The shrine's pieces do something** (a playtest's question), each said in its description:
+  - The rune altar: weaving within reach, the pain you carry stirs the heartbeat half as much (`CastSession.AltarHelp`).
+  - A herb rack: a wound bound within reach gets a poultice, a better dressing (`Bandaging.ShrineHelp`).
+  - The wash basin: a wound bound within reach is washed first and won't fester.
+  - The linen basket holds the shrine's bandages. The healer's corner, at the head of the end
+    pallet, has the basin, a herb rack and the meditation stone all in reach.
+- **Pointing at a thing** (furniture, an item, a building) a moment shows its name and what it's for
+  (`VillageGame.HoverInfo`), when the cursor has nothing more pressing to say.
+- **The practice yard, for the new healer:** patients with several wounds or one festering under a
+  dressing (`PatientCase`), and lessons for them: "Many hurts" (W/S to the next wound), "Under a
+  dressing" (the long press), and "The shrine's help" (bind at the corner, weave a charm at the
+  altar, put it out for sale).
 

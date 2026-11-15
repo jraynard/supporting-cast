@@ -23,6 +23,19 @@ public enum PracticeAction : byte
 
     /// <summary>A lesson's setup (<see cref="LessonDef"/>, by index in the player's trade's lessons): stock, supplies, customers.</summary>
     Lesson,
+
+    /// <summary>The healer's: a patient with more to them than one wound (<see cref="PracticeCommand.Arg"/>, a <see cref="PatientCase"/>).</summary>
+    PatientCase,
+}
+
+/// <summary>A practice patient beyond one plain wound.</summary>
+public enum PatientCase : byte
+{
+    /// <summary>A cut, a bruise and a burn: one sitting, wound after wound.</summary>
+    Many,
+
+    /// <summary>A cut bound up, festering under the dressing: only a long press finds it.</summary>
+    Festering,
 }
 
 /// <summary>
@@ -75,6 +88,10 @@ public static class Practice
                 if (Enum.IsDefined((DamageType)arg) && PatientWounds.Contains((DamageType)arg))
                     BringPatient(sim, player, (DamageType)arg);
                 break;
+            case PracticeAction.PatientCase:
+                if (Enum.IsDefined((PatientCase)arg))
+                    BringPatient(sim, player, (PatientCase)arg);
+                break;
             case PracticeAction.Lesson:
                 if (w.TryGet<Trade>(player, out var trade) && arg >= 0 && arg < trade.Def.Lessons.Count)
                     SetUp(sim, player, trade.Def.Lessons[arg]);
@@ -91,7 +108,9 @@ public static class Practice
             Inventory.Stow(sim, player, sim.CreateItem(item.ThingDef, item.Count, Simulation.MaterialFor(item.ThingDef, null)));
         if (lesson.Customers is { } wear)
             SendCustomers(sim, player, wear);
-        if (lesson.Patient is { } wound && PatientWounds.Contains(wound))
+        if (lesson.PatientCase is { } kind)
+            BringPatient(sim, player, kind);
+        else if (lesson.Patient is { } wound && PatientWounds.Contains(wound))
             BringPatient(sim, player, wound);
         if (lesson.Spent && sim.World.Has<Mana>(player))
             sim.World.Get<Mana>(player).Current = 0f;
@@ -205,18 +224,58 @@ public static class Practice
     public static Entity BringPatient(Simulation sim, Entity player, DamageType wound)
     {
         var w = sim.World;
-        var shrine = Workplace(sim, player);
-        var pallets = shrine.IsNull ? [] : Shops.ShopSystem.BedsOf(sim, shrine);
-        var at = pallets.Select(p => w.Get<Thing>(p).Cell).FirstOrDefault(c => !sim.Creatures().Any(e => w.Get<Position>(e).Cell == c),
-            w.Get<Position>(player).Cell);
-        var patient = sim.SpawnCreature(sim.Defs.Creature("Human"), PatientName, at, ageDays: 30 * 365);
-        Array.Fill(w.Get<Needs>(patient).Values, 1f);
-        w.Get<Mind>(patient).Drafted = true; // lying still for it, as in a bed
+        var patient = PatientOnAPallet(sim, player);
+        var at = w.Get<Position>(patient).Cell;
         if (wound == DamageType.Fever)
             FeverSystem.Catch(sim, patient);
         else
             HealthSystem.Damage(sim, patient, WoundDamage, wound, PartFor(w.Get<Health>(patient)));
         sim.Messages.Add(MessageKind.Info, $"{PatientName} is brought in, {DamageTypes.Wound(wound)} and all.", at);
+        return patient;
+    }
+
+    /// <summary>The practice patient with more to them: several wounds at once, or one festering under its dressing.</summary>
+    public static Entity BringPatient(Simulation sim, Entity player, PatientCase kind)
+    {
+        var w = sim.World;
+        var patient = PatientOnAPallet(sim, player);
+        var h = w.Get<Health>(patient);
+        int Part(string label) => h.Body.Parts.FindIndex(p => p.Label.Contains(label) && !p.Vital) is var i and >= 0 ? i : PartFor(h);
+        if (kind == PatientCase.Many)
+        {
+            HealthSystem.Damage(sim, patient, WoundDamage, DamageType.Cut, Part("arm"));
+            HealthSystem.Damage(sim, patient, WoundDamage * 0.7f, DamageType.Blunt, Part("leg"));
+            HealthSystem.Damage(sim, patient, WoundDamage * 0.5f, DamageType.Burn, Part("hand"));
+            sim.Messages.Add(MessageKind.Info, $"{PatientName} is brought in, cut, bruised and burned: a bad day.", w.Get<Position>(patient).Cell);
+            return patient;
+        }
+        HealthSystem.Damage(sim, patient, WoundDamage, DamageType.Cut, Part("arm"));
+        var cut = h.Injuries.Last();
+        Bandaging.Dress(sim, cut, 0.4f);
+        cut.Infection = new Infection { Severity = 0.25f };
+        cut.InfectionRolled = true;
+        h.Changed();
+        sim.Messages.Add(MessageKind.Info, $"{PatientName} is brought in, a cut bound up days ago. It smells wrong.", w.Get<Position>(patient).Cell);
+        return patient;
+    }
+
+    /// <summary>
+    /// The practice patient, lying on a free shrine pallet (the one nearest the healer's corner: the
+    /// wash basin and the herbs), whole for now and keeping still for the healer.
+    /// </summary>
+    private static Entity PatientOnAPallet(Simulation sim, Entity player)
+    {
+        var w = sim.World;
+        var shrine = Workplace(sim, player);
+        var pallets = shrine.IsNull ? [] : Shops.ShopSystem.BedsOf(sim, shrine);
+        var basin = shrine.IsNull ? Entity.Null : Buildings.Parts(sim, shrine).FirstOrDefault(e => w.Get<Thing>(e).Def.Building is { Washes: true }, Entity.Null);
+        var free = pallets.Select(p => w.Get<Thing>(p).Cell).Where(c => !sim.Creatures().Any(e => w.Get<Position>(e).Cell == c)).ToList();
+        if (!basin.IsNull)
+            free = free.OrderBy(c => Maps.Map.Distance(c, w.Get<Thing>(basin).Cell)).ToList();
+        var at = free.Count > 0 ? free[0] : w.Get<Position>(player).Cell;
+        var patient = sim.SpawnCreature(sim.Defs.Creature("Human"), PatientName, at, ageDays: 30 * 365);
+        Array.Fill(w.Get<Needs>(patient).Values, 1f);
+        w.Get<Mind>(patient).Drafted = true; // lying still for it, as in a bed
         return patient;
     }
 }
