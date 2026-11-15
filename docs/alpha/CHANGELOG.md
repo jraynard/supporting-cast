@@ -4,6 +4,57 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+## 0.1.0-playtest.11
+
+The festival becomes an evening to remember, and the cook's kitchen fills out.
+
+**The festival**
+- The bell rings at three on the last day. Once the town's gathered at the well, the crier tells
+  the story of the season: the parties, their quests, every crisis met or missed, who was lost.
+  The crier waits until every player is close enough to hear, and the festival card keeps "The
+  tale so far" for anyone who missed a line.
+- A card at the top of the screen and markers over the square show what's on, how to join in,
+  and who's leading. The crier calls folk to each thing in turn.
+- Lines spoken aloud stay up long enough to read, and the ceremony waits for each one.
+- The labourers put the festival up through the afternoon, so the square fills with tables and
+  lanterns before the bell. Bunting is strung between the lantern posts.
+- The feast tables are laid with roasts, bread and pies: help yourself. F at a free stool sits
+  you down.
+- The festival's music comes from a band at the well: walk away and it fades.
+- F at the show table lays out your best work for the visitors to judge.
+- The butts take real arrows now. Stand at the red cord in front of the butt (or press F at the
+  butt and you'll walk there) and press F. You get a bow if you need one: hold right click to
+  draw, aim at the gold, left click to loose. Three arrows, scored by where they land, and they
+  stay in the target until the ceremony. Afterwards your own weapon's back in your hand, put
+  away. Don't walk in front of the butts.
+- After each guest's toast, press E (or use the wheel on a pad) to cheer it. The town cheers the
+  warm ones too.
+
+**The kitchen**
+- Porridge for breakfast: oats in the stew pot of a morning.
+- Pies: dough and a filling at the prep table, crimp the rim on the marks, bake by smell. A loose
+  rim leaks.
+- The butcher block: the carter brings a side of pork and whole fowl. Joint the side with the
+  cleaver, pluck the bird with short firm pulls before the skin tears, and roast it on the spit.
+- A second stew pot over the bread oven. The kitchen's fires are yours to feed: a roaring fire
+  burns wood faster, and the carter brings wood for the log basket.
+- Grease fires: a fatty pot left at a rolling boil flares. Clap the lid on quickly (Space, or F
+  at the pot) or the kitchen catches.
+- Rats come with a shortage and gnaw at the larder until the cook chases them down with the knife.
+- Feasts: a party back from a clean win wants one, a dish each, against the clock. Lay it on and
+  the whole room's merry.
+- Broths: a fresh-tasting bowl (herbs, greens) helps wounds close faster.
+- The larder keeps food cool. Salt meat and fish at the prep table, or hang them on the smoking
+  rack, and they keep for weeks.
+- Good food gets talked about (it shows on the sign), and parties come sooner for it.
+- Cooking is the kitchen's now: campfires and fireplaces no longer cook meals.
+
+**Around town**
+- The town's stores live in the barn, not in the middle of the square.
+- "Look at" from the festival card, a toast or the message log holds the camera there for a few
+  seconds instead of snapping back.
+- Long notices wrap instead of being cut off.
+
 ## 0.1.0-playtest.10
 
 The healer works without you, fires can be fought, and there's a yard to practise in.
