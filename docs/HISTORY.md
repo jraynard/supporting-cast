@@ -1713,3 +1713,60 @@ From a multiplayer playtest that found the healer the weakest trade.
   deaths 1.9 a round either way. The dragon is harder: a moving target makes blows miss. Left to
   the tuning pass, with these levers: `WaryPain`, `WaryHold`, `WithdrawTicks`, `GroundReach`,
   `Leash`, `OnDragon`, `MobRange`, `MobSize`, and the dragon's `FleeDamage`/`FleePain`.
+
+### Solo playtest notes (2026-11-15)
+The tuning playtest's "alone first" pass (PLAYTEST.md), and what came of it.
+- **Laying on hands, felt:** the palms glow warmer and beat quicker as they near a hurt (the
+  session's `Feel`, until now only a line of text), a warmth blooms where one's first sensed, and
+  the gift's hum swells and brightens on the way to one, with a soft beat as each is found
+  (`HandsOnScene`, `WorkSounds`).
+- **The gift and the inspector:** the inspector reserved 400 px whatever it held, and a journal
+  panel kept the size it opened at, so the gift opened with no wounds stayed one line tall: drawn
+  wounds were there but out of sight. The inspector fits what it shows (up to 400 px); height-less
+  journal panels fit theirs every frame.
+- **A weave for no wound:** the gift's own Weave button wove for no wound, so a Knitting from it
+  "found nothing to take hold of" with a cut to mend. Now a mending woven that way takes hold of the
+  worst wound carried that it fits, as a torn charm does (`CastSession.Finish`), and a miss says why.
+- **Bracing the span:** the level was carried along the span for you, so a wedge was a timing
+  test. Now A/D carry it (let go and it settles on the nearest stone); F or W lifts, Space or S
+  eases (`SpanSession`).
+- **The dragon in the ring** sometimes came down outside the fence and sat there. A landing has to
+  be somewhere its target can be reached from on foot (`DragonPassJob`).
+- **The dragon in a round** made a pass, breathed once and waited. Set on the town now (`Rampage`):
+  three passes over roofs and trees in one flight, never touching down between them, breathing
+  from the air as it crosses each (`DragonStrafeJob`, legs from `Navigation.AloftRoute`), then
+  down on open ground by the well for good. There it goes after whoever's out (further and longer
+  than in the ring), on foot through the streets, and burns buildings when nobody comes. It never
+  goes through a door or into a house (`DragonBrain.TooTight`): anyone indoors, it burns out. Hurt,
+  or seeing three or more out together, it comes down early on them. The ring's dragon is as it
+  was. Seeds 1–48, Normal (`--combat-sweep`; raids and duels unchanged):
+
+  | | Before | After |
+  |---|---|---|
+  | Dragon, party in town | met 27/48 → 12/48 (footwork), town dead 5 | met 14/48, town dead 10, heroes dead 21 |
+  | Dragon, no party | 0/48, town dead 5 | met 1/48, town dead 21 |
+
+  It does real harm now. If that's too much, the levers are `DragonBrain.Passes`, `Crowd`,
+  `Hunts`, `DragonPassJob.RampageReach`/`RampageLeash`, and `FleeDamage`/`FleePain`.
+- **Seeing it fly:** sight covers two levels up and down, and the dragon's passes are five to seven
+  up, so it was never seen (nor drawn) in the air. Anyone under open sky now sees something
+  flying overhead within `Perception.SkySight` (28 cells in daylight, less at night, by the light
+  where they stand: the light map isn't kept up in the sky), unless something's in the way.
+- **Water on the dragon** did nothing (a splash only put out fire). Now a bucket landing on or
+  beside it (`Buckets.Splash`) puts its fire out for `DragonBrain.DousedSeconds` (15 s: it can only
+  bite, and a breath it's drawing goes up in steam), and `SoaksToDrive` (4) soakings see it off
+  (`Doused`). Only once it's down: the air's out of a bucket's reach. The AI's buckets go on fires,
+  not the dragon, so the sweep's numbers are unchanged.
+- **Crisis banners:** the "Dragon!" headline was placed where it spawned, at the map's edge, so
+  nobody witnessed it and the banner never showed. It's for the whole town now, as a raid's bell
+  is, and so is "Fire!". "Rats in the larder" is told to the cook, wherever they are. (A line told
+  to someone reaches them wherever they stand; anyone else's only if it happened in sight.)
+- **Toasts in co-op:** messages had no addressee, so another player's "You draw the wound into
+  yourself" turned up as yours if you could see them. A line can be told to someone
+  (`MessageLog.Tell`, `Message.To`, saved on a spare bit of the kind); second-person lines are, and
+  only they see them. The playtest log marks whose they were.
+- **The practice yard:** its intro lines are gone. Six healer lessons became four (the fever joins
+  "Several wounds", meditation opens "Use the shrine"), and every trade's lessons are plain
+  instructions now, out of character; the flavour stays in the game.
+- **The Veteran** felt easy-ish to a practised action-game player. Left as it is.
+

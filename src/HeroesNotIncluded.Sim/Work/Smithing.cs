@@ -216,16 +216,16 @@ public static class Smithing
         if (PieceOf(sim, smith) is { } held)
         {
             if (held.Forge != forge || held.Recipe != recipe || held.IsMend)
-                sim.Messages.Add(MessageKind.Info, $"You already have the {PieceLabel(sim, held)} in your tongs.", cell);
+                sim.Messages.Tell(smith, MessageKind.Info, $"You already have the {PieceLabel(sim, held)} in your tongs.", cell);
             else
-                sim.Messages.Add(MessageKind.Info, $"The {PieceLabel(sim, held)} is in your tongs: {NextStep(sim, smith, held)}.", cell);
+                sim.Messages.Tell(smith, MessageKind.Info, $"The {PieceLabel(sim, held)} is in your tongs: {NextStep(sim, smith, held)}.", cell);
             return;
         }
         w.Add(smith, new WorkPiece
         {
             Forge = forge, Recipe = recipe, Temp = AirAt(sim, smith), BlowsNeeded = BlowsFor(recipe),
         });
-        sim.Messages.Add(MessageKind.Info, $"A billet for the {recipe.Label} is in your tongs: put it in the fire, and work it {WorkingColours(recipe)}.", cell);
+        sim.Messages.Tell(smith, MessageKind.Info, $"A billet for the {recipe.Label} is in your tongs: put it in the fire, and work it {WorkingColours(recipe)}.", cell);
     }
 
     /// <summary>Begin a bloom from ore and charcoal staged at the forge: it's smelted in the fire, then beaten on the anvil.</summary>
@@ -235,7 +235,7 @@ public static class Smithing
         var cell = w.Get<Thing>(forge).Cell;
         if (PieceOf(sim, smith) is { } held)
         {
-            sim.Messages.Add(MessageKind.Info, held.Forge == forge && held.Recipe == recipe && held.IsBloom
+            sim.Messages.Tell(smith, MessageKind.Info, held.Forge == forge && held.Recipe == recipe && held.IsBloom
                 ? $"The bloom is in the forge: {NextStep(sim, smith, held)}."
                 : $"You already have the {PieceLabel(sim, held)} in your tongs.", cell);
             return;
@@ -256,7 +256,7 @@ public static class Smithing
             return;
         if (PieceOf(sim, smith) is { } held)
         {
-            sim.Messages.Add(MessageKind.Info, $"You already have the {PieceLabel(sim, held)} in your tongs.", cell);
+            sim.Messages.Tell(smith, MessageKind.Info, $"You already have the {PieceLabel(sim, held)} in your tongs.", cell);
             return;
         }
         var hp = WeaponWear.HpFraction(sim, item);
@@ -276,7 +276,7 @@ public static class Smithing
             Forge = forge, Recipe = recipe, Mending = item, Temp = AirAt(sim, smith),
             BlowsNeeded = Math.Max(3, (int)MathF.Round(BlowsFor(recipe) * (1f - hp) * 1.5f)),
         });
-        sim.Messages.Add(MessageKind.Info, $"The {sim.LabelOf(item)} is in your tongs: heat it {WorkingColours(recipe)} and hammer out the chips.", cell);
+        sim.Messages.Tell(smith, MessageKind.Info, $"The {sim.LabelOf(item)} is in your tongs: heat it {WorkingColours(recipe)} and hammer out the chips.", cell);
     }
 
     /// <summary>A forge fires only for work: a mend keeps it lit for an hour from now.</summary>

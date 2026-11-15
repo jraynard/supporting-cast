@@ -6,32 +6,32 @@ numbers that have had a pass.
 
 ## Before
 
-- [ ] **The build:** cut a playtest build for itch, and make sure everyone runs the same one (the co-op
+- [x] **The build:** cut a playtest build for itch, and make sure everyone runs the same one (the co-op
   handshake refuses a mismatch).
-- [ ] **The relay:** check it's current. Redeploy with
+- [x] **The relay:** check it's current. Redeploy with
   `external/narsil/deploy/relay/publish.sh ubuntu@129.153.122.49 linux-arm64`.
 - [ ] **Who:** a host at home, a joiner on another network (a phone hotspot will do), and a Steam Deck.
   The Deck through the relay on the same network already works.
-- [ ] **The baseline:** run `dotnet run --project src/HeroesNotIncluded -c Release -- --season-sweep`
+- [x] **The baseline:** run `dotnet run --project src/HeroesNotIncluded -c Release -- --season-sweep`
   and keep its output. It's how bot-played seasons come out with today's `season.json`, the "before"
   for the season pass.
-- [ ] **Logs:** Settings, "Playtest logs", is on by default. Each round leaves a folder under the logs
+- [x] **Logs:** Settings, "Playtest logs", is on by default. Each round leaves a folder under the logs
   folder's `rounds/`.
 
 ## Alone first
 
 Each one is a command away. Press the note key (F11) whenever something's worth remembering.
 
-- [ ] **Laying on hands:** `--practice Healer --lesson wound`. Does reading by the pulse teach the
+- [x] **Laying on hands:** `--practice Healer --lesson wound`. Does reading by the pulse teach the
   kinds? Is the flinch fair?
-- [ ] **The other healer games:** `--practice Healer --lesson fever`, `many`, `festering`, `shrine`,
-  `meditate`. The bandage band, the weave's beat window, the labyrinth's size.
-- [ ] **A Veteran:** `--arena Veteran` (`--weapon IronSpear` to change arms). Fair to a player? (About
+- [x] **The other healer games:** `--practice Healer --lesson many`, `festering`, `shrine`. The bandage
+  band, the weave's beat window, the labyrinth's size.
+- [x] **A Veteran:** `--arena Veteran` (`--weapon IronSpear` to change arms). Fair to a player? (About
   6% for a skill-6 villager with a sword.)
-- [ ] **The dragon in the ring:** `--arena Dragon`. Can a player hurt it and live?
-- [ ] **The dragon in a round:** `--dragon-test`. What water does against it; the town hiding; whether
+- [x] **The dragon in the ring:** `--arena Dragon`. Can a player hurt it and live?
+- [x] **The dragon in a round:** `--dragon-test`. What water does against it; the town hiding; whether
   it leaves (it comes at the deal, before any party's in town).
-- [ ] **Bracing the bridge:** `--bridge-test`. The bracing window, as the tinker with wood in hand.
+- [x] **Bracing the bridge:** `--bridge-test`. The bracing window, as the tinker with wood in hand.
 
 ### The lessons
 
@@ -53,11 +53,9 @@ step shown is the one you're on.
   - [ ] `smelt`
 - **Healer**
   - [ ] `wound`
-  - [ ] `fever`
   - [ ] `many`
   - [ ] `festering`
   - [ ] `shrine`
-  - [ ] `meditate`
 - **Tinker**
   - [ ] `box`
   - [ ] `curio`

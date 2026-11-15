@@ -99,7 +99,7 @@ public sealed class SharpenSession : WorkSession
     {
         if (Problem(sim, worker, item) is { } why)
         {
-            sim.Messages.Add(MessageKind.Info, $"Can't sharpen that: {why}.", sim.LocationOf(worker));
+            sim.Messages.Tell(worker, MessageKind.Info, $"Can't sharpen that: {why}.", sim.LocationOf(worker));
             return;
         }
         var w = sim.World;

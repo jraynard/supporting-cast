@@ -340,12 +340,12 @@ public sealed partial class VillageGame
     }
 
     /// <summary>
-    /// The span from the side: its stones on the centring, the level sliding along them, and its
+    /// The span from the side: its stones on the centring, the level carried along them, and its
     /// bubble off the middle where a stone sags or rides high. The band is where level lies.
     /// </summary>
     private void DrawSpan(SpanSession s)
     {
-        BeginWork(s.Title, ("F", "drive a wedge under the stone at the level"), ("A", "ease one out"), ("Esc", "stop"));
+        BeginWork(s.Title, ("A/D", "carry the level to a stone"), ("F", "drive a wedge in: lift it"), ("Space", "ease one out: let it down"), ("Esc", "stop"));
         TextC(Theme.Dim, "Lift the stones that sag, ease down the ones riding high. Get the whole span level.");
         var dl = ImGui.GetWindowDrawList();
         var min = ImGui.GetCursorScreenPos();

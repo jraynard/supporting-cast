@@ -197,7 +197,7 @@ public sealed class MixSession : WorkSession
             carrying.Item = made;
         else
             Inventory.Stow(sim, Worker, made);
-        sim.Messages.Add(MessageKind.Info, $"Mixed a {Crafting.QualityLabel(quality)} {_label}: it's in your hand.", at);
+        sim.Messages.Tell(Worker, MessageKind.Info, $"Mixed a {Crafting.QualityLabel(quality)} {_label}: it's in your hand.", at);
     }
 
     /// <summary>What a mix does: its base and adds summed, the better mixed, the more of it.</summary>

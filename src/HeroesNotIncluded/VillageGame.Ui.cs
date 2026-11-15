@@ -235,9 +235,14 @@ public sealed partial class VillageGame
             _selected = Entity.Null; // lost from sight
             return;
         }
-        _hud.Next(Anchor.BottomLeft, ScreenFit.Width(360, 0.32f), Gui.S(400));
+        // As tall as what it shows, up to a cap: a fixed height took the column from the panels
+        // above it (the gift squeezed to its tabs, its wounds out of sight).
+        var width = _hud.Next(Anchor.BottomLeft, ScreenFit.Width(360, 0.32f));
+        var most = new float2(width, Math.Min(_hud.Room(Anchor.BottomLeft), Gui.S(400)));
+        var least = new float2(width, 0);
+        ImGui.SetNextWindowSizeConstraints(in least, in most, (ImGuiSizeCallback?)null, default);
         var open = true;
-        Panel.Begin("Inspector###inspector", ref open, Hud.Flags);
+        Panel.Begin("Inspector###inspector", ref open, Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize);
         _hud.Took();
         if (!open)
             _selected = Entity.Null;
@@ -1066,7 +1071,14 @@ public sealed partial class VillageGame
     private long _witnessedTotal = -1;
 
     /// <summary>Whether this player would know about a message: a public one, or one that happened where they can see.</summary>
-    private bool Witnessed(Message m) => m.Location is not { } at || View.CanSeeCell(at);
+    /// <summary>
+    /// Whether this player has a message: one said to someone (<see cref="Message.To"/>) only if it
+    /// was said to them, wherever they are (in co-op, another player's "You..." lines were turning up
+    /// as this one's toasts); any other only if where it happened was in sight.
+    /// </summary>
+    private bool Witnessed(Message m) => m.To is { } to
+        ? to == _avatar || View.Omniscient
+        : m.Location is not { } at || View.CanSeeCell(at);
 
     /// <summary>
     /// The log this player is entitled to. In a round each message is judged as it arrives, by what

@@ -118,7 +118,7 @@ public sealed class StewSession : WorkSession
         // Cooked through: bank the fire to keep it warm without catching.
         p.Flame = Math.Min(p.Flame, (Cooking.SteamingAt + Cooking.SimmerAt) * 0.5f);
         var burnt = p.Scorch > 0.35f ? " It's caught on the bottom: you can taste it." : p.Scorch > 0.12f ? " A little caught on the bottom." : "";
-        sim.Messages.Add(MessageKind.Info, $"The stew's cooked through; you bank the fire to keep it warm.{burnt}", sim.World.Get<Thing>(Pot).Cell);
+        sim.Messages.Tell(Worker, MessageKind.Info, $"The stew's cooked through; you bank the fire to keep it warm.{burnt}", sim.World.Get<Thing>(Pot).Cell);
     }
 
     public override void Interrupted(Simulation sim) => WriteBack(sim);

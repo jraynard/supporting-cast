@@ -42,7 +42,7 @@ public static class Broths
         if (w.TryGet<Mana>(eater, out var mana))
             w.Get<Mana>(eater).Current = Math.Min(mana.Max, mana.Current + Mana);
         if (w.Has<Avatar>(eater))
-            sim.Messages.Add(MessageKind.Good, w.Has<Mana>(eater) ? "A good broth: it warms you through, and something of the gift comes back with it."
+            sim.Messages.Tell(eater, MessageKind.Good, w.Has<Mana>(eater) ? "A good broth: it warms you through, and something of the gift comes back with it."
                 : "A good broth: it warms you through. Hurts mend the better for it.", w.Get<Position>(eater).Cell);
     }
 

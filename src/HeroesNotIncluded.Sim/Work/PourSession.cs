@@ -79,7 +79,7 @@ public sealed class PourSession : WorkSession
         var into = w.Get<Thing>(cask).Def.Building!.Cask!.Into;
         if (!Vessels.Ready(sim, worker, into))
         {
-            sim.Messages.Add(MessageKind.Info, Vessels.CleanOn(sim, worker, into).IsNull
+            sim.Messages.Tell(worker, MessageKind.Info, Vessels.CleanOn(sim, worker, into).IsNull
                 ? $"You need a clean {sim.Defs.Thing(into).Label} to pour into: there are some on the shelf behind the bar."
                 : $"You need a hand free for the {sim.Defs.Thing(into).Label}.", at);
             return;
@@ -140,7 +140,7 @@ public sealed class PourSession : WorkSession
         if (Spilled)
         {
             sim.Mess.Spill(sim, Hospitality.MessKind.SpilledAle, w.Get<Position>(Worker).Cell);
-            sim.Messages.Add(MessageKind.Info, $"It foams over the rim and down your arm: that {DrinkLabel} is on the floor.", at);
+            sim.Messages.Tell(Worker, MessageKind.Info, $"It foams over the rim and down your arm: that {DrinkLabel} is on the floor.", at);
             return;
         }
         Vessels.Use(sim, Worker, w.Get<Thing>(Cask).Def.Building!.Cask!.Into);

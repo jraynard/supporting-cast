@@ -68,7 +68,7 @@ public sealed partial class VillageGame
             Issue(new WeaveCommand(_avatar, 0));
         ImGui.EndDisabled();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            Tip(cantWeave != null ? Cap(cantWeave) + "." : "Weave a mending meant for no wound (one that steadies you, or a mix you're trying out).");
+            Tip(cantWeave != null ? Cap(cantWeave) + "." : "Weave without choosing a wound: a mending takes hold of the worst one you carry that it mends. Or one that steadies you, or a mix you're trying out.");
         ImGui.SameLine(0, 6);
         var cantCharm = CastSession.Problem(_sim, _avatar, 0, intoCharm: true);
         ImGui.BeginDisabled(cantCharm != null || Working);

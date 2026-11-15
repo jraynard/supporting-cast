@@ -396,15 +396,28 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         return s.Gauge > mark ? (true, false, 0) : s.Gauge < -mark ? (false, false, -1) : (false, false, 0);
     }
 
-    /// <summary>As the level reaches each stone: a sag wedged up, a high one eased down, once a pass.</summary>
+    /// <summary>Stone by stone along the span and back: carry the level to it, let it settle, then wedge a sag up or ease a high one down till it reads level.</summary>
     private (bool, bool, int) Span(SpanSession s)
     {
-        var at = s.At * (SpanSession.Stones - 1);
-        if (MathF.Abs(at - MathF.Round(at)) > 0.12f || s.AtStone == _spoke)
-            return (false, false, 0);
-        _spoke = s.AtStone;
+        if (_spoke < 0)
+            (_spoke, _dir) = (0, 1);
+        if (s.AtStone != _spoke)
+            return (false, false, Math.Sign(_spoke - s.AtStone));
+        if (MathF.Abs(s.At * (SpanSession.Stones - 1) - _spoke) > 0.01f || _working-- > 0)
+            return (false, false, 0); // settling, or letting the last wedge show
+        _working = 8;
         var mark = s.BandWidth * 0.8f;
-        return s.Reading < -mark ? (true, false, 0) : s.Reading > mark ? (false, false, -1) : (false, false, 0);
+        if (s.Reading < -mark)
+            return (true, false, 0);
+        if (s.Reading > mark)
+        {
+            _act = true;
+            return (false, false, 0);
+        }
+        if (_spoke + _dir is < 0 or >= SpanSession.Stones)
+            _dir = -_dir;
+        _spoke += _dir;
+        return (false, false, 0);
     }
 
     /// <summary>Keep each part square over its seat and press it in only while it is; then wind to the catch and latch.</summary>

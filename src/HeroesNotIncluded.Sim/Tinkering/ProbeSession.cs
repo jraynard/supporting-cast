@@ -75,7 +75,7 @@ public sealed class ProbeSession : WorkSession
     {
         if (Lockwork.Problem(sim, worker, box) is { } why)
         {
-            sim.Messages.Add(MessageKind.Info, $"Can't search that: {why}.", sim.LocationOf(worker));
+            sim.Messages.Tell(worker, MessageKind.Info, $"Can't search that: {why}.", sim.LocationOf(worker));
             return;
         }
         var b = sim.World.Get<Strongbox>(box);
@@ -138,7 +138,7 @@ public sealed class ProbeSession : WorkSession
             sim.Messages.Add(MessageKind.Good, $"{w.Get<Creature>(Worker).Name} eases {Lockwork.TrapLabel(Trap)} out of the strongbox's lid.", at);
         }
         else
-            sim.Messages.Add(MessageKind.Info, "You've run the probe along the whole seam.", at);
+            sim.Messages.Tell(Worker, MessageKind.Info, "You've run the probe along the whole seam.", at);
     }
 
     protected override void WriteState(SaveWriter w)

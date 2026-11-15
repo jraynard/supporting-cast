@@ -131,8 +131,9 @@ public static class Buckets
 
     /// <summary>
     /// Water lands here: fire knocked down and the ground soaked, in the cell and round it, from
-    /// the level below to the eaves above (a bucket thrown up wets a roof's edge). Returns how many
-    /// burning cells it put out.
+    /// the level below to the eaves above (a bucket thrown up wets a roof's edge), and a dragon
+    /// caught in it (its bulk reaching a cell further) soaked (<see cref="DragonBrain.Douse"/>).
+    /// Returns how many burning cells it put out.
     /// </summary>
     public static int Splash(Simulation sim, int3 at)
     {
@@ -156,6 +157,14 @@ public static class Buckets
                     }
                     sim.Fire.Soak(sim, i, middle ? soak : soak * 2 / 3);
                 }
+        foreach (var e in sim.Creatures().ToList())
+        {
+            if (sim.World.Get<Creature>(e) is not { Dead: false, Def.Race: Race.Dragon })
+                continue;
+            var c = sim.World.Get<Position>(e).Cell;
+            if (Math.Abs(c.X - at.X) <= 2 && Math.Abs(c.Y - at.Y) <= 2 && c.Z - at.Z is >= -1 and <= 2)
+                DragonBrain.Douse(sim, e);
+        }
         return put;
     }
 

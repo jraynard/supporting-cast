@@ -116,7 +116,7 @@ public static class Revival
         var body = BodyBeside(sim, caster);
         if (body.IsNull)
         {
-            sim.Messages.Add(MessageKind.Warning, "The calling reaches out and finds no one beside you to call back. The mana's spent.", at);
+            sim.Messages.Tell(caster, MessageKind.Warning, "The calling reaches out and finds no one beside you to call back. The mana's spent.", at);
             return false;
         }
         var name = w.Get<Creature>(body).Name;
@@ -138,7 +138,7 @@ public static class Revival
         var chill = HealthSystem.Damage(sim, caster, ChillDamage * (1.5f - Math.Clamp(quality, 0f, 1f)), DamageType.Frost, bias: PartHeight.High);
         if (chill != null)
             chill.Absorbed = true;
-        sim.Messages.Add(MessageKind.Good, $"The calling holds the way open for {name}, and the grave's cold creeps into your hands.", at);
+        sim.Messages.Tell(caster, MessageKind.Good, $"The calling holds the way open for {name}, and the grave's cold creeps into your hands.", at);
 
         var ghost = GhostOf(sim, body);
         if (ghost.IsNull || w.Get<Ghost>(ghost).Away)

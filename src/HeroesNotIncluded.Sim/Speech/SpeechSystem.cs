@@ -253,7 +253,10 @@ public sealed class SpeechSystem : ISimSystem, ISaveState
     private static int RoomsAt(Simulation sim, int3 cell, Span<int> rooms, out bool outdoors)
     {
         var map = sim.Map;
-        outdoors = false;
+        // Off the map (above its top: a dragon's breath from the air) is open sky.
+        outdoors = !map.InBounds(cell);
+        if (outdoors)
+            return 0;
         var count = 0;
         var own = map.RoomId[map.Idx(cell)];
         if (own > 0)

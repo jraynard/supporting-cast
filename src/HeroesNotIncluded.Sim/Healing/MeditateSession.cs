@@ -100,7 +100,7 @@ public sealed class MeditateSession : WorkSession
     {
         if (Problem(sim, who) is { } why)
         {
-            sim.Messages.Add(MessageKind.Info, $"Can't meditate: {why}.", sim.LocationOf(who));
+            sim.Messages.Tell(who, MessageKind.Info, $"Can't meditate: {why}.", sim.LocationOf(who));
             return;
         }
         var mana = sim.World.Get<Mana>(who);
@@ -257,9 +257,9 @@ public sealed class MeditateSession : WorkSession
         mana.Current = Math.Min(mana.Max, mana.Current + Gained);
         var at = sim.LocationOf(Worker);
         if (Centred)
-            sim.Messages.Add(MessageKind.Good, $"You find the still centre of yourself, and come back with {Gained:F0} mana.", at);
+            sim.Messages.Tell(Worker, MessageKind.Good, $"You find the still centre of yourself, and come back with {Gained:F0} mana.", at);
         else
-            sim.Messages.Add(Gained >= Room * 0.5f ? MessageKind.Good : MessageKind.Info, Pain > 0.4f && Gained < Room * 0.5f
+            sim.Messages.Tell(Worker, Gained >= Room * 0.5f ? MessageKind.Good : MessageKind.Info, Pain > 0.4f && Gained < Room * 0.5f
                 ? $"The pain keeps scattering your thoughts. You come back with {Gained:F0} mana."
                 : $"You come back to yourself with {Gained:F0} mana.", at);
     }

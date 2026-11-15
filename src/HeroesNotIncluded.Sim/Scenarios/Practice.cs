@@ -243,10 +243,11 @@ public static class Practice
         int Part(string label) => h.Body.Parts.FindIndex(p => p.Label.Contains(label) && !p.Vital) is var i and >= 0 ? i : PartFor(h);
         if (kind == PatientCase.Many)
         {
-            HealthSystem.Damage(sim, patient, WoundDamage, DamageType.Cut, Part("arm"));
+            // Three kinds that feel different under the hands (a cut is the first lesson's), the fever among them.
             HealthSystem.Damage(sim, patient, WoundDamage * 0.7f, DamageType.Blunt, Part("leg"));
             HealthSystem.Damage(sim, patient, WoundDamage * 0.5f, DamageType.Burn, Part("hand"));
-            sim.Messages.Add(MessageKind.Info, $"{PatientName} is brought in, cut, bruised and burned: a bad day.", w.Get<Position>(patient).Cell);
+            FeverSystem.Catch(sim, patient);
+            sim.Messages.Add(MessageKind.Info, $"{PatientName} is brought in, bruised, burned and feverish: a bad day.", w.Get<Position>(patient).Cell);
             return patient;
         }
         HealthSystem.Damage(sim, patient, WoundDamage, DamageType.Cut, Part("arm"));

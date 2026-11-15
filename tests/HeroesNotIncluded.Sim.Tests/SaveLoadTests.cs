@@ -56,6 +56,19 @@ public class SaveLoadTests
     }
 
     [Fact]
+    public void WhoALineWasForSurvives()
+    {
+        var (live, _) = TestWorld.Millbrook(5);
+        var who = live.Creatures().First();
+        live.Messages.Tell(who, Core.MessageKind.Warning, "Can't weave: you've no mana left; meditate.", new int3(3, 4, 1));
+        live.Messages.Add(Core.MessageKind.Danger, "A dragon!", null, "Dragon!");
+        var kept = RoundTrip(live).Messages.Messages.TakeLast(2).ToList();
+        Assert.Equal(live.Messages.Messages.TakeLast(2), kept);
+        Assert.Equal(who, kept[0].To);
+        Assert.Null(kept[1].To);
+    }
+
+    [Fact]
     public void StorytellerStateSurvives()
     {
         var (live, _) = TestWorld.Millbrook(5);

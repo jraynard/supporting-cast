@@ -355,7 +355,7 @@ public sealed class TapSession : WorkSession
         var at = sim.World.Get<Thing>(Cask).Cell;
         if (Misses > 0)
             sim.Mess.Spill(sim, Hospitality.MessKind.SpilledAle, sim.World.Get<Position>(Worker).Cell, 0.4f * Misses);
-        sim.Messages.Add(MessageKind.Info, Misses == 0 ? "The tap's in clean, and the cask is full."
+        sim.Messages.Tell(Worker, MessageKind.Info, Misses == 0 ? "The tap's in clean, and the cask is full."
             : $"The tap's in, after a soaking: {Wasted} servings down your front and on the floor.", at);
     }
 

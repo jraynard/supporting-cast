@@ -167,7 +167,9 @@ public sealed partial class VillageGame
     private bool BeginJournal(string title, ref bool open, float height = 0f, Anchor side = Anchor.TopRight)
     {
         _hud.Next(side, ScreenFit.Width(JournalWidth, JournalShare), height > 0 ? Gui.S(height) : 0f);
-        var visible = Panel.Begin(title, ref open, Hud.Flags);
+        // Without a height it fits what it holds, every frame: else it keeps the size it opened at
+        // (the gift opened with no wounds stayed a line tall once there were some).
+        var visible = Panel.Begin(title, ref open, height > 0 ? Hud.Flags : Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize);
         _hud.Took();
         return visible;
     }

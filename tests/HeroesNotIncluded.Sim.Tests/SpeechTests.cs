@@ -40,6 +40,15 @@ public class SpeechTests
     private static Hearing? HeardBy(Utterance u, Entity e) => u.Listeners.FindIndex(h => h.Listener == e) is >= 0 and var i ? u.Listeners[i] : null;
 
     [Fact]
+    public void ASoundFromAboveTheMapIsOutdoors()
+    {
+        // A dragon at the top of the sky breathes from above the map's last level.
+        var sim = World();
+        var above = C(10, 10) with { Z = sim.Map.Depth + 1 };
+        Assert.Equal(Clarity.Clear, SpeechSystem.Hear(sim, above, C(12, 10), Volume.Shout));
+    }
+
+    [Fact]
     public void AWhisperReachesOnlyTheOneBesideYou()
     {
         var sim = World();

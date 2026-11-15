@@ -10,9 +10,11 @@ public enum MessageKind
 
 /// <summary>
 /// One line in the log. A <paramref name="Headline"/> marks the season's big moments (a raid, the
-/// dragon, the festival, the end): a few words the game shows large, the text under them.
+/// dragon, the festival, the end): a few words the game shows large, the text under them. A line
+/// <paramref name="To"/> someone ("You draw the wound into yourself", "Can't weave: ...") is theirs
+/// alone: in co-op the other players don't see it, however near they stand.
 /// </summary>
-public readonly record struct Message(long Tick, MessageKind Kind, string Text, int3? Location, string? Headline = null);
+public readonly record struct Message(long Tick, MessageKind Kind, string Text, int3? Location, string? Headline = null, Entity? To = null);
 
 /// <summary>
 /// Player-facing event log ("The stone bridge is down!"). Keeps the newest <see cref="MaxKept"/>:
@@ -56,9 +58,18 @@ public sealed class MessageLog
     }
 
     /// <summary>Add a line; with a <paramref name="headline"/>, it's announced large (<see cref="Message.Headline"/>).</summary>
-    public void Add(MessageKind kind, string text, int3? location = null, string? headline = null)
+    public void Add(MessageKind kind, string text, int3? location = null, string? headline = null) => Post(new Message(Now(), kind, text, location, headline));
+
+    /// <summary>
+    /// A line for <paramref name="to"/> alone (<see cref="Message.To"/>), wherever they are: what they
+    /// did, said to them, or news that's theirs (a <paramref name="headline"/>: rats in the cook's larder).
+    /// </summary>
+    public void Tell(Entity to, MessageKind kind, string text, int3? location = null, string? headline = null) =>
+        Post(new Message(Now(), kind, text, location, headline, to));
+
+    private void Post(Message message)
     {
-        _messages.Add(new Message(Now(), kind, text, location, headline));
+        _messages.Add(message);
         Total++;
         if (_messages.Count < MaxKept + TrimBatch)
             return;

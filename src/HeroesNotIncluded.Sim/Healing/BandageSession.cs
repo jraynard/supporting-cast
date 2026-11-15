@@ -52,7 +52,7 @@ public sealed class BandageSession : WorkSession
     {
         if (Bandaging.CantBind(sim, binder, patient) is { } why)
         {
-            sim.Messages.Add(MessageKind.Info, $"Can't bandage: {why}.", sim.LocationOf(binder));
+            sim.Messages.Tell(binder, MessageKind.Info, $"Can't bandage: {why}.", sim.LocationOf(binder));
             return;
         }
         var wounds = Math.Min(Bandaging.WoundsToBind(sim, patient, binder), Bandaging.BandagesOn(sim, binder));
@@ -122,10 +122,10 @@ public sealed class BandageSession : WorkSession
         var quality = Math.Clamp(0.15f + 0.55f * Quality + 0.025f * medicine, 0.05f, 1f);
         Bandaging.Bind(sim, Worker, Patient, quality);
         if (Tight * 3 >= Turns)
-            sim.Messages.Add(MessageKind.Warning, Patient == Worker ? "You've bound it too tight. It throbs under the cloth."
+            sim.Messages.Tell(Worker, MessageKind.Warning, Patient == Worker ? "You've bound it too tight. It throbs under the cloth."
                 : $"{PatientName} winces: you've bound it too tight.", sim.LocationOf(Patient));
         else if (Slack * 3 >= Turns)
-            sim.Messages.Add(MessageKind.Info, "The dressing's loose. It'll do, barely.", sim.LocationOf(Patient));
+            sim.Messages.Tell(Worker, MessageKind.Info, "The dressing's loose. It'll do, barely.", sim.LocationOf(Patient));
     }
 
     protected override void WriteState(SaveWriter w)

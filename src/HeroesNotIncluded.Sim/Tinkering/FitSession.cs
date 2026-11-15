@@ -290,7 +290,7 @@ public sealed class FitSession : WorkSession
         if (Snapped)
         {
             // The parts come apart, and the materials stay staged on the bench to begin again.
-            sim.Messages.Add(MessageKind.Warning, $"The {What}'s spring snaps as you wind it. The parts come apart: you'll have to fit them again.", at);
+            sim.Messages.Tell(Worker, MessageKind.Warning, $"The {What}'s spring snaps as you wind it. The parts come apart: you'll have to fit them again.", at);
             return;
         }
         var quality = Crafting.QualityFrom(Quality);

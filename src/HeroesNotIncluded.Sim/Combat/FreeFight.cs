@@ -119,7 +119,12 @@ public static class FreeFight
             // A fresh path when there's none, or they've moved off the end of the last.
             if (!mover.Moving || Maps.Map.Distance(mover.Path![^1], them.Cell) > 1)
             {
-                if (Ai.Navigation.PlanRoute(sim, e, me.Cell, them.Cell, PathEnd.Touch) is { } path)
+                // A dragon down on the town (Ai.Rampage) chases on foot through the streets, never
+                // through a door or a house: no such way, and it doesn't come.
+                var path = w.Has<Ai.Rampage>(e)
+                    ? sim.Pathfinder.FindPath(me.Cell, them.Cell, PathEnd.Touch) is { } walked && !Ai.DragonBrain.Squeezes(sim, walked) ? walked : null
+                    : Ai.Navigation.PlanRoute(sim, e, me.Cell, them.Cell, PathEnd.Touch);
+                if (path != null)
                 {
                     mover.Path = path;
                     mover.PathIndex = 0;

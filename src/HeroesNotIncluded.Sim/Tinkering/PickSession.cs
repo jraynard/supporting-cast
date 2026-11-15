@@ -140,7 +140,7 @@ public sealed class PickSession : WorkSession
     {
         if (Lockwork.Problem(sim, worker, box) is { } why)
         {
-            sim.Messages.Add(MessageKind.Info, $"Can't pick that: {why}.", sim.LocationOf(worker));
+            sim.Messages.Tell(worker, MessageKind.Info, $"Can't pick that: {why}.", sim.LocationOf(worker));
             return;
         }
         var b = sim.World.Get<Strongbox>(box);
@@ -152,7 +152,7 @@ public sealed class PickSession : WorkSession
     {
         if (DoorProblem(sim, worker, door) is { } why)
         {
-            sim.Messages.Add(MessageKind.Info, $"Can't pick that: {why}.", sim.LocationOf(worker));
+            sim.Messages.Tell(worker, MessageKind.Info, $"Can't pick that: {why}.", sim.LocationOf(worker));
             return;
         }
         var cut = sim.World.Get<LockCut>(door);
@@ -299,7 +299,7 @@ public sealed class PickSession : WorkSession
         else if (Opened)
             Lockwork.Open(sim, Worker, Box);
         else if (Snapped)
-            sim.Messages.Add(MessageKind.Warning, "The pick snaps off in the lock. You'll have to start again.", at);
+            sim.Messages.Tell(Worker, MessageKind.Warning, "The pick snaps off in the lock. You'll have to start again.", at);
     }
 
     protected override void WriteState(SaveWriter w)

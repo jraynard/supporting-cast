@@ -42,8 +42,11 @@ timings come after, trade by trade (Backlog, "Tuning the mini-games").
   headless sweep (HISTORY.md, "Combat balance"; `--combat-sweep`); parry and stamina feel right.
   The dragon got harder with AI footwork (HISTORY.md, "AI footwork": met 12/48 with a party, was
   27/48): bring it back with `DragonBrain.FleeDamage`/`FleePain` and the footwork levers.
-- **Not yet seen running:** the bracing window (`--bridge-test`), buckets against the dragon and the
-  dragon in a round (`--dragon-test`).
+- **Seen once, changed since (HISTORY.md, "Solo playtest notes"):** the bracing window
+  (`--bridge-test`, now a level you carry) and the dragon in a round (`--dragon-test`, now passes
+  from the air, then a stand in the square). Look again, and at buckets against it.
+- **The Veteran** felt easy-ish to a practised action-game player; probably right for most. Leave it
+  unless friends say the same.
 - **The lessons:** one trade at a time, the words and whether the step shown is the one you're on.
 
 **With friends, over the internet**
@@ -63,7 +66,8 @@ timings come after, trade by trade (Backlog, "Tuning the mini-games").
 - **Heroes die often:** about one in two raids with a party in town costs one. Watch what it does
   to Renown before blunting raids.
 - **The dragon without a party** is met by nobody: the town hides and it leaves unhurt. It's meant
-  for players; check friends can drive it off.
+  for players; check friends can drive it off. Water now puts its fire out and four soakings see it
+  off (`DragonBrain.Douse`); see Backlog, "Crises and the town", for villagers doing it too.
 
 **The numbers** (defaults not yet tuned in play)
 - **The season** (`season.json`): the Renown target and Dread rates (Dread per death included),
@@ -215,6 +219,9 @@ items into "Now" when a playtest says they matter.
 - Time passes fast only while everyone sleeps, not when the town is otherwise quiet.
 - Errands fetch only what's lying about or in common stores. Wood left out on a cold day goes on
   the fires first.
+- **Brave villagers with buckets:** once the dragon's down, the bolder villagers (by trait or
+  mood) fetch water and soak it (`DragonBrain.Douse`; `SoaksToDrive`), not just the fires it sets
+  (`BucketJob`). The town without a party has a way to see it off (met 1/48 in the sweep).
 
 **Map and movement**
 - Lanes cost the same to walk as grass, so villagers don't prefer them.

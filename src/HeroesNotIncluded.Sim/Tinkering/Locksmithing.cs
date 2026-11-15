@@ -208,7 +208,7 @@ public static class Locksmithing
     {
         if (FitProblem(sim, who, door, lockItem) is { } why)
         {
-            sim.Messages.Add(MessageKind.Info, $"Can't fit that: {why}.", sim.LocationOf(who));
+            sim.Messages.Tell(who, MessageKind.Info, $"Can't fit that: {why}.", sim.LocationOf(who));
             return false;
         }
         var w = sim.World;
@@ -234,7 +234,7 @@ public static class Locksmithing
         var key = KeyFor(sim, who, w.Get<LockCut>(door).Seed);
         if (key.IsNull)
         {
-            sim.Messages.Add(MessageKind.Info, "None of your keys fits this lock.", at);
+            sim.Messages.Tell(who, MessageKind.Info, "None of your keys fits this lock.", at);
             return false;
         }
         var fit = w.Get<Key>(key).Fit;

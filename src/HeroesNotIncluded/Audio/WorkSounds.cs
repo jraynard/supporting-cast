@@ -18,8 +18,8 @@ public sealed class WorkSounds(AudioEngine audio)
     private const float Quick = 0.08f;
 
     private long _session = -1;
-    private int _a, _b;
-    private float _q;
+    private int _a, _b, _c;
+    private float _q, _warm;
     private bool _flag;
 
     /// <summary>Once a frame with the session being worked, or null.</summary>
@@ -34,7 +34,7 @@ public sealed class WorkSounds(AudioEngine audio)
         if (fresh)
         {
             _session = session.StartTick;
-            (_a, _b, _q, _flag) = (0, 0, 0f, false);
+            (_a, _b, _c, _q, _warm, _flag) = (0, 0, -1, 0f, 0f, false);
             audio.Play(Sounds.UiOpen, gain: 0.5f);
         }
 
@@ -115,8 +115,18 @@ public sealed class WorkSounds(AudioEngine audio)
                 audio.Hold("work:hum", Sounds.Hum, 0.5f);
                 break;
             case HandsOnSession s:
-                // The gift's hum, up while the link's open and climbing as the strain does.
-                audio.Hold("work:hum", Sounds.Hum, s.Linked ? 0.75f : 0.4f, pitch: 1f + 0.25f * Math.Clamp(s.Link.Strain, 0f, 1f), fade: 0.2f);
+            {
+                // The gift's hum, up while the link's open and climbing as the strain does; unlinked,
+                // it swells and brightens as the hands near a hurt (the warmth the scene shows, smoothed
+                // so a trembling hand doesn't make it warble).
+                _warm += (Math.Clamp(s.Feel, 0f, 1f) - _warm) * 0.15f;
+                audio.Hold("work:hum", Sounds.Hum, s.Linked ? 0.75f : 0.3f + 0.4f * _warm,
+                    pitch: s.Linked ? 1f + 0.25f * Math.Clamp(s.Link.Strain, 0f, 1f) : 1f + 0.15f * _warm, fade: 0.2f);
+                // A soft beat each time a new warmth is sensed (ones read before are known already).
+                var sensed = s.Spots.Count(p => p.Sensed > 0f);
+                if (_c >= 0 && sensed > _c)
+                    audio.Play(Sounds.Pulse, gain: 0.6f, pitch: 1.35f);
+                _c = sensed;
                 // A wound's beat under a pressing hand, each time it swells (its kind's way, as the scene shows it).
                 if (s.Pulse > 0.6f && !_flag)
                     audio.Play(Sounds.Pulse, gain: 0.4f + 0.6f * s.Pulse, pitch: s.Linked ? 1.1f : 1f);
@@ -131,6 +141,7 @@ public sealed class WorkSounds(AudioEngine audio)
                     audio.Play(Sounds.Snap);
                 _q = s.Link.Snapped ? 1f : 0f;
                 break;
+            }
             case MeditateSession:
                 audio.Hold("work:hum", Sounds.Hum, 0.6f);
                 break;

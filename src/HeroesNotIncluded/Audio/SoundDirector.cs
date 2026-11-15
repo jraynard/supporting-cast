@@ -242,7 +242,10 @@ public sealed class SoundDirector(AudioEngine audio)
                 continue;
             newest = Math.Max(newest, b.Tick);
             // Dragon fire carries: seen, or heard anywhere in town (muffled indoors).
-            var muffle = Reach(sim, view, me, Cell(b.Mouth)) ?? (me != null ? 0.6f : (float?)null);
+            // Heard from where it's breathed, on the map: a dragon high up breathes from above its top.
+            var from = Cell(b.Mouth);
+            from = new int3(Math.Clamp(from.X, 0, sim.Map.Width - 1), Math.Clamp(from.Y, 0, sim.Map.Height - 1), Math.Clamp(from.Z, 0, sim.Map.Depth - 1));
+            var muffle = Reach(sim, view, me, from) ?? (me != null ? 0.6f : (float?)null);
             if (muffle is not { } m)
                 continue;
             var at = ToAudio(b.Mouth);

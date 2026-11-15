@@ -93,7 +93,7 @@ public sealed class CastSession : WorkSession
             wound = 0;
         if (Problem(sim, caster, wound, intoCharm) is { } why)
         {
-            sim.Messages.Add(MessageKind.Info, $"Can't weave: {why}.", sim.LocationOf(caster));
+            sim.Messages.Tell(caster, MessageKind.Info, $"Can't weave: {why}.", sim.LocationOf(caster));
             return;
         }
         var feels = wound != 0 && Empathy.Find(sim, caster, wound) is { } inj ? Empathy.Feel(sim, inj.Type) : "";
@@ -165,27 +165,27 @@ public sealed class CastSession : WorkSession
         if (mana.Current < cost - 0.01f)
         {
             mana.Current = 0f;
-            sim.Messages.Add(MessageKind.Warning, "Your mana gives out before the weave is whole, and it unravels.", at);
+            sim.Messages.Tell(Worker, MessageKind.Warning, "Your mana gives out before the weave is whole, and it unravels.", at);
             return;
         }
         mana.Current -= cost;
         if (woven is not { } made)
         {
-            sim.Messages.Add(MessageKind.Warning, "The runes won't hold together. The weave fizzles, and the mana's spent.", at);
+            sim.Messages.Tell(Worker, MessageKind.Warning, "The runes won't hold together. The weave fizzles, and the mana's spent.", at);
             return;
         }
         var m = made.Mending;
         if (!w.Has<Spellbook>(Worker))
             w.Add(Worker, new Spellbook());
         if (w.Get<Spellbook>(Worker).Known.Add(m))
-            sim.Messages.Add(MessageKind.Good, $"A mending you didn't know: {m.Label}. You write its runes into your book.", at);
+            sim.Messages.Tell(Worker, MessageKind.Good, $"A mending you didn't know: {m.Label}. You write its runes into your book.", at);
         var label = m.Label.ToLowerInvariant();
         if (IntoCharm)
         {
             if (Charms.Make(sim, Worker, m, made.Extra, Quality).IsNull)
-                sim.Messages.Add(MessageKind.Warning, $"There's no linen to hand to knot the {label} into, and it slips away.", at);
+                sim.Messages.Tell(Worker, MessageKind.Warning, $"There's no linen to hand to knot the {label} into, and it slips away.", at);
             else
-                sim.Messages.Add(MessageKind.Good, Quality >= 0.75f
+                sim.Messages.Tell(Worker, MessageKind.Good, Quality >= 0.75f
                     ? $"You knot the {label} into a charm. It holds well."
                     : $"You knot the {label} into a charm. Some strands are loose.", at);
             return;
@@ -195,14 +195,26 @@ public sealed class CastSession : WorkSession
             Afterlife.Revival.Call(sim, Worker, Quality); // it says how it went
             return;
         }
-        if (!Empathy.Cast(sim, Worker, Wound, m, Quality, made.Extra))
-            sim.Messages.Add(MessageKind.Warning, $"The {label} finds nothing to take hold of. The mana's spent.", at);
+        // Woven for no wound in particular (the gift's own Weave), a mending that heals takes hold of
+        // the worst one it fits, as a torn charm does: a playtester knitted with a cut to mend and
+        // was told it found nothing.
+        var wound = Wound;
+        var feels = Feels;
+        if (wound == 0 && !m.Targetless && Charms.Target(sim, Worker, m) is var fit and not 0)
+        {
+            wound = fit;
+            feels = Empathy.Feel(sim, Empathy.Find(sim, Worker, fit)!.Type);
+        }
+        if (!Empathy.Cast(sim, Worker, wound, m, Quality, made.Extra))
+            sim.Messages.Tell(Worker, MessageKind.Warning, Wound != 0
+                ? $"The {label} doesn't answer {Feels}: it slides off. The mana's spent. (Your book says what mends what.)"
+                : $"The {label} finds no wound on you that it mends. The mana's spent.", at);
         else if (m.Targetless)
-            sim.Messages.Add(MessageKind.Good, $"The {label} settles over you. Your hands are steadier.", at);
+            sim.Messages.Tell(Worker, MessageKind.Good, $"The {label} settles over you. Your hands are steadier.", at);
         else
-            sim.Messages.Add(MessageKind.Good, Quality >= 0.75f
-                ? $"The {label} takes hold, and {Feels} eases."
-                : $"The {label} takes hold, weakly: {Feels}, dulled a little.", at);
+            sim.Messages.Tell(Worker, MessageKind.Good, Quality >= 0.75f
+                ? $"The {label} takes hold, and {feels} eases."
+                : $"The {label} takes hold, weakly: {feels}, dulled a little.", at);
     }
 
     protected override void WriteState(SaveWriter w)

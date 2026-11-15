@@ -56,7 +56,7 @@ public static class Larder
             salted += count;
         }
         if (salted > 0)
-            sim.Messages.Add(MessageKind.Info, $"You rub salt into {salted} portion{(salted == 1 ? "" : "s")}: it'll keep for weeks now, and season a pot by itself.", at);
+            sim.Messages.Tell(cook, MessageKind.Info, $"You rub salt into {salted} portion{(salted == 1 ? "" : "s")}: it'll keep for weeks now, and season a pot by itself.", at);
         return salted;
     }
 

@@ -303,6 +303,41 @@ public static class Navigation
         return route;
     }
 
+    /// <summary>
+    /// A leg flown and not landed: take off if on the ground (walking out to open sky first if
+    /// need be), climb clear of everything on the way, and fly straight to above
+    /// <paramref name="to"/>, ending in the air. A dragon's passes over the town chain these, so it
+    /// goes from one to the next without touching down. Null if it can't fly now or there's no way.
+    /// </summary>
+    public static List<int3>? AloftRoute(Simulation sim, Entity pawn, int3 from, int2 to)
+    {
+        if (FlyingStage(sim, pawn) is not { } stage)
+            return null;
+        var map = sim.Map;
+        var route = new List<int3>();
+        var takeoff = from;
+        var airborne = Airborne(map, from);
+        if (!airborne && !OpenAbove(map, from))
+        {
+            var spot = NearestOpenSky(sim, from, sim.Regions.RegionAt(from));
+            if (spot is not { } s || sim.Pathfinder.FindPath(from, s, PathEnd.OnTile) is not { } toSky)
+                return null;
+            route.AddRange(toSky);
+            takeoff = s;
+        }
+        var end = new int3(Math.Clamp(to.X, 0, map.Width - 1), Math.Clamp(to.Y, 0, map.Height - 1), takeoff.Z);
+        var cruise = Math.Min(CruiseLevel(map, takeoff, end) + stage.FlyAltitude, map.Depth - 1);
+        if (airborne)
+            cruise = Math.Max(cruise, takeoff.Z);
+        if (cruise <= takeoff.Z && !airborne || !ClearUpTo(map, takeoff, cruise))
+            return null;
+        for (var z = takeoff.Z + 1; z <= cruise; z++)
+            route.Add(new int3(takeoff.X, takeoff.Y, z));
+        foreach (var c in Line(takeoff, end))
+            route.Add(new int3(c.X, c.Y, cruise));
+        return route.Count > 0 ? route : null;
+    }
+
     /// <summary>Lowest level that clears every column on the straight line (and its ends).</summary>
     private static int CruiseLevel(Map map, int3 a, int3 b)
     {
@@ -326,7 +361,7 @@ public static class Navigation
     }
 
     /// <summary>Nothing (no block, floor or structure) above the cell all the way up.</summary>
-    private static bool OpenAbove(Map map, int3 cell) => map.InBounds(cell) && ClearUpTo(map, cell, map.Depth - 1);
+    public static bool OpenAbove(Map map, int3 cell) => map.InBounds(cell) && ClearUpTo(map, cell, map.Depth - 1);
 
     private static bool ClearUpTo(Map map, int3 cell, int top)
     {

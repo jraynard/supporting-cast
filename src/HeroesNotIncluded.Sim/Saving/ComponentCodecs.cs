@@ -246,6 +246,17 @@ internal static class ComponentCodecs
             w.Long(i.At);
         }, r => new Combat.Inhaling { Target = r.Int3(), Start = r.Long(), At = r.Long() }),
         Codec("Aiming", (w, a) => w.Long(a.Start), r => new Combat.Aiming { Start = r.Long() }),
+        Codec("Doused", (w, d) =>
+        {
+            w.Long(d.Until);
+            w.Int(d.Times);
+        }, r => new Ai.Doused { Until = r.Long(), Times = r.Int() }),
+        Codec("Rampage", (w, d) =>
+        {
+            w.Int(d.Passes);
+            w.Bool(d.Down);
+            w.Float(d.HurtSeen);
+        }, r => new Ai.Rampage { Passes = r.Int(), Down = r.Bool(), HurtSeen = r.Float() }),
         Codec("ButtsTurn", (w, t) =>
         {
             w.Entity(t.Target);

@@ -54,7 +54,7 @@ public sealed class LoupeSession : WorkSession
     {
         if (Curios.Problem(sim, worker, curio) is { } why)
         {
-            sim.Messages.Add(MessageKind.Info, $"Can't look that over: {why}.", sim.LocationOf(worker));
+            sim.Messages.Tell(worker, MessageKind.Info, $"Can't look that over: {why}.", sim.LocationOf(worker));
             return;
         }
         WorkSystem.Start(sim, worker, new LoupeSession { Curio = curio, Seed = sim.World.Get<Curio>(curio).Seed });

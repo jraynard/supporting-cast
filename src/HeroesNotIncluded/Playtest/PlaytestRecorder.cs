@@ -81,6 +81,8 @@ public sealed class PlaytestRecorder
                 sb.Append(When(sim, m.Tick)).Append(' ').Append(m.Kind.ToString().ToLowerInvariant()).Append(": ");
                 if (m.Headline != null)
                     sb.Append('[').Append(m.Headline).Append("] ");
+                if (m.To is { } to && sim.World.IsAlive(to) && sim.World.TryGet<Sim.Components.Creature>(to, out var c))
+                    sb.Append("(to ").Append(c.Name).Append(") ");
                 sb.AppendLine(m.Text);
             }
             _messagesSeen = log.Total;

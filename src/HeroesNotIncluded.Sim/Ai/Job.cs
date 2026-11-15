@@ -235,6 +235,18 @@ public abstract class Job
         return false;
     }
 
+    /// <summary>Follow a route planned already (a flyer's leg, a way chosen with care). Yields while moving.</summary>
+    protected IEnumerable<JobStatus> Follow(List<int3> route)
+    {
+        var mover = Sim.World.Get<Mover>(Pawn);
+        mover.Path = route;
+        mover.PathIndex = 0;
+        mover.StepProgress = 0;
+        mover.StepFrom = PawnCell;
+        while (mover.Moving)
+            yield return JobStatus.Running;
+    }
+
     /// <summary>Walk (or fly, see <see cref="Navigation"/>) to a cell. Yields while moving; calls Fail if no route.</summary>
     protected IEnumerable<JobStatus> GoTo(int3 target, PathEnd end)
     {

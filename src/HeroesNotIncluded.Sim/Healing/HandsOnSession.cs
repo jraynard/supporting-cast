@@ -170,7 +170,7 @@ public sealed class HandsOnSession : WorkSession
     {
         if (Problem(sim, healer, patient) is { } why)
         {
-            sim.Messages.Add(MessageKind.Info, $"Can't lay on hands: {why}.", sim.LocationOf(healer));
+            sim.Messages.Tell(healer, MessageKind.Info, $"Can't lay on hands: {why}.", sim.LocationOf(healer));
             return;
         }
         var h = sim.World.Get<Health>(patient);
@@ -374,7 +374,7 @@ public sealed class HandsOnSession : WorkSession
                 s.Applied = true;
                 Know(sim, s);
                 var drew = Empathy.Draw(sim, Worker, Patient, s.Key, 1f, snapped: false);
-                sim.Messages.Add(drew > 0 ? MessageKind.Good : MessageKind.Info, drew > 0
+                sim.Messages.Tell(Worker, drew > 0 ? MessageKind.Good : MessageKind.Info, drew > 0
                     ? $"You draw {PatientName}'s wound into yourself. It's yours now."
                     : "You can't take more of that into yourself and live.", at);
                 if (drew > 0 && sim.World.Has<Mood>(Patient))
@@ -409,14 +409,14 @@ public sealed class HandsOnSession : WorkSession
             var snapped = Link.Snapped && s.Key == _linkKey;
             var drew = Empathy.Draw(sim, Worker, Patient, s.Key, s.Drawn, snapped);
             if (snapped)
-                sim.Messages.Add(MessageKind.Warning, drew > 0
+                sim.Messages.Tell(Worker, MessageKind.Warning, drew > 0
                     ? $"Your focus breaks and the link snaps back at you. Part of {PatientName}'s wound came with it."
                     : "Your focus breaks and the link snaps back at you.", at);
             if (drew > 0 && sim.World.Has<Mood>(Patient))
                 MoodSystem.Remember(sim, Patient, sim.Defs.Thoughts.TendedMe, Worker);
         }
         if (whole && !Link.Snapped && Spots.All(s => s.Drawn <= 0f))
-            sim.Messages.Add(MessageKind.Info, read == 0
+            sim.Messages.Tell(Worker, MessageKind.Info, read == 0
                 ? $"You run your hands over {PatientName} and feel nothing that needs you."
                 : $"You run your hands over {PatientName}: {read} {(read == 1 ? "hurt" : "hurts")} under them.", at);
     }

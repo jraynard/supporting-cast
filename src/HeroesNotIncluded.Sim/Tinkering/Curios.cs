@@ -149,7 +149,7 @@ public static class Curios
         else
             w.Add(curio, a);
         var label = sim.LabelOf(curio);
-        sim.Messages.Add(MessageKind.Info, a.Doubts
+        sim.Messages.Tell(by, MessageKind.Info, a.Doubts
             ? $"Under the loupe, the {label} gives itself away: a fake. Worth {a.Low} to {a.High} silver, as a curiosity."
             : $"You'd put the {label} at {a.Low} to {a.High} silver.", sim.LocationOf(by));
     }

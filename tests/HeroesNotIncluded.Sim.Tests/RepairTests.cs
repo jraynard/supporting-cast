@@ -84,18 +84,24 @@ public class RepairTests
     private static void Play(Simulation sim, Entity me, int maxTicks = 60 * 180)
     {
         var predictor = new WorkPredictor();
-        var stone = -1;
+        var wait = 0;
         for (var t = 0; t < maxTicks && sim.World.Has<WorkSession>(me); t++)
         {
             sim.Tick();
-            var (press, axis) = (false, 0);
-            if (predictor.Session is SpanSession s && s.AtStone != stone && MathF.Abs(s.At * (SpanSession.Stones - 1) - s.AtStone) < 0.1f)
+            var (press, ease, axis) = (false, false, 0);
+            if (predictor.Session is SpanSession s)
             {
-                stone = s.AtStone;
-                var o = s.Offsets[stone];
-                (press, axis) = o < -s.BandWidth * 0.5f ? (true, 0) : o > s.BandWidth * 0.5f ? (false, -1) : (false, 0);
+                // Carry the level to the worst stone, let it settle, and wedge it up or ease it down.
+                var worst = Enumerable.Range(0, SpanSession.Stones).MaxBy(i => MathF.Abs(s.Offsets[i]));
+                if (s.AtStone != worst)
+                    axis = Math.Sign(worst - s.AtStone);
+                else if (MathF.Abs(s.At * (SpanSession.Stones - 1) - worst) < 0.01f && wait-- <= 0)
+                {
+                    wait = 4;
+                    (press, ease) = s.Offsets[worst] < 0 ? (true, false) : (false, true);
+                }
             }
-            predictor.Update(sim, me, 1, press, false, axis, c => sim.ApplyNow(c));
+            predictor.Update(sim, me, 1, press, false, axis, c => sim.ApplyNow(c), 0, -1, ease);
         }
         sim.Tick();
         Assert.False(sim.World.Has<WorkSession>(me), "the session should have ended");

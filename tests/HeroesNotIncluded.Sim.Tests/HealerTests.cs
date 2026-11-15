@@ -470,6 +470,19 @@ public class HealerTests
     }
 
     [Fact]
+    public void AWeaveForNoWoundTakesHoldOfOneItMends()
+    {
+        // The gift's own Weave button chooses no wound: a knitting woven from it still finds the cut you carry.
+        var (sim, me, patient, arm) = AtTheBedside(cut: 30f);
+        Empathy.Draw(sim, me, patient, CutKey(sim, patient, arm), 1f, snapped: false);
+        var key = CutKey(sim, me, arm);
+        var before = Empathy.Find(sim, me, key)!.Damage;
+        Weave(sim, me, 0, ["Thread", "Flesh"]);
+        Assert.True((Empathy.Find(sim, me, key)?.Damage ?? 0f) < before - 5f);
+        Assert.DoesNotContain(sim.Messages.Messages, m => m.Text.Contains("finds no wound"));
+    }
+
+    [Fact]
     public void RunesOffTheBeatMakeAWeakerMending()
     {
         float Mend(bool onBeat)

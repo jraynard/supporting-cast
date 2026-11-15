@@ -22,9 +22,6 @@ public sealed partial class VillageGame
         _hud.Next(Anchor.TopLeft, ScreenFit.Width(320, 0.3f));
         Panel.Begin("The practice yard###practice", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize);
         _hud.Took();
-        WrappedC(Theme.Parchment, $"The {def.Label}'s games, with nobody waiting.");
-        WrappedC(Theme.Dim, "No season, no festival, no trouble. Customers come only when you send for them.");
-        Gui.Rule();
 
         if (ImGui.Button("Send customers"u8))
             Issue(new PracticeCommand(_avatar, PracticeAction.SendCustomers));
@@ -43,7 +40,7 @@ public sealed partial class VillageGame
 
         if (def.Name == "Healer")
         {
-            TextC(Theme.Dim, "Bring in a patient, on a pallet:");
+            TextC(Theme.Dim, "Bring in a patient:");
             var first = true;
             foreach (var kind in Sim.Scenarios.Practice.PatientWounds)
             {
@@ -56,7 +53,7 @@ public sealed partial class VillageGame
             if (ImGui.Button("Several wounds##patient-many"u8))
                 Issue(new PracticeCommand(_avatar, PracticeAction.PatientCase, (int)PatientCase.Many));
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip("Cut, bruised and burned: draw them all in one sitting (W/S to the next).");
+                Tip("Bruised, burned and feverish: draw them all in one sitting (W/S to the next).");
             ImGui.SameLine(0, Gui.S(6));
             if (ImGui.Button("Festering##patient-festering"u8))
                 Issue(new PracticeCommand(_avatar, PracticeAction.PatientCase, (int)PatientCase.Festering));

@@ -24,6 +24,8 @@ public sealed partial class VillageGame
         public int Count;
         public float Progress;
         public readonly List<Mote> Motes = [];
+        /// <summary>When each of a scene's marks first showed (a warmth sensed), for a bloom that dies away.</summary>
+        public readonly List<float> Since = [];
     }
 
     private readonly Dictionary<string, SceneState> _scenes = [];
@@ -83,6 +85,7 @@ public sealed partial class VillageGame
             st.Count = count;
             st.Progress = progress;
             st.Motes.Clear();
+            st.Since.Clear();
         }
         return st;
     }
@@ -357,18 +360,18 @@ public sealed partial class VillageGame
 
     /// <summary>What the laying-on-of-hands scene draws: the session as the empath has it.</summary>
     private readonly record struct HandsView(long Session, IReadOnlyList<string> Parts, IReadOnlyList<HandsSpot> Spots, float Hands, bool Held,
-        bool Linked, bool Calm, float Strain, float Pulse, int Under, int Step, int LastDrawn, int LastDrawnAt, int LastFlinch);
+        bool Linked, bool Calm, float Strain, float Pulse, int Under, int Step, int LastDrawn, int LastDrawnAt, int LastFlinch, float Feel);
 
     private static HandsView HandsViewOf(HandsOnSession s) => new(s.StartTick, s.Parts,
         [.. s.Spots.Select(p => new HandsSpot(p.At, p.Gravity, p.Pattern, p.Sensed, p.Found, p.Drawn, s.FoundFestering(p)))],
-        s.Hands01, s.Held, s.Linked, s.Link.Calm, s.Link.Strain, s.Pulse, s.Under, s.StepsDone, s.LastDrawn, s.LastDrawnAt, s.LastFlinch);
+        s.Hands01, s.Held, s.Linked, s.Link.Calm, s.Link.Strain, s.Pulse, s.Under, s.StepsDone, s.LastDrawn, s.LastDrawnAt, s.LastFlinch, s.Feel);
 
     /// <summary>Frost's pale blue, venom's sick green, a burn's scorch: the marks' own colours.</summary>
     private static readonly float4 FrostBlue = new(0.72f, 0.88f, 1f, 1f), VenomGreen = new(0.55f, 0.8f, 0.35f, 1f), Scorch = new(0.95f, 0.5f, 0.2f, 1f), Bruise = new(0.5f, 0.3f, 0.6f, 1f);
 
     /// <summary>
-    /// The patient lying head to feet, the parts named over them. A warmth where the hands have
-    /// sensed something; once read, the wound's own mark, beating in its pulse (a cut's bright slash,
+    /// The patient lying head to feet, the parts named over them. The palms glow warmer as they
+    /// near a hurt (all a skim tells you), and a warmth blooms where they've sensed one; once read, the wound's own mark, beating in its pulse (a cut's bright slash,
     /// a bite's two, a bruise swelling, a burn's scorch, frost's rime, venom spreading), fading as
     /// it's drawn. The hands over them, pressing as you press; while the link's open a thread of
     /// light from the wound into the palms, fraying red off balance and shaking with strain. A
@@ -391,15 +394,26 @@ public sealed partial class VillageGame
             dl.AddText(in at, Theme.U8(Theme.Dim), label);
         }
 
+        // When each warmth was first sensed: already known ones (read before) don't bloom.
+        while (st.Since.Count < v.Spots.Count)
+            st.Since.Add(v.Spots[st.Since.Count].Sensed > 0f ? float.MinValue : float.MaxValue);
         for (var i = 0; i < v.Spots.Count; i++)
         {
             var sp = v.Spots[i];
+            if (sp.Sensed > 0f && st.Since[i] == float.MaxValue)
+                st.Since[i] = _time;
             if (sp.Sensed <= 0f || sp.Drawn >= 1f && v.Step - v.LastDrawnAt > 40)
                 continue;
             var centre = new float2(AlongBody(sp.At), bodyY);
             var left = 1f - sp.Drawn;
-            // The warmth: all a skim tells you.
+            // The warmth: all a skim tells you. It blooms as it's found, a ring spreading and fading.
             dl.AddCircleFilled(in centre, Gui.S(7f + 7f * sp.Gravity), Theme.U8(Theme.Warn, 0.12f + 0.18f * sp.Sensed * left), 24);
+            var bloom = (_time - st.Since[i]) / 0.7f;
+            if (bloom is >= 0f and < 1f)
+            {
+                dl.AddCircleFilled(in centre, Gui.S(7f + 7f * sp.Gravity) * (1f + 0.4f * (1f - bloom)), Theme.U8(Theme.Warn, 0.35f * (1f - bloom)), 24);
+                dl.AddCircle(in centre, Gui.S(8f + 26f * bloom), Theme.U8(Theme.Warn, 0.8f * (1f - bloom)), 32, Gui.S(2f));
+            }
             if (sp.Found >= 1f)
                 WoundMark(dl, centre, sp, i == v.Under ? v.Pulse : 0f, left, px);
             else if (i == v.Under && v.Pulse > 0f)
@@ -413,7 +427,15 @@ public sealed partial class VillageGame
         var handX = MathF.Min(AlongBody(v.Hands), max.X - 13 * px);
         var press = v.Held ? 3f * px : 0f;
         var palm = new float2(handX + shake, bodyY - 2 * px + press);
-        var tint = v.Held ? Gui.White : Gui.U8(new float4(0.88f, 0.84f, 0.8f, 1f));
+        // Warmth in the palms as they near a hurt, beating quicker the nearer: hot and cold, by eye.
+        var warm = Math.Clamp(v.Feel, 0f, 1f);
+        if (warm > 0.05f && !v.Linked)
+        {
+            var beat = 0.75f + 0.25f * MathF.Sin(_time * (3f + 9f * warm));
+            dl.AddCircleFilled(in palm, Gui.S(10f + 10f * warm) * beat, Theme.U8(Theme.Warn, 0.1f + 0.3f * warm), 24);
+        }
+        var cool = new float4(0.88f, 0.84f, 0.8f, 1f);
+        var tint = v.Held ? Gui.White : Gui.U8(cool + (new float4(1f, 0.78f, 0.55f, 1f) - cool) * warm);
         Prop(dl, "hand", palm + new float2(-5 * px, 0), px, tint);
         Prop(dl, "hand", palm + new float2(5 * px, -px), px, tint);
 
@@ -557,7 +579,7 @@ public sealed partial class VillageGame
                 var kinds = Enum.GetValues<Sim.Defs.DrawPattern>();
                 var spots = kinds.Select((k, i) => new HandsSpot(0.08f + 0.84f * i / Math.Max(1, kinds.Length - 1), 0.3f + 0.1f * i, k, 1f, 1f, i == 1 ? (_time * 0.15f) % 1f : 0f, i == kinds.Length - 1)).ToList();
                 HandsOnScene(new HandsView(1, ["head", "neck", "chest", "belly", "arms", "legs", "feet"], spots, spots[1].At, true, true, Wave(0.7f) > 0.3f,
-                    Wave(0.9f), HandsOnSession.PulseShape(kinds[1], step, spots[1].Drawn), 1, step, -1, -1000, -1000));
+                    Wave(0.9f), HandsOnSession.PulseShape(kinds[1], step, spots[1].Drawn), 1, step, -1, -1000, -1000, Wave(0.4f)));
             });
             Cell("True", () => TrueScene(_time * 0.1f, (Wave(0.63f) - 0.5f) * 0.6f, 0.06f));
             ImGui.EndTable();

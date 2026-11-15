@@ -815,17 +815,17 @@ public sealed class AvatarSystem : ISimSystem
                 if (ShowAt(sim, avatar, action.Target, action.Cell, Entity.Null) is { Kind: AvatarActionKind.ShowPiece } still && still.Item == action.Item)
                 {
                     Inventory.StoreFromPack(sim, avatar, action.Target, action.Item);
-                    sim.Messages.Add(MessageKind.Info, $"You lay your {w.Get<Thing>(action.Item).Label} out on the show table. The visitors will look it over.", action.Cell);
+                    sim.Messages.Tell(avatar, MessageKind.Info, $"You lay your {w.Get<Thing>(action.Item).Label} out on the show table. The visitors will look it over.", action.Cell);
                 }
                 break;
             case AvatarActionKind.OrderMeal:
                 if (Shops.Hatch.ShopOf(sim, action.Target) is { IsNull: false } inn && sim.Shops.OpenOrderOf(avatar, ServiceKind.Meal) == null
                     && sim.Shops.PlayerOrder(sim, avatar, ServiceKind.Meal, inn) is { } why)
-                    sim.Messages.Add(MessageKind.Info, $"Can't order: {why}.", action.Cell);
+                    sim.Messages.Tell(avatar, MessageKind.Info, $"Can't order: {why}.", action.Cell);
                 break;
             case AvatarActionKind.FillBucket:
                 if (Environment.Buckets.Fill(sim, avatar))
-                    sim.Messages.Add(MessageKind.Info, "You draw up a bucket of water.", action.Cell);
+                    sim.Messages.Tell(avatar, MessageKind.Info, "You draw up a bucket of water.", action.Cell);
                 break;
             case AvatarActionKind.ThrowWater:
                 if (!w.Has<Work.WorkSession>(avatar))
@@ -834,7 +834,7 @@ public sealed class AvatarSystem : ISimSystem
             case AvatarActionKind.OrderHealing:
                 if (Buildings.Of(sim, action.Target) is { IsNull: false } shrine && sim.Shops.OpenOrderOf(avatar, ServiceKind.Healing) == null
                     && sim.Shops.PlayerOrder(sim, avatar, ServiceKind.Healing, shrine) is { } refused)
-                    sim.Messages.Add(MessageKind.Info, $"Can't ask: {refused}.", action.Cell);
+                    sim.Messages.Tell(avatar, MessageKind.Info, $"Can't ask: {refused}.", action.Cell);
                 break;
             case AvatarActionKind.Mend:
                 Tinkering.Repairs.StartMend(sim, avatar, sim.Repairs.At(action.Cell));

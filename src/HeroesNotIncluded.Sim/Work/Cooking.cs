@@ -533,7 +533,7 @@ public static class Cooking
                 var label = w.Get<Thing>(food).Def.Label;
                 var seasoner = w.Get<Thing>(food).Def.IsSeasoner;
                 var n = Add(sim, station, food);
-                sim.Messages.Add(MessageKind.Info, n > 0 ? $"Put {n} {label} in the pot. It tastes {p.Flavour.Words()} now."
+                sim.Messages.Tell(cook, MessageKind.Info, n > 0 ? $"Put {n} {label} in the pot. It tastes {p.Flavour.Words()} now."
                     : !seasoner ? "The pot's full."
                     : p.Empty ? $"Put some food in first: {label} only flavours what's there."
                     : $"That's flavour enough: any more {label} and it's all you'll taste.", cell);
@@ -564,7 +564,7 @@ public static class Cooking
                 var bowlDef = BowlOf(sim, station);
                 if (!Vessels.Ready(sim, cook, bowlDef))
                 {
-                    sim.Messages.Add(MessageKind.Info, Vessels.CleanOn(sim, cook, bowlDef).IsNull
+                    sim.Messages.Tell(cook, MessageKind.Info, Vessels.CleanOn(sim, cook, bowlDef).IsNull
                         ? $"You need a clean {sim.Defs.Thing(bowlDef).Label} to ladle into: there are some on the kitchen shelf."
                         : $"You need a hand free for the {sim.Defs.Thing(bowlDef).Label}.", cell);
                     return;

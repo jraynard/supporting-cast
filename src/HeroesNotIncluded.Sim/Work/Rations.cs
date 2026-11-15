@@ -248,7 +248,7 @@ public static class Rations
                 if (Choppable(sim, cook) is { IsNull: false } food)
                     WorkSystem.Start(sim, cook, ChopSession.For(sim, table, food));
                 else
-                    sim.Messages.Add(MessageKind.Info, "Nothing on you to chop: bring raw meat, fish or cabbage from the larder.", cell);
+                    sim.Messages.Tell(cook, MessageKind.Info, "Nothing on you to chop: bring raw meat, fish or cabbage from the larder.", cell);
                 return;
             case PrepStep.Knead:
                 if (Baking.FlourIn(sim, cook) is { IsNull: false } flour)

@@ -380,8 +380,8 @@ public static class SaveGame
         }
     }
 
-    /// <summary>Set on a saved message's kind when a headline follows it.</summary>
-    private const int HeadlineBit = 0x100;
+    /// <summary>Set on a saved message's kind when a headline follows it, and when who it's for does.</summary>
+    private const int HeadlineBit = 0x100, ToBit = 0x200;
 
     private static void WriteMessages(SaveWriter w, MessageLog log)
     {
@@ -390,9 +390,11 @@ public static class SaveGame
         {
             w.Long(m.Tick);
             // A headline rides on a spare bit of the kind, so older saves (never with it) read as before.
-            w.Int((int)m.Kind | (m.Headline != null ? HeadlineBit : 0));
+            w.Int((int)m.Kind | (m.Headline != null ? HeadlineBit : 0) | (m.To != null ? ToBit : 0));
             if (m.Headline != null)
                 w.String(m.Headline);
+            if (m.To is { } to)
+                w.Entity(to);
             w.String(m.Text);
             w.Bool(m.Location.HasValue);
             if (m.Location is { } at)
@@ -415,11 +417,12 @@ public static class SaveGame
         {
             var tick = r.Long();
             var bits = r.Int();
-            var kind = (MessageKind)(bits & ~HeadlineBit);
+            var kind = (MessageKind)(bits & ~(HeadlineBit | ToBit));
             var headline = (bits & HeadlineBit) != 0 ? r.String() : null;
+            Entity? to = (bits & ToBit) != 0 ? r.Entity() : null;
             var text = r.String();
             int3? at = r.Bool() ? r.Int3() : null;
-            messages.Add(new Message(tick, kind, text, at, headline));
+            messages.Add(new Message(tick, kind, text, at, headline, to));
         }
         log.Cooldowns.Clear();
         n = r.Count();

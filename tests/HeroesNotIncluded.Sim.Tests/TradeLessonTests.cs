@@ -309,7 +309,8 @@ public class TradeLessonTests
         Assert.Equal("feel", y.Stage.Step);
         var patient = y.Stage.Point;
         var h = y.W.Get<Health>(patient);
-        Assert.Equal(3, h.Injuries.Count); // cut, bruised and burned
+        Assert.Equal(3, h.Injuries.Count); // bruised, burned and feverish
+        Assert.Contains(h.Injuries, i => i.Type == DamageType.Fever);
 
         y.StandBy(patient);
         y.Sim.ApplyNow(new FeelCommand(y.Me, patient));
@@ -349,8 +350,15 @@ public class TradeLessonTests
     {
         var y = Begin("Healer", "shrine");
         y.Sim.Tick();
+        // First the mana, spent at the start, won back at the meditation stone.
+        Assert.Equal(0f, y.W.Get<Mana>(y.Me).Current);
+        var stone = y.Station("MeditationStone");
+        Assert.Equal(stone, y.Stage.Point);
+        y.StandBy(stone);
+        Assert.Equal("meditate", y.Stage.Step);
+        y.W.Get<Mana>(y.Me).Current = y.W.Get<Mana>(y.Me).Max;
+        Assert.Contains(y.Stage.Step, new[] { "corner", "bind" }); // the stone's by the healer's corner
         var patient = y.Stage.Point;
-        Assert.Equal("corner", y.Stage.Step);
 
         // The foot of the pallet: the patient, the basin and the herbs all in reach.
         var basin = y.Station("WashBasin");
@@ -428,19 +436,5 @@ public class TradeLessonTests
         y.W.Get<Health>(y.Me).Injuries.Clear(); // woven
         Assert.True(y.Stage.Done);
         Assert.NotEmpty(drawn);
-    }
-
-    [Fact]
-    public void ManaIsWonBackAtTheStone()
-    {
-        var y = Begin("Healer", "meditate");
-        y.Sim.Tick();
-        Assert.Equal(0f, y.W.Get<Mana>(y.Me).Current);
-        var stone = y.Station("MeditationStone");
-        Assert.Equal(stone, y.Stage.Point);
-        y.StandBy(stone);
-        Assert.Equal("meditate", y.Stage.Step);
-        y.W.Get<Mana>(y.Me).Current = y.W.Get<Mana>(y.Me).Max;
-        Assert.True(y.Stage.Done);
     }
 }

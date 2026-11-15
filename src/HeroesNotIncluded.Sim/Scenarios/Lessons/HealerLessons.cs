@@ -6,9 +6,11 @@ using static HeroesNotIncluded.Sim.Scenarios.Lessons.Lessons;
 namespace HeroesNotIncluded.Sim.Scenarios.Lessons;
 
 /// <summary>
-/// The healer's lessons: a patient's wound felt over, drawn in and mended by the gift; a fever the
-/// same way, which passes to whoever lingers; and mana won back at the meditation stone. Read from
-/// the wounds as the empath feels them (never named by kind once drawn) and their own mana.
+/// The healer's lessons: a patient's wound felt over, drawn in and mended by the gift; several at
+/// once (a fever among them); festering found under a dressing; and the shrine's help, from mana won
+/// back at the meditation stone to a charm put out for sale. Read from the wounds as the empath
+/// feels them (never named by kind once drawn) and their own mana. (There were six; a playtest
+/// found the wound, fever and many-hurts lessons too alike, and meditating too small on its own.)
 /// </summary>
 public static class HealerLessons
 {
@@ -19,11 +21,9 @@ public static class HealerLessons
     public static readonly Lesson[] All =
     [
         new(Trade, "wound", Mending, Patient),
-        new(Trade, "fever", Mending, Patient),
-        new(Trade, "meditate", ["stone", "meditate"], Meditate),
         new(Trade, "many", ["feel", "read", "draw", "next"], Many),
-        new(Trade, "festering", ["feel", "deep", "draw", "meditate", "weave"], Patient),
-        new(Trade, "shrine", ["corner", "bind", "altar", "show"], Shrine),
+        new(Trade, "festering", ["feel", "read", "deep", "draw", "meditate", "weave"], Patient),
+        new(Trade, "shrine", ["stone", "meditate", "corner", "bind", "altar", "show"], Shrine),
     ];
 
     /// <summary>Mana won back this far (a share of the most) finishes the meditation lesson.</summary>
@@ -92,12 +92,20 @@ public static class HealerLessons
     }
 
     /// <summary>
-    /// The shrine's help: a cut bound by the healer's corner (the wash basin and the herbs in reach,
-    /// so it's washed and poulticed), then a charm woven at the rune altar and put out for sale.
+    /// The shrine's help: mana won back at the meditation stone (the lesson starts with none), a cut
+    /// bound by the healer's corner (the wash basin and the herbs in reach, so it's washed and
+    /// poulticed), then a charm woven at the rune altar and put out for sale.
     /// </summary>
     public static LessonStage Shrine(Simulation sim, Entity me, LessonRun run)
     {
         var w = sim.World;
+        if (!run.Passed.Contains("rested"))
+        {
+            var rest = Meditate(sim, me, run);
+            if (!rest.Done)
+                return rest;
+            run.Passed.Add("rested");
+        }
         var patient = PatientOf(sim, run);
         if (Session(sim, me) is CastSession)
             return new LessonStage("altar", Entity.Null);

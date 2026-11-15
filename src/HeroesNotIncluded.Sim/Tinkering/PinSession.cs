@@ -71,7 +71,7 @@ public sealed class PinSession : WorkSession
     {
         if (CopyProblem(sim, worker, station, key) is { } why)
         {
-            sim.Messages.Add(MessageKind.Info, $"Can't copy that: {why}.", sim.LocationOf(worker));
+            sim.Messages.Tell(worker, MessageKind.Info, $"Can't copy that: {why}.", sim.LocationOf(worker));
             return;
         }
         var k = sim.World.Get<Key>(key);
@@ -171,7 +171,7 @@ public sealed class PinSession : WorkSession
             // A copy is never better than what it was filed from.
             var copy = Locksmithing.MakeKey(sim, Seed, Pins, Math.Min(fit, w.Get<Key>(Source).Fit));
             Inventory.Stow(sim, Worker, copy);
-            sim.Messages.Add(MessageKind.Info, ruined > 0 ? "You file a copy of the key. A bit's gone too deep: it'll stick." : "You file a copy of the key.", at);
+            sim.Messages.Tell(Worker, MessageKind.Info, ruined > 0 ? "You file a copy of the key. A bit's gone too deep: it'll stick." : "You file a copy of the key.", at);
             return;
         }
         var quality = Crafting.QualityFrom(fit);
@@ -182,7 +182,7 @@ public sealed class PinSession : WorkSession
             Inventory.Stow(sim, Worker, item);
         }
         var note = ruined > 0 ? $" {ruined} {(ruined == 1 ? "pin was" : "pins were")} filed too far: it's a loose lock." : fit >= 0.85f ? " Every pin sits crisply: it'll be a hard one to pick." : "";
-        sim.Messages.Add(MessageKind.Info, $"You pin a {Pins}-pin lock and cut its key.{note}", at);
+        sim.Messages.Tell(Worker, MessageKind.Info, $"You pin a {Pins}-pin lock and cut its key.{note}", at);
     }
 
     protected override void WriteState(SaveWriter w)

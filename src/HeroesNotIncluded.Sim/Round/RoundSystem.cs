@@ -212,7 +212,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     }
 
     /// <summary>The town's well, where a festival gathers; failing one, wherever the first villager stands.</summary>
-    private static int3? FindSquare(Simulation sim)
+    public static int3? FindSquare(Simulation sim)
     {
         var w = sim.World;
         foreach (var e in w.Query<Thing>())

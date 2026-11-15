@@ -90,6 +90,12 @@ public static class Perception
     /// <summary>Levels above and below the viewer considered: past this a line of sight is rare, and costly to look for.</summary>
     public const int SightLevels = 2;
 
+    /// <summary>
+    /// How far across the ground (cells, in good light) something flying overhead is seen, from
+    /// anywhere under open sky: past <see cref="SightLevels"/>, but a dragon over the town is hard to miss.
+    /// </summary>
+    public const int SkySight = 28;
+
     /// <summary>Anyone this close is seen whatever the light: you can tell who's beside you in the dark.</summary>
     public const float TouchRange = 2.5f;
 
@@ -169,12 +175,35 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         if (!w.IsAlive(e))
             return false;
         if (w.TryGet<Position>(e, out var p))
-            return CanSeeCell(p.Cell);
+            return CanSeeCell(p.Cell) || Overhead(p.Cell);
         if (!w.TryGet<Thing>(e, out var thing))
             return false;
         if (!thing.Spawned)
             return Within(sim.LocationOf(e), 1);
         return thing.Def.Category != ThingCategory.Item || CanSeeCell(thing.Cell);
+    }
+
+    /// <summary>
+    /// Something in the air above the levels sight covers (<see cref="Perception.SightLevels"/>):
+    /// seen from under open sky, as far as <see cref="Perception.SkySight"/> in good light, if nothing's
+    /// in the way. Not from under a roof.
+    /// </summary>
+    private bool Overhead(int3 cell)
+    {
+        var map = sim.Map;
+        if (!Embodied || Ghostly || !map.InBounds(cell) || !Ai.Navigation.Airborne(map, cell))
+            return false;
+        var here = sim.World.Get<Position>(viewer).Cell;
+        if (!map.InBounds(here) || cell.Z <= here.Z + Perception.SightLevels)
+            return false; // within the levels sight covers: CanSeeCell's answer stands
+        var hereIdx = map.Idx(here);
+        if (map.Roofed[hereIdx] || sim.Rooms.RoomAt(here) is { Indoors: true })
+            return false;
+        var i = map.Idx(cell);
+        // The light where you stand, under the same sky (the light map isn't kept up there: it reads dark).
+        var light = Math.Clamp(map.Light[hereIdx] / Perception.FullLight, Perception.DarkFactor, 1f);
+        float dx = cell.X - here.X, dy = cell.Y - here.Y;
+        return dx * dx + dy * dy <= Perception.SkySight * Perception.SkySight * light * light && Clear(here, cell, i);
     }
 
     /// <summary>The creatures in sight, the viewer included.</summary>

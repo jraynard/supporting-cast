@@ -63,7 +63,8 @@ public sealed class FireCrisis : ICrisis
             var origin = cells[rand.NextInt(cells.Count)];
             sim.Fire.Ignite(sim, origin, 1f);
             var name = Buildings.Called(sim, b);
-            sim.Messages.Add(MessageKind.Danger, $"Fire at {name}!", origin, "Fire!");
+            // The alarm's raised for the whole town: everyone gets the headline, not just who sees it.
+            sim.Messages.Add(MessageKind.Danger, $"Fire at {name}!", null, "Fire!");
             Alarm.Raise(sim, origin, $"Fire! Fire at {name}!");
             return new FireCrisis
             {
@@ -173,7 +174,13 @@ public sealed class ShortageCrisis : ICrisis
             Hospitality.RatSystem.Loose(sim, store, Rats);
         }
         var at = w.Get<PresetBuilding>(inn).Anchor;
-        sim.Messages.Add(MessageKind.Danger, "Rats have got into the inn's larder, and word is the carter won't come while there's trouble on the road.", at, "Rats in the larder");
+        // The larder's the cook's: the headline is theirs, wherever they are (anyone else hears the alarm).
+        const string ratsText = "Rats have got into the inn's larder, and word is the carter won't come while there's trouble on the road.";
+        var cooks = sim.Creatures().Where(e => w.Get<Creature>(e) is { Dead: false } && w.TryGet<Trade>(e, out var t) && t.Def.Name == "Cook").ToList();
+        foreach (var cook in cooks)
+            sim.Messages.Tell(cook, MessageKind.Danger, ratsText, at, "Rats in the larder");
+        if (cooks.Count == 0)
+            sim.Messages.Add(MessageKind.Danger, ratsText, at);
         Alarm.Raise(sim, at, "Rats in the larder! Get them before they get the rest!");
         return new ShortageCrisis
         {
@@ -314,8 +321,12 @@ public sealed class DragonCrisis : ICrisis
         var adult = def.LifeStages.Count > 0 ? def.LifeStages[^1].MinAgeDays + 8 : 30;
         var dragon = sim.SpawnCreature(def, Names[rand.NextInt(Names.Length)], at, Faction.Predator, ageDays: adult);
         Array.Fill(w.Get<Needs>(dragon).Values, 1f);
+        // Set on the town: passes from the air, then down in the square (Ai.DragonBrain).
+        w.Add(dragon, new Ai.Rampage());
         var name = w.Get<Creature>(dragon).Name;
-        sim.Messages.Add(MessageKind.Danger, $"A dragon! {name} is coming from the {Combat.Raids.Direction(sim.Map, at)}!", at, "Dragon!");
+        // The whole town hears the alarm, so everyone gets the headline (placed at the map's edge, it
+        // was witnessed by nobody and never shown), as a raid's bell is.
+        sim.Messages.Add(MessageKind.Danger, $"A dragon! {name} is coming from the {Combat.Raids.Direction(sim.Map, at)}!", null, "Dragon!");
         Alarm.Raise(sim, at, "Dragon! DRAGON! Get indoors!");
         return new DragonCrisis { Started = sim.Clock.Tick, Dragon = dragon, _deadline = sim.Clock.Tick + SimClock.HoursToTicks(Hours) };
     }

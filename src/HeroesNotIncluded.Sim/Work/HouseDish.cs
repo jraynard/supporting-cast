@@ -109,7 +109,7 @@ public sealed record NameDishCommand(Entity Avatar, Entity Pot, string? Name) : 
             return;
         var at = sim.World.Get<Thing>(Pot).Cell;
         if (HouseDish.Christen(sim, Avatar, Pot, Name) is { } why)
-            sim.Messages.Add(MessageKind.Info, $"Can't name it: {why}.", at);
+            sim.Messages.Tell(Avatar, MessageKind.Info, $"Can't name it: {why}.", at);
         else
             sim.Messages.Add(MessageKind.Good, $"The {HouseDish.Of(sim, Buildings.Of(sim, Pot))!.Name} is the house dish now. It's on the sign: make it like this again and it's the same dish.", at);
     }

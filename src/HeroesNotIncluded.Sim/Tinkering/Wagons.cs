@@ -202,7 +202,7 @@ public static class Wagons
     {
         if (WheelProblem(sim, worker, wagon) is { } why)
         {
-            sim.Messages.Add(MessageKind.Info, $"Can't true it: {why}.", sim.LocationOf(worker));
+            sim.Messages.Tell(worker, MessageKind.Info, $"Can't true it: {why}.", sim.LocationOf(worker));
             return;
         }
         WorkSystem.Start(sim, worker, new TrueSession { Wagon = wagon, Seed = sim.World.Get<Wagon>(wagon).WheelSeed });
@@ -212,7 +212,7 @@ public static class Wagons
     {
         if (AxleProblem(sim, worker, wagon) is { } why)
         {
-            sim.Messages.Add(MessageKind.Info, $"Can't fit an axle: {why}.", sim.LocationOf(worker));
+            sim.Messages.Tell(worker, MessageKind.Info, $"Can't fit an axle: {why}.", sim.LocationOf(worker));
             return;
         }
         FitSession.StartAxle(sim, worker, wagon);

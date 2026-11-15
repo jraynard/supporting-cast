@@ -125,7 +125,7 @@ public sealed class Repairs : ISimSystem, ISaveState
     {
         if (MendProblem(sim, worker, breach) is { } why)
         {
-            sim.Messages.Add(MessageKind.Info, $"Can't mend it: {why}.", sim.LocationOf(worker));
+            sim.Messages.Tell(worker, MessageKind.Info, $"Can't mend it: {why}.", sim.LocationOf(worker));
             return;
         }
         WorkSystem.Start(sim, worker, new SpanSession { Breach = breach!.Id, Seed = breach.Seed });
@@ -181,17 +181,19 @@ public sealed class Repairs : ISimSystem, ISaveState
 }
 
 /// <summary>
-/// Bracing a broken span. The stones settle on their new centring out of level, and a level slides
-/// along the span and back; its bubble reads low where a stone sags and high where it rides up. F
-/// drives a wedge under the stone at the level, lifting it; A eases one out, letting it down. Each
-/// stone nudges its neighbours a little. With every stone within the band, the span is sound.
+/// Bracing a broken span. The stones settle on their new centring out of level. A/D carry a level
+/// along the span (let go and it settles on the nearest stone); its bubble reads low where a stone
+/// sags and high where it rides up. F (or W) drives a wedge under the stone at the level, lifting
+/// it; S (or the other action) eases one out, letting it down. Each stone nudges its neighbours a
+/// little. With every stone within the band, the span is sound. (The level used to slide on its
+/// own, so a wedge was a timing test; a playtester wanted to move it themselves.)
 /// </summary>
 public sealed class SpanSession : WorkSession
 {
     public const int Stones = 6;
 
-    /// <summary>Seconds for the level to slide from one end of the span to the other.</summary>
-    public const float PassSeconds = 3f;
+    /// <summary>Seconds for the level to be carried from one end of the span to the other.</summary>
+    public const float PassSeconds = 1.5f;
 
     /// <summary>How far one wedge moves the stone at the level, and the ones beside it.</summary>
     public const float Lift = 0.06f, LiftBeside = 0.015f;
@@ -205,9 +207,9 @@ public sealed class SpanSession : WorkSession
     /// <summary>How far each stone stands high (+) or sags (−).</summary>
     public float[] Offsets { get; private set; } = [];
 
-    /// <summary>Where the level is along the span, 0..1, and which way it's sliding.</summary>
+    /// <summary>Where the level is along the span, 0..1, and which way it's being carried (0: settling on a stone).</summary>
     public float At { get; private set; }
-    public int Way { get; private set; } = 1;
+    public int Way { get; private set; }
 
     /// <summary>What the level reads now: the span under it, with the hand's shake in it.</summary>
     public float Reading { get; private set; }
@@ -251,13 +253,17 @@ public sealed class SpanSession : WorkSession
 
     protected override void Cloned() => Offsets = (float[])Offsets.Clone();
 
-    protected override void Axis(int value)
+    protected override void Axis(int value) => Way = value;
+
+    protected override void Axis2(int value)
     {
-        if (value < 0)
-            _key = -1;
+        if (value != 0)
+            _key = value;
     }
 
     protected override void Press() => _key = 1;
+
+    protected override void Act() => _key = -1;
 
     protected override void Step()
     {
@@ -274,11 +280,14 @@ public sealed class SpanSession : WorkSession
                 return;
             }
         }
-        At += Way / (PassSeconds * SimClock.TicksPerSecond);
-        if (At >= 1f || At <= 0f)
+        var speed = 1f / (PassSeconds * SimClock.TicksPerSecond);
+        if (Way != 0)
+            At = Math.Clamp(At + Way * speed, 0f, 1f);
+        else
         {
-            At = Math.Clamp(At, 0f, 1f);
-            Way = -Way;
+            // Let go, it settles on the nearest stone.
+            var stone = AtStone / (float)(Stones - 1);
+            At = MathF.Abs(stone - At) <= speed ? stone : At + MathF.Sign(stone - At) * speed;
         }
         // Between two stones the span runs between their heights.
         var x = At * (Stones - 1);
@@ -329,7 +338,7 @@ public sealed class SpanSession : WorkSession
         for (var i = 0; i < Stones; i++)
             Offsets[i] = r.Float();
         At = r.Float();
-        Way = r.Int() < 0 ? -1 : 1;
+        Way = Math.Sign(r.Int());
         Reading = r.Float();
         Level = r.Bool();
         _key = Math.Clamp(r.Int(), -1, 1);

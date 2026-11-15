@@ -99,12 +99,12 @@ public sealed record CraftCommand(Entity Avatar, Entity Station, RecipeDef Recip
             return;
         if (!Crafting.CanMake(sim, Avatar, Recipe))
         {
-            sim.Messages.Add(MessageKind.Info, $"You don't know how to make {Recipe.Label} yet.", cell);
+            sim.Messages.Tell(Avatar, MessageKind.Info, $"You don't know how to make {Recipe.Label} yet.", cell);
             return;
         }
         if (Crafting.MissingTool(sim, Avatar, Station, Recipe) is { } tool)
         {
-            sim.Messages.Add(MessageKind.Info, $"You'll need {Crafting.ToolNeed(sim, Recipe, tool)} to make {Recipe.Label}.", cell);
+            sim.Messages.Tell(Avatar, MessageKind.Info, $"You'll need {Crafting.ToolNeed(sim, Recipe, tool)} to make {Recipe.Label}.", cell);
             return;
         }
         var bench = w.Get<Workbench>(Station);
