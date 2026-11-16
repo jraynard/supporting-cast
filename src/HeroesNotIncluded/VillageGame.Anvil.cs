@@ -22,7 +22,7 @@ public sealed partial class VillageGame
 
     private void DrawHammer(HammerSession s)
     {
-        BeginWork(s.Title, ("F", "strike as the hammer comes down on the mark"), ("Esc", "back to the fire"));
+        BeginWork(s.Title, ("A/D|Point", "carry the hammer over the mark"), ("F", "strike, once your hand's settled"), ("Esc", "back to the fire"));
         if (s.StartTick != _anvilSession)
         {
             _anvilSession = s.StartTick;
@@ -89,7 +89,8 @@ public sealed partial class VillageGame
             }
         }
 
-        // The timing strip: the mark as a glowing notch, the marker, and a pip per blow.
+        // The bar along: the mark as a glowing notch, where the hammer's held (swaying till the hand
+        // settles), and for a moment where the last blow landed.
         ImGui.Spacing();
         var tMin = ImGui.GetCursorScreenPos();
         var tSize = Gui.S(420, 22);
@@ -98,16 +99,23 @@ public sealed partial class VillageGame
         Gui.Trough(dl, tMin, tMax);
         var inner = Gui.S(3);
         float X(float f) => tMin.X + inner + (tSize.X - inner * 2) * f;
+        TakesPointer(new float2(X(0f), origin.Y), new float2(X(1f), tMax.Y)); // across: one end of the bar to the other
         var mMin = new float2(X(s.Mark - s.HalfWidth), tMin.Y + inner);
         var mMax = new float2(X(s.Mark + s.HalfWidth), tMax.Y - inner);
         dl.AddRectFilled(in mMin, in mMax, Theme.U8(Theme.Accent, 0.55f), 0f, ImDrawFlags.None);
         var notchMin = new float2(X(s.Mark) - Gui.S(1), tMin.Y + inner);
         var notchMax = new float2(X(s.Mark) + Gui.S(1), tMax.Y - inner);
         dl.AddRectFilled(in notchMin, in notchMax, Theme.U8(Theme.Text), 0f, ImDrawFlags.None);
-        var x = X(s.Marker);
+        if (since < GradeSeconds && s.LastAt >= 0f)
+        {
+            var hit = X(Math.Clamp(s.LastAt, 0f, 1f));
+            dl.AddRectFilled(new float2(hit - Gui.S(1.5f), tMin.Y + inner), new float2(hit + Gui.S(1.5f), tMax.Y - inner),
+                Theme.U8(_strikeGrade > 0.7f ? Theme.Good : Theme.Bad, 0.9f * (1f - since / GradeSeconds)), 0f, ImDrawFlags.None);
+        }
+        var x = X(s.Marker) + (s.Settled ? 0f : MathF.Sin(_time * 21f) * Gui.S(2f));
         var nMin = new float2(x - Gui.S(2), tMin.Y - Gui.S(3));
         var nMax = new float2(x + Gui.S(2), tMax.Y + Gui.S(3));
-        dl.AddRectFilled(in nMin, in nMax, Theme.U8(s.Ready ? Theme.Text : Theme.Dim), Gui.S(1), ImDrawFlags.None);
+        dl.AddRectFilled(in nMin, in nMax, Theme.U8(!s.Ready ? Theme.Dim : s.Settled ? Theme.Text : Theme.Warn), Gui.S(1), ImDrawFlags.None);
 
         // How far it's been beaten into shape, over every heat; and a warning as the colour goes.
         ImGui.Spacing();
@@ -132,7 +140,7 @@ public sealed partial class VillageGame
 
     /// <summary>
     /// The hammer, pivoting at the smith's hand off to the right. Between blows it hangs high when
-    /// the marker is far from the mark and drops toward the bar as it nears it; just after a blow
+    /// it's held far from the mark and drops toward the bar as it's carried near; just after a blow
     /// it rests on the bar, then lifts.
     /// </summary>
     private void DrawHammerSwing(ImDrawListPtr dl, HammerSession s, float2 strike, float px, float since)

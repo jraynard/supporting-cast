@@ -324,4 +324,40 @@ public class PointerTests
         s.Advance([new WorkInput(0, WorkInputKind.Axis2, -1), new WorkInput(8, WorkInputKind.Axis2, 0)], 20);
         Assert.True(s.Flame > flame);
     }
+
+    /// <summary>The average grade of a heat's first blows, the hammer carried over each mark and struck settled (or at once).</summary>
+    private static float Hammered(float precision, bool settle)
+    {
+        var (sim, me, forge, recipe) = WorkTests.AtTheForge();
+        var real = WorkTests.Start(sim, me, forge, recipe);
+        var total = 0f;
+        const int Heats = 12;
+        for (var k = 0; k < Heats; k++)
+        {
+            var s = (HammerSession)real.Clone();
+            s.Rand = new SimRandom((uint)k + 1);
+            s.Hands = new Hands(precision, 1f, 5);
+            for (var blow = 0; blow < 4 && !s.Done; blow++)
+            {
+                s.Advance([Point(s.StepsDone, s.Mark)], s.StepsDone + 1);
+                while (!s.Done && (WorkSession.Toward(s.Marker, s.Mark, Aim.PerStep) != 0 || !s.Ready || settle && !s.Settled))
+                    s.Advance([], s.StepsDone + 1);
+                s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Press)], s.StepsDone + 1);
+            }
+            total += s.Quality;
+        }
+        return total / Heats;
+    }
+
+    [Fact]
+    public void ASettledBlowOnTheMarkGradesWellAndAShakyHandScattersIt()
+    {
+        var steady = Hammered(1f, settle: true);
+        var shaky = Hammered(0.2f, settle: true);
+        var hurried = Hammered(0.6f, settle: false);
+        var patient = Hammered(0.6f, settle: true);
+        Assert.True(steady > 0.85f, $"steady {steady}");
+        Assert.True(shaky < steady - 0.1f, $"shaky {shaky} against steady {steady}");
+        Assert.True(hurried < patient, $"hurried {hurried} against patient {patient}");
+    }
 }

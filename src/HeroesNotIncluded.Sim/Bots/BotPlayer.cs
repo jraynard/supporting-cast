@@ -195,7 +195,11 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             case StrikerSession striker:
                 return (striker.Flight == 0 && striker.Needle >= 0.93f, false, 0);
             case HammerSession h:
-                return (h.Ready && MathF.Abs(h.Marker - h.Mark) <= h.HalfWidth * 0.5f, false, 0);
+            {
+                // Over the mark, let the hand settle, and strike.
+                var go = WorkSession.Toward(h.Marker, h.Mark, Aim.PerStep);
+                return (go == 0 && h.Ready && h.Settled, false, go);
+            }
             case BloomSession bloom:
                 // Keep it orange: pump below the middle of the band, ease off above. Out once it's grown.
                 _act = bloom.Grown;

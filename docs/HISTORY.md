@@ -2015,3 +2015,27 @@ player vanished on day two and it ended on day three.
 - Save format 42. With the inn rearranged every bench hash moved: 1234 state `D6A12824E1AB05B0`,
   full `EBA4B9A2A90ED5BF`; 99 state `545C1A14456A3FF3`, full `0B41A5B0EDD223B8`. (Before the bar
   moved, the state hashes were unchanged by the rest of this entry.)
+
+### The mouse in the mini-games (2026-11-15)
+- **Every work window takes the buttons**: the left is F (a click; held, F held), the right Space;
+  the hints say "Click" and "Right-click" while the mouse is in use. A game marks the picture the
+  mouse points over (`TakesPointer`), places a click works as a key (`ClickSpot`: Cast's runes)
+  and whether the wheel turns as W/S. A click carries where it was (`WorkInputKind.Click`): F
+  unless the game minds (a spoke picked on the wheel, a stone the level's carried to, a half of the
+  dough or the bed). The mouse points nothing till it's moved, and nothing with a pad in use. Mixing
+  stays on its three keys; the old bucket throw is left alone.
+- **Pulled, never jumped** (`WorkSession.Toward`): the probe along the seam, the loupe, the empath's
+  hands, the pin lifted, the pour's tilt and the walk inward follow the mouse at their own pace, so
+  what's felt in passing is still felt and a trigger swept with weight on it still springs. The
+  whetstone's angle and a part over its seat turn as far as the mouse moves, so the wander still
+  has to be met. A tool that finishes at its end stops short of it; the other action runs it on.
+- **The cleaver and the hammer are carried** (`Work/Aim`): over a joint or the mark (A/D, or the
+  mouse) and struck where they're held, wider for an unsteady hand and wider still struck before the
+  hand's settled. No more sweeping marker. The bot smith carries the hammer to the mark and waits
+  for its hand to settle.
+- **Plucking by drag**: the pull is as hard as the bird's dragged, no quicker than a held F
+  tightens; a grip gives out after a handful. **Stirring by circling**: pressed in the pot, the mouse
+  stirs only as it goes round; the wheel works the fire.
+- Save format 43. Bench hashes unchanged. 8-seed `--season-sweep`: Renown mean 50.2 (50.2 before),
+  won 2 (3), quests cleared 1.6 (1.4); the smith's blows take their own time now, which moves
+  every season after.

@@ -15,7 +15,7 @@ public class WorkTests
     private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
 
     /// <summary>A round with a character in a smithy (<see cref="SmithyKit"/>), a billet for an axe in their tongs.</summary>
-    private static (Simulation Sim, Entity Me, Entity Forge, RecipeDef Recipe) AtTheForge()
+    internal static (Simulation Sim, Entity Me, Entity Forge, RecipeDef Recipe) AtTheForge()
     {
         var (sim, me, kit, recipe) = AtTheSmithy();
         return (sim, me, kit.Forge, recipe);
@@ -36,12 +36,23 @@ public class WorkTests
     }
 
     /// <summary>A heat on the anvil, the billet drawn from the fire glowing orange.</summary>
-    private static HammerSession Start(Simulation sim, Entity me, Entity forge, RecipeDef recipe)
+    internal static HammerSession Start(Simulation sim, Entity me, Entity forge, RecipeDef recipe)
     {
         Smithing.PieceOf(sim, me)!.Temp = 950f;
         var anvil = sim.World.Query<Thing>().First(e => sim.World.Get<Thing>(e).Def.Name == "Anvil");
         sim.ApplyNow(new SmithCommand(me, anvil));
         return (HammerSession)sim.World.Get<WorkSession>(me);
+    }
+
+    /// <summary>
+    /// A smith at the anvil: carry the hammer over the mark, let the hand settle and strike; or, badly,
+    /// carry it to the far side of the bar from the mark and strike there.
+    /// </summary>
+    internal static (bool Strike, int Steer) Smith(HammerSession h, bool onTheMark)
+    {
+        var target = onTheMark ? h.Mark : h.Mark < 0.5f ? 1f : 0f;
+        var steer = WorkSession.Toward(h.Marker, target, Aim.PerStep);
+        return (steer == 0 && h.Ready && (h.Settled || !onTheMark), steer);
     }
 
     /// <summary>Plays a whole session perfectly or badly through the predictor, as a client would.</summary>
@@ -50,9 +61,8 @@ public class WorkTests
         for (var t = 0; t < maxTicks && sim.World.Has<WorkSession>(me); t++)
         {
             sim.Tick();
-            var strike = predictor.Session is HammerSession { Ready: true } h
-                && (onTheMark ? MathF.Abs(h.Marker - h.Mark) <= h.HalfWidth * 0.5f : MathF.Abs(h.Marker - h.Mark) >= 0.5f);
-            predictor.Update(sim, me, 1, strike, false, 0, c => sim.ApplyNow(c));
+            var (strike, steer) = predictor.Session is HammerSession h ? Smith(h, onTheMark) : (false, 0);
+            predictor.Update(sim, me, 1, strike, false, steer, c => sim.ApplyNow(c));
         }
     }
 
@@ -108,13 +118,17 @@ public class WorkTests
         var real = Start(sim, me, forge, recipe);
         var predictor = new WorkPredictor();
         var held = new List<ISimCommand>();
+        var sentNow = false;
 
-        // Run ahead for a while with the commands held back, as a slow link would.
-        for (var t = 0; t < 200; t++)
+        // Run ahead for a while with the commands held back, as a slow link would, stopping on a
+        // tick that sent (else the last few steps are still in hand, waiting for the next batch).
+        for (var t = 0; t < 400 && (t < 200 || !sentNow); t++)
         {
+            var before = held.Count;
             sim.Tick();
-            var strike = predictor.Session is HammerSession { Ready: true } h && MathF.Abs(h.Marker - h.Mark) <= h.HalfWidth;
-            predictor.Update(sim, me, 1, strike, false, 0, held.Add);
+            var (strike, steer) = predictor.Session is HammerSession h ? Smith(h, true) : (false, 0);
+            predictor.Update(sim, me, 1, strike, false, steer, held.Add);
+            sentNow = held.Count > before;
         }
         var ahead = (HammerSession)predictor.Session!;
         Assert.True(ahead.Blows > 0);
