@@ -181,6 +181,108 @@ def wall_timber_plaster(variant=0, seed=21):
 WALL_VARIANTS = 4
 
 
+# The inn's upper storey: warmer, lighter oak than the cottages' near-black (art/reference/inn*.webp).
+OAK_WARM = (118, 76, 44)
+
+
+def _oak_beam(img, box, seed, vertical):
+    """A warm oak member, as _beam but lighter: grain, a lit edge, adzed flecks."""
+    x0, y0, x1, y1 = box
+    rnd = random.Random(seed)
+    d = ImageDraw.Draw(img)
+    d.rectangle(box, fill=tint(OAK_WARM, 1.0))
+    for _ in range((x1 - x0 + y1 - y0) // 2):
+        if vertical:
+            x, y = rnd.randrange(x0, x1 + 1), rnd.randrange(y0, max(y0 + 1, y1 - 4))
+            d.line([(x, y), (x, y + rnd.randrange(2, 6))], fill=tint(OAK_WARM, rnd.choice([0.78, 1.16])))
+        else:
+            x, y = rnd.randrange(x0, max(x0 + 1, x1 - 4)), rnd.randrange(y0, y1 + 1)
+            d.line([(x, y), (x + rnd.randrange(2, 7), y)], fill=tint(OAK_WARM, rnd.choice([0.78, 1.16])))
+    if vertical:
+        d.line([(x0, y0), (x0, y1)], fill=tint(OAK_WARM, 1.35))
+        d.line([(x1, y0), (x1, y1)], fill=tint(OAK_WARM, 0.7))
+    else:
+        d.line([(x0, y0), (x1, y0)], fill=tint(OAK_WARM, 1.35))
+        d.line([(x0, y1), (x1, y1)], fill=tint(OAK_WARM, 0.7))
+
+
+def _oak_diag(img, a, b):
+    d = ImageDraw.Draw(img)
+    d.line([a, b], fill=tint(OAK_WARM, 1.0), width=3)
+    d.line([(a[0], a[1] - 1), (b[0], b[1] - 1)], fill=tint(OAK_WARM, 1.3), width=1)
+
+
+def beam_oak(seed=13):
+    """The upper storey's posts, cap and frames: warm oak grain, a beam's face."""
+    img = noise(OAK_WARM, 7, seed)
+    _oak_beam(img, (0, 0, S - 1, S - 1), seed, vertical=True)
+    return img
+
+
+def wall_timber_oak(variant=0, seed=61, outside=False):
+    """
+    A bay of the inn's upper storey: warm oak framing with braces of its own, limewash between.
+    Variants: 0 plain, 1 a curved brace, 2 a St Andrew's cross under the rail, 3 a chevron. Facing
+    the street (outside=True) there are two more: 4 a leaded window with shutters, 5 the same with a
+    box of red flowers under it. The room only ever sees 0-3.
+    """
+    rnd = random.Random(seed + variant * 113)
+    img = noise(PLASTER, 3, seed + variant, size=(S, WALL_H))
+    px = img.load()
+    for _ in range(5):
+        cx, cy, r = rnd.randrange(S), rnd.randrange(WALL_SHOWN), rnd.randrange(4, 9)
+        for y in range(max(0, cy - r), min(WALL_H, cy + r)):
+            for x in range(max(0, cx - r), min(S, cx + r)):
+                if (x - cx) ** 2 + (y - cy) ** 2 < r * r:
+                    px[x, y] = tint(px[x, y], 0.97)
+    mid, sill = (24, 26), (WALL_SHOWN - 3, WALL_SHOWN - 1)
+    for x in range(S):
+        for y in (0, mid[1] + 1):
+            px[x, y] = tint(px[x, y], 0.8)
+    if variant == 1:  # a curved brace rising from the post into the rail: stepped pixels
+        pts = [(4, mid[0] - 1), (8, mid[0] - 6), (13, mid[0] - 10), (19, mid[0] - 13), (26, mid[0] - 15), (S - 1, mid[0] - 16)]
+        for a, b in zip(pts, pts[1:]):
+            _oak_diag(img, a, b)
+    elif variant == 2:  # a St Andrew's cross in the lower panel
+        _oak_diag(img, (5, mid[1] + 2), (S - 2, sill[0] - 1))
+        _oak_diag(img, (5, sill[0] - 1), (S - 2, mid[1] + 2))
+    elif variant == 3:  # a chevron in the upper panel
+        _oak_diag(img, (5, mid[0] - 1), (S // 2 + 2, 2))
+        _oak_diag(img, (S // 2 + 2, 2), (S - 2, mid[0] - 1))
+    elif variant >= 4:  # a leaded window across the rail, shutters open either side
+        x0, x1, y0, y1 = 9, S - 6, 8, 38
+        d = ImageDraw.Draw(img)
+        d.rectangle([x0 - 4, y0, x0 - 1, y1], fill=tint((92, 108, 70), 1.0))   # the shutters, painted green
+        d.rectangle([x1 + 1, y0, x1 + 4, y1], fill=tint((92, 108, 70), 1.0))
+        for yy in range(y0, y1 + 1, 4):
+            d.line([(x0 - 4, yy), (x0 - 1, yy)], fill=tint((92, 108, 70), 0.75))
+            d.line([(x1 + 1, yy), (x1 + 4, yy)], fill=tint((92, 108, 70), 0.75))
+        d.rectangle([x0, y0, x1, y1], fill=(64, 52, 40, 255))                  # the casement, dark
+        for yy in range(y0 + 1, y1):                                           # the panes: warm light within
+            for xx in range(x0 + 1, x1):
+                lead = (xx + yy) % 5 == 0 or (xx - yy) % 5 == 0
+                px[xx, yy] = (52, 46, 40, 255) if lead else tint((214, 168, 92), 0.9 + 0.2 * ((yy - y0) / (y1 - y0)))
+        _oak_beam(img, (x0 - 1, y0 - 2, x1 + 1, y0), seed + 9, vertical=False)  # the head
+        _oak_beam(img, (x0 - 1, y1, x1 + 1, y1 + 2), seed + 10, vertical=False)  # the sill
+        if variant == 5:  # a flower box under it: red and pink, leaves between
+            d.rectangle([x0 - 2, y1 + 3, x1 + 2, y1 + 7], fill=tint(OAK_WARM, 0.85))
+            for xx in range(x0 - 1, x1 + 2):
+                if rnd.random() < 0.8:
+                    yy = y1 + 2 - rnd.randrange(0, 3)
+                    px[xx, yy] = rnd.choice([(196, 52, 46, 255), (220, 92, 98, 255), (74, 120, 54, 255), (88, 138, 60, 255)])
+    if variant < 4:
+        _oak_beam(img, (0, mid[0], S - 1, mid[1]), seed + 2, vertical=False)
+    else:
+        _oak_beam(img, (0, mid[0], 8, mid[1]), seed + 2, vertical=False)       # the rail stops at the window
+        _oak_beam(img, (S - 5, mid[0], S - 1, mid[1]), seed + 2, vertical=False)
+    _oak_beam(img, (0, sill[0], S - 1, sill[1]), seed + 3, vertical=False)
+    _oak_beam(img, (0, 0, 3, WALL_H - 1), seed + 4, vertical=True)
+    for y in range(sill[1] + 1, WALL_H):
+        for x in range(S):
+            px[x, y] = tint(OAK_WARM, 0.9)
+    return img
+
+
 STONE = (166, 148, 122)
 MORTAR = (198, 182, 150)
 
@@ -536,6 +638,11 @@ def generate():
     for v in range(3):
         save(wall_fieldstone(v), "buildings/wall_fieldstone" + ("" if v == 0 else f"_v{v + 1}"))
     save(quoin(), "buildings/quoin")
+    save(beam_oak(), "buildings/beam_oak")
+    for v in range(4):
+        save(wall_timber_oak(v), "buildings/wall_timber_oak" + ("" if v == 0 else f"_v{v + 1}"))
+    for v in range(6):
+        save(wall_timber_oak(v, outside=True), "buildings/wall_timber_oak_out" + ("" if v == 0 else f"_v{v + 1}"))
     save(gable_plaster(), "buildings/gable_plaster")
     save(gable_fill_plaster(), "buildings/gable_fill_plaster")
     save(straw_thatch(81), "buildings/roof_thatch_straw")
