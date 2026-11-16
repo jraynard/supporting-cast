@@ -146,11 +146,14 @@ public class InnUpkeepTests
         Assert.Equal(3, sim.World.Get<Stack>(BarWork.DirtyOn(sim, me)).Count);
     }
 
+    /// <summary>A full cask's servings, as its def has it.</summary>
+    private static int Full(Simulation sim, Entity cask) => sim.World.Get<Thing>(cask).Def.Building!.Cask!.Servings;
+
     [Fact]
     public void ADryCaskTakesANewKegKnockedInCleanly()
     {
         var (sim, me, cask, _) = Bar();
-        sim.World.Add(cask, new CaskDrawn { Drawn = 60 });
+        sim.World.Add(cask, new CaskDrawn { Drawn = Full(sim, cask) });
         sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("Keg"), 1);
         Assert.Equal("Knock in the new keg", AvatarSystem.ActionAt(sim, me, C(11, 10)).Label);
         sim.ApplyNow(new BarWorkCommand(me, cask));
@@ -158,18 +161,18 @@ public class InnUpkeepTests
         OnTheBeat(sim, me, s => ((TapSession)s).OnTheTap);
 
         Assert.True(sim.World.Get<Carrying>(me).Item.IsNull, "the keg went in");
-        Assert.True(PourSession.ServingsLeft(sim, cask) >= 60 - TapSession.SprayPerMiss, $"{PourSession.ServingsLeft(sim, cask)}");
+        Assert.True(PourSession.ServingsLeft(sim, cask) >= Full(sim, cask) - TapSession.SprayPerMiss, $"{PourSession.ServingsLeft(sim, cask)}");
     }
 
     [Fact]
     public void AFumbledTapSpraysServingsAway()
     {
         var (sim, me, cask, _) = Bar();
-        sim.World.Add(cask, new CaskDrawn { Drawn = 60 });
+        sim.World.Add(cask, new CaskDrawn { Drawn = Full(sim, cask) });
         sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("Keg"), 1);
         sim.ApplyNow(new BarWorkCommand(me, cask));
         OnTheBeat(sim, me, s => ((TapSession)s).OnTheTap, miss: true);
-        Assert.True(PourSession.ServingsLeft(sim, cask) <= 60 - 2 * TapSession.SprayPerMiss, $"{PourSession.ServingsLeft(sim, cask)}");
+        Assert.True(PourSession.ServingsLeft(sim, cask) <= Full(sim, cask) - 2 * TapSession.SprayPerMiss, $"{PourSession.ServingsLeft(sim, cask)}");
     }
 
     [Fact]
@@ -269,11 +272,11 @@ public class InnUpkeepTests
         var (sim, _) = Tavern("Healer");
         var inn = Inn(sim);
         var cask = Buildings.Parts(sim, inn).Single(p => sim.World.Get<Thing>(p).Def.Building?.Cask != null);
-        sim.World.Add(cask, new CaskDrawn { Drawn = 60 });
+        sim.World.Add(cask, new CaskDrawn { Drawn = Full(sim, cask) });
         sim.SpawnItem(sim.Thing("DirtyTankard"), 5, sim.World.Get<Thing>(cask).Cell + new int3(-2, 3, 0));
         for (var i = 0; i < 16 && (PourSession.ServingsLeft(sim, cask) == 0 || Count(sim, "DirtyTankard") > 0); i++)
             sim.TickMany(SimClock.TicksPerHour / 4);
-        Assert.True(PourSession.ServingsLeft(sim, cask) > 40, $"cask {PourSession.ServingsLeft(sim, cask)}");
+        Assert.True(PourSession.ServingsLeft(sim, cask) > Full(sim, cask) * 2 / 3, $"cask {PourSession.ServingsLeft(sim, cask)}");
         Assert.Equal(0, Count(sim, "DirtyTankard"));
     }
 

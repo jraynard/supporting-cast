@@ -42,6 +42,9 @@ public static class SeasonSweep
         var result = new SeasonResult { Seed = seed, Sim = sim };
         var dead = new HashSet<Entity>();
         var limit = sim.Round.EndTick(sim) + SimClock.TicksPerHour;
+        // The casks, watched from outside (nothing in the sim keeps count): a fall is servings drawn, a rise a keg knocked in.
+        var casks = sim.World.Query<Thing>().Where(e => sim.World.Get<Thing>(e).Def.Building?.Cask != null).ToList();
+        var left = casks.Select(c => Work.PourSession.ServingsLeft(sim, c)).ToArray();
         while (sim.Round.Phase != RoundPhase.Over && sim.Clock.Tick < limit)
         {
             sim.Tick();
@@ -63,6 +66,16 @@ public static class SeasonSweep
             foreach (var c in sim.Director.Active)
                 if (c.Started == sim.Clock.Tick)
                     result.Crises.Add(c.Kind);
+            if (sim.Clock.Tick % 60 == 0)
+                for (var i = 0; i < casks.Count; i++)
+                {
+                    var now = sim.World.IsAlive(casks[i]) ? Work.PourSession.ServingsLeft(sim, casks[i]) : 0;
+                    if (now < left[i])
+                        result.Drawn += left[i] - now;
+                    else if (now > left[i])
+                        result.KegsTapped++;
+                    left[i] = now;
+                }
         }
         result.Summary = sim.Round.Summary;
         result.Hours = sim.Clock.Tick / (float)SimClock.TicksPerHour;
@@ -92,6 +105,9 @@ public sealed class SeasonResult
 
     /// <summary>What the bots were doing, sampled every 10 s.</summary>
     public Dictionary<string, int> Doing = [];
+
+    /// <summary>Servings drawn from the inn's casks (poured or mixed), and new kegs knocked in.</summary>
+    public int Drawn, KegsTapped;
 
     public int Met => Sim.Director.Met;
     public int Unmet => Sim.Director.Unmet;

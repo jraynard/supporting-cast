@@ -90,7 +90,7 @@
       "name": "AleCask", "label": "ale cask", "category": "Building", "solid": true, "sprite": "buildings/ale_cask",
       "description": "A great oak cask on a cradle, with a tap. F at it to pour.",
       "maxHp": 120, "flammability": 0.8,
-      "building": { "work": 200, "surfaceHeight": 0.7, "cost": [ { "def": "Wood", "count": 14 } ], "cask": { "pours": "Ale", "servings": 60 } },
+      "building": { "work": 200, "surfaceHeight": 0.7, "cost": [ { "def": "Wood", "count": 14 } ], "cask": { "pours": "Ale", "servings": 24 } },
       "model": [
         { "min": [0.12, 0.2, 0], "max": [0.88, 0.8, 0.16], "top": "props/planks", "side": "props/planks" },
         { "min": [0.08, 0.14, 0.12], "max": [0.92, 0.86, 0.7], "top": "props/log_end", "side": "props/planks" },

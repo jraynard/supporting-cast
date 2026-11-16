@@ -34,7 +34,8 @@ public static class SeasonSweepRun
                     + $" | Renown {s2.Renown,5:F1}/{s2.RenownTarget:F0} Dread {s2.Dread,5:F1}/{s2.DreadLimit:F0} (peak {Peak(s2.DreadByHour):F1})"
                     + $" | crises {string.Join(",", r.Crises)} met {r.Met}/{r.Crises.Count}"
                     + $" | served {s2.AdventurersServed}, quests {s2.QuestsCleared}+/{s2.QuestsFailed}-, lost {s2.AdventurersLost}"
-                    + $" | dead {s2.People.Count(p => !p.Alive)}, back {s2.People.Count(p => p.CameBack)}");
+                    + $" | dead {s2.People.Count(p => !p.Alive)}, back {s2.People.Count(p => p.CameBack)}"
+                    + $" | drawn {r.Drawn}, kegs {r.KegsTapped}");
         }
 
         var ended = results.Where(r => r.Summary != null).Select(r => r.Summary!).ToList();
@@ -48,6 +49,8 @@ public static class SeasonSweepRun
             Console.WriteLine($"Deaths {ended.Average(e => e.People.Count(p => !p.Alive)):F1} a round, came back {ended.Average(e => e.People.Count(p => p.CameBack)):F1};"
                 + $" served {ended.Average(e => e.AdventurersServed):F1}, quests cleared {ended.Average(e => e.QuestsCleared):F1} failed {ended.Average(e => e.QuestsFailed):F1}");
         }
+        Console.WriteLine($"Casks: drawn {results.Average(r => r.Drawn):F1} servings a season, kegs knocked in {results.Average(r => r.KegsTapped):F1}"
+            + $" (drinks served {results.Average(r => r.Sim.Shops.Served(ServiceKind.Drink)):F1}, mixed {results.Average(r => r.Sim.Shops.Served(ServiceKind.MixedDrink)):F1})");
         var kinds = results.SelectMany(r => r.Sim.Reckoning.Crises).GroupBy(c => c.Kind).OrderBy(g => g.Key);
         Console.WriteLine("Crises met: " + string.Join(", ", kinds.Select(g => $"{g.Key} {g.Count(c => c.Met)}/{g.Count()}")));
         Console.WriteLine($"{results.Length} seasons in {clock.Elapsed.TotalSeconds:F0} s");

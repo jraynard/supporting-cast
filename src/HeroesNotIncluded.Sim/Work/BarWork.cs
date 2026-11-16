@@ -14,7 +14,7 @@ namespace HeroesNotIncluded.Sim.Work;
 public static class BarWork
 {
     /// <summary>A cask with no more than this many servings left can take a new keg; any fuller and you'd waste what's in it.</summary>
-    public const int TapBelow = 10;
+    public const int TapBelow = 6;
 
     public static bool IsTub(Simulation sim, Entity e) =>
         !e.IsNull && sim.World.IsAlive(e) && sim.World.TryGet<Thing>(e, out var t) && t.Def.Building is { WashTub: true } && !sim.World.Has<Construction>(e);
