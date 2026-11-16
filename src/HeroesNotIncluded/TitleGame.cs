@@ -520,8 +520,19 @@ public sealed class TitleGame : Game
         {
             if (_submenuTitle != null)
                 ImGui.TextColored(dim, _submenuTitle);
+            // The list keeps one height, room left below for the longest hint: the window's centred,
+            // so an entry growing as it's picked moved every entry, and the one under the pointer with it.
+            float most = 0f, grown = 0f;
             foreach (var item in _submenu ?? _items)
-                MenuButton(item);
+            {
+                most = MathF.Max(most, HintGrowth(Hint(item)));
+                grown += MenuButton(item);
+            }
+            if (most > grown)
+            {
+                var room = new float2(1, most - grown);
+                ImGui.Dummy(in room);
+            }
         }
 
         ImGui.Dummy(in gap);
@@ -653,22 +664,17 @@ public sealed class TitleGame : Game
     /// keys or a pad) its hint underneath and a barrel-gold bar at its edge. Every entry is tall
     /// enough for a one-line hint, so picking one of those doesn't shift the rest; a longer hint
     /// (a trade's description) wraps, and its entry grows downward to hold it while it's picked.
+    /// Returns how much it grew.
     /// </summary>
-    private void MenuButton(MenuItem item)
+    private float MenuButton(MenuItem item)
     {
         // A choice that leads on (a town, a trade) has a Then and no Start of its own; it's live too.
         var enabled = item.Start != null || item.Then != null || item.Action != MenuAction.Start;
-        var width = Gui.S(420);
+        var width = Gui.S(MenuWidth);
         var inset = Gui.S(17);
-        List<string> hint;
-        float lineHeight;
-        using (Gui.BodyFont(15f))
-        {
-            hint = WrapText(item.Hint, width - inset - Gui.S(10));
-            lineHeight = ImGui.GetTextLineHeight();
-        }
+        var (hint, lineHeight) = Hint(item);
         // Laid out from last frame's pick: the hover that grows an entry is decided by its button.
-        var extra = _pickedEntry == item.Label ? (hint.Count - 1) * lineHeight : 0f;
+        var extra = _pickedEntry == item.Label ? HintGrowth((hint, lineHeight)) : 0f;
         var size = new float2(width, Gui.S(46) + extra);
         var min = ImGui.GetCursorScreenPos();
         if (!enabled)
@@ -706,7 +712,20 @@ public sealed class TitleGame : Game
             _pickedEntry = null;
         if (pressed)
             Press(item);
+        return extra;
     }
+
+    private const float MenuWidth = 420f;
+
+    /// <summary>An entry's hint in lines as it's drawn (the body face, wrapped to the entry), and the height of a line.</summary>
+    private static (List<string> Lines, float LineHeight) Hint(MenuItem item)
+    {
+        using (Gui.BodyFont(15f))
+            return (WrapText(item.Hint, Gui.S(MenuWidth) - Gui.S(17) - Gui.S(10)), ImGui.GetTextLineHeight());
+    }
+
+    /// <summary>How much taller than the rest an entry stands while its hint shows: a line for each beyond the first.</summary>
+    private static float HintGrowth((List<string> Lines, float LineHeight) hint) => (hint.Lines.Count - 1) * hint.LineHeight;
 
     /// <summary>Text broken into lines at spaces, each at most <paramref name="width"/> wide in the current font.</summary>
     private static List<string> WrapText(string text, float width)
