@@ -35,6 +35,15 @@ public class SettingsTests
     }
 
     [Fact]
+    public void AntiAliasingIsOneOfTheChoices()
+    {
+        Assert.Equal(Settings.DefaultMsaa, Settings.Deserialize("""{ "Msaa": 3 }""").Msaa);
+        Assert.Equal(Settings.DefaultMsaa, Settings.Deserialize("""{ "Msaa": -4 }""").Msaa);
+        Assert.Equal(1, Settings.Deserialize("""{ "Msaa": 1 }""").Msaa); // off
+        Assert.Equal(8, Settings.Deserialize("""{ "Msaa": 8 }""").Msaa);
+    }
+
+    [Fact]
     public void FirstRunOnADeckIsReadableAndFrugal()
     {
         Assert.Equal(Settings.Serialize(new Settings()), Settings.Serialize(HandheldDefaults.FirstRun(steamDeck: false)));
@@ -42,6 +51,7 @@ public class SettingsTests
         Assert.True(deck.UiScale > 1.1f);
         Assert.Equal(WindowMode.Borderless, deck.WindowMode);
         Assert.InRange(deck.MaxFps, 30, 60);
+        Assert.True(deck.Msaa < new Settings().Msaa, "lighter anti-aliasing on the Deck");
         Assert.Equal(Settings.Serialize(deck), Settings.Serialize(deck.Sanitized())); // in range as it stands
     }
 

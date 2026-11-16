@@ -130,7 +130,7 @@ public sealed partial class VillageGame
         var old = _quads;
         var cut = _renderer.CutawayZ;
         _renderer = new WorldRenderer(Host.Atlas) { CutawayZ = cut, Interp = _interp };
-        _quads = new QuadRenderer(Host, new int3(_sim.Map.Width, _sim.Map.Height, _sim.Map.Depth), ShaderReload.QuadShaders(Host));
+        _quads = new QuadRenderer(Host, new int3(_sim.Map.Width, _sim.Map.Height, _sim.Map.Depth), ShaderReload.QuadShaders(Host)) { SmoothAll = true };
         old.Dispose();
         _selected = Entity.Null;
         _lastSeenMessages = _sim.Messages.Total;

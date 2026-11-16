@@ -152,6 +152,7 @@ using var host = new GameHost(new GameHostOptions
     IconPath = Path.Combine(AppContext.BaseDirectory, "data", "icon.png"),
     Display = settings.Display,
     VSync = !stress && settings.VSync,
+    SceneSamples = settings.Msaa, // fixed for the run: the world's pipelines are built for it
     MaxFps = stress ? 0 : settings.MaxFps,
     CapUnsyncedFps = !stress,
     UnfocusedMaxFps = stress ? 0 : FrameCap.DefaultUnfocused,

@@ -39,6 +39,18 @@ public sealed class Settings
     /// <summary>Multiplier on keyboard camera panning.</summary>
     public float CameraPanSpeed { get; set; } = 1f;
 
+    /// <summary>
+    /// Anti-aliasing (MSAA) samples for the world: 1 (off), 2, 4 or 8. Smooths the edges of roofs,
+    /// beams and walls as the camera turns, for GPU memory and fill rate (older PCs and handhelds: 2
+    /// or off). Applies at the next launch.
+    /// </summary>
+    public int Msaa { get; set; } = DefaultMsaa;
+
+    public const int DefaultMsaa = 4;
+
+    /// <summary>The MSAA choices offered.</summary>
+    public static readonly int[] MsaaChoices = [1, 2, 4, 8];
+
     /// <summary>The HD-2D look: tilt-shift blur, bloom on fire, vignette and a warmer grade (F10 toggles it).</summary>
     public bool Hd2d { get; set; } = true;
 
@@ -122,6 +134,8 @@ public sealed class Settings
         s.Width = Math.Clamp(s.Width, 320, 16384);
         s.Height = Math.Clamp(s.Height, 240, 16384);
         s.MaxFps = Math.Clamp(s.MaxFps, 0, 1000);
+        if (Array.IndexOf(MsaaChoices, s.Msaa) < 0)
+            s.Msaa = DefaultMsaa;
         s.UiScale = float.IsFinite(s.UiScale) ? Math.Clamp(s.UiScale, MinUiScale, MaxUiScale) : 1f;
         s.CameraPanSpeed = float.IsFinite(s.CameraPanSpeed) ? Math.Clamp(s.CameraPanSpeed, MinPanSpeed, MaxPanSpeed) : 1f;
         static float Unit(float v, float fallback) => float.IsFinite(v) ? Math.Clamp(v, 0f, 1f) : fallback;

@@ -427,7 +427,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         _basePanSpeed = _cameraController.PanSpeed;
         _renderer = new WorldRenderer(Host.Atlas) { CutawayZ = Math.Clamp(StartCutaway, 1, _sim.Map.Depth - 1), Interp = _interp };
         _followLevel = StartCutaway == int.MaxValue;
-        _quads = new QuadRenderer(Host, new int3(_sim.Map.Width, _sim.Map.Height, _sim.Map.Depth), ShaderReload.QuadShaders(Host));
+        _quads = new QuadRenderer(Host, new int3(_sim.Map.Width, _sim.Map.Height, _sim.Map.Depth), ShaderReload.QuadShaders(Host)) { SmoothAll = true };
         // Whatever happened during setup and skipping (or before the save) is history: don't auto-pause for it.
         _lastSeenMessages = _sim.Messages.Total;
     }

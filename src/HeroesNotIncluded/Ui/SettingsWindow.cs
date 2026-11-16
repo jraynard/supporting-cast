@@ -1,6 +1,7 @@
 using Brutal.ImGuiApi;
 using Narsil;
 using Narsil.Platform;
+using Narsil.Rendering;
 using Narsil.Ui;
 
 namespace HeroesNotIncluded.Ui;
@@ -293,6 +294,18 @@ public sealed class SettingsWindow(GameHost host)
             capIndex = caps.Count - 1;
         if (Combo("##fps", caps, ref capIndex, c => c == 0 ? "Unlimited" : $"{c} fps"))
             _draft.MaxFps = caps[capIndex];
+
+        Row("Anti-aliasing", "Smooths the edges of roofs, beams and walls so they don't shimmer as the camera turns. Higher looks better and costs more of the graphics card; on an older PC or a handheld, 2x or Off. Applies when you next start the game.");
+        // Only what this GPU can do (PostProcessor.PickSamples falls back the same way).
+        var supported = Settings.MsaaChoices.Where(n => (int)PostProcessor.PickSamples(host.Vulkan.AttachmentSampleCounts, n) == n).ToList();
+        var msaaIndex = Math.Max(0, supported.IndexOf((int)PostProcessor.PickSamples(host.Vulkan.AttachmentSampleCounts, _draft.Msaa)));
+        if (Combo("##msaa", supported, ref msaaIndex, n => n == 1 ? "Off" : $"{n}x MSAA"))
+            _draft.Msaa = supported[msaaIndex];
+        if ((int)PostProcessor.PickSamples(host.Vulkan.AttachmentSampleCounts, _draft.Msaa) != (int)host.Post.SceneSamples)
+        {
+            ImGui.SameLine(0, -1);
+            ImGuiText.Colored(Theme.Dim, "(after a restart)");
+        }
     }
 
     private void InterfaceTab()

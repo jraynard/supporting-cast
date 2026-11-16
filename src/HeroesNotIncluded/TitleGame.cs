@@ -39,7 +39,7 @@ public sealed class TitleGame : Game
     private Simulation _sim = null!;
     private WorldRenderer _renderer = null!;
     private QuadRenderer _quads = null!;
-    private readonly Camera3D _camera = new() { Zoom = 30f, VerticalScale = WorldScale.LevelHeight };
+    private readonly Camera3D _camera = new() { Zoom = 34f, VerticalScale = WorldScale.LevelHeight };
     private float _time;
     private float _accumulator;
     private float _fade;
@@ -306,14 +306,18 @@ public sealed class TitleGame : Game
         _sim = VillageRound.NewSimulation(defs, (ulong)Random.Shared.Next(1, 100_000));
         _sim.StrictJobs = false; // a buggy job fails itself, not the game
         _sim.Presets.PresetMode = true; // as a round's town is
-        var center = VillageRound.Setup(_sim).Center;
+        var town = VillageRound.Setup(_sim);
         _sim.RebuildDerivedIfNeeded();
 
-        _camera.Target = new float3(center.X + 0.5f, center.Y + 0.5f, center.Z);
+        // Turning about a point between the square and the inn, so the inn, the town's heart, stays in the frame.
+        var center = new float3(town.Center.X + 0.5f, town.Center.Y + 0.5f, town.Center.Z);
+        if (_sim.World.TryGet<PresetBuilding>(town.Tavern, out var inn))
+            center += (new float3(inn.Anchor.X + 0.5f, inn.Anchor.Y + 0.5f, center.Z) - center) * 0.4f;
+        _camera.Target = center;
         _camera.Yaw = 0.6f;
         _renderer = new WorldRenderer(Host.Atlas) { ShowNames = false, ShowBubbles = false };
         // Roofs on: the title's view of the village is from outside, with nobody inside to open up.
-        _quads = new QuadRenderer(Host, new int3(_sim.Map.Width, _sim.Map.Height, _sim.Map.Depth), ShaderReload.QuadShaders(Host)) { HideRoofs = false };
+        _quads = new QuadRenderer(Host, new int3(_sim.Map.Width, _sim.Map.Height, _sim.Map.Depth), ShaderReload.QuadShaders(Host)) { HideRoofs = false, SmoothAll = true };
         if (AutoCreator != null)
         {
             _creating = true;

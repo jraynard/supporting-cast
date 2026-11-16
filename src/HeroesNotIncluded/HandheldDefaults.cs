@@ -14,6 +14,9 @@ public static class HandheldDefaults
     public const float DeckUiScale = 1.2f;
     public const int DeckMaxFps = 45;
 
+    /// <summary>Light anti-aliasing: the Deck's GPU and battery are better spent on the frame rate.</summary>
+    public const int DeckMsaa = 2;
+
     /// <summary>Whether this machine is a Steam Deck (<see cref="Handheld"/>).</summary>
     public static bool OnSteamDeck => Handheld.OnSteamDeck;
 
@@ -28,6 +31,7 @@ public static class HandheldDefaults
         s.Width = 1280;
         s.Height = 800;
         s.MaxFps = DeckMaxFps;
+        s.Msaa = DeckMsaa;
         return s;
     }
 }
