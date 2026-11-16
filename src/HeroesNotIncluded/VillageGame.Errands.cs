@@ -73,20 +73,20 @@ public sealed partial class VillageGame
     /// <summary>A guest picked out in the room book: pointed to for a while.</summary>
     private (Entity Who, string Name, float Until)? _bookPointer;
 
-    /// <summary>On an order you're seeing to: go and collect it, or take it back once it looks done.</summary>
+    /// <summary>
+    /// On an order you're seeing to whose thing changes hands, after its time bar: go and collect it,
+    /// or take it back once it looks done (greyed out while it's still at the work).
+    /// </summary>
     private void DrawErrandButton(KnownErrand errand)
     {
         if (errand.Returning && !errand.Ready)
         {
-            TextC(Theme.Dim, $"With you. When it's done, take it back to {errand.Name}.");
+            CardIcon($"##errand{errand.Order}", "ui/work/hand", false, $"With you. When it's done, take it back to {errand.Name}.", () => { });
             return;
         }
-        var label = errand.Returning ? $"Take it back to {errand.Name}" : $"Go and collect it from {errand.Name}";
-        if (ImGui.Button(label, in _autoSize))
-            Issue(new SeeToCustomerCommand(_avatar, errand.Order));
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-            Tip(errand.Returning
-                ? "Walks you over and hands it back. They look it over: done, they pay; if not, they say what's wrong. Moving calls it off."
-                : "Walks you over; they hand it to you when you're close. Moving calls it off.");
+        CardIcon($"##errand{errand.Order}", "ui/work/hand", true, errand.Returning
+                ? $"Take it back to {errand.Name}: walks you over and hands it back. They look it over: done, they pay; if not, they say what's wrong. Moving calls it off."
+                : $"Go and collect it from {errand.Name}: walks you over; they hand it to you when you're close. Moving calls it off.",
+            () => Issue(new SeeToCustomerCommand(_avatar, errand.Order)));
     }
 }

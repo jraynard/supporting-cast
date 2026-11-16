@@ -855,6 +855,12 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     public static bool HandsOver(ServiceKind kind) => kind is ServiceKind.Repair or ServiceKind.Unlock or ServiceKind.Appraise;
 
     /// <summary>
+    /// An order a player can be walked over to see to (<see cref="SeeToCustomerCommand"/>): a thing
+    /// that changes hands, or a drink poured at the bar and carried to wherever they've sat down.
+    /// </summary>
+    public static bool Delivers(ServiceKind kind) => HandsOver(kind) || kind is ServiceKind.Drink or ServiceKind.MixedDrink;
+
+    /// <summary>
     /// An adventurer gives the piece to be mended (or the box to be opened) to whoever took the
     /// job on, once they're in reach. True if it changed hands (or already had).
     /// </summary>

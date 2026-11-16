@@ -97,21 +97,48 @@ public sealed partial class VillageGame
         {
             var (share, color, words) = TimeLeft(e.PostedTick, e.Deadline, now);
             var take = !e.Mine && e.AssigneeName.Length == 0;
+            var errand = e.MineToDo ? View.Awaiting().Cast<KnownErrand?>().FirstOrDefault(a => a!.Value.Order == e.Id) : null;
+            var carry = e.MineToDo && e.Kind is Sim.Defs.ServiceKind.Drink or Sim.Defs.ServiceKind.MixedDrink;
+            var buttons = (take ? 1 : 0) + (errand != null || carry ? 1 : 0);
             CardBar(e.AssigneeName.Length > 0 ? (e.MineToDo ? "You're on it" : $"{e.AssigneeName} is on it") : "Nobody's taken it",
-                share, color, words, take ? SmallButtonWidth("I'll do it") : 0f);
+                share, color, words, buttons * (CardIconSize + Gui.S(8)));
             if (take)
+                TakeButton($"##take{e.Id}", "Say aloud that you'll see to it. They pay whoever gets it done.", () => Issue(new TakeOrderCommand(_avatar, e.Id)));
+            if (carry)
             {
-                ImGui.SameLine(0, Gui.S(8));
-                if (ImGui.SmallButton("I'll do it"u8))
-                    Issue(new TakeOrderCommand(_avatar, e.Id));
-                if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                    Tip("Say aloud that you'll see to it. They pay whoever gets it done.");
+                // What they ordered, to take to them: only with a drink poured that fills it.
+                var poured = !SeeToCustomerJob.DrinkFor(_sim, _avatar, e.Kind).IsNull;
+                var wanted = e.Kind == Sim.Defs.ServiceKind.MixedDrink ? View.WantedDrink(e.Id) : null;
+                CardIcon($"##carry{e.Id}", wanted?.Icon is { Length: > 0 } icon ? icon : ServiceIcon(e.Kind), poured,
+                    poured ? $"Take it to {e.PosterName}: walks you over and serves it. Moving calls it off." : "Pour it first.",
+                    () => Issue(new SeeToCustomerCommand(_avatar, e.Id)));
             }
-            if (e.MineToDo && View.Awaiting().Cast<KnownErrand?>().FirstOrDefault(a => a!.Value.Order == e.Id) is { } errand)
-                DrawErrandButton(errand);
+            else if (errand is { } x)
+                DrawErrandButton(x);
         }
         CardEnd();
     }
+
+    /// <summary>The square of an icon button at the end of a card's time bar.</summary>
+    private static float CardIconSize => Gui.S(26);
+
+    /// <summary>
+    /// An icon button after a card's time bar, on the same line. Greyed out (its tooltip saying
+    /// why) when it can't be pressed.
+    /// </summary>
+    private void CardIcon(string id, string sprite, bool enabled, string tip, Action press)
+    {
+        ImGui.SameLine(0, Gui.S(8));
+        ImGui.BeginDisabled(!enabled);
+        if (Gui.IconButton(id, sprite, CardIconSize, false) && enabled)
+            press();
+        ImGui.EndDisabled();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            Tip(tip);
+    }
+
+    /// <summary>The green check that takes on an order or a favour ("I'll do it").</summary>
+    private void TakeButton(string id, string why, Action press) => CardIcon(id, "ui/icon_good", true, $"I'll do it.\n{why}", press);
 
     /// <summary>
     /// Under the orders (and the favours), how many are over with, and a link to show or hide them:

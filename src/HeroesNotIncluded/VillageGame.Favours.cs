@@ -120,18 +120,12 @@ public sealed partial class VillageGame
             var take = !f.Mine && f.AssigneeName.Length == 0;
             var hand = f.MineToDo && f.Wants != null;
             var pay = f.Mine && f.AssigneeName.Length > 0;
-            var keep = take ? SmallButtonWidth("I'll do it") : hand ? SmallButtonWidth("Hand it over") : 0f;
+            var keep = take ? CardIconSize + Gui.S(8) : hand ? SmallButtonWidth("Hand it over") : 0f;
             CardBar(f.AssigneeName.Length > 0 ? (f.MineToDo ? "You're on it" : $"{f.AssigneeName} is on it") : "Nobody's taken it",
                 share, color, words, keep);
             if (take)
-            {
-                ImGui.SameLine(0, Gui.S(8));
-                if (ImGui.SmallButton("I'll do it"u8))
-                    Issue(new AcceptFavourCommand(_avatar, f.Id));
-                if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                    Tip(f.Wants != null ? "Take it on. Bring them what they want and they'll pay you on the spot."
-                        : "Say aloud that you'll see to it. They pay you when they say it's done.");
-            }
+                TakeButton($"##takefavour{f.Id}", f.Wants != null ? "Take it on. Bring them what they want and they'll pay you on the spot."
+                    : "Say aloud that you'll see to it. They pay you when they say it's done.", () => Issue(new AcceptFavourCommand(_avatar, f.Id)));
             if (hand && f.Wants is { } wants)
             {
                 ImGui.SameLine(0, Gui.S(8));

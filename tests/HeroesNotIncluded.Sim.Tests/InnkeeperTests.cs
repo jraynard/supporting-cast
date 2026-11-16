@@ -194,6 +194,64 @@ public class InnkeeperTests
         Assert.True(sim.World.Get<Adventurer>(drinker).Satisfaction - mood < 1.5f, "a crude pour pleases less");
     }
 
+    /// <summary>A drink order taken by the player keeper, them some way off across the room with nothing in hand.</summary>
+    private static (Simulation Sim, Entity Me, Entity Drinker, Order Order) TakenAcrossTheRoom()
+    {
+        var (sim, party) = Tavern("Innkeeper");
+        var me = Players.CharacterOf(sim, Ana);
+        var drinker = party[0];
+        Thirsty(sim, drinker);
+        sim.TickMany(SimClock.TicksPerHour / 6);
+        var order = sim.Shops.All.Single(e => e.IsOpen && e.Poster == drinker && e.Kind.Kind == ServiceKind.Drink);
+        var at = sim.World.Get<Position>(drinker).Cell;
+        var cell = sim.SpiralFrom(at, 8).Last(c => sim.Map.Passable(c) && c.Z == at.Z && Sim.Maps.Map.Distance(c, at) >= 5
+            && sim.Pathfinder.FindPath(c, at, PathEnd.Touch) != null);
+        sim.World.Get<Position>(me).Cell = cell;
+        sim.World.Get<Position>(me).Pos = Position.CenterOf(cell);
+        sim.World.Get<Carrying>(me).Item = Entity.Null;
+        sim.ApplyNow(new TakeOrderCommand(me, order.Id));
+        Assert.Equal(me, order.Assignee);
+        return (sim, me, drinker, order);
+    }
+
+    [Fact]
+    public void ADrinkTakenToACustomerAcrossTheRoomIsServedAndPaidFor()
+    {
+        var (sim, me, drinker, order) = TakenAcrossTheRoom();
+        // Nothing poured yet: the button's greyed out, and the command starts nothing.
+        sim.ApplyNow(new SeeToCustomerCommand(me, order.Id));
+        sim.TickMany(2);
+        Assert.IsNotType<SeeToCustomerJob>(sim.World.Get<Mind>(me).Job);
+
+        var ale = sim.CreateItem(sim.Thing("Ale"), 1);
+        sim.World.Add(ale, new Crafted { Quality = Quality.Plain, Maker = me });
+        Inventory.Stow(sim, me, ale);
+        var purse = Coin.Count(sim, me);
+        sim.ApplyNow(new SeeToCustomerCommand(me, order.Id));
+        for (var i = 0; i < SeeToCustomerJob.MaxTicks / 30 && order.IsOpen; i++)
+            sim.TickMany(30);
+        Assert.Equal(OrderStatus.Done, order.Status);
+        Assert.Equal(purse + order.Price, Coin.Count(sim, me));
+        Assert.Equal(ale, sim.World.Get<Carrying>(drinker).Item);
+    }
+
+    [Fact]
+    public void TakingADrinkOverFailsCleanlyIfItsGoneOnTheWay()
+    {
+        var (sim, me, _, order) = TakenAcrossTheRoom();
+        var ale = sim.CreateItem(sim.Thing("Ale"), 1);
+        Inventory.Stow(sim, me, ale);
+        sim.ApplyNow(new SeeToCustomerCommand(me, order.Id));
+        sim.TickMany(10);
+        Assert.IsType<SeeToCustomerJob>(sim.World.Get<Mind>(me).Job);
+        sim.DestroyThing(ale); // drunk on the way
+        for (var i = 0; i < 40 && sim.World.Get<Mind>(me).Job is SeeToCustomerJob; i++)
+            sim.TickMany(30);
+        Assert.IsNotType<SeeToCustomerJob>(sim.World.Get<Mind>(me).Job);
+        Assert.True(order.IsOpen, "still theirs to pour");
+        Assert.Equal(me, order.Assignee);
+    }
+
     /// <summary>Two of the party waiting on an ale each, and the player keeper beside them with ales poured.</summary>
     private static (Simulation Sim, Entity Me, Order First, Order Second, Entity Bar) TwoWaiting()
     {

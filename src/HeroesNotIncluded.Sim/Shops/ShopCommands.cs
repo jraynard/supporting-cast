@@ -59,7 +59,7 @@ public sealed record SeeToCustomerCommand(Entity Avatar, int Order) : ISimComman
     public void Apply(Simulation sim)
     {
         if (!InventoryCommand.Ready(sim, Avatar) || sim.Shops.Find(Order) is not { IsOpen: true } order || order.Assignee != Avatar
-            || !ShopSystem.HandsOver(order.Kind.Kind) || !sim.World.IsAlive(order.Poster) || sim.World.Has<Carried>(Avatar))
+            || !ShopSystem.Delivers(order.Kind.Kind) || !sim.World.IsAlive(order.Poster) || sim.World.Has<Carried>(Avatar))
             return;
         AiSystem.Order(sim, Avatar, new SeeToCustomerJob(Order));
     }
