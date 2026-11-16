@@ -482,107 +482,103 @@ public sealed partial class VillageGame
     }
 
     /// <summary>The oven beside you, between times: whether there's bread in and what it smells of, or how to start.</summary>
-    private void DrawOvenPanel()
+    private void OfferOven(List<StationCard> cards)
     {
         if (StationBeside(e => Baking.IsOven(_sim, e)) is not { IsNull: false } oven || View.Oven(oven) is not { } o)
             return;
-        _hud.Next(Anchor.Bottom);
-        Panel.Begin("The bread oven###oven", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
-        _hud.Took();
-        if (o.Loaves > 0)
+        cards.Add(new("The bread oven", oven, () =>
         {
-            TextC(o.Smell == "burning!" ? Theme.Bad : o.Smell == "a golden crust" ? Theme.Good : Theme.Text, $"{(o.Pie ? "A pie's" : "Bread's")} in. It smells of {o.Smell}.");
-            SmellLadder(o.Smell);
-            TextC(Theme.Dim, Controls.Keys("~F~ to stand by it and take it out."));
-        }
-        else if (!o.Lit)
-            TextC(Theme.Warn, Controls.Keys("Cold. Feed it wood (~F~ with wood on you) before anything goes in."));
-        else if (!Baking.DoughIn(_sim, _avatar).IsNull)
-            TextC(Theme.Good, Controls.Keys("~F~ puts your dough in. Then it's all in the smell: out on a golden crust."));
-        else if (!Pies.RawIn(_sim, _avatar).IsNull)
-            TextC(Theme.Good, Controls.Keys("~F~ puts your pie in. Out on a golden crust, as bread is."));
-        else
-            Wrapped($"Empty. Bread starts at the prep table: knead {Baking.FlourPerDough} flour into dough, let it rise an hour or two, then bring it here.");
-        Panel.End();
+            if (o.Loaves > 0)
+            {
+                TextC(o.Smell == "burning!" ? Theme.Bad : o.Smell == "a golden crust" ? Theme.Good : Theme.Text, $"{(o.Pie ? "A pie's" : "Bread's")} in. It smells of {o.Smell}.");
+                SmellLadder(o.Smell);
+                TextC(Theme.Dim, Controls.Keys("~F~ to stand by it and take it out."));
+            }
+            else if (!o.Lit)
+                TextC(Theme.Warn, Controls.Keys("Cold. Feed it wood (~F~ with wood on you) before anything goes in."));
+            else if (!Baking.DoughIn(_sim, _avatar).IsNull)
+                TextC(Theme.Good, Controls.Keys("~F~ puts your dough in. Then it's all in the smell: out on a golden crust."));
+            else if (!Pies.RawIn(_sim, _avatar).IsNull)
+                TextC(Theme.Good, Controls.Keys("~F~ puts your pie in. Out on a golden crust, as bread is."));
+            else
+                Wrapped($"Empty. Bread starts at the prep table: knead {Baking.FlourPerDough} flour into dough, let it rise an hour or two, then bring it here.");
+        }));
     }
 
     /// <summary>The spit beside you, between times: what's on it and how it looks, or how to start.</summary>
-    private void DrawSpitPanel()
+    private void OfferSpit(List<StationCard> cards)
     {
         if (StationBeside(e => Roasting.IsSpit(_sim, e)) is not { IsNull: false } spit || View.Spit(spit) is not { } p)
             return;
-        _hud.Next(Anchor.Bottom);
-        Panel.Begin("The spit###spit", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
-        _hud.Took();
-        if (p.Pieces > 0)
+        cards.Add(new("The spit", spit, () =>
         {
-            Wrapped($"{p.Pieces} meat on the spit: {string.Join(", ", p.Sides.Select(Roasting.CrustLabel))}.");
-            if (p.Sides[p.Facing] >= Crust.Dark)
-                TextC(Theme.Bad, "The side to the fire is going dark.");
-            TextC(Theme.Dim, Controls.Keys("~F~ to turn it, or lift it off."));
-        }
-        else if (!p.Lit)
-            TextC(Theme.Warn, "Nothing on it, and the fire beside it is out: light the hearth first.");
-        else if (!Roasting.Joint(_sim, _avatar).IsNull)
-            TextC(Theme.Good, Controls.Keys("~F~ puts your meat on (up to four). Turn it so every side goes golden."));
-        else
-            Wrapped("Nothing on it. Bring raw meat from the larder and put it on to roast.");
-        Panel.End();
+            if (p.Pieces > 0)
+            {
+                Wrapped($"{p.Pieces} meat on the spit: {string.Join(", ", p.Sides.Select(Roasting.CrustLabel))}.");
+                if (p.Sides[p.Facing] >= Crust.Dark)
+                    TextC(Theme.Bad, "The side to the fire is going dark.");
+                TextC(Theme.Dim, Controls.Keys("~F~ to turn it, or lift it off."));
+            }
+            else if (!p.Lit)
+                TextC(Theme.Warn, "Nothing on it, and the fire beside it is out: light the hearth first.");
+            else if (!Roasting.Joint(_sim, _avatar).IsNull)
+                TextC(Theme.Good, Controls.Keys("~F~ puts your meat on (up to four). Turn it so every side goes golden."));
+            else
+                Wrapped("Nothing on it. Bring raw meat from the larder and put it on to roast.");
+        }));
     }
 
     /// <summary>The prep table beside you: what you could do there with what's on you, each by name.</summary>
-    private void DrawPrepPanel()
+    private void OfferPrep(List<StationCard> cards)
     {
         if (StationBeside(e => Rations.IsPrepTable(_sim, e)) is not { IsNull: false } table)
             return;
-        _hud.Next(Anchor.Bottom);
-        Panel.Begin("The prep table###prep", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
-        _hud.Took();
-        var chop = Rations.Choppable(_sim, _avatar);
-        var flour = !Baking.FlourIn(_sim, _avatar).IsNull;
-        var portions = Rations.PortionsOn(_sim, _avatar);
-        // What each step makes, as a tile: lit when you've what it takes, its name and needs in the tooltip.
-        var things = _sim.Defs;
-        PrepButton(table, PrepStep.Chop, chop.IsNull ? things.Thing("ChoppedMeat") : _sim.World.Get<Thing>(chop).Def,
-            chop.IsNull ? "Chop" : $"Chop the {_sim.World.Get<Thing>(chop).Def.Label}", !chop.IsNull,
-            "Raw meat, fish or cabbage, cut on the knife's beat. Chopped food cooks quicker.");
-        ImGui.SameLine(0, Gui.S(TileGap));
-        PrepButton(table, PrepStep.Knead, things.Thing("Dough"), "Knead dough", flour, $"{Baking.FlourPerDough} flour, pushed from either side on the beat. Then let it rise and bake it.");
-        ImGui.SameLine(0, Gui.S(TileGap));
-        PrepButton(table, PrepStep.Pack, things.Thing("Rations"), "Pack rations", portions >= Rations.Portions, $"{Rations.Portions} portions of any food, wrapped and tied: sold to parties for the road.");
-        ImGui.SameLine(0, Gui.S(TileGap));
-        var pie = Pies.CanMake(_sim, _avatar);
-        PrepButton(table, PrepStep.Pie, things.Thing("RawPie"), "Make a pie", pie, $"A ball of dough and {Pies.Filling} portions of raw food, the rim crimped round. Then the oven.");
-        ImGui.SameLine(0, Gui.S(TileGap));
-        PrepButton(table, PrepStep.Salt, things.Thing("SaltMeat"), "Salt it", Larder.CanSalt(_sim, _avatar), $"Raw meat or fish rubbed with salt, a scoop to {Larder.PerScoop}: keeps for weeks, and seasons a pot by itself.");
-        // A cookhouse apart from the inn: the inn's hamper, once the innkeeper's ordered one.
-        if (HeroesNotIncluded.Sim.Hospitality.Provisions.Cooks(_sim, _avatar))
+        cards.Add(new("The prep table", table, () =>
         {
+            var chop = Rations.Choppable(_sim, _avatar);
+            var flour = !Baking.FlourIn(_sim, _avatar).IsNull;
+            var portions = Rations.PortionsOn(_sim, _avatar);
+            // What each step makes, as a tile: lit when you've what it takes, its name and needs in the tooltip.
+            var things = _sim.Defs;
+            PrepButton(table, PrepStep.Chop, chop.IsNull ? things.Thing("ChoppedMeat") : _sim.World.Get<Thing>(chop).Def,
+                chop.IsNull ? "Chop" : $"Chop the {_sim.World.Get<Thing>(chop).Def.Label}", !chop.IsNull,
+                "Raw meat, fish or cabbage, cut on the knife's beat. Chopped food cooks quicker.");
             ImGui.SameLine(0, Gui.S(TileGap));
-            PrepButton(table, PrepStep.Hamper, things.Thing(HeroesNotIncluded.Sim.Hospitality.Provisions.HamperDef), "Pack a hamper for the inn",
-                Rations.HamperWanted(_sim, _avatar) && HeroesNotIncluded.Sim.Hospitality.Provisions.DishesOn(_sim, _avatar).Count > 0,
-                $"Up to {HeroesNotIncluded.Sim.Hospitality.Provisions.Holds} servings of the dishes on you, once the innkeeper's ordered one. Put it up on the hatch for them.");
-        }
-        if (chop.IsNull && !flour && portions < Rations.Portions && !pie)
-            TextC(Theme.Dim, "Bring raw food, flour or a few portions of food from the larder.");
-        Panel.End();
+            PrepButton(table, PrepStep.Knead, things.Thing("Dough"), "Knead dough", flour, $"{Baking.FlourPerDough} flour, pushed from either side on the beat. Then let it rise and bake it.");
+            ImGui.SameLine(0, Gui.S(TileGap));
+            PrepButton(table, PrepStep.Pack, things.Thing("Rations"), "Pack rations", portions >= Rations.Portions, $"{Rations.Portions} portions of any food, wrapped and tied: sold to parties for the road.");
+            ImGui.SameLine(0, Gui.S(TileGap));
+            var pie = Pies.CanMake(_sim, _avatar);
+            PrepButton(table, PrepStep.Pie, things.Thing("RawPie"), "Make a pie", pie, $"A ball of dough and {Pies.Filling} portions of raw food, the rim crimped round. Then the oven.");
+            ImGui.SameLine(0, Gui.S(TileGap));
+            PrepButton(table, PrepStep.Salt, things.Thing("SaltMeat"), "Salt it", Larder.CanSalt(_sim, _avatar), $"Raw meat or fish rubbed with salt, a scoop to {Larder.PerScoop}: keeps for weeks, and seasons a pot by itself.");
+            // A cookhouse apart from the inn: the inn's hamper, once the innkeeper's ordered one.
+            if (HeroesNotIncluded.Sim.Hospitality.Provisions.Cooks(_sim, _avatar))
+            {
+                ImGui.SameLine(0, Gui.S(TileGap));
+                PrepButton(table, PrepStep.Hamper, things.Thing(HeroesNotIncluded.Sim.Hospitality.Provisions.HamperDef), "Pack a hamper for the inn",
+                    Rations.HamperWanted(_sim, _avatar) && HeroesNotIncluded.Sim.Hospitality.Provisions.DishesOn(_sim, _avatar).Count > 0,
+                    $"Up to {HeroesNotIncluded.Sim.Hospitality.Provisions.Holds} servings of the dishes on you, once the innkeeper's ordered one. Put it up on the hatch for them.");
+            }
+            if (chop.IsNull && !flour && portions < Rations.Portions && !pie)
+                TextC(Theme.Dim, "Bring raw food, flour or a few portions of food from the larder.");
+        }));
     }
 
     /// <summary>The butcher block beside you: what it's for, and whether you've anything to dress.</summary>
-    private void DrawBlockPanel()
+    private void OfferBlock(List<StationCard> cards)
     {
-        if (StationBeside(e => Butchery.IsBlock(_sim, e)).IsNull)
+        if (StationBeside(e => Butchery.IsBlock(_sim, e)) is not { IsNull: false } block)
             return;
-        _hud.Next(Anchor.Bottom);
-        Panel.Begin("The butcher block###block", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
-        _hud.Took();
-        if (Butchery.Side(_sim, _avatar) is { IsNull: false } side)
-            TextC(Theme.Good, Controls.Keys($"~F~ to joint the {_sim.World.Get<Thing>(side).Def.Label}: bring the cleaver down on the joints."));
-        else if (Butchery.Bird(_sim, _avatar) is { IsNull: false } bird)
-            TextC(Theme.Good, Controls.Keys($"~F~ to pluck the {_sim.World.Get<Thing>(bird).Def.Label}: short firm pulls, or the skin tears."));
-        else
-            Wrapped("Bring a side of pork or a bird in its feathers from the larder: they're dressed here.");
-        Panel.End();
+        cards.Add(new("The butcher block", block, () =>
+        {
+            if (Butchery.Side(_sim, _avatar) is { IsNull: false } side)
+                TextC(Theme.Good, Controls.Keys($"~F~ to joint the {_sim.World.Get<Thing>(side).Def.Label}: bring the cleaver down on the joints."));
+            else if (Butchery.Bird(_sim, _avatar) is { IsNull: false } bird)
+                TextC(Theme.Good, Controls.Keys($"~F~ to pluck the {_sim.World.Get<Thing>(bird).Def.Label}: short firm pulls, or the skin tears."));
+            else
+                Wrapped("Bring a side of pork or a bird in its feathers from the larder: they're dressed here.");
+        }));
     }
 
     /// <summary>Jointing: the side along the block, its joints marked, the cleaver sweeping over it.</summary>
@@ -1002,55 +998,54 @@ public sealed partial class VillageGame
     }
 
     /// <summary>The stew pot beside you, between times: what's in it, how it looks, and its steps.</summary>
-    private void DrawPotPanel()
+    private void OfferPot(List<StationCard> cards)
     {
         if (!HasAvatar || PotBeside() is not { } p)
             return;
-        _hud.Next(Anchor.Bottom);
-        Panel.Begin("The stew pot###pot", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
-        _hud.Took();
-        if (p.Flaring)
+        cards.Add(new("The stew pot", p.Pot, () =>
         {
-            TextC(Theme.Bad, Controls.Keys("The fat's caught: flames over the pot! ~F~ to clap the lid on."));
-            if (ImGui.SmallButton("Clap the lid on"u8))
-                Issue(new PotCommand(_avatar, p.Pot, PotStep.Lid));
-        }
-        if (p.Empty)
-            TextC(Theme.Dim, Controls.Keys("Empty. Bring it food from the larder: ~F~ at the pot puts in what you carry."));
-        else
-        {
-            Wrapped($"In it: {p.Contents}. It tastes {p.Tastes}.");
-            if (p.House is { } house)
-                TextC(Theme.Good, $"It tastes like your {house}: it's the house dish.");
-            if (p.Mends)
-                TextC(Theme.Good, "Fresh enough to be a broth: good for the hurt, and for a healer's gift.");
-            TextC(p.Surface == Surface.Simmer ? Theme.Good : Theme.Dim, $"It's {Cooking.SurfaceLabel(p.Surface)}{(p.Lit ? "" : ", and the fire beside it is out")}.");
-            if (p.Caught is { } caught)
-                TextC(Theme.Bad, Cap(caught) + ".");
-            if (!p.Cooked)
-                Bar("Cooked", p.Doneness, Theme.Accent);
-            else
-                TextC(Theme.Good, $"Cooked through: {p.Bowls} bowl{(p.Bowls == 1 ? "" : "s")} in it.");
-            if (ImGui.SmallButton("Tend it"u8))
-                Issue(new PotCommand(_avatar, p.Pot, PotStep.Tend));
-            ImGui.SameLine(0, 6);
-            if (ImGui.SmallButton("Season it"u8))
-                Issue(new PotCommand(_avatar, p.Pot, PotStep.Season));
-            ImGui.SameLine(0, 6);
-            if (ImGui.SmallButton("Smell it"u8))
-                Issue(new PotCommand(_avatar, p.Pot, PotStep.Sniff));
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip("Has anything in it turned? You can't pick out what. Better to smell it before it goes in.");
-            if (p.Doneness >= Cooking.LadleFrom && p.Bowls > 0)
+            if (p.Flaring)
             {
-                ImGui.SameLine(0, 6);
-                if (ImGui.SmallButton("Ladle a bowl"u8))
-                    Issue(new PotCommand(_avatar, p.Pot, PotStep.Ladle));
+                TextC(Theme.Bad, Controls.Keys("The fat's caught: flames over the pot! ~F~ to clap the lid on."));
+                if (ImGui.SmallButton("Clap the lid on"u8))
+                    Issue(new PotCommand(_avatar, p.Pot, PotStep.Lid));
             }
-            if (p.Cooked && _sim.World.TryGet<Trade>(_avatar, out var trade) && trade.Def.Serving(Sim.Defs.ServiceKind.Meal))
-                DrawNameDish(p);
-        }
-        Panel.End();
+            if (p.Empty)
+                TextC(Theme.Dim, Controls.Keys("Empty. Bring it food from the larder: ~F~ at the pot puts in what you carry."));
+            else
+            {
+                Wrapped($"In it: {p.Contents}. It tastes {p.Tastes}.");
+                if (p.House is { } house)
+                    TextC(Theme.Good, $"It tastes like your {house}: it's the house dish.");
+                if (p.Mends)
+                    TextC(Theme.Good, "Fresh enough to be a broth: good for the hurt, and for a healer's gift.");
+                TextC(p.Surface == Surface.Simmer ? Theme.Good : Theme.Dim, $"It's {Cooking.SurfaceLabel(p.Surface)}{(p.Lit ? "" : ", and the fire beside it is out")}.");
+                if (p.Caught is { } caught)
+                    TextC(Theme.Bad, Cap(caught) + ".");
+                if (!p.Cooked)
+                    Bar("Cooked", p.Doneness, Theme.Accent);
+                else
+                    TextC(Theme.Good, $"Cooked through: {p.Bowls} bowl{(p.Bowls == 1 ? "" : "s")} in it.");
+                if (ImGui.SmallButton("Tend it"u8))
+                    Issue(new PotCommand(_avatar, p.Pot, PotStep.Tend));
+                ImGui.SameLine(0, 6);
+                if (ImGui.SmallButton("Season it"u8))
+                    Issue(new PotCommand(_avatar, p.Pot, PotStep.Season));
+                ImGui.SameLine(0, 6);
+                if (ImGui.SmallButton("Smell it"u8))
+                    Issue(new PotCommand(_avatar, p.Pot, PotStep.Sniff));
+                if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                    Tip("Has anything in it turned? You can't pick out what. Better to smell it before it goes in.");
+                if (p.Doneness >= Cooking.LadleFrom && p.Bowls > 0)
+                {
+                    ImGui.SameLine(0, 6);
+                    if (ImGui.SmallButton("Ladle a bowl"u8))
+                        Issue(new PotCommand(_avatar, p.Pot, PotStep.Ladle));
+                }
+                if (p.Cooked && _sim.World.TryGet<Trade>(_avatar, out var trade) && trade.Def.Serving(Sim.Defs.ServiceKind.Meal))
+                    DrawNameDish(p);
+            }
+        }));
     }
 
     private ImInputString? _dishNameInput;

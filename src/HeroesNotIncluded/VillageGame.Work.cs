@@ -354,12 +354,7 @@ public sealed partial class VillageGame
                 return;
             case null:
                 DrawTongs();
-                DrawPotPanel();
-                DrawSpitPanel();
-                DrawOvenPanel();
-                DrawPrepPanel();
-                DrawBlockPanel();
-                DrawBarPanel();
+                DrawStationCard();
                 return;
         }
     }

@@ -445,63 +445,62 @@ public sealed partial class VillageGame
     }
 
     /// <summary>The bar beside you: the named drinks (and what they take), and a house mix of whatever's ticked.</summary>
-    private void DrawBarPanel()
+    private void OfferBar(List<StationCard> cards)
     {
         if (!HasAvatar || BarBeside() is not { IsNull: false } bar)
             return;
         var w = _sim.World;
-        _hud.Next(Anchor.Bottom);
-        Panel.Begin("The bar###bar", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
-        _hud.Took();
-        TextC(Theme.Dim, "From the cask, with a clean tankard and what goes in to hand (yours, or the shelf behind the bar):");
-        foreach (var drink in _sim.Defs.AllThings.Where(d => d.Mix is { House: false }))
+        cards.Add(new("The bar", bar, () =>
         {
-            ImGui.PushID(drink.Name);
-            var adds = MixSession.AddsOf(_sim, drink, null);
-            var why = MixSession.WhyNot(_sim, _avatar, bar, drink, null);
-            if (why != null)
-                ImGui.BeginDisabled(true);
-            if (ImGui.SmallButton($"Mix a {drink.Label}"))
-                Issue(new MixCommand(_avatar, bar, drink, null));
-            if (why != null)
-                ImGui.EndDisabled();
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(why ?? drink.Description);
-            ImGui.SameLine(0, 8);
-            TextC(why == null ? Theme.Dim : Theme.Warn, why == null ? $"ale, {string.Join(", ", adds.Select(d => d.Label))}" : why);
-            ImGui.PopID();
-        }
-        Gui.Rule();
-        TextC(Theme.Dim, "A house mix of:");
-        foreach (var add in _sim.Defs.AllThings.Where(d => d.MixCue is { Length: > 0 }))
-        {
-            ImGui.SameLine(0, 8);
-            var on = _houseAdds.Contains(add.Name);
-            if (ImGui.Checkbox(add.Label, ref on))
+            TextC(Theme.Dim, "From the cask, with a clean tankard and what goes in to hand (yours, or the shelf behind the bar):");
+            foreach (var drink in _sim.Defs.AllThings.Where(d => d.Mix is { House: false }))
             {
-                if (on)
-                    _houseAdds.Add(add.Name);
-                else
-                    _houseAdds.Remove(add.Name);
-            }
-        }
-        if (_houseAdds.Count > 0)
-        {
-            var house = _sim.Defs.Thing("HouseMix");
-            var adds = string.Join(",", _houseAdds.Order());
-            var why = MixSession.WhyNot(_sim, _avatar, bar, house, adds);
-            if (why != null)
-                ImGui.BeginDisabled(true);
-            if (ImGui.SmallButton("Mix it"u8))
-                Issue(new MixCommand(_avatar, bar, house, adds));
-            if (why != null)
-            {
-                ImGui.EndDisabled();
+                ImGui.PushID(drink.Name);
+                var adds = MixSession.AddsOf(_sim, drink, null);
+                var why = MixSession.WhyNot(_sim, _avatar, bar, drink, null);
+                if (why != null)
+                    ImGui.BeginDisabled(true);
+                if (ImGui.SmallButton($"Mix a {drink.Label}"))
+                    Issue(new MixCommand(_avatar, bar, drink, null));
+                if (why != null)
+                    ImGui.EndDisabled();
+                if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                    Tip(why ?? drink.Description);
                 ImGui.SameLine(0, 8);
-                TextC(Theme.Warn, why);
+                TextC(why == null ? Theme.Dim : Theme.Warn, why == null ? $"ale, {string.Join(", ", adds.Select(d => d.Label))}" : why);
+                ImGui.PopID();
             }
-        }
-        Panel.End();
+            Gui.Rule();
+            TextC(Theme.Dim, "A house mix of:");
+            foreach (var add in _sim.Defs.AllThings.Where(d => d.MixCue is { Length: > 0 }))
+            {
+                ImGui.SameLine(0, 8);
+                var on = _houseAdds.Contains(add.Name);
+                if (ImGui.Checkbox(add.Label, ref on))
+                {
+                    if (on)
+                        _houseAdds.Add(add.Name);
+                    else
+                        _houseAdds.Remove(add.Name);
+                }
+            }
+            if (_houseAdds.Count > 0)
+            {
+                var house = _sim.Defs.Thing("HouseMix");
+                var adds = string.Join(",", _houseAdds.Order());
+                var why = MixSession.WhyNot(_sim, _avatar, bar, house, adds);
+                if (why != null)
+                    ImGui.BeginDisabled(true);
+                if (ImGui.SmallButton("Mix it"u8))
+                    Issue(new MixCommand(_avatar, bar, house, adds));
+                if (why != null)
+                {
+                    ImGui.EndDisabled();
+                    ImGui.SameLine(0, 8);
+                    TextC(Theme.Warn, why);
+                }
+            }
+        }));
     }
 
     /// <summary>A bar counter in arm's reach of you.</summary>
