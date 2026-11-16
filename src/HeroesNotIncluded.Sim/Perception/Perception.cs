@@ -611,6 +611,31 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         }
     }
 
+    /// <summary>
+    /// The room a guest is written into for tonight, as the book says (what was written, which the
+    /// keeper who wrote it knows; not where anyone really is). Null if they're not in any book.
+    /// </summary>
+    public int? WrittenInto(Entity guest)
+    {
+        if (blind || guest.IsNull)
+            return null;
+        var tonight = Hospitality.Lodging.Tonight(sim);
+        foreach (var e in sim.World.Each<Hospitality.InnLedger>())
+        {
+            var lines = sim.World.Get<Hospitality.InnLedger>(e).Lines;
+            for (var i = lines.Count - 1; i >= 0; i--)
+                if (lines[i].Guest == guest && lines[i].Night == tonight && !lines[i].Out)
+                    return lines[i].Room;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Whether this person's come back down owed a room, having walked in on someone with the wrong
+    /// key. They said so aloud, so it's known to whoever heard their order for another.
+    /// </summary>
+    public bool OwedARoom(Entity who) => !blind && sim.World.IsAlive(who) && sim.World.Has<Hospitality.OwedRoom>(who);
+
     /// <summary>The named drink a drink order the viewer knows of asked for, if it asked for one.</summary>
     public Defs.ThingDef? WantedDrink(int order) =>
         !blind && sim.Shops.Find(order) is { } e && (Omniscient || e.KnownBy.Contains(viewer)) && sim.Drinking.Wanted(order) is { } name

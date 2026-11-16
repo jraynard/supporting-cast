@@ -45,7 +45,18 @@ public sealed partial class VillageGame
             if (line is { } l)
             {
                 var when = l.Night == book.Tonight ? "tonight" : l.Night == book.Tonight - 1 ? "last night" : $"day {l.Night + 1}";
-                TextC(l.Out ? Theme.Dim : Theme.Text, l.Out ? $"{l.Name}, {when} (gone)" : $"{l.Name}, {when}");
+                if (l.Out)
+                    TextC(Theme.Dim, $"{l.Name}, {when} (gone)");
+                else
+                {
+                    // Click a name to have them pointed out: where's the guest in room 3?
+                    ImGui.PushStyleColor(ImGuiCol.Text, in Theme.Text);
+                    if (ImGui.Selectable($"{l.Name}, {when}##guest{r}", _bookPointer?.Who == l.Guest, ImGuiSelectableFlags.None, default))
+                        _bookPointer = (l.Guest, $"{l.Name}: room {r}", _time + BookPointerSeconds);
+                    ImGui.PopStyleColor(1);
+                    if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                        Tip("Point them out.");
+                }
             }
             else
                 ImGui.TextDisabled("nobody yet"u8);
