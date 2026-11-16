@@ -249,6 +249,30 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     }
 
     /// <summary>
+    /// Gear on show is a luxury: an adventurer keeps back what the work they came for costs, a
+    /// quest while the party's not yet sought one and a locked box's opening while they carry one,
+    /// so a smith's shelf doesn't leave a party unable to pay for the job or its reward.
+    /// </summary>
+    private int KeptFromGear(Simulation sim, Entity who)
+    {
+        if (!sim.World.TryGet<Adventurer>(who, out var a) || a.PartyDef.Traveller)
+            return 0;
+        var kept = 0;
+        if (!SeekingOrSentOnQuest(sim, a.Party))
+            kept += SignPrice(sim, ServiceKind.Quest);
+        if (!Tinkering.Lockwork.LockedBoxOf(sim, who).IsNull)
+            kept += SignPrice(sim, ServiceKind.Unlock);
+        return kept;
+    }
+
+    /// <summary>What the town's shop for a service asks for it, or 0 if it isn't offered.</summary>
+    private static int SignPrice(Simulation sim, ServiceKind kind)
+    {
+        var shop = BuildingFor(sim, sim.Defs.Service(kind).AtRole);
+        return !shop.IsNull && ShopPrices.Posted(sim, shop, kind) is { Offered: true } sign ? sign.Price : 0;
+    }
+
+    /// <summary>
     /// A traveller's come for a bed: until they have tonight's, they keep back what a room costs
     /// from anything else (a hurt that won't wait aside), so supper and a scrape seen to don't leave
     /// them sleeping under a hedge. Adventurers spend as they please.
@@ -548,7 +572,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var w = sim.World;
         var def = sim.Defs.Service(ServiceKind.Goods);
         var spend = w.Get<Adventurer>(who).Kind?.Spend ?? 1f;
-        var spare = Math.Max(0, Coin.Count(sim, who) - Promised(who));
+        var spare = Math.Max(0, Coin.Count(sim, who) - Promised(who) - KeptFromGear(sim, who));
         int? roll = null;
         (Entity Item, Entity Shop, int Price, int Worth, int Tier)? best = null, dear = null;
         foreach (var (item, shop, price) in Goods.OnShow(sim))

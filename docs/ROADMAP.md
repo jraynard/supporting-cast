@@ -202,9 +202,8 @@ items into "Now" when a playtest says they matter.
 - **Innkeeper:** the AI innkeeper doesn't mix (asked for a named drink, it pours an ale); mess on
   tables, and a rag; no brewing (casks refill only from the carter's kegs); keys for the guest
   rooms; villagers at supper sit but don't swap rumours.
-- **Cook:** bots and AI cooks never chop, roast, bake, make pies, salt, smoke or name a house dish
-  (an AI cook never offers the roast, bread or pies); bots don't joint, pluck, lid a flare or chase
-  rats. Rations are sold at the bar's line; the hatch would suit them better. The healer sending
+- **Cook:** AI cooks never chop, roast, bake, make pies, salt, smoke or name a house dish (an AI
+  cook never offers the roast, bread or pies); the cook bot does all but salting and smoking. Rations are sold at the bar's line; the hatch would suit them better. The healer sending
   the hurt to eat a broth; teas from shared herbs; pickling. To tune: the fold cue and the cord's
   band (`PackSession`), cravings and moods (`Tastes`), the fed and sick factors (`Rations`),
   seasoner weight and cap (`Cooking`), the house dish (`HouseDish`), tips (`ShopSystem.FineTip`),
@@ -225,16 +224,25 @@ items into "Now" when a playtest says they matter.
   the customer pointer for notice-board errands (`VillageGame.Errands`).
 
 **Bots** (solo playtests and the scenario tests)
-- Bots don't weave charms, pack rations, put goods on show, pin locks, make contraptions, haggle
-  over curios, use the notice board or throw water.
-- `SeasonScenarioTests` checks only that a round plays through, not how it comes out.
+- The cook bot never offers porridge, matches a craving or an ask for the house dish by name, or
+  salts, smokes or makes broths; a pot that smells off can't be emptied by anyone. Rations are
+  sold only where an AI innkeeper keeps the bar (the innkeeper bot doesn't sell goods). Rats are
+  chased at the think's pace, not every tick.
+- The bot labourer doesn't dig (no pick); the porter's errands (unload a party's wagon) aren't in.
+- Adventurers don't chat among themselves (`SocialSystem.CanTalk` leaves them out); drunks aren't
+  refused service or thrown out after a fight.
+- Sim: at the forge, the bot's step back from the heat (`Safety`) fights a piece in the tongs, and
+  the work key at a forge with a piece in it offers Craft before Refuel, so a forge gone out can't
+  be fed (by a player either). Charms are all labelled "charm", so a buyer can't tell two apart.
+  The work key at an oven with dough in hand puts the dough in rather than refuelling.
+- `SeasonScenarioTests` checks only that a round plays through, not how it comes out. The sweep
+  swings a lot from seed to seed (crises met decide most of it): tune tempers over 24+ seeds.
 
 **Crises and the town**
 - Raiders don't bash doors or gates; only the bridge breaks.
 - AI carrying the dead to the shrine, so an AI empath gets a chance without a player's help.
 - Time passes fast only while everyone sleeps, not when the town is otherwise quiet.
-- Errands fetch only what's lying about or in common stores. Wood left out on a cold day goes on
-  the fires first.
+- Wood left out on a cold day goes on the fires before an errand can fetch it.
 - **Brave villagers with buckets:** once the dragon's down, the bolder villagers (by trait or
   mood) fetch water and soak it (`DragonBrain.Douse`; `SoaksToDrive`), not just the fires it sets
   (`BucketJob`). The town without a party has a way to see it off (met 1/48 in the sweep).

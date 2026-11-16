@@ -239,14 +239,14 @@ public sealed partial class BotPlayer
     }
 
     /// <summary>A roast, a loaf or a pie it's carrying, to go up for a plain meal while the stew's not ready: Entity.Null if none.</summary>
-    private static Entity Stock(Simulation sim, Entity me) =>
+    private static Entity MadeAhead(Simulation sim, Entity me) =>
         AvatarSystem.Supply(sim, me, d => d.Cooked && d.Menu is { } m && m.MadeAt != "StewPot");
 
     /// <summary>A dish it has on it, into its hands and up on the hatch. False with none.</summary>
     private bool PutUpStock(Simulation sim, Entity me, PerceptionView view, Entity diner, Entity hatch, long now)
     {
         var w = sim.World;
-        var dish = Stock(sim, me);
+        var dish = MadeAhead(sim, me);
         if (dish.IsNull)
             return false;
         var held = w.Get<Carrying>(me).Item;

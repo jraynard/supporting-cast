@@ -60,7 +60,7 @@ public class PartyLoopScenarioTests(ITestOutputHelper output)
                 if (e.Status == OrderStatus.Done && players.Contains(e.Assignee) && served.Add(e.Kind.Kind))
                     log.Add($"{SimClock.TicksToDays(t) * 24:F1}h: {e.AssigneeName} did {e.Kind.Label} for {e.PosterName}");
             if (served.Count >= 4 && Wanted.All(served.Contains) && sim.Expeditions.Succeeded + sim.Expeditions.Failed > 0
-                && (sim.Expeditions.Succeeded == 0 || served.Contains(ServiceKind.Unlock)))
+                && (!BoxCameHome(sim) || served.Contains(ServiceKind.Unlock)))
                 break;
         }
 
@@ -76,7 +76,11 @@ public class PartyLoopScenarioTests(ITestOutputHelper output)
             Assert.True(served.Contains(kind), $"no bot served {kind}\n{summary}");
         Assert.True(sim.Expeditions.Succeeded + sim.Expeditions.Failed >= 1, $"no party came back from a quest\n{summary}");
         Assert.True(sim.Messages.Messages.Any(m => m.Text.Contains("return from") || m.Text.StartsWith("No one comes back")), summary);
-        if (sim.Expeditions.Succeeded > 0)
+        if (BoxCameHome(sim))
             Assert.True(served.Contains(ServiceKind.Unlock), $"a party came back with a strongbox, and no bot opened it\n{summary}");
     }
+
+    /// <summary>A party succeeded and brought its strongbox home (a wagon in no state to carry it leaves it behind).</summary>
+    private static bool BoxCameHome(Simulation sim) =>
+        sim.Expeditions.Succeeded > 0 && !sim.Speech.Kept.Any(u => u.Text.Contains("the wagon wouldn't carry it"));
 }
