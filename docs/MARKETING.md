@@ -34,8 +34,9 @@ See ROADMAP.md for what the page needs built. On the people side:
 
 - [x] Check the name: search Steam, itch and the trademark databases (USPTO, EUIPO) for
       "Heroes Not Included" and near matches. Clear as of November 2026.
-- [ ] Claim the name where it's free: a domain, and the handle on YouTube, TikTok, Bluesky, X
-      and Reddit. Decide on registering the trademark when the store page goes up.
+- [x] Domains: heroesnotincluded.com, and herosnotincluded.com for the misspelling.
+- [ ] Claim the handle on YouTube, TikTok, Bluesky, X and Reddit. Decide on registering the
+      trademark when the store page goes up.
 - [ ] Capsule art: it matters more than anything else on the page. Brand colours, the emblem, a
       busy common room at dusk, no heroes in front.
 - [ ] Screenshots and a 30 to 60 second trailer cut from real play.

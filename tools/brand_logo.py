@@ -10,7 +10,10 @@ Everything is vector. The wordmark is converted to outlines, so the SVGs need no
     pip install fonttools
     python tools/brand_logo.py --fonts path/to/fonts          # Cinzel[wght].ttf (SIL OFL)
 
-Writes art/brand/: the SVGs, emblem.png (via headless Edge/Chrome), palette.json and brand-guide.html. The palette is the single source of truth: it starts from
+    python tools/brand_logo.py --banners-only                 # just the social banners, from the logo as it is
+
+Writes art/brand/: the SVGs, emblem.png and the social banners (via headless Edge/Chrome, or rsvg-convert),
+palette.json and brand-guide.html. The palette is the single source of truth: it starts from
 Ui/Theme.cs (oak, iron, bone, ember) so the logo sits in the game's own chrome.
 """
 from __future__ import annotations
@@ -569,26 +572,64 @@ def export_icons(svg: Path) -> list[Path]:
     return [ico, OUT / "apple-touch-icon.png"]
 
 
-def export_png(svg: Path, png: Path, size: int) -> bool:
-    """Rasterise with headless Edge or Chrome, keeping the transparency. No extra Python packages."""
+# Social banners: (file, width, height, logo height). The horizontal logo, centred on Oak Deep.
+# YouTube shows only the middle 1546x423 of its banner on phones, so the logo stays inside that.
+BANNERS = (
+    ("banner-youtube.png", 2560, 1440, 400),
+    ("banner-1500x500.png", 1500, 500, 280),   # X and Bluesky headers
+)
+
+
+def banner_svg(logo: str, w: int, h: int, logo_h: int) -> str:
+    """The horizontal logo nested, centred, in a w x h field of Oak Deep."""
+    inner = logo[logo.index(">") + 1:logo.rindex("</svg>")]
+    lw = logo_h * 1280 / 520
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}">'
+            f'<rect width="{w}" height="{h}" fill="{P["oak_deep"]}"/>'
+            f'<svg x="{(w - lw) / 2:.1f}" y="{(h - logo_h) / 2:.1f}" width="{lw:.1f}" height="{logo_h}" viewBox="0 0 1280 520">'
+            f'{inner}</svg></svg>\n')
+
+
+def export_banners() -> list[Path]:
+    """The social banners, from the logo-horizontal.svg already written. Needs no fonts."""
+    import tempfile
+    logo = (OUT / "logo-horizontal.svg").read_text(encoding="utf-8")
+    done = []
+    with tempfile.TemporaryDirectory() as td:
+        for name, w, h, logo_h in BANNERS:
+            svg = Path(td) / (Path(name).stem + ".svg")
+            svg.write_text(banner_svg(logo, w, h, logo_h), encoding="utf-8")
+            if export_png(svg, OUT / name, w, h):
+                done.append(OUT / name)
+    return done
+
+
+def export_png(svg: Path, png: Path, size: int, height: int | None = None) -> bool:
+    """Rasterise with headless Edge or Chrome, keeping the transparency, or rsvg-convert where there's
+    no browser. No extra Python packages."""
     import shutil
     import subprocess
     import tempfile
+    w, h = size, height or size
     cands = [shutil.which(n) for n in ("msedge", "chrome", "google-chrome", "chromium")] + [
         r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
         r"C:\Program Files\Google\Chrome\Application\chrome.exe",
         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"]
     exe = next((c for c in cands if c and Path(c).exists()), None)
     if not exe:
-        print("no Edge or Chrome found: skipped", png.name)
+        rsvg = shutil.which("rsvg-convert")
+        if rsvg:
+            return subprocess.run([rsvg, "-w", str(w), "-h", str(h), "-o", str(png), str(svg)],
+                                  check=False, capture_output=True, timeout=60).returncode == 0
+        print("no Edge, Chrome or rsvg-convert found: skipped", png.name)
         return False
     with tempfile.TemporaryDirectory() as td:
         page = Path(td) / "p.html"
         page.write_text(f'<!doctype html><meta charset="utf-8"><style>html,body{{margin:0;background:transparent}}'
-                        f'img{{display:block;width:{size}px;height:{size}px}}</style><img src="{svg.resolve().as_uri()}">', encoding="utf-8")
+                        f'img{{display:block;width:{w}px;height:{h}px}}</style><img src="{svg.resolve().as_uri()}">', encoding="utf-8")
         png.unlink(missing_ok=True)
         subprocess.run([exe, "--headless", "--disable-gpu", "--hide-scrollbars", "--default-background-color=00000000",
-                        f"--screenshot={png}", f"--window-size={size},{size}", page.as_uri()],
+                        f"--screenshot={png}", f"--window-size={w},{h}", page.as_uri()],
                        check=False, capture_output=True, timeout=60)
         # the browser can hand back before the file is written: wait for it to appear and settle
         import time
@@ -604,9 +645,16 @@ def export_png(svg: Path, png: Path, size: int) -> bool:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--fonts", type=Path, required=True, help="folder holding Cinzel[wght].ttf")
-    ap.add_argument("--no-png", action="store_true", help="skip emblem.png (needs Edge or Chrome installed)")
+    ap.add_argument("--fonts", type=Path, help="folder holding Cinzel[wght].ttf")
+    ap.add_argument("--no-png", action="store_true", help="skip the PNGs (need Edge, Chrome or rsvg-convert)")
+    ap.add_argument("--banners-only", action="store_true", help="just the social banners, from the logo already written")
     a = ap.parse_args()
+    if a.banners_only:
+        for f in export_banners():
+            print("wrote", f)
+        return
+    if not a.fonts:
+        ap.error("--fonts is required (except with --banners-only)")
     font = load_font(next(a.fonts.glob("Cinzel*.ttf")), 800)
     OUT.mkdir(parents=True, exist_ok=True)
     files = {
@@ -627,6 +675,8 @@ def main() -> None:
         print("wrote", OUT / "emblem.png")
     if not a.no_png:
         for f in export_icons(OUT / "favicon.svg"):
+            print("wrote", f)
+        for f in export_banners():
             print("wrote", f)
     for fg, bg in (("bone", "oak_deep"), ("bone", "cellar"), ("ember", "oak_deep"), ("parchment", "oak_deep"),
                    ("cellar", "bone"), ("cellar", "ember"), ("bone", "hearth_red"), ("iron_light", "oak_deep")):
