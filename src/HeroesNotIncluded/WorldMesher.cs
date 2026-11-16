@@ -564,9 +564,6 @@ public sealed class WorldMesher(TextureAtlas atlas)
         if (grounded)
             return; // laid on the ground: no visible edges
 
-        // A floor cell beside this one that isn't under a wall: the room side.
-        bool Inside(int nx, int ny) => map.InBounds(nx, ny, z) && map.HasFloor[map.Idx(nx, ny, z)] && !IsWallAt(sim, nx, ny, z);
-
         Edge(x + 1, y, new float3(x + 1, y + 1, top), new float3(0, -1, 0), 0.78f);
         Edge(x - 1, y, new float3(x, y, top), new float3(0, 1, 0), 0.66f);
         Edge(x, y + 1, new float3(x, y + 1, top), new float3(1, 0, 0), 0.88f);
