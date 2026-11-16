@@ -126,7 +126,7 @@ public class RepairTests
         var dread = sim.Reckoning.Dread;
         sim.Clock.Tick = sim.Round.TickAt(sim, 2, Shops.InnSupplySystem.DeliveryHour) - 1;
         sim.TickMany(SimClock.TicksPerHour);
-        Assert.Contains(sim.Messages.Messages, m => m.Text.StartsWith("The carter couldn't get over the river"));
+        Assert.Contains(sim.Messages.Messages, m => m.Text.StartsWith("The carter couldn't get through, the stone bridge down"));
         Assert.True(sim.Reckoning.Dread > dread, "a cut road weighs on the valley");
     }
 

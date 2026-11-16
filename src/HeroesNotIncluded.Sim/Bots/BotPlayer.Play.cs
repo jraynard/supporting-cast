@@ -187,6 +187,17 @@ public sealed partial class BotPlayer
                     default:
                         return (false, false, mb.StepsDone % 4 < 2 ? mb.NextSide : 0); // a tap at the corner that's next
                 }
+            case PackSession pack:
+            {
+                // Each corner on its cue, from its side; then draw the cord to the middle of snug and let go.
+                if (!pack.Wrapped)
+                {
+                    var fold = pack.OnCue && !_struck;
+                    _struck = pack.OnCue;
+                    return (false, false, fold ? pack.NextSide : 0);
+                }
+                return (false, pack.Tension < (PackSession.SoundAt + PackSession.BitingAt) / 2f, 0);
+            }
             case TapSession tap:
             {
                 // A slip: one blow struck early, before the mallet's down, and the ale sprays.

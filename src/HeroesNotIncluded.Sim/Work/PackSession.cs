@@ -10,7 +10,9 @@ namespace HeroesNotIncluded.Sim.Work;
 /// from the wrong side, is a sloppy one. Then the cord: hold F to draw it tight and let go to tie
 /// it. It reads only as slack, snug or biting, and snug isn't all one thing: tied at the slack end
 /// of snug it looks fine and lets the air in (<see cref="Ration.LooseWrap"/>, never shown);
-/// pulled to biting it squashes what's inside.
+/// pulled to biting it squashes what's inside. The same at the cookhouse for a hamper for the inn
+/// (<see cref="ForHamper"/>, <see cref="Hospitality.Provisions"/>): the cloth folded over the dishes
+/// and the lid tied down, a slack tie as hidden as a bundle's.
 /// </summary>
 public sealed class PackSession : WorkSession
 {
@@ -29,6 +31,9 @@ public sealed class PackSession : WorkSession
     public const float SoundAt = 0.62f;
 
     public Entity Table { get; set; } = Entity.Null;
+
+    /// <summary>Packing a hamper of dishes for the inn, rather than a bundle of rations.</summary>
+    public bool ForHamper { get; set; }
 
     /// <summary>Corners folded so far.</summary>
     public int Folded { get; private set; }
@@ -64,10 +69,11 @@ public sealed class PackSession : WorkSession
 
     public override Skill Skill => Skill.Cooking;
     public override float Xp => 15f;
-    public override string Title => "Packing rations";
+    public override string Title => ForHamper ? "Packing a hamper" : "Packing rations";
 
     public override bool StillValid(Simulation sim) =>
-        Rations.IsPrepTable(sim, Table) && Rations.PortionsOn(sim, Worker) >= Rations.Portions
+        Rations.IsPrepTable(sim, Table)
+        && (ForHamper ? Hospitality.Provisions.DishesOn(sim, Worker).Count > 0 : Rations.PortionsOn(sim, Worker) >= Rations.Portions)
         && AvatarSystem.InReach(sim, sim.World.Get<Position>(Worker).Cell, Table);
 
     protected override void Axis(int value)
@@ -112,6 +118,15 @@ public sealed class PackSession : WorkSession
 
     public override void Finish(Simulation sim)
     {
+        if (ForHamper)
+        {
+            var hamper = Hospitality.Provisions.MakeHamper(sim, Worker, Loose);
+            if (!hamper.IsNull)
+                sim.Messages.Tell(Worker, MessageKind.Info,
+                    $"You tie the lid down on a hamper of {Hospitality.Provisions.Servings(sim, hamper)} servings. Put it up on the hatch for the inn.",
+                    sim.World.Get<Thing>(Table).Cell);
+            return;
+        }
         var item = Rations.Make(sim, Worker, Quality, Loose);
         if (item.IsNull)
             return;
@@ -125,6 +140,7 @@ public sealed class PackSession : WorkSession
     protected override void WriteState(SaveWriter w)
     {
         w.Entity(Table);
+        w.Bool(ForHamper);
         w.Int(Folded);
         foreach (var m in FoldMarks)
             w.Float(m);
@@ -137,6 +153,7 @@ public sealed class PackSession : WorkSession
     protected override void ReadState(SaveReader r)
     {
         Table = r.Entity();
+        ForHamper = r.Version >= 48 && r.Bool(); // hampers came with format 48
         Folded = Math.Clamp(r.Int(), 0, Folds);
         for (var i = 0; i < Folds; i++)
             FoldMarks[i] = Math.Clamp(r.Float(), 0f, 1f);

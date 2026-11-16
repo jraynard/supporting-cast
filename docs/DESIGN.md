@@ -536,6 +536,13 @@ villager mid-round is for late joiners only.
   inn has no kitchen there: the cook keeps the cookhouse and the innkeeper the inn. Everything out on
   the water is timber (it burns, though damp planks are slow to catch); buckets are let down from
   dipping posts; and a raid that brings the causeway down cuts the town off till the tinker mends it.
+  The cook **supplies the inn**: the innkeeper orders a hamper at the cookhouse hatch, from their own
+  purse, and carries it back to the warming shelf behind the bar. Lodgers have their board off it
+  at breakfast and supper, at no charge; parties setting out take rations off it; a bare shelf makes
+  a room worth less. So the two trades lean on each other, and there's something for a traitor to
+  spoil. With the causeway down the carter still reaches the cookhouse, but not the inn. A feast is
+  called at the inn and eaten at the cookhouse. A festival missed by a party stranded on the water
+  is the lake town's risk.
 
 ## Art direction
 

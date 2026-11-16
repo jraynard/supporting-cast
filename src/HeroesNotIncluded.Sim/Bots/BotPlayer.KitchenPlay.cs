@@ -28,18 +28,26 @@ public sealed partial class BotPlayer
             Send(new StopWorkCommand(me));
     }
 
-    /// <summary>A cut on each beat of the knife. A slip: one cut hurried off the beat, which may catch an arm.</summary>
+    /// <summary>
+    /// The fingers drawn back a slice (A), then the knife down (F), and again. A slip: one chop
+    /// hurried with the fingers still up against the blade.
+    /// </summary>
     private (bool, bool, int) Chop(ChopSession s)
     {
-        if (_slip && !_slipCounted && s.Cuts == s.Needed / 2 && s.Phase == ChopSession.Beat / 2)
+        if (_slip && !_slipCounted && s.Cuts == s.Needed / 2 && s.Unsafe)
         {
             Slipped();
             return (true, false, 0);
         }
-        var on = s.Off <= 1;
-        var press = on && !_struck;
-        _struck = on;
-        return (press, false, 0);
+        // Drawn back to a slice's width, near enough: chop (once; the slice falls away and the fingers go up again).
+        if (s.Bared >= 1f - s.Even * 0.5f)
+        {
+            var press = !_struck;
+            _struck = true;
+            return (press, false, 0);
+        }
+        _struck = false;
+        return (false, false, -1);
     }
 
     /// <summary>A push on each beat, from the side it's due. A slip: one push from the wrong side.</summary>

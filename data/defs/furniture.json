@@ -481,6 +481,25 @@
       ]
     },
     {
+      // Behind the bar of an inn without a kitchen (the LandingInn): the cookhouse's hampers are
+      // unpacked onto it, a pan of coals under the lowest shelf keeping the dishes warm. The lodgers'
+      // board comes off it, and rations for a party setting out (Hospitality/Provisions). Taken from by hand only.
+      "name": "WarmingShelf", "label": "warming shelf", "category": "Building", "solid": true, "sprite": "buildings/shelf",
+      "description": "Plank shelves behind the bar over a pan of coals. Holds 6 stacks: what the cookhouse sends over, for the lodgers' board and the road.",
+      "maxHp": 80, "flammability": 1.0,
+      "building": { "work": 80, "storageStacks": 6, "kept": true, "warming": true, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "model": [
+        { "min": [0.08, 0.6, 0], "max": [0.92, 0.7, 0.92], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.28, 0.42], "max": [0.92, 0.7, 0.5], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.28, 0.84], "max": [0.92, 0.7, 0.92], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.06, 0.28, 0], "max": [0.14, 0.7, 0.94], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.86, 0.28, 0], "max": [0.94, 0.7, 0.94], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.22, 0.34, 0], "max": [0.78, 0.62, 0.1], "top": "props/coal", "side": "props/iron_pot" },
+        { "min": [0.2, 0.36, 0.5], "max": [0.42, 0.58, 0.62], "top": "props/meal_top", "side": "props/basket" },
+        { "min": [0.56, 0.36, 0.5], "max": [0.78, 0.58, 0.62], "top": "props/meal_top", "side": "props/basket" }
+      ]
+    },
+    {
       // A serving hatch, set in the wall between kitchen and common room (Shops.Hatch): meals are
       // ordered at it, and the cook puts dishes up on its counter for whoever's at the front to take.
       // Heights in model units: 1.54 is the wall's top once furniture is scaled to 0.65.

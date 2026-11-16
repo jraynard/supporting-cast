@@ -23,6 +23,12 @@
       { "text": "{n} silver, and you can tell people who paid it.", "when": [ "boastful" ] },
       { "text": "Thank you. {n} silver, here.", "when": [ "easy" ] }
     ] },
+    // A lodger's board, off the warming shelf of an inn without a kitchen (Hospitality/Provisions): no silver, it's in with the room.
+    { "name": "adv_board", "lines": [
+      { "text": "That's my board. Much obliged." },
+      { "text": "In with the room. Good." },
+      { "text": "Still warm, near enough. Thank you.", "when": [ "easy" ] }
+    ] },
     { "name": "adv_paid_short", "lines": [
       { "text": "Here's {n} silver. It's all I've got." },
       { "text": "{n} silver. That's the lot, I swear." }

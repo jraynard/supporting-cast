@@ -436,6 +436,12 @@ public sealed class BuildingProps
     public bool Kept { get; set; }
 
     /// <summary>
+    /// The inn's warming shelf, where its keeper unpacks the cookhouse's hampers (<c>Hospitality.Provisions</c>):
+    /// the lodgers' board and the road's rations. Taken from by hand only, so nobody's job eats it.
+    /// </summary>
+    public bool Warming { get; set; }
+
+    /// <summary>
     /// Buckets are filled here (<c>Environment.Buckets</c>): the well in the square, or a dipping post
     /// at a deck's edge where a lake town lowers its buckets into the water. Fire is fought from these.
     /// </summary>

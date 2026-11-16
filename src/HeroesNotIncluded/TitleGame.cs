@@ -648,7 +648,8 @@ public sealed class TitleGame : Game
     /// </summary>
     private void MenuButton(MenuItem item)
     {
-        var enabled = item.Start != null || item.Action != MenuAction.Start;
+        // A choice that leads on (a town, a trade) has a Then and no Start of its own; it's live too.
+        var enabled = item.Start != null || item.Then != null || item.Action != MenuAction.Start;
         var size = new float2(Gui.S(360), Gui.S(46));
         var min = ImGui.GetCursorScreenPos();
         if (!enabled)

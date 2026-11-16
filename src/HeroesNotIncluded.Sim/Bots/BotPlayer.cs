@@ -154,7 +154,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
         if (!festival)
             GoToWork(sim, me);
         Price(sim, me, view, now);
-        if (Mend(sim, me, view))
+        if (Mend(sim, me, view) || CarryHamper(sim, me, now))
             return;
         if (_task != 0 && (now - _taskSince > TaskTimeoutTicks * (1.25f - 0.75f * Temper.Haste) || !Work(sim, me, view, now)))
             _task = 0;
@@ -172,6 +172,8 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
         if (_task == 0 && Smith(sim, me, view, now))
             return;
         // Each trade's work between orders, in its own file.
+        if (_task == 0 && SendForHamper(sim, me, now))
+            return;
         if (_task == 0 && (Kitchen(sim, me, view, now) || Bench(sim, me, view, now) || Shrine(sim, me, view, now) || Labour(sim, me, view, now)))
             return;
         // The hasty let the chores go half the time (an hour on, an hour off).
@@ -189,7 +191,8 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
     private static ServiceKind[] KindsFor(Simulation sim, TradeDef trade) =>
         [.. sim.Defs.AllServices
             .Where(s => (trade.HasWorkplace && s.AtRole == trade.Role && trade.Serving(s.Kind)) || (s.Kind == ServiceKind.Quest && trade.Brokers)
-                || (s.Kind == ServiceKind.Goods && trade.HasWorkplace)) // gear on show: the seller hands it over
+                || (s.Kind == ServiceKind.Goods && trade.HasWorkplace) // gear on show: the seller hands it over
+                || (s.Kind == ServiceKind.Meal && trade.Role == TownRole.Tavern && Hospitality.Provisions.Split(sim))) // a lodger's board, where the inn has no kitchen
             .Select(s => s.Kind)
             .Distinct()];
 
@@ -206,6 +209,11 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
                 continue;
             if (e.Kind == ServiceKind.Goods && GoodsFor(sim, me, e).IsNull)
                 continue; // someone else's piece
+            // The innkeeper serves only a lodger's board (said at their own bar); the cook, a hamper not yet up.
+            if (e.Kind == ServiceKind.Meal && trade.Def.Role == TownRole.Tavern && !(sim.Shops.Find(e.Id) is { } meal && Hospitality.Provisions.IsBoard(sim, meal)))
+                continue;
+            if (e.Kind == ServiceKind.Provisions && (Hospitality.Provisions.HamperUp(sim) || !HamperInReach(sim, me, view)))
+                continue;
             if (e.Kind != ServiceKind.Quest && !e.MineToDo)
                 Send(new TakeOrderCommand(me, e.Id));
             _task = e.Id;
@@ -229,7 +237,9 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
             ServiceKind.Repair => Repair(sim, me, view, poster, now),
             ServiceKind.Drink => Pour(sim, me, view, poster, now),
             ServiceKind.MixedDrink => view.WantedDrink(_task) is { Mix: not null } named ? MixFor(sim, me, view, poster, named, now) : Pour(sim, me, view, poster, now),
+            ServiceKind.Meal when sim.Shops.Find(_task) is { } board && Hospitality.Provisions.IsBoard(sim, board) => Board(sim, me, view, poster, now),
             ServiceKind.Meal => Serve(sim, me, view, poster, now),
+            ServiceKind.Provisions => PackHamper(sim, me, view, now),
             ServiceKind.Lodging => ShowUp(sim, me, view, poster, now),
             ServiceKind.Healing => Heal(sim, me, view, poster, now),
             ServiceKind.Quest => Broker(sim, me, view, poster, now),

@@ -121,7 +121,10 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 s
     derived from open orders, never stored. Coin is real `SilverCoin` items; paying moves them. AI
     trades serve front first (`MendJob`, `ServeJob`, `HealOrders`). An AI work pack keeps coin and
     `Entrusted` items (and a few clean vessels) between jobs. The inn's meals go through its serving
-    `Hatch` (their own line; dishes put up, taken by whoever's at the front; players order with F there, `ShopSystem.PlayerOrder`). Gear marked `ForSale` and lying in its seller's shop is on show
+    `Hatch` (their own line; dishes put up, taken by whoever's at the front; players order with F there, `ShopSystem.PlayerOrder`).
+    Where the inn and the kitchen stand apart (Reedmere; `Hospitality/Provisions.Split`, never on Millbrook) the innkeeper orders a
+    hamper at the cookhouse hatch (`ServiceKind.Provisions`), it's packed at the prep table (`PackSession.ForHamper`) and unpacked
+    onto the inn's warming shelf: lodgers' board (a meal ordered at the inn, `Provisions.IsBoard`) and rations for the road. Gear marked `ForSale` and lying in its seller's shop is on show
     (`Goods`); no job takes an item for sale (`IsAvailable`). Villagers buy supper there of an
     evening. `Favours/`: pinned to the notice board in the square and known by reading it, for
     silver; errands (bring so many of a thing) are done by bringing, and the labourer takes them.

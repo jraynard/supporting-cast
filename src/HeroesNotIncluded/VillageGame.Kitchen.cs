@@ -555,6 +555,14 @@ public sealed partial class VillageGame
         PrepButton(table, PrepStep.Pie, things.Thing("RawPie"), "Make a pie", pie, $"A ball of dough and {Pies.Filling} portions of raw food, the rim crimped round. Then the oven.");
         ImGui.SameLine(0, Gui.S(TileGap));
         PrepButton(table, PrepStep.Salt, things.Thing("SaltMeat"), "Salt it", Larder.CanSalt(_sim, _avatar), $"Raw meat or fish rubbed with salt, a scoop to {Larder.PerScoop}: keeps for weeks, and seasons a pot by itself.");
+        // A cookhouse apart from the inn: the inn's hamper, once the innkeeper's ordered one.
+        if (HeroesNotIncluded.Sim.Hospitality.Provisions.Cooks(_sim, _avatar))
+        {
+            ImGui.SameLine(0, Gui.S(TileGap));
+            PrepButton(table, PrepStep.Hamper, things.Thing(HeroesNotIncluded.Sim.Hospitality.Provisions.HamperDef), "Pack a hamper for the inn",
+                Rations.HamperWanted(_sim, _avatar) && HeroesNotIncluded.Sim.Hospitality.Provisions.DishesOn(_sim, _avatar).Count > 0,
+                $"Up to {HeroesNotIncluded.Sim.Hospitality.Provisions.Holds} servings of the dishes on you, once the innkeeper's ordered one. Put it up on the hatch for them.");
+        }
         if (chop.IsNull && !flour && portions < Rations.Portions && !pie)
             TextC(Theme.Dim, "Bring raw food, flour or a few portions of food from the larder.");
         Panel.End();

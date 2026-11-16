@@ -35,13 +35,16 @@ public sealed class ShopPrices
         return p;
     }
 
-    /// <summary>The services a building serves (those whose <see cref="ServiceDef.AtRole"/> it has), in def order.</summary>
+    /// <summary>
+    /// The services a building serves (those whose <see cref="ServiceDef.AtRole"/> it has), in def
+    /// order. The inn's hampers only at a cookhouse apart from the inn (<see cref="Hospitality.Provisions"/>).
+    /// </summary>
     public static IEnumerable<ServiceDef> ServicesAt(Simulation sim, Entity building)
     {
         if (!sim.World.IsAlive(building) || !sim.World.TryGet<PresetBuilding>(building, out var b))
             yield break;
         foreach (var d in sim.Defs.AllServices)
-            if (b.Def.Has(d.AtRole))
+            if (b.Def.Has(d.AtRole) && (d.Kind != ServiceKind.Provisions || building == Hospitality.Provisions.Cookhouse(sim)))
                 yield return d;
     }
 

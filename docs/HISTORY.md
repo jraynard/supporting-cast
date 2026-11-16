@@ -2106,3 +2106,43 @@ the trouble that makes rounds funny.
   and trestle table, barrels and flower tubs, all decorative.
 - Bench baselines (the town's new props): 1234 state `E33D1E2E4B14E165`, full `C2D19A435FD2BAA2`;
   99 state `3E0C3971ABFE93F7`, full `FB7CFA1FEDC07CB6`.
+
+### The cook supplies the inn (2026-11-15)
+Where the inn and the kitchen stand apart (Reedmere), the cookhouse supplies the inn
+(`Hospitality/Provisions`). On Millbrook, whose inn has its own kitchen, none of it applies
+(`Provisions.Split`).
+- **Provisions**: a new service, a hamper for the inn, on the cookhouse's sign only (12 silver,
+  six servings). Only the inn's keeper orders one: F at the cookhouse hatch, from their own purse.
+  It lines up at the hatch like a meal.
+- **The hamper**: a container item carried in both arms. The cook packs it at the prep table from
+  the dishes on them (bowls, bread, pies, a roast, rations), with the rations game
+  (`PackSession.ForHamper`). A lid tied slack is hidden, and its dishes come out further gone.
+  It's put up on the hatch and taken by the keeper at the front of the line, which completes and
+  pays the order.
+- **The warming shelf** behind the inn's bar: F with the hamper unpacks it. Nobody's job takes
+  from it. **Lodgers' board**: at breakfast or supper a lodger asks at the inn's own bar for a dish
+  off the shelf, at no charge, served across the bar by the keeper (`BarService`, `ServeJob`).
+  **The road**: a party member setting out without rations takes a bundle off it. **A bare shelf**
+  makes a room worth 0.7 of itself to an adventurer.
+- **The AI**: the innkeeper sends for a hamper when the shelf's under two servings, waits in the
+  hatch's line, carries it back and unpacks it (`OrderProvisionsJob`, `UnpackHamperJob`). The cook
+  ladles bowls (else takes something cooked), packs without the game and puts it up
+  (`PackHamperJob`). The bot does the same as either trade, by commands, and now plays the packing
+  game. `SeasonScenarioTests` plays Reedmere too and wants at least one hamper delivered.
+- **The carter**, with a span down: on Millbrook, nothing as before. Where the kitchen stands
+  apart, the carter calls at it if a cart can still reach it from the map's edge, and at the inn
+  only if it's still joined to the kitchen. The message says what's down.
+- **Feasts** are called coming into the inn too (where parties loiter on a split map), and the party
+  goes over to the cookhouse to eat.
+- **The festival**: a party stranded out on the water missing it is accepted as the lake town's
+  risk. Falling in, Reedmere's art and its balance are on the roadmap.
+- **New round**: the town choice (Millbrook, Reedmere) was greyed out on the title screen. Items
+  that lead on to a further choice now count as live.
+- Save format 48 (a hamper's packing). Bench hashes unchanged.
+- **Merged with the bots' work**: the hamper bot moved into its own partial (`BotPlayer.Hampers`); the
+  bot cook takes a hamper order only when it can get on with it (dishes on it, or a cooked pot it
+  knows of), so the kitchen's own work isn't starved. The bot chops by the fingers now (draw back a
+  slice, then the knife), as the game does since "chopping by the fingers". `CookPassTests` picks a
+  diner and calls off their other orders, now every adventurer orders on arrival. A lodger thanks
+  for their board in their own words (`adv_board`). Bench: 1234 and 99 unchanged; `--round` 1234
+  state `F47242A57089C29B`.
