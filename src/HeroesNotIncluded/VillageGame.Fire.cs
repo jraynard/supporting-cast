@@ -79,7 +79,7 @@ public sealed partial class VillageGame
 
     private void DrawThrow(ThrowSession s)
     {
-        BeginWork(s.Title, ("F", "hold to swing back, let go to throw"), ("A/D", "turn"), ("Esc", "lower it"));
+        BeginWork(s.Title, false, ("F", "hold to swing back, let go to throw"), ("A/D", "turn"), ("Esc", "lower it"));
         TextC(Theme.Dim, "Point with the mouse, or turn with A and D. The further back it swings, the further it goes: let go as the mark lines up.");
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(360, 26);

@@ -477,7 +477,7 @@ public class InnKitchenTests
         using var stream = new MemoryStream();
         using (var w = new SaveWriter(stream, sim.Defs))
         {
-            WorkSession.Write(w, s);
+            WorkSession.Write(w, s, 7);
             w.Int(1);       // format 7's last A/D
             w.Int(0x5EA50); // what follows in the save
         }

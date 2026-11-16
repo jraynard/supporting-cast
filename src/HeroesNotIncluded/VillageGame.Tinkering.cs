@@ -77,7 +77,7 @@ public sealed partial class VillageGame
             DrawWinding(s);
             return;
         }
-        BeginWork(s.Title, ("A/D", "keep it square over the seat"), ("F", "hold to press it in"), ("Esc", "stop"));
+        BeginWork(s.Title, ("A/D|Move", "keep it square over the seat"), ("F", "hold to press it in"), ("Esc", "stop"));
         var name = PartName(s, s.Part);
         TextC(Theme.Text, s.Settling > 0 ? $"{Cap(name)}: seated." : $"Fitting the {name}.");
         var dl = ImGui.GetWindowDrawList();
@@ -86,6 +86,7 @@ public sealed partial class VillageGame
         ImGui.Dummy(in size);
         var mid = min.X + size.X * 0.5f;
         var travel = Gui.S(110);                   // how far a part off true by 1 sits from the middle
+        TakesPointer(new float2(mid - travel, min.Y), new float2(mid + travel, min.Y + size.Y)); // across: off true by -1 to 1
         var partW = Gui.S(46);
         var partH = Gui.S(78);
         var lip = min.Y + Gui.S(78);               // the top of the seat
@@ -317,8 +318,8 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawTrue(TrueSession s)
     {
-        BeginWork(s.Title, ("A/D", "turn the wheel to a spoke"), ("W", "tighten it: pulls the rim in"), ("S", "slacken it: lets it out"),
-            ("F", "spin it past the gauge"), ("Esc", "stop"));
+        BeginWork(s.Title, ("A/D|Click a spoke", "turn the wheel to a spoke"), ("W|Wheel up", "tighten it: pulls the rim in"), ("S|Wheel down", "slacken it: lets it out"),
+            ("F|Click off it", "spin it past the gauge"), ("Esc", "stop"));
         TextC(Theme.Dim, s.Spinning ? "The gauge chalks the rim at each spoke as it goes by."
             : s.Turns == 0 ? "Spin it first: the gauge chalks where the rim runs out or in."
             : "Tighten the spokes chalked out, slacken those chalked in, then spin again. It's true when a spin runs within the band.");
@@ -368,7 +369,7 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawSpan(SpanSession s)
     {
-        BeginWork(s.Title, ("A/D", "carry the level to a stone"), ("F", "drive a wedge in: lift it"), ("Space", "ease one out: let it down"), ("Esc", "stop"));
+        BeginWork(s.Title, ("A/D|Click a stone", "carry the level to a stone"), ("F|Click it again", "drive a wedge in: lift it"), ("Space", "ease one out: let it down"), ("Esc", "stop"));
         TextC(Theme.Dim, "Lift the stones that sag, ease down the ones riding high. Get the whole span level.");
         var dl = ImGui.GetWindowDrawList();
         var min = ImGui.GetCursorScreenPos();
@@ -378,6 +379,7 @@ public sealed partial class VillageGame
         dl.AddRectFilled(in min, in max, new ImColor8(40, 66, 80, 255), Gui.S(3), ImDrawFlags.None); // the river under it
         var w = size.X / SpanSession.Stones;
         float StoneX(float at) => min.X + w * 0.5f + at * (size.X - w);
+        TakesPointer(min, max, wheel: true); // across: the stones side by side, each a sixth; the wheel wedges
         var mid = (min.Y + max.Y) * 0.5f;
         var scale = size.Y * 0.5f / 0.4f;
         // The band where level lies.
@@ -418,7 +420,7 @@ public sealed partial class VillageGame
     /// <summary>The piece under the glass, the loupe on it, what catches the eye, and the reading.</summary>
     private void DrawLoupe(LoupeSession s)
     {
-        BeginWork(s.Title, ("A/D", "move the loupe along it"), ("F", "hold still to study"), ("Esc", "stop"));
+        BeginWork(s.Title, ("A/D|Point", "move the loupe along it"), ("F", "hold still to study"), ("Space", "on to the end: done"), ("Esc", "stop"));
         TextC(Theme.Dim, "Where the eye catches, stop and study it. The far end finishes.");
         LoupeScene(s.At, s.Catch, s.Held);
         Bar("Eye", s.Catch, s.Catch > 0.6f ? Theme.Warn : Theme.Dim);
@@ -437,11 +439,12 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawPick(PickSession s)
     {
-        BeginWork(s.Title, ("W/S", "ease the tension on / off"), ("A/D", "lift the pin"), ("F", "set it"), ("Esc", "stop"));
+        BeginWork(s.Title, ("W/S|Wheel", "ease the tension on / off"), ("A/D|Point up", "lift the pin"), ("F", "set it"), ("Esc", "stop"));
         var dl = ImGui.GetWindowDrawList();
         var min = ImGui.GetCursorScreenPos();
         var size = Gui.S(440, 190);
         ImGui.Dummy(in size);
+        TakesPointer(min, min + size, wheel: true); // up: the pin lifted (geared down: the whole height lifts it all the way)
         var steps = s.StepsDone;
         bool Recent(int at, int within) => at >= 0 && steps - at < within;
         var clicked = Recent(s.ClickedAt, 30);

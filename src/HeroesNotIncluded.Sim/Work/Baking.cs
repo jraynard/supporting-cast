@@ -270,6 +270,15 @@ public sealed class KneadSession : WorkSession
             Done = true;
     }
 
+    /// <summary>A click on the picture's left or right half works as A or D (off it, as F).</summary>
+    protected override void Clicked(float? u, float? v)
+    {
+        if (u is { } x)
+            Axis(x < 0.5f ? -1 : 1);
+        else
+            Press();
+    }
+
     protected override void Step() { }
 
     public override void Finish(Simulation sim)

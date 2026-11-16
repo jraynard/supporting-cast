@@ -105,6 +105,9 @@ public sealed class HandsOnSession : WorkSession
     public int LastDrawnAt { get; private set; } = -1000;
 
     private int _move, _jump, _flinchesFelt;
+
+    // How the hands went last step, keys or mouse (Going): a still press reads.
+    private int _going;
     private bool _mustRelease;
     private int _linkKey = -1;
 
@@ -119,7 +122,7 @@ public sealed class HandsOnSession : WorkSession
     public bool Drawable(Spot s) => Read(s) && s.Drawn < 1f;
 
     /// <summary>Pressing still on a wound not yet read.</summary>
-    public bool Reading => Held && !Linked && !_mustRelease && _move == 0 && Under >= 0 && !Read(Spots[Under]);
+    public bool Reading => Held && !Linked && !_mustRelease && _going == 0 && Under >= 0 && !Read(Spots[Under]);
 
     /// <summary>Where a part lies along the body, head to feet: its place in the body's list.</summary>
     public static float PartAt(int part, int parts) => (part + 0.5f) / Math.Max(1, parts);
@@ -225,6 +228,23 @@ public sealed class HandsOnSession : WorkSession
             _jump = value;
     }
 
+    /// <summary>
+    /// How the hands go this step: A/D, else toward where the mouse points along the body at the
+    /// hands' own pace (so a press as they slide over a hurt is still rough). While the link's open
+    /// the hands stay put and the mouse leans composure: pointing left of them steers it left.
+    /// </summary>
+    private int Going(bool linked)
+    {
+        if (_move != 0 || PointU is not { } u)
+            return _move;
+        if (linked)
+            return MathF.Abs(u - Hands01) < LeanDeadZone ? 0 : Math.Sign(u - Hands01);
+        return Toward(Hands01, u, HandsPerStep * (Held ? 0.5f : 1f));
+    }
+
+    /// <summary>How far from the hands the mouse must point, along the body, to lean composure while drawing.</summary>
+    public const float LeanDeadZone = 0.03f;
+
     protected override void Step()
     {
         if (!Held)
@@ -234,12 +254,14 @@ public sealed class HandsOnSession : WorkSession
 
         // The link opens on a wound read, pressed on; it rests the moment the press does.
         Linked = Held && !_mustRelease && under != null && Drawable(under);
+        var move = Going(Linked);
+        _going = move;
         if (Linked && under!.Key != _linkKey)
         {
             Link.Take(under.Pattern, under.Rate, under.Strength, under.Gravity, Rand);
             _linkKey = under.Key;
         }
-        var calm = Link.Step(Rand, Linked, _move, under?.Drawn ?? 0f, Hands.Tremor, StepsDone);
+        var calm = Link.Step(Rand, Linked, move, under?.Drawn ?? 0f, Hands.Tremor, StepsDone);
         if (Link.Snapped)
         {
             Done = true;
@@ -273,7 +295,7 @@ public sealed class HandsOnSession : WorkSession
             if (next != null)
                 Hands01 = next.At;
         }
-        Hands01 = Math.Clamp(Hands01 + _move * HandsPerStep * (Held ? 0.5f : 1f), 0f, 1f);
+        Hands01 = Math.Clamp(Hands01 + move * HandsPerStep * (Held ? 0.5f : 1f), 0f, 1f);
 
         var feel = 0f;
         var rough = false;
@@ -287,7 +309,7 @@ public sealed class HandsOnSession : WorkSession
             if (d >= FindRange * Hands.Tolerance)
                 continue;
             s.Sensed = Math.Min(1f, s.Sensed + 1f / SenseSteps);
-            if (Held && _move != 0)
+            if (Held && move != 0)
             {
                 // Pressing while the hands slide over it: rough on the hurt, the graver the more.
                 Rough += (0.4f + s.Gravity) / RoughSteps;
@@ -298,13 +320,13 @@ public sealed class HandsOnSession : WorkSession
             Rough = Math.Max(0f, Rough - 1f / 60);
         if (Rough >= 1f)
         {
-            Flinch();
+            Flinch(move);
             return;
         }
 
         Pulse = 0f;
         Under = UnderHands();
-        if (Held && _move == 0 && !_mustRelease && Under >= 0)
+        if (Held && move == 0 && !_mustRelease && Under >= 0)
         {
             // A still press reads it: what it is comes through the hand, then (dressed) what's under the dressing.
             var s = Spots[Under];
@@ -324,12 +346,12 @@ public sealed class HandsOnSession : WorkSession
     }
 
     /// <summary>The patient flinches from a rough hand: the hands are thrown back, the link jarred, a half-read wound lost.</summary>
-    private void Flinch()
+    private void Flinch(int move)
     {
         Flinches++;
         LastFlinch = StepsDone;
         Rough = 0f;
-        Hands01 = Math.Clamp(Hands01 - _move * FlinchThrow, 0f, 1f);
+        Hands01 = Math.Clamp(Hands01 - move * FlinchThrow, 0f, 1f);
         Link.Jar(FlinchStrain, (Rand.NextFloat() < 0.5f ? -1 : 1) * 0.02f);
         foreach (var s in Spots)
             if (MathF.Abs(s.At - Hands01) < FeelRange)

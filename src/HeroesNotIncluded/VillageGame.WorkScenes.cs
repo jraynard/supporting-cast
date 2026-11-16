@@ -31,6 +31,9 @@ public sealed partial class VillageGame
     private readonly Dictionary<string, SceneState> _scenes = [];
 
     /// <summary>A scene's box under the hints, inset and lit like the anvil's; its pixel scale with it.</summary>
+    // The last scene drawn, on screen: a game whose halves are clicked takes the mouse over it.
+    private (float2 Min, float2 Max) _lastScene;
+
     private (ImDrawListPtr Dl, float2 Min, float2 Max, float Px) WorkScene(float height, float4? light = null)
     {
         var dl = ImGui.GetWindowDrawList();
@@ -38,6 +41,7 @@ public sealed partial class VillageGame
         var min = ImGui.GetCursorScreenPos();
         ImGui.Dummy(in size);
         var max = min + size;
+        _lastScene = (min, max);
         Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
         if (light is { } l)
         {
@@ -316,6 +320,7 @@ public sealed partial class VillageGame
         if (Prop(dl, "strongbox", new float2((min.X + max.X) * 0.5f, floor), px) is not { } box)
             return;
         var seamY = box.Min.Y + 10 * px;
+        TakesPointer(new float2(box.Min.X + 6 * px, min.Y), new float2(box.Max.X - 6 * px, max.Y)); // across: hasp to hinge
         var x = box.Min.X + 6 * px + probe * (box.Max.X - box.Min.X - 12 * px);
         var shake = feel * 1.5f * px * MathF.Sin(_time * 50f);
         var depth = pressure * 3f * px;
@@ -328,6 +333,7 @@ public sealed partial class VillageGame
         var (dl, min, max, px) = WorkScene(120);
         if (Prop(dl, "curio", new float2((min.X + max.X) * 0.5f, max.Y - Gui.S(40)), px) is not { } piece)
             return;
+        TakesPointer(new float2(piece.Min.X + 4 * px, min.Y), new float2(piece.Max.X - 4 * px, max.Y)); // across: end to end of the piece
         var x = piece.Min.X + 4 * px + at * (piece.Max.X - piece.Min.X - 8 * px);
         var lens = new float2(x, piece.Min.Y + 9 * px);
         var still = held ? 0f : MathF.Sin(_time * 3f) * px;
@@ -353,6 +359,7 @@ public sealed partial class VillageGame
         var (dl, min, max, px) = WorkScene(130);
         var centre = new float2((min.X + max.X) * 0.5f, min.Y + Gui.S(62));
         var r = Gui.S(52);
+        TakesPointer(centre - new float2(r, r) * TrueSession.PickedOut, centre + new float2(r, r) * TrueSession.PickedOut, wheel: true); // the wheel's square
         var oak = Theme.U8(Theme.OakLight);
         var dark = Theme.U8(Theme.Oak);
         var gauge = spinning ? reading : 0f;
@@ -445,6 +452,7 @@ public sealed partial class VillageGame
         if (Prop(dl, "patient", new float2((min.X + max.X) * 0.5f + jerk, max.Y - Gui.S(6)), px) is not { } body)
             return;
         float AlongBody(float f) => body.Min.X + 4 * px + f * (body.Max.X - body.Min.X - 8 * px);
+        TakesPointer(new float2(AlongBody(0f), min.Y), new float2(AlongBody(1f), max.Y)); // across: head to feet
         var bodyY = body.Min.Y + 12 * px;
         for (var i = 0; i < v.Parts.Count; i++)
         {

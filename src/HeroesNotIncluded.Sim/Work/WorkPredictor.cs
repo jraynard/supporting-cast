@@ -47,10 +47,11 @@ public sealed class WorkPredictor
     /// <paramref name="rune"/> is a numbered key pressed this frame (0 for 1), or -1; <paramref name="act"/>
     /// the game's other action pressed this frame (<see cref="WorkInputKind.Act"/>); <paramref name="point"/>
     /// the mouse's place on the panel (<see cref="WorkSession.PackPoint"/>), or -1 when it's not over it:
-    /// sent only when it's moved.
+    /// sent only when it's moved; <paramref name="click"/> a left click on it this frame
+    /// (<see cref="WorkInputKind.Click"/>), or -1.
     /// </summary>
     public void Update(Simulation sim, Entity worker, int steps, bool press, bool held, int axis, Action<ISimCommand> send, int axis2 = 0, int rune = -1, bool act = false,
-        int point = -1)
+        int point = -1, int click = -1)
     {
         if (!sim.World.IsAlive(worker) || !sim.World.TryGet<WorkSession>(worker, out var real))
         {
@@ -84,6 +85,8 @@ public sealed class WorkPredictor
                 _pending.Add(new WorkInput(at, WorkInputKind.Point, point));
             if (point >= 0)
                 _point = point;
+            if (click >= 0)
+                _pending.Add(new WorkInput(at, WorkInputKind.Click, click)); // after the point: the session knows where it is first
             (_held, _axis, _axis2) = (held, axis, axis2);
             if (_pending.Count > 0 && steps == 0)
                 steps = 1; // an input needs a step to land on

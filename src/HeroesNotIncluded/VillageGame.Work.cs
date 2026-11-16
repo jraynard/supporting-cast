@@ -67,47 +67,138 @@ public sealed partial class VillageGame
         var act = live && map.Pressed(Act.WorkAct);
         if (_work.Session is Sim.Environment.ThrowSession throwing)
             axis = AimThrow(throwing, axis);
-        // The cleaning games take the mouse too: where it points over the piece or the floor, and the left button as F held.
-        var (point, mouseHeld) = live ? PointerOnWork() : (-1, false);
-        _work.Update(_sim, _avatar, steps, f && map.Pressed(Act.Use), f && live && (map.Down(Act.Use) || mouseHeld), axis, Issue, axis2, rune, act, point);
+        // The mouse over the work's window: the left button is F, the right Space, and where it points
+        // over the picture (or a place marked to click) steers the games that take it.
+        var mouse = live && session >= 0 ? MouseOnWork(session) : WorkMouse.None;
+        _work.Update(_sim, _avatar, steps, (f && map.Pressed(Act.Use)) || mouse.Press, f && live && (map.Down(Act.Use) || mouse.Held),
+            axis != 0 ? axis : mouse.Axis, Issue, axis2 != 0 ? axis2 : mouse.Axis2, rune >= 0 ? rune : mouse.Rune, act || mouse.Act, mouse.Point, mouse.Click);
     }
 
-    // Where the mini-game being drawn takes the mouse, on screen (DrawWash, DrawScrub set it each frame they draw).
-    private (float2 Min, float2 Max)? _pointArea;
-    private long _pointAreaFor = -1;
-
-    // Seconds since the mouse last moved over a mini-game that takes it: the hints say "drag" while it's in use.
-    private float _pointerUsedAt = -100f;
-    private float2 _pointerLast;
-
-    private bool UsingPointer => _time - _pointerUsedAt < 4f;
-
-    /// <summary>A mini-game panel takes the mouse over this square of the screen, this frame.</summary>
-    private void TakesPointer(float2 min, float2 max)
+    /// <summary>What the mouse did to the work in hand this frame, as the keys would have.</summary>
+    private readonly record struct WorkMouse(int Point, int Click, bool Press, bool Held, bool Act, int Rune, int Axis, int Axis2)
     {
-        _pointArea = (min, max);
-        _pointAreaFor = _sim.World.TryGet<WorkSession>(_avatar, out var s) ? s.StartTick : -1;
+        public static WorkMouse None => new(-1, -1, false, false, false, -1, 0, 0);
     }
+
+    /// <summary>A place on a mini-game's picture that a click works as a key would (a rune, one side, the other action).</summary>
+    private readonly record struct WorkSpot(float2 Min, float2 Max, WorkInputKind Kind, int Value);
+
+    // What the last frame's draw of the work marked for the mouse (BeginWork, TakesPointer, ClickSpot), and for which session.
+    private (float2 Min, float2 Max)? _workWindow, _pointArea;
+    private long _workDrawnFor = -1;
+    private bool _workWheel;
+    private readonly List<WorkSpot> _workSpots = [];
+
+    // A left press begun on the work, still down: it holds as F does, and drags the point along even off the picture.
+    private bool _grip;
+
+    // Where the mouse was when the session began: it points nothing till it's moved, so one resting over
+    // the panel doesn't yank the tool to it.
+    private long _mouseSeenFor = -1;
+    private float2 _mouseAtStart;
+    private bool _mouseMoved;
+
+    // When the mouse last worked a mini-game: the hints name the mouse while it's in use.
+    private float _pointerUsedAt = -100f;
+
+    private bool UsingPointer => _time - _pointerUsedAt < 4f && !Controls.UsingPad;
 
     /// <summary>
-    /// The mouse over the mini-game's area, packed (<see cref="WorkSession.PackPoint"/>), and the left
-    /// button down there; (-1, false) when it's elsewhere or the game doesn't take it.
+    /// A mini-game's picture takes the mouse's place over this part of the screen, this frame: u and v
+    /// run 0..1 across it (<see cref="WorkSession.Pointed"/>). <paramref name="wheel"/>: the wheel turns
+    /// as W/S would (up is W).
     /// </summary>
-    private (int Point, bool Held) PointerOnWork()
+    private void TakesPointer(float2 min, float2 max, bool wheel = false)
     {
-        if (_pointArea is not { } area || _work.Session is not (WashSession or Sim.Hospitality.ScrubSession) || _work.Session.StartTick != _pointAreaFor)
-            return (-1, false);
-        var at = ImGui.GetMousePos();
-        var size = area.Max - area.Min;
-        if (size.X <= 0 || size.Y <= 0 || at.X < area.Min.X || at.Y < area.Min.Y || at.X > area.Max.X || at.Y > area.Max.Y)
-            return (-1, false);
-        if (at != _pointerLast)
-            (_pointerLast, _pointerUsedAt) = (at, _time);
-        var held = ImGui.IsMouseDown(ImGuiMouseButton.Left);
-        if (held)
-            _pointerUsedAt = _time;
-        return (WorkSession.PackPoint((at.X - area.Min.X) / size.X, (at.Y - area.Min.Y) / size.Y), held);
+        _pointArea = (min, max);
+        _workWheel = wheel;
     }
+
+    /// <summary>A click over this part of the picture works as this input, not as F.</summary>
+    private void ClickSpot(float2 min, float2 max, WorkInputKind kind, int value = 0) =>
+        _workSpots.Add(new WorkSpot(min, max, kind, value));
+
+    /// <summary>The work's window, opened: it takes the mouse's buttons (<see cref="MouseOnWork"/>) unless <paramref name="mouse"/> is off.</summary>
+    private void WorkWindowDrawn(bool mouse)
+    {
+        _workDrawnFor = _sim.World.TryGet<WorkSession>(_avatar, out var s) ? s.StartTick : -1;
+        var pos = ImGui.GetWindowPos();
+        _workWindow = mouse ? (pos, pos + ImGui.GetWindowSize()) : null;
+        _pointArea = null;
+        _workWheel = false;
+        _workSpots.Clear();
+    }
+
+    private static int Packed(float2 at, (float2 Min, float2 Max) r)
+    {
+        var size = r.Max - r.Min;
+        return WorkSession.PackPoint(size.X > 0 ? (at.X - r.Min.X) / size.X : 0.5f, size.Y > 0 ? (at.Y - r.Min.Y) / size.Y : 0.5f);
+    }
+
+    private static bool Inside(float2 at, (float2 Min, float2 Max) r) =>
+        at.X >= r.Min.X && at.Y >= r.Min.Y && at.X <= r.Max.X && at.Y <= r.Max.Y;
+
+    /// <summary>
+    /// The mouse on the work in hand, from what its window marked last frame: a left click there is a
+    /// click (<see cref="WorkInputKind.Click"/>: F, unless the game minds where) or a marked spot's input, and holding it holds F; a right click is Space; its place
+    /// over the picture is sent packed (<see cref="WorkSession.PackPoint"/>) once it's moved this session.
+    /// Nothing while a pad's in use.
+    /// </summary>
+    private WorkMouse MouseOnWork(long session)
+    {
+        if (_mouseSeenFor != session)
+            (_mouseSeenFor, _mouseAtStart, _mouseMoved, _grip) = (session, ImGui.GetMousePos(), false, false);
+        if (_workDrawnFor != session || _workWindow is not { } window || Controls.UsingPad)
+        {
+            _grip = false;
+            return WorkMouse.None;
+        }
+        var at = ImGui.GetMousePos();
+        if (at != _mouseAtStart)
+            _mouseMoved = true;
+        var over = Inside(at, window);
+        if (!ImGui.IsMouseDown(ImGuiMouseButton.Left))
+            _grip = false;
+        var m = WorkMouse.None;
+        if (over && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+        {
+            _mouseMoved = true; // a click is the mouse taken up: it points from here on
+            var spot = _workSpots.FindIndex(s => Inside(at, (s.Min, s.Max)));
+            if (spot < 0)
+                (_grip, m) = (true, m with { Click = _pointArea is { } a && Inside(at, a) ? Packed(at, a) : WorkSession.OffPicture });
+            else
+                m = _workSpots[spot] switch
+                {
+                    { Kind: WorkInputKind.Rune } s => m with { Rune = s.Value },
+                    { Kind: WorkInputKind.Axis } s => m with { Axis = s.Value },
+                    { Kind: WorkInputKind.Axis2 } s => m with { Axis2 = s.Value },
+                    { Kind: WorkInputKind.Act } => m with { Act = true },
+                    _ => m with { Press = true },
+                };
+        }
+        if (over && ImGui.IsMouseClicked(ImGuiMouseButton.Right))
+            m = m with { Act = true };
+        // A notch of the wheel holds W (up) or S a moment: a turn of the wrench, or one wedge for a game counting presses.
+        var wheel = ImGui.GetIO().MouseWheel;
+        if (over && _workWheel && wheel != 0f)
+            (_wheelWay, _wheelUntil) = (wheel > 0f ? -1 : 1, _time + WheelNotch);
+        if (_workWheel && _time < _wheelUntil && m.Axis2 == 0)
+            m = m with { Axis2 = _wheelWay };
+        m = m with { Held = _grip };
+        if (_pointArea is { } area && _mouseMoved && (_grip || Inside(at, area)))
+            m = m with { Point = Packed(at, area) };
+        if (over && (_mouseMoved && at != _mouseLast || m.Click >= 0 || m.Press || m.Held || m.Act || m.Rune >= 0 || m.Axis != 0 || m.Axis2 != 0))
+            _pointerUsedAt = _time;
+        _mouseLast = at;
+        return m;
+    }
+
+    private float2 _mouseLast;
+
+    // The wheel's last notch, held as W/S till then.
+    private int _wheelWay;
+    private float _wheelUntil = -1f;
+    private const float WheelNotch = 0.12f;
 
     private int3 _thrownAt;
 
@@ -315,8 +406,10 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawPour(PourSession s)
     {
-        BeginWork(s.Title, ("F", "hold to pour"), ("A/D", "tilt: less foam, slower"), ("Esc", "stop"));
+        BeginWork(s.Title, ("F", "hold to pour"), ("A/D|Mouse", "tilt: less foam, slower"), ("Esc", "stop"));
+        var top = ImGui.GetCursorScreenPos();
         PourScene(s);
+        TakesPointer(top, new float2(top.X + ImGui.GetContentRegionAvail().X, ImGui.GetCursorScreenPos().Y)); // left upright, right tipped
         TextC(Theme.Dim, "Stop at the line and let the head settle.");
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 200);
@@ -412,14 +505,16 @@ public sealed partial class VillageGame
     /// <summary>The whetstone: the blade's angle against the band, the steel's heat and the edge coming back.</summary>
     private void DrawSharpen(SharpenSession s)
     {
-        BeginWork(s.Title, ("F", "hold to grind"), ("A/D", "keep the angle in the band"), ("Esc", "stop"));
+        BeginWork(s.Title, ("F", "hold to grind"), ("A/D|Move", "keep the angle in the band"), ("Esc", "stop"));
         TextC(Theme.Dim, "Ease off before the steel overheats.");
+        var top = ImGui.GetCursorScreenPos();
         SharpenScene(s.StartTick, s.Held, s.Angle, s.Heat, s.Progress, s.OnWheel);
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 30);
         var min = ImGui.GetCursorScreenPos();
         var max = min + size;
         ImGui.Dummy(in size);
+        TakesPointer(new float2(min.X, top.Y), max); // across, the gauge's width: the blade turns as far as the mouse moves
         dl.AddRectFilled(in min, in max, Theme.U8(Theme.Well), 4f, ImDrawFlags.None);
         var bandMin = new float2(min.X + (0.5f - s.HalfWidth) * size.X, min.Y);
         var bandMax = new float2(min.X + (0.5f + s.HalfWidth) * size.X, max.Y);
@@ -444,7 +539,7 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawProbe(Sim.Tinkering.ProbeSession s)
     {
-        BeginWork(s.Title, ("A/D", "run the probe (F let go)"), ("F", "hold, still, to press in"), ("Esc", "stop"));
+        BeginWork(s.Title, ("A/D|Point", "run the probe (F let go)"), ("F", "hold, still, to press in"), ("Space", "on to the hinge: done"), ("Esc", "stop"));
         if (_probeTraceFor != s.StartTick)
         {
             _probeTraceFor = s.StartTick;
@@ -462,7 +557,7 @@ public sealed partial class VillageGame
             : s.Held && s.InBand ? (Theme.Good, "Steady in the green. If something's there, it's coming loose.")
             : s.Held ? (Theme.Text, "Pressing in... bring it up into the green.")
             : caught ? (Theme.Warn, "It catches here. Stop, then hold F to press it into the green.")
-            : (Theme.Dim, "Sweep along the seam with F let go, and feel for a catch. The hinge end finishes.");
+            : (Theme.Dim, UsingPointer ? "Sweep along the seam with the button up, and feel for a catch. Right-click when you're done." : "Sweep along the seam with F let go, and feel for a catch. The hinge end finishes.");
         TextC(colour, line);
         ProbeScene(s.Probe, s.Feel, s.Pressure);
 
@@ -544,21 +639,31 @@ public sealed partial class VillageGame
     /// The work in hand's window, centred just above the hotbar: a title plate, the keys as caps,
     /// then the game. Every mini-game opens it this way; pair with <see cref="EndWork"/>.
     /// </summary>
-    private void BeginWork(string title, params (string Keys, string Does)[] hints)
+    private void BeginWork(string title, params (string Keys, string Does)[] hints) => BeginWork(title, true, hints);
+
+    /// <summary>
+    /// <see cref="BeginWork(string, ValueTuple{string, string}[])"/>, saying whether the window takes
+    /// the mouse's buttons (left as F, right as Space). While the mouse is in use the hints name it for those.
+    /// </summary>
+    private void BeginWork(string title, bool mouse, params (string Keys, string Does)[] hints)
     {
         _hud.Next(Anchor.Bottom);
         Panel.Begin($"{title}###work", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
         _hud.Took();
-        Gui.Hints([.. hints.Select(h => (WorkKeys(h.Keys), h.Does))]);
+        WorkWindowDrawn(mouse);
+        var pointer = mouse && UsingPointer;
+        Gui.Hints([.. hints.Select(h => (pointer ? MouseKeys(h.Keys) : WorkKeys(h.Keys), h.Does))]);
         ImGui.Spacing();
     }
 
     /// <summary>
     /// A mini-game's hint keys as the player has them bound: the games name the default keys
     /// ("F", "A/D", "Space", "Esc", "1-6"), and this turns them into the bound caps for the device in use.
+    /// "A/D|Mouse" names the mouse instead while it's working the game (<see cref="MouseKeys"/>).
     /// </summary>
     private static string WorkKeys(string keys) => keys switch
     {
+        _ when keys.IndexOf('|') is var bar and >= 0 => WorkKeys(keys[..bar]), // "keys|mouse": the mouse's words while it's in use
         "F" => Controls.Glyph(Act.Use),
         "A" => Controls.Glyph(Act.WalkLeft),
         "D" => Controls.Glyph(Act.WalkRight),
@@ -595,6 +700,15 @@ public sealed partial class VillageGame
             caps.Insert(dpad, "D-pad");
         return string.Join("/", caps);
     }
+
+    /// <summary>A hint's keys while the mouse is working the game: F is the left button, Space the right.</summary>
+    private static string MouseKeys(string keys) => keys switch
+    {
+        _ when keys.IndexOf('|') is var bar and >= 0 => keys[(bar + 1)..],
+        "F" => "Click",
+        "Space" => "Right-click",
+        _ => WorkKeys(keys),
+    };
 
     private static void EndWork() => Panel.End();
 

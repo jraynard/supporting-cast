@@ -236,8 +236,9 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawKnead(KneadSession s)
     {
-        BeginWork(s.Title, ("A/D", "push from that side, on the beat"), ("Esc", "leave it"));
+        BeginWork(s.Title, ("A/D|Click a side", "push from that side, on the beat"), ("Esc", "leave it"));
         KneadScene(s);
+        TakesPointer(_lastScene.Min, _lastScene.Max); // a click on a half pushes from that side
         if (s.StartTick != _kneadSession)
         {
             _kneadSession = s.StartTick;
@@ -845,8 +846,9 @@ public sealed partial class VillageGame
         if (s.Wrapped)
             BeginWork(s.Title, ("F", "hold to draw the cord, let go to tie"), ("Esc", "leave it"));
         else
-            BeginWork(s.Title, ("A/D", "fold the corner from its side, as the hand comes round"), ("Esc", "leave it"));
+            BeginWork(s.Title, ("A/D|Click a side", "fold the corner from its side, as the hand comes round"), ("Esc", "leave it"));
         PackScene(s);
+        TakesPointer(_lastScene.Min, _lastScene.Max); // folding: a click on a half folds from that side
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 150);
         var min = ImGui.GetCursorScreenPos();

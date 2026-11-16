@@ -7,7 +7,8 @@ namespace HeroesNotIncluded.Sim.Work;
 
 /// <summary>
 /// Putting an edge back on a blade with a whetstone. Hold F to grind; the blade's angle wanders
-/// and A/D steer it back into the band. Grinding at the right angle brings the edge up, at the
+/// and A/D steer it back into the band (or the mouse: the blade turns as far as it moves, so the
+/// wander still has to be met, not left to a cursor parked on the band). Grinding at the right angle brings the edge up, at the
 /// wrong one does little good. Grind too long without easing off and the steel overheats and
 /// loses its temper. A stone takes out dullness, not chips: grinding at a chipped blade only
 /// wears metal away (<see cref="WeaponWear"/>).
@@ -125,6 +126,15 @@ public sealed class SharpenSession : WorkSession
     }
 
     protected override void Axis(int value) => _steer = value;
+
+    /// <summary>The most one move of the mouse turns the blade: a fling isn't a turn of the wrist.</summary>
+    public const float MouseTurn = 0.05f;
+
+    protected override void Pointed(float u, float v)
+    {
+        if (PointU is { } was)
+            Angle = Math.Clamp(Angle + Math.Clamp(u - was, -MouseTurn, MouseTurn), 0f, 1f);
+    }
 
     protected override void Step()
     {

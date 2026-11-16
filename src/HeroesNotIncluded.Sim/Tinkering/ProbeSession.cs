@@ -58,7 +58,7 @@ public sealed class ProbeSession : WorkSession
     private int _move;
 
     /// <summary>Which way the probe's being run (-1 toward the hasp, 1 toward the hinge), 0 if it's held still.</summary>
-    public int Moving => _move;
+    public int Moving => _going;
 
     /// <summary>Pressing harder than a sweep can take: running the probe now would set off a trigger it crossed.</summary>
     public bool TooHeavyToSweep => Pressure > LightTouch;
@@ -87,17 +87,36 @@ public sealed class ProbeSession : WorkSession
 
     protected override void Axis(int value) => _move = value;
 
+    /// <summary>The other action (Space, the right button): run on to the hinge and finish the search.</summary>
+    protected override void Act() => _onToEnd = true;
+
+    // Run on to the end (Act); and how the probe went last step, keys or mouse.
+    private bool _onToEnd;
+    private int _going;
+
+    /// <summary>
+    /// How the probe goes this step: A/D, else toward where the mouse points along the seam at the
+    /// probe's own pace, so it passes over what's there as a sweep does. The mouse alone stops just
+    /// short of the hinge: finishing is a choice (<see cref="Act"/>), not a cursor at the edge.
+    /// </summary>
+    private int Going() =>
+        _move != 0 ? _move : _onToEnd ? 1 : Toward(Probe, PointU is { } u ? Math.Min(u, MouseReach) : null, ProbePerStep);
+
+    /// <summary>The furthest along that pointing takes a tool that finishes at its end.</summary>
+    public const float MouseReach = 0.97f;
+
     private float Near => Armed ? MathF.Abs(Probe - TrapAt) : 1f;
 
     protected override void Step()
     {
+        var move = _going = Going();
         var tremor = (Rand.NextFloat() * 2f - 1f) * 0.004f * (1f + Hands.Tremor * 4f);
         Pressure = Math.Clamp(Pressure + (Held ? PressPerStep : -EasePerStep) + (Pressure > 0.05f ? tremor : 0f), 0f, 1f);
         var catching = Armed ? Math.Max(0f, 1f - Near / CatchRange) : 0f;
         Feel = Math.Clamp(catching * 0.85f + Rand.NextFloat() * 0.22f * (1f + Hands.Tremor), 0f, 1f);
 
         var overTrigger = Armed && Near <= TriggerRange;
-        if (overTrigger && (Pressure > SpringAbove || (_move != 0 && Pressure > LightTouch)))
+        if (overTrigger && (Pressure > SpringAbove || (move != 0 && Pressure > LightTouch)))
         {
             Sprung = true;
             Armed = false;
@@ -105,7 +124,7 @@ public sealed class ProbeSession : WorkSession
             Done = true;
             return;
         }
-        if (overTrigger && _move == 0 && Held && InBand)
+        if (overTrigger && move == 0 && Held && InBand)
         {
             Progress += 1f / StepsToDisarm;
             if (Progress >= 1f)
@@ -115,7 +134,7 @@ public sealed class ProbeSession : WorkSession
                 Sample(1f);
             }
         }
-        Probe = Math.Clamp(Probe + _move * ProbePerStep, 0f, 1f);
+        Probe = Math.Clamp(Probe + move * ProbePerStep, 0f, 1f);
         if (Probe >= 1f)
         {
             if (!Disarmed)
@@ -154,6 +173,8 @@ public sealed class ProbeSession : WorkSession
         w.Bool(Disarmed);
         w.Bool(Sprung);
         w.Int(_move);
+        w.Bool(_onToEnd);
+        w.Int(_going);
     }
 
     protected override void ReadState(SaveReader r)
@@ -172,5 +193,10 @@ public sealed class ProbeSession : WorkSession
         Disarmed = r.Bool();
         Sprung = r.Bool();
         _move = Math.Sign(r.Int());
+        if (r.Version >= 43)
+        {
+            _onToEnd = r.Bool();
+            _going = Math.Sign(r.Int());
+        }
     }
 }

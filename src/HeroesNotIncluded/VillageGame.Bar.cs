@@ -348,10 +348,11 @@ public sealed partial class VillageGame
         {
             Sim.Hospitality.BedStep.Strip => new[] { ("F", "hold to pull the old sheet off"), ("Esc", "leave it") },
             Sim.Hospitality.BedStep.Spread => [("F", "as the sheet billows to the top"), ("Esc", "leave it")],
-            _ => [("A", "tuck the head end"), ("D", "tuck the foot"), ("Esc", "leave it")],
+            _ => [("A|Click the head", "tuck the head end"), ("D|Click the foot", "tuck the foot"), ("Esc", "leave it")],
         };
         BeginWork(s.Title, hints);
         MakeBedScene(s.At, s.Stripped, s.Billow, s.Flopped, s.OnCue, s.Tucked, s.NextSide);
+        TakesPointer(_lastScene.Min, _lastScene.Max); // tucking: the head's the left half, the foot the right
         string[] steps = ["Strip it", "Shake out a clean sheet", "Tuck it in"];
         for (var i = 0; i < steps.Length; i++)
         {
@@ -376,7 +377,7 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawMix(MixSession s)
     {
-        BeginWork(s.Title, ("F A D", "the cue as it reaches the mark"), ("Esc", "stop"));
+        BeginWork(s.Title, false, ("F A D", "the cue as it reaches the mark"), ("Esc", "stop")); // a three-key rhythm: the keys alone
         MixScene(s);
         MixCues(s.Cues, s.Resolved, s.StepsDone, s.Last);
         ImGui.Spacing();

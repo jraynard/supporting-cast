@@ -195,6 +195,7 @@ public sealed class PickSession : WorkSession
         else
             MissedAt = StepsDone;
         Lift = 0.05f;
+        ForgetPoint(); // the next pin waits on the mouse, not on where the last one was
     }
 
     /// <summary>W eases the tension on (-1), S eases it off (+1).</summary>
@@ -252,7 +253,9 @@ public sealed class PickSession : WorkSession
         if (Binding)
             return;
         var rate = LiftPerStep * (1f - 0.55f * Feel);
-        Lift = Math.Clamp(Lift + _drift * (1f - 0.6f * Feel) + _steer * rate, 0f, 1f);
+        // The mouse lifts toward how high it points over the lock (top is all the way), at the pick's own stiff pace.
+        var steer = _steer != 0 ? _steer : Toward(Lift, PointV is { } v ? 1f - v : null, rate);
+        Lift = Math.Clamp(Lift + _drift * (1f - 0.6f * Feel) + steer * rate, 0f, 1f);
 
         if (Lift > height + OverRange && Tension > 0.15f)
         {

@@ -217,11 +217,16 @@ public sealed class MeditateSession : WorkSession
             ScatteredAt = StepsDone;
             _ready = StepsDone + StepLength * 2;
         }
-        if (!Held && StepsDone >= _ready && (_dx != 0 || _dy != 0))
+        // The keys, else the way toward the place the mouse points at: a step at a time and no
+        // finding the way round, so the walls still have to be learnt.
+        var (dx, dy) = (_dx, _dy);
+        if (dx == 0 && dy == 0 && PointU is { } u && PointV is { } v)
+            (dx, dy) = (Math.Sign(Math.Clamp((int)(u * Size), 0, Size - 1) - X), Math.Sign(Math.Clamp((int)(v * Size), 0, Size - 1) - Y));
+        if (!Held && StepsDone >= _ready && (dx != 0 || dy != 0))
         {
             // Across first if that way's open, else up or down.
-            int? dir = _dx > 0 && CanGo(X, Y, 1) ? 1 : _dx < 0 && CanGo(X, Y, 3) ? 3
-                : _dy < 0 && CanGo(X, Y, 0) ? 0 : _dy > 0 && CanGo(X, Y, 2) ? 2 : null;
+            int? dir = dx > 0 && CanGo(X, Y, 1) ? 1 : dx < 0 && CanGo(X, Y, 3) ? 3
+                : dy < 0 && CanGo(X, Y, 0) ? 0 : dy > 0 && CanGo(X, Y, 2) ? 2 : null;
             if (dir is { } d)
             {
                 (X, Y) = Step(X, Y, d);

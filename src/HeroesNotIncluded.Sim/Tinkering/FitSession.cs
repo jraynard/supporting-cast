@@ -161,6 +161,19 @@ public sealed class FitSession : WorkSession
 
     protected override void Axis(int value) => _steer = value;
 
+    /// <summary>
+    /// The mouse holds the part: it moves as far as the mouse does (the panel's u runs off true from
+    /// -1 to 1), so the wander still has to be met. A fling moves it no further than a wrist would.
+    /// </summary>
+    protected override void Pointed(float u, float v)
+    {
+        if (!Winding && PointU is { } was)
+            Offset = Math.Clamp(Offset + Math.Clamp((u - was) * 2f, -MouseShift, MouseShift), -1f, 1f);
+    }
+
+    /// <summary>The most one move of the mouse shifts the part.</summary>
+    public const float MouseShift = 0.1f;
+
     /// <summary>Latch the wound spring (Space); nothing while fitting parts.</summary>
     protected override void Act() => _latch = 1;
 

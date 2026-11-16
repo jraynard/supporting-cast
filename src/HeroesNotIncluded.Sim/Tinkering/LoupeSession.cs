@@ -75,11 +75,24 @@ public sealed class LoupeSession : WorkSession
 
     protected override void Axis(int value) => _move = value;
 
+    /// <summary>The other action (Space, the right button): look on to the far end and be done.</summary>
+    protected override void Act() => _onToEnd = true;
+
+    private bool _onToEnd;
+
+    /// <summary>
+    /// How the glass goes this step: A/D, else toward where the mouse points along the piece at the
+    /// glass's own pace, stopping short of the far end (finishing is <see cref="Act"/>).
+    /// </summary>
+    private int Going() =>
+        _move != 0 ? _move : _onToEnd ? 1 : Toward(At, PointU is { } u ? Math.Min(u, ProbeSession.MouseReach) : null, MovePerStep);
+
     protected override void Step()
     {
         if (Done)
             return;
-        At = Math.Clamp(At + _move * MovePerStep + (Rand.NextFloat() * 2f - 1f) * 0.0004f * Hands.Tremor * 4f, 0f, 1f);
+        var move = Going();
+        At = Math.Clamp(At + move * MovePerStep + (Rand.NextFloat() * 2f - 1f) * 0.0004f * Hands.Tremor * 4f, 0f, 1f);
         var nearest = -1;
         var near = 1f;
         for (var i = 0; i < _tells.Length; i++)
@@ -88,7 +101,7 @@ public sealed class LoupeSession : WorkSession
         var catching = Math.Max(0f, 1f - near / CatchRange);
         Catch = Math.Clamp(catching * 0.85f + Rand.NextFloat() * 0.15f * (1f + Hands.Tremor), 0f, 1f);
 
-        if (Held && _move == 0 && nearest >= 0 && near <= StudyRange && !Studied[nearest])
+        if (Held && move == 0 && nearest >= 0 && near <= StudyRange && !Studied[nearest])
         {
             if (_studying != nearest)
                 (_studying, Reading) = (nearest, 0f);
@@ -128,6 +141,7 @@ public sealed class LoupeSession : WorkSession
             w.Bool(r);
         w.Int(_move);
         w.Int(_studying);
+        w.Bool(_onToEnd);
     }
 
     protected override void ReadState(SaveReader r)
@@ -146,5 +160,7 @@ public sealed class LoupeSession : WorkSession
             Studied[i] = r.Bool();
         _move = Math.Sign(r.Int());
         _studying = Math.Clamp(r.Int(), -1, n - 1);
+        if (r.Version >= 43)
+            _onToEnd = r.Bool();
     }
 }

@@ -217,6 +217,15 @@ public sealed class MakeBedSession : WorkSession
             Done = true;
     }
 
+    /// <summary>Tucking, a click on the head (the picture's left half) or the foot (the right) tucks that end; else it's F.</summary>
+    protected override void Clicked(float? u, float? v)
+    {
+        if (At == BedStep.Tuck && u is { } x)
+            Axis(x < 0.5f ? -1 : 1);
+        else
+            Press();
+    }
+
     protected override void Step()
     {
         switch (At)

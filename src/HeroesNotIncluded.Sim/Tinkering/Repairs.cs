@@ -266,6 +266,27 @@ public sealed class SpanSession : WorkSession
 
     protected override void Act() => _key = -1;
 
+    // A stone clicked: the level's carried there (-1: none).
+    private int _carryTo = -1;
+
+    /// <summary>
+    /// A click on a stone (u runs across them all, each a <see cref="Stones"/>th) carries the level to it; on the
+    /// one it's on, it drives a wedge in as F does.
+    /// </summary>
+    protected override void Clicked(float? u, float? v)
+    {
+        if (u is not { } x)
+        {
+            Press();
+            return;
+        }
+        var stone = Math.Clamp((int)MathF.Floor(x * Stones), 0, Stones - 1);
+        if (stone == AtStone && MathF.Abs(At - stone / (float)(Stones - 1)) < 0.01f)
+            Press();
+        else
+            _carryTo = stone;
+    }
+
     protected override void Step()
     {
         if (Done)
@@ -283,7 +304,17 @@ public sealed class SpanSession : WorkSession
         }
         var speed = 1f / (PassSeconds * SimClock.TicksPerSecond);
         if (Way != 0)
+        {
+            _carryTo = -1;
             At = Math.Clamp(At + Way * speed, 0f, 1f);
+        }
+        else if (_carryTo >= 0)
+        {
+            var to = _carryTo / (float)(Stones - 1);
+            At = MathF.Abs(to - At) <= speed ? to : At + MathF.Sign(to - At) * speed;
+            if (At == to)
+                _carryTo = -1;
+        }
         else
         {
             // Let go, it settles on the nearest stone.
@@ -329,6 +360,7 @@ public sealed class SpanSession : WorkSession
         w.Float(Reading);
         w.Bool(Level);
         w.Int(_key);
+        w.Int(_carryTo);
     }
 
     protected override void ReadState(SaveReader r)
@@ -343,6 +375,8 @@ public sealed class SpanSession : WorkSession
         Reading = r.Float();
         Level = r.Bool();
         _key = Math.Clamp(r.Int(), -1, 1);
+        if (r.Version >= 43)
+            _carryTo = Math.Clamp(r.Int(), -1, Stones - 1);
     }
 }
 

@@ -147,6 +147,13 @@ public sealed class CastSession : WorkSession
         Sample(strong ? 1f : 0.3f);
     }
 
+    /// <summary>A click lets the weave go only in the circle (the picture's round middle): a stray one by a rune doesn't.</summary>
+    protected override void Clicked(float? u, float? v)
+    {
+        if (u is { } x && v is { } y && (x - 0.5f) * (x - 0.5f) + (y - 0.5f) * (y - 0.5f) <= 0.25f)
+            Press();
+    }
+
     protected override void Press()
     {
         if (Woven.Count == 0)

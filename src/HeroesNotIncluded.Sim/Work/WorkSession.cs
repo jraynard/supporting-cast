@@ -48,6 +48,13 @@ public enum WorkInputKind : byte
     /// the replayed session see it alike. Appended last: the kinds go over the wire by number.
     /// </summary>
     Point,
+
+    /// <summary>
+    /// The mouse's left button pressed on the mini-game: where, packed as <see cref="Point"/> is, with
+    /// <see cref="WorkSession.OffPicture"/> set when it was on the window but not its picture. A session
+    /// that doesn't care where takes it as a press of F (<see cref="WorkSession.Clicked"/>). Appended last.
+    /// </summary>
+    Click,
 }
 
 /// <summary>One input to a session, stamped with the step it happened on.</summary>
@@ -83,6 +90,19 @@ public abstract class WorkSession
 
     /// <summary>The main input is held down.</summary>
     public bool Held { get; private set; }
+
+    /// <summary>
+    /// Where the mouse last pointed on the panel (u across, v down, each 0..1), or null since a key
+    /// steered. A session that moves a tool along something pulls it toward this at the tool's own pace
+    /// (<see cref="Toward"/>), never jumps it there: a sweep that's felt as it passes must still pass.
+    /// </summary>
+    public float? PointU { get; private set; }
+
+    /// <inheritdoc cref="PointU"/>
+    public float? PointV { get; private set; }
+
+    /// <summary>Let go of where the mouse pointed, till it moves again (a pin set: the next one starts at the bottom).</summary>
+    protected void ForgetPoint() => (PointU, PointV) = (null, null);
 
     public bool Done { get; protected set; }
 
@@ -147,12 +167,35 @@ public abstract class WorkSession
     /// <summary>The game's other action (<see cref="WorkInputKind.Act"/>), once per press.</summary>
     protected virtual void Act() { }
 
-    /// <summary>The mouse pointing at (u, v) on the mini-game's panel, each 0..1 (<see cref="WorkInputKind.Point"/>).</summary>
+    /// <summary>
+    /// The mouse pointing at (u, v) on the mini-game's panel, each 0..1 (<see cref="WorkInputKind.Point"/>).
+    /// <see cref="PointU"/> and <see cref="PointV"/> still hold where it was before (null if a key had it).
+    /// </summary>
     protected virtual void Pointed(float u, float v) { }
+
+    /// <summary>
+    /// The left button pressed at (u, v) on the picture, or with both null off it (on the window's
+    /// words and bars). Unless a game minds where, a click is F.
+    /// </summary>
+    protected virtual void Clicked(float? u, float? v) => Press();
+
+    /// <summary>A <see cref="WorkInputKind.Click"/> value's flag: on the window, off the picture.</summary>
+    public const int OffPicture = 1 << 16;
 
     /// <summary>A pointer's place packed as a <see cref="WorkInputKind.Point"/> value: u and v (0..1) quantised to a byte each.</summary>
     public static int PackPoint(float u, float v) =>
         (int)MathF.Round(Math.Clamp(u, 0f, 1f) * 255f) | (int)MathF.Round(Math.Clamp(v, 0f, 1f) * 255f) << 8;
+
+    /// <summary>
+    /// Which way to move something at <paramref name="at"/> to come to <paramref name="target"/>
+    /// (the pointer's place, mapped onto the thing's own measure) a step of <paramref name="perStep"/>
+    /// at a time: -1, +1, or 0 once it's within half a step (or there's no target).
+    /// </summary>
+    public static int Toward(float at, float? target, float perStep) =>
+        target is not { } t || MathF.Abs(t - at) <= perStep * 0.5f ? 0 : Math.Sign(t - at);
+
+    /// <summary>The pointer's u mapped onto lo..hi of the panel (the thing drawn there), clamped to 0..1; null with no pointer.</summary>
+    protected static float? Across(float? u, float lo, float hi) => u is { } x ? Math.Clamp((x - lo) / (hi - lo), 0f, 1f) : null;
 
     /// <summary>Count one moment or blow of work at quality 0..1.</summary>
     protected void Sample(float quality)
@@ -187,9 +230,13 @@ public abstract class WorkSession
                 Held = input.Value != 0;
                 break;
             case WorkInputKind.Axis:
+                if (input.Value != 0)
+                    PointU = null; // the keys have it till the mouse moves again
                 Axis(Math.Sign(input.Value));
                 break;
             case WorkInputKind.Axis2:
+                if (input.Value != 0)
+                    PointV = null;
                 Axis2(Math.Sign(input.Value));
                 break;
             case WorkInputKind.Rune:
@@ -198,8 +245,17 @@ public abstract class WorkSession
             case WorkInputKind.Act:
                 Act();
                 break;
+            case WorkInputKind.Click:
+                if ((input.Value & OffPicture) != 0)
+                    Clicked(null, null);
+                else
+                    Clicked((input.Value & 0xFF) / 255f, (input.Value >> 8 & 0xFF) / 255f);
+                break;
             case WorkInputKind.Point:
-                Pointed((input.Value & 0xFF) / 255f, (input.Value >> 8 & 0xFF) / 255f);
+                // Pointed sees the last place still in PointU/PointV: a game steered by how far the mouse moved reads it there.
+                var (u, v) = ((input.Value & 0xFF) / 255f, (input.Value >> 8 & 0xFF) / 255f);
+                Pointed(u, v);
+                (PointU, PointV) = (u, v);
                 break;
         }
     }
@@ -227,7 +283,10 @@ public abstract class WorkSession
     protected abstract void WriteState(SaveWriter w);
     protected abstract void ReadState(SaveReader r);
 
-    internal static void Write(SaveWriter w, WorkSession s)
+    internal static void Write(SaveWriter w, WorkSession s) => Write(w, s, SaveGame.FormatVersion);
+
+    /// <summary>As a save of <paramref name="format"/> laid it out (tests of reading old saves write them this way).</summary>
+    internal static void Write(SaveWriter w, WorkSession s, int format)
     {
         w.String(s.GetType().Name);
         w.Entity(s.Worker);
@@ -244,6 +303,11 @@ public abstract class WorkSession
         w.NullableString(s.Failed);
         w.Float(s._qualitySum);
         w.Int(s._qualitySamples);
+        if (format >= 43)
+        {
+            w.Float(s.PointU ?? -1f);
+            w.Float(s.PointV ?? -1f);
+        }
         s.WriteState(w);
     }
 
@@ -303,6 +367,11 @@ public abstract class WorkSession
         s.Failed = r.NullableString();
         s._qualitySum = r.Float();
         s._qualitySamples = r.Int();
+        if (r.Version >= 43) // the mouse in the mini-games (format 43)
+        {
+            var (u, v) = (r.Float(), r.Float());
+            (s.PointU, s.PointV) = (u < 0f ? null : u, v < 0f ? null : v);
+        }
         s.ReadState(r);
         return s;
     }

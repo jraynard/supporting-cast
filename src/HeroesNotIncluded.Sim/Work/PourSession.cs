@@ -47,6 +47,9 @@ public sealed class PourSession : WorkSession
     public bool Spilled { get; private set; }
 
     private int _tiltDir;
+
+    /// <summary>How far a step of A/D (or the mouse) tips the tankard.</summary>
+    public const float TiltPerStep = 0.03f;
     private int _still;
     private bool _poured;
 
@@ -98,7 +101,9 @@ public sealed class PourSession : WorkSession
 
     protected override void Step()
     {
-        Tilt = Math.Clamp(Tilt + _tiltDir * 0.03f, 0f, 1f);
+        // The mouse tips it toward where it points across the picture (left upright, right tipped), at the hand's own pace.
+        var dir = _tiltDir != 0 ? _tiltDir : Toward(Tilt, Across(PointU, 0.15f, 0.85f), TiltPerStep);
+        Tilt = Math.Clamp(Tilt + dir * TiltPerStep, 0f, 1f);
         if (Held)
         {
             var poured = PourUpright + (PourTilted - PourUpright) * Tilt;

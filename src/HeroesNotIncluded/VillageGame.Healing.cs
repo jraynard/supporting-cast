@@ -251,9 +251,9 @@ public sealed partial class VillageGame
     private void DrawHandsOn(HandsOnSession s)
     {
         if (s.Linked)
-            BeginWork(s.Title, ("A/D", "keep your composure in the band"), ("F", "hold to draw, let go to rest"), ("Esc", "take your hands away"));
+            BeginWork(s.Title, ("A/D|Point aside", "keep your composure in the band"), ("F", "hold to draw, let go to rest"), ("Esc", "take your hands away"));
         else
-            BeginWork(s.Title, ("A/D", "run your hands along them"), ("W/S", "to the next warmth"), ("F", "hold still on a warmth: read it, then draw it"), ("Esc", "take your hands away"));
+            BeginWork(s.Title, ("A/D|Point", "run your hands along them"), ("W/S", "to the next warmth"), ("F", "hold still on a warmth: read it, then draw it"), ("Esc", "take your hands away"));
         HandsOnScene(HandsViewOf(s));
 
         // What you've read of them, the one under your hands marked.
@@ -310,7 +310,7 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawCast(CastSession s)
     {
-        BeginWork(s.Title, ("1-6", "key a rune as the ring meets the circle"), ("F", "let the weave go"), ("Esc", "let it unravel (nothing spent)"));
+        BeginWork(s.Title, ("1-6|Click a rune", "key a rune as the ring meets the circle"), ("F|Click the circle", "let the weave go"), ("Esc", "let it unravel (nothing spent)"));
         // Begun at a body: the Calling's runes, in order, so nobody has to go looking in the book.
         if (s.CallingFor.Length > 0 && Sim.Afterlife.Revival.CallMending(_sim) is { } calling)
         {
@@ -328,6 +328,7 @@ public sealed partial class VillageGame
         var centre = min + new float2(size.X / 2, size.Y / 2);
         var outer = Gui.S(118f);
         var inner = Gui.S(40f);
+        TakesPointer(centre - new float2(inner, inner), centre + new float2(inner, inner)); // the circle: a click in it lets the weave go
         var glyph = Gui.S(50f);
 
         // The ground: a dark well, a faint rim, and the ring of the six places.
@@ -399,6 +400,7 @@ public sealed partial class VillageGame
         for (var i = 0; i < palette.Count; i++)
         {
             var at = row + new float2(i * (cell + gap), 0);
+            ClickSpot(at, at + new float2(cell, cell), WorkInputKind.Rune, i);
             if (i == lit)
             {
                 var c = at + new float2(cell / 2, cell / 2);
@@ -420,7 +422,7 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawMeditate(MeditateSession s)
     {
-        BeginWork(s.Title, ("WASD", "find your way inward"), ("F", "hold to be still and see further"), ("Esc", "come back"));
+        BeginWork(s.Title, ("WASD|Point", "find your way inward"), ("F", "hold to be still and see further"), ("Esc", "come back"));
         var dl = ImGui.GetWindowDrawList();
         var width = Math.Max(Gui.S(420), ImGui.GetContentRegionAvail().X);
         var side = Gui.S(330f);
@@ -429,6 +431,7 @@ public sealed partial class VillageGame
         ImGui.Dummy(in areaSize);
         var min = origin + new float2((width - side) / 2, 0);
         var max = min + new float2(side, side);
+        TakesPointer(min, max); // the labyrinth: they walk toward the place pointed at
         var cell = side / MeditateSession.Size;
         dl.AddRectFilled(in min, in max, Theme.U8(Theme.Spirit), 6f, ImDrawFlags.None);
         float2 Mid(int i) => min + new float2((i % MeditateSession.Size + 0.5f) * cell, (i / MeditateSession.Size + 0.5f) * cell);

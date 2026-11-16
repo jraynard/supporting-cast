@@ -135,6 +135,30 @@ public sealed class TrueSession : WorkSession
             _key = -value;
     }
 
+    /// <summary>
+    /// The picture's square round the wheel, as a share of the wheel's radius each way from its hub:
+    /// a click inside the rim picks the spoke it's on (turned to the key), anywhere else spins it.
+    /// </summary>
+    public const float PickedOut = 1.25f;
+
+    protected override void Clicked(float? u, float? v)
+    {
+        if (Spinning)
+            return;
+        if (u is { } x && v is { } y)
+        {
+            float dx = x - 0.5f, dy = y - 0.5f;
+            if (dx * dx + dy * dy <= 0.5f / PickedOut * (0.5f / PickedOut) * 1.1f)
+            {
+                // On screen a spoke stands at (i / Spokes - Turn) of a turn (y down, as it's drawn).
+                var a = DetMath.Atan2(dy, dx) / MathF.Tau;
+                Selected = ((int)MathF.Round((a + Turn) * Spokes) % Spokes + Spokes) % Spokes;
+                return;
+            }
+        }
+        Press();
+    }
+
     /// <summary>F: spin it past the gauge.</summary>
     protected override void Press()
     {

@@ -81,6 +81,15 @@ public sealed class PackSession : WorkSession
         Folded++;
     }
 
+    /// <summary>While folding, a click on the picture's left or right half folds from that side; tying, it's F.</summary>
+    protected override void Clicked(float? u, float? v)
+    {
+        if (!Wrapped && u is { } x)
+            Axis(x < 0.5f ? -1 : 1);
+        else
+            Press();
+    }
+
     protected override void Step()
     {
         if (!Wrapped || Tied)
