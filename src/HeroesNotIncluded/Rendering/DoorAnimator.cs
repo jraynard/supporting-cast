@@ -8,7 +8,7 @@ namespace HeroesNotIncluded.Rendering;
 /// <summary>
 /// Doors that swing. A door is drawn per frame (not baked into the chunk meshes) as a slab hinged
 /// at one end, swinging open, away from whoever pushes it, while a creature is in its doorway or
-/// about to step into it, and falling shut once they're through. A lockable gate (the Escape
+/// about to step into it, and falling shut once they're through; a locked door stays shut. A lockable gate (the Escape
 /// cage's) swings by its lock instead: shut with a padlock on it while <see cref="Locked"/>,
 /// swung open and left standing open while not. Presentation only: what's passable is the sim's
 /// business, and nothing here is saved or hashed. Times are animation time (game speed; frozen
@@ -71,6 +71,8 @@ public sealed class DoorAnimator
             var (want, side) = Wanted(sim, door);
             if (gate)
                 want = !w.Has<Locked>(door.Entity); // a gate goes by its lock, not by who's near
+            else if (w.Has<Locked>(door.Entity))
+                want = false; // locked, it stays shut whoever's at it (a key-holder unlocks it as they pass: Tinkering.Locksmithing.LetThrough)
             else if (CanSee != null && !CanSee(door.Cell))
                 want = false; // a door swinging out of sight would give away who's behind it
             if (want && door.Open < 0.05f && side != 0)

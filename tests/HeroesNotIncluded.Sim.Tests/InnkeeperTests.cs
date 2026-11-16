@@ -194,6 +194,65 @@ public class InnkeeperTests
         Assert.True(sim.World.Get<Adventurer>(drinker).Satisfaction - mood < 1.5f, "a crude pour pleases less");
     }
 
+    /// <summary>Two of the party waiting on an ale each, and the player keeper beside them with ales poured.</summary>
+    private static (Simulation Sim, Entity Me, Order First, Order Second, Entity Bar) TwoWaiting()
+    {
+        var (sim, party) = Tavern("Innkeeper");
+        var me = Players.CharacterOf(sim, Ana);
+        Thirsty(sim, party[0]);
+        sim.TickMany(SimClock.TicksPerHour / 12);
+        Thirsty(sim, party[1]);
+        sim.TickMany(SimClock.TicksPerHour / 12);
+        var first = sim.Shops.All.Single(e => e.IsOpen && e.Poster == party[0] && e.Kind.Kind == ServiceKind.Drink);
+        var second = sim.Shops.All.Single(e => e.IsOpen && e.Poster == party[1] && e.Kind.Kind == ServiceKind.Drink);
+        // Hold them where they stand, and stand within arm's reach of both.
+        foreach (var e in new[] { party[0], party[1] })
+            sim.World.Get<Mind>(e).Job = null;
+        var a = sim.World.Get<Position>(party[0]).Cell;
+        var b = sim.World.Get<Position>(party[1]).Cell;
+        sim.World.Get<Position>(party[1]).Cell = sim.SpiralFrom(a, 2).First(c => c != a && c.Z == a.Z && sim.Map.Passable(c));
+        sim.World.Get<Position>(party[1]).Pos = Position.CenterOf(sim.World.Get<Position>(party[1]).Cell);
+        var cell = sim.SpiralFrom(a, 2).First(c => c != a && c != sim.World.Get<Position>(party[1]).Cell && c.Z == a.Z && sim.Map.Passable(c)
+            && Map.Distance(c, sim.World.Get<Position>(party[1]).Cell) <= Handing.Reach);
+        sim.World.Get<Position>(me).Cell = cell;
+        sim.World.Get<Position>(me).Pos = Position.CenterOf(cell);
+        Assert.Contains(me, first.KnownBy);
+        var bar = Buildings.Parts(sim, first.Where).First(e => sim.World.Get<Thing>(e).Def.Building is { Bar: true });
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("Ale"), 2);
+        return (sim, me, first, second, bar);
+    }
+
+    [Fact]
+    public void FAtTheBarServesWhoeverHasWaitedLongest()
+    {
+        var (sim, me, first, second, bar) = TwoWaiting();
+        var counter = sim.World.Get<Thing>(bar).Cell;
+        Assert.Equal(AvatarActionKind.ServeDrink, AvatarSystem.ActionAt(sim, me, counter).Kind);
+
+        sim.ApplyNow(new AvatarWorkCommand(me, true, counter));
+        Assert.Equal(OrderStatus.Done, first.Status);
+        Assert.True(second.IsOpen);
+        sim.ApplyNow(new AvatarWorkCommand(me, true, counter));
+        Assert.Equal(OrderStatus.Done, second.Status);
+        Assert.True(sim.World.Get<Carrying>(me).Item.IsNull, "both ales went");
+        Assert.NotEqual(AvatarActionKind.ServeDrink, AvatarSystem.ActionAt(sim, me, counter).Kind);
+    }
+
+    [Fact]
+    public void FAtTheBarServesYourOwnOrdersFirstAndFAtACustomerServesThem()
+    {
+        var (sim, me, first, second, bar) = TwoWaiting();
+        sim.ApplyNow(new TakeOrderCommand(me, second.Id));
+        var counter = sim.World.Get<Thing>(bar).Cell;
+        sim.ApplyNow(new AvatarWorkCommand(me, true, counter));
+        Assert.Equal(OrderStatus.Done, second.Status);
+        Assert.True(first.IsOpen);
+
+        // Pointed straight at a customer, it's theirs.
+        sim.ApplyNow(new AvatarWorkCommand(me, true, sim.World.Get<Position>(first.Poster).Cell));
+        Assert.Equal(OrderStatus.Done, first.Status);
+    }
+
     [Fact]
     public void AnAIInnkeeperPoursForOrders()
     {

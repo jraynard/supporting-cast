@@ -112,6 +112,9 @@ public enum AvatarActionKind
 
     /// <summary>An empath at a fresh body: weave a Calling back for it (<see cref="Afterlife.Revival.BeginCalling"/>), begun at once.</summary>
     CallBack,
+
+    /// <summary>Hand a poured drink across the bar to whoever's waiting for it (<see cref="Shops.BarService"/>), at once.</summary>
+    ServeDrink,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -317,6 +320,9 @@ public sealed class AvatarSystem : ISimSystem
         // A full bucket: thrown where you point, out of arm's reach as much as in it.
         if (tool == AvatarTool.Use && Environment.Buckets.ThrowAt(sim, avatar, cell, here) is { } throwing)
             return throwing;
+        // A poured drink: across the bar to whoever's waiting for one, or to the customer pointed at.
+        if (tool == AvatarTool.Use && Shops.BarService.At(sim, avatar, site, cell) is { } serving)
+            return new(AvatarActionKind.ServeDrink, Shops.BarService.Label(sim, serving), cell, serving.Order.Poster) { Item = serving.Drink };
         // A gap a crisis tore (the bridge): the tinker braces it.
         if (tool == AvatarTool.Use && sim.Repairs.At(cell) is { } breach && InReach(here, cell)
             && w.TryGet<Trade>(avatar, out var mender) && mender.Def.MendsTown)
@@ -816,6 +822,10 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.BarWork:
                 Work.BarWork.Start(sim, avatar, action.Target);
+                break;
+            case AvatarActionKind.ServeDrink:
+                if (Shops.BarService.At(sim, avatar, sim.Map.Structure[sim.Map.Idx(action.Cell)], action.Cell) is { } serve)
+                    Shops.BarService.Serve(sim, avatar, serve);
                 break;
             case AvatarActionKind.FestivalGame:
                 Work.FestivalGames.Start(sim, avatar, action.Target);

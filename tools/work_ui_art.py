@@ -47,6 +47,7 @@ CLAY = ramp((176, 110, 70), 5, dark=0.55, light=1.3)
 STEW = ramp((150, 92, 50), 4, dark=0.55, light=1.35)
 SALT = ramp((236, 234, 228), 3, main=1, dark=0.85, light=1.03)
 BLACK_IRON = ramp((64, 66, 76), 5, main=1, dark=0.55, light=2.0)
+POT_IRON = ramp((46, 45, 50), 5, main=1, dark=0.6, light=2.4)   # the stew pot's: near black, a warm sheen
 
 
 def canvas(w, h):
@@ -117,14 +118,30 @@ def grind_trough():
 
 
 def stew_pot():
-    """The iron pot side on, its stew showing at the rim."""
+    """The iron pot side on: a round hammered belly sooted low down, a lit lip, ring lugs, three
+    stubby feet, and the stew showing at the rim with chunks in it."""
     img = canvas(44, 30)
-    part(img, poly([(2, 7), (42, 7), (40, 22), (34, 28), (10, 28), (4, 22)]), BLACK_IRON, radius=1.4)
-    part(img, lambda d: d.ellipse([3, 4, 41, 10], fill=255), BLACK_IRON[1:], radius=0.5)
-    part(img, lambda d: d.ellipse([6, 5, 38, 9], fill=255), STEW, radius=0.6, line=None,
+    for x in (10, 21, 32):                                                  # the feet, behind the belly
+        part(img, lambda d, x=x: d.rectangle([x, 24, x + 2, 29], fill=255), POT_IRON, radius=0.3)
+    part(img, poly([(3, 8), (41, 8), (43, 13), (42, 19), (37, 25), (30, 27), (14, 27), (7, 25), (2, 19), (1, 13)]), POT_IRON,
+         radius=1.8, tex=lambda x, y: (-0.9 if y > 22 else -0.4 if y > 19 else 0) + (0.4 if (x * 7 + y * 11) % 47 == 0 else 0))
+    for y in range(11, 20):                                                 # a sheen down the lit side
+        put(img, 6, y, POT_IRON[4] if 12 < y < 18 else POT_IRON[3])
+        if 13 < y < 17:
+            put(img, 7, y, POT_IRON[3])
+    for x in (12, 22, 32):                                                  # a seam of rivets
+        put(img, x, 10, POT_IRON[4]); put(img, x, 11, POT_IRON[0])
+    part(img, ell([1, 3, 42, 11]), POT_IRON[1:], radius=0.5)               # the lip
+    for x in range(6, 38):
+        put(img, x, 3 if 9 < x < 34 else 4, POT_IRON[4])
+    part(img, ell([5, 5, 38, 9]), STEW, radius=0.6, line=None,
          tex=lambda x, y: 0.6 if (x * 3 + y) % 7 == 0 else 0)
-    for x in (1, 42):                                                       # the lugs
-        part(img, lambda d, x=x: d.rectangle([x - 1, 9, x + 1, 13], fill=255), BLACK_IRON, radius=0.3)
+    for x, y, c in ((11, 6, (214, 168, 92, 255)), (17, 7, (150, 70, 52, 255)), (24, 6, (214, 168, 92, 255)),
+                    (29, 7, (96, 122, 60, 255)), (33, 6, (150, 70, 52, 255)), (14, 8, (96, 122, 60, 255))):
+        put(img, x, y, c); put(img, x + 1, y, c)                            # root, meat and herb
+    for x in (0, 41):                                                       # ring lugs
+        part(img, lambda d, x=x: d.ellipse([x - 1, 9, x + 3, 14], fill=255), POT_IRON, radius=0.3)
+        put(img, x + 1, 11, (0, 0, 0, 0)); put(img, x + 1, 12, (0, 0, 0, 0))
     return ink_outline(img)
 
 

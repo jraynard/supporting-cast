@@ -143,6 +143,12 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
     /// <summary>A party turns down a quest stated as less than this share of its strength (beneath them), or more than this (madness).</summary>
     public const float TooEasy = 0.5f, TooHard = 1.4f;
 
+    /// <summary>
+    /// How far off a broker's first guess at a quest's danger can be, either way. Wide enough that
+    /// rumours and reports are worth hearing, not so wide that a dangerous quest reads as certain death.
+    /// </summary>
+    public const float BrokerGuess = 0.25f;
+
     /// <summary>Game hours a returned party stays before moving on.</summary>
     public const float StayAfterHours = 8;
 
@@ -223,21 +229,36 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             }
     }
 
+    /// <summary>
+    /// The round's quests, spread from easy to hard. The ones drawn are put in order of how hard
+    /// their kind runs, and each takes a danger from its own share of its range (the easiest kind
+    /// from the low end, the hardest from the high), so a weaker party has something it'll take
+    /// and a strong one something worth its while. Rolled at random across the whole range, the
+    /// board was often all deadly, and no party would go.
+    /// </summary>
     private void Roll(Simulation sim)
     {
         _rolled = true;
         var pool = sim.Defs.AllQuests.ToList();
+        var picked = new List<QuestDef>();
         for (var n = 0; n < QuestsPerRound && pool.Count > 0; n++)
         {
             var def = pool[_rand.NextInt(pool.Count)];
             pool.Remove(def);
-            _quests.Add(new Quest
-            {
-                Id = _nextQuest++, Def = def, Danger = _rand.Range(def.DangerMin, def.DangerMax),
-                Reward = _rand.Range(def.RewardMin, def.RewardMax + 1),
-            });
+            picked.Add(def);
         }
+        picked.Sort((a, b) => (a.DangerMin + a.DangerMax).CompareTo(b.DangerMin + b.DangerMax));
+        for (var n = 0; n < picked.Count; n++)
+            Post(picked[n], (n + _rand.NextFloat()) / picked.Count);
     }
+
+    /// <summary>Put a quest of this kind on the board, its danger this far (0..1) through its range.</summary>
+    private void Post(QuestDef def, float along) =>
+        _quests.Add(new Quest
+        {
+            Id = _nextQuest++, Def = def, Danger = def.DangerMin + (def.DangerMax - def.DangerMin) * along,
+            Reward = _rand.Range(def.RewardMin, def.RewardMax + 1),
+        });
 
     /// <summary>Whoever holds a broker's trade has a guess at every quest (a late joiner too).</summary>
     private void BriefBrokers(Simulation sim)
@@ -248,7 +269,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
                 continue;
             foreach (var q in _quests)
                 if (!_intel.ContainsKey((e, q.Id)))
-                    _intel[(e, q.Id)] = new Intel { Danger = q.Danger * _rand.Range(0.6f, 1.4f), Reward = q.Reward * _rand.Range(0.6f, 1.4f), Confidence = 0.2f };
+                    _intel[(e, q.Id)] = new Intel { Danger = q.Danger * _rand.Range(1f - BrokerGuess, 1f + BrokerGuess), Reward = q.Reward * _rand.Range(0.6f, 1.4f), Confidence = 0.2f };
         }
     }
 

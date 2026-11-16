@@ -132,9 +132,24 @@
       "building": { "staffOnly": true, "work": 120, "surfaceHeight": 0.55, "cost": [ { "def": "Stone", "count": 4 }, { "def": "Wood", "count": 2 } ],
                     "stewPot": { "serves": "Stew", "grains": "Porridge", "yield": 1.5, "holds": 6 } },
       "model": [
-        { "min": [0.2, 0.2, 0], "max": [0.8, 0.8, 0.08], "top": "props/stone_block", "side": "props/stone_block" },
-        { "min": [0.16, 0.16, 0.08], "max": [0.84, 0.84, 0.5], "top": "props/iron_pot", "side": "props/iron_pot" },
-        { "min": [0.22, 0.22, 0.5], "max": [0.78, 0.78, 0.53], "top": "props/meal_top", "side": "props/iron_pot" }
+        // A cauldron on a stone hearth-step: a round belly (stepped in at the foot and the shoulder),
+        // an open mouth with the inside dark iron (what's in it is drawn by WorldRenderer.Kitchen,
+        // as anyone looking in sees it), lugs either side and a bail handle over the top.
+        { "min": [0.18, 0.18, 0.00], "max": [0.82, 0.82, 0.06], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.30, 0.30, 0.06], "max": [0.70, 0.70, 0.12], "top": "props/iron_pot", "side": "props/iron_pot" },
+        { "min": [0.22, 0.22, 0.12], "max": [0.78, 0.78, 0.18], "top": "props/iron_pot", "side": "props/iron_pot" },
+        { "min": [0.16, 0.16, 0.18], "max": [0.84, 0.84, 0.36], "top": "props/iron_pot", "side": "props/iron_pot" },
+        { "min": [0.20, 0.20, 0.36], "max": [0.80, 0.80, 0.42], "top": "props/iron_pot", "side": "props/iron_pot" },
+        { "min": [0.27, 0.27, 0.40], "max": [0.73, 0.73, 0.42], "top": "props/pot_inner", "side": "props/pot_inner" },
+        { "min": [0.22, 0.22, 0.42], "max": [0.78, 0.27, 0.54], "top": "props/iron", "side": "props/iron_pot", "front": "props/pot_inner" },
+        { "min": [0.22, 0.73, 0.42], "max": [0.78, 0.78, 0.54], "top": "props/iron", "side": "props/iron_pot" },
+        { "min": [0.22, 0.27, 0.42], "max": [0.27, 0.73, 0.54], "top": "props/iron", "side": "props/pot_inner" },
+        { "min": [0.73, 0.27, 0.42], "max": [0.78, 0.73, 0.54], "top": "props/iron", "side": "props/iron_pot" },
+        { "min": [0.12, 0.46, 0.40], "max": [0.16, 0.54, 0.50], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.84, 0.46, 0.40], "max": [0.88, 0.54, 0.50], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.13, 0.48, 0.50], "max": [0.15, 0.52, 0.78], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.85, 0.48, 0.50], "max": [0.87, 0.52, 0.78], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.13, 0.48, 0.78], "max": [0.87, 0.52, 0.80], "top": "props/iron", "side": "props/iron" }
       ]
     },
     {
@@ -466,7 +481,18 @@
       "maxHp": 80, "flammability": 0.6,
       "building": { "staffOnly": true, "work": 90, "surfaceHeight": 0.5, "washTub": true, "cost": [ { "def": "Wood", "count": 6 } ] },
       "model": [
-        { "min": [0.12, 0.12, 0], "max": [0.88, 0.88, 0.5], "top": "props/suds", "side": "props/washtub_side" }
+        // A half-barrel up on a low stand at working height (the quench tub's staves around sunken
+        // water, in pale pine): soapy water well below the rim, a washboard stood in it.
+        { "min": [0.16, 0.16, 0.00], "max": [0.24, 0.24, 0.10], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.76, 0.16, 0.00], "max": [0.84, 0.24, 0.10], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.16, 0.76, 0.00], "max": [0.24, 0.84, 0.10], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.76, 0.76, 0.00], "max": [0.84, 0.84, 0.10], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.20, 0.20, 0.10], "max": [0.80, 0.80, 0.34], "top": "props/suds", "side": "props/washtub_inner" },
+        { "min": [0.14, 0.14, 0.10], "max": [0.86, 0.20, 0.50], "top": "props/washtub_side", "side": "props/washtub_side", "front": "props/washtub_inner" },
+        { "min": [0.14, 0.80, 0.10], "max": [0.86, 0.86, 0.50], "top": "props/washtub_side", "side": "props/washtub_side" },
+        { "min": [0.14, 0.20, 0.10], "max": [0.20, 0.80, 0.50], "top": "props/washtub_side", "side": "props/washtub_inner" },
+        { "min": [0.80, 0.20, 0.10], "max": [0.86, 0.80, 0.50], "top": "props/washtub_side", "side": "props/washtub_side" },
+        { "min": [0.30, 0.24, 0.26], "max": [0.70, 0.30, 0.68], "top": "props/timber_dark", "side": "props/washboard" }
       ]
     }
   ]

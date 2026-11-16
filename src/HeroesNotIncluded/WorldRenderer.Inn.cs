@@ -17,6 +17,9 @@ namespace HeroesNotIncluded;
 /// </summary>
 public sealed partial class WorldRenderer
 {
+    /// <summary>The wash tub's soapy water stands this high in its model (furniture.json WashTub).</summary>
+    private const float TubSuds = 0.34f;
+
     /// <summary>Where the key board's hooks are on its model (furniture.json KeyBoard): three across, two rows.</summary>
     private static readonly float[] HookX = [0.23f, 0.5f, 0.77f], HookZ = [1.18f, 0.88f];
 
@@ -55,9 +58,16 @@ public sealed partial class WorldRenderer
         }
     }
 
-    /// <summary>Ale running from the cask into the tankard while someone holds the pour.</summary>
+    /// <summary>Ale running from the cask into the tankard while someone holds the pour; suds thrown up off the wash tub while they scrub.</summary>
     private void DrawInnWorkLife(Simulation sim, Entity e, Work.WorkSession session)
     {
+        if (session is Work.WashSession { Scrubbing: true } wash && sim.World.IsAlive(wash.Tub) && Due(_nextSteam, -e.Index - 1, 0.18f))
+        {
+            var tub = sim.World.Get<Thing>(wash.Tub);
+            var water = new float3(tub.Cell.X + 0.5f, tub.Cell.Y + 0.5f, tub.Cell.Z) + new float3(0, 0, TubSuds * WorldScale.HeightOf(tub.Def));
+            _particles.Dust(water, 2, 0.12f, new float4(0.94f, 0.96f, 1f, 0.9f), 0.18f);
+            return;
+        }
         if (session is not Work.PourSession { Held: true } pour || !sim.World.IsAlive(pour.Cask) || !Due(_nextSteam, -e.Index - 1, 0.05f))
             return;
         var t = sim.World.Get<Thing>(pour.Cask);

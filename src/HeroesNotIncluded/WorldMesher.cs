@@ -538,10 +538,14 @@ public sealed class WorldMesher(TextureAtlas atlas)
         // Under a wall up off the ground (an upper storey's), the boards stop at the wall's middle
         // on each side that faces out, so they don't jut past its outer face; toward a room they
         // run on under it. On the ground the foundation's meant to show, a plinth under the wall.
+        // A doorway's boards run right across it between the walls either side (they'd meet at its
+        // middle and leave nothing), so there's floor under the door when it swings open.
         if (!grounded && IsWallAt(sim, x, y, z))
         {
-            float x0 = Inside(x - 1, y) ? x : x + 0.5f, x1 = Inside(x + 1, y) ? x + 1 : x + 0.5f;
-            float y0 = Inside(x, y - 1) ? y : y + 0.5f, y1 = Inside(x, y + 1) ? y + 1 : y + 0.5f;
+            var door = map.Structure[map.Idx(x, y, z)] is { IsNull: false } s && sim.World.Get<Thing>(s).Def.Building?.IsDoor == true;
+            bool Run(int nx, int ny) => Inside(nx, ny) || (door && IsWallAt(sim, nx, ny, z));
+            float x0 = Run(x - 1, y) ? x : x + 0.5f, x1 = Run(x + 1, y) ? x + 1 : x + 0.5f;
+            float y0 = Run(x, y - 1) ? y : y + 0.5f, y1 = Run(x, y + 1) ? y + 1 : y + 0.5f;
             if (x1 > x0 && y1 > y0)
                 _quads.Add(new Quad
                 {

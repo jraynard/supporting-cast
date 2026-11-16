@@ -57,6 +57,23 @@ public class ExpeditionTests
         Assert.All(sim.Expeditions.Quests, q => Assert.True(sim.Expeditions.IntelOf(villager, q.Id) is null or { Confidence: >= 0.35f }));
     }
 
+    [Theory]
+    [InlineData(1234ul)]
+    [InlineData(99ul)]
+    [InlineData(7ul)]
+    [InlineData(31ul)]
+    public void TheBoardRunsFromEasyToHardAndTheBrokersGuessIsNearTheMark(ulong seed)
+    {
+        var (sim, me, _) = Round("Innkeeper", seed, tillTheyAsk: false);
+        sim.TickMany(SimClock.TicksPerHour / 4);
+        var quests = sim.Expeditions.Quests;
+        // Something a middling party (strength about 2.5) would take, stated as it truly is.
+        Assert.Contains(quests, q => q.Danger <= ExpeditionSystem.TooHard * 2.5f);
+        Assert.True(quests.Max(q => q.Danger) - quests.Min(q => q.Danger) >= 1f, string.Join(", ", quests.Select(q => q.Danger)));
+        Assert.All(quests, q => Assert.InRange(sim.Expeditions.IntelOf(me, q.Id)!.Danger,
+            q.Danger * (1f - ExpeditionSystem.BrokerGuess) - 0.01f, q.Danger * (1f + ExpeditionSystem.BrokerGuess) + 0.01f));
+    }
+
     [Fact]
     public void APartyTurnsDownAQuestThatSoundsWrongForThem()
     {

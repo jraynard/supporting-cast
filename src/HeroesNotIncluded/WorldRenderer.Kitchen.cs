@@ -35,6 +35,9 @@ public sealed partial class WorldRenderer
         if (def.Building.StewPot != null)
         {
             var rim = floor + new float3(0, 0, 0.55f * height);
+            // What's in it, down inside the rim (furniture.json StewPot: the inside's floor at 0.42).
+            if (look.Full)
+                Decal(S("props/meal_top"), floor + new float3(0, 0, PotContents * height), 0.46f, Rgba.White, level);
             if (look.Flaring)
             {
                 var size = (0.7f + 0.08f * MathF.Sin(_anim.Clock * 11f + e.Index)) * height;
@@ -66,6 +69,9 @@ public sealed partial class WorldRenderer
         if (look.Baking && Due(_nextSteam, e.Index, 1.2f))
             _particles.Wisps(mouth + new float3(0, 0, 0.3f), mouth + new float3(0, 0, 1.2f), 1, new float4(0.85f, 0.8f, 0.7f, 0.5f));
     }
+
+    /// <summary>How high in the pot's model its stew stands, a little over the inside's floor.</summary>
+    private const float PotContents = 0.46f;
 
     /// <summary>True (and the next one set) when a per-thing timer's run out.</summary>
     private bool Due(Dictionary<int, float> timers, int key, float every)

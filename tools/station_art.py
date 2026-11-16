@@ -21,12 +21,14 @@ STONE = rock_ramp(graded(ROCKS["rough"]["base"]))
 HONE = ramp((128, 134, 140), 5, dark=0.5, light=1.4)
 SLATE = ramp((110, 116, 128), 5, dark=0.5, light=1.4)
 WATER = ramp((70, 110, 140), 4, dark=0.55, light=1.5)
+SOAPY = ramp((122, 140, 148), 4, dark=0.55, light=1.3)
 SUDS = ramp((226, 232, 236), 3, main=1, dark=0.8, light=1.05)
 LEAF = ramp((96, 140, 72), 5, dark=0.5, light=1.4)
 SAGE = ramp((140, 160, 120), 4, dark=0.55, light=1.3)
 CLAY = ramp((176, 110, 70), 4, dark=0.55, light=1.3)
 STEW = ramp((150, 92, 50), 4, dark=0.55, light=1.35)
 ALE = ramp((196, 132, 44), 4, dark=0.55, light=1.3)
+BLACK_IRON = ramp((52, 50, 54), 5, main=1, dark=0.6, light=2.1)   # a cooking pot's iron: near black, a warm sheen
 OUTLINE_KEEP = (GLOW, HOT, CORE, EMBER)
 
 
@@ -375,40 +377,85 @@ def prop_iron_pot():
             dent = 0.5 if ((x // 5 + y // 4) % 3 == 0 and (x % 5 in (1, 2))) else 0
             soot = -0.6 if (y % 32) > 22 else 0
             v = 1.4 + dent + soot + (0.3 if bayer(x, y) > 0.8 else 0)
-            img.putpixel((x, y), IRON[max(0, min(4, round(v)))])
+            img.putpixel((x, y), BLACK_IRON[max(0, min(4, round(v)))])
     return img
 
 
 def prop_washtub_side():
-    """Pale pine staves with a hoop: a wash tub's sides (not the smithy's dark quench tub)."""
+    """Pine staves with grain, bound by two iron hoops: a wash tub's sides (paler than the smithy's quench tub)."""
+    img = canvas()
+    rnd = random.Random(41)
+    for i in range(4):
+        board(img, i * 8, 0, i * 8 + 7, S - 1, WOODS["_pine"], rnd, False, tone=3.0 + (i % 2) * 0.3)
+    for y0 in (4, 23):
+        for x in range(S):
+            put(img, x, y0, IRON[3]); put(img, x, y0 + 1, IRON[2]); put(img, x, y0 + 2, IRON[0])
+        for x in range(4, S, 8):
+            put(img, x, y0 + 1, IRON[4])
+    return img
+
+
+def prop_washtub_inner():
+    """The inside of the wash tub's staves: the same pine in its own shadow, darker and grey where
+    the soapy water's wet it, a scum line at the waterline."""
     img = canvas()
     w = WOODS["_pine"]
     for y in range(S):
         for x in range(S):
-            if x % 8 == 7:
-                c = w.w[1]
-            elif y % 32 in (10, 11):
-                c = IRON[2] if y % 32 == 10 else IRON[1]
+            c = w.w[1] if x % 8 == 7 else w.w[2 - (1 if bayer(x, y) > 0.85 else 0)]
+            if y > S - 9:                                                  # wet below the waterline
+                c = (c[0] * 3 // 4, c[1] * 3 // 4, c[2] * 4 // 5, 255)
+            img.putpixel((x, y), c)
+    for x in range(S):
+        put(img, x, S - 9, SUDS[1] if x % 3 else SUDS[0])
+    return img
+
+
+def prop_washboard():
+    """A scrubbing board: pale ribs across a pine frame, worn bright along the ridges."""
+    img = canvas()
+    w = WOODS["_pine"]
+    for y in range(S):
+        for x in range(S):
+            if x < 3 or x > S - 4:
+                c = w.w[2 if x in (0, S - 1) else 3]
             else:
-                c = w.w[3 + (1 if x % 8 == 0 else 0) - (1 if bayer(x, y) > 0.85 else 0)]
+                c = w.w[4] if y % 4 == 0 else w.w[3] if y % 4 == 1 else w.w[1]
             img.putpixel((x, y), c)
     return img
 
 
-def prop_suds():
-    """Grey-blue washing water with drifts of suds."""
+def prop_pot_inner():
+    """The inside of an iron pot: black, crusted with what's caught, a dull ring where the stew stood."""
     img = canvas()
-    rnd = random.Random(19)
     for y in range(S):
         for x in range(S):
-            img.putpixel((x, y), WATER[1 + (1 if bayer(x, y) > 0.7 else 0)])
-    for _ in range(14):
-        cx, cy, r = rnd.randrange(S), rnd.randrange(S), rnd.uniform(1.5, 3.2)
-        for y in range(int(cy - r) - 1, int(cy + r) + 2):
-            for x in range(int(cx - r) - 1, int(cx + r) + 2):
-                if (x - cx) ** 2 + (y - cy) ** 2 <= r * r:
-                    lit = (x - cx) + (y - cy) < -r * 0.3
-                    img.putpixel((x % S, y % S), SUDS[2] if lit else SUDS[1])
+            v = 0.4 + (0.4 if bayer(x, y) > 0.8 else 0) + (0.6 if (x * 5 + y * 3) % 17 == 0 else 0)
+            img.putpixel((x, y), BLACK_IRON[max(0, min(4, round(v)))])
+    for x in range(S):
+        put(img, x, 6, BLACK_IRON[2])
+    return img
+
+
+def prop_suds():
+    """Grey soapy water seen from above: a dull swell, darker at the staves' shadow, and a froth of
+    small bubbles drifting in clumps, lit on their top left."""
+    img = canvas()
+    rnd = random.Random(19)
+    px = img.load()
+    for y in range(S):
+        for x in range(S):
+            edge = min(x, y, S - 1 - x, S - 1 - y)
+            v = 1.6 + bayer(x, y) * 0.5 + math.sin(x * 0.3 + y * 0.5) * 0.3 - (0.8 if edge < 2 else 0.3 if edge < 4 else 0)
+            px[x, y] = SOAPY[max(0, min(3, round(v)))]
+    for _ in range(9):
+        cx, cy = rnd.randrange(4, S - 4), rnd.randrange(4, S - 4)
+        for _ in range(7):
+            x, y, r = cx + rnd.randint(-4, 4), cy + rnd.randint(-3, 3), rnd.choice((1, 1, 1.5, 2))
+            for yy in range(int(y - r), int(y + r) + 1):
+                for xx in range(int(x - r), int(x + r) + 1):
+                    if (xx - x) ** 2 + (yy - y) ** 2 <= r * r and 0 <= xx < S and 0 <= yy < S:
+                        px[xx, yy] = SUDS[2] if (xx - x) + (yy - y) < 0 else SUDS[1]
     return img
 
 
@@ -425,7 +472,10 @@ def generate():
     save(prop_iron_pot(), "props/iron_pot")
     save(prop_washtub_side(), "props/washtub_side")
     save(prop_suds(), "props/suds")
-    print("stations: wrote 18 icons and 4 model faces")
+    save(prop_washtub_inner(), "props/washtub_inner")
+    save(prop_washboard(), "props/washboard")
+    save(prop_pot_inner(), "props/pot_inner")
+    print("stations: wrote 18 icons and 7 model faces")
 
 
 if __name__ == "__main__":

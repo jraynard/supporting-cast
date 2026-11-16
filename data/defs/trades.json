@@ -14,6 +14,7 @@
       "stations": [ "AleCask", "Shelf", "BarCounter", "KeyBoard" ],
       "tips": [ "Thirsty adventurers come to the bar. The bubble over a head says what they're after; a ! means it's yours to pour.",
                 "Hold ~F~ at the ale cask to pour. ~AD~ tilts the tankard: less foam, more patience.",
+                "A drink poured: ~F~ at the counter hands it across to whoever's waited longest (your own orders first), or ~F~ at a customer for theirs.",
                 "Your prices hang on the sign (~J~). Too dear and they go thirsty. Too cheap and so do you.",
                 "Lucky Lou's under the bar. You'll know when. ~F~ at the counter.",
                 "A room: ~F~ at the key board behind the bar, write the guest into the book, take that room's key down and hand it over. The wrong key sends them in on someone.",
@@ -25,7 +26,7 @@
             { "id": "wait", "text": "Customers are on their way. They come to the bar to order; a ! over someone's head means they're waiting for you." },
             { "id": "tankard", "text": "Take a clean tankard from the shelf behind the bar (~F~)." },
             { "id": "pour", "text": "Hold ~F~ at the ale cask to pour. ~AD~ tilts the tankard: tilted, it foams less but fills slower. Let go when it's full." },
-            { "id": "give", "text": "Click the customer who ordered while you're close, and hand it over. They pay once they have it." } ] },
+            { "id": "give", "text": "Press ~F~ at the bar counter to hand it across to the customer waiting for it (or ~F~ at them). They pay once they have it." } ] },
         { "id": "mixed", "title": "Mix a named drink", "supply": [ { "def": "Spirits" }, { "def": "Honey" } ],
           "blurb": "Mix a hearthwarmer (ale, spirits and honey) at the bar. The spirits and honey are in your pack.",
           "steps": [

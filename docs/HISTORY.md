@@ -1881,3 +1881,24 @@ player vanished on day two and it ended on day three.
   crust colours for both.
 - Not yet: the spoon, knife and quill in hand.
 
+
+### Playtest fixes: serving across the bar, a fairer quest board, the pot and tub (2026-11-15)
+- **Serving drinks** (`Shops/BarService`): F at the bar counter with a poured drink hands it across
+  to whoever's waiting for one in reach, without finding them and opening the inspector: a
+  mixed-drink order gets the mixed drink, your own orders first, then the line's order. F pointed
+  at a customer serves them. The ale lesson and the keeper's tips say so.
+- **The quest board** (`ExpeditionSystem.Roll`): a round's three quests are spread from easy to hard
+  (put in order of how hard their kind runs, each taking its own share of its range), and the
+  broker's first guess is within a quarter either way (`BrokerGuess`, was 40%). The whole board had
+  often read as deadly, and no party would take anything. A 16-seed `--season-sweep`: won 5 (was 2),
+  quests cleared 1.2 a round (1.1), failed 0.4 (0.2). Replacing cleared quests was tried and left
+  out: an open quest feeds Dread every hour, so clearing one has to empty the board.
+- **The stew pot** is a cauldron on a hearth-step: a stepped belly, an open mouth dark inside, lugs and
+  a bail handle, in near-black iron. The stew shows inside it only while there's some to ladle
+  (`KnownKitchenLook.Full`). The stew game's pot sprite is redrawn the same way.
+- **The wash tub** is built like the quench tub: grained pine staves bound with hoops around grey
+  soapy water sunk below the rim, on a low stand, a washboard stood in it; suds fly while someone
+  scrubs.
+- **Doors**: a locked door no longer swings open for whoever stands at it (a key-holder unlocks it as
+  they pass). Upstairs, the boards run right across a doorway, so there's floor under an open door.
+- Bench: state hashes unchanged; full `9C057DC56CA7791F` (seed 1234), `0FC614E584126363` (seed 99).

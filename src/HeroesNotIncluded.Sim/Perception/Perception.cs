@@ -64,7 +64,7 @@ public readonly record struct KnownOven(Entity Oven, int Loaves, string Smell, b
 /// the pot's surface moves and whether it's flaring, the crust on the side of the spit's joint
 /// turned up, whether the fire's lit. Never what's in the pot, how done it is, or what's baking.
 /// </summary>
-public readonly record struct KnownKitchenLook(Work.Surface Surface, bool Flaring, bool Lit, Work.Crust? Crust, bool Baking);
+public readonly record struct KnownKitchenLook(Work.Surface Surface, bool Flaring, bool Lit, Work.Crust? Crust, bool Baking, bool Full = false);
 
 /// <summary>A shop's house dish as posted with its prices: its name and how it tastes (<see cref="Work.HouseDish"/>).</summary>
 public readonly record struct KnownHouseDish(string Name, string Tastes);
@@ -441,7 +441,8 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
             foreach (var e in w.Each<Work.WorkSession>())
                 if (w.Get<Work.WorkSession>(e) is Work.StewSession s && s.Pot == station)
                     heat = s.Heat;
-            return new KnownKitchenLook(p.Empty ? Work.Surface.Still : Work.Cooking.SurfaceOf(heat), Work.Cooking.Flaring(sim, station), Work.Cooking.Lit(sim, station), null, false);
+            return new KnownKitchenLook(p.Empty ? Work.Surface.Still : Work.Cooking.SurfaceOf(heat), Work.Cooking.Flaring(sim, station), Work.Cooking.Lit(sim, station), null, false,
+                Full: !p.Empty && Work.Cooking.ServingsLeft(sim, station) > 0);
         }
         if (t.Def.Building is { Spit: true })
         {
