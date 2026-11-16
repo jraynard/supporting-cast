@@ -1978,3 +1978,31 @@ player vanished on day two and it ended on day three.
   character faces the mouse while it swings; a bar shows the swing and the landing patch is outlined.
   Clicking a cell no longer throws; `ThrowSession` stays only for a save made mid-throw.
 - `BucketTests` rewritten for it. Bench hashes unchanged.
+
+### The innkeeper's playtest (2026-11-15)
+- **Travellers** (`PartyDef.Traveller`, `adventurers.json`): a pedlar, a pilgrim, a drover and a
+  minstrel, one at a time, 14:00 to 19:00, about a day apart and no more than two in town, on their
+  own schedule and random stream (`PartySystem.Travellers`), never holding a party back
+  (`Present` ignores them). They leave the morning after their last night, never quest, count half at
+  the reckoning (`Reckoning.WordOf`), and keep back a room's price from anything else till they've a
+  bed (`ShopSystem.KeptForARoom`): thin purses spent on supper and a scrape seen to left them none.
+- **Bedtimes**: a guest asks for a room at their own hour, 18:00 to 21:00, derived from who they are
+  and the night (`ShopSystem.Bedtime`), not all at six.
+- **Order cards**: a green tick to take an order or favour; a drink order you're on gets a button
+  showing what they ordered, enabled once you've poured one, that walks you over and serves it
+  (`SeeToCustomerJob`, `ShopSystem.Delivers`). Errands use the same icon button.
+- **Markers** for every order you've taken, labelled with what's owed ("their key, room 3"), for a
+  guest back down from the wrong room, and for a guest whose name you click in the room book.
+- **Keys** off the board go into an empty hand.
+- **Kegs**: a cask holds 24 (was 60), so a season wants one changed; the sweep counts servings drawn
+  and kegs knocked in. The innkeeper bot spends long spells stuck mixing or mopping, so it draws
+  about 15 a season and never changes one yet.
+- **Mixing cues**: dark tokens with a hoop ring and a bright letter, the next one ringed green.
+- **Cleaning with the mouse**: `WorkInputKind.Point` carries the pointer into a session. The wash
+  brush goes where it points; the scrub is now a grid of blots rubbed out by moving over them, by
+  mouse drag or A/D/W/S, not A/D mashing.
+- **Upper floor**: boards run on along an upper wall line (`WorldMesher.UpperWallBoards`), so no
+  strip shows between the wall and the cell's edge.
+- 8-seed `--season-sweep`: Renown mean 46.5 (48.8 before), won 1 (2), served 10.0 (7.9).
+- Save format 42. Bench state hashes unchanged (1234 `57F4CB524D2257FB`, 99 `C1BB56A18110F5C7`);
+  the full hashes moved with the save format (1234 `A7A0D0705BEACE0A`, 99 `AED1C3DDE9F325C0`).

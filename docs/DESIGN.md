@@ -167,6 +167,11 @@ do it.
     cue; a miss sprays foam and wastes servings.
 - *Rooms.* Let by the night: the guest pays each evening, keeps the same room while they're in
   town, and checks out when they move on or let a night go unpaid (`Hospitality/InnRooms`).
+  Each guest turns in at an hour of their own, 18:00 to 21:00, so a party doesn't rush the board.
+  - **Travellers:** lone passers-through (a pedlar, a pilgrim, a drover, a minstrel) come of an
+    afternoon, about one a day, alongside whatever party's in town. They eat, drink, take a room
+    for a night or two and move on the morning after; they never quest, keep a room's price back
+    till they have one, and their word of the town counts half. The rooms aren't all or nothing.
   - **Keys and the book:** each room's door is locked; its key hangs on the board behind the bar,
     with a spare in the storeroom. The keeper writes the guest into the book on the board (a
     stroke on each beat), takes a room's key down and hands it over: whatever key they're given is
