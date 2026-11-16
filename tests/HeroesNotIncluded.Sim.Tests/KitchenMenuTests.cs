@@ -95,6 +95,20 @@ public class KitchenMenuTests
     }
 
     [Fact]
+    public void JointingASecondSideWithMeatAlreadyInThePackDoesntFallOver()
+    {
+        // The meat that comes off joins the stack already carried: the session mustn't read the new one after.
+        var (sim, me, block) = Block(("Meat", 3));
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("PorkSide"), 2); // two in hand: the meat goes to the pack
+        Work(sim, me, block);
+        var s = Assert.IsType<ButcherSession>(sim.World.Get<WorkSession>(me));
+        Joint(s, onJoints: true);
+        sim.Tick();
+        Assert.False(sim.World.Has<WorkSession>(me));
+        Assert.True(sim.World.Get<Stack>(Named(sim, me, "Meat")).Count > 3);
+    }
+
+    [Fact]
     public void ASideJointedCleanlyGivesItsFullYield()
     {
         var (sim, me, block) = Block(("PorkSide", 1));

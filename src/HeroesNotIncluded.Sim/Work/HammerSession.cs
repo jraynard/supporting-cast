@@ -9,9 +9,9 @@ namespace HeroesNotIncluded.Sim.Work;
 /// One heat on the anvil (<see cref="Smithing"/>): hold W (or F, or the mouse's button) to raise
 /// the hammer, and let go to bring it down. The blow is as good as the wind: back to the mark is a
 /// full one; short of it moves the metal less; past it, the blow comes down too hard and knocks
-/// the work out of true, undoing what was done. Raised, it wanders off the piece, the more for an
-/// unsteady arm: A/D (or the mouse moved side to side) keep it centred, and a blow off centre
-/// glances. A new mark after every blow, and the piece's quality is the average of them all, so a
+/// the work out of true, undoing a little of what was done. Raised, it wanders across the piece,
+/// the more for an unsteady arm: A/D (or the mouse moved side to side) keep it over the spot to
+/// strike, which moves after every blow, and a blow off the spot glances. A new mark after every blow, and the piece's quality is the average of them all, so a
 /// smith's hands decide the blade in place of a skill roll. The piece cools all the while: hot, a
 /// blow moves the metal; fading, less; black, barely, and it may crack. The heat ends when it's
 /// shaped or too cold to work, and it goes back to the fire.
@@ -30,8 +30,11 @@ public sealed class HammerSession : WorkSession
     /// <summary>How much a wind wavers a step for an unsteady hand, per point of tremor.</summary>
     public const float WindWaver = 0.012f;
 
-    /// <summary>How far an unsteady arm carries on past (or falls short of) where it's let go, per point of tremor.</summary>
-    public const float TopWaver = 0.4f;
+    /// <summary>How far across the spot to strike may move between blows (the piece is -1 to 1 across).</summary>
+    public const float SpotRange = 0.55f;
+
+    /// <summary>How much of a blow's shaping an overwound one undoes: this much just over, up to <see cref="OverUndoMost"/> well over.</summary>
+    public const float OverUndo = 0.3f, OverUndoMost = 0.5f;
 
     /// <summary>How far A/D move the hammer across a step (the piece is -1 to 1 across, centred on 0).</summary>
     public const float SteerPerStep = 0.012f;
@@ -123,8 +126,11 @@ public sealed class HammerSession : WorkSession
 
     public float CentreWidth => CentreHalfWidth * Hands.Tolerance;
 
-    /// <summary>Over the piece near enough for a true blow.</summary>
-    public bool Centred => MathF.Abs(Offset) <= CentreWidth;
+    /// <summary>Where across the piece to strike this blow (-1 to 1); it moves after every blow.</summary>
+    public float Spot { get; private set; }
+
+    /// <summary>Over the spot near enough for a true blow.</summary>
+    public bool Centred => MathF.Abs(Offset - Spot) <= CentreWidth;
 
     public float HalfWidth => MarkHalfWidth * Hands.Tolerance;
 
@@ -160,7 +166,11 @@ public sealed class HammerSession : WorkSession
         return w.IsAlive(Station) && AvatarSystem.InReach(sim, w.Get<Position>(Worker).Cell, Station) && Smithing.PieceOf(sim, Worker) != null;
     }
 
-    private void NewMark() => Mark = Rand.Range(0.35f, 0.9f);
+    private void NewMark()
+    {
+        Mark = Rand.Range(0.35f, 0.9f);
+        Spot = Rand.Range(-SpotRange, SpotRange);
+    }
 
     protected internal override void Begin() => NewMark();
 
@@ -192,12 +202,7 @@ public sealed class HammerSession : WorkSession
             }
             else if (Raise > 0f)
             {
-                if (!_falling)
-                {
-                    // Let go: an unsteady arm carries on a little, or sags, as it comes over.
-                    _falling = true;
-                    Peak = Math.Clamp(Peak + (Rand.NextFloat() * 2f - 1f) * Hands.Tremor * TopWaver, 0f, 1f);
-                }
+                _falling = true; // let go: it comes down from where it was, judged by that
                 Raise = Math.Max(0f, Raise - SwingPerStep);
                 if (Raise <= 0f)
                 {
@@ -225,7 +230,7 @@ public sealed class HammerSession : WorkSession
         var heat = Workable;
         LastCold = heat < 0.5f;
         LastWind = Peak;
-        var wide = MathF.Abs(Offset) - CentreWidth;
+        var wide = MathF.Abs(Offset - Spot) - CentreWidth;
         var centre = wide <= 0f ? 1f : Math.Clamp(1f - wide / 0.4f, Glancing, 1f);
         LastOffCentre = centre < 1f;
         float grade;
@@ -234,7 +239,7 @@ public sealed class HammerSession : WorkSession
             // Wound past it: it comes down too hard and knocks the work out of true.
             LastWindWas = 1;
             var over = Math.Clamp((off - HalfWidth) / (HalfWidth * 3f), 0f, 1f);
-            Shape = Math.Max(0f, Shape - (0.6f + 0.9f * over) / BlowsNeeded);
+            Shape = Math.Max(0f, Shape - (OverUndo + (OverUndoMost - OverUndo) * over) / BlowsNeeded);
             grade = 0.1f * (1f - over) * centre;
         }
         else
@@ -324,6 +329,7 @@ public sealed class HammerSession : WorkSession
         w.Int(LastWindWas);
         w.Float(LastWind);
         w.Bool(LastOffCentre);
+        w.Float(Spot);
     }
 
     protected override void ReadState(SaveReader r)
@@ -378,6 +384,7 @@ public sealed class HammerSession : WorkSession
             LastWindWas = Math.Clamp(r.Int(), -1, 1);
             LastWind = r.Float();
             LastOffCentre = r.Bool();
+            Spot = r.Version >= 46 ? Math.Clamp(r.Float(), -1f, 1f) : 0f; // the spot to strike moving came with format 46
         }
     }
 }

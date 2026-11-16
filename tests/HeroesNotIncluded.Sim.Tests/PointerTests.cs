@@ -330,9 +330,10 @@ public class PointerTests
     /// mark (0 on it), then let go; pushed <paramref name="push"/> steps off centre with D first. The
     /// piece's shape gained, and the blows' average grade.
     /// </summary>
-    private static (float Shape, float Grade) Swung(float precision, float wind, int push = 0, int blows = 4)
+    private static (float Shape, float Grade) Swung(float precision, float wind, int push = 0, int blows = 4, float shaped = 0f)
     {
         var (sim, me, forge, recipe) = WorkTests.AtTheForge();
+        Smithing.PieceOf(sim, me)!.Shape = shaped;
         var real = WorkTests.Start(sim, me, forge, recipe);
         var shape = 0f;
         var grade = 0f;
@@ -349,17 +350,20 @@ public class PointerTests
                     s.Advance([], s.StepsDone + 1);
                 var top = Math.Clamp(s.Mark + wind, 0f, 1f);
                 s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Hold, 1)], s.StepsDone + 1);
-                if (push > 0)
-                    s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Axis, 1), new WorkInput(s.StepsDone + push, WorkInputKind.Axis, 0)], s.StepsDone + push + 1);
+                if (push > 0) // steered away from the spot
+                {
+                    var away = s.Spot > s.Offset ? -1 : 1;
+                    s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Axis, away), new WorkInput(s.StepsDone + push, WorkInputKind.Axis, 0)], s.StepsDone + push + 1);
+                }
                 while (!s.Done && s.Raise < top - HammerSession.WindPerStep * 0.5f && s.Raise < 1f)
                     s.Advance(push > 0 ? [] : [new WorkInput(s.StepsDone, WorkInputKind.Axis, Bots.BotPlayer.HammerCentre(s))], s.StepsDone + 1);
                 var before = s.Blows;
                 s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Hold, 0), new WorkInput(s.StepsDone, WorkInputKind.Axis, 0)], s.StepsDone + 1);
                 while (!s.Done && s.Blows == before && s.Swinging)
                     s.Advance([], s.StepsDone + 1);
-                // Back to the middle for the next.
-                while (!s.Done && MathF.Abs(s.Offset) > s.CentreWidth * 0.3f)
-                    s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Axis, -Math.Sign(s.Offset)), new WorkInput(s.StepsDone + 1, WorkInputKind.Axis, 0)], s.StepsDone + 1);
+                // Over to the next spot.
+                while (!s.Done && MathF.Abs(s.Offset - s.Spot) > s.CentreWidth * 0.3f)
+                    s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Axis, Math.Sign(s.Spot - s.Offset)), new WorkInput(s.StepsDone + 1, WorkInputKind.Axis, 0)], s.StepsDone + 1);
             }
             shape += s.Shape - from;
             grade += s.Quality;
@@ -421,9 +425,28 @@ public class PointerTests
     [Fact]
     public void AnUnsteadyHandsWindWavers()
     {
-        var steady = Swung(1f, 0f);
-        var shaky = Swung(0f, 0f);
-        Assert.True(shaky.Grade < steady.Grade, $"shaky {shaky.Grade}, steady {steady.Grade}");
+        float Uneven(float precision)
+        {
+            var total = 0f;
+            for (var seed = 1u; seed <= 20; seed++)
+            {
+                var s = new HammerSession { Rand = new SimRandom(seed), Hands = new Hands(precision, 1f, 5) };
+                s.Begin();
+                s.Advance([new WorkInput(0, WorkInputKind.Hold, 1)], 20);
+                total += MathF.Abs(s.Raise - 20 * HammerSession.WindPerStep);
+            }
+            return total / 20f;
+        }
+        Assert.Equal(0f, Uneven(1f), 4);
+        Assert.True(Uneven(0f) > 0.005f, $"a shaky wind's off by {Uneven(0f)}");
+    }
+
+    [Fact]
+    public void AnOverwoundBlowUndoesOnlyPartOfABlow()
+    {
+        var full = Swung(1f, 0f, blows: 1);
+        var over = Swung(1f, 0.3f, blows: 1, shaped: 0.5f);
+        Assert.True(over.Shape < 0f && -over.Shape < full.Shape * 0.6f, $"over {over.Shape}, a full blow {full.Shape}");
     }
 
     [Fact]

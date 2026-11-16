@@ -53,25 +53,30 @@ public static class Butchery
     /// into, as far gone as it was: back where it came from (hands or pack). The made stack, or
     /// Entity.Null if it couldn't be.
     /// </summary>
-    internal static Entity Dress(Simulation sim, Entity cook, Entity whole, DressProps props, int count)
+    /// <remarks>
+    /// Returns how many were made and what (null if nothing): what's stowed may join a stack already
+    /// in the pack, so the new stack can be gone by the time this returns.
+    /// </remarks>
+    internal static (int Count, ThingDef? Made) Dress(Simulation sim, Entity cook, Entity whole, DressProps props, int count)
     {
         var w = sim.World;
         if (!w.IsAlive(whole) || !sim.Defs.TryThing(props.Into, out var into))
-            return Entity.Null;
+            return (0, null);
         var rot = FoodPoisoning.RotOf(sim, whole);
         ref var hands = ref w.Get<Carrying>(cook);
         var inHand = hands.Item == whole && w.Get<Stack>(whole).Count <= 1;
         if (inHand)
             hands.Item = Entity.Null;
         w.Destroy(sim.TakeFromStack(whole, 1));
-        var made = sim.CreateItem(into, Math.Max(1, count));
+        var n = Math.Max(1, count);
+        var made = sim.CreateItem(into, n);
         if (w.Has<Rot>(made))
             w.Get<Rot>(made).Progress = rot;
         if (inHand)
             w.Get<Carrying>(cook).Item = made;
         else
             Inventory.Stow(sim, cook, made);
-        return made;
+        return (n, into);
     }
 
     /// <summary>What an average hand gets from it: most of it, not all.</summary>
@@ -234,12 +239,11 @@ public sealed class ButcherSession : WorkSession
             return;
         var parted = Parted.Count(p => p) / (float)Parted.Length;
         var count = (int)MathF.Round(props.Yield * (0.45f + 0.35f * parted + 0.2f * Quality));
-        var made = Butchery.Dress(sim, Worker, Side, props, count);
-        if (made.IsNull)
+        var (n, made) = Butchery.Dress(sim, Worker, Side, props, count);
+        if (made == null)
             return;
-        var w = sim.World;
         var hacked = Hacks switch { 0 => "", 1 => " One blow went through bone.", _ => $" {Hacks} blows went through bone: there's waste." };
-        sim.Messages.Add(MessageKind.Info, $"Jointed the {Label}: {w.Get<Stack>(made).Count} {w.Get<Thing>(made).Def.Label}.{hacked}", w.Get<Thing>(Block).Cell);
+        sim.Messages.Add(MessageKind.Info, $"Jointed the {Label}: {n} {made.Label}.{hacked}", sim.World.Get<Thing>(Block).Cell);
     }
 
     protected override void Cloned() => Parted = (bool[])Parted.Clone();
@@ -408,12 +412,11 @@ public sealed class PluckSession : WorkSession
         if (!sim.World.IsAlive(Bird) || sim.World.Get<Thing>(Bird).Def.Plucks is not { } props)
             return;
         var count = props.Yield - (Tears >= 2 ? 1 : 0);
-        var made = Butchery.Dress(sim, Worker, Bird, props, count);
-        if (made.IsNull)
+        var (n, made) = Butchery.Dress(sim, Worker, Bird, props, count);
+        if (made == null)
             return;
-        var w = sim.World;
         var torn = Tears switch { 0 => " Not a tear in it.", 1 => " The skin tore once.", _ => " The skin's torn: there's less of it." };
-        sim.Messages.Add(MessageKind.Info, $"Plucked the {Label}: {w.Get<Stack>(made).Count} {w.Get<Thing>(made).Def.Label}.{torn}", w.Get<Thing>(Block).Cell);
+        sim.Messages.Add(MessageKind.Info, $"Plucked the {Label}: {n} {made.Label}.{torn}", sim.World.Get<Thing>(Block).Cell);
     }
 
     protected override void WriteState(SaveWriter w)

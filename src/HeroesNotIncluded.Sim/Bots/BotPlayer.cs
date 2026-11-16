@@ -539,8 +539,8 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     }
 
     /// <summary>Steer a needle back toward the middle of its band.</summary>
-    /// <summary>A smith's other hand on the hammer: A/D back toward the middle of the piece when it wanders.</summary>
-    public static int HammerCentre(HammerSession h) => MathF.Abs(h.Offset) > h.CentreWidth * 0.3f ? -Math.Sign(h.Offset) : 0;
+    /// <summary>A smith's other hand on the hammer: A/D toward the spot to strike when it's off it.</summary>
+    public static int HammerCentre(HammerSession h) => MathF.Abs(h.Offset - h.Spot) > h.CentreWidth * 0.3f ? Math.Sign(h.Spot - h.Offset) : 0;
 
     /// <summary>A smith's arm: hold W till the mark's in reach, then let go; -1 is W held.</summary>
     public static int HammerSwing(HammerSession h) =>

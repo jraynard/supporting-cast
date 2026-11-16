@@ -25,7 +25,7 @@ public sealed partial class VillageGame
 
     private void DrawHammer(HammerSession s)
     {
-        BeginWork(s.Title, ("F|Hold the button", "raise it to the mark, let go to strike"), ("A/D|Move", "keep it over the middle"), ("Esc", "back to the fire"));
+        BeginWork(s.Title, ("F|Hold the button", "raise it to the mark, let go to strike"), ("A/D|Move", "keep it over the marker"), ("Esc", "back to the fire"));
         if (s.StartTick != _anvilSession)
         {
             _anvilSession = s.StartTick;
@@ -86,11 +86,14 @@ public sealed partial class VillageGame
                 var strikePoint = new float2(bMin.X + b.X * 0.6f, bMin.Y);
                 if (_pendingSparks)
                     ThrowSparks(strikePoint, _strikeGrade, s.Blows);
-                // The middle of the piece, green while the hammer's over it.
-                var mid0 = new float2(strikePoint.X, bMin.Y - Gui.S(3));
-                var mid1 = new float2(strikePoint.X, bMin.Y + b.Y);
-                dl.AddLine(in mid0, in mid1, Theme.U8(s.Centred ? Theme.Good : Theme.Text, s.Centred ? 0.8f : 0.4f), Gui.S(1.5f));
-                DrawHammerSwing(dl, s.Mark, strikePoint, px, Gui.U8(new float4(1f, 1f, 1f, 0.22f))); // the mark: a ghost of the wind to aim for, dead centre
+                // The spot to strike, a notch over the bar, green while the hammer's over it; it moves after every blow.
+                var spotX = strikePoint.X + s.Spot * HammerShift;
+                var mid0 = new float2(spotX, bMin.Y - Gui.S(3));
+                var mid1 = new float2(spotX, bMin.Y + b.Y);
+                var spotColour = Theme.U8(s.Centred ? Theme.Good : Theme.Accent, s.Centred ? 0.9f : 0.7f);
+                dl.AddLine(in mid0, in mid1, spotColour, Gui.S(2f));
+                dl.AddTriangleFilled(new float2(spotX - Gui.S(6), bMin.Y - Gui.S(12)), new float2(spotX + Gui.S(6), bMin.Y - Gui.S(12)), new float2(spotX, bMin.Y - Gui.S(4)), spotColour);
+                DrawHammerSwing(dl, s.Mark, new float2(spotX, strikePoint.Y), px, Gui.U8(new float4(1f, 1f, 1f, 0.22f))); // a ghost of the blow to aim for: as high, over the spot
                 DrawHammerSwing(dl, s.Raise, strikePoint + new float2(s.Offset * HammerShift, 0f), px, Gui.White);
                 DrawSparks(dl);
                 if (since < GradeSeconds)
@@ -129,10 +132,10 @@ public sealed partial class VillageGame
                 ? "It's going black: blows now do it no good, and may crack it. Back to the fire."
                 : "The colour's fading: it's moving less under the hammer.");
         else if (since < GradeSeconds * 2 && s.LastWind >= 0f && (s.LastWindWas != 0 || s.LastOffCentre))
-            TextC(s.LastWindWas > 0 ? Theme.Bad : Theme.Warn, s.LastWindWas > 0 ? "Raised too far: it came down too hard and knocked the work out of true."
-                : s.LastWindWas < 0 ? "Short of the mark: it moved the metal less." : "Off the middle: it glanced.");
+            TextC(s.LastWindWas > 0 ? Theme.Bad : Theme.Warn, s.LastWindWas > 0 ? "Raised too far: it came down too hard and undid a little."
+                : s.LastWindWas < 0 ? "Short of the mark: it moved the metal less." : "Off the marker: it glanced.");
         else
-            TextC(Theme.Dim, s.Repairing ? "Hammering out the chips: raise it to the mark, keep it centred, let go." : "Raise it to the mark, not past it, and let go. Keep it over the middle.");
+            TextC(Theme.Dim, s.Repairing ? "Hammering out the chips: over the marker, raise it to the mark, let go." : "Keep it over the marker, raise it to the mark (not past it), and let go.");
         EndWork();
     }
 
