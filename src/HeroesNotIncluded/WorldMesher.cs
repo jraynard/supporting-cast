@@ -343,7 +343,7 @@ public sealed class WorldMesher(TextureAtlas atlas)
                         cutAt: stub ? StubHeight + BuildingKit.CutLift(index++, facing) : float.MaxValue);
                 continue; // a door's leaf still swings on its own (Rendering/DoorAnimator)
             }
-            if (def.Model is { } model)
+            if (PropModel.Placed(def) is { } model)
             {
                 var material = thing.Material;
                 // Set in a wall cut down to stubs (a serving hatch, a fireplace): just what stands

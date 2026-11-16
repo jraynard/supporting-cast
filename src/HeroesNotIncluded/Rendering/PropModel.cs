@@ -181,6 +181,29 @@ public static class PropModel
     }
 
     /// <summary>A point in the cell, turned about the cell's centre.</summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ThingDef, IReadOnlyList<ModelBox>> PlacedModels = new();
+
+    /// <summary>
+    /// A def's model where its footprint is. Models are made from the anchor cell's corner, but an
+    /// odd-sized footprint is centred on its anchor (<see cref="Sim.Maps.Footprint.Lo"/>: cells -1
+    /// to +1 for three), so a three-cell bar or wagon drew a cell along from where it stood and
+    /// came through the wall at its end. Shifted by the footprint's low corner, it's on its cells.
+    /// </summary>
+    public static IReadOnlyList<ModelBox>? Placed(ThingDef def)
+    {
+        if (def.Model is not { } model)
+            return null;
+        int lx = Sim.Maps.Footprint.Lo(def.SizeX), ly = Sim.Maps.Footprint.Lo(def.SizeY);
+        if (lx == 0 && ly == 0)
+            return model;
+        return PlacedModels.GetValue(def, _ => model.Select(b => new ModelBox
+        {
+            Min = [b.Min[0] + lx, b.Min[1] + ly, b.Min[2]],
+            Max = [b.Max[0] + lx, b.Max[1] + ly, b.Max[2]],
+            Top = b.Top, Side = b.Side, Front = b.Front, Back = b.Back, MinCount = b.MinCount, Fit = b.Fit,
+        }).ToList());
+    }
+
     public static float3 RotatePoint(float3 p, int facing)
     {
         var r = Rotate(new float3(p.X - 0.5f, p.Y - 0.5f, p.Z), facing);

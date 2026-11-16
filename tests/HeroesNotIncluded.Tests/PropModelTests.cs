@@ -74,6 +74,31 @@ public class PropModelTests
         Assert.Equal(5, Build([fitted]).Count);
     }
 
+    [Theory]
+    [InlineData("BarCounter", 0)]
+    [InlineData("BarCounter", 1)]
+    [InlineData("BarCounter", 3)]
+    [InlineData("Wagon", 2)]
+    [InlineData("SquareTable", 1)]
+    public void AWideModelIsDrawnOnTheCellsItStandsOn(string name, int facing)
+    {
+        // Three cells long, a bar's footprint is centred on its anchor: drawn from the anchor's
+        // corner, it reached a cell past its end and through the inn's wall.
+        var defs = DefDatabase.LoadDirectory(DevPaths.Defs!);
+        var def = defs.Thing(name);
+        var anchor = new int3(10, 20, 3);
+        var map = new HeroesNotIncluded.Sim.Maps.Map(40, 40, 6, defs.AllBlocks[0]);
+        var cells = HeroesNotIncluded.Sim.Maps.Footprint.Cells(map, def, anchor, facing).ToList();
+        var quads = new List<Quad>();
+        PropModel.Build(quads, PropModel.Placed(def)!, anchor, facing, Resolve, Rgba.White, Quad.Level(3));
+        foreach (var q in quads)
+        {
+            var mid = q.Origin + (q.AxisU + q.AxisV) * 0.5f;
+            var near = cells.Min(c => MathF.Max(MathF.Abs(mid.X - (c.X + 0.5f)), MathF.Abs(mid.Y - (c.Y + 0.5f))));
+            Assert.True(near <= 0.51f, $"{name} turned {facing}: a face at {mid} is off its cells {string.Join(" ", cells)}");
+        }
+    }
+
     [Fact]
     public void TurningMovesTheFrontAround()
     {

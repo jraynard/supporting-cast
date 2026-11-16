@@ -1802,7 +1802,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             var ghost = Rgba.Pack(0.6f, 0.8f, 1f, c.MaterialsComplete ? 0.6f : 0.3f);
             var (siteSprite, siteTint) = _materials.Resolve(def.Sprite, c.MainMaterial);
             var ghostSprite = S(siteSprite);
-            if (def.Model is { } siteModel)
+            if (PropModel.Placed(def) is { } siteModel)
             {
                 // Boxes: a see-through ghost of the whole thing, and the real one rising inside it.
                 var frac = Math.Clamp(c.WorkDone / c.Target.Building!.Work, 0, 1);
