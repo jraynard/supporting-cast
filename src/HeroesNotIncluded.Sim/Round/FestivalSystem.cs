@@ -984,7 +984,7 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         CrowdCheers(sim, mean);
         foreach (var e in members)
         {
-            sim.Reckoning.AdventurerLeft(sim, w.Get<Adventurer>(e).Satisfaction);
+            sim.Reckoning.AdventurerLeft(sim, w.Get<Adventurer>(e).Satisfaction, Director.Reckoning.WordOf(w.Get<Adventurer>(e)));
             _toasted.Add(e);
         }
     }

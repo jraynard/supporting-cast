@@ -186,7 +186,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             // Work comes after the road's been washed down: fed, served, mended, then a quest.
             // Once one of the party has a quest on order, the rest leave it to them.
             // Nobody sets out on the festival's night.
-            if (!SeekingOrSentOnQuest(sim, a.Party) && sim.Round.Phase != Round.RoundPhase.Festival
+            // A traveller's passing through: no quests for them.
+            if (!a.PartyDef.Traveller && !SeekingOrSentOnQuest(sim, a.Party) && sim.Round.Phase != Round.RoundPhase.Festival
                 && sim.Clock.Tick - a.Arrived >= SimClock.HoursToTicks(QuestAfterHours)
                 && Want(sim, who, ServiceKind.Quest, Entity.Null))
                 _questAsked.Add(a.Party);
@@ -246,12 +247,39 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), Entity.Null, owed.Inn, def.WorthMax);
     }
 
+    /// <summary>
+    /// A traveller's come for a bed: until they have tonight's, they keep back what a room costs
+    /// from anything else (a hurt that won't wait aside), so supper and a scrape seen to don't leave
+    /// them sleeping under a hedge. Adventurers spend as they please.
+    /// </summary>
+    private static int KeptForARoom(Simulation sim, Entity who, ServiceKind kind, float urgency)
+    {
+        if (kind == ServiceKind.Lodging || urgency > 1f || !sim.World.TryGet<Adventurer>(who, out var a) || !a.PartyDef.Traveller
+            || Hospitality.Lodging.Lodged(sim, who))
+            return 0;
+        var inn = BuildingFor(sim, sim.Defs.Service(ServiceKind.Lodging).AtRole);
+        return !inn.IsNull && ShopPrices.Posted(sim, inn, ServiceKind.Lodging) is { Offered: true } room ? room.Price : 0;
+    }
+
+    /// <summary>Bedtimes fall over this many hours from <see cref="LodgingFromHour"/>, before the town's night (22:00).</summary>
+    public const float BedtimeSpread = 3f;
+
+    /// <summary>
+    /// The hour this guest wants a room tonight: their own, derived from who they are and the night,
+    /// never stored, so the whole party doesn't rush the board at six. The same on every peer.
+    /// </summary>
+    public static float Bedtime(Simulation sim, Entity who) =>
+        LodgingFromHour + BedtimeSpread * (SimRandom.Hash(who.Index, Hospitality.Lodging.Tonight(sim), (uint)sim.Seed ^ 0xBED7_1AE5u) % 1024) / 1024f;
+
     /// <summary>Evening, staying the night, and no room paid for tonight: they'll want one (another night, if they had one last night).</summary>
     private static bool WantsARoom(Simulation sim, Entity who, Adventurer a)
     {
         var hour = sim.Clock.HourOfDay;
         if (hour is < LodgingFromHour and >= LodgingUntilHour || a.LeaveTick - sim.Clock.Tick < SimClock.HoursToTicks(6))
             return false;
+        if (hour >= LodgingFromHour && hour < Bedtime(sim, who))
+            return false; // not tired yet: each turns in at an hour of their own
+
         if (Hospitality.Lodging.Lodged(sim, who) || sim.World.Has<Hospitality.WalkIn>(who))
             return false;
         // A bed of their own that isn't a let one (a villager's): no need of a room.
@@ -402,7 +430,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             return false;
         var def = sim.Defs.Service(kind);
         var worth = Worth(sim, who, def, urgency);
-        var spare = Math.Max(0, Coin.Count(sim, who) - Promised(who));
+        var spare = Math.Max(0, Coin.Count(sim, who) - Promised(who) - KeptForARoom(sim, who, kind, urgency));
         // The box pays for its own opening: they know what's in it, and they pay once it's open.
         if (kind == ServiceKind.Unlock && sim.World.TryGet<Strongbox>(subject, out var box))
             spare += box.Silver;

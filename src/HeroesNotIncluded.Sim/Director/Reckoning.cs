@@ -87,14 +87,23 @@ public sealed class Reckoning : ISimSystem, ISaveState
         AddDread(sim, dread);
     }
 
-    /// <summary>An adventurer leaves town for good: what they thought of it goes into the town's name.</summary>
-    public void AdventurerLeft(Simulation sim, float satisfaction)
+    /// <summary>How far a traveller's word carries, against an adventurer's: a pedlar's talk reaches fewer ears.</summary>
+    public const float TravellerWord = 0.5f;
+
+    /// <summary>The weight of this one's word of the town (<see cref="AdventurerLeft"/>).</summary>
+    public static float WordOf(Components.Adventurer a) => a.PartyDef.Traveller ? TravellerWord : 1f;
+
+    /// <summary>
+    /// An adventurer (or a traveller) leaves town for good: what they thought of it goes into the
+    /// town's name, by <paramref name="weight"/> (<see cref="WordOf"/>).
+    /// </summary>
+    public void AdventurerLeft(Simulation sim, float satisfaction, float weight = 1f)
     {
         if (!sim.Round.Live)
             return;
         var season = sim.Defs.Season;
         var range = season.SatisfactionRange is [var lo, var hi] ? (lo, hi) : (-5f, 10f);
-        Renown += Math.Clamp(satisfaction, range.Item1, range.Item2) * season.RenownPerSatisfaction;
+        Renown += Math.Clamp(satisfaction, range.Item1, range.Item2) * season.RenownPerSatisfaction * weight;
         AdventurersCounted++;
     }
 
@@ -134,7 +143,7 @@ public sealed class Reckoning : ISimSystem, ISaveState
         var w = sim.World;
         foreach (var e in w.Query<Adventurer>())
             if (!w.Has<Leaving>(e) && !w.Get<Creature>(e).Dead && counted?.Contains(e) != true)
-                AdventurerLeft(sim, w.Get<Adventurer>(e).Satisfaction);
+                AdventurerLeft(sim, w.Get<Adventurer>(e).Satisfaction, WordOf(w.Get<Adventurer>(e)));
     }
 
     /// <summary>What travellers say of the town, in words, for those in it.</summary>

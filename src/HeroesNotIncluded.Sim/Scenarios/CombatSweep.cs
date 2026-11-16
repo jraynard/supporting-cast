@@ -73,9 +73,10 @@ public static class CombatSweep
         sim.Director.PassOverBeats(sim);
         sim.Parties.HoldArrivals();
         sim.Clock.Tick = sim.Round.TickAt(sim, Day, Hour - (party ? 1 : 0));
-        if (party && defs.AllParties.Count > 0)
+        var parties = defs.AllParties.Where(p => !p.Traveller).ToList();
+        if (party && parties.Count > 0)
         {
-            sim.Parties.Send(sim, defs.AllParties[(int)(seed % (ulong)defs.AllParties.Count)]);
+            sim.Parties.Send(sim, parties[(int)(seed % (ulong)parties.Count)]);
             sim.TickMany(SimClock.TicksPerHour); // they've walked in
         }
         return sim;

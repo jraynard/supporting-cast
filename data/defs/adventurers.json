@@ -4,7 +4,8 @@
 // with it (what a service is worth to them is its worth in services.json times this); "tastes":
 // what they like in a meal, said ordering it (Hospitality.Tastes: Savoury, Sweet, Hot, Fresh). "parties"
 // are who travels together, where they loiter ("haunt", a town role: the Tavern) and how many game hours
-// they stay (±25%).
+// they stay (±25%). A "traveller" party is one person passing through, not adventuring: they come
+// of an afternoon (PartySystem's own schedule), stay "nightsMin".."nightsMax" nights and never quest.
 // Names are our own; keep tabletop terms out.
 {
   "adventurerKinds": [
@@ -15,7 +16,11 @@
     { "name": "Vanguard", "label": "vanguard", "weapon": "BronzeSpear", "apparel": [ "ChainShirt" ],
       "outfit": "Wanderer", "skillMin": 8, "skillMax": 13, "purseMin": 20, "purseMax": 45, "spend": 1.2, "tastes": [ "Savoury" ] },
     { "name": "Hedgewise", "label": "hedge-wise", "weapon": "Club", "apparel": [],
-      "outfit": "Seer", "skillMin": 3, "skillMax": 7, "purseMin": 25, "purseMax": 60, "spend": 1.3, "tastes": [ "Sweet", "Fresh" ] }
+      "outfit": "Seer", "skillMin": 3, "skillMax": 7, "purseMin": 25, "purseMax": 60, "spend": 1.3, "tastes": [ "Sweet", "Fresh" ] },
+    { "name": "Pedlar", "label": "pedlar", "outfit": "Wanderer", "skillMin": 1, "skillMax": 3, "purseMin": 16, "purseMax": 24, "spend": 0.8, "tastes": [ "Sweet", "Savoury" ] },
+    { "name": "Pilgrim", "label": "pilgrim", "outfit": "Seer", "skillMin": 0, "skillMax": 2, "purseMin": 12, "purseMax": 18, "spend": 0.7, "tastes": [ "Fresh" ] },
+    { "name": "Drover", "label": "drover", "weapon": "Club", "outfit": "Farmhand", "skillMin": 2, "skillMax": 5, "purseMin": 14, "purseMax": 22, "spend": 0.85, "tastes": [ "Savoury", "Hot" ] },
+    { "name": "Minstrel", "label": "minstrel", "outfit": "Skald", "skillMin": 1, "skillMax": 3, "purseMin": 12, "purseMax": 20, "spend": 0.9, "tastes": [ "Sweet", "Hot" ] }
   ],
   "parties": [
     { "name": "GildedSpurs", "label": "the Gilded Spurs", "members": [ "Sellsword", "Bowman", "Hedgewise" ],
@@ -35,6 +40,18 @@
       "stayHours": 16, "names": [ "Bastian", "Cuthbert", "Garrick", "Hamish", "Lucan", "Tobin" ] },
     { "name": "LarkspurThree", "label": "the Larkspur Three", "members": [ "Bowman", "Hedgewise", "Sellsword" ],
       "description": "They were five when they set out. They'd rather not discuss it.",
-      "stayHours": 14, "names": [ "Clemence", "Dorian", "Maude", "Pell", "Wren" ] }
+      "stayHours": 14, "names": [ "Clemence", "Dorian", "Maude", "Pell", "Wren" ] },
+    { "name": "Pedlar", "label": "a pedlar", "members": [ "Pedlar" ], "traveller": true, "wagonChance": 0, "nightsMin": 1, "nightsMax": 2,
+      "description": "Ribbons, pins and needles, and news three weeks old.",
+      "names": [ "Ambrose", "Hilde", "Jarvis", "Nell", "Silas" ] },
+    { "name": "Pilgrim", "label": "a pilgrim", "members": [ "Pilgrim" ], "traveller": true, "wagonChance": 0,
+      "description": "Bound for a shrine further on, and in no hurry to get there.",
+      "names": [ "Agnes", "Benedict", "Ida", "Oswin", "Perpetua" ] },
+    { "name": "Drover", "label": "a drover", "members": [ "Drover" ], "traveller": true, "wagonChance": 0, "nightsMin": 1, "nightsMax": 2,
+      "description": "Driving sheep to the market towns, and thirsty with it.",
+      "names": [ "Abel", "Godric", "Mab", "Rufus", "Tilda" ] },
+    { "name": "Minstrel", "label": "a minstrel", "members": [ "Minstrel" ], "traveller": true, "wagonChance": 0,
+      "description": "Sings for supper, and better for a second ale.",
+      "names": [ "Cormac", "Ffion", "Lisette", "Ned", "Rosalind" ] }
   ]
 }

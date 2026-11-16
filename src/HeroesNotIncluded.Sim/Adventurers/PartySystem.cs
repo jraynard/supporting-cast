@@ -11,7 +11,9 @@ namespace HeroesNotIncluded.Sim.Adventurers;
 /// sends them on their way when their stay is up. Nothing happens outside a round
 /// (<see cref="RoundSystem.Live"/>), so tests, demos and the bench are untouched. None come once the
 /// festival starts. Its rolls use a
-/// stream of its own, so a party arriving doesn't reshuffle the rest of the sim.
+/// stream of its own, so a party arriving doesn't reshuffle the rest of the sim. Lone travellers
+/// (<see cref="PartyDef.Traveller"/>) come on a second schedule with a stream of its own again, of an
+/// afternoon, whatever party is or isn't in town: the inn's rooms aren't all or nothing.
 /// </summary>
 public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
 {
@@ -25,6 +27,24 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
     public const float HoursBetweenParties = 10;
 
     private readonly SimRandom _rand = new(seed ^ 0xAD7E_17u);
+
+    /// <summary>The travellers' rolls: who, when, and everything about them, apart from the parties'.</summary>
+    private readonly SimRandom _travellerRand = new(seed ^ 0x7A4E_11E5u);
+
+    /// <summary>Travellers come up the road between these hours, to be in by supper.</summary>
+    public const float TravellerFromHour = 14, TravellerUntilHour = 19;
+
+    /// <summary>Travellers in town at once, at most.</summary>
+    public const int MaxTravellers = 2;
+
+    /// <summary>Game hours from one traveller to the next (±30%), each then put in that day's window.</summary>
+    public const float HoursBetweenTravellers = 24;
+
+    /// <summary>The hours of the morning a traveller leaves, after their last night.</summary>
+    public const float TravellerLeavesFrom = 8, TravellerLeavesBy = 10;
+
+    /// <summary>When the next traveller is due; -1 until a round is playing.</summary>
+    public long NextTravellerTick { get; private set; } = -1;
 
     /// <summary>When the next party is due; -1 until a round is playing.</summary>
     public long NextArrivalTick { get; private set; } = -1;
@@ -47,6 +67,9 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         w.Int(_sent.Count);
         foreach (var name in _sent)
             w.String(name);
+        (a, b, c, d) = _travellerRand.State;
+        w.UInt(a); w.UInt(b); w.UInt(c); w.UInt(d);
+        w.Long(NextTravellerTick);
     }
 
     public void Load(Saving.SaveReader r, Simulation sim)
@@ -59,6 +82,11 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (r.Version >= 41) // came with format 41
             for (var n = r.Count(10_000); n > 0; n--)
                 _sent.Add(r.String());
+        if (r.Version >= 42) // travellers came with format 42
+        {
+            _travellerRand.State = (r.UInt(), r.UInt(), r.UInt(), r.UInt());
+            NextTravellerTick = r.Long();
+        }
     }
 
     public void Update(Simulation sim)
@@ -69,6 +97,7 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         SendOff(sim, now);
         if (sim.Round.Phase == RoundPhase.Festival || sim.Round.Practice)
             return; // in the practice yard, only when sent for
+        Travellers(sim, now);
         if (NextArrivalTick < 0)
         {
             NextArrivalTick = now + SimClock.HoursToTicks(FirstArrivalHours);
@@ -84,32 +113,98 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         // Nobody rides in after dark: they make camp and come in the morning.
         if (Ai.AiQueries.IsNight(sim))
             return;
-        var parties = sim.Defs.AllParties;
+        var parties = sim.Defs.AllParties.Where(p => !p.Traveller).ToList();
         if (parties.Count == 0)
             return;
-        Send(sim, NextParty(parties));
+        Send(sim, NextParty(parties, _rand));
         // A table that's talked of brings the next lot sooner; the talk fades with each new party.
         NextArrivalTick = now + SimClock.HoursToTicks(HoursBetweenParties * _rand.Range(0.7f, 1.3f) * (1f - sim.Shops.FareFactor));
         sim.Shops.TalkFades();
     }
 
     /// <summary>One of the parties sent least this round (<see cref="Send"/> counts them), at random.</summary>
-    internal PartyDef NextParty(IReadOnlyList<PartyDef> parties)
+    internal PartyDef NextParty(IReadOnlyList<PartyDef> parties) => NextParty(parties, _rand);
+
+    private PartyDef NextParty(IReadOnlyList<PartyDef> parties, SimRandom rand)
     {
         var least = parties.Min(p => _sent.Count(n => n == p.Name));
         var fewest = parties.Where(p => _sent.Count(n => n == p.Name) == least).ToList();
-        return fewest[_rand.NextInt(fewest.Count)];
+        return fewest[rand.NextInt(fewest.Count)];
     }
 
-    /// <summary>No party rides in unless one is sent (<see cref="Send"/>): the combat sweep, with or without heroes as it asks.</summary>
-    public void HoldArrivals() => NextArrivalTick = long.MaxValue;
+    /// <summary>
+    /// A traveller up the road when one's due, if it's the afternoon and there's room for another;
+    /// then the next, about a day on, at some hour of that day's window.
+    /// </summary>
+    private void Travellers(Simulation sim, long now)
+    {
+        if (NextTravellerTick < 0)
+        {
+            NextTravellerTick = InWindow(sim, now);
+            return;
+        }
+        if (now < NextTravellerTick)
+            return;
+        var hour = sim.Clock.HourOfDay;
+        if (hour is < TravellerFromHour or >= TravellerUntilHour)
+        {
+            NextTravellerTick = InWindow(sim, now); // missed it (a save, a long festival): the next afternoon
+            return;
+        }
+        var kinds = sim.Defs.AllParties.Where(p => p.Traveller).ToList();
+        if (kinds.Count == 0)
+        {
+            NextTravellerTick = long.MaxValue;
+            return;
+        }
+        if (TravellersPresent(sim) >= MaxTravellers)
+        {
+            NextTravellerTick = now + SimClock.HoursToTicks(1);
+            return;
+        }
+        Send(sim, NextParty(kinds, _travellerRand));
+        NextTravellerTick = InWindow(sim, now + SimClock.HoursToTicks(HoursBetweenTravellers * _travellerRand.Range(0.7f, 1.3f)));
+    }
 
-    /// <summary>Is any adventurer still in town (alive and not on their way out)?</summary>
+    /// <summary>
+    /// A tick at some hour of the traveller window (<see cref="TravellerFromHour"/> to
+    /// <see cref="TravellerUntilHour"/>) no earlier than <paramref name="from"/>: that day's, or the next if it's past.
+    /// </summary>
+    private long InWindow(Simulation sim, long from)
+    {
+        var offset = sim.Clock.StartHour * (long)SimClock.TicksPerHour; // ticks count from the start hour, days from midnight
+        var total = from + offset;
+        var midnight = total - total % SimClock.TicksPerDay;
+        long open = midnight + SimClock.HoursToTicks(TravellerFromHour), close = midnight + SimClock.HoursToTicks(TravellerUntilHour);
+        if (total >= close)
+        {
+            open += SimClock.TicksPerDay;
+            close += SimClock.TicksPerDay;
+        }
+        var start = Math.Max(total, open);
+        return start + (long)((close - start) * _travellerRand.NextFloat()) - offset;
+    }
+
+    /// <summary>Travellers in town, alive and not on their way out.</summary>
+    public static int TravellersPresent(Simulation sim)
+    {
+        var w = sim.World;
+        var n = 0;
+        foreach (var e in w.Query<Adventurer>())
+            if (w.Get<Adventurer>(e).PartyDef.Traveller && !w.Get<Creature>(e).Dead && !w.Has<Leaving>(e))
+                n++;
+        return n;
+    }
+
+    /// <summary>No party (nor traveller) comes unless one is sent (<see cref="Send"/>): the combat sweep, with or without heroes as it asks.</summary>
+    public void HoldArrivals() => NextArrivalTick = NextTravellerTick = long.MaxValue;
+
+    /// <summary>Is any adventuring party's member still in town (alive)? Travellers don't count: they hold no party back.</summary>
     public static bool Present(Simulation sim)
     {
         var w = sim.World;
         foreach (var e in sim.Creatures())
-            if (w.Has<Adventurer>(e) && !w.Get<Creature>(e).Dead)
+            if (w.TryGet<Adventurer>(e, out var a) && !a.PartyDef.Traveller && !w.Get<Creature>(e).Dead)
                 return true;
         return false;
     }
@@ -137,14 +232,16 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
             if (!Tinkering.Lockwork.LockedBoxOf(sim, e).IsNull && now < a.LeaveTick + SimClock.HoursToTicks(BoxWaitHours))
                 continue;
             w.Add(e, new Leaving());
-            sim.Reckoning.AdventurerLeft(sim, a.Satisfaction);
+            sim.Reckoning.AdventurerLeft(sim, a.Satisfaction, Director.Reckoning.WordOf(a));
             AiSystem.EndJob(sim, e, w.Get<Mind>(e), false);
             announced ??= [];
             if (announced.Contains(a.Party))
                 continue;
             announced.Add(a.Party);
             Tinkering.Wagons.Leave(sim, a.Party);
-            sim.Messages.Add(MessageKind.Info, $"{Capital(a.PartyDef.Label)} are moving on.", w.Get<Position>(e).Cell);
+            sim.Messages.Add(MessageKind.Info, a.PartyDef.Traveller
+                ? $"{w.Get<Creature>(e).Name} the {a.Kind.Label} moves on."
+                : $"{Capital(a.PartyDef.Label)} are moving on.", w.Get<Position>(e).Cell);
         }
     }
 
@@ -158,8 +255,10 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         var toward = HauntOf(sim, def) is { } haunt ? haunt.Anchor : TownCenter(sim);
         if (toward is not { } target)
             return members;
+        // A traveller's every roll is from their own stream: one coming doesn't change the parties.
+        var rand = def.Traveller ? _travellerRand : _rand;
         int3? entry = null;
-        var first = _rand.NextInt(4);
+        var first = rand.NextInt(4);
         for (var i = 0; i < 4 && entry == null; i++)
             entry = Raids.EdgeEntry(sim, (first + i) % 4, target);
         if (entry is not { } from)
@@ -167,25 +266,28 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
 
         var id = _nextId++;
         _sent.Add(def.Name);
-        var stay = SimClock.HoursToTicks(def.StayHours * _rand.Range(0.75f, 1.25f));
+        var stay = def.Traveller ? TravellerStay(sim, rand.Range(def.NightsMin, def.NightsMax + 1), rand)
+            : SimClock.HoursToTicks(def.StayHours * rand.Range(0.75f, 1.25f));
         var names = def.Names.ToList();
-        Shuffle(names);
+        Shuffle(names, rand);
         var spots = Raids.GatherSpots(sim, from, target, def.MemberDefs.Count);
         for (var i = 0; i < spots.Count; i++)
         {
             var kind = def.MemberDefs[i];
-            var e = Spawn(sim, kind, names[i], spots[i]);
+            var e = Spawn(sim, kind, names[i], spots[i], rand);
             sim.World.Add(e, new Adventurer
             {
                 Party = id, Kind = kind, PartyDef = def, LeaveTick = sim.Clock.Tick + stay, Arrived = sim.Clock.Tick,
-                NextDrink = sim.Clock.Tick + SimClock.HoursToTicks(_rand.Range(0.3f, 1.2f)), // the road's thirsty work
+                NextDrink = sim.Clock.Tick + SimClock.HoursToTicks(rand.Range(0.3f, 1.2f)), // the road's thirsty work
             });
             // And hungry work: they come in wanting feeding. Not from _rand, which rolls who they are.
             if (sim.World.TryGet<Needs>(e, out var needs))
                 needs.Values[sim.Defs.Need("Food").Index] = 0.45f + 0.1f * (i % 3);
             members.Add(e);
         }
-        if (members.Count > 0)
+        if (members.Count > 0 && def.Traveller)
+            sim.Messages.Add(MessageKind.Info, $"{Capital(def.Label)} comes up the {Raids.Direction(sim.Map, from)} road.", from);
+        else if (members.Count > 0)
         {
             PartiesSent++;
             // The wagon's whoever's best able to pay for its mending.
@@ -196,9 +298,19 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         return members;
     }
 
-    private Entity Spawn(Simulation sim, AdventurerKindDef kind, string name, int3 cell)
+    /// <summary>Ticks from now to a traveller's leaving: the morning after their last night.</summary>
+    private static long TravellerStay(Simulation sim, int nights, SimRandom rand)
     {
-        var e = sim.SpawnCreature(sim.Defs.Creature("Human"), name, cell, Faction.Adventurer, ageDays: _rand.Range(19, 45) * 365f, rand: _rand);
+        var offset = sim.Clock.StartHour * (long)SimClock.TicksPerHour;
+        var total = sim.Clock.Tick + offset;
+        var midnight = total - total % SimClock.TicksPerDay;
+        var leave = midnight + (long)nights * SimClock.TicksPerDay + SimClock.HoursToTicks(rand.Range(TravellerLeavesFrom, TravellerLeavesBy));
+        return leave - total;
+    }
+
+    private Entity Spawn(Simulation sim, AdventurerKindDef kind, string name, int3 cell, SimRandom rand)
+    {
+        var e = sim.SpawnCreature(sim.Defs.Creature("Human"), name, cell, Faction.Adventurer, ageDays: rand.Range(19, 45) * 365f, rand: rand);
         if (kind.WeaponDef != null)
             sim.Equip(e, kind.WeaponDef);
         if (kind.OutfitDef != null) // clothes first, then armor over them
@@ -208,11 +320,11 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (sim.Defs.TryThing(Simulation.StartingPack, out var pack))
             sim.Wear(e, pack);
         var skills = sim.World.Get<Skills>(e);
-        skills.Level[(int)Skill.Melee] = _rand.Range(kind.SkillMin, kind.SkillMax + 1);
-        skills.Level[(int)Skill.Shooting] = _rand.Range(kind.SkillMin, kind.SkillMax + 1);
+        skills.Level[(int)Skill.Melee] = rand.Range(kind.SkillMin, kind.SkillMax + 1);
+        skills.Level[(int)Skill.Shooting] = rand.Range(kind.SkillMin, kind.SkillMax + 1);
         Array.Fill(sim.World.Get<Needs>(e).Values, 1f);
-        RoadWorn(sim, e);
-        var coins = _rand.Range(kind.PurseMin, kind.PurseMax + 1);
+        RoadWorn(sim, e, rand);
+        var coins = rand.Range(kind.PurseMin, kind.PurseMax + 1);
         if (coins > 0)
             Inventory.Stow(sim, e, sim.CreateItem(sim.Defs.Thing("SilverCoin"), coins));
         return e;
@@ -222,27 +334,27 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// They've come a long way: blades dulled and nicked, armor scuffed, and now and then a scrape
     /// that wants seeing to. Work for the smith and the healer from the first hour.
     /// </summary>
-    private void RoadWorn(Simulation sim, Entity e)
+    private static void RoadWorn(Simulation sim, Entity e, SimRandom rand)
     {
         var w = sim.World;
         if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon))
         {
             ref var t = ref w.Get<Thing>(eq.Weapon);
-            t.Hp = t.MaxHp * _rand.Range(0.55f, 1f);
+            t.Hp = t.MaxHp * rand.Range(0.55f, 1f);
             if (WeaponWear.Edged(t.Def))
-                WeaponWear.SetDullness(sim, eq.Weapon, _rand.Range(0.15f, 0.7f));
+                WeaponWear.SetDullness(sim, eq.Weapon, rand.Range(0.15f, 0.7f));
         }
         foreach (var item in sim.Worn(e))
             if (w.Get<Thing>(item).Def.Apparel is { } props && (props.Sharp > 0 || props.Blunt > 0))
             {
                 ref var t = ref w.Get<Thing>(item);
-                t.Hp = t.MaxHp * _rand.Range(0.6f, 1f);
+                t.Hp = t.MaxHp * rand.Range(0.6f, 1f);
             }
-        if (_rand.Chance(RoadWoundChance) && w.TryGet<Health>(e, out var h))
+        if (rand.Chance(RoadWoundChance) && w.TryGet<Health>(e, out var h))
         {
             var limbs = Enumerable.Range(0, h.Body.Parts.Count).Where(p => !h.Body.Parts[p].Vital).ToList();
             if (limbs.Count > 0)
-                HealthSystem.Damage(sim, e, _rand.Range(3f, 8f), _rand.Chance(0.5f) ? DamageType.Cut : DamageType.Blunt, limbs[_rand.NextInt(limbs.Count)]);
+                HealthSystem.Damage(sim, e, rand.Range(3f, 8f), rand.Chance(0.5f) ? DamageType.Cut : DamageType.Blunt, limbs[rand.NextInt(limbs.Count)]);
         }
     }
 
@@ -265,11 +377,11 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         return null;
     }
 
-    private void Shuffle<T>(List<T> list)
+    private static void Shuffle<T>(List<T> list, SimRandom rand)
     {
         for (var i = list.Count - 1; i > 0; i--)
         {
-            var j = _rand.NextInt(i + 1);
+            var j = rand.NextInt(i + 1);
             (list[i], list[j]) = (list[j], list[i]);
         }
     }

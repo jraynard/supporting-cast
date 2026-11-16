@@ -78,6 +78,17 @@ public sealed class PartyDef : Def
     /// <summary>The chance they come with a wagon, and so the chance it's come off the road the worse for it (<c>Tinkering.Wagons</c>).</summary>
     public float WagonChance { get; set; } = 0.5f;
 
+    /// <summary>
+    /// A lone traveller (a pedlar, a pilgrim), not an adventuring party: they come of an afternoon on a
+    /// schedule of their own, alongside whatever party's in town, eat, drink and take a room for a
+    /// night or two, and move on. They never quest, and their word of the town counts for less.
+    /// </summary>
+    public bool Traveller { get; set; }
+
+    /// <summary>A traveller's nights in town (inclusive range): they leave the morning after the last.</summary>
+    public int NightsMin { get; set; } = 1;
+    public int NightsMax { get; set; } = 1;
+
     [JsonIgnore] public List<AdventurerKindDef> MemberDefs { get; } = [];
     [JsonIgnore] public TownRole HauntRole { get; private set; }
 
@@ -91,5 +102,7 @@ public sealed class PartyDef : Def
         if (Names.Count < MemberDefs.Count)
             throw new Exception($"Party {Name} needs at least as many names as members");
         HauntRole = TownRoles.Parse(Haunt, $"Party '{Name}' haunt");
+        if (NightsMin < 1 || NightsMin > NightsMax)
+            throw new Exception($"Party {Name}: nights must be at least 1, min no more than max");
     }
 }
