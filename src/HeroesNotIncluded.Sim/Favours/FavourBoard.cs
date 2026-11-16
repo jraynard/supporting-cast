@@ -56,6 +56,17 @@ public sealed class FavourBoard : ISimSystem, Saving.ISaveState
                 Close(sim, r, FavourStatus.Expired);
         }
         _favours.RemoveAll(r => !r.IsOpen && now - r.ClosedTick > KeepClosedTicks);
+        if (now % SimClock.TicksPerHour < Interval)
+            Wants.Post(sim);
+    }
+
+    /// <summary>The town's notice board (the first, if there are more), or Entity.Null.</summary>
+    public static Entity AnyBoard(Simulation sim)
+    {
+        foreach (var e in sim.World.Query<Thing>())
+            if (IsBoard(sim, e))
+                return e;
+        return Entity.Null;
     }
 
     /// <summary>Most of one thing an errand may ask for.</summary>
@@ -90,14 +101,21 @@ public sealed class FavourBoard : ISimSystem, Saving.ISaveState
     public Favour? PostErrand(Simulation sim, Entity who, Defs.ThingDef? wants, int count, int price, int hours) =>
         wants == null || wants.Category != Defs.ThingCategory.Item ? null : Pin(sim, who, null, price, hours, wants, Math.Clamp(count, 1, MaxCount));
 
-    private Favour? Pin(Simulation sim, Entity who, string? text, int price, int hours, Defs.ThingDef? wants, int count)
+    /// <summary>
+    /// An errand sent up to the board on a tradesperson's behalf (<see cref="Wants"/>): the AI at
+    /// its work doesn't walk to the square to pin it, the note just goes up, as if by a child sent running.
+    /// </summary>
+    public Favour? SendErrand(Simulation sim, Entity who, Defs.ThingDef wants, int count, int price, int hours) =>
+        Pin(sim, who, null, price, hours, wants, Math.Clamp(count, 1, MaxCount), anywhere: true);
+
+    private Favour? Pin(Simulation sim, Entity who, string? text, int price, int hours, Defs.ThingDef? wants, int count, bool anywhere = false)
     {
         var line = wants != null ? $"Wanted: {count} {wants.Label}, brought to me" : SpeechSystem.Clean(text);
         if (line.Length > MaxTextLength)
             line = line[..MaxTextLength].Trim();
         if (line.Length == 0 || _favours.Count(r => r.IsOpen && r.Poster == who) >= MaxOpen)
             return null;
-        var board = BoardBy(sim, who);
+        var board = anywhere ? AnyBoard(sim) : BoardBy(sim, who);
         if (board.IsNull)
         {
             sim.Messages.Add(MessageKind.Info, "Favours are pinned to the notice board in the square: go to it first.", sim.LocationOf(who));

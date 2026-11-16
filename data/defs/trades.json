@@ -11,6 +11,8 @@
   "trades": [
     // The innkeeper keeps the tavern (the bar, the rooms and the quest board), the cook the kitchen:
     // under one roof at Millbrook's inn, apart where a town has a cookhouse. "serves": the services at the workplace a trade sees to (and prices on the sign).
+    // "wants": what an AI holder pins an errand for when its workplace has fewer than "below" of it
+    // (Favours/Wants), "count" of them for "price" silver: the labourer's living.
     { "name": "Innkeeper", "label": "innkeeper", "description": "Keeps the bar and the rooms, hears everything said over the counter, and points adventuring parties at work, on whatever that's worth.",
       "workplace": "Tavern", "workPriorities": { "Cook": 1 }, "brokers": true, "serves": [ "Drink", "MixedDrink", "Lodging", "Quest" ], "holdsKeys": true,
       "stations": [ "AleCask", "BarShelf", "BarCounter", "KeyBoard" ],
@@ -42,6 +44,8 @@
       "kit": [ { "def": "Mop" } ], "stash": [ { "def": "LuckyLou" } ] },
     { "name": "Cook", "label": "cook", "description": "Keeps the inn's kitchen: the stew pot by taste, the larder, the bowls, the meals out to the tables, and rations for the road.",
       "workplace": "Kitchen", "workPriorities": { "Cook": 1 }, "serves": [ "Meal" ], "namesShop": false, "skills": { "Cooking": 5 },
+      "wants": [ { "thing": "Wood", "below": 6, "count": 10, "price": 5 }, { "thing": "Berries", "below": 4, "count": 8, "price": 4 },
+                 { "thing": "Cabbage", "below": 3, "count": 6, "price": 4 } ],
       "stations": [ "StewPot", "Spit", "Oven", "Larder", "PrepTable", "ButcherBlock", "SmokingRack", "LogBasket", "ServingHatch", "WashTub" ],
       "tips": [ "The kitchen's yours. Fill the pot from the larder, then hold ~F~ at it to stir. A simmer, not a boil.",
                 "Season a pinch at a time (~F~) and taste with ~Space~. Salt doesn't come back out.",
@@ -192,6 +196,7 @@
     // The Carpenter is benched for now: building and fletching come back as a trade of its own later.
     { "name": "Tinker", "label": "tinker", "description": "Locks and clockwork: opens what adventurers drag home, fits locks and cuts keys, builds contraptions for the road, mends wagons and knows what a curio's worth.",
       "workplace": "TinkerShop", "workPriorities": { "Craft": 1 }, "skills": { "Crafting": 6, "Construction": 4 }, "mendsTown": true,
+      "wants": [ { "thing": "Wood", "below": 4, "count": 8, "price": 5 } ],
       "knows": [ "TinkerBench" ],
       "stations": [ "TinkerBench" ],
       "tips": [ "Strongboxes, wagons and curios end up on your bench. Hold ~F~ there to start.",

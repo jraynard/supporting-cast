@@ -12,7 +12,7 @@ public enum Temper : byte
     /// <summary>Loud, thirsty, short-fused: drinks sooner, waits less, and wants a fight once it's in its cups.</summary>
     Rowdy,
 
-    /// <summary>Knows what it likes: tastes count double, waits a little less.</summary>
+    /// <summary>Knows what it likes: tastes count half again, waits a little less.</summary>
     Picky,
 
     /// <summary>Counts every coin: a service is worth less to it.</summary>
@@ -56,8 +56,8 @@ public static class Tempers
     /// <summary>How long they'll wait for an order, against an easy one's.</summary>
     public static float Patience(Temper t) => t switch
     {
-        Temper.Rowdy => 0.8f,
-        Temper.Picky => 0.9f,
+        Temper.Rowdy => 0.85f,
+        Temper.Picky => 0.95f,
         Temper.Easy => 1.2f,
         _ => 1f,
     };
@@ -72,7 +72,7 @@ public static class Tempers
     };
 
     /// <summary>How much a dish's taste moves them, against an easy one.</summary>
-    public static float Taste(Temper t) => t == Temper.Picky ? 2f : 1f;
+    public static float Taste(Temper t) => t == Temper.Picky ? 1.5f : 1f;
 
     /// <summary>The temper as the barks know it ("rowdy").</summary>
     public static string Tag(Temper t) => t.ToString().ToLowerInvariant();
