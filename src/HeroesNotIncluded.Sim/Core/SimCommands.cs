@@ -138,7 +138,8 @@ public sealed record AvatarDropCommand(Entity Avatar, int3 Target) : ISimCommand
 /// <summary>
 /// Take some of a stack (one, by default; <see cref="All"/> for up to a full stack) out of a
 /// container in reach (the wagon, a shelf, a pack on the ground): as much as fits into the avatar's
-/// pack, and what doesn't (a keg, a pack, a full satchel) into empty hands.
+/// pack, and what doesn't (a keg, a pack, a full satchel) into empty hands. A room key goes to an
+/// empty hand first, ready to hand over.
 /// </summary>
 public sealed record TakeFromStorageCommand(Entity Avatar, Entity Item, int Count = 1) : ISimCommand, IActorCommand
 {
@@ -169,6 +170,12 @@ public sealed record TakeFromStorageCommand(Entity Avatar, Entity Item, int Coun
         // The pack first, the hands only for what won't go in. Something left in hand changes what
         // F does next: at a chest it puts it in, at the forge it feeds the fire, so ore and charcoal
         // fetched for a bloom went astray one at a time.
+        // A room key off the board goes straight into an empty hand: it's about to be handed over.
+        if (Hospitality.InnRooms.IsRoomKey(sim, Item) && !w.Get<Carrying>(Avatar).HasItem)
+        {
+            w.Get<Carrying>(Avatar).Item = sim.TakeFromStack(Item, 1);
+            return;
+        }
         var pack = sim.PackOf(Avatar);
         var t = w.Get<Thing>(Item);
         var room = pack.IsNull ? 0 : Math.Min(sim.ContainerRoom(pack, t.Def, t.Material), count);

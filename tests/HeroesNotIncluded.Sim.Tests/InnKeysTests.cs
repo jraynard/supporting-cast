@@ -328,4 +328,31 @@ public class InnKeysTests
         Assert.Equal(bed, loaded.World.Get<OwedRoom>(party[2]).WrongBed);
         Assert.True(Ledger.SignedIn(loaded, InnRooms.Board(loaded, Inn(loaded)), party[0]));
     }
+
+    [Fact]
+    public void AKeyOffTheBoardGoesIntoAnEmptyHandOrElseThePack()
+    {
+        var (sim, _, player) = Tavern("Innkeeper");
+        var w = sim.World;
+        var board = InnRooms.Board(sim, Inn(sim));
+        foreach (var c in sim.SpiralFrom(w.Get<Thing>(board).Cell, 2).Where(sim.Map.Passable))
+        {
+            Put(sim, player, c);
+            if (Inventory.CanReachContainer(sim, player, board))
+                break;
+        }
+        Assert.True(Inventory.CanReachContainer(sim, player, board));
+        w.Get<Carrying>(player).Item = Entity.Null;
+        Assert.False(w.Get<Carrying>(player).HasItem);
+
+        var first = Key(sim, 1);
+        sim.ApplyNow(new TakeFromStorageCommand(player, first));
+        var held = w.Get<Carrying>(player).Item;
+        Assert.True(InnRooms.IsRoomKey(sim, held), "the key's in hand");
+        Assert.Equal(1, InnRooms.RoomNumber(sim, w.Get<Key>(held).Seed));
+
+        sim.ApplyNow(new TakeFromStorageCommand(player, Key(sim, 2)));
+        Assert.Equal(held, w.Get<Carrying>(player).Item); // the first still in hand
+        Assert.Contains(sim.StoredIn(sim.PackOf(player)), e => InnRooms.IsRoomKey(sim, e) && InnRooms.RoomNumber(sim, w.Get<Key>(e).Seed) == 2);
+    }
 }
