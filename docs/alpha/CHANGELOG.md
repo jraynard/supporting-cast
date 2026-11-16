@@ -4,6 +4,54 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+## 0.1.0-playtest.16
+
+A second town, inn rooms with keys, the mouse in every mini-game, and townsfolk with tempers.
+
+**Reedmere, a town on stilts**
+- Pick it when you start a new round (the town choice was greyed out; it works now). Houses on piles
+  over a lake, joined by boardwalks and one causeway to the shore. If a raid brings the causeway
+  down, the town is cut in two until the tinker mends it. Buckets are filled at dipping posts.
+- It's harder than Millbrook for now. The cook has a cookhouse on the shore and the innkeeper an
+  inn without a kitchen out at the landing. The innkeeper orders hampers of food at the
+  cookhouse hatch (F) and unpacks them on the warming shelf behind the bar. That shelf feeds
+  lodgers at breakfast and supper, and gives parties rations for the road.
+
+**The inn**
+- Rooms have locked doors and keys. The keys hang on a board behind the bar: hand one over to let
+  the room, and sign the guest into the book. Spare keys are in the storeroom. Once a guest leaves,
+  turn the room round: strip and make the bed, empty the slops, fill the jug from a bucket.
+- Drinks can be served across the bar, and anywhere behind the bar reaches its shelves.
+- Every order you've taken gets a marker, and order cards have a check to take them.
+- Travellers stop for a night or two. Guests go to bed at their own hour.
+- You can drink too, and it goes to your head.
+- A rowdy drunk may start a fist fight.
+- The inn has new art: stone below, oak above jutting over the street, deep thatch, new furniture.
+
+**The mini-games**
+- The mouse works in every game that takes it:
+  - At the forge you wind the hammer back to the mark and bring it down.
+  - The cook stirs by circling, plucks by dragging and aims the cleaver.
+  - Chopping is now by the fingers: draw them back a slice, then bring the knife down.
+  - You point the brush to clean.
+- The cook's games show one clear picture each, and the mixing cues are easier to read.
+- Buckets are swung and thrown like a bow, and you can throw on the move.
+
+**Townsfolk and adventurers**
+- Adventurers have tempers. Drink, ghosts and bad food change what they do.
+- Bots play every trade's whole job: the kitchen, the bar and rooms, errands from the board. They
+  also slip up, put their work on show, and pitch in with buckets and the downed.
+- AI trades pin errands on the notice board for the labourer.
+
+**Ghosts**
+- More to do once you're dead: startle or beckon beasts, possess one, leave frost words, send
+  dreams, and unnerve raiders. Calling a ghost back is easier to find.
+
+**Fixes**
+- The quest board runs from easy to hard. Fixes for healing, truing, wood, quests, flicker and the
+  downed. Deaths in town are counted, and feasts give the cook more time.
+- Rounds run faster.
+
 ## 0.1.0-playtest.15
 
 The dragon reworked, the healer easier to read, and fixes from the first solo playtest.
