@@ -51,7 +51,7 @@ public static class Tastes
         if (meal.Craving is not { } wanted)
             return;
         var right = flavour is { } f && f.Has(wanted);
-        w.Get<Adventurer>(who).Satisfaction += right ? RightMood : -WrongMood;
+        w.Get<Adventurer>(who).Satisfaction += (right ? RightMood : -WrongMood) * Adventurers.Tempers.Taste(Adventurers.Tempers.Of(sim, who));
         var word = Flavour.Word(wanted);
         sim.Speech.Say(sim, who, right ? Pleased(wanted) : $"I'd hoped for something {word}. Still, it's food.", Volume.Say);
     }

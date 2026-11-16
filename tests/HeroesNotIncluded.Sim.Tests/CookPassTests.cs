@@ -435,7 +435,9 @@ public class CookPassTests
         sim.World.Get<Position>(me).Cell = by;
         sim.World.Get<Position>(me).Pos = Position.CenterOf(by);
         Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Bowl"), 6));
-        var diner = party[0];
+        // Someone with nothing on order yet, so the bowl can only be for this one.
+        var diner = party.First(p => !sim.Shops.All.Any(o => o.IsOpen && o.Poster == p));
+        Inventory.Stow(sim, diner, sim.CreateItem(sim.Thing(Coin.Silver), 10)); // enough to tip with
         var order = sim.Shops.Post(sim, diner, sim.Defs.Service(ServiceKind.Meal), "Food!", 3, sim.Clock.Tick + SimClock.HoursToTicks(2), where: inn);
         order.WantsHouse = house;
         return (sim, me, pot, diner, order);

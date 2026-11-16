@@ -216,7 +216,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                     && Want(sim, who, ServiceKind.MixedDrink, Entity.Null);
                 if (!fancy)
                     Want(sim, who, ServiceKind.Drink, Entity.Null);
-                w.Get<Adventurer>(who).NextDrink = sim.Clock.Tick + SimClock.HoursToTicks(HoursBetweenDrinks * _rand.Range(0.75f, 1.25f));
+                w.Get<Adventurer>(who).NextDrink = sim.Clock.Tick
+                    + SimClock.HoursToTicks(HoursBetweenDrinks * Adventurers.Tempers.Thirst(Adventurers.Tempers.Of(sim, who)) * _rand.Range(0.75f, 1.25f));
             }
             if (MostWorn(sim, who) is { IsNull: false } gear)
                 Want(sim, who, ServiceKind.Repair, gear, WeaponWear.HpFraction(sim, gear) < 0.35f ? 1.5f : 1f);
@@ -244,7 +245,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             return;
         var def = sim.Defs.Service(ServiceKind.Lodging);
         Post(sim, who, def, "You gave me someone else's room! Another key, and I'm not paying twice.", 0,
-            sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), Entity.Null, owed.Inn, def.WorthMax);
+            sim.Clock.Tick + PatienceTicks(sim, who, def), Entity.Null, owed.Inn, def.WorthMax);
     }
 
     /// <summary>
@@ -478,10 +479,27 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 text += " " + Work.Flavour.Craving(c);
             }
         }
-        var order = Post(sim, who, def, text, price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), subject, shop, worth, craving);
+        Hello(sim, who);
+        var order = Post(sim, who, def, text, price, sim.Clock.Tick + PatienceTicks(sim, who, def), subject, shop, worth, craving);
         order.WantsHouse = house;
         order.Dish = named;
         return true;
+    }
+
+    /// <summary>
+    /// A party's first order since they came (or came back) to town: one of them says hello for
+    /// all of them first, in the party's manner (the leader, by temper). Nothing kept: the orders
+    /// they've placed since they came are the memory.
+    /// </summary>
+    private void Hello(Simulation sim, Entity who)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Adventurer>(who, out var a) || a.PartyDef.Traveller)
+            return;
+        foreach (var o in _orders)
+            if (o.PostedTick >= a.Arrived && w.TryGet<Adventurer>(o.Poster, out var them) && them.Party == a.Party)
+                return;
+        Speech.Barks.Say(sim, who, "adv_hello", Volume.Say, null, who: a.PartyDef.Label);
     }
 
     /// <summary>
@@ -507,7 +525,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             return $"{def.Label} is {sign.Price} silver, and you have {spare} to spare";
         if (kind == ServiceKind.Healing && !Healing.LayOnHands.Hurt(sim, who))
             return "you've nothing that wants healing";
-        var order = Post(sim, who, def, Asking(def, sign.Price, null), sign.Price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), Entity.Null, shop, sign.Price);
+        var order = Post(sim, who, def, Asking(def, sign.Price, null), sign.Price, sim.Clock.Tick + PatienceTicks(sim, who, def), Entity.Null, shop, sign.Price);
         order.Mend = kind == ServiceKind.Healing;
         // A bowl already up and nobody ahead: paid for and in hand at once.
         Hatch.TryCollect(sim, order);
@@ -552,7 +570,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (best is { } buy)
         {
             var label = w.Get<Thing>(buy.Item).Label;
-            Post(sim, who, def, Asking(def, buy.Price, label), buy.Price, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours),
+            Post(sim, who, def, Asking(def, buy.Price, label), buy.Price, sim.Clock.Tick + PatienceTicks(sim, who, def),
                 buy.Item, buy.Shop, buy.Worth);
         }
         else if (dear is { } no)
@@ -569,9 +587,13 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// </summary>
     private int Worth(Simulation sim, Entity who, ServiceDef def, float urgency)
     {
-        var spend = sim.World.TryGet<Adventurer>(who, out var a) ? a.Kind?.Spend ?? 1f : 1f;
+        var spend = sim.World.TryGet<Adventurer>(who, out var a) ? (a.Kind?.Spend ?? 1f) * Adventurers.Tempers.Worth(Adventurers.Tempers.Of(sim, who)) : 1f;
         return Math.Max(0, (int)MathF.Round(_rand.Range(def.WorthMin, def.WorthMax + 1) * spend * urgency));
     }
+
+    /// <summary>How long someone waits for an order of this kind: the service's patience, and an adventurer's temper.</summary>
+    private static long PatienceTicks(Simulation sim, Entity who, ServiceDef def) =>
+        SimClock.HoursToTicks(def.PatienceHours * (sim.World.Has<Adventurer>(who) ? Adventurers.Tempers.Patience(Adventurers.Tempers.Of(sim, who)) : 1f));
 
     /// <summary>Silver this person has promised to orders still open.</summary>
     private int Promised(Entity who)
@@ -762,8 +784,10 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             var bargain = e.Worth > 0 ? Math.Clamp((e.Worth - e.Price) / (float)e.Worth, 0f, 1f) * BargainMood : 0f;
             sim.World.Get<Adventurer>(e.Poster).Satisfaction += (quick ? 1.5f : 1f) + bargain;
         }
-        var thanks = paid >= e.Price ? $"There. {paid} silver, as promised." : $"Here's {paid} silver. It's all I've got.";
-        sim.Speech.Say(sim, e.Poster, thanks, Volume.Say);
+        if (paid >= e.Price)
+            Speech.Barks.Say(sim, e.Poster, "adv_paid", Volume.Say, "There. {n} silver, as promised.", n: paid);
+        else
+            Speech.Barks.Say(sim, e.Poster, "adv_paid_short", Volume.Say, "Here's {n} silver. It's all I've got.", n: paid);
     }
 
     // ---------------- The line ----------------
@@ -1087,13 +1111,13 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             && needs.Get(sim.Defs.Need("Food")) >= MealBelow)
         {
             sim.World.Get<Adventurer>(e.Poster).Satisfaction -= PeckishGiveUpMood;
-            sim.Speech.Say(sim, e.Poster, "Never mind the food. I'll eat later.", Volume.Say);
+            Speech.Barks.Say(sim, e.Poster, "adv_give_up_peckish", Volume.Say, "Never mind the food. I'll eat later.");
             return;
         }
         if (sim.World.Has<Adventurer>(e.Poster))
         {
             sim.World.Get<Adventurer>(e.Poster).Satisfaction -= 1f;
-            sim.Speech.Say(sim, e.Poster, $"Forget it. So much for {e.Kind.Label} in this town.", Volume.Say);
+            Speech.Barks.Say(sim, e.Poster, "adv_give_up", Volume.Say, "Forget it. So much for {thing} in this town.", thing: e.Kind.Label);
         }
     }
 

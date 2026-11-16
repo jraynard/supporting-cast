@@ -52,6 +52,9 @@ public sealed class AdventurerBrain : IBrain
         var needs = w.Get<Needs>(pawn);
         var food = sim.Defs.Need("Food");
         var rest = sim.Defs.Need("Rest");
+        // Out cold from the drink: down where they stand, till they've slept it off (carry them to a bed if you like).
+        if (Hospitality.DrinkingSystem.LevelOf(sim, pawn) >= Hospitality.DrinkingSystem.OutAt)
+            return new SleepJob(Entity.Null);
         if (needs.Get(food) < food.UrgentBelow && HumanBrain.EatSomething(sim, pawn, creature.Def) is { } eat)
             return eat;
         // Abed at night unless they're fresh: the town's asleep, and so should they be.

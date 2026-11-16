@@ -52,6 +52,31 @@ public static class Barks
         return Fill(fits[^1].Line.Text, who, thing, place, n);
     }
 
+    /// <summary>
+    /// Someone in town says the line for this event, in their own words (their tags), picked from a
+    /// hash of who, when and what rather than the sim's dice, so a line's choosing changes nothing
+    /// else. <paramref name="fallback"/> is said if the defs have nothing for it. Null if not said.
+    /// </summary>
+    public static Utterance? Say(Simulation sim, Entity speaker, string id, Volume volume, string? fallback = null,
+        string? who = null, string? thing = null, string? place = null, int? n = null, IEnumerable<string>? extra = null)
+    {
+        var tags = TagsOf(sim, speaker);
+        if (extra != null)
+            tags.AddRange(extra);
+        var rand = new SimRandom(SimRandom.Hash(speaker.Index, (int)sim.Clock.Tick, StableHash(id) ^ (uint)sim.Seed));
+        var line = Pick(sim.Defs, id, tags, rand, null, who, thing, place, n) ?? (fallback == null ? null : Fill(fallback, who, thing, place, n));
+        return line == null ? null : sim.Speech.Say(sim, speaker, line, volume);
+    }
+
+    /// <summary>FNV-1a: a string's hash that's the same in every process (string.GetHashCode isn't).</summary>
+    public static uint StableHash(string s)
+    {
+        var h = 2166136261u;
+        foreach (var c in s)
+            h = (h ^ c) * 16777619u;
+        return h;
+    }
+
     /// <summary>The slots filled in: <c>{who}</c>, <c>{thing}</c>, <c>{place}</c>, <c>{n}</c>.</summary>
     public static string Fill(string text, string? who = null, string? thing = null, string? place = null, int? n = null) =>
         text.Replace("{who}", who ?? "you").Replace("{thing}", thing ?? "it").Replace("{place}", place ?? "there")
@@ -69,6 +94,7 @@ public static class Barks
         {
             tags.Add("adventurer");
             tags.Add(a.Kind.Name.ToLowerInvariant());
+            tags.Add(Adventurers.Tempers.Tag(Adventurers.Tempers.Of(sim, e)));
         }
         else if (w.Has<Creature>(e))
             tags.Add("villager");

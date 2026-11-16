@@ -213,6 +213,9 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// <summary>Game hours past their leaving time an adventurer waits to have a locked strongbox opened.</summary>
     public const float BoxWaitHours = 8;
 
+    /// <summary>Satisfaction at or above which they leave pleased with the town, and at or below which, sour.</summary>
+    public const float PleasedFrom = 3f, SourFrom = -1f;
+
     private static void SendOff(Simulation sim, long now)
     {
         var w = sim.World;
@@ -239,6 +242,9 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
                 continue;
             announced.Add(a.Party);
             Tinkering.Wagons.Leave(sim, a.Party);
+            // A parting word for the town, as it found it.
+            if (Speech.SpeechSystem.CanAct(sim, e))
+                Speech.Barks.Say(sim, e, "adv_leaving", Speech.Volume.Say, null, extra: [a.Satisfaction >= PleasedFrom ? "pleased" : a.Satisfaction <= SourFrom ? "sour" : "middling"]);
             sim.Messages.Add(MessageKind.Info, a.PartyDef.Traveller
                 ? $"{w.Get<Creature>(e).Name} the {a.Kind.Label} moves on."
                 : $"{Capital(a.PartyDef.Label)} are moving on.", w.Get<Position>(e).Cell);
@@ -292,8 +298,10 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
             PartiesSent++;
             // The wagon's whoever's best able to pay for its mending.
             Tinkering.Wagons.Bring(sim, seed, def, id, members.OrderByDescending(e => Shops.Coin.Count(sim, e)).First(), target);
-            sim.Messages.Add(MessageKind.Good,
-                $"{Capital(def.Label)} ride in from the {Raids.Direction(sim.Map, from)}, wanting everything at once.", from);
+            // Who they are, as the town sees them coming: the party's own description, if it has one.
+            sim.Messages.Add(MessageKind.Good, string.IsNullOrWhiteSpace(def.Description)
+                ? $"{Capital(def.Label)} ride in from the {Raids.Direction(sim.Map, from)}, wanting everything at once."
+                : $"{Capital(def.Label)} ride in from the {Raids.Direction(sim.Map, from)}. {def.Description}", from);
         }
         return members;
     }

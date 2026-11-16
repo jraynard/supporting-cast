@@ -144,16 +144,22 @@ public sealed class MessSystem : ISimSystem, ISaveState
         foreach (var i in _spots.Keys)
             if (sim.Rooms.RoomAt(sim.Map.CellOf(i)) is { Indoors: true } r)
                 byRoom[r.Id] = byRoom.GetValueOrDefault(r.Id) + 1;
+        // One voice a room an hour says it: the rest only think it (a chorus of the same line was a playtest's laugh, not the good kind).
+        var said = new HashSet<int>();
         foreach (var e in sim.Creatures())
         {
             if (!w.Has<Adventurer>(e) || !SpeechSystem.CanAct(sim, e) || sim.Rooms.RoomAt(w.Get<Position>(e).Cell) is not { Indoors: true } room
                 || !byRoom.TryGetValue(room.Id, out var spots))
                 continue;
             w.Get<Adventurer>(e).Satisfaction -= MoodPerSpot * Math.Min(spots, WorstSpots);
-            if (spots >= 2 && (!_complained.TryGetValue(e, out var last) || sim.Clock.Tick - last > SimClock.HoursToTicks(ComplainHours)))
+            if (spots >= 2 && !said.Contains(room.Id) && (!_complained.TryGetValue(e, out var last) || sim.Clock.Tick - last > SimClock.HoursToTicks(ComplainHours)))
             {
                 _complained[e] = sim.Clock.Tick;
-                sim.Speech.Say(sim, e, spots >= 4 ? "Does nobody ever clean this floor?" : "Mind the mess, it's everywhere.", Volume.Say);
+                said.Add(room.Id);
+                if (spots >= 4)
+                    Speech.Barks.Say(sim, e, "adv_mess_bad", Volume.Say, "Does nobody ever clean this floor?");
+                else
+                    Speech.Barks.Say(sim, e, "adv_mess", Volume.Say, "Mind the mess, it's everywhere.");
             }
         }
     }

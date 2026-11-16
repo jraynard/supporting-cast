@@ -6,21 +6,23 @@
 // are who travels together, where they loiter ("haunt", a town role: the Tavern) and how many game hours
 // they stay (±25%). A "traveller" party is one person passing through, not adventuring: they come
 // of an afternoon (PartySystem's own schedule), stay "nightsMin".."nightsMax" nights and never quest.
-// Names are our own; keep tabletop terms out.
+// "tempers": how likely each kind is to be Easy, Rowdy, Picky, Stingy, Boastful or Timid
+// (Adventurers/Tempers: what a service is worth to them, how long they'll wait, how thirsty, how
+// fussy, what they say). Names are our own; keep tabletop terms out.
 {
   "adventurerKinds": [
     { "name": "Sellsword", "label": "sellsword", "weapon": "ShortSword", "apparel": [ "LeatherJerkin", "IronHelm" ],
-      "outfit": "Shieldmaiden", "skillMin": 7, "skillMax": 12, "purseMin": 15, "purseMax": 35, "spend": 1.0, "tastes": [ "Savoury", "Hot" ] },
+      "outfit": "Shieldmaiden", "skillMin": 7, "skillMax": 12, "purseMin": 15, "purseMax": 35, "spend": 1.0, "tastes": [ "Savoury", "Hot" ], "tempers": { "Rowdy": 3, "Boastful": 2, "Easy": 1, "Stingy": 1 } },
     { "name": "Bowman", "label": "bowman", "weapon": "Bow", "apparel": [ "LeatherCap" ],
-      "outfit": "Hunter", "skillMin": 6, "skillMax": 11, "purseMin": 10, "purseMax": 25, "spend": 0.9, "tastes": [ "Fresh", "Savoury" ] },
+      "outfit": "Hunter", "skillMin": 6, "skillMax": 11, "purseMin": 10, "purseMax": 25, "spend": 0.9, "tastes": [ "Fresh", "Savoury" ], "tempers": { "Easy": 2, "Picky": 2, "Stingy": 1, "Timid": 1 } },
     { "name": "Vanguard", "label": "vanguard", "weapon": "BronzeSpear", "apparel": [ "ChainShirt" ],
-      "outfit": "Wanderer", "skillMin": 8, "skillMax": 13, "purseMin": 20, "purseMax": 45, "spend": 1.2, "tastes": [ "Savoury" ] },
+      "outfit": "Wanderer", "skillMin": 8, "skillMax": 13, "purseMin": 20, "purseMax": 45, "spend": 1.2, "tastes": [ "Savoury" ], "tempers": { "Boastful": 3, "Rowdy": 2, "Picky": 1 } },
     { "name": "Hedgewise", "label": "hedge-wise", "weapon": "Club", "apparel": [],
-      "outfit": "Seer", "skillMin": 3, "skillMax": 7, "purseMin": 25, "purseMax": 60, "spend": 1.3, "tastes": [ "Sweet", "Fresh" ] },
-    { "name": "Pedlar", "label": "pedlar", "outfit": "Wanderer", "skillMin": 1, "skillMax": 3, "purseMin": 16, "purseMax": 24, "spend": 0.8, "tastes": [ "Sweet", "Savoury" ] },
-    { "name": "Pilgrim", "label": "pilgrim", "outfit": "Seer", "skillMin": 0, "skillMax": 2, "purseMin": 12, "purseMax": 18, "spend": 0.7, "tastes": [ "Fresh" ] },
-    { "name": "Drover", "label": "drover", "weapon": "Club", "outfit": "Farmhand", "skillMin": 2, "skillMax": 5, "purseMin": 14, "purseMax": 22, "spend": 0.85, "tastes": [ "Savoury", "Hot" ] },
-    { "name": "Minstrel", "label": "minstrel", "outfit": "Skald", "skillMin": 1, "skillMax": 3, "purseMin": 12, "purseMax": 20, "spend": 0.9, "tastes": [ "Sweet", "Hot" ] }
+      "outfit": "Seer", "skillMin": 3, "skillMax": 7, "purseMin": 25, "purseMax": 60, "spend": 1.3, "tastes": [ "Sweet", "Fresh" ], "tempers": { "Picky": 3, "Timid": 2, "Easy": 1 } },
+    { "name": "Pedlar", "label": "pedlar", "outfit": "Wanderer", "skillMin": 1, "skillMax": 3, "purseMin": 16, "purseMax": 24, "spend": 0.8, "tastes": [ "Sweet", "Savoury" ], "tempers": { "Stingy": 3, "Easy": 1, "Picky": 1 } },
+    { "name": "Pilgrim", "label": "pilgrim", "outfit": "Seer", "skillMin": 0, "skillMax": 2, "purseMin": 12, "purseMax": 18, "spend": 0.7, "tastes": [ "Fresh" ], "tempers": { "Easy": 3, "Timid": 2, "Stingy": 1 } },
+    { "name": "Drover", "label": "drover", "weapon": "Club", "outfit": "Farmhand", "skillMin": 2, "skillMax": 5, "purseMin": 14, "purseMax": 22, "spend": 0.85, "tastes": [ "Savoury", "Hot" ], "tempers": { "Rowdy": 2, "Easy": 2, "Stingy": 1 } },
+    { "name": "Minstrel", "label": "minstrel", "outfit": "Skald", "skillMin": 1, "skillMax": 3, "purseMin": 12, "purseMax": 20, "spend": 0.9, "tastes": [ "Sweet", "Hot" ], "tempers": { "Boastful": 2, "Easy": 2, "Rowdy": 1, "Picky": 1 } }
   ],
   "parties": [
     { "name": "GildedSpurs", "label": "the Gilded Spurs", "members": [ "Sellsword", "Bowman", "Hedgewise" ],
