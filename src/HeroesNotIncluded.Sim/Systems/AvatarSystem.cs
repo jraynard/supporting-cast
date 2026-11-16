@@ -92,7 +92,11 @@ public enum AvatarActionKind
     /// <summary>Fill the empty bucket in hand at the well (<see cref="Environment.Buckets"/>), at once.</summary>
     FillBucket,
 
-    /// <summary>Throw a full bucket's water where you point (<see cref="Environment.ThrowSession"/>), begun at once.</summary>
+    /// <summary>
+    /// Throw a full bucket's water where you point (<see cref="Environment.ThrowSession"/>). No longer
+    /// offered: a bucket's swung and thrown like a bow (<see cref="Environment.BucketCommand"/>). Kept so
+    /// the kinds after it keep their numbers.
+    /// </summary>
     ThrowWater,
 
     /// <summary>Have a go at a festival game (<see cref="Work.FestivalGames"/>), begun at once.</summary>
@@ -317,11 +321,7 @@ public sealed class AvatarSystem : ISimSystem
         // Game: shot from as far as the bow carries (or struck from beside it); a carcass in reach is butchered.
         if (tool == AvatarTool.Use && Ai.AvatarHunting.ActionAt(sim, avatar, cell, here) is { } hunting)
             return hunting;
-        // A full bucket: thrown where you point, out of arm's reach as much as in it.
-        // (Not at a washstand wanting its jug filled, unless it's burning: that's what the water's for.)
-        if (tool == AvatarTool.Use && !(Hospitality.RoomChores.TakesWater(sim, site) && map.Fire[i] <= 0)
-            && Environment.Buckets.ThrowAt(sim, avatar, cell, here) is { } throwing)
-            return throwing;
+        // A full bucket is thrown with the buttons, as a bow's shot (Environment.BucketCommand), not a click on a cell.
         // A poured drink: across the bar to whoever's waiting for one, or to the customer pointed at.
         if (tool == AvatarTool.Use && Shops.BarService.At(sim, avatar, site, cell) is { } serving)
             return new(AvatarActionKind.ServeDrink, Shops.BarService.Label(sim, serving), cell, serving.Order.Poster) { Item = serving.Drink };

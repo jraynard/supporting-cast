@@ -186,9 +186,10 @@ public class InnTurnoverTests
         Assert.Equal("Fill the jug", action.Label);
         sim.ApplyNow(new AvatarWorkCommand(me, true, cell));
         Assert.False(sim.World.Has<JugEmpty>(stand));
-        // Filled, the bucket's for throwing again.
+        // Filled, the jug wants no more: the bucket's for swinging and throwing again.
         InHand(sim, me, Environment.Buckets.Full);
-        Assert.Equal(AvatarActionKind.ThrowWater, AvatarSystem.ActionAt(sim, me, cell).Kind);
+        Assert.NotEqual(AvatarActionKind.BarWork, AvatarSystem.ActionAt(sim, me, cell).Kind);
+        Assert.True(Environment.Buckets.Prime(sim, me, true, sim.Clock.Tick));
     }
 
     [Fact]

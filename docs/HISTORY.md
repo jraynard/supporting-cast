@@ -1970,3 +1970,11 @@ player vanished on day two and it ended on day three.
   (Millbrook 51.9), won 0 (2), Dread peak 71 (68). The walk from the inn to the cookhouse for every
   meal is most of what's left; the cook supplying the inn is next.
 - `ReedmereMapTests`; `VillageDayScenarioTests` runs on both maps. Bench hashes unchanged.
+
+### Buckets thrown like a bow (2026-11-15)
+- A full bucket in hand: hold the right button (Heavy) to swing it back and forth (`BucketSwing`, the
+  same 1.6 s swing), walking as you like (at a drawn bow's pace), and click the left (Strike) to throw
+  it the way you aim, as far as the swing has gone (`BucketCommand`, `Buckets.Prime`/`Throw`). Your
+  character faces the mouse while it swings; a bar shows the swing and the landing patch is outlined.
+  Clicking a cell no longer throws; `ThrowSession` stays only for a save made mid-throw.
+- `BucketTests` rewritten for it. Bench hashes unchanged.

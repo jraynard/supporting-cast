@@ -104,24 +104,19 @@ public class BucketTests
         Assert.False(well.IsNull);
     }
 
-    /// <summary>Swing it back (F held) until it'd land this far out, then let go.</summary>
-    private static void ThrowTo(Simulation sim, Entity me, float cells, int turn = 0, int turnSteps = 0)
+    /// <summary>Swing it (the right button held) until it'd land this far out, then throw (the left) along <paramref name="aim"/>.</summary>
+    private static void ThrowTo(Simulation sim, Entity me, float cells, float aim = 0f)
     {
-        var predictor = new WorkPredictor();
-        var let = false;
-        for (var t = 0; t < 60 * 10 && sim.World.Has<WorkSession>(me); t++)
-        {
+        sim.ApplyNow(new BucketCommand(me, true, false, aim, sim.Clock.Tick));
+        Assert.True(sim.World.Has<BucketSwing>(me), "swinging");
+        for (var t = 0; t < 60 * 5 && Buckets.ThrowDistance(Buckets.SwingOf(sim, me)) < cells; t++)
             sim.Tick();
-            var hold = !let;
-            if (predictor.Session is ThrowSession s && s.Swing > 0f && 1f + s.Swing * (Buckets.MaxRange - 1) >= cells)
-                let = true;
-            predictor.Update(sim, me, 1, false, hold && !let, t < turnSteps ? turn : 0, c => sim.ApplyNow(c));
-        }
+        sim.ApplyNow(new BucketCommand(me, true, true, aim, sim.Clock.Tick));
         sim.Tick();
     }
 
     [Fact]
-    public void AFullBucketIsThrownWhereYouPointAsFarAsYouSwingIt()
+    public void AFullBucketIsSwungAndThrownTheWayYouAimAsFarAsItSwung()
     {
         var sim = Warm();
         for (var x = 13; x <= 15; x++)
@@ -130,16 +125,12 @@ public class BucketTests
         Assert.True(sim.Fire.Ignite(sim, C(14, 10), 1f));
         var me = Avatar(sim, C(10, 10));
         Hold(sim, me, Buckets.Full);
+        // Not a click on the fire any more: the buttons, as a bow's.
+        Assert.NotEqual(AvatarActionKind.ThrowWater, AvatarSystem.ActionAt(sim, me, C(14, 10)).Kind);
 
-        var throwing = AvatarSystem.ActionAt(sim, me, C(14, 10)); // four cells off: out of arm's reach
-        Assert.Equal(AvatarActionKind.ThrowWater, throwing.Kind);
-        Assert.Contains("fire", throwing.Label);
-        Assert.Equal(AvatarActionKind.None, AvatarSystem.ActionAt(sim, me, C(10 + Buckets.MaxRange + 2, 10)).Kind); // too far
-        AvatarSystem.Perform(sim, me, throwing);
-        Assert.IsType<ThrowSession>(sim.World.Get<WorkSession>(me));
-
-        ThrowTo(sim, me, 4f);
-        Assert.False(sim.World.Has<WorkSession>(me));
+        ThrowTo(sim, me, 4f); // east, four out
+        Assert.False(sim.World.Has<BucketSwing>(me));
+        Assert.False(sim.World.Has<WorkSession>(me), "no game to sit in: you're free the whole time");
         Assert.Equal(Buckets.Empty, HeldName(sim, me));
         Assert.Equal(0f, sim.Map.Fire[sim.Map.Idx(C(14, 10))]);
         Assert.True(sim.Fire.Soaked(sim, sim.Map.Idx(C(14, 10))));
@@ -147,53 +138,67 @@ public class BucketTests
     }
 
     [Fact]
-    public void TheThrowTurnsAsItSwingsAndFollowsWhereYouPoint()
+    public void TheThrowGoesTheWayYouAimWhenItsThrown()
     {
         var sim = Warm();
         var me = Avatar(sim, C(10, 10));
         Hold(sim, me, Buckets.Full);
-        AvatarSystem.Perform(sim, me, AvatarSystem.ActionAt(sim, me, C(14, 10))); // east, four out
-
-        // Pointed elsewhere (the mouse): the throw goes that way instead.
-        sim.ApplyNow(new AimThrowCommand(me, C(10, 14)));
-        var s = (ThrowSession)sim.World.Get<WorkSession>(me);
-        Assert.Equal(C(10, 14), s.Aim);
-        ThrowTo(sim, me, 4f);
-        Assert.True(sim.Fire.Soaked(sim, sim.Map.Idx(C(10, 14))), "thrown where it was last pointed");
+        ThrowTo(sim, me, 4f, aim: MathF.PI / 2); // south (+y)
+        Assert.True(sim.Fire.Soaked(sim, sim.Map.Idx(C(10, 14))), "thrown the way it was aimed");
         Assert.False(sim.Fire.Soaked(sim, sim.Map.Idx(C(14, 10))));
-
-        // Turned with A/D through a quarter turn while swinging: off the way it was first aimed.
-        var sim2 = Warm();
-        var me2 = Avatar(sim2, C(10, 10));
-        Hold(sim2, me2, Buckets.Full);
-        AvatarSystem.Perform(sim2, me2, AvatarSystem.ActionAt(sim2, me2, C(14, 10)));
-        var quarter = (int)(MathF.PI / 2 / (ThrowSession.TurnPerSecond / SimClock.TicksPerSecond));
-        ThrowTo(sim2, me2, 4f, turn: 1, turnSteps: quarter);
-        Assert.False(sim2.Fire.Soaked(sim2, sim2.Map.Idx(C(14, 10))), "turned away from where it was first aimed");
-        Assert.True(sim2.Fire.Soaked(sim2, sim2.Map.Idx(C(10, 14))) || sim2.Fire.Soaked(sim2, sim2.Map.Idx(C(10, 6))), "a quarter turn round");
     }
 
     [Fact]
-    public void ATurnedThrowSurvivesASave()
+    public void YouWalkWithItSwinging()
     {
         var sim = Warm();
         var me = Avatar(sim, C(10, 10));
         Hold(sim, me, Buckets.Full);
-        AvatarSystem.Perform(sim, me, AvatarSystem.ActionAt(sim, me, C(14, 10)));
-        sim.ApplyNow(new AimThrowCommand(me, C(13, 13)));
+        sim.ApplyNow(new BucketCommand(me, true, false, 0f, sim.Clock.Tick));
+        sim.ApplyNow(new FreeMoveCommand(me, 1f, 0f, 0f));
+        var before = sim.World.Get<Position>(me).Pos;
+        sim.TickMany(SimClock.TicksPerSecond * 2);
+        Assert.True(sim.World.Get<Position>(me).Pos.X > before.X + 0.5f, "walked east with it swinging");
+        Assert.True(sim.World.Has<BucketSwing>(me), "still swinging");
+    }
+
+    [Fact]
+    public void LoweredItThrowsNothing()
+    {
+        var sim = Warm();
+        var me = Avatar(sim, C(10, 10));
+        Hold(sim, me, Buckets.Full);
+        sim.ApplyNow(new BucketCommand(me, true, false, 0f, sim.Clock.Tick));
+        sim.TickMany(30);
+        sim.ApplyNow(new BucketCommand(me, false, false, 0f, sim.Clock.Tick));
+        sim.ApplyNow(new BucketCommand(me, true, true, 0f, sim.Clock.Tick)); // a click, not swinging
+        Assert.False(sim.World.Has<BucketSwing>(me));
+        Assert.Equal(Buckets.Full, HeldName(sim, me));
+        Assert.Empty(sim.Fire.SoakedCells);
+        // An empty bucket isn't swung at all.
+        Hold(sim, me, Buckets.Empty);
+        Assert.False(Buckets.Prime(sim, me, true, sim.Clock.Tick));
+    }
+
+    [Fact]
+    public void ASwingSurvivesASave()
+    {
+        var sim = Warm();
+        var me = Avatar(sim, C(10, 10));
+        Hold(sim, me, Buckets.Full);
+        sim.ApplyNow(new BucketCommand(me, true, false, 0f, sim.Clock.Tick));
+        sim.TickMany(40);
         var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
-        var s = (ThrowSession)loaded.World.Get<WorkSession>(me);
-        Assert.Equal(C(13, 13), s.Aim);
-        Assert.Equal(((ThrowSession)sim.World.Get<WorkSession>(me)).Heading, s.Heading);
+        Assert.Equal(Buckets.SwingOf(sim, me), Buckets.SwingOf(loaded, me));
+        Assert.True(Buckets.SwingOf(loaded, me) > 0f);
     }
 
     [Fact]
-    public void ASwingLetGoEarlyFallsShort()
+    public void ASwingThrownEarlyFallsShort()
     {
         var sim = Warm();
         var me = Avatar(sim, C(10, 10));
         Hold(sim, me, Buckets.Full);
-        AvatarSystem.Perform(sim, me, AvatarSystem.ActionAt(sim, me, C(16, 10)));
         ThrowTo(sim, me, 2f);
         Assert.True(sim.Fire.Soaked(sim, sim.Map.Idx(C(12, 10))) || sim.Fire.Soaked(sim, sim.Map.Idx(C(13, 10))));
         Assert.False(sim.Fire.Soaked(sim, sim.Map.Idx(C(16, 10))));

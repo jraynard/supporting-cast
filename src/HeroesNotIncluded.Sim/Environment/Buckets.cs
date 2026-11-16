@@ -178,17 +178,75 @@ public static class Buckets
     /// <summary>How long a splash stays in <see cref="Simulation.RecentSplashes"/>.</summary>
     public const int SplashShowTicks = SimClock.TicksPerSecond * 4;
 
-    /// <summary>
-    /// With a full bucket in hand, pointing somewhere within a throw (not the well, not where you
-    /// stand): throw the water there. Checked before arm's reach, as a bow's shot is.
-    /// </summary>
-    public static AvatarAction? ThrowAt(Simulation sim, Entity avatar, int3 cell, int3 here)
+    /// <summary>A full bucket's swing: back and forth over <see cref="ThrowSession.SwingSeconds"/>, 0..1..0 (no trig, as a session's).</summary>
+    public static float SwingOf(Simulation sim, Entity e)
     {
-        if (!IsFull(sim, sim.World.Get<Carrying>(avatar).Item) || (cell.X == here.X && cell.Y == here.Y)
-            || Map.Distance(new int3(cell.X, cell.Y, here.Z), here) > MaxRange || IsWell(sim, sim.Map.Structure[sim.Map.Idx(cell)]))
-            return null;
-        var burning = sim.Map.Fire[sim.Map.Idx(cell)] > 0;
-        return new AvatarAction(AvatarActionKind.ThrowWater, burning ? "Throw the water on the fire" : "Throw the water", cell, Entity.Null);
+        if (!sim.World.TryGet<BucketSwing>(e, out var s))
+            return 0f;
+        var t = Math.Max(0, sim.Clock.Tick - s.Start) / (float)SimClock.TicksPerSecond / ThrowSession.SwingSeconds;
+        var f = t - MathF.Floor(t);
+        return f < 0.5f ? f * 2f : 2f - f * 2f;
+    }
+
+    /// <summary>How far a throw goes at this point of the swing, cells: one at the bottom, the whole range at the top.</summary>
+    public static float ThrowDistance(float swing) => 1f + swing * (MaxRange - 1);
+
+    /// <summary>Where a bucket thrown now from <paramref name="from"/> along <paramref name="aim"/> would land (before shaky hands).</summary>
+    public static int3 LandsAt(int3 from, float aim, float swing)
+    {
+        var d = ThrowDistance(swing);
+        return new int3(from.X + (int)MathF.Round(DetMath.Cos(aim) * d), from.Y + (int)MathF.Round(DetMath.Sin(aim) * d), from.Z);
+    }
+
+    /// <summary>
+    /// Start swinging the full bucket in hand (as of <paramref name="at"/>), or lower it. False if
+    /// there's no full bucket to swing, or they're busy at something else.
+    /// </summary>
+    public static bool Prime(Simulation sim, Entity e, bool up, long at)
+    {
+        var w = sim.World;
+        if (!up)
+        {
+            if (w.Has<BucketSwing>(e))
+                w.Remove<BucketSwing>(e);
+            return true;
+        }
+        if (w.Has<BucketSwing>(e) || !w.TryGet<Carrying>(e, out var c) || !IsFull(sim, c.Item) || w.Has<Work.WorkSession>(e))
+            return false;
+        w.Add(e, new BucketSwing { Start = Math.Min(at, sim.Clock.Tick) });
+        return true;
+    }
+
+    /// <summary>
+    /// Throw the swinging bucket along <paramref name="aim"/>: as far as the swing has gone, a touch
+    /// short or long for unsteady hands. The water lands, the bucket's empty in hand. False if
+    /// nothing was being swung.
+    /// </summary>
+    public static bool Throw(Simulation sim, Entity e, float aim)
+    {
+        var w = sim.World;
+        if (!w.Has<BucketSwing>(e) || !w.TryGet<Carrying>(e, out var c) || !IsFull(sim, c.Item))
+        {
+            if (w.Has<BucketSwing>(e))
+                w.Remove<BucketSwing>(e);
+            return false;
+        }
+        var hands = Work.Hands.Of(sim, e, Skill.Shooting);
+        var distance = Math.Clamp(ThrowDistance(SwingOf(sim, e)) + sim.Rand.Range(-1f, 1f) * hands.Tremor * 3f / hands.Tolerance, 1f, MaxRange);
+        var from = w.Get<Position>(e).Cell;
+        var at = new int3(from.X + (int)MathF.Round(DetMath.Cos(aim) * distance), from.Y + (int)MathF.Round(DetMath.Sin(aim) * distance), from.Z);
+        w.Remove<BucketSwing>(e);
+        if (sim.Map.InBounds(at))
+        {
+            var put = Splash(sim, at, e);
+            sim.Messages.Add(MessageKind.Info, put > 0 ? "The water hisses on the flames." : "The water splashes down.", at);
+        }
+        Swap(sim, e, Empty);
+        if (w.Has<Skills>(e))
+            SkillRules.Learn(sim, e, Skill.Shooting, 2f);
+        if (w.Has<Combat.FreeMover>(e))
+            w.Get<Combat.FreeMover>(e).Aim = aim;
+        return true;
     }
 
     /// <summary>At the well with an empty bucket in hand: fill it.</summary>
@@ -486,5 +544,42 @@ public sealed record AimThrowCommand(Entity Avatar, int3 Cell) : ISimCommand, IA
         if (sim.World.IsAlive(Avatar) && sim.World.TryGet<Work.WorkSession>(Avatar, out var s) && s is ThrowSession throwing && !throwing.Done
             && sim.Map.InBounds(Cell))
             throwing.AimAt(Cell);
+    }
+}
+
+/// <summary>
+/// A full bucket being swung back and forth to throw (<see cref="Buckets.Prime"/>), since
+/// <see cref="Start"/>: the right button held, as a bow's drawn. Walk with it; the left button throws.
+/// </summary>
+public struct BucketSwing
+{
+    public long Start;
+}
+
+/// <summary>
+/// A player's bucket (<see cref="Buckets"/>), worked like a bow: swing it (<paramref name="Prime"/> true,
+/// the right button down), lower it (false), or <paramref name="Throw"/> it along <paramref name="Aim"/>
+/// (the left button), as far as the swing has gone. <paramref name="At"/> is the tick it was pressed on
+/// the player's screen; with a throw, where they were too (co-op).
+/// </summary>
+public sealed record BucketCommand(Entity Avatar, bool Prime, bool Throw, float Aim, long At, float AtX = float.NaN, float AtY = float.NaN, int AtZ = 0)
+    : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (!sim.World.IsAlive(Avatar) || !sim.World.Has<Creature>(Avatar) || !sim.World.Get<Creature>(Avatar).Able)
+            return;
+        if (!Throw)
+        {
+            Buckets.Prime(sim, Avatar, Prime, Combat.Blows.Stamp(sim, At));
+            return;
+        }
+        if (!float.IsFinite(Aim))
+            return;
+        if (sim.World.Has<Combat.FreeMover>(Avatar))
+            Combat.FreeMoveSystem.Claim(sim, Avatar, AtX, AtY, AtZ, stopped: false);
+        Buckets.Throw(sim, Avatar, MathF.IEEERemainder(Aim, MathF.Tau));
     }
 }

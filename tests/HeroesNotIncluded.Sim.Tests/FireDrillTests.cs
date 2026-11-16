@@ -35,9 +35,7 @@ public class FireDrillTests
         var at = sim.World.Get<Position>(me).Cell;
         Assert.Contains(Buckets.Wells(sim), well => AvatarSystem.InReach(sim, at, well));
 
-        // A throw at the fire from here is offered, if it's within a throw.
-        var near = sim.Fire.BurningTiles.Select(i => sim.Map.CellOf(i)).OrderBy(c => Maps.Map.Distance(c, at)).First();
-        if (Maps.Map.Distance(new int3(near.X, near.Y, at.Z), at) <= Buckets.MaxRange)
-            Assert.Equal(AvatarActionKind.ThrowWater, AvatarSystem.ActionAt(sim, me, near).Kind);
+        // It can be swung at once, to throw at the fire (the buttons, as a bow's).
+        Assert.True(Buckets.Prime(sim, me, true, sim.Clock.Tick));
     }
 }

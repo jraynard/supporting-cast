@@ -70,6 +70,7 @@ public sealed partial class VillageGame
             DrawButtsHint();
         else
             DrawFightHint();
+        DrawBucketSwing();
         DrawWork();
         if (WorkScenesDemo)
             DrawWorkSceneGallery();

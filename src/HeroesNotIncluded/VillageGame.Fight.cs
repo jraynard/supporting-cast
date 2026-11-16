@@ -145,7 +145,7 @@ public sealed partial class VillageGame
                 _aim = MathF.Atan2(at.Y - me.Y, at.X - me.X);
         }
         // Drawn, you face the mouse at once; sheathed, the way you walk (the sim's say).
-        _renderer.LocalAim = WeaponDrawn ? (_avatar, _aim) : null;
+        _renderer.LocalAim = WeaponDrawn || (HasAvatar && _sim.World.Has<Sim.Environment.BucketSwing>(_avatar)) ? (_avatar, _aim) : null;
         var turned = float.IsNaN(_sentAim) || MathF.Abs(MathF.IEEERemainder(_aim - _sentAim, MathF.Tau)) > AimStep;
         // In co-op, where you are goes too, now and then while you move, so the host keeps up with your screen.
         var drift = _coop != null && _freePredictor.Active && _time - _aimSentAt > PositionEvery;
@@ -172,7 +172,7 @@ public sealed partial class VillageGame
         if (!WeaponDrawn)
             _bowSent = false; // sheathed lets it down (DrawWeaponCommand)
         if (!WeaponDrawn)
-            return false;
+            return (HoldingFullBucket || _bucketSent) && HandleBucket(); // a full bucket's swung and thrown like a bow
         var mouse = input.IsMouseDown(MouseButton.Left) || input.IsMouseDown(MouseButton.Right)
             || input.WasMousePressed(MouseButton.Left) || input.WasMousePressed(MouseButton.Right);
         if (Archery.Bow(_sim, _avatar) != null)

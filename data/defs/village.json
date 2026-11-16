@@ -50,14 +50,14 @@
     },
     {
       // Fighting fire (Environment/Buckets): they hang at the well, F there fills one, and a full one
-      // is thrown (hold F to swing it back, let go). Water soaks the ground so it won't catch for a
+      // is thrown like a bow's shot (right button held swings it, left throws). Water soaks the ground so it won't catch for a
       // while. Both arms: art from tools/bucket_art.py.
       "name": "Bucket", "label": "bucket", "category": "Item", "mass": 1.5, "bulky": true, "sprite": "items/bucket", "maxHp": 60, "flammability": 0.4,
       "description": "A stave bucket on a rope bail, kept at the well for fire. F at the well fills it."
     },
     {
       "name": "WaterBucket", "label": "bucket of water", "category": "Item", "mass": 10, "bulky": true, "sprite": "items/bucket_full", "maxHp": 60, "flammability": 0.0,
-      "description": "Water to the brim. Point where it should go, then hold F to swing it back and let go to throw: the further back, the further it goes. Wet ground won't catch for a while."
+      "description": "Water to the brim. Hold the right button to swing it, walking as you like, and click the left to throw it the way you aim: the further back it's swung, the further it goes. Wet ground won't catch for a while."
     },
     {
       // The inn's rooms (Hospitality/InnRooms): a slept-in bed is stripped and made up with clean

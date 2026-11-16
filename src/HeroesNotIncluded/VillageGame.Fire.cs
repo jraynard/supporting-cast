@@ -7,9 +7,76 @@ using Narsil.Ui;
 
 namespace HeroesNotIncluded;
 
-/// <summary>Throwing a bucket of water (<see cref="ThrowSession"/>): the swing, and where it'll land.</summary>
+/// <summary>
+/// Throwing a bucket of water, worked like a bow (<see cref="BucketCommand"/>): hold the right button
+/// to swing it back and forth, walking as you like, and click the left to throw it the way you aim,
+/// as far as the swing has gone. (<see cref="ThrowSession"/>: the old way, still drawn for a save made mid-throw.)
+/// </summary>
 public sealed partial class VillageGame
 {
+    /// <summary>The bucket swinging, as last told to the sim.</summary>
+    private bool _bucketSent;
+
+    /// <summary>A full bucket in your hands.</summary>
+    private bool HoldingFullBucket =>
+        HasAvatar && _sim.World.TryGet<Carrying>(_avatar, out var c) && Buckets.IsFull(_sim, c.Item);
+
+    /// <summary>
+    /// A full bucket's buttons: Heavy (right) held swings it, Strike (left) throws it while it swings.
+    /// True if it took the mouse: while swinging, clicks throw rather than walk or act.
+    /// </summary>
+    private bool HandleBucket()
+    {
+        var full = HoldingFullBucket;
+        var tick = _sim.Clock.Tick;
+        var swing = full && Controls.Map.Down(Act.Heavy);
+        if (swing != _bucketSent)
+        {
+            Issue(new BucketCommand(_avatar, swing, false, _aim, tick));
+            _bucketSent = swing;
+        }
+        if (swing && Controls.Map.Pressed(Act.Strike) && _sim.World.Has<BucketSwing>(_avatar))
+        {
+            var (ax, ay, az) = Here();
+            Issue(new BucketCommand(_avatar, true, true, _aim, tick, ax, ay, az));
+        }
+        return swing;
+    }
+
+    /// <summary>Swinging a full bucket: how far it'd go now, and where it'd land (the patch outlined on the ground).</summary>
+    private void DrawBucketSwing()
+    {
+        if (!HasAvatar)
+            return;
+        var w = _sim.World;
+        if (!HoldingFullBucket)
+            return;
+        var (strike, heavy) = (Press(Act.Strike), Press(Act.Heavy));
+        _hud.Next(Anchor.Bottom);
+        Panel.Begin("##bucket-swing", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs);
+        _hud.Took();
+        if (!w.Has<BucketSwing>(_avatar))
+        {
+            TextC(Theme.Dim, $"A full bucket. Hold {heavy} to swing it, {strike} to throw it the way you aim.");
+            Panel.End();
+            return;
+        }
+        TextC(Theme.Dim, $"The further back it swings, the further it goes: {strike} to throw as it reaches the fire.");
+        var swing = Buckets.SwingOf(_sim, _avatar);
+        var dl = ImGui.GetWindowDrawList();
+        var size = Gui.S(360, 18);
+        var min = ImGui.GetCursorScreenPos();
+        ImGui.Dummy(in size);
+        var max = min + size;
+        Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
+        var pad = Gui.S(3);
+        var fillMin = min + new float2(pad, pad);
+        var fillMax = new float2(min.X + pad + (size.X - 2 * pad) * swing, max.Y - pad);
+        dl.AddRectFilled(in fillMin, in fillMax, Theme.U8(Theme.Water), 0f, ImDrawFlags.None);
+        Panel.End();
+        DrawLanding(Buckets.LandsAt(w.Get<Position>(_avatar).Cell, _aim, swing));
+    }
+
     private void DrawThrow(ThrowSession s)
     {
         BeginWork(s.Title, ("F", "hold to swing back, let go to throw"), ("A/D", "turn"), ("Esc", "lower it"));
