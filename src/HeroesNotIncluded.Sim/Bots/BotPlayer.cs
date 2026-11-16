@@ -1573,6 +1573,8 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         var cask = bar.IsNull ? Entity.Null : MixSession.CaskFor(sim, bar, named);
         if (cask.IsNull)
             return Pour(sim, me, view, drinker, now);
+        if (PourSession.ServingsLeft(sim, cask) <= 0)
+            return Restock(sim, me, view, now); // run dry: a mix needs its measure from the cask
         var into = w.Get<Thing>(cask).Def.Building!.Cask!.Into;
         if (Carried(sim, me, into).IsNull)
             return Crockery(sim, me, view, now, into, cask);

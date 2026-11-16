@@ -69,7 +69,9 @@ public static class SeasonSweep
             if (sim.Clock.Tick % 60 == 0)
                 for (var i = 0; i < casks.Count; i++)
                 {
-                    var now = sim.World.IsAlive(casks[i]) ? Work.PourSession.ServingsLeft(sim, casks[i]) : 0;
+                    if (!sim.World.IsAlive(casks[i]))
+                        continue; // burned: that's not drinking
+                    var now = Work.PourSession.ServingsLeft(sim, casks[i]);
                     if (now < left[i])
                         result.Drawn += left[i] - now;
                     else if (now > left[i])
