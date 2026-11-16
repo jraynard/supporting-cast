@@ -75,11 +75,12 @@ public static class BuildingKit
         Stepped.GetValue(model, m => [.. Enumerable.Range(0, 4).Select(f => (IReadOnlyList<ModelBox>)m.Select(b => Resized(b, 0f, ArmStep * (f + 1))).ToList())])[facing & 3];
 
     /// <summary>The kit's models for a wall, post or door cell, each with its turn (made along X).</summary>
+    /// <remarks>Above the ground storey, the kit's <see cref="BuildingKitDef.UpperKit"/> if it has one.</remarks>
     public static IEnumerable<(IReadOnlyList<ModelBox> Model, int Facing)> WallPieces(BuildingKitDef kit, PresetBuilding b, int3 cell)
     {
         if (cell.Z == b.Anchor.Z)
             return GroundPieces(kit, b, cell);
-        return GroundPieces(kit, b, cell).Select(p => (WithoutFooting(p.Model), p.Facing));
+        return GroundPieces(kit.UpperKit ?? kit, b, cell).Select(p => (WithoutFooting(p.Model), p.Facing));
     }
 
     private static IEnumerable<(IReadOnlyList<ModelBox> Model, int Facing)> GroundPieces(BuildingKitDef kit, PresetBuilding b, int3 cell)
@@ -96,19 +97,24 @@ public static class BuildingKit
         bool Joined(int dx, int dy) => Joins(At(dx, dy)) || SetIn(dx, dy);
         var symbol = At(0, 0);
         bool e = Joined(1, 0), w = Joined(-1, 0), s = Joined(0, 1), n = Joined(0, -1);
+        // Made along X with the front at +Y: facing 0 fronts +Y, 2 fronts -Y; along Y, 1 fronts -X, 3 fronts +X.
+        // A kit that faces out turns the run so its front is to the street, where one side of it is.
+        bool Outside(int dx, int dy) => At(dx, dy) == ' ';
+        int AlongX() => kit.FacesOut && Outside(0, -1) && !Outside(0, 1) ? 2 : 0;
+        int AlongY() => kit.FacesOut && Outside(1, 0) && !Outside(-1, 0) ? 3 : 1;
         if (symbol == 'D')
         {
-            yield return (kit.Door, e || w ? 0 : 1);
+            yield return (kit.Door, e || w ? AlongX() : AlongY());
             yield break;
         }
         if (symbol == 'W' && e && w && !n && !s)
         {
-            yield return (kit.Span, 0);
+            yield return (kit.Span, AlongX());
             yield break;
         }
         if (symbol == 'W' && n && s && !e && !w)
         {
-            yield return (kit.Span, 1);
+            yield return (kit.Span, AlongY());
             yield break;
         }
         // Each post's end grain turned its own way, so a row of them doesn't look stamped.

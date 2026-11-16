@@ -278,6 +278,7 @@ public sealed class DefDatabase
         foreach (var d in AllTraits) d.Resolve(this);
         foreach (var d in AllRecipes) d.Resolve(this); // after things: stations collect their recipes
         foreach (var d in AllOutfits) d.Resolve(this);
+        foreach (var d in AllKits) d.Resolve(this);
         foreach (var d in AllBuildings) d.Resolve(this); // after things and thoughts: their parts, furniture, feasts
         foreach (var d in AllTrades) d.Resolve(this); // after buildings: their workplaces
         foreach (var d in AllAdventurerKinds) d.Resolve(this);

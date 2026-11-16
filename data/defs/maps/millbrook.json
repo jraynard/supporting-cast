@@ -68,7 +68,7 @@
       {"def": "TinkerShop", "at": [63, 64], "facing": 2, "variant": "Timber", "role": "TinkerShop"},
       {"def": "Smithy", "at": [20, 30], "facing": 3, "variant": "Stone", "role": "Forge"},
       {"def": "Cottage", "at": [28, 41], "facing": 0, "role": "Home"},
-      {"def": "Inn", "at": [61, 45], "facing": 1, "variant": "Timber", "role": "Tavern"},
+      {"def": "Inn", "at": [61, 45], "facing": 1, "variant": "Jettied", "role": "Tavern"},
       {"def": "Cottage", "at": [74, 44], "facing": 1, "variant": "Shingle", "role": "Home"},
       {"def": "Cottage", "at": [30, 56], "facing": 0, "role": "Home"},
       {"def": "Cottage", "at": [43, 61], "facing": 2, "role": "Home"},

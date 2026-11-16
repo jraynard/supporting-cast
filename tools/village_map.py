@@ -81,7 +81,7 @@ building("Woodshop", 70, 28, 1, role="Woodshop")                 # D: by the lak
 building("TinkerShop", 63, 64, 2, role="TinkerShop", variant="Timber")  # N: south of the square, its door to the north (cottage K stood by here; removed for room)
 building("Smithy", 20, 30, 3, role="Forge", variant="Stone")     # E: the west barn with the stone chimney
 building("Cottage", 28, 41, 0, role="Home")                     # F: west house with the yard
-building("Inn", 61, 45, 1, role="Tavern", variant="Timber")      # G: on the square, facing the well (its kitchen out the back)
+building("Inn", 61, 45, 1, role="Tavern", variant="Jettied")      # G: on the square, facing the well (its kitchen out the back)
 building("Cottage", 74, 44, 1, role="Home", variant="Shingle")  # H: east, the big brown roof (moved over for the inn's kitchen)
 building("Cottage", 30, 56, 0, role="Home")                     # I: south-west, with its garden
 building("Cottage", 43, 61, 2, role="Home")                     # J: south of the square

@@ -564,6 +564,28 @@ public sealed class BuildingKitDef : Def
     public string Floor { get; set; } = "";
 
     public RoofKit? Roof { get; set; }
+
+    /// <summary>
+    /// Another kit for the walls of the storeys above the ground (stone below, timber above), by
+    /// name. The roof, the floor and the ground storey's walls are this kit's own.
+    /// </summary>
+    public string? Upper { get; set; }
+
+    /// <summary>
+    /// Straight runs and doors turn so their <c>front</c> (+Y as made) faces outside wherever one
+    /// side of the wall is outside the plan: art for the street (windows, a stone face, an arch)
+    /// goes there, and the room sees the <c>back</c>.
+    /// </summary>
+    public bool FacesOut { get; set; }
+
+    [JsonIgnore] public BuildingKitDef? UpperKit { get; private set; }
+
+    internal override void Resolve(DefDatabase db)
+    {
+        UpperKit = string.IsNullOrEmpty(Upper) ? null : db.Kit(Upper);
+        if (UpperKit == this)
+            throw new Exception($"Kit {Name}: its upper kit is itself");
+    }
 }
 
 /// <summary>

@@ -177,4 +177,52 @@ public class BuildingKitTests
             Assert.NotNull(kit.Roof);
         }
     }
+
+    /// <summary>The inn as Millbrook builds it: stone below, timber above (its "Jettied" look).</summary>
+    private static (Simulation Sim, PresetBuilding Building) Jettied(int facing)
+    {
+        var sim = Simulation.CreateStandard(Defs.Value, 40, 40, 1, 5);
+        sim.RebuildDerivedIfNeeded();
+        var def = Defs.Value.Building("Inn");
+        var e = Buildings.SpawnFinished(sim, def, new int3(20, 20, 1), facing, def.Variants.FindIndex(v => v.Name == "Jettied"));
+        return (sim, sim.World.Get<PresetBuilding>(e));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void TheInnsUpperStoreyIsDrawnWithItsUpperKitAndItsRunsFaceTheStreet(int facing)
+    {
+        var (sim, b) = Jettied(facing);
+        var kit = b.VariantDef.KitDef!;
+        Assert.NotNull(kit.UpperKit);
+        var spans = 0;
+        foreach (var p in Buildings.Plot(sim.Map, b.Def, b.Anchor, b.Facing))
+        {
+            if (Buildings.SymbolAt(b.Def, b.Anchor, b.Facing, p.Cell) is not 'W')
+                continue;
+            var upper = p.Cell.Z != b.Anchor.Z;
+            foreach (var (model, turn) in BuildingKit.WallPieces(kit, b, p.Cell))
+            {
+                // A straight run's boxes are its storey's own kit's span (the footing aside, upstairs).
+                var ground = model.All(box => kit.Span.Contains(box));
+                var above = model.All(box => kit.UpperKit!.Span.Contains(box));
+                if (!ground && !above)
+                    continue; // a corner, an arm or a door
+                Assert.True(upper ? above && !ground : ground && !above, $"{p.Cell}: a run drawn with the {(upper ? "ground" : "upper")} kit");
+                // A run with the street on one side: its front (+Y as made, turned) is that side.
+                var front = PropModel.Rotate(new float3(0, 1, 0), turn);
+                var ahead = p.Cell + new int3((int)MathF.Round(front.X), (int)MathF.Round(front.Y), 0);
+                var behind = p.Cell - new int3((int)MathF.Round(front.X), (int)MathF.Round(front.Y), 0);
+                bool Out(int3 c) => Buildings.SymbolAt(b.Def, b.Anchor, b.Facing, c) == ' ';
+                if (Out(ahead) == Out(behind))
+                    continue;
+                Assert.True(Out(ahead), $"{p.Cell} (level {p.Cell.Z - b.Anchor.Z}, turned {turn}) faces the room");
+                spans++;
+            }
+        }
+        Assert.True(spans > 20, $"only {spans} outside runs");
+    }
 }

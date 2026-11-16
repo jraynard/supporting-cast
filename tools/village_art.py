@@ -181,6 +181,58 @@ def wall_timber_plaster(variant=0, seed=21):
 WALL_VARIANTS = 4
 
 
+STONE = (166, 148, 122)
+MORTAR = (198, 182, 150)
+
+
+def wall_fieldstone(variant=0, seed=91):
+    """
+    The inn's ground storey: rubble fieldstone laid in rough courses, each stone rounded and shaded
+    (lit at its top, dark under), set in pale lime mortar. A storey tall (32x64, once a level); the
+    variants are the same wall laid differently, so a long run doesn't repeat.
+    """
+    rnd = random.Random(seed + variant * 37)
+    img = noise(MORTAR, 5, seed + variant, size=(S, WALL_H))
+    px = img.load()
+    y = 0
+    while y < WALL_H:
+        h = rnd.randrange(6, 10)
+        x = -rnd.randrange(0, 8)
+        while x < S:
+            w = rnd.randrange(7, 13)
+            k = rnd.choice([0.86, 0.94, 1.0, 1.06, 1.12])
+            hue = rnd.choice([(0, 0, 0), (6, 2, -4), (-4, -2, 4)])
+            base = (STONE[0] * k + hue[0], STONE[1] * k + hue[1], STONE[2] * k + hue[2])
+            cx, cy = x + w / 2, y + h / 2
+            for yy in range(y, min(WALL_H, y + h)):
+                for xx in range(max(0, x), min(S, x + w)):
+                    # A rounded stone: inside an ellipse a pixel short of its cell, shaded from the top.
+                    ex, ey = (xx + 0.5 - cx) / (w / 2 - 0.6), (yy + 0.5 - cy) / (h / 2 - 0.6)
+                    if ex * ex + ey * ey > 1:
+                        continue
+                    shade = 1.12 - 0.3 * ((yy - y) / max(1, h - 1)) + rnd.uniform(-0.04, 0.04)
+                    px[xx % S, yy] = tint(base, shade)
+            x += w
+        y += h
+    return img
+
+
+def quoin(seed=97):
+    """Dressed corner stones: big squared blocks, alternately long and short, crisp edges."""
+    rnd = random.Random(seed)
+    img = noise(MORTAR, 4, seed)
+    d = ImageDraw.Draw(img)
+    for i, y in enumerate(range(0, S, 8)):
+        x0, x1 = (0, S - 9) if i % 2 == 0 else (8, S - 1)
+        base = tint((168, 158, 140), rnd.choice([0.95, 1.0, 1.05]))
+        d.rectangle([x0, y, x1, y + 6], fill=base)
+        d.line([(x0, y), (x1, y)], fill=tint(base, 1.14))
+        d.line([(x0, y + 6), (x1, y + 6)], fill=tint(base, 0.78))
+        for _ in range(6):
+            img.putpixel((rnd.randrange(x0, x1 + 1), rnd.randrange(y + 1, y + 6)), tint(base, rnd.choice([0.9, 1.08])))
+    return img
+
+
 def gable_plaster():
     # The gable kit sprite: alpha-cut to a triangle, its high side on the right (as gable_boards).
     mask = Image.open(os.path.join(ROOT, "buildings", "gable_boards.png")).convert("RGBA").getchannel("A")
@@ -481,6 +533,9 @@ def generate():
         save(wall_timber_plaster(v), "buildings/wall_timber_plaster" + suffix)
         for k, c in WOODS.items():
             save(by_material(wall_timber_plaster(v), c, True), f"buildings/wall_timber_plaster_{k}{suffix}")
+    for v in range(3):
+        save(wall_fieldstone(v), "buildings/wall_fieldstone" + ("" if v == 0 else f"_v{v + 1}"))
+    save(quoin(), "buildings/quoin")
     save(gable_plaster(), "buildings/gable_plaster")
     save(gable_fill_plaster(), "buildings/gable_fill_plaster")
     save(straw_thatch(81), "buildings/roof_thatch_straw")

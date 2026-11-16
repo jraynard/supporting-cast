@@ -181,7 +181,8 @@
       "eatThought": "AteAtTheInn", "letsBeds": true, "defaultName": "The Wild Bear",
       "variants": [
         { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster" },
-        { "name": "Shingle", "label": "shingle-roofed", "kit": "timber_shingle", "parts": { "roof": "ShingleRoofPart" } }
+        { "name": "Shingle", "label": "shingle-roofed", "kit": "timber_shingle", "parts": { "roof": "ShingleRoofPart" } },
+        { "name": "Jettied", "label": "stone and timber", "kit": "inn_stone_timber" }
       ]
     },
     {
@@ -556,6 +557,67 @@
         "gable": "buildings/gable_plaster", "gableFill": "buildings/gable_fill_plaster", "trim": "props/timber_dark", "horns": 0,
         "ridge": "buildings/roof_thatch_straw"
       }
+    },
+    {
+      // The inn's look (art/reference/inn*.webp): a fieldstone ground storey, dressed quoins at the
+      // corners and an arched stone door, under a timber-framed upper storey (its own kit, "upper").
+      // Runs and doors face out, so the street sees the stone's face and the room its plaster.
+      "name": "inn_stone_timber", "upper": "inn_timber_upper", "facesOut": true,
+      "span": [
+        { "min": [0, 0.16, 0], "max": [1, 0.84, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0, 0.22, 0.1], "max": [1, 0.78, 0.94], "top": "buildings/wall_fieldstone", "side": "buildings/wall_fieldstone", "back": "buildings/gable_fill_plaster" },
+        { "min": [0, 0.2, 0.94], "max": [1, 0.8, 1], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ],
+      "arm": [
+        { "min": [0.5, 0.16, 0], "max": [1, 0.84, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.5, 0.22, 0.1], "max": [1, 0.78, 0.94], "top": "buildings/wall_fieldstone", "side": "buildings/wall_fieldstone" },
+        { "min": [0.5, 0.2, 0.94], "max": [1, 0.8, 1], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ],
+      "corner": [
+        { "min": [0.12, 0.12, 0], "max": [0.88, 0.88, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.16, 0.16, 0.1], "max": [0.84, 0.84, 1.02], "top": "buildings/quoin", "side": "buildings/quoin" }
+      ],
+      "post": [
+        { "min": [0.18, 0.18, 0], "max": [0.82, 0.82, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.22, 0.22, 0.1], "max": [0.78, 0.78, 1.02], "top": "buildings/quoin", "side": "buildings/quoin" }
+      ],
+      "door": [
+        { "min": [0, 0.16, 0], "max": [1, 0.84, 0.04], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0, 0.2, 0], "max": [0.14, 0.8, 1], "top": "buildings/quoin", "side": "buildings/quoin" },
+        { "min": [0.86, 0.2, 0], "max": [1, 0.8, 1], "top": "buildings/quoin", "side": "buildings/quoin" },
+        { "min": [0.14, 0.22, 0.86], "max": [0.28, 0.78, 1], "top": "buildings/quoin", "side": "buildings/quoin" },
+        { "min": [0.72, 0.22, 0.86], "max": [0.86, 0.78, 1], "top": "buildings/quoin", "side": "buildings/quoin" },
+        { "min": [0.28, 0.22, 0.93], "max": [0.72, 0.78, 1], "top": "buildings/quoin", "side": "buildings/quoin" }
+      ],
+      "floor": "buildings/floor_planks",
+      "roof": {
+        "sprite": "buildings/roof_thatch_straw", "pitch": 0.5, "eave": 0.85, "overhang": 0.5, "thickness": 0.24,
+        "gable": "buildings/gable_plaster", "gableFill": "buildings/gable_fill_plaster", "trim": "props/timber_dark", "horns": 0,
+        "ridge": "buildings/roof_thatch_straw"
+      }
+    },
+    {
+      // The inn's upper storey (inn_stone_timber's "upper"): half-timbering facing the street.
+      "name": "inn_timber_upper", "facesOut": true,
+      "span": [
+        { "min": [0, 0.28, 0.1], "max": [1, 0.72, 0.94], "top": "props/planks", "side": "buildings/wall_timber_plaster" },
+        { "min": [0, 0.26, 0.94], "max": [1, 0.74, 1], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ],
+      "arm": [
+        { "min": [0.5, 0.28, 0.1], "max": [1, 0.72, 0.94], "top": "props/planks", "side": "buildings/wall_timber_plaster" },
+        { "min": [0.5, 0.26, 0.94], "max": [1, 0.74, 1], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ],
+      "corner": [
+        { "min": [0.24, 0.24, 0.1], "max": [0.76, 0.76, 1.04], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ],
+      "post": [
+        { "min": [0.3, 0.3, 0.1], "max": [0.7, 0.7, 1.04], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ],
+      "door": [
+        { "min": [0, 0.24, 0], "max": [0.12, 0.76, 1], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.88, 0.24, 0], "max": [1, 0.76, 1], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0, 0.26, 0.88], "max": [1, 0.74, 1], "top": "props/timber_dark", "side": "props/timber_dark" }
+      ]
     },
     {
       // The same walls under split-oak shingles: the better-off houses.
