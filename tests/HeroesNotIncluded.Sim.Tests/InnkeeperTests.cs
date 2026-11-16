@@ -1,4 +1,5 @@
 using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Maps;
 using HeroesNotIncluded.Sim.Round;
@@ -192,6 +193,34 @@ public class InnkeeperTests
         Assert.False(sim.World.IsAlive(ale), "they drank it");
         // Quick service pleases by 1.5 (and a bargain a little more); a crude pour takes 0.75 off it.
         Assert.True(sim.World.Get<Adventurer>(drinker).Satisfaction - mood < 1.5f, "a crude pour pleases less");
+    }
+
+    [Fact]
+    public void APlayerCanDrinkAnAleAndItGoesToTheirHead()
+    {
+        var (sim, _) = Tavern("Innkeeper");
+        var w = sim.World;
+        var me = Players.CharacterOf(sim, Ana);
+        var ale = sim.CreateItem(sim.Thing("Ale"), 1);
+        w.Get<Carrying>(me).Item = ale;
+        Assert.Equal(0f, Perception.For(sim, me).OwnDrink);
+
+        sim.ApplyNow(new DrinkCommand(me, ale));
+        sim.TickMany(DrinkHeldJob.SwallowTicks + 10);
+
+        Assert.False(w.IsAlive(ale), "drunk down");
+        var level = Perception.For(sim, me).OwnDrink;
+        Assert.True(level > 0.1f, $"tipsy: {level}");
+        Assert.Equal("DirtyTankard", w.Get<Thing>(w.Get<Carrying>(me).Item).Def.Name); // the empty, to wash
+
+        // A customer's order isn't theirs to drink.
+        var theirs = sim.CreateItem(sim.Thing("Ale"), 1);
+        w.Add(theirs, new Entrusted { Owner = me });
+        Assert.False(DrinkHeldJob.CanDrink(sim, me, theirs));
+
+        // And it wears off.
+        sim.TickMany(SimClock.HoursToTicks(3));
+        Assert.True(Perception.For(sim, me).OwnDrink < level);
     }
 
     [Fact]

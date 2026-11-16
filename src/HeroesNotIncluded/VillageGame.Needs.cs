@@ -145,6 +145,14 @@ public sealed partial class VillageGame
             felt < tol.ComfortMin ? (Warn, "cold") :
             felt > tol.ComfortMax ? (Warn, "hot") : (Good, "comfortable");
         TextC(warmColor, $"Feels {felt:F0}°C, {warmNote}");
+        // Drink in you: you feel it (your own head, through Perception).
+        if (View.OwnDrink is >= 0.08f and var drunk)
+        {
+            var how = Sim.Hospitality.DrinkingSystem.Looks(drunk) ?? "a little tipsy";
+            TextC(drunk >= Sim.Hospitality.DrinkingSystem.ClumsyAt ? Bad : Warn, $"You're {how}");
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip("It wears off over a few hours. Too much and you'll sleep it off where you stand.");
+        }
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
             Tip($"Comfortable from {tol.ComfortMin:F0} to {tol.ComfortMax:F0}°C; dangerous below {tol.SafeMin:F0} or above {tol.SafeMax:F0}°C."
                 + "\nA lit fire within 3 tiles warms you; warmer clothes help.");

@@ -99,6 +99,21 @@ public sealed record EatCommand(Entity Avatar, Entity Food) : ISimCommand, IActo
 }
 
 /// <summary>
+/// Drink something you carry (a tankard of ale, a mixed drink): from your hands or pack. Picked
+/// from the item's menu, never the work key, so serving a customer never drinks their order.
+/// </summary>
+public sealed record DrinkCommand(Entity Avatar, Entity Drink) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (InventoryCommand.Ready(sim, Avatar) && DrinkHeldJob.CanDrink(sim, Avatar, Drink))
+            AiSystem.Order(sim, Avatar, new DrinkHeldJob(Drink));
+    }
+}
+
+/// <summary>
 /// "Sleep here": lie down where the avatar stands, in the bed there if there is one, else on the
 /// ground (a worse night: the "slept on the ground" thought). Walking off wakes them.
 /// </summary>

@@ -192,6 +192,14 @@ public sealed partial class VillageGame
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                 Tip(EatTip(def));
         }
+        if (def.Drink && (held || packed) && Sim.Systems.DrinkHeldJob.CanDrink(_sim, _avatar, item))
+        {
+            any = true;
+            if (ImGui.MenuItem($"Drink the {def.Label}"))
+                Later(new Sim.Core.DrinkCommand(_avatar, item));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip(DrinkTip(item));
+        }
         if ((held || packed) && SmellsOfSomething(item))
         {
             any = true;
@@ -346,6 +354,15 @@ public sealed partial class VillageGame
         if (!_sim.World.IsAlive(item))
             return;
         var def = _sim.World.Get<Thing>(item).Def;
+        if (def.Drink && Sim.Systems.DrinkHeldJob.CanDrink(_sim, _avatar, item))
+        {
+            ImGui.SameLine(0, 4);
+            if (ImGui.SmallButton("Drink"u8))
+                Issue(new Sim.Core.DrinkCommand(_avatar, item));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip(DrinkTip(item));
+            return;
+        }
         if (!def.IsFood || !AvatarSystem.CanEat(_sim, _avatar, item))
             return;
         ImGui.SameLine(0, 4);
@@ -353,6 +370,14 @@ public sealed partial class VillageGame
             Issue(new EatCommand(_avatar, item));
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
             Tip(EatTip(def));
+    }
+
+    /// <summary>What drinking it will do, as far as you can tell: it's drink, and it goes to your head.</summary>
+    private string DrinkTip(Entity item)
+    {
+        var level = View.OwnDrink;
+        var now = Sim.Hospitality.DrinkingSystem.Looks(level) is { } looks ? $" You're {looks} already." : "";
+        return $"Down it yourself. It goes to your head, and wears off over a few hours; the tankard's left to wash.{now}";
     }
 
     /// <summary>How full a pack is, as a bar in kg.</summary>

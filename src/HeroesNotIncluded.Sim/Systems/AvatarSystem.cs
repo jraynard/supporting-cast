@@ -984,6 +984,54 @@ public sealed class EatHeldJob(Entity food) : Job
 }
 
 /// <summary>
+/// The avatar drinks something it carries (<see cref="Core.DrinkCommand"/>): a few swallows, and it
+/// goes to their head as it would a customer's (<see cref="Hospitality.DrinkingSystem.Drank"/>),
+/// leaving the tankard dirty in their hand. Walking off stops it.
+/// </summary>
+public sealed class DrinkHeldJob(Entity drink) : Job
+{
+    /// <summary>Ticks it takes to down one.</summary>
+    public const int SwallowTicks = 150;
+
+    public override Entity Focus => drink;
+
+    /// <summary>A drink on this person (in hand or pack), whole and theirs to drink.</summary>
+    public static bool CanDrink(Simulation sim, Entity who, Entity drink)
+    {
+        var w = sim.World;
+        return w.IsAlive(drink) && w.TryGet<Thing>(drink, out var t) && t.Def.Drink && w.Has<Stack>(drink)
+            && Inventory.OnPerson(sim, who, drink) && !w.Has<Entrusted>(drink) && !w.Has<Shops.ForSale>(drink);
+    }
+
+    protected override IEnumerable<JobStatus> Run()
+    {
+        if (!CanDrink(Sim, Pawn, drink))
+            yield break;
+        var def = Get<Thing>(drink).Def;
+        Report = $"Drinking {def.Label}";
+        foreach (var s in Wait(SwallowTicks)) yield return s;
+        if (!CanDrink(Sim, Pawn, drink) || Get<Thing>(drink).Def != def)
+        {
+            Fail("the drink's gone");
+            yield break;
+        }
+        var inHand = Get<Carrying>(Pawn).Item == drink;
+        var one = Inventory.TakeFromPerson(Sim, Pawn, drink, 1);
+        Sim.Drinking.Drank(Sim, Pawn, one);
+        Sim.World.Destroy(one);
+        // The empty, dirty, back in hand (or the pack): it wants washing, not leaving on the floor.
+        if (def.Leaves is { } leaves)
+        {
+            var empty = Sim.CreateItem(Sim.Defs.Thing(leaves), 1);
+            if (inHand && Get<Carrying>(Pawn).Item.IsNull)
+                Get<Carrying>(Pawn).Item = empty;
+            else
+                Inventory.Stow(Sim, Pawn, empty);
+        }
+    }
+}
+
+/// <summary>
 /// Click-to-move: walk to a cell, or (<see cref="Interact"/>) up to what's there, where
 /// <see cref="AvatarSystem"/> then does what the work key would. Holding the button and moving
 /// the cursor moves <see cref="Target"/> (<see cref="Retarget"/>) without restarting the walk: the

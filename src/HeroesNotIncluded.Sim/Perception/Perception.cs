@@ -296,6 +296,9 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
                 yield return new Hospitality.KnownAsk(a.Id, a.Asker, a.AskerName, a.To.Label, a.Tick);
     }
 
+    /// <summary>How much drink the viewer has in them, 0 sober (their own head: known, not seen).</summary>
+    public float OwnDrink => viewer.IsNull ? 0f : Hospitality.DrinkingSystem.LevelOf(sim, viewer);
+
     /// <summary>How far gone with drink someone looks (null sober, or out of sight).</summary>
     public string? Drunkenness(Entity e) =>
         blind || !CanSee(e) ? null : Hospitality.DrinkingSystem.Looks(Hospitality.DrinkingSystem.LevelOf(sim, e));

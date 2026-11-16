@@ -492,6 +492,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         UpdateFestival();
         UpdateChoreMarkers();
         UpdateErrandPointers();
+        UpdateDrunkLook();
         UpdateFoodPointer();
         UpdateLesson(); // after the festival's and the tips' marks are cleared: its own go on top
         UpdateHomeMark();
@@ -951,7 +952,11 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     public override bool DrawsScene => true;
 
-    private void ApplyVisualStyle() => VisualStyle.Apply(Host, _quads);
+    private void ApplyVisualStyle()
+    {
+        VisualStyle.Apply(Host, _quads);
+        _drunkApplied = -1f; // the drunk look goes back on top of the new settings
+    }
 
     /// <summary>Nothing goes straight to the screen: the HUD is ImGui, and the world is the scene.</summary>
     public override void Draw(in FrameContext frame) { }

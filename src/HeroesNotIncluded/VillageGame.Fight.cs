@@ -6,6 +6,7 @@ using Narsil.Platform;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Ecs;
 using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Rendering;
 using HeroesNotIncluded.Ui;
 
 namespace HeroesNotIncluded;
@@ -331,6 +332,39 @@ public sealed partial class VillageGame
     private float3 ShakeOffset() => (_shake < 0.003f && _rumble < 0.003f) || !Settings.Current.ScreenShake ? default
         : new float3(MathF.Sin(_time * 91f) * _shake + (MathF.Sin(_time * 31f) + 0.5f * MathF.Sin(_time * 53f)) * _rumble,
             MathF.Cos(_time * 77f) * _shake + (MathF.Cos(_time * 27f) + 0.5f * MathF.Sin(_time * 47f)) * _rumble, 0);
+
+    /// <summary>How far the drink's got to you, 0 sober to 1 out cold: what the sway and the blur follow.</summary>
+    private float DrunkAmount => HasAvatar ? Math.Clamp(View.OwnDrink / Sim.Hospitality.DrinkingSystem.OutAt, 0f, 1f) : 0f;
+
+    /// <summary>The world swims a little with drink in you: a slow lean of the camera, not a jitter (off with screen shake).</summary>
+    private float3 DrunkSway()
+    {
+        var k = DrunkAmount;
+        if (k < 0.05f || !Settings.Current.ScreenShake)
+            return default;
+        var r = 0.35f * k * k + 0.1f * k;
+        return new float3(MathF.Sin(_time * 0.9f) + 0.4f * MathF.Sin(_time * 2.1f), MathF.Cos(_time * 0.7f) + 0.3f * MathF.Sin(_time * 1.7f), 0) * r;
+    }
+
+    // The drunk blur as last applied, so the post settings change only when it does (-1: reapply).
+    private float _drunkApplied = -1f;
+
+    /// <summary>
+    /// The edges darken and blur with drink: the grade's vignette and tilt-shift raised by how far
+    /// gone you are, back to the player's own settings as you sober. Only with HD-2D on.
+    /// </summary>
+    private void UpdateDrunkLook()
+    {
+        var k = MathF.Round(DrunkAmount * 50f) / 50f;
+        if (k == _drunkApplied)
+            return;
+        _drunkApplied = k;
+        var s = Settings.Current;
+        var post = VisualStyle.For(s);
+        if (k > 0 && s.Hd2d)
+            post = post with { Vignette = Math.Min(1f, post.Vignette + 0.5f * k), TiltShift = post.TiltShift + 0.8f * k };
+        Host.Post.Settings = post;
+    }
 
     /// <summary>The nearest raider or predator on its feet that you can see, within <see cref="FightHintRange"/>.</summary>
     private Entity? NearestFoe()
