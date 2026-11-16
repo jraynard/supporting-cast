@@ -85,6 +85,8 @@ public static class Ghosts
             w.Add(body, new Death { Tick = sim.Clock.Tick, Cause = cause });
         if (w.Get<Creature>(body).Faction == Faction.Village)
             sim.Reckoning.Add(sim, 0f, sim.Defs.Season.DreadPerTownDeath); // the valley feels it
+        else if (w.Has<Adventurer>(body))
+            sim.Reckoning.AdventurerDied(sim); // the road hears of it
         Revival.TellEmpaths(sim, body);
 
         Guid player;

@@ -673,6 +673,10 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// </summary>
     private void Issue(ISimCommand command)
     {
+        // Once the season's over every peer refuses these (CommandRules.Refusal), so don't send
+        // them: movement went out every frame through the reveal and filled the host's log.
+        if (_sim.Round.Phase == Sim.Round.RoundPhase.Over && command is IActorCommand)
+            return;
         if (_coop != null)
             _coop.Send(command);
         else

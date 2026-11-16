@@ -25,8 +25,8 @@ public sealed class FeastSystem : ISimSystem, ISaveState
     public string Name => "Feasts";
     public int Interval => SimClock.TicksPerHour / 12;
 
-    /// <summary>How long the kitchen has to put every dish up.</summary>
-    public const float Hours = 2f;
+    /// <summary>How long the kitchen has to put every dish up: at 2 hours (80 real seconds) none of a playtest's three were.</summary>
+    public const float Hours = 6f;
 
     /// <summary>What each of them pays over the price, for the occasion.</summary>
     public const int Over = 2;

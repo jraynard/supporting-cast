@@ -42,6 +42,21 @@ public class PartyTests
     }
 
     [Fact]
+    public void EveryPartyComesOnceBeforeAnyComesAgain()
+    {
+        var (sim, _) = Town();
+        var parties = sim.Defs.AllParties;
+        Assert.True(parties.Count > 2);
+        // Sent by hand or by the clock, a party counts: the next is one that hasn't come.
+        foreach (var p in parties.Skip(1))
+            sim.Parties.Send(sim, p);
+        Assert.Equal(parties[0].Name, sim.Parties.NextParty(parties).Name);
+        sim.Parties.Send(sim, parties[0]);
+        sim.Parties.Send(sim, parties[1]);
+        Assert.NotEqual(parties[1].Name, sim.Parties.NextParty(parties).Name);
+    }
+
+    [Fact]
     public void APartyArrivesArmedAndPayingAndMakesForTheTavern()
     {
         var (sim, town) = Town();

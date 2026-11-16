@@ -47,6 +47,7 @@ answered so far is in HISTORY.md, "Solo playtest notes" and "From two multiplaye
 
 **For you to look at, next round with friends.** These were fixed after the last two rounds and
 haven't been played since:
+- [ ] **Feasts:** does the cook see the call and lay one on in its 6 hours?
 - [ ] **The downed:** do players and the AI keep them alive now? AI first aid, bandaging and rescue
   now reach downed adventurers, and blows go over the downed. A downed healer weaves on themselves.
 - [ ] **Wood:** the barn should hold out and the fires stay lit. In round two the inn's fireplaces,
@@ -66,30 +67,18 @@ redeploy with `external/narsil/deploy/relay/publish.sh ubuntu@129.153.122.49 lin
 - [ ] Join mid-round.
 - [ ] Pull the host's network for a few seconds: the session should carry on, not split.
 
-**Found in the last two rounds' logs, not yet done (proposed)**
-- **Adventurers dying in town cost nothing.** Eight bled to death in round one, but the summary
-  says "adventurers lost 0": it only counts deaths on the road. A death in town takes no Renown and
-  adds no Dread (`Ghosts.OnDeath` counts the town's own), and the dead never leave, so they never
-  have their say either. That makes a dead adventurer cheaper than one who leaves unhappy (−5).
-  Proposed: count them as lost (`renownPerAdventurerLost`, `dreadPerAdventurerLost`) and in the
-  summary. Do it before reading "heroes die often" against Renown.
-- **Feasts: none of three laid on.** `Feasts.Hours` gives the kitchen 2 game hours, about 80 real
-  seconds, to put up three or four dishes, and two of the three came at dawn. Proposed: 5 or 6
-  hours, or start the clock when the cook hears it.
-- **Too few parties.** There are only two party defs, so in round two the Gilded Spurs came three
-  times, with two Osrics and two Tamsins. Proposed: four to six parties, or the same party coming
-  back as the same people.
-- **Renown is far short:** round one peaked at 20 and ended at 12 of 60. Most of that was the
-  deaths. Tune `renownTarget` only after a round with the fixes, against a fresh `--season-sweep`.
-- Small: clients keep sending move commands once the season's over, which floods the host's log
-  with refusals. They should stop.
+**For you to look at, also new since:** adventurers dying in town now count as lost (Renown and
+Dread, and the reveal), feasts give the kitchen 6 hours, and there are six parties, each coming
+once before any comes again (HISTORY.md, "From two multiplayer rounds"). In the bots' sweep,
+Renown rose with them (mean 43 to 58 of 60 over 8 seeds, mostly feasts now laid on). Tune
+`renownTarget` against a round with friends, not before.
 
 **For you to decide: the numbers** (defaults not yet tuned in play)
 - [ ] **The season** (`season.json`): the Renown target and Dread rates (Dread per death included),
   the day-two crisis weights (equal for now), raid size, the raid warning's lead, the town purse,
   the price of arms, the carter's load.
 - [ ] **Heroes die often:** about one raid in two with a party in town costs one. Watch what that
-  does to Renown (after the change above) before making raids gentler.
+  does to Renown, now that deaths in town cost some, before making raids gentler.
 - [ ] **Night speed and the need rates.**
 - [ ] **The healer in a round:** the AI empath's meditation (`MeditateJob.Gathers`) and the charms
   it puts out (`LayOnHands.CharmsOnShow`, price).

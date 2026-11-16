@@ -58,7 +58,7 @@ public sealed partial class VillageGame
 
         Gui.Rule();
         TextC(Theme.Dim, $"{s.Parties} {(s.Parties == 1 ? "party" : "parties")} came to town; {s.AdventurersServed} adventurers had their say of it.");
-        TextC(Theme.Dim, $"Quests cleared {s.QuestsCleared}, failed {s.QuestsFailed}; adventurers lost on the road {s.AdventurersLost}.");
+        TextC(Theme.Dim, $"Quests cleared {s.QuestsCleared}, failed {s.QuestsFailed}; adventurers lost {s.AdventurersLost}.");
 
         if (s.Honours.Count > 0)
         {
