@@ -14,13 +14,15 @@ public class VillageDayScenarioTests
     private const int Days = 4;
 
     [Theory]
-    [InlineData(1234UL)]
-    [InlineData(99UL)]
-    public void TheVillageSurvivesARoundUnattended(ulong seed)
+    [InlineData(1234UL, VillageRound.DefaultMap)]
+    [InlineData(99UL, VillageRound.DefaultMap)]
+    [InlineData(1234UL, ReedmereMapTests.Map)]
+    [InlineData(99UL, ReedmereMapTests.Map)]
+    public void TheVillageSurvivesARoundUnattended(ulong seed, string map)
     {
-        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), seed);
+        var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), seed, map);
         sim.Presets.PresetMode = true;
-        var town = VillageRound.Setup(sim);
+        var town = VillageRound.Setup(sim, map);
         Assert.False(town.Tavern.IsNull, "the longhouse should fit near the landing");
         Assert.False(town.Forge.IsNull, "the smithy should fit near the landing");
         Assert.False(town.Shrine.IsNull, "the shrine should fit near the landing");

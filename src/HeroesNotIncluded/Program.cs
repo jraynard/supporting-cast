@@ -47,7 +47,7 @@ if (args.Contains("--check-gpu"))
 
 if (args.Contains("--bench"))
 {
-    Bench.Run(ParseSeed(args), round: args.Contains("--round"));
+    Bench.Run(ParseSeed(args), round: args.Contains("--round"), map: ParseString(args, "--map") ?? HeroesNotIncluded.Sim.Scenarios.VillageRound.DefaultMap);
     return;
 }
 

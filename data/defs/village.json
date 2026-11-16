@@ -134,10 +134,11 @@
     },
     {
       // Planks on piles over a lake: the walks, the square and the decks a lake town's houses stand
-      // on. Held up by the bed below (piled), not by a bank, and timber through: it burns.
+      // on. Held up by the bed below (piled), not by a bank. Timber, so it burns, but damp from the
+      // lake: slower to catch than the thatch above it (flammability 0.4, tuned by --season-sweep --map Reedmere).
       "name": "Boardwalk", "label": "boardwalk", "category": "Building", "sprite": "buildings/floor_planks",
       "description": "Planks on piles driven into the lakebed: a walk over the water, and ground for a house to stand on. Wood: it burns.",
-      "maxHp": 160, "flammability": 0.9,
+      "maxHp": 160, "flammability": 0.4,
       "bridge": { "parapet": "props/fence_rail", "coping": "props/fence_rail", "pier": "props/log_side", "height": 0.5, "thickness": 0.07, "pierEvery": 2, "arched": false },
       "building": { "isFloor": true, "outdoor": true, "supportSpan": 1, "piled": 3, "insulation": 0.9, "work": 120, "cost": [ { "def": "Wood", "count": 3 } ] }
     },
@@ -146,7 +147,7 @@
       // a raid can bring a stretch of it down (breakable), cutting the town off till the tinker mends it.
       "name": "Causeway", "label": "causeway", "category": "Building", "sprite": "buildings/floor_planks",
       "description": "The long boardwalk from the shore to the town on the water, on piles in the lakebed: the one road in. Wood: it burns, and it can be brought down.",
-      "maxHp": 200, "flammability": 0.9,
+      "maxHp": 200, "flammability": 0.4,
       "bridge": { "parapet": "props/fence_rail", "coping": "props/fence_rail", "pier": "props/log_side", "height": 0.5, "thickness": 0.07, "pierEvery": 2, "arched": false },
       "building": { "isFloor": true, "outdoor": true, "breakable": true, "supportSpan": 1, "piled": 3, "insulation": 0.9, "work": 120, "cost": [ { "def": "Wood", "count": 3 } ] }
     }

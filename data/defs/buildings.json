@@ -64,7 +64,9 @@
       ],
       "variants": [
         { "name": "Timber", "label": "thatched", "kit": "timber_plaster" },
-        { "name": "Shingle", "label": "shingle-roofed", "kit": "timber_shingle", "parts": { "roof": "ShingleRoofPart" } }
+        { "name": "Shingle", "label": "shingle-roofed", "kit": "timber_shingle", "parts": { "roof": "ShingleRoofPart" } },
+        // On a deck over the water: no foundation, the boardwalk under it is its floor.
+        { "name": "Piled", "label": "on piles", "kit": "timber_plaster", "parts": { "foundation": "" } }
       ]
     },
     {
@@ -291,7 +293,11 @@
       "line": [ [3, 4], [4, 4], [5, 4], [6, 4], [2, 4], [2, 3], [3, 3], [4, 3], [5, 3] ],
       "sign": [1, 6], // on the front wall, by the corner its door is round
       "signFace": "props/sign_rune",
-      "variants": [ { "name": "Stone", "label": "stone", "kit": "shrine_stone" } ]
+      "variants": [
+        { "name": "Stone", "label": "stone", "kit": "shrine_stone" },
+        // On a deck over the water: no foundation, the boardwalk under it is its floor.
+        { "name": "Piled", "label": "on piles", "kit": "shrine_stone", "parts": { "foundation": "" } }
+      ]
     },
     {
       "name": "TinkerShop", "roles": [ "TinkerShop" ], "label": "tinker's shop", "icon": "buildings/tinker_bench",
@@ -320,7 +326,9 @@
       "variants": [
         { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster", "parts": { "wall": "TimberWall", "roof": "ThatchRoofPart" } },
         { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
-        { "name": "Thatch", "label": "thatched", "kit": "stave_thatch", "parts": { "wall": "StaveWall", "roof": "ThatchRoofPart" } }
+        { "name": "Thatch", "label": "thatched", "kit": "stave_thatch", "parts": { "wall": "StaveWall", "roof": "ThatchRoofPart" } },
+        // On a deck over the water: no foundation, the boardwalk under it is its floor.
+        { "name": "Piled", "label": "on piles", "kit": "timber_plaster", "parts": { "foundation": "", "wall": "TimberWall", "roof": "ThatchRoofPart" } }
       ]
     },
     {

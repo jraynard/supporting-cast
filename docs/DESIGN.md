@@ -522,7 +522,15 @@ villager mid-round is for late joiners only.
   Millbrook), not a generated valley. The town's layout is part of the social game: who can see the
   forge from the inn, which lane the parties come in by, and where a body would go unnoticed. A
   map is data with exact building anchors. The seed still varies what's underground, what grows,
-  and who lives there.
+  and who lives there. Who works where is the buildings' town roles (`roles`: Tavern, Kitchen,
+  Forge, Shrine, TinkerShop), so a map decides who shares a roof.
+- **Reedmere** (`tools/lake_map.py`): a town on stilts over a lake. The shore is the working side,
+  where the road comes in and raids are fought: the barn, the forge, the shrine and the cookhouse,
+  the cook's own house at the causeway's foot. The causeway is the one way out over the water, to a
+  square on piles and boardwalks to the houses, the tinker's and the inn at the far landing. The
+  inn has no kitchen there: the cook keeps the cookhouse and the innkeeper the inn. Everything out on
+  the water is timber (it burns, though damp planks are slow to catch); buckets are let down from
+  dipping posts; and a raid that brings the causeway down cuts the town off till the tinker mends it.
 
 ## Art direction
 
@@ -541,7 +549,6 @@ villager mid-round is for late joiners only.
 
 - an underground dwarven fortress as nod to dwarf fortress
 - a mountain town
-- village built on a lake like Esgaroth in the hobbit
 - beach or island town
 - howl's moving castle inspired moving city
 

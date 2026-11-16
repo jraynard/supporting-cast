@@ -18,12 +18,14 @@ public static class SeasonSweep
     public static readonly string[] Trades = ["Innkeeper", "Cook", "Blacksmith", "Healer", "Tinker"];
 
     /// <param name="botSeed">The first bot's seed (the rest follow it); by default derived from <paramref name="seed"/>.</param>
-    public static SeasonResult Play(DefDatabase defs, ulong seed, string difficulty = "Normal", IReadOnlyList<string>? trades = null, ulong? botSeed = null)
+    /// <param name="map">The town it's played in (data/defs/maps/): Millbrook unless told otherwise.</param>
+    public static SeasonResult Play(DefDatabase defs, ulong seed, string difficulty = "Normal", IReadOnlyList<string>? trades = null, ulong? botSeed = null,
+        string map = VillageRound.DefaultMap)
     {
         trades ??= Trades;
-        var sim = VillageRound.NewSimulation(defs, seed);
+        var sim = VillageRound.NewSimulation(defs, seed, map);
         sim.Presets.PresetMode = true;
-        VillageRound.Setup(sim);
+        VillageRound.Setup(sim, map);
         sim.Director.Enable(sim.Defs.Difficulty(difficulty));
         sim.Round.OpenLobby();
         var bots = new List<BotPlayer>();

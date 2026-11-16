@@ -104,8 +104,11 @@ public sealed class TitleGame : Game
     /// <summary><c>--join address</c>: open the Join panel and connect straight away.</summary>
     public string? AutoJoin { get; set; }
 
-    /// <summary>An entry: a label saying what it does, and the line underneath (the word bank's, or what it'll do).</summary>
-    private sealed record MenuItem(string Label, string Hint, Func<Game>? Start, MenuAction Action = MenuAction.Start);
+    /// <summary>
+    /// An entry: a label saying what it does, and the line underneath (the word bank's, or what it'll do).
+    /// <see cref="Then"/>: a step that leads on to another menu rather than starting a game (the town, then the trade).
+    /// </summary>
+    private sealed record MenuItem(string Label, string Hint, Func<Game>? Start, MenuAction Action = MenuAction.Start, Action? Then = null);
 
     /// <summary>How many saves the Load Game list shows (the in-game Load window lists them all).</summary>
     private const int MaxListedSaves = 8;
@@ -169,9 +172,9 @@ public sealed class TitleGame : Game
     /// A solo round's last step: the trade to be dealt. The bots fill the others, so any choice
     /// leaves a full cast; "Any" lets the deal decide as before.
     /// </summary>
-    private MenuItem[] TradeItems(SavedCharacter c)
+    private MenuItem[] TradeItems(SavedCharacter c, string map)
     {
-        Game Start(string? trade) => new VillageGame(DefaultSeed) { Adventure = true, Character = c, HeroTrade = trade };
+        Game Start(string? trade) => new VillageGame(DefaultSeed) { Adventure = true, Character = c, HeroTrade = trade, MapName = map };
         return _defs.AllTrades
             .Select(t => new MenuItem(char.ToUpperInvariant(t.Label[0]) + t.Label[1..], t.Description, () => Start(t.Name)))
             .Append(new MenuItem("Any", "Let the deal pick a trade for you.", () => Start(null)))
@@ -234,6 +237,26 @@ public sealed class TitleGame : Game
         return saved;
     }
 
+    /// <summary>The towns a round can be played in: maps with an inn (the practice ring isn't one), Millbrook first.</summary>
+    private List<Sim.Defs.MapDef> Towns() => _defs.AllMaps
+        .Where(m => m.Buildings.Exists(b => b.BuildingDef.Has(Sim.Defs.TownRole.Tavern)))
+        .OrderBy(m => m.Name == VillageRound.DefaultMap ? 0 : 1).ToList();
+
+    /// <summary>
+    /// Which town, then <paramref name="then"/> with its name; straight on to it where there's only the one.
+    /// </summary>
+    private void ChooseTown(Action<string> then, MenuAction back)
+    {
+        var towns = Towns();
+        if (towns.Count <= 1)
+        {
+            then(towns.FirstOrDefault()?.Name ?? VillageRound.DefaultMap);
+            return;
+        }
+        (_submenu, _submenuTitle) = (towns.Select(m => new MenuItem(m.Label, m.Description, null, Then: () => then(m.Name)))
+            .Append(new MenuItem("Back", "Back.", null, back)).ToArray(), "Which town?");
+    }
+
     /// <summary><paramref name="c"/> is who you'll be: on to what they were chosen for.</summary>
     private void Chosen(SavedCharacter c)
     {
@@ -243,13 +266,13 @@ public sealed class TitleGame : Game
         switch (_purpose)
         {
             case Purpose.Solo:
-                (_submenu, _submenuTitle) = (TradeItems(c), "Which trade will you take?");
+                ChooseTown(map => (_submenu, _submenuTitle) = (TradeItems(c, map), "Which trade will you take?"), MenuAction.BackToCreator);
                 break;
             case Purpose.Practice:
                 (_submenu, _submenuTitle) = (PracticeItems(c), "Which trade will you practise?");
                 break;
             case Purpose.Host:
-                HostAs(c);
+                ChooseTown(map => HostAs(c, map), MenuAction.Back);
                 break;
             case Purpose.Join:
                 (_coopMenu ??= new CoopMenu(Host, _defs)).Playing = c;
@@ -259,9 +282,9 @@ public sealed class TitleGame : Game
     }
 
     /// <summary>Host a new village as <paramref name="c"/>.</summary>
-    private void HostAs(SavedCharacter c) => Begin(() => new VillageGame((ulong)Random.Shared.Next(1, 1_000_000))
+    private void HostAs(SavedCharacter c, string map) => Begin(() => new VillageGame((ulong)Random.Shared.Next(1, 1_000_000))
     {
-        Adventure = true, Character = c, HostCoop = HostSettingsFor(c),
+        Adventure = true, Character = c, HostCoop = HostSettingsFor(c), MapName = map,
     });
 
     /// <summary>Load a save for <see cref="Press"/>; a <see cref="Sim.Saving.SaveException"/> keeps us on the title.</summary>
@@ -586,6 +609,11 @@ public sealed class TitleGame : Game
                 ChooseCharacter(Purpose.Solo);
                 break;
             default:
+                if (item.Then is { } then)
+                {
+                    then();
+                    break;
+                }
                 if (item.Start == null)
                     break;
                 _error = null;

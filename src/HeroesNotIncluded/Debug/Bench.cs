@@ -13,15 +13,15 @@ namespace HeroesNotIncluded.Debug;
 /// </summary>
 public static class Bench
 {
-    public static void Run(ulong seed, bool round = false)
+    public static void Run(ulong seed, bool round = false, string map = Sim.Scenarios.VillageRound.DefaultMap)
     {
         var defs = DefDatabase.LoadDirectory(Path.Combine(AppContext.BaseDirectory, "data", "defs"));
-        var sim = Sim.Scenarios.VillageRound.NewSimulation(defs, seed);
+        var sim = Sim.Scenarios.VillageRound.NewSimulation(defs, seed, map);
         var bots = new List<Sim.Bots.BotPlayer>();
         if (round)
         {
             sim.Presets.PresetMode = true;
-            Sim.Scenarios.VillageRound.Setup(sim);
+            Sim.Scenarios.VillageRound.Setup(sim, map);
             sim.Director.Enable(sim.Defs.Difficulty("Normal"));
             sim.Round.OpenLobby();
             var trades = Sim.Scenarios.SeasonSweep.Trades;
@@ -35,7 +35,7 @@ public static class Bench
             sim.ApplyNow(new Sim.Round.StartRoundCommand());
         }
         else
-            Sim.Scenarios.VillageRound.Setup(sim);
+            Sim.Scenarios.VillageRound.Setup(sim, map);
         var ticks = round ? (int)(sim.Round.EndTick(sim) + SimClock.TicksPerHour - sim.Clock.Tick) : SimClock.TicksPerDay;
 
         // Per-tick times too: frames hitch on the slowest ticks, which the average hides.

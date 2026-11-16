@@ -18,12 +18,13 @@ public static class SeasonSweepRun
         var n = Value(args, "--seeds") is { } s && int.TryParse(s, out var count) ? count : 8;
         var first = Value(args, "--seed") is { } f && ulong.TryParse(f, out var seed) ? seed : 1ul;
         var difficulty = Value(args, "--difficulty") ?? "Normal";
+        var map = Value(args, "--map") ?? VillageRound.DefaultMap;
         var seeds = Enumerable.Range(0, n).Select(i => first + (ulong)i).ToArray();
 
-        Console.WriteLine($"== Seasons, {difficulty}, bots as {string.Join(", ", SeasonSweep.Trades)}; seeds {first}..{first + (ulong)n - 1} ==");
+        Console.WriteLine($"== Seasons in {map}, {difficulty}, bots as {string.Join(", ", SeasonSweep.Trades)}; seeds {first}..{first + (ulong)n - 1} ==");
         var clock = Stopwatch.StartNew();
         var results = new SeasonResult[seeds.Length];
-        Parallel.For(0, seeds.Length, i => results[i] = SeasonSweep.Play(defs, seeds[i], difficulty));
+        Parallel.For(0, seeds.Length, i => results[i] = SeasonSweep.Play(defs, seeds[i], difficulty, map: map));
         foreach (var r in results)
         {
             var s2 = r.Summary;

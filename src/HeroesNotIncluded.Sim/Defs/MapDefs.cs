@@ -12,7 +12,8 @@ namespace HeroesNotIncluded.Sim.Defs;
 /// <item><see cref="Levels"/> (<c>levels</c>): a digit per column, the level people stand on there, counted up
 /// from <see cref="BaseZ"/>. Water stands lower than its banks, so rivers sit in their beds.</item>
 /// <item><see cref="Features"/> (<c>features</c>): a structure on the ground (a tree, a fence, the well). A legend
-/// entry <c>"Name@L"</c> stands at level <c>L</c> rather than on the ground: a bridge over a river.</item>
+/// entry <c>"Name@L"</c> stands at level <c>L</c> rather than on the ground: a bridge over a river. A floor
+/// and what stands on it are joined with <c>+</c>: <c>"Boardwalk@2+DippingPost@2"</c>, a post on a deck.</item>
 /// </list>
 /// Buildings are listed with exact anchors; a building that doesn't fit is a load-time mistake in
 /// the map, not something to search around.
@@ -67,8 +68,11 @@ public sealed class MapDef : Def
     /// <summary>The surface z people stand on in a column.</summary>
     public int StandZ(int x, int y) => BaseZ + Levels[y * Width + x];
 
+    private DefDatabase? _db;
+
     internal override void Resolve(DefDatabase db)
     {
+        _db = db;
         string Where(string grid, int row) => $"Map '{Name}': {grid} row {row}";
         if (Width <= 0 || Height <= 0)
             throw new Exception($"Map '{Name}': width and height must be positive");
@@ -82,14 +86,19 @@ public sealed class MapDef : Def
         var features = new Dictionary<char, MapFeature>();
         foreach (var (k, value) in FeatureLegend)
         {
-            var locked = value.EndsWith('!');
-            var v = locked ? value[..^1] : value;
-            var at = v.IndexOf('@');
-            var level = at < 0 ? -1 : int.Parse(v[(at + 1)..]);
-            var def = db.Thing(at < 0 ? v : v[..at]);
-            if (locked && def.Building is not { IsDoor: true, Lockable: true })
-                throw new Exception($"Map '{Name}': '{def.Name}' can't be locked ('!'): it isn't a lockable door");
-            features[Key(k, "feature legend")] = new MapFeature(def, level, locked);
+            var parts = value.Split('+');
+            if (parts.Length > 2)
+                throw new Exception($"Map '{Name}': feature '{value}' stacks more than a floor and one thing on it");
+            var (def, level, locked) = Part(parts[0]);
+            ThingDef? on = null;
+            if (parts.Length == 2)
+            {
+                var (top, topLevel, _) = Part(parts[1]);
+                if (!def.IsFloor || top.IsFloor || topLevel != level)
+                    throw new Exception($"Map '{Name}': '{value}' must be a floor and a thing standing on it, at the same level");
+                on = top;
+            }
+            features[Key(k, "feature legend")] = new MapFeature(def, level, locked, on);
         }
 
         Ground = new BlockDef[Width * Height];
@@ -124,6 +133,25 @@ public sealed class MapDef : Def
 
     internal bool Inside(int x, int y) => x >= 0 && y >= 0 && x < Width && y < Height;
 
+    /// <summary>A legend part, <c>"Name"</c>, <c>"Name@L"</c> or <c>"Name!"</c>: its def, fixed level (-1: on the ground) and whether it's locked.</summary>
+    private (ThingDef Def, int Level, bool Locked) Part(string value)
+    {
+        var locked = value.EndsWith('!');
+        var v = locked ? value[..^1] : value;
+        var at = v.IndexOf('@');
+        var level = at < 0 ? -1 : int.Parse(v[(at + 1)..]);
+        var def = _db!.Thing(at < 0 ? v : v[..at]);
+        if (locked && def.Building is not { IsDoor: true, Lockable: true })
+            throw new Exception($"Map '{Name}': '{def.Name}' can't be locked ('!'): it isn't a lockable door");
+        return (def, level, locked);
+    }
+
+    /// <summary>
+    /// The level people stand on at a column, or a fixed level given (a building or a prop on a lake
+    /// town's deck: <see cref="MapBuilding.Level"/>), counted from <see cref="BaseZ"/>.
+    /// </summary>
+    public int StandZ(int x, int y, int level) => level >= 0 ? BaseZ + level : StandZ(x, y);
+
     private void Check(List<string> rows, string grid)
     {
         if (rows.Count != Height)
@@ -137,8 +165,11 @@ public sealed class MapDef : Def
         k.Length == 1 && k != "." ? k[0] : throw new Exception($"Map '{Name}': {legend} key '{k}' must be one character other than '.'");
 }
 
-/// <summary>A structure a map places: its def, a fixed level (-1: on the ground), and whether it's locked (a gate).</summary>
-public readonly record struct MapFeature(ThingDef Def, int Level, bool Locked);
+/// <summary>
+/// A structure a map places: its def, a fixed level (-1: on the ground), whether it's locked (a gate),
+/// and for a floor, what stands on it (<see cref="On"/>: a dipping post on a deck).
+/// </summary>
+public readonly record struct MapFeature(ThingDef Def, int Level, bool Locked, ThingDef? On = null);
 
 /// <summary>A preset building on a map, finished at the round's start.</summary>
 public sealed class MapBuilding
@@ -154,6 +185,12 @@ public sealed class MapBuilding
 
     /// <summary>What the round uses it for: Tavern, Forge, Shrine, TinkerShop, Home. Empty: it's just there.</summary>
     public string Role { get; set; } = "";
+
+    /// <summary>
+    /// The level it stands at, from the map's base (a house on a lake town's deck, over the water);
+    /// -1: on the ground in its anchor's column.
+    /// </summary>
+    public int Level { get; set; } = -1;
 
     [JsonIgnore] public BuildingDef BuildingDef { get; private set; } = null!;
     [JsonIgnore] public int VariantIndex { get; private set; }
@@ -191,9 +228,12 @@ public sealed class MapProp
 {
     public string Def { get; set; } = "";
 
-    /// <summary>The column (x, y); it stands on the ground there.</summary>
+    /// <summary>The column (x, y); it stands on the ground there (or at <see cref="Level"/>).</summary>
     public int[] At { get; set; } = [];
     public int Facing { get; set; }
+
+    /// <summary>The level it stands at, from the map's base (on a deck); -1: on the ground.</summary>
+    public int Level { get; set; } = -1;
 
     [JsonIgnore] public ThingDef ThingDef { get; private set; } = null!;
 

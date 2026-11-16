@@ -1954,3 +1954,19 @@ player vanished on day two and it ended on day three.
 - **Water sources** (`building.waterSource`): buckets are filled at a well or at a `DippingPost` on a
   deck's edge, and fire's fought from either; buckets hang at both.
 - `LakeTests`. Bench hashes unchanged.
+
+### Reedmere, a town on stilts (2026-11-15)
+- **The map** (`data/defs/maps/reedmere.json`, from `tools/lake_map.py`): a shore with the road, the
+  barn, the forge, the shrine and the cookhouse; a causeway out to a square on piles; boardwalks to
+  the tinker's, five houses and the landing inn. Chosen on the title screen ("Which town?", before
+  the trade and before hosting), or `--map Reedmere`; `--season-sweep` and `--bench` take `--map` too.
+- **Map format**: a building or festival prop can stand at a fixed `level` (on a deck), and a legend
+  entry can stack a floor and what stands on it (`"Boardwalk@2+DippingPost@2"`).
+- **`tools/mapkit.py`**: the helpers both maps' scripts share (a canvas of grids, plots, gardens,
+  the writer, the preview). Millbrook's JSON comes out byte-identical.
+- **Tuning**: decks' flammability 0.4 (was 0.9): the dragon burned the whole town down and nobody
+  out on the water reached the festival. The shrine moved to the shore: the wounded bled out on the
+  bank before they could be carried across. 8-seed `--season-sweep --map Reedmere`: Renown mean 29.5
+  (Millbrook 51.9), won 0 (2), Dread peak 71 (68). The walk from the inn to the cookhouse for every
+  meal is most of what's left; the cook supplying the inn is next.
+- `ReedmereMapTests`; `VillageDayScenarioTests` runs on both maps. Bench hashes unchanged.

@@ -156,7 +156,7 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
     {
         _layout.Clear();
         foreach (var p in map.Festival)
-            _layout.Add((p.ThingDef, new int3(p.At[0], p.At[1], map.StandZ(p.At[0], p.At[1])), p.Facing));
+            _layout.Add((p.ThingDef, new int3(p.At[0], p.At[1], map.StandZ(p.At[0], p.At[1], p.Level)), p.Facing));
     }
 
     /// <summary>The first prop of a def still standing, or Entity.Null.</summary>

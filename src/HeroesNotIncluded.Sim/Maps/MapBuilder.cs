@@ -57,13 +57,18 @@ public static class MapBuilder
         for (var y = 0; y < map.Height; y++)
         for (var x = 0; x < map.Width; x++)
         {
-            if (def.Features[y * map.Width + x] is not { } f || f.Def.IsFloor != (pass == 0))
+            if (def.Features[y * map.Width + x] is not { } f)
                 continue;
             var cell = new int3(x, y, f.Level < 0 ? standZ[y * map.Width + x] : def.BaseZ + f.Level);
-            if (!sim.CanPlaceStructure(cell, f.Def, Facing(def, x, y)))
-                throw new Exception($"Map '{def.Name}': {f.Def.Name} at {x},{y} (z {cell.Z}) can't be placed there");
-            var placed = sim.SpawnStructure(f.Def, cell, Facing(def, x, y));
-            if (f.Locked)
+            // A floor's in the first pass and what stands on it in the second, with everything else.
+            var (put, facing) = pass == 0 ? (f.Def.IsFloor ? f.Def : null, Facing(def, x, y))
+                : f.Def.IsFloor ? (f.On, 0) : (f.Def, Facing(def, x, y));
+            if (put == null)
+                continue;
+            if (!sim.CanPlaceStructure(cell, put, facing))
+                throw new Exception($"Map '{def.Name}': {put.Name} at {x},{y} (z {cell.Z}) can't be placed there");
+            var placed = sim.SpawnStructure(put, cell, facing);
+            if (f.Locked && put == f.Def)
                 sim.SetLocked(placed, true);
         }
         sim.RebuildDerivedIfNeeded();
@@ -71,7 +76,7 @@ public static class MapBuilder
         var buildings = new List<(MapBuilding, Entity)>();
         foreach (var b in def.Buildings)
         {
-            var anchor = new int3(b.At[0], b.At[1], def.StandZ(b.At[0], b.At[1]));
+            var anchor = new int3(b.At[0], b.At[1], def.StandZ(b.At[0], b.At[1], b.Level));
             if (Buildings.PlacementProblem(sim, b.BuildingDef, anchor, b.Facing, b.VariantIndex) is { } problem)
                 throw new Exception($"Map '{def.Name}': {b.Def} at {b.At[0]},{b.At[1]}: {problem}");
             buildings.Add((b, Buildings.SpawnFinished(sim, b.BuildingDef, anchor, b.Facing, b.VariantIndex)));

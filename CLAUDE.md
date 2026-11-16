@@ -34,6 +34,7 @@ dotnet run --project src/HeroesNotIncluded -- --input-log     # joysticks, focus
 dotnet run --project src/HeroesNotIncluded -c Release -- --bench --seed 1234   # per-system cost and hashes (--round: a whole season with bots and crises)
 dotnet run --project src/HeroesNotIncluded -c Release -- --season-sweep --seeds 8   # bot-played seasons: the baseline for tuning season.json (also --combat-sweep)
 dotnet run --project external/narsil/src/Narsil.Relay -- --port 47050       # relay for online play
+python3 tools/lake_map.py --preview OUT.png               # Reedmere, the town on stilts (tools/village_map.py: Millbrook; shared helpers in tools/mapkit.py)
 python3 tools/chibi_people.py --preview                    # art generators: see docs/ART.md
 python3 tools/sfx_synth.py --preview                       # synthesized sound effects: see docs/AUDIO.md
 python3 tools/fetch_music.py                               # placeholder music (not in git); once per checkout
