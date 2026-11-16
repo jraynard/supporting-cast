@@ -284,4 +284,44 @@ public class PointerTests
         Assert.Equal(1, s.Tears);
         Assert.Equal(0f, s.Pull); // torn loose: the hand has to take hold again
     }
+
+    /// <summary>Pressed in the pot and held, the mouse going round its middle a round every <paramref name="secondsARound"/> (0: held still).</summary>
+    private static StewSession Stirred(float secondsARound, int steps = 240)
+    {
+        var s = Ready(new StewSession());
+        var inputs = new List<WorkInput> { new(0, WorkInputKind.Hold, 1), Click(0, 0.8f, 0.5f) };
+        for (var t = 1; secondsARound > 0f && t < steps; t++)
+        {
+            var a = t / (secondsARound * SimClock.TicksPerSecond) * MathF.Tau;
+            inputs.Add(Point(t, 0.5f + 0.3f * MathF.Cos(a), 0.5f + 0.3f * MathF.Sin(a)));
+        }
+        s.Advance(inputs, steps);
+        return s;
+    }
+
+    [Fact]
+    public void CirclingThePotStirsItAndAStillPressDoesnt()
+    {
+        var round = Stirred(1.5f);
+        Assert.True(round.Stirring);
+        Assert.Equal(0, round.SinceStir);
+        var still = Stirred(0f);
+        Assert.False(still.Stirring, "pressed still in the pot isn't stirring");
+        Assert.True(still.SinceStir > 200);
+        var slow = Stirred(8f);
+        Assert.False(slow.Stirring, "a round in eight seconds is hardly stirring");
+        // F held is a stir as ever.
+        var keys = Ready(new StewSession());
+        keys.Advance([new WorkInput(0, WorkInputKind.Hold, 1)], 60);
+        Assert.True(keys.Stirring);
+    }
+
+    [Fact]
+    public void TheWheelFeedsAndBanksTheFire()
+    {
+        var s = Ready(new StewSession());
+        var flame = s.Flame;
+        s.Advance([new WorkInput(0, WorkInputKind.Axis2, -1), new WorkInput(8, WorkInputKind.Axis2, 0)], 20);
+        Assert.True(s.Flame > flame);
+    }
 }

@@ -9,7 +9,9 @@ namespace HeroesNotIncluded.Sim.Work;
 /// follows slowly, and shows only in how the surface looks. It cooks from a simmer, faster at a
 /// boil, but past a simmer it catches on the bottom unless it's stirred (hold F); stirring all the
 /// time lets the heat out and slows it. Done when it's cooked through: the fire is banked to keep
-/// it warm. Walk away early and the pot carries on as the fire was left.
+/// it warm. Walk away early and the pot carries on as the fire was left. With the mouse the spoon
+/// goes round as the mouse does: press in the pot and circle it (held still, it isn't stirring),
+/// and the wheel feeds or banks the fire.
 /// </summary>
 public sealed class StewSession : WorkSession
 {
@@ -44,10 +46,44 @@ public sealed class StewSession : WorkSession
     private int _flameDir;
 
     public Surface Surface => Cooking.SurfaceOf(Heat);
-    public bool Stirring => Held;
+    /// <summary>The spoon's going round: F held, or the mouse pressed in the pot and circling.</summary>
+    public bool Stirring => Held && (!_byMouse || _spin >= StirSpin);
 
     /// <summary>Starting to catch: a careful cook can smell it (the bottom's catching at more than a trickle).</summary>
-    public bool Catching => Heat > Cooking.SimmerAt && !Held && SinceStir > Cooking.CatchSteps;
+    public bool Catching => Heat > Cooking.SimmerAt && !Stirring && SinceStir > Cooking.CatchSteps;
+
+    /// <summary>How fast the mouse must go round the pot to stir, as the smoothed turn a step: a round every three seconds or so.</summary>
+    public const float StirSpin = 0.4f;
+
+    /// <summary>How the turn a step is smoothed: the spoon keeps going a moment after the mouse slows.</summary>
+    public const float SpinKeep = 0.92f;
+
+    // The button pressed in the pot (it stirs as the mouse goes round, not by being held); how far
+    // round it's gone since the last step (a turn, in radians), and that smoothed; the wheel on the fire.
+    private bool _byMouse;
+    private float _swept, _spin;
+    private int _flameWheel;
+
+    protected override void Clicked(float? u, float? v)
+    {
+        if (u != null)
+            _byMouse = true;
+    }
+
+    /// <summary>The mouse over the pot (its mouth the picture's middle): how far round the middle it's gone, while pressed.</summary>
+    protected override void Pointed(float u, float v)
+    {
+        if (!_byMouse || !Held || PointU is not { } was || PointV is not { } wasV)
+            return;
+        var a0 = DetMath.Atan2(wasV - 0.5f, was - 0.5f);
+        var a1 = DetMath.Atan2(v - 0.5f, u - 0.5f);
+        var d = a1 - a0;
+        d -= MathF.Round(d / MathF.Tau) * MathF.Tau; // the short way round
+        _swept += Math.Min(MathF.Abs(d), 1.2f);      // a jump across the middle isn't a stir
+    }
+
+    /// <summary>The wheel feeds the fire (up) or banks it (down), as D and A do.</summary>
+    protected override void Axis2(int value) => _flameWheel = -value;
 
     public override int3? Focus(Simulation sim) => sim.World.IsAlive(Pot) && sim.World.TryGet<Thing>(Pot, out var t) ? t.Cell : null;
 
@@ -85,11 +121,16 @@ public sealed class StewSession : WorkSession
 
     protected override void Step()
     {
-        Flame = Math.Clamp(Flame + _flameDir * Cooking.FlameStep, 0f, 1f);
+        Flame = Math.Clamp(Flame + (_flameDir != 0 ? _flameDir : _flameWheel) * Cooking.FlameStep, 0f, 1f);
+        if (!Held)
+            _byMouse = false;
+        _spin = _spin * SpinKeep + _swept;
+        _swept = 0f;
+        var stirring = Stirring;
         float heat = Heat, done = Doneness, scorch = Scorch;
-        Cooking.Step(ref heat, Flame, Lit, ref done, ref scorch, SinceStir, Held, 1f, Speed);
+        Cooking.Step(ref heat, Flame, Lit, ref done, ref scorch, SinceStir, stirring, 1f, Speed);
         (Heat, Doneness, Scorch) = (heat, done, scorch);
-        SinceStir = Held ? 0 : Math.Min(SinceStir + 1, Cooking.Untended);
+        SinceStir = stirring ? 0 : Math.Min(SinceStir + 1, Cooking.Untended);
         if (Flaring > 0)
         {
             if (--Flaring == 0)
@@ -151,6 +192,10 @@ public sealed class StewSession : WorkSession
         w.Int(Flaring);
         w.Bool(Caught);
         w.Int(Lidded);
+        w.Bool(_byMouse);
+        w.Float(_swept);
+        w.Float(_spin);
+        w.Int(_flameWheel);
     }
 
     protected override void ReadState(SaveReader r)
@@ -170,6 +215,13 @@ public sealed class StewSession : WorkSession
             Flaring = Math.Clamp(r.Int(), 0, Cooking.FlareSteps);
             Caught = r.Bool();
             Lidded = Math.Clamp(r.Int(), 0, 1000);
+        }
+        if (r.Version >= 43) // stirred by the mouse going round (format 43)
+        {
+            _byMouse = r.Bool();
+            _swept = Math.Clamp(r.Float(), 0f, 100f);
+            _spin = Math.Clamp(r.Float(), 0f, 100f);
+            _flameWheel = Math.Sign(r.Int());
         }
     }
 }

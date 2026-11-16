@@ -22,9 +22,9 @@ public sealed partial class VillageGame
     private void DrawStew(StewSession s)
     {
         if (s.Flaring > 0)
-            BeginWork(s.Title, ("Space", "clap the lid on!"), ("F", "hold to stir"), ("A/D", "bank or feed the fire"), ("Esc", "leave it"));
+            BeginWork(s.Title, ("Space", "clap the lid on!"), ("F|Press and circle", "stir"), ("A/D|Wheel", "bank or feed the fire"), ("Esc", "leave it"));
         else
-            BeginWork(s.Title, ("F", "hold to stir"), ("A/D", "bank or feed the fire"), ("Esc", "leave it"));
+            BeginWork(s.Title, ("F|Press and circle", "stir"), ("A/D|Wheel", "bank or feed the fire"), ("Esc", "leave it"));
         StewScene(s);
         TextC(Theme.Dim, s.Fatty ? "Keep it at a simmer, and stir before it catches. It's fatty: a hard boil spits." : "Keep it at a simmer, and stir before it catches.");
         var dl = ImGui.GetWindowDrawList();
@@ -37,6 +37,7 @@ public sealed partial class VillageGame
         // The fire under it: taller and brighter as it's fed.
         var potMin = new float2(min.X + size.X * 0.25f, min.Y + size.Y * 0.28f);
         var potMax = new float2(max.X - size.X * 0.25f, max.Y - Gui.S(44));
+        TakesPointer(potMin, potMax, wheel: true); // the pot: press in it and go round its middle; the wheel works the fire
         var fireY = max.Y - Gui.S(10);
         for (var i = 0; i < 9; i++)
         {
@@ -100,9 +101,12 @@ public sealed partial class VillageGame
             dl.AddCircleFilled(in at, p.Size * (1f + t), new ImColor8(230, 232, 236, (byte)(90 * (1f - t / p.Life))), 12);
         }
 
-        // The spoon: going round while you stir, resting against the rim when you don't.
+        // The spoon: going round while you stir (with the mouse, where it is over the pot), resting against the rim when you don't.
         var mid = (surfMin + surfMax) * 0.5f;
-        var tip = s.Stirring
+        var mouse = ImGui.GetMousePos();
+        var tip = s.Held && UsingPointer
+            ? new float2(Math.Clamp(mouse.X, surfMin.X + Gui.S(6), surfMax.X - Gui.S(6)), Math.Clamp(mouse.Y, surfMin.Y, surfMax.Y + Gui.S(6)))
+            : s.Stirring
             ? mid + new float2(MathF.Cos(_time * 7f) * (surfMax.X - surfMin.X) * 0.3f, Gui.S(2))
             : new float2(surfMax.X - Gui.S(14), surfMin.Y + Gui.S(4));
         var handle = tip + new float2(Gui.S(46), -Gui.S(70));
@@ -126,7 +130,7 @@ public sealed partial class VillageGame
 
         ImGui.Spacing();
         if (s.Flaring > 0)
-            TextC(Theme.Bad, Controls.Keys("The fat's caught! Clap the lid on (~Space~)!"));
+            TextC(Theme.Bad, UsingPointer ? "The fat's caught! Clap the lid on (right-click)!" : Controls.Keys("The fat's caught! Clap the lid on (~Space~)!"));
         TextC(s.Surface is Surface.Simmer ? Theme.Good : s.Surface == Surface.Boil ? Theme.Warn : Theme.Dim,
             $"It's {Cooking.SurfaceLabel(s.Surface)}.");
         if (s.Catching)
