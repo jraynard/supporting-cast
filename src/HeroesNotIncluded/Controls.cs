@@ -152,6 +152,8 @@ public static class Controls
             .Replace("~WS~", Pair(Act.WalkUp, Act.WalkDown))
             .Replace("~A~", Glyph(Act.WalkLeft))
             .Replace("~D~", Glyph(Act.WalkRight))
+            .Replace("~W~", Glyph(Act.WalkUp))
+            .Replace("~S~", Glyph(Act.WalkDown))
             .Replace("~WASD~", Walk())
             .Replace("~Space~", Glyph(Act.WorkAct))
             .Replace("~Esc~", Glyph(Act.Back))

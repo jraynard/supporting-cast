@@ -18,11 +18,11 @@ public sealed partial class VillageGame
     private int _anvilBlows;
     private float _anvilQuality, _strikeAt = -10f, _strikeGrade;
 
-    private const float StrikeSeconds = 0.18f, GradeSeconds = 0.9f;
+    private const float GradeSeconds = 0.9f;
 
     private void DrawHammer(HammerSession s)
     {
-        BeginWork(s.Title, ("A/D|Point", "carry the hammer over the mark"), ("F", "strike, once your hand's settled"), ("Esc", "back to the fire"));
+        BeginWork(s.Title, ("W|Raise the mouse", "wind back to the mark"), ("S|Bring it down", "swing it down, quick"), ("Esc", "back to the fire"));
         if (s.StartTick != _anvilSession)
         {
             _anvilSession = s.StartTick;
@@ -52,6 +52,7 @@ public sealed partial class VillageGame
         var jolt = new float2(MathF.Sin(_time * 90f) * shake, MathF.Cos(_time * 70f) * shake);
         var min = origin;
         var max = origin + size;
+        TakesPointer(min, max); // up the anvil: the hammer wound back as far as the mouse is raised
 
         // The forge's light behind it all.
         Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
@@ -82,40 +83,29 @@ public sealed partial class VillageGame
                 var strikePoint = new float2(bMin.X + b.X * 0.6f, bMin.Y);
                 if (_pendingSparks)
                     ThrowSparks(strikePoint, _strikeGrade, s.Blows);
-                DrawHammerSwing(dl, s, strikePoint, px, since);
+                DrawHammerSwing(dl, s.Mark, strikePoint, px, Gui.U8(new float4(1f, 1f, 1f, 0.22f))); // the mark: a ghost of the wind to aim for
+                DrawHammerSwing(dl, s.Raise, strikePoint, px, Gui.White);
                 DrawSparks(dl);
                 if (since < GradeSeconds)
                     DrawGrade(dl, strikePoint, since);
             }
         }
 
-        // The bar along: the mark as a glowing notch, where the hammer's held (swaying till the hand
-        // settles), and for a moment where the last blow landed.
-        ImGui.Spacing();
-        var tMin = ImGui.GetCursorScreenPos();
-        var tSize = Gui.S(420, 22);
-        ImGui.Dummy(in tSize);
-        var tMax = tMin + tSize;
-        Gui.Trough(dl, tMin, tMax);
-        var inner = Gui.S(3);
-        float X(float f) => tMin.X + inner + (tSize.X - inner * 2) * f;
-        TakesPointer(new float2(X(0f), origin.Y), new float2(X(1f), tMax.Y)); // across: one end of the bar to the other
-        var mMin = new float2(X(s.Mark - s.HalfWidth), tMin.Y + inner);
-        var mMax = new float2(X(s.Mark + s.HalfWidth), tMax.Y - inner);
-        dl.AddRectFilled(in mMin, in mMax, Theme.U8(Theme.Accent, 0.55f), 0f, ImDrawFlags.None);
-        var notchMin = new float2(X(s.Mark) - Gui.S(1), tMin.Y + inner);
-        var notchMax = new float2(X(s.Mark) + Gui.S(1), tMax.Y - inner);
-        dl.AddRectFilled(in notchMin, in notchMax, Theme.U8(Theme.Text), 0f, ImDrawFlags.None);
-        if (since < GradeSeconds && s.LastAt >= 0f)
+        // The wind, up the right of the anvil: the mark's band, the hammer now, and for a moment the top of the last wind.
+        var gx = max.X - Gui.S(16);
+        var g0 = new float2(gx - Gui.S(5), min.Y + Gui.S(10));
+        var g1 = new float2(gx + Gui.S(5), max.Y - Gui.S(10));
+        Gui.Trough(dl, g0, g1);
+        float Y(float f) => g1.Y - (g1.Y - g0.Y) * Math.Clamp(f, 0f, 1f);
+        dl.AddRectFilled(new float2(g0.X, Y(s.Mark + s.HalfWidth)), new float2(g1.X, Y(s.Mark - s.HalfWidth)), Theme.U8(Theme.Accent, 0.55f), 0f, ImDrawFlags.None);
+        if (since < GradeSeconds && s.LastWind >= 0f)
         {
-            var hit = X(Math.Clamp(s.LastAt, 0f, 1f));
-            dl.AddRectFilled(new float2(hit - Gui.S(1.5f), tMin.Y + inner), new float2(hit + Gui.S(1.5f), tMax.Y - inner),
-                Theme.U8(_strikeGrade > 0.7f ? Theme.Good : Theme.Bad, 0.9f * (1f - since / GradeSeconds)), 0f, ImDrawFlags.None);
+            var top = Y(s.LastWind);
+            dl.AddRectFilled(new float2(g0.X - Gui.S(2), top - Gui.S(1.5f)), new float2(g1.X + Gui.S(2), top + Gui.S(1.5f)),
+                Theme.U8(s.LastWindWas == 0 ? Theme.Good : Theme.Bad, 0.9f * (1f - since / GradeSeconds)), 0f, ImDrawFlags.None);
         }
-        var x = X(s.Marker) + (s.Settled ? 0f : MathF.Sin(_time * 21f) * Gui.S(2f));
-        var nMin = new float2(x - Gui.S(2), tMin.Y - Gui.S(3));
-        var nMax = new float2(x + Gui.S(2), tMax.Y + Gui.S(3));
-        dl.AddRectFilled(in nMin, in nMax, Theme.U8(!s.Ready ? Theme.Dim : s.Settled ? Theme.Text : Theme.Warn), Gui.S(1), ImDrawFlags.None);
+        var now = Y(s.Raise);
+        dl.AddRectFilled(new float2(g0.X - Gui.S(4), now - Gui.S(2)), new float2(g1.X + Gui.S(4), now + Gui.S(2)), Theme.U8(s.Ready ? Theme.Text : Theme.Dim), Gui.S(1), ImDrawFlags.None);
 
         // How far it's been beaten into shape, over every heat; and a warning as the colour goes.
         ImGui.Spacing();
@@ -131,25 +121,25 @@ public sealed partial class VillageGame
             TextC(s.Workable < 0.5f ? Theme.Bad : Theme.Warn, s.Workable < 0.5f
                 ? "It's going black: blows now do it no good, and may crack it. Back to the fire."
                 : "The colour's fading: it's moving less under the hammer.");
+        else if (since < GradeSeconds * 2 && s.LastWind >= 0f && (s.LastWindWas != 0 || s.LastSlow))
+            TextC(s.LastWindWas > 0 ? Theme.Bad : Theme.Warn, s.LastWindWas > 0 ? "Wound too far: it came down too hard and knocked the work out of true."
+                : s.LastWindWas < 0 ? "Short of the mark: it moved the metal less." : "Too slow: bring it down hard.");
         else
-            TextC(Theme.Dim, s.Repairing ? "Hammering out the chips." : "Beating it into shape.");
+            TextC(Theme.Dim, s.Repairing ? "Hammering out the chips: wind back to the mark, and swing." : "Wind back to the mark, not past it, and swing it down hard.");
         EndWork();
     }
 
     private bool _pendingSparks, _strikeCold;
 
     /// <summary>
-    /// The hammer, pivoting at the smith's hand off to the right. Between blows it hangs high when
-    /// it's held far from the mark and drops toward the bar as it's carried near; just after a blow
-    /// it rests on the bar, then lifts.
+    /// The hammer, pivoting at the smith's hand off to the right, wound back by <paramref name="raise"/>
+    /// (0 flat on the bar, 1 as far back as it goes): the smith's own swing, drawn as it's made.
     /// </summary>
-    private void DrawHammerSwing(ImDrawListPtr dl, HammerSession s, float2 strike, float px, float since)
+    private void DrawHammerSwing(ImDrawListPtr dl, float raise, float2 strike, float px, ImColor8 tint)
     {
         if (!Gui.TrySprite("ui/work/hammer", out var hammer))
             return;
-        var near = Math.Clamp(1f - MathF.Abs(s.Marker - s.Mark) / 0.45f, 0f, 1f);
-        var raise = since < StrikeSeconds ? 0f : s.Ready ? 1f - near * near : 0.5f;
-        var angle = -raise * 1.15f; // radians up from resting flat on the bar
+        var angle = -Math.Clamp(raise, 0f, 1f) * 1.15f; // radians up from resting flat on the bar
         var len = new float2(hammer.PixelSize.X, hammer.PixelSize.Y) * px;
         // The head's face meets the bar when flat: the pivot is a hammer's length to the right.
         var pivot = new float2(strike.X + len.X * 0.85f, strike.Y - len.Y * 0.5f);
@@ -160,7 +150,7 @@ public sealed partial class VillageGame
         var h = up * (len.Y * 0.5f);
         // The sprite runs handle (u=0) to iron head (u=1): the handle sits at the hand and the head
         // at the far end, on the bar. `h` points up off the shaft, where the sprite's top row goes.
-        Gui.ImageQuad(dl, hammer, back + h, head + h, head - h, back - h, Gui.White);
+        Gui.ImageQuad(dl, hammer, back + h, head + h, head - h, back - h, tint);
     }
 
     private void ThrowSparks(float2 at, float grade, int seed)

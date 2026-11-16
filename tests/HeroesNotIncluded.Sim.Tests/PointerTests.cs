@@ -325,39 +325,74 @@ public class PointerTests
         Assert.True(s.Flame > flame);
     }
 
-    /// <summary>The average grade of a heat's first blows, the hammer carried over each mark and struck settled (or at once).</summary>
-    private static float Hammered(float precision, bool settle)
+    /// <summary>
+    /// A heat's first blows by the mouse: raised over the anvil to <paramref name="wind"/> past the
+    /// mark (0 on it), then brought down at <paramref name="down"/> of the panel a step. The piece's
+    /// shape gained, and the blows' average grade.
+    /// </summary>
+    private static (float Shape, float Grade) Swung(float precision, float wind, float down = 1f, int blows = 4)
     {
         var (sim, me, forge, recipe) = WorkTests.AtTheForge();
         var real = WorkTests.Start(sim, me, forge, recipe);
-        var total = 0f;
+        var shape = 0f;
+        var grade = 0f;
         const int Heats = 12;
         for (var k = 0; k < Heats; k++)
         {
             var s = (HammerSession)real.Clone();
             s.Rand = new SimRandom((uint)k + 1);
             s.Hands = new Hands(precision, 1f, 5);
-            for (var blow = 0; blow < 4 && !s.Done; blow++)
+            var from = s.Shape;
+            for (var blow = 0; blow < blows && !s.Done; blow++)
             {
-                s.Advance([Point(s.StepsDone, s.Mark)], s.StepsDone + 1);
-                while (!s.Done && (WorkSession.Toward(s.Marker, s.Mark, Aim.PerStep) != 0 || !s.Ready || settle && !s.Settled))
+                var top = Math.Clamp(s.Mark + wind, 0f, 1f);
+                while (!s.Done && !s.Ready)
                     s.Advance([], s.StepsDone + 1);
-                s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Press)], s.StepsDone + 1);
+                s.Advance([Point(s.StepsDone, 0.5f, 1f - top)], s.StepsDone + 1);
+                while (!s.Done && s.Raise < top - 0.03f && s.StepsDone < 100_000)
+                    s.Advance([], s.StepsDone + 1);
+                s.Advance([], s.StepsDone + 4); // the top of the wind
+                var before = s.Blows;
+                for (var v = 1f - s.Raise; !s.Done && s.Blows == before; v = Math.Min(1f, v + down))
+                    s.Advance([Point(s.StepsDone, 0.5f, v)], s.StepsDone + 1);
             }
-            total += s.Quality;
+            shape += s.Shape - from;
+            grade += s.Quality;
         }
-        return total / Heats;
+        return (shape / Heats, grade / Heats);
     }
 
     [Fact]
-    public void ASettledBlowOnTheMarkGradesWellAndAShakyHandScattersIt()
+    public void WoundToTheMarkAndSwungQuickIsAFullBlow()
     {
-        var steady = Hammered(1f, settle: true);
-        var shaky = Hammered(0.2f, settle: true);
-        var hurried = Hammered(0.6f, settle: false);
-        var patient = Hammered(0.6f, settle: true);
-        Assert.True(steady > 0.85f, $"steady {steady}");
-        Assert.True(shaky < steady - 0.1f, $"shaky {shaky} against steady {steady}");
-        Assert.True(hurried < patient, $"hurried {hurried} against patient {patient}");
+        var (shape, grade) = Swung(1f, 0f);
+        Assert.True(grade > 0.85f, $"grade {grade}");
+        Assert.True(shape > 0f);
+    }
+
+    [Fact]
+    public void AShortWindMovesItLessAndAnOverwoundOneUndoesWork()
+    {
+        var full = Swung(1f, 0f);
+        var shortWind = Swung(1f, -0.22f);
+        var over = Swung(1f, 0.25f);
+        Assert.True(shortWind.Shape < full.Shape && shortWind.Shape > 0f, $"short {shortWind.Shape}, full {full.Shape}");
+        Assert.True(over.Shape <= 0f, $"overwound, the shape still went {over.Shape}");
+    }
+
+    [Fact]
+    public void AHammerLoweredSlowlyHardlyMovesIt()
+    {
+        var quick = Swung(1f, 0f);
+        var slow = Swung(1f, 0f, down: 0.012f);
+        Assert.True(slow.Shape < quick.Shape * 0.75f, $"slow {slow.Shape}, quick {quick.Shape}");
+    }
+
+    [Fact]
+    public void AnUnsteadyHandsWindWavers()
+    {
+        var steady = Swung(1f, 0f);
+        var shaky = Swung(0f, 0f);
+        Assert.True(shaky.Grade < steady.Grade, $"shaky {shaky.Grade}, steady {steady.Grade}");
     }
 }

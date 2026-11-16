@@ -80,7 +80,7 @@ public sealed record SmithyKit(Entity Forge, Entity Anvil, Entity Tub, Entity Gr
                 continue;
             }
             bool press = false, held = false, act = false;
-            var axis = 0;
+            var axis2 = 0;
             switch (predictor.Session)
             {
                 case BloomSession b:
@@ -100,7 +100,7 @@ public sealed record SmithyKit(Entity Forge, Entity Anvil, Entity Tub, Entity Gr
                         sim.ApplyNow(new StopWorkCommand(me));
                         continue;
                     }
-                    (press, axis) = WorkTests.Smith(h, style != SmithStyle.BadAim);
+                    axis2 = WorkTests.Smith(h, style != SmithStyle.BadAim);
                     break;
                 case QuenchSession q:
                     held = style switch
@@ -111,7 +111,7 @@ public sealed record SmithyKit(Entity Forge, Entity Anvil, Entity Tub, Entity Gr
                     };
                     break;
             }
-            predictor.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c), act: act);
+            predictor.Update(sim, me, 1, press, held, 0, c => sim.ApplyNow(c), axis2, act: act);
         }
         sim.Tick();
     }

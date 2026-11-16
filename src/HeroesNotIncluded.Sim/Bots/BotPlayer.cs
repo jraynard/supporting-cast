@@ -195,11 +195,9 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             case StrikerSession striker:
                 return (striker.Flight == 0 && striker.Needle >= 0.93f, false, 0);
             case HammerSession h:
-            {
-                // Over the mark, let the hand settle, and strike.
-                var go = WorkSession.Toward(h.Marker, h.Mark, Aim.PerStep);
-                return (go == 0 && h.Ready && h.Settled, false, go);
-            }
+                // Wind back to the mark (a step short, for the waver), then swing down hard.
+                _axis2 = HammerSwing(h);
+                return (false, false, 0);
             case BloomSession bloom:
                 // Keep it orange: pump below the middle of the band, ease off above. Out once it's grown.
                 _act = bloom.Grown;
@@ -541,6 +539,10 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     }
 
     /// <summary>Steer a needle back toward the middle of its band.</summary>
+    /// <summary>A smith's arm: wind back till the mark's in reach, then down onto the piece; W is -1, S +1.</summary>
+    public static int HammerSwing(HammerSession h) =>
+        !h.Ready ? 0 : h.Swinging || h.Raise >= h.Mark - HammerSession.WindPerStep * 0.5f ? 1 : -1;
+
     private static int Steer(float needle, float halfWidth)
     {
         var off = needle - 0.5f;

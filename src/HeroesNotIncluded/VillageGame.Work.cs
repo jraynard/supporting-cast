@@ -668,6 +668,8 @@ public sealed partial class VillageGame
         "A" => Controls.Glyph(Act.WalkLeft),
         "D" => Controls.Glyph(Act.WalkRight),
         "A/D" => Controls.Pair(Act.WalkLeft, Act.WalkRight),
+        "W" => Controls.Glyph(Act.WalkUp),
+        "S" => Controls.Glyph(Act.WalkDown),
         "W/S" => Controls.Pair(Act.WalkUp, Act.WalkDown),
         "WASD" => Controls.Walk(),
         "Space" => Controls.Glyph(Act.WorkAct),

@@ -2029,13 +2029,17 @@ player vanished on day two and it ended on day three.
   what's felt in passing is still felt and a trigger swept with weight on it still springs. The
   whetstone's angle and a part over its seat turn as far as the mouse moves, so the wander still
   has to be met. A tool that finishes at its end stops short of it; the other action runs it on.
-- **The cleaver and the hammer are carried** (`Work/Aim`): over a joint or the mark (A/D, or the
-  mouse) and struck where they're held, wider for an unsteady hand and wider still struck before the
-  hand's settled. No more sweeping marker. The bot smith carries the hammer to the mark and waits
-  for its hand to settle.
+- **The cleaver is carried** (`Work/Aim`): over a joint (A/D, or the mouse) and struck where it's
+  held, wider for an unsteady hand and wider still struck before the hand's settled.
+- **The hammer is swung**: wound back (W, or the mouse raised over the anvil) and brought down (S,
+  or the mouse brought down), drawn as it's swung with a ghost of the wind to aim for. Wound to the
+  mark it's a full blow; short, it moves the metal less (and grades poorly); past it, it knocks the
+  work out of true and undoes some of it. Lowered slowly, it hardly moves it. An unsteady arm
+  wavers as it winds and carries on or sags as it stops. No more sweeping marker; the bot smith
+  winds to the mark and swings.
 - **Plucking by drag**: the pull is as hard as the bird's dragged, no quicker than a held F
   tightens; a grip gives out after a handful. **Stirring by circling**: pressed in the pot, the mouse
   stirs only as it goes round; the wheel works the fire.
-- Save format 43. Bench hashes unchanged. 8-seed `--season-sweep`: Renown mean 50.2 (50.2 before),
-  won 2 (3), quests cleared 1.6 (1.4); the smith's blows take their own time now, which moves
+- Save format 44. Bench hashes unchanged. 8-seed `--season-sweep`: Renown mean 68.5 (50.2 before),
+  won 5 (3), quests cleared 1.8 (1.4); the smith's blows take their own time now, which moves
   every season after.
