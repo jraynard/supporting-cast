@@ -80,7 +80,9 @@ def tilled(seed):
 # ---------------- Timber and plaster ----------------
 
 OAK_DARK = (66, 46, 32)
-PLASTER = (228, 218, 190)
+# Limewash with a little ochre in it: the world grade cools and the evening light blues it, so it
+# starts warmer than it ends up (a plain cream came out the grey of wet slate).
+PLASTER = (242, 214, 160)
 
 
 def timber_dark(seed=5):
@@ -94,21 +96,89 @@ def timber_dark(seed=5):
     return img
 
 
-def wall_timber_plaster(seed=21):
-    img = noise(PLASTER, 4, seed)
+# One cell of wall, one storey: 32 across and 64 up, so it shows once a level, pixels square
+# (Rendering/WorldScale). The face is 0.84 of a level and hangs from its top, so rows below
+# WALL_SHOWN are cut off: the sill plate sits just above that.
+WALL_H = 64
+WALL_SHOWN = 54
+
+
+def _beam(img, box, seed, vertical):
+    """A dark oak member: grain along it, its lit edge, and a shadow it casts on the plaster."""
+    x0, y0, x1, y1 = box
+    rnd = random.Random(seed)
     d = ImageDraw.Draw(img)
-    beam = tint(OAK_DARK, 1.0)
-    shadow = tint(PLASTER, 0.82)
-    d.rectangle([0, 0, 3, S - 1], fill=beam)          # posts at the cell's ends
-    d.rectangle([S - 4, 0, S - 1, S - 1], fill=beam)
-    d.rectangle([0, 0, S - 1, 2], fill=beam)           # head and mid rails
-    d.rectangle([0, 15, S - 1, 17], fill=beam)
-    d.rectangle([0, S - 3, S - 1, S - 1], fill=beam)   # sole plate
-    d.line([(5, 14), (13, 4)], fill=beam, width=3)     # a brace in the upper panel
-    for x in range(4, S - 4):                          # the panels' shadow under each rail
-        img.putpixel((x, 3), shadow)
-        img.putpixel((x, 18), shadow)
+    d.rectangle(box, fill=tint(OAK_DARK, 1.0))
+    for _ in range((x1 - x0 + y1 - y0) // 3):
+        if vertical:
+            x = rnd.randrange(x0, x1 + 1)
+            y = rnd.randrange(y0, max(y0 + 1, y1 - 4))
+            d.line([(x, y), (x, y + rnd.randrange(2, 6))], fill=tint(OAK_DARK, rnd.choice([0.74, 1.18])))
+        else:
+            y = rnd.randrange(y0, y1 + 1)
+            x = rnd.randrange(x0, max(x0 + 1, x1 - 4))
+            d.line([(x, y), (x + rnd.randrange(2, 7), y)], fill=tint(OAK_DARK, rnd.choice([0.74, 1.18])))
+    # The edge facing the light (up and left) catches it.
+    if vertical:
+        d.line([(x0, y0), (x0, y1)], fill=tint(OAK_DARK, 1.32))
+    else:
+        d.line([(x0, y0), (x1, y0)], fill=tint(OAK_DARK, 1.32))
+
+
+def _brace(img, a, b, seed):
+    """A diagonal brace, three pixels thick, with its upper edge lit."""
+    d = ImageDraw.Draw(img)
+    d.line([a, b], fill=tint(OAK_DARK, 1.0), width=3)
+    d.line([(a[0], a[1] - 1), (b[0], b[1] - 1)], fill=tint(OAK_DARK, 1.25), width=1)
+
+
+def wall_timber_plaster(variant=0, seed=21):
+    """
+    A bay of half-timbering: a post at its left (the next bay's post closes it on the right), the
+    head beam, a middle rail and the sill, limewashed infill mottled where the wash is thin, and
+    darker under each rail. The variants differ in what's framed into the bay, so a long wall picks
+    among them cell by cell and doesn't repeat: plain, a brace each way, or an extra stud.
+    """
+    rnd = random.Random(seed + variant * 101)
+    img = noise(PLASTER, 3, seed + variant, size=(S, WALL_H))
+    px = img.load()
+    # The wash: soft blotches a shade darker or paler, and a few flecks where it's flaked.
+    for _ in range(6):
+        cx, cy, r = rnd.randrange(S), rnd.randrange(WALL_SHOWN), rnd.randrange(4, 9)
+        k = rnd.choice([0.95, 0.97, 1.03])
+        for y in range(max(0, cy - r), min(WALL_H, cy + r)):
+            for x in range(max(0, cx - r), min(S, cx + r)):
+                if (x - cx) ** 2 + (y - cy) ** 2 < r * r:
+                    px[x, y] = tint(px[x, y], k)
+    for _ in range(5):
+        x, y = rnd.randrange(4, S - 1), rnd.randrange(4, WALL_SHOWN - 4)
+        px[x, y] = tint(PLASTER, 0.78)
+    # No head beam: the kit's cap timber lies along the wall's top already.
+    head, mid, sill = (-1, -1), (25, 27), (WALL_SHOWN - 3, WALL_SHOWN - 1)
+    # Shadow under the cap and the rail, and dirt splashed up from the footing.
+    for x in range(S):
+        for y in (head[1] + 1, mid[1] + 1):
+            px[x, y] = tint(px[x, y], 0.8)
+            px[x, y + 1] = tint(px[x, y + 1], 0.9)
+        for y in range(sill[0] - 4, sill[0]):
+            px[x, y] = tint(px[x, y], 0.97 - 0.03 * (y - sill[0] + 4))
+    if variant == 1:
+        _brace(img, (5, mid[0] - 1), (S - 3, head[1] + 2), seed)        # rising to the right, in the upper panel
+    elif variant == 2:
+        _brace(img, (5, mid[1] + 2), (S - 3, sill[0] - 1), seed)        # falling to the right, in the lower panel
+    elif variant == 3:
+        _beam(img, (15, mid[1], 17, sill[0]), seed + 7, vertical=True)  # a stud under the rail
+    _beam(img, (0, mid[0], S - 1, mid[1]), seed + 2, vertical=False)
+    _beam(img, (0, sill[0], S - 1, sill[1]), seed + 3, vertical=False)
+    _beam(img, (0, 0, 3, WALL_H - 1), seed + 4, vertical=True)
+    # Below what shows: footing-coloured, in case a short face shows more.
+    for y in range(sill[1] + 1, WALL_H):
+        for x in range(S):
+            px[x, y] = tint(OAK_DARK, 0.9)
     return img
+
+
+WALL_VARIANTS = 4
 
 
 def gable_plaster():
@@ -125,17 +195,54 @@ def gable_plaster():
     return img
 
 
-def straw_thatch(seed):
-    base = (210, 172, 98)
-    img = noise(base, 6, seed)
+def gable_fill_plaster(seed=37):
+    """Under a wide gable's triangle: limewash between upright studs, no rails (WorldMesher stacks it)."""
     rnd = random.Random(seed)
-    d = ImageDraw.Draw(img)
-    for x in range(0, S, 2):  # straw strokes
-        for y in range(rnd.randrange(3), S, 6):
-            d.line([(x, y), (x, y + 3)], fill=tint(base, rnd.choice([0.86, 1.1, 1.16])))
-    for y in range(7, S, 8):  # courses: a shadowed band under each
-        d.line([(0, y), (S, y)], fill=tint(base, 0.68))
-        d.line([(0, y + 1), (S, y + 1)], fill=tint(base, 0.82))
+    img = noise(PLASTER, 3, seed)
+    px = img.load()
+    for _ in range(3):
+        cx, cy, r = rnd.randrange(S), rnd.randrange(S), rnd.randrange(4, 8)
+        for y in range(S):
+            for x in range(S):
+                if (x - cx) ** 2 + (y - cy) ** 2 < r * r:
+                    px[x, y] = tint(px[x, y], 0.96)
+    for x in (4, 5):
+        for y in range(S):
+            px[x, y] = tint(px[x, y], 0.86)  # the stud's shadow on the wash
+    _beam(img, (0, 0, 3, S - 1), seed + 1, vertical=True)
+    return img
+
+
+def straw_thatch(seed):
+    """
+    Long straw laid in courses down the slope (tile v runs down it, u along the ridge). Each course's
+    butt ends make a ragged edge, not a ruled line, and the courses are staggered and bunched, so
+    cells side by side don't line up into stripes. The left and right edges wrap, for the same reason.
+    """
+    base = (214, 176, 100)
+    rnd = random.Random(seed)
+    img = noise(base, 5, seed)
+    px = img.load()
+    # Strands: short streaks down the slope, a few lighter or darker, wrapping across the tile.
+    for x in range(S):
+        y = rnd.randrange(4)
+        while y < S:
+            n = rnd.randrange(3, 7)
+            k = rnd.choice([0.84, 0.92, 1.08, 1.14, 1.0])
+            for i in range(n):
+                px[x, (y + i) % S] = tint(base, k)
+            y += n + rnd.randrange(1, 3)
+    # One course a tile, at a height of its own: the butts' soft shadow under a ragged edge that
+    # wanders up and down across the tile, not a ruled line.
+    y0 = rnd.randrange(S)
+    drift = 0
+    for x in range(S):
+        drift = max(-3, min(3, drift + rnd.choice([-1, 0, 0, 1])))
+        edge = y0 + drift
+        px[x, edge % S] = tint(px[x, edge % S], 0.8)
+        px[x, (edge + 1) % S] = tint(px[x, (edge + 1) % S], 0.9)
+        if rnd.random() < 0.35:
+            px[x, (edge - 1) % S] = tint(px[x, (edge - 1) % S], 1.1)  # a butt end catching the light
     return img
 
 
@@ -369,9 +476,13 @@ def generate():
     save(road(63, ruts=True), "terrain/road_ruts")
     save(tilled(71), "terrain/tilled")
     save(timber_dark(), "props/timber_dark")
-    save(wall_timber_plaster(), "buildings/wall_timber_plaster")
-    materials(wall_timber_plaster(), "buildings/wall_timber_plaster", WOODS, only_dark=True)
+    for v in range(WALL_VARIANTS):
+        suffix = "" if v == 0 else f"_v{v + 1}"
+        save(wall_timber_plaster(v), "buildings/wall_timber_plaster" + suffix)
+        for k, c in WOODS.items():
+            save(by_material(wall_timber_plaster(v), c, True), f"buildings/wall_timber_plaster_{k}{suffix}")
     save(gable_plaster(), "buildings/gable_plaster")
+    save(gable_fill_plaster(), "buildings/gable_fill_plaster")
     save(straw_thatch(81), "buildings/roof_thatch_straw")
     save(straw_thatch(82), "buildings/roof_thatch_straw_v2")
     save(straw_thatch(83), "buildings/roof_thatch_straw_v3")
