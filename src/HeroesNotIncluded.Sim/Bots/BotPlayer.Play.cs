@@ -110,6 +110,10 @@ public sealed partial class BotPlayer
             }
             case StewSession st:
             {
+                // Flames over it: the lid on, before anything. A cold fire under it never cooks: step away and see to it.
+                _act = st.Flaring > 0;
+                if (!st.Lit)
+                    StopKitchenWork();
                 // Keep it at a simmer, and stir every couple of seconds.
                 if (st.SinceStir > 120)
                     _stir = 20;
