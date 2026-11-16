@@ -30,7 +30,7 @@ public sealed class HammerSession : WorkSession
     /// <summary>How much a wind wavers a step for an unsteady hand, per point of tremor.</summary>
     public const float WindWaver = 0.012f;
 
-    /// <summary>How far across the spot to strike may move between blows (the piece is -1 to 1 across).</summary>
+    /// <summary>How far across the spot to strike may move between blows once the piece is drawn out (the piece is -1 to 1 across).</summary>
     public const float SpotRange = 0.55f;
 
     /// <summary>A good blow's shaping, in shares of the blows the piece needs: a smith's blow moves the metal.</summary>
@@ -135,6 +135,9 @@ public sealed class HammerSession : WorkSession
     /// <summary>Where across the piece to strike this blow (-1 to 1); it moves after every blow.</summary>
     public float Spot { get; private set; }
 
+    /// <summary>How far either side the spot to strike may go now: the bar's drawn out as it's shaped, from 0.6 of <see cref="SpotRange"/> to all of it.</summary>
+    public float SpotReach => SpotRange * (0.6f + 0.4f * Math.Clamp(Shape, 0f, 1f));
+
     /// <summary>Over the spot near enough for a true blow.</summary>
     public bool Centred => MathF.Abs(Offset - Spot) <= CentreWidth;
 
@@ -175,7 +178,7 @@ public sealed class HammerSession : WorkSession
     private void NewMark()
     {
         Mark = Rand.Range(0.35f, 0.9f);
-        Spot = Rand.Range(-SpotRange, SpotRange);
+        Spot = Rand.Range(-SpotReach, SpotReach);
     }
 
     protected internal override void Begin() => NewMark();

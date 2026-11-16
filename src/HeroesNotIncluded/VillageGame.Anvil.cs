@@ -71,19 +71,23 @@ public sealed partial class VillageGame
             var a = new float2(anvil.PixelSize.X, anvil.PixelSize.Y) * px;
             var aMin = new float2(min.X + size.X * 0.5f - a.X * 0.55f, max.Y - a.Y - Gui.S(6)) + jolt;
             Gui.Image(dl, anvil, aMin, aMin + a, Gui.White);
-            // The bar on the anvil's face, glowing as hot as it still is.
+            // The bar on the anvil's face, glowing as hot as it still is: as long as anywhere the marker
+            // may go, and drawn out longer as it's shaped (the marker ranging further with it).
             var face = new float2(aMin.X + 15 * px, aMin.Y + 4 * px);
             if (Gui.TrySprite("ui/work/billet", out var billet))
             {
-                var b = new float2(billet.PixelSize.X, billet.PixelSize.Y) * px;
-                var bMin = new float2(face.X + 2 * px, face.Y - b.Y + px);
+                var bh = billet.PixelSize.Y * px;
+                var strikeX = face.X + 2 * px + billet.PixelSize.X * px * 0.6f;
+                var halfLen = (s.SpotReach + s.CentreWidth + 0.1f) * HammerShift;
+                var b = new float2(halfLen * 2f, bh);
+                var bMin = new float2(strikeX - halfLen, face.Y - bh + px);
                 var hot = GlowColour(s.Temp);
                 var glowAt = bMin + b * 0.5f;
-                dl.AddCircleFilled(in glowAt, b.X * 0.7f, Gui.U8(hot, 0.25f * GlowStrength(s.Temp)), 24);
-                Gui.Image(dl, billet, bMin, bMin + b, Gui.U8(hot));
+                dl.AddEllipseFilled(in glowAt, new float2(b.X * 0.62f, b.X * 0.3f), Gui.U8(hot, 0.25f * GlowStrength(s.Temp)), 0f, 32);
+                DrawBar(dl, bMin, b, px, hot);
                 if (since < 0.08f)
                     dl.AddRectFilled(in bMin, bMin + b, new ImColor8(255, 255, 240, (byte)(220 * (1f - since / 0.08f))), 0f, ImDrawFlags.None);
-                var strikePoint = new float2(bMin.X + b.X * 0.6f, bMin.Y);
+                var strikePoint = new float2(strikeX, bMin.Y);
                 if (_pendingSparks)
                     ThrowSparks(strikePoint, _strikeGrade, s.Blows);
                 // The spot to strike, a notch over the bar, green while the hammer's over it; it moves after every blow.
@@ -144,6 +148,24 @@ public sealed partial class VillageGame
     }
 
     private bool _pendingSparks, _strikeCold;
+
+    /// <summary>
+    /// The bar being worked, any length: the billet's art drawn out (its rows pale to dark top to
+    /// bottom, its ends and underside darker), tinted by its heat.
+    /// </summary>
+    private static void DrawBar(ImDrawListPtr dl, float2 at, float2 size, float px, float4 hot)
+    {
+        float[] rows = [255f, 255f, 225f, 225f, 190f, 150f];
+        var row = size.Y / rows.Length;
+        for (var y = 0; y < rows.Length; y++)
+        {
+            var shade = new float4(hot.X * rows[y] / 255f, hot.Y * rows[y] / 255f, hot.Z * rows[y] / 255f, hot.W);
+            dl.AddRectFilled(at + new float2(0f, y * row), at + new float2(size.X, (y + 1) * row), Gui.U8(shade), 0f, ImDrawFlags.None);
+        }
+        var end = new float4(hot.X * 150f / 255f, hot.Y * 150f / 255f, hot.Z * 150f / 255f, hot.W);
+        dl.AddRectFilled(at, at + new float2(px, size.Y), Gui.U8(end), 0f, ImDrawFlags.None);
+        dl.AddRectFilled(at + new float2(size.X - px, 0f), at + size, Gui.U8(end), 0f, ImDrawFlags.None);
+    }
 
     /// <summary>
     /// The hammer, pivoting at the smith's hand off to the right, wound back by <paramref name="raise"/>

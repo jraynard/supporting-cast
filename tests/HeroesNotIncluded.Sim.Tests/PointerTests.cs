@@ -473,4 +473,23 @@ public class PointerTests
         s.Advance([Click(3, 0.8f - slice)], 4);
         Assert.Equal(1, s.Slips); // chopped again without drawing back: the fingers
     }
+
+    [Fact]
+    public void TheMarkerStaysOnTheBarAndRangesFurtherAsItsDrawnOut()
+    {
+        var (sim, me, forge, recipe) = WorkTests.AtTheForge();
+        var fresh = WorkTests.Start(sim, me, forge, recipe);
+        var (sim2, me2, forge2, recipe2) = WorkTests.AtTheForge();
+        Smithing.PieceOf(sim2, me2)!.Shape = 0.9f;
+        var shaped = WorkTests.Start(sim2, me2, forge2, recipe2);
+        Assert.True(shaped.SpotReach > fresh.SpotReach * 1.4f);
+        foreach (var h in new[] { fresh, shaped })
+            for (var seed = 1u; seed <= 30; seed++)
+            {
+                var c = (HammerSession)h.Clone();
+                c.Rand = new SimRandom(seed);
+                c.Begin();
+                Assert.InRange(c.Spot, -c.SpotReach, c.SpotReach);
+            }
+    }
 }

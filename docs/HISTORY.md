@@ -2037,7 +2037,8 @@ player vanished on day two and it ended on day three.
   (1.6 times the old one's shaping); short, it moves the metal less (and grades poorly); past it,
   only a little, and it never undoes any. Raised, it wanders across the piece (more for an
   unsteady arm): A/D, or the mouse moved side to side, keep it over a marker that moves after
-  every blow, and a blow off the marker glances. An unsteady arm wavers as it rises. The bot smith
+  every blow, and a blow off the marker glances. The bar's drawn as long as the marker can range,
+  and lengthens (the marker ranging further) as it's shaped. An unsteady arm wavers as it rises. The bot smith
   keeps it over the marker, raises it to the mark and lets go.
 - **Chopping by the fingers**: the beat's gone. Draw the guiding fingers back a slice (A, or the
   mouse moved left) and chop (F, or a click); an even slice is clean, a sliver or a slab poor, and
