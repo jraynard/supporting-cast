@@ -32,7 +32,8 @@ public sealed partial class BotPlayer
     private bool Fight(Simulation sim, Entity me, PerceptionView view, long now)
     {
         var w = sim.World;
-        if (!w.TryGet<Combat.FreeMover>(me, out var free) || !w.Get<Creature>(me).Able || Ai.RaiderBrain.WantsToFlee(sim, me)
+        // The nervy don't stand and fight: they get out of the way (Safety).
+        if (!w.TryGet<Combat.FreeMover>(me, out var free) || !w.Get<Creature>(me).Able || Ai.RaiderBrain.WantsToFlee(sim, me) || Temper.Nerve < 0.25f
             || !w.TryGet<Equipment>(me, out var eq) || !w.IsAlive(eq.Weapon) || w.Get<Thing>(eq.Weapon).Def.Weapon is not { } weapon)
             return StopFighting(me, free.Drawn);
         var here = w.Get<Position>(me).Pos;

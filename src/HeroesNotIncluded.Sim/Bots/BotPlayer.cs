@@ -64,6 +64,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
     public BotStats Stats { get; } = new();
 
     private long _countedSession = -1;
+    private bool _wasGhost;
     private readonly HashSet<int> _counted = [];
 
     /// <summary>Every command goes out through here, so what it says is counted.</summary>
@@ -85,7 +86,14 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
         if (me.IsNull && Afterlife.Ghosts.Of(sim, player) is { IsNull: false } ghost)
         {
             Haunt(sim, ghost);
+            _wasGhost = true;
             return;
+        }
+        if (_wasGhost && !me.IsNull)
+        {
+            // Back from the dead: a word for whoever brought it back, when it can.
+            _wasGhost = false;
+            _toAnswer = ("revived", "");
         }
         if (me.IsNull || !sim.World.Has<Avatar>(me))
             return;
@@ -102,10 +110,16 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
         _act = false;
         var (press, held, axis) = _work.Session?.StartTick == live ? Play(_work.Session) : (false, false, 0);
         // At the anvil it puts the hammer down as the colour fades, and takes the piece back to the fire.
-        if (_work.Session is HammerSession { Workable: < 0.95f } && !_stopped)
+        // A slip: it keeps striking after the colour's gone, on metal too cold to take it.
+        if (_work.Session is HammerSession { Workable: var heat } && heat < 0.95f && !_stopped)
         {
-            _stopped = true;
-            Send(new StopWorkCommand(me));
+            if (_slip)
+                Slipped();
+            if (!_slip || heat < 0.45f)
+            {
+                _stopped = true;
+                Send(new StopWorkCommand(me));
+            }
         }
         if (_work.Session is SeasonSession && _seasoned && !_stopped)
         {
@@ -132,6 +146,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
 
     private void Think(Simulation sim, Entity me, PerceptionView view, long now)
     {
+        Shout(sim, me, view, now);
         if (Douse(sim, me, view, now) || Safety(sim, me, view, now) || BindOwn(sim, me) || PitchIn(sim, me, view, now)
             || SeeTheHealer(sim, me, now) || Bedtime(sim, me, now) || Supper(sim, me, now))
             return;
@@ -141,7 +156,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
         Price(sim, me, view, now);
         if (Mend(sim, me, view))
             return;
-        if (_task != 0 && (now - _taskSince > TaskTimeoutTicks || !Work(sim, me, view, now)))
+        if (_task != 0 && (now - _taskSince > TaskTimeoutTicks * (1.25f - 0.75f * Temper.Haste) || !Work(sim, me, view, now)))
             _task = 0;
         if (_task == 0 && !festival && PutKeyBack(sim, me, now))
             return;
@@ -156,8 +171,11 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
             return;
         if (_task == 0 && Smith(sim, me, view, now))
             return;
-        if (_task == 0 && !Upkeep(sim, me, view, now))
-            Chat(view, me, now);
+        // The hasty let the chores go half the time (an hour on, an hour off).
+        if (_task == 0 && (Temper.Haste < 0.65f || now / SimClock.TicksPerHour % 2 == 0) && Upkeep(sim, me, view, now))
+            return;
+        if (_task == 0)
+            Chat(sim, view, me, now);
     }
 
     /// <summary>

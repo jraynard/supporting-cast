@@ -276,6 +276,8 @@ else
         // --festival-at SECONDS: the festival begins then, to see it without playing to it.
         FestivalAt = args.Contains("--festival-at") ? ParseFloat(args, "--festival-at") : -1f,
         Bots = args.Contains("--bots") ? ParseInt(args, "--bots") : 0,
+        // --bot-skill F (with --bots): 1 plays to each bot's temper; more, fewer slips; less, more.
+        BotSkill = args.Contains("--bot-skill") ? ParseFloat(args, "--bot-skill") : 1f,
     }, error => new TitleGame { StartError = error }));
 
 HeroesNotIncluded.Audio.GameAudio.Close();

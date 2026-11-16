@@ -72,6 +72,7 @@ public sealed partial class BotPlayer
             _struck = false;
             _spoke = -1;
             _read = 0;
+            RollSlip();
         }
         switch (s)
         {
@@ -88,11 +89,20 @@ public sealed partial class BotPlayer
                 return (false, bloom.Temp < (bloom.Lo + bloom.SlagAt) * 0.5f, 0);
             case HeatSession heat:
                 // Pump, and draw it out once it glows the colour at the top of its working heat.
-                _act = heat.LooksReady;
+                // A slip: impatient, it's drawn out before it's there.
+                _act = heat.LooksReady || (_slip && heat.StepsDone > SimClock.TicksPerSecond * 3);
+                if (_act && !heat.LooksReady)
+                    Slipped();
                 return (false, true, 0);
             case QuenchSession q:
-                // Keep it under till the steam thins to a hiss.
-                return (false, !(q.Dunked && q.Steam < 0.2f), 0);
+            {
+                // Keep it under till the steam thins to a hiss. A slip: a hasty hand lifts it while
+                // it's still steaming hard; a careless one forgets it till it's cold.
+                var lift = _slip ? (Temper.Haste >= 0.5f ? q.Steam < 0.6f : false) : q.Steam < 0.2f;
+                if (_slip && q.Dunked)
+                    Slipped();
+                return (false, !(q.Dunked && lift), 0);
+            }
             case SharpenSession sh:
             {
                 _resting = _resting ? sh.Heat > 0.3f : sh.Heat > 0.8f;
@@ -112,6 +122,12 @@ public sealed partial class BotPlayer
                 _seasonBeat = (_seasonBeat + 1) % 30;
                 if (se.TastedAt == se.Pinches && se.Taste is "about right" or "a touch salty" or "far too salty")
                 {
+                    // A slip: one more pinch for luck, after it tasted right.
+                    if (_slip && se.Taste == "about right" && !_slipCounted)
+                    {
+                        Slipped();
+                        return (true, false, 0);
+                    }
                     _seasoned = true;
                     return (false, false, 0);
                 }
@@ -174,16 +190,28 @@ public sealed partial class BotPlayer
                     return (false, false, 0);
                 _lastRune = mx.Resolved;
                 var cue = mx.Cues[mx.Resolved];
+                // A slip: one cue muddled, the other way.
+                if (_slip && !_slipCounted && mx.Resolved == mx.Cues.Length / 2)
+                {
+                    Slipped();
+                    cue = cue == 'A' ? 'D' : 'A';
+                }
                 return (cue == 'F', false, cue == 'A' ? -1 : cue == 'D' ? 1 : 0);
             }
             case PourSession p:
                 // Stop where the settled head will bring it to the line.
-                _stopped |= p.Level + p.Foam * 0.73f >= p.Line;
+                // A slip: looking away, it pours on past the line, and over.
+                _stopped |= p.Level + p.Foam * 0.73f >= p.Line + (_slip ? 0.15f : 0f);
+                if (_slip && _stopped)
+                    Slipped();
                 return (false, !_stopped, 1);
             case HandsOnSession h:
                 return HandsOn(h);
             case BandageSession b:
-                return (false, b.Tension < (b.Low + b.High) / 2f, 0); // pull to the middle of the band, then let go
+                // Pull to the middle of the band, then let go; a slip pulls it past, too tight.
+                if (_slip && b.Tension > b.High)
+                    Slipped();
+                return (false, b.Tension < (_slip ? b.High + 0.08f : (b.Low + b.High) / 2f), 0);
             case CastSession c:
             {
                 // The book's runes for the mending it means, each on a beat; then let it go.
@@ -193,6 +221,12 @@ public sealed partial class BotPlayer
                     return (false, false, 0);
                 _lastRune = c.NextBeat;
                 _rune = _weave[c.Woven.Count];
+                // A slip: the wrong rune keyed, halfway through the weave.
+                if (_slip && !_slipCounted && c.Woven.Count == _weave.Count / 2)
+                {
+                    Slipped();
+                    _rune = (_rune + 1) % Math.Max(1, world().Defs.AllRunes.Count);
+                }
                 return (false, false, 0);
             }
             case MeditateSession m:

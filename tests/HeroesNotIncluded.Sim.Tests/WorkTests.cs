@@ -332,7 +332,7 @@ public class WorkTests
 
         var say = Assert.IsType<SayCommand>(Assert.Single(sent));
         Assert.Equal(me, say.Actor);
-        Assert.Equal("Morning, Near.", say.Text);
+        Assert.Contains("Near", say.Text); // in its own words (barks.json), but to them
     }
 
     [Fact]

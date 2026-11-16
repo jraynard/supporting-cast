@@ -18,8 +18,11 @@ public sealed partial class BotPlayer
     /// <summary>Game hours between changes to the same price.</summary>
     public const float RepriceHours = 1;
 
-    /// <summary>The most it will ask, as a multiple of the default price.</summary>
+    /// <summary>The most it will ask, as a multiple of the default price: a greedy bot asks up to this, a modest one two thirds of it.</summary>
     public const int MaxMarkup = 3;
+
+    /// <summary>The most this bot will ask, as a multiple of the default: its greed.</summary>
+    private float Markup => MaxMarkup * (0.67f + 0.33f * Temper.Greed);
 
     /// <summary>People in line it can see before it reckons business is good enough to charge more.</summary>
     public const int BusyLine = 3;
@@ -39,7 +42,7 @@ public sealed partial class BotPlayer
         var changed = new HashSet<ServiceKind>();
         void Set(PostedPrice p, int price)
         {
-            var max = sim.Defs.Service(p.Kind).DefaultPrice * MaxMarkup;
+            var max = (int)MathF.Round(sim.Defs.Service(p.Kind).DefaultPrice * Markup);
             price = Math.Clamp(price, 1, Math.Max(1, max));
             if (price == p.Price || changed.Contains(p.Kind)
                 || (_repriced.TryGetValue(p.Kind, out var at) && now - at < SimClock.HoursToTicks(RepriceHours)))
@@ -58,7 +61,13 @@ public sealed partial class BotPlayer
                 continue;
             foreach (var p in sign)
                 if (p.Offered && TooDear(sim.Defs.Service(p.Kind), p.Price, line.Text))
-                    Set(p, p.Price - 1);
+                {
+                    // A greedy one holds out against some of the grumbling, and says so.
+                    if (_slipRand.Chance(Temper.Greed * 0.6f))
+                        _toAnswer ??= ("too_dear_reply", line.Who);
+                    else
+                        Set(p, p.Price - 1);
+                }
         }
         var cells = ShopSystem.LineCells(sim, shop);
         var waiting = view.Creatures().Where(e => e != me && sim.World.Has<Adventurer>(e) && cells.Contains(sim.World.Get<Position>(e).Cell)).ToHashSet();

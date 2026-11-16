@@ -3,6 +3,7 @@ using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Environment;
+using HeroesNotIncluded.Sim.Speech;
 using HeroesNotIncluded.Sim.Systems;
 
 namespace HeroesNotIncluded.Sim.Bots;
@@ -102,6 +103,10 @@ public sealed partial class BotPlayer
             return PutBucketBack(sim, me, now, held);
         if (w.TryGet<Health>(me, out var h) && h.Injuries.Sum(i => i.Damage) >= SeeTheHealerFrom)
             return false; // hurt: let the others
+        // The nervy keep their heads down when it's the dragon; only the bravest go at a blaze close up.
+        var dragon = view.Creatures().Any(e => w.Get<Creature>(e) is { Dead: false, Def.Race: Race.Dragon });
+        if (Temper.Nerve < (dragon ? 0.4f : 0.15f))
+            return PutBucketBack(sim, me, now, held);
         var here = w.Get<Position>(me).Cell;
         var wells = Buckets.Wells(sim);
         if (wells.Count == 0)
@@ -114,6 +119,8 @@ public sealed partial class BotPlayer
             if (d >= ThrowFrom && d <= Buckets.MaxRange && !NearFire(sim, here))
             {
                 Doing = "throwing water";
+                if (Alarm($"douse:{now / SimClock.TicksPerHour}"))
+                    Say(sim, me, "douse", Volume.Shout, now);
                 _throwAt = at;
                 _swingSince = now;
                 Send(new BucketCommand(me, true, false, 0f, now));
@@ -337,7 +344,11 @@ public sealed partial class BotPlayer
         if (!w.Get<Carrying>(me).Item.IsNull)
             Send(new StowCommand(me));
         else if (AvatarSystem.InReach(here, cell))
+        {
+            if (Alarm($"carry:{hurt.Index}:{now / SimClock.TicksPerDay}"))
+                Say(sim, me, "carry", Volume.Say, now, who: w.Get<Creature>(hurt).Name);
             Use(me, cell);
+        }
         else
             Walk(sim, me, cell, now);
         return true;

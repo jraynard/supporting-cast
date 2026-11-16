@@ -20,7 +20,9 @@ public class BotHelpingTests
     private static readonly Guid Bea = new("00000000-0000-0000-0000-00000000000b");
 
     /// <summary>A dealt round with these players in these trades, bots for each.</summary>
-    private static (Simulation Sim, List<BotPlayer> Bots) Round(params (Guid Id, string Trade)[] seats)
+    private static (Simulation Sim, List<BotPlayer> Bots) Round(params (Guid Id, string Trade)[] seats) => Round(BotTemperament.Steady, seats);
+
+    private static (Simulation Sim, List<BotPlayer> Bots) Round(BotTemperament temper, params (Guid Id, string Trade)[] seats)
     {
         var sim = VillageRound.NewSimulation(LoadDefs(), 1234);
         sim.Presets.PresetMode = true;
@@ -31,7 +33,7 @@ public class BotHelpingTests
         {
             sim.ApplyNow(new JoinLobbyCommand(id, id.ToString()[^1..], default, []));
             sim.ApplyNow(new SetTradePreferencesCommand(id, [sim.Defs.Trade(trade)], []));
-            bots.Add(new BotPlayer(() => sim, id, c => sim.ApplyNow(c), 7 + (ulong)bots.Count));
+            bots.Add(new BotPlayer(() => sim, id, c => sim.ApplyNow(c), 7 + (ulong)bots.Count) { Temper = temper });
         }
         sim.ApplyNow(new StartRoundCommand());
         return (sim, bots);
@@ -100,6 +102,28 @@ public class BotHelpingTests
         var dragon = DragonDrill.Stage(sim, Players.CharacterOf(sim, Ana))!.Dragon;
         Assert.True(Run(sim, bots, () => sim.World.TryGet<Ai.Doused>(dragon, out var d) && d.Times > 0, SimClock.TicksPerHour * 4),
             $"never soaked it: {string.Join(" / ", bots.Select(b => b.Doing))}");
+    }
+
+    [Fact]
+    public void ANervyBotHidesFromTheDragonInsteadOfThrowingWater()
+    {
+        var nervy = BotTemperament.Steady with { Name = "Nervy", Nerve = 0.1f };
+        var (sim, bots) = Round(nervy, (Ana, "Blacksmith"));
+        var me = Players.CharacterOf(sim, Ana);
+        var dragon = DragonDrill.Stage(sim, me)!.Dragon;
+        Run(sim, bots, () => false, SimClock.TicksPerHour * 2);
+        Assert.False(sim.World.TryGet<Ai.Doused>(dragon, out var d) && d.Times > 0 && sim.RecentSplashes.Any(s => s.Thrower == me));
+        Assert.DoesNotContain("throwing water", bots[0].Doing);
+    }
+
+    [Fact]
+    public void ABotShoutsWhenItSeesAFire()
+    {
+        var (sim, bots) = Round((Ana, "Blacksmith"));
+        var me = Players.CharacterOf(sim, Ana);
+        FireDrill.Stage(sim, me);
+        Run(sim, bots, () => bots[0].Stats.Said > 0, SimClock.TicksPerHour / 4);
+        Assert.Contains(sim.Speech.Kept, l => l.Speaker == me && l.Volume == Speech.Volume.Shout);
     }
 
     [Fact]
@@ -176,6 +200,29 @@ public class BotHelpingTests
         sim.World.Get<Mind>(bea).Asleep = true;
         Assert.True(Run(sim, bots, () => sim.World.Has<Dream>(bea), SimClock.TicksPerHour / 4), $"no dream: {bots[0].Doing}");
         Assert.Contains("call me back", sim.World.Get<Dream>(bea).Text);
+    }
+
+    [Fact]
+    public void ACarelessBotSlipsBindingItselfWhereASteadyOneDoesNot()
+    {
+        int Slips(BotTemperament temper)
+        {
+            var slips = 0;
+            for (var go = 0; go < 4; go++)
+            {
+                var (sim, bots) = Round(temper, (Ana, "Blacksmith"));
+                var me = Players.CharacterOf(sim, Ana);
+                var body = sim.World.Get<Health>(me).Body;
+                HealthSystem.Damage(sim, me, 6, DamageType.Cut, body.PartIndex("LeftArm"));
+                sim.Store(sim.PackOf(me), sim.CreateItem(sim.Thing("Bandage"), 2));
+                var bot = new BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 11 + (ulong)go) { Temper = temper, Skill = 0.1f };
+                Run(sim, [bot], () => Bandaging.BandagesOn(sim, me) < 2 && !sim.World.Has<Work.WorkSession>(me), SimClock.TicksPerHour / 2);
+                slips += bot.Stats.Mistakes;
+            }
+            return slips;
+        }
+        Assert.Equal(0, Slips(BotTemperament.Steady));
+        Assert.True(Slips(BotTemperament.Steady with { Name = "Careless", Care = 0f }) > 0);
     }
 
     private static bool InABed(Simulation sim, Entity e)

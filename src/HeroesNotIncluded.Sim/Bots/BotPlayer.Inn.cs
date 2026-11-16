@@ -256,8 +256,9 @@ public sealed partial class BotPlayer
             Doing = $"writing a guest into room {free}";
             return AtStation(sim, me, board, now, b => Send(new Hospitality.SignInCommand(me, b, _task, free)));
         }
-        // A key to the room on them: the one off the board.
-        var mine = Tinkering.Locksmithing.Keys(sim, me).Where(k => Hospitality.InnRooms.RoomOfKey(sim, k) == signed).ToList();
+        // A key to the room on them: the one off the board (or the one it took down for this guest, right or not).
+        var mine = Tinkering.Locksmithing.Keys(sim, me)
+            .Where(k => Hospitality.InnRooms.RoomOfKey(sim, k) == signed || (_keyFor == _task && k == _keyTaken)).ToList();
         if (mine.Count >= 1)
         {
             Doing = $"handing over room {signed}'s key";
@@ -268,10 +269,24 @@ public sealed partial class BotPlayer
         Doing = $"taking room {signed}'s key down";
         return AtStation(sim, me, board, now, b =>
         {
-            if (view.InContainer(b).FirstOrDefault(k => Hospitality.InnRooms.RoomOfKey(sim, k) == signed, Entity.Null) is { IsNull: false } key)
-                Send(new TakeFromStorageCommand(me, key));
+            var hung = view.InContainer(b).ToList();
+            if (hung.FirstOrDefault(k => Hospitality.InnRooms.RoomOfKey(sim, k) == signed, Entity.Null) is not { IsNull: false } key)
+                return;
+            // A slip: the key off the hook beside it.
+            if (_slipRand.Chance(SlipChance)
+                && hung.FirstOrDefault(k => Math.Abs(Hospitality.InnRooms.RoomOfKey(sim, k) - signed) == 1, Entity.Null) is { IsNull: false } wrong)
+            {
+                key = wrong;
+                Stats.Mistakes++;
+            }
+            (_keyFor, _keyTaken) = (_task, key);
+            Send(new TakeFromStorageCommand(me, key));
         });
     }
+
+    // The key it took down for an order: handed over as the guest's, whichever room it's to.
+    private int _keyFor;
+    private Entity _keyTaken;
 
     /// <summary>The key board and its book as last read standing at it.</summary>
     private KnownRoomBoard? _roomBoard;

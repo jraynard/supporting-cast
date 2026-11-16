@@ -170,6 +170,7 @@ public sealed partial class BotPlayer
         if (holding.IsNull)
         {
             _noOreUntil = now + SimClock.TicksPerHour;
+            Need(sim, me, want.ThingDef.Label, now);
             return false;
         }
         Doing = $"fetching {what}";

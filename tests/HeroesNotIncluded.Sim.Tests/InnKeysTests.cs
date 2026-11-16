@@ -255,6 +255,31 @@ public class InnKeysTests
     }
 
     [Fact]
+    public void ACarelessBotKeeperCanTakeTheKeyOffTheNextHook()
+    {
+        var (sim, party, player) = Tavern("Innkeeper");
+        var careless = BotTemperament.Steady with { Name = "Careless", Care = 0f };
+        var bot = new BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 5) { Temper = careless, Skill = 0.1f };
+        var guest = party[0];
+        foreach (var a in party)
+            sim.World.Get<Adventurer>(a).LeaveTick = sim.Clock.Tick + SimClock.TicksPerDay * 3;
+        var order = AskForARoom(sim, guest);
+        sim.Speech.Say(sim, guest, order.Text, Speech.Volume.Shout);
+        for (var t = 0; t < SimClock.TicksPerHour * 3 && order.IsOpen; t++)
+        {
+            sim.Tick();
+            bot.Tick();
+        }
+        Assert.False(order.IsOpen, $"bot {bot.Doing}");
+        Assert.Equal(1, bot.Stats.Mistakes);
+        // Written into one room, holding the key to the one beside it.
+        var book = Perception.For(sim, Entity.Null).RoomBoard(InnRooms.Board(sim, Inn(sim)))!;
+        var written = Enumerable.Range(1, book.Rooms).First(r => book.Lines[r] is { } l && l.Guest == guest);
+        var held = Locksmithing.Keys(sim, guest).Select(k => InnRooms.RoomOfKey(sim, k)).Single(r => r > 0);
+        Assert.Equal(1, Math.Abs(held - written));
+    }
+
+    [Fact]
     public void AnAiKeeperLetsARoomByItsKey()
     {
         var (sim, party, _) = Tavern("Healer");
