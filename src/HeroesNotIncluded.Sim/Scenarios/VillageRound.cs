@@ -199,7 +199,7 @@ public static class VillageRound
             var at = w.Get<Thing>(mark).Cell;
             return parts.Where(e => w.Get<Thing>(e).Def.Name == def).OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, at)).FirstOrDefault(Entity.Null);
         }
-        if (Near(tavern, "Shelf", d => d.Building?.Cask != null) is { IsNull: false } bar)
+        if (Near(tavern, "BarShelf", d => d.Building?.Cask != null) is { IsNull: false } bar)
         {
             sim.Store(bar, sim.CreateItem(sim.Defs.Thing("Tankard"), Tankards));
             foreach (var (def, count) in BarStock)

@@ -1914,3 +1914,20 @@ player vanished on day two and it ended on day three.
   F as the clean one billows to the top lays it flat (off the top, it flops and is shaken out
   again); A and D in turn tuck the head and the foot. The scene follows each.
 - Bench hashes unchanged.
+
+### Workplaces by town role; the bar's stock and the bar itself (2026-11-15)
+- **Town roles** (`Defs/TownRole`): trades (`workplace`), services (`at`) and parties (`haunt`) name a
+  role (Tavern, Kitchen, Forge, Shrine, TinkerShop), and building defs list the roles they fill
+  (`roles`). Who works where is found by `ShopSystem.BuildingFor` / `WorkplaceOf`, the first standing
+  building with the role. Millbrook's inn is both the tavern and the kitchen, so it played the same
+  (bench hashes unchanged); a town with a cookhouse gives the cook a building of their own. The
+  carter, feasts, the rats, the bot's upkeep and the round's stocking go by role, not the inn's name.
+- **The bar's stock** (from the playtest): villagers ate the berries behind the bar. Its shelf is a
+  `BarShelf`, a `kept` piece: food on it is for mixing, never taken to eat, to feed someone or to
+  put in a pot (`Simulation.InKept`). Tankards are fetched from it as ever.
+- **Millbrook's bar** runs the length of the common room's back wall, two counters long, with room
+  behind for the cask, the bar shelf and the key board; the storeroom opens onto the keeper's side.
+  The serving hatch moved to the kitchen wall's left end, the long table to the front right, and
+  the bar's line runs along the counter toward the door.
+- Bench hashes move (the inn's layout): seed 1234 state `57F4CB524D2257FB`, full `4187CA2B619AA4D5`;
+  seed 99 state `C1BB56A18110F5C7`, full `38AAD123E2D4EA7D`; `--round` 1234 state `A5FCA9767F06D3FA`.

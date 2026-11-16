@@ -255,7 +255,7 @@ public class InnUpkeepTests
         Assert.Single(parts, p => BarWork.IsTub(sim, p));
         // Everything a named drink takes is on the shelf behind the bar, beside the tankards.
         var cask = parts.Single(p => sim.World.Get<Thing>(p).Def.Building?.Cask != null);
-        var barShelf = parts.Where(p => sim.World.Get<Thing>(p).Def.Name == "Shelf")
+        var barShelf = parts.Where(p => sim.World.Get<Thing>(p).Def.Name == "BarShelf")
             .OrderBy(p => Maps.Map.Distance(sim.World.Get<Thing>(p).Cell, sim.World.Get<Thing>(cask).Cell)).First();
         var onShelf = sim.StoredIn(barShelf).Select(e => sim.World.Get<Thing>(e).Def.Name).ToHashSet();
         foreach (var drink in sim.Defs.AllThings.Where(d => d.Mix is { House: false }))

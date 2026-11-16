@@ -1802,7 +1802,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             return AtStation(sim, me, Nearest(sim, me, "WashTub"), now, tub => send(new BarWorkCommand(me, tub)));
         }
         var at = w.Get<Thing>(usedAt).Cell;
-        var shelf = w.Query<Thing>().Where(e => w.Get<Thing>(e) is { Spawned: true, Def.Name: "Shelf" })
+        var shelf = w.Query<Thing>().Where(e => w.Get<Thing>(e) is { Spawned: true, Def.Name: "Shelf" or "BarShelf" })
             .OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, at)).FirstOrDefault(Entity.Null);
         if (!shelf.IsNull && sim.StoredIn(shelf).Any(e => w.Get<Thing>(e).Def.Name == clean))
         {

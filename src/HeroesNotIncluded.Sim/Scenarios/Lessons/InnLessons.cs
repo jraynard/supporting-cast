@@ -70,6 +70,6 @@ public static class InnLessons
     {
         if (!sim.World.TryGet<Thing>(cask, out var c) || c.Def.Building?.Cask is not { } props)
             return null;
-        return AvatarSystem.Supply(sim, me, d => d.Name == props.Into).IsNull ? new LessonStage("tankard", run.Station(sim, "Shelf", cask)) : null;
+        return AvatarSystem.Supply(sim, me, d => d.Name == props.Into).IsNull ? new LessonStage("tankard", run.Station(sim, "BarShelf", cask)) : null;
     }
 }

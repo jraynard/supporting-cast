@@ -130,7 +130,7 @@ public sealed class WashJob(Entity tub) : Job
         var w = sim.World;
         if (Buildings.Of(sim, near) is not { IsNull: false } inn)
             return Entity.Null;
-        var shelves = Buildings.Parts(sim, inn).Where(e => w.Get<Thing>(e).Def.Name == "Shelf" && !w.Has<Construction>(e)).ToList();
+        var shelves = Buildings.Parts(sim, inn).Where(e => w.Get<Thing>(e).Def.Name is "Shelf" or "BarShelf" && !w.Has<Construction>(e)).ToList();
         return shelves.FirstOrDefault(s => sim.StoredIn(s).Any(i => w.Get<Thing>(i).Def == def) && sim.HasRoomFor(s, def, null), Entity.Null)
             is { IsNull: false } keeps ? keeps : shelves.FirstOrDefault(s => sim.HasRoomFor(s, def, null), Entity.Null);
     }

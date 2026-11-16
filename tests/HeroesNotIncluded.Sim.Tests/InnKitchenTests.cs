@@ -358,7 +358,7 @@ public class InnKitchenTests
         Assert.Equal(front, sim.World.Get<Position>(diner).Cell);
 
         // The cook, in the kitchen, puts a bowl up: the work key at the hatch with it in hand.
-        var kitchenSide = InnCell(sim, 7, 3);
+        var kitchenSide = InnCell(sim, 2, 3);
         sim.World.Get<Position>(me) = Position.At(kitchenSide);
         sim.World.Get<Carrying>(me).Item = Stew(sim, me);
         var purse = Coin.Count(sim, me);
@@ -443,11 +443,11 @@ public class InnKitchenTests
     public void TheKitchenIsARoomOfItsOwnButHeardThroughTheHatch()
     {
         var (sim, _) = Tavern("Cook");
-        int3 kitchen = InnCell(sim, 7, 3), counter = InnCell(sim, 7, 5);
+        int3 kitchen = InnCell(sim, 2, 3), counter = InnCell(sim, 2, 5);
         Assert.NotEqual(sim.Rooms.RoomAt(kitchen), sim.Rooms.RoomAt(counter));
         Assert.Equal(Speech.Clarity.Clear, Speech.SpeechSystem.Hear(sim, counter, kitchen, Speech.Volume.Say));
         // Across the common room, away from the hatch, it's only heard through the wall.
-        Assert.Equal(Speech.Clarity.Muffled, Speech.SpeechSystem.Hear(sim, InnCell(sim, 1, 6), InnCell(sim, 1, 2), Speech.Volume.Say));
+        Assert.Equal(Speech.Clarity.Muffled, Speech.SpeechSystem.Hear(sim, InnCell(sim, 7, 6), InnCell(sim, 7, 2), Speech.Volume.Say));
     }
 
     [Fact]

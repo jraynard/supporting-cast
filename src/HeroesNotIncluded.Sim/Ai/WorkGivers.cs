@@ -248,9 +248,9 @@ public sealed class WorkGivers
         if (patient.IsNull)
             return null;
         var eater = w.Get<Creature>(patient).Def;
-        var meal = AiQueries.FindNearestItem(sim, pawn, (e, d) => d.EdibleBy(eater) && !Systems.FoodPoisoning.IsSpoiled(sim, e));
+        var meal = AiQueries.FindNearestItem(sim, pawn, (e, d) => d.EdibleBy(eater) && !Systems.FoodPoisoning.IsSpoiled(sim, e) && !sim.InKept(e));
         if (meal.IsNull)
-            meal = AiQueries.FindNearestItem(sim, pawn, (_, d) => d.EdibleBy(eater));
+            meal = AiQueries.FindNearestItem(sim, pawn, (e, d) => d.EdibleBy(eater) && !sim.InKept(e));
         return meal.IsNull ? null : new FeedPrisonerJob(patient, meal, byWarden: false);
     }
 
@@ -344,9 +344,9 @@ public sealed class WorkGivers
         var prisoner = NearestPrisoner(sim, pawn, (e, _) => sim.World.Get<Needs>(e).Get(food) < food.SeekBelow);
         if (prisoner.IsNull)
             return null;
-        var meal = AiQueries.FindNearestItem(sim, pawn, (_, d) => d.IsFood && !d.IsMeat);
+        var meal = AiQueries.FindNearestItem(sim, pawn, (e, d) => d.IsFood && !d.IsMeat && !sim.InKept(e));
         if (meal.IsNull)
-            meal = AiQueries.FindNearestItem(sim, pawn, (_, d) => d.IsFood);
+            meal = AiQueries.FindNearestItem(sim, pawn, (e, d) => d.IsFood && !sim.InKept(e));
         return meal.IsNull ? null : new FeedPrisonerJob(prisoner, meal);
     }
 

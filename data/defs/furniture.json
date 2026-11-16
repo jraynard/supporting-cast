@@ -423,6 +423,20 @@
       ]
     },
     {
+      // Behind the bar: the tankards, and what goes into a mix. Kept: the bar's stock, not food for whoever's hungry.
+      "name": "BarShelf", "label": "bar shelf", "category": "Building", "solid": true, "sprite": "buildings/shelf",
+      "description": "Plank shelves behind the bar. Holds 6 stacks: the clean tankards, and the spirits, honey, herbs and berries that go into a mix. The bar's stock: nobody else helps themselves.",
+      "maxHp": 80, "flammability": 1.0,
+      "building": { "work": 80, "storageStacks": 6, "kept": true, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "model": [
+        { "min": [0.08, 0.3, 0], "max": [0.92, 0.7, 0.06], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.08, 0.3, 0.42], "max": [0.92, 0.7, 0.48], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.08, 0.3, 0.84], "max": [0.92, 0.7, 0.9], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.08, 0.3, 0], "max": [0.14, 0.7, 0.9], "top": "props/log_side", "side": "props/log_side" },
+        { "min": [0.86, 0.3, 0], "max": [0.92, 0.7, 0.9], "top": "props/log_side", "side": "props/log_side" }
+      ]
+    },
+    {
       // A serving hatch, set in the wall between kitchen and common room (Shops.Hatch): meals are
       // ordered at it, and the cook puts dishes up on its counter for whoever's at the front to take.
       // Heights in model units: 1.54 is the wall's top once furniture is scaled to 0.65.

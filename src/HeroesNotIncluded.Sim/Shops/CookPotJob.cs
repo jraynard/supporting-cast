@@ -46,7 +46,7 @@ public sealed class CookPotJob(Entity pot) : Job
     /// </summary>
     private static Entity Ingredient(Simulation sim, Entity pawn, bool seasoner = false, bool grains = false) =>
         AiQueries.FindNearestItem(sim, pawn, (e, def) => Cooking.IsIngredient(def) && def.IsSeasoner == seasoner && def.Grain == grains && !FoodPoisoning.IsSpoiled(sim, e)
-            && (!seasoner || (sim.World.TryGet<Stored>(e, out var st) && sim.World.Get<Thing>(st.In).Def.Name == "Larder")), 80);
+            && !sim.InKept(e) && (!seasoner || (sim.World.TryGet<Stored>(e, out var st) && sim.World.Get<Thing>(st.In).Def.Name == "Larder")), 80);
 
     /// <summary>Early hours the AI cook puts oats on, for porridge at breakfast.</summary>
     public const float PorridgeFromHour = 4f, PorridgeUntilHour = 10f;

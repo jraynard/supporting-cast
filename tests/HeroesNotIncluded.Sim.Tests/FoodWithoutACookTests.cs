@@ -47,6 +47,27 @@ public class FoodWithoutACookTests
     }
 
     [Fact]
+    public void NobodyEatsTheBarsStockEvenStarving()
+    {
+        // From a playtest: villagers helped themselves to the berries behind the bar. The bar shelf's
+        // stock is for mixing (a "kept" piece): with nothing else in town to eat, it's still left be.
+        var (sim, _) = Round();
+        var w = sim.World;
+        var shelf = Buildings.Parts(sim, Inn(sim)).Single(p => w.Get<Thing>(p).Def.Name == "BarShelf");
+        int Berries() => sim.StoredIn(shelf).Where(e => w.Get<Thing>(e).Def.Name == "Berries").Sum(e => w.Get<Stack>(e).Count);
+        var before = Berries();
+        Assert.True(before > 0);
+        foreach (var e in w.Query<Stack>())
+            if (w.Get<Thing>(e).Def.Nutrition > 0 && !(w.TryGet<Stored>(e, out var st) && st.In == shelf))
+                sim.DestroyThing(e);
+        var food = sim.Defs.Need("Food").Index;
+        foreach (var e in sim.Creatures().Where(c => w.Has<Trade>(c)))
+            w.Get<Needs>(e).Values[food] = 0.02f;
+        sim.TickMany(SimClock.TicksPerHour * 3);
+        Assert.Equal(before, Berries());
+    }
+
+    [Fact]
     public void ABowlAlreadyUpIsPaidForAndInHandAtOnce()
     {
         var (sim, _) = Round();

@@ -414,6 +414,13 @@ public sealed class BuildingProps
     /// </summary>
     public bool StaffOnly { get; set; }
 
+    /// <summary>
+    /// What's kept in it is for the work done there, not a meal (the bar shelf's spirits, honey and
+    /// berries, for mixing): nobody's job takes food from it to eat or to put in a pot
+    /// (<see cref="Simulation.InKept"/>). The tankards beside them are fetched as ever, and anything can be taken by hand.
+    /// </summary>
+    public bool Kept { get; set; }
+
     /// <summary>A bread oven with its own fire: dough baked in it by smell (<c>Work.Baking</c>).</summary>
     public bool Oven { get; set; }
 

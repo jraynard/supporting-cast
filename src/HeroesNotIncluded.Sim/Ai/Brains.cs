@@ -397,9 +397,10 @@ public sealed class HumanBrain : IBrain
     private static Entity FindFood(Simulation sim, Entity pawn, CreatureDef def, bool allowMeat, bool fresh)
     {
         // Omnivores prefer a cooked meal, then plant food, and leave the meat for the carnivores (the dragon!).
+        // Never the bar's stock (Simulation.InKept): the berries behind the counter are for mixing.
         Func<Entity, ThingDef, bool> ok = fresh
-            ? (e, d) => !FoodPoisoning.IsSpoiled(sim, e)
-            : (_, _) => true;
+            ? (e, d) => !FoodPoisoning.IsSpoiled(sim, e) && !sim.InKept(e)
+            : (e, _) => !sim.InKept(e);
         var food = Entity.Null;
         if (def.EatsPlants && def.Race == Race.Human)
             food = AiQueries.FindNearestItem(sim, pawn, (e, d) => d.Cooked && d.EdibleBy(def) && ok(e, d));

@@ -13,7 +13,7 @@
     // under one roof at Millbrook's inn, apart where a town has a cookhouse. "serves": the services at the workplace a trade sees to (and prices on the sign).
     { "name": "Innkeeper", "label": "innkeeper", "description": "Keeps the bar and the rooms, hears everything said over the counter, and points adventuring parties at work, on whatever that's worth.",
       "workplace": "Tavern", "workPriorities": { "Cook": 1 }, "brokers": true, "serves": [ "Drink", "MixedDrink", "Lodging", "Quest" ], "holdsKeys": true,
-      "stations": [ "AleCask", "Shelf", "BarCounter", "KeyBoard" ],
+      "stations": [ "AleCask", "BarShelf", "BarCounter", "KeyBoard" ],
       "tips": [ "Thirsty adventurers come to the bar. The bubble over a head says what they're after; a ! means it's yours to pour.",
                 "Hold ~F~ at the ale cask to pour. ~AD~ tilts the tankard: less foam, more patience.",
                 "A drink poured: ~F~ at the counter hands it across to whoever's waited longest (your own orders first), or ~F~ at a customer for theirs.",

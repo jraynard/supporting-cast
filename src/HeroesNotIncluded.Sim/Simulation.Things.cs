@@ -544,6 +544,13 @@ public sealed partial class Simulation
     private Defs.BuildingDef? KeptStockOf(Entity container) =>
         World.TryGet<PartOf>(container, out var part) && World.TryGet<PresetBuilding>(part.Building, out var shop) && shop.Def.KeepsStock ? shop.Def : null;
 
+    /// <summary>
+    /// Stored in a piece whose stock is for the work done there, not for eating (<see cref="Defs.BuildingProps.Kept"/>:
+    /// the bar shelf's berries and honey): no job takes it to eat or to cook with.
+    /// </summary>
+    public bool InKept(Entity item) =>
+        World.TryGet<Stored>(item, out var s) && World.TryGet<Thing>(s.In, out var t) && t.Def.Building is { Kept: true };
+
     /// <summary>A shop's kept stock, and the taker works there (their trade's workplace): it's theirs to use.</summary>
     private bool KeptFor(Entity container, Entity taker) =>
         !taker.IsNull && KeptStockOf(container) is { } shop && World.TryGet<Trade>(taker, out var trade) && trade.Def.WorksAt(shop)
