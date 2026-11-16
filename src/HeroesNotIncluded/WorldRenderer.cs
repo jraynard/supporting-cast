@@ -1925,22 +1925,8 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             for (var k = 0; k < pieces.Count; k++)
                 Billboard(S(pieces[k].Sprite), top + along * ((k + 0.5f) / Math.Max(3, pieces.Count) * 2f - 0.5f), 0.38f, 0.38f, Rgba.White, level);
         }
-        // A pot whose fat has caught: flames over it (plain to anyone looking).
-        if (w.TryGet<Sim.Work.StewPot>(e, out var pot) && pot.FlareUntil > sim.Clock.Tick)
-        {
-            var size = (0.7f + 0.08f * MathF.Sin(_anim.Clock * 11f + e.Index)) * WorldScale.HeightOf(def);
-            Billboard(S("fx/fire"), floor + new float3(0, 0, 0.55f * WorldScale.HeightOf(def)), size * 0.8f, size, Rgba.Pack(1f, 0.92f, 0.8f, 0.95f), level | Quad.Unlit | Quad.Glow, translucent: true);
-        }
-        // Meat on a spit, over the rod: browner as it roasts (how it looks is plain to anyone).
-        if (def.Building is { Spit: true } && w.TryGet<Sim.Work.SpitRoast>(e, out var roast) && !roast.Empty)
-        {
-            var brown = 0f;
-            foreach (var b in roast.Brown)
-                brown += b;
-            var k = Math.Clamp(brown / roast.Brown.Length / 1.3f, 0f, 1f);
-            var crust = Rgba.Pack(1f - 0.45f * k, 1f - 0.6f * k, 1f - 0.75f * k);
-            Billboard(S(sim.Defs.Thing("Meat").Sprite), floor + new float3(0, 0, 0.36f * WorldScale.HeightOf(def)), 0.42f, 0.36f, crust, level);
-        }
+        DrawKitchenLife(sim, e, def, floor, thing, level);
+        DrawRoomLife(sim, e, def, floor, thing, level);
         if (def.Building is { Hatch: true })
         {
             var dishes = new List<ThingDef>();

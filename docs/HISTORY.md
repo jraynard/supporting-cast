@@ -1850,3 +1850,19 @@ player vanished on day two and it ended on day three.
   has the key to (`Locksmithing.KeyedDoor(..., player: true)`).
 - Bench hashes move: a behaviour change.
 
+### The kitchen and the inn, drawn (2026-11-15)
+- **Stations** (`tools/kitchen_art.py`): the spit, oven, prep table, butcher block, log basket and
+  smoking rack have icons of their own, and the rooms' key board, key box, washstand, chamber pot,
+  midden and lost property box too; linen, soiled linen and the slop bucket have item icons. Models
+  wear new faces: a brick oven with its mouth, a scored board, the block's end grain, wicker.
+- **Scenes** (`VillageGame.KitchenScenes`, from `ui/work/*` in `tools/work_ui_art.py`): stew, roast,
+  knead, bake, butcher, pluck, crimp, chop, pack, sniff, pour, mix, signing in and the slop pot each
+  have a sprite scene over their gauges, drawn from the session alone. `--work-scenes` shows them.
+- **The world**: steam off a pot by its surface, flames in a flare, the spit's joint the colour of its
+  turned-up crust, an oven's mouth aglow and smoking while there's bread in, all through the new
+  `PerceptionView.KitchenLook` (the renderer no longer reads `StewPot` or `SpitRoast`). Room keys hang
+  on their hooks, a slept-in bed has its sheets heaped on it, a used pot shows, water stands in a
+  filled basin, and ale runs from the cask while someone pours. `Rendering/KitchenLook` holds the
+  crust colours for both.
+- Not yet: the spoon, knife and quill in hand.
+

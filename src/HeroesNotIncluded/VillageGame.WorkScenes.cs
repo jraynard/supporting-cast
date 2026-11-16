@@ -607,5 +607,48 @@ public sealed partial class VillageGame
             ImGui.EndTable();
         }
         Panel.End();
+        DrawKitchenSceneGallery();
+    }
+
+    // Idle sessions to draw the kitchen's and the inn's scenes from: at rest, but the scenes' own motion runs.
+    private readonly WorkSession[] _galleryIdle =
+    [
+        new StewSession(), new RoastSession(), new KneadSession(), new BakeSession(), new ButcherSession(), new PluckSession(),
+        new CrimpSession(), new ChopSession(), new PackSession(), new SniffSession(), new PourSession(), new MixSession(),
+        new Sim.Hospitality.SignInSession { Room = 3 }, new Sim.Hospitality.SlopSession(),
+    ];
+
+    /// <summary>The kitchen's and the inn's scenes, from idle sessions: to look the art over.</summary>
+    private void DrawKitchenSceneGallery()
+    {
+        ImGui.SetNextWindowPos(Gui.S(900, 20), ImGuiCond.FirstUseEver);
+        Panel.Begin("Kitchen and inn scenes###kitchenscenes", ImGuiWindowFlags.AlwaysAutoResize);
+        if (ImGui.BeginTable("##kscenes"u8, 3, ImGuiTableFlags.None, default, 0f))
+        {
+            foreach (var s in _galleryIdle)
+            {
+                ImGui.TableNextColumn();
+                TextC(Theme.Dim, s.GetType().Name.Replace("Session", ""));
+                switch (s)
+                {
+                    case StewSession x: StewScene(x); break;
+                    case RoastSession x: RoastScene(x); break;
+                    case KneadSession x: KneadScene(x); break;
+                    case BakeSession x: BakeScene(x, SmellColour("bread baking")); break;
+                    case ButcherSession x: ButcherScene(x); break;
+                    case PluckSession x: PluckScene(x); break;
+                    case CrimpSession x: CrimpScene(x); break;
+                    case ChopSession x: ChopScene(x); break;
+                    case PackSession x: PackScene(x); break;
+                    case SniffSession x: SniffScene(x, SmellColour("sour")); break;
+                    case PourSession x: PourScene(x); break;
+                    case MixSession x: MixScene(x); break;
+                    case Sim.Hospitality.SignInSession x: SignInScene(x); break;
+                    case Sim.Hospitality.SlopSession x: SlopScene(x); break;
+                }
+            }
+            ImGui.EndTable();
+        }
+        Panel.End();
     }
 }

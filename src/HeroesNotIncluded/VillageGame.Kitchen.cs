@@ -25,6 +25,7 @@ public sealed partial class VillageGame
             BeginWork(s.Title, ("Space", "clap the lid on!"), ("F", "hold to stir"), ("A/D", "bank or feed the fire"), ("Esc", "leave it"));
         else
             BeginWork(s.Title, ("F", "hold to stir"), ("A/D", "bank or feed the fire"), ("Esc", "leave it"));
+        StewScene(s);
         TextC(Theme.Dim, s.Fatty ? "Keep it at a simmer, and stir before it catches. It's fatty: a hard boil spits." : "Keep it at a simmer, and stir before it catches.");
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 180);
@@ -162,6 +163,7 @@ public sealed partial class VillageGame
     private void DrawSniff(SniffSession s)
     {
         BeginWork(s.Title, ("Space", "sniff"), ("Esc", "that'll do"));
+        SniffScene(s, SmellColour(s.Smell));
         TextC(Theme.Dim, s.IsPot ? "A pot hides what's in it. At best you'll know something's off." : "Fresh, fine, on the turn, or off. A practised nose is surer.");
         ImGui.Spacing();
         if (s.Sniffs == 0)
@@ -177,19 +179,13 @@ public sealed partial class VillageGame
         EndWork();
     }
 
-    private static float4 CrustColour(Crust c) => c switch
-    {
-        Crust.Pale => new(0.86f, 0.70f, 0.66f, 1f),
-        Crust.Colouring => new(0.80f, 0.55f, 0.36f, 1f),
-        Crust.Golden => new(0.74f, 0.47f, 0.18f, 1f),
-        Crust.Dark => new(0.45f, 0.26f, 0.12f, 1f),
-        _ => new(0.16f, 0.12f, 0.10f, 1f),
-    };
+    private static float4 CrustColour(Crust c) => Rendering.KitchenLook.Crust(c);
 
     /// <summary>The roast from the end, its four sides round it, the fire under the one to it, flaring when the fat drips.</summary>
     private void DrawRoast(RoastSession s)
     {
         BeginWork(s.Title, ("F", "turn it"), ("Space", "lift it off"), ("Esc", "leave it on the spit"));
+        RoastScene(s);
         TextC(Theme.Dim, "Golden all round, and through. When the fat flares, turn it away.");
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 170);
@@ -241,6 +237,7 @@ public sealed partial class VillageGame
     private void DrawKnead(KneadSession s)
     {
         BeginWork(s.Title, ("A/D", "push from that side, on the beat"), ("Esc", "leave it"));
+        KneadScene(s);
         if (s.StartTick != _kneadSession)
         {
             _kneadSession = s.StartTick;
@@ -395,6 +392,7 @@ public sealed partial class VillageGame
     private void DrawBake(BakeSession s)
     {
         BeginWork(s.Title, ("Space", "take it out"), ("Esc", "leave it in"));
+        BakeScene(s, SmellColour(s.Smell));
         var now = Array.IndexOf(BakeSmells, s.Smell);
         if (now != _bakeStage)
         {
@@ -579,6 +577,7 @@ public sealed partial class VillageGame
     private void DrawButcher(ButcherSession s)
     {
         BeginWork(s.Title, ("F", "bring the cleaver down"), ("Esc", "leave it"));
+        ButcherScene(s);
         if (s.StartTick != _blockSession)
         {
             _blockSession = s.StartTick;
@@ -659,6 +658,7 @@ public sealed partial class VillageGame
     private void DrawPluck(PluckSession s)
     {
         BeginWork(s.Title, ("F", "hold to pull, let go to take the handful"), ("Esc", "leave it"));
+        PluckScene(s);
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 150);
         var min = ImGui.GetCursorScreenPos();
@@ -712,6 +712,7 @@ public sealed partial class VillageGame
     private void DrawCrimp(CrimpSession s)
     {
         BeginWork(s.Title, ("F", "crimp as the pinch reaches a mark"), ("Esc", "leave it"));
+        CrimpScene(s);
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 170);
         var min = ImGui.GetCursorScreenPos();
@@ -756,6 +757,7 @@ public sealed partial class VillageGame
     private void DrawChop(ChopSession s)
     {
         BeginWork(s.Title, ("F", "cut as the knife comes down"), ("Esc", "put the knife down"));
+        ChopScene(s);
         if (s.StartTick != _chopSession)
         {
             _chopSession = s.StartTick;
@@ -844,6 +846,7 @@ public sealed partial class VillageGame
             BeginWork(s.Title, ("F", "hold to draw the cord, let go to tie"), ("Esc", "leave it"));
         else
             BeginWork(s.Title, ("A/D", "fold the corner from its side, as the hand comes round"), ("Esc", "leave it"));
+        PackScene(s);
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 150);
         var min = ImGui.GetCursorScreenPos();

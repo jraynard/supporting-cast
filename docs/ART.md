@@ -599,7 +599,12 @@ and weapons in every metal tier, bars, coins, jewellery, ores, fuel, building st
 hides), `norse_animals.py` (deer, boar, hare), `norse_plants.py` (berry bushes, wild flax, emberroot) and
 `norse_ui.py` (the toolbar icons, `fx/fire`, `fx/ember`), `norse_roofs.py` (turf, thatch and shingle
 roofs) and `norse_fx.py` (the selection brackets, the rune-cut designation mark, the shield-shaped need bubble,
-the chatter bubble, the breath's core, the thrown water's `fx/droplet` and `fx/splash_ring`). These run after the older placeholder modules and replace their drawings of the same
+the chatter bubble, the breath's core, the thrown water's `fx/droplet` and `fx/splash_ring`), `norse_smithy.py` (the smithy's
+stations) and `kitchen_art.py` (the kitchen's stations and the inn rooms' furniture: their icons, the linen and slop
+bucket's item icons, and model faces such as `brick_dome`, `oven_mouth`, `cutting_board`, `block_top`, `wicker`, `glaze`,
+`muck` and the key board's `key_fobs`). The mini-games' scenes are drawn from `work_ui_art.py`'s `ui/work/*` props,
+the kitchen's (fire bed, spoon, firedogs, joint, oven front, block, pork side, bird, pie, board, knife, cloth) and the
+inn's (tankard, bottle, cup, the book's page, quill, chamber pot, jug, bucket) among them. These run after the older placeholder modules and replace their drawings of the same
 sprites; the old modules still draw the small white effects (`fx/zzz`, `fx/glint`)
 and the soft `fx/smoke` puff (also the contact shadow under everyone). They draw a silhouette as a
 mask, shade it from a blurred copy of itself lit from the top left, then add texture and detail by

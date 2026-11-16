@@ -277,6 +277,7 @@ public sealed partial class VillageGame
     private void DrawPour(PourSession s)
     {
         BeginWork(s.Title, ("F", "hold to pour"), ("A/D", "tilt: less foam, slower"), ("Esc", "stop"));
+        PourScene(s);
         TextC(Theme.Dim, "Stop at the line and let the head settle.");
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 200);

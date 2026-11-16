@@ -262,11 +262,10 @@ items into "Now" when a playtest says they matter.
 - Co-op: a ridden beast isn't predicted on its rider's screen (`FreeMovePredictor` is the
   character's), so it lags a round trip behind the keys.
 - The bucket's water drawn in flight.
-- Placeholder art in the kitchen: rations are a bolt of cloth, the prep table and butcher block a
-  table, the spit the butcher spot, roast slices and the side of pork a meat sprite; the oven
-  wears the fireplace, flour and oats the fiber, dough and the unbaked pie the clay, bread,
-  porridge and pie the meal; the fowl is hide, salt is lime, the log basket a crate, the smoking
-  rack the tool rack; rats are small hares.
+- Placeholder art in the kitchen's items: rations are a bolt of cloth, roast slices and the side
+  of pork a meat sprite, flour and oats the fiber, dough and the unbaked pie the clay, bread,
+  porridge and pie the meal; the fowl is hide, salt is lime; rats are small hares. Nobody yet
+  holds a spoon, knife or quill while they work (a held shape each in `tools/chibi_people.py`).
 - The folk (elves, dwarves, halflings) are only looks; they could have something of their own (an
   elf's keener sight at dusk, a dwarf's ease at the forge, a halfling's quiet step). Halflings
   could go barefoot (villagers' clothes come from the sim, so it isn't only a look).

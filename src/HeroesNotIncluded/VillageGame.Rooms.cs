@@ -70,87 +70,21 @@ public sealed partial class VillageGame
     // Which of several guests waiting for a room the book's buttons write in.
     private int _signFor;
 
-    /// <summary>Signing a guest in: the page, the strokes so far, a blot for each one off the beat, the quill as it comes round.</summary>
+    /// <summary>Signing a guest in: the book (<see cref="SignInScene"/>), how far it's got, the quill's beat.</summary>
     private void DrawSignIn(SignInSession s)
     {
         BeginWork(s.Title, ("F", "as the quill comes round"), ("Esc", "leave it"));
-        var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(360, 110);
-        var min = ImGui.GetCursorScreenPos();
-        ImGui.Dummy(in size);
-        var max = min + size;
-        dl.AddRectFilled(in min, in max, new ImColor8(226, 212, 178, 255), Gui.S(4), ImDrawFlags.None);
-        var ruled = new ImColor8(170, 150, 120, 140);
-        for (var i = 1; i < 4; i++)
-        {
-            var a = new float2(min.X + Gui.S(10), min.Y + size.Y * i / 4f);
-            var b = new float2(max.X - Gui.S(10), a.Y);
-            dl.AddLine(in a, in b, ruled, Gui.S(1));
-        }
-        // Today's line, half-way down: the strokes written so far, in ink.
-        var ink = new ImColor8(40, 34, 30, 255);
-        var lineY = min.Y + size.Y * 0.5f - Gui.S(6);
-        var x0 = min.X + Gui.S(18);
-        var span = (size.X - Gui.S(36)) / SignInSession.Strokes;
-        for (var i = 0; i < s.Written; i++)
-        {
-            var from = new float2(x0 + span * i, lineY);
-            for (var k = 0; k < 6; k++)
-            {
-                var p0 = from + new float2(span * 0.8f * k / 6f, MathF.Sin(k * 1.7f + i) * Gui.S(5));
-                var p1 = from + new float2(span * 0.8f * (k + 1) / 6f, MathF.Sin((k + 1) * 1.7f + i) * Gui.S(5));
-                dl.AddLine(in p0, in p1, ink, Gui.S(2));
-            }
-        }
-        for (var i = 0; i < s.Blots; i++)
-        {
-            var c = new float2(x0 + span * Math.Min(s.Written, SignInSession.Strokes - 1) + Gui.S(8 + 9 * (i % 4)), lineY + Gui.S(14 + 4 * (i % 2)));
-            dl.AddCircleFilled(in c, Gui.S(4 + i % 3), new ImColor8(30, 26, 40, 220), 12);
-        }
-        // The quill, sweeping over the stroke to come; bright when it's time.
-        var qx = x0 + span * Math.Min(s.Written, SignInSession.Strokes - 1) + span * 0.8f * s.Sweep;
-        var tip = new float2(qx, lineY + Gui.S(4));
-        var top = tip + new float2(Gui.S(18), -Gui.S(34));
-        dl.AddLine(in tip, in top, s.OnCue ? Theme.U8(Theme.Good) : new ImColor8(240, 236, 226, 255), Gui.S(3));
+        SignInScene(s);
         ImGui.Text($"Room {s.Room}: {s.Written} of {SignInSession.Strokes} written{(s.Blots > 0 ? $", {s.Blots} blot{(s.Blots == 1 ? "" : "s")}" : "")}.");
         Bar("", s.Sweep, s.OnCue ? Theme.Good : Theme.Dim);
         EndWork();
     }
 
-    /// <summary>Emptying a chamber pot into a bucket: the pot tipping over the bucket as the pour sways round, a splash on the floor for each one off the beat.</summary>
+    /// <summary>Emptying a chamber pot into a bucket (<see cref="SlopScene"/>), how far it's got, the sway's beat.</summary>
     private void DrawSlop(SlopSession s)
     {
         BeginWork(s.Title, ("F", "as the pour comes round"), ("Esc", "leave it"));
-        var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(300, 120);
-        var min = ImGui.GetCursorScreenPos();
-        ImGui.Dummy(in size);
-        var max = min + size;
-        dl.AddRectFilled(in min, in max, new ImColor8(70, 56, 44, 255), Gui.S(4), ImDrawFlags.None);
-        // The bucket on the floor.
-        var b0 = new float2(min.X + size.X * 0.55f, max.Y - Gui.S(50));
-        var b1 = new float2(min.X + size.X * 0.8f, max.Y - Gui.S(8));
-        dl.AddRectFilled(in b0, in b1, new ImColor8(120, 92, 60, 255), Gui.S(3), ImDrawFlags.None);
-        var fill = Math.Clamp(s.Poured / (float)SlopSession.Pours, 0f, 1f);
-        var f0 = new float2(b0.X + Gui.S(3), b1.Y - Gui.S(3) - (b1.Y - b0.Y - Gui.S(6)) * fill);
-        var f1 = new float2(b1.X - Gui.S(3), b1.Y - Gui.S(3));
-        if (fill > 0)
-            dl.AddRectFilled(in f0, in f1, new ImColor8(96, 88, 52, 255), Gui.S(2), ImDrawFlags.None);
-        // The pot, tilting further as the sway comes round.
-        var pivot = new float2(min.X + size.X * 0.42f, min.Y + Gui.S(40));
-        var tilt = s.Sweep * 1.1f;
-        float2 Rot(float x, float y) => pivot + new float2(x * MathF.Cos(tilt) - y * MathF.Sin(tilt), x * MathF.Sin(tilt) + y * MathF.Cos(tilt));
-        var p0 = Rot(-Gui.S(22), -Gui.S(16));
-        var p1 = Rot(Gui.S(22), -Gui.S(16));
-        var p2 = Rot(Gui.S(18), Gui.S(16));
-        var p3 = Rot(-Gui.S(18), Gui.S(16));
-        dl.AddQuadFilled(in p0, in p1, in p2, in p3, s.OnCue ? Theme.U8(Theme.Good) : new ImColor8(214, 204, 184, 255));
-        // Spills, on the boards.
-        for (var i = 0; i < s.Spills; i++)
-        {
-            var c = new float2(min.X + Gui.S(40 + 22 * i), max.Y - Gui.S(10));
-            dl.AddCircleFilled(in c, Gui.S(7), new ImColor8(96, 88, 52, 200), 12);
-        }
+        SlopScene(s);
         ImGui.Text($"{s.Poured} of {SlopSession.Pours} poured{(s.Spills > 0 ? $", {s.Spills} on the floor" : "")}.");
         Bar("", s.Sweep, s.OnCue ? Theme.Good : Theme.Dim);
         EndWork();

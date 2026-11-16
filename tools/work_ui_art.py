@@ -16,6 +16,21 @@ them at a whole-pixel scale and moves, turns and tints them from the session in 
   rasp                    the file a lock's pins are filed down with
   cask_end, spigot, mallet  the cask's head, its tap and the mallet that drives the tap home
 
+The kitchen's:
+  fire_bed, spoon, pot_lid   the logs and embers under the pot, the stirring spoon, the lid for a flare
+  firedogs, joint            the spit's uprights and rod; a joint side on (pale: tinted by its crust)
+  knead_board, dough         the floured board and the dough on it (pale: tinted as it comes together)
+  oven_front, peel           the oven's mouth in its brick dome, and the peel the loaves go in on
+  block_side, pork_side, cleaver  the butcher's block, a side of pork on it, the cleaver
+  bird, feather              a fowl to pluck (pale skin) and a feather off it
+  pie_top, chop_board, kitchen_knife  a pie's lid to crimp, the chopping board, the knife
+  cabbage, fish, meat        food on the board
+  cloth, cord                a ration's wrapping cloth and the cord it's tied with
+The inn's:
+  tankard, bottle, cup       a tankard side on, a bottle of what goes in a mix, the cup it's mixed in
+  ledger_page, quill         the inn's book open at today's page, and the quill
+  chamber_pot, jug, bucket   a room's pot, its jug, and the bucket the slops go in
+
 Writes only its own files. Run alone (``python3 tools/work_ui_art.py``) or from gen_placeholder_art.py.
 """
 import os
@@ -295,12 +310,290 @@ def mallet():
     return ink_outline(img)
 
 
+# ---------------------------------------------------------------- the kitchen
+
+EMBER = ramp((214, 96, 40), 5, dark=0.45, light=1.4)
+LOG = ramp((110, 74, 46), 5, dark=0.5, light=1.3)
+PALEC = [(v, v, v, 255) for v in (120, 160, 196, 226, 250)]       # tinted by the game
+BRICK = ramp((168, 84, 60), 5, dark=0.5, light=1.3)
+FLOUR = ramp((236, 228, 210), 4, main=2, dark=0.75, light=1.05)
+PORK = ramp((222, 150, 140), 5, dark=0.55, light=1.15)
+FAT = ramp((240, 226, 206), 3, main=1, dark=0.85, light=1.04)
+GREENS = ramp((108, 156, 72), 5, dark=0.5, light=1.35)
+FISHR = ramp((128, 160, 176), 5, dark=0.5, light=1.35)
+GLASS = ramp((96, 128, 96), 5, dark=0.5, light=1.6)
+CREAM = ramp((228, 220, 200), 4, main=2, dark=0.7, light=1.06)
+
+
+def fire_bed():
+    """Two logs crossed on a bed of embers: the fire under the pot or the spit (the game scales it with the flame)."""
+    img = canvas(44, 12)
+    part(img, ell([0, 4, 43, 11]), EMBER, radius=1.2, tex=lambda x, y: 0.8 if (x * 5 + y * 3) % 7 == 0 else 0)
+    part(img, stick((3, 8), (38, 4), 3.0), LOG, radius=0.6)
+    part(img, stick((6, 3), (40, 9), 3.0), LOG, radius=0.6)
+    return ink_outline(img)
+
+
+def spoon():
+    """A wooden stirring spoon, the bowl at the bottom (it's turned about its top)."""
+    img = canvas(8, 34)
+    part(img, stick((4, 0), (4, 26), 2.2, 2.6), OAK, radius=0.5)
+    part(img, ell([1, 24, 7, 33]), OAK, radius=0.8)
+    return ink_outline(img)
+
+
+def pot_lid():
+    """An iron lid side on, its knob on top."""
+    img = canvas(46, 9)
+    part(img, poly([(0, 8), (6, 3), (40, 3), (45, 8)]), BLACK_IRON, radius=0.8)
+    part(img, lambda d: d.rectangle([20, 0, 25, 3], fill=255), BLACK_IRON[1:], radius=0.3)
+    return ink_outline(img)
+
+
+def firedogs():
+    """The spit: two forked iron uprights and the rod across them, a crank at the right."""
+    img = canvas(76, 34)
+    for x in (6, 64):
+        part(img, poly([(x, 33), (x + 2, 8), (x - 2, 2), (x + 1, 2), (x + 3, 6), (x + 5, 2), (x + 8, 2), (x + 4, 8), (x + 6, 33)]), BLACK_IRON, radius=0.5)
+    part(img, lambda d: d.rectangle([2, 5, 72, 7], fill=255), IRONR[1:], radius=0.3)
+    part(img, poly([(72, 4), (75, 4), (75, 14), (72, 14)]), IRONR[1:], radius=0.3)
+    return ink_outline(img)
+
+
+def joint():
+    """A joint on the spit side on, pale so the game can tint it by its crust."""
+    img = canvas(44, 20)
+    part(img, ell([0, 1, 43, 19]), PALEC, radius=2.0, tex=lambda x, y: -0.4 if (x + y * 2) % 9 == 0 else 0)
+    return ink_outline(img)
+
+
+def knead_board():
+    img = canvas(72, 10)
+    part(img, lambda d: d.rectangle([0, 2, 71, 9], fill=255), OAK, radius=0.8, tex=lambda x, y: -0.5 if x % 12 == 0 else 0)
+    for x in range(4, 68, 3):
+        put(img, x, 2 + (x % 2), FLOUR[3])                                  # flour on it
+    return ink_outline(img)
+
+
+def dough():
+    """The dough, pale: the game tints it as it comes together."""
+    img = canvas(34, 16)
+    part(img, poly([(2, 15), (4, 6), (11, 1), (23, 1), (30, 6), (33, 15)]), PALEC, radius=1.6)
+    return ink_outline(img)
+
+
+def oven_front():
+    """The bread oven end on: a brick dome, the arched mouth (dark, for the glow) and its sill."""
+    img = canvas(64, 48)
+    part(img, poly([(2, 47), (2, 22), (10, 8), (24, 2), (40, 2), (54, 8), (62, 22), (62, 47)]), BRICK, radius=2.2,
+         tex=lambda x, y: -0.7 if y % 6 == 0 or (x + (y // 6) * 4) % 9 == 0 else 0)
+    part(img, poly([(18, 44), (18, 30), (24, 22), (40, 22), (46, 30), (46, 44)]), [(24, 16, 14, 255)] * 5, radius=0.2)
+    part(img, lambda d: d.rectangle([12, 43, 52, 47], fill=255), STONE, radius=0.6)
+    return ink_outline(img)
+
+
+def peel():
+    img = canvas(58, 10)
+    part(img, stick((0, 5), (38, 5), 2.2), OAK, radius=0.4)
+    part(img, poly([(36, 1), (57, 0), (57, 9), (36, 8)]), OAK, radius=0.8)
+    return ink_outline(img)
+
+
+def block_side():
+    """The butcher's block, a hooped stump, its scarred top."""
+    img = canvas(56, 28)
+    part(img, poly([(2, 4), (53, 4), (51, 27), (4, 27)]), LOG, radius=1.4, tex=lambda x, y: -0.6 if x % 7 == 0 else 0)
+    part(img, lambda d: d.rectangle([2, 2, 53, 6], fill=255), OAK, radius=0.6)
+    for y in (12, 22):
+        for x in range(3, 53):
+            put(img, x, y, IRONR[2])
+    return ink_outline(img)
+
+
+def pork_side():
+    """A side of pork, fat along the top: the game parts it at the joints."""
+    img = canvas(52, 16)
+    part(img, poly([(0, 6), (6, 1), (46, 1), (51, 6), (49, 15), (2, 15)]), PORK, radius=1.4)
+    for x in range(4, 48):
+        put(img, x, 3, FAT[2]); put(img, x, 4, FAT[1])
+    for x in (13, 25, 37):
+        for y in range(5, 14, 2):
+            put(img, x, y, PORK[1])                                         # where the joints part
+    return ink_outline(img)
+
+
+def cleaver():
+    img = canvas(32, 16)
+    part(img, stick((18, 8), (31, 9), 2.6), WALNUT, radius=0.4)
+    part(img, poly([(0, 0), (19, 0), (19, 15), (2, 13)]), [(v, v, v + 8, 255) for v in (110, 150, 186, 214, 240)], radius=0.8)
+    return ink_outline(img)
+
+
+def bird():
+    """A fowl to pluck, side on, pale skin (the game draws its feathers over it, thinning)."""
+    img = canvas(36, 24)
+    part(img, ell([2, 4, 30, 23]), CREAM, radius=1.6)
+    part(img, stick((28, 10), (35, 4), 2.6, 2.0), CREAM, radius=0.4)
+    for x in (12, 20):
+        part(img, stick((x, 21), (x, 23), 1.2), STRAW[1:], radius=0.2)
+    return ink_outline(img)
+
+
+def feather():
+    img = canvas(7, 12)
+    part(img, poly([(3, 0), (6, 5), (4, 11), (2, 11), (0, 5)]), LEATHER if False else ramp((150, 120, 90), 4), radius=0.5)
+    return ink_outline(img)
+
+
+def pie_top():
+    img = canvas(48, 14)
+    part(img, poly([(0, 13), (3, 6), (10, 2), (38, 2), (45, 6), (47, 13)]), ramp((214, 170, 110), 5, dark=0.55, light=1.2), radius=1.4)
+    for x in (16, 24, 32):
+        put(img, x, 6, (110, 70, 40, 255)); put(img, x + 1, 7, (110, 70, 40, 255))  # the slits
+    return ink_outline(img)
+
+
+def chop_board():
+    img = canvas(64, 8)
+    part(img, lambda d: d.rounded_rectangle([0, 1, 63, 7], radius=2, fill=255), OAK, radius=0.8)
+    return ink_outline(img)
+
+
+def kitchen_knife():
+    img = canvas(36, 8)
+    part(img, stick((22, 4), (35, 4), 2.4), WALNUT, radius=0.4)
+    part(img, poly([(0, 5), (4, 2), (23, 2), (23, 7), (2, 7)]), [(v, v, v + 6, 255) for v in (120, 160, 196, 226, 250)], radius=0.6)
+    return ink_outline(img)
+
+
+def cabbage():
+    img = canvas(18, 16)
+    part(img, ell([0, 1, 17, 15]), GREENS, radius=1.4, tex=lambda x, y: -0.6 if (x - 8) ** 2 + (y - 8) ** 2 in range(20, 26) else 0)
+    return ink_outline(img)
+
+
+def fish_side():
+    img = canvas(28, 12)
+    part(img, poly([(0, 6), (6, 1), (18, 1), (22, 5), (27, 1), (27, 11), (22, 7), (18, 11), (6, 11)]), FISHR, radius=1.0)
+    put(img, 5, 5, INKC)
+    return ink_outline(img)
+
+
+def meat():
+    img = canvas(20, 14)
+    part(img, poly([(0, 7), (4, 1), (16, 1), (19, 7), (16, 13), (4, 13)]), PORK, radius=1.2)
+    for x in range(3, 17):
+        put(img, x, 3, FAT[2])
+    return ink_outline(img)
+
+
+def cloth():
+    """A square of cloth laid out flat (the game folds its corners in)."""
+    img = canvas(32, 32)
+    part(img, lambda d: d.rectangle([0, 0, 31, 31], fill=255), LINEN, radius=1.0, tex=lambda x, y: -0.4 if (x + y) % 6 == 0 else 0)
+    return ink_outline(img)
+
+
+def cord():
+    img = canvas(34, 4)
+    part(img, lambda d: d.rectangle([0, 1, 33, 3], fill=255), STRAW, radius=0.3, tex=lambda x, y: -0.7 if x % 3 == 0 else 0)
+    return ink_outline(img)
+
+
+# ---------------------------------------------------------------- the inn
+
+def tankard():
+    """A tankard side on, its handle at the right (empty: the game draws the ale rising in it)."""
+    img = canvas(22, 22)
+    oak = ramp((150, 104, 60), 5, dark=0.45, light=1.3)
+    part(img, lambda d: d.rectangle([2, 2, 15, 21], fill=255), oak, radius=1.0, tex=lambda x, y: -0.6 if x % 4 == 0 else 0)
+    for y in (5, 17):
+        for x in range(2, 16):
+            put(img, x, y, IRONR[2])
+    part(img, poly([(15, 6), (21, 6), (21, 16), (15, 16), (15, 13), (18, 13), (18, 9), (15, 9)]), oak, radius=0.4)
+    return ink_outline(img)
+
+
+def bottle():
+    img = canvas(12, 30)
+    part(img, poly([(4, 0), (8, 0), (8, 8), (11, 12), (11, 29), (0, 29), (0, 12), (4, 8)]), GLASS, radius=1.0)
+    part(img, lambda d: d.rectangle([4, 0, 8, 2], fill=255), OAK, radius=0.2)
+    for y in range(13, 26):
+        put(img, 2, y, GLASS[4])
+    return ink_outline(img)
+
+
+def cup():
+    img = canvas(20, 16)
+    part(img, poly([(0, 0), (19, 0), (16, 15), (3, 15)]), ramp((190, 150, 90), 5, dark=0.5, light=1.3), radius=1.0)
+    return ink_outline(img)
+
+
+def ledger_page():
+    """The book open on the board: two pages, ruled, last nights' names in a faded hand."""
+    img = canvas(92, 44)
+    part(img, poly([(0, 4), (45, 0), (46, 43), (1, 40)]), CREAM, radius=1.2)
+    part(img, poly([(46, 0), (91, 4), (90, 40), (46, 43)]), CREAM, radius=1.2)
+    for y in range(9, 38, 6):
+        for x in range(4, 88):
+            if abs(x - 46) > 2:
+                put(img, x, y, CREAM[1])
+    for y in range(8, 30, 6):                                             # yesterday's lines, faded
+        for x in range(6, 30, 2):
+            put(img, x, y - 1, (120, 104, 90, 255))
+    return ink_outline(img)
+
+
+def quill():
+    img = canvas(32, 10)
+    part(img, poly([(0, 9), (10, 4), (31, 0), (24, 6), (8, 8)]), ramp((236, 232, 222), 4, main=2, dark=0.7, light=1.04), radius=0.6)
+    return ink_outline(img)
+
+
+def chamber_pot():
+    img = canvas(24, 16)
+    part(img, poly([(2, 3), (21, 3), (19, 15), (4, 15)]), CREAM, radius=1.2)
+    part(img, ell([1, 0, 22, 5]), CREAM[1:], radius=0.4)
+    part(img, poly([(21, 6), (24, 6), (24, 11), (20, 11)]), CREAM, radius=0.3)
+    for x in range(4, 20):
+        put(img, x, 9, WOAD[2])                                            # a blue band
+    return ink_outline(img)
+
+
+def jug():
+    img = canvas(18, 24)
+    part(img, poly([(4, 0), (12, 0), (14, 4), (16, 14), (13, 23), (3, 23), (1, 14), (3, 4)]), CLAY, radius=1.2)
+    part(img, poly([(0, 1), (5, 1), (4, 4)]), CLAY, radius=0.3)            # the lip
+    return ink_outline(img)
+
+
+def bucket():
+    img = canvas(24, 24)
+    oak = ramp((150, 104, 60), 5, dark=0.45, light=1.3)
+    part(img, poly([(1, 6), (22, 6), (19, 23), (4, 23)]), oak, radius=1.0, tex=lambda x, y: -0.6 if x % 5 == 0 else 0)
+    for y in (9, 19):
+        for x in range(2, 22):
+            put(img, x, y, IRONR[2])
+    for t in range(0, 23):                                                 # the bail
+        put(img, t, 6 - round(5 * (1 - ((t - 11) / 11) ** 2)), IRONR[2])
+    return ink_outline(img)
+
+
+INKC = (30, 22, 20, 255)
+
 SPRITES = (("whetstone", whetstone), ("blade", blade), ("stew_pot", stew_pot), ("salt_crock", salt_crock),
            ("bed", bed), ("sheet", sheet), ("hand", hand), ("forearm", forearm), ("wrap", wrap),
            ("grindwheel", grindwheel), ("grind_posts", grind_posts), ("grind_trough", grind_trough),
            ("strongbox", strongbox), ("probe", probe), ("curio", curio), ("loupe", loupe), ("patient", patient),
            ("stone", stone), ("spirit_level", spirit_level), ("rasp", rasp),
-           ("cask_end", cask_end), ("spigot", spigot), ("mallet", mallet))
+           ("cask_end", cask_end), ("spigot", spigot), ("mallet", mallet),
+           ("fire_bed", fire_bed), ("spoon", spoon), ("pot_lid", pot_lid), ("firedogs", firedogs), ("joint", joint),
+           ("knead_board", knead_board), ("dough", dough), ("oven_front", oven_front), ("peel", peel),
+           ("block_side", block_side), ("pork_side", pork_side), ("cleaver", cleaver), ("bird", bird), ("feather", feather),
+           ("pie_top", pie_top), ("chop_board", chop_board), ("kitchen_knife", kitchen_knife), ("cabbage", cabbage),
+           ("fish", fish_side), ("meat", meat), ("cloth", cloth), ("cord", cord),
+           ("tankard", tankard), ("bottle", bottle), ("cup", cup), ("ledger_page", ledger_page), ("quill", quill),
+           ("chamber_pot", chamber_pot), ("jug", jug), ("bucket", bucket))
 
 
 def generate():

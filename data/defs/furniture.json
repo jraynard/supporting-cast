@@ -140,20 +140,22 @@
     {
       // A spit beside the kitchen fire (Work.Roasting): meat on it, turned on cue, its crust read by
       // colour. It roasts only while the fire beside it burns.
-      "name": "Spit", "label": "spit", "category": "Building", "solid": true, "sprite": "buildings/butcher_spot",
+      "name": "Spit", "label": "spit", "category": "Building", "solid": true, "sprite": "buildings/spit",
       "description": "Two iron dogs and a crank by the fire. F with raw meat in hand puts it on to roast; F again turns it.",
       "maxHp": 120, "flammability": 0,
       "building": { "staffOnly": true, "work": 120, "surfaceHeight": 0.6, "spit": true, "cost": [ { "def": "IronBar", "count": 1 }, { "def": "Stone", "count": 2 } ] },
       "model": [
         { "min": [0.10, 0.42, 0], "max": [0.18, 0.58, 0.62], "top": "props/iron", "side": "props/iron" },
         { "min": [0.82, 0.42, 0], "max": [0.90, 0.58, 0.62], "top": "props/iron", "side": "props/iron" },
-        { "min": [0.10, 0.48, 0.52], "max": [0.90, 0.52, 0.56], "top": "props/iron", "side": "props/iron" }
+        { "min": [0.10, 0.48, 0.52], "max": [0.90, 0.52, 0.56], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.90, 0.48, 0.40], "max": [0.94, 0.52, 0.56], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.24, 0.34, 0], "max": [0.76, 0.66, 0.04], "top": "props/hearth_soot", "side": "props/iron" }
       ]
     },
     {
       // The kitchen's bread oven (Work.Baking): a domed brick oven with its own small fire, fed
       // with wood like any hearth. Bread's baked in it by smell.
-      "name": "Oven", "label": "bread oven", "category": "Building", "solid": true, "sprite": "buildings/fireplace",
+      "name": "Oven", "label": "bread oven", "category": "Building", "solid": true, "sprite": "buildings/oven",
       "description": "A domed brick oven with its own small fire. F with dough in hand puts it in to bake; after that, it's all in the smell.",
       "maxHp": 160, "flammability": 0,
       "building": { "staffOnly": true, "oven": true, "work": 150, "surfaceHeight": 0.7, "cost": [ { "def": "Stone", "count": 8 } ],
@@ -162,25 +164,25 @@
       // Its mouth on the front (+Y), the fire showing inside it.
       "fireAt": [0.5, 0.66, 0.42], "fireSize": 0.42,
       "model": [
-        { "min": [0.06, 0.06, 0], "max": [0.94, 0.94, 0.4], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.06, 0.06, 0], "max": [0.94, 0.94, 0.4], "top": "props/brick_dome", "side": "props/brick_dome" },
         { "min": [0.30, 0.50, 0.4], "max": [0.70, 0.90, 0.42], "top": "props/hearth_soot", "side": "props/hearth_soot" },
-        { "min": [0.10, 0.10, 0.4], "max": [0.90, 0.50, 1.0], "top": "props/stone_block", "side": "props/stone_block", "front": "props/hearth_soot" },
-        { "min": [0.10, 0.50, 0.4], "max": [0.30, 0.90, 1.0], "top": "props/stone_block", "side": "props/stone_block" },
-        { "min": [0.70, 0.50, 0.4], "max": [0.90, 0.90, 1.0], "top": "props/stone_block", "side": "props/stone_block" },
-        { "min": [0.30, 0.50, 0.76], "max": [0.70, 0.90, 1.0], "top": "props/stone_block", "side": "props/stone_block" },
-        { "min": [0.18, 0.18, 1.0], "max": [0.82, 0.82, 1.14], "top": "props/stone_block", "side": "props/stone_block" },
-        { "min": [0.40, 0.22, 1.14], "max": [0.60, 0.40, 1.36], "top": "props/hearth_soot", "side": "props/stone_block" }
+        { "min": [0.10, 0.10, 0.4], "max": [0.90, 0.50, 1.0], "top": "props/brick_dome", "side": "props/brick_dome", "front": "props/oven_mouth" },
+        { "min": [0.10, 0.50, 0.4], "max": [0.30, 0.90, 1.0], "top": "props/brick_dome", "side": "props/brick_dome" },
+        { "min": [0.70, 0.50, 0.4], "max": [0.90, 0.90, 1.0], "top": "props/brick_dome", "side": "props/brick_dome" },
+        { "min": [0.30, 0.50, 0.76], "max": [0.70, 0.90, 1.0], "top": "props/brick_dome", "side": "props/brick_dome" },
+        { "min": [0.18, 0.18, 1.0], "max": [0.82, 0.82, 1.14], "top": "props/brick_dome", "side": "props/brick_dome" },
+        { "min": [0.40, 0.22, 1.14], "max": [0.60, 0.40, 1.36], "top": "props/hearth_soot", "side": "props/brick_dome" }
       ]
     },
     {
       // The kitchen's prep table (Work.PackSession): rations for the road are packed on it, three
       // portions of food wrapped and tied.
-      "name": "PrepTable", "label": "prep table", "category": "Building", "solid": true, "sprite": "buildings/table",
+      "name": "PrepTable", "label": "prep table", "category": "Building", "solid": true, "sprite": "buildings/prep_table",
       "description": "A scrubbed board on trestles, a knife, a roll of cloth and a ball of cord. F here with raw food in hand chops it; with three portions of food on you, packs rations for the road.",
       "maxHp": 100, "flammability": 1.0,
       "building": { "staffOnly": true, "work": 100, "surfaceHeight": 0.66, "prepTable": true, "cost": [ { "def": "Wood", "count": 8 } ] },
       "model": [
-        { "min": [0.04, 0.12, 0.56], "max": [0.96, 0.88, 0.66], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.04, 0.12, 0.56], "max": [0.96, 0.88, 0.66], "top": "props/cutting_board", "side": "props/planks" },
         { "min": [0.10, 0.18, 0], "max": [0.18, 0.82, 0.56], "top": "props/planks", "side": "props/log_side" },
         { "min": [0.82, 0.18, 0], "max": [0.90, 0.82, 0.56], "top": "props/planks", "side": "props/log_side" },
         { "min": [0.14, 0.24, 0.66], "max": [0.46, 0.60, 0.70], "top": "props/linen", "side": "props/linen" },
@@ -190,13 +192,13 @@
     {
       // The kitchen's butcher block (Work.Butchery): a side of pork jointed on it with the cleaver, a
       // bird plucked. What the carter brings whole is dressed here.
-      "name": "ButcherBlock", "label": "butcher block", "category": "Building", "solid": true, "sprite": "buildings/table",
+      "name": "ButcherBlock", "label": "butcher block", "category": "Building", "solid": true, "sprite": "buildings/butcher_block",
       "description": "A thick end of oak scarred by the cleaver. F here with a side of pork joints it; with a bird, plucks it.",
       "maxHp": 120, "flammability": 0.8,
       "building": { "staffOnly": true, "work": 100, "surfaceHeight": 0.62, "butcherBlock": true, "cost": [ { "def": "Wood", "count": 10 } ] },
       "model": [
         { "min": [0.14, 0.14, 0], "max": [0.86, 0.86, 0.56], "top": "props/log_end", "side": "props/log_side" },
-        { "min": [0.10, 0.10, 0.56], "max": [0.90, 0.90, 0.62], "top": "props/log_end", "side": "props/timber_dark" },
+        { "min": [0.10, 0.10, 0.56], "max": [0.90, 0.90, 0.62], "top": "props/block_top", "side": "props/timber_dark" },
         { "min": [0.56, 0.20, 0.62], "max": [0.82, 0.30, 0.66], "top": "props/iron", "side": "props/iron" },
         { "min": [0.40, 0.21, 0.62], "max": [0.56, 0.29, 0.65], "top": "props/timber_dark", "side": "props/timber_dark" }
       ]
@@ -204,19 +206,19 @@
     {
       // The kitchen's log basket: wood for its fires, brought by the carter (Shops.InnSupplySystem).
       // Only the kitchen's cook feeds its fires, so in a rush it's a hand off the pot.
-      "name": "LogBasket", "label": "log basket", "category": "Building", "solid": true, "sprite": "buildings/crate",
+      "name": "LogBasket", "label": "log basket", "category": "Building", "solid": true, "sprite": "buildings/log_basket",
       "description": "A wicker basket of split logs for the kitchen's fires. Holds 2 stacks.",
       "maxHp": 60, "flammability": 1.0,
       "building": { "staffOnly": true, "work": 60, "storageStacks": 2, "surfaceHeight": 0.5, "cost": [ { "def": "Wood", "count": 4 } ] },
       "model": [
-        { "min": [0.14, 0.14, 0], "max": [0.86, 0.86, 0.42], "top": "props/woodpile_top", "side": "props/basket" },
+        { "min": [0.14, 0.14, 0], "max": [0.86, 0.86, 0.42], "top": "props/woodpile_top", "side": "props/wicker" },
         { "min": [0.22, 0.22, 0.42], "max": [0.78, 0.78, 0.56], "top": "props/woodpile_top", "side": "props/woodpile_side" }
       ]
     },
     {
       // A smoking rack (Work.Larder): raw meat or fish hung on it cures in the smoke while a fire
       // burns within two cells (the bread oven's, in the inn), and keeps for weeks after.
-      "name": "SmokingRack", "label": "smoking rack", "category": "Building", "solid": true, "sprite": "buildings/tool_rack",
+      "name": "SmokingRack", "label": "smoking rack", "category": "Building", "solid": true, "sprite": "buildings/smoking_rack",
       "description": "Rails and hooks by the oven's fire. Hang raw meat or fish on it and the smoke cures it in a few hours. Holds 2 stacks.",
       "maxHp": 80, "flammability": 0.8,
       "building": { "staffOnly": true, "work": 80, "storageStacks": 2, "smokingRack": true, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
@@ -321,12 +323,12 @@
     {
       // Behind the bar: a hook for each room's key upstairs (Hospitality.InnRooms). A key on its
       // hook is a room nobody's been given; the keeper takes it down and hands it to the guest.
-      "name": "KeyBoard", "label": "key board", "category": "Building", "solid": true, "sprite": "buildings/tool_rack",
+      "name": "KeyBoard", "label": "key board", "category": "Building", "solid": true, "sprite": "buildings/key_board",
       "description": "A board of hooks behind the bar, one for each room's key. F at it to take a key down or hang one up.",
       "maxHp": 60, "flammability": 0.8,
       "building": { "work": 60, "storageStacks": 8, "storageOnly": [ "Key" ], "cost": [ { "def": "Wood", "count": 3 } ] },
       "model": [
-        { "min": [0.1, 0.00, 0.7], "max": [0.9, 0.08, 1.4], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.1, 0.00, 0.7], "max": [0.9, 0.08, 1.4], "top": "props/planks", "side": "props/planks", "front": "props/key_fobs" },
         { "min": [0.2, 0.08, 1.2], "max": [0.26, 0.14, 1.26], "top": "props/iron", "side": "props/iron" },
         { "min": [0.47, 0.08, 1.2], "max": [0.53, 0.14, 1.26], "top": "props/iron", "side": "props/iron" },
         { "min": [0.74, 0.08, 1.2], "max": [0.8, 0.14, 1.26], "top": "props/iron", "side": "props/iron" },
@@ -338,41 +340,41 @@
     {
       // In each room upstairs, by the bed (Hospitality/InnRooms): used of a night, emptied into a
       // bucket in the morning (Hospitality.SlopSession) and tipped at the midden.
-      "name": "ChamberPot", "label": "chamber pot", "category": "Building", "sprite": "items/bucket",
+      "name": "ChamberPot", "label": "chamber pot", "category": "Building", "sprite": "buildings/chamber_pot",
       "description": "A glazed pot under the bed. Empty it into a bucket once its guest has gone, and tip that at the midden.",
       "maxHp": 30, "flammability": 0.0,
       "building": { "partOnly": true, "work": 20, "surfaceHeight": 0.18, "cost": [ { "def": "Clay", "count": 1 } ] },
       "model": [
-        { "min": [0.36, 0.36, 0], "max": [0.64, 0.64, 0.16], "top": "props/crock_side", "side": "props/crock_side" },
-        { "min": [0.33, 0.33, 0.14], "max": [0.67, 0.67, 0.18], "top": "props/crock_side", "side": "props/crock_side" }
+        { "min": [0.36, 0.36, 0], "max": [0.64, 0.64, 0.16], "top": "props/glaze", "side": "props/glaze" },
+        { "min": [0.33, 0.33, 0.14], "max": [0.67, 0.67, 0.18], "top": "props/glaze", "side": "props/glaze" }
       ]
     },
     {
       // A basin and jug on a stand in each room: the jug's filled from a bucket once its guest has gone.
-      "name": "Washstand", "label": "washstand", "category": "Building", "solid": true, "sprite": "buildings/wash_tub",
+      "name": "Washstand", "label": "washstand", "category": "Building", "solid": true, "sprite": "buildings/washstand",
       "description": "A basin and a jug on a little stand. Fill the jug from a bucket of water for the next guest.",
       "maxHp": 50, "flammability": 0.8,
       "building": { "partOnly": true, "work": 40, "surfaceHeight": 0.7, "cost": [ { "def": "Wood", "count": 2 } ] },
       "model": [
         { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.66], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.28, 0.28, 0.66], "max": [0.72, 0.72, 0.74], "top": "props/crock_side", "side": "props/crock_side" },
-        { "min": [0.58, 0.36, 0.74], "max": [0.7, 0.48, 0.96], "top": "props/crock_side", "side": "props/crock_side" }
+        { "min": [0.28, 0.28, 0.66], "max": [0.72, 0.72, 0.74], "top": "props/glaze", "side": "props/glaze" },
+        { "min": [0.58, 0.36, 0.74], "max": [0.7, 0.48, 0.96], "top": "props/glaze", "side": "props/glaze" }
       ]
     },
     {
       // Behind the inn: where the slops go (F with a bucket of slops).
-      "name": "Midden", "label": "midden", "category": "Building", "sprite": "buildings/butcher_spot",
+      "name": "Midden", "label": "midden", "category": "Building", "sprite": "buildings/midden",
       "description": "A heap of muck and ashes behind the inn. Tip the slops here, not in the street.",
       "maxHp": 200, "flammability": 0.0,
       "building": { "outdoor": true, "work": 40, "cost": [] },
       "model": [
-        { "min": [0.1, 0.1, 0], "max": [0.9, 0.9, 0.12], "top": "props/hearth_soot", "side": "props/hearth_soot" },
-        { "min": [0.25, 0.25, 0.12], "max": [0.75, 0.75, 0.24], "top": "props/hearth_soot", "side": "props/hearth_soot" }
+        { "min": [0.1, 0.1, 0], "max": [0.9, 0.9, 0.12], "top": "props/muck", "side": "props/muck" },
+        { "min": [0.25, 0.25, 0.12], "max": [0.75, 0.75, 0.24], "top": "props/muck", "side": "props/muck" }
       ]
     },
     {
       // Behind the bar: what guests left behind, kept for them (Hospitality/InnRooms).
-      "name": "LostProperty", "label": "lost property box", "category": "Building", "solid": true, "sprite": "buildings/chest",
+      "name": "LostProperty", "label": "lost property box", "category": "Building", "solid": true, "sprite": "buildings/lost_property",
       "description": "A box behind the bar for what guests leave in their rooms. Hand it back if they come asking.",
       "maxHp": 80, "flammability": 1.0,
       "building": { "work": 60, "storageStacks": 6, "surfaceHeight": 0.4, "cost": [ { "def": "Wood", "count": 4 } ] },
@@ -382,7 +384,7 @@
     },
     {
       // In the inn's storeroom: a spare key to each room upstairs, for when one's lost or locked in.
-      "name": "KeyBox", "label": "key box", "category": "Building", "solid": true, "sprite": "buildings/chest",
+      "name": "KeyBox", "label": "key box", "category": "Building", "solid": true, "sprite": "buildings/key_box",
       "description": "A small iron-bound box of spare room keys. Lose a room's key and the spare goes up on the board, or to the tinker to be copied.",
       "maxHp": 80, "flammability": 0.5,
       "building": { "work": 60, "storageStacks": 8, "storageOnly": [ "Key" ], "surfaceHeight": 0.32, "cost": [ { "def": "Wood", "count": 2 }, { "def": "IronBar", "count": 1 } ] },

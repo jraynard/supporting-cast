@@ -59,6 +59,13 @@ public readonly record struct KnownSpit(Entity Spit, int Pieces, Work.Crust[] Si
 /// <summary>An oven as anyone close knows it: whether there's bread in, and what it smells of (all a baker has to go on).</summary>
 public readonly record struct KnownOven(Entity Oven, int Loaves, string Smell, bool Lit, bool Pie = false);
 
+/// <summary>
+/// A kitchen station as it looks from across the room (<see cref="PerceptionView.KitchenLook"/>): how
+/// the pot's surface moves and whether it's flaring, the crust on the side of the spit's joint
+/// turned up, whether the fire's lit. Never what's in the pot, how done it is, or what's baking.
+/// </summary>
+public readonly record struct KnownKitchenLook(Work.Surface Surface, bool Flaring, bool Lit, Work.Crust? Crust, bool Baking);
+
 /// <summary>A shop's house dish as posted with its prices: its name and how it tastes (<see cref="Work.HouseDish"/>).</summary>
 public readonly record struct KnownHouseDish(string Name, string Tastes);
 
@@ -420,6 +427,37 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         for (var r = 1; r <= rooms; r++)
             lines[r] = Hospitality.Ledger.Latest(book, r);
         return new KnownRoomBoard(board, rooms, hung, lines, Hospitality.Lodging.Tonight(sim));
+    }
+
+    /// <summary>A pot, spit or oven in sight, as it looks (<see cref="KnownKitchenLook"/>); null if it's none of those or can't be seen.</summary>
+    public KnownKitchenLook? KitchenLook(Entity station)
+    {
+        var w = sim.World;
+        if (blind || !w.IsAlive(station) || !w.TryGet<Thing>(station, out var t) || (!Omniscient && !CanSeeCell(t.Cell)))
+            return null;
+        if (w.TryGet<Work.StewPot>(station, out var p))
+        {
+            var heat = p.Heat;
+            foreach (var e in w.Each<Work.WorkSession>())
+                if (w.Get<Work.WorkSession>(e) is Work.StewSession s && s.Pot == station)
+                    heat = s.Heat;
+            return new KnownKitchenLook(p.Empty ? Work.Surface.Still : Work.Cooking.SurfaceOf(heat), Work.Cooking.Flaring(sim, station), Work.Cooking.Lit(sim, station), null, false);
+        }
+        if (t.Def.Building is { Spit: true })
+        {
+            Work.Crust? crust = null;
+            if (w.TryGet<Work.SpitRoast>(station, out var r) && !r.Empty)
+                crust = Work.Roasting.CrustOf(r.Brown[r.Facing % r.Brown.Length]);
+            foreach (var e in w.Each<Work.WorkSession>())
+                if (w.Get<Work.WorkSession>(e) is Work.RoastSession s && s.Spit == station && !s.Lifted)
+                    crust = Work.Roasting.CrustOf(s.Brown[s.Facing % s.Brown.Length]);
+            return new KnownKitchenLook(Work.Surface.Still, false, Work.Cooking.Lit(sim, station), crust, false);
+        }
+        if (w.TryGet<Work.OvenLoad>(station, out var o))
+            return new KnownKitchenLook(Work.Surface.Still, false, Work.Baking.Lit(sim, station), null, o.Loaves > 0);
+        if (t.Def.Building is { Oven: true })
+            return new KnownKitchenLook(Work.Surface.Still, false, Work.Baking.Lit(sim, station), null, false);
+        return null;
     }
 
     public KnownStrongbox? Strongbox(Entity item)

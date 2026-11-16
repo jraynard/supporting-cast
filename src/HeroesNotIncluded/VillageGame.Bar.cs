@@ -336,6 +336,7 @@ public sealed partial class VillageGame
     private void DrawMix(MixSession s)
     {
         BeginWork(s.Title, ("F A D", "the cue as it reaches the mark"), ("Esc", "stop"));
+        MixScene(s);
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 90);
         var min = ImGui.GetCursorScreenPos();

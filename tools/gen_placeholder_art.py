@@ -26,6 +26,7 @@ import norse_stone
 import norse_glow
 import norse_buildings
 import norse_smithy
+import kitchen_art
 import inn_art
 import bucket_art
 import station_art
@@ -508,6 +509,7 @@ if __name__ == "__main__":
     norse_buildings.generate()   # walls, floors, doors, stairs, ladders, beds, model textures, furniture icons
     norse_smithy.generate()      # anvil, quench tub, grindstone, tool rack, fuel bin: model textures and icons
     inn_art.generate()           # the inn's upkeep: the mop, and the mess on the floor
+    kitchen_art.generate()       # the kitchen's stations and the rooms' furniture: icons, item icons, model faces
     bucket_art.generate()        # the well's buckets, empty and full
     station_art.generate()       # icons of their own for the inn's stations, the barrel, crate, barn, whetstone, pyre...
     healer_art.generate()        # the empath's rune glyphs
