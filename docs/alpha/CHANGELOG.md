@@ -4,6 +4,29 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+## 0.1.0-playtest.18
+
+Fixes from our first outside playtester: a menu on Esc, easier ways into buildings, and a tidier
+kitchen.
+
+**Menus**
+- Esc now opens the game menu (save, load, settings, controls, back to the title) when there's
+  nothing else for it to close. Press it again to close the menu. It also backs out of settings,
+  saves, credits and the recipe book.
+- The trade descriptions on "Which trade will you take?" no longer run off the edge. Longer ones
+  wrap, and the highlight grows to hold them.
+
+**Getting in and out**
+- Clicking a building's roof walks you inside, through its door. Before, only a click on the
+  doorway itself did.
+- Standing at a building's door keeps it open to view, so you can see the doorway and the room
+  as you come and go. The healer's shrine, whose door faces away from the camera, was the worst.
+
+**The kitchen**
+- The pot, spit, oven, prep table, butcher block and bar now share one card at the bottom of the
+  screen, instead of each opening a panel that stacked up over the kitchen. It shows the station
+  you're facing, with a tab for each other one in reach.
+
 ## 0.1.0-playtest.17
 
 Reedmere rebuilt as a lake town, rare companies on the road, and Millbrook's inn with windows and a
