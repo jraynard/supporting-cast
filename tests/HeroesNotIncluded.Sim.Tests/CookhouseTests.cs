@@ -53,7 +53,7 @@ public class CookhouseTests
     public void EachSignShowsItsOwnServices()
     {
         var (sim, inn, cookhouse) = Town();
-        Assert.Equal([ServiceKind.Meal], ShopPrices.Board(sim, cookhouse).Select(p => p.Kind));
+        Assert.Equal([ServiceKind.Meal, ServiceKind.Provisions], ShopPrices.Board(sim, cookhouse).Select(p => p.Kind)); // and the inn's hampers
         Assert.Equal([ServiceKind.Drink, ServiceKind.MixedDrink, ServiceKind.Quest, ServiceKind.Lodging], ShopPrices.Board(sim, inn).Select(p => p.Kind));
         Assert.False(Hatch.Of(sim, cookhouse).IsNull, "meals go over the cookhouse's hatch");
         Assert.True(Hatch.Of(sim, inn).IsNull, "the inn has no kitchen to serve from");

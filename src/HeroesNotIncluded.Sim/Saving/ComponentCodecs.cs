@@ -833,6 +833,11 @@ internal static class ComponentCodecs
                 traits.List.Add(r.Def<TraitDef>());
             return traits;
         }),
+        Codec("Hamper", (w, h) =>
+        {
+            w.Entity(h.Maker);
+            w.Bool(h.Loose);
+        }, r => new Hospitality.Hamper { Maker = r.Entity(), Loose = r.Bool() }),
     ];
 
     private static readonly Dictionary<string, ComponentCodec> ByName = All.ToDictionary(c => c.Name);

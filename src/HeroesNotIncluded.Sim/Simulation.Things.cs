@@ -534,13 +534,13 @@ public sealed partial class Simulation
     /// <summary>
     /// A container whose contents aren't up for grabs: one someone carries (a pack, or a creature's
     /// own tool belt), the muster rack outside a call to arms, a serving hatch (what's put up there is for the customer at it), the
-    /// festival's show table, a cottage's bread crock, a
+    /// inn's warming shelf (the lodgers' board), the festival's show table, a cottage's bread crock, a
     /// trade's stash (<see cref="Militia.Stashes"/>), or one in a
     /// shop that keeps its stock (<see cref="Defs.BuildingDef.KeepsStock"/>: it's taken by hand).
     /// </summary>
     private bool OnSomeone(Entity container) => IsPack(container) || World.Has<Creature>(container)
         || (!Militia.Mustering && Sim.Militia.MilitiaSystem.IsRack(this, container)) // the town's arms, for the muster only
-        || (World.TryGet<Thing>(container, out var t) && (t.Def.Building is { Hatch: true } or { Stash: true } or { Show: true } // a stash: its trade's, by hand; the show table's, on show
+        || (World.TryGet<Thing>(container, out var t) && (t.Def.Building is { Hatch: true } or { Stash: true } or { Show: true } or { Warming: true } // a stash: its trade's, by hand; the show table's, on show
             || t.Def.Name == HeroesNotIncluded.Sim.Systems.Homes.Crock)) // a cottage's bread crock: eaten from at home, by hand
         || KeptStockOf(container) != null;
 

@@ -245,20 +245,59 @@ public sealed class InnSupplySystem : ISimSystem, Saving.ISaveState
             sim.Messages.Add(MessageKind.Warning, $"The carter didn't come: no kegs or food for {where} today.", anchor);
             return;
         }
-        if (sim.Repairs.RoadCut)
+        // With a span down the road's cut. Where the inn and the kitchen share a roof (Millbrook's,
+        // over the river) that's the end of it. Where they stand apart the carter calls at the kitchen
+        // first, if a cart can still get there, and at the inn only if it's still joined to the kitchen:
+        // a lake town's cookhouse on the shore gets its food while its inn out at the landing waits.
+        bool toInn, toKitchen;
+        if (!sim.Repairs.RoadCut)
+            (toInn, toKitchen) = (!inn.IsNull, !kitchen.IsNull);
+        else if (inn.IsNull || kitchen.IsNull || inn == kitchen)
+            (toInn, toKitchen) = (false, false);
+        else
         {
-            sim.Messages.Add(MessageKind.Warning, $"The carter couldn't get over the river: no kegs or food for {where} today.", anchor);
+            var kitchenAt = Inside(sim, kitchen);
+            toKitchen = kitchenAt is { } k && Enumerable.Range(0, 4).Any(side => Combat.Raids.EdgeEntry(sim, side, k) != null);
+            toInn = toKitchen && Inside(sim, inn) is { } i && sim.Regions.CanReach(kitchenAt!.Value, i, PathEnd.OnTile);
+        }
+        if (!toInn && !toKitchen)
+        {
+            sim.Messages.Add(MessageKind.Warning, $"The carter couldn't get through, the {Cut(sim)} down: no kegs or food for {where} today.", anchor);
             return;
         }
-        if (!inn.IsNull)
+        if (toInn)
             Deliver(sim, inn, "Chest", Kegs);
-        if (!kitchen.IsNull)
+        if (toKitchen)
         {
             Deliver(sim, kitchen, "Larder", Food);
             Deliver(sim, kitchen, "LogBasket", Logs);
         }
-        sim.Messages.Add(MessageKind.Info, $"The carter's been by {where}: kegs and bar stock for the storeroom, food for the larder and wood for the kitchen.", anchor);
+        if (toInn && (toKitchen || kitchen.IsNull))
+            sim.Messages.Add(MessageKind.Info, $"The carter's been by {where}: kegs and bar stock for the storeroom, food for the larder and wood for the kitchen.", anchor);
+        else
+        {
+            var reached = toInn ? inn : kitchen;
+            var missed = toInn ? kitchen : inn;
+            sim.Messages.Add(MessageKind.Warning,
+                $"The carter's been by the {sim.World.Get<PresetBuilding>(reached).Def.Label}, but couldn't get to the {sim.World.Get<PresetBuilding>(missed).Def.Label}, the {Cut(sim)} down.",
+                sim.World.Get<PresetBuilding>(missed).Anchor);
+        }
     }
+
+    /// <summary>Somewhere to stand inside a building, by its storeroom chest or larder (where the carter unloads); null if none.</summary>
+    private static int3? Inside(Simulation sim, Entity building)
+    {
+        var w = sim.World;
+        var box = Buildings.Parts(sim, building).FirstOrDefault(e => w.Get<Thing>(e).Def.Name is "Chest" or "Larder" && !w.Has<Construction>(e), Entity.Null);
+        var at = box.IsNull ? w.Get<PresetBuilding>(building).Anchor : w.Get<Thing>(box).Cell;
+        foreach (var c in sim.SpiralFrom(at, 3))
+            if (sim.Map.InBounds(c) && sim.Map.Passable(c) && sim.Map.Standable(sim.Map.Idx(c)) && Buildings.At(sim, c) == building)
+                return c;
+        return null;
+    }
+
+    /// <summary>What's down, for the carter's message: "bridge", "causeway".</summary>
+    private static string Cut(Simulation sim) => sim.Repairs.Breaches.Count > 0 ? sim.Repairs.Breaches[0].Label : "road";
 
     /// <summary>Into the first of the inn's containers of a kind, else on the floor beside it.</summary>
     public static void Deliver(Simulation sim, Entity inn, string into, (string Def, int Count)[] goods)

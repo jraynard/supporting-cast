@@ -277,6 +277,17 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                     default:
                         return (false, false, mb.StepsDone % 4 < 2 ? mb.NextSide : 0); // a tap at the corner that's next
                 }
+            case PackSession pack:
+            {
+                // Each corner on its cue, from its side; then draw the cord to the middle of snug and let go.
+                if (!pack.Wrapped)
+                {
+                    var fold = pack.OnCue && !_struck;
+                    _struck = pack.OnCue;
+                    return (false, false, fold ? pack.NextSide : 0);
+                }
+                return (false, pack.Tension < (PackSession.SoundAt + PackSession.BitingAt) / 2f, 0);
+            }
             case TapSession tap:
             {
                 var press = tap.OnTheTap && !_struck;
@@ -663,7 +674,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         if (!festival)
             GoToWork(sim, me);
         Price(sim, me, view, now);
-        if (Mend(sim, me, view))
+        if (Mend(sim, me, view) || CarryHamper(sim, me, now))
             return;
         if (_task != 0 && (now - _taskSince > TaskTimeoutTicks || !Work(sim, me, view, now)))
             _task = 0;
@@ -680,8 +691,128 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             return;
         if (_task == 0 && Smith(sim, me, view, now))
             return;
+        if (_task == 0 && SendForHamper(sim, me, now))
+            return;
         if (_task == 0 && !Upkeep(sim, me, view, now))
             Chat(view, me, now);
+    }
+
+    // ---------------- A lake town's inn, supplied from the cookhouse ----------------
+
+    /// <summary>The inn's keeper with the cookhouse's hamper in their arms: to the warming shelf with it, and unpack it.</summary>
+    private bool CarryHamper(Simulation sim, Entity me, long now)
+    {
+        if (!Hospitality.Provisions.KeepsInn(sim, me) || !Hospitality.Provisions.IsHamper(sim, sim.World.Get<Carrying>(me).Item)
+            || Hospitality.Provisions.Shelf(sim) is not { IsNull: false } shelf)
+            return false;
+        Doing = "carrying the hamper back to the inn";
+        return AtStation(sim, me, shelf, now, s => send(new BarWorkCommand(me, s)));
+    }
+
+    /// <summary>
+    /// The inn's keeper, the warming shelf running low: over to the cookhouse hatch to order a hamper,
+    /// then in its line till it comes up (it's handed over at the front).
+    /// </summary>
+    private bool SendForHamper(Simulation sim, Entity me, long now)
+    {
+        var w = sim.World;
+        if (!Hospitality.Provisions.KeepsInn(sim, me))
+            return false;
+        var cookhouse = Hospitality.Provisions.Cookhouse(sim);
+        var hatch = Hatch.Of(sim, cookhouse);
+        if (hatch.IsNull)
+            return false;
+        if (Hospitality.Provisions.Ordered(sim, me) != null)
+        {
+            Doing = "waiting at the cookhouse for the hamper";
+            if (sim.Shops.PlaceOf(sim, me) is { Cell: { } place } && w.Get<Position>(me).Cell != place)
+                Walk(sim, me, place, now);
+            return true;
+        }
+        if (Hospitality.Provisions.OnShelf(sim) >= Hospitality.Provisions.ShelfLow || ShopSystem.SmallHours(sim)
+            || Hospitality.Provisions.Refusal(sim, me) != null)
+            return false;
+        Doing = "off to the cookhouse for a hamper";
+        if (!w.Get<Carrying>(me).Item.IsNull)
+        {
+            send(new StowCommand(me));
+            return true;
+        }
+        return AtStation(sim, me, hatch, now, at =>
+        {
+            send(new AvatarWorkCommand(me, true, w.Get<Thing>(at).Cell));
+            send(new AvatarWorkCommand(me, false));
+        });
+    }
+
+    /// <summary>A lodger's board: a dish off the warming shelf, handed across to them.</summary>
+    private bool Board(Simulation sim, Entity me, PerceptionView view, Entity lodger, long now)
+    {
+        var w = sim.World;
+        var dish = BarService.DishOn(sim, me);
+        if (!dish.IsNull)
+        {
+            Doing = "serving a lodger's board";
+            if (Reach(sim, me, lodger, now))
+                send(new GiveCommand(me, lodger, dish, 1));
+            return true;
+        }
+        if (Hospitality.Provisions.Shelf(sim) is not { IsNull: false } shelf
+            || Hospitality.Provisions.DishFor(sim, shelf, lodger) is not { IsNull: false } on)
+            return false; // the shelf's bare: nothing to give them
+        Doing = "taking a lodger's board off the shelf";
+        if (!w.Get<Carrying>(me).Item.IsNull)
+        {
+            send(new StowCommand(me));
+            return true;
+        }
+        return AtStation(sim, me, shelf, now, _ => send(new TakeFromStorageCommand(me, on, 1)));
+    }
+
+    /// <summary>
+    /// The cook, a hamper on order from the inn: bowls ladled from the pot (a clean bowl for each),
+    /// packed at the prep table, and put up on the hatch. False once it's up (the keeper collects it),
+    /// or when the pot has nothing to give (its meals come first).
+    /// </summary>
+    private bool PackHamper(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        var w = sim.World;
+        var shop = MyShop(sim, me) ?? Entity.Null;
+        var hatch = Hatch.Of(sim, shop);
+        if (hatch.IsNull || Hospitality.Provisions.HamperUp(sim))
+            return false;
+        var held = w.Get<Carrying>(me).Item;
+        if (Hospitality.Provisions.IsHamper(sim, held))
+        {
+            Doing = "putting the inn's hamper up on the hatch";
+            return AtStation(sim, me, hatch, now, at =>
+            {
+                send(new AvatarWorkCommand(me, true, w.Get<Thing>(at).Cell));
+                send(new AvatarWorkCommand(me, false));
+            });
+        }
+        var dishes = Hospitality.Provisions.DishesOn(sim, me).Sum(d => w.Get<Stack>(d).Count);
+        var pot = Nearest(sim, me, "StewPot");
+        var seen = pot.IsNull ? null : view.Pot(pot);
+        var ladling = seen is { Cooked: true, Empty: false, Bowls: > 0 } && dishes < Hospitality.Provisions.Holds;
+        if (!ladling)
+        {
+            if (dishes == 0)
+                return false;
+            Doing = "packing a hamper for the inn";
+            var table = Buildings.Parts(sim, shop).FirstOrDefault(p => Rations.IsPrepTable(sim, p), Entity.Null);
+            return AtStation(sim, me, table, now, t => send(new PrepCommand(me, t, PrepStep.Hamper)));
+        }
+        var bowl = Cooking.BowlOf(sim, pot);
+        if (Carried(sim, me, bowl).IsNull)
+            return Crockery(sim, me, view, now, bowl, pot);
+        if (!held.IsNull && w.Get<Thing>(held).Def.Name != bowl)
+        {
+            send(new StowCommand(me)); // the last bowl into the pack: a free hand for the ladle
+            return true;
+        }
+        Doing = "ladling bowls for the inn's hamper";
+        return AtStation(sim, me, pot, now, at => send(new PotCommand(me, at, PotStep.Ladle)));
     }
 
     private bool _laidOut;
@@ -1075,8 +1206,8 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     private static ServiceKind[] KindsFor(TradeDef trade) => trade.Name switch
     {
         "Blacksmith" => [ServiceKind.Repair],
-        "Innkeeper" => [ServiceKind.Drink, ServiceKind.MixedDrink, ServiceKind.Lodging, ServiceKind.Quest], // the bar, the rooms and the quest board
-        "Cook" => [ServiceKind.Meal], // the pot
+        "Innkeeper" => [ServiceKind.Drink, ServiceKind.MixedDrink, ServiceKind.Lodging, ServiceKind.Quest, ServiceKind.Meal], // the bar, the rooms, the quest board, a lodger's board
+        "Cook" => [ServiceKind.Meal, ServiceKind.Provisions], // the pot, and the inn's hamper
         "Healer" => [ServiceKind.Healing],
         "Tinker" => [ServiceKind.Unlock, ServiceKind.WagonRepair, ServiceKind.Appraise],
         _ => trade.Brokers ? [ServiceKind.Quest] : [],
@@ -1092,6 +1223,11 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             if (e.Status != OrderStatus.Open || e.Mine || !kinds.Contains(e.Kind) || (e.AssigneeName.Length > 0 && !e.MineToDo))
                 continue;
             if (e.Kind == ServiceKind.Quest && !QuestFor(sim, view, e.Poster).HasValue)
+                continue;
+            // The innkeeper serves only a lodger's board (said at their own bar); the cook, a hamper not yet up.
+            if (e.Kind == ServiceKind.Meal && trade.Def.Role == Defs.TownRole.Tavern && !(sim.Shops.Find(e.Id) is { } meal && Hospitality.Provisions.IsBoard(sim, meal)))
+                continue;
+            if (e.Kind == ServiceKind.Provisions && Hospitality.Provisions.HamperUp(sim))
                 continue;
             if (e.Kind != ServiceKind.Quest && !e.MineToDo)
                 send(new TakeOrderCommand(me, e.Id));
@@ -1114,7 +1250,9 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             ServiceKind.Repair => Repair(sim, me, view, poster, now),
             ServiceKind.Drink => Pour(sim, me, view, poster, now),
             ServiceKind.MixedDrink => view.WantedDrink(_task) is { Mix: not null } named ? MixFor(sim, me, view, poster, named, now) : Pour(sim, me, view, poster, now),
+            ServiceKind.Meal when sim.Shops.Find(_task) is { } board && Hospitality.Provisions.IsBoard(sim, board) => Board(sim, me, view, poster, now),
             ServiceKind.Meal => Serve(sim, me, view, poster, now),
+            ServiceKind.Provisions => PackHamper(sim, me, view, now),
             ServiceKind.Lodging => ShowUp(sim, me, view, poster, now),
             ServiceKind.Healing => Heal(sim, me, view, poster, now),
             ServiceKind.Quest => Broker(sim, me, view, poster, now),

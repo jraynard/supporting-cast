@@ -186,6 +186,10 @@ public static class Rations
         }
     }
 
+    /// <summary>A cookhouse's cook with a hamper on order from the inn, and none up on the hatch yet.</summary>
+    public static bool HamperWanted(Simulation sim, Entity cook) =>
+        Hospitality.Provisions.Cooks(sim, cook) && Hospitality.Provisions.Wanted(sim, cook) != null && !Hospitality.Provisions.HamperUp(sim);
+
     /// <summary>The prep table at a building (the inn's kitchen), Entity.Null if none.</summary>
     public static bool IsPrepTable(Simulation sim, Entity e) =>
         !e.IsNull && sim.World.IsAlive(e) && sim.World.TryGet<Thing>(e, out var t) && t.Def.Building is { PrepTable: true } && !sim.World.Has<Construction>(e);
@@ -211,6 +215,9 @@ public static class Rations
         var dough = Baking.DoughIn(sim, cook);
         if (!dough.IsNull && dough == held && Pies.FillingPortionsOn(sim, cook) >= Pies.Filling)
             return PrepStep.Pie;
+        // The inn's waiting on a hamper, and there are dishes on you to pack in it.
+        if (HamperWanted(sim, cook) && Hospitality.Provisions.DishesOn(sim, cook).Count > 0)
+            return PrepStep.Hamper;
         if (PortionsOn(sim, cook) >= Portions)
             return PrepStep.Pack;
         return !chop.IsNull ? PrepStep.Chop : !flour.IsNull ? PrepStep.Knead : PrepStep.Next;
@@ -227,6 +234,7 @@ public static class Rations
             PrepStep.Knead => "Knead some dough",
             PrepStep.Pack => "Pack rations for the road",
             PrepStep.Pie => "Make a pie",
+            PrepStep.Hamper => "Pack a hamper for the inn",
             _ => null,
         };
     }
@@ -272,6 +280,14 @@ public static class Rations
                         ? "A pie wants a ball of dough: knead some first."
                         : $"A pie wants {Pies.Filling} portions of raw food to fill it: meat, fowl, berries, cabbage.", cell);
                 return;
+            case PrepStep.Hamper:
+                if (!Hospitality.Provisions.Cooks(sim, cook))
+                    sim.Messages.Tell(cook, MessageKind.Info, "Hampers are packed at a cookhouse, for an inn without a kitchen.", cell);
+                else if (Hospitality.Provisions.DishesOn(sim, cook).Count > 0)
+                    WorkSystem.Start(sim, cook, new PackSession { Table = table, ForHamper = true });
+                else
+                    sim.Messages.Tell(cook, MessageKind.Info, "A hamper's packed with dishes: bowls ladled from the pot, bread, pies, a roast, or rations.", cell);
+                return;
             case PrepStep.Pack:
                 if (PortionsOn(sim, cook) >= Portions)
                     WorkSystem.Start(sim, cook, new PackSession { Table = table });
@@ -283,7 +299,7 @@ public static class Rations
 }
 
 /// <summary>What to do at a prep table: the key's choice, or chopping, kneading, packing or making a pie by name.</summary>
-public enum PrepStep : byte { Next, Chop, Knead, Pack, Pie, Salt }
+public enum PrepStep : byte { Next, Chop, Knead, Pack, Pie, Salt, Hamper }
 
 /// <summary>The work key at a prep table, or one of its steps by name (<see cref="Rations.Start"/>).</summary>
 public sealed record PrepCommand(Entity Avatar, Entity Table, PrepStep Step) : ISimCommand, IActorCommand

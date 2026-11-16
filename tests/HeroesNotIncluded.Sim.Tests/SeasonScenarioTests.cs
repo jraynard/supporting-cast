@@ -12,10 +12,12 @@ namespace HeroesNotIncluded.Sim.Tests;
 /// </summary>
 public class SeasonScenarioTests(ITestOutputHelper output)
 {
-    [Fact]
-    public void AnHonestRoundIsPlayableStartToFinish()
+    [Theory]
+    [InlineData(VillageRound.DefaultMap)]
+    [InlineData(ReedmereMapTests.Map)] // the inn supplied from the cookhouse: the bots order, pack and carry its hampers
+    public void AnHonestRoundIsPlayableStartToFinish(string map)
     {
-        var played = SeasonSweep.Play(TestWorld.LoadDefs(), 1234, botSeed: 100);
+        var played = SeasonSweep.Play(TestWorld.LoadDefs(), 1234, botSeed: 100, map: map);
         var (sim, festival, deaths, doing, crises) = (played.Sim, played.Festival, played.Deaths, played.Doing, played.Crises);
 
         var summary = sim.Round.Summary;
@@ -28,6 +30,7 @@ public class SeasonScenarioTests(ITestOutputHelper output)
             output.WriteLine($"  {p.Name,-10} {p.Trade,-11} {p.Earned,5:+0;-0;0} silver{(p.Alive ? "" : " (dead)")}");
         foreach (var d in deaths)
             output.WriteLine("  " + d);
+        output.WriteLine($"Hampers {sim.Shops.Served(ServiceKind.Provisions)}");
         output.WriteLine("Bots doing (10 s samples): " + string.Join(", ", doing.OrderByDescending(kv => kv.Value).Take(14).Select(kv => $"{kv.Key}={kv.Value}")));
 
         Assert.NotEqual(RoundOutcome.None, summary.Outcome);
@@ -41,6 +44,8 @@ public class SeasonScenarioTests(ITestOutputHelper output)
         // Each crisis was met or not, or was still under way when Dread ended the round.
         Assert.Equal(crises.Count, sim.Director.Met + sim.Director.Unmet + sim.Director.Active.Count);
         Assert.True(summary.Parties > 0);
+        if (map == ReedmereMapTests.Map)
+            Assert.True(sim.Shops.Served(ServiceKind.Provisions) > 0, "the inn had a hamper from the cookhouse");
         Assert.Contains(summary.People, p => p.Player);
     }
 }

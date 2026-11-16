@@ -408,6 +408,8 @@
         { "def": "Shelf", "at": [7, 1], "facing": 2 },
         { "def": "Chest", "at": [11, 1], "facing": 2 },
         { "def": "BarShelf", "at": [11, 5], "facing": 2 },
+        // The cookhouse's hampers are unpacked here, behind the bar (Hospitality/Provisions).
+        { "def": "WarmingShelf", "at": [8, 5], "facing": 2 },
         { "def": "Fireplace", "at": [0, 9], "facing": 3 },
         { "def": "AleCask", "at": [10, 5] },
         { "def": "BarCounter", "at": [7, 7] }, { "def": "BarCounter", "at": [10, 7] },
@@ -502,8 +504,9 @@
       ],
       "lamp": "Lantern",
       "lamps": [ { "at": [5, 3] }, { "at": [2, 2] }, { "at": [3, 7] }, { "at": [8, 8] } ],
-      // Meals are ordered at the hatch and collected from it (Shops.Hatch); the line runs back to the door.
-      "hatchServes": ["Meal"],
+      // Meals are ordered at the hatch and collected from it (Shops.Hatch), and so are the inn's
+      // hampers (Hospitality/Provisions); the line runs back to the door.
+      "hatchServes": ["Meal", "Provisions"],
       "hatchLine": [ [5, 6], [6, 6], [6, 7], [6, 8], [5, 8] ],
       "sign": [3, 9],
       "slots": [

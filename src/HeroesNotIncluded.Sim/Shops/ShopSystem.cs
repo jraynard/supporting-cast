@@ -206,7 +206,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 continue;
             }
             // Hungry, or peckish at a mealtime (breakfast, supper): the rushes at the hatch.
-            if (!savouring && (hunger < MealBelow || (Mealtime(sim) && hunger < MealtimeBelow)))
+            // A lodger at a lake town's inn has their board off its warming shelf, at a mealtime.
+            if (!savouring && (hunger < MealBelow || (Mealtime(sim) && hunger < MealtimeBelow)) && !AskForBoard(sim, who))
                 Want(sim, who, ServiceKind.Meal, Entity.Null, hunger < food.UrgentBelow ? 1.5f : 1f);
             if (sim.Clock.Tick >= a.NextDrink && !savouring && MayAsk(sim, who, ServiceKind.Drink)
                 && !_orders.Exists(e => e.IsOpen && e.Poster == who && e.Kind.Kind == ServiceKind.MixedDrink))
@@ -235,6 +236,20 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 Want(sim, who, ServiceKind.Lodging, Entity.Null);
             ShopForGear(sim, who);
         }
+    }
+
+    /// <summary>
+    /// A lodger's board (<see cref="Hospitality.Provisions.BoardAt"/>): at breakfast or supper, with a
+    /// room at an inn whose warming shelf has a dish for them, they ask at its bar rather than trek
+    /// to the cookhouse. It's in with the room: no charge, served by the innkeeper. True if they asked.
+    /// </summary>
+    private bool AskForBoard(Simulation sim, Entity who)
+    {
+        if (!Mealtime(sim) || Hospitality.Provisions.BoardAt(sim, who) is not { IsNull: false } inn || !MayAsk(sim, who, ServiceKind.Meal))
+            return false;
+        var def = sim.Defs.Service(ServiceKind.Meal);
+        Post(sim, who, def, Hospitality.Provisions.BoardAsk, 0, sim.Clock.Tick + SimClock.HoursToTicks(def.PatienceHours), Entity.Null, inn);
+        return true;
     }
 
     /// <summary>Back down from walking in on someone: another key, and they've paid already.</summary>
@@ -430,6 +445,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             return false;
         var def = sim.Defs.Service(kind);
         var worth = Worth(sim, who, def, urgency);
+        // A lake town's inn with nothing on its warming shelf: a room with no board to it.
+        if (kind == ServiceKind.Lodging && Hospitality.Provisions.ShelfBare(sim))
+            worth = (int)MathF.Round(worth * Hospitality.Provisions.BareShelfWorth);
         var spare = Math.Max(0, Coin.Count(sim, who) - Promised(who) - KeptForARoom(sim, who, kind, urgency));
         // The box pays for its own opening: they know what's in it, and they pay once it's open.
         if (kind == ServiceKind.Unlock && sim.World.TryGet<Strongbox>(subject, out var box))
@@ -762,7 +780,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             var bargain = e.Worth > 0 ? Math.Clamp((e.Worth - e.Price) / (float)e.Worth, 0f, 1f) * BargainMood : 0f;
             sim.World.Get<Adventurer>(e.Poster).Satisfaction += (quick ? 1.5f : 1f) + bargain;
         }
-        var thanks = paid >= e.Price ? $"There. {paid} silver, as promised." : $"Here's {paid} silver. It's all I've got.";
+        var thanks = Hospitality.Provisions.IsBoard(sim, e) ? "That's my board. Much obliged."
+            : paid >= e.Price ? $"There. {paid} silver, as promised." : $"Here's {paid} silver. It's all I've got.";
         sim.Speech.Say(sim, e.Poster, thanks, Volume.Say);
     }
 
@@ -1155,6 +1174,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         }
         var room = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Lodging);
         if (room != null && Hospitality.InnRooms.IsRoomKey(sim, item) && TakeKey(sim, room, giver, item))
+            return;
+        // The inn's hamper, handed to the keeper who ordered it.
+        if (Hospitality.Provisions.Received(sim, giver, to, item, this))
             return;
         var meal = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Meal);
         if (meal != null && def.EdibleBy(w.Get<Creature>(to).Def))

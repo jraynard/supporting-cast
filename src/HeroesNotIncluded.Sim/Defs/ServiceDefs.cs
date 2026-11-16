@@ -40,6 +40,12 @@ public enum ServiceKind
 
     /// <summary>A curio brought back from a quest looked over, and its worth told them (the Tinker's).</summary>
     Appraise,
+
+    /// <summary>
+    /// A hamper of dishes for the inn, packed at the cookhouse (the Cook's): ordered by the
+    /// innkeeper where the inn and the kitchen stand apart, never by an adventurer (<c>Hospitality.Provisions</c>).
+    /// </summary>
+    Provisions,
 }
 
 /// <summary>

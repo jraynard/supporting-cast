@@ -50,6 +50,8 @@ public static class BarWork
         if (!AvatarSystem.InReach(sim, w.Get<Position>(who).Cell, station))
             return;
         var cell = w.Get<Thing>(station).Cell;
+        if (Hospitality.Provisions.Unpack(sim, who, station))
+            return;
         if (Hospitality.Lodging.IsUnmade(sim, station))
         {
             if (Hospitality.RoomChores.LinenOn(sim, who).IsNull)

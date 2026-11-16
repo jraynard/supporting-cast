@@ -59,7 +59,10 @@ public sealed class FeastSystem : ISimSystem, ISaveState
                     continue;
                 }
                 var inn = ShopSystem.BuildingFor(sim, Defs.TownRole.Kitchen); // the dishes come over its hatch
-                if (inn.IsNull || Buildings.At(sim, w.Get<Position>(e).Cell) != inn || !SpeechSystem.CanAct(sim, e))
+                // Called coming into the kitchen, or into the inn where it stands apart (a lake town's,
+                // where parties loiter at the inn): then they go over to the cookhouse to eat it.
+                var at = inn.IsNull ? Entity.Null : Buildings.At(sim, w.Get<Position>(e).Cell);
+                if (inn.IsNull || (at != inn && at != Provisions.Inn(sim)) || at.IsNull || !SpeechSystem.CanAct(sim, e))
                     continue;
                 var party = w.Get<FeastDue>(e).Party;
                 w.Remove<FeastDue>(e);
@@ -104,7 +107,8 @@ public sealed class FeastSystem : ISimSystem, ISaveState
             order.Dish = dish?.Dish;
             feast.Orders.Add(order.Id);
         }
-        sim.Speech.Say(sim, caller, "A feast! We're back, all of us, and the job's done. Food for the whole table, on us!", Volume.Shout);
+        var over = Buildings.At(sim, w.Get<Position>(caller).Cell) != inn ? $" Over to the {w.Get<PresetBuilding>(inn).Def.Label}, all of you!" : "";
+        sim.Speech.Say(sim, caller, $"A feast! We're back, all of us, and the job's done. Food for the whole table, on us!{over}", Volume.Shout);
         sim.Messages.Add(MessageKind.Good, $"{w.Get<Creature>(caller).Name}'s party calls for a feast: {members.Count} dishes at the hatch, quick as the kitchen can.",
             w.Get<Position>(caller).Cell);
         _feasts.Add(feast);

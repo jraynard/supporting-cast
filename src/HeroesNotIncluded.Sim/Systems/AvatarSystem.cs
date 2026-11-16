@@ -117,8 +117,11 @@ public enum AvatarActionKind
     /// <summary>An empath at a fresh body: weave a Calling back for it (<see cref="Afterlife.Revival.BeginCalling"/>), begun at once.</summary>
     CallBack,
 
-    /// <summary>Hand a poured drink across the bar to whoever's waiting for it (<see cref="Shops.BarService"/>), at once.</summary>
+    /// <summary>Hand a poured drink (or a lodger's board) across the bar to whoever's waiting for it (<see cref="Shops.BarService"/>), at once.</summary>
     ServeDrink,
+
+    /// <summary>The inn's keeper orders a hamper at the cookhouse hatch (<see cref="Hospitality.Provisions.Order"/>), or sees where they are in its line.</summary>
+    OrderProvisions,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -145,7 +148,7 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
         or AvatarActionKind.Store or AvatarActionKind.OpenStorage or AvatarActionKind.Tinker
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
         or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean
-        or AvatarActionKind.Mend or AvatarActionKind.OrderMeal or AvatarActionKind.OrderHealing or AvatarActionKind.FillBucket or AvatarActionKind.ThrowWater or AvatarActionKind.FestivalGame or AvatarActionKind.Dance
+        or AvatarActionKind.Mend or AvatarActionKind.OrderMeal or AvatarActionKind.OrderProvisions or AvatarActionKind.OrderHealing or AvatarActionKind.FillBucket or AvatarActionKind.ThrowWater or AvatarActionKind.FestivalGame or AvatarActionKind.Dance
         or AvatarActionKind.ShowPiece or AvatarActionKind.Sit or AvatarActionKind.CallBack;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
@@ -181,6 +184,24 @@ public sealed class AvatarSystem : ISimSystem
             return place <= 0 ? "Your meal's ordered: wait here for it" : $"Your meal's ordered: {Ordinal(place + 1)} in line";
         }
         return Shops.ShopPrices.Posted(sim, inn, ServiceKind.Meal) is { Offered: true } sign ? $"Order a meal ({sign.Price} silver)" : null;
+    }
+
+    /// <summary>
+    /// What F at the cookhouse hatch says to the inn's keeper, where the two stand apart: the price
+    /// of a hamper for the inn, or where they are in the line for the one they ordered. Null for
+    /// anyone else, at any other hatch, or with no hamper to be had (they order a meal there like anyone).
+    /// </summary>
+    private static string? ProvisionsOrder(Simulation sim, Entity avatar, Entity hatch)
+    {
+        if (!Hospitality.Provisions.KeepsInn(sim, avatar) || Shops.Hatch.ShopOf(sim, hatch) is not { IsNull: false } shop || shop != Hospitality.Provisions.Cookhouse(sim))
+            return null;
+        if (Hospitality.Provisions.Ordered(sim, avatar) != null)
+        {
+            var place = sim.Shops.LineAt(sim, shop, hatch: true).IndexOf(avatar);
+            return place <= 0 ? "The inn's hamper is ordered: wait here for it" : $"The inn's hamper is ordered: {Ordinal(place + 1)} in line";
+        }
+        return Hospitality.Provisions.Refusal(sim, avatar) == null && Shops.ShopPrices.Posted(sim, shop, ServiceKind.Provisions) is { } sign
+            ? $"Order a hamper for the inn ({sign.Price} silver)" : null;
     }
 
     /// <summary>
@@ -416,6 +437,9 @@ public sealed class AvatarSystem : ISimSystem
         if (Work.Butchery.StepAt(sim, avatar, site) is { } dressing && !sim.Reservations.IsReservedByOther(site, avatar))
             return new(AvatarActionKind.Cook, dressing, cell, site);
 
+        // A hamper in your arms to the inn's warming shelf.
+        if (tool == AvatarTool.Use && Hospitality.Provisions.StepAt(sim, avatar, site) is { } unpack)
+            return new(AvatarActionKind.BarWork, unpack, cell, site);
         // Dirty crockery to the wash tub; a keg in your arms to a dry cask.
         if (Work.BarWork.StepAt(sim, avatar, site) is { } upkeep && !sim.Reservations.IsReservedByOther(site, avatar))
             return new(AvatarActionKind.BarWork, upkeep, cell, site);
@@ -479,6 +503,9 @@ public sealed class AvatarSystem : ISimSystem
             return new(AvatarActionKind.Store, w.Get<Thing>(site).Def.Building is { Hatch: true }
                 ? $"Put {w.Get<Thing>(held).Label} up on the {w.Get<Thing>(site).Label}"
                 : $"Put {w.Get<Thing>(held).Label} in the {w.Get<Thing>(site).Label}", cell, site);
+        // At the cookhouse hatch, the inn's keeper orders the inn's hamper.
+        if (held.IsNull && !site.IsNull && w.Get<Thing>(site).Def.Building is { Hatch: true } && ProvisionsOrder(sim, avatar, site) is { } hamper)
+            return new(AvatarActionKind.OrderProvisions, hamper, cell, site);
         // At the inn's serving hatch with empty hands: order a meal there (not the cook: they serve it).
         if (held.IsNull && !site.IsNull && w.Get<Thing>(site).Def.Building is { Hatch: true } && MealOrder(sim, avatar, site) is { } meal)
             return new(AvatarActionKind.OrderMeal, meal, cell, site);
@@ -489,7 +516,7 @@ public sealed class AvatarSystem : ISimSystem
         if (held.IsNull && !site.IsNull && HealingOrder(sim, avatar, site) is { } heal)
             return new(AvatarActionKind.OrderHealing, heal, cell, site);
         // A pack lying about opens like the wagon (you're already wearing one, or it'd go on).
-        if (!item.IsNull && sim.IsPack(item))
+        if (!item.IsNull && sim.IsPack(item) && !Hospitality.Provisions.IsHamper(sim, item))
             return new(AvatarActionKind.OpenStorage, $"Open the {w.Get<Thing>(item).Label}", cell, item);
         // Picking up: into the pack when it fits, else into empty hands. Items at a tree's foot come
         // before working the tree, so nothing's lost under it.
@@ -847,6 +874,10 @@ public sealed class AvatarSystem : ISimSystem
                 if (Shops.Hatch.ShopOf(sim, action.Target) is { IsNull: false } inn && sim.Shops.OpenOrderOf(avatar, ServiceKind.Meal) == null
                     && sim.Shops.PlayerOrder(sim, avatar, ServiceKind.Meal, inn) is { } why)
                     sim.Messages.Tell(avatar, MessageKind.Info, $"Can't order: {why}.", action.Cell);
+                break;
+            case AvatarActionKind.OrderProvisions:
+                if (Hospitality.Provisions.Ordered(sim, avatar) == null && Hospitality.Provisions.Order(sim, avatar) is { } refusal)
+                    sim.Messages.Tell(avatar, MessageKind.Info, $"Can't order: {refusal}.", action.Cell);
                 break;
             case AvatarActionKind.FillBucket:
                 if (Environment.Buckets.Fill(sim, avatar))

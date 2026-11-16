@@ -59,8 +59,14 @@ haven't been played since:
   lost for good, and guests walking in on each other more than a careless keeper earns.
   Playtest feedback (rooms feast or famine, order buttons, keys, markers, the cleaning and mixing
   games, the keg, the upper floor) and its fixes are built: [HISTORY.md](HISTORY.md), "The innkeeper's playtest".
- - [ ] **The cook supplies the inn** where they keep apart (Reedmere), and what the lake town still
-  wants (the carter, feasts, falling in, art, tuning): [COOKHOUSE-PLAN.md](COOKHOUSE-PLAN.md).
+- [ ] **The cook supplies the inn** (Reedmere; HISTORY.md, "The cook supplies the inn"): does the
+  innkeeper keep the warming shelf stocked, and is the trek to the cookhouse worth the bar standing
+  empty? Do the bowls that go over in hampers come back, or pile up dirty at the inn?
+- [ ] **Reedmere, still to do:** knockback off the walks, swimming and breath, fishing someone out
+  (a body sunk in the lake is the traitors', M4); thinner rails with gaps on the boardwalk, reeds
+  along the shallows, a proper dipping post sprite, a reference painting in `art/reference/`;
+  balance (`--season-sweep --seeds 8 --map Reedmere`), once the rest has settled. It may stay a
+  little harder than Millbrook on purpose.
 - [ ] **Flicker** at wall corners and on furniture, and the upper floors when walking past the inn.
 - [ ] **Net notices:** if someone drops, it now shows up in `net.log`.
 

@@ -222,6 +222,14 @@
       "description": "Food for the road, wrapped in a cloth and tied off. What's inside, and how it keeps, you'll find out on the way.",
       "model": [ { "min": [0.25, 0.25, 0], "max": [0.75, 0.75, 0.22], "top": "props/linen", "side": "props/linen" } ]
     },
+    // A hamper (Hospitality/Provisions): the cookhouse's dishes packed for the inn, carried over in
+    // both arms and unpacked onto its warming shelf. Made at the prep table, folded away once unpacked.
+    {
+      "name": "Hamper", "label": "hamper", "category": "Item", "mass": 2, "sprite": "props/basket", "stackLimit": 1,
+      "container": { "capacity": 6 }, "flammability": 0.6, "maxHp": 30,
+      "description": "A lidded basket lined with cloth, dishes for the inn packed in it. Carried in both arms.",
+      "model": [ { "min": [0.2, 0.25, 0], "max": [0.8, 0.75, 0.36], "top": "props/linen", "side": "props/basket" } ]
+    },
     {
       "name": "SimpleMeal", "label": "simple meal", "category": "Item", "mass": 0.4, "sprite": "items/meal", "stackLimit": 20,
       "nutrition": 0.3, "cooked": true, "rotDays": 3, "flammability": 0.4, "maxHp": 20,

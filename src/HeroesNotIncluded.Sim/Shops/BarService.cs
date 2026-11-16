@@ -10,11 +10,12 @@ namespace HeroesNotIncluded.Sim.Shops;
 /// customer and pick them from the inspector. The customer is chosen in this order: one whose
 /// order matches the drink (a mixed drink for a mixed-drink order, plain ale for plain), then an
 /// order the server took on, then whoever has waited longest in the bar's line. Only orders the
-/// server knows of count, and only customers within arm's reach.
+/// server knows of count, and only customers within arm's reach. A lodger's board at an inn without
+/// a kitchen (<see cref="Hospitality.Provisions"/>) is served the same way, with a dish off the warming shelf.
 /// </summary>
 public static class BarService
 {
-    /// <summary>A drink to serve and the order it goes to.</summary>
+    /// <summary>What to serve (a drink, or a lodger's dish) and the order it goes to.</summary>
     public readonly record struct Serving(Entity Drink, Order Order);
 
     /// <summary>
@@ -25,7 +26,8 @@ public static class BarService
     {
         var w = sim.World;
         var drink = DrinkOn(sim, server);
-        if (drink.IsNull)
+        var dish = DishOn(sim, server);
+        if (drink.IsNull && dish.IsNull)
             return null;
         var atBar = !site.IsNull && w.IsAlive(site) && w.TryGet<Thing>(site, out var t) && t.Def.Building is { Bar: true };
         Serving? best = null;
@@ -34,11 +36,14 @@ public static class BarService
         {
             if (!Waiting(sim, server, o) || (!atBar && w.Get<Position>(o.Poster).Cell != cell))
                 continue;
-            var rank = Rank(sim, server, drink, o);
+            var served = o.Kind.Kind == ServiceKind.Meal ? dish : drink;
+            if (served.IsNull || (o.Kind.Kind == ServiceKind.Meal && !Hatch.Fits(sim, o, w.Get<Thing>(served).Def)))
+                continue;
+            var rank = Rank(sim, server, served, o);
             if (rank < bestRank)
             {
                 bestRank = rank;
-                best = new Serving(drink, o);
+                best = new Serving(served, o);
             }
         }
         return best;
@@ -47,9 +52,15 @@ public static class BarService
     /// <summary>The drink a server has to hand: in hand first, then the pack.</summary>
     public static Entity DrinkOn(Simulation sim, Entity who) => AvatarSystem.Supply(sim, who, d => d.Drink);
 
-    /// <summary>An open drink order this server knows of, its customer in reach and nobody else seeing to it.</summary>
+    /// <summary>A cooked dish a server has to hand, for a lodger's board: in hand first, then the pack.</summary>
+    public static Entity DishOn(Simulation sim, Entity who) => AvatarSystem.Supply(sim, who, d => d is { Cooked: true, Nutrition: > 0, Drink: false });
+
+    /// <summary>
+    /// An open drink order (or a lodger's board) this server knows of, its customer in reach and
+    /// nobody else seeing to it.
+    /// </summary>
     private static bool Waiting(Simulation sim, Entity server, Order o) =>
-        o.IsOpen && o.Kind.Kind is ServiceKind.Drink or ServiceKind.MixedDrink && o.KnownBy.Contains(server)
+        o.IsOpen && (o.Kind.Kind is ServiceKind.Drink or ServiceKind.MixedDrink || Hospitality.Provisions.IsBoard(sim, o)) && o.KnownBy.Contains(server)
         && (o.Assignee.IsNull || o.Assignee == server) && o.Poster != server && Handing.InReach(sim, server, o.Poster);
 
     /// <summary>Lower serves first: the drink matching the order, then your own orders, then the line's order.</summary>
@@ -70,12 +81,15 @@ public static class BarService
     public static string Label(Simulation sim, Serving s) =>
         $"Serve the {sim.LabelOf(s.Drink)} to {s.Order.PosterName}";
 
-    /// <summary>Hand the drink over: one of it, to the order's customer, as <see cref="GiveCommand"/> would.</summary>
+    /// <summary>Hand it over: one drink, or a lodger's helping, to the order's customer, as <see cref="GiveCommand"/> would.</summary>
     public static void Serve(Simulation sim, Entity server, Serving s)
     {
         if (!Inventory.OnPerson(sim, server, s.Drink) || !Handing.InReach(sim, server, s.Order.Poster))
             return;
-        var taken = Inventory.TakeFromPerson(sim, server, s.Drink, 1);
+        var taken = s.Order.Kind.Kind == ServiceKind.Meal
+            ? Hospitality.Provisions.Portion(sim, s.Drink,
+                Math.Max(1, Math.Min(Ai.EatJob.Wanted(sim, s.Order.Poster, sim.World.Get<Thing>(s.Drink).Def), sim.World.Get<Stack>(s.Drink).Count)), server)
+            : Inventory.TakeFromPerson(sim, server, s.Drink, 1);
         sim.Shops.Received(sim, server, s.Order.Poster, taken);
     }
 }

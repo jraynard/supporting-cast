@@ -35,13 +35,19 @@ public sealed class ServeJob(int order, Entity spareAt = default) : Job
         var from = w.Get<Position>(pawn).Cell;
         foreach (var e in sim.Shops.FrontFirst(sim))
         {
-            if (!e.IsOpen || e.Kind.Kind is not (ServiceKind.Drink or ServiceKind.MixedDrink or ServiceKind.Meal) || e.Kind.AtRole != trade.Def.Role || !trade.Def.Serving(e.Kind.Kind)
+            if (!e.IsOpen || e.Kind.Kind is not (ServiceKind.Drink or ServiceKind.MixedDrink or ServiceKind.Meal)
                 || !e.KnownBy.Contains(pawn) || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Poster))
+                continue;
+            // A lodger's board is the inn's keeper's, off the warming shelf; anything else is the trade's that serves it.
+            var board = Hospitality.Provisions.IsBoard(sim, e);
+            if (board ? !trade.Def.WorksAt(w.Get<PresetBuilding>(e.Where).Def) : e.Kind.AtRole != trade.Def.Role || !trade.Def.Serving(e.Kind.Kind))
                 continue;
             // Ordered at the hatch: no more put up than are waiting for.
             if (Hatch.Takes(sim, e) && Hatch.Enough(sim, e.Where, e.Kind.Kind))
                 continue;
-            var supply = e.Kind.Kind is ServiceKind.Drink or ServiceKind.MixedDrink ? Cask(sim, pawn) : Pot(sim, e.Where) is { IsNull: false } pot ? pot : Meal(sim, pawn, e.Poster);
+            var supply = e.Kind.Kind is ServiceKind.Drink or ServiceKind.MixedDrink ? Cask(sim, pawn)
+                : board ? Hospitality.Provisions.DishFor(sim, Hospitality.Provisions.ShelfOf(sim, e.Where), e.Poster)
+                : Pot(sim, e.Where) is { IsNull: false } pot ? pot : Meal(sim, pawn, e.Poster);
             // Poured and ladled things go in a clean vessel: none to hand, and the washing comes first.
             var vessel = VesselFor(sim, supply);
             if (vessel != null && Vessels.CleanOn(sim, pawn, vessel).IsNull && CleanVessel(sim, pawn, vessel).IsNull)
@@ -187,6 +193,31 @@ public sealed class ServeJob(int order, Entity spareAt = default) : Job
             var level = SkillRules.LevelOf(Sim, Pawn, Skill.Cooking);
             SkillRules.Learn(Sim, Pawn, Skill.Cooking, 20f);
             served = PourSession.PourInto(Sim, Pawn, cask, Crafting.QualityFrom(0.3f + 0.035f * level + Sim.Rand.Range(-0.15f, 0.15f)));
+        }
+        else if (Hospitality.Provisions.IsBoard(Sim, e))
+        {
+            // Their board, off the warming shelf behind the bar.
+            var shelf = Hospitality.Provisions.ShelfOf(Sim, e.Where);
+            var dish = Hospitality.Provisions.DishFor(Sim, shelf, e.Poster);
+            if (dish.IsNull || !Reserve(dish))
+            {
+                Fail("the warming shelf's bare");
+                yield break;
+            }
+            Report = $"Taking {e.PosterName}'s board off the shelf";
+            foreach (var s in GoToBeside(shelf)) yield return s;
+            if (HasFailed) yield break;
+            if (!Alive(dish) || !Inventory.CanReachContainer(Sim, Pawn, shelf) || !Sim.World.TryGet<Stored>(dish, out var on) || on.In != shelf)
+            {
+                Fail("the dish is gone");
+                yield break;
+            }
+            var portion = Hospitality.Provisions.Portion(Sim, dish, Math.Min(EatJob.Wanted(Sim, e.Poster, Get<Thing>(dish).Def), Get<Stack>(dish).Count));
+            if (Get<Carrying>(Pawn).Item.IsNull)
+                Get<Carrying>(Pawn).Item = portion;
+            else
+                Inventory.Stow(Sim, Pawn, portion);
+            served = portion;
         }
         else if (Pot(Sim, e.Where) is { IsNull: false } pot && Reserve(pot))
         {

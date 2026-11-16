@@ -39,6 +39,7 @@ public static class Hatch
     {
         ServiceKind.Meal => dish.Cooked && dish.Nutrition > 0 && (e.Dish == null || e.Dish == dish) && sim.World.IsAlive(e.Poster) && dish.EdibleBy(sim.World.Get<Creature>(e.Poster).Def),
         ServiceKind.Drink or ServiceKind.MixedDrink => dish.Drink,
+        ServiceKind.Provisions => dish.Name == Hospitality.Provisions.HamperDef,
         _ => false,
     };
 
@@ -51,7 +52,7 @@ public static class Hatch
         foreach (var item in sim.StoredIn(hatch))
         {
             var def = sim.World.Get<Thing>(item).Def;
-            if (kind == ServiceKind.Meal ? def.Cooked && def.Nutrition > 0 : def.Drink)
+            if (kind switch { ServiceKind.Meal => def.Cooked && def.Nutrition > 0, ServiceKind.Provisions => def.Name == Hospitality.Provisions.HamperDef, _ => def.Drink })
                 dishes.Add(item);
         }
         return dishes;
