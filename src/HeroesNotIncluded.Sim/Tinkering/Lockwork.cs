@@ -113,6 +113,9 @@ public static class Lockwork
         HealthSystem.Damage(sim, worker, damage, type, arm);
         var name = w.Get<Creature>(worker).Name;
         sim.Messages.Add(MessageKind.Warning, $"{what} {name}'s {(arm >= 0 && h != null ? h.Body.Parts[arm].Label : "hand")}: the strongbox was trapped.", sim.LocationOf(worker));
+        // Whoever brought it in, if they're about to see it: a word, of a sort.
+        if (w.TryGet<Entrusted>(box, out var by) && w.IsAlive(by.Owner) && w.Has<Adventurer>(by.Owner) && Speech.SpeechSystem.CanAct(sim, by.Owner))
+            Speech.Barks.Say(sim, by.Owner, "adv_trap_sprung", Speech.Volume.Say, "Ah. Should have mentioned that.", who: name);
     }
 
     /// <summary>The lid comes up: an armed trap goes off now.</summary>

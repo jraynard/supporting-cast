@@ -167,8 +167,36 @@ public static class Hauntings
         w.Add(sign, Position.At(at));
         w.Add(sign, new Haunting { Kind = kind, Tick = sim.Clock.Tick, Until = sim.Clock.Tick + Lasts(kind), Text = text ?? "" });
         if (kind is HauntKind.Chill or HauntKind.Knock or HauntKind.Spook)
+        {
             Unnerve(sim, at);
+            Startle(sim, at, kind);
+        }
         return sign;
+    }
+
+    /// <summary>How long a timid adventurer stays in a town once it's felt the dead in it, at most.</summary>
+    public const float TimidLeaveHours = 1f;
+
+    /// <summary>
+    /// Adventurers near a chill, a knock or a spook feel it too: they say so, and a timid one
+    /// decides it's seen enough of this town (<see cref="Adventurers.Temper.Timid"/>).
+    /// </summary>
+    private static void Startle(Simulation sim, int3 at, HauntKind kind)
+    {
+        var w = sim.World;
+        foreach (var e in sim.Creatures())
+        {
+            if (!w.TryGet<Adventurer>(e, out var a) || w.Has<Combat.Leaving>(e) || !Speech.SpeechSystem.CanAct(sim, e))
+                continue;
+            var cell = w.Get<Position>(e).Cell;
+            if (cell.Z != at.Z || Math.Max(Math.Abs(cell.X - at.X), Math.Abs(cell.Y - at.Y)) > UnnerveReach)
+                continue;
+            var timid = Adventurers.Tempers.Of(sim, e) == Adventurers.Temper.Timid;
+            Speech.Barks.Say(sim, e, timid ? "adv_spooked" : "adv_uneasy", Speech.Volume.Say, timid ? "No. No, I'm not staying here." : "Did you feel that?",
+                thing: kind.ToString().ToLowerInvariant());
+            if (timid)
+                w.Get<Adventurer>(e).LeaveTick = Math.Min(a.LeaveTick, sim.Clock.Tick + SimClock.HoursToTicks(TimidLeaveHours));
+        }
     }
 
     /// <summary>Raiders and predators near a sign are shaken by it (<see cref="Unnerved"/>).</summary>

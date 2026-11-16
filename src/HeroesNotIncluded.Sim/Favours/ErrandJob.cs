@@ -23,11 +23,73 @@ public sealed class ErrandJob(int favour) : Job
             if (!f.IsOpen || f.Wants is not { } wants || f.Poster == pawn || (!f.Assignee.IsNull && f.Assignee != pawn)
                 || !w.IsAlive(f.Poster) || w.Get<Creature>(f.Poster).Dead)
                 continue;
-            if (Lying(sim, pawn, wants) >= f.Count)
+            var lying = Lying(sim, pawn, wants);
+            if (lying >= f.Count)
                 return new ErrandJob(f.Id);
+            if (trade.Def.Gathers)
+                MarkToGather(sim, pawn, wants, f.Count - lying);
         }
         return null;
     }
+
+    /// <summary>The most cells (trees, bushes, rocks) an errand marks to gather at a time.</summary>
+    public const int MostMarked = 6;
+
+    /// <summary>How far from the notice board an errand's gathering is marked, cells.</summary>
+    public const int GatherRange = 40;
+
+    /// <summary>
+    /// Not enough of it lying about: mark enough of what yields it (trees for logs, bushes for
+    /// berries, rocks for stone) near the square for the gatherer's own work to bring in, and the
+    /// errand's done with what's then lying about. Nothing more's marked while enough is already.
+    /// </summary>
+    private static void MarkToGather(Simulation sim, Entity pawn, Defs.ThingDef def, int shortBy)
+    {
+        var w = sim.World;
+        var map = sim.Map;
+        static int Yields(Defs.ThingDef? source, Defs.ThingDef def) =>
+            source?.Harvest?.Yield.Where(y => y.ThingDef == def).Sum(y => y.Count) ?? 0;
+        if (!sim.Defs.AllThings.Any(t => Yields(t, def) > 0))
+            return; // nothing in the world gives it
+        var marked = 0;
+        foreach (var flag in (Designation[])[Designation.Chop, Designation.Mine, Designation.Harvest])
+            foreach (var i in map.Designated(flag))
+                if (!map.Structure[i].IsNull && w.TryGet<Thing>(map.Structure[i], out var t))
+                    marked += Yields(t.Def, def);
+        if (marked >= shortBy)
+            return;
+        var board = FavourBoard.AnyBoard(sim);
+        if (board.IsNull)
+            return;
+        var centre = w.Get<Thing>(board).Cell;
+        var from = w.Get<Position>(pawn).Cell;
+        var sources = new List<(Entity Source, int Dist)>();
+        foreach (var e in w.Query<Thing>())
+        {
+            var t = w.Get<Thing>(e);
+            if (!t.Spawned || Yields(t.Def, def) == 0 || Map.Distance(t.Cell, centre) is var d && d > GatherRange
+                || (w.TryGet<PlantState>(e, out var plant) && !plant.Ready) || (map.Designations[map.Idx(t.Cell)] & FlagOf(t.Def.Harvest!.WorkType)) != 0
+                || !sim.Regions.CanReach(from, t.Cell, PathEnd.Touch))
+                continue;
+            sources.Add((e, d));
+        }
+        // Nearest the square first; ties to the lower entity, so the set's order decides nothing.
+        foreach (var (source, _) in sources.OrderBy(s => s.Dist).ThenBy(s => s.Source.Index).Take(MostMarked))
+        {
+            if (marked >= shortBy)
+                break;
+            var t = w.Get<Thing>(source);
+            map.Designate(map.Idx(t.Cell), FlagOf(t.Def.Harvest!.WorkType));
+            marked += Yields(t.Def, def);
+        }
+    }
+
+    private static Designation FlagOf(Defs.WorkType type) => type switch
+    {
+        Defs.WorkType.Chop => Designation.Chop,
+        Defs.WorkType.Mine => Designation.Mine,
+        _ => Designation.Harvest,
+    };
 
     /// <summary>How many of a thing are about (lying, or kept where anyone may take it) where this one can get at them.</summary>
     private static int Lying(Simulation sim, Entity pawn, Defs.ThingDef def)

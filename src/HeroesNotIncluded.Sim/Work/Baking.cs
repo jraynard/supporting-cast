@@ -360,6 +360,12 @@ public sealed class BakeSession : WorkSession
         if (item.IsNull)
             return;
         var w = sim.World;
+        // Hands full, it went in the pack, where it may have joined a stack like it: nothing left to read.
+        if (!w.IsAlive(item))
+        {
+            sim.Messages.Add(MessageKind.Info, "Out of the oven, into the pack with it.", w.Get<Thing>(Oven).Cell);
+            return;
+        }
         var said = w.Get<Dish>(item).Fault switch
         {
             DishFault.Caught => " The crust's burnt.",

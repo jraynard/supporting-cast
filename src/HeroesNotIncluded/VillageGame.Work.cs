@@ -18,6 +18,9 @@ public sealed partial class VillageGame
     /// <summary><c>--bots N</c>: how many stand-in players a solo round deals in.</summary>
     public int Bots { get; init; }
 
+    /// <summary><c>--bot-skill F</c>: how steady the bots' hands are (<see cref="BotPlayer.Skill"/>).</summary>
+    public float BotSkill { get; init; } = 1f;
+
     private readonly List<BotPlayer> _bots = [];
     private readonly WorkPredictor _work = new();
     private double _workSteps;

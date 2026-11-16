@@ -79,6 +79,13 @@ public sealed class TradeDef : Def
     /// <summary>The holder mends what crises break in town (<c>Tinkering.Repairs</c>): the tinker, the bridge.</summary>
     public bool MendsTown { get; set; }
 
+    /// <summary>
+    /// What its workplace runs short of that a labourer could fetch (<c>Favours.Wants</c>): held by
+    /// the AI, it pins an errand to the notice board when there's less than <see cref="TradeWant.Below"/>
+    /// about the place. It's the labourer's living, when no player's posting.
+    /// </summary>
+    public List<TradeWant> Wants { get; set; } = [];
+
     /// <summary>The holder names the shop (<c>Shops.ShopName</c>): the innkeeper, not the cook.</summary>
     public bool NamesShop { get; set; } = true;
 
@@ -105,6 +112,12 @@ public sealed class TradeDef : Def
     internal override void Resolve(DefDatabase db)
     {
         Role = TownRoles.Parse(Workplace, $"Trade '{Name}' workplace");
+        foreach (var want in Wants)
+        {
+            want.ThingDef = db.Thing(want.Thing);
+            if (want.ThingDef.Category != ThingCategory.Item || want.Below < 1 || want.Count < 1 || want.Price < 0 || want.Hours <= 0)
+                throw new Exception($"Trade '{Name}': a want of {want.Thing} needs an item, below and count of 1 or more, a price and hours");
+        }
         KnownStations.Clear();
         foreach (var station in Knows)
             KnownStations.Add(db.Thing(station));
@@ -199,4 +212,24 @@ public sealed class LessonStepDef
 
     /// <summary>Only comes up when something's gone a way it needn't (the forge gone out): listed only while it's the step at hand.</summary>
     public bool Aside { get; set; }
+}
+
+/// <summary>Something a trade's workplace wants kept in, and what it'll pay a labourer to fetch it (<see cref="TradeDef.Wants"/>).</summary>
+public sealed class TradeWant
+{
+    public string Thing { get; set; } = "";
+
+    /// <summary>Fewer than this about the workplace and an errand goes up.</summary>
+    public int Below { get; set; } = 4;
+
+    /// <summary>How many the errand asks for.</summary>
+    public int Count { get; set; } = 8;
+
+    /// <summary>Silver for fetching them.</summary>
+    public int Price { get; set; } = 5;
+
+    /// <summary>How long the errand's left up, game hours.</summary>
+    public float Hours { get; set; } = 8;
+
+    [JsonIgnore] public ThingDef ThingDef { get; set; } = null!;
 }

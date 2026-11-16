@@ -29,6 +29,15 @@ public sealed class AdventurerKindDef : Def
     /// <summary>What they like the taste of: ordering a meal, they may say they fancy one of these (<c>Hospitality.Tastes</c>).</summary>
     public List<Work.FlavourKind> Tastes { get; set; } = [];
 
+    /// <summary>
+    /// How likely each temper is in one of these (<see cref="Adventurers.Temper"/>: "Easy", "Rowdy",
+    /// "Picky", "Stingy", "Boastful", "Timid"), by weight. Empty: any, evenly.
+    /// </summary>
+    public Dictionary<string, float> Tempers { get; set; } = [];
+
+    /// <summary>The tempers, parsed, with their weights.</summary>
+    [JsonIgnore] public List<(Adventurers.Temper Temper, float Weight)> TemperWeights { get; } = [];
+
     [JsonIgnore] public OutfitDef? OutfitDef { get; private set; }
     [JsonIgnore] public ThingDef? WeaponDef { get; private set; }
     [JsonIgnore] public List<ThingDef> ApparelDefs { get; } = [];
@@ -54,6 +63,16 @@ public sealed class AdventurerKindDef : Def
             throw new Exception($"Adventurer kind {Name}: a min is above its max");
         if (!(Spend > 0))
             throw new Exception($"Adventurer kind {Name}: spend must be above 0");
+        TemperWeights.Clear();
+        foreach (var (name, weight) in Tempers.OrderBy(t => t.Key, StringComparer.Ordinal))
+        {
+            if (!Enum.TryParse<Adventurers.Temper>(name, true, out var temper) || !(weight > 0))
+                throw new Exception($"Adventurer kind {Name}: temper '{name}' isn't one of {string.Join(", ", Enum.GetNames<Adventurers.Temper>())}, or its weight isn't above 0");
+            TemperWeights.Add((temper, weight));
+        }
+        if (TemperWeights.Count == 0)
+            foreach (var t in Enum.GetValues<Adventurers.Temper>())
+                TemperWeights.Add((t, 1f));
     }
 }
 

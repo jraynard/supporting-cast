@@ -1,0 +1,114 @@
+{
+  // What people say when something happens (Speech/Barks). One entry per event; each line may be
+  // kept for speakers with all its "when" tags: what they are ("bot", "villager", "adventurer" and
+  // its kind), their trade ("innkeeper", "blacksmith"...), a bot's temper ("hasty", "brave", "chatty",
+  // "careless", "greedy", "nervy", "quiet"...), their traits ("gloomy", "optimist"...) and how much
+  // they've drunk ("merry", "loud", "clumsy"). The more tags a line asks for, the likelier it is for
+  // someone who has them. Slots: {who}, {thing}, {place}, {n}.
+  "barks": [
+    { "name": "greet", "lines": [
+      { "text": "Morning, {who}." },
+      { "text": "{who}." },
+      { "text": "All right, {who}?" },
+      { "text": "Fine day for it, {who}. So far.", "when": [ "chatty" ] },
+      { "text": "Oh. It's you, {who}.", "when": [ "dour" ] },
+      { "text": "{who}. Mm.", "when": [ "quiet" ] },
+      { "text": "{who}! Just the person. Probably.", "when": [ "chatty" ] }
+    ] },
+    { "name": "reply", "lines": [
+      { "text": "Aye, {who}." },
+      { "text": "Right you are." },
+      { "text": "Mm." },
+      { "text": "If you say so, {who}." },
+      { "text": "You don't say, {who}.", "when": [ "chatty" ] },
+      { "text": "Busy, {who}. Busy.", "when": [ "hasty" ] },
+      { "text": "Is that so.", "when": [ "dour" ] },
+      { "text": "Ha! Go on, then.", "when": [ "chatty" ] }
+    ] },
+    { "name": "idle", "lines": [
+      { "text": "Quiet out, isn't it." },
+      { "text": "Forge is hot, if anyone's got a blade worth saving.", "when": [ "blacksmith" ] },
+      { "text": "Steel doesn't care how you feel about it.", "when": [ "blacksmith" ] },
+      { "text": "Ale's cold, rooms are clean. Mostly.", "when": [ "innkeeper" ] },
+      { "text": "If you hear a rumour, I heard it first.", "when": [ "innkeeper" ] },
+      { "text": "Stew's on. Don't ask what's in it.", "when": [ "cook" ] },
+      { "text": "Somebody's been at the larder again.", "when": [ "cook" ] },
+      { "text": "Shrine's open, if it hurts.", "when": [ "healer" ] },
+      { "text": "You'd be amazed what people walk around with.", "when": [ "healer" ] },
+      { "text": "Locks opened, wagons mended, no questions.", "when": [ "tinker" ] },
+      { "text": "That box they brought back is ticking. Probably fine.", "when": [ "tinker" ] },
+      { "text": "Anyone need anything hauled?", "when": [ "labourer" ] },
+      { "text": "Do you ever think the heroes notice us? No? Me neither.", "when": [ "chatty" ] },
+      { "text": "Something's coming. I can feel it in my knees.", "when": [ "nervy" ] },
+      { "text": "Same as yesterday.", "when": [ "dour" ] }
+    ] },
+    { "name": "alarm_fire", "lines": [
+      { "text": "Fire! The {place}'s alight!" },
+      { "text": "Fire at the {place}! Buckets!" },
+      { "text": "Water! The {place}'s burning!" },
+      { "text": "It's burning! The {place}! Somebody do something!", "when": [ "nervy" ] },
+      { "text": "Buckets, all of you! The {place}!", "when": [ "brave" ] }
+    ] },
+    { "name": "alarm_dragon", "lines": [
+      { "text": "Dragon! Get inside!" },
+      { "text": "It's the dragon! Off the street!" },
+      { "text": "Oh no. Oh no no no. Dragon!", "when": [ "nervy" ] },
+      { "text": "Dragon! Grab a bucket and soak it!", "when": [ "brave" ] }
+    ] },
+    { "name": "alarm_raid", "lines": [
+      { "text": "Raiders on the road!" },
+      { "text": "Raiders! Bar the doors!" },
+      { "text": "Trouble! Raiders!" },
+      { "text": "Raiders! Who's got a spear?", "when": [ "brave" ] },
+      { "text": "Raiders! I'm not here!", "when": [ "nervy" ] }
+    ] },
+    { "name": "alarm_downed", "lines": [
+      { "text": "{who}'s down! Healer!" },
+      { "text": "Somebody help {who}!" },
+      { "text": "{who}'s hurt bad! Get the healer!" },
+      { "text": "Hold on, {who}, I'm coming.", "when": [ "brave" ] }
+    ] },
+    { "name": "alarm_body", "lines": [
+      { "text": "Gods. {who}'s dead." },
+      { "text": "{who}... no." },
+      { "text": "Get the healer. {who} can still be called back.", "when": [ "healer" ] },
+      { "text": "Somebody fetch the empath, quick. {who}'s gone.", "when": [ "careful" ] }
+    ] },
+    { "name": "carry", "lines": [
+      { "text": "Up you get, {who}." },
+      { "text": "I've got you, {who}." },
+      { "text": "You're heavier than you look, {who}.", "when": [ "chatty" ] }
+    ] },
+    { "name": "douse", "lines": [
+      { "text": "Water coming!" },
+      { "text": "Mind your heads!" },
+      { "text": "Out of the way, water!" },
+      { "text": "Take that!", "when": [ "brave" ] }
+    ] },
+    { "name": "need", "lines": [
+      { "text": "We're out of {thing} at the {place}." },
+      { "text": "Anyone got {thing}? The {place}'s out." },
+      { "text": "No {thing}. Again.", "when": [ "dour" ] },
+      { "text": "Who took all the {thing}?", "when": [ "hasty" ] }
+    ] },
+    { "name": "too_dear_reply", "lines": [
+      { "text": "Take it or leave it, {who}." },
+      { "text": "Quality costs, friend." },
+      { "text": "That's the price. The sign doesn't haggle and neither do I.", "when": [ "greedy" ] },
+      { "text": "You're paying for the craft, {who}, not the iron.", "when": [ "blacksmith" ] }
+    ] },
+    { "name": "blamed_key", "lines": [
+      { "text": "That's the key that was on the hook, friend." },
+      { "text": "Must have been {who} at the board." },
+      { "text": "Ah. Sorry about that, {who}.", "when": [ "careful" ] },
+      { "text": "Keys all look the same. Talk to {who}.", "when": [ "careless" ] },
+      { "text": "Blame {who}. Everyone else does.", "when": [ "hasty" ] }
+    ] },
+    { "name": "revived", "lines": [
+      { "text": "Cold. So cold. Thank you." },
+      { "text": "Was I... was I gone?" },
+      { "text": "Don't tell anyone I died. Bad for business.", "when": [ "innkeeper" ] },
+      { "text": "Right. Where was I.", "when": [ "dour" ] }
+    ] }
+  ]
+}

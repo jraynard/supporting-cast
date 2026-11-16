@@ -39,6 +39,9 @@ public static class FoodPoisoning
     public static float Chance(CreatureDef eater, float rot) =>
         Math.Clamp((rot - SpoiledAt) / (1f - SpoiledAt), 0f, 1f) * eater.FoodPoisonFactor;
 
+    /// <summary>What an adventurer thinks the less of the town for being made ill by its food.</summary>
+    public const float PoisonedMood = 1.5f;
+
     /// <summary>
     /// After a creature has eaten food at <paramref name="rot"/>: a memory of eating spoiled food,
     /// and perhaps food poisoning (it takes the worse of what it has and what this one brings).
@@ -62,8 +65,18 @@ public static class FoodPoisoning
             severity = Math.Max(severity, had.Severity);
             until = Math.Max(until, had.Until);
         }
-        else if (c.Def.Race == Race.Human || w.Has<Avatar>(eater))
-            sim.Messages.Add(MessageKind.Warning, $"{c.Name} has food poisoning from spoiled food.", w.Get<Position>(eater).Cell);
+        else
+        {
+            if (c.Def.Race == Race.Human || w.Has<Avatar>(eater))
+                sim.Messages.Add(MessageKind.Warning, $"{c.Name} has food poisoning from spoiled food.", w.Get<Position>(eater).Cell);
+            // A customer made ill by the town's food doesn't keep it to themselves.
+            if (w.Has<Components.Adventurer>(eater))
+            {
+                w.Get<Components.Adventurer>(eater).Satisfaction -= PoisonedMood;
+                if (Speech.SpeechSystem.CanAct(sim, eater))
+                    Speech.Barks.Say(sim, eater, "adv_poisoned", Speech.Volume.Shout, "Something in that food was off. I'm going to be sick.");
+            }
+        }
         w.Add(eater, new Components.FoodPoisoned { Until = until, Severity = severity });
     }
 

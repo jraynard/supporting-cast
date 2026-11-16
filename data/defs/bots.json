@@ -1,0 +1,14 @@
+{
+  // How stand-in players play (Bots/BotTemperament): each bot draws one by its seed and wobbles it a
+  // little. care: how rarely it slips at a game; haste: how readily it lets the chores go; greed:
+  // how dear it prices; nerve: whether it throws water at the dragon or hides; chatter: how much it says.
+  "botTempers": [
+    { "name": "Careful", "care": 0.9, "haste": 0.2, "greed": 0.4, "nerve": 0.5, "chatter": 0.4 },
+    { "name": "Hasty", "care": 0.35, "haste": 0.85, "greed": 0.4, "nerve": 0.6, "chatter": 0.5 },
+    { "name": "Greedy", "care": 0.6, "haste": 0.4, "greed": 0.9, "nerve": 0.4, "chatter": 0.5 },
+    { "name": "Nervy", "care": 0.65, "haste": 0.5, "greed": 0.3, "nerve": 0.15, "chatter": 0.6 },
+    { "name": "Brave", "care": 0.5, "haste": 0.5, "greed": 0.3, "nerve": 0.9, "chatter": 0.4 },
+    { "name": "Chatty", "care": 0.5, "haste": 0.3, "greed": 0.5, "nerve": 0.5, "chatter": 0.95 },
+    { "name": "Dour", "care": 0.75, "haste": 0.4, "greed": 0.6, "nerve": 0.6, "chatter": 0.15 }
+  ]
+}

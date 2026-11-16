@@ -437,7 +437,9 @@ public class CookPassTests
         sim.World.Get<Position>(me).Cell = by;
         sim.World.Get<Position>(me).Pos = Position.CenterOf(by);
         Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Bowl"), 6));
-        var diner = party[0];
+        // Someone with nothing on order yet, so the bowl can only be for this one.
+        var diner = party.First(p => !sim.Shops.All.Any(o => o.IsOpen && o.Poster == p));
+        Inventory.Stow(sim, diner, sim.CreateItem(sim.Thing(Coin.Silver), 10)); // enough to tip with
         var order = sim.Shops.Post(sim, diner, sim.Defs.Service(ServiceKind.Meal), "Food!", 3, sim.Clock.Tick + SimClock.HoursToTicks(2), where: inn);
         order.WantsHouse = house;
         return (sim, me, pot, diner, order);
@@ -685,6 +687,19 @@ public class CookPassTests
         var roast = sim.World.Get<Carrying>(me).Item;
         Assert.Equal(Roasting.Dish, sim.World.Get<Thing>(roast).Def.Name);
         return roast;
+    }
+
+    [Fact]
+    public void ARoastLiftedWithFullHandsGoesInThePackEvenOntoAnother()
+    {
+        var (sim, me, _, s) = Spit();
+        // Hands full, and a roast already in the pack it may stack with: lifting mustn't trip over it.
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("Bowl"), 1);
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing(Roasting.Dish), 1));
+        s.Advance([new WorkInput(1, WorkInputKind.Act)], 3);
+        Assert.True(s.Done);
+        sim.Tick();
+        Assert.True(sim.StoredIn(sim.PackOf(me)).Where(e => sim.World.Get<Thing>(e).Def.Name == Roasting.Dish).Sum(e => sim.World.Get<Stack>(e).Count) > 1);
     }
 
     [Fact]

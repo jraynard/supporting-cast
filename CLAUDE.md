@@ -14,7 +14,7 @@ dotnet test -c Release                                     # sim, game and Narsi
 dotnet test --filter VillageDayScenario --logger "console;verbosity=detailed"
 dotnet test --filter SeasonScenario --logger "console;verbosity=detailed"   # a whole round, bots, to the reveal
 dotnet run --project src/HeroesNotIncluded                    # title screen
-dotnet run --project src/HeroesNotIncluded -- --new-game --name Arin        # straight into a solo round (--trade Blacksmith, --bots N, --map NAME, --folk Elf, --friendly-fire)
+dotnet run --project src/HeroesNotIncluded -- --new-game --name Arin        # straight into a solo round (--trade Blacksmith, --bots N, --bot-skill F, --map NAME, --folk Elf, --friendly-fire)
 dotnet run --project src/HeroesNotIncluded -- --host --name Arin            # host (--port N, --relay HOST, --difficulty D)
 dotnet run --project src/HeroesNotIncluded -- --join 127.0.0.1 --player-id bea --name Bea
 dotnet run --project src/HeroesNotIncluded -- --raid-test --name Arin          # as the smith, bandits down the north road

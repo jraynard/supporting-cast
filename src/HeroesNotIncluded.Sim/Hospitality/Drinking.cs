@@ -123,6 +123,11 @@ public sealed class DrinkingSystem : ISimSystem, ISaveState
             if (a) w.Get<Adventurer>(who).Satisfaction += 0.6f * mix.Numbing;
             sim.Speech.Say(sim, who, "Dulls the ache, that does.", Volume.Say);
         }
+        // Going under, or getting loud: said as it happens.
+        if (a && was < OutAt && tipsy.Level >= OutAt)
+            Barks.Say(sim, who, "drunk_out", Volume.Say, "I'm fine. I'm absolutely... fine.");
+        else if (a && was < LoudAt && tipsy.Level >= LoudAt)
+            Barks.Say(sim, who, "drunk_loud", Volume.Say, "Another! For everyone! Well. For me.");
         // Too far gone to hold a tankard straight.
         if (was >= ClumsyAt && _rand.NextFloat() < 0.35f)
         {
@@ -166,6 +171,13 @@ public sealed class DrinkingSystem : ISimSystem, ISaveState
                 needs.Values[sim.Defs.Need("Rest").Index] = 0f;
                 continue;
             }
+            // Loud and rowdy, now and then a fight (Brawls).
+            if (hourly && t.Level >= LoudAt && Brawls.MaybeStart(sim, e))
+                continue;
+            // Loud, they sing, boast and pick at each other, now and then (a hash, not the dice: nothing else hangs on it).
+            if (hourly && t.Level >= LoudAt && w.Has<Adventurer>(e)
+                && SimRandom.Hash(e.Index, (int)(sim.Clock.Tick / SimClock.TicksPerHour), (uint)sim.Seed ^ 0xA1Eu) % 3 == 0)
+                Barks.Say(sim, e, "drunk_loud", Volume.Say, "Another! For everyone! Well. For me.");
             // Merry, they talk: a rumour now and then, and truer the more they've had.
             if (hourly && t.Level >= MerryAt && w.Has<Adventurer>(e) && _rand.NextFloat() < 0.6f * t.Level)
                 sim.Expeditions.Gossip(sim, e, spread: Math.Max(0.05f, 0.25f - 0.2f * t.Level));

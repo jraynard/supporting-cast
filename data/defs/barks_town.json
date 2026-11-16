@@ -1,0 +1,114 @@
+{
+  // What the town's customers say (Speech/Barks; see barks.json for the tags). Adventurers carry
+  // their kind ("sellsword", "pilgrim"...) and temper ("easy", "rowdy", "picky", "stingy",
+  // "boastful", "timid", Adventurers/Tempers); drinkers "merry", "loud" or "clumsy"; leaving,
+  // "pleased", "middling" or "sour". Lines the tests listen for keep their words: a give-up always
+  // says "So much for {thing}".
+  "barks": [
+    { "name": "adv_hello", "lines": [
+      { "text": "Evening! Room for {who}, I hope." },
+      { "text": "Right. {who} are here. Try to look pleased." },
+      { "text": "Ale! Ale for {who}! Then the rest.", "when": [ "rowdy" ] },
+      { "text": "So this is the town. It's... small.", "when": [ "picky" ] },
+      { "text": "You'll have heard of us. {who}? No? You will.", "when": [ "boastful" ] },
+      { "text": "Is it safe here? It looks safe. Is it?", "when": [ "timid" ] },
+      { "text": "We're not paying for the view, mind.", "when": [ "stingy" ] },
+      { "text": "Lovely little place. We'll be no trouble.", "when": [ "easy" ] }
+    ] },
+    { "name": "adv_paid", "lines": [
+      { "text": "There. {n} silver, as promised." },
+      { "text": "{n} silver. Fair's fair." },
+      { "text": "{n} silver. Count it twice. I did.", "when": [ "stingy" ] },
+      { "text": "{n} silver! Worth every coin. Mostly.", "when": [ "rowdy" ] },
+      { "text": "{n} silver, and you can tell people who paid it.", "when": [ "boastful" ] },
+      { "text": "Thank you. {n} silver, here.", "when": [ "easy" ] }
+    ] },
+    { "name": "adv_paid_short", "lines": [
+      { "text": "Here's {n} silver. It's all I've got." },
+      { "text": "{n} silver. That's the lot, I swear." }
+    ] },
+    { "name": "adv_give_up", "lines": [
+      { "text": "Forget it. So much for {thing} in this town." },
+      { "text": "So much for {thing}, then." },
+      { "text": "So much for {thing}! What a dump.", "when": [ "rowdy" ] },
+      { "text": "So much for {thing}. I've had better service in a swamp.", "when": [ "picky" ] },
+      { "text": "Oh. So much for {thing}. I'll just... go.", "when": [ "timid" ] },
+      { "text": "So much for {thing}. Good. Saved my silver.", "when": [ "stingy" ] }
+    ] },
+    { "name": "adv_give_up_peckish", "lines": [
+      { "text": "Never mind the food. I'll eat later." },
+      { "text": "Never mind. I'll eat on the road." },
+      { "text": "Never mind. I'll just starve heroically.", "when": [ "boastful" ] }
+    ] },
+    { "name": "adv_mess", "lines": [
+      { "text": "Mind the mess, it's everywhere." },
+      { "text": "Something's sticky. I won't ask what.", "when": [ "picky" ] },
+      { "text": "Lived in, isn't it.", "when": [ "easy" ] }
+    ] },
+    { "name": "adv_mess_bad", "lines": [
+      { "text": "Does nobody ever clean this floor?" },
+      { "text": "I've slept in cleaner caves. Actual caves.", "when": [ "picky" ] },
+      { "text": "Is that... blood? Is that blood?", "when": [ "timid" ] }
+    ] },
+    { "name": "adv_poisoned", "lines": [
+      { "text": "Something in that food was off. I'm going to be sick." },
+      { "text": "Oh, that's not right. That's not right at all." },
+      { "text": "Who cooked that? I want a word. After I'm sick.", "when": [ "rowdy" ] },
+      { "text": "I knew it. I knew I should have had the bread.", "when": [ "picky" ] }
+    ] },
+    { "name": "adv_trap_sprung", "lines": [
+      { "text": "Ah. Should have mentioned that." },
+      { "text": "We did wonder why it was ticking." },
+      { "text": "Sorry, {who}! It did that to Osric too.", "when": [ "easy" ] },
+      { "text": "Still charging us for that, are you?", "when": [ "stingy" ] }
+    ] },
+    { "name": "adv_spooked", "lines": [
+      { "text": "No. No, I'm not staying here." },
+      { "text": "This town's haunted. I'm leaving. Tonight." },
+      { "text": "Who's there? Nobody? Right. I'm off." }
+    ] },
+    { "name": "adv_uneasy", "lines": [
+      { "text": "Did you feel that?" },
+      { "text": "Cold in here all of a sudden." },
+      { "text": "Ha! A ghost. I've killed worse.", "when": [ "boastful" ] },
+      { "text": "Some wind, that.", "when": [ "rowdy" ] }
+    ] },
+    { "name": "drunk_loud", "lines": [
+      { "text": "Another! For everyone! Well. For me." },
+      { "text": "Did I tell you about the time I fought a bear? It was a big bear." },
+      { "text": "(singing) Oh, the road goes on and the ale goes down..." },
+      { "text": "I love this town. I love all of you. Except him.", "when": [ "rowdy" ] },
+      { "text": "Who wants a fight? Nobody? Cowards! Lovely cowards.", "when": [ "rowdy" ] },
+      { "text": "We'd have won if the wizard hadn't sneezed.", "when": [ "boastful" ] },
+      { "text": "I'm not even supposed to be drinking. Don't tell anyone.", "when": [ "timid" ] },
+      { "text": "Is it my round? It's never my round.", "when": [ "stingy" ] }
+    ] },
+    { "name": "drunk_out", "lines": [
+      { "text": "I'm fine. I'm absolutely... fine." },
+      { "text": "Just going to rest my eyes. Right here." },
+      { "text": "Floor's lovely. Whoever made this floor..." }
+    ] },
+    { "name": "brawl_start", "lines": [
+      { "text": "You looking at me, {who}?" },
+      { "text": "Say that again, {who}. Go on." },
+      { "text": "That was MY ale, {who}!" },
+      { "text": "Right, {who}. You and me." }
+    ] },
+    { "name": "brawl_reply", "lines": [
+      { "text": "Right. Outside. No, here's fine." },
+      { "text": "Oh, you want some, {who}?" },
+      { "text": "Not the face! Not the... fine.", "when": [ "timid" ] },
+      { "text": "I've wrestled bears bigger than you, {who}.", "when": [ "boastful" ] },
+      { "text": "I'm not paying for anything you break.", "when": [ "stingy" ] }
+    ] },
+    { "name": "adv_leaving", "lines": [
+      { "text": "Best town on the road. Don't tell anyone.", "when": [ "pleased" ] },
+      { "text": "We'll be back. Keep the ale cold.", "when": [ "pleased" ] },
+      { "text": "Right. Onward.", "when": [ "middling" ] },
+      { "text": "Could be worse. Could be better.", "when": [ "middling" ] },
+      { "text": "Never again.", "when": [ "sour" ] },
+      { "text": "We'll be telling people about this place. Not nicely.", "when": [ "sour" ] },
+      { "text": "I'd tip, but you know why I won't.", "when": [ "sour", "stingy" ] }
+    ] }
+  ]
+}

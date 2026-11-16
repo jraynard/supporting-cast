@@ -281,6 +281,12 @@ public sealed class RoastSession : WorkSession
         if (item.IsNull)
             return;
         var w = sim.World;
+        // Hands full, it went in the pack, where it may have joined a stack like it: nothing left to read.
+        if (!w.IsAlive(item))
+        {
+            sim.Messages.Add(MessageKind.Info, "Lifted the roast off, into the pack with it.", w.Get<Thing>(Spit).Cell);
+            return;
+        }
         var fault = w.Get<Dish>(item).Fault;
         var said = fault switch
         {

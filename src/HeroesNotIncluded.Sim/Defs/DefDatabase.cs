@@ -40,6 +40,8 @@ public sealed class DefDatabase
 
     private readonly Dictionary<string, MendingDef> _mendings = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, GhostErrandDef> _ghostErrands = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, BotTemperDef> _botTempers = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, BarkDef> _barks = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, RuneDef> _runes = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, DrawFeelDef> _drawFeels = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, QuestDef> _quests = new(StringComparer.OrdinalIgnoreCase);
@@ -54,6 +56,8 @@ public sealed class DefDatabase
     /// <summary>What an empath can cast (data/defs/healing.json), in def order.</summary>
     public List<MendingDef> AllMendings { get; } = [];
     public List<GhostErrandDef> AllGhostErrands { get; } = [];
+    public List<BotTemperDef> AllBotTempers { get; } = [];
+    public List<BarkDef> AllBarks { get; } = [];
 
     /// <summary>What mendings are woven from (data/defs/healing.json), in def order: keys 1 to 9.</summary>
     public List<RuneDef> AllRunes { get; } = [];
@@ -164,6 +168,8 @@ public sealed class DefDatabase
         public List<ServiceDef> Services { get; set; } = [];
         public List<MendingDef> Mendings { get; set; } = [];
         public List<GhostErrandDef> GhostErrands { get; set; } = [];
+        public List<BotTemperDef> BotTempers { get; set; } = [];
+        public List<BarkDef> Barks { get; set; } = [];
         public List<RuneDef> Runes { get; set; } = [];
         public List<DrawFeelDef> DrawFeels { get; set; } = [];
         public List<QuestDef> Quests { get; set; } = [];
@@ -230,6 +236,8 @@ public sealed class DefDatabase
         AddAll(file.Services, _services, AllServices, source);
         AddAll(file.Mendings, _mendings, AllMendings, source);
         AddAll(file.GhostErrands, _ghostErrands, AllGhostErrands, source);
+        AddAll(file.BotTempers, _botTempers, AllBotTempers, source);
+        AddAll(file.Barks, _barks, AllBarks, source);
         AddAll(file.Runes, _runes, AllRunes, source);
         AddAll(file.DrawFeels, _drawFeels, AllDrawFeels, source);
         AddAll(file.Quests, _quests, AllQuests, source);
@@ -287,6 +295,8 @@ public sealed class DefDatabase
             throw new Exception("At most 9 runes: they're keyed 1 to 9");
         foreach (var d in AllMendings) d.Resolve(this);
         foreach (var d in AllGhostErrands) d.Resolve(this);
+        foreach (var d in AllBotTempers) d.Resolve(this);
+        foreach (var d in AllBarks) d.Resolve(this);
         Healing.Weaving.Validate(this);
         foreach (var d in AllDrawFeels) d.Resolve(this);
         foreach (var d in AllQuests) d.Resolve(this);
@@ -452,6 +462,9 @@ public sealed class DefDatabase
     public ServiceDef Service(string name) => Lookup(_services, name);
     public MendingDef Mending(string name) => Lookup(_mendings, name);
     public RuneDef Rune(string name) => Lookup(_runes, name);
+
+    /// <summary>What's said when this happens; null if nothing's written for it.</summary>
+    public BarkDef? Bark(string name) => _barks.GetValueOrDefault(name);
 
     /// <summary>How drawing a wound of this kind feels; plain jolts for a kind with no def.</summary>
     public DrawFeelDef? DrawFeel(DamageType type) => _drawFeels.GetValueOrDefault(type.ToString());

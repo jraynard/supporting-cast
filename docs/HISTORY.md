@@ -2053,6 +2053,39 @@ player vanished on day two and it ended on day three.
   won 1 (3), quests cleared 1.4 (1.4); the smith's blows take their own time now, which moves
   every season after.
 
+### Bots who play like people, and a town that talks back (2026-11-15)
+For a solo round with bots to play like a multiplayer one: every trade's game, human slips, and
+the trouble that makes rounds funny.
+- **`BotPlayer` in partials** by area (`Bots/BotPlayer.*.cs`); its trades' orders come from the
+  defs' `serves`; the solo table seats a cook; `--season-sweep` reports what each trade's bot
+  played, took on, said and slipped at (`BotStats`).
+- **Pitching in** (`BotPlayer.Helping`): water on a fire it sees, smells or was told of, and on the
+  dragon once it's down (bucket from the well, swung and let go at the distance); the downed
+  carried to a bed, a neighbour's bleeding bound, the dead called back by an empath bot or carried
+  to a shrine pallet. A dead bot's ghost spooks raiders, rides a beast at them and whispers "call me
+  back" to a sleeping empath.
+- **Tempers** (`BotTemperament`, `bots.json`): care, haste, greed, nerve, chatter. Slips are real
+  inputs (a blade lifted hot or left till it's cold, cold iron hammered, a pinch past right, a cue
+  or rune muddled, a bandage too tight, a pour over the line, the key off the next hook). Greed
+  prices, nerve decides who throws water and who hides. `--bot-skill F`.
+- **Barks** (`Speech/Barks`, `barks*.json`): what's said when something happens, by the speaker's
+  tags (kind, trade, temper, traits, drink), townsfolk's picked by a stable hash so the sim's dice
+  are untouched. Bots shout alarms, greet, answer, ask for what they're out of, blame someone for
+  a wrong key; adventurers pay, give up, complain (one voice a room, not a chorus) in their own words.
+- **Every trade's game**: the cook's whole kitchen (fires, lids, chopping, the spit, the oven, pies,
+  the block, sniffing, feasts, rations, the house dish, rats); the innkeeper's kegs, slops, jug and
+  book; the smith's blades, the healer's charms and the tinker's contraptions on show and sold; the
+  tinker's locks and curio haggling; the bot labourer's errands, gathering and festival sites.
+- **Adventurers' tempers** (`Adventurers/Tempers`, `adventurers.json` "tempers"): easy, rowdy,
+  picky, stingy, boastful, timid, by a hash of who they are. Worth, patience, thirst and taste go by
+  them. A party says hello with its first order and goodbye as it found the town; loud drunks
+  sing, the out-cold sleep where they fall, rowdy ones start fistfights (`Hospitality/Brawls`);
+  the poisoned shout about it, a sprung trap gets a word from its owner, a timid one who feels the
+  dead leaves within the hour. Gear is bought only from what's left after a quest and a box's opening.
+- **The labourer's living** (`Favours/Wants`, trades.json "wants"): AI trades pin errands for what
+  their workplace runs short of; an errand for what isn't lying about marks trees, bushes or rocks.
+- A roast or loaf taken out with full hands no longer crashes on the pack it went into.
+
 ### The inn's look, its furniture, drinking (2026-11-15)
 - **Behind the bar**: anywhere beside a counter on the keeper's side reaches the shelves behind it
   (`Vessels.BehindTheBar`), not only the cells next to the shelf.
