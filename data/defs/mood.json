@@ -73,7 +73,9 @@
     { "name": "FeastedInTheHall", "label": "ate in the longhouse", "mood": 4, "durationHours": 10, "races": [ "Human" ] },
     { "name": "AteAtTheInn", "label": "ate at the inn", "mood": 4, "durationHours": 10, "races": [ "Human" ] },
     // A ghost's whisper remembered on waking (Afterlife/Dreams). New thoughts go last: the bench's state hash counts them by place.
-    { "name": "DreamtOfTheDead", "label": "dreamt the dead spoke to me", "mood": 3, "durationHours": 24, "races": [ "Human" ] }
+    { "name": "DreamtOfTheDead", "label": "dreamt the dead spoke to me", "mood": 3, "durationHours": 24, "races": [ "Human" ] },
+    // A meal at a town's cookhouse (BuildingDef.EatThought), where it keeps one apart from the inn.
+    { "name": "AteAtTheCookhouse", "label": "ate at the cookhouse", "mood": 4, "durationHours": 10, "races": [ "Human" ] }
   ],
 
   // Traits: humans get 0-2 (rolled from their own stream; the player picks the avatar's). "mood" is

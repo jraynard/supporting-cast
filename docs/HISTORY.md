@@ -1931,3 +1931,12 @@ player vanished on day two and it ended on day three.
   the bar's line runs along the counter toward the door.
 - Bench hashes move (the inn's layout): seed 1234 state `57F4CB524D2257FB`, full `4187CA2B619AA4D5`;
   seed 99 state `C1BB56A18110F5C7`, full `38AAD123E2D4EA7D`; `--round` 1234 state `A5FCA9767F06D3FA`.
+
+### A cookhouse, and an inn without a kitchen (2026-11-15)
+- **`Cookhouse`** (role Kitchen): the Inn's kitchen a little roomier behind, a small eating room in
+  front with a hearth and two tables, meals ordered and collected at the hatch in the wall between.
+  Eating there is its own thought (`AteAtTheCookhouse`). Its default name is The Ladle.
+- **`LandingInn`** (role Tavern): the Inn's common room, long bar, storeroom and rooms upstairs, with a
+  scullery (wash tub, crockery shelf) where the kitchen was. The Dry Boots.
+- A town that puts both up gives the cook a building of their own: signs, work, stock and the carter
+  follow the roles (`CookhouseTests`). Millbrook keeps its inn. Bench hashes unchanged.
