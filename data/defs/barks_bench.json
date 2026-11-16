@@ -1,0 +1,21 @@
+{
+  // The workshops' barks (Speech/Barks), said by bots at their benches: a piece put out on show,
+  // a lock fitted. Same shape as barks.json; slots {who}, {thing}, {place}, {n}.
+  "barks": [
+    { "name": "on_show", "lines": [
+      { "text": "A {thing}, on show. For anyone with the silver." },
+      { "text": "There. The {thing}'s out." },
+      { "text": "Fresh off the anvil: one {thing}. Don't all rush.", "when": [ "blacksmith" ] },
+      { "text": "A {thing} for the road. Mind you don't need it.", "when": [ "healer" ] },
+      { "text": "Woven today. Carry it close.", "when": [ "healer" ] },
+      { "text": "One {thing}, wound and latched. It works. Mostly.", "when": [ "tinker" ] },
+      { "text": "Going cheap, one {thing}. Well. Going.", "when": [ "greedy" ] },
+      { "text": "Something to sell, if anyone's buying.", "when": [ "quiet" ] }
+    ] },
+    { "name": "lock_fitted", "lines": [
+      { "text": "There. The {thing}'s got a lock on it now." },
+      { "text": "New lock on the {thing}. Don't lose the key, me.", "when": [ "tinker" ] },
+      { "text": "Pinned it myself. Try picking that.", "when": [ "chatty" ] }
+    ] }
+  ]
+}

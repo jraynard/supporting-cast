@@ -78,6 +78,55 @@ public sealed partial class BotPlayer
     /// <summary>The healer's further games; null for a session that isn't one.</summary>
     private (bool Press, bool Held, int Axis)? PlayShrine(WorkSession s) => null;
 
-    /// <summary>The healer between patients (charms for the road). True while at it.</summary>
-    private bool Shrine(Simulation sim, Entity me, PerceptionView view, long now) => false;
+    /// <summary>A charm of its own it knows came out looser than this isn't sold: it's torn.</summary>
+    public const float WeakCharm = 0.4f;
+
+    /// <summary>The share of its mana it keeps for the hurt: it weaves a charm only with more than this to hand.</summary>
+    public const float CharmsFrom = 0.8f;
+
+    /// <summary>Bandages it keeps for binding: a charm takes a strip only past these.</summary>
+    public const int KeepBandages = 1;
+
+    /// <summary>
+    /// The healer between patients: charms for the road. A charm it wove loose is torn (its mending
+    /// lands on it, as anyone's would); good ones go on show in the shrine; and with mana to spare
+    /// and linen to hand, a new one is woven at the shrine's altar, a different healing mending from
+    /// what's in stock, while the stock's short. Never in the small hours. True while at it.
+    /// </summary>
+    private bool Shrine(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Mana>(me, out var mana) || MyShop(sim, me) is not { IsNull: false } shop)
+            return false;
+        // A loose one: torn, rather than sold to someone who'd trust their life to it.
+        foreach (var item in Loose(sim, me))
+            if (MadeBy(sim, item, me) && view.Charm(item) is { Quality: < WeakCharm } && !w.Has<Shops.ForSale>(item))
+            {
+                Doing = "tearing a loose charm";
+                Send(new TearCharmCommand(me, item));
+                return true;
+            }
+        if (ShowGoods(sim, me, view, now))
+            return true;
+        if (!sim.Round.Live || ShopSystem.SmallHours(sim) || Stock(sim, me) >= StockWanted || mana.Current < mana.Max * CharmsFrom)
+            return false;
+        // Linen on it, not just in the chest beside it: it walks off to the altar.
+        if (OnMe(sim, me, Bandaging.BandageDef) <= KeepBandages)
+            return sim.Defs.Thing(Bandaging.BandageDef) is { } linen
+                && Fetch(sim, me, view, now, new ThingCount { Def = linen.Name, Count = 2, ThingDef = linen }, "linen");
+        // A healing mending in its book, not one already in stock (nobody carries two the same).
+        var stocked = OnSale(sim, me).Concat(Loose(sim, me)).Select(view.Charm).OfType<KnownCharm>().Select(c => c.Mending).ToHashSet();
+        var pick = sim.Defs.AllMendings.FirstOrDefault(m => !m.CallsBack && m.Heals.Count > 0 && m.Sears <= 0 && Weaving.Knows(sim, me, m)
+            && !stocked.Contains(m) && m.CostAt(0) <= mana.Current - mana.Max * (CharmsFrom - 0.3f));
+        if (pick == null)
+            return false;
+        _weave = Weaving.Recipe(pick).Select(r => r.Index).ToList();
+        Doing = $"weaving a charm of {pick.Label.ToLowerInvariant()}";
+        // At the altar if the shrine has one: the heart's steadier there.
+        var altar = Buildings.Parts(sim, shop).FirstOrDefault(e => w.Get<Thing>(e).Def.Building is { Weaving: > 0 }, Entity.Null);
+        if (!altar.IsNull && AtStation(sim, me, altar, now, _ => Send(new WeaveCharmCommand(me))))
+            return true;
+        Send(new WeaveCharmCommand(me));
+        return true;
+    }
 }
