@@ -398,4 +398,7 @@ public sealed partial class BotPlayer
         }
         return best;
     }
+
+    /// <summary>The innkeeper's further games; null for a session that isn't one.</summary>
+    private (bool Press, bool Held, int Axis)? PlayInn(WorkSession s) => null;
 }

@@ -171,6 +171,9 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
             return;
         if (_task == 0 && Smith(sim, me, view, now))
             return;
+        // Each trade's work between orders, in its own file.
+        if (_task == 0 && (Kitchen(sim, me, view, now) || Bench(sim, me, view, now) || Shrine(sim, me, view, now) || Labour(sim, me, view, now)))
+            return;
         // The hasty let the chores go half the time (an hour on, an hour off).
         if (_task == 0 && (Temper.Haste < 0.65f || now / SimClock.TicksPerHour % 2 == 0) && Upkeep(sim, me, view, now))
             return;
@@ -230,6 +233,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
             ServiceKind.Unlock => OpenBox(sim, me, view, poster, now),
             ServiceKind.WagonRepair => MendWagon(sim, me, view, poster, now),
             ServiceKind.Appraise => Appraise(sim, me, view, poster, now),
+            ServiceKind.Goods => Sell(sim, me, view, poster, now),
             _ => false,
         };
     }

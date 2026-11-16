@@ -114,4 +114,10 @@ public sealed partial class BotPlayer
             Send(new GiveCommand(me, owner, curio, 1));
         return true;
     }
+
+    /// <summary>The tinker's further games; null for a session that isn't one.</summary>
+    private (bool Press, bool Held, int Axis)? PlayBench(WorkSession s) => null;
+
+    /// <summary>The tinker between orders. True while at it.</summary>
+    private bool Bench(Simulation sim, Entity me, PerceptionView view, long now) => false;
 }

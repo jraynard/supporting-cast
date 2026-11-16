@@ -180,4 +180,7 @@ public sealed partial class BotPlayer
                 Send(new TakeFromStorageCommand(me, item, want.Count * 2));
         });
     }
+
+    /// <summary>The smith's further games; null for a session that isn't one.</summary>
+    private (bool Press, bool Held, int Axis)? PlayForge(WorkSession s) => null;
 }

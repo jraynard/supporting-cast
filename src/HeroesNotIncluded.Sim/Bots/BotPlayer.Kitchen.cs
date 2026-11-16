@@ -97,4 +97,10 @@ public sealed partial class BotPlayer
         Doing = "ladling a bowl";
         return AtStation(sim, me, pot, now, at => Send(new PotCommand(me, at, PotStep.Ladle)));
     }
+
+    /// <summary>The cook's further games (a <see cref="Play"/> case for each); null for a session that isn't one.</summary>
+    private (bool Press, bool Held, int Axis)? PlayKitchen(WorkSession s) => null;
+
+    /// <summary>The cook between orders. True while at it.</summary>
+    private bool Kitchen(Simulation sim, Entity me, PerceptionView view, long now) => false;
 }

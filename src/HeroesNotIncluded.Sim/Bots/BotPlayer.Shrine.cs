@@ -74,4 +74,10 @@ public sealed partial class BotPlayer
         }
         return false;
     }
+
+    /// <summary>The healer's further games; null for a session that isn't one.</summary>
+    private (bool Press, bool Held, int Axis)? PlayShrine(WorkSession s) => null;
+
+    /// <summary>The healer between patients (charms for the road). True while at it.</summary>
+    private bool Shrine(Simulation sim, Entity me, PerceptionView view, long now) => false;
 }
