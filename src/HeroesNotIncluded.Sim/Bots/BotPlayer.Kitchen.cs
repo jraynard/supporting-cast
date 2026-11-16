@@ -29,8 +29,8 @@ public sealed partial class BotPlayer
     /// <summary>
     /// A meal: a dish asked for by name (<see cref="ServeDish"/>), else a bowl from the pot, ladled
     /// and put up on the hatch; with the pot not ready, cook it (fill it from the larder, chopped,
-    /// tend it till it's done, season it by taste, and sniff it) first. A dish already made waits
-    /// on no pot: up it goes.
+    /// tend it till it's done, season it by taste, and sniff it) first. With nothing in the larder
+    /// for a pot, a dish made ahead goes up instead.
     /// </summary>
     private bool Serve(Simulation sim, Entity me, PerceptionView view, Entity diner, long now)
     {
@@ -69,9 +69,6 @@ public sealed partial class BotPlayer
             _pot = seen;
         if (_pot is not { } p || p.Pot != pot)
             return AtStation(sim, me, pot, now, _ => { });
-        // The stew's a while off yet, and there's a roast or a loaf to hand: that goes up instead.
-        if (!(p.Cooked && p.Bowls > 0) && Stock(sim, me) is { IsNull: false })
-            return PutUpStock(sim, me, view, diner, hatch, now);
         if (!p.Lit && FireBy(sim, pot) is { IsNull: false } fire)
             return FeedFire(sim, me, view, fire, now);
         // Only what it fetched for the pot goes in it: not the meat it's carrying for the spit, or a pie's filling.
@@ -96,6 +93,9 @@ public sealed partial class BotPlayer
         }
         if (p.Empty || (p.Bowls == 0 && p.Cooked))
         {
+            // Nothing in the larder for a pot: a roast or a loaf made ahead goes up instead.
+            if (!sim.StoredIn(Larder(sim, me)).Any(e => Cooking.IsIngredient(w.Get<Thing>(e).Def) && !w.Get<Thing>(e).Def.IsSeasoner))
+                return PutUpStock(sim, me, view, diner, hatch, now);
             Doing = "fetching food for the pot";
             _potSeasoned = _potSniffed = false;
             return AtStation(sim, me, Larder(sim, me), now, larder =>
@@ -371,17 +371,17 @@ public sealed partial class BotPlayer
     };
 
     /// <summary>
-    /// The cook between orders (BotPlayer.KitchenWork): a flaring pot lidded; a roast left on the
+    /// The cook between orders (BotPlayer.KitchenWork): a flaring pot lidded; a rat chased off; a roast left on the
     /// spit or bread in the oven seen to; the kitchen's fires kept; its dishes on the sign; what the
-    /// carter brought whole dressed; a roast, a loaf or a pie or two made ahead for the rush. True
-    /// while at it.
+    /// carter brought whole dressed; a roast, a loaf or a pie or two made ahead for the rush; rations
+    /// packed for a party's road. True while at it.
     /// </summary>
     private bool Kitchen(Simulation sim, Entity me, PerceptionView view, long now)
     {
         if (!IsCook(sim, me))
             return false;
-        return LidAFlare(sim, me, view, now) || SeeToTheSpitAndOven(sim, me, view, now) || KeepTheFires(sim, me, view, now)
-            || OfferTheMenu(sim, me, view) || DressWhole(sim, me, view, now) || MakeAhead(sim, me, view, now);
+        return LidAFlare(sim, me, view, now) || ChaseRats(sim, me, view, now) || SeeToTheSpitAndOven(sim, me, view, now) || KeepTheFires(sim, me, view, now)
+            || OfferTheMenu(sim, me, view) || DressWhole(sim, me, view, now) || MakeAhead(sim, me, view, now) || PackRations(sim, me, view, now);
     }
 
     /// <summary>It cooks at a kitchen of its own.</summary>

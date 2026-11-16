@@ -113,6 +113,56 @@ public sealed partial class BotPlayer
         return false;
     }
 
+    /// <summary>Bundles of rations it keeps on show while there are parties in town to buy them.</summary>
+    public const int RationsOnShow = 2;
+
+    // The bundles it's put out for sale (its own to know of).
+    private readonly List<Entity> _rationsOut = [];
+
+    /// <summary>
+    /// Rations for the road, while a party's in town: three portions packed at the prep table, tied,
+    /// and set down in the kitchen priced for sale (the bar sells them). Greedier, dearer.
+    /// </summary>
+    private bool PackRations(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        var w = sim.World;
+        _rationsOut.RemoveAll(r => view.Sale(r) is not { Seller: var seller } || seller != me);
+        // A party in town: seen, or heard ordering (the kitchen's walls hide the common room).
+        var party = view.Creatures().Any(e => w.Has<Adventurer>(e))
+            || view.Orders().Any(o => now - o.PostedTick < SimClock.TicksPerHour * 4 && w.IsAlive(o.Poster) && w.Has<Adventurer>(o.Poster));
+        if (_rationsOut.Count >= RationsOnShow || !party)
+            return false;
+        var table = Part(sim, me, "PrepTable");
+        if (table.IsNull)
+            return false;
+        if (Rations.Carried(sim, me).FirstOrDefault(Entity.Null) is { IsNull: false } bundle)
+        {
+            if (w.Get<Carrying>(me).Item == bundle)
+            {
+                Send(new StowCommand(me));
+                return true;
+            }
+            Doing = "setting out rations for sale";
+            var price = Math.Max(1, (int)MathF.Round(3 * (0.85f + 0.5f * Temper.Greed)));
+            Send(new DropFromPackCommand(me, bundle));
+            Send(new SetItemPriceCommand(me, bundle, price, true));
+            _rationsOut.Add(bundle);
+            return true;
+        }
+        // Three portions of something that keeps on the road, in hand (packing takes from the hand first, not the pack's roast).
+        static bool Road(ThingDef d) => Rations.IsPortion(d) && !d.Cooked && !d.Roasts && !d.Grain && d.Name != Baking.Flour && d.Joints == null && d.Plucks == null && !d.IsSeasoner;
+        var food = AvatarSystem.SupplyItem(sim, me, e => Road(w.Get<Thing>(e).Def) && w.Get<Stack>(e).Count >= Rations.Portions);
+        if (food.IsNull)
+            return FromLarder(sim, me, view, now, Road, Rations.Portions, "food for the road");
+        if (w.Get<Carrying>(me).Item != food)
+        {
+            Send(new HoldCommand(me, food));
+            return true;
+        }
+        Doing = "packing rations";
+        return AtStation(sim, me, table, now, t => Send(new PrepCommand(me, t, PrepStep.Pack)));
+    }
+
     /// <summary>One step toward a dish off the sign. False if it can't be made now (or the dough's still proving).</summary>
     private bool MakeDish(Simulation sim, Entity me, PerceptionView view, ThingDef dish, long now) => dish.Name switch
     {

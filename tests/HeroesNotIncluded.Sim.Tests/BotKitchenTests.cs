@@ -207,4 +207,30 @@ public class BotKitchenTests
         Run(sim, bot, () => Have(sim, me, inn, Pies.Pie) > 0, SimClock.TicksPerHour * 10);
         Assert.True(bot.Stats.Mistakes >= 3, $"{bot.Stats.Mistakes} slips; " + Log(sim, bot));
     }
+
+    [Fact]
+    public void TheCookPacksRationsForAPartyAndSetsThemOutForSale()
+    {
+        var (sim, bot, me, inn) = Cook();
+        HungryParty(sim, inn);
+        bool OnSale() => Goods.OnShow(sim).Count(x => sim.World.Has<Ration>(x.Item) && sim.World.Get<ForSale>(x.Item).Seller == me) >= 1;
+        Assert.True(Run(sim, bot, OnSale, SimClock.TicksPerHour * 8), Log(sim, bot));
+        Assert.True(bot.Stats.Sessions.ContainsKey(nameof(PackSession)));
+        var bundle = Goods.OnShow(sim).First(x => sim.World.Has<Ration>(x.Item)).Item;
+        Assert.False(sim.World.Get<Ration>(bundle).LooseWrap, "a steady hand ties it snug");
+        Assert.Equal(inn, Goods.ShownIn(sim, bundle));
+    }
+
+    [Fact]
+    public void TheCookGoesAfterTheRatsInAShortage()
+    {
+        var (sim, bot, me, inn) = Cook();
+        sim.Director.Enable(sim.Defs.Difficulty("Normal"));
+        Assert.IsType<Director.ShortageCrisis>(sim.Director.Send(sim, Defs.CrisisKind.Shortage));
+        var rats = sim.World.Query<Hospitality.Vermin>().ToList();
+        Assert.NotEmpty(rats);
+        var chased = false;
+        Assert.True(Run(sim, bot, () => (chased |= bot.Doing == "chasing a rat") && rats.Any(r => !sim.World.IsAlive(r) || sim.World.Get<Creature>(r).Dead),
+            SimClock.TicksPerHour * 2), Log(sim, bot));
+    }
 }
