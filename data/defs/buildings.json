@@ -562,7 +562,7 @@
       // The inn's look (art/reference/inn*.webp): a fieldstone ground storey, dressed quoins at the
       // corners and an arched stone door, under a timber-framed upper storey (its own kit, "upper").
       // Runs and doors face out, so the street sees the stone's face and the room its plaster.
-      "name": "inn_stone_timber", "upper": "inn_timber_upper", "facesOut": true,
+      "name": "inn_stone_timber", "upper": "inn_timber_upper", "facesOut": true, "jetty": 0.22,
       "span": [
         { "min": [0, 0.16, 0], "max": [1, 0.84, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
         { "min": [0, 0.22, 0.1], "max": [1, 0.78, 0.94], "top": "buildings/wall_fieldstone", "side": "buildings/wall_fieldstone", "back": "buildings/gable_fill_plaster" },
@@ -597,19 +597,25 @@
       }
     },
     {
-      // The inn's upper storey (inn_stone_timber's "upper"): warm oak half-timbering, braced, and
+      // The inn's upper storey (inn_stone_timber's "upper", jettied out over the street on a sole
+      // beam, its corners on stepped brackets): warm oak half-timbering, braced, and
       // facing the street, now and then a leaded window with shutters and a flower box
       // (wall_timber_oak_out: its bays' variants; the room sees plain wall_timber_oak).
       "name": "inn_timber_upper", "facesOut": true,
       "span": [
+        { "min": [0, 0.22, -0.02], "max": [1, 0.78, 0.13], "top": "buildings/beam_oak", "side": "buildings/beam_oak" },
         { "min": [0, 0.28, 0.1], "max": [1, 0.72, 0.94], "top": "props/planks", "side": "buildings/wall_timber_oak", "front": "buildings/wall_timber_oak_out" },
         { "min": [0, 0.26, 0.94], "max": [1, 0.74, 1], "top": "buildings/beam_oak", "side": "buildings/beam_oak" }
       ],
       "arm": [
+        { "min": [0.5, 0.22, -0.02], "max": [1, 0.78, 0.13], "top": "buildings/beam_oak", "side": "buildings/beam_oak" },
         { "min": [0.5, 0.28, 0.1], "max": [1, 0.72, 0.94], "top": "props/planks", "side": "buildings/wall_timber_oak" },
         { "min": [0.5, 0.26, 0.94], "max": [1, 0.74, 1], "top": "buildings/beam_oak", "side": "buildings/beam_oak" }
       ],
       "corner": [
+        { "min": [0.2, 0.2, -0.02], "max": [0.8, 0.8, 0.13], "top": "buildings/beam_oak", "side": "buildings/beam_oak" },
+        { "min": [0.3, 0.3, -0.18], "max": [0.7, 0.7, 0.13], "top": "buildings/beam_oak", "side": "buildings/beam_oak" },
+        { "min": [0.36, 0.36, -0.34], "max": [0.64, 0.64, 0.13], "top": "buildings/beam_oak", "side": "buildings/beam_oak" },
         { "min": [0.24, 0.24, 0.1], "max": [0.76, 0.76, 1.04], "top": "buildings/beam_oak", "side": "buildings/beam_oak" }
       ],
       "post": [

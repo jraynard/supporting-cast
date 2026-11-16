@@ -306,7 +306,7 @@ public sealed class WorldMesher(TextureAtlas atlas)
                     var roofMaterial = roof.Material;
                     BuildingKit.Roof(_quads, pitched, roofKit.Building, new int3(x, y, z),
                         (name, pick) => _materials.Resolve(name, roofMaterial) is var (art, artTint) && V(art) is var looks ? (looks[(int)(pick % (uint)looks.Count)], artTint) : default,
-                        Rgba.White, Quad.Level(z) | Quad.Roof | Quad.Occluder);
+                        Rgba.White, Quad.Level(z) | Quad.Roof | Quad.Occluder, jetty: roofKit.Kit.Jetty);
                 }
                 else
                 {
@@ -335,12 +335,21 @@ public sealed class WorldMesher(TextureAtlas atlas)
                 var index = 0;
                 // Each bay picks among its art's variants (wall_timber_plaster_v2...), so a long wall isn't stamped.
                 var bay = Variation.Hash(x, y * 61 + z, 0xBA75);
+                var from = _quads.Count;
                 foreach (var (piece, facing) in BuildingKit.WallPieces(walls.Kit, walls.Building, new int3(x, y, z)))
                     PropModel.Build(_quads, piece, new int3(x, y, z), facing,
                         name => _materials.Resolve(name, material) is var (art, artTint) && V(art) is var looks
                             ? (looks[(int)(bay % (uint)looks.Count)], artTint) : default,
                         Rgba.White, Quad.Level(z) | Quad.Occluder, d => Occludes(sim, x + d.X, y + d.Y, z) && !IsStub(sim, x + d.X, y + d.Y, z),
                         cutAt: stub ? StubHeight + BuildingKit.CutLift(index++, facing) : float.MaxValue);
+                // Upstairs on a jettied building, the walls jut out over the street (BuildingKitDef.Jetty).
+                if (JettyOut(walls.Kit, walls.Building, x, y, z) is { } jut)
+                    for (var q = from; q < _quads.Count; q++)
+                    {
+                        var moved = _quads[q];
+                        moved.Origin += new float3(jut.X, jut.Y, 0);
+                        _quads[q] = moved;
+                    }
                 continue; // a door's leaf still swings on its own (Rendering/DoorAnimator)
             }
             if (PropModel.Placed(def) is { } model)
@@ -595,8 +604,25 @@ public sealed class WorldMesher(TextureAtlas atlas)
     {
         var map = sim.Map;
         bool Run(int nx, int ny) => map.InBounds(nx, ny, z) && map.HasFloor[map.Idx(nx, ny, z)];
-        return (Run(x - 1, y) ? x : x + 0.5f, Run(x, y - 1) ? y : y + 0.5f,
-                Run(x + 1, y) ? x + 1 : x + 0.5f, Run(x, y + 1) ? y + 1 : y + 0.5f);
+        // Jettied, the wall's middle is out over the street, and the boards reach out under it.
+        var s = map.Structure[map.Idx(x, y, z)];
+        var jut = !s.IsNull && BuildingKit.Of(sim, s) is { } kit ? JettyOut(kit.Kit, kit.Building, x, y, z) ?? default : default;
+        return (Run(x - 1, y) ? x : x + 0.5f + Math.Min(0f, jut.X), Run(x, y - 1) ? y : y + 0.5f + Math.Min(0f, jut.Y),
+                Run(x + 1, y) ? x + 1 : x + 0.5f + Math.Max(0f, jut.X), Run(x, y + 1) ? y + 1 : y + 0.5f + Math.Max(0f, jut.Y));
+    }
+
+    /// <summary>
+    /// How far an upper storey's wall cell is drawn out over the street (<see cref="BuildingKitDef.Jetty"/>):
+    /// toward each side of it that's outside the plan (both, at a corner). Null on the ground storey,
+    /// or where the kit has no jetty.
+    /// </summary>
+    internal static float2? JettyOut(BuildingKitDef kit, PresetBuilding b, int x, int y, int z)
+    {
+        if (kit.Jetty <= 0f || z == b.Anchor.Z)
+            return null;
+        bool Out(int dx, int dy) => Buildings.SymbolAt(b.Def, b.Anchor, b.Facing, new int3(x + dx, y + dy, z)) == ' ';
+        var d = new float2((Out(1, 0) ? 1 : 0) - (Out(-1, 0) ? 1 : 0), (Out(0, 1) ? 1 : 0) - (Out(0, -1) ? 1 : 0));
+        return d.X == 0 && d.Y == 0 ? null : d * kit.Jetty;
     }
 
     private readonly List<ModelBox> _bridgeTop = [];

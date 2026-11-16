@@ -146,7 +146,9 @@ public static class BuildingKit
     /// A sprite name (with the part's material) to its art, picking among its variants
     /// (<c>_v2</c>...) by the given number, so long slopes don't repeat cell by cell.
     /// </param>
-    public static void Roof(List<Quad> output, RoofKit roof, PresetBuilding b, int3 cell, Func<string, uint, (Sprite Sprite, uint Tint)> sprite, uint color, uint flags)
+    /// <param name="jetty">How far the upper storey's walls jut out (<see cref="BuildingKitDef.Jetty"/>): the roof rests on them out there.</param>
+    public static void Roof(List<Quad> output, RoofKit roof, PresetBuilding b, int3 cell, Func<string, uint, (Sprite Sprite, uint Tint)> sprite, uint color, uint flags,
+        float jetty = 0f)
     {
         var def = b.Def;
         var back = Footprint.Rotate(cell.X - b.Anchor.X, cell.Y - b.Anchor.Y, (4 - b.Facing) & 3);
@@ -174,7 +176,7 @@ public static class BuildingKit
             return new float2(d.X, d.Y);
         }
         // The underside: on the side walls' middles (c = 0.5 and span - 0.5), rising to the ridge.
-        float H(float c) => floor + roof.Pitch * (Math.Min(c, span - c) - 0.5f);
+        float H(float c) => floor + roof.Pitch * (Math.Min(c, span - c) - 0.5f + jetty);
         var pick = Variation.Hash(cell.X, cell.Y, 0x500F);
         void Add(float3 origin, float3 u, float3 v, string name, float shade, bool flip = false)
         {
@@ -185,8 +187,8 @@ public static class BuildingKit
             output.Add(new Quad { Origin = origin, AxisU = u, AxisV = v, Flags = flags, Color = PropModel.Multiply(color, tint), Ao = Shade(shade), Uv = uv });
         }
 
-        float aLo = a0 == 0 ? 0.5f - roof.Overhang : a0, aHi = a0 == length - 1 ? length - 0.5f + roof.Overhang : a0 + 1;
-        float cLo = c0 == 0 ? 0.5f - roof.Eave : c0, cHi = c0 == span - 1 ? span - 0.5f + roof.Eave : c0 + 1;
+        float aLo = a0 == 0 ? 0.5f - jetty - roof.Overhang : a0, aHi = a0 == length - 1 ? length - 0.5f + jetty + roof.Overhang : a0 + 1;
+        float cLo = c0 == 0 ? 0.5f - jetty - roof.Eave : c0, cHi = c0 == span - 1 ? span - 0.5f + jetty + roof.Eave : c0 + 1;
         List<(float A, float B)> pieces = cLo < mid && cHi > mid ? [(cLo, mid), (mid, cHi)] : [(cLo, cHi)];
         var gableEnds = new List<float>();
         if (a0 == 0) gableEnds.Add(aLo);
@@ -223,8 +225,8 @@ public static class BuildingKit
                 Add(bo, P(edge, c2, Z(c2)) - bo, new float3(0, 0, -(t + 0.14f)), roof.Trim, shade);
 
                 // The gable: boards from the top of the end wall up to the roof, flush with the wall's outer face.
-                var aG = aEdge < 1 ? 0.26f : length - 0.26f;
-                float ga = Math.Max(ca, 0.5f), gb = Math.Min(cb, span - 0.5f);
+                var aG = aEdge < 1 ? 0.26f - jetty : length - 0.26f + jetty;
+                float ga = Math.Max(ca, 0.5f - jetty), gb = Math.Min(cb, span - 0.5f + jetty);
                 if (gb <= ga)
                     continue;
                 float lower = Math.Min(H(ga), H(gb)), upper = Math.Max(H(ga), H(gb));

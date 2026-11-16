@@ -110,4 +110,31 @@ public class UpperFloorBoardTests
         }
         Assert.True(walls > 30, $"only {walls} upper wall cells found");
     }
+
+    [Fact]
+    public void JettiedTheBoardsReachOutUnderTheWallsMiddle()
+    {
+        var defs = DefDatabase.LoadDirectory(DevPaths.Defs!);
+        var sim = HeroesNotIncluded.Sim.Simulation.CreateStandard(defs, 30, 30, 1, depth: 5);
+        var inn = defs.Building("Inn");
+        var b = HeroesNotIncluded.Sim.Systems.Buildings.SpawnFinished(sim, inn, new int3(15, 15, 1), 0, inn.Variants.FindIndex(v => v.Name == "Jettied"));
+        sim.RebuildDerivedIfNeeded();
+        var p = sim.World.Get<HeroesNotIncluded.Sim.Components.PresetBuilding>(b);
+        var jetty = p.VariantDef.KitDef!.Jetty;
+        Assert.True(jetty > 0);
+        var map = sim.Map;
+        var checkedOut = 0;
+        for (var col = 1; col < inn.Width - 1; col++)
+        {
+            // Along the back wall, row 0 upstairs: outside is -y, so the boards reach that far past the middle.
+            var c = HeroesNotIncluded.Sim.Systems.Buildings.CellOf(map, inn, p.Anchor, p.Facing, col, 0, level: 1);
+            if (!map.HasFloor[map.Idx(c)])
+                continue;
+            var (_, y0, _, y1) = WorldMesher.UpperWallBoards(sim, c.X, c.Y, c.Z);
+            Assert.Equal(c.Y + 0.5f - jetty, y0, 3);
+            Assert.True(y1 > y0);
+            checkedOut++;
+        }
+        Assert.True(checkedOut > 5);
+    }
 }

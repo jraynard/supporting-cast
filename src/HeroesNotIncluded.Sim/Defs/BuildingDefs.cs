@@ -578,6 +578,13 @@ public sealed class BuildingKitDef : Def
     /// </summary>
     public bool FacesOut { get; set; }
 
+    /// <summary>
+    /// How far the upper storey's walls jut out over the street (cells), a jetty: its pieces are
+    /// drawn that much out toward each outside side, its floor reaches out under them, and the roof
+    /// rests on them there. Drawn only: the sim's walls stay in their cells.
+    /// </summary>
+    public float Jetty { get; set; }
+
     [JsonIgnore] public BuildingKitDef? UpperKit { get; private set; }
 
     internal override void Resolve(DefDatabase db)

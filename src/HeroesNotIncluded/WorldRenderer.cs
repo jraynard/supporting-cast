@@ -1748,7 +1748,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 // The pitched roof, laid cell by cell as the work goes on.
                 _kitQuads.Clear();
                 BuildingKit.Roof(_kitQuads, pitched, b, s.Cell, (name, _) => _materials.Resolve(name, c.MainMaterial) is var (n, t) ? (S(n), t) : default,
-                    k < laid ? Rgba.White : ghost, level);
+                    k < laid ? Rgba.White : ghost, level, jetty: kit.Jetty);
                 foreach (var q in _kitQuads)
                     _quads.Add(q, translucent: k >= laid);
                 continue;
