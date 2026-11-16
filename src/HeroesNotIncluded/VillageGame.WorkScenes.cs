@@ -684,6 +684,15 @@ public sealed partial class VillageGame
                     case Sim.Hospitality.SlopSession x: SlopScene(x); break;
                 }
             }
+            ImGui.TableNextColumn();
+            TextC(Theme.Dim, "Mixing cues");
+            // The cues sliding in on a loop, each taken as it reaches the mark, every third one missed.
+            const string cues = "FADFDAFAD";
+            var steps = _time * 60f % (MixSession.DueOf(cues.Length) + 20);
+            var resolved = 0;
+            while (resolved < cues.Length && MixSession.DueOf(resolved) <= steps)
+                resolved++;
+            MixCues(cues, resolved, steps, resolved == 0 ? null : resolved % 3 != 0);
             ImGui.EndTable();
         }
         Panel.End();

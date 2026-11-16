@@ -277,7 +277,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             case MixSession mx:
             {
                 // Each cue's key as it reaches the mark.
-                if (mx.Resolved >= mx.Cues.Length || mx.Resolved == _lastRune || mx.StepsDone < mx.DueOf(mx.Resolved))
+                if (mx.Resolved >= mx.Cues.Length || mx.Resolved == _lastRune || mx.StepsDone < MixSession.DueOf(mx.Resolved))
                     return (false, false, 0);
                 _lastRune = mx.Resolved;
                 var cue = mx.Cues[mx.Resolved];

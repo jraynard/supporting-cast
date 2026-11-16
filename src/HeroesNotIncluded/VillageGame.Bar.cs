@@ -350,8 +350,26 @@ public sealed partial class VillageGame
     {
         BeginWork(s.Title, ("F A D", "the cue as it reaches the mark"), ("Esc", "stop"));
         MixScene(s);
+        MixCues(s.Cues, s.Resolved, s.StepsDone, s.Last);
+        ImGui.Spacing();
+        ImGui.Text($"{s.Hits} of {s.Resolved} on the mark, {s.Cues.Length - s.Resolved} to go.");
+        if (s.Last is { } last)
+        {
+            ImGui.SameLine(0, 10);
+            TextC(last ? Theme.Good : Theme.Bad, last ? "Neat." : "Sloppy.");
+        }
+        EndWork();
+    }
+
+    /// <summary>
+    /// The mixing cues sliding along the bar toward the mark (<see cref="MixSession"/>'s, or the
+    /// work-scene gallery's): <paramref name="steps"/> is the session's steps done, <paramref name="last"/>
+    /// how the last one taken landed.
+    /// </summary>
+    private void MixCues(string cues, int resolved, float steps, bool? last)
+    {
         var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(420, 90);
+        var size = Gui.S(420, 110);
         var min = ImGui.GetCursorScreenPos();
         ImGui.Dummy(in size);
         var max = min + size;
@@ -363,26 +381,38 @@ public sealed partial class VillageGame
         dl.AddLine(in a, in b, Theme.U8(Theme.Good), Gui.S(2));
         // Steps to pixels: a cue slides in from the right and reaches the mark when it's due.
         var perStep = size.X * 0.7f / (MixSession.Gap * 3f);
-        for (var i = s.Resolved; i < s.Cues.Length; i++)
+        var radius = Gui.S(19);
+        // Dark tokens with a barrel-hoop ring and a bright letter: ember's kept for rarer things.
+        // The one due next rings green as it nears the mark; the last one taken slides on past it,
+        // flashing how it landed.
+        using (Gui.BodyFont(ImGui.GetFontSize() * 1.4f))
         {
-            var x = markX + (s.DueOf(i) - s.StepsDone) * perStep;
-            if (x > max.X - Gui.S(10))
-                break;
+            if (resolved > 0 && last is { } landed)
+            {
+                var x = markX + (MixSession.DueOf(resolved - 1) - steps) * perStep;
+                if (x > min.X + radius)
+                    Cue(resolved - 1, x, landed ? Theme.Good : Theme.Bad, Math.Clamp((x - min.X) / (markX - min.X), 0.25f, 1f));
+            }
+            for (var i = resolved; i < cues.Length; i++)
+            {
+                var x = markX + (MixSession.DueOf(i) - steps) * perStep;
+                if (x > max.X - radius)
+                    break;
+                var near = i == resolved && x - markX < MixSession.Gap * 0.5f * perStep;
+                Cue(i, x, near ? Theme.Good : Theme.Barrel, 1f);
+            }
+        }
+
+        void Cue(int i, float x, float4 ring, float alpha)
+        {
             var c = new float2(x, midY);
-            dl.AddCircleFilled(in c, Gui.S(14), Theme.U8(Theme.Accent, 0.85f), 20);
-            var label = Controls.Cue(s.Cues[i]);
+            dl.AddCircleFilled(in c, radius, Theme.U8(Theme.Oak, alpha), 24);
+            dl.AddCircle(in c, radius, Theme.U8(ring, alpha), 24, Gui.S(ring == Theme.Barrel ? 2 : 3));
+            var label = Controls.Cue(cues[i]);
             var ts = ImGui.CalcTextSize(label);
             var tp = c - ts * 0.5f;
-            dl.AddText(in tp, Theme.U8(Theme.Text), label);
+            dl.AddText(in tp, Theme.U8(Theme.Parchment, alpha), label);
         }
-        ImGui.Spacing();
-        ImGui.Text($"{s.Hits} of {s.Resolved} on the mark, {s.Cues.Length - s.Resolved} to go.");
-        if (s.Last is { } last)
-        {
-            ImGui.SameLine(0, 10);
-            TextC(last ? Theme.Good : Theme.Bad, last ? "Neat." : "Sloppy.");
-        }
-        EndWork();
     }
 
     /// <summary>The bar beside you: the named drinks (and what they take), and a house mix of whatever's ticked.</summary>

@@ -57,7 +57,7 @@ public sealed class MixSession : WorkSession
     public override string Title => $"Mixing a {_label}";
 
     /// <summary>The step a cue reaches the mark.</summary>
-    public int DueOf(int i) => Lead + i * Gap;
+    public static int DueOf(int i) => Lead + i * Gap;
 
     /// <summary>The adds a drink takes: a named one's own, or a house mix's choice.</summary>
     public static List<ThingDef> AddsOf(Simulation sim, ThingDef drink, string? adds) =>

@@ -46,7 +46,7 @@ public class InnTalkTests
             sim.Tick();
             bool press = false;
             var axis = 0;
-            if (predictor.Session is MixSession m && m.Resolved < m.Cues.Length && m.Resolved != done && m.StepsDone >= m.DueOf(m.Resolved))
+            if (predictor.Session is MixSession m && m.Resolved < m.Cues.Length && m.Resolved != done && m.StepsDone >= MixSession.DueOf(m.Resolved))
             {
                 var cue = m.Cues[m.Resolved];
                 if (fumble)
