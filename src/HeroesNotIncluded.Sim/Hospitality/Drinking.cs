@@ -171,6 +171,9 @@ public sealed class DrinkingSystem : ISimSystem, ISaveState
                 needs.Values[sim.Defs.Need("Rest").Index] = 0f;
                 continue;
             }
+            // Loud and rowdy, now and then a fight (Brawls).
+            if (hourly && t.Level >= LoudAt && Brawls.MaybeStart(sim, e))
+                continue;
             // Loud, they sing, boast and pick at each other, now and then (a hash, not the dice: nothing else hangs on it).
             if (hourly && t.Level >= LoudAt && w.Has<Adventurer>(e)
                 && SimRandom.Hash(e.Index, (int)(sim.Clock.Tick / SimClock.TicksPerHour), (uint)sim.Seed ^ 0xA1Eu) % 3 == 0)

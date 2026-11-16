@@ -88,6 +88,19 @@
       { "text": "Just going to rest my eyes. Right here." },
       { "text": "Floor's lovely. Whoever made this floor..." }
     ] },
+    { "name": "brawl_start", "lines": [
+      { "text": "You looking at me, {who}?" },
+      { "text": "Say that again, {who}. Go on." },
+      { "text": "That was MY ale, {who}!" },
+      { "text": "Right, {who}. You and me." }
+    ] },
+    { "name": "brawl_reply", "lines": [
+      { "text": "Right. Outside. No, here's fine." },
+      { "text": "Oh, you want some, {who}?" },
+      { "text": "Not the face! Not the... fine.", "when": [ "timid" ] },
+      { "text": "I've wrestled bears bigger than you, {who}.", "when": [ "boastful" ] },
+      { "text": "I'm not paying for anything you break.", "when": [ "stingy" ] }
+    ] },
     { "name": "adv_leaving", "lines": [
       { "text": "Best town on the road. Don't tell anyone.", "when": [ "pleased" ] },
       { "text": "We'll be back. Keep the ale cold.", "when": [ "pleased" ] },

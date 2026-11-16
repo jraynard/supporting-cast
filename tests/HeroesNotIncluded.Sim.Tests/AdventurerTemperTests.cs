@@ -101,4 +101,34 @@ public class AdventurerTemperTests
             .Any(l => Speech.Barks.Fill(l.Text, sim.World.Get<Adventurer>(party[0]).PartyDef.Label) == u.Text));
         Assert.Equal(1, hellos);
     }
+
+    [Fact]
+    public void ABarFightIsFistsAndEndsBeforeAnyoneIsBadlyHurt()
+    {
+        var sim = Round();
+        var a = Party(sim, 0)[0];
+        var b = Party(sim, 1)[0];
+        sim.TickMany(SimClock.TicksPerSecond * 2);
+        var at = sim.World.Get<Position>(a).Cell;
+        var next = sim.SpiralFrom(at, 2).First(c => c != at && c.Z == at.Z && sim.Map.Passable(c));
+        sim.World.Get<Position>(b) = Position.At(next);
+        // Some come in off the road with wounds already: only what the fight adds counts.
+        var before = (sim.World.Get<Health>(a).Injuries.ToList(), sim.World.Get<Health>(b).Injuries.ToList());
+        Brawls.Start(sim, a, b);
+        Assert.True(Brawls.InOne(sim, a) && Brawls.InOne(sim, b));
+        var swords = (sim.World.Get<Equipment>(a).Weapon, sim.World.Get<Equipment>(b).Weapon);
+        var windups = 0;
+        for (var t = 0; t < SimClock.TicksPerSecond * 30; t++)
+        {
+            sim.Tick();
+            if (sim.World.Has<Combat.Windup>(a) || sim.World.Has<Combat.Windup>(b)) windups++;
+        }
+        Assert.True(windups > 0, "nobody swung");
+        var taken = sim.World.Get<Health>(a).Injuries.Except(before.Item1).Concat(sim.World.Get<Health>(b).Injuries.Except(before.Item2)).ToList();
+        // Armour soaks most of a punch: what does get through is bruising, never a cut.
+        Assert.All(taken, i => Assert.Equal(Defs.DamageType.Blunt, i.Type));
+        Assert.False(sim.World.Get<Creature>(a).Dead || sim.World.Get<Creature>(b).Dead);
+        Assert.False(Brawls.InOne(sim, a) || Brawls.InOne(sim, b), "it's over");
+        Assert.Equal(swords, (sim.World.Get<Equipment>(a).Weapon, sim.World.Get<Equipment>(b).Weapon));
+    }
 }
