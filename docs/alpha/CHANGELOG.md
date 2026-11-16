@@ -4,6 +4,43 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+## 0.1.0-playtest.17
+
+Reedmere rebuilt as a lake town, rare companies on the road, and Millbrook's inn with windows and a
+double door. The world also shimmers much less as the camera moves.
+
+**Reedmere**
+- Redrawn as a town on the long lake. Houses crowd on piles round an open harbour, with a
+  water-gate canal and one long causeway out to a headland.
+- The moot hall stands on the far quay and the forge on a stone pier. The inn and the cookhouse
+  face each other across the water-gate.
+- The festival is held on boats lashed together in the harbour, round a mast.
+- Rowboats and reeds sit on the water, lanterns burn on the quays all night, and every open deck
+  edge has a rail.
+
+**Rare companies**
+- Now and then a company comes in place of a party: the Greyhorn Company or the Company of the
+  Long Road. They're their own folk, sized to the number of players, and they take only their own
+  errand.
+
+**Millbrook's inn**
+- A lower roof, so the timbered upper storey shows to the street. The gables are calmer and the
+  chimneys taller.
+- A double door at the front, with a step before each.
+- Windows on both floors. By day they let light into the room behind them, brightest beside the
+  window. After dark, a lit room's windows glow from the street.
+
+**Looks**
+- Walls, thatch and timbering no longer flicker as the title screen turns or when you zoom out.
+  Roof edges and beams are smoother too.
+- New setting: Settings > Display > Anti-aliasing (Off, 2x, 4x, 8x). It's 4x by default and 2x
+  on a Steam Deck. On an older PC, try 2x or Off. The change applies the next time you start the
+  game.
+
+**Fixes**
+- Doors on the ground floor of two-storey buildings (the inn's front door among them) weren't
+  drawn at all, so you saw the floor through an empty doorway. They are now.
+
 ## 0.1.0-playtest.16
 
 A second town, inn rooms with keys, the mouse in every mini-game, and townsfolk with tempers.
