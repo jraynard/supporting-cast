@@ -249,7 +249,12 @@ public abstract class WorkSession
                 if ((input.Value & OffPicture) != 0)
                     Clicked(null, null);
                 else
-                    Clicked((input.Value & 0xFF) / 255f, (input.Value >> 8 & 0xFF) / 255f);
+                {
+                    // A click is where the mouse points, too (it may not have been sent moving there).
+                    var (cu, cv) = ((input.Value & 0xFF) / 255f, (input.Value >> 8 & 0xFF) / 255f);
+                    (PointU, PointV) = (cu, cv);
+                    Clicked(cu, cv);
+                }
                 break;
             case WorkInputKind.Point:
                 // Pointed sees the last place still in PointU/PointV: a game steered by how far the mouse moved reads it there.

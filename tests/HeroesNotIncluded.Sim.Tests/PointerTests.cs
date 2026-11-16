@@ -197,4 +197,43 @@ public class PointerTests
         else
             Assert.True(local.Done || local.Failed != null, "the sim ended a session the copy hadn't");
     }
+
+    /// <summary>How far, on average, a blow strays from a joint the cleaver's carried to: struck at once, or once the hand's settled.</summary>
+    private static float Stray(bool settle)
+    {
+        var total = 0f;
+        for (var seed = 1u; seed <= 40; seed++)
+        {
+            var s = new ButcherSession { Rand = new SimRandom(seed), Hands = new Hands(0.6f, 1f, 5) };
+            s.Begin();
+            var target = ButcherSession.JointsAt[2];
+            s.Advance([Point(0, target)], 1);
+            while (MathF.Abs(s.Cleaver - target) > Aim.PerStep * 0.5f)
+                s.Advance([], s.StepsDone + 1);
+            if (settle)
+                s.Advance([], s.StepsDone + Aim.SettleSteps);
+            s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Press)], s.StepsDone + 1);
+            total += MathF.Abs(s.LastAt - target);
+        }
+        return total / 40f;
+    }
+
+    [Fact]
+    public void AHurriedCleaverGoesWiderThanASettledOne()
+    {
+        var hurried = Stray(settle: false);
+        var settled = Stray(settle: true);
+        Assert.True(hurried > settled * 1.8f, $"hurried {hurried}, settled {settled}");
+    }
+
+    [Fact]
+    public void AClickOnAJointCarriesTheCleaverThereAndBringsItDown()
+    {
+        var s = Ready(new ButcherSession());
+        s.Advance([Click(0, ButcherSession.JointsAt[1])], 1);
+        Assert.Equal(0, s.Blows);
+        s.Advance([], 200);
+        Assert.Equal(1, s.Blows);
+        Assert.True(MathF.Abs(s.LastAt - ButcherSession.JointsAt[1]) < 0.1f);
+    }
 }

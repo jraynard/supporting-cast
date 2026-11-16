@@ -577,7 +577,7 @@ public sealed partial class VillageGame
     /// <summary>Jointing: the side along the block, its joints marked, the cleaver sweeping over it.</summary>
     private void DrawButcher(ButcherSession s)
     {
-        BeginWork(s.Title, ("F", "bring the cleaver down"), ("Esc", "leave it"));
+        BeginWork(s.Title, ("A/D|Point", "carry the cleaver over a mark"), ("F", "bring it down"), ("Esc", "leave it"));
         ButcherScene(s);
         if (s.StartTick != _blockSession)
         {
@@ -603,6 +603,7 @@ public sealed partial class VillageGame
         var sideA = new float2(blockA.X + Gui.S(26), blockA.Y - Gui.S(34));
         var sideB = new float2(blockB.X - Gui.S(26), blockA.Y);
         var len = sideB.X - sideA.X;
+        TakesPointer(new float2(sideA.X, min.Y), new float2(sideB.X, max.Y)); // across: one end of the side to the other
         // The side, its pieces parted at the joints cut so far.
         var cuts = new List<float> { 0f };
         for (var i = 0; i < ButcherSession.JointsAt.Length; i++)
@@ -632,9 +633,12 @@ public sealed partial class VillageGame
                 dl.AddLine(in a, in b, new ImColor8(250, 240, 220, 230), Gui.S(2));
             }
         }
-        // The cleaver over the side: down for a moment after a blow.
-        var cx = sideA.X + len * s.Cleaver;
-        var drop = since < 0.15f ? Gui.S(26) : 0f;
+        // The cleaver over the side, swaying till the hand's settled; down for a moment after a blow,
+        // where it came down (which may be off where it was held), then lifted back.
+        var sway = s.Settled ? 0f : MathF.Sin(_time * 21f) * Gui.S(2.5f);
+        var down = since < 0.15f && s.LastAt >= 0f;
+        var cx = sideA.X + len * (down ? s.LastAt : s.Cleaver) + (down ? 0f : sway);
+        var drop = down ? Gui.S(26) : s.Ready ? 0f : -Gui.S(8);
         var bladeA = new float2(cx - Gui.S(12), sideA.Y - Gui.S(40) + drop);
         var bladeB = new float2(cx + Gui.S(12), sideA.Y - Gui.S(14) + drop);
         var steel = since < 0.3f ? (s.LastMark == 1 ? Theme.U8(Theme.Good) : Theme.U8(Theme.Bad)) : new ImColor8(200, 204, 212, 255);
@@ -647,7 +651,7 @@ public sealed partial class VillageGame
         if (since < 0.8f && s.LastMark >= 0)
             TextC(s.LastMark == 1 ? Theme.Good : Theme.Bad, s.LastMark == 1 ? "Clean through the joint." : "Through the bone: that's waste.");
         else
-            TextC(Theme.Dim, "Bring it down as the cleaver's over a mark.");
+            TextC(Theme.Dim, s.Settled ? "Steady over it: bring it down." : "Hold it over a mark and let your hand settle: a hurried blow goes wide.");
         EndWork();
     }
 

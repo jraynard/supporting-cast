@@ -76,27 +76,19 @@ public class KitchenMenuTests
         sim.ApplyNow(new AvatarWorkCommand(me, false));
     }
 
-    /// <summary>Bring the cleaver down as it passes over each joint (or between them).</summary>
+    /// <summary>Carry the cleaver over each joint (or between them) by the mouse, let the hand settle, and bring it down.</summary>
     private static void Joint(ButcherSession s, bool onJoints)
     {
-        var steps = (int)(ButcherSession.Sweep * SimClock.TicksPerSecond);
         foreach (var j in ButcherSession.JointsAt)
         {
             var target = onJoints ? j : Math.Clamp(j + 0.08f, 0f, 1f);
-            // Find the next step at which the sweep (going out) is over the target.
-            var at = s.StepsDone;
-            for (var t = s.StepsDone; t < s.StepsDone + steps; t++)
+            var inputs = new List<WorkInput> { new(s.StepsDone, WorkInputKind.Point, WorkSession.PackPoint(target, 0.5f)) };
+            for (var t = 0; t < 600 && !(s.Settled && s.Ready && MathF.Abs(s.Cleaver - target) <= 0.01f); t++)
             {
-                var f = t / (float)SimClock.TicksPerSecond / ButcherSession.Sweep;
-                f -= MathF.Floor(f);
-                var x = f < 0.5f ? f * 2f : 2f - f * 2f;
-                if (MathF.Abs(x - target) < 0.01f)
-                {
-                    at = t;
-                    break;
-                }
+                s.Advance(inputs, s.StepsDone + 1);
+                inputs.Clear();
             }
-            s.Advance([new WorkInput(at, WorkInputKind.Press)], at + 1);
+            s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Press)], s.StepsDone + 1);
             if (s.Done)
                 break;
         }

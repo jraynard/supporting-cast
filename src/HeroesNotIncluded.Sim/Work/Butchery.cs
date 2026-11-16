@@ -107,17 +107,22 @@ public static class Butchery
 }
 
 /// <summary>
-/// Jointing a side at the butcher block: the cleaver sweeps back and forth along it, and F brings
-/// it down. On a joint, it parts clean; anywhere else it hacks through bone, and what's splintered
-/// is lost. All the joints parted, or the side hacked about enough, it's done: meat by how clean.
+/// Jointing a side at the butcher block: carry the cleaver along it (A/D, or where the mouse
+/// points) and bring it down (F, or a click: on the move, it comes down once it's there). On a
+/// joint, it parts clean; anywhere else it hacks through bone, and what's splintered is lost. A
+/// blow struck before the hand's settled goes wide (<see cref="Aim"/>), and an unsteady hand wider
+/// still. All the joints parted, or the side hacked about enough, it's done: meat by how clean.
 /// </summary>
 public sealed class ButcherSession : WorkSession
 {
     /// <summary>Where the joints lie along the side, 0..1.</summary>
     public static readonly float[] JointsAt = [0.16f, 0.33f, 0.5f, 0.67f, 0.84f];
 
-    /// <summary>Seconds the cleaver takes to sweep along and back.</summary>
-    public const float Sweep = 2.4f;
+    /// <summary>How wide a settled, steady blow strays from where the cleaver's held.</summary>
+    public const float Stray = 0.01f;
+
+    /// <summary>Steps to lift the cleaver again after a blow: one before then waits for it.</summary>
+    public const int RecoverySteps = 24;
 
     /// <summary>How near a joint a blow parts it, along the side, before practice widens it.</summary>
     public const float Window = 0.035f;
@@ -141,7 +146,19 @@ public sealed class ButcherSession : WorkSession
     public int LastMark { get; private set; } = -1;
 
     /// <summary>Where the cleaver is along the side, 0..1.</summary>
-    public float Cleaver => Triangle(StepsDone, Sweep);
+    public float Cleaver => _aim.At;
+
+    /// <summary>Where the last blow came down, 0..1 (for the drawing: it may be off where it was held).</summary>
+    public float LastAt { get; private set; } = -1f;
+
+    /// <summary>The hand's at rest over the side: a blow now lands where it's held, as near as the hand's steady.</summary>
+    public bool Settled => _aim.Settled(StepsDone);
+
+    /// <summary>The cleaver's up again after the last blow.</summary>
+    public bool Ready => _recovery <= 0;
+
+    private Aim _aim = new(0.05f);
+    private int _dir, _recovery;
 
     public override int3? Focus(Simulation sim) => sim.World.IsAlive(Block) && sim.World.TryGet<Thing>(Block, out var t) ? t.Cell : null;
     public override Skill Skill => Skill.Cooking;
@@ -155,11 +172,24 @@ public sealed class ButcherSession : WorkSession
         Butchery.IsBlock(sim, Block) && sim.World.IsAlive(Side) && AvatarSystem.SupplyItem(sim, Worker, e => e == Side) == Side
         && AvatarSystem.InReach(sim, sim.World.Get<Position>(Worker).Cell, Block);
 
+    protected override void Axis(int value) => _dir = value;
+
+    /// <summary>A click strikes where it points: at once if the cleaver's there, else as soon as it's carried there.</summary>
+    protected override void Clicked(float? u, float? v)
+    {
+        if (u is { } x && WorkSession.Toward(_aim.At, x, Aim.PerStep) != 0)
+            _aim.Queued = true;
+        else
+            Press();
+    }
+
     protected override void Press()
     {
-        if (Done)
+        if (Done || !Ready)
             return;
-        var at = Cleaver;
+        _recovery = RecoverySteps;
+        // The blow comes down near where it's held: nearer the steadier the hand, and the more it's settled.
+        var at = LastAt = Math.Clamp(_aim.At + (Rand.NextFloat() * 2f - 1f) * (Stray + Hands.Tremor * 0.1f) * _aim.Unsteadiness(StepsDone), 0f, 1f);
         var nearest = -1;
         var best = float.MaxValue;
         for (var i = 0; i < JointsAt.Length; i++)
@@ -183,7 +213,20 @@ public sealed class ButcherSession : WorkSession
             Done = true;
     }
 
-    protected override void Step() { }
+    protected override void Step()
+    {
+        if (Done)
+            return;
+        if (_recovery > 0)
+            _recovery--;
+        if (_aim.Step(_dir, PointU, StepsDone))
+        {
+            if (Ready)
+                Press();
+            else
+                _aim.Queued = true; // still lifting it: the blow waits
+        }
+    }
 
     public override void Finish(Simulation sim)
     {
@@ -211,6 +254,10 @@ public sealed class ButcherSession : WorkSession
         w.Int(Hacks);
         w.Int(Blows);
         w.Int(LastMark);
+        _aim.Write(w);
+        w.Int(_dir);
+        w.Int(_recovery);
+        w.Float(LastAt);
     }
 
     protected override void ReadState(SaveReader r)
@@ -223,6 +270,13 @@ public sealed class ButcherSession : WorkSession
         Hacks = Math.Clamp(r.Int(), 0, MostBlows);
         Blows = Math.Clamp(r.Int(), 0, MostBlows);
         LastMark = Math.Clamp(r.Int(), -1, 1);
+        if (r.Version >= 43) // the cleaver carried, not swept (format 43)
+        {
+            _aim = Aim.Read(r);
+            _dir = Math.Sign(r.Int());
+            _recovery = Math.Clamp(r.Int(), 0, RecoverySteps);
+            LastAt = r.Float();
+        }
     }
 }
 
