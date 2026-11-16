@@ -94,7 +94,11 @@ public sealed partial class VillageGame
                 dl.AddLine(in mid0, in mid1, spotColour, Gui.S(2f));
                 dl.AddTriangleFilled(new float2(spotX - Gui.S(6), bMin.Y - Gui.S(12)), new float2(spotX + Gui.S(6), bMin.Y - Gui.S(12)), new float2(spotX, bMin.Y - Gui.S(4)), spotColour);
                 DrawHammerSwing(dl, s.Mark, new float2(spotX, strikePoint.Y), px, Gui.U8(new float4(1f, 1f, 1f, 0.22f))); // a ghost of the blow to aim for: as high, over the spot
-                DrawHammerSwing(dl, s.Raise, strikePoint + new float2(s.Offset * HammerShift, 0f), px, Gui.White);
+                // Where it would fall: a faint line from the face down to the bar, green over the marker.
+                var fallX = strikePoint.X + s.Offset * HammerShift;
+                if (s.Ready)
+                    dl.AddLine(new float2(fallX, bMin.Y - Gui.S(30)), new float2(fallX, bMin.Y + b.Y), Theme.U8(s.Centred ? Theme.Good : Theme.Text, s.Centred ? 0.7f : 0.35f), Gui.S(1.5f));
+                DrawHammerSwing(dl, s.Raise, new float2(fallX, strikePoint.Y), px, Gui.White);
                 DrawSparks(dl);
                 if (since < GradeSeconds)
                     DrawGrade(dl, strikePoint, since);
@@ -132,7 +136,7 @@ public sealed partial class VillageGame
                 ? "It's going black: blows now do it no good, and may crack it. Back to the fire."
                 : "The colour's fading: it's moving less under the hammer.");
         else if (since < GradeSeconds * 2 && s.LastWind >= 0f && (s.LastWindWas != 0 || s.LastOffCentre))
-            TextC(s.LastWindWas > 0 ? Theme.Bad : Theme.Warn, s.LastWindWas > 0 ? "Raised too far: it came down too hard and undid a little."
+            TextC(s.LastWindWas > 0 ? Theme.Bad : Theme.Warn, s.LastWindWas > 0 ? "Raised too far: it came down too hard, and did little."
                 : s.LastWindWas < 0 ? "Short of the mark: it moved the metal less." : "Off the marker: it glanced.");
         else
             TextC(Theme.Dim, s.Repairing ? "Hammering out the chips: over the marker, raise it to the mark, let go." : "Keep it over the marker, raise it to the mark (not past it), and let go.");
@@ -151,8 +155,10 @@ public sealed partial class VillageGame
             return;
         var angle = -Math.Clamp(raise, 0f, 1f) * 1.15f; // radians up from resting flat on the bar
         var len = new float2(hammer.PixelSize.X, hammer.PixelSize.Y) * px;
-        // The head's face meets the bar when flat: the pivot is a hammer's length to the right.
-        var pivot = new float2(strike.X + len.X * 0.85f, strike.Y - len.Y * 0.5f);
+        // Flat, the middle of the head's face sits on the strike point (the sprite's head runs from
+        // 22 to 30 of its 32 pixels, so its middle's 26 along): the pivot's to the right of that.
+        const float faceAlong = 26f / 32f;
+        var pivot = new float2(strike.X + len.X * (faceAlong - 0.15f), strike.Y - len.Y * 0.5f);
         var dir = new float2(-MathF.Cos(angle), MathF.Sin(angle));   // from the pivot toward the head
         var up = new float2(-dir.Y, dir.X);
         var back = pivot - dir * (len.X * 0.15f);

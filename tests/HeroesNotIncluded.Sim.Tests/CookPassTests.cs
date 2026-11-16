@@ -299,7 +299,8 @@ public class CookPassTests
         Assert.Equal("Chop the cabbage", AvatarSystem.ActionAt(sim, me, sim.World.Get<Thing>(table).Cell).Label);
         sim.ApplyNow(new PrepCommand(me, table, PrepStep.Next));
         var chop = Assert.IsType<ChopSession>(sim.World.Get<WorkSession>(me));
-        chop.Advance(Enumerable.Range(1, chop.Needed).Select(i => new WorkInput(i * ChopSession.Beat, WorkInputKind.Press)).ToList(), chop.Needed * ChopSession.Beat + 2);
+        var cuts = Chops(chop.Needed);
+        chop.Advance(cuts, cuts[^1].Step + 2);
         Assert.True(chop.Done);
         chop.Finish(sim);
         Assert.True(sim.World.Get<Carrying>(me).Item.IsNull, "nothing came into the hands");
@@ -546,6 +547,20 @@ public class CookPassTests
 
     // ---------------- Phase 3: prep ----------------
 
+    /// <summary>Chopping by the keys: A held while the fingers draw back a slice, then F; <paramref name="n"/> times.</summary>
+    internal static List<WorkInput> Chops(int n, int from = 0)
+    {
+        var inputs = new List<WorkInput>();
+        for (var i = 0; i < n; i++)
+        {
+            var t = from + i * 25;
+            inputs.Add(new(t, WorkInputKind.Axis, -1));
+            inputs.Add(new(t + 20, WorkInputKind.Axis, 0));
+            inputs.Add(new(t + 21, WorkInputKind.Press));
+        }
+        return inputs;
+    }
+
     /// <summary>Raw food in hand at the prep table, and the chopping started with the work key.</summary>
     private static (Simulation Sim, Entity Me, ChopSession Chop, Entity Food) Chopping(string def = "Meat", int count = 4)
     {
@@ -561,11 +576,11 @@ public class CookPassTests
     }
 
     [Fact]
-    public void ChoppingOnTheBeatTurnsWholeFoodToChopped()
+    public void ChoppingASliceAtATimeTurnsWholeFoodToChopped()
     {
         var (sim, me, chop, _) = Chopping();
         Assert.Equal(ChopSession.CutsFor(4), chop.Needed);
-        var inputs = Enumerable.Range(1, chop.Needed).Select(i => new WorkInput(i * ChopSession.Beat, WorkInputKind.Press)).ToList();
+        var inputs = Chops(chop.Needed);
         chop.Advance(inputs, inputs[^1].Step + 2);
         Assert.True(chop.Done);
         Assert.Equal(0, chop.Slips);
@@ -578,14 +593,14 @@ public class CookPassTests
     }
 
     [Fact]
-    public void WildCutsCanSlipAndASlipIsARealCut()
+    public void ChoppingWithoutDrawingTheFingersBackCutsThem()
     {
         var (sim, me, chop, _) = Chopping();
-        // Hacking away halfway between beats, over and over.
-        var inputs = Enumerable.Range(0, 30).Select(i => new WorkInput(i * ChopSession.Beat + ChopSession.Beat / 2, WorkInputKind.Press)).ToList();
+        // Hacking away with the fingers left by the blade.
+        var inputs = Enumerable.Range(0, 3).Select(i => new WorkInput(i * 10, WorkInputKind.Press)).ToList();
         chop.Advance(inputs, inputs[^1].Step + 2);
         Assert.Equal(0, chop.Cuts);
-        Assert.True(chop.Slips > 0, "thirty wild cuts and not one slip");
+        Assert.Equal(3, chop.Slips);
         sim.ApplyNow(new StopWorkCommand(me));
         sim.Tick();
         Assert.Contains(sim.World.Get<Health>(me).Injuries, i => i.Type == DamageType.Cut);

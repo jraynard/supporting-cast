@@ -9,7 +9,7 @@ namespace HeroesNotIncluded.Sim.Work;
 /// One heat on the anvil (<see cref="Smithing"/>): hold W (or F, or the mouse's button) to raise
 /// the hammer, and let go to bring it down. The blow is as good as the wind: back to the mark is a
 /// full one; short of it moves the metal less; past it, the blow comes down too hard and knocks
-/// the work out of true, undoing a little of what was done. Raised, it wanders across the piece,
+/// the work out of true and does it little good. Raised, it wanders across the piece,
 /// the more for an unsteady arm: A/D (or the mouse moved side to side) keep it over the spot to
 /// strike, which moves after every blow, and a blow off the spot glances. A new mark after every blow, and the piece's quality is the average of them all, so a
 /// smith's hands decide the blade in place of a skill roll. The piece cools all the while: hot, a
@@ -33,8 +33,14 @@ public sealed class HammerSession : WorkSession
     /// <summary>How far across the spot to strike may move between blows (the piece is -1 to 1 across).</summary>
     public const float SpotRange = 0.55f;
 
-    /// <summary>How much of a blow's shaping an overwound one undoes: this much just over, up to <see cref="OverUndoMost"/> well over.</summary>
-    public const float OverUndo = 0.3f, OverUndoMost = 0.5f;
+    /// <summary>A good blow's shaping, in shares of the blows the piece needs: a smith's blow moves the metal.</summary>
+    public const float GoodBlow = 1.6f;
+
+    /// <summary>What an overwound blow still does, of a good one's shaping: a little (it never undoes any).</summary>
+    public const float OverBlow = 0.15f;
+
+    /// <summary>The least a short blow does, of a good one's shaping (well short; nearer the mark, more).</summary>
+    public const float ShortBlow = 0.45f;
 
     /// <summary>How far A/D move the hammer across a step (the piece is -1 to 1 across, centred on 0).</summary>
     public const float SteerPerStep = 0.012f;
@@ -236,21 +242,21 @@ public sealed class HammerSession : WorkSession
         float grade;
         if (off > HalfWidth)
         {
-            // Wound past it: it comes down too hard and knocks the work out of true.
+            // Wound past it: it comes down too hard, out of true; the metal moves a little.
             LastWindWas = 1;
             var over = Math.Clamp((off - HalfWidth) / (HalfWidth * 3f), 0f, 1f);
-            Shape = Math.Max(0f, Shape - (OverUndo + (OverUndoMost - OverUndo) * over) / BlowsNeeded);
+            Shape = Math.Min(1f, Shape + GoodBlow * OverBlow * (0.1f + 0.9f * heat) * centre / BlowsNeeded);
             grade = 0.1f * (1f - over) * centre;
         }
         else
         {
             // On the mark, a full blow; short of it, less, the shorter the less.
             LastWindWas = off < -HalfWidth ? -1 : 0;
-            var aim = off >= -HalfWidth ? 1f : Math.Clamp(1f - (-off - HalfWidth) / (HalfWidth * 5f), 0.25f, 1f);
+            var aim = off >= -HalfWidth ? 1f : Math.Clamp(1f - (-off - HalfWidth) / (HalfWidth * 6f), 0f, 1f);
             // As a smith's blow it's judged harder: well short is no blow worth the name, though it shapes it a little.
             var judged = off >= -HalfWidth ? 1f : Math.Clamp(1f - (-off - HalfWidth) / (HalfWidth * 2.5f), 0f, 1f);
             // A good blow on hot metal moves it most; on fading metal it moves less and does it no good. Off centre, it glances.
-            Shape = Math.Min(1f, Shape + (0.35f + 0.65f * aim) * (0.1f + 0.9f * heat) * centre / BlowsNeeded);
+            Shape = Math.Min(1f, Shape + GoodBlow * (ShortBlow + (1f - ShortBlow) * aim) * (0.1f + 0.9f * heat) * centre / BlowsNeeded);
             grade = judged * judged * centre * (0.4f + 0.6f * heat);
         }
         Sample(grade);

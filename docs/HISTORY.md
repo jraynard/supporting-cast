@@ -2032,15 +2032,22 @@ player vanished on day two and it ended on day three.
 - **The cleaver is carried** (`Work/Aim`): over a joint (A/D, or the mouse) and struck where it's
   held, wider for an unsteady hand and wider still struck before the hand's settled.
 - **The hammer is raised and let go**: hold F (or W, or the mouse's button) to raise it, let go to
-  bring it down, drawn as it's swung with a ghost of the blow to aim for. Raised to the mark it's a
-  full blow; short, it moves the metal less (and grades poorly); past it, it comes down too hard and
-  undoes a third to a half of a blow. Raised, it wanders across the piece (more for an unsteady
-  arm): A/D, or the mouse moved side to side, keep it over a marker that moves after every blow,
-  and a blow off the marker glances. An unsteady arm wavers as it rises. No more sweeping marker;
-  the bot smith keeps it over the marker, raises it to the mark and lets go.
-- **Plucking by drag**: the pull is as hard as the bird's dragged, no quicker than a held F
-  tightens; a grip gives out after a handful. **Stirring by circling**: pressed in the pot, the mouse
-  stirs only as it goes round; the wheel works the fire.
-- Save format 46. Bench hashes unchanged. 8-seed `--season-sweep`: Renown mean 56.8 (50.2 before),
-  won 4 (3), quests cleared 1.8 (1.4); the smith's blows take their own time now, which moves
+  bring it down, drawn as it's swung with a ghost of the blow to aim for; the middle of its face is
+  what lands, with a faint line down to where it would fall. Raised to the mark it's a full blow
+  (1.6 times the old one's shaping); short, it moves the metal less (and grades poorly); past it,
+  only a little, and it never undoes any. Raised, it wanders across the piece (more for an
+  unsteady arm): A/D, or the mouse moved side to side, keep it over a marker that moves after
+  every blow, and a blow off the marker glances. An unsteady arm wavers as it rises. The bot smith
+  keeps it over the marker, raises it to the mark and lets go.
+- **Chopping by the fingers**: the beat's gone. Draw the guiding fingers back a slice (A, or the
+  mouse moved left) and chop (F, or a click); an even slice is clean, a sliver or a slab poor, and
+  a chop with the fingers still by the blade cuts them.
+- **The cook's pictures**: stew, butchery, plucking and chopping draw one picture each (the little
+  scene over them is gone); the pot's bigger; the cleaver's drawn edge on, a gash where it lands.
+- **Plucking by drag**: a press anywhere grips the bird, and the pull is as hard as it's dragged,
+  no quicker than a held F tightens; a grip gives out after a handful. Feathers fly as it comes
+  away. **Stirring by circling**: pressed in the pot, the mouse stirs only as it goes round; the
+  wheel works the fire.
+- Save format 47. Bench hashes unchanged. 8-seed `--season-sweep`: Renown mean 46.0 (50.2 before),
+  won 1 (3), quests cleared 1.4 (1.4); the smith's blows take their own time now, which moves
   every season after.

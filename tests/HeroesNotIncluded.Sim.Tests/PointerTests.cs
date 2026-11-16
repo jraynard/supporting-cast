@@ -380,13 +380,13 @@ public class PointerTests
     }
 
     [Fact]
-    public void AShortWindMovesItLessAndAnOverwoundOneUndoesWork()
+    public void AShortWindMovesItLessAndAnOverwoundOneLessStill()
     {
         var full = Swung(1f, 0f);
         var shortWind = Swung(1f, -0.22f);
         var over = Swung(1f, 0.25f);
-        Assert.True(shortWind.Shape < full.Shape && shortWind.Shape > 0f, $"short {shortWind.Shape}, full {full.Shape}");
-        Assert.True(over.Shape <= 0f, $"overwound, the shape still went {over.Shape}");
+        Assert.True(shortWind.Shape < full.Shape && shortWind.Shape > full.Shape * 0.5f, $"short {shortWind.Shape}, full {full.Shape}");
+        Assert.True(over.Shape > 0f && over.Shape < shortWind.Shape * 0.5f, $"overwound {over.Shape}, short {shortWind.Shape}");
     }
 
     [Fact]
@@ -442,11 +442,11 @@ public class PointerTests
     }
 
     [Fact]
-    public void AnOverwoundBlowUndoesOnlyPartOfABlow()
+    public void AnOverwoundBlowNeverUndoesWorkButMovesItOnALittle()
     {
-        var full = Swung(1f, 0f, blows: 1);
+        var full = Swung(1f, 0f, blows: 1, shaped: 0.5f);
         var over = Swung(1f, 0.3f, blows: 1, shaped: 0.5f);
-        Assert.True(over.Shape < 0f && -over.Shape < full.Shape * 0.6f, $"over {over.Shape}, a full blow {full.Shape}");
+        Assert.True(over.Shape > 0f && over.Shape < full.Shape * 0.3f, $"over {over.Shape}, a full blow {full.Shape}");
     }
 
     [Fact]
@@ -458,5 +458,19 @@ public class PointerTests
         s.Advance([new WorkInput(0, WorkInputKind.Hold, 1), ClickOff(0)], 240);
         Assert.True(s.Gripping);
         Assert.True(s.Pull < 0.02f && s.Plucked < 0.01f && s.Tears == 0, $"pull {s.Pull}, plucked {s.Plucked}");
+    }
+
+    [Fact]
+    public void TheMouseMovedLeftDrawsTheFingersBackForTheNextSlice()
+    {
+        var s = Ready(new ChopSession { Needed = 6 });
+        var slice = 1f / ChopSession.MouseDraw;
+        s.Advance([Point(0, 0.8f), Point(1, 0.8f - slice)], 2);
+        Assert.InRange(s.Bared, 0.95f, 1.05f);
+        s.Advance([Click(2, 0.8f - slice)], 3);
+        Assert.Equal((1, 0, 1), (s.Cuts, s.Slips, s.LastMark));
+        Assert.Equal(0f, s.Bared); // up against the blade again
+        s.Advance([Click(3, 0.8f - slice)], 4);
+        Assert.Equal(1, s.Slips); // chopped again without drawing back: the fingers
     }
 }

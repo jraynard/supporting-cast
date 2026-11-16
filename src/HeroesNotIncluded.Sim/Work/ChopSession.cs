@@ -5,25 +5,30 @@ using HeroesNotIncluded.Sim.Systems;
 namespace HeroesNotIncluded.Sim.Work;
 
 /// <summary>
-/// Chopping at the prep table (docs/DESIGN.md, "Cook"): raw food in hand, cut down on the knife's
-/// beat (F as it comes down). Done ahead in a quiet hour, it pays at the rush: chopped food goes a
-/// little further and cooks faster in the pot (<see cref="Cooking.SpeedOf"/>). A cut off the beat
-/// does nothing; one badly off may slip, and a slip is a real cut on the cook's arm, work for the
-/// healer, landed when they put the knife down.
+/// Chopping at the prep table (docs/DESIGN.md, "Cook"): raw food in hand, the knife's held still and
+/// the guiding fingers drawn back along the food (A, or the mouse moved left) to bare the next
+/// slice, then the knife brought down (F, or a click). A slice as wide as it should be is a clean
+/// cut; a sliver or a slab is a poor one. Chop without drawing the fingers back and it's the
+/// fingers that are cut: a slip, a real cut on the cook's hand, work for the healer, landed when
+/// they put the knife down. Done ahead in a quiet hour, it pays at the rush: chopped food goes a
+/// little further and cooks faster in the pot (<see cref="Cooking.SpeedOf"/>).
 /// </summary>
 public sealed class ChopSession : WorkSession
 {
-    /// <summary>Steps between the knife's beats.</summary>
-    public const int Beat = 30;
+    /// <summary>How far the fingers draw back a step with A held, in slices: a slice in a third of a second.</summary>
+    public const float DrawPerStep = 1f / 20f;
 
-    /// <summary>How near the beat a cut lands, in steps, before practice widens it.</summary>
-    public const float Window = 4f;
+    /// <summary>The furthest the fingers draw back, in slices.</summary>
+    public const float MostBared = 3f;
 
-    /// <summary>How far off the beat a cut is wild enough to slip, in steps.</summary>
-    public const int WildFrom = 10;
+    /// <summary>Fingers drawn back less than this (of a slice) are still under the blade: chopping cuts them.</summary>
+    public const float SafeFrom = 0.3f;
 
-    /// <summary>The chance a wild cut slips, for steady hands; shaky ones slip more.</summary>
-    public const float SlipChance = 0.3f;
+    /// <summary>How near a slice's width a cut is clean, before practice widens it.</summary>
+    public const float EvenWithin = 0.25f;
+
+    /// <summary>Slices bared per width of the picture the mouse moves left (the picture draws a slice an eighth of its width or so).</summary>
+    public const float MouseDraw = 8.4f;
 
     /// <summary>How deep a slip cuts.</summary>
     public const float SlipDamage = 3f;
@@ -36,20 +41,27 @@ public sealed class ChopSession : WorkSession
     public string Label { get; private set; } = "";
 
     /// <summary>Cuts it takes, and cuts made.</summary>
-    public int Needed { get; private set; }
+    public int Needed { get; internal set; }
     public int Cuts { get; private set; }
 
     /// <summary>Slips so far: each a cut on the cook, landed when they stop.</summary>
     public int Slips { get; private set; }
 
-    /// <summary>Steps since the knife was last down (for the drawing, and the beat).</summary>
-    public int Phase => StepsDone % Beat;
+    /// <summary>How far the fingers are drawn back from the blade, in slices: what the next chop takes.</summary>
+    public float Bared { get; private set; }
 
-    /// <summary>How far off the beat a cut now would be, in steps.</summary>
-    public int Off => Math.Min(Phase, Beat - Phase);
+    /// <summary>How wide the last slice came off, in slices (0 for a slip).</summary>
+    public float LastSlice { get; private set; }
 
-    /// <summary>The last cut's mark, for the drawing: 1 on the beat, 0 a miss, -1 a slip.</summary>
+    /// <summary>The last cut's mark, for the drawing: 1 clean, 0 a poor slice, -1 a slip.</summary>
     public int LastMark { get; private set; }
+
+    public float Even => EvenWithin * Hands.Tolerance;
+
+    /// <summary>The fingers are still under the blade.</summary>
+    public bool Unsafe => Bared < SafeFrom;
+
+    private int _draw;
 
     public override int3? Focus(Simulation sim) => sim.World.IsAlive(Table) && sim.World.TryGet<Thing>(Table, out var t) ? t.Cell : null;
 
@@ -69,28 +81,45 @@ public sealed class ChopSession : WorkSession
         Rations.IsPrepTable(sim, Table) && sim.World.IsAlive(Food) && AvatarSystem.SupplyItem(sim, Worker, e => e == Food) == Food
         && AvatarSystem.InReach(sim, sim.World.Get<Position>(Worker).Cell, Table);
 
-    protected override void Press()
+    /// <summary>A draws the fingers back (-1), D pushes them up to the blade again.</summary>
+    protected override void Axis(int value) => _draw = -value;
+
+    /// <summary>The mouse moved left draws the fingers back as far as it moves; right, up again.</summary>
+    protected override void Pointed(float u, float v)
     {
-        var off = Off;
-        if (off <= Window * Hands.Tolerance)
-        {
-            Cuts++;
-            LastMark = 1;
-            Sample(1f - off / (Window * Hands.Tolerance + 1f) * 0.5f);
-            if (Cuts >= Needed)
-                Done = true;
-            return;
-        }
-        if (off >= WildFrom && Rand.NextFloat() < SlipChance * (1f + Hands.Tremor * 2f))
-        {
-            Slips++;
-            LastMark = -1;
-            return;
-        }
-        LastMark = 0;
+        if (PointU is { } was)
+            Bared = Math.Clamp(Bared + (was - u) * MouseDraw, 0f, MostBared);
     }
 
-    protected override void Step() { }
+    protected override void Press()
+    {
+        if (Done)
+            return;
+        if (Unsafe)
+        {
+            // The fingers never moved: the knife comes down on them.
+            Slips++;
+            (LastMark, LastSlice) = (-1, 0f);
+            return;
+        }
+        var off = MathF.Abs(Bared - 1f);
+        var clean = off <= Even;
+        LastMark = clean ? 1 : 0;
+        LastSlice = Bared;
+        Sample(clean ? 1f - 0.3f * off / Even : Math.Clamp(1f - off, 0.15f, 0.6f));
+        Bared = 0f; // the slice falls away: the fingers are up against the blade again
+        Cuts++;
+        if (Cuts >= Needed)
+            Done = true;
+    }
+
+    protected override void Step()
+    {
+        if (_draw == 0)
+            return;
+        // An unsteady hand doesn't draw back quite evenly.
+        Bared = Math.Clamp(Bared + _draw * DrawPerStep * (1f + (Rand.NextFloat() * 2f - 1f) * Hands.Tremor), 0f, MostBared);
+    }
 
     public override void Finish(Simulation sim)
     {
@@ -141,6 +170,9 @@ public sealed class ChopSession : WorkSession
         w.Int(Cuts);
         w.Int(Slips);
         w.Int(LastMark);
+        w.Float(Bared);
+        w.Float(LastSlice);
+        w.Int(_draw);
     }
 
     protected override void ReadState(SaveReader r)
@@ -152,5 +184,11 @@ public sealed class ChopSession : WorkSession
         Cuts = Math.Clamp(r.Int(), 0, 12);
         Slips = Math.Clamp(r.Int(), 0, 12);
         LastMark = Math.Clamp(r.Int(), -1, 1);
+        if (r.Version >= 47) // the fingers drawn back, not the beat (format 47)
+        {
+            Bared = Math.Clamp(r.Float(), 0f, MostBared);
+            LastSlice = Math.Clamp(r.Float(), 0f, MostBared);
+            _draw = Math.Sign(r.Int());
+        }
     }
 }

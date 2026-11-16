@@ -203,7 +203,7 @@ public sealed partial class VillageGame
         var pieces = Math.Min(s.Cuts, 8);
         for (var i = 0; i <= pieces; i++)
             Prop(dl, food, new float2(mid - Gui.S(20) + i * 4 * px + (i > 0 ? 2 * px : 0), board.Min.Y + px), px * (i == 0 ? 1f : 0.45f));
-        var down = s.Off < 2;
+        var down = s.Bared < ChopSession.SafeFrom; // the knife at rest by the fingers
         PropTurned(dl, "kitchen_knife", new float2(mid + Gui.S(24), board.Min.Y - (down ? 2 : 12) * px), new float2(0.1f, 0.5f), down ? 0f : -18f, px);
         if (s.Cuts > st.Count)
             for (var g = 0; g < 3; g++)
