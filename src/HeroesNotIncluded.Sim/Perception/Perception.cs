@@ -642,6 +642,14 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
             ? sim.Defs.Thing(name) : null;
 
     /// <summary>
+    /// What a meal order the viewer knows of asked for, as it was said: a dish off the menu by name
+    /// (<see cref="Shops.Order.Dish"/>), or the house dish. Null if it isn't a meal they know of.
+    /// </summary>
+    public (Defs.ThingDef? Dish, bool House)? WantedMeal(int order) =>
+        !blind && sim.Shops.Find(order) is { } e && (Omniscient || e.KnownBy.Contains(viewer)) && e.Kind.Kind == ServiceKind.Meal
+            ? (e.Dish, e.WantsHouse) : null;
+
+    /// <summary>
     /// A shop's price sign: every service the building serves, what it costs and whether it's
     /// offered. Posted for anyone to read, so it isn't gated by sight. Empty if it's no shop.
     /// </summary>

@@ -1,0 +1,27 @@
+{
+  // What a cook says at the kitchen's own troubles (Bots/BotPlayer.Kitchen). Same shape as barks.json.
+  "barks": [
+    // Flames over the stew pot: the lid's going on.
+    { "name": "kitchen_flare", "lines": [
+      { "text": "Fat's caught! Lid, lid, lid!" },
+      { "text": "Stand back from the pot!" },
+      { "text": "Not today, you don't." },
+      { "text": "Oh, for pity's sake. Lid!", "when": [ "hasty" ] },
+      { "text": "Nobody saw that.", "when": [ "careless" ] }
+    ] },
+    // A sniff of the pot, and it's not right: none of it goes out.
+    { "name": "kitchen_sour", "lines": [
+      { "text": "That pot's turned. Nobody eats from it." },
+      { "text": "Something in there's gone off. The other pot, then." },
+      { "text": "Smell that? No. Neither will the customers.", "when": [ "chatty" ] },
+      { "text": "Off. Mm.", "when": [ "quiet" ] }
+    ] },
+    // A pot good enough to put a name to: the house dish ({thing} is its name).
+    { "name": "kitchen_house_dish", "lines": [
+      { "text": "That's the one. {thing}, from now on." },
+      { "text": "Put it on the sign: {thing}." },
+      { "text": "{thing}. They'll be asking for it by name.", "when": [ "chatty" ] },
+      { "text": "{thing}, and it's dear. Worth it, mind.", "when": [ "greedy" ] }
+    ] }
+  ]
+}
