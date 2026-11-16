@@ -78,37 +78,37 @@
       "name": "Inn", "roles": [ "Tavern", "Kitchen" ], "label": "inn", "icon": "buildings/table",
       "description": "A two-storey inn: a common room with a bar and a fireplace, a kitchen and a storeroom behind, and rooms to let upstairs.",
       "layout": [
-        "WW.WWWWWWWWWW",
+        "WW.WOWWWWWOWW",
         "W.......W...W",
         "W.......W...W",
         "W.......W...W",
         "WW.WDWWWWDWWW",
         "W...........W",
-        "W...........W",
+        "O...........W",
         "WS..........W",
         "W...........W",
         "............W",
         "W...........W",
-        "W...........W",
-        "WWWWWWDWWWWWW"
+        "O...........W",
+        "WWWOWWDDWWOWW"
       ],
       "upperLayout": [
-        "WWWWWWWWWWWWW",
+        "WWOWWWOWWWOWW",
         "W...W...W...W",
         "W...W...W...W",
         "W...W...W...W",
         "WWDWWWDWWWDWW",
         "W...........W",
-        "W...........W",
+        "O...........O",
         "W...........W",
         "WWDWWWDWWWDWW",
         "W...W...W...W",
         "W...W...W...W",
         "W...W...W...W",
-        "WWWWWWWWWWWWW"
+        "WWOWWWOWWWOWW"
       ],
       "parts": {
-        "foundation": "Sill", "wall": "TimberWall", "door": "PlankDoor", "roof": "ThatchRoofPart",
+        "foundation": "Sill", "wall": "TimberWall", "door": "PlankDoor", "window": "LeadedWindow", "roof": "ThatchRoofPart",
         "stair": "InnStair", "upperFloor": "Floorboards"
       },
       // The kitchen (back left): its own fireplace with the spit and the stew pot either side of it,
@@ -623,6 +623,12 @@
         { "min": [0.18, 0.18, 0], "max": [0.82, 0.82, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
         { "min": [0.22, 0.22, 0.1], "max": [0.78, 0.78, 1.02], "top": "buildings/quoin", "side": "buildings/quoin" }
       ],
+      // A window (an O): the run with a dressed-stone window to the street and the room's own inside.
+      "window": [
+        { "min": [0, 0.16, 0], "max": [1, 0.84, 0.1], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0, 0.22, 0.1], "max": [1, 0.78, 0.94], "top": "buildings/wall_fieldstone", "side": "buildings/wall_fieldstone", "front": "buildings/window_fieldstone", "back": "buildings/window_in" },
+        { "min": [0, 0.2, 0.94], "max": [1, 0.8, 1], "top": "buildings/beam_oak", "side": "buildings/beam_oak" }
+      ],
       "door": [
         { "min": [0, 0.16, 0], "max": [1, 0.84, 0.04], "top": "props/stone_block", "side": "props/stone_block" },
         { "min": [0, 0.2, 0], "max": [0.14, 0.8, 1], "top": "buildings/quoin", "side": "buildings/quoin" },
@@ -633,16 +639,16 @@
       ],
       "floor": "buildings/floor_planks",
       "roof": {
-        "sprite": "buildings/roof_thatch_straw", "pitch": 0.55, "eave": 0.75, "overhang": 0.6, "thickness": 0.4, "lip": 0.2,
+        "sprite": "buildings/roof_thatch_straw", "pitch": 0.45, "eave": 0.4, "overhang": 0.5, "thickness": 0.28, "lip": 0.12, "chimneyAbove": 1.0, "chimneyWidth": 0.84,
         "gable": "buildings/gable_plaster", "gableFill": "buildings/gable_fill_oak", "trim": "buildings/beam_oak", "horns": 0,
         "eaveTrim": "buildings/thatch_eave", "ridge": "buildings/thatch_ridge"
       }
     },
     {
       // The inn's upper storey (inn_stone_timber's "upper", jettied out over the street on a sole
-      // beam, its corners on stepped brackets): warm oak half-timbering, braced, and
-      // facing the street, now and then a leaded window with shutters and a flower box
-      // (wall_timber_oak_out: its bays' variants; the room sees plain wall_timber_oak).
+      // beam, its corners on stepped brackets): warm oak half-timbering, braced, to the street
+      // (wall_timber_oak_out: its bays' variants; the room sees plain wall_timber_oak). Its windows
+      // are the plan's O cells ("window": shutters, now and then a flower box).
       "name": "inn_timber_upper", "facesOut": true,
       "span": [
         { "min": [0, 0.22, -0.02], "max": [1, 0.78, 0.13], "top": "buildings/beam_oak", "side": "buildings/beam_oak" },
@@ -667,6 +673,12 @@
         { "min": [0, 0.24, 0], "max": [0.12, 0.76, 1], "top": "buildings/beam_oak", "side": "buildings/beam_oak" },
         { "min": [0.88, 0.24, 0], "max": [1, 0.76, 1], "top": "buildings/beam_oak", "side": "buildings/beam_oak" },
         { "min": [0, 0.26, 0.88], "max": [1, 0.74, 1], "top": "buildings/beam_oak", "side": "buildings/beam_oak" }
+      ],
+      // A window (an O): a bay with a leaded window and shutters to the street, the room's own inside.
+      "window": [
+        { "min": [0, 0.22, -0.02], "max": [1, 0.78, 0.13], "top": "buildings/beam_oak", "side": "buildings/beam_oak" },
+        { "min": [0, 0.28, 0.1], "max": [1, 0.72, 0.94], "top": "props/planks", "side": "buildings/wall_timber_oak", "front": "buildings/window_timber_oak", "back": "buildings/window_in" },
+        { "min": [0, 0.26, 0.94], "max": [1, 0.74, 1], "top": "buildings/beam_oak", "side": "buildings/beam_oak" }
       ]
     },
     {
@@ -880,6 +892,13 @@
       "name": "TimberWall", "label": "timber-framed wall", "category": "Building", "sprite": "buildings/wall_timber_plaster",
       "maxHp": 140, "flammability": 0.8,
       "building": { "partOnly": true, "isWall": true, "insulation": 0.93, "work": 95, "cost": [ { "def": "Wood", "count": 3 } ] }
+    },
+    {
+      // A wall with a leaded window in it (an O in a plan): a wall to everything but the light, which
+      // it lets into the room by day (LightingSystem); a lit room's windows glow after dark.
+      "name": "LeadedWindow", "label": "leaded window", "category": "Building", "sprite": "buildings/window_timber_oak",
+      "maxHp": 90, "flammability": 0.6,
+      "building": { "partOnly": true, "isWall": true, "window": true, "insulation": 0.8, "work": 110, "cost": [ { "def": "Wood", "count": 3 } ] }
     },
     {
       // Boards on joists over the walls below: an upper storey's floor.

@@ -107,6 +107,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     /// <summary>This frame's culling box and cutaway level (<see cref="InViewNow"/>).</summary>
     private (int X0, int Y0, int X1, int Y1, int Cut) _view;
     private Func<int3, bool>? _inView;
+    private Func<int3, bool>? _shellInView;
     private Func<int3, bool>? _canSeeCell;
     private Func<Thing, (Sprite, uint)>? _artOfThing;
     private Action<float3, uint>? _padlock;
@@ -115,6 +116,15 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     /// <summary>In this frame's culling box, at or under the cutaway, and not under a floor that's drawn.</summary>
     private bool InViewNow(int3 c) =>
         c.X >= _view.X0 && c.X <= _view.X1 && c.Y >= _view.Y0 && c.Y <= _view.Y1 && c.Z <= _view.Cut && !UnderDrawnFloor(_sim!.Map, c);
+
+    /// <summary>
+    /// <see cref="InViewNow"/> for part of a building's shell drawn apart from its walls (a door, a
+    /// window's glow): a floor drawn above it (the storey over a front door) doesn't hide it from
+    /// the street. What's above the level you're on in the building you're in still goes.
+    /// </summary>
+    private bool ShellInView(int3 c) =>
+        c.X >= _view.X0 && c.X <= _view.X1 && c.Y >= _view.Y0 && c.Y <= _view.Y1 && c.Z <= _view.Cut
+        && !(_sim != null && UnderOpenRoof(_sim, c) && c.Z > _openLevel);
 
     private PerceptionView? _omniscient;
 
@@ -479,7 +489,9 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 Rgba.Pack(0.45f, 0.62f, 0.85f, 0.15f + 0.3f * Math.Min(1f, left)), Quad.Level(c.Z), translucent: true);
         }
 
-        _doors.Draw(quads, sim, inView, animDt, _artOfThing ??= t => ArtOf(t),
+        DrawWindowGlow(sim);
+
+        _doors.Draw(quads, sim, _shellInView ??= ShellInView, animDt, _artOfThing ??= t => ArtOf(t),
             _padlock ??= (at, level) => Billboard(S("props/padlock"), at - new float3(0, 0, 0.1f), 0.22f, 0.22f, Rgba.White, level));
 
         foreach (var (site, info) in _sites)
@@ -1713,6 +1725,59 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             Billboard(S(shot.Hit ? "fx/fire" : "fx/smoke"), to - new float3(0, 0, 0.3f), 0.5f + 0.4f * age, 0.5f + 0.4f * age, color, Quad.Unlit | Quad.Always, translucent: true);
         }
     }
+
+    private readonly List<ModelBox> _glowPane = [new()];
+
+    /// <summary>
+    /// After dark, a window whose room is lit (by its lamps or its fire, brighter than the night
+    /// outside) glows warm from the street: its panes alone (<c>window_glow</c>) laid over its face,
+    /// brighter the brighter the room. Only the street side: from inside you see the room.
+    /// </summary>
+    private void DrawWindowGlow(Simulation sim)
+    {
+        var dark = 1f - sim.Clock.Daylight;
+        if (dark < 0.05f)
+            return;
+        var map = sim.Map;
+        var sky = sim.Lighting.SkyLight(sim);
+        foreach (var (cell, room) in sim.Lighting.Windows(sim))
+        {
+            if (!ShellInView(cell) || _mesher.IsStub(sim, cell.X, cell.Y, cell.Z))
+                continue;
+            // The room's light just inside the window.
+            var inside = -1f;
+            foreach (var d in GlowSides)
+                if (map.InBounds(cell + d) && map.RoomId[map.Idx(cell + d)] == room)
+                    inside = Math.Max(inside, map.Light[map.Idx(cell + d)]);
+            var glow = Math.Clamp((inside - sky - 0.05f) / 0.4f, 0f, 1f) * dark;
+            if (glow < 0.04f || map.Structure[map.Idx(cell)] is var part && part.IsNull || BuildingKit.Of(sim, part) is not { } kitted)
+                continue;
+            foreach (var (model, facing) in BuildingKit.WallPieces(kitted.Kit, kitted.Building, cell))
+            foreach (var box in model)
+            {
+                if (string.IsNullOrEmpty(box.Front))
+                    continue;
+                // A film over the face to the street (+Y as made), a hair proud of it.
+                _glowPane[0] = new ModelBox
+                {
+                    Min = [box.Min[0], box.Max[1] + 0.004f, box.Min[2]], Max = [box.Max[0], box.Max[1] + 0.008f, box.Max[2]],
+                    Top = "none", Side = "none", Back = "none", Front = "buildings/window_glow",
+                };
+                _modelQuads.Clear();
+                PropModel.Build(_modelQuads, _glowPane, cell, facing, name => (S(name), Rgba.White),
+                    Rgba.Pack(glow, glow * 0.92f, glow * 0.8f), Quad.Level(cell.Z) | Quad.Glow | Quad.Unlit);
+                var jut = WorldMesher.JettyOut(kitted.Kit, kitted.Building, cell.X, cell.Y, cell.Z) ?? default;
+                foreach (var q in _modelQuads)
+                {
+                    var moved = q;
+                    moved.Origin += new float3(jut.X, jut.Y, 0);
+                    _quads.Add(moved);
+                }
+            }
+        }
+    }
+
+    private static readonly int3[] GlowSides = [new(1, 0, 0), new(-1, 0, 0), new(0, 1, 0), new(0, -1, 0)];
 
     /// <summary>
     /// A preset building's phase going up (one site over its plot, off the map's layers): a ghost

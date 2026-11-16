@@ -167,10 +167,10 @@ for (x, y), f in {(65, 37): "u", (66, 37): "u", (53, 52): "X", (24, 36): "u", (2
     if not reserved[y][x] and level[y][x] == TOWN:
         feature[y][x] = f
 
-# The inn's front (its door at 55,45 opens west onto the square): steps up to the door between two
-# lantern posts, a bench and a trestle table against the wall to the north, barrels and a flower
-# tub to the south (art/reference/inn*.webp). The door's own cell and the one before it stay open.
-for (x, y), f in {(54, 45): "_", (54, 44): "L", (54, 46): "L", (54, 41): "h", (53, 41): "T",
+# The inn's front (its double door at 55,45-46 opens west onto the square): steps up to the doors
+# between two lantern posts, a bench and a trestle table against the wall to the north, barrels and
+# a flower tub to the south (art/reference/inn*.webp). The doors' own cells stay open.
+for (x, y), f in {(54, 45): "_", (54, 46): "_", (54, 44): "L", (54, 47): "L", (54, 41): "h", (53, 41): "T",
                   (54, 48): "u", (54, 49): "u", (53, 49): "u", (54, 50): "F", (54, 39): "F"}.items():
     feature[y][x] = f
 

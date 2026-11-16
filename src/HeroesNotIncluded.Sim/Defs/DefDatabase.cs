@@ -348,9 +348,9 @@ public sealed class DefDatabase
                 {
                     BuildPhase.Foundation when parts.FoundationDef is { } f => [(f, plot)],
                     BuildPhase.Roof when parts.RoofDef is { } r => [(r, plot)],
-                    BuildPhase.Walls => Parts(plan, "WDPS"),
+                    BuildPhase.Walls => Parts(plan, "WDPOS"),
                     BuildPhase.UpperFloor when parts.UpperFloorDef is { } f && upper.Length > 0 => [(f, upper.Count(ch => ch != ' ') - plan.Count(ch => ch == 'S'))],
-                    BuildPhase.UpperWalls => Parts(upper, "WDP"),
+                    BuildPhase.UpperWalls => Parts(upper, "WDPO"),
                     _ => [],
                 };
                 v.PhaseDefs[(int)phase] = null;

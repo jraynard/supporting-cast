@@ -4,7 +4,7 @@ namespace HeroesNotIncluded.Sim.Environment;
 
 /// <summary>
 /// Light level per cell (0 = pitch dark, 1 = full daylight): sky light where unroofed plus
-/// point lights from lit fires, buildings' lamps (<see cref="Defs.BuildingDef.Lamps"/>) and burning tiles. Drawn by the renderer; the sim only reads it
+/// daylight through windows, point lights from lit fires, buildings' lamps (<see cref="Defs.BuildingDef.Lamps"/>) and burning tiles. Drawn by the renderer; the sim only reads it
 /// for mood (sitting in the dark indoors).
 /// </summary>
 public sealed class LightingSystem : ISimSystem
@@ -27,7 +27,13 @@ public sealed class LightingSystem : ISimSystem
         var sky = SkyLight(sim);
         // Only cells where things can be; open sky keeps whatever it had (renderers treat it as sky).
         foreach (var i in map.ActiveCells)
-            map.Light[i] = map.Roofed[i] ? Math.Min(sky, 0.35f + 0.3f * sim.Clock.Daylight) : sky;
+            map.Light[i] = map.Roofed[i] ? Indoors(sim) : sky;
+
+        // By day, windows let the sky in: brighter by them than the room's dim, fading across it.
+        sim.Rooms.UpdateIfNeeded();
+        if (sim.Clock.Daylight > 0)
+            foreach (var (cell, room) in Windows(sim))
+                SkyThrough(sim, cell, room, Indoors(sim), sky * WindowStrength);
 
         foreach (var e in sim.World.Query<Fueled>())
         {
@@ -69,6 +75,68 @@ public sealed class LightingSystem : ISimSystem
                 _standing.Add((t.Cell, t.Def));
         }
         return _standing;
+    }
+
+    /// <summary>How far a window's daylight reaches into its room (cells), and how much of the sky's it lets in.</summary>
+    public const float WindowReach = 4f;
+    public const float WindowStrength = 0.9f;
+
+    private readonly List<(int3 Cell, int Room)> _windows = [];
+    private int _windowsVersion = -1;
+
+    /// <summary>
+    /// Every finished window (<see cref="Defs.BuildingProps.Window"/>) with the indoor room it opens
+    /// onto (a window between two rooms lights both), found again only when the map's structures change.
+    /// </summary>
+    /// <remarks>Reads the rooms as they stand (the lighting pass brings them up to date first), so a renderer may ask too.</remarks>
+    public IReadOnlyList<(int3 Cell, int Room)> Windows(Simulation sim)
+    {
+        if (_windowsVersion == sim.Map.StructureVersion)
+            return _windows;
+        _windowsVersion = sim.Map.StructureVersion;
+        _windows.Clear();
+        var map = sim.Map;
+        foreach (var e in sim.World.Each<Thing>())
+        {
+            var t = sim.World.Get<Thing>(e);
+            if (!t.Spawned || t.Def.Building is not { Window: true } || sim.World.Has<Construction>(e))
+                continue;
+            foreach (var d in Sides)
+            {
+                var n = t.Cell + d;
+                if (!map.InBounds(n))
+                    continue;
+                var id = map.RoomId[map.Idx(n)];
+                if (id > 0 && sim.Rooms.All[id - 1].Indoors && !_windows.Contains((t.Cell, id)))
+                    _windows.Add((t.Cell, id));
+            }
+        }
+        return _windows;
+    }
+
+    private static readonly int3[] Sides = [new(1, 0, 0), new(-1, 0, 0), new(0, 1, 0), new(0, -1, 0)];
+
+    /// <summary>The light under a roof with no window or lamp: dim even at noon.</summary>
+    public float Indoors(Simulation sim) => Math.Min(SkyLight(sim), 0.35f + 0.3f * sim.Clock.Daylight);
+
+    /// <summary>
+    /// Daylight through a window: its room's cells on its level, from the room's dim up towards the
+    /// window's <paramref name="strength"/>, brightest beside it.
+    /// </summary>
+    private static void SkyThrough(Simulation sim, int3 window, int room, float dim, float strength)
+    {
+        var map = sim.Map;
+        foreach (var t in map.CellsInRadius(window, WindowReach))
+        {
+            var i = map.Idx(t.X, t.Y, window.Z);
+            if (map.RoomId[i] != room)
+                continue;
+            var dx = t.X - window.X;
+            var dy = t.Y - window.Y;
+            var falloff = 1f - MathF.Sqrt(dx * dx + dy * dy) / (WindowReach + 0.5f);
+            if (falloff > 0 && strength > dim)
+                map.Light[i] = Math.Min(1f, Math.Max(map.Light[i], dim + (strength - dim) * falloff));
+        }
     }
 
     /// <summary>A lamp is softer than a fire.</summary>

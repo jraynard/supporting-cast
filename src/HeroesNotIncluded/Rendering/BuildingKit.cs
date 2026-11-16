@@ -29,7 +29,7 @@ public static class BuildingKit
         return b.VariantDef.KitDef is { } kit ? (b, kit) : null;
     }
 
-    private static bool Joins(char symbol) => symbol is 'W' or 'D' or 'P';
+    private static bool Joins(char symbol) => symbol is 'W' or 'D' or 'P' or 'O';
 
     /// <summary>A box wholly this low is the footing a wall stands on: drawn on the ground storey only.</summary>
     public const float FootingHeight = 0.12f;
@@ -74,6 +74,41 @@ public static class BuildingKit
     private static IReadOnlyList<ModelBox> StepFor(IReadOnlyList<ModelBox> model, int facing) =>
         Stepped.GetValue(model, m => [.. Enumerable.Range(0, 4).Select(f => (IReadOnlyList<ModelBox>)m.Select(b => Resized(b, 0f, ArmStep * (f + 1))).ToList())])[facing & 3];
 
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<IReadOnlyList<ModelBox>, IReadOnlyList<ModelBox>[]> Pairs = new();
+
+    /// <summary>
+    /// A door frame that shares a side with another door's (<paramref name="high"/>: the +X side as
+    /// made, <paramref name="low"/>: the -X): what stands only on that side (its jamb, the arch's
+    /// springing) is left out, and what reaches towards it (the arch's crown) carries on to the edge,
+    /// so a pair reads as one wide doorway.
+    /// </summary>
+    private static IReadOnlyList<ModelBox> Paired(IReadOnlyList<ModelBox> door, bool high, bool low) =>
+        Pairs.GetValue(door, m =>
+        [
+            .. Enumerable.Range(0, 4).Select(k => (IReadOnlyList<ModelBox>)Pair(m, (k & 1) != 0, (k & 2) != 0)),
+        ])[(high ? 1 : 0) | (low ? 2 : 0)];
+
+    private static List<ModelBox> Pair(IReadOnlyList<ModelBox> door, bool high, bool low)
+    {
+        var list = new List<ModelBox>();
+        foreach (var b in door)
+        {
+            float x0 = b.Min[0], x1 = b.Max[0];
+            if (high && x0 >= 0.6f || low && x1 <= 0.4f)
+                continue; // stands only on the shared side
+            if (high && x1 > 0.5f && x1 < 1f)
+                x1 = 1f;
+            if (low && x0 < 0.5f && x0 > 0f)
+                x0 = 0f;
+            list.Add(new ModelBox
+            {
+                Min = [x0, b.Min[1], b.Min[2]], Max = [x1, b.Max[1], b.Max[2]],
+                Top = b.Top, Side = b.Side, Front = b.Front, Back = b.Back, MinCount = b.MinCount, Fit = b.Fit,
+            });
+        }
+        return list;
+    }
+
     /// <summary>The kit's models for a wall, post or door cell, each with its turn (made along X).</summary>
     /// <remarks>Above the ground storey, the kit's <see cref="BuildingKitDef.UpperKit"/> if it has one.</remarks>
     public static IEnumerable<(IReadOnlyList<ModelBox> Model, int Facing)> WallPieces(BuildingKitDef kit, PresetBuilding b, int3 cell)
@@ -104,7 +139,17 @@ public static class BuildingKit
         int AlongY() => kit.FacesOut && Outside(1, 0) && !Outside(-1, 0) ? 3 : 1;
         if (symbol == 'D')
         {
-            yield return (kit.Door, e || w ? AlongX() : AlongY());
+            var facing = e || w ? AlongX() : AlongY();
+            // A pair of doors side by side share one frame: no jamb between them, the arch across both.
+            var plusX = facing switch { 1 => new int2(0, 1), 2 => new int2(-1, 0), 3 => new int2(0, -1), _ => new int2(1, 0) };
+            bool high = At(plusX.X, plusX.Y) == 'D', low = At(-plusX.X, -plusX.Y) == 'D';
+            yield return (high || low ? Paired(kit.Door, high, low) : kit.Door, facing);
+            yield break;
+        }
+        // A window is a run of wall with a window in it, turned as the wall runs.
+        if (symbol == 'O')
+        {
+            yield return (kit.Window.Count > 0 ? kit.Window : kit.Span, e || w ? AlongX() : AlongY());
             yield break;
         }
         if (symbol == 'W' && e && w && !n && !s)
@@ -285,9 +330,6 @@ public static class BuildingKit
         return b.Def.Chimneys.Exists(c => c.Length >= 2 && c[0] == col && c[1] == row);
     }
 
-    /// <summary>How far a chimney stands above the roof where it comes through.</summary>
-    public const float ChimneyAboveRoof = 0.7f;
-
     /// <summary>
     /// The model of a chimney stack at a roof cell (in cell units from the storey below the roof),
     /// and where its top's middle is in the world: from that storey's floor up through it and out
@@ -305,14 +347,15 @@ public static class BuildingKit
         var c = (alongX ? row : col) + 0.5f;
         var surface = roofCell.Z + roof.Pitch * (Math.Min(c, span - c) - 0.5f + kit.Jetty) + roof.Thickness;
         var under = roofCell - new int3(0, 0, 1);
-        var height = surface + ChimneyAboveRoof - under.Z;
+        var height = surface + roof.ChimneyAbove - under.Z;
         var jut = WorldMesher.JettyOut(kit, b, under.X, under.Y, under.Z) ?? default;
-        float x0 = 0.16f + jut.X, x1 = 0.84f + jut.X, y0 = 0.16f + jut.Y, y1 = 0.84f + jut.Y;
+        var half = Math.Clamp(roof.ChimneyWidth, 0.2f, 0.96f) * 0.5f;
+        float x0 = 0.5f - half + jut.X, x1 = 0.5f + half + jut.X, y0 = 0.5f - half + jut.Y, y1 = 0.5f + half + jut.Y;
         var model = new List<ModelBox>
         {
             new() { Min = [x0, y0, 0], Max = [x1, y1, height - 0.14f], Top = "props/stone_block", Side = "buildings/wall_fieldstone" },
             new() { Min = [x0 - 0.06f, y0 - 0.06f, height - 0.14f], Max = [x1 + 0.06f, y1 + 0.06f, height], Top = "props/hearth_soot", Side = "buildings/quoin" },
-            new() { Min = [0.4f + jut.X, 0.4f + jut.Y, height], Max = [0.6f + jut.X, 0.6f + jut.Y, height + 0.12f], Top = "props/hearth_soot", Side = "props/stone_block" },
+            new() { Min = [0.5f - half * 0.3f + jut.X, 0.5f - half * 0.3f + jut.Y, height], Max = [0.5f + half * 0.3f + jut.X, 0.5f + half * 0.3f + jut.Y, height + 0.12f], Top = "props/hearth_soot", Side = "props/stone_block" },
         };
         var top = new float3(under.X + 0.5f + jut.X, under.Y + 0.5f + jut.Y, under.Z + height + 0.12f);
         return (model, under, top);

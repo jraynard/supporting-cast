@@ -155,7 +155,7 @@ public sealed class BuildingDef : Def
         return At(col + d.X, row + d.Y, level);
     }
 
-    private static bool IsWallSymbol(char c) => c is 'W' or 'P';
+    private static bool IsWallSymbol(char c) => c is 'W' or 'P' or 'O';
 
     public char At(int col, int row) => col >= 0 && row >= 0 && col < Width && row < Depth ? Layout[row][col] : ' ';
 
@@ -282,8 +282,8 @@ public sealed class BuildingDef : Def
             if (row.Length != Width)
                 throw new Exception($"Building '{Name}': every layout row must be {Width} long");
             foreach (var ch in row)
-                if (ch is not ('W' or 'D' or 'P' or 'S' or '.' or ' '))
-                    throw new Exception($"Building '{Name}': unknown layout symbol '{ch}' (W, D, P, S, . or space)");
+                if (ch is not ('W' or 'D' or 'P' or 'O' or 'S' or '.' or ' '))
+                    throw new Exception($"Building '{Name}': unknown layout symbol '{ch}' (W, D, P, O, S, . or space)");
         }
         if (Line.Concat(HatchLine).Any(c => c.Length != 2))
             throw new Exception($"Building '{Name}': each line cell is [column, row]");
@@ -300,8 +300,8 @@ public sealed class BuildingDef : Def
             for (var col = 0; col < Width; col++)
             {
                 var ch = UpperLayout[row][col];
-                if (ch is not ('W' or 'D' or 'P' or '.' or ' '))
-                    throw new Exception($"Building '{Name}': unknown upper layout symbol '{ch}' (W, D, P, . or space)");
+                if (ch is not ('W' or 'D' or 'P' or 'O' or '.' or ' '))
+                    throw new Exception($"Building '{Name}': unknown upper layout symbol '{ch}' (W, D, P, O, . or space)");
                 if (ch != ' ' && At(col, row) == ' ')
                     throw new Exception($"Building '{Name}': the upper storey overhangs the ground plan at [{col}, {row}]");
                 if (At(col, row) == 'S' && ch != '.')
@@ -380,6 +380,9 @@ public sealed class BuildingParts
     public string? Post { get; set; }
     public string? Door { get; set; }
 
+    /// <summary>For <c>O</c> cells: a wall with a window (<see cref="BuildingProps.Window"/>).</summary>
+    public string? Window { get; set; }
+
     /// <summary>A roof over every plot cell, above the top storey. Null: no roof phase.</summary>
     public string? Roof { get; set; }
 
@@ -393,12 +396,13 @@ public sealed class BuildingParts
     [JsonIgnore] public ThingDef? WallDef { get; private set; }
     [JsonIgnore] public ThingDef? PostDef { get; private set; }
     [JsonIgnore] public ThingDef? DoorDef { get; private set; }
+    [JsonIgnore] public ThingDef? WindowDef { get; private set; }
     [JsonIgnore] public ThingDef? RoofDef { get; private set; }
     [JsonIgnore] public ThingDef? StairDef { get; private set; }
     [JsonIgnore] public ThingDef? UpperFloorDef { get; private set; }
 
     /// <summary>The part for a plan symbol in the Walls phase.</summary>
-    public ThingDef? ForSymbol(char ch) => ch switch { 'W' => WallDef, 'D' => DoorDef, 'P' => PostDef, 'S' => StairDef, _ => null };
+    public ThingDef? ForSymbol(char ch) => ch switch { 'W' => WallDef, 'D' => DoorDef, 'P' => PostDef, 'O' => WindowDef, 'S' => StairDef, _ => null };
 
     internal static BuildingParts Merge(BuildingParts over, BuildingParts base_) => new()
     {
@@ -406,6 +410,7 @@ public sealed class BuildingParts
         Wall = over.Wall ?? base_.Wall,
         Post = over.Post ?? base_.Post,
         Door = over.Door ?? base_.Door,
+        Window = over.Window ?? base_.Window,
         Roof = over.Roof ?? base_.Roof,
         Stair = over.Stair ?? base_.Stair,
         UpperFloor = over.UpperFloor ?? base_.UpperFloor,
@@ -426,12 +431,15 @@ public sealed class BuildingParts
         WallDef = Part(Wall, "wall", d => d.Building!.IsWall);
         PostDef = Part(Post, "post", d => d.Building!.IsWall) ?? WallDef;
         DoorDef = Part(Door, "door", d => d.Building!.IsDoor);
+        WindowDef = Part(Window, "window", d => d.Building! is { IsWall: true, Window: true });
         RoofDef = Part(Roof, "roof", d => d.IsRoof);
         StairDef = Part(Stair, "stair", d => d.Building!.Climb == ClimbKind.Ramp);
         UpperFloorDef = Part(UpperFloor, "upper floor", d => d.IsFloor && !d.IsRoof);
         var plan = string.Concat(owner.Layout) + string.Concat(owner.UpperLayout);
         if ((plan.Contains('W') && WallDef == null) || (plan.Contains('D') && DoorDef == null) || (plan.Contains('P') && PostDef == null))
             throw new Exception($"Building '{owner.Name}': its plan has walls, doors or posts without a part for them");
+        if (plan.Contains('O') && WindowDef == null)
+            throw new Exception($"Building '{owner.Name}': its plan has windows without a window part");
         if (plan.Contains('S') && StairDef == null)
             throw new Exception($"Building '{owner.Name}': its plan has stairs without a stair part");
         if (owner.UpperLayout.Count > 0 && UpperFloorDef == null)
@@ -567,6 +575,9 @@ public sealed class BuildingKitDef : Def
     /// <summary>The frame round a door in a wall running along X (the door itself swings, drawn apart).</summary>
     public List<ModelBox> Door { get; set; } = [];
 
+    /// <summary>A window (an <c>O</c>) in a wall running along X: <see cref="Span"/> if it has none.</summary>
+    public List<ModelBox> Window { get; set; } = [];
+
     /// <summary>The floor laid over the foundation (a sprite), instead of the foundation part's own.</summary>
     public string Floor { get; set; } = "";
 
@@ -637,6 +648,13 @@ public sealed class RoofKit
 
     /// <summary>The beam along the ridge (empty for none).</summary>
     public string Ridge { get; set; } = "";
+
+    /// <summary>
+    /// How far a chimney stands above the roof where it comes through, and how broad its stack is
+    /// (of a cell): a big building's stacks have to be bigger to read as chimneys at all.
+    /// </summary>
+    public float ChimneyAbove { get; set; } = 0.7f;
+    public float ChimneyWidth { get; set; } = 0.68f;
 }
 
 /// <summary>

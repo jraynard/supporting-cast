@@ -272,6 +272,12 @@ public sealed class BuildingProps
     /// <summary>Blocks movement and separates rooms.</summary>
     public bool IsWall { get; set; }
 
+    /// <summary>
+    /// A wall with a window in it (an <c>O</c> in a building's plan): a wall to everything else, but
+    /// by day it lets the sky's light into the room behind it (<c>Environment.LightingSystem</c>).
+    /// </summary>
+    public bool Window { get; set; }
+
     /// <summary>Passable, but separates rooms (and holds heat when closed).</summary>
     public bool IsDoor { get; set; }
 

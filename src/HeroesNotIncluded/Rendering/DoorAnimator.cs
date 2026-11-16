@@ -143,17 +143,33 @@ public sealed class DoorAnimator
         || !(WorldMesher.WallAt(sim, c.X, c.Y - 1, c.Z) || WorldMesher.WallAt(sim, c.X, c.Y + 1, c.Z));
 
     /// <summary>
-    /// The slab: hinged at its west (or south) end, rotated by the swing. Shut, it's exactly the
-    /// slab the mesher used to bake: two faces with the door art, plain edges and top.
+    /// Whether the door is the second leaf of a pair: another door beside it at its west (or south)
+    /// end, where it would hinge. Hung from its other end instead, the two meet in the middle.
+    /// </summary>
+    public static bool HingesFar(Simulation sim, int3 c, bool alongX)
+    {
+        var p = alongX ? new int3(c.X - 1, c.Y, c.Z) : new int3(c.X, c.Y - 1, c.Z);
+        if (!sim.Map.InBounds(p))
+            return false;
+        var s = sim.Map.Structure[sim.Map.Idx(p)];
+        return !s.IsNull && sim.World.Get<Thing>(s).Def.Building?.IsDoor == true;
+    }
+
+    /// <summary>
+    /// The slab: hinged at its west (or south) end, rotated by the swing (the second leaf of a pair
+    /// at its east or north end: <see cref="HingesFar"/>). Shut, it's exactly the slab the mesher
+    /// used to bake: two faces with the door art, plain edges and top.
     /// </summary>
     private static void Emit(QuadRenderer quads, Simulation sim, Door door, (Sprite Sprite, uint Tint) art, float thickness, float height = 1f)
     {
         var c = door.Cell;
         var alongX = DoorRunsAlongX(sim, c);
+        var far = HingesFar(sim, c, alongX);
         // Shut: running along d, its faces towards n (d x n points up).
-        var d0 = alongX ? new float2(1, 0) : new float2(0, 1);
-        var hinge = alongX ? new float2(c.X, c.Y + 0.5f) : new float2(c.X + 0.5f, c.Y);
-        var angle = door.Sign * SwingAngle * Ease(door.Open);
+        var d0 = alongX ? new float2(far ? -1 : 1, 0) : new float2(0, far ? -1 : 1);
+        var hinge = alongX ? new float2(c.X + (far ? 1 : 0), c.Y + 0.5f) : new float2(c.X + 0.5f, c.Y + (far ? 1 : 0));
+        // Turned end for end, the same push swings it the other way round its hinge.
+        var angle = (far ? -door.Sign : door.Sign) * SwingAngle * Ease(door.Open);
         float cos = MathF.Cos(angle), sin = MathF.Sin(angle);
         var d2 = new float2(d0.X * cos - d0.Y * sin, d0.X * sin + d0.Y * cos);
         var d = new float3(d2.X, d2.Y, 0);
@@ -164,8 +180,11 @@ public sealed class DoorAnimator
         var edgeUv = new float4(uv.X, uv.Y, uv.X + (uv.Z - uv.X) * thickness, uv.W);
         var level = Quad.Level(c.Z) | Quad.Occluder;
 
-        Side(top + half, d, alongX ? 0.88f : 0.66f, uv);                    // the face towards n
-        Side(top + d - half, -d, alongX ? 0.6f : 0.78f, uv);                // the face away from n
+        float towards = alongX ? 0.88f : 0.66f, away = alongX ? 0.6f : 0.78f;
+        if (far)
+            (towards, away) = (away, towards); // n is the other way round
+        Side(top + half, d, towards, uv);                                   // the face towards n
+        Side(top + d - half, -d, away, uv);                                 // the face away from n
         Face(top - half, d, n * thickness, 1f, edgeUv);                     // top
         Side(top + d + half, -n * thickness, 0.72f, edgeUv);                // the swinging end
         if (door.Open > 0.01f)

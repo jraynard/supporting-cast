@@ -206,9 +206,9 @@ def _oak_beam(img, box, seed, vertical):
         d.line([(x0, y1), (x1, y1)], fill=tint(OAK_WARM, 0.7))
 
 
-def _oak_diag(img, a, b):
+def _oak_diag(img, a, b, width=3):
     d = ImageDraw.Draw(img)
-    d.line([a, b], fill=tint(OAK_WARM, 1.0), width=3)
+    d.line([a, b], fill=tint(OAK_WARM, 1.0), width=width)
     d.line([(a[0], a[1] - 1), (b[0], b[1] - 1)], fill=tint(OAK_WARM, 1.3), width=1)
 
 
@@ -257,11 +257,7 @@ def wall_timber_oak(variant=0, seed=61, outside=False):
         for yy in range(y0, y1 + 1, 4):
             d.line([(x0 - 4, yy), (x0 - 1, yy)], fill=tint((92, 108, 70), 0.75))
             d.line([(x1 + 1, yy), (x1 + 4, yy)], fill=tint((92, 108, 70), 0.75))
-        d.rectangle([x0, y0, x1, y1], fill=(64, 52, 40, 255))                  # the casement, dark
-        for yy in range(y0 + 1, y1):                                           # the panes: warm light within
-            for xx in range(x0 + 1, x1):
-                lead = (xx + yy) % 5 == 0 or (xx - yy) % 5 == 0
-                px[xx, yy] = (52, 46, 40, 255) if lead else tint((214, 168, 92), 0.9 + 0.2 * ((yy - y0) / (y1 - y0)))
+        _leaded(img, outside=True)                                             # the casement and its panes
         _oak_beam(img, (x0 - 1, y0 - 2, x1 + 1, y0), seed + 9, vertical=False)  # the head
         _oak_beam(img, (x0 - 1, y1, x1 + 1, y1 + 2), seed + 10, vertical=False)  # the sill
         if variant == 5:  # a flower box under it: red and pink, leaves between
@@ -280,6 +276,89 @@ def wall_timber_oak(variant=0, seed=61, outside=False):
     for y in range(sill[1] + 1, WALL_H):
         for x in range(S):
             px[x, y] = tint(OAK_WARM, 0.9)
+    return img
+
+
+# A window's panes, the same in every window's art (a bay's tile, 32x64), so one glow fits them all.
+PANES = (9, 8, S - 6, 38)
+
+
+def _leaded(img, outside):
+    """
+    Leaded panes in a dark casement: from outside, dark glass catching the sky (lit rooms glow after
+    dark: window_glow over it); from inside, the pale day.
+    """
+    x0, y0, x1, y1 = PANES
+    px = img.load()
+    d = ImageDraw.Draw(img)
+    d.rectangle([x0, y0, x1, y1], fill=(64, 52, 40, 255))
+    for yy in range(y0 + 1, y1):
+        for xx in range(x0 + 1, x1):
+            lead = (xx + yy) % 5 == 0 or (xx - yy) % 5 == 0
+            if lead:
+                px[xx, yy] = (52, 46, 40, 255)
+            elif outside:
+                px[xx, yy] = tint((86, 98, 110), 1.25 - 0.4 * ((yy - y0) / (y1 - y0)))
+            else:
+                px[xx, yy] = tint((196, 214, 222), 1.04 - 0.14 * ((yy - y0) / (y1 - y0)))
+
+
+def window_fieldstone(variant=0, seed=93):
+    """
+    A window in the inn's fieldstone ground storey, from the street: leaded panes in a dressed-stone
+    surround (a lintel, a sill, jambs of squared blocks), the rubble wall round it.
+    """
+    img = wall_fieldstone(variant, seed)
+    rnd = random.Random(seed + 5)
+    x0, y0, x1, y1 = PANES
+    d = ImageDraw.Draw(img)
+    dressed = (168, 158, 140)
+    for box in ([x0 - 3, y0 - 5, x1 + 3, y0 - 1], [x0 - 4, y1 + 1, x1 + 4, y1 + 4]):  # lintel, sill
+        d.rectangle(box, fill=tint(dressed, rnd.choice([0.97, 1.0, 1.03])))
+        d.line([(box[0], box[1]), (box[2], box[1])], fill=tint(dressed, 1.18))
+        d.line([(box[0], box[3]), (box[2], box[3])], fill=tint(dressed, 0.72))
+    for y in range(y0, y1 + 1, 8):  # jambs: squared blocks up each side
+        for xa in (x0 - 3, x1 + 1):
+            d.rectangle([xa, y, xa + 2, min(y + 6, y1)], fill=tint(dressed, rnd.choice([0.94, 1.0, 1.06])))
+    _leaded(img, outside=True)
+    return img
+
+
+def window_in(seed=39):
+    """A window from inside the room: limewash, an oak frame and a deep sill, the day through the panes."""
+    rnd = random.Random(seed)
+    img = noise(PLASTER, 3, seed, size=(S, WALL_H))
+    x0, y0, x1, y1 = PANES
+    d = ImageDraw.Draw(img)
+    _oak_beam(img, (x0 - 3, y0 - 3, x1 + 3, y0 - 1), seed + 1, vertical=False)
+    _oak_beam(img, (x0 - 3, y0, x0 - 1, y1), seed + 2, vertical=True)
+    _oak_beam(img, (x1 + 1, y0, x1 + 3, y1), seed + 3, vertical=True)
+    d.rectangle([x0 - 4, y1 + 1, x1 + 4, y1 + 4], fill=tint(OAK_WARM, 1.15))  # the sill, worn pale
+    d.line([(x0 - 4, y1 + 4), (x1 + 4, y1 + 4)], fill=tint(OAK_WARM, 0.7))
+    _leaded(img, outside=False)
+    return img
+
+
+def _tinted(img, k):
+    """The same art a shade lighter or darker (alpha kept)."""
+    out = img.copy()
+    px = out.load()
+    for y in range(out.height):
+        for x in range(out.width):
+            r, g, b, a = px[x, y]
+            px[x, y] = (clamp(r * k), clamp(g * k), clamp(b * k), a)
+    return out
+
+
+def window_glow():
+    """Just the panes, lit: drawn over a window's face after dark when its room is lit (WorldRenderer)."""
+    img = Image.new("RGBA", (S, WALL_H), (0, 0, 0, 0))
+    x0, y0, x1, y1 = PANES
+    px = img.load()
+    for yy in range(y0 + 1, y1):
+        for xx in range(x0 + 1, x1):
+            lead = (xx + yy) % 5 == 0 or (xx - yy) % 5 == 0
+            px[xx, yy] = (120, 74, 36, 255) if lead else tint((255, 196, 112), 1.0 - 0.12 * ((yy - y0) / (y1 - y0)))
     return img
 
 
@@ -410,8 +489,9 @@ def thatch_ridge(seed=103):
 def gable_fill_oak(variant=0, seed=107):
     """
     The inn's gable, tiled up it a storey at a time (32x64, as the walls' bays): limewash between
-    warm oak studs, a rail across the middle and one under, now and then a brace (variants), so the
-    gable's panels match the bays of the storey below them.
+    warm oak studs, one stud a cell to match the bays below and a rail at each storey, now and then
+    a long brace (variants 2 and 3; 0 and 1 plain). Kept calm and heavy-membered: a busy grid of
+    thin lines reads as noise, and shimmers, at the title's distance.
     """
     rnd = random.Random(seed + variant * 7)
     img = noise(PLASTER, 3, seed + variant, size=(S, WALL_H))
@@ -422,13 +502,12 @@ def gable_fill_oak(variant=0, seed=107):
             for x in range(S):
                 if (x - cx) ** 2 + (y - cy) ** 2 < r * r:
                     px[x, y] = tint(px[x, y], 0.97)
-    if variant == 1:
-        _oak_diag(img, (5, 30), (S - 2, 4))
-    elif variant == 2:
-        _oak_diag(img, (5, 36), (S - 2, WALL_H - 6))
-    _oak_beam(img, (0, 30, S - 1, 33), seed + 1, vertical=False)
-    _oak_beam(img, (0, WALL_H - 4, S - 1, WALL_H - 1), seed + 2, vertical=False)
-    _oak_beam(img, (0, 0, 3, WALL_H - 1), seed + 3, vertical=True)
+    if variant == 2:
+        _oak_diag(img, (6, WALL_H - 6), (S - 2, 6), width=4)
+    elif variant == 3:
+        _oak_diag(img, (6, 6), (S - 2, WALL_H - 6), width=4)
+    _oak_beam(img, (0, WALL_H - 5, S - 1, WALL_H - 1), seed + 2, vertical=False)
+    _oak_beam(img, (0, 0, 4, WALL_H - 1), seed + 3, vertical=True)
     return img
 
 
@@ -706,11 +785,23 @@ def generate():
     save(beam_oak(), "buildings/beam_oak")
     for v in range(4):
         save(wall_timber_oak(v), "buildings/wall_timber_oak" + ("" if v == 0 else f"_v{v + 1}"))
-    for v in range(6):
+    for v in range(4):
         save(wall_timber_oak(v, outside=True), "buildings/wall_timber_oak_out" + ("" if v == 0 else f"_v{v + 1}"))
+    # Windows (an O in a plan): the upper storey's with shutters (and now and then a flower box), the
+    # ground storey's in dressed stone, the room's side, and the panes alone to glow after dark.
+    save(wall_timber_oak(4, outside=True), "buildings/window_timber_oak")
+    save(wall_timber_oak(5, outside=True), "buildings/window_timber_oak_v2")
+    save(window_fieldstone(0), "buildings/window_fieldstone")
+    save(window_fieldstone(1), "buildings/window_fieldstone_v2")
+    save(window_in(), "buildings/window_in")
+    save(window_glow(), "buildings/window_glow", finish=False)
+    # Its art in each wood, for a window built of one (a preset building's are drawn by its kit).
+    for suffix, k in (("_oak", 0.94), ("_pine", 1.06), ("_birch", 1.14)):
+        base = wall_timber_oak(4, outside=True)
+        save(_tinted(base, k), "buildings/window_timber_oak" + suffix)
     save(gable_plaster(), "buildings/gable_plaster")
     save(gable_fill_plaster(), "buildings/gable_fill_plaster")
-    for v in range(3):
+    for v in range(4):
         save(gable_fill_oak(v), "buildings/gable_fill_oak" + ("" if v == 0 else f"_v{v + 1}"))
     save(thatch_eave(), "buildings/thatch_eave", finish=True)
     save(thatch_ridge(), "buildings/thatch_ridge")
