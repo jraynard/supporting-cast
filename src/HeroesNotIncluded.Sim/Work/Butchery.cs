@@ -281,10 +281,12 @@ public sealed class ButcherSession : WorkSession
 }
 
 /// <summary>
-/// Plucking a bird at the butcher block: hold F to grip and pull, let go to take the handful. The
-/// harder it's pulled the more comes away, and the skin pulls taut; past where this bird's skin
-/// gives (never shown, a little different every bird) it tears. Short firm pulls are the trick. A
-/// torn bird gives less.
+/// Plucking a bird at the butcher block: hold F to grip and pull, let go to take the handful; or
+/// with the mouse, press on the bird and drag away, the pull as hard as it's dragged (it tightens
+/// no quicker than a held F does, so a fling can't leap past a tear). The harder it's pulled the
+/// more comes away, and the skin pulls taut; past where this bird's skin gives (never shown, a
+/// little different every bird) it tears. A grip gives out after a handful, so short firm pulls
+/// are the trick. A torn bird gives less.
 /// </summary>
 public sealed class PluckSession : WorkSession
 {
@@ -319,6 +321,27 @@ public sealed class PluckSession : WorkSession
 
     public bool Taut => Pull >= TautAt;
 
+    /// <summary>How much a grip brings away before it gives out (it tapers over the last of it).</summary>
+    public const float Handful = 0.25f;
+
+    /// <summary>How hard a drag pulls, per the picture's width dragged.</summary>
+    public const float DragPull = 1.7f;
+
+    /// <summary>Pressed on the bird with the mouse: the pull's how far it's dragged from here.</summary>
+    public bool Gripping { get; private set; }
+    public float GripU { get; private set; }
+    public float GripV { get; private set; }
+
+    // Plucked this grip; and a grip torn loose, waiting for the button to come up.
+    private float _inHand;
+    private bool _lost;
+
+    protected override void Clicked(float? u, float? v)
+    {
+        if (u is { } x && v is { } y)
+            (Gripping, GripU, GripV, _lost) = (true, x, y, false);
+    }
+
     public override int3? Focus(Simulation sim) => sim.World.IsAlive(Block) && sim.World.TryGet<Thing>(Block, out var t) ? t.Cell : null;
     public override Skill Skill => Skill.Cooking;
     public override float Xp => 12f;
@@ -340,10 +363,22 @@ public sealed class PluckSession : WorkSession
         }
         if (Done)
             return;
-        if (Held)
+        if (Held && !_lost)
         {
-            Pull += PullPerStep * (1f + Hands.Tremor);
-            Plucked = Math.Min(1f, Plucked + Pull * PluckPerStep);
+            var rise = PullPerStep * (1f + Hands.Tremor);
+            if (Gripping && PointU is { } u && PointV is { } v)
+            {
+                // Dragged: toward how far, never quicker than a held F tightens; eased back as fast as it's let.
+                var want = DragPull * MathF.Sqrt((u - GripU) * (u - GripU) + (v - GripV) * (v - GripV));
+                var shake = (Rand.NextFloat() * 2f - 1f) * Hands.Tremor * 0.01f;
+                Pull = Math.Max(0f, Pull + Math.Clamp(want - Pull, -rise * 3f, rise) + shake);
+            }
+            else
+                Pull += rise;
+            var left = Math.Clamp((Handful - _inHand) / (Handful * 0.3f), 0f, 1f);
+            var came = Math.Min(1f - Plucked, Pull * PluckPerStep * left);
+            Plucked += came;
+            _inHand += came;
             if (Pull >= TearAt)
             {
                 Tears++;
@@ -351,14 +386,20 @@ public sealed class PluckSession : WorkSession
                 Sample(0.1f);
                 Pull = 0f;
                 TearAt = 0.85f + 0.25f * Rand.NextFloat();
+                _inHand = 0f;
+                _lost = Gripping; // torn loose from the hand: grip it again (F, held, tightens on as it did)
             }
         }
-        else if (Pull > 0f)
+        else if (!Held)
         {
-            // Let go: the handful's taken. A firm one is the trick; a timid one is slow work.
-            LastMark = Pull >= 0.5f ? 1 : 0;
-            Sample(Pull >= 0.5f ? 1f : 0.7f);
-            Pull = 0f;
+            if (Pull > 0f)
+            {
+                // Let go: the handful's taken. A firm one is the trick; a timid one is slow work.
+                LastMark = Pull >= 0.5f ? 1 : 0;
+                Sample(Pull >= 0.5f ? 1f : 0.7f);
+                Pull = 0f;
+            }
+            (_inHand, Gripping, _lost) = (0f, false, false);
         }
         if (Plucked >= 1f)
             Done = true;
@@ -388,6 +429,11 @@ public sealed class PluckSession : WorkSession
         w.Int(LastMark);
         w.Float(TearAt);
         w.Bool(_rolled);
+        w.Bool(Gripping);
+        w.Float(GripU);
+        w.Float(GripV);
+        w.Float(_inHand);
+        w.Bool(_lost);
     }
 
     protected override void ReadState(SaveReader r)
@@ -401,5 +447,13 @@ public sealed class PluckSession : WorkSession
         LastMark = Math.Clamp(r.Int(), -1, 2);
         TearAt = Math.Clamp(r.Float(), 0.5f, 1.5f);
         _rolled = r.Bool();
+        if (r.Version >= 43) // the pull dragged by the mouse, a grip giving out after a handful (format 43)
+        {
+            Gripping = r.Bool();
+            GripU = Math.Clamp(r.Float(), 0f, 1f);
+            GripV = Math.Clamp(r.Float(), 0f, 1f);
+            _inHand = Math.Clamp(r.Float(), 0f, 1f);
+            _lost = r.Bool();
+        }
     }
 }

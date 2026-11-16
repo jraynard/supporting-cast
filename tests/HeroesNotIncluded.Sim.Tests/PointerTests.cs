@@ -236,4 +236,52 @@ public class PointerTests
         Assert.Equal(1, s.Blows);
         Assert.True(MathF.Abs(s.LastAt - ButcherSession.JointsAt[1]) < 0.1f);
     }
+
+    /// <summary>A bird gripped at the middle of the picture by the mouse, the button held.</summary>
+    private static PluckSession Gripped(uint seed = 3)
+    {
+        var s = new PluckSession { Rand = new SimRandom(seed), Hands = new Hands(1f, 1f, 5) };
+        s.Begin();
+        s.Advance([new WorkInput(0, WorkInputKind.Hold, 1), Click(0, 0.5f, 0.5f)], 1);
+        return s;
+    }
+
+    [Fact]
+    public void ThePullIsAsHardAsTheBirdsDraggedAndNoQuicker()
+    {
+        var s = Gripped();
+        s.Advance([], 60);
+        Assert.True(s.Pull < 0.02f, $"held still on the bird, it barely pulls ({s.Pull})");
+        // Flung right out: it tightens no quicker than F held would.
+        s.Advance([Point(s.StepsDone, 1f, 0.5f)], s.StepsDone + 10);
+        Assert.True(s.Pull <= 10 * PluckSession.PullPerStep * 1.05f + 0.02f, $"pull {s.Pull}");
+        // Eased back to a firm drag, it settles there.
+        var firm = 0.55f / PluckSession.DragPull;
+        s.Advance([Point(s.StepsDone, 0.5f + firm, 0.5f)], s.StepsDone + 60);
+        Assert.InRange(s.Pull, 0.5f, 0.6f);
+    }
+
+    [Fact]
+    public void AGripHeldOnGivesOutAfterAHandful()
+    {
+        var s = Gripped();
+        s.Advance([Point(1, 0.5f + 0.6f / PluckSession.DragPull, 0.5f)], 60 * 20);
+        Assert.False(s.Done);
+        Assert.True(s.Plucked <= PluckSession.Handful + 0.01f, $"plucked {s.Plucked} on one grip");
+        Assert.Equal(0, s.Tears);
+        // Let go and take hold again: more comes.
+        var before = s.Plucked;
+        s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Hold, 0)], s.StepsDone + 2);
+        s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Hold, 1), Click(s.StepsDone, 0.5f, 0.5f), Point(s.StepsDone + 1, 0.5f + 0.6f / PluckSession.DragPull, 0.5f)], s.StepsDone + 200);
+        Assert.True(s.Plucked > before + 0.05f);
+    }
+
+    [Fact]
+    public void DraggedPastWhereTheSkinGivesItTears()
+    {
+        var s = Gripped();
+        s.Advance([Point(1, 1f, 1f)], 60 * 3);
+        Assert.Equal(1, s.Tears);
+        Assert.Equal(0f, s.Pull); // torn loose: the hand has to take hold again
+    }
 }

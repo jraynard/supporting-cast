@@ -662,13 +662,14 @@ public sealed partial class VillageGame
     /// <summary>Plucking: the bird, its feathers thinning, and how hard the pull is.</summary>
     private void DrawPluck(PluckSession s)
     {
-        BeginWork(s.Title, ("F", "hold to pull, let go to take the handful"), ("Esc", "leave it"));
+        BeginWork(s.Title, ("F|Press and drag", "pull, let go to take the handful"), ("Esc", "leave it"));
         PluckScene(s);
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 150);
         var min = ImGui.GetCursorScreenPos();
         ImGui.Dummy(in size);
         var max = min + size;
+        TakesPointer(min, max); // the bird: press on it and drag away
         Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
         // The bird: pale skin under a coat of feathers that thins as it's plucked.
         var c = new float2((min.X + max.X) * 0.5f, min.Y + Gui.S(68));
@@ -682,6 +683,14 @@ public sealed partial class VillageGame
             var at = c + new float2(MathF.Cos(a) * r * Gui.S(64), MathF.Sin(a) * r * Gui.S(34) * stretch);
             var tip = at + new float2(Gui.S(7), -Gui.S(3));
             dl.AddLine(in at, in tip, new ImColor8(150, 120, 90, 255), Gui.S(3));
+        }
+        // A grip by the mouse: a line from where it took hold to the hand, drawn as tight as the pull.
+        if (s.Gripping && s.Held)
+        {
+            var grip = min + new float2(s.GripU * size.X, s.GripV * size.Y);
+            var hand = ImGui.GetMousePos();
+            dl.AddLine(in grip, in hand, Theme.U8(s.Taut ? Theme.Warn : Theme.Text, 0.5f + 0.4f * Math.Min(1f, s.Pull)), Gui.S(1.5f + 2f * Math.Min(1f, s.Pull)));
+            dl.AddCircleFilled(in grip, Gui.S(4), Theme.U8(Theme.Text, 0.8f), 12);
         }
         // How hard it's pulled: taut past the mark, and it'll tear somewhere beyond.
         var barA = new float2(min.X + Gui.S(60), max.Y - Gui.S(22));
