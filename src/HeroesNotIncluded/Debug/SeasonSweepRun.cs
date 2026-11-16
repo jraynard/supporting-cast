@@ -53,6 +53,21 @@ public static class SeasonSweepRun
             + $" (drinks served {results.Average(r => r.Sim.Shops.Served(ServiceKind.Drink)):F1}, mixed {results.Average(r => r.Sim.Shops.Served(ServiceKind.MixedDrink)):F1})");
         var kinds = results.SelectMany(r => r.Sim.Reckoning.Crises).GroupBy(c => c.Kind).OrderBy(g => g.Key);
         Console.WriteLine("Crises met: " + string.Join(", ", kinds.Select(g => $"{g.Key} {g.Count(c => c.Met)}/{g.Count()}")));
+        // What each trade's bot played: a game no bot starts shows here as missing, not just as a lost round.
+        Console.WriteLine();
+        Console.WriteLine("BOTS (means a season)");
+        foreach (var trade in SeasonSweep.Trades)
+        {
+            var stats = results.Select(r => r.Bots.GetValueOrDefault(trade)).OfType<Sim.Bots.BotStats>().ToList();
+            if (stats.Count == 0)
+                continue;
+            string Mean(Func<Sim.Bots.BotStats, Dictionary<string, int>> of) =>
+                string.Join(", ", stats.SelectMany(s => of(s).Keys).Distinct().Order()
+                    .Select(k => $"{k} {stats.Average(s => of(s).GetValueOrDefault(k)):F1}"));
+            Console.WriteLine($"  {trade}: said {stats.Average(s => s.Said):F1}, slips {stats.Average(s => s.Mistakes):F1}");
+            Console.WriteLine($"    taken: {Mean(s => s.Taken)}");
+            Console.WriteLine($"    games: {Mean(s => s.Sessions)}");
+        }
         Console.WriteLine($"{results.Length} seasons in {clock.Elapsed.TotalSeconds:F0} s");
     }
 

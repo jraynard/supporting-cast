@@ -79,6 +79,8 @@ public static class SeasonSweep
                     left[i] = now;
                 }
         }
+        for (var i = 0; i < trades.Count; i++)
+            result.Bots[trades[i]] = bots[i].Stats;
         result.Summary = sim.Round.Summary;
         result.Hours = sim.Clock.Tick / (float)SimClock.TicksPerHour;
         return result;
@@ -110,6 +112,9 @@ public sealed class SeasonResult
 
     /// <summary>Servings drawn from the inn's casks (poured or mixed), and new kegs knocked in.</summary>
     public int Drawn, KegsTapped;
+
+    /// <summary>What each trade's bot played and said, by the trade it sat for.</summary>
+    public Dictionary<string, BotStats> Bots = [];
 
     public int Met => Sim.Director.Met;
     public int Unmet => Sim.Director.Unmet;
