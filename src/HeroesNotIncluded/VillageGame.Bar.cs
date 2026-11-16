@@ -453,7 +453,7 @@ public sealed partial class VillageGame
         _hud.Next(Anchor.Bottom);
         Panel.Begin("The bar###bar", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
         _hud.Took();
-        TextC(Theme.Dim, "From the cask, with a clean tankard and what goes in to hand (yours, or the shelf beside you):");
+        TextC(Theme.Dim, "From the cask, with a clean tankard and what goes in to hand (yours, or the shelf behind the bar):");
         foreach (var drink in _sim.Defs.AllThings.Where(d => d.Mix is { House: false }))
         {
             ImGui.PushID(drink.Name);

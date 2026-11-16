@@ -91,13 +91,13 @@ public sealed class MixSession : WorkSession
             return $"There's no {sim.Defs.Thing(drink.Mix.Base).Label} behind the bar.";
         var into = sim.World.Get<Thing>(cask).Def.Building!.Cask!.Into;
         if (Vessels.CleanOn(sim, mixer, into).IsNull)
-            return $"You need a clean {sim.Defs.Thing(into).Label} to hand: carry one, or stand by the shelf behind the bar.";
+            return $"You need a clean {sim.Defs.Thing(into).Label} to hand: carry one, or stand behind the bar by its shelf.";
         var list = AddsOf(sim, drink, adds);
         if (drink.Mix.House && list.Count == 0)
             return "A house mix needs something added.";
         foreach (var add in list)
             if (Vessels.ToHand(sim, mixer, d => d == add).IsNull)
-                return $"You need some {add.Label} to hand: carry some, or stand by the shelf behind the bar.";
+                return $"You need some {add.Label} to hand: carry some, or stand behind the bar by its shelf.";
         return null;
     }
 

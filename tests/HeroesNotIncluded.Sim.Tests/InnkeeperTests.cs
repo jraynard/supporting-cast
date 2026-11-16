@@ -194,6 +194,53 @@ public class InnkeeperTests
         Assert.True(sim.World.Get<Adventurer>(drinker).Satisfaction - mood < 1.5f, "a crude pour pleases less");
     }
 
+    [Fact]
+    public void AnywhereBehindTheBarReachesItsShelfButNotFromAcrossTheCounter()
+    {
+        var (sim, _) = Tavern("Innkeeper");
+        var w = sim.World;
+        var me = Players.CharacterOf(sim, Ana);
+        var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+        var parts = Buildings.Parts(sim, inn);
+        var shelf = parts.Single(e => w.Get<Thing>(e).Def.Name == "BarShelf");
+        var counters = parts.Where(e => w.Get<Thing>(e).Def.Building?.Bar == true).ToList();
+        Assert.Equal(2, counters.Count);
+        // Nothing carried: whatever's used comes off the shelf.
+        w.Get<Carrying>(me).Item = Entity.Null;
+        foreach (var e in sim.StoredIn(sim.PackOf(me)).ToList())
+            w.Destroy(e);
+        var drink = sim.Defs.AllThings.First(d => d.Mix is { House: false } m
+            && m.Adds.All(a => sim.StoredIn(shelf).Any(i => w.Get<Thing>(i).Def.Name == a)));
+
+        // The keeper's side: a cell beside a counter on the shelf's side, as far from the shelf as there is.
+        var shelfAt = w.Get<Thing>(shelf).Cell;
+        void Put(Simulation _, Entity who, int3 cell)
+        {
+            w.Get<Position>(who).Cell = cell;
+            w.Get<Position>(who).Pos = Position.CenterOf(cell);
+        }
+        bool Beside(int3 c, Entity counter) => Footprint.Cells(sim.Map, w.Get<Thing>(counter).Def, w.Get<Thing>(counter).Cell, w.Get<Thing>(counter).Facing)
+            .Any(q => q != c && Map.Distance(q, c) <= 1);
+        var behind = counters.SelectMany(k => sim.SpiralFrom(w.Get<Thing>(k).Cell, 2).Where(c => sim.Map.Passable(c) && Beside(c, k)).Select(c => (Cell: c, Counter: k)))
+            .Where(x => { Put(sim, me, x.Cell); return Vessels.BehindTheBar(sim, me).Contains(shelf); })
+            .OrderByDescending(x => Map.Distance(x.Cell, shelfAt)).First();
+        Assert.True(Map.Distance(behind.Cell, shelfAt) > 1, "far enough that the shelf isn't beside them");
+        Put(sim, me, behind.Cell);
+        Assert.Null(MixSession.WhyNot(sim, me, behind.Counter, drink, null));
+
+        // Across the counter, where the customers stand: nothing behind it's to hand.
+        var across = sim.SpiralFrom(w.Get<Thing>(behind.Counter).Cell, 2)
+            .First(c => sim.Map.Passable(c) && Beside(c, behind.Counter) && !(c == behind.Cell) && Map.Distance(c, shelfAt) > 1
+                && Away(c));
+        bool Away(int3 c)
+        {
+            Put(sim, me, c);
+            return !Vessels.BehindTheBar(sim, me).Contains(shelf);
+        }
+        Put(sim, me, across);
+        Assert.NotNull(MixSession.WhyNot(sim, me, behind.Counter, drink, null));
+    }
+
     /// <summary>A drink order taken by the player keeper, them some way off across the room with nothing in hand.</summary>
     private static (Simulation Sim, Entity Me, Entity Drinker, Order Order) TakenAcrossTheRoom()
     {
