@@ -96,8 +96,8 @@ public static class BarWork
 
 /// <summary>
 /// Washing up at the tub, a vessel at a time. Each comes out of the water with grime on it in
-/// patches (different each time); move the brush over it (WASD) and hold F to scrub, and the
-/// grime under the brush comes off. When none's left it shines, and the next comes up. Stop early
+/// patches (different each time); move the brush over it (WASD, or the mouse: the brush goes
+/// where it points) and hold F (or the mouse button) to scrub, and the grime under the brush comes off. When none's left it shines, and the next comes up. Stop early
 /// and what's washed stays washed.
 /// </summary>
 public sealed class WashSession : WorkSession
@@ -207,6 +207,8 @@ public sealed class WashSession : WorkSession
     protected override void Axis(int value) => _dx = value;
 
     protected override void Axis2(int value) => _dy = value;
+
+    protected override void Pointed(float u, float v) => (BrushX, BrushY) = (u, v);
 
     protected override void Step()
     {

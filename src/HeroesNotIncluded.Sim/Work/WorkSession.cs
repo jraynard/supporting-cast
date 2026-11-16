@@ -41,6 +41,13 @@ public enum WorkInputKind : byte
     /// Appended last: the kinds go over the wire by number.
     /// </summary>
     Act,
+
+    /// <summary>
+    /// The mouse over the mini-game: where it points on its panel, u and v each 0..255 packed into
+    /// Value (u in the low byte). Stamped and batched like every other input, so the predicted and
+    /// the replayed session see it alike. Appended last: the kinds go over the wire by number.
+    /// </summary>
+    Point,
 }
 
 /// <summary>One input to a session, stamped with the step it happened on.</summary>
@@ -140,6 +147,13 @@ public abstract class WorkSession
     /// <summary>The game's other action (<see cref="WorkInputKind.Act"/>), once per press.</summary>
     protected virtual void Act() { }
 
+    /// <summary>The mouse pointing at (u, v) on the mini-game's panel, each 0..1 (<see cref="WorkInputKind.Point"/>).</summary>
+    protected virtual void Pointed(float u, float v) { }
+
+    /// <summary>A pointer's place packed as a <see cref="WorkInputKind.Point"/> value: u and v (0..1) quantised to a byte each.</summary>
+    public static int PackPoint(float u, float v) =>
+        (int)MathF.Round(Math.Clamp(u, 0f, 1f) * 255f) | (int)MathF.Round(Math.Clamp(v, 0f, 1f) * 255f) << 8;
+
     /// <summary>Count one moment or blow of work at quality 0..1.</summary>
     protected void Sample(float quality)
     {
@@ -183,6 +197,9 @@ public abstract class WorkSession
                 break;
             case WorkInputKind.Act:
                 Act();
+                break;
+            case WorkInputKind.Point:
+                Pointed((input.Value & 0xFF) / 255f, (input.Value >> 8 & 0xFF) / 255f);
                 break;
         }
     }

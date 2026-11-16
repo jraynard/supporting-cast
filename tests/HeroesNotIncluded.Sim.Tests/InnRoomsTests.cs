@@ -191,14 +191,14 @@ public class InnRoomsTests
         }
         Assert.True(sim.World.Get<Adventurer>(drinker).Satisfaction < before, $"they noticed: {before} -> {sim.World.Get<Adventurer>(drinker).Satisfaction}");
 
-        // Mop one up, as a player: back and forth until it's gone.
+        // Mop one up, as a player: rubbed over until it's gone.
         var spot = Plan(sim, 5, 11);
         Put(sim, me, Plan(sim, 5, 10));
         Toolbelt.PutOn(sim, me, sim.CreateItem(sim.Thing("Mop"), 1));
         sim.ApplyNow(new ScrubCommand(me, spot));
         var scrub = (ScrubSession)sim.World.Get<WorkSession>(me);
         Assert.True(scrub.Mop);
-        scrub.Advance(Enumerable.Range(0, 20).Select(i => new WorkInput(i * 4, WorkInputKind.Axis, i % 2 == 0 ? 1 : -1)).ToList(), 90);
+        scrub.Advance(CleaningTests.Rubbing(8), 2000);
         sim.Tick();
         Assert.Null(sim.Mess.At(sim, spot));
     }
@@ -216,7 +216,7 @@ public class InnRoomsTests
         Assert.Equal("dark stain", seen.Label);
         sim.ApplyNow(new ScrubCommand(me, room));
         var scrub = (ScrubSession)sim.World.Get<WorkSession>(me);
-        scrub.Advance(Enumerable.Range(0, 40).Select(i => new WorkInput(i * 4, WorkInputKind.Axis, i % 2 == 0 ? 1 : -1)).ToList(), 170);
+        scrub.Advance(CleaningTests.Rubbing(16), 4000); // by hand: twice the rubbing
         sim.Tick();
         Assert.Null(sim.Mess.At(sim, room));
     }

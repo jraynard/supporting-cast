@@ -244,8 +244,15 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 return (false, over && wa.Shine == 0, MathF.Abs(tx - wa.BrushX) > 0.03f ? Math.Sign(tx - wa.BrushX) : 0);
             }
             case Hospitality.ScrubSession sc:
-                // Back and forth, a stroke every few steps.
-                return (false, false, (sc.StepsDone / 8) % 2 == 0 ? -1 : 1);
+            {
+                // Onto the darkest blot's row, then back and forth across it till it's gone.
+                var (bx, by) = Darkest(sc);
+                float tx = (bx + 0.5f) / Hospitality.ScrubSession.GridW, ty = (by + 0.5f) / Hospitality.ScrubSession.GridH;
+                _axis2 = MathF.Abs(ty - sc.MopY) > 0.05f ? Math.Sign(ty - sc.MopY) : 0;
+                if (MathF.Abs(tx - sc.MopX) > Hospitality.ScrubSession.Reach)
+                    return (false, false, Math.Sign(tx - sc.MopX));
+                return (false, false, (sc.StepsDone / 6) % 2 == 0 ? -1 : 1);
+            }
             case Hospitality.SignInSession si:
                 return (!si.Begun, false, 0);
             case Hospitality.SlopSession sl:
@@ -493,6 +500,17 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     }
 
     /// <summary>The cell on a piece being washed with the most grime left on it.</summary>
+    private static (int X, int Y) Darkest(Hospitality.ScrubSession s)
+    {
+        var best = (X: Hospitality.ScrubSession.GridW / 2, Y: Hospitality.ScrubSession.GridH / 2);
+        var most = 0f;
+        for (var y = 0; y < Hospitality.ScrubSession.GridH; y++)
+            for (var x = 0; x < Hospitality.ScrubSession.GridW; x++)
+                if (s.BlotAt(x, y) > most)
+                    (best, most) = ((x, y), s.BlotAt(x, y));
+        return best;
+    }
+
     private static (int X, int Y) Grimiest(WashSession s)
     {
         var best = (X: WashSession.GridW / 2, Y: WashSession.GridH / 2);

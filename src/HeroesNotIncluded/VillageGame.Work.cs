@@ -67,7 +67,46 @@ public sealed partial class VillageGame
         var act = live && map.Pressed(Act.WorkAct);
         if (_work.Session is Sim.Environment.ThrowSession throwing)
             axis = AimThrow(throwing, axis);
-        _work.Update(_sim, _avatar, steps, f && map.Pressed(Act.Use), f && live && map.Down(Act.Use), axis, Issue, axis2, rune, act);
+        // The cleaning games take the mouse too: where it points over the piece or the floor, and the left button as F held.
+        var (point, mouseHeld) = live ? PointerOnWork() : (-1, false);
+        _work.Update(_sim, _avatar, steps, f && map.Pressed(Act.Use), f && live && (map.Down(Act.Use) || mouseHeld), axis, Issue, axis2, rune, act, point);
+    }
+
+    // Where the mini-game being drawn takes the mouse, on screen (DrawWash, DrawScrub set it each frame they draw).
+    private (float2 Min, float2 Max)? _pointArea;
+    private long _pointAreaFor = -1;
+
+    // Seconds since the mouse last moved over a mini-game that takes it: the hints say "drag" while it's in use.
+    private float _pointerUsedAt = -100f;
+    private float2 _pointerLast;
+
+    private bool UsingPointer => _time - _pointerUsedAt < 4f;
+
+    /// <summary>A mini-game panel takes the mouse over this square of the screen, this frame.</summary>
+    private void TakesPointer(float2 min, float2 max)
+    {
+        _pointArea = (min, max);
+        _pointAreaFor = _sim.World.TryGet<WorkSession>(_avatar, out var s) ? s.StartTick : -1;
+    }
+
+    /// <summary>
+    /// The mouse over the mini-game's area, packed (<see cref="WorkSession.PackPoint"/>), and the left
+    /// button down there; (-1, false) when it's elsewhere or the game doesn't take it.
+    /// </summary>
+    private (int Point, bool Held) PointerOnWork()
+    {
+        if (_pointArea is not { } area || _work.Session is not (WashSession or Sim.Hospitality.ScrubSession) || _work.Session.StartTick != _pointAreaFor)
+            return (-1, false);
+        var at = ImGui.GetMousePos();
+        var size = area.Max - area.Min;
+        if (size.X <= 0 || size.Y <= 0 || at.X < area.Min.X || at.Y < area.Min.Y || at.X > area.Max.X || at.Y > area.Max.Y)
+            return (-1, false);
+        if (at != _pointerLast)
+            (_pointerLast, _pointerUsedAt) = (at, _time);
+        var held = ImGui.IsMouseDown(ImGuiMouseButton.Left);
+        if (held)
+            _pointerUsedAt = _time;
+        return (WorkSession.PackPoint((at.X - area.Min.X) / size.X, (at.Y - area.Min.Y) / size.Y), held);
     }
 
     private int3 _thrownAt;

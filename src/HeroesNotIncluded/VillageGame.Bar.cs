@@ -20,7 +20,10 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawWash(WashSession s)
     {
-        BeginWork(s.Title, ("WASD", "move the brush"), ("F", "hold to scrub"), ("Esc", "stop"));
+        if (UsingPointer)
+            BeginWork(s.Title, ("Mouse", "drag to scrub"), ("Esc", "stop"));
+        else
+            BeginWork(s.Title, ("WASD", "move the brush"), ("F", "hold to scrub"), ("Esc", "stop"));
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 210);
         var min = ImGui.GetCursorScreenPos();
@@ -38,6 +41,7 @@ public sealed partial class VillageGame
         var side = size.Y - Gui.S(16);
         var p0 = new float2((min.X + max.X - side) * 0.5f, min.Y + Gui.S(8));
         float2 At(float u, float v) => p0 + new float2(u * side, v * side);
+        TakesPointer(p0, p0 + new float2(side, side));
         var cw = side / WashSession.GridW;
         var ch = side / WashSession.GridH;
         var wood = new ImColor8(178, 132, 82, 255);
@@ -216,6 +220,17 @@ public sealed partial class VillageGame
     // strokes seen so far (a new one throws suds), and the suds.
     private float _mopX;
     private int _mopStrokesSeen = -1;
+    private float _mopY;
+
+    // The mess a scrub began with, by session: the bar under it shows what's left of that.
+    private (long Session, float Amount) _mopStart = (-1, 0f);
+
+    private float MessAtStart(Sim.Hospitality.ScrubSession s)
+    {
+        if (_mopStart.Session != s.StartTick)
+            _mopStart = (s.StartTick, s.Amount);
+        return _mopStart.Amount;
+    }
     private long _mopSession = -1;
     private readonly List<Puff> _suds = [];
 
@@ -228,8 +243,11 @@ public sealed partial class VillageGame
     {
         if (s.StartTick != _mopSession)
             (_mopSession, _mopStrokesSeen) = (s.StartTick, -1); // a new stain: the mop starts in the middle
-        BeginWork(s.Title, ("A/D", "back and forth"), ("Esc", "stop"));
-        TextC(Theme.Dim, s.Mop ? "The mop makes short work of it." : "By hand, this takes a while: a mop would be quicker.");
+        if (UsingPointer)
+            BeginWork(s.Title, ("Mouse", "drag over it to rub it out"), ("Esc", "stop"));
+        else
+            BeginWork(s.Title, ("A/D", "sweep back and forth"), ("W/S", "the next row"), ("Esc", "stop"));
+        TextC(Theme.Dim, s.Mop ? "The mop makes short work of it. Keep it moving over the mess." : "By hand, this takes a while: a mop would be quicker. Keep the rag moving.");
         var dl = ImGui.GetWindowDrawList();
         var size = Gui.S(420, 170);
         var min = ImGui.GetCursorScreenPos();
@@ -252,40 +270,50 @@ public sealed partial class VillageGame
             dl.AddLine(in a, in b, new ImColor8(60, 40, 26, 255), Gui.S(2));
         }
 
-        // The stain, fading as it comes up (blood looks like any dark stain).
-        var mid = (min + max) * 0.5f;
-        var sprite = s.Kind switch
-        {
-            Sim.Hospitality.MessKind.SpilledAle => "ui/mess_puddle",
-            Sim.Hospitality.MessKind.Mud => "ui/mess_mud",
-            Sim.Hospitality.MessKind.Crumbs => "ui/mess_crumbs",
-            _ => "ui/mess_stain",
-        };
-        var left = Math.Clamp(s.Amount, 0f, 1f);
-        if (Gui.TrySprite(sprite, out var stain))
-        {
-            var box = Gui.S(150, 150);
-            Gui.Sprite(dl, stain, mid - box * 0.5f, box, Gui.U8(new float4(1f, 1f, 1f, 0.15f + 0.85f * left)));
-        }
+        // The mess's grid lies over the floor inside a margin; the mouse maps onto the same.
+        var pad = Gui.S(14);
+        var f0 = min + new float2(pad, pad);
+        var fs = size - new float2(pad * 2, pad * 2);
+        TakesPointer(f0, f0 + fs);
+        float2 At(float u, float v) => f0 + new float2(u * fs.X, v * fs.Y);
+        float cw = fs.X / Sim.Hospitality.ScrubSession.GridW, ch = fs.Y / Sim.Hospitality.ScrubSession.GridH;
 
-        // The mop: its head eases toward the side you last stroked to; the handle runs up and off to the right.
-        var reach = Gui.S(110);
-        var target = mid.X + s.LastDir * reach;
+        // The stain in blots, each as dark as what's left of it (blood looks like any dark stain).
+        var tint = s.Kind switch
+        {
+            Sim.Hospitality.MessKind.SpilledAle => new float4(0.78f, 0.58f, 0.22f, 1f),
+            Sim.Hospitality.MessKind.Mud => new float4(0.36f, 0.25f, 0.14f, 1f),
+            Sim.Hospitality.MessKind.Crumbs => new float4(0.85f, 0.72f, 0.48f, 1f),
+            _ => new float4(0.2f, 0.12f, 0.1f, 1f),
+        };
+        for (var y = 0; y < Sim.Hospitality.ScrubSession.GridH; y++)
+            for (var x = 0; x < Sim.Hospitality.ScrubSession.GridW; x++)
+            {
+                var g = s.BlotAt(x, y);
+                if (g <= 0.02f)
+                    continue;
+                var c = At((x + 0.5f) / Sim.Hospitality.ScrubSession.GridW, (y + 0.5f) / Sim.Hospitality.ScrubSession.GridH);
+                dl.AddCircleFilled(in c, MathF.Max(cw, ch) * (0.4f + 0.3f * g), Gui.U8(tint, 0.85f * Math.Min(1f, g)), 12);
+            }
+        var left = Math.Clamp(s.Amount / Math.Max(0.001f, MessAtStart(s)), 0f, 1f);
+
+        // The mop: its head eases after where it is on the floor; the handle runs up and off to the right.
+        var want = At(s.MopX, s.MopY);
         if (_mopStrokesSeen < 0)
-            _mopX = mid.X;
+            (_mopX, _mopY) = (want.X, want.Y);
         var dt = ImGui.GetIO().DeltaTime;
-        _mopX += (target - _mopX) * Math.Min(1f, dt * 12f);
-        var headC = new float2(_mopX, mid.Y + Gui.S(10));
-        // The wet sheen it leaves along its way.
-        var sheen0 = new float2(Math.Min(_mopX, mid.X) - Gui.S(20), mid.Y - Gui.S(10));
-        var sheen1 = new float2(Math.Max(_mopX, mid.X) + Gui.S(20), mid.Y + Gui.S(30));
-        dl.AddRectFilled(in sheen0, in sheen1, new ImColor8(200, 220, 230, 40), Gui.S(10), ImDrawFlags.None);
+        _mopX += (want.X - _mopX) * Math.Min(1f, dt * 16f);
+        _mopY += (want.Y - _mopY) * Math.Min(1f, dt * 16f);
+        var headC = new float2(_mopX, _mopY - Gui.S(10));
+        // The wet sheen round where it's working, as wide as it reaches.
+        var rx = Sim.Hospitality.ScrubSession.Reach * fs.X;
+        dl.AddCircleFilled(in want, rx, new ImColor8(200, 220, 230, 40), 24);
         var handleTop = new float2(headC.X + Gui.S(90), min.Y - Gui.S(6));
         dl.AddLine(in headC, in handleTop, new ImColor8(196, 160, 110, 255), Gui.S(5));
         for (var i = -6; i <= 6; i++)
         {
             var a = headC + new float2(i * Gui.S(3), 0);
-            var swing = MathF.Sin(_time * 18f + i) * Gui.S(2) - (target - _mopX) * 0.05f;
+            var swing = MathF.Sin(_time * 18f + i) * Gui.S(2) - (want.X - _mopX) * 0.05f;
             var b = a + new float2(swing + i * Gui.S(1.5f), Gui.S(22));
             dl.AddLine(in a, in b, new ImColor8(210, 210, 200, 255), Gui.S(3));
         }

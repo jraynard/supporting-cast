@@ -27,6 +27,7 @@ public sealed class WorkPredictor
     private int _sentUpTo;
     private bool _held;
     private int _axis, _axis2;
+    private int _point = -1;
 
     /// <summary>The session as the player should see it; null when there's no job.</summary>
     public WorkSession? Session => _local;
@@ -38,14 +39,18 @@ public sealed class WorkPredictor
         _pending.Clear();
         _held = false;
         _axis = _axis2 = 0;
+        _point = -1;
     }
 
     /// <summary>
     /// Play this frame's <paramref name="steps"/> with its input, and send a batch if one is due.
     /// <paramref name="rune"/> is a numbered key pressed this frame (0 for 1), or -1; <paramref name="act"/>
-    /// the game's other action pressed this frame (<see cref="WorkInputKind.Act"/>).
+    /// the game's other action pressed this frame (<see cref="WorkInputKind.Act"/>); <paramref name="point"/>
+    /// the mouse's place on the panel (<see cref="WorkSession.PackPoint"/>), or -1 when it's not over it:
+    /// sent only when it's moved.
     /// </summary>
-    public void Update(Simulation sim, Entity worker, int steps, bool press, bool held, int axis, Action<ISimCommand> send, int axis2 = 0, int rune = -1, bool act = false)
+    public void Update(Simulation sim, Entity worker, int steps, bool press, bool held, int axis, Action<ISimCommand> send, int axis2 = 0, int rune = -1, bool act = false,
+        int point = -1)
     {
         if (!sim.World.IsAlive(worker) || !sim.World.TryGet<WorkSession>(worker, out var real))
         {
@@ -75,6 +80,10 @@ public sealed class WorkPredictor
                 _pending.Add(new WorkInput(at, WorkInputKind.Rune, rune));
             if (act)
                 _pending.Add(new WorkInput(at, WorkInputKind.Act));
+            if (point >= 0 && point != _point)
+                _pending.Add(new WorkInput(at, WorkInputKind.Point, point));
+            if (point >= 0)
+                _point = point;
             (_held, _axis, _axis2) = (held, axis, axis2);
             if (_pending.Count > 0 && steps == 0)
                 steps = 1; // an input needs a step to land on
