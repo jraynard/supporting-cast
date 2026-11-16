@@ -114,14 +114,16 @@ public sealed partial class BotPlayer
                 bool Stewing(ThingDef d) => Cooking.IsIngredient(d) && !d.IsSeasoner && !d.Grain && d.Name != Baking.Flour && d.Joints == null && d.Plucks == null;
                 var greens = stores.FirstOrDefault(e => Stewing(w.Get<Thing>(e).Def) && !w.Get<Thing>(e).Def.Roasts, Entity.Null);
                 var meat = stores.FirstOrDefault(e => Stewing(w.Get<Thing>(e).Def) && w.Get<Thing>(e).Def.Roasts, Entity.Null);
+                var any = stores.FirstOrDefault(e => Cooking.IsIngredient(w.Get<Thing>(e).Def) && !w.Get<Thing>(e).Def.IsSeasoner, Entity.Null);
+                var seasoner = AvatarSystem.Supply(sim, me, d => d.IsSeasoner).IsNull ? stores.FirstOrDefault(e => w.Get<Thing>(e).Def.IsSeasoner, Entity.Null) : Entity.Null;
+                // Chosen before any's taken: a stack taken whole is gone from the larder.
                 if (!greens.IsNull)
                     Take(greens, meat.IsNull ? 8 : 5);
                 if (!meat.IsNull)
                     Take(meat, greens.IsNull ? 8 : 3);
-                if (greens.IsNull && meat.IsNull && stores.FirstOrDefault(e => Cooking.IsIngredient(w.Get<Thing>(e).Def) && !w.Get<Thing>(e).Def.IsSeasoner, Entity.Null) is { IsNull: false } any)
+                if (greens.IsNull && meat.IsNull && !any.IsNull)
                     Take(any, 8); // whatever there is
-                if (stores.FirstOrDefault(e => w.Get<Thing>(e).Def.IsSeasoner, Entity.Null) is { IsNull: false } seasoner
-                    && AvatarSystem.Supply(sim, me, d => d.IsSeasoner).IsNull)
+                if (!seasoner.IsNull)
                     Send(new TakeFromStorageCommand(me, seasoner, 1));
             });
         }
@@ -384,7 +386,8 @@ public sealed partial class BotPlayer
             || OfferTheMenu(sim, me, view) || DressWhole(sim, me, view, now) || MakeAhead(sim, me, view, now) || PackRations(sim, me, view, now);
     }
 
-    /// <summary>It cooks at a kitchen of its own.</summary>
+    /// <summary>It cooks at a kitchen of its own: its trade sees to meals (a trade with no list sees to all), and its workplace has a pot.</summary>
     private static bool IsCook(Simulation sim, Entity me) =>
-        sim.World.TryGet<Trade>(me, out var trade) && trade.Def.HasWorkplace && trade.Def.Serving(ServiceKind.Meal) && MyShop(sim, me) is { IsNull: false };
+        sim.World.TryGet<Trade>(me, out var trade) && trade.Def.HasWorkplace && trade.Def.Serving(ServiceKind.Meal)
+        && MyShop(sim, me) is { IsNull: false } shop && !Cooking.PotIn(sim, shop).IsNull;
 }
