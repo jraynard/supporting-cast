@@ -2004,5 +2004,14 @@ player vanished on day two and it ended on day three.
 - **Upper floor**: boards run on along an upper wall line (`WorldMesher.UpperWallBoards`), so no
   strip shows between the wall and the cell's edge.
 - 8-seed `--season-sweep`: Renown mean 46.5 (48.8 before), won 1 (2), served 10.0 (7.9).
-- Save format 42. Bench state hashes unchanged (1234 `57F4CB524D2257FB`, 99 `C1BB56A18110F5C7`);
-  the full hashes moved with the save format (1234 `A7A0D0705BEACE0A`, 99 `AED1C3DDE9F325C0`).
+- **The inn's look**: half-timbering drawn a bay to a storey (one frame per cell, not a 2x2 grid of
+  little framed tiles) in four variants picked by cell, in a warmer limewash; thatch in ragged
+  courses instead of ruled stripes; gables filled with studded plaster (`gable_fill_plaster`). The
+  village's other timber houses share the walls.
+- **The bar runs east to west** in Millbrook: two counters down the common room's right side from
+  the storeroom door, the cask, bar shelf and key board along the wall behind them, the line along
+  the counter's front; the long table moved to the front left. The bot keeper hangs a room key back
+  before its next order (from the hand, where the board now puts it).
+- Save format 42. With the inn rearranged every bench hash moved: 1234 state `D6A12824E1AB05B0`,
+  full `EBA4B9A2A90ED5BF`; 99 state `545C1A14456A3FF3`, full `0B41A5B0EDD223B8`. (Before the bar
+  moved, the state hashes were unchanged by the rest of this entry.)

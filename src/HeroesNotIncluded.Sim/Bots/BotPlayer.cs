@@ -658,6 +658,8 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             return;
         if (_task != 0 && (now - _taskSince > TaskTimeoutTicks || !Work(sim, me, view, now)))
             _task = 0;
+        if (_task == 0 && !festival && PutKeyBack(sim, me, now))
+            return;
         if (_task == 0)
             TakeOn(sim, me, view, now);
         if (_task == 0 && festival)
@@ -1008,19 +1010,6 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             }
             return AtStation(sim, me, bed, now, b => send(new BarWorkCommand(me, b)));
         }
-        // A room key carried with nothing doing: back on the board if it's short of it, else with the spares.
-        if (trade.Def.Serving(ServiceKind.Lodging) && Tinkering.Locksmithing.Keys(sim, me).FirstOrDefault(k => Hospitality.InnRooms.IsRoomKey(sim, k), Entity.Null) is { IsNull: false } spare
-            && _task == 0)
-        {
-            var seed = w.Get<Tinkering.Key>(spare).Seed;
-            var board = Hospitality.InnRooms.Board(sim, inn);
-            var to = Hospitality.InnRooms.KeyIn(sim, board, seed).IsNull ? board : Hospitality.InnRooms.SpareBox(sim, inn);
-            if (!to.IsNull && sim.ContainerRoom(to, w.Get<Thing>(spare).Def, null) > 0)
-            {
-                Doing = "putting a room key back";
-                return AtStation(sim, me, to, now, s => send(new StoreFromPackCommand(me, s, spare)));
-            }
-        }
         var anchor = w.Get<PresetBuilding>(inn).Anchor;
         var mess = view.Messes().Where(m => Maps.Map.Distance(m.Cell, anchor) <= CleanJob.InnReach && CleanJob.Mine(sim, trade.Def, inn, m.Cell))
             .OrderBy(m => Maps.Map.Distance(m.Cell, w.Get<Position>(me).Cell)).Select(m => (int3?)m.Cell).FirstOrDefault();
@@ -1041,6 +1030,36 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             return AtStation(sim, me, Nearest(sim, me, "WashTub"), now, tub => send(new BarWorkCommand(me, tub)));
         }
         return false;
+    }
+
+    /// <summary>
+    /// A room key carried once the room's made up goes back before the next order: on the board if
+    /// it's short of it, else with the spares (it was left in a pack an hour while the bar was busy).
+    /// </summary>
+    private bool PutKeyBack(Simulation sim, Entity me, long now)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Trade>(me, out var trade) || !trade.Def.Serving(ServiceKind.Lodging) || trade.Def.Role != Defs.TownRole.Tavern)
+            return false;
+        var inn = ShopSystem.WorkplaceOf(sim, trade.Def);
+        if (inn.IsNull || Tinkering.Locksmithing.Keys(sim, me).FirstOrDefault(k => Hospitality.InnRooms.IsRoomKey(sim, k), Entity.Null) is not { IsNull: false } spare)
+            return false;
+        var seed = w.Get<Tinkering.Key>(spare).Seed;
+        // Still wanted for a room to make up: keep it.
+        if (Buildings.Parts(sim, inn).Any(p => Hospitality.Lodging.IsUnmade(sim, p) && Hospitality.InnRooms.SeedOf(sim, p) == seed))
+            return false;
+        var board = Hospitality.InnRooms.Board(sim, inn);
+        var to = Hospitality.InnRooms.KeyIn(sim, board, seed).IsNull ? board : Hospitality.InnRooms.SpareBox(sim, inn);
+        if (to.IsNull || sim.ContainerRoom(to, w.Get<Thing>(spare).Def, null) <= 0)
+            return false;
+        Doing = "putting a room key back";
+        // Taken off the board, a key comes into an empty hand: into the pack first, to put it away from there.
+        if (w.Get<Carrying>(me).Item == spare)
+        {
+            send(new StowCommand(me));
+            return true;
+        }
+        return AtStation(sim, me, to, now, s => send(new StoreFromPackCommand(me, s, spare)));
     }
 
     /// <summary>The order kinds this character's trade answers.</summary>
