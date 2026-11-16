@@ -72,7 +72,8 @@ public sealed class Repairs : ISimSystem, ISaveState
     }
 
     /// <summary>
-    /// Bring a bridge down: a line of its span across the middle (along its longer side), and any
+    /// Bring a bridge down (whatever floor is <see cref="Defs.BuildingProps.Breakable"/>: the stone
+    /// bridge, a causeway): a line of its span across the middle (along its longer side), and any
     /// of it that falls with it. Null if the town has no bridge, or it's already down.
     /// </summary>
     public Breach? BreakBridge(Simulation sim, SimRandom rand)
@@ -82,7 +83,7 @@ public sealed class Repairs : ISimSystem, ISaveState
         var w = sim.World;
         var span = new List<(Entity E, int3 Cell, byte Facing, ThingDef Def)>();
         foreach (var e in w.Query<Thing>())
-            if (w.Get<Thing>(e) is { Def.IsFloor: true, Def.Name: "StoneBridge" } t && !w.Has<Construction>(e))
+            if (w.Get<Thing>(e) is { Def.IsFloor: true, Def.Building.Breakable: true } t && !w.Has<Construction>(e))
                 span.Add((e, t.Cell, t.Facing, t.Def));
         if (span.Count == 0)
             return null;

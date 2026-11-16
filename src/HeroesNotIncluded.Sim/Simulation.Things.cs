@@ -112,6 +112,10 @@ public sealed partial class Simulation
     /// </summary>
     public bool FloorSupported(int3 cell, ThingDef floor, bool finishedOnly, int3? without = null)
     {
+        // On piles: the bed straight below, however far from a bank.
+        for (var down = 1; down <= floor.Building!.Piled && cell.Z - down >= 0; down++)
+            if (Map.IsSolid(Map.Idx(new int3(cell.X, cell.Y, cell.Z - down))))
+                return true;
         var span = floor.Building!.SupportSpan;
         for (var dy = -span; dy <= span; dy++)
         for (var dx = -span; dx <= span; dx++)

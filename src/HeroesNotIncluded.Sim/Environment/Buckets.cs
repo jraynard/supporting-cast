@@ -41,14 +41,14 @@ public static class Buckets
         sim.World.IsAlive(e) && sim.World.TryGet<Thing>(e, out var t) && t.Def.Name == Full;
 
     public static bool IsWell(Simulation sim, Entity e) =>
-        sim.World.IsAlive(e) && sim.World.TryGet<Thing>(e, out var t) && t.Def.Name == "Well";
+        sim.World.IsAlive(e) && sim.World.TryGet<Thing>(e, out var t) && t.Def.Building is { WaterSource: true };
 
     /// <summary>Every well in town, in entity order.</summary>
     public static List<Entity> Wells(Simulation sim)
     {
         var wells = new List<Entity>();
         foreach (var e in sim.World.Query<Thing>())
-            if (sim.World.Get<Thing>(e).Def.Name == "Well" && sim.World.Get<Thing>(e).Spawned)
+            if (sim.World.Get<Thing>(e).Def.Building is { WaterSource: true } && sim.World.Get<Thing>(e).Spawned)
                 wells.Add(e);
         return wells;
     }

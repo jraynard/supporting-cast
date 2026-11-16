@@ -121,6 +121,7 @@ public static class Buildings
         if (!map.InBounds(anchor) || anchor.Z == 0 || anchor.Z + def.Storeys >= map.Depth)
             return "It doesn't fit there.";
         var roof = def.Variant(variant).Resolved.RoofDef != null;
+        var foundation = def.Variant(variant).Resolved.FoundationDef != null;
         foreach (var p in Plot(map, def, anchor, facing))
         {
             if (p.Cell == Off)
@@ -128,9 +129,13 @@ public static class Buildings
             var i = map.Idx(p.Cell);
             if (map.IsSolid(i))
                 return "Rock is in the way.";
-            if (!map.Standable(i) || map.GroundUnder(i) is not { CanBuildOn: true, Passable: true })
+            // A finished deck on piles is ground to build on, for a building that lays no foundation of its own.
+            var deck = map.HasFloor[i] && w.Get<Thing>(map.Floor[i]).Def.Building is { Piled: > 0 } && !w.Has<Construction>(map.Floor[i]);
+            if (deck && foundation)
+                return "It needs firm ground: a deck takes a building without a foundation.";
+            if (!deck && (!map.Standable(i) || map.GroundUnder(i) is not { CanBuildOn: true, Passable: true }))
                 return "It needs level, firm ground.";
-            if (!map.Floor[i].IsNull)
+            if (!deck && !map.Floor[i].IsNull)
                 return "Something is built there.";
             if (map.Structure[i] is { IsNull: false } s && !Clearable(sim, s))
                 return $"The {w.Get<Thing>(s).Label} is in the way.";

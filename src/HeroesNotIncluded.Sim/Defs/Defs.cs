@@ -291,6 +291,20 @@ public sealed class BuildingProps
     public int SupportSpan { get; set; } = 2;
 
     /// <summary>
+    /// A floor on piles driven into the bed below it (a boardwalk over a lake): held up by solid
+    /// ground, or the water's bed, within this many levels straight under its own cell, wherever it
+    /// stands, rather than by a bank or a wall within its <see cref="SupportSpan"/>. A finished piled
+    /// floor is firm ground to build on (<c>Systems.Buildings.PlacementProblem</c>). 0: not piled.
+    /// </summary>
+    public int Piled { get; set; }
+
+    /// <summary>
+    /// A raid can bring it down (<c>Tinkering.Repairs.BreakBridge</c>): the stone bridge over the
+    /// river, a lake town's causeway to the shore. The road it carries is cut until the tinker mends it.
+    /// </summary>
+    public bool Breakable { get; set; }
+
+    /// <summary>
     /// A roof (with <see cref="IsFloor"/>: it lives in the floor layer, on top of the walls): shelters
     /// the cells below like a floor, but isn't walked on or built on. Covers a porch or lean-to off
     /// a wall, out to <see cref="SupportSpan"/> cells; enclosed rooms are roofed without one.
@@ -420,6 +434,12 @@ public sealed class BuildingProps
     /// (<see cref="Simulation.InKept"/>). The tankards beside them are fetched as ever, and anything can be taken by hand.
     /// </summary>
     public bool Kept { get; set; }
+
+    /// <summary>
+    /// Buckets are filled here (<c>Environment.Buckets</c>): the well in the square, or a dipping post
+    /// at a deck's edge where a lake town lowers its buckets into the water. Fire is fought from these.
+    /// </summary>
+    public bool WaterSource { get; set; }
 
     /// <summary>A bread oven with its own fire: dough baked in it by smell (<c>Work.Baking</c>).</summary>
     public bool Oven { get; set; }
@@ -752,6 +772,15 @@ public sealed class BridgeLook
 
     /// <summary>A pier every so many cells along the span (counted from its first cell).</summary>
     public int PierEvery { get; set; } = 2;
+
+    /// <summary>
+    /// Stone arches between the piers (a bridge), or a timber deck on piles (false: a boardwalk):
+    /// a slim pile at each corner of a pier cell and no vault between, the rails thin.
+    /// </summary>
+    public bool Arched { get; set; } = true;
+
+    /// <summary>How thick the parapet (or rail) is, as a share of the cell.</summary>
+    public float Thickness { get; set; } = 0.2f;
 }
 
 public sealed class ThingDef : Def

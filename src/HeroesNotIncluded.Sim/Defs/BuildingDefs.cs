@@ -408,7 +408,7 @@ public sealed class BuildingParts
     {
         ThingDef? Part(string? name, string role, Func<ThingDef, bool> fits)
         {
-            if (name == null)
+            if (string.IsNullOrEmpty(name)) // "": none, a variant leaving out what the building has (no foundation on piles)
                 return null;
             var d = db.Thing(name);
             if (d.Building is not { PartOnly: true } || !fits(d))

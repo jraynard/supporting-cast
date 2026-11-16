@@ -1940,3 +1940,17 @@ player vanished on day two and it ended on day three.
   scullery (wash tub, crockery shelf) where the kitchen was. The Dry Boots.
 - A town that puts both up gives the cook a building of their own: signs, work, stock and the carter
   follow the roles (`CookhouseTests`). Millbrook keeps its inn. Bench hashes unchanged.
+
+### Building on the water (2026-11-15)
+- **Piled floors** (`building.piled`): a floor on piles is held up by the bed (ground, or the
+  water's) within that many levels straight below it, however far from a bank. A finished piled
+  floor is ground to build on, for a building that lays no foundation (`PlacementProblem`); a
+  variant's empty part name leaves one out, so the cookhouse and the landing inn have a `Piled`
+  variant whose floor is the deck.
+- **`Boardwalk`** and **`Causeway`**: planks on piles, drawn as a timber bridge (`BridgeLook.Arched`
+  false: thin rails, slim piles, no vault). They burn like any floor.
+- **Breakable spans** (`building.breakable`): what a raid brings down (`Repairs.BreakBridge`), the
+  stone bridge or a causeway, never a town's own decks.
+- **Water sources** (`building.waterSource`): buckets are filled at a well or at a `DippingPost` on a
+  deck's edge, and fire's fought from either; buckets hang at both.
+- `LakeTests`. Bench hashes unchanged.

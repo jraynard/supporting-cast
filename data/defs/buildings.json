@@ -441,7 +441,9 @@
       "letsBeds": true, "defaultName": "The Dry Boots",
       "variants": [
         { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster" },
-        { "name": "Shingle", "label": "shingle-roofed", "kit": "timber_shingle", "parts": { "roof": "ShingleRoofPart" } }
+        { "name": "Shingle", "label": "shingle-roofed", "kit": "timber_shingle", "parts": { "roof": "ShingleRoofPart" } },
+        // On a deck over the water: no foundation, the boardwalk under it is its floor.
+        { "name": "Piled", "label": "on piles", "kit": "timber_plaster", "parts": { "foundation": "" } }
       ]
     },
     {
@@ -498,7 +500,9 @@
       "eatThought": "AteAtTheCookhouse", "defaultName": "The Ladle",
       "variants": [
         { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster" },
-        { "name": "Shingle", "label": "shingle-roofed", "kit": "timber_shingle", "parts": { "roof": "ShingleRoofPart" } }
+        { "name": "Shingle", "label": "shingle-roofed", "kit": "timber_shingle", "parts": { "roof": "ShingleRoofPart" } },
+        // On a deck over the water: no foundation, the boardwalk under it is its floor.
+        { "name": "Piled", "label": "on piles", "kit": "timber_plaster", "parts": { "foundation": "" } }
       ]
     },
   ],

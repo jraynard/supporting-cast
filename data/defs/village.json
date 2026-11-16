@@ -79,7 +79,7 @@
       "name": "Well", "label": "well", "category": "Building", "solid": true, "sprite": "buildings/well",
       "description": "A stone-ringed well with a windlass and a bucket, the middle of the village.",
       "maxHp": 400, "flammability": 0.1,
-      "building": { "outdoor": true, "work": 400, "cost": [ { "def": "Stone", "count": 20 }, { "def": "Wood", "count": 8 } ] },
+      "building": { "outdoor": true, "waterSource": true, "work": 400, "cost": [ { "def": "Stone", "count": 20 }, { "def": "Wood", "count": 8 } ] },
       "model": [
         { "min": [0.1, 0.1, 0], "max": [0.9, 0.9, 0.36], "top": "props/stone_block", "side": "props/stone_block" },
         { "min": [0.22, 0.22, 0.3], "max": [0.78, 0.78, 0.34], "top": "terrain/water", "side": "terrain/water" },
@@ -88,6 +88,20 @@
         { "min": [0.2, 0.46, 0.82], "max": [0.8, 0.54, 0.9], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" },
         { "min": [0.42, 0.42, 0.52], "max": [0.58, 0.58, 0.66], "top": "props/planks", "side": "props/planks" },
         { "min": [0.02, 0.2, 1.1], "max": [0.98, 0.8, 1.18], "top": "buildings/roof_shingles", "side": "props/timber_dark" }
+      ]
+    },
+    {
+      // A lake town's well: a post at a deck's edge with a rope and a hook, to lower a bucket into the
+      // water below. Buckets hang by it, and fire's fought from it as from a well.
+      "name": "DippingPost", "label": "dipping post", "category": "Building", "solid": true, "sprite": "buildings/well",
+      "description": "A post at the boardwalk's edge with a rope to let a bucket down into the lake. Where the buckets hang, for the fires.",
+      "maxHp": 120, "flammability": 0.8,
+      "building": { "outdoor": true, "waterSource": true, "work": 120, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "model": [
+        { "min": [0.4, 0.4, 0], "max": [0.6, 0.6, 1.25], "top": "props/log_end", "side": "props/timber_dark" },
+        { "min": [0.45, 0.1, 1.1], "max": [0.55, 0.9, 1.2], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.48, 0.12, 0.55], "max": [0.52, 0.16, 1.1], "top": "props/log_side", "side": "props/log_side" },
+        { "min": [0.4, 0.04, 0.32], "max": [0.6, 0.24, 0.55], "top": "props/planks", "side": "props/planks" }
       ]
     },
     {
@@ -116,7 +130,25 @@
       "description": "Dressed stone over the water: a lane carried across a river. Must be within four cells of a bank.",
       "maxHp": 600, "flammability": 0,
       "bridge": { "parapet": "buildings/bridge_parapet", "coping": "buildings/bridge_coping", "pier": "buildings/bridge_pier", "height": 0.45, "pierEvery": 3 },
-      "building": { "isFloor": true, "outdoor": true, "supportSpan": 4, "insulation": 0.9, "work": 300, "cost": [ { "def": "Stone", "count": 6 } ] }
+      "building": { "isFloor": true, "outdoor": true, "breakable": true, "supportSpan": 4, "insulation": 0.9, "work": 300, "cost": [ { "def": "Stone", "count": 6 } ] }
+    },
+    {
+      // Planks on piles over a lake: the walks, the square and the decks a lake town's houses stand
+      // on. Held up by the bed below (piled), not by a bank, and timber through: it burns.
+      "name": "Boardwalk", "label": "boardwalk", "category": "Building", "sprite": "buildings/floor_planks",
+      "description": "Planks on piles driven into the lakebed: a walk over the water, and ground for a house to stand on. Wood: it burns.",
+      "maxHp": 160, "flammability": 0.9,
+      "bridge": { "parapet": "props/fence_rail", "coping": "props/fence_rail", "pier": "props/log_side", "height": 0.5, "thickness": 0.07, "pierEvery": 2, "arched": false },
+      "building": { "isFloor": true, "outdoor": true, "supportSpan": 1, "piled": 3, "insulation": 0.9, "work": 120, "cost": [ { "def": "Wood", "count": 3 } ] }
+    },
+    {
+      // The long boardwalk out from the shore to a lake town: as a boardwalk, but the one road in, and
+      // a raid can bring a stretch of it down (breakable), cutting the town off till the tinker mends it.
+      "name": "Causeway", "label": "causeway", "category": "Building", "sprite": "buildings/floor_planks",
+      "description": "The long boardwalk from the shore to the town on the water, on piles in the lakebed: the one road in. Wood: it burns, and it can be brought down.",
+      "maxHp": 200, "flammability": 0.9,
+      "bridge": { "parapet": "props/fence_rail", "coping": "props/fence_rail", "pier": "props/log_side", "height": 0.5, "thickness": 0.07, "pierEvery": 2, "arched": false },
+      "building": { "isFloor": true, "outdoor": true, "breakable": true, "supportSpan": 1, "piled": 3, "insulation": 0.9, "work": 120, "cost": [ { "def": "Wood", "count": 3 } ] }
     }
   ],
 

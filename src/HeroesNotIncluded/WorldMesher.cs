@@ -642,14 +642,16 @@ public sealed class WorldMesher(TextureAtlas atlas)
         float Rand(int k) => ((seed + (uint)k * 2654435761u) >> 8 & 0xFFFF) / 65535f;
 
         var h = look.Height;
-        const float Wall = 0.2f, Lip = 0.03f, CopeHeight = 0.07f;
+        var Wall = look.Thickness;
+        const float Lip = 0.03f, CopeHeight = 0.07f;
         var brokenBefore = Cell(-1, 0) is var (bx0, by0) && Broken(bx0, by0);
         var brokenAfter = Cell(1, 0) is var (bx1, by1) && Broken(bx1, by1);
 
-        // Parapets, along each side with nothing of the span beyond it.
+        // Parapets, along each side with nothing of the span beyond it (nor a building's wall on it: a deck's).
+        var walled = map.Structure[map.Idx(x, y, z)] is { IsNull: false } st && sim.World.Get<Thing>(st).Def.Building is { IsWall: true } or { IsDoor: true };
         foreach (var (side, v0, v1) in new[] { (-1, 0f, Wall), (1, 1 - Wall, 1f) })
         {
-            if (Cell(0, side) is var (sx, sy) && Span(sx, sy))
+            if (Cell(0, side) is var (sx, sy) && Span(sx, sy) || walled)
                 continue;
             float cv0 = side < 0 ? v0 - Lip : v0, cv1 = side < 0 ? v1 : v1 + Lip;
             // Beside a gap the wall's torn off short and uneven, without its coping.
@@ -671,6 +673,17 @@ public sealed class WorldMesher(TextureAtlas atlas)
         var bed = -drop; // the ground under it, in this cell's model units
         bool Abutment(int i) => i == 0 || i == length - 1;
         bool Pier(int i) => Abutment(i) || i % Math.Max(1, look.PierEvery) == 0;
+
+        // A boardwalk: slim piles at the corners of every so many cells, down into the water, and nothing under between.
+        if (!look.Arched)
+        {
+            if (Pier(at))
+                foreach (var (pu, pv) in new[] { (0.06f, 0.06f), (0.94f, 0.06f), (0.06f, 0.94f), (0.94f, 0.94f) })
+                    Box(under, pu - 0.06f, pu + 0.06f, pv - 0.06f, pv + 0.06f, bed, -SlabThickness, look.Pier);
+            PropModel.Build(_quads, top, new int3(x, y, z), 0, Art, Rgba.White, Quad.Level(z));
+            PropModel.Build(_quads, under, new int3(x, y, z), 0, Art, Rgba.White, Quad.Level(z - 1));
+            return;
+        }
 
         if (Pier(at))
         {
