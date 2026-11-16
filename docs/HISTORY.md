@@ -1848,7 +1848,8 @@ player vanished on day two and it ended on day three.
   the sheets till it's stripped) are handed back for satisfaction or boxed as lost property.
 - **The bot keeper** signs guests in, takes the key down and hands it over, and unlocks doors it
   has the key to (`Locksmithing.KeyedDoor(..., player: true)`).
-- Bench hashes move: a behaviour change.
+- Bench hashes move (a behaviour change): seed 1234 state `3813191A36FA5D2A`, full `FE98358F8BCA658B`;
+  seed 99 state `4F30080EDB097CF0`, full `1ED584621E2BAC85`.
 
 ### The kitchen and the inn, drawn (2026-11-15)
 - **Stations** (`tools/kitchen_art.py`): the spit, oven, prep table, butcher block, log basket and
