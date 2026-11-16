@@ -188,7 +188,8 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
     /// </summary>
     private static ServiceKind[] KindsFor(Simulation sim, TradeDef trade) =>
         [.. sim.Defs.AllServices
-            .Where(s => (trade.HasWorkplace && s.AtRole == trade.Role && trade.Serving(s.Kind)) || (s.Kind == ServiceKind.Quest && trade.Brokers))
+            .Where(s => (trade.HasWorkplace && s.AtRole == trade.Role && trade.Serving(s.Kind)) || (s.Kind == ServiceKind.Quest && trade.Brokers)
+                || (s.Kind == ServiceKind.Goods && trade.HasWorkplace)) // gear on show: the seller hands it over
             .Select(s => s.Kind)
             .Distinct()];
 
@@ -203,6 +204,8 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
                 continue;
             if (e.Kind == ServiceKind.Quest && !QuestFor(sim, view, e.Poster).HasValue)
                 continue;
+            if (e.Kind == ServiceKind.Goods && GoodsFor(sim, me, e).IsNull)
+                continue; // someone else's piece
             if (e.Kind != ServiceKind.Quest && !e.MineToDo)
                 Send(new TakeOrderCommand(me, e.Id));
             _task = e.Id;

@@ -390,6 +390,13 @@ public sealed partial class BotPlayer
         }
         var square = MathF.Abs(s.Offset) <= s.TrueHalfWidth * 0.6f;
         var steer = MathF.Abs(s.Offset) > s.TrueHalfWidth * 0.25f ? -Math.Sign(s.Offset) : 0;
+        // A slip: impatient with the middle part, it leans on it while it's still off true.
+        if (_slip && s.Part == s.Parts / 2 && s.Settling == 0)
+        {
+            if (!s.OnTrue && s.Pressure > FitSession.LightTouch)
+                Slipped();
+            return (false, s.Bind < 0.8f, steer);
+        }
         return (false, square && s.Bind < 0.3f, steer);
     }
 
