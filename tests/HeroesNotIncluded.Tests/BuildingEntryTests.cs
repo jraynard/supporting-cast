@@ -66,6 +66,36 @@ public class BuildingEntryTests
         Assert.Equal(Entity.Null, BuildingEntry.DoorBeside(sim, away + step + step));
     }
 
+    [Fact]
+    public void StandingBehindTheShrineOpensItButStandingInFrontDoesNot()
+    {
+        var (sim, _) = CoopSessionTests.Millbrook(7, 2);
+        var map = sim.Map;
+        var shrine = ShopSystem.BuildingOf(sim, sim.Defs.Building("Shrine"));
+        var index = BuildingPlanIndex.For(sim);
+        // A cell just outside one of its walls, straight out from it.
+        foreach (var part in Buildings.Parts(sim, shrine))
+        {
+            var t = sim.World.Get<Thing>(part);
+            if (t.Def.Building is not { IsWall: true })
+                continue;
+            foreach (var d in new[] { new int3(1, 0, 0), new int3(-1, 0, 0), new int3(0, 1, 0), new int3(0, -1, 0) })
+            {
+                var c = t.Cell + d;
+                if (!map.InBounds(c) || !index.At(c).IsNull || !map.Standable(map.Idx(c)) || !map.Structure[map.Idx(c)].IsNull)
+                    continue;
+                if (!BuildingEntry.DoorBeside(sim, c).IsNull)
+                    continue; // the door's own rule
+                // The camera looking across the wall at you (the wall between): open. Looking from your side: not.
+                var across = new float2(d.X, d.Y);
+                Assert.Equal(shrine, BuildingEntry.WallBetween(sim, c, across));
+                Assert.Equal(Entity.Null, BuildingEntry.WallBetween(sim, c, -across));
+                return;
+            }
+        }
+        Assert.Fail("no open cell beside the shrine's walls");
+    }
+
     private static int3 DoorCell(Simulation sim, Entity building) =>
         Buildings.Parts(sim, building).Select(p => sim.World.Get<Thing>(p)).First(t => t.Def.Building is { IsDoor: true }).Cell;
 

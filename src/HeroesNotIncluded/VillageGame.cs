@@ -145,15 +145,20 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     }
 
     /// <summary>
-    /// The building the view should open: the one you're in, or the one whose door you're standing
-    /// at, so a door on its far side (the shrine's, under its eave) stays in sight as you come and go.
+    /// The building the view should open: the one you're in, the one whose door you're standing at,
+    /// or the one you're standing behind, so a door on its far side (the shrine's, under its eave)
+    /// stays in sight as you come and go.
     /// </summary>
     private (Entity Building, int Level) InsideBuilding()
     {
         if (Eye.IsNull || !_sim.World.TryGet<Position>(Eye, out var p))
             return (Entity.Null, int.MaxValue);
-        var inside = Rendering.BuildingPlanIndex.For(_sim).At(p.Cell);
-        return (!inside.IsNull ? inside : Rendering.BuildingEntry.DoorBeside(_sim, p.Cell), p.Cell.Z);
+        var open = Rendering.BuildingPlanIndex.For(_sim).At(p.Cell);
+        if (open.IsNull)
+            open = Rendering.BuildingEntry.DoorBeside(_sim, p.Cell);
+        if (open.IsNull)
+            open = Rendering.BuildingEntry.WallBetween(_sim, p.Cell, new float2(_camera.Heading.X, _camera.Heading.Y));
+        return (open, p.Cell.Z);
     }
 
     /// <summary>Who the view is about: your character, or your ghost; null for the overseer.</summary>

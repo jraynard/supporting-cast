@@ -56,6 +56,34 @@ public static class BuildingEntry
     }
 
     /// <summary>
+    /// The building hiding <paramref name="cell"/> from the camera: one whose wall (or door) is
+    /// beside it on the camera's side, <paramref name="heading"/> being the view's direction into
+    /// the screen across the ground. Standing behind the shrine, its roof hid you and its door.
+    /// Walls beside you on the far side don't count, so walking down the street in front of the
+    /// houses leaves their roofs on. Entity.Null if none.
+    /// </summary>
+    public static Entity WallBetween(Simulation sim, int3 cell, float2 heading)
+    {
+        var map = sim.Map;
+        for (var dy = -1; dy <= 1; dy++)
+        for (var dx = -1; dx <= 1; dx++)
+        {
+            if (dx * heading.X + dy * heading.Y >= -0.1f)
+                continue; // not toward the camera
+            var c = new int3(cell.X + dx, cell.Y + dy, cell.Z);
+            if (!map.InBounds(c))
+                continue;
+            var wall = map.Structure[map.Idx(c)];
+            if (wall.IsNull || !sim.World.TryGet<Thing>(wall, out var t) || t.Def.Building is not ({ IsWall: true } or { IsDoor: true }))
+                continue;
+            var building = Buildings.Of(sim, wall);
+            if (!building.IsNull)
+                return building;
+        }
+        return Entity.Null;
+    }
+
+    /// <summary>
     /// The building whose door is in or beside <paramref name="cell"/> (on its level; straight in
     /// front first, then a corner off), or Entity.Null.
     /// </summary>
