@@ -82,7 +82,7 @@ the first link.
    `HNIgame`. Display name "Heroes Not Included".
 3. Emblem, header, short bio.
 
-### Reddit - user created
+### Reddit - user created, subreddit created
 Reddit dislikes brand accounts that only promote, so:
 1. **Reserve** `u/heroesnotincluded` so nobody else takes it, and leave it quiet.
 2. **Post as yourself, the developer**, from a personal account or a new one (say

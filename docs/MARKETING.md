@@ -4,7 +4,7 @@ How the game finds its players, and when. The goal is a game we love playing wit
 family; anything past that is a bonus. Every step here is cheap, and none of it needs the game to
 be a hit to be worth doing. The build-side timing (store page, Steamworks, Early Access) lives in
 [ROADMAP.md](ROADMAP.md), "Toward Steam"; this file is the people side. The store page draft is
-[STEAM-PAGE.md](STEAM-PAGE.md). Voice and words: the brand guide (`art/brand/brand-guide.html`).
+[STEAM-PAGE.md](STEAM-PAGE.md); setting up the accounts is [SOCIAL.md](SOCIAL.md). Voice and words: the brand guide (`art/brand/brand-guide.html`).
 
 ## The principle
 
@@ -32,11 +32,9 @@ The question isn't reach. It's whether the game is fun with people who aren't us
 
 See ROADMAP.md for what the page needs built. On the people side:
 
-- [x] Check the name: search Steam, itch and the trademark databases (USPTO, EUIPO) for
-      "Heroes Not Included" and near matches. Clear as of November 2026.
-- [x] Domains: heroesnotincluded.com, and herosnotincluded.com for the misspelling.
-- [ ] Claim the handle on YouTube, TikTok, Bluesky, X and Reddit. Decide on registering the
-      trademark when the store page goes up.
+- [ ] Check the name: search Steam, itch and the trademark databases (USPTO, EUIPO) for
+      "Heroes Not Included" and near matches. The nod to *Oxygen Not Included* is fine as long as
+      nothing is too close.
 - [ ] Capsule art: it matters more than anything else on the page. Brand colours, the emblem, a
       busy common room at dusk, no heroes in front.
 - [ ] Screenshots and a 30 to 60 second trailer cut from real play.
