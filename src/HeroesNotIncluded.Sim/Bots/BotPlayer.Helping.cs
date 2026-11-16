@@ -139,12 +139,15 @@ public sealed partial class BotPlayer
         // A bucket in the pack: into the hands. Hands full of something else: into the pack with that.
         if (sim.PackOf(me) is { IsNull: false } pack && sim.StoredIn(pack).FirstOrDefault(e => Buckets.IsBucket(sim, e), Entity.Null) is { IsNull: false } packed)
         {
-            Send(held.IsNull ? new HoldCommand(me, packed) : new StowCommand(me));
+            if (held.IsNull)
+                Send(new HoldCommand(me, packed));
+            else
+                FreeHand(sim, me);
             return true;
         }
         if (!held.IsNull)
         {
-            Send(new StowCommand(me));
+            FreeHand(sim, me); // into the pack, or a keg set down: it won't go in one
             return true;
         }
         // One lying about (at the well, mostly), in sight and not spoken for.
@@ -317,7 +320,7 @@ public sealed partial class BotPlayer
             return false;
         Doing = $"picking up {name}'s body";
         if (!w.Get<Carrying>(me).Item.IsNull)
-            Send(new StowCommand(me));
+            FreeHand(sim, me);
         else if (AvatarSystem.InReach(w.Get<Position>(me).Cell, cell))
             Use(me, cell);
         else
@@ -342,7 +345,7 @@ public sealed partial class BotPlayer
         var cell = w.Get<Position>(hurt).Cell;
         Doing = $"picking up {w.Get<Creature>(hurt).Name}";
         if (!w.Get<Carrying>(me).Item.IsNull)
-            Send(new StowCommand(me));
+            FreeHand(sim, me);
         else if (AvatarSystem.InReach(here, cell))
         {
             if (Alarm($"carry:{hurt.Index}:{now / SimClock.TicksPerDay}"))
