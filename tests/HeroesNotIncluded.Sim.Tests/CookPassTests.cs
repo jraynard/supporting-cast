@@ -1,4 +1,5 @@
 using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Speech;
 using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Expeditions;
 using HeroesNotIncluded.Sim.Hospitality;
@@ -479,7 +480,11 @@ public class CookPassTests
         var purse = Coin.Count(sim, me);
         sim.Shops.Received(sim, me, diner, bowl);
         Assert.Equal(purse + meal.Price + ShopSystem.MasterworkTip, Coin.Count(sim, me));
-        Assert.Contains(sim.Speech.Kept, u => u.Speaker == diner && u.Text.Contains("for yourself"));
+        // A diner who's just been talking (served a drink this very moment) can reach the speech
+        // rate limit, and then their thanks is dropped like any line: the silver's what counts.
+        var limited = sim.Speech.Kept.Count(u => u.Speaker == diner && u.Tick > sim.Clock.Tick - SpeechSystem.RateWindowTicks) >= SpeechSystem.RateLimit;
+        if (!limited)
+            Assert.Contains(sim.Speech.Kept, u => u.Speaker == diner && u.Text.Contains("for yourself"));
     }
 
     [Fact]

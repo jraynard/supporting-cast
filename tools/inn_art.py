@@ -127,22 +127,33 @@ def sign_blank(seed):
 
 
 def prop_sign_board():
-    """A hanging inn sign: the board with a bear's head in the middle."""
+    """A hanging inn sign: a bear's head above a foaming tankard, for the Wild Bear."""
     img = sign_blank(46)
     px = img.load()
-    # A bear's head: round face, two ears, a pale muzzle.
     dark = (44, 28, 20, 255)
+    # The bear's head, up top: round face, two ears, a pale muzzle, gilt eyes.
     for y in range(S):
         for x in range(S):
-            if math.hypot(x - 16, y - 17) < 6.5 or math.hypot(x - 11, y - 11) < 2.6 or math.hypot(x - 21, y - 11) < 2.6:
+            if math.hypot(x - 16, y - 12) < 5 or math.hypot(x - 12, y - 7.5) < 2.1 or math.hypot(x - 20, y - 7.5) < 2.1:
                 px[x, y] = dark
     for y in range(S):
         for x in range(S):
-            if math.hypot(x - 16, y - 19.5) < 2.6:
+            if math.hypot(x - 16, y - 14) < 2.1:
                 px[x, y] = (196, 150, 104, 255)
-    px[16, 18] = dark
-    px[14, 15] = (236, 178, 74, 255)
-    px[18, 15] = (236, 178, 74, 255)
+    px[16, 13] = dark
+    px[14, 11] = (236, 178, 74, 255)
+    px[18, 11] = (236, 178, 74, 255)
+    # A tankard below it: oak staves, two hoops, a handle, a head of foam.
+    oak, hoop, foam = (150, 96, 52, 255), (52, 46, 44, 255), (238, 228, 200, 255)
+    for y in range(19, 26):
+        for x in range(12, 19):
+            px[x, y] = hoop if y in (20, 24) else oak
+    for x in range(12, 19):
+        px[x, 18] = foam
+    for x in range(13, 18, 2):
+        px[x, 17] = foam
+    for y in range(20, 24):
+        px[19 if y in (20, 23) else 20, y] = hoop
     return img
 
 

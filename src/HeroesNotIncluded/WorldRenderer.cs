@@ -680,12 +680,23 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     /// A hanging shop sign, in its wall cell with the street to the front (+Y): an iron arm out from
     /// the wall's top, and the board hung from it edge-on to the wall, painted both sides.
     /// </summary>
+    /// <remarks>
+    /// The arm is wrought iron on a plate at the wall, held up by a stepped brace from below, its end
+    /// curled over in a scroll (art/reference/inn3.webp); the board hangs from two rings.
+    /// </remarks>
     private static readonly List<ModelBox> SignModel =
     [
-        new() { Min = [0.47f, 0.92f, 0.86f], Max = [0.53f, 1.86f, 0.9f], Top = "props/stone_block", Side = "props/stone_block" },
-        new() { Min = [0.48f, 1.04f, 0.8f], Max = [0.52f, 1.08f, 0.86f], Top = "props/stone_block", Side = "props/stone_block" },
-        new() { Min = [0.48f, 1.72f, 0.8f], Max = [0.52f, 1.76f, 0.86f], Top = "props/stone_block", Side = "props/stone_block" },
-        new() { Min = [0.475f, 1.0f, 0.28f], Max = [0.525f, 1.8f, 0.8f], Top = "props/planks", Side = "props/sign_board", Front = "props/planks" },
+        new() { Min = [0.42f, 0.9f, 0.6f], Max = [0.58f, 0.95f, 0.96f], Top = "furniture/hoop", Side = "furniture/hoop" },          // the wall plate
+        new() { Min = [0.47f, 0.92f, 0.86f], Max = [0.53f, 1.86f, 0.9f], Top = "furniture/hoop", Side = "furniture/hoop" },          // the arm
+        new() { Min = [0.475f, 0.95f, 0.64f], Max = [0.525f, 1.1f, 0.7f], Top = "furniture/hoop", Side = "furniture/hoop" },         // the brace, stepping up
+        new() { Min = [0.475f, 1.1f, 0.7f], Max = [0.525f, 1.25f, 0.76f], Top = "furniture/hoop", Side = "furniture/hoop" },
+        new() { Min = [0.475f, 1.25f, 0.76f], Max = [0.525f, 1.4f, 0.82f], Top = "furniture/hoop", Side = "furniture/hoop" },
+        new() { Min = [0.475f, 1.4f, 0.82f], Max = [0.525f, 1.52f, 0.86f], Top = "furniture/hoop", Side = "furniture/hoop" },
+        new() { Min = [0.475f, 1.86f, 0.86f], Max = [0.525f, 1.92f, 0.98f], Top = "furniture/hoop", Side = "furniture/hoop" },       // the scroll at its end
+        new() { Min = [0.475f, 1.8f, 0.96f], Max = [0.525f, 1.88f, 1.0f], Top = "furniture/hoop", Side = "furniture/hoop" },
+        new() { Min = [0.48f, 1.04f, 0.8f], Max = [0.52f, 1.08f, 0.86f], Top = "furniture/hoop", Side = "furniture/hoop" },          // the rings
+        new() { Min = [0.48f, 1.72f, 0.8f], Max = [0.52f, 1.76f, 0.86f], Top = "furniture/hoop", Side = "furniture/hoop" },
+        new() { Min = [0.475f, 1.0f, 0.28f], Max = [0.525f, 1.8f, 0.8f], Top = "furniture/oak_planks", Side = "props/sign_board", Front = "furniture/oak_planks" },
     ];
 
     private readonly Dictionary<string, List<ModelBox>> _signModels = [];

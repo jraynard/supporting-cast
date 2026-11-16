@@ -110,9 +110,76 @@
       "maxHp": 80, "flammability": 0.8,
       "building": { "outdoor": true, "work": 90, "storageStacks": 2, "surfaceHeight": 0.62, "cost": [ { "def": "Wood", "count": 6 } ] },
       "model": [
-        { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.62], "top": "props/log_end", "side": "props/planks" },
-        { "min": [0.2, 0.2, 0.1], "max": [0.8, 0.8, 0.16], "top": "props/stone_block", "side": "props/stone_block" },
-        { "min": [0.2, 0.2, 0.46], "max": [0.8, 0.8, 0.52], "top": "props/stone_block", "side": "props/stone_block" }
+        { "min": [0.22, 0.22, 0], "max": [0.78, 0.78, 0.62], "top": "furniture/cask_head", "side": "furniture/staves_across", "fit": true },
+        { "min": [0.18, 0.18, 0.12], "max": [0.82, 0.82, 0.5], "top": "furniture/staves_across", "side": "furniture/staves_across" },
+        { "min": [0.215, 0.215, 0.05], "max": [0.785, 0.785, 0.1], "top": "furniture/hoop", "side": "furniture/hoop" },
+        { "min": [0.175, 0.175, 0.29], "max": [0.825, 0.825, 0.34], "top": "furniture/hoop", "side": "furniture/hoop" },
+        { "min": [0.215, 0.215, 0.52], "max": [0.785, 0.785, 0.57], "top": "furniture/hoop", "side": "furniture/hoop" }
+      ]
+    },
+    {
+      // Dressing round the inn (art/reference/inn*.webp), placed by the map: not used, only seen.
+      "name": "OutdoorBench", "label": "bench", "category": "Building", "solid": true, "sprite": "buildings/stool", "size": [1, 2],
+      "description": "A weathered bench against the inn's wall, for sitting out on a fine evening.",
+      "maxHp": 60, "flammability": 1.0,
+      "building": { "outdoor": true, "buildable": false, "work": 60, "cost": [] },
+      "model": [
+        { "min": [0.18, 0.06, 0.34], "max": [0.82, 1.94, 0.44], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.24, 0.16, 0], "max": [0.76, 0.26, 0.34], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.24, 1.74, 0], "max": [0.76, 1.84, 0.34], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.46, 0.26, 0.12], "max": [0.54, 1.74, 0.18], "top": "furniture/oak_leg", "side": "furniture/oak_leg" }
+      ]
+    },
+    {
+      "name": "OutdoorTable", "label": "trestle table", "category": "Building", "solid": true, "sprite": "buildings/table", "size": [1, 2],
+      "description": "A trestle table set out in front of the inn.",
+      "maxHp": 100, "flammability": 1.0,
+      "building": { "outdoor": true, "buildable": false, "work": 80, "surfaceHeight": 0.66, "cost": [] },
+      "model": [
+        { "min": [0.02, 0.02, 0.56], "max": [0.98, 1.98, 0.66], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.12, 0.16, 0], "max": [0.88, 0.28, 0.08], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.42, 0.17, 0.08], "max": [0.58, 0.27, 0.48], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.16, 0.48], "max": [0.92, 0.28, 0.56], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.12, 1.72, 0], "max": [0.88, 1.84, 0.08], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.42, 1.73, 0.08], "max": [0.58, 1.83, 0.48], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.08, 1.72, 0.48], "max": [0.92, 1.84, 0.56], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.45, 0.28, 0.2], "max": [0.55, 1.72, 0.28], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.3, 0.5, 0.66], "max": [0.42, 0.62, 0.78], "top": "furniture/oak_end", "side": "furniture/staves" }
+      ]
+    },
+    {
+      // Two dressed stone steps up to the inn's door: walked over, not round.
+      "name": "DoorStep", "label": "door step", "category": "Building", "sprite": "buildings/quoin",
+      "description": "Worn stone steps up to the door.",
+      "maxHp": 200, "flammability": 0,
+      "building": { "outdoor": true, "buildable": false, "work": 60, "cost": [] },
+      "model": [
+        { "min": [0.02, 0.06, 0], "max": [0.98, 0.94, 0.06], "top": "buildings/quoin", "side": "buildings/quoin" },
+        { "min": [0.5, 0.12, 0.06], "max": [0.98, 0.88, 0.12], "top": "buildings/quoin", "side": "buildings/quoin" }
+      ]
+    },
+    {
+      "name": "LanternPost", "label": "lantern post", "category": "Building", "solid": true, "sprite": "buildings/lantern",
+      "description": "An iron lantern on an oak post by the inn's door.",
+      "maxHp": 80, "flammability": 0.5,
+      "building": { "outdoor": true, "buildable": false, "work": 40, "cost": [] },
+      "model": [
+        { "min": [0.36, 0.36, 0], "max": [0.64, 0.64, 0.08], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.44, 0.44, 0.08], "max": [0.56, 0.56, 1.0], "top": "furniture/oak_end", "side": "buildings/beam_oak" },
+        { "min": [0.38, 0.38, 1.0], "max": [0.62, 0.62, 1.04], "top": "furniture/hoop", "side": "furniture/hoop" },
+        { "min": [0.4, 0.4, 1.04], "max": [0.6, 0.6, 1.22], "top": "furniture/hoop", "side": "props/candle" },
+        { "min": [0.37, 0.37, 1.22], "max": [0.63, 0.63, 1.27], "top": "furniture/hoop", "side": "furniture/hoop" }
+      ]
+    },
+    {
+      "name": "FlowerTub", "label": "flower tub", "category": "Building", "solid": true, "sprite": "buildings/barrel",
+      "description": "Half a barrel of red and yellow flowers by the inn's wall.",
+      "maxHp": 50, "flammability": 0.8,
+      "building": { "outdoor": true, "buildable": false, "work": 40, "cost": [] },
+      "model": [
+        { "min": [0.18, 0.18, 0], "max": [0.82, 0.82, 0.34], "top": "furniture/flowers", "side": "furniture/staves_across" },
+        { "min": [0.175, 0.175, 0.24], "max": [0.825, 0.825, 0.29], "top": "furniture/hoop", "side": "furniture/hoop" },
+        { "min": [0.26, 0.26, 0.34], "max": [0.74, 0.74, 0.46], "top": "furniture/flowers", "side": "furniture/flowers" }
       ]
     },
     {

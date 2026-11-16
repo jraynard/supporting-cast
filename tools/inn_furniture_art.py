@@ -183,6 +183,23 @@ def brass(seed=81):
     return img
 
 
+def flowers(seed=91):
+    """A tub's flowers from above: red and pink heads among green leaves, the soil dark between."""
+    rnd = random.Random(seed)
+    img = _field((70, 54, 40), seed, var=8)
+    px = img.load()
+    for _ in range(140):
+        x, y = rnd.randrange(S), rnd.randrange(S)
+        px[x, y] = rnd.choice([(74, 120, 54, 255), (88, 138, 60, 255), (60, 104, 46, 255)])
+    for _ in range(26):
+        x, y = rnd.randrange(1, S - 1), rnd.randrange(1, S - 1)
+        c = rnd.choice([(204, 54, 48, 255), (226, 98, 104, 255), (236, 196, 84, 255)])
+        for dx, dy in ((0, 0), (1, 0), (0, 1), (-1, 0), (0, -1)):
+            px[x + dx, y + dy] = c
+        px[x, y] = tint(c, 1.2)
+    return img
+
+
 def generate():
     for wood, base in WOODS.items():
         staves_across = lambda b: staves(b).transpose(Image.Transpose.TRANSPOSE)  # seen from above, along a cask lying along y
@@ -194,6 +211,7 @@ def generate():
                 save(img, f"furniture/{name}")
     save(hoop(), "furniture/hoop")
     save(brass(), "furniture/brass")
+    save(flowers(), "furniture/flowers")
     print("inn furniture: oak boards, legs, end grain, counter panels, staves, cask heads, hoops, brass")
 
 
