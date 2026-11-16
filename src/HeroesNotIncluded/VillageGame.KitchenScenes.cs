@@ -141,7 +141,7 @@ public sealed partial class VillageGame
             var gap = new float2(mid + (i - (parted - 1) * 0.5f) * 12 * px, block.Min.Y - 6 * px);
             dl.AddRectFilled(gap - new float2(px, 6 * px), gap + new float2(px, 6 * px), Gui.U8(Theme.Well), 0f, ImDrawFlags.None);
         }
-        PropTurned(dl, "cleaver", new float2(mid + Gui.S(30), block.Min.Y - 24 * px), new float2(0.8f, 0.5f), -40f + 50f * s.Cleaver, px);
+        PropTurned(dl, "cleaver", new float2(mid + Gui.S(30), block.Min.Y - 24 * px), new float2(0.8f, 0.5f), -15f, px);
         if (s.Blows > st.Count)
             for (var g = 0; g < 5; g++)
                 st.Motes.Add(new Mote(new float2(mid, block.Min.Y), new float2(mid + (g - 2) * 8 * px, block.Min.Y - 12 * px), _time, 0.4f));

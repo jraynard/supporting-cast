@@ -425,4 +425,15 @@ public class PointerTests
         var shaky = Swung(0f, 0f);
         Assert.True(shaky.Grade < steady.Grade, $"shaky {shaky.Grade}, steady {steady.Grade}");
     }
+
+    [Fact]
+    public void ThePressedButtonOnTheBirdPullsNothingTillItsDragged()
+    {
+        var s = new PluckSession { Rand = new SimRandom(3), Hands = new Hands(1f, 1f, 5) };
+        s.Begin();
+        // Pressed on the window's words, off the picture: still a grip, and held still it doesn't pull.
+        s.Advance([new WorkInput(0, WorkInputKind.Hold, 1), ClickOff(0)], 240);
+        Assert.True(s.Gripping);
+        Assert.True(s.Pull < 0.02f && s.Plucked < 0.01f && s.Tears == 0, $"pull {s.Pull}, plucked {s.Plucked}");
+    }
 }

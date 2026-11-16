@@ -336,11 +336,8 @@ public sealed class PluckSession : WorkSession
     private float _inHand;
     private bool _lost;
 
-    protected override void Clicked(float? u, float? v)
-    {
-        if (u is { } x && v is { } y)
-            (Gripping, GripU, GripV, _lost) = (true, x, y, false);
-    }
+    /// <summary>The mouse's button pressed: a grip, where it's pressed (off the bird's picture, at its middle). It pulls only as it's dragged.</summary>
+    protected override void Clicked(float? u, float? v) => (Gripping, GripU, GripV, _lost) = (true, u ?? 0.5f, v ?? 0.5f, false);
 
     public override int3? Focus(Simulation sim) => sim.World.IsAlive(Block) && sim.World.TryGet<Thing>(Block, out var t) ? t.Cell : null;
     public override Skill Skill => Skill.Cooking;
@@ -366,9 +363,10 @@ public sealed class PluckSession : WorkSession
         if (Held && !_lost)
         {
             var rise = PullPerStep * (1f + Hands.Tremor);
-            if (Gripping && PointU is { } u && PointV is { } v)
+            if (Gripping)
             {
                 // Dragged: toward how far, never quicker than a held F tightens; eased back as fast as it's let.
+                var (u, v) = (PointU ?? GripU, PointV ?? GripV);
                 var want = DragPull * MathF.Sqrt((u - GripU) * (u - GripU) + (v - GripV) * (v - GripV));
                 var shake = (Rand.NextFloat() * 2f - 1f) * Hands.Tremor * 0.01f;
                 Pull = Math.Max(0f, Pull + Math.Clamp(want - Pull, -rise * 3f, rise) + shake);

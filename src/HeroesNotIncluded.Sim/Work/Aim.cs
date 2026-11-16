@@ -10,8 +10,8 @@ namespace HeroesNotIncluded.Sim.Work;
 /// </summary>
 public struct Aim
 {
-    /// <summary>How far the hand carries the tool a step: across the whole work in about a second and a half.</summary>
-    public const float PerStep = 0.011f;
+    /// <summary>How far the hand carries the tool a step: across the whole work in under a second, keeping up with the mouse.</summary>
+    public const float PerStep = 0.02f;
 
     /// <summary>Steps after it last moved before the hand's settled.</summary>
     public const int SettleSteps = 18;

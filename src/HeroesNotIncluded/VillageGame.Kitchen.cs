@@ -25,18 +25,17 @@ public sealed partial class VillageGame
             BeginWork(s.Title, ("Space", "clap the lid on!"), ("F|Press and circle", "stir"), ("A/D|Wheel", "bank or feed the fire"), ("Esc", "leave it"));
         else
             BeginWork(s.Title, ("F|Press and circle", "stir"), ("A/D|Wheel", "bank or feed the fire"), ("Esc", "leave it"));
-        StewScene(s);
         TextC(Theme.Dim, s.Fatty ? "Keep it at a simmer, and stir before it catches. It's fatty: a hard boil spits." : "Keep it at a simmer, and stir before it catches.");
         var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(420, 180);
+        var size = Gui.S(420, 240);
         var min = ImGui.GetCursorScreenPos();
         ImGui.Dummy(in size);
         var max = min + size;
         Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
 
         // The fire under it: taller and brighter as it's fed.
-        var potMin = new float2(min.X + size.X * 0.25f, min.Y + size.Y * 0.28f);
-        var potMax = new float2(max.X - size.X * 0.25f, max.Y - Gui.S(44));
+        var potMin = new float2(min.X + size.X * 0.17f, min.Y + size.Y * 0.3f);
+        var potMax = new float2(max.X - size.X * 0.17f, max.Y - Gui.S(48));
         TakesPointer(potMin, potMax, wheel: true); // the pot: press in it and go round its middle; the wheel works the fire
         var fireY = max.Y - Gui.S(10);
         for (var i = 0; i < 9; i++)
@@ -582,7 +581,6 @@ public sealed partial class VillageGame
     private void DrawButcher(ButcherSession s)
     {
         BeginWork(s.Title, ("A/D|Point", "carry the cleaver over a mark"), ("F", "bring it down"), ("Esc", "leave it"));
-        ButcherScene(s);
         if (s.StartTick != _blockSession)
         {
             _blockSession = s.StartTick;
@@ -637,18 +635,30 @@ public sealed partial class VillageGame
                 dl.AddLine(in a, in b, new ImColor8(250, 240, 220, 230), Gui.S(2));
             }
         }
-        // The cleaver over the side, swaying till the hand's settled; down for a moment after a blow,
-        // where it came down (which may be off where it was held), then lifted back.
-        var sway = s.Settled ? 0f : MathF.Sin(_time * 21f) * Gui.S(2.5f);
-        var down = since < 0.15f && s.LastAt >= 0f;
-        var cx = sideA.X + len * (down ? s.LastAt : s.Cleaver) + (down ? 0f : sway);
-        var drop = down ? Gui.S(26) : s.Ready ? 0f : -Gui.S(8);
-        var bladeA = new float2(cx - Gui.S(12), sideA.Y - Gui.S(40) + drop);
-        var bladeB = new float2(cx + Gui.S(12), sideA.Y - Gui.S(14) + drop);
-        var steel = since < 0.3f ? (s.LastMark == 1 ? Theme.U8(Theme.Good) : Theme.U8(Theme.Bad)) : new ImColor8(200, 204, 212, 255);
-        dl.AddRectFilled(in bladeA, in bladeB, steel, Gui.S(2), ImDrawFlags.None);
-        var handleA = new float2(cx - Gui.S(3), bladeA.Y - Gui.S(22));
-        var handleB = new float2(cx + Gui.S(3), bladeA.Y);
+        // Where the last blow landed: a gash in the meat, green on a joint, red through bone.
+        if (since < 0.9f && s.LastAt >= 0f)
+        {
+            var gx = sideA.X + len * s.LastAt;
+            dl.AddLine(new float2(gx, sideA.Y - Gui.S(2)), new float2(gx, sideB.Y), Theme.U8(s.LastMark == 1 ? Theme.Good : Theme.Bad, 1f - since / 0.9f), Gui.S(3));
+        }
+        // The cleaver, edge on over where it's held: a faint line down to the meat where it would fall,
+        // swaying a little till the hand's settled. A blow drops it there; then it's lifted back.
+        var sway = s.Settled ? 0f : MathF.Sin(_time * 21f) * Gui.S(1.5f);
+        var cx = sideA.X + len * s.Cleaver + sway;
+        if (s.Ready)
+            dl.AddLine(new float2(cx, sideA.Y - Gui.S(12)), new float2(cx, sideB.Y), Theme.U8(s.Settled ? Theme.Text : Theme.Dim, 0.35f), Gui.S(1));
+        var lift = since < 0.05f ? since / 0.05f : since < 0.18f ? 1f - (since - 0.05f) / 0.13f : 0f; // down and back up
+        var drop = lift * Gui.S(30) - (s.Ready ? 0f : Gui.S(6) * (1f - lift));
+        var bladeA = new float2(cx - Gui.S(3), sideA.Y - Gui.S(44) + drop);
+        var bladeB = new float2(cx + Gui.S(3), sideA.Y - Gui.S(12) + drop);
+        var steel = since < 0.3f && s.LastAt >= 0f ? (s.LastMark == 1 ? Theme.U8(Theme.Good) : Theme.U8(Theme.Bad)) : new ImColor8(200, 204, 212, 255);
+        // The blade's flat a little to the side, its edge the line it falls on.
+        var flatA = new float2(cx, bladeA.Y);
+        var flatB = new float2(cx + Gui.S(16), bladeB.Y - Gui.S(4));
+        dl.AddRectFilled(in flatA, in flatB, new ImColor8(150, 154, 162, 255), Gui.S(2), ImDrawFlags.None);
+        dl.AddRectFilled(in bladeA, in bladeB, steel, Gui.S(1), ImDrawFlags.None);
+        var handleA = new float2(cx + Gui.S(8), bladeA.Y - Gui.S(22));
+        var handleB = new float2(cx + Gui.S(14), bladeA.Y + Gui.S(2));
         dl.AddRectFilled(in handleA, in handleB, new ImColor8(90, 60, 40, 255), Gui.S(2), ImDrawFlags.None);
         ImGui.Spacing();
         TextC(Theme.Dim, $"Joints parted: {s.Parted.Count(p => p)} of {ButcherSession.JointsAt.Length}. Through bone: {s.Hacks}. Blows left: {ButcherSession.MostBlows - s.Blows}.");
@@ -666,17 +676,24 @@ public sealed partial class VillageGame
     /// <summary>Plucking: the bird, its feathers thinning, and how hard the pull is.</summary>
     private void DrawPluck(PluckSession s)
     {
-        BeginWork(s.Title, ("F|Press and drag", "pull, let go to take the handful"), ("Esc", "leave it"));
-        PluckScene(s);
+        BeginWork(s.Title, ("F|Press and drag away", "pull, let go to take the handful"), ("Esc", "leave it"));
         var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(420, 150);
+        var size = Gui.S(420, 190);
         var min = ImGui.GetCursorScreenPos();
         ImGui.Dummy(in size);
         var max = min + size;
-        TakesPointer(min, max); // the bird: press on it and drag away
         Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
         // The bird: pale skin under a coat of feathers that thins as it's plucked.
-        var c = new float2((min.X + max.X) * 0.5f, min.Y + Gui.S(68));
+        var c = new float2((min.X + max.X) * 0.5f, min.Y + Gui.S(78));
+        // The mouse over a square round the bird, so a drag pulls as hard whichever way it goes.
+        var half = new float2(size.X, size.X) * 0.5f;
+        TakesPointer(c - half, c + half);
+        var gripAt = c - half + new float2(s.GripU, s.GripV) * size.X;
+        var hand = ImGui.GetMousePos();
+        var gripping = s.Gripping && s.Held && UsingPointer;
+        // Gripped, the skin's drawn out toward the hand as hard as it's pulled.
+        var toward = gripping && hand != gripAt ? (hand - gripAt) / MathF.Max(1f, MathF.Sqrt((hand - gripAt).X * (hand - gripAt).X + (hand - gripAt).Y * (hand - gripAt).Y)) : new float2(0f, -1f);
+        c += toward * Gui.S(6) * Math.Min(1f, s.Pull);
         var stretch = 1f + 0.12f * s.Pull;
         dl.AddEllipseFilled(in c, new float2(Gui.S(70), Gui.S(40) * stretch), new ImColor8(236, 206, 176, 255), 0f, 32);
         var feathers = (int)MathF.Round(48 * (1f - s.Plucked));
@@ -688,13 +705,17 @@ public sealed partial class VillageGame
             var tip = at + new float2(Gui.S(7), -Gui.S(3));
             dl.AddLine(in at, in tip, new ImColor8(150, 120, 90, 255), Gui.S(3));
         }
-        // A grip by the mouse: a line from where it took hold to the hand, drawn as tight as the pull.
-        if (s.Gripping && s.Held)
+        // A grip by the mouse: a tuft of feathers drawn out from where it took hold to the hand, as tight as the pull.
+        if (gripping)
         {
-            var grip = min + new float2(s.GripU * size.X, s.GripV * size.Y);
-            var hand = ImGui.GetMousePos();
-            dl.AddLine(in grip, in hand, Theme.U8(s.Taut ? Theme.Warn : Theme.Text, 0.5f + 0.4f * Math.Min(1f, s.Pull)), Gui.S(1.5f + 2f * Math.Min(1f, s.Pull)));
-            dl.AddCircleFilled(in grip, Gui.S(4), Theme.U8(Theme.Text, 0.8f), 12);
+            var tight = Theme.U8(s.Taut ? Theme.Warn : s.Pull >= 0.5f ? Theme.Good : Theme.Text, 0.5f + 0.4f * Math.Min(1f, s.Pull));
+            for (var k = -2; k <= 2; k++)
+            {
+                var side = new float2(-toward.Y, toward.X) * Gui.S(2.5f) * k;
+                dl.AddLine(gripAt + side * 0.4f, hand + side, tight, Gui.S(1.5f + 1.5f * Math.Min(1f, s.Pull)));
+            }
+            dl.AddCircleFilled(in hand, Gui.S(7), new ImColor8(222, 184, 150, 255), 16);
+            dl.AddCircleFilled(in gripAt, Gui.S(3), Theme.U8(Theme.Text, 0.8f), 12);
         }
         // How hard it's pulled: taut past the mark, and it'll tear somewhere beyond.
         var barA = new float2(min.X + Gui.S(60), max.Y - Gui.S(22));
@@ -712,13 +733,17 @@ public sealed partial class VillageGame
         dl.AddLine(in ta, in tb, Theme.U8(Theme.Warn), Gui.S(2));
         ImGui.Spacing();
         Bar("Plucked", s.Plucked, Theme.Accent);
-        var (col, say) = s.Taut ? (Theme.Warn, "The skin's pulling taut...")
+        var (col, say) = s.Taut ? (Theme.Warn, "The skin's pulling taut: let go!")
+            : s.Held && s.Pull >= 0.5f ? (Theme.Good, "That's firm: let go to take the handful.")
+            : gripping && s.Pull < 0.15f ? (Theme.Text, "Drag away from the bird to pull.")
+            : s.Held ? (Theme.Text, "Pulling... past the green mark, then let go.")
             : s.LastMark switch
             {
-                -1 => (Theme.Bad, "It tore!"),
+                -1 => (Theme.Bad, "It tore! Shorter pulls."),
                 1 => (Theme.Good, "A good handful."),
                 0 => (Theme.Dim, "A few feathers. Pull firmer."),
-                _ => (Theme.Dim, "Grip and pull: let go past the green mark, before it's taut."),
+                _ => (Theme.Dim, UsingPointer ? "Press on the bird and drag away to pull; let go past the green mark, before it's taut."
+                    : "Hold to pull; let go past the green mark, before it's taut."),
             };
         TextC(col, say);
         if (s.Tears > 0)
@@ -774,8 +799,7 @@ public sealed partial class VillageGame
     /// <summary>Chopping on the knife's beat: the knife rising and falling over the food, cutting its way along it, and what the last cut did.</summary>
     private void DrawChop(ChopSession s)
     {
-        BeginWork(s.Title, ("F", "cut as the knife comes down"), ("Esc", "put the knife down"));
-        ChopScene(s);
+        BeginWork(s.Title, ("F", "cut as a line reaches the blade"), ("Esc", "put the knife down"));
         if (s.StartTick != _chopSession)
         {
             _chopSession = s.StartTick;
@@ -793,9 +817,10 @@ public sealed partial class VillageGame
         ImGui.Dummy(in size);
         var max = min + size;
         Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
-        // The board, and the food lying along it.
-        var boardA = new float2(min.X + Gui.S(40), max.Y - Gui.S(28));
-        var boardB = new float2(max.X - Gui.S(40), max.Y - Gui.S(12));
+        // The board, the knife held still over it, and the food fed along under the blade from the
+        // right, a line on it where each slice should come off: cut as a line reaches the blade.
+        var boardA = new float2(min.X + Gui.S(16), max.Y - Gui.S(28));
+        var boardB = new float2(max.X - Gui.S(16), max.Y - Gui.S(12));
         dl.AddRectFilled(in boardA, in boardB, new ImColor8(150, 110, 70, 255), Gui.S(3), ImDrawFlags.None);
         var food = s.Label switch
         {
@@ -803,47 +828,62 @@ public sealed partial class VillageGame
             "raw fish" => new ImColor8(150, 160, 170, 255),
             _ => new ImColor8(170, 70, 60, 255),
         };
-        var foodA = new float2(boardA.X + Gui.S(50), boardA.Y - Gui.S(26));
-        var foodB = new float2(boardB.X - Gui.S(50), boardA.Y);
-        // Cut from the left: the slices already off it set a little apart.
-        var width = foodB.X - foodA.X;
-        float CutX(int i) => foodA.X + width * i / (float)(s.Needed + 1);
-        var prev = foodA.X;
-        for (var i = 1; i <= s.Cuts + 1; i++)
+        var top = boardA.Y - Gui.S(26);
+        var knifeX = min.X + size.X * 0.42f;
+        var spacing = Gui.S(44);                                   // a slice's width: a beat's feed
+        var perStep = spacing / ChopSession.Beat;
+        // Where the food is fed to: a line reaches the blade every beat, the last one Phase steps ago.
+        float LineX(int k) => knifeX + (k * ChopSession.Beat - s.Phase) * perStep;
+        var nextLine = LineX(s.Phase == 0 ? 0 : 1);
+        // The strike zone round the blade: a line in it is a clean cut.
+        var zone = ChopSession.Window * s.Hands.Tolerance * perStep;
+        dl.AddRectFilled(new float2(knifeX - zone, top - Gui.S(6)), new float2(knifeX + zone, boardA.Y + Gui.S(2)), Theme.U8(Theme.Good, 0.18f), 0f, ImDrawFlags.None);
+        // The food: from the blade off to the right, as long as there's still to cut.
+        var left = Math.Max(0, s.Needed - s.Cuts);
+        var foodEnd = Math.Min(boardB.X, knifeX + spacing * (left + 0.6f) + (nextLine - knifeX));
+        dl.AddRectFilled(new float2(knifeX - Gui.S(2), top), new float2(foodEnd, boardA.Y), food, Gui.S(4), ImDrawFlags.None);
+        // The line just past the blade still counts while it's in the green, unless it's been cut.
+        var justCut = (_time - _chopAt) * SimClock.TicksPerSecond <= s.Phase + 1;
+        if (s.Phase > 0 && s.Phase <= zone / perStep && left > 0 && !justCut)
+            for (var y = top + Gui.S(2); y < boardA.Y - Gui.S(2); y += Gui.S(6))
+                dl.AddLine(new float2(LineX(0), y), new float2(LineX(0), y + Gui.S(3)), Theme.U8(Theme.Good), Gui.S(3));
+        for (var k = 0; k < left && k < 12; k++)
         {
-            var end = i <= s.Cuts ? CutX(i) : foodB.X;
-            var shift = (s.Cuts + 1 - i) * -Gui.S(3);
-            var a = new float2(prev + shift + Gui.S(1), foodA.Y);
-            var b = new float2(end + shift - Gui.S(1), foodB.Y);
-            dl.AddRectFilled(in a, in b, food, Gui.S(3), ImDrawFlags.None);
-            prev = end;
+            var x = nextLine + k * spacing;
+            if (x > foodEnd - Gui.S(4))
+                break;
+            var near = MathF.Abs(x - knifeX) <= zone;
+            for (var y = top + Gui.S(2); y < boardA.Y - Gui.S(2); y += Gui.S(6))
+                dl.AddLine(new float2(x, y), new float2(x, y + Gui.S(3)), near ? Theme.U8(Theme.Good) : new ImColor8(250, 240, 220, 200), Gui.S(near ? 3 : 2));
         }
-        // The knife over where the next cut goes: high between beats, down to the food on the beat.
-        var lift = (float)s.Off / (ChopSession.Beat / 2f);
-        var x = CutX(Math.Min(s.Cuts + 1, s.Needed));
-        var edge = foodA.Y - lift * Gui.S(44);
-        var bladeA = new float2(x - Gui.S(3), edge - Gui.S(30));
-        var bladeB = new float2(x + Gui.S(3), edge);
+        // The slices already off, pushed away to the left of the blade.
+        for (var i = 0; i < Math.Min(s.Cuts, 7); i++)
+        {
+            var x1 = knifeX - Gui.S(8) - i * (spacing * 0.55f + Gui.S(4));
+            var x0 = x1 - spacing * 0.55f;
+            if (x0 < boardA.X)
+                break;
+            dl.AddRectFilled(new float2(x0, top + Gui.S(6)), new float2(x1, boardA.Y), food, Gui.S(3), ImDrawFlags.None);
+        }
+        // The knife: held up, dropped to the board the moment you cut.
+        var cut = _time - _workPressedAt;
+        var lift = cut < 0.06f ? 0f : cut < 0.2f ? (cut - 0.06f) / 0.14f : 1f;
+        var edge = boardA.Y - lift * Gui.S(38);
+        var bladeA = new float2(knifeX - Gui.S(3), edge - Gui.S(34));
+        var bladeB = new float2(knifeX + Gui.S(3), edge);
         var flash = _time - _chopAt < 0.25f;
-        var steel = s.LastMark == -1 && flash ? new ImColor8(230, 90, 80, 255) : new ImColor8(210, 214, 220, 255);
+        var steel = s.LastMark == -1 && flash ? new ImColor8(230, 90, 80, 255) : s.LastMark == 1 && flash ? Theme.U8(Theme.Good) : new ImColor8(210, 214, 220, 255);
         dl.AddRectFilled(in bladeA, in bladeB, steel, Gui.S(1), ImDrawFlags.None);
-        var handleA = new float2(x - Gui.S(4), bladeA.Y - Gui.S(16));
-        var handleB = new float2(x + Gui.S(4), bladeA.Y);
+        var handleA = new float2(knifeX - Gui.S(4), bladeA.Y - Gui.S(18));
+        var handleB = new float2(knifeX + Gui.S(4), bladeA.Y);
         dl.AddRectFilled(in handleA, in handleB, new ImColor8(90, 60, 40, 255), Gui.S(2), ImDrawFlags.None);
-        if (flash && s.LastMark == 1)
-        {
-            var cx = CutX(s.Cuts);
-            var ca = new float2(cx - Gui.S(1), foodA.Y - Gui.S(4));
-            var cb = new float2(cx + Gui.S(1), foodB.Y + Gui.S(2));
-            dl.AddRectFilled(in ca, in cb, Theme.U8(Theme.Good), 0f, ImDrawFlags.None);
-        }
         ImGui.Spacing();
         Bar("Cuts", s.Needed == 0 ? 0f : s.Cuts / (float)s.Needed, Theme.Accent);
         var (colour, said) = s.LastMark switch
         {
             1 => (Theme.Good, "Clean."),
             -1 => (Theme.Bad, "The knife slips!"),
-            _ => (Theme.Dim, s.StepsDone > 0 && s.Cuts > 0 ? "Off the beat: wait for it." : "Wait for the knife to come down."),
+            _ => (Theme.Dim, s.StepsDone > 0 && s.Cuts > 0 ? "Missed it: cut as the line's in the green." : "Cut as each line reaches the blade."),
         };
         TextC(colour, said);
         EndWork();

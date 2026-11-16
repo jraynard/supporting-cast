@@ -70,6 +70,8 @@ public sealed partial class VillageGame
         // The mouse over the work's window: the left button is F, the right Space, and where it points
         // over the picture (or a place marked to click) steers the games that take it.
         var mouse = live && session >= 0 ? MouseOnWork(session) : WorkMouse.None;
+        if ((f && map.Pressed(Act.Use)) || mouse.Click >= 0)
+            _workPressedAt = _time;
         _work.Update(_sim, _avatar, steps, (f && map.Pressed(Act.Use)) || mouse.Press, f && live && (map.Down(Act.Use) || mouse.Held),
             axis != 0 ? axis : mouse.Axis, Issue, axis2 != 0 ? axis2 : mouse.Axis2, rune >= 0 ? rune : mouse.Rune, act || mouse.Act, mouse.Point, mouse.Click);
     }
@@ -82,6 +84,9 @@ public sealed partial class VillageGame
 
     /// <summary>A place on a mini-game's picture that a click works as a key would (a rune, one side, the other action).</summary>
     private readonly record struct WorkSpot(float2 Min, float2 Max, WorkInputKind Kind, int Value);
+
+    // When F (or a click) last went down on the work: a drawing that answers a press at once (the knife falling) reads it.
+    private float _workPressedAt = -10f;
 
     // What the last frame's draw of the work marked for the mouse (BeginWork, TakesPointer, ClickSpot), and for which session.
     private (float2 Min, float2 Max)? _workWindow, _pointArea;
