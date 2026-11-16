@@ -204,7 +204,7 @@ public class InnKeysTests
     }
 
     [Fact]
-    public void SigningInOnCueWritesThemIntoTheBook()
+    public void SigningInWritesThemIntoTheBook()
     {
         var (sim, party, player) = Tavern("Innkeeper");
         var guest = party[0];
@@ -219,13 +219,8 @@ public class InnKeysTests
         for (var t = 0; t < 60 * 30 && sim.World.Has<WorkSession>(player); t++)
         {
             sim.Tick();
-            var press = false;
-            if (predictor.Session is SignInSession s)
-            {
-                press = s.OnCue && !was;
-                was = s.OnCue;
-            }
-            predictor.Update(sim, player, 1, press, false, 0, c => sim.ApplyNow(c));
+            var (press, held, axis) = RoomWork(predictor.Session, ref was);
+            predictor.Update(sim, player, 1, press, held, axis, c => sim.ApplyNow(c));
         }
         sim.Tick();
         Assert.True(Ledger.SignedIn(sim, board, guest));

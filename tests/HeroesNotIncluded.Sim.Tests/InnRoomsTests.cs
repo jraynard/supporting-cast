@@ -137,13 +137,8 @@ public class InnRoomsTests
         for (var t = 0; t < 60 * 30 && sim.World.Has<WorkSession>(me); t++)
         {
             sim.Tick();
-            var press = false;
-            if (predictor.Session is MakeBedSession s)
-            {
-                press = s.OnCue && !was;
-                was = s.OnCue;
-            }
-            predictor.Update(sim, me, 1, press, false, 0, c => sim.ApplyNow(c));
+            var (press, held, axis) = RoomWork(predictor.Session, ref was);
+            predictor.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c));
         }
         sim.Tick();
         Assert.False(Lodging.IsUnmade(sim, bed));

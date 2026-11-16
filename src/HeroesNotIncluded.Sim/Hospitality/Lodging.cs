@@ -128,24 +128,67 @@ public sealed class LodgingSystem : ISimSystem
     }
 }
 
+/// <summary>The steps of making up a bed, in order.</summary>
+public enum BedStep : byte
+{
+    /// <summary>Last night's sheet dragged off: hold F.</summary>
+    Strip,
+
+    /// <summary>The clean sheet shaken out: press F as it billows to the top, and it settles flat.</summary>
+    Spread,
+
+    /// <summary>Its corners tucked under, left and right in turn: A, D, A, D.</summary>
+    Tuck,
+}
+
 /// <summary>
-/// Making up a slept-in bed: strip it, smooth the sheet, tuck it in. Three movements, each pressed
-/// as the hands come round to it; a fumble only costs time.
+/// Making up a slept-in bed, a step each way of working it. Strip: hold F and last night's sheet
+/// comes off (let go and it slides back a little). Spread: the clean sheet billows; press F at the
+/// top of the billow and it floats down flat, anywhere else and it flops and is shaken out again.
+/// Tuck: the corners go under in turn, A for the left and D for the right. Nothing's spoiled by a
+/// fumble; it only takes longer.
 /// </summary>
 public sealed class MakeBedSession : WorkSession
 {
-    public const int Moves = 3;
+    /// <summary>Seconds of holding F to strip it.</summary>
+    public const float StripSeconds = 0.9f;
 
-    /// <summary>Seconds a movement takes.</summary>
-    public const float Beat = 0.7f;
+    /// <summary>Seconds a billow takes, up and down.</summary>
+    public const float Beat = 0.9f;
+
+    /// <summary>Corners to tuck.</summary>
+    public const int Corners = 4;
+
+    /// <summary>Steps a flopped sheet lies before it can be shaken out again.</summary>
+    public const int FlopSteps = 20;
 
     public Entity Bed { get; set; } = Entity.Null;
 
-    public int Movements { get; private set; }
+    public BedStep At { get; private set; }
 
-    public float Sweep => Triangle(StepsDone, Beat);
+    /// <summary>How far the old sheet's off, 0..1.</summary>
+    public float Stripped { get; private set; }
 
-    public bool OnCue => Sweep > 0.78f;
+    /// <summary>Corners tucked so far.</summary>
+    public int Tucked { get; private set; }
+
+    /// <summary>Steps since the spread began (the billow's clock), and the step a sheet last flopped (-1: never).</summary>
+    public int SpreadSteps { get; private set; }
+    public int FloppedAt { get; private set; } = -1;
+
+    /// <summary>The clean sheet's lift as it's shaken, 0 (down) to 1 (billowed full).</summary>
+    public float Billow => Triangle(SpreadSteps, Beat);
+
+    /// <summary>A flopped sheet's still lying in a heap.</summary>
+    public bool Flopped => FloppedAt >= 0 && StepsDone - FloppedAt < FlopSteps;
+
+    public bool OnCue => At == BedStep.Spread && !Flopped && Billow > 0.8f;
+
+    /// <summary>The side the next corner's on: -1 the left (A), 1 the right (D).</summary>
+    public int NextSide => Tucked % 2 == 0 ? -1 : 1;
+
+    /// <summary>Steps through the whole of it, for its sounds: one per step finished and per corner.</summary>
+    public int Movements => (int)At + Tucked;
 
     public override int3? Focus(Simulation sim) => sim.World.IsAlive(Bed) && sim.World.TryGet<Thing>(Bed, out var t) ? t.Cell : null;
 
@@ -158,14 +201,37 @@ public sealed class MakeBedSession : WorkSession
 
     protected override void Press()
     {
-        if (!OnCue)
+        if (At != BedStep.Spread || Flopped)
             return;
-        Movements++;
-        if (Movements >= Moves)
+        if (Billow > 0.8f)
+            At = BedStep.Tuck;
+        else
+            FloppedAt = StepsDone;
+    }
+
+    protected override void Axis(int value)
+    {
+        if (At != BedStep.Tuck || value == 0 || value != NextSide)
+            return;
+        if (++Tucked >= Corners)
             Done = true;
     }
 
-    protected override void Step() { }
+    protected override void Step()
+    {
+        switch (At)
+        {
+            case BedStep.Strip:
+                Stripped = Math.Clamp(Stripped + (Held ? 1f : -0.4f) / (StripSeconds * SimClock.TicksPerSecond), 0f, 1f);
+                if (Stripped >= 1f)
+                    At = BedStep.Spread;
+                break;
+            case BedStep.Spread:
+                if (!Flopped)
+                    SpreadSteps++;
+                break;
+        }
+    }
 
     /// <summary>
     /// Made up: a clean sheet on, last night's off (into the worker's pack, for the wash), and
@@ -195,12 +261,20 @@ public sealed class MakeBedSession : WorkSession
     protected override void WriteState(SaveWriter w)
     {
         w.Entity(Bed);
-        w.Int(Movements);
+        w.Byte((byte)At);
+        w.Float(Stripped);
+        w.Int(Tucked);
+        w.Int(SpreadSteps);
+        w.Int(FloppedAt);
     }
 
     protected override void ReadState(SaveReader r)
     {
         Bed = r.Entity();
-        Movements = r.Int();
+        At = (BedStep)r.Byte();
+        Stripped = r.Float();
+        Tucked = r.Int();
+        SpreadSteps = r.Int();
+        FloppedAt = r.Int();
     }
 }

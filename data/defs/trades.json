@@ -18,7 +18,7 @@
                 "Your prices hang on the sign (~J~). Too dear and they go thirsty. Too cheap and so do you.",
                 "Lucky Lou's under the bar. You'll know when. ~F~ at the counter.",
                 "A room: ~F~ at the key board behind the bar, write the guest into the book, take that room's key down and hand it over. The wrong key sends them in on someone.",
-                "When a guest's gone, their room wants turning round: clean linen from the storeroom on the bed, the pot into a bucket and out to the midden, water in the jug." ],
+                "When a guest's gone, their room wants turning round: clean linen from the storeroom on the bed (hold ~F~ to strip it, ~F~ as the sheet billows, ~A~ ~D~ to tuck), the pot into an empty bucket and out to the midden behind the inn, a bucket of water from the well into the jug." ],
       "lessons": [
         { "id": "ale", "title": "Pour an ale", "customers": "Thirsty",
           "blurb": "Serve a customer an ale and get paid.",

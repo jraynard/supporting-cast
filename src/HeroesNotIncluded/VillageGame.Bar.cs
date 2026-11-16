@@ -313,16 +313,29 @@ public sealed partial class VillageGame
         EndWork();
     }
 
-    /// <summary>Making up a bed: three movements, each as the hands come round.</summary>
+    /// <summary>Making up a bed: strip it (hold F), shake the clean sheet out (F at the top), tuck it in (A and D in turn).</summary>
     private void DrawMakeBed(Sim.Hospitality.MakeBedSession s)
     {
-        BeginWork(s.Title, ("F", "as the hands come round"), ("Esc", "leave it"));
-        MakeBedScene(s.Movements, s.Sweep, s.OnCue);
-        TextC(Theme.Dim, "Clean linen on, last night's into your pack for the wash tub.");
-        string[] moves = ["Strip it", "Smooth the sheet", "Tuck it in"];
-        for (var i = 0; i < moves.Length; i++)
-            TextC(i < s.Movements ? Theme.Good : i == s.Movements ? Theme.Accent : Theme.Dim, (i < s.Movements ? "Done: " : "") + moves[i]);
-        Bar("", s.Sweep, s.OnCue ? Theme.Good : Theme.Dim);
+        var hints = s.At switch
+        {
+            Sim.Hospitality.BedStep.Strip => new[] { ("F", "hold to pull the old sheet off"), ("Esc", "leave it") },
+            Sim.Hospitality.BedStep.Spread => [("F", "as the sheet billows to the top"), ("Esc", "leave it")],
+            _ => [("A", "tuck the head end"), ("D", "tuck the foot"), ("Esc", "leave it")],
+        };
+        BeginWork(s.Title, hints);
+        MakeBedScene(s.At, s.Stripped, s.Billow, s.Flopped, s.OnCue, s.Tucked, s.NextSide);
+        string[] steps = ["Strip it", "Shake out a clean sheet", "Tuck it in"];
+        for (var i = 0; i < steps.Length; i++)
+        {
+            var at = (int)s.At;
+            var line = i == 2 && at == 2 ? $"{steps[i]}: {s.Tucked} of {Sim.Hospitality.MakeBedSession.Corners} corners" : steps[i];
+            TextC(i < at ? Theme.Good : i == at ? Theme.Accent : Theme.Dim, (i < at ? "Done: " : "") + line);
+        }
+        if (s.At == Sim.Hospitality.BedStep.Strip)
+            Bar("", s.Stripped, Theme.Accent);
+        else if (s.At == Sim.Hospitality.BedStep.Spread)
+            Bar("", s.Flopped ? 0f : s.Billow, s.OnCue ? Theme.Good : Theme.Dim);
+        TextC(Theme.Dim, s.Flopped ? "It flopped. Shake it out again." : "Clean linen on, last night's into your pack for the wash tub.");
         EndWork();
     }
 

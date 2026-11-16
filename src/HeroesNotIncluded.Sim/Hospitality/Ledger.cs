@@ -107,32 +107,33 @@ public static class Ledger
 }
 
 /// <summary>
-/// Signing a guest in: their name, the room and the night, written into the book a stroke at a
-/// time, each pressed as the quill comes round to it. A stroke off the beat blots and is written
-/// again: it only costs time.
+/// Signing a guest in: press F and the quill writes their name, the room and the night into the
+/// book. There's nothing to get wrong here (the choice that matters was the room); the writing is
+/// to watch, and takes a moment.
 /// </summary>
 public sealed class SignInSession : WorkSession
 {
-    public const int Strokes = 4;
+    /// <summary>Seconds the quill takes over a line.</summary>
+    public const float WriteSeconds = 1.1f;
 
-    /// <summary>Seconds a stroke takes.</summary>
-    public const float Beat = 0.55f;
+    private const int WriteSteps = (int)(WriteSeconds * SimClock.TicksPerSecond);
 
     public Entity Board { get; set; } = Entity.Null;
     public Entity Guest { get; set; } = Entity.Null;
     public int Room { get; set; }
 
-    public int Written { get; private set; }
-    public int Blots { get; private set; }
+    /// <summary>Steps the quill has been writing (0: not begun).</summary>
+    public int Writing { get; private set; }
 
-    public float Sweep => Triangle(StepsDone, Beat);
+    public bool Begun => Writing > 0;
 
-    public bool OnCue => Sweep > 0.75f;
+    /// <summary>How far along the line the quill's got, 0..1.</summary>
+    public float Ink => Math.Clamp(Writing / (float)WriteSteps, 0f, 1f);
 
     public override int3? Focus(Simulation sim) => sim.World.IsAlive(Board) && sim.World.TryGet<Thing>(Board, out var t) ? t.Cell : null;
 
     public override Skill Skill => Skill.Social;
-    public override float Xp => 1.5f;
+    public override float Xp => 1f;
     public override string Title => $"Writing them into room {Room}";
 
     public override bool StillValid(Simulation sim) =>
@@ -140,17 +141,17 @@ public sealed class SignInSession : WorkSession
 
     protected override void Press()
     {
-        if (!OnCue)
-        {
-            Blots++;
-            return;
-        }
-        Written++;
-        if (Written >= Strokes)
-            Done = true;
+        if (Writing == 0)
+            Writing = 1;
     }
 
-    protected override void Step() { }
+    protected override void Step()
+    {
+        if (Writing == 0)
+            return;
+        if (++Writing > WriteSteps)
+            Done = true;
+    }
 
     public override void Finish(Simulation sim)
     {
@@ -163,8 +164,7 @@ public sealed class SignInSession : WorkSession
         w.Entity(Board);
         w.Entity(Guest);
         w.Int(Room);
-        w.Int(Written);
-        w.Int(Blots);
+        w.Int(Writing);
     }
 
     protected override void ReadState(SaveReader r)
@@ -172,8 +172,7 @@ public sealed class SignInSession : WorkSession
         Board = r.Entity();
         Guest = r.Entity();
         Room = r.Int();
-        Written = r.Int();
-        Blots = r.Int();
+        Writing = r.Int();
     }
 }
 

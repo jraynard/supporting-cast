@@ -57,17 +57,14 @@ public class InnTurnoverTests
         for (var t = 0; t < 60 * 30 && sim.World.Has<WorkSession>(me); t++)
         {
             sim.Tick();
-            var press = false;
-            var cue = predictor.Session switch { SlopSession s => s.OnCue, MakeBedSession b => b.OnCue, SignInSession i => i.OnCue, _ => false };
-            if (miss > 0 && !cue && t % 7 == 0 && t > 3)
+            var cue = predictor.Session is SlopSession sl && sl.OnCue;
+            var (press, held, axis) = RoomWork(predictor.Session, ref was);
+            if (miss > 0 && predictor.Session is SlopSession && !cue && t % 7 == 0 && t > 3)
             {
                 press = true;
                 miss--;
             }
-            else
-                press = cue && !was;
-            was = cue;
-            predictor.Update(sim, me, 1, press, false, 0, c => sim.ApplyNow(c));
+            predictor.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c));
         }
         sim.Tick();
     }
@@ -173,6 +170,76 @@ public class InnTurnoverTests
         for (var i = 0; i < 64 && w.Query<Thing>().Any(e => w.Get<Thing>(e).Def.Name == RoomChores.SoiledDef); i++)
             sim.TickMany(SimClock.TicksPerHour / 8);
         Assert.DoesNotContain(w.Query<Thing>(), e => w.Get<Thing>(e).Def.Name == RoomChores.SoiledDef);
+    }
+
+    [Fact]
+    public void FAtAnEmptyJugWithABucketOfWaterFillsItRatherThanThrowing()
+    {
+        var (sim, _, me) = Tavern("Innkeeper");
+        var stand = RoomChores.FixtureOf(sim, Room(sim, 3), RoomChores.StandDef);
+        sim.World.Add(stand, new JugEmpty());
+        Beside(sim, me, stand);
+        InHand(sim, me, Environment.Buckets.Full);
+        var cell = sim.World.Get<Thing>(stand).Cell;
+        var action = AvatarSystem.ActionAt(sim, me, cell);
+        Assert.Equal(AvatarActionKind.BarWork, action.Kind);
+        Assert.Equal("Fill the jug", action.Label);
+        sim.ApplyNow(new AvatarWorkCommand(me, true, cell));
+        Assert.False(sim.World.Has<JugEmpty>(stand));
+        // Filled, the bucket's for throwing again.
+        InHand(sim, me, Environment.Buckets.Full);
+        Assert.Equal(AvatarActionKind.ThrowWater, AvatarSystem.ActionAt(sim, me, cell).Kind);
+    }
+
+    [Fact]
+    public void ABedIsStrippedHeldThenSpreadOnTheBillowThenTuckedSideBySide()
+    {
+        var (sim, _, me) = Tavern("Innkeeper");
+        var bed = Room(sim, 1);
+        sim.World.Add(bed, new Unmade());
+        Beside(sim, me, bed);
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing(RoomChores.LinenDef), 1));
+        var s = new MakeBedSession { Bed = bed };
+        WorkSystem.Start(sim, me, s);
+        var step = 0;
+        void Run(int steps, params WorkInput[] inputs)
+        {
+            s.Advance(inputs.Select(i => i with { Step = step + i.Step }).ToList(), step + steps);
+            step += steps;
+        }
+        // Not held: nothing comes off. Held long enough: stripped.
+        Run(30);
+        Assert.Equal(BedStep.Strip, s.At);
+        Run(80, new WorkInput(0, WorkInputKind.Hold, 1));
+        Assert.Equal(BedStep.Spread, s.At);
+        // Pressed low in the billow, it flops and lies a moment; at the top, it's laid.
+        while (s.Billow > 0.3f || s.Billow == 0f) Run(1);
+        Run(1, new WorkInput(0, WorkInputKind.Press));
+        Assert.True(s.Flopped);
+        Assert.Equal(BedStep.Spread, s.At);
+        Run(MakeBedSession.FlopSteps);
+        while (!s.OnCue) Run(1);
+        Run(1, new WorkInput(0, WorkInputKind.Press));
+        Assert.Equal(BedStep.Tuck, s.At);
+        // The wrong side does nothing; A then D, twice over, tucks all four.
+        Run(2, new WorkInput(0, WorkInputKind.Axis, 1), new WorkInput(1, WorkInputKind.Axis, 0));
+        Assert.Equal(0, s.Tucked);
+        foreach (var side in new[] { -1, 1, -1, 1 })
+            Run(2, new WorkInput(0, WorkInputKind.Axis, side), new WorkInput(1, WorkInputKind.Axis, 0));
+        Assert.True(s.Done);
+    }
+
+    [Fact]
+    public void SigningInIsOnePressAndAMomentsWriting()
+    {
+        var s = new SignInSession { Room = 2 };
+        s.Advance([], 120);
+        Assert.False(s.Begun);
+        Assert.False(s.Done);
+        s.Advance([new WorkInput(120, WorkInputKind.Press)], 121);
+        Assert.True(s.Begun);
+        s.Advance([], 121 + (int)(SignInSession.WriteSeconds * SimClock.TicksPerSecond) + 2);
+        Assert.True(s.Done);
     }
 
     [Fact]

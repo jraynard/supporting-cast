@@ -12,6 +12,30 @@ public static class TestWorld
 
     public static DefDatabase LoadDefs() => Defs.Value;
 
+    /// <summary>
+    /// The inputs a careful player gives the room chores' sessions this step (as the bot does):
+    /// sign-in, one press; a bed, held to strip, pressed at the billow's top, A and D in turn to
+    /// tuck; slops, pressed on the cue. <paramref name="was"/> keeps a cue's edge between steps.
+    /// </summary>
+    public static (bool Press, bool Held, int Axis) RoomWork(Work.WorkSession? s, ref bool was)
+    {
+        bool Edge(bool cue, ref bool was)
+        {
+            var press = cue && !was;
+            was = cue;
+            return press;
+        }
+        return s switch
+        {
+            Hospitality.SignInSession i => (!i.Begun, false, 0),
+            Hospitality.MakeBedSession { At: Hospitality.BedStep.Strip } => (false, true, 0),
+            Hospitality.MakeBedSession { At: Hospitality.BedStep.Spread } b => (Edge(b.OnCue, ref was), false, 0),
+            Hospitality.MakeBedSession b => (false, false, b.StepsDone % 4 < 2 ? b.NextSide : 0),
+            Hospitality.SlopSession sl => (Edge(sl.OnCue, ref was), false, 0),
+            _ => (false, false, 0),
+        };
+    }
+
     /// <summary>An empty two-level map (grass ground at z = 0, air above) with the standard systems, at a fixed seed.</summary>
     public static Simulation Create(int width = 40, int height = 40, ulong seed = 1, int depth = Simulation.DefaultDepth)
     {

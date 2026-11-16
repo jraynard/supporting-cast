@@ -304,29 +304,35 @@ public sealed partial class VillageGame
 
     // ---------------- The rooms ----------------
 
-    /// <summary>The book open on the board, today's line written a stroke at a time, blots where the quill slipped.</summary>
-    private void SignInScene(SignInSession s)
+    /// <summary>
+    /// The book open on the board, the guest's line ("Gorran, room 3") written out on today's page by the
+    /// quill a letter at a time once it's begun; till then the quill waits at the line's start.
+    /// </summary>
+    private void SignInScene(float ink, bool writing, string line)
     {
         var (dl, min, max, px) = WorkScene(150);
         var floor = max.Y - Gui.S(6);
         var mid = (min.X + max.X) * 0.5f;
         if (Prop(dl, "ledger_page", new float2(mid, floor), px) is not { } page)
             return;
-        var ink = Gui.U8(new float4(0.16f, 0.13f, 0.12f, 1f));
-        var lineY = page.Min.Y + 32 * px;
-        var x0 = page.Min.X + 50 * px;
-        var span = 9 * px;
-        for (var i = 0; i < s.Written; i++)
-            for (var k = 0; k < 4; k++)
-            {
-                var a = new float2(x0 + span * i + k * 2 * px, lineY + MathF.Sin(k * 1.7f + i) * px);
-                var b = a + new float2(2 * px, MathF.Cos(k + i) * px);
-                dl.AddLine(in a, in b, ink, px);
-            }
-        for (var i = 0; i < s.Blots; i++)
-            dl.AddCircleFilled(new float2(x0 + span * s.Written + (i % 3) * 3 * px, lineY + 3 * px), px * (1.5f + i % 2), ink, 8);
-        var tip = new float2(x0 + span * Math.Min(s.Written, SignInSession.Strokes - 1) + span * s.Sweep, lineY - px);
-        PropTurned(dl, "quill", tip, new float2(0f, 1f), -10f, px, s.OnCue ? Gui.U8(Theme.Good) : null);
+        var inkColour = Gui.U8(new float4(0.16f, 0.13f, 0.12f, 1f));
+        // Today's page is the right-hand one, blank under yesterday's on the left.
+        var lineY = page.Min.Y + 7 * px;
+        var x0 = (page.Min.X + page.Max.X) * 0.5f + 5 * px;
+        var shown = (int)MathF.Round(line.Length * Math.Clamp(ink, 0f, 1f));
+        var written = line[..shown];
+        var at = new float2(x0, lineY);
+        float width, lineH;
+        using (Gui.DisplayFont(Gui.S(13)))
+        {
+            dl.AddText(in at, inkColour, written);
+            width = ImGui.CalcTextSize(written, false, -1).X;
+            lineH = ImGui.GetTextLineHeight();
+        }
+        // The quill at the end of what's written, bobbing with each letter as it writes.
+        var scratch = writing && ink < 1f ? MathF.Abs(MathF.Sin(_time * 22f)) * 2 * px : 0f;
+        var tip = new float2(x0 + width + px, lineY + lineH - scratch);
+        PropTurned(dl, "quill", tip, new float2(0f, 1f), -10f, px);
     }
 
     /// <summary>The chamber pot tipping over the bucket as the pour sways round; the bucket filling.</summary>

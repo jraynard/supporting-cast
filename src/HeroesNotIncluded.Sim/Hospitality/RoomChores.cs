@@ -210,6 +210,13 @@ public static class RoomChores
         return null;
     }
 
+    /// <summary>
+    /// Does the work key at this thing want the bucket of water in hand (an empty jug's washstand),
+    /// rather than throwing it? Throwing is checked first, so it'd always win at a washstand.
+    /// </summary>
+    public static bool TakesWater(Simulation sim, Entity station) =>
+        !station.IsNull && sim.World.IsAlive(station) && sim.World.TryGet<Thing>(station, out var t) && t.Def.Name == StandDef && sim.World.Has<JugEmpty>(station);
+
     /// <summary>The work key at a pot, washstand or midden. True if it was one of them.</summary>
     public static bool Start(Simulation sim, Entity who, Entity station)
     {
@@ -240,7 +247,7 @@ public static class RoomChores
         if (def == MiddenDef && SlopsOn(sim, who) is { IsNull: false } slops)
         {
             SwapBucket(sim, who, slops, Environment.Buckets.Empty);
-            sim.Messages.Tell(who, MessageKind.Info, "Tipped. The bucket's empty again.", at);
+            sim.Messages.Tell(who, MessageKind.Info, "Tipped. The bucket's empty again: keep it for the next pot, or fill it at the well for a jug.", at);
             return true;
         }
         return false;
@@ -321,7 +328,7 @@ public sealed class SlopSession : WorkSession
         w.Remove<Slops>(Pot);
         if (RoomChores.EmptyBucketOn(sim, Worker) is { IsNull: false } bucket)
             RoomChores.SwapBucket(sim, Worker, bucket, RoomChores.SlopDef);
-        sim.Messages.Tell(Worker, MessageKind.Info, "Emptied. Out to the midden with it.", w.Get<Thing>(Pot).Cell);
+        sim.Messages.Tell(Worker, MessageKind.Info, "Emptied into the bucket. Carry it out to the midden behind the inn and tip it there (F).", w.Get<Thing>(Pot).Cell);
     }
 
     protected override void WriteState(SaveWriter w)

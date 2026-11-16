@@ -318,7 +318,9 @@ public sealed class AvatarSystem : ISimSystem
         if (tool == AvatarTool.Use && Ai.AvatarHunting.ActionAt(sim, avatar, cell, here) is { } hunting)
             return hunting;
         // A full bucket: thrown where you point, out of arm's reach as much as in it.
-        if (tool == AvatarTool.Use && Environment.Buckets.ThrowAt(sim, avatar, cell, here) is { } throwing)
+        // (Not at a washstand wanting its jug filled, unless it's burning: that's what the water's for.)
+        if (tool == AvatarTool.Use && !(Hospitality.RoomChores.TakesWater(sim, site) && map.Fire[i] <= 0)
+            && Environment.Buckets.ThrowAt(sim, avatar, cell, here) is { } throwing)
             return throwing;
         // A poured drink: across the bar to whoever's waiting for one, or to the customer pointed at.
         if (tool == AvatarTool.Use && Shops.BarService.At(sim, avatar, site, cell) is { } serving)

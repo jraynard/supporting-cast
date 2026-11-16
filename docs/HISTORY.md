@@ -1902,3 +1902,15 @@ player vanished on day two and it ended on day three.
 - **Doors**: a locked door no longer swings open for whoever stands at it (a key-holder unlocks it as
   they pass). Upstairs, the boards run right across a doorway, so there's floor under an open door.
 - Bench: state hashes unchanged; full `9C057DC56CA7791F` (seed 1234), `0FC614E584126363` (seed 99).
+
+### Playtest fixes: the room chores (2026-11-15)
+- **The jug**: F at a washstand wanting water, with a bucket of it in hand, fills the jug. Throwing
+  was checked first and always won (`RoomChores.TakesWater`).
+- **Where the leavings go**: carrying slops, a marker stands over the midden ("Tip the slops here");
+  carrying soiled sheets, over the wash tub. The messages say where, and what the tipped bucket's for.
+- **Signing in** is one press: F, and the quill writes "Gorran, room 3" on today's page in a moment.
+  The choice that matters was the room; there's no beat to catch.
+- **Making a bed** is three ways of working it (`BedStep`): hold F to drag last night's sheet off;
+  F as the clean one billows to the top lays it flat (off the top, it flops and is shaken out
+  again); A and D in turn tuck the head and the foot. The scene follows each.
+- Bench hashes unchanged.

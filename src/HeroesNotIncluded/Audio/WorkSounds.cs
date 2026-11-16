@@ -108,7 +108,7 @@ public sealed class WorkSounds(AudioEngine audio)
                 Count(s.Poured, Sounds.Scrub); // a slosh, till it has a sound of its own
                 break;
             case SignInSession s:
-                Count(s.Written, Sounds.Cloth); // a quill's scratch, till it has a sound of its own
+                Count(s.Begun ? 1 : 0, Sounds.Cloth); // a quill's scratch, till it has a sound of its own
                 break;
             case BandageSession s:
                 Count(s.TurnsDone, Sounds.Cloth);

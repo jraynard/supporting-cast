@@ -132,33 +132,70 @@ public sealed partial class VillageGame
 
     // ---------------- The inn: making a bed ----------------
 
-    /// <summary>The bed, the sheet as far as it's got (rumpled, held up, laid, tucked) and the hands coming round.</summary>
-    private void MakeBedScene(int movements, float sweep, bool onCue)
+    /// <summary>
+    /// The bed seen side on, head to the left. Stripping, last night's sheet drags off over the foot as
+    /// far as it's pulled; spreading, the clean one billows over the mattress (heaped where it flopped);
+    /// tucking, it lies flat, each end's corners folded under as they're done and the next end marked.
+    /// </summary>
+    private void MakeBedScene(Sim.Hospitality.BedStep at, float stripped, float billow, bool flopped, bool onCue, int tucked, int nextSide)
     {
-        var (dl, min, max, px) = WorkScene(100);
+        var (dl, min, max, px) = WorkScene(110);
         var floor = max.Y - Gui.S(8);
         var midX = (min.X + max.X) * 0.5f;
         if (Prop(dl, "bed", new float2(midX, floor), px) is not { } bed)
             return;
         var mattress = new float2(bed.Min.X + 32 * px, bed.Min.Y + 12 * px); // the mattress's top middle
-        switch (movements)
+        var soiled = Gui.U8(new float4(0.78f, 0.74f, 0.66f, 1f));
+        switch (at)
         {
-            case 0: // yesterday's sheet, rumpled
-                PropTurned(dl, "sheet", mattress + new float2(-4 * px, 0), new float2(0.5f, 1f), -6f, px, Gui.U8(Theme.Dim));
-                PropTurned(dl, "sheet", mattress + new float2(10 * px, -2 * px), new float2(0.5f, 1f), 9f, px * 0.6f, Gui.U8(Theme.Dim));
+            case Sim.Hospitality.BedStep.Strip:
+            {
+                // Dragged toward the foot, tipping over it as it goes; the hand on its far end.
+                var off = stripped * 34 * px;
+                PropTurned(dl, "sheet", mattress + new float2(off, stripped * 6 * px), new float2(0.5f, 1f), -4f + stripped * 28f, px, soiled);
+                Prop(dl, "hand", new float2(mattress.X + off + 22 * px, mattress.Y - 2 * px + stripped * 6 * px), px);
                 break;
-            case 1: // stripped: the clean sheet shaken out over it
-                PropTurned(dl, "sheet", mattress + new float2(0, -8 * px - MathF.Sin(_time * 5f) * px), new float2(0.5f, 1f), MathF.Sin(_time * 3f) * 4f, px);
+            }
+            case Sim.Hospitality.BedStep.Spread when flopped:
+                // Flopped in a heap: shaken out again in a moment.
+                PropTurned(dl, "sheet", mattress + new float2(-6 * px, 0), new float2(0.5f, 1f), -10f, px * 0.7f);
+                PropTurned(dl, "sheet", mattress + new float2(8 * px, -2 * px), new float2(0.5f, 1f), 12f, px * 0.6f);
                 break;
-            case 2: // laid on, hanging over the foot
-                Prop(dl, "sheet", mattress + new float2(6 * px, 1 * px), px);
+            case Sim.Hospitality.BedStep.Spread:
+            {
+                // Billowing: up and down over the mattress, held at both ends.
+                var lift = (4 + 18 * billow) * px;
+                var sheetAt = mattress + new float2(0, -lift);
+                PropTurned(dl, "sheet", sheetAt, new float2(0.5f, 1f), MathF.Sin(_time * 4f) * (1f - billow) * 5f, px, onCue ? Gui.U8(Theme.Good) : null);
+                Prop(dl, "hand", sheetAt + new float2(-26 * px, -2 * px), px);
+                Prop(dl, "hand", sheetAt + new float2(26 * px, -2 * px), px);
                 break;
-            default: // tucked in square
-                Prop(dl, "sheet", mattress + new float2(2 * px, 1 * px), px);
+            }
+            default:
+            {
+                // Laid flat; done ends tucked under (the hem hidden), the next end marked by its key.
+                Prop(dl, "sheet", mattress + new float2(0, 1 * px), px);
+                var head = new float2(mattress.X - 24 * px, mattress.Y + 3 * px);
+                var foot = new float2(mattress.X + 24 * px, mattress.Y + 3 * px);
+                var folded = Gui.U8(new float4(0.55f, 0.5f, 0.45f, 1f));
+                int headDone = (tucked + 1) / 2, footDone = tucked / 2; // A, D, A, D: head, foot, head, foot
+                for (var k = 0; k < headDone; k++)
+                    dl.AddRectFilled(head + new float2(-2 * px, k * 2 * px), head + new float2(2 * px, (k * 2 + 1) * px), folded, 0f, ImDrawFlags.None);
+                for (var k = 0; k < footDone; k++)
+                    dl.AddRectFilled(foot + new float2(-2 * px, k * 2 * px), foot + new float2(2 * px, (k * 2 + 1) * px), folded, 0f, ImDrawFlags.None);
+                if (tucked < Sim.Hospitality.MakeBedSession.Corners)
+                {
+                    var end = nextSide < 0 ? head : foot;
+                    var glyph = Controls.Glyph(nextSide < 0 ? Act.WalkLeft : Act.WalkRight);
+                    var size = ImGui.CalcTextSize(glyph, false, -1);
+                    var bob = MathF.Abs(MathF.Sin(_time * 5f)) * 3 * px;
+                    var tp = end + new float2(-size.X * 0.5f, -14 * px - size.Y - bob);
+                    dl.AddText(in tp, Gui.U8(Theme.Accent), glyph);
+                    Prop(dl, "hand", end + new float2(0, -4 * px - bob * 0.5f), px);
+                }
                 break;
+            }
         }
-        var handX = bed.Min.X + (bed.Max.X - bed.Min.X) * (0.15f + 0.7f * sweep);
-        Prop(dl, "hand", new float2(handX, mattress.Y - 6 * px), px, onCue ? Gui.White : Gui.U8(new float4(0.85f, 0.8f, 0.75f, 1f)));
     }
 
     // ---------------- The healer: binding and drawing ----------------
@@ -576,7 +613,7 @@ public sealed partial class VillageGame
                 draw();
             }
             Cell("Season", () => SeasonScene(1, beat));
-            Cell("Make bed", () => MakeBedScene(beat % 4, Wave(2f), Wave(2f) > 0.8f));
+            Cell("Make bed", () => MakeBedScene((Sim.Hospitality.BedStep)(beat / 2 % 3), Wave(2f), Wave(1.1f), false, Wave(1.1f) > 0.8f, beat % 5, beat % 2 == 0 ? -1 : 1));
             Cell("Bandage", () => BandageScene(5, beat % 5, Wave(1.5f), 0.55f, 0.75f));
             Cell("Sharpen", () => SharpenScene(1, true, Wave(0.8f), Wave(0.3f), _time * 0.05f));
             Cell("Grind", () => SharpenScene(1, true, Wave(0.8f), Wave(0.3f), _time * 0.05f, onWheel: true));
@@ -643,7 +680,7 @@ public sealed partial class VillageGame
                     case SniffSession x: SniffScene(x, SmellColour("sour")); break;
                     case PourSession x: PourScene(x); break;
                     case MixSession x: MixScene(x); break;
-                    case Sim.Hospitality.SignInSession x: SignInScene(x); break;
+                    case Sim.Hospitality.SignInSession: SignInScene(_time % 2.2f / 1.1f, true, "Gorran, room 3"); break;
                     case Sim.Hospitality.SlopSession x: SlopScene(x); break;
                 }
             }

@@ -247,11 +247,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 // Back and forth, a stroke every few steps.
                 return (false, false, (sc.StepsDone / 8) % 2 == 0 ? -1 : 1);
             case Hospitality.SignInSession si:
-            {
-                var press = si.OnCue && !_struck;
-                _struck = si.OnCue;
-                return (press, false, 0);
-            }
+                return (!si.Begun, false, 0);
             case Hospitality.SlopSession sl:
             {
                 var press = sl.OnCue && !_struck;
@@ -259,11 +255,19 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
                 return (press, false, 0);
             }
             case Hospitality.MakeBedSession mb:
-            {
-                var press = mb.OnCue && !_struck;
-                _struck = mb.OnCue;
-                return (press, false, 0);
-            }
+                switch (mb.At)
+                {
+                    case Hospitality.BedStep.Strip:
+                        return (false, true, 0);
+                    case Hospitality.BedStep.Spread:
+                    {
+                        var press = mb.OnCue && !_struck;
+                        _struck = mb.OnCue;
+                        return (press, false, 0);
+                    }
+                    default:
+                        return (false, false, mb.StepsDone % 4 < 2 ? mb.NextSide : 0); // a tap at the corner that's next
+                }
             case TapSession tap:
             {
                 var press = tap.OnTheTap && !_struck;

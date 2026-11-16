@@ -1,5 +1,6 @@
 using Brutal.ImGuiApi;
 using Narsil.Ui;
+using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Ecs;
 using HeroesNotIncluded.Sim.Hospitality;
 using HeroesNotIncluded.Ui;
@@ -67,16 +68,55 @@ public sealed partial class VillageGame
         TextC(Theme.Dim, "The book says what was written, not who's where. Hand over the key to the room you wrote.");
     }
 
+    /// <summary>
+    /// Where a room's leavings go, marked while you carry them: slops to the midden behind the inn,
+    /// soiled sheets to the wash tub, and the empty bucket back to the storeroom chest once it's tipped.
+    /// Plain to the one carrying them; nothing hidden.
+    /// </summary>
+    private void UpdateChoreMarkers()
+    {
+        if (!HasAvatar || !_sim.Round.Live)
+            return;
+        var w = _sim.World;
+        string? want = null, label = null;
+        if (!RoomChores.SlopsOn(_sim, _avatar).IsNull)
+            (want, label) = (RoomChores.MiddenDef, "Tip the slops here (F)");
+        else if (!RoomChores.SoiledOn(_sim, _avatar).IsNull)
+            (want, label) = ("WashTub", "Wash the sheets here (F)");
+        if (want == null)
+            return;
+        var near = w.Get<Position>(_avatar).Cell;
+        Entity best = Entity.Null;
+        var bestD = int.MaxValue;
+        foreach (var e in w.Query<Thing>())
+        {
+            var t = w.Get<Thing>(e);
+            if (!t.Spawned || t.Def.Name != want)
+                continue;
+            var d = Sim.Maps.Map.Distance(t.Cell, near);
+            if (d < bestD)
+                (best, bestD) = (e, d);
+        }
+        if (best.IsNull)
+            return;
+        var at = w.Get<Thing>(best);
+        var top = (at.Def.Model?.Max(b => b.Max[2]) ?? 0.5f) * Rendering.WorldScale.HeightOf(at.Def);
+        _renderer.Markers.Add(new(Sim.Components.Position.CenterOf(at.Cell) + Rendering.WorldScale.Rise(top + 0.5f), label!, false));
+    }
+
     // Which of several guests waiting for a room the book's buttons write in.
     private int _signFor;
 
-    /// <summary>Signing a guest in: the book (<see cref="SignInScene"/>), how far it's got, the quill's beat.</summary>
+    /// <summary>Signing a guest in: F, and the quill writes their line into the book (<see cref="SignInScene"/>).</summary>
     private void DrawSignIn(SignInSession s)
     {
-        BeginWork(s.Title, ("F", "as the quill comes round"), ("Esc", "leave it"));
-        SignInScene(s);
-        ImGui.Text($"Room {s.Room}: {s.Written} of {SignInSession.Strokes} written{(s.Blots > 0 ? $", {s.Blots} blot{(s.Blots == 1 ? "" : "s")}" : "")}.");
-        Bar("", s.Sweep, s.OnCue ? Theme.Good : Theme.Dim);
+        var name = _sim.World.IsAlive(s.Guest) && _sim.World.TryGet<Creature>(s.Guest, out var c) ? c.Name : "the guest";
+        if (s.Begun)
+            BeginWork(s.Title, ("Esc", "leave it"));
+        else
+            BeginWork(s.Title, ("F", "write them in"), ("Esc", "leave it"));
+        SignInScene(s.Ink, s.Begun, $"{name}, room {s.Room}");
+        TextC(s.Begun ? Theme.Dim : Theme.Text, s.Begun ? $"Writing {name} into room {s.Room}..." : $"{name}, in room {s.Room}. Press F to write it.");
         EndWork();
     }
 
