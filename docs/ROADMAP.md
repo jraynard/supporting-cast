@@ -48,13 +48,13 @@ answered so far is in HISTORY.md, "Solo playtest notes" and "From two multiplaye
 **For you to look at, next round with friends.** These were fixed after the last two rounds and
 haven't been played since:
 - [ ] **Feasts:** does the cook see the call and lay one on in its 6 hours?
-- [ ] **The downed:** do players and the AI keep them alive now? AI first aid, bandaging and rescue
+- [x] **The downed:** do players and the AI keep them alive now? AI first aid, bandaging and rescue
   now reach downed adventurers, and blows go over the downed. A downed healer weaves on themselves.
-- [ ] **Wood:** the barn should hold out and the fires stay lit. In round two the inn's fireplaces,
+- [x] **Wood:** the barn should hold out and the fires stay lit. In round two the inn's fireplaces,
   the oven and the forge kept burning out.
 - [ ] **Truing a wheel** (new controls), **tinker games finishing in co-op**, and **a second party
   sent on a quest**.
-- [ ] **Inn rooms:** keys, the book and turning rooms round are new (HISTORY.md, "Inn rooms").
+- [x] **Inn rooms:** keys, the book and turning rooms round are new (HISTORY.md, "Inn rooms").
   Is letting a room busy in a good way next to the bar's line? Watch for rooms stuck unready, keys
   lost for good, and guests walking in on each other more than a careless keeper earns.
   Playtest feedback (rooms feast or famine, order buttons, keys, markers, the cleaning and mixing
@@ -303,6 +303,7 @@ items into "Now" when a playtest says they matter.
 - The folk (elves, dwarves, halflings) are only looks; they could have something of their own (an
   elf's keener sight at dusk, a dwarf's ease at the forge, a halfling's quiet step). Halflings
   could go barefoot (villagers' clothes come from the sim, so it isn't only a look).
+- real windows that can be opened, closed, and seen through.
 
 **Sound** (first pass done: docs/AUDIO.md)
 1. **Music, ours:** a theme (at least its start), then a score to replace the placeholder tracks
