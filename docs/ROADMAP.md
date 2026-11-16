@@ -130,6 +130,9 @@ The traitors: the game's hook, and what makes it a game people tell others about
 
 ## Toward Steam
 
+The people side (playtests, clips, creators, Next Fest) is [MARKETING.md](MARKETING.md); the store
+page's copy is drafted in [STEAM-PAGE.md](STEAM-PAGE.md).
+
 ### When
 Don't wait for breadth (M6) to start; do wait for M4 to launch.
 
