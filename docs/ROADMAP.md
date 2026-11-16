@@ -58,7 +58,7 @@ haven't been played since:
   Is letting a room busy in a good way next to the bar's line? Watch for rooms stuck unready, keys
   lost for good, and guests walking in on each other more than a careless keeper earns.
   Playtest feedback (rooms feast or famine, order buttons, keys, markers, the cleaning and mixing
-  games, the keg, the upper floor) and its fixes: [INNKEEPER-PLAN.md](INNKEEPER-PLAN.md).
+  games, the keg, the upper floor) and its fixes are built: [HISTORY.md](HISTORY.md), "The innkeeper's playtest".
  - [ ] **The cook supplies the inn** where they keep apart (Reedmere), and what the lake town still
   wants (the carter, feasts, falling in, art, tuning): [COOKHOUSE-PLAN.md](COOKHOUSE-PLAN.md).
 - [ ] **Flicker** at wall corners and on furniture, and the upper floors when walking past the inn.
