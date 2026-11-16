@@ -71,7 +71,10 @@ public sealed partial class WorldRenderer
         if (session is not Work.PourSession { Held: true } pour || !sim.World.IsAlive(pour.Cask) || !Due(_nextSteam, -e.Index - 1, 0.05f))
             return;
         var t = sim.World.Get<Thing>(pour.Cask);
-        var spout = new float3(t.Cell.X + 0.5f, t.Cell.Y + 0.5f, t.Cell.Z) + new float3(0, 0, 0.35f * WorldScale.HeightOf(t.Def));
+        // From its tap, turned with it, if the def says where; else from its middle.
+        var (sx, sy, sz) = t.Def.SpoutAt is [var x, var y, var z] ? (x, y, z) : (0.5f, 0.5f, 0.35f);
+        var o = Sim.Maps.Footprint.Rotate(sx - 0.5f, sy - 0.5f, t.Facing);
+        var spout = new float3(t.Cell.X + 0.5f + o.X, t.Cell.Y + 0.5f + o.Y, t.Cell.Z + sz * WorldScale.HeightOf(t.Def));
         _particles.Dust(spout, 1, 0.03f, new float4(0.85f, 0.55f, 0.18f, 0.9f), 0.12f);
     }
 }

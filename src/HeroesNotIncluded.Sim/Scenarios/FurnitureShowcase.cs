@@ -23,7 +23,7 @@ public static class FurnitureShowcase
         }
 
         // Clear the plot of trees, bushes and boulders (and anything lying there).
-        for (var y = -1; y <= 8; y++)
+        for (var y = -1; y <= 10; y++)
         for (var x = -1; x <= 15; x++)
         {
             var c = At(x, y);
@@ -49,6 +49,10 @@ public static class FurnitureShowcase
         Put("SquareTable", 5, 4);
         Put("Stool", 2, 5);
         Put("Chest", 6, 6);
+        Put("AleCask", 1, 3, facing: 1);
+        Put("Stool", 2, 4);
+        Put("BarShelf", 4, 1);
+        Put("BarCounter", 5, 9); // out front: the bar's three cells and its panelled side
 
         // The porch: open on three sides, its roof held up by the room's east wall.
         for (var y = 0; y <= 7; y++)

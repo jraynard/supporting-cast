@@ -42,9 +42,10 @@ def _grain(img, base, seed, along_x=True, lines=10, dark=0.8, light=1.12):
             x = rnd.randrange(w)
             y = rnd.randrange(h)
             d.line([(x, y), (x, y + rnd.randrange(6, 18))], fill=tint(base, rnd.choice([dark, light, 0.9])))
-    if rnd.random() < 0.5:
+    if rnd.random() < 0.5:  # a knot: a dark eye and the grain darkening beside it, not a cross
         x, y = rnd.randrange(3, w - 3), rnd.randrange(3, h - 3)
-        d.ellipse([x - 1, y - 1, x + 1, y + 1], fill=tint(base, 0.62))
+        img.putpixel((x, y), tint(base, 0.58))
+        img.putpixel((x + 1, y) if along_x else (x, y + 1), tint(base, 0.76))
 
 
 def _field(base, seed, size=(S, S), var=4):
@@ -184,8 +185,9 @@ def brass(seed=81):
 
 def generate():
     for wood, base in WOODS.items():
+        staves_across = lambda b: staves(b).transpose(Image.Transpose.TRANSPOSE)  # seen from above, along a cask lying along y
         for name, art in (("oak_planks", planks), ("oak_leg", leg), ("oak_end", end_grain), ("counter_panel", counter_panel),
-                          ("staves", staves), ("cask_head", cask_head)):
+                          ("staves", staves), ("staves_across", staves_across), ("cask_head", cask_head)):
             img = art(base)
             save(img, f"furniture/{name}_{wood}")
             if wood == "oak":

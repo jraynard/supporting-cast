@@ -866,6 +866,9 @@ public sealed class ThingDef : Def
     /// <summary>Where a lit fire's smoke leaves it, in model units (a chimney's top). Presentation only.</summary>
     public float[]? SmokeAt { get; set; }
 
+    /// <summary>Where what's poured from it runs out, in model units (a cask's tap). Presentation only.</summary>
+    public float[]? SpoutAt { get; set; }
+
     /// <summary>
     /// A model set in a wall (a serving hatch, a fireplace): while the walls beside it are cut
     /// down to show the room, boxes starting this high or higher are left out. Presentation only.

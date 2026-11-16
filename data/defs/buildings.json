@@ -134,7 +134,7 @@
         { "def": "Chest", "at": [11, 1], "facing": 2 },
         { "def": "BarShelf", "at": [11, 6], "facing": 1 },
         { "def": "Fireplace", "at": [0, 9], "facing": 3 },
-        { "def": "AleCask", "at": [11, 8] },
+        { "def": "AleCask", "at": [11, 8], "facing": 1 },
         { "def": "BarCounter", "at": [9, 7], "facing": 1 }, { "def": "BarCounter", "at": [9, 10], "facing": 1 },
         { "def": "KeyBoard", "at": [11, 10], "facing": 1 },
         { "def": "KeyBox", "at": [9, 1], "facing": 2 },

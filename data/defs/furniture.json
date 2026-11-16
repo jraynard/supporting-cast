@@ -21,11 +21,14 @@
       "maxHp": 100, "flammability": 1.0, 
       "building": { "work": 120, "surfaceHeight": 0.66, "cost": [ { "def": "Wood", "count": 8 } ] },
       "model": [
-        { "min": [0.02, 0.02, 0.56], "max": [0.98, 0.98, 0.66], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.08, 0.08, 0], "max": [0.18, 0.18, 0.56], "top": "props/planks", "side": "props/log_side" },
-        { "min": [0.82, 0.08, 0], "max": [0.92, 0.18, 0.56], "top": "props/planks", "side": "props/log_side" },
-        { "min": [0.08, 0.82, 0], "max": [0.18, 0.92, 0.56], "top": "props/planks", "side": "props/log_side" },
-        { "min": [0.82, 0.82, 0], "max": [0.92, 0.92, 0.56], "top": "props/planks", "side": "props/log_side" }
+        { "min": [0.02, 0.02, 0.56], "max": [0.98, 0.98, 0.66], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.12, 0.12, 0.48], "max": [0.88, 0.18, 0.56], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.12, 0.82, 0.48], "max": [0.88, 0.88, 0.56], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.1, 0.1, 0], "max": [0.2, 0.2, 0.56], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.8, 0.1, 0], "max": [0.9, 0.2, 0.56], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.1, 0.8, 0], "max": [0.2, 0.9, 0.56], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.8, 0.8, 0], "max": [0.9, 0.9, 0.56], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.15, 0.45, 0.1], "max": [0.85, 0.55, 0.15], "top": "furniture/oak_leg", "side": "furniture/oak_leg" }
       ]
     },
     {
@@ -34,11 +37,16 @@
       "maxHp": 140, "flammability": 1.0, 
       "building": { "work": 180, "surfaceHeight": 0.66, "cost": [ { "def": "Wood", "count": 12 } ] },
       "model": [
-        { "min": [0.02, 0.02, 0.56], "max": [0.98, 1.98, 0.66], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.08, 0.08, 0], "max": [0.18, 0.18, 0.56], "top": "props/planks", "side": "props/log_side" },
-        { "min": [0.82, 0.08, 0], "max": [0.92, 0.18, 0.56], "top": "props/planks", "side": "props/log_side" },
-        { "min": [0.08, 1.82, 0], "max": [0.18, 1.92, 0.56], "top": "props/planks", "side": "props/log_side" },
-        { "min": [0.82, 1.82, 0], "max": [0.92, 1.92, 0.56], "top": "props/planks", "side": "props/log_side" }
+        { "min": [0.02, 0.02, 0.56], "max": [0.98, 1.98, 0.66], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.02, 0.02, 0.56], "max": [0.98, 0.1, 0.665], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.02, 1.9, 0.56], "max": [0.98, 1.98, 0.665], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.12, 0.16, 0], "max": [0.88, 0.28, 0.08], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.42, 0.17, 0.08], "max": [0.58, 0.27, 0.48], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.16, 0.48], "max": [0.92, 0.28, 0.56], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.12, 1.72, 0], "max": [0.88, 1.84, 0.08], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.42, 1.73, 0.08], "max": [0.58, 1.83, 0.48], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.08, 1.72, 0.48], "max": [0.92, 1.84, 0.56], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.45, 0.22, 0.2], "max": [0.55, 1.78, 0.28], "top": "furniture/oak_leg", "side": "furniture/oak_leg" }
       ]
     },
     {
@@ -51,10 +59,13 @@
       "building": { "work": 260, "surfaceHeight": 0.86, "bar": true, "storageStacks": 1, "stash": true, "cost": [ { "def": "Wood", "count": 18 } ] },
       "model": [
         { "min": [0.04, 0.3, 0], "max": [2.96, 0.8, 0.08], "top": "props/timber_dark", "side": "props/timber_dark" },
-        { "min": [0.06, 0.34, 0.08], "max": [2.94, 0.76, 0.8], "top": "props/planks", "side": "props/planks" },
-        { "min": [0, 0.22, 0.8], "max": [3, 0.88, 0.88], "top": "props/timber_dark", "side": "props/timber_dark" },
-        { "min": [0.3, 0.4, 0.88], "max": [0.42, 0.52, 1.0], "top": "props/log_end", "side": "props/planks" },
-        { "min": [2.5, 0.48, 0.88], "max": [2.6, 0.58, 0.96], "top": "props/stone_block", "side": "props/stone_block" }
+        { "min": [0.06, 0.34, 0.08], "max": [2.94, 0.76, 0.8], "top": "furniture/oak_planks", "side": "furniture/oak_leg", "front": "furniture/counter_panel", "back": "furniture/oak_leg" },
+        { "min": [0, 0.2, 0.8], "max": [3, 0.9, 0.9], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.1, 0.84, 0.1], "max": [2.9, 0.88, 0.14], "top": "furniture/brass", "side": "furniture/brass" },
+        { "min": [0.12, 0.82, 0.06], "max": [0.16, 0.88, 0.14], "top": "furniture/brass", "side": "furniture/brass" },
+        { "min": [2.84, 0.82, 0.06], "max": [2.88, 0.88, 0.14], "top": "furniture/brass", "side": "furniture/brass" },
+        { "min": [0.3, 0.4, 0.9], "max": [0.42, 0.52, 1.02], "top": "furniture/oak_end", "side": "furniture/staves" },
+        { "min": [1.9, 0.44, 0.9], "max": [2.0, 0.54, 1.0], "top": "furniture/oak_end", "side": "furniture/staves" }
       ]
     },
     {
@@ -63,11 +74,21 @@
       "maxHp": 180, "flammability": 1.0, 
       "building": { "work": 240, "surfaceHeight": 0.66, "cost": [ { "def": "Wood", "count": 16 } ] },
       "model": [
-        { "min": [0.02, 0.02, 0.56], "max": [1.98, 1.98, 0.66], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.10, 0.10, 0], "max": [0.20, 0.20, 0.56], "top": "props/planks", "side": "props/log_side" },
-        { "min": [1.80, 0.10, 0], "max": [1.90, 0.20, 0.56], "top": "props/planks", "side": "props/log_side" },
-        { "min": [0.10, 1.80, 0], "max": [0.20, 1.90, 0.56], "top": "props/planks", "side": "props/log_side" },
-        { "min": [1.80, 1.80, 0], "max": [1.90, 1.90, 0.56], "top": "props/planks", "side": "props/log_side" }
+        { "min": [0.02, 0.02, 0.56], "max": [1.98, 1.98, 0.66], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.14, 0.14, 0.48], "max": [1.86, 0.2, 0.56], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.14, 1.8, 0.48], "max": [1.86, 1.86, 0.56], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.14, 0.14, 0.48], "max": [0.2, 1.86, 0.56], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [1.8, 0.14, 0.48], "max": [1.86, 1.86, 0.56], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.14, 0.14, 0], "max": [0.22, 0.22, 0.48], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.12, 0.12, 0.22], "max": [0.24, 0.24, 0.32], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [1.78, 0.14, 0], "max": [1.86, 0.22, 0.48], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [1.76, 0.12, 0.22], "max": [1.88, 0.24, 0.32], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.14, 1.78, 0], "max": [0.22, 1.86, 0.48], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.12, 1.76, 0.22], "max": [0.24, 1.88, 0.32], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [1.78, 1.78, 0], "max": [1.86, 1.86, 0.48], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [1.76, 1.76, 0.22], "max": [1.88, 1.88, 0.32], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.2, 0.15, 0.08], "max": [1.8, 0.21, 0.13], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.2, 1.79, 0.08], "max": [1.8, 1.85, 0.13], "top": "furniture/oak_leg", "side": "furniture/oak_leg" }
       ]
     },
     {
@@ -87,16 +108,23 @@
     {
       // The tavern's cask on its cradle: F at it pours a drink (Work.PourSession). It holds
       // "servings" drinks; a keg knocked in refills it (TapSession, TapJob). Brewing comes later.
-      "name": "AleCask", "label": "ale cask", "category": "Building", "solid": true, "sprite": "buildings/ale_cask",
+      "name": "AleCask", "label": "ale cask", "category": "Building", "solid": true, "sprite": "buildings/ale_cask", "spoutAt": [0.5, 1.0, 0.27],
       "description": "A great oak cask on a cradle, with a tap. F at it to pour.",
       "maxHp": 120, "flammability": 0.8,
       "building": { "work": 200, "surfaceHeight": 0.7, "cost": [ { "def": "Wood", "count": 14 } ], "cask": { "pours": "Ale", "servings": 24 } },
       "model": [
-        { "min": [0.12, 0.2, 0], "max": [0.88, 0.8, 0.16], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.08, 0.14, 0.12], "max": [0.92, 0.86, 0.7], "top": "props/log_end", "side": "props/planks" },
-        { "min": [0.07, 0.3, 0.12], "max": [0.93, 0.36, 0.7], "top": "props/iron_band", "side": "props/iron_band" },
-        { "min": [0.07, 0.64, 0.12], "max": [0.93, 0.7, 0.7], "top": "props/iron_band", "side": "props/iron_band" },
-        { "min": [0.46, 0.86, 0.2], "max": [0.54, 0.95, 0.28], "top": "props/log_side", "side": "props/log_side" }
+        { "min": [0.12, 0.2, 0], "max": [0.88, 0.3, 0.2], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.12, 0.7, 0], "max": [0.88, 0.8, 0.2], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.14, 0.25, 0.12], "max": [0.86, 0.75, 0.84], "top": "furniture/staves_across", "side": "furniture/staves" },
+        { "min": [0.18, 0.12, 0.16], "max": [0.82, 0.88, 0.8], "top": "furniture/staves_across", "side": "furniture/staves" },
+        { "min": [0.23, 0.06, 0.21], "max": [0.77, 0.94, 0.75], "top": "furniture/staves_across", "side": "furniture/staves" },
+        { "min": [0.23, 0.935, 0.21], "max": [0.77, 0.945, 0.75], "top": "furniture/staves_across", "side": "furniture/staves", "front": "furniture/cask_head", "back": "none", "fit": true },
+        { "min": [0.23, 0.055, 0.21], "max": [0.77, 0.065, 0.75], "top": "furniture/staves_across", "side": "furniture/staves", "front": "none", "back": "furniture/cask_head", "fit": true },
+        { "min": [0.17, 0.16, 0.15], "max": [0.83, 0.2, 0.81], "top": "furniture/hoop", "side": "furniture/hoop" },
+        { "min": [0.17, 0.8, 0.15], "max": [0.83, 0.84, 0.81], "top": "furniture/hoop", "side": "furniture/hoop" },
+        { "min": [0.13, 0.47, 0.11], "max": [0.87, 0.53, 0.85], "top": "furniture/hoop", "side": "furniture/hoop" },
+        { "min": [0.46, 0.94, 0.34], "max": [0.54, 1.0, 0.4], "top": "furniture/brass", "side": "furniture/brass" },
+        { "min": [0.47, 0.97, 0.27], "max": [0.53, 1.0, 0.34], "top": "furniture/brass", "side": "furniture/brass" }
       ]
     },
     {
@@ -105,11 +133,19 @@
       "maxHp": 60, "flammability": 1.0,
       "building": { "work": 60, "surfaceHeight": 0.42, "seat": true, "cost": [ { "def": "Wood", "count": 3 } ] },
       "model": [
-        { "min": [0.3, 0.3, 0.34], "max": [0.7, 0.7, 0.42], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.34, 0.34, 0], "max": [0.42, 0.42, 0.34], "top": "props/planks", "side": "props/log_side" },
-        { "min": [0.58, 0.34, 0], "max": [0.66, 0.42, 0.34], "top": "props/planks", "side": "props/log_side" },
-        { "min": [0.34, 0.58, 0], "max": [0.42, 0.66, 0.34], "top": "props/planks", "side": "props/log_side" },
-        { "min": [0.58, 0.58, 0], "max": [0.66, 0.66, 0.34], "top": "props/planks", "side": "props/log_side" }
+        { "min": [0.28, 0.28, 0.36], "max": [0.72, 0.72, 0.46], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.32, 0.32, 0.14], "max": [0.4, 0.4, 0.36], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.295, 0.295, 0], "max": [0.375, 0.375, 0.15], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.6, 0.32, 0.14], "max": [0.68, 0.4, 0.36], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.625, 0.295, 0], "max": [0.705, 0.375, 0.15], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.32, 0.6, 0.14], "max": [0.4, 0.68, 0.36], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.295, 0.625, 0], "max": [0.375, 0.705, 0.15], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.6, 0.6, 0.14], "max": [0.68, 0.68, 0.36], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.625, 0.625, 0], "max": [0.705, 0.705, 0.15], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.36, 0.34, 0.18], "max": [0.64, 0.38, 0.22], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.36, 0.62, 0.18], "max": [0.64, 0.66, 0.22], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.34, 0.36, 0.24], "max": [0.38, 0.64, 0.28], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.62, 0.36, 0.24], "max": [0.66, 0.64, 0.28], "top": "furniture/oak_leg", "side": "furniture/oak_leg" }
       ]
     },
     {
@@ -415,11 +451,12 @@
       "maxHp": 80, "flammability": 1.0,
       "building": { "work": 80, "storageStacks": 6, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
       "model": [
-        { "min": [0.08, 0.3, 0], "max": [0.92, 0.7, 0.06], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.08, 0.3, 0.42], "max": [0.92, 0.7, 0.48], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.08, 0.3, 0.84], "max": [0.92, 0.7, 0.9], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.08, 0.3, 0], "max": [0.14, 0.7, 0.9], "top": "props/log_side", "side": "props/log_side" },
-        { "min": [0.86, 0.3, 0], "max": [0.92, 0.7, 0.9], "top": "props/log_side", "side": "props/log_side" }
+        { "min": [0.08, 0.6, 0], "max": [0.92, 0.7, 0.92], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.28, 0], "max": [0.92, 0.7, 0.08], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.28, 0.42], "max": [0.92, 0.7, 0.5], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.28, 0.84], "max": [0.92, 0.7, 0.92], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.06, 0.28, 0], "max": [0.14, 0.7, 0.94], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.86, 0.28, 0], "max": [0.94, 0.7, 0.94], "top": "furniture/oak_end", "side": "furniture/oak_leg" }
       ]
     },
     {
@@ -429,11 +466,18 @@
       "maxHp": 80, "flammability": 1.0,
       "building": { "work": 80, "storageStacks": 6, "kept": true, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
       "model": [
-        { "min": [0.08, 0.3, 0], "max": [0.92, 0.7, 0.06], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.08, 0.3, 0.42], "max": [0.92, 0.7, 0.48], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.08, 0.3, 0.84], "max": [0.92, 0.7, 0.9], "top": "props/planks", "side": "props/planks" },
-        { "min": [0.08, 0.3, 0], "max": [0.14, 0.7, 0.9], "top": "props/log_side", "side": "props/log_side" },
-        { "min": [0.86, 0.3, 0], "max": [0.92, 0.7, 0.9], "top": "props/log_side", "side": "props/log_side" }
+        { "min": [0.08, 0.6, 0], "max": [0.92, 0.7, 0.92], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.28, 0], "max": [0.92, 0.7, 0.08], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.28, 0.42], "max": [0.92, 0.7, 0.5], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.28, 0.84], "max": [0.92, 0.7, 0.92], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.06, 0.28, 0], "max": [0.14, 0.7, 0.94], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.86, 0.28, 0], "max": [0.94, 0.7, 0.94], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.2, 0.36, 0.5], "max": [0.3, 0.46, 0.64], "top": "furniture/oak_end", "side": "furniture/staves" },
+        { "min": [0.36, 0.36, 0.5], "max": [0.46, 0.46, 0.64], "top": "furniture/oak_end", "side": "furniture/staves" },
+        { "min": [0.56, 0.36, 0.5], "max": [0.66, 0.46, 0.64], "top": "furniture/oak_end", "side": "furniture/staves" },
+        { "min": [0.22, 0.38, 0.08], "max": [0.3, 0.46, 0.3], "top": "furniture/brass", "side": "furniture/hoop" },
+        { "min": [0.44, 0.38, 0.08], "max": [0.52, 0.46, 0.3], "top": "furniture/brass", "side": "furniture/hoop" },
+        { "min": [0.68, 0.38, 0.08], "max": [0.76, 0.46, 0.3], "top": "furniture/brass", "side": "furniture/hoop" }
       ]
     },
     {
