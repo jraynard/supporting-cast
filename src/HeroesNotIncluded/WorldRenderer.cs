@@ -1896,18 +1896,25 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 Billboard(S("fx/fire"), floor + FireOffset(def, thing.Facing), size * 0.85f, size, Rgba.Pack(1f, 0.92f, 0.8f, 0.95f), level | Quad.Unlit | Quad.Glow, translucent: true);
                 DrawCoalBed(sim, e, def, floor, thing.Facing, level);
                 // A thin wisp from the chimney, gone with the roofs (it rises from the stack, which is drawn as roof).
+                // Under another storey, from the top of the building's chimney stack there instead (BuildingKit.Chimney).
+                float3? stack = null;
                 if (def.SmokeAt is [var sx, var sy, var sz] && sim.Map.InBounds(cell + new int3(0, 0, 1)) && sim.Map.Structure[sim.Map.Idx(cell + new int3(0, 0, 1))].IsNull)
                 {
                     var o = Footprint.Rotate(sx - 0.5f, sy - 0.5f, thing.Facing);
+                    stack = floor + new float3(o.X, o.Y, sz);
+                }
+                else if (def.SmokeAt != null && BuildingKit.Of(sim, e) is { } kitted
+                    && BuildingKit.Chimney(kitted.Kit, kitted.Building, new int3(cell.X, cell.Y, kitted.Building.Anchor.Z + kitted.Building.Def.Storeys)) is { } chimney)
+                    stack = chimney.Top;
+                if (stack is { } from)
                     for (var k = 0; k < 3; k++)
                     {
                         var rise = (_anim.Clock * 0.22f + k / 3f + e.Index * 0.137f) % 1f;
                         var drift = MathF.Sin(_anim.Clock * 0.7f + k * 2.1f) * 0.12f + rise * 0.3f;
                         var puff = 0.35f + 0.5f * rise;
-                        Billboard(S("fx/smoke"), floor + new float3(o.X + drift, o.Y, sz + rise * 1.2f), puff, puff,
+                        Billboard(S("fx/smoke"), from + new float3(drift, 0, rise * 1.2f), puff, puff,
                             Rgba.Pack(0.6f, 0.6f, 0.62f, 0.4f * (1 - rise) * Math.Min(1, rise * 6)), level | Quad.Roof, translucent: true);
                     }
-                }
             }
             Bar(floor + new float3(0, 0, 0.9f), frac, frac > props.RefuelAt ? Rgba.Pack(1f, 0.6f, 0.2f) : Rgba.Pack(1f, 0.2f, 0.2f), level);
         }

@@ -169,6 +169,8 @@
       "hatchLine": [ [2, 5], [2, 6], [3, 6], [4, 6], [4, 7] ],
       // The sign hangs on the front wall beside the door: its name and prices (Shops/Signs).
       "sign": [5, 12],
+      // The kitchen's and the common room's fireplaces carry their stacks up and out past the thatch.
+      "chimneys": [ [2, 0], [0, 9] ],
       "slots": [
         { "defs": ["Chest"], "at": [10, 1], "facing": 2 },
         { "defs": ["Chest"], "at": [3, 1], "facing": 2, "level": 1 },
@@ -591,9 +593,9 @@
       ],
       "floor": "buildings/floor_planks",
       "roof": {
-        "sprite": "buildings/roof_thatch_straw", "pitch": 0.5, "eave": 0.85, "overhang": 0.5, "thickness": 0.24,
-        "gable": "buildings/gable_plaster", "gableFill": "buildings/gable_fill_plaster", "trim": "buildings/beam_oak", "horns": 0,
-        "ridge": "buildings/roof_thatch_straw"
+        "sprite": "buildings/roof_thatch_straw", "pitch": 0.55, "eave": 0.75, "overhang": 0.6, "thickness": 0.4, "lip": 0.2,
+        "gable": "buildings/gable_plaster", "gableFill": "buildings/gable_fill_oak", "trim": "buildings/beam_oak", "horns": 0,
+        "eaveTrim": "buildings/thatch_eave", "ridge": "buildings/thatch_ridge"
       }
     },
     {

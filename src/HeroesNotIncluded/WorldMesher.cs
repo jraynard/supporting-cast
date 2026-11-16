@@ -307,6 +307,11 @@ public sealed class WorldMesher(TextureAtlas atlas)
                     BuildingKit.Roof(_quads, pitched, roofKit.Building, new int3(x, y, z),
                         (name, pick) => _materials.Resolve(name, roofMaterial) is var (art, artTint) && V(art) is var looks ? (looks[(int)(pick % (uint)looks.Count)], artTint) : default,
                         Rgba.White, Quad.Level(z) | Quad.Roof | Quad.Occluder, jetty: roofKit.Kit.Jetty);
+                    // A ground-storey fireplace's stack, up through the storey above and out past the ridge.
+                    if (BuildingKit.Chimney(roofKit.Kit, roofKit.Building, new int3(x, y, z)) is { } chimney)
+                        PropModel.Build(_quads, chimney.Model, chimney.Base, 0,
+                            name => (S(_materials.Resolve(name, null).Sprite), _materials.Resolve(name, null).Tint),
+                            Rgba.White, Quad.Level(z) | Quad.Roof | Quad.Occluder);
                 }
                 else
                 {

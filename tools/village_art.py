@@ -367,6 +367,71 @@ def gable_fill_plaster(seed=37):
     return img
 
 
+def thatch_eave(seed=101):
+    """
+    The thatch's rolled edge at the eaves, hanging below the slope: a thick roll of straw, lit along
+    its top, its butt ends ragged at the bottom (alpha-cut), the way the references' eaves hang.
+    """
+    base = (214, 176, 100)
+    rnd = random.Random(seed)
+    img = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    px = img.load()
+    for x in range(S):
+        bottom = S - 1 - rnd.randrange(0, 7)                      # ragged ends
+        for y in range(0, bottom + 1):
+            roll = 1.14 - 0.5 * (y / S) ** 1.4                    # rounded: lit on top, shadowed under
+            px[x, y] = tint(base, roll * rnd.uniform(0.9, 1.08))
+        for y in range(max(0, bottom - 2), bottom + 1):
+            px[x, y] = tint(base, 0.62)                           # the cut ends, in shadow
+    for x in range(0, S, 2):                                      # straws down the roll
+        y = rnd.randrange(0, 10)
+        for k in range(rnd.randrange(6, 14)):
+            if y + k < S and px[x, y + k][3]:
+                px[x, y + k] = tint(px[x, y + k], 0.86)
+    return img
+
+
+def thatch_ridge(seed=103):
+    """The ridge: a block of tighter straw pinned with hazel spars crossing in a lattice."""
+    base = (196, 158, 88)
+    rnd = random.Random(seed)
+    img = noise(base, 5, seed)
+    d = ImageDraw.Draw(img)
+    for x in range(-S, S, 8):                                     # spars crossing
+        d.line([(x, 0), (x + S, S)], fill=tint(base, 0.66))
+        d.line([(x + S, 0), (x, S)], fill=tint(base, 0.66))
+    d.line([(0, 2), (S - 1, 2)], fill=tint(base, 0.6))            # the liggers along it
+    d.line([(0, S - 3), (S - 1, S - 3)], fill=tint(base, 0.6))
+    for _ in range(30):
+        img.putpixel((rnd.randrange(S), rnd.randrange(S)), tint(base, rnd.choice([0.85, 1.12])))
+    return img
+
+
+def gable_fill_oak(variant=0, seed=107):
+    """
+    The inn's gable, tiled up it a storey at a time (32x64, as the walls' bays): limewash between
+    warm oak studs, a rail across the middle and one under, now and then a brace (variants), so the
+    gable's panels match the bays of the storey below them.
+    """
+    rnd = random.Random(seed + variant * 7)
+    img = noise(PLASTER, 3, seed + variant, size=(S, WALL_H))
+    px = img.load()
+    for _ in range(5):
+        cx, cy, r = rnd.randrange(S), rnd.randrange(WALL_H), rnd.randrange(4, 9)
+        for y in range(WALL_H):
+            for x in range(S):
+                if (x - cx) ** 2 + (y - cy) ** 2 < r * r:
+                    px[x, y] = tint(px[x, y], 0.97)
+    if variant == 1:
+        _oak_diag(img, (5, 30), (S - 2, 4))
+    elif variant == 2:
+        _oak_diag(img, (5, 36), (S - 2, WALL_H - 6))
+    _oak_beam(img, (0, 30, S - 1, 33), seed + 1, vertical=False)
+    _oak_beam(img, (0, WALL_H - 4, S - 1, WALL_H - 1), seed + 2, vertical=False)
+    _oak_beam(img, (0, 0, 3, WALL_H - 1), seed + 3, vertical=True)
+    return img
+
+
 def straw_thatch(seed):
     """
     Long straw laid in courses down the slope (tile v runs down it, u along the ridge). Each course's
@@ -645,6 +710,10 @@ def generate():
         save(wall_timber_oak(v, outside=True), "buildings/wall_timber_oak_out" + ("" if v == 0 else f"_v{v + 1}"))
     save(gable_plaster(), "buildings/gable_plaster")
     save(gable_fill_plaster(), "buildings/gable_fill_plaster")
+    for v in range(3):
+        save(gable_fill_oak(v), "buildings/gable_fill_oak" + ("" if v == 0 else f"_v{v + 1}"))
+    save(thatch_eave(), "buildings/thatch_eave", finish=True)
+    save(thatch_ridge(), "buildings/thatch_ridge")
     save(straw_thatch(81), "buildings/roof_thatch_straw")
     save(straw_thatch(82), "buildings/roof_thatch_straw_v2")
     save(straw_thatch(83), "buildings/roof_thatch_straw_v3")

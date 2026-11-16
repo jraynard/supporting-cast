@@ -125,6 +125,13 @@ public sealed class BuildingDef : Def
     /// </summary>
     public int[]? Sign { get; set; }
 
+    /// <summary>
+    /// Plan cells [column, row] of the ground storey's fireplaces whose stacks rise through the storey
+    /// above and out past the roof: drawn as a stone chimney there, the fire's smoke from its top.
+    /// Presentation only (BuildingKit.Chimney).
+    /// </summary>
+    public List<int[]> Chimneys { get; set; } = [];
+
     /// <summary>The picture painted on the sign, a texture (presentation only; the sim never reads it). Null: the plain board.</summary>
     public string? SignFace { get; set; }
 

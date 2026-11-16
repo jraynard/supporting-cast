@@ -230,10 +230,21 @@ public static class BuildingKit
                 if (gb <= ga)
                     continue;
                 float lower = Math.Min(H(ga), H(gb)), upper = Math.Max(H(ga), H(gb));
-                if (lower > floor + 0.001f)
+                if (lower > floor + 0.001f && !string.IsNullOrEmpty(roof.GableFill))
                 {
-                    var r = P(aG, ga, lower);
-                    Add(r, P(aG, gb, lower) - r, new float3(0, 0, floor - lower), roof.GableFill, shade);
+                    // Stacked a tile at a time from the top, as walls' art is (WorldScale), each
+                    // its own variant: stretched up the whole gable, its studs stood storeys tall.
+                    var across = P(aG, gb, lower) - P(aG, ga, lower);
+                    var step = 1f / WorldScale.TilesPerLevel(sprite(roof.GableFill, 0).Sprite); // a tile's height, its pixels square
+                    var k = 0;
+                    for (var top = lower; top > floor + 0.001f; top -= step, k++)
+                    {
+                        var h = Math.Min(step, top - floor);
+                        var (art, tint) = sprite(roof.GableFill, Variation.Hash(cell.X * 7 + k, cell.Y, 0x6AB1));
+                        var uv = new float4(art.Uv.X, art.Uv.Y, art.Uv.Z, art.Uv.Y + (art.Uv.W - art.Uv.Y) * (h / step));
+                        output.Add(new Quad { Origin = P(aG, ga, top), AxisU = across, AxisV = new float3(0, 0, -h), Flags = flags,
+                            Color = PropModel.Multiply(color, tint), Ao = Shade(shade), Uv = uv });
+                    }
                 }
                 var g = P(aG, ga, upper);
                 Add(g, P(aG, gb, upper) - g, new float3(0, 0, lower - upper), roof.Gable, shade, flip: !rising);
@@ -258,5 +269,52 @@ public static class BuildingKit
                 Add(end, P(aEdge, r1, z1) - end, new float3(0, 0, z0 - z1), roof.Ridge, SideShade(Dir(aEdge < 1 ? -1 : 1, 0)));
             }
         }
+    }
+
+    /// <summary>The plan cell [column, row] a world cell of the building is on.</summary>
+    public static (int Col, int Row) PlanCell(PresetBuilding b, int3 cell)
+    {
+        var d = Footprint.Rotate(cell.X - b.Anchor.X, cell.Y - b.Anchor.Y, (4 - b.Facing) & 3);
+        return (d.X - Footprint.Lo(b.Def.Width), d.Y - Footprint.Lo(b.Def.Depth));
+    }
+
+    /// <summary>Whether a chimney (<see cref="BuildingDef.Chimneys"/>) rises at this cell's place on the plan.</summary>
+    public static bool HasChimney(PresetBuilding b, int3 cell)
+    {
+        var (col, row) = PlanCell(b, cell);
+        return b.Def.Chimneys.Exists(c => c.Length >= 2 && c[0] == col && c[1] == row);
+    }
+
+    /// <summary>How far a chimney stands above the roof where it comes through.</summary>
+    public const float ChimneyAboveRoof = 0.7f;
+
+    /// <summary>
+    /// The model of a chimney stack at a roof cell (in cell units from the storey below the roof),
+    /// and where its top's middle is in the world: from that storey's floor up through it and out
+    /// past the roof, moved out with a jetty so it stands in the wall's line. Null if none's there.
+    /// </summary>
+    public static (List<ModelBox> Model, int3 Base, float3 Top)? Chimney(BuildingKitDef kit, PresetBuilding b, int3 roofCell)
+    {
+        if (kit.Roof is not { } roof || !HasChimney(b, roofCell))
+            return null;
+        var def = b.Def;
+        var alongX = def.Width >= def.Depth;
+        var span = alongX ? def.Depth : def.Width;
+        var (col, row) = PlanCell(b, roofCell);
+        // Up past the roof where it comes through it (not to the ridge: at the eaves that stood a pole on the slope).
+        var c = (alongX ? row : col) + 0.5f;
+        var surface = roofCell.Z + roof.Pitch * (Math.Min(c, span - c) - 0.5f + kit.Jetty) + roof.Thickness;
+        var under = roofCell - new int3(0, 0, 1);
+        var height = surface + ChimneyAboveRoof - under.Z;
+        var jut = WorldMesher.JettyOut(kit, b, under.X, under.Y, under.Z) ?? default;
+        float x0 = 0.16f + jut.X, x1 = 0.84f + jut.X, y0 = 0.16f + jut.Y, y1 = 0.84f + jut.Y;
+        var model = new List<ModelBox>
+        {
+            new() { Min = [x0, y0, 0], Max = [x1, y1, height - 0.14f], Top = "props/stone_block", Side = "buildings/wall_fieldstone" },
+            new() { Min = [x0 - 0.06f, y0 - 0.06f, height - 0.14f], Max = [x1 + 0.06f, y1 + 0.06f, height], Top = "props/hearth_soot", Side = "buildings/quoin" },
+            new() { Min = [0.4f + jut.X, 0.4f + jut.Y, height], Max = [0.6f + jut.X, 0.6f + jut.Y, height + 0.12f], Top = "props/hearth_soot", Side = "props/stone_block" },
+        };
+        var top = new float3(under.X + 0.5f + jut.X, under.Y + 0.5f + jut.Y, under.Z + height + 0.12f);
+        return (model, under, top);
     }
 }
