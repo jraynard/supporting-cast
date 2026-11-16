@@ -15,9 +15,9 @@ namespace HeroesNotIncluded.Sim.Tests;
 /// </summary>
 public class FestivalTests
 {
-    private static Simulation Round(ulong seed = 7, bool friendlyFire = false)
+    private static Simulation Round(ulong seed = 7, bool friendlyFire = false, string map = "Millbrook")
     {
-        var (sim, _) = TestWorld.Millbrook(seed, 4);
+        var (sim, _) = TestWorld.OnMap(map, seed, 4);
         sim.Round.OpenLobby();
         sim.ApplyNow(new SetRoundOptionsCommand(friendlyFire, false));
         sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default, []));
@@ -108,6 +108,28 @@ public class FestivalTests
         Assert.True(seen.Count >= 3, $"only {string.Join(", ", seen)}");
         Assert.True(sat, "someone sat down at the feast");
         Assert.True(danced, "someone danced round the bonfire");
+    }
+
+    [Fact]
+    public void InReedmereTheFestivalIsOnTheBoatsAndTheBonfireDoesntBurnThem()
+    {
+        var sim = Round(map: ReedmereMapTests.Map);
+        SendParty(sim, 2f);
+        ToRevels(sim);
+        var w = sim.World;
+        bool OnTheBoats(int3 c) => c.Z > 0 && sim.Map.HasFloor[sim.Map.Idx(c)]
+            && w.Get<Thing>(sim.Map.Floor[sim.Map.Idx(c)]).Def.Name is "BoatDeck" or "FireBarge";
+        var boats = w.Query<Thing>().Count(e => w.Get<Thing>(e).Def.Name == "BoatDeck");
+        var aboard = 0;
+        for (var t = 0; t < SimClock.TicksPerHour * 2; t += 30)
+        {
+            sim.TickMany(30);
+            aboard = Math.Max(aboard, sim.Creatures().Count(e => w.Get<Mind>(e).Job is FestivalJob && OnTheBoats(w.Get<Position>(e).Cell)));
+        }
+        Assert.True(aboard >= 3, $"only {aboard} out on the boats for the revels");
+        Assert.True(sim.Burning(sim.Festival.Prop(sim, FestivalSystem.BonfireDef)), "the bonfire's still lit");
+        Assert.Equal(boats, w.Query<Thing>().Count(e => w.Get<Thing>(e).Def.Name == "BoatDeck"));
+        Assert.DoesNotContain(sim.Fire.BurningTiles, i => OnTheBoats(sim.Map.CellOf(i)));
     }
 
     [Fact]

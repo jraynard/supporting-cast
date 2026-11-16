@@ -32,8 +32,17 @@ public sealed class QuestDef : Def
     /// <summary>Beasts to be dealt with: a spring snare helps.</summary>
     public bool Beasts { get; set; }
 
+    /// <summary>
+    /// A company's own errand (<see cref="PartyDef.Rare"/>: a mountain hall to win back): never one of
+    /// a round's quests, but put on the board when that company comes to town, and the only one it
+    /// will take. Null: an ordinary quest.
+    /// </summary>
+    public string? Party { get; set; }
+
     internal override void Resolve(DefDatabase db)
     {
+        if (Party != null && db.AllParties.All(p => p.Name != Party))
+            throw new Exception($"Quest '{Name}': no party '{Party}'");
         if (DangerMin <= 0 || DangerMin > DangerMax || RewardMin < 0 || RewardMin > RewardMax || Hours <= 0 || Threats.Count == 0)
             throw new Exception($"Quest '{Name}': bad ranges or no threats");
     }

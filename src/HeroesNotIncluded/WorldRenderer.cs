@@ -433,6 +433,16 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 Quad.Level(lampCell.Z) | Quad.Unlit | Quad.Glow, translucent: true);
         }
 
+        // Lanterns standing on their own, lit for good (a quay's): the post's meshed; just the flame.
+        foreach (var (lampCell, lamp) in sim.Lighting.StandingLamps(sim))
+        {
+            if (!InViewNow(lampCell) || Viewer?.Dark(lampCell) == true)
+                continue;
+            var flicker = 0.45f * lamp.FireSize * (1f + 0.04f * MathF.Sin(_anim.Clock * 3f + lampCell.X * 7 + lampCell.Y));
+            Billboard(S("fx/fire"), Position.CenterOf(lampCell) + FireOffset(lamp, 0), flicker * 0.7f, flicker, Rgba.Pack(1f, 0.9f, 0.7f, 0.95f),
+                Quad.Level(lampCell.Z) | Quad.Unlit | Quad.Glow, translucent: true);
+        }
+
         // Structures that aren't meshed, construction ghosts and items.
         foreach (var e in w.Each<Thing>())
         {

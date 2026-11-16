@@ -1065,6 +1065,16 @@ public struct Appearance
         model is { Length: > 0 and <= MaxModelLength } && model.All(c => c is (>= 'a' and <= 'z') or (>= '0' and <= '9') or '_') ? model : null;
 }
 
+/// <summary>
+/// Which folk someone without an <see cref="Appearance"/> of their own is (a company of dwarves come
+/// to town, <see cref="Defs.AdventurerKindDef.Folk"/>): their derived look is drawn from that folk's
+/// colours and build instead of the hash's pick. Cosmetic, like the appearance, and saved with it.
+/// </summary>
+public struct Kin
+{
+    public Folk Folk;
+}
+
 public enum RequestKind : byte
 {
     Follow,

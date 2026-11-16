@@ -11,7 +11,7 @@ import random
 
 # Plan sizes (width across, depth front to back) of the preset buildings, as buildings.json.
 PLANS = {"Inn": (13, 13), "Dwelling": (6, 5), "Cottage": (9, 6), "Smithy": (7, 5), "Shrine": (11, 7), "Woodshop": (7, 5),
-         "TinkerShop": (7, 6), "Barn": (10, 6), "Cookhouse": (11, 10), "LandingInn": (13, 13)}
+         "TinkerShop": (7, 6), "Barn": (10, 6), "Cookhouse": (11, 10), "LandingInn": (13, 13), "MootHall": (13, 9)}
 
 COLORS = {"g": (96, 150, 70), "d": (130, 100, 70), "r": (186, 160, 116), "t": (100, 70, 46), "k": (120, 116, 110),
           "s": (210, 196, 140), "~": (90, 160, 190), "w": (50, 120, 170)}

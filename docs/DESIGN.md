@@ -529,20 +529,35 @@ villager mid-round is for late joiners only.
   map is data with exact building anchors. The seed still varies what's underground, what grows,
   and who lives there. Who works where is the buildings' town roles (`roles`: Tavern, Kitchen,
   Forge, Shrine, TinkerShop), so a map decides who shares a roof.
-- **Reedmere** (`tools/lake_map.py`): a town on stilts over a lake. The shore is the working side,
-  where the road comes in and raids are fought: the barn, the forge, the shrine and the cookhouse,
-  the cook's own house at the causeway's foot. The causeway is the one way out over the water, to a
-  square on piles and boardwalks to the houses, the tinker's and the inn at the far landing. The
-  inn has no kitchen there: the cook keeps the cookhouse and the innkeeper the inn. Everything out on
-  the water is timber (it burns, though damp planks are slow to catch); buckets are let down from
-  dipping posts; and a raid that brings the causeway down cuts the town off till the tinker mends it.
+- **Reedmere** (`tools/lake_map.py`): a town on stilts out in a long lake, after the lake towns
+  in `art/reference/` (the tipexleloup map for the plan, the others for the mood). Houses crowd on
+  piles round a pool of open harbour water, under steep shingles; one long bridge (the causeway)
+  runs back to the shore, which is only a headland in the corner: the road in, the woods, an old
+  barn and the woodshop. At the gate, where the bridge lands and the fighting comes in, stand the
+  shrine, the forge on a stone pier (kept off the timber) and the storehouse with the stockpile. The
+  main street runs up from the gate across the harbour on the festival's boats to the **moot hall**
+  on the far quay, the town's hall (the Mayor's, one day), with the notice board, the muster rack and
+  a great bow on its stone forecourt. The inn and the cookhouse face each other across the
+  water-gate, the canal out of the harbour; the tinker's is on the west quay. Everything else is
+  timber (it burns, though damp planks are slow to catch); buckets are let down from dipping
+  posts; nets and fish dry along the outer walks and lanterns burn on the quays all night. A raid
+  that brings the causeway down cuts the whole town off from the shore, the carter with it, till
+  the tinker mends it.
   The cook **supplies the inn**: the innkeeper orders a hamper at the cookhouse hatch, from their own
   purse, and carries it back to the warming shelf behind the bar. Lodgers have their board off it
   at breakfast and supper, at no charge; parties setting out take rations off it; a bare shelf makes
   a room worth less. So the two trades lean on each other, and there's something for a traitor to
-  spoil. With the causeway down the carter still reaches the cookhouse, but not the inn. A feast is
-  called at the inn and eaten at the cookhouse. A festival missed by a party stranded on the water
-  is the lake town's risk.
+  spoil. A feast is called at the inn and eaten at the cookhouse.
+  **The festival is on the boats**: there's no square to spare, so the town gathers round the mast
+  of the boats lashed together in the harbour (the `gathering` place, not the well), the bonfire on
+  a stone-ballasted barge among them, the butts shot along the raft.
+- **The rare companies** (`adventurers.json`, `rare`): now and then a company comes in place of a
+  party, our own homage to the stories the town's setting comes from. A dwarf heir's company bound
+  for the hall their grandfathers lost to a fire-wyrm, a halfling along to keep the books; and the
+  company of the long road, halflings who never meant to leave home, a grey wanderer, a ranger, an
+  elf and a dwarf, carrying something to a mountain that burns. They come as their own folk and by
+  their own names, as big as the town can take (four always; all of them only at twelve players),
+  and they'll take only their own errand, whatever the broker says of it.
 
 ## Art direction
 

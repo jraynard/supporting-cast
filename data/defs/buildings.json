@@ -66,7 +66,9 @@
         { "name": "Timber", "label": "thatched", "kit": "timber_plaster" },
         { "name": "Shingle", "label": "shingle-roofed", "kit": "timber_shingle", "parts": { "roof": "ShingleRoofPart" } },
         // On a deck over the water: no foundation, the boardwalk under it is its floor.
-        { "name": "Piled", "label": "on piles", "kit": "timber_plaster", "parts": { "foundation": "" } }
+        { "name": "Piled", "label": "on piles", "kit": "timber_plaster", "parts": { "foundation": "" } },
+        // A lake town's: on piles under steep shingles (art/reference/laketown*.webp).
+        { "name": "PiledShingle", "label": "shingled, on piles", "kit": "timber_shingle", "parts": { "foundation": "", "roof": "ShingleRoofPart" } }
       ]
     },
     {
@@ -257,7 +259,9 @@
       ],
       "variants": [
         { "name": "Timber", "label": "timber", "kit": "log_turf" },
-        { "name": "Stone", "label": "stone", "kit": "stone_turf", "parts": { "wall": "StoneWallPart" } }
+        { "name": "Stone", "label": "stone", "kit": "stone_turf", "parts": { "wall": "StoneWallPart" } },
+        // A lake town's forge, kept off the timber: stone walls on a stone pier (StonePier), no foundation of its own.
+        { "name": "Piled", "label": "stone, on a pier", "kit": "stone_turf", "parts": { "foundation": "", "wall": "StoneWallPart" } }
       ]
     },
     {
@@ -457,7 +461,8 @@
         { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster" },
         { "name": "Shingle", "label": "shingle-roofed", "kit": "timber_shingle", "parts": { "roof": "ShingleRoofPart" } },
         // On a deck over the water: no foundation, the boardwalk under it is its floor.
-        { "name": "Piled", "label": "on piles", "kit": "timber_plaster", "parts": { "foundation": "" } }
+        { "name": "Piled", "label": "on piles", "kit": "timber_plaster", "parts": { "foundation": "" } },
+        { "name": "PiledShingle", "label": "shingled, on piles", "kit": "timber_shingle", "parts": { "foundation": "", "roof": "ShingleRoofPart" } }
       ]
     },
     {
@@ -517,9 +522,41 @@
         { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster" },
         { "name": "Shingle", "label": "shingle-roofed", "kit": "timber_shingle", "parts": { "roof": "ShingleRoofPart" } },
         // On a deck over the water: no foundation, the boardwalk under it is its floor.
-        { "name": "Piled", "label": "on piles", "kit": "timber_plaster", "parts": { "foundation": "" } }
+        { "name": "Piled", "label": "on piles", "kit": "timber_plaster", "parts": { "foundation": "" } },
+        { "name": "PiledShingle", "label": "shingled, on piles", "kit": "timber_shingle", "parts": { "foundation": "", "roof": "ShingleRoofPart" } }
       ]
     },
+    {
+      // A lake town's hall over the water, where its council sits and its master keeps the town's
+      // books: long tables for a moot, chests for the records, lanterns from the beams. Nobody's
+      // workplace yet (the Mayor's, when there is one: docs/DESIGN.md); for now a hall to stand in.
+      "name": "MootHall", "label": "moot hall", "icon": "buildings/table",
+      "description": "A great timber hall on piles under steep shingles, where the town's council sits: long tables for a moot, chests of the town's records, doors at the front and both ends.",
+      "layout": [
+        "WWWWWWWWWWWWW",
+        "W...........W",
+        "W...........W",
+        "W...........W",
+        "D...........D",
+        "W...........W",
+        "W...........W",
+        "W...........W",
+        "WWWWWWDWWWWWW"
+      ],
+      "parts": { "foundation": "", "wall": "TimberWall", "door": "PlankDoor", "roof": "ShingleRoofPart" },
+      "furnish": [
+        { "def": "LongTable", "at": [3, 2] }, { "def": "LongTable", "at": [9, 2] },
+        { "def": "LongTable", "at": [3, 5] }, { "def": "LongTable", "at": [9, 5] },
+        { "def": "Stool", "at": [2, 2] }, { "def": "Stool", "at": [4, 3] }, { "def": "Stool", "at": [8, 2] }, { "def": "Stool", "at": [10, 3] },
+        { "def": "Stool", "at": [2, 6] }, { "def": "Stool", "at": [4, 5] }, { "def": "Stool", "at": [8, 6] }, { "def": "Stool", "at": [10, 5] },
+        { "def": "Chest", "at": [5, 1], "facing": 2 }, { "def": "Chest", "at": [7, 1], "facing": 2 }
+      ],
+      "lamp": "Lantern",
+      "lamps": [ { "at": [6, 3] }, { "at": [6, 6] }, { "at": [1, 1] }, { "at": [11, 1] } ],
+      "variants": [
+        { "name": "Piled", "label": "on piles", "kit": "timber_shingle" }
+      ]
+    }
   ],
 
   // How the buildings look (presentation only; Rendering/BuildingKit.cs, docs/ART.md "Building

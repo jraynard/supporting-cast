@@ -39,7 +39,11 @@ public sealed class BrokerJob(Entity member, int quest) : Job
             var strength = ExpeditionSystem.PartyStrength(sim, a.Party);
             var best = -1;
             var bestOff = float.MaxValue;
-            foreach (var q in sim.Expeditions.Quests)
+            // A company with its own errand takes nothing else: that's the one to put to them.
+            var errand = ExpeditionSystem.ErrandOf(sim, a.PartyDef);
+            if (errand != null && sim.Expeditions.OwnQuest(a.PartyDef) is { } own && sim.Expeditions.IntelOf(pawn, own.Id) != null)
+                best = own.Id;
+            foreach (var q in errand == null ? sim.Expeditions.Quests : [])
             {
                 if (q.Status != QuestStatus.Open || sim.Expeditions.IntelOf(pawn, q.Id) is not { } intel
                     || intel.Danger < ExpeditionSystem.TooEasy * strength || intel.Danger > ExpeditionSystem.TooHard * strength)

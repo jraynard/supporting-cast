@@ -97,7 +97,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             Options = options with { Traitors = false };
     }
 
-    /// <summary>Where the festival gathers (the well in the square), once it's begun.</summary>
+    /// <summary>Where the festival gathers (the well in the square, or the town's gathering place), once it's begun.</summary>
     public int3? Square { get; private set; }
 
     /// <summary>How the round came out, once it's <see cref="RoundPhase.Over"/>.</summary>
@@ -183,7 +183,8 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         Square = FindSquare(sim);
         sim.Festival.Begin(sim, Math.Min(at ?? sim.Clock.Tick, sim.Clock.Tick));
         // Everyone hears the bell, wherever they are.
-        sim.Messages.Add(MessageKind.Good, "The festival bell! Everyone to the well in the square: the crier tells the season, then the feast, the dance and the games.", null, "The festival");
+        var to = GatheringPlace(sim) is { } place ? place : "the well in the square";
+        sim.Messages.Add(MessageKind.Good, $"The festival bell! Everyone to {to}: the crier tells the season, then the feast, the dance and the games.", null, "The festival");
     }
 
     /// <summary>
@@ -211,16 +212,39 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         sim.Messages.Add(outcome == RoundOutcome.Won ? MessageKind.Good : MessageKind.Danger, Summary.Headline, null, outcome == RoundOutcome.Won ? "The season is won" : "The season is lost");
     }
 
-    /// <summary>The town's well, where a festival gathers; failing one, wherever the first villager stands.</summary>
+    /// <summary>
+    /// Where a festival gathers: the town's gathering place if it has one (<see cref="Defs.BuildingProps.Gathering"/>:
+    /// a lake town's mast on its boats), else its well; failing both, wherever the first villager stands.
+    /// </summary>
     public static int3? FindSquare(Simulation sim)
     {
         var w = sim.World;
+        int3? well = null;
         foreach (var e in w.Query<Thing>())
-            if (w.Get<Thing>(e).Def.Name == "Well")
-                return w.Get<Thing>(e).Cell;
+        {
+            var t = w.Get<Thing>(e);
+            if (t.Def.Building?.Gathering != null)
+                return t.Cell;
+            if (well == null && t.Def.Name == "Well")
+                well = t.Cell;
+        }
+        if (well != null)
+            return well;
         foreach (var e in sim.Creatures())
             if (w.Get<Creature>(e).Faction == Faction.Village)
                 return w.Get<Position>(e).Cell;
+        return null;
+    }
+
+    /// <summary>
+    /// The town's own gathering place for its festival, in words ("the boats in the harbour"), or
+    /// null for the well in the square (<see cref="Defs.BuildingProps.Gathering"/>).
+    /// </summary>
+    public static string? GatheringPlace(Simulation sim)
+    {
+        if ((sim.Round.Square ?? FindSquare(sim)) is { } at && sim.Map.InBounds(at) && sim.Map.Structure[sim.Map.Idx(at)] is { IsNull: false } e
+            && sim.World.Get<Thing>(e).Def.Building?.Gathering is { } words)
+            return words;
         return null;
     }
 

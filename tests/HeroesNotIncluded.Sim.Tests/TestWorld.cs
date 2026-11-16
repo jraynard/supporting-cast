@@ -50,10 +50,14 @@ public static class TestWorld
     /// round open: for tests that need a real town. <see cref="VillageRound.Setup"/> adds what a round
     /// needs on top (beds filled, the shrine stocked) but fixes the villager count.
     /// </summary>
-    public static (Simulation Sim, int3 Center) Millbrook(ulong seed = 1234, int villagers = VillageRound.StartingVillagers, DefDatabase? defs = null)
+    public static (Simulation Sim, int3 Center) Millbrook(ulong seed = 1234, int villagers = VillageRound.StartingVillagers, DefDatabase? defs = null) =>
+        OnMap(VillageRound.DefaultMap, seed, villagers, defs);
+
+    /// <summary>A hand-made town (<see cref="Millbrook"/>'s, or another map's: Reedmere), built with its villagers.</summary>
+    public static (Simulation Sim, int3 Center) OnMap(string name, ulong seed = 1234, int villagers = VillageRound.StartingVillagers, DefDatabase? defs = null)
     {
         defs ??= Defs.Value;
-        var map = defs.Map(VillageRound.DefaultMap);
+        var map = defs.Map(name);
         var sim = MapBuilder.CreateSimulation(defs, map, seed);
         var center = MapBuilder.Build(sim, map, new MapGenerator.Options { Villagers = villagers }).Center;
         return (sim, center);

@@ -24,7 +24,7 @@ public static class MapBuilder
     private static int3 StockpileMiddle(MapDef def)
     {
         int x = def.Stockpile[0] + def.Stockpile[2] / 2, y = def.Stockpile[1] + def.Stockpile[3] / 2;
-        return new int3(x, y, def.StandZ(x, y));
+        return new int3(x, y, def.SurfaceZ(x, y));
     }
 
     public static Built Build(Simulation sim, MapDef def, MapGenerator.Options? options = null)
@@ -47,7 +47,7 @@ public static class MapBuilder
             moistures[col] = MapGenerator.Fbm(x, y, seed + 7919, 32f, 3);
             MapGenerator.FillColumn(map, x, y, standZ[col], def.Ground[col], dirt, rock);
         }
-        var center = new int3(def.Center[0], def.Center[1], def.StandZ(def.Center[0], def.Center[1]));
+        var center = new int3(def.Center[0], def.Center[1], def.SurfaceZ(def.Center[0], def.Center[1]));
         MapGenerator.PlaceStrata(sim, standZ, center.Z, center, seed);
         MapGenerator.PlaceVeins(sim, standZ, moistures, center, seed);
         map.MarkStructureChanged();
@@ -87,7 +87,7 @@ public static class MapBuilder
             for (var y = def.Stockpile[1]; y < def.Stockpile[1] + def.Stockpile[3]; y++)
             for (var x = def.Stockpile[0]; x < def.Stockpile[0] + def.Stockpile[2]; x++)
                 if (map.InBounds(x, y, 0))
-                    map.SetZone(map.Idx(x, y, def.StandZ(x, y)), 1);
+                    map.SetZone(map.Idx(x, y, def.SurfaceZ(x, y)), 1);
 
         MapGenerator.Settle(sim, center, new MapGenerator.Options
         {
@@ -97,7 +97,7 @@ public static class MapBuilder
 
         foreach (var l in def.Livestock)
         {
-            var at = new int3(l.At[0], l.At[1], def.StandZ(l.At[0], l.At[1]));
+            var at = new int3(l.At[0], l.At[1], def.SurfaceZ(l.At[0], l.At[1]));
             var placed = 0;
             foreach (var c in sim.SpiralFrom(at, 4))
             {

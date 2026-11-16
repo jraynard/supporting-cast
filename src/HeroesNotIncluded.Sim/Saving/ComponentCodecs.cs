@@ -735,6 +735,7 @@ internal static class ComponentCodecs
             Model = Appearance.ValidModel(r.NullableString()),
             Folk = r.Version >= 12 && (Folk)r.Int() is var folk && Enum.IsDefined(folk) ? folk : Folk.Human, // the folk came with format 12
         }),
+        Codec("Kin", (w, k) => w.Int((int)k.Folk), r => new Kin { Folk = (Folk)r.Int() is var folk && Enum.IsDefined(folk) ? folk : Folk.Human }),
         Codec("AwaitingSettler", (w, a) => w.Long(a.ArriveTick), r => new AwaitingSettler { ArriveTick = r.Long() }),
         Codec("Avatar", (w, a) =>
         {

@@ -239,7 +239,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
     private void Roll(Simulation sim)
     {
         _rolled = true;
-        var pool = sim.Defs.AllQuests.ToList();
+        var pool = sim.Defs.AllQuests.Where(q => q.Party == null).ToList();
         var picked = new List<QuestDef>();
         for (var n = 0; n < QuestsPerRound && pool.Count > 0; n++)
         {
@@ -251,6 +251,26 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         for (var n = 0; n < picked.Count; n++)
             Post(picked[n], (n + _rand.NextFloat()) / picked.Count);
     }
+
+    /// <summary>
+    /// A company come to town with an errand of its own (<see cref="QuestDef.Party"/>): it goes up on
+    /// the board, once a round, and the talk at the inn is of where they're bound.
+    /// </summary>
+    public void PostOwn(Simulation sim, PartyDef party)
+    {
+        foreach (var def in sim.Defs.AllQuests)
+            if (def.Party == party.Name && _quests.All(q => q.Def != def))
+            {
+                Post(def, _rand.NextFloat());
+                sim.Messages.Add(MessageKind.Info, $"Word goes round: {party.Label} are bound for {def.Label}, and want a broker's blessing to go.", null);
+            }
+    }
+
+    /// <summary>The kind of errand a company comes to town for (<see cref="QuestDef.Party"/>), or null for an ordinary party.</summary>
+    public static QuestDef? ErrandOf(Simulation sim, PartyDef party) => sim.Defs.AllQuests.FirstOrDefault(q => q.Party == party.Name);
+
+    /// <summary>The errand a party came to town for, if it's one with its own and it's still to be done.</summary>
+    public Quest? OwnQuest(PartyDef party) => _quests.FirstOrDefault(q => q.Def.Party == party.Name && q.Status == QuestStatus.Open);
 
     /// <summary>Put a quest of this kind on the board, its danger this far (0..1) through its range.</summary>
     private void Post(QuestDef def, float along) =>
@@ -415,17 +435,26 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             return false;
         var strength = PartyStrength(sim, a.Party);
         var label = quest.Def.Label;
-        if (intel.Danger < TooEasy * strength)
+        var own = ErrandOf(sim, a.PartyDef);
+        if (own != null && quest.Def != own)
+        {
+            sim.Speech.Say(sim, member, $"{Capital(label)}? We've a road of our own, and it goes to {own.Label}. Nowhere else.", Volume.Say);
+            return false;
+        }
+        if (own != null)
+            sim.Speech.Say(sim, member, $"{Capital(label)}. {Capital(DangerWord(intel.Danger))} or not, it's what we came for. We go.", Volume.Say);
+        else if (intel.Danger < TooEasy * strength)
         {
             sim.Speech.Say(sim, member, $"{Capital(label)}, {DangerWord(intel.Danger)}? That's work for farmhands, not us.", Volume.Say);
             return false;
         }
-        if (intel.Danger > TooHard * strength)
+        else if (intel.Danger > TooHard * strength)
         {
             sim.Speech.Say(sim, member, $"{Capital(label)}, {DangerWord(intel.Danger)}? Do we look mad to you?", Volume.Say);
             return false;
         }
-        sim.Speech.Say(sim, member, $"{Capital(label)}. {Capital(DangerWord(intel.Danger))}, you say? We'll do it.", Volume.Say);
+        else
+            sim.Speech.Say(sim, member, $"{Capital(label)}. {Capital(DangerWord(intel.Danger))}, you say? We'll do it.", Volume.Say);
         sim.Shops.Complete(sim, order, broker);
         quest.Status = QuestStatus.Taken;
         var party = PartyInTown(sim, a.Party);

@@ -394,6 +394,9 @@ public sealed partial class BotPlayer
     {
         if (view.PartyLooks(member) is not { } looks || !sim.World.TryGet<Adventurer>(member, out var a))
             return null;
+        // A company that's said where it's bound (its own errand, posted when it came) takes only that.
+        if (ExpeditionSystem.ErrandOf(sim, a.PartyDef) != null)
+            return sim.Expeditions.OwnQuest(a.PartyDef) is { } own && view.Quests().Any(q => q.Id == own.Id) && !_offered.Contains((a.Party, own.Id)) ? own.Id : null;
         int? best = null;
         var bestOff = float.MaxValue;
         foreach (var q in view.Quests())

@@ -13,7 +13,10 @@ namespace HeroesNotIncluded.Sim.Adventurers;
 /// festival starts. Its rolls use a
 /// stream of its own, so a party arriving doesn't reshuffle the rest of the sim. Lone travellers
 /// (<see cref="PartyDef.Traveller"/>) come on a second schedule with a stream of its own again, of an
-/// afternoon, whatever party is or isn't in town: the inn's rooms aren't all or nothing.
+/// afternoon, whatever party is or isn't in town: the inn's rooms aren't all or nothing. Now and
+/// then a rare company (<see cref="PartyDef.Rare"/>) comes on its day in place of the next party,
+/// rolled at the round's start on a stream of its own again, so a round without one runs as before.
+/// A company's size follows the round's players (<see cref="PartyDef.SizeFor"/>).
 /// </summary>
 public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
 {
@@ -30,6 +33,17 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
 
     /// <summary>The travellers' rolls: who, when, and everything about them, apart from the parties'.</summary>
     private readonly SimRandom _travellerRand = new(seed ^ 0x7A4E_11E5u);
+
+    /// <summary>Whether a rare company comes this round, and on what day: rolled apart from the rest.</summary>
+    private readonly SimRandom _rareRand = new(seed ^ 0x0C0F_FA11u);
+
+    private bool _rareRolled, _rareCame;
+    private string? _rare;
+    private int _rareDay;
+
+    /// <summary>The rare company coming this round and the day it's due (rolled at the round's start), or null.</summary>
+    public (PartyDef Company, int Day)? RareCompany(Simulation sim) =>
+        _rare != null && sim.Defs.AllParties.FirstOrDefault(p => p.Name == _rare) is { } def ? (def, _rareDay) : null;
 
     /// <summary>Travellers come up the road between these hours, to be in by supper.</summary>
     public const float TravellerFromHour = 14, TravellerUntilHour = 19;
@@ -70,6 +84,12 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         (a, b, c, d) = _travellerRand.State;
         w.UInt(a); w.UInt(b); w.UInt(c); w.UInt(d);
         w.Long(NextTravellerTick);
+        (a, b, c, d) = _rareRand.State;
+        w.UInt(a); w.UInt(b); w.UInt(c); w.UInt(d);
+        w.Bool(_rareRolled);
+        w.NullableString(_rare);
+        w.Int(_rareDay);
+        w.Bool(_rareCame);
     }
 
     public void Load(Saving.SaveReader r, Simulation sim)
@@ -87,6 +107,14 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
             _travellerRand.State = (r.UInt(), r.UInt(), r.UInt(), r.UInt());
             NextTravellerTick = r.Long();
         }
+        if (r.Version >= 49) // the rare companies came with format 49
+        {
+            _rareRand.State = (r.UInt(), r.UInt(), r.UInt(), r.UInt());
+            _rareRolled = r.Bool();
+            _rare = r.NullableString();
+            _rareDay = r.Int();
+            _rareCame = r.Bool();
+        }
     }
 
     public void Update(Simulation sim)
@@ -98,12 +126,16 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (sim.Round.Phase == RoundPhase.Festival || sim.Round.Practice)
             return; // in the practice yard, only when sent for
         Travellers(sim, now);
+        if (!_rareRolled)
+            RollRare(sim);
         if (NextArrivalTick < 0)
         {
             NextArrivalTick = now + SimClock.HoursToTicks(FirstArrivalHours);
             return;
         }
-        if (now < NextArrivalTick)
+        // A rare company comes on its day, whenever the town's free of the last lot.
+        var rareDue = !_rareCame && RareCompany(sim) is { } rare && sim.Round.SeasonDay(sim).Day >= rare.Day;
+        if (now < NextArrivalTick && !rareDue)
             return;
         if (Present(sim))
         {
@@ -113,14 +145,48 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         // Nobody rides in after dark: they make camp and come in the morning.
         if (Ai.AiQueries.IsNight(sim))
             return;
-        var parties = sim.Defs.AllParties.Where(p => !p.Traveller).ToList();
-        if (parties.Count == 0)
+        var parties = sim.Defs.AllParties.Where(p => !p.Traveller && !p.Rare).ToList();
+        if (rareDue)
+        {
+            _rareCame = true;
+            Send(sim, RareCompany(sim)!.Value.Company);
+        }
+        else if (parties.Count > 0)
+            Send(sim, NextParty(parties, _rand));
+        else
             return;
-        Send(sim, NextParty(parties, _rand));
         // A table that's talked of brings the next lot sooner; the talk fades with each new party.
         NextArrivalTick = now + SimClock.HoursToTicks(HoursBetweenParties * _rand.Range(0.7f, 1.3f) * (1f - sim.Shops.FareFactor));
         sim.Shops.TalkFades();
     }
+
+    /// <summary>
+    /// Whether a rare company comes this round, and on which of its days: each rare one in turn
+    /// (in def order) has its chance, and the first to come is the round's.
+    /// </summary>
+    private void RollRare(Simulation sim)
+    {
+        _rareRolled = true;
+        foreach (var def in sim.Defs.AllParties)
+            if (def.Rare && _rareRand.Chance(def.Chance))
+            {
+                _rare = def.Name;
+                _rareDay = Math.Min(_rareRand.Range(def.FromDay, def.ToDay + 1), Math.Max(1, sim.Defs.Season.Days));
+                return;
+            }
+    }
+
+    /// <summary>A dev's or a test's say: this rare company comes this round, on this day.</summary>
+    public void SetRare(PartyDef def, int day)
+    {
+        _rareRolled = true;
+        _rareCame = false;
+        _rare = def.Name;
+        _rareDay = day;
+    }
+
+    /// <summary>Players in the round, bots too: the size a company comes at (<see cref="PartyDef.SizeFor"/>).</summary>
+    public static int Players(Simulation sim) => sim.World.Query<PlayerCharacter>().Count();
 
     /// <summary>One of the parties sent least this round (<see cref="Send"/> counts them), at random.</summary>
     internal PartyDef NextParty(IReadOnlyList<PartyDef> parties) => NextParty(parties, _rand);
@@ -197,7 +263,11 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
     }
 
     /// <summary>No party (nor traveller) comes unless one is sent (<see cref="Send"/>): the combat sweep, with or without heroes as it asks.</summary>
-    public void HoldArrivals() => NextArrivalTick = NextTravellerTick = long.MaxValue;
+    public void HoldArrivals()
+    {
+        NextArrivalTick = NextTravellerTick = long.MaxValue;
+        (_rareRolled, _rare) = (true, null); // and no rare company either
+    }
 
     /// <summary>Is any adventuring party's member still in town (alive)? Travellers don't count: they hold no party back.</summary>
     public static bool Present(Simulation sim)
@@ -275,11 +345,13 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         var stay = def.Traveller ? TravellerStay(sim, rand.Range(def.NightsMin, def.NightsMax + 1), rand)
             : SimClock.HoursToTicks(def.StayHours * rand.Range(0.75f, 1.25f));
         var names = def.Names.ToList();
-        Shuffle(names, rand);
-        var spots = Raids.GatherSpots(sim, from, target, def.MemberDefs.Count);
+        if (!def.FixedNames)
+            Shuffle(names, rand);
+        var kinds = def.MembersFor(Players(sim)).ToList();
+        var spots = Raids.GatherSpots(sim, from, target, kinds.Count);
         for (var i = 0; i < spots.Count; i++)
         {
-            var kind = def.MemberDefs[i];
+            var kind = kinds[i];
             var e = Spawn(sim, kind, names[i], spots[i], rand);
             sim.World.Add(e, new Adventurer
             {
@@ -296,6 +368,7 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         else if (members.Count > 0)
         {
             PartiesSent++;
+            sim.Expeditions.PostOwn(sim, def);
             // The wagon's whoever's best able to pay for its mending.
             Tinkering.Wagons.Bring(sim, seed, def, id, members.OrderByDescending(e => Shops.Coin.Count(sim, e)).First(), target);
             // Who they are, as the town sees them coming: the party's own description, if it has one.
@@ -319,6 +392,8 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
     private Entity Spawn(Simulation sim, AdventurerKindDef kind, string name, int3 cell, SimRandom rand)
     {
         var e = sim.SpawnCreature(sim.Defs.Creature("Human"), name, cell, Faction.Adventurer, ageDays: rand.Range(19, 45) * 365f, rand: rand);
+        if (kind.Folk is { } folk)
+            sim.World.Add(e, new Kin { Folk = folk });
         if (kind.WeaponDef != null)
             sim.Equip(e, kind.WeaponDef);
         if (kind.OutfitDef != null) // clothes first, then armor over them

@@ -52,6 +52,13 @@ public sealed class OreCarterSystem : ISimSystem, ISaveState
             if (chest.IsNull)
                 continue;
             var cell = w.Get<Thing>(chest).Cell;
+            // With the road cut, a smithy the carter can't reach from the road waits (a lake town's, over the causeway).
+            if (sim.Repairs.RoadCut && sim.SpiralFrom(cell, 2).FirstOrDefault(c => sim.Map.InBounds(c) && sim.Map.Passable(c), new int3(-1, -1, -1)) is var by
+                && by.X >= 0 && !Enumerable.Range(0, 4).Any(side => Combat.Raids.EdgeEntry(sim, side, by) != null))
+            {
+                sim.Messages.Add(MessageKind.Warning, $"The carter couldn't get the ore through to the smithy, the {sim.Repairs.Breaches[0].Label} down.", cell);
+                continue;
+            }
             foreach (var t in load)
             {
                 var item = sim.CreateItem(t.ThingDef, t.Count, t.MaterialDef);

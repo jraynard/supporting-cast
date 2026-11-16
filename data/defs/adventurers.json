@@ -8,7 +8,15 @@
 // of an afternoon (PartySystem's own schedule), stay "nightsMin".."nightsMax" nights and never quest.
 // "tempers": how likely each kind is to be Easy, Rowdy, Picky, Stingy, Boastful or Timid
 // (Adventurers/Tempers: what a service is worth to them, how long they'll wait, how thirsty, how
-// fussy, what they say). Names are our own; keep tabletop terms out.
+// fussy, what they say). "folk": what they always are (Dwarf, Halfling, Elf; else the look's own
+// pick). Names are our own; keep tabletop terms out.
+//
+// A "rare" company comes now and then (PartySystem: "chance" in a round, on a day from "fromDay"
+// to "toDay", in place of the next party; one a round at most). Its "members" always come, its
+// "extraMembers" join as the round has more players, none at "coreAt" (4) and all at "fullAt" (12),
+// so a full company only comes to a town big enough for it. "fixedNames": each member's name is the
+// one in the same place. A company may have its own errand (quests.json "party"): it's posted when
+// they come, and it's the only quest they'll take.
 {
   "adventurerKinds": [
     { "name": "Sellsword", "label": "sellsword", "weapon": "ShortSword", "apparel": [ "LeatherJerkin", "IronHelm" ],
@@ -22,7 +30,22 @@
     { "name": "Pedlar", "label": "pedlar", "outfit": "Wanderer", "skillMin": 1, "skillMax": 3, "purseMin": 16, "purseMax": 24, "spend": 0.8, "tastes": [ "Sweet", "Savoury" ], "tempers": { "Stingy": 3, "Easy": 1, "Picky": 1 } },
     { "name": "Pilgrim", "label": "pilgrim", "outfit": "Seer", "skillMin": 0, "skillMax": 2, "purseMin": 12, "purseMax": 18, "spend": 0.7, "tastes": [ "Fresh" ], "tempers": { "Easy": 3, "Timid": 2, "Stingy": 1 } },
     { "name": "Drover", "label": "drover", "weapon": "Club", "outfit": "Farmhand", "skillMin": 2, "skillMax": 5, "purseMin": 14, "purseMax": 22, "spend": 0.85, "tastes": [ "Savoury", "Hot" ], "tempers": { "Rowdy": 2, "Easy": 2, "Stingy": 1 } },
-    { "name": "Minstrel", "label": "minstrel", "outfit": "Skald", "skillMin": 1, "skillMax": 3, "purseMin": 12, "purseMax": 20, "spend": 0.9, "tastes": [ "Sweet", "Hot" ], "tempers": { "Boastful": 2, "Easy": 2, "Rowdy": 1, "Picky": 1 } }
+    { "name": "Minstrel", "label": "minstrel", "outfit": "Skald", "skillMin": 1, "skillMax": 3, "purseMin": 12, "purseMax": 20, "spend": 0.9, "tastes": [ "Sweet", "Hot" ], "tempers": { "Boastful": 2, "Easy": 2, "Rowdy": 1, "Picky": 1 } },
+    // The companies' folk. Dwarves come with thin purses and long memories; the halfling keeps the accounts.
+    { "name": "ExiledHeir", "label": "heir-in-exile", "folk": "Dwarf", "weapon": "ShortSword", "apparel": [ "ChainShirt", "IronHelm" ],
+      "outfit": "Wanderer", "skillMin": 9, "skillMax": 13, "purseMin": 8, "purseMax": 18, "spend": 0.9, "tastes": [ "Savoury", "Hot" ], "tempers": { "Boastful": 3, "Picky": 2 } },
+    { "name": "Graybeard", "label": "graybeard", "folk": "Dwarf", "weapon": "Staff", "apparel": [ "IronHelm" ],
+      "outfit": "Wanderer", "skillMin": 5, "skillMax": 9, "purseMin": 6, "purseMax": 14, "spend": 0.8, "tastes": [ "Savoury" ], "tempers": { "Picky": 2, "Stingy": 2, "Boastful": 1 } },
+    { "name": "AxeHand", "label": "axe-hand", "folk": "Dwarf", "weapon": "Axe", "apparel": [ "ChainShirt", "IronHelm" ],
+      "outfit": "Wanderer", "skillMin": 7, "skillMax": 12, "purseMin": 4, "purseMax": 12, "spend": 0.8, "tastes": [ "Savoury", "Hot" ], "tempers": { "Rowdy": 3, "Boastful": 2, "Stingy": 1 } },
+    { "name": "Burrower", "label": "halfling", "folk": "Halfling", "weapon": "Dagger", "apparel": [],
+      "outfit": "Farmhand", "skillMin": 2, "skillMax": 5, "purseMin": 15, "purseMax": 30, "spend": 1.2, "tastes": [ "Sweet", "Savoury" ], "tempers": { "Easy": 3, "Timid": 2, "Picky": 1 } },
+    { "name": "GreyWanderer", "label": "grey wanderer", "folk": "Human", "weapon": "Staff", "apparel": [],
+      "outfit": "Seer", "skillMin": 6, "skillMax": 10, "purseMin": 20, "purseMax": 40, "spend": 1.1, "tastes": [ "Hot", "Fresh" ], "tempers": { "Picky": 2, "Boastful": 2, "Easy": 1 } },
+    { "name": "Ranger", "label": "ranger", "folk": "Human", "weapon": "ShortSword", "apparel": [ "LeatherJerkin" ],
+      "outfit": "Hunter", "skillMin": 8, "skillMax": 12, "purseMin": 5, "purseMax": 15, "spend": 0.9, "tastes": [ "Fresh", "Savoury" ], "tempers": { "Easy": 2, "Stingy": 1, "Timid": 1 } },
+    { "name": "ElfArcher", "label": "elf archer", "folk": "Elf", "weapon": "Bow", "apparel": [ "LeatherCap" ],
+      "outfit": "Hunter", "skillMin": 9, "skillMax": 13, "purseMin": 15, "purseMax": 30, "spend": 1.1, "tastes": [ "Fresh", "Sweet" ], "tempers": { "Picky": 3, "Boastful": 1 } }
   ],
   "parties": [
     { "name": "GildedSpurs", "label": "the Gilded Spurs", "members": [ "Sellsword", "Bowman", "Hedgewise" ],
@@ -43,6 +66,21 @@
     { "name": "LarkspurThree", "label": "the Larkspur Three", "members": [ "Bowman", "Hedgewise", "Sellsword" ],
       "description": "They were five when they set out. They'd rather not discuss it.",
       "stayHours": 14, "names": [ "Clemence", "Dorian", "Maude", "Pell", "Wren" ] },
+    // The rare companies: a dwarf lord's heir and what's left of his kin, bound for the hall their
+    // grandfathers lost to a fire-wyrm, a halfling along to keep the books; and a company of the long
+    // road, carrying something they won't put down to a mountain that burns.
+    { "name": "GreyhornCompany", "label": "the Greyhorn Company", "rare": true, "chance": 0.3, "fromDay": 1, "toDay": 2,
+      "members": [ "ExiledHeir", "Graybeard", "AxeHand", "Burrower" ],
+      "extraMembers": [ "AxeHand", "AxeHand", "Graybeard", "AxeHand", "AxeHand", "Graybeard", "AxeHand", "AxeHand", "AxeHand", "Graybeard" ],
+      "description": "Dwarves a long way from the hall their grandfathers lost, an heir with no throne at their head, and one small, worried halfling keeping the accounts.",
+      "stayHours": 22, "wagonChance": 0.8, "fixedNames": true,
+      "names": [ "Brannoc", "Thrumm", "Gorrim", "Bramble", "Grist", "Grum", "Ottin", "Bodd", "Budd", "Ferrin", "Farrin", "Hask", "Husk", "Tamm" ] },
+    { "name": "LongRoadCompany", "label": "the Company of the Long Road", "rare": true, "chance": 0.25, "fromDay": 2, "toDay": 3,
+      "members": [ "GreyWanderer", "Burrower", "Burrower", "Ranger" ],
+      "extraMembers": [ "Burrower", "ElfArcher", "AxeHand", "Burrower", "Vanguard" ],
+      "description": "Halflings who were never meant to leave home, a grey wanderer who says they were, and whoever else the road has gathered. They carry something they won't put down.",
+      "stayHours": 14, "wagonChance": 0, "fixedNames": true,
+      "names": [ "Morrow", "Tansy", "Cobble", "Corran", "Burdock", "Ilvaren", "Tuggin", "Hazel", "Aldren" ] },
     { "name": "Pedlar", "label": "a pedlar", "members": [ "Pedlar" ], "traveller": true, "wagonChance": 0, "nightsMin": 1, "nightsMax": 2,
       "description": "Ribbons, pins and needles, and news three weeks old.",
       "names": [ "Ambrose", "Hilde", "Jarvis", "Nell", "Silas" ] },

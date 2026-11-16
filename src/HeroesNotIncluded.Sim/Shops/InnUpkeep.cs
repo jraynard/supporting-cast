@@ -248,7 +248,7 @@ public sealed class InnSupplySystem : ISimSystem, Saving.ISaveState
         // With a span down the road's cut. Where the inn and the kitchen share a roof (Millbrook's,
         // over the river) that's the end of it. Where they stand apart the carter calls at the kitchen
         // first, if a cart can still get there, and at the inn only if it's still joined to the kitchen:
-        // a lake town's cookhouse on the shore gets its food while its inn out at the landing waits.
+        // a cookhouse on the shore would get its food while an inn out on the water waited.
         bool toInn, toKitchen;
         if (!sim.Repairs.RoadCut)
             (toInn, toKitchen) = (!inn.IsNull, !kitchen.IsNull);

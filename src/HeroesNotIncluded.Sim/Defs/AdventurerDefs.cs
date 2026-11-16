@@ -15,6 +15,12 @@ public sealed class AdventurerKindDef : Def
     /// <summary>The clothes under their armor (<see cref="OutfitDef"/>), dyes rolled per adventurer.</summary>
     public string? Outfit { get; set; }
 
+    /// <summary>
+    /// Which folk they always are (a company of dwarves and the small one they brought along):
+    /// <see cref="Components.Kin"/>. Null: whatever their look is drawn as, like anyone else's.
+    /// </summary>
+    public Components.Folk? Folk { get; set; }
+
     /// <summary>The Melee and Shooting levels they come with (inclusive range).</summary>
     public int SkillMin { get; set; } = 5;
     public int SkillMax { get; set; } = 10;
@@ -82,8 +88,41 @@ public sealed class AdventurerKindDef : Def
 /// </summary>
 public sealed class PartyDef : Def
 {
-    /// <summary>Adventurer kinds by name, one member each.</summary>
+    /// <summary>Adventurer kinds by name, one member each: those who always come.</summary>
     public List<string> Members { get; set; } = [];
+
+    /// <summary>
+    /// More of the company, in the order they join it as the town grows (<see cref="SizeFor"/>):
+    /// none at <see cref="CoreAt"/> players or fewer, all of them at <see cref="FullAt"/>. A full
+    /// company of fourteen would swamp a town of five; a town of twelve can take them all.
+    /// </summary>
+    public List<string> ExtraMembers { get; set; } = [];
+
+    /// <summary>Players in the round (bots too) at or under which only <see cref="Members"/> come.</summary>
+    public int CoreAt { get; set; } = 4;
+
+    /// <summary>Players in the round from which the whole company comes, <see cref="ExtraMembers"/> and all.</summary>
+    public int FullAt { get; set; } = 12;
+
+    /// <summary>
+    /// Each member always has the name in the same place in <see cref="Names"/> (members, then the
+    /// extras): a company everyone knows by name. Otherwise names are shuffled out to them.
+    /// </summary>
+    public bool FixedNames { get; set; }
+
+    /// <summary>
+    /// A company that comes now and then, not in the usual run (<see cref="Adventurers.PartySystem"/>):
+    /// at most one such a round, with <see cref="Chance"/>, on a day from <see cref="FromDay"/> to
+    /// <see cref="ToDay"/> of the season, in place of the party that would have come next.
+    /// </summary>
+    public bool Rare { get; set; }
+
+    /// <summary>A rare company's chance of coming in a round (each rare one rolled in turn; the first to come is the round's).</summary>
+    public float Chance { get; set; } = 0.25f;
+
+    /// <summary>The days of the season (1: the deal's) a rare company may come on.</summary>
+    public int FromDay { get; set; } = 1;
+    public int ToDay { get; set; } = 3;
 
     /// <summary>The town role (<see cref="TownRole"/>) of the building they make for and loiter in: the tavern.</summary>
     public string Haunt { get; set; } = "Tavern";
@@ -109,17 +148,42 @@ public sealed class PartyDef : Def
     public int NightsMax { get; set; } = 1;
 
     [JsonIgnore] public List<AdventurerKindDef> MemberDefs { get; } = [];
+    [JsonIgnore] public List<AdventurerKindDef> ExtraMemberDefs { get; } = [];
     [JsonIgnore] public TownRole HauntRole { get; private set; }
+
+    /// <summary>
+    /// How many of the company come to a round of so many players: the core, and a share of the
+    /// extras growing from none at <see cref="CoreAt"/> to all at <see cref="FullAt"/>.
+    /// </summary>
+    public int SizeFor(int players)
+    {
+        if (ExtraMemberDefs.Count == 0)
+            return MemberDefs.Count;
+        var share = Math.Clamp((players - CoreAt) / (float)Math.Max(1, FullAt - CoreAt), 0f, 1f);
+        return MemberDefs.Count + (int)MathF.Round(ExtraMemberDefs.Count * share);
+    }
+
+    /// <summary>Who comes, in order, for a round of so many players (<see cref="SizeFor"/>).</summary>
+    public IEnumerable<AdventurerKindDef> MembersFor(int players) => MemberDefs.Concat(ExtraMemberDefs).Take(SizeFor(players));
 
     internal override void Resolve(DefDatabase db)
     {
         MemberDefs.Clear();
         foreach (var m in Members)
             MemberDefs.Add(db.AdventurerKind(m));
+        ExtraMemberDefs.Clear();
+        foreach (var m in ExtraMembers)
+            ExtraMemberDefs.Add(db.AdventurerKind(m));
         if (MemberDefs.Count == 0)
             throw new Exception($"Party {Name} has no members");
-        if (Names.Count < MemberDefs.Count)
+        if (Names.Count < MemberDefs.Count + ExtraMemberDefs.Count)
             throw new Exception($"Party {Name} needs at least as many names as members");
+        if (ExtraMemberDefs.Count > 0 && CoreAt >= FullAt)
+            throw new Exception($"Party {Name}: coreAt must be below fullAt");
+        if (Rare && (!(Chance > 0) || Chance > 1 || FromDay < 1 || FromDay > ToDay))
+            throw new Exception($"Party {Name}: a rare company needs a chance in (0, 1] and days from no later than to");
+        if (Rare && Traveller)
+            throw new Exception($"Party {Name}: a traveller can't be a rare company");
         HauntRole = TownRoles.Parse(Haunt, $"Party '{Name}' haunt");
         if (NightsMin < 1 || NightsMin > NightsMax)
             throw new Exception($"Party {Name}: nights must be at least 1, min no more than max");

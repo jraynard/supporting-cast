@@ -342,6 +342,30 @@ def wild_flax(bare=False):
     return cv.img
 
 
+def reeds():
+    """Reeds and bulrushes in a lake's shallows: a tuft of tall blades, some bent, and a few brown
+    cattail heads on stiff stems above them (Reeds, Reedmere's shore)."""
+    rnd = random.Random(53)
+    cv = Canvas(32, 40)
+    blade = ramp((118, 150, 74), 4, light=1.3)
+    dry = ramp((176, 160, 96), 3)
+    head = ramp((122, 76, 46), 4, light=1.25)
+    for k in range(11):                                                   # blades, back to front
+        x = 7 + k * 1.8 + rnd.uniform(-0.6, 0.6)
+        lean = rnd.uniform(-5, 5)
+        tip = (x + lean, 6 + rnd.uniform(0, 12))
+        s = cv.strip([(x, 39), lerp((x, 39), tip, 0.55), tip], [2.6, 1.9, 0.3], steps=4)
+        cv.paint(s, dry if k % 4 == 3 else blade, "base", radius=0.3, line_color=LEAF_LINE)
+    for k in range(4):                                                    # the bulrushes' stems and heads
+        x = 10 + k * 3.6 + rnd.uniform(-0.8, 0.8)
+        top = (x + rnd.uniform(-1.5, 1.5), 4 + rnd.uniform(0, 6))
+        s = cv.strip([(x, 39), top], [1.2, 1.0], steps=2)
+        cv.paint(s, blade, "base", radius=0.2, line_color=LEAF_LINE)
+        cv.paint(cv.ellipse(top[0], top[1] + 3.2, 1.4, 3.2), head, "base", radius=0.6, line_color=WOOD_LINE)
+        cv.curve([(top[0], top[1] - 0.3), (top[0], top[1] - 2.2)], blade[1], "base", 2)
+    return cv.img
+
+
 def sprites():
     out = {}
     for i, sfx in enumerate(("", "_v2", "_v3")):
@@ -360,6 +384,7 @@ def sprites():
     out["things/emberroot_bare"] = emberroot(bare=True)
     out["things/wild_flax"] = wild_flax()
     out["things/wild_flax_bare"] = wild_flax(bare=True)
+    out["things/reeds"] = reeds()
     return out
 
 

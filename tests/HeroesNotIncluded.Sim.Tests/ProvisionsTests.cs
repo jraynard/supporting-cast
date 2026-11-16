@@ -249,7 +249,7 @@ public class ProvisionsTests
     }
 
     [Fact]
-    public void ACutCausewayStopsTheCarterOnlyAtTheInn()
+    public void ACutCausewayStopsTheCarterAtTheWater()
     {
         var sim = Round(ReedmereMapTests.Map);
         var w = sim.World;
@@ -263,6 +263,8 @@ public class ProvisionsTests
                 sim.Repairs.BreakBridge(sim, sim.Rand);
         }
         var said = sim.Messages.Messages.Skip(sim.Messages.IndexAfter(seen)).Select(m => m.Text).Where(t => t.Contains("carter")).ToList();
-        Assert.True(said.Any(t => t.Contains("been by the cookhouse") && t.Contains("couldn't get to the inn")), string.Join("\n", said));
+        // Reedmere's inn and cookhouse both stand out on the water: neither is reached, nor the forge's ore.
+        Assert.True(said.Any(t => t.Contains("couldn't get through") && t.Contains("the inn and the cookhouse")), string.Join("\n", said));
+        Assert.DoesNotContain(said, t => t.Contains("left a load of ore"));
     }
 }

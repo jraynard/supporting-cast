@@ -20,6 +20,16 @@
       "rumours": [ "Smoke from the Ashfall Tower again. Shepherds say it's {0}.", "I wouldn't go up to the Tower. {0}, from what I hear." ] },
     { "name": "Rimewater", "label": "the Rimewater Caves", "description": "Ice caves under the falls, where the cold never leaves.",
       "dangerMin": 1.5, "dangerMax": 3.0, "rewardMin": 30, "rewardMax": 60, "hours": 6, "threats": [ "Frost", "Bite" ], "dark": true, "beasts": true,
-      "rumours": [ "The Rimewater caves are {0}, but the cold'll get you first.", "Trappers go into Rimewater. It's {0}, they say." ] }
+      "rumours": [ "The Rimewater caves are {0}, but the cold'll get you first.", "Trappers go into Rimewater. It's {0}, they say." ] },
+    // The rare companies' own errands ("party": posted when they come, and all they'll take). Danger is
+    // set for the company's core (four); a bigger town's fuller company has more in hand.
+    { "name": "GreyhornHall", "label": "Greyhorn Hall", "party": "GreyhornCompany",
+      "description": "A dwarf-hall under a lone peak to the north, lost to fire a lifetime ago. Whatever burned it out is said to sleep there still, on the gold.",
+      "dangerMin": 4.0, "dangerMax": 6.0, "rewardMin": 200, "rewardMax": 320, "hours": 16, "threats": [ "Burn", "Cut" ], "dark": true,
+      "rumours": [ "They say it's still warm inside Greyhorn. {0}, and then some.", "My gran saw the fire on Greyhorn the year it fell. Going there's {0}.", "Something sleeps on Greyhorn's gold. Waking it would be {0}." ] },
+    { "name": "CinderMount", "label": "the Cinder Mount", "party": "LongRoadCompany",
+      "description": "A mountain that smokes at the edge of the maps. The company won't say what they're carrying there, only that it can't come back.",
+      "dangerMin": 3.5, "dangerMax": 5.0, "rewardMin": 60, "rewardMax": 120, "hours": 18, "threats": [ "Burn", "Cut", "Bite" ],
+      "rumours": [ "Nobody comes back from the Cinder Mount. {0}, that road.", "The ground's hot for miles round the Cinder Mount. {0}, they say." ] }
   ]
 }

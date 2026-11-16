@@ -217,6 +217,141 @@
       "maxHp": 200, "flammability": 0.4,
       "bridge": { "parapet": "props/fence_rail", "coping": "props/fence_rail", "pier": "props/log_side", "height": 0.5, "thickness": 0.07, "pierEvery": 2, "arched": false },
       "building": { "isFloor": true, "outdoor": true, "breakable": true, "supportSpan": 1, "piled": 3, "insulation": 0.9, "work": 120, "cost": [ { "def": "Wood", "count": 3 } ] }
+    },
+    {
+      // Dressed stone on piers sunk in the lakebed: a lake town's ground that doesn't burn, under its
+      // forge and before its hall. Arched underneath like the stone bridge.
+      "name": "StonePier", "label": "stone pier", "category": "Building", "sprite": "buildings/bridge_stone",
+      "description": "Dressed stone on piers sunk into the lakebed: ground over the water that won't burn, for a forge or a hall's forecourt.",
+      "maxHp": 600, "flammability": 0,
+      "bridge": { "parapet": "buildings/bridge_parapet", "coping": "buildings/bridge_coping", "pier": "buildings/bridge_pier", "height": 0.45, "pierEvery": 3 },
+      "building": { "isFloor": true, "outdoor": true, "supportSpan": 1, "piled": 3, "insulation": 0.9, "work": 300, "cost": [ { "def": "Stone", "count": 6 } ] }
+    },
+    {
+      // Boats moored hull to hull in a lake town's harbour and lashed into one deck, gangplanks to the
+      // quays: where the town holds its festival (Reedmere has no square to spare). Walked like a deck.
+      "name": "BoatDeck", "label": "lashed boats", "category": "Building", "sprite": "buildings/floor_wood",
+      "description": "Boats moored side by side in the harbour and lashed together: a deck on the water, for the festival. Wood: it burns.",
+      "maxHp": 140, "flammability": 0.4,
+      "bridge": { "parapet": "props/timber_dark", "coping": "props/log_side", "pier": "props/timber_dark", "height": 0.3, "thickness": 0.1, "arched": false, "hull": true },
+      "building": { "isFloor": true, "outdoor": true, "buildable": false, "supportSpan": 1, "piled": 3, "insulation": 0.9, "work": 120, "cost": [ { "def": "Wood", "count": 3 } ] }
+    },
+    {
+      // One of the lashed boats ballasted with stone and its deck flagged: the festival's bonfire burns on it.
+      "name": "FireBarge", "label": "fire barge", "category": "Building", "sprite": "buildings/bridge_stone",
+      "description": "A barge ballasted with stone, its deck flagged: a fire can burn on it without taking the boats with it.",
+      "maxHp": 300, "flammability": 0,
+      "bridge": { "parapet": "props/timber_dark", "coping": "props/log_side", "pier": "props/timber_dark", "height": 0.3, "thickness": 0.1, "arched": false, "hull": true },
+      "building": { "isFloor": true, "outdoor": true, "buildable": false, "supportSpan": 1, "piled": 3, "insulation": 0.9, "work": 200, "cost": [ { "def": "Stone", "count": 6 } ] }
+    },
+    {
+      // Moored in the harbour and off the walks: only seen (nobody rows yet).
+      "name": "Rowboat", "label": "rowboat", "category": "Building", "solid": true, "sprite": "buildings/crate", "size": [1, 2],
+      "description": "A clinker-built rowboat, moored with its oars shipped.",
+      "maxHp": 80, "flammability": 0.6,
+      "building": { "outdoor": true, "buildable": false, "floats": true, "work": 60, "cost": [] },
+      "model": [
+        { "min": [0.26, 0.2, -0.08], "max": [0.74, 1.8, 0.04], "top": "props/planks", "side": "props/planks" },
+        { "min": [0.18, 0.24, -0.1], "max": [0.27, 1.76, 0.3], "top": "props/log_side", "side": "props/timber_dark" },
+        { "min": [0.73, 0.24, -0.1], "max": [0.82, 1.76, 0.3], "top": "props/log_side", "side": "props/timber_dark" },
+        { "min": [0.3, 0.04, -0.1], "max": [0.7, 0.24, 0.36], "top": "props/log_side", "side": "props/timber_dark" },
+        { "min": [0.42, -0.04, 0.2], "max": [0.58, 0.06, 0.42], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.27, 1.76, -0.1], "max": [0.73, 1.92, 0.3], "top": "props/log_side", "side": "props/timber_dark" },
+        { "min": [0.27, 0.9, 0.16], "max": [0.73, 1.04, 0.2], "top": "props/planks", "side": "props/timber_dark" },
+        { "min": [0.27, 1.5, 0.16], "max": [0.73, 1.62, 0.2], "top": "props/planks", "side": "props/timber_dark" },
+        { "min": [0.32, 0.4, 0.2], "max": [0.37, 1.7, 0.24], "top": "props/log_side", "side": "props/log_side" },
+        { "min": [0.63, 0.4, 0.2], "max": [0.68, 1.7, 0.24], "top": "props/log_side", "side": "props/log_side" }
+      ]
+    },
+    {
+      // A lake town's catch, split and hung to dry on the quays: dressing, placed by the map.
+      "name": "DryingRack", "label": "drying rack", "category": "Building", "solid": true, "sprite": "buildings/smoking_rack",
+      "description": "Split fish hung on a pole to dry in the wind off the lake.",
+      "maxHp": 60, "flammability": 0.8,
+      "building": { "outdoor": true, "buildable": false, "work": 60, "cost": [] },
+      "model": [
+        { "min": [0.06, 0.44, 0], "max": [0.14, 0.56, 1.15], "top": "props/log_end", "side": "props/timber_dark" },
+        { "min": [0.86, 0.44, 0], "max": [0.94, 0.56, 1.15], "top": "props/log_end", "side": "props/timber_dark" },
+        { "min": [0.04, 0.46, 1.06], "max": [0.96, 0.54, 1.12], "top": "props/log_side", "side": "props/log_side" },
+        { "min": [0.2, 0.47, 0.6], "max": [0.28, 0.53, 1.06], "top": "props/fish_top", "side": "props/fish_top" },
+        { "min": [0.34, 0.47, 0.66], "max": [0.42, 0.53, 1.06], "top": "props/fish_top", "side": "props/fish_top" },
+        { "min": [0.48, 0.47, 0.58], "max": [0.56, 0.53, 1.06], "top": "props/fish_top", "side": "props/fish_top" },
+        { "min": [0.62, 0.47, 0.64], "max": [0.7, 0.53, 1.06], "top": "props/fish_top", "side": "props/fish_top" },
+        { "min": [0.75, 0.47, 0.6], "max": [0.82, 0.53, 1.06], "top": "props/fish_top", "side": "props/fish_top" }
+      ]
+    },
+    {
+      "name": "NetFrame", "label": "net frame", "category": "Building", "solid": true, "sprite": "buildings/tanning_rack",
+      "description": "A fishing net stretched on a frame to dry and be mended, its floats hanging along the bottom.",
+      "maxHp": 50, "flammability": 0.9,
+      "building": { "outdoor": true, "buildable": false, "work": 60, "cost": [] },
+      "model": [
+        { "min": [0.06, 0.44, 0], "max": [0.14, 0.56, 1.25], "top": "props/log_end", "side": "props/timber_dark" },
+        { "min": [0.86, 0.44, 0], "max": [0.94, 0.56, 1.25], "top": "props/log_end", "side": "props/timber_dark" },
+        { "min": [0.04, 0.46, 1.16], "max": [0.96, 0.54, 1.22], "top": "props/log_side", "side": "props/log_side" },
+        { "min": [0.14, 0.485, 0.2], "max": [0.86, 0.515, 1.16], "top": "props/wicker", "side": "props/wicker" },
+        { "min": [0.2, 0.47, 0.16], "max": [0.28, 0.53, 0.24], "top": "props/cloth_ochre", "side": "props/cloth_ochre" },
+        { "min": [0.46, 0.47, 0.16], "max": [0.54, 0.53, 0.24], "top": "props/cloth_ochre", "side": "props/cloth_ochre" },
+        { "min": [0.72, 0.47, 0.16], "max": [0.8, 0.53, 0.24], "top": "props/cloth_ochre", "side": "props/cloth_ochre" }
+      ]
+    },
+    {
+      // Along a lake town's quays, lit at dusk and left burning (alwaysLit): the lights on the water.
+      "name": "QuayLantern", "label": "quay lantern", "category": "Building", "solid": true, "sprite": "buildings/lantern",
+      "description": "An iron lantern on a tall post at the quay's edge, kept burning through the night.",
+      "maxHp": 80, "flammability": 0.3,
+      "building": { "outdoor": true, "buildable": false, "alwaysLit": true, "lightRadius": 4, "work": 40, "cost": [] },
+      "fireAt": [0.5, 0.5, 1.5], "fireSize": 0.3,
+      "model": [
+        { "min": [0.36, 0.36, 0], "max": [0.64, 0.64, 0.08], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.45, 0.45, 0.08], "max": [0.55, 0.55, 1.42], "top": "props/log_end", "side": "props/timber_dark" },
+        { "min": [0.38, 0.38, 1.4], "max": [0.62, 0.62, 1.44], "top": "furniture/hoop", "side": "furniture/hoop" },
+        { "min": [0.4, 0.4, 1.44], "max": [0.6, 0.6, 1.62], "top": "furniture/hoop", "side": "props/candle" },
+        { "min": [0.37, 0.37, 1.62], "max": [0.63, 0.63, 1.67], "top": "furniture/hoop", "side": "furniture/hoop" }
+      ]
+    },
+    {
+      // A siege bow on a turntable before the moot hall, aimed at the sky: what the town would have
+      // against something that comes by air. Only seen, for now (docs/ROADMAP.md, "The dragon over the lake").
+      "name": "GreatBow", "label": "great bow", "category": "Building", "solid": true, "sprite": "buildings/tool_rack",
+      "description": "A bow as long as a boat, on a turntable of iron and oak, its bolt as thick as a wrist. Nobody living has seen it loosed.",
+      "maxHp": 300, "flammability": 0.3,
+      "building": { "outdoor": true, "buildable": false, "work": 200, "cost": [] },
+      "model": [
+        { "min": [0.1, 0.1, 0], "max": [0.9, 0.9, 0.24], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.18, 0.18, 0.24], "max": [0.82, 0.82, 0.32], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.4, 0.4, 0.32], "max": [0.6, 0.6, 0.95], "top": "furniture/oak_end", "side": "buildings/beam_oak" },
+        { "min": [0.42, -0.25, 0.92], "max": [0.58, 1.25, 1.06], "top": "buildings/beam_oak", "side": "buildings/beam_oak" },
+        { "min": [-0.55, -0.12, 1.0], "max": [1.55, 0.0, 1.1], "top": "buildings/beam_oak", "side": "buildings/beam_oak" },
+        { "min": [-0.55, 0.0, 1.02], "max": [-0.47, 0.9, 1.06], "top": "props/linen", "side": "props/linen" },
+        { "min": [1.47, 0.0, 1.02], "max": [1.55, 0.9, 1.06], "top": "props/linen", "side": "props/linen" },
+        { "min": [-0.47, 0.86, 1.02], "max": [1.47, 0.9, 1.06], "top": "props/linen", "side": "props/linen" },
+        { "min": [0.47, -0.45, 1.06], "max": [0.53, 0.9, 1.11], "top": "props/iron", "side": "props/iron" },
+        { "min": [0.44, -0.55, 1.04], "max": [0.56, -0.4, 1.13], "top": "props/iron", "side": "props/iron" }
+      ]
+    },
+    {
+      // The mast of the biggest of the lashed boats, bunting run from it: where a lake town gathers
+      // for its festival, as another town gathers at its well (gathering: Round.RoundSystem.FindSquare).
+      "name": "FestivalMast", "label": "mast", "category": "Building", "solid": true, "sprite": "buildings/lantern",
+      "description": "The mast of the biggest boat in the harbour, its sail furled and a pennant at the top: the town gathers round it for the festival.",
+      "maxHp": 200, "flammability": 0.4,
+      "building": { "outdoor": true, "buildable": false, "gathering": "the boats in the harbour", "work": 120, "cost": [] },
+      "model": [
+        { "min": [0.36, 0.36, 0], "max": [0.64, 0.64, 0.2], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.43, 0.43, 0], "max": [0.57, 0.57, 3.4], "top": "props/log_end", "side": "props/log_side" },
+        { "min": [-0.7, 0.45, 2.7], "max": [1.7, 0.55, 2.8], "top": "buildings/beam_oak", "side": "buildings/beam_oak" },
+        { "min": [-0.6, 0.41, 2.52], "max": [1.6, 0.59, 2.7], "top": "props/linen", "side": "props/linen" },
+        { "min": [0.57, 0.48, 3.05], "max": [1.4, 0.52, 3.3], "top": "props/cloth_madder", "side": "props/cloth_madder" },
+        { "min": [0.42, 0.42, 3.4], "max": [0.58, 0.58, 3.48], "top": "props/iron", "side": "props/iron" }
+      ]
+    },
+    {
+      // In the shallows along a lake's shore: only seen, and it burns.
+      "name": "Reeds", "label": "reeds", "category": "Building", "shape": "Billboard", "sprite": "things/reeds", "renderSize": 0.9,
+      "description": "Tall reeds and bulrushes in the shallows.",
+      "maxHp": 20, "flammability": 0.5,
+      "building": { "outdoor": true, "buildable": false, "floats": true, "work": 30, "cost": [] }
     }
   ],
 
@@ -257,7 +392,9 @@
       ],
       "variants": [
         { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster" },
-        { "name": "Stave", "label": "stave", "kit": "stave_thatch", "parts": { "wall": "StaveWall" } }
+        { "name": "Stave", "label": "stave", "kit": "stave_thatch", "parts": { "wall": "StaveWall" } },
+        // A lake town's storehouse, on a deck over the water: no foundation, the boardwalk its floor.
+        { "name": "Piled", "label": "on piles", "kit": "timber_shingle", "parts": { "foundation": "", "roof": "ShingleRoofPart" } }
       ]
     }
   ]

@@ -152,6 +152,13 @@ public sealed class MapDef : Def
     /// </summary>
     public int StandZ(int x, int y, int level) => level >= 0 ? BaseZ + level : StandZ(x, y);
 
+    /// <summary>
+    /// Where people stand in a column once the map's built: on a floor it lays at a fixed level (a
+    /// lake town's deck) if it has one, else on the ground. A landing or a stockpile out on the water.
+    /// </summary>
+    public int SurfaceZ(int x, int y) =>
+        Features[y * Width + x] is { Def.IsFloor: true, Level: >= 0 } deck ? BaseZ + deck.Level : StandZ(x, y);
+
     private void Check(List<string> rows, string grid)
     {
         if (rows.Count != Height)

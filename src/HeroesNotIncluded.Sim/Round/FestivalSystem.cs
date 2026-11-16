@@ -212,7 +212,7 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
             _sites.Add(site);
         }
         if (_sites.Exists(e => !e.IsNull))
-            sim.Messages.Add(MessageKind.Info, "The labourers are putting up the festival in the square.", sim.Round.Square);
+            sim.Messages.Add(MessageKind.Info, RoundSystem.GatheringPlace(sim) is { } place ? $"The labourers are putting up the festival out on {place}." : "The labourers are putting up the festival in the square.", sim.Round.Square);
     }
 
     /// <summary>

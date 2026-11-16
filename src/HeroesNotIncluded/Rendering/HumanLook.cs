@@ -174,14 +174,17 @@ public static class HumanLook
     }
 
     public static Appearance Of(Simulation sim, Entity e) =>
-        sim.World.TryGet<Appearance>(e, out var a) ? a : Derived(Sim.Systems.Clothing.LookId(sim, e));
+        sim.World.TryGet<Appearance>(e, out var a) ? a
+            : Derived(Sim.Systems.Clothing.LookId(sim, e), folk: sim.World.TryGet<Kin>(e, out var kin) ? kin.Folk : null);
 
     /// <summary>
     /// A look picked by hashing an id, so it never touches the sim's random stream. Villagers get natural
     /// colours and some hair; <paramref name="fantasy"/> (the creator's Randomize) also draws the dyed ones
     /// and the bald look. The body is the sim's <see cref="Sim.Systems.Clothing.DerivedBody"/>, so it fits the clothes.
+    /// <paramref name="folk"/>: always this folk (<see cref="Kin"/>, a company of dwarves), its colours
+    /// and beards; everyone else's look is just as it was.
     /// </summary>
-    public static Appearance Derived(int id, bool fantasy = false)
+    public static Appearance Derived(int id, bool fantasy = false, Folk? folk = null)
     {
         var h = (uint)id * 2654435761u;
         uint Next()
@@ -202,6 +205,18 @@ public static class HumanLook
         a.Eyes = EyeStyles[Next() % (uint)EyeStyles.Length].Style;
         var beard = Next() % 10;
         a.Beard = a.Body == BodyType.Male && beard < 6 ? Beards[1 + beard % (uint)(Beards.Length - 1)].Style : BeardStyle.None;
+        if (folk is { } kin)
+            return kin switch
+            {
+                Folk.Human => a,
+                Folk.Elf => a with
+                {
+                    Folk = Folk.Elf, SkinColor = ElfSkinTones[Next() % (uint)ElfSkinTones.Length],
+                    HairColor = ElfHairColors[Next() % (uint)ElfHairColors.Length], EyeColor = ElfEyeColors[Next() % (uint)ElfEyeColors.Length],
+                    Beard = BeardStyle.None,
+                },
+                _ => SmallFolk(a, FolkOf(kin), Next),
+            };
         // Drawn last, so everyone who was human before looks just as they did (the elves too).
         if (Next() % ElfOneIn == 0)
         {
@@ -212,14 +227,18 @@ public static class HumanLook
             a.Beard = BeardStyle.None; // our elves don't grow them
         }
         else if (Next() % SmallFolkOneIn is var small && small < 2)
-        {
-            var f = FolkOf(small == 0 ? Folk.Dwarf : Folk.Halfling);
-            a.Folk = f.Folk;
-            a.SkinColor = f.Skin[Next() % (uint)f.Skin.Length];
-            a.HairColor = f.Hair![Next() % (uint)f.Hair.Length];
-            var bearded = Next() % 10 < (a.Body == BodyType.Male ? f.BeardedMen : f.BeardedWomen);
-            a.Beard = bearded ? Beards[1 + Next() % (uint)(Beards.Length - 1)].Style : BeardStyle.None;
-        }
+            a = SmallFolk(a, FolkOf(small == 0 ? Folk.Dwarf : Folk.Halfling), Next);
+        return a;
+    }
+
+    /// <summary>A look made one of the small folk's (a dwarf, a halfling): their skin, hair and beards.</summary>
+    private static Appearance SmallFolk(Appearance a, FolkLook f, Func<uint> next)
+    {
+        a.Folk = f.Folk;
+        a.SkinColor = f.Skin[next() % (uint)f.Skin.Length];
+        a.HairColor = f.Hair![next() % (uint)f.Hair.Length];
+        var bearded = next() % 10 < (a.Body == BodyType.Male ? f.BeardedMen : f.BeardedWomen);
+        a.Beard = bearded ? Beards[1 + next() % (uint)(Beards.Length - 1)].Style : BeardStyle.None;
         return a;
     }
 

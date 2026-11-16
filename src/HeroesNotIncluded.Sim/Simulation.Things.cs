@@ -67,7 +67,7 @@ public sealed partial class Simulation
         if (!Map.Floor[i].IsNull)
             return true; // on a floor, finished or planned
         if (Map.GroundUnder(i) is { } ground)
-            return ground is { CanBuildOn: true, Passable: true };
+            return def?.Building?.Floats == true ? ground.IsWater : ground is { CanBuildOn: true, Passable: true };
         return def?.Building?.IsWall == true && WallBelow(cell, finishedOnly: false);
     }
 

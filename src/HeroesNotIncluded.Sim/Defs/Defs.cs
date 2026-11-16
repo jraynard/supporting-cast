@@ -305,6 +305,19 @@ public sealed class BuildingProps
     public bool Breakable { get; set; }
 
     /// <summary>
+    /// Stands in the water rather than on ground or a floor (a boat moored in a lake town's harbour,
+    /// reeds in the shallows): placed on a water column's surface, which no other structure may be.
+    /// </summary>
+    public bool Floats { get; set; }
+
+    /// <summary>
+    /// Where the town gathers for its festival (<c>Round.RoundSystem.FindSquare</c>), in place of the
+    /// well: a lake town's mast on the boats in its harbour. The words for the place, said when the
+    /// festival's put up and its bell rung ("the boats in the harbour"). Null: not a gathering place.
+    /// </summary>
+    public string? Gathering { get; set; }
+
+    /// <summary>
     /// A roof (with <see cref="IsFloor"/>: it lives in the floor layer, on top of the walls): shelters
     /// the cells below like a floor, but isn't walked on or built on. Covers a porch or lean-to off
     /// a wall, out to <see cref="SupportSpan"/> cells; enclosed rooms are roofed without one.
@@ -362,6 +375,12 @@ public sealed class BuildingProps
     public float RadiantWarmth { get; set; }
 
     public float LightRadius { get; set; }
+
+    /// <summary>
+    /// Lit for good, with no fuel to burn down (a lantern on a quay's post): gives its
+    /// <see cref="LightRadius"/> as a building's lamp does (<c>Environment.LightingSystem</c>).
+    /// </summary>
+    public bool AlwaysLit { get; set; }
 
     public FuelProps? Fuel { get; set; }
 
@@ -787,6 +806,13 @@ public sealed class BridgeLook
 
     /// <summary>How thick the parapet (or rail) is, as a share of the cell.</summary>
     public float Thickness { get; set; } = 0.2f;
+
+    /// <summary>
+    /// Boats lashed side by side (a lake town's raft), not a deck on piles: hulls lying east-west, two
+    /// rows to a boat from an even row, down to the water under it (<see cref="Pier"/>), a gunwale
+    /// (<see cref="Parapet"/>, <see cref="Coping"/>) along every open edge, and a seam where one boat's lashed to the next.
+    /// </summary>
+    public bool Hull { get; set; }
 }
 
 public sealed class ThingDef : Def

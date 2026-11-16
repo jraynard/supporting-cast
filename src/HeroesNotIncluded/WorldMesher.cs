@@ -686,11 +686,23 @@ public sealed class WorldMesher(TextureAtlas atlas)
         var brokenBefore = Cell(-1, 0) is var (bx0, by0) && Broken(bx0, by0);
         var brokenAfter = Cell(1, 0) is var (bx1, by1) && Broken(bx1, by1);
 
-        // Parapets, along each side with nothing of the span beyond it (nor a building's wall on it: a deck's).
+        // Parapets, along each side with nothing of the span beyond it (nor a building's wall on it: a deck's,
+        // nor another floor at its level: a stone pier or a raft met by the boardwalk).
         var walled = map.Structure[map.Idx(x, y, z)] is { IsNull: false } st && sim.World.Get<Thing>(st).Def.Building is { IsWall: true } or { IsDoor: true };
+        // Another floor at its level, or ground standing level with it (the shore a causeway comes in on).
+        bool Floored(int nx, int ny) => map.InBounds(nx, ny, z) && (map.HasFloor[map.Idx(nx, ny, z)] || z > 0 && map.IsSolid(map.Idx(nx, ny, z - 1)));
+        (Sprite, uint) Art(string name) => _materials.Resolve(name, material) is var (art, tint) ? (S(art), tint) : default;
+        var drop = Drop(x, y);
+        if (!look.Arched)
+        {
+            OpenEdges(sim, x, y, z, look, walled, drop, Floored, Broken);
+            PropModel.Build(_quads, top, new int3(x, y, z), 0, Art, Rgba.White, Quad.Level(z));
+            PropModel.Build(_quads, under, new int3(x, y, z), 0, Art, Rgba.White, Quad.Level(z - 1));
+            return;
+        }
         foreach (var (side, v0, v1) in new[] { (-1, 0f, Wall), (1, 1 - Wall, 1f) })
         {
-            if (Cell(0, side) is var (sx, sy) && Span(sx, sy) || walled)
+            if (Cell(0, side) is var (sx, sy) && (Span(sx, sy) || Floored(sx, sy)) || walled)
                 continue;
             float cv0 = side < 0 ? v0 - Lip : v0, cv1 = side < 0 ? v1 : v1 + Lip;
             // Beside a gap the wall's torn off short and uneven, without its coping.
@@ -702,8 +714,6 @@ public sealed class WorldMesher(TextureAtlas atlas)
                 Box(top, 0, 1, cv0, cv1, h, h + CopeHeight, look.Coping);
         }
 
-        (Sprite, uint) Art(string name) => _materials.Resolve(name, material) is var (art, tint) ? (S(art), tint) : default;
-        var drop = Drop(x, y);
         if (drop <= 0)
         {
             PropModel.Build(_quads, top, new int3(x, y, z), 0, Art, Rgba.White, Quad.Level(z));
@@ -712,17 +722,6 @@ public sealed class WorldMesher(TextureAtlas atlas)
         var bed = -drop; // the ground under it, in this cell's model units
         bool Abutment(int i) => i == 0 || i == length - 1;
         bool Pier(int i) => Abutment(i) || i % Math.Max(1, look.PierEvery) == 0;
-
-        // A boardwalk: slim piles at the corners of every so many cells, down into the water, and nothing under between.
-        if (!look.Arched)
-        {
-            if (Pier(at))
-                foreach (var (pu, pv) in new[] { (0.06f, 0.06f), (0.94f, 0.06f), (0.06f, 0.94f), (0.94f, 0.94f) })
-                    Box(under, pu - 0.06f, pu + 0.06f, pv - 0.06f, pv + 0.06f, bed, -SlabThickness, look.Pier);
-            PropModel.Build(_quads, top, new int3(x, y, z), 0, Art, Rgba.White, Quad.Level(z));
-            PropModel.Build(_quads, under, new int3(x, y, z), 0, Art, Rgba.White, Quad.Level(z - 1));
-            return;
-        }
 
         if (Pier(at))
         {
@@ -782,6 +781,73 @@ public sealed class WorldMesher(TextureAtlas atlas)
 
         PropModel.Build(_quads, top, new int3(x, y, z), 0, Art, Rgba.White, Quad.Level(z));
         PropModel.Build(_quads, under, new int3(x, y, z), 0, Art, Rgba.White, Quad.Level(z - 1));
+    }
+
+    /// <summary>
+    /// A deck on piles (<see cref="BridgeLook.Arched"/> false), dressed on every side open to the
+    /// water, whichever way it runs (a lake town's decks are as wide as they're long): a rail on
+    /// posts, thin and left open here and there, where a ladder or a boat would come up; under it,
+    /// slim piles at its corners down to the water. Lashed boats (<see cref="BridgeLook.Hull"/>)
+    /// have a gunwale instead, hulls under them lying east-west, and a seam between each pair of rows.
+    /// </summary>
+    private void OpenEdges(Simulation sim, int x, int y, int z, BridgeLook look, bool walled, int drop,
+        Func<int, int, bool> floored, Func<int, int, bool> broken)
+    {
+        var top = _bridgeTop;
+        var under = _bridgeUnder;
+        top.Clear();
+        under.Clear();
+        void Box(List<ModelBox> into, float x0, float x1, float y0, float y1, float z0, float z1, string sprite, string? cap = null) =>
+            into.Add(new ModelBox { Min = [x0, y0, z0], Max = [x1, y1, z1], Top = cap ?? sprite, Side = sprite });
+        var h = look.Height;
+        var t = look.Thickness;
+        var bed = -drop;
+        // The four sides: which neighbour, and the strip of the cell along it (x0, x1, y0, y1).
+        var sides = new (int Dx, int Dy, float X0, float X1, float Y0, float Y1)[]
+        {
+            (0, -1, 0, 1, 0, t), (0, 1, 0, 1, 1 - t, 1), (-1, 0, 0, t, 0, 1), (1, 0, 1 - t, 1, 0, 1),
+        };
+        var hash = (uint)(x * 73856093 ^ y * 19349663 ^ z * 83492791);
+        foreach (var (dx, dy, x0, x1, y0, y1) in sides)
+        {
+            int nx = x + dx, ny = y + dy;
+            if (walled || floored(nx, ny) || broken(nx, ny))
+                continue;
+            if (look.Hull)
+            {
+                // The gunwale, capped; the hull below is drawn whole.
+                Box(top, x0, x1, y0, y1, 0.01f, h, look.Parapet, look.Coping);
+                continue;
+            }
+            // Now and then a gap, where a ladder goes down to the water.
+            if ((hash + (uint)(dx * 3 + dy * 7)) % 11 == 0)
+                continue;
+            float px0 = dx == 0 ? 0.04f : x0, px1 = dx == 0 ? 0.04f + t : x1, py0 = dy == 0 ? 0.04f : y0, py1 = dy == 0 ? 0.04f + t : y1;
+            Box(top, px0, px1, py0, py1, 0.01f, h, look.Pier, look.Coping);                       // a post at the corner
+            Box(top, x0, x1, y0, y1, h - 0.06f, h, look.Parapet, look.Coping);                   // the top rail
+            Box(top, x0, x1, y0, y1, h * 0.45f, h * 0.45f + 0.04f, look.Parapet, look.Coping);   // the mid rail
+        }
+        if (drop <= 0)
+            return;
+        if (look.Hull)
+        {
+            // Boats lying east-west, two rows to a boat (a boat's rows start on an even y): each a
+            // dark hull to the waterline, its bilge narrowing below so the water shows between keels,
+            // and stepped in at the bow and stern, the raft's east and west ends.
+            var outerNorth = (y & 1) == 0;
+            bool bow = !floored(x - 1, y), stern = !floored(x + 1, y);
+            Box(under, bow ? 0.08f : 0, stern ? 0.92f : 1, 0, 1, -0.7f, -SlabThickness, look.Pier);
+            float v0 = outerNorth ? 0.22f : 0, v1 = outerNorth ? 1 : 0.78f;
+            Box(under, bow ? 0.4f : 0, stern ? 0.6f : 1, v0, v1, bed - 0.1f, -0.7f, look.Pier);
+            // The seam where one boat's lashed to the next: a low rail along the boat's north side.
+            if (outerNorth && floored(x, y - 1))
+                Box(top, 0, 1, 0, 0.07f, 0.01f, 0.1f, look.Parapet, look.Coping);
+            return;
+        }
+        // Slim piles at the corners of every other cell, down into the water.
+        if (((x + y) & 1) == 0)
+            foreach (var (pu, pv) in new[] { (0.06f, 0.06f), (0.94f, 0.06f), (0.06f, 0.94f), (0.94f, 0.94f) })
+                Box(under, pu - 0.06f, pu + 0.06f, pv - 0.06f, pv + 0.06f, bed, -SlabThickness, look.Pier);
     }
 
     /// <summary>A wall, door or post stands in this cell.</summary>

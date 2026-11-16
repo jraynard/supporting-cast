@@ -39,11 +39,36 @@ public sealed class LightingSystem : ISimSystem
         foreach (var (cell, lamp, _) in Systems.Buildings.LitLamps(sim))
             if (!Afterlife.Hauntings.Guttered(sim, cell)) // a ghost has it dark a while
                 Splat(sim, cell, lamp.Building!.LightRadius, LampStrength);
+        foreach (var (cell, lamp) in StandingLamps(sim))
+            if (!Afterlife.Hauntings.Guttered(sim, cell))
+                Splat(sim, cell, lamp.Building!.LightRadius, LampStrength);
 
         foreach (var i in sim.Fire.BurningTiles)
             Splat(sim, map.CellOf(i), 2f + 3f * map.Fire[i], map.Fire[i]);
 
         sim.Rooms.UpdateTemperatures();
+    }
+
+    private readonly List<(int3 Cell, Defs.ThingDef Def)> _standing = [];
+    private int _standingVersion = -1;
+
+    /// <summary>
+    /// The lamps standing on their own, lit for good (<see cref="Defs.BuildingProps.AlwaysLit"/>: a
+    /// quay's lanterns), found again only when the map's structures change.
+    /// </summary>
+    public IReadOnlyList<(int3 Cell, Defs.ThingDef Def)> StandingLamps(Simulation sim)
+    {
+        if (_standingVersion == sim.Map.StructureVersion)
+            return _standing;
+        _standingVersion = sim.Map.StructureVersion;
+        _standing.Clear();
+        foreach (var e in sim.World.Each<Thing>())
+        {
+            var t = sim.World.Get<Thing>(e);
+            if (t.Spawned && t.Def.Building is { AlwaysLit: true, LightRadius: > 0 })
+                _standing.Add((t.Cell, t.Def));
+        }
+        return _standing;
     }
 
     /// <summary>A lamp is softer than a fire.</summary>

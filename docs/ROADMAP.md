@@ -62,11 +62,16 @@ haven't been played since:
 - [ ] **The cook supplies the inn** (Reedmere; HISTORY.md, "The cook supplies the inn"): does the
   innkeeper keep the warming shelf stocked, and is the trek to the cookhouse worth the bar standing
   empty? Do the bowls that go over in hampers come back, or pile up dirty at the inn?
+- [ ] **Reedmere, redrawn** (HISTORY.md, "Reedmere, the town on the long lake"): does the crowded
+  town read in play, is the long bridge worth its walk, and does the festival on the boats work
+  with friends? The raft reads as one great barge from the usual angle; boats you can tell apart
+  would be better.
+- [ ] **The rare companies** (HISTORY.md, same entry): do the dwarves and the long road's company
+  feel like an event? Their chances (0.3 and 0.25 a round) and their errands' danger are first guesses.
 - [ ] **Reedmere, still to do:** knockback off the walks, swimming and breath, fishing someone out
-  (a body sunk in the lake is the traitors', M4); thinner rails with gaps on the boardwalk, reeds
-  along the shallows, a proper dipping post sprite, a reference painting in `art/reference/`;
-  balance (`--season-sweep --seeds 8 --map Reedmere`), once the rest has settled. It may stay a
-  little harder than Millbrook on purpose.
+  (a body sunk in the lake is the traitors', M4); rowing the moored boats; a proper dipping post
+  sprite; balance (`--season-sweep --seeds 8 --map Reedmere`), once the rest has settled. It may
+  stay a little harder than Millbrook on purpose.
 - [ ] **Flicker** at wall corners and on furniture, and the upper floors when walking past the inn.
 - [ ] **Net notices:** if someone drops, it now shows up in `net.log`.
 
@@ -178,6 +183,28 @@ The necromancer and the Undertaker build on `Death`, `Ghost` and the Calling.
 Remaining trades, more maps (authored like Millbrook), crisis variety, personal ambitions, an art
 pass. Purely non-combat options (a round, or trades, that never need a blade) once there's the
 variety to carry them.
+- **A town for twelve:** Millbrook suits five or six players. Before the twelve-player goal, grow
+  it or make a bigger one. The rare companies already come bigger with more players
+  (`PartyDef.SizeFor`); the ordinary parties and the crises may want the same.
+
+### The dragon over the lake
+Reedmere's set piece, after the battle the lake towns of its stories are known for. Not built yet;
+a sketch to build from.
+- **It follows from a quest.** The dwarves' errand to Greyhorn Hall wakes what sleeps there: a
+  day or two after they set out (whether they come back or not), the dragon comes to Reedmere at
+  dusk, in place of the season's own dragon. Needs a link from a quest's outcome to a crisis in the
+  `Director`.
+- **The town burns.** It strafes the timber town end to end (`DragonBrain`'s passes, along the
+  walks), and the bucket lines from the dipping posts are the town's whole defence until someone
+  hurts it.
+- **The weak spot is a secret.** One part of it has no armour: a hidden property, known only
+  through `Perception` (`Intel`), from what the halfling saw in the hall and tells whoever's in
+  earshot at the inn on the way back. Called shots, or an armour gap on one body part that an aimed
+  arrow can find (`HealthSystem.PickPart`).
+- **The great bow** on the moot hall's forecourt is real: crewed by two (the tinker keeps it
+  working), slow to turn, one bolt at a time, a turret's free aim from the stand.
+- **One heirloom arrow**, kept in someone's house: an ammo item, fetched in time or not.
+- **It falls into the lake**, breaking the decks under it, and the town counts what it lost.
 
 ### M7: Playing with strangers
 An authoritative server filtered by `Perception`, matchmaking, moderation, voice.

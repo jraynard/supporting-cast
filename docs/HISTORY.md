@@ -2146,3 +2146,45 @@ Where the inn and the kitchen stand apart (Reedmere), the cookhouse supplies the
   diner and calls off their other orders, now every adventurer orders on arrival. A lodger thanks
   for their board in their own words (`adv_board`). Bench: 1234 and 99 unchanged; `--round` 1234
   state `F47242A57089C29B`.
+
+### Reedmere, the town on the long lake (2026-11-16)
+- **The map, redrawn** (`tools/lake_map.py`, after `art/reference/laketown_map_by_tipexleloup*.jpg`
+  and the esgaroth and laketown pictures): a crowded rectangle of houses on piles round an open
+  harbour, a water-gate canal out to the lake, one long causeway north from a rocky spit to the gate
+  quay; the shore only a headland in the south-west (the road, woods, garden, an old barn, the
+  woodshop). Shrine, forge (on a `StonePier`) and storehouse (the stockpile) at the gate; the inn and
+  cookhouse across the water-gate from each other; the tinker's on the west quay; nine cottages and
+  two warehouses; the **moot hall** (`MootHall`, no role yet) on the far quay with the notice board,
+  muster rack and a **great bow** (only seen) on its stone forecourt. Shingled `PiledShingle`
+  variants for the cottage, inn and cookhouse, `Piled` for the smithy (stone, on its pier) and barn.
+  Dressing: rowboats moored in the water (`floats`: a structure placed on water), drying racks, net
+  frames, lanterns lit all night along the quays (`alwaysLit`, `LightingSystem.StandingLamps`), reeds
+  in the shallows (`things/reeds`, `chibi_nature.py`).
+- **The festival on the boats**: the boats lashed in the harbour (`BoatDeck`, a hull look drawn as
+  boats lying east-west) round a mast that is the town's gathering place (`BuildingProps.Gathering`:
+  `RoundSystem.FindSquare` prefers it to a well; the messages say where). The bonfire burns on a
+  `FireBarge` that doesn't, the butts are shot along the raft.
+- **Decks drawn on every open side**: rails on posts, with a gap now and then, wherever a deck on
+  piles meets the water, and none between one floor and another (a pier and a boardwalk) or where
+  it meets the shore (`WorldMesher.OpenEdges`).
+- **The landing on a deck**: `MapDef.SurfaceZ` puts a map's center, stockpile and livestock on a
+  floor it lays at a fixed level.
+- **The carter** with the causeway down reaches neither the inn nor the cookhouse, both out on the
+  water, nor the forge's ore (`Deliveries`: a smithy the road can't reach waits).
+- **8-seed `--season-sweep --map Reedmere`**: Renown mean 34.4 to 52.0 of 60, won 1 to 4, Dread peak
+  73.8 to 64.2, deaths 2.2 to 0.9 a round (the cookhouse a footbridge from the bar). Millbrook, with
+  the rare companies in its pool: Renown mean 68.0, won 5 of 8.
+- **The rare companies** (`adventurers.json`): `PartyDef.Rare` with a `chance` a round and days
+  (`fromDay`, `toDay`), rolled at the round's start on the party system's own stream, at most one, sent
+  on its day in place of the next party. `extraMembers` join as the round has more players
+  (`SizeFor`: the core of four at `coreAt` 4 or fewer, all at `fullAt` 12); `fixedNames`. A kind's
+  `folk` (Dwarf, Halfling, Elf, Human) is a `Kin` component the derived look honours (`HumanLook.Derived`;
+  everyone else's look unchanged). A quest with a `party` is the company's own errand: never in a
+  round's draw, posted when they come (`ExpeditionSystem.PostOwn`), the only one they'll take, at
+  whatever danger (the broker's AI and the bot offer it first). **The Greyhorn Company** (a dwarf
+  heir, a graybeard, axe-hands and Bramble the halfling; fourteen at twelve players) for Greyhorn
+  Hall, and **the Company of the Long Road** (a grey wanderer, halflings, a ranger, an elf archer, a
+  dwarf; nine at twelve) for the Cinder Mount. Our own names throughout.
+- Save format 49 (whether a rare company comes, and when). `ReedmereMapTests` rewritten,
+  `FestivalTests` on Reedmere, `CompanyTests`. Bench state hashes unchanged for 1234 and 99 (the
+  full hash moves with the save format).

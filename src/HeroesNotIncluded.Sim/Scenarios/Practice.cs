@@ -123,7 +123,7 @@ public static class Practice
     public static List<Entity> SendCustomers(Simulation sim, Entity player, CustomerKind wear = CustomerKind.Trade)
     {
         var w = sim.World;
-        var parties = sim.Defs.AllParties.Where(p => !p.Traveller).ToList();
+        var parties = sim.Defs.AllParties.Where(p => !p.Traveller && !p.Rare).ToList();
         if (parties.Count == 0)
             return [];
         var party = sim.Parties.Send(sim, parties[sim.Rand.NextInt(parties.Count)]);
