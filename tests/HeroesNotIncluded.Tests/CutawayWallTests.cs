@@ -73,3 +73,41 @@ public class CutawayWallTests
         Assert.Equal(0f, h.Y, 3);
     }
 }
+
+/// <summary>An upper storey's boards under its walls (<see cref="WorldMesher.UpperWallBoards"/>).</summary>
+public class UpperFloorBoardTests
+{
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public void EveryUpperWallCellOfTheInnHasBoardsUnderIt(int facing)
+    {
+        var defs = DefDatabase.LoadDirectory(DevPaths.Defs!);
+        var sim = HeroesNotIncluded.Sim.Simulation.CreateStandard(defs, 30, 30, 1, depth: 5);
+        var inn = defs.Building("Inn");
+        var b = HeroesNotIncluded.Sim.Systems.Buildings.SpawnFinished(sim, inn, new int3(15, 15, 1), facing);
+        sim.RebuildDerivedIfNeeded();
+        var p = sim.World.Get<HeroesNotIncluded.Sim.Components.PresetBuilding>(b);
+        var map = sim.Map;
+        var walls = 0;
+        for (var row = 0; row < inn.UpperLayout.Count; row++)
+        for (var col = 0; col < inn.UpperLayout[row].Length; col++)
+        {
+            var c = HeroesNotIncluded.Sim.Systems.Buildings.CellOf(map, inn, p.Anchor, p.Facing, col, row, level: 1);
+            if (map.Structure[map.Idx(c)] is not { IsNull: false } s || sim.World.Get<HeroesNotIncluded.Sim.Components.Thing>(s).Def.Building is not { IsWall: true } or { IsDoor: true })
+                continue;
+            if (!map.HasFloor[map.Idx(c)])
+                continue;
+            bool Floor(int dx, int dy) => map.HasFloor[map.Idx(c + new int3(dx, dy, 0))];
+            if (!Floor(-1, 0) && !Floor(1, 0) || !Floor(0, -1) && !Floor(0, 1))
+                continue; // between the outside and the open stairwell: nothing to board
+            walls++;
+            var (x0, y0, x1, y1) = WorldMesher.UpperWallBoards(sim, c.X, c.Y, c.Z);
+            Assert.True(x1 > x0 && y1 > y0, $"no boards under the wall at {c}");
+            // Never past the building's outer face: a side with no floor beyond stops at the middle.
+            if (!map.HasFloor[map.Idx(c + new int3(-1, 0, 0))]) Assert.Equal(c.X + 0.5f, x0);
+            if (!map.HasFloor[map.Idx(c + new int3(1, 0, 0))]) Assert.Equal(c.X + 0.5f, x1);
+        }
+        Assert.True(walls > 30, $"only {walls} upper wall cells found");
+    }
+}

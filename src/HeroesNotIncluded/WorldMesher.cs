@@ -535,17 +535,9 @@ public sealed class WorldMesher(TextureAtlas atlas)
         var map = sim.Map;
         var top = z + 0.01f;
         var grounded = z > 0 && map.IsSolid(map.Idx(x, y, z - 1));
-        // Under a wall up off the ground (an upper storey's), the boards stop at the wall's middle
-        // on each side that faces out, so they don't jut past its outer face; toward a room they
-        // run on under it. On the ground the foundation's meant to show, a plinth under the wall.
-        // A doorway's boards run right across it between the walls either side (they'd meet at its
-        // middle and leave nothing), so there's floor under the door when it swings open.
         if (!grounded && IsWallAt(sim, x, y, z))
         {
-            var door = map.Structure[map.Idx(x, y, z)] is { IsNull: false } s && sim.World.Get<Thing>(s).Def.Building?.IsDoor == true;
-            bool Run(int nx, int ny) => Inside(nx, ny) || (door && IsWallAt(sim, nx, ny, z));
-            float x0 = Run(x - 1, y) ? x : x + 0.5f, x1 = Run(x + 1, y) ? x + 1 : x + 0.5f;
-            float y0 = Run(x, y - 1) ? y : y + 0.5f, y1 = Run(x, y + 1) ? y + 1 : y + 0.5f;
+            var (x0, y0, x1, y1) = UpperWallBoards(sim, x, y, z);
             if (x1 > x0 && y1 > y0)
                 _quads.Add(new Quad
                 {
@@ -589,6 +581,22 @@ public sealed class WorldMesher(TextureAtlas atlas)
             var template = new Quad { Flags = Quad.Level(z), Color = Rgba.White, Ao = b | b << 8 | b << 16 | b << 24 };
             _quads.Add(WorldScale.Tile(template, origin, u, SlabThickness, sprite.Uv, WorldScale.TilesPerLevel(sprite), 0));
         }
+    }
+
+    /// <summary>
+    /// How far an upper storey's boards run under a wall cell, in world x/y. They stop at the wall's
+    /// middle on each side that faces out (no floor beyond), so they don't jut past its outer face;
+    /// toward a room, and along the wall line into the next wall cell, they run on to the cell's edge.
+    /// (Stopping at every wall neighbour left a straight run of wall with no boards at all, and the
+    /// strip between the thin wall and the cell edge showed through.) On the ground there's no such
+    /// clipping: the foundation's meant to show, a plinth under the wall.
+    /// </summary>
+    internal static (float X0, float Y0, float X1, float Y1) UpperWallBoards(Simulation sim, int x, int y, int z)
+    {
+        var map = sim.Map;
+        bool Run(int nx, int ny) => map.InBounds(nx, ny, z) && map.HasFloor[map.Idx(nx, ny, z)];
+        return (Run(x - 1, y) ? x : x + 0.5f, Run(x, y - 1) ? y : y + 0.5f,
+                Run(x + 1, y) ? x + 1 : x + 0.5f, Run(x, y + 1) ? y + 1 : y + 0.5f);
     }
 
     private readonly List<ModelBox> _bridgeTop = [];
