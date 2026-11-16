@@ -32,7 +32,7 @@ public sealed partial class VillageGame
             return;
         var w = _sim.World;
         if (!HasAvatar || !w.IsAlive(_readingSign) || Signs.CellOf(_sim, _readingSign) is not { } at
-            || !AvatarSystem.InReach(w.Get<Position>(_avatar).Cell, at) || Controls.Map.Pressed(Act.Back))
+            || !AvatarSystem.InReach(w.Get<Position>(_avatar).Cell, at) || BackPressed())
         {
             _readingSign = Entity.Null;
             return;

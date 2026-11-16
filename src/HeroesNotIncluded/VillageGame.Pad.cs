@@ -10,7 +10,8 @@ namespace HeroesNotIncluded;
 /// <summary>
 /// The gamepad's own UI: menus driven by ImGui's navigation while one's open (the d-pad moves, A
 /// picks, B closes), the action wheel for what has no button of its own (held RB, the right stick
-/// picks, let go to do it), and a menu of the top bar's things on Start.
+/// picks, let go to do it), and the game menu: the top bar's things on Start, or on Esc (B) when
+/// there's nothing else for it to close.
 /// </summary>
 public sealed partial class VillageGame
 {
@@ -22,8 +23,27 @@ public sealed partial class VillageGame
 
     private string? _padFocused;
 
-    /// <summary>The pad's game menu (Start): the top bar's Menu, as buttons.</summary>
-    private bool _padMenu;
+    /// <summary>The game menu (Start, or Esc with nothing else to close): the top bar's Menu, as buttons.</summary>
+    private bool _gameMenu;
+
+    /// <summary>
+    /// Back (Esc, B) was taken this frame by something it closes, stops or puts down, so it doesn't
+    /// also open the game menu. Reset as the frame's input starts; checked once every window has
+    /// had its chance (<see cref="EndPadUi"/>).
+    /// </summary>
+    private bool _backUsed;
+
+    /// <summary>One of the menu's own windows was up as the frame began: Back is for it, even if it closed itself on Esc.</summary>
+    private bool _menuWindowUp;
+
+    /// <summary>Back was pressed this frame, for something it closes or stops: marks it taken.</summary>
+    private bool BackPressed()
+    {
+        if (!Controls.Map.Pressed(Act.Back))
+            return false;
+        _backUsed = true;
+        return true;
+    }
 
     /// <summary>A window the pad can drive is up: call after its Begin.</summary>
     private void PadWindow(string id, Action? close) => _padWindows.Add((id, close));
@@ -34,6 +54,9 @@ public sealed partial class VillageGame
     /// </summary>
     private void UpdatePadUi()
     {
+        // A popup or a text box takes Esc itself (closing, or leaving the field).
+        _backUsed = ImGui.IsPopupOpen(""u8, ImGuiPopupFlags.AnyPopup) || ImGui.GetIO().WantTextInput;
+        _menuWindowUp = _settings.IsOpen || _saveWindow != SaveWindow.None || _showCredits || _showRecipeBook;
         var shown = _padWindowsShown;
         _padOrder.RemoveAll(id => !shown.Exists(w => w.Id == id));
         foreach (var (id, _) in shown)
@@ -58,13 +81,32 @@ public sealed partial class VillageGame
         var back = false;
         foreach (var b in Controls.Map.Bindings(Act.Back))
             back |= b.IsPad && Host.Gamepad.WasPressedRaw((PadButton)b.Code);
-        if (back && !ImGui.IsPopupOpen(""u8, ImGuiPopupFlags.AnyPopup))
-            shown.Find(w => w.Id == top).Close?.Invoke();
+        if (back && !ImGui.IsPopupOpen(""u8, ImGuiPopupFlags.AnyPopup) && shown.Find(w => w.Id == top).Close is { } close)
+        {
+            close();
+            _backUsed = true;
+        }
     }
 
-    /// <summary>After the frame's UI: what was drawn is what's open next frame.</summary>
+    /// <summary>
+    /// After the frame's UI: what was drawn is what's open next frame. A Back nothing took backs out
+    /// of the menu's own windows (settings, saves, credits), else opens or closes the game menu.
+    /// </summary>
     private void EndPadUi()
     {
+        if (!_backUsed && !Working && !_settings.Capturing && !ImGui.IsPopupOpen(""u8, ImGuiPopupFlags.AnyPopup) && Controls.Map.Pressed(Act.Back))
+        {
+            if (_settings.IsOpen)
+                _settings.Close();
+            else if (_saveWindow != SaveWindow.None)
+                _saveWindow = SaveWindow.None;
+            else if (_showCredits)
+                _showCredits = false;
+            else if (_showRecipeBook)
+                _showRecipeBook = false;
+            else if (!_menuWindowUp) // settings and credits close themselves on Esc
+                _gameMenu = !_gameMenu;
+        }
         if (_settings.IsOpen)
             PadWindow("Settings", _settings.Close);
         if (_showCredits)
@@ -175,14 +217,14 @@ public sealed partial class VillageGame
         }
     }
 
-    // ---------------- The pad's game menu ----------------
+    // ---------------- The game menu ----------------
 
     private bool _padLeaving;
 
-    /// <summary>The top bar's Menu as big buttons, for a pad (Start). B or Start again closes it.</summary>
+    /// <summary>The top bar's Menu as big buttons: Start or Esc opens it, and again (or B) closes it.</summary>
     private void DrawPadMenu()
     {
-        if (!_padMenu)
+        if (!_gameMenu)
         {
             _padLeaving = false;
             return;
@@ -190,32 +232,32 @@ public sealed partial class VillageGame
         var center = ImGui.GetIO().DisplaySize * 0.5f;
         float2? middle = new float2(0.5f, 0.5f);
         ImGui.SetNextWindowPos(in center, ImGuiCond.Always, in middle);
-        Panel.Begin("Menu###padmenu", ref _padMenu, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
-        PadWindow("###padmenu", () => _padMenu = false);
+        Panel.Begin("Menu###padmenu", ref _gameMenu, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings);
+        PadWindow("###padmenu", () => _gameMenu = false);
         var wide = (float2?)new float2(Gui.S(260), 0);
         if (ImGui.Button("Back to the village"u8, in wide))
-            _padMenu = false;
+            _gameMenu = false;
         if (ImGui.Button("Save"u8, in wide))
         {
-            _padMenu = false;
+            _gameMenu = false;
             OpenSaveWindow(SaveWindow.Save);
         }
         if (ImGui.Button("Load"u8, in wide))
         {
-            _padMenu = false;
+            _gameMenu = false;
             OpenSaveWindow(SaveWindow.Load);
         }
         if (ImGui.Button("Settings"u8, in wide))
         {
-            _padMenu = false;
+            _gameMenu = false;
             _settings.Open();
         }
         if (ImGui.Button("Controls"u8, in wide))
-            (_padMenu, _showControls) = (false, true);
+            (_gameMenu, _showControls) = (false, true);
         if (ImGui.Button("Recipes"u8, in wide))
-            (_padMenu, _showRecipeBook) = (false, true);
+            (_gameMenu, _showRecipeBook) = (false, true);
         if (ImGui.Button("Credits"u8, in wide))
-            (_padMenu, _showCredits) = (false, true);
+            (_gameMenu, _showCredits) = (false, true);
         ImGui.Spacing();
         if (!_padLeaving)
         {

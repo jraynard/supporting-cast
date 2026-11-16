@@ -77,7 +77,7 @@ public sealed partial class VillageGame
     {
         if (!_aimingHands)
             return false;
-        if (input.WasMousePressed(MouseButton.Right) || Controls.Map.Pressed(Act.Back) || !Empathy.Gifted(_sim, _avatar))
+        if (input.WasMousePressed(MouseButton.Right) || BackPressed() || !Empathy.Gifted(_sim, _avatar))
         {
             _aimingHands = false;
             return true;

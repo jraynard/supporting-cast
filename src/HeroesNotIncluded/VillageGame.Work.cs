@@ -50,7 +50,7 @@ public sealed partial class VillageGame
         var steps = (int)_workSteps;
         _workSteps -= steps;
         var map = Controls.Map;
-        if (Working && map.Pressed(Act.Back))
+        if (Working && BackPressed())
             Issue(new StopWorkCommand(_avatar));
         var live = speed > 0 && Working;
         var axis = !live ? 0 : (map.Down(Act.WalkRight) ? 1 : 0) - (map.Down(Act.WalkLeft) ? 1 : 0);

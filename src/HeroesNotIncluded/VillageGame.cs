@@ -144,8 +144,17 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             _renderer.OpenBuilding = inside;
     }
 
-    private (Entity Building, int Level) InsideBuilding() =>
-        !Eye.IsNull && _sim.World.TryGet<Position>(Eye, out var p) ? (Rendering.BuildingPlanIndex.For(_sim).At(p.Cell), p.Cell.Z) : (Entity.Null, int.MaxValue);
+    /// <summary>
+    /// The building the view should open: the one you're in, or the one whose door you're standing
+    /// at, so a door on its far side (the shrine's, under its eave) stays in sight as you come and go.
+    /// </summary>
+    private (Entity Building, int Level) InsideBuilding()
+    {
+        if (Eye.IsNull || !_sim.World.TryGet<Position>(Eye, out var p))
+            return (Entity.Null, int.MaxValue);
+        var inside = Rendering.BuildingPlanIndex.For(_sim).At(p.Cell);
+        return (!inside.IsNull ? inside : Rendering.BuildingEntry.DoorBeside(_sim, p.Cell), p.Cell.Z);
+    }
 
     /// <summary>Who the view is about: your character, or your ghost; null for the overseer.</summary>
     private Entity Eye => HasAvatar ? _avatar : Ghosting ? _ghost : Entity.Null;
@@ -710,15 +719,22 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             if (input.WasKeyPressed(GlfwKey.Number3)) SetSpeed(3);
         }
         // Back (Esc, B) puts work down (VillageGame.Work.cs) and closes a menu (VillageGame.Pad.cs)
-        // before it does anything else; with a weapon out, the pad's B is a dash.
-        if (Controls.Map.Pressed(Act.Back) && !Working && !(WeaponDrawn && Controls.Map.PadPressed(Act.Dash)))
+        // before it does anything else; with a weapon out, the pad's B is a dash. With nothing
+        // here or anywhere else to close, it opens the game menu (EndPadUi).
+        if (Controls.Map.Pressed(Act.Back) && !Working)
         {
-            if (_tool != ToolKind.Select)
+            var used = true;
+            if (WeaponDrawn && Controls.Map.PadPressed(Act.Dash))
+                used = true; // the pad's B dashed
+            else if (_tool != ToolKind.Select)
                 SetTool(ToolKind.Select);
             else if (_showControls)
                 _showControls = false;
-            else
+            else if (!_selected.IsNull)
                 _selected = Entity.Null;
+            else
+                used = false;
+            _backUsed |= used;
         }
         if (_devMode)
         {

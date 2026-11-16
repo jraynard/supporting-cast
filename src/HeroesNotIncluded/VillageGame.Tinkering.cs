@@ -625,7 +625,7 @@ public sealed partial class VillageGame
             return;
         var w = _sim.World;
         if (!HasAvatar || !w.IsAlive(_tinkerAt) || !AvatarSystem.InReach(_sim, w.Get<Position>(_avatar).Cell, _tinkerAt)
-            || Controls.Map.Pressed(Act.Back))
+            || BackPressed())
         {
             _tinkerAt = Entity.Null;
             return;
@@ -774,7 +774,7 @@ public sealed partial class VillageGame
             return;
         var w = _sim.World;
         if (!HasAvatar || View.Curio(_curioTalk) is not { Mine: true } curio || !Inventory.OnPerson(_sim, _avatar, _curioTalk)
-            || Controls.Map.Pressed(Act.Back))
+            || BackPressed())
         {
             _curioTalk = Entity.Null;
             return;

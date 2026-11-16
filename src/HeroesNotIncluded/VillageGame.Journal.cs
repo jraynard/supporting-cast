@@ -80,7 +80,7 @@ public sealed partial class VillageGame
         if (map.Pressed(Act.ControlsCard) && !_showBuild)
             _showControls = !_showControls;
         if (map.Pressed(Act.Menu))
-            _padMenu = !_padMenu;
+            _gameMenu = !_gameMenu;
         if (_showBuild)
             return; // the drawer's letter keys are the build tools'
         foreach (var tab in JournalTabs)
@@ -194,7 +194,7 @@ public sealed partial class VillageGame
         ("Fighting", [("@" + Act.Draw, "draw or sheathe your weapon"), ("@aim", "weapon drawn: aim"), ("@" + Act.Strike, "weapon drawn: strike"),
             ("@" + Act.Heavy, "swing heavy; a bow: hold to draw, strike looses; a crossbow: hold to crank, it stays loaded"),
             ("@" + Act.Guard, "held: guard; raised as a blow lands, a parry"), ("@" + Act.Dash, "dash clear")]),
-        ("The village", [("!Left-click", "walk there or act"), ("!Shift-click", "look at someone or something"), ("!Right-click", "an item's menu"), ("@" + Act.Back, "stop looking, close")]),
+        ("The village", [("!Left-click", "walk there or act"), ("!Shift-click", "look at someone or something"), ("!Right-click", "an item's menu"), ("@" + Act.Back, "stop looking, close; with nothing to close, the menu")]),
         ("Hands-on work", [("@" + Act.Use, "strike, pour, set, press"), ("@steer", "steer, tilt, lift"), ("@" + Act.WorkAct, "the other thing: taste, latch, draw out"),
             ("@runes", "weave a rune"), ("@" + Act.Back, "put the work down")]),
         ("Panels", [("@" + Act.Shop, "shop and favours"), ("@" + Act.Heard, "talk (what you've heard)"), ("@" + Act.Quests, "quests"), ("@" + Act.Gift, "the gift"),

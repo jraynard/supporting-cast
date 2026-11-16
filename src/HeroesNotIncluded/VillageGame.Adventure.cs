@@ -351,10 +351,10 @@ public sealed partial class VillageGame
             var moved = input.MousePosition - _clickPressAt;
             if (_clickHeldFor >= FollowAfter && moved.X * moved.X + moved.Y * moved.Y >= FollowDrag * FollowDrag)
                 _clickPressAt = new float2(float.NegativeInfinity, 0); // dragging from now on
-            if (float.IsNegativeInfinity(_clickPressAt.X) && _sim.Map.InBounds(_hoverCell) && _hoverCell != _clickSent)
+            if (float.IsNegativeInfinity(_clickPressAt.X) && _sim.Map.InBounds(_hoverCell) && WalkCell is var to && to != _clickSent)
             {
-                Issue(new AvatarGoToCommand(_avatar, _hoverCell));
-                _clickSent = _hoverCell;
+                Issue(new AvatarGoToCommand(_avatar, to));
+                _clickSent = to;
             }
         }
 
@@ -391,10 +391,14 @@ public sealed partial class VillageGame
         }
         if (!_sim.Map.InBounds(_hoverCell))
             return true;
-        Issue(new AvatarGoToCommand(_avatar, _hoverCell));
-        (_clickHold, _clickSent, _clickPressAt, _clickHeldFor) = (ClickHold.Walk, _hoverCell, input.MousePosition, 0f);
+        var walkTo = WalkCell;
+        Issue(new AvatarGoToCommand(_avatar, walkTo));
+        (_clickHold, _clickSent, _clickPressAt, _clickHeldFor) = (ClickHold.Walk, walkTo, input.MousePosition, 0f);
         return true;
     }
+
+    /// <summary>Where a plain click walks: the hovered cell, or, on a building's roof, in through its door to the floor under the click.</summary>
+    private int3 WalkCell => Rendering.BuildingEntry.Inside(_sim, _hoverCell, _renderer.OpenBuilding.Building) ?? _hoverCell;
 
     /// <summary>
     /// Where a click would go: a faint ring on the hovered cell, amber on the thing a click would
@@ -420,7 +424,7 @@ public sealed partial class VillageGame
         if (action.Kind != AvatarActionKind.None)
             Mark(cell, Rgba.Pack(1f, 0.75f, 0.25f, 0.65f));
         else
-            Mark(_hoverCell, Rgba.Pack(1f, 1f, 1f, 0.3f));
+            Mark(WalkCell, Rgba.Pack(1f, 1f, 1f, 0.3f));
     }
 
     /// <summary>

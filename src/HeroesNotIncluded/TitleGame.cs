@@ -645,16 +645,31 @@ public sealed class TitleGame : Game
         ImGui.Dummy(in size);
     }
 
+    /// <summary>The entry picked last frame: it's laid out tall enough for all of its hint's lines.</summary>
+    private string? _pickedEntry;
+
     /// <summary>
     /// A menu entry: its label in the display face, and while it's picked (hovered, or reached with
-    /// keys or a pad) its line underneath and a barrel-gold bar at its edge. Every entry is tall
-    /// enough for its line, so picking one doesn't shift the rest.
+    /// keys or a pad) its hint underneath and a barrel-gold bar at its edge. Every entry is tall
+    /// enough for a one-line hint, so picking one of those doesn't shift the rest; a longer hint
+    /// (a trade's description) wraps, and its entry grows downward to hold it while it's picked.
     /// </summary>
     private void MenuButton(MenuItem item)
     {
         // A choice that leads on (a town, a trade) has a Then and no Start of its own; it's live too.
         var enabled = item.Start != null || item.Then != null || item.Action != MenuAction.Start;
-        var size = new float2(Gui.S(360), Gui.S(46));
+        var width = Gui.S(420);
+        var inset = Gui.S(17);
+        List<string> hint;
+        float lineHeight;
+        using (Gui.BodyFont(15f))
+        {
+            hint = WrapText(item.Hint, width - inset - Gui.S(10));
+            lineHeight = ImGui.GetTextLineHeight();
+        }
+        // Laid out from last frame's pick: the hover that grows an entry is decided by its button.
+        var extra = _pickedEntry == item.Label ? (hint.Count - 1) * lineHeight : 0f;
+        var size = new float2(width, Gui.S(46) + extra);
         var min = ImGui.GetCursorScreenPos();
         if (!enabled)
             ImGui.BeginDisabled(true);
@@ -678,12 +693,39 @@ public sealed class TitleGame : Game
             dl.AddText(in label, Theme.U8(enabled ? Theme.Text : Theme.Dim, enabled ? 1f : 0.6f), item.Label);
         if (picked)
         {
-            var line = min + new float2(Gui.S(17), Gui.S(28));
+            _pickedEntry = item.Label;
+            var line = min + new float2(inset, Gui.S(28));
             using (Gui.BodyFont(15f))
-                dl.AddText(in line, Theme.U8(Theme.Parchment, enabled ? 0.95f : 0.6f), item.Hint);
+                foreach (var text in hint)
+                {
+                    dl.AddText(in line, Theme.U8(Theme.Parchment, enabled ? 0.95f : 0.6f), text);
+                    line += new float2(0, lineHeight);
+                }
         }
+        else if (_pickedEntry == item.Label)
+            _pickedEntry = null;
         if (pressed)
             Press(item);
+    }
+
+    /// <summary>Text broken into lines at spaces, each at most <paramref name="width"/> wide in the current font.</summary>
+    private static List<string> WrapText(string text, float width)
+    {
+        var lines = new List<string>();
+        var line = "";
+        foreach (var word in text.Split(' '))
+        {
+            var tried = line.Length == 0 ? word : line + " " + word;
+            if (line.Length > 0 && ImGui.CalcTextSize(tried, false, -1f).X > width)
+            {
+                lines.Add(line);
+                line = word;
+            }
+            else
+                line = tried;
+        }
+        lines.Add(line);
+        return lines;
     }
 
     public override void Dispose()

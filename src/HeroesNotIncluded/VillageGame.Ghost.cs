@@ -345,7 +345,7 @@ public sealed partial class VillageGame
         OnScreenKeyboard.AfterTextField();
         done |= ImGui.Button(frost ? "Write it"u8 : "Whisper it"u8, in _autoSize);
         ImGui.SameLine(0, Gui.S(8));
-        var leave = ImGui.Button("Leave it"u8, in _autoSize) || Controls.Map.Pressed(Act.Back);
+        var leave = ImGui.Button("Leave it"u8, in _autoSize) || BackPressed();
         if (done)
         {
             var text = ImGuiText.Value(_ghostWords);
