@@ -162,14 +162,21 @@ Beds, campfires, tables, stools, chests and item piles (wood, stone, food) are d
 few textured boxes, listed in their def's `model` (see `ModelBox` in `Defs.cs`):
 `{ "min": [x, y, z], "max": [x, y, z], "top": ..., "side": ..., "front": ..., "minCount": n }`.
 
-A building with a `footprint` wider than a cell (the wagon) is drawn once, from its centre
-cell: its boxes use coordinates past 0..1 (a 3x3's run from -1 to 2) to cover the cells round it.
+A building with a footprint wider than a cell (the bar counter, the wagon) is drawn once, from
+its anchor cell, its boxes made from the footprint's corner: 0..3 along a three-cell bar. The
+renderer shifts them by the footprint's low corner (`PropModel.Placed`), since an odd-sized
+footprint is centred on its anchor, so they stand on the cells the sim has them on.
 
 - **Coordinates:** 0..1 inside the cell with z up (boxes may stand taller than 1). The front is
   +Y (south), which faces the viewer at the default camera. R turns a building while you place it.
-- **Face textures** (`props/*`, from `tools/placeholder_props.py`) are 32×32 tiles drawn as if
-  they covered a whole cell. A face shows only the part matching its size, so thin boxes keep the
-  pixel scale instead of squashing the art.
+- **Face textures** (`props/*`, from `tools/norse_buildings.py`; the inn's furniture's
+  `furniture/*`, from `tools/inn_furniture_art.py`) are 32×32 tiles drawn as if they covered a
+  whole cell. A face shows only the part matching its size, so thin boxes keep the pixel scale
+  instead of squashing the art, and a face longer than a cell repeats its tile a cell at a time.
+- **Furniture wood:** `furniture/*` is drawn in its wood (warm oak boards, legs, end grain,
+  counter panels, barrel staves and heads, hoops, brass), with `_oak`, `_pine` and `_birch`
+  versions; the plain name is oak, for preset furniture, which has no material. `props/planks` is
+  a pale neutral the game tints, and came out grey there.
 - **Whole pictures (`fit`):** a box with `"fit": true` stretches each face's whole sprite over it
   once instead (the grindstone's wheel, the anvil's face), so the art can be any size. Keep pixels
   square: a 32 px-per-cell texture on a fitted vertical face wants it `dy / (2 × 0.65)` tall for
@@ -193,6 +200,7 @@ cell: its boxes use coordinates past 0..1 (a 3x3's run from -1 to 2) to cover th
   fireplace's chimney breast). Kit walls run straight on into such a model (`BuildingKit`).
 - **Fire and smoke:** a fuelled model draws its flames at `fireAt` (model units; the cell's middle
   by default), `fireSize` times as big, and `smokeAt` sends a wisp up from a chimney's top.
+  `spoutAt` is where what's poured runs from (the cask's tap).
 - **Lamps:** a building's `lamps` (plan cells) hang its `lamp` def's model from the beams, with a
   small steady flame at its `fireAt` (the inn's lanterns). They're not structures, so they take no
   floor, and they light once the building's finished, without fuel.
@@ -224,7 +232,23 @@ drawn without their footing: any box wholly below `BuildingKit.FootingHeight` is
 The village's look is `timber_plaster` (limewashed panels in dark oak, straw thatch) and
 `timber_shingle`, drawn by `tools/village_art.py` with the rest of the village's scenery (lanes,
 garden soil, the well, the bridge, fences, crates, cabbages). It writes only its own files,
-so it can be re-run alone, and makes the wood and stone versions of its art itself.
+so it can be re-run alone, and makes the wood and stone versions of its art itself. Wall art is
+32×64, a bay a storey, so it shows once a level; its `_vN` variants are picked per cell.
+
+The inn's look (`inn_stone_timber`, the `Jettied` variant; art/reference/inn*.webp) shows what a
+kit can do beyond that:
+
+- `upper`: another kit for the storeys above the ground (fieldstone below, `inn_timber_upper`
+  above). The roof and floor are the ground kit's.
+- `facesOut`: straight runs and doors turn so their `front` faces outside wherever one side of
+  the wall is. Street-only art goes in `front` (the stone's face, the upper storey's windows,
+  `wall_timber_oak_out`), and the room sees `side`/`back`.
+- `jetty`: how far the upper storey's walls are drawn out over the street (toward each outside
+  side; both at a corner). Its floorboards reach out under them and the roof rests on them there.
+  The sim's walls stay in their cells.
+- The building's `chimneys` (plan cells of ground-storey fireplaces) rise as stone stacks up
+  through the storey above and out past the roof where it comes through, the fire's smoke from
+  their top (`BuildingKit.Chimney`).
 
 **The roof** is generated over the plot. Its ridge runs along the long side. It rests on the side
 walls' middles at `pitch` levels of rise per cell, reaches `eave` past them, and reaches
@@ -235,14 +259,16 @@ walls' middles at `pitch` levels of rise per cell, reaches `eave` past them, and
 - `ridge`: the beam along the ridge.
 - `gable`: an alpha-cut triangle, opaque below the diagonal with its high side on the right. It's
   mirrored for the other slope.
-- `gableFill`: the boards under a wide gable's triangle.
+- `gableFill`: the boards under a wide gable's triangle, stacked a tile at a time up it (its
+  variants picked per tile), as walls' art is.
 
 Each roof cell draws only its own share, so chunks mesh independently. Everything is flagged as
 roof, so `\` hides it and the outline shows instead.
 
 The slopes pick a variant per cell (`roof_turf_v2`...) and are mirrored at random. Corner and
 post pieces are turned per cell, so their end grain doesn't repeat. A roof's `eaveTrim` (with
-`lip`) hangs along the eaves in place of `trim`: turf roofs use it for their grass lip.
+`lip`) hangs along the eaves in place of `trim`: turf roofs use it for their grass lip, the inn
+for its thatch's ragged, rolled edge (`thatch_eave`).
 
 `tools/norse_kit.py` makes the kit's own art from the existing textures:
 

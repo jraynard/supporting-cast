@@ -2052,3 +2052,24 @@ player vanished on day two and it ended on day three.
 - Save format 47. Bench hashes unchanged. 8-seed `--season-sweep`: Renown mean 46.0 (50.2 before),
   won 1 (3), quests cleared 1.4 (1.4); the smith's blows take their own time now, which moves
   every season after.
+
+### The inn's look, its furniture, drinking (2026-11-15)
+- **Behind the bar**: anywhere beside a counter on the keeper's side reaches the shelves behind it
+  (`Vessels.BehindTheBar`), not only the cells next to the shelf.
+- **Players drink**: Drink on a drink you carry (`DrinkCommand`, `DrinkHeldJob`); it goes to your
+  head as a customer's does. For now: a line under Feels, a slow camera sway and the edges darkening
+  and blurring, fading as you sober; out cold, you sleep where you stand.
+- **Furniture**: warm oak faces (`tools/inn_furniture_art.py`, per wood), long faces repeating their
+  art a cell at a time, trestle and turned-leg tables, braced stools, a barrel cask on its cradle
+  (the pour from its tap, `spoutAt`), a panelled bar with a foot rail, backed shelves. Three-cell
+  models (the bar, wagons) now stand on their own cells (`PropModel.Placed`): the bar came through
+  the inn's wall.
+- **The inn's outside** (art/reference/inn*.webp): a fieldstone ground storey with quoins and an
+  arched door, a warm oak upper storey with braces, leaded windows, shutters and a flower box,
+  jettied out over the street on a sole beam and brackets, a deep thatch with a ragged rolled eave
+  and a spar-pinned ridge, oak-studded gables, two stone chimneys with their smoke. Kits gained
+  `upper`, `facesOut` and `jetty`; buildings `chimneys` (docs/ART.md, "Building kits"). In front:
+  steps between lantern posts, the sign on a scrolled iron bracket (a bear over a tankard), a bench
+  and trestle table, barrels and flower tubs, all decorative.
+- Bench baselines (the town's new props): 1234 state `E33D1E2E4B14E165`, full `C2D19A435FD2BAA2`;
+  99 state `3E0C3971ABFE93F7`, full `FB7CFA1FEDC07CB6`.
