@@ -4,6 +4,17 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+## 0.1.0-playtest.19
+
+Two fixes to playtest.18.
+
+**Fixes**
+- The trade and town lists on the title screen no longer jump about as you move the pointer over
+  them.
+- Standing behind a building now opens it to view, as standing at its door does: by the healer's
+  shrine's back wall you see the room and the door, not just its roof. Walking along the street in
+  front of houses leaves their roofs on.
+
 ## 0.1.0-playtest.18
 
 Fixes from our first outside playtester: a menu on Esc, easier ways into buildings, and a tidier
