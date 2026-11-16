@@ -670,6 +670,19 @@ public class CookPassTests
     }
 
     [Fact]
+    public void ARoastLiftedWithFullHandsGoesInThePackEvenOntoAnother()
+    {
+        var (sim, me, _, s) = Spit();
+        // Hands full, and a roast already in the pack it may stack with: lifting mustn't trip over it.
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("Bowl"), 1);
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing(Roasting.Dish), 1));
+        s.Advance([new WorkInput(1, WorkInputKind.Act)], 3);
+        Assert.True(s.Done);
+        sim.Tick();
+        Assert.True(sim.StoredIn(sim.PackOf(me)).Where(e => sim.World.Get<Thing>(e).Def.Name == Roasting.Dish).Sum(e => sim.World.Get<Stack>(e).Count) > 1);
+    }
+
+    [Fact]
     public void ARoastTurnedEvenlyComesOffGolden()
     {
         var (sim, me, _, s) = Spit();
