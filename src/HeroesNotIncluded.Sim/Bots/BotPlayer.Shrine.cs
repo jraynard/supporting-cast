@@ -114,10 +114,12 @@ public sealed partial class BotPlayer
         if (OnMe(sim, me, Bandaging.BandageDef) <= KeepBandages)
             return sim.Defs.Thing(Bandaging.BandageDef) is { } linen
                 && Fetch(sim, me, view, now, new ThingCount { Def = linen.Name, Count = 2, ThingDef = linen }, "linen");
-        // A healing mending in its book, not one already in stock (nobody carries two the same).
+        // A healing mending in its book, not one already in stock (nobody carries two the same),
+        // leaving a Calling's worth: whoever dies next mustn't wait on a charm for sale.
         var stocked = OnSale(sim, me).Concat(Loose(sim, me)).Select(view.Charm).OfType<KnownCharm>().Select(c => c.Mending).ToHashSet();
+        var reserve = Math.Max(mana.Max * (CharmsFrom - 0.3f), Afterlife.Revival.CallCost(sim));
         var pick = sim.Defs.AllMendings.FirstOrDefault(m => !m.CallsBack && m.Heals.Count > 0 && m.Sears <= 0 && Weaving.Knows(sim, me, m)
-            && !stocked.Contains(m) && m.CostAt(0) <= mana.Current - mana.Max * (CharmsFrom - 0.3f));
+            && !stocked.Contains(m) && m.CostAt(0) <= mana.Current - reserve);
         if (pick == null)
             return false;
         _weave = Weaving.Recipe(pick).Select(r => r.Index).ToList();
