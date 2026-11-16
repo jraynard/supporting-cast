@@ -191,7 +191,7 @@ public sealed partial class BotPlayer
     {
         var w = sim.World;
         var packed = sim.PackOf(me) is { IsNull: false } pack ? sim.StoredIn(pack).FirstOrDefault(e => Buckets.IsBucket(sim, e), Entity.Null) : Entity.Null;
-        if (!Buckets.IsBucket(sim, held) && packed.IsNull)
+        if ((!Buckets.IsBucket(sim, held) && packed.IsNull) || KeepsBucket)
             return false;
         var here = w.Get<Position>(me).Cell;
         var wells = Buckets.Wells(sim);

@@ -159,6 +159,12 @@ public sealed partial class BotPlayer
                 return (!si.Begun, false, 0);
             case Hospitality.SlopSession sl:
             {
+                // A slip: tipped before the sway's come round, and some goes on the floor.
+                if (_slip && !_slipCounted && sl.Poured == 0 && !sl.OnCue && sl.Sweep > 0.4f)
+                {
+                    Slipped();
+                    return (true, false, 0);
+                }
                 var press = sl.OnCue && !_struck;
                 _struck = sl.OnCue;
                 return (press, false, 0);
@@ -179,6 +185,12 @@ public sealed partial class BotPlayer
                 }
             case TapSession tap:
             {
+                // A slip: one blow struck early, before the mallet's down, and the ale sprays.
+                if (_slip && !_slipCounted && tap.Blows == 1 && !tap.OnTheTap && tap.Mallet > 0.5f)
+                {
+                    Slipped();
+                    return (true, false, 0);
+                }
                 var press = tap.OnTheTap && !_struck;
                 _struck = tap.OnTheTap;
                 return (press, false, 0);

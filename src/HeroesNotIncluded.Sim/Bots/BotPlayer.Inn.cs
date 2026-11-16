@@ -32,29 +32,16 @@ public sealed partial class BotPlayer
         var inn = ShopSystem.WorkplaceOf(sim, trade.Def);
         if (inn.IsNull || trade.Def.Role != Defs.TownRole.Tavern)
             return false;
+        // The cask it saw run low at its last pour: a new keg in before it's dry.
+        if (ChangeKeg(sim, me, view, now))
+            return true;
+        NoteLeftRooms(sim, inn);
         var bed = trade.Def.Serving(ServiceKind.Lodging) ? Buildings.Parts(sim, inn).FirstOrDefault(p => Hospitality.Lodging.IsUnmade(sim, p), Entity.Null) : Entity.Null;
         if (!bed.IsNull)
         {
             Doing = "making up a bed";
-            // A locked room: its key off the board (or the spare from the storeroom), then the door.
-            if (w.TryGet<Hospitality.GuestRoom>(bed, out var room) && sim.IsLocked(room.Door))
-            {
-                if (Hospitality.InnRooms.KeyOn(sim, me, bed).IsNull)
-                {
-                    var seed = Hospitality.InnRooms.SeedOf(sim, bed);
-                    var store = Hospitality.InnRooms.OnBoard(sim, inn, seed).IsNull ? Hospitality.InnRooms.SpareBox(sim, inn) : Hospitality.InnRooms.Board(sim, inn);
-                    if (Hospitality.InnRooms.KeyIn(sim, store, seed).IsNull)
-                        return false; // no key to be had: leave it
-                    Doing = "fetching a room key";
-                    return AtStation(sim, me, store, now, s =>
-                    {
-                        if (view.InContainer(s).FirstOrDefault(k => Hospitality.InnRooms.RoomOfKey(sim, k) == room.Number, Entity.Null) is { IsNull: false } key)
-                            Send(new TakeFromStorageCommand(me, key));
-                    });
-                }
-                Doing = "unlocking a room";
-                return AtStation(sim, me, room.Door, now, d => Send(new Tinkering.TurnKeyCommand(me, d, false)));
-            }
+            if (IntoRoom(sim, me, view, inn, bed, now) is { } atDoor)
+                return atDoor;
             // Clean linen from the storeroom first.
             if (Hospitality.RoomChores.LinenOn(sim, me).IsNull)
             {
@@ -75,6 +62,9 @@ public sealed partial class BotPlayer
             }
             return AtStation(sim, me, bed, now, b => Send(new BarWorkCommand(me, b)));
         }
+        // The book put straight for guests who've gone, and the rest of their rooms turned round.
+        if (trade.Def.Serving(ServiceKind.Lodging) && (StrikeOut(sim, me, view, inn, now) || TurnRooms(sim, me, view, inn, now)))
+            return true;
         var anchor = w.Get<PresetBuilding>(inn).Anchor;
         var mess = view.Messes().Where(m => Maps.Map.Distance(m.Cell, anchor) <= CleanJob.InnReach && CleanJob.Mine(sim, trade.Def, inn, m.Cell))
             .OrderBy(m => Maps.Map.Distance(m.Cell, w.Get<Position>(me).Cell)).Select(m => (int3?)m.Cell).FirstOrDefault();
@@ -137,16 +127,19 @@ public sealed partial class BotPlayer
         var held = w.Get<Carrying>(me).Item;
         if (w.IsAlive(held) && w.Get<Thing>(held).Def.Drink)
         {
+            NoteCasks(sim, me);
             if (Reach(sim, me, drinker, now))
                 Send(new GiveCommand(me, drinker, held, 1));
             return true;
         }
+        if (KegInArms(sim, me) is { IsNull: false } low)
+            return Restock(sim, me, view, now, low);
         var bar = Nearest(sim, me, "BarCounter");
         var cask = bar.IsNull ? Entity.Null : MixSession.CaskFor(sim, bar, named);
         if (cask.IsNull)
             return Pour(sim, me, view, drinker, now);
         if (PourSession.ServingsLeft(sim, cask) <= 0)
-            return Restock(sim, me, view, now); // run dry: a mix needs its measure from the cask
+            return Restock(sim, me, view, now, cask); // run dry: a mix needs its measure from the cask
         var into = w.Get<Thing>(cask).Def.Building!.Cask!.Into;
         if (Carried(sim, me, into).IsNull)
             return Crockery(sim, me, view, now, into, cask);
@@ -163,7 +156,7 @@ public sealed partial class BotPlayer
             Doing = $"fetching {add.Label}";
             if (!w.Get<Carrying>(me).Item.IsNull && w.Get<Thing>(w.Get<Carrying>(me).Item).Def.Name != into)
             {
-                Send(new StowCommand(me));
+                FreeHand(sim, me);
                 return true;
             }
             return AtStation(sim, me, store, now, s =>
@@ -174,7 +167,7 @@ public sealed partial class BotPlayer
         }
         if (!held.IsNull && w.Get<Thing>(held).Def.Name != into)
         {
-            Send(new StowCommand(me));
+            FreeHand(sim, me);
             return true;
         }
         Doing = $"mixing a {named.Label}";
@@ -187,10 +180,14 @@ public sealed partial class BotPlayer
         var held = w.Get<Carrying>(me).Item;
         if (w.IsAlive(held) && w.Get<Thing>(held).Def.Drink)
         {
+            NoteCasks(sim, me);
             if (Reach(sim, me, drinker, now))
                 Send(new GiveCommand(me, drinker, held, 1));
             return true;
         }
+        // A keg in its arms for a low cask: in it goes first (it won't go in a pack).
+        if (KegInArms(sim, me) is { IsNull: false } low)
+            return Restock(sim, me, view, now, low);
         var cask = ServeJob.Cask(sim, me);
         if (cask.IsNull)
             return Restock(sim, me, view, now);
@@ -199,7 +196,7 @@ public sealed partial class BotPlayer
             return Crockery(sim, me, view, now, into, cask);
         if (!held.IsNull && w.Get<Thing>(held).Def.Name != into)
         {
-            Send(new StowCommand(me)); // a free hand to pour with
+            FreeHand(sim, me); // a free hand to pour with
             return true;
         }
         // Walk up to the cask and use it: that starts the pour.
@@ -313,7 +310,7 @@ public sealed partial class BotPlayer
             Doing = $"fetching a clean {sim.Defs.Thing(clean).Label}";
             if (!w.Get<Carrying>(me).Item.IsNull && w.Get<Thing>(w.Get<Carrying>(me).Item).Def.Name != clean)
             {
-                Send(new StowCommand(me));
+                FreeHand(sim, me);
                 return true;
             }
             return AtStation(sim, me, shelf, now, s =>
@@ -338,25 +335,31 @@ public sealed partial class BotPlayer
         return true;
     }
 
-    /// <summary>The cask's dry: fetch a keg from the storeroom and knock it in.</summary>
-    private bool Restock(Simulation sim, Entity me, PerceptionView view, long now)
+    /// <summary>
+    /// A cask dry (or, given one, low): a keg from the storeroom in both arms, then knocked in at
+    /// the cask. False if there's no cask or no keg to be had.
+    /// </summary>
+    private bool Restock(Simulation sim, Entity me, PerceptionView view, long now, Entity? low = null)
     {
         var w = sim.World;
-        var cask = Nearest(sim, me, "AleCask");
-        if (cask.IsNull)
+        var cask = low ?? Nearest(sim, me, "AleCask");
+        if (cask.IsNull || !w.IsAlive(cask))
             return false;
         Doing = "changing the keg";
         if (!BarWork.KegFor(sim, me, cask).IsNull)
-            return AtStation(sim, me, cask, now, c => Send(new BarWorkCommand(me, c)));
+            return AtStation(sim, me, cask, now, c =>
+            {
+                _tapping = c;
+                _tapTries++;
+                Send(new BarWorkCommand(me, c));
+            });
         if (!w.Get<Carrying>(me).Item.IsNull)
         {
-            Send(new StowCommand(me));
+            FreeHand(sim, me);
             return true;
         }
         var keg = w.Get<Thing>(cask).Def.Building!.Cask!.Keg;
-        var store = w.Query<Thing>().Where(e => w.Get<Thing>(e) is { Spawned: true } t && t.Def.Building?.StorageStacks > 0
-                && sim.StoredIn(e).Any(i => w.Get<Thing>(i).Def.Name == keg))
-            .OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, w.Get<Position>(me).Cell)).FirstOrDefault(Entity.Null);
+        var store = KegStore(sim, me, keg);
         if (store.IsNull)
             return false;
         return AtStation(sim, me, store, now, s =>
@@ -364,6 +367,15 @@ public sealed partial class BotPlayer
             if (view.InContainer(s).FirstOrDefault(e => w.Get<Thing>(e).Def.Name == keg, Entity.Null) is { IsNull: false } k)
                 Send(new TakeFromStorageCommand(me, k));
         });
+    }
+
+    /// <summary>The nearest store with a keg of this kind in it (the storeroom's kept where the carter leaves them), or Entity.Null.</summary>
+    private static Entity KegStore(Simulation sim, Entity me, string keg)
+    {
+        var w = sim.World;
+        return w.Query<Thing>().Where(e => w.Get<Thing>(e) is { Spawned: true } t && t.Def.Building?.StorageStacks > 0
+                && sim.StoredIn(e).Any(i => w.Get<Thing>(i).Def.Name == keg))
+            .OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, w.Get<Position>(me).Cell)).FirstOrDefault(Entity.Null);
     }
 
     private bool Broker(Simulation sim, Entity me, PerceptionView view, Entity member, long now)
