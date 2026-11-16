@@ -3,7 +3,7 @@
 // Melee/Shooting skill range, the silver coins they arrive with, and "spend": how free they are
 // with it (what a service is worth to them is its worth in services.json times this); "tastes":
 // what they like in a meal, said ordering it (Hospitality.Tastes: Savoury, Sweet, Hot, Fresh). "parties"
-// are who travels together, where they loiter ("haunt", a building def) and how many game hours
+// are who travels together, where they loiter ("haunt", a town role: the Tavern) and how many game hours
 // they stay (±25%).
 // Names are our own; keep tabletop terms out.
 {

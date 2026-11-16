@@ -58,7 +58,7 @@ public sealed class FeastSystem : ISimSystem, ISaveState
                     w.Remove<FeastDue>(e);
                     continue;
                 }
-                var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+                var inn = ShopSystem.BuildingFor(sim, Defs.TownRole.Kitchen); // the dishes come over its hatch
                 if (inn.IsNull || Buildings.At(sim, w.Get<Position>(e).Cell) != inn || !SpeechSystem.CanAct(sim, e))
                     continue;
                 var party = w.Get<FeastDue>(e).Party;

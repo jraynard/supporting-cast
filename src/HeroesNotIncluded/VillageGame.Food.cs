@@ -36,9 +36,9 @@ public sealed partial class VillageGame
             foreach (var part in Buildings.Parts(_sim, home))
                 if (Homes.IsCrock(_sim, part) && _sim.StoredIn(part).Any())
                     Consider(part, "Food at home");
-        var inn = ShopSystem.BuildingOf(_sim, _sim.Defs.Building("Inn"));
+        var inn = ShopSystem.BuildingFor(_sim, TownRole.Kitchen);
         if (Hatch.Of(_sim, inn) is { IsNull: false } hatch && ShopPrices.Posted(_sim, inn, ServiceKind.Meal) is { Offered: true }
-            && !(w.TryGet<Trade>(_avatar, out var trade) && trade.Def.WorkplaceDef == w.Get<PresetBuilding>(inn).Def))
+            && !(w.TryGet<Trade>(_avatar, out var trade) && trade.Def.WorksAt(w.Get<PresetBuilding>(inn).Def)))
             Consider(hatch, Hatch.DishesOn(_sim, hatch, ServiceKind.Meal).Count > 0 ? "A hot meal, ready" : "Meals at the hatch");
         if (best.IsNull || bestD <= 1)
             return;

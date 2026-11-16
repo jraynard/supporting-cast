@@ -31,7 +31,7 @@ public sealed partial class VillageGame
         if (ImGui.Button("Restock"u8))
             Issue(new PracticeCommand(_avatar, PracticeAction.Restock));
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-            Tip(def.WorkplaceDef is { } work ? $"Fill the {work.Label} with what it started with." : "Nothing to restock.");
+            Tip(Sim.Shops.ShopSystem.WorkplaceOf(_sim, def) is { IsNull: false } work ? $"Fill the {_sim.World.Get<PresetBuilding>(work).Def.Label} with what it started with." : "Nothing to restock.");
         ImGui.SameLine(0, Gui.S(6));
         if (ImGui.Button("Freshen up"u8))
             Issue(new PracticeCommand(_avatar, PracticeAction.Freshen));

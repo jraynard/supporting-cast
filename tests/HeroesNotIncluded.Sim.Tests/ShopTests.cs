@@ -175,7 +175,7 @@ public class ShopTests
     {
         var (sim, keeper, inn, _) = Inn(aleOnly: false);
         var sign = Perception.For(sim, keeper).Prices(inn);
-        Assert.Equal(sim.Defs.AllServices.Where(d => d.At == "Inn").Select(d => d.Kind), sign.Select(p => p.Kind));
+        Assert.Equal(sim.Defs.AllServices.Where(d => sim.World.Get<PresetBuilding>(inn).Def.Has(d.AtRole)).Select(d => d.Kind), sign.Select(p => p.Kind));
         Assert.All(sign, p => Assert.True(p.Offered && p.Price == sim.Defs.Service(p.Kind).DefaultPrice));
 
         sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, 7, true));

@@ -169,7 +169,7 @@ public sealed class AvatarSystem : ISimSystem
         var inn = Shops.Hatch.ShopOf(sim, hatch);
         var innDef = inn.IsNull ? null : sim.World.Get<PresetBuilding>(inn).Def;
         if (innDef == null || !innDef.HatchServes.Contains(ServiceKind.Meal)
-            || sim.World.TryGet<Trade>(avatar, out var trade) && trade.Def.WorkplaceDef == innDef && trade.Def.Serving(ServiceKind.Meal))
+            || sim.World.TryGet<Trade>(avatar, out var trade) && trade.Def.WorksAt(innDef) && trade.Def.Serving(ServiceKind.Meal))
             return null;
         if (sim.Shops.OpenOrderOf(avatar, ServiceKind.Meal) != null)
         {
@@ -190,7 +190,7 @@ public sealed class AvatarSystem : ISimSystem
             || sim.Shops.OpenOrderOf(avatar, ServiceKind.Healing) != null || !Healing.LayOnHands.Hurt(sim, avatar))
             return null;
         var def = sim.World.Get<PresetBuilding>(shrine).Def;
-        if (sim.World.TryGet<Trade>(avatar, out var trade) && trade.Def.WorkplaceDef == def)
+        if (sim.World.TryGet<Trade>(avatar, out var trade) && trade.Def.WorksAt(def))
             return null;
         return Shops.ShopPrices.Posted(sim, shrine, ServiceKind.Healing) is { Offered: true } sign ? $"Ask to be healed ({sign.Price} silver)" : null;
     }

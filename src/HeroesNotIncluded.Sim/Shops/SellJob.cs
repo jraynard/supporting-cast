@@ -17,14 +17,14 @@ public sealed class SellJob(int order) : Job
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+        if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace)
             return null;
         var from = w.Get<Position>(pawn).Cell;
         foreach (var e in sim.Shops.FrontFirst(sim))
         {
             if (e.Kind.Kind != ServiceKind.Goods || !e.KnownBy.Contains(pawn) || (!e.Assignee.IsNull && e.Assignee != pawn)
                 || !w.IsAlive(e.Poster) || Goods.ShownIn(sim, e.Subject) is not { IsNull: false } shop
-                || w.Get<PresetBuilding>(shop).Def != workplace || sim.Reservations.IsReservedByOther(e.Subject, pawn))
+                || !trade.Def.WorksAt(w.Get<PresetBuilding>(shop).Def) || sim.Reservations.IsReservedByOther(e.Subject, pawn))
                 continue;
             if (Navigation.CanReach(sim, pawn, from, w.Get<Thing>(e.Subject).Cell, PathEnd.OnTile)
                 && Navigation.CanReach(sim, pawn, from, w.Get<Position>(e.Poster).Cell, PathEnd.Touch))

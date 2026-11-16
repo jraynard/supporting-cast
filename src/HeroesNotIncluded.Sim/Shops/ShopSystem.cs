@@ -410,7 +410,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         // Somewhere offers it, but nowhere they know the way to: they ask.
         if (cheapest == Lost)
         {
-            sim.Directions.Ask(sim, who, def.AtDef!, def.Label);
+            sim.Directions.Ask(sim, who, sim.World.Get<PresetBuilding>(BuildingFor(sim, def.AtRole)).Def, def.Label);
             return false;
         }
         if (price < 0)
@@ -468,7 +468,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var def = sim.Defs.Service(kind);
         if (!sim.Round.Live)
             return "nobody's serving yet";
-        if (w.TryGet<Trade>(who, out var trade) && w.TryGet<PresetBuilding>(shop, out var b) && trade.Def.WorkplaceDef == b.Def && trade.Def.Serving(kind))
+        if (w.TryGet<Trade>(who, out var trade) && w.TryGet<PresetBuilding>(shop, out var b) && trade.Def.WorksAt(b.Def) && trade.Def.Serving(kind))
             return "you'd be serving yourself";
         if (_orders.Exists(e => e.IsOpen && e.Poster == who && e.Kind.Kind == kind))
             return $"you've ordered {def.Label} already";
@@ -567,7 +567,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// </summary>
     private static (Entity Shop, int Price, int Cheapest) ChooseShop(Simulation sim, Entity who, ServiceDef def, int budget)
     {
-        if (def.AtDef == null || BuildingOf(sim, def.AtDef).IsNull)
+        if (BuildingFor(sim, def.AtRole).IsNull)
             return def.DefaultPrice <= budget ? (Entity.Null, def.DefaultPrice, def.DefaultPrice) : (Entity.Null, -1, def.DefaultPrice);
         var w = sim.World;
         var from = w.Get<Position>(who).Cell;
@@ -577,7 +577,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         foreach (var e in w.Each<PresetBuilding>())
         {
             var b = w.Get<PresetBuilding>(e);
-            if (b.Def != def.AtDef || b.Demolishing || ShopPrices.Posted(sim, e, def.Kind) is not { Offered: true } sign)
+            if (!b.Def.Has(def.AtRole) || b.Demolishing || ShopPrices.Posted(sim, e, def.Kind) is not { Offered: true } sign)
                 continue;
             if (!Hospitality.DirectionsSystem.Knows(sim, who, e))
             {
@@ -661,17 +661,16 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         {
             Craving = craving,
             Id = _nextId++, Kind = kind, Poster = poster, PosterName = sim.World.Get<Creature>(poster).Name, Text = text,
-            Where = where ?? (kind.AtDef is { } at ? BuildingOf(sim, at) : Entity.Null), Subject = subject ?? Entity.Null, Price = price,
+            Where = where ?? BuildingFor(sim, kind.AtRole), Subject = subject ?? Entity.Null, Price = price,
             Worth = worth, PostedTick = sim.Clock.Tick, Deadline = deadline,
         };
         _orders.Add(order);
         Learn(order, poster);
         // Word of work at a trade's building reaches whoever holds that trade.
-        var workplace = sim.World.IsAlive(order.Where) && sim.World.TryGet<PresetBuilding>(order.Where, out var shop) ? shop.Def : kind.AtDef;
-        if (workplace != null)
-            foreach (var e in sim.Creatures())
-                if (sim.World.TryGet<Trade>(e, out var trade) && trade.Def.WorkplaceDef == workplace)
-                    Learn(order, e);
+        var workplace = sim.World.IsAlive(order.Where) && sim.World.TryGet<PresetBuilding>(order.Where, out var shop) ? shop.Def : null;
+        foreach (var e in sim.Creatures())
+            if (sim.World.TryGet<Trade>(e, out var trade) && (workplace != null ? trade.Def.WorksAt(workplace) : trade.Def.HasWorkplace && trade.Def.Role == kind.AtRole))
+                Learn(order, e);
         // At a shop with a line they say it at the counter (or the hatch), when their turn comes (TimeToAsk).
         if (LineCells(sim, order.Where, Hatch.Takes(sim, order)).Count == 0)
             Announce(sim, order, text);
@@ -1280,6 +1279,30 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var wound = h.Injuries.Find(i => !i.Tended);
         return wound == null ? null : h.Body.Parts[wound.Part].Label;
     }
+
+    /// <summary>
+    /// The first standing building that is this to the town (<see cref="TownRole"/>: the kitchen,
+    /// the tavern), Entity.Null if it has none. Where a trade works and a service is served.
+    /// </summary>
+    public static Entity BuildingFor(Simulation sim, TownRole role)
+    {
+        if (role == TownRole.None)
+            return Entity.Null;
+        foreach (var e in sim.World.Each<PresetBuilding>())
+        {
+            var b = sim.World.Get<PresetBuilding>(e);
+            if (b.Def.Has(role) && !b.Demolishing)
+                return e;
+        }
+        return Entity.Null;
+    }
+
+    /// <summary>The building a trade works from in this town, Entity.Null if none.</summary>
+    public static Entity WorkplaceOf(Simulation sim, TradeDef trade) => BuildingFor(sim, trade.Role);
+
+    /// <summary>The building someone's trade works from, Entity.Null if they have none or the town hasn't one.</summary>
+    public static Entity WorkplaceOf(Simulation sim, Entity who) =>
+        sim.World.TryGet<Trade>(who, out var t) ? BuildingFor(sim, t.Def.Role) : Entity.Null;
 
     /// <summary>The first standing building of a kind, Entity.Null if the town has none.</summary>
     public static Entity BuildingOf(Simulation sim, BuildingDef def)

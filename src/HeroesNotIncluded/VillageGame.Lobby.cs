@@ -85,7 +85,7 @@ public sealed partial class VillageGame
         if (!HasAvatar || !_sim.World.TryGet<Trade>(_avatar, out var trade))
             return;
         _tradeRequested = false;
-        var where = trade.Def.WorkplaceDef is { } work ? $" This is your {work.Label}." : "";
+        var where = Sim.Shops.ShopSystem.WorkplaceOf(_sim, trade.Def) is { IsNull: false } work ? $" This is your {_sim.World.Get<PresetBuilding>(work).Def.Label}." : "";
         Notify(MessageKind.Good, $"You are {_sim.World.Get<Creature>(_avatar).Name}, the {trade.Def.Label}.{where}");
     }
 

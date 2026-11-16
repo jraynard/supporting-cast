@@ -35,13 +35,13 @@ public sealed class ShopPrices
         return p;
     }
 
-    /// <summary>The services a building serves (those whose <see cref="ServiceDef.AtDef"/> it is), in def order.</summary>
+    /// <summary>The services a building serves (those whose <see cref="ServiceDef.AtRole"/> it has), in def order.</summary>
     public static IEnumerable<ServiceDef> ServicesAt(Simulation sim, Entity building)
     {
         if (!sim.World.IsAlive(building) || !sim.World.TryGet<PresetBuilding>(building, out var b))
             yield break;
         foreach (var d in sim.Defs.AllServices)
-            if (d.AtDef == b.Def)
+            if (b.Def.Has(d.AtRole))
                 yield return d;
     }
 
@@ -69,7 +69,7 @@ public sealed class ShopPrices
     /// <summary>Does this person keep the shop: their trade works from a building of its kind?</summary>
     public static bool Keeps(Simulation sim, Entity who, Entity building) =>
         sim.World.IsAlive(building) && sim.World.TryGet<PresetBuilding>(building, out var b)
-        && sim.World.TryGet<Trade>(who, out var trade) && trade.Def.WorkplaceDef == b.Def;
+        && sim.World.TryGet<Trade>(who, out var trade) && trade.Def.WorksAt(b.Def);
 
     /// <summary>
     /// The keeper changes the sign. False (and nothing changes) unless they keep the shop, it serves

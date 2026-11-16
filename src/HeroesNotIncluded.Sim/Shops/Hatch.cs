@@ -86,7 +86,7 @@ public static class Hatch
         var here = w.Get<PresetBuilding>(shop).Def;
         foreach (var e in w.Query<PlayerCharacter>())
             if (w.TryGet<Needs>(e, out var n) && n.Get(food) < food.SeekBelow && w.Get<Creature>(e) is { Dead: false }
-                && !(w.TryGet<Trade>(e, out var t) && t.Def.WorkplaceDef == here && t.Def.Serving(ServiceKind.Meal)))
+                && !(w.TryGet<Trade>(e, out var t) && t.Def.WorksAt(here) && t.Def.Serving(ServiceKind.Meal)))
                 return true;
         return false;
     }
@@ -145,7 +145,7 @@ public static class Hatch
         if (Here(e.Assignee) && e.Assignee != e.Poster)
             return e.Assignee;
         foreach (var x in sim.Creatures())
-            if (w.TryGet<Trade>(x, out var t) && t.Def.WorkplaceDef == e.Kind.AtDef && t.Def.Serving(e.Kind.Kind))
+            if (w.TryGet<Trade>(x, out var t) && t.Def.HasWorkplace && t.Def.Role == e.Kind.AtRole && t.Def.Serving(e.Kind.Kind))
                 return x;
         return e.Poster; // nobody to pay: on the house
     }

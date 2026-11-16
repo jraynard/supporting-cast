@@ -22,7 +22,7 @@ public sealed class CallBackJob(Entity body) : Job
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Mana>(pawn, out var mana) || !w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef?.Name != "Shrine"
+        if (!w.TryGet<Mana>(pawn, out var mana) || !w.TryGet<Trade>(pawn, out var trade) || trade.Def.Role != TownRole.Shrine
             || mana.Current < sim.Defs.Mending("CallBack").ManaCost)
             return null;
         var from = w.Get<Position>(pawn).Cell;

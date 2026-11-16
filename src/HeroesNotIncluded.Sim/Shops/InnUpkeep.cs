@@ -21,9 +21,9 @@ public sealed class WashJob(Entity tub) : Job
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+        if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace)
             return null;
-        var inn = ShopSystem.BuildingOf(sim, workplace);
+        var inn = ShopSystem.WorkplaceOf(sim, trade.Def);
         if (inn.IsNull)
             return null;
         var tub = Buildings.Parts(sim, inn).FirstOrDefault(e => BarWork.IsTub(sim, e), Entity.Null);
@@ -40,9 +40,9 @@ public sealed class WashJob(Entity tub) : Job
     {
         var w = sim.World;
         var kinds = new HashSet<string>();
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+        if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace)
             return kinds;
-        foreach (var part in Buildings.Parts(sim, ShopSystem.BuildingOf(sim, workplace)))
+        foreach (var part in Buildings.Parts(sim, ShopSystem.WorkplaceOf(sim, trade.Def)))
         {
             var b = w.Get<Thing>(part).Def.Building;
             if (b?.Cask is { } cask && trade.Def.Serving(ServiceKind.Drink))
@@ -145,9 +145,9 @@ public sealed class TapJob(Entity cask, Entity keg) : Job
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace || !trade.Def.Serving(ServiceKind.Drink))
+        if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace || !trade.Def.Serving(ServiceKind.Drink))
             return null;
-        var inn = ShopSystem.BuildingOf(sim, workplace);
+        var inn = ShopSystem.WorkplaceOf(sim, trade.Def);
         if (inn.IsNull)
             return null;
         foreach (var cask in Buildings.Parts(sim, inn))
@@ -231,24 +231,33 @@ public sealed class InnSupplySystem : ISimSystem, Saving.ISaveState
         // The round's first morning is what it was stocked with.
         if (sim.Clock.Tick < SimClock.TicksPerHour * 6)
             return;
-        var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
-        if (inn.IsNull)
+        // Kegs for the tavern, food and wood for the kitchen: one stop where they share a roof (Millbrook's inn).
+        var inn = ShopSystem.BuildingFor(sim, Defs.TownRole.Tavern);
+        var kitchen = ShopSystem.BuildingFor(sim, Defs.TownRole.Kitchen);
+        var at = !inn.IsNull ? inn : kitchen;
+        if (at.IsNull)
             return;
+        var anchor = sim.World.Get<PresetBuilding>(at).Anchor;
+        var where = inn.IsNull || kitchen.IsNull || inn == kitchen ? $"the {sim.World.Get<PresetBuilding>(at).Def.Label}"
+            : $"the {sim.World.Get<PresetBuilding>(inn).Def.Label} and the {sim.World.Get<PresetBuilding>(kitchen).Def.Label}";
         if (sim.Director.Active.Any(c => c.Kind == Defs.CrisisKind.Shortage))
         {
-            sim.Messages.Add(MessageKind.Warning, "The carter didn't come: no kegs or food for the inn today.", sim.World.Get<PresetBuilding>(inn).Anchor);
+            sim.Messages.Add(MessageKind.Warning, $"The carter didn't come: no kegs or food for {where} today.", anchor);
             return;
         }
         if (sim.Repairs.RoadCut)
         {
-            sim.Messages.Add(MessageKind.Warning, "The carter couldn't get over the river: no kegs or food for the inn today.", sim.World.Get<PresetBuilding>(inn).Anchor);
+            sim.Messages.Add(MessageKind.Warning, $"The carter couldn't get over the river: no kegs or food for {where} today.", anchor);
             return;
         }
-        Deliver(sim, inn, "Chest", Kegs);
-        Deliver(sim, inn, "Larder", Food);
-        Deliver(sim, inn, "LogBasket", Logs);
-        sim.Messages.Add(MessageKind.Info, "The carter's been by the inn: kegs and bar stock for the storeroom, food for the larder and wood for the kitchen.",
-            sim.World.Get<PresetBuilding>(inn).Anchor);
+        if (!inn.IsNull)
+            Deliver(sim, inn, "Chest", Kegs);
+        if (!kitchen.IsNull)
+        {
+            Deliver(sim, kitchen, "Larder", Food);
+            Deliver(sim, kitchen, "LogBasket", Logs);
+        }
+        sim.Messages.Add(MessageKind.Info, $"The carter's been by {where}: kegs and bar stock for the storeroom, food for the larder and wood for the kitchen.", anchor);
     }
 
     /// <summary>Into the first of the inn's containers of a kind, else on the floor beside it.</summary>
@@ -289,9 +298,9 @@ public sealed class CleanJob(int3 cell) : Job
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+        if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace)
             return null;
-        var inn = ShopSystem.BuildingOf(sim, workplace);
+        var inn = ShopSystem.WorkplaceOf(sim, trade.Def);
         if (inn.IsNull || sim.Mess.All.Count == 0)
             return null;
         var anchor = w.Get<PresetBuilding>(inn).Anchor;
@@ -354,7 +363,7 @@ public abstract class RoomKeyJob : Job
     private Entity _key = Entity.Null;
 
     /// <summary>The innkeeper's inn, by their trade's workplace.</summary>
-    protected Entity Inn => Pawn.IsNull || !Sim.World.TryGet<Trade>(Pawn, out var t) || t.Def.WorkplaceDef is not { } wp ? Entity.Null : ShopSystem.BuildingOf(Sim, wp);
+    protected Entity Inn => Pawn.IsNull || !Sim.World.TryGet<Trade>(Pawn, out var t) || !t.Def.HasWorkplace ? Entity.Null : ShopSystem.WorkplaceOf(Sim, t.Def);
 
     /// <summary>Have a key to this bed's room on them, if its door's locked. Fails the job if there's none to be had.</summary>
     protected IEnumerable<JobStatus> KeyFor(Entity bed)
@@ -420,9 +429,9 @@ public sealed class MakeBedJob(Entity bed) : RoomKeyJob
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace || !trade.Def.Serving(ServiceKind.Lodging))
+        if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace || !trade.Def.Serving(ServiceKind.Lodging))
             return null;
-        var inn = ShopSystem.BuildingOf(sim, workplace);
+        var inn = ShopSystem.WorkplaceOf(sim, trade.Def);
         if (inn.IsNull || (w.Count<Hospitality.Unmade>() == 0 && w.Count<Hospitality.Slops>() == 0 && w.Count<Hospitality.JugEmpty>() == 0))
             return null;
         var from = w.Get<Position>(pawn).Cell;
@@ -573,9 +582,9 @@ public sealed class HangKeyJob(Entity key, Entity board) : Job
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace || !trade.Def.Serving(ServiceKind.Lodging))
+        if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace || !trade.Def.Serving(ServiceKind.Lodging))
             return null;
-        var inn = ShopSystem.BuildingOf(sim, workplace);
+        var inn = ShopSystem.WorkplaceOf(sim, trade.Def);
         var board = Hospitality.InnRooms.Board(sim, inn);
         if (board.IsNull)
             return null;

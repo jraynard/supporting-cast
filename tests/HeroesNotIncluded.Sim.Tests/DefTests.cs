@@ -43,7 +43,7 @@ public class DefTests
         var w = sim.World;
         foreach (var trade in sim.Defs.AllTrades.Where(t => t.StationDefs.Count > 0))
         {
-            var building = Shops.ShopSystem.BuildingOf(sim, trade.WorkplaceDef!);
+            var building = Shops.ShopSystem.WorkplaceOf(sim, trade);
             Assert.False(building.IsNull, $"{trade.Name}: no {trade.Workplace} in town");
             foreach (var station in trade.StationDefs)
                 Assert.True(w.Query<Components.Thing>().Any(e => w.Get<Components.Thing>(e).Def == station && Systems.Buildings.Of(sim, e) == building),

@@ -93,12 +93,12 @@ public static class LayOnHands
         || (sim.World.TryGet<Health>(patient, out var h) && h.Injuries.Exists(i => i.NeedsTending(sim.Clock.Tick)));
 
     /// <summary>An empath of a shrine (an AI's trade with the gift).</summary>
-    private static bool ShrineEmpath(Simulation sim, Entity pawn, out BuildingDef shrine)
+    private static bool ShrineEmpath(Simulation sim, Entity pawn, out TownRole shrine)
     {
-        shrine = null!;
-        if (!Empathy.Gifted(sim, pawn) || !sim.World.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+        shrine = TownRole.None;
+        if (!Empathy.Gifted(sim, pawn) || !sim.World.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace)
             return false;
-        shrine = workplace;
+        shrine = trade.Def.Role;
         return true;
     }
 
@@ -116,7 +116,7 @@ public static class LayOnHands
         var from = w.Get<Position>(pawn).Cell;
         foreach (var e in sim.Shops.FrontFirst(sim))
         {
-            if (!e.IsOpen || e.Kind.Kind != ServiceKind.Healing || e.Kind.AtDef != shrine || !e.KnownBy.Contains(pawn)
+            if (!e.IsOpen || e.Kind.Kind != ServiceKind.Healing || e.Kind.AtRole != shrine || !e.KnownBy.Contains(pawn)
                 || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Poster) || e.Poster == pawn
                 || !w.TryGet<Health>(e.Poster, out var h)
                 || !(e.Mend ? CanHelp(sim, pawn, e.Poster) : h.Injuries.Exists(i => i.NeedsTending(now)))
@@ -179,9 +179,9 @@ public static class LayOnHands
     public const int CharmsOnShow = 2, CharmPrice = 4;
 
     /// <summary>The meditation stone at an empath's shrine, Entity.Null if none.</summary>
-    private static Entity StoneOf(Simulation sim, BuildingDef shrine)
+    private static Entity StoneOf(Simulation sim, TownRole shrine)
     {
-        var b = Shops.ShopSystem.BuildingOf(sim, shrine);
+        var b = Shops.ShopSystem.BuildingFor(sim, shrine);
         if (b.IsNull)
             return Entity.Null;
         foreach (var part in Buildings.Parts(sim, b))
@@ -217,7 +217,7 @@ public static class LayOnHands
         if (!sim.Round.Live || Shops.ShopSystem.SmallHours(sim) || !ShrineEmpath(sim, pawn, out var shrine)
             || !w.TryGet<Mana>(pawn, out var mana) || mana.Current < mana.Max * CharmsFrom || Bandaging.BandagesOn(sim, pawn) <= 0)
             return null;
-        var shop = Shops.ShopSystem.BuildingOf(sim, shrine);
+        var shop = Shops.ShopSystem.BuildingFor(sim, shrine);
         var shown = Shops.Goods.OnShow(sim).Where(g => g.Shop == shop && w.TryGet<Charm>(g.Item, out _)).Select(g => w.Get<Charm>(g.Item).Mending).ToList();
         if (shop.IsNull || shown.Count >= CharmsOnShow)
             return null;

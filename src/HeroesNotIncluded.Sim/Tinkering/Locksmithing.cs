@@ -123,11 +123,11 @@ public static class Locksmithing
     public static void GiveWorkplaceKeys(Simulation sim, Entity who, TradeDef trade)
     {
         var w = sim.World;
-        if (trade.WorkplaceDef is not { } workplace)
+        if (!trade.HasWorkplace)
             return;
         foreach (var door in w.Query<LockCut>().OrderBy(e => e.Index))
         {
-            if (!IsDoor(sim, door) || Buildings.Of(sim, door) is not { IsNull: false } b || w.Get<PresetBuilding>(b).Def != workplace)
+            if (!IsDoor(sim, door) || Buildings.Of(sim, door) is not { IsNull: false } b || !trade.WorksAt(w.Get<PresetBuilding>(b).Def))
                 continue;
             var cut = w.Get<LockCut>(door);
             // The inn's rooms keep their keys on the board, and spares in the storeroom (Hospitality.InnRooms).

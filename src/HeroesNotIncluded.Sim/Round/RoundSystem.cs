@@ -481,13 +481,13 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     /// </summary>
     public static void PlaceAtWork(Simulation sim, Entity e, TradeDef? trade)
     {
-        if (trade?.WorkplaceDef is not { } def)
+        if (trade is not { HasWorkplace: true })
             return;
         var w = sim.World;
         foreach (var b in w.Query<PresetBuilding>())
         {
             var building = w.Get<PresetBuilding>(b);
-            if (building.Def != def || building.Phase != BuildPhase.Done || building.Demolishing)
+            if (!trade.WorksAt(building.Def) || building.Phase != BuildPhase.Done || building.Demolishing)
                 continue;
             foreach (var c in sim.SpiralFrom(building.Anchor, 6))
             {
@@ -571,7 +571,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     /// <summary>A container in the trade's workplace (not a stash) with room for the item, or Entity.Null.</summary>
     private static Entity WorkplaceStore(Simulation sim, TradeDef trade, Entity item)
     {
-        if (trade.WorkplaceDef is not { } def || Shops.ShopSystem.BuildingOf(sim, def) is not { IsNull: false } building)
+        if (Shops.ShopSystem.WorkplaceOf(sim, trade) is not { IsNull: false } building)
             return Entity.Null;
         var w = sim.World;
         var t = w.Get<Thing>(item);

@@ -20,10 +20,10 @@ public static class Stashes
     public static Entity Of(Simulation sim, TradeDef trade)
     {
         var w = sim.World;
-        if (trade.Stash.Count == 0 || trade.WorkplaceDef is not { } workplace)
+        if (trade.Stash.Count == 0 || !trade.HasWorkplace)
             return Entity.Null;
         foreach (var e in w.Query<Thing>().OrderBy(e => e.Index))
-            if (IsStash(sim, e) && Buildings.Of(sim, e) is { IsNull: false } b && w.Get<PresetBuilding>(b).Def == workplace)
+            if (IsStash(sim, e) && Buildings.Of(sim, e) is { IsNull: false } b && trade.WorksAt(w.Get<PresetBuilding>(b).Def))
                 return e;
         return Entity.Null;
     }

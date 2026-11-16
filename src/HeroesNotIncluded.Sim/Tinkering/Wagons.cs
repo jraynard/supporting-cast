@@ -277,12 +277,12 @@ public sealed class WagonJob(int order) : Job
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+        if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace)
             return null;
         var from = w.Get<Position>(pawn).Cell;
         foreach (var e in sim.Shops.FrontFirst(sim))
         {
-            if (!e.IsOpen || e.Kind.Kind != ServiceKind.WagonRepair || e.Kind.AtDef != workplace || !trade.Def.Serving(e.Kind.Kind)
+            if (!e.IsOpen || e.Kind.Kind != ServiceKind.WagonRepair || e.Kind.AtRole != trade.Def.Role || !trade.Def.Serving(e.Kind.Kind)
                 || !e.KnownBy.Contains(pawn) || (!e.Assignee.IsNull && e.Assignee != pawn) || !Wagons.Damaged(sim, e.Subject)
                 || sim.Reservations.IsReservedByOther(e.Subject, pawn))
                 continue;

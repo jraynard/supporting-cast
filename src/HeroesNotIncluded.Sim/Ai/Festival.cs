@@ -46,10 +46,10 @@ public static class Festival
     public static bool StillServing(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (w.Has<Adventurer>(pawn) || !w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+        if (w.Has<Adventurer>(pawn) || !w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace)
             return false;
         foreach (var order in sim.Shops.All)
-            if (order.IsOpen && w.IsAlive(order.Where) && w.TryGet<PresetBuilding>(order.Where, out var b) && b.Def == workplace
+            if (order.IsOpen && w.IsAlive(order.Where) && w.TryGet<PresetBuilding>(order.Where, out var b) && trade.Def.WorksAt(b.Def)
                 && trade.Def.Serving(order.Kind.Kind))
                 return true;
         return false;

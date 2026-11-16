@@ -30,12 +30,12 @@ public sealed class ServeJob(int order, Entity spareAt = default) : Job
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+        if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace)
             return null;
         var from = w.Get<Position>(pawn).Cell;
         foreach (var e in sim.Shops.FrontFirst(sim))
         {
-            if (!e.IsOpen || e.Kind.Kind is not (ServiceKind.Drink or ServiceKind.MixedDrink or ServiceKind.Meal) || e.Kind.AtDef != workplace || !trade.Def.Serving(e.Kind.Kind)
+            if (!e.IsOpen || e.Kind.Kind is not (ServiceKind.Drink or ServiceKind.MixedDrink or ServiceKind.Meal) || e.Kind.AtRole != trade.Def.Role || !trade.Def.Serving(e.Kind.Kind)
                 || !e.KnownBy.Contains(pawn) || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Poster))
                 continue;
             // Ordered at the hatch: no more put up than are waiting for.
@@ -59,9 +59,9 @@ public sealed class ServeJob(int order, Entity spareAt = default) : Job
     public static Job? SpareFor(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace || !trade.Def.Serving(ServiceKind.Meal))
+        if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace || !trade.Def.Serving(ServiceKind.Meal))
             return null;
-        var shop = ShopSystem.BuildingOf(sim, workplace);
+        var shop = ShopSystem.WorkplaceOf(sim, trade.Def);
         if (shop.IsNull || !w.Get<PresetBuilding>(shop).Def.HatchServes.Contains(ServiceKind.Meal) || !Hatch.WantsSpare(sim, shop)
             || Pot(sim, shop) is not { IsNull: false } pot)
             return null;

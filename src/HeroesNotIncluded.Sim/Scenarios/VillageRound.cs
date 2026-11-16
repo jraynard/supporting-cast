@@ -21,8 +21,14 @@ public static class VillageRound
     /// <summary>The map a round is played on unless another is chosen (data/defs/maps/).</summary>
     public const string DefaultMap = "Millbrook";
 
-    /// <summary>The landing point and the buildings trades will work from.</summary>
-    public readonly record struct Town(int3 Center, Entity Tavern, Entity Forge, Entity Shrine, Entity TinkerShop);
+    /// <summary>
+    /// The landing point and the buildings trades will work from. <see cref="Tavern"/> and
+    /// <see cref="Kitchen"/> are the same building where they share a roof (Millbrook's inn).
+    /// </summary>
+    public readonly record struct Town(int3 Center, Entity Tavern, Entity Forge, Entity Shrine, Entity TinkerShop)
+    {
+        public Entity Kitchen { get; init; }
+    }
 
     /// <summary>A simulation the size of the round's map, with the standard systems: what <see cref="Setup"/> builds into.</summary>
     public static Simulation NewSimulation(DefDatabase defs, ulong seed, string map = DefaultMap) =>
@@ -32,14 +38,15 @@ public static class VillageRound
     public static Town Setup(Simulation sim, string map = DefaultMap)
     {
         var built = MapBuilder.Build(sim, sim.Defs.Map(map), new MapGenerator.Options { Villagers = StartingVillagers });
-        Entity Role(string role) => built.Buildings.FirstOrDefault(b => b.Spec.Role == role).Building;
-        var shrine = Role("Shrine");
+        // Who works where is the buildings' roles (buildings.json "roles"), not the map's say.
+        Entity Role(TownRole role) => Shops.ShopSystem.BuildingFor(sim, role);
+        var shrine = Role(TownRole.Shrine);
         StockShrine(sim, shrine);
-        StockSmithy(sim, Role("Forge"));
-        StockInn(sim, Role("Tavern"));
-        LockStoreroom(sim, Role("Tavern"));
-        Hospitality.InnRooms.FitLocks(sim, Role("Tavern"));
-        StockTinkerShop(sim, Role("TinkerShop"));
+        StockSmithy(sim, Role(TownRole.Forge));
+        StockInn(sim, Role(TownRole.Tavern), Role(TownRole.Kitchen));
+        LockStoreroom(sim, Role(TownRole.Tavern));
+        Hospitality.InnRooms.FitLocks(sim, Role(TownRole.Tavern));
+        StockTinkerShop(sim, Role(TownRole.TinkerShop));
         if (sim.Defs.Season.BarnWood > 0)
             sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing("Wood"), sim.Defs.Season.BarnWood, sim.Defs.Material("Pine")), StockpileMiddle(sim));
         Environment.Buckets.HangAtWells(sim); // for fighting fire
@@ -48,7 +55,7 @@ public static class VillageRound
             if (spec.Role == "Home")
                 VillageSetup.FillSpareBeds(sim, home);
         sim.RebuildDerivedIfNeeded();
-        return new Town(built.Center, Role("Tavern"), Role("Forge"), shrine, Role("TinkerShop"));
+        return new Town(built.Center, Role(TownRole.Tavern), Role(TownRole.Forge), shrine, Role(TownRole.TinkerShop)) { Kitchen = Role(TownRole.Kitchen) };
     }
 
     /// <summary>The stockpile cell nearest the middle of the town's stockpile (the barn's): where its stock is laid and delivered.</summary>
@@ -73,13 +80,14 @@ public static class VillageRound
     {
         if (!sim.World.IsAlive(building) || !sim.World.TryGet<PresetBuilding>(building, out var b))
             return;
-        switch (b.Def.Name)
-        {
-            case "Inn": StockInn(sim, building); break;
-            case "Smithy": StockSmithy(sim, building); break;
-            case "Shrine": StockShrine(sim, building); break;
-            case "TinkerShop": StockTinkerShop(sim, building); break;
-        }
+        if (b.Def.Has(TownRole.Tavern) || b.Def.Has(TownRole.Kitchen))
+            StockInn(sim, b.Def.Has(TownRole.Tavern) ? building : Entity.Null, b.Def.Has(TownRole.Kitchen) ? building : Entity.Null);
+        if (b.Def.Has(TownRole.Forge))
+            StockSmithy(sim, building);
+        if (b.Def.Has(TownRole.Shrine))
+            StockShrine(sim, building);
+        if (b.Def.Has(TownRole.TinkerShop))
+            StockTinkerShop(sim, building);
     }
 
     /// <summary>Clean linen in the inn's storeroom: a change for every room, and a few over.</summary>
@@ -162,33 +170,43 @@ public static class VillageRound
     public static readonly (string Def, int Count)[] BarStock = [("Spirits", 8), ("Honey", 8), ("Herbs", 8), ("Berries", 10)];
 
     /// <summary>The inn opens stocked: food in the larder, kegs in the storeroom, tankards on the shelf behind the bar and bowls on the kitchen's.</summary>
-    private static void StockInn(Simulation sim, Entity inn)
+    /// <summary>
+    /// The tavern's storeroom and bar, and the kitchen's larder, logs and bowls: one building or two
+    /// (either may be Entity.Null). Stocked in the same order whichever, so Millbrook's inn comes out as it always has.
+    /// </summary>
+    private static void StockInn(Simulation sim, Entity tavern, Entity kitchen)
     {
-        if (inn.IsNull)
-            return;
         var w = sim.World;
-        Shops.InnSupplySystem.Deliver(sim, inn, "Larder", LarderStock);
-        Shops.InnSupplySystem.Deliver(sim, inn, "LogBasket", Shops.InnSupplySystem.Logs);
-        Shops.InnSupplySystem.Deliver(sim, inn, "Chest", [("Keg", StoreroomKegs)]);
-        // The rooms' clean linen, and a bucket for the slops and the jugs (Hospitality.InnRooms).
-        Shops.InnSupplySystem.Deliver(sim, inn, "Chest", [("Linen", RoomLinen), (Environment.Buckets.Empty, 1)]);
-        var parts = Buildings.Parts(sim, inn);
-        Entity Near(string def, Func<Defs.ThingDef, bool> by)
+        if (!kitchen.IsNull)
         {
+            Shops.InnSupplySystem.Deliver(sim, kitchen, "Larder", LarderStock);
+            Shops.InnSupplySystem.Deliver(sim, kitchen, "LogBasket", Shops.InnSupplySystem.Logs);
+        }
+        if (!tavern.IsNull)
+        {
+            Shops.InnSupplySystem.Deliver(sim, tavern, "Chest", [("Keg", StoreroomKegs)]);
+            // The rooms' clean linen, and a bucket for the slops and the jugs (Hospitality.InnRooms).
+            Shops.InnSupplySystem.Deliver(sim, tavern, "Chest", [("Linen", RoomLinen), (Environment.Buckets.Empty, 1)]);
+        }
+        Entity Near(Entity building, string def, Func<Defs.ThingDef, bool> by)
+        {
+            if (building.IsNull)
+                return Entity.Null;
+            var parts = Buildings.Parts(sim, building);
             var mark = parts.FirstOrDefault(e => by(w.Get<Thing>(e).Def), Entity.Null);
             if (mark.IsNull)
                 return Entity.Null;
             var at = w.Get<Thing>(mark).Cell;
             return parts.Where(e => w.Get<Thing>(e).Def.Name == def).OrderBy(e => Maps.Map.Distance(w.Get<Thing>(e).Cell, at)).FirstOrDefault(Entity.Null);
         }
-        if (Near("Shelf", d => d.Building?.Cask != null) is { IsNull: false } bar)
+        if (Near(tavern, "Shelf", d => d.Building?.Cask != null) is { IsNull: false } bar)
         {
             sim.Store(bar, sim.CreateItem(sim.Defs.Thing("Tankard"), Tankards));
             foreach (var (def, count) in BarStock)
                 sim.Store(bar, sim.CreateItem(sim.Defs.Thing(def), count));
         }
-        if (Near("Shelf", d => d.Building?.StewPot != null) is { IsNull: false } kitchen)
-            sim.Store(kitchen, sim.CreateItem(sim.Defs.Thing("Bowl"), Bowls));
+        if (Near(kitchen, "Shelf", d => d.Building?.StewPot != null) is { IsNull: false } shelf)
+            sim.Store(shelf, sim.CreateItem(sim.Defs.Thing("Bowl"), Bowls));
     }
 
     /// <summary>Bandages in the shrine's chest: the healer's backup for when the mana runs dry.</summary>

@@ -75,6 +75,18 @@ public sealed class BuildingDef : Def
     public bool Home { get; set; }
 
     /// <summary>
+    /// What it is to the town (<see cref="TownRole"/>): the inn is the tavern and the kitchen, a
+    /// cookhouse only the kitchen. Trades work from, and services are served at, the first standing
+    /// building with their role.
+    /// </summary>
+    public List<TownRole> Roles { get; set; } = [];
+
+    [JsonIgnore] public TownRole RoleFlags { get; private set; }
+
+    /// <summary>Is it this to the town (the cook's kitchen, the tavern)? <see cref="TownRole.None"/> never is.</summary>
+    public bool Has(TownRole role) => role != TownRole.None && (RoleFlags & role) == role;
+
+    /// <summary>
     /// Its containers hold the keeper's stock (the tinker's iron and wood, the collector's crate):
     /// no villager's job takes from them, only someone opening them by hand.
     /// </summary>
@@ -253,6 +265,7 @@ public sealed class BuildingDef : Def
 
     internal override void Resolve(DefDatabase db)
     {
+        RoleFlags = Roles.Aggregate(TownRole.None, (a, r) => a | r);
         if (Layout.Count == 0 || Layout[0].Length == 0)
             throw new Exception($"Building '{Name}' has no layout");
         Width = Layout[0].Length;

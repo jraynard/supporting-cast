@@ -9,7 +9,10 @@ namespace HeroesNotIncluded.Sim.Defs;
 /// </summary>
 public sealed class TradeDef : Def
 {
-    /// <summary>The building this trade works from, by def name; empty for none.</summary>
+    /// <summary>
+    /// The town role (<see cref="TownRole"/>) of the building this trade works from: "Kitchen",
+    /// "Tavern". Empty for none. Which building that is depends on the map.
+    /// </summary>
     public string Workplace { get; set; } = "";
 
     /// <summary>Any number may hold it, so there's always something left to deal.</summary>
@@ -88,13 +91,20 @@ public sealed class TradeDef : Def
     [JsonIgnore]
     public List<ThingDef> StationDefs { get; } = [];
 
+    /// <summary>The role of the building it works from (<see cref="Workplace"/>); <see cref="TownRole.None"/> for none.</summary>
     [JsonIgnore]
-    public BuildingDef? WorkplaceDef { get; private set; }
+    public TownRole Role { get; private set; }
+
+    /// <summary>Does it work from a building at all (the labourer doesn't)?</summary>
+    [JsonIgnore]
+    public bool HasWorkplace => Role != TownRole.None;
+
+    /// <summary>Does it work from a building of this kind (its def has the trade's role)?</summary>
+    public bool WorksAt(BuildingDef? def) => def != null && def.Has(Role);
 
     internal override void Resolve(DefDatabase db)
     {
-        if (Workplace.Length > 0)
-            WorkplaceDef = db.Building(Workplace);
+        Role = TownRoles.Parse(Workplace, $"Trade '{Name}' workplace");
         KnownStations.Clear();
         foreach (var station in Knows)
             KnownStations.Add(db.Thing(station));

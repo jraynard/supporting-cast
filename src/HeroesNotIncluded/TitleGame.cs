@@ -187,7 +187,7 @@ public sealed class TitleGame : Game
     {
         Game Start(string trade) => new VillageGame(DefaultSeed) { Adventure = true, Practice = true, Character = c, HeroTrade = trade };
         return _defs.AllTrades
-            .Where(t => t.WorkplaceDef != null)
+            .Where(t => t.HasWorkplace)
             .Select(t => new MenuItem(char.ToUpperInvariant(t.Label[0]) + t.Label[1..], t.Description, () => Start(t.Name)))
             .Append(new MenuItem("Back", "Back to the main menu.", null, MenuAction.Back))
             .ToArray();

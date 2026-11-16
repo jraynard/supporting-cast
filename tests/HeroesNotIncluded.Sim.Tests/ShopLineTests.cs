@@ -45,9 +45,10 @@ public class ShopLineTests
     public void EveryShopInTheVillageHasRoomForALine()
     {
         var (sim, _, _) = Town("Labourer");
-        foreach (var name in sim.Defs.AllServices.Select(d => d.At).Where(a => a.Length > 0).Distinct())
+        foreach (var role in sim.Defs.AllServices.Select(d => d.AtRole).Where(r => r != TownRole.None).Distinct())
         {
-            var shop = Shop(sim, name);
+            var name = role.ToString();
+            var shop = ShopSystem.BuildingFor(sim, role);
             Assert.False(shop.IsNull, name);
             var cells = ShopSystem.LineCells(sim, shop);
             Assert.True(cells.Count >= 3, $"{name}: {cells.Count} line cells");

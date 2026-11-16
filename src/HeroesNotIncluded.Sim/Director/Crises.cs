@@ -156,7 +156,7 @@ public sealed class ShortageCrisis : ICrisis
     internal static ShortageCrisis? Begin(Simulation sim)
     {
         var w = sim.World;
-        var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+        var inn = ShopSystem.BuildingFor(sim, Defs.TownRole.Kitchen); // the larder's
         if (inn.IsNull)
             return null;
         // Rats in the larder: a quarter of every stack of food spoiled, and the rats still in there.
@@ -175,8 +175,8 @@ public sealed class ShortageCrisis : ICrisis
         }
         var at = w.Get<PresetBuilding>(inn).Anchor;
         // The larder's the cook's: the headline is theirs, wherever they are (anyone else hears the alarm).
-        const string ratsText = "Rats have got into the inn's larder, and word is the carter won't come while there's trouble on the road.";
-        var cooks = sim.Creatures().Where(e => w.Get<Creature>(e) is { Dead: false } && w.TryGet<Trade>(e, out var t) && t.Def.Name == "Cook").ToList();
+        var ratsText = $"Rats have got into the {w.Get<PresetBuilding>(inn).Def.Label}'s larder, and word is the carter won't come while there's trouble on the road.";
+        var cooks = sim.Creatures().Where(e => w.Get<Creature>(e) is { Dead: false } && w.TryGet<Trade>(e, out var t) && t.Def.Role == Defs.TownRole.Kitchen).ToList();
         foreach (var cook in cooks)
             sim.Messages.Tell(cook, MessageKind.Danger, ratsText, at, "Rats in the larder");
         if (cooks.Count == 0)

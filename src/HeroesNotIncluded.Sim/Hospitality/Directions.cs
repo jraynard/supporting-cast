@@ -76,7 +76,7 @@ public sealed class DirectionsSystem : ISimSystem, ISaveState
         var w = sim.World;
         if (!w.TryGet<Adventurer>(who, out var a))
             return true;
-        if (a.PartyDef?.HauntDef is { } haunt && w.TryGet<PresetBuilding>(shop, out var b) && b.Def == haunt)
+        if (a.PartyDef is { } party && w.TryGet<PresetBuilding>(shop, out var b) && b.Def.Has(party.HauntRole))
             return true;
         return w.TryGet<KnowsTheWay>(who, out var k) && k.Shops.Contains(shop);
     }

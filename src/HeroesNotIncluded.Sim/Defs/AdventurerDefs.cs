@@ -66,8 +66,8 @@ public sealed class PartyDef : Def
     /// <summary>Adventurer kinds by name, one member each.</summary>
     public List<string> Members { get; set; } = [];
 
-    /// <summary>The building they make for and loiter in (a building def name): the tavern.</summary>
-    public string Haunt { get; set; } = "Inn";
+    /// <summary>The town role (<see cref="TownRole"/>) of the building they make for and loiter in: the tavern.</summary>
+    public string Haunt { get; set; } = "Tavern";
 
     /// <summary>Game hours in town before they move on (±25%).</summary>
     public float StayHours { get; set; } = 12;
@@ -79,7 +79,7 @@ public sealed class PartyDef : Def
     public float WagonChance { get; set; } = 0.5f;
 
     [JsonIgnore] public List<AdventurerKindDef> MemberDefs { get; } = [];
-    [JsonIgnore] public BuildingDef? HauntDef { get; private set; }
+    [JsonIgnore] public TownRole HauntRole { get; private set; }
 
     internal override void Resolve(DefDatabase db)
     {
@@ -90,6 +90,6 @@ public sealed class PartyDef : Def
             throw new Exception($"Party {Name} has no members");
         if (Names.Count < MemberDefs.Count)
             throw new Exception($"Party {Name} needs at least as many names as members");
-        HauntDef = Haunt.Length > 0 ? db.Building(Haunt) : null;
+        HauntRole = TownRoles.Parse(Haunt, $"Party '{Name}' haunt");
     }
 }

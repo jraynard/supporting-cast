@@ -207,8 +207,8 @@ public class MilitiaTests
         var chest = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "Chest" && Buildings.Of(sim, e) is { IsNull: false } b
             && w.Get<PresetBuilding>(b).Def.Name == "Smithy");
         var wood = sim.StoredIn(chest).First(e => w.Get<Thing>(e).Def.Name == "Wood");
-        var smith = sim.Creatures().First(e => w.TryGet<Trade>(e, out var t) && t.Def.WorkplaceDef?.Name == "Smithy");
-        var other = sim.Creatures().First(e => w.TryGet<Trade>(e, out var t) && t.Def.WorkplaceDef?.Name != "Smithy");
+        var smith = sim.Creatures().First(e => w.TryGet<Trade>(e, out var t) && t.Def.Role == Sim.Defs.TownRole.Forge);
+        var other = sim.Creatures().First(e => w.TryGet<Trade>(e, out var t) && t.Def.Role != Sim.Defs.TownRole.Forge);
         Assert.False(sim.IsAvailable(wood), "no job of the town's takes it");
         Assert.False(sim.IsAvailable(wood, other), "nor anyone working elsewhere");
         Assert.True(sim.IsAvailable(wood, smith), "the smith can use it");

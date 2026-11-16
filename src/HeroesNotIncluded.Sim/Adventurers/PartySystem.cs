@@ -252,15 +252,8 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// <summary>The first standing building of the party's haunt, if the town has one.</summary>
     public static PresetBuilding? HauntOf(Simulation sim, PartyDef def)
     {
-        if (def.HauntDef == null)
-            return null;
-        foreach (var e in sim.World.Each<PresetBuilding>())
-        {
-            var b = sim.World.Get<PresetBuilding>(e);
-            if (b.Def == def.HauntDef && !b.Demolishing)
-                return b;
-        }
-        return null;
+        var e = Shops.ShopSystem.BuildingFor(sim, def.HauntRole);
+        return e.IsNull ? null : sim.World.Get<PresetBuilding>(e);
     }
 
     /// <summary>Where the villagers are, for a town with no haunt to walk to.</summary>

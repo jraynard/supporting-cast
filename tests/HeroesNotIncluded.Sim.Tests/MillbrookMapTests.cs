@@ -25,8 +25,8 @@ public class MillbrookMapTests
         Assert.Equal("Shrine", sim.World.Get<PresetBuilding>(town.Shrine).Def.Name);
         Assert.Equal("TinkerShop", sim.World.Get<PresetBuilding>(town.TinkerShop).Def.Name);
         foreach (var trade in sim.Defs.AllTrades)
-            if (trade.WorkplaceDef is { } workplace)
-                Assert.Contains(sim.World.Query<PresetBuilding>(), e => sim.World.Get<PresetBuilding>(e).Def == workplace);
+            if (trade.HasWorkplace)
+                Assert.False(Shops.ShopSystem.WorkplaceOf(sim, trade).IsNull, $"{trade.Name}: no {trade.Workplace} in town");
         Assert.All(sim.World.Query<PresetBuilding>(), e => Assert.Equal(BuildPhase.Done, sim.World.Get<PresetBuilding>(e).Phase));
     }
 

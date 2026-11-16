@@ -516,10 +516,10 @@ public class FestivalTests
         var sim = Round();
         ToRevels(sim);
         var w = sim.World;
-        var cook = sim.Creatures().First(e => !w.Has<Avatar>(e) && w.TryGet<Trade>(e, out var t) && t.Def.Serving(ServiceKind.Drink) && t.Def.WorkplaceDef != null);
+        var cook = sim.Creatures().First(e => !w.Has<Avatar>(e) && w.TryGet<Trade>(e, out var t) && t.Def.Serving(ServiceKind.Drink) && t.Def.HasWorkplace);
         Assert.False(Festival.StillServing(sim, cook));
         var guest = SendParty(sim, 0f)[0];
-        var inn = w.Query<PresetBuilding>().First(b => w.Get<PresetBuilding>(b).Def == w.Get<Trade>(cook).Def.WorkplaceDef);
+        var inn = Shops.ShopSystem.WorkplaceOf(sim, cook);
         sim.Shops.Post(sim, guest, sim.Defs.Service(ServiceKind.Drink), "An ale.", 0, sim.Clock.Tick + 1000, Entity.Null, inn, 0);
         Assert.True(Festival.StillServing(sim, cook));
         Assert.Null(Festival.Gathering(sim, cook));
@@ -828,7 +828,7 @@ public class FestivalTests
         // An AI smith's kit stock is in the smithy, not dropped where they stood.
         var w = sim.World;
         var smith = sim.Creatures().First(e => !w.Has<PlayerCharacter>(e) && w.TryGet<Trade>(e, out var t) && t.Def.Kit.Any(k => k.Def == "IronBar"));
-        var smithy = Shops.ShopSystem.BuildingOf(sim, w.Get<Trade>(smith).Def.WorkplaceDef!);
+        var smithy = Shops.ShopSystem.WorkplaceOf(sim, smith);
         Assert.Contains(w.Query<PartOf>(), e => w.Get<PartOf>(e).Building == smithy && sim.StoredIn(e).Any(i => w.Get<Thing>(i).Def.Name == "Leather"));
     }
 

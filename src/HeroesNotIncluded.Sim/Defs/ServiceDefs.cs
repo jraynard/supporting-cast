@@ -55,7 +55,7 @@ public sealed class ServiceDef : Def
     /// </summary>
     public string Icon { get; set; } = "";
 
-    /// <summary>The building it's served at (a building def name); empty for anywhere.</summary>
+    /// <summary>The town role (<see cref="TownRole"/>) of the building it's served at: "Kitchen". Empty for anywhere.</summary>
     public string At { get; set; } = "";
 
     /// <summary>
@@ -82,14 +82,15 @@ public sealed class ServiceDef : Def
     public List<string> Lines { get; set; } = [];
 
     [JsonIgnore] public ServiceKind Kind { get; private set; }
-    [JsonIgnore] public BuildingDef? AtDef { get; private set; }
+    /// <summary>Where it's served (<see cref="At"/>); <see cref="TownRole.None"/> for anywhere.</summary>
+    [JsonIgnore] public TownRole AtRole { get; private set; }
 
     internal override void Resolve(DefDatabase db)
     {
         if (!Enum.TryParse<ServiceKind>(Name, out var kind))
             throw new Exception($"Service '{Name}' isn't one of {string.Join(", ", Enum.GetNames<ServiceKind>())}");
         Kind = kind;
-        AtDef = At.Length > 0 ? db.Building(At) : null;
+        AtRole = TownRoles.Parse(At, $"Service '{Name}' at");
         if (DefaultPrice < 0 || DefaultPrice > Shops.ShopPrices.MaxPrice || WorthMin < 0 || WorthMin > WorthMax || PatienceHours <= 0)
             throw new Exception($"Service '{Name}': bad price, worth or patience");
     }

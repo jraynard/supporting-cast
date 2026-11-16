@@ -757,7 +757,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
         var best = int.MaxValue;
         foreach (var b in w.Query<PresetBuilding>())
         {
-            if (w.Get<PresetBuilding>(b).Def != healing.AtDef || Shops.ShopPrices.Posted(sim, b, ServiceKind.Healing) is not { Offered: true } sign
+            if (!w.Get<PresetBuilding>(b).Def.Has(healing.AtRole) || Shops.ShopPrices.Posted(sim, b, ServiceKind.Healing) is not { Offered: true } sign
                 || sign.Price > Shops.Coin.Count(sim, me))
                 continue;
             foreach (var bed in Shops.ShopSystem.BedsOf(sim, b))
@@ -942,10 +942,10 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
             send(new Hospitality.DirectCommand(me, ask.Id));
             return true;
         }
-        if (!w.TryGet<Trade>(me, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+        if (!w.TryGet<Trade>(me, out var trade) || !trade.Def.HasWorkplace)
             return false;
-        var inn = ShopSystem.BuildingOf(sim, workplace);
-        if (inn.IsNull || w.Get<PresetBuilding>(inn).Def.Name != "Inn")
+        var inn = ShopSystem.WorkplaceOf(sim, trade.Def);
+        if (inn.IsNull || trade.Def.Role != Defs.TownRole.Tavern)
             return false;
         var bed = trade.Def.Serving(ServiceKind.Lodging) ? Buildings.Parts(sim, inn).FirstOrDefault(p => Hospitality.Lodging.IsUnmade(sim, p), Entity.Null) : Entity.Null;
         if (!bed.IsNull)
@@ -1149,7 +1149,7 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
 
     /// <summary>The shop this character keeps, if their trade works from one.</summary>
     private static Entity? MyShop(Simulation sim, Entity me) =>
-        sim.World.TryGet<Trade>(me, out var trade) && trade.Def.WorkplaceDef is { } workplace ? ShopSystem.BuildingOf(sim, workplace) : null;
+        sim.World.TryGet<Trade>(me, out var trade) && trade.Def.HasWorkplace ? ShopSystem.WorkplaceOf(sim, trade.Def) : null;
 
     /// <summary>How far someone stands from the front of this character's line (for serving the front first); large if it can't say.</summary>
     private static int FromCounter(Simulation sim, Entity me, Entity who)
@@ -1191,12 +1191,12 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     /// <summary>A standable cell by this character's trade building, if it has one.</summary>
     private static int3? Workplace(Simulation sim, Entity me)
     {
-        if (!sim.World.TryGet<Trade>(me, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+        if (!sim.World.TryGet<Trade>(me, out var trade) || !trade.Def.HasWorkplace)
             return null;
         foreach (var e in sim.World.Each<PresetBuilding>()) // the town's layout is common knowledge
         {
             var building = sim.World.Get<PresetBuilding>(e);
-            if (building.Def == workplace)
+            if (trade.Def.WorksAt(building.Def))
                 return sim.SpiralFrom(building.Anchor, 8).FirstOrDefault(c => sim.Map.Passable(c), building.Anchor);
         }
         return null;
@@ -1501,12 +1501,12 @@ public sealed class BotPlayer(Func<Simulation> world, Guid player, Action<ISimCo
     private bool FetchWood(Simulation sim, Entity me, PerceptionView view, long now)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(me, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+        if (!w.TryGet<Trade>(me, out var trade) || !trade.Def.HasWorkplace)
             return false;
         foreach (var e in w.Each<PartOf>())
         {
             var b = w.Get<PartOf>(e).Building;
-            if (!w.TryGet<PresetBuilding>(b, out var pb) || pb.Def != workplace || w.Get<Thing>(e).Def.Name != "Chest")
+            if (!w.TryGet<PresetBuilding>(b, out var pb) || !trade.Def.WorksAt(pb.Def) || w.Get<Thing>(e).Def.Name != "Chest")
                 continue;
             var chest = e;
             if (view.InContainer(chest).FirstOrDefault(i => w.Get<Thing>(i).Def.Name == "Wood", Entity.Null) is not { IsNull: false } wood)

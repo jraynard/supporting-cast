@@ -22,12 +22,12 @@ public sealed class OpenBoxJob(int order) : Job
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace || Lockwork.Picks(sim, pawn).IsNull)
+        if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace || Lockwork.Picks(sim, pawn).IsNull)
             return null;
         var from = w.Get<Position>(pawn).Cell;
         foreach (var e in sim.Shops.FrontFirst(sim))
         {
-            if (!e.IsOpen || e.Kind.Kind != ServiceKind.Unlock || e.Kind.AtDef != workplace || !trade.Def.Serving(e.Kind.Kind) || !e.KnownBy.Contains(pawn)
+            if (!e.IsOpen || e.Kind.Kind != ServiceKind.Unlock || e.Kind.AtRole != trade.Def.Role || !trade.Def.Serving(e.Kind.Kind) || !e.KnownBy.Contains(pawn)
                 || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Subject) || !w.IsAlive(e.Poster))
                 continue;
             if (Navigation.CanReach(sim, pawn, from, w.Get<Position>(e.Poster).Cell, PathEnd.Touch))

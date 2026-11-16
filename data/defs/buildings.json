@@ -71,7 +71,7 @@
       // A traditional inn: a common room with a bar, a hearth and tables at the front; a kitchen
       // and a storeroom behind it; and rooms to let upstairs, reached by the stair by the hearth.
       // Where the innkeeper works.
-      "name": "Inn", "label": "inn", "icon": "buildings/table",
+      "name": "Inn", "roles": [ "Tavern", "Kitchen" ], "label": "inn", "icon": "buildings/table",
       "description": "A two-storey inn: a common room with a bar and a fireplace, a kitchen and a storeroom behind, and rooms to let upstairs.",
       "layout": [
         "WW.WWWWWWWWWW",
@@ -212,7 +212,7 @@
       ]
     },
     {
-      "name": "Smithy", "label": "smithy", "icon": "buildings/forge",
+      "name": "Smithy", "roles": [ "Forge" ], "label": "smithy", "icon": "buildings/forge",
       // The chest by the forge is the smith's: the ore the carter leaves, bars, fuel and wood. No
       // labourer's errand or haul takes from it, only someone opening it by hand.
       "keepsStock": true,
@@ -254,7 +254,7 @@
       ]
     },
     {
-      "name": "Shrine", "label": "healer's shrine", "icon": "buildings/shrine",
+      "name": "Shrine", "roles": [ "Shrine" ], "label": "healer's shrine", "icon": "buildings/shrine",
       "description": "The empath's house, built apart in pale stone under a steep turf roof, its gables horned and a band of runes cut round its walls: pallets for the wounded, a fire to keep them warm, the rune altar and a stone to meditate at, herbs drying and linen for binding.",
       "layout": [
         "WWWWWWWWWWW",
@@ -293,7 +293,7 @@
       "variants": [ { "name": "Stone", "label": "stone", "kit": "shrine_stone" } ]
     },
     {
-      "name": "TinkerShop", "label": "tinker's shop", "icon": "buildings/tinker_bench",
+      "name": "TinkerShop", "roles": [ "TinkerShop" ], "label": "tinker's shop", "icon": "buildings/tinker_bench",
       // Its chest and crate are the tinker's stock: no villager's job takes from them (Tinkering/).
       "keepsStock": true,
       "description": "The tinker's: a shut shop with a door a lock can be fitted to, a bench with a vise and files at the back, a rack of tools, a chest of stock and the collector's crate. Customers come in and wait at the front.",
@@ -323,7 +323,7 @@
       ]
     },
     {
-      "name": "Woodshop", "label": "woodshop", "icon": "buildings/sawhorse",
+      "name": "Woodshop", "roles": [ "Woodshop" ], "label": "woodshop", "icon": "buildings/sawhorse",
       "description": "An open-fronted shed for woodworking: it comes with a sawhorse for planks, and has a spot for a carpenter's bench and a chest. No foundation: it stands on the ground.",
       "layout": [
         "WWWWWWW",

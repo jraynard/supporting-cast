@@ -28,9 +28,9 @@ public sealed class CookPotJob(Entity pot) : Job
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace || !trade.Def.Serving(ServiceKind.Meal))
+        if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace || !trade.Def.Serving(ServiceKind.Meal))
             return null;
-        var pot = Cooking.PotIn(sim, ShopSystem.BuildingOf(sim, workplace));
+        var pot = Cooking.PotIn(sim, ShopSystem.WorkplaceOf(sim, trade.Def));
         if (pot.IsNull || sim.Reservations.IsReservedByOther(pot, pawn) || Cooking.BeingWorked(sim, pot) || !Cooking.Lit(sim, pot))
             return null;
         var p = Cooking.PotOf(sim, pot);
@@ -162,9 +162,9 @@ public sealed class DressJob(Entity block, Entity larder) : Job
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace || !trade.Def.Serving(ServiceKind.Meal))
+        if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace || !trade.Def.Serving(ServiceKind.Meal))
             return null;
-        var inn = ShopSystem.BuildingOf(sim, workplace);
+        var inn = ShopSystem.WorkplaceOf(sim, trade.Def);
         if (inn.IsNull)
             return null;
         var parts = Buildings.Parts(sim, inn).ToList();
@@ -213,9 +213,9 @@ public sealed class RatJob(Entity rat) : Job
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(pawn, out var trade) || trade.Def.WorkplaceDef is not { } workplace || !trade.Def.Serving(ServiceKind.Meal))
+        if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace || !trade.Def.Serving(ServiceKind.Meal))
             return null;
-        var inn = ShopSystem.BuildingOf(sim, workplace);
+        var inn = ShopSystem.WorkplaceOf(sim, trade.Def);
         if (inn.IsNull || !Combat.CombatRules.Attacks(sim, pawn).Any(a => !a.Ranged))
             return null;
         var at = w.Get<Position>(pawn).Cell;

@@ -54,8 +54,8 @@ public static class Homes
                 break;
         }
         // Inn staff with no cottage bed left: a room at the inn, kept from guests.
-        if (bed.IsNull && AtTheInn(sim, who) && w.Get<Trade>(who).Def.WorkplaceDef is { } inn)
-            bed = Shops.ShopSystem.FreeLetBed(sim, Shops.ShopSystem.BuildingOf(sim, inn));
+        if (bed.IsNull && AtTheInn(sim, who))
+            bed = Shops.ShopSystem.FreeLetBed(sim, Shops.ShopSystem.WorkplaceOf(sim, who));
         if (bed.IsNull)
             return false;
         if (w.Has<BedOwner>(who))
@@ -122,13 +122,11 @@ public static class Homes
         sim.World.TryGet<BedOwner>(who, out var own) && sim.World.IsAlive(own.Bed);
 
     private static bool AtTheInn(Simulation sim, Entity who) =>
-        sim.World.TryGet<Trade>(who, out var t) && t.Def.WorkplaceDef is { LetsBeds: true };
+        Shops.ShopSystem.WorkplaceOf(sim, who) is { IsNull: false } b && sim.World.Get<PresetBuilding>(b).Def.LetsBeds;
 
     private static int3? WorkOf(Simulation sim, Entity who)
     {
-        if (!sim.World.TryGet<Trade>(who, out var t) || t.Def.WorkplaceDef is not { } def)
-            return null;
-        var b = Shops.ShopSystem.BuildingOf(sim, def);
+        var b = Shops.ShopSystem.WorkplaceOf(sim, who);
         return b.IsNull ? null : sim.World.Get<PresetBuilding>(b).Anchor;
     }
 

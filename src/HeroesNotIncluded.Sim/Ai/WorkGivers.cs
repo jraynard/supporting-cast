@@ -598,7 +598,7 @@ public sealed class WorkGivers
     /// <summary>Whether <paramref name="pawn"/> is the cook of <paramref name="building"/>: its kitchen's fires and stores are theirs.</summary>
     public static bool CooksAt(Simulation sim, Entity pawn, Entity building) =>
         !building.IsNull && sim.World.TryGet<Trade>(pawn, out var trade) && trade.Def.Serving(ServiceKind.Meal)
-        && trade.Def.WorkplaceDef is { } workplace && Shops.ShopSystem.BuildingOf(sim, workplace) == building;
+        && Shops.ShopSystem.WorkplaceOf(sim, trade.Def) == building;
 
     /// <summary>Kept in a staff-only room (the kitchen's larder, its log basket) and <paramref name="pawn"/> isn't its cook: not theirs to take.</summary>
     public static bool KitchenStock(Simulation sim, Entity pawn, Entity item)

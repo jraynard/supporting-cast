@@ -328,11 +328,11 @@ public class RoundTests
         var placed = 0;
         foreach (var e in Humans(sim))
         {
-            if (!w.TryGet<Trade>(e, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+            if (!w.TryGet<Trade>(e, out var trade) || !trade.Def.HasWorkplace)
                 continue;
             var inside = Buildings.At(sim, w.Get<Position>(e).Cell);
             Assert.False(inside.IsNull, $"{w.Get<Creature>(e).Name} ({trade.Def.Name}) isn't in a building");
-            Assert.Equal(workplace, w.Get<PresetBuilding>(inside).Def);
+            Assert.True(trade.Def.WorksAt(w.Get<PresetBuilding>(inside).Def));
             placed++;
         }
         Assert.True(placed >= 4, $"only {placed} placed"); // the four named trades, players and AI alike

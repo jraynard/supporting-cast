@@ -184,9 +184,12 @@ public sealed partial class VillageGame
     /// <summary>Your shop's price sign, if your trade keeps one: what you charge, and what you're offering.</summary>
     private void DrawSign()
     {
-        if (!_sim.World.TryGet<Trade>(_avatar, out var trade) || trade.Def.WorkplaceDef is not { } workplace)
+        if (!_sim.World.TryGet<Trade>(_avatar, out var trade) || !trade.Def.HasWorkplace)
             return;
-        var shop = ShopSystem.BuildingOf(_sim, workplace);
+        var shop = ShopSystem.WorkplaceOf(_sim, trade.Def);
+        if (shop.IsNull)
+            return;
+        var workplace = _sim.World.Get<PresetBuilding>(shop).Def;
         // Only your trade's lines: the cook prices the meals, the innkeeper the rest.
         var sign = shop.IsNull ? [] : View.Prices(shop).Where(p => trade.Def.Serving(p.Kind)).ToList();
         if (sign.Count == 0)
@@ -347,7 +350,7 @@ public sealed partial class VillageGame
 
     /// <summary>Is this the trade's work: served at its workplace, and one of the services it sees to there?</summary>
     private bool Serves(Sim.Defs.TradeDef? trade, Sim.Defs.ServiceKind kind) =>
-        trade?.WorkplaceDef is { } shop && _sim.Defs.Service(kind).AtDef == shop && trade.Serving(kind);
+        trade is { HasWorkplace: true } && _sim.Defs.Service(kind).AtRole == trade.Role && trade.Serving(kind);
 
     /// <summary>The service's own icon (services.json), or a speech mark for one without.</summary>
     private string ServiceIcon(Sim.Defs.ServiceKind kind) =>

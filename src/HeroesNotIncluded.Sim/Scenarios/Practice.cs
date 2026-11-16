@@ -56,10 +56,10 @@ public static class Practice
     public static Entity Workplace(Simulation sim, Entity player)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(player, out var trade) || trade.Def.WorkplaceDef is not { } def)
+        if (!w.TryGet<Trade>(player, out var trade) || !trade.Def.HasWorkplace)
             return Entity.Null;
         foreach (var b in w.Query<PresetBuilding>())
-            if (w.Get<PresetBuilding>(b).Def == def)
+            if (trade.Def.WorksAt(w.Get<PresetBuilding>(b).Def))
                 return b;
         return Entity.Null;
     }

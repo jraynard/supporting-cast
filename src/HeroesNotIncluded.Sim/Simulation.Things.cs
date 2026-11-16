@@ -546,7 +546,7 @@ public sealed partial class Simulation
 
     /// <summary>A shop's kept stock, and the taker works there (their trade's workplace): it's theirs to use.</summary>
     private bool KeptFor(Entity container, Entity taker) =>
-        !taker.IsNull && KeptStockOf(container) is { } shop && World.TryGet<Trade>(taker, out var trade) && trade.Def.WorkplaceDef == shop
+        !taker.IsNull && KeptStockOf(container) is { } shop && World.TryGet<Trade>(taker, out var trade) && trade.Def.WorksAt(shop)
         && !IsPack(container) && !World.Has<Creature>(container);
 
     /// <summary>What's in a container, in its order (<see cref="Stored.Slot"/>; ties by entity, so every peer agrees).</summary>

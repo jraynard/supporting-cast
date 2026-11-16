@@ -69,13 +69,13 @@ public sealed partial class VillageGame
             return;
         var w = _sim.World;
         var trade = w.Get<Trade>(_avatar).Def;
-        if (trade.StationDefs.Count == 0 || trade.WorkplaceDef is not { } shop)
+        if (trade.StationDefs.Count == 0 || !trade.HasWorkplace)
             return;
         if (_time - _stationsFoundAt > 3f)
         {
             _stationsFoundAt = _time;
             _stations.Clear();
-            var building = ShopSystem.BuildingOf(_sim, shop);
+            var building = ShopSystem.WorkplaceOf(_sim, trade);
             if (!building.IsNull)
                 foreach (var e in w.Each<Thing>())
                     if (trade.StationDefs.Contains(w.Get<Thing>(e).Def) && Buildings.Of(_sim, e) == building)
