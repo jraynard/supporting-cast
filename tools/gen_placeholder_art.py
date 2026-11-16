@@ -44,6 +44,7 @@ import norse_ui
 import placeholder_mining
 import placeholder_roofs
 import village_art
+import inn_furniture_art
 
 S = 32
 ROOT = os.path.join(os.path.dirname(__file__), "..", "data", "textures")
@@ -526,6 +527,7 @@ if __name__ == "__main__":
     norse_fx.generate()      # selection, designation mark, need and chatter bubbles (white art the game tints), the breath core
     chibi_nature.generate()  # trees, bushes, boulders, standing stones, wild plants: chibi, 4x detail (replaces the drawings above)
     village_art.generate()   # lanes, gardens, half-timbering and straw thatch, well, bridge, fences, crates, cabbages
+    inn_furniture_art.generate()  # the inn's furniture faces: oak boards, counter panels, staves and hoops
     chibi_builds.generate()  # dwarves' and halflings' builds, warped from every people sheet above (so: last)
     print("wooden buildings, wood and berry bushes: see placeholder_wood.py")
     count = sum(len(f) for _, _, f in os.walk(ROOT))

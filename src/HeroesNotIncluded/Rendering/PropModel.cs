@@ -88,10 +88,29 @@ public static class PropModel
         static bool OnEdge(float v) => MathF.Abs(v - MathF.Round(v)) < 0.001f;
         static float Out(float v, float by) => OnEdge(v) ? v : v + by;
 
+        // A face longer than a cell repeats its art a cell at a time, as walls and the ground do:
+        // stretched, a counter's front or a long table's top showed one board three cells long.
         void Face(string name, float3 p, float3 u, float3 v, float w, float h, bool top = false, bool edge = false)
         {
             if (string.IsNullOrEmpty(name) || name == "none")
                 return;
+            if (fit || (w <= 1.001f && (!top || h <= 1.001f)))
+            {
+                FaceOne(name, p, u, v, w, h, top, edge);
+                return;
+            }
+            int nu = Math.Max(1, (int)MathF.Ceiling(w - 0.001f)), nv = top ? Math.Max(1, (int)MathF.Ceiling(h - 0.001f)) : 1;
+            for (var j = 0; j < nv; j++)
+                for (var i = 0; i < nu; i++)
+                {
+                    float wi = Math.Min(1f, w - i), hj = top ? Math.Min(1f, h - j) : h;
+                    var at = p + u * (i / w) + (top ? v * (j / h) : default);
+                    FaceOne(name, at, u * (wi / w), top ? v * (hj / h) : v, wi, hj, top, edge);
+                }
+        }
+
+        void FaceOne(string name, float3 p, float3 u, float3 v, float w, float h, bool top, bool edge)
+        {
             var local = Normal(Cross(u, v));
             var n = Rotate(local, facing);
             // A side flush with a cell edge, against a wall or rock: nobody sees it. Which cell is

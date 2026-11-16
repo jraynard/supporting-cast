@@ -57,6 +57,24 @@ public class PropModelTests
     }
 
     [Fact]
+    public void ALongFaceRepeatsItsArtACellAtATime()
+    {
+        // Three cells long and half a cell high: its top and long sides come in cell-wide pieces,
+        // each a whole sprite across, the last one cut to what's left; a fit box is still one stretch.
+        var quads = Build([Box(0, 0.25f, 0, 2.5f, 0.75f, 0.25f)]);
+        var tops = quads.Where(q => Normal(q).Z > 0).ToList();
+        Assert.Equal(3, tops.Count);
+        var front = quads.Where(q => Normal(q).Z == 0 && Normal(q).Y > 0).OrderBy(q => q.Origin.X).ToList();
+        Assert.Equal(3, front.Count);
+        Assert.Equal(1f, front[0].AxisU.X, 3);
+        Assert.Equal(0.75f, front[0].Uv.Z, 4); // a whole sprite across the first cell
+        Assert.Equal(0.5f, front[2].AxisU.X, 3);
+        Assert.Equal(0.5f + 0.25f * 0.5f, front[2].Uv.Z, 4); // half of it across the last half cell
+        var fitted = new ModelBox { Min = [0, 0.25f, 0], Max = [2.5f, 0.75f, 0.25f], Top = "t", Side = "s", Fit = true };
+        Assert.Equal(5, Build([fitted]).Count);
+    }
+
+    [Fact]
     public void TurningMovesTheFrontAround()
     {
         var model = new[] { Box(0.1f, 0.1f, 0, 0.9f, 0.9f, 0.5f, front: "front") };
