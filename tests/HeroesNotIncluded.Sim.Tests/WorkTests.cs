@@ -47,12 +47,12 @@ public class WorkTests
     /// <summary>
     /// A smith at the anvil: wind back to the mark and swing; or, badly, barely wind at all.
     /// </summary>
-    internal static int Smith(HammerSession h, bool onTheMark) =>
-        onTheMark ? Bots.BotPlayer.HammerSwing(h) : !h.Ready ? 0 : h.Swinging || h.Raise >= HammerSession.MinWind + 0.04f ? 1 : -1;
+    internal static (int Centre, int Raise) Smith(HammerSession h, bool onTheMark) =>
+        (Bots.BotPlayer.HammerCentre(h), onTheMark ? Bots.BotPlayer.HammerSwing(h) : h.Ready && !h.Swinging && h.Raise < HammerSession.MinWind + 0.04f ? -1 : 0);
 
-    /// <summary>One blow's inputs from <paramref name="from"/>: wound back two-thirds of the way, then swung down; done by step +40.</summary>
+    /// <summary>One blow's inputs from <paramref name="from"/>: F held to raise it most of the way, then let go; landed by step +40.</summary>
     internal static List<WorkInput> OneBlow(int from = 0) =>
-        [new(from, WorkInputKind.Axis2, -1), new(from + 24, WorkInputKind.Axis2, 1), new(from + 40, WorkInputKind.Axis2, 0)];
+        [new(from, WorkInputKind.Hold, 1), new(from + 24, WorkInputKind.Hold, 0)];
 
     /// <summary>Plays a whole session perfectly or badly through the predictor, as a client would.</summary>
     private static void Play(Simulation sim, Entity me, WorkPredictor predictor, bool onTheMark, int maxTicks = 60 * 60)
@@ -60,8 +60,8 @@ public class WorkTests
         for (var t = 0; t < maxTicks && sim.World.Has<WorkSession>(me); t++)
         {
             sim.Tick();
-            var swing = predictor.Session is HammerSession h ? Smith(h, onTheMark) : 0;
-            predictor.Update(sim, me, 1, false, false, 0, c => sim.ApplyNow(c), swing);
+            var (centre, swing) = predictor.Session is HammerSession h ? Smith(h, onTheMark) : (0, 0);
+            predictor.Update(sim, me, 1, false, false, centre, c => sim.ApplyNow(c), swing);
         }
     }
 
@@ -125,8 +125,8 @@ public class WorkTests
         {
             var before = held.Count;
             sim.Tick();
-            var swing = predictor.Session is HammerSession h ? Smith(h, true) : 0;
-            predictor.Update(sim, me, 1, false, false, 0, held.Add, swing);
+            var (centre, swing) = predictor.Session is HammerSession h ? Smith(h, true) : (0, 0);
+            predictor.Update(sim, me, 1, false, false, centre, held.Add, swing);
             sentNow = held.Count > before;
         }
         var ahead = (HammerSession)predictor.Session!;
@@ -162,7 +162,7 @@ public class WorkTests
     {
         var (sim, me, forge, recipe) = AtTheForge();
         var s = (HammerSession)Start(sim, me, forge, recipe).Clone();
-        var inputs = new List<WorkInput> { new(0, WorkInputKind.Axis2, -1), new(24, WorkInputKind.Axis2, 1) };
+        var inputs = OneBlow();
         while (s.Blows == 0 && s.StepsDone < 200)
         {
             s.Advance(inputs, s.StepsDone + 1);
@@ -182,7 +182,7 @@ public class WorkTests
     {
         var (sim, me, forge, recipe) = AtTheForge();
         var s = (HammerSession)Start(sim, me, forge, recipe).Clone();
-        s.Advance([new WorkInput(0, WorkInputKind.Axis2, -1), new WorkInput(3, WorkInputKind.Axis2, 1)], 20);
+        s.Advance([new WorkInput(0, WorkInputKind.Hold, 1), new WorkInput(3, WorkInputKind.Hold, 0)], 20);
         Assert.Equal(0, s.Blows); // a tap: under the least wind
     }
 

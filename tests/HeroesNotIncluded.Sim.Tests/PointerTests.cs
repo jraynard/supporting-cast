@@ -326,11 +326,11 @@ public class PointerTests
     }
 
     /// <summary>
-    /// A heat's first blows by the mouse: raised over the anvil to <paramref name="wind"/> past the
-    /// mark (0 on it), then brought down at <paramref name="down"/> of the panel a step. The piece's
-    /// shape gained, and the blows' average grade.
+    /// A heat's first blows: the button held till the hammer's raised <paramref name="wind"/> past the
+    /// mark (0 on it), then let go; pushed <paramref name="push"/> steps off centre with D first. The
+    /// piece's shape gained, and the blows' average grade.
     /// </summary>
-    private static (float Shape, float Grade) Swung(float precision, float wind, float down = 1f, int blows = 4)
+    private static (float Shape, float Grade) Swung(float precision, float wind, int push = 0, int blows = 4)
     {
         var (sim, me, forge, recipe) = WorkTests.AtTheForge();
         var real = WorkTests.Start(sim, me, forge, recipe);
@@ -345,16 +345,21 @@ public class PointerTests
             var from = s.Shape;
             for (var blow = 0; blow < blows && !s.Done; blow++)
             {
-                var top = Math.Clamp(s.Mark + wind, 0f, 1f);
                 while (!s.Done && !s.Ready)
                     s.Advance([], s.StepsDone + 1);
-                s.Advance([Point(s.StepsDone, 0.5f, 1f - top)], s.StepsDone + 1);
-                while (!s.Done && s.Raise < top - 0.03f && s.StepsDone < 100_000)
-                    s.Advance([], s.StepsDone + 1);
-                s.Advance([], s.StepsDone + 4); // the top of the wind
+                var top = Math.Clamp(s.Mark + wind, 0f, 1f);
+                s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Hold, 1)], s.StepsDone + 1);
+                if (push > 0)
+                    s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Axis, 1), new WorkInput(s.StepsDone + push, WorkInputKind.Axis, 0)], s.StepsDone + push + 1);
+                while (!s.Done && s.Raise < top - HammerSession.WindPerStep * 0.5f && s.Raise < 1f)
+                    s.Advance(push > 0 ? [] : [new WorkInput(s.StepsDone, WorkInputKind.Axis, Bots.BotPlayer.HammerCentre(s))], s.StepsDone + 1);
                 var before = s.Blows;
-                for (var v = 1f - s.Raise; !s.Done && s.Blows == before; v = Math.Min(1f, v + down))
-                    s.Advance([Point(s.StepsDone, 0.5f, v)], s.StepsDone + 1);
+                s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Hold, 0), new WorkInput(s.StepsDone, WorkInputKind.Axis, 0)], s.StepsDone + 1);
+                while (!s.Done && s.Blows == before && s.Swinging)
+                    s.Advance([], s.StepsDone + 1);
+                // Back to the middle for the next.
+                while (!s.Done && MathF.Abs(s.Offset) > s.CentreWidth * 0.3f)
+                    s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Axis, -Math.Sign(s.Offset)), new WorkInput(s.StepsDone + 1, WorkInputKind.Axis, 0)], s.StepsDone + 1);
             }
             shape += s.Shape - from;
             grade += s.Quality;
@@ -363,7 +368,7 @@ public class PointerTests
     }
 
     [Fact]
-    public void WoundToTheMarkAndSwungQuickIsAFullBlow()
+    public void RaisedToTheMarkAndLetGoIsAFullBlow()
     {
         var (shape, grade) = Swung(1f, 0f);
         Assert.True(grade > 0.85f, $"grade {grade}");
@@ -381,11 +386,36 @@ public class PointerTests
     }
 
     [Fact]
-    public void AHammerLoweredSlowlyHardlyMovesIt()
+    public void ABlowOffCentreGlances()
     {
-        var quick = Swung(1f, 0f);
-        var slow = Swung(1f, 0f, down: 0.012f);
-        Assert.True(slow.Shape < quick.Shape * 0.75f, $"slow {slow.Shape}, quick {quick.Shape}");
+        var centred = Swung(1f, 0f);
+        var off = Swung(1f, 0f, push: 40);
+        Assert.True(off.Shape < centred.Shape * 0.8f && off.Grade < centred.Grade, $"off {off.Shape}/{off.Grade}, centred {centred.Shape}/{centred.Grade}");
+    }
+
+    [Fact]
+    public void ARaisedHammerWandersOffThePiece()
+    {
+        var s = Ready(new HammerSession());
+        s.Advance([new WorkInput(0, WorkInputKind.Hold, 1)], 0);
+        var wandered = 0f;
+        for (var seed = 1u; seed <= 20; seed++)
+        {
+            var c = (HammerSession)s.Clone();
+            c.Rand = new SimRandom(seed);
+            c.Hands = new Hands(0.3f, 1f, 5);
+            c.Advance([new WorkInput(0, WorkInputKind.Hold, 1)], 36);
+            wandered += MathF.Abs(c.Offset);
+        }
+        Assert.True(wandered / 20f > 0.02f, $"wandered {wandered / 20f}");
+    }
+
+    [Fact]
+    public void TheMouseMovedSideToSideShiftsTheHammerAcross()
+    {
+        var s = Ready(new HammerSession());
+        s.Advance([Point(0, 0.5f), Point(1, 0.55f)], 2);
+        Assert.InRange(s.Offset, 0.09f, 0.11f);
     }
 
     [Fact]

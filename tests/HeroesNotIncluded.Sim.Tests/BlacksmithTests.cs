@@ -67,8 +67,8 @@ public class BlacksmithTests
         for (var t = 0; t < maxTicks && sim.World.Has<WorkSession>(me); t++)
         {
             sim.Tick();
-            var swing = predictor.Session is HammerSession h ? WorkTests.Smith(h, true) : 0;
-            predictor.Update(sim, me, 1, false, false, 0, c => sim.ApplyNow(c), swing);
+            var (centre, swing) = predictor.Session is HammerSession h ? WorkTests.Smith(h, true) : (0, 0);
+            predictor.Update(sim, me, 1, false, false, centre, c => sim.ApplyNow(c), swing);
         }
         sim.Tick();
     }

@@ -6,42 +6,44 @@ using HeroesNotIncluded.Sim.Systems;
 namespace HeroesNotIncluded.Sim.Work;
 
 /// <summary>
-/// One heat on the anvil (<see cref="Smithing"/>): wind the hammer back (W, or the mouse raised
-/// over the anvil) and swing it down onto the piece (S, or the mouse brought down). The blow is
-/// as good as the wind: back to the mark is a full one; short of it moves the metal less; past it,
-/// the blow comes down too hard and knocks the work out of true, undoing what was done. It must
-/// come down quickly, too: a hammer lowered slowly onto the bar hardly moves it. An unsteady arm
-/// wavers as it winds and carries on (or sags) as it stops, so the top of the wind isn't quite where it was meant. A new mark after
-/// every blow, and the piece's quality is the average of them all, so a smith's hands decide the
-/// blade in place of a skill roll. The piece cools all the while: hot, a blow moves the metal;
-/// fading, less; black, barely, and it may crack. The heat ends when it's shaped or too cold to
-/// work, and it goes back to the fire.
+/// One heat on the anvil (<see cref="Smithing"/>): hold W (or F, or the mouse's button) to raise
+/// the hammer, and let go to bring it down. The blow is as good as the wind: back to the mark is a
+/// full one; short of it moves the metal less; past it, the blow comes down too hard and knocks
+/// the work out of true, undoing what was done. Raised, it wanders off the piece, the more for an
+/// unsteady arm: A/D (or the mouse moved side to side) keep it centred, and a blow off centre
+/// glances. A new mark after every blow, and the piece's quality is the average of them all, so a
+/// smith's hands decide the blade in place of a skill roll. The piece cools all the while: hot, a
+/// blow moves the metal; fading, less; black, barely, and it may crack. The heat ends when it's
+/// shaped or too cold to work, and it goes back to the fire.
 /// </summary>
 public sealed class HammerSession : WorkSession
 {
-    /// <summary>How far the hammer winds back a step with W held (all the way in about two-thirds of a second).</summary>
+    /// <summary>How far the hammer's raised a step while held (all the way in about two-thirds of a second).</summary>
     public const float WindPerStep = 0.025f;
 
-    /// <summary>How far it comes down a step at full swing: from the top in under a quarter of a second.</summary>
+    /// <summary>How far it comes down a step once let go: from the top in under a quarter of a second.</summary>
     public const float SwingPerStep = 0.075f;
 
-    /// <summary>How much faster than W the mouse may wind it.</summary>
-    public const float MouseWind = 1.6f;
-
-    /// <summary>A wind under this is a tap, not a blow: lowering it from there strikes nothing.</summary>
+    /// <summary>A wind under this is a tap, not a blow: let go from there, it strikes nothing.</summary>
     public const float MinWind = 0.12f;
-
-    /// <summary>Steps from the top of the wind to the piece that still make a full blow; slower loses force over <see cref="SlowSteps"/> more.</summary>
-    public const int QuickSteps = 16, SlowSteps = 30;
-
-    /// <summary>The least a slow blow keeps of its force.</summary>
-    public const float SlowestBlow = 0.45f;
 
     /// <summary>How much a wind wavers a step for an unsteady hand, per point of tremor.</summary>
     public const float WindWaver = 0.012f;
 
-    /// <summary>How far an unsteady arm carries on past (or falls short of) where the wind's stopped, per point of tremor: once a wind.</summary>
+    /// <summary>How far an unsteady arm carries on past (or falls short of) where it's let go, per point of tremor.</summary>
     public const float TopWaver = 0.4f;
+
+    /// <summary>How far A/D move the hammer across a step (the piece is -1 to 1 across, centred on 0).</summary>
+    public const float SteerPerStep = 0.012f;
+
+    /// <summary>How fast a raised hammer's wander can grow a step, and how fast it can go, before tremor.</summary>
+    public const float Wander = 0.0008f, MaxWander = 0.006f;
+
+    /// <summary>The most one move of the mouse shifts it across.</summary>
+    public const float MouseShift = 0.1f;
+
+    /// <summary>Half the width of dead centre, before skill widens it; a blow further off glances, down to <see cref="Glancing"/> of its worth.</summary>
+    public const float CentreHalfWidth = 0.12f, Glancing = 0.3f;
 
     /// <summary>Half the width of a perfect wind's mark, before skill widens it.</summary>
     public const float MarkHalfWidth = 0.07f;
@@ -55,8 +57,9 @@ public sealed class HammerSession : WorkSession
     /// <summary>Below this share of the working heat the piece has gone black: the heat's over.</summary>
     public const float TooCold = 0.6f;
 
-    private int _recovery, _wind, _down;
-    private bool _rising, _jolted;
+    private int _recovery, _wind, _steer;
+    private bool _falling;
+    private float _drift;
 
     /// <summary>The anvil.</summary>
     public Entity Station { get; set; }
@@ -109,11 +112,19 @@ public sealed class HammerSession : WorkSession
     public int LastWindWas { get; private set; }
     public float LastWind { get; private set; } = -1f;
 
-    /// <summary>The last blow came down slowly.</summary>
-    public bool LastSlow { get; private set; }
+    /// <summary>The last blow glanced off centre.</summary>
+    public bool LastOffCentre { get; private set; }
 
-    /// <summary>Coming down: the hammer's fallen from the top of its wind.</summary>
-    public bool Swinging => Raise < Peak - 0.001f;
+    /// <summary>Where the hammer is across the piece: 0 dead centre, -1 and 1 off either side.</summary>
+    public float Offset { get; private set; }
+
+    /// <summary>Let go: it's coming down, and can't be raised again till it lands.</summary>
+    public bool Swinging => _falling;
+
+    public float CentreWidth => CentreHalfWidth * Hands.Tolerance;
+
+    /// <summary>Over the piece near enough for a true blow.</summary>
+    public bool Centred => MathF.Abs(Offset) <= CentreWidth;
 
     public float HalfWidth => MarkHalfWidth * Hands.Tolerance;
 
@@ -153,8 +164,18 @@ public sealed class HammerSession : WorkSession
 
     protected internal override void Begin() => NewMark();
 
-    /// <summary>W winds it back (-1), S swings it down (+1).</summary>
+    /// <summary>W held raises it (-1); let go, it comes down.</summary>
     protected override void Axis2(int value) => _wind = value;
+
+    /// <summary>A/D move it across the piece.</summary>
+    protected override void Axis(int value) => _steer = value;
+
+    /// <summary>The mouse moved side to side shifts it across as far as it moves (the panel's width is the piece's, -1 to 1).</summary>
+    protected override void Pointed(float u, float v)
+    {
+        if (PointU is { } was)
+            Offset = Math.Clamp(Offset + Math.Clamp((u - was) * 2f, -MouseShift, MouseShift), -1f, 1f);
+    }
 
     protected override void Step()
     {
@@ -162,48 +183,51 @@ public sealed class HammerSession : WorkSession
             _recovery--;
         else
         {
-            var before = Raise;
-            if (_wind < 0)
-                Raise += WindPerStep;
-            else if (_wind > 0)
-                Raise -= SwingPerStep;
-            else if (PointV is { } v) // the mouse: up the anvil is wound back, at the arm's own pace
-                Raise += Math.Clamp(1f - v - Raise, -SwingPerStep, WindPerStep * MouseWind);
-            if (Raise > before) // winding back, an unsteady hand wavers
-                Raise += (Rand.NextFloat() * 2f - 1f) * Hands.Tremor * WindWaver;
-            else if (_rising && !_jolted && Hands.Tremor > 0f)
+            var raising = (_wind < 0 || Held) && !_falling;
+            if (raising)
             {
-                // Stopped at the top: an unsteady arm carries on a little, or sags, as it will.
-                _jolted = true;
-                Raise += (Rand.NextFloat() * 2f - 1f) * Hands.Tremor * TopWaver;
+                // Raised, an unsteady hand wavers.
+                Raise = Math.Clamp(Raise + WindPerStep + (Rand.NextFloat() * 2f - 1f) * Hands.Tremor * WindWaver, 0f, 1f);
+                Peak = Math.Max(Peak, Raise);
             }
-            _rising = Raise > before;
-            Raise = Math.Clamp(Raise, 0f, 1f);
-            if (Raise >= Peak)
-                (Peak, _down) = (Raise, 0);
+            else if (Raise > 0f)
+            {
+                if (!_falling)
+                {
+                    // Let go: an unsteady arm carries on a little, or sags, as it comes over.
+                    _falling = true;
+                    Peak = Math.Clamp(Peak + (Rand.NextFloat() * 2f - 1f) * Hands.Tremor * TopWaver, 0f, 1f);
+                }
+                Raise = Math.Max(0f, Raise - SwingPerStep);
+                if (Raise <= 0f)
+                {
+                    if (Peak >= MinWind)
+                        Blow();
+                    (Peak, _falling) = (0f, false);
+                }
+            }
+            // Off the bar it wanders across, the more for an unsteady arm; A/D bring it back.
+            if (Raise > 0f)
+                _drift = Math.Clamp(_drift + (Rand.NextFloat() * 2f - 1f) * Wander * (1f + Hands.Tremor * 4f), -MaxWander, MaxWander);
             else
-                _down++;
-            if (Raise <= 0f)
-            {
-                if (Peak >= MinWind)
-                    Blow();
-                Peak = 0f;
-            }
+                _drift *= 0.9f;
+            Offset = Math.Clamp(Offset + _drift + _steer * SteerPerStep, -1f, 1f);
         }
         Temp = Air + (Temp - Air) * Smithing.AirCooling;
         if (Temp < Lo * TooCold)
             Done = true;
     }
 
-    /// <summary>The hammer's come down on the piece: as good as the wind was, and as quick.</summary>
+    /// <summary>The hammer's come down on the piece: as good as the wind was, and as true.</summary>
     private void Blow()
     {
         var off = Peak - Mark;
         var heat = Workable;
         LastCold = heat < 0.5f;
         LastWind = Peak;
-        var quick = Math.Clamp(1f - (_down - QuickSteps) / (float)SlowSteps, SlowestBlow, 1f);
-        LastSlow = quick < 1f;
+        var wide = MathF.Abs(Offset) - CentreWidth;
+        var centre = wide <= 0f ? 1f : Math.Clamp(1f - wide / 0.4f, Glancing, 1f);
+        LastOffCentre = centre < 1f;
         float grade;
         if (off > HalfWidth)
         {
@@ -211,7 +235,7 @@ public sealed class HammerSession : WorkSession
             LastWindWas = 1;
             var over = Math.Clamp((off - HalfWidth) / (HalfWidth * 3f), 0f, 1f);
             Shape = Math.Max(0f, Shape - (0.6f + 0.9f * over) / BlowsNeeded);
-            grade = 0.1f * (1f - over);
+            grade = 0.1f * (1f - over) * centre;
         }
         else
         {
@@ -220,9 +244,9 @@ public sealed class HammerSession : WorkSession
             var aim = off >= -HalfWidth ? 1f : Math.Clamp(1f - (-off - HalfWidth) / (HalfWidth * 5f), 0.25f, 1f);
             // As a smith's blow it's judged harder: well short is no blow worth the name, though it shapes it a little.
             var judged = off >= -HalfWidth ? 1f : Math.Clamp(1f - (-off - HalfWidth) / (HalfWidth * 2.5f), 0f, 1f);
-            // A good blow on hot metal moves it most; on fading metal it moves less and does it no good.
-            Shape = Math.Min(1f, Shape + (0.35f + 0.65f * aim) * (0.1f + 0.9f * heat) * quick / BlowsNeeded);
-            grade = judged * judged * quick * (0.4f + 0.6f * heat);
+            // A good blow on hot metal moves it most; on fading metal it moves less and does it no good. Off centre, it glances.
+            Shape = Math.Min(1f, Shape + (0.35f + 0.65f * aim) * (0.1f + 0.9f * heat) * centre / BlowsNeeded);
+            grade = judged * judged * centre * (0.4f + 0.6f * heat);
         }
         Sample(grade);
         BlowSum += grade;
@@ -230,7 +254,6 @@ public sealed class HammerSession : WorkSession
         if (LastCold && Flaw == PieceFlaw.None && Rand.NextFloat() < CrackChance)
             Flaw = PieceFlaw.Crack;
         _recovery = RecoverySteps;
-        (_down, _rising, _jolted) = (0, false, false);
         Blows++;
         NewMark();
         if (Shaped)
@@ -292,14 +315,15 @@ public sealed class HammerSession : WorkSession
         w.Int(BlowCount);
         w.Bool(LastCold);
         w.Int(_wind);
-        w.Int(_down);
+        w.Int(_steer);
+        w.Bool(_falling);
         w.Float(Raise);
         w.Float(Peak);
+        w.Float(Offset);
+        w.Float(_drift);
         w.Int(LastWindWas);
         w.Float(LastWind);
-        w.Bool(LastSlow);
-        w.Bool(_rising);
-        w.Bool(_jolted);
+        w.Bool(LastOffCentre);
     }
 
     protected override void ReadState(SaveReader r)
@@ -338,17 +362,22 @@ public sealed class HammerSession : WorkSession
             r.Int();
             r.Float();
         }
-        else if (r.Version >= 44) // the hammer wound back and swung (format 44)
+        else if (r.Version == 44) // format 44 swung it by W and S: put down as it was, resting on the bar
+        {
+            r.Int(); r.Int(); r.Float(); r.Float(); r.Int(); r.Float(); r.Bool(); r.Bool(); r.Bool();
+        }
+        else if (r.Version >= 45) // raised while held, let go to strike, kept centred (format 45)
         {
             _wind = Math.Sign(r.Int());
-            _down = Math.Clamp(r.Int(), 0, 100_000);
+            _steer = Math.Sign(r.Int());
+            _falling = r.Bool();
             Raise = Math.Clamp(r.Float(), 0f, 1f);
             Peak = Math.Clamp(r.Float(), 0f, 1f);
+            Offset = Math.Clamp(r.Float(), -1f, 1f);
+            _drift = Math.Clamp(r.Float(), -MaxWander, MaxWander);
             LastWindWas = Math.Clamp(r.Int(), -1, 1);
             LastWind = r.Float();
-            LastSlow = r.Bool();
-            _rising = r.Bool();
-            _jolted = r.Bool();
+            LastOffCentre = r.Bool();
         }
     }
 }
