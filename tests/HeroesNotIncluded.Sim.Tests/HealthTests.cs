@@ -31,6 +31,28 @@ public class HealthTests
     private static int Part(Simulation sim, Entity e, string name) => sim.World.Get<Health>(e).Body.PartIndex(name);
 
     [Fact]
+    public void BloodComesBackFasterInBed()
+    {
+        var sim = Warm();
+        var bed = sim.SpawnStructure(sim.Thing("Bed"), C(10, 10));
+        var abed = Person(sim, sim.World.Get<Thing>(bed).Cell, "Abed");
+        var floor = Person(sim, C(20, 20), "Floor");
+        foreach (var e in new[] { abed, floor })
+        {
+            sim.World.Get<Health>(e).Blood = 0.1f; // bled white, but not bleeding now
+            HealthSystem.SetDowned(sim, e, ref sim.World.Get<Creature>(e), true);
+        }
+        Assert.True(HealthSystem.InBed(sim, abed));
+        sim.TickMany(SimClock.HoursToTicks(6));
+        float Gained(Entity e) => sim.World.Get<Health>(e).Blood - 0.1f;
+        Assert.Equal(HealthSystem.InBedBloodFactor, Gained(abed) / Gained(floor), 0.05f);
+        // From nearly white to on their feet in well under a day.
+        sim.TickMany(SimClock.HoursToTicks(12));
+        Assert.False(sim.World.Get<Creature>(abed).Downed, $"blood {sim.World.Get<Health>(abed).Blood:0.00}");
+        Assert.True(sim.World.Get<Creature>(floor).Downed);
+    }
+
+    [Fact]
     public void HitLocationsFollowCoverage()
     {
         var sim = Warm();

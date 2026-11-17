@@ -24,6 +24,12 @@ public sealed class HealthSystem : ISimSystem
     public const float BloodPerDay = 0.5f;
 
     /// <summary>
+    /// Blood comes back this much faster in bed: someone bled nearly white in a raid is up in about
+    /// fifteen game hours there, not the best part of two days (a whole season's work lost).
+    /// </summary>
+    public const float InBedBloodFactor = 3f;
+
+    /// <summary>
     /// Infection race, per game day: severity gains (less the better the wound was tended) against
     /// immunity (×1.3 in bed). Untended, it's roughly a coin flip in bed and fatal out of it.
     /// </summary>
@@ -41,10 +47,11 @@ public sealed class HealthSystem : ISimSystem
                 continue;
             ref var c = ref w.Get<Creature>(e);
 
-            var bleed = h.BleedPerHour;
-            h.Blood = bleed > 0 ? h.Blood - bleed / UpdatesPerHour : Math.Min(1f, h.Blood + BloodPerDay / UpdatesPerDay);
-
             var inBed = InBed(sim, e);
+            var bleed = h.BleedPerHour;
+            h.Blood = bleed > 0 ? h.Blood - bleed / UpdatesPerHour
+                : Math.Min(1f, h.Blood + BloodPerDay * (inBed ? InBedBloodFactor : 1f) / UpdatesPerDay);
+
             // In bed, or (too big to carry to one) lying downed by a fire: they mend faster.
             var bed = (inBed ? 1.5f : c.Downed && h.Injuries.Count > 0 && ByAFire(sim, e) ? ByFireFactor : 1f) * Work.Broths.HealFactorOf(sim, e);
             for (var i = h.Injuries.Count - 1; i >= 0; i--)

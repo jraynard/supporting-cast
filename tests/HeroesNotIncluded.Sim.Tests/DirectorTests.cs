@@ -28,6 +28,19 @@ public class DirectorTests
         return sim;
     }
 
+    [Fact]
+    public void NoCrisisOnTheLastDayRunsIntoTheFestival()
+    {
+        var season = TestWorld.LoadDefs().Season;
+        foreach (var beat in season.Beats.Where(b => b.Day == season.Days))
+        {
+            // At its latest, and as long as its longest kind lasts.
+            var lasts = beat.Weights().Max(k => k.Kind == CrisisKind.Dragon ? DragonCrisis.Hours : season.CrisisHours);
+            Assert.True(beat.ToHour + lasts <= season.FestivalSetupHour,
+                $"a day-{beat.Day} beat could still be on at {beat.ToHour + lasts}:00; the festival goes up at {season.FestivalSetupHour}:00");
+        }
+    }
+
     private static List<Entity> Raiders(Simulation sim) =>
         sim.Creatures().Where(e => sim.World.Get<Creature>(e) is { Faction: Faction.Raider, Dead: false }).ToList();
 

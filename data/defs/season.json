@@ -41,8 +41,9 @@
       "crisisHours": 6,
       // Raid points (storyteller.json's formula) times this: at 0.85 a town of six meets a bandit or
       // two on the first evening and three on the second day. Left to itself the town loses that
-      // one (at 1 it was wiped out): it needs its players.
-      "raidPointsFactor": 1.3,
+      // one (at 1 it was wiped out): it needs its players. At 1.6 the combat sweep's sixteen
+      // seeds meet about ten raids with heroes in town and five without (CombatBalanceTests).
+      "raidPointsFactor": 1.6,
       "raidBreaksBridge": 0.6,
       "dreadPerBreachHour": 0.5,
       // Word of a raid comes this many game hours ahead (Director/Director.cs), and the town calls
@@ -61,7 +62,9 @@
       "beats": [
         { "day": 1, "fromHour": 20, "toHour": 23, "strength": 0.5, "kinds": { "Raid": 1 } },
         { "day": 2, "fromHour": 10, "toHour": 17, "strength": 1, "kinds": { "Raid": 3, "Fire": 2, "Shortage": 2, "Plague": 2 } },
-        { "day": 3, "fromHour": 11, "toHour": 15, "strength": 1.2, "kinds": { "Dragon": 1 } }
+        // The dragon on the last morning: gone (DragonCrisis.Hours) and its fires out before the
+        // festival goes up at festivalSetupHour, never into it (DirectorTests checks).
+        { "day": 3, "fromHour": 6, "toHour": 8, "strength": 1.2, "kinds": { "Dragon": 1 } }
       ]
     }
   ]
