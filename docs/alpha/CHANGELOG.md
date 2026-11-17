@@ -7,9 +7,9 @@ Write it for testers: what they'll notice, not how it's done.
 Playing together always needs everyone on the same build. Saves and characters carry over
 between builds unless a section's **Compatibility** line says otherwise.
 
-## Unreleased
+## 0.1.0-playtest.23
 
-Point and click with a controller, and quieter cards at the bar and the stew pot.
+Point and click with a controller, quieter cards at the bar and the stew pot, and a tutorial card that folds away.
 
 **Pointing with a controller**
 - When your weapon isn't drawn, the right stick moves a pointer and the right trigger clicks. It
