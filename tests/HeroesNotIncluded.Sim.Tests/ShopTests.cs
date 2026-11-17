@@ -346,7 +346,8 @@ public class ShopTests
     public void ABotKeeperDropsAPriceItHearsCalledTooDear()
     {
         var (sim, keeper, inn, party) = Inn();
-        var bot = new Bots.BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 11);
+        // Not greedy: one that is may hold out against a grumble, and this is about hearing it.
+        var bot = new Bots.BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 11) { Temper = Bots.BotTemperament.Steady with { Greed = 0f } };
         // Whole, so they lounge at the inn within the keeper's hearing, not about the healer's.
         foreach (var a in party)
             sim.World.Get<Health>(a).Injuries.Clear();

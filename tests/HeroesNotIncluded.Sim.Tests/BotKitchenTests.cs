@@ -230,7 +230,9 @@ public class BotKitchenTests
         var rats = sim.World.Query<Hospitality.Vermin>().ToList();
         Assert.NotEmpty(rats);
         var chased = false;
-        Assert.True(Run(sim, bot, () => (chased |= bot.Doing == "chasing a rat") && rats.Any(r => !sim.World.IsAlive(r) || sim.World.Get<Creature>(r).Dead),
+        // Killed, or chased off out of the inn: either way it's not at the larder.
+        Assert.True(Run(sim, bot, () => (chased |= bot.Doing == "chasing a rat") && rats.Any(r => !sim.World.IsAlive(r) || sim.World.Get<Creature>(r).Dead
+                || Buildings.At(sim, sim.World.Get<Position>(r).Cell) != inn),
             SimClock.TicksPerHour * 2), Log(sim, bot));
     }
 }

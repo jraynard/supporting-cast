@@ -31,7 +31,7 @@ rnd = random.Random(1234)
 GROUND_LEGEND = {"g": "Grass", "d": "Dirt", "r": "Road", "t": "TilledSoil", "k": "Stone", "s": "Sand", "~": "ShallowWater", "w": "Water"}
 FEATURE_LEGEND = {
     "O": "Oak", "P": "Pine", "B": "Birch", "b": "BerryBush", "o": "Boulder", "x": "WildFlax",
-    "f": "Fence", "G": "Gate!", "c": "CabbagePlant", "W": "Well", "N": "NoticeBoard", "=": "StoneBridge@2",
+    "f": "Fence", "G": "Gate!", "g": "Gate", "c": "CabbagePlant", "W": "Well", "N": "NoticeBoard", "=": "StoneBridge@2",
     "u": "Barrel", "X": "Crate", "C": "Wagon", "/": "Slope", "R": "WeaponRack", "M": "Midden",
     "h": "OutdoorBench", "T": "OutdoorTable", "_": "DoorStep", "L": "LanternPost", "F": "FlowerTub",
 }
@@ -93,11 +93,15 @@ building("Cottage", 75, 70, 2, role="Home", variant="Shingle")  # M: the south-e
 
 fence_ring(27, 21, 35, 30, gate=(31, 30), locked=True)            # the pig pen (B), gate onto the lane
 paint(cells_rect(28, 22, 34, 29), g="d")
-garden(14, 36, 21, 45, gate=(21, 40))                            # F's kitchen garden
-garden(18, 46, 24, 53, gate=(24, 50))                            # I's
-garden(73, 53, 80, 61, gate=(73, 57))                            # K's cabbage field
-garden(45, 76, 51, 82, gate=(48, 76))                            # L's
-garden(77, 46, 82, 51, gate=(77, 48))                            # H's
+GARDENS = [
+    ((14, 36, 21, 45), (21, 40)),                                # F's kitchen garden
+    ((18, 46, 24, 53), (24, 50)),                                # I's
+    ((74, 57, 81, 63), (77, 57)),                                # K's cabbage field, south of the east road, its gate onto it
+    ((42, 76, 48, 82), (45, 76)),                                # L's, west of the shrine with a path between
+    ((79, 41, 84, 48), (81, 48)),                                # H's, east of the cottage, its gate onto the east road
+]
+for box, gate in GARDENS:
+    garden(*box, gate=gate)
 
 # ---------------- Things on the ground ----------------
 
@@ -230,8 +234,18 @@ def check():
         for x, y in plot(b["def"], b["at"][0], b["at"][1], b["facing"]):
             if not inside(x, y) or level[y][x] != TOWN or ground[y][x] in "wk~":
                 problems.append(f"{b['def']} at {b['at']}: plot cell {x},{y} isn't level town ground")
-            elif feature[y][x] in "fGWuXC":
+            elif feature[y][x] in "fGgWuXC":
                 problems.append(f"{b['def']} at {b['at']}: {feature[y][x]} on its plot at {x},{y}")
+    # Garden fences stay off the lanes and a step clear of every building's plot, so the way round them is open.
+    plots = {c for b in buildings for c in plot(b["def"], b["at"][0], b["at"][1], b["facing"])}
+    for (x0, y0, x1, y1), _ in GARDENS:
+        for x, y in cells_rect(x0, y0, x1, y1):
+            if feature[y][x] not in "fGg":
+                continue
+            if ground[y][x] == "r":
+                problems.append(f"fence at {x},{y} is on a lane")
+            if any((x + dx, y + dy) in plots for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
+                problems.append(f"fence at {x},{y} is hard up against a building")
     for y in range(N):
         for x in range(N):
             f = feature[y][x]

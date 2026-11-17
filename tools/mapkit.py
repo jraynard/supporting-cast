@@ -16,7 +16,7 @@ PLANS = {"Inn": (13, 13), "Dwelling": (6, 5), "Cottage": (9, 6), "Smithy": (7, 5
 COLORS = {"g": (96, 150, 70), "d": (130, 100, 70), "r": (186, 160, 116), "t": (100, 70, 46), "k": (120, 116, 110),
           "s": (210, 196, 140), "~": (90, 160, 190), "w": (50, 120, 170)}
 FEATURE_COLORS = {"O": (40, 90, 40), "P": (30, 70, 50), "B": (90, 130, 60), "b": (150, 40, 60), "x": (110, 140, 200),
-                  "o": (140, 140, 140), "f": (90, 60, 30), "G": (200, 140, 60), "c": (120, 200, 90), "W": (60, 60, 200),
+                  "o": (140, 140, 140), "f": (90, 60, 30), "G": (200, 140, 60), "g": (220, 170, 90), "c": (120, 200, 90), "W": (60, 60, 200),
                   "=": (170, 170, 170), "N": (150, 110, 60), "u": (120, 80, 40), "X": (160, 120, 70), "C": (110, 70, 40), "/": (200, 200, 120)}
 
 
@@ -122,7 +122,13 @@ class Canvas:
             if (x in (x0, x1) or y in (y0, y1)) and self.level[y][x] == self.town:
                 self.feature[y][x] = "f"
         if gate:
-            self.feature[gate[1]][gate[0]] = "G" if locked else "."
+            gx, gy = gate
+            self.feature[gy][gx] = "G" if locked else "g"
+            # The gate and the cell outside it stay clear (no tree or prop grows in the way in).
+            out = (gx - 1, gy) if gx == x0 else (gx + 1, gy) if gx == x1 else (gx, gy - 1) if gy == y0 else (gx, gy + 1)
+            self.reserved[gy][gx] = True
+            if self.inside(*out):
+                self.reserved[out[1]][out[0]] = True
 
     def garden(self, x0, y0, x1, y1, gate):
         self.fence_ring(x0, y0, x1, y1, gate)

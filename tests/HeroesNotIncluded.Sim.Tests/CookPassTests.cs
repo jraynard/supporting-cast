@@ -107,13 +107,14 @@ public class CookPassTests
         var meal = sim.Defs.Service(ServiceKind.Meal);
         ref var a = ref sim.World.Get<Adventurer>(diner);
         var before = a.Satisfaction;
+        var taste = Adventurers.Tempers.Taste(Adventurers.Tempers.Of(sim, diner)); // a picky one feels it more
         Tastes.Served(sim, diner, new Flavour(0.5f, 0, 0.5f, 0), new Order { Kind = meal, Craving = FlavourKind.Hot });
-        Assert.Equal(before + Tastes.RightMood, sim.World.Get<Adventurer>(diner).Satisfaction, 0.001f);
+        Assert.Equal(before + Tastes.RightMood * taste, sim.World.Get<Adventurer>(diner).Satisfaction, 0.001f);
         Tastes.Served(sim, diner, new Flavour(1f, 0, 0, 0), new Order { Kind = meal, Craving = FlavourKind.Sweet });
-        Assert.Equal(before + Tastes.RightMood - Tastes.WrongMood, sim.World.Get<Adventurer>(diner).Satisfaction, 0.001f);
+        Assert.Equal(before + (Tastes.RightMood - Tastes.WrongMood) * taste, sim.World.Get<Adventurer>(diner).Satisfaction, 0.001f);
         // Fancying nothing in particular, it's only the pot's quality that counts.
         Tastes.Served(sim, diner, new Flavour(1f, 0, 0, 0), new Order { Kind = meal });
-        Assert.Equal(before + Tastes.RightMood - Tastes.WrongMood, sim.World.Get<Adventurer>(diner).Satisfaction, 0.001f);
+        Assert.Equal(before + (Tastes.RightMood - Tastes.WrongMood) * taste, sim.World.Get<Adventurer>(diner).Satisfaction, 0.001f);
     }
 
     [Fact]

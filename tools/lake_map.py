@@ -46,7 +46,7 @@ DECK = TOWN     # the level a building on the water stands at
 GROUND_LEGEND = {"g": "Grass", "d": "Dirt", "r": "Road", "t": "TilledSoil", "k": "Stone", "s": "Sand", "~": "ShallowWater", "w": "Water"}
 FEATURE_LEGEND = {
     "O": "Oak", "P": "Pine", "B": "Birch", "b": "BerryBush", "o": "Boulder", "x": "WildFlax",
-    "f": "Fence", "G": "Gate!", "c": "CabbagePlant", "W": "Well", "u": "Barrel", "X": "Crate", "M": "Midden",
+    "f": "Fence", "G": "Gate!", "g": "Gate", "c": "CabbagePlant", "W": "Well", "u": "Barrel", "X": "Crate", "M": "Midden",
     # Over the water: decks and what stands on them, at the decks' level.
     "=": f"Boardwalk@{DECK}", "#": f"Causeway@{DECK}", "S": f"StonePier@{DECK}", "=b": None,
     "D": f"Boardwalk@{DECK}+DippingPost@{DECK}", "N": f"StonePier@{DECK}+NoticeBoard@{DECK}",
