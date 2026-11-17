@@ -7,9 +7,9 @@ Write it for testers: what they'll notice, not how it's done.
 Playing together always needs everyone on the same build. Saves and characters carry over
 between builds unless a section's **Compatibility** line says otherwise.
 
-## Unreleased
+## 0.1.0-playtest.24
 
-Workstation windows that fit on the screen.
+Workstation windows that fit on the screen, and a right click and scrolling for the controller.
 
 **Workstations**
 - The forge is split into tabs: Make, Smelt and Mend. Each tab shows only when you have something
