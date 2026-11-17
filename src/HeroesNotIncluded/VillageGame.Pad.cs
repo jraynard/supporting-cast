@@ -147,6 +147,21 @@ public sealed partial class VillageGame
     /// <summary>The wheel's up: the right stick picks from it rather than aims, and A and X wait.</summary>
     private bool WheelOpen => _wheelOpen;
 
+    /// <summary>
+    /// The right stick points a cursor and the right trigger clicks (<see cref="Narsil.Platform.PadCursor"/>),
+    /// so a pad can click anything a mouse can: a Steam Deck playtester had only the touchscreen.
+    /// Not where the stick or trigger mean something else: a weapon drawn, a full bucket, the
+    /// archery butts, the wheel, camera mode, a beast ridden, or the walk moved onto the right stick.
+    /// </summary>
+    private bool PadPointerWanted =>
+        !WeaponDrawn && !HoldingFullBucket && !WheelOpen && !_cameraMode
+        && !(HasAvatar && _sim.World.Has<Sim.Work.ButtsTurn>(_avatar))
+        && !(Ghosting && !Sim.Afterlife.Possession.Ridden(_sim, _ghost).IsNull)
+        && StickOf(Act.WalkUp) != false;
+
+    /// <summary>The pad's cursor is in use: hovers and clicks mean what they do with a mouse.</summary>
+    private bool PadPointing => Host.PadCursor.Active;
+
     /// <summary>A pack stack for the wheel: its name, or nothing for an empty slot.</summary>
     private string? HotbarLabel(int slot)
     {

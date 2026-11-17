@@ -136,7 +136,8 @@ public sealed partial class VillageGame
         {
             // The right stick aims, turned with the camera as the walk is; let go, you keep facing
             // where you last aimed, or where you walk.
-            var stick = Host.Gamepad.RightStick;
+            // While the stick points the cursor (sheathed), it doesn't turn you too: F would follow the pointing about.
+            var stick = Host.PadCursor.Enabled ? float2.Zero : Host.Gamepad.RightStick;
             if (!WheelOpen && stick != float2.Zero)
                 _aim = MathF.Atan2(right.Y * stick.X + ahead.Y * stick.Y, right.X * stick.X + ahead.X * stick.Y);
             else if (_wish != float2.Zero)

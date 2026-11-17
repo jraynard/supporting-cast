@@ -121,6 +121,7 @@ public sealed class ReplayGame(ReplayFile file, string? path = null) : Game
 
     public override void Update(float dt)
     {
+        Host.PadCursor.Enabled = false; // the stick's the camera's here (or there's nothing to point at)
         _time += dt;
         var window = Host.Window.Size;
         _camera.ViewportSize = new float2(Math.Max(1, window.X), Math.Max(1, window.Y));

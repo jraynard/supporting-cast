@@ -463,6 +463,8 @@ public sealed class TitleGame : Game
     {
         Controls.Map.Update();
         Host.ImGui.GamepadNav = !_settings.Capturing;
+        // The right stick points and the right trigger clicks, for anything the d-pad can't reach.
+        Host.PadCursor.Enabled = !_settings.Capturing;
         var top = _settings.IsOpen ? "Settings" : _showCredits ? "###credits" : "##title";
         // Only once the window's there to take it: asked before its first frame, the focus went nowhere and wasn't asked again.
         if (top != _padFocused && (top != "##title" || _titleDrawn))

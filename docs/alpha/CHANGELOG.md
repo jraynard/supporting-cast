@@ -7,6 +7,27 @@ Write it for testers: what they'll notice, not how it's done.
 Playing together always needs everyone on the same build. Saves and characters carry over
 between builds unless a section's **Compatibility** line says otherwise.
 
+## Unreleased
+
+Point and click with a controller, and quieter cards at the bar and the stew pot.
+
+**Pointing with a controller**
+- When your weapon isn't drawn, the right stick moves a pointer and the right trigger clicks. It
+  works on anything a mouse click does: people, things in the world, and any button in a window or
+  on the title screen. A still uses or works whatever is in front of you.
+- The pointer fades a few seconds after you stop using it. Moving the mouse or touching the trackpad
+  takes over from it.
+- It's off while your weapon is drawn, while you hold a full bucket, at the archery butts, while the
+  action wheel is open and in camera mode, since the stick and trigger have other jobs there.
+- With the stick now pointing, it no longer turns your character when your weapon is sheathed. You
+  face the way you walk.
+
+**At the bar and the stew pot** (with Simple HUD on)
+- The bar's card is down to one row: a button for each named drink, and a House mix button that shows
+  its ingredients only when you open it. Hover a drink to see what goes in it, or why you can't make
+  it yet.
+- The stew pot's card shows how it's cooking and its buttons. Hover to see what's in it and how it tastes.
+
 ## 0.1.0-playtest.22
 
 A shorter title menu, a quieter screen, and a plain way to take an order. All from playing on a Steam Deck.

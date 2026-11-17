@@ -43,6 +43,7 @@ public sealed class LoadingScreen(Func<Game> start, Func<string, Game> back) : G
 
     public override void Update(float dt)
     {
+        Host.PadCursor.Enabled = false; // the stick's the camera's here (or there's nothing to point at)
         _time += dt;
         if (_work is not { IsCompleted: true } work)
             return;

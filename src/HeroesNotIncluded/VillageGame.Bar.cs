@@ -452,6 +452,11 @@ public sealed partial class VillageGame
         var w = _sim.World;
         cards.Add(new("The bar", bar, () =>
         {
+            if (SimpleHud)
+            {
+                DrawBarRow(bar);
+                return;
+            }
             TextC(Theme.Dim, "From the cask, with a clean tankard and what goes in to hand (yours, or the shelf behind the bar):");
             foreach (var drink in _sim.Defs.AllThings.Where(d => d.Mix is { House: false }))
             {
@@ -501,6 +506,71 @@ public sealed partial class VillageGame
                 }
             }
         }));
+    }
+
+    /// <summary>The house mix's ticks are showing on the simple bar card.</summary>
+    private bool _houseMixOpen;
+
+    /// <summary>
+    /// The simple HUD's bar card: one row, a button for each named drink (greyed when you can't,
+    /// why and what goes in on hover) and the house mix, its ticks only once you ask. The full card
+    /// spelled out every drink's makings and every tick all the time you stood at the bar, and on a
+    /// Steam Deck it took over the screen.
+    /// </summary>
+    private void DrawBarRow(Sim.Ecs.Entity bar)
+    {
+        var first = true;
+        foreach (var drink in _sim.Defs.AllThings.Where(d => d.Mix is { House: false }))
+        {
+            ImGui.PushID(drink.Name);
+            if (!first)
+                ImGui.SameLine(0, Gui.S(6));
+            first = false;
+            var adds = MixSession.AddsOf(_sim, drink, null);
+            var why = MixSession.WhyNot(_sim, _avatar, bar, drink, null);
+            ImGui.BeginDisabled(why != null);
+            if (ImGui.SmallButton(Cap(drink.Label)))
+                Issue(new MixCommand(_avatar, bar, drink, null));
+            ImGui.EndDisabled();
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                Tip($"{drink.Description}\nAle, {string.Join(", ", adds.Select(d => d.Label))}: a clean tankard and the makings to hand (yours, or the shelf behind the bar)."
+                    + (why != null ? $"\n{Cap(why)}." : ""));
+            ImGui.PopID();
+        }
+        ImGui.SameLine(0, Gui.S(6));
+        if (ImGui.SmallButton(_houseMixOpen ? "Put the mix away"u8 : "House mix..."u8))
+            _houseMixOpen = !_houseMixOpen;
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+            Tip("Ale with whatever you tick: your own mix, for whoever asks for the house's.");
+        if (!_houseMixOpen)
+            return;
+        var any = false;
+        foreach (var add in _sim.Defs.AllThings.Where(d => d.MixCue is { Length: > 0 }))
+        {
+            if (any)
+                ImGui.SameLine(0, Gui.S(8));
+            any = true;
+            var on = _houseAdds.Contains(add.Name);
+            if (ImGui.Checkbox(add.Label, ref on))
+            {
+                if (on)
+                    _houseAdds.Add(add.Name);
+                else
+                    _houseAdds.Remove(add.Name);
+            }
+        }
+        if (_houseAdds.Count == 0)
+            return;
+        var house = _sim.Defs.Thing("HouseMix");
+        var picked = string.Join(",", _houseAdds.Order());
+        var whyNot = MixSession.WhyNot(_sim, _avatar, bar, house, picked);
+        ImGui.SameLine(0, Gui.S(8));
+        ImGui.BeginDisabled(whyNot != null);
+        if (ImGui.SmallButton("Mix it"u8))
+            Issue(new MixCommand(_avatar, bar, house, picked));
+        ImGui.EndDisabled();
+        if (whyNot != null && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            Tip(Cap(whyNot) + ".");
     }
 
     /// <summary>A bar counter in arm's reach of you.</summary>

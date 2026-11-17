@@ -58,7 +58,7 @@ public sealed partial class VillageGame
     /// <summary>The furniture, item or building under the pointer, when the pointer's free to point at the world.</summary>
     private Entity HoverInfoTarget()
     {
-        if (_tool != ToolKind.Select || ImGui.GetIO().WantCaptureMouse || Host.Input.MouseCaptured || Controls.UsingPad || _pointer.Stale
+        if (_tool != ToolKind.Select || ImGui.GetIO().WantCaptureMouse || Host.Input.MouseCaptured || (Controls.UsingPad && !PadPointing) || _pointer.Stale
             || (HasAvatar && Working) || !_sim.Map.InBounds(_hoverCell))
             return Entity.Null;
         if (!PickCreature(Host.Input.MousePosition).IsNull)

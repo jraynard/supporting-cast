@@ -148,7 +148,7 @@ public sealed partial class VillageGame
     private void HandleAvatarInput(Input input, float dt)
     {
         if (HasAvatar)
-            _pointer.Update(input.MouseDelta != float2.Zero && !Controls.UsingPad, _sim.World.Get<Position>(_avatar).Cell);
+            _pointer.Update((input.MouseDelta != float2.Zero && !Controls.UsingPad) || Host.PadCursor.Moved, _sim.World.Get<Position>(_avatar).Cell);
         if (!HasAvatar || Working) // at a mini-game the keys are the mini-game's (UpdateWork)
         {
             _moveKeysFromWork = _useKeyFromWork = Working;
@@ -986,8 +986,8 @@ public sealed partial class VillageGame
         }
         else if (WorkTarget() is { Kind: not AvatarActionKind.None } action)
             (key, text) = (CapFor(Act.Use), action.Label);
-        else if (_tool == ToolKind.Select && !Controls.UsingPad && !Host.Input.MouseCaptured && ClickTarget() is { Action.Kind: not AvatarActionKind.None } click)
-            (key, text) = ("Click", click.Action.Label); // out of reach: a click walks over
+        else if (_tool == ToolKind.Select && (!Controls.UsingPad || PadPointing) && !Host.Input.MouseCaptured && ClickTarget() is { Action.Kind: not AvatarActionKind.None } click)
+            (key, text) = (PadPointing ? CapFor(Act.Strike) : "Click", click.Action.Label); // out of reach: a click walks over
         else if (WorkTarget(AvatarTool.Drop) is { Kind: AvatarActionKind.PutDown } drop)
             (key, text) = (CapFor(Act.Drop), drop.Label);
         else if (_sim.Map.InBounds(_hoverBlock) && AvatarSystem.ActionAt(_sim, _avatar, _hoverBlock, AvatarTool.Dig) is { Kind: not AvatarActionKind.None } dig)

@@ -482,6 +482,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
         var input = Host.Input;
         Controls.Map.Update();
+        Host.PadCursor.Enabled = PadPointerWanted;
         UpdatePadUi();
         HandleWheel();
         HandleKeys(input);

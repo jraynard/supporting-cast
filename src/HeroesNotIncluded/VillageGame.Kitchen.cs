@@ -1014,12 +1014,25 @@ public sealed partial class VillageGame
                 TextC(Theme.Dim, Controls.Keys("Empty. Bring it food from the larder: ~F~ at the pot puts in what you carry."));
             else
             {
-                Wrapped($"In it: {p.Contents}. It tastes {p.Tastes}.");
-                if (p.House is { } house)
-                    TextC(Theme.Good, $"It tastes like your {house}: it's the house dish.");
-                if (p.Mends)
-                    TextC(Theme.Good, "Fresh enough to be a broth: good for the hurt, and for a healer's gift.");
-                TextC(p.Surface == Surface.Simmer ? Theme.Good : Theme.Dim, $"It's {Cooking.SurfaceLabel(p.Surface)}{(p.Lit ? "" : ", and the fire beside it is out")}.");
+                // The simple HUD keeps the pot to how it's doing and what to do; what's in it and how it tastes is a hover away.
+                var detail = $"In it: {p.Contents}. It tastes {p.Tastes}."
+                    + (p.House is { } dish ? $"\nIt tastes like your {dish}: it's the house dish." : "")
+                    + (p.Mends ? "\nFresh enough to be a broth: good for the hurt, and for a healer's gift." : "");
+                if (SimpleHud)
+                {
+                    TextC(p.Surface == Surface.Simmer ? Theme.Good : Theme.Dim, $"{Cap(Cooking.SurfaceLabel(p.Surface))}{(p.Lit ? "" : ", the fire out")}{(p.House != null ? ": the house dish" : "")}");
+                    if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                        Tip(detail);
+                }
+                else
+                {
+                    Wrapped($"In it: {p.Contents}. It tastes {p.Tastes}.");
+                    if (p.House is { } house)
+                        TextC(Theme.Good, $"It tastes like your {house}: it's the house dish.");
+                    if (p.Mends)
+                        TextC(Theme.Good, "Fresh enough to be a broth: good for the hurt, and for a healer's gift.");
+                    TextC(p.Surface == Surface.Simmer ? Theme.Good : Theme.Dim, $"It's {Cooking.SurfaceLabel(p.Surface)}{(p.Lit ? "" : ", and the fire beside it is out")}.");
+                }
                 if (p.Caught is { } caught)
                     TextC(Theme.Bad, Cap(caught) + ".");
                 if (!p.Cooked)
