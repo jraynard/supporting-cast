@@ -270,6 +270,49 @@ public class InnkeeperTests
         Assert.NotNull(MixSession.WhyNot(sim, me, behind.Counter, drink, null));
     }
 
+    [Fact]
+    public void AKeeperOutOfAleTurnsADrinkerAwayAndTheyDontAskAgainStraightOff()
+    {
+        var (sim, party) = Tavern("Innkeeper");
+        var me = Players.CharacterOf(sim, Ana);
+        var drinker = party[0];
+        Thirsty(sim, drinker);
+        sim.TickMany(SimClock.TicksPerHour / 6);
+        var order = sim.Shops.All.Single(e => e.IsOpen && e.Poster == drinker && e.Kind.Kind == ServiceKind.Drink);
+        Assert.True(Perception.For(sim, me).MayTurnAway(order.Id));
+        var pleased = sim.World.Get<Adventurer>(drinker).Satisfaction;
+
+        sim.ApplyNow(new TurnAwayCommand(me, order.Id));
+        Assert.Equal(OrderStatus.Refused, order.Status);
+        Assert.Equal(pleased - ShopSystem.RefusedMood, sim.World.Get<Adventurer>(drinker).Satisfaction, 0.001f);
+        Assert.False(Perception.For(sim, me).MayTurnAway(order.Id), "it's over");
+        // Told, they don't stand there asking again.
+        Thirsty(sim, drinker);
+        sim.TickMany(SimClock.TicksPerHour / 2);
+        Assert.DoesNotContain(sim.Shops.All, e => e.IsOpen && e.Poster == drinker && e.Kind.Kind == ServiceKind.Drink);
+    }
+
+    [Fact]
+    public void TheKeeperCantTurnAwayTheCooksMeals()
+    {
+        var (sim, party) = Tavern("Innkeeper");
+        var me = Players.CharacterOf(sim, Ana);
+        var diner = party[0];
+        sim.World.Get<Needs>(diner).Set(sim.Defs.Need("Food"), 0.2f);
+        Order? meal = null;
+        for (var i = 0; i < 12 && meal == null; i++)
+        {
+            sim.TickMany(SimClock.TicksPerHour / 6);
+            meal = sim.Shops.All.FirstOrDefault(e => e.IsOpen && e.Poster == diner && e.Kind.Kind == ServiceKind.Meal);
+        }
+        Assert.NotNull(meal);
+        if (!meal!.KnownBy.Contains(me))
+            meal.KnownBy.Add(me); // heard it, even: it's still not theirs to refuse
+        Assert.False(Perception.For(sim, me).MayTurnAway(meal.Id));
+        sim.ApplyNow(new TurnAwayCommand(me, meal.Id));
+        Assert.True(meal.IsOpen);
+    }
+
     /// <summary>A drink order taken by the player keeper, them some way off across the room with nothing in hand.</summary>
     private static (Simulation Sim, Entity Me, Entity Drinker, Order Order) TakenAcrossTheRoom()
     {

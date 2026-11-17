@@ -41,6 +41,18 @@
       { "text": "Oh. So much for {thing}. I'll just... go.", "when": [ "timid" ] },
       { "text": "So much for {thing}. Good. Saved my silver.", "when": [ "stingy" ] }
     ] },
+    { "name": "keeper_out", "lines": [
+      { "text": "Sorry, {who}, we're out of {thing}." },
+      { "text": "None to be had, {who}. Not today." },
+      { "text": "We're out, {who}. I'd not keep you waiting on it." }
+    ] },
+    { "name": "adv_turned_away", "lines": [
+      { "text": "Out? Fine. I'll go without." },
+      { "text": "Out of {thing}? What sort of town is this?", "when": [ "rowdy" ] },
+      { "text": "Out. Of course you are.", "when": [ "picky" ] },
+      { "text": "Oh. That's all right. Thank you for saying.", "when": [ "timid" ] },
+      { "text": "Good. Saves my silver.", "when": [ "stingy" ] }
+    ] },
     { "name": "adv_give_up_peckish", "lines": [
       { "text": "Never mind the food. I'll eat later." },
       { "text": "Never mind. I'll eat on the road." },

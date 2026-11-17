@@ -12,6 +12,9 @@ public enum OrderStatus : byte
 
     /// <summary>Called off by the asker, or they're gone.</summary>
     Cancelled,
+
+    /// <summary>Turned away by the shop: "Sorry, we're out" (<see cref="ShopSystem.TurnAway"/>).</summary>
+    Refused,
 }
 
 /// <summary>

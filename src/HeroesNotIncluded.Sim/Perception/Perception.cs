@@ -644,6 +644,10 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         !blind && sim.Shops.Find(order) is { } e && (Omniscient || e.KnownBy.Contains(viewer)) && sim.Drinking.Wanted(order) is { } name
             ? sim.Defs.Thing(name) : null;
 
+    /// <summary>Whether the viewer may turn this order away, "Sorry, we're out" (<see cref="Shops.ShopSystem.MayTurnAway"/>).</summary>
+    public bool MayTurnAway(int order) =>
+        !blind && sim.Shops.Find(order) is { } e && Shops.ShopSystem.MayTurnAway(sim, viewer, e);
+
     /// <summary>
     /// What a meal order the viewer knows of asked for, as it was said: a dish off the menu by name
     /// (<see cref="Shops.Order.Dish"/>), or the house dish. Null if it isn't a meal they know of.

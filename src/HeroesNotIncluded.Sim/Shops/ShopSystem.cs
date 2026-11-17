@@ -788,6 +788,49 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             e.KnownBy.Add(who);
     }
 
+    /// <summary>
+    /// What it costs a keeper to say "Sorry, we're out": less than leaving them to give up waiting
+    /// (1, <see cref="GiveUp"/>), since they're told straight and can go elsewhere.
+    /// </summary>
+    public const float RefusedMood = 0.5f;
+
+    /// <summary>
+    /// Whether <paramref name="who"/> may turn this order away: open, known to them, for something
+    /// their trade serves, at their workplace, and with nothing of the asker's in the shop's keeping
+    /// (that's handed back first). A shortage, a dry cask, a cold pot: better told than kept waiting.
+    /// </summary>
+    public static bool MayTurnAway(Simulation sim, Entity who, Order e)
+    {
+        var w = sim.World;
+        if (!e.IsOpen || e.Poster == who || !e.KnownBy.Contains(who) || !w.TryGet<Trade>(who, out var trade) || !trade.Def.HasWorkplace
+            || !trade.Def.Serving(e.Kind.Kind) || (!e.Where.IsNull && e.Where != WorkplaceOf(sim, trade.Def)))
+            return false;
+        return !HandsOver(e.Kind.Kind) || !w.IsAlive(e.Subject) || !w.IsAlive(e.Poster) || Inventory.OnPerson(sim, e.Poster, e.Subject);
+    }
+
+    /// <summary>
+    /// "Sorry, we're out": the keeper says so aloud and the order is over. The asker takes it better
+    /// than being left to wait it out, and won't ask for that again for a while (<see cref="MayAsk"/>).
+    /// </summary>
+    public bool TurnAway(Simulation sim, Entity who, int id)
+    {
+        if (Find(id) is not { } e || !MayTurnAway(sim, who, e))
+            return false;
+        Close(sim, e, OrderStatus.Refused);
+        if (e.Assignee.IsNull)
+        {
+            e.Assignee = who;
+            e.AssigneeName = sim.World.Get<Creature>(who).Name;
+        }
+        Speech.Barks.Say(sim, who, "keeper_out", Volume.Say, "Sorry, {who}, we're out of {thing}.", who: e.PosterName, thing: e.Kind.Label);
+        if (sim.World.Has<Adventurer>(e.Poster))
+        {
+            sim.World.Get<Adventurer>(e.Poster).Satisfaction -= RefusedMood;
+            Speech.Barks.Say(sim, e.Poster, "adv_turned_away", Volume.Say, "Out? Fine. I'll go without.", thing: e.Kind.Label);
+        }
+        return true;
+    }
+
     /// <summary>Someone says they'll see to an order they know of. False if they can't take it.</summary>
     public bool Accept(Simulation sim, Entity who, int id)
     {

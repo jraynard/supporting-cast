@@ -77,6 +77,18 @@ public sealed record TakeOrderCommand(Entity Avatar, int Order) : ISimCommand, I
     }
 }
 
+/// <summary>"Sorry, we're out": turn away an order you can't fill (<see cref="ShopSystem.TurnAway"/>).</summary>
+public sealed record TurnAwayCommand(Entity Avatar, int Order) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (InventoryCommand.Ready(sim, Avatar) && SpeechSystem.CanAct(sim, Avatar))
+            sim.Shops.TurnAway(sim, Avatar, Order);
+    }
+}
+
 /// <summary>
 /// Change your shop's sign: what you charge for a service, and whether you're offering it. Only
 /// the keeper (whose trade works from that kind of building) can.

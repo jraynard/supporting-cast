@@ -90,6 +90,7 @@ public sealed partial class VillageGame
             {
                 OrderStatus.Done => e.AssigneeName.Length > 0 ? $"Done by {e.AssigneeName}." : "Done.",
                 OrderStatus.Expired => "They gave up waiting.",
+                OrderStatus.Refused => "Turned away: you were out.",
                 _ => "Called off.",
             };
         CardHead(ServiceIcon(e.Kind), open, open ? (e.Mine ? Theme.Good : Theme.Text) : Theme.Dim, title, e.Price, tip);
@@ -99,7 +100,8 @@ public sealed partial class VillageGame
             var take = !e.Mine && e.AssigneeName.Length == 0;
             var errand = e.MineToDo ? View.Awaiting().Cast<KnownErrand?>().FirstOrDefault(a => a!.Value.Order == e.Id) : null;
             var carry = e.MineToDo && e.Kind is Sim.Defs.ServiceKind.Drink or Sim.Defs.ServiceKind.MixedDrink;
-            var buttons = (take ? 1 : 0) + (errand != null || carry ? 1 : 0);
+            var refuse = View.MayTurnAway(e.Id);
+            var buttons = (take ? 1 : 0) + (errand != null || carry ? 1 : 0) + (refuse ? 1 : 0);
             CardBar(e.AssigneeName.Length > 0 ? (e.MineToDo ? "You're on it" : $"{e.AssigneeName} is on it") : "Nobody's taken it",
                 share, color, words, buttons * (CardIconSize + Gui.S(8)));
             if (take)
@@ -115,6 +117,9 @@ public sealed partial class VillageGame
             }
             else if (errand is { } x)
                 DrawErrandButton(x);
+            if (refuse)
+                CardIcon($"##out{e.Id}", "ui/icon_cancel", true, $"Sorry, we're out.\nTell {e.PosterName} you can't do it. They take it better than being left to wait, and won't ask again for a while.",
+                    () => Issue(new TurnAwayCommand(_avatar, e.Id)));
         }
         CardEnd();
     }
