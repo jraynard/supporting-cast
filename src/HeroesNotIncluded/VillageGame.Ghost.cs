@@ -72,7 +72,8 @@ public sealed partial class VillageGame
             _showBuild = false;
             _selected = Entity.Null;
         }
-        _camera.Target = new float3(_ghostPos.X, _ghostPos.Y, _ghostPos.Z);
+        if (!_cameraMode)
+            _camera.Target = new float3(_ghostPos.X, _ghostPos.Y, _ghostPos.Z);
     }
 
     /// <summary>
@@ -161,7 +162,7 @@ public sealed partial class VillageGame
     /// </summary>
     private void HandleGhostInput(float dt)
     {
-        if (!Ghosting)
+        if (!Ghosting || _cameraMode)
             return;
         var w = _sim.World;
         if (_ghostWords != null)

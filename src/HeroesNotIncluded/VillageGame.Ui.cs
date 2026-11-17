@@ -33,6 +33,8 @@ public sealed partial class VillageGame
     public override void DrawUi()
     {
         DrawDayTint();
+        if (_uiHidden)
+            return; // camera mode's H: the world alone, names over heads included
         _renderer.DrawLabels(_camera, _sim, _time);
         DrawAvatarPrompt();
         DrawTopBar();
@@ -70,6 +72,7 @@ public sealed partial class VillageGame
             DrawButtsHint();
         else
             DrawFightHint();
+        DrawCameraModeHint();
         DrawBucketSwing();
         DrawWork();
         if (WorkScenesDemo)

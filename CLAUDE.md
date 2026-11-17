@@ -26,7 +26,7 @@ dotnet run --project src/HeroesNotIncluded -- --new-game --festival-at 5       #
 dotnet run --project src/HeroesNotIncluded -- --practice Healer          # the practice yard: a trade's games, no season, customers on request (--lesson ID: straight into a lesson)
 dotnet run --project src/HeroesNotIncluded -- --arena Swordsman --weapon IronSpear  # the practice ring: one foe a bout (any raider kind, or Dragon; Enter for the next)
 dotnet run --project src/HeroesNotIncluded -- --furniture-demo --zoom 80    # also --building-demo
-dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui, --look-at X,Y; any mode
+dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui, --look-at X,Y, --yaw/--pitch DEG, --camera-mode; any mode
 dotnet run --project src/HeroesNotIncluded -- --art-preview
 dotnet run --project src/HeroesNotIncluded -- --check-art     # headless: every sprite and tag exists
 dotnet run --project src/HeroesNotIncluded -- --check-gpu
@@ -41,7 +41,7 @@ python3 tools/fetch_music.py                               # placeholder music (
 ```
 
 Data files are copied to the output on build. From a checkout, `data/defs` edits reload by
-themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. F12 saves a screenshot (Shift+F12 without the UI) to
+themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3) is camera mode: fly the camera for filming, H hides the HUD. F12 saves a screenshot (Shift+F12 without the UI) to
 `~/.config/Heroes_Not_Included/screenshots`. F11 takes a playtest note; each round's playtest log
 (`Playtest/PlaytestRecorder`) goes to `logs/rounds/` there. Running a playtest: docs/PLAYTEST.md.
 

@@ -213,6 +213,12 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     public int StartYawDegrees { get; init; } = 45;
     public int StartCutaway { get; init; } = int.MaxValue;
 
+    /// <summary>Debug (<c>--pitch N</c>): the view's starting tilt in degrees; 0 for the usual.</summary>
+    public int StartPitchDegrees { get; init; }
+
+    /// <summary>Debug (<c>--camera-mode</c>): start in camera mode, for staged shots.</summary>
+    public bool StartCameraMode { get; init; }
+
     /// <summary>
     /// Adventure's starting zoom (screen units per cell): closer than the overseer's 40, since the
     /// game is about one person, and close enough that a high-density character sheet (the
@@ -442,6 +448,10 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             MaxPendingZoomSteps = 3f,
         };
         _basePanSpeed = _cameraController.PanSpeed;
+        if (StartCameraMode)
+            EnterCameraMode();
+        if (StartPitchDegrees > 0)
+            _camera.Pitch = StartPitchDegrees * MathF.PI / 180f;
         _renderer = new WorldRenderer(Host.Atlas) { CutawayZ = Math.Clamp(StartCutaway, 1, _sim.Map.Depth - 1), Interp = _interp };
         _followLevel = StartCutaway == int.MaxValue;
         _quads = new QuadRenderer(Host, new int3(_sim.Map.Width, _sim.Map.Height, _sim.Map.Depth), ShaderReload.QuadShaders(Host)) { SmoothAll = true };
@@ -452,7 +462,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     public override void Update(float dt)
     {
         _time += dt;
-        _animDt = dt * Math.Min(RunMultiplier, 3);
+        _animDt = FilmPaused ? 0f : dt * Math.Min(RunMultiplier, 3) * FilmTimeScale;
         _animDt = HitFeel(dt, _animDt);
         _artReloader ??= new ArtReloader(Host.Atlas, DevPaths.Watch("SC_WATCH_ART"));
         _artReloader.Update(Host.Input, dt);
@@ -480,17 +490,24 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         (_cameraController.RotateLeftKey, _cameraController.RotateRightKey) = embodied ? ((GlfwKey?)null, (GlfwKey?)null) : (GlfwKey.Q, GlfwKey.E);
         // With a character, the view stays on them and the town around: far enough out to see a
         // street, not the whole map (which also hides who's who). Without one, all of it.
-        _camera.MinZoom = embodied ? EmbodiedMinZoom : FreeMinZoom;
+        // Camera mode outside a round may pull out as far as anyone can; in one, as your character.
+        _camera.MinZoom = embodied && (!_cameraMode || CameraHonest) ? EmbodiedMinZoom : FreeMinZoom;
         if (_camera.Zoom < _camera.MinZoom)
             _camera.Zoom = _camera.MinZoom;
-        HandleCameraActions();
-        _cameraController.Update(input, dt);
+        if (_cameraMode)
+            UpdateCameraMode(input, dt);
+        else
+        {
+            HandleCameraActions();
+            _cameraController.Update(input, dt);
+        }
 
         UpdateHover(input.MousePosition);
         HandleAvatarInput(input, dt);
         HandleGhostInput(dt);
         _buildUp = input.IsKeyDown(GlfwKey.LeftControl) || input.IsKeyDown(GlfwKey.RightControl);
-        HandleMouse(input, dt);
+        if (!_cameraMode)
+            HandleMouse(input, dt);
         if (_coop != null)
             RunCoop(dt);
         else
@@ -517,6 +534,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         RunBots();
         FollowAvatar(); // after the ticks, so the camera shows this frame's position
         UpdateGhost();
+        EaseCameraHome(dt);
         WarnOfHeat(dt);
         UpdateSound(dt);
     }
@@ -534,7 +552,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         var right = _camera.ScreenToPlane(center + new float2(64, 0), _camera.Target.Z) - _camera.ScreenToPlane(center, _camera.Target.Z);
         // Zoomed out, the town is heard from higher up: quieter, and more of it at once.
         var height = Math.Clamp(240f / Math.Max(1f, _camera.Zoom), 1.5f, 14f);
-        _sound.Update(_sim, View, HasAvatar ? _avatar : Entity.Null, _camera.Target, right, height, dt);
+        // A flown camera in a round hears from where your character (or ghost) is, not from the camera.
+        var listen = _cameraMode && CameraHonest ? (HasAvatar ? AvatarDrawPos() : _ghostPos) : _camera.Target;
+        _sound.Update(_sim, View, HasAvatar ? _avatar : Entity.Null, listen, right, height, dt);
         _workSound.Update(HasAvatar ? _work.Session : null);
         Audio.GameAudio.Update(Host, dt);
     }
@@ -658,13 +678,15 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         // Whoever plays a character can't stop the clock, whatever a save or a key last set.
         if (HasAvatar && !_devMode && _speed != 1)
             _speed = 1;
-        if (Paused || RoundOver)
+        // Camera mode in solo may hold the clock or slow it (FilmClock), the one exception to the
+        // above: you're filming, not playing, and co-op never gets it.
+        if (Paused || RoundOver || FilmPaused)
         {
             _tickAccumulator = 0;
             _interp.Alpha = 1f; // show exactly where things are (paused orders apply at once)
             return;
         }
-        _tickAccumulator += dt * SimClock.TicksPerSecond * RunMultiplier;
+        _tickAccumulator += dt * SimClock.TicksPerSecond * RunMultiplier * FilmTimeScale;
         // Never fall into a death spiral: cap the work per frame.
         var ticks = Math.Min((int)_tickAccumulator, 6 * SimClock.TicksPerSecond / 4);
         _tickAccumulator -= ticks;
@@ -717,7 +739,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     {
         // Space pauses god mode and the demos. Never someone playing a character, dev mode
         // included: the town doesn't wait (and at hands-on work Space is the game's other action).
-        if (input.WasKeyPressed(GlfwKey.Space) && !HasAvatar && !Working)
+        var cameraKeys = HandleCameraModeToggle();
+        if (input.WasKeyPressed(GlfwKey.Space) && !HasAvatar && !Working && !_cameraMode)
             SetSpeed(Paused ? _speedBeforePause : 0);
         // Ctrl+1–3: plain numbers are the Adventure hotbar (VillageGame.Inventory.cs).
         if (!HasAvatar && (input.IsKeyDown(GlfwKey.LeftControl) || input.IsKeyDown(GlfwKey.RightControl)))
@@ -729,7 +752,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         // Back (Esc, B) puts work down (VillageGame.Work.cs) and closes a menu (VillageGame.Pad.cs)
         // before it does anything else; with a weapon out, the pad's B is a dash. With nothing
         // here or anywhere else to close, it opens the game menu (EndPadUi).
-        if (Controls.Map.Pressed(Act.Back) && !Working)
+        if (Controls.Map.Pressed(Act.Back) && !Working && !cameraKeys)
         {
             var used = true;
             if (WeaponDrawn && Controls.Map.PadPressed(Act.Dash))
@@ -773,8 +796,10 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             if (CoopForbids("load a game") is { } no) Notify(MessageKind.Info, no);
             else QuickLoad();
         }
-        HandleJournalKeys(input);
         HandlePlaytestNoteKey();
+        if (_cameraMode)
+            return; // the rest of the letters are the camera's now
+        HandleJournalKeys(input);
         if (ToolbarOpen)
             HandleToolHotkeys(input);
         if (_tool is ToolKind.Build or ToolKind.PlaceBuilding && input.WasKeyPressed(GlfwKey.R))

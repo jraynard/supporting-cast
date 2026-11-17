@@ -2188,3 +2188,19 @@ Where the inn and the kitchen stand apart (Reedmere), the cookhouse supplies the
 - Save format 49 (whether a rare company comes, and when). `ReedmereMapTests` rewritten,
   `FestivalTests` on Reedmere, `CompanyTests`. Bench state hashes unchanged for 1234 and 99 (the
   full hash moves with the save format).
+
+### Camera mode, for filming (2026-11-16)
+- **Camera mode** (`` ` `` or R3, `VillageGame.CameraMode.cs`): the camera comes off your character
+  and flies free on Narsil's `CinematicCamera`, which glides (speeds ease in and out) and is driven by
+  intent, not keys. Fly with the walk keys or left stick, orbit Q/E, tilt R/F (20–70°; the right
+  stick or a right-drag does both), zoom as ever, Shift faster and Ctrl slower. G (or a click) follows
+  whoever you point at, or yourself; T turns slowly by itself; H hides the HUD and names; F12 as
+  ever. Its keys are their own group (`Controls.Cinema`), rebindable. Leaving eases back onto your
+  character, the short way round and back to the view's tilt.
+- **Honest in a round:** drawn through your character's or ghost's Perception as ever, heard from
+  where they stand, not the camera, zoomed no further out, and following only someone they can see.
+  Free and all-seeing outside a round.
+- **The clock:** pause (Space) and slow motion (M: 0.5x, 0.25x) in solo only, as a time scale on
+  `RunSimulation`, so ticks stay whole. Co-op's clock never waits.
+- `--camera-mode`, `--pitch N` for staged shots. The fire drill finds the tavern by role (works on
+  Reedmere) and `--fire-spread N` starts a blaze.

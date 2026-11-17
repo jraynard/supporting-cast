@@ -128,7 +128,11 @@ public sealed partial class VillageGame
         var wish = new float2(right.X * x + ahead.X * y, right.Y * x + ahead.Y * y);
         var len = MathF.Sqrt(wish.X * wish.X + wish.Y * wish.Y);
         _wish = len > 0.01f ? wish * (1f / len) : float2.Zero;
-        if (Controls.UsingPad)
+        if (_cameraMode)
+        {
+            // The stick and the mouse are the camera's: keep facing as you were.
+        }
+        else if (Controls.UsingPad)
         {
             // The right stick aims, turned with the camera as the walk is; let go, you keep facing
             // where you last aimed, or where you walk.

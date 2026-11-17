@@ -154,6 +154,11 @@ public sealed partial class VillageGame
             _moveKeysFromWork = _useKeyFromWork = Working;
             return;
         }
+        if (_cameraMode)
+        {
+            HandleFreeMove(input, 0, 0); // the keys fly the camera: your character stands still
+            return;
+        }
         var (x, y) = WalkAxes();
         // A key that ended a mini-game (F the last blow, A/D steering as it ended) doesn't walk off or
         // use the station again once it's over: nothing till the keys held then come up.
@@ -896,7 +901,7 @@ public sealed partial class VillageGame
     /// </summary>
     private void FollowAvatar()
     {
-        if (!HasAvatar || LookAt != null)
+        if (!HasAvatar || LookAt != null || _cameraMode)
             return;
         // A look elsewhere (a festival card's line, a toast) holds until you move, or a while passes.
         if (_lookingAt is { } look)

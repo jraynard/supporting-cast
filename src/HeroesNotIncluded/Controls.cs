@@ -18,6 +18,9 @@ public static class Controls
     /// <summary>Dead: a ghost's own keys (the number row, as the living's hotbar), never live with a character's.</summary>
     public const string Dead = "Dead";
 
+    /// <summary>Camera mode: the keys are the camera's then, never a character's.</summary>
+    public const string Cinema = "Cinema";
+
     private static Binding K(GlfwKey k) => Binding.Key(k);
     private static Binding M(MouseButton b) => Binding.Mouse(b);
     private static Binding P(PadButton b) => Binding.Pad(b);
@@ -88,6 +91,17 @@ public static class Controls
         A(Act.LevelDown, "Show a level down", "Camera", Play, [K(GlfwKey.LeftBracket), K(GlfwKey.PageDown)]),
         A(Act.LevelFollow, "Levels follow you again", "Camera", Play, [K(GlfwKey.Home)]),
         A(Act.Roofs, "Roofs on or off", "Camera", Play, [K(GlfwKey.Backslash)]),
+        A(Act.CameraMode, "Camera mode: fly the camera, for filming", "Camera", Play, [K(GlfwKey.GraveAccent)], P(PadButton.R3)),
+
+        A(Act.CamOrbitLeft, "Orbit left", "Camera mode", Cinema, [K(GlfwKey.Q)]),
+        A(Act.CamOrbitRight, "Orbit right", "Camera mode", Cinema, [K(GlfwKey.E)]),
+        A(Act.CamTiltUp, "Tilt up, toward the horizon", "Camera mode", Cinema, [K(GlfwKey.R)]),
+        A(Act.CamTiltDown, "Tilt down", "Camera mode", Cinema, [K(GlfwKey.F)]),
+        A(Act.CamFollow, "Follow who you point at (or yourself)", "Camera mode", Cinema, [K(GlfwKey.G)], P(PadButton.X)),
+        A(Act.CamTurntable, "Turn slowly by itself", "Camera mode", Cinema, [K(GlfwKey.T)], P(PadButton.Y)),
+        A(Act.CamHideUi, "Hide the HUD", "Camera mode", Cinema, [K(GlfwKey.H)], P(PadButton.View)),
+        A(Act.CamPause, "Pause (solo only)", "Camera mode", Cinema, [K(GlfwKey.Space)], P(PadButton.A)),
+        A(Act.CamSlow, "Slow motion (solo only)", "Camera mode", Cinema, [K(GlfwKey.M)], P(PadButton.LB)),
     ];
 
     /// <summary>The one map, shared by the title screen and the village; settings fill its overrides.</summary>
@@ -196,7 +210,9 @@ public static class Act
     public const string Shop = "shop", Heard = "heard", Quests = "quests", Gift = "gift", Log = "log", Build = "build",
         ControlsCard = "controls", Menu = "menu", PlaytestNote = "playtest_note";
     public const string TurnLeft = "turn_left", TurnRight = "turn_right", ZoomIn = "zoom_in", ZoomOut = "zoom_out",
-        LevelUp = "level_up", LevelDown = "level_down", LevelFollow = "level_follow", Roofs = "roofs";
+        LevelUp = "level_up", LevelDown = "level_down", LevelFollow = "level_follow", Roofs = "roofs", CameraMode = "camera_mode";
+    public const string CamOrbitLeft = "cam_orbit_left", CamOrbitRight = "cam_orbit_right", CamTiltUp = "cam_tilt_up", CamTiltDown = "cam_tilt_down",
+        CamFollow = "cam_follow", CamTurntable = "cam_turntable", CamHideUi = "cam_hide_ui", CamPause = "cam_pause", CamSlow = "cam_slow";
 
     public static readonly string[] Hotbar = [Hotbar1, Hotbar2, Hotbar3, Hotbar4];
     public static readonly string[] Runes = [Rune1, Rune2, Rune3, Rune4, Rune5, Rune6, Rune7, Rune8, Rune9];

@@ -234,6 +234,9 @@ else
     {
         // Debug/screenshot helpers: starting camera rotation (degrees) and cutaway level.
         StartYawDegrees = args.Contains("--yaw") ? ParseInt(args, "--yaw") : 45,
+        // --pitch N: the starting tilt in degrees; --camera-mode: start flying the camera (staged shots).
+        StartPitchDegrees = args.Contains("--pitch") ? ParseInt(args, "--pitch") : 0,
+        StartCameraMode = args.Contains("--camera-mode"),
         StartCutaway = args.Contains("--cutaway") ? ParseInt(args, "--cutaway") : int.MaxValue,
         StartZoom = args.Contains("--zoom") ? ParseInt(args, "--zoom") : args.Contains("--arena") ? (int)VillageGame.AdventureZoom : 0,
         IgniteForest = args.Contains("--ignite-forest"),
@@ -310,7 +313,7 @@ SavedCharacter? PickedCharacter()
 
 static bool LaunchesDirectly(string[] args) =>
     args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--freeform" or "--show-roofs" or "--hide-roofs"
-        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--fire-spread" or "--dragon-test" or "--bridge-test" or "--arena" or "--practice" or "--yaw" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
+        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--fire-spread" or "--dragon-test" or "--bridge-test" or "--arena" or "--practice" or "--yaw" or "--pitch" or "--camera-mode" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
 
 // --load and --check-save take a path, or the name of a slot in the saves directory ("quicksave").
 static string ResolveSave(string pathOrSlot)
