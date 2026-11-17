@@ -235,6 +235,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>Debug (<c>--fire-test</c>): the fire drill (<see cref="FireDrill"/>), the inn alight and you at the well.</summary>
     public bool FireTest { get; init; }
 
+    /// <summary>Debug (<c>--fire-spread N</c>): cells the fire drill starts alight.</summary>
+    public int FireSpread { get; init; } = FireDrill.Spread;
+
     /// <summary>Debug (<c>--dragon-test</c>): the dragon drill (<see cref="DragonDrill"/>), the dragon coming and you at the well.</summary>
     public bool DragonTest { get; init; }
 
@@ -390,7 +393,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             if (RaidTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } me)
                 RaidDrill.Stage(_sim, me);
             if (FireTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } burning)
-                FireDrill.Stage(_sim, burning);
+                FireDrill.Stage(_sim, burning, FireSpread);
             if (DragonTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } watching)
                 DragonDrill.Stage(_sim, watching);
             if (BridgeTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } mending)

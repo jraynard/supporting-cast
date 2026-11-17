@@ -1,8 +1,10 @@
 using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Director;
 using HeroesNotIncluded.Sim.Environment;
 using HeroesNotIncluded.Sim.Round;
 using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Shops;
 using HeroesNotIncluded.Sim.Systems;
 using static HeroesNotIncluded.Sim.Tests.TestWorld;
 
@@ -13,12 +15,14 @@ public class FireDrillTests
 {
     private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
 
-    [Fact]
-    public void TheInnIsAlightAndYouStandAtTheWellWithAFullBucket()
+    [Theory]
+    [InlineData("Millbrook")]
+    [InlineData("Reedmere")]
+    public void TheInnIsAlightAndYouStandAtTheWellWithAFullBucket(string map)
     {
-        var sim = VillageRound.NewSimulation(LoadDefs(), 1234);
+        var sim = VillageRound.NewSimulation(LoadDefs(), 1234, map);
         sim.Presets.PresetMode = true;
-        VillageRound.Setup(sim);
+        VillageRound.Setup(sim, map);
         sim.Round.OpenLobby();
         sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
         sim.ApplyNow(new StartRoundCommand());
@@ -27,7 +31,7 @@ public class FireDrillTests
         var fire = FireDrill.Stage(sim, me);
         Assert.NotNull(fire);
         var inn = fire.Building;
-        Assert.Equal(FireDrill.Building, sim.World.Get<PresetBuilding>(inn).Def.Name);
+        Assert.Equal(ShopSystem.BuildingFor(sim, TownRole.Tavern), inn);
         var burning = sim.Fire.BurningTiles.Count(i => Buildings.At(sim, sim.Map.CellOf(i)) == inn);
         Assert.True(burning >= 2, $"{burning} cells alight in the inn");
 

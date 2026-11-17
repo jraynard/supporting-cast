@@ -1,6 +1,8 @@
 using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Director;
 using HeroesNotIncluded.Sim.Environment;
+using HeroesNotIncluded.Sim.Shops;
 using HeroesNotIncluded.Sim.Systems;
 
 namespace HeroesNotIncluded.Sim.Scenarios;
@@ -12,24 +14,27 @@ namespace HeroesNotIncluded.Sim.Scenarios;
 /// </summary>
 public static class FireDrill
 {
-    public const string Building = "Inn";
-
     /// <summary>Cells alight to begin with, round where it starts: a blaze, not a spark the AI puts out first.</summary>
     public const int Spread = 4;
 
-    /// <summary>Set the inn alight and stand the player at the well with water. Call once the round's dealt.</summary>
-    public static FireCrisis? Stage(Simulation sim, Entity player)
+    /// <summary>
+    /// Set the inn alight and stand the player at the well with water. Call once the round's dealt.
+    /// <paramref name="spread"/> cells start alight (<see cref="Spread"/> by default); more makes a
+    /// blaze the town can't put out at once, for screenshots and trailers (<c>--fire-spread</c>).
+    /// </summary>
+    public static FireCrisis? Stage(Simulation sim, Entity player, int spread = Spread)
     {
         var w = sim.World;
         if (!sim.Director.Enabled)
             sim.Director.Enable(sim.Defs.Difficulty("Normal"));
-        var inn = w.Query<PresetBuilding>().FirstOrDefault(b => w.Get<PresetBuilding>(b).Def.Name == Building, Entity.Null);
+        // The town's tavern, whatever the map calls it (Millbrook's Inn, Reedmere's LandingInn).
+        var inn = ShopSystem.BuildingFor(sim, TownRole.Tavern);
         if (inn.IsNull)
-            throw new InvalidOperationException("The fire drill needs an inn on the map.");
+            throw new InvalidOperationException("The fire drill needs a tavern on the map.");
         var fire = sim.Director.SendFire(sim, inn) ?? throw new InvalidOperationException("Nothing in the inn would burn.");
         var lit = 1;
-        foreach (var c in sim.SpiralFrom(fire.Origin, 3))
-            if (lit < Spread && c != fire.Origin && Buildings.At(sim, c) == inn && sim.Fire.Ignite(sim, c, 1f))
+        foreach (var c in sim.SpiralFrom(fire.Origin, spread <= Spread ? 3 : 12))
+            if (lit < spread && c != fire.Origin && Buildings.At(sim, c) == inn && sim.Fire.Ignite(sim, c, 1f))
                 lit++;
 
         StandAtWell(sim, player, fire.Origin);

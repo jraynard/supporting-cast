@@ -264,6 +264,8 @@ else
         RaidTest = args.Contains("--raid-test"),
         // --fire-test: the fire drill (FireDrill): the inn alight, you at the well with a full bucket.
         FireTest = args.Contains("--fire-test"),
+        // --fire-spread N: how many cells it starts with (a blaze for screenshots; 4 by default).
+        FireSpread = args.Contains("--fire-spread") ? ParseInt(args, "--fire-spread") : HeroesNotIncluded.Sim.Scenarios.FireDrill.Spread,
         // --dragon-test: the dragon drill (DragonDrill): the dragon coming, you at the well with a full bucket.
         DragonTest = args.Contains("--dragon-test"),
         // --bridge-test: the bridge drill (BridgeDrill): the bridge down, you at the gap with wood to mend it.
@@ -308,7 +310,7 @@ SavedCharacter? PickedCharacter()
 
 static bool LaunchesDirectly(string[] args) =>
     args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--freeform" or "--show-roofs" or "--hide-roofs"
-        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--dragon-test" or "--bridge-test" or "--arena" or "--practice" or "--yaw" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
+        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--fire-spread" or "--dragon-test" or "--bridge-test" or "--arena" or "--practice" or "--yaw" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
 
 // --load and --check-save take a path, or the name of a slot in the saves directory ("quicksave").
 static string ResolveSave(string pathOrSlot)
