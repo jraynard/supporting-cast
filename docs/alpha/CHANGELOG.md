@@ -7,6 +7,21 @@ Write it for testers: what they'll notice, not how it's done.
 Playing together always needs everyone on the same build. Saves and characters carry over
 between builds unless a section's **Compatibility** line says otherwise.
 
+## Unreleased
+
+Workstation windows that fit on the screen.
+
+**Workstations**
+- The forge is split into tabs: Make, Smelt and Mend. Each tab shows only when you have something
+  for it. When a customer's piece is waiting, the forge opens on Mend and its tab is marked.
+- The forge's Begin button and the other workstations' Make button now sit at the bottom of the
+  window, always in view. Only the list above them scrolls.
+- A list with more below it fades out at the bottom and shows a small arrow.
+- These windows stay on the screen as they grow, instead of running off the bottom.
+
+**With a controller**
+- Hold LT and push the right stick to scroll the window under the pointer.
+
 ## 0.1.0-playtest.23
 
 Point and click with a controller, quieter cards at the bar and the stew pot, and a tutorial card that folds away.

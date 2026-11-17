@@ -123,6 +123,15 @@ public sealed partial class VillageGame
         _ => false,
     };
 
+    /// <summary>A dot in the last button's top right corner: something there you haven't seen.</summary>
+    private static void UnreadDot()
+    {
+        var r = Gui.S(3.5f);
+        var corner = ImGui.GetItemRectMax();
+        var at = new float2(corner.X - r - Gui.S(2), ImGui.GetItemRectMin().Y + r + Gui.S(2));
+        ImGui.GetWindowDrawList().AddCircleFilled(in at, r, Theme.U8(Theme.Parchment), 0);
+    }
+
     /// <summary>The panel buttons in a bar of their own, bottom centre just above the hotbar.</summary>
     private void DrawJournalBar()
     {
@@ -159,12 +168,7 @@ public sealed partial class VillageGame
                 ImGui.PopStyleColor(1);
             var unread = !open && Unread(tab);
             if (unread)
-            {
-                var r = Gui.S(3.5f);
-                var corner = ImGui.GetItemRectMax();
-                var at = new float2(corner.X - r - Gui.S(2), ImGui.GetItemRectMin().Y + r + Gui.S(2));
-                ImGui.GetWindowDrawList().AddCircleFilled(in at, r, Theme.U8(Theme.Parchment), 0);
-            }
+                UnreadDot();
             Gui.ItemTip($"{(open ? "Close" : "Open")} {tab.Label.ToLowerInvariant()}{(unread ? " (something new)" : "")}{KeyTip(tab.Action)}");
         }
         if (!first)

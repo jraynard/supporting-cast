@@ -581,6 +581,7 @@ villager mid-round is for late joiners only.
 - a mountain town
 - beach or island town
 - howl's moving castle inspired moving city
+- cyberpunk / bladerunner setting (maybe a different game) 
 
 ## Sim folders
 

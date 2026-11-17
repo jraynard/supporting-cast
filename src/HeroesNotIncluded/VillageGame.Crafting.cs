@@ -186,8 +186,9 @@ public sealed partial class VillageGame
 
     /// <summary>
     /// The avatar's window at a station: its recipes with what you have toward each (hands, pack,
-    /// containers in reach), one button to bring them and start, and the craft under way. A forge
-    /// in a round has its own (<see cref="DrawForgeWindow"/>). Closes when you walk off.
+    /// containers in reach), and gear it could mend, a tab each; the picked recipe's button pinned
+    /// at the bottom (<see cref="Sheet"/>) so a long list never hides it. A forge in a round has its
+    /// own (<see cref="DrawForgeWindow"/>). Closes when you walk off.
     /// </summary>
     private void DrawStationWindow()
     {
@@ -207,16 +208,12 @@ public sealed partial class VillageGame
         }
         var thing = w.Get<Thing>(_openStation);
         var bench = w.Get<Workbench>(_openStation);
-        var pos = ImGui.GetIO().DisplaySize * 0.5f + new float2(Narsil.Ui.Gui.S(60), 0);
-        float2? pivot = new float2(0f, 0.5f);
-        ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in pivot);
+        var has = HaveToHand();
+        var repairs = Repairable(thing.Def);
         var open = true;
-        // A fixed width, so the picker's tiles wrap rather than the window stretching to its words.
-        var size = new float2(ScreenFit.Width(380, 0.45f), 0f);
-        var most = new float2(size.X, ImGui.GetIO().DisplaySize.Y * 0.8f);
-        ImGui.SetNextWindowSizeConstraints(in size, in most, (ImGuiSizeCallback?)null, default);
-        Narsil.Ui.Panel.Begin($"{Cap(thing.Label)}###station", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
+        Sheet.Begin($"{Cap(thing.Label)}###station", ref open, 380);
         PadWindow("###station", () => _openStation = Entity.Null);
+        var tab = StationTabs((thing.Def.Recipes.Count > 0, MakeTab, false), (repairs.Count > 0, MendTab, CustomerPiece(repairs)));
         if (bench.Active != null)
         {
             DrawCraftUnderWay(_openStation, bench);
@@ -225,11 +222,63 @@ public sealed partial class VillageGame
             ImGui.Separator();
         }
         var busy = !bench.Untouched && (bench.By != _avatar || bench.Active == null);
-        DrawRecipePicker(thing.Def.Recipes, bench, busy, thing.Def, HaveToHand());
-        DrawRepairs(thing.Def);
-        Narsil.Ui.Panel.End();
+        if (tab == MendTab)
+            DrawRepairs(repairs);
+        else
+            DrawRecipePicker(thing.Def.Recipes, bench, has);
+        Sheet.Footer();
+        if (tab == MendTab)
+            TextC(Dim, Controls.Keys("Mending's worked like making: hold ~F~ at it."));
+        else
+            DrawRecipePick(thing.Def.Recipes, bench, busy, thing.Def, has);
+        Sheet.End();
         if (!open)
             _openStation = Entity.Null;
+    }
+
+    private const string MakeTab = "Make", SmeltTab = "Smelt", MendTab = "Mend";
+
+    /// <summary>The tab shown in the station window, and the station it was chosen at (a new one chooses again).</summary>
+    private string _stationTab = MakeTab;
+    private Entity _stationTabAt = Entity.Null;
+
+    /// <summary>
+    /// The station window's tabs, those that apply, as a row of buttons (none with only one); the
+    /// one shown lit, one with something waiting marked. Opening at a new station, a marked tab is
+    /// shown first (a customer's piece to mend), else <paramref name="first"/>, else the first.
+    /// Returns the tab to show.
+    /// </summary>
+    private string StationTabs(params (bool Applies, string Name, bool Waiting)[] tabs) => StationTabs(null, tabs);
+
+    private string StationTabs(string? first, params (bool Applies, string Name, bool Waiting)[] tabs)
+    {
+        var shown = tabs.Where(t => t.Applies).ToList();
+        if (shown.Count == 0)
+            return MakeTab;
+        if (_stationTabAt != _openStation || !shown.Exists(t => t.Name == _stationTab))
+        {
+            _stationTabAt = _openStation;
+            _stationTab = shown.Find(t => t.Waiting).Name ?? (first != null && shown.Exists(t => t.Name == first) ? first : shown[0].Name);
+        }
+        if (shown.Count < 2)
+            return _stationTab;
+        for (var i = 0; i < shown.Count; i++)
+        {
+            if (i > 0)
+                ImGui.SameLine(0, Gui.S(4));
+            var on = shown[i].Name == _stationTab;
+            if (on)
+                ImGui.PushStyleColor(ImGuiCol.Button, in Theme.AccentSoft);
+            if (ImGui.Button($"{shown[i].Name}##station-tab"))
+                _stationTab = shown[i].Name;
+            if (on)
+                ImGui.PopStyleColor(1);
+            if (shown[i].Waiting)
+                UnreadDot();
+            GuideGlow(shown[i].Name == MendTab && !on && TutorialStep == "mend");
+        }
+        Gui.Rule();
+        return _stationTab;
     }
 
     /// <summary>What the player has to hand (hands, pack, containers in reach), by def and material.</summary>
@@ -250,10 +299,10 @@ public sealed partial class VillageGame
 
     /// <summary>
     /// A station's recipes as tiles, each its product's picture (dimmed while you're short of what
-    /// it takes, a "?" while you don't know it), and under them the one picked: what it takes as
-    /// have/need tiles, and Make (or Bring more, once begun).
+    /// it takes, a "?" while you don't know it). The one picked is shown with its button by
+    /// <see cref="DrawRecipePick"/>, in the window's footer.
     /// </summary>
-    private void DrawRecipePicker(IReadOnlyList<RecipeDef> recipes, Workbench bench, bool busy, ThingDef station, Func<ThingCount, int> has)
+    private void DrawRecipePicker(IReadOnlyList<RecipeDef> recipes, Workbench bench, Func<ThingCount, int> has)
     {
         if (recipes.Count == 0)
             return;
@@ -273,9 +322,16 @@ public sealed partial class VillageGame
             if (DefTile($"recipe-{r.Name}", product, tip, selected: r == _recipePick, dim: known && !Ready(r), enabled: known))
                 _recipePick = r;
         }
-        if (_recipePick is not { } pick || !Knows(pick))
+    }
+
+    /// <summary>The recipe picked among <paramref name="recipes"/>: what it takes as have/need tiles, and Make (or Bring more, once begun).</summary>
+    private void DrawRecipePick(IReadOnlyList<RecipeDef> recipes, Workbench bench, bool busy, ThingDef station, Func<ThingCount, int> has)
+    {
+        if (_recipePick is not { } pick || !recipes.Contains(pick) || !RecipeBooks.Knows(_sim, _avatar, pick))
+        {
+            TextC(Dim, "Pick something to make.");
             return;
-        ImGui.Spacing();
+        }
         var blocker = RecipeBlocker(_avatar, _openStation, pick);
         var mine = bench.Active == pick && (bench.By == _avatar || bench.By.IsNull);
         var enabled = blocker == null && (!busy || mine);
@@ -300,9 +356,10 @@ public sealed partial class VillageGame
     private RecipeDef? _forgeShape;
 
     /// <summary>
-    /// The forge in a round: pick a metal, then a shape, then begin, which puts the billet in your
-    /// tongs and closes the window (the fire and the piece are the "In your tongs" panel's). Smelting
-    /// and mending fold away below.
+    /// The forge in a round, in tabs: Make (a metal, then a shape), Smelt (ore to bars) and Mend.
+    /// The shape picked and its Begin sit pinned at the bottom (<see cref="Sheet"/>): on a Steam
+    /// Deck the one long column ran past the screen, Begin and the mending with it. Begin puts the
+    /// billet in your tongs and closes the window (the fire and the piece are the tongs panel's).
     /// </summary>
     private void DrawForgeWindow()
     {
@@ -316,31 +373,67 @@ public sealed partial class VillageGame
         var thing = w.Get<Thing>(_openStation);
         var bench = w.Get<Workbench>(_openStation);
         var has = HaveToHand();
-        var pos = ImGui.GetIO().DisplaySize * 0.5f + new float2(60, 0);
-        float2? pivot = new float2(0f, 0.5f);
-        ImGui.SetNextWindowPos(in pos, ImGuiCond.Appearing, in pivot);
-        // A fixed width: the fold-away headers would otherwise stretch it across the screen.
-        var size = new float2(ScreenFit.Width(400, 0.45f), 0f);
-        var most = new float2(size.X, ImGui.GetIO().DisplaySize.Y * 0.8f);
-        ImGui.SetNextWindowSizeConstraints(in size, in most, (ImGuiSizeCallback?)null, default);
+        var blooms = thing.Def.Recipes.Where(r => r.Bloom && Sim.Work.Smithing.Applies(_sim, _avatar, _openStation, r) && RecipeBooks.Knows(_sim, _avatar, r)).ToList();
+        var gear = thing.Def.Recipes.Where(r => !r.Bloom && Sim.Work.Smithing.Applies(_sim, _avatar, _openStation, r)).ToList();
+        var other = thing.Def.Recipes.Where(r => !gear.Contains(r) && !blooms.Contains(r)).ToList();
+        var metals = gear.GroupBy(MetalOf).OrderBy(g => g.Min(r => r.MinTemp)).ToList();
+        var repairs = Repairable(thing.Def);
+        // Nothing worked to hand but ore you know how to smelt: start where the work is.
+        var barsToHand = metals.Any(g => g.Any(r => RecipeBooks.Knows(_sim, _avatar, r)) && g.First().Ingredients.Count > 0 && has(g.First().Ingredients[0]) > 0);
+        var oreToHand = blooms.Any(r => r.Ingredients.Count > 0 && has(r.Ingredients[0]) > 0);
+
         var open = true;
-        Narsil.Ui.Panel.Begin($"{Cap(thing.Label)}###station", ref open, ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings);
+        Sheet.Begin($"{Cap(thing.Label)}###station", ref open, 400);
         PadWindow("###station", () => _openStation = Entity.Null);
+        var tab = StationTabs(!barsToHand && oreToHand ? SmeltTab : null,
+            (gear.Count > 0, MakeTab, false), (blooms.Count + other.Count > 0, SmeltTab, false), (repairs.Count > 0, MendTab, CustomerPiece(repairs)));
         if (bench.Active != null && bench.By != _avatar)
         {
             DrawCraftUnderWay(_openStation, bench);
             ImGui.Separator();
         }
+        var busyOther = !bench.Untouched && (bench.By != _avatar || bench.Active == null);
+        switch (tab)
+        {
+            case SmeltTab:
+                // Smelting: ore to bars, a bloom at a time, before there's metal to work.
+                foreach (var r in blooms)
+                    DrawBloomRow(r, bench, thing.Def, has);
+                if (blooms.Count > 0 && other.Count > 0)
+                    ImGui.Separator();
+                DrawRecipePicker(other, bench, has);
+                break;
+            case MendTab:
+                DrawRepairs(repairs);
+                break;
+            default:
+                DrawForgeMake(metals, has);
+                break;
+        }
+        Sheet.Footer();
+        switch (tab)
+        {
+            case SmeltTab when other.Count > 0:
+                DrawRecipePick(other, bench, busyOther, thing.Def, has);
+                break;
+            case SmeltTab:
+                TextC(Dim, "Keep the fire orange while the bloom comes together.");
+                break;
+            case MendTab:
+                TextC(Dim, "Mending takes it in your tongs: heat it, then hammer out the chips.");
+                break;
+            default:
+                DrawForgeBegin(thing, bench, has);
+                break;
+        }
+        Sheet.End();
+        if (!open)
+            _openStation = Entity.Null;
+    }
 
-        // 0. Smelting: ore to bars, a bloom at a time, before there's metal to work.
-        var blooms = thing.Def.Recipes.Where(r => r.Bloom && Sim.Work.Smithing.Applies(_sim, _avatar, _openStation, r) && RecipeBooks.Knows(_sim, _avatar, r)).ToList();
-        foreach (var r in blooms)
-            DrawBloomRow(r, bench, thing.Def, has);
-        if (blooms.Count > 0)
-            ImGui.Separator();
-
-        var gear = thing.Def.Recipes.Where(r => !r.Bloom && Sim.Work.Smithing.Applies(_sim, _avatar, _openStation, r)).ToList();
-        var metals = gear.GroupBy(MetalOf).OrderBy(g => g.Min(r => r.MinTemp)).ToList();
+    /// <summary>The forge's Make tab: the metal, a chip each with the bars you have of it, then its shapes.</summary>
+    private void DrawForgeMake(List<IGrouping<string, RecipeDef>> metals, Func<ThingCount, int> has)
+    {
         if (_forgeMetal == null || metals.All(g => g.Key != _forgeMetal))
             // The metal you've most of to hand, among those you know how to work.
             _forgeMetal = metals.Where(g => g.Any(r => RecipeBooks.Knows(_sim, _avatar, r)))
@@ -407,19 +500,21 @@ public sealed partial class VillageGame
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 Tip(known ? $"{Cap(r.Label)}: {string.Join(", ", r.Ingredients.Select(x => $"{x.Count} {x.ThingDef.Label}"))}" : $"??? ({UnlockHint(r)})");
         }
+    }
 
-        // 3. Begin: what it takes, how it's worked, and the one button.
+    /// <summary>The forge's footer on the Make tab: the shape picked, what it takes, and Begin.</summary>
+    private void DrawForgeBegin(Thing thing, Workbench bench, Func<ThingCount, int> has)
+    {
         if (_forgeShape is { } pick)
         {
-            ImGui.Separator();
             var blocker = RecipeBlocker(_avatar, _openStation, pick);
             var mine = bench.Active == pick && (bench.By == _avatar || bench.By.IsNull);
             var busy = !bench.Untouched && (bench.By != _avatar || bench.Active == null) && !mine;
             var stocked = pick.Ingredients.TrueForAll(x => has(x) >= x.Count) || (mine && bench.Stocked);
             ImGui.Text(Cap(pick.Label));
             IngredientTiles($"shape-{pick.Name}", pick.Ingredients, x => mine && bench.Stocked ? x.Count : has(x));
-            Wrapped($"Work it {Sim.Work.Smithing.WorkingColours(pick)}; about {Sim.Work.Smithing.BlowsFor(pick)} good blows"
-                + (Sim.Work.Smithing.NeedsQuench(pick) ? ", then the quench." : "."));
+            var how = $"Work it {Sim.Work.Smithing.WorkingColours(pick)}; about {Sim.Work.Smithing.BlowsFor(pick)} good blows"
+                + (Sim.Work.Smithing.NeedsQuench(pick) ? ", then the quench." : ".");
             var enabled = blocker == null && !busy;
             if (!enabled)
                 ImGui.BeginDisabled(true);
@@ -430,25 +525,11 @@ public sealed partial class VillageGame
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 Tip(blocker != null ? $"You can't yet: {blocker}."
                     : busy ? $"The {thing.Def.Label} is busy with {bench.Active!.Label}; call that off first."
-                    : stocked ? "Takes what it needs from your hands, pack and any chest in reach and puts the billet in your tongs. Then " + Controls.Glyph(Act.Use) + " at the fire."
-                    : "Brings what you have of it to the forge; the rest can follow.");
+                    : stocked ? how + "\nTakes what it needs from your hands, pack and any chest in reach and puts the billet in your tongs. Then " + Controls.Glyph(Act.Use) + " at the fire."
+                    : how + "\nBrings what you have of it to the forge; the rest can follow.");
         }
-
-        // Smelting and mending, folded away unless there's something waiting.
-        var other = thing.Def.Recipes.Where(r => !gear.Contains(r) && !blooms.Contains(r)).ToList();
-        if (other.Count > 0)
-        {
-            ImGui.Spacing();
-            if (ImGui.CollapsingHeader("Smelting"u8, ImGuiTreeNodeFlags.None))
-            {
-                var busyOther = !bench.Untouched && (bench.By != _avatar || bench.Active == null);
-                DrawRecipePicker(other, bench, busyOther, thing.Def, has);
-            }
-        }
-        DrawRepairs(thing.Def, folded: true);
-        Narsil.Ui.Panel.End();
-        if (!open)
-            _openStation = Entity.Null;
+        else
+            TextC(Dim, "Pick something to make.");
     }
 
     /// <summary>A smelting recipe run as a bloom by hand: the ore to hand, what it takes, and the button.</summary>
@@ -491,8 +572,8 @@ public sealed partial class VillageGame
         return Cap(label);
     }
 
-    /// <summary>Gear the avatar has on them that this station could mend, what it would take, the pieces customers left first.</summary>
-    private void DrawRepairs(ThingDef station, bool folded = false)
+    /// <summary>Gear the avatar has on them that this station could mend, and what each would take, the pieces customers left first.</summary>
+    private List<(Entity Item, (ThingCount Material, int Count, float Work) Cost)> Repairable(ThingDef station)
     {
         var w = _sim.World;
         var gear = _sim.Worn(_avatar).ToList();
@@ -502,28 +583,22 @@ public sealed partial class VillageGame
             gear.Add(held);
         if (_sim.PackOf(_avatar) is { IsNull: false } pack)
             gear.AddRange(_sim.StoredIn(pack));
-        var first = true;
+        var mendable = new List<(Entity Item, (ThingCount Material, int Count, float Work) Cost)>();
         foreach (var item in gear.OrderBy(i => w.Has<Entrusted>(i) ? 0 : 1))
+            if (Crafting.RepairCost(_sim, station, item) is { } cost)
+                mendable.Add((item, cost));
+        return mendable;
+    }
+
+    /// <summary>A customer's piece among what could be mended: the Mend tab is marked, and shown first.</summary>
+    private bool CustomerPiece(List<(Entity Item, (ThingCount Material, int Count, float Work) Cost)> repairs) => repairs.Exists(r => _sim.World.Has<Entrusted>(r.Item));
+
+    /// <summary>The Mend tab: a button for each piece, whose it is, how it's faring and what mending it takes.</summary>
+    private void DrawRepairs(List<(Entity Item, (ThingCount Material, int Count, float Work) Cost)> repairs)
+    {
+        var w = _sim.World;
+        foreach (var (item, cost) in repairs)
         {
-            if (Crafting.RepairCost(_sim, station, item) is not { } cost)
-                continue;
-            if (first)
-            {
-                first = false;
-                if (folded)
-                {
-                    // Open by itself when a customer's piece is waiting.
-                    ImGui.Spacing();
-                    var flags = gear.Any(i => w.Has<Entrusted>(i)) ? ImGuiTreeNodeFlags.DefaultOpen : ImGuiTreeNodeFlags.None;
-                    if (!ImGui.CollapsingHeader("Mend"u8, flags))
-                        return;
-                }
-                else
-                {
-                    ImGui.Separator();
-                    Theme.Header(Host.ImGui, "Mend");
-                }
-            }
             ImGui.PushID(item.Index);
             if (ImGui.Button("Mend"u8, in _autoSize))
                 Issue(new RepairCommand(_avatar, _openStation, item));
@@ -535,7 +610,7 @@ public sealed partial class VillageGame
             ImGui.SameLine(0, 8);
             var t = w.Get<Thing>(item);
             var whose = w.TryGet<Entrusted>(item, out var e) && w.IsAlive(e.Owner) && w.TryGet<Creature>(e.Owner, out var owner) ? $"{owner.Name}'s " : "";
-            ImGui.Text($"{whose}{_sim.LabelOf(item)} ({View.Condition(item) ?? $"{t.Hp / t.MaxHp * 100:F0}%"}): {cost.Count} {cost.Material.ThingDef.Label}");
+            Wrapped($"{whose}{_sim.LabelOf(item)} ({View.Condition(item) ?? $"{t.Hp / t.MaxHp * 100:F0}%"}): {cost.Count} {cost.Material.ThingDef.Label}");
             ImGui.PopID();
         }
     }
