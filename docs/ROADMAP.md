@@ -136,6 +136,21 @@ Moved up from "once Whispers plays" (Toward Steam, "When").
 *Exit: newcomers get through their first ten minutes, friends play a whole round from their own
 homes, and the numbers have had a pass.*
 
+### 5. Two pairs of hands, the rest (DESIGN.md, "The theme under them")
+The striker is built; the rest follow its pattern (`HelperSession`, beats through the sim).
+- [ ] **The keeper at the Calling back:** the rite needs two (`Revival.CallProblem` refuses it
+  alone). The keeper braces against the grave's pull on each rune the empath keys (`CastSession`
+  with `callingFor`), and a slipped hold breaks a rune, so the weave comes out worse (`Revival.Call`'s quality). An AI empath's
+  `CallBackJob` waits for a keeper; existing revival tests bring one.
+- [ ] **The pitman** under the carpenter's pit saw (`SawSession`, the great beam), and **the
+  lifter** holding a wagon level for the tinker (`TrueSession`, axles).
+- [ ] **Playtest the striker** over the internet: is the call's window (`SledgeSession.CallSteps`)
+  wide enough at a real round trip? Does the smith wait for the striker's heave?
+- [ ] A "Lend a hand" lesson in the practice yard (`trades.json` `basics`), with an AI smith.
+- [ ] Bots don't answer a call for a hand or take up the sledge; AI smiths never make a great piece
+  (`Crafting.NextForVillager` skips `twoHanded`). The greatsword borrows the longsword's sprite, and
+  the sledge has no sounds of its own yet.
+
 ## Then: M4, Whispers
 
 The traitors: the game's hook, and what makes it a game people tell others about.

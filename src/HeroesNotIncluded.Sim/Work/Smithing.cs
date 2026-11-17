@@ -67,6 +67,9 @@ public sealed class WorkPiece
 
     public PieceFlaw Flaw;
 
+    /// <summary>Who struck for it at the sledge (<see cref="Pairs"/>), if anyone: named on what it becomes.</summary>
+    public Entity Helper = Entity.Null;
+
     /// <summary>Ore being smelted to a bloom (<see cref="Smithing.BeginBloom"/>), not a billet.</summary>
     public bool IsBloom;
 
@@ -343,6 +346,8 @@ public static class Smithing
                 return;
             case SmithyRole.Anvil when piece is { Shaped: false }:
                 WorkSystem.Start(sim, smith, HammerSession.For(sim, smith, station, piece));
+                if (w.Get<WorkSession>(smith) is HammerSession { Heavy: true } heavy && !Pairs.Linked(sim, heavy))
+                    sim.Messages.Add(MessageKind.Info, $"The {PieceLabel(sim, piece)} is striker's work: call for a hand on the sledge, or it'll barely move.", cell);
                 return;
             case SmithyRole.Quench when piece is { Shaped: true } && NeedsQuench(piece.Recipe) && !piece.IsMend:
                 if (piece.Temp < Window(piece.Recipe).Lo * 0.75f)
@@ -433,6 +438,8 @@ public static class Smithing
                 WeaponWear.SetDullness(sim, item, 1f);
             if (p.Flaw != PieceFlaw.None)
                 w.Add(item, new Flawed { Flaw = p.Flaw });
+            if (w.IsAlive(p.Helper) && w.TryGet<Crafted>(item, out var made))
+                w.Add(item, made with { Helper = p.Helper });
             Inventory.Stow(sim, smith, item);
             var edge = WeaponWear.Edged(w.Get<Thing>(item).Def) ? " Grind it an edge." : "";
             sim.Messages.Add(MessageKind.Info, $"Made a {sim.LabelOf(item)}.{edge}", cell);

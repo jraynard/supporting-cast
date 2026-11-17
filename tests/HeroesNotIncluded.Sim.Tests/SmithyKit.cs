@@ -41,14 +41,19 @@ public sealed record SmithyKit(Entity Forge, Entity Anvil, Entity Tub, Entity Gr
     }
 
     /// <summary>Work the piece in the smith's tongs to the end (or until <paramref name="maxTicks"/>): the fire, the anvil, the tub, as it needs.</summary>
-    /// <remarks><paramref name="goTo"/> steps the smith over to each station first, where they aren't all in reach (a real smithy).</remarks>
-    public void Drive(Simulation sim, Entity me, SmithStyle style = SmithStyle.Careful, int maxTicks = 60 * 60 * 10, Action<Entity>? goTo = null)
+    /// <remarks>
+    /// <paramref name="goTo"/> steps the smith over to each station first, where they aren't all in reach (a real smithy).
+    /// <paramref name="alongside"/> runs each tick after the sim's, for someone working beside the smith (a striker).
+    /// </remarks>
+    public void Drive(Simulation sim, Entity me, SmithStyle style = SmithStyle.Careful, int maxTicks = 60 * 60 * 10, Action<Entity>? goTo = null,
+        Action? alongside = null)
     {
         var predictor = new WorkPredictor();
         var stopped = -1L;
         for (var t = 0; t < maxTicks; t++)
         {
             sim.Tick();
+            alongside?.Invoke();
             var w = sim.World;
             if (!w.Has<WorkSession>(me))
             {

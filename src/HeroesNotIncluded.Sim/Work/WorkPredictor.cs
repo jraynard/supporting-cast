@@ -64,7 +64,17 @@ public sealed class WorkPredictor
             _local = real.Clone();
             _sentUpTo = real.StepsDone;
         }
+        else if (_local.Revision != real.Revision)
+        {
+            // A partner's beat reached the sim's session (Pairs): take it again from there, and play
+            // what's been pressed since on top, back to where the copy had got.
+            var ahead = _local.StepsDone;
+            var again = real.Clone();
+            again.Advance(_kept.FindAll(i => i.Step >= real.StepsDone), ahead);
+            _local = again;
+        }
         var local = _local;
+        local.ClearOutbox(); // only the sim's copy sends its partner anything
         if (!local.Done && local.Failed == null)
         {
             // Inputs wait here for a step to land on (the copy may be held at the sim's clock).

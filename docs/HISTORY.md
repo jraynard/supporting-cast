@@ -2404,3 +2404,30 @@ sends the player to the chest for six logs first (the chest is out of reach of t
   near the chalk to take a side is theirs to judge; wood left on now costs (an untouched side scores
   nothing), as a bite past the line does. The grain's drift on the saw a little stronger
   (`DriftPerStroke` 0.07), so an unsteered cut still costs planks with the smoother wobble.
+
+### The theme: behind every hero, and two pairs of hands (2026-11-17)
+- **Behind every hero** (`Expeditions/QuestTales`): each quest a party goes on keeps a `QuestTale`
+  of whose work went with them, as `Deed`s: armed, armoured, fed or sickened, warded, a life spared,
+  jammed, shot true or wide, healed, sent, struck at the sledge. Names are kept as words, so the
+  tale outlives the people in it. Gear now keeps its maker on a quest (`GearRecord.Maker`, lost before
+  on `Remake`). Who healed an adventurer is remembered (`TendedBy`, set in `ShopSystem.Treated`).
+- **The reveal** has a "Behind every hero" section (`VillageGame.Reveal`): each quest, how it went,
+  and the hands behind it, hidden truths included (`Deed.Hidden`).
+- **The festival:** a party back in triumph names someone in its toast (`FestivalSystem.ThanksLine`,
+  only `Deed.Public` work: never a quiver, so a warped one's silence can't give it away), and the
+  ceremony calls up "the hands behind the heroes" (`QuestTale.Hands`).
+- **Two pairs of hands** (`Work/Pairs`): the lead's and the helper's sessions are each driven only
+  by their own player, and pass `Beat`s through the sim between steps (`Pairs.Exchange`). A session
+  the sim hands a beat to bumps its `Revision`, and the `WorkPredictor` takes it again from the sim
+  and replays its unplayed inputs. A helper's session follows the lead from one session to the next
+  (`HelperSession.Follows`, `Pairs.Relink`) and puts its tool down when the work's done.
+- **The striker** (`SledgeSession`): a `twoHanded` recipe (the **greatsword**, Millbrook's forge) is
+  striker's work. The smith's blow is a tap (`HammerSession.TapShare`) that calls the sledge; the
+  striker heaves it up and brings it down on the call, as good as the heave and how soon. Off the beat
+  it can crack the piece (`OffbeatCrack`). The striker's named on the blade (`Crafted.Helper`,
+  `WorkPiece.Helper`) and in the quest's tale, and learns a little Crafting. Joined with the work key at
+  the anvil (`AvatarActionKind.LendAHand`).
+- **A hand from a villager:** "Help!" from the quick-say wheel, at work for two, is a call for a hand
+  (`AskForHandCommand`): of the AI villagers who hear it clearly, the one who thinks best of you
+  comes (`HelpJob`, `Helping`), unless nobody thinks well enough of you (`Pairs.MinOpinion`).
+- Saves to format 54. `QuestTaleTests`, `PairTests`.

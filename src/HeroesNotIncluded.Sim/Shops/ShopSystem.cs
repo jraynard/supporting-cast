@@ -1108,8 +1108,20 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         sim.Speech.Say(sim, e.Poster, $"And {(e.AssigneeName.Length > 0 ? e.AssigneeName : "this town")} keeps my {SubjectLabel(sim, e.Subject)}. Thieves, the lot of you.", Volume.Shout);
     }
 
-    /// <summary>Someone saw to a patient's wounds (an empath drew one, a healer bandaged them): theirs to be paid for it.</summary>
-    public void Treated(Simulation sim, Entity patient, Entity by) => _treatedBy[patient] = by;
+    /// <summary>
+    /// Someone saw to a patient's wounds (an empath drew one, a healer bandaged them): theirs to be paid for it.
+    /// An adventurer remembers who it was, for their party's tale if they go on a quest (<see cref="TendedBy"/>).
+    /// </summary>
+    public void Treated(Simulation sim, Entity patient, Entity by)
+    {
+        _treatedBy[patient] = by;
+        var w = sim.World;
+        if (by == patient || !w.Has<Adventurer>(patient) || !w.IsAlive(by))
+            return;
+        if (!w.TryGet<TendedBy>(patient, out var tended))
+            w.Add(patient, tended = new TendedBy());
+        tended.Add(by);
+    }
 
     private static bool Untended(Simulation sim, Entity who) =>
         sim.World.TryGet<Health>(who, out var h) && h.Injuries.Exists(i => i.NeedsTending(sim.Clock.Tick));

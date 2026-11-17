@@ -72,6 +72,8 @@ public sealed partial class VillageGame
             }
         }
 
+        DrawQuestTales(s);
+
         Gui.Rule();
         if (ImGui.BeginTable("##reveal-people"u8, 4, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg))
         {
@@ -114,6 +116,35 @@ public sealed partial class VillageGame
         DrawReplayButton();
         DrawPlaytestFolderButton();
         Panel.End();
+    }
+
+    /// <summary>
+    /// "Behind every hero": each quest a party went on, and whose work went with them. The heroes
+    /// took the glory; this is the town's count. Hidden truths (a warped quiver, a contraption that
+    /// bound) are told here and nowhere before.
+    /// </summary>
+    private static void DrawQuestTales(RoundSummary s)
+    {
+        if (s.Quests.Count == 0)
+            return;
+        Gui.Rule();
+        TextC(Theme.Dim, "Behind every hero:");
+        foreach (var t in s.Quests)
+        {
+            WrappedC(t.Cleared ? Theme.Good : Theme.Warn, t.Headline);
+            ImGui.Indent(Gui.S(12));
+            var good = t.Deeds.Where(d => d.Good || d.Kind == Sim.Expeditions.DeedKind.Sent).Select(d => d.Phrase).ToList();
+            var bad = t.Deeds.Where(d => !d.Good && d.Kind != Sim.Expeditions.DeedKind.Sent).Select(d => d.Phrase).ToList();
+            if (good.Count == 0 && bad.Count == 0)
+                TextC(Theme.Dim, "They went with nothing of the town's.");
+            if (good.Count > 0)
+                Wrapped(Cap(string.Join("; ", good)) + ".");
+            if (bad.Count > 0)
+                WrappedC(Theme.Bad, Cap(string.Join("; ", bad)) + ".");
+            ImGui.Unindent(Gui.S(12));
+        }
+
+        static string Cap(string x) => x.Length == 0 ? x : char.ToUpperInvariant(x[0]) + x[1..];
     }
 
     /// <summary>

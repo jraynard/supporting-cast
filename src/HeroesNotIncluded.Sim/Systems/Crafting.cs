@@ -271,13 +271,14 @@ public static class Crafting
             return null;
         if (bench.Active is { } active && !bench.Untouched)
         {
-            if (active.WorkType != type || !CanMake(sim, worker, active))
+            if (active.WorkType != type || active.TwoHanded || !CanMake(sim, worker, active))
                 return null;
             var bill = bench.BillFor(active);
             return bill != null && WantsMore(sim, bill) ? active : null;
         }
+        // Work for two (a great blade) is a player's, with a striker: no villager makes it alone.
         foreach (var bill in bench.Bills)
-            if (bill.Recipe.WorkType == type && WantsMore(sim, bill) && CanMake(sim, worker, bill.Recipe) && Fitted(sim, station, bill.Recipe))
+            if (bill.Recipe.WorkType == type && !bill.Recipe.TwoHanded && WantsMore(sim, bill) && CanMake(sim, worker, bill.Recipe) && Fitted(sim, station, bill.Recipe))
                 return bill.Recipe;
         return null;
     }

@@ -628,6 +628,13 @@
       "products": [ { "def": "ShortSword", "count": 1 } ]
     },
     {
+      "name": "ForgeGreatsword", "label": "greatsword", "station": "Forge", "skill": "Crafting", "minSkill": 5, "work": 2400, "minTemp": 800, "tools": [ "Hammer" ], "toolTier": "Iron",
+      "twoHanded": true, "unlock": { "discover": "handle:IronBar" },
+      "description": "Striker's work: the smith taps where the sledge must fall, and a second pair of hands brings it down.",
+      "ingredients": [ { "def": "IronBar", "count": 5 }, { "def": "Leather", "count": 1 } ],
+      "products": [ { "def": "Greatsword", "count": 1 } ]
+    },
+    {
       "name": "ForgeHelm", "label": "iron helm", "station": "Forge", "skill": "Crafting", "minSkill": 5, "work": 1800, "minTemp": 800, "tools": [ "Hammer" ], "toolTier": "Iron",
       "unlock": { "discover": "handle:IronBar" },
       "ingredients": [ { "def": "IronBar", "count": 3 }, { "def": "Leather", "count": 1 } ],

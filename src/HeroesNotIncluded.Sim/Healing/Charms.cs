@@ -112,11 +112,16 @@ public static class Charms
     public static float Heals(CharmRecord c) => c.Mending.HealAt(c.Extra) * (0.25f + 0.75f * Math.Clamp(c.Quality, 0f, 1f));
 
     /// <summary>A wound taken on a quest, against the bearer's charms: the first that fits spends itself on it. The damage left.</summary>
-    public static float Ward(List<CharmRecord> charms, DamageType type, float damage)
+    public static float Ward(List<CharmRecord> charms, DamageType type, float damage) => Ward(charms, type, damage, out _);
+
+    /// <summary>As <see cref="Ward(List{CharmRecord}, DamageType, float)"/>, with the charm that was spent, if one fit.</summary>
+    public static float Ward(List<CharmRecord> charms, DamageType type, float damage, out CharmRecord? spent)
     {
+        spent = null;
         var i = charms.FindIndex(c => Fits(c.Mending, type));
         if (i < 0)
             return damage;
+        spent = charms[i];
         var left = Math.Max(0f, damage - Heals(charms[i]));
         charms.RemoveAt(i);
         return left;

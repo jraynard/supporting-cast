@@ -49,6 +49,12 @@
     {
       "name": "ShortSword", "held": "sword", "label": "short sword", "category": "Item", "mass": 1.5, "sprite": "items/sword", "maxHp": 120, "tier": "Iron",
       "weapon": { "verb": "slashes at", "accuracy": 0.75, "damageMin": 10, "damageMax": 16, "damageType": "Cut", "penetration": 0.2, "glance": 0.08 }
+    },
+    {
+      // Striker's work: drawn out under the sledge by two (the recipe is twoHanded). The longsword's sprite for now.
+      "name": "Greatsword", "held": "longsword", "label": "greatsword", "category": "Item", "mass": 3, "sprite": "items/steel_sword", "maxHp": 170, "tier": "Iron",
+      "description": "A great blade, drawn out on the anvil by a smith and a striker together.",
+      "weapon": { "verb": "cleaves at", "accuracy": 0.72, "damageMin": 15, "damageMax": 24, "damageType": "Cut", "penetration": 0.3, "glance": 0.07 }
     }
   ]
 }

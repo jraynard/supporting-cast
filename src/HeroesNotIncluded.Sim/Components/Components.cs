@@ -303,6 +303,32 @@ public struct Crafted
 {
     public Quality Quality;
     public Entity Maker;
+
+    /// <summary>Who lent the maker a hand (a striker at the sledge, <c>Work.Pairs</c>), or Entity.Null.</summary>
+    public Entity Helper;
+
+    public Crafted() => Helper = Entity.Null;
+}
+
+/// <summary>
+/// Who saw to an adventurer's wounds in town (an empath, a healer's bandages), so the party's tale
+/// can credit them if they go on a quest (<c>Expeditions.QuestTale</c>). Kept to the last few.
+/// </summary>
+public sealed class TendedBy
+{
+    /// <summary>How many healers are remembered.</summary>
+    public const int Most = 3;
+
+    public readonly List<Entity> Healers = [];
+
+    public void Add(Entity healer)
+    {
+        if (Healers.Contains(healer))
+            return;
+        if (Healers.Count >= Most)
+            Healers.RemoveAt(0);
+        Healers.Add(healer);
+    }
 }
 
 /// <summary>

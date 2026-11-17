@@ -42,7 +42,9 @@ public sealed class Intel
 public readonly record struct KnownQuest(int Id, string Label, string Description, float Danger, float Reward, float Confidence, QuestStatus Status);
 
 /// <summary>A piece of gear as it went out, to be put back on its owner when they return.</summary>
-public sealed record GearRecord(ThingDef Def, MaterialDef? Material, Quality? Quality, float Hp, float Dullness);
+/// <param name="Maker">Who made it (<see cref="Crafted.Maker"/>), for the reveal's credit and to put back on it.</param>
+/// <param name="Helper">Who lent the maker a hand (<see cref="Crafted.Helper"/>), likewise.</param>
+public sealed record GearRecord(ThingDef Def, MaterialDef? Material, Quality? Quality, float Hp, float Dullness, Entity Maker, Entity Helper);
 
 /// <summary>A wound as it went out.</summary>
 public sealed record WoundRecord(int Part, DamageType Type, float Damage, bool Tended, float TendQuality, bool Absorbed);
@@ -84,6 +86,9 @@ public sealed class MemberRecord
 
     /// <summary>How the food on the road went, set when the quest is resolved: none, fed, or sick.</summary>
     public RoadFood Fed;
+
+    /// <summary>Who saw to their wounds in town before they left (<see cref="TendedBy"/>), for the reveal's credit.</summary>
+    public List<Entity> Healers = [];
 }
 
 /// <summary>How a member ate on the road (<see cref="Work.Rations"/>).</summary>
@@ -159,12 +164,16 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
     private readonly List<Quest> _quests = [];
     private readonly Dictionary<(Entity Who, int Quest), Intel> _intel = [];
     private readonly List<Expedition> _out = [];
+    private readonly List<QuestTale> _tales = [];
     private int _nextQuest = 1;
     private long _nextRumour = -1;
     private bool _rolled;
 
     public IReadOnlyList<Quest> Quests => _quests;
     public IReadOnlyList<Expedition> Out => _out;
+
+    /// <summary>Every quest a party went on this round and whose work went with them, in the order they were resolved.</summary>
+    public IReadOnlyList<QuestTale> Tales => _tales;
 
     /// <summary>Quests that came good or didn't, for the round's reckoning (M3's Renown and Dread).</summary>
     public int Succeeded { get; private set; }
@@ -578,14 +587,17 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         m.Contraptions = Tinkering.Contraptions.Records(sim, e);
         m.Rations = Work.Rations.Records(sim, e);
         m.Quivers = Carpentry.Fletching.Records(sim, e);
+        if (w.TryGet<TendedBy>(e, out var tended))
+            m.Healers = [.. tended.Healers];
         return m;
     }
 
     private static GearRecord Gear(Simulation sim, Entity item)
     {
         var t = sim.World.Get<Thing>(item);
-        return new GearRecord(t.Def, t.Material, sim.World.TryGet<Crafted>(item, out var c) ? c.Quality : null,
-            WeaponWear.HpFraction(sim, item), WeaponWear.Dullness(sim, item));
+        var crafted = sim.World.TryGet<Crafted>(item, out var c);
+        return new GearRecord(t.Def, t.Material, crafted ? c.Quality : null,
+            WeaponWear.HpFraction(sim, item), WeaponWear.Dullness(sim, item), crafted ? c.Maker : Entity.Null, crafted ? c.Helper : Entity.Null);
     }
 
     // ---------------- How it went ----------------
@@ -606,6 +618,26 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         // Contraptions that bind may jam on the road, and do nothing all the way (they still come home).
         var jammed = new HashSet<Tinkering.ContraptionRecord>(
             Tinkering.Contraptions.Jam(ex.Members.SelectMany(m => m.Contraptions), _rand.NextFloat), ReferenceEqualityComparer.Instance);
+        // The town's own count of whose work went with them (the reveal's "Behind every hero").
+        var tale = new QuestTale { Quest = quest.Def.Label, Party = ex.PartyDef.Label, PartyId = ex.Party, Went = ex.Members.Count };
+        tale.Credit(DeedKind.Sent, ex.BrokerName, "");
+        foreach (var m in ex.Members)
+        {
+            if (m.Weapon is { } carried)
+            {
+                tale.Credit(sim, DeedKind.Armed, carried.Maker, carried.Def.Label);
+                tale.Credit(sim, DeedKind.Struck, carried.Helper, carried.Def.Label);
+            }
+            foreach (var a in m.Apparel)
+            {
+                tale.Credit(sim, DeedKind.Armoured, a.Maker, a.Def.Label);
+                tale.Credit(sim, DeedKind.Struck, a.Helper, a.Def.Label);
+            }
+            foreach (var h in m.Healers)
+                tale.Credit(sim, DeedKind.Healed, h, "");
+        }
+        foreach (var c in jammed)
+            tale.Credit(sim, DeedKind.Jammed, c.Maker, c.Def.Label);
         // Rations are eaten on the way: how they served each traveller, then they're gone.
         var hoursOut = quest.Def.Hours + 2 * TravelHours;
         var fedBy = new Dictionary<MemberRecord, float>(ReferenceEqualityComparer.Instance);
@@ -614,12 +646,18 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             fedBy[m] = Work.Rations.StrengthFactor(sim, m.Rations, hoursOut);
             m.Fed = m.Rations.Count == 0 ? RoadFood.None : Work.Rations.Turned(sim, m.Rations[0], hoursOut) ? RoadFood.Sick : RoadFood.Fed;
             if (m.Rations.Count > 0)
+            {
+                tale.Credit(sim, m.Fed == RoadFood.Sick ? DeedKind.Sickened : DeedKind.Fed, m.Rations[0].Maker, "rations");
                 m.Rations.RemoveAt(0);
+            }
             // An archer's quiver is shot away on the quest; anyone else's comes home.
             var shoots = m.Weapon is { } bow && bow.Def.Weapon is { Ranged: true };
             fedBy[m] *= Carpentry.Fletching.StrengthFactor(shoots, m.Quivers);
             if (shoots && m.Quivers.Count > 0)
+            {
+                tale.Credit(sim, m.Quivers[0].Warped ? DeedKind.ShotWide : DeedKind.Shot, m.Quivers[0].Maker, "arrows");
                 m.Quivers.RemoveAt(0);
+            }
         }
         var strength = ex.Members.Sum(m => Strength(m, quest.Def, jammed, fedBy[m]));
         var ratio = strength / quest.Danger * _rand.Range(0.85f, 1.15f);
@@ -637,10 +675,16 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             {
                 // A charm that heals may turn it into a bad wound instead (the roll only if they carry one);
                 // then a grapnel; then a rocket, once one's gone up, brings help in time.
-                if (m.Charms.Count > 0 && Healing.Charms.Spare(m.Charms, _rand.NextFloat()) != null)
+                if (m.Charms.Count > 0 && Healing.Charms.Spare(m.Charms, _rand.NextFloat()) is { } charm)
+                {
                     warded++;
-                else if (Spared(m, ex, jammed, ref rocket))
+                    tale.Credit(sim, DeedKind.SparedALife, charm.Maker, "charm");
+                }
+                else if (Spared(m, ex, jammed, ref rocket) is { } saver)
+                {
                     caught++;
+                    tale.Credit(sim, DeedKind.SparedALife, saver.Maker, saver.Def.Label);
+                }
                 else
                 {
                     Dead++;
@@ -657,9 +701,12 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
                 if (Working(m, jammed).FirstOrDefault(c => c.Use == ContraptionUse.Traps) is { } rod && _rand.Chance(Tinkering.Contraptions.TrapsAvoided(rod)))
                     continue;
                 // Charms ward what they fit: the first that fits spends itself on it.
-                var before = m.Charms.Count;
-                damage = Healing.Charms.Ward(m.Charms, type, damage);
-                warded += before - m.Charms.Count;
+                damage = Healing.Charms.Ward(m.Charms, type, damage, out var ward);
+                if (ward != null)
+                {
+                    warded++;
+                    tale.Credit(sim, DeedKind.Warded, ward.Maker, ward.Mending.Label);
+                }
                 if (damage > 0.5f)
                     m.Wounds.Add(new WoundRecord(-1, type, damage, false, 0f, false));
             }
@@ -669,6 +716,9 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             m.Food = m.Fed == RoadFood.Fed ? Work.Rations.FedOnReturn : 0.35f;
             survivors.Add(m);
         }
+        tale.Cleared = success;
+        tale.Back = survivors.Count;
+        _tales.Add(tale);
         if (success)
         {
             Succeeded++;
@@ -699,15 +749,16 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
 
     /// <summary>
     /// A death on a quest, against a tinker's work: a grapnel may catch the fall (and is spent), or
-    /// once a rocket's gone up (the first death fires it), help may come in time. True if they live.
+    /// once a rocket's gone up (the first death fires it), help may come in time. The contraption
+    /// that saved them, or null if nothing did.
     /// </summary>
-    private bool Spared(MemberRecord m, Expedition ex, ISet<Tinkering.ContraptionRecord> jammed, ref Tinkering.ContraptionRecord? rocket)
+    private Tinkering.ContraptionRecord? Spared(MemberRecord m, Expedition ex, ISet<Tinkering.ContraptionRecord> jammed, ref Tinkering.ContraptionRecord? rocket)
     {
         if (Working(m, jammed).FirstOrDefault(c => c.Use == ContraptionUse.Falls) is { } grapnel)
         {
             m.Contraptions.Remove(grapnel);
             if (_rand.Chance(Tinkering.Contraptions.FallCaught(grapnel)))
-                return true;
+                return grapnel;
         }
         if (rocket == null)
             foreach (var bearer in ex.Members)
@@ -717,7 +768,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
                     rocket = fired;
                     break;
                 }
-        return rocket != null && _rand.Chance(Tinkering.Contraptions.Rescued(rocket));
+        return rocket != null && _rand.Chance(Tinkering.Contraptions.Rescued(rocket)) ? rocket : null;
     }
 
     /// <summary>The survivors walk back in from an edge, worn and wounded and maybe richer, with a tale to tell at the tavern.</summary>
@@ -829,7 +880,10 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         ref var t = ref sim.World.Get<Thing>(item);
         t.Hp = Math.Max(1f, t.MaxHp * g.Hp);
         if (g.Quality is { } q)
-            sim.World.Add(item, new Crafted { Quality = q, Maker = Entity.Null });
+            sim.World.Add(item, new Crafted
+            {
+                Quality = q, Maker = sim.World.IsAlive(g.Maker) ? g.Maker : Entity.Null, Helper = sim.World.IsAlive(g.Helper) ? g.Helper : Entity.Null,
+            });
         WeaponWear.SetDullness(sim, item, g.Dullness);
         return item;
     }
@@ -920,6 +974,9 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             foreach (var m in ex.Members)
                 WriteMember(w, m);
         }
+        w.Int(_tales.Count);
+        foreach (var t in _tales)
+            t.Save(w);
     }
 
     public void Load(SaveReader r, Simulation sim)
@@ -956,6 +1013,10 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
                 ex.Members.Add(ReadMember(r));
             _out.Add(ex);
         }
+        _tales.Clear();
+        if (r.Version >= 54) // the quests' tales (whose work went with each party) came with format 54
+            for (var n = r.Count(1 << 10); n > 0; n--)
+                _tales.Add(QuestTale.Read(r));
     }
 
     private static void WriteGear(SaveWriter w, GearRecord? g)
@@ -968,6 +1029,8 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         w.Int(g.Quality is { } q ? (int)q : -1);
         w.Float(g.Hp);
         w.Float(g.Dullness);
+        w.Entity(g.Maker);
+        w.Entity(g.Helper);
     }
 
     private static GearRecord? ReadGear(SaveReader r)
@@ -979,7 +1042,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         var q = r.Int();
         if (q < -1 || q > (int)Quality.Masterwork)
             throw new SaveException($"Corrupt save: quality {q}");
-        return new GearRecord(def, material, q < 0 ? null : (Quality)q, r.Float(), r.Float());
+        return new GearRecord(def, material, q < 0 ? null : (Quality)q, r.Float(), r.Float(), r.Version >= 54 ? r.Entity() : Entity.Null, r.Version >= 54 ? r.Entity() : Entity.Null);
     }
 
     private static void WriteMember(SaveWriter w, MemberRecord m)
@@ -1044,6 +1107,9 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             w.Bool(q.Warped);
             w.Entity(q.Maker);
         }
+        w.Int(m.Healers.Count);
+        foreach (var h in m.Healers)
+            w.Entity(h);
     }
 
     private static MemberRecord ReadMember(SaveReader r)
@@ -1086,6 +1152,9 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         if (r.Version >= 52)
             for (var n = r.Count(64); n > 0; n--)
                 m.Quivers.Add(new Carpentry.QuiverRecord(Math.Clamp(r.Float(), 0f, 1f), r.Bool(), r.Entity()));
+        if (r.Version >= 54)
+            for (var n = r.Count(TendedBy.Most); n > 0; n--)
+                m.Healers.Add(r.Entity());
         return m;
     }
 }

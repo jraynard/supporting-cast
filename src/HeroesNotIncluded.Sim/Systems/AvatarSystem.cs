@@ -128,6 +128,9 @@ public enum AvatarActionKind
     /// their thing changes hands next. A Steam Deck playtester couldn't find the shop panel's button for it.
     /// </summary>
     TakeOrder,
+
+    /// <summary>Lend a hand to someone's work for two at this station (<see cref="Work.Pairs"/>): take up the sledge.</summary>
+    LendAHand,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -429,6 +432,10 @@ public sealed class AvatarSystem : ISimSystem
             return show;
         if (tool == AvatarTool.Use && SitJob.CanSit(sim, avatar, site))
             return new(AvatarActionKind.Sit, $"Sit on the {w.Get<Thing>(site).Label}", cell, site);
+
+        // Someone at work for two here, with nobody helping: lend them a hand.
+        if (tool == AvatarTool.Use && Work.Pairs.WantsHandAt(sim, avatar, site) is { IsNull: false } lead)
+            return new(AvatarActionKind.LendAHand, $"Lend {w.Get<Creature>(lead).Name} a hand", cell, lead);
 
         // A piece in the tongs goes to the fire, the anvil or the tub; a blade to the grindstone.
         if (Work.Smithing.StepAt(sim, avatar, site) is { } step && !sim.Reservations.IsReservedByOther(site, avatar))
@@ -845,6 +852,9 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.Smith:
                 Work.Smithing.Start(sim, avatar, action.Target);
+                break;
+            case AvatarActionKind.LendAHand:
+                Work.Pairs.Join(sim, avatar, action.Target);
                 break;
             case AvatarActionKind.Cook:
                 if (Work.Rations.IsPrepTable(sim, action.Target))

@@ -60,6 +60,25 @@ public enum WorkInputKind : byte
 /// <summary>One input to a session, stamped with the step it happened on.</summary>
 public readonly record struct WorkInput(int Step, WorkInputKind Kind, int Value = 0);
 
+/// <summary>What passes between the two halves of a two-person job (<see cref="Pairs"/>). Saved by number: append only.</summary>
+public enum BeatKind : byte
+{
+    /// <summary>The lead's call: the smith's tap, where the sledge is to fall. Value: how true the tap was, 0..1.</summary>
+    Call,
+
+    /// <summary>The helper's answer, on the call. Value: how good, 0..1.</summary>
+    Strike,
+
+    /// <summary>The helper's blow with no call to answer: it knocks the work about. Value: how hard, 0..1.</summary>
+    Offbeat,
+
+    /// <summary>A call that went unanswered.</summary>
+    Missed,
+}
+
+/// <summary>One thing that passed between partners (<see cref="WorkSession.Partner"/>): what, and how much.</summary>
+public readonly record struct Beat(BeatKind Kind, float Value);
+
 /// <summary>
 /// One hands-on job in progress, as a component on the worker. A timing game can't wait on a
 /// network round trip, so a session is a pure state machine: <see cref="Advance"/> touches nothing
@@ -72,6 +91,7 @@ public abstract class WorkSession
 {
     private float _qualitySum;
     private int _qualitySamples;
+    private List<Beat> _outbox = [];
 
     public Entity Worker { get; internal set; }
 
@@ -85,6 +105,46 @@ public abstract class WorkSession
     internal long LastInputTick { get; set; }
 
     public Hands Hands { get; internal set; }
+
+    /// <summary>
+    /// The other half of a two-person job (<see cref="Pairs"/>): on a lead's session, who's helping;
+    /// on a helper's, whose work it is. Entity.Null for one pair of hands. Set by the sim only.
+    /// </summary>
+    public Entity Partner { get; internal set; } = Entity.Null;
+
+    /// <summary>
+    /// Counts what the sim has handed this session from outside its inputs (a partner's beats). A
+    /// copy running ahead (<see cref="WorkPredictor"/>) with an older revision is stale: it's taken
+    /// again from the sim's and its unplayed inputs replayed on top.
+    /// </summary>
+    public int Revision { get; private set; }
+
+    /// <summary>Beats this session's play has sent its partner that the sim hasn't passed on yet.</summary>
+    internal IReadOnlyList<Beat> Outbox => _outbox;
+
+    internal void ClearOutbox() => _outbox.Clear();
+
+    /// <summary>Send the partner a beat (from <see cref="Step"/> or an input): the sim passes it on (<see cref="Pairs.Exchange"/>).</summary>
+    protected void Send(BeatKind kind, float value = 0f) => _outbox.Add(new Beat(kind, value));
+
+    /// <summary>A beat from the partner, handed over by the sim between steps. Sim-only.</summary>
+    internal void Receive(Beat beat)
+    {
+        Received(beat);
+        Revision++;
+    }
+
+    /// <summary>What a beat from the partner does: may read and change only the session's own state (and <see cref="Rand"/>).</summary>
+    protected virtual void Received(Beat beat) { }
+
+    /// <summary>This work is for two (<see cref="Pairs"/>): someone may join it with <see cref="HelperFor"/>.</summary>
+    public virtual bool TakesHelper => false;
+
+    /// <summary>What the lead shouts when they call for a hand (<see cref="AskForHandCommand"/>).</summary>
+    public virtual string AskForHand => "A hand here, someone!";
+
+    /// <summary>The helper's own session for someone joining this work, or null if it takes none.</summary>
+    public virtual HelperSession? HelperFor(Simulation sim, Entity helper) => null;
 
     protected internal SimRandom Rand { get; internal set; } = new(1);
 
@@ -270,6 +330,7 @@ public abstract class WorkSession
     {
         var copy = (WorkSession)MemberwiseClone();
         copy.Rand = new SimRandom(1) { State = Rand.State };
+        copy._outbox = [.. _outbox];
         copy.Cloned();
         return copy;
     }
@@ -312,6 +373,17 @@ public abstract class WorkSession
         {
             w.Float(s.PointU ?? -1f);
             w.Float(s.PointV ?? -1f);
+        }
+        if (format >= 54)
+        {
+            w.Entity(s.Partner);
+            w.Int(s.Revision);
+            w.Int(s._outbox.Count);
+            foreach (var beat in s._outbox)
+            {
+                w.Byte((byte)beat.Kind);
+                w.Float(beat.Value);
+            }
         }
         s.WriteState(w);
     }
@@ -361,6 +433,7 @@ public abstract class WorkSession
             nameof(Carpentry.FletchSession) => new Carpentry.FletchSession(),
             nameof(Carpentry.BowSession) => new Carpentry.BowSession(),
             nameof(StrikerSession) => new StrikerSession(),
+            nameof(SledgeSession) => new SledgeSession(),
             nameof(Environment.ThrowSession) => new Environment.ThrowSession(),
             _ => throw new SaveException($"Corrupt save: unknown work session {name}"),
         };
@@ -379,6 +452,18 @@ public abstract class WorkSession
         {
             var (u, v) = (r.Float(), r.Float());
             (s.PointU, s.PointV) = (u < 0f ? null : u, v < 0f ? null : v);
+        }
+        if (r.Version >= 54) // two pairs of hands (format 54)
+        {
+            s.Partner = r.Entity();
+            s.Revision = r.Int();
+            for (var n = r.Count(256); n > 0; n--)
+            {
+                var kind = r.Byte();
+                var value = r.Float();
+                if (Enum.IsDefined((BeatKind)kind))
+                    s._outbox.Add(new Beat((BeatKind)kind, value));
+            }
         }
         s.ReadState(r);
         return s;

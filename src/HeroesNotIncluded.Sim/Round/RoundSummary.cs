@@ -21,13 +21,13 @@ public enum RoundOutcome : byte
     TownFell,
 }
 
+/// <summary>Someone called up at the festival's ceremony (<see cref="FestivalSystem"/>), and what for.</summary>
+public sealed record HonourRow(string Name, string Title);
+
 /// <summary>One of the town in the reveal: who they were, what they did, what they made of it.</summary>
 /// <param name="DiedOnDay">The day of the round they died (1 is the first), if they lie dead.</param>
 /// <param name="CameBack">Called back from the grave this round.</param>
 /// <param name="Errands">Unfinished business they saw to as a ghost.</param>
-/// <summary>Someone called up at the festival's ceremony (<see cref="FestivalSystem"/>), and what for.</summary>
-public sealed record HonourRow(string Name, string Title);
-
 public sealed record RevealRow(string Name, string Trade, bool Player, int Earned, bool Alive, int? DiedOnDay = null, bool CameBack = false, int Errands = 0);
 
 /// <summary>
@@ -57,6 +57,12 @@ public sealed class RoundSummary
 
     /// <summary>Who the festival's ceremony called up, in order.</summary>
     public List<HonourRow> Honours = [];
+
+    /// <summary>
+    /// Every quest a party went on, and whose work went with them ("Behind every hero"). The hidden
+    /// truths in it (a warped quiver, a binding contraption) are the reveal's to tell.
+    /// </summary>
+    public List<Expeditions.QuestTale> Quests = [];
 
     public string Headline => Outcome switch
     {
@@ -100,6 +106,9 @@ public sealed class RoundSummary
             w.String(h.Name);
             w.String(h.Title);
         }
+        w.Int(Quests.Count);
+        foreach (var q in Quests)
+            q.Save(w);
     }
 
     public static RoundSummary Read(SaveReader r)
@@ -120,6 +129,9 @@ public sealed class RoundSummary
         if (r.Version >= 20) // the festival's honours came with format 20
             for (var n = r.Count(100); n > 0; n--)
                 s.Honours.Add(new HonourRow(r.String(), r.String()));
+        if (r.Version >= 54) // the quests' tales came with format 54
+            for (var n = r.Count(1 << 10); n > 0; n--)
+                s.Quests.Add(Expeditions.QuestTale.Read(r));
         return s;
     }
 

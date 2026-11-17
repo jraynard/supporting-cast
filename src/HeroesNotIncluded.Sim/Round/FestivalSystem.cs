@@ -978,6 +978,9 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         var mean = members.Average(e => w.Get<Adventurer>(e).Satisfaction);
         var speaker = members.FirstOrDefault(e => SpeechSystem.CanAct(sim, e), Entity.Null);
         var line = ToastLine(mean);
+        // A party back from a quest in triumph names someone whose work went with them.
+        if (Expeditions.QuestTale.Toasted(sim.Expeditions.Tales, party) is { } deed)
+            line += " " + ThanksLine(deed, mean);
         Say(sim, speaker, line);
         _stepUntil = sim.Clock.Tick + LineTicks(sim, line);
         _toastsSaid++;
@@ -999,6 +1002,26 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         _ => "To the road out of here. We won't be back, and we'll say why.",
     };
 
+    /// <summary>
+    /// What a party back from a quest says of someone whose work went with them (only good work everyone
+    /// could know of, <see cref="Expeditions.Deed.Public"/>). A sour party grants it grudgingly.
+    /// </summary>
+    public static string ThanksLine(Expeditions.Deed deed, float satisfaction)
+    {
+        if (satisfaction < 0f)
+            return $"Though I'll grant {deed.Who} knows their work.";
+        return deed.Kind switch
+        {
+            Expeditions.DeedKind.SparedALife => $"And to {deed.Who}: one of us is only standing here because of that {deed.What}.",
+            Expeditions.DeedKind.Warded => $"And to {deed.Who}, whose charms took wounds meant for us.",
+            Expeditions.DeedKind.Healed => $"And to {deed.Who}, who patched us up before we went.",
+            Expeditions.DeedKind.Armed => $"And to {deed.Who}, whose {deed.What} saw us through!",
+            Expeditions.DeedKind.Fed => $"And to {deed.Who}, whose rations kept us on our feet.",
+            Expeditions.DeedKind.Struck => $"And to {deed.Who}, who swung the sledge for that {deed.What}!",
+            _ => $"And to {deed.Who}: that {deed.What} took blows meant for us.",
+        };
+    }
+
     private void CallHonour(Simulation sim)
     {
         _stepUntil = sim.Clock.Tick;
@@ -1008,7 +1031,8 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
 
     /// <summary>
     /// Who's called up, from what the whole town saw: the games' winners, the finest work on the show
-    /// table (by what the visitors made of it), the busiest counter, and anyone called back from the dead.
+    /// table (by what the visitors made of it), the hands behind the heroes (whose work went out with
+    /// the most parties that came good), the busiest counter, and anyone called back from the dead.
     /// </summary>
     private void ChooseHonours(Simulation sim)
     {
@@ -1028,6 +1052,12 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         if (!finest.Key.IsNull && finest.Value > 0)
             Add("the finest work on the show table", finest.Key);
         var town = sim.Creatures().Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Dead: false }).ToList();
+        foreach (var (who, _) in Expeditions.QuestTale.Hands(sim.Expeditions.Tales))
+            if (town.FirstOrDefault(e => NameOf(e) == who, Entity.Null) is { IsNull: false } hands)
+            {
+                Add("the hands behind the heroes", hands);
+                break;
+            }
         var busiest = town.Select(e => (Who: e, Earned: sim.Round.EarnedBy(sim, e))).Where(p => p.Earned > 0)
             .OrderByDescending(p => p.Earned).ThenBy(p => p.Who.Index).FirstOrDefault();
         if (busiest.Earned > 0)

@@ -206,6 +206,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             QuestsCleared = ex.Succeeded, QuestsFailed = ex.Failed, AdventurersLost = ex.Dead + reckoning.AdventurersDiedInTown,
             People = RoundSummary.PeopleOf(sim, _startCoin),
             Honours = sim.Festival.Honours.Select(h => new HonourRow(h.Name, h.Title)).ToList(),
+            Quests = [.. ex.Tales],
         };
         Phase = RoundPhase.Over;
         sim.Messages.Add(outcome == RoundOutcome.Won ? MessageKind.Good : MessageKind.Danger, Summary.Headline, null, outcome == RoundOutcome.Won ? "The season is won" : "The season is lost");

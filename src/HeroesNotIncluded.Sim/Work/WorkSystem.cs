@@ -20,6 +20,7 @@ public sealed class WorkSystem : ISimSystem
     public void Update(Simulation sim)
     {
         var w = sim.World;
+        Pairs.Exchange(sim);
         if (w.Count<WorkSession>() == 0)
             return;
         foreach (var e in w.Query<WorkSession>())
@@ -84,6 +85,7 @@ public sealed class WorkSystem : ISimSystem
             before.Interrupted(sim);
         w.Remove<WorkSession>(worker);
         w.Add(worker, session);
+        Pairs.Relink(sim, worker, session);
     }
 
     /// <summary>End a job unfinished. What it used stays where it is.</summary>

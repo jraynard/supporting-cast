@@ -125,7 +125,28 @@ internal static class ComponentCodecs
         {
             w.Int((int)c.Quality);
             w.Entity(c.Maker);
-        }, r => new Crafted { Quality = (Quality)r.Int(), Maker = r.Entity() }),
+            w.Entity(c.Helper);
+        }, r => new Crafted { Quality = (Quality)r.Int(), Maker = r.Entity(), Helper = r.Version >= 54 ? r.Entity() : Entity.Null }), // a helper came with format 54
+        // An AI villager lending a player a hand (format 54).
+        Codec("Helping", (w, h) =>
+        {
+            w.Entity(h.Lead);
+            w.Long(h.AnswerAt);
+            w.Int(h.Blows);
+        }, r => new Work.Helping { Lead = r.Entity(), AnswerAt = r.Long(), Blows = r.Int() }),
+        // Who saw to an adventurer, for a quest's tale (format 54).
+        Codec("TendedBy", (w, t) =>
+        {
+            w.Int(t.Healers.Count);
+            foreach (var h in t.Healers)
+                w.Entity(h);
+        }, r =>
+        {
+            var t = new TendedBy();
+            for (var n = r.Count(TendedBy.Most); n > 0; n--)
+                t.Healers.Add(r.Entity());
+            return t;
+        }),
         Codec("RecipeBook", (w, b) =>
         {
             var known = b.Known.OrderBy(d => d.Index).ToList(); // a stable order, whatever the set's
@@ -559,12 +580,14 @@ internal static class ComponentCodecs
             w.Bool(p.IsBloom);
             w.Float(p.Reduced);
             w.Float(p.Slag);
+            w.Entity(p.Helper);
         }, r => new Work.WorkPiece
         {
             Forge = r.Entity(), Recipe = r.Def<RecipeDef>(), Mending = r.Entity(), Temp = r.Float(), Shape = r.Float(),
             BlowsNeeded = r.Int(), BlowSum = r.Float(), BlowCount = r.Int(), BurnSteps = r.Int(), Flaw = (Work.PieceFlaw)r.Int(),
             // From format 13: blooms.
             IsBloom = r.Version >= 13 && r.Bool(), Reduced = r.Version >= 13 ? Math.Clamp(r.Float(), 0f, 1f) : 0f, Slag = r.Version >= 13 ? Math.Clamp(r.Float(), 0f, 1f) : 0f,
+            Helper = r.Version >= 54 ? r.Entity() : Entity.Null, // a striker came with format 54
         }),
         Codec("StewPot", (w, p) =>
         {

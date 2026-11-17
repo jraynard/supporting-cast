@@ -25,6 +25,29 @@ Tone: warm, comic and a little put-upon, until someone finds the blacksmith in t
    the key, and fire burns what burns. A plan nobody anticipated should simply work.
 4. **You know only what your character knows.** Sight, hearing and rumour are the information game.
 
+**The theme under them:** working people, ordinary people, facing danger together. Two systems
+play to it directly.
+- **Behind every hero** (`Expeditions/QuestTales`). The heroes take the glory, but the town keeps
+  its own count. Each quest a party goes on records whose work went with them: the smith's blade
+  (and who struck for it), the cook's rations, the empath's charms, the tinker's grapnel, the healer
+  who patched them up, and the broker who sent them. The reveal tells it all, the hidden truths
+  too (a warped quiver, a contraption that bound). Before the reveal only what everyone could know
+  is told: at the festival a party back in triumph toasts someone whose work saw them through, and
+  "the hands behind the heroes" is called up.
+- **Two pairs of hands** (`Work/Pairs`). Some work is too much for one person. Help never makes
+  ordinary work easier: it opens up work one pair of hands can't do, the helper plays a game of
+  their own with its own way to fail, and bad help is worse than none. The lead calls and the
+  helper answers, so they have to keep time and talk. Anyone can lend a hand: another trade, the
+  labourer, or an AI villager who heard the call and thinks well enough of you. The helper is named
+  on the work and learns a little of the trade.
+  - *Built: the striker.* A great blade (`twoHanded` recipes: the greatsword) is drawn out by a smith
+    and a striker. The smith's hammer only taps where the sledge must fall; the striker heaves it
+    up, holds it, and brings it down on the tap. Late, the call's gone; with no call, the sledge
+    comes down off the beat and may crack the piece. Alone, a great piece barely moves.
+  - *Next:* the Calling back made a rite for two (a keeper holds the body against the grave's pull
+    while the empath weaves), the pitman under the carpenter's saw (the great beam), and the lifter
+    holding a party's wagon level for the tinker.
+
 ## A round
 
 - 30 to 40 minutes at fixed speed: 2 to 2.5 in-game days at 16 real minutes a day (40 s an hour).
@@ -77,6 +100,7 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 | Bard | Rhythm performance, morale, rumours. | Mood, Social | Spreading lies |
 | Mayor | Treasury, laws, chairs town meetings | New | Corruption |
 | Animal Handler / Druid | taming wild animals, ancient forest rituals | new | forest spirts, "wild" animal attacks
+| Farmer | grows crops, tends livestock, processes results | farm plots exist on map but need a barn or farmouse | rot, not sure |
 
 ### Trade notes
 

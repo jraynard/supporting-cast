@@ -99,7 +99,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
   - `Work/`: mini-games. `WorkSession.Advance` is pure, so `WorkPredictor` can run it ahead of the
     sim; anything reading the world goes in `StillValid` or `Finish`. Inputs arrive in batches.
     New sessions go in the `WorkSession.Read` switch. `Interrupted` keeps what lasts when one is
-    stopped early. Forging (`Smithing`) keeps the piece in the tongs as a `WorkPiece` between its
+    stopped early. Work for two (`Work/Pairs`): a lead's session and a `HelperSession` (the striker's
+    `SledgeSession`) are each driven by their own player and pass `Beat`s through the sim; a session's
+    `Revision` tells the predictor to take it again. Forging (`Smithing`) keeps the piece in the tongs as a `WorkPiece` between its
     sessions (fire, anvil, quench); its heat is shown only as colour. Cooking (`Cooking`) keeps
     its state on the `StewPot`, carried on by `CookingSystem` between sessions; a pot's rot and
     the seasoning it wants are hidden (read pots through `PerceptionView.Pot`). A pot tastes of what went in
@@ -153,7 +155,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     (`Weaving`); the book (`Spellbook`) is what the empath knows of them. An AI empath works the gift without the games (`LayOnHands`): it
     draws only what its mana will mend at once. Players ask for healing with F at a shrine pallet.
   - `Expeditions/`: quests with hidden truth, per-person `Intel`, parties off the map as
-    `MemberRecord`s, the resolver, the return.
+    `MemberRecord`s, the resolver, the return. Each resolved quest keeps a `QuestTale` of whose work
+    went with the party, for the reveal (hidden deeds there only) and the festival's toasts.
   - `Bots/BotPlayer` plays only through commands and `Perception`, a trade's whole game included.
   - `Replay/`: a round is recorded (`ReplayRecorder`, on `Simulation.Recorder`) as a snapshot plus every
     command and co-op event (`PeerEvents`) by tick, from a point with no job running, and played back in a

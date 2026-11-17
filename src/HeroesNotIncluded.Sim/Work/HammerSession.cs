@@ -77,9 +77,22 @@ public sealed class HammerSession : WorkSession
     /// <summary>Below this share of the working heat the piece has gone black: the heat's over.</summary>
     public const float TooCold = 0.6f;
 
+    /// <summary>
+    /// On heavy work (<see cref="Heavy"/>), what the smith's own hammer does of a blow's shaping: it
+    /// taps where the striker's sledge is to fall. Alone, a great piece barely moves.
+    /// </summary>
+    public const float TapShare = 0.1f;
+
+    /// <summary>A striker's blow on the call, in shares of a good blow's shaping at its best.</summary>
+    public const float StrikeShaping = 1.1f;
+
+    /// <summary>Chance a sledge brought down off the beat knocks a crack into the piece.</summary>
+    public const float OffbeatCrack = 0.3f;
+
     private int _recovery, _wind, _steer;
     private bool _falling;
     private float _drift;
+    private float _lastTap;
 
     /// <summary>The anvil.</summary>
     public Entity Station { get; set; }
@@ -175,6 +188,64 @@ public sealed class HammerSession : WorkSession
 
     public bool Shaped => Shape >= 1f;
 
+    /// <summary>A great piece (<see cref="RecipeDef.TwoHanded"/>): the smith taps, a striker's sledge moves the metal.</summary>
+    public bool Heavy => Recipe.TwoHanded && !Repairing;
+
+    /// <summary>The striker's blows this heat, those off the beat, and the smith's calls nobody answered.</summary>
+    public int StrikerBlows { get; private set; }
+    public int Offbeats { get; private set; }
+    public int MissedCalls { get; private set; }
+
+    /// <summary>How the striker's last blow went, 0..1 on the call, -1 off the beat; and the step it came (-1 before any).</summary>
+    public float LastStrike { get; private set; }
+    public int LastStrikeStep { get; private set; } = -1;
+
+    public override bool TakesHelper => Heavy;
+
+    public override string AskForHand => "A striker at the anvil, someone! I need a hand on the sledge.";
+
+    public override HelperSession? HelperFor(Simulation sim, Entity helper) => Heavy ? SledgeSession.For(sim, this) : null;
+
+    /// <summary>
+    /// The striker's sledge, sent in by the sim between steps (<see cref="Pairs"/>). On the call it
+    /// moves the metal as well as it was struck and as true as the smith's tap placed it; off the
+    /// beat it does no good and may crack the piece.
+    /// </summary>
+    protected override void Received(Beat beat)
+    {
+        switch (beat.Kind)
+        {
+            case BeatKind.Strike:
+            {
+                var heat = Workable;
+                var v = Math.Clamp(beat.Value, 0f, 1f);
+                Shape = Math.Min(1f, Shape + StrikeShaping * GoodBlow * (0.3f + 0.7f * v) * (0.1f + 0.9f * heat) / BlowsNeeded);
+                var grade = v * (0.5f + 0.5f * _lastTap) * (0.4f + 0.6f * heat);
+                Sample(grade);
+                BlowSum += grade;
+                BlowCount++;
+                StrikerBlows++;
+                (LastStrike, LastStrikeStep) = (v, StepsDone);
+                if (heat < 0.5f && Flaw == PieceFlaw.None && Rand.NextFloat() < CrackChance)
+                    Flaw = PieceFlaw.Crack;
+                if (Shaped)
+                    Done = true;
+                break;
+            }
+            case BeatKind.Offbeat:
+                Sample(0f);
+                BlowCount++;
+                Offbeats++;
+                (LastStrike, LastStrikeStep) = (-1f, StepsDone);
+                if (Flaw == PieceFlaw.None && Rand.NextFloat() < OffbeatCrack)
+                    Flaw = PieceFlaw.Crack;
+                break;
+            case BeatKind.Missed:
+                MissedCalls++;
+                break;
+        }
+    }
+
     public override int3? Focus(Simulation sim) => sim.World.IsAlive(Station) && sim.World.TryGet<Thing>(Station, out var t) ? t.Cell : null;
 
     public override Skill Skill => Recipe.Skill;
@@ -267,6 +338,8 @@ public sealed class HammerSession : WorkSession
     /// <summary>The hammer's come down on the piece: as good as the wind was, and as true.</summary>
     private void Blow()
     {
+        // On heavy work the smith's blow is a tap: it places the striker's sledge, and moves little itself.
+        var own = Heavy ? TapShare : 1f;
         var off = Peak - Mark;
         var heat = Workable;
         LastCold = heat < 0.5f;
@@ -281,7 +354,7 @@ public sealed class HammerSession : WorkSession
             // Wound well past it: it comes down too hard, out of true; the metal moves a little.
             LastWindWas = 2;
             var over = Math.Clamp((past - HalfWidth) / (HalfWidth * 3f), 0f, 1f);
-            Shape = Math.Min(1f, Shape + GoodBlow * OverBlow * (0.1f + 0.9f * heat) * centre / BlowsNeeded);
+            Shape = Math.Min(1f, Shape + own * GoodBlow * OverBlow * (0.1f + 0.9f * heat) * centre / BlowsNeeded);
             grade = 0.1f * (1f - over) * centre;
         }
         else if (past > 0f)
@@ -289,7 +362,7 @@ public sealed class HammerSession : WorkSession
             // A touch past: a bit heavy, a bit less true, fading toward too hard.
             LastWindWas = 1;
             var t = past / HalfWidth;
-            Shape = Math.Min(1f, Shape + GoodBlow * (1f - (1f - OverBlow) * t) * (0.1f + 0.9f * heat) * centre / BlowsNeeded);
+            Shape = Math.Min(1f, Shape + own * GoodBlow * (1f - (1f - OverBlow) * t) * (0.1f + 0.9f * heat) * centre / BlowsNeeded);
             grade = (0.7f - 0.5f * t) * centre * (0.4f + 0.6f * heat);
         }
         else
@@ -300,7 +373,7 @@ public sealed class HammerSession : WorkSession
             // As a smith's blow it's judged harder: well short is no blow worth the name, though it shapes it a little.
             var judged = off >= -HalfWidth ? 1f : Math.Clamp(1f - (-off - HalfWidth) / (HalfWidth * 2.5f), 0f, 1f);
             // A good blow on hot metal moves it most; on fading metal it moves less and does it no good. Off centre, it glances.
-            Shape = Math.Min(1f, Shape + GoodBlow * (ShortBlow + (1f - ShortBlow) * aim) * (0.1f + 0.9f * heat) * centre / BlowsNeeded);
+            Shape = Math.Min(1f, Shape + own * GoodBlow * (ShortBlow + (1f - ShortBlow) * aim) * (0.1f + 0.9f * heat) * centre / BlowsNeeded);
             grade = judged * judged * centre * (0.4f + 0.6f * heat);
         }
         Sample(grade);
@@ -308,6 +381,11 @@ public sealed class HammerSession : WorkSession
         BlowCount++;
         if (LastCold && Flaw == PieceFlaw.None && Rand.NextFloat() < CrackChance)
             Flaw = PieceFlaw.Crack;
+        if (Heavy)
+        {
+            _lastTap = grade;
+            Send(BeatKind.Call, grade); // the striker's cue: here, now
+        }
         _recovery = RecoverySteps;
         Blows++;
         NewMark();
@@ -347,6 +425,9 @@ public sealed class HammerSession : WorkSession
         p.BlowSum = BlowSum;
         p.BlowCount = BlowCount;
         p.Flaw = Flaw;
+        // Whoever struck for it is remembered on the piece, and on what it becomes.
+        if (StrikerBlows > 0 && sim.World.IsAlive(Partner))
+            p.Helper = Partner;
         return p;
     }
 
@@ -380,6 +461,12 @@ public sealed class HammerSession : WorkSession
         w.Float(LastWind);
         w.Bool(LastOffCentre);
         w.Float(Spot);
+        w.Float(_lastTap);
+        w.Int(StrikerBlows);
+        w.Int(Offbeats);
+        w.Int(MissedCalls);
+        w.Float(LastStrike);
+        w.Int(LastStrikeStep);
     }
 
     protected override void ReadState(SaveReader r)
@@ -435,6 +522,15 @@ public sealed class HammerSession : WorkSession
             LastWind = r.Float();
             LastOffCentre = r.Bool();
             Spot = r.Version >= 46 ? Math.Clamp(r.Float(), -1f, 1f) : 0f; // the spot to strike moving came with format 46
+        }
+        if (r.Version >= 54) // the striker at the sledge (format 54)
+        {
+            _lastTap = Math.Clamp(r.Float(), 0f, 1f);
+            StrikerBlows = r.Int();
+            Offbeats = r.Int();
+            MissedCalls = r.Int();
+            LastStrike = Math.Clamp(r.Float(), -1f, 1f);
+            LastStrikeStep = r.Int();
         }
     }
 }

@@ -148,6 +148,7 @@ public sealed partial class VillageGame
                 : s.LastWindWas < 0 ? "Short of the mark: it moved the metal less." : "Off the marker: it glanced.");
         else
             TextC(Theme.Dim, s.Repairing ? "Hammering out the chips: over the marker, raise it to the mark, let go." : "Keep it over the marker, raise it to the mark (not past it), and let go.");
+        DrawStrikerLine(s);
         EndWork();
     }
 

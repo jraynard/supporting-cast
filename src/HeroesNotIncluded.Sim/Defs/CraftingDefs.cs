@@ -56,6 +56,12 @@ public sealed class RecipeDef : Def
     /// </summary>
     public bool Bloom { get; set; }
 
+    /// <summary>
+    /// Too heavy for one pair of hands (<c>Work.Pairs</c>): at the anvil the smith's hammer only taps
+    /// where a striker's sledge is to fall, and without a striker it barely moves. Nobody's AI makes it.
+    /// </summary>
+    public bool TwoHanded { get; set; }
+
     [JsonIgnore] public ThingDef? StationDef { get; private set; }
 
     /// <summary>

@@ -69,6 +69,12 @@ public sealed partial class VillageGame
     {
         if (!HasAvatar && !Ghosting)
             return;
+        // At work for two with nobody helping, "Help!" is a call for a hand there: a villager may come.
+        if (q.Id == "help" && HasAvatar && Sim.Work.Pairs.WantsHand(_sim, _avatar))
+        {
+            Issue(new Sim.Work.AskForHandCommand(_avatar));
+            return;
+        }
         var text = Barks.Pick(_sim.Defs, "quick_" + q.Id, [], _quickRand, _lastQuick) ?? q.Label;
         _lastQuick = text;
         Issue(new SayCommand(HasAvatar ? _avatar : _ghost, text, q.Volume));
