@@ -994,6 +994,23 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     public static bool HandsOver(ServiceKind kind) => kind is ServiceKind.Repair or ServiceKind.Unlock or ServiceKind.Appraise;
 
     /// <summary>
+    /// The order of the customer standing at <paramref name="cell"/> that <paramref name="who"/> can
+    /// take with the work key: one whose thing changes hands, asked at a shop they keep, that they
+    /// heard asked and nobody's seeing to yet, with the customer in handing reach. Drinks, meals and
+    /// healing are served, not taken, so they aren't offered here. Oldest first; null if none.
+    /// </summary>
+    public static Order? TakeableAt(Simulation sim, Entity who, int3 cell)
+    {
+        var w = sim.World;
+        foreach (var e in sim.Shops.All)
+            if (e.IsOpen && HandsOver(e.Kind.Kind) && e.Assignee.IsNull && e.Poster != who && e.KnownBy.Contains(who)
+                && w.IsAlive(e.Poster) && w.TryGet<Position>(e.Poster, out var at) && at.Cell == cell
+                && ShopPrices.Keeps(sim, who, e.Where) && Handing.InReach(sim, who, e.Poster))
+                return e;
+        return null;
+    }
+
+    /// <summary>
     /// An order a player can be walked over to see to (<see cref="SeeToCustomerCommand"/>): a thing
     /// that changes hands, or a drink poured at the bar and carried to wherever they've sat down.
     /// </summary>

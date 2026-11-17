@@ -318,6 +318,12 @@ public sealed class SettingsWindow(GameHost host)
             _draft.UiScale = MathF.Round(percent / 5f) * 5f / 100f; // 5% steps
 
         ImGui.Dummy(in gap);
+        Row("Simple HUD", "Only what needs you: hunger, rest and mood when they're low, the weather when it's cold, the shop when an order comes. Off shows everything all the time.");
+        var simple = _draft.SimpleHud;
+        if (ImGui.Checkbox("##simplehud"u8, ref simple))
+            _draft.SimpleHud = simple;
+
+        ImGui.Dummy(in gap);
         Row("Screen shake", "The camera shakes a little with heavy blows you deal or take, and with dragon fire nearby.");
         var shake = _draft.ScreenShake;
         if (ImGui.Checkbox("##shake"u8, ref shake))

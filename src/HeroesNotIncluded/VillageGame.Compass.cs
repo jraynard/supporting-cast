@@ -15,6 +15,9 @@ public sealed partial class VillageGame
 
     private void DrawCompass()
     {
+        // The minimap has its own north: the simple HUD doesn't say it twice.
+        if (SimpleHud && MapShown)
+            return;
         // North and east on screen: where a step of -y (+x) from the camera's target lands.
         var from = _camera.WorldToScreen(_camera.Target);
         if (ScreenDir(_camera.WorldToScreen(_camera.Target + new float3(0, -1, 0)) - from) is not { } north

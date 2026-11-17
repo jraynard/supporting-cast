@@ -39,10 +39,12 @@ public sealed partial class VillageGame
                 continue;
             // A guest who walked in on someone: their new ask isn't taken yet, but it's the keeper's to put right.
             var owed = o.Kind == Sim.Defs.ServiceKind.Lodging && o.AssigneeName.Length == 0 && Serves(trade, o.Kind) && View.OwedARoom(o.Poster);
-            if (!o.MineToDo && !owed)
+            // Waiting on your trade, nobody seeing to them yet: the tag (and its arrow) leads you there, where F takes it.
+            var waiting = o.AssigneeName.Length == 0 && Sim.Shops.ShopSystem.HandsOver(o.Kind) && Serves(trade, o.Kind);
+            if (!o.MineToDo && !owed && !waiting)
                 continue;
             shown.Add(o.Poster);
-            Point(o.Poster, $"{o.PosterName}: {Owed(o)}");
+            Point(o.Poster, waiting && !o.MineToDo && !owed ? $"{o.PosterName}: waiting" : $"{o.PosterName}: {Owed(o)}");
         }
         if (_bookPointer is { } picked && _time < picked.Until && !shown.Contains(picked.Who))
             Point(picked.Who, picked.Name);

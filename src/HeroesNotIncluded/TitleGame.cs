@@ -58,13 +58,19 @@ public sealed class TitleGame : Game
     /// <summary>A submenu (Adventure's difficulties, Load Game's saves) shown instead of the main menu.</summary>
     private MenuItem[]? _submenu;
     private string? _submenuTitle;
+
+    /// <summary>Where a submenu's Back leads: the submenu it was opened from (More…, Play with friends), or the main menu when null.</summary>
+    private Action? _submenuBack;
+
+    /// <summary>The list on show changed: its first entry takes the pick, so a pad's first press moves from something you can see.</summary>
+    private object? _focusedList;
     private MenuItem[] _items = [];
     private DefDatabase _defs = null!;
 
     /// <summary>Why the last load failed, shown under the menu.</summary>
     private string? _error;
 
-    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Host, HostNew, HostSave, Join, Characters, BackToCreator, Report, Credits, Practice, Replays }
+    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Host, HostNew, HostSave, Join, Characters, BackToCreator, Report, Credits, Practice, Replays, Friends, More }
 
     /// <summary>The Credits window (BRUTAL License 2.1: its copyright notice; and the fonts' licences).</summary>
     private readonly CreditsWindow _credits = new(Title, "Somebody has to keep the lights on.", GameCredits.People);
@@ -125,23 +131,59 @@ public sealed class TitleGame : Game
         var newest = SaveSlots.Newest();
         return
         [
-            newest is { } last
-                ? new("Continue", $"{last.Name}: {last.Summary}", () => FromSave(last))
-                : new("Continue", "Nothing saved yet.", null),
+            // Continue only when there's something to continue: a disabled entry at the top made a pad's first press skip it.
+            .. (newest is { } last ? new[] { new MenuItem("Continue", $"{last.Name}: {last.Summary}", () => FromSave(last)) } : Array.Empty<MenuItem>()),
             new("New round", "Just you and the regulars.", null, MenuAction.NewGame),
             Newcomer
                 ? new("Tutorial", "New here? Start here: learn a trade, step by step.", null, MenuAction.Practice) { Nudge = true }
                 : new("Tutorial", "Learn a trade, step by step, with nobody waiting.", null, MenuAction.Practice),
-            new("Host game", "Open the doors.", null, MenuAction.Host),
-            new("Join game", "Pull up a stool.", null, MenuAction.Join),
-            new("Characters", "Who you've been.", null, MenuAction.Characters),
-            new("Load game", newest == null ? "Nothing saved yet." : "Pick up where you left off.", null, newest == null ? MenuAction.Start : MenuAction.LoadGame),
-            new("Replays", Replay.ReplayLibrary.List().Count == 0 ? "Finish a round and it's kept here." : "Watch a season again, from anywhere.", null, MenuAction.Replays),
+            new("Play with friends", "Open the doors, or pull up a stool.", null, MenuAction.Friends),
             new("Settings", "House rules.", null, MenuAction.Settings),
-            new("Report a bug", "Something broke? Tell us how.", null, MenuAction.Report),
-            new("Credits", "Everyone who swept up.", null, MenuAction.Credits),
+            new("More", "Characters, saves, replays, bugs, credits.", null, MenuAction.More),
             new("Quit", "Close up for the night.", null, MenuAction.Exit),
         ];
+    }
+
+    /// <summary>Co-op: host a village or join one.</summary>
+    private MenuItem[] FriendsItems() =>
+    [
+        new("Host game", "Open the doors.", null, MenuAction.Host),
+        new("Join game", "Pull up a stool.", null, MenuAction.Join),
+        new("Back", "Back to the main menu.", null, MenuAction.Back),
+    ];
+
+    /// <summary>
+    /// The rest of the title, out of the main list so it fits a Steam Deck's 800 lines without
+    /// scrolling: playtesters on one found the long list hard to get round.
+    /// </summary>
+    private MenuItem[] MoreItems()
+    {
+        var anySave = SaveSlots.Newest() != null;
+        return
+        [
+            new("Characters", "Who you've been.", null, MenuAction.Characters),
+            new("Load game", anySave ? "Pick up where you left off." : "Nothing saved yet.", null, anySave ? MenuAction.LoadGame : MenuAction.Start),
+            new("Replays", Replay.ReplayLibrary.List().Count == 0 ? "Finish a round and it's kept here." : "Watch a season again, from anywhere.", null, MenuAction.Replays),
+            new("Report a bug", "Something broke? Tell us how.", null, MenuAction.Report),
+            new("Credits", "Everyone who swept up.", null, MenuAction.Credits),
+            new("Back", "Back to the main menu.", null, MenuAction.Back),
+        ];
+    }
+
+    /// <summary>Show <paramref name="items"/> under <paramref name="title"/>; its Back (or B) runs <paramref name="back"/>, or returns to the main menu.</summary>
+    private void OpenSubmenu(MenuItem[] items, string title, Action? back = null) =>
+        (_submenu, _submenuTitle, _submenuBack) = (items, title, back);
+
+    private void OpenFriends() => OpenSubmenu(FriendsItems(), "Play with friends");
+
+    private void OpenMore() => OpenSubmenu(MoreItems(), "More");
+
+    /// <summary>A submenu's Back: to the one it came from, or the main menu.</summary>
+    private void SubmenuBack()
+    {
+        var back = _submenuBack;
+        (_submenu, _submenuTitle, _submenuBack) = (null, null, null);
+        back?.Invoke();
     }
 
     private MenuItem[] SaveItems()
@@ -151,7 +193,7 @@ public sealed class TitleGame : Game
             .Where(s => s.Header != null)
             .Take(MaxListedSaves)
             .Select(s => new MenuItem(s.Name, $"{s.Summary} · saved {SaveSlots.Ago(s.Modified, now)}", () => FromSave(s)))
-            .Append(new MenuItem("Back", "Back to the main menu.", null, MenuAction.Back))
+            .Append(new MenuItem("Back", "Back to more.", null, MenuAction.Back))
             .ToArray();
     }
 
@@ -171,7 +213,7 @@ public sealed class TitleGame : Game
                 var path = r.Path;
                 return new MenuItem(label, hint.Length > 0 ? hint : "A season, kept.", () => new Replay.ReplayGame(Replay.ReplayLibrary.Load(path), path));
             })
-            .Append(new MenuItem("Back", "Back to the main menu.", null, MenuAction.Back))
+            .Append(new MenuItem("Back", "Back to more.", null, MenuAction.Back))
             .ToArray();
     }
 
@@ -182,7 +224,7 @@ public sealed class TitleGame : Game
         [
             new("New round", "Open a lobby: friends say which trades they want, you deal.", null, MenuAction.HostNew),
             new("A saved village", anySave ? "Open one of your saved villages to friends." : "Nothing saved yet.", null, anySave ? MenuAction.HostSave : MenuAction.Start),
-            new("Back", "Back to the main menu.", null, MenuAction.Back),
+            new("Back", "Back to playing with friends.", null, MenuAction.Back),
         ];
     }
 
@@ -195,7 +237,7 @@ public sealed class TitleGame : Game
                 var save = SaveSlots.Load(s.Path, _defs);
                 return new VillageGame(save.Sim.Seed) { Loaded = save, HostCoop = HostSettingsFor() };
             }))
-            .Append(new MenuItem("Back", "Back.", null, MenuAction.Back))
+            .Append(new MenuItem("Back", "Back to hosting.", null, MenuAction.Back))
             .ToArray();
 
     /// <summary>
@@ -257,7 +299,7 @@ public sealed class TitleGame : Game
     /// </summary>
     private void ChooseCharacter(Purpose purpose)
     {
-        (_purpose, _editing, _submenu, _submenuTitle, _error) = (purpose, null, null, null, null);
+        (_purpose, _editing, _submenu, _submenuTitle, _submenuBack, _error) = (purpose, null, null, null, null, null);
         _picker.Showing = purpose == Purpose.Manage ? CharacterPicker.Mode.Manage : CharacterPicker.Mode.Choose;
         _creator.ContinueLabel = purpose == Purpose.Manage ? "Save" : "Continue";
         if (_roster.Characters.Count > 0 || purpose == Purpose.Manage)
@@ -293,7 +335,7 @@ public sealed class TitleGame : Game
             then(towns.FirstOrDefault()?.Name ?? VillageRound.DefaultMap);
             return;
         }
-        (_submenu, _submenuTitle) = (towns.Select(m => new MenuItem(m.Label, m.Description, null, Then: () => then(m.Name)))
+        OpenSubmenu(towns.Select(m => new MenuItem(m.Label, m.Description, null, Then: () => then(m.Name)))
             .Append(new MenuItem("Back", "Back.", null, back)).ToArray(), "Which town?");
     }
 
@@ -306,10 +348,10 @@ public sealed class TitleGame : Game
         switch (_purpose)
         {
             case Purpose.Solo:
-                ChooseTown(map => (_submenu, _submenuTitle) = (TradeItems(c, map), "Which trade will you take?"), MenuAction.BackToCreator);
+                ChooseTown(map => OpenSubmenu(TradeItems(c, map), "Which trade will you take?"), MenuAction.BackToCreator);
                 break;
             case Purpose.Practice:
-                (_submenu, _submenuTitle) = (PracticeItems(c), "Which trade will you learn?");
+                OpenSubmenu(PracticeItems(c), "Which trade will you learn?");
                 break;
             case Purpose.Host:
                 ChooseTown(map => HostAs(c, map), MenuAction.Back);
@@ -408,6 +450,9 @@ public sealed class TitleGame : Game
 
     private string? _padFocused;
 
+    /// <summary>The menu's window has been drawn once, so focusing it by name finds it.</summary>
+    private bool _titleDrawn;
+
     /// <summary>
     /// The title is all menus: a pad drives them (ImGui's navigation) unless the controls page is
     /// waiting for a button. The newest window takes the focus, and B closes it or leaves a submenu.
@@ -417,7 +462,8 @@ public sealed class TitleGame : Game
         Controls.Map.Update();
         Host.ImGui.GamepadNav = !_settings.Capturing;
         var top = _settings.IsOpen ? "Settings" : _showCredits ? "###credits" : "##title";
-        if (top != _padFocused)
+        // Only once the window's there to take it: asked before its first frame, the focus went nowhere and wasn't asked again.
+        if (top != _padFocused && (top != "##title" || _titleDrawn))
         {
             ImGui.SetWindowFocus(top);
             _padFocused = top;
@@ -432,7 +478,7 @@ public sealed class TitleGame : Game
         else if (_showCredits)
             _showCredits = false;
         else if (_submenu != null && !_joining && !_picking && !_creating && !_reporting)
-            (_submenu, _submenuTitle) = (null, null);
+            SubmenuBack();
         else if (_reporting)
             _reporting = false;
     }
@@ -478,6 +524,7 @@ public sealed class TitleGame : Game
         ImGui.SetNextWindowBgAlpha(0f);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0f);
         ImGui.Begin("##title"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoMove);
+        _titleDrawn = true;
 
         DrawLogo(screen);
         var dim = Theme.Parchment;
@@ -561,8 +608,21 @@ public sealed class TitleGame : Game
             if (_submenuTitle != null)
                 ImGui.TextColored(dim, _submenuTitle);
             // Every hint always shown, each entry its own fixed height: the list never changes size as the pick moves.
-            foreach (var item in _submenu ?? _items)
+            var list = _submenu ?? _items;
+            // A new list on show, with a pad in hand: its first live entry takes the pick, plainly. Left
+            // to itself ImGui chose one unseen, and the first press down skipped past it.
+            var focusFirst = !ReferenceEquals(list, _focusedList) && Host.Gamepad.Connected && _padFocused == "##title";
+            if (focusFirst)
+                _focusedList = list;
+            foreach (var item in list)
+            {
+                if (focusFirst && Enabled(item))
+                {
+                    ImGui.SetKeyboardFocusHere(0);
+                    focusFirst = false;
+                }
                 MenuButton(item);
+            }
         }
 
         ImGui.Dummy(in gap);
@@ -623,7 +683,13 @@ public sealed class TitleGame : Game
                 ChooseCharacter(Purpose.Practice);
                 break;
             case MenuAction.Host:
-                (_submenu, _submenuTitle) = (HostItems(), "Open the doors");
+                OpenSubmenu(HostItems(), "Open the doors", OpenFriends);
+                break;
+            case MenuAction.Friends:
+                OpenFriends();
+                break;
+            case MenuAction.More:
+                OpenMore();
                 break;
             case MenuAction.Credits:
                 _showCredits = !_showCredits;
@@ -632,7 +698,7 @@ public sealed class TitleGame : Game
                 ChooseCharacter(Purpose.Host);
                 break;
             case MenuAction.HostSave:
-                (_submenu, _submenuTitle) = (HostSaveItems(), "Which village will you open to friends?");
+                OpenSubmenu(HostSaveItems(), "Which village will you open to friends?", () => OpenSubmenu(HostItems(), "Open the doors", OpenFriends));
                 break;
             case MenuAction.Join:
                 _coopMenu ??= new CoopMenu(Host, _defs);
@@ -642,13 +708,13 @@ public sealed class TitleGame : Game
                     ChooseCharacter(Purpose.Join);
                 break;
             case MenuAction.LoadGame:
-                (_submenu, _submenuTitle) = (SaveItems(), "Which village?");
+                OpenSubmenu(SaveItems(), "Which village?", OpenMore);
                 break;
             case MenuAction.Replays:
-                (_submenu, _submenuTitle) = (ReplayItems(), "Which season?");
+                OpenSubmenu(ReplayItems(), "Which season?", OpenMore);
                 break;
             case MenuAction.Back:
-                (_submenu, _submenuTitle) = (null, null);
+                SubmenuBack();
                 break;
             case MenuAction.Report:
                 (_reporting, _logsError) = (true, null);
@@ -682,7 +748,7 @@ public sealed class TitleGame : Game
                 ImGui.TextColored(Theme.Text, Title); // the brand's lettering is bone; ember is the "!"'s
             return;
         }
-        var h = MathF.Min(Gui.S(280), screen.Y * 0.3f);
+        var h = MathF.Min(Gui.S(280), screen.Y * 0.25f);
         var size = new float2(h * logo.PixelSize.X / logo.PixelSize.Y, h);
         var min = ImGui.GetCursorScreenPos();
         Gui.Image(ImGui.GetWindowDrawList(), logo, min, min + size, new ImColor8(255, 255, 255, 255));
@@ -699,7 +765,7 @@ public sealed class TitleGame : Game
     private float MenuButton(MenuItem item)
     {
         // A choice that leads on (a town, a trade) has a Then and no Start of its own; it's live too.
-        var enabled = item.Start != null || item.Then != null || item.Action != MenuAction.Start;
+        var enabled = Enabled(item);
         var width = Gui.S(MenuWidth);
         var inset = Gui.S(17);
         var (hint, lineHeight) = Hint(item);
@@ -758,6 +824,9 @@ public sealed class TitleGame : Game
     }
 
     private const float MenuWidth = 420f;
+
+    /// <summary>An entry does something: it starts a game, leads on (a town, a trade, with a Then), or is an action.</summary>
+    private static bool Enabled(MenuItem item) => item.Start != null || item.Then != null || item.Action != MenuAction.Start;
 
     /// <summary>An entry's hint in lines as it's drawn (the body face, wrapped to the entry), and the height of a line.</summary>
     private static (List<string> Lines, float LineHeight) Hint(MenuItem item)

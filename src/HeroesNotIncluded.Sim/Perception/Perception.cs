@@ -684,6 +684,13 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
     }
 
     /// <summary>
+    /// The dread's heavy enough to worry about (a pall over the valley, or worse): a HUD that
+    /// keeps quiet otherwise says it then. Felt by all, like <see cref="Standing"/>.
+    /// </summary>
+    public bool DreadHeavy() =>
+        sim.Round.Live && sim.Reckoning.Dread / Math.Max(1f, Director.Reckoning.DreadLimit(sim)) >= Director.Reckoning.HeavyDread;
+
+    /// <summary>
     /// The favours players asked this character knows of, oldest first: those they heard asked, took
     /// on or asked for themselves. Open ones and those closed within the last day.
     /// </summary>

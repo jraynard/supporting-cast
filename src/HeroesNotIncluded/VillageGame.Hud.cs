@@ -252,16 +252,33 @@ public sealed partial class VillageGame
         using (Gui.HeaderFont())
             ImGui.Text(_sim.Clock.TimeString());
         var outdoor = _sim.Climate.OutdoorTemperature;
-        TextC(outdoor < 5 ? Theme.Warn : Theme.Dim, $"Outside {outdoor:F0}°C");
+        // The simple HUD gives the weather only when it's cold enough to matter.
+        if (!SimpleHud || outdoor < 5)
+            TextC(outdoor < 5 ? Theme.Warn : Theme.Dim, $"Outside {outdoor:F0}°C");
         if (_sim.Round.Practice)
             TextC(Theme.Dim, "The practice yard: no season");
         else if (View.Standing() is { } standing)
         {
             TextC(Theme.Dim, SeasonLine());
-            TextC(Theme.Dim, standing.Renown);
-            Gui.ItemTip("What travellers say of the town. The festival on the season's last evening reckons it: well spoken of, the town comes through.");
-            TextC(Theme.Dim, standing.Dread);
-            Gui.ItemTip("How the dungeon weighs on the valley. Quests left unanswered, or gone badly, feed it; if it grips the valley completely, the season is lost.");
+            if (SimpleHud)
+            {
+                // The town's standing behind the season's line, a hover away.
+                Gui.ItemTip($"{standing.Renown}: what travellers say of the town.\n{standing.Dread}: how the dungeon weighs on the valley.\n"
+                    + "Well spoken of at the festival, the town comes through; if dread grips the valley completely, the season is lost.");
+                // Dread heavy enough to lose the season over is said out loud.
+                if (View.DreadHeavy())
+                {
+                    TextC(Theme.Warn, standing.Dread);
+                    Gui.ItemTip("How the dungeon weighs on the valley. Quests left unanswered, or gone badly, feed it; if it grips the valley completely, the season is lost.");
+                }
+            }
+            else
+            {
+                TextC(Theme.Dim, standing.Renown);
+                Gui.ItemTip("What travellers say of the town. The festival on the season's last evening reckons it: well spoken of, the town comes through.");
+                TextC(Theme.Dim, standing.Dread);
+                Gui.ItemTip("How the dungeon weighs on the valley. Quests left unanswered, or gone badly, feed it; if it grips the valley completely, the season is lost.");
+            }
         }
         // Time runs at one speed for whoever plays a character; only god mode, the demos and a lone ghost change it.
         if (!HasAvatar && !(Spectating && _coop != null))

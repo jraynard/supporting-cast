@@ -30,6 +30,13 @@ public sealed class Settings
     /// <summary>A glow round the button for what needs doing now (a patient waiting: the gift, lay on hands).</summary>
     public bool GuideHighlights { get; set; } = true;
 
+    /// <summary>
+    /// The round's HUD shows only what needs you: needs when they're low, the weather when it's cold,
+    /// no compass beside the minimap, the shop panel shut till an order comes. Off, everything shows
+    /// all the time. On by default: a Steam Deck playtest found the full HUD crowded the screen.
+    /// </summary>
+    public bool SimpleHud { get; set; } = true;
+
     /// <summary>The camera shakes a little with heavy blows you deal or take, and rumbles with dragon fire nearby.</summary>
     public bool ScreenShake { get; set; } = true;
 

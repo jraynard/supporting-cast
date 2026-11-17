@@ -18,7 +18,17 @@ public sealed partial class VillageGame
 
     // Journal panels, open or not. A round starts with only the shop (and an empath's gift) open; the
     // others mark their tab when there's something new rather than filling the screen from the start.
-    private bool _showShop = true, _showHeard, _showQuests, _showGift = true, _showLog;
+    // The simple HUD starts the shop shut too: its tab is marked when someone's waiting on an order.
+    private bool _showShop = !Settings.Current.SimpleHud, _showHeard, _showQuests, _showGift = true, _showLog;
+
+    /// <summary>The simple HUD (<see cref="Settings.SimpleHud"/>): only what needs you is on screen.</summary>
+    private static bool SimpleHud => Settings.Current.SimpleHud;
+
+    /// <summary>Orders nobody's taken, as many as there were when the shop was last open: more than this marks its tab.</summary>
+    private int _ordersSeen;
+
+    /// <summary>Open orders you've heard that nobody's seen to yet: what the shop's tab is marked for.</summary>
+    private int UntakenOrders() => View.Orders().Count(e => e.Status == Sim.Shops.OrderStatus.Open && !e.Mine && e.AssigneeName.Length == 0);
 
     /// <summary>Quests known when the quest board was last open: more than this marks its tab.</summary>
     private int _questsSeen;
@@ -109,6 +119,7 @@ public sealed partial class VillageGame
     {
         "Heard" => View.Heard().Count() > _speechSeen,
         "Quests" => View.Quests().Count() > _questsSeen,
+        "Shop" => InRound && HasAvatar && UntakenOrders() > _ordersSeen,
         _ => false,
     };
 

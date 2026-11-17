@@ -157,11 +157,14 @@ public sealed class Reckoning : ISimSystem, ISaveState
         _ => "The whole valley sings of the town",
     };
 
+    /// <summary>The share of the limit where dread stops being a glance at the hills and becomes a pall: worth putting in front of a player.</summary>
+    public const float HeavyDread = 0.45f;
+
     /// <summary>How the dungeon weighs on the valley, in words.</summary>
     public static string DreadWord(float dread, float limit) => (dread / Math.Max(1f, limit)) switch
     {
         < 0.2f => "The valley feels safe",
-        < 0.45f => "Folk glance toward the hills",
+        < HeavyDread => "Folk glance toward the hills",
         < 0.7f => "A pall hangs over the valley",
         < 0.9f => "Dread grips the valley",
         _ => "The valley is on the edge of despair",

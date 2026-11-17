@@ -83,11 +83,20 @@ public sealed partial class VillageGame
             _selected = _selected == _avatar ? Sim.Ecs.Entity.Null : _avatar;
         if (hovered)
             Tip("Click for your full inspector: mood, health, skills, gear.");
-        Gui.Rule();
+        // The simple HUD keeps the card to who you are, and whatever needs you now; hovering it shows the rest.
+        var all = !SimpleHud || hovered;
+        var ruled = false;
+        void Below()
+        {
+            if (!ruled)
+                Gui.Rule();
+            ruled = true;
+        }
 
         // Collapsed: no bar for it, just what it means. You can still call for help, weakly.
         if (c.Downed && w.TryGet<Health>(_avatar, out var health))
         {
+            Below();
             var bleeding = health.BleedPerHour > 0;
             TextC(Bad, health.Blood < 0.2f ? "You're slipping away." : bleeding ? "You've collapsed, bleeding out." : "You've collapsed.");
             TextC(Ui.Theme.Dim, bleeding
@@ -95,7 +104,7 @@ public sealed partial class VillageGame
                 : $"Call for help ({Controls.Glyph(Act.Heard)}, /s to shout), or lie still until you can stand.");
             if (w.Has<Sim.Components.Mana>(_avatar))
                 TextC(Ui.Theme.Dim, $"Your gift still answers, though the beat's harder to keep: weave a mending on yourself ({Controls.Glyph(Act.Gift)}, the gift).");
-            Gui.Rule();
+            ruled = false;
         }
 
         // Needs.
@@ -104,6 +113,9 @@ public sealed partial class VillageGame
         {
             var def = rate.NeedDef;
             var v = needs.Get(def);
+            if (!all && v >= def.SeekBelow)
+                continue;
+            Below();
             var color = v < def.UrgentBelow ? Bad : v < def.SeekBelow ? Warn : Good;
             HudBar(Capitalized(def.Label), v, color, $"{v * 100:F0}%");
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
@@ -120,6 +132,7 @@ public sealed partial class VillageGame
         // Wind, in a fight or while it's coming back: what's left to swing, guard and dodge with.
         if (w.TryGet<Sim.Combat.Guard>(_avatar, out var guard) && (guard.Stamina < 0.999f || NearestFoe() != null))
         {
+            Below();
             HudBar("Wind", guard.Stamina, guard.Stamina < Sim.Combat.Blows.DodgeCost ? Bad : guard.Stamina < 0.5f ? Warn : Good,
                 guard.Stamina < Sim.Combat.Blows.DodgeCost ? "spent" : guard.Stamina < 0.5f ? "winded" : "steady");
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
@@ -127,8 +140,9 @@ public sealed partial class VillageGame
         }
 
         // Mood.
-        if (w.TryGet<Mood>(_avatar, out var mood))
+        if (w.TryGet<Mood>(_avatar, out var mood) && (all || MoodColor(mood.Value) != Good))
         {
+            Below();
             var trend = mood.Target > mood.Value + 0.01f ? " ↑" : mood.Target < mood.Value - 0.01f ? " ↓" : "";
             // A word, not a number: the number means nothing until you've learned the scale.
             HudBar("Mood", mood.Value, MoodColor(mood.Value), MoodRules.Describe(mood.Value) + trend);
@@ -144,22 +158,28 @@ public sealed partial class VillageGame
             felt > tol.SafeMax ? (Bad, "overheating") :
             felt < tol.ComfortMin ? (Warn, "cold") :
             felt > tol.ComfortMax ? (Warn, "hot") : (Good, "comfortable");
-        TextC(warmColor, $"Feels {felt:F0}°C, {warmNote}");
+        if (all || warmColor != Good)
+        {
+            Below();
+            TextC(warmColor, $"Feels {felt:F0}°C, {warmNote}");
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip($"Comfortable from {tol.ComfortMin:F0} to {tol.ComfortMax:F0}°C; dangerous below {tol.SafeMin:F0} or above {tol.SafeMax:F0}°C."
+                    + "\nA lit fire within 3 tiles warms you; warmer clothes help.");
+        }
         // Drink in you: you feel it (your own head, through Perception).
         if (View.OwnDrink is >= 0.08f and var drunk)
         {
+            Below();
             var how = Sim.Hospitality.DrinkingSystem.Looks(drunk) ?? "a little tipsy";
             TextC(drunk >= Sim.Hospitality.DrinkingSystem.ClumsyAt ? Bad : Warn, $"You're {how}");
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                 Tip("It wears off over a few hours. Too much and you'll sleep it off where you stand.");
         }
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-            Tip($"Comfortable from {tol.ComfortMin:F0} to {tol.ComfortMax:F0}°C; dangerous below {tol.SafeMin:F0} or above {tol.SafeMax:F0}°C."
-                + "\nA lit fire within 3 tiles warms you; warmer clothes help.");
 
         // Wounds, only when there are any.
         if (w.TryGet<Health>(_avatar, out var h) && (h.Injuries.Count > 0 || h.Blood < 0.999f))
         {
+            Below();
             var bleed = h.BleedPerHour;
             if (h.Blood < 0.999f)
                 HudBar("Blood", h.Blood, h.Blood < 0.6f ? Bad : Warn, $"{h.Blood * 100:F0}%");

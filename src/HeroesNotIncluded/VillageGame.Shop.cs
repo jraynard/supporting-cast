@@ -40,7 +40,12 @@ public sealed partial class VillageGame
     /// <summary>The orders you've heard asked or taken on, then the favours players ask of each other.</summary>
     private void DrawShop()
     {
-        if (!_sim.Round.Live || !HasAvatar || !_showShop)
+        if (!_sim.Round.Live || !HasAvatar)
+            return;
+        // Seen while open; one taken or gone while shut lowers the mark, so the next to come raises it again.
+        var untaken = UntakenOrders();
+        _ordersSeen = _showShop ? untaken : Math.Min(_ordersSeen, untaken);
+        if (!_showShop)
             return;
         BeginJournal("Shop###orders", ref _showShop, side: Anchor.TopLeft);
         DrawSign();
@@ -101,12 +106,15 @@ public sealed partial class VillageGame
             var errand = e.MineToDo ? View.Awaiting().Cast<KnownErrand?>().FirstOrDefault(a => a!.Value.Order == e.Id) : null;
             var carry = e.MineToDo && e.Kind is Sim.Defs.ServiceKind.Drink or Sim.Defs.ServiceKind.MixedDrink;
             var refuse = View.MayTurnAway(e.Id);
-            var buttons = (take ? 1 : 0) + (errand != null || carry ? 1 : 0) + (refuse ? 1 : 0);
+            var icons = (errand != null || carry ? 1 : 0) + (refuse ? 1 : 0);
             CardBar(e.AssigneeName.Length > 0 ? (e.MineToDo ? "You're on it" : $"{e.AssigneeName} is on it") : "Nobody's taken it",
-                share, color, words, buttons * (CardIconSize + Gui.S(8)));
+                share, color, words, (take ? TakeButtonWidth : 0f) + icons * (CardIconSize + Gui.S(8)));
             if (take)
-                TakeButton($"##take{e.Id}", "Say aloud that you'll see to it. They pay whoever gets it done.", () => Issue(new TakeOrderCommand(_avatar, e.Id)));
+            {
+                TakeButton($"##take{e.Id}", Controls.Keys("Say aloud that you'll see to it. They pay whoever gets it done. (Or ~F~ beside them.)"),
+                    () => Issue(new TakeOrderCommand(_avatar, e.Id)));
                 GuideGlow(TutorialStep == "take");
+            }
             if (carry)
             {
                 // What they ordered, to take to them: only with a drink poured that fills it.
@@ -143,8 +151,23 @@ public sealed partial class VillageGame
             Tip(tip);
     }
 
-    /// <summary>The green check that takes on an order or a favour ("I'll do it").</summary>
-    private void TakeButton(string id, string why, Action press) => CardIcon(id, "ui/icon_good", true, $"I'll do it.\n{why}", press);
+    private const string TakeLabel = "I'll do it";
+
+    /// <summary>
+    /// The button that takes on an order or a favour, in words: as a bare green check, playtesters
+    /// didn't know it was there to press.
+    /// </summary>
+    private void TakeButton(string id, string why, Action press)
+    {
+        ImGui.SameLine(0, Gui.S(8));
+        if (ImGui.SmallButton(TakeLabel + id))
+            press();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+            Tip(why);
+    }
+
+    /// <summary>Room the take button needs at the end of a card's time bar.</summary>
+    private static float TakeButtonWidth => SmallButtonWidth(TakeLabel);
 
     /// <summary>
     /// Under the orders (and the favours), how many are over with, and a link to show or hide them:

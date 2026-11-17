@@ -122,6 +122,12 @@ public enum AvatarActionKind
 
     /// <summary>The inn's keeper orders a hamper at the cookhouse hatch (<see cref="Hospitality.Provisions.Order"/>), or sees where they are in its line.</summary>
     OrderProvisions,
+
+    /// <summary>
+    /// Say you'll see to the order of a customer in reach at your shop (<see cref="Shops.ShopSystem.TakeableAt"/>), at once:
+    /// their thing changes hands next. A Steam Deck playtester couldn't find the shop panel's button for it.
+    /// </summary>
+    TakeOrder,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -149,7 +155,7 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
         or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean
         or AvatarActionKind.Mend or AvatarActionKind.OrderMeal or AvatarActionKind.OrderProvisions or AvatarActionKind.OrderHealing or AvatarActionKind.FillBucket or AvatarActionKind.ThrowWater or AvatarActionKind.FestivalGame or AvatarActionKind.Dance
-        or AvatarActionKind.ShowPiece or AvatarActionKind.Sit or AvatarActionKind.CallBack;
+        or AvatarActionKind.ShowPiece or AvatarActionKind.Sit or AvatarActionKind.CallBack or AvatarActionKind.TakeOrder;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
     public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker
@@ -346,6 +352,9 @@ public sealed class AvatarSystem : ISimSystem
         // A poured drink: across the bar to whoever's waiting for one, or to the customer pointed at.
         if (tool == AvatarTool.Use && Shops.BarService.At(sim, avatar, site, cell) is { } serving)
             return new(AvatarActionKind.ServeDrink, Shops.BarService.Label(sim, serving), cell, serving.Order.Poster) { Item = serving.Drink };
+        // A customer waiting at your shop, nobody yet seeing to them: say you will (handing reach, so across a counter too).
+        if (tool == AvatarTool.Use && Shops.ShopSystem.TakeableAt(sim, avatar, cell) is { } takeable)
+            return new(AvatarActionKind.TakeOrder, $"Take {takeable.PosterName}'s order: {takeable.Kind.Label} ({takeable.Price} silver)", cell, takeable.Poster);
         // A gap a crisis tore (the bridge): the tinker braces it.
         if (tool == AvatarTool.Use && sim.Repairs.At(cell) is { } breach && InReach(here, cell)
             && w.TryGet<Trade>(avatar, out var mender) && mender.Def.MendsTown)
@@ -874,6 +883,10 @@ public sealed class AvatarSystem : ISimSystem
                 if (Shops.Hatch.ShopOf(sim, action.Target) is { IsNull: false } inn && sim.Shops.OpenOrderOf(avatar, ServiceKind.Meal) == null
                     && sim.Shops.PlayerOrder(sim, avatar, ServiceKind.Meal, inn) is { } why)
                     sim.Messages.Tell(avatar, MessageKind.Info, $"Can't order: {why}.", action.Cell);
+                break;
+            case AvatarActionKind.TakeOrder:
+                if (Shops.ShopSystem.TakeableAt(sim, avatar, action.Cell) is { } order && Speech.SpeechSystem.CanAct(sim, avatar))
+                    sim.Shops.Accept(sim, avatar, order.Id);
                 break;
             case AvatarActionKind.OrderProvisions:
                 if (Hospitality.Provisions.Ordered(sim, avatar) == null && Hospitality.Provisions.Order(sim, avatar) is { } refusal)

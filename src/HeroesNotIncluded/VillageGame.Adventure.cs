@@ -649,6 +649,14 @@ public sealed partial class VillageGame
             if (action.Kind != AvatarActionKind.None)
                 return action;
         }
+        // A customer waiting on you within handing reach, wherever you face: across the counter, a
+        // step off. With a pad there's no pointing at them, and playtesters couldn't find how to take one.
+        if (tool == AvatarTool.Use)
+            foreach (var o in View.Orders())
+                if (o.Status == Sim.Shops.OrderStatus.Open && !o.Mine && o.AssigneeName.Length == 0 && Sim.Shops.ShopSystem.HandsOver(o.Kind)
+                    && _sim.World.TryGet<Position>(o.Poster, out var waiting)
+                    && AvatarSystem.ActionAt(_sim, _avatar, waiting.Cell, tool) is { Kind: AvatarActionKind.TakeOrder } take)
+                    return take;
         // Nothing where you're looking: a station, cask or chest anywhere beside you will do, so you
         // needn't line up square in front of a forge in a cramped smithy.
         if (tool == AvatarTool.Use)

@@ -119,7 +119,7 @@
           "steps": [
             { "id": "wait", "text": "Customers are on their way. One of them will want a blade sharpened.",
               "more": "They walk in from the road, which takes a minute. A hammer over someone's head means a repair." },
-            { "id": "take", "text": "Take the order: open your shop (~J~) and press \"I'll do it\", or click the customer and press \"Take order\".", "ui": "shop" },
+            { "id": "take", "text": "Take the order: walk up to the customer and press ~F~ (or press \"I'll do it\" in your shop, ~J~)." },
             { "id": "handover", "text": "Go to the customer (follow the arrow, or press \"Go and collect it\" on the order). They hand you the blade when you're close.", "ui": "shop" },
             { "id": "mend", "text": "This blade is chipped too. Open the forge (~F~) and press Mend.", "aside": true },
             { "id": "fuel", "text": "The forge is out. Take charcoal from the fuel bin, then press ~F~ at the forge.", "aside": true },
@@ -132,7 +132,7 @@
           "blurb": "Hammer the chips out at the forge and anvil, then sharpen it. You have two spare iron bars.",
           "steps": [
             { "id": "wait", "text": "Customers are on their way. Their blades are chipped." },
-            { "id": "take", "text": "Take the order: open your shop (~J~) and press \"I'll do it\", or click the customer and press \"Take order\".", "ui": "shop" },
+            { "id": "take", "text": "Take the order: walk up to the customer and press ~F~ (or press \"I'll do it\" in your shop, ~J~)." },
             { "id": "handover", "text": "Go to the customer (follow the arrow, or press \"Go and collect it\" on the order). They hand you the blade when you're close.", "ui": "shop" },
             { "id": "mend", "text": "Open the forge (~F~) and press Mend. It uses one iron bar." },
             { "id": "fuel", "text": "The forge is out. Take charcoal from the fuel bin, then press ~F~ at the forge.", "aside": true },
@@ -220,7 +220,7 @@
           "steps": [
             { "id": "wait", "text": "Customers are on their way. One of them has a locked strongbox.",
               "more": "They walk in from the road, which takes a minute." },
-            { "id": "take", "text": "Take the order: open your shop (~J~) and press \"I'll do it\", or click the customer and press \"Take order\".", "ui": "shop" },
+            { "id": "take", "text": "Take the order: walk up to the customer and press ~F~ (or press \"I'll do it\" in your shop, ~J~)." },
             { "id": "handover", "text": "Go to the customer (follow the arrow, or press \"Go and collect it\" on the order). They hand you the box when you're close.", "ui": "shop" },
             { "id": "probe", "text": "Check for traps first: open your pack (~Tab~), right-click the box, and choose \"Feel for traps\". Run the probe along the seam with ~AD~, ~F~ let go. Where it catches, hold still for a good read, then hold ~F~ to press in and press ~Space~ while the needle's in the green.", "ui": "inventory",
               "more": "Fingers don't grow back. Feel it over before you pick it." },
@@ -233,7 +233,7 @@
           "blurb": "Examine a curio and tell its owner what you think it's worth.",
           "steps": [
             { "id": "wait", "text": "Customers are on their way. One of them has a curio." },
-            { "id": "take", "text": "Take the order: open your shop (~J~) and press \"I'll do it\", or click the customer and press \"Take order\".", "ui": "shop" },
+            { "id": "take", "text": "Take the order: walk up to the customer and press ~F~ (or press \"I'll do it\" in your shop, ~J~)." },
             { "id": "handover", "text": "Go to the customer (follow the arrow, or press \"Go and collect it\" on the order). They hand you the curio when you're close.", "ui": "shop" },
             { "id": "appraise", "text": "Open your pack (~Tab~), right-click the curio, and choose \"Look it over under the loupe\". ~AD~ moves the loupe; where something catches your eye, hold ~F~ still. Your appraisal can be wrong.", "ui": "inventory" },
             { "id": "giveback", "text": "Press \"Take it back\" on the order (~J~) and tell them what you think it's worth.", "ui": "shop" } ],
