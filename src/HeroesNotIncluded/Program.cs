@@ -297,6 +297,9 @@ else
         StartLesson = ParseString(args, "--lesson"),
         // --die-at SECONDS: your character drops dead then, to try being a ghost.
         DieAt = args.Contains("--die-at") ? ParseFloat(args, "--die-at") : -1f,
+        // --emote KIND [--emote-at SECONDS]: your character shows it then (default 1 s), to see one (Wave, Point...).
+        DevEmote = ParseString(args, "--emote"),
+        DevEmoteAt = args.Contains("--emote-at") ? ParseFloat(args, "--emote-at") : 1f,
         // --festival-at SECONDS: the festival begins then, to see it without playing to it.
         FestivalAt = args.Contains("--festival-at") ? ParseFloat(args, "--festival-at") : -1f,
         // --keep-replay-at N: keep the round's replay so far after N seconds (then --replay newest).

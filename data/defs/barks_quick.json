@@ -1,0 +1,41 @@
+{
+  // Quick lines from the wheel (hold U, or RB then LB to "Say"): said aloud like anything typed,
+  // so they carry only as far as a voice does (the alarms are shouted). VillageGame.Emotes names
+  // them; the wheel shows its own short label, and one of these lines is what's said.
+  "barks": [
+    { "name": "quick_help", "lines": [
+      { "text": "Help!" },
+      { "text": "Help, here!" },
+      { "text": "A hand, someone!" }
+    ] },
+    { "name": "quick_here", "lines": [
+      { "text": "Over here!" },
+      { "text": "Here! This way!" }
+    ] },
+    { "name": "quick_thanks", "lines": [
+      { "text": "Thanks." },
+      { "text": "My thanks." },
+      { "text": "Much obliged." }
+    ] },
+    { "name": "quick_aye", "lines": [
+      { "text": "Aye." },
+      { "text": "Aye, that." }
+    ] },
+    { "name": "quick_nay", "lines": [
+      { "text": "Nay." },
+      { "text": "No. Not that." }
+    ] },
+    { "name": "quick_coming", "lines": [
+      { "text": "Coming!" },
+      { "text": "On my way." }
+    ] },
+    { "name": "quick_fire", "lines": [
+      { "text": "Fire! Buckets!" },
+      { "text": "Fire! Get water!" }
+    ] },
+    { "name": "quick_raiders", "lines": [
+      { "text": "Raiders! To arms!" },
+      { "text": "Raiders on the road!" }
+    ] }
+  ]
+}

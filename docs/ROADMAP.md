@@ -148,7 +148,10 @@ The traitors: the game's hook, and what makes it a game people tell others about
 - **Friendly fire's consequences:** townsfolk you cut are only hurt for now; the town remembering
   it, shouting it, and it counting at the reveal.
 - Discord integration for meetings and reveals, in the spirit of the bots Among Us groups use
-  (look at what's out there before designing ours).
+  (look at what's out there before designing ours). Sooner and separately: Rich Presence (trade,
+  town, day of the season, an invite to join), cheap and harmless without Discord running.
+- Ghosts' own emotes (a wisp's flicker, a cold point), and body poses for the living's
+  (`emote_<kind>_<view>` frames in `tools/chibi_people.py`; the bubble carries them meanwhile).
 
 *Exit: a Whispers round.* **Playtest gate: can traitors act and be caught?**
 
@@ -247,6 +250,13 @@ a sketch to build from.
 
 ### M7: Playing with strangers
 An authoritative server filtered by `Perception`, matchmaking, moderation, voice.
+- **Voice** goes by the speech rules, or it undoes them: each client plays a voice only where
+  `SpeechSystem` would let that listener hear it (the same ranges; muffled through walls; the dead
+  only to the dead). Raw proximity voice would let the dead talk to the living and get round
+  eavesdropping and the traitors. Steamworks voice for capture and the codec.
+- **Speech to text** (opt-in; the Deck's answer to typing): push to talk, a local model (sherpa-onnx,
+  shared with the NPC voices), the words shown to confirm, then an ordinary `SayCommand`, so a
+  spoken order at a counter is heard like a typed one. Watch model size and the Deck's CPU.
 
 ### Mods
 New maps, buildings, trades, game modes and character options, as far as the defs allow; Steam

@@ -21,6 +21,7 @@ public static class ArtAudit
         "ui/icon_build", "ui/icon_deconstruct", "ui/icon_burn", "ui/icon_stockpile", "ui/icon_clearzone",
         "ui/icon_sleep", "ui/icon_eat", "ui/icon_alert", "ui/icon_fight", "ui/icon_doctor", "ui/icon_haul",
         "ui/icon_hunt", "ui/icon_fish", "ui/icon_butcher", "ui/icon_home",
+        .. Enum.GetValues<Sim.Speech.Emote>().Select(WorldRenderer.EmoteIcon),
     ];
 
     public sealed record Report(List<string> Errors, List<string> Warnings);

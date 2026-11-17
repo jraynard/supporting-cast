@@ -2299,3 +2299,19 @@ reach varied, and a good flick showed nothing; drawing a wound hard with the mou
   `PauseAnswerCommand`; `PauseVoteTests`.
 - `PauseVote` adds saved system state, so full bench hashes move: seed 1234 full `62C0D498662C6D4F`,
   seed 99 full `B60421361A01CE94`.
+
+### Emotes and quick-say (2026-11-17)
+- **Emotes** (`Speech/Emotes`): wave, bow, cheer, laugh, point, shrug, weep, angry, through
+  `EmoteCommand`. An `Emoting` component lasts a few seconds and ends if you step off the cell or
+  are knocked down, set to work, or draw a blade. Seen, not heard: `PerceptionView.EmoteOf` shows it
+  only to whoever can see you. A point keeps the cell it points at (within 40 cells); the renderer
+  rings it. Glyphs `ui/emote_*` (`tools/norse_ui.py --emotes`) in a bubble over the head. The
+  animator asks for `emote_<kind>[_view]` tags while idle and stands idle where a sheet has none
+  (the people sheets don't yet).
+- **Quick lines** (`barks_quick.json`): help, over here, thanks, aye, nay, coming, fire, raiders,
+  said as ordinary `SayCommand`s (the alarms shouted), so every hearing rule holds.
+- **The wheel**: hold U and the mouse picks, with emotes inside and quick lines round them. On a pad,
+  the RB wheel's LB turns its pages: Actions, Show, Say. `--emote KIND [--emote-at S]` shows one, for
+  screenshots.
+- Bots wave as they greet a new face.
+- Bench hashes unchanged.

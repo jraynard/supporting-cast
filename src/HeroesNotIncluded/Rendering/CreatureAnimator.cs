@@ -142,8 +142,16 @@ public sealed class CreatureAnimator
         "breathe" => "breathe_windup",
         "downed" => "sleep",
         "ride" or "sit" => "idle",
-        _ => null,
+        _ => tag.StartsWith("emote_", StringComparison.Ordinal) ? "idle" : null,
     };
+
+    /// <summary>
+    /// A standing emote's tag (<c>emote_wave</c>, and <c>emote_wave_down</c> for a view). Sheets
+    /// without the frames stand idle; the bubble over the head says it either way.
+    /// </summary>
+    public static string EmoteTag(Sim.Speech.Emote kind) => EmoteTags[(int)kind];
+
+    private static readonly string[] EmoteTags = [.. Enum.GetValues<Sim.Speech.Emote>().Select(k => "emote_" + k.ToString().ToLowerInvariant())];
 
     /// <summary>
     /// The screen view for a heading: <paramref name="side"/> is its part along the screen's right,
@@ -193,7 +201,11 @@ public sealed class CreatureAnimator
         return null;
     }
 
-    public CreaturePose Pose(Simulation sim, Entity e, SpriteSheet sheet, Camera3D cam)
+    /// <summary>
+    /// <paramref name="emote"/>: what the viewer sees them showing (<see cref="Sim.Systems.PerceptionView.EmoteOf"/>),
+    /// played while they'd otherwise stand idle, a point facing where it points.
+    /// </summary>
+    public CreaturePose Pose(Simulation sim, Entity e, SpriteSheet sheet, Camera3D cam, Sim.Speech.SeenEmote? emote = null)
     {
         var w = sim.World;
         if (!_states.TryGetValue(e.Index, out var st) || st.Generation != e.Generation)
@@ -263,6 +275,8 @@ public sealed class CreatureAnimator
             job is Sim.Hospitality.SavourJob { Seated: true } or FestivalJob { Seated: true } or Sim.Systems.SitJob { Seated: true }
         );
         var want = ChooseTag(inputs);
+        if (emote is { } shown && want == "idle")
+            want = EmoteTag(shown.Kind);
         if (want != st.Want || newBreath)
             st.Done = null;
         st.Want = want;
@@ -315,6 +329,8 @@ public sealed class CreatureAnimator
             var aim = LocalAim is { } mine && mine.E == e ? mine.Aim : fm.Aim;
             look = new float3(MathF.Cos(aim), MathF.Sin(aim), 0);
         }
+        if (emote is { At: { } pointed } && !mover.Moving && !freeMoving)
+            look = Position.CenterOf(pointed) - pos.Pos;
         if (look is { } dir && !(tag is "sleep" or "downed"))
         {
             var side = dir.X * cam.Right.X + dir.Y * cam.Right.Y;

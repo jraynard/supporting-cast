@@ -180,6 +180,19 @@ internal static class ComponentCodecs
             w.Long(d.WokeTick);
         }, r => new Afterlife.Dream { Text = r.String(), Tick = r.Long(), WokeTick = r.Long() }),
         Codec("Unnerved", (w, u) => w.Long(u.Until), r => new Afterlife.Unnerved { Until = r.Long() }),
+        Codec("Emoting", (w, e) =>
+        {
+            w.Int((int)e.Kind);
+            w.Long(e.Since);
+            w.Long(e.Until);
+            w.Int3(e.From);
+            w.Bool(e.At.HasValue);
+            if (e.At is { } at)
+                w.Int3(at);
+        }, r => new Speech.Emoting
+        {
+            Kind = (Speech.Emote)r.Int(), Since = r.Long(), Until = r.Long(), From = r.Int3(), At = r.Bool() ? r.Int3() : null,
+        }),
         Codec("Unfinished", (w, u) => w.Int(u.Done), r => new Afterlife.Unfinished { Done = r.Int() }),
         Codec("Haunting", (w, h) =>
         {

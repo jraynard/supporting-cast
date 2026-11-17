@@ -11,6 +11,17 @@ between builds unless a section's **Compatibility** line says otherwise.
 
 Workstation windows that fit on the screen, and a right click and scrolling for the controller.
 
+**Talking without typing**
+- Hold U to open a wheel at the mouse. The inner ring shows a feeling: wave, bow, cheer, laugh,
+  point, shrug, weep or angry. The outer ring calls out: help, over here, thanks, aye, nay, coming,
+  fire or raiders. Move toward one and let go.
+- An emote shows in a bubble over your head, to anyone who can see you. Pointing marks the spot
+  under the mouse.
+- Calls are said aloud like anything you type, so they carry only as far as a voice does. The
+  alarms are shouted.
+- With a controller, hold RB for the action wheel and press LB to turn to Show and Say.
+- Bot players wave when they greet someone.
+
 **Workstations**
 - The forge is split into tabs: Make, Smelt and Mend. Each tab shows only when you have something
   for it. When a customer's piece is waiting, the forge opens on Mend and its tab is marked.

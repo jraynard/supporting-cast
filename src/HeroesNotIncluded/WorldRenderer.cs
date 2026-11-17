@@ -623,7 +623,9 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 else
                     Billboard(S(w.Get<Thing>(carried).Def.Sprite), p.Pos + cam.Right * 0.3f + WorldScale.Rise(size * 0.45f), 0.5f, 0.5f, Rgba.White, level);
             }
-            if (OrderBubbles.TryGetValue(e, out var wants) && !c.Dead && !c.Downed && !w.Has<Carried>(e))
+            if (Sees(sim).EmoteOf(e) is { } emote)
+                DrawEmote(sim, emote, p.Pos + WorldScale.Rise(VisualHeight(sim, e) + 0.2f), level, time);
+            else if (OrderBubbles.TryGetValue(e, out var wants) && !c.Dead && !c.Downed && !w.Has<Carried>(e))
                 DrawOrderBubble(wants, p.Pos + WorldScale.Rise(VisualHeight(sim, e) + 0.2f), level, time + e.Index);
             else if (ShowBubbles && c.Faction == Faction.Village && !c.Dead && !w.Has<Carried>(e) && BubbleIcon(sim, e) is { } icon)
                 DrawBubble(icon, p.Pos + WorldScale.Rise(VisualHeight(sim, e) + 0.2f), level, time + e.Index);
@@ -769,7 +771,7 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         var map = sim.Map;
         var c = w.Get<Creature>(e);
         var mind = w.Get<Mind>(e);
-        var pose = _anim.Pose(sim, e, sheet, _cam);
+        var pose = _anim.Pose(sim, e, sheet, _cam, Sees(sim).EmoteOf(e));
         var color = c.Dead ? Rgba.Pack(0.5f, 0.5f, 0.5f, 0.9f) : c.Downed ? Rgba.Pack(0.85f, 0.7f, 0.7f) : tint;
         // Humans are drawn lying flat (top-down art); dragons and animals lie down in their side view.
         var flat = c.Def.Race == Race.Human;
@@ -2097,6 +2099,37 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 0.42f, 0.42f, Rgba.White, level | Quad.Unlit);
         }
     }
+
+    /// <summary>The emote's glyph in a bubble, popping up as it starts; a point also rings the cell it points at.</summary>
+    private void DrawEmote(Simulation sim, Sim.Speech.SeenEmote emote, float3 at, uint level, float time)
+    {
+        var age = (sim.Clock.Tick - emote.Since) / (float)Sim.Core.SimClock.TicksPerSecond;
+        var left = (emote.Until - sim.Clock.Tick) / (float)Sim.Core.SimClock.TicksPerSecond;
+        var pop = Math.Clamp(age * 6f, 0f, 1f) * Math.Clamp(left * 4f, 0f, 1f);
+        var size = 0.62f * (0.6f + 0.4f * pop + 0.12f * MathF.Sin(MathF.PI * Math.Clamp(age * 3f, 0f, 1f)));
+        // A wave waggles, a laugh shakes, a cheer bounces: the glyph moves as the feeling does.
+        var wiggle = emote.Kind switch
+        {
+            Sim.Speech.Emote.Wave => _cam.Right * (0.06f * MathF.Sin(time * 12f)),
+            Sim.Speech.Emote.Laugh => WorldScale.Rise(0.04f * MathF.Abs(MathF.Sin(time * 16f))),
+            Sim.Speech.Emote.Cheer => WorldScale.Rise(0.1f * MathF.Abs(MathF.Sin(time * 7f))),
+            Sim.Speech.Emote.Angry => _cam.Right * (0.03f * MathF.Sin(time * 30f)),
+            _ => float3.Zero,
+        };
+        DrawBubble(EmoteIcon(emote.Kind), at + WorldScale.Rise(0.1f * pop) + wiggle, level, 0f, size: size);
+        if (emote.At is { } cell && InViewNow(cell))
+        {
+            var ring = 1.2f * (1f + 0.15f * MathF.Sin(time * 6f));
+            var parchment = Rgba.Pack(Ui.Theme.Parchment.X, Ui.Theme.Parchment.Y, Ui.Theme.Parchment.Z, 0.9f * pop);
+            Decal(S("ui/selection"), Position.CenterOf(cell) + new float3(0, 0, 0.04f), ring, parchment, Quad.Level(cell.Z) | Quad.Unlit, translucent: true);
+            Billboard(S("ui/emote_point"), Position.CenterOf(cell) + WorldScale.Rise(0.7f + 0.08f * MathF.Sin(time * 5f)), 0.4f, 0.4f, Rgba.White, Quad.Level(cell.Z) | Quad.Unlit);
+        }
+    }
+
+    /// <summary>An emote's glyph (<c>ui/emote_wave</c>...), from <c>tools/norse_ui.py --emotes</c>.</summary>
+    public static string EmoteIcon(Sim.Speech.Emote kind) => EmoteIcons[(int)kind];
+
+    private static readonly string[] EmoteIcons = [.. Enum.GetValues<Sim.Speech.Emote>().Select(k => "ui/emote_" + k.ToString().ToLowerInvariant())];
 
     private void DrawBubble(string icon, float3 at, uint level, float phase, uint? tint = null, float size = 0.56f)
     {

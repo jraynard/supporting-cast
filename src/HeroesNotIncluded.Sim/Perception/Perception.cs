@@ -221,6 +221,10 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         return dx * dx + dy * dy <= Perception.SkySight * Perception.SkySight * light * light && Clear(here, cell, i);
     }
 
+    /// <summary>What someone in sight is showing (a wave, a pointed finger); null if nothing, or they can't be seen.</summary>
+    public Speech.SeenEmote? EmoteOf(Entity e) =>
+        CanSee(e) && Speech.Emotes.Current(sim, e) is { } em ? new Speech.SeenEmote(em.Kind, em.At, em.Since, em.Until) : null;
+
     /// <summary>The creatures in sight, the viewer included.</summary>
     public IEnumerable<Entity> Creatures()
     {

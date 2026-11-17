@@ -93,7 +93,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     the body (`Revival`). A `Possessed` beast is steered like a player's character: where code means
     "a player steers this", ask `Players.Steered`, not `Has<Avatar>`.
   - `Perception/`: what a character knows. Sight reads `Map.Light`, so it must never feed sim state.
-  - `Speech/`: who heard what, decided when spoken from positions and rooms, and saved.
+  - `Speech/`: who heard what, decided when spoken from positions and rooms, and saved. Emotes
+    (`Emotes`, `EmoteCommand`) are seen, not heard: `PerceptionView.EmoteOf`. Quick lines from the
+    wheel (`VillageGame.Emotes`) are ordinary `SayCommand`s worded in `barks_quick.json`.
   - `Work/`: mini-games. `WorkSession.Advance` is pure, so `WorkPredictor` can run it ahead of the
     sim; anything reading the world goes in `StillValid` or `Finish`. Inputs arrive in batches.
     New sessions go in the `WorkSession.Read` switch. `Interrupted` keeps what lasts when one is

@@ -85,7 +85,7 @@ public sealed class SpeechSystem : ISimSystem, ISaveState
     /// <summary>Recent utterances, oldest first.</summary>
     public IReadOnlyList<Utterance> Kept => _kept;
 
-    public void Update(Simulation sim) { }
+    public void Update(Simulation sim) => Emotes.Tidy(sim);
 
     /// <summary>Text from the chat box: <c>/w</c> whispers, <c>/s</c> shouts, anything else is said.</summary>
     public static (Volume Volume, string Text) Parse(string input)

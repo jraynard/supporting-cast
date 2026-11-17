@@ -330,7 +330,10 @@ public class WorkTests
 
         bot.Tick();
 
-        var say = Assert.IsType<SayCommand>(Assert.Single(sent));
+        var wave = Assert.IsType<EmoteCommand>(Assert.Single(sent, c => c is EmoteCommand));
+        Assert.Equal((me, Emote.Wave), (wave.Actor, wave.Kind)); // a wave with the greeting
+        var say = Assert.IsType<SayCommand>(Assert.Single(sent, c => c is SayCommand));
+        Assert.Equal(2, sent.Count);
         Assert.Equal(me, say.Actor);
         Assert.Contains("Near", say.Text); // in its own words (barks.json), but to them
     }

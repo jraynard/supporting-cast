@@ -141,6 +141,8 @@ public sealed partial class BotPlayer
         foreach (var e in view.Creatures())
             if (e != me && view.Describe(e) is { } seen && !sim.World.Get<Creature>(e).Dead && _greeted.Add(e))
             {
+                if (Emotes.Problem(sim, me, Emote.Wave) == null)
+                    Send(new EmoteCommand(me, Emote.Wave, null));
                 if (Say(sim, me, "greet", Volume.Say, now, who: seen.Name))
                     return;
                 Send(new SayCommand(me, $"Morning, {seen.Name}.", Volume.Say)); // no barks in the defs

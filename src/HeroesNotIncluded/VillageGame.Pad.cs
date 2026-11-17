@@ -115,9 +115,10 @@ public sealed partial class VillageGame
         _padWindows.Clear();
     }
 
-    // ---------------- The action wheel ----------------
+    // ---------------- The wheel ----------------
 
-    private readonly record struct WheelEntry(string Id, Func<VillageGame, string?> Label, Action<VillageGame> Do);
+    /// <summary><paramref name="Icon"/>: a sprite shown beside the label (the emotes).</summary>
+    private readonly record struct WheelEntry(string Id, Func<VillageGame, string?> Label, Action<VillageGame> Do, string? Icon = null);
 
     /// <summary>What the wheel offers, clockwise from the top: the actions with no pad button by default. A null label leaves one out.</summary>
     private static readonly WheelEntry[] WheelEntries =
@@ -140,12 +141,31 @@ public sealed partial class VillageGame
     /// <summary>Actions the wheel reaches (the controls card says "the wheel" for them on a pad).</summary>
     private static readonly HashSet<string> WheelActions = [.. WheelEntries.Select(e => e.Id)];
 
-    private bool _wheelOpen;
-    private int _wheelPick = -1;
-    private List<(WheelEntry Entry, string Label)> _wheelShown = [];
+    /// <summary>
+    /// How the wheel was opened. On a pad (<see cref="Act.Wheel"/>) it's one ring at a time, the
+    /// pages <see cref="WheelPages"/> turned with LB, the right stick picking. From the keys
+    /// (<see cref="Act.Emote"/>) it opens at the mouse with the emotes inside and the quick lines
+    /// round them, and the mouse picks: which way, and how far out.
+    /// </summary>
+    private enum WheelBy { None, Pad, Keys }
+
+    private static readonly string[] WheelPages = ["Actions", "Show", "Say"];
+
+    private const PadButton WheelPageButton = PadButton.LB;
+
+    private readonly record struct Shown(WheelEntry Entry, string Label);
+
+    private WheelBy _wheelBy;
+    private int _wheelPage;
+    private (int Ring, int Index) _wheelPick = (-1, -1);
+    private List<List<Shown>> _wheelRings = [];
+    private float2 _wheelAnchor;
+
+    /// <summary>The cell under the mouse as the wheel opened: where a point points (null on a pad).</summary>
+    private int3? _wheelAimed;
 
     /// <summary>The wheel's up: the right stick picks from it rather than aims, and A and X wait.</summary>
-    private bool WheelOpen => _wheelOpen;
+    private bool WheelOpen => _wheelBy != WheelBy.None;
 
     /// <summary>
     /// The right stick points a cursor and the right trigger clicks (<see cref="Narsil.Platform.PadCursor"/>),
@@ -172,64 +192,137 @@ public sealed partial class VillageGame
         return slot < items.Count ? $"Hold: {_sim.World.Get<Thing>(items[slot]).Label}" : null;
     }
 
-    /// <summary>Hold the wheel's button to open it, lean the right stick to pick, let go to do it.</summary>
+    private static List<Shown> Ring(VillageGame g, IEnumerable<WheelEntry> entries) =>
+        [.. entries.Select(e => (e, e.Label(g))).Where(x => x.Item2 != null).Select(x => new Shown(x.e, x.Item2!))];
+
+    /// <summary>The rings to show: on a pad, the page that's up; from the keys, emotes and quick lines both.</summary>
+    private List<List<Shown>> BuildRings(WheelBy by) => by == WheelBy.Pad
+        ? [_wheelPage switch { 0 => Ring(this, WheelEntries), 1 => Ring(this, EmoteEntries), _ => Ring(this, QuickEntries) }]
+        : [Ring(this, EmoteEntries), Ring(this, QuickEntries)];
+
+    /// <summary>Radii (screen pixels) the rings are drawn at; the keys' wheel picks its ring by the halfway mark.</summary>
+    private float RingRadius(int ring, int rings) => rings == 1 ? Gui.S(150) : ring == 0 ? Gui.S(92) : Gui.S(184);
+
+    /// <summary>Hold the wheel's button to open it, lean the right stick (or move the mouse) to pick, let go to do it.</summary>
     private void HandleWheel()
     {
-        var can = HasAvatar && !Working && !WeaponDrawn && !Host.ImGui.GamepadNav;
-        var held = can && Controls.Map.Down(Act.Wheel);
-        if (held && !_wheelOpen)
+        var padCan = HasAvatar && !Working && !WeaponDrawn && !Host.ImGui.GamepadNav;
+        // From the keys a blade may be out: a call for help is wanted most then (an emote is refused).
+        var keyCan = HasAvatar && !Working && !ImGui.GetIO().WantTextInput;
+        var padHeld = padCan && Controls.Map.Down(Act.Wheel);
+        var keyHeld = keyCan && Controls.Map.Down(Act.Emote);
+        var by = _wheelBy != WheelBy.None ? _wheelBy : padHeld ? WheelBy.Pad : keyHeld ? WheelBy.Keys : WheelBy.None;
+        var held = by switch { WheelBy.Pad => padHeld, WheelBy.Keys => keyHeld, _ => false };
+        if (held && _wheelBy == WheelBy.None)
         {
-            _wheelShown = [.. WheelEntries.Select(e => (e, e.Label(this))).Where(x => x.Item2 != null).Select(x => (x.e, x.Item2!))];
-            _wheelPick = -1;
+            _wheelBy = by;
+            _wheelPage = 0;
+            _wheelPick = (-1, -1);
+            _wheelAnchor = ImGui.GetMousePos();
+            _wheelAimed = by == WheelBy.Keys && _sim.Map.InBounds(_hoverCell) ? _hoverCell : null;
+            _wheelRings = BuildRings(by);
         }
-        if (held && _wheelShown.Count > 0)
+        if (held && by == WheelBy.Pad)
         {
-            var stick = Host.Gamepad.RightStick;
-            if (stick.X * stick.X + stick.Y * stick.Y > 0.25f)
+            if (Host.Gamepad.WasPressed(WheelPageButton))
             {
-                // Clockwise from the top, as drawn.
-                var turn = MathF.Atan2(stick.X, stick.Y);
-                if (turn < 0)
-                    turn += MathF.Tau;
-                _wheelPick = (int)MathF.Round(turn / MathF.Tau * _wheelShown.Count) % _wheelShown.Count;
+                _wheelPage = (_wheelPage + 1) % WheelPages.Length;
+                _wheelRings = BuildRings(by);
+                _wheelPick = (-1, -1);
             }
+            var stick = Host.Gamepad.RightStick;
+            if (stick.X * stick.X + stick.Y * stick.Y > 0.25f && _wheelRings[0].Count > 0)
+                _wheelPick = (0, Slice(MathF.Atan2(stick.X, stick.Y), _wheelRings[0].Count));
         }
-        if (!held && _wheelOpen && can && _wheelPick >= 0 && _wheelPick < _wheelShown.Count)
-            _wheelShown[_wheelPick].Entry.Do(this);
-        _wheelOpen = held;
+        else if (held)
+        {
+            var d = ImGui.GetMousePos() - WheelCenter;
+            var far = MathF.Sqrt(d.X * d.X + d.Y * d.Y);
+            var ring = far < Gui.S(30) ? -1 : far < (RingRadius(0, 2) + RingRadius(1, 2)) * 0.5f ? 0 : 1;
+            // Screen y runs down; the wheel is laid out clockwise from the top.
+            _wheelPick = ring < 0 || _wheelRings[ring].Count == 0 ? (-1, -1) : (ring, Slice(MathF.Atan2(d.X, -d.Y), _wheelRings[ring].Count));
+        }
+        if (!held && _wheelBy != WheelBy.None)
+        {
+            var can = _wheelBy == WheelBy.Pad ? padCan : keyCan;
+            if (can && _wheelPick.Ring >= 0 && _wheelPick.Ring < _wheelRings.Count && _wheelPick.Index < _wheelRings[_wheelPick.Ring].Count)
+                _wheelRings[_wheelPick.Ring][_wheelPick.Index].Entry.Do(this);
+            _wheelBy = WheelBy.None;
+            _wheelAimed = null;
+        }
+    }
+
+    /// <summary>Which of <paramref name="n"/> slices, clockwise from the top, a turn (radians, clockwise from up) falls in.</summary>
+    private static int Slice(float turn, int n)
+    {
+        if (turn < 0)
+            turn += MathF.Tau;
+        return (int)MathF.Round(turn / MathF.Tau * n) % n;
+    }
+
+    /// <summary>Mid-screen on a pad; from the keys, where the mouse was, kept on screen.</summary>
+    private float2 WheelCenter
+    {
+        get
+        {
+            var screen = ImGui.GetIO().DisplaySize;
+            if (_wheelBy != WheelBy.Keys)
+                return screen * 0.5f;
+            var margin = RingRadius(1, 2) + Gui.S(60);
+            return new float2(Math.Clamp(_wheelAnchor.X, margin, Math.Max(margin, screen.X - margin)),
+                Math.Clamp(_wheelAnchor.Y, margin, Math.Max(margin, screen.Y - margin)));
+        }
     }
 
     private void DrawWheel()
     {
-        if (!_wheelOpen || _wheelShown.Count == 0)
+        if (!WheelOpen || _wheelRings.Count == 0)
             return;
         var dl = ImGui.GetForegroundDrawList(ImGui.GetMainViewport());
-        var center = ImGui.GetIO().DisplaySize * 0.5f;
-        var radius = Gui.S(150);
+        var center = WheelCenter;
+        var outer = RingRadius(_wheelRings.Count - 1, _wheelRings.Count);
         var hub = Gui.S(26);
-        dl.AddCircleFilled(in center, radius + Gui.S(46), Theme.U8(new float4(0.05f, 0.04f, 0.03f, 0.55f)), 48);
+        dl.AddCircleFilled(in center, outer + Gui.S(56), Theme.U8(new float4(0.05f, 0.04f, 0.03f, 0.55f)), 48);
         dl.AddCircleFilled(in center, hub, Theme.U8(Theme.AccentSoft, 0.8f), 24);
-        for (var i = 0; i < _wheelShown.Count; i++)
+        for (var r = 0; r < _wheelRings.Count; r++)
         {
-            var angle = MathF.Tau * i / _wheelShown.Count;
-            var at = center + new float2(MathF.Sin(angle), -MathF.Cos(angle)) * radius;
-            var label = _wheelShown[i].Label;
-            var size = ImGui.CalcTextSize(label, false, -1f);
-            var pad = Gui.S(8);
-            var min = at - size * 0.5f - new float2(pad, pad * 0.6f);
-            var max = at + size * 0.5f + new float2(pad, pad * 0.6f);
-            var picked = i == _wheelPick;
-            dl.AddRectFilled(in min, in max, Theme.U8(picked ? Theme.AccentSoft : new float4(0.11f, 0.085f, 0.075f, 0.95f)), Gui.S(4), ImDrawFlags.None);
-            dl.AddRect(in min, in max, Theme.U8(picked ? Theme.Accent : Theme.Dim, 0.8f), Gui.S(4), ImDrawFlags.None, picked ? 2f : 1f);
-            var tp = at - size * 0.5f;
-            dl.AddText(in tp, Theme.U8(Theme.Text), label);
+            var shown = _wheelRings[r];
+            var radius = RingRadius(r, _wheelRings.Count);
+            for (var i = 0; i < shown.Count; i++)
+            {
+                var angle = MathF.Tau * i / shown.Count;
+                var at = center + new float2(MathF.Sin(angle), -MathF.Cos(angle)) * radius;
+                var (entry, label) = shown[i];
+                var size = ImGui.CalcTextSize(label, false, -1f);
+                var icon = entry.Icon != null ? Gui.S(26) : 0f;
+                var gap = icon > 0 ? Gui.S(4) : 0f;
+                var body = new float2(size.X + icon + gap, Math.Max(size.Y, icon));
+                var pad = Gui.S(8);
+                var min = at - body * 0.5f - new float2(pad, pad * 0.6f);
+                var max = at + body * 0.5f + new float2(pad, pad * 0.6f);
+                var picked = _wheelPick == (r, i);
+                dl.AddRectFilled(in min, in max, Theme.U8(picked ? Theme.AccentSoft : new float4(0.11f, 0.085f, 0.075f, 0.95f)), Gui.S(4), ImDrawFlags.None);
+                dl.AddRect(in min, in max, Theme.U8(picked ? Theme.Accent : Theme.Dim, 0.8f), Gui.S(4), ImDrawFlags.None, picked ? 2f : 1f);
+                var left = at - body * 0.5f;
+                if (entry.Icon is { } sprite)
+                    DrawSprite(dl, Host.Atlas.Get(sprite), new float2(left.X, at.Y - icon * 0.5f), new float2(icon, icon));
+                var tp = new float2(left.X + icon + gap, at.Y - size.Y * 0.5f);
+                dl.AddText(in tp, Theme.U8(Theme.Text), label);
+            }
         }
-        if (_wheelPick >= 0)
+        if (_wheelPick.Ring >= 0)
         {
-            var angle = MathF.Tau * _wheelPick / _wheelShown.Count;
+            var angle = MathF.Tau * _wheelPick.Index / _wheelRings[_wheelPick.Ring].Count;
             var tip = center + new float2(MathF.Sin(angle), -MathF.Cos(angle)) * (hub + Gui.S(14));
             dl.AddLine(in center, in tip, Theme.U8(Theme.Accent), Gui.S(3));
         }
+        // What's up, and how to turn the page (a pad) or what the rings are (the keys).
+        var caption = _wheelBy == WheelBy.Pad
+            ? $"{WheelPages[_wheelPage]}    {WheelPageButton}: {WheelPages[(_wheelPage + 1) % WheelPages.Length]}"
+            : "Show (inside)  ·  Say (outside)";
+        var cs = ImGui.CalcTextSize(caption, false, -1f);
+        var cp = center + new float2(-cs.X * 0.5f, outer + Gui.S(30));
+        dl.AddText(in cp, Theme.U8(Theme.Dim), caption);
     }
 
     // ---------------- The game menu ----------------

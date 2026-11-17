@@ -254,6 +254,11 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>Debug (<c>--die-at SECONDS</c>): your character drops dead this long in, to try being a ghost. Negative: never.</summary>
     public float DieAt { get; init; } = -1f;
 
+    /// <summary>Debug (<c>--emote KIND</c>, <c>--emote-at SECONDS</c>): your character shows it once, then.</summary>
+    public string? DevEmote { get; init; }
+
+    public float DevEmoteAt { get; init; } = 1f;
+
     /// <summary>Debug (<c>--festival-at SECONDS</c>): the season's festival begins this long in, to see it. Negative: on the clock.</summary>
     public float FestivalAt { get; init; } = -1f;
 

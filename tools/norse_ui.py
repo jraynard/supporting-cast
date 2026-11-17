@@ -410,6 +410,82 @@ def good(img):
     part(img, poly([(3, 12), (7, 9), (10, 13), (19, 3), (22, 6), (10, 20)]), GREEN, radius=1.0)
 
 
+# ---------------------------------------------------------------- emotes (over a head, in a bubble: Speech/Emotes)
+
+def emote_wave(img):
+    """An open hand, raised, with a swish either side."""
+    part(img, lambda d: d.rounded_rectangle([7, 10, 17, 21], radius=3, fill=255), OAT, radius=1.0)          # the palm
+    for x, top in ((7, 5), (9.6, 3), (12.2, 3), (14.8, 5)):
+        part(img, lambda d, x=x, top=top: d.rounded_rectangle([x, top, x + 2.2, 12], radius=1, fill=255), OAT, radius=0.6)
+    part(img, stick((16, 15), (20, 10), 2.2), OAT, radius=0.6)                                               # the thumb
+    for r, a0, a1 in ((5, 200, 250), (8, 205, 245)):
+        part(img, lambda d, r=r, a0=a0, a1=a1: d.arc([12 - r, 12 - r, 12 + r, 12 + r], a0, a1, fill=255, width=1), BONE[2:], line=None)
+
+
+def emote_bow(img):
+    """Someone bowing low from the waist: legs straight, back level, head down past it."""
+    part(img, stick((7, 22), (8, 13), 3.2), WALNUT, radius=0.6)                                                 # the legs
+    part(img, lambda d: d.polygon(ribbon([(6, 14), (12, 11), (17, 12)], [5.0, 5.0, 4.2]), fill=255), WOAD, radius=1.0)  # the back, coated
+    part(img, ell([15, 11, 22, 18]), OAT, radius=1.0)                                                          # the head, bowed
+    part(img, stick((11, 14), (13, 18), 1.8), OAT, line=None)                                                   # a hand hanging
+
+
+def emote_cheer(img):
+    """A tankard raised in a toast, frothing over the rim."""
+    part(img, lambda d: d.rounded_rectangle([4, 8, 15, 22], radius=2, fill=255), WALNUT, radius=1.0)            # the tankard
+    part(img, lambda d: d.arc([12, 10, 21, 19], 270, 90, fill=255, width=3), WALNUT, radius=0.6)                # its handle
+    for y in (11, 19):
+        part(img, lambda d, y=y: d.rectangle([4, y, 15, y + 1], fill=255), BRONZE, line=None)                    # the hoops
+    part(img, lambda d: (d.ellipse([2, 3, 10, 10], fill=255), d.ellipse([7, 2, 16, 10], fill=255)), LINEN, radius=1.0)  # the froth
+    put(img, 18, 4, LINEN[3]); put(img, 20, 7, LINEN[2]); put(img, 1, 13, LINEN[2])
+
+
+def emote_laugh(img):
+    """A face laughing: eyes screwed shut, mouth wide."""
+    part(img, ell([2, 2, 21, 21]), OAT, radius=1.4)
+    for x in (6, 13):
+        part(img, lambda d, x=x: d.arc([x, 7, x + 5, 12], 200, 340, fill=255, width=1), [INK], line=None)
+    part(img, lambda d: d.chord([6, 9, 17, 19], 0, 180, fill=255), MEAT[:3], radius=0.6)
+
+
+def emote_point(img):
+    """A hand pointing: there, look."""
+    part(img, lambda d: d.rounded_rectangle([3, 9, 12, 19], radius=3, fill=255), OAT, radius=1.0)           # the fist
+    part(img, lambda d: d.rounded_rectangle([10, 9, 22, 12], radius=1, fill=255), OAT, radius=0.6)          # the finger
+    part(img, stick((5, 9), (8, 5), 2.0), OAT, radius=0.6)                                                    # the thumb
+
+
+def emote_shrug(img):
+    """Who knows: a question, carved."""
+    part(img, lambda d: d.arc([5, 2, 18, 14], 180, 90, fill=255, width=4), WOAD, radius=0.6)
+    part(img, poly([(10, 12), (14, 12), (14, 17), (10, 17)]), WOAD)
+    part(img, ell([10, 18, 14, 22]), WOAD)
+
+
+def emote_weep(img):
+    """Tears."""
+    part(img, lambda d: (d.polygon([(9, 2), (4, 11), (14, 11)], fill=255), d.ellipse([4, 7, 14, 17], fill=255)), WATER, radius=1.2)
+    part(img, lambda d: (d.polygon([(17, 9), (14, 15), (20, 15)], fill=255), d.ellipse([14, 12, 20, 19], fill=255)), WATER, radius=1.0)
+
+
+def emote_angry(img):
+    """The sign of temper: four hooks bowing in on a throbbing middle."""
+    for cx, cy, a0 in ((2, 2, 0), (21, 2, 90), (21, 21, 180), (2, 21, 270)):
+        part(img, lambda d, cx=cx, cy=cy, a0=a0: d.arc([cx - 9, cy - 9, cx + 9, cy + 9], a0 + 8, a0 + 82, fill=255, width=3), RED, radius=0.6)
+
+
+EMOTE_ICONS = (("wave", emote_wave), ("bow", emote_bow), ("cheer", emote_cheer), ("laugh", emote_laugh),
+               ("point", emote_point), ("shrug", emote_shrug), ("weep", emote_weep), ("angry", emote_angry))
+
+
+def emotes():
+    """Only the emote glyphs (ui/emote_*): --emotes, so the rest needn't be written again."""
+    for name, fn in EMOTE_ICONS:
+        img = canvas()
+        fn(img)
+        ink_outline(img).save(os.path.join(ROOT, "ui", f"emote_{name}.png"))
+
+
 def work_anvil():
     """A horned anvil on a stump, side on, for the hammering scene."""
     img = Image.new("RGBA", (48, 32), (0, 0, 0, 0))
@@ -474,7 +550,9 @@ def generate():
         fn().save(os.path.join(ROOT, "ui", "work", f"{name}.png"))
     fx_fire().save(os.path.join(ROOT, "fx", "fire.png"))
     fx_ember().save(os.path.join(ROOT, "fx", "ember.png"))
+    emotes()
 
 
 if __name__ == "__main__":
-    generate()
+    import sys
+    emotes() if "--emotes" in sys.argv else generate()
