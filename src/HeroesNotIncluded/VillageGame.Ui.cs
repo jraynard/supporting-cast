@@ -62,8 +62,9 @@ public sealed partial class VillageGame
         DrawHandsAimHint();
         // Bottom left, before the centre so the centre keeps clear of it.
         DrawInspector();
-        // Bottom right: which way north is.
+        // Bottom right: which way north is, and the town round you above it.
         DrawCompass();
+        DrawMinimap();
         // Bottom centre, stacking upward: the build tools, the hotbar, the panel buttons, and the work in hand.
         DrawToolbar();
         DrawHotbar();
@@ -99,6 +100,7 @@ public sealed partial class VillageGame
         DrawReveal();
         DrawPlaytestNote();
         DrawControls();
+        DrawTownMap();
         _settings.Draw();
         DrawPadMenu();
         DrawWheel();

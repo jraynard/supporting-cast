@@ -139,8 +139,10 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         ref var p = ref w.Get<Position>(e);
         var (pos, cell, vel) = Slide(sim, p.Pos, p.Cell, m.Vel, w.TryGet<Perched>(e, out var up) ? up.Cell : null);
         m.Vel = vel;
-        if (cell != p.Cell && w.TryGet<Perched>(e, out var perch) && perch.Cell != cell)
-            w.Remove<Perched>(e); // stepped down off the furniture
+        // Stepped down off the furniture once the whole of you is off it, not just your middle:
+        // till then the perch keeps its cell out of Fits, or its edge would snag you.
+        if (w.TryGet<Perched>(e, out var perch) && perch.Cell != cell && !Touches(new float2(pos.X, pos.Y), perch.Cell))
+            w.Remove<Perched>(e);
         p.Pos = pos;
         p.Cell = cell;
         // F's "in front" is the way you face, to the nearest of eight.
@@ -243,9 +245,10 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
             (x, y, dist) = (p.Pos.X + dx * part, p.Pos.Y + dy * part, budget);
         }
         var cell = new int3((int)MathF.Floor(x), (int)MathF.Floor(y), z);
-        if (!sim.Map.Passable(cell) || !Fits(sim, new float2(x, y), z) || !Walkable(sim, p.Cell, cell))
+        int3? perch = w.TryGet<Perched>(e, out var up) ? up.Cell : null;
+        if ((cell != perch && !sim.Map.Passable(cell)) || !Fits(sim, new float2(x, y), z, perch) || !Walkable(sim, p.Cell, cell))
             return;
-        if (cell != p.Cell && w.TryGet<Perched>(e, out var perch) && perch.Cell != cell)
+        if (perch is { } on && on != cell && !Touches(new float2(x, y), on))
             w.Remove<Perched>(e);
         p.Pos = new float3(x, y, z);
         p.Cell = cell;
@@ -288,6 +291,16 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
             }
             start = end;
         }
+        return false;
+    }
+
+    /// <summary>Does a free mover with its middle at <paramref name="at"/> still overlap <paramref name="cell"/>'s column (the corners <see cref="Fits"/> checks)?</summary>
+    public static bool Touches(float2 at, int3 cell)
+    {
+        for (var dy = -1; dy <= 1; dy += 2)
+        for (var dx = -1; dx <= 1; dx += 2)
+            if ((int)MathF.Floor(at.X + dx * Radius) == cell.X && (int)MathF.Floor(at.Y + dy * Radius) == cell.Y)
+                return true;
         return false;
     }
 

@@ -81,6 +81,8 @@ public sealed partial class VillageGame
             _showControls = !_showControls;
         if (map.Pressed(Act.Menu))
             _gameMenu = !_gameMenu;
+        if (map.Pressed(Act.TownMap))
+            ToggleTownMap();
         if (_showBuild)
             return; // the drawer's letter keys are the build tools'
         foreach (var tab in JournalTabs)

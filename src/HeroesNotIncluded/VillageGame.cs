@@ -765,6 +765,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
                 SetTool(ToolKind.Select);
             else if (_showControls)
                 _showControls = false;
+            else if (_showTownMap)
+                _showTownMap = false;
             else if (!_selected.IsNull)
                 _selected = Entity.Null;
             else

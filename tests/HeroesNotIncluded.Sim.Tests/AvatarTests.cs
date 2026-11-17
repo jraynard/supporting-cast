@@ -188,6 +188,38 @@ public class AvatarTests
         sim.Enqueue(new AvatarMoveCommand(me, default));
         sim.TickMany(SimClock.TicksPerSecond);
         Assert.True(Cell(sim, me).X >= 7, $"stepped down east, at {Cell(sim, me)}");
+
+        // And the walk goes on: stepping down never leaves you snagged on the table's edge.
+        sim.Enqueue(new AvatarMoveCommand(me, new int2(1, 0)));
+        sim.TickMany(SimClock.TicksPerSecond);
+        sim.Enqueue(new AvatarMoveCommand(me, default));
+        sim.TickMany(SimClock.TicksPerSecond / 2);
+        var pos = sim.World.Get<Position>(me).Pos;
+        Assert.True(pos.X > 7.5f, $"walked on east after stepping down, at {pos}");
+        Assert.False(sim.World.Has<Perched>(me));
+    }
+
+    [Fact]
+    public void SteppingOffATableThenWalkingAlongItsSide()
+    {
+        var sim = Warm();
+        sim.SpawnStructure(sim.Thing("Table"), C(6, 5));
+        sim.RebuildDerivedIfNeeded();
+        var me = Avatar(sim, C(5, 5));
+        sim.Enqueue(new AvatarWorkCommand(me, true, C(6, 5)));
+        sim.TickMany(SimClock.TicksPerSecond * 2);
+        Assert.True(sim.World.Has<Perched>(me));
+
+        // A short step south, just off the edge, then along the table's side to the east.
+        sim.Enqueue(new AvatarMoveCommand(me, new int2(0, 1)));
+        sim.TickMany(SimClock.TicksPerSecond / 3);
+        sim.Enqueue(new AvatarMoveCommand(me, new int2(1, 0)));
+        sim.TickMany(SimClock.TicksPerSecond);
+        sim.Enqueue(new AvatarMoveCommand(me, default));
+        sim.TickMany(SimClock.TicksPerSecond / 2);
+        var pos = sim.World.Get<Position>(me).Pos;
+        Assert.True(pos.Y > 6f, $"stepped down south, at {pos}");
+        Assert.True(pos.X > 7.5f, $"walked east along the table, at {pos}");
         Assert.False(sim.World.Has<Perched>(me));
     }
 
