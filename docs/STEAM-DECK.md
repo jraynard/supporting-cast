@@ -14,6 +14,34 @@ device you last touched.
 3. Leave the compatibility tool off: it's a native Linux build, so don't run it through Proton.
 4. Go back to Game Mode and launch it from your library.
 
+## Quick deploys from a dev machine
+
+For testing builds, skip the tarball: `tools/deck.sh` publishes the Linux build and copies only
+what changed straight into the Deck's install folder over ssh, so a push after a small change
+takes seconds and the library shortcut runs it.
+
+Once, on the Deck in Desktop Mode (Konsole):
+
+```sh
+passwd                                  # give the deck user a password
+sudo systemctl enable --now sshd
+```
+
+Once, on your machine: `ssh-copy-id deck@steamdeck.local` (or the Deck's IP). Then:
+
+```sh
+tools/deck.sh push            # publish (Release) and send it; --debug for a Debug build
+tools/deck.sh tail            # follow the game's log on the Deck while you play
+tools/deck.sh logs            # fetch its logs (playtest rounds, crashes) and screenshots into dist/deck-pulled/
+tools/deck.sh ssh             # a shell on the Deck
+```
+
+`DECK_HOST` (default `deck@steamdeck.local`) and `DECK_DIR` (default `~/Games/HeroesNotIncluded`,
+where the shortcut points) choose where it goes. Launch from the library as usual: a game started
+over ssh wouldn't get Game Mode's display or Steam Input. Co-op only connects identical builds, so
+to host from your machine for a Deck you just pushed, run `dist/deck/HeroesNotIncluded` rather
+than `dotnet run`.
+
 ## What the game does on a Deck
 
 When the game finds no settings file yet (`~/.config/Heroes_Not_Included/settings.json`) and

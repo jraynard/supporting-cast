@@ -34,6 +34,7 @@ dotnet run --project src/HeroesNotIncluded -- --check-gpu
 dotnet run --project src/HeroesNotIncluded -- --input-log     # joysticks, focus and clicks to the log (on a Deck: NARSIL_INPUT_LOG=1 %command%)
 dotnet run --project src/HeroesNotIncluded -c Release -- --bench --seed 1234   # per-system cost and hashes (--round: a whole season with bots and crises)
 dotnet run --project src/HeroesNotIncluded -c Release -- --season-sweep --seeds 8   # bot-played seasons: the baseline for tuning season.json (also --combat-sweep)
+tools/deck.sh push                                        # publish linux-x64 and rsync it to a Steam Deck over ssh (logs, tail: docs/STEAM-DECK.md)
 dotnet run --project external/narsil/src/Narsil.Relay -- --port 47050       # relay for online play
 python3 tools/lake_map.py --preview OUT.png               # Reedmere, the town on stilts (tools/village_map.py: Millbrook; shared helpers in tools/mapkit.py)
 python3 tools/chibi_people.py --preview                    # art generators: see docs/ART.md
