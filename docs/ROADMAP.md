@@ -23,14 +23,41 @@ internet, with the weakest trade brought up and the numbers tuned.
 
 ## Now: the co-op round, solid
 
-What's left before M4 is a tuning playtest that covers everything still to be tested or reviewed.
+What outside testers have shown so far (playtests 18 to 22): **getting in** was rough from an
+itch.io link but smooth since testers were given the app and a key, so the trouble was getting
+the build, not the netcode. **The trades confused people**: what their work is and what to do
+first. Visual issues and requests came along the way. So the order is: newcomers first, then the
+numbers. Tuning a season with players who don't yet know their work only measures the confusion.
 
-### The tuning playtest
+### 1. The first ten minutes
+The tutorial (playtest.20), F to take an order and the "waiting" tags (playtest.22) are the answer
+so far. Nobody new has tried them yet.
+- [ ] **The tutorial, played by someone new:** one trade at a time, the whole run (`--practice
+  TRADE`): the words, the step shown, the arrow and the glowed button, the stuck hint
+  (PLAYTEST.md, "The lessons"). Check it alone first, then watch a non-gamer (and a child, if
+  one's handy) play their first ten minutes without help.
+- [ ] **The tutorial's gaps:** handing over a drink, a dish or a box from the order (as "Take it
+  back" does for a mend), and the customer pointer for notice-board errands (`VillageGame.Errands`).
+- [ ] **For you to decide: a first-round hint.** The tutorial is optional, so anyone who skips it
+  starts a round confused. Either a one-line "your work: ..." on the trade's card until that trade
+  has a finished round (`CharacterProgress`), or a nudge on the trade picker toward the tutorial
+  for a trade never played. The first goes against "no in-round tips" (CLAUDE.md).
+- [ ] Maybe mark a trade or two on the picker as a good first one (the smith's loop is the plainest).
+- **Done:** the labourer is no longer offered to players (it has no game of its own; Backlog, "The
+  trades, deeper"). It's still what a sixth player gets, and the lobby says so.
+
+### 2. From testers
+Visual issues and requests from playtests, so they don't get lost between HISTORY.md and the Backlog.
+- [ ] **Flicker** at wall corners and on furniture, and the upper floors when walking past the inn.
+
+### 3. The tuning playtest
 Rounds with friends over the internet, to prove the round and tune its numbers, then a pass on
-what they show. How to run it: [PLAYTEST.md](PLAYTEST.md). Each round leaves its numbers and the
-testers' notes (F11) under the logs folder's `rounds/`; `--season-sweep` gives the bots' baseline.
-Mini-game timings come after, trade by trade (Backlog, "Tuning the mini-games"). What's been
-answered so far is in HISTORY.md, "Solo playtest notes" and "From two multiplayer rounds".
+what they show, once players know their work (1). Play on **Millbrook**; Reedmere is untuned and
+still being built (Later, "Reedmere, in progress"). How to run it: [PLAYTEST.md](PLAYTEST.md).
+Each round leaves its numbers and the testers' notes (F11) under the logs folder's `rounds/`;
+`--season-sweep` gives the bots' baseline. Mini-game timings come after, trade by trade (Backlog,
+"Tuning the mini-games"). What's been answered so far is in HISTORY.md, "Solo playtest notes" and
+"From two multiplayer rounds".
 
 **Settled, leave alone**
 - **The dragon:** in a multiplayer round, two or three players throwing water drove it off easily
@@ -41,12 +68,7 @@ answered so far is in HISTORY.md, "Solo playtest notes" and "From two multiplaye
   Left unless friends say the same.
 - **Join snapshots:** 54 KB, built in 3 to 48 ms, with no stall seen. No need to chunk them.
 
-**For you to look at, alone** (dev flags)
-- [ ] **The tutorial:** one trade at a time, the whole run (`--practice TRADE`): the words, the step
-  shown, the arrow and the glowed button, the stuck hint (PLAYTEST.md, "The lessons").
-
-**For you to look at, next round with friends.** These were fixed after the last two rounds and
-haven't been played since:
+**Next round with friends.** Fixed after the last rounds and not played since:
 - [ ] **Feasts:** does the cook see the call and lay one on in its 6 hours?
 - [x] **The downed:** do players and the AI keep them alive now? AI first aid, bandaging and rescue
   now reach downed adventurers, and blows go over the downed. A downed healer weaves on themselves.
@@ -59,34 +81,24 @@ haven't been played since:
   lost for good, and guests walking in on each other more than a careless keeper earns.
   Playtest feedback (rooms feast or famine, order buttons, keys, markers, the cleaning and mixing
   games, the keg, the upper floor) and its fixes are built: [HISTORY.md](HISTORY.md), "The innkeeper's playtest".
-- [ ] **The cook supplies the inn** (Reedmere; HISTORY.md, "The cook supplies the inn"): does the
-  innkeeper keep the warming shelf stocked, and is the trek to the cookhouse worth the bar standing
-  empty? Do the bowls that go over in hampers come back, or pile up dirty at the inn?
-- [ ] **Reedmere, redrawn** (HISTORY.md, "Reedmere, the town on the long lake"): does the crowded
-  town read in play, is the long bridge worth its walk, and does the festival on the boats work
-  with friends? The raft reads as one great barge from the usual angle; boats you can tell apart
-  would be better.
-- [ ] **The rare companies** (HISTORY.md, same entry): do the dwarves and the long road's company
-  feel like an event? Their chances (0.3 and 0.25 a round) and their errands' danger are first guesses.
-- [ ] **Reedmere, still to do:** knockback off the walks, swimming and breath, fishing someone out
-  (a body sunk in the lake is the traitors', M4); rowing the moored boats; a proper dipping post
-  sprite; balance (`--season-sweep --seeds 8 --map Reedmere`), once the rest has settled. It may
-  stay a little harder than Millbrook on purpose.
-- [ ] **Flicker** at wall corners and on furniture, and the upper floors when walking past the inn.
+- [ ] **The rare companies** (HISTORY.md, "Reedmere, the town on the long lake"): do the dwarves
+  and the long road's company feel like an event? Their chances (0.3 and 0.25 a round) and their
+  errands' danger are first guesses.
 - [ ] **Net notices:** if someone drops, it now shows up in `net.log`.
 
-**For you to look at, the connection** (the relay: `CoopRelay.Default`, 129.153.122.49:47050;
-redeploy with `external/narsil/deploy/relay/publish.sh ubuntu@129.153.122.49 linux-arm64`)
+**The connection, in those same rounds.** Getting in is fine now; what's left is staying in. No
+session of its own: watch for these in ordinary rounds. (The relay: `CoopRelay.Default`,
+129.153.122.49:47050; redeploy with `external/narsil/deploy/relay/publish.sh ubuntu@129.153.122.49 linux-arm64`)
 - [ ] A joiner on another network (a phone hotspot will do).
 - [ ] Over a whole round, watch the Players window's buffer, jitter and starvations.
 - [ ] Join mid-round.
 - [ ] Pull the host's network for a few seconds: the session should carry on, not split.
 
-**For you to look at, also new since:** adventurers dying in town now count as lost (Renown and
-Dread, and the reveal), feasts give the kitchen 6 hours, and there are six parties, each coming
-once before any comes again (HISTORY.md, "From two multiplayer rounds"). In the bots' sweep,
-Renown rose with them (mean 43 to 58 of 60 over 8 seeds, mostly feasts now laid on). Tune
-`renownTarget` against a round with friends, not before.
+**Also new since:** adventurers dying in town now count as lost (Renown and Dread, and the
+reveal), feasts give the kitchen 6 hours, and there are six parties, each coming once before any
+comes again (HISTORY.md, "From two multiplayer rounds"). In the bots' sweep, Renown rose with them
+(mean 43 to 58 of 60 over 8 seeds, mostly feasts now laid on). Tune `renownTarget` against a round
+with friends, not before.
 
 **For you to decide: the numbers** (defaults not yet tuned in play)
 - [ ] **The season** (`season.json`): the Renown target and Dread rates (Dread per death included),
@@ -105,7 +117,19 @@ Renown rose with them (mean 43 to 58 of 60 over 8 seeds, mostly feasts now laid 
   ride (`Possession.DrainPerHour`, by mass) and whether a ridden boar is too strong a fighter; how
   hard the dead's unnerving bites (`Hauntings.Unnerved*`).
 
-*Exit: friends play a whole round from their own homes, and the numbers have had a pass.*
+### 4. Alongside: Steam Playtest
+Testers with a download and a key got in smoothly. Steam Playtest is that done properly: one click
+to ask for access, and updates for everyone, so the whole group is always on the same build.
+Moved up from "once Whispers plays" (Toward Steam, "When").
+- [ ] Steamworks account and app fee; the app with a **Coming soon** page (capsule and
+  screenshots; the trailer can wait for the music). Check whether Valve wants the page public
+  before a Playtest can open.
+- [ ] Steam Playtest set up and builds uploaded by the release workflow, beside itch.
+- Keep itch keys as the fallback until it's running. Steam invites, lobbies and Datagram Relay
+  stay with Early Access prep.
+
+*Exit: newcomers get through their first ten minutes, friends play a whole round from their own
+homes, and the numbers have had a pass.*
 
 ## Then: M4, Whispers
 
@@ -136,13 +160,13 @@ page's copy is drafted in [STEAM-PAGE.md](STEAM-PAGE.md).
 ### When
 Don't wait for breadth (M6) to start; do wait for M4 to launch.
 
-- **Store page: now-ish, during M4.** A "Coming soon" page costs little and is how wishlists
-  accumulate, and wishlists at launch decide how much Steam shows the game. Pages usually want
-  six months or more of lead time. What it needs is a capsule, a trailer and screenshots that
-  sell the pitch, so get the co-op round looking and sounding good first (Now, and a theme for the
-  trailer).
-- **Steam Playtest: once Whispers plays.** Use it to grow beyond friends and family and to see
-  whether traitors land with groups who don't know you.
+- **Store page: now, with the Playtest** (Now, 4). A "Coming soon" page costs little and is how
+  wishlists accumulate, and wishlists at launch decide how much Steam shows the game. Pages usually
+  want six months or more of lead time. Put it up with a capsule and screenshots; the trailer
+  follows once the co-op round looks and sounds good (a theme for it, Backlog "Sound").
+- **Steam Playtest: now** (Now, 4), moved up from "once Whispers plays": a download and a key
+  proved the smooth way in. Later, use it to grow beyond friends and family and to see whether
+  traitors land with groups who don't know you.
 - **Early Access launch: after M4, with a little breadth.** The traitors are what make this
   different from other cosy co-op games, and what streamers and friend groups pick up, so launch
   with them in. Before launch, have: a round that's reliable over the internet with Steam invites,
@@ -160,7 +184,6 @@ Don't wait for breadth (M6) to start; do wait for M4 to launch.
 - **Steamworks:** invites and lobbies through Steam (friends join from the overlay), Steam
   Datagram Relay as a transport in place of (or beside) our own relay, rich presence, Steam Cloud
   for `characters.json`. Keep it behind an interface in the game, not in Narsil's sim.
-- **Steam Playtest** in place of the itch page once there's a page, to reach more testers.
 - **Deck Verified:** the remaining pad gaps (a cursor on the right stick for placing buildings and
   dragging areas), sound on the Deck, text size.
 - Licensing: the BRUTAL License allows commercial release; keep the splash, Credits, `NOTICE.txt`
@@ -189,6 +212,19 @@ variety to carry them.
 - **A town for twelve:** Millbrook suits five or six players. Before the twelve-player goal, grow
   it or make a bigger one. The rare companies already come bigger with more players
   (`PartyDef.SizeFor`); the ordinary parties and the crises may want the same.
+
+### Reedmere, in progress
+An untuned map still being built; the town picker says so. Playtests stay on Millbrook until the
+first ten minutes and the numbers have settled. It may stay a little harder than Millbrook on purpose.
+- **Redrawn** (HISTORY.md, "Reedmere, the town on the long lake"): does the crowded town read in
+  play, is the long bridge worth its walk, and does the festival on the boats work with friends?
+  The raft reads as one great barge from the usual angle; boats you can tell apart would be better.
+- **The cook supplies the inn** (HISTORY.md, "The cook supplies the inn"): does the innkeeper keep
+  the warming shelf stocked, and is the trek to the cookhouse worth the bar standing empty? Do the
+  bowls that go over in hampers come back, or pile up dirty at the inn?
+- **Still to do:** knockback off the walks, swimming and breath, fishing someone out (a body sunk
+  in the lake is the traitors', M4); rowing the moored boats; a proper dipping post sprite;
+  balance (`--season-sweep --seeds 8 --map Reedmere`), once the rest has settled.
 
 ### The dragon over the lake
 Reedmere's set piece, after the battle the lake towns of its stories are known for. Not built yet;
@@ -248,16 +284,15 @@ items into "Now" when a playtest says they matter.
   (`Pies`), flares (`Cooking.FlarePerStep`), rats (`RatSystem`), feasts (`FeastSystem`), broths
   (`Broths`), word of the food (`ShopSystem.Fare`).
 - **Healer:** adventurers never tear a charm in town.
+- **Labourer:** hidden from players (the solo picker and the lobby) till it has a game of its own;
+  still the overflow for a sixth player and `--trade Labourer`. Its work is the AI's: errands off
+  the notice board, hauling, chopping. Likely split into Miner, Forager and Carpenter rather than given a pass.
 - **Tinker:** no lockboxes or locked chests (locks go on doors only); AI tinkers don't buy curios;
   a wagon lesson (practice customers' wagons aren't damaged yet).
 - **Carpenter** (benched): the build and zone tools are open to every player and should be the
   carpenter's; building and mending have no game of their own.
 - **Gathering:** digging, mining, chopping and foraging are the labourer's until the Miner and
   Forager come.
-
-**Lessons**
-- Handing over a drink, a dish or a box from the order (as "Take it back" does for a mend), and
-  the customer pointer for notice-board errands (`VillageGame.Errands`).
 
 **Bots** (solo playtests and the scenario tests)
 - The cook bot never offers porridge, matches a craving or an ask for the house dish by name, or
@@ -330,5 +365,3 @@ items into "Now" when a playtest says they matter.
    100 MB) and the CPU on a Deck. Lines are made at runtime (players type theirs), so they can't
    be pre-recorded.
 
-**Words and docs**
-- Watch a child and a non-gamer play the first ten minutes.

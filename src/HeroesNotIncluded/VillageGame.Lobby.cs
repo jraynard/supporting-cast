@@ -108,6 +108,9 @@ public sealed partial class VillageGame
         }
         if (session.Players.Count <= 1)
             TextC(Theme.Parchment, "Nobody's here yet. Suspicious.");
+        // The labourer isn't offered (it has no game of its own yet), but it's what's left over.
+        if (session.Players.Count > _sim.Defs.AllTrades.Count(t => !t.Unlimited))
+            TextC(Theme.Dim, "More players than trades: whoever's left over is the town's labourer (rough for now).");
 
         ImGui.Separator();
         DrawRoundOptions(session, round.Options);

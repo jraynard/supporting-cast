@@ -412,7 +412,7 @@ def check():
 
 def build_def():
     d = M.map_def("Reedmere", "Reedmere",
-                  "A town on stilts out in a lake: houses crowded on piles round a harbour, one long bridge back to the shore. The festival's held on the boats.",
+                  "A town on stilts out in a lake: houses crowded on piles round a harbour, one long bridge back to the shore. The festival's held on the boats. Still being built: untuned, and harder than Millbrook.",
                   GROUND_LEGEND, FEATURE_LEGEND, CENTER, STOCKPILE, LIVESTOCK, festival)
     return d
 
