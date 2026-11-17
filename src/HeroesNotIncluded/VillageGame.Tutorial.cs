@@ -41,6 +41,12 @@ public sealed partial class VillageGame
     private TutorialState _tutorial;
     private bool _tutorialBegun;
 
+    /// <summary>
+    /// The chapter's card folded away to a button at the top ("Got it"): on a Steam Deck the open
+    /// card covered the room being worked in. A new step opens it again, there being something new to read.
+    /// </summary>
+    private bool _tutorialFolded;
+
     /// <summary>The run's chapters, and which one's at hand.</summary>
     private List<LessonDef> _chapters = [];
     private int _chapter;
@@ -153,7 +159,7 @@ public sealed partial class VillageGame
             // Moved on (not back: a step come round again isn't one done).
             if (_lesson.Def.IndexOf(_lessonStage.Step) > _lesson.Def.IndexOf(_stepAt) && _lesson.Def.IndexOf(_stepAt) >= 0)
                 (_doneStep, _doneAt) = (_stepAt, _time);
-            (_stepAt, _stepSince) = (_lessonStage.Step, _time);
+            (_stepAt, _stepSince, _tutorialFolded) = (_lessonStage.Step, _time, false);
             // The shop starts open: folded away for the step that teaches opening it, so J opens it rather than closing it.
             if (_lessonStage.Step == "shop" && _lesson.Def.Id == Tutorial.BasicsId)
                 (_showShop, _sawShop) = (false, false);
@@ -208,6 +214,11 @@ public sealed partial class VillageGame
     {
         if (_tutorial == TutorialState.Off)
             return false;
+        if (_tutorial == TutorialState.Running && _lesson != null && _tutorialFolded)
+        {
+            DrawTutorialButton();
+            return true;
+        }
         _hud.Next(Anchor.Top, ScreenFit.Width(480, 0.5f));
         Panel.Begin("Tutorial###tutorial", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoTitleBar);
         _hud.Took();
@@ -228,6 +239,25 @@ public sealed partial class VillageGame
         }
         Panel.End();
         return true;
+    }
+
+    /// <summary>The folded card: a button at the top saying where you are in the chapter, the step itself on hover. Pressed, the card opens.</summary>
+    private void DrawTutorialButton()
+    {
+        var def = _lesson!.Def;
+        var current = def.IndexOf(_lessonStage.Step);
+        _hud.Next(Anchor.Top);
+        Panel.Begin("###tutorial-folded", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoNav);
+        _hud.Took();
+        var label = current >= 0 ? $"Tutorial: {def.Title} ({current + 1} of {def.Steps.Count})" : $"Tutorial: {def.Title}";
+        if (ImGui.Button($"{label}###tutorial-open", in _autoSize))
+            _tutorialFolded = false;
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+            Tip(current >= 0 ? Controls.Keys(def.Steps[current].Text) + "\n\nPress for the card." : "Press for the card.");
+        // Stuck a while on it: the card has a fuller hint, so say so.
+        if (_time - _stepSince > StuckAfter)
+            GuideGlow(true);
+        Panel.End();
     }
 
     private static void CardTitle(string title)
@@ -305,6 +335,11 @@ public sealed partial class VillageGame
                 }
             }
         }
+        if (ImGui.Button("Got it"u8, in _autoSize))
+            _tutorialFolded = true;
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+            Tip("Fold the card away while you work: the Tutorial button at the top brings it back, and the next step opens it again.");
+        ImGui.SameLine(0, Gui.S(8));
         if (ImGui.SmallButton("Skip this chapter"u8))
             NextChapter(trade);
         ImGui.SameLine(0, Gui.S(8));

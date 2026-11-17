@@ -28,6 +28,11 @@ Point and click with a controller, and quieter cards at the bar and the stew pot
   it yet.
 - The stew pot's card shows how it's cooking and its buttons. Hover to see what's in it and how it tastes.
 
+**The tutorial**
+- Press "Got it" to fold the tutorial card away while you work. It becomes a small Tutorial button at
+  the top of the screen that shows which step you're on (hover it to read the step). Press it to open
+  the card again. The card opens by itself when the next step comes up.
+
 ## 0.1.0-playtest.22
 
 A shorter title menu, a quieter screen, and a plain way to take an order. All from playing on a Steam Deck.
