@@ -27,12 +27,53 @@ public static class Vessels
         var near = NearToHand(sim, who, fits);
         if (!near.IsNull)
             return near;
-        foreach (var box in BehindTheBar(sim, who))
+        foreach (var box in BehindTheBar(sim, who).Concat(AtThePot(sim, who)))
             foreach (var item in sim.StoredIn(box))
                 if (fits(sim.World.Get<Thing>(item).Def) && !sim.World.Has<Shops.ForSale>(item))
                     return item;
         return Entity.Null;
     }
+
+    /// <summary>
+    /// The kitchen's containers, to someone standing at its stew pot: the building's own, in the
+    /// pot's room. The cook ladles straight into a bowl off the kitchen shelf, as the innkeeper
+    /// pours into a tankard off the shelf behind the bar; keeping it stocked is the job, not
+    /// carrying a stack about. Empty when they're at no pot.
+    /// </summary>
+    public static IEnumerable<Entity> AtThePot(Simulation sim, Entity who)
+    {
+        if (!sim.World.TryGet<Position>(who, out var p))
+            yield break;
+        var at = p.Cell;
+        var seen = new HashSet<Entity>();
+        foreach (var d in Maps.Map.Neighbors8)
+        {
+            var c = new int3(at.X + d.X, at.Y + d.Y, at.Z);
+            if (sim.Map.InBounds(c) && sim.Map.Structure[sim.Map.Idx(c)] is { IsNull: false } pot && Cooking.IsPot(sim, pot))
+                foreach (var shelf in KitchenShelves(sim, pot))
+                    if (seen.Add(shelf))
+                        yield return shelf;
+        }
+    }
+
+    /// <summary>The containers a pot's cook ladles from (<see cref="AtThePot"/>): its building's own, in its room.</summary>
+    public static IEnumerable<Entity> KitchenShelves(Simulation sim, Entity pot)
+    {
+        var w = sim.World;
+        var building = Systems.Buildings.Of(sim, pot);
+        if (building.IsNull)
+            yield break;
+        var at = w.Get<Thing>(pot).Cell;
+        var room = sim.Rooms.RoomAt(at);
+        foreach (var part in Systems.Buildings.Parts(sim, building))
+            if (sim.IsContainer(part) && !w.Has<Construction>(part) && w.TryGet<Thing>(part, out var shelf)
+                && shelf.Cell.Z == at.Z && sim.Rooms.RoomAt(shelf.Cell) == room)
+                yield return part;
+    }
+
+    /// <summary>Whether a clean vessel of a kind waits on a pot's kitchen shelves, to be ladled into from there.</summary>
+    public static bool Shelved(Simulation sim, Entity pot, string def) =>
+        KitchenShelves(sim, pot).Any(box => sim.StoredIn(box).Any(i => sim.World.Get<Thing>(i).Def.Name == def && !sim.World.Has<Shops.ForSale>(i)));
 
     /// <summary>How far from the counter a container still counts as behind the bar.</summary>
     public const int BarDepth = 3;

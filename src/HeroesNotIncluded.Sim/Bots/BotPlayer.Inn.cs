@@ -82,7 +82,7 @@ public sealed partial class BotPlayer
         if (BarWork.DirtyOn(sim, me) is { IsNull: false } dirty && w.Get<Thing>(dirty).Def.WashesInto is { } clean && mine.Contains(clean))
         {
             Doing = "washing up";
-            return AtStation(sim, me, Nearest(sim, me, "WashTub"), now, tub => Send(new BarWorkCommand(me, tub)));
+            return AtStation(sim, me, MyTub(sim, me), now, tub => Send(new BarWorkCommand(me, tub)));
         }
         return false;
     }
@@ -292,6 +292,9 @@ public sealed partial class BotPlayer
     /// A clean vessel of a kind to pour or ladle into: from the shelf nearest where it's used, and
     /// if there are none clean, gather up the dirty ones and wash them.
     /// </summary>
+    /// <summary>Where it washes up: its own trade's tub (the bar's, or the kitchen's), else the nearest.</summary>
+    private Entity MyTub(Simulation sim, Entity me) => WashJob.TubFor(sim, me) is { IsNull: false } tub ? tub : Nearest(sim, me, "WashTub");
+
     private bool Crockery(Simulation sim, Entity me, PerceptionView view, long now, string clean, Entity usedAt)
     {
         var w = sim.World;
@@ -300,7 +303,7 @@ public sealed partial class BotPlayer
         if (!dirtyHeld.IsNull)
         {
             Doing = "washing up";
-            return AtStation(sim, me, Nearest(sim, me, "WashTub"), now, tub => Send(new BarWorkCommand(me, tub)));
+            return AtStation(sim, me, MyTub(sim, me), now, tub => Send(new BarWorkCommand(me, tub)));
         }
         var at = w.Get<Thing>(usedAt).Cell;
         var shelf = w.Query<Thing>().Where(e => w.Get<Thing>(e) is { Spawned: true, Def.Name: "Shelf" or "BarShelf" })

@@ -115,7 +115,7 @@
       // the prep table and the larder; a serving hatch through its wall at the common room's back
       // left corner, where meals are ordered and collected. The bar runs down the common room's right
       // side from the storeroom door toward the front, two counters long (east to west in Millbrook,
-      // the inn facing the road), with the cask, the bar shelf and the key board along the wall
+      // the inn facing the road), with the cask, the bar's own wash tub, the bar shelf and the key board along the wall
       // behind it; the keeper's side is reached past its back end, where the storeroom opens onto it.
       // The hearth and a table on the left, a long table at the front left, and an aisle from the
       // door up the room.
@@ -137,6 +137,7 @@
         { "def": "BarShelf", "at": [11, 6], "facing": 1 },
         { "def": "Fireplace", "at": [0, 9], "facing": 3 },
         { "def": "AleCask", "at": [11, 8], "facing": 1 },
+        { "def": "BarTub", "at": [11, 7] },
         { "def": "BarCounter", "at": [9, 7], "facing": 1 }, { "def": "BarCounter", "at": [9, 10], "facing": 1 },
         { "def": "KeyBoard", "at": [11, 10], "facing": 1 },
         { "def": "KeyBox", "at": [9, 1], "facing": 2 },

@@ -21,7 +21,7 @@ public static class KitchenLessons
 
     public static readonly Lesson[] All =
     [
-        new(Trade, "stew", ["larder", "fill", "fuel", "stir", "season", "wash", "bowl", "ladle", "hatch", "served"], Stew),
+        new(Trade, "stew", ["larder", "fill", "fuel", "stir", "season", "wash", "ladle", "hatch", "served"], Stew),
         new(Trade, "roast", ["meat", "fuel", "spit", "turn"], Roast),
         new(Trade, "bread", ["flour", "knead", "prove", "fuel", "oven"], Bread),
     ];
@@ -64,10 +64,9 @@ public static class KitchenLessons
         if (!run.Passed.Contains("seasoned"))
             return new LessonStage("season", pot);
         var bowl = Cooking.BowlOf(sim, pot);
-        if (AvatarSystem.Supply(sim, me, d => d.Name == bowl).IsNull)
-            return BarWork.DirtyOn(sim, me).IsNull
-                ? new LessonStage("bowl", run.Station(sim, "Shelf", pot))
-                : new LessonStage("wash", run.Station(sim, "WashTub"));
+        // Ladled straight into a bowl off the kitchen shelf: only an empty shelf sends the cook off to wash up.
+        if (AvatarSystem.Supply(sim, me, d => d.Name == bowl).IsNull && !Vessels.Shelved(sim, pot, bowl))
+            return new LessonStage("wash", run.Station(sim, "WashTub"));
         return new LessonStage("ladle", pot);
     }
 

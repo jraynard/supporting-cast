@@ -23,13 +23,30 @@ public sealed class WashJob(Entity tub) : Job
         var w = sim.World;
         if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace)
             return null;
-        var inn = ShopSystem.WorkplaceOf(sim, trade.Def);
-        if (inn.IsNull)
-            return null;
-        var tub = Buildings.Parts(sim, inn).FirstOrDefault(e => BarWork.IsTub(sim, e), Entity.Null);
+        var tub = TubFor(sim, pawn);
         if (tub.IsNull || sim.Reservations.IsReservedByOther(tub, pawn) || Dirty(sim, pawn, tub).IsNull)
             return null;
         return new WashJob(tub);
+    }
+
+    /// <summary>
+    /// The tub a villager washes up at: in the room their trade serves from at their workplace (the
+    /// tub behind the bar for the keeper, the kitchen's for the cook), so neither goes into the
+    /// other's room to wash; else the workplace's only one. Entity.Null if it has none.
+    /// </summary>
+    public static Entity TubFor(Simulation sim, Entity pawn)
+    {
+        var w = sim.World;
+        if (!w.TryGet<Trade>(pawn, out var trade) || !trade.Def.HasWorkplace)
+            return Entity.Null;
+        var parts = Buildings.Parts(sim, ShopSystem.WorkplaceOf(sim, trade.Def));
+        var tubs = parts.Where(e => BarWork.IsTub(sim, e)).ToList();
+        if (tubs.Count <= 1)
+            return tubs.FirstOrDefault(Entity.Null);
+        var station = parts.FirstOrDefault(e => w.Get<Thing>(e).Def.Building is { } b && !w.Has<Construction>(e)
+            && ((b.Cask != null && trade.Def.Serving(ServiceKind.Drink)) || (b.StewPot != null && trade.Def.Serving(ServiceKind.Meal))), Entity.Null);
+        var room = station.IsNull ? null : sim.Rooms.RoomAt(w.Get<Thing>(station).Cell);
+        return tubs.FirstOrDefault(t => room != null && sim.Rooms.RoomAt(w.Get<Thing>(t).Cell) == room, tubs[0]);
     }
 
     /// <summary>
@@ -578,7 +595,7 @@ public sealed class MakeBedJob(Entity bed) : RoomKeyJob
         foreach (var s in PutAwayLeftThings()) yield return s;
         // The sheets down to the wash tub, to be washed with the crockery (WashJob).
         if (Hospitality.RoomChores.SoiledOn(Sim, Pawn) is { IsNull: false } soiled
-            && Buildings.Parts(Sim, Inn).FirstOrDefault(e => BarWork.IsTub(Sim, e), Entity.Null) is { IsNull: false } tub)
+            && WashJob.TubFor(Sim, Pawn) is { IsNull: false } tub)
         {
             foreach (var s in GoTo(Get<Thing>(tub).Cell, PathEnd.Touch)) yield return s;
             if (!HasFailed && Alive(soiled) && Inventory.OnPerson(Sim, Pawn, soiled))

@@ -232,6 +232,55 @@ public class InnKitchenTests
         Assert.Equal("Ladle a bowl of stew", AvatarSystem.ActionAt(sim, me, at).Label);
     }
 
+    [Fact]
+    public void TheCookLadlesIntoABowlOffTheKitchenShelf()
+    {
+        var (sim, me, _) = ExpeditionTests.Round("Cook", tillTheyAsk: false);
+        var w = sim.World;
+        var pot = Cooking.PotIn(sim, ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn")));
+        Assert.False(pot.IsNull);
+        // Nothing on the cook: their own bowls, if any, put away elsewhere.
+        foreach (var b in w.Query<Thing>().Where(e => w.Get<Thing>(e).Def.Name == "Bowl" && Inventory.OnPerson(sim, me, e)).ToList())
+            w.Destroy(Inventory.TakeFromPerson(sim, me, b, w.Get<Stack>(b).Count));
+        w.Get<Carrying>(me).Item = Entity.Null;
+        var at = w.Get<Thing>(pot).Cell;
+        var room = sim.Rooms.RoomAt(at);
+        var stand = Maps.Map.Neighbors8.Select(d => new int3(at.X + d.X, at.Y + d.Y, at.Z))
+            .First(c => sim.Map.Passable(c) && sim.Rooms.RoomAt(c) == room);
+        w.Get<Position>(me).Cell = stand;
+        w.Get<Position>(me).Pos = Position.CenterOf(stand);
+        Assert.True(Vessels.Shelved(sim, pot, "Bowl"), "the kitchen shelf starts stocked");
+        var shelved = Vessels.KitchenShelves(sim, pot).Sum(s => sim.StoredIn(s).Where(i => w.Get<Thing>(i).Def.Name == "Bowl").Sum(i => w.Get<Stack>(i).Count));
+
+        Fill(sim, me, pot, ("Cabbage", 6));
+        w.Get<StewPot>(pot).Doneness = 1f;
+        Assert.Equal("Ladle a bowl of stew", AvatarSystem.ActionAt(sim, me, at).Label);
+        sim.ApplyNow(new PotCommand(me, pot, PotStep.Ladle));
+        var stew = w.Get<Carrying>(me).Item;
+        Assert.False(stew.IsNull, "a bowl in hand, without fetching one");
+        Assert.Equal("Stew", w.Get<Thing>(stew).Def.Name);
+        Assert.Equal(shelved - 1, Vessels.KitchenShelves(sim, pot).Sum(s => sim.StoredIn(s).Where(i => w.Get<Thing>(i).Def.Name == "Bowl").Sum(i => w.Get<Stack>(i).Count)));
+    }
+
+    [Fact]
+    public void TheKeeperWashesUpBehindTheBarAndTheCookInTheKitchen()
+    {
+        var (sim, cook, _) = ExpeditionTests.Round("Cook", tillTheyAsk: false);
+        var w = sim.World;
+        var keeper = w.Query<Trade>().Single(e => w.Get<Trade>(e).Def.Name == "Innkeeper");
+        var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
+        Entity Part(string def) => Buildings.Parts(sim, inn).Single(e => w.Get<Thing>(e).Def.Name == def);
+        Environment.Room? RoomOf(Entity e) => sim.Rooms.RoomAt(w.Get<Thing>(e).Cell);
+
+        var barTub = WashJob.TubFor(sim, keeper);
+        Assert.Equal(Part("BarTub"), barTub);
+        Assert.Equal(RoomOf(Part("AleCask")), RoomOf(barTub));
+        Assert.Equal(Part("WashTub"), WashJob.TubFor(sim, cook));
+        // Behind the bar, but the common room stays open to customers.
+        Assert.False(Ai.AiQueries.StaffOnly(sim, w.Get<Thing>(Part("AleCask")).Cell));
+        Assert.True(Ai.AiQueries.StaffOnly(sim, w.Get<Thing>(Cooking.PotIn(sim, inn)).Cell));
+    }
+
     // ---------------- In a round ----------------
 
     private static (Simulation Sim, List<Entity> Party) Tavern(string playerTrade)

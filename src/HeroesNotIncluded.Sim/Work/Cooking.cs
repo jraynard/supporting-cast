@@ -460,7 +460,8 @@ public static class Cooking
     public static string BowlOf(Simulation sim, Entity pot) => sim.World.Get<Thing>(pot).Def.Building!.StewPot!.Into;
 
     /// <summary>
-    /// A bowl from the pot, into the server's hand, in a clean bowl of theirs: the pot's quality,
+    /// A bowl from the pot, into the server's hand, in a clean bowl (theirs, or off the kitchen
+    /// shelf, <see cref="Vessels.AtThePot"/>): the pot's quality,
     /// and its rot with it. The last bowl empties it. Entity.Null if there's nothing to ladle or
     /// nothing clean to ladle into.
     /// </summary>
@@ -565,7 +566,7 @@ public static class Cooking
                 if (!Vessels.Ready(sim, cook, bowlDef))
                 {
                     sim.Messages.Tell(cook, MessageKind.Info, Vessels.CleanOn(sim, cook, bowlDef).IsNull
-                        ? $"You need a clean {sim.Defs.Thing(bowlDef).Label} to ladle into: there are some on the kitchen shelf."
+                        ? $"There's no clean {sim.Defs.Thing(bowlDef).Label} on the kitchen shelf to ladle into: wash some at the tub."
                         : $"You need a hand free for the {sim.Defs.Thing(bowlDef).Label}.", cell);
                     return;
                 }

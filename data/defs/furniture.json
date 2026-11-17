@@ -571,6 +571,28 @@
         { "min": [0.80, 0.20, 0.10], "max": [0.86, 0.80, 0.50], "top": "props/washtub_side", "side": "props/washtub_side" },
         { "min": [0.30, 0.24, 0.26], "max": [0.70, 0.30, 0.68], "top": "props/timber_dark", "side": "props/washboard" }
       ]
+    },
+    {
+      // The bar's own tub, behind the counter: the keeper washes the tankards there and never goes
+      // into the kitchen. Not staff-only (that would close the common room to customers).
+      "name": "BarTub", "label": "bar tub", "category": "Building", "solid": true, "sprite": "buildings/wash_tub",
+      "description": "A half-barrel of hot water behind the bar. F at it with dirty tankards to wash them.",
+      "maxHp": 80, "flammability": 0.6,
+      "building": { "work": 90, "surfaceHeight": 0.5, "washTub": true, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "model": [
+        // A half-barrel up on a low stand at working height (the quench tub's staves around sunken
+        // water, in pale pine): soapy water well below the rim, a washboard stood in it.
+        { "min": [0.16, 0.16, 0.00], "max": [0.24, 0.24, 0.10], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.76, 0.16, 0.00], "max": [0.84, 0.24, 0.10], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.16, 0.76, 0.00], "max": [0.24, 0.84, 0.10], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.76, 0.76, 0.00], "max": [0.84, 0.84, 0.10], "top": "props/timber_dark", "side": "props/timber_dark" },
+        { "min": [0.20, 0.20, 0.10], "max": [0.80, 0.80, 0.34], "top": "props/suds", "side": "props/washtub_inner" },
+        { "min": [0.14, 0.14, 0.10], "max": [0.86, 0.20, 0.50], "top": "props/washtub_side", "side": "props/washtub_side", "front": "props/washtub_inner" },
+        { "min": [0.14, 0.80, 0.10], "max": [0.86, 0.86, 0.50], "top": "props/washtub_side", "side": "props/washtub_side" },
+        { "min": [0.14, 0.20, 0.10], "max": [0.20, 0.80, 0.50], "top": "props/washtub_side", "side": "props/washtub_inner" },
+        { "min": [0.80, 0.20, 0.10], "max": [0.86, 0.80, 0.50], "top": "props/washtub_side", "side": "props/washtub_side" },
+        { "min": [0.30, 0.24, 0.26], "max": [0.70, 0.30, 0.68], "top": "props/timber_dark", "side": "props/washboard" }
+      ]
     }
   ]
 }

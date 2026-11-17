@@ -130,7 +130,7 @@ public sealed partial class BotPlayer
             return AtStation(sim, me, table, now, t => Send(new PrepCommand(me, t, PrepStep.Hamper)));
         }
         var bowl = Cooking.BowlOf(sim, pot);
-        if (Carried(sim, me, bowl).IsNull)
+        if (Carried(sim, me, bowl).IsNull && !Vessels.Shelved(sim, pot, bowl)) // the kitchen shelf's are to hand at the pot
             return Crockery(sim, me, view, now, bowl, pot);
         if (!held.IsNull && w.Get<Thing>(held).Def.Name != bowl)
         {

@@ -255,7 +255,8 @@ public class InnUpkeepTests
         Assert.Equal(VillageRound.Tankards, Held("Tankard"));
         Assert.Equal(VillageRound.Bowls, Held("Bowl"));
         Assert.Equal(VillageRound.StoreroomKegs, Held("Keg"));
-        Assert.Single(parts, p => BarWork.IsTub(sim, p));
+        // A tub in the kitchen for the bowls and one behind the bar for the tankards.
+        Assert.Equal(2, parts.Count(p => BarWork.IsTub(sim, p)));
         // Everything a named drink takes is on the shelf behind the bar, beside the tankards.
         var cask = parts.Single(p => sim.World.Get<Thing>(p).Def.Building?.Cask != null);
         var barShelf = parts.Where(p => sim.World.Get<Thing>(p).Def.Name == "BarShelf")

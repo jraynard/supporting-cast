@@ -102,7 +102,7 @@ public sealed partial class VillageGame
         foreach (var e in w.Query<Thing>())
         {
             var t = w.Get<Thing>(e);
-            if (!t.Spawned || t.Def.Name != want)
+            if (!t.Spawned || (want == "WashTub" ? t.Def.Building is not { WashTub: true } : t.Def.Name != want))
                 continue;
             var d = Sim.Maps.Map.Distance(t.Cell, near);
             if (d < bestD)
