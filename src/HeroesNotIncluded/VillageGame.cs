@@ -490,6 +490,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         // Q is a guard for a character: the view turns on its own actions (Z/X, the d-pad). Without
         // one (god mode, the demos) Z and X are the toolbar's, and the view turns on Q/E as before.
         (_cameraController.RotateLeftKey, _cameraController.RotateRightKey) = embodied ? ((GlfwKey?)null, (GlfwKey?)null) : (GlfwKey.Q, GlfwKey.E);
+        // With a character, a middle-drag turns the view freely (the camera follows them, so it has nothing to pan).
+        _cameraController.DragPan = !embodied;
         // With a character, the view stays on them and the town around: far enough out to see a
         // street, not the whole map (which also hides who's who). Without one, all of it.
         // Camera mode outside a round may pull out as far as anyone can; in one, as your character.
@@ -817,8 +819,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     }
 
     /// <summary>
-    /// The camera's actions: zoom in any mode, and with a character the quarter turns (without one,
-    /// Q/E turn it as ever). Not at hands-on work, where the d-pad's runes are.
+    /// The camera's actions: zoom in any mode, and with a character the quarter turns and a
+    /// middle-drag's free turn (without one, Q/E turn it as ever and a middle-drag pans). Not at hands-on work, where the d-pad's runes are.
     /// </summary>
     private void HandleCameraActions()
     {
@@ -826,8 +828,16 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         var free = !Working;
         _cameraController.ZoomHeld = free ? (map.Down(Act.ZoomIn) ? 1f : 0f) - (map.Down(Act.ZoomOut) ? 1f : 0f) : 0f;
         if ((HasAvatar || Ghosting) && free)
+        {
             _cameraController.Turn = (map.Pressed(Act.TurnRight) ? 1 : 0) - (map.Pressed(Act.TurnLeft) ? 1 : 0);
+            var input = Host.Input;
+            if (input.IsMouseDown(MouseButton.Middle) && !ImGui.GetIO().WantCaptureMouse)
+                _cameraController.FreeTurn = input.MouseDelta.X * DragTurnPerPixel;
+        }
     }
+
+    /// <summary>How far a middle-drag turns the view, radians a pixel.</summary>
+    private const float DragTurnPerPixel = 0.006f;
 
     /// <summary>Pick a level by hand: the view stays there until Home hands it back to <see cref="FollowLevel"/>.</summary>
     private void SetCutaway(int z)
