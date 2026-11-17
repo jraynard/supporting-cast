@@ -14,7 +14,7 @@ public class SeasonTests
     {
         var (sim, _) = TestWorld.Millbrook(seed, 4);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default));
         sim.ApplyNow(new StartRoundCommand());
         return sim;
     }

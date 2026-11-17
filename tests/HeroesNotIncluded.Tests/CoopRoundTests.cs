@@ -20,7 +20,7 @@ public class CoopRoundTests
 
     private static void Seat(CoopSession session, string trade)
     {
-        session.Send(new JoinLobbyCommand(session.Me.Id, session.Me.Name, null, []));
+        session.Send(new JoinLobbyCommand(session.Me.Id, session.Me.Name, null));
         session.Send(new SetTradePreferencesCommand(session.Me.Id, [session.Defs.Trade(trade)], []));
     }
 

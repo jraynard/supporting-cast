@@ -114,7 +114,7 @@ public sealed record Lesson(string Trade, string Id, string[] Steps, Func<Simula
 /// <summary>Every trade's lessons, by trade and id (the words are in trades.json's <c>lessons</c>).</summary>
 public static class Lessons
 {
-    public static readonly Lesson[] All = [BasicsLesson.Lesson, .. SmithLessons.All, .. TinkerLessons.All, .. InnLessons.All, .. KitchenLessons.All, .. HealerLessons.All];
+    public static readonly Lesson[] All = [BasicsLesson.Lesson, .. SmithLessons.All, .. TinkerLessons.All, .. CarpenterLessons.All, .. InnLessons.All, .. KitchenLessons.All, .. HealerLessons.All];
 
     /// <summary>The trade's lesson by id, or one every trade shares (<see cref="BasicsLesson"/>, trade "*").</summary>
     public static Lesson? For(string trade, string id) =>

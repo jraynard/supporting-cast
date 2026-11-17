@@ -365,17 +365,6 @@ public sealed partial class VillageGame
             Bar("Health", health, health < 0.4f ? Bad : Good);
             if (w.TryGet<Mood>(e, out var overviewMood))
                 MoodBar(e, c, overviewMood);
-            if (w.TryGet<Traits>(e, out var traits) && traits.List.Count > 0)
-            {
-                TextC(Dim, "Traits:");
-                foreach (var t in traits.List)
-                {
-                    ImGui.SameLine(0, 6);
-                    ImGui.Text(t.Label);
-                    if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                        Tip(t.Description);
-                }
-            }
             if (c.Downed)
                 TextC(Bad, w.Has<Carried>(e) ? "Down, being carried" : "Down: can't move or act");
             if (UrgentNeed(e) is { } urgent)
@@ -582,17 +571,13 @@ public sealed partial class VillageGame
     private void InspectMood(Entity e, Creature c, Mood mood)
     {
         MoodBar(e, c, mood);
-        var traits = TraitRules.Of(_sim, e);
         var rows = new List<(string Label, string Description, float Points, string When, int Count)>();
-        foreach (var t in traits?.List ?? [])
-            if (t.Mood != 0)
-                rows.Add((t.Label, t.Description, t.Mood, "trait", 1));
         foreach (var t in mood.Situational)
-            rows.Add((t.Label, t.Description, TraitRules.Factor(traits, t) * t.Mood, "now", 1));
+            rows.Add((t.Label, t.Description, t.Mood, "now", 1));
         for (var i = 0; i < mood.Memories.Count; i++)
         {
             var m = mood.Memories[i];
-            var points = MoodSystem.Weight(mood, i) * TraitRules.Factor(traits, m.Def) * m.Def.Mood;
+            var points = MoodSystem.Weight(mood, i) * m.Def.Mood;
             if (points == 0)
                 continue; // opinion-only memories show in the Social tab
             var left = $"{SimClock.TicksToDays(m.TicksLeft) * 24:F0}h";
@@ -669,7 +654,7 @@ public sealed partial class VillageGame
             var m = mood.Memories[i];
             if (m.Other != other || m.Def.Opinion == 0)
                 continue;
-            var points = MoodSystem.Weight(mood, i, perPerson: true) * TraitRules.Factor(TraitRules.Of(_sim, e), m.Def) * m.Def.Opinion;
+            var points = MoodSystem.Weight(mood, i, perPerson: true) * m.Def.Opinion;
             var at = parts.FindIndex(p => p.Label == m.Def.Label);
             if (at < 0)
                 parts.Add((m.Def.Label, points, 1));

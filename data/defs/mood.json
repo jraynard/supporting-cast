@@ -78,26 +78,6 @@
     { "name": "AteAtTheCookhouse", "label": "ate at the cookhouse", "mood": 4, "durationHours": 10, "races": [ "Human" ] }
   ],
 
-  // Traits: humans get 0-2 (rolled from their own stream; the player picks the avatar's). "mood" is
-  // a constant offset; thoughtFactors scale a thought's mood and opinion for them (0 ignores it);
-  // interactionFactors scale how often they start an interaction.
-  "traits": [
-    { "name": "Optimist", "label": "optimist", "description": "Looks on the bright side.", "mood": 6, "conflictsWith": [ "Gloomy" ] },
-    { "name": "Gloomy", "label": "gloomy", "description": "Expects the worst, and usually finds it.", "mood": -6 },
-    { "name": "Hardy", "label": "hardy", "description": "Shrugs off cold, heat and a hard night.",
-      "thoughtFactors": { "Cold": 0.5, "Hot": 0.5, "SleptOnGround": 0.3, "SleptOutdoors": 0 } },
-    { "name": "Kind", "label": "kind", "description": "Quick with a kind word, slow to slight anyone.",
-      "interactionFactors": { "Slight": 0.2, "Comfort": 2 }, "conflictsWith": [ "Abrasive" ] },
-    { "name": "Abrasive", "label": "abrasive", "description": "Says what they think, and it often stings.",
-      "interactionFactors": { "Slight": 2.5, "DeepTalk": 0.5 } },
-    { "name": "ThickSkinned", "label": "thick-skinned", "description": "Insults roll off them.",
-      "thoughtFactors": { "Slighted": 0.3, "BossedAround": 0.3 } },
-    { "name": "Glutton", "label": "glutton", "description": "Lives for the next meal, and minds going without.",
-      "thoughtFactors": { "Hungry": 1.8, "Ravenous": 1.5, "AteRawMeat": 0 } },
-    { "name": "Loner", "label": "loner", "description": "Happy enough with their own company.", "commonness": 0.7,
-      "thoughtFactors": { "Chatted": 0.3, "DeepTalk": 0.5, "VillagerDied": 0.7 }, "interactionFactors": { "Chat": 0.4, "DeepTalk": 0.6 } }
-  ],
-
   // People nearby (same room, or both outdoors, within a few cells) start one of these now and
   // then (SocialSystem). The pick is weighted: weight x (1 + opinionFactor x opinion / 100, 0..3)
   // x (1 + socialFactor x (Social - 6) / 6). minOpinion / targetMoodBelow (0-1) gate it.

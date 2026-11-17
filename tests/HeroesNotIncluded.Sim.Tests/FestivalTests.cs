@@ -20,7 +20,7 @@ public class FestivalTests
         var (sim, _) = TestWorld.OnMap(map, seed, 4);
         sim.Round.OpenLobby();
         sim.ApplyNow(new SetRoundOptionsCommand(friendlyFire, false));
-        sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default));
         sim.ApplyNow(new StartRoundCommand());
         return sim;
     }
@@ -722,7 +722,7 @@ public class FestivalTests
     {
         var (sim, _) = TestWorld.Millbrook(seed);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default));
         sim.ApplyNow(new StartRoundCommand());
         Assert.Contains(sim.Creatures(), e => FestivalSystem.PutsUp(sim, e) && !sim.World.Has<Avatar>(e));
         return sim;
@@ -772,14 +772,14 @@ public class FestivalTests
     }
 
     [Fact]
-    public void OnlyTheLabourersPutItUp()
+    public void OnlyTheLabourersAndTheCarpenterPutItUp()
     {
         var sim = FullRound();
         ToSetup(sim);
         var w = sim.World;
         foreach (var e in sim.Creatures())
             if (w.TryGet<Trade>(e, out var t))
-                Assert.Equal(t.Def.Gathers, FestivalSystem.PutsUp(sim, e));
+                Assert.Equal(t.Def.Gathers || t.Def.Name == "Carpenter", FestivalSystem.PutsUp(sim, e));
         var builders = new HashSet<Entity>();
         for (var t = 0; t < SimClock.TicksPerHour * 2; t += 60)
         {
@@ -789,7 +789,7 @@ public class FestivalTests
                     builders.Add(e);
         }
         Assert.NotEmpty(builders);
-        Assert.All(builders, e => Assert.True(FestivalSystem.PutsUp(sim, e), $"{e} isn't a labourer"));
+        Assert.All(builders, e => Assert.True(FestivalSystem.PutsUp(sim, e), $"{e} isn't a labourer or the carpenter"));
     }
 
     [Fact]

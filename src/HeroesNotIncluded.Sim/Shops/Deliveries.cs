@@ -69,6 +69,24 @@ public sealed class OreCarterSystem : ISimSystem, ISaveState
             sim.Messages.Add(MessageKind.Info, "The carter's left a load of ore at the smithy.", cell);
         }
         DeliverWood(sim);
+        DeliverToWoodshop(sim);
+    }
+
+    /// <summary>The carter's load for the woodshop (<see cref="Defs.SeasonDef.WoodshopDelivery"/>): feathers, which nobody in town grows.</summary>
+    public static void DeliverToWoodshop(Simulation sim)
+    {
+        var load = sim.Defs.Season.WoodshopDelivery;
+        var chest = Carpentry.Carpenters.ChestOf(sim, ShopSystem.BuildingFor(sim, Defs.TownRole.Woodshop));
+        if (load.Count == 0 || chest.IsNull)
+            return;
+        var cell = sim.World.Get<Thing>(chest).Cell;
+        foreach (var t in load)
+        {
+            var rest = sim.Store(chest, sim.CreateItem(t.ThingDef, t.Count, t.MaterialDef));
+            if (!rest.IsNull)
+                sim.PlaceItemNear(rest, cell);
+        }
+        sim.Messages.Add(MessageKind.Info, "The carter's left a bundle of feathers at the woodshop.", cell);
     }
 
     /// <summary>The woodcutter's morning load (<see cref="Defs.SeasonDef.WoodDelivery"/>), stacked in the barn's stockpile.</summary>

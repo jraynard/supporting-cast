@@ -22,7 +22,7 @@ public class PlaytestRecorderTests
             sim.Presets.PresetMode = true;
             VillageRound.Setup(sim);
             sim.Round.OpenLobby();
-            sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+            sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
             sim.ApplyNow(new StartRoundCommand());
             var recorder = new PlaytestRecorder("round", root);
             Assert.Null(recorder.Folder); // nothing written yet: no folder

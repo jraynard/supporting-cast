@@ -226,6 +226,30 @@ def prop_sign_rune():
     return img
 
 
+def prop_sign_saw():
+    """The woodshop's sign: a bow saw on the board, its blade across the bottom with teeth along it,
+    the frame's arms and the twisted cord across the top, a glint on the blade."""
+    img = sign_blank(50)
+    px = img.load()
+    iron, lit, wood, cord = (34, 32, 34, 255), (150, 146, 150, 255), (52, 34, 22, 255), (212, 190, 140, 255)
+    for x in range(6, 26):                                                  # the blade
+        px[x, 21] = lit
+        px[x, 22] = iron
+        if x % 2 == 0:
+            px[x, 23] = iron                                                # teeth
+    for y in range(9, 22):                                                  # the two arms, splaying out at the foot
+        lean = (21 - y) // 6
+        px[8 + lean, y] = wood
+        px[9 + lean, y] = wood
+        px[23 - lean, y] = wood
+        px[22 - lean, y] = wood
+    for x in range(10, 22):                                                 # the centre stretcher
+        px[x, 15] = wood
+    for x in range(10, 22):                                                 # the cord, twisted
+        px[x, 9] = cord if x % 2 else (160, 138, 96, 255)
+    return img
+
+
 def generate():
     save(mess_puddle(), "ui/mess_puddle")
     save(mess_mud(), "ui/mess_mud")
@@ -236,6 +260,7 @@ def generate():
     save(prop_sign_anvil(), "props/sign_anvil")
     save(prop_sign_gear(), "props/sign_gear")
     save(prop_sign_rune(), "props/sign_rune")
+    save(prop_sign_saw(), "props/sign_saw")
 
 
 if __name__ == "__main__":

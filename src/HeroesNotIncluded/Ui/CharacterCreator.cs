@@ -19,7 +19,7 @@ public sealed class CharacterCreator
 {
     public enum Result { None, Continue, Back }
 
-    private enum Tab { Look, Hair, Outfit, Traits }
+    private enum Tab { Look, Hair, Outfit }
 
     private static readonly string[] Names = ["Arin", "Wren", "Tamsin", "Bram", "Isolde", "Corwin", "Maren", "Edric", "Sigrun", "Halvar", "Astrid", "Leif"];
 
@@ -53,11 +53,6 @@ public sealed class CharacterCreator
     /// <summary>What the finishing button says: "Continue" on the way into a game, "Save" on the Characters screen.</summary>
     public string ContinueLabel { get; set; } = "Continue";
 
-    private readonly List<TraitDef> _traits = [];
-
-    /// <summary>The picked traits, by name (at most <see cref="TraitRules.MaxTraits"/>, none conflicting).</summary>
-    public IReadOnlyList<string> Traits => _traits.Select(t => t.Name).ToList();
-
     /// <summary>The picked clothes as <c>"Def:Dye"</c> (<see cref="Clothing.Parse"/>).</summary>
     public IReadOnlyList<string> Clothes =>
         Clothing.Slots.Where(s => _clothes.TryGetValue(s, out var c) && c.Def != null).Select(s => Clothing.Write(_clothes[s].Def!, _clothes[s].Dye)).ToList();
@@ -65,14 +60,10 @@ public sealed class CharacterCreator
     public string Name => Narsil.Ui.ImGuiText.Value(_name).Trim() is { Length: > 0 } n ? n : "Arin";
 
     /// <summary>Start from a saved character (<see cref="Characters.SavedCharacter"/>): editing it, or making the next one like it.</summary>
-    public void Load(string name, Appearance look, IEnumerable<string> traits, IEnumerable<string>? clothes = null)
+    public void Load(string name, Appearance look, IEnumerable<string>? clothes = null)
     {
         _name.SetValue(name.AsSpan());
         _look = look;
-        _traits.Clear();
-        foreach (var t in traits)
-            if (defs.AllTraits.FirstOrDefault(d => d.Name == t) is { } def && !_traits.Exists(def.ConflictsWithTrait) && _traits.Count < TraitRules.MaxTraits)
-                _traits.Add(def);
         if (clothes?.ToList() is { Count: > 0 } list)
         {
             _clothes.Clear();
@@ -103,11 +94,8 @@ public sealed class CharacterCreator
             case Tab.Hair:
                 DrawHairTab();
                 break;
-            case Tab.Outfit:
-                DrawOutfitTab();
-                break;
             default:
-                DrawTraits();
+                DrawOutfitTab();
                 break;
         }
 
@@ -335,33 +323,6 @@ public sealed class CharacterCreator
 
     private List<MaterialDef> Dyes(ThingDef def) => defs.AllMaterials.Where(m => m.Fits(def)).ToList();
 
-    /// <summary>Up to two traits as checkboxes; ones that clash with a pick, or past the limit, are greyed out.</summary>
-    private void DrawTraits()
-    {
-        ImGui.TextColored(Theme.Dim, $"Traits (up to {TraitRules.MaxTraits})");
-        var column = 0;
-        foreach (var trait in defs.AllTraits)
-        {
-            var picked = _traits.Contains(trait);
-            var blocked = !picked && (_traits.Count >= TraitRules.MaxTraits || _traits.Exists(trait.ConflictsWithTrait));
-            if (column++ % 3 != 0)
-                ImGui.SameLine(0, 12);
-            if (blocked)
-                ImGui.BeginDisabled(true);
-            if (ImGui.Checkbox(trait.Label, ref picked))
-            {
-                if (picked)
-                    _traits.Add(trait);
-                else
-                    _traits.Remove(trait);
-            }
-            if (blocked)
-                ImGui.EndDisabled();
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                ImGuiText.Tooltip(trait.Description);
-        }
-    }
-
     /// <summary>An outfit's pieces in their first dye, every other clothes slot emptied.</summary>
     private void ApplyOutfit(OutfitDef outfit)
     {
@@ -387,13 +348,6 @@ public sealed class CharacterCreator
     {
         _rolls++;
         _look = HumanLook.Derived(Environment.TickCount ^ (_rolls * 7919), fantasy: true);
-        _traits.Clear();
-        for (var n = Random.Shared.Next(TraitRules.MaxTraits + 1); n > 0; n--)
-        {
-            var open = defs.AllTraits.Where(t => !_traits.Exists(t.ConflictsWithTrait)).ToList();
-            if (open.Count > 0)
-                _traits.Add(open[Random.Shared.Next(open.Count)]);
-        }
         _clothes.Clear();
         foreach (var slot in Clothing.Slots)
         {

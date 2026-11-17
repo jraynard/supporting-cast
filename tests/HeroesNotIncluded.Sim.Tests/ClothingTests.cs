@@ -88,8 +88,7 @@ public class ClothingTests
         var sim = Create();
         sim.SpawnStructure(sim.Thing("Wagon"), C(20, 20));
         var player = Guid.NewGuid();
-        sim.ApplyNow(new CreateCharacterCommand(player, "Ylva", new Appearance { Hair = HairStyle.Shaggy, Beard = BeardStyle.Stubble, Eyes = EyeStyle.Narrow },
-            [], Clothes: ["LeatherVest", "Trousers:IronBlack", "HoodedCloak:Orchil", "IronHelm", "Nonsense:Woad", "Tunic:Granite"]));
+        sim.ApplyNow(new CreateCharacterCommand(player, "Ylva", new Appearance { Hair = HairStyle.Shaggy, Beard = BeardStyle.Stubble, Eyes = EyeStyle.Narrow }, Clothes: ["LeatherVest", "Trousers:IronBlack", "HoodedCloak:Orchil", "IronHelm", "Nonsense:Woad", "Tunic:Granite"]));
         var me = Players.CharacterOf(sim, player);
         var w = sim.World;
         Assert.Equal("LeatherVest", w.Get<Thing>(In(sim, me, ApparelSlot.Body)).Def.Name); // a garment in the Body slot

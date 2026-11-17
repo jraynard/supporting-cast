@@ -29,7 +29,7 @@ public class InnKitchenTests
         var sim = Create(40, 40);
         var me = sim.SpawnCreature(sim.Defs.Creature("Human"), "Inna", C(10, 11), ageDays: 25 * 365);
         sim.Round.OpenLobby();
-        sim.Round.Sit(Ana, "Inna", null, null, null);
+        sim.Round.Sit(Ana, "Inna", null, null);
         sim.Round.Start(sim);
         sim.GiveStartingPack(me);
         var hearth = sim.SpawnStructure(sim.Thing("Hearth"), C(11, 10));
@@ -289,7 +289,7 @@ public class InnKitchenTests
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(playerTrade)], []));
         sim.ApplyNow(new StartRoundCommand());
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));

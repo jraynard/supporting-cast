@@ -44,7 +44,6 @@ public class MoodTests
     {
         var sim = Mild();
         var e = Person(sim);
-        TraitRules.Set(sim, e, []); // a rolled trait would scale the thought
         var bad = sim.Defs.Thoughts.SleptOnGround!;
         MoodSystem.Remember(sim, e, bad);
         Assert.Single(MoodOf(sim, e).Memories);

@@ -27,7 +27,7 @@ public class BotBenchTests
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(trade)], []));
         var bot = new BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 7) { Temper = temper ?? BotTemperament.Steady };
         sim.ApplyNow(new StartRoundCommand());

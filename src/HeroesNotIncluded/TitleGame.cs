@@ -292,7 +292,7 @@ public sealed class TitleGame : Game
     /// <summary>The creator starts from a saved character.</summary>
     private void Prefill(SavedCharacter c)
     {
-        _creator.Load(c.Name, c.Look, c.Traits, c.Clothes);
+        _creator.Load(c.Name, c.Look, c.Clothes);
     }
 
     /// <summary>
@@ -314,7 +314,7 @@ public sealed class TitleGame : Game
     private SavedCharacter? SaveCreated()
     {
         var made = (_editing is { } id ? _roster.Get(id) : null) ?? new SavedCharacter();
-        made = made with { Name = _creator.Name, Look = _creator.Look, Traits = _creator.Traits.ToList(), Clothes = _creator.Clothes.ToList() };
+        made = made with { Name = _creator.Name, Look = _creator.Look, Clothes = _creator.Clothes.ToList() };
         var saved = _purpose == Purpose.Manage ? _roster.Update(made) : _roster.Put(made);
         if (saved == null)
             _error = $"The roster's full ({CharacterRoster.Max}): let someone go first.";

@@ -20,7 +20,7 @@ public class DrillTests
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(trade)], []));
         sim.ApplyNow(new StartRoundCommand());
         return (sim, Players.CharacterOf(sim, Ana));

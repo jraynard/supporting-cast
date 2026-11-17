@@ -20,7 +20,7 @@ public class FreeCombatTests
     {
         var sim = Arena.NewSimulation(TestWorld.LoadDefs(), 7);
         var center = Arena.Setup(sim);
-        var me = VillageRound.SpawnHero(sim, new Hero("Arin", null, null), center);
+        var me = VillageRound.SpawnHero(sim, new Hero("Arin", null), center);
         sim.Equip(me, sim.Defs.Thing(weapon));
         sim.ApplyNow(new DrawWeaponCommand(me, true));
         Place(sim, me, new float2(16.5f, 16.5f));
@@ -273,7 +273,7 @@ public class FreeCombatTests
     private static (Simulation Sim, Entity Me) Village()
     {
         var (sim, center) = TestWorld.Millbrook(villagers: 3);
-        var me = VillageRound.SpawnHero(sim, new Hero("Arin", null, null), center);
+        var me = VillageRound.SpawnHero(sim, new Hero("Arin", null), center);
         sim.Equip(me, sim.Defs.Thing("ShortSword"));
         sim.TickMany(10);
         return (sim, me);
@@ -419,7 +419,7 @@ public class FreeCombatTests
         sim.Round.OpenLobby();
         sim.ApplyNow(new SetRoundOptionsCommand(friendlyFire, false));
         foreach (var (who, name) in new[] { (Ana, "Ana"), (Bea, "Bea") })
-            sim.ApplyNow(new JoinLobbyCommand(who, name, default, []));
+            sim.ApplyNow(new JoinLobbyCommand(who, name, default));
         sim.ApplyNow(new StartRoundCommand());
         Assert.True(sim.Round.Live);
         var me = Players.CharacterOf(sim, Ana);
@@ -548,7 +548,7 @@ public class FreeCombatTests
     public void ACharacterWhoJoinsLaterMovesFreelyToo()
     {
         var (sim, _) = Village();
-        var late = VillageRound.SpawnHero(sim, new Hero("Bea", null, null), sim.World.Get<Position>(sim.World.Query<Avatar>()[0]).Cell);
+        var late = VillageRound.SpawnHero(sim, new Hero("Bea", null), sim.World.Get<Position>(sim.World.Query<Avatar>()[0]).Cell);
         sim.Tick();
         Assert.True(sim.World.Has<FreeMover>(late));
         sim.World.Remove<Avatar>(late); // they left: the AI has them again
@@ -675,7 +675,7 @@ public class FreeCombatTests
         for (var i = 0; i < 2; i++)
         {
             var id = new Guid(i + 1, 0, 0, new byte[8]);
-            sim.ApplyNow(new JoinLobbyCommand(id, $"Bot {i + 1}", default, []));
+            sim.ApplyNow(new JoinLobbyCommand(id, $"Bot {i + 1}", default));
             bots.Add(new Bots.BotPlayer(() => sim, id, c => sim.ApplyNow(c), 50 + (ulong)i));
         }
         sim.ApplyNow(new StartRoundCommand());

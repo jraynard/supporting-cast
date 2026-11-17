@@ -342,7 +342,9 @@
     },
     {
       "name": "Woodshop", "roles": [ "Woodshop" ], "label": "woodshop", "icon": "buildings/sawhorse",
-      "description": "An open-fronted shed for woodworking: it comes with a sawhorse for planks, and has a spot for a carpenter's bench and a chest. No foundation: it stands on the ground.",
+      // Its chest is the carpenter's stock: no villager's job takes from it (the logs aren't for the town's fires).
+      "keepsStock": true,
+      "description": "An open-fronted shed for woodworking on a plank floor: a sawhorse for planks, a carpenter's bench for bows and arrows, a chest of stock, logs and planks stacked to season, and bows on the wall.",
       "layout": [
         "WWWWWWW",
         "W.....W",
@@ -350,16 +352,26 @@
         "W.....W",
         "P.....P"
       ],
-      "parts": { "wall": "LogWall", "post": "CornerPost", "roof": "TurfRoofPart" },
+      "parts": { "foundation": "Sill", "wall": "LogWall", "post": "CornerPost", "roof": "TurfRoofPart" },
+      // Torches on the side walls, as the smithy has.
+      "lamps": [ { "at": [1, 2], "facing": 3, "def": "WallTorch" }, { "at": [5, 2], "facing": 1, "def": "WallTorch" } ],
+      // The sawhorse and bench at the back, worked from the row in front of them (kept clear); bows on
+      // the wall between; logs by the saw and planks beside them, arrows by the chest along the front,
+      // the middle left open from the street.
       "furnish": [
-        { "def": "Sawhorse", "at": [1, 1] }
+        { "def": "Sawhorse", "at": [1, 1] },
+        { "def": "BowRack", "at": [3, 1] },
+        { "def": "CarpenterBench", "at": [4, 1] },
+        { "def": "LogPile", "at": [1, 3] },
+        { "def": "PlankStack", "at": [2, 3] },
+        { "def": "ArrowBarrel", "at": [4, 3] },
+        { "def": "Chest", "at": [5, 3], "facing": 2 },
+        { "def": "Shavings", "at": [2, 2] }
       ],
       // Customers line up at the open front, out into the street.
       "line": [ [3, 4], [3, 5], [3, 6], [3, 7], [3, 8], [3, 9] ],
-      "slots": [
-        { "defs": ["CarpenterBench"], "at": [4, 1] },
-        { "defs": ["Chest"], "at": [5, 3], "facing": 2 }
-      ],
+      "sign": [0, 4], // on the front post, by the open front
+      "signFace": "props/sign_saw",
       "variants": [
         { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster", "parts": { "wall": "TimberWall", "roof": "ThatchRoofPart" } },
         { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },

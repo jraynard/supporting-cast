@@ -24,7 +24,7 @@ public class TinkerTests
         var sim = Create(40, 40);
         var me = sim.SpawnCreature(sim.Defs.Creature("Human"), "Wright", C(10, 10), ageDays: 25 * 365);
         sim.Round.OpenLobby();
-        sim.Round.Sit(Ana, "Wright", null, null, null);
+        sim.Round.Sit(Ana, "Wright", null, null);
         sim.Round.Start(sim);
         sim.GiveStartingPack(me);
         Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Lockpicks"), 1));
@@ -446,8 +446,10 @@ public class TinkerTests
         Assert.Equal(1, sim.Expeditions.Succeeded);
 
         var back = sim.Creatures().Where(e => sim.World.TryGet<Adventurer>(e, out var a) && a.Party == id).ToList();
-        // One of them asks for it opened (by now the tinker may have it on the bench).
-        sim.TickMany(SimClock.TicksPerHour / 4);
+        // One of them asks for it opened, once they've settled back in (by now the tinker may have it on the bench).
+        bool Asked() => sim.Shops.All.Any(e => e.Kind.Kind == ServiceKind.Unlock && back.Contains(e.Poster));
+        for (var t = 0; t < 64 && !Asked(); t++) // through a night if need be: back late, they eat and sleep first
+            sim.TickMany(SimClock.TicksPerHour / 4);
         var order = sim.Shops.All.Single(e => e.Kind.Kind == ServiceKind.Unlock && back.Contains(e.Poster));
         var box = order.Subject;
         if (sim.World.Get<Strongbox>(box).Locked) // else the tinker's already opened it and handed it back
@@ -464,7 +466,7 @@ public class TinkerTests
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(trade)], []));
         sim.ApplyNow(new StartRoundCommand());
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));

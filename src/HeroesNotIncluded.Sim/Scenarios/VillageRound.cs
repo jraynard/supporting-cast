@@ -6,7 +6,7 @@ using HeroesNotIncluded.Sim.Systems;
 namespace HeroesNotIncluded.Sim.Scenarios;
 
 /// <summary>Who a player made in the creator.</summary>
-public sealed record Hero(string? Name, Appearance? Look, IReadOnlyList<string>? Traits, IReadOnlyList<string>? Clothes = null);
+public sealed record Hero(string? Name, Appearance? Look, IReadOnlyList<string>? Clothes = null);
 
 /// <summary>
 /// The village a round is played in: a hand-made map (<see cref="MapDef"/>, Millbrook unless told
@@ -15,8 +15,8 @@ public sealed record Hero(string? Name, Appearance? Look, IReadOnlyList<string>?
 /// </summary>
 public static class VillageRound
 {
-    /// <summary>AI villagers at the start, before any player arrives.</summary>
-    public const int StartingVillagers = 6;
+    /// <summary>AI villagers at the start, before any player arrives: one to each of the six trades, and a labourer.</summary>
+    public const int StartingVillagers = 7;
 
     /// <summary>The map a round is played on unless another is chosen (data/defs/maps/).</summary>
     public const string DefaultMap = "Millbrook";
@@ -28,6 +28,7 @@ public static class VillageRound
     public readonly record struct Town(int3 Center, Entity Tavern, Entity Forge, Entity Shrine, Entity TinkerShop)
     {
         public Entity Kitchen { get; init; }
+        public Entity Woodshop { get; init; }
     }
 
     /// <summary>A simulation the size of the round's map, with the standard systems: what <see cref="Setup"/> builds into.</summary>
@@ -47,6 +48,7 @@ public static class VillageRound
         LockStoreroom(sim, Role(TownRole.Tavern));
         Hospitality.InnRooms.FitLocks(sim, Role(TownRole.Tavern));
         StockTinkerShop(sim, Role(TownRole.TinkerShop));
+        StockWoodshop(sim, Role(TownRole.Woodshop));
         if (sim.Defs.Season.BarnWood > 0)
             sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing("Wood"), sim.Defs.Season.BarnWood, sim.Defs.Material("Pine")), StockpileMiddle(sim));
         Environment.Buckets.HangAtWells(sim); // for fighting fire
@@ -55,7 +57,7 @@ public static class VillageRound
             if (spec.Role == "Home")
                 VillageSetup.FillSpareBeds(sim, home);
         sim.RebuildDerivedIfNeeded();
-        return new Town(built.Center, Role(TownRole.Tavern), Role(TownRole.Forge), shrine, Role(TownRole.TinkerShop)) { Kitchen = Role(TownRole.Kitchen) };
+        return new Town(built.Center, Role(TownRole.Tavern), Role(TownRole.Forge), shrine, Role(TownRole.TinkerShop)) { Kitchen = Role(TownRole.Kitchen), Woodshop = Role(TownRole.Woodshop) };
     }
 
     /// <summary>The stockpile cell nearest the middle of the town's stockpile (the barn's): where its stock is laid and delivered.</summary>
@@ -88,6 +90,8 @@ public static class VillageRound
             StockShrine(sim, building);
         if (b.Def.Has(TownRole.TinkerShop))
             StockTinkerShop(sim, building);
+        if (b.Def.Has(TownRole.Woodshop))
+            StockWoodshop(sim, building);
     }
 
     /// <summary>Clean linen in the inn's storeroom: a change for every room, and a few over.</summary>
@@ -134,6 +138,23 @@ public static class VillageRound
                 sim.Store(e, sim.CreateItem(sim.Defs.Thing("Charcoal"), 6));
                 return;
             }
+    }
+
+    /// <summary>Logs, planks and feathers in the woodshop's chest at the start: a couple of batches of planks, and a day's quivers.</summary>
+    public const int WoodshopLogs = 12, WoodshopPlanks = 6, WoodshopFeathers = 6;
+
+    /// <summary>Stock in the carpenter's chest: logs to saw, planks to fletch from, and feathers for the fletching.</summary>
+    private static void StockWoodshop(Simulation sim, Entity shop)
+    {
+        var chest = Carpentry.Carpenters.ChestOf(sim, shop);
+        if (chest.IsNull)
+            return;
+        foreach (var (def, count) in new[] { ("Wood", WoodshopLogs), ("Planks", WoodshopPlanks), ("Feathers", WoodshopFeathers) })
+        {
+            var rest = sim.Store(chest, sim.CreateItem(sim.Defs.Thing(def), count));
+            if (!rest.IsNull)
+                sim.PlaceItemNear(rest, sim.World.Get<Thing>(chest).Cell);
+        }
     }
 
     /// <summary>Iron ore and wood in the smithy's chest at the start: a few blooms' worth, and hafts for spears. The carter brings more (<see cref="Shops.OreCarterSystem"/>).</summary>
@@ -235,8 +256,6 @@ public static class VillageRound
         sim.GiveStartingPack(me);
         if (hero.Look is { } look)
             w.Add(me, look);
-        if (hero.Traits != null)
-            TraitRules.Set(sim, me, hero.Traits);
         Clothing.DressHero(sim, me, hero.Clothes); // last, so it shifts no other entity
         return me;
     }

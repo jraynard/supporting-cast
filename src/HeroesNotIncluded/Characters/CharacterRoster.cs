@@ -10,14 +10,13 @@ namespace HeroesNotIncluded.Characters;
 /// A character the player made once and plays in every village, solo or with friends: who they
 /// are and what they look like, and what they've done across rounds (<see cref="Progress"/>).
 /// Only that carries over: skills and gear start fresh in every round. The sim never sees one,
-/// only the name, look, traits and clothes a game sends from it.
+/// only the name, look and clothes a game sends from it.
 /// </summary>
 public sealed record SavedCharacter
 {
     public Guid Id { get; init; } = Guid.NewGuid();
     public string Name { get; init; } = "Arin";
     public Appearance Look { get; init; }
-    public List<string> Traits { get; init; } = [];
 
     /// <summary>What they wear, as <c>"Def:Dye"</c> (<see cref="Sim.Systems.Clothing.Parse"/>): part of their look.</summary>
     public List<string> Clothes { get; init; } = [];
@@ -105,7 +104,7 @@ public sealed class CharacterRoster
 
     public static CharacterRoster Load(GameHost host, DefDatabase defs) => Load(PathFor(host), defs);
 
-    /// <summary>Read the roster, dropping what this build doesn't know (traits since removed, bad colours). Missing or broken: empty.</summary>
+    /// <summary>Read the roster, dropping what this build doesn't know (clothes since removed, bad colours; old rosters' traits are ignored). Missing or broken: empty.</summary>
     public static CharacterRoster Load(string path, DefDatabase defs)
     {
         var roster = new CharacterRoster { Path = path };
@@ -137,7 +136,6 @@ public sealed class CharacterRoster
 
     private static SavedCharacter Clean(SavedCharacter c, DefDatabase defs)
     {
-        var known = defs.AllTraits.Select(t => t.Name).ToHashSet();
         var trades = defs.AllTrades.Select(t => t.Name).ToHashSet();
         var look = c.Look;
         look.HairColor &= 0xFFFFFF;
@@ -161,7 +159,6 @@ public sealed class CharacterRoster
         {
             Name = string.IsNullOrWhiteSpace(c.Name) ? "Arin" : c.Name.Trim(),
             Look = look,
-            Traits = (c.Traits ?? []).Where(known.Contains).Distinct().Take(Sim.Systems.TraitRules.MaxTraits).ToList(),
             Clothes = (c.Clothes ?? []).Where(p => Sim.Systems.Clothing.Parse(defs, p) != null).Take(Sim.Systems.Clothing.Slots.Length).ToList(),
             Created = c.Created == default ? c.LastUsed : c.Created,
             Progress = progress with

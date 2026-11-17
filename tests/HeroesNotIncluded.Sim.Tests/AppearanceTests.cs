@@ -30,7 +30,7 @@ public class AppearanceTests
         var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
         Assert.Equal("wanderer3d", loaded.World.Get<Appearance>(e).Model);
 
-        var command = new CreateCharacterCommand(Guid.NewGuid(), "Bea", new Appearance { Model = "wanderer3d" }, []);
+        var command = new CreateCharacterCommand(Guid.NewGuid(), "Bea", new Appearance { Model = "wanderer3d" });
         var round = (CreateCharacterCommand)CommandCodec.Decode(CommandCodec.Encode(command, sim.Defs), sim.Defs);
         Assert.Equal("wanderer3d", round.Look.Model);
     }
@@ -45,7 +45,7 @@ public class AppearanceTests
         Assert.Equal(Folk.Elf, loaded.World.Get<Appearance>(e).Folk);
         Assert.Equal("wanderer3d", loaded.World.Get<Appearance>(e).Model);
 
-        var command = new CreateCharacterCommand(Guid.NewGuid(), "Bea", new Appearance { Folk = Folk.Elf }, []);
+        var command = new CreateCharacterCommand(Guid.NewGuid(), "Bea", new Appearance { Folk = Folk.Elf });
         var round = (CreateCharacterCommand)CommandCodec.Decode(CommandCodec.Encode(command, sim.Defs), sim.Defs);
         Assert.Equal(Folk.Elf, round.Look.Folk);
     }

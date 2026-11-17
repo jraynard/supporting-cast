@@ -71,9 +71,12 @@ public static class Goods
         return true;
     }
 
-    /// <summary>What adventurers buy: weapons, armor (apparel that turns a blade or a blow), the empath's charms, the tinker's contraptions and the cook's rations.</summary>
+    /// <summary>What adventurers buy: weapons, armor (apparel that turns a blade or a blow), the empath's charms, the tinker's contraptions, the cook's rations and the carpenter's quivers.</summary>
     public static bool IsGear(ThingDef def) =>
-        def.Weapon != null || def.Apparel is { } a && (a.Sharp > 0 || a.Blunt > 0) || def.Charm || def.Contraption != null || def.Rations;
+        def.Weapon != null || def.Apparel is { } a && (a.Sharp > 0 || a.Blunt > 0) || def.Charm || def.Contraption != null || def.Rations || def.Quiver;
+
+    /// <summary>Gear carried for the road rather than worn or wielded: stowed in the pack when bought.</summary>
+    private static bool ForTheRoad(ThingDef def) => def.Charm || def.Contraption != null || def.Rations || def.Quiver;
 
     /// <summary>
     /// Would they be better off with this? A weapon of the kind they fight with (in hand or at
@@ -94,6 +97,9 @@ public static class Goods
         if (def.Rations)
             // Food for the road: one bundle, judged by how it's made (it can't be smelt through the cloth).
             return Work.Rations.Carried(sim, who).Count < Work.Rations.MostCarried;
+        if (def.Quiver)
+            // Arrows for the road: one quiver, and only for someone who shoots.
+            return Carpentry.Fletching.Shoots(sim, who) && Carpentry.Fletching.Carried(sim, who).Count < Carpentry.Fletching.MostCarried;
         if (def.Contraption is { } contraption)
         {
             // Kit for the road: a couple, and not two that do the same.
@@ -123,7 +129,8 @@ public static class Goods
             return Healing.Charms.Worth * (1f + 0.5f * charm.Extra);
         var quality = QualityWorth(sim.World.TryGet<Crafted>(item, out var made) ? made.Quality : Quality.Plain);
         var def = sim.World.Get<Thing>(item).Def;
-        return def.Contraption != null ? Tinkering.Contraptions.Worth * quality : def.Rations ? Work.Rations.Worth * quality : quality;
+        return def.Contraption != null ? Tinkering.Contraptions.Worth * quality : def.Rations ? Work.Rations.Worth * quality
+            : def.Quiver ? Carpentry.Fletching.Worth * quality : quality;
     }
 
     /// <summary>How much better made pieces are worth, by quality.</summary>
@@ -142,7 +149,7 @@ public static class Goods
         if (w.Has<ForSale>(item))
             w.Remove<ForSale>(item);
         var def = w.Get<Thing>(item).Def;
-        if (def.Charm || def.Contraption != null || def.Rations)
+        if (ForTheRoad(def))
         {
             Inventory.Stow(sim, who, item);
             return;

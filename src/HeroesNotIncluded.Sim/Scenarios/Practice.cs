@@ -118,7 +118,7 @@ public static class Practice
 
     /// <summary>
     /// A party now, the way the player's trade wants it: hurt for a healer, their blades worn for a
-    /// smith (chipped, or only dull), a locked strongbox and a curio for a tinker; hungry, for the inn.
+    /// smith (chipped, or only dull), a locked strongbox and a curio for a tinker, archers for a carpenter; hungry, for the inn.
     /// </summary>
     public static List<Entity> SendCustomers(Simulation sim, Entity player, CustomerKind wear = CustomerKind.Trade)
     {
@@ -176,6 +176,19 @@ public static class Practice
                         Inventory.Stow(sim, e, Tinkering.Lockwork.Make(sim, sim.Rand, 2f, 20, "the practice yard"));
                     else if (k == 1 && Tinkering.Curios.Make(sim, sim.Rand, 2f) is { IsNull: false } curio)
                         Inventory.Stow(sim, e, curio);
+                    break;
+                case "Carpenter":
+                    // Archers, every one: the woodshop's customers are those who'll want arrows.
+                    if (!Carpentry.Fletching.Shoots(sim, e))
+                    {
+                        if (w.TryGet<Equipment>(e, out var held) && w.IsAlive(held.Weapon))
+                        {
+                            var old = held.Weapon;
+                            w.Remove<Equipment>(e);
+                            Inventory.Stow(sim, e, old);
+                        }
+                        sim.EquipItem(e, sim.CreateItem(sim.Defs.Thing("Bow"), 1));
+                    }
                     break;
                 default:
                     if (wear == CustomerKind.Thirsty)

@@ -21,7 +21,7 @@ public class ExpeditionTests
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(trade)], []));
         sim.ApplyNow(new StartRoundCommand());
         var party = sim.Parties.Send(sim, sim.Defs.Party("IronLantern"));
@@ -172,7 +172,8 @@ public class ExpeditionTests
     public void AnAIBrokerSendsAPartyOut()
     {
         var (sim, _, party) = Round("Healer");
-        for (var h = 0; h < 12 && sim.Expeditions.Out.Count == 0; h++)
+        // A party that rides in hurt waits on the shrine (the player's, here, who sees to nobody) a while before it gives up and goes.
+        for (var h = 0; h < 24 && sim.Expeditions.Out.Count == 0; h++)
             sim.TickMany(SimClock.TicksPerHour / 2);
         Assert.NotEmpty(sim.Expeditions.Out);
     }

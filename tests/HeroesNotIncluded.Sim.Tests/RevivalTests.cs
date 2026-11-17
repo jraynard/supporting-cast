@@ -22,8 +22,8 @@ public class RevivalTests
     {
         var (sim, _) = TestWorld.Millbrook(7, 4);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
-        sim.ApplyNow(new JoinLobbyCommand(Bea, "Bea", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
+        sim.ApplyNow(new JoinLobbyCommand(Bea, "Bea", default));
         sim.ApplyNow(new StartRoundCommand());
         var w = sim.World;
         var body = Players.CharacterOf(sim, Ana);
@@ -123,7 +123,7 @@ public class RevivalTests
     {
         var (sim, _) = TestWorld.Millbrook(7, 2);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
         sim.ApplyNow(new StartRoundCommand());
         var body = Players.CharacterOf(sim, Ana);
         var worn = sim.Worn(body).ToList();
@@ -240,7 +240,7 @@ public class RevivalTests
     {
         var (sim, _) = TestWorld.Millbrook(7, 4);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade("Blacksmith")], []));
         sim.ApplyNow(new StartRoundCommand());
         var w = sim.World;

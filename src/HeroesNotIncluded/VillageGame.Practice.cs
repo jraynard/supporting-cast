@@ -80,6 +80,7 @@ public sealed partial class VillageGame
         "Healer" => "A party rides in, hurt: they'll queue at the shrine.",
         "Blacksmith" => "A party rides in with their blades worn: they'll want them mended.",
         "Tinker" => "A party rides in with a locked strongbox and a curio.",
+        "Carpenter" => "Archers ride in: they'll want arrows for the road.",
         _ => "A party rides in, hungry and thirsty.",
     };
 }

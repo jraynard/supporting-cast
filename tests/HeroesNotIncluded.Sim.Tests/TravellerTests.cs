@@ -27,7 +27,7 @@ public class TravellerTests
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Ana, "Arin", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Arin", default));
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade("Healer")], []));
         sim.ApplyNow(new StartRoundCommand());
         return sim;

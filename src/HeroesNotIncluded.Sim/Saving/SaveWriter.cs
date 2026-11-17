@@ -149,6 +149,26 @@ public sealed class SaveReader(Stream stream, DefDatabase defs, int version = Sa
     public T Def<T>() where T : Def =>
         DefOrNull<T>() ?? throw new SaveException($"Corrupt save: missing {typeof(T).Name}");
 
+    /// <summary>
+    /// Read past a reference to a def of a kind this version no longer has (an old save's traits): its
+    /// first mention still takes its place in the table, so later references keep their numbers.
+    /// </summary>
+    public void SkipDef()
+    {
+        var id = Int();
+        if (id < 0 || id < _defs.Count)
+            return;
+        if (id != _defs.Count)
+            throw new SaveException($"Corrupt save: def #{id} out of order");
+        String();
+        _defs.Add(RetiredDef.Instance);
+    }
+
+    private sealed class RetiredDef : Def
+    {
+        public static readonly RetiredDef Instance = new() { Name = "(retired)" };
+    }
+
     public T? DefOrNull<T>() where T : Def
     {
         var id = Int();
@@ -179,7 +199,6 @@ public sealed class SaveReader(Stream stream, DefDatabase defs, int version = Sa
                 var t when t == typeof(RaiderKindDef) => defs.RaiderKind(name),
                 var t when t == typeof(ThoughtDef) => defs.Thought(name),
                 var t when t == typeof(InteractionDef) => defs.Interaction(name),
-                var t when t == typeof(TraitDef) => defs.Trait(name),
                 var t when t == typeof(RecipeDef) => defs.Recipe(name),
                 var t when t == typeof(BuildingDef) => defs.Building(name),
                 var t when t == typeof(TradeDef) => defs.Trade(name),

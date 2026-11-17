@@ -5,7 +5,7 @@ namespace HeroesNotIncluded.Sim.Defs;
 
 /// <summary>
 /// All loaded defs. Each JSON file under the defs directory is an object with any of the keys
-/// "blocks", "things", "creatures", "needs", "bodies", "materials", "difficulties", "raiderKinds", "wildlife", "seasons", "thoughts", "interactions", "traits", "recipes", "tiers", "veins",
+/// "blocks", "things", "creatures", "needs", "bodies", "materials", "difficulties", "raiderKinds", "wildlife", "seasons", "thoughts", "interactions", "recipes", "tiers", "veins",
 /// "dragonInteractions", "trustLevels", "tricks", "outfits", "elements", "buildings", "kits", "trades", "adventurerKinds", "parties", "services", "mendings", "ghostErrands", "quests",
 /// each an array of defs (and "basics", the tutorial's first chapter: one lesson, the last loaded). Files are merged in name
 /// order so later files (mods) can add content.
@@ -25,7 +25,6 @@ public sealed class DefDatabase
     private readonly Dictionary<string, FestivalDef> _festivals = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ThoughtDef> _thoughts = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, InteractionDef> _interactions = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, TraitDef> _traits = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, RecipeDef> _recipes = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, TierDef> _tiers = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, VeinDef> _veins = new(StringComparer.OrdinalIgnoreCase);
@@ -88,7 +87,6 @@ public sealed class DefDatabase
     public List<WildlifeDef> AllWildlife { get; } = [];
     public List<ThoughtDef> AllThoughts { get; } = [];
     public List<InteractionDef> AllInteractions { get; } = [];
-    public List<TraitDef> AllTraits { get; } = [];
     public List<RecipeDef> AllRecipes { get; } = [];
     public List<TierDef> AllTiers { get; } = [];
     public List<VeinDef> AllVeins { get; } = [];
@@ -161,7 +159,6 @@ public sealed class DefDatabase
         public List<FestivalDef> Festivals { get; set; } = [];
         public List<ThoughtDef> Thoughts { get; set; } = [];
         public List<InteractionDef> Interactions { get; set; } = [];
-        public List<TraitDef> Traits { get; set; } = [];
         public List<RecipeDef> Recipes { get; set; } = [];
         public List<TierDef> Tiers { get; set; } = [];
         public List<VeinDef> Veins { get; set; } = [];
@@ -230,7 +227,6 @@ public sealed class DefDatabase
         AddAll(file.Festivals, _festivals, AllFestivals, source);
         AddAll(file.Thoughts, _thoughts, AllThoughts, source);
         AddAll(file.Interactions, _interactions, AllInteractions, source);
-        AddAll(file.Traits, _traits, AllTraits, source);
         AddAll(file.Recipes, _recipes, AllRecipes, source);
         AddAll(file.Tiers, _tiers, AllTiers, source);
         AddAll(file.Veins, _veins, AllVeins, source);
@@ -292,7 +288,6 @@ public sealed class DefDatabase
         foreach (var d in AllRaiderKinds) d.Resolve(this);
         foreach (var d in AllThoughts) d.Resolve(this);
         foreach (var d in AllInteractions) d.Resolve(this);
-        foreach (var d in AllTraits) d.Resolve(this);
         foreach (var d in AllRecipes) d.Resolve(this); // after things: stations collect their recipes
         foreach (var d in AllOutfits) d.Resolve(this);
         foreach (var d in AllKits) d.Resolve(this);
@@ -486,14 +481,12 @@ public sealed class DefDatabase
         _byServiceKind[(int)kind] ?? throw new KeyNotFoundException($"No service def for {kind}");
     public ThoughtDef Thought(string name) => Lookup(_thoughts, name);
     public InteractionDef Interaction(string name) => Lookup(_interactions, name);
-    public TraitDef Trait(string name) => Lookup(_traits, name);
     public RecipeDef Recipe(string name) => Lookup(_recipes, name);
     public OutfitDef Outfit(string name) => Lookup(_outfits, name);
     public BuildingDef Building(string name) => Lookup(_buildings, name);
     public BuildingKitDef Kit(string name) => Lookup(_kits, name);
     public TradeDef Trade(string name) => Lookup(_trades, name);
     public bool TryMaterial(string name, out MaterialDef def) => _materials.TryGetValue(name, out def!);
-    public bool TryTrait(string name, out TraitDef def) => _traits.TryGetValue(name, out def!);
 
     public bool TryThing(string name, out ThingDef def) => _things.TryGetValue(name, out def!);
 

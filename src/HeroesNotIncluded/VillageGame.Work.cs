@@ -2,6 +2,7 @@ using Brutal.ImGuiApi;
 using Narsil.Ui;
 using Narsil.Platform;
 using HeroesNotIncluded.Sim;
+using HeroesNotIncluded.Sim.Carpentry;
 using HeroesNotIncluded.Sim.Bots;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Round;
@@ -280,6 +281,15 @@ public sealed partial class VillageGame
                 return;
             case Sim.Tinkering.LoupeSession loupe:
                 DrawLoupe(loupe);
+                return;
+            case SawSession saw:
+                DrawSaw(saw);
+                return;
+            case FletchSession fletch:
+                DrawFletch(fletch);
+                return;
+            case BowSession bow:
+                DrawBow(bow);
                 return;
             case StrikerSession striker:
                 DrawStriker(striker);

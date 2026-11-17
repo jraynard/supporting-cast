@@ -19,12 +19,14 @@ public static class SeasonSweepRun
         var first = Value(args, "--seed") is { } f && ulong.TryParse(f, out var seed) ? seed : 1ul;
         var difficulty = Value(args, "--difficulty") ?? "Normal";
         var map = Value(args, "--map") ?? VillageRound.DefaultMap;
+        // The bots' table: --trades Innkeeper,Cook,... (one bot each), or the usual six.
+        var trades = Value(args, "--trades") is { } t ? t.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : SeasonSweep.Trades;
         var seeds = Enumerable.Range(0, n).Select(i => first + (ulong)i).ToArray();
 
-        Console.WriteLine($"== Seasons in {map}, {difficulty}, bots as {string.Join(", ", SeasonSweep.Trades)}; seeds {first}..{first + (ulong)n - 1} ==");
+        Console.WriteLine($"== Seasons in {map}, {difficulty}, bots as {string.Join(", ", trades)}; seeds {first}..{first + (ulong)n - 1} ==");
         var clock = Stopwatch.StartNew();
         var results = new SeasonResult[seeds.Length];
-        Parallel.For(0, seeds.Length, i => results[i] = SeasonSweep.Play(defs, seeds[i], difficulty, map: map));
+        Parallel.For(0, seeds.Length, i => results[i] = SeasonSweep.Play(defs, seeds[i], difficulty, trades, map: map));
         foreach (var r in results)
         {
             var s2 = r.Summary;

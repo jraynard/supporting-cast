@@ -67,7 +67,7 @@ public static class CombatSweep
         VillageRound.Setup(sim);
         sim.Director.Enable(defs.Difficulty(difficulty));
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default));
         sim.ApplyNow(new StartRoundCommand());
         Players.Leave(sim, Guid.Empty);
         sim.Director.PassOverBeats(sim);

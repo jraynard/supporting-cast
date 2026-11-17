@@ -24,7 +24,7 @@ public class NightTests
         sim.Round.OpenLobby();
         foreach (var (player, trade) in players)
         {
-            sim.ApplyNow(new JoinLobbyCommand(player, player == Ana ? "Ana" : "Bea", default, []));
+            sim.ApplyNow(new JoinLobbyCommand(player, player == Ana ? "Ana" : "Bea", default));
             sim.ApplyNow(new SetTradePreferencesCommand(player, [sim.Defs.Trade(trade)], []));
         }
         sim.ApplyNow(new StartRoundCommand());

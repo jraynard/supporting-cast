@@ -26,7 +26,7 @@ public class WorkTests
         var sim = Create(40, 40);
         var me = sim.SpawnCreature(sim.Defs.Creature("Human"), "Smith", C(10, 10), ageDays: 25 * 365);
         sim.Round.OpenLobby();
-        sim.Round.Sit(Ana, "Smith", null, null, null);
+        sim.Round.Sit(Ana, "Smith", null, null);
         sim.Round.Start(sim);
         var kit = SmithyKit.Place(sim);
         var recipe = sim.Defs.Recipe("ForgeAxe");
@@ -319,7 +319,7 @@ public class WorkTests
         var sim = Create(70, 70);
         var me = sim.SpawnCreature(sim.Defs.Creature("Human"), "Bot", C(10, 10), ageDays: 25 * 365);
         sim.Round.OpenLobby();
-        sim.Round.Sit(Ana, "Bot", null, null, null);
+        sim.Round.Sit(Ana, "Bot", null, null);
         sim.Round.Start(sim);
         sim.RebuildDerivedIfNeeded();
         Array.Fill(sim.Map.Light, 1f);

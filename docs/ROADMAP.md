@@ -44,7 +44,12 @@ so far. Nobody new has tried them yet.
   for a trade never played. The first goes against "no in-round tips" (CLAUDE.md).
 - [ ] Maybe mark a trade or two on the picker as a good first one (the smith's loop is the plainest).
 - **Done:** the labourer is no longer offered to players (it has no game of its own; Backlog, "The
-  trades, deeper"). It's still what a sixth player gets, and the lobby says so.
+  trades, deeper"). The carpenter is Millbrook's sixth trade (HISTORY.md, "The carpenter"), so the
+  labourer is now what a seventh player gets, and the lobby says so.
+- [ ] **The carpenter, played by someone:** `--practice Carpenter`. Do the saw and the fletching
+  read? Is the woodshop worth a seat in a six-player round, or is it quiet between parties with
+  archers? In the bots' sweep the carpenter's seasons ended further apart (more wins, more lost to
+  Dread) than the labourer bot's; watch Dread in a six-player round with friends.
 
 ### 2. From testers
 Visual issues and requests from playtests, so they don't get lost between HISTORY.md and the Backlog.
@@ -295,12 +300,15 @@ items into "Now" when a playtest says they matter.
   (`Broths`), word of the food (`ShopSystem.Fare`).
 - **Healer:** adventurers never tear a charm in town.
 - **Labourer:** hidden from players (the solo picker and the lobby) till it has a game of its own;
-  still the overflow for a sixth player and `--trade Labourer`. Its work is the AI's: errands off
-  the notice board, hauling, chopping. Likely split into Miner, Forager and Carpenter rather than given a pass.
+  still the overflow for a seventh player and `--trade Labourer`. Its work is the AI's: errands off
+  the notice board, hauling, chopping. Likely split into Miner and Forager (once there's wild ground
+  beyond the walls) rather than given a pass; the Carpenter has come out of it already.
 - **Tinker:** no lockboxes or locked chests (locks go on doors only); AI tinkers don't buy curios;
   a wagon lesson (practice customers' wagons aren't damaged yet).
-- **Carpenter** (benched): the build and zone tools are open to every player and should be the
-  carpenter's; building and mending have no game of their own.
+- **Carpenter** (slice 2): bar fights and raids breaking furniture (`Hospitality/Brawls` doesn't
+  yet), mended by the carpenter; the build and zone tools brought back as the carpenter's own (they
+  are off for everyone, `VillageGame.Journal.BuildTools`, since playtesters found them useless); feathers
+  from the cook's plucking; AI carpenters don't build bows for sale.
 - **Gathering:** digging, mining, chopping and foraging are the labourer's until the Miner and
   Forager come.
 
@@ -324,7 +332,7 @@ items into "Now" when a playtest says they matter.
 - AI carrying the dead to the shrine, so an AI empath gets a chance without a player's help.
 - Time passes fast only while everyone sleeps, not when the town is otherwise quiet.
 - Wood left out on a cold day goes on the fires before an errand can fetch it.
-- **Brave villagers with buckets:** once the dragon's down, the bolder villagers (by trait or
+- **Brave villagers with buckets:** once the dragon's down, the bolder villagers (by temper or
   mood) fetch water and soak it (`DragonBrain.Douse`; `SoaksToDrive`), not just the fires it sets
   (`BucketJob`). The town without a party has a way to see it off (met 1/48 in the sweep).
 

@@ -1106,10 +1106,7 @@ public sealed partial class Simulation
             World.Add(e, new Health { Body = def.BodyDef, Scale = def.MaxHp / 100f });
 
         if (def.Race == Race.Human)
-        {
             World.Add(e, SkillRules.Roll(Seed, e));
-            World.Add(e, TraitRules.Roll(Defs, Seed, e));
-        }
         if (MoodSystem.HasMood(def))
             World.Add(e, new Mood());
         return e;

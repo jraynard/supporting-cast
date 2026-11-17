@@ -39,7 +39,7 @@ public class CoopSessionTests
         {
             var (sim, center) = Millbrook(77, lobbyVillagers ?? 1);
             if (lobbyVillagers == null)
-                VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
+                VillageRound.SpawnHero(sim, new Hero("Hosta", null), center);
             else
                 sim.Round.OpenLobby();
             Host = CoopSession.StartHost(sim, new PlayerIdentity(Guid.NewGuid(), "host"), "test", Listener);
@@ -159,7 +159,7 @@ public class CoopSessionTests
         var bea = new PlayerIdentity(Guid.NewGuid(), "Bea");
         var client = t.Join(bea);
         t.Run(1f);
-        client.Send(new CreateCharacterCommand(bea.Id, "Bea", new Appearance(), ["Kind"]));
+        client.Send(new CreateCharacterCommand(bea.Id, "Bea", new Appearance()));
         t.Run(1.5f);
         var sim = client.Sim!;
         var mine = Players.CharacterOf(sim, bea.Id);
@@ -201,7 +201,7 @@ public class CoopSessionTests
         var bea = new PlayerIdentity(Guid.NewGuid(), "Bea");
         var client = t.Join(bea, canReconnect: true);
         t.Run(1f);
-        client.Send(new CreateCharacterCommand(bea.Id, "Bea", new Appearance(), ["Kind"]));
+        client.Send(new CreateCharacterCommand(bea.Id, "Bea", new Appearance()));
         t.Run(1f);
         var mine = Players.CharacterOf(t.Host.Sim!, bea.Id);
         client.Send(new AvatarMoveCommand(Players.CharacterOf(client.Sim!, bea.Id), new int2(1, 0)));
@@ -230,7 +230,7 @@ public class CoopSessionTests
         Assert.True(client.Ready);
         Assert.True(Players.CharacterOf(client.Sim!, bea.Id).IsNull, "a newcomer has no character yet");
 
-        client.Send(new CreateCharacterCommand(bea.Id, "Bea", new Appearance { Hair = HairStyle.Long }, ["Kind"]));
+        client.Send(new CreateCharacterCommand(bea.Id, "Bea", new Appearance { Hair = HairStyle.Long }));
         t.Run(1f);
         var mine = Players.CharacterOf(client.Sim!, bea.Id);
         Assert.False(mine.IsNull);
@@ -249,7 +249,7 @@ public class CoopSessionTests
     public void HostingKeepsTheStoryteller()
     {
         var (sim, center) = Millbrook(5, 1);
-        VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
+        VillageRound.SpawnHero(sim, new Hero("Hosta", null), center);
         sim.Storyteller.SetDifficulty(sim, Defs.Value.Difficulty("Normal"));
         using var host = CoopSession.StartHost(sim, new PlayerIdentity(Guid.NewGuid(), "host"), "raids", new LoopbackListener());
         Assert.NotNull(host.Sim!.Storyteller.Difficulty); // raids come to co-op villages too
@@ -262,7 +262,7 @@ public class CoopSessionTests
         var bea = new PlayerIdentity(Guid.NewGuid(), "Bea");
         var first = t.Join(bea);
         t.Run(1f);
-        first.Send(new CreateCharacterCommand(bea.Id, "Bea", default, []));
+        first.Send(new CreateCharacterCommand(bea.Id, "Bea", default));
         t.Run(1f);
         var mine = Players.CharacterOf(t.Host.Sim!, bea.Id);
 
@@ -286,7 +286,7 @@ public class CoopSessionTests
         var a = new PlayerIdentity(Guid.NewGuid(), "A");
         var ca = t.Join(a);
         t.Run(1f);
-        ca.Send(new CreateCharacterCommand(a.Id, "A", default, []));
+        ca.Send(new CreateCharacterCommand(a.Id, "A", default));
         t.Run(4f); // a few game minutes of village life at 6x
         var b = new PlayerIdentity(Guid.NewGuid(), "B");
         t.Join(b);
@@ -299,7 +299,7 @@ public class CoopSessionTests
     public async Task WorksOverRealSockets()
     {
         var (sim, center) = Millbrook(5, 1);
-        VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
+        VillageRound.SpawnHero(sim, new Hero("Hosta", null), center);
         var listener = new TcpNetListener(0, System.Net.IPAddress.Loopback);
         using var host = CoopSession.StartHost(sim, new PlayerIdentity(Guid.NewGuid(), "host"), "tcp", listener, listener.Port);
         var bea = new PlayerIdentity(Guid.NewGuid(), "Bea");
@@ -322,7 +322,7 @@ public class CoopSessionTests
 
         Pump(1.5f, SimClock.TicksPerSecond * 3);
         Assert.True(client.Ready, client.Ended ?? "never got the village");
-        client.Send(new CreateCharacterCommand(bea.Id, "Bea", default, []));
+        client.Send(new CreateCharacterCommand(bea.Id, "Bea", default));
         Pump(1f, SimClock.TicksPerSecond * 3);
         Pump(1.5f, 0); // pause and let everything arrive
         Assert.False(Players.CharacterOf(client.Sim!, bea.Id).IsNull);
@@ -340,7 +340,7 @@ public class CoopSessionTests
         try
         {
             var (sim, center) = Millbrook(5, 1);
-            VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
+            VillageRound.SpawnHero(sim, new Hero("Hosta", null), center);
             using var host = CoopSession.StartHost(sim, new PlayerIdentity(Guid.NewGuid(), "host"), "online", port: 0, online: true);
             CoopSession? client = null;
 
@@ -368,7 +368,7 @@ public class CoopSessionTests
 
             Pump(5f, SimClock.TicksPerSecond * 3, () => client.Ready);
             Assert.True(client.Ready, client.Ended ?? "never got the village");
-            client.Send(new CreateCharacterCommand(bea.Id, "Bea", default, []));
+            client.Send(new CreateCharacterCommand(bea.Id, "Bea", default));
             Pump(1f, SimClock.TicksPerSecond * 3);
             Pump(1.5f, 0);
             Assert.False(Players.CharacterOf(client.Sim!, bea.Id).IsNull);
@@ -392,7 +392,7 @@ public class CoopSessionTests
         try
         {
             var (sim, center) = Millbrook(5, 1);
-            VillageRound.SpawnHero(sim, new Hero("Hosta", null, null), center);
+            VillageRound.SpawnHero(sim, new Hero("Hosta", null), center);
             var host = CoopSession.StartHost(sim, new PlayerIdentity(Guid.NewGuid(), "host"), "online", port: 0, online: true);
             var peers = new List<CoopSession>();
             var hostAlive = true;
@@ -425,7 +425,7 @@ public class CoopSessionTests
                     await RelayClient.JoinAsync(relayHost, relayPort, CoopSession.GameId, code),
                     ct => RelayClient.JoinAsync(relayHost, relayPort, CoopSession.GameId, code, ct)));
                 Pump(5f, () => peers[^1].Ready);
-                peers[^1].Send(new CreateCharacterCommand(me.Id, name, default, []));
+                peers[^1].Send(new CreateCharacterCommand(me.Id, name, default));
             }
             Pump(1.5f);
             Assert.All(peers, p => Assert.NotNull(p.Client!.HandoverData));

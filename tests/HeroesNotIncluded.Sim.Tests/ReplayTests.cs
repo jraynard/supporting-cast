@@ -29,7 +29,7 @@ public class ReplayTests
         for (var i = 0; i < Trades.Length; i++)
         {
             var id = new Guid(i + 1, 0, 0, new byte[8]);
-            sim.ApplyNow(new JoinLobbyCommand(id, $"Bot {i + 1}", default, []));
+            sim.ApplyNow(new JoinLobbyCommand(id, $"Bot {i + 1}", default));
             sim.ApplyNow(new SetTradePreferencesCommand(id, [sim.Defs.Trade(Trades[i])], []));
             bots.Add(new BotPlayer(() => sim, id, c => sim.ApplyNow(c), 100 + (ulong)i));
         }
@@ -156,7 +156,7 @@ public class ReplayTests
         for (var i = 0; i < Trades.Length; i++)
         {
             var id = new Guid(i + 1, 0, 0, new byte[8]);
-            sim.ApplyNow(new JoinLobbyCommand(id, $"Bot {i + 1}", default, []));
+            sim.ApplyNow(new JoinLobbyCommand(id, $"Bot {i + 1}", default));
             sim.ApplyNow(new SetTradePreferencesCommand(id, [sim.Defs.Trade(Trades[i])], []));
             bots.Add(new BotPlayer(() => sim, id, c => sim.ApplyNow(c), 100 + (ulong)i));
         }

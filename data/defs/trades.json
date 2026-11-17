@@ -3,13 +3,13 @@
 // work still gets done. knows: stations whose recipes the holder knows; skills: the least they
 // have; kit: what they start with (a weapon goes in hand); stash: what's kept for them at the workplace
 // (under the bar), fetched when trouble comes; holdsKeys: a key to every lock at the workplace (the inn's storeroom). Labourer is unlimited: it's what's left when the named trades run out.
-// stations: the trade's furniture at its workplace.
+// stations: the trade's furniture at its workplace. mendsTown: braces what a raid breaks (the bridge); builds: puts up the festival, as the labourer does.
 // The tutorial (the title menu's Tutorial, Scenarios/Lessons): tutorialIntro is what the trade's about,
 // said first; lessons are its chapters, "core" ones run in order after the basics (below), the rest offered
 // after. A step's "ui" is the action whose button glows while it's at hand (shop, inventory, gift, quests);
 // "more" is shown once the player's been stuck on it a while; "notes" are the chapter's "worth knowing",
 // shown when it's done. Words in the innkeeper's voice (docs in art/brand); keys as ~F~, ~AD~, ~J~...
-// workplace: the town role of the building it works from (Tavern, Kitchen, Forge, Shrine, TinkerShop):
+// workplace: the town role of the building it works from (Tavern, Kitchen, Forge, Shrine, TinkerShop, Woodshop):
 // which building that is is the map's to say (buildings.json "roles").
 {
   // Every trade's tutorial starts here, unless the character's done it before.
@@ -207,7 +207,50 @@
             { "id": "altar", "text": "Go to the rune altar, where pain disturbs your weaving less. Open the gift (~Y~) and press \"Weave a charm\".", "ui": "gift" },
             { "id": "show", "text": "Put the charm down in the shrine (~G~), click it, and set a price. Parties buy charms to take on quests." } ] } ],
       "kit": [ { "def": "Staff" }, { "def": "Bandage", "count": 4 } ] },
-    // The Carpenter is benched for now: building and fletching come back as a trade of its own later.
+    // The carpenter works the woodshop: planks at the sawhorse, arrows at the bench for the parties'
+    // archers, the bridge braced when a raid brings it down, and the festival put up (Carpentry/).
+    { "name": "Carpenter", "label": "carpenter", "description": "Wood and arrows: saws planks, fletches quivers for the parties' archers, braces the bridge when it's down and puts up the festival.",
+      "workplace": "Woodshop", "workPriorities": { "Craft": 1, "Construct": 2 }, "skills": { "Crafting": 5, "Construction": 6, "Shooting": 4 }, "mendsTown": true, "builds": true,
+      "wants": [ { "thing": "Wood", "below": 6, "count": 12, "price": 6 } ],
+      "knows": [ "Sawhorse", "CarpenterBench" ],
+      "stations": [ "Sawhorse", "CarpenterBench" ],
+      "tutorialIntro": "You're the carpenter. Logs come in, planks and arrows go out. Archers in the parties need arrows for the road, and a well-fletched quiver brings them home. When the bridge comes down, or the festival needs putting up, the town looks to you.",
+      "lessons": [
+        { "id": "saw", "title": "Saw some planks", "core": true,
+          "blurb": "Hew a log square with the axe, then saw the beam into planks along its chalk lines.",
+          "steps": [
+            { "id": "logs", "text": "Take six logs from the woodshop's chest (~F~)." },
+            { "id": "start", "text": "Carry them to the sawhorse, hold ~F~ there and choose planks." },
+            { "id": "hew", "text": "First hew the log square. Hold ~F~ to raise the axe and let go to strike: the higher it's raised, the deeper the blow. Bring the right side flat down to the chalk line, then press ~Space~ (or right-click) to turn the log to the next.",
+              "more": "The dashed line shows where the blow will cut to. Past the chalk line is waste, wood left on is rough: finish a side with a light blow." },
+            { "id": "saw", "text": "Then saw the beam, as the top sawyer: ~S~ pulls the saw down (that's what cuts), ~W~ draws it back up. When the blade wanders off the line, the arrow shows the way back: ~A~ or ~D~.",
+              "more": "Long, steady strokes: a rushed one wanders. The squarer the log and the straighter the cuts, the more planks you get." } ],
+          "notes": [ "Six logs make up to ten planks: a crooked cut wastes some.",
+                     "When the chest runs low on logs, the barn has plenty." ] },
+        { "id": "quiver", "title": "Make a quiver of arrows", "core": true,
+          "blurb": "Make one fine arrow at the bench, cut the rest to match, and put the quiver out for the parties' archers.",
+          "steps": [
+            { "id": "start", "text": "Hold ~F~ at the carpenter's bench and choose a quiver of arrows. It takes a plank and a bundle of feathers." },
+            { "id": "sight", "text": "First sight the shaft: hold ~F~ to bend it against its warp, and press ~Space~ when the needle reads straight. Bend too far and it warps the other way.",
+              "more": "Your eye isn't perfect: the needle is what you see, and a shaft can look truer than it is. Steady hands see better." },
+            { "id": "shave", "text": "Shave it smooth: move the knife with the mouse (or ~WASD~) and hold the button (or ~F~) to shave. Take the lumps down to the shaft's line, then press ~Space~.",
+              "more": "Below the line the knife bites into the shaft, and a gouge costs more than a little wood left on." },
+            { "id": "head", "text": "Fit the head: hold ~F~ to push it onto the shaft. It tips as it goes on: ~A~/~D~ (or the mouse) keep it on the line." },
+            { "id": "fletch", "text": "Then fletch it: point round the shaft with the mouse (or ~A~/~D~) and click (or ~F~) to set a feather. Three, evenly round it." },
+            { "id": "show", "text": "Put the quiver down in the woodshop (~G~), click it, and set a price. Archers buy them before they set out.", "ui": "inventory" } ],
+          "notes": [ "Only archers buy quivers: a party with a bow or two in it will come looking.",
+                     "A true quiver brings an archer home in better shape. A warped one flies wide, and nobody can tell until it does.",
+                     "When raiders bring the bridge down, it's yours to mend: take 2 wood to the gap and press ~F~." ] },
+        { "id": "bow", "title": "Tiller a bow", "supply": [ { "def": "Planks", "count": 4 } ],
+          "blurb": "Scrape a bow stave until both limbs bend in an even arc. A good bow sells to a party's archer.",
+          "steps": [
+            { "id": "start", "text": "Hold ~F~ at the carpenter's bench and choose a hunting bow. It takes four planks." },
+            { "id": "tiller", "text": "The stave's on the tillering stick. Each bar under it is wood still to come off a section. ~A~/~D~ (or the mouse) picks one; hold ~F~ to scrape it down to its mark. When every bar's at its mark, press ~Space~.",
+              "more": "Short strokes: the scraper bites harder the longer you hold it, and wood scraped off can't go back. A bar below its mark is a hinge, worse than one left stiff." },
+            { "id": "string", "text": "String it: hold ~F~ to bend the bow against the floor, and press ~Space~ to slip the loop into the nock once the gauge is in the green.",
+              "more": "Too soon and the loop slips past: bend it again. Bend it into the red and the limbs strain." } ],
+          "notes": [ "Put a bow down in the woodshop (~G~) and price it: an archer with a worse one will buy it." ] } ],
+      "kit": [ { "def": "Bow" }, { "def": "Saw" }, { "def": "Planks", "count": 4 }, { "def": "Feathers", "count": 4 } ] },
     { "name": "Tinker", "label": "tinker", "description": "Locks and clockwork: opens what adventurers drag home, fits locks and cuts keys, builds contraptions for the road, mends wagons and knows what a curio's worth.",
       "workplace": "TinkerShop", "workPriorities": { "Craft": 1 }, "skills": { "Crafting": 6, "Construction": 4 }, "mendsTown": true,
       "wants": [ { "thing": "Wood", "below": 4, "count": 8, "price": 5 } ],

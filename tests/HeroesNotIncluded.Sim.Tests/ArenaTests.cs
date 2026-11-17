@@ -11,7 +11,7 @@ public class ArenaTests
     {
         var sim = Arena.NewSimulation(TestWorld.LoadDefs(), 7);
         var center = Arena.Setup(sim);
-        var me = VillageRound.SpawnHero(sim, new Hero("Arin", null, null), center);
+        var me = VillageRound.SpawnHero(sim, new Hero("Arin", null), center);
         return (sim, me);
     }
 

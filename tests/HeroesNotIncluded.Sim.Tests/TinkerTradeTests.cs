@@ -27,7 +27,7 @@ public class TinkerTradeTests
         var sim = Create(40, 40);
         var me = sim.SpawnCreature(sim.Defs.Creature("Human"), "Wright", C(10, 10), ageDays: 25 * 365);
         sim.Round.OpenLobby();
-        sim.Round.Sit(Ana, "Wright", null, null, null);
+        sim.Round.Sit(Ana, "Wright", null, null);
         sim.Round.Start(sim);
         sim.GiveStartingPack(me);
         sim.World.Get<Skills>(me).Level[(int)Skill.Crafting] = 6;

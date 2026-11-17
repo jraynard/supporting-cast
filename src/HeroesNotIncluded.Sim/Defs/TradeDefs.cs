@@ -82,6 +82,9 @@ public sealed class TradeDef : Def
     /// <summary>The holder mends what crises break in town (<c>Tinkering.Repairs</c>): the tinker, the bridge.</summary>
     public bool MendsTown { get; set; }
 
+    /// <summary>Puts up what the town builds for an occasion (the festival's stalls and lanterns), as the labourer does, without gathering.</summary>
+    public bool Builds { get; set; }
+
     /// <summary>
     /// What its workplace runs short of that a labourer could fetch (<c>Favours.Wants</c>): held by
     /// the AI, it pins an errand to the notice board when there's less than <see cref="TradeWant.Below"/>

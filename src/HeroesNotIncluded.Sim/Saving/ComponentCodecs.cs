@@ -678,6 +678,12 @@ internal static class ComponentCodecs
             Quality = Math.Clamp(r.Float(), 0f, 1f), Flavour = ReadFlavour(r), Maker = r.Entity(), LooseWrap = r.Bool(),
             Keeps = r.Version >= 25 && r.Bool(), // bread in rations came with format 25
         }),
+        Codec("Fletched", (w, x) =>
+        {
+            w.Float(x.Quality);
+            w.Entity(x.Maker);
+            w.Bool(x.Warped);
+        }, r => new Carpentry.Fletched { Quality = Math.Clamp(r.Float(), 0f, 1f), Maker = r.Entity(), Warped = r.Bool() }),
         Codec("Dough", (w, d) =>
         {
             w.Float(d.Knead);
@@ -835,18 +841,6 @@ internal static class ComponentCodecs
         Codec("ShopName", (w, n) => w.String(n.Name), r => new Shops.ShopName { Name = Shops.ShopName.Clean(r.String()) }),
         Codec("ForSale", (w, f) => { w.Entity(f.Seller); w.Int(f.Price); }, r => new Shops.ForSale { Seller = r.Entity(), Price = r.Int() }),
         Codec("Mood", WriteMood, ReadMood),
-        Codec("Traits", (w, t) =>
-        {
-            w.Int(t.List.Count);
-            foreach (var def in t.List)
-                w.Def(def);
-        }, r =>
-        {
-            var traits = new Traits();
-            for (int i = 0, n = r.Count(100); i < n; i++)
-                traits.List.Add(r.Def<TraitDef>());
-            return traits;
-        }),
         Codec("Hamper", (w, h) =>
         {
             w.Entity(h.Maker);
@@ -906,9 +900,25 @@ internal static class ComponentCodecs
         for (var i = 0; i < n; i++)
         {
             var name = r.String();
+            if (name == "Traits" && r.Version < 53)
+            {
+                SkipTraits(r); // traits, a DragonWorld leftover, were taken out with format 53
+                continue;
+            }
             if (!ByName.TryGetValue(name, out var codec))
                 throw new SaveException($"The save has '{name}' components, which this version of the game doesn't know.");
             codec.Read(r, world);
+        }
+    }
+
+    /// <summary>An old save's traits store, read past: entity, then the trait defs each held.</summary>
+    private static void SkipTraits(SaveReader r)
+    {
+        for (var n = r.Count(); n > 0; n--)
+        {
+            r.Entity();
+            for (var k = r.Count(100); k > 0; k--)
+                r.SkipDef();
         }
     }
 

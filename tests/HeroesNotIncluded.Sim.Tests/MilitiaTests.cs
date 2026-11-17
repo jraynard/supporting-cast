@@ -22,7 +22,7 @@ public class MilitiaTests
         if (director)
             sim.Director.Enable(sim.Defs.Difficulty("Normal"));
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default));
         sim.ApplyNow(new StartRoundCommand());
         sim.TickMany(SimClock.TicksPerHour / 4); // the beats are planned, the purse filled
         return sim;

@@ -17,7 +17,7 @@ public class BlowTests
     {
         var (sim, center) = TestWorld.Millbrook(villagers: 0);
         sim.TickMany(SimClock.TicksPerSecond * 3); // a clock well past zero, as a real fight's is
-        var me = VillageRound.SpawnHero(sim, new Hero("Arin", null, null), center);
+        var me = VillageRound.SpawnHero(sim, new Hero("Arin", null), center);
         sim.Equip(me, sim.Defs.Thing("ShortSword"));
         var here = sim.World.Get<Position>(me).Cell;
         var off = foe == "Archer" ? 4 : 1;
@@ -100,7 +100,7 @@ public class BlowTests
     {
         var (sim, me, _, blow) = Duel();
         // Co-op: someone else is playing, so blows at players wait for keys coming over the network.
-        VillageRound.SpawnHero(sim, new Hero("Bea", null, null), sim.World.Get<Position>(me).Cell);
+        VillageRound.SpawnHero(sim, new Hero("Bea", null), sim.World.Get<Position>(me).Cell);
         Assert.Equal(Blows.LatencyGrace, Blows.Grace(sim));
         // Pressed just before impact on the player's screen; reaches the sim after the window (latency).
         RunTo(sim, blow.Impact + Blows.LatencyGrace / 2);

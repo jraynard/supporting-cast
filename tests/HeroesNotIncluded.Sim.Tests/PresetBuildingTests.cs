@@ -403,23 +403,20 @@ public class PresetBuildingHeatTests
 public class WoodshopTests
 {
     [Fact]
-    public void AWoodshopHoldsTheSawhorseAndTheCarpentersBench()
+    public void AWoodshopComesWithItsStationsItsChestAndItsDressing()
     {
         var sim = TestWorld.Create(30, 30, depth: 5);
         sim.Presets.PresetMode = true;
         var shop = sim.Defs.Building("Woodshop");
 
-        // No foundation: the first site is its walls.
+        // A plank floor on a timber sill: the first site is its foundation.
         var going = Buildings.Place(sim, shop, C(8, 8), 0);
-        Assert.Equal(BuildPhase.Walls, sim.World.Get<PresetBuilding>(going).Phase);
+        Assert.Equal(BuildPhase.Foundation, sim.World.Get<PresetBuilding>(going).Phase);
 
         var b = Buildings.SpawnFinished(sim, shop, C(20, 20), 0);
-        var state = sim.World.Get<PresetBuilding>(b);
-        Assert.Contains(Buildings.Parts(sim, b), p => sim.World.Get<Thing>(p).Def.Name == "Sawhorse");
+        foreach (var def in new[] { "Sawhorse", "CarpenterBench", "Chest", "BowRack", "LogPile", "PlankStack", "ArrowBarrel" })
+            Assert.Contains(Buildings.Parts(sim, b), p => sim.World.Get<Thing>(p).Def.Name == def);
         var bench = sim.Thing("CarpenterBench");
-        var spot = Buildings.Slots(sim, state).Single(s => s.Slot.Accepts(bench));
-        sim.ApplyNow(new FillSlotCommand(b, spot.Index, bench));
-        Assert.False(Buildings.InSlot(sim, b, spot).IsNull);
 
         // Neither stands out in the open while preset buildings are on.
         Assert.Contains("woodshop", Buildings.PlayerProblem(sim, sim.Thing("Sawhorse"), C(3, 3), 0, out _));

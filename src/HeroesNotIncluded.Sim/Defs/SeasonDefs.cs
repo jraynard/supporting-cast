@@ -107,8 +107,13 @@ public sealed class SeasonDef : Def
     /// <summary>What the woodcutter leaves in the barn each morning from the second day.</summary>
     public List<ThingCount> WoodDelivery { get; set; } = [];
 
+    /// <summary>What the carter leaves in the woodshop's chest each morning from the second day: feathers for fletching, which nobody in town grows.</summary>
+    public List<ThingCount> WoodshopDelivery { get; set; } = [];
+
     internal override void Resolve(DefDatabase db)
     {
+        foreach (var t in WoodshopDelivery)
+            t.Resolve(db);
         foreach (var t in OreDelivery)
             t.Resolve(db);
         foreach (var t in WoodDelivery)

@@ -36,7 +36,7 @@ public class PartyLoopScenarioTests(ITestOutputHelper output)
         for (var i = 0; i < Trades.Length; i++)
         {
             var id = new Guid(i + 1, 0, 0, new byte[8]);
-            sim.ApplyNow(new JoinLobbyCommand(id, $"Bot {Trades[i]}", default, []));
+            sim.ApplyNow(new JoinLobbyCommand(id, $"Bot {Trades[i]}", default));
             sim.ApplyNow(new SetTradePreferencesCommand(id, [sim.Defs.Trade(Trades[i])], []));
             bots.Add(new BotPlayer(() => sim, id, c => sim.ApplyNow(c), seed + (ulong)i));
         }

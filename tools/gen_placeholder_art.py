@@ -34,6 +34,7 @@ import work_ui_art
 import healer_art
 import shrine_art
 import tinker_art
+import carpenter_art
 import norse_gear
 import chibi_people
 import chibi_builds
@@ -516,6 +517,7 @@ if __name__ == "__main__":
     healer_art.generate()        # the empath's rune glyphs
     shrine_art.generate()        # the shrine furnished (altar, herb rack, linen basket, basin, candles, pallet) and the cottages' bread crock
     tinker_art.generate()        # the tinker's bench, locks, keys, contraptions and curios
+    carpenter_art.generate()     # the carpenter's quiver and feathers
     placeholder_roofs.generate()     # roof thatch and shingles
     norse_gear.generate()        # tools and weapons per metal, stock, ores, fuel, food, hides: replaces the recoloured gear
     chibi_animals.generate()     # deer, boar, pig, hare, wolf, bear: chibi, 4x detail

@@ -77,7 +77,7 @@ public class CommandTests
     {
         var defs = TestWorld.LoadDefs();
         var (sim, center) = TestWorld.Millbrook(7, villagers: 2);
-        var avatar = VillageRound.SpawnHero(sim, new Hero("Arin", null, null), center);
+        var avatar = VillageRound.SpawnHero(sim, new Hero("Arin", null), center);
         sim.TickMany(SimClock.TicksPerHour);
 
         var rand = new Random(1234);
@@ -122,7 +122,7 @@ public class CommandTests
                     return null;
                 var a = Array.CreateInstance(element, rand.Next(5) == 0 ? 4096 : rand.Next(4));
                 for (var i = 0; i < a.Length; i++)
-                    a.SetValue(element == typeof(string) ? (rand.Next(3) == 0 ? "NoSuchTrait" : "Optimist") : Hostile(element), i);
+                    a.SetValue(element == typeof(string) ? (rand.Next(3) == 0 ? "NoSuchThing" : "Tunic:Woad") : Hostile(element), i);
                 return a;
             }
             return Sample(t, defs);

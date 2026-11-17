@@ -16,7 +16,7 @@ public class EmoteTests
         var sim = Create(60, 60);
         var me = Person(sim, 10, 10, "Me");
         sim.Round.OpenLobby();
-        sim.Round.Sit(Guid.Empty, "Me", null, null, null);
+        sim.Round.Sit(Guid.Empty, "Me", null, null);
         sim.Round.Start(sim);
         sim.RebuildDerivedIfNeeded();
         Array.Fill(sim.Map.Light, 1f);

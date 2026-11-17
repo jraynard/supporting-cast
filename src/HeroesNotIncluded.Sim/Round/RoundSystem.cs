@@ -27,7 +27,6 @@ public sealed class LobbySeat
 
     public string Name = "";
     public Appearance? Look;
-    public List<string> Traits = [];
     public List<string>? Clothes;
 
     /// <summary>Trades this player wants, best first.</summary>
@@ -311,7 +310,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     }
 
     /// <summary>A player takes a seat, or changes who they'll be. Their preferences stay.</summary>
-    public void Sit(Guid player, string name, Appearance? look, IReadOnlyList<string>? traits, IReadOnlyList<string>? clothes)
+    public void Sit(Guid player, string name, Appearance? look, IReadOnlyList<string>? clothes)
     {
         if (Phase != RoundPhase.Lobby)
             return;
@@ -324,7 +323,6 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         }
         seat.Name = Players.Clean(name);
         seat.Look = look is { } a ? Players.Valid(a) : null;
-        seat.Traits = traits?.Take(TraitRules.MaxTraits * 2).ToList() ?? [];
         seat.Clothes = clothes?.Take(MaxClothes).ToList();
     }
 
@@ -419,7 +417,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
                 body = Players.SpawnNewcomer(sim, seat.Name);
             }
             Players.Inhabit(sim, seat.Player, body);
-            Players.TakeOnLook(sim, body, seat.Name, seat.Look, seat.Traits, seat.Clothes);
+            Players.TakeOnLook(sim, body, seat.Name, seat.Look, seat.Clothes);
             Assign(sim, body, trade);
             PlaceAtWork(sim, body, trade);
         }
@@ -619,7 +617,6 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             w.Bool(seat.Look != null);
             if (seat.Look is { } look)
                 ComponentCodecs.For(typeof(Appearance))!.WriteValue(w, look);
-            WriteStrings(w, seat.Traits);
             w.Bool(seat.Clothes != null);
             if (seat.Clothes != null)
                 WriteStrings(w, seat.Clothes);
@@ -658,7 +655,8 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             var seat = new LobbySeat { Player = Guid.ParseExact(r.String(), "N"), Name = r.String() };
             if (r.Bool())
                 seat.Look = (Appearance)ComponentCodecs.For(typeof(Appearance))!.ReadValue(r);
-            seat.Traits = ReadStrings(r);
+            if (r.Version < 53)
+                ReadStrings(r); // traits, from before they were taken out
             seat.Clothes = r.Bool() ? ReadStrings(r) : null;
             seat.Wanted = ReadTrades(r);
             seat.Never = ReadTrades(r);

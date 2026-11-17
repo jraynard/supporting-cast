@@ -42,7 +42,7 @@ public class VillageDayScenarioTests
         var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), 1234);
         sim.Presets.PresetMode = true;
         var town = VillageRound.Setup(sim);
-        var me = VillageRound.SpawnHero(sim, new Hero("Arin", null, null), town.Center);
+        var me = VillageRound.SpawnHero(sim, new Hero("Arin", null), town.Center);
 
         Assert.True(sim.World.Has<Avatar>(me));
         Assert.Equal("Arin", sim.World.Get<Creature>(me).Name);

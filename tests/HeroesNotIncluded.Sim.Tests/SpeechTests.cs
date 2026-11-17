@@ -239,7 +239,7 @@ public class SpeechTests
         var sim = Create(70, 70);
         var me = Person(sim, 10, 10, "Me");
         sim.Round.OpenLobby();
-        sim.Round.Sit(Guid.Empty, "Me", null, null, null);
+        sim.Round.Sit(Guid.Empty, "Me", null, null);
         sim.Round.Start(sim);
         sim.RebuildDerivedIfNeeded();
         var friend = Person(sim, 12, 10, "Friend");
@@ -265,7 +265,7 @@ public class SpeechTests
         var sim = Create(70, 70);
         var me = Person(sim, 10, 10, "Me");
         sim.Round.OpenLobby();
-        sim.Round.Sit(Guid.Empty, "Me", null, null, null);
+        sim.Round.Sit(Guid.Empty, "Me", null, null);
         sim.Round.Start(sim);
         sim.RebuildDerivedIfNeeded();
         var far = Person(sim, 30, 10, "Far");

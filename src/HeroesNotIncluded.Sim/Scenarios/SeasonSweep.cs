@@ -14,8 +14,8 @@ namespace HeroesNotIncluded.Sim.Scenarios;
 /// </summary>
 public static class SeasonSweep
 {
-    /// <summary>Every trade with a game of its own, and the labourer (errands, the festival): the bots' table.</summary>
-    public static readonly string[] Trades = ["Innkeeper", "Cook", "Blacksmith", "Healer", "Tinker", "Labourer"];
+    /// <summary>Every trade with a game of its own: the bots' table (an AI labourer runs the errands).</summary>
+    public static readonly string[] Trades = ["Innkeeper", "Cook", "Blacksmith", "Healer", "Tinker", "Carpenter"];
 
     /// <param name="botSeed">The first bot's seed (the rest follow it); by default derived from <paramref name="seed"/>.</param>
     /// <param name="map">The town it's played in (data/defs/maps/): Millbrook unless told otherwise.</param>
@@ -33,7 +33,7 @@ public static class SeasonSweep
         for (var i = 0; i < trades.Count; i++)
         {
             var id = new Guid(i + 1, 0, 0, new byte[8]);
-            sim.ApplyNow(new JoinLobbyCommand(id, $"Bot {i + 1}", default, []));
+            sim.ApplyNow(new JoinLobbyCommand(id, $"Bot {i + 1}", default));
             sim.ApplyNow(new SetTradePreferencesCommand(id, [sim.Defs.Trade(trades[i])], []));
             bots.Add(new BotPlayer(() => sim, id, c => sim.ApplyNow(c), first + (ulong)i));
         }

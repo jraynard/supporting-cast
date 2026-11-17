@@ -22,7 +22,7 @@ public class FavourTests
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();
         foreach (var p in players)
-            sim.ApplyNow(new JoinLobbyCommand(p, p.ToString()[^1..], default, []));
+            sim.ApplyNow(new JoinLobbyCommand(p, p.ToString()[^1..], default));
         sim.ApplyNow(new StartRoundCommand());
         return sim;
     }

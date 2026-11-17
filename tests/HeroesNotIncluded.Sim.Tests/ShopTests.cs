@@ -24,7 +24,7 @@ public class ShopTests
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();
         foreach (var p in players)
-            sim.ApplyNow(new JoinLobbyCommand(p, p.ToString()[^1..], default, []));
+            sim.ApplyNow(new JoinLobbyCommand(p, p.ToString()[^1..], default));
         if (firstTrade != null)
             sim.ApplyNow(new SetTradePreferencesCommand(players[0], [sim.Defs.Trade(firstTrade)], []));
         sim.ApplyNow(new StartRoundCommand());
@@ -156,7 +156,7 @@ public class ShopTests
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade("Innkeeper")], []));
         sim.ApplyNow(new StartRoundCommand());
         if (aleOnly)

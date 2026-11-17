@@ -28,7 +28,7 @@ public static class Bench
             for (var i = 0; i < trades.Length; i++)
             {
                 var id = new Guid(i + 1, 0, 0, new byte[8]);
-                sim.ApplyNow(new Sim.Round.JoinLobbyCommand(id, $"Bot {i + 1}", default, []));
+                sim.ApplyNow(new Sim.Round.JoinLobbyCommand(id, $"Bot {i + 1}", default));
                 sim.ApplyNow(new Sim.Round.SetTradePreferencesCommand(id, [sim.Defs.Trade(trades[i])], []));
                 bots.Add(new Sim.Bots.BotPlayer(() => sim, id, c => sim.ApplyNow(c), seed * 16 + 100 + (ulong)i));
             }

@@ -24,7 +24,7 @@ public class HealerTests
         var me = sim.SpawnCreature(sim.Defs.Creature("Human"), "Eir", C(10, 10), ageDays: 25 * 365);
         var patient = sim.SpawnCreature(sim.Defs.Creature("Human"), "Torvi", C(11, 10), ageDays: 25 * 365);
         sim.Round.OpenLobby();
-        sim.Round.Sit(Ana, "Eir", null, null, null);
+        sim.Round.Sit(Ana, "Eir", null, null);
         sim.Round.Start(sim);
         var spawned = new[] { me, patient };
         me = Players.CharacterOf(sim, Ana);
@@ -776,7 +776,7 @@ public class HealerTests
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(playerTrade)], []));
         sim.ApplyNow(new StartRoundCommand());
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"));

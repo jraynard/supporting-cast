@@ -23,7 +23,7 @@ public class RoundTests
 
     private static void Sit(Simulation sim, Guid player, string name, params string[] wanted)
     {
-        sim.ApplyNow(new JoinLobbyCommand(player, name, default, []));
+        sim.ApplyNow(new JoinLobbyCommand(player, name, default));
         sim.ApplyNow(new SetTradePreferencesCommand(player, wanted.Select(sim.Defs.Trade).ToList(), []));
     }
 
@@ -66,7 +66,7 @@ public class RoundTests
         for (var seed = 1UL; seed <= 20; seed++)
         {
             var sim = Town(seed: seed);
-            sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+            sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
             sim.ApplyNow(new SetTradePreferencesCommand(Ana, [], named));
             sim.ApplyNow(new StartRoundCommand());
             Assert.Equal("Labourer", TradeOf(sim, Ana));
@@ -278,7 +278,7 @@ public class RoundTests
         var sim = Town();
         var healer = sim.Defs.Trade("Healer");
         var labourer = sim.Defs.Trade("Labourer");
-        sim.ApplyNow(new JoinLobbyCommand(Ana, "", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "", default));
 
         sim.Round.SetPreferences(Ana, [healer, null!, healer], [healer, labourer, null!]);
 
@@ -292,7 +292,7 @@ public class RoundTests
     public void LobbyCommandsDoNothingOutsideALobby()
     {
         var sim = TestWorld.Create();
-        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
         sim.ApplyNow(new StartRoundCommand());
         sim.ApplyNow(new TakeTradeCommand(Ana, [], []));
 

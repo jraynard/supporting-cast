@@ -22,7 +22,7 @@ public class InnkeeperTests
         var sim = Create(40, 40);
         var me = sim.SpawnCreature(sim.Defs.Creature("Human"), "Inna", C(10, 10), ageDays: 25 * 365);
         sim.Round.OpenLobby();
-        sim.Round.Sit(Ana, "Inna", null, null, null);
+        sim.Round.Sit(Ana, "Inna", null, null);
         sim.Round.Start(sim);
         sim.GiveStartingPack(me);
         var cask = sim.SpawnStructure(sim.Thing("AleCask"), C(11, 10));
@@ -128,7 +128,7 @@ public class InnkeeperTests
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(playerTrade)], []));
         sim.ApplyNow(new StartRoundCommand());
         TestWorld.AleOnly(sim); // drink orders here are for ale

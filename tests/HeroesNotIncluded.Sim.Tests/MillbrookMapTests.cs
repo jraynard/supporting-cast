@@ -75,7 +75,7 @@ public class MillbrookMapTests
     public void TheHeroWalksInOnTheSquare()
     {
         var (sim, town) = Round();
-        var me = VillageRound.SpawnHero(sim, new Hero("Arin", null, null), town.Center);
+        var me = VillageRound.SpawnHero(sim, new Hero("Arin", null), town.Center);
         var at = sim.World.Get<Position>(me).Cell;
         Assert.True(sim.Map.Passable(at));
         Assert.Equal("Road", sim.Map.GroundUnder(sim.Map.Idx(at))?.Name);

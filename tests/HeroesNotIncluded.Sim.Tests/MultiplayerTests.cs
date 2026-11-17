@@ -29,7 +29,7 @@ public class MultiplayerTests
 
     private static Entity Create(Simulation sim, Guid player, string name)
     {
-        sim.ApplyNow(new CreateCharacterCommand(player, name, new Appearance { Hair = HairStyle.Long }, ["Kind"]));
+        sim.ApplyNow(new CreateCharacterCommand(player, name, new Appearance { Hair = HairStyle.Long }));
         return Players.CharacterOf(sim, player);
     }
 

@@ -190,7 +190,7 @@ public class CharacterRosterTests : IDisposable
                 "Id": "{{id}}",
                 "Name": "Wren",
                 "Look": { "Body": 1, "Hair": 2, "HairColor": 4210752, "EyeColor": 0, "SkinColor": 15253142, "Beard": 0, "Eyes": 1, "Stance": 0, "Folk": 1, "Model": null },
-                "Traits": [],
+                "Traits": ["Optimist"],
                 "Clothes": ["Tunic:Orchil"],
                 "LastUsed": "2026-10-01T12:00:00Z"
               }

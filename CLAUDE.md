@@ -137,6 +137,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     (`Goods`); no job takes an item for sale (`IsAvailable`). Villagers buy supper there of an
     evening. `Favours/`: pinned to the notice board in the square and known by reading it, for
     silver; errands (bring so many of a thing) are done by bringing, and the labourer takes them.
+  - `Carpentry/`: the Carpenter, at the woodshop. Planks sawn (`SawSession`), bows tillered
+    (`BowSession`), a quiver's pattern arrow sighted, shaved, headed and fletched (`FletchSession`) with a hidden warp (`Fletched.Warped`, never shown), sold as goods to archers
+    and shot away on a quest (`Fletching`, like rations). AI: `SawJob`, `FletchJob`.
   - `Tinkering/`: the Tinker. Lockwork on strongboxes from quests: a box's trap is hidden item
     state, shown only through `PerceptionView.Strongbox`, which never says an armed one is there.
     Locks pinned at the bench (`PinSession`) and fitted to doors (`LockCut`), keys (`Key`);
@@ -205,7 +208,7 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
   brand guide's voice and word bank.
 - Saved characters: `Characters/CharacterRoster` (`characters.json` in the config folder) holds the
   player's characters and their `CharacterProgress`, for every mode. Game-side only: the sim sees
-  just the name, look, traits and clothes sent from one; `VillageGame` credits the round at the reveal.
+  just the name, look and clothes sent from one; `VillageGame` credits the round at the reveal.
 - `src/HeroesNotIncluded`: `TitleGame`, `VillageGame` (partials by area), `WorldRenderer`, `WorldMesher`,
   `Net/CoopSession`. Draw creatures at `WorldRenderer.DrawPos`, never raw `Position.Pos`. Presentation
   that lives on defs (`model`, `bridge`, `fireAt`, `smokeAt`, `modelCutAt`) is never read by the sim.

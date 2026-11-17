@@ -73,7 +73,7 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 | Undertaker | Autopsy, burial before the dead rise | Health, `Scars`, carcasses, the pyre | Destroying evidence |
 | Forager, Miner | Risky trips beyond the walls | Harvest, Mining, Hunting, Fishing | Alone out there, in both directions |
 | Tinker | Pick the locks and disarm the traps on chests adventurers bring back; pin locks and cut keys; fit contraptions together for the road; mend wagons; appraise curios and buy them for a collector | `Tinkering/`, doors, `Work/`, expeditions, loot | A spare key, a chest opened early, a trap left armed, a contraption that jams, a curio talked down |
-| Carpenter | *Benched for now.* Building, mending furniture, fletching and bows | Construction, Rooms, the woodshop | Comes back as a trade of its own later |
+| Carpenter | Sawing planks, fletching quivers for the parties' archers, bracing the bridge, putting up the festival; later mending furniture and building | Construction, `Carpentry/`, the woodshop | A warped shaft in a quiver that looks true |
 | Bard | Rhythm performance, morale, rumours. | Mood, Social | Spreading lies |
 | Mayor | Treasury, laws, chairs town meetings | New | Corruption |
 | Animal Handler / Druid | taming wild animals, ancient forest rituals | new | forest spirts, "wild" animal attacks
@@ -408,8 +408,8 @@ model: wounds sit on body parts, have a kind, and bleed, hurt and fester.
   - **Reviving** the dead, somehow.
 - Betrayal later (M4): drawing only part of a wound, or quietly pushing one back.
 
-**Tinker.** Locks and clockwork, the last of the starting trades, split off the Carpenter (who's
-benched until building and fletching make a trade of their own). Works from the tinker's shop on
+**Tinker.** Locks and clockwork, split off the Carpenter (who came back as a trade of its own
+with fletching; see **Carpenter.**). Works from the tinker's shop on
 Millbrook, south of the square, with a bench, a stock chest and the collector's crate
 (`Tinkering/`, `data/defs/tinkering.json`).
 - *Strongboxes (since M2).* A party that clears a quest brings back a strongbox holding part of
@@ -460,6 +460,53 @@ Millbrook, south of the square, with a bench, a stock chest and the collector's 
   by the Tinker; town devices (alarms, a bell trip) when there are thieves to catch (M4).
 - Betrayal later (M4): a spare key, a box opened early and some silver missing, a trap left armed,
   a contraption that jams, a curio talked down to nothing and sold on.
+
+**Carpenter.** Millbrook's sixth trade, so a six-player round has a game for everyone (the
+labourer is what a seventh gets). Works from the woodshop by the tinker's: a sawhorse, a
+carpenter's bench and a chest the carter leaves feathers in (`Carpentry/`).
+- *Making planks* (`SawSession`), as before the sawmill (riving, splitting along the grain with
+  wedges, is the other old way: a later alternative, not a step of this):
+  - **Hew**: the round log end on, a square chalked on it. F held raises the axe, let go strikes as
+    deep as it was raised (a dashed line shows where it'll cut to). Each of the four sides hewn
+    flat to the chalk; past it is waste. The log turns to the next side on its own.
+  - **Pit saw**: the squared beam end on, as the top sawyer sees it, the planks' lines chalked down
+    its end. W/S (or the mouse up and down) work the long saw, and only the downstroke cuts; the
+    blade wanders, more rushed, and A/D (or the mouse across) steer it back. Beside it, the beam
+    from above with the cut creeping along it. Six logs make up to ten planks: a log hewn past its
+    lines or a wandering cut wastes some.
+- *Making a quiver* (`FletchSession`): a plank and a bundle of feathers make one fine arrow, the
+  pattern the score in the quiver is cut to, through four stages scored once each:
+  - **Sight**: bend the shaft straight against its warp (hold F, Space when the needle reads true).
+    The needle is the carpenter's eye, a little off the truth (wider with shakier hands), so a shaft
+    can look truer than it is. Left past the limit, the quiver's warped: hidden item state
+    (`Fletched.Warped`), never shown.
+  - **Shave**: the knife goes where the mouse (or WASD) puts it, as the mop does, and shaves while
+    the button (or F) is down, taking the lumps down to its edge a bite at a time. Below the shaft's
+    line it gouges. Space when it's smooth enough: wood taken off counts, gouges count against.
+  - **Head**: hold F to push the iron head onto the shaft's end; it tips further off line as it
+    goes, and A/D (or the mouse) keep it straight. Seated, it's bound on.
+  - **Fletch**: the shaft end on, still; point round it (mouse or A/D) and set three feathers,
+    best a third of a turn apart.
+- *Tillering a bow* (`BowSession`, four planks): the stave on the tillering stick, each limb in four
+  sections, every one too stiff. A/D (or the mouse) picks a section, F scrapes it (harder the longer
+  the stroke), till the bend follows an even arc, both limbs alike; Space draws it to full and it's
+  done. A section scraped past even is a hinge, worse than one left stiff. A bar per section shows
+  the wood still to come off down to its mark; shavings fly while the scraper bites. Then it's
+  strung: F bends it against the floor, Space slips the loop into the nock, which catches only bent
+  far enough; bent too far, the limbs strain. Bows sell as gear.
+- *Quivers on the road* (`Fletching`): sold as goods in the woodshop, one to an archer (only those
+  with a bow or crossbow buy). Shot away on the quest: a true quiver makes the archer count for
+  more, a warped one for a little less. Like rations and charms.
+- *The town's work:* braces the bridge when a raid breaks it (with the tinker), and puts up the
+  festival with the labourers.
+- AI carpenter: saws when the chest's short of planks and keeps two quivers on show
+  (`SawJob`, `FletchJob`), without the games.
+- The woodshop: a plank floor, a rack of bows on the back wall, logs and planks stacked along the
+  front, a barrel of arrows by the chest, shavings by the saw, torches on the walls. Logs are
+  fetched from the chest by hand, as the smith fetches ore.
+- Next (slice 2): bar fights and raids that break furniture, mended by the carpenter; the build and
+  zone tools as the carpenter's own; feathers from the cook's plucking.
+- Betrayal later (M4): a quiver warped on purpose, sold to the party a traitor wants to fail.
 
 ## Pressure and traitors
 
@@ -602,7 +649,7 @@ Lifeline when its milestone starts:
 | Avatar control, walk prediction | `Systems/AvatarSystem.cs`, `Net/AvatarPredictor.cs` |
 | Crafting, forge heat, tools, quality | `Systems/Crafting.cs`, `Ai/CraftJobs.cs`, `Toolbelt`, `Mining` |
 | Injuries, downed, rescue, jail | `HealthSystem`, `Rescues`, `Prisoners`, `Locked` doors |
-| Mood, gossip, traits | `MoodSystem`, `SocialSystem`, `TraitRules` |
+| Mood, gossip | `MoodSystem`, `SocialSystem` |
 | Crises | `Storyteller`, `WildEvents`, `Raids`, `FireSystem`, `FoodPoisoning` |
 | Look, creator, rendering | `Ui/CharacterCreator`, `HumanLook`, `WorldRenderer`, `WorldMesher`, chibi tools |
 | Mini-games | Lifeline `Work/` (reworked to run ahead; the empath's touch replaced `Assessment`-style diagnosis) |

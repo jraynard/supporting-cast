@@ -79,6 +79,9 @@ public sealed class MemberRecord
     /// <summary>The cook's rations they carry (<see cref="Work.Rations"/>): eaten on the way, and gone.</summary>
     public List<Work.RationRecord> Rations = [];
 
+    /// <summary>The carpenter's quivers they carry (<see cref="Carpentry.Fletching"/>): shot away by an archer on the way.</summary>
+    public List<Carpentry.QuiverRecord> Quivers = [];
+
     /// <summary>How the food on the road went, set when the quest is resolved: none, fed, or sick.</summary>
     public RoadFood Fed;
 }
@@ -368,7 +371,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
     /// </summary>
     public static float Strength(MemberRecord m, QuestDef? quest, ISet<Tinkering.ContraptionRecord>? jammed) => Strength(m, quest, jammed, 1f);
 
-    /// <summary>As <see cref="Strength(MemberRecord, QuestDef?, ISet{Tinkering.ContraptionRecord}?)"/>, with how their rations served them on the road (<see cref="Work.Rations.StrengthFactor"/>).</summary>
+    /// <summary>As <see cref="Strength(MemberRecord, QuestDef?, ISet{Tinkering.ContraptionRecord}?)"/>, with how their rations and arrows served them on the road (<see cref="Work.Rations.StrengthFactor"/>, <see cref="Carpentry.Fletching.StrengthFactor"/>).</summary>
     public static float Strength(MemberRecord m, QuestDef? quest, ISet<Tinkering.ContraptionRecord>? jammed, float rations)
     {
         var skill = Math.Clamp(Math.Max(m.Melee, m.Shooting) / 9f, 0.3f, 2f);
@@ -574,6 +577,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         m.Charms = Healing.Charms.Records(sim, e);
         m.Contraptions = Tinkering.Contraptions.Records(sim, e);
         m.Rations = Work.Rations.Records(sim, e);
+        m.Quivers = Carpentry.Fletching.Records(sim, e);
         return m;
     }
 
@@ -611,6 +615,11 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             m.Fed = m.Rations.Count == 0 ? RoadFood.None : Work.Rations.Turned(sim, m.Rations[0], hoursOut) ? RoadFood.Sick : RoadFood.Fed;
             if (m.Rations.Count > 0)
                 m.Rations.RemoveAt(0);
+            // An archer's quiver is shot away on the quest; anyone else's comes home.
+            var shoots = m.Weapon is { } bow && bow.Def.Weapon is { Ranged: true };
+            fedBy[m] *= Carpentry.Fletching.StrengthFactor(shoots, m.Quivers);
+            if (shoots && m.Quivers.Count > 0)
+                m.Quivers.RemoveAt(0);
         }
         var strength = ex.Members.Sum(m => Strength(m, quest.Def, jammed, fedBy[m]));
         var ratio = strength / quest.Danger * _rand.Range(0.85f, 1.15f);
@@ -795,6 +804,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         Healing.Charms.Restore(sim, e, m.Charms);
         Tinkering.Contraptions.Restore(sim, e, m.Contraptions);
         Work.Rations.Restore(sim, e, m.Rations);
+        Carpentry.Fletching.Restore(sim, e, m.Quivers);
         if (m.Fed == RoadFood.Sick)
             FoodPoisoning.Sicken(sim, e, 0.6f);
         foreach (var wound in m.Wounds)
@@ -1027,6 +1037,13 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             w.Bool(x.Keeps);
         }
         w.Byte((byte)m.Fed);
+        w.Int(m.Quivers.Count);
+        foreach (var q in m.Quivers)
+        {
+            w.Float(q.Quality);
+            w.Bool(q.Warped);
+            w.Entity(q.Maker);
+        }
     }
 
     private static MemberRecord ReadMember(SaveReader r)
@@ -1066,6 +1083,9 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             var fed = r.Byte();
             m.Fed = Enum.IsDefined((RoadFood)fed) ? (RoadFood)fed : RoadFood.None;
         }
+        if (r.Version >= 52)
+            for (var n = r.Count(64); n > 0; n--)
+                m.Quivers.Add(new Carpentry.QuiverRecord(Math.Clamp(r.Float(), 0f, 1f), r.Bool(), r.Entity()));
         return m;
     }
 }

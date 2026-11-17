@@ -31,7 +31,7 @@ public sealed partial class VillageGame
 
     /// <summary>
     /// The saved character played as (<see cref="CharacterRoster"/>), if any: the hero's name,
-    /// look, traits and clothes unless set apart, and whom the reveal credits with the round.
+    /// look and clothes unless set apart, and whom the reveal credits with the round.
     /// Game-side only; the sim sees what's sent from it.
     /// </summary>
     public SavedCharacter? Character { get; init; }
@@ -41,9 +41,6 @@ public sealed partial class VillageGame
 
     /// <summary>The avatar's look (from the character creator); null keeps a derived one.</summary>
     public Appearance? HeroLook { get => field ?? Character?.Look; init; }
-
-    /// <summary>The avatar's traits by name (from the character creator); null keeps rolled ones.</summary>
-    public IReadOnlyList<string>? HeroTraits { get => field ?? Character?.Traits; init; }
 
     /// <summary>The avatar's clothes (<c>"Def:Dye"</c>, from the character creator); null dresses them as a villager.</summary>
     public IReadOnlyList<string>? HeroClothes { get => field ?? Character?.Clothes; init; }

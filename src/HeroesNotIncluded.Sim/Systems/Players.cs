@@ -191,7 +191,7 @@ public static class Players
     /// Make a player's character: a young villager at <see cref="Home"/>. Does nothing if they
     /// already have one.
     /// </summary>
-    public static Entity CreateCharacter(Simulation sim, Guid player, string name, Appearance? look, IReadOnlyList<string>? traits,
+    public static Entity CreateCharacter(Simulation sim, Guid player, string name, Appearance? look,
         IReadOnlyList<string>? clothes = null)
     {
         var w = sim.World;
@@ -205,8 +205,6 @@ public static class Players
         sim.GiveStartingPack(me);
         if (look is { } a)
             w.Add(me, Valid(a));
-        if (traits != null)
-            TraitRules.Set(sim, me, traits.Take(TraitRules.MaxTraits * 2));
 
         Clothing.DressHero(sim, me, clothes); // last, so it shifts no other entity
 
@@ -245,7 +243,7 @@ public static class Players
     }
 
     /// <summary>At the start of a round, before anyone has met them: a villager becomes the character a player made.</summary>
-    internal static void TakeOnLook(Simulation sim, Entity e, string name, Appearance? look, IReadOnlyList<string>? traits, IReadOnlyList<string>? clothes)
+    internal static void TakeOnLook(Simulation sim, Entity e, string name, Appearance? look, IReadOnlyList<string>? clothes)
     {
         var w = sim.World;
         w.Get<Creature>(e).Name = Clean(name);
@@ -255,8 +253,6 @@ public static class Players
                 w.Remove<Appearance>(e);
             w.Add(e, Valid(a));
         }
-        if (traits is { Count: > 0 })
-            TraitRules.Set(sim, e, traits.Take(TraitRules.MaxTraits * 2));
         Clothing.DressHero(sim, e, clothes);
     }
 
@@ -285,11 +281,10 @@ public static class Players
 }
 
 /// <summary>A newly joined player makes their character (from the character creator).</summary>
-public sealed record CreateCharacterCommand(Guid Player, string Name, Appearance Look, IReadOnlyList<string> Traits,
-    IReadOnlyList<string>? Clothes = null)
+public sealed record CreateCharacterCommand(Guid Player, string Name, Appearance Look, IReadOnlyList<string>? Clothes = null)
     : ISimCommand, IPlayerCommand
 {
     public Guid? Owner => Player;
 
-    public void Apply(Simulation sim) => Players.CreateCharacter(sim, Player, Name, Look, Traits, Clothes);
+    public void Apply(Simulation sim) => Players.CreateCharacter(sim, Player, Name, Look, Clothes);
 }

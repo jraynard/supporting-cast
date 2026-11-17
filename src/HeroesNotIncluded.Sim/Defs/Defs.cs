@@ -1015,6 +1015,9 @@ public sealed class ThingDef : Def
     /// <summary>Rations for the road, packed by the cook (<c>Work.Rations</c>): carried on a quest, eaten on the way.</summary>
     public bool Rations { get; set; }
 
+    /// <summary>A quiver of arrows, fletched by the carpenter (<c>Carpentry.Fletching</c>): carried by an archer on a quest, shot away on it.</summary>
+    public bool Quiver { get; set; }
+
     public BuildingProps? Building { get; set; }
 
     /// <summary>

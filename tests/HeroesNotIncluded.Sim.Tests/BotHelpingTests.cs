@@ -31,7 +31,7 @@ public class BotHelpingTests
         var bots = new List<BotPlayer>();
         foreach (var (id, trade) in seats)
         {
-            sim.ApplyNow(new JoinLobbyCommand(id, id.ToString()[^1..], default, []));
+            sim.ApplyNow(new JoinLobbyCommand(id, id.ToString()[^1..], default));
             sim.ApplyNow(new SetTradePreferencesCommand(id, [sim.Defs.Trade(trade)], []));
             bots.Add(new BotPlayer(() => sim, id, c => sim.ApplyNow(c), 7 + (ulong)bots.Count) { Temper = temper });
         }

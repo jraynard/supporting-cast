@@ -765,7 +765,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         // Back (Esc, B) puts work down (VillageGame.Work.cs) and closes a menu (VillageGame.Pad.cs)
         // before it does anything else; with a weapon out, the pad's B is a dash. With nothing
         // here or anywhere else to close, it opens the game menu (EndPadUi).
-        if (Controls.Map.Pressed(Act.Back) && !Working && !cameraKeys)
+        if (Controls.Map.Pressed(Act.Back) && !Working && !cameraKeys && !_backUsed) // a window took it first (UpdatePadUi)
         {
             var used = true;
             if (WeaponDrawn && Controls.Map.PadPressed(Act.Dash))

@@ -59,6 +59,8 @@
       // barn's stockpile at the deal, and woodDelivery left there each morning from the second day.
       "barnWood": 120,
       "woodDelivery": [ { "def": "Wood", "material": "Pine", "count": 120 } ],
+      // Goose feathers for the carpenter's arrows, left in the woodshop's chest with the ore.
+      "woodshopDelivery": [ { "def": "Feathers", "count": 6 } ],
       "beats": [
         { "day": 1, "fromHour": 20, "toHour": 23, "strength": 0.5, "kinds": { "Raid": 1 } },
         { "day": 2, "fromHour": 10, "toHour": 17, "strength": 1, "kinds": { "Raid": 3, "Fire": 2, "Shortage": 2, "Plague": 2 } },

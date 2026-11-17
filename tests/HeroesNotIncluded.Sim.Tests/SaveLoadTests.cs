@@ -94,7 +94,7 @@ public class SaveLoadTests
         live.Presets.PresetMode = true;
         VillageRound.Setup(live);
         live.Round.OpenLobby();
-        live.ApplyNow(new Round.JoinLobbyCommand(Guid.Empty, "Arin", default, []));
+        live.ApplyNow(new Round.JoinLobbyCommand(Guid.Empty, "Arin", default));
         live.ApplyNow(new Round.StartRoundCommand());
         var party = live.Parties.Send(live, live.Defs.Party("IronLantern"));
         Assert.NotEmpty(party);
@@ -268,5 +268,34 @@ public class SaveLoadTests
             .Append(typeof(Leaving));
         foreach (var t in types)
             Assert.True(ComponentCodecs.Has(t), $"{t.Name} has no save codec");
+    }
+}
+
+/// <summary>Saves from before traits were taken out (format 53) still load: their traits store is read past.</summary>
+public class RetiredTraitsTests
+{
+    [Fact]
+    public void AnOldSavesTraitsAreReadPastAndLaterDefsKeepTheirNumbers()
+    {
+        var sim = TestWorld.Create(10, 10);
+        var e = sim.SpawnCreature(sim.Defs.Creature("Human"), "Old", TestWorld.C(3, 3));
+        using var stream = new MemoryStream();
+        using (var w = new SaveWriter(stream, sim.Defs))
+        {
+            w.Int(1);              // one component store
+            w.String("Traits");
+            w.Int(1);              // on one person
+            w.Entity(e);
+            w.Int(2);              // two traits: a new def (#0, by name), then #0 again
+            w.Int(0);
+            w.String("Optimist");
+            w.Int(0);
+            w.Int(1);              // what follows: the next new def is #1
+            w.String("Wood");
+        }
+        stream.Position = 0;
+        using var r = new SaveReader(stream, sim.Defs, version: 52);
+        ComponentCodecs.ReadAll(r, sim.World);
+        Assert.Equal("Wood", r.Def<Defs.ThingDef>().Name);
     }
 }

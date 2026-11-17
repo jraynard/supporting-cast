@@ -55,7 +55,7 @@ public class BandagingTests
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new Round.JoinLobbyCommand(ana, "Ana", default, []));
+        sim.ApplyNow(new Round.JoinLobbyCommand(ana, "Ana", default));
         sim.ApplyNow(new Round.SetTradePreferencesCommand(ana, [sim.Defs.Trade("Blacksmith")], []));
         sim.ApplyNow(new Round.StartRoundCommand());
         var me = Players.CharacterOf(sim, ana);

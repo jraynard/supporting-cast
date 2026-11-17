@@ -1240,14 +1240,6 @@ public sealed class Mood
     public readonly List<Defs.ThoughtDef> Situational = [];
 }
 
-/// <summary>Someone's lasting nature (<see cref="Defs.TraitDef"/>): rolled at spawn for humans, picked for the avatar.</summary>
-public sealed class Traits
-{
-    public List<Defs.TraitDef> List = [];
-
-    public bool Has(Defs.TraitDef def) => List.Contains(def);
-}
-
 /// <summary>A memory thought counting down; <see cref="Other"/> is who it's about, if anyone.</summary>
 public sealed class Memory
 {

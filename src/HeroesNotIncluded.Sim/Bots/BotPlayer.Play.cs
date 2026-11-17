@@ -278,7 +278,7 @@ public sealed partial class BotPlayer
                 return Loupe(lp);
         }
         // Each trade's further games, in its own file.
-        return PlayKitchen(s) ?? PlayBench(s) ?? PlayForge(s) ?? PlayShrine(s) ?? PlayInn(s) ?? (false, false, 0);
+        return PlayKitchen(s) ?? PlayBench(s) ?? PlayWoodshop(s) ?? PlayForge(s) ?? PlayShrine(s) ?? PlayInn(s) ?? (false, false, 0);
     }
 
     /// <summary>

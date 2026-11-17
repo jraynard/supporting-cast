@@ -2,9 +2,9 @@
   // What people say when something happens (Speech/Barks). One entry per event; each line may be
   // kept for speakers with all its "when" tags: what they are ("bot", "villager", "adventurer" and
   // its kind), their trade ("innkeeper", "blacksmith"...), a bot's temper ("hasty", "brave", "chatty",
-  // "careless", "greedy", "nervy", "quiet"...), their traits ("gloomy", "optimist"...) and how much
-  // they've drunk ("merry", "loud", "clumsy"). The more tags a line asks for, the likelier it is for
-  // someone who has them. Slots: {who}, {thing}, {place}, {n}.
+  // "careless", "greedy", "nervy", "quiet"...) and how much they've drunk ("merry", "loud", "clumsy").
+  // The more tags a line asks for, the likelier it is for someone who has them. Slots: {who},
+  // {thing}, {place}, {n}.
   "barks": [
     { "name": "greet", "lines": [
       { "text": "Morning, {who}." },

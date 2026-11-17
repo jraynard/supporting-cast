@@ -29,7 +29,7 @@ public sealed partial class VillageGame
         _sim.StrictJobs = false;
         var center = Arena.Setup(_sim);
         var (look, clothes) = HeroAppearance();
-        var me = VillageRound.SpawnHero(_sim, new Hero(string.IsNullOrWhiteSpace(HeroName) ? "Arin" : HeroName, look, HeroTraits, clothes), center);
+        var me = VillageRound.SpawnHero(_sim, new Hero(string.IsNullOrWhiteSpace(HeroName) ? "Arin" : HeroName, look, clothes), center);
         _arenaFoe = ArenaFoe ?? Arena.DefaultFoe;
         _arenaWeapon = ArenaWeapon;
         _boutFoe = Arena.Bout(_sim, me, _arenaFoe, _arenaWeapon ?? Arena.DefaultWeapon);

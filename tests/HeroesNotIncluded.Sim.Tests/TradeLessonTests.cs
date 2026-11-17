@@ -14,7 +14,7 @@ using static HeroesNotIncluded.Sim.Tests.TestWorld;
 namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>
-/// The tinker's, innkeeper's, cook's and healer's lessons in the practice yard: each set up, and
+/// The tinker's, carpenter's, innkeeper's, cook's and healer's lessons in the practice yard: each set up, and
 /// walked through its steps with the commands a client sends. Where a step is a hand game, its
 /// outcome is set directly (the games have their own tests; <see cref="SmithLessonTests"/> drives
 /// the forge's end to end): what's checked here is that each lesson names the right step and
@@ -101,7 +101,7 @@ public class TradeLessonTests
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade(trade)], []));
         sim.ApplyNow(new StartRoundCommand());
         sim.Round.Practice = true;
@@ -191,6 +191,54 @@ public class TradeLessonTests
         var y = Begin("Tinker", "crossbow");
         Assert.Equal("choose", y.Stage.Step);
         y.Hold("Crossbow");
+        Assert.True(y.Stage.Done);
+    }
+
+    // ---------------- Carpenter ----------------
+
+    [Fact]
+    public void PlanksAreSawnAtTheSawhorse()
+    {
+        var y = Begin("Carpenter", "saw");
+        var horse = y.Station(Carpentry.Carpenters.SawhorseDef);
+        Assert.False(horse.IsNull);
+        var chest = Carpentry.Carpenters.ChestOf(y.Sim, y.Run.Workplace);
+        Assert.Equal("logs", y.Stage.Step);
+        Assert.Equal(chest, y.Stage.Point);
+        y.TakeFrom(chest, "Wood", 6);
+        Assert.Equal("start", y.Stage.Step);
+        Assert.Equal(horse, y.Stage.Point);
+        y.StandBy(horse);
+        y.Sim.ApplyNow(new CraftCommand(y.Me, horse, y.Sim.Defs.AllRecipes.Single(r => r.Name == "SawPlanks")));
+        Assert.Equal("hew", y.Stage.Step); // the log hewn square first, then sawn
+        // Sawn (SawSession's outcome; CarpenterTests plays it): the planks in the pack, the session over.
+        y.Sim.ApplyNow(new StopWorkCommand(y.Me));
+        Inventory.Stow(y.Sim, y.Me, y.Sim.CreateItem(y.Sim.Defs.Thing("Planks"), 10));
+        Assert.True(y.Stage.Done);
+    }
+
+    [Fact]
+    public void AQuiverIsFletchedAndPutOnShow()
+    {
+        var y = Begin("Carpenter", "quiver");
+        Assert.Equal("start", y.Stage.Step);
+        Assert.Equal(y.Station(Carpentry.Carpenters.BenchDef), y.Stage.Point);
+        var quiver = y.Hold("Quiver");
+        Assert.Equal("show", y.Stage.Step);
+        Assert.False(y.Stage.Done);
+        y.W.Get<Carrying>(y.Me).Item = Entity.Null;
+        y.Sim.PlaceItemNear(quiver, y.W.Get<Thing>(y.Station(Carpentry.Carpenters.BenchDef)).Cell);
+        Assert.True(Goods.Set(y.Sim, y.Me, quiver, 5, true));
+        Assert.True(y.Stage.Done);
+    }
+
+    [Fact]
+    public void ABowIsDoneOnceTillered()
+    {
+        var y = Begin("Carpenter", "bow");
+        Assert.Equal("start", y.Stage.Step);
+        Assert.Equal(y.Station(Carpentry.Carpenters.BenchDef), y.Stage.Point);
+        y.Hold("Bow");
         Assert.True(y.Stage.Done);
     }
 

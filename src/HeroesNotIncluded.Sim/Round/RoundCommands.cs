@@ -5,12 +5,12 @@ using HeroesNotIncluded.Sim.Defs;
 namespace HeroesNotIncluded.Sim.Round;
 
 /// <summary>A player sits down in the lobby as the character they made.</summary>
-public sealed record JoinLobbyCommand(Guid Player, string Name, Appearance? Look, IReadOnlyList<string> Traits, IReadOnlyList<string>? Clothes = null)
+public sealed record JoinLobbyCommand(Guid Player, string Name, Appearance? Look, IReadOnlyList<string>? Clothes = null)
     : ISimCommand, IPlayerCommand
 {
     public Guid? Owner => Player;
 
-    public void Apply(Simulation sim) => sim.Round.Sit(Player, Name, Look, Traits, Clothes);
+    public void Apply(Simulation sim) => sim.Round.Sit(Player, Name, Look, Clothes);
 }
 
 /// <summary>A player says which trades they want, best first, and which they refuse.</summary>

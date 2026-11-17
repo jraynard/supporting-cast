@@ -44,28 +44,27 @@ public sealed class MoodSystem : ISimSystem
                 if ((mood.Memories[i].TicksLeft -= Interval) <= 0)
                     mood.Memories.RemoveAt(i);
 
-            var traits = TraitRules.Of(sim, e);
             mood.Situational.Clear();
             foreach (var def in sim.Defs.AllThoughts)
-                if (def.Situational && def.AppliesTo(c.Def.Race) && TraitRules.Factor(traits, def) != 0 && Holds(sim, e, c, def))
+                if (def.Situational && def.AppliesTo(c.Def.Race) && Holds(sim, e, c, def))
                     mood.Situational.Add(def);
             // Ravenous replaces hungry: of the bands that hold on one need, only the lowest counts.
             mood.Situational.RemoveAll(t => t.NeedDef != null && mood.Situational.Exists(o => o.NeedDef == t.NeedDef && o.Below < t.Below));
 
-            mood.Target = Math.Clamp(0.5f + Offset(mood, traits) / 100f, 0f, 1f);
+            mood.Target = Math.Clamp(0.5f + Offset(mood) / 100f, 0f, 1f);
             var step = EasePerHour / UpdatesPerHour;
             mood.Value = Math.Clamp(mood.Target, mood.Value - step, mood.Value + step);
         }
     }
 
-    /// <summary>The sum of all current thoughts in mood points (stacked memories falling off, scaled by traits), plus the traits' own.</summary>
-    public static float Offset(Mood mood, Traits? traits = null)
+    /// <summary>The sum of all current thoughts in mood points (stacked memories falling off).</summary>
+    public static float Offset(Mood mood)
     {
-        var sum = TraitRules.Mood(traits);
+        var sum = 0f;
         foreach (var def in mood.Situational)
-            sum += TraitRules.Factor(traits, def) * def.Mood;
+            sum += def.Mood;
         for (var i = 0; i < mood.Memories.Count; i++)
-            sum += Weight(mood, i) * TraitRules.Factor(traits, mood.Memories[i].Def) * mood.Memories[i].Def.Mood;
+            sum += Weight(mood, i) * mood.Memories[i].Def.Mood;
         return sum;
     }
 
@@ -218,11 +217,10 @@ public static class MoodRules
     public static float Opinion(Simulation sim, Entity of, Entity about)
     {
         var sum = Compatibility(sim, of, about);
-        var traits = TraitRules.Of(sim, of);
         if (sim.World.TryGet<Mood>(of, out var mood))
             for (var i = 0; i < mood.Memories.Count; i++)
                 if (mood.Memories[i].Other == about && mood.Memories[i].Def.Opinion != 0)
-                    sum += MoodSystem.Weight(mood, i, perPerson: true) * TraitRules.Factor(traits, mood.Memories[i].Def) * mood.Memories[i].Def.Opinion;
+                    sum += MoodSystem.Weight(mood, i, perPerson: true) * mood.Memories[i].Def.Opinion;
         return Math.Clamp(sum, -100f, 100f);
     }
 

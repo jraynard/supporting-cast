@@ -179,7 +179,8 @@ public sealed class ErrandJob(int favour) : Job
         Entity? best = null;
         var dist = int.MaxValue;
         foreach (var e in Sim.AvailableItems())
-            if (Get<Thing>(e).Def == def && !Sim.Reservations.IsReservedByOther(e, Pawn)
+            // Never the kitchen's own stores (its log basket, its larder): those are its cook's.
+            if (Get<Thing>(e).Def == def && !Sim.Reservations.IsReservedByOther(e, Pawn) && !Ai.WorkGivers.KitchenStock(Sim, Pawn, e)
                 && Map.Distance(Sim.LocationOf(e), PawnCell) is var d && d < dist && Reachable(Sim, Pawn, PawnCell, e))
                 (best, dist) = (e, d);
         return best;

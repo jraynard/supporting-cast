@@ -2315,3 +2315,92 @@ reach varied, and a good flick showed nothing; drawing a wound hard with the mou
   screenshots.
 - Bots wave as they greet a new face.
 - Bench hashes unchanged.
+
+### The carpenter (2026-11-17)
+Millbrook's sixth trade, so a six-player round has a game for everyone (DESIGN.md, "Carpenter").
+- **The woodshop** comes furnished: sawhorse, carpenter's bench, chest, and a sign (`props/sign_saw`).
+  Stocked at the deal with logs, planks and feathers; the carter leaves feathers each morning
+  (`season.json` `woodshopDelivery`, `OreCarterSystem.DeliverToWoodshop`).
+- **Sawing** (`Carpentry/SawSession`) and **fletching** (`Carpentry/FletchSession`) at the woodshop,
+  started through `Crafting.WorkAt` (`Carpenters.Applies`). A quiver (`Fletched`) carries a hidden
+  warp; quality shows as `Crafted`.
+- **Quivers on quests** (`Carpentry/Fletching`, `MemberRecord.Quivers`): sold as goods, bought by
+  archers only (`Goods.IsUpgrade`), shot away on the road (`ExpeditionSystem.Resolve`). Save format 52.
+- **The town's work:** `mendsTown` (the bridge, with the tinker) and a new `builds` flag on the trade
+  (`FestivalSystem.PutsUp`: the carpenter puts up the festival with the labourers).
+- **AI carpenter** (`SawJob`, `FletchJob` in the Craft chain); **bot** (`BotPlayer.Woodshop`); the
+  sweep's table is now the six trades (`SeasonSweep.Trades`), `--trades` picks another.
+- **Tutorial:** `saw` and `quiver` (`Scenarios/Lessons/CarpenterLessons`); practice customers are archers.
+- `StartingVillagers` 6 to 7, so a town with every trade taken still has an AI labourer.
+- Fixed on the way: errands no longer take from the kitchen's own stores (the log basket, the larder):
+  `ErrandJob` skips `WorkGivers.KitchenStock`.
+- Art: `tools/carpenter_art.py` (quiver, feathers), `inn_art.py` (the sign). Sound: `work.saw`
+  (`sfx_synth.py`).
+- **Sweep** (24 seeds): `main` before this was Won 8, FellShort 7, Dread 8, TownFell 1 (Renown mean
+  56); with the carpenter bot, Won 9, FellShort 3, Dread 12 (Renown 47). The old `season-baseline.txt`
+  was 61 commits stale (8 seeds, Won 6); replaced with the 24-seed run.
+- Bench hashes change (new behaviour).
+
+### Traits taken out (2026-11-17)
+DragonWorld's character traits (optimist, gloomy, hardy, kind, abrasive...) are gone: no Traits tab
+in the creator, none rolled for villagers, none on saved characters or in the inspector, and none
+weighing on mood, opinion or who starts a chat. `JoinLobbyCommand`, `CreateCharacterCommand`,
+`Hero` and `RoundSystem.Sit` lost their traits argument. Save format 53: an older save's traits store
+is read past (`ComponentCodecs.SkipTraits`, `SaveReader.SkipDef`); an old `characters.json` with
+traits still loads. Bench hashes change (mood no longer scaled by traits).
+
+### Fixed: the woodshop's logs (2026-11-17)
+The woodshop now keeps its stock (`keepsStock`), as the smithy and the tinker's do: villagers
+refuelling the town's fires had emptied its chest of logs in the round's first minute. The saw lesson
+sends the player to the chest for six logs first (the chest is out of reach of the sawhorse).
+
+### The carpenter's games, deeper; the woodshop dressed (2026-11-17)
+- **One arrow, in depth** (`Carpentry/FletchSession`, `ArrowStage`): in place of three shafts sighted
+  and feathered alike, one arrow taken through sight, shave (the knife along the shaft, its bite on
+  W/S), the head bound on with sinew (pull judged as each wrap lays; too hard snaps it) and fletch.
+  Each stage scores once; the hidden warp stays. Lesson `quiver` gains `shave` and `head` steps.
+- **Bows tillered by hand** (`Carpentry/BowSession`): `MakeBow` at the carpenter's bench is a game of
+  its own now, not hold-F. Lesson `bow`. Bot plays both (`BotPlayer.Woodshop`).
+- **The woodshop dressed** (`workshop.json`): `BowRack`, `LogPile`, `PlankStack`, `ArrowBarrel`,
+  `Shavings`; a timber sill under a plank floor (it had none: grass inside); torches. Its own
+  furniture and the sawhorse and bench drawn in oak (`furniture/oak_*`) rather than the neutral planks
+  that come out grey with no material. Faces from `tools/carpenter_art.py`.
+- Tests leaning on a seed's timing given room: `AnAIBrokerSendsAPartyOut` (a party in hurt waits on
+  the shrine) and the tinker's strongbox test (a party back late sleeps before it asks).
+
+### The carpenter's games, reworked from play (2026-11-17)
+- **Sawing** is a push and pull: A/D in turn (or the mouse side to side) work the saw, only a moving
+  saw cuts, a rushed stroke wanders more, W/S lean it back. Drawn side on: the blade's teeth in the
+  kerf sliding with the stroke, the kerf's path as it wandered, sawdust. Two cuts a batch.
+- **Shaving** moves the knife freely, like the mop: it shaves while held, takes the lumps down to its
+  edge, gouges below the shaft's line, and is done when the player says (Space).
+- **The head** is pushed on and kept in line (it tips as it goes) in place of the sinew wraps,
+  which didn't read.
+- **Feathers** are placed where the player points round the still shaft; no spinning.
+- **Esc** closes the newest closable window (a container, the pack over it, a station) before it
+  reaches the game menu, as the pad's B already did (`VillageGame.UpdatePadUi`).
+- **Sawing from above**: the plank top-down, the chalk line along it, the saw lying along the cut edge
+  on (so the kerf shows under it) sliding with the stroke; W leans up and S down as seen, and an arrow
+  at the cut's front points back to the line.
+- **The bow, clearer**: a bar per section of the wood still to come off, down to its mark; the scraper
+  drawn working, shavings flying (`BowSession.Scraping`); A/D and the mouse go by the sections as
+  drawn (`ColumnOf`). And **strung** after tillering: bend it into the green and slip the loop on;
+  too soon misses, too far strains (`Stringing`, `Flex`, `StringScore`). Lesson step `string`.
+- **Planks the old way** (`SawSession`): the round log **hewn** square with the axe (raise and let
+  go, a blow as deep as it was raised, four sides to the chalk), then the beam **pit-sawn** end on
+  as the top sawyer sees it (W/S work the saw, only the downstroke cuts; A/D steer), with the beam
+  from above beside it. Replaces the push-and-pull view, which didn't read. Lesson step `hew`.
+  Riving (splitting with wedges) noted in DESIGN.md as the other old method, for later.
+- **Hewing from the side**: the face being hewn turned to the right and upright, the broad axe coming
+  straight down along it from above, its edge on the dashed cut line; chips fly off the face.
+- **The pit saw on the mouse, smoothed**: the saw eased toward the pointer (`MouseEase`), not jumped to
+  it, and no faster than `MostPace`; steering over a wider span with a dead zone in the middle, so
+  working it up and down doesn't steer by accident. The hand's shake on the blade is a slow waver
+  rather than a jolt a step, the kerf kept at twice the points and drawn lightly smoothed.
+- **The log turned between sides**: a side hewn flat, the log comes a quarter round to the next over
+  a moment (`SawSession.Turning`, `TurnSteps`), the axe resting meanwhile (a hold doesn't raise it),
+  drawn eased round in the window.
+- **Turning the log is the hewer's call**: Space (or a right-click) turns it to the next side, so how
+  near the chalk to take a side is theirs to judge; wood left on now costs (an untouched side scores
+  nothing), as a bite past the line does. The grain's drift on the saw a little stronger
+  (`DriftPerStroke` 0.07), so an unsteered cut still costs planks with the smoother wobble.

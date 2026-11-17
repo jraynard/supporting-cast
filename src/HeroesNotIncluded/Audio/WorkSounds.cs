@@ -166,6 +166,22 @@ public sealed class WorkSounds(AudioEngine audio)
             case LoupeSession s:
                 Count(s.ReadCount, Sounds.Click);
                 break;
+            case Sim.Carpentry.SawSession s:
+                // The axe's thunk on each blow while hewing; then the saw's rasp on the downstroke, louder rushed.
+                if (s.Hewing)
+                    Count(s.Blows, Sounds.Knock);
+                audio.Hold("work:saw", Sounds.Saw, s.Cutting ? 0.5f + 0.5f * Math.Min(1f, s.Pace / Sim.Carpentry.SawSession.MostPace) : 0f, fade: Quick);
+                break;
+            case Sim.Carpentry.FletchSession s:
+                // The knife along the shaft; the head scraping on; a rustle for each feather.
+                audio.Hold("work:shave", Sounds.Scrub, s.Stage == Sim.Carpentry.ArrowStage.Shave && s.Held ? 0.5f : 0f, pitch: 1.4f, fade: Quick);
+                audio.Hold("work:seat", Sounds.Grind, s.Stage == Sim.Carpentry.ArrowStage.Head && s.Held ? 0.35f : 0f, pitch: 0.7f, fade: Quick);
+                Count(s.Set, Sounds.Cloth);
+                break;
+            case Sim.Carpentry.BowSession s:
+                audio.Hold("work:scrape", Sounds.Scrub, s.Scraping ? 0.45f : 0f, pitch: 0.8f, fade: Quick);
+                Count(s.Missed, Sounds.Snap); // the loop slipping past the nock
+                break;
             case ProbeSession s:
                 // A tick in the fingers when the probe catches (the feel it shows), not again till it's let go.
                 if (!_flag && s.Feel > 0.7f)

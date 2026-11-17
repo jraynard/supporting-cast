@@ -50,7 +50,7 @@ public sealed partial class VillageGame
 
     /// <summary>
     /// Before the frame's input: the pad drives menus while any is open (not at hands-on work,
-    /// where it's the work's), B closes the newest, and a newly opened one takes the focus.
+    /// where it's the work's), Back (B or Esc) closes the newest, and a newly opened one takes the focus.
     /// </summary>
     private void UpdatePadUi()
     {
@@ -77,10 +77,12 @@ public sealed partial class VillageGame
             ImGui.SetWindowFocus(top);
             _padFocused = top;
         }
-        // B (the back action's pad buttons) closes the newest, when it can be closed.
+        // Back (B, or Esc on the keyboard) closes the newest, when it can be closed: a container's
+        // window and the pack over it go one press at a time before Esc reaches the game menu.
         var back = false;
         foreach (var b in Controls.Map.Bindings(Act.Back))
             back |= b.IsPad && Host.Gamepad.WasPressedRaw((PadButton)b.Code);
+        back |= Controls.Map.Pressed(Act.Back) && !ImGui.GetIO().WantTextInput;
         if (back && !ImGui.IsPopupOpen(""u8, ImGuiPopupFlags.AnyPopup) && shown.Find(w => w.Id == top).Close is { } close)
         {
             close();

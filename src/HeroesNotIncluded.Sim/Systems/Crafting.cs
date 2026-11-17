@@ -192,7 +192,10 @@ public static class Crafting
         var made = MakeProducts(sim, recipe, bench.MainMaterial, bench.RotUnits > 0 ? bench.Rot : null, crafter, w.Get<Thing>(station).Cell, quality);
         // Made the plain way (not played by hand): a lock gets cut and keyed, a contraption put together.
         if (quality == null)
+        {
             Tinkering.Tinkers.Made(sim, made, crafter);
+            Carpentry.Carpenters.Made(sim, made, crafter);
+        }
         if (bench.By.IsNull && bench.BillFor(recipe) is { } bill)
         {
             bill.Done++;
@@ -352,6 +355,8 @@ public static class Crafting
             Work.Smithing.BeginMaking(sim, avatar, station, recipe);
         else if (Tinkering.Tinkers.Applies(sim, avatar, station, recipe))
             Tinkering.Tinkers.WorkAt(sim, avatar, station, recipe);
+        else if (Carpentry.Carpenters.Applies(sim, avatar, station, recipe))
+            Carpentry.Carpenters.WorkAt(sim, avatar, station, recipe);
         else
             AiSystem.Order(sim, avatar, new Ai.CraftJob(station, recipe));
     }

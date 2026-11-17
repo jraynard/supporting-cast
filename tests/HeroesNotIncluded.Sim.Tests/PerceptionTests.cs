@@ -14,7 +14,7 @@ public class PerceptionTests
         var sim = Create(60, 60, depth: depth);
         var me = sim.SpawnCreature(sim.Defs.Creature("Human"), "Me", C(10, 10), ageDays: 25 * 365);
         sim.Round.OpenLobby();
-        sim.Round.Sit(Guid.Empty, "Me", null, null, null);
+        sim.Round.Sit(Guid.Empty, "Me", null, null);
         sim.Round.Start(sim);
         sim.RebuildDerivedIfNeeded();
         Array.Fill(sim.Map.Light, 1f);

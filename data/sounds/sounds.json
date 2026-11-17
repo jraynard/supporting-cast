@@ -20,6 +20,7 @@
     "forge.quench":  { "files": ["sfx/forge_quench_rec_*.ogg"], "gain": 0.8, "max": 1, "priority": 3 },
     "forge.steam":   { "files": ["amb/forge_steam.ogg"], "gain": 0.5 },
     "work.grind":    { "files": ["amb/work_grind.ogg"], "gain": 0.45 },
+    "work.saw":      { "files": ["amb/work_saw.ogg"], "gain": 0.5 },
 
     "kitchen.bubble": { "files": ["amb/kitchen_bubble_rec.ogg"], "gain": 0.6 },
     "kitchen.stir":   { "files": ["amb/kitchen_stir.ogg"], "gain": 0.4 },

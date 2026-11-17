@@ -20,7 +20,7 @@ public class GhostTests
         sim.Round.OpenLobby();
         var i = 0;
         foreach (var p in players)
-            sim.ApplyNow(new JoinLobbyCommand(p, $"P{i++}", default, []));
+            sim.ApplyNow(new JoinLobbyCommand(p, $"P{i++}", default));
         sim.ApplyNow(new StartRoundCommand());
         return sim;
     }

@@ -9,7 +9,7 @@ using HeroesNotIncluded.Rendering;
 namespace HeroesNotIncluded.Ui;
 
 /// <summary>
-/// Your saved characters (<see cref="CharacterRoster"/>), one card each: them idling, their traits,
+/// Your saved characters (<see cref="CharacterRoster"/>), one card each: them idling
 /// and the trades they've played. In <see cref="Mode.Choose"/> it's who you'll be in the game you're
 /// starting or joining (Use); in <see cref="Mode.Manage"/> it's the main menu's Characters screen,
 /// for making, changing and letting go of them. Delete asks once more before it goes.
@@ -49,7 +49,6 @@ public sealed class CharacterPicker(GameHost host, CharacterRoster roster, Sim.D
             ImGui.SameLine(0, 10);
             ImGui.BeginGroup();
             Theme.Header(host.ImGui, c.Name);
-            ImGui.TextDisabled(c.Traits.Count > 0 ? string.Join(", ", c.Traits) : "No traits");
             ImGui.TextDisabled(Played(c));
             if (!manage)
             {

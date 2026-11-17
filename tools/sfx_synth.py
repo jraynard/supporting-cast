@@ -268,6 +268,15 @@ def scrape_loop(rng, seconds, center, rate):
     return norm(loopable(s), 0.6)
 
 
+def saw_loop(rng, seconds=4.0):
+    """A handsaw through a log: a rasp of teeth (a buzz at the tooth rate) swelling with each push and pull."""
+    t = t_axis(seconds + 0.5)
+    n = band(noise(rng, seconds + 0.5), lo=900, hi=5000)
+    teeth = 0.6 + 0.4 * np.sign(np.sin(2 * np.pi * 38 * t))
+    strokes = np.abs(np.sin(np.pi * 1.5 * t)) ** 0.7
+    return norm(loopable(n * teeth * strokes), 0.6)
+
+
 def grind_loop(rng, seconds=4.0):
     t = t_axis(seconds + 0.5)
     n = band(noise(rng, seconds + 0.5), lo=1800, hi=6000)
@@ -715,6 +724,7 @@ def catalogue():
         "water_douse": ("sfx", v(douse_hiss, 2)),
         "forge_steam": ("amb", [lambda r: norm(loopable(band(noise(r, 4.5), lo=3000, hi=12000)), 0.5)]),
         "work_grind": ("amb", [grind_loop]),
+        "work_saw": ("amb", [saw_loop]),
         "kitchen_bubble": ("amb", [bubble_loop]),
         "kitchen_stir": ("amb", [lambda r: scrape_loop(r, 4, 700, 0.8)]),
         "kitchen_pinch": ("sfx", v(pinch, 3)),

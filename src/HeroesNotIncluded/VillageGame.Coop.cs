@@ -367,14 +367,14 @@ public sealed partial class VillageGame
     /// <summary>The creator on a saved character.</summary>
     private void Prefill(SavedCharacter c)
     {
-        _coopCreator!.Load(c.Name, c.Look, c.Traits, c.Clothes);
+        _coopCreator!.Load(c.Name, c.Look, c.Clothes);
     }
 
     /// <summary>Arrive as a saved character.</summary>
     private void UseSaved(CoopSession session, SavedCharacter c)
     {
         _arrivedAs = _roster!.Put(c) ?? c; // most recently used
-        SendArrival(session, c.Name, c.Look, c.Traits, c.Clothes);
+        SendArrival(session, c.Name, c.Look, c.Clothes);
     }
 
     /// <summary>Arrive as the character in the creator, and remember them (a new one, or the one edited).</summary>
@@ -382,18 +382,18 @@ public sealed partial class VillageGame
     {
         var creator = _coopCreator!;
         var made = (_coopEditing is { } id ? _roster?.Get(id) : null) ?? new SavedCharacter();
-        made = made with { Name = creator.Name, Look = creator.Look, Traits = creator.Traits.ToList(), Clothes = creator.Clothes.ToList() };
+        made = made with { Name = creator.Name, Look = creator.Look, Clothes = creator.Clothes.ToList() };
         _arrivedAs = _roster?.Put(made); // null with the roster full: they play, unsaved
-        SendArrival(session, creator.Name, creator.Look, creator.Traits, creator.Clothes);
+        SendArrival(session, creator.Name, creator.Look, creator.Clothes);
     }
 
     /// <summary>A finished character takes a seat in the lobby, or with no round simply arrives.</summary>
-    private void SendArrival(CoopSession session, string name, Appearance look, IReadOnlyList<string> traits, IReadOnlyList<string> clothes)
+    private void SendArrival(CoopSession session, string name, Appearance look, IReadOnlyList<string> clothes)
     {
         if (InLobby)
-            session.Send(new JoinLobbyCommand(session.Me.Id, name, look, traits, clothes));
+            session.Send(new JoinLobbyCommand(session.Me.Id, name, look, clothes));
         else
-            session.Send(new CreateCharacterCommand(session.Me.Id, name, look, traits, Clothes: clothes));
+            session.Send(new CreateCharacterCommand(session.Me.Id, name, look, Clothes: clothes));
         _characterRequested = true;
     }
 

@@ -17,8 +17,8 @@ public class HauntingTests
     {
         var (sim, _) = TestWorld.Millbrook(7, 4);
         sim.Round.OpenLobby();
-        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default, []));
-        sim.ApplyNow(new JoinLobbyCommand(Bea, "Bea", default, []));
+        sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
+        sim.ApplyNow(new JoinLobbyCommand(Bea, "Bea", default));
         sim.ApplyNow(new StartRoundCommand());
         var ana = Players.CharacterOf(sim, Ana);
         ref var c = ref sim.World.Get<Creature>(ana);

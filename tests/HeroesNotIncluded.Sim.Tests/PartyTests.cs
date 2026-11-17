@@ -20,7 +20,7 @@ public class PartyTests
         if (round)
         {
             sim.Round.OpenLobby();
-            sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default, []));
+            sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default));
             sim.ApplyNow(new StartRoundCommand());
         }
         return (sim, town);

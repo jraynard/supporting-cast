@@ -108,8 +108,7 @@ public sealed class SocialSystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (opinion < def.MinOpinion)
             return 0f;
         var social = (SkillRules.LevelOf(sim, from, Skill.Social) - Skills.Average) / (float)Skills.Average;
-        return def.Weight * Math.Clamp(1f + def.OpinionFactor * opinion / 100f, 0f, 3f) * Math.Max(0f, 1f + def.SocialFactor * social)
-            * TraitRules.Factor(TraitRules.Of(sim, from), def);
+        return def.Weight * Math.Clamp(1f + def.OpinionFactor * opinion / 100f, 0f, 3f) * Math.Max(0f, 1f + def.SocialFactor * social);
     }
 
     /// <summary>

@@ -50,7 +50,7 @@ public sealed partial class VillageGame
     {
         var (look, clothes) = HeroAppearance();
         var round = _sim.Round;
-        round.Sit(Guid.Empty, string.IsNullOrWhiteSpace(HeroName) ? "Arin" : HeroName.Trim(), look, HeroTraits, clothes);
+        round.Sit(Guid.Empty, string.IsNullOrWhiteSpace(HeroName) ? "Arin" : HeroName.Trim(), look, clothes);
         if (HeroTrade != null)
             round.SetPreferences(Guid.Empty, [_sim.Defs.Trade(HeroTrade)], []);
         // Bots ask for the trades that have a game to play, the hero's aside, so a solo round has its cast.
@@ -58,7 +58,7 @@ public sealed partial class VillageGame
         for (var i = 0; i < Bots; i++)
         {
             var id = new Guid(i + 1, 0, 0, new byte[8]);
-            round.Sit(id, $"Bot {i + 1}", null, null, null);
+            round.Sit(id, $"Bot {i + 1}", null, null);
             if (wanted.Count > 0)
                 round.SetPreferences(id, wanted.Skip(i % wanted.Count).Concat(wanted.Take(i % wanted.Count)).Select(_sim.Defs.Trade).ToList(), []);
             _bots.Add(new Sim.Bots.BotPlayer(() => _sim, id, Issue, seed + (ulong)i) { Skill = BotSkill });
@@ -76,7 +76,7 @@ public sealed partial class VillageGame
         if (_coop is not { IsHost: true } session || !InLobby || !Adventure)
             return;
         var (look, clothes) = HeroAppearance();
-        session.Send(new JoinLobbyCommand(session.Me.Id, string.IsNullOrWhiteSpace(HeroName) ? session.Me.Name : HeroName.Trim(), look, HeroTraits ?? [], clothes));
+        session.Send(new JoinLobbyCommand(session.Me.Id, string.IsNullOrWhiteSpace(HeroName) ? session.Me.Name : HeroName.Trim(), look, clothes));
     }
 
     /// <summary>Tell the player who they've become.</summary>

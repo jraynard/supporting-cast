@@ -100,9 +100,6 @@ public static class Barks
             tags.Add("villager");
         if (w.TryGet<Trade>(e, out var trade))
             tags.Add(trade.Def.Name.ToLowerInvariant());
-        if (w.TryGet<Traits>(e, out var traits))
-            foreach (var t in traits.List)
-                tags.Add(t.Name.ToLowerInvariant());
         if (Hospitality.DrinkingSystem.LevelOf(sim, e) is var drink && drink >= Hospitality.DrinkingSystem.MerryAt)
             tags.Add(drink >= Hospitality.DrinkingSystem.ClumsyAt ? "clumsy" : drink >= Hospitality.DrinkingSystem.LoudAt ? "loud" : "merry");
         return tags;

@@ -1,36 +1,52 @@
-== Seasons in Millbrook, Normal, bots as Innkeeper, Cook, Blacksmith, Healer, Tinker, Labourer; seeds 1..8 ==
-seed   1: Won       day 3 | Renown  67.6/60 Dread  85.6/100 (peak 85.1) | crises Raid,Raid,Dragon met 2/3 | served 10, quests 1+/1-, lost 6 | dead 1, back 0 | drawn 12, kegs 0
-seed   2: Won       day 3 | Renown  69.2/60 Dread  82.6/100 (peak 82.6) | crises Raid,Plague,Dragon met 3/3 | served 6, quests 0+/1-, lost 3 | dead 2, back 0 | drawn 11, kegs 0
-seed   3: Won       day 3 | Renown 101.4/60 Dread   6.8/100 (peak 28.8) | crises Raid,Fire,Dragon met 2/3 | served 8, quests 3+/0-, lost 3 | dead 1, back 0 | drawn 17, kegs 0
-seed   4: Won       day 3 | Renown  87.2/60 Dread  60.4/100 (peak 60.4) | crises Raid,Shortage,Dragon met 2/3 | served 11, quests 1+/1-, lost 3 | dead 1, back 0 | drawn 24, kegs 1
-seed   5: FellShort day 3 | Renown  48.0/60 Dread  48.2/100 (peak 48.2) | crises Raid,Raid,Dragon met 2/3 | served 9, quests 2+/0-, lost 1 | dead 4, back 0 | drawn 13, kegs 0
-seed   6: FellShort day 3 | Renown  38.7/60 Dread  99.0/100 (peak 99.0) | crises Raid,Fire,Dragon met 1/3 | served 6, quests 1+/1-, lost 4 | dead 3, back 0 | drawn 12, kegs 0
-seed   7: Won       day 3 | Renown  82.2/60 Dread  66.2/100 (peak 66.2) | crises Raid,Plague,Dragon met 1/3 | served 15, quests 1+/0-, lost 2 | dead 1, back 0 | drawn 15, kegs 0
-seed   8: Won       day 3 | Renown  76.0/60 Dread  75.2/100 (peak 72.2) | crises Raid,Plague,Dragon met 1/3 | served 10, quests 1+/0-, lost 1 | dead 3, back 1 | drawn 15, kegs 0
+== Seasons in Millbrook, Normal, bots as Innkeeper, Cook, Blacksmith, Healer, Tinker, Carpenter; seeds 1..24 ==
+seed   1: Dread     day 2 | Renown  29.7/60 Dread 100.0/100 (peak 100.0) | crises Raid,Raid met 1/2 | served 9, quests 0+/0-, lost 5 | dead 2, back 0 | drawn 18, kegs 1
+seed   2: Dread     day 2 | Renown   2.6/60 Dread 100.0/100 (peak 100.0) | crises Raid,Plague met 0/2 | served 8, quests 0+/0-, lost 1 | dead 4, back 1 | drawn 6, kegs 0
+seed   3: FellShort day 3 | Renown  45.7/60 Dread  59.2/100 (peak 59.2) | crises Raid,Fire,Dragon met 1/3 | served 8, quests 2+/0-, lost 5 | dead 3, back 0 | drawn 9, kegs 0
+seed   4: Won       day 3 | Renown  73.4/60 Dread  63.0/100 (peak 63.0) | crises Raid,Shortage,Dragon met 2/3 | served 11, quests 1+/0-, lost 2 | dead 3, back 0 | drawn 18, kegs 1
+seed   5: Dread     day 3 | Renown  15.7/60 Dread 100.0/100 (peak 100.0) | crises Raid,Raid,Dragon met 1/3 | served 3, quests 1+/0-, lost 7 | dead 5, back 0 | drawn 11, kegs 0
+seed   6: Won       day 3 | Renown  68.2/60 Dread  93.0/100 (peak 93.0) | crises Raid,Fire,Dragon met 1/3 | served 12, quests 1+/0-, lost 0 | dead 5, back 1 | drawn 10, kegs 0
+seed   7: Dread     day 2 | Renown  -0.6/60 Dread 100.0/100 (peak 100.0) | crises Raid,Plague met 0/2 | served 5, quests 0+/0-, lost 4 | dead 2, back 0 | drawn 20, kegs 1
+seed   8: Won       day 3 | Renown  80.4/60 Dread  87.0/100 (peak 87.0) | crises Raid,Plague,Dragon met 2/3 | served 10, quests 1+/0-, lost 6 | dead 3, back 1 | drawn 20, kegs 1
+seed   9: Dread     day 3 | Renown  54.9/60 Dread 100.0/100 (peak 100.0) | crises Raid,Shortage,Dragon met 0/3 | served 6, quests 1+/0-, lost 2 | dead 3, back 1 | drawn 13, kegs 0
+seed  10: Won       day 3 | Renown  66.1/60 Dread  78.2/100 (peak 78.2) | crises Raid,Shortage,Dragon met 3/3 | served 6, quests 0+/0-, lost 4 | dead 1, back 0 | drawn 12, kegs 0
+seed  11: Won       day 3 | Renown  82.4/60 Dread  79.4/100 (peak 79.4) | crises Raid,Fire,Dragon met 2/3 | served 11, quests 0+/0-, lost 1 | dead 0, back 0 | drawn 11, kegs 0
+seed  12: FellShort day 3 | Renown  32.6/60 Dread  98.2/100 (peak 98.2) | crises Raid,Raid,Dragon met 1/3 | served 9, quests 1+/0-, lost 4 | dead 3, back 0 | drawn 10, kegs 0
+seed  13: Dread     day 3 | Renown  37.3/60 Dread 100.0/100 (peak 100.0) | crises Raid,Raid,Dragon met 3/3 | served 8, quests 0+/1-, lost 10 | dead 2, back 1 | drawn 20, kegs 1
+seed  14: Won       day 3 | Renown  63.8/60 Dread  78.0/100 (peak 78.0) | crises Raid,Shortage,Dragon met 1/3 | served 9, quests 1+/0-, lost 4 | dead 0, back 0 | drawn 13, kegs 0
+seed  15: Dread     day 2 | Renown  32.1/60 Dread 100.0/100 (peak 100.0) | crises Raid,Fire met 0/2 | served 5, quests 0+/2-, lost 3 | dead 2, back 1 | drawn 18, kegs 1
+seed  16: Dread     day 3 | Renown -13.8/60 Dread 100.0/100 (peak 100.0) | crises Raid,Raid,Dragon met 1/3 | served 4, quests 1+/0-, lost 6 | dead 4, back 1 | drawn 10, kegs 0
+seed  17: Won       day 3 | Renown  70.3/60 Dread  75.0/100 (peak 75.0) | crises Raid,Dragon met 3/2 | served 15, quests 1+/1-, lost 4 | dead 1, back 0 | drawn 16, kegs 0
+seed  18: Won       day 3 | Renown 130.7/60 Dread  82.6/100 (peak 85.0) | crises Raid,Plague,Dragon met 1/3 | served 19, quests 2+/0-, lost 0 | dead 1, back 0 | drawn 22, kegs 1
+seed  19: FellShort day 3 | Renown  53.1/60 Dread  69.6/100 (peak 69.6) | crises Raid,Shortage,Dragon met 2/3 | served 17, quests 1+/0-, lost 2 | dead 2, back 0 | drawn 12, kegs 0
+seed  20: Dread     day 3 | Renown  18.0/60 Dread 100.0/100 (peak 100.0) | crises Raid,Fire,Dragon met 2/3 | served 8, quests 0+/0-, lost 2 | dead 3, back 1 | drawn 9, kegs 0
+seed  21: Dread     day 3 | Renown  66.7/60 Dread 100.0/100 (peak 100.0) | crises Raid,Raid,Dragon met 0/3 | served 7, quests 1+/0-, lost 3 | dead 6, back 1 | drawn 16, kegs 0
+seed  22: Won       day 3 | Renown  75.3/60 Dread  69.2/100 (peak 69.2) | crises Raid,Fire,Dragon met 2/3 | served 9, quests 1+/0-, lost 1 | dead 3, back 0 | drawn 11, kegs 0
+seed  23: Dread     day 3 | Renown  15.4/60 Dread 100.0/100 (peak 100.0) | crises Raid,Plague,Dragon met 0/3 | served 6, quests 1+/0-, lost 5 | dead 4, back 0 | drawn 7, kegs 0
+seed  24: Dread     day 3 | Renown  34.0/60 Dread 100.0/100 (peak 100.0) | crises Raid,Plague,Dragon met 0/3 | served 5, quests 1+/1-, lost 5 | dead 3, back 0 | drawn 20, kegs 0
 
-OUTCOMES Won 6, FellShort 2, Dread 0, TownFell 0
-Renown mean 71.3 of 60 (min 38.7, max 101.4); Dread peak mean 67.8 of 100
-Deaths 2.0 a round, came back 0.1; served 9.4, quests cleared 1.2 failed 0.5
-Casks: drawn 14.9 servings a season, kegs knocked in 0.1 (drinks served 9.2, mixed 4.2)
-Crises met: Raid 6/10, Fire 0/2, Shortage 1/1, Plague 1/3, Dragon 6/8
+OUTCOMES Won 9, FellShort 3, Dread 12, TownFell 0
+Renown mean 47.2 of 60 (min -13.8, max 130.7); Dread peak mean 89.0 of 100
+Deaths 2.7 a round, came back 0.4; served 8.8, quests cleared 0.8 failed 0.2
+Casks: drawn 13.8 servings a season, kegs knocked in 0.3 (drinks served 8.5, mixed 3.5)
+Crises met: Raid 16/30, Fire 2/7, Shortage 1/5, Plague 1/6, Dragon 9/19
 
 BOTS (means a season)
-  Innkeeper: said 40.5, slips 1.0
-    taken: Drink 16.1, Lodging 3.8, MixedDrink 6.8, Quest 2.0
-    games: MakeBedSession 3.0, MixSession 4.6, PourSession 10.2, ScrubSession 20.9, SignInSession 3.6, SlopSession 1.9, StrikerSession 0.6, TapSession 0.1, WashSession 3.0
-  Cook: said 28.8, slips 4.2
-    taken: Goods 5.5, Meal 13.4
-    games: BakeSession 6.8, ButcherSession 2.2, ChopSession 2.0, CrimpSession 3.1, KneadSession 6.9, PackSession 7.0, PluckSession 3.2, RoastSession 2.5, SeasonSession 1.0, SniffSession 1.0, StewSession 1.1, StrikerSession 0.4
-  Blacksmith: said 18.2, slips 2.1
-    taken: Goods 0.5, Repair 5.5
-    games: BloomSession 2.1, HammerSession 6.5, HeatSession 40.0, QuenchSession 1.1, SharpenSession 0.8, StrikerSession 0.4
-  Healer: said 36.0, slips 1.8
-    taken: Goods 2.1, Healing 5.5
-    games: BandageSession 6.6, CastSession 12.1, HandsOnSession 4.5, MeditateSession 1.0, StrikerSession 0.5
-  Tinker: said 31.0, slips 0.4
-    taken: Appraise 0.1, Goods 1.2, Unlock 0.4, WagonRepair 0.9
-    games: FitSession 3.2, LoupeSession 0.1, PickSession 0.4, PinSession 2.0, ProbeSession 0.4, StrikerSession 0.4, TrueSession 0.6
-  Labourer: said 55.9, slips 0.0
-    taken: FestivalSite 16.4
-    games: StrikerSession 0.5
-8 seasons in 40 s
+  Innkeeper: said 40.4, slips 1.2
+    taken: Drink 14.2, Lodging 2.8, MixedDrink 6.1, Quest 1.0
+    games: MakeBedSession 1.3, MixSession 3.6, PourSession 10.1, ScrubSession 24.3, SignInSession 2.8, SlopSession 1.0, StrikerSession 0.2, TapSession 0.3, WashSession 2.1
+  Cook: said 31.6, slips 2.8
+    taken: Goods 4.3, Meal 11.6
+    games: BakeSession 5.9, ButcherSession 2.0, ChopSession 2.5, CrimpSession 2.8, KneadSession 6.0, PackSession 5.4, PluckSession 3.0, RoastSession 2.4, ScrubSession 0.1, SeasonSession 1.3, SniffSession 1.2, StewSession 1.5, StrikerSession 0.2, WashSession 0.1
+  Blacksmith: said 24.2, slips 1.2
+    taken: Goods 0.3, Repair 3.9
+    games: BloomSession 0.6, HammerSession 5.8, HeatSession 40.8, QuenchSession 1.2, SharpenSession 1.0, StrikerSession 0.1
+  Healer: said 34.5, slips 1.1
+    taken: Goods 1.5, Healing 4.3
+    games: BandageSession 4.3, CastSession 10.3, HandsOnSession 3.4, MeditateSession 1.4, StrikerSession 0.1
+  Tinker: said 40.6, slips 0.5
+    taken: Appraise 0.2, Goods 1.9, Unlock 0.5, WagonRepair 0.8
+    games: FitSession 4.2, LoupeSession 0.2, PickSession 0.5, PinSession 2.0, ProbeSession 0.5, SpanSession 0.1, StrikerSession 0.3, TrueSession 0.5
+  Carpenter: said 35.5, slips 0.1
+    taken: Goods 0.6
+    games: FletchSession 3.0, StrikerSession 0.3
+24 seasons in 47 s
