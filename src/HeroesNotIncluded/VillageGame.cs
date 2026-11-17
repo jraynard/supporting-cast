@@ -442,6 +442,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
             _camera.Zoom = AdventureZoom;
         _cameraController = new Camera3DController(_camera)
         {
+            TurnStep = MathF.PI / 4, // eighth turns: finer than quarters, and every other one a diagonal
             Bounds = (float2.Zero, new float2(_sim.Map.Width, _sim.Map.Height)),
             // Zoom without a scroll wheel comes from the zoom actions (HandleCameraActions).
             // Eased, and a flick capped: a touchpad's stream of small deltas otherwise jerks it about.
@@ -819,7 +820,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     }
 
     /// <summary>
-    /// The camera's actions: zoom in any mode, and with a character the quarter turns and a
+    /// The camera's actions: zoom in any mode, and with a character the stepped turns and a
     /// middle-drag's free turn (without one, Q/E turn it as ever and a middle-drag pans). Not at hands-on work, where the d-pad's runes are.
     /// </summary>
     private void HandleCameraActions()

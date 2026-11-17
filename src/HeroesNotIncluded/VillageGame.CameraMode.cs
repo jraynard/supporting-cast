@@ -109,7 +109,7 @@ public sealed partial class VillageGame
             _cine.Turntable = 0f;
             _cine.Stop();
         }
-        // Turn back the short way: the quarter-turn view eases from within half a turn of home.
+        // Turn back the short way: the stepped view eases from within half a turn of home.
         _camera.Yaw = _yawHome + MathF.IEEERemainder(_camera.Yaw - _yawHome, MathF.Tau);
         if (HasAvatar || Ghosting)
         {
