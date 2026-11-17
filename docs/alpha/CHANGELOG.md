@@ -4,6 +4,52 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+## 0.1.0-playtest.20
+
+A tutorial for every trade, the fiddly mini-games made fairer, and a camera and replays for
+watching a season back.
+
+**The tutorial**
+- "Practice yard" on the title is now **Tutorial**, marked "start here" until you've played. Pick a
+  trade and it walks you through it: what the trade is about, the basics (walking, your pack, your
+  shop, the controls card), then the trade's main work, one step at a time. Each step points at
+  what to use (with an arrow at the screen's edge when it's off screen) and lights up the button
+  to press. Stuck for a while, it offers a fuller hint and sets the scene up again.
+- After the main chapters you can start a round in that trade, try the extra chapters, or practise
+  freely.
+- The "Getting started" tips box in a round is gone: everything it said is now in the tutorial.
+- The menu's descriptions always show, so the list no longer shifts as you move over it.
+
+**Mini-games**
+- **Pouring:** tip the tankard and the ale runs down its side with less foam, but tipped, it runs
+  over the low lip sooner. Tip it early, bring it upright near the top. The picture now holds the
+  tankard under the tap the way you'd expect.
+- **Feeling for traps:** stop where the probe catches and hold still: the surer your read, the
+  wider the green. Hold F to press in, then Space while the needle's in the green to flick the
+  spring out. Outside the green, it goes off. The mouse no longer drags the probe while you press.
+- **Laying on hands:** while drawing a wound, point the mouse where the needle should be and it
+  follows, settling on the spot. With the keys it's a little less easy than it was.
+- **The hammer and the lock:** both are more forgiving of a press that's a moment late, and the
+  lock's pins no longer drop while the needle shows green.
+- Clicking outside a mini-game no longer walks you away from it.
+
+**The inn and the kitchen**
+- The cook ladles straight into a clean bowl from the kitchen shelf; the inn has its own wash tub
+  behind the bar.
+- A red X on an order turns it away: "Sorry, we're out." They take it better than being left
+  waiting.
+
+**The season**
+- The dragon now comes on the last morning, and is gone before the festival is set up.
+- Raids are a little stronger. Rest in bed brings blood back much faster.
+- Millbrook's gardens have real gates, and none sit on the road.
+
+**New**
+- **Replays:** every round is kept, to watch again from the reveal or from Replays on the title:
+  scrub the timeline, jump to each crisis, follow anyone.
+- **Camera mode** (the ` key, or R3): fly the camera free for filming. In a round it still only
+  shows what your character could see.
+
 ## 0.1.0-playtest.19
 
 Two fixes to playtest.18.
