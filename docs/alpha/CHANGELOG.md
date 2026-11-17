@@ -7,6 +7,31 @@ Write it for testers: what they'll notice, not how it's done.
 Playing together always needs everyone on the same build. Saves and characters carry over
 between builds unless a section's **Compatibility** line says otherwise.
 
+## 0.1.0-playtest.21
+
+Pausing, a map of the town, a camera you can turn freely, and tables you can walk across.
+
+**Pausing**
+- **Alone:** the game menu (Esc, Start) now stops time while it's open, and the pause key (P, or
+  Pause) holds it until you press it again.
+- **Together:** the pause key asks everyone. Time stops once every player agrees, and anyone can say
+  "carry on" to turn it down. A call nobody answers lapses after 30 seconds. To start again, everyone
+  says they're ready. Someone who drops out can't keep the town paused.
+
+**Finding your way**
+- A minimap in the bottom right shows the town around you, turned the way your camera faces, with
+  a pin on everything the edge arrows point at. Press M for the whole town map. It shows streets
+  and buildings, not people.
+
+**The camera**
+- Hold the middle mouse button and drag to turn the view to any angle.
+- The turn keys (Z/X, the d-pad) now turn it an eighth of the way round instead of a quarter.
+
+**Tables**
+- Up on a table, you can walk its whole length and across a big square one without getting stuck in
+  the middle, and stepping off no longer snags you on its edge.
+- Clicking from a table no longer picks things on the floor upstairs (the bed above the inn).
+
 ## 0.1.0-playtest.20
 
 A tutorial for every trade, the fiddly mini-games made fairer, and a camera and replays for
