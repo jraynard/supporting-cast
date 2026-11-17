@@ -74,6 +74,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     demos, bench); behaviour that belongs to rounds checks `Round.Live` (playing or festival).
     `Endless` keeps a test's round going. The host's choices are `RoundOptions` (friendly fire; traitors, off till M4). Players inhabit AI villagers. The deal also gives
     everyone a home (`Systems/Homes`: a cottage bed of their own, held for them).
+    `Round/PauseVote`: co-op pauses by agreement (all connected agree, all ready to resume; who's connected
+    comes from `PeerEvents`); the host seals turns with no steps while it holds. Alone, pausing is game-side
+    (`VillageGame.Pause`: the menu or the pause key).
   - `Director/`: `Reckoning` keeps Renown (adventurers leaving pleased, quests cleared) and Dread
     (quests unanswered or gone badly; its limit ends the round). Players see words for them,
     through `PerceptionView.Standing`. `Director` sends the season's crises (`season.json` beats:

@@ -65,6 +65,9 @@ public sealed partial class Simulation
     /// <summary>The round's lobby and deal. <see cref="Round.RoundPhase.None"/> until something opens one.</summary>
     public Round.RoundSystem Round { get; }
 
+    /// <summary>A co-op pause by agreement: everyone connected agrees to hold time, and is ready before it runs again.</summary>
+    public Round.PauseVote PauseVote { get; } = new();
+
     /// <summary>The season's last evening: the props, the revels and the ceremony (<see cref="Round.FestivalSystem"/>).</summary>
     public Round.FestivalSystem Festival { get; }
 
@@ -245,6 +248,7 @@ public sealed partial class Simulation
     {
         var sim = new Simulation(defs, width, height, seed, depth);
         sim.AddSystem(sim.Round)
+            .AddSystem(sim.PauseVote)
             .AddSystem(sim.Festival)
             .AddSystem(sim.Speech)
             .AddSystem(sim.Temperature)

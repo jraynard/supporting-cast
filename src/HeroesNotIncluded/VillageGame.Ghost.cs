@@ -162,7 +162,7 @@ public sealed partial class VillageGame
     /// </summary>
     private void HandleGhostInput(float dt)
     {
-        if (!Ghosting || _cameraMode)
+        if (!Ghosting || _cameraMode || PauseHeld)
             return;
         var w = _sim.World;
         if (_ghostWords != null)

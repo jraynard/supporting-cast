@@ -30,6 +30,22 @@ public sealed record SetReadyCommand(Guid Player, bool Ready) : ISimCommand, IPl
     public void Apply(Simulation sim) => sim.Round.SetReady(Player, Ready);
 }
 
+/// <summary>A player asks everyone to pause (co-op): it holds once all agree (<see cref="PauseVote"/>).</summary>
+public sealed record CallPauseCommand(Guid Player) : ISimCommand, IPlayerCommand
+{
+    public Guid? Owner => Player;
+
+    public void Apply(Simulation sim) => sim.PauseVote.Call(sim, Player);
+}
+
+/// <summary>A player answers a call to pause (agree, or carry on), or, while it holds, is ready or not.</summary>
+public sealed record PauseAnswerCommand(Guid Player, bool Yes) : ISimCommand, IPlayerCommand
+{
+    public Guid? Owner => Player;
+
+    public void Apply(Simulation sim) => sim.PauseVote.Answer(sim, Player, Yes);
+}
+
 /// <summary>The host deals the trades and starts the round.</summary>
 public sealed record StartRoundCommand : ISimCommand, IHostCommand
 {

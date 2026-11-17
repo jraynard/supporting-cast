@@ -56,6 +56,7 @@ public sealed partial class VillageGame
         DrawGhostBanner();
         DrawGhostWords();
         DrawCallToArms();
+        DrawPause();
         DrawFestivalCard();
         DrawToasts();
         DrawHandsAimHint();

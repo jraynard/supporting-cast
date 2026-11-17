@@ -27,8 +27,10 @@ Tone: warm, comic and a little put-upon, until someone finds the blacksmith in t
 
 ## A round
 
-- 30 to 40 minutes at fixed speed with no pause: 2 to 2.5 in-game days at 16 real minutes a day (40 s an hour).
-  Players get no speed controls. When there's nothing left to do (everyone asleep, say, or the
+- 30 to 40 minutes at fixed speed: 2 to 2.5 in-game days at 16 real minutes a day (40 s an hour).
+  Players get no speed controls. Alone, the game menu and the pause key (P, Pause) hold time; in
+  co-op the town never waits for one player, but holds once everyone agrees to a pause (someone
+  needs a break), and runs again once everyone's ready. When there's nothing left to do (everyone asleep, say, or the
   town quiet between parties), the game advances time on its own.
 - 4 to 12 players. AI villagers fill the empty trades at a basic level, so any headcount works.
 - Self-contained: no progression between rounds yet.

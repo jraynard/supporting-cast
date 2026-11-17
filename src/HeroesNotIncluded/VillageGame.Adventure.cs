@@ -154,9 +154,9 @@ public sealed partial class VillageGame
             _moveKeysFromWork = _useKeyFromWork = Working;
             return;
         }
-        if (_cameraMode)
+        if (_cameraMode || PauseHeld)
         {
-            HandleFreeMove(input, 0, 0); // the keys fly the camera: your character stands still
+            HandleFreeMove(input, 0, 0); // the keys fly the camera, or time's held: your character stands still
             return;
         }
         var (x, y) = WalkAxes();

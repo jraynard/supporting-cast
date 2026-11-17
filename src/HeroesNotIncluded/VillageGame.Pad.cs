@@ -237,6 +237,11 @@ public sealed partial class VillageGame
         var wide = (float2?)new float2(Gui.S(260), 0);
         if (ImGui.Button("Back to the village"u8, in wide))
             _gameMenu = false;
+        if (PauseMenuLabel() is { } pause && ImGui.Button(pause, in wide))
+        {
+            _gameMenu = false;
+            AnswerPause();
+        }
         if (ImGui.Button("Save"u8, in wide))
         {
             _gameMenu = false;

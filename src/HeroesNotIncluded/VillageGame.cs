@@ -199,7 +199,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     private bool _devMode => DevMode;
 
-    private bool Paused => _speed == 0;
+    /// <summary>Time stands still: god mode's pause (<see cref="_speed"/> 0), or the players' (<see cref="PauseHeld"/>).</summary>
+    private bool Paused => _speed == 0 || PauseHeld;
 
     /// <summary>How fast time runs while every player sleeps (<see cref="Players.AllAsleep"/>): an 8-hour night in 40 seconds.</summary>
     private const int NightSpeed = 8;
@@ -507,8 +508,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         HandleAvatarInput(input, dt);
         HandleGhostInput(dt);
         _buildUp = input.IsKeyDown(GlfwKey.LeftControl) || input.IsKeyDown(GlfwKey.RightControl);
-        if (!_cameraMode)
-            HandleMouse(input, dt);
+        if (!_cameraMode && !(PauseHeld && (HasAvatar || Ghosting)))
+            HandleMouse(input, dt); // held, a character does nothing (god mode still gives its orders)
         if (_coop != null)
             RunCoop(dt);
         else
@@ -675,11 +676,12 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
 
     private void RunSimulation(float dt)
     {
-        // Whoever plays a character can't stop the clock, whatever a save or a key last set.
+        // Whoever plays a character can't change the speed, whatever a save or a key last set.
         if (HasAvatar && !_devMode && _speed != 1)
             _speed = 1;
-        // Camera mode in solo may hold the clock or slow it (FilmClock), the one exception to the
-        // above: you're filming, not playing, and co-op never gets it.
+        // Time still holds for a pause (PauseHeld: the menu or the pause key, alone), which leaves
+        // _speed be. Camera mode in solo may also hold the clock or slow it (FilmClock): you're
+        // filming, not playing, and co-op never gets it.
         if (Paused || RoundOver || FilmPaused)
         {
             _tickAccumulator = 0;
@@ -741,7 +743,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         // included: the town doesn't wait (and at hands-on work Space is the game's other action).
         var cameraKeys = HandleCameraModeToggle();
         if (input.WasKeyPressed(GlfwKey.Space) && !HasAvatar && !Working && !_cameraMode)
-            SetSpeed(Paused ? _speedBeforePause : 0);
+            SetSpeed(_speed == 0 ? _speedBeforePause : 0);
+        // The pause key is the players' own (VillageGame.Pause.cs): alone it holds; with company it asks.
+        HandlePauseKey();
         // Ctrl+1–3: plain numbers are the Adventure hotbar (VillageGame.Inventory.cs).
         if (!HasAvatar && (input.IsKeyDown(GlfwKey.LeftControl) || input.IsKeyDown(GlfwKey.RightControl)))
         {

@@ -16,12 +16,14 @@ public static class PeerEvents
             // Hosting a save: anyone who was playing when it was saved is away until they rejoin.
             Players.ReleaseAllBut(sim, player);
         Players.Join(sim, player, adoptLooseAvatar: isHost);
+        sim.PauseVote.Joined(player, isHost);
     }
 
     public static void Away(Simulation sim, Guid player)
     {
         sim.Recorder?.Note(sim, ReplayEventKind.Away, player, false);
         Players.Away(sim, player);
+        sim.PauseVote.Gone(sim, player);
     }
 
     public static void Left(Simulation sim, Guid player)
@@ -29,6 +31,7 @@ public static class PeerEvents
         sim.Recorder?.Note(sim, ReplayEventKind.Left, player, false);
         sim.Round.Stand(player);
         Players.Leave(sim, player);
+        sim.PauseVote.Gone(sim, player);
     }
 
     /// <summary>Every job stopped, so the state can be snapshot exactly (a joiner, a resync).</summary>

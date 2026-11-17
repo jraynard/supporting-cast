@@ -2287,3 +2287,15 @@ reach varied, and a good flick showed nothing; drawing a wound hard with the mou
 - The tutorial: one customer for a drink or a quest, two otherwise; the ale's wait lasts till the
   customer's in the tavern; a finished step stays on the card a few seconds; no tankard step.
 - Save format 51. Bench hashes change: a gameplay change.
+
+### Pausing (2026-11-16)
+- **Alone**: the game menu (Esc, Start) and the windows it opens hold time; the pause key (`Act.Pause`:
+  P, Pause) holds it till pressed again. Game-side (`VillageGame.Pause`): your character stands still
+  and does nothing while it holds; god mode's speed buttons are as they were.
+- **Co-op, by agreement** (`Round/PauseVote`): the pause key (or the menu's line) asks everyone; it holds
+  once every connected player agrees, any one "carry on" turns it down, and an unanswered call lapses
+  after 30 s. While it holds, everyone says they're ready (a joiner too) and time runs again. Who's
+  connected comes from `PeerEvents`, so someone who drops can't hold the town. `CallPauseCommand`,
+  `PauseAnswerCommand`; `PauseVoteTests`.
+- `PauseVote` adds saved system state, so full bench hashes move: seed 1234 full `62C0D498662C6D4F`,
+  seed 99 full `B60421361A01CE94`.
