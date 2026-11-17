@@ -7,6 +7,46 @@ Write it for testers: what they'll notice, not how it's done.
 Playing together always needs everyone on the same build. Saves and characters carry over
 between builds unless a section's **Compatibility** line says otherwise.
 
+## 0.1.0-playtest.25
+
+A sixth trade, the carpenter; wares shelves in every shop; the innkeeper's rations come from the cook;
+and the town's hands remembered behind every hero.
+
+**The carpenter**
+- Millbrook's sixth trade, at the woodshop: logs hewn square with the axe and pit-sawn into planks,
+  bows scraped to an even bend and strung, and quivers of arrows sighted, shaved, headed and
+  fletched for the parties' archers. A badly made arrow doesn't show until it's shot.
+- The carpenter helps the tinker brace the bridge when it's down, and puts up the festival.
+- Tutorial chapters for the saw, the bow and the quiver; practice customers are archers.
+
+**Selling your wares**
+- The smithy, the shrine, the tinker's and the woodshop each have a wares shelf. Put a blade, a
+  charm, a contraption or a quiver on it (F at the shelf with it in hand, or right-click it in your
+  pack: "Put on the wares shelf") and it's for sale at once at a fair price.
+- Open the shelf to change a price or take a piece off sale. Only you can take your wares down.
+- Things set down on the floor aren't for sale any more: use the shelf.
+
+**The inn and the kitchen**
+- The cook no longer sells to adventurers. The innkeeper sends for a hamper from the bar (the
+  button on the bar card), the cook packs it and puts it up on the hatch, and the innkeeper unpacks
+  it behind the bar. The rations go up for sale on the merchandise shelf there.
+- A hamper costs what's in it: the cook's price is for a full one.
+- In Reedmere a labourer runs the hamper over from the cookhouse for a couple of silver. Parties
+  setting out buy their rations now; they don't take them free.
+
+**Behind every hero**
+- Each quest remembers whose work went with the party: the blade, the armour, the charm, the
+  rations, the quiver. The reveal tells it, hidden flaws and all.
+- At the festival a party back in triumph names someone in its toast.
+- The greatsword takes two: the smith taps where the striker's sledge comes down. Join in with F
+  at the anvil. Call "Help!" from the quick-say wheel at work for two, and a villager who likes you
+  may come.
+
+**Also**
+- Character traits are gone: no Traits tab, nothing weighing on mood.
+- Esc closes the newest window first, before the game menu.
+- Customers in the practice yard bring enough silver for what they came for.
+
 ## 0.1.0-playtest.24
 
 Workstation windows that fit on the screen, and a right click and scrolling for the controller.
