@@ -7,6 +7,35 @@ Write it for testers: what they'll notice, not how it's done.
 Playing together always needs everyone on the same build. Saves and characters carry over
 between builds unless a section's **Compatibility** line says otherwise.
 
+## 0.1.0-playtest.22
+
+A shorter title menu, a quieter screen, and a plain way to take an order. All from playing on a Steam Deck.
+
+**The title menu**
+- The main menu is down to what you'll want most: Continue, New round, Tutorial, Play with friends,
+  Settings, More and Quit. Hosting and joining are under Play with friends. Characters, saves,
+  replays, bug reports and the credits are under More. It fits a Steam Deck's screen without scrolling.
+- Continue only shows when there's a save to go back to.
+- With a controller, the menu's first entry is picked when you arrive. Pressing down no longer skips it.
+
+**A quieter screen**
+- A new setting, Simple HUD (Settings, Interface), is on by default. It shows only what needs you:
+  - Hunger, rest and mood appear on your card when they're getting low. Hover your portrait to see them all.
+  - Your warmth shows when you're cold or hot, and the weather when it's cold out.
+  - The town's standing is behind the season line (hover it). Dread shows on its own once it starts
+    to weigh on the valley.
+  - No compass, since the minimap already marks north.
+  - The Shop panel starts closed, and its tab is marked when a customer is waiting.
+- Turn Simple HUD off to see everything all the time, as before.
+
+**Taking orders**
+- Walk up to a customer waiting at your shop and press F (A on a controller) to take their order.
+  The prompt over your head says whose order it is and what it pays. This works for the smith's
+  mending and the tinker's strongboxes and curios.
+- A customer nobody has seen to yet gets a "waiting" tag, with an arrow at the screen's edge when
+  they're out of view.
+- In the Shop panel, the button that takes an order now says "I'll do it" instead of being a plain check mark.
+
 ## 0.1.0-playtest.21
 
 Pausing, a map of the town, a camera you can turn freely, and tables you can walk across.
