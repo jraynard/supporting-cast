@@ -20,7 +20,9 @@ Workstation windows that fit on the screen.
 - These windows stay on the screen as they grow, instead of running off the bottom.
 
 **With a controller**
-- Hold LT and push the right stick to scroll the window under the pointer.
+- Tap LT to right-click where the pointer is: an item's menu, for one. Hold LT and push the right
+  stick to scroll the window under the pointer instead.
+- The controls card (L3) lists the pointer's controls when you're on a controller.
 
 ## 0.1.0-playtest.23
 

@@ -211,7 +211,8 @@ public sealed partial class VillageGame
         ("Fighting", [("@" + Act.Draw, "draw or sheathe your weapon"), ("@aim", "weapon drawn: aim"), ("@" + Act.Strike, "weapon drawn: strike"),
             ("@" + Act.Heavy, "swing heavy; a bow: hold to draw, strike looses; a crossbow: hold to crank, it stays loaded"),
             ("@" + Act.Guard, "held: guard; raised as a blow lands, a parry"), ("@" + Act.Dash, "dash clear")]),
-        ("The village", [("!Left-click", "walk there or act"), ("!Shift-click", "look at someone or something"), ("!Right-click", "an item's menu"), ("@" + Act.Back, "stop looking, close; with nothing to close, the menu")]),
+        ("The village", [("!Left-click", "walk there or act"), ("!Shift-click", "look at someone or something"), ("!Right-click", "an item's menu"),
+            ("?RS", "weapon sheathed: point"), ("?RT", "click: walk there or act"), ("?LT", "tap: right-click (an item's menu); held, RS scrolls"), ("@" + Act.Back, "stop looking, close; with nothing to close, the menu")]),
         ("Hands-on work", [("@" + Act.Use, "strike, pour, set, press"), ("@steer", "steer, tilt, lift"), ("@" + Act.WorkAct, "the other thing: taste, latch, draw out"),
             ("@runes", "weave a rune"), ("@" + Act.Back, "put the work down")]),
         ("Panels", [("@" + Act.Shop, "shop and favours"), ("@" + Act.Heard, "talk (what you've heard)"), ("@" + Act.Quests, "quests"), ("@" + Act.Gift, "the gift"),
@@ -223,13 +224,16 @@ public sealed partial class VillageGame
 
     /// <summary>
     /// Key caps for a card line: "@id" is an action as bound for the device in use; a pad
-    /// without a button for it reaches it through the wheel (null: nothing to show).
+    /// without a button for it reaches it through the wheel (null: nothing to show). "!" lines are
+    /// the mouse's alone, "?" lines the pad's pointer (<see cref="Narsil.Platform.PadCursor"/>).
     /// </summary>
     private static string? CardKeys(string keys)
     {
         var pad = Controls.UsingPad;
         if (keys.StartsWith('!'))
             return pad ? null : keys[1..]; // the mouse's alone
+        if (keys.StartsWith('?'))
+            return pad ? keys[1..] : null; // the pad's pointer alone
         if (!keys.StartsWith('@'))
             return keys;
         var id = keys[1..];
