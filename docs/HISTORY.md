@@ -2204,3 +2204,23 @@ Where the inn and the kitchen stand apart (Reedmere), the cookhouse supplies the
   `RunSimulation`, so ticks stay whole. Co-op's clock never waits.
 - `--camera-mode`, `--pitch N` for staged shots. The fire drill finds the tavern by role (works on
   Reedmere) and `--fire-spread N` starts a blaze.
+
+### Round replays (2026-11-16)
+- **Recording** (`Sim/Replay`): `ReplayRecorder` on `Simulation.Recorder` keeps a snapshot from where
+  no job is running (before a new sim's first tick, after a load or a joiner's snapshot) and every
+  command and co-op event since, by tick, with a state hash every 600 ticks. It only reads: bench
+  hashes unchanged. Co-op's joins, leaves, away and barriers go through `PeerEvents`, so a session
+  and its replay do the same; every peer records the same log, and a resync carries it on. The dev
+  tools that change the world without a command spoil it.
+- **Playback** (`ReplayPlayer`): the snapshot loaded, then ticked on with each event at its tick; back
+  means from the start (a whole season replays in about four seconds). A hash that doesn't match is
+  shown as where the replay drifted.
+- **Kept at the reveal** in `replays/` in the config folder (the newest 20; a 1.5 h round is ~60 KB),
+  with the crises, the festival and players' deaths marked. **Watch the replay** at the reveal (in
+  co-op it leaves the game), **Replays** on the title, `--replay PATH|newest`. Replays carry their
+  build and play only on it.
+- **The viewer** (`Replay/ReplayGame`): all-seeing (the round's over), the cinematic camera, a timeline
+  to scrub, 0.25x to 8x, jump to a crisis, click someone to follow, H hides it all. Dev: the Debug
+  window's "Keep a replay now", `--keep-replay-at N`.
+- `ReplayTests`: bot rounds on both maps play back hash for hash, seeking back lands the same, co-op
+  events replay, files round-trip, recording changes nothing.

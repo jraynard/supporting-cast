@@ -474,6 +474,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         var window = Host.Window.Size;
         _camera.ViewportSize = new float2(Math.Max(1, window.X), Math.Max(1, window.Y));
 
+        TrackReplay(); // before anything this frame touches the sim
         RecordRound();
         UpdatePlaytest();
 

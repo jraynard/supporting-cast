@@ -137,11 +137,18 @@ public sealed partial class Simulation
     public void Enqueue(Core.ISimCommand command) => _commands.Add(command);
 
     /// <summary>
+    /// Recording this game for a replay, if anything is (<see cref="Replay.ReplayRecorder"/>). It
+    /// only reads: not saved, not hashed, and nothing in the sim depends on it.
+    /// </summary>
+    public Replay.ReplayRecorder? Recorder { get; set; }
+
+    /// <summary>
     /// Apply a command right away, between ticks: the overseer's orders while paused, and every
     /// command in a lockstep session (a turn's commands land before its ticks on every peer).
     /// </summary>
     public void ApplyNow(Core.ISimCommand command)
     {
+        Recorder?.Applied(this, command);
         RebuildDerivedIfNeeded();
         Apply(command);
         World.FlushDeferred();
@@ -312,6 +319,7 @@ public sealed partial class Simulation
 
         if (_commands.Count > 0)
         {
+            Recorder?.Spoil("commands queued into a tick"); // the game applies its own between ticks (ApplyNow)
             foreach (var command in _commands)
                 Apply(command);
             _commands.Clear();
@@ -327,6 +335,7 @@ public sealed partial class Simulation
             Record(system.Name, Stopwatch.GetElapsedTime(start).TotalMilliseconds);
             World.FlushDeferred();
         }
+        Recorder?.Ticked(this);
     }
 
     public void TickMany(int ticks)

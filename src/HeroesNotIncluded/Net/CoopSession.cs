@@ -6,6 +6,7 @@ using HeroesNotIncluded.Sim;
 using HeroesNotIncluded.Sim.Ai;
 using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Replay;
 using HeroesNotIncluded.Sim.Saving;
 using HeroesNotIncluded.Sim.Systems;
 using VillagePlayers = HeroesNotIncluded.Sim.Systems.Players;
@@ -310,26 +311,14 @@ public sealed class CoopSession : ILockstepGame, IDisposable
 
     // ---------------- ILockstepGame ----------------
 
-    void ILockstepGame.Barrier()
-    {
-        AiSystem.InterruptAll(Sim!);
-    }
+    // Joins, leaves and barriers go through PeerEvents, so a replay of the session does the same.
+    void ILockstepGame.Barrier() => PeerEvents.Barrier(Sim!);
 
-    void ILockstepGame.PlayerJoined(NetPlayer player)
-    {
-        if (player.IsHost)
-            // Hosting a save: anyone who was playing when it was saved is away until they rejoin.
-            VillagePlayers.ReleaseAllBut(Sim!, player.Id);
-        VillagePlayers.Join(Sim!, player.Id, adoptLooseAvatar: player.IsHost);
-    }
+    void ILockstepGame.PlayerJoined(NetPlayer player) => PeerEvents.Joined(Sim!, player.Id, player.IsHost);
 
-    void ILockstepGame.PlayerAway(NetPlayer player) => VillagePlayers.Away(Sim!, player.Id);
+    void ILockstepGame.PlayerAway(NetPlayer player) => PeerEvents.Away(Sim!, player.Id);
 
-    void ILockstepGame.PlayerLeft(NetPlayer player)
-    {
-        Sim!.Round.Stand(player.Id);
-        VillagePlayers.Leave(Sim, player.Id);
-    }
+    void ILockstepGame.PlayerLeft(NetPlayer player) => PeerEvents.Left(Sim!, player.Id);
 
     void ILockstepGame.ApplyCommand(NetPlayer issuer, ReadOnlySpan<byte> bytes)
     {
@@ -364,6 +353,9 @@ public sealed class CoopSession : ILockstepGame, IDisposable
     {
         var (sim, _) = SaveGame.Read(state, Defs);
         sim.StrictJobs = false;
+        // A resync: the host's state, which is what the commands recorded so far lead to (every
+        // peer applies the same ones), so a recording carries on. A first snapshot has none yet.
+        sim.Recorder = Sim?.Recorder;
         Sim = sim;
         SimReplaced?.Invoke();
     }

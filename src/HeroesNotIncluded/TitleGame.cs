@@ -64,7 +64,7 @@ public sealed class TitleGame : Game
     /// <summary>Why the last load failed, shown under the menu.</summary>
     private string? _error;
 
-    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Host, HostNew, HostSave, Join, Characters, BackToCreator, Report, Credits, Practice }
+    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Host, HostNew, HostSave, Join, Characters, BackToCreator, Report, Credits, Practice, Replays }
 
     /// <summary>The Credits window (BRUTAL License 2.1: its copyright notice; and the fonts' licences).</summary>
     private readonly CreditsWindow _credits = new(Title, "Somebody has to keep the lights on.", GameCredits.People);
@@ -127,6 +127,7 @@ public sealed class TitleGame : Game
             new("Join game", "Pull up a stool.", null, MenuAction.Join),
             new("Characters", "Who you've been.", null, MenuAction.Characters),
             new("Load game", newest == null ? "Nothing saved yet." : "Pick up where you left off.", null, newest == null ? MenuAction.Start : MenuAction.LoadGame),
+            new("Replays", Replay.ReplayLibrary.List().Count == 0 ? "Finish a round and it's kept here." : "Watch a season again, from anywhere.", null, MenuAction.Replays),
             new("Settings", "House rules.", null, MenuAction.Settings),
             new("Report a bug", "Something broke? Tell us how.", null, MenuAction.Report),
             new("Credits", "Everyone who swept up.", null, MenuAction.Credits),
@@ -141,6 +142,26 @@ public sealed class TitleGame : Game
             .Where(s => s.Header != null)
             .Take(MaxListedSaves)
             .Select(s => new MenuItem(s.Name, $"{s.Summary} · saved {SaveSlots.Ago(s.Modified, now)}", () => FromSave(s)))
+            .Append(new MenuItem("Back", "Back to the main menu.", null, MenuAction.Back))
+            .ToArray();
+    }
+
+    /// <summary>The replays kept, newest first: one made on another build of the game won't play.</summary>
+    private MenuItem[] ReplayItems()
+    {
+        var build = CoopSession.BuildTag(_defs);
+        return Replay.ReplayLibrary.List()
+            .Take(MaxListedSaves)
+            .Select(r =>
+            {
+                var meta = r.Header.Meta;
+                var label = $"{meta.GetValueOrDefault("date", r.Written.ToString("yyyy-MM-dd HH:mm"))} · {meta.GetValueOrDefault("map", "the town")}";
+                if (r.Header.BuildTag != build)
+                    return new MenuItem(label, "Made on another version of the game: it plays only there.", null);
+                var hint = string.Join(" · ", new[] { meta.GetValueOrDefault("headline"), meta.GetValueOrDefault("players") }.Where(t => !string.IsNullOrEmpty(t)));
+                var path = r.Path;
+                return new MenuItem(label, hint.Length > 0 ? hint : "A season, kept.", () => new Replay.ReplayGame(Replay.ReplayLibrary.Load(path), path));
+            })
             .Append(new MenuItem("Back", "Back to the main menu.", null, MenuAction.Back))
             .ToArray();
     }
@@ -613,6 +634,9 @@ public sealed class TitleGame : Game
                 break;
             case MenuAction.LoadGame:
                 (_submenu, _submenuTitle) = (SaveItems(), "Which village?");
+                break;
+            case MenuAction.Replays:
+                (_submenu, _submenuTitle) = (ReplayItems(), "Which season?");
                 break;
             case MenuAction.Back:
                 (_submenu, _submenuTitle) = (null, null);

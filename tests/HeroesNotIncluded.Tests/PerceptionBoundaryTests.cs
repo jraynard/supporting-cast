@@ -12,6 +12,7 @@ public partial class PerceptionBoundaryTests
     private static readonly Dictionary<string, int> Allowed = new()
     {
         ["Rendering/DoorAnimator.cs"] = 1, // who's in a doorway; DoorAnimator.CanSee gates the result
+        ["Replay/ReplayGame.cs"] = 1, // click to follow in a replay: watched only after the reveal, its own sim, all-seeing by design
         ["VillageGame.Adventure.cs"] = 1, // PickCreature, which filters by View.CanSee
         ["VillageGame.Arena.cs"] = 1, // the practice ring's foe: a dev tool with no round, two people and no secrets
         ["VillageGame.Hud.cs"] = 1, // the overseer's bar, only with no round

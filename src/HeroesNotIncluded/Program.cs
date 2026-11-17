@@ -211,6 +211,24 @@ else if (args.Contains("--host"))
 }
 else if (ParseString(args, "--join") is { } joinAddress)
     host.Run(new TitleGame { AutoJoin = joinAddress });
+else if (ParseString(args, "--replay") is { } replayPath)
+{
+    // --replay PATH: watch a kept round again (the newest with --replay newest).
+    if (replayPath == "newest")
+        replayPath = HeroesNotIncluded.Replay.ReplayLibrary.List().FirstOrDefault()?.Path ?? replayPath;
+    HeroesNotIncluded.Sim.Replay.ReplayFile replay;
+    try
+    {
+        replay = HeroesNotIncluded.Replay.ReplayLibrary.Load(replayPath);
+    }
+    catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+    {
+        Console.WriteLine($"error: {ex.Message}");
+        Environment.Exit(1);
+        return;
+    }
+    host.Run(new HeroesNotIncluded.Ui.LoadingScreen(() => new HeroesNotIncluded.Replay.ReplayGame(replay, replayPath), error => new TitleGame { StartError = error }));
+}
 else if (ParseString(args, "--load") is { } loadPath)
 {
     LoadedGame save;
@@ -281,6 +299,8 @@ else
         DieAt = args.Contains("--die-at") ? ParseFloat(args, "--die-at") : -1f,
         // --festival-at SECONDS: the festival begins then, to see it without playing to it.
         FestivalAt = args.Contains("--festival-at") ? ParseFloat(args, "--festival-at") : -1f,
+        // --keep-replay-at N: keep the round's replay so far after N seconds (then --replay newest).
+        KeepReplayAt = args.Contains("--keep-replay-at") ? ParseFloat(args, "--keep-replay-at") : -1f,
         Bots = args.Contains("--bots") ? ParseInt(args, "--bots") : 0,
         // --bot-skill F (with --bots): 1 plays to each bot's temper; more, fewer slips; less, more.
         BotSkill = args.Contains("--bot-skill") ? ParseFloat(args, "--bot-skill") : 1f,
@@ -313,7 +333,7 @@ SavedCharacter? PickedCharacter()
 
 static bool LaunchesDirectly(string[] args) =>
     args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--freeform" or "--show-roofs" or "--hide-roofs"
-        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--fire-spread" or "--dragon-test" or "--bridge-test" or "--arena" or "--practice" or "--yaw" or "--pitch" or "--camera-mode" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
+        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--fire-spread" or "--dragon-test" or "--bridge-test" or "--arena" or "--practice" or "--yaw" or "--pitch" or "--camera-mode" or "--keep-replay-at" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
 
 // --load and --check-save take a path, or the name of a slot in the saves directory ("quicksave").
 static string ResolveSave(string pathOrSlot)

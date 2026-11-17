@@ -111,6 +111,7 @@ public sealed partial class VillageGame
             else
                 Host.SwitchTo(new TitleGame());
         }
+        DrawReplayButton();
         DrawPlaytestFolderButton();
         Panel.End();
     }

@@ -27,6 +27,7 @@ dotnet run --project src/HeroesNotIncluded -- --practice Healer          # the p
 dotnet run --project src/HeroesNotIncluded -- --arena Swordsman --weapon IronSpear  # the practice ring: one foe a bout (any raider kind, or Dragon; Enter for the next)
 dotnet run --project src/HeroesNotIncluded -- --furniture-demo --zoom 80    # also --building-demo
 dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui, --look-at X,Y, --yaw/--pitch DEG, --camera-mode; any mode
+dotnet run --project src/HeroesNotIncluded -- --replay newest   # watch a kept round again (or a path; --keep-replay-at N keeps one mid-round)
 dotnet run --project src/HeroesNotIncluded -- --art-preview
 dotnet run --project src/HeroesNotIncluded -- --check-art     # headless: every sprite and tag exists
 dotnet run --project src/HeroesNotIncluded -- --check-gpu
@@ -143,6 +144,10 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
   - `Expeditions/`: quests with hidden truth, per-person `Intel`, parties off the map as
     `MemberRecord`s, the resolver, the return.
   - `Bots/BotPlayer` plays only through commands and `Perception`, a trade's whole game included.
+  - `Replay/`: a round is recorded (`ReplayRecorder`, on `Simulation.Recorder`) as a snapshot plus every
+    command and co-op event (`PeerEvents`) by tick, from a point with no job running, and played back in a
+    sim of its own (`ReplayPlayer`), state hashes checked. Anything that changes the sim outside a command
+    must `Spoil` it. Kept at the reveal (`Replay/ReplayLibrary`), watched in `Replay/ReplayGame`.
   - Jobs (`Ai/Jobs.cs`) are iterator coroutines: use `GoTo`/`Reserve`, `Fail(reason)` then
     `yield break`, and check `Alive(target)` after every wait. `ReleasePawn` is everything ending a
     job does to the world. "Job" here is an AI task; a player's role is a **`Trade`**.

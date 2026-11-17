@@ -36,6 +36,7 @@ public sealed class LoadingScreen(Func<Game> start, Func<string, Game> back) : G
         {
             var game = start();
             (game as VillageGame)?.PrepareWorld(dataDirectory);
+            (game as Replay.ReplayGame)?.Prepare(dataDirectory);
             return game;
         });
     }

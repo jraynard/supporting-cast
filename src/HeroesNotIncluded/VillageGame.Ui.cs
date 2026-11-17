@@ -1268,7 +1268,7 @@ public sealed partial class VillageGame
             if (ImGui.Button("Raid now"u8, in _autoSize))
             {
                 if (CoopForbids("send a raid") is { } no) Notify(MessageKind.Info, no);
-                else st.SendRaid(_sim);
+                else { st.SendRaid(_sim); _sim.Recorder?.Spoil("a raid sent by the dev tools"); }
             }
         }
 
@@ -1281,7 +1281,7 @@ public sealed partial class VillageGame
             if (ImGui.Button("Herd now"u8, in _autoSize))
             {
                 if (CoopForbids("send a herd") is { } no) Notify(MessageKind.Info, no);
-                else wl.SendHerd(_sim);
+                else { wl.SendHerd(_sim); _sim.Recorder?.Spoil("a herd sent by the dev tools"); }
             }
         }
 
@@ -1297,6 +1297,7 @@ public sealed partial class VillageGame
                 {
                     _sim.Fire.ExtinguishAll(_sim);
                     _sim.Smoke.Clear(_sim);
+                    _sim.Recorder?.Spoil("fires put out by the dev tools");
                 }
             }
             var spawnables = _sim.Defs.AllThings.ToList();
@@ -1313,6 +1314,7 @@ public sealed partial class VillageGame
             ImGui.SetNextItemWidth(150);
             if (ImGui.SliderFloat("Weather offset °C"u8, ref _climateOffset, -30, 30, "%.0f"u8, ImGuiSliderFlags.None))
                 Issue(new DevWeatherCommand(_climateOffset));
+            DrawKeepReplayButton();
             if (ImGui.Button("Skip 1 hour"u8, in _autoSize))
             {
                 if (CoopForbids("skip time") is { } no) Notify(MessageKind.Info, no);
