@@ -141,7 +141,7 @@ public sealed partial class VillageGame
             }
             if (ImGui.Button($"{tab.Label}##journal-{tab.Action}", in _autoSize))
                 tab.Toggle(this);
-            GuideGlow(!open && tab.Action == Act.Gift && GiftWanted());
+            GuideGlow(!open && ((tab.Action == Act.Gift && GiftWanted()) || TutorialWants(tab.Action)));
             if (open)
                 ImGui.PopStyleColor(1);
             var unread = !open && Unread(tab);

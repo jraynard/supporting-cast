@@ -324,12 +324,6 @@ public sealed class SettingsWindow(GameHost host)
             _draft.ScreenShake = shake;
 
         ImGui.Dummy(in gap);
-        Row("Tips", "First-day tips for your trade, and markers on its stations till you've been to each.");
-        var tips = _draft.ShowTips;
-        if (ImGui.Checkbox("##tips"u8, ref tips))
-            _draft.ShowTips = tips;
-
-        ImGui.Dummy(in gap);
         Row("Guide highlights", "A glow round the button for what needs doing now: the gift when someone needs healing, lay on hands, a weave for your own wounds.");
         var guide = _draft.GuideHighlights;
         if (ImGui.Checkbox("##guide"u8, ref guide))

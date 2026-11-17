@@ -201,11 +201,8 @@ public class TradeLessonTests
     {
         var y = Begin("Innkeeper", "ale");
         y.WaitPast("wait");
-        Assert.Equal("tankard", y.Stage.Step);
         var cask = y.Station("AleCask");
-        var shelf = y.Stage.Point;
-        y.TakeFrom(shelf, "Tankard");
-        Assert.Equal("pour", y.Stage.Step);
+        Assert.Equal("pour", y.Stage.Step); // no tankard step: none is needed in hand to pour
         Assert.Equal(cask, y.Stage.Point);
 
         y.Hold("Ale", made: false); // poured (PourSession's outcome)

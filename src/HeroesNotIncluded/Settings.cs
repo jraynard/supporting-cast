@@ -27,9 +27,6 @@ public sealed class Settings
     /// <summary>Drop to pause when a danger message arrives (raids, fires, a downed villager).</summary>
     public bool PauseOnDanger { get; set; } = true;
 
-    /// <summary>First-day tips for your trade, and markers on its stations till you've been to each.</summary>
-    public bool ShowTips { get; set; } = true;
-
     /// <summary>A glow round the button for what needs doing now (a patient waiting: the gift, lay on hands).</summary>
     public bool GuideHighlights { get; set; } = true;
 

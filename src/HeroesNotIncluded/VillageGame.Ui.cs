@@ -44,10 +44,9 @@ public sealed partial class VillageGame
         DrawQuestBoard();
         DrawSpeech();
         DrawMessages();
-        // Top left: you, then your trade: its tips, the practice yard or ring, the gift, your shop.
-        // Top centre: a headline's ribbon, the village (god mode) and the toasts.
+        // Top left: you, then your trade: the practice yard or ring, the gift, your shop.
+        // Top centre: the tutorial's card, a headline's ribbon, the village (god mode) and the toasts.
         DrawNeedsPanel();
-        DrawTips();
         DrawPractice();
         DrawArena();
         DrawGift();

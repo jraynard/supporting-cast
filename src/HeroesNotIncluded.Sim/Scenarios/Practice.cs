@@ -126,7 +126,10 @@ public static class Practice
         var parties = sim.Defs.AllParties.Where(p => !p.Traveller && !p.Rare).ToList();
         if (parties.Count == 0)
             return [];
-        var party = sim.Parties.Send(sim, parties[sim.Rand.NextInt(parties.Count)]);
+        // A customer or two, not a whole party through the door: one for a drink or a quest, two where
+        // a chapter wants a pair (the tinker's box and curio) or a spare (a smith's blade it can't mend).
+        var most = wear is CustomerKind.Thirsty or CustomerKind.Questing ? 1 : 2;
+        var party = sim.Parties.Send(sim, parties[sim.Rand.NextInt(parties.Count)], most);
         var trade = w.TryGet<Trade>(player, out var t) ? t.Def.Name : "";
         for (var k = 0; k < party.Count; k++)
         {
@@ -184,7 +187,7 @@ public static class Practice
                     break;
             }
         }
-        sim.Messages.Add(MessageKind.Info, "Adventurers ride into town.", party.Count > 0 ? w.Get<Position>(party[0]).Cell : null);
+        sim.Messages.Add(MessageKind.Info, party.Count == 1 ? "An adventurer rides into town." : "Adventurers ride into town.", party.Count > 0 ? w.Get<Position>(party[0]).Cell : null);
         return party;
     }
 

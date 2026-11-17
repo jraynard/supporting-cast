@@ -171,6 +171,12 @@ public sealed class WorkSounds(AudioEngine audio)
                 if (!_flag && s.Feel > 0.7f)
                     audio.Play(Sounds.Click, gain: 0.6f, pitch: 0.8f);
                 _flag = s.Feel > 0.7f || (_flag && s.Feel > 0.45f);
+                // The spring out: a snap, once (the session ends on it).
+                if (s.Disarmed && _a == 0)
+                {
+                    audio.Play(Sounds.Snap, gain: 0.8f, pitch: 1.3f);
+                    _a = 1;
+                }
                 break;
         }
     }

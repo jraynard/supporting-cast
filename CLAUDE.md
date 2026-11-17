@@ -23,7 +23,7 @@ dotnet run --project src/HeroesNotIncluded -- --dragon-test --name Arin        #
 dotnet run --project src/HeroesNotIncluded -- --bridge-test --name Arin        # the bridge down, you the tinker at the gap with wood
 dotnet run --project src/HeroesNotIncluded -- --new-game --die-at 5            # your character drops dead: try being a ghost
 dotnet run --project src/HeroesNotIncluded -- --new-game --festival-at 5       # the season's festival, now, you by the well
-dotnet run --project src/HeroesNotIncluded -- --practice Healer          # the practice yard: a trade's games, no season, customers on request (--lesson ID: straight into a lesson)
+dotnet run --project src/HeroesNotIncluded -- --practice Healer          # the tutorial in the practice yard: no season, customers on request (--lesson ID: straight into a chapter, `basics` too)
 dotnet run --project src/HeroesNotIncluded -- --arena Swordsman --weapon IronSpear  # the practice ring: one foe a bout (any raider kind, or Dragon; Enter for the next)
 dotnet run --project src/HeroesNotIncluded -- --furniture-demo --zoom 80    # also --building-demo
 dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui, --look-at X,Y, --yaw/--pitch DEG, --camera-mode; any mode
@@ -64,9 +64,11 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     `art/reference/village-map2.webp`: edit the script, not the JSON. `Scenarios/VillageSetup`
     holds shared helpers. `MapGenerator` (the old valley) remains for the helpers `MapBuilder`
     borrows and the open ground `--building-demo` needs; tests that need a town use `TestWorld.Millbrook`.
-  - `Scenarios/Practice` and `Scenarios/Lessons`: the practice yard and its guided lessons. A lesson's
-    step is derived each frame from `Perception` (never a cursor), its words are the trade's `lessons`
-    in `trades.json`; a finished one is kept game-side in `CharacterProgress.Lessons`.
+  - `Scenarios/Practice` and `Scenarios/Lessons`: the practice yard and its tutorial (`VillageGame.Tutorial`):
+    the shared basics (`BasicsLesson`), then the trade's `core` lessons, the rest offered after (`Tutorial`).
+    A lesson's step is derived each frame from `Perception` (never a cursor), its words are the trade's
+    `lessons` in `trades.json` (and its top-level `basics`); a finished one is kept game-side in
+    `CharacterProgress.Lessons`. There are no in-round tips: teaching text lives in the tutorial.
   - `Round/RoundSystem`: the lobby, the deal and the season (`season.json`): `Festival` on the last
     evening (put up that afternoon by the labourers, `FestivalSystem.Sites`), then `Over` with a `RoundSummary` for the reveal. `Phase.None` means no round (tests,
     demos, bench); behaviour that belongs to rounds checks `Round.Live` (playing or festival).

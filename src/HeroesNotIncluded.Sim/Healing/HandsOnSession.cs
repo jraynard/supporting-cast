@@ -230,20 +230,34 @@ public sealed class HandsOnSession : WorkSession
 
     /// <summary>
     /// How the hands go this step: A/D, else toward where the mouse points along the body at the
-    /// hands' own pace (so a press as they slide over a hurt is still rough). While the link's open
-    /// the hands stay put and the mouse leans composure: pointing left of them steers it left.
+    /// hands' own pace (so a press as they slide over a hurt is still rough).
     /// </summary>
-    private int Going(bool linked)
+    private int Going()
     {
         if (_move != 0 || PointU is not { } u)
             return _move;
-        if (linked)
-            return MathF.Abs(u - Hands01) < LeanDeadZone ? 0 : Math.Sign(u - Hands01);
         return Toward(Hands01, u, HandsPerStep * (Held ? 0.5f : 1f));
     }
 
-    /// <summary>How far from the hands the mouse must point, along the body, to lean composure while drawing.</summary>
-    public const float LeanDeadZone = 0.03f;
+    /// <summary>
+    /// While the link's open the hands stay put, and composure is steered: A/D push it at the full
+    /// pace; the mouse points where it should be (across the composure gauge, which the game marks as
+    /// the pointer's while drawing) and steers it there, gentler as it closes in, so it settles on the
+    /// spot instead of swinging past it.
+    /// </summary>
+    private float Lean()
+    {
+        if (_move != 0 || PointU is not { } u)
+            return _move;
+        var off = u - Link.Composure;
+        return MathF.Abs(off) < LeanDeadZone ? 0f : Math.Clamp(off / LeanFull, -1f, 1f) * MouseLean;
+    }
+
+    /// <summary>
+    /// The mouse's steer while drawing: none this near where it points, full (times <see cref="MouseLean"/>)
+    /// this far off, in between in proportion.
+    /// </summary>
+    public const float LeanDeadZone = 0.01f, LeanFull = 0.15f, MouseLean = 0.85f;
 
     protected override void Step()
     {
@@ -254,14 +268,15 @@ public sealed class HandsOnSession : WorkSession
 
         // The link opens on a wound read, pressed on; it rests the moment the press does.
         Linked = Held && !_mustRelease && under != null && Drawable(under);
-        var move = Going(Linked);
-        _going = move;
+        var move = Linked ? 0 : Going();
+        var lean = Linked ? Lean() : 0f;
+        _going = Linked ? Math.Sign(lean) : move;
         if (Linked && under!.Key != _linkKey)
         {
             Link.Take(under.Pattern, under.Rate, under.Strength, under.Gravity, Rand);
             _linkKey = under.Key;
         }
-        var calm = Link.Step(Rand, Linked, move, under?.Drawn ?? 0f, Hands.Tremor, StepsDone);
+        var calm = Link.Step(Rand, Linked, lean, under?.Drawn ?? 0f, Hands.Tremor, StepsDone);
         if (Link.Snapped)
         {
             Done = true;

@@ -7,11 +7,11 @@ using HeroesNotIncluded.Ui;
 
 namespace HeroesNotIncluded;
 
-// The practice yard (from the title menu, or --practice TRADE): Millbrook with no season to it.
-// A panel lists everything the trade's tips say, and sets up what its games work on: customers
-// when you want them (brought in the way the trade needs them), the workplace restocked, a patient
-// on a pallet for the healer. Every setup goes through PracticeCommand, which does nothing outside
-// the yard.
+// The practice yard (the title's Tutorial, or --practice TRADE): Millbrook with no season to it.
+// While the tutorial guides (VillageGame.Tutorial) its card is all there is; once it's left, a
+// panel sets up what the trade's games work on: customers when you want them (brought in the way
+// the trade needs them), the workplace restocked, a patient on a pallet for the healer. Every setup
+// goes through PracticeCommand, which does nothing outside the yard.
 public sealed partial class VillageGame
 {
     private void DrawPractice()
@@ -19,6 +19,8 @@ public sealed partial class VillageGame
         if (!_sim.Round.Practice || !HasAvatar || !_sim.World.TryGet<Trade>(_avatar, out var trade))
             return;
         var def = trade.Def;
+        if (DrawTutorial(def))
+            return;
         _hud.Next(Anchor.TopLeft, ScreenFit.Width(320, 0.3f));
         Panel.Begin("The practice yard###practice", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize);
         _hud.Took();
@@ -61,15 +63,13 @@ public sealed partial class VillageGame
                 Tip("A cut bound days ago, festering out of sight: only a long press finds it.");
         }
 
-        DrawLessons(def);
-
-        if (def.Tips.Count > 0)
+        if (def.Lessons.Count > 0)
         {
             Gui.Rule();
-            ImGui.SetNextItemOpen(def.Lessons.Count == 0, ImGuiCond.Once); // folded away under lessons
-            if (ImGui.CollapsingHeader("How the trade works"u8))
-                foreach (var tip in def.Tips)
-                    Wrapped("· " + Controls.Keys(tip));
+            if (ImGui.Button("Tutorial"u8))
+                _tutorial = TutorialState.Finished;
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip("The trade's chapters, step by step.");
         }
         Panel.End();
     }

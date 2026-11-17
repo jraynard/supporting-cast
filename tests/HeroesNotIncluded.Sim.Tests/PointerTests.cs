@@ -66,16 +66,19 @@ public class PointerTests
     }
 
     [Fact]
-    public void ThePointerPullsTheProbeAtItsOwnPaceAndATriggerSweptStillSprings()
+    public void ThePointerPullsTheProbeAtItsOwnPaceButNotWhilePressingIn()
     {
         var (sim, me, _) = Probing(trapped: true);
         var s = (ProbeSession)sim.World.Get<WorkSession>(me).Clone();
         var from = s.Probe;
-        // Pointed at the hinge end with the button held: pressing in as it goes, never a jump.
-        s.Advance([new WorkInput(0, WorkInputKind.Hold, 1), Point(0, 1f)], 1);
-        Assert.InRange(s.Probe - from, 0f, ProbeSession.ProbePerStep + 1e-5f);
-        s.Advance([], 60 * 60);
-        Assert.True(s.Sprung, "swept over the trigger with weight on it");
+        // Pointed at the hinge end, light: it goes at its own pace, never a jump.
+        s.Advance([Point(0, 1f)], 1);
+        Assert.InRange(s.Probe - from, 1e-5f, ProbeSession.ProbePerStep + 1e-5f);
+        // Pressing in, the mouse leaves it where it is: a hand on the button isn't dragging weight across the seam.
+        var at = s.Probe;
+        s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Hold, 1)], s.StepsDone + 60);
+        Assert.Equal(at, s.Probe);
+        Assert.False(s.Sprung);
     }
 
     [Fact]

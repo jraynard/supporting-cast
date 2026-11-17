@@ -7,7 +7,7 @@ namespace HeroesNotIncluded.Sim.Defs;
 /// All loaded defs. Each JSON file under the defs directory is an object with any of the keys
 /// "blocks", "things", "creatures", "needs", "bodies", "materials", "difficulties", "raiderKinds", "wildlife", "seasons", "thoughts", "interactions", "traits", "recipes", "tiers", "veins",
 /// "dragonInteractions", "trustLevels", "tricks", "outfits", "elements", "buildings", "kits", "trades", "adventurerKinds", "parties", "services", "mendings", "ghostErrands", "quests",
-/// each an array of defs. Files are merged in name
+/// each an array of defs (and "basics", the tutorial's first chapter: one lesson, the last loaded). Files are merged in name
 /// order so later files (mods) can add content.
 /// </summary>
 public sealed class DefDatabase
@@ -132,6 +132,12 @@ public sealed class DefDatabase
 
     private static readonly FestivalDef DefaultFestival = new() { Name = "Default" };
 
+    /// <summary>
+    /// The tutorial's first chapter, the same for every trade (trades.json's "basics"): moving,
+    /// the pack, the orders and the controls card. The last one loaded; one step if none is.
+    /// </summary>
+    public LessonDef Basics { get; private set; } = new() { Id = "basics", Title = "The basics", Steps = [new() { Id = "move", Text = "Walk with ~WASD~." }] };
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -174,6 +180,7 @@ public sealed class DefDatabase
         public List<DrawFeelDef> DrawFeels { get; set; } = [];
         public List<QuestDef> Quests { get; set; } = [];
         public List<MapDef> Maps { get; set; } = [];
+        public LessonDef? Basics { get; set; }
     }
 
     public static DefDatabase LoadDirectory(string directory)
@@ -242,6 +249,8 @@ public sealed class DefDatabase
         AddAll(file.DrawFeels, _drawFeels, AllDrawFeels, source);
         AddAll(file.Quests, _quests, AllQuests, source);
         AddAll(file.Maps, _maps, AllMaps, source);
+        if (file.Basics != null)
+            Basics = file.Basics;
     }
 
     private static void AddAll<T>(List<T> defs, Dictionary<string, T> map, List<T> all, string source)
@@ -289,6 +298,7 @@ public sealed class DefDatabase
         foreach (var d in AllKits) d.Resolve(this);
         foreach (var d in AllBuildings) d.Resolve(this); // after things and thoughts: their parts, furniture, feasts
         foreach (var d in AllTrades) d.Resolve(this); // after buildings: their workplaces
+        Basics.Resolve(this, "Basics");
         foreach (var d in AllAdventurerKinds) d.Resolve(this);
         foreach (var d in AllParties) d.Resolve(this); // after adventurer kinds and buildings
         if (AllRunes.Count > 9)

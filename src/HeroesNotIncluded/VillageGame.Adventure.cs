@@ -348,7 +348,15 @@ public sealed partial class VillageGame
                 Issue(new AvatarWorkCommand(_avatar, false));
             _clickHold = ClickHold.None;
         }
-        else if (_clickHold == ClickHold.Walk && input.IsMouseDown(MouseButton.Left))
+        if (Working)
+        {
+            // A mini-game in hand has the mouse, as it has the keys: a click off its window doesn't
+            // walk you away from the work, open a menu or pick someone out.
+            if (_clickHold == ClickHold.Walk)
+                _clickHold = ClickHold.None;
+            return true;
+        }
+        if (_clickHold == ClickHold.Walk && input.IsMouseDown(MouseButton.Left))
         {
             // A click names one cell; the camera following you mustn't drag it about. Only a held,
             // moved press steers the walk with the cursor.

@@ -271,7 +271,7 @@ public sealed partial class VillageGame
                 Later(new Sim.Tinkering.ProbeBoxCommand(_avatar, item));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(why != null ? Cap(why) + "." : Controls.Keys("~AD~ run the probe along the seam; sweep light. Where it catches, stop and hold ~F~ to ease the spring out. The far end finishes."));
+                Tip(why != null ? Cap(why) + "." : Controls.Keys("~AD~ run the probe along the seam; sweep light. Where it catches, hold still for a read, hold ~F~ to press in, and ~Space~ in the green flicks the spring out. The far end finishes."));
             ImGui.BeginDisabled(why != null);
             if (ImGui.MenuItem($"Pick the lock ({box.Pins} pins)"))
                 Later(new Sim.Tinkering.PickLockCommand(_avatar, item));

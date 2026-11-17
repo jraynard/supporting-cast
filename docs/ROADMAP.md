@@ -42,8 +42,8 @@ answered so far is in HISTORY.md, "Solo playtest notes" and "From two multiplaye
 - **Join snapshots:** 54 KB, built in 3 to 48 ms, with no stall seen. No need to chunk them.
 
 **For you to look at, alone** (dev flags)
-- [ ] **The lessons:** one trade at a time, check the words and whether the step shown is the one
-  you're on (PLAYTEST.md, "The lessons").
+- [ ] **The tutorial:** one trade at a time, the whole run (`--practice TRADE`): the words, the step
+  shown, the arrow and the glowed button, the stuck hint (PLAYTEST.md, "The lessons").
 
 **For you to look at, next round with friends.** These were fixed after the last two rounds and
 haven't been played since:

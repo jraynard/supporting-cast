@@ -106,6 +106,7 @@ public sealed partial class VillageGame
                 share, color, words, buttons * (CardIconSize + Gui.S(8)));
             if (take)
                 TakeButton($"##take{e.Id}", "Say aloud that you'll see to it. They pay whoever gets it done.", () => Issue(new TakeOrderCommand(_avatar, e.Id)));
+                GuideGlow(TutorialStep == "take");
             if (carry)
             {
                 // What they ordered, to take to them: only with a drink poured that fills it.
@@ -227,8 +228,8 @@ public sealed partial class VillageGame
         if (sign.Count == 0)
             return;
         // Folded away once set: prices are set now and then, orders watched all day. The smith's
-        // lesson on prices opens it.
-        if (_lessonStage.Step == "prices")
+        // tutorial chapter on prices opens it.
+        if (TutorialStep == "prices")
             ImGui.SetNextItemOpen(true, ImGuiCond.Always);
         var name = ShopName.Of(_sim, shop) ?? $"the {workplace.Label}";
         var onOffer = sign.Count(p => p.Offered);
@@ -405,6 +406,7 @@ public sealed partial class VillageGame
                 ImGui.SameLine(0, Gui.S(8));
                 if (ImGui.Button("Take order"u8, in _autoSize))
                     Issue(new TakeOrderCommand(_avatar, o.Id));
+                GuideGlow(TutorialStep == "take");
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                     Tip(ShopSystem.HandsOver(o.Kind) ? "Say you'll see to it: they hand it over, and step out of the line while you work." : "Say you'll see to it. They pay when it's done.");
             }

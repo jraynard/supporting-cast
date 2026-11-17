@@ -88,5 +88,6 @@ public sealed partial class VillageGame
                 ? $"Take it back to {errand.Name}: walks you over and hands it back. They look it over: done, they pay; if not, they say what's wrong. Moving calls it off."
                 : $"Go and collect it from {errand.Name}: walks you over; they hand it to you when you're close. Moving calls it off.",
             () => Issue(new SeeToCustomerCommand(_avatar, errand.Order)));
+        GuideGlow(TutorialStep == (errand.Returning ? "giveback" : "handover"));
     }
 }

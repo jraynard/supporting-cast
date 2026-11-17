@@ -35,8 +35,11 @@ Each one is a command away. Press the note key (F11) whenever something's worth 
 
 ### The lessons
 
-`--practice TRADE --lesson ID` (ids from `data/defs/trades.json`). Check the words, and whether the
-step shown is the one you're on.
+The whole run: `--practice TRADE` (the intro, the basics, then the core chapters; a character
+that's done the basics skips them). One chapter: `--practice TRADE --lesson ID` (ids from
+`data/defs/trades.json`, `basics` too). Check the words, whether the step shown is the one you're on,
+that the arrow and the glowed button are the right ones, and the "worth knowing" notes at the end.
+Sit on a step for 45 seconds: the fuller hint and "Set it up again" should come up.
 
 - **Innkeeper**
   - [ ] `ale`

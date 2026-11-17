@@ -18,12 +18,12 @@ public static class InnLessons
 
     public static readonly Lesson[] All =
     [
-        new(Trade, "ale", ["wait", "tankard", "pour", "give"], Ale),
+        new(Trade, "ale", ["wait", "pour", "give"], Ale),
         new(Trade, "mixed", ["tankard", "mix"], Mixed),
         new(Trade, "quest", ["wait", "offer"], Quest),
     ];
 
-    /// <summary>A thirsty customer's ale: a clean tankard, the pour, and into their hand.</summary>
+    /// <summary>A thirsty customer's ale: the pour (no tankard needed in hand first), and into their hand.</summary>
     public static LessonStage Ale(Simulation sim, Entity me, LessonRun run)
     {
         var view = Perception.For(sim, me);
@@ -36,9 +36,16 @@ public static class InnLessons
             return new LessonStage("pour", cask);
         if (orders.Cast<KnownOrder?>().FirstOrDefault(o => o!.Value.Status == OrderStatus.Open) is not { } open)
             return new LessonStage("wait", Entity.Null);
+        // They say what they're after as soon as they're in town: it's waiting till they're in the tavern, pointed out on the way.
+        if (!run.Passed.Contains("arrived"))
+        {
+            if (!view.CanSee(open.Poster) || !w.TryGet<Position>(open.Poster, out var at) || Buildings.At(sim, at.Cell) != run.Workplace)
+                return new LessonStage("wait", open.Poster);
+            run.Passed.Add("arrived");
+        }
         if (w.Get<Carrying>(me).Item is { IsNull: false } held && w.Get<Thing>(held).Def.Drink)
             return new LessonStage("give", open.Poster);
-        return Tankard(sim, me, run, cask) ?? new LessonStage("pour", cask);
+        return new LessonStage("pour", cask);
     }
 
     /// <summary>A named drink mixed at the bar: its adds (in your pack), a clean tankard, and the cues.</summary>

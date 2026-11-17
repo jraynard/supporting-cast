@@ -325,7 +325,7 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// A party walks in from a map edge toward its haunt, armed, dressed, fed and carrying coin.
     /// Empty if there's no way in. Also the debug panel's and tests' way to send one now.
     /// </summary>
-    public List<Entity> Send(Simulation sim, PartyDef def)
+    public List<Entity> Send(Simulation sim, PartyDef def, int most = int.MaxValue)
     {
         var members = new List<Entity>();
         var toward = HauntOf(sim, def) is { } haunt ? haunt.Anchor : TownCenter(sim);
@@ -347,7 +347,7 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
         var names = def.Names.ToList();
         if (!def.FixedNames)
             Shuffle(names, rand);
-        var kinds = def.MembersFor(Players(sim)).ToList();
+        var kinds = def.MembersFor(Players(sim)).Take(most).ToList();
         var spots = Raids.GatherSpots(sim, from, target, kinds.Count);
         for (var i = 0; i < spots.Count; i++)
         {

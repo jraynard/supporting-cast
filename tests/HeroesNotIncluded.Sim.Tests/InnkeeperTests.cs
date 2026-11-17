@@ -31,8 +31,11 @@ public class InnkeeperTests
         return (sim, me, cask);
     }
 
-    /// <summary>Pour as a player would: tilted or not, and stopping early enough for the head to settle (or not stopping).</summary>
-    private static void Pour(Simulation sim, Entity me, bool tilted, bool stop = true, int maxTicks = 60 * 60)
+    /// <summary>
+    /// Pour as a player would: tipped early and brought upright near the top (or, <paramref name="keepTipped"/>,
+    /// tipped all the way), or straight; stopping early enough for the head to settle (or not stopping).
+    /// </summary>
+    private static void Pour(Simulation sim, Entity me, bool tilted, bool stop = true, int maxTicks = 60 * 60, bool keepTipped = false)
     {
         var predictor = new WorkPredictor();
         var stopped = false;
@@ -40,13 +43,15 @@ public class InnkeeperTests
         {
             sim.Tick();
             var hold = false;
+            var axis = 0;
             if (predictor.Session is PourSession p)
             {
                 // Some of the head settles into drink and the rest goes: aim for where it'll end up.
                 stopped |= stop && p.Level + p.Foam * 0.73f >= p.Line;
                 hold = !stopped;
+                axis = !tilted ? 0 : keepTipped || p.Top < p.Line - 0.3f ? 1 : -1;
             }
-            predictor.Update(sim, me, 1, false, hold, tilted ? 1 : 0, c => sim.ApplyNow(c));
+            predictor.Update(sim, me, 1, false, hold, axis, c => sim.ApplyNow(c));
         }
         sim.Tick();
     }
@@ -65,6 +70,27 @@ public class InnkeeperTests
         Assert.True(sim.World.Get<Thing>(ale).Def.Drink);
         Assert.True(sim.World.Get<Crafted>(ale).Quality >= Quality.Fine, $"{sim.World.Get<Crafted>(ale).Quality}");
         Assert.Equal(full - 1, PourSession.ServingsLeft(sim, cask));
+    }
+
+    [Fact]
+    public void KeptTippedToTheLineItRunsOverTheLowLip()
+    {
+        var (sim, me, cask) = AtTheCask();
+        PourSession.TryStart(sim, me, cask);
+        var lost = 0f;
+        var predictor = new WorkPredictor();
+        for (var t = 0; t < 60 * 60 && sim.World.Has<WorkSession>(me); t++)
+        {
+            sim.Tick();
+            if (predictor.Session is PourSession p)
+                lost = p.Lost;
+            var pouring = predictor.Session is PourSession q && q.Level + q.Foam * 0.73f < q.Line;
+            predictor.Update(sim, me, 1, false, pouring, 1, c => sim.ApplyNow(c));
+        }
+        // Fully tipped, the low lip is below the line: the ale runs over before it gets there.
+        Assert.True(lost > 0f, "nothing ran over");
+        var held = sim.World.Get<Carrying>(me).Item;
+        Assert.False(sim.World.Get<Thing>(held).Def.Drink && sim.World.Get<Crafted>(held).Quality >= Quality.Fine, "a fine ale, poured over the lip");
     }
 
     [Fact]

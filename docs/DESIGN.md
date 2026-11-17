@@ -415,8 +415,9 @@ Millbrook, south of the square, with a bench, a stock chest and the collector's 
   the likelier a trap (a poisoned needle, a spring blade, burning powder).
   - *Feeling for the trap.* Run a probe along the lid's seam, lightly to feel for explosive traps. 
     The feel twitches as it goes
-    and catches hard near a trigger. Dragging weight across a trigger sets it off; stopped over
-    one, press in and hold the pressure in the band to ease the spring out, too hard and it fires.
+    and catches hard near a trigger. Dragging weight across a trigger sets it off. Stopped over
+    one, hold still for a read of the spot (the surer the read, the wider the green), press in, and
+    flick the spring out while the pressure's in the green; flicked outside it, or pressed too hard, it fires.
     Reaching the hinge ends the search, so finishing never tells you whether there was one.
     don't notice (or ignore it) and it explodes in the adventurer's hand when they open it.
   - also should have to inspect the keyhole to see if there are any poison needle traps and disarm

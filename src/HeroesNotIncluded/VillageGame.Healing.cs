@@ -251,7 +251,7 @@ public sealed partial class VillageGame
     private void DrawHandsOn(HandsOnSession s)
     {
         if (s.Linked)
-            BeginWork(s.Title, ("A/D|Point aside", "keep your composure in the band"), ("F", "hold to draw, let go to rest"), ("Esc", "take your hands away"));
+            BeginWork(s.Title, ("A/D|Point", "keep your composure in the band (the mouse: where it should be)"), ("F", "hold to draw, let go to rest"), ("Esc", "take your hands away"));
         else
             BeginWork(s.Title, ("A/D|Point", "run your hands along them"), ("W/S", "to the next warmth"), ("F", "hold still on a warmth: read it, then draw it"), ("Esc", "take your hands away"));
         HandsOnScene(HandsViewOf(s));
@@ -281,6 +281,17 @@ public sealed partial class VillageGame
         var nMin = new float2(x - 2, min.Y - 3);
         var nMax = new float2(x + 2, max.Y + 3);
         dl.AddRectFilled(in nMin, in nMax, Theme.U8(link.Calm ? Theme.Accent : Theme.Bad, open ? 1f : 0.4f), 1f, ImDrawFlags.None);
+        if (open)
+        {
+            // Drawing, the mouse is on composure: across this gauge, where the needle should be (anywhere
+            // up or down the window while the button's held). Shown where it's pointing.
+            TakesPointer(min, max, edges: true);
+            if (UsingPointer)
+            {
+                var mx = Math.Clamp(ImGui.GetMousePos().X, min.X, max.X);
+                dl.AddTriangleFilled(new float2(mx - Gui.S(5), max.Y + Gui.S(9)), new float2(mx + Gui.S(5), max.Y + Gui.S(9)), new float2(mx, max.Y + Gui.S(3)), Theme.U8(Theme.Parchment, 0.8f));
+            }
+        }
         if (s.Under >= 0 && s.Spots[s.Under] is { Drawn: > 0f } spot)
             Bar("Drawn", spot.Drawn, Theme.Good);
         if (link.Strain > 0.02f)

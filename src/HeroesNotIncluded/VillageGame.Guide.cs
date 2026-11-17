@@ -20,7 +20,7 @@ namespace HeroesNotIncluded;
 // asked for is known to those who heard it, and your own hurts you feel.
 public sealed partial class VillageGame
 {
-    private bool Guiding => Settings.Current.GuideHighlights && HasAvatar && InRound;
+    private bool Guiding => (Settings.Current.GuideHighlights || TutorialRunning) && HasAvatar && InRound;
 
     /// <summary>A pulsing glow round the last item drawn, when <paramref name="when"/> and guiding.</summary>
     private void GuideGlow(bool when)

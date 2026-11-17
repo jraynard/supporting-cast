@@ -5,12 +5,14 @@ using HeroesNotIncluded.Sim.Systems;
 namespace HeroesNotIncluded.Sim.Work;
 
 /// <summary>
-/// Drawing a drink from a cask. Hold F to pour: the drink rises toward a fill line, and pouring
-/// raises a head of foam that settles back into the drink when you stop. A/D tilt the tankard:
-/// tilted, it foams less but fills slower. Let go and let it settle; once it's still, it's poured.
-/// The best pour settles at the line with a decent head; overfill it and it spills (a wasted
-/// serving). The quality is the drink's (<see cref="Crafted"/>), and the customer can taste it.
-/// It's poured into a clean tankard (<see cref="Vessels"/>), in hand or from the pack.
+/// Drawing a drink from a cask, as a barkeep does: the tankard tipped under the tap so the ale runs
+/// down its side, then brought upright as it fills. Hold F to pour: the drink rises toward a fill
+/// line, and pouring raises a head of foam that settles back into the drink when you stop. A/D tilt
+/// the tankard: tipped, it foams less but fills slower, and its low lip sits lower (<see cref="Lip"/>),
+/// so what rises past it runs over. A little over is a poorer drink; too much is a wasted serving.
+/// Let go and let it settle; once it's still, it's poured. The best pour settles at the line with a
+/// decent head, nothing lost. The quality is the drink's (<see cref="Crafted"/>), and the customer can
+/// taste it. It's poured into a clean tankard (<see cref="Vessels"/>), in hand or from the pack.
 /// </summary>
 public sealed class PourSession : WorkSession
 {
@@ -29,6 +31,12 @@ public sealed class PourSession : WorkSession
     /// <summary>The head a good pour has, as a share of the glass.</summary>
     public const float GoodHead = 0.08f;
 
+    /// <summary>How far the low lip comes down at full tilt, as a share of the tankard.</summary>
+    public const float LipDrop = 0.3f;
+
+    /// <summary>Run over the lip, more than this is a wasted serving.</summary>
+    public const float SpillLimit = 0.1f;
+
     public Entity Cask { get; set; } = Entity.Null;
     public string DrinkLabel { get; set; } = "";
 
@@ -45,6 +53,12 @@ public sealed class PourSession : WorkSession
     public float Tilt { get; private set; }
 
     public bool Spilled { get; private set; }
+
+    /// <summary>What's run over the lip so far, 0..1 of the tankard.</summary>
+    public float Lost { get; private set; }
+
+    /// <summary>How full it can be at this tilt before it runs over the low lip.</summary>
+    public float Lip => 1f - LipDrop * Tilt;
 
     private int _tiltDir;
 
@@ -121,18 +135,27 @@ public sealed class PourSession : WorkSession
             if (_poured)
                 _still++;
         }
-        if (Top > 1f)
+        if (Top > Lip)
         {
-            Spilled = true;
-            Done = true;
-            return;
+            // Over the low lip: the head goes first, then the drink.
+            var over = Top - Lip;
+            var foam = Math.Min(Foam, over);
+            Foam -= foam;
+            Level -= over - foam;
+            Lost += over;
+            if (Lost > SpillLimit)
+            {
+                Spilled = true;
+                Done = true;
+                return;
+            }
         }
         if (_poured && _still >= SettledSteps)
         {
-            // How close the top came to the line, and how good a head it kept.
+            // How close the top came to the line, how good a head it kept, and what ran over.
             var off = MathF.Abs(Top - Line);
             var head = MathF.Abs(Foam - GoodHead);
-            Sample(Math.Clamp(1f - off * 5f / Hands.Tolerance - head * 3f, 0f, 1f));
+            Sample(Math.Clamp(1f - off * 5f / Hands.Tolerance - head * 3f - Lost * 4f, 0f, 1f));
             Done = true;
         }
     }
@@ -189,6 +212,7 @@ public sealed class PourSession : WorkSession
         w.Int(_tiltDir);
         w.Int(_still);
         w.Bool(_poured);
+        w.Float(Lost);
     }
 
     protected override void ReadState(SaveReader r)
@@ -203,5 +227,7 @@ public sealed class PourSession : WorkSession
         _tiltDir = Math.Sign(r.Int());
         _still = r.Int();
         _poured = r.Bool();
+        if (r.Version >= 51)
+            Lost = r.Float();
     }
 }

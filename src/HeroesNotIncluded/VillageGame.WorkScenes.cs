@@ -653,6 +653,32 @@ public sealed partial class VillageGame
         }
         Panel.End();
         DrawKitchenSceneGallery();
+        DrawPourGallery();
+    }
+
+    /// <summary>The pour's picture at its moments: tipped and pouring, upright near the line, run over the low lip, settled.</summary>
+    private void DrawPourGallery()
+    {
+        ImGui.SetNextWindowPos(Gui.S(20, 520), ImGuiCond.FirstUseEver);
+        Panel.Begin("Pouring###pourscenes", ImGuiWindowFlags.AlwaysAutoResize);
+        if (ImGui.BeginTable("##pours"u8, 2, ImGuiTableFlags.None, default, 0f))
+        {
+            (string Label, float Tilt, float Level, float Foam, float Lost, bool Held)[] pours =
+            [
+                ("Tipped, pouring", 1f, 0.35f, 0.04f, 0f, true),
+                ("Upright near the line", 0.15f, 0.62f, 0.14f, 0f, true),
+                ("Run over the low lip", 0.9f, 0.68f, 0.05f, 0.05f, true),
+                ("Settled at the line", 0f, 0.76f, 0.08f, 0f, false),
+            ];
+            foreach (var p in pours)
+            {
+                ImGui.TableNextColumn();
+                TextC(Theme.Dim, p.Label);
+                PourPicture(p.Tilt, p.Level, p.Foam, 0.84f, p.Lost, p.Held);
+            }
+            ImGui.EndTable();
+        }
+        Panel.End();
     }
 
     // Idle sessions to draw the kitchen's and the inn's scenes from: at rest, but the scenes' own motion runs.

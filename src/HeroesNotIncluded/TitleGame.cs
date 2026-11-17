@@ -108,7 +108,14 @@ public sealed class TitleGame : Game
     /// An entry: a label saying what it does, and the line underneath (the word bank's, or what it'll do).
     /// <see cref="Then"/>: a step that leads on to another menu rather than starting a game (the town, then the trade).
     /// </summary>
-    private sealed record MenuItem(string Label, string Hint, Func<Game>? Start, MenuAction Action = MenuAction.Start, Action? Then = null);
+    private sealed record MenuItem(string Label, string Hint, Func<Game>? Start, MenuAction Action = MenuAction.Start, Action? Then = null)
+    {
+        /// <summary>Marked as the place to start (the tutorial, for someone who's done nothing yet).</summary>
+        public bool Nudge { get; init; }
+    }
+
+    /// <summary>Nobody saved has finished a lesson or a round: whoever's here is new, and the tutorial's where to start.</summary>
+    private bool Newcomer => _roster.Characters.All(c => c.Progress.Lessons.Count == 0 && c.Progress.Rounds == 0);
 
     /// <summary>How many saves the Load Game list shows (the in-game Load window lists them all).</summary>
     private const int MaxListedSaves = 8;
@@ -122,7 +129,9 @@ public sealed class TitleGame : Game
                 ? new("Continue", $"{last.Name}: {last.Summary}", () => FromSave(last))
                 : new("Continue", "Nothing saved yet.", null),
             new("New round", "Just you and the regulars.", null, MenuAction.NewGame),
-            new("Practice yard", "Learn a trade with nobody waiting.", null, MenuAction.Practice),
+            Newcomer
+                ? new("Tutorial", "New here? Start here: learn a trade, step by step.", null, MenuAction.Practice) { Nudge = true }
+                : new("Tutorial", "Learn a trade, step by step, with nobody waiting.", null, MenuAction.Practice),
             new("Host game", "Open the doors.", null, MenuAction.Host),
             new("Join game", "Pull up a stool.", null, MenuAction.Join),
             new("Characters", "Who you've been.", null, MenuAction.Characters),
@@ -204,15 +213,25 @@ public sealed class TitleGame : Game
     }
 
     /// <summary>
-    /// The practice yard's trades: those with a workplace and games of their own. No bots, no
-    /// season: the town's other trades are the AI's.
+    /// The tutorial's trades: those with a workplace and games of their own, each with how far this
+    /// character has got in it. It runs in the practice yard: no bots, no season.
     /// </summary>
     private MenuItem[] PracticeItems(SavedCharacter c)
     {
         Game Start(string trade) => new VillageGame(DefaultSeed) { Adventure = true, Practice = true, Character = c, HeroTrade = trade };
+        string Progress(Sim.Defs.TradeDef t)
+        {
+            var learned = c.Progress.Lessons;
+            if (Sim.Scenarios.Lessons.Tutorial.CoreLearned(t, learned.Contains))
+            {
+                var done = t.Lessons.Count(l => learned.Contains(Sim.Scenarios.Lessons.LessonRun.KeyOf(t, l)));
+                return $"Learned ({done} of {t.Lessons.Count} chapters). ";
+            }
+            return "";
+        }
         return _defs.AllTrades
             .Where(t => t.HasWorkplace)
-            .Select(t => new MenuItem(char.ToUpperInvariant(t.Label[0]) + t.Label[1..], t.Description, () => Start(t.Name)))
+            .Select(t => new MenuItem(char.ToUpperInvariant(t.Label[0]) + t.Label[1..], Progress(t) + t.Description, () => Start(t.Name)))
             .Append(new MenuItem("Back", "Back to the main menu.", null, MenuAction.Back))
             .ToArray();
     }
@@ -290,7 +309,7 @@ public sealed class TitleGame : Game
                 ChooseTown(map => (_submenu, _submenuTitle) = (TradeItems(c, map), "Which trade will you take?"), MenuAction.BackToCreator);
                 break;
             case Purpose.Practice:
-                (_submenu, _submenuTitle) = (PracticeItems(c), "Which trade will you practise?");
+                (_submenu, _submenuTitle) = (PracticeItems(c), "Which trade will you learn?");
                 break;
             case Purpose.Host:
                 ChooseTown(map => HostAs(c, map), MenuAction.Back);
@@ -541,19 +560,9 @@ public sealed class TitleGame : Game
         {
             if (_submenuTitle != null)
                 ImGui.TextColored(dim, _submenuTitle);
-            // The list keeps one height, room left below for the longest hint: the window's centred,
-            // so an entry growing as it's picked moved every entry, and the one under the pointer with it.
-            float most = 0f, grown = 0f;
+            // Every hint always shown, each entry its own fixed height: the list never changes size as the pick moves.
             foreach (var item in _submenu ?? _items)
-            {
-                most = MathF.Max(most, HintGrowth(Hint(item)));
-                grown += MenuButton(item);
-            }
-            if (most > grown)
-            {
-                var room = new float2(1, most - grown);
-                ImGui.Dummy(in room);
-            }
+                MenuButton(item);
         }
 
         ImGui.Dummy(in gap);
@@ -680,15 +689,12 @@ public sealed class TitleGame : Game
         ImGui.Dummy(in size);
     }
 
-    /// <summary>The entry picked last frame: it's laid out tall enough for all of its hint's lines.</summary>
-    private string? _pickedEntry;
 
     /// <summary>
-    /// A menu entry: its label in the display face, and while it's picked (hovered, or reached with
-    /// keys or a pad) its hint underneath and a barrel-gold bar at its edge. Every entry is tall
-    /// enough for a one-line hint, so picking one of those doesn't shift the rest; a longer hint
-    /// (a trade's description) wraps, and its entry grows downward to hold it while it's picked.
-    /// Returns how much it grew.
+    /// A menu entry: its label in the display face, its hint always underneath (wrapped, the entry
+    /// as tall as it needs, so nothing shifts as the pick moves: playtesters saw the old grow-on-hover
+    /// jump about), and while it's picked (hovered, or reached with keys or a pad) the hint brightened
+    /// and a barrel-gold bar at its edge. Returns how much taller than one hint line it stands.
     /// </summary>
     private float MenuButton(MenuItem item)
     {
@@ -697,8 +703,8 @@ public sealed class TitleGame : Game
         var width = Gui.S(MenuWidth);
         var inset = Gui.S(17);
         var (hint, lineHeight) = Hint(item);
-        // Laid out from last frame's pick: the hover that grows an entry is decided by its button.
-        var extra = _pickedEntry == item.Label ? HintGrowth((hint, lineHeight)) : 0f;
+        // Every entry is laid out tall enough for its whole hint, always shown: nothing moves as the pick does.
+        var extra = HintGrowth((hint, lineHeight));
         var size = new float2(width, Gui.S(46) + extra);
         var min = ImGui.GetCursorScreenPos();
         if (!enabled)
@@ -718,22 +724,34 @@ public sealed class TitleGame : Game
             var barMax = new float2(min.X + Gui.S(4), max.Y);
             dl.AddRectFilled(in min, in barMax, Theme.U8(Theme.Barrel), Gui.S(2), ImDrawFlags.None);
         }
+        else if (item.Nudge)
+        {
+            // The place to start, marked even while something else is picked.
+            var barMax = new float2(min.X + Gui.S(4), max.Y);
+            var pulse = 0.6f + 0.4f * MathF.Sin((float)ImGui.GetTime() * 3f);
+            dl.AddRectFilled(in min, in barMax, Theme.U8(Theme.Barrel, pulse), Gui.S(2), ImDrawFlags.None);
+        }
         var label = min + new float2(Gui.S(16), Gui.S(3));
         using (Gui.DisplayFont(25f))
-            dl.AddText(in label, Theme.U8(enabled ? Theme.Text : Theme.Dim, enabled ? 1f : 0.6f), item.Label);
-        if (picked)
         {
-            _pickedEntry = item.Label;
+            dl.AddText(in label, Theme.U8(enabled ? Theme.Text : Theme.Dim, enabled ? 1f : 0.6f), item.Label);
+            if (item.Nudge && !picked)
+            {
+                var after = label + new float2(ImGui.CalcTextSize(item.Label).X + Gui.S(12), Gui.S(9));
+                using (Gui.BodyFont(15f))
+                    dl.AddText(in after, Theme.U8(Theme.Barrel), "start here"u8);
+            }
+        }
+        {
+            // The hint, always there: bright on the picked entry, quieter on the rest.
             var line = min + new float2(inset, Gui.S(28));
             using (Gui.BodyFont(15f))
                 foreach (var text in hint)
                 {
-                    dl.AddText(in line, Theme.U8(Theme.Parchment, enabled ? 0.95f : 0.6f), text);
+                    dl.AddText(in line, picked ? Theme.U8(Theme.Parchment, enabled ? 0.95f : 0.6f) : Theme.U8(Theme.Dim, enabled ? 0.7f : 0.45f), text);
                     line += new float2(0, lineHeight);
                 }
         }
-        else if (_pickedEntry == item.Label)
-            _pickedEntry = null;
         if (pressed)
             Press(item);
         return extra;

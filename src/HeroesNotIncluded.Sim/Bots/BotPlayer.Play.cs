@@ -231,7 +231,8 @@ public sealed partial class BotPlayer
                 _stopped |= p.Level + p.Foam * 0.73f >= p.Line + (_slip ? 0.15f : 0f);
                 if (_slip && _stopped)
                     Slipped();
-                return (false, !_stopped, 1);
+                // Tipped while it's low (less foam), brought upright as it nears the line: tipped, it'd run over the low lip.
+                return (false, !_stopped, p.Top < p.Line - PourUprightBelow ? 1 : -1);
             case HandsOnSession h:
                 return HandsOn(h);
             case BandageSession b:
@@ -296,18 +297,36 @@ public sealed partial class BotPlayer
         return null;
     }
 
-    /// <summary>Sweep the seam light; at a catch, go back to its middle and ease the spring out; then on to the hinge.</summary>
+    /// <summary>How far below the line a bot brings the tankard upright: the last of the pour builds the head.</summary>
+    private const float PourUprightBelow = 0.3f;
+
+    /// <summary>Steps a bot holds the probe still on a catch before pressing in: long enough for a good read.</summary>
+    private const int ProbeReadSteps = 60;
+
+    /// <summary>
+    /// Sweep the seam light; at a catch, go back to its middle, hold still for a read, press in and
+    /// flick the spring out at the middle of the green; then on to the hinge.
+    /// </summary>
     private (bool, bool, int) Probe(ProbeSession s)
     {
         _feel = _feel * 0.8f + s.Feel * 0.2f;
-        var mid = (s.Low + s.High) * 0.5f;
         if (_working > 0)
         {
-            _working = s.Progress > _progress ? 60 : _working - 1; // stalled: not on it after all
-            _progress = s.Progress;
-            if (!s.Disarmed && _working > 0)
-                return (false, s.Pressure < mid - 0.03f, 0);
-            _working = 0;
+            if (s.Disarmed)
+                _working = 0;
+            else if (_working > 1)
+            {
+                _working--;
+                return (false, false, 0); // still: the read settling
+            }
+            else if (s.Pressure < (s.Low + s.High) * 0.5f)
+                return (false, true, 0); // pressing in
+            else
+            {
+                _act = true; // in the middle of the green: out it comes (or nothing gives)
+                _working = 0;
+                return (false, true, 0);
+            }
         }
         if (s.Pressure > ProbeSession.LightTouch - 0.08f)
             return (false, false, 0); // never drag weight across the seam
@@ -318,8 +337,8 @@ public sealed partial class BotPlayer
                 return (false, false, Math.Sign(off));
             _middle = null;
             _skipTo = target + ProbeSession.CatchRange;
-            _working = 90;
-            return (false, true, 0);
+            _working = ProbeReadSteps;
+            return (false, false, 0);
         }
         if (s.Probe >= _skipTo && Middle(s.Probe, 0.5f) is { } found)
             _middle = found;

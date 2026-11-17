@@ -178,6 +178,7 @@ public static class Controls
             .Replace("~J~", Glyph(Act.Shop))
             .Replace("~Y~", Glyph(Act.Gift))
             .Replace("~K~", Glyph(Act.Quests))
+            .Replace("~H~", Glyph(Act.ControlsCard))
             .Replace("~1-4~", UsingPad ? "the wheel" : $"{Glyph(Act.Hotbar1)}–{Glyph(Act.Hotbar4)}");
     }
 

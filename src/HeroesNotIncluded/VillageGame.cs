@@ -523,13 +523,12 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         _renderer.PredictedEntity = _avatar;
         _renderer.Viewer = View.Omniscient ? null : View;
         UpdateOrderBubbles();
-        UpdateStationMarks();
         UpdateFestival();
         UpdateChoreMarkers();
         UpdateErrandPointers();
         UpdateDrunkLook();
         UpdateFoodPointer();
-        UpdateLesson(); // after the festival's and the tips' marks are cleared: its own go on top
+        UpdateLesson(); // after the festival's marks and the errands' pointers are cleared: its own go on top
         UpdateHomeMark();
         UpdateWork(dt);
         RunBots();

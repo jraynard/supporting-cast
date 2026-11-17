@@ -113,7 +113,7 @@ public class SmithLessonTests
     public void EveryStepALessonCanNameHasWords()
     {
         var defs = LoadDefs();
-        foreach (var lesson in Lessons.All)
+        foreach (var lesson in Lessons.All.Where(l => l.Trade != BasicsLesson.AnyTrade)) // the basics: TutorialTests
         {
             var def = defs.Trade(lesson.Trade).Lessons.SingleOrDefault(l => l.Id == lesson.Id);
             Assert.True(def != null, $"{lesson.Trade}/{lesson.Id} has no words in trades.json");

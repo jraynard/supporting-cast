@@ -20,8 +20,11 @@ public sealed class DrawLink
     /// <summary>Steps of drawing a slight wound takes, and how many more a grave one.</summary>
     public const int BaseSteps = 180, StepsPerSeverity = 420;
 
-    /// <summary>How far one step of steering moves composure.</summary>
-    public const float SteerPerStep = 0.01f;
+    /// <summary>
+    /// How far one step of steering moves composure, at full lean. Enough to meet a jolt, not so much
+    /// that a held key simply pins the needle where it's wanted.
+    /// </summary>
+    public const float SteerPerStep = 0.0075f;
 
     /// <summary>Steps out of the band before the link snaps.</summary>
     public const int SnapSteps = 75;
@@ -82,7 +85,7 @@ public sealed class DrawLink
     /// through; the keys steer). Otherwise composure settles back and the strain eases. Returns
     /// whether it's calm.
     /// </summary>
-    public bool Step(SimRandom rand, bool drawing, int steer, float drawn, float tremor, int stepsDone)
+    public bool Step(SimRandom rand, bool drawing, float steer, float drawn, float tremor, int stepsDone)
     {
         if (!drawing)
         {

@@ -32,6 +32,7 @@ public sealed class LessonRun
         foreach (var item in Had)
             if (w.TryGet<Thing>(item, out var t))
                 CountsAtStart[t.Def.Name] = CountsAtStart.GetValueOrDefault(t.Def.Name) + (w.TryGet<Stack>(item, out var s) ? s.Count : 1);
+        StartCell = w.TryGet<Position>(me, out var pos) ? pos.Cell : default;
         Workplace = Practice.Workplace(sim, me);
         if (!Workplace.IsNull)
             Prices = Perception.For(sim, me).Prices(Workplace);
@@ -43,9 +44,13 @@ public sealed class LessonRun
     /// <summary>Progress is kept under this (<c>Blacksmith/sharpen</c>).</summary>
     public string Key => KeyOf(Trade, Def);
 
-    public static string KeyOf(TradeDef trade, LessonDef def) => $"{trade.Name}/{def.Id}";
+    public static string KeyOf(TradeDef trade, LessonDef def) =>
+        def.Id == Tutorial.BasicsId ? Tutorial.BasicsKey : $"{trade.Name}/{def.Id}";
 
     public long StartTick { get; }
+
+    /// <summary>Where the player stood when it began.</summary>
+    public int3 StartCell { get; }
 
     /// <summary>What the player had in hand and pack when it began.</summary>
     public HashSet<Entity> Had { get; } = [];
@@ -109,9 +114,11 @@ public sealed record Lesson(string Trade, string Id, string[] Steps, Func<Simula
 /// <summary>Every trade's lessons, by trade and id (the words are in trades.json's <c>lessons</c>).</summary>
 public static class Lessons
 {
-    public static readonly Lesson[] All = [.. SmithLessons.All, .. TinkerLessons.All, .. InnLessons.All, .. KitchenLessons.All, .. HealerLessons.All];
+    public static readonly Lesson[] All = [BasicsLesson.Lesson, .. SmithLessons.All, .. TinkerLessons.All, .. InnLessons.All, .. KitchenLessons.All, .. HealerLessons.All];
 
-    public static Lesson? For(string trade, string id) => Array.Find(All, l => l.Trade == trade && l.Id == id);
+    /// <summary>The trade's lesson by id, or one every trade shares (<see cref="BasicsLesson"/>, trade "*").</summary>
+    public static Lesson? For(string trade, string id) =>
+        Array.Find(All, l => l.Trade == trade && l.Id == id) ?? Array.Find(All, l => l.Trade == BasicsLesson.AnyTrade && l.Id == id);
 
     /// <summary>Where the run has got to; a lesson with no logic (not written yet) never finishes.</summary>
     public static LessonStage Stage(Simulation sim, Entity me, LessonRun run)

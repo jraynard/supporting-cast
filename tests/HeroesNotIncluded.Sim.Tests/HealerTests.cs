@@ -187,8 +187,8 @@ public class HealerTests
     [Fact]
     public void FrostNumbsTheHandsSoSteeringAnswersLate()
     {
-        var plain = DrawPath(DrawPattern.Spike, 12, held: true, steer: 1);
-        var numb = DrawPath(DrawPattern.Numb, 12, held: true, steer: 1);
+        var plain = DrawPath(DrawPattern.Spike, 16, held: true, steer: 1);
+        var numb = DrawPath(DrawPattern.Numb, 16, held: true, steer: 1);
         Assert.True(plain[^1] - 0.5f > 0.1f, $"plain hands move it ({plain[^1]})");
         Assert.True(numb[^1] - 0.5f < (plain[^1] - 0.5f) * 0.5f, $"numb ones barely ({numb[^1]} vs {plain[^1]})");
     }

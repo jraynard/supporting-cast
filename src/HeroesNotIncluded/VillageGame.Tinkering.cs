@@ -432,8 +432,9 @@ public sealed partial class VillageGame
 
     /// <summary>
     /// The lock in section: the plug and housing, a chamber per pin with its key pin, driver and
-    /// spring, the shear line between them; the pick under the pin being lifted, the tension wrench in
-    /// the keyway with the finger's pressure on it; and an end view of the plug turning under it.
+    /// spring, the shear line between them; the pick and the tension wrench both in at the keyway's
+    /// mouth (the wrench along its bottom, the pick above it, up under the pin being lifted), the
+    /// finger's pressure on the wrench; and an end view of the plug turning under it.
     /// No noise: the pin stiffening near its set point shows as the pick slowing and shuddering and the
     /// shear line glowing; a pin setting clicks, the plug jolting.
     /// </summary>
@@ -527,20 +528,23 @@ public sealed partial class VillageGame
         var l1 = new float2(right, shear);
         dl.AddLine(in l0, in l1, Theme.U8(Theme.Dim, 0.6f), Gui.S(1));
 
-        // The pick: in along the keyway, its hook up under the pin being lifted.
+        // The pick: in at the keyway's mouth (the same side as the wrench, above it), along the keyway,
+        // its hook up under the pin being lifted; its handle angled up and out, clear of the wrench's arm.
         if (!s.Turning && pickTip != default)
         {
-            var handle = new float2(right + Gui.S(40), plugBottom - Gui.S(14));
-            var under = new float2(pickTip.X + Gui.S(6), plugBottom - Gui.S(14));
-            dl.AddLine(in handle, in under, Gui.U8(steel), Gui.S(3));
+            var handle = new float2(left - Gui.S(52), plugBottom - Gui.S(40));
+            var mouth = new float2(left - Gui.S(4) + jolt, plugBottom - Gui.S(18));
+            var under = new float2(pickTip.X - Gui.S(6), plugBottom - Gui.S(18));
+            dl.AddLine(in handle, in mouth, Gui.U8(steel), Gui.S(3));
+            dl.AddLine(in mouth, in under, Gui.U8(steel), Gui.S(3));
             dl.AddLine(in under, in pickTip, Gui.U8(steel), Gui.S(3));
         }
 
-        // The tension wrench in the keyway's mouth, and the finger's pressure on it.
-        var wrench0 = new float2(left - Gui.S(30), plugBottom - Gui.S(18));
-        var wrench1 = new float2(left + Gui.S(14), plugBottom - Gui.S(12));
+        // The tension wrench along the bottom of the keyway's mouth, and the finger's pressure on it.
+        var wrench0 = new float2(left - Gui.S(30), plugBottom - Gui.S(13));
+        var wrench1 = new float2(left + Gui.S(14), plugBottom - Gui.S(8));
         dl.AddRectFilled(in wrench0, in wrench1, Gui.U8(steel), Gui.S(1), ImDrawFlags.None);
-        var arm0 = new float2(left - Gui.S(30), plugBottom - Gui.S(18));
+        var arm0 = new float2(left - Gui.S(30), plugBottom - Gui.S(13));
         var arm1 = new float2(left - Gui.S(24), plugBottom + Gui.S(18));
         dl.AddRectFilled(in arm0, in arm1, Gui.U8(steel), Gui.S(1), ImDrawFlags.None);
         var chatter = s.Chattering && MathF.Sin((float)ImGui.GetTime() * 18f) > 0f;

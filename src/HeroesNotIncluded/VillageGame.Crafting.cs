@@ -527,6 +527,7 @@ public sealed partial class VillageGame
             ImGui.PushID(item.Index);
             if (ImGui.Button("Mend"u8, in _autoSize))
                 Issue(new RepairCommand(_avatar, _openStation, item));
+            GuideGlow(TutorialStep == "mend");
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                 Tip(Sim.Work.Smithing.AppliesToRepair(_sim, _avatar, _openStation)
                     ? "Take it in your tongs: heat it, then hammer out the chips on the anvil. It comes off dull: grind it after."

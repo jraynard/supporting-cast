@@ -27,16 +27,19 @@ public sealed class TradeDef : Def
     /// </summary>
     public List<string> Knows { get; set; } = [];
 
-    /// <summary>
-    /// The trade's working stations at its workplace (thing def names): marked in the world for a
-    /// newcomer until they've been to each, so the first thing a new player sees is where to go.
-    /// </summary>
+    /// <summary>The trade's working stations at its workplace (thing def names): what its holder works at.</summary>
     public List<string> Stations { get; set; } = [];
 
-    /// <summary>A few short first-day lines for a player new to the trade, shown one at a time.</summary>
-    public List<string> Tips { get; set; } = [];
+    /// <summary>
+    /// What the trade is about and how it earns, in a line or two: the first thing its tutorial says,
+    /// because a newcomer told only which key to press doesn't know why they're pressing it.
+    /// </summary>
+    public string TutorialIntro { get; set; } = "";
 
-    /// <summary>The practice yard's guided lessons in the trade (<c>Scenarios/Lessons</c>), one game loop each.</summary>
+    /// <summary>
+    /// The trade's tutorial chapters (<c>Scenarios/Lessons</c>), one game loop each: those marked
+    /// <see cref="LessonDef.Core"/> are run in order, the rest offered after.
+    /// </summary>
     public List<LessonDef> Lessons { get; set; } = [];
 
     /// <summary>The least the holder has in a skill: a smith can smith.</summary>
@@ -130,10 +133,9 @@ public sealed class TradeDef : Def
             item.ThingDef = db.Thing(item.Def);
         foreach (var lesson in Lessons)
         {
-            foreach (var item in lesson.Supply)
-                item.ThingDef = db.Thing(item.Def);
-            if (lesson.Steps.Count == 0 || lesson.Steps.Select(s => s.Id).Distinct().Count() != lesson.Steps.Count)
-                throw new Exception($"Trade '{Name}': lesson '{lesson.Id}' needs steps, each with its own id");
+            if (lesson.Id == Scenarios.Lessons.Tutorial.BasicsId)
+                throw new Exception($"Trade '{Name}': lesson id '{lesson.Id}' is the shared basics chapter's");
+            lesson.Resolve(db, $"Trade '{Name}'");
         }
         foreach (var (skill, level) in Skills)
             if (level is < 0 or > Components.Skills.Max)
@@ -200,8 +202,22 @@ public sealed class LessonDef
     /// <summary>Its steps in the usual order; a step can come round again (a blade still chipped goes back to the fire).</summary>
     public List<LessonStepDef> Steps { get; set; } = [];
 
+    /// <summary>Part of the trade's main tutorial run, in the order listed; the rest are extra chapters.</summary>
+    public bool Core { get; set; }
+
+    /// <summary>"Worth knowing": lines shown once it's done, on what the chapter touched but didn't walk through.</summary>
+    public List<string> Notes { get; set; } = [];
+
     /// <summary>The step's index by id, -1 if this lesson doesn't list it.</summary>
     public int IndexOf(string step) => Steps.FindIndex(s => s.Id == step);
+
+    internal void Resolve(DefDatabase db, string owner)
+    {
+        foreach (var item in Supply)
+            item.ThingDef = db.Thing(item.Def);
+        if (Steps.Count == 0 || Steps.Select(s => s.Id).Distinct().Count() != Steps.Count)
+            throw new Exception($"{owner}: lesson '{Id}' needs steps, each with its own id");
+    }
 }
 
 /// <summary>A step of a lesson: an id the code returns, and what the player is told to do (key glyphs as in tips).</summary>
@@ -212,6 +228,15 @@ public sealed class LessonStepDef
 
     /// <summary>Only comes up when something's gone a way it needn't (the forge gone out): listed only while it's the step at hand.</summary>
     public bool Aside { get; set; }
+
+    /// <summary>
+    /// The on-screen control the step is done with (a game action's name: "Orders", "Pack", "Gift"),
+    /// glowed while it's the step at hand. The game reads it; the sim never does.
+    /// </summary>
+    public string? Ui { get; set; }
+
+    /// <summary>A fuller hint, shown when the player's been on the step a while.</summary>
+    public string? More { get; set; }
 }
 
 /// <summary>Something a trade's workplace wants kept in, and what it'll pay a labourer to fetch it (<see cref="TradeDef.Wants"/>).</summary>

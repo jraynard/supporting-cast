@@ -2248,3 +2248,42 @@ level 0 after ~3 steps of screen and input lag, and no cue is looser than its wi
 - Audited and left alone: butchery (placed, not timed), quench (0.7–1.1 s by the steam), the spring
   latch (taps against a wide catch), truing, the span, the probe, the whetstone.
 - Save format 50 (a lock's chattering). Bench hashes change: a gameplay change.
+
+### The tutorial (2026-11-16)
+Playtest: confusing, not clear what to do. The practice yard's lessons were a list of buttons in a
+busy panel, nothing led from one to the next, and a paged "Getting started" box under the portrait
+was most new players' only guide.
+- **One guided run per trade** (`VillageGame.Tutorial`; the title's "Tutorial", was "Practice yard"):
+  what the trade's about (`tutorialIntro`), the basics every trade shares (walk, the workplace, the
+  pack, the shop, the controls card: `BasicsLesson`, trades.json's `basics`; skipped once done), then
+  the trade's `core` chapters back to back (smith: sharpen, mend; inn: ale; cook: stew; healer: wound;
+  tinker: box). Then a round in the trade, the extra chapters, or the yard to practise in.
+- **A card at the top centre**: the step in a bigger face; the thing it's about pointed at with a
+  named tag, pinned to the screen's edge with an arrow when it's off it; the button for it glowed (a
+  step's `ui`, plus take, collect, take back and Mend), whatever the guide-highlights setting says.
+  45 seconds on one step brings its `more` hint and "Set it up again".
+- **Tips folded in**: every trade's `tips` line went into a step, a hint or a chapter's `notes` ("worth
+  knowing", shown when it's done); the field, the box, its station rings and the Tips setting are gone.
+- The title marks Tutorial "start here" while no saved character has a lesson or a round to its name;
+  the trade picker says which trades are learned.
+- `TutorialTests`, `TutorialWordsTests` (every key mark known, every glowed button an action).
+
+### Pour, probe and the draw retuned (2026-11-16)
+Playtest: the pour's tilt "off and weird"; Space in the probe's green set the trap off, the mouse's
+reach varied, and a good flick showed nothing; drawing a wound hard with the mouse, easy with keys.
+- **Pour** (`PourSession`): tipped, the tankard's low lip sits lower (`Lip`, `LipDrop`), and what rises
+  past it runs over (`Lost`: a poorer drink; past `SpillLimit` a wasted serving). So: tip it early (less
+  foam), upright near the top. One picture, held by the mouth under the tap, the stream down the inner
+  wall when tipped, the line marked on the walls (`PourPicture`, also in `--work-scenes`).
+- **Probe** (`ProbeSession`): stopped on a catch, the fingers take a read (`SpotRead`) that sets how wide
+  the green is; hold F to press in, Space in the green flicks the spring out and ends the search (a snap).
+  Out of the green, it fires; where nothing's there, nothing gives. A flick is judged on the pressure as
+  pressed, with `LateSteps` of grace; pressing in, the mouse no longer drags the probe; the mouse is
+  read off the seam bar, where the probe's drawn.
+- **Laying on hands, drawing**: the mouse points where composure should be (the gauge is the pointer's
+  while drawing) and steers it there, gentler as it nears; keys steer a little slower (`SteerPerStep`).
+- A mini-game in hand takes the mouse as it takes the keys: no click-to-walk off it.
+- The title menu shows every hint, always: no entry grows as the pick moves.
+- The tutorial: one customer for a drink or a quest, two otherwise; the ale's wait lasts till the
+  customer's in the tavern; a finished step stays on the card a few seconds; no tankard step.
+- Save format 51. Bench hashes change: a gameplay change.

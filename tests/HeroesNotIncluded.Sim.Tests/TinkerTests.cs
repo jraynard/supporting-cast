@@ -44,26 +44,38 @@ public class TinkerTests
         Play(sim, me, w => { var (p, h, a) = keys(w); return (p, h, a, 0); }, maxTicks);
 
     /// <summary>As <see cref="Play(Simulation, Entity, Func{WorkSession, ValueTuple{bool, bool, int}}, int)"/>, with W/S too.</summary>
-    private static void Play(Simulation sim, Entity me, Func<WorkSession, (bool Press, bool Held, int Axis, int Axis2)> keys, int maxTicks = 60 * 120)
+    private static void Play(Simulation sim, Entity me, Func<WorkSession, (bool Press, bool Held, int Axis, int Axis2)> keys, int maxTicks = 60 * 120) =>
+        Play(sim, me, w => { var (p, h, a, a2) = keys(w); return (p, h, a, a2, false); }, maxTicks);
+
+    /// <summary>As above, with Space (the other action) too.</summary>
+    private static void Play(Simulation sim, Entity me, Func<WorkSession, (bool Press, bool Held, int Axis, int Axis2, bool Act)> keys, int maxTicks = 60 * 120)
     {
         var predictor = new WorkPredictor();
         for (var t = 0; t < maxTicks && sim.World.Has<WorkSession>(me); t++)
         {
             sim.Tick();
-            var (press, held, axis, axis2) = predictor.Session is { } s ? keys(s) : (false, false, 0, 0);
-            predictor.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c), axis2);
+            var (press, held, axis, axis2, act) = predictor.Session is { } s ? keys(s) : (false, false, 0, 0, false);
+            predictor.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c), axis2, act: act);
         }
         sim.Tick();
         Assert.False(sim.World.Has<WorkSession>(me), "the session should have ended");
     }
 
-    /// <summary>A careful hand that knows where the trigger is: light to it, stop, ease the spring out, on to the hinge.</summary>
-    private static (bool, bool, int) Careful(WorkSession w)
+    /// <summary>
+    /// A careful hand that knows where the trigger is: light to it, stop and get a sure read, press
+    /// in, and flick the spring out in the middle of the green; then on to the hinge.
+    /// </summary>
+    private static (bool, bool, int, int, bool) Careful(WorkSession w)
     {
         var s = (ProbeSession)w;
         if (!s.Disarmed && MathF.Abs(s.Probe - s.TrapAt) <= ProbeSession.ProbePerStep)
-            return (false, s.Pressure < (s.Low + s.High) * 0.5f, 0);
-        return s.Pressure > 0.1f ? (false, false, 0) : (false, false, 1);
+        {
+            if (!s.Held && s.SpotRead < 0.75f && s.Pressure <= 0f)
+                return (false, false, 0, 0, false); // still, reading the spot
+            var mid = (s.Low + s.High) * 0.5f;
+            return (false, true, 0, 0, s.Pressure >= mid);
+        }
+        return s.Pressure > 0.1f ? (false, false, 0, 0, false) : (false, false, 1, 0, false);
     }
 
     [Fact]
@@ -79,6 +91,55 @@ public class TinkerTests
         Assert.Equal(me, b.SearchedBy);
         Assert.Equal(0, Wounds(sim, me));
         Assert.Equal("a spring blade", Perception.For(sim, me).Strongbox(box)!.Value.SpentTrap);
+    }
+
+    [Fact]
+    public void FlickedOutsideTheGreenTheTrapGoesOff()
+    {
+        var (sim, me, box) = AtTheBench(trapped: true);
+        sim.ApplyNow(new ProbeBoxCommand(me, box));
+        // On the trigger, a sure read, then a flick barely pressed in: well short of the green.
+        Play(sim, me, w =>
+        {
+            var s = (ProbeSession)w;
+            if (MathF.Abs(s.Probe - s.TrapAt) > ProbeSession.ProbePerStep)
+                return (false, false, 1, 0, false);
+            if (!s.Held && s.SpotRead < 0.75f && s.Pressure <= 0f)
+                return (false, false, 0, 0, false);
+            return (false, true, 0, 0, s.Pressure > ProbeSession.LightTouch * 0.5f);
+        });
+        Assert.False(sim.World.Get<Strongbox>(box).Armed);
+        Assert.NotEmpty(sim.World.Get<Health>(me).Injuries);
+    }
+
+    [Fact]
+    public void FlickedWhereNoTriggerIsNothingGivesAndTheSearchGoesOn()
+    {
+        var (sim, me, box) = AtTheBench(trapped: true);
+        sim.ApplyNow(new ProbeBoxCommand(me, box));
+        var s = (ProbeSession)sim.World.Get<WorkSession>(me);
+        // Pressed in near the hasp, far from the trigger at the middle, and flicked: nothing.
+        s.Advance([new WorkInput(0, WorkInputKind.Hold, 1)], 60);
+        s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Act)], s.StepsDone + 1);
+        Assert.Equal(1, s.NothingGave);
+        Assert.False(s.Done);
+        Assert.False(s.Sprung);
+        Assert.True(s.Armed);
+    }
+
+    [Fact]
+    public void ASureReadOfTheSpotWidensTheGreen()
+    {
+        var (sim, me, box) = AtTheBench(trapped: true);
+        sim.ApplyNow(new ProbeBoxCommand(me, box));
+        var s = (ProbeSession)sim.World.Get<WorkSession>(me);
+        var unsure = s.High - s.Low;
+        // Run to the trigger, light, and hold still on it.
+        var steps = (int)MathF.Ceiling(s.TrapAt / ProbeSession.ProbePerStep);
+        s.Advance([new WorkInput(0, WorkInputKind.Axis, 1)], steps);
+        s.Advance([new WorkInput(s.StepsDone, WorkInputKind.Axis, 0)], s.StepsDone + 90);
+        Assert.True(s.SpotRead > 0.7f, $"read {s.SpotRead}");
+        Assert.True(s.High - s.Low > unsure * 2.5f, $"green {s.High - s.Low} against {unsure} unread");
     }
 
     [Fact]

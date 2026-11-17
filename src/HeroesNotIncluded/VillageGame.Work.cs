@@ -403,72 +403,139 @@ public sealed partial class VillageGame
         Panel.End();
     }
 
-    /// <summary>How far the tankard leans at full tilt, radians: toward the tap, so the ale runs down its side.</summary>
-    private const float PourMaxLean = 0.7f;
-
     /// <summary>
-    /// The tankard from the side under the cask's tap, leaning as it's tilted (A/D): the ale and its
-    /// head keep level as it tips, the line is marked inside the cup, and the stream runs while you
-    /// hold F.
+    /// The tankard held under the cask's tap by its mouth, tipped toward the tap as it's tilted (A/D):
+    /// its foot swings out while the mouth stays under the stream, which runs down the inner wall when
+    /// it's tipped and splashes into the ale when it's upright. The ale and its head keep level; the
+    /// line is marked on the walls; the low lip is where it runs over. One picture, drawn to the
+    /// session's numbers: the lean is the one at which the ale reaches the lip at <see cref="PourSession.Lip"/>.
     /// </summary>
     private void DrawPour(PourSession s)
     {
-        BeginWork(s.Title, ("F", "hold to pour"), ("A/D|Mouse", "tilt: less foam, slower"), ("Esc", "stop"));
-        var top = ImGui.GetCursorScreenPos();
-        PourScene(s);
-        TakesPointer(top, new float2(top.X + ImGui.GetContentRegionAvail().X, ImGui.GetCursorScreenPos().Y)); // left upright, right tipped
-        TextC(Theme.Dim, "Stop at the line and let the head settle.");
+        BeginWork(s.Title, ("F", "hold to pour"), ("A/D|Mouse", "tip it: less foam, slower"), ("Esc", "stop"));
+        var nearLip = s.Top > s.Lip - 0.06f && s.Tilt > 0.05f;
+        var (colour, advice) =
+            s.Lost > 0f && s.Top >= s.Lip - 0.005f ? (Theme.Bad, "It's running over the low lip! Bring it upright.")
+            : nearLip ? (Theme.Warn, "Nearly at the low lip: bring it upright before it runs over.")
+            : s.Held && s.Tilt > 0.5f ? (Theme.Good, "Tipped: it runs down the side and barely foams. Upright for the last of it.")
+            : s.Held ? (Theme.Text, "Upright, it fills fast and foams up. Let go short of the line: the head settles.")
+            : s.Level > 0.05f ? (Theme.Dim, "Settling... the head sinks a little as it goes.")
+            : (Theme.Dim, "Tip the tankard (A/D) and hold F to pour. Bring it upright near the top, and let go at the line.");
+        TextC(colour, advice);
+
+        var (min, max) = PourPicture(s.Tilt, s.Level, s.Foam, s.Line, s.Lost, s.Held);
+        TakesPointer(min, max); // left upright, right tipped
+        var stateColour = s.Lost > 0f ? Theme.Bad : Theme.Dim;
+        TextC(stateColour, $"Head {s.Foam * 100:F0}%{(s.Lost > 0f ? $"   run over {s.Lost * 100:F0}%" : "")}   {PourSession.ServingsLeft(_sim, s.Cask)} left in the cask");
+        EndWork();
+    }
+
+    /// <summary>The pour's picture, from its numbers (the session's, or the scene gallery's); where it was drawn.</summary>
+    private (float2 Min, float2 Max) PourPicture(float tilt, float level, float foam, float line, float lost, bool held)
+    {
         var dl = ImGui.GetWindowDrawList();
-        var size = Gui.S(420, 200);
+        var size = Gui.S(420, 230);
         var min = ImGui.GetCursorScreenPos();
         ImGui.Dummy(in size);
         var max = min + size;
         Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
 
-        // The cask's end and its tap, top right.
-        var caskC = new float2(min.X + size.X * 0.5f + Gui.S(52), min.Y + Gui.S(36));
+        // The tankard's size, and its mouth's centre: held under the tap.
+        var w = Gui.S(76);
+        var h = Gui.S(116);
+        var inset = Gui.S(6);
+        var mouth = new float2(min.X + size.X * 0.5f + Gui.S(20), min.Y + Gui.S(92));
+
+        // The cask's end and its tap above and to the right; the spout pours just inside the mouth.
+        var caskC = new float2(mouth.X + Gui.S(70), min.Y + Gui.S(40));
         var spout = CaskAndTap(dl, caskC, MathF.Max(1f, MathF.Round(1.5f * Gui.Scale)), Gui.S(30));
 
-        // The tankard: its foot pivots, leaning its mouth toward the tap.
-        var w = Gui.S(70);
-        var h = Gui.S(110);
-        var pivot = new float2(min.X + size.X * 0.5f, max.Y - Gui.S(14));
-        var lean = s.Tilt * PourMaxLean;
+        // Leaning the mouth toward the tap: at this lean, the low lip is at the session's Lip.
+        var lean = MathF.Atan(PourSession.LipDrop * tilt * (h - inset) / (w * 0.5f));
         float cos = MathF.Cos(lean), sin = MathF.Sin(lean);
-        // x across the cup, y up it (negative on screen); turned clockwise by the lean, toward the tap.
-        float2 Cup(float x, float y) => pivot + new float2(x * cos - y * sin, x * sin + y * cos);
+        // x across the cup, y up it from the foot (negative on screen), turned about the mouth.
+        float2 Cup(float x, float y)
+        {
+            var dx = x;
+            var dy = y + h; // from the mouth
+            return mouth + new float2(dx * cos - dy * sin, dx * sin + dy * cos);
+        }
         var outer = new[] { Cup(-w / 2, 0), Cup(w / 2, 0), Cup(w / 2, -h), Cup(-w / 2, -h) };
-        Fill(dl, outer, new ImColor8(70, 48, 30, 255));
-        var inset = Gui.S(6);
+        // The handle, on the side away from the tap.
+        var hc = new ImColor8(70, 48, 30, 255);
+        var h0 = Cup(-w / 2, -h * 0.25f);
+        var h1 = Cup(-w / 2 - Gui.S(18), -h * 0.42f);
+        var h2 = Cup(-w / 2 - Gui.S(18), -h * 0.62f);
+        var h3 = Cup(-w / 2, -h * 0.78f);
+        dl.AddLine(in h0, in h1, hc, Gui.S(6));
+        dl.AddLine(in h1, in h2, hc, Gui.S(6));
+        dl.AddLine(in h2, in h3, hc, Gui.S(6));
+        Fill(dl, outer, hc);
         var inner = new[] { Cup(-w / 2 + inset, -inset), Cup(w / 2 - inset, -inset), Cup(w / 2 - inset, -h), Cup(-w / 2 + inset, -h) };
         Fill(dl, inner, new ImColor8(40, 28, 18, 255));
-        // The ale and its head, level whatever the lean: filled up to the height of their share of the cup's axis.
+        // The ale and its head, level whatever the lean: up to the height of their share of the cup's axis.
         float LevelY(float f) => Cup(0, -inset - (h - inset) * Math.Clamp(f, 0f, 1f)).Y;
-        var ale = Below(inner, LevelY(s.Level));
-        Fill(dl, ale, new ImColor8(184, 122, 40, 255));
-        var head = Below(Above(inner, LevelY(s.Level)), LevelY(s.Top));
-        Fill(dl, head, new ImColor8(240, 232, 210, 255));
-        // The line, marked on both walls inside.
-        var la = Cup(-w / 2 + inset, -inset - (h - inset) * s.Line);
-        var lb = Cup(w / 2 - inset, -inset - (h - inset) * s.Line);
-        dl.AddLine(in la, in lb, Theme.U8(Theme.Good, 0.9f), Gui.S(2));
-        // The handle on the far side.
-        var h0 = Cup(-w / 2, -h * 0.25f);
-        var h1 = Cup(-w / 2 - Gui.S(16), -h * 0.45f);
-        var h2 = Cup(-w / 2, -h * 0.7f);
-        dl.AddLine(in h0, in h1, new ImColor8(70, 48, 30, 255), Gui.S(6));
-        dl.AddLine(in h1, in h2, new ImColor8(70, 48, 30, 255), Gui.S(6));
-
-        // The stream from the tap into the mouth while you hold F.
-        if (s.Held)
+        var aleTop = LevelY(level);
+        var topY = LevelY(level + foam);
+        Fill(dl, Below(inner, aleTop), new ImColor8(184, 122, 40, 255));
+        Fill(dl, Below(Above(inner, aleTop), topY), new ImColor8(240, 232, 210, 255));
+        // The line, a mark on each wall inside (not across the mouth: tipped, that's open air).
+        var lineY = -inset - (h - inset) * line;
+        var tick = Gui.S(12);
+        var la0 = Cup(-w / 2 + inset, lineY);
+        var la1 = Cup(-w / 2 + inset + tick, lineY);
+        var lb0 = Cup(w / 2 - inset, lineY);
+        var lb1 = Cup(w / 2 - inset - tick, lineY);
+        dl.AddLine(in la0, in la1, Theme.U8(Theme.Good, 0.95f), Gui.S(2.5f));
+        dl.AddLine(in lb0, in lb1, Theme.U8(Theme.Good, 0.95f), Gui.S(2.5f));
+        // The low lip, warm as the ale nears it.
+        var lipAt = Cup(w / 2, -h);
+        var nearLip = level + foam > 1f - PourSession.LipDrop * tilt - 0.06f && tilt > 0.05f;
+        if (nearLip || lost > 0f)
+            dl.AddCircleFilled(in lipAt, Gui.S(4), Theme.U8(lost > 0f ? Theme.Bad : Theme.Warn, 0.9f), 12);
+        // What's run over, down the outside and on the boards.
+        if (lost > 0f)
         {
-            var mouth = Cup(w * 0.2f, -h);
-            var target = new float2(spout.X, Math.Max(mouth.Y, LevelY(s.Top)));
-            dl.AddLine(in spout, in target, new ImColor8(200, 140, 50, 230), Gui.S(4));
+            var drip = new float2(lipAt.X + Gui.S(2), max.Y - Gui.S(8));
+            dl.AddLine(in lipAt, in drip, new ImColor8(200, 140, 50, 200), Gui.S(3));
+            dl.AddCircleFilled(in drip, Gui.S(3) + Gui.S(12) * MathF.Min(1f, lost / PourSession.SpillLimit), new ImColor8(184, 122, 40, 150), 18);
         }
 
-        TextC(Theme.Dim, $"Head {s.Foam * 100:F0}%   {PourSession.ServingsLeft(_sim, s.Cask)} left in the cask");
-        EndWork();
+        // The stream while you hold F: straight down from the spout to the ale, or to the inner wall
+        // it meets first when tipped, then down that wall to the ale.
+        if (held)
+        {
+            var stream = new ImColor8(200, 140, 50, 230);
+            var x = spout.X;
+            var wallY = float.MaxValue;
+            float2? along = null;
+            for (var i = 0; i < inner.Length; i++)
+            {
+                var a = inner[i];
+                var b = inner[(i + 1) % inner.Length];
+                if ((a.X - x) * (b.X - x) > 0f || MathF.Abs(b.X - a.X) < 1e-3f)
+                    continue;
+                var y = a.Y + (b.Y - a.Y) * (x - a.X) / (b.X - a.X);
+                if (y > spout.Y && y < wallY && y > Cup(0, -h).Y + Gui.S(4))
+                {
+                    wallY = y;
+                    along = (a.Y > b.Y ? a : b) - (a.Y > b.Y ? b : a); // down the wall
+                }
+            }
+            var end = new float2(x, Math.Min(wallY, topY));
+            dl.AddLine(in spout, in end, stream, Gui.S(4));
+            if (wallY < topY && along is { } dir)
+            {
+                // Down the wall to the surface.
+                var t = (topY - end.Y) / MathF.Max(1e-3f, dir.Y);
+                var down = end + dir * t;
+                dl.AddLine(in end, in down, stream, Gui.S(3));
+            }
+            else
+                dl.AddCircleFilled(new float2(x, topY), Gui.S(3) + Gui.S(4) * (1f - tilt), new ImColor8(245, 238, 215, 220), 12); // the splash that makes foam
+        }
+
+        return (min, max);
     }
 
     /// <summary>A convex shape filled, as a fan of triangles.</summary>
@@ -546,26 +613,31 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawProbe(Sim.Tinkering.ProbeSession s)
     {
-        BeginWork(s.Title, ("A/D|Point", "run the probe (F let go)"), ("F", "hold, still, to press in"), ("Space", "on to the hinge: done"), ("Esc", "stop"));
+        BeginWork(s.Title, ("A/D|Point", "run the probe (F let go)"), ("F", "hold, still, to press in"), ("Space", "F held: flick it out · F let go: done"), ("Esc", "stop"));
         if (_probeTraceFor != s.StartTick)
         {
-            _probeTraceFor = s.StartTick;
+            (_probeTraceFor, _probeNothing, _probeNothingAt) = (s.StartTick, 0, float.NegativeInfinity);
             Array.Clear(_probeTrace);
         }
+        if (s.NothingGave != _probeNothing)
+            (_probeNothing, _probeNothingAt) = (s.NothingGave, _time);
         var bin = Math.Clamp((int)(s.Probe * _probeTrace.Length), 0, _probeTrace.Length - 1);
         _probeTrace[bin] += (s.Feel - _probeTrace[bin]) * 0.2f; // smoothed: the noise settles, a catch stands up
         var caught = _probeTrace[bin] > CatchFelt;
 
         // What to do now, from what the fingers know.
+        var sure = s.SpotRead > ProbeSureRead;
         var (colour, line) =
             s.Moving != 0 && s.TooHeavyToSweep ? (Theme.Bad, "Too heavy to sweep! Let go of F before you move.")
-            : s.Pressure > s.High ? (Theme.Bad, "Too hard: ease off a little, or it'll spring.")
-            : s.Held && s.InBand && s.Progress > 0f ? (Theme.Good, "That's it: hold it steady in the green.")
-            : s.Held && s.InBand ? (Theme.Good, "Steady in the green. If something's there, it's coming loose.")
-            : s.Held ? (Theme.Text, "Pressing in... bring it up into the green.")
-            : caught ? (Theme.Warn, "It catches here. Stop, then hold F to press it into the green.")
+            : _time - _probeNothingAt < 2.5f && !s.Held ? (Theme.Dim, "Nothing gives there. Feel along for the catch.")
+            : s.Pressure > s.High ? (Theme.Bad, "Past the green! Let go of F, quick, or it springs.")
+            : s.Held && s.InBand ? (Theme.Good, Controls.Keys("In the green: ~Space~ to flick it out!"))
+            : s.Held ? (Theme.Text, Controls.Keys("Pressing in... ~Space~ once the needle's in the green. Out of it, the trap goes off."))
+            : caught && !sure ? (Theme.Warn, "It catches here. Hold still a moment: the surer your read, the wider the green.")
+            : caught ? (Theme.Good, Controls.Keys("A good read. Hold ~F~ to press in, then ~Space~ while it's in the green."))
             : (Theme.Dim, UsingPointer ? "Sweep along the seam with the button up, and feel for a catch. Right-click when you're done." : "Sweep along the seam with F let go, and feel for a catch. The hinge end finishes.");
         TextC(colour, line);
+        var pictureTop = ImGui.GetCursorScreenPos().Y;
         ProbeScene(s.Probe, s.Feel, s.Pressure);
 
         var dl = ImGui.GetWindowDrawList();
@@ -603,6 +675,10 @@ public sealed partial class VillageGame
         var probeMin = new float2(x - 2, tMin.Y);
         var probeMax = new float2(x + 2, max.Y + 3);
         dl.AddRectFilled(in probeMin, in probeMax, Theme.U8(caught ? Theme.Warn : Theme.Accent, 0.9f), 1f, ImDrawFlags.None);
+        // The mouse is read across this seam, where the probe's drawn (not the box's picture above,
+        // narrower, which made the same move go further one place than another), from the picture's
+        // top down to here.
+        TakesPointer(new float2(min.X + 4, pictureTop), new float2(max.X - 4, max.Y));
         TextC(Theme.Dim, "hasp");
         ImGui.SameLine(size.X - Gui.S(24), 0);
         TextC(Theme.Dim, "hinge");
@@ -615,20 +691,28 @@ public sealed partial class VillageGame
         float At(float f) => gMin.X + f * gSize.X;
         dl.AddRectFilled(in gMin, in gMax, Theme.U8(Theme.Well), 3f, ImDrawFlags.None);
         Zone(dl, gMin.X, At(Sim.Tinkering.ProbeSession.LightTouch), gMin.Y, gMax.Y, Theme.Iron, 0.45f, "sweep");
-        Zone(dl, At(s.Low), At(s.High), gMin.Y, gMax.Y, Theme.Good, 0.6f, "ease");
+        Zone(dl, At(s.Low), At(s.High), gMin.Y, gMax.Y, Theme.Good, 0.6f, "flick");
         Zone(dl, At(Sim.Tinkering.ProbeSession.SpringAbove), gMax.X, gMin.Y, gMax.Y, Theme.Bad, 0.6f, "springs");
         var light = At(Sim.Tinkering.ProbeSession.LightTouch);
         dl.AddLine(new float2(light, gMin.Y - Gui.S(3)), new float2(light, gMax.Y + Gui.S(3)), Theme.U8(Theme.Text, 0.8f), Gui.S(1.5f));
         var needle = At(s.Pressure);
         var needleColour = s.Pressure > s.High ? Theme.Bad : s.InBand ? Theme.Good : s.TooHeavyToSweep ? Theme.Warn : Theme.Text;
         dl.AddRectFilled(new float2(needle - Gui.S(2), gMin.Y - Gui.S(4)), new float2(needle + Gui.S(2), gMax.Y + Gui.S(4)), Theme.U8(needleColour), 1f, ImDrawFlags.None);
-        if (s.Progress > 0f)
-            Bar("Spring", s.Progress, Theme.Good, "easing it out");
+        // The read of the spot, while the probe's still: what sets how wide the green is.
+        if (s.Moving == 0)
+            Bar("Read", s.SpotRead, s.SpotRead > ProbeSureRead ? Theme.Good : Theme.Dim, s.SpotRead > ProbeSureRead ? "sure of the spot" : "hold still to read the spot");
         EndWork();
     }
 
     /// <summary>How hard the smoothed feel has to catch to count as a catch, on the trace and in the advice.</summary>
     private const float CatchFelt = 0.55f;
+
+    /// <summary>A read of the spot this good is a sure one, in the advice (a catch's middle reads about 0.9).</summary>
+    private const float ProbeSureRead = 0.75f;
+
+    /// <summary>The probe's "nothing gave" count last seen, and when it last went up (game-side clock).</summary>
+    private int _probeNothing;
+    private float _probeNothingAt = float.NegativeInfinity;
 
     /// <summary>A labelled stretch of a gauge.</summary>
     private static void Zone(ImDrawListPtr dl, float x0, float x1, float y0, float y1, float4 colour, float alpha, string label)

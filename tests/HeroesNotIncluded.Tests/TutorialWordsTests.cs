@@ -1,0 +1,39 @@
+using HeroesNotIncluded.Sim.Defs;
+
+namespace HeroesNotIncluded.Tests;
+
+/// <summary>
+/// The tutorial's words as the game shows them: every key mark turned into a key, and every
+/// button a step glows (its "ui") an action the game has.
+/// </summary>
+public class TutorialWordsTests
+{
+    private static readonly Lazy<DefDatabase> Defs = new(() => DefDatabase.LoadDirectory(DevPaths.Defs!));
+
+    private static IEnumerable<(string Where, LessonDef Lesson)> Chapters()
+    {
+        yield return ("basics", Defs.Value.Basics);
+        foreach (var trade in Defs.Value.AllTrades)
+            foreach (var lesson in trade.Lessons)
+                yield return ($"{trade.Name}/{lesson.Id}", lesson);
+    }
+
+    [Fact]
+    public void EveryKeyMarkIsOneTheGameKnows()
+    {
+        var texts = Defs.Value.AllTrades.Select(t => ($"{t.Name} intro", t.TutorialIntro))
+            .Concat(Chapters().SelectMany(c => c.Lesson.Steps.SelectMany(s => new[] { ($"{c.Where}/{s.Id}", s.Text), ($"{c.Where}/{s.Id} more", s.More ?? "") })
+                .Concat(c.Lesson.Notes.Select(n => ($"{c.Where} note", n)))));
+        foreach (var (where, text) in texts)
+            Assert.False(Controls.Keys(text).Contains('~'), $"{where}: a key mark the game doesn't know in \"{text}\"");
+    }
+
+    [Fact]
+    public void EveryGlowedButtonIsAnAction()
+    {
+        var acts = Controls.Defs.Select(d => d.Id).ToHashSet();
+        foreach (var (where, lesson) in Chapters())
+            foreach (var step in lesson.Steps.Where(s => s.Ui != null))
+                Assert.True(acts.Contains(step.Ui!), $"{where}/{step.Id}: no action '{step.Ui}'");
+    }
+}
