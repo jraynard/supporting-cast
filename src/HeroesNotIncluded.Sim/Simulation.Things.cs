@@ -652,6 +652,9 @@ public sealed partial class Simulation
             return 0;
         if (cdef.Building is { Stash: true } && !Sim.Militia.Stashes.Stashed(this, def))
             return 0;
+        // A wares shelf takes what's sold from it, nothing else (Shops.Goods).
+        if (cdef.Building is { Display: true } && !HeroesNotIncluded.Sim.Shops.Goods.IsGear(def))
+            return 0;
         // A store for one kind of thing (the inn's key board) takes nothing else.
         if (cdef.Building is { StorageOnly.Count: > 0 } only && !only.StorageOnly.Contains(def.Name))
             return 0;

@@ -898,10 +898,14 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
 
     /// <summary>
     /// Is the order holding its asker's place in line: open, and not a piece they've already
-    /// handed over to be seen to (they step aside and wait for it to come back)?
+    /// handed over to be seen to (they step aside and wait for it to come back)? The inn's hamper,
+    /// sent for from the bar, holds a place only once it's up and nobody's running it over
+    /// (<see cref="Hospitality.Provisions.Waits"/>).
     /// </summary>
     public static bool WaitsInLine(Simulation sim, Order e) =>
-        e.IsOpen && !(HandsOver(e.Kind.Kind) && !e.Assignee.IsNull && sim.World.IsAlive(e.Subject) && Inventory.OnPerson(sim, e.Assignee, e.Subject));
+        e.IsOpen && (e.Kind.Kind == ServiceKind.Provisions
+            ? Hospitality.Provisions.Waits(sim, e)
+            : !(HandsOver(e.Kind.Kind) && !e.Assignee.IsNull && sim.World.IsAlive(e.Subject) && Inventory.OnPerson(sim, e.Assignee, e.Subject)));
 
     /// <summary>
     /// The customers waiting at a shop, front first: in the order they first ordered there. Worked

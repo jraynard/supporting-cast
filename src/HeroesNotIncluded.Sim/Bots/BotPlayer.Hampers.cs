@@ -8,54 +8,59 @@ using HeroesNotIncluded.Sim.Work;
 namespace HeroesNotIncluded.Sim.Bots;
 
 /// <summary>
-/// A lake town's inn, supplied from the cookhouse (<see cref="Provisions"/>): as innkeeper the bot
-/// orders, fetches and unpacks the hampers and serves lodgers their board off the warming shelf; as
-/// cook it ladles, packs and puts them up on the hatch. Nothing here runs where the inn has its own kitchen.
+/// The inn, supplied from the kitchen (<see cref="Provisions"/>): as innkeeper the bot sends for
+/// hampers from the bar, takes them off the hatch (unless a labourer runs them over) and unpacks
+/// them, and serves lodgers their board off a lake town's warming shelf; as cook it ties rations and
+/// (where the inn's apart) ladles bowls, packs them and puts them up on the hatch.
 /// </summary>
 public sealed partial class BotPlayer
 {
-    /// <summary>The inn's keeper with the cookhouse's hamper in their arms: to the warming shelf with it, and unpack it.</summary>
+    /// <summary>The inn's keeper with the kitchen's hamper in their arms: to the inn's shelf with it, and unpack it.</summary>
     private bool CarryHamper(Simulation sim, Entity me, long now)
     {
         if (!Provisions.KeepsInn(sim, me) || !Provisions.IsHamper(sim, sim.World.Get<Carrying>(me).Item)
-            || Provisions.Shelf(sim) is not { IsNull: false } shelf)
+            || Provisions.UnpackAt(sim) is not { IsNull: false } shelf)
             return false;
         Doing = "carrying the hamper back to the inn";
         return AtStation(sim, me, shelf, now, s => Send(new BarWorkCommand(me, s)));
     }
 
     /// <summary>
-    /// The inn's keeper, the warming shelf running low: over to the cookhouse hatch to order a hamper,
-    /// then in its line till it comes up (it's handed over at the front).
+    /// The inn's keeper, its shelves running low: sends to the kitchen for a hamper from the bar,
+    /// then, once it's up, over to the hatch to take it (unless a labourer's about to run it over).
     /// </summary>
     private bool SendForHamper(Simulation sim, Entity me, long now)
     {
         var w = sim.World;
         if (!Provisions.KeepsInn(sim, me))
             return false;
-        var hatch = Hatch.Of(sim, Provisions.Cookhouse(sim));
-        if (hatch.IsNull)
-            return false;
-        if (Provisions.Ordered(sim, me) != null)
+        if (Provisions.Ordered(sim, me) is { } order)
         {
-            Doing = "waiting at the cookhouse for the hamper";
-            if (sim.Shops.PlaceOf(sim, me) is { Cell: { } place } && w.Get<Position>(me).Cell != place)
-                Walk(sim, me, place, now);
-            return true;
+            if (!order.Assignee.IsNull || !Provisions.HamperUp(sim) || (Provisions.Split(sim) && Provisions.RunnerAbout(sim)))
+                return false; // being packed, or a labourer's running it: back to the bar meanwhile
+            var hatch = Hatch.Of(sim, Provisions.Cookhouse(sim));
+            if (hatch.IsNull)
+                return false;
+            Doing = "fetching the hamper from the kitchen";
+            if (!w.Get<Carrying>(me).Item.IsNull)
+            {
+                Send(new StowCommand(me));
+                return true;
+            }
+            return AtStation(sim, me, hatch, now, at =>
+            {
+                Send(new AvatarWorkCommand(me, true, w.Get<Thing>(at).Cell));
+                Send(new AvatarWorkCommand(me, false));
+            });
         }
-        if (Provisions.OnShelf(sim) >= Provisions.ShelfLow || ShopSystem.SmallHours(sim) || Provisions.Refusal(sim, me) != null)
+        if (!Provisions.WantsSupplies(sim) || ShopSystem.SmallHours(sim) || Provisions.Refusal(sim, me) != null)
             return false;
-        Doing = "off to the cookhouse for a hamper";
-        if (!w.Get<Carrying>(me).Item.IsNull)
-        {
-            Send(new StowCommand(me));
-            return true;
-        }
-        return AtStation(sim, me, hatch, now, at =>
-        {
-            Send(new AvatarWorkCommand(me, true, w.Get<Thing>(at).Cell));
-            Send(new AvatarWorkCommand(me, false));
-        });
+        var bar = Buildings.Parts(sim, Provisions.Inn(sim)).OrderBy(e => e.Index)
+            .FirstOrDefault(p => w.Get<Thing>(p).Def.Building is { Bar: true }, Entity.Null);
+        if (bar.IsNull)
+            return false;
+        Doing = "sending to the kitchen for a hamper";
+        return AtStation(sim, me, bar, now, _ => Send(new OrderProvisionsCommand(me)));
     }
 
     /// <summary>A lodger's board: a dish off the warming shelf, handed across to them.</summary>
@@ -93,7 +98,7 @@ public sealed partial class BotPlayer
     {
         var w = sim.World;
         return Provisions.IsHamper(sim, w.Get<Carrying>(me).Item) || Provisions.DishesOn(sim, me).Count > 0
-            || Ladleable(sim, me, view, Nearest(sim, me, "StewPot"));
+            || (Provisions.Split(sim) && Ladleable(sim, me, view, Nearest(sim, me, "StewPot")));
     }
 
     /// <summary>
@@ -120,7 +125,7 @@ public sealed partial class BotPlayer
         }
         var dishes = Provisions.DishesOn(sim, me).Sum(d => w.Get<Stack>(d).Count);
         var pot = Nearest(sim, me, "StewPot");
-        var ladling = Ladleable(sim, me, view, pot) && dishes < Provisions.Holds;
+        var ladling = Provisions.Split(sim) && Ladleable(sim, me, view, pot) && dishes < Provisions.Holds; // dishes for the board, where the inn's apart
         if (!ladling)
         {
             if (dishes == 0)

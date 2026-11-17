@@ -99,8 +99,8 @@ public sealed partial class VillageGame
         ImGui.EndDisabled();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             Tip(cantCharm != null ? Cap(cantCharm) + "."
-                : "Weave a mending into a strip of linen (a bandage), to keep. Torn, it mends whoever tears it. Put it out in the shrine with a price, "
-                + "and parties buy them as wards for the road: on a quest a charm spends itself on a wound it fits, and may turn a death into a bad wound.");
+                : "Weave a mending into a strip of linen (a bandage), to keep. Torn, it mends whoever tears it. Put it on the shrine's wares shelf (by the altar) "
+                + "and it's for sale: parties buy them as wards for the road: on a quest a charm spends itself on a wound it fits, and may turn a death into a bad wound.");
         if (!ImGui.BeginTabBar("gift"u8, ImGuiTabBarFlags.None))
         {
             Panel.End();

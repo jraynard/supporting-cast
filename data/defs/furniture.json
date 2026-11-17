@@ -445,6 +445,38 @@
       ]
     },
     {
+      // In each trade's shop: what's put on it is for sale, priced by its keeper (Shops/Goods). The
+      // parties look it over and line up to buy. What's on it stands on show (rendered like the show table).
+      "name": "WaresShelf", "label": "wares shelf", "category": "Building", "solid": true, "sprite": "buildings/shelf",
+      "description": "Plank shelves out front where the customers can see them. Holds 4 pieces: put your wares on it and price them, and the parties buy from it.",
+      "maxHp": 80, "flammability": 1.0,
+      "building": { "work": 80, "storageStacks": 4, "kept": true, "show": true, "display": true, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "model": [
+        { "min": [0.08, 0.6, 0], "max": [0.92, 0.7, 0.92], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.28, 0], "max": [0.92, 0.7, 0.08], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.28, 0.42], "max": [0.92, 0.7, 0.5], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.28, 0.84], "max": [0.92, 0.7, 0.92], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.06, 0.28, 0], "max": [0.14, 0.7, 0.94], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.86, 0.28, 0], "max": [0.94, 0.7, 0.94], "top": "furniture/oak_end", "side": "furniture/oak_leg" }
+      ]
+    },
+    {
+      // Behind the inn's bar: the innkeeper's goods for the road (the rations the cook sends over), for sale.
+      // The innkeeper's alone, though the kitchen shares the roof at Millbrook ("displayFor").
+      "name": "MerchandiseShelf", "label": "merchandise shelf", "category": "Building", "solid": true, "sprite": "buildings/shelf",
+      "description": "Plank shelves behind the bar. Holds 6 stacks: what the innkeeper sells for the road, rations from the cook's hampers first. Priced by the innkeeper.",
+      "maxHp": 80, "flammability": 1.0,
+      "building": { "work": 80, "storageStacks": 6, "kept": true, "show": true, "display": true, "displayFor": "Tavern", "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "model": [
+        { "min": [0.08, 0.6, 0], "max": [0.92, 0.7, 0.92], "top": "furniture/oak_leg", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.28, 0], "max": [0.92, 0.7, 0.08], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.28, 0.42], "max": [0.92, 0.7, 0.5], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.28, 0.84], "max": [0.92, 0.7, 0.92], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.06, 0.28, 0], "max": [0.14, 0.7, 0.94], "top": "furniture/oak_end", "side": "furniture/oak_leg" },
+        { "min": [0.86, 0.28, 0], "max": [0.94, 0.7, 0.94], "top": "furniture/oak_end", "side": "furniture/oak_leg" }
+      ]
+    },
+    {
       // Behind the bar and in the kitchen: where the clean tankards and bowls are kept.
       "name": "Shelf", "label": "shelf", "category": "Building", "solid": true, "sprite": "buildings/shelf",
       "description": "Plank shelves on brackets. Holds 6 stacks: the clean crockery lives here, and behind the bar what goes into a mix.",

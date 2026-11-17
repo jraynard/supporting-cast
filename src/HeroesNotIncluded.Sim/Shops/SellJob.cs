@@ -26,7 +26,7 @@ public sealed class SellJob(int order) : Job
                 || !w.IsAlive(e.Poster) || Goods.ShownIn(sim, e.Subject) is not { IsNull: false } shop
                 || !trade.Def.WorksAt(w.Get<PresetBuilding>(shop).Def) || sim.Reservations.IsReservedByOther(e.Subject, pawn))
                 continue;
-            if (Navigation.CanReach(sim, pawn, from, w.Get<Thing>(e.Subject).Cell, PathEnd.OnTile)
+            if (Navigation.CanReach(sim, pawn, from, w.Get<Thing>(e.Subject).Cell, PathEnd.Touch)
                 && Navigation.CanReach(sim, pawn, from, w.Get<Position>(e.Poster).Cell, PathEnd.Touch))
                 return new SellJob(e.Id);
         }
@@ -49,14 +49,17 @@ public sealed class SellJob(int order) : Job
         }
         var label = Sim.LabelOf(item);
         Report = $"Taking down the {label} for {e.PosterName}";
-        foreach (var s in GoTo(Get<Thing>(item).Cell, PathEnd.OnTile)) yield return s;
+        // It stands on the shop's wares shelf: reach it down from beside it.
+        foreach (var s in GoTo(Get<Thing>(item).Cell, PathEnd.Touch)) yield return s;
         if (HasFailed) yield break;
-        if (Goods.ShownIn(Sim, item).IsNull) // (it's for sale, so not IsAvailable: only its seller's shop takes it down)
+        if (Goods.ShownIn(Sim, item).IsNull || !Sim.World.TryGet<Stored>(item, out var shelf)
+            || !Inventory.CanReachContainer(Sim, Pawn, shelf.In)) // (it's for sale, so not IsAvailable: only its seller takes it down)
         {
             Fail("it's gone from the shelf");
             yield break;
         }
-        Get<Carrying>(Pawn).Item = Inventory.PickUp(Sim, Pawn, item, Get<Carrying>(Pawn).Item);
+        var down = Sim.TakeFromStack(item, 1);
+        Get<Carrying>(Pawn).Item = Inventory.PickUp(Sim, Pawn, down, Get<Carrying>(Pawn).Item);
 
         Report = $"Selling {e.PosterName} the {label}";
         foreach (var s in GoToEntity(e.Poster, PathEnd.Touch, 1500)) yield return s;

@@ -132,7 +132,7 @@ public sealed class PackSession : WorkSession
             return;
         var q = Crafting.QualityLabel(sim.World.Get<Crafted>(item).Quality);
         var tasting = sim.World.Get<Ration>(item).Flavour.Words();
-        sim.Messages.Tell(Worker, MessageKind.Info, $"You tie off a {q} bundle of rations, {tasting}. Set it out in the inn to sell.", sim.World.Get<Thing>(Table).Cell);
+        sim.Messages.Tell(Worker, MessageKind.Info, $"You tie off a {q} bundle of rations, {tasting}. It goes in the inn's next hamper, and the innkeeper sells it.", sim.World.Get<Thing>(Table).Cell);
     }
 
     protected override void Cloned() => FoldMarks = (float[])FoldMarks.Clone();

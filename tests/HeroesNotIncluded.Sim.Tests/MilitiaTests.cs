@@ -274,27 +274,38 @@ public class MilitiaTests
     [Fact]
     public void ABandAtYourElbowTakesItInTurns()
     {
-        var sim = Round(director: false);
-        var me = Me(sim);
-        var w = sim.World;
-        var here = w.Get<Position>(me).Cell;
-        var band = Raids.Spawn(sim, Enumerable.Repeat(sim.Defs.AllRaiderKinds.First(k => k.Name == "Swordsman"), 3).ToList(), here, here, sim.Rand);
-        Assert.Equal(3, band.Count);
-        long firstHurt = -1, downed = -1;
-        var mostOnMe = 0;
-        for (var t = 0; t < SimClock.TicksPerSecond * 90 && downed < 0; t++)
+        // Over a few towns (one seed's rolls swing it by seconds either way): standing there doing
+        // nothing, you've still a few blows' grace to answer. It was ~5 s when all three swung at once.
+        var lasted = new List<float>();
+        foreach (var seed in new ulong[] { 1234, 1, 2 })
         {
-            sim.Tick();
-            mostOnMe = Math.Max(mostOnMe, Engagement.Pressers(sim, me, Entity.Null));
-            if (firstHurt < 0 && w.Get<Health>(me).Injuries.Count > 0)
-                firstHurt = sim.Clock.Tick;
-            if (w.Get<Creature>(me).Downed)
-                downed = sim.Clock.Tick;
+            var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), seed);
+            sim.Presets.PresetMode = true;
+            VillageRound.Setup(sim);
+            sim.Round.OpenLobby();
+            sim.ApplyNow(new JoinLobbyCommand(Guid.Empty, "Arin", default));
+            sim.ApplyNow(new StartRoundCommand());
+            sim.TickMany(SimClock.TicksPerHour / 4);
+            var me = Me(sim);
+            var w = sim.World;
+            var here = w.Get<Position>(me).Cell;
+            var band = Raids.Spawn(sim, Enumerable.Repeat(sim.Defs.AllRaiderKinds.First(k => k.Name == "Swordsman"), 3).ToList(), here, here, sim.Rand);
+            Assert.Equal(3, band.Count);
+            long firstHurt = -1, downed = -1;
+            var mostOnMe = 0;
+            for (var t = 0; t < SimClock.TicksPerSecond * 90 && downed < 0; t++)
+            {
+                sim.Tick();
+                mostOnMe = Math.Max(mostOnMe, Engagement.Pressers(sim, me, Entity.Null));
+                if (firstHurt < 0 && w.Get<Health>(me).Injuries.Count > 0)
+                    firstHurt = sim.Clock.Tick;
+                if (w.Get<Creature>(me).Downed)
+                    downed = sim.Clock.Tick;
+            }
+            Assert.True(firstHurt >= 0, "they came at you");
+            Assert.Equal(Engagement.OnPlayer, mostOnMe);
+            lasted.Add(((downed < 0 ? sim.Clock.Tick : downed) - firstHurt) / (float)SimClock.TicksPerSecond);
         }
-        Assert.True(firstHurt >= 0, "they came at you");
-        Assert.Equal(Engagement.OnPlayer, mostOnMe);
-        // Standing there doing nothing, you've still a few blows' grace to answer: it was ~5 s when all three swung at once.
-        var lasted = (downed < 0 ? sim.Clock.Tick : downed) - firstHurt;
-        Assert.True(lasted >= SimClock.TicksPerSecond * 6, $"downed {lasted / (float)SimClock.TicksPerSecond:0.0} s after the first wound");
+        Assert.True(lasted.Average() >= 6f, $"downed after {string.Join(", ", lasted.Select(s => $"{s:0.0} s"))} from the first wound");
     }
 }

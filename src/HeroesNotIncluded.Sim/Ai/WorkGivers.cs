@@ -41,13 +41,13 @@ public sealed class WorkGivers
                     WorkType.Construct => Shops.SellJob.For(sim, pawn) ?? Construct(sim, pawn) ?? Deconstruct(sim, pawn),
                     WorkType.Craft => Shops.SellJob.For(sim, pawn) ?? Shops.MendJob.For(sim, pawn) ?? Tinkering.OpenBoxJob.For(sim, pawn) ?? Tinkering.AppraiseJob.For(sim, pawn) ?? Tinkering.WagonJob.For(sim, pawn) ?? Tinkering.MendBreachJob.For(sim, pawn) ?? Carpentry.Carpenters.Saw(sim, pawn) ?? Carpentry.Carpenters.Fletch(sim, pawn) ?? Craft(sim, pawn, type), // a sale is quick, a mend is not
                     WorkType.Cook => Shops.RatJob.For(sim, pawn) ?? Shops.ServeJob.For(sim, pawn)
-                        ?? Hospitality.UnpackHamperJob.For(sim, pawn) ?? Hospitality.PackHamperJob.For(sim, pawn) ?? Hospitality.OrderProvisionsJob.For(sim, pawn) // a lake town's inn, supplied from the cookhouse
+                        ?? Hospitality.UnpackHamperJob.For(sim, pawn) ?? Hospitality.PackHamperJob.For(sim, pawn) ?? Hospitality.OrderProvisionsJob.For(sim, pawn) // the inn, supplied from the kitchen
                         ?? Shops.LodgeJob.For(sim, pawn) ?? Shops.ServeJob.SpareFor(sim, pawn) ?? Shops.SellJob.For(sim, pawn) ?? Shops.TapJob.For(sim, pawn) ?? Shops.WashJob.For(sim, pawn) ?? Shops.CookPotJob.For(sim, pawn) ?? Shops.DressJob.For(sim, pawn) ?? Shops.HangKeyJob.For(sim, pawn) ?? Shops.MakeBedJob.For(sim, pawn) ?? Shops.CleanJob.For(sim, pawn) ?? Craft(sim, pawn, type),
                     WorkType.Hunt => Butcher(sim, pawn) ?? Hunt(sim, pawn),
                     WorkType.Fish => Fish(sim, pawn),
                     WorkType.Mine => Harvest(sim, pawn, type) ?? Dig(sim, pawn),
                     WorkType.Chop or WorkType.Harvest => Harvest(sim, pawn, type),
-                    WorkType.Haul => Favours.ErrandJob.For(sim, pawn) ?? Haul(sim, pawn),
+                    WorkType.Haul => Hospitality.HamperRunJob.For(sim, pawn) ?? Favours.ErrandJob.For(sim, pawn) ?? Haul(sim, pawn),
                     _ => null,
                 };
                 if (job != null)

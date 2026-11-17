@@ -175,8 +175,8 @@ public class ShopTests
     {
         var (sim, keeper, inn, _) = Inn(aleOnly: false);
         var sign = Perception.For(sim, keeper).Prices(inn);
-        // Everything its roles serve, but the hampers a cookhouse sends an inn without a kitchen.
-        Assert.Equal(sim.Defs.AllServices.Where(d => sim.World.Get<PresetBuilding>(inn).Def.Has(d.AtRole) && d.Kind != ServiceKind.Provisions).Select(d => d.Kind), sign.Select(p => p.Kind));
+        // Everything its roles serve, the kitchen's hampers for the innkeeper included.
+        Assert.Equal(sim.Defs.AllServices.Where(d => sim.World.Get<PresetBuilding>(inn).Def.Has(d.AtRole)).Select(d => d.Kind), sign.Select(p => p.Kind));
         Assert.All(sign, p => Assert.True(p.Offered && p.Price == sim.Defs.Service(p.Kind).DefaultPrice));
 
         sim.ApplyNow(new SetPriceCommand(keeper, inn, ServiceKind.Drink, 7, true));

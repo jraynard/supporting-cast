@@ -257,7 +257,7 @@ public sealed partial class VillageGame
             prev = p;
         }
         var label2 = new float2(v0.X, v1.Y + Gui.S(6));
-        dl.AddText(in label2, Theme.U8(Theme.Dim), "from above");
+        dl.AddText(in label2, Theme.U8(Theme.Dim), "from above"u8);
         EndWork();
     }
 
@@ -597,9 +597,9 @@ public sealed partial class VillageGame
         }
         dl.AddLine(in m0, in m1, Theme.U8(Theme.Parchment), Gui.S(2));
         var limbs = new float2(left, mark + Gui.S(6));
-        dl.AddText(in limbs, Theme.U8(Theme.Dim), "upper limb");
+        dl.AddText(in limbs, Theme.U8(Theme.Dim), "upper limb"u8);
         var lower = new float2(mid + Gui.S(8), mark + Gui.S(6));
-        dl.AddText(in lower, Theme.U8(Theme.Dim), "lower limb");
+        dl.AddText(in lower, Theme.U8(Theme.Dim), "lower limb"u8);
         EndWork();
     }
 

@@ -2431,3 +2431,28 @@ sends the player to the chest for six logs first (the chest is out of reach of t
   (`AskForHandCommand`): of the AI villagers who hear it clearly, the one who thinks best of you
   comes (`HelpJob`, `Helping`), unless nobody thinks well enough of you (`Pairs.MinOpinion`).
 - Saves to format 54. `QuestTaleTests`, `PairTests`.
+
+### Wares shelves, and the inn's supplies from the cook (2026-11-17)
+- **Wares shelves** (`Shops/Goods`): a playtester couldn't find how the healer sold charms (drop it
+  on the shrine's floor, click it). Gear is now sold only from a shop's shelf (`display` furniture):
+  a `WaresShelf` in the smithy, shrine, tinker's shop and woodshop, a `MerchandiseShelf` behind each
+  inn's bar (`displayFor` the innkeeper, so the cook can't sell from it at Millbrook). Put on it by its
+  seller (F with it in hand, from the pack, or the inventory's "Put on the wares shelf",
+  `ShelveCommand`), a piece is for sale at once at a fair price (`Goods.Shelved`, `DefaultPrice`); the
+  shelf's window sets prices (`DrawShelfPrices`). Only its seller takes a piece down (it comes off
+  sale, unless someone's buying it). The shelf shows what's on it. The AI empath and carpenter, the
+  bots and `SellJob` all work from the shelf; floor items are no longer on show.
+- **The inn's supplies from the cook** (`Hospitality/Provisions`, now both towns, `Provisions.Active`):
+  the cook doesn't sell to parties; the innkeeper sends for a hamper from the bar (the bar card's
+  button, `OrderProvisionsCommand`), and holds no place in the hatch's line till it's up. The cook
+  packs rations (an AI cook ties them itself, `PackHamperJob.RoadFood`) and, where the kitchen's apart,
+  dishes for the board. A hamper is paid for by what's in it (`Provisions.Charge`: the sign's price is
+  a full one's). Unpacked at the inn, its rations go on sale on the merchandise shelf; parties no longer
+  take rations free as they set out. Millbrook's inn takes hampers at its own hatch.
+- **The labourer's run** (Reedmere): a labourer takes the hamper off the cookhouse hatch and carries
+  it over (`HamperRunJob`, F at the hatch for a player's), paid `Provisions.RunFee` by the innkeeper;
+  the innkeeper fetches it only with no AI labourer about (`Provisions.Waits`, `Collect`).
+- Practice customers bring silver to spare for what they came for (`Practice.CustomerPurse`): a
+  tinker's curio went unasked for, its bearer broke on meals and drinks.
+- `ABandAtYourElbowTakesItInTurns` averages three towns: on one seed it swung from 6.8 s to 5.0 s with
+  the new furniture, and seeds 5, 9 and 11 were under 6 s before it.

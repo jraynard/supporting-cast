@@ -213,8 +213,28 @@ public sealed class FletchJob(Entity bench, Entity chest) : Job
         SkillRules.Learn(Sim, Pawn, Skill.Crafting, SkillRules.XpPerWorkTick * Ticks);
         var quiver = Sim.CreateItem(Sim.Defs.Thing(Fletching.Def), 1);
         Carpenters.Made(Sim, [quiver], Pawn);
-        // Laid out in the woodshop where the archers will see it, at the price the carpenter asks.
-        Sim.PlaceItemNear(quiver, PawnCell);
-        Shops.Goods.Set(Sim, Pawn, quiver, Carpenters.QuiverPrice, true);
+        // Onto the woodshop's wares shelf where the archers will see it, at the price the carpenter asks
+        // (set down by the bench if the shelf's full or gone).
+        var shelf = Shops.Goods.MyDisplay(Sim, Pawn);
+        if (shelf.IsNull || Sim.ContainerRoom(shelf, Get<Thing>(quiver).Def, null) <= 0)
+        {
+            Sim.PlaceItemNear(quiver, PawnCell);
+            yield break;
+        }
+        Get<Carrying>(Pawn).Item = Inventory.PickUp(Sim, Pawn, quiver, Get<Carrying>(Pawn).Item);
+        foreach (var s in GoTo(Get<Thing>(shelf).Cell, PathEnd.Touch)) yield return s;
+        if (HasFailed || !Alive(shelf) || !Alive(quiver))
+            yield break;
+        if (Get<Carrying>(Pawn).Item == quiver)
+        {
+            Get<Carrying>(Pawn).Item = Entity.Null;
+            var left = Sim.Store(shelf, quiver);
+            if (!left.IsNull)
+                Sim.PlaceItemNear(left, PawnCell);
+        }
+        else if (Inventory.InOwnPack(Sim, Pawn, quiver))
+            Inventory.StoreFromPack(Sim, Pawn, shelf, quiver);
+        if (Alive(quiver) && Sim.World.Has<Stored>(quiver) && Sim.World.Get<Stored>(quiver).In == shelf)
+            Shops.Goods.Set(Sim, Pawn, quiver, Carpenters.QuiverPrice, true);
     }
 }

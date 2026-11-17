@@ -226,9 +226,13 @@ public class TradeLessonTests
         var quiver = y.Hold("Quiver");
         Assert.Equal("show", y.Stage.Step);
         Assert.False(y.Stage.Done);
+        // Onto the woodshop's wares shelf: put there, it's for sale at once.
         y.W.Get<Carrying>(y.Me).Item = Entity.Null;
-        y.Sim.PlaceItemNear(quiver, y.W.Get<Thing>(y.Station(Carpentry.Carpenters.BenchDef)).Cell);
-        Assert.True(Goods.Set(y.Sim, y.Me, quiver, 5, true));
+        Inventory.Stow(y.Sim, y.Me, quiver);
+        var shelf = Goods.MyDisplay(y.Sim, y.Me);
+        y.StandBy(shelf);
+        y.Sim.ApplyNow(new StoreFromPackCommand(y.Me, shelf, quiver));
+        Assert.True(y.W.Has<ForSale>(quiver));
         Assert.True(y.Stage.Done);
     }
 
@@ -424,9 +428,12 @@ public class TradeLessonTests
         Charms.Make(y.Sim, y.Me, y.Sim.Defs.AllMendings.First(m => m.Heals.Count > 0), 0, 0.8f);
         Assert.Equal("show", y.Stage.Step);
         var charm = Charms.Carried(y.Sim, y.Me).Single();
-        var item = Inventory.TakeFromPerson(y.Sim, y.Me, charm, 1);
-        y.Sim.PlaceItemNear(item, y.W.Get<Position>(y.Me).Cell);
-        Assert.True(Goods.Set(y.Sim, y.Me, item, 4, true));
+        var shelf = Goods.MyDisplay(y.Sim, y.Me);
+        y.StandBy(shelf);
+        if (y.W.Get<Carrying>(y.Me).Item == charm)
+            Inventory.Stow(y.Sim, y.Me, Inventory.TakeFromPerson(y.Sim, y.Me, charm, 1));
+        y.Sim.ApplyNow(new StoreFromPackCommand(y.Me, shelf, charm));
+        Assert.True(y.W.Has<ForSale>(charm), "put on the shrine's wares shelf, it's for sale");
         Assert.True(y.Stage.Done);
 
         static bool Reaches(Yard y, int3 c)

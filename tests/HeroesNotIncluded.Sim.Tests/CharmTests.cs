@@ -118,9 +118,11 @@ public class CharmTests
     public void AnAdventurerBuysACharmOnShowForTheRoad()
     {
         var (sim, me, shrine, party) = Town();
-        var cell = ShopSystem.LineCells(sim, shrine).Last();
-        var charm = sim.PlaceItemNear(NewCharm(sim, "Knit"), cell);
-        Assert.Equal(shrine, Buildings.At(sim, sim.World.Get<Thing>(charm).Cell));
+        // On the shrine's wares shelf (where a charm's sold from), priced.
+        var shelf = Goods.MyDisplay(sim, me);
+        Assert.Equal(shrine, Buildings.Of(sim, shelf));
+        var charm = NewCharm(sim, "Knit");
+        Assert.True(sim.Store(shelf, charm).IsNull);
         sim.ApplyNow(new SetItemPriceCommand(me, charm, 10, true));
         Assert.Equal(shrine, Goods.ShownIn(sim, charm));
         Assert.All(party, e => Assert.True(Goods.IsUpgrade(sim, e, charm)));

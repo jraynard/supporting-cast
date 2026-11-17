@@ -3,6 +3,7 @@ using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Shops;
 using HeroesNotIncluded.Sim.Systems;
+using HeroesNotIncluded.Sim.Hospitality;
 using HeroesNotIncluded.Sim.Work;
 
 namespace HeroesNotIncluded.Sim.Bots;
@@ -113,40 +114,26 @@ public sealed partial class BotPlayer
         return false;
     }
 
-    /// <summary>Bundles of rations it keeps on show while there are parties in town to buy them.</summary>
-    public const int RationsOnShow = 2;
-
-    // The bundles it's put out for sale (its own to know of).
-    private readonly List<Entity> _rationsOut = [];
-
     /// <summary>
-    /// Rations for the road, while a party's in town: three portions packed at the prep table, tied,
-    /// and set down in the kitchen priced for sale (the bar sells them). Greedier, dearer.
+    /// Rations for the road, for the inn's hampers: while a hamper's on order or the innkeeper's
+    /// merchandise shelf is short of them, three portions packed at the prep table and tied, kept on
+    /// it to go in the next hamper (the innkeeper sells them, not the cook). Two at most.
     /// </summary>
     private bool PackRations(Simulation sim, Entity me, PerceptionView view, long now)
     {
         var w = sim.World;
-        _rationsOut.RemoveAll(r => view.Sale(r) is not { Seller: var seller } || seller != me);
-        // A party in town: seen, or heard ordering (the kitchen's walls hide the common room).
-        var party = view.Creatures().Any(e => w.Has<Adventurer>(e))
-            || view.Orders().Any(o => now - o.PostedTick < SimClock.TicksPerHour * 4 && w.IsAlive(o.Poster) && w.Has<Adventurer>(o.Poster));
-        if (_rationsOut.Count >= RationsOnShow || !party)
+        if (!Provisions.Cooks(sim, me))
+            return false;
+        var wanted = Rations.HamperWanted(sim, me)
+            || (!Provisions.Merchandise(sim).IsNull && Provisions.RationsShelved(sim) < Provisions.RationsLow);
+        if (!wanted || Rations.Carried(sim, me).Count >= PackHamperJob.RationsPerHamper)
             return false;
         var table = Part(sim, me, "PrepTable");
         if (table.IsNull)
             return false;
-        if (Rations.Carried(sim, me).FirstOrDefault(Entity.Null) is { IsNull: false } bundle)
+        if (Rations.Carried(sim, me).FirstOrDefault(Entity.Null) is { IsNull: false } bundle && w.Get<Carrying>(me).Item == bundle)
         {
-            if (w.Get<Carrying>(me).Item == bundle)
-            {
-                Send(new StowCommand(me));
-                return true;
-            }
-            Doing = "setting out rations for sale";
-            var price = Math.Max(1, (int)MathF.Round(3 * (0.85f + 0.5f * Temper.Greed)));
-            Send(new DropFromPackCommand(me, bundle));
-            Send(new SetItemPriceCommand(me, bundle, price, true));
-            _rationsOut.Add(bundle);
+            Send(new StowCommand(me));
             return true;
         }
         // Three portions of something that keeps on the road, in hand (packing takes from the hand first, not the pack's roast).

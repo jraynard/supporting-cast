@@ -120,6 +120,9 @@ public static class Practice
     /// A party now, the way the player's trade wants it: hurt for a healer, their blades worn for a
     /// smith (chipped, or only dull), a locked strongbox and a curio for a tinker, archers for a carpenter; hungry, for the inn.
     /// </summary>
+    /// <summary>Silver each practice customer brings beyond their party's purse, for what they came for.</summary>
+    public const int CustomerPurse = 15;
+
     public static List<Entity> SendCustomers(Simulation sim, Entity player, CustomerKind wear = CustomerKind.Trade)
     {
         var w = sim.World;
@@ -135,6 +138,9 @@ public static class Practice
         {
             var e = party[k];
             Hospitality.DirectionsSystem.KnowsTheTown(sim, e); // they've been here before: no asking the way
+            // Silver to spare for what they came for: a meal and a round on the way mustn't leave the
+            // lesson's customer unable to pay for it (a tinker's curio went unasked for, its bearer broke).
+            Inventory.Stow(sim, e, sim.CreateItem(sim.Defs.Thing(Shops.Coin.Silver), CustomerPurse));
             switch (trade)
             {
                 case "Healer":

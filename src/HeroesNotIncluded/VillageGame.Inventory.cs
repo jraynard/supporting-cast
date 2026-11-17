@@ -305,7 +305,20 @@ public sealed partial class VillageGame
             if (ImGui.MenuItem("Put down"u8))
                 Later(new AvatarDropCommand(_avatar, w.Get<Position>(_avatar).Cell));
         }
-        if (packed && !_openStorage.IsNull && Inventory.CanReachContainer(_sim, _avatar, _openStorage)
+        // Your own wares onto your shop's shelf, for sale: where players find selling (Shops.Goods).
+        if ((held || packed) && Sim.Shops.Goods.IsGear(def) && Sim.Shops.Goods.MyDisplay(_sim, _avatar) is { IsNull: false } wares
+            && Inventory.CanReachContainer(_sim, _avatar, wares))
+        {
+            any = true;
+            var room = _sim.ContainerRoom(wares, def, w.Get<Thing>(item).Material) > 0;
+            ImGui.BeginDisabled(!room);
+            if (ImGui.MenuItem($"Put on the {w.Get<Thing>(wares).Label} for sale"))
+                Later(new Sim.Shops.ShelveCommand(_avatar, item));
+            ImGui.EndDisabled();
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                Tip(room ? "It goes up for sale at a fair price; open the shelf to change it." : $"The {w.Get<Thing>(wares).Label} is full.");
+        }
+        if (packed && !_openStorage.IsNull && _openStorage != Sim.Shops.Goods.MyDisplay(_sim, _avatar) && Inventory.CanReachContainer(_sim, _avatar, _openStorage)
             && _sim.ContainerRoom(_openStorage, def, w.Get<Thing>(item).Material) > 0)
         {
             any = true;

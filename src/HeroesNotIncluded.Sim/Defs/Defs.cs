@@ -513,6 +513,22 @@ public sealed class BuildingProps
     public bool Show { get; set; }
 
     /// <summary>
+    /// A shop's wares shelf (<c>Shops.Goods</c>): gear its keeper puts on it is for sale, and what's
+    /// on it is all that's on show. Players find selling here rather than by dropping things on the floor.
+    /// </summary>
+    public bool Display { get; set; }
+
+    /// <summary>
+    /// The trade role that sells from a <see cref="Display"/> where one building has several (the
+    /// innkeeper's merchandise shelf in an inn with its kitchen): empty for whoever keeps the shop.
+    /// </summary>
+    public string DisplayFor { get; set; } = "";
+
+    /// <summary><see cref="DisplayFor"/> as a role (<see cref="TownRole.None"/>: anyone who keeps the shop).</summary>
+    [JsonIgnore] public TownRole DisplayRole => _displayRole ??= TownRoles.Parse(DisplayFor, "displayFor");
+    private TownRole? _displayRole;
+
+    /// <summary>
     /// Something to shoot at (the festival's butts): an arrow along its line stops in it
     /// (<c>Combat.Reach.TargetAlong</c>) rather than flying on, and lands somewhere on its face.
     /// </summary>

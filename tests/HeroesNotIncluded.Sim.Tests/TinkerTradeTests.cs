@@ -279,6 +279,7 @@ public class TinkerTradeTests
         // The key's kept between jobs: still on them hours later.
         sim.TickMany(SimClock.TicksPerHour * 3);
         Assert.False(Locksmithing.KeyFor(sim, keeper, sim.World.Get<LockCut>(door).Seed).IsNull);
+        SettledStoreroomDoor(sim); // they may be just through it again (for a hamper off the hatch): locked once they're clear
         // A tinker in the doorway sees a lock to pick, and no key for it.
         Assert.StartsWith("The lock on the", Tinkers.ActionAt(sim, me, door));
         Assert.False(Perception.For(sim, me).Lock(door)!.Value.HaveKey);

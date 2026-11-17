@@ -30,7 +30,7 @@ public sealed partial class BotPlayer
     // Each piece it's put out: what it first asked, and when it last priced it.
     private readonly Dictionary<Entity, (int First, long Since)> _asked = [];
 
-    // The piece it's just set down in the shop, to price once it's lying there.
+    // The piece it's just put on its wares shelf, to price once it's there.
     private Entity _placing = Entity.Null;
     private long _goodsHeardUpTo;
 
@@ -42,7 +42,7 @@ public sealed partial class BotPlayer
             || GoodsFor(sim, me, order) is not { IsNull: false } item)
             return false;
         var label = w.Get<Thing>(item).Label;
-        if (w.Get<Thing>(item).Spawned)
+        if (w.TryGet<Stored>(item, out var onShelf) && Goods.IsDisplay(sim, onShelf.In))
         {
             Doing = $"taking down the {label} for {order.PosterName}";
             // A hand free to take it, if the pack hasn't room: what's in it goes in the pack, or down.
@@ -55,9 +55,9 @@ public sealed partial class BotPlayer
                     Send(new AvatarDropCommand(me, w.Get<Position>(me).Cell));
                 return true;
             }
-            var cell = w.Get<Thing>(item).Cell;
-            if (AvatarSystem.InReach(w.Get<Position>(me).Cell, cell))
-                Use(me, cell);
+            var cell = w.Get<Thing>(onShelf.In).Cell;
+            if (Inventory.CanReachContainer(sim, me, onShelf.In))
+                Send(new TakeFromStorageCommand(me, item));
             else
                 Walk(sim, me, cell, now);
             return true;
@@ -131,8 +131,12 @@ public sealed partial class BotPlayer
     {
         var w = sim.World;
         return Goods.OnShow(sim).Count(g => w.Get<ForSale>(g.Item).Seller == me) + Loose(sim, me).Count(i => ForTheShelf(sim, me, i))
-            + _asked.Keys.Count(e => w.IsAlive(e) && w.Get<Thing>(e).Spawned && !w.Has<ForSale>(e) && MadeBy(sim, e, me));
+            + _asked.Keys.Count(e => w.IsAlive(e) && OnMyShelf(sim, me, e) && !w.Has<ForSale>(e) && MadeBy(sim, e, me));
     }
+
+    /// <summary>Lying on a wares shelf it sells from.</summary>
+    private static bool OnMyShelf(Simulation sim, Entity me, Entity item) =>
+        sim.World.TryGet<Stored>(item, out var s) && Goods.CanSellAt(sim, me, s.In);
 
     /// <summary>
     /// The shop's stock seen to: a piece just set down is priced; a piece made and on it goes out
@@ -149,9 +153,9 @@ public sealed partial class BotPlayer
             return Shutters(sim, me, shop);
         if (_placing is { IsNull: false } put)
         {
-            if (!w.IsAlive(put) || !w.Get<Thing>(put).Spawned || w.Has<ForSale>(put))
-                _placing = Entity.Null; // priced, or picked back up
-            else if (Buildings.At(sim, w.Get<Thing>(put).Cell) == shop)
+            if (!w.IsAlive(put) || !(OnMyShelf(sim, me, put) || Loose(sim, me).Contains(put)))
+                _placing = Entity.Null; // sold, or gone
+            else if (OnMyShelf(sim, me, put))
             {
                 _placing = Entity.Null;
                 var ask = Asking(sim, put);
@@ -165,15 +169,7 @@ public sealed partial class BotPlayer
                 return true;
             }
             else
-            {
-                // It landed outside the shop: back up with it.
-                var at = w.Get<Thing>(put).Cell;
-                if (AvatarSystem.InReach(w.Get<Position>(me).Cell, at))
-                    Use(me, at);
-                else
-                    Walk(sim, me, at, now);
-                return true;
-            }
+                _placing = Entity.Null; // still on it: it goes out again below
         }
         // Marked down once it's sat a while.
         foreach (var (item, _, price) in Goods.OnShow(sim))
@@ -193,7 +189,7 @@ public sealed partial class BotPlayer
         }
         // Pieces it took off sale while the town was busy with newcomers go back up at what they were.
         foreach (var e in _asked.Keys.OrderBy(e => e.Index).ToList())
-            if (w.IsAlive(e) && !w.Has<ForSale>(e) && w.Get<Thing>(e).Spawned && Buildings.At(sim, w.Get<Thing>(e).Cell) == shop && MadeBy(sim, e, me))
+            if (w.IsAlive(e) && !w.Has<ForSale>(e) && OnMyShelf(sim, me, e) && MadeBy(sim, e, me))
             {
                 var (first, _) = _asked[e];
                 var ask = _offSale.GetValueOrDefault(e, first);
@@ -206,18 +202,27 @@ public sealed partial class BotPlayer
             }
         if (Goods.OnShow(sim).Count(g => w.Get<ForSale>(g.Item).Seller == me) >= StockWanted)
             return false;
-        var piece = Loose(sim, me).FirstOrDefault(i => ForTheShelf(sim, me, i) && Showable(sim, me, view, i), Entity.Null);
-        if (piece.IsNull || DisplayCell(sim, me, shop) is not { } spot)
+        var shelf = Goods.DisplayOf(sim, shop, me);
+        var piece = Loose(sim, me).FirstOrDefault(i => ForTheShelf(sim, me, i) && Showable(sim, me, view, i)
+            && !shelf.IsNull && sim.ContainerRoom(shelf, w.Get<Thing>(i).Def, w.Get<Thing>(i).Material) > 0, Entity.Null);
+        if (piece.IsNull)
             return false;
-        Doing = $"putting the {w.Get<Thing>(piece).Label} on show";
-        if (!AvatarSystem.InReach(w.Get<Position>(me).Cell, spot))
+        Doing = $"putting the {w.Get<Thing>(piece).Label} on the {w.Get<Thing>(shelf).Label}";
+        if (!Inventory.CanReachContainer(sim, me, shelf))
         {
-            Walk(sim, me, spot, now);
+            Walk(sim, me, w.Get<Thing>(shelf).Cell, now);
             return true;
         }
-        if (w.Get<Carrying>(me).Item != piece)
-            Send(new HoldCommand(me, piece));
-        Send(new AvatarDropCommand(me, spot));
+        // From the pack straight onto the shelf; from the hands, by putting it there (F at the shelf).
+        if (Inventory.InOwnPack(sim, me, piece))
+            Send(new StoreFromPackCommand(me, shelf, piece));
+        else if (w.TryGet<Equipment>(me, out var eq) && eq.Weapon == piece)
+        {
+            Send(new UnequipCommand(me, GearSlot.Weapon));
+            return true;
+        }
+        else
+            Use(me, w.Get<Thing>(shelf).Cell);
         _placing = piece;
         return true;
     }
@@ -268,7 +273,7 @@ public sealed partial class BotPlayer
     /// <summary>A line in the town's news saying a party has ridden in (<c>PartySystem</c>'s words; a lone traveller isn't after a quest).</summary>
     private static bool Arrival(string text) => text.Contains(" ride in from the ", StringComparison.Ordinal);
 
-    /// <summary>Its pieces off sale (they stay where they lie), bar any someone's already asked for. True while at it.</summary>
+    /// <summary>Its pieces off sale (they stay on the shelf), bar any someone's already asked for. True while at it.</summary>
     private bool Shutters(Simulation sim, Entity me, Entity shop)
     {
         var w = sim.World;
@@ -315,30 +320,6 @@ public sealed partial class BotPlayer
         var tier = Math.Max(1, sim.World.Get<Thing>(item).Def.GearTier);
         var worth = (def.WorthMin + def.WorthMax) * 0.5f * tier * Goods.WorthFactor(sim, item);
         return Math.Clamp((int)MathF.Round(worth * (0.15f + 0.35f * Temper.Greed)), 1, ShopPrices.MaxPrice);
-    }
-
-    /// <summary>
-    /// A cell in the shop to set a piece down on: clear floor it can reach, near the front of the
-    /// line where buyers stand, but off it, out of doorways and away from the heat of a forge.
-    /// </summary>
-    private static int3? DisplayCell(Simulation sim, Entity me, Entity shop)
-    {
-        var w = sim.World;
-        var map = sim.Map;
-        var line = ShopSystem.LineCells(sim, shop);
-        var here = w.Get<Position>(me).Cell;
-        var from = line.Count > 0 ? line[0] : w.Get<PresetBuilding>(shop).Anchor;
-        var hot = w.Get<Creature>(me).Tolerance(sim.Clock.Tick).SafeMax - 12;
-        foreach (var c in sim.SpiralFrom(from, 10))
-        {
-            if (!map.InBounds(c) || Buildings.At(sim, c) != shop || !map.Passable(c) || line.Contains(c) || Environment.Warmth.FeltAt(sim, c) > hot)
-                continue;
-            var i = map.Idx(c);
-            if (!map.Item[i].IsNull || !map.Structure[i].IsNull || !sim.Regions.CanReach(here, c, PathEnd.Touch))
-                continue;
-            return c;
-        }
-        return null;
     }
 
     /// <summary>

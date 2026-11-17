@@ -120,7 +120,10 @@ public enum AvatarActionKind
     /// <summary>Hand a poured drink (or a lodger's board) across the bar to whoever's waiting for it (<see cref="Shops.BarService"/>), at once.</summary>
     ServeDrink,
 
-    /// <summary>The inn's keeper orders a hamper at the cookhouse hatch (<see cref="Hospitality.Provisions.Order"/>), or sees where they are in its line.</summary>
+    /// <summary>
+    /// The inn's hamper at the kitchen's hatch (<see cref="Hospitality.Provisions"/>): its keeper orders
+    /// one, or takes the one that's up; a labourer takes it to run over to the inn.
+    /// </summary>
     OrderProvisions,
 
     /// <summary>
@@ -196,19 +199,20 @@ public sealed class AvatarSystem : ISimSystem
     }
 
     /// <summary>
-    /// What F at the cookhouse hatch says to the inn's keeper, where the two stand apart: the price
-    /// of a hamper for the inn, or where they are in the line for the one they ordered. Null for
-    /// anyone else, at any other hatch, or with no hamper to be had (they order a meal there like anyone).
+    /// What F at the kitchen's hatch says about the inn's hamper: to its keeper, the price of one,
+    /// or (ordered) that it's up to take or still being packed; to a labourer, that there's one to
+    /// run over. Null for anyone else, at any other hatch, or with no hamper to be had (they order
+    /// a meal there like anyone).
     /// </summary>
     private static string? ProvisionsOrder(Simulation sim, Entity avatar, Entity hatch)
     {
+        if (Hospitality.Provisions.RunPrompt(sim, avatar, hatch) is { } run)
+            return run;
         if (!Hospitality.Provisions.KeepsInn(sim, avatar) || Shops.Hatch.ShopOf(sim, hatch) is not { IsNull: false } shop || shop != Hospitality.Provisions.Cookhouse(sim))
             return null;
-        if (Hospitality.Provisions.Ordered(sim, avatar) != null)
-        {
-            var place = sim.Shops.LineAt(sim, shop, hatch: true).IndexOf(avatar);
-            return place <= 0 ? "The inn's hamper is ordered: wait here for it" : $"The inn's hamper is ordered: {Ordinal(place + 1)} in line";
-        }
+        if (Hospitality.Provisions.Ordered(sim, avatar) is { } ordered)
+            return !ordered.Assignee.IsNull ? $"The inn's hamper is on its way: {ordered.AssigneeName} is running it over"
+                : Hospitality.Provisions.HamperUp(sim) ? "Take the inn's hamper" : "The inn's hamper is ordered: the cook's packing it";
         return Hospitality.Provisions.Refusal(sim, avatar) == null && Shops.ShopPrices.Posted(sim, shop, ServiceKind.Provisions) is { } sign
             ? $"Order a hamper for the inn ({sign.Price} silver)" : null;
     }
@@ -515,7 +519,11 @@ public sealed class AvatarSystem : ISimSystem
         var rack = Militia.MilitiaSystem.IsRack(sim, site);
         if (!held.IsNull && rack && Militia.MilitiaSystem.IsWeapon(sim, held) && sim.HasRoomFor(site, w.Get<Thing>(held).Def, w.Get<Thing>(held).Material))
             return new(AvatarActionKind.Store, sim.Militia.RackLabel(sim, held), cell, site);
-        if (!held.IsNull && !rack && !stash && IsContainer(sim, site) && sim.HasRoomFor(site, w.Get<Thing>(held).Def, w.Get<Thing>(held).Material))
+        // A wares shelf is its seller's alone: what they put on it is for sale (Shops.Goods).
+        var display = Shops.Goods.IsDisplay(sim, site);
+        if (!held.IsNull && display && Shops.Goods.CanSellAt(sim, avatar, site) && sim.HasRoomFor(site, w.Get<Thing>(held).Def, w.Get<Thing>(held).Material))
+            return new(AvatarActionKind.Store, $"Put {w.Get<Thing>(held).Label} on the {w.Get<Thing>(site).Label} for sale", cell, site);
+        if (!held.IsNull && !rack && !stash && !display && IsContainer(sim, site) && sim.HasRoomFor(site, w.Get<Thing>(held).Def, w.Get<Thing>(held).Material))
             return new(AvatarActionKind.Store, w.Get<Thing>(site).Def.Building is { Hatch: true }
                 ? $"Put {w.Get<Thing>(held).Label} up on the {w.Get<Thing>(site).Label}"
                 : $"Put {w.Get<Thing>(held).Label} in the {w.Get<Thing>(site).Label}", cell, site);
@@ -550,6 +558,9 @@ public sealed class AvatarSystem : ISimSystem
         {
             if (rack)
                 return new(AvatarActionKind.OpenStorage, sim.Militia.Mustering ? "Take up arms from the muster rack" : "Look over the muster rack", cell, site);
+            if (display)
+                return new(AvatarActionKind.OpenStorage, Shops.Goods.CanSellAt(sim, avatar, site)
+                    ? $"Open the {w.Get<Thing>(site).Label} (your wares and their prices)" : $"Look over the {w.Get<Thing>(site).Label}", cell, site);
             if (IsContainer(sim, site) && !stash)
                 return new(AvatarActionKind.OpenStorage, $"Open the {w.Get<Thing>(site).Label}", cell, site);
         }
@@ -815,6 +826,8 @@ public sealed class AvatarSystem : ISimSystem
                 carrying.Item = sim.Store(action.Target, carrying.Item);
                 if (carrying.Item != put && Militia.MilitiaSystem.IsRack(sim, action.Target))
                     sim.Militia.Racked(sim, avatar, put);
+                if (carrying.Item != put && w.IsAlive(put) && Shops.Goods.IsDisplay(sim, action.Target))
+                    Shops.Goods.Shelved(sim, avatar, put);
                 break;
             }
             case AvatarActionKind.Deliver:
@@ -899,7 +912,11 @@ public sealed class AvatarSystem : ISimSystem
                     sim.Shops.Accept(sim, avatar, order.Id);
                 break;
             case AvatarActionKind.OrderProvisions:
-                if (Hospitality.Provisions.Ordered(sim, avatar) == null && Hospitality.Provisions.Order(sim, avatar) is { } refusal)
+                if (Hospitality.Provisions.RunPrompt(sim, avatar, action.Target) != null)
+                    Hospitality.Provisions.TakeToRun(sim, avatar);
+                else if (Hospitality.Provisions.Ordered(sim, avatar) != null)
+                    Hospitality.Provisions.Collect(sim, avatar);
+                else if (Hospitality.Provisions.Order(sim, avatar) is { } refusal)
                     sim.Messages.Tell(avatar, MessageKind.Info, $"Can't order: {refusal}.", action.Cell);
                 break;
             case AvatarActionKind.FillBucket:

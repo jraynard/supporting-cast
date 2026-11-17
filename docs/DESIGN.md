@@ -408,7 +408,7 @@ model: wounds sit on body parts, have a kind, and bleed, hurt and fester.
   runes, what it does, and the feelings it answers. Others are found by trying new mixes, and
   written in when they work: searing a wound shut, steadying your own hands, grounding lightning.
 - *Charms.* Before anyone's hurt, the healer weaves ahead: a mending woven into a strip of linen
-  keeps. Torn, it lands on whoever tears it, gift or no. Put out in the shrine with a price,
+  keeps. Torn, it lands on whoever tears it, gift or no. Put on the shrine's wares shelf, priced,
   charms sell to parties as wards for the road, a couple each and no two alike. On a quest a charm
   spends itself on the first wound it fits, and a healing one may turn a death into a bad wound.
   Anyone can see which mending a charm holds; only its maker knows how well it was woven. Which
@@ -617,10 +617,11 @@ villager mid-round is for late joiners only.
   posts; nets and fish dry along the outer walks and lanterns burn on the quays all night. A raid
   that brings the causeway down cuts the whole town off from the shore, the carter with it, till
   the tinker mends it.
-  The cook **supplies the inn**: the innkeeper orders a hamper at the cookhouse hatch, from their own
-  purse, and carries it back to the warming shelf behind the bar. Lodgers have their board off it
-  at breakfast and supper, at no charge; parties setting out take rations off it; a bare shelf makes
-  a room worth less. So the two trades lean on each other, and there's something for a traitor to
+  The cook **supplies the inn** (in every town; here the cookhouse stands apart): the innkeeper
+  sends from the bar for a hamper, from their own purse, a labourer runs it over from the cookhouse
+  hatch, and it's unpacked behind the bar. Lodgers have their board off the warming shelf at
+  breakfast and supper, at no charge, and a bare one makes a room worth less; the rations go on the
+  merchandise shelf, for the innkeeper to sell to parties setting out. So the two trades lean on each other, and there's something for a traitor to
   spoil. A feast is called at the inn and eaten at the cookhouse.
   **The festival is on the boats**: there's no square to spare, so the town gathers round the mast
   of the boats lashed together in the harbour (the `gathering` place, not the well), the bonfire on

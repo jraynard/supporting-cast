@@ -348,11 +348,15 @@ public class CookPassTests
     [Fact]
     public void AnAdventurerBuysRationsOnShowAtTheInnOneApiece()
     {
-        var (sim, me, party) = ExpeditionTests.Round("Cook");
+        // The innkeeper sells them, off the merchandise shelf (the cook sends them over in a hamper).
+        var (sim, me, party) = ExpeditionTests.Round("Innkeeper");
         var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
-        var cell = ShopSystem.LineCells(sim, inn).Last();
-        var ration = sim.PlaceItemNear(NewRation(sim), cell);
-        Assert.Equal(inn, Buildings.At(sim, sim.World.Get<Thing>(ration).Cell));
+        var shelf = Hospitality.Provisions.Merchandise(sim);
+        Assert.Equal(inn, Buildings.Of(sim, shelf));
+        var cook = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Cook");
+        Assert.False(Goods.CanSellAt(sim, cook, shelf), "the cook doesn't sell from the innkeeper's shelf");
+        var ration = NewRation(sim);
+        Assert.True(sim.Store(shelf, ration).IsNull);
         sim.ApplyNow(new SetItemPriceCommand(me, ration, 3, true));
         Assert.Equal(inn, Goods.ShownIn(sim, ration));
         Assert.All(party, e => Assert.True(Goods.IsUpgrade(sim, e, ration)));

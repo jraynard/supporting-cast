@@ -186,7 +186,7 @@ public static class Rations
         }
     }
 
-    /// <summary>A cookhouse's cook with a hamper on order from the inn, and none up on the hatch yet.</summary>
+    /// <summary>The cook with a hamper on order from the inn, and none up on the hatch yet.</summary>
     public static bool HamperWanted(Simulation sim, Entity cook) =>
         Hospitality.Provisions.Cooks(sim, cook) && Hospitality.Provisions.Wanted(sim, cook) != null && !Hospitality.Provisions.HamperUp(sim);
 
@@ -282,11 +282,13 @@ public static class Rations
                 return;
             case PrepStep.Hamper:
                 if (!Hospitality.Provisions.Cooks(sim, cook))
-                    sim.Messages.Tell(cook, MessageKind.Info, "Hampers are packed at a cookhouse, for an inn without a kitchen.", cell);
+                    sim.Messages.Tell(cook, MessageKind.Info, "Hampers are packed by the cook, for the inn.", cell);
                 else if (Hospitality.Provisions.DishesOn(sim, cook).Count > 0)
                     WorkSystem.Start(sim, cook, new PackSession { Table = table, ForHamper = true });
                 else
-                    sim.Messages.Tell(cook, MessageKind.Info, "A hamper's packed with dishes: bowls ladled from the pot, bread, pies, a roast, or rations.", cell);
+                    sim.Messages.Tell(cook, MessageKind.Info, Hospitality.Provisions.Split(sim)
+                        ? "A hamper's packed with rations for the road and dishes for the board: bowls ladled from the pot, bread, pies, a roast."
+                        : "The inn's hamper is packed with rations for the road: tie some here first, from three portions of food each.", cell);
                 return;
             case PrepStep.Pack:
                 if (PortionsOn(sim, cook) >= Portions)

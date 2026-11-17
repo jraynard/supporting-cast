@@ -105,8 +105,8 @@ public sealed record SetPriceCommand(Entity Avatar, Entity Shop, Defs.ServiceKin
 }
 
 /// <summary>
-/// Put a piece lying in your shop up for sale at a price, or take it off sale. Adventurers who'd be
-/// better off with it, and think it worth the price, line up to buy it.
+/// Put a piece on your shop's wares shelf up for sale at a price (or change it), or take it off sale.
+/// Adventurers who'd be better off with it, and think it worth the price, line up to buy it.
 /// </summary>
 public sealed record SetItemPriceCommand(Entity Avatar, Entity Item, int Price, bool ForSale) : ISimCommand, IActorCommand
 {
@@ -116,5 +116,35 @@ public sealed record SetItemPriceCommand(Entity Avatar, Entity Item, int Price, 
     {
         if (InventoryCommand.Ready(sim, Avatar))
             Goods.Set(sim, Avatar, Item, Price, ForSale);
+    }
+}
+
+/// <summary>
+/// Put a piece of your own, in hand or in your pack, on your shop's wares shelf in reach: it's for
+/// sale at once (<see cref="Goods.Shelved"/>). The inventory's "Put on the wares shelf".
+/// </summary>
+public sealed record ShelveCommand(Entity Avatar, Entity Item) : ISimCommand, IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        var w = sim.World;
+        if (!InventoryCommand.Ready(sim, Avatar) || !InventoryCommand.IsItem(sim, Item) || !Goods.IsGear(w.Get<Thing>(Item).Def)
+            || Goods.MyDisplay(sim, Avatar) is not { IsNull: false } shelf || !Inventory.CanReachContainer(sim, Avatar, shelf))
+            return;
+        if (Inventory.InOwnPack(sim, Avatar, Item))
+        {
+            Inventory.StoreFromPack(sim, Avatar, shelf, Item);
+            return;
+        }
+        ref var hands = ref w.Get<Carrying>(Avatar);
+        if (hands.Item != Item || sim.ContainerRoom(shelf, w.Get<Thing>(Item).Def, w.Get<Thing>(Item).Material) < w.Get<Stack>(Item).Count)
+            return;
+        hands.Item = Entity.Null;
+        if (!sim.Store(shelf, Item).IsNull)
+            throw new InvalidOperationException("room was counted, so it must fit");
+        if (w.IsAlive(Item))
+            Goods.Shelved(sim, Avatar, Item);
     }
 }

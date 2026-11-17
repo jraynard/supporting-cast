@@ -1,6 +1,9 @@
 using Brutal.ImGuiApi;
 using Narsil.Ui;
+using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Ecs;
+using HeroesNotIncluded.Sim.Hospitality;
+using HeroesNotIncluded.Sim.Shops;
 using HeroesNotIncluded.Sim.Work;
 using HeroesNotIncluded.Ui;
 
@@ -457,6 +460,7 @@ public sealed partial class VillageGame
                 DrawBarRow(bar);
                 return;
             }
+            DrawHamperOrder();
             TextC(Theme.Dim, "From the cask, with a clean tankard and what goes in to hand (yours, or the shelf behind the bar):");
             foreach (var drink in _sim.Defs.AllThings.Where(d => d.Mix is { House: false }))
             {
@@ -508,6 +512,37 @@ public sealed partial class VillageGame
         }));
     }
 
+    /// <summary>
+    /// The innkeeper's line on the bar card: send to the kitchen for a hamper from here (rations for
+    /// the merchandise shelf, and a lake town's board), or how the one on order is coming on. A
+    /// playtester couldn't find how the innkeeper got supplies from the cook.
+    /// </summary>
+    private void DrawHamperOrder()
+    {
+        if (!HasAvatar || !Provisions.KeepsInn(_sim, _avatar))
+            return;
+        if (Provisions.Ordered(_sim, _avatar) is { } order)
+        {
+            TextC(Dim, !order.Assignee.IsNull && order.Assignee != _avatar ? $"The hamper's on its way: {order.AssigneeName} is running it over."
+                : Provisions.HamperUp(_sim) ? (Provisions.Split(_sim) && Provisions.RunnerAbout(_sim)
+                    ? "The hamper's up on the cookhouse hatch: a labourer will run it over (or fetch it yourself)."
+                    : "The hamper's up on the kitchen's hatch: take it from there.")
+                : "A hamper's on order: the cook's packing it.");
+            return;
+        }
+        var why = Provisions.Refusal(_sim, _avatar);
+        var price = ShopPrices.Posted(_sim, Provisions.Cookhouse(_sim), ServiceKind.Provisions)?.Price;
+        ImGui.BeginDisabled(why != null);
+        if (ImGui.SmallButton(price is { } p ? $"Send for a hamper (up to {p} silver)" : "Send for a hamper"))
+            Issue(new OrderProvisionsCommand(_avatar));
+        ImGui.EndDisabled();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            Tip((why != null ? Cap(why) + ".\n" : "")
+                + "Word goes to the cook: they pack rations for the road (and, where the kitchen's apart, dishes for the lodgers' board) "
+                + "and put the hamper up on their hatch. You pay for what's in it, a full hamper at most. Unpack it here and the rations go "
+                + "up on the merchandise shelf for sale." + (Provisions.RationsShelved(_sim) is var n ? $"\nRations on the shelf: {n}." : ""));
+    }
+
     /// <summary>The house mix's ticks are showing on the simple bar card.</summary>
     private bool _houseMixOpen;
 
@@ -519,6 +554,7 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawBarRow(Sim.Ecs.Entity bar)
     {
+        DrawHamperOrder();
         var first = true;
         foreach (var drink in _sim.Defs.AllThings.Where(d => d.Mix is { House: false }))
         {

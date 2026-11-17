@@ -504,18 +504,12 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         var w = sim.World;
         ex.SetOutBy = 0;
         ex.ReturnTick = sim.Clock.Tick + SimClock.HoursToTicks(sim.Expeditions.Find(ex.Quest)!.Def.Hours + 2 * TravelHours);
-        var fromShelf = 0;
+        // (Rations are bought off the inn's merchandise shelf beforehand, like any gear: none are handed out here.)
         foreach (var e in party)
         {
-            // Where the inn keeps a warming shelf (a lake town's), anyone without rations takes a bundle off it.
-            if (Hospitality.Provisions.TakeRations(sim, e))
-                fromShelf++;
             w.Add(e, new Leaving());
             AiSystem.EndJob(sim, e, w.Get<Mind>(e), false);
         }
-        if (fromShelf > 0)
-            sim.Messages.Add(MessageKind.Info, $"{fromShelf} of them {(fromShelf == 1 ? "takes" : "take")} rations off the inn's warming shelf.",
-                w.Get<Position>(party[0]).Cell);
         sim.Messages.Add(MessageKind.Info, $"{Capital(ex.PartyDef.Label)} set out for {sim.Expeditions.Find(ex.Quest)!.Def.Label}.",
             party.Count > 0 ? w.Get<Position>(party[0]).Cell : default);
     }

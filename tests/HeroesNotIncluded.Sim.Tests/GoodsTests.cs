@@ -7,7 +7,7 @@ using HeroesNotIncluded.Sim.Systems;
 
 namespace HeroesNotIncluded.Sim.Tests;
 
-/// <summary>Gear put up for sale in a shop, and the adventurers who'd be better off with it buying it.</summary>
+/// <summary>Gear put up for sale on a shop's wares shelf, and the adventurers who'd be better off with it buying it.</summary>
 public class GoodsTests
 {
     private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
@@ -27,14 +27,68 @@ public class GoodsTests
         return (sim, Players.CharacterOf(sim, Ana), ShopSystem.BuildingOf(sim, sim.Defs.Building("Smithy")), party);
     }
 
-    /// <summary>A piece of gear lying on the smithy's floor.</summary>
+    /// <summary>The smithy's wares shelf.</summary>
+    private static Entity ShelfIn(Simulation sim, Entity smithy) => Buildings.Parts(sim, smithy).Single(p => Goods.IsDisplay(sim, p));
+
+    /// <summary>A piece of gear on the smithy's wares shelf (not yet priced).</summary>
     private static Entity InTheSmithy(Simulation sim, Entity smithy, string def)
     {
-        var cell = ShopSystem.LineCells(sim, smithy)[0];
-        Assert.Equal(smithy, Buildings.At(sim, cell));
-        var item = sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing(def), 1), cell);
-        Assert.Equal(smithy, Buildings.At(sim, sim.World.Get<Thing>(item).Cell));
+        var item = sim.CreateItem(sim.Defs.Thing(def), 1);
+        Assert.True(sim.Store(ShelfIn(sim, smithy), item).IsNull);
         return item;
+    }
+
+    /// <summary>Stand someone where they can reach a thing.</summary>
+    private static void Beside(Simulation sim, Entity who, Entity thing)
+    {
+        var at = sim.World.Get<Thing>(thing).Cell;
+        var cell = sim.SpiralFrom(at, 3).First(c => c != at && sim.Map.Passable(c) && AvatarSystem.InReach(sim, c, thing));
+        sim.World.Get<Position>(who).Cell = cell;
+        sim.World.Get<Position>(who).Pos = Position.CenterOf(cell);
+    }
+
+    [Fact]
+    public void GearOnTheFloorIsNotOnShowOnlyOnTheShelf()
+    {
+        var (sim, me, smithy, _) = Town("Blacksmith");
+        var cell = ShopSystem.LineCells(sim, smithy)[0];
+        var floor = sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing("BronzeMace"), 1), cell);
+        Assert.Equal(smithy, Buildings.At(sim, sim.World.Get<Thing>(floor).Cell));
+        sim.ApplyNow(new SetItemPriceCommand(me, floor, 10, true));
+        Assert.False(sim.World.Has<ForSale>(floor), "lying on the floor, it can't be put up");
+        Assert.True(Goods.ShownIn(sim, floor).IsNull);
+    }
+
+    [Fact]
+    public void PuttingGearOnYourShelfPricesItAndOnlyYouTakeItDown()
+    {
+        var (sim, me, smithy, _) = Town("Blacksmith");
+        var w = sim.World;
+        var shelf = ShelfIn(sim, smithy);
+        Assert.Equal(shelf, Goods.MyDisplay(sim, me));
+        var mace = sim.CreateItem(sim.Defs.Thing("BronzeMace"), 1);
+        Inventory.Stow(sim, me, mace);
+        Beside(sim, me, shelf);
+        var label = AvatarSystem.ActionAt(sim, me, w.Get<Thing>(shelf).Cell).Label;
+        Assert.Contains("wares shelf", label);
+        sim.ApplyNow(new StoreFromPackCommand(me, shelf, mace));
+        Assert.True(w.TryGet<ForSale>(mace, out var sale) && sale.Seller == me && sale.Price == Goods.DefaultPrice(sim, mace));
+        Assert.Equal(smithy, Goods.ShownIn(sim, mace));
+        // Wood isn't sold here: the shelf won't take it.
+        Assert.Equal(0, sim.ContainerRoom(shelf, sim.Defs.Thing("Wood"), null));
+
+        // Someone else can't reach it down.
+        var other = sim.Creatures().First(e => e != me && w.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
+        w.Add(other, new Avatar());
+        Beside(sim, other, shelf);
+        Assert.False(Goods.CanSellAt(sim, other, shelf));
+        sim.ApplyNow(new TakeFromStorageCommand(other, mace));
+        Assert.Equal(shelf, w.Get<Stored>(mace).In);
+
+        // Its seller can: taken down, it's off sale.
+        sim.ApplyNow(new TakeFromStorageCommand(me, mace));
+        Assert.True(Inventory.OnPerson(sim, me, mace));
+        Assert.False(w.Has<ForSale>(mace));
     }
 
     /// <summary>The one with a club: a bronze mace is a step up for them, and for nobody else in the party.</summary>

@@ -207,9 +207,10 @@ public sealed class CastSession : WorkSession
             if (Charms.Make(sim, Worker, m, made.Extra, Quality).IsNull)
                 sim.Messages.Tell(Worker, MessageKind.Warning, $"There's no linen to hand to knot the {label} into, and it slips away.", at);
             else
-                sim.Messages.Tell(Worker, MessageKind.Good, Quality >= 0.75f
+                sim.Messages.Tell(Worker, MessageKind.Good, (Quality >= 0.75f
                     ? $"You knot the {label} into a charm. It holds well."
-                    : $"You knot the {label} into a charm. Some strands are loose.", at);
+                    : $"You knot the {label} into a charm. Some strands are loose.")
+                    + (Shops.Goods.MyDisplay(sim, Worker) is { IsNull: false } shelf ? $" Put it on the {sim.World.Get<Thing>(shelf).Label} to sell it." : ""), at);
             return;
         }
         if (m.CallsBack)

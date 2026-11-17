@@ -8,37 +8,37 @@ using HeroesNotIncluded.Sim.Work;
 namespace HeroesNotIncluded.Sim.Hospitality;
 
 /// <summary>
-/// An AI innkeeper sends for a hamper (<see cref="Provisions"/>): the warming shelf's running low,
-/// and none's on order. Posting it is all the job does; the order holds their place in the
-/// cookhouse hatch's line, and the brain walks them over to wait (<c>HumanBrain</c>, "in line").
+/// An AI innkeeper sends for a hamper (<see cref="Provisions"/>): the merchandise shelf's short of
+/// rations, or the warming shelf of dishes, and none's on order. Posting it is all the job does,
+/// from wherever they are; once it's up the order holds their place in the hatch's line (unless a
+/// labourer's running it over), and the brain walks them over to wait (<c>HumanBrain</c>, "in line").
 /// </summary>
 public sealed class OrderProvisionsJob : Job
 {
     public static Job? For(Simulation sim, Entity pawn)
     {
-        if (!Provisions.KeepsInn(sim, pawn) || !sim.Round.Live || ShopSystem.SmallHours(sim) || Provisions.Shelf(sim).IsNull
-            || Provisions.OnShelf(sim) >= Provisions.ShelfLow || Provisions.IsHamper(sim, sim.World.Get<Carrying>(pawn).Item)
-            || Provisions.Refusal(sim, pawn) != null)
+        if (!Provisions.KeepsInn(sim, pawn) || !sim.Round.Live || ShopSystem.SmallHours(sim) || !Provisions.WantsSupplies(sim)
+            || Provisions.IsHamper(sim, sim.World.Get<Carrying>(pawn).Item) || Provisions.Refusal(sim, pawn) != null)
             return null;
         return new OrderProvisionsJob();
     }
 
     protected override IEnumerable<JobStatus> Run()
     {
-        Report = "Sending to the cookhouse for a hamper";
+        Report = "Sending to the kitchen for a hamper";
         if (Provisions.Order(Sim, Pawn) is { } why)
             Fail(why);
         yield break;
     }
 }
 
-/// <summary>An AI innkeeper carries the hamper in their arms to the inn's warming shelf and unpacks it.</summary>
+/// <summary>An AI innkeeper (or the labourer running it) carries the hamper in their arms to the inn's shelf and unpacks it.</summary>
 public sealed class UnpackHamperJob(Entity shelf) : Job
 {
     public static Job? For(Simulation sim, Entity pawn)
     {
-        if (!Provisions.KeepsInn(sim, pawn) || !Provisions.IsHamper(sim, sim.World.Get<Carrying>(pawn).Item)
-            || Provisions.Shelf(sim) is not { IsNull: false } shelf)
+        if (!(Provisions.KeepsInn(sim, pawn) || Provisions.Running(sim, pawn) != null) || !Provisions.IsHamper(sim, sim.World.Get<Carrying>(pawn).Item)
+            || Provisions.UnpackAt(sim) is not { IsNull: false } shelf)
             return null;
         return new UnpackHamperJob(shelf);
     }
@@ -54,9 +54,57 @@ public sealed class UnpackHamperJob(Entity shelf) : Job
 }
 
 /// <summary>
+/// A labourer runs the inn's hamper over from the cookhouse (<see cref="Provisions.TakeToRun"/>):
+/// off the hatch, across to the inn, unpacked there, for a small fee from the innkeeper. Only where
+/// the kitchen stands apart from the inn.
+/// </summary>
+public sealed class HamperRunJob(Entity hatch) : Job
+{
+    public static Job? For(Simulation sim, Entity pawn)
+    {
+        var w = sim.World;
+        if (!sim.Round.Live || !Provisions.Runs(sim, pawn) || Players.Steered(sim, pawn))
+            return null;
+        // Already carrying one over: on to the inn with it.
+        if (Provisions.Running(sim, pawn) != null && Provisions.IsHamper(sim, w.Get<Carrying>(pawn).Item))
+            return UnpackHamperJob.For(sim, pawn);
+        if (Provisions.ToRun(sim) is not { } order || order.Poster == pawn || !w.Get<Carrying>(pawn).Item.IsNull
+            || Hatch.Of(sim, Provisions.Cookhouse(sim)) is not { IsNull: false } hatch
+            || !Navigation.CanReach(sim, pawn, w.Get<Position>(pawn).Cell, w.Get<Thing>(hatch).Cell, PathEnd.Touch))
+            return null;
+        return new HamperRunJob(hatch);
+    }
+
+    protected override IEnumerable<JobStatus> Run()
+    {
+        Report = "Fetching the inn's hamper from the cookhouse";
+        foreach (var s in GoToBeside(hatch)) yield return s;
+        if (HasFailed) yield break;
+        if (!Provisions.TakeToRun(Sim, Pawn))
+        {
+            Fail("someone's taken it");
+            yield break;
+        }
+        var shelf = Provisions.UnpackAt(Sim);
+        if (shelf.IsNull)
+        {
+            Fail("nowhere at the inn to unpack it");
+            yield break;
+        }
+        Report = "Carrying the hamper over to the inn";
+        foreach (var s in GoToBeside(shelf)) yield return s;
+        if (HasFailed) yield break;
+        if (!Alive(shelf) || !Provisions.Unpack(Sim, Pawn, shelf))
+            Fail("couldn't unpack it");
+    }
+}
+
+/// <summary>
 /// An AI cook packs the inn's hamper the plain way, without the game (as <c>Healing.LayOnHands</c>
-/// works the gift): bowls ladled from the pot (else whatever's cooked about the kitchen), packed
-/// at the prep table as well as their skill allows, and put up on the hatch for the innkeeper.
+/// works the gift): rations tied from road food out of the larder while the inn's merchandise
+/// shelf is short of them, and (where the inn's apart, for the lodgers' board) bowls ladled from
+/// the pot or whatever's cooked about the kitchen; packed at the prep table as well as their skill
+/// allows, and put up on the hatch for the innkeeper.
 /// </summary>
 public sealed class PackHamperJob(int order, Entity shop) : Job
 {
@@ -66,6 +114,22 @@ public sealed class PackHamperJob(int order, Entity shop) : Job
     /// <summary>At no skill, how often an AI cook ties the lid slack; a level takes a share off it.</summary>
     public const float SlackChance = 0.25f, SlackPerLevel = 0.02f;
 
+    /// <summary>Bundles of rations an AI cook ties for one hamper.</summary>
+    public const int RationsPerHamper = 2;
+
+    /// <summary>Food that keeps on the road and goes in a bundle: fruit, greens, bread, cured meat (not a raw joint, flour or grain).</summary>
+    public static bool RoadFood(ThingDef d) =>
+        Rations.IsPortion(d) && !d.Roasts && !d.Grain && d.Name != Baking.Flour && d.Joints == null && d.Plucks == null && !d.IsSeasoner
+        && (!d.Cooked || d.Name == Baking.Bread);
+
+    /// <summary>The inn wants rations off this hamper.</summary>
+    private static bool RationsWanted(Simulation sim) =>
+        !Provisions.Merchandise(sim).IsNull && Provisions.RationsShelved(sim) < Provisions.RationsLow;
+
+    /// <summary>The nearest road food sound to pack, or Entity.Null.</summary>
+    private static Entity RoadSource(Simulation sim, Entity pawn) =>
+        AiQueries.FindNearestItem(sim, pawn, (e, d) => RoadFood(d) && !FoodPoisoning.IsSpoiled(sim, e) && !sim.InKept(e), 80);
+
     public static Job? For(Simulation sim, Entity pawn)
     {
         var w = sim.World;
@@ -73,8 +137,10 @@ public sealed class PackHamperJob(int order, Entity shop) : Job
             || Provisions.Cookhouse(sim) is not { IsNull: false } shop || Hatch.Of(sim, shop).IsNull || PrepTable(sim, shop).IsNull
             || Provisions.IsHamper(sim, w.Get<Carrying>(pawn).Item))
             return null;
-        // Something to pack: dishes on them already, the pot cooked with a clean bowl to be had, or something cooked lying about.
-        if (Provisions.DishesOn(sim, pawn).Count == 0 && Source(sim, pawn, shop).IsNull)
+        // Something to pack: dishes or rations on them already, food for the road the inn's short of, or
+        // (apart) the pot cooked with a clean bowl to be had, or something cooked lying about.
+        if (Provisions.DishesOn(sim, pawn).Count == 0 && (!RationsWanted(sim) || RoadSource(sim, pawn).IsNull)
+            && (!Provisions.Split(sim) || Source(sim, pawn, shop).IsNull))
             return null;
         return new PackHamperJob(order.Id, shop);
     }
@@ -98,8 +164,43 @@ public sealed class PackHamperJob(int order, Entity shop) : Job
             Fail("the inn's done without");
             yield break;
         }
-        // Gather what goes in it, up to a hamper's worth.
-        if (Provisions.DishesOn(Sim, Pawn).Sum(d => Get<Stack>(d).Count) < Provisions.Holds)
+        // Rations first, while the inn's shelf is short: road food fetched, tied at the table.
+        if (RationsWanted(Sim))
+        {
+            for (var trip = 0; trip < RationsPerHamper * Rations.Portions && Rations.PortionsOn(Sim, Pawn) < RationsPerHamper * Rations.Portions; trip++)
+            {
+                var food = RoadSource(Sim, Pawn);
+                if (food.IsNull || !Reserve(food))
+                    break;
+                Report = "Fetching food for the road";
+                foreach (var s in GoTo(Get<Thing>(food).Cell, PathEnd.Touch)) yield return s;
+                if (HasFailed) yield break;
+                if (!Sim.IsAvailable(food, Pawn))
+                    break;
+                var want = RationsPerHamper * Rations.Portions - Rations.PortionsOn(Sim, Pawn);
+                var taken = Provisions.Portion(Sim, food, Math.Min(want, Get<Stack>(food).Count));
+                if (Get<Carrying>(Pawn).Item.IsNull)
+                    Get<Carrying>(Pawn).Item = taken;
+                else
+                    Inventory.Stow(Sim, Pawn, taken);
+            }
+            if (Rations.PortionsOn(Sim, Pawn) >= Rations.Portions && PrepTable(Sim, shop) is { IsNull: false } bench && Reserve(bench))
+            {
+                Report = "Tying rations for the road";
+                foreach (var s in GoToBeside(bench)) yield return s;
+                if (HasFailed) yield break;
+                var tying = SkillRules.LevelOf(Sim, Pawn, Skill.Cooking);
+                for (var n = 0; n < RationsPerHamper && Rations.PortionsOn(Sim, Pawn) >= Rations.Portions; n++)
+                {
+                    foreach (var s in Wait(PackTicks)) yield return s;
+                    var handiwork = Math.Clamp(0.4f + 0.05f * tying + Sim.Rand.Range(-0.1f, 0.1f), 0.05f, 0.95f);
+                    Rations.Make(Sim, Pawn, handiwork, Sim.Rand.NextFloat() < Math.Max(0f, SlackChance - SlackPerLevel * tying));
+                    SkillRules.Learn(Sim, Pawn, Skill.Cooking, 10f);
+                }
+            }
+        }
+        // Gather what goes in it, up to a hamper's worth: dishes for the board, where the inn's apart.
+        if (Provisions.Split(Sim) && Provisions.DishesOn(Sim, Pawn).Sum(d => Get<Stack>(d).Count) < Provisions.Holds)
         {
             var source = Source(Sim, Pawn, shop);
             if (Cooking.IsPot(Sim, source))

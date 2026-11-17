@@ -274,6 +274,9 @@ public static class Inventory
         // A weapon hung on the muster rack: the town may pay for it.
         if (w.IsAlive(moved) && Militia.MilitiaSystem.IsRack(sim, container))
             sim.Militia.Racked(sim, creature, moved);
+        // Gear put on its keeper's wares shelf is for sale at once (Shops.Goods).
+        if (w.IsAlive(moved) && Shops.Goods.IsDisplay(sim, container))
+            Shops.Goods.Shelved(sim, creature, moved);
     }
 
     /// <summary>

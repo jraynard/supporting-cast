@@ -337,13 +337,13 @@ public sealed partial class VillageGame
     /// <summary>Dish prices being dragged on the sign, by dish def name.</summary>
     private readonly Dictionary<string, int> _dishPriceDrafts = [];
 
-    /// <summary>The price being set for a piece in the inspector, and which piece it's for.</summary>
-    private int _salePrice = 10;
-    private Entity _salePriceFor;
+    /// <summary>Prices being dragged for pieces on a wares shelf, by item.</summary>
+    private readonly Dictionary<Entity, int> _salePrices = [];
 
     /// <summary>
-    /// A piece's price, if it's for sale; and for its keeper, putting gear lying in their shop up
-    /// for sale, changing its price or taking it off sale.
+    /// A piece's price, if it's for sale. Gear is sold from a shop's wares shelf (<see cref="Goods"/>),
+    /// so for its keeper the price is set there (<see cref="DrawShelfPrices"/>); a piece of theirs
+    /// marked for sale anywhere else can be taken off sale, and gear of theirs lying about is pointed at the shelf.
     /// </summary>
     private void DrawForSale(Entity item, Thing thing)
     {
@@ -351,31 +351,88 @@ public sealed partial class VillageGame
             return;
         var sale = View.Sale(item);
         if (sale is { } s)
-            WrappedC(Theme.Warn, s.OnShow ? $"For sale: {s.Price} silver." : $"Marked for sale at {s.Price} silver, but not on show in its seller's shop.");
+            WrappedC(Theme.Warn, s.OnShow ? $"For sale: {s.Price} silver." : $"Marked for sale at {s.Price} silver, but not on show on its seller's wares shelf.");
         if (!HasAvatar || !Goods.IsGear(thing.Def))
             return;
-        var inMyShop = thing.Spawned && Sim.Systems.Buildings.At(_sim, thing.Cell) is { IsNull: false } shop && ShopPrices.Keeps(_sim, _avatar, shop);
-        var mine = sale is { } own && own.Seller == _avatar;
-        if (!inMyShop && !mine)
-            return;
-        if (_salePriceFor != item)
+        if (sale is { } own && own.Seller == _avatar)
         {
-            _salePriceFor = item;
-            _salePrice = sale?.Price ?? 10;
-        }
-        ImGui.SetNextItemWidth(Gui.S(150));
-        ImGui.SliderInt("##saleprice"u8, ref _salePrice, 0, Math.Max(PriceSliderMax * 2, _salePrice), "%d silver"u8, ImGuiSliderFlags.AlwaysClamp);
-        ImGui.SameLine(0, Gui.S(6));
-        if (inMyShop && ImGui.Button(sale == null ? "Put up for sale"u8 : "Change price"u8, in _autoSize))
-            Issue(new SetItemPriceCommand(_avatar, item, _salePrice, true));
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-            Tip("On show while it lies in your shop. Adventurers who'd be better off with it, and think it worth the price, line up to buy it.");
-        if (mine)
-        {
-            ImGui.SameLine(0, Gui.S(6));
-            if (ImGui.Button("Take off sale"u8, in _autoSize))
+            if (own.OnShow)
+                DrawPriceRow(item, own.Price);
+            else if (ImGui.Button("Take off sale"u8, in _autoSize))
                 Issue(new SetItemPriceCommand(_avatar, item, 0, false));
         }
+        else if (thing.Spawned && !Goods.MyDisplay(_sim, _avatar).IsNull)
+            TextC(Dim, $"To sell it, put it on your {_sim.World.Get<Thing>(Goods.MyDisplay(_sim, _avatar)).Label}.");
+    }
+
+    /// <summary>A price slider for a piece of yours on sale, with the button to set it and to take it off sale.</summary>
+    private void DrawPriceRow(Entity item, int price)
+    {
+        ImGui.PushID(item.Index);
+        var draft = _salePrices.TryGetValue(item, out var d) ? d : price;
+        ImGui.SetNextItemWidth(Gui.S(140));
+        if (ImGui.SliderInt("##saleprice"u8, ref draft, 0, Math.Max(PriceSliderMax * 2, draft), "%d silver"u8, ImGuiSliderFlags.AlwaysClamp))
+            _salePrices[item] = draft;
+        ImGui.SameLine(0, Gui.S(6));
+        ImGui.BeginDisabled(draft == price);
+        if (ImGui.SmallButton("Set price"u8))
+        {
+            Issue(new SetItemPriceCommand(_avatar, item, draft, true));
+            _salePrices.Remove(item);
+        }
+        ImGui.EndDisabled();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            Tip("Adventurers who'd be better off with it, and think it worth the price, line up to buy it.");
+        ImGui.SameLine(0, Gui.S(6));
+        if (ImGui.SmallButton("Off sale"u8))
+        {
+            Issue(new SetItemPriceCommand(_avatar, item, 0, false));
+            _salePrices.Remove(item);
+        }
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+            Tip("Keep it on the shelf, but not for sale. Putting a price on it again puts it back up.");
+        ImGui.PopID();
+    }
+
+    /// <summary>
+    /// Under a wares shelf's tiles: each piece and its price. Its seller sets them here (what they put on
+    /// it went up at a fair price at once); anyone else just reads them, and buys from the keeper.
+    /// </summary>
+    private void DrawShelfPrices(List<Entity> items)
+    {
+        var w = _sim.World;
+        var mine = Goods.CanSellAt(_sim, _avatar, _openStorage);
+        ImGui.Separator();
+        if (items.Count == 0)
+        {
+            WrappedC(Dim, mine ? "Put your wares here to sell them: drag them in from your pack, or press F at the shelf with one in hand. They go up for sale at a fair price; change it here."
+                : "Nothing for sale.");
+            return;
+        }
+        foreach (var item in items)
+        {
+            if (!w.IsAlive(item))
+                continue;
+            ImGui.Text(Capital(w.Get<Thing>(item).Label));
+            ImGui.SameLine(Gui.S(150));
+            var sale = View.Sale(item);
+            if (mine && sale is { Seller: var seller } && seller == _avatar)
+                DrawPriceRow(item, sale.Value.Price);
+            else if (sale is { } s)
+                TextC(Theme.Warn, $"{s.Price} silver");
+            else if (mine)
+            {
+                ImGui.PushID(item.Index);
+                if (ImGui.SmallButton("Put up for sale"u8))
+                    Issue(new SetItemPriceCommand(_avatar, item, _salePrices.GetValueOrDefault(item, 10), true));
+                ImGui.PopID();
+            }
+            else
+                TextC(Dim, "not for sale");
+        }
+        if (_salePrices.Count > 32)
+            foreach (var gone in _salePrices.Keys.Where(e => !w.IsAlive(e)).ToList())
+                _salePrices.Remove(gone);
     }
 
     private static string Capital(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];

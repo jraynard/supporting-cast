@@ -418,9 +418,15 @@ public sealed class WeaveCharmJob(MendingDef mending, Entity at) : Job
         if (charm.IsNull)
             yield break; // no linen after all
         mana.Current = Math.Max(0f, mana.Current - mending.CostAt(0));
-        // Laid out in the shrine where the parties will see it, at the price they ask for one.
-        var item = Inventory.TakeFromPerson(Sim, Pawn, charm, 1);
-        Sim.PlaceItemNear(item, PawnCell);
-        Shops.Goods.Set(Sim, Pawn, item, LayOnHands.CharmPrice, true);
+        // Put on the shrine's wares shelf where the parties will see it, at the price they ask for one.
+        var shelf = Shops.Goods.MyDisplay(Sim, Pawn);
+        if (shelf.IsNull)
+            yield break; // kept in the pack: there's nowhere to sell it from
+        foreach (var s in GoTo(Get<Thing>(shelf).Cell, PathEnd.Touch)) yield return s;
+        if (HasFailed || !Alive(shelf) || !Alive(charm) || !Inventory.InOwnPack(Sim, Pawn, charm))
+            yield break;
+        Inventory.StoreFromPack(Sim, Pawn, shelf, charm);
+        if (Alive(charm) && Sim.World.Has<Stored>(charm))
+            Shops.Goods.Set(Sim, Pawn, charm, LayOnHands.CharmPrice, true);
     }
 }

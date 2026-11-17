@@ -209,16 +209,20 @@ public class BotKitchenTests
     }
 
     [Fact]
-    public void TheCookPacksRationsForAPartyAndSetsThemOutForSale()
+    public void TheCookPacksRationsIntoTheInnsHamperAndTheInnkeeperSellsThem()
     {
         var (sim, bot, me, inn) = Cook();
         HungryParty(sim, inn);
-        bool OnSale() => Goods.OnShow(sim).Count(x => sim.World.Has<Ration>(x.Item) && sim.World.Get<ForSale>(x.Item).Seller == me) >= 1;
-        Assert.True(Run(sim, bot, OnSale, SimClock.TicksPerHour * 8), Log(sim, bot));
+        // The AI innkeeper sends for a hamper (its merchandise shelf is bare); the cook ties rations,
+        // packs them and puts the hamper up; the innkeeper takes it and sets them out for sale.
+        var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
+        bool OnSale() => Goods.OnShow(sim).Any(x => sim.World.TryGet<Ration>(x.Item, out var r) && r.Maker == me && sim.World.Get<ForSale>(x.Item).Seller == keeper);
+        Assert.True(Run(sim, bot, OnSale, SimClock.TicksPerHour * 10), Log(sim, bot));
         Assert.True(bot.Stats.Sessions.ContainsKey(nameof(PackSession)));
         var bundle = Goods.OnShow(sim).First(x => sim.World.Has<Ration>(x.Item)).Item;
         Assert.False(sim.World.Get<Ration>(bundle).LooseWrap, "a steady hand ties it snug");
         Assert.Equal(inn, Goods.ShownIn(sim, bundle));
+        Assert.DoesNotContain(Goods.OnShow(sim), x => sim.World.Get<ForSale>(x.Item).Seller == me); // the cook sells nothing
     }
 
     [Fact]

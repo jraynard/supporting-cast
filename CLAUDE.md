@@ -133,10 +133,14 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     trades serve front first (`MendJob`, `ServeJob`, `HealOrders`). An AI work pack keeps coin and
     `Entrusted` items (and a few clean vessels) between jobs. The inn's meals go through its serving
     `Hatch` (their own line; dishes put up, taken by whoever's at the front; players order with F there, `ShopSystem.PlayerOrder`).
-    Where the inn and the kitchen stand apart (Reedmere; `Hospitality/Provisions.Split`, never on Millbrook) the innkeeper orders a
-    hamper at the cookhouse hatch (`ServiceKind.Provisions`), it's packed at the prep table (`PackSession.ForHamper`) and unpacked
-    onto the inn's warming shelf: lodgers' board (a meal ordered at the inn, `Provisions.IsBoard`) and rations for the road. Gear marked `ForSale` and lying in its seller's shop is on show
-    (`Goods`); no job takes an item for sale (`IsAvailable`). Villagers buy supper there of an
+    The cook supplies the inn and never sells to parties (`Hospitality/Provisions`, both towns): the innkeeper sends for a hamper
+    (`ServiceKind.Provisions`) from the bar (`OrderProvisionsCommand`) or the kitchen's hatch, it's packed at the prep table
+    (`PackSession.ForHamper`; an AI cook ties rations itself), put up on the hatch, and paid by what's in it (`Provisions.Charge`).
+    Unpacked at the inn, its rations go on sale on the merchandise shelf. Where the inn and the kitchen stand apart (Reedmere,
+    `Provisions.Split`) a labourer runs it over for a fee (`HamperRunJob`) and its dishes go on the warming shelf: lodgers' board
+    (a meal ordered at the inn, `Provisions.IsBoard`). Gear is sold only from a shop's wares shelf (`display` furniture; `Goods`):
+    stored there by its seller (`Goods.CanSellAt`, a shelf's `displayFor` role) it's priced at once (`Goods.Shelved`), and only
+    the seller takes it down; no job takes an item for sale (`IsAvailable`). Villagers buy supper there of an
     evening. `Favours/`: pinned to the notice board in the square and known by reading it, for
     silver; errands (bring so many of a thing) are done by bringing, and the labourer takes them.
   - `Carpentry/`: the Carpenter, at the woodshop. Planks sawn (`SawSession`), bows tillered

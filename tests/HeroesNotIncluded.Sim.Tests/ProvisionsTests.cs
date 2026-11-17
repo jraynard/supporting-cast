@@ -12,9 +12,9 @@ using static HeroesNotIncluded.Sim.Tests.TestWorld;
 namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>
-/// The cook supplies the inn where they stand apart (Reedmere): the innkeeper orders a hamper at
-/// the cookhouse, it's packed, carried over and unpacked onto the warming shelf, and the shelf
-/// feeds the lodgers and the road. On Millbrook, where the inn has its own kitchen, none of it applies.
+/// The cook supplies the inn: the innkeeper orders a hamper (from the bar, or at the hatch), it's
+/// packed and put up, taken or run over and unpacked: rations onto the merchandise shelf for sale,
+/// and where the kitchen's apart (Reedmere) dishes onto the warming shelf for the lodgers' board.
 /// </summary>
 public class ProvisionsTests
 {
@@ -50,17 +50,43 @@ public class ProvisionsTests
             && AvatarSystem.InReach(sim, c, thing));
 
     [Fact]
-    public void MillbrooksInnHasItsOwnKitchenAndNoHampers()
+    public void MillbrooksInnGetsItsHampersFromItsOwnKitchen()
     {
         var sim = Round(VillageRound.DefaultMap);
         Assert.False(Provisions.Split(sim));
-        Assert.True(Provisions.Shelf(sim).IsNull);
-        foreach (var b in sim.World.Query<PresetBuilding>())
-            Assert.DoesNotContain(ShopPrices.Board(sim, b), p => p.Kind == ServiceKind.Provisions);
+        Assert.True(Provisions.Active(sim));
+        Assert.True(Provisions.Shelf(sim).IsNull, "no warming shelf: the board is the hatch's meals");
+        Assert.False(Provisions.Merchandise(sim).IsNull);
+        Assert.Equal(Provisions.Inn(sim), Provisions.Cookhouse(sim));
+        Assert.Contains(ShopPrices.Board(sim, Provisions.Inn(sim)), p => p.Kind == ServiceKind.Provisions);
         var keeper = Holder(sim, "Innkeeper");
         Purse(sim, keeper, 50);
-        Assert.Equal("the inn has its own kitchen", Provisions.Order(sim, keeper));
-        Assert.Null(Provisions.Ordered(sim, keeper));
+        Assert.Null(Provisions.Order(sim, keeper));
+        Assert.NotNull(Provisions.Ordered(sim, keeper));
+        // A hamper holds rations only here: there's no board to send dishes for.
+        Assert.True(Provisions.Packable(sim, sim.Defs.Thing(Rations.Def)));
+        Assert.False(Provisions.Packable(sim, sim.Defs.Thing("Stew")));
+    }
+
+    [Fact]
+    public void TheInnkeeperSendsForAHamperFromTheBar()
+    {
+        var sim = Round(VillageRound.DefaultMap, playerTrade: "Innkeeper");
+        var w = sim.World;
+        var me = sim.Creatures().First(e => w.Has<PlayerCharacter>(e));
+        Purse(sim, me, 50);
+        var bar = Buildings.Parts(sim, Provisions.Inn(sim)).First(p => w.Get<Thing>(p).Def.Building is { Bar: true });
+        // Away from the bar, nothing.
+        Put(sim, me, Beside(sim, Buildings.Parts(sim, Provisions.Inn(sim)).First(p => Rations.IsPrepTable(sim, p))));
+        sim.ApplyNow(new OrderProvisionsCommand(me));
+        Assert.Null(Provisions.Ordered(sim, me));
+        Put(sim, me, Beside(sim, bar));
+        sim.ApplyNow(new OrderProvisionsCommand(me));
+        var order = Provisions.Ordered(sim, me);
+        Assert.NotNull(order);
+        Assert.Contains(Holder(sim, "Cook"), order!.KnownBy); // word goes to the kitchen
+        Assert.False(ShopSystem.WaitsInLine(sim, order), "no place held at the hatch till the hamper's up");
+        Assert.DoesNotContain(me, sim.Shops.LineAt(sim, Provisions.Cookhouse(sim), hatch: true));
     }
 
     [Fact]
@@ -111,7 +137,7 @@ public class ProvisionsTests
         Assert.Equal(hamper, w.Get<Carrying>(keeper).Item);
         Assert.Equal(cookSilver + order.Price, Coin.Count(sim, cook));
 
-        // At the warming shelf, F unpacks it.
+        // At the warming shelf, F unpacks it: the stew there, the rations up for sale beside it.
         var shelf = Provisions.Shelf(sim);
         Assert.False(shelf.IsNull);
         Put(sim, keeper, Beside(sim, shelf));
@@ -121,10 +147,15 @@ public class ProvisionsTests
         Assert.True(Provisions.Unpack(sim, keeper, shelf));
         Assert.False(w.IsAlive(hamper));
         Assert.True(w.Get<Carrying>(keeper).Item.IsNull);
-        Assert.Equal(5, Provisions.OnShelf(sim));
+        Assert.Equal(4, Provisions.OnShelf(sim));
         Assert.False(Provisions.ShelfBare(sim));
-        // Nobody's job takes from it: it's the lodgers' board.
+        Assert.Equal(1, Provisions.RationsShelved(sim));
+        var bundle = sim.StoredIn(Provisions.Merchandise(sim)).Single();
+        Assert.Equal(keeper, w.Get<ForSale>(bundle).Seller);
+        Assert.Contains(Goods.OnShow(sim), g => g.Item == bundle && g.Shop == Provisions.Inn(sim));
+        // Nobody's job takes from either: the lodgers' board, and the keeper's wares.
         Assert.All(sim.StoredIn(shelf), e => Assert.False(sim.IsAvailable(e)));
+        Assert.False(sim.IsAvailable(bundle));
     }
 
     [Fact]
@@ -162,20 +193,93 @@ public class ProvisionsTests
     }
 
     [Fact]
-    public void APartySettingOutTakesRationsOffTheShelf()
+    public void APartyBuysRationsOffTheMerchandiseShelfAndTakesNoneFree()
     {
         var sim = Round(ReedmereMapTests.Map);
-        var shelf = Provisions.Shelf(sim);
+        var w = sim.World;
+        var keeper = Holder(sim, "Innkeeper");
+        var shelf = Provisions.Merchandise(sim);
         var bundle = sim.CreateItem(sim.Defs.Thing(Rations.Def), 1);
-        sim.World.Add(bundle, new Ration { Quality = 0.5f });
+        w.Add(bundle, new Ration { Quality = 0.5f });
         sim.Store(shelf, bundle);
+        Assert.True(Goods.Set(sim, keeper, bundle, 3, true));
+        // The cook can't sell from the innkeeper's shelf, though they keep the same town's food.
+        Assert.False(Goods.CanSellAt(sim, Holder(sim, "Cook"), shelf));
         var member = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs"))[0];
         foreach (var r in Rations.Carried(sim, member))
-            sim.World.Destroy(Inventory.TakeFromPerson(sim, member, r, 1));
-        Assert.True(Provisions.TakeRations(sim, member));
-        Assert.Single(Rations.Carried(sim, member));
-        Assert.Equal(0, Provisions.OnShelf(sim));
-        Assert.False(Provisions.TakeRations(sim, member)); // one's enough, and the shelf's bare
+            w.Destroy(Inventory.TakeFromPerson(sim, member, r, 1));
+        Assert.True(Goods.IsUpgrade(sim, member, bundle), "a party member with none would buy a bundle");
+        Assert.Contains(Goods.OnShow(sim), g => g.Item == bundle);
+    }
+
+    [Fact]
+    public void ALabourerRunsTheHamperOverAndIsPaidForIt()
+    {
+        var sim = Round(ReedmereMapTests.Map, playerTrade: "Innkeeper");
+        var w = sim.World;
+        var me = sim.Creatures().First(e => w.Has<PlayerCharacter>(e));
+        var cook = Holder(sim, "Cook");
+        var runner = sim.Creatures().FirstOrDefault(e => Provisions.Runs(sim, e) && !Players.Steered(sim, e), Entity.Null);
+        Assert.False(runner.IsNull, "Reedmere has a labourer");
+        Assert.True(Provisions.RunnerAbout(sim));
+        Purse(sim, me, 50);
+        Assert.Null(Provisions.Order(sim, me));
+        var order = Provisions.Ordered(sim, me)!;
+        // A hamper of rations, up on the cookhouse hatch.
+        var hatch = Hatch.Of(sim, Provisions.Cookhouse(sim));
+        w.Get<Carrying>(cook).Item = Entity.Null;
+        for (var n = 0; n < 2; n++)
+        {
+            var bundle = sim.CreateItem(sim.Defs.Thing(Rations.Def), 1);
+            w.Add(bundle, new Ration { Quality = 0.6f, Maker = cook });
+            Inventory.Stow(sim, cook, bundle);
+        }
+        var hamper = Provisions.MakeHamper(sim, cook, loose: false);
+        w.Get<Carrying>(cook).Item = Entity.Null;
+        Assert.True(sim.Store(hatch, hamper).IsNull);
+        Assert.True(Provisions.HamperUp(sim));
+        Assert.False(ShopSystem.WaitsInLine(sim, order), "with a labourer about the keeper doesn't wait at the cookhouse");
+        Assert.NotNull(Provisions.ToRun(sim));
+
+        // The labourer takes it and carries it over.
+        Put(sim, runner, Beside(sim, hatch));
+        var runnerSilver = Coin.Count(sim, runner);
+        var cookSilver = Coin.Count(sim, cook);
+        Assert.True(Provisions.TakeToRun(sim, runner));
+        Assert.Equal(runner, order.Assignee);
+        Assert.Equal(hamper, w.Get<Carrying>(runner).Item);
+        var shelf = Provisions.UnpackAt(sim);
+        Put(sim, runner, Beside(sim, shelf));
+        Assert.True(Provisions.Unpack(sim, runner, shelf));
+        Assert.Equal(OrderStatus.Done, order.Status);
+        Assert.Equal(2, Provisions.RationsShelved(sim));
+        Assert.All(sim.StoredIn(Provisions.Merchandise(sim)), e => Assert.Equal(me, w.Get<ForSale>(e).Seller));
+        Assert.Equal(cookSilver + order.Price, Coin.Count(sim, cook));
+        Assert.Equal(runnerSilver + Provisions.RunFee, Coin.Count(sim, runner));
+    }
+
+    [Fact]
+    public void AnAiLabourerRunsAHamperUnasked()
+    {
+        var sim = Round(ReedmereMapTests.Map, playerTrade: "Innkeeper");
+        var w = sim.World;
+        var me = sim.Creatures().First(e => w.Has<PlayerCharacter>(e));
+        var cook = Holder(sim, "Cook");
+        Purse(sim, me, 50);
+        Assert.Null(Provisions.Order(sim, me));
+        var order = Provisions.Ordered(sim, me)!;
+        var bundle = sim.CreateItem(sim.Defs.Thing(Rations.Def), 1);
+        w.Add(bundle, new Ration { Quality = 0.6f, Maker = cook });
+        w.Get<Carrying>(cook).Item = Entity.Null;
+        Inventory.Stow(sim, cook, bundle);
+        var hamper = Provisions.MakeHamper(sim, cook, loose: false);
+        w.Get<Carrying>(cook).Item = Entity.Null;
+        sim.Store(Hatch.Of(sim, Provisions.Cookhouse(sim)), hamper);
+        for (var i = 0; i < 96 && order.IsOpen; i++)
+            sim.TickMany(SimClock.TicksPerHour / 12);
+        Assert.Equal(OrderStatus.Done, order.Status);
+        Assert.True(Provisions.Runs(sim, order.Assignee), "a labourer ran it");
+        Assert.Equal(1, Provisions.RationsShelved(sim));
     }
 
     [Fact]
@@ -185,6 +289,13 @@ public class ProvisionsTests
         var w = sim.World;
         var shelf = Provisions.Shelf(sim);
         sim.Store(shelf, sim.CreateItem(sim.Defs.Thing("Stew"), 6));
+        // The merchandise shelf stocked too, so no hamper's sent for to fill the warming shelf back up.
+        for (var n = 0; n < Provisions.RationsLow; n++)
+        {
+            var bundle = sim.CreateItem(sim.Defs.Thing(Rations.Def), 1);
+            w.Add(bundle, new Ration { Quality = 0.5f });
+            sim.Store(Provisions.Merchandise(sim), bundle);
+        }
         while (sim.Clock.HourOfDay < ShopSystem.SupperFromHour)
             sim.TickMany(SimClock.TicksPerHour / 4);
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs")); // just in, for the night

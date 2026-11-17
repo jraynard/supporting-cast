@@ -13,6 +13,7 @@ using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Ecs;
 using HeroesNotIncluded.Sim.Maps;
 using HeroesNotIncluded.Sim.Scenarios;
+using HeroesNotIncluded.Sim.Shops;
 using HeroesNotIncluded.Sim.Systems;
 using HeroesNotIncluded.Ui;
 
@@ -741,7 +742,9 @@ public sealed partial class VillageGame
         else
             ImGui.TextDisabled($"{items.Count}/{thing.Def.Building!.StorageStacks} stacks");
         DrawStorageTiles(items, handsFull, myPack);
-        if (items.Count == 0)
+        if (Goods.IsDisplay(_sim, _openStorage))
+            DrawShelfPrices(items);
+        else if (items.Count == 0)
         {
             ImGui.TextDisabled("Empty."u8);
             DrawDismantle(thing);
@@ -766,8 +769,10 @@ public sealed partial class VillageGame
     {
         var w = _sim.World;
         var carried = CarriedItem;
+        // A wares shelf is its seller's alone to stock and take down: anyone else only looks.
+        var keeps = !Goods.IsDisplay(_sim, _openStorage) || Goods.CanSellAt(_sim, _avatar, _openStorage);
         ISimCommand? store = null;
-        if (!carried.IsNull && w.Get<Thing>(carried) is var ct && _sim.ContainerRoom(_openStorage, ct.Def, ct.Material) > 0)
+        if (keeps && !carried.IsNull && w.Get<Thing>(carried) is var ct && _sim.ContainerRoom(_openStorage, ct.Def, ct.Material) > 0)
             store = new StoreFromPackCommand(_avatar, _openStorage, carried);
         var gap = Gui.S(4);
         var tile = Gui.S(IconSize) + 2 * Gui.S(5);
@@ -784,7 +789,7 @@ public sealed partial class VillageGame
             var t = w.Get<Thing>(item);
             var count = w.TryGet<Stack>(item, out var stack) ? stack.Count : 1;
             var packRoom = myPack.IsNull ? 0 : _sim.ContainerRoom(myPack, t.Def, t.Material);
-            var canTake = !handsFull || packRoom > 0;
+            var canTake = keeps && (!handsFull || packRoom > 0);
             ImGui.PushID(item.Index);
             var min = ImGui.GetCursorScreenPos();
             var box = DrawSlotArt(item, "", dim: !canTake && carried.IsNull);
@@ -808,7 +813,8 @@ public sealed partial class VillageGame
             var all = ImGui.IsItemClicked(ImGuiMouseButton.Right)
                 || (ImGui.IsItemFocused() && ImGui.IsKeyPressed(ImGuiKey.GamepadFaceUp, false));
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip($"{ItemLine(item)}\n{ItemDetails(item)}\n{TakeTip(canTake, packRoom, handsFull, count)}");
+                Tip($"{ItemLine(item)}\n{ItemDetails(item)}" + (View.Sale(item) is { } price ? $"\nFor sale: {price.Price} silver." : "")
+                    + (keeps ? $"\n{TakeTip(canTake, packRoom, handsFull, count)}" : "\nIts keeper sells it."));
             ImGui.PopID();
             if (canTake && (one || all))
             {
