@@ -533,6 +533,9 @@ public sealed partial class VillageGame
             var e = map.Structure[map.Idx(c)];
             if (e.IsNull || !w.TryGet<Thing>(e, out var thing) || thing.Cell != c || !View.CanSee(e))
                 continue; // a wide piece is tested once, from its anchor
+            if (!HideRoofs && c.Z > _renderer.OpenBuilding.Level && !_renderer.OpenBuilding.Building.IsNull
+                && Rendering.BuildingPlanIndex.For(_sim).At(c) == _renderer.OpenBuilding.Building)
+                continue; // the storey above you in the building you're in isn't drawn (playtest: the bed upstairs, clicked from a table)
             var def = thing.Def;
             if (def.Building?.IsWall == true || (def.Model == null && def.Shape is RenderShape.Block or RenderShape.Ramp or RenderShape.Slab or RenderShape.Decal))
                 continue; // walls and flat things are picked by the cell

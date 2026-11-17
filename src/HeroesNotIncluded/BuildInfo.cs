@@ -35,7 +35,7 @@ public static class BuildInfo
 
     /// <summary>A few lines for logs and crash reports.</summary>
     public static string Describe(string? tag) =>
-        $"{TitleGame.Title} {Label}, build tag {tag ?? "?"}, {RuntimeInformation.OSDescription} {RuntimeInformation.RuntimeIdentifier}, .NET {Environment.Version}";
+        $"{TitleGame.Title} {Label}, save format {Sim.Saving.SaveGame.FormatVersion}, build tag {tag ?? "?"}, {RuntimeInformation.OSDescription} {RuntimeInformation.RuntimeIdentifier}, .NET {Environment.Version}";
 
     /// <summary>Where logs, crash reports and desync dumps go (the per-user config folder's <c>logs</c>).</summary>
     public static string LogDirectory => Path.Combine(Narsil.GameHost.DefaultConfigDirectory(TitleGame.DataFolder), "logs");

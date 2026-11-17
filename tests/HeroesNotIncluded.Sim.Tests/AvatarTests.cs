@@ -200,6 +200,59 @@ public class AvatarTests
     }
 
     [Fact]
+    public void WalkingTheLengthOfALongTable()
+    {
+        var sim = Warm();
+        var table = sim.SpawnStructure(sim.Thing("LongTable"), C(6, 5));
+        sim.RebuildDerivedIfNeeded();
+        var tops = Enumerable.Range(0, 3).Select(dy => C(6, 5 + dy)).Where(c => sim.Map.Structure[sim.Map.Idx(c)] == table).ToList();
+        Assert.Equal(2, tops.Count);
+        var me = Avatar(sim, C(5, 5));
+        sim.Enqueue(new AvatarWorkCommand(me, true, C(6, 5)));
+        sim.TickMany(SimClock.TicksPerSecond * 2);
+        Assert.True(sim.World.Has<Perched>(me));
+
+        // South along the top, from one end to the other: still up on it.
+        sim.Enqueue(new AvatarMoveCommand(me, new int2(0, 1)));
+        for (var t = 0; t < SimClock.TicksPerSecond && Cell(sim, me) != tops[1]; t++)
+            sim.Tick();
+        Assert.Equal(tops[1], Cell(sim, me));
+        Assert.True(sim.World.Has<Perched>(me));
+        Assert.Equal(tops[1], sim.World.Get<Perched>(me).Cell);
+
+        // And on, off the far end and down.
+        sim.TickMany(SimClock.TicksPerSecond);
+        sim.Enqueue(new AvatarMoveCommand(me, default));
+        sim.TickMany(SimClock.TicksPerSecond / 2);
+        var pos = sim.World.Get<Position>(me).Pos;
+        Assert.True(pos.Y > tops[1].Y + 1.5f, $"walked off the far end, at {pos}");
+        Assert.False(sim.World.Has<Perched>(me));
+    }
+
+    [Fact]
+    public void CrossingABigSquareTable()
+    {
+        // Playtest: up on the inn's square table, you couldn't get past its middle.
+        var sim = Warm();
+        var table = sim.SpawnStructure(sim.Thing("SquareTable"), C(6, 5));
+        sim.RebuildDerivedIfNeeded();
+        var me = Avatar(sim, C(5, 5));
+        sim.Enqueue(new AvatarWorkCommand(me, true, C(6, 5)));
+        sim.TickMany(SimClock.TicksPerSecond * 2);
+        Assert.True(sim.World.Has<Perched>(me));
+
+        // East over the top and off the far side, then back south-west across it: never snagged.
+        sim.Enqueue(new AvatarMoveCommand(me, new int2(1, 0)));
+        sim.TickMany(SimClock.TicksPerSecond * 2);
+        sim.Enqueue(new AvatarMoveCommand(me, default));
+        sim.TickMany(SimClock.TicksPerSecond / 2);
+        var pos = sim.World.Get<Position>(me).Pos;
+        var far = Enumerable.Range(6, 4).Last(x => sim.Map.Structure[sim.Map.Idx(C(x, 5))] == table);
+        Assert.True(pos.X > far + 1.5f, $"crossed the table east and stepped off, at {pos}");
+        Assert.False(sim.World.Has<Perched>(me));
+    }
+
+    [Fact]
     public void SteppingOffATableThenWalkingAlongItsSide()
     {
         var sim = Warm();

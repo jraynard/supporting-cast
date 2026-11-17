@@ -4,6 +4,9 @@ What changed in each playtest build, newest first. The release workflow posts th
 section to Discord's #builds with the build, and the packages ship this file as CHANGELOG.txt.
 Write it for testers: what they'll notice, not how it's done.
 
+Playing together always needs everyone on the same build. Saves and characters carry over
+between builds unless a section's **Compatibility** line says otherwise.
+
 ## 0.1.0-playtest.20
 
 A tutorial for every trade, the fiddly mini-games made fairer, and a camera and replays for

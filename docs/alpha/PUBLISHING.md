@@ -8,9 +8,16 @@ builds the packages (it runs locally too, see its header).
 
 ## Releasing a build
 
-1. Bump `<Version>` in `Directory.Build.props` (`0.1.0-playtest.2`, ...).
+1. Bump `<Version>` in `Directory.Build.props` (`0.1.0-playtest.2`, ...). The minor number is
+   the milestone and N the build: `0.2.0-playtest.1` when M4 opens, `0.3.0-playtest.1` at M5, N
+   back to 1 each time; `1.0.0` is the Steam release. Compatibility isn't in the version: saves
+   (`SaveGame.FormatVersion`, old formats read forward), the character roster
+   (`CharacterRoster.Version`), replays (`ReplayFile.FormatVersion`) and the relay
+   (`RelayProtocol.Version`) each carry their own, and co-op needs the identical build anyway.
 2. Add a `## 0.1.0-playtest.2` section at the top of `docs/alpha/CHANGELOG.md`, written for
-   testers. It becomes the Discord post. The workflow refuses to publish without it.
+   testers. It becomes the Discord post. The workflow refuses to publish without it. If this
+   build breaks something testers keep (older saves no longer load, characters reset, kept
+   replays no longer play), say so in a **Compatibility** line at the top of the section.
 3. Commit, push, then tag and push the tag:
 
    ```sh

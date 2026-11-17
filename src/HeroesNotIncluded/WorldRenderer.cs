@@ -215,8 +215,9 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     }
 
     /// <summary>
-    /// How far up someone on furniture stands (<see cref="Perched"/>): its top in its cell, easing
-    /// up and down over the step on and off, so the climb reads as one.
+    /// How far up someone on furniture stands (<see cref="Perched"/>): its top, all the way up while
+    /// they're over it (the perch follows them along a long table), easing down over the step off
+    /// till they're clear of its edge (when the sim lets the perch go), and up the same way climbing on.
     /// </summary>
     private static float PerchLift(Simulation sim, Entity e, float3 p)
     {
@@ -224,7 +225,8 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             return 0f;
         var top = Position.CenterOf(perched.Cell);
         var d = MathF.Max(MathF.Abs(p.X - top.X), MathF.Abs(p.Y - top.Y));
-        return SurfaceUnder(sim.Map, sim.World, perched.Cell) * Math.Clamp(1f - d, 0f, 1f);
+        const float edge = 0.5f, clear = 0.5f + Sim.Combat.FreeMoveSystem.Radius;
+        return SurfaceUnder(sim.Map, sim.World, perched.Cell) * Math.Clamp((clear - d) / (clear - edge), 0f, 1f);
     }
 
     /// <summary>World-anchored text that rises and fades ("Built!", "Hit"), drawn with the labels.</summary>

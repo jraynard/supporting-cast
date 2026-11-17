@@ -139,10 +139,7 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         ref var p = ref w.Get<Position>(e);
         var (pos, cell, vel) = Slide(sim, p.Pos, p.Cell, m.Vel, w.TryGet<Perched>(e, out var up) ? up.Cell : null);
         m.Vel = vel;
-        // Stepped down off the furniture once the whole of you is off it, not just your middle:
-        // till then the perch keeps its cell out of Fits, or its edge would snag you.
-        if (w.TryGet<Perched>(e, out var perch) && perch.Cell != cell && !Touches(new float2(pos.X, pos.Y), perch.Cell))
-            w.Remove<Perched>(e);
+        Reperch(sim, e, new float2(pos.X, pos.Y), cell);
         p.Pos = pos;
         p.Cell = cell;
         // F's "in front" is the way you face, to the nearest of eight.
@@ -246,10 +243,11 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         }
         var cell = new int3((int)MathF.Floor(x), (int)MathF.Floor(y), z);
         int3? perch = w.TryGet<Perched>(e, out var up) ? up.Cell : null;
-        if ((cell != perch && !sim.Map.Passable(cell)) || !Fits(sim, new float2(x, y), z, perch) || !Walkable(sim, p.Cell, cell))
+        // Up on furniture, its top is footing: a step along it, to the next cell over at most.
+        var alongTop = perch != null && Tabletop(sim, cell) && Math.Abs(cell.X - p.Cell.X) <= 1 && Math.Abs(cell.Y - p.Cell.Y) <= 1 && cell.Z == p.Cell.Z;
+        if (!alongTop && (!sim.Map.Passable(cell) || !Walkable(sim, p.Cell, cell)) || !Fits(sim, new float2(x, y), z, perch))
             return;
-        if (perch is { } on && on != cell && !Touches(new float2(x, y), on))
-            w.Remove<Perched>(e);
+        Reperch(sim, e, new float2(x, y), cell);
         p.Pos = new float3(x, y, z);
         p.Cell = cell;
         budget -= dist;
@@ -294,12 +292,41 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         return false;
     }
 
-    /// <summary>Does a free mover with its middle at <paramref name="at"/> still overlap <paramref name="cell"/>'s column (the corners <see cref="Fits"/> checks)?</summary>
-    public static bool Touches(float2 at, int3 cell)
+    /// <summary>
+    /// Is <paramref name="cell"/> the top of furniture you can climb (a table, a counter)? Up on one,
+    /// every such top is footing (<see cref="Fits"/>, <see cref="Into"/>): you walk the length of a
+    /// long table or along the bar, and onto the table pushed up against it.
+    /// </summary>
+    public static bool Tabletop(Simulation sim, int3 cell)
+    {
+        var map = sim.Map;
+        if (!map.InBounds(cell))
+            return false;
+        var s = map.Structure[map.Idx(cell)];
+        return !s.IsNull && sim.World.Get<Thing>(s).Def is { Solid: true, Climbable: true } && !sim.World.Has<Construction>(s);
+    }
+
+    /// <summary>
+    /// After a step, up on furniture: on a top, the perch follows you to it; off them all, once the
+    /// whole of you is off and not just your middle (or the edge you'd still overlap would snag you), you've stepped down.
+    /// </summary>
+    private static void Reperch(Simulation sim, Entity e, float2 at, int3 cell)
+    {
+        var w = sim.World;
+        if (!w.Has<Perched>(e))
+            return;
+        if (Tabletop(sim, cell))
+            w.Get<Perched>(e).Cell = cell;
+        else if (!OnATop(sim, at, cell.Z))
+            w.Remove<Perched>(e);
+    }
+
+    /// <summary>Does any of a free mover's circle (the corners <see cref="Fits"/> checks), its middle at <paramref name="at"/>, overlap a furniture top?</summary>
+    private static bool OnATop(Simulation sim, float2 at, int z)
     {
         for (var dy = -1; dy <= 1; dy += 2)
         for (var dx = -1; dx <= 1; dx += 2)
-            if ((int)MathF.Floor(at.X + dx * Radius) == cell.X && (int)MathF.Floor(at.Y + dy * Radius) == cell.Y)
+            if (Tabletop(sim, new int3((int)MathF.Floor(at.X + dx * Radius), (int)MathF.Floor(at.Y + dy * Radius), z)))
                 return true;
         return false;
     }
@@ -312,8 +339,8 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         for (var dx = -1; dx <= 1; dx += 2)
         {
             var cell = new int3((int)MathF.Floor(at.X + dx * Radius), (int)MathF.Floor(at.Y + dy * Radius), z);
-            if (cell == perch)
-                continue;
+            if (perch != null && (cell == perch || Tabletop(sim, cell)))
+                continue; // up on furniture, its top is footing
             if (!map.Passable(cell) && !map.Passable(cell with { Z = z + 1 }) && !map.Passable(cell with { Z = z - 1 }))
                 return false;
         }
@@ -336,6 +363,8 @@ public sealed class FreeMoveSystem : ISimSystem, ISaveState
         var map = sim.Map;
         if (!map.InBounds(from))
             return null;
+        if (perch != null && Tabletop(sim, to) && Math.Abs(to.X - from.X) <= 1 && Math.Abs(to.Y - from.Y) <= 1)
+            return Fits(sim, at, to.Z, perch) ? to : null; // along the top of the furniture you're up on
         var upward = map.Climb[map.Idx(from)] == ClimbKind.Ramp && map.ClimbOf(from.X, from.Y, from.Z) == new int2(to.X - from.X, to.Y - from.Y);
         Span<NavGraph.Step> steps = stackalloc NavGraph.Step[NavGraph.MaxSteps];
         var count = NavGraph.Neighbors(new Maps.MapNav(map), map.Idx(from), steps);
