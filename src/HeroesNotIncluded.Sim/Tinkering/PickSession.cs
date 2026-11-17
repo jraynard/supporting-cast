@@ -12,11 +12,11 @@ namespace HeroesNotIncluded.Sim.Tinkering;
 /// unsteadiness and the plug pushing back now and then (<see cref="Pushing"/>), which wants
 /// correcting. Too much tension freezes the pins: those set stay set, but the pin won't lift or
 /// set. Coming back down from there is hitchy: the plug springs back toward slack, hard, while it's
-/// too tight and for a moment after, and wants catching (W). Too little tension and every pin set
-/// drops back. Meanwhile the pick lifts the pin (A/D): near the
+/// too tight and for a moment after, and wants catching (W). Too little tension and the set pins
+/// chatter, and drop back unless the tension's caught within <see cref="SlackGrace"/>. Meanwhile the pick lifts the pin (A/D): near the
 /// height where it sets it goes stiff under the pick, and there, with the tension right, F sets it
 /// with a click and the next is taken up. F anywhere else and the pin falls back to the bottom, to
-/// be lifted again. Lifted past it, it oversets: a slip, which drops the last pin set, wears the
+/// be lifted again. Past its set point it stays stiff under the pick; lifted on past it, it oversets: a slip, which drops the last pin set, wears the
 /// picks and may jar a trap that's still armed. Too many slips and the pick snaps in the lock. With
 /// the last pin set the plug turns over, and the lock's open; an armed trap goes off as the lid
 /// comes up.
@@ -27,7 +27,7 @@ public sealed class PickSession : WorkSession
     public const float LiftPerStep = 0.006f;
 
     /// <summary>How near (0..1 of the lift) the pin goes stiff, and how near it must be to set (before skill widens it).</summary>
-    public const float GiveRange = 0.15f, SetHalfWidth = 0.035f;
+    public const float GiveRange = 0.15f, SetHalfWidth = 0.05f;
 
     /// <summary>Lifted this far past where it sets, the pin oversets: a slip.</summary>
     public const float OverRange = 0.1f;
@@ -43,15 +43,21 @@ public sealed class PickSession : WorkSession
     /// tension this strong a step (more for a tight lock), lasting this many steps, every so often.
     /// Slower than W/S, so it can always be caught.
     /// </summary>
-    public const float PushPerStep = 0.0022f;
-    public const int PushStepsMin = 20, PushStepsMax = 35, PushEveryMin = 120, PushEveryMax = 300;
+    public const float PushPerStep = 0.0016f;
+    public const int PushStepsMin = 20, PushStepsMax = 35, PushEveryMin = 180, PushEveryMax = 360;
 
     /// <summary>
     /// The spring-back from too much tension: a pull toward slack this strong a step (just under
-    /// W's, so it can be held against) while the tension's too high, and for this many steps after.
+    /// W's, so it's plainly held against) while the tension's too high, and for this many steps after.
     /// </summary>
-    public const float HitchPerStep = 0.0048f;
+    public const float HitchPerStep = 0.0035f;
     public const int HitchSteps = 100;
+
+    /// <summary>Steps the set pins chatter under too little tension before they drop: long enough to catch it.</summary>
+    public const int SlackGrace = 24;
+
+    /// <summary>How much the pin slows under the pick at its stiffest (near and past where it sets).</summary>
+    public const float Stiffness = 0.55f;
 
     /// <summary>The band of tension that holds set pins and lets the next one set (before skill widens it).</summary>
     public const float BandLow = 0.35f, BandHigh = 0.65f;
@@ -122,8 +128,15 @@ public sealed class PickSession : WorkSession
     private int _tense;
     private int _push, _pushLeft, _pushIn = PushEveryMin;
     private int _hitch;
+    private int _slack;
 
     public float HalfWidth => SetHalfWidth * Hands.Tolerance * (1f - Locksmithing.TightnessSqueeze * Tightness);
+
+    /// <summary>The stiffness (<see cref="Feel"/>) at and above which the pin's near enough to set: what the cue to press F waits for.</summary>
+    public float SetFeel => Math.Max(0f, 1f - HalfWidth / GiveRange);
+
+    /// <summary>Too slack with pins set: they're chattering, and drop unless the tension comes back in time.</summary>
+    public bool Chattering => _slack > 0;
     public float Low => 0.5f - (0.5f - BandLow) * Math.Min(Hands.Tolerance, 1.5f);
     public float High => 0.5f + (BandHigh - 0.5f) * Math.Min(Hands.Tolerance, 1.5f);
     public bool InBand => Tension >= Low && Tension <= High;
@@ -186,7 +199,7 @@ public sealed class PickSession : WorkSession
         if (Done || Pin >= _heights.Length || Binding)
             return; // frozen: F does nothing
         var off = MathF.Abs(Lift - _heights[Pin]);
-        if (InBand && off <= HalfWidth)
+        if (InBand && off <= HalfWidth * 1.0001f) // a hair over, for the float: where Feel says SetFeel, it sets
         {
             Sample(1f - 0.5f * off / HalfWidth);
             Pin++;
@@ -235,13 +248,19 @@ public sealed class PickSession : WorkSession
             }
             return;
         }
-        // Too slack: every pin set drops back. (Too tight they're frozen, below.)
+        // Too slack: the set pins chatter, and drop back if it isn't caught. (Too tight they're frozen, below.)
         if (Tension < Low && Pin > 0)
         {
-            Pin = 0;
-            Lift = 0.05f;
-            DroppedAt = StepsDone;
+            if (++_slack > SlackGrace)
+            {
+                Pin = 0;
+                Lift = 0.05f;
+                DroppedAt = StepsDone;
+                _slack = 0;
+            }
         }
+        else
+            _slack = 0;
 
         var height = _heights[Pin];
         var near = MathF.Abs(Lift - height);
@@ -252,10 +271,13 @@ public sealed class PickSession : WorkSession
         // Frozen by too much tension: the pin won't move at all.
         if (Binding)
             return;
-        var rate = LiftPerStep * (1f - 0.55f * Feel);
+        // Past where it sets the pin's jammed against the line: as stiff as at the point itself.
+        var rate = LiftPerStep * (1f - Stiffness * (Lift > height ? 1f : Feel));
         // The mouse lifts toward how high it points over the lock (top is all the way), at the pick's own stiff pace.
         var steer = _steer != 0 ? _steer : Toward(Lift, PointV is { } v ? 1f - v : null, rate);
         Lift = Math.Clamp(Lift + _drift * (1f - 0.6f * Feel) + steer * rate, 0f, 1f);
+        // Felt where it is now, so the cue to set it is never a step behind the pin.
+        Feel = Math.Max(0f, 1f - MathF.Abs(Lift - height) / GiveRange);
 
         if (Lift > height + OverRange && Tension > 0.15f)
         {
@@ -333,6 +355,7 @@ public sealed class PickSession : WorkSession
         w.Int(_pushLeft);
         w.Int(_pushIn);
         w.Int(_hitch);
+        w.Int(_slack);
     }
 
     protected override void ReadState(SaveReader r)
@@ -371,6 +394,8 @@ public sealed class PickSession : WorkSession
             _pushIn = Math.Clamp(r.Int(), 0, PushEveryMax);
             _hitch = Math.Clamp(r.Int(), 0, HitchSteps);
         }
+        if (r.Version >= 50) // the pins chattering before they drop came with format 50
+            _slack = Math.Clamp(r.Int(), 0, SlackGrace);
         _heights = Lockwork.PinHeights(LockSeed, Pins);
     }
 }

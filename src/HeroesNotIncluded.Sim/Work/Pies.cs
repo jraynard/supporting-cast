@@ -107,7 +107,8 @@ public static class Pies
 /// <summary>
 /// Making a pie at the prep table: the dough's rolled out and filled, and the rim crimped all the
 /// way round. A pinch goes round the rim; F as it reaches each mark crimps it shut there. Off the
-/// mark, the rim's left loose, and the filling finds the gap in the oven.
+/// mark, the rim's left loose, and the filling finds the gap in the oven. A press a moment after the
+/// mark still counts (<see cref="LateSteps"/>): the eye and the screen lag the hand.
 /// </summary>
 public sealed class CrimpSession : WorkSession
 {
@@ -119,6 +120,12 @@ public sealed class CrimpSession : WorkSession
 
     /// <summary>How near a mark (in marks) a crimp counts as on it, before practice widens it.</summary>
     public const float Window = 0.16f;
+
+    /// <summary>Steps after a mark's window that a crimp still lands on it.</summary>
+    public const int LateSteps = 2;
+
+    /// <summary><see cref="LateSteps"/> in marks.</summary>
+    public static float LateGrace => LateSteps * Marks / (Round * SimClock.TicksPerSecond);
 
     public Entity Table { get; set; } = Entity.Null;
 
@@ -147,9 +154,11 @@ public sealed class CrimpSession : WorkSession
         if (Done)
             return;
         var window = Window * Hands.Tolerance;
-        var tight = Off <= window;
+        var late = At - MathF.Round(At);
+        var off = late > 0f ? Math.Max(0f, late - LateGrace) : -late;
+        var tight = off <= window;
         Crimps[Crimped] = tight ? 1 : 0;
-        Sample(tight ? 1f - Off / window * 0.3f : 0.25f);
+        Sample(tight ? 1f - off / window * 0.3f : 0.25f);
         Crimped++;
         if (Crimped >= Marks)
             Done = true;

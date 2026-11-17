@@ -234,7 +234,7 @@ public class TinkerTests
                     if (s.StepsDone - frozenAt > 40)
                         phase = 3;
                 }
-                if (phase == 3 && !s.Binding && !s.Hitching)
+                if (phase == 3 && !s.Binding && !s.Hitching && !s.Chattering)
                 {
                     if (catchIt)
                         Assert.Equal(2, s.Pin);

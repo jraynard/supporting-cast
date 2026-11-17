@@ -505,13 +505,15 @@ public sealed partial class VillageGame
                 dl.AddLine(in last, in p, Theme.U8(Theme.Dim), Gui.S(1.5f));
                 last = p;
             }
-            // Where this pin meets the shear line: gold once set, glowing as the current one stiffens.
+            // Where this pin meets the shear line: gold once set; faint as the current one stiffens, bright once it's near enough to set.
             var s0 = new float2(cx - pinW * 0.5f - Gui.S(2), shear - Gui.S(1));
             var s1 = new float2(cx + pinW * 0.5f + Gui.S(2), shear + Gui.S(1));
             if (set)
                 dl.AddRectFilled(in s0, in s1, Gui.U8(new float4(1f, 0.85f, 0.35f, 1f)), 0f, ImDrawFlags.None);
+            else if (current && s.Feel >= s.SetFeel)
+                dl.AddRectFilled(s0 - Gui.S(0, 1), s1 + Gui.S(0, 1), Theme.U8(Theme.Good, 1f), 0f, ImDrawFlags.None);
             else if (current && s.Feel > 0f)
-                dl.AddRectFilled(in s0, in s1, Theme.U8(Theme.Good, s.Feel), 0f, ImDrawFlags.None);
+                dl.AddRectFilled(in s0, in s1, Theme.U8(Theme.Good, 0.35f * s.Feel / Math.Max(0.01f, s.SetFeel)), 0f, ImDrawFlags.None);
             if (current)
                 pickTip = new float2(cx + shudder, keyBottom);
             if (set && i == s.Pin - 1 && clicked)
@@ -541,7 +543,8 @@ public sealed partial class VillageGame
         var arm0 = new float2(left - Gui.S(30), plugBottom - Gui.S(18));
         var arm1 = new float2(left - Gui.S(24), plugBottom + Gui.S(18));
         dl.AddRectFilled(in arm0, in arm1, Gui.U8(steel), Gui.S(1), ImDrawFlags.None);
-        var tensionTone = s.Binding ? Theme.Bad : s.InBand ? Theme.Good : Theme.Dim;
+        var chatter = s.Chattering && MathF.Sin((float)ImGui.GetTime() * 18f) > 0f;
+        var tensionTone = s.Binding ? Theme.Bad : s.Chattering ? (chatter ? Theme.Warn : Theme.Bad) : s.InBand ? Theme.Good : Theme.Dim;
         if (s.Tension > 0.01f)
         {
             var len = Gui.S(8) + s.Tension * Gui.S(26);
@@ -594,15 +597,17 @@ public sealed partial class VillageGame
             : Recent(s.SlippedAt, 60) ? (Theme.Bad, "Overset! The pin jumped the line, and one you'd set fell back.")
             : Recent(s.MissedAt, 60) ? (Theme.Warn, "Not there: the pin falls back to the bottom. Lift it again.")
             : Recent(s.DroppedAt, 90) ? (Theme.Bad, "Too slack: every pin you'd set has dropped back.")
+            : s.Chattering ? (Theme.Bad, Controls.Keys("The pins are chattering: more tension (~W~), quick!"))
             : s.Binding ? (Theme.Warn, "Too much tension: the pins are frozen. Ease off, and catch it as it springs back.")
             : s.Hitching ? (Theme.Warn, "The plug's springing back toward slack: hold it (W) before the pins drop.")
             : s.Pin > 0 && s.Tension < s.Low + 0.04f ? (Theme.Warn, "Near the light edge: a touch more tension (W), or the pins drop.")
-            : s.Pin > 0 && s.Tension > s.High - 0.04f ? (Theme.Warn, "Near the heavy edge: ease off a touch (S), or the pins drop.")
+            : s.Pin > 0 && s.Tension > s.High - 0.04f ? (Theme.Warn, "Near the heavy edge: ease off a touch (S), or the pins freeze.")
             : s.Tension < s.Low ? (Theme.Dim, "Ease the tension on with W till it's in the band, then lift the pin.")
             : s.Pushing < 0 && s.InBand ? (Theme.Warn, "The plug's pushing back against your finger: hold the tension (W).")
             : s.Pushing > 0 && s.InBand ? (Theme.Warn, "The plug gives under your finger: ease off a touch (S).")
             : clicked ? (Theme.Good, "Click. That one's set.")
-            : s.Feel > 0.6f ? (Theme.Good, s.InBand ? Controls.Keys("It's stiffening under the pick: set it (~F~).") : "It's stiffening under the pick, but the tension's off.")
+            : s.Feel >= s.SetFeel ? (Theme.Good, s.InBand ? Controls.Keys("It's caught at the line: set it (~F~).") : "It's caught at the line, but the tension's off.")
+            : s.Feel > 0.5f ? (Theme.Text, "It's stiffening under the pick: go slowly, feeling for the catch.")
             : (Theme.Text, "Lift the pin slowly, feeling for where it stiffens.");
         TextC(tone, say);
         TextC(s.Slips > 0 ? Theme.Warn : Theme.Dim, $"Slips {s.Slips} of {PickSession.MaxSlips}");

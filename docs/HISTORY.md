@@ -2224,3 +2224,27 @@ Where the inn and the kitchen stand apart (Reedmere), the cookhouse supplies the
   window's "Keep a replay now", `--keep-replay-at N`.
 - `ReplayTests`: bot rounds on both maps play back hash for hash, seeking back lands the same, co-op
   events replay, files round-trip, recording changes nothing.
+
+### Precision games, tightened for real hands (2026-11-16)
+Playtest: the hammer "over every time" letting go on the ghost; the lock's wrench slipping, and pins
+falling while the needle was green. A window a game tells you to hit now spans at least ~5 steps at
+level 0 after ~3 steps of screen and input lag, and no cue is looser than its window
+(`PrecisionTests` plays each game a few steps late, as a person does).
+- **Hammer** (`HammerSession`): the arm slows to 0.4 of its pace within 0.12 of the mark and past it
+  (`WindRate`); a wind up to two slowed steps past the mark is still on it (`BandLow`/`BandHigh`, drawn
+  as the gauge's band); a touch further past is a heavy blow (grade fading 0.7 to 0.2,
+  `LastWindWas` 1), not the old cliff to 0.1, which is kept for well past (`LastWindWas` 2). The ghost
+  and the band go green while the hammer's in the band.
+  The mouse held at (or past) either edge of the panel keeps the hammer going that way at A/D's pace
+  (`EdgeU`; the anvil reads the mouse off the picture, held to its edge: `TakesPointer(edges:)`), so a
+  spot far out is reachable after the hammer's drifted.
+- **Lock** (`PickSession`): the cue to set a pin was shown at Feel 0.6 while a novice's window began
+  near 0.83, so pressing on it missed. Now `SetFeel` gates the "set it" words and the bright shear
+  line, and Feel is felt after the pin moves. The window's wider (`SetHalfWidth` 0.05), the pin stays
+  stiff past its set point, too little tension makes the pins chatter for `SlackGrace` (24 steps)
+  before they drop, the spring-back is gentler (0.0035 a step against W's 0.006), and the plug pushes
+  less and less often.
+- **Crimp** (`CrimpSession`): two steps late on a mark still counts (`LateSteps`).
+- Audited and left alone: butchery (placed, not timed), quench (0.7–1.1 s by the steam), the spring
+  latch (taps against a wide catch), truing, the span, the probe, the whetstone.
+- Save format 50 (a lock's chattering). Bench hashes change: a gameplay change.

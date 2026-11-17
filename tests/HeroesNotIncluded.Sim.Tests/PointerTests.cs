@@ -423,6 +423,26 @@ public class PointerTests
     }
 
     [Fact]
+    public void TheMouseHeldAtTheEdgeKeepsTheHammerGoing()
+    {
+        // Run out of room on the right: held there (or past, which reads as the edge), it pushes on as D would.
+        var s = Ready(new HammerSession());
+        s.Advance([Point(0, 0.9f), Point(1, 1f)], 2);
+        var at = s.Offset;
+        s.Advance([], 2 + 40);
+        Assert.InRange(s.Offset - at, 40 * HammerSession.SteerPerStep * 0.9f, 40 * HammerSession.SteerPerStep * 1.1f);
+        // The far left too; and off the edge it stops.
+        s.Advance([Point(s.StepsDone, 0.5f), Point(s.StepsDone + 1, 0f)], s.StepsDone + 2);
+        at = s.Offset;
+        s.Advance([], s.StepsDone + 20);
+        Assert.True(s.Offset < at - 15 * HammerSession.SteerPerStep, $"from {at} to {s.Offset}");
+        s.Advance([Point(s.StepsDone, 0.3f)], s.StepsDone + 1);
+        at = s.Offset;
+        s.Advance([], s.StepsDone + 20);
+        Assert.Equal(at, s.Offset, 4);
+    }
+
+    [Fact]
     public void AnUnsteadyHandsWindWavers()
     {
         float Uneven(float precision)
@@ -430,10 +450,15 @@ public class PointerTests
             var total = 0f;
             for (var seed = 1u; seed <= 20; seed++)
             {
-                var s = new HammerSession { Rand = new SimRandom(seed), Hands = new Hands(precision, 1f, 5) };
-                s.Begin();
-                s.Advance([new WorkInput(0, WorkInputKind.Hold, 1)], 20);
-                total += MathF.Abs(s.Raise - 20 * HammerSession.WindPerStep);
+                // Against a steady hand's wind from the same mark (it slows near the mark either way).
+                HammerSession Wound(float p)
+                {
+                    var s = new HammerSession { Rand = new SimRandom(seed), Hands = new Hands(p, 1f, 5) };
+                    s.Begin();
+                    s.Advance([new WorkInput(0, WorkInputKind.Hold, 1)], 20);
+                    return s;
+                }
+                total += MathF.Abs(Wound(precision).Raise - Wound(1f).Raise);
             }
             return total / 20f;
         }

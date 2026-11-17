@@ -94,7 +94,7 @@ public sealed partial class VillageGame
     // What the last frame's draw of the work marked for the mouse (BeginWork, TakesPointer, ClickSpot), and for which session.
     private (float2 Min, float2 Max)? _workWindow, _pointArea;
     private long _workDrawnFor = -1;
-    private bool _workWheel;
+    private bool _workWheel, _pointEdges;
     private readonly List<WorkSpot> _workSpots = [];
 
     // A left press begun on the work, still down: it holds as F does, and drags the point along even off the picture.
@@ -116,10 +116,13 @@ public sealed partial class VillageGame
     /// run 0..1 across it (<see cref="WorkSession.Pointed"/>). <paramref name="wheel"/>: the wheel turns
     /// as W/S would (up is W).
     /// </summary>
-    private void TakesPointer(float2 min, float2 max, bool wheel = false)
+    /// <paramref name="edges"/>: the mouse is read even off the picture, held to its nearest edge, for a
+    /// game that moves a thing as far as the mouse moves and lets an edge push on (the hammer).
+    private void TakesPointer(float2 min, float2 max, bool wheel = false, bool edges = false)
     {
         _pointArea = (min, max);
         _workWheel = wheel;
+        _pointEdges = edges;
     }
 
     /// <summary>A click over this part of the picture works as this input, not as F.</summary>
@@ -134,6 +137,7 @@ public sealed partial class VillageGame
         _workWindow = mouse ? (pos, pos + ImGui.GetWindowSize()) : null;
         _pointArea = null;
         _workWheel = false;
+        _pointEdges = false;
         _workSpots.Clear();
     }
 
@@ -193,7 +197,7 @@ public sealed partial class VillageGame
         if (_workWheel && _time < _wheelUntil && m.Axis2 == 0)
             m = m with { Axis2 = _wheelWay };
         m = m with { Held = _grip };
-        if (_pointArea is { } area && _mouseMoved && (_grip || Inside(at, area)))
+        if (_pointArea is { } area && _mouseMoved && (_grip || _pointEdges || Inside(at, area)))
             m = m with { Point = Packed(at, area) };
         if (over && (_mouseMoved && at != _mouseLast || m.Click >= 0 || m.Press || m.Held || m.Act || m.Rune >= 0 || m.Axis != 0 || m.Axis2 != 0))
             _pointerUsedAt = _time;

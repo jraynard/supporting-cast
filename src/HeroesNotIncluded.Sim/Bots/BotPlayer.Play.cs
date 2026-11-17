@@ -345,8 +345,8 @@ public sealed partial class BotPlayer
             return (false, false, 0);
         var easing = s.Feel < _feel - 0.01f && _feel > 0.5f;
         _feel = s.Feel;
-        if (s.Feel > 0.85f)
-            return (s.InBand, false, 0); // there: set it
+        if (s.Feel >= s.SetFeel + (1f - s.SetFeel) * 0.4f)
+            return (s.InBand, false, 0); // well inside where it sets: set it
 
         if (easing)
             _dir = -1;
@@ -497,7 +497,7 @@ public sealed partial class BotPlayer
 
     /// <summary>A smith's arm: hold W till the mark's in reach, then let go; -1 is W held.</summary>
     public static int HammerSwing(HammerSession h) =>
-        h.Ready && !h.Swinging && h.Raise < h.Mark - HammerSession.WindPerStep * 0.5f ? -1 : 0;
+        h.Ready && !h.Swinging && h.Raise < h.Mark - h.WindRate * 0.5f ? -1 : 0;
 
     private static int Steer(float needle, float halfWidth)
     {

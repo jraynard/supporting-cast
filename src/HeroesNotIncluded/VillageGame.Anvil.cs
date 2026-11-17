@@ -55,7 +55,7 @@ public sealed partial class VillageGame
         var jolt = new float2(MathF.Sin(_time * 90f) * shake, MathF.Cos(_time * 70f) * shake);
         var min = origin;
         var max = origin + size;
-        TakesPointer(min, max); // across: the hammer moved over the piece as the mouse moves (the panel's width is -1 to 1)
+        TakesPointer(min, max, edges: true); // across: the hammer moved over the piece as the mouse moves (the panel's width is -1 to 1)
 
         // The forge's light behind it all.
         Gui.Frame(dl, min, max, UiTheme.Current.Frames.Inset, Theme.Well);
@@ -97,7 +97,9 @@ public sealed partial class VillageGame
                 var spotColour = Theme.U8(s.Centred ? Theme.Good : Theme.Accent, s.Centred ? 0.9f : 0.7f);
                 dl.AddLine(in mid0, in mid1, spotColour, Gui.S(2f));
                 dl.AddTriangleFilled(new float2(spotX - Gui.S(6), bMin.Y - Gui.S(12)), new float2(spotX + Gui.S(6), bMin.Y - Gui.S(12)), new float2(spotX, bMin.Y - Gui.S(4)), spotColour);
-                DrawHammerSwing(dl, s.Mark, new float2(spotX, strikePoint.Y), px, Gui.U8(new float4(1f, 1f, 1f, 0.22f))); // a ghost of the blow to aim for: as high, over the spot
+                // A ghost of the blow to aim for: as high, over the spot; green while the hammer's raised into the band.
+                var inBand = s.Ready && !s.Swinging && s.Raise > 0f && s.InBand;
+                DrawHammerSwing(dl, s.Mark, new float2(spotX, strikePoint.Y), px, inBand ? Theme.U8(Theme.Good, 0.45f) : Gui.U8(new float4(1f, 1f, 1f, 0.22f)));
                 // Where it would fall: a faint line from the face down to the bar, green over the marker.
                 var fallX = strikePoint.X + s.Offset * HammerShift;
                 if (s.Ready)
@@ -115,12 +117,13 @@ public sealed partial class VillageGame
         var g1 = new float2(gx + Gui.S(5), max.Y - Gui.S(10));
         Gui.Trough(dl, g0, g1);
         float Y(float f) => g1.Y - (g1.Y - g0.Y) * Math.Clamp(f, 0f, 1f);
-        dl.AddRectFilled(new float2(g0.X, Y(s.Mark + s.HalfWidth)), new float2(g1.X, Y(s.Mark - s.HalfWidth)), Theme.U8(Theme.Accent, 0.55f), 0f, ImDrawFlags.None);
+        var windIn = s.Ready && !s.Swinging && s.Raise > 0f && s.InBand;
+        dl.AddRectFilled(new float2(g0.X, Y(s.BandHigh)), new float2(g1.X, Y(s.BandLow)), windIn ? Theme.U8(Theme.Good, 0.7f) : Theme.U8(Theme.Accent, 0.55f), 0f, ImDrawFlags.None);
         if (since < GradeSeconds && s.LastWind >= 0f)
         {
             var top = Y(s.LastWind);
             dl.AddRectFilled(new float2(g0.X - Gui.S(2), top - Gui.S(1.5f)), new float2(g1.X + Gui.S(2), top + Gui.S(1.5f)),
-                Theme.U8(s.LastWindWas == 0 ? Theme.Good : Theme.Bad, 0.9f * (1f - since / GradeSeconds)), 0f, ImDrawFlags.None);
+                Theme.U8(s.LastWindWas == 0 ? Theme.Good : s.LastWindWas == 1 ? Theme.Warn : Theme.Bad, 0.9f * (1f - since / GradeSeconds)), 0f, ImDrawFlags.None);
         }
         var now = Y(s.Raise);
         dl.AddRectFilled(new float2(g0.X - Gui.S(4), now - Gui.S(2)), new float2(g1.X + Gui.S(4), now + Gui.S(2)), Theme.U8(s.Ready ? Theme.Text : Theme.Dim), Gui.S(1), ImDrawFlags.None);
@@ -140,7 +143,8 @@ public sealed partial class VillageGame
                 ? "It's going black: blows now do it no good, and may crack it. Back to the fire."
                 : "The colour's fading: it's moving less under the hammer.");
         else if (since < GradeSeconds * 2 && s.LastWind >= 0f && (s.LastWindWas != 0 || s.LastOffCentre))
-            TextC(s.LastWindWas > 0 ? Theme.Bad : Theme.Warn, s.LastWindWas > 0 ? "Raised too far: it came down too hard, and did little."
+            TextC(s.LastWindWas > 1 ? Theme.Bad : Theme.Warn, s.LastWindWas > 1 ? "Raised too far: it came down too hard, and did little."
+                : s.LastWindWas > 0 ? "A touch past the mark: a heavy blow, not quite true."
                 : s.LastWindWas < 0 ? "Short of the mark: it moved the metal less." : "Off the marker: it glanced.");
         else
             TextC(Theme.Dim, s.Repairing ? "Hammering out the chips: over the marker, raise it to the mark, let go." : "Keep it over the marker, raise it to the mark (not past it), and let go.");

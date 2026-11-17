@@ -9,7 +9,9 @@ namespace HeroesNotIncluded.Sim.Work;
 /// One heat on the anvil (<see cref="Smithing"/>): hold W (or F, or the mouse's button) to raise
 /// the hammer, and let go to bring it down. The blow is as good as the wind: back to the mark is a
 /// full one; short of it moves the metal less; past it, the blow comes down too hard and knocks
-/// the work out of true and does it little good. Raised, it wanders across the piece,
+/// the work out of true and does it little good. The arm slows as it nears the mark (a hammer's
+/// weight at the top of its reach), and a hair past still counts: a hand lets go a moment after it
+/// sees the mark, never before. Raised, it wanders across the piece,
 /// the more for an unsteady arm: A/D (or the mouse moved side to side) keep it over the spot to
 /// strike, which moves after every blow, and a blow off the spot glances. A new mark after every blow, and the piece's quality is the average of them all, so a
 /// smith's hands decide the blade in place of a skill roll. The piece cools all the while: hot, a
@@ -23,6 +25,15 @@ public sealed class HammerSession : WorkSession
 
     /// <summary>How far it comes down a step once let go: from the top in under a quarter of a second.</summary>
     public const float SwingPerStep = 0.075f;
+
+    /// <summary>
+    /// Within this of the mark (and past it) the arm slows to <see cref="NearSlow"/> of its pace: the
+    /// window to let go in is long enough for a hand and an eye, not only a frame.
+    /// </summary>
+    public const float Approach = 0.12f, NearSlow = 0.4f;
+
+    /// <summary>Steps of the slowed wind past the mark that still count as on it: the eye and the screen lag the hand.</summary>
+    public const int OverGraceSteps = 2;
 
     /// <summary>A wind under this is a tap, not a blow: let go from there, it strikes nothing.</summary>
     public const float MinWind = 0.12f;
@@ -117,7 +128,7 @@ public sealed class HammerSession : WorkSession
     /// <summary>The top of this wind so far: what the blow will be judged by.</summary>
     public float Peak { get; private set; }
 
-    /// <summary>How the last wind sat against its mark: -1 short, 0 on it, 1 past it; and how high it went (-1 before the first).</summary>
+    /// <summary>How the last wind sat against its mark: -1 short, 0 on it, 1 a touch past it, 2 well past (too hard); and how high it went (-1 before the first).</summary>
     public int LastWindWas { get; private set; }
     public float LastWind { get; private set; } = -1f;
 
@@ -142,6 +153,19 @@ public sealed class HammerSession : WorkSession
     public bool Centred => MathF.Abs(Offset - Spot) <= CentreWidth;
 
     public float HalfWidth => MarkHalfWidth * Hands.Tolerance;
+
+    /// <summary>How far past the mark still counts as on it (<see cref="OverGraceSteps"/> of the slowed wind).</summary>
+    public static float OverGrace => OverGraceSteps * WindPerStep * NearSlow;
+
+    /// <summary>The band a wind counts as on the mark: a little longer past it than short of it.</summary>
+    public float BandLow => Mark - HalfWidth;
+    public float BandHigh => Mark + HalfWidth + OverGrace;
+
+    /// <summary>Raised into the band now: let go and it's a full blow.</summary>
+    public bool InBand => Raise >= BandLow && Raise <= BandHigh;
+
+    /// <summary>How far the hammer rises a step held now: slower near the mark and past it.</summary>
+    public float WindRate => Raise >= Mark - Approach ? WindPerStep * NearSlow : WindPerStep;
 
     /// <summary>The hammer's off the bar after the last blow and can be wound again.</summary>
     public bool Ready => _recovery <= 0;
@@ -189,7 +213,13 @@ public sealed class HammerSession : WorkSession
     /// <summary>A/D move it across the piece.</summary>
     protected override void Axis(int value) => _steer = value;
 
-    /// <summary>The mouse moved side to side shifts it across as far as it moves (the panel's width is the piece's, -1 to 1).</summary>
+    /// <summary>The pointer at (or past) this near either edge of the panel keeps the hammer going that way, as A/D would.</summary>
+    public const float EdgeU = 0.01f;
+
+    /// <summary>
+    /// The mouse moved side to side shifts it across as far as it moves (the panel's width is the
+    /// piece's, -1 to 1). Run out of room at either edge, hold it there (or past) and it keeps going.
+    /// </summary>
     protected override void Pointed(float u, float v)
     {
         if (PointU is { } was)
@@ -206,7 +236,7 @@ public sealed class HammerSession : WorkSession
             if (raising)
             {
                 // Raised, an unsteady hand wavers.
-                Raise = Math.Clamp(Raise + WindPerStep + (Rand.NextFloat() * 2f - 1f) * Hands.Tremor * WindWaver, 0f, 1f);
+                Raise = Math.Clamp(Raise + WindRate + (Rand.NextFloat() * 2f - 1f) * Hands.Tremor * WindWaver, 0f, 1f);
                 Peak = Math.Max(Peak, Raise);
             }
             else if (Raise > 0f)
@@ -225,7 +255,9 @@ public sealed class HammerSession : WorkSession
                 _drift = Math.Clamp(_drift + (Rand.NextFloat() * 2f - 1f) * Wander * (1f + Hands.Tremor * 4f), -MaxWander, MaxWander);
             else
                 _drift *= 0.9f;
-            Offset = Math.Clamp(Offset + _drift + _steer * SteerPerStep, -1f, 1f);
+            // The mouse held at an edge pushes on as A/D would: the hammer's drift can leave it further out than the panel.
+            var steer = _steer != 0 ? _steer : PointU is { } u ? u >= 1f - EdgeU ? 1 : u <= EdgeU ? -1 : 0 : 0;
+            Offset = Math.Clamp(Offset + _drift + steer * SteerPerStep, -1f, 1f);
         }
         Temp = Air + (Temp - Air) * Smithing.AirCooling;
         if (Temp < Lo * TooCold)
@@ -243,13 +275,22 @@ public sealed class HammerSession : WorkSession
         var centre = wide <= 0f ? 1f : Math.Clamp(1f - wide / 0.4f, Glancing, 1f);
         LastOffCentre = centre < 1f;
         float grade;
-        if (off > HalfWidth)
+        var past = off - HalfWidth - OverGrace;
+        if (past > HalfWidth)
         {
-            // Wound past it: it comes down too hard, out of true; the metal moves a little.
-            LastWindWas = 1;
-            var over = Math.Clamp((off - HalfWidth) / (HalfWidth * 3f), 0f, 1f);
+            // Wound well past it: it comes down too hard, out of true; the metal moves a little.
+            LastWindWas = 2;
+            var over = Math.Clamp((past - HalfWidth) / (HalfWidth * 3f), 0f, 1f);
             Shape = Math.Min(1f, Shape + GoodBlow * OverBlow * (0.1f + 0.9f * heat) * centre / BlowsNeeded);
             grade = 0.1f * (1f - over) * centre;
+        }
+        else if (past > 0f)
+        {
+            // A touch past: a bit heavy, a bit less true, fading toward too hard.
+            LastWindWas = 1;
+            var t = past / HalfWidth;
+            Shape = Math.Min(1f, Shape + GoodBlow * (1f - (1f - OverBlow) * t) * (0.1f + 0.9f * heat) * centre / BlowsNeeded);
+            grade = (0.7f - 0.5f * t) * centre * (0.4f + 0.6f * heat);
         }
         else
         {
@@ -390,7 +431,7 @@ public sealed class HammerSession : WorkSession
             Peak = Math.Clamp(r.Float(), 0f, 1f);
             Offset = Math.Clamp(r.Float(), -1f, 1f);
             _drift = Math.Clamp(r.Float(), -MaxWander, MaxWander);
-            LastWindWas = Math.Clamp(r.Int(), -1, 1);
+            LastWindWas = Math.Clamp(r.Int(), -1, 2);
             LastWind = r.Float();
             LastOffCentre = r.Bool();
             Spot = r.Version >= 46 ? Math.Clamp(r.Float(), -1f, 1f) : 0f; // the spot to strike moving came with format 46
