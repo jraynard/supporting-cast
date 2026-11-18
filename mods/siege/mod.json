@@ -1,0 +1,8 @@
+{
+  "id": "siege",
+  "name": "Siege Night",
+  "version": "0.1.0",
+  "authors": ["Heroes Not Included"],
+  "description": "A way to play: the bandits come at nightfall, again and again; hold the town till dawn. The example game mode (docs/MODDING.md).",
+  "gameVersion": "0.1"
+}

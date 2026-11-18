@@ -220,7 +220,7 @@ new one is built the moddable way.
 - [x] **The carpenter moves out** to `mods/carpenter`: its sim half, defs and game half are a mod (on by
   default, off with `--mods -carpenter`); the core and the game never name it.
 - [ ] **Art and sound tools write a mod's files into the mod** (then the carpenter's five sprites and its sounds move).
-- [ ] **Game modes:** the season, the practice yard and the arena as `IGameMode`s.
+- [x] **Game modes:** `IGameMode`, the season and the practice yard the game's own, Siege Night (`mods/siege`) the example.
 - [ ] **The musician, built as a mod** from [MUSICIAN-PLAN.md](MUSICIAN-PLAN.md): first pass in (a player-only trade,
   the tin pipe played free, `mods/musician`); playtest how it feels, then the other instruments, the tune book
   and the lead-in, the audience and dancing.

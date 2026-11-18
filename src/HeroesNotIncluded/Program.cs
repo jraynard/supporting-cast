@@ -321,6 +321,8 @@ else
         // --drill NAME: a trade's moment staged at once (a mod registers its drills, SimRegistry.Drill);
         // --fell-test is the carpenter's woods drill: by a pine with an axe and a saw.
         Drill = ParseString(args, "--drill") ?? (args.Contains("--fell-test") ? "fell" : null),
+        // --mode NAME: how the round's played (a mod's mode, say "siege"): a season unless told otherwise.
+        Mode = ParseString(args, "--mode"),
         // --pairs-test: every job for two pairs of hands ready at once (PairsDrill): a greatsword's iron, a great
         // log, a wagon's axle and a body on a shrine pallet. With --host, for co-op; alone, Help! brings a villager.
         PairsTest = args.Contains("--pairs-test"),

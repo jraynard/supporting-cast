@@ -179,6 +179,9 @@ public sealed partial class VillageGame
     private string SeasonLine()
     {
         var round = _sim.Round;
+        // A mode with no season (a siege) says where it's got to itself.
+        if (round.ModeOf(_sim) is { Seasonal: false } mode)
+            return mode.Status(_sim) ?? mode.Label;
         if (round.Phase == Sim.Round.RoundPhase.Festival)
             return _sim.Festival.Part switch
             {

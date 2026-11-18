@@ -80,6 +80,19 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     /// </summary>
     public bool Practice { get; set; }
 
+    /// <summary>How the round's played (<see cref="Modding.IGameMode"/>), by name: the season unless the lobby chose otherwise. Saved.</summary>
+    public string Mode { get; private set; } = Modding.SeasonMode.Id;
+
+    /// <summary>The round's mode (the season if its mod's off).</summary>
+    public Modding.IGameMode ModeOf(Simulation sim) => Modding.GameModes.Of(Mode);
+
+    /// <summary>Choose how the round's played; only while the lobby's open.</summary>
+    public void SetMode(string mode)
+    {
+        if (Phase == RoundPhase.Lobby && Modding.GameModes.All.Any(m => m.Name == mode))
+            Mode = mode;
+    }
+
     /// <summary>The host's choices for the round (<see cref="SetRoundOptionsCommand"/>). Saved.</summary>
     public RoundOptions Options { get; set; } = RoundOptions.Default;
 
@@ -149,6 +162,18 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     {
         if (!Live || Endless || Practice)
             return;
+        var mode = ModeOf(sim);
+        if (mode.Check(sim) is { } ends)
+        {
+            End(sim, ends.Outcome, ends.Headline);
+            return;
+        }
+        if (!mode.Seasonal)
+        {
+            if (!AnyoneAlive(sim))
+                End(sim, RoundOutcome.TownFell);
+            return;
+        }
         var now = sim.Clock.Tick;
         if (Phase == RoundPhase.Playing && now >= FestivalTick(sim))
             BeginFestival(sim, FestivalTick(sim));
@@ -190,7 +215,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     /// End the round: build the reveal and stand the session still. Only once; a round that isn't
     /// live has nothing to end.
     /// </summary>
-    public void End(Simulation sim, RoundOutcome outcome)
+    public void End(Simulation sim, RoundOutcome outcome, string? headline = null)
     {
         if (!Live || outcome == RoundOutcome.None)
             return;
@@ -207,6 +232,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             People = RoundSummary.PeopleOf(sim, _startCoin),
             Honours = sim.Festival.Honours.Select(h => new HonourRow(h.Name, h.Title)).ToList(),
             Quests = [.. ex.Tales],
+            Told = headline,
         };
         Phase = RoundPhase.Over;
         sim.Messages.Add(outcome == RoundOutcome.Won ? MessageKind.Good : MessageKind.Danger, Summary.Headline, null, outcome == RoundOutcome.Won ? "The season is won" : "The season is lost");
@@ -403,6 +429,10 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     {
         if (Phase != RoundPhase.Lobby || _seats.Count == 0)
             return;
+        var mode = ModeOf(sim);
+        // A mode that starts later in the day (a siege at dusk): the clock's moved on to it before anyone's placed.
+        if (mode.StartHour is { } hour && sim.Clock.HourOfDay < hour)
+            sim.Clock.Tick += SimClock.HoursToTicks(hour - sim.Clock.HourOfDay);
         var dealt = Deal(sim.Defs);
         var free = OpenVillagers(sim);
         foreach (var (seat, trade) in dealt)
@@ -450,6 +480,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
                     Inventory.Stow(sim, e, sim.CreateItem(sim.Defs.Thing(Shops.Coin.Silver), purse));
                 _startCoin.Add((e, Shops.Coin.Count(sim, e)));
             }
+        mode.Started(sim);
     }
 
     /// <summary>
@@ -650,6 +681,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         w.Bool(Practice);
         w.Bool(Options.FriendlyFire);
         w.Bool(Options.Traitors);
+        w.String(Mode);
     }
 
     public void Load(SaveReader r, Simulation sim)
@@ -692,6 +724,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         Practice = r.Version >= 28 && r.Bool();
         if (r.Version >= 38)
             Options = new RoundOptions(r.Bool(), r.Bool());
+        Mode = r.Version >= 63 ? r.String() : Modding.SeasonMode.Id;
     }
 
     private static void WriteStrings(SaveWriter w, List<string> list)

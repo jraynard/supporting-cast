@@ -15,6 +15,7 @@
     <ProjectReference Include="..\..\src\HeroesNotIncluded.Sim\HeroesNotIncluded.Sim.csproj" />
     <ProjectReference Include="..\..\mods\carpenter\src\Carpenter.Sim\Carpenter.Sim.csproj" />
     <ProjectReference Include="..\..\mods\musician\src\Musician.Sim\Musician.Sim.csproj" />
+    <ProjectReference Include="..\..\mods\siege\src\Siege.Sim\Siege.Sim.csproj" />
   </ItemGroup>
 
   <ItemGroup>

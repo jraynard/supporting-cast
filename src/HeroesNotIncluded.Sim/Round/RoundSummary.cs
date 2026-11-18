@@ -66,7 +66,10 @@ public sealed class RoundSummary
     /// </summary>
     public List<Expeditions.QuestTale> Quests = [];
 
-    public string Headline => Outcome switch
+    /// <summary>The headline a mode gave its end (<see cref="Modding.RoundEnd"/>), or null for the outcome's own.</summary>
+    public string? Told { get; set; }
+
+    public string Headline => Told ?? Outcome switch
     {
         RoundOutcome.Won => "The town came through the season.",
         RoundOutcome.FellShort => "The season's over, and the town is soon forgotten.",
@@ -113,6 +116,7 @@ public sealed class RoundSummary
         w.Int(Quests.Count);
         foreach (var q in Quests)
             q.Save(w);
+        w.NullableString(Told);
     }
 
     public static RoundSummary Read(SaveReader r)
@@ -138,6 +142,8 @@ public sealed class RoundSummary
         if (r.Version >= 54) // the quests' tales came with format 54
             for (var n = r.Count(1 << 10); n > 0; n--)
                 s.Quests.Add(Expeditions.QuestTale.Read(r));
+        if (r.Version >= 63) // a mode's own headline came with format 63
+            s.Told = r.NullableString();
         return s;
     }
 

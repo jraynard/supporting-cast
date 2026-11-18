@@ -65,7 +65,7 @@ public sealed class Reckoning : ISimSystem, ISaveState
 
         _renownByHour.Add(Renown);
         _dreadByHour.Add(Dread);
-        if (Dread >= DreadLimit(sim))
+        if (Dread >= DreadLimit(sim) && sim.Round.ModeOf(sim).Seasonal)
             sim.Round.End(sim, RoundOutcome.Dread);
     }
 

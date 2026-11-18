@@ -29,6 +29,7 @@ public sealed class SimRegistry
     internal readonly List<ITradeModule> TradeModules = [];
     internal readonly List<Scenarios.Lessons.Lesson> Lessons = [];
     internal readonly List<Func<Bots.BotPlayer, Bots.IBotTrade>> Bots = [];
+    internal readonly List<IGameMode> Modes = [];
     internal readonly Dictionary<string, Func<Simulation, Entity, Entity>> Drills = new(StringComparer.OrdinalIgnoreCase);
     internal readonly Dictionary<string, string> Formerly = new(StringComparer.Ordinal);
 
@@ -54,6 +55,9 @@ public sealed class SimRegistry
     /// carpenter by a pine, axe to hand). Given the player's character; returns what to look at, or Entity.Null.
     /// </summary>
     public void Drill(string name, Func<Simulation, Entity, Entity> stage) => Drills[name] = stage;
+
+    /// <summary>A way to play a round (<see cref="IGameMode"/>), listed on the title screen.</summary>
+    public void Mode(IGameMode mode) => Modes.Add(mode);
 
     /// <summary>How a bot plays the trade (<see cref="Bots.IBotTrade"/>): made fresh for each bot, so it may keep state.</summary>
     public void Bot(Func<Bots.BotPlayer, Bots.IBotTrade> make) => Bots.Add(make);
@@ -184,6 +188,8 @@ public static class SimContent
     internal static IEnumerable<Scenarios.Lessons.Lesson> Lessons => Registries.SelectMany(r => r.Lessons);
 
     internal static IEnumerable<Func<Bots.BotPlayer, Bots.IBotTrade>> BotFactories => Registries.SelectMany(r => r.Bots);
+
+    internal static IEnumerable<IGameMode> ModeList => Registries.SelectMany(r => r.Modes);
 
     /// <summary>A drill by name (<see cref="SimRegistry.Drill"/>), the last registered of that name; null if none.</summary>
     public static Func<Simulation, Entity, Entity>? DrillNamed(string name) =>

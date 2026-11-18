@@ -99,6 +99,23 @@ public sealed class TitleGame : Game
     /// <summary>What the character being picked or made is for: every way into a village starts with who you are.</summary>
     private enum Purpose { Solo, Host, Join, Manage, Practice }
 
+    /// <summary>How the next solo round's played (<see cref="Sim.Modding.IGameMode"/>): null for a season.</summary>
+    private string? _mode;
+
+    /// <summary>The ways to play beyond a season and the practice yard: the mods' modes.</summary>
+    private static List<Sim.Modding.IGameMode> OtherModes() =>
+        [.. Sim.Modding.GameModes.All.Where(m => m.Name is not (Sim.Modding.SeasonMode.Id or Sim.Modding.PracticeMode.Id))];
+
+    private MenuItem[] ModeItems() =>
+    [
+        .. OtherModes().Select(m => new MenuItem(m.Label, m.Description, null, Then: () =>
+        {
+            _mode = m.Name;
+            ChooseCharacter(Purpose.Solo);
+        })),
+        new("Back", "Back to the main menu.", null, MenuAction.Back),
+    ];
+
     private Purpose _purpose;
 
     /// <summary>Saved characters (<see cref="CharacterRoster"/>): picked before any game, or looked after on the Characters screen.</summary>
@@ -144,6 +161,8 @@ public sealed class TitleGame : Game
                 ? new("Tutorial", "New here? Start here: learn a trade, step by step.", null, MenuAction.Practice) { Nudge = true }
                 : new("Tutorial", "Learn a trade, step by step, with nobody waiting.", null, MenuAction.Practice),
             new("Play with friends", "Open the doors, or pull up a stool.", null, MenuAction.Friends),
+            // A mod's ways to play (a night of raids to see through), when there are any.
+            .. (OtherModes().Count > 0 ? new[] { new MenuItem("Other ways to play", string.Join(", ", OtherModes().Select(m => m.Label)) + ".", null, Then: () => OpenSubmenu(ModeItems(), "How will you play?")) } : Array.Empty<MenuItem>()),
             new("Settings", "House rules.", null, MenuAction.Settings),
             new("More", "Characters, saves, replays, bugs, credits.", null, MenuAction.More),
             new("Quit", "Close up for the night.", null, MenuAction.Exit),
@@ -254,7 +273,7 @@ public sealed class TitleGame : Game
     /// </summary>
     private MenuItem[] TradeItems(SavedCharacter c, string map)
     {
-        Game Start(string? trade) => new VillageGame(DefaultSeed) { Adventure = true, Character = c, HeroTrade = trade, MapName = map };
+        Game Start(string? trade) => new VillageGame(DefaultSeed) { Adventure = true, Character = c, HeroTrade = trade, MapName = map, Mode = _mode };
         return _defs.AllTrades
             .Where(t => !t.Unlimited)
             .Select(t => new MenuItem(TradeTitle(t), PaceNote(t) + t.Description, () => Start(t.Name)))
@@ -712,6 +731,7 @@ public sealed class TitleGame : Game
                 Host.Window.ShouldClose = true;
                 break;
             case MenuAction.NewGame:
+                _mode = null; // a season
                 ChooseCharacter(Purpose.Solo);
                 break;
             case MenuAction.Characters:

@@ -101,8 +101,15 @@ is the first trade built as a mod from nothing.
 
 ### A new game mode
 
-An `IGameMode` sets a round up (map, deal, extra systems), names its phases, decides when it's won or
-lost and what the reveal shows. The season, the practice yard and the arena are the core's three.
+An `IGameMode` (`Modding/GameMode.cs`, `registry.Mode`) is how a round is played: whether the season's
+clock runs it (`Seasonal`: the festival, the reckoning, Dread's limit), whether the Director sends its
+crises (`Crises`), the hour it starts at, what it sets out once the trades are dealt (`Started`), when
+it ends and with what headline (`Check`), and its line under the clock (`Status`). The round keeps
+its mode by name (saved; one whose mod is off is played as a season), the title screen lists the
+mods' modes under "Other ways to play", and `--mode <name>` starts one. The game's own are the
+season and the practice yard. `mods/siege` (Siege Night: dusk, three waves of raiders, dawn) is the
+example; the skill is `.claude/skills/new-mode`. The arena isn't a round (a test ring of its own) and
+stays the game's.
 
 ### What the musician needed (the first trade built from nothing)
 
@@ -191,7 +198,8 @@ The game's own rules (CLAUDE.md) bind its mods:
   generators (`tools/*_art.py`, `norse_buildings.py`, `sfx_synth.py`), which write one tree for everything:
   they need to write a mod's files into the mod first. Only five sprites are the carpenter's alone; the rest
   (bows, quivers, logs) are the core's. Left in the core they change nothing about play.
-- [ ] Game modes.
+- [x] Game modes: `IGameMode`, the season and the practice yard as the game's own, a mode saved with the
+  round, "Other ways to play" on the title screen, `--mode`; `mods/siege` as the example.
 - [x] The musician as a mod, first pass: a player-only trade with a tin pipe, played free (eight scale keys and
   the octave above), notes heard as you press them and from others in earshot. `--new-game --trade Musician
   --mods musician --drill pipe`. Not on by default yet. The rest of MUSICIAN-PLAN.md follows, by ear, with you.

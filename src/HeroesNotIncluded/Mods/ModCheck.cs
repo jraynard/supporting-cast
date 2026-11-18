@@ -107,6 +107,9 @@ public static class ModCheck
                     var added = sim.Systems.Where(sys => Sim.Modding.SimContent.ModOf(sys.GetType().Assembly) == mod.Id).Select(sys => sys.Name).ToList();
                     if (added.Count > 0)
                         notes.Add($"Systems: {string.Join(", ", added)}");
+                    var modes = Sim.Modding.GameModes.All.Where(m => Sim.Modding.SimContent.ModOf(m.GetType().Assembly) == mod.Id).Select(m => $"{m.Label} ({m.Name})").ToList();
+                    if (modes.Count > 0)
+                        notes.Add($"Ways to play: {string.Join(", ", modes)}");
                     var sessions = Sim.Work.WorkSession.KnownSessions.Where(k => k.StartsWith(mod.Id + ":", StringComparison.Ordinal)).ToList();
                     if (sessions.Count > 0)
                         notes.Add($"Work sessions: {string.Join(", ", sessions)}");

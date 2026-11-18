@@ -125,14 +125,16 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
         if (!Enabled || !sim.Round.Live || Difficulty is { Peaceful: true })
             return;
         var season = sim.Defs.Season;
-        if (_beatAt.Count == 0 && season.Beats.Count > 0)
+        // A mode without the season's crises (a siege, the practice yard) sends none of its own; those sent by hand still play out.
+        var beats = sim.Round.ModeOf(sim).Crises;
+        if (beats && _beatAt.Count == 0 && season.Beats.Count > 0)
             Plan(sim, season);
         var now = sim.Clock.Tick;
         Reading = Tension.Read(sim, _active.Count);
         var calm = Reading.Harm < season.Pacing.CalmHarm && _active.Count == 0;
         if (!calm || _quietSince < 0)
             _quietSince = now;
-        if (sim.Round.Phase == Round.RoundPhase.Playing)
+        if (beats && sim.Round.Phase == Round.RoundPhase.Playing)
         {
             FollowQuests(sim, season);
             var lead = SimClock.HoursToTicks(season.RaidWarningHours);
@@ -317,7 +319,9 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
         if (!Enabled || sim.Round.Phase != Round.RoundPhase.Playing || Difficulty is { Peaceful: true })
             return false;
         var season = sim.Defs.Season;
-        if (_beatAt.Count == 0 && season.Beats.Count > 0)
+        // A mode without the season's crises (a siege, the practice yard) sends none of its own; those sent by hand still play out.
+        var beats = sim.Round.ModeOf(sim).Crises;
+        if (beats && _beatAt.Count == 0 && season.Beats.Count > 0)
             Plan(sim, season);
         Reading = Tension.Read(sim, _active.Count);
         for (var i = 0; i < Beats(season); i++)
@@ -405,7 +409,9 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
         if (!Enabled || sim.Round.Phase != Round.RoundPhase.Playing || !CanSend(kind))
             return false;
         var season = sim.Defs.Season;
-        if (_beatAt.Count == 0 && season.Beats.Count > 0)
+        // A mode without the season's crises (a siege, the practice yard) sends none of its own; those sent by hand still play out.
+        var beats = sim.Round.ModeOf(sim).Crises;
+        if (beats && _beatAt.Count == 0 && season.Beats.Count > 0)
             Plan(sim, season);
         for (var i = 0; i < Beats(season); i++)
         {

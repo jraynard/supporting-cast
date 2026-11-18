@@ -257,7 +257,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
   `Mods/GameContent` (defs, then `$patch` merges; atlas and sound roots; the build tag; save meta).
   Read content through `GameContent.Current`, never a hardcoded `data/defs` path. A new trade, mini-game,
   content mod or town: the skills in `.claude/skills/` (`new-trade`, `new-minigame`, `content-mod`, `new-map`)
-  and the ModKit (`modkit/`). The game's own trades are mods too: `mods/carpenter`, `mods/musician`.
+  and the ModKit (`modkit/`). The game's own trades are mods too: `mods/carpenter`, `mods/musician`. A round's
+  mode is an `IGameMode` (`Modding/GameMode.cs`; `new-mode` skill, `mods/siege`); `--mode NAME`.
 
 ## Rules
 

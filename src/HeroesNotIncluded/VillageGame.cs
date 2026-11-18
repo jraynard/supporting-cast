@@ -252,6 +252,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     public bool BridgeTest { get; init; }
 
     /// <summary>Debug (<c>--fell-test</c>): the woods drill (<see cref="FellDrill"/>), the carpenter by a pine with an axe and a saw.</summary>
+    /// <summary>How the round's played (<c>--mode</c>, <see cref="Sim.Modding.IGameMode"/>): a season unless told otherwise.</summary>
+    public string? Mode { get; init; }
+
     /// <summary>A trade's drill staged at the start (<c>--drill</c>, <see cref="Sim.Modding.SimRegistry.Drill"/>).</summary>
     public string? Drill { get; init; }
 
@@ -408,6 +411,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         if (Adventure)
         {
             _sim.Round.OpenLobby();
+            // How it's played: before the first tick, so a host's joiners get it with the town.
+            _sim.Round.SetMode(Practice ? Sim.Modding.PracticeMode.Id : Mode ?? Sim.Modding.SeasonMode.Id);
             if (FriendlyFire)
                 _sim.Round.SetOptions(_sim.Round.Options with { FriendlyFire = true }); // before the first tick, like Practice
             if (HostCoop == null)
