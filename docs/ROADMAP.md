@@ -217,7 +217,9 @@ new one is built the moddable way.
   and sounds registered.
 - [ ] **The rest of the registries:** sessions, work views, codecs, commands, systems, work givers,
   roles, crises, lessons and bot hooks registered, not switched on; mod DLLs loaded. Hashes unchanged.
-- [ ] **The carpenter moves out** to `mods/carpenter`: the proof the API is enough.
+- [x] **The carpenter moves out** to `mods/carpenter`: its sim half, defs and game half are a mod (on by
+  default, off with `--mods -carpenter`); the core and the game never name it.
+- [ ] **Art and sound tools write a mod's files into the mod** (then the carpenter's five sprites and its sounds move).
 - [ ] **Game modes:** the season, the practice yard and the arena as `IGameMode`s.
 - [ ] **The bard, built as a mod** from [BARD-PLAN.md](BARD-PLAN.md); the ModKit's templates and
   the coding-agent skills (`.claude/skills/new-trade` and friends).

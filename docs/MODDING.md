@@ -169,7 +169,10 @@ The game's own rules (CLAUDE.md) bind its mods:
   (`--mods -carpenter`, or the Mods panel), a round deals no carpenter, the woodshop's plot stands
   empty (`MapDef.Absent`), and its services aren't asked for; `WithoutTheCarpenterTests` plays a
   season to the end that way. Turned on, bench hashes and bot-played seasons are unchanged.
-- [ ] The carpenter's art and sounds moved into the mod (`textures/`, `sounds/`).
+- [ ] The carpenter's art and sounds moved into the mod (`textures/`, `sounds/`). Waiting on the art and sound
+  generators (`tools/*_art.py`, `norse_buildings.py`, `sfx_synth.py`), which write one tree for everything:
+  they need to write a mod's files into the mod first. Only five sprites are the carpenter's alone; the rest
+  (bows, quivers, logs) are the core's. Left in the core they change nothing about play.
 - [ ] Game modes.
 - [ ] The bard as a mod; the ModKit and the skills.
 - [ ] Steam Workshop (ROADMAP.md, Later).
