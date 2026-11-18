@@ -224,7 +224,7 @@ new one is built the moddable way.
 - [ ] **The musician, built as a mod** from [MUSICIAN-PLAN.md](MUSICIAN-PLAN.md): first pass in (a player-only trade,
   the tin pipe played free, `mods/musician`); playtest how it feels, then the other instruments, the tune book
   and the lead-in, the audience and dancing.
-- [ ] **The ModKit's templates and the coding-agent skills** (`.claude/skills/new-trade` and friends).
+- [x] **The ModKit's templates and the coding-agent skills** (`modkit/`, `.claude/skills/new-trade` and friends).
 
 ## Then: M4, Whispers
 

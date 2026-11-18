@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Heroes Not Included",
+  "classifications": [ "Game", "Mod" ],
+  "identity": "HeroesNotIncluded.Mod.Trade",
+  "name": "Heroes Not Included: a trade",
+  "shortName": "hni-trade",
+  "description": "A trade as a mod: its def, a tool, a hand mini-game (sim half), how it's drawn (game half), a bot that plays it and a drill. Builds and passes --check-mod as it stands.",
+  "sourceName": "ExampleTrade",
+  "preferNameDirectory": false,
+  "symbols": {
+    "modId": { "type": "generated", "generator": "casing", "parameters": { "source": "name", "toLower": true }, "replaces": "exampletrade", "fileRename": "exampletrade" }
+  },
+  "sources": [ { "exclude": [ "**/[Bb]in/**", "**/[Oo]bj/**", ".template.config/**" ] } ]
+}

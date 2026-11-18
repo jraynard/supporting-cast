@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Heroes Not Included",
+  "classifications": [ "Game", "Mod" ],
+  "identity": "HeroesNotIncluded.Mod.Content",
+  "name": "Heroes Not Included: a content mod",
+  "shortName": "hni-content",
+  "description": "A mod of defs alone (and art and sounds if it likes): new things, a changed price, a town. No code.",
+  "sourceName": "ExampleContent",
+  "symbols": {
+    "modId": { "type": "generated", "generator": "casing", "parameters": { "source": "name", "toLower": true }, "replaces": "examplecontent", "fileRename": "examplecontent" }
+  },
+  "sources": [ { "exclude": [ ".template.config/**" ] } ]
+}

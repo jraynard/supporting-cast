@@ -19,7 +19,7 @@ public class MusicianModTests
     private static DefDatabase MusicianDefs() =>
         DefDatabase.LoadDirectories([.. TestWorld.DefDirectories(), Path.Combine(TestWorld.FindDefsDirectory(), "..", "..", "mods", "musician", "defs")]);
 
-    private static T WithBard<T>(Func<T> test)
+    private static T WithMusician<T>(Func<T> test)
     {
         try
         {
@@ -52,7 +52,7 @@ public class MusicianModTests
         [.. sim.Creatures().Where(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Musician")];
 
     [Fact]
-    public void NobodyIsTheBardUnlessTheyAskedToBe() => WithBard(() =>
+    public void NobodyIsTheMusicianUnlessTheyAskedToBe() => WithMusician(() =>
     {
         var defs = MusicianDefs();
         Assert.True(defs.Trade("Musician").PlayerOnly);
@@ -63,7 +63,7 @@ public class MusicianModTests
     });
 
     [Fact]
-    public void TheBardComesToTownWithAPipeAndTheVillagersStay() => WithBard(() =>
+    public void TheMusicianComesToTownWithAPipeAndTheVillagersStay() => WithMusician(() =>
     {
         var defs = MusicianDefs();
         var without = Round(defs, (Bea, "Blacksmith"));
@@ -77,7 +77,7 @@ public class MusicianModTests
     });
 
     [Fact]
-    public void NotesArePlayedInOrderAndKeptThroughASave() => WithBard(() =>
+    public void NotesArePlayedInOrderAndKeptThroughASave() => WithMusician(() =>
     {
         var defs = MusicianDefs();
         var sim = Round(defs, (Arin, "Musician"));
@@ -102,7 +102,7 @@ public class MusicianModTests
     });
 
     [Fact]
-    public void TheInstrumentIsTheModsOwnKindOfDef() => WithBard(() =>
+    public void TheInstrumentIsTheModsOwnKindOfDef() => WithMusician(() =>
     {
         var pipe = MusicianDefs().ModDef<InstrumentDef>(InstrumentDef.Kind, "Pipe");
         Assert.NotNull(pipe);
@@ -120,7 +120,7 @@ public class MusicianModTests
     }
 
     [Fact]
-    public void ATunesOpeningFromAnyNoteStrikesItUpAndTheHandsCarryTheRest() => WithBard(() =>
+    public void ATunesOpeningFromAnyNoteStrikesItUpAndTheHandsCarryTheRest() => WithMusician(() =>
     {
         var defs = MusicianDefs();
         var wheel = defs.ModDef<SongDef>(SongDef.Kind_, "MillersWheel")!;
@@ -143,7 +143,7 @@ public class MusicianModTests
     });
 
     [Fact]
-    public void ANearMissOrALongPauseStrikesNothingUp() => WithBard(() =>
+    public void ANearMissOrALongPauseStrikesNothingUp() => WithMusician(() =>
     {
         var defs = MusicianDefs();
         Assert.Null(Played(defs, (0, 0, false), (20, 2, false), (40, 4, false), (60, 4, false), (80, 6, false)).Carrying); // its fifth note wrong
@@ -152,7 +152,7 @@ public class MusicianModTests
     });
 
     [Fact]
-    public void ANoteOfYourOwnTakesTheTuneBack() => WithBard(() =>
+    public void ANoteOfYourOwnTakesTheTuneBack() => WithMusician(() =>
     {
         var defs = MusicianDefs();
         var s = Played(defs, (0, 0, false), (20, 2, false), (40, 4, false), (60, 4, false), (80, 5, false));
@@ -164,7 +164,7 @@ public class MusicianModTests
     });
 
     [Fact]
-    public void ThePredictorsCopyPlaysOnItsOwnNotes() => WithBard(() =>
+    public void ThePredictorsCopyPlaysOnItsOwnNotes() => WithMusician(() =>
     {
         var defs = MusicianDefs();
         var sim = Played(defs, (0, 1, false));

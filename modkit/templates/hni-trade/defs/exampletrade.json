@@ -1,0 +1,15 @@
+// The trade, its tool and what it makes (docs/MODDING.md). Defs merge after the game's: name one of the
+// game's again to replace it, or add "$patch": "merge" to change only the fields you give.
+{
+  "trades": [
+    // playerOnly: only a player who asked for it is ever dealt it (the musician's way). A trade with a
+    // workplace the AI runs too needs a building with a role, stations and AI jobs: see mods/carpenter.
+    { "name": "ExampleTrade", "label": "exampletrade", "pace": "Steady", "playerOnly": true,
+      "description": "What this trade does for the town, in the game's voice.",
+      "kit": [ { "def": "ExampleTradeTool" } ] }
+  ],
+  "things": [
+    { "name": "ExampleTradeTool", "label": "exampletrade's tool", "category": "Item", "mass": 1, "sprite": "items/exampletrade_tool", "maxHp": 60 },
+    { "name": "ExampleTradeWare", "label": "exampletrade's ware", "category": "Item", "mass": 0.5, "sprite": "items/exampletrade_tool", "maxHp": 30, "stackLimit": 10 }
+  ]
+}

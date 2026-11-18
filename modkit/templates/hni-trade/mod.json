@@ -1,0 +1,8 @@
+{
+  "id": "exampletrade",
+  "name": "ExampleTrade",
+  "version": "0.1.0",
+  "authors": [ "You" ],
+  "description": "A new trade. Say what it does for the town in a line.",
+  "gameVersion": "0.1"
+}

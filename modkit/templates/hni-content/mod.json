@@ -1,0 +1,8 @@
+{
+  "id": "examplecontent",
+  "name": "ExampleContent",
+  "version": "0.1.0",
+  "authors": [ "You" ],
+  "description": "What this mod changes, in a line.",
+  "gameVersion": "0.1"
+}

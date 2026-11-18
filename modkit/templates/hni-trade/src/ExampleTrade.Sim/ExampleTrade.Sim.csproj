@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The trade's sim half (docs/MODDING.md): it may reference only the game's sim, so it stays deterministic.
+       Built into the mod's folder, where the game loads it. In the game's repository (mods/<id>/src/...) it
+       references the game's projects; anywhere else, an installed game: dotnet build -p:HniGame=<install dir>. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>ExampleTrade</RootNamespace>
+    <OutDir>$(MSBuildThisFileDirectory)../../</OutDir>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
+    <!-- Determinism as a compile error, as the game's own sim is built (BannedSymbols.txt). -->
+    <WarningsAsErrors>$(WarningsAsErrors);RS0030</WarningsAsErrors>
+    <HniSource Condition="'$(HniSource)' == ''">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), HeroesNotIncluded.sln))</HniSource>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(HniSource)' != ''">
+    <ProjectReference Include="$(HniSource)/src/HeroesNotIncluded.Sim/HeroesNotIncluded.Sim.csproj" Private="false" />
+    <ProjectReference Include="$(HniSource)/external/narsil/src/Narsil.Sim/Narsil.Sim.csproj" Private="false" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(HniSource)' == ''">
+    <Reference Include="HeroesNotIncluded.Sim" HintPath="$(HniGame)/HeroesNotIncluded.Sim.dll" Private="false" />
+    <Reference Include="Narsil.Sim" HintPath="$(HniGame)/Narsil.Sim.dll" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ahwoo.BRUTAL.Numerics" Version="2026.10.1" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="4.14.0" PrivateAssets="all" />
+    <AdditionalFiles Include="../BannedSymbols.txt" />
+    <Using Include="Brutal.Numerics" />
+    <Using Include="HeroesNotIncluded.Sim.Ecs" />
+    <Using Include="HeroesNotIncluded.Sim.Core" />
+    <Using Include="Narsil.Sim.Core" />
+  </ItemGroup>
+
+</Project>

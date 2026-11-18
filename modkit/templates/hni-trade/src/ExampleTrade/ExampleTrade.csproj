@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The trade's game half (docs/MODDING.md): how its mini-game looks and sounds. It references the game.
+       In the game's repository it references the game's projects; anywhere else, an installed game:
+       dotnet build -p:HniGame=<install dir>. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>ExampleTrade</RootNamespace>
+    <OutDir>$(MSBuildThisFileDirectory)../../</OutDir>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
+    <HniSource Condition="'$(HniSource)' == ''">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), HeroesNotIncluded.sln))</HniSource>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(HniSource)' != ''">
+    <ProjectReference Include="$(HniSource)/src/HeroesNotIncluded/HeroesNotIncluded.csproj" Private="false" />
+    <ProjectReference Include="$(HniSource)/src/HeroesNotIncluded.Sim/HeroesNotIncluded.Sim.csproj" Private="false" />
+    <ProjectReference Include="$(HniSource)/external/narsil/src/Narsil/Narsil.csproj" Private="false" />
+    <ProjectReference Include="$(HniSource)/external/narsil/src/Narsil.Sim/Narsil.Sim.csproj" Private="false" />
+    <ProjectReference Include="$(HniSource)/external/narsil/src/Narsil.Audio/Narsil.Audio.csproj" Private="false" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(HniSource)' == ''">
+    <Reference Include="HeroesNotIncluded" HintPath="$(HniGame)/HeroesNotIncluded.dll" Private="false" />
+    <Reference Include="HeroesNotIncluded.Sim" HintPath="$(HniGame)/HeroesNotIncluded.Sim.dll" Private="false" />
+    <Reference Include="Narsil" HintPath="$(HniGame)/Narsil.dll" Private="false" />
+    <Reference Include="Narsil.Sim" HintPath="$(HniGame)/Narsil.Sim.dll" Private="false" />
+    <Reference Include="Narsil.Audio" HintPath="$(HniGame)/Narsil.Audio.dll" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../ExampleTrade.Sim/ExampleTrade.Sim.csproj" Private="false" />
+    <PackageReference Include="Ahwoo.BRUTAL.Numerics" Version="2026.10.1" ExcludeAssets="runtime" />
+    <Using Include="Brutal.Numerics" />
+    <Using Include="HeroesNotIncluded.Sim.Core" />
+    <Using Include="Narsil.Sim.Core" />
+  </ItemGroup>
+
+</Project>

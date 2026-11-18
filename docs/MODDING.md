@@ -195,5 +195,8 @@ The game's own rules (CLAUDE.md) bind its mods:
 - [x] The musician as a mod, first pass: a player-only trade with a tin pipe, played free (eight scale keys and
   the octave above), notes heard as you press them and from others in earshot. `--new-game --trade Musician
   --mods musician --drill pipe`. Not on by default yet. The rest of MUSICIAN-PLAN.md follows, by ear, with you.
-- [ ] The ModKit and the skills.
+- [x] The ModKit (`modkit/`: `hni-trade`, `hni-content`, each with an `AGENTS.md`; `modkit/check.sh` makes,
+  builds and checks a mod from each) and the skills (`.claude/skills/new-trade`, `new-minigame`,
+  `content-mod`, `new-map`), the mini-game's many passes with the user first among them.
+- [ ] A fresh agent, given only a template and "make a trade that does X", builds one that checks: the skills' own test.
 - [ ] Steam Workshop (ROADMAP.md, Later).

@@ -1,0 +1,12 @@
+// A content mod's defs, merged after the game's (docs/MODDING.md). Three ways to change the game:
+//   a new def:            a name the game doesn't have;
+//   a def replaced:       the game's name again, every field restated;
+//   a def patched:        the game's name with "$patch": "merge" (only the fields given change; objects
+//                         merge, arrays are replaced) or "$patch": "remove".
+// The game's defs are data/defs/*.json: read the one you're changing. Check with --check-mod.
+{
+  "seasons": [
+    // An example patch, the season a day longer. Delete it, or keep it and make it yours.
+    { "name": "Season", "$patch": "merge", "days": 4 }
+  ]
+}
