@@ -146,6 +146,12 @@ public enum AvatarActionKind
 
     /// <summary>A trip-bell (<see cref="Tinkering.TripBells"/>): set the one in hand here, wind a tripped one again, or take one up. At once.</summary>
     TripBell,
+
+    /// <summary>Fell a tree by hand (<see cref="Carpentry.FellSession"/>): the carpenter in a round. At once.</summary>
+    Fell,
+
+    /// <summary>Buck a felled trunk into logs (<see cref="Carpentry.BuckSession"/>). At once.</summary>
+    Buck,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -174,7 +180,8 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
         or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean
         or AvatarActionKind.Mend or AvatarActionKind.SetFurniture or AvatarActionKind.OrderMeal or AvatarActionKind.OrderProvisions or AvatarActionKind.OrderHealing or AvatarActionKind.FillBucket or AvatarActionKind.ThrowWater or AvatarActionKind.FestivalGame or AvatarActionKind.Dance
         or AvatarActionKind.ShowPiece or AvatarActionKind.Sit or AvatarActionKind.CallBack or AvatarActionKind.TakeOrder
-        or AvatarActionKind.HandOver or AvatarActionKind.Barter or AvatarActionKind.TripBell;
+        or AvatarActionKind.HandOver or AvatarActionKind.Barter or AvatarActionKind.TripBell
+        or AvatarActionKind.Fell or AvatarActionKind.Buck;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
     public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker
@@ -623,8 +630,16 @@ public sealed class AvatarSystem : ISimSystem
                 if ((c.MaterialsComplete || (Buildings.IsPhaseSite(sim, site) && Buildings.HasWork(c))) && sim.CanBuildNow(site))
                     return new(AvatarActionKind.Build, $"Build {c.Target.Label}", cell, site);
             }
+            else if (Carpentry.Felling.IsTrunk(sim, site) && Round.RoundSystem.MayFell(sim, avatar))
+            {
+                return new(AvatarActionKind.Buck, $"Buck the {thing.Label} into logs", cell, site);
+            }
+            else if (thing.Def.Felling != null && !w.Has<Carpentry.Falling>(site) && Carpentry.Felling.ByHand(sim, avatar, site))
+            {
+                return new(AvatarActionKind.Fell, $"Fell {thing.Label}", cell, site);
+            }
             else if (thing.Def.Harvest is { } harvest && (!w.TryGet<PlantState>(site, out var plant) || plant.Ready)
-                && Round.RoundSystem.MayGather(sim, avatar))
+                && Round.RoundSystem.MayGather(sim, avatar) && !w.Has<Carpentry.Falling>(site))
             {
                 var verb = harvest.WorkType switch
                 {
@@ -1056,6 +1071,12 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.Harvest:
                 AiSystem.Order(sim, avatar, new HarvestJob(action.Target));
+                break;
+            case AvatarActionKind.Fell:
+                Carpentry.Felling.StartFelling(sim, avatar, action.Target);
+                break;
+            case AvatarActionKind.Buck:
+                Carpentry.Felling.StartBucking(sim, avatar, action.Target);
                 break;
             case AvatarActionKind.Dismantle:
                 sim.Map.Designate(sim.Map.Idx(w.Get<Thing>(action.Target).Cell), Designation.Deconstruct);

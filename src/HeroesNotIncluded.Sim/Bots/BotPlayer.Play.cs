@@ -251,6 +251,12 @@ public sealed partial class BotPlayer
             case Carpentry.PitSession pit:
                 // Pull with each stroke the top sawyer starts, and let go between.
                 return (false, pit.CallOpen || pit.Down > 0f && pit.Down < 1f, 0);
+            case Carpentry.CrosscutSession crosscut:
+                // Pull back with each stroke the lead starts, and let go between.
+                return (false, crosscut.CallOpen || crosscut.Drawn > 0f && crosscut.Drawn < 1f, 0);
+            case Carpentry.BuckSession { GreatButt: true } great when great.Partner.IsNull && !great.Done && great.StepsDone % (SimClock.TicksPerSecond * 4) == 1:
+                Send(new AskForHandCommand(great.Worker));
+                return (false, false, 0);
             case Carpentry.LiftSession lift:
                 // Keep it up, and lean against the way it's tipping; set it down to rest once the arms are nearly spent.
                 return (false, lift.Strain < 0.9f || lift.Up && lift.Strain < 0.97f, lift.Tilt + lift.Sway * 8f > 0.05f ? -1 : lift.Tilt + lift.Sway * 8f < -0.05f ? 1 : 0);

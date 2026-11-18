@@ -361,13 +361,13 @@
       // Torches on the side walls, as the smithy has.
       "lamps": [ { "at": [1, 2], "facing": 3, "def": "WallTorch" }, { "at": [5, 2], "facing": 1, "def": "WallTorch" } ],
       // The sawhorse and bench at the back, worked from the row in front of them (kept clear); bows on
-      // the wall between; logs by the saw and planks beside them, arrows by the chest along the front,
+      // the wall between; the chopping block by the saw and planks beside it, arrows by the chest along the front,
       // the middle left open from the street.
       "furnish": [
         { "def": "Sawhorse", "at": [1, 1] },
         { "def": "BowRack", "at": [3, 1] },
         { "def": "CarpenterBench", "at": [4, 1] },
-        { "def": "LogPile", "at": [1, 3] },
+        { "def": "ChoppingBlock", "at": [1, 3] }, // split logs for firewood (Carpentry.SplitSession)
         { "def": "PlankStack", "at": [2, 3] },
         { "def": "ArrowBarrel", "at": [4, 3] },
         { "def": "Chest", "at": [5, 3], "facing": 2 },
@@ -966,7 +966,7 @@
         "partOnly": true, "work": 80, "cost": [ { "def": "Stone", "count": 6 }, { "def": "Wood", "count": 4 } ],
         // Holds its cell at 22°C: a closed room settles a little under that, people beside it feel a few degrees more.
         "heatOutput": 900, "maxHeatTemp": 22, "lightRadius": 6, "radiantWarmth": 5,
-        "fuel": { "def": "Wood", "capacity": 20, "burnPerDay": 12, "refuelAt": 0.5 }
+        "fuel": { "def": "Firewood", "capacity": 20, "burnPerDay": 12, "refuelAt": 0.5 }
       }
     },
 
@@ -997,7 +997,7 @@
         "partOnly": true, "isWall": true, "setInWall": true, "work": 120, "cost": [ { "def": "Stone", "count": 10 }, { "def": "Wood", "count": 2 } ],
         // As the hearth: holds its cell at 22°C, so a closed room settles a little under that.
         "heatOutput": 900, "maxHeatTemp": 22, "lightRadius": 6, "radiantWarmth": 5,
-        "fuel": { "def": "Wood", "capacity": 20, "burnPerDay": 12, "refuelAt": 0.5 }
+        "fuel": { "def": "Firewood", "capacity": 20, "burnPerDay": 12, "refuelAt": 0.5 }
       }
     },
 

@@ -21,6 +21,7 @@ dotnet run --project src/HeroesNotIncluded -- --raid-test --name Arin          #
 dotnet run --project src/HeroesNotIncluded -- --fire-test --name Arin          # the inn alight, you at the well with a full bucket
 dotnet run --project src/HeroesNotIncluded -- --dragon-test --name Arin        # the dragon coming, you at the well with a full bucket
 dotnet run --project src/HeroesNotIncluded -- --bridge-test --name Arin        # the bridge down, you the tinker at the gap with wood
+dotnet run --project src/HeroesNotIncluded -- --fell-test --name Arin          # the carpenter by a pine in the open, axe and saw to hand
 dotnet run --project src/HeroesNotIncluded -- --host --name Arin --pairs-test  # every job for two ready: a greatsword's iron, a great log, a wagon's axle, a body on a shrine pallet (solo: --new-game, and Help! brings a villager)
 dotnet run --project src/HeroesNotIncluded -- --new-game --die-at 5            # your character drops dead: try being a ghost
 dotnet run --project src/HeroesNotIncluded -- --new-game --festival-at 5       # the season's festival, now, you by the well
@@ -156,7 +157,10 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     (`WeaponWear.MendKind`): bows, cudgels and staves at the woodshop (`WoodRepair`, a bow re-tillered: `BowSession.Mending`),
     crossbows at the tinker's (`CrossbowRepair`, `FitSession.Mending`); the AI's through `MendJob`. Joinery (`JoinSession`): a wagon's
     woodwork (`WagonJoinery`; the wheel stays the tinker's `WagonRepair`), and furniture the fire took (`Refurnishing`, defs with `joinery`),
-    joined at the bench and set back where it stood. AI: `SawJob`, `FletchJob`, `ArrowsJob`, `FurnishJob`.
+    joined at the bench and set back where it stood. In the woods (`Felling`, the trade `fells`): a tree felled where it's
+    aimed (`FellSession`; its lean from `LeanOf`, plain to see), a `Falling` tree landing on whoever's under it after a creak,
+    the `Trunk` bucked into bulky `Log`s and `GreatLog`s (`BuckSession`; an oak's with a `CrosscutSession` on the other end),
+    logs split into firewood at the chopping block (`SplitSession`). AI: `SawJob`, `FletchJob`, `ArrowsJob`, `FurnishJob`, `SplitJob`, `FellJob`.
   - `Tinkering/`: the Tinker. Lockwork on strongboxes from quests: a box's trap is hidden item
     state, shown only through `PerceptionView.Strongbox`, which never says an armed one is there.
     Locks pinned at the bench (`PinSession`) and fitted to doors (`LockCut`), keys (`Key`);
@@ -192,6 +196,7 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     cells (`FireSystem.Soak`), which then have no fuel till they dry. The AI's firefighting uses them.
   - Fires give off heat, light and radiant warmth from `Warmth.FireCell`: their own cell, or for a
     fireplace (`setInWall`) the room's cell in front of it, which is also the only place it's worked from.
+    Wood-burning fires burn `Firewood`, never timber (`Wood`): the carter's barn load (`season.json`, none in a shortage) and the carpenter's splitting.
   - `Appearance` is cosmetic and left out of the hash, its `Folk` (human, elf) included. AI villagers
     have none: `HumanLook.Derived` hashes their look (and folk) from the entity, the same on every peer.
   - Fights are real time and readable (docs/ROADMAP.md, "Combat pass"): a melee blow is wound up

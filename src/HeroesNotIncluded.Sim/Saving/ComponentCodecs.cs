@@ -87,6 +87,21 @@ internal static class ComponentCodecs
             w.Def(f.Loaded);
         }, r => new Fueled { Fuel = r.Float(), Loaded = r.DefOrNull<ThingDef>()}), // the loaded fuel came with format 9
         Codec("PlantState", (w, p) => w.Float(p.RegrowTicksLeft), r => new PlantState { RegrowTicksLeft = r.Float() }),
+        // Felling by hand (format 62): a tree coming down, and the trunk it leaves.
+        Codec("Falling", (w, f) =>
+        {
+            w.Float(f.Dir);
+            w.Long(f.At);
+            w.Entity(f.By);
+            w.Bool(f.Through);
+        }, r => new Carpentry.Falling { Dir = Carpentry.FellSession.Wrap360(r.Float()), At = r.Long(), By = r.Entity(), Through = r.Bool() }),
+        Codec("Trunk", (w, t) =>
+        {
+            w.Float(t.Dir);
+            w.Int(t.Lengths);
+            w.Bool(t.GreatButt);
+            w.Def(t.Material);
+        }, r => new Carpentry.Trunk { Dir = Carpentry.FellSession.Wrap360(r.Float()), Lengths = Math.Clamp(r.Int(), 0, 16), GreatButt = r.Bool(), Material = r.DefOrNull<MaterialDef>() }),
         Codec("Construction", WriteConstruction, ReadConstruction),
         // Preset buildings (format 18).
         Codec("PresetBuilding", (w, b) =>

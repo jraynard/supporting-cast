@@ -414,7 +414,7 @@ public class WoodshopTests
         Assert.Equal(BuildPhase.Foundation, sim.World.Get<PresetBuilding>(going).Phase);
 
         var b = Buildings.SpawnFinished(sim, shop, C(20, 20), 0);
-        foreach (var def in new[] { "Sawhorse", "CarpenterBench", "Chest", "BowRack", "LogPile", "PlankStack", "ArrowBarrel" })
+        foreach (var def in new[] { "Sawhorse", "CarpenterBench", "Chest", "BowRack", "ChoppingBlock", "PlankStack", "ArrowBarrel" })
             Assert.Contains(Buildings.Parts(sim, b), p => sim.World.Get<Thing>(p).Def.Name == def);
         var bench = sim.Thing("CarpenterBench");
 

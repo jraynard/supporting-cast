@@ -392,7 +392,7 @@ public class ProvisionsTests
         var seen = sim.Messages.Total;
         while (sim.Clock.Day == day || sim.Clock.HourOfDay < InnSupplySystem.DeliveryHour + 0.5f)
         {
-            sim.TickMany(SimClock.TicksPerHour / 4);
+            sim.TickMany(SimClock.TicksPerHour / 40);
             if (!sim.Repairs.RoadCut) // the tinker's mended it overnight: down again for the morning
                 sim.Repairs.BreakBridge(sim, sim.Rand);
         }

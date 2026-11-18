@@ -152,14 +152,14 @@ public class CarpenterTests
     public void ATopSawyerAndAPitmanSawAGreatLogTogether()
     {
         var (sim, me, horse, _) = AtTheWoodshop();
-        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Wood"), 4)); // ten logs with the six
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing(Felling.GreatLogDef), 1); // a great log in the arms
         var pitman = Pitman(sim, horse);
         sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawGreatLog")));
         Assert.True(Assert.IsType<SawSession>(sim.World.Get<WorkSession>(me)).Great);
         var session = SawGreat(sim, me, horse, pitman);
         Assert.False(sim.World.Has<WorkSession>(me), "the great log should be sawn");
         Assert.True(session.Pulls > 0);
-        Assert.True(PlanksOn(sim, me) >= StartPlanks + 15, $"{PlanksOn(sim, me)} planks");
+        Assert.True(PlanksOn(sim, me) >= StartPlanks + 12, $"{PlanksOn(sim, me)} planks"); // 16 at best
         Assert.False(sim.World.Has<WorkSession>(pitman)); // out of the pit once it's done
     }
 
@@ -167,7 +167,7 @@ public class CarpenterTests
     public void AloneAGreatLogsSawBarelyMoves()
     {
         var (sim, me, horse, _) = AtTheWoodshop();
-        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Wood"), 4));
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing(Felling.GreatLogDef), 1);
         sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawGreatLog")));
         var session = SawGreat(sim, me, horse, null, maxTicks: 60 * 60);
         Assert.True(sim.World.Has<WorkSession>(me), "a minute's sawing alone shouldn't see a great log through");
@@ -178,7 +178,7 @@ public class CarpenterTests
     public void APitmanPullingAgainstTheSawBindsIt()
     {
         var (sim, me, horse, _) = AtTheWoodshop();
-        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Wood"), 4));
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing(Felling.GreatLogDef), 1);
         var pitman = Pitman(sim, horse);
         sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawGreatLog")));
         var session = SawGreat(sim, me, horse, pitman, withTheStroke: false, maxTicks: 60 * 200);

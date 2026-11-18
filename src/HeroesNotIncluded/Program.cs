@@ -282,7 +282,7 @@ else
         HeroFolk = Enum.TryParse<HeroesNotIncluded.Sim.Components.Folk>(ParseString(args, "--folk"), true, out var folk) ? folk : null,
         // --raid-test: the raid drill (RaidDrill), as the smith unless --trade says otherwise; --bridge-test as the tinker.
         HeroTrade = ParseString(args, "--trade") ?? (ParseString(args, "--practice") is { } practising && !practising.StartsWith("--") ? practising
-            : args.Contains("--raid-test") ? "Blacksmith" : args.Contains("--bridge-test") ? "Tinker" : null),
+            : args.Contains("--raid-test") ? "Blacksmith" : args.Contains("--bridge-test") ? "Tinker" : args.Contains("--fell-test") ? "Carpenter" : null),
         RaidTest = args.Contains("--raid-test"),
         // --fire-test: the fire drill (FireDrill): the inn alight, you at the well with a full bucket.
         FireTest = args.Contains("--fire-test"),
@@ -292,6 +292,8 @@ else
         DragonTest = args.Contains("--dragon-test"),
         // --bridge-test: the bridge drill (BridgeDrill): the bridge down, you at the gap with wood to mend it.
         BridgeTest = args.Contains("--bridge-test"),
+        // --fell-test: the woods drill (FellDrill): the carpenter by a pine with an axe and a saw.
+        FellTest = args.Contains("--fell-test"),
         // --pairs-test: every job for two pairs of hands ready at once (PairsDrill): a greatsword's iron, a great
         // log, a wagon's axle and a body on a shrine pallet. With --host, for co-op; alone, Help! brings a villager.
         PairsTest = args.Contains("--pairs-test"),
@@ -340,7 +342,7 @@ SavedCharacter? PickedCharacter()
 
 static bool LaunchesDirectly(string[] args) =>
     args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--freeform" or "--show-roofs" or "--hide-roofs"
-        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--fire-spread" or "--dragon-test" or "--bridge-test" or "--pairs-test" or "--arena" or "--practice" or "--yaw" or "--pitch" or "--camera-mode" or "--keep-replay-at" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
+        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--fire-spread" or "--dragon-test" or "--bridge-test" or "--fell-test" or "--pairs-test" or "--arena" or "--practice" or "--yaw" or "--pitch" or "--camera-mode" or "--keep-replay-at" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
 
 // --load and --check-save take a path, or the name of a slot in the saves directory ("quicksave").
 static string ResolveSave(string pathOrSlot)

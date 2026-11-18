@@ -89,16 +89,33 @@ public sealed class OreCarterSystem : ISimSystem, ISaveState
         sim.Messages.Add(MessageKind.Info, "The carter's left a bundle of feathers at the woodshop.", cell);
     }
 
-    /// <summary>The woodcutter's morning load (<see cref="Defs.SeasonDef.WoodDelivery"/>), stacked in the barn's stockpile.</summary>
+    /// <summary>
+    /// The woodcutter's morning load (<see cref="Defs.SeasonDef.WoodDelivery"/>, timber) and the
+    /// carter's firewood (<see cref="Defs.SeasonDef.FirewoodDelivery"/>), stacked in the barn's
+    /// stockpile. In a shortage there's no firewood to be had: the carpenter's axe is the town's.
+    /// </summary>
     public static void DeliverWood(Simulation sim)
     {
-        var load = sim.Defs.Season.WoodDelivery;
-        if (load.Count == 0 || sim.Map.ZonedCells.Count == 0)
+        var season = sim.Defs.Season;
+        if (sim.Map.ZonedCells.Count == 0)
             return;
         var at = Scenarios.VillageRound.StockpileMiddle(sim);
-        foreach (var t in load)
+        if (season.WoodDelivery.Count > 0)
+        {
+            foreach (var t in season.WoodDelivery)
+                sim.PlaceItemNear(sim.CreateItem(t.ThingDef, t.Count, t.MaterialDef), at);
+            sim.Messages.Add(MessageKind.Info, "The woodcutter's stacked a load of timber in the barn.", at);
+        }
+        if (season.FirewoodDelivery.Count == 0)
+            return;
+        if (sim.Director.Active.Any(c => c.Kind == Defs.CrisisKind.Shortage))
+        {
+            sim.Messages.Add(MessageKind.Warning, "No firewood came this morning: there's none to be had in the shortage.", at);
+            return;
+        }
+        foreach (var t in season.FirewoodDelivery)
             sim.PlaceItemNear(sim.CreateItem(t.ThingDef, t.Count, t.MaterialDef), at);
-        sim.Messages.Add(MessageKind.Info, "The woodcutter's stacked a load of logs in the barn.", at);
+        sim.Messages.Add(MessageKind.Info, "The carter's stacked a load of firewood in the barn.", at);
     }
 
     public void Save(SaveWriter w, Simulation sim) => w.Int(_lastDay);

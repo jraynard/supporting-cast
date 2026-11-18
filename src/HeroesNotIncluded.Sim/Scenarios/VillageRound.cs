@@ -51,6 +51,8 @@ public static class VillageRound
         StockWoodshop(sim, Role(TownRole.Woodshop));
         if (sim.Defs.Season.BarnWood > 0)
             sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing("Wood"), sim.Defs.Season.BarnWood, sim.Defs.Material("Pine")), StockpileMiddle(sim));
+        if (sim.Defs.Season.BarnFirewood > 0)
+            sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing(Carpentry.Carpenters.FirewoodDef), sim.Defs.Season.BarnFirewood, sim.Defs.Material("Pine")), StockpileMiddle(sim));
         Environment.Buckets.HangAtWells(sim); // for fighting fire
         // Beds for everyone, or the first night sends them all out to sleep in the cold.
         foreach (var (spec, home) in built.Buildings)

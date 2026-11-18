@@ -129,7 +129,7 @@ public class KitchenPressureTests
         Assert.Equal(2, pots.Count);
         Assert.All(pots, pot => Assert.True(Cooking.Lit(sim, pot)));
         var basket = parts.Single(e => sim.World.Get<Thing>(e).Def.Name == "LogBasket");
-        Assert.Contains(sim.StoredIn(basket), e => sim.World.Get<Thing>(e).Def.Name == "Wood");
+        Assert.Contains(sim.StoredIn(basket), e => sim.World.Get<Thing>(e).Def.Name == "Firewood");
 
         // Only the kitchen's cook keeps its fires: not the keeper, not any villager.
         var kitchenFire = parts.First(e => sim.World.Get<Thing>(e).Def.Name == "Fireplace"

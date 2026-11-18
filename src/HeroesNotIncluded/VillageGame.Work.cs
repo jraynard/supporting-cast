@@ -309,6 +309,18 @@ public sealed partial class VillageGame
             case Sim.Carpentry.LiftSession lift:
                 DrawLift(lift);
                 return;
+            case FellSession fell:
+                DrawFell(fell);
+                return;
+            case BuckSession buck:
+                DrawBuck(buck);
+                return;
+            case CrosscutSession crosscut:
+                DrawCrosscut(crosscut);
+                return;
+            case SplitSession split:
+                DrawSplit(split);
+                return;
             case Sim.Environment.ThrowSession throwing:
                 DrawThrow(throwing);
                 return;
@@ -757,6 +769,9 @@ public sealed partial class VillageGame
     /// </summary>
     private void BeginWork(string title, params (string Keys, string Does)[] hints) => BeginWork(title, true, hints);
 
+    /// <summary>Set just before <see cref="BeginWork(string, ValueTuple{string, string}[])"/>: this frame's panel goes to the side, not the middle.</summary>
+    private bool _workAside;
+
     /// <summary>
     /// <see cref="BeginWork(string, ValueTuple{string, string}[])"/>, saying whether the window takes
     /// the mouse's buttons (left as F, right as Space). While the mouse is in use the hints name it for those.
@@ -769,6 +784,12 @@ public sealed partial class VillageGame
         var (lo, hi) = _hud.Area;
         var centre = (lo + hi) * 0.5f;
         float2? pivot = new float2(0.5f, 0.5f);
+        if (_workAside)
+        {
+            // Work out in the world (a tree to fell): against the right edge, the middle of the screen left clear.
+            (centre, pivot) = (new float2(hi.X, centre.Y), new float2(1f, 0.5f));
+            _workAside = false;
+        }
         ImGui.SetNextWindowPos(in centre, ImGuiCond.Always, in pivot);
         var most = hi - lo;
         var none = float2.Zero;

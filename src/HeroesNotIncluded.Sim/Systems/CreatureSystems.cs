@@ -116,8 +116,8 @@ public sealed class MovementSystem : ISimSystem
         var speed = c.Def.MoveSpeed * stage.SpeedFactor / SimClock.TicksPerSecond;
         if (w.TryGet<Health>(e, out var health))
             speed *= Math.Max(0.15f, health.Capacity(Capacity.Moving));
-        if (w.Get<Carrying>(e).HasItem)
-            speed *= 0.85f;
+        if (w.Get<Carrying>(e).Item is { IsNull: false } held)
+            speed *= 0.85f * (w.TryGet<Thing>(held, out var ht) ? ht.Def.CarrySpeed : 1f); // a log in the arms is slow going
         if (w.Has<Components.FoodPoisoned>(e))
             speed *= FoodPoisoning.MoveFactor(sim, e);
         speed *= WellBeing.MoveFactor(sim, e);

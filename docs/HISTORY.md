@@ -2516,3 +2516,32 @@ Eating and sleeping turned from chores into bonuses (`Systems/WellBeing`).
   says what a meal would do, judged without its hidden rot. The food pointer shows only at
   mealtimes. Bots eat at supper when they've nothing better to do.
 - Saves to format 59. `WellBeingTests`.
+
+### The carpenter in the woods, and firewood (2026-11-17)
+Trees felled, bucked and split by hand; the town's fires burn firewood, not timber.
+- **Firewood** (`Firewood`, `core.json`): every wood-burning `fuel` (hearth, fireplaces, bread oven,
+  kiln, the festival's fires) takes it. The barn starts with `barnFirewood` and the carter stacks
+  `firewoodDelivery` there each morning, a little short of what the town burns on purpose, and none
+  in a shortage (`OreCarterSystem.DeliverWood`). Timber (`Wood`) is for building and recipes only;
+  its delivery fell from 120 to 30 a day. The kitchen's basket and the cook's want are firewood.
+- **Felling** (`Carpentry/FellSession`, `Felling`): the carpenter (`TradeDef.Fells`, `RoundSystem.MayFell`)
+  fells by hand: aim (A/D, a line on the ground; each tree's lean from `LeanOf`), notch to the mark,
+  back cut thinning the hinge. `FallDir` is the pure rule: a shallow notch drifts toward the lean, a
+  hinge cut through goes with it. A `Falling` tree creaks 1.5 s, then lands: creatures on its line hurt
+  (`Felling.Crush`), a wall breaks it short and loses logs, and a `FelledTrunk` (`Trunk`) lies there.
+  The renderer topples it; the sound director plays the creak and crash.
+- **Bucking** (`BuckSession`): crown first, a log per cut, the pull cuts; past halfway the kerf
+  pinches (Space drives a wedge). An oak's (`greatButt`) takes a `CrosscutSession` on the other end and
+  may keep its butt whole as a `GreatLog`. Stopped early, the cut logs stay.
+- **Logs** (`Log`, `GreatLog`): bulky, one in the arms, slowing whoever carries them (`ThingDef.CarrySpeed`).
+  `SawLog` (7 planks) and `SawGreatLog` (16, with a pitman: the pit saw's great log is a real log now).
+  The plain chop (`harvest`: the labourer, building sites, outside rounds) still gives timber; logs
+  come from felling (`FellingProps`), by hand or by the AI carpenter's `FellJob`.
+- **Splitting** (`SplitSession`, at the woodshop's new `ChoppingBlock`): the edge over a check, raised
+  past the mark; off the check the axe sticks. A log gives 4 firewood, a great log 8. The AI carpenter
+  splits what logs it can find when the barn runs low, felling a tree for some if there are none
+  (`Carpenters.Split`, `SplitJob`, `FellJob`); the bot fells,
+  bucks, carries and splits.
+- **Lessons**: "Fell a tree" and "Split firewood" (`CarpenterLessons`). `--fell-test` (`FellDrill`).
+  Panels for work out in the world sit to the side (`VillageGame._workAside`).
+- Saves to format 62. `FellingTests`.

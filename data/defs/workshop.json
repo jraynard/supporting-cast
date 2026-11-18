@@ -12,6 +12,21 @@
   "things": [
     // ---- Refined materials ----
     {
+      // Bucked from a felled trunk (Carpentry.BuckSession): carried one at a time in both arms, and
+      // slowly. Sawn into planks at the sawhorse or split into firewood at the chopping block.
+      "name": "Log", "label": "log", "category": "Item", "materialsOf": "Wood", "mass": 20, "bulky": true, "carrySpeed": 0.8,
+      "sprite": "items/wood", "stackLimit": 1, "flammability": 0.8, "maxHp": 80,
+      "description": "A length of trunk, bark on. Heavy: carried in both arms. Saw it into planks, or split it for firewood.",
+      "model": [ { "min": [0.1, 0.36, 0], "max": [0.9, 0.64, 0.26], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" } ]
+    },
+    {
+      // A trunk's butt left whole: two logs' length, too long for one saw (the pitman's work, Work.Pairs).
+      "name": "GreatLog", "label": "great log", "category": "Item", "materialsOf": "Wood", "mass": 45, "bulky": true, "carrySpeed": 0.55,
+      "sprite": "items/wood", "stackLimit": 1, "flammability": 0.7, "maxHp": 150,
+      "description": "The butt of a great trunk, left whole. Very heavy. A top sawyer and a pitman make fine long planks of it.",
+      "model": [ { "min": [0.02, 0.3, 0], "max": [0.98, 0.7, 0.36], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" } ]
+    },
+    {
       "name": "Planks", "label": "planks", "category": "Item", "mass": 0.5, "sprite": "items/planks", "stackLimit": 60,
       "materialsOf": "Wood", "flammability": 1.0, "maxHp": 40,
       "description": "Sawn boards: lighter than logs, and they make tighter walls and floors.",
@@ -434,6 +449,16 @@
       ]
     },
     {
+      // Carpentry.SplitSession: a stump to split logs on, the axe kept in it.
+      "name": "ChoppingBlock", "label": "chopping block", "category": "Building", "solid": true, "sprite": "buildings/sawhorse",
+      "description": "A broad round of elm to split logs on. Add bills in its window; F at it with a log to split it yourself.",
+      "maxHp": 120, "flammability": 0.8,
+      "building": { "work": 60, "surfaceHeight": 0.42, "workbench": { "bills": 4 }, "cost": [ { "def": "Wood", "count": 2 } ] },
+      "model": [
+        { "min": [0.22, 0.22, 0.00], "max": [0.78, 0.78, 0.42], "top": "props/log_end", "side": "props/log_side" }
+      ]
+    },
+    {
       "name": "CarpenterBench", "label": "carpenter's bench", "category": "Building", "solid": true, "sprite": "buildings/carpenter_bench", "size": [2, 1],
       "description": "A planked workbench with a vise, two cells wide, for bows, clubs and finer woodwork.",
       "maxHp": 120, "flammability": 1.0, 
@@ -502,7 +527,7 @@
         "heatOutput": 5000, "maxHeatTemp": 900, "lightRadius": 3, "stokeHeat": 4000, "stokedMaxTemp": 1100,
         // "reach": the heat it holds on each fuel, standing in the open (OreTests checks these against
         // the heat sim). Haulers bring the cheapest fuel that reaches the next craft's heat.
-        "fuel": { "def": "Wood", "capacity": 30, "burnPerDay": 60, "refuelAt": 0.4, "onDemand": true, "reach": 745,
+        "fuel": { "def": "Firewood", "capacity": 30, "burnPerDay": 60, "refuelAt": 0.4, "onDemand": true, "reach": 745,
           "also": [ { "def": "Charcoal", "heatFactor": 1.2, "maxTempBonus": 80, "burnFactor": 0.8, "reach": 890 },
                     { "def": "Coal", "heatFactor": 1.3, "maxTempBonus": 120, "burnFactor": 0.6, "reach": 960 } ] }
       }
@@ -568,7 +593,7 @@
   "recipes": [
     {
       "name": "SawPlanks", "label": "planks", "station": "Sawhorse", "skill": "Crafting", "work": 600, "helpedBy": [ "Saw" ],
-      "description": "Saw 6 logs into 10 planks.",
+      "description": "Saw 6 timber into 10 planks.",
       "ingredients": [ { "def": "Wood", "count": 6 } ],
       "products": [ { "def": "Planks", "count": 10 } ]
     },
@@ -576,9 +601,28 @@
       // Pitman's work (Work.Pairs): too long for one saw. Hewn as any, sawn by a top sawyer and a pitman below.
       "name": "SawGreatLog", "label": "planks from a great log", "station": "Sawhorse", "skill": "Crafting", "work": 1200, "helpedBy": [ "Saw" ],
       "twoHanded": true,
-      "description": "A great log, too long for one saw: a top sawyer and a pitman below make 20 planks of 10 logs.",
-      "ingredients": [ { "def": "Wood", "count": 10 } ],
-      "products": [ { "def": "Planks", "count": 20 } ]
+      "description": "A great log, too long for one saw: a top sawyer and a pitman below make 16 planks of it.",
+      "ingredients": [ { "def": "GreatLog", "count": 1 } ],
+      "products": [ { "def": "Planks", "count": 16 } ]
+    },
+    {
+      "name": "SawLog", "label": "planks from a log", "station": "Sawhorse", "skill": "Crafting", "work": 600, "helpedBy": [ "Saw" ],
+      "description": "Saw a felled log into 7 planks.",
+      "ingredients": [ { "def": "Log", "count": 1 } ],
+      "products": [ { "def": "Planks", "count": 7 } ]
+    },
+    {
+      // Carpentry.SplitSession: a log stood on the block and split along its checks.
+      "name": "SplitLog", "label": "firewood", "station": "ChoppingBlock", "skill": "Crafting", "work": 300, "helpedBy": [ "Axe" ],
+      "description": "Split a log into 4 firewood.",
+      "ingredients": [ { "def": "Log", "count": 1 } ],
+      "products": [ { "def": "Firewood", "count": 4 } ]
+    },
+    {
+      "name": "SplitGreatLog", "label": "firewood from a great log", "station": "ChoppingBlock", "skill": "Crafting", "work": 600, "helpedBy": [ "Axe" ],
+      "description": "Split a great log into 8 firewood.",
+      "ingredients": [ { "def": "GreatLog", "count": 1 } ],
+      "products": [ { "def": "Firewood", "count": 8 } ]
     },
     {
       "name": "TanHides", "label": "leather", "station": "TanningRack", "skill": "Crafting", "work": 900,

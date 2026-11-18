@@ -55,7 +55,7 @@
       "description": "A lantern hung from a pole in the square, bunting strung from its top to the next. Up for the festival.",
       "maxHp": 40, "flammability": 0.3,
       "building": { "buildable": false, "outdoor": true, "work": 30, "lightRadius": 5, "heatOutput": 0,
-        "fuel": { "def": "Wood", "capacity": 4, "burnPerDay": 4, "refuelAt": 0 }, "cost": [ { "def": "Wood", "count": 2 } ] },
+        "fuel": { "def": "Firewood", "capacity": 4, "burnPerDay": 4, "refuelAt": 0 }, "cost": [ { "def": "Wood", "count": 2 } ] },
       "fireAt": [0.5, 0.5, 1.34], "fireSize": 0.42,
       "model": [
         { "min": [0.45, 0.45, 0], "max": [0.55, 0.55, 1.9], "top": "props/timber_dark", "side": "props/timber_dark" },
@@ -76,7 +76,7 @@
       "maxHp": 200, "flammability": 0,
       "building": { "buildable": false, "outdoor": true, "work": 60, "cost": [ { "def": "Wood", "count": 20 } ],
         "heatOutput": 1200, "maxHeatTemp": 45, "lightRadius": 10, "radiantWarmth": 10,
-        "fuel": { "def": "Wood", "capacity": 30, "burnPerDay": 30, "refuelAt": 0 } },
+        "fuel": { "def": "Firewood", "capacity": 30, "burnPerDay": 30, "refuelAt": 0 } },
       "fireAt": [0.5, 0.5, 0.3], "fireSize": 1.7,
       "model": [
         { "min": [0.02, 0.02, 0], "max": [0.22, 0.22, 0.2], "top": "props/stone_block", "side": "props/stone_block" },

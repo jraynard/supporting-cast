@@ -17,7 +17,7 @@ public static class KitchenLessons
     public const string Trade = "Cook";
 
     /// <summary>What the kitchen's fires burn, and where it's kept.</summary>
-    private const string Fuel = "Wood", LogBasket = "LogBasket";
+    private const string Fuel = "Firewood", LogBasket = "LogBasket";
 
     public static readonly Lesson[] All =
     [

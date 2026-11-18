@@ -1970,7 +1970,11 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 Decal(art, floor + new float3(0, 0, 0.02f), def.RenderSize, tint, level);
                 break;
             default:
-                DrawVariedBillboard(def, thing.Material == null ? baseSprite : _materials.Resolve(def.Sprite, thing.Material).Sprite, cell, floor, tint, level);
+                var spriteName = thing.Material == null ? baseSprite : _materials.Resolve(def.Sprite, thing.Material).Sprite;
+                if (w.TryGet<Sim.Carpentry.Falling>(e, out var falling))
+                    DrawToppling(spriteName, cell, floor, def, tint, level, falling, sim.Clock.Tick);
+                else
+                    DrawVariedBillboard(def, spriteName, cell, floor, tint, level);
                 break;
         }
 
@@ -2202,6 +2206,42 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 AxisU = r * width,
                 AxisV = -u * height - r * sway,
                 Flags = level | Quad.Billboard | Quad.Upright | Quad.Smooth, // trees and rocks are drawn at 4x detail (chibi_nature.py)
+                Color = tint,
+                Ao = Quad.NoAo,
+                Uv = sprite.Uv,
+            },
+            false
+        );
+    }
+
+    /// <summary>
+    /// A tree whose hinge has given (<see cref="Sim.Carpentry.Falling"/>): it creaks over a few degrees
+    /// toward its fall, then comes down faster and faster, pivoting on its stump, flat as it lands.
+    /// </summary>
+    private void DrawToppling(string spriteName, int3 cell, float3 feet, ThingDef def, uint tint, uint level, Sim.Carpentry.Falling falling, long tick)
+    {
+        if (_atlasVersion != atlas.Version)
+            _variantCache.Clear();
+        if (!_variantCache.TryGetValue(spriteName, out var variants))
+            _variantCache[spriteName] = variants = atlas.Variants(spriteName);
+        var h = Variation.Hash(cell.X, cell.Y, 0x7EE);
+        var sprite = Variation.Mirror(variants[(int)((h >> 8) % (uint)variants.Count)], (h & 1) != 0, false);
+        var height = def.RenderSize;
+        var width = height * sprite.PixelSize.X / Math.Max(1f, sprite.PixelSize.Y);
+        var t = Math.Clamp((tick - falling.At) / (float)Sim.Carpentry.Felling.CreakTicks, 0f, 1f);
+        const float creak = 0.4f, lean = 0.09f;
+        var angle = t < creak ? lean * t / creak : lean + (MathF.PI / 2f - lean) * MathF.Pow((t - creak) / (1f - creak), 2f);
+        var rad = falling.Dir * MathF.PI / 180f;
+        var toward = new float3(MathF.Cos(rad), MathF.Sin(rad), 0);
+        var up = new float3(0, 0, 1) * MathF.Cos(angle) + toward * MathF.Sin(angle);
+        var r = _cam.Right;
+        _quads.Add(
+            new Quad
+            {
+                Origin = feet + up * height - r * (width * 0.5f),
+                AxisU = r * width,
+                AxisV = -up * height,
+                Flags = level | Quad.Smooth,
                 Color = tint,
                 Ao = Quad.NoAo,
                 Uv = sprite.Uv,

@@ -107,8 +107,18 @@ public sealed class SeasonDef : Def
     /// </summary>
     public int BarnWood { get; set; }
 
-    /// <summary>What the woodcutter leaves in the barn each morning from the second day.</summary>
+    /// <summary>What the woodcutter leaves in the barn each morning from the second day: timber, for building and mending.</summary>
     public List<ThingCount> WoodDelivery { get; set; } = [];
+
+    /// <summary>
+    /// Firewood laid in the barn's stockpile at the deal: the town's hearths, ovens and kilns burn it
+    /// (not timber). With <see cref="FirewoodDelivery"/> it should nearly last the season, so the
+    /// carpenter splits logs only to top it up, or in a shortage, when the carter brings none.
+    /// </summary>
+    public int BarnFirewood { get; set; }
+
+    /// <summary>Firewood the carter leaves in the barn each morning from the second day, but not in a shortage.</summary>
+    public List<ThingCount> FirewoodDelivery { get; set; } = [];
 
     /// <summary>What the carter leaves in the woodshop's chest each morning from the second day: feathers for fletching, which nobody in town grows.</summary>
     public List<ThingCount> WoodshopDelivery { get; set; } = [];
@@ -130,6 +140,8 @@ public sealed class SeasonDef : Def
         foreach (var t in OreDelivery)
             t.Resolve(db);
         foreach (var t in WoodDelivery)
+            t.Resolve(db);
+        foreach (var t in FirewoodDelivery)
             t.Resolve(db);
     }
 }

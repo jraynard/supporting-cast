@@ -123,7 +123,7 @@ public class OreTests
         var smith = Villager(sim, C(5, 5), only: [WorkType.Craft, WorkType.Refuel]);
         var kiln = Station(sim, "Kiln");
         sim.World.Get<Fueled>(kiln).Fuel = 0;
-        sim.SpawnItem(sim.Thing("Wood"), 40, C(6, 9));
+        sim.SpawnItem(sim.Thing("Firewood"), 40, C(6, 9));
         sim.SpawnItem(sim.Thing("CopperOre"), 12, C(7, 9));
         sim.SpawnItem(sim.Thing("TinOre"), 2, C(8, 9));
         sim.SpawnItem(sim.Thing("Charcoal"), 30, C(9, 9));
@@ -133,7 +133,7 @@ public class OreTests
         TickFed(sim, SimClock.HoursToTicks(10));
         Assert.True(Count(sim, "CopperBar") == 6, $"copper {Count(sim, "CopperBar")}, kiln {sim.TemperatureAt(C(15, 15)):F0}°C, fuel {sim.World.Get<Fueled>(kiln).Fuel:F1} {sim.World.Get<Fueled>(kiln).Loaded}, smith: {sim.World.Get<Mind>(smith).Job?.Report}, "
             + string.Join(" | ", sim.Messages.Messages.TakeLast(6).Select(m => m.Text)));
-        Assert.Equal("Wood", sim.World.Get<Fueled>(kiln).Loaded?.Name); // wood was hot enough for copper
+        Assert.Equal("Firewood", sim.World.Get<Fueled>(kiln).Loaded?.Name); // wood was hot enough for copper
 
         sim.ApplyNow(new Core.AddBillCommand(kiln, sim.Defs.Recipe("AlloyBronze"), BillMode.Count, 1));
         TickFed(sim, SimClock.HoursToTicks(10));

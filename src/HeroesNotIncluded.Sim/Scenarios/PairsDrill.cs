@@ -32,11 +32,11 @@ public static class PairsDrill
             staged.Add("a greatsword's iron by the forge (the smith makes it; someone takes the sledge)");
         }
 
-        // The pitman: a great log's ten logs by the sawhorse.
+        // The pitman: a great log by the sawhorse.
         if (Station(sim, TownRole.Woodshop, Carpentry.Carpenters.SawhorseDef) is { IsNull: false } horse)
         {
-            Lay(sim, horse, "Wood", 10);
-            staged.Add("a great log's wood by the sawhorse (the carpenter saws it; someone gets in the pit)");
+            Lay(sim, horse, Carpentry.Felling.GreatLogDef, 1);
+            staged.Add("a great log by the sawhorse (the carpenter saws it; someone gets in the pit)");
         }
 
         // The lifter: a party's wagon with a cracked axle by the woodshop, and a log for the axle.

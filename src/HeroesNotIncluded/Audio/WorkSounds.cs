@@ -172,6 +172,24 @@ public sealed class WorkSounds(AudioEngine audio)
                     Count(s.Blows, Sounds.Knock);
                 audio.Hold("work:saw", Sounds.Saw, s.Cutting ? 0.5f + 0.5f * Math.Min(1f, s.Pace / Sim.Carpentry.SawSession.MostPace) : 0f, fade: Quick);
                 break;
+            case Sim.Carpentry.FellSession s:
+                // The axe biting into the trunk on each blow, deeper notes as the cut goes in.
+                Count(s.Blows, Sounds.Knock);
+                break;
+            case Sim.Carpentry.BuckSession s:
+                // The crosscut's rasp on the pull; a snap when the saw binds in the kerf.
+                audio.Hold("work:saw", Sounds.Saw, s.Cutting ? 0.4f + 0.5f * Math.Min(1f, s.Pace / Sim.Carpentry.BuckSession.MostPace) : 0f, pitch: 0.85f, fade: Quick);
+                Count(s.Binds, Sounds.Snap);
+                break;
+            case Sim.Carpentry.CrosscutSession s:
+                audio.Hold("work:saw", Sounds.Saw, s.Held && s.Drawn < 1f ? 0.45f : 0f, pitch: 0.85f, fade: Quick);
+                break;
+            case Sim.Carpentry.SplitSession s:
+                // Each blow knocks; a split cracks the log open.
+                if (s.Blows > _a)
+                    audio.Play(s.LastBlow == Sim.Carpentry.SplitBlow.Split ? Sounds.Snap : Sounds.Knock, pitch: s.LastBlow == Sim.Carpentry.SplitBlow.Split ? 0.8f : 1f);
+                _a = s.Blows;
+                break;
             case Sim.Carpentry.FletchSession s:
                 // The knife along the shaft; the head scraping on; a rustle for each feather.
                 audio.Hold("work:shave", Sounds.Scrub, s.Stage == Sim.Carpentry.ArrowStage.Shave && s.Held ? 0.5f : 0f, pitch: 1.4f, fade: Quick);

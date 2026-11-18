@@ -531,6 +531,10 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     public static bool MayGather(Simulation sim, Entity who) =>
         sim.Round.Phase == RoundPhase.None || (sim.World.TryGet<Trade>(who, out var t) && t.Def.Gathers);
 
+    /// <summary>Whether someone may fell trees: whoever may gather, and in a round a trade that fells (<see cref="TradeDef.Fells"/>).</summary>
+    public static bool MayFell(Simulation sim, Entity who) =>
+        MayGather(sim, who) || (sim.World.TryGet<Trade>(who, out var t) && t.Def.Fells);
+
     /// <summary>The work only a gathering trade does in a round.</summary>
     public static readonly WorkType[] GatheringWork = [WorkType.Chop, WorkType.Mine, WorkType.Harvest];
 

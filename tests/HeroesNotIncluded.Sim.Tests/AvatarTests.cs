@@ -394,7 +394,7 @@ public class AvatarTests
         var fire = sim.SpawnStructure(sim.Thing("Campfire"), C(6, 5));
         var capacity = sim.Thing("Campfire").Building!.Fuel!.Capacity;
         sim.World.Get<Fueled>(fire).Fuel = 0; // burned out
-        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("Wood"), capacity + 3);
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing("Firewood"), capacity + 3);
 
         var action = AvatarSystem.ActionAt(sim, me, C(6, 5));
         Assert.Equal(AvatarActionKind.Refuel, action.Kind);

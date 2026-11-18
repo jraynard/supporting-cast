@@ -211,7 +211,7 @@
       "maxHp": 160, "flammability": 0,
       "building": { "staffOnly": true, "oven": true, "work": 150, "surfaceHeight": 0.7, "cost": [ { "def": "Stone", "count": 8 } ],
                     "heatOutput": 200, "maxHeatTemp": 22, "lightRadius": 2,
-                    "fuel": { "def": "Wood", "capacity": 8, "burnPerDay": 6, "refuelAt": 0.5 } },
+                    "fuel": { "def": "Firewood", "capacity": 8, "burnPerDay": 6, "refuelAt": 0.5 } },
       // Its mouth on the front (+Y), the fire showing inside it.
       "fireAt": [0.5, 0.66, 0.42], "fireSize": 0.42,
       "model": [

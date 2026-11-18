@@ -251,6 +251,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>Debug (<c>--bridge-test</c>): the bridge drill (<see cref="BridgeDrill"/>), the bridge down and you at the gap with wood.</summary>
     public bool BridgeTest { get; init; }
 
+    /// <summary>Debug (<c>--fell-test</c>): the woods drill (<see cref="FellDrill"/>), the carpenter by a pine with an axe and a saw.</summary>
+    public bool FellTest { get; init; }
+
     /// <summary>
     /// Debug (<c>--pairs-test</c>): every job for two pairs of hands staged at once (<see cref="PairsDrill"/>),
     /// through a dev command once the round's dealt, so a host's co-op round stages it for everyone.
@@ -418,6 +421,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
                 DragonDrill.Stage(_sim, watching);
             if (BridgeTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } mending)
                 BridgeDrill.Stage(_sim, mending);
+            if (FellTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } felling
+                && FellDrill.Stage(_sim, felling) is { IsNull: false } pine)
+                center = _sim.World.Get<Thing>(pine).Cell;
         }
         var focus = center;
         if (IgniteForest)
@@ -537,7 +543,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         if (_coop != null && FreeMoving)
             _freePredictor.Update(_sim, _avatar, _wish, dt, Paused ? 0 : RunMultiplier);
         _renderer.FreePredicted = _coop != null && FreeMoving ? _freePredictor : null;
-        _renderer.AimLine = HasAvatar ? AimLine() : null;
+        _renderer.AimLine = HasAvatar ? AimLine() ?? FellLine() : null;
         _renderer.PredictedEntity = _avatar;
         _renderer.Viewer = View.Omniscient ? null : View;
         UpdateOrderBubbles();

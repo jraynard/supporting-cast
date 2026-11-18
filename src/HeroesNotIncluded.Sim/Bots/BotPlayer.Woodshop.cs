@@ -35,6 +35,8 @@ public sealed partial class BotPlayer
             return true;
         if (!bench.IsNull && Refurnish(sim, me, view, bench, now))
             return true;
+        if (Firewood(sim, me, view, now))
+            return true;
         if (Stock(sim, me) >= StockWanted || bench.IsNull)
             return false;
         var fletch = Recipe(sim, bench, Carpenters.Fletches);
@@ -129,6 +131,100 @@ public sealed partial class BotPlayer
         return false;
     }
 
+    /// <summary>
+    /// The town's firewood running short (<see cref="Carpenters.FirewoodLow"/>): a log split at the
+    /// chopping block if there's one to be had; else the nearest tree felled and its trunk bucked
+    /// into logs, to split. True while at it.
+    /// </summary>
+    private bool Firewood(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        var w = sim.World;
+        var block = Nearest(sim, me, Carpenters.BlockDef);
+        if (block.IsNull || Carpenters.TownFirewood(sim) >= Carpenters.FirewoodLow)
+            return false;
+        if (w.TryGet<Workbench>(block, out var b) && b.Active is { } begun && b.By == me && !b.Untouched)
+            return Make(sim, me, view, block, begun, now);
+        foreach (var split in w.Get<Thing>(block).Def.Recipes.Where(Carpenters.Splits))
+            if (split.Ingredients.TrueForAll(x => Obtainable(sim, me, x)))
+            {
+                Doing = "splitting firewood";
+                return Make(sim, me, view, block, split, now);
+            }
+        // A log lying about (one it bucked, or the labourer's): picked up and carried to the block.
+        foreach (var def in new[] { Felling.LogDef, Felling.GreatLogDef })
+            if (Known(sim, me, view, sim.Defs.Thing(def)) is { IsNull: false } lying)
+            {
+                Doing = "carrying a log to the chopping block";
+                return Fetch(sim, me, view, lying, 1, now);
+            }
+        if (Crafting.ToolSpeed(sim, me, Felling.AxeKind) <= 0f)
+            return false;
+        var from = w.Get<Position>(me).Cell;
+        // A trunk down already: saw it into logs. Else the nearest tree to fell.
+        Entity Near(Func<Entity, bool> what) => sim.SpiralFrom(from, 40)
+            .Where(c => sim.Map.InBounds(c))
+            .Select(c => sim.Map.Structure[sim.Map.Idx(c)])
+            .FirstOrDefault(e => !e.IsNull && what(e) && sim.Regions.CanReach(from, w.Get<Thing>(e).Cell, PathEnd.Touch), Entity.Null);
+        var trunk = Near(e => Felling.IsTrunk(sim, e));
+        if (!trunk.IsNull)
+        {
+            Doing = "bucking a trunk into logs";
+            return AtStation(sim, me, trunk, now, t => Send(new AvatarWorkCommand(me, true, w.Get<Thing>(t).Cell)));
+        }
+        var tree = Near(e => w.Get<Thing>(e).Def.Felling != null && !w.Has<Falling>(e));
+        if (tree.IsNull)
+            return false;
+        Doing = "felling a tree for firewood";
+        return AtStation(sim, me, tree, now, t => Send(new AvatarWorkCommand(me, true, w.Get<Thing>(t).Cell)));
+    }
+
+    /// <summary>Felling: the aim left as it starts (away from the bot), the notch to the mark, round the back, the hinge thinned and not cut through.</summary>
+    private (bool, bool, int) Fell(FellSession s)
+    {
+        var per = FellSession.DeepestBlow / Math.Max(0.3f, s.Girth);
+        if (!s.Backing)
+        {
+            if (s.Notch >= FellSession.NotchMark - 0.02f && s.Raised <= 0f)
+            {
+                _act = true;
+                return (false, false, 0);
+            }
+            return (false, s.Raised * per < Math.Min(per, Math.Max(0.02f, FellSession.NotchMark - s.Notch)), 0);
+        }
+        return (false, s.Raised * per < Math.Min(per * 0.7f, Math.Max(0.015f, s.Hinge - FellSession.HingeFalls * 0.5f)), 0);
+    }
+
+    /// <summary>Bucking: steady strokes on the keys, a wedge in once the kerf starts to close.</summary>
+    private (bool, bool, int) Buck(BuckSession s)
+    {
+        if (s.Wedging > 0f)
+            return (false, false, 0);
+        if (!s.Wedged && (s.Progress >= BuckSession.PinchFrom - 0.05f || s.Bound))
+        {
+            _act = true;
+            return (false, false, 0);
+        }
+        if (s.Stroke >= 0.97f)
+            _sawWay = -1;
+        else if (s.Stroke <= 0.03f)
+            _sawWay = 1;
+        _axis2 = _sawWay;
+        return (false, false, 0);
+    }
+
+    /// <summary>Splitting: the edge over the check, raised past what it needs, let go; a stuck axe rocked free.</summary>
+    private (bool, bool, int) Split(SplitSession s)
+    {
+        if (s.Stuck > 0)
+        {
+            _act = true;
+            return (false, false, 0);
+        }
+        if (s.Raised <= 0f && MathF.Abs(s.Aim - s.Check) > s.CheckWidthNow * 0.4f)
+            return (false, false, Math.Sign(s.Check - s.Aim));
+        return (false, s.Raised < s.Need + 0.1f, 0);
+    }
+
     private static RecipeDef? Recipe(Simulation sim, Entity station, Func<RecipeDef, bool> which) =>
         sim.World.Get<Thing>(station).Def.Recipes.FirstOrDefault(which);
 
@@ -139,6 +235,9 @@ public sealed partial class BotPlayer
         FletchSession fletch => Fletch(fletch),
         BowSession bow => Tiller(bow),
         JoinSession join => Join(join),
+        FellSession fell => Fell(fell),
+        BuckSession buck => Buck(buck),
+        SplitSession split => Split(split),
         _ => null,
     };
 

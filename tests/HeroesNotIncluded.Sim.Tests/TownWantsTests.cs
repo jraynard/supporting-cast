@@ -50,11 +50,11 @@ public class TownWantsTests
         var sim = Round();
         var cook = Holder(sim, "Cook");
         var kitchen = ShopSystem.WorkplaceOf(sim, sim.World.Get<Trade>(cook).Def);
-        Empty(sim, kitchen, "Wood");
+        Empty(sim, kitchen, "Firewood");
         Inventory.Stow(sim, cook, sim.CreateItem(sim.Thing(Coin.Silver), 20));
         Wants.Post(sim);
         Wants.Post(sim);
-        var errands = sim.Favours.All.Where(f => f.IsOpen && f.Poster == cook && f.Wants?.Name == "Wood").ToList();
+        var errands = sim.Favours.All.Where(f => f.IsOpen && f.Poster == cook && f.Wants?.Name == "Firewood").ToList();
         Assert.Single(errands);
         Assert.True(errands[0].Price > 0);
         // A player's own trade posts nothing for them.
@@ -91,10 +91,10 @@ public class TownWantsTests
         var w = sim.World;
         var cook = Holder(sim, "Cook");
         var kitchen = ShopSystem.WorkplaceOf(sim, w.Get<Trade>(cook).Def);
-        Empty(sim, kitchen, "Wood");
+        Empty(sim, kitchen, "Firewood");
         Inventory.Stow(sim, cook, sim.CreateItem(sim.Thing(Coin.Silver), 20));
         Wants.Post(sim);
-        var errand = sim.Favours.All.Single(f => f.IsOpen && f.Poster == cook && f.Wants?.Name == "Wood");
+        var errand = sim.Favours.All.Single(f => f.IsOpen && f.Poster == cook && f.Wants?.Name == "Firewood");
         for (var i = 0; i < 48 && errand.IsOpen; i++)
             sim.TickMany(SimClock.TicksPerHour / 8);
         Assert.Equal(FavourStatus.Done, errand.Status);

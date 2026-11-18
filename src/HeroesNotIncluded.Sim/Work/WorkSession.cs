@@ -456,6 +456,10 @@ public abstract class WorkSession
             nameof(Afterlife.HoldSession) => new Afterlife.HoldSession(),
             nameof(Carpentry.PitSession) => new Carpentry.PitSession(),
             nameof(Carpentry.LiftSession) => new Carpentry.LiftSession(),
+            nameof(Carpentry.FellSession) => new Carpentry.FellSession(),
+            nameof(Carpentry.BuckSession) => new Carpentry.BuckSession(),
+            nameof(Carpentry.CrosscutSession) => new Carpentry.CrosscutSession(),
+            nameof(Carpentry.SplitSession) => new Carpentry.SplitSession(),
             nameof(Environment.ThrowSession) => new Environment.ThrowSession(),
             _ => throw new SaveException($"Corrupt save: unknown work session {name}"),
         };

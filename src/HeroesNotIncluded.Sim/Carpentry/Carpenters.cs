@@ -18,9 +18,13 @@ public static class Carpenters
 {
     public const string SawhorseDef = "Sawhorse";
     public const string BenchDef = "CarpenterBench";
+    public const string BlockDef = "ChoppingBlock";
     public const string PlanksDef = "Planks";
     public const string FeathersDef = "Feathers";
     public const string WoodDef = "Wood";
+
+    /// <summary>Split billets: what the town's fires burn (Defs: every wood-burning <c>fuel</c>).</summary>
+    public const string FirewoodDef = "Firewood";
 
     /// <summary>The bench's plain cudgel: what a carpenter hangs on the muster rack when there aren't the planks for a bow.</summary>
     public const string CudgelRecipe = "MakeCudgel";
@@ -41,6 +45,11 @@ public static class Carpenters
 
     public static bool IsBench(Simulation sim, Entity e) => Is(sim, e, BenchDef);
 
+    public static bool IsBlock(Simulation sim, Entity e) => Is(sim, e, BlockDef);
+
+    /// <summary>A recipe that splits a log into firewood at the chopping block.</summary>
+    public static bool Splits(RecipeDef r) => r.StationDef?.Name == BlockDef && r.Products.Exists(p => p.ThingDef.Name == FirewoodDef);
+
     /// <summary>A recipe that saws planks.</summary>
     public static bool Saws(RecipeDef r) => r.StationDef?.Name == SawhorseDef && r.Products.Exists(p => p.ThingDef.Name == PlanksDef);
 
@@ -53,7 +62,8 @@ public static class Carpenters
     /// <summary>Should a player's work on this recipe at this station be done by hand? In a round, sawing planks at a sawhorse, or fletching or tillering a bow at the carpenter's bench.</summary>
     public static bool Applies(Simulation sim, Entity worker, Entity station, RecipeDef recipe) =>
         sim.Round.Live && sim.World.Has<Avatar>(worker)
-        && (IsSawhorse(sim, station) && Saws(recipe) || IsBench(sim, station) && (Fletches(recipe) || MakesBow(recipe)));
+        && (IsSawhorse(sim, station) && Saws(recipe) || IsBench(sim, station) && (Fletches(recipe) || MakesBow(recipe))
+            || IsBlock(sim, station) && Splits(recipe));
 
     /// <summary>A player works a stocked station: the hand game for the recipe (<see cref="Applies"/>).</summary>
     public static void WorkAt(Simulation sim, Entity worker, Entity station, RecipeDef recipe)
@@ -66,6 +76,8 @@ public static class Carpenters
             WorkSystem.Start(sim, worker, new FletchSession { Station = station });
         else if (MakesBow(recipe))
             WorkSystem.Start(sim, worker, new BowSession { Station = station });
+        else if (Splits(recipe))
+            WorkSystem.Start(sim, worker, new SplitSession { Station = station, Great = recipe.Ingredients.Exists(i => i.ThingDef.Name == Felling.GreatLogDef) });
     }
 
     /// <summary>A bow, mended by hand at the carpenter's bench (re-tillered and restrung, <see cref="BowSession.Mending"/>).</summary>
@@ -172,6 +184,43 @@ public static class Carpenters
         return new SawJob(horse, chest);
     }
 
+    /// <summary>Firewood in the barn's stockpile below which an AI carpenter splits logs for the town's fires.</summary>
+    public const int FirewoodLow = 40;
+
+    /// <summary>
+    /// The town's firewood running low (the carter short, or none in a shortage) and a log to be had:
+    /// an AI carpenter carries it to the chopping block and splits it (<see cref="SplitJob"/>).
+    /// </summary>
+    public static Job? Split(Simulation sim, Entity pawn)
+    {
+        var shop = WoodshopOf(sim, pawn);
+        var block = StationOf(sim, shop, BlockDef);
+        if (block.IsNull || sim.Reservations.IsReservedByOther(block, pawn) || TownFirewood(sim) >= FirewoodLow)
+            return null;
+        var w = sim.World;
+        var from = w.Get<Position>(pawn).Cell;
+        foreach (var log in sim.AvailableItems().Where(e => w.Get<Thing>(e).Def.Name is Felling.LogDef or Felling.GreatLogDef)
+            .OrderBy(e => Map.Distance(w.Get<Thing>(e).Cell, from)).ThenBy(e => e.Index))
+            if (!sim.Reservations.IsReservedByOther(log, pawn) && Navigation.CanReach(sim, pawn, from, w.Get<Thing>(log).Cell, PathEnd.Touch))
+                return new SplitJob(log, block);
+        // No log to be had: fell the nearest tree for some, axe in hand.
+        if (Crafting.ToolSpeed(sim, pawn, Felling.AxeKind) <= 0f)
+            return null;
+        var stump = sim.SpiralFrom(from, FellRange)
+            .Where(c => sim.Map.InBounds(c))
+            .Select(c => sim.Map.Structure[sim.Map.Idx(c)])
+            .FirstOrDefault(e => !e.IsNull && w.Get<Thing>(e).Def.Felling != null && !w.Has<Falling>(e)
+                && !sim.Reservations.IsReservedByOther(e, pawn) && Navigation.CanReach(sim, pawn, from, w.Get<Thing>(e).Cell, PathEnd.Touch), Entity.Null);
+        return stump.IsNull ? null : new FellJob(stump);
+    }
+
+    /// <summary>How far (cells) an AI carpenter goes for a tree to fell.</summary>
+    public const int FellRange = 40;
+
+    /// <summary>Firewood lying about where anyone may take it (the barn's pile, mostly).</summary>
+    public static int TownFirewood(Simulation sim) =>
+        sim.AvailableItems().Where(e => sim.World.Get<Thing>(e).Def.Name == FirewoodDef).Sum(e => sim.World.Get<Stack>(e).Count);
+
     /// <summary>
     /// An archer asking for arrows at the woodshop (<see cref="ServiceKind.Arrows"/>), known to this AI
     /// carpenter and nobody else's: it fletches a quiver at the bench (or takes one it has on it) and
@@ -241,6 +290,45 @@ public sealed class SawJob(Entity horse, Entity chest) : Job
         var rest = Sim.Store(chest, planks);
         if (!rest.IsNull)
             Sim.PlaceItemNear(rest, Get<Thing>(chest).Cell);
+    }
+}
+
+/// <summary>An AI carpenter carries a log to the chopping block and splits it for firewood, left by the block for the haulers.</summary>
+public sealed class SplitJob(Entity log, Entity block) : Job
+{
+    public const int Ticks = 600;
+
+    public override Entity Focus => block;
+
+    public override string? ToolKind => Felling.AxeKind;
+
+    protected override IEnumerable<JobStatus> Run()
+    {
+        Report = "Splitting firewood";
+        if (!Reserve(log) || !Reserve(block)) yield break;
+        foreach (var s in GoTo(Get<Thing>(log).Cell, PathEnd.Touch)) yield return s;
+        if (HasFailed) yield break;
+        if (!Alive(log) || Sim.World.Has<Stored>(log) || !Get<Carrying>(Pawn).Item.IsNull)
+        {
+            Fail("can't take the log");
+            yield break;
+        }
+        var great = Get<Thing>(log).Def.Name == Felling.GreatLogDef;
+        var material = Get<Thing>(log).Material;
+        Get<Carrying>(Pawn).Item = Sim.TakeFromStack(log, 1);
+        var held = Get<Carrying>(Pawn).Item;
+        foreach (var s in GoTo(Get<Thing>(block).Cell, PathEnd.Touch)) yield return s;
+        if (HasFailed) yield break;
+        foreach (var s in Wait(Ticks * (great ? 2 : 1))) yield return s;
+        if (!Alive(block) || !Alive(held) || Get<Carrying>(Pawn).Item != held)
+        {
+            Fail("lost the log");
+            yield break;
+        }
+        Get<Carrying>(Pawn).Item = Entity.Null;
+        Sim.DestroyThing(held);
+        SkillRules.Learn(Sim, Pawn, Skill.Crafting, SkillRules.XpPerWorkTick * Ticks);
+        Sim.PlaceItemNear(Sim.CreateItem(Sim.Defs.Thing(Carpenters.FirewoodDef), great ? 8 : 4, material), Get<Thing>(block).Cell);
     }
 }
 

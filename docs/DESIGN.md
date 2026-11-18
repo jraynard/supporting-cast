@@ -120,7 +120,7 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 | Undertaker | Autopsy, burial before the dead rise | Health, `Scars`, carcasses, the pyre | Destroying evidence |
 | Forager, Miner | Risky trips beyond the walls | Harvest, Mining, Hunting, Fishing | Alone out there, in both directions |
 | Tinker | Pick the locks and disarm the traps on chests adventurers bring back; pin locks and cut keys; fit contraptions together for the road; mend wagons; appraise curios and buy them for a collector; set trip-bells across the roads before a raid | `Tinkering/`, doors, `Work/`, expeditions, loot | A spare key, a chest opened early, a trap left armed, a contraption that jams, a curio talked down, a trip-bell that never rings |
-| Carpenter | Sawing planks, fletching quivers for the parties' archers, bracing the bridge, putting up the festival; later mending furniture and building | Construction, `Carpentry/`, the woodshop | A warped shaft in a quiver that looks true |
+| Carpenter | Felling and bucking trees, sawing planks, splitting firewood, fletching quivers for the parties' archers, bracing the bridge, putting up the festival; later mending furniture and building | Construction, `Carpentry/`, the woodshop | A warped shaft in a quiver that looks true |
 | Bard | Rhythm performance, morale, rumours. | Mood, Social | Spreading lies |
 | Mayor | Treasury, laws, chairs town meetings | New | Corruption |
 | Animal Handler / Druid | taming wild animals, ancient forest rituals | new | forest spirts, "wild" animal attacks
@@ -529,7 +529,7 @@ Millbrook, south of the square, with a bench, a stock chest and the collector's 
 
 **Carpenter.** Millbrook's sixth trade, so a six-player round has a game for everyone (the
 labourer is what a seventh gets). Works from the woodshop by the tinker's: a sawhorse, a
-carpenter's bench and a chest the carter leaves feathers in (`Carpentry/`).
+carpenter's bench, a chopping block and a chest the carter leaves feathers in (`Carpentry/`).
 - *Making planks* (`SawSession`), as before the sawmill (riving, splitting along the grain with
   wedges, is the other old way: a later alternative, not a step of this):
   - **Hew**: the round log end on, a square chalked on it. F held raises the axe, let go strikes as
@@ -540,6 +540,30 @@ carpenter's bench and a chest the carter leaves feathers in (`Carpentry/`).
     blade wanders, more rushed, and A/D (or the mouse across) steer it back. Beside it, the beam
     from above with the cut creeping along it. Six logs make up to ten planks: a log hewn past its
     lines or a wandering cut wastes some.
+- *In the woods* (`Felling`): the carpenter fells trees by hand in a round (`TradeDef.Fells`; the
+  labourer still chops them the plain way, for timber):
+  - **Fell** (`FellSession`): the trunk from above, turned as the camera looks. A/D aim the fall (a
+    line on the ground shows where it'll land); every tree leans a little somewhere, plain to see.
+    The notch on the aimed side, to a chalk mark a third in (hold F to raise the axe, let go to
+    strike); Space goes round for the back cut, which thins the hinge till the tree goes. A shallow
+    notch lets it pull toward its lean; a blow through the hinge leaves nothing to steer it.
+  - **The fall**: a moment's creak and a "Timber!", then it lands along its line, hurting whoever's
+    under it (more at the butt) and breaking short against a wall, which loses logs. The trunk lies
+    where it fell (`Trunk`).
+  - **Buck** (`BuckSession`): the trunk side on, sawn crown first a length at a time with the
+    crosscut (W/S, the pull cuts). Past halfway the kerf closes on the blade, faster rushed: Space
+    drives a wedge. An oak's butt takes two (`CrosscutSession`, the other end pulling on the
+    lead's cue, as the pitman), and may be kept whole as a great log for the pit saw.
+  - Logs (`Log`, `GreatLog`) are bulky and slow whoever carries them (`carrySpeed`). A pine gives
+    three logs, an oak a great log and a log (or three logs), a birch two. A log saws into seven
+    planks (`SawLog`), a great log into sixteen long ones with a pitman (`SawGreatLog`).
+- *Firewood* (`SplitSession`, at the chopping block): the town's hearths, ovens, kilns and
+  campfires burn `Firewood`, not timber. The carter brings most of it to the barn each morning,
+  a little short of what the town burns on purpose, and none in a shortage. A log stood on end,
+  its checks showing: A/D put the edge over one, hold F past the mark and let go; on the check it
+  splits clean, off it the axe sticks (Space rocks it free). A log gives four, a great log eight.
+  An AI carpenter splits whatever logs it can find when the barn runs low (`SplitJob`), felling a
+  tree for some if there are none (`FellJob`: the same logs, no game).
 - *Making a quiver* (`FletchSession`): a plank and a bundle of feathers make one fine arrow, the
   pattern the score in the quiver is cut to, through four stages scored once each:
   - **Sight**: bend the shaft straight against its warp (hold F, Space when the needle reads true).

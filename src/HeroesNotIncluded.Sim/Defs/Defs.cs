@@ -214,7 +214,8 @@ public sealed class MaterialDef : Def
     internal override void Resolve(DefDatabase db) => VariantOf = db.Thing(Of);
 
     /// <summary>Can an item of this def come in this material: the item it's a kind of, or one made from it (oak planks).</summary>
-    public bool Fits(ThingDef def) => VariantOf == def || (def.MaterialsOfDef != null && def.MaterialsOfDef == VariantOf);
+    public bool Fits(ThingDef def) => VariantOf == def || (def.MaterialsOfDef != null && def.MaterialsOfDef == VariantOf)
+        || (def.MaterialsOf != null && def.MaterialsOf == VariantOf.Name); // by name too: a tree's yield may resolve before its log's materialsOf
 
     /// <summary>
     /// "birch wood", "birch wall" (for "wooden wall"), "birch bed"; for stone, the word "stone"
@@ -753,6 +754,27 @@ public sealed class HarvestProps
     public float RegrowDays { get; set; }
 }
 
+/// <summary>
+/// A tree felled by hand (Carpentry.FellSession): how far it reaches when it falls, how many logs'
+/// lengths its trunk is, whether its butt is thick enough to be a great log (and so a two-man
+/// crosscut), and how hard its wood takes the axe. The AI's plain chop yields the same logs through
+/// <see cref="HarvestProps.Yield"/>.
+/// </summary>
+public sealed class FellingProps
+{
+    /// <summary>Cells from the stump to the crown, along the ground when it's down.</summary>
+    public int Height { get; set; } = 4;
+
+    /// <summary>The trunk's length in logs.</summary>
+    public int Logs { get; set; } = 2;
+
+    /// <summary>The butt's two lengths may be left whole as a great log (an oak's).</summary>
+    public bool GreatButt { get; set; }
+
+    /// <summary>How much harder than a pine it is to cut through (each blow goes 1/girth as deep).</summary>
+    public float Girth { get; set; } = 1f;
+}
+
 /// <summary>How the 3D view draws a thing. <see cref="Auto"/> picks from the category and building props.</summary>
 public enum RenderShape
 {
@@ -964,6 +986,12 @@ public sealed class ThingDef : Def
     /// <summary>Too awkward for a pack: carried in the hands only (a pack itself).</summary>
     public bool Bulky { get; set; }
 
+    /// <summary>
+    /// How fast someone walks carrying one of these (1: not slowed; a great log, about 0.6). Set on
+    /// what's heavy and awkward on purpose, not worked out from mass, so kegs and stacks stay as they were.
+    /// </summary>
+    public float CarrySpeed { get; set; } = 1f;
+
     /// <summary>Food value per unit, as a fraction of a full food need.</summary>
     public float Nutrition { get; set; }
 
@@ -1067,6 +1095,9 @@ public sealed class ThingDef : Def
     [JsonIgnore] public BuildingUpgrade? UpgradeOf { get; internal set; }
 
     public HarvestProps? Harvest { get; set; }
+
+    /// <summary>A tree the carpenter can fell by hand (Carpentry.FellSession) and buck into logs (Carpentry.BuckSession).</summary>
+    public FellingProps? Felling { get; set; }
 
     /// <summary>Items that can be wielded: how they attack.</summary>
     public AttackDef? Weapon { get; set; }

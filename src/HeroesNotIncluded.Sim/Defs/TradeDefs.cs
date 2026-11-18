@@ -85,6 +85,9 @@ public sealed class TradeDef : Def
     /// </summary>
     public bool Gathers { get; set; }
 
+    /// <summary>The holder may fell trees in a round, by hand (the carpenter: Carpentry.FellSession), though it gathers nothing else.</summary>
+    public bool Fells { get; set; }
+
     /// <summary>The holder mends what crises break in town (<c>Tinkering.Repairs</c>): the tinker, the bridge.</summary>
     public bool MendsTown { get; set; }
 

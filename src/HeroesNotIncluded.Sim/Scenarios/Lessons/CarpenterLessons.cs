@@ -16,6 +16,8 @@ public static class CarpenterLessons
         new(Trade, "saw", ["logs", "start", "hew", "saw"], Saw),
         new(Trade, "quiver", ["start", "sight", "shave", "head", "fletch", "show"], Quiver),
         new(Trade, "bow", ["start", "tiller", "string"], Bow),
+        new(Trade, "woods", ["tree", "aim", "notch", "back", "buck", "carry"], Woods),
+        new(Trade, "firewood", ["start", "split"], Firewood),
     ];
 
     /// <summary>Planks by hand: logs from the chest, a batch started at the sawhorse, the log hewn square, the beam sawn on its lines.</summary>
@@ -51,6 +53,47 @@ public static class CarpenterLessons
         if (!Made(sim, me, run, d => d.Quiver).IsNull)
             return new LessonStage("show", Entity.Null);
         return new LessonStage("start", bench);
+    }
+
+    /// <summary>
+    /// A tree felled where it's aimed (aim, notch, back cut), its trunk bucked into logs, and a log
+    /// carried home to the sawhorse. Pointed at the nearest tree, then the trunk it leaves.
+    /// </summary>
+    public static LessonStage Woods(Simulation sim, Entity me, LessonRun run)
+    {
+        var w = sim.World;
+        switch (Session(sim, me))
+        {
+            case FellSession f:
+                return new LessonStage(!f.AimSet ? "aim" : !f.Backing ? "notch" : "back", f.Tree);
+            case BuckSession b:
+                return new LessonStage("buck", b.Trunk);
+        }
+        var horse = run.Station(sim, Carpenters.SawhorseDef);
+        if (OnMe(sim, me, Felling.LogDef) + OnMe(sim, me, Felling.GreatLogDef) > 0)
+        {
+            var home = !horse.IsNull && Systems.AvatarSystem.InReach(sim, w.Get<Components.Position>(me).Cell, horse);
+            return new LessonStage("carry", horse, Done: home);
+        }
+        var near = w.Get<Components.Position>(me).Cell;
+        Entity Nearest(Func<Entity, bool> what) => sim.SpiralFrom(near, 30)
+            .Where(c => sim.Map.InBounds(c))
+            .Select(c => sim.Map.Structure[sim.Map.Idx(c)])
+            .FirstOrDefault(e => !e.IsNull && what(e), Entity.Null);
+        // A trunk down already (theirs, or one left lying): buck it. Else the nearest standing tree.
+        var trunk = Nearest(e => Felling.IsTrunk(sim, e));
+        if (!trunk.IsNull)
+            return new LessonStage("buck", trunk);
+        return new LessonStage("tree", Nearest(e => w.Get<Components.Thing>(e).Def.Felling != null && !w.Has<Falling>(e)));
+    }
+
+    /// <summary>A log split into firewood at the chopping block.</summary>
+    public static LessonStage Firewood(Simulation sim, Entity me, LessonRun run)
+    {
+        var block = run.Station(sim, Carpenters.BlockDef);
+        if (Session(sim, me) is SplitSession)
+            return new LessonStage("split", block);
+        return new LessonStage("start", block, Done: Gained(sim, me, run, Carpenters.FirewoodDef));
     }
 
     /// <summary>A bow tillered at the bench, then strung.</summary>
