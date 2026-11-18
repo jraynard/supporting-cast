@@ -81,6 +81,10 @@ public sealed partial class VillageGame
         _lessonsLearned.Contains(key) || (Character is { } c && (_roster?.Get(c.Id) ?? c).Progress.Lessons.Contains(key));
 
     /// <summary>A chapter's being guided: glows show whatever the settings say (<see cref="Guiding"/>).</summary>
+    /// <summary>The card's up to read (not folded to its button, and the tutorial not off): what <see cref="TutorialHold"/> holds time for.</summary>
+    private bool TutorialCardOpen =>
+        _sim.Round.Practice && HasAvatar && _tutorial != TutorialState.Off && !(_tutorial == TutorialState.Running && _lesson != null && _tutorialFolded);
+
     private bool TutorialRunning => _tutorial == TutorialState.Running && _lesson != null && !_lessonStage.Done;
 
     /// <summary>The step at hand, while a chapter runs ("take", "giveback"); empty otherwise.</summary>
@@ -222,6 +226,9 @@ public sealed partial class VillageGame
         _hud.Next(Anchor.Top, ScreenFit.Width(480, 0.5f));
         Panel.Begin("Tutorial###tutorial", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoTitleBar);
         _hud.Took();
+        // While time holds for it, the pad drives the card (A presses, B is Got it): nothing else moves anyway.
+        if (TutorialHold)
+            PadWindow("###tutorial", _tutorial == TutorialState.Running && _lesson != null ? () => _tutorialFolded = true : null);
         switch (_tutorial)
         {
             case TutorialState.Intro:
@@ -335,6 +342,8 @@ public sealed partial class VillageGame
                 }
             }
         }
+        if (TutorialHold)
+            TextC(Theme.Dim, Controls.UsingPad ? $"Time holds while you read. Got it ({Controls.Glyph(Act.Back)}) carries on." : "Time holds while you read. Got it carries on.");
         if (ImGui.Button("Got it"u8, in _autoSize))
             _tutorialFolded = true;
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))

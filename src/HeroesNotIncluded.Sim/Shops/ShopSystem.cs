@@ -135,6 +135,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 WagonMended(sim, e);
             else if (e.Kind.Kind == ServiceKind.Arrows && Carpentry.Fletching.Carried(sim, e.Poster).Count >= Carpentry.Fletching.MostCarried)
                 Close(sim, e, OrderStatus.Cancelled); // bought one off the shelf after all
+            else if (now >= e.Deadline && sim.Round.Practice)
+                e.Deadline = now + SimClock.HoursToTicks(PracticePatienceHours); // the yard's customers are there to be learned on
             else if (now >= e.Deadline && StillAtIt(sim, e))
                 BearWithIt(sim, e);
             else if (now >= e.Deadline)
@@ -1251,6 +1253,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// <summary>Handed over: the work's clock starts now, whatever was left of their wait for someone to take it on.</summary>
     private static void GiveTime(Simulation sim, Order e) =>
         e.Deadline = Math.Max(e.Deadline, sim.Clock.Tick + SimClock.HoursToTicks(HandedOverHours));
+
+    /// <summary>In the practice yard an order never runs out: its deadline moves on this far each time it comes.</summary>
+    public const float PracticePatienceHours = 4f;
 
     /// <summary>Game hours an asker gives once they've handed their piece over: the work's clock starts then.</summary>
     public const float HandedOverHours = 4f;

@@ -183,8 +183,14 @@ public sealed partial class VillageGame
             var rank = seat.Wanted.IndexOf(trade);
             var never = seat.Never.Contains(trade);
             ImGui.Text(Capitalized(trade.Label));
-            Gui.ItemTip(trade.Description);
-            ImGui.SameLine(160, -1);
+            Gui.ItemTip(PacedDescription(trade));
+            if (trade.Pace is { } pace)
+            {
+                ImGui.SameLine(0, Gui.S(6));
+                TextC(Theme.Dim, TradePaces.Label(pace).ToLowerInvariant());
+                Gui.ItemTip(TradePaces.About(pace));
+            }
+            ImGui.SameLine(Gui.S(220), -1);
             if (ImGui.SmallButton(rank >= 0 ? $"Choice {rank + 1}" : "Want"))
             {
                 var wanted = seat.Wanted.ToList();
@@ -225,14 +231,18 @@ public sealed partial class VillageGame
         {
             if (trade.Unlimited)
                 continue;
-            if (ImGui.Button(Capitalized(trade.Label), in _autoSize))
+            if (ImGui.Button(Capitalized(trade.Label) + (trade.Pace is { } pace ? $" ({TradePaces.Label(pace).ToLowerInvariant()})" : ""), in _autoSize))
                 Take(session, [trade]);
-            Gui.ItemTip(trade.Description);
+            Gui.ItemTip(PacedDescription(trade));
         }
         if (ImGui.Button("Anything going"u8, in _autoSize))
             Take(session, []);
         Narsil.Ui.Panel.End();
     }
+
+    /// <summary>A trade's description with what its pace means first, for a tooltip.</summary>
+    private static string PacedDescription(TradeDef trade) =>
+        trade.Pace is { } pace ? $"{TradePaces.Label(pace)}: {TradePaces.About(pace)}\n\n{trade.Description}" : trade.Description;
 
     private void Take(CoopSession session, IReadOnlyList<TradeDef> wanted)
     {

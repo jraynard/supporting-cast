@@ -336,6 +336,12 @@ public sealed class SettingsWindow(GameHost host)
             _draft.GuideHighlights = guide;
 
         ImGui.Dummy(in gap);
+        Row("Hold time for the tutorial", "Playing alone, the clock stops while the tutorial's card is open: read it, press Got it, and the town carries on.");
+        var tutorialHold = _draft.TutorialHold;
+        if (ImGui.Checkbox("##tutorialhold"u8, ref tutorialHold))
+            _draft.TutorialHold = tutorialHold;
+
+        ImGui.Dummy(in gap);
         Row("HD-2D look", "Tilt-shift blur, glowing fire, a vignette and warmer colours. F10 toggles it in game.");
         var hd2d = _draft.Hd2d;
         if (ImGui.Checkbox("##hd2d"u8, ref hd2d))

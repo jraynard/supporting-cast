@@ -21,7 +21,13 @@ public sealed partial class VillageGame
     /// Time is held for the players: alone, by the pause key or the menu; in co-op, by everyone's
     /// agreement. Not the god-mode speed buttons' pause (<see cref="_speed"/> 0), which gives orders.
     /// </summary>
-    private bool PauseHeld => _coop == null ? _soloHold || MenuHold : _sim.PauseVote.Held;
+    private bool PauseHeld => _coop == null ? _soloHold || MenuHold || TutorialHold : _sim.PauseVote.Held;
+
+    /// <summary>
+    /// Single player: the tutorial's card is open, so time holds while it's read ("Got it" lets it run).
+    /// Never at hands-on work, which has the pad to itself and needs the clock.
+    /// </summary>
+    private bool TutorialHold => _coop == null && Settings.Current.TutorialHold && TutorialCardOpen && !Working;
 
     /// <summary>The pause key: holds or releases alone, and asks, agrees or says ready in co-op.</summary>
     private void HandlePauseKey()

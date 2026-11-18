@@ -89,7 +89,9 @@ public sealed partial class VillageGame
             _showBuild = !_showBuild;
         if (map.Pressed(Act.ControlsCard) && !_showBuild)
             _showControls = !_showControls;
-        if (map.Pressed(Act.Menu))
+        // Start opens the menu and closes it again: the menu's pad navigation captures the pad, so its
+        // second press is read raw (as B is in UpdatePadUi).
+        if (map.Pressed(Act.Menu) || map.PadPressedRaw(Act.Menu))
             _gameMenu = !_gameMenu;
         if (map.Pressed(Act.TownMap))
             ToggleTownMap();

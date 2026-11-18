@@ -2572,3 +2572,23 @@ Trees felled, bucked and split by hand; the town's fires burn firewood, not timb
   (`DrawToolSwing`, new `ui/work/axe` and `ui/work/log_side` in `tools/work_ui_art.py`).
 - **Lifting a wagon** (`LiftSession`): A/D leaned it the wrong way (toward the tip, not against it);
   the bots, the tests and the hint all meant against it. Fixed in the session.
+
+### From a Deck playtest: menus, the pad's words, the tutorial (2026-11-18)
+- **Title**: Characters' Back returns to More (`ChooseCharacter` had cleared the submenu). The creator
+  has a name-only Random, the folk tooltip is the hovered folk's (it was checked after the loop: the
+  last button, the chosen folk's words), and "Start from" is "Starting look", clothes and features only.
+- **The pad**: Start closes the game menu too (`ActionMap.PadPressedRaw`: the menu's pad navigation
+  captured the pad, so the second press never reached the action). Narsil names View and Menu "Select"
+  and "Start". A pair of one stick's directions is named by its axis ("L↑↓", "L←→"), so the lock pick's
+  tension and pin aren't both "LS". In prose, actions with no pad button are "on the wheel, RB"
+  (`Controls.Said`), and `~Pointer~`, `~Click~`, `~rightclick~` give the pad's right stick, RT and LT.
+- **Tutorial**: alone, time holds while the card is open (`TutorialHold`, a setting, on by default);
+  Got it, or B, lets it run. Not during hands-on work. The Shop button is "on the bar at the bottom".
+- **The practice yard's customers** wait however long a learner takes (`Practice.StillWanted`; orders
+  in practice never lapse), and a lesson set up again sends the earlier ones away with what they'd
+  handed over (`Practice.SendAway`): a tester kept a strongbox that was never theirs.
+- **Minimap**: a pin or rim arrow says what it is on hover; home's arrow carries a little house.
+- **Trade pace** (`TradeDef.Pace`: easygoing, steady, busy) beside the name wherever a trade is chosen.
+- **The coin stance's coin** has its own sheet (`person_<body>_coin`, front views only), drawn over
+  everything: a halfling's braided beard hid it, and from behind it showed on the back of the head.
+- Bench hashes unchanged for seeds 1234 and 99. Window moving and folding: ROADMAP, From testers.

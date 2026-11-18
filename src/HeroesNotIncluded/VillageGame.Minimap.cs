@@ -163,16 +163,29 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawPins(ImDrawListPtr dl, MapView view, float? rim, bool labels)
     {
+        // Hovered (the mouse, or the pad's pointer), a pin or a rim arrow says what it is: the nearest under the pointer.
+        var mouse = ImGui.GetIO().MousePos;
+        var (nearest, best) = ((string?)null, Gui.S(10) * Gui.S(10));
+        void Hover(float2 at, string text)
+        {
+            var d = at - mouse;
+            var d2 = d.X * d.X + d.Y * d.Y;
+            if (d2 <= best && text.Length > 0)
+                (nearest, best) = (text, d2);
+        }
         if (_renderer.HomeMark is { } home)
-            Pin(dl, view, home, rim, Theme.Barrel, house: true, null);
+            Hover(Pin(dl, view, home, rim, Theme.Barrel, house: true, null), "Your home");
         foreach (var m in _renderer.Markers)
             if (!m.Done)
-                Pin(dl, view, m.At, rim, Theme.Parchment, house: false, labels ? m.Text : null);
+                Hover(Pin(dl, view, m.At, rim, Theme.Parchment, house: false, labels ? m.Text : null), m.Text);
         foreach (var p in _renderer.Pointers)
-            Pin(dl, view, p.At, rim, Theme.Accent, house: false, labels ? p.Text : null);
+            Hover(Pin(dl, view, p.At, rim, Theme.Accent, house: false, labels ? p.Text : null), p.Text);
+        if (nearest != null)
+            Tip(nearest);
     }
 
-    private static void Pin(ImDrawListPtr dl, MapView view, float3 at, float? rim, float4 colour, bool house, string? label)
+    /// <summary>One pin, or its arrow on the <paramref name="rim"/>; returns where it was drawn, for hovering.</summary>
+    private static float2 Pin(ImDrawListPtr dl, MapView view, float3 at, float? rim, float4 colour, bool house, string? label)
     {
         var p = view.ToScreen(at.X, at.Y);
         var off = p - view.Centre;
@@ -188,20 +201,14 @@ public sealed partial class VillageGame
             var b = tip - dir * Gui.S(9) - side * Gui.S(5);
             dl.AddTriangleFilled(in tip, in a, in b, Theme.U8(colour));
             dl.AddTriangle(in tip, in a, in b, dark, Gui.S(1));
-            return;
+            var back = tip - dir * Gui.S(6);
+            // Home's arrow carries the little house just inside it, so it's never taken for an errand's.
+            if (house)
+                House(dl, back - dir * Gui.S(8), colour, 0.7f);
+            return back;
         }
         if (house)
-        {
-            // A little house: a square and its roof.
-            var s = Gui.S(4.5f);
-            var lo = p + new float2(-s, -s * 0.2f);
-            var hi = p + new float2(s, s * 1.4f);
-            dl.AddRectFilled(in lo, in hi, Theme.U8(colour), 0, ImDrawFlags.None);
-            var ridge = p + new float2(0, -s * 1.4f);
-            var l = p + new float2(-s * 1.4f, -s * 0.2f);
-            var r = p + new float2(s * 1.4f, -s * 0.2f);
-            dl.AddTriangleFilled(in ridge, in r, in l, Theme.U8(colour));
-        }
+            House(dl, p, colour, 1f);
         else
         {
             dl.AddCircleFilled(in p, Gui.S(4.5f), Theme.U8(colour), 12);
@@ -209,6 +216,20 @@ public sealed partial class VillageGame
         }
         if (label != null)
             MapText(dl, p + new float2(Gui.S(8), -ImGui.GetTextLineHeight() * 0.5f), label, colour, false);
+        return p;
+    }
+
+    /// <summary>A little house: a square and its roof, at <paramref name="p"/>.</summary>
+    private static void House(ImDrawListPtr dl, float2 p, float4 colour, float scale)
+    {
+        var s = Gui.S(4.5f) * scale;
+        var lo = p + new float2(-s, -s * 0.2f);
+        var hi = p + new float2(s, s * 1.4f);
+        dl.AddRectFilled(in lo, in hi, Theme.U8(colour), 0, ImDrawFlags.None);
+        var ridge = p + new float2(0, -s * 1.4f);
+        var l = p + new float2(-s * 1.4f, -s * 0.2f);
+        var r = p + new float2(s * 1.4f, -s * 0.2f);
+        dl.AddTriangleFilled(in ridge, in r, in l, Theme.U8(colour));
     }
 
     /// <summary>You: an arrowhead the way you face.</summary>

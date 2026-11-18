@@ -24,6 +24,12 @@ public sealed class TradeDef : Def
     /// <summary>Any number may hold it, so there's always something left to deal.</summary>
     public bool Unlimited { get; set; }
 
+    /// <summary>
+    /// How busy the trade keeps its holder, shown where a trade is chosen: some players want a trade
+    /// they can take at their own pace, and should be able to find it. Presentation only.
+    /// </summary>
+    public TradePace? Pace { get; set; }
+
     /// <summary>Changes from the default work priorities (1 highest, 4 lowest, 0 disabled).</summary>
     public Dictionary<WorkType, int> WorkPriorities { get; set; } = [];
 
@@ -269,4 +275,35 @@ public sealed class TradeWant
     public float Hours { get; set; } = 8;
 
     [JsonIgnore] public ThingDef ThingDef { get; set; } = null!;
+}
+
+/// <summary>How much a trade asks of its holder through a day (<see cref="TradeDef.Pace"/>).</summary>
+public enum TradePace : byte
+{
+    /// <summary>Work comes now and then; time between to potter, wander and talk.</summary>
+    Easygoing,
+
+    /// <summary>A steady day's work, with lulls.</summary>
+    Steady,
+
+    /// <summary>Customers all day, several things on the go at once.</summary>
+    Busy,
+}
+
+/// <summary>Words for a <see cref="TradePace"/>, for the menus.</summary>
+public static class TradePaces
+{
+    public static string Label(TradePace pace) => pace switch
+    {
+        TradePace.Easygoing => "Easygoing",
+        TradePace.Steady => "Steady",
+        _ => "Busy",
+    };
+
+    public static string About(TradePace pace) => pace switch
+    {
+        TradePace.Easygoing => "Work comes now and then, with time between to potter about.",
+        TradePace.Steady => "A steady day's work, with lulls.",
+        _ => "Customers all day and several things on the go at once.",
+    };
 }

@@ -250,11 +250,18 @@ public sealed class TitleGame : Game
         Game Start(string? trade) => new VillageGame(DefaultSeed) { Adventure = true, Character = c, HeroTrade = trade, MapName = map };
         return _defs.AllTrades
             .Where(t => !t.Unlimited)
-            .Select(t => new MenuItem(char.ToUpperInvariant(t.Label[0]) + t.Label[1..], t.Description, () => Start(t.Name)))
+            .Select(t => new MenuItem(TradeTitle(t), PaceNote(t) + t.Description, () => Start(t.Name)))
             .Append(new MenuItem("Any", "Let the deal pick a trade for you.", () => Start(null)))
             .Append(new MenuItem("Back", "Back to who you'll be.", null, MenuAction.BackToCreator))
             .ToArray();
     }
+
+    /// <summary>A trade's name in a menu, with its pace when it has one: "Tinker (easygoing)".</summary>
+    private static string TradeTitle(Sim.Defs.TradeDef t) =>
+        char.ToUpperInvariant(t.Label[0]) + t.Label[1..] + (t.Pace is { } pace ? $" ({Sim.Defs.TradePaces.Label(pace).ToLowerInvariant()})" : "");
+
+    /// <summary>What a trade's pace means, ahead of its description.</summary>
+    private static string PaceNote(Sim.Defs.TradeDef t) => t.Pace is { } pace ? Sim.Defs.TradePaces.About(pace) + " " : "";
 
     /// <summary>
     /// The tutorial's trades: those with a workplace and games of their own, each with how far this
@@ -275,7 +282,7 @@ public sealed class TitleGame : Game
         }
         return _defs.AllTrades
             .Where(t => t.HasWorkplace)
-            .Select(t => new MenuItem(char.ToUpperInvariant(t.Label[0]) + t.Label[1..], Progress(t) + t.Description, () => Start(t.Name)))
+            .Select(t => new MenuItem(TradeTitle(t), Progress(t) + PaceNote(t) + t.Description, () => Start(t.Name)))
             .Append(new MenuItem("Back", "Back to the main menu.", null, MenuAction.Back))
             .ToArray();
     }
@@ -585,6 +592,9 @@ public sealed class TitleGame : Game
                     _picking = false;
                     // Changing who you'll join as, and thinking better of it: back to the Join panel as you were.
                     _joining = _purpose == Purpose.Join && _coopMenu?.Playing != null;
+                    // The Characters screen is under More: back to it, not the main menu.
+                    if (_purpose == Purpose.Manage)
+                        OpenMore();
                     break;
             }
         }

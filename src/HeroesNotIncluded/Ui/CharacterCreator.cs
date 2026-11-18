@@ -82,6 +82,11 @@ public sealed class CharacterCreator
         ImGui.SetNextItemWidth(220);
         ImGui.InputText("Name"u8, _name, ImGuiInputTextFlags.None, null, IntPtr.Zero);
         OnScreenKeyboard.AfterTextField();
+        ImGui.SameLine(0, 6);
+        if (ImGui.Button("Random##name"u8))
+            RandomName();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+            ImGuiText.Tooltip("Another name; the look stays as it is.");
         DrawPresets();
         ImGui.Spacing();
         DrawTabs();
@@ -122,7 +127,9 @@ public sealed class CharacterCreator
     {
         if (_presets.Count == 0)
             return;
-        ImGui.TextColored(Theme.Dim, "Start from"u8);
+        ImGui.TextColored(Theme.Dim, "Starting look"u8);
+        ImGui.SameLine();
+        ImGui.TextColored(Theme.Dim, "(clothes and features only: your trade comes later)"u8);
         var size = (float2?)new float2(Gui.S(0), Gui.S(26));
         for (var i = 0; i < _presets.Count; i++)
         {
@@ -166,6 +173,8 @@ public sealed class CharacterCreator
             if (i > 0)
                 ImGui.SameLine(0, 12);
             ImGui.RadioButton($"{HumanLook.Folks[i].Label}##folk", ref folk, (int)HumanLook.Folks[i].Folk);
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                ImGuiText.Tooltip(HumanLook.Folks[i].About);
         }
         if ((Folk)folk != _look.Folk)
         {
@@ -182,8 +191,6 @@ public sealed class CharacterCreator
             else if (kind.BeardedMen >= 10 && _look.Body == BodyType.Male && _look.Beard == BeardStyle.None)
                 _look.Beard = BeardStyle.Full;
         }
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-            ImGuiText.Tooltip(HumanLook.FolkOf(_look.Folk).About);
 
         ImGui.TextColored(Theme.Dim, "Body"u8);
         var body = (int)_look.Body;
@@ -358,7 +365,17 @@ public sealed class CharacterCreator
             var dyes = Dyes(def);
             _clothes[slot] = (def, dyes.Count > 0 ? dyes[Random.Shared.Next(dyes.Count)] : null);
         }
-        _name.SetValue(Names[(uint)(Environment.TickCount + _rolls) % Names.Length].AsSpan());
+        RandomName();
+    }
+
+    /// <summary>A name from the list, never the one already in the field.</summary>
+    private void RandomName()
+    {
+        var now = Name;
+        var pick = Names[Random.Shared.Next(Names.Length)];
+        while (pick == now)
+            pick = Names[Random.Shared.Next(Names.Length)];
+        _name.SetValue(pick.AsSpan());
     }
 
     /// <summary>The character at 5× native size in a framed box, turnable, idling or walking.</summary>

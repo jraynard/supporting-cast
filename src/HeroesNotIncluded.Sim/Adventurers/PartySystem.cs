@@ -298,6 +298,9 @@ public sealed class PartySystem(ulong seed) : ISimSystem, Saving.ISaveState
             // Taken a quest and waiting on their gear to set out: the quest sends them (Expeditions).
             if (a.Quest != 0)
                 continue;
+            // The practice yard's customers wait as long as a learner takes: they came for the lesson.
+            if (sim.Round.Practice && Scenarios.Practice.StillWanted(sim, e))
+                continue;
             // Nobody leaves town with their sword still at the smith's, if they can help it.
             if (sim.Shops.GearOut(sim, e) && now < a.LeaveTick + SimClock.HoursToTicks(Shops.ShopSystem.HandedOverHours))
                 continue;

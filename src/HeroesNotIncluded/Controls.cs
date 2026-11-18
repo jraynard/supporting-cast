@@ -125,24 +125,34 @@ public static class Controls
     public static string Glyph(string id) => Map.Glyph(id);
 
     /// <summary>
-    /// Two actions as one cap pair for a hint ("A/D", "L←/L→"), or the stick alone ("LS") when
-    /// both are on one stick.
+    /// Two actions as one cap pair for a hint ("A/D"), or one stick and its axis ("L←→", "L↑↓") when
+    /// both are on one stick: a game that uses both of a stick's axes names each, never "LS" twice.
     /// </summary>
     public static string Pair(string a, string b)
     {
         var (x, y) = (Glyph(a), Glyph(b));
-        if (x.Length == 2 && y.Length == 2 && x[0] == y[0] && x[0] is 'L' or 'R' && "←→↑↓".Contains(x[1]) && "←→↑↓".Contains(y[1]))
-            return x[0] + "S";
+        if (Stick(x, y) is { } stick)
+            return $"{stick}{x[1]}{y[1]}";
         return x.Length == 0 ? y : y.Length == 0 ? x : $"{x}/{y}";
     }
 
-    /// <summary>The walk: four caps, or the stick.</summary>
+    /// <summary>The stick both caps are on ('L' or 'R'), if they're two directions of one.</summary>
+    private static char? Stick(string x, string y) =>
+        x.Length == 2 && y.Length == 2 && x[0] == y[0] && x[0] is 'L' or 'R' && "←→↑↓".Contains(x[1]) && "←→↑↓".Contains(y[1]) ? x[0] : null;
+
+    /// <summary>The walk: four caps, or the stick ("LS") when it's all on one.</summary>
     public static string Walk()
     {
-        var all = Pair(Act.WalkUp, Act.WalkDown);
-        var side = Pair(Act.WalkLeft, Act.WalkRight);
-        return all == side && all.EndsWith('S') ? all : $"{Glyph(Act.WalkUp)}/{Glyph(Act.WalkLeft)}/{Glyph(Act.WalkDown)}/{Glyph(Act.WalkRight)}";
+        var (up, down, left, right) = (Glyph(Act.WalkUp), Glyph(Act.WalkDown), Glyph(Act.WalkLeft), Glyph(Act.WalkRight));
+        return Stick(up, down) is { } stick && Stick(left, right) == stick ? stick + "S" : $"{up}/{left}/{down}/{right}";
     }
+
+    /// <summary>
+    /// An action as prose names it, in brackets after what it does ("your shop (~J~)"): its cap, or
+    /// on a pad with no button for it, the wheel it's on (Shop, Quests, the Gift, putting down, sleeping).
+    /// </summary>
+    public static string Said(string id) =>
+        UsingPad && Map.Bindings(id).All(b => !b.IsPad) ? $"on the wheel, {Glyph(Act.Wheel)}" : Glyph(id);
 
     /// <summary>The key cap for "the mini-game's letter" in its data cues: F, A or D as the player has them bound.</summary>
     public static string Cue(char letter) => letter switch
@@ -175,12 +185,20 @@ public static class Controls
             .Replace("~Space~", Glyph(Act.WorkAct))
             .Replace("~Esc~", Glyph(Act.Back))
             .Replace("~Tab~", Glyph(Act.Inventory))
-            .Replace("~N~", UsingPad && Map.Bindings(Act.Sleep).All(b => !b.IsPad) ? "the wheel" : Glyph(Act.Sleep))
-            .Replace("~G~", UsingPad && Map.Bindings(Act.Drop).All(b => !b.IsPad) ? "the wheel" : Glyph(Act.Drop))
+            .Replace("~N~", Said(Act.Sleep))
+            .Replace("~G~", Said(Act.Drop))
             .Replace("~C~", Glyph(Act.Dig))
-            .Replace("~J~", Glyph(Act.Shop))
-            .Replace("~Y~", Glyph(Act.Gift))
-            .Replace("~K~", Glyph(Act.Quests))
+            .Replace("~J~", Said(Act.Shop))
+            .Replace("~Y~", Said(Act.Gift))
+            .Replace("~K~", Said(Act.Quests))
+            .Replace("~T~", Said(Act.Heard))
+            .Replace("~L~", Said(Act.Log))
+            // The pointer, as a pad has it (Narsil's PadCursor): the right stick moves it, RT clicks,
+            // a tap of LT right-clicks; in a list the pad's picked, Y opens what's picked.
+            .Replace("~Pointer~", UsingPad ? "The right stick" : "The mouse")
+            .Replace("~Click~", UsingPad ? "Use RT (aiming with the right stick) on" : "Click")
+            .Replace("~click~", UsingPad ? "use RT (aiming with the right stick) on" : "click")
+            .Replace("~rightclick~", UsingPad ? "use LT (or Y) on" : "right-click")
             .Replace("~H~", Glyph(Act.ControlsCard))
             .Replace("~1-4~", UsingPad ? "the wheel" : $"{Glyph(Act.Hotbar1)}–{Glyph(Act.Hotbar4)}");
     }

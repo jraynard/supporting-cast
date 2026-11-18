@@ -63,6 +63,13 @@ Visual issues and requests from playtests, so they don't get lost between HISTOR
 - [ ] **The bot smith stalls on the smithy's heat** (`BotPlayer.Forge.TooHotToForge`): on a warm afternoon it
   waits hours "letting the smithy cool" with a customer's blade in hand (and on `main` too, by luck less often).
   `PartyLoopScenarioTests` seed 99 and the Reedmere `SeasonScenario` (Dread ends it before the dragon) tip on it.
+- [ ] **HUD layout: move, fold, choose** (Deck playtest, Nov 2026): testers want windows they can drag about and
+  fold away like an OS's (the character block top left most of all), and to choose what it always shows (rest
+  and food at a glance, not only when low; a setting, not more on screen). Every HUD panel is placed by Narsil's
+  `Hud` each frame (`Hud.Flags`: `NoMove`, `NoSavedSettings`), so: an opt-in per panel that skips placing it once
+  it's been dragged, its position and folded state kept in `Settings`, a fold button like the tutorial card's
+  (`_tutorialFolded`), `_hud.Took()` reserving no room for a panel that's moved, and "Reset layout" in Settings.
+  The character block's lines are in `VillageGame.Needs` (`DrawNeedsPanel`: `all = !SimpleHud || hovered`).
 
 ### 3. The tuning playtest
 Rounds with friends over the internet, to prove the round and tune its numbers, then a pass on

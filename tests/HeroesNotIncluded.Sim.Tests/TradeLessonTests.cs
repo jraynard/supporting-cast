@@ -154,6 +154,36 @@ public class TradeLessonTests
     }
 
     [Fact]
+    public void ASlowLearnersCustomerWaitsAndSettingUpAgainTakesTheOldBoxBack()
+    {
+        // A tester took too long over the box: the customer left, and the box stayed theirs after "Set it up again".
+        var y = Begin("Tinker", "box");
+        y.WaitPast("wait");
+        var order = y.Order(ServiceKind.Unlock);
+        y.Sim.ApplyNow(new TakeOrderCommand(y.Me, order.Id));
+        y.SeeTo(order, "handover");
+        var box = Lessons.EntrustedBy(y.Sim, y.Me, order.Poster);
+        Assert.False(box.IsNull);
+
+        // Long past their stay and the order's time: in the yard they wait on.
+        y.W.Get<Adventurer>(order.Poster).LeaveTick = y.Sim.Clock.Tick - SimClock.HoursToTicks(48);
+        y.Sim.Shops.Find(order.Id)!.Deadline = y.Sim.Clock.Tick;
+        y.Sim.TickMany(SimClock.HoursToTicks(2));
+        Assert.False(y.W.Has<Combat.Leaving>(order.Poster));
+        Assert.True(y.Sim.Shops.Find(order.Id)!.IsOpen);
+        Assert.Equal(order.Poster, y.W.Get<Entrusted>(box).Owner);
+
+        // Set up again: the old customer goes, their box with them, and a new one comes with another.
+        var index = y.Sim.Defs.Trade("Tinker").Lessons.FindIndex(l => l.Id == "box");
+        y.Sim.ApplyNow(new PracticeCommand(y.Me, PracticeAction.Lesson, index));
+        Assert.False(y.W.IsAlive(box));
+        Assert.True(y.W.Has<Combat.Leaving>(order.Poster));
+        Assert.Contains(y.Sim.Creatures(), e => y.W.Has<Adventurer>(e) && !y.W.Has<Combat.Leaving>(e) && !Lockwork.LockedBoxOf(y.Sim, e).IsNull);
+        y.Sim.TickMany(SimClock.TicksPerHour / 4);
+        Assert.False(y.Sim.Shops.Find(order.Id)!.IsOpen);
+    }
+
+    [Fact]
     public void ACurioIsCollectedAndLookedOver()
     {
         var y = Begin("Tinker", "curio");

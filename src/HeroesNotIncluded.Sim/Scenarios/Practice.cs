@@ -99,7 +99,10 @@ public static class Practice
         }
     }
 
-    /// <summary>What a lesson needs to be there when it begins: the workplace stocked, materials in the pack, customers on their way.</summary>
+    /// <summary>
+    /// What a lesson needs to be there when it begins: the workplace stocked, materials in the pack,
+    /// customers on their way. Set up again, the earlier customers go first, with what they handed over.
+    /// </summary>
     public static void SetUp(Simulation sim, Entity player, LessonDef lesson)
     {
         if (lesson.Restock)
@@ -107,7 +110,10 @@ public static class Practice
         foreach (var item in lesson.Supply)
             Inventory.Stow(sim, player, sim.CreateItem(item.ThingDef, item.Count, Simulation.MaterialFor(item.ThingDef, null)));
         if (lesson.Customers is { } wear)
+        {
+            SendAway(sim);
             SendCustomers(sim, player, wear);
+        }
         if (lesson.PatientCase is { } kind)
             BringPatient(sim, player, kind);
         else if (lesson.Patient is { } wound && PatientWounds.Contains(wound))
@@ -208,6 +214,42 @@ public static class Practice
         }
         sim.Messages.Add(MessageKind.Info, party.Count == 1 ? "An adventurer rides into town." : "Adventurers ride into town.", party.Count > 0 ? w.Get<Position>(party[0]).Cell : null);
         return party;
+    }
+
+    /// <summary>
+    /// A practice customer still has business in town: an order open, a piece handed over, a box
+    /// still locked. They stay for it (<see cref="Adventurers.PartySystem"/>): a learner may take all day.
+    /// </summary>
+    public static bool StillWanted(Simulation sim, Entity who) =>
+        sim.Shops.GearOut(sim, who) || !Tinkering.Lockwork.LockedBoxOf(sim, who).IsNull
+        || sim.Shops.All.Any(o => o.IsOpen && o.Poster == who);
+
+    /// <summary>
+    /// The yard cleared for customers sent again: everyone here leaves, and what they handed over
+    /// goes with them, wherever it's got to (the player's pack too), so a lesson set up again
+    /// doesn't leave the learner a strongbox that was never theirs.
+    /// </summary>
+    public static void SendAway(Simulation sim)
+    {
+        var w = sim.World;
+        var going = w.Query<Adventurer>().Where(e => !w.Has<Combat.Leaving>(e) && !w.Get<Creature>(e).Dead && w.Get<Adventurer>(e).Quest == 0)
+            .OrderBy(e => e.Index).ToList();
+        if (going.Count == 0)
+            return;
+        foreach (var item in w.Query<Entrusted>().OrderBy(e => e.Index).ToList())
+        {
+            if (!going.Contains(w.Get<Entrusted>(item).Owner))
+                continue;
+            foreach (var hands in w.Query<Carrying>())
+                if (w.Get<Carrying>(hands).Item == item)
+                    w.Get<Carrying>(hands).Item = Entity.Null;
+            sim.DestroyThing(item);
+        }
+        foreach (var e in going)
+        {
+            w.Add(e, new Combat.Leaving());
+            AiSystem.EndJob(sim, e, w.Get<Mind>(e), false);
+        }
     }
 
     /// <summary>How worn a practice customer's blade is: this much of its HP left, chipped; or this dull, only dull.</summary>

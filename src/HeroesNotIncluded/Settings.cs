@@ -30,6 +30,9 @@ public sealed class Settings
     /// <summary>A glow round the button for what needs doing now (a patient waiting: the gift, lay on hands).</summary>
     public bool GuideHighlights { get; set; } = true;
 
+    /// <summary>Alone, time holds while the tutorial's card is open to read: a tester watched the clock run while reading.</summary>
+    public bool TutorialHold { get; set; } = true;
+
     /// <summary>
     /// The round's HUD shows only what needs you: needs when they're low, the weather when it's cold,
     /// no compass beside the minimap, the shop panel shut till an order comes. Off, everything shows
