@@ -752,8 +752,8 @@ public sealed partial class VillageGame
     }
 
     /// <summary>
-    /// The work in hand's window, centred just above the hotbar: a title plate, the keys as caps,
-    /// then the game. Every mini-game opens it this way; pair with <see cref="EndWork"/>.
+    /// The work in hand's window, front and centre over everything else: a title plate, the keys as
+    /// caps, then the game. Every mini-game opens it this way; pair with <see cref="EndWork"/>.
     /// </summary>
     private void BeginWork(string title, params (string Keys, string Does)[] hints) => BeginWork(title, true, hints);
 
@@ -763,19 +763,23 @@ public sealed partial class VillageGame
     /// </summary>
     private void BeginWork(string title, bool mouse, params (string Keys, string Does)[] hints)
     {
-        // A session just begun comes to the front, over the window it was started from.
-        var session = _sim.World.TryGet<WorkSession>(_avatar, out var started) ? started.StartTick : -1;
-        if (session != _workFocusedFor)
-        {
-            _workFocusedFor = session;
-            ImGui.SetNextWindowFocus();
-        }
-        _workRoom = _hud.Room(Anchor.Bottom);
-        _hud.Next(Anchor.Bottom);
+        // Front and centre, over everything else, every frame while it's in hand: the work comes first.
+        // It isn't one of the HUD's columns; it's laid over them, in the middle of the screen below the
+        // top bar, and drawn smaller if what it holds wouldn't fit there (a Steam Deck's 1280x800).
+        var (lo, hi) = _hud.Area;
+        var centre = (lo + hi) * 0.5f;
+        float2? pivot = new float2(0.5f, 0.5f);
+        ImGui.SetNextWindowPos(in centre, ImGuiCond.Always, in pivot);
+        var most = hi - lo;
+        var none = float2.Zero;
+        ImGui.SetNextWindowSizeConstraints(in none, in most, (ImGuiSizeCallback?)null, default);
+        ImGui.SetNextWindowFocus();
+        _workRoom = most.Y;
+        var pad = ImGui.GetStyle().WindowPadding.X * 2;
+        var wide = Math.Clamp((most.X - pad) / Gui.S(WorkHintsWidth), WorkFitLeast, 1f);
         Panel.Begin($"{title}###work", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
-        _hud.Took();
-        // Too tall for the screen last frame (a Steam Deck's 800 lines): drawn smaller till it fits.
-        Gui.PushScale(_workFit);
+        // Too tall for the screen last frame: drawn smaller till it fits.
+        Gui.PushScale(Math.Min(_workFit, wide));
         WorkWindowDrawn(mouse);
         var pointer = mouse && UsingPointer;
         Gui.Hints(Gui.S(WorkHintsWidth), [.. hints.Select(h => (pointer ? MouseKeys(h.Keys) : WorkKeys(h.Keys), h.Does))]);
@@ -793,9 +797,6 @@ public sealed partial class VillageGame
 
     /// <summary>The height the work window may take, this frame.</summary>
     private float _workRoom = float.MaxValue;
-
-    /// <summary>The session the work window was last brought to the front for.</summary>
-    private long _workFocusedFor = -1;
 
     /// <summary>
     /// The work window's end: if what it held ran taller than the room it had, it's drawn that much

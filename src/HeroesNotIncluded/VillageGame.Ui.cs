@@ -69,19 +69,14 @@ public sealed partial class VillageGame
         DrawMinimap();
         // Bottom centre, stacking upward: the build tools, the hotbar, the panel buttons, and the work in hand.
         DrawToolbar();
-        // At work, the hotbar and the panel buttons step aside: the work window has the room (a Deck's 800 lines).
-        if (!Working)
-        {
-            DrawHotbar();
-            DrawJournalBar();
-        }
+        DrawHotbar();
+        DrawJournalBar();
         if (HasAvatar && _sim.World.Has<ButtsTurn>(_avatar))
             DrawButtsHint();
         else
             DrawFightHint();
         DrawCameraModeHint();
         DrawBucketSwing();
-        DrawWork();
         if (WorkScenesDemo)
             DrawWorkSceneGallery();
         // Free windows.
@@ -95,6 +90,7 @@ public sealed partial class VillageGame
         DrawRecipeBook();
         DrawInventoryWindow();
         DrawCarried(); // after every window a carried item could be put in
+        DrawWork(); // after the free windows: the work in hand is laid over all of them
         DrawHoverInfo();
         if (_showWorkTab && !OrdersLocked)
             DrawWorkTab();

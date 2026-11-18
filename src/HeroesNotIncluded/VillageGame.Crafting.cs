@@ -192,8 +192,7 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawStationWindow()
     {
-        // Set aside while the work it started is in hand (it comes back after): nothing over the work window.
-        if (_openStation.IsNull || Working)
+        if (_openStation.IsNull)
             return;
         var w = _sim.World;
         if (!HasAvatar || !Crafting.IsStation(_sim, _openStation)
