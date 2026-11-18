@@ -83,6 +83,15 @@ public readonly record struct KnownMess(int3 Cell, MessLook Look, float Amount, 
 
 public readonly record struct PerceivedPerson(string Name, string Condition, string? Holding);
 
+/// <summary>Something on a trading table, as it's shown: what anyone can see of it by looking.</summary>
+public readonly record struct TableItem(Entity Item, string Label, int Count);
+
+/// <summary>
+/// A trade the viewer is in, as they see it (<see cref="Shops.BarterSystem"/>): asking, being asked, or at the table.
+/// </summary>
+public sealed record PerceivedBarter(int Id, Entity Partner, string PartnerName, bool Open, bool IAsked,
+    IReadOnlyList<TableItem> Mine, int MySilver, bool IAgreed, IReadOnlyList<TableItem> Theirs, int TheirSilver, bool TheyAgreed);
+
 /// <summary>
 /// A line as one character caught it. <see cref="Speaker"/> is null when they couldn't tell who it was;
 /// <see cref="At"/> is where it was said from, which hearing it tells you (a voice has a direction).
@@ -232,6 +241,25 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
             if (CanSee(e))
                 yield return e;
     }
+
+    /// <summary>
+    /// The trade the viewer's in, if any. The other side's table is what they've put out to be
+    /// seen: labels anyone could read off the things, never their hidden state.
+    /// </summary>
+    public PerceivedBarter? Barter()
+    {
+        if (viewer.IsNull || sim.Barter.Of(viewer) is not { } deal)
+            return null;
+        var mine = deal.SideOf(viewer);
+        var theirs = deal.OtherSide(viewer);
+        var w = sim.World;
+        var name = w.TryGet<Creature>(theirs.Who, out var c) ? c.Name : "Someone";
+        return new PerceivedBarter(deal.Id, theirs.Who, name, deal.Open, deal.Asker.Who == viewer,
+            Table(mine), mine.Silver, mine.Agreed, Table(theirs), theirs.Silver, theirs.Agreed);
+    }
+
+    private TableItem[] Table(Shops.BarterSide side) =>
+        side.Items.Where(o => sim.World.IsAlive(o.Item)).Select(o => new TableItem(o.Item, sim.LabelOf(o.Item), o.Count)).ToArray();
 
     /// <summary>What the viewer can tell about someone in sight; null if they can't see them.</summary>
     public PerceivedPerson? Describe(Entity e)

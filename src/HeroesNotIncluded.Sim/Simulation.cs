@@ -68,6 +68,9 @@ public sealed partial class Simulation
     /// <summary>A co-op pause by agreement: everyone connected agrees to hold time, and is ready before it runs again.</summary>
     public Round.PauseVote PauseVote { get; } = new();
 
+    /// <summary>Players trading face to face: both sides agree, then it all changes hands at once.</summary>
+    public Shops.BarterSystem Barter { get; } = new();
+
     /// <summary>The season's last evening: the props, the revels and the ceremony (<see cref="Round.FestivalSystem"/>).</summary>
     public Round.FestivalSystem Festival { get; }
 
@@ -249,6 +252,7 @@ public sealed partial class Simulation
         var sim = new Simulation(defs, width, height, seed, depth);
         sim.AddSystem(sim.Round)
             .AddSystem(sim.PauseVote)
+            .AddSystem(sim.Barter)
             .AddSystem(sim.Festival)
             .AddSystem(sim.Speech)
             .AddSystem(sim.Temperature)

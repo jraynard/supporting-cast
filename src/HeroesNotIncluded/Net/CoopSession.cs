@@ -272,7 +272,7 @@ public sealed class CoopSession : ILockstepGame, IDisposable
         {
             Host.StepsPerSecond = stepsPerSecond;
             Host.Update(dt);
-            _advertiser?.Update(dt, () => LanBeacon.Encode(GameId, Host.Options.BuildTag, SessionName, Host.Players.Count, Host.Options.MaxPlayers, Port));
+            _advertiser?.Update(dt, () => LanBeacon.Encode(GameId, Host.Options.BuildTag, SessionName, Host.Players.Count, Host.Options.MaxPlayers, Port, _advertiser.Instance));
         }
         else
         {

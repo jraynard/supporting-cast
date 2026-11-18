@@ -141,7 +141,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     (a meal ordered at the inn, `Provisions.IsBoard`). Gear is sold only from a shop's wares shelf (`display` furniture; `Goods`):
     stored there by its seller (`Goods.CanSellAt`, a shelf's `displayFor` role) it's priced at once (`Goods.Shelved`), and only
     the seller takes it down; no job takes an item for sale (`IsAvailable`). Villagers buy supper there of an
-    evening. `Favours/`: pinned to the notice board in the square and known by reading it, for
+    evening. Players trade face to face (`Shops/Barter`, read through `PerceptionView.Barter`): F at another player hands over
+    what you hold, or with empty hands asks to trade; both fill a table, and it changes hands at once when both agree. `Favours/`: pinned to the notice board in the square and known by reading it, for
     silver; errands (bring so many of a thing) are done by bringing, and the labourer takes them.
   - `Carpentry/`: the Carpenter, at the woodshop. Planks sawn (`SawSession`), bows tillered
     (`BowSession`), a quiver's pattern arrow sighted, shaved, headed and fletched (`FletchSession`) with a hidden warp (`Fletched.Warped`, never shown), sold as goods to archers

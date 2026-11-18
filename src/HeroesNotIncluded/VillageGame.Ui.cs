@@ -57,6 +57,7 @@ public sealed partial class VillageGame
         DrawGhostWords();
         DrawCallToArms();
         DrawPause();
+        DrawBarterAsk();
         DrawFestivalCard();
         DrawToasts();
         DrawHandsAimHint();
@@ -80,6 +81,7 @@ public sealed partial class VillageGame
             DrawWorkSceneGallery();
         // Free windows.
         DrawStorageWindow();
+        DrawBarterWindow();
         DrawSignWindow();
         DrawTinkerWindow();
         DrawCurioTalk();

@@ -517,6 +517,14 @@ public sealed partial class VillageGame
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                 Tip("If it's what they asked for, they'll pay what they promised.");
         }
+        // Another player: trade, give and take at once (also F at them with empty hands).
+        if (w.Has<Avatar>(other) && BarterSystem.Problem(_sim, _avatar, other) == null && _sim.Barter.Of(_avatar) == null && _sim.Barter.Of(other) == null)
+        {
+            if (ImGui.Button("Trade"u8, in _autoSize))
+                Issue(new BarterCommand(_avatar, other));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip("Ask to trade: you each put things on the table, and they change hands once you both agree.");
+        }
         var purse = Coin.Count(_sim, _avatar);
         if (purse > 0)
             foreach (var amount in new[] { 1, 5 })

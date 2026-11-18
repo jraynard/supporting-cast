@@ -134,6 +134,12 @@ public enum AvatarActionKind
 
     /// <summary>Lend a hand to someone's work for two at this station (<see cref="Work.Pairs"/>): take up the sledge.</summary>
     LendAHand,
+
+    /// <summary>Hand what you hold to another player in reach (<see cref="Shops.GiveCommand"/>), at once.</summary>
+    HandOver,
+
+    /// <summary>Ask another player in reach to trade, or say yes to theirs (<see cref="Shops.BarterSystem"/>).</summary>
+    Barter,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -161,7 +167,8 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
         or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean
         or AvatarActionKind.Mend or AvatarActionKind.OrderMeal or AvatarActionKind.OrderProvisions or AvatarActionKind.OrderHealing or AvatarActionKind.FillBucket or AvatarActionKind.ThrowWater or AvatarActionKind.FestivalGame or AvatarActionKind.Dance
-        or AvatarActionKind.ShowPiece or AvatarActionKind.Sit or AvatarActionKind.CallBack or AvatarActionKind.TakeOrder;
+        or AvatarActionKind.ShowPiece or AvatarActionKind.Sit or AvatarActionKind.CallBack or AvatarActionKind.TakeOrder
+        or AvatarActionKind.HandOver or AvatarActionKind.Barter;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
     public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker
@@ -379,6 +386,21 @@ public sealed class AvatarSystem : ISimSystem
         if (tool == AvatarTool.Use && held.IsNull && InReach(here, cell) && Rescues.DownedAt(sim, cell, avatar) is { IsNull: false } hurt
             && Rescues.CanCarry(sim, avatar, hurt))
             return new(AvatarActionKind.Carry, $"Pick up {w.Get<Creature>(hurt).Name}", cell, hurt);
+        // Another player in front of you: hand them what you hold, or (hands empty) trade.
+        if (tool == AvatarTool.Use && PlayerAt(sim, cell, avatar) is { IsNull: false } other && Shops.Handing.InReach(sim, avatar, other))
+        {
+            var name = w.Get<Creature>(other).Name;
+            if (!held.IsNull && !w.Has<Entrusted>(held) && w.Has<Stack>(held))
+                return new AvatarAction(AvatarActionKind.HandOver, $"Hand {ItemLabel(sim, avatar, held)} to {name}", cell, other) { Item = held };
+            if (held.IsNull && Shops.BarterSystem.Problem(sim, avatar, other) == null)
+            {
+                var deal = sim.Barter.Of(avatar);
+                if (deal == null && sim.Barter.Of(other) == null)
+                    return new(AvatarActionKind.Barter, $"Trade with {name}", cell, other);
+                if (deal is { Open: false } asked && asked.Asked.Who == avatar && asked.Asker.Who == other)
+                    return new(AvatarActionKind.Barter, $"Trade with {name} (they asked)", cell, other);
+            }
+        }
         if (!InReach(here, cell))
         {
             // Out of arm's reach, the one thing you can still do is hand material to a blueprint close by.
@@ -773,6 +795,30 @@ public sealed class AvatarSystem : ISimSystem
             AiSystem.EndJob(sim, e, mind, true);
     }
 
+    /// <summary>Another player's character standing at a cell, up and about; null if there's none.</summary>
+    public static Entity PlayerAt(Simulation sim, int3 cell, Entity except)
+    {
+        var w = sim.World;
+        foreach (var e in w.Each<Avatar>())
+            if (e != except && w.TryGet<Position>(e, out var p) && p.Cell == cell && w.TryGet<Creature>(e, out var c) && !c.Dead && !c.Downed
+                && !w.Has<Carried>(e))
+                return e;
+        return Entity.Null;
+    }
+
+    /// <summary>Hand what you hold, the whole of it, to another player; they hear what it was.</summary>
+    private static void HandOver(Simulation sim, Entity avatar, Entity to, Entity item)
+    {
+        var w = sim.World;
+        if (!w.IsAlive(item) || w.Get<Carrying>(avatar).Item != item)
+            return;
+        var label = sim.LabelOf(item);
+        var count = w.Get<Stack>(item).Count;
+        new Shops.GiveCommand(avatar, to, item, count).Apply(sim);
+        if (w.Get<Carrying>(avatar).Item != item)
+            sim.Messages.Tell(to, MessageKind.Info, $"{w.Get<Creature>(avatar).Name} handed you {(count > 1 ? $"{count} {label}" : label)}.");
+    }
+
     /// <summary>
     /// Can the avatar eat this now: food its kind eats, in its hands or pack, in a container in
     /// reach, or lying in reach, and nobody else's?
@@ -868,6 +914,12 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.LendAHand:
                 Work.Pairs.Join(sim, avatar, action.Target);
+                break;
+            case AvatarActionKind.HandOver:
+                HandOver(sim, avatar, action.Target, action.Item);
+                break;
+            case AvatarActionKind.Barter:
+                sim.Barter.Ask(sim, avatar, action.Target);
                 break;
             case AvatarActionKind.Cook:
                 if (Work.Rations.IsPrepTable(sim, action.Target))

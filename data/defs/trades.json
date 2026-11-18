@@ -250,7 +250,7 @@
             { "id": "string", "text": "String it: hold ~F~ to bend the bow against the floor, and press ~Space~ to slip the loop into the nock once the gauge is in the green.",
               "more": "Too soon and the loop slips past: bend it again. Bend it into the red and the limbs strain." } ],
           "notes": [ "Put a bow down in the woodshop (~G~) and price it: an archer with a worse one will buy it." ] } ],
-      "kit": [ { "def": "Bow" }, { "def": "Saw" }, { "def": "Planks", "count": 4 }, { "def": "Feathers", "count": 4 } ] },
+      "kit": [ { "def": "Axe" }, { "def": "Saw" }, { "def": "Planks", "count": 4 }, { "def": "Feathers", "count": 4 } ] },
     { "name": "Tinker", "label": "tinker", "description": "Locks and clockwork: opens what adventurers drag home, fits locks and cuts keys, builds contraptions for the road, mends wagons and knows what a curio's worth.",
       "workplace": "TinkerShop", "workPriorities": { "Craft": 1 }, "skills": { "Crafting": 6, "Construction": 4 }, "mendsTown": true,
       "wants": [ { "thing": "Wood", "below": 4, "count": 8, "price": 5 } ],
