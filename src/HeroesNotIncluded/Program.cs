@@ -20,7 +20,7 @@ Log.CrashContext = () => BuildInfo.Describe(buildTag);
 
 // Mods for this run (docs/MODDING.md): --mods a,b, else the player's own list once the settings are read.
 // Headless runs (bench, sweeps, checks) see only the defaults and --mods, so their results don't depend on a player's setup.
-// --mods bard,-carpenter: the bard on, the carpenter (on by default) off.
+// --mods musician,-carpenter: the musician on, the carpenter (on by default) off.
 var modsGiven = args.Contains("--mods");
 if (modsGiven || headless)
     GameContent.Use(GameContent.FromArgument(ParseString(args, "--mods")));

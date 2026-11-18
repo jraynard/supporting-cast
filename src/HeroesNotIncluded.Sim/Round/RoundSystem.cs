@@ -409,7 +409,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         {
             Entity body;
             if (trade is { PlayerOnly: true })
-                body = Players.SpawnNewcomer(sim, seat.Name); // the bard comes to town; the villagers stay who they are
+                body = Players.SpawnNewcomer(sim, seat.Name); // the musician comes to town; the villagers stay who they are
             else if (free.Count > 0)
             {
                 body = free[0];

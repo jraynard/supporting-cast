@@ -91,7 +91,7 @@ Steam asks these of every Early Access game. Draft answers:
 > set of trades and the traitors are properly sneaky.
 
 **How is the full version planned to differ?**
-> More trades (the constable, the apothecary, the bard and others), more towns, deeper betrayals
+> More trades (the constable, the apothecary, the musician and others), more towns, deeper betrayals
 > and the evidence to catch them, and something of your character to carry between rounds.
 
 **What is the current state of the Early Access version?**

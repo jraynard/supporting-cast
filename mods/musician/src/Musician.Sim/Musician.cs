@@ -6,21 +6,21 @@ using HeroesNotIncluded.Sim.Saving;
 using HeroesNotIncluded.Sim.Systems;
 using HeroesNotIncluded.Sim.Work;
 
-namespace HeroesNotIncluded.Bard;
+namespace HeroesNotIncluded.Musician;
 
 /// <summary>
-/// The bard's sim half (docs/BARD-PLAN.md), built as a mod from nothing (docs/MODDING.md): a trade only
+/// The musician's sim half (docs/MUSICIAN-PLAN.md), built as a mod from nothing (docs/MODDING.md): a trade only
 /// players take (<see cref="TradeDef.PlayerOnly"/>), and an instrument played anywhere it's carried.
 /// </summary>
-public sealed class BardMod : ISimMod
+public sealed class MusicianMod : ISimMod
 {
     public void Register(SimRegistry registry)
     {
-        registry.Trade(new BardModule());
+        registry.Trade(new MusicianModule());
         // --drill pipe: a pipe in your hands and playing it, wherever you are.
         registry.Drill("pipe", (sim, me) =>
         {
-            var pipe = BardModule.InstrumentOf(sim, me);
+            var pipe = MusicianModule.InstrumentOf(sim, me);
             if (pipe.IsNull && sim.Defs.AllThings.FirstOrDefault(t => t.Name == "Pipe") is { } def)
                 Inventory.Stow(sim, me, pipe = sim.CreateItem(def, 1));
             if (!pipe.IsNull && !sim.World.Has<WorkSession>(me))
@@ -30,7 +30,7 @@ public sealed class BardMod : ISimMod
     }
 }
 
-/// <summary>An instrument (the bard mod's own kind of def, <c>instruments</c>): how it sounds and what its keys play.</summary>
+/// <summary>An instrument (the musician mod's own kind of def, <c>instruments</c>): how it sounds and what its keys play.</summary>
 public sealed class InstrumentDef : Def
 {
     /// <summary>Plucked, Bowed, Breath or Struck (only Breath, the pipe, so far).</summary>
@@ -45,7 +45,7 @@ public sealed class InstrumentDef : Def
     public const string Kind = "instruments";
 }
 
-/// <summary>A tune in the book (the bard mod's own kind of def, <c>songs</c>): original tunes only.</summary>
+/// <summary>A tune in the book (the musician mod's own kind of def, <c>songs</c>): original tunes only.</summary>
 public sealed class SongDef : Def
 {
     /// <summary>Jig, Reel, Air, March or Ballad: the dance it calls for (to come).</summary>
@@ -96,13 +96,13 @@ public sealed class PlaySession : WorkSession
     /// <summary>How many notes have been played in all (a count that only climbs, for sounds to follow).</summary>
     public int Played;
 
-    /// <summary>The tunes the bard knows, given when the session starts (it reads no defs while it plays).</summary>
+    /// <summary>The tunes the musician knows, given when the session starts (it reads no defs while it plays).</summary>
     public List<SongDef> Book = [];
 
     /// <summary>Notes of a tune's opening that strike it up (the lead-in), and the longest pause between them, in steps.</summary>
     public const int Opening = 5, MostPause = 90;
 
-    /// <summary>The tune the bard's hands are carrying (struck up by its opening), or null in free play.</summary>
+    /// <summary>The tune the musician's hands are carrying (struck up by its opening), or null in free play.</summary>
     public SongDef? Carrying;
 
     /// <summary>The carried tune's next note, how far it's moved from the book's (the opening began elsewhere), and when it's due (session steps).</summary>
@@ -274,10 +274,10 @@ public sealed class PlaySession : WorkSession
     };
 }
 
-/// <summary>The bard's hooks: F with an instrument carried plays it, where you stand.</summary>
-public sealed class BardModule : ITradeModule
+/// <summary>The musician's hooks: F with an instrument carried plays it, where you stand.</summary>
+public sealed class MusicianModule : ITradeModule
 {
-    public string? Trade => "Bard";
+    public string? Trade => "Musician";
 
     /// <summary>The first instrument the character carries (in hand, then the pack), Entity.Null if none.</summary>
     public static Entity InstrumentOf(Simulation sim, Entity who)

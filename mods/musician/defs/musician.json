@@ -1,26 +1,27 @@
-// The bard (docs/BARD-PLAN.md): a trade only a player takes, never an AI villager's.
+// The musician (docs/MUSICIAN-PLAN.md): a professional musician, the town's own (not an adventurer's
+// class), a trade only a player takes, never an AI villager's.
 {
   "trades": [
-    { "name": "Bard", "label": "bard", "pace": "Steady", "playerOnly": true,
+    { "name": "Musician", "label": "musician", "pace": "Steady", "playerOnly": true, "formerly": [ "Bard" ],
       "description": "Music for the town: plays the pipe for whoever will listen. Comes only if someone plays it.",
       "kit": [ { "def": "Pipe" } ] }
   ],
   "things": [
-    // A tin whistle in D. Its music is the bard mod's own kind of def, below.
+    // A tin whistle in D. Its music is the musician mod's own kind of def, below.
     { "name": "Pipe", "label": "tin pipe", "category": "Item", "mass": 0.2, "sprite": "items/pipe", "flammability": 0.1, "maxHp": 40 }
   ],
-  // The bard mod's own kind (DefDatabase.ModDefs): how an instrument sounds and what it plays.
+  // The musician mod's own kind (DefDatabase.ModDefs): how an instrument sounds and what it plays.
   "instruments": [
     { "name": "Pipe", "label": "tin pipe", "voice": "Breath",
       // One root sample per octave (sounds/sounds.json), each pitched up to the scale's notes.
-      "octaves": [ "bard.pipe.d5", "bard.pipe.d6" ],
+      "octaves": [ "musician.pipe.d5", "musician.pipe.d6" ],
       // The major scale from the root, in semitones: the eight note keys.
       "scale": [ 0, 2, 4, 5, 7, 9, 11, 12 ] }
   ],
-  // The tune book (the bard mod's own kind, DefDatabase.ModDefs): original tunes only. A note is
+  // The tune book (the musician mod's own kind, DefDatabase.ModDefs): original tunes only. A note is
   // [step, beats]: steps of the scale from the instrument's root, 0..14 across its two octaves (7 is
   // the octave key, 8 the second octave's second). Play a tune's first five notes, starting on any
-  // step, and the bard's hands carry the rest (PlaySession's lead-in): the openings must differ in shape.
+  // step, and the musician's hands carry the rest (PlaySession's lead-in): the openings must differ in shape.
   "songs": [
     { "name": "MillersWheel", "label": "The Miller's Wheel", "kind": "Jig", "mood": "Lively", "tempo": 116,
       "notes": [ [0,1], [2,1], [4,1], [4,1], [5,1], [4,2], [2,1], [3,1], [1,1], [2,2], [0,2],

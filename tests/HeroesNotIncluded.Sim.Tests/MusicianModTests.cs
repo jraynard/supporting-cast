@@ -1,4 +1,4 @@
-using HeroesNotIncluded.Bard;
+using HeroesNotIncluded.Musician;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Systems;
 using HeroesNotIncluded.Sim.Defs;
@@ -9,21 +9,21 @@ using HeroesNotIncluded.Sim.Work;
 
 namespace HeroesNotIncluded.Sim.Tests;
 
-/// <summary>The bard, a trade built as a mod from nothing (mods/bard): turned on here, as a player would.</summary>
+/// <summary>The musician, a trade built as a mod from nothing (mods/musician): turned on here, as a player would.</summary>
 [Collection(nameof(SimContentTests))]
-public class BardModTests
+public class MusicianModTests
 {
     private static readonly Guid Arin = new("00000000-0000-0000-0000-00000000000a");
     private static readonly Guid Bea = new("00000000-0000-0000-0000-00000000000b");
 
-    private static DefDatabase BardDefs() =>
-        DefDatabase.LoadDirectories([.. TestWorld.DefDirectories(), Path.Combine(TestWorld.FindDefsDirectory(), "..", "..", "mods", "bard", "defs")]);
+    private static DefDatabase MusicianDefs() =>
+        DefDatabase.LoadDirectories([.. TestWorld.DefDirectories(), Path.Combine(TestWorld.FindDefsDirectory(), "..", "..", "mods", "musician", "defs")]);
 
     private static T WithBard<T>(Func<T> test)
     {
         try
         {
-            SimContent.Use([.. TestContent.Standard, ("bard", typeof(BardMod).Assembly)]);
+            SimContent.Use([.. TestContent.Standard, ("musician", typeof(MusicianMod).Assembly)]);
             return test();
         }
         finally
@@ -48,28 +48,29 @@ public class BardModTests
         return sim;
     }
 
-    private static List<Entity> Bards(Simulation sim) =>
-        [.. sim.Creatures().Where(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Bard")];
+    private static List<Entity> Musicians(Simulation sim) =>
+        [.. sim.Creatures().Where(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Musician")];
 
     [Fact]
     public void NobodyIsTheBardUnlessTheyAskedToBe() => WithBard(() =>
     {
-        var defs = BardDefs();
-        Assert.True(defs.Trade("Bard").PlayerOnly);
+        var defs = MusicianDefs();
+        Assert.True(defs.Trade("Musician").PlayerOnly);
+        Assert.Same(defs.Trade("Musician"), defs.Trade("Bard")); // its name before: a professional musician, not an adventurer's class
         var sim = Round(defs, (Arin, null), (Bea, "Blacksmith"));
-        Assert.Empty(Bards(sim)); // not an AI villager, not a seat that took what was left
+        Assert.Empty(Musicians(sim)); // not an AI villager, not a seat that took what was left
         return 0;
     });
 
     [Fact]
     public void TheBardComesToTownWithAPipeAndTheVillagersStay() => WithBard(() =>
     {
-        var defs = BardDefs();
+        var defs = MusicianDefs();
         var without = Round(defs, (Bea, "Blacksmith"));
-        var with = Round(defs, (Arin, "Bard"), (Bea, "Blacksmith"));
-        var bard = Assert.Single(Bards(with));
-        Assert.Equal(Players.CharacterOf(with, Arin), bard);
-        Assert.False(BardModule.InstrumentOf(with, bard).IsNull, "the kit's pipe");
+        var with = Round(defs, (Arin, "Musician"), (Bea, "Blacksmith"));
+        var musician = Assert.Single(Musicians(with));
+        Assert.Equal(Players.CharacterOf(with, Arin), musician);
+        Assert.False(MusicianModule.InstrumentOf(with, musician).IsNull, "the kit's pipe");
         // A newcomer: every villager the round would have had is still there, doing their trade.
         Assert.Equal(without.Creatures().Count(e => with.World.Has<Trade>(e)) + 1, with.Creatures().Count(e => with.World.Has<Trade>(e)));
         return 0;
@@ -78,10 +79,10 @@ public class BardModTests
     [Fact]
     public void NotesArePlayedInOrderAndKeptThroughASave() => WithBard(() =>
     {
-        var defs = BardDefs();
-        var sim = Round(defs, (Arin, "Bard"));
+        var defs = MusicianDefs();
+        var sim = Round(defs, (Arin, "Musician"));
         var me = Players.CharacterOf(sim, Arin);
-        var pipe = BardModule.InstrumentOf(sim, me);
+        var pipe = MusicianModule.InstrumentOf(sim, me);
         WorkSystem.Start(sim, me, new PlaySession { Instrument = pipe, InstrumentName = "Pipe" });
         var session = (PlaySession)sim.World.Get<WorkSession>(me);
         session.Advance([
@@ -103,9 +104,9 @@ public class BardModTests
     [Fact]
     public void TheInstrumentIsTheModsOwnKindOfDef() => WithBard(() =>
     {
-        var pipe = BardDefs().ModDef<InstrumentDef>(InstrumentDef.Kind, "Pipe");
+        var pipe = MusicianDefs().ModDef<InstrumentDef>(InstrumentDef.Kind, "Pipe");
         Assert.NotNull(pipe);
-        Assert.Equal(["bard.pipe.d5", "bard.pipe.d6"], pipe.Octaves);
+        Assert.Equal(["musician.pipe.d5", "musician.pipe.d6"], pipe.Octaves);
         Assert.Equal(8, pipe.Scale.Count);
         return 0;
     });
@@ -121,7 +122,7 @@ public class BardModTests
     [Fact]
     public void ATunesOpeningFromAnyNoteStrikesItUpAndTheHandsCarryTheRest() => WithBard(() =>
     {
-        var defs = BardDefs();
+        var defs = MusicianDefs();
         var wheel = defs.ModDef<SongDef>(SongDef.Kind_, "MillersWheel")!;
         // Its opening (0 2 4 4 5) two steps up: 2 4 6 6 7.
         var s = Played(defs, (0, 2, false), (20, 4, false), (40, 6, false), (60, 6, false), (80, 7, false));
@@ -144,7 +145,7 @@ public class BardModTests
     [Fact]
     public void ANearMissOrALongPauseStrikesNothingUp() => WithBard(() =>
     {
-        var defs = BardDefs();
+        var defs = MusicianDefs();
         Assert.Null(Played(defs, (0, 0, false), (20, 2, false), (40, 4, false), (60, 4, false), (80, 6, false)).Carrying); // its fifth note wrong
         Assert.Null(Played(defs, (0, 0, false), (20, 2, false), (40, 4, false), (300, 4, false), (320, 5, false)).Carrying); // a long breath in it
         return 0;
@@ -153,7 +154,7 @@ public class BardModTests
     [Fact]
     public void ANoteOfYourOwnTakesTheTuneBack() => WithBard(() =>
     {
-        var defs = BardDefs();
+        var defs = MusicianDefs();
         var s = Played(defs, (0, 0, false), (20, 2, false), (40, 4, false), (60, 4, false), (80, 5, false));
         Assert.NotNull(s.Carrying);
         s.Advance([new WorkInput(100, WorkInputKind.Custom, PlaySession.Pack(3, false, true))], 101);
@@ -165,7 +166,7 @@ public class BardModTests
     [Fact]
     public void ThePredictorsCopyPlaysOnItsOwnNotes() => WithBard(() =>
     {
-        var defs = BardDefs();
+        var defs = MusicianDefs();
         var sim = Played(defs, (0, 1, false));
         var ahead = (PlaySession)sim.Clone();
         ahead.Advance([new WorkInput(5, WorkInputKind.Custom, PlaySession.Pack(3, false, true))], 6);

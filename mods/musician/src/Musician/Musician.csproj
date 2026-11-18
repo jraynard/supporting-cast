@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- The bard's game half (docs/MODDING.md): its mini-games' views and sounds. It references the
+  <!-- The musician's game half (docs/MODDING.md): its mini-games' views and sounds. It references the
        game; it builds into the mod's folder, where the game loads it from. -->
   <PropertyGroup>
-    <RootNamespace>HeroesNotIncluded.Bard</RootNamespace>
+    <RootNamespace>HeroesNotIncluded.Musician</RootNamespace>
     <OutDir>$(MSBuildThisFileDirectory)../../</OutDir>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GenerateDependencyFile>false</GenerateDependencyFile>
@@ -16,7 +16,7 @@
     <ProjectReference Include="..\..\..\..\external\narsil\src\Narsil\Narsil.csproj" Private="false" />
     <ProjectReference Include="..\..\..\..\external\narsil\src\Narsil.Sim\Narsil.Sim.csproj" Private="false" />
     <ProjectReference Include="..\..\..\..\external\narsil\src\Narsil.Audio\Narsil.Audio.csproj" Private="false" />
-    <ProjectReference Include="..\Bard.Sim\Bard.Sim.csproj" Private="false" />
+    <ProjectReference Include="..\Musician.Sim\Musician.Sim.csproj" Private="false" />
     <PackageReference Include="Ahwoo.BRUTAL.Numerics" Version="2026.10.1" ExcludeAssets="runtime" />
   </ItemGroup>
 

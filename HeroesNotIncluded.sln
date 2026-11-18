@@ -35,9 +35,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Carpenter", "mods\carpenter
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Narsil.Sim", "external\narsil\src\Narsil.Sim\Narsil.Sim.csproj", "{6799184E-3C58-4C5C-AB9D-52C70FD53808}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bard.Sim", "mods\bard\src\Bard.Sim\Bard.Sim.csproj", "{46427AFA-D4AC-4322-B7B8-D1D9F7419B63}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Musician.Sim", "mods\musician\src\Musician.Sim\Musician.Sim.csproj", "{46427AFA-D4AC-4322-B7B8-D1D9F7419B63}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bard", "mods\bard\src\Bard\Bard.csproj", "{733BFCC5-32D0-43E5-8B3A-E125789B3F52}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Musician", "mods\musician\src\Musician\Musician.csproj", "{733BFCC5-32D0-43E5-8B3A-E125789B3F52}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

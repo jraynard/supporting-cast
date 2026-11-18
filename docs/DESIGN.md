@@ -121,7 +121,7 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 | Forager, Miner | Risky trips beyond the walls | Harvest, Mining, Hunting, Fishing | Alone out there, in both directions |
 | Tinker | Pick the locks and disarm the traps on chests adventurers bring back; pin locks and cut keys; fit contraptions together for the road; mend wagons; appraise curios and buy them for a collector; set trip-bells across the roads before a raid | `Tinkering/`, doors, `Work/`, expeditions, loot | A spare key, a chest opened early, a trap left armed, a contraption that jams, a curio talked down, a trip-bell that never rings |
 | Carpenter | Felling and bucking trees, sawing planks, splitting firewood, fletching quivers for the parties' archers, bracing the bridge, putting up the festival; later mending furniture and building | Construction, `Carpentry/`, the woodshop | A warped shaft in a quiver that looks true |
-| Bard | Rhythm performance, morale, rumours. | Mood, Social | Spreading lies |
+| Musician | Rhythm performance, morale, rumours. | Mood, Social | Spreading lies |
 | Mayor | Treasury, laws, chairs town meetings | New | Corruption |
 | Animal Handler / Druid | taming wild animals, ancient forest rituals | new | forest spirts, "wild" animal attacks
 | Farmer | grows crops, tends livestock, processes results | farm plots exist on map but need a barn or farmouse | rot, not sure |
@@ -130,7 +130,7 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 
 Ideas for depth, to build when each trade's milestone comes round.
 
-**Bard**
+**Musician**
 - musical performance obviously - allow some instrutment customization if possible
 - stretch goal would be full ocarina of time remake style playing where a real life musician could actually recreate songs in game
 - insstrument care should be part of the trade, and instrument crafting.

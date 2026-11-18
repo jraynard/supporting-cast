@@ -1,0 +1,6 @@
+{
+  "sounds": {
+    "musician.pipe.d5": { "files": ["pipe_d5.wav"], "gain": 0.55, "max": 6, "range": 18, "near": 3 },
+    "musician.pipe.d6": { "files": ["pipe_d6.wav"], "gain": 0.45, "max": 6, "range": 18, "near": 3 }
+  }
+}

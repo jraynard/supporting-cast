@@ -20,7 +20,7 @@ The question isn't reach. It's whether the game is fun with people who aren't us
 - [ ] **Watch for coming back unprompted.** Someone asking "are we playing Friday?" is the real
       signal; polite praise isn't.
 - [ ] **Collect the stories.** After a round, write down what people retold ("the inn caught fire
-      while Dad argued with the bard about prices"). These become the trailer, the screenshots
+      while Dad argued with the musician about prices"). These become the trailer, the screenshots
       and the pitch. F11 notes and `logs/rounds/` help; keep a running list below.
 - [ ] **Record play.** OBS running during playtests. Clip the funny moments, even roughly.
 - [ ] **Smooth the join path.** Note every place someone got stuck installing, hosting or joining,

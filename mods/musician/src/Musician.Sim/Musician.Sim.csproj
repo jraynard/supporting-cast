@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- The bard's sim half (docs/MODDING.md): it references only the game's sim, and builds into the
+  <!-- The musician's sim half (docs/MODDING.md): it references only the game's sim, and builds into the
        mod's folder, where the game loads it from. Built against the sim's banned-API list, as every mod is. -->
   <PropertyGroup>
-    <RootNamespace>HeroesNotIncluded.Bard</RootNamespace>
+    <RootNamespace>HeroesNotIncluded.Musician</RootNamespace>
     <OutDir>$(MSBuildThisFileDirectory)../../</OutDir>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <GenerateDependencyFile>false</GenerateDependencyFile>

@@ -66,8 +66,8 @@ references the engine, a window or the game. A mod's types are saved and sent as
 Each half has an entry type the loader finds:
 
 ```csharp
-public sealed class BardMod : ISimMod  { public void Register(SimRegistry r) { ... } }
-public sealed class BardView : IGameMod { public void Register(GameRegistry r) { ... } }
+public sealed class MusicianMod : ISimMod  { public void Register(SimRegistry r) { ... } }
+public sealed class MusicianView : IGameMod { public void Register(GameRegistry r) { ... } }
 ```
 
 The core registers its own trades the same way. What can be registered, and what it replaces:
@@ -96,7 +96,7 @@ kit, priorities, services, lessons' words), its workplace's role and building, a
   and setup.
 - **`ITradeView`** (game): its work views, HUD, bot hook and sounds.
 
-The carpenter is the worked example once it moves out to `mods/carpenter`. The bard (BARD-PLAN.md)
+The carpenter is the worked example once it moves out to `mods/carpenter`. The musician (MUSICIAN-PLAN.md)
 is the first trade built as a mod from nothing.
 
 ### A new game mode
@@ -104,9 +104,9 @@ is the first trade built as a mod from nothing.
 An `IGameMode` sets a round up (map, deal, extra systems), names its phases, decides when it's won or
 lost and what the reveal shows. The season, the practice yard and the arena are the core's three.
 
-### What the bard needed (the first trade built from nothing)
+### What the musician needed (the first trade built from nothing)
 
-Building the bard (`mods/bard`) only through the doors above showed what a new trade needs that a moved
+Building the musician (`mods/musician`) only through the doors above showed what a new trade needs that a moved
 one didn't. Each is now part of the API:
 - **A trade only players take** (`"playerOnly": true` on the trade): never dealt to an AI villager or a
   seat that didn't ask, and its player comes to town as a newcomer.
@@ -148,7 +148,7 @@ The game's own rules (CLAUDE.md) bind its mods:
   `hni-mode`, each with `mod.json`, both projects, the banned-API list, a scenario test and a README.
 - **Skills** in `.claude/skills/` (`new-trade`, `new-minigame`, `new-map`, `new-mode`, `content-mod`): the
   steps, the files, the registry calls, the rules and the check loop, pointing at the carpenter and the
-  bard. The same skills, with an `AGENTS.md`, ship inside the templates, so a modder's agent knows
+  musician. The same skills, with an `AGENTS.md`, ship inside the templates, so a modder's agent knows
   how without this repository.
 - **A trade's mini-games are found, not written once.** Every trade here took many rounds of play,
   feel and fixes before its games were right (the forge's heat, the stew's seasoning, the bow's
@@ -192,8 +192,8 @@ The game's own rules (CLAUDE.md) bind its mods:
   they need to write a mod's files into the mod first. Only five sprites are the carpenter's alone; the rest
   (bows, quivers, logs) are the core's. Left in the core they change nothing about play.
 - [ ] Game modes.
-- [x] The bard as a mod, first pass: a player-only trade with a tin pipe, played free (eight scale keys and
-  the octave above), notes heard as you press them and from others in earshot. `--new-game --trade Bard
-  --mods bard --drill pipe`. Not on by default yet. The rest of BARD-PLAN.md follows, by ear, with you.
+- [x] The musician as a mod, first pass: a player-only trade with a tin pipe, played free (eight scale keys and
+  the octave above), notes heard as you press them and from others in earshot. `--new-game --trade Musician
+  --mods musician --drill pipe`. Not on by default yet. The rest of MUSICIAN-PLAN.md follows, by ear, with you.
 - [ ] The ModKit and the skills.
 - [ ] Steam Workshop (ROADMAP.md, Later).

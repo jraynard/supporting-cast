@@ -52,7 +52,7 @@ public sealed class GameContent
         return [.. Catalog.All.Where(m => m.DefaultOn).Select(m => m.Id).Concat(on).Distinct().Where(id => !offs.Contains(id))];
     }
 
-    /// <summary>The mods a <c>--mods</c> list names: <c>bard,-carpenter</c> turns the bard on and the carpenter off.</summary>
+    /// <summary>The mods a <c>--mods</c> list names: <c>musician,-carpenter</c> turns the musician on and the carpenter off.</summary>
     public static IReadOnlyList<string> FromArgument(string? list)
     {
         var items = (list ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -98,7 +98,7 @@ public sealed class GameContent
 
     public bool HasMods => Mods.Mods.Count > 0;
 
-    /// <summary>"bard 0.1.0, lutes 1.2": for logs, saves and refusals.</summary>
+    /// <summary>"musician 0.1.0, lutes 1.2": for logs, saves and refusals.</summary>
     public string Describe() => HasMods ? string.Join(", ", Mods.Mods.Select(m => $"{m.Id} {m.Version}")) : "none";
 
     private IEnumerable<string> ModFolders(string name) => Mods.Mods.Select(m => m.Folder(name)).OfType<string>();
@@ -153,7 +153,7 @@ public sealed class GameContent
     /// <summary>The save meta key naming the mods a save was made with.</summary>
     public const string SaveMetaKey = "mods";
 
-    /// <summary>The mods as a save records them: "bard 0.1.0,lutes 1.2" (empty without).</summary>
+    /// <summary>The mods as a save records them: "musician 0.1.0,lutes 1.2" (empty without).</summary>
     public string SaveMeta => string.Join(",", Mods.Mods.Select(m => $"{m.Id} {m.Version}"));
 
     /// <summary>
@@ -171,6 +171,6 @@ public sealed class GameContent
         return $"This save was made with {Names(saved)}, and {Names(now)} {(now.Count == 1 ? "is" : "are")} turned on now (Mods, on the title screen).";
     }
 
-    /// <summary>The tag's readable tail naming the mods ("+bard,lutes"), so a refused joiner sees which; empty without mods.</summary>
+    /// <summary>The tag's readable tail naming the mods ("+musician,lutes"), so a refused joiner sees which; empty without mods.</summary>
     public string TagSuffix => HasMods ? "+" + string.Join(",", Mods.Ids) : "";
 }

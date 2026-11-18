@@ -14,7 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\HeroesNotIncluded.Sim\HeroesNotIncluded.Sim.csproj" />
     <ProjectReference Include="..\..\mods\carpenter\src\Carpenter.Sim\Carpenter.Sim.csproj" />
-    <ProjectReference Include="..\..\mods\bard\src\Bard.Sim\Bard.Sim.csproj" />
+    <ProjectReference Include="..\..\mods\musician\src\Musician.Sim\Musician.Sim.csproj" />
   </ItemGroup>
 
   <ItemGroup>

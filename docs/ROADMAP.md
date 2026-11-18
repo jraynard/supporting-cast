@@ -190,8 +190,8 @@ tinker and innkeeper have nothing to do before one comes. In order:
 - [ ] **More town contraptions** (DESIGN.md, "Tinker"): a smoke bell for a fire, rat traps for the
   cook in a shortage, then something for the dragon. Each a `ContraptionUse` that's not `ForTheRoad`,
   set like the trip-bell.
-- [ ] **New trades:** the Constable comes with M4 (traitors need catching); the Bard
-  ([BARD-PLAN.md](BARD-PLAN.md)) as the seventh player's seat in place of the labourer.
+- [ ] **New trades:** the Constable comes with M4 (traitors need catching); the Musician
+  ([MUSICIAN-PLAN.md](MUSICIAN-PLAN.md)) as the seventh player's seat in place of the labourer.
 
 ### 7. Speaking aloud: playtest it
 Built ([VOICE.md](VOICE.md)): hold Talk and speak; the words are made out on the machine
@@ -221,8 +221,8 @@ new one is built the moddable way.
   default, off with `--mods -carpenter`); the core and the game never name it.
 - [ ] **Art and sound tools write a mod's files into the mod** (then the carpenter's five sprites and its sounds move).
 - [ ] **Game modes:** the season, the practice yard and the arena as `IGameMode`s.
-- [ ] **The bard, built as a mod** from [BARD-PLAN.md](BARD-PLAN.md): first pass in (a player-only trade,
-  the tin pipe played free, `mods/bard`); playtest how it feels, then the other instruments, the tune book
+- [ ] **The musician, built as a mod** from [MUSICIAN-PLAN.md](MUSICIAN-PLAN.md): first pass in (a player-only trade,
+  the tin pipe played free, `mods/musician`); playtest how it feels, then the other instruments, the tune book
   and the lead-in, the audience and dancing.
 - [ ] **The ModKit's templates and the coding-agent skills** (`.claude/skills/new-trade` and friends).
 
@@ -474,7 +474,7 @@ items into "Now" when a playtest says they matter.
 **Sound** (first pass done: docs/AUDIO.md)
 1. **Music, ours:** a theme (at least its start), then a score to replace the placeholder tracks
    mood by mood (`title`, `day`, `night`, `danger`, `festival`, `reveal`). Later, adaptive layers
-   (danger drums over the day track), festival songs, and a bard. Needed before a Steam trailer.
+   (danger drums over the day track), festival songs, and a musician. Needed before a Steam trailer.
 2. **Coverage:** footsteps by surface, doors, animals and weather; hammering heard from other
    smithies and every trade seen from outside; the bucket's splash; room reverb (EFX) for the inn,
    cottages and caves; a mix pass from playtest notes.

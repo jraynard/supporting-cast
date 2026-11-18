@@ -1,8 +1,0 @@
-{
-  "id": "bard",
-  "name": "The Bard",
-  "version": "0.1.0",
-  "authors": ["Heroes Not Included"],
-  "description": "A trade only players take: music for the town. A first pass: a tin pipe, played free (docs/BARD-PLAN.md). The first trade built as a mod from nothing (docs/MODDING.md).",
-  "gameVersion": "0.1"
-}

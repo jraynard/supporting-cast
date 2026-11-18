@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""The bard mod's art and sounds, made from nothing (docs/MODDING.md): run from the repo root.
+"""The musician mod's art and sounds, made from nothing (docs/MODDING.md): run from the repo root.
 
-    python3 mods/bard/tools/bard_assets.py
+    python3 mods/musician/tools/musician_assets.py
 
 Writes into the mod's own folders (textures/, sounds/), never the game's. The pipe is a tin
 whistle in D: one root sample per octave, pitched up to the scale's other notes as they're played.
@@ -63,4 +63,4 @@ if __name__ == "__main__":
     write_wav(os.path.join(MOD, "sounds", "pipe_d5.wav"), pipe_note(587.33, seed=1))
     write_wav(os.path.join(MOD, "sounds", "pipe_d6.wav"), pipe_note(1174.66, seed=2))
     pipe_icon(os.path.join(MOD, "textures", "items", "pipe.png"))
-    print("bard assets written")
+    print("musician assets written")

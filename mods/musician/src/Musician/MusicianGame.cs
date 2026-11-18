@@ -8,13 +8,13 @@ using Narsil.Audio;
 using Narsil.Platform;
 using Narsil.Ui;
 
-namespace HeroesNotIncluded.Bard;
+namespace HeroesNotIncluded.Musician;
 
 /// <summary>
-/// The bard's game half: the note keys, the playing window, and the notes heard, your own the moment
+/// The musician's game half: the note keys, the playing window, and the notes heard, your own the moment
 /// they're pressed (from the predicted session) and anyone else's from where they stand.
 /// </summary>
-public sealed class BardGame : IGameMod
+public sealed class MusicianGame : IGameMod
 {
     /// <summary>The note keys' controls, the scale's first degree first.</summary>
     private static string[] _notes = [];

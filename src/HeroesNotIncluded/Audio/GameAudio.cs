@@ -54,7 +54,7 @@ public static class GameAudio
     private static bool _holdMusic;
 
     /// <summary>
-    /// Hold the background music this frame (a bard playing in earshot): it fades down and pauses, and
+    /// Hold the background music this frame (a musician playing in earshot): it fades down and pauses, and
     /// goes on from where it was once nothing asks. Asked every frame it should hold.
     /// </summary>
     public static void HoldMusic() => _holdMusic = true;
