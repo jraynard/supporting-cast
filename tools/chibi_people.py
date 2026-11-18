@@ -9,6 +9,7 @@ layers the game mixes and matches (Rendering/HumanLook, docs/ART.md "People"):
   creatures/person_<body>                  linen underclothes: the base every layer matches by frame
   creatures/person_<body>_skin             head, arms, legs (tinted with the skin colour)
   creatures/person_<body>_coin             the coin stance's coin, over everything (front views only)
+  creatures/person_<body>_coin_hand        the hand that flips it, under the coin (tinted with the skin colour)
   creatures/person_<body>_eyes_<style>     irises (tinted); _face_<style>: whites, lids, lashes, mouth, blush
   creatures/person_hair_<style>[_back]     hair and brows (tinted), the back half drawn behind the body
   creatures/person_beard_<style>           beards (tinted with the hair colour)
@@ -233,6 +234,21 @@ def coin_layer(F):
     edge_on = F.pose.k % 2 == 1
     c = ellipse([x - (0.4 if edge_on else 1.1), y - 1.1, x + (0.4 if edge_on else 1.1), y + 1.1])
     part(img, c, GOLD, INK, radius=0.4, bias=0.2, width=1)
+    return img
+
+
+def coin_hand_layer(F, folk="human"):
+    """The hand that flips the coin, forearm and fist, again over everything but the coin (tinted with
+    the skin colour): held up before the chest, it's in front of a beard (a halfling's braided one
+    hung over it). The skin layer's own pixels, so it matches; front views only, like the coin."""
+    img = blank()
+    if F.coin is None or not F.front:
+        return img
+    shoulder, elbow, hand, _ = F.arms[F.role_side(1)]
+    keep = union(strip([lerp(elbow, hand, 0.12), hand], [2.8, 2.6], steps=3),
+                 ellipse([hand[0] - 1.6, hand[1] - 1.4, hand[0] + 1.6, hand[1] + 1.6]))
+    img = skin_layer(F, folk)
+    cut(img, minus(Image.new("L", (W, H), 255), keep))
     return img
 
 
@@ -2679,6 +2695,8 @@ def job_frames(job):
             img = ears_layer(Fig(body, pose), folk)
         elif kind == "coin":
             img = coin_layer(Fig(args, pose))
+        elif kind == "coin_hand":
+            img = coin_hand_layer(Fig(args, pose))
         elif kind == "eyes":
             body, style, which = args
             img = eyes_layers(Fig(body, pose), style)[0 if which == "eyes" else 1]
@@ -2720,6 +2738,7 @@ def jobs():
         out.append((f"creatures/person_{body}", ("base", body)))
         out.append((f"creatures/person_{body}_skin", ("skin", (body, "human"))))
         out.append((f"creatures/person_{body}_coin", ("coin", body)))
+        out.append((f"creatures/person_{body}_coin_hand", ("coin_hand", body)))
         for folk in FOLK[1:]:
             out.append((f"creatures/person_{body}_skin_{folk}", ("skin", (body, folk))))
             out.append((f"creatures/person_{body}_ears_{folk}", ("ears", (body, folk))))
@@ -2816,6 +2835,7 @@ def figure(body, pose, hair="long", eyes="round", beard=None, wear=(), dyes=None
     for item in HEAD_ITEMS:
         if item in wear:
             order.append(worn[item][""])
+    order.append(tint(coin_hand_layer(F, folk), colors["skin"]))
     order.append(coin_layer(F))
     for layer in order:
         img.alpha_composite(layer)
