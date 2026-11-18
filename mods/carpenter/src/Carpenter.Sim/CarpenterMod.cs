@@ -20,6 +20,14 @@ public sealed class CarpenterMod : ISimMod
         registry.Trade(new CarpenterModule());
         registry.Lesson([.. CarpenterLessons.All]);
         registry.Bot(bot => new CarpenterBot(bot));
+        registry.Drill("fell", Scenarios.FellDrill.Stage); // --fell-test: by a pine in the open, axe and saw to hand
+        registry.Drill("felling", (sim, me) => // --drill felling: the same, the axe already at the trunk
+        {
+            var pine = Scenarios.FellDrill.Stage(sim, me);
+            if (!pine.IsNull)
+                Felling.StartFelling(sim, me, pine);
+            return pine;
+        });
         // The carpenter was part of the game until it moved out: saves from then name its sessions and
         // components without the mod's prefix, and still load.
         foreach (var type in typeof(CarpenterMod).Assembly.GetTypes().Where(t => typeof(Work.WorkSession).IsAssignableFrom(t) && !t.IsAbstract && t.GetConstructor(Type.EmptyTypes) != null))

@@ -318,8 +318,9 @@ else
         DragonTest = args.Contains("--dragon-test"),
         // --bridge-test: the bridge drill (BridgeDrill): the bridge down, you at the gap with wood to mend it.
         BridgeTest = args.Contains("--bridge-test"),
-        // --fell-test: the woods drill (FellDrill): the carpenter by a pine with an axe and a saw.
-        FellTest = args.Contains("--fell-test"),
+        // --drill NAME: a trade's moment staged at once (a mod registers its drills, SimRegistry.Drill);
+        // --fell-test is the carpenter's woods drill: by a pine with an axe and a saw.
+        Drill = ParseString(args, "--drill") ?? (args.Contains("--fell-test") ? "fell" : null),
         // --pairs-test: every job for two pairs of hands ready at once (PairsDrill): a greatsword's iron, a great
         // log, a wagon's axle and a body on a shrine pallet. With --host, for co-op; alone, Help! brings a villager.
         PairsTest = args.Contains("--pairs-test"),

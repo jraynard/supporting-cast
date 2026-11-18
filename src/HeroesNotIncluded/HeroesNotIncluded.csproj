@@ -16,8 +16,6 @@
     <ProjectReference Include="..\..\external\narsil\src\Narsil.Audio\Narsil.Audio.csproj" />
     <ProjectReference Include="..\..\external\narsil\src\Narsil.Speech\Narsil.Speech.csproj" />
     <ProjectReference Include="..\HeroesNotIncluded.Sim\HeroesNotIncluded.Sim.csproj" />
-    <!-- The game's own trade mods: loaded as mods, and referenced until their views move into their own game halves (docs/MODDING.md). -->
-    <ProjectReference Include="..\..\mods\carpenter\src\Carpenter.Sim\Carpenter.Sim.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,6 +29,31 @@
     <!-- The title's lettering (SIL Open Font License 1.1), the brand's display face. -->
     <None Include="..\..\data\fonts\Cinzel-OFL.txt" Link="licenses\Cinzel-OFL.txt" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- The mods that ship with the game (mods/*/src/*): built after the game into their own folders, the game's
+       assemblies not rebuilt for them, so a `dotnet run` of the game has its own trades. The game never references
+       them: it loads them as mods (docs/MODDING.md). -->
+  <Target Name="BuildBundledMods" AfterTargets="Build" Condition="'$(BuildingBundledMods)' != 'true'">
+    <ItemGroup>
+      <BundledModSim Include="..\..\mods\*\src\*.Sim\*.csproj" />
+      <BundledModGame Include="..\..\mods\*\src\*\*.csproj" Exclude="@(BundledModSim)" />
+    </ItemGroup>
+    <MSBuild Projects="@(BundledModSim);@(BundledModGame)" Targets="Build" BuildInParallel="false"
+             Properties="Configuration=$(Configuration);BuildProjectReferences=false;BuildingBundledMods=true" />
+    <!-- Built after the output's copy of mods/ was made: their code goes in now. -->
+    <ItemGroup>
+      <BundledModCode Include="..\..\mods\*\*.dll;..\..\mods\*\*.pdb" />
+    </ItemGroup>
+    <Copy SourceFiles="@(BundledModCode)" DestinationFiles="@(BundledModCode->'$(OutDir)mods\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- A published build carries the mods' code too (their data comes with the mods folder's other files). -->
+  <Target Name="PublishBundledMods" AfterTargets="Publish">
+    <ItemGroup>
+      <BundledModPublish Include="..\..\mods\*\*.dll" />
+    </ItemGroup>
+    <Copy SourceFiles="@(BundledModPublish)" DestinationFiles="@(BundledModPublish->'$(PublishDir)mods\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+  </Target>
 
   <!-- BRUTAL License 1.0 and 4.0: BRUTAL's license and third-party notices go to licenses/ on build and publish. -->
   <Import Project="..\..\external\narsil\build\Narsil.Licensing.targets" />

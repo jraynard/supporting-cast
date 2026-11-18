@@ -175,54 +175,6 @@ public sealed class WorkSounds(AudioEngine audio)
             case LoupeSession s:
                 Count(s.ReadCount, Sounds.Click);
                 break;
-            case Sim.Carpentry.SawSession s:
-                // The axe's thunk on each blow while hewing; then the saw's rasp on the downstroke, louder rushed.
-                if (s.Hewing)
-                    Count(s.Blows, Sounds.Knock);
-                audio.Hold("work:saw", Sounds.Saw, s.Cutting ? 0.5f + 0.5f * Math.Min(1f, s.Pace / Sim.Carpentry.SawSession.MostPace) : 0f, fade: Quick);
-                break;
-            case Sim.Carpentry.FellSession s:
-                // The axe biting into the trunk on each blow, deeper notes as the cut goes in.
-                Count(s.Blows, Sounds.Knock);
-                break;
-            case Sim.Carpentry.BuckSession s:
-                // The crosscut's rasp on the pull; a snap when the saw binds in the kerf.
-                audio.Hold("work:saw", Sounds.Saw, s.Cutting ? 0.4f + 0.5f * Math.Min(1f, s.Pace / Sim.Carpentry.BuckSession.MostPace) : 0f, pitch: 0.85f, fade: Quick);
-                Count(s.Binds, Sounds.Snap);
-                break;
-            case Sim.Carpentry.CrosscutSession s:
-                audio.Hold("work:saw", Sounds.Saw, s.Held && s.Drawn < 1f ? 0.45f : 0f, pitch: 0.85f, fade: Quick);
-                break;
-            case Sim.Carpentry.SplitSession s:
-                // Each blow knocks; a split cracks the log open.
-                if (s.Blows > _a)
-                    audio.Play(s.LastBlow == Sim.Carpentry.SplitBlow.Split ? Sounds.Snap : Sounds.Knock, pitch: s.LastBlow == Sim.Carpentry.SplitBlow.Split ? 0.8f : 1f);
-                _a = s.Blows;
-                break;
-            case Sim.Carpentry.NailSession s:
-                // The hammer on the nail, ringing as it goes home; a dull knock on a miss or a bend.
-                if (s.Blows > _a)
-                    audio.Play(s.LastBlow is Sim.Carpentry.NailBlow.Set or Sim.Carpentry.NailBlow.Drove or Sim.Carpentry.NailBlow.Bruised ? Sounds.AnvilFair : Sounds.Knock,
-                        gain: s.LastBlow == Sim.Carpentry.NailBlow.Set ? 0.5f : 0.8f, pitch: 1.6f + 0.3f * s.Depth);
-                _a = s.Blows;
-                break;
-            case Sim.Carpentry.FletchSession s:
-                // The knife along the shaft; the head scraping on; a rustle for each feather.
-                audio.Hold("work:shave", Sounds.Scrub, s.Stage == Sim.Carpentry.ArrowStage.Shave && s.Held ? 0.5f : 0f, pitch: 1.4f, fade: Quick);
-                audio.Hold("work:seat", Sounds.Grind, s.Stage == Sim.Carpentry.ArrowStage.Head && s.Held ? 0.35f : 0f, pitch: 0.7f, fade: Quick);
-                Count(s.Set, Sounds.Cloth);
-                break;
-            case Sim.Carpentry.JoinSession s:
-                // The mallet on the chisel or the tenon; a crack when a joint splits.
-                Count(s.Blows, Sounds.Knock);
-                if (s.Splits > _b)
-                    audio.Play(Sounds.Snap);
-                _b = s.Splits;
-                break;
-            case Sim.Carpentry.BowSession s:
-                audio.Hold("work:scrape", Sounds.Scrub, s.Scraping ? 0.45f : 0f, pitch: 0.8f, fade: Quick);
-                Count(s.Missed, Sounds.Snap); // the loop slipping past the nock
-                break;
             case ProbeSession s:
                 // A tick in the fingers when the probe catches (the feel it shows), not again till it's let go.
                 if (!_flag && s.Feel > 0.7f)

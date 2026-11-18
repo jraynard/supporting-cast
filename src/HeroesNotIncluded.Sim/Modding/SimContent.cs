@@ -29,6 +29,7 @@ public sealed class SimRegistry
     internal readonly List<ITradeModule> TradeModules = [];
     internal readonly List<Scenarios.Lessons.Lesson> Lessons = [];
     internal readonly List<Func<Bots.BotPlayer, Bots.IBotTrade>> Bots = [];
+    internal readonly Dictionary<string, Func<Simulation, Entity, Entity>> Drills = new(StringComparer.OrdinalIgnoreCase);
     internal readonly Dictionary<string, string> Formerly = new(StringComparer.Ordinal);
 
     /// <summary>The game's own registrations (its bundled trades) keep their names unprefixed.</summary>
@@ -47,6 +48,12 @@ public sealed class SimRegistry
     /// it's asked (its words are the trade's <c>lessons</c> in trades.json).
     /// </summary>
     public void Lesson(params Scenarios.Lessons.Lesson[] lessons) => Lessons.AddRange(lessons);
+
+    /// <summary>
+    /// A drill (<c>--drill NAME</c>): a moment of the trade staged at once for trying it out (the
+    /// carpenter by a pine, axe to hand). Given the player's character; returns what to look at, or Entity.Null.
+    /// </summary>
+    public void Drill(string name, Func<Simulation, Entity, Entity> stage) => Drills[name] = stage;
 
     /// <summary>How a bot plays the trade (<see cref="Bots.IBotTrade"/>): made fresh for each bot, so it may keep state.</summary>
     public void Bot(Func<Bots.BotPlayer, Bots.IBotTrade> make) => Bots.Add(make);
@@ -177,6 +184,13 @@ public static class SimContent
     internal static IEnumerable<Scenarios.Lessons.Lesson> Lessons => Registries.SelectMany(r => r.Lessons);
 
     internal static IEnumerable<Func<Bots.BotPlayer, Bots.IBotTrade>> BotFactories => Registries.SelectMany(r => r.Bots);
+
+    /// <summary>A drill by name (<see cref="SimRegistry.Drill"/>), the last registered of that name; null if none.</summary>
+    public static Func<Simulation, Entity, Entity>? DrillNamed(string name) =>
+        Registries.Reverse().Select(r => r.Drills.GetValueOrDefault(name)).FirstOrDefault(d => d != null);
+
+    /// <summary>Every drill's name, for <c>--drill</c>'s help.</summary>
+    public static IEnumerable<string> DrillNames => Registries.SelectMany(r => r.Drills.Keys).Distinct(StringComparer.OrdinalIgnoreCase);
 
     private static (int Version, List<ITradeModule> Modules)? _trades;
 

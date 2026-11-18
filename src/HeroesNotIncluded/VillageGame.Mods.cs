@@ -1,5 +1,6 @@
 using HeroesNotIncluded.Sim;
 using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Ecs;
 using HeroesNotIncluded.Sim.Systems;
 
 namespace HeroesNotIncluded;
@@ -22,4 +23,30 @@ public sealed partial class VillageGame
     internal void EndWorkWindow() => EndWork();
 
     internal void IssueCommand(ISimCommand command) => Issue(command);
+
+    internal void BeginWorkWindow(string title, bool mouse, (string Keys, string Does)[] hints) => BeginWork(title, mouse, hints);
+
+    internal Sim.Work.WorkSession? WorkInHand => _work.Session;
+
+    internal Entity Me => HasAvatar ? _avatar : Entity.Null;
+
+    internal bool IsWorking => Working;
+
+    internal void MarkPointer(float2 min, float2 max, bool wheel, bool edges) => TakesPointer(min, max, wheel, edges);
+
+    internal void WorkAside() => _workAside = true;
+
+    internal float2 OnScreen(float degrees)
+    {
+        var rad = degrees * MathF.PI / 180f;
+        var (cos, sin) = (MathF.Cos(rad), MathF.Sin(rad));
+        return Frame() is { } f ? f.East * cos - f.North * sin : new float2(cos, sin);
+    }
+
+    internal void ToolSwing(Brutal.ImGuiApi.ImDrawListPtr dl, string sprite, float faceAlong, float raise, float2 strike, float px, Brutal.ImGuiApi.ImColor8 tint) =>
+        DrawToolSwing(dl, sprite, faceAlong, raise, strike, px, tint);
+
+    internal void ShowTip(string text) => Tip(text);
+
+    internal float2? AutoSize => _autoSize;
 }

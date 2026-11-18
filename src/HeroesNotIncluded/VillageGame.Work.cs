@@ -2,7 +2,6 @@ using Brutal.ImGuiApi;
 using Narsil.Ui;
 using Narsil.Platform;
 using HeroesNotIncluded.Sim;
-using HeroesNotIncluded.Sim.Carpentry;
 using HeroesNotIncluded.Sim.Bots;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Round;
@@ -254,20 +253,9 @@ public sealed partial class VillageGame
         [typeof(Sim.Tinkering.TrueSession)] = (g, s) => g.DrawTrue((Sim.Tinkering.TrueSession)s),
         [typeof(Sim.Tinkering.SpanSession)] = (g, s) => g.DrawSpan((Sim.Tinkering.SpanSession)s),
         [typeof(Sim.Tinkering.LoupeSession)] = (g, s) => g.DrawLoupe((Sim.Tinkering.LoupeSession)s),
-        [typeof(SawSession)] = (g, s) => g.DrawSaw((SawSession)s),
-        [typeof(FletchSession)] = (g, s) => g.DrawFletch((FletchSession)s),
-        [typeof(BowSession)] = (g, s) => g.DrawBow((BowSession)s),
-        [typeof(Sim.Carpentry.JoinSession)] = (g, s) => g.DrawJoin((Sim.Carpentry.JoinSession)s),
         [typeof(StrikerSession)] = (g, s) => g.DrawStriker((StrikerSession)s),
         [typeof(SledgeSession)] = (g, s) => g.DrawSledge((SledgeSession)s),
         [typeof(Sim.Afterlife.HoldSession)] = (g, s) => g.DrawHold((Sim.Afterlife.HoldSession)s),
-        [typeof(Sim.Carpentry.PitSession)] = (g, s) => g.DrawPit((Sim.Carpentry.PitSession)s),
-        [typeof(Sim.Carpentry.LiftSession)] = (g, s) => g.DrawLift((Sim.Carpentry.LiftSession)s),
-        [typeof(FellSession)] = (g, s) => g.DrawFell((FellSession)s),
-        [typeof(BuckSession)] = (g, s) => g.DrawBuck((BuckSession)s),
-        [typeof(CrosscutSession)] = (g, s) => g.DrawCrosscut((CrosscutSession)s),
-        [typeof(SplitSession)] = (g, s) => g.DrawSplit((SplitSession)s),
-        [typeof(NailSession)] = (g, s) => g.DrawNail((NailSession)s),
         [typeof(Sim.Environment.ThrowSession)] = (g, s) => g.DrawThrow((Sim.Environment.ThrowSession)s),
         [typeof(HammerSession)] = (g, s) => g.DrawHammer((HammerSession)s),
         [typeof(HeatSession)] = (g, s) => g.DrawHeat((HeatSession)s),

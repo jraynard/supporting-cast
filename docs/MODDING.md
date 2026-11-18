@@ -158,7 +158,12 @@ The game's own rules (CLAUDE.md) bind its mods:
   only through `ITradeModule` (station work, mending, the AI's jobs, a player's F, stocking, the fire),
   `SimRegistry` (systems, codecs, lessons, bots) and `IBotTrade`; old saves load through `formerly` names.
   Bench hashes and bot-played seasons unchanged.
-- [ ] The carpenter's game half (its work views, the woods, sounds) moved into its own `Carpenter.dll`.
+- [x] The carpenter's game half moved into its own `Carpenter.dll` (`mods/carpenter/src/Carpenter`): its work
+  views and sounds, the aim line of a tree to fell, a tree toppling (`Tilt`), its world sounds, the bench's
+  Rebuild tab (`StationTab`), mend hints and a wagon's woodwork (`WagonPanel`), all through `GameRegistry`;
+  `WorkView` is the drawing API they use. The game never names it (`ModBoundaryTests` in both test
+  projects), never references it, and builds the mods it ships after itself (`BuildBundledMods`).
+  Drills are a mod's too (`SimRegistry.Drill`, `--drill felling`).
 - [x] The carpenter's defs (its trade, stations, recipes, the woodshop and its services) moved into
   `mods/carpenter/defs` (`tools/move_defs.py` lifts defs out with their comments). Turned off
   (`--mods -carpenter`, or the Mods panel), a round deals no carpenter, the woodshop's plot stands

@@ -1,6 +1,7 @@
 using System.Reflection;
 using HeroesNotIncluded.Sim;
 using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Ecs;
 using HeroesNotIncluded.Sim.Systems;
 using HeroesNotIncluded.Sim.Work;
 using Narsil;
@@ -27,6 +28,12 @@ public sealed class GameRegistry
 
     internal readonly Dictionary<Type, Action<WorkView, WorkSession>> Views = [];
     internal readonly Dictionary<Type, Action<WorkSoundContext, WorkSession>> Sounds = [];
+    internal readonly Dictionary<Type, Func<WorkView, WorkSession, AimLine?>> AimLines = [];
+    internal readonly List<Func<Simulation, Entity, long, Tilt?>> Tilts = [];
+    internal readonly List<Func<IWorldSounds>> WorldSoundMakers = [];
+    internal readonly List<StationTab> StationTabs = [];
+    internal readonly List<Func<WorkView, Entity, Entity, string?>> MendHints = [];
+    internal readonly List<Action<WorkView, Entity>> WagonPanels = [];
 
     /// <summary>
     /// How a work session (a mini-game) is drawn while it's in hand: open the window with
@@ -42,6 +49,63 @@ public sealed class GameRegistry
     /// </summary>
     public void WorkSound<T>(Action<WorkSoundContext, T> update) where T : WorkSession =>
         Sounds[typeof(T)] = (ctx, s) => update(ctx, (T)s);
+
+    /// <summary>A line on the ground while a session's in hand (where a tree's aimed to fall), as a bow's aim is drawn.</summary>
+    public void AimLine<T>(Func<WorkView, T, AimLine?> line) where T : WorkSession =>
+        AimLines[typeof(T)] = (view, s) => line(view, (T)s);
+
+    /// <summary>
+    /// A thing drawn tipped over (a tree coming down): given the thing and the tick, the way it tips and how
+    /// far (radians, 0 upright to π/2 flat), or null to draw it standing. Read only what anyone can see.
+    /// </summary>
+    public void Tilt(Func<Simulation, Entity, long, Tilt?> tilt) => Tilts.Add(tilt);
+
+    /// <summary>Sounds of the world the mod adds (a tree's creak and crash), made once per game: heard as the player perceives it.</summary>
+    public void WorldSounds(Func<IWorldSounds> make) => WorldSoundMakers.Add(make);
+
+    /// <summary>A tab of a station's window (the carpenter's bench: the furniture the fire took, to join anew).</summary>
+    public void StationTab(string name, Func<WorkView, Entity, bool> applies, Action<WorkView, Entity> draw, string? footer = null) =>
+        StationTabs.Add(new StationTab(name, applies, draw, footer));
+
+    /// <summary>What the Mend button's tip says for a piece mended by this mod's hand game; null if it isn't this mod's.</summary>
+    public void MendHint(Func<WorkView, Entity, Entity, string?> hint) => MendHints.Add(hint);
+
+    /// <summary>A part of a wagon's window (its woodwork's mending): drawn under the wagon's own.</summary>
+    public void WagonPanel(Action<WorkView, Entity> draw) => WagonPanels.Add(draw);
+}
+
+/// <summary>A line on the ground from <see cref="From"/> to <see cref="To"/>, drawn <see cref="Drawn"/> (0..1) of the way; ember once <see cref="Ready"/>.</summary>
+public readonly record struct AimLine(float3 From, float3 To, float Drawn, bool Ready, bool Winded);
+
+/// <summary>A thing tipped <see cref="Angle"/> radians (π/2 is flat) toward <see cref="Degrees"/> (0 east, 90 south).</summary>
+public readonly record struct Tilt(float Degrees, float Angle);
+
+/// <summary>A tab a mod adds to a station's window.</summary>
+public sealed record StationTab(string Name, Func<WorkView, Entity, bool> Applies, Action<WorkView, Entity> Draw, string? Footer);
+
+/// <summary>A mod's sounds of the world, asked once a frame (<see cref="GameRegistry.WorldSounds"/>).</summary>
+public interface IWorldSounds
+{
+    void Update(WorldSoundContext ctx);
+}
+
+/// <summary>The world as the player hears it, for a mod's sounds: never key a sound to hidden state.</summary>
+public sealed class WorldSoundContext
+{
+    public required Simulation Sim { get; init; }
+    public required PerceptionView View { get; init; }
+    public required AudioEngine Audio { get; init; }
+
+    /// <summary>Where the player is (null for a camera with no character).</summary>
+    public int3? Me { get; init; }
+
+    internal Func<int3, float?> ReachOf { get; init; } = _ => null;
+
+    /// <summary>How muffled a sound at a cell comes to the player (0 clear), or null if it's out of earshot.</summary>
+    public float? Reach(int3 cell) => ReachOf(cell);
+
+    /// <summary>A cell's place for the audio engine.</summary>
+    public static float3 At(int3 cell) => HeroesNotIncluded.Audio.SoundDirector.ToAudio(cell);
 }
 
 /// <summary>
@@ -57,9 +121,10 @@ public sealed class WorkSoundContext(AudioEngine audio)
 
     /// <summary>Counts for the mod's own use, zero when a session starts.</summary>
     public int A, B, C;
-    public float Value;
+    public float Value, Warm;
+    public bool Flag;
 
-    internal void Reset() => (A, B, C, Value) = (0, 0, 0, 0f);
+    internal void Reset() => (A, B, C, Value, Warm, Flag) = (0, 0, -1, 0f, 0f, false);
 }
 
 /// <summary>
@@ -91,6 +156,37 @@ public sealed class WorkView
 
     /// <summary>Send a command, as the game's own controls do (it's checked on every peer).</summary>
     public void Issue(ISimCommand command) => _game.IssueCommand(command);
+
+    /// <summary><see cref="Begin(string, ValueTuple{string, string}[])"/>, saying whether the window takes the mouse's buttons (left as F, right as Space).</summary>
+    public void Begin(string title, bool mouse, params (string Keys, string Does)[] hints) => _game.BeginWorkWindow(title, mouse, hints);
+
+    /// <summary>The work session in hand (the predicted one, so it answers the frame a key is pressed), or null.</summary>
+    public WorkSession? Session => _game.WorkInHand;
+
+    /// <summary>The player's character, Entity.Null without one.</summary>
+    public Entity Me => _game.Me;
+
+    /// <summary>Busy at work already (a button that starts work is off while it is).</summary>
+    public bool Working => _game.IsWorking;
+
+    /// <summary>This frame's panel stands against the right edge, the middle of the screen left clear (work out in the world: a tree). Call before <see cref="Begin(string, ValueTuple{string, string}[])"/>.</summary>
+    public void Aside() => _game.WorkAside();
+
+    /// <summary>The mouse is the game's here (a drag, a click to aim): it works the session rather than the camera.</summary>
+    public void TakesPointer(float2 min, float2 max, bool wheel = false, bool edges = false) => _game.MarkPointer(min, max, wheel, edges);
+
+    /// <summary>A way on the map (degrees: 0 east, 90 south) as it points on screen, the camera's way round.</summary>
+    public float2 ScreenDir(float degrees) => _game.OnScreen(degrees);
+
+    /// <summary>A tool sprite swung about its handle (a hammer, an axe), as the anvil draws its hammer.</summary>
+    public void DrawToolSwing(Brutal.ImGuiApi.ImDrawListPtr dl, string sprite, float faceAlong, float raise, float2 strike, float px, Brutal.ImGuiApi.ImColor8 tint) =>
+        _game.ToolSwing(dl, sprite, faceAlong, raise, strike, px, tint);
+
+    /// <summary>A tooltip in the game's style.</summary>
+    public void Tip(string text) => _game.ShowTip(text);
+
+    /// <summary>The size the game's own buttons take in a window.</summary>
+    public float2? ButtonSize => _game.AutoSize;
 }
 
 /// <summary>
@@ -122,6 +218,7 @@ public static class GameMods
             registries.Add(registry);
         }
         _registries = registries;
+        _worldSounds = null;
     }
 
     private static T? Find<T>(Type session, Func<GameRegistry, Dictionary<Type, T>> table) where T : class
@@ -141,6 +238,29 @@ public static class GameMods
         draw(view, session);
         return true;
     }
+
+    internal static AimLine? AimLineFor(WorkView view, WorkSession? session) =>
+        session != null && Find(session.GetType(), r => r.AimLines) is { } line ? line(view, session) : null;
+
+    internal static Tilt? TiltOf(Simulation sim, Entity e, long tick)
+    {
+        foreach (var r in _registries)
+            foreach (var tilt in r.Tilts)
+                if (tilt(sim, e, tick) is { } t)
+                    return t;
+        return null;
+    }
+
+    private static List<IWorldSounds>? _worldSounds;
+
+    internal static IReadOnlyList<IWorldSounds> WorldSoundsMade => _worldSounds ??= [.. _registries.SelectMany(r => r.WorldSoundMakers).Select(make => make())];
+
+    internal static IEnumerable<StationTab> StationTabs => _registries.SelectMany(r => r.StationTabs);
+
+    internal static string? MendHint(WorkView view, Entity station, Entity item) =>
+        _registries.SelectMany(r => r.MendHints).Select(h => h(view, station, item)).FirstOrDefault(h => h != null);
+
+    internal static IEnumerable<Action<WorkView, Entity>> WagonPanels => _registries.SelectMany(r => r.WagonPanels);
 
     internal static bool TrySound(WorkSoundContext ctx, WorkSession session)
     {

@@ -705,26 +705,8 @@ public sealed partial class VillageGame
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 Tip(why != null ? Cap(why) + "." : Controls.Keys("As each spoke comes past the gauge: ~F~ tightens it (where the rim bulges out), ~A~ slackens it (where it dips in)."));
         }
-        if ((wagon.Damage & WagonDamage.Axle) != 0)
-        {
-            var why = Wagons.AxleProblem(_sim, _avatar, _tinkerAt);
-            ImGui.BeginDisabled(why != null || Working);
-            if (ImGui.Button($"Hew a new axle ({Wagons.AxleWood} log)"))
-                Issue(new Sim.Carpentry.FitAxleCommand(_avatar, _tinkerAt));
-            ImGui.EndDisabled();
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(why != null ? Cap(why) + "." : Controls.Keys("Carpenter's work. At each end: hold ~F~ to raise the mallet and let go to strike, trimming the arm to the mark (~Space~ when it's there); then drive the hub on, lighter as it tightens."));
-        }
-        if ((wagon.Damage & WagonDamage.Board) != 0)
-        {
-            var why = Sim.Carpentry.WagonJoinery.BoardProblem(_sim, _avatar, _tinkerAt);
-            ImGui.BeginDisabled(why != null || Working);
-            if (ImGui.Button($"Nail a plank across the sprung board ({Wagons.BoardPlanks} plank)"))
-                Issue(new Sim.Carpentry.PegBoardCommand(_avatar, _tinkerAt));
-            ImGui.EndDisabled();
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(why != null ? Cap(why) + "." : Controls.Keys("Carpenter's work, with the claw hammer. Tap each nail to set it, then drive it: hold ~F~ to raise, ~A~/~D~ keep the head over the nail, let go to strike. A bent one's drawn with the claw (~Space~)."));
-        }
+        foreach (var panel in Mods.GameMods.WagonPanels) // a mod's part of the wagon (the carpenter's woodwork)
+            panel(ModWorkView, _tinkerAt);
         if (wagon.Damage == WagonDamage.None)
             TextC(Theme.Good, "It's sound.");
     }

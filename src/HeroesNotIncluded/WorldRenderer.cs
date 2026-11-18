@@ -1971,8 +1971,8 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
                 break;
             default:
                 var spriteName = thing.Material == null ? baseSprite : _materials.Resolve(def.Sprite, thing.Material).Sprite;
-                if (w.TryGet<Sim.Carpentry.Falling>(e, out var falling))
-                    DrawToppling(spriteName, cell, floor, def, tint, level, falling, sim.Clock.Tick);
+                if (Mods.GameMods.TiltOf(sim, e, sim.Clock.Tick) is { } tilt) // a tree coming down, say (a mod's)
+                    DrawToppling(spriteName, cell, floor, def, tint, level, tilt);
                 else
                     DrawVariedBillboard(def, spriteName, cell, floor, tint, level);
                 break;
@@ -2215,10 +2215,10 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
     }
 
     /// <summary>
-    /// A tree whose hinge has given (<see cref="Sim.Carpentry.Falling"/>): it creaks over a few degrees
-    /// toward its fall, then comes down faster and faster, pivoting on its stump, flat as it lands.
+    /// A thing tipping over (<see cref="Mods.Tilt"/>: a tree whose hinge has given), pivoting on its foot
+    /// toward its fall, flat when the angle reaches π/2.
     /// </summary>
-    private void DrawToppling(string spriteName, int3 cell, float3 feet, ThingDef def, uint tint, uint level, Sim.Carpentry.Falling falling, long tick)
+    private void DrawToppling(string spriteName, int3 cell, float3 feet, ThingDef def, uint tint, uint level, Mods.Tilt tilt)
     {
         if (_atlasVersion != atlas.Version)
             _variantCache.Clear();
@@ -2228,10 +2228,8 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         var sprite = Variation.Mirror(variants[(int)((h >> 8) % (uint)variants.Count)], (h & 1) != 0, false);
         var height = def.RenderSize;
         var width = height * sprite.PixelSize.X / Math.Max(1f, sprite.PixelSize.Y);
-        var t = Math.Clamp((tick - falling.At) / (float)Sim.Carpentry.Felling.CreakTicks, 0f, 1f);
-        const float creak = 0.4f, lean = 0.09f;
-        var angle = t < creak ? lean * t / creak : lean + (MathF.PI / 2f - lean) * MathF.Pow((t - creak) / (1f - creak), 2f);
-        var rad = falling.Dir * MathF.PI / 180f;
+        var angle = tilt.Angle;
+        var rad = tilt.Degrees * MathF.PI / 180f;
         var toward = new float3(MathF.Cos(rad), MathF.Sin(rad), 0);
         var up = new float3(0, 0, 1) * MathF.Cos(angle) + toward * MathF.Sin(angle);
         var r = _cam.Right;

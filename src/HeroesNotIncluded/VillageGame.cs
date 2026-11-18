@@ -252,7 +252,8 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     public bool BridgeTest { get; init; }
 
     /// <summary>Debug (<c>--fell-test</c>): the woods drill (<see cref="FellDrill"/>), the carpenter by a pine with an axe and a saw.</summary>
-    public bool FellTest { get; init; }
+    /// <summary>A trade's drill staged at the start (<c>--drill</c>, <see cref="Sim.Modding.SimRegistry.Drill"/>).</summary>
+    public string? Drill { get; init; }
 
     /// <summary>
     /// Debug (<c>--pairs-test</c>): every job for two pairs of hands staged at once (<see cref="PairsDrill"/>),
@@ -421,9 +422,13 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
                 DragonDrill.Stage(_sim, watching);
             if (BridgeTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } mending)
                 BridgeDrill.Stage(_sim, mending);
-            if (FellTest && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } felling
-                && FellDrill.Stage(_sim, felling) is { IsNull: false } pine)
-                center = _sim.World.Get<Thing>(pine).Cell;
+            if (Drill != null && _sim.World.Query<Avatar>().FirstOrDefault(Entity.Null) is { IsNull: false } drilled)
+            {
+                if (Sim.Modding.SimContent.DrillNamed(Drill) is not { } stage)
+                    Log.Engine.Warning($"No drill called {Drill} (there's {string.Join(", ", Sim.Modding.SimContent.DrillNames)})");
+                else if (stage(_sim, drilled) is { IsNull: false } staged && _sim.World.TryGet<Thing>(staged, out var seen))
+                    center = seen.Cell;
+            }
         }
         var focus = center;
         if (IgniteForest)
@@ -544,7 +549,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         if (_coop != null && FreeMoving)
             _freePredictor.Update(_sim, _avatar, _wish, dt, Paused ? 0 : RunMultiplier);
         _renderer.FreePredicted = _coop != null && FreeMoving ? _freePredictor : null;
-        _renderer.AimLine = HasAvatar ? AimLine() ?? FellLine() : null;
+        _renderer.AimLine = HasAvatar ? AimLine() ?? (Mods.GameMods.AimLineFor(ModWorkView, _work.Session) is { } line ? (line.From, line.To, line.Drawn, line.Ready, line.Winded) : null) : null;
         _renderer.PredictedEntity = _avatar;
         _renderer.Viewer = View.Omniscient ? null : View;
         UpdateOrderBubbles();

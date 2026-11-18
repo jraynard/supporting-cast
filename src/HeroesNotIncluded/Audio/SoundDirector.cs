@@ -48,7 +48,6 @@ public sealed class SoundDirector(AudioEngine audio)
     private float3? _bandAt;
     private long _bellHeard = -1;
     private long _tripHeard = -1;
-    private long _fallHeard = -1;
 
     /// <summary>How far from the well (cells) the festival's music carries.</summary>
     public const int FestivalReach = 24;
@@ -99,31 +98,15 @@ public sealed class SoundDirector(AudioEngine audio)
         PickMood(sim);
         FestivalBell(sim, view, me);
         TripBellsRung(sim, view, me);
-        TreesFalling(sim, view, me);
+        // A mod's own sounds of the world (the carpenter's trees coming down).
+        if (Mods.GameMods.WorldSoundsMade.Count > 0)
+        {
+            var ctx = new Mods.WorldSoundContext { Sim = sim, View = view, Audio = audio, Me = me, ReachOf = cell => Reach(sim, view, me, cell) };
+            foreach (var sounds in Mods.GameMods.WorldSoundsMade)
+                sounds.Update(ctx);
+        }
     }
 
-    /// <summary>A tree coming down (<see cref="Sim.Carpentry.Falling"/>), as far as it carries: the hinge's creak, then the crash as it lands.</summary>
-    private void TreesFalling(Simulation sim, PerceptionView view, int3? me)
-    {
-        var w = sim.World;
-        var newest = _fallHeard;
-        foreach (var tree in w.Each<Sim.Carpentry.Falling>())
-        {
-            var at = w.Get<Sim.Carpentry.Falling>(tree).At;
-            if (at <= _fallHeard)
-                continue;
-            newest = Math.Max(newest, at);
-            var cell = w.Get<Sim.Components.Thing>(tree).Cell;
-            if (sim.Clock.Tick - at <= FreshTicks && Reach(sim, view, me, cell) is { } muffle)
-            {
-                var land = Sim.Carpentry.Felling.CreakTicks / (float)SimClock.TicksPerSecond;
-                audio.Play(Sounds.Creak, ToAudio(cell), muffle: muffle, pitch: 0.6f);
-                audio.Play(Sounds.Heavy, ToAudio(cell), muffle: muffle, pitch: 0.5f, delay: land);
-                audio.Play(Sounds.Knock, ToAudio(cell), muffle: muffle, pitch: 0.45f, delay: land + 0.12f);
-            }
-        }
-        _fallHeard = newest;
-    }
 
     /// <summary>A trip-bell going off where it's set (<see cref="Sim.Tinkering.TripBells"/>), as far as it carries. Rung or not is plain; why one didn't, never.</summary>
     private void TripBellsRung(Simulation sim, PerceptionView view, int3? me)
@@ -169,7 +152,6 @@ public sealed class SoundDirector(AudioEngine audio)
         _dangerUntil = -1000f;
         _bellHeard = sim.Festival.BellTick;
         _tripHeard = sim.Clock.Tick;
-        _fallHeard = sim.Clock.Tick;
     }
 
     /// <summary>
