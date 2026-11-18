@@ -505,6 +505,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         UpdatePadUi();
         HandleWheel();
         HandleKeys(input);
+        UpdateVoice(dt);
         // WASD walks your character (or drifts your ghost), not the camera: panning it here would also shift the cursor's cell.
         var embodied = HasAvatar || Ghosting;
         _cameraController.PanSpeed = embodied ? 0f : _basePanSpeed * Settings.Current.CameraPanSpeed;
@@ -613,6 +614,9 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     public override void Dispose()
     {
         Host.ScreenshotSaved -= OnScreenshotSaved;
+        _dictation.Discard();
+        Voice.VoiceService.Mic?.Stop();
+        Voice.VoiceService.Ducking = false;
         // Quitting (or travelling) right after dawn mustn't lose a half-written autosave.
         try { _autosaving?.Wait(TimeSpan.FromSeconds(5)); } catch (AggregateException) { }
         _quads?.Dispose();

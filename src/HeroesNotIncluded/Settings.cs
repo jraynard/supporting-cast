@@ -80,6 +80,29 @@ public sealed class Settings
     /// <summary>Speech heard as a babble of syllables, each voice its own.</summary>
     public bool Babble { get; set; } = true;
 
+    /// <summary>
+    /// Speak aloud: hold the talk key and your words become your character's line (Voice/). Off
+    /// until the player opts in; the microphone isn't opened before then.
+    /// </summary>
+    public bool VoiceInput { get; set; }
+
+    /// <summary>Which microphone, by OpenAL's name for it; null for the system's default.</summary>
+    public string? MicDevice { get; set; }
+
+    /// <summary>The speech model (<see cref="Narsil.Speech.SpeechModels"/>): "base.en" (quick) or "small.en" (careful).</summary>
+    public string VoiceModel { get; set; } = Narsil.Speech.SpeechModels.BaseEnglish.Id;
+
+    /// <summary>Seconds a spoken line waits, shown, before it's said: 0 says it at once, below 0 waits for you.</summary>
+    public float VoicePreviewSeconds { get; set; } = DefaultVoicePreview;
+
+    /// <summary>The player's quiet, normal and loud voice on this microphone; null until calibrated.</summary>
+    public Narsil.Speech.VoiceCalibration? VoiceCalibration { get; set; }
+
+    /// <summary>Turn the game down while the talk key is held, so the microphone hears you and not the speakers.</summary>
+    public bool DuckWhileTalking { get; set; } = true;
+
+    public const float DefaultVoicePreview = 2f, MaxVoicePreview = 10f;
+
     /// <summary>Relay server for online co-op ("host" or "host:port"); empty uses the game's own (<see cref="Net.CoopRelay.Default"/>).</summary>
     public string RelayServer { get; set; } = "";
 
@@ -156,6 +179,17 @@ public sealed class Settings
         s.AmbienceVolume = Unit(s.AmbienceVolume, 0.8f);
         s.VoiceVolume = Unit(s.VoiceVolume, 0.8f);
         s.Bindings = Controls.Sanitize(s.Bindings);
+        if (Narsil.Speech.SpeechModels.Find(s.VoiceModel) == null)
+            s.VoiceModel = Narsil.Speech.SpeechModels.BaseEnglish.Id;
+        s.VoicePreviewSeconds = float.IsFinite(s.VoicePreviewSeconds) ? Math.Clamp(s.VoicePreviewSeconds, -1f, MaxVoicePreview) : DefaultVoicePreview;
+        if (s.VoicePreviewSeconds < 0f)
+            s.VoicePreviewSeconds = -1f;
+        if (s.VoiceCalibration is { } c && !(Level(c.QuietDb) && Level(c.NormalDb) && Level(c.LoudDb) && Share(c.QuietVoiced) && Share(c.NormalVoiced)))
+            s.VoiceCalibration = null;
+        static bool Level(float db) => float.IsFinite(db) && db is >= -120f and <= 10f;
+        static bool Share(float v) => float.IsFinite(v) && v is >= 0f and <= 1f;
+        if (s.MicDevice is { Length: 0 or > 500 })
+            s.MicDevice = null;
         s.RelayServer = (s.RelayServer ?? "").Trim();
         if (s.RelayServer.Length > 200)
             s.RelayServer = "";

@@ -193,6 +193,18 @@ tinker and innkeeper have nothing to do before one comes. In order:
 - [ ] **New trades:** the Constable comes with M4 (traitors need catching); the Bard
   ([BARD-PLAN.md](BARD-PLAN.md)) as the seventh player's seat in place of the labourer.
 
+### 7. Speaking aloud: playtest it
+Built ([VOICE.md](VOICE.md)): hold Talk and speak; the words are made out on the machine
+(whisper.cpp), shown with the volume they were spoken at, and said as an ordinary `SayCommand`.
+- [ ] **On a Deck:** `--dictate-test mic` and a round with L4 on Talk. How long does the Quick
+  model take for a short line, and does the frame hold while it works? Is Careful affordable?
+- [ ] **The volume:** calibrate, then whisper, talk and shout near another player. Do whispers
+  stay whispers (the fence goes to the quieter side), and does the Deck's microphone level a
+  shout (`VoiceCalibration.Flattened`)?
+- [ ] **The card:** is two seconds the right wait? Do testers change the volume on it, or take
+  lines back?
+- [ ] **Names:** does the prompt (`VillageGame.VoicePrompt`) spell the town's names right?
+
 ## Then: M4, Whispers
 
 The traitors: the game's hook, and what makes it a game people tell others about.
@@ -316,13 +328,25 @@ An authoritative server filtered by `Perception`, matchmaking, moderation, voice
   `SpeechSystem` would let that listener hear it (the same ranges; muffled through walls; the dead
   only to the dead). Raw proximity voice would let the dead talk to the living and get round
   eavesdropping and the traitors. Steamworks voice for capture and the codec.
-- **Speech to text** (opt-in; the Deck's answer to typing): push to talk, a local model (sherpa-onnx,
-  shared with the NPC voices), the words shown to confirm, then an ordinary `SayCommand`, so a
-  spoken order at a counter is heard like a typed one. Watch model size and the Deck's CPU.
+- **A word filter** on every line, typed or spoken (VOICE.md: a misheard word can come out rude).
 
 ### Mods
 New maps, buildings, trades, game modes and character options, as far as the defs allow; Steam
 Workshop eventually. Content is already all in `data/defs`, which is most of the way there.
+
+### Villagers who listen
+No AI acts on what a player says, typed or spoken: orders go through F at the counter, and only bots
+read a line's words. Spoken lines make this matter more. A deterministic `Speech/Listening` system,
+in the sim (the words are already in the `SayCommand`), matching what an AI caught clearly against
+word banks in the defs, and answering through what's already there:
+- a villager or adventurer named turns and answers (a bark, `Barks`);
+- "Help!" joins the ask for a hand (`Work/Pairs`); "Fire!" or "Bandits!" raises the alarm as a
+  trip-bell or a sighting does (`RaidCrisis.Watch`), for those who believe the speaker;
+- greetings and thanks answered, which a mood memory could follow (`mood.json`);
+- a dish or a service on the sign, said at the front of a line, taken as the same `Order` F makes
+  (`ShopSystem.PlayerOrder`);
+- later, an optional host-side language model reading what was meant, acting only through commands,
+  as the Director's outside mind would (DIRECTOR-PLAN.md, layer 3).
 
 ## Backlog
 

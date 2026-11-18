@@ -33,9 +33,15 @@ public static class GameAudio
         Apply(Settings.Current);
     }
 
+    /// <summary>The game's share of the master volume while the talk key is held: low enough not to be heard back.</summary>
+    public const float DuckedTo = 0.3f;
+
+    private static float _master = 1f, _duck = 1f;
+
     public static void Apply(Settings s)
     {
-        Engine.MasterVolume = s.MasterVolume;
+        _master = s.MasterVolume;
+        Engine.MasterVolume = _master * _duck;
         Engine.SetVolume(AudioBus.Music, s.MusicVolume);
         Engine.SetVolume(AudioBus.Sfx, s.EffectsVolume);
         Engine.SetVolume(AudioBus.Ui, s.EffectsVolume);
@@ -47,6 +53,12 @@ public static class GameAudio
     public static void Update(GameHost host, float dt)
     {
         Engine.Muted = Settings.Current.MuteInBackground && !host.Window.IsFocused;
+        // The microphone and the speech model follow the settings here too, for every game alike.
+        Voice.VoiceService.Update(Settings.Current);
+        // Down quickly as the talk key's pressed, back up gently after.
+        var duck = Voice.VoiceService.Ducking ? DuckedTo : 1f;
+        _duck += (duck - _duck) * Math.Min(1f, dt * (duck < _duck ? 20f : 4f));
+        Engine.MasterVolume = _master * _duck;
         _reloader?.Update(dt, force: host.Input.WasKeyPressed(Brutal.GlfwApi.GlfwKey.F5));
         Engine.Update(dt);
         if (LogPlays)

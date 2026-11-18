@@ -71,6 +71,7 @@ public sealed partial class VillageGame
         DrawToolbar();
         DrawHotbar();
         DrawJournalBar();
+        DrawVoice();
         if (HasAvatar && _sim.World.Has<ButtsTurn>(_avatar))
             DrawButtsHint();
         else

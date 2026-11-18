@@ -12,7 +12,7 @@ using HeroesNotIncluded.Sim.Saving;
 using HeroesNotIncluded.Sim.Scenarios;
 
 // Headless runs (bench, checks) log to the console only; the game also writes a file testers can send.
-var headless = args.Any(a => a is "--bench" or "--combat-sweep" or "--season-sweep" or "--check-art" or "--check-save" or "--check-gpu" or "--version");
+var headless = args.Any(a => a is "--bench" or "--combat-sweep" or "--season-sweep" or "--check-art" or "--check-save" or "--check-gpu" or "--version" or "--dictate-test");
 Log.Initialize(logDirectory: headless ? null : BuildInfo.LogDirectory, appName: TitleGame.AppId);
 string? buildTag = null;
 Log.CrashContext = () => BuildInfo.Describe(buildTag);
@@ -43,6 +43,13 @@ if (args.Contains("--check-gpu"))
         Console.WriteLine($"error: Vulkan didn't start: {e.InnerException?.Message ?? e.Message}");
         Environment.Exit(1);
     }
+}
+
+if (ParseString(args, "--dictate-test") is { } dictatePath)
+{
+    // Headless: a recorded clip through the speech recognizer, timed (docs/VOICE.md).
+    Settings.Load(Settings.DefaultPath);
+    Environment.Exit(HeroesNotIncluded.Voice.DictateTest.Run(dictatePath, ParseString(args, "--model"), ParseString(args, "--prompt"), ParseInt(args, "--threads")));
 }
 
 if (args.Contains("--bench"))
@@ -139,6 +146,8 @@ if (args.Contains("--deck") || args.Contains("--size") || args.Contains("--ui-sc
 }
 SaveSlots.Directory = SaveSlots.DefaultDirectory;
 VillageGame.OpenProfiler = args.Contains("--profiler");
+VillageGame.VoiceClip = ParseString(args, "--voice-clip");
+TitleGame.OpenSettingsTab = ParseString(args, "--settings-tab");
 if (args.Contains("--dev"))
     VillageGame.DevMode = true;
 HeroesNotIncluded.Net.CoopRelay.Override = ParseString(args, "--relay");
@@ -316,6 +325,7 @@ else
     }, error => new TitleGame { StartError = error }));
 
 HeroesNotIncluded.Audio.GameAudio.Close();
+HeroesNotIncluded.Voice.VoiceService.Close();
 
 // Remember a window the player resized by hand. Settings.Current, not `settings`: the options
 // screen replaces the instance when it applies changes.

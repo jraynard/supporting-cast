@@ -55,6 +55,9 @@ public sealed class TitleGame : Game
 
     private SettingsWindow _settings = null!;
 
+    /// <summary><c>--settings-tab NAME</c> (dev): open the settings on that tab at start, for screenshots.</summary>
+    public static string? OpenSettingsTab { get; set; }
+
     /// <summary>A submenu (Adventure's difficulties, Load Game's saves) shown instead of the main menu.</summary>
     private MenuItem[]? _submenu;
     private string? _submenuTitle;
@@ -386,6 +389,8 @@ public sealed class TitleGame : Game
         Theme.Apply(Settings.Current.UiScale);
         _error = StartError;
         _settings = new SettingsWindow(Host);
+        if (OpenSettingsTab != null)
+            _settings.OpenOn(OpenSettingsTab);
         var defs = _defs = DefDatabase.LoadDirectory(Path.Combine(Host.DataDirectory, "defs"));
         _creator = new CharacterCreator(Host, defs);
         _roster = CharacterRoster.Load(Host, defs);

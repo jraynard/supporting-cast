@@ -10,6 +10,8 @@ The title lettering is Cinzel, Copyright 2020 The Cinzel Project Authors (https:
 
 Sound plays through OpenAL Soft 1.23.1 (https://openal-soft.org), used under the GNU Library General Public License 2.0 (licenses/OpenAL-Soft-LGPL-2.0.txt), and NVorbis, used under the MIT License (licenses/NVorbis-MIT.txt). OpenAL Soft is an unmodified shared library you may replace with your own build; its source is at https://github.com/kcat/openal-soft/releases/tag/1.23.1.
 
+Speaking aloud (off unless turned on in Settings, Voice) makes out speech with whisper.cpp, Copyright (c) 2023-2026 The ggml authors (licenses/whisper.cpp-MIT.txt), through Whisper.net, Copyright (c) 2024 Sandro Hanea (licenses/Whisper.net-LICENSE.txt), both used under the MIT License. Its speech models are OpenAI's Whisper models, Copyright (c) 2022 OpenAI, used under the MIT License (licenses/OpenAI-Whisper-models-MIT.txt), converted by the whisper.cpp project; they are downloaded when the player turns the feature on, not shipped with the game.
+
 The game runs on .NET (https://dotnet.microsoft.com), with the Microsoft.Extensions libraries, Copyright (c) .NET Foundation and Contributors, used under the MIT License (licenses/dotnet-runtime-LICENSE.txt, with third-party notices in licenses/dotnet-runtime-THIRD-PARTY-NOTICES.txt and licenses/Microsoft.Extensions-*.txt), and the .NET Community Toolkit (CommunityToolkit.HighPerformance), Copyright (c) .NET Foundation and Contributors, used under the MIT License (licenses/CommunityToolkit.HighPerformance-License.txt).
 
 Placeholder music (fetched by tools/fetch_music.py):

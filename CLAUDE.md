@@ -29,6 +29,8 @@ dotnet run --project src/HeroesNotIncluded -- --practice Empath          # the t
 dotnet run --project src/HeroesNotIncluded -- --arena Swordsman --weapon IronSpear  # the practice ring: one foe a bout (any raider kind, or Dragon; Enter for the next)
 dotnet run --project src/HeroesNotIncluded -- --furniture-demo --zoom 80    # also --building-demo
 dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui, --look-at X,Y, --yaw/--pitch DEG, --camera-mode; any mode
+dotnet run --project src/HeroesNotIncluded -c Release -- --dictate-test clip.wav   # speaking aloud: a clip (or `mic`) through the recognizer, timed (--model small.en)
+dotnet run --project src/HeroesNotIncluded -- --new-game --voice-clip clip.wav       # a clip spoken into a round as if through the microphone
 dotnet run --project src/HeroesNotIncluded -- --replay newest   # watch a kept round again (or a path; --keep-replay-at N keeps one mid-round)
 dotnet run --project src/HeroesNotIncluded -- --art-preview
 dotnet run --project src/HeroesNotIncluded -- --check-art     # headless: every sprite and tag exists
@@ -222,6 +224,11 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     components implements `ISaveState`. Jobs aren't saved: a load equals `AiSystem.InterruptAll`.
   - Materials, crafting, tools, mining, apparel, mood, social, prisoners and rot work as their
     XML doc summaries describe. Read through `Thing.MaxHp` and friends, not the def's raw number.
+- Speaking aloud (docs/VOICE.md): `Voice/`. Push to talk (`Act.Talk`), made out locally by
+  `Narsil.Speech` (`VoiceService` holds the microphone and the model for every game, `Dictation` the
+  listen, transcribe and preview, `VoiceCalibrator` the player's whisper, word and shout), then an
+  ordinary `SayCommand`: the sim never knows a line was spoken. Off unless the player opts in; audio
+  is never kept. The recognizer's prompt comes from what the player perceives, never hidden state.
 - Sound (docs/AUDIO.md): `Audio/GameAudio` holds Narsil's `AudioEngine`; ids are constants in
   `Audio/Sounds.cs`, mapped to files by `data/sounds/sounds.json`. `SoundDirector` plays the world
   only as the player perceives it (`PerceptionView`, `SpeechSystem.Hear`), `WorkSounds` the

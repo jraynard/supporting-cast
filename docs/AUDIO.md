@@ -132,4 +132,6 @@ vowels, so each register keeps a natural throat instead of being a pitched-up de
 - **Strangers:** a voice you didn't recognise takes its voice from the line, so babble never
   gives away who spoke.
 
-Real voices (text to speech) are on the roadmap.
+Real voices (text to speech) are on the roadmap. The other way, a player's own speech made into
+their character's line, is [VOICE.md](VOICE.md): the microphone (`MicCapture`) is Narsil.Audio's,
+and while the talk key's held the game ducks to `GameAudio.DuckedTo` so it isn't heard back.

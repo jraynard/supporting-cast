@@ -101,6 +101,24 @@ The back buttons are free: put anything else on them in Steam Input, as keys (Le
 Shift-click looking, say; the controls card lists the rest). Once the layout plays well, export it from the controller settings and commit it to
 `tools/steamdeck/`. We can't produce a working file without a Deck.
 
+## Speaking aloud
+
+The Deck's microphones let you talk instead of typing ([VOICE.md](VOICE.md)). Turn it on in
+**Settings → Voice**, download the Quick model (60 MB, once), and read the three calibration lines.
+Then give Talk a button. Either set a pad button for it on the Voice tab (every pad button already
+does something, so it'll share one), or, better, put it on a back grip:
+
+1. In Game Mode, press the Steam button with the game running: **Controller Settings → Edit
+   Layout → Back Grip Buttons**.
+2. **L4 → Keyboard → O** (Talk: hold it while you speak).
+3. **R4 → Keyboard → Backspace** (take back what you just spoke).
+
+The words show on a card at the bottom of the screen for a moment before they're said: tap
+**Whisper**, **Say** or **Shout** on the touchscreen to change how loudly, or press L4 again to say
+it at once. If your shouts come out as plain words, the calibration will say whether the
+microphone is levelling itself; a headset with a microphone does better than the Deck's own in a
+noisy room. `tools/deck.sh tail` shows how long each line took to make out ("Heard in … ms").
+
 ## Known gaps
 
 - Placing buildings and area tools need a trackpad drag.

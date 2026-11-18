@@ -12,7 +12,7 @@ namespace HeroesNotIncluded.Ui;
 /// asks to be confirmed and reverts by itself after <see cref="ConfirmSeconds"/>, so a mode the
 /// monitor can't show doesn't strand the player on a black screen.
 /// </summary>
-public sealed class SettingsWindow(GameHost host)
+public sealed partial class SettingsWindow(GameHost host)
 {
     public const float ConfirmSeconds = 15f;
 
@@ -47,9 +47,28 @@ public sealed class SettingsWindow(GameHost host)
         _monitors = Display.Monitors(); // re-query: monitors come and go
     }
 
+    /// <summary>A tab to open on, once (<c>--settings-tab NAME</c>, the screenshots).</summary>
+    private string? _pickTab;
+
+    /// <summary>Open on one tab: "Voice", "Controls" and so on.</summary>
+    public void OpenOn(string tab)
+    {
+        Open();
+        _pickTab = tab;
+    }
+
+    private ImGuiTabItemFlags Pick(string tab)
+    {
+        if (!string.Equals(_pickTab, tab, StringComparison.OrdinalIgnoreCase))
+            return ImGuiTabItemFlags.None;
+        _pickTab = null;
+        return ImGuiTabItemFlags.SetSelected;
+    }
+
     public void Close()
     {
         IsOpen = false;
+        LeaveVoiceTab();
         Audio.GameAudio.Apply(Settings.Current); // volumes dragged but not applied
     }
 
@@ -88,34 +107,41 @@ public sealed class SettingsWindow(GameHost host)
 
         if (ImGui.BeginTabBar("settings"u8, ImGuiTabBarFlags.None))
         {
-            if (ImGui.BeginTabItem("Display"u8, ImGuiTabItemFlags.None))
+            if (ImGui.BeginTabItem("Display"u8, Pick("Display")))
             {
                 DisplayTab();
                 ImGui.EndTabItem();
             }
-            if (ImGui.BeginTabItem("Sound"u8, ImGuiTabItemFlags.None))
+            if (ImGui.BeginTabItem("Sound"u8, Pick("Sound")))
             {
                 SoundTab();
                 ImGui.EndTabItem();
             }
-            if (ImGui.BeginTabItem("Interface"u8, ImGuiTabItemFlags.None))
+            if (ImGui.BeginTabItem("Voice"u8, Pick("Voice")))
+            {
+                VoiceTab();
+                ImGui.EndTabItem();
+            }
+            else
+                LeaveVoiceTab();
+            if (ImGui.BeginTabItem("Interface"u8, Pick("Interface")))
             {
                 InterfaceTab();
                 ImGui.EndTabItem();
             }
-            if (ImGui.BeginTabItem("Gameplay"u8, ImGuiTabItemFlags.None))
+            if (ImGui.BeginTabItem("Gameplay"u8, Pick("Gameplay")))
             {
                 GameplayTab();
                 ImGui.EndTabItem();
             }
-            if (ImGui.BeginTabItem("Controls"u8, ImGuiTabItemFlags.None))
+            if (ImGui.BeginTabItem("Controls"u8, Pick("Controls")))
             {
                 ControlsTab();
                 ImGui.EndTabItem();
             }
             else
                 _bindings.Cancel();
-            if (ImGui.BeginTabItem("Network"u8, ImGuiTabItemFlags.None))
+            if (ImGui.BeginTabItem("Network"u8, Pick("Network")))
             {
                 NetworkTab();
                 ImGui.EndTabItem();

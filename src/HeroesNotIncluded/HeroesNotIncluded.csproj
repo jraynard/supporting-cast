@@ -14,6 +14,7 @@
     <ProjectReference Include="..\..\external\narsil\src\Narsil\Narsil.csproj" />
     <ProjectReference Include="..\..\external\narsil\src\Narsil.Voxel\Narsil.Voxel.csproj" />
     <ProjectReference Include="..\..\external\narsil\src\Narsil.Audio\Narsil.Audio.csproj" />
+    <ProjectReference Include="..\..\external\narsil\src\Narsil.Speech\Narsil.Speech.csproj" />
     <ProjectReference Include="..\HeroesNotIncluded.Sim\HeroesNotIncluded.Sim.csproj" />
   </ItemGroup>
 
