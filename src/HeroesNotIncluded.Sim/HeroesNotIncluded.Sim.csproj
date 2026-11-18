@@ -14,4 +14,14 @@
     <InternalsVisibleTo Include="HeroesNotIncluded.Sim.Tests" />
   </ItemGroup>
 
+  <!-- Determinism as a compile error: the APIs a lockstep sim must never touch (docs/MODDING.md;
+       the ModKit ships the same list for mods' sim halves). -->
+  <PropertyGroup>
+    <WarningsAsErrors>$(WarningsAsErrors);RS0030</WarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="4.14.0" PrivateAssets="all" />
+    <AdditionalFiles Include="BannedSymbols.txt" />
+  </ItemGroup>
+
 </Project>

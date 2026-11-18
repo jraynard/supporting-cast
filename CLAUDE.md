@@ -256,7 +256,13 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
 
 - **Determinism:** all randomness through `sim.Rand` or a system's own `SimRandom`. No
   `System.Random`, `DateTime` or unordered iteration that affects state. Trig and powers through
-  `DetMath`. A pure refactor must leave `--bench` hashes unchanged for seeds 1234 and 99.
+  `DetMath`. A pure refactor must leave `--bench` hashes unchanged for seeds 1234 and 99. The sim
+  builds against `BannedSymbols.txt` (RS0030 is an error): extend that list, don't suppress it.
+- **Moddability** (docs/MODDING.md): the core game is meant to be the first mod, so build it through
+  doors a mod could use. No new `switch`/`if` on a trade's, map's or session's name or type outside
+  that trade's own code; a new kind of thing is a def or a registration, not a new enum member; a
+  trade's code lives in its own folder. Where an old switch is in the way, turn it into a registry
+  (MODDING.md lists them) rather than adding an arm.
 - **Secrets (from M1):** the game may show other characters, allegiances and hidden item properties
   only through `Perception`. Never read that state directly from UI or rendering code.
 - Add a test for new sim behaviour. `VillageDayScenarioTests` checks the town survives unattended;

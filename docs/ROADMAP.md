@@ -205,6 +205,20 @@ Built ([VOICE.md](VOICE.md)): hold Talk and speak; the words are made out on the
   lines back?
 - [ ] **Names:** does the prompt (`VillageGame.VoicePrompt`) spell the town's names right?
 
+### 8. Modding, built in
+A new trade, mini-game, map or game mode should be a mod, and the core game the first of them
+(the plan, phase by phase: [MODDING.md](MODDING.md)). Before many more trades are added, so each
+new one is built the moddable way.
+- [x] **Guard rails:** the Moddability rule (CLAUDE.md); banned non-deterministic APIs in the sim.
+- [ ] **Data mods:** `mods/<id>/` folders with `mod.json`, several def, texture and sound roots,
+  `$patch` merges, the mod set in co-op's build tag, saves and replays; a Mods window; `--check-mod`.
+- [ ] **Registries and assemblies:** sessions, work views, codecs, commands, systems, work givers,
+  roles, crises, lessons and bot hooks registered, not switched on; mod DLLs loaded. Hashes unchanged.
+- [ ] **The carpenter moves out** to `mods/carpenter`: the proof the API is enough.
+- [ ] **Game modes:** the season, the practice yard and the arena as `IGameMode`s.
+- [ ] **The bard, built as a mod** from [BARD-PLAN.md](BARD-PLAN.md); the ModKit's templates and
+  the coding-agent skills (`.claude/skills/new-trade` and friends).
+
 ## Then: M4, Whispers
 
 The traitors: the game's hook, and what makes it a game people tell others about.
@@ -330,9 +344,9 @@ An authoritative server filtered by `Perception`, matchmaking, moderation, voice
   eavesdropping and the traitors. Steamworks voice for capture and the codec.
 - **A word filter** on every line, typed or spoken (VOICE.md: a misheard word can come out rude).
 
-### Mods
-New maps, buildings, trades, game modes and character options, as far as the defs allow; Steam
-Workshop eventually. Content is already all in `data/defs`, which is most of the way there.
+### Steam Workshop
+Uploading and subscribing to mods (Steamworks UGC) once modding is built (Now, 8; [MODDING.md](MODDING.md)):
+a subscribed item is a mod folder in the user mods directory, with the code notice for one that runs code.
 
 ### Villagers who listen
 No AI acts on what a player says, typed or spoken: orders go through F at the counter, and only bots
