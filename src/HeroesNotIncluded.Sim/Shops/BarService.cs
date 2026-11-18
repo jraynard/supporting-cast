@@ -61,7 +61,7 @@ public static class BarService
     /// </summary>
     private static bool Waiting(Simulation sim, Entity server, Order o) =>
         o.IsOpen && (o.Kind.Kind is ServiceKind.Drink or ServiceKind.MixedDrink || Hospitality.Provisions.IsBoard(sim, o)) && o.KnownBy.Contains(server)
-        && (o.Assignee.IsNull || o.Assignee == server) && o.Poster != server && Handing.InReach(sim, server, o.Poster);
+        && (o.Assignee == server || (o.Assignee.IsNull && ShopSystem.MayTake(sim, server, o))) && o.Poster != server && Handing.InReach(sim, server, o.Poster);
 
     /// <summary>Lower serves first: the drink matching the order, then your own orders, then the line's order.</summary>
     private static long Rank(Simulation sim, Entity server, Entity drink, Order o)

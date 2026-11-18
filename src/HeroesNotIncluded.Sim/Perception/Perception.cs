@@ -712,6 +712,10 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         !blind && sim.Shops.Find(order) is { } e && (Omniscient || e.KnownBy.Contains(viewer)) && sim.Drinking.Wanted(order) is { } name
             ? sim.Defs.Thing(name) : null;
 
+    /// <summary>Whether the order's the viewer's to take on: their trade's work where they work (<see cref="Shops.ShopSystem.MayTake"/>).</summary>
+    public bool MayTake(int order) =>
+        !blind && sim.Shops.Find(order) is { } e && Shops.ShopSystem.MayTake(sim, viewer, e);
+
     /// <summary>Whether the viewer may turn this order away, "Sorry, we're out" (<see cref="Shops.ShopSystem.MayTurnAway"/>).</summary>
     public bool MayTurnAway(int order) =>
         !blind && sim.Shops.Find(order) is { } e && Shops.ShopSystem.MayTurnAway(sim, viewer, e);

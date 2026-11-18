@@ -105,7 +105,7 @@ public sealed partial class VillageGame
         if (open)
         {
             var (share, color, words) = TimeLeft(e.PostedTick, e.Deadline, now);
-            var take = !e.Mine && e.AssigneeName.Length == 0;
+            var take = !e.Mine && e.AssigneeName.Length == 0 && View.MayTake(e.Id);
             var errand = e.MineToDo ? View.Awaiting().Cast<KnownErrand?>().FirstOrDefault(a => a!.Value.Order == e.Id) : null;
             var carry = e.MineToDo && e.Kind is Sim.Defs.ServiceKind.Drink or Sim.Defs.ServiceKind.MixedDrink;
             var refuse = View.MayTurnAway(e.Id);
@@ -475,7 +475,7 @@ public sealed partial class VillageGame
         {
             ImGui.PushID(o.Id);
             TextC(Theme.Text, $"Wants {o.KindLabel}, {o.Price} silver.");
-            if (o.AssigneeName.Length == 0)
+            if (o.AssigneeName.Length == 0 && View.MayTake(o.Id))
             {
                 ImGui.SameLine(0, Gui.S(8));
                 if (ImGui.Button("Take order"u8, in _autoSize))

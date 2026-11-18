@@ -948,6 +948,29 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     }
 
     /// <summary>
+    /// Whether this order is <paramref name="who"/>'s to take on: something their trade sees to where
+    /// they work (an empath overhearing a drink ordered at the inn can't say they'll pour it), a quest
+    /// if they broker them, a piece asked for at their own shop, or a lodger's board at an inn with no
+    /// kitchen. The same as the bots' and the AI's (<c>BotPlayer.KindsFor</c>, <see cref="ServeJob"/>).
+    /// </summary>
+    public static bool MayTake(Simulation sim, Entity who, Order e)
+    {
+        if (!sim.World.TryGet<Trade>(who, out var t))
+            return false;
+        var trade = t.Def;
+        var kind = e.Kind.Kind;
+        if (kind == ServiceKind.Quest && trade.Brokers)
+            return true;
+        if (!trade.HasWorkplace)
+            return false;
+        if (kind == ServiceKind.Goods)
+            return e.Where.IsNull || ShopPrices.Keeps(sim, who, e.Where);
+        if (kind == ServiceKind.Meal && trade.Role == TownRole.Tavern && Hospitality.Provisions.Split(sim))
+            return true;
+        return e.Kind.AtRole == trade.Role && trade.Serving(kind);
+    }
+
+    /// <summary>
     /// "Sorry, we're out": the keeper says so aloud and the order is over. The asker takes it better
     /// than being left to wait it out, and won't ask for that again for a while (<see cref="MayAsk"/>).
     /// </summary>
@@ -973,7 +996,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// <summary>Someone says they'll see to an order they know of. False if they can't take it.</summary>
     public bool Accept(Simulation sim, Entity who, int id)
     {
-        if (Find(id) is not { IsOpen: true } e || e.Poster == who || !e.Assignee.IsNull || !e.KnownBy.Contains(who))
+        if (Find(id) is not { IsOpen: true } e || e.Poster == who || !e.Assignee.IsNull || !e.KnownBy.Contains(who) || !MayTake(sim, who, e))
             return false;
         e.Assignee = who;
         e.AssigneeName = sim.World.Get<Creature>(who).Name;
@@ -1154,7 +1177,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         foreach (var e in sim.Shops.All)
             if (e.IsOpen && HandsOver(e.Kind.Kind) && e.Assignee.IsNull && e.Poster != who && e.KnownBy.Contains(who)
                 && w.IsAlive(e.Poster) && w.TryGet<Position>(e.Poster, out var at) && at.Cell == cell
-                && ShopPrices.Keeps(sim, who, e.Where) && Handing.InReach(sim, who, e.Poster))
+                && ShopPrices.Keeps(sim, who, e.Where) && MayTake(sim, who, e) && Handing.InReach(sim, who, e.Poster))
                 return e;
         return null;
     }
