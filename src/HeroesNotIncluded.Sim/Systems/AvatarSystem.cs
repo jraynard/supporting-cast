@@ -152,6 +152,9 @@ public enum AvatarActionKind
 
     /// <summary>Buck a felled trunk into logs (<see cref="Carpentry.BuckSession"/>). At once.</summary>
     Buck,
+
+    /// <summary>A mod's own action (play the pipe), done by the module that offered it (<see cref="AvatarAction.By"/>). At once.</summary>
+    Custom,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -177,7 +180,7 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
     public Modding.ITradeModule? By { get; init; }
 
     /// <summary>Done at once on the key press, rather than worked at while it's held.</summary>
-    public bool Instant => Kind is AvatarActionKind.PutDown or AvatarActionKind.Deliver or AvatarActionKind.PickUp
+    public bool Instant => Kind is AvatarActionKind.Custom or AvatarActionKind.PutDown or AvatarActionKind.Deliver or AvatarActionKind.PickUp
         or AvatarActionKind.Store or AvatarActionKind.OpenStorage or AvatarActionKind.Tinker
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
         or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean

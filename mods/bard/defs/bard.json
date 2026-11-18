@@ -1,0 +1,20 @@
+// The bard (docs/BARD-PLAN.md): a trade only a player takes, never an AI villager's.
+{
+  "trades": [
+    { "name": "Bard", "label": "bard", "pace": "Steady", "playerOnly": true,
+      "description": "Music for the town: plays the pipe for whoever will listen. Comes only if someone plays it.",
+      "kit": [ { "def": "Pipe" } ] }
+  ],
+  "things": [
+    // A tin whistle in D. Its music is the bard mod's own kind of def, below.
+    { "name": "Pipe", "label": "tin pipe", "category": "Item", "mass": 0.2, "sprite": "items/pipe", "flammability": 0.1, "maxHp": 40 }
+  ],
+  // The bard mod's own kind (DefDatabase.ModDefs): how an instrument sounds and what it plays.
+  "instruments": [
+    { "name": "Pipe", "label": "tin pipe", "voice": "Breath",
+      // One root sample per octave (sounds/sounds.json), each pitched up to the scale's notes.
+      "octaves": [ "bard.pipe.d5", "bard.pipe.d6" ],
+      // The major scale from the root, in semitones: the eight note keys.
+      "scale": [ 0, 2, 4, 5, 7, 9, 11, 12 ] }
+  ]
+}

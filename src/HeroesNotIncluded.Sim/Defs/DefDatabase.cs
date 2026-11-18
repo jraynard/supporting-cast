@@ -346,6 +346,11 @@ public sealed class DefDatabase
                 throw new Exception($"Failed to read defs: {e.Message}", e);
             }
             var db = new DefDatabase();
+            // Kinds the game doesn't know are a mod's own ("instruments"): kept, merged and patched like the
+            // game's, and read typed through ModDefs.
+            var known = typeof(DefFile).GetProperties().Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (var kind in _kinds.Where(k => !known.Contains(k.Key)))
+                db._modKinds[kind.Key] = [.. kind.Order.Select(n => kind.ByName[n])];
             db.AddFile(file, "defs");
             db.ResolveAll();
             return db;
@@ -631,6 +636,45 @@ public sealed class DefDatabase
     public BuildingDef Building(string name) => Lookup(_buildings, name);
 
     public bool HasBuilding(string name) => _buildings.ContainsKey(name);
+
+    private readonly Dictionary<string, List<JsonObject>> _modKinds = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<(string, Type), object> _modDefs = [];
+
+    /// <summary>
+    /// A mod's own kind of def (a top-level key the game doesn't know, "instruments"), read as
+    /// <typeparamref name="T"/>, in load order, once. Defs implementing <see cref="IModDef"/> resolve their
+    /// references after all of the kind are read. Empty when no file has the kind (its mod is off).
+    /// </summary>
+    public IReadOnlyList<T> ModDefs<T>(string kind) where T : Def
+    {
+        if (_modDefs.TryGetValue((kind, typeof(T)), out var cached))
+            return (List<T>)cached;
+        var list = new List<T>();
+        foreach (var raw in _modKinds.GetValueOrDefault(kind) ?? [])
+        {
+            T def;
+            try
+            {
+                def = raw.Deserialize<T>(JsonOptions) ?? throw new JsonException("empty");
+            }
+            catch (JsonException e)
+            {
+                throw new Exception($"Failed to read a def in \"{kind}\": {e.Message}", e);
+            }
+            if (string.IsNullOrEmpty(def.Label))
+                def.Label = def.Name;
+            def.Index = list.Count;
+            list.Add(def);
+        }
+        _modDefs[(kind, typeof(T))] = list;
+        foreach (var def in list.OfType<IModDef>())
+            def.Resolve(this);
+        return list;
+    }
+
+    /// <summary>A mod's def of its own kind by name (see <see cref="ModDefs{T}"/>); null if there's none.</summary>
+    public T? ModDef<T>(string kind, string name) where T : Def =>
+        ModDefs<T>(kind).FirstOrDefault(d => string.Equals(d.Name, name, StringComparison.OrdinalIgnoreCase));
     public BuildingKitDef Kit(string name) => Lookup(_kits, name);
     public TradeDef Trade(string name) =>
         TryTrade(name, out var def) ? def : throw new Exception($"Unknown TradeDef '{name}'");

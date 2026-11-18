@@ -95,6 +95,9 @@ public static class ModCheck
                 notes.Add($"Game code: {asm.GetName().Name}");
             if (failed.Count == 0)
             {
+                // A check, not a switch: the content this run had comes back after.
+                var simBefore = Sim.Modding.SimContent.Mods.ToList();
+                var gameBefore = GameMods.Loaded;
                 try
                 {
                     Sim.Modding.SimContent.Use(code.Sim);
@@ -112,6 +115,11 @@ public static class ModCheck
                 catch (Exception ex) when (ex is not OutOfMemoryException)
                 {
                     errors.Add($"code: {ex.Message}");
+                }
+                finally
+                {
+                    Sim.Modding.SimContent.Use(simBefore);
+                    GameMods.Use(gameBefore);
                 }
             }
         }

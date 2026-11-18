@@ -77,26 +77,30 @@ public interface ITradeModule
 /// <summary>The trade modules registered, in order, and the core's ways of asking them.</summary>
 public static class Trades
 {
-    /// <summary>Every module: the game's own, then each mod's, in load order.</summary>
-    public static IReadOnlyList<ITradeModule> All => SimContent.TradeModules;
+    /// <summary>
+    /// The modules of this simulation: the game's own, then each mod's, in load order, as they were when
+    /// it was made. A simulation keeps its own (a mod's hooks read that mod's systems, which only a
+    /// simulation made with the mod has), so the content changing later can't reach into it.
+    /// </summary>
+    public static IReadOnlyList<ITradeModule> All(Simulation sim) => sim.TradeModules;
 
-    public static ITradeModule? Of(string trade) => All.FirstOrDefault(m => m.Trade == trade);
+    public static ITradeModule? Of(Simulation sim, string trade) => All(sim).FirstOrDefault(m => m.Trade == trade);
 
     public static ITradeModule? WorkingAt(Simulation sim, Entity worker, Entity station, RecipeDef recipe) =>
-        All.FirstOrDefault(m => m.AppliesAt(sim, worker, station, recipe));
+        All(sim).FirstOrDefault(m => m.AppliesAt(sim, worker, station, recipe));
 
     public static ITradeModule? MendingAt(Simulation sim, Entity worker, Entity station, Entity item) =>
-        All.FirstOrDefault(m => m.AppliesToRepair(sim, worker, station, item));
+        All(sim).FirstOrDefault(m => m.AppliesToRepair(sim, worker, station, item));
 
     public static void Made(Simulation sim, List<Entity> made, Entity maker)
     {
-        foreach (var m in All)
+        foreach (var m in All(sim))
             m.Made(sim, made, maker);
     }
 
     public static Job? JobFor(Simulation sim, Entity pawn, WorkType type)
     {
-        foreach (var m in All)
+        foreach (var m in All(sim))
             if (m.JobFor(sim, pawn, type) is { } job)
                 return job;
         return null;
@@ -104,7 +108,7 @@ public static class Trades
 
     public static AvatarAction? EarlyActionAt(Simulation sim, Entity avatar, int3 cell, int3 here)
     {
-        foreach (var m in All)
+        foreach (var m in All(sim))
             if (m.EarlyActionAt(sim, avatar, cell, here) is { } a)
                 return a with { By = m };
         return null;
@@ -112,13 +116,13 @@ public static class Trades
 
     public static AvatarAction? SiteActionAt(Simulation sim, Entity avatar, Entity site, int3 cell)
     {
-        foreach (var m in All)
+        foreach (var m in All(sim))
             if (m.SiteActionAt(sim, avatar, site, cell) is { } a)
                 return a with { By = m };
         return null;
     }
 
-    public static bool Busy(Simulation sim, Entity site) => All.Any(m => m.Busy(sim, site));
+    public static bool Busy(Simulation sim, Entity site) => All(sim).Any(m => m.Busy(sim, site));
 
     /// <summary>Every town building offered to every trade, to stock what's its own.</summary>
     public static void StockTown(Simulation sim)
@@ -129,13 +133,13 @@ public static class Trades
 
     public static void Stock(Simulation sim, Entity building)
     {
-        foreach (var m in All)
+        foreach (var m in All(sim))
             m.Stock(sim, building);
     }
 
     public static void Burned(Simulation sim, ThingDef def, int3 cell, byte facing)
     {
-        foreach (var m in All)
+        foreach (var m in All(sim))
             m.Burned(sim, def, cell, facing);
     }
 }

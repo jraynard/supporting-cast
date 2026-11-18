@@ -75,8 +75,10 @@ public sealed partial class VillageGame
         var mouse = live && session >= 0 ? MouseOnWork(session) : WorkMouse.None;
         if ((f && map.Pressed(Act.Use)) || mouse.Click >= 0)
             _workPressedAt = _time;
+        // A mod's own inputs for its session (a note on the pipe), read from its own controls.
+        var custom = live ? Mods.GameMods.InputsFor(ModWorkView, _work.Session) : null;
         _work.Update(_sim, _avatar, steps, (f && map.Pressed(Act.Use)) || mouse.Press, f && live && (map.Down(Act.Use) || mouse.Held),
-            axis != 0 ? axis : mouse.Axis, Issue, axis2 != 0 ? axis2 : mouse.Axis2, rune >= 0 ? rune : mouse.Rune, act || mouse.Act, mouse.Point, mouse.Click);
+            axis != 0 ? axis : mouse.Axis, Issue, axis2 != 0 ? axis2 : mouse.Axis2, rune >= 0 ? rune : mouse.Rune, act || mouse.Act, mouse.Point, mouse.Click, custom);
     }
 
     /// <summary>What the mouse did to the work in hand this frame, as the keys would have.</summary>

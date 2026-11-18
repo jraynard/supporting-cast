@@ -51,7 +51,7 @@ public sealed class WorkPredictor
     /// (<see cref="WorkInputKind.Click"/>), or -1.
     /// </summary>
     public void Update(Simulation sim, Entity worker, int steps, bool press, bool held, int axis, Action<ISimCommand> send, int axis2 = 0, int rune = -1, bool act = false,
-        int point = -1, int click = -1)
+        int point = -1, int click = -1, IReadOnlyList<int>? custom = null)
     {
         if (!sim.World.IsAlive(worker) || !sim.World.TryGet<WorkSession>(worker, out var real))
         {
@@ -97,6 +97,9 @@ public sealed class WorkPredictor
                 _point = point;
             if (click >= 0)
                 _pending.Add(new WorkInput(at, WorkInputKind.Click, click)); // after the point: the session knows where it is first
+            if (custom != null)
+                foreach (var value in custom)
+                    _pending.Add(new WorkInput(at, WorkInputKind.Custom, value)); // a mod's own (a note)
             (_held, _axis, _axis2) = (held, axis, axis2);
             if (_pending.Count > 0 && steps == 0)
                 steps = 1; // an input needs a step to land on

@@ -147,7 +147,7 @@ public static class Practice
             // Silver to spare for what they came for: a meal and a round on the way mustn't leave the
             // lesson's customer unable to pay for it (a tinker's curio went unasked for, its bearer broke).
             Inventory.Stow(sim, e, sim.CreateItem(sim.Defs.Thing(Shops.Coin.Silver), CustomerPurse));
-            if (Modding.Trades.Of(trade) is { } module)
+            if (Modding.Trades.Of(sim, trade) is { } module)
             {
                 module.PracticeCustomer(sim, player, e, k); // the trade's own customers
                 continue;

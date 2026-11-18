@@ -388,7 +388,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
                 }
 
         foreach (var seat in order)
-            if (!dealt.ContainsKey(seat) && open.Find(t => !seat.Never.Contains(t)) is { } any)
+            if (!dealt.ContainsKey(seat) && open.Find(t => !seat.Never.Contains(t) && !t.PlayerOnly) is { } any)
                 Give(seat, any);
 
         var fallback = defs.AllTrades.Find(t => t.Unlimited);
@@ -408,7 +408,9 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         foreach (var (seat, trade) in dealt)
         {
             Entity body;
-            if (free.Count > 0)
+            if (trade is { PlayerOnly: true })
+                body = Players.SpawnNewcomer(sim, seat.Name); // the bard comes to town; the villagers stay who they are
+            else if (free.Count > 0)
             {
                 body = free[0];
                 free.RemoveAt(0);
@@ -423,7 +425,7 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
             PlaceAtWork(sim, body, trade);
         }
 
-        var open = sim.Defs.AllTrades.Where(t => !t.Unlimited && !dealt.Exists(d => d.Trade == t)).ToList();
+        var open = sim.Defs.AllTrades.Where(t => !t.Unlimited && !t.PlayerOnly && !dealt.Exists(d => d.Trade == t)).ToList();
         var fallback = sim.Defs.AllTrades.Find(t => t.Unlimited);
         foreach (var villager in free)
         {

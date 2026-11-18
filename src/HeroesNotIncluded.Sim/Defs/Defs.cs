@@ -21,6 +21,12 @@ public abstract class Def
     public override string ToString() => Name;
 }
 
+/// <summary>A mod's own def (<see cref="DefDatabase.ModDefs{T}"/>) that names others: resolved once all of its kind are read.</summary>
+public interface IModDef
+{
+    void Resolve(DefDatabase db);
+}
+
 /// <summary>
 /// What fills a map cell: air, or a solid block (dirt, stone, water...). Creatures stand on top of
 /// solid blocks, so the movement and fire properties describe the block's top surface.

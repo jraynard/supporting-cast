@@ -104,6 +104,24 @@ is the first trade built as a mod from nothing.
 An `IGameMode` sets a round up (map, deal, extra systems), names its phases, decides when it's won or
 lost and what the reveal shows. The season, the practice yard and the arena are the core's three.
 
+### What the bard needed (the first trade built from nothing)
+
+Building the bard (`mods/bard`) only through the doors above showed what a new trade needs that a moved
+one didn't. Each is now part of the API:
+- **A trade only players take** (`"playerOnly": true` on the trade): never dealt to an AI villager or a
+  seat that didn't ask, and its player comes to town as a newcomer.
+- **Defs of a mod's own kind** (`"instruments"` in its defs): kept, merged and patched like the game's,
+  read typed with `DefDatabase.ModDefs<T>(kind)`; an `IModDef` resolves its references.
+- **Inputs of a mod's own** (`WorkInputKind.Custom`, a session's `Custom(int)`): its game half packs them
+  each frame (`GameRegistry.WorkInput<T>`), stamped and batched like the game's, so co-op and replays carry them.
+- **Controls of a mod's own** (`GameRegistry.Control`): rebindable in Settings, with a context of their own
+  so they don't clash with the game's.
+- **An action of a mod's own** (`AvatarActionKind.Custom`, done by the module that offered it).
+- **Drills** (`SimRegistry.Drill`, `--drill NAME`): a moment staged at once for trying a game out.
+- **A simulation keeps the modules it was made with** (`Simulation.TradeModules`), and `--check-mod`
+  puts the content back after looking: a check once left the carpenter's hooks reaching into a
+  simulation made without its systems.
+
 ## The rules a mod keeps
 
 The game's own rules (CLAUDE.md) bind its mods:
@@ -174,5 +192,8 @@ The game's own rules (CLAUDE.md) bind its mods:
   they need to write a mod's files into the mod first. Only five sprites are the carpenter's alone; the rest
   (bows, quivers, logs) are the core's. Left in the core they change nothing about play.
 - [ ] Game modes.
-- [ ] The bard as a mod; the ModKit and the skills.
+- [x] The bard as a mod, first pass: a player-only trade with a tin pipe, played free (eight scale keys and
+  the octave above), notes heard as you press them and from others in earshot. `--new-game --trade Bard
+  --mods bard --drill pipe`. Not on by default yet. The rest of BARD-PLAN.md follows, by ear, with you.
+- [ ] The ModKit and the skills.
 - [ ] Steam Workshop (ROADMAP.md, Later).

@@ -4,6 +4,7 @@ using Narsil.Mods;
 namespace HeroesNotIncluded.Tests;
 
 /// <summary>Mods as the game sees them: the shipped example, content layering, saves and the check.</summary>
+[Collection(nameof(ModCodeTests))] // checks load mods' code: alone, the content is process-wide
 public class ModContentTests
 {
     private static string ModsDir => DevPaths.Mods ?? throw new InvalidOperationException("no mods/ in the checkout");

@@ -49,4 +49,6 @@ public sealed partial class VillageGame
     internal void ShowTip(string text) => Tip(text);
 
     internal float2? AutoSize => _autoSize;
+
+    internal bool WorkLive => !Paused && Working;
 }

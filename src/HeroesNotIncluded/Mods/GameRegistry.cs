@@ -34,6 +34,7 @@ public sealed class GameRegistry
     internal readonly List<StationTab> StationTabs = [];
     internal readonly List<Func<WorkView, Entity, Entity, string?>> MendHints = [];
     internal readonly List<Action<WorkView, Entity>> WagonPanels = [];
+    internal readonly Dictionary<Type, Func<WorkView, WorkSession, IEnumerable<int>>> Inputs = [];
 
     /// <summary>
     /// How a work session (a mini-game) is drawn while it's in hand: open the window with
@@ -69,6 +70,30 @@ public sealed class GameRegistry
 
     /// <summary>What the Mend button's tip says for a piece mended by this mod's hand game; null if it isn't this mod's.</summary>
     public void MendHint(Func<WorkView, Entity, Entity, string?> hint) => MendHints.Add(hint);
+
+    /// <summary>
+    /// A control of the mod's own (a note on the pipe), rebindable in Settings like the game's and live
+    /// while working (the work context). Returns its id (<c>modId:id</c>), which the mod asks
+    /// <see cref="WorkView.Down"/> and friends about, and names in text with <see cref="WorkView.Glyph"/>.
+    /// </summary>
+    /// <param name="context">
+    /// When it's live, for Settings' clash check: <see cref="Controls.Work"/> (the default) clashes with the game's
+    /// mini-game keys; a context of the mod's own ("Music") clashes only with its own.
+    /// </param>
+    public string Control(string id, string label, Narsil.Platform.Binding[] keys, Narsil.Platform.Binding[] pad, string context = Controls.Work)
+    {
+        var full = $"{ModId}:{id}";
+        Controls.Map.Add(new Narsil.Platform.ActionDef(full, label, "Hands-on work", context, keys, pad));
+        return full;
+    }
+
+    /// <summary>
+    /// This frame's inputs of the mod's own for a session in hand (<see cref="WorkInputKind.Custom"/>):
+    /// values the session's <c>Custom</c> unpacks (a note's degree, velocity, on or off). Stamped and
+    /// sent like the game's own, so co-op and replays carry them. Read the mod's controls here.
+    /// </summary>
+    public void WorkInput<T>(Func<WorkView, T, IEnumerable<int>> inputs) where T : WorkSession =>
+        Inputs[typeof(T)] = (view, s) => inputs(view, (T)s);
 
     /// <summary>A part of a wagon's window (its woodwork's mending): drawn under the wagon's own.</summary>
     public void WagonPanel(Action<WorkView, Entity> draw) => WagonPanels.Add(draw);
@@ -182,6 +207,19 @@ public sealed class WorkView
     public void DrawToolSwing(Brutal.ImGuiApi.ImDrawListPtr dl, string sprite, float faceAlong, float raise, float2 strike, float px, Brutal.ImGuiApi.ImColor8 tint) =>
         _game.ToolSwing(dl, sprite, faceAlong, raise, strike, px, tint);
 
+    /// <summary>Whether a control (the game's, or a mod's: <see cref="GameRegistry.Control"/>) is held, pressed this frame, let go this frame.</summary>
+    public bool Down(string control) => Controls.Map.Down(control);
+
+    public bool Pressed(string control) => Controls.Map.Pressed(control);
+
+    public bool Released(string control) => Controls.Map.Released(control);
+
+    /// <summary>A control's key cap for the device last used, for the words on a mini-game.</summary>
+    public static string Glyph(string control) => Controls.Glyph(control);
+
+    /// <summary>Whether the work's clock is running (not paused, the session live): read controls only then.</summary>
+    public bool Live => _game.WorkLive;
+
     /// <summary>A tooltip in the game's style.</summary>
     public void Tip(string text) => _game.ShowTip(text);
 
@@ -196,6 +234,10 @@ public sealed class WorkView
 public static class GameMods
 {
     private static List<GameRegistry> _registries = [];
+    private static IReadOnlyList<(string ModId, Assembly Assembly)> _loaded = [];
+
+    /// <summary>The game halves in use, to put back after a look at others (<see cref="ModCheck"/>).</summary>
+    public static IReadOnlyList<(string ModId, Assembly Assembly)> Loaded => _loaded;
 
     /// <summary>Call each mod's <see cref="IGameMod"/>s (load order). Throws naming the mod whose registration failed.</summary>
     public static void Use(IReadOnlyList<(string ModId, Assembly Assembly)> mods)
@@ -218,7 +260,9 @@ public static class GameMods
             registries.Add(registry);
         }
         _registries = registries;
+        _loaded = [.. mods];
         _worldSounds = null;
+        Controls.Map.Load(Settings.Current.Bindings); // a mod's own controls' saved bindings, now they're there
     }
 
     private static T? Find<T>(Type session, Func<GameRegistry, Dictionary<Type, T>> table) where T : class
@@ -261,6 +305,10 @@ public static class GameMods
         _registries.SelectMany(r => r.MendHints).Select(h => h(view, station, item)).FirstOrDefault(h => h != null);
 
     internal static IEnumerable<Action<WorkView, Entity>> WagonPanels => _registries.SelectMany(r => r.WagonPanels);
+
+    /// <summary>This frame's inputs of a mod's own for the session in hand; null if no mod reads any for it.</summary>
+    internal static List<int>? InputsFor(WorkView view, WorkSession? session) =>
+        session != null && Find(session.GetType(), r => r.Inputs) is { } inputs ? [.. inputs(view, session)] : null;
 
     internal static bool TrySound(WorkSoundContext ctx, WorkSession session)
     {

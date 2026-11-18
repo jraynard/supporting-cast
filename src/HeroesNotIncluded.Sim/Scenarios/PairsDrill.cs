@@ -33,7 +33,7 @@ public static class PairsDrill
         }
 
         // Each trade's own work for two (the carpenter's great log and wagon axle).
-        foreach (var module in Modding.Trades.All)
+        foreach (var module in Modding.Trades.All(sim))
             staged.AddRange(module.PairsDrill(sim));
 
         // The keeper: a villager dead on a shrine pallet, and every empath's mana full.

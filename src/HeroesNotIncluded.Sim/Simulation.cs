@@ -228,6 +228,9 @@ public sealed partial class Simulation
     /// A map of air with a flat layer of the first solid block def at z = 0, so creatures can
     /// stand at z = 1 straight away. Map generators replace the blocks.
     /// </summary>
+    /// <summary>The trade modules this simulation was made with (<see cref="Modding.Trades.All"/>).</summary>
+    public IReadOnlyList<Modding.ITradeModule> TradeModules { get; } = Modding.SimContent.TradeModules;
+
     public Simulation(DefDatabase defs, int width, int height, ulong seed, int depth = DefaultDepth)
     {
         Defs = defs;

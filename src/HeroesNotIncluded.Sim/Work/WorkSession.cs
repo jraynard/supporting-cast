@@ -55,6 +55,13 @@ public enum WorkInputKind : byte
     /// that doesn't care where takes it as a press of F (<see cref="WorkSession.Clicked"/>). Appended last.
     /// </summary>
     Click,
+
+    /// <summary>
+    /// A mod's own input (a note on a pipe): <see cref="WorkInput.Value"/> is the session's to unpack,
+    /// stamped and batched like the rest, so the predicted and the replayed session see it alike.
+    /// Off the network: check what you unpack. Appended last.
+    /// </summary>
+    Custom,
 }
 
 /// <summary>One input to a session, stamped with the step it happened on.</summary>
@@ -245,6 +252,9 @@ public abstract class WorkSession
     /// <summary>The game's other action (<see cref="WorkInputKind.Act"/>), once per press.</summary>
     protected virtual void Act() { }
 
+    /// <summary>A mod's own input (<see cref="WorkInputKind.Custom"/>): the value as its game half packed it. Off the network: check it.</summary>
+    protected virtual void Custom(int value) { }
+
     /// <summary>
     /// The mouse pointing at (u, v) on the mini-game's panel, each 0..1 (<see cref="WorkInputKind.Point"/>).
     /// <see cref="PointU"/> and <see cref="PointV"/> still hold where it was before (null if a key had it).
@@ -322,6 +332,9 @@ public abstract class WorkSession
                 break;
             case WorkInputKind.Act:
                 Act();
+                break;
+            case WorkInputKind.Custom:
+                Custom(input.Value);
                 break;
             case WorkInputKind.Click:
                 if ((input.Value & OffPicture) != 0)

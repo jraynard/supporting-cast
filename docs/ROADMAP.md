@@ -221,8 +221,10 @@ new one is built the moddable way.
   default, off with `--mods -carpenter`); the core and the game never name it.
 - [ ] **Art and sound tools write a mod's files into the mod** (then the carpenter's five sprites and its sounds move).
 - [ ] **Game modes:** the season, the practice yard and the arena as `IGameMode`s.
-- [ ] **The bard, built as a mod** from [BARD-PLAN.md](BARD-PLAN.md); the ModKit's templates and
-  the coding-agent skills (`.claude/skills/new-trade` and friends).
+- [ ] **The bard, built as a mod** from [BARD-PLAN.md](BARD-PLAN.md): first pass in (a player-only trade,
+  the tin pipe played free, `mods/bard`); playtest how it feels, then the other instruments, the tune book
+  and the lead-in, the audience and dancing.
+- [ ] **The ModKit's templates and the coding-agent skills** (`.claude/skills/new-trade` and friends).
 
 ## Then: M4, Whispers
 

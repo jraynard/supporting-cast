@@ -25,6 +25,13 @@ public sealed class TradeDef : Def
     public bool Unlimited { get; set; }
 
     /// <summary>
+    /// Only ever a player's, and only one who asked for it (the bard): never dealt to an AI villager or to a
+    /// seat that didn't want it, and its player comes to town as a newcomer rather than taking a villager's
+    /// place. A round nobody asks for it in plays as if it weren't there.
+    /// </summary>
+    public bool PlayerOnly { get; set; }
+
+    /// <summary>
     /// How busy the trade keeps its holder, shown where a trade is chosen: some players want a trade
     /// they can take at their own pace, and should be able to find it. Presentation only.
     /// </summary>
