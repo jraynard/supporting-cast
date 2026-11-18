@@ -629,13 +629,27 @@ public class TinkerTradeTests
         return (false, s.Raised < Carpentry.JoinSession.SafeAt(s.Seat) * 0.7f, 0, false);
     }
 
+    /// <summary>Nailing true: the head kept over the nail, a tap to set it, then blows sized to drive it flush; a bent one drawn.</summary>
+    internal static (bool, bool, int, bool) NailTrue(WorkSession w)
+    {
+        var s = (Carpentry.NailSession)w;
+        if (s.Bent)
+            return (false, false, 0, true);
+        if (s.Settling > 0)
+            return (false, false, 0, false);
+        var steer = MathF.Abs(s.Offset) > s.OnHeadWidth * 0.4f ? -Math.Sign(s.Offset) : 0;
+        var want = !s.Set ? Carpentry.NailSession.SetMax * 0.6f : Math.Min(1f, (1f - s.Depth) / Carpentry.NailSession.DeepestDrive + 0.05f);
+        return (false, s.Raised < want || (s.Raised > 0f && steer != 0 && s.Raised < 1f), steer, false);
+    }
+
     [Fact]
-    public void TheCarpenterHewsANewAxleAndPegsTheSprungBoard()
+    public void TheCarpenterHewsANewAxleAndNailsTheSprungBoard()
     {
         var (sim, me, _, wagon) = WithAWagon("Carpenter", WagonDamage.Axle | WagonDamage.Board);
         Beside(sim, me, wagon);
         Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Wood"), 2));
         Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Planks"), 1));
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("ClawHammer"), 1));
         var wood = Wagons.WoodOn(sim, me);
         var planks = Wagons.PlanksOn(sim, me);
 
@@ -646,8 +660,8 @@ public class TinkerTradeTests
         Assert.Equal(wood - Wagons.AxleWood, Wagons.WoodOn(sim, me));
 
         sim.ApplyNow(new PegBoardCommand(me, wagon));
-        Assert.Equal(Carpentry.JoinWork.Board, Assert.IsType<Carpentry.JoinSession>(sim.World.Get<WorkSession>(me)).Work);
-        Play(sim, me, JoinTrue);
+        Assert.IsType<Carpentry.NailSession>(sim.World.Get<WorkSession>(me));
+        Play(sim, me, NailTrue);
         Assert.False(Wagons.Damaged(sim, wagon));
         Assert.Equal(planks - Wagons.BoardPlanks, Wagons.PlanksOn(sim, me));
         Assert.Equal(me, sim.World.Get<Wagon>(wagon).JoinedBy);
@@ -739,18 +753,24 @@ public class TinkerTradeTests
     }
 
     [Fact]
-    public void DrivenTooHardAJointSplits()
+    public void HammeredHardBeforeItsSetANailBends()
     {
         var (sim, me, _, wagon) = WithAWagon("Carpenter", WagonDamage.Board);
         Beside(sim, me, wagon);
         Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Planks"), 1));
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("ClawHammer"), 1));
         sim.ApplyNow(new PegBoardCommand(me, wagon));
-        var session = (Carpentry.JoinSession)sim.World.Get<WorkSession>(me);
-        // Every blow raised all the way: the first goes in, the next splits it as it tightens.
-        Play(sim, me, w => w is Carpentry.JoinSession { Settling: 0 } s ? (false, s.Raised < 1f, 0, false) : (false, false, 0, false));
-        Assert.False(Wagons.Damaged(sim, wagon)); // forced home, cracked: it holds, but poorly
-        Assert.True(session.Splits > 0);
-        Assert.True(session.Quality < 0.5f);
+        var session = Assert.IsType<Carpentry.NailSession>(sim.World.Get<WorkSession>(me));
+        // Every blow raised all the way, the claw for a bent one: the nail never sets.
+        var predictor = new WorkPredictor();
+        for (var t = 0; t < 60 * 20 && sim.World.Has<WorkSession>(me); t++)
+        {
+            sim.Tick();
+            var (held, act) = predictor.Session is Carpentry.NailSession n ? (n.Raised < 1f && !n.Bent, n.Bent) : (false, false);
+            predictor.Update(sim, me, 1, false, held, 0, c => sim.ApplyNow(c), act: act);
+        }
+        Assert.True(session.BentNails > 1, $"{session.BentNails} bent");
+        Assert.True(Wagons.Damaged(sim, wagon), "no nail went in");
     }
 
     [Fact]

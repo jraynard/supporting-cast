@@ -56,11 +56,10 @@ public class QuestTaleTests
                 sim.World.Add(eq.Weapon, new Crafted { Quality = Quality.Fine, Maker = smith });
         var names = ExpeditionTests.SendAndWait(sim, me, party).Names;
         var back = sim.Creatures().Where(e => sim.World.Has<Adventurer>(e) && names.Contains(Name(sim, e))).ToList();
-        Assert.All(back, e =>
-        {
-            if (sim.World.TryGet<Equipment>(e, out var eq) && sim.World.IsAlive(eq.Weapon))
-                Assert.Equal(smith, sim.World.Get<Crafted>(eq.Weapon).Maker);
-        });
+        // The smith's name comes home on every blade that bears one (a club picked up in town bears none).
+        var signed = back.Where(e => sim.World.TryGet<Equipment>(e, out var eq) && sim.World.IsAlive(eq.Weapon) && sim.World.Has<Crafted>(eq.Weapon)).ToList();
+        Assert.NotEmpty(signed);
+        Assert.All(signed, e => Assert.Equal(smith, sim.World.Get<Crafted>(sim.World.Get<Equipment>(e).Weapon).Maker));
     }
 
     [Fact]

@@ -451,6 +451,47 @@ public class FellingTests
         _ = me;
     }
 
+    // ---------------- Nailing (a wagon's sprung board) ----------------
+
+    /// <summary>A nail session on its own, for its rules: no wagon needed to step it.</summary>
+    private static NailSession Nailing()
+    {
+        var (sim, me, _) = ByATree();
+        var s = new NailSession { Nails = 2 };
+        s.Worker = me;
+        s.Hands = Hands.Of(sim, me, Skill.Crafting);
+        s.Rand = new SimRandom(5);
+        s.Begin();
+        return s;
+    }
+
+    /// <summary>Raise to <paramref name="raise"/> and let go, from <paramref name="step"/>; the inputs, and the step after.</summary>
+    private static (List<WorkInput>, int) Blow(int step, float raise)
+    {
+        var hold = (int)MathF.Ceiling(raise / NailSession.RaisePerStep);
+        return ([new WorkInput(step, WorkInputKind.Hold, 1), new WorkInput(step + hold, WorkInputKind.Hold, 0)], step + hold + 1);
+    }
+
+    [Fact]
+    public void ATapSetsANailAndAHardFirstBlowBendsIt()
+    {
+        var tap = Nailing();
+        var (inputs, upTo) = Blow(0, NailSession.SetMax * 0.5f);
+        tap.Advance(inputs, upTo);
+        Assert.True(tap.Set);
+        Assert.False(tap.Bent);
+
+        var hard = Nailing();
+        (inputs, upTo) = Blow(0, 1f);
+        hard.Advance(inputs, upTo);
+        Assert.True(hard.Bent);
+        // The claw draws it: a few pulls, and it's a fresh nail to start.
+        var claws = Enumerable.Range(0, NailSession.ClawPulls).Select(k => new WorkInput(upTo + k * 2, WorkInputKind.Act)).ToList();
+        hard.Advance(claws, upTo + NailSession.ClawPulls * 2 + 1);
+        Assert.False(hard.Bent);
+        Assert.False(hard.Set);
+    }
+
     // ---------------- Sessions as the rest ----------------
 
     [Fact]

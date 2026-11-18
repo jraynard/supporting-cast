@@ -460,6 +460,7 @@ public abstract class WorkSession
             nameof(Carpentry.BuckSession) => new Carpentry.BuckSession(),
             nameof(Carpentry.CrosscutSession) => new Carpentry.CrosscutSession(),
             nameof(Carpentry.SplitSession) => new Carpentry.SplitSession(),
+            nameof(Carpentry.NailSession) => new Carpentry.NailSession(),
             nameof(Environment.ThrowSession) => new Environment.ThrowSession(),
             _ => throw new SaveException($"Corrupt save: unknown work session {name}"),
         };

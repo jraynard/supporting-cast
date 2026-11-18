@@ -29,8 +29,11 @@ public static class Carpenters
     /// <summary>The bench's plain cudgel: what a carpenter hangs on the muster rack when there aren't the planks for a bow.</summary>
     public const string CudgelRecipe = "MakeCudgel";
 
-    /// <summary>Logs a batch of planks takes, and the planks it gives at best (as the <c>SawPlanks</c> recipe).</summary>
-    public const int LogsPerBatch = 6, PlanksPerBatch = 10;
+    /// <summary>Logs a batch of planks takes, and the planks it gives at best (as the <c>SawLog</c> recipe).</summary>
+    public const int LogsPerBatch = 1, PlanksPerBatch = 4;
+
+    /// <summary>What a batch of planks is sawn from at the woodshop: a felled log.</summary>
+    public const string LogDef = Felling.LogDef;
 
     /// <summary>Quivers an AI carpenter keeps on show at once, and the price it asks for each.</summary>
     public const int QuiversOnShow = 2, QuiverPrice = 4;
@@ -171,17 +174,42 @@ public static class Carpenters
     public static int OnShow(Simulation sim, Entity woodshop) =>
         Shops.Goods.OnShow(sim).Count(g => g.Shop == woodshop && sim.World.Get<Thing>(g.Item).Def.Quiver);
 
-    /// <summary>Planks short at the woodshop and logs in its chest to saw: an AI carpenter saws a batch.</summary>
+    /// <summary>
+    /// Planks short at the woodshop: an AI carpenter saws a log, from the chest or one lying about
+    /// (carried over), or fells a tree for some when there's none to be had.
+    /// </summary>
     public static Job? Saw(Simulation sim, Entity pawn)
     {
+        var w = sim.World;
         var shop = WoodshopOf(sim, pawn);
         var chest = ChestOf(sim, shop);
         var horse = StationOf(sim, shop, SawhorseDef);
-        if (chest.IsNull || horse.IsNull || CountIn(sim, chest, PlanksDef) >= PlanksLow || CountIn(sim, chest, WoodDef) < LogsPerBatch
-            || sim.Reservations.IsReservedByOther(horse, pawn)
-            || !Navigation.CanReach(sim, pawn, sim.World.Get<Position>(pawn).Cell, sim.World.Get<Thing>(horse).Cell, PathEnd.Touch))
+        if (chest.IsNull || horse.IsNull || CountIn(sim, chest, PlanksDef) >= PlanksLow || sim.Reservations.IsReservedByOther(horse, pawn))
             return null;
-        return new SawJob(horse, chest);
+        var from = w.Get<Position>(pawn).Cell;
+        if (!Navigation.CanReach(sim, pawn, from, w.Get<Thing>(horse).Cell, PathEnd.Touch))
+            return null;
+        if (CountIn(sim, chest, LogDef) >= LogsPerBatch)
+            return new SawJob(horse, chest, Entity.Null);
+        foreach (var log in sim.AvailableItems().Where(e => w.Get<Thing>(e).Def.Name == LogDef)
+            .OrderBy(e => Map.Distance(w.Get<Thing>(e).Cell, from)).ThenBy(e => e.Index))
+            if (!sim.Reservations.IsReservedByOther(log, pawn) && Navigation.CanReach(sim, pawn, from, w.Get<Thing>(log).Cell, PathEnd.Touch))
+                return new SawJob(horse, chest, log);
+        return FellForLogs(sim, pawn, from);
+    }
+
+    /// <summary>The nearest tree an AI carpenter (axe in hand) can fell for logs, as a job; null if none.</summary>
+    private static Job? FellForLogs(Simulation sim, Entity pawn, int3 from)
+    {
+        var w = sim.World;
+        if (Crafting.ToolSpeed(sim, pawn, Felling.AxeKind) <= 0f)
+            return null;
+        var stump = sim.SpiralFrom(from, FellRange)
+            .Where(c => sim.Map.InBounds(c))
+            .Select(c => sim.Map.Structure[sim.Map.Idx(c)])
+            .FirstOrDefault(e => !e.IsNull && w.Get<Thing>(e).Def.Felling != null && !w.Has<Falling>(e)
+                && !sim.Reservations.IsReservedByOther(e, pawn) && Navigation.CanReach(sim, pawn, from, w.Get<Thing>(e).Cell, PathEnd.Touch), Entity.Null);
+        return stump.IsNull ? null : new FellJob(stump);
     }
 
     /// <summary>Firewood in the barn's stockpile below which an AI carpenter splits logs for the town's fires.</summary>
@@ -204,14 +232,7 @@ public static class Carpenters
             if (!sim.Reservations.IsReservedByOther(log, pawn) && Navigation.CanReach(sim, pawn, from, w.Get<Thing>(log).Cell, PathEnd.Touch))
                 return new SplitJob(log, block);
         // No log to be had: fell the nearest tree for some, axe in hand.
-        if (Crafting.ToolSpeed(sim, pawn, Felling.AxeKind) <= 0f)
-            return null;
-        var stump = sim.SpiralFrom(from, FellRange)
-            .Where(c => sim.Map.InBounds(c))
-            .Select(c => sim.Map.Structure[sim.Map.Idx(c)])
-            .FirstOrDefault(e => !e.IsNull && w.Get<Thing>(e).Def.Felling != null && !w.Has<Falling>(e)
-                && !sim.Reservations.IsReservedByOther(e, pawn) && Navigation.CanReach(sim, pawn, from, w.Get<Thing>(e).Cell, PathEnd.Touch), Entity.Null);
-        return stump.IsNull ? null : new FellJob(stump);
+        return FellForLogs(sim, pawn, from);
     }
 
     /// <summary>How far (cells) an AI carpenter goes for a tree to fell.</summary>
@@ -268,8 +289,11 @@ public static class Carpenters
     }
 }
 
-/// <summary>An AI carpenter saws a batch of logs from the woodshop's chest into planks, as many as its skill gets from them.</summary>
-public sealed class SawJob(Entity horse, Entity chest) : Job
+/// <summary>
+/// An AI carpenter saws a log into planks, as many as its skill gets from it: one from the woodshop's
+/// chest, or one lying about (<paramref name="log"/>), carried over to the sawhorse first.
+/// </summary>
+public sealed class SawJob(Entity horse, Entity chest, Entity log) : Job
 {
     public const int Ticks = 900;
 
@@ -279,10 +303,35 @@ public sealed class SawJob(Entity horse, Entity chest) : Job
     {
         Report = "Sawing planks";
         if (!Reserve(horse)) yield break;
+        var held = Entity.Null;
+        if (!log.IsNull)
+        {
+            if (!Reserve(log)) yield break;
+            foreach (var s in GoTo(Get<Thing>(log).Cell, PathEnd.Touch)) yield return s;
+            if (HasFailed) yield break;
+            if (!Alive(log) || Sim.World.Has<Stored>(log) || !Get<Carrying>(Pawn).Item.IsNull)
+            {
+                Fail("can't take the log");
+                yield break;
+            }
+            Get<Carrying>(Pawn).Item = held = Sim.TakeFromStack(log, 1);
+        }
         foreach (var s in GoTo(Get<Thing>(horse).Cell, PathEnd.Touch)) yield return s;
         if (HasFailed) yield break;
         foreach (var s in Wait(Ticks)) yield return s;
-        if (!Alive(horse) || !Alive(chest) || !Carpenters.TakeFrom(Sim, chest, Carpenters.WoodDef, Carpenters.LogsPerBatch))
+        if (!Alive(horse) || !Alive(chest))
+            yield break;
+        if (!held.IsNull)
+        {
+            if (!Alive(held) || Get<Carrying>(Pawn).Item != held)
+            {
+                Fail("lost the log");
+                yield break;
+            }
+            Get<Carrying>(Pawn).Item = Entity.Null;
+            Sim.DestroyThing(held);
+        }
+        else if (!Carpenters.TakeFrom(Sim, chest, Carpenters.LogDef, Carpenters.LogsPerBatch))
             yield break;
         SkillRules.Learn(Sim, Pawn, Skill.Crafting, SkillRules.XpPerWorkTick * Ticks);
         var quality = Math.Clamp(Carpenters.ExpectedQuality(Sim, Pawn) + Sim.Rand.Range(-0.1f, 0.1f), 0f, 1f);

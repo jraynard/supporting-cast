@@ -34,6 +34,7 @@ public class CarpenterTests
         sim.GiveStartingPack(me);
         sim.World.Get<Skills>(me).Level[(int)Skill.Crafting] = 6;
         Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Wood"), 6));
+        sim.World.Get<Carrying>(me).Item = sim.CreateItem(sim.Thing(Felling.LogDef), 1); // a log in the arms, to saw
         Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Planks"), StartPlanks));
         Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Feathers"), 2));
         var horse = sim.SpawnStructure(sim.Thing(Carpenters.SawhorseDef), C(10, 11));
@@ -159,7 +160,7 @@ public class CarpenterTests
         var session = SawGreat(sim, me, horse, pitman);
         Assert.False(sim.World.Has<WorkSession>(me), "the great log should be sawn");
         Assert.True(session.Pulls > 0);
-        Assert.True(PlanksOn(sim, me) >= StartPlanks + 12, $"{PlanksOn(sim, me)} planks"); // 16 at best
+        Assert.True(PlanksOn(sim, me) >= StartPlanks + 7, $"{PlanksOn(sim, me)} planks"); // 10 at best
         Assert.False(sim.World.Has<WorkSession>(pitman)); // out of the pit once it's done
     }
 
@@ -189,7 +190,7 @@ public class CarpenterTests
     public void HewingSquareThenSawingTrueGivesEveryPlank()
     {
         var (sim, me, horse, _) = AtTheWoodshop();
-        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawPlanks")));
+        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawLog")));
         Assert.IsType<SawSession>(sim.World.Get<WorkSession>(me));
         Play(sim, me, SawStraight());
         Assert.Equal(StartPlanks + Carpenters.PlanksPerBatch, PlanksOn(sim, me));
@@ -199,20 +200,25 @@ public class CarpenterTests
     public void ACutLeftToWanderWastesPlanks()
     {
         var (sim, me, horse, _) = AtTheWoodshop();
-        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawPlanks")));
+        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawLog")));
+        var session = (SawSession)sim.World.Get<WorkSession>(me);
         Play(sim, me, SawStraight(steer: false));
         var sawn = PlanksOn(sim, me) - StartPlanks;
-        Assert.InRange(sawn, 1, Carpenters.PlanksPerBatch - 2);
+        Assert.InRange(sawn, 1, Carpenters.PlanksPerBatch - 1);
+        Assert.True(session.Quality < 0.75f, $"{session.Quality}");
     }
 
     [Fact]
     public void HewingPastTheLineWastesPlanks()
     {
         var (sim, me, horse, _) = AtTheWoodshop();
-        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawPlanks")));
+        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawLog")));
+        var session = (SawSession)sim.World.Get<WorkSession>(me);
         Play(sim, me, SawStraight(hewHold: s => s.Raised < 1f)); // every blow from as high as it goes
         var sawn = PlanksOn(sim, me) - StartPlanks;
-        Assert.InRange(sawn, 1, Carpenters.PlanksPerBatch - 1);
+        Assert.InRange(sawn, 1, Carpenters.PlanksPerBatch);
+        // At four planks a batch the waste may round away: the work's worse all the same.
+        Assert.True(session.Quality < 0.85f, $"{session.Quality}");
     }
 
     /// <summary>Hew the log square straight on the session: blows from high, waiting out each turn of the log.</summary>
@@ -238,7 +244,7 @@ public class CarpenterTests
     public void TheLogIsTurnedBetweenSidesAndTheAxeRestsMeanwhile()
     {
         var (sim, me, horse, _) = AtTheWoodshop();
-        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawPlanks")));
+        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawLog")));
         var s = (SawSession)sim.World.Get<WorkSession>(me);
         // Hewn past flat, blows and all: it stays on this side till it's turned.
         for (var b = 0; b < 5; b++)
@@ -272,7 +278,7 @@ public class CarpenterTests
     public void ABlowGoesAsDeepAsTheAxeWasRaised()
     {
         var (sim, me, horse, _) = AtTheWoodshop();
-        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawPlanks")));
+        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawLog")));
         var s = (SawSession)sim.World.Get<WorkSession>(me);
         s.Advance([new WorkInput(0, WorkInputKind.Hold, 1), new WorkInput(20, WorkInputKind.Hold, 0)], 22);
         Assert.Equal(1, s.Blows);
@@ -283,7 +289,7 @@ public class CarpenterTests
     public void AStillSawCutsNothingAndOnlyTheDownstrokeCuts()
     {
         var (sim, me, horse, _) = AtTheWoodshop();
-        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawPlanks")));
+        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawLog")));
         var s = (SawSession)sim.World.Get<WorkSession>(me);
         // Hewn, then left alone: nothing cut.
         HewSquare(s);
@@ -301,7 +307,7 @@ public class CarpenterTests
     public void TheMouseEasesTheSawAndSteersOnlyOutsideItsMiddle()
     {
         var (sim, me, horse, _) = AtTheWoodshop();
-        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawPlanks")));
+        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawLog")));
         var s = (SawSession)sim.World.Get<WorkSession>(me);
         HewSquare(s);
         var at = s.StepsDone;
@@ -662,7 +668,7 @@ public class CarpenterTests
         sim.ApplyNow(new StartRoundCommand());
         var chest = Carpenters.ChestOf(sim, ShopSystem.BuildingFor(sim, TownRole.Woodshop));
         sim.TickMany(SimClock.TicksPerHour);
-        Assert.Equal(VillageRound.WoodshopLogs, Carpenters.CountIn(sim, chest, Carpenters.WoodDef));
+        Assert.Equal(VillageRound.WoodshopLogs, Carpenters.CountIn(sim, chest, Carpenters.LogDef));
     }
 
     [Fact]

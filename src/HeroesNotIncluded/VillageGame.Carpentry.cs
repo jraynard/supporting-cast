@@ -37,13 +37,13 @@ public sealed partial class VillageGame
         TextC(tone, say);
         var dl = ImGui.GetWindowDrawList();
         var min = ImGui.GetCursorScreenPos();
-        var size = Gui.S(360, 230);
+        var size = Gui.S(360, 300);
         ImGui.Dummy(in size);
         // The piece in section: a block, the mortise down into it from the top.
         var x0 = min.X + Gui.S(40);
         var x1 = min.X + Gui.S(240);
-        var top = min.Y + Gui.S(80);
-        var bottom = min.Y + Gui.S(220);
+        var top = min.Y + Gui.S(150);
+        var bottom = min.Y + Gui.S(290);
         var unit = Gui.S(100); // a depth of 1 (the mark)
         var b0 = new float2(x0, top);
         var b1 = new float2(x1, bottom);
@@ -77,8 +77,9 @@ public sealed partial class VillageGame
                 dl.AddLine(in d0, in d1, Theme.U8(past ? Theme.Bad : Theme.Accent), Gui.S(2));
             }
             // The chisel upright in the mortise, the mallet over it raised as it's held.
-            var c0 = new float2(mx - Gui.S(5), top + s.Depth * unit - Gui.S(60));
-            var c1 = new float2(mx + Gui.S(5), top + s.Depth * unit);
+            // (to the hole as it's drawn: a mortise cut far past the mark still shows the chisel at its foot)
+            var c0 = new float2(mx - Gui.S(5), top + depth * unit - Gui.S(60));
+            var c1 = new float2(mx + Gui.S(5), top + depth * unit);
             dl.AddRectFilled(in c0, in c1, Theme.U8(Theme.Iron));
             var lift = s.Raised * Gui.S(55);
             var k0 = new float2(mx - Gui.S(24), c0.Y - Gui.S(18) - lift);
@@ -87,10 +88,13 @@ public sealed partial class VillageGame
         }
         else
         {
-            // The tenon above the mortise, driven down into it as far as it's gone home.
-            var into = s.Seat * depth * unit;
-            var t0 = new float2(mx - half + Gui.S(3), top - Gui.S(50) + into);
-            var t1 = new float2(mx + half - Gui.S(3), top + into);
+            // The tenon above the mortise, driven down into it as far as it's gone home. It's cut to the
+            // mark's length, so home its shoulder sits on the face: a mortise short of the mark leaves it
+            // standing proud, one cut past the mark leaves a gap under its end (loose).
+            var tenon = unit;
+            var into = s.Seat * Math.Min(depth, 1f) * unit;
+            var t0 = new float2(mx - half + Gui.S(3), top - tenon + into);
+            var t1 = new float2(mx + half - Gui.S(3), top - tenon + into + tenon);
             dl.AddRectFilled(in t0, in t1, Theme.U8(s.Settling > 0 && s.JustSplit ? Theme.Bad : Theme.OakLight));
             var shoulder0 = new float2(mx - half - Gui.S(30), t0.Y - Gui.S(14));
             var shoulder1 = new float2(mx + half + Gui.S(30), t0.Y);
@@ -100,8 +104,8 @@ public sealed partial class VillageGame
             var k1 = new float2(mx + Gui.S(26), shoulder0.Y - Gui.S(2) - lift);
             dl.AddRectFilled(in k0, in k1, Theme.U8(Theme.OakLight), Gui.S(3));
             // The mallet's gauge: the blow as raised, against what the joint will take now.
-            var g0 = new float2(min.X + Gui.S(290), min.Y + Gui.S(40));
-            var g1 = new float2(min.X + Gui.S(310), min.Y + Gui.S(220));
+            var g0 = new float2(min.X + Gui.S(290), min.Y + Gui.S(60));
+            var g1 = new float2(min.X + Gui.S(310), min.Y + Gui.S(290));
             var gh = g1.Y - g0.Y;
             dl.AddRectFilled(in g0, in g1, Theme.U8(Theme.Inset), Gui.S(2));
             var fill = new float2(g0.X, g1.Y - s.Raised * gh);
@@ -172,7 +176,7 @@ public sealed partial class VillageGame
         TextC(Theme.Dim, s.Turning > 0f ? "Turning the log to its next side..." : "Hew the right side flat, as near the chalk line as you dare, then turn the log. Past the line is waste.");
         var dl = ImGui.GetWindowDrawList();
         var min = ImGui.GetCursorScreenPos();
-        var size = Gui.S(360, 260);
+        var size = Gui.S(560, 260);
         ImGui.Dummy(in size);
         var c = new float2(min.X + Gui.S(130), min.Y + Gui.S(160));
         var r = Gui.S(95);
@@ -234,7 +238,7 @@ public sealed partial class VillageGame
             }
             // The broad axe over the right side, edge down on that line, raised with the hold: its
             // head a wedge to the edge, the haft rising away from the log.
-            var lift = s.Raised * Gui.S(70);
+            var lift = s.Raised * Gui.S(24); // a little: the side view shows the swing
             var edgeY = c.Y - r - Gui.S(6) - lift;
             var e0 = new float2(x - Gui.S(2), edgeY);
             var e1 = new float2(x + Gui.S(14), edgeY - Gui.S(4));
@@ -264,16 +268,67 @@ public sealed partial class VillageGame
                     dl.AddCircleFilled(in p, Gui.S(2.5f), Theme.U8(new float4(Theme.OakLight.XYZ, 1f - f)), 6);
                 }
         }
-        // The sides done, round the right.
+        DrawHewFromTheSide(dl, s, new float2(min.X + Gui.S(270), min.Y), new float2(min.X + size.X, min.Y + size.Y));
+        // The sides done.
         for (var k = 0; k < SawSession.Sides; k++)
         {
-            var t = new float2(min.X + Gui.S(270), min.Y + Gui.S(150) + k * Gui.S(22));
             var done = k < s.Side;
             var score = done ? s.SideScore(s.Proud[k]) : 0f;
-            dl.AddText(in t, Theme.U8(!done ? (k == s.Side ? Theme.Accent : Theme.Dim) : s.Proud[k] < 0f ? Theme.Bad : score > 0.9f ? Theme.Good : Theme.Warn),
+            if (k > 0)
+                ImGui.SameLine(0, Gui.S(14));
+            TextC(!done ? (k == s.Side ? Theme.Accent : Theme.Dim) : s.Proud[k] < 0f ? Theme.Bad : score > 0.9f ? Theme.Good : Theme.Warn,
                 !done ? $"side {k + 1}" : s.Proud[k] < 0f ? $"side {k + 1}: bitten" : $"side {k + 1}: flat");
         }
         EndWork();
+    }
+
+    // How high the axe was raised the frame before a blow: it's swung down from there.
+    private float _hewRaisedLast;
+
+    /// <summary>
+    /// The same blows from the hewer's side, as the smith's hammer is drawn at the anvil: the log lying
+    /// along on its trestle, the broad axe pivoting at the hand, up as high as it's held; let go, it
+    /// comes down onto the log in a blink, the log jolts and the chips fly.
+    /// </summary>
+    private void DrawHewFromTheSide(ImDrawListPtr dl, SawSession s, float2 min, float2 max)
+    {
+        var px = MathF.Max(1f, MathF.Round(3f * Gui.Scale));
+        var since = _time - _hewBlowAt;
+        var shake = since < 0.2f ? (1f - since / 0.2f) * Gui.S(3f) : 0f;
+        var jolt = new float2(MathF.Sin(_time * 90f) * shake, MathF.Cos(_time * 70f) * shake);
+        if (!Gui.TrySprite("ui/work/log_side", out var log))
+            return;
+        var l = new float2(log.PixelSize.X, log.PixelSize.Y) * px;
+        var lMin = new float2((min.X + max.X) * 0.5f - l.X * 0.5f, max.Y - l.Y - Gui.S(30)) + jolt;
+        // The trestle under it.
+        var legs = Theme.U8(Theme.Oak);
+        dl.AddLine(new float2(lMin.X + l.X * 0.2f, lMin.Y + l.Y), new float2(lMin.X + l.X * 0.12f, max.Y - Gui.S(6)), legs, Gui.S(4));
+        dl.AddLine(new float2(lMin.X + l.X * 0.8f, lMin.Y + l.Y), new float2(lMin.X + l.X * 0.88f, max.Y - Gui.S(6)), legs, Gui.S(4));
+        Gui.Image(dl, log, lMin, lMin + l, Gui.White);
+        // Where the blade bites: along the top, the hewn face showing as flatter wood where it's been worked.
+        var strike = new float2(lMin.X + l.X * 0.42f, lMin.Y + px * 2f);
+        var hewn = 1f - Math.Clamp(s.Side < SawSession.Sides ? s.Proud[s.Side] : 0f, 0f, 1f);
+        if (hewn > 0f)
+            dl.AddRectFilled(new float2(lMin.X + px * 3, lMin.Y + px * 2), new float2(lMin.X + l.X - px * 10, lMin.Y + px * (2 + 3 * hewn)),
+                Theme.U8(Theme.OakLight, 0.85f), 0f, ImDrawFlags.None);
+        // The axe: as raised; after a blow, swung down from where it was (a blink), then resting on the log.
+        if (s.Raised > 0f)
+            _hewRaisedLast = s.Raised;
+        var raise = s.Turning > 0f ? 0.15f
+            : s.Raised > 0f ? s.Raised
+            : since < 0.07f ? _hewRaisedLast * (1f - since / 0.07f)
+            : 0f;
+        DrawToolSwing(dl, "ui/work/axe", 27f / 34f, raise, strike + jolt, px, Gui.White);
+        // Chips off the face on the blow.
+        if (since < 0.45f && s.Blows > 0)
+            for (var k = 0; k < 7; k++)
+            {
+                var f = since / 0.45f;
+                var p = strike + new float2(MathF.Cos(k * 1.3f + 0.4f) * Gui.S(70) * f, -Gui.S(40) * f + Gui.S(80) * f * f);
+                dl.AddCircleFilled(in p, Gui.S(2.5f), Theme.U8(new float4(Theme.OakLight.XYZ, 1f - f)), 6);
+            }
+        var label = new float2(min.X + Gui.S(4), min.Y + Gui.S(4));
+        dl.AddText(in label, Theme.U8(Theme.Dim), "from the side"u8);
     }
 
     /// <summary>

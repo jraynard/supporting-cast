@@ -205,11 +205,11 @@ public class TradeLessonTests
         var chest = Carpentry.Carpenters.ChestOf(y.Sim, y.Run.Workplace);
         Assert.Equal("logs", y.Stage.Step);
         Assert.Equal(chest, y.Stage.Point);
-        y.TakeFrom(chest, "Wood", 6);
+        y.TakeFrom(chest, Carpentry.Carpenters.LogDef, 1);
         Assert.Equal("start", y.Stage.Step);
         Assert.Equal(horse, y.Stage.Point);
         y.StandBy(horse);
-        y.Sim.ApplyNow(new CraftCommand(y.Me, horse, y.Sim.Defs.AllRecipes.Single(r => r.Name == "SawPlanks")));
+        y.Sim.ApplyNow(new CraftCommand(y.Me, horse, y.Sim.Defs.AllRecipes.Single(r => r.Name == "SawLog")));
         Assert.Equal("hew", y.Stage.Step); // the log hewn square first, then sawn
         // Sawn (SawSession's outcome; CarpenterTests plays it): the planks in the pack, the session over.
         y.Sim.ApplyNow(new StopWorkCommand(y.Me));

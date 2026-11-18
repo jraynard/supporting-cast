@@ -29,7 +29,7 @@ public static class CarpenterLessons
         if (Gained(sim, me, run, Carpenters.PlanksDef))
             return new LessonStage("saw", horse, Done: true);
         // The chest's across the shed from the sawhorse: the logs are carried over.
-        if (OnMe(sim, me, Carpenters.WoodDef) < Carpenters.LogsPerBatch)
+        if (OnMe(sim, me, Carpenters.LogDef) < Carpenters.LogsPerBatch && OnMe(sim, me, Carpenters.WoodDef) < 6)
             return new LessonStage("logs", run.Station(sim, "Chest"));
         return new LessonStage("start", horse);
     }

@@ -2545,3 +2545,30 @@ Trees felled, bucked and split by hand; the town's fires burn firewood, not timb
 - **Lessons**: "Fell a tree" and "Split firewood" (`CarpenterLessons`). `--fell-test` (`FellDrill`).
   Panels for work out in the world sit to the side (`VillageGame._workAside`).
 - Saves to format 62. `FellingTests`.
+
+### The carpenter's games, from play (2026-11-18)
+- **Felling** starts aimed the way the tree leans (the easy fell), the lean a broad arrow under the
+  aim's, and the hints say the first blow (F) sets the aim.
+- **Felling's cuts**: the notch a V inside the round, the back cut a slim cut in from the far side
+  that stops at the hinge (a box that ran out past the bark, and past the notch, before). The axe
+  swings round from the hands into the cut, as a chop does, not pushed in and out along it.
+- **Bucking**: side on, only the saw's handle shows at the cut, sinking as it goes down (the blade
+  lay along the trunk before, as if slicing it lengthwise), each length its own shade of bark; beside
+  it, the cut seen along the trunk, the saw going back and forth across the round, hidden inside it,
+  sawdust spat out either side.
+- **Planks from a log**: `SawLog` (one log, four planks) is the sawhorse's first recipe; six timber
+  still make ten (`SawPlanks`, "planks from timber"), and a great log ten long ones. The woodshop's
+  chest starts with three logs and a little timber for mending. The AI carpenter saws a log from the
+  chest or one lying about, and fells for more when it's out (`SawJob`, `Carpenters.Saw`); the bot
+  fetches, bucks or fells for one (`GetALog`).
+- **A room's price kept back** (`ShopSystem.KeptFromGear`): from 16:00 an adventurer staying the night
+  with no room yet doesn't spend a bed's price on shelf gear (a quiver off the woodshop's shelf left
+  one with too little for a room, asleep in the street).
+- **Joinery**: the tenon is cut to the mark's length, so home its shoulder sits on the face (it sank
+  into the block before); the chisel stops at the hole as drawn.
+- **A wagon's sprung board** is nailed, not pegged (`NailSession`, the carpenter's new `ClawHammer`
+  in their kit): a tap to set, square blows to drive, a bent nail drawn with the claw.
+- **The hew** is shown from the side too, the axe swung as the smith's hammer is at the anvil
+  (`DrawToolSwing`, new `ui/work/axe` and `ui/work/log_side` in `tools/work_ui_art.py`).
+- **Lifting a wagon** (`LiftSession`): A/D leaned it the wrong way (toward the tip, not against it);
+  the bots, the tests and the hint all meant against it. Fixed in the session.

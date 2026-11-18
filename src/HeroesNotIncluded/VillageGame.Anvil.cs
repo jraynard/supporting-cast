@@ -176,15 +176,22 @@ public sealed partial class VillageGame
     /// The hammer, pivoting at the smith's hand off to the right, wound back by <paramref name="raise"/>
     /// (0 flat on the bar, 1 as far back as it goes): the smith's own swing, drawn as it's made.
     /// </summary>
-    private void DrawHammerSwing(ImDrawListPtr dl, float raise, float2 strike, float px, ImColor8 tint)
+    private void DrawHammerSwing(ImDrawListPtr dl, float raise, float2 strike, float px, ImColor8 tint) =>
+        DrawToolSwing(dl, "ui/work/hammer", 26f / 32f, raise, strike, px, tint);
+
+    /// <summary>
+    /// A tool lying flat in its sprite (handle at the left, head at the right) swung about the hand:
+    /// raised up off the work by <paramref name="raise"/> (0 resting on it), the middle of its striking
+    /// face (<paramref name="faceAlong"/> of the way along) on <paramref name="strike"/> when flat.
+    /// The smith's hammer at the anvil, the axe at the log.
+    /// </summary>
+    private void DrawToolSwing(ImDrawListPtr dl, string spriteName, float faceAlong, float raise, float2 strike, float px, ImColor8 tint)
     {
-        if (!Gui.TrySprite("ui/work/hammer", out var hammer))
+        if (!Gui.TrySprite(spriteName, out var hammer))
             return;
         var angle = -Math.Clamp(raise, 0f, 1f) * 1.15f; // radians up from resting flat on the bar
         var len = new float2(hammer.PixelSize.X, hammer.PixelSize.Y) * px;
-        // Flat, the middle of the head's face sits on the strike point (the sprite's head runs from
-        // 22 to 30 of its 32 pixels, so its middle's 26 along): the pivot's to the right of that.
-        const float faceAlong = 26f / 32f;
+        // Flat, the middle of the head's face sits on the strike point: the pivot's to the right of that.
         var pivot = new float2(strike.X + len.X * (faceAlong - 0.15f), strike.Y - len.Y * 0.5f);
         var dir = new float2(-MathF.Cos(angle), MathF.Sin(angle));   // from the pivot toward the head
         var up = new float2(-dir.Y, dir.X);

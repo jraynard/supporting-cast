@@ -44,12 +44,13 @@ public sealed partial class BotPlayer
             return false;
         if (fletch.Ingredients.TrueForAll(x => Obtainable(sim, me, x)))
             return Make(sim, me, view, bench, fletch, now);
-        // Short of planks: saw some, if there are logs.
-        var saw = horse.IsNull ? null : Recipe(sim, horse, Carpenters.Saws);
+        // Short of planks: saw a log (the chest's, or one it fetches, bucks or fells), or timber at a pinch.
         var planks = fletch.Ingredients.Find(x => x.Def == Carpenters.PlanksDef);
-        if (saw == null || planks == null || Obtainable(sim, me, planks) || !saw.Ingredients.TrueForAll(x => Obtainable(sim, me, x)))
+        if (horse.IsNull || planks == null || Obtainable(sim, me, planks))
             return false;
-        return Make(sim, me, view, horse, saw, now);
+        if (SawRecipe(sim, me, horse) is { } saw)
+            return Make(sim, me, view, horse, saw, now);
+        return GetALog(sim, me, view, now, "for planks", great: false);
     }
 
     /// <summary>
@@ -108,8 +109,9 @@ public sealed partial class BotPlayer
         if (fletch.Ingredients.TrueForAll(x => Obtainable(sim, me, x)))
             return Make(sim, me, view, bench, fletch, now);
         var horse = Nearest(sim, me, Carpenters.SawhorseDef);
-        var saw = horse.IsNull ? null : Recipe(sim, horse, Carpenters.Saws);
-        return saw != null && saw.Ingredients.TrueForAll(x => Obtainable(sim, me, x)) && Make(sim, me, view, horse, saw, now);
+        if (horse.IsNull)
+            return false;
+        return SawRecipe(sim, me, horse) is { } saw ? Make(sim, me, view, horse, saw, now) : GetALog(sim, me, view, now, "for planks", great: false);
     }
 
     /// <summary>
@@ -150,11 +152,20 @@ public sealed partial class BotPlayer
                 Doing = "splitting firewood";
                 return Make(sim, me, view, block, split, now);
             }
-        // A log lying about (one it bucked, or the labourer's): picked up and carried to the block.
-        foreach (var def in new[] { Felling.LogDef, Felling.GreatLogDef })
+        return GetALog(sim, me, view, now, "for firewood", great: true);
+    }
+
+    /// <summary>
+    /// A log to hand: one lying about picked up (one it bucked, or left by anyone); else a trunk down
+    /// bucked into logs; else the nearest tree felled. False if there's no way to one (no axe, no tree).
+    /// </summary>
+    private bool GetALog(Simulation sim, Entity me, PerceptionView view, long now, string what, bool great)
+    {
+        var w = sim.World;
+        foreach (var def in great ? new[] { Felling.LogDef, Felling.GreatLogDef } : [Felling.LogDef])
             if (Known(sim, me, view, sim.Defs.Thing(def)) is { IsNull: false } lying)
             {
-                Doing = "carrying a log to the chopping block";
+                Doing = $"fetching a log {what}";
                 return Fetch(sim, me, view, lying, 1, now);
             }
         if (Crafting.ToolSpeed(sim, me, Felling.AxeKind) <= 0f)
@@ -174,7 +185,7 @@ public sealed partial class BotPlayer
         var tree = Near(e => w.Get<Thing>(e).Def.Felling != null && !w.Has<Falling>(e));
         if (tree.IsNull)
             return false;
-        Doing = "felling a tree for firewood";
+        Doing = $"felling a tree {what}";
         return AtStation(sim, me, tree, now, t => Send(new AvatarWorkCommand(me, true, w.Get<Thing>(t).Cell)));
     }
 
@@ -212,6 +223,23 @@ public sealed partial class BotPlayer
         return (false, false, 0);
     }
 
+    /// <summary>Nailing: the head kept over the nail, a light tap to set it, then full blows; a bent one drawn.</summary>
+    private (bool, bool, int) Nail(NailSession s)
+    {
+        if (s.Bent)
+        {
+            _act = true;
+            return (false, false, 0);
+        }
+        if (s.Settling > 0)
+            return (false, false, 0);
+        var steer = MathF.Abs(s.Offset) > s.OnHeadWidth * 0.4f ? -Math.Sign(s.Offset) : 0;
+        var want = !s.Set ? NailSession.SetMax * 0.6f : Math.Min(1f, (1f - s.Depth) / NailSession.DeepestDrive + 0.05f);
+        // Hold off striking while it's off the head: keep it raised and bring it back.
+        var holding = s.Raised < want || (s.Raised > 0f && steer != 0 && s.Raised < 1f);
+        return (false, holding, steer);
+    }
+
     /// <summary>Splitting: the edge over the check, raised past what it needs, let go; a stuck axe rocked free.</summary>
     private (bool, bool, int) Split(SplitSession s)
     {
@@ -224,6 +252,10 @@ public sealed partial class BotPlayer
             return (false, false, Math.Sign(s.Check - s.Aim));
         return (false, s.Raised < s.Need + 0.1f, 0);
     }
+
+    /// <summary>The plank recipe at the sawhorse it has the makings of (a log first, then timber), or null. Not a great log's: that wants a pitman.</summary>
+    private static RecipeDef? SawRecipe(Simulation sim, Entity me, Entity horse) =>
+        sim.World.Get<Thing>(horse).Def.Recipes.FirstOrDefault(r => Carpenters.Saws(r) && !r.TwoHanded && r.Ingredients.TrueForAll(x => Obtainable(sim, me, x)));
 
     private static RecipeDef? Recipe(Simulation sim, Entity station, Func<RecipeDef, bool> which) =>
         sim.World.Get<Thing>(station).Def.Recipes.FirstOrDefault(which);
@@ -238,6 +270,7 @@ public sealed partial class BotPlayer
         FellSession fell => Fell(fell),
         BuckSession buck => Buck(buck),
         SplitSession split => Split(split),
+        NailSession nail => Nail(nail),
         _ => null,
     };
 

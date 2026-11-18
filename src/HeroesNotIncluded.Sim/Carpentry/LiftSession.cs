@@ -108,7 +108,7 @@ public sealed class LiftSession : HelperSession
             return;
         }
         // It sways as it hangs, more as the arms tire and the hands shake; a lean pushes it back.
-        Sway = Sway * Damping + (Rand.NextFloat() * 2f - 1f) * SwayPerStep * (1f + Strain + Hands.Tremor * 3f) - _lean * LeanPerStep;
+        Sway = Sway * Damping + (Rand.NextFloat() * 2f - 1f) * SwayPerStep * (1f + Strain + Hands.Tremor * 3f) + _lean * LeanPerStep; // leaning against the tip (A when it goes right) pushes it back
         Tilt = Math.Clamp(Tilt + Sway, -1f, 1f);
         if (MathF.Abs(Tilt) >= 1f)
             Sway = 0f;

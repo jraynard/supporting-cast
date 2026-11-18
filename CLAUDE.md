@@ -160,7 +160,7 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     joined at the bench and set back where it stood. In the woods (`Felling`, the trade `fells`): a tree felled where it's
     aimed (`FellSession`; its lean from `LeanOf`, plain to see), a `Falling` tree landing on whoever's under it after a creak,
     the `Trunk` bucked into bulky `Log`s and `GreatLog`s (`BuckSession`; an oak's with a `CrosscutSession` on the other end),
-    logs split into firewood at the chopping block (`SplitSession`). AI: `SawJob`, `FletchJob`, `ArrowsJob`, `FurnishJob`, `SplitJob`, `FellJob`.
+    logs split into firewood at the chopping block (`SplitSession`); a wagon's sprung board nailed with the claw hammer (`NailSession`). AI: `SawJob`, `FletchJob`, `ArrowsJob`, `FurnishJob`, `SplitJob`, `FellJob`.
   - `Tinkering/`: the Tinker. Lockwork on strongboxes from quests: a box's trap is hidden item
     state, shown only through `PerceptionView.Strongbox`, which never says an armed one is there.
     Locks pinned at the bench (`PinSession`) and fitted to doors (`LockCut`), keys (`Key`);

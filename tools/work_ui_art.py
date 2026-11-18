@@ -15,6 +15,7 @@ them at a whole-pixel scale and moves, turns and tints them from the session in 
   stone, spirit_level     a dressed stone of the bridge's span, and the level laid on them
   rasp                    the file a lock's pins are filed down with
   cask_end, spigot, mallet  the cask's head, its tap and the mallet that drives the tap home
+  axe, log_side           the woodsman's axe lying flat (swung as the smith's hammer) and a log side on
 
 The kitchen's:
   fire_bed, spoon, pot_lid   the logs and embers under the pot, the stirring spoon, the lid for a flare
@@ -327,6 +328,31 @@ def mallet():
     return ink_outline(img)
 
 
+def axe():
+    """A woodsman's axe lying flat, as the smith's hammer (norse_ui.work_hammer): the head at the
+    right, its bit facing down, the haft running left to the hand (the pivot end)."""
+    img = canvas(34, 16)
+    part(img, stick((1, 6), (27, 5), 2.2, 2.6), WALNUT, radius=0.6)
+    steel = [(v, v, v + 8, 255) for v in (96, 134, 170, 204, 236)]
+    part(img, poly([(24, 1), (31, 1), (31, 6), (33, 15), (21, 15), (24, 7)]), steel, radius=0.8)
+    for x in range(22, 33):
+        put(img, x, 15, steel[4])                                                     # the bit, honed bright
+    return ink_outline(img)
+
+
+def log_side():
+    """A log lying side on, bark on, its end showing at the right: what the axe is hewing."""
+    img = canvas(64, 20)
+    part(img, lambda d: d.rounded_rectangle([0, 2, 56, 19], radius=3, fill=255), LOG, radius=1.2,
+         tex=lambda x, y: -0.5 if (x * 7 + y * 3) % 11 == 0 else 0)
+    part(img, ell([50, 1, 63, 19]), ramp((206, 168, 112), 5, dark=0.55, light=1.2), radius=1.0)
+    for r in (2, 4):
+        for t in range(0, 360, 20):
+            import math
+            put(img, round(56.5 + r * 0.6 * math.cos(math.radians(t))), round(10 + r * math.sin(math.radians(t))), (150, 110, 70, 255))
+    return ink_outline(img)
+
+
 # ---------------------------------------------------------------- the kitchen
 
 EMBER = ramp((214, 96, 40), 5, dark=0.45, light=1.4)
@@ -603,7 +629,7 @@ SPRITES = (("whetstone", whetstone), ("blade", blade), ("stew_pot", stew_pot), (
            ("grindwheel", grindwheel), ("grind_posts", grind_posts), ("grind_trough", grind_trough),
            ("strongbox", strongbox), ("probe", probe), ("curio", curio), ("loupe", loupe), ("patient", patient),
            ("stone", stone), ("spirit_level", spirit_level), ("rasp", rasp),
-           ("cask_end", cask_end), ("spigot", spigot), ("mallet", mallet),
+           ("cask_end", cask_end), ("spigot", spigot), ("mallet", mallet), ("axe", axe), ("log_side", log_side),
            ("fire_bed", fire_bed), ("spoon", spoon), ("pot_lid", pot_lid), ("firedogs", firedogs), ("joint", joint),
            ("knead_board", knead_board), ("dough", dough), ("oven_front", oven_front), ("peel", peel),
            ("block_side", block_side), ("pork_side", pork_side), ("cleaver", cleaver), ("bird", bird), ("feather", feather),

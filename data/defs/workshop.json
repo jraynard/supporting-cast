@@ -346,6 +346,12 @@
       "tool": { "kind": "Rod", "speed": 1.0, "tier": "Stone" }, "description": "A springy pole and a line. Casting without one is mostly hoping."
     },
     {
+      // The carpenter's: nails driven with the face, drawn with the claw (Carpentry.NailSession).
+      "name": "ClawHammer", "held": "hammer", "label": "claw hammer", "category": "Item", "mass": 0.8, "sprite": "items/hammer", "maxHp": 90,
+      "tool": { "kind": "ClawHammer", "speed": 1.0, "tier": "Iron" },
+      "description": "A light hammer with a split claw: drives nails, and draws the ones that bend."
+    },
+    {
       "name": "Hammer", "held": "hammer", "label": "smith's hammer", "category": "Item", "mass": 1.5, "sprite": "items/hammer", "maxHp": 120,
       "tool": { "kind": "Hammer", "speed": 1.25, "tier": "Iron" },
       // The smith's own weapon too, until they make themselves a better one.
@@ -592,7 +598,14 @@
 
   "recipes": [
     {
-      "name": "SawPlanks", "label": "planks", "station": "Sawhorse", "skill": "Crafting", "work": 600, "helpedBy": [ "Saw" ],
+      "name": "SawLog", "label": "planks from a log", "station": "Sawhorse", "skill": "Crafting", "work": 600, "helpedBy": [ "Saw" ],
+      "description": "Saw a log into 4 planks.",
+      "ingredients": [ { "def": "Log", "count": 1 } ],
+      "products": [ { "def": "Planks", "count": 4 } ]
+    },
+    {
+      // Timber (Wood) from the barn, for want of a log: the town's builders' way, and the carpenter's last resort.
+      "name": "SawPlanks", "label": "planks from timber", "station": "Sawhorse", "skill": "Crafting", "work": 600, "helpedBy": [ "Saw" ],
       "description": "Saw 6 timber into 10 planks.",
       "ingredients": [ { "def": "Wood", "count": 6 } ],
       "products": [ { "def": "Planks", "count": 10 } ]
@@ -601,15 +614,9 @@
       // Pitman's work (Work.Pairs): too long for one saw. Hewn as any, sawn by a top sawyer and a pitman below.
       "name": "SawGreatLog", "label": "planks from a great log", "station": "Sawhorse", "skill": "Crafting", "work": 1200, "helpedBy": [ "Saw" ],
       "twoHanded": true,
-      "description": "A great log, too long for one saw: a top sawyer and a pitman below make 16 planks of it.",
+      "description": "A great log, too long for one saw: a top sawyer and a pitman below make 10 long planks of it.",
       "ingredients": [ { "def": "GreatLog", "count": 1 } ],
-      "products": [ { "def": "Planks", "count": 16 } ]
-    },
-    {
-      "name": "SawLog", "label": "planks from a log", "station": "Sawhorse", "skill": "Crafting", "work": 600, "helpedBy": [ "Saw" ],
-      "description": "Saw a felled log into 7 planks.",
-      "ingredients": [ { "def": "Log", "count": 1 } ],
-      "products": [ { "def": "Planks", "count": 7 } ]
+      "products": [ { "def": "Planks", "count": 10 } ]
     },
     {
       // Carpentry.SplitSession: a log stood on the block and split along its checks.

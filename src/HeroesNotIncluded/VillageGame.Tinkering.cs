@@ -719,11 +719,11 @@ public sealed partial class VillageGame
         {
             var why = Wagons.BoardProblem(_sim, _avatar, _tinkerAt);
             ImGui.BeginDisabled(why != null || Working);
-            if (ImGui.Button($"Peg a plank across the sprung board ({Wagons.BoardPlanks} plank)"))
+            if (ImGui.Button($"Nail a plank across the sprung board ({Wagons.BoardPlanks} plank)"))
                 Issue(new PegBoardCommand(_avatar, _tinkerAt));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(why != null ? Cap(why) + "." : Controls.Keys("Carpenter's work. Drive each peg home: hold ~F~ to raise the mallet, let go to strike, lighter as it tightens or it splits."));
+                Tip(why != null ? Cap(why) + "." : Controls.Keys("Carpenter's work, with the claw hammer. Tap each nail to set it, then drive it: hold ~F~ to raise, ~A~/~D~ keep the head over the nail, let go to strike. A bent one's drawn with the claw (~Space~)."));
         }
         if (wagon.Damage == WagonDamage.None)
             TextC(Theme.Good, "It's sound.");

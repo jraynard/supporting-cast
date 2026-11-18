@@ -555,8 +555,9 @@ carpenter's bench, a chopping block and a chest the carter leaves feathers in (`
     drives a wedge. An oak's butt takes two (`CrosscutSession`, the other end pulling on the
     lead's cue, as the pitman), and may be kept whole as a great log for the pit saw.
   - Logs (`Log`, `GreatLog`) are bulky and slow whoever carries them (`carrySpeed`). A pine gives
-    three logs, an oak a great log and a log (or three logs), a birch two. A log saws into seven
-    planks (`SawLog`), a great log into sixteen long ones with a pitman (`SawGreatLog`).
+    three logs, an oak a great log and a log (or three logs), a birch two. A log saws into four
+    planks (`SawLog`), a great log into ten long ones with a pitman (`SawGreatLog`); the woodshop
+    starts a round with three logs.
 - *Firewood* (`SplitSession`, at the chopping block): the town's hearths, ovens, kilns and
   campfires burn `Firewood`, not timber. The carter brings most of it to the barn each morning,
   a little short of what the town burns on purpose, and none in a shortage. A log stood on end,
@@ -602,8 +603,11 @@ carpenter's bench, a chopping block and a chest the carter leaves feathers in (`
   deep enough: short of it the tenon won't seat, past it the joint's loose); then **drive** the tenon
   home, lighter as it tightens: a blow past what the joint will take (the gauge's mark) splits it.
 - *Wagons' woodwork* (`ServiceKind.WagonJoinery`): a cracked axle hewn new from a log, each end's arm
-  trimmed and its hub driven on; a sprung board with a plank pegged across it. Joinery, where the
-  wagon stands. The wheel stays the tinker's.
+  trimmed and its hub driven on; a sprung board with a plank nailed across it, with the carpenter's
+  claw hammer (`NailSession`): F raises it (the head wanders off the nail the higher it goes, A/D
+  bring it back), a light tap sets each nail, square blows drive it; struck hard before it's set, or
+  off the head, it bends, and Space draws it with the claw. Driven well past flush, it bruises the
+  board. Where the wagon stands. The wheel stays the tinker's.
 - *Furniture after the fire* (`Refurnishing`): a joined piece (a stool, a table, a shelf, a chest: a
   def with `joinery`) that burns in a town building is remembered where it stood. The carpenter
   joins a new one at the bench (the Rebuild tab, planks from what's to hand), carries it over in

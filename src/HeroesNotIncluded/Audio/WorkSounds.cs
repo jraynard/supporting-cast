@@ -190,6 +190,13 @@ public sealed class WorkSounds(AudioEngine audio)
                     audio.Play(s.LastBlow == Sim.Carpentry.SplitBlow.Split ? Sounds.Snap : Sounds.Knock, pitch: s.LastBlow == Sim.Carpentry.SplitBlow.Split ? 0.8f : 1f);
                 _a = s.Blows;
                 break;
+            case Sim.Carpentry.NailSession s:
+                // The hammer on the nail, ringing as it goes home; a dull knock on a miss or a bend.
+                if (s.Blows > _a)
+                    audio.Play(s.LastBlow is Sim.Carpentry.NailBlow.Set or Sim.Carpentry.NailBlow.Drove or Sim.Carpentry.NailBlow.Bruised ? Sounds.AnvilFair : Sounds.Knock,
+                        gain: s.LastBlow == Sim.Carpentry.NailBlow.Set ? 0.5f : 0.8f, pitch: 1.6f + 0.3f * s.Depth);
+                _a = s.Blows;
+                break;
             case Sim.Carpentry.FletchSession s:
                 // The knife along the shaft; the head scraping on; a rustle for each feather.
                 audio.Hold("work:shave", Sounds.Scrub, s.Stage == Sim.Carpentry.ArrowStage.Shave && s.Held ? 0.5f : 0f, pitch: 1.4f, fade: Quick);

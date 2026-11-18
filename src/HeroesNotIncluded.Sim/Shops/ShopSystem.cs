@@ -310,9 +310,13 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// </summary>
     private int KeptFromGear(Simulation sim, Entity who)
     {
-        if (!sim.World.TryGet<Adventurer>(who, out var a) || a.PartyDef.Traveller)
+        if (!sim.World.TryGet<Adventurer>(who, out var a))
             return 0;
-        var kept = 0;
+        // Staying the night with no room yet: a bed's price isn't spent on gear, in the evening.
+        var kept = sim.Clock.HourOfDay >= LodgingFromHour - 2f && a.LeaveTick - sim.Clock.Tick >= SimClock.HoursToTicks(6) && !Hospitality.Lodging.Lodged(sim, who)
+            ? SignPrice(sim, ServiceKind.Lodging) : 0;
+        if (a.PartyDef.Traveller)
+            return kept;
         if (!SeekingOrSentOnQuest(sim, a.Party))
             kept += SignPrice(sim, ServiceKind.Quest);
         if (!Tinkering.Lockwork.LockedBoxOf(sim, who).IsNull)

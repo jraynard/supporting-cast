@@ -142,8 +142,11 @@ public static class VillageRound
             }
     }
 
-    /// <summary>Logs, planks and feathers in the woodshop's chest at the start: a couple of batches of planks, and a day's quivers.</summary>
-    public const int WoodshopLogs = 12, WoodshopPlanks = 6, WoodshopFeathers = 6;
+    /// <summary>
+    /// Logs, timber, planks and feathers in the woodshop's chest at the start: three logs to saw (four
+    /// planks each), a little timber for mending a bridge or an axle, and a day's quivers. More logs come from felling.
+    /// </summary>
+    public const int WoodshopLogs = 3, WoodshopTimber = 4, WoodshopPlanks = 6, WoodshopFeathers = 6;
 
     /// <summary>Stock in the carpenter's chest: logs to saw, planks to fletch from, and feathers for the fletching.</summary>
     private static void StockWoodshop(Simulation sim, Entity shop)
@@ -151,9 +154,14 @@ public static class VillageRound
         var chest = Carpentry.Carpenters.ChestOf(sim, shop);
         if (chest.IsNull)
             return;
-        foreach (var (def, count) in new[] { ("Wood", WoodshopLogs), ("Planks", WoodshopPlanks), ("Feathers", WoodshopFeathers) })
+        for (var i = 0; i < WoodshopLogs; i++) // a log's a stack of one
+            Stock(Carpentry.Carpenters.LogDef, 1, sim.Defs.Material("Pine"));
+        foreach (var (def, count) in new[] { ("Wood", WoodshopTimber), ("Planks", WoodshopPlanks), ("Feathers", WoodshopFeathers) })
+            Stock(def, count, null);
+
+        void Stock(string def, int count, Defs.MaterialDef? material)
         {
-            var rest = sim.Store(chest, sim.CreateItem(sim.Defs.Thing(def), count));
+            var rest = sim.Store(chest, sim.CreateItem(sim.Defs.Thing(def), count, material));
             if (!rest.IsNull)
                 sim.PlaceItemNear(rest, sim.World.Get<Thing>(chest).Cell);
         }

@@ -155,7 +155,7 @@ public sealed class Felling : ISimSystem
         sim.Round.Live && Players.Steered(sim, worker) && sim.World.TryGet<Trade>(worker, out var trade) && trade.Def.Fells
         && sim.World.TryGet<Thing>(tree, out var t) && t.Def.Felling != null;
 
-    /// <summary>A player sets about a tree: the felling game, aimed at first away from them.</summary>
+    /// <summary>A player sets about a tree: the felling game, aimed at first the way it leans (the easy way to fell it).</summary>
     public static void StartFelling(Simulation sim, Entity worker, Entity tree)
     {
         var w = sim.World;
@@ -167,12 +167,10 @@ public sealed class Felling : ISimSystem
             sim.Messages.Tell(worker, MessageKind.Info, $"Can't fell it: {why}.", t.Cell);
             return;
         }
-        var me = w.Get<Position>(worker).Cell;
-        var away = FellSession.Wrap360(DetMath.Atan2(t.Cell.Y - me.Y, t.Cell.X - me.X) * 180f / MathF.PI);
         var (lean, pull) = FellSession.LeanOf(t.Cell);
         WorkSystem.Start(sim, worker, new FellSession
         {
-            Tree = tree, Aim = MathF.Round(away), Lean = lean, LeanPull = pull, Girth = t.Def.Felling!.Girth,
+            Tree = tree, Aim = MathF.Round(lean), Lean = lean, LeanPull = pull, Girth = t.Def.Felling!.Girth,
         });
     }
 

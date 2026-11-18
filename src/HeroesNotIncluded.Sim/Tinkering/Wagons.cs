@@ -210,6 +210,8 @@ public static class Wagons
             return "its boards are sound";
         if (!InReach(sim, worker, wagon))
             return "you need to be at the wagon";
+        if (!Carpentry.NailSession.HasHammer(sim, worker))
+            return "you need a hammer to nail it";
         return PlanksOn(sim, worker) < BoardPlanks ? $"it takes {BoardPlanks} plank" : null;
     }
 
@@ -285,7 +287,7 @@ public static class Wagons
             sim.Messages.Tell(worker, MessageKind.Info, $"Can't mend the board: {why}.", sim.LocationOf(worker));
             return;
         }
-        WorkSystem.Start(sim, worker, new Carpentry.JoinSession { Wagon = wagon, Work = Carpentry.JoinWork.Board, Joints = BoardPegs });
+        WorkSystem.Start(sim, worker, new Carpentry.NailSession { Wagon = wagon, Nails = BoardPegs });
     }
 
     /// <summary>The wheel's trued: it runs straight again.</summary>
@@ -324,7 +326,7 @@ public static class Wagons
         wg.Damage &= ~WagonDamage.Board;
         wg.JoinedBy = worker;
         var how = quality >= 0.75f ? "Tight as the day it was built." : quality >= 0.4f ? "It'll hold." : "It creaks, but it'll hold.";
-        sim.Messages.Add(MessageKind.Good, $"{sim.World.Get<Creature>(worker).Name} pegs a plank across the wagon's sprung board. {how}", sim.LocationOf(worker));
+        sim.Messages.Add(MessageKind.Good, $"{sim.World.Get<Creature>(worker).Name} nails a plank across the wagon's sprung board. {how}", sim.LocationOf(worker));
     }
 }
 

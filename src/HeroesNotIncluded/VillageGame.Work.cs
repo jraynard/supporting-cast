@@ -321,6 +321,9 @@ public sealed partial class VillageGame
             case SplitSession split:
                 DrawSplit(split);
                 return;
+            case NailSession nail:
+                DrawNail(nail);
+                return;
             case Sim.Environment.ThrowSession throwing:
                 DrawThrow(throwing);
                 return;
