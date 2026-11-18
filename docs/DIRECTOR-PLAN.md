@@ -1,6 +1,16 @@
 # A Director that reacts: options, and a first step
 
-_Saved 2026-11-17 for later; not started._
+_Saved 2026-11-17. The first step below is built (layers 1 and 2); layer 3, the LLM, is not._
+
+**As built:** `Director/Tension.cs`, `Director/RuleMind.cs`, `Director/Incidents.cs`,
+`Director/DirectorCommands.cs`, `pacing` in `data/defs/season.json`, `data/defs/incidents.json`, save
+format 60, tests in `DirectorPacingTests`. One change from the plan: there's no `IDirectorMind`
+interface. The sim runs the same on every peer, so the rules can't be swapped per machine. `RuleMind`
+is the rules as pure functions, and an outside mind (an LLM on the host) acts only through
+`DirectorChoiceCommand`: it can settle the next beat's kind (from that beat's kinds) or call an
+incident. Of the four incident ideas, three are built (fever, rats, a traveller's errand). A wrecked
+wagon was left out because wagons already arrive broken most of the time. No beat in the shipped
+season follows a quest yet: the Reedmere dragon is the first that should.
 
 ## Context
 

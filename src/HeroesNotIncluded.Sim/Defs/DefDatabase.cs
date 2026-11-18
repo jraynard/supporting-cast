@@ -22,6 +22,7 @@ public sealed class DefDatabase
     private readonly Dictionary<string, RaiderKindDef> _raiderKinds = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, WildlifeDef> _wildlife = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, SeasonDef> _seasons = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, IncidentDef> _incidents = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, FestivalDef> _festivals = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ThoughtDef> _thoughts = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, InteractionDef> _interactions = new(StringComparer.OrdinalIgnoreCase);
@@ -122,6 +123,9 @@ public sealed class DefDatabase
 
     private static readonly SeasonDef DefaultSeason = new() { Name = "Default" };
 
+    /// <summary>The Director's small happenings between crises (data/defs/incidents.json).</summary>
+    public List<IncidentDef> AllIncidents { get; } = [];
+
     /// <summary>How the season's festival runs (data/defs/festival.json): the last one loaded.</summary>
     public List<FestivalDef> AllFestivals { get; } = [];
 
@@ -156,6 +160,7 @@ public sealed class DefDatabase
         public List<RaiderKindDef> RaiderKinds { get; set; } = [];
         public List<WildlifeDef> Wildlife { get; set; } = [];
         public List<SeasonDef> Seasons { get; set; } = [];
+        public List<IncidentDef> Incidents { get; set; } = [];
         public List<FestivalDef> Festivals { get; set; } = [];
         public List<ThoughtDef> Thoughts { get; set; } = [];
         public List<InteractionDef> Interactions { get; set; } = [];
@@ -224,6 +229,7 @@ public sealed class DefDatabase
         AddAll(file.RaiderKinds, _raiderKinds, AllRaiderKinds, source);
         AddAll(file.Wildlife, _wildlife, AllWildlife, source);
         AddAll(file.Seasons, _seasons, AllSeasons, source);
+        AddAll(file.Incidents, _incidents, AllIncidents, source);
         AddAll(file.Festivals, _festivals, AllFestivals, source);
         AddAll(file.Thoughts, _thoughts, AllThoughts, source);
         AddAll(file.Interactions, _interactions, AllInteractions, source);
@@ -307,6 +313,7 @@ public sealed class DefDatabase
         foreach (var d in AllQuests) d.Resolve(this);
         foreach (var d in AllMaps) d.Resolve(this); // after blocks, things, creatures and buildings
         foreach (var d in AllSeasons) d.Resolve(this);
+        foreach (var d in AllIncidents) d.Resolve(this);
         foreach (var d in AllFestivals) d.Resolve(this);
         foreach (var d in AllServices)
         {

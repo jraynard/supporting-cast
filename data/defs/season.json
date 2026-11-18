@@ -61,6 +61,29 @@
       "woodDelivery": [ { "def": "Wood", "material": "Pine", "count": 120 } ],
       // Goose feathers for the carpenter's arrows, left in the woodshop's chest with the ore.
       "woodshopDelivery": [ { "def": "Feathers", "count": 6 } ],
+      // How the Director paces it (Director/Tension.cs, Director/RuleMind.cs): it eases off a town
+      // that's struggling and pushes one that's coasting, against where a town on course would be
+      // (renownAtFestival of the target by the festival; the rest comes at its end). A beat waits in
+      // its window for the town to be calm (harm under calmHarm, nothing under way) and settles its
+      // kind a raid's warning ahead, weighed by what's been seen and who'd answer it (answers: the
+      // town role whose trade meets each kind; a player there counts playerWeight, nobody able
+      // nobodyWeight). In a lull (lullHours quiet), an incident (incidents.json).
+      "pacing": {
+        "renownAtFestival": 0.6,
+        "strengthRange": [ 0.75, 1.35 ],
+        "calmHarm": 0.35,
+        "lullHours": 3,
+        "incidentGapHours": 4,
+        "beatClearHours": 3,
+        "incidentPushFloor": -0.25,
+        "seenWeight": 0.4,
+        "playerWeight": 1.5,
+        "nobodyWeight": 0.25,
+        "answers": { "Raid": "Forge", "Shortage": "Kitchen", "Plague": "Shrine" }
+      },
+      // A beat may follow a quest instead ("followsQuest": a quest's name, "afterHours": [earliest,
+      // latest] after its party sets out, "replaces": another beat's "id", "omen": what the town
+      // hears then): it comes only if a party goes, and never into the festival.
       "beats": [
         { "day": 1, "fromHour": 20, "toHour": 23, "strength": 0.5, "kinds": { "Raid": 1 } },
         { "day": 2, "fromHour": 10, "toHour": 17, "strength": 1, "kinds": { "Raid": 3, "Fire": 2, "Shortage": 2, "Plague": 2 } },

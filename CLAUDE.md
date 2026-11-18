@@ -82,7 +82,10 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
   - `Director/`: `Reckoning` keeps Renown (adventurers leaving pleased, quests cleared) and Dread
     (quests unanswered or gone badly; its limit ends the round). Players see words for them,
     through `PerceptionView.Standing`. `Director` sends the season's crises (`season.json` beats:
-    raid, fire, shortage, plague, the dragon), each an `ICrisis` that's met or not. Off unless the
+    raid, fire, shortage, plague, the dragon), each an `ICrisis` that's met or not. It paces them like a game master
+    (`Tension`, `RuleMind`: eases off a struggling town, pushes a coasting one, waits for calm, settles a beat's
+    kind a warning ahead), lets a beat follow a quest (`followsQuest`) and fills lulls with `incidents.json`
+    (`Incidents`). Anything deciding from outside the sim does it only through `DirectorChoiceCommand`. Off unless the
     game enables it, so tests stay scripted; outside rounds the old `Storyteller` sends raids.
     `Ai/Defence`: the armed fight raiders, the rest shelter; `Ai/DragonBrain`. The bridge a raid
     breaks is a `Tinkering/Repairs` breach, braced whole by the tinker (`SpanSession`).

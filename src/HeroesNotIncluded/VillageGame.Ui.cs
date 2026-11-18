@@ -1207,7 +1207,7 @@ public sealed partial class VillageGame
 
     private ThingDef? _spawnDef;
     private float _climateOffset;
-    private int _devCrisis;
+    private int _devCrisis, _devIncident;
 
     private void DrawDebug()
     {
@@ -1337,6 +1337,19 @@ public sealed partial class VillageGame
             ImGui.SameLine(0, -1);
             if (ImGui.Button("Festival now"u8, in _autoSize))
                 Issue(new DevFestivalCommand());
+            // The Director's small happenings, and how it reads the town (what it's pacing by).
+            var incidents = _sim.Defs.AllIncidents;
+            if (incidents.Count > 0)
+            {
+                ImGui.SetNextItemWidth(150);
+                ImGui.Combo("##incident"u8, ref _devIncident, incidents.Select(d => d.Name).ToArray(), -1);
+                _devIncident = Math.Clamp(_devIncident, 0, incidents.Count - 1);
+                ImGui.SameLine(0, -1);
+                if (ImGui.Button("Send incident"u8, in _autoSize))
+                    Issue(new HeroesNotIncluded.Sim.Director.DirectorChoiceCommand(null, incidents[_devIncident].Name));
+            }
+            if (_sim.Director.Enabled)
+                ImGuiText.Wrapped($"Director: {_sim.Director.Reading}");
         }
 
         if (ImGui.CollapsingHeader("System timings (ms)"u8, ImGuiTreeNodeFlags.None))
