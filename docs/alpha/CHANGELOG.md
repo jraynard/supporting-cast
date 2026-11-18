@@ -7,6 +7,66 @@ Write it for testers: what they'll notice, not how it's done.
 Playing together always needs everyone on the same build. Saves and characters carry over
 between builds unless a section's **Compatibility** line says otherwise.
 
+## 0.1.0-playtest.26
+
+The carpenter goes into the woods, the town looks after its fallen, adventurers shop for themselves,
+and a long list of fixes from the Steam Deck playtest.
+
+**The carpenter**
+- Fell trees by hand: aim the fall, cut the notch, then the back cut. A tree comes down where it
+  leans and lands on whoever's under it. Buck the trunk into logs (great logs slow whoever carries
+  them), saw a log into planks, and split logs into firewood at the woodshop's new chopping block.
+- The town burns firewood now, and the carter brings a little less than it needs: the carpenter
+  makes up the rest.
+- Worn bows, cudgels and staves go to the woodshop to be mended (they used to go unmended), and
+  crossbows to the tinker. An archer with no quiver asks the woodshop for one aloud.
+- Wagons are shared: the wheel is the tinker's, the woodwork the carpenter's (a new axle, a sprung
+  board nailed with the claw hammer). Furniture lost in a fire is joined again at the bench and set
+  back where it stood.
+- The carpenter starts with a woodcutter's axe. New tutorial chapters: "Fell a tree" and "Split firewood".
+
+**Work for two**
+- The keeper: someone holds the body while the empath calls them back. The pitman: the second sawyer
+  under a great log. The lifter: holds a wagon level while its new axle goes on. Bots join in too.
+
+**The town**
+- No more hunger or tiredness meters. Sleep two hours and you're well rested; eat and you're well
+  fed (the better the dish, the more). Both make you a little quicker. Going without costs nothing.
+- When someone collapses nearby, the two closest drop everything to bind the bleeding and carry
+  them to a pallet or a bed.
+- Adventurers buy off a wares shelf themselves, whether or not you're there. Finding nothing for
+  them, they may ask you to make a piece by name.
+- The season reacts to how the town's doing: crises come sooner or later and harder or softer, and
+  small incidents (a fever, rats, a traveller's errand) fill the quiet stretches.
+- The healer is now the empath. The tinker can set a trip-bell on the road: without one, you only
+  know a raid's coming when someone sees it.
+- Trade with another player face to face: F at them with something in hand gives it, with empty
+  hands asks to trade.
+
+**From the Deck playtest**
+- Start closes the game menu as well as opening it.
+- The controller's buttons are named as you know them: Select and Start, not View and Menu.
+- The tutorial names the controller's buttons on a controller: the wheel (RB) for your shop, quests
+  and the gift, LT where it said right-click, RT and the right stick where it said click.
+- The lock pick's hints say which way on the stick: up and down for tension, left and right for the pin.
+- Playing alone, time stops while a tutorial card is open. Press Got it (or B) to carry on. You can
+  turn this off in Settings.
+- Practice customers wait however long you take. "Set it up again" sends the earlier ones away,
+  and what they handed you goes with them.
+- Mini-game windows open in front of everything, in the middle of the screen, and shrink to fit a
+  small screen.
+- Hover over a minimap pin or edge arrow to see what it points at. Your home's arrow has a little house on it.
+- Character creation: a Random button for the name alone; the folk tooltip describes the folk you're
+  pointing at; "Start from" is now "Starting look" (it's only your look, your trade comes later).
+- More, then Characters, then Back returns to More.
+- Each trade is marked easygoing, steady or busy where you choose it.
+- The coin flip shows in front of a beard, and no longer appears on the back of your head.
+
+**Also**
+- Only a shop's own trade can take its orders: an empath can't take the inn's drink orders any more.
+- An adventurer staying the night keeps back the price of a bed instead of spending it on gear.
+- Lifting a wagon: A and D leaned it the wrong way.
+
 ## 0.1.0-playtest.25
 
 A sixth trade, the carpenter; wares shelves in every shop; the innkeeper's rations come from the cook;
