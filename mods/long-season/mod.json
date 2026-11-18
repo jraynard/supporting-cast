@@ -1,0 +1,8 @@
+{
+  "id": "long-season",
+  "name": "The Long Season",
+  "version": "1.0.0",
+  "authors": ["Heroes Not Included"],
+  "description": "Five days to the festival instead of three, and the Renown to match. An example data mod: one $patch, nothing else (docs/MODDING.md).",
+  "gameVersion": "0.1"
+}

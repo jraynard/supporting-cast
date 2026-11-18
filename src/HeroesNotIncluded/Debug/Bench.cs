@@ -15,7 +15,7 @@ public static class Bench
 {
     public static void Run(ulong seed, bool round = false, string map = Sim.Scenarios.VillageRound.DefaultMap)
     {
-        var defs = DefDatabase.LoadDirectory(Path.Combine(AppContext.BaseDirectory, "data", "defs"));
+        var defs = Mods.GameContent.Current.LoadDefs();
         var sim = Sim.Scenarios.VillageRound.NewSimulation(defs, seed, map);
         var bots = new List<Sim.Bots.BotPlayer>();
         if (round)

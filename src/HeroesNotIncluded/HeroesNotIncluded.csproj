@@ -20,6 +20,8 @@
 
   <ItemGroup>
     <None Include="..\..\data\**\*" LinkBase="data" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The mods that ship with the game (docs/MODDING.md): their data, not their sources or builds. -->
+    <None Include="..\..\mods\**\*" Exclude="..\..\mods\**\bin\**;..\..\mods\**\obj\**;..\..\mods\**\*.cs;..\..\mods\**\*.csproj" LinkBase="mods" CopyToOutputDirectory="PreserveNewest" />
     <!-- BRUTAL License 2.3: NOTICE.txt must be distributed alongside the product. -->
     <None Include="..\..\NOTICE.txt" Link="NOTICE.txt" CopyToOutputDirectory="PreserveNewest" />
     <!-- Bundled UI font (SIL Open Font License 1.1): its license ships with the other third-party notices. -->

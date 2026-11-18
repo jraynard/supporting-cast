@@ -210,8 +210,9 @@ A new trade, mini-game, map or game mode should be a mod, and the core game the 
 (the plan, phase by phase: [MODDING.md](MODDING.md)). Before many more trades are added, so each
 new one is built the moddable way.
 - [x] **Guard rails:** the Moddability rule (CLAUDE.md); banned non-deterministic APIs in the sim.
-- [ ] **Data mods:** `mods/<id>/` folders with `mod.json`, several def, texture and sound roots,
-  `$patch` merges, the mod set in co-op's build tag, saves and replays; a Mods window; `--check-mod`.
+- [x] **Data mods:** `mods/<id>/` folders with `mod.json`, several def, texture and sound roots,
+  `$patch` merges, the mod set in co-op's build tag, saves and replays; a Mods panel; `--check-mod`.
+- [ ] **A third town as a data mod**, played in co-op, a mismatched joiner refused.
 - [ ] **Registries and assemblies:** sessions, work views, codecs, commands, systems, work givers,
   roles, crises, lessons and bot hooks registered, not switched on; mod DLLs loaded. Hashes unchanged.
 - [ ] **The carpenter moves out** to `mods/carpenter`: the proof the API is enough.

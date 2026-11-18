@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 
 namespace HeroesNotIncluded.Sim.Defs;
@@ -8,7 +9,9 @@ namespace HeroesNotIncluded.Sim.Defs;
 /// "blocks", "things", "creatures", "needs", "bodies", "materials", "difficulties", "raiderKinds", "wildlife", "seasons", "thoughts", "interactions", "recipes", "tiers", "veins",
 /// "dragonInteractions", "trustLevels", "tricks", "outfits", "elements", "buildings", "kits", "trades", "adventurerKinds", "parties", "services", "mendings", "ghostErrands", "quests",
 /// each an array of defs (and "basics", the tutorial's first chapter: one lesson, the last loaded). Files are merged in name
-/// order so later files (mods) can add content.
+/// order, directory by directory (the game's, then each mod's), so later files can add content, replace a def by
+/// naming it again, or change only some of its fields with <c>"$patch": "merge"</c> (objects merge, anything else is
+/// replaced) or drop it with <c>"$patch": "remove"</c> (docs/MODDING.md).
 /// </summary>
 public sealed class DefDatabase
 {
@@ -185,40 +188,172 @@ public sealed class DefDatabase
         public LessonDef? Basics { get; set; }
     }
 
-    public static DefDatabase LoadDirectory(string directory)
-    {
-        if (!Directory.Exists(directory))
-            throw new DirectoryNotFoundException($"Defs directory not found: {directory}");
+    public static DefDatabase LoadDirectory(string directory) => LoadDirectories([directory]);
 
-        var db = new DefDatabase();
-        foreach (var file in Directory.EnumerateFiles(directory, "*.json", SearchOption.AllDirectories).Order())
-            db.AddJson(File.ReadAllText(file), file);
-        db.ResolveAll();
-        return db;
+    /// <summary>
+    /// Every <c>*.json</c> under each directory, in order: the first is the game's own (it must exist), the
+    /// rest are mods' and are layered over it.
+    /// </summary>
+    public static DefDatabase LoadDirectories(IReadOnlyList<string> directories)
+    {
+        if (directories.Count == 0 || !Directory.Exists(directories[0]))
+            throw new DirectoryNotFoundException($"Defs directory not found: {(directories.Count == 0 ? "(none)" : directories[0])}");
+
+        var layers = new DefLayers();
+        foreach (var directory in directories)
+        {
+            if (!Directory.Exists(directory))
+                throw new DirectoryNotFoundException($"Defs directory not found: {directory}");
+            foreach (var file in Directory.EnumerateFiles(directory, "*.json", SearchOption.AllDirectories).Order())
+                layers.Add(File.ReadAllText(file), file);
+        }
+        return layers.Build();
     }
 
     /// <summary>Build from JSON strings directly (tests).</summary>
     public static DefDatabase FromJson(params string[] json)
     {
-        var db = new DefDatabase();
+        var layers = new DefLayers();
         for (var i = 0; i < json.Length; i++)
-            db.AddJson(json[i], $"<json {i}>");
-        db.ResolveAll();
-        return db;
+            layers.Add(json[i], $"<json {i}>");
+        return layers.Build();
     }
 
-    private void AddJson(string json, string source)
+    /// <summary>
+    /// Files as raw JSON, def by def, so a later one can merge into or remove an earlier def before
+    /// anything is typed. A def keeps the place it first had, so indices stay put when one is replaced.
+    /// </summary>
+    private sealed class DefLayers
     {
-        DefFile file;
-        try
+        private static readonly JsonNodeOptions NodeOptions = new() { PropertyNameCaseInsensitive = true };
+        private static readonly JsonDocumentOptions DocOptions = new() { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true };
+
+        private sealed class Kind
         {
-            file = JsonSerializer.Deserialize<DefFile>(json, JsonOptions) ?? new DefFile();
-        }
-        catch (JsonException e)
-        {
-            throw new Exception($"Failed to parse defs in {source}: {e.Message}", e);
+            public required string Key;
+            public readonly List<string> Order = [];
+            public readonly Dictionary<string, JsonObject> ByName = new(StringComparer.OrdinalIgnoreCase);
         }
 
+        private readonly List<Kind> _kinds = [];
+        private readonly Dictionary<string, Kind> _byKey = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, JsonNode?> _singles = new(StringComparer.OrdinalIgnoreCase);
+
+        public void Add(string json, string source)
+        {
+            JsonObject root;
+            try
+            {
+                root = JsonNode.Parse(json, NodeOptions, DocOptions) as JsonObject ?? throw new JsonException("expected an object at the top");
+            }
+            catch (JsonException e)
+            {
+                throw new Exception($"Failed to parse defs in {source}: {e.Message}", e);
+            }
+            foreach (var (key, value) in root.ToList())
+            {
+                if (value is not JsonArray array)
+                {
+                    _singles[key] = value?.DeepClone(); // "basics": the last one loaded
+                    continue;
+                }
+                if (!_byKey.TryGetValue(key, out var kind))
+                {
+                    kind = new Kind { Key = key };
+                    _byKey[key] = kind;
+                    _kinds.Add(kind);
+                }
+                foreach (var item in array)
+                    AddDef(kind, item as JsonObject ?? throw new Exception($"Failed to parse defs in {source}: \"{key}\" should hold objects"), source);
+            }
+        }
+
+        private static void AddDef(Kind kind, JsonObject def, string source)
+        {
+            def = (JsonObject)def.DeepClone();
+            var name = Text(def, "name");
+            if (string.IsNullOrWhiteSpace(name))
+                throw new Exception($"A def in \"{kind.Key}\" without a name in {source}");
+            var patch = Text(def, "$patch");
+            Remove(def, "$patch");
+            switch (patch)
+            {
+                case null:
+                    if (!kind.ByName.ContainsKey(name))
+                        kind.Order.Add(name);
+                    kind.ByName[name] = def;
+                    break;
+                case "merge":
+                    if (!kind.ByName.TryGetValue(name, out var into))
+                        throw new Exception($"{source} merges into \"{name}\" in \"{kind.Key}\", which no earlier file defines");
+                    Merge(into, def);
+                    break;
+                case "remove":
+                    if (!kind.ByName.Remove(name))
+                        throw new Exception($"{source} removes \"{name}\" from \"{kind.Key}\", which no earlier file defines");
+                    kind.Order.RemoveAll(n => string.Equals(n, name, StringComparison.OrdinalIgnoreCase));
+                    break;
+                default:
+                    throw new Exception($"{source}: \"$patch\" on \"{name}\" should be \"merge\" or \"remove\", not \"{patch}\"");
+            }
+        }
+
+        /// <summary>Objects merge field by field (names ignoring case); anything else, arrays included, is replaced.</summary>
+        private static void Merge(JsonObject into, JsonObject from)
+        {
+            foreach (var (key, value) in from.ToList())
+            {
+                var existing = into.FirstOrDefault(p => string.Equals(p.Key, key, StringComparison.OrdinalIgnoreCase));
+                if (existing.Key != null && existing.Value is JsonObject a && value is JsonObject b)
+                {
+                    Merge(a, b);
+                    continue;
+                }
+                if (existing.Key != null)
+                    into.Remove(existing.Key);
+                into[key] = value?.DeepClone();
+            }
+        }
+
+        private static string? Text(JsonObject o, string key)
+        {
+            foreach (var (k, v) in o)
+                if (string.Equals(k, key, StringComparison.OrdinalIgnoreCase))
+                    return v is JsonValue jv && jv.TryGetValue<string>(out var s) ? s : null;
+            return null;
+        }
+
+        private static void Remove(JsonObject o, string key)
+        {
+            foreach (var k in o.Select(p => p.Key).Where(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase)).ToList())
+                o.Remove(k);
+        }
+
+        public DefDatabase Build()
+        {
+            var merged = new JsonObject(NodeOptions);
+            foreach (var kind in _kinds)
+                merged[kind.Key] = new JsonArray([.. kind.Order.Select(n => (JsonNode)kind.ByName[n])]);
+            foreach (var (key, value) in _singles)
+                merged[key] = value;
+            DefFile file;
+            try
+            {
+                file = merged.Deserialize<DefFile>(JsonOptions) ?? new DefFile();
+            }
+            catch (JsonException e)
+            {
+                throw new Exception($"Failed to read defs: {e.Message}", e);
+            }
+            var db = new DefDatabase();
+            db.AddFile(file, "defs");
+            db.ResolveAll();
+            return db;
+        }
+    }
+
+    private void AddFile(DefFile file, string source)
+    {
         AddAll(file.Blocks, _blocks, AllBlocks, source);
         AddAll(file.Things, _things, AllThings, source);
         AddAll(file.Creatures, _creatures, AllCreatures, source);

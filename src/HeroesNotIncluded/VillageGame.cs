@@ -345,13 +345,13 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     {
         if (Coop != null || Loaded != null || _prepared != null)
             return;
-        var defs = DefDatabase.LoadDirectory(Path.Combine(dataDirectory, "defs"));
+        var defs = Mods.GameContent.Current.LoadDefs(dataDirectory);
         _prepared = (defs, StartNewVillage(defs));
     }
 
     public override void Load()
     {
-        var defs = Coop?.Defs ?? Loaded?.Sim.Defs ?? _prepared?.Defs ?? DefDatabase.LoadDirectory(Path.Combine(Host.DataDirectory, "defs"));
+        var defs = Coop?.Defs ?? Loaded?.Sim.Defs ?? _prepared?.Defs ?? Mods.GameContent.Current.LoadDefs(Host.DataDirectory);
         ArtAudit.Log(ArtAudit.Run(defs, Host.Atlas.Sprites, Host.Atlas.Sheets));
         Ui.Theme.Apply(Settings.Current.UiScale);
         _settings = new Ui.SettingsWindow(Host);
@@ -487,7 +487,7 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         _animDt = HitFeel(dt, _animDt);
         _artReloader ??= new ArtReloader(Host.Atlas, DevPaths.Watch("SC_WATCH_ART"));
         _artReloader.Update(Host.Input, dt);
-        _defReloader ??= new DefReloader(DevPaths.Defs ?? Path.Combine(Host.DataDirectory, "defs"), DevPaths.Watch());
+        _defReloader ??= new DefReloader(Mods.GameContent.Current.LiveDefDirectories(Host.DataDirectory), DevPaths.Watch());
         if (_defReloader.Update(Host.Input, dt))
             ReloadDefs();
         // Window units, not framebuffer pixels: the cursor and ImGui use them, and the projection

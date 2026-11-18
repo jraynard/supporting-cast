@@ -1,0 +1,6 @@
+// A patch: only the fields given change, the rest of data/defs/season.json stands.
+{
+  "seasons": [
+    { "name": "Season", "$patch": "merge", "days": 5, "renownTarget": 100 }
+  ]
+}

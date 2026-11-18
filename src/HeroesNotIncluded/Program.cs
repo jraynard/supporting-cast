@@ -1,6 +1,7 @@
 using HeroesNotIncluded;
 using HeroesNotIncluded.Characters;
 using HeroesNotIncluded.Debug;
+using HeroesNotIncluded.Mods;
 using HeroesNotIncluded.Net;
 using Narsil;
 using Narsil.Platform;
@@ -12,15 +13,21 @@ using HeroesNotIncluded.Sim.Saving;
 using HeroesNotIncluded.Sim.Scenarios;
 
 // Headless runs (bench, checks) log to the console only; the game also writes a file testers can send.
-var headless = args.Any(a => a is "--bench" or "--combat-sweep" or "--season-sweep" or "--check-art" or "--check-save" or "--check-gpu" or "--version" or "--dictate-test");
+var headless = args.Any(a => a is "--bench" or "--combat-sweep" or "--season-sweep" or "--check-art" or "--check-mod" or "--check-save" or "--check-gpu" or "--version" or "--dictate-test");
 Log.Initialize(logDirectory: headless ? null : BuildInfo.LogDirectory, appName: TitleGame.AppId);
 string? buildTag = null;
 Log.CrashContext = () => BuildInfo.Describe(buildTag);
 
+// Mods for this run (docs/MODDING.md): --mods a,b, else the player's own list once the settings are read.
+// Headless runs (bench, sweeps, checks) see only --mods, so their results don't depend on a player's setup.
+if (ParseString(args, "--mods") is { } modsArg)
+    GameContent.Use(modsArg.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+var modsGiven = args.Contains("--mods");
+
 if (args.Contains("--version"))
 {
     // Headless: what testers (and the packaging script) compare. Co-op only works between equal tags.
-    var defs = DefDatabase.LoadDirectory(Path.Combine(AppContext.BaseDirectory, "data", "defs"));
+    var defs = GameContent.Current.LoadDefs();
     Console.WriteLine($"{TitleGame.Title} {BuildInfo.Label}");
     Console.WriteLine($"build tag {BuildInfo.Tag(defs)}");
     Console.WriteLine($"{System.Runtime.InteropServices.RuntimeInformation.OSDescription} {System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier}");
@@ -73,15 +80,15 @@ if (args.Contains("--season-sweep"))
 if (args.Contains("--check-art"))
 {
     // Headless: pack the atlas on the CPU and audit it against the defs. Non-zero exit on missing sprites.
-    var data = Path.Combine(AppContext.BaseDirectory, "data");
-    var packed = AtlasPacker.Pack(Path.Combine(data, "textures"));
-    var report = ArtAudit.Run(DefDatabase.LoadDirectory(Path.Combine(data, "defs")), packed.Sprites, packed.Sheets);
+    var content = GameContent.Current;
+    var packed = AtlasPacker.Pack(content.TextureRoots());
+    var report = ArtAudit.Run(content.LoadDefs(), packed.Sprites, packed.Sheets);
     foreach (var e in report.Errors)
         Console.WriteLine($"error: {e}");
     foreach (var w in report.Warnings)
         Console.WriteLine($"warning: {w}");
     Console.WriteLine($"{packed.Sprites.Count} sprites, {packed.Sheets.Count} sheets, {packed.Pages} atlas page(s) of {packed.Size}x{packed.Size}: {report.Errors.Count} error(s), {report.Warnings.Count} warning(s)");
-    var sounds = HeroesNotIncluded.Audio.SoundAudit.Run(Path.Combine(data, "sounds", "sounds.json"));
+    var sounds = HeroesNotIncluded.Audio.SoundAudit.Run(Path.Combine(GameContent.DataDirectory, "sounds", "sounds.json"));
     foreach (var e in sounds.Errors)
         Console.WriteLine($"error: {e}");
     foreach (var w in sounds.Warnings)
@@ -90,12 +97,18 @@ if (args.Contains("--check-art"))
     Environment.Exit(report.Errors.Count + sounds.Errors.Count > 0 ? 1 : 0);
 }
 
+if (ParseString(args, "--check-mod") is { } modPath)
+{
+    // Headless: a mod over the core, its defs resolved and its art and sounds audited (docs/MODDING.md).
+    Environment.Exit(ModCheck.Run(modPath, Console.Out));
+}
+
 if (ParseString(args, "--check-save") is { } checkPath)
 {
     // Headless: load a save, play an hour on and print what's in it. Non-zero exit if it won't load.
     try
     {
-        var defs = DefDatabase.LoadDirectory(Path.Combine(AppContext.BaseDirectory, "data", "defs"));
+        var defs = GameContent.Current.LoadDefs();
         var save = SaveSlots.Load(ResolveSave(checkPath), defs);
         var h = save.Header;
         Console.WriteLine($"{save.SlotName}: format {h.Version}, seed {h.Seed}, {h.Time}, {h.Width}x{h.Height}x{h.Depth}, {h.Villagers} villager(s)");
@@ -114,9 +127,12 @@ if (ParseString(args, "--check-save") is { } checkPath)
 }
 
 var stress = args.Contains("--stress");
+var settings = Settings.Load(Settings.DefaultPath);
+if (!modsGiven)
+    GameContent.Use(settings.Mods);
 try
 {
-    buildTag = BuildInfo.Tag(DefDatabase.LoadDirectory(Path.Combine(AppContext.BaseDirectory, "data", "defs")));
+    buildTag = BuildInfo.Tag(GameContent.Current.LoadDefs());
 }
 catch (Exception ex)
 {
@@ -128,7 +144,6 @@ if (Log.File is { } file)
 // Co-op testing: run two copies on one machine as different players.
 CoopIdentity.IdOverride = ParseString(args, "--player-id");
 CoopIdentity.NameOverride = ParseString(args, "--name");
-var settings = Settings.Load(Settings.DefaultPath);
 // Trying another screen from the desktop: --deck (the Steam Deck's first-run settings), --size WxH,
 // --ui-scale N. These are for looking, so the player's settings file is left alone.
 if (args.Contains("--deck") || args.Contains("--size") || args.Contains("--ui-scale"))
@@ -177,6 +192,7 @@ using var host = new GameHost(new GameHostOptions
 });
 
 Controls.Attach(host);
+GameContent.Current.ApplyTo(host); // the mods' art (the host packed the game's own)
 
 // Sound for every mode; silent with no device, or with --mute (screenshot runs, scripts).
 if (args.Contains("--mute"))
@@ -199,7 +215,7 @@ else if (args.Contains("--host"))
     {
         try
         {
-            var save = SaveSlots.Load(ResolveSave(hostPath), DefDatabase.LoadDirectory(Path.Combine(AppContext.BaseDirectory, "data", "defs")));
+            var save = SaveSlots.Load(ResolveSave(hostPath), GameContent.Current.LoadDefs());
             host.Run(new VillageGame(save.Sim.Seed) { Loaded = save, HostCoop = hosting, AutoPause = false });
         }
         catch (SaveException ex)
@@ -244,7 +260,7 @@ else if (ParseString(args, "--load") is { } loadPath)
     LoadedGame save;
     try
     {
-        save = SaveSlots.Load(ResolveSave(loadPath), DefDatabase.LoadDirectory(Path.Combine(AppContext.BaseDirectory, "data", "defs")));
+        save = SaveSlots.Load(ResolveSave(loadPath), GameContent.Current.LoadDefs());
     }
     catch (SaveException ex)
     {
@@ -344,7 +360,7 @@ SavedCharacter? PickedCharacter()
     if (CharacterRoster.PickOverride is not { } pick)
         return null;
     CharacterRoster.PickOverride = null;
-    var found = CharacterRoster.Load(host, DefDatabase.LoadDirectory(Path.Combine(AppContext.BaseDirectory, "data", "defs"))).Find(pick);
+    var found = CharacterRoster.Load(host, GameContent.Current.LoadDefs()).Find(pick);
     if (found == null)
         Console.WriteLine($"warning: no saved character called {pick}");
     return found;

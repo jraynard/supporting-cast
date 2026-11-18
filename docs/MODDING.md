@@ -22,7 +22,8 @@ mods/<id>/
   <Id>.dll          optional: the presentation half (work views, HUD, sounds; references the game)
 ```
 
-- **The core is `mods/core`**, always first: today's `data/`.
+- **The core is `data/`**, always first: the implicit core mod (moving it would churn the tools and
+  packaging for nothing).
 - **Load order:** dependencies first (`dependsOn`, `loadAfter`), then by id. Def indices of the
   core don't move, so a game with no mods hashes as it always did.
 - **Two halves, the same rule as the game's:** a mod's `.Sim.dll` is refused if it references the
@@ -30,8 +31,14 @@ mods/<id>/
   game's own (below).
 - **Code mods are C# assemblies.** Steam Workshop hosts any files, and other games ship DLL mods
   through it. Code isn't sandboxed, so the Mods window says plainly when a mod runs code.
-- **Where they're found:** `mods/` beside the game, and a mods folder in the config directory
-  (where Workshop items will go).
+- **Where they're found:** `mods/` beside the game (the checkout's when running from one), then
+  `mods/` in the config folder (where Workshop items will go). The first to have an id keeps it.
+- **Turning them on:** the title screen's More, then Mods (saved in `settings.json`'s `mods`), or
+  `--mods a,b` for one run. Headless runs (bench, sweeps) see only `--mods`.
+- **What follows them:** defs (`GameContent.LoadDefs`), the atlas's roots, the sound manifests, the
+  def reloader (F8 and file watching cover a mod's `defs/` too), co-op's build tag (every file of
+  every mod, the ids at its end: `0.1.0-…-2e283fc5be+long-season`), and saves (their meta names the
+  mods; loading with others turned on is refused in plain words). Replays follow the build tag.
 
 ## Data mods
 
@@ -40,8 +47,10 @@ is loaded):
 - **New things:** buildings, furniture, items, recipes, quests, parties, adventurer kinds, incidents,
   barks, runes and mendings, outfits, and maps (a town is a `MapDef` with a building in the Tavern role).
 - **Overriding:** a def with the same name replaces the earlier one.
-- **Patching** (to build): `"$patch": "merge"` merges only the fields given into the existing def, and
-  `"$patch": "remove"` drops it, so a mod can change a price without restating the def.
+- **Patching:** `"$patch": "merge"` merges only the fields given into the existing def (objects merge
+  field by field; arrays and values are replaced whole), and `"$patch": "remove"` drops it, so a mod
+  can change a price without restating the def. Merging happens on the raw JSON before anything is
+  typed, so a def keeps its place and the core's indices don't move. Example: `mods/long-season`.
 - **Art and sound:** a mod's `textures/` and `sounds/` are further roots; a later root's file with the
   same id replaces the core's, so a retexture is a folder of PNGs.
 
@@ -102,8 +111,9 @@ The game's own rules (CLAUDE.md) bind its mods:
 
 ## Checking a mod
 
-- `--check-mod PATH` (to build): loads the core and the mod headless, resolves defs, and audits
-  sprites and sounds as `--check-art` does.
+- `--check-mod PATH` (or an installed mod's id): loads the core, the mod and what it depends on
+  headless, resolves defs, audits sprites and sounds as `--check-art` does, and lists what the mod
+  adds, changes and removes, kind by kind. The exit code is the error count.
 - A mod's tests use `HeroesNotIncluded.Sim.Testing` (`TestWorld.Millbrook` and friends).
 - Then play it: `--new-game --mods <id> --trade <Trade>`.
 
@@ -125,8 +135,11 @@ The game's own rules (CLAUDE.md) bind its mods:
 ## Status
 
 - [x] Guard rails: the Moddability rule in CLAUDE.md; the sim builds against a banned-API list.
-- [ ] Data mods: folders and `mod.json`, content roots in Narsil, `$patch`, the mod set in the
-  build tag, saves and replays, the Mods window, `--mods`, `--check-mod`.
+- [x] Data mods: folders and `mod.json` (`Narsil.Mods`), several atlas and sound roots, `$patch`,
+  the mod set in the build tag, saves and replays, the Mods panel, `--mods`, `--check-mod`; the
+  example `mods/long-season`.
+- [ ] A third town as a data mod (a map and a building), played in co-op: the proof data mods are
+  enough for a town.
 - [ ] Registries and mod assemblies (a pure refactor: `--bench` hashes unchanged).
 - [ ] The carpenter moved out to `mods/carpenter`.
 - [ ] Game modes.

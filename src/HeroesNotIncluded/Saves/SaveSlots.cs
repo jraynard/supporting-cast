@@ -159,6 +159,10 @@ public static class SaveSlots
         try
         {
             using var stream = File.OpenRead(path);
+            // A save names the mods it was made with: say so plainly rather than fail on a def it can't find.
+            if (Mods.GameContent.Current.Refuses(SaveGame.ReadHeader(stream).Meta) is { } refusal)
+                throw new SaveException(refusal);
+            stream.Position = 0;
             var (sim, header) = SaveGame.Read(stream, defs);
             return new LoadedGame(sim, header, System.IO.Path.GetFileNameWithoutExtension(path));
         }

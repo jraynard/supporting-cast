@@ -40,7 +40,7 @@ public sealed class ArtPreviewGame : Game
         _reloader = new ArtReloader(Host.Atlas, DevPaths.Watch("SC_WATCH_ART"));
         try
         {
-            _defs = Sim.Defs.DefDatabase.LoadDirectory(Path.Combine(Host.DataDirectory, "defs"));
+            _defs = Mods.GameContent.Current.LoadDefs(Host.DataDirectory);
         }
         catch (Exception ex)
         {

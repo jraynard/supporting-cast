@@ -15,7 +15,7 @@ public static class CombatSweepRun
     public static void Run(string[] args)
     {
         _log = args.Contains("--log");
-        var defs = DefDatabase.LoadDirectory(Path.Combine(AppContext.BaseDirectory, "data", "defs"));
+        var defs = Mods.GameContent.Current.LoadDefs();
         var n = Value(args, "--seeds") is { } s && int.TryParse(s, out var count) ? count : 8;
         var first = Value(args, "--seed") is { } f && ulong.TryParse(f, out var seed) ? seed : 1ul;
         var seeds = Enumerable.Range(0, n).Select(i => first + (ulong)i).ToArray();

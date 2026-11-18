@@ -5,7 +5,7 @@ namespace HeroesNotIncluded.Rendering;
 
 /// <summary>
 /// Notices def edits: F8, or (Debug builds, <c>SC_WATCH=1</c>) any <c>*.json</c> change under the
-/// defs directory, after a short quiet spell so an editor's save-and-rename counts once.
+/// defs directories (the core's and each mod's), after a short quiet spell so an editor's save-and-rename counts once.
 /// <see cref="VillageGame"/> does the actual reload (a save round trip onto the new defs).
 /// </summary>
 public sealed class DefReloader : IDisposable
@@ -13,24 +13,36 @@ public sealed class DefReloader : IDisposable
     /// <summary>Seconds without further changes before a reload.</summary>
     public const float QuietSeconds = 0.3f;
 
-    private readonly FileSystemWatcher? _watcher;
+    private readonly List<FileSystemWatcher> _watchers = [];
     private volatile bool _dirty;
     private float _quiet;
 
-    public string Directory { get; }
+    /// <summary>The core's defs directory (file names in messages are shown relative to it).</summary>
+    public string Directory => Directories[0];
 
-    public DefReloader(string directory, bool watch)
+    /// <summary>Every directory a reload reads, in order: the core's, then each mod's.</summary>
+    public IReadOnlyList<string> Directories { get; }
+
+    public DefReloader(string directory, bool watch) : this([directory], watch)
     {
-        Directory = directory;
-        if (!watch || !System.IO.Directory.Exists(directory))
+    }
+
+    public DefReloader(IReadOnlyList<string> directories, bool watch)
+    {
+        Directories = directories;
+        if (!watch)
             return;
-        _watcher = new FileSystemWatcher(directory, "*.json") { IncludeSubdirectories = true, NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size };
-        _watcher.Changed += OnChanged;
-        _watcher.Created += OnChanged;
-        _watcher.Renamed += OnChanged;
-        _watcher.Deleted += OnChanged;
-        _watcher.EnableRaisingEvents = true;
-        Log.Engine.Info($"Watching {directory} for def changes (F8 reloads by hand)");
+        foreach (var directory in directories.Where(System.IO.Directory.Exists))
+        {
+            var watcher = new FileSystemWatcher(directory, "*.json") { IncludeSubdirectories = true, NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.Size };
+            watcher.Changed += OnChanged;
+            watcher.Created += OnChanged;
+            watcher.Renamed += OnChanged;
+            watcher.Deleted += OnChanged;
+            watcher.EnableRaisingEvents = true;
+            _watchers.Add(watcher);
+            Log.Engine.Info($"Watching {directory} for def changes (F8 reloads by hand)");
+        }
     }
 
     private void OnChanged(object sender, FileSystemEventArgs e) => MarkChanged();
@@ -61,5 +73,10 @@ public sealed class DefReloader : IDisposable
         return true;
     }
 
-    public void Dispose() => _watcher?.Dispose();
+    public void Dispose()
+    {
+        foreach (var w in _watchers)
+            w.Dispose();
+        _watchers.Clear();
+    }
 }

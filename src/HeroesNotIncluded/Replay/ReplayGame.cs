@@ -68,7 +68,7 @@ public sealed class ReplayGame(ReplayFile file, string? path = null) : Game
     /// </summary>
     public void Prepare(string dataDirectory)
     {
-        _defs = DefDatabase.LoadDirectory(Path.Combine(dataDirectory, "defs"));
+        _defs = Mods.GameContent.Current.LoadDefs(dataDirectory);
         if (file.BuildTag != CoopSession.BuildTag(_defs))
             throw new Sim.Saving.SaveException("That replay was made on another version of the game, and plays only there.");
         try

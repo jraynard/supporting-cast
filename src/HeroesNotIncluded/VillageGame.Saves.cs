@@ -161,7 +161,7 @@ public sealed partial class VillageGame
         DefDatabase defs;
         try
         {
-            defs = DefDatabase.LoadDirectory(dir);
+            defs = DefDatabase.LoadDirectories(_defReloader.Directories);
         }
         catch (Exception ex) // bad JSON, a dangling reference, a file mid-write: report and keep playing
         {
@@ -227,6 +227,7 @@ public sealed partial class VillageGame
             ["camera"] = string.Join(",", new[] { c.Target.X, c.Target.Y, c.Target.Z, c.Yaw, c.Zoom }.Select(v => v.ToString("R", inv))),
             ["cutaway"] = _followLevel ? "follow" : _renderer.CutawayZ.ToString(inv),
             ["speed"] = _speed.ToString(inv),
+            [Mods.GameContent.SaveMetaKey] = Mods.GameContent.Current.SaveMeta,
         };
     }
 

@@ -198,16 +198,19 @@ public sealed class CoopSession : ILockstepGame, IDisposable
     /// </summary>
     public const int MaxIncomingFrame = 1 << 20;
 
-    private static string? _buildTag;
+    private static (Mods.GameContent Content, string Tag)? _buildTag;
 
     /// <summary>
     /// Code and content fingerprint: the game and sim assemblies, Narsil's sim half (the PRNG and
-    /// pathing live there) (deterministic builds give the same id for the same source) plus every def. Anything else would desync.
+    /// pathing live there) (deterministic builds give the same id for the same source) plus every def,
+    /// and every file of each mod turned on (<see cref="Mods.GameContent.Current"/>), whose ids end the
+    /// tag so a refusal says which mods the other side has. Anything else would desync.
     /// </summary>
     public static string BuildTag(DefDatabase defs)
     {
-        if (_buildTag != null)
-            return _buildTag;
+        var content = Mods.GameContent.Current;
+        if (_buildTag is { } cached && cached.Content == content)
+            return cached.Tag;
         using var sha = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         foreach (var asm in new[] { typeof(Simulation).Assembly, typeof(SimRandom).Assembly, typeof(CoopSession).Assembly })
             sha.AppendData(asm.ManifestModule.ModuleVersionId.ToByteArray());
@@ -215,8 +218,11 @@ public sealed class CoopSession : ILockstepGame, IDisposable
         if (Directory.Exists(dir))
             foreach (var file in Directory.GetFiles(dir, "*.json", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.Ordinal))
                 sha.AppendData(File.ReadAllBytes(file));
+        content.AppendFingerprint(sha);
         var version = typeof(CoopSession).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "dev";
-        return _buildTag = $"{version.Split('+')[0]}-{Convert.ToHexString(sha.GetHashAndReset())[..10].ToLowerInvariant()}";
+        var tag = $"{version.Split('+')[0]}-{Convert.ToHexString(sha.GetHashAndReset())[..10].ToLowerInvariant()}{content.TagSuffix}";
+        _buildTag = (content, tag);
+        return tag;
     }
 
     /// <summary>Where desync dumps go (the log folder); tests point it elsewhere.</summary>

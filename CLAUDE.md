@@ -34,6 +34,7 @@ dotnet run --project src/HeroesNotIncluded -- --new-game --voice-clip clip.wav  
 dotnet run --project src/HeroesNotIncluded -- --replay newest   # watch a kept round again (or a path; --keep-replay-at N keeps one mid-round)
 dotnet run --project src/HeroesNotIncluded -- --art-preview
 dotnet run --project src/HeroesNotIncluded -- --check-art     # headless: every sprite and tag exists
+dotnet run --project src/HeroesNotIncluded -- --check-mod mods/long-season   # headless: a mod over the core, checked (any mode takes --mods a,b)
 dotnet run --project src/HeroesNotIncluded -- --check-gpu
 dotnet run --project src/HeroesNotIncluded -- --input-log     # joysticks, focus and clicks to the log (on a Deck: NARSIL_INPUT_LOG=1 %command%)
 dotnet run --project src/HeroesNotIncluded -c Release -- --bench --seed 1234   # per-system cost and hashes (--round: a whole season with bots and crises)
@@ -251,6 +252,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
 - `external/narsil`: make engine changes there and commit them first, then the submodule pointer.
   Keep it game-agnostic. A change to `Narsil.Sim` or `Narsil.Voxel` affects DragonWorld and Lifeline.
 - `data/defs/*.json`: all content. Files merge in name order; references resolve at load.
+- Mods (docs/MODDING.md): `mods/<id>/` with a `mod.json` (`Narsil.Mods`), layered over `data/` by
+  `Mods/GameContent` (defs, then `$patch` merges; atlas and sound roots; the build tag; save meta).
+  Read content through `GameContent.Current`, never a hardcoded `data/defs` path.
 
 ## Rules
 

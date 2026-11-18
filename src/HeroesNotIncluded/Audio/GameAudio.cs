@@ -22,15 +22,33 @@ public static class GameAudio
     public static string ManifestPath(string dataDirectory) =>
         Path.Combine(DevPaths.Sounds ?? Path.Combine(dataDirectory, "sounds"), "sounds.json");
 
-    /// <summary>Open the output device (or stay silent without one) and load the sounds.</summary>
+    /// <summary>Open the output device (or stay silent without one) and load the sounds: the game's and each mod's.</summary>
     public static void Open(GameHost host)
     {
         Engine.Dispose();
-        var path = ManifestPath(host.DataDirectory);
-        Engine = AudioEngine.Open(path);
+        var paths = Mods.GameContent.Current.SoundManifests(host.DataDirectory);
+        Engine = AudioEngine.Open(paths[0]);
+        if (paths.Count > 1)
+            Engine.SetManifests(paths);
         Engine.Preload();
-        _reloader = new SoundReloader(Engine, Path.GetDirectoryName(path)!, DevPaths.Watch());
+        Watch(paths);
         Apply(Settings.Current);
+    }
+
+    /// <summary>Load from these manifests (the content changed: mods turned on or off) and watch their folders.</summary>
+    public static void UseManifests(IReadOnlyList<string> paths)
+    {
+        if (paths.SequenceEqual(Engine.ManifestPaths))
+            return;
+        Engine.SetManifests(paths);
+        Engine.Preload();
+        Watch(paths);
+    }
+
+    private static void Watch(IReadOnlyList<string> paths)
+    {
+        _reloader?.Dispose();
+        _reloader = new SoundReloader(Engine, paths.Select(p => Path.GetDirectoryName(p)!), DevPaths.Watch());
     }
 
     /// <summary>The game's share of the master volume while the talk key is held: low enough not to be heard back.</summary>

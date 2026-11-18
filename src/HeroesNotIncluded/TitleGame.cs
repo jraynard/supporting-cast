@@ -73,7 +73,7 @@ public sealed class TitleGame : Game
     /// <summary>Why the last load failed, shown under the menu.</summary>
     private string? _error;
 
-    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Host, HostNew, HostSave, Join, Characters, BackToCreator, Report, Credits, Practice, Replays, Friends, More }
+    private enum MenuAction { Start, Settings, Exit, NewGame, LoadGame, Back, Host, HostNew, HostSave, Join, Characters, BackToCreator, Report, Credits, Practice, Replays, Friends, More, Mods }
 
     /// <summary>The Credits window (BRUTAL License 2.1: its copyright notice; and the fonts' licences).</summary>
     private readonly CreditsWindow _credits = new(Title, "Somebody has to keep the lights on.", GameCredits.People);
@@ -91,6 +91,9 @@ public sealed class TitleGame : Game
 
     /// <summary>The Report a Bug panel (where the logs are, where to send them), shown instead of the menu while open.</summary>
     private bool _reporting;
+
+    /// <summary>The Mods panel while it's open (More, then Mods).</summary>
+    private Ui.ModsPanel? _mods;
     private string? _logsError;
 
     /// <summary>What the character being picked or made is for: every way into a village starts with who you are.</summary>
@@ -167,6 +170,7 @@ public sealed class TitleGame : Game
             new("Characters", "Who you've been.", null, MenuAction.Characters),
             new("Load game", anySave ? "Pick up where you left off." : "Nothing saved yet.", null, anySave ? MenuAction.LoadGame : MenuAction.Start),
             new("Replays", Replay.ReplayLibrary.List().Count == 0 ? "Finish a round and it's kept here." : "Watch a season again, from anywhere.", null, MenuAction.Replays),
+            new("Mods", Mods.GameContent.Current.HasMods ? $"On: {string.Join(", ", Mods.GameContent.Current.Mods.Mods.Select(m => m.Name))}." : "New trades, towns and ways to play, made by others.", null, MenuAction.Mods),
             new("Report a bug", "Something broke? Tell us how.", null, MenuAction.Report),
             new("Credits", "Everyone who swept up.", null, MenuAction.Credits),
             new("Back", "Back to the main menu.", null, MenuAction.Back),
@@ -391,7 +395,7 @@ public sealed class TitleGame : Game
         _settings = new SettingsWindow(Host);
         if (OpenSettingsTab != null)
             _settings.OpenOn(OpenSettingsTab);
-        var defs = _defs = DefDatabase.LoadDirectory(Path.Combine(Host.DataDirectory, "defs"));
+        var defs = _defs = Mods.GameContent.Current.LoadDefs(Host.DataDirectory);
         _creator = new CharacterCreator(Host, defs);
         _roster = CharacterRoster.Load(Host, defs);
         _picker = new CharacterPicker(Host, _roster, defs);
@@ -493,10 +497,12 @@ public sealed class TitleGame : Game
             _settings.Close();
         else if (_showCredits)
             _showCredits = false;
-        else if (_submenu != null && !_joining && !_picking && !_creating && !_reporting)
+        else if (_submenu != null && !_joining && !_picking && !_creating && !_reporting && _mods == null)
             SubmenuBack();
         else if (_reporting)
             _reporting = false;
+        else if (_mods != null)
+            _mods = null;
     }
 
     // Light uploads are transfers, recorded before the render pass opens.
@@ -578,6 +584,19 @@ public sealed class TitleGame : Game
         }
         else if (_reporting)
             DrawReport(dim);
+        else if (_mods != null)
+        {
+            switch (_mods.Draw(Host, dim))
+            {
+                case Ui.ModsPanel.Result.Back:
+                    _mods = null;
+                    break;
+                case Ui.ModsPanel.Result.Applied:
+                    // Everything read from the content (defs, the roster, the towns) is read again.
+                    Host.SwitchTo(new TitleGame());
+                    break;
+            }
+        }
         else if (_picking)
         {
             ImGui.TextColored(dim, _purpose == Purpose.Manage ? "Your characters"u8 : "Who will you be?"u8);
@@ -734,6 +753,9 @@ public sealed class TitleGame : Game
                 break;
             case MenuAction.Back:
                 SubmenuBack();
+                break;
+            case MenuAction.Mods:
+                _mods = new Ui.ModsPanel();
                 break;
             case MenuAction.Report:
                 (_reporting, _logsError) = (true, null);
