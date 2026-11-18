@@ -466,6 +466,8 @@ Millbrook, south of the square, with a bench, a stock chest and the collector's 
   cost quality; a part forced home while it still binds leaves a hidden *binding*, and a binding
   contraption may jam on the road and do nothing. They go on show and sell like the smith's gear;
   adventurers carry two, not two alike, and judge them only by what shows.
+- *Crossbows* (`ServiceKind.CrossbowRepair`): the tinker makes them, so the tinker mends them: the
+  lock taken apart, the nut and the trigger seated again and the spring wound (`FitSession.Mending`).
 - *Wagons.* Some parties ride in with a wagon, often the worse for the road: a buckled wheel or a
   cracked axle. It's parked outside near their haunt, and its owner asks for it mended. Truing a
   wheel: it stands on its stand; A/D turn it to a spoke, W tightens that spoke (pulling a bulge
@@ -520,11 +522,22 @@ carpenter's bench and a chest the carter leaves feathers in (`Carpentry/`).
   far enough; bent too far, the limbs strain. Bows sell as gear.
 - *Quivers on the road* (`Fletching`): sold as goods in the woodshop, one to an archer (only those
   with a bow or crossbow buy). Shot away on the quest: a true quiver makes the archer count for
-  more, a warped one for a little less. Like rations and charms.
+  more, a warped one for a little less. Like rations and charms. An archer with no quiver who finds
+  none on the shelf asks for one aloud (`ServiceKind.Arrows`, at the woodshop): handed one, they
+  pay. Each quest shoots it away, so they ask again when they're back.
+- *Mending wooden gear* (`ServiceKind.WoodRepair`): whoever makes a piece mends it
+  (`WeaponWear.MendKind`): forged gear and dull edges are the smith's, a bow, a cudgel or a staff
+  the carpenter's (made at the bench: `MakeBow`, `MakeCudgel`, `MakeStaff`). A worn bow is
+  re-tillered where it's set stiff and restrung (`BowSession.Mending`); a cudgel or a staff is
+  mended the plain way (hold F) for now. The plank it takes comes from what's to hand
+  (`Crafting.RepairCost`), and a poor job leaves it short of what its owner will take back.
+- *Arms for the muster:* a bow (or a cudgel) of the carpenter's own, hung on the muster rack in a
+  call to arms, is paid for like the smith's spears, and the town shoots with it.
 - *The town's work:* braces the bridge when a raid breaks it (with the tinker), and puts up the
   festival with the labourers.
 - AI carpenter: saws when the chest's short of planks and keeps two quivers on show
-  (`SawJob`, `FletchJob`), without the games.
+  (`SawJob`, `FletchJob`), answers an archer's ask (`ArrowsJob`) and mends what's brought
+  (`MendJob`, as the smith's), without the games.
 - The woodshop: a plank floor, a rack of bows on the back wall, logs and planks stacked along the
   front, a barrel of arrows by the chest, shavings by the saw, torches on the walls. Logs are
   fetched from the chest by hand, as the smith fetches ore.

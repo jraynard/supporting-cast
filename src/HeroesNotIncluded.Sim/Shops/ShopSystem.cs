@@ -118,6 +118,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 Healed(sim, e);
             else if (e.Kind.Kind == ServiceKind.WagonRepair && !Tinkering.Wagons.Damaged(sim, e.Subject))
                 WagonMended(sim, e);
+            else if (e.Kind.Kind == ServiceKind.Arrows && Carpentry.Fletching.Carried(sim, e.Poster).Count >= Carpentry.Fletching.MostCarried)
+                Close(sim, e, OrderStatus.Cancelled); // bought one off the shelf after all
             else if (now >= e.Deadline && StillAtIt(sim, e))
                 BearWithIt(sim, e);
             else if (now >= e.Deadline)
@@ -220,8 +222,10 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 w.Get<Adventurer>(who).NextDrink = sim.Clock.Tick
                     + SimClock.HoursToTicks(HoursBetweenDrinks * Adventurers.Tempers.Thirst(Adventurers.Tempers.Of(sim, who)) * _rand.Range(0.75f, 1.25f));
             }
-            if (MostWorn(sim, who) is { IsNull: false } gear)
-                Want(sim, who, ServiceKind.Repair, gear, WeaponWear.HpFraction(sim, gear) < 0.35f ? 1.5f : 1f);
+            // The worst-worn piece for each who mends: the smith's, the carpenter's, the tinker's.
+            foreach (var mend in Mends)
+                if (MostWorn(sim, who, mend) is { IsNull: false } gear)
+                    Want(sim, who, mend, gear, WeaponWear.HpFraction(sim, gear) < 0.35f ? 1.5f : 1f);
             if (w.TryGet<Health>(who, out var h) && h.Injuries.Exists(i => !i.Tended))
                 Want(sim, who, ServiceKind.Healing, Entity.Null, h.Injuries.Where(i => !i.Tended).Sum(i => i.Damage) >= 8f ? 1.75f : 1f);
             if (Tinkering.Lockwork.LockedBoxOf(sim, who) is { IsNull: false } box)
@@ -236,7 +240,24 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             else if (WantsARoom(sim, who, a))
                 Want(sim, who, ServiceKind.Lodging, Entity.Null);
             ShopForGear(sim, who);
+            if (WantsArrows(sim, who, a))
+                Want(sim, who, ServiceKind.Arrows, Entity.Null, SeekingOrSentOnQuest(sim, a.Party) ? 1.25f : 1f);
         }
+    }
+
+    /// <summary>
+    /// An archer with no quiver asks for one aloud when there's none on show to buy (one on a shelf
+    /// they'd simply buy, <see cref="ShopForGear"/>): the carpenter's order to fletch. Travellers don't shoot for a living.
+    /// </summary>
+    private bool WantsArrows(Simulation sim, Entity who, Adventurer a)
+    {
+        if (a.PartyDef.Traveller || !Carpentry.Fletching.Shoots(sim, who) || Carpentry.Fletching.Carried(sim, who).Count >= Carpentry.Fletching.MostCarried)
+            return false;
+        var w = sim.World;
+        foreach (var (item, _, _) in Goods.OnShow(sim))
+            if (Carpentry.Fletching.IsQuiver(sim, item))
+                return false;
+        return !_orders.Exists(e => e.IsOpen && e.Poster == who && e.Kind.Kind == ServiceKind.Goods && w.IsAlive(e.Subject) && Carpentry.Fletching.IsQuiver(sim, e.Subject));
     }
 
     /// <summary>
@@ -994,8 +1015,14 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         return _orders.Where(e => e.IsOpen).OrderBy(Rank).ToList(); // stable: ties stay oldest first
     }
 
+    /// <summary>The services that mend a worn piece of gear, each at the shop of whoever makes it (<see cref="WeaponWear.MendKind"/>).</summary>
+    public static readonly ServiceKind[] Mends = [ServiceKind.Repair, ServiceKind.WoodRepair, ServiceKind.CrossbowRepair];
+
+    /// <summary>A mending order: the piece is handed over, mended, and given back (<see cref="Mends"/>).</summary>
+    public static bool IsMend(ServiceKind kind) => kind is ServiceKind.Repair or ServiceKind.WoodRepair or ServiceKind.CrossbowRepair;
+
     /// <summary>Orders that hand something over to be seen to and given back.</summary>
-    public static bool HandsOver(ServiceKind kind) => kind is ServiceKind.Repair or ServiceKind.Unlock or ServiceKind.Appraise;
+    public static bool HandsOver(ServiceKind kind) => IsMend(kind) || kind is ServiceKind.Unlock or ServiceKind.Appraise;
 
     /// <summary>
     /// The order of the customer standing at <paramref name="cell"/> that <paramref name="who"/> can
@@ -1257,7 +1284,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var def = w.Get<Thing>(item).Def;
         if (Hospitality.RoomChores.HandedBack(sim, giver, to, item))
             return;
-        var repair = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Repair && e.Subject == item);
+        var repair = _orders.Find(e => e.IsOpen && e.Poster == to && IsMend(e.Kind.Kind) && e.Subject == item);
         if (repair != null)
         {
             TakeBack(sim, repair, giver);
@@ -1273,6 +1300,14 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (appraise != null)
         {
             TakeBackCurio(sim, appraise, giver);
+            return;
+        }
+        // A quiver for an archer who asked for arrows: theirs, and paid for.
+        var arrows = Carpentry.Fletching.IsQuiver(sim, item) ? _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Arrows) : null;
+        if (arrows != null)
+        {
+            Goods.TakeUp(sim, to, item);
+            Complete(sim, arrows, giver);
             return;
         }
         var bought = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Goods && e.Subject == item);
@@ -1423,14 +1458,14 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     }
 
     /// <summary>The weapon or armor most in need of mending (<see cref="WeaponWear.NeedsMending"/>); Entity.Null if none.</summary>
-    public static Entity MostWorn(Simulation sim, Entity who)
+    public static Entity MostWorn(Simulation sim, Entity who, ServiceKind mend = ServiceKind.Repair)
     {
         var w = sim.World;
         var worst = Entity.Null;
         var worstHp = 2f;
         void Consider(Entity item)
         {
-            if (!w.IsAlive(item) || !WeaponWear.NeedsMending(sim, item) || !WeaponWear.SmithCanMend(sim, item))
+            if (!w.IsAlive(item) || WeaponWear.MendKind(sim, item) != mend)
                 return;
             var hp = WeaponWear.HpFraction(sim, item);
             if (hp < worstHp)

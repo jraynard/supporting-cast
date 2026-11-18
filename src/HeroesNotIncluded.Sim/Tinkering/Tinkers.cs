@@ -42,6 +42,17 @@ public static class Tinkers
         sim.Round.Live && sim.World.Has<Avatar>(worker) && IsBench(sim, station)
         && (MakesLock(recipe) || FitOf(recipe) != null);
 
+    /// <summary>Should a player's mend of this piece at this station be a hand game? In a round, a crossbow at the tinker's bench (its lock re-seated).</summary>
+    public static bool AppliesToRepair(Simulation sim, Entity worker, Entity station, Entity item) =>
+        sim.Round.Live && sim.World.Has<Avatar>(worker) && IsBench(sim, station) && sim.World.Get<Thing>(item).Def.Name == "Crossbow";
+
+    /// <summary>A player takes a worn crossbow to the bench (<see cref="FitSession.StartMending"/>).</summary>
+    public static void BeginMending(Simulation sim, Entity worker, Entity station, Entity crossbow)
+    {
+        if (!sim.World.Has<Work.WorkSession>(worker))
+            FitSession.StartMending(sim, worker, station, crossbow);
+    }
+
     /// <summary>A player works a stocked bench: the hand game for the recipe (<see cref="Applies"/>).</summary>
     public static void WorkAt(Simulation sim, Entity worker, Entity station, RecipeDef recipe)
     {

@@ -39,9 +39,11 @@ public sealed class WorkGivers
                     WorkType.Warden => FeedPrisoner(sim, pawn) ?? VisitPrisoner(sim, pawn),
                     WorkType.Refuel => Refuel(sim, pawn),
                     WorkType.Construct => Shops.SellJob.For(sim, pawn) ?? Construct(sim, pawn) ?? Deconstruct(sim, pawn),
-                    WorkType.Craft => Shops.SellJob.For(sim, pawn) ?? Shops.MendJob.For(sim, pawn) ?? Tinkering.OpenBoxJob.For(sim, pawn) ?? Tinkering.AppraiseJob.For(sim, pawn) ?? Tinkering.WagonJob.For(sim, pawn) ?? Tinkering.MendBreachJob.For(sim, pawn) ?? Carpentry.Carpenters.Saw(sim, pawn) ?? Carpentry.Carpenters.Fletch(sim, pawn) ?? Craft(sim, pawn, type), // a sale is quick, a mend is not
-                    WorkType.Cook => Shops.RatJob.For(sim, pawn) ?? Shops.ServeJob.For(sim, pawn)
-                        ?? Hospitality.UnpackHamperJob.For(sim, pawn) ?? Hospitality.PackHamperJob.For(sim, pawn) ?? Hospitality.OrderProvisionsJob.For(sim, pawn) // the inn, supplied from the kitchen
+                    WorkType.Craft => Shops.SellJob.For(sim, pawn) ?? Shops.MendJob.For(sim, pawn) ?? Tinkering.OpenBoxJob.For(sim, pawn) ?? Tinkering.AppraiseJob.For(sim, pawn) ?? Tinkering.WagonJob.For(sim, pawn) ?? Tinkering.MendBreachJob.For(sim, pawn) ?? Carpentry.Carpenters.Arrows(sim, pawn) ?? Carpentry.Carpenters.Saw(sim, pawn) ?? Carpentry.Carpenters.Fletch(sim, pawn) ?? Craft(sim, pawn, type), // a sale is quick, a mend is not
+                    // A hamper in the arms is set out before anyone's served: pouring takes the hands, and a
+                    // hamper put down for it is forgotten (only one held is unpacked).
+                    WorkType.Cook => Shops.RatJob.For(sim, pawn) ?? Hospitality.UnpackHamperJob.For(sim, pawn) ?? Shops.ServeJob.For(sim, pawn)
+                        ?? Hospitality.PackHamperJob.For(sim, pawn) ?? Hospitality.OrderProvisionsJob.For(sim, pawn) // the inn, supplied from the kitchen
                         ?? Shops.LodgeJob.For(sim, pawn) ?? Shops.ServeJob.SpareFor(sim, pawn) ?? Shops.SellJob.For(sim, pawn) ?? Shops.TapJob.For(sim, pawn) ?? Shops.WashJob.For(sim, pawn) ?? Shops.CookPotJob.For(sim, pawn) ?? Shops.DressJob.For(sim, pawn) ?? Shops.HangKeyJob.For(sim, pawn) ?? Shops.MakeBedJob.For(sim, pawn) ?? Shops.CleanJob.For(sim, pawn) ?? Craft(sim, pawn, type),
                     WorkType.Hunt => Butcher(sim, pawn) ?? Hunt(sim, pawn),
                     WorkType.Fish => Fish(sim, pawn),

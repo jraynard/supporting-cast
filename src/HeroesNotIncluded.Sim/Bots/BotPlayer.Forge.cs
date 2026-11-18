@@ -182,22 +182,23 @@ public sealed partial class BotPlayer
         return AtStation(sim, me, Nearest(sim, me, next), now, st => Send(new SmithCommand(me, st)));
     }
 
-    /// <summary>The spear the call to arms is answered with: cheap (a bar and two hafts), and quick at the anvil.</summary>
-    public const string MilitiaWeapon = "ForgeIronSpear";
-
-    /// <summary>A weapon of its own making to hang on the muster rack, or one to make. False if it can't do either.</summary>
-    private bool ArmTheTown(Simulation sim, Entity me, PerceptionView view, long now)
+    /// <summary>
+    /// A weapon of its own making (not on the rack yet, not a customer's) taken to the muster rack:
+    /// true while at it, false if there's a rack but it can't get there, null if there's nothing to
+    /// hang (or no rack): then it makes one.
+    /// </summary>
+    private bool? RackSpare(Simulation sim, Entity me, long now)
     {
         var w = sim.World;
         var rack = Nearest(sim, me, Militia.MilitiaSystem.RackDef);
         if (rack.IsNull)
             return false;
         bool Spare(Entity e) => Militia.MilitiaSystem.IsWeapon(sim, e) && w.TryGet<Crafted>(e, out var c) && c.Maker == me
-            && !w.Has<Militia.TownArms>(e) && !w.Has<Entrusted>(e);
+            && !w.Has<Militia.TownArms>(e) && !w.Has<Entrusted>(e) && !w.Has<ForSale>(e);
         var pack = sim.PackOf(me);
         if (Spare(w.Get<Carrying>(me).Item))
         {
-            Doing = "taking a spear to the muster rack";
+            Doing = $"taking a {sim.LabelOf(w.Get<Carrying>(me).Item)} to the muster rack";
             return AtStation(sim, me, rack, now, r =>
             {
                 Send(new AvatarWorkCommand(me, true, w.Get<Thing>(r).Cell));
@@ -206,9 +207,20 @@ public sealed partial class BotPlayer
         }
         if (!pack.IsNull && sim.StoredIn(pack).FirstOrDefault(Spare, Entity.Null) is { IsNull: false } spare)
         {
-            Doing = "taking a spear to the muster rack";
+            Doing = $"taking a {sim.LabelOf(spare)} to the muster rack";
             return AtStation(sim, me, rack, now, r => Send(new StoreFromPackCommand(me, r, spare)));
         }
+        return null;
+    }
+
+    /// <summary>The spear the call to arms is answered with: cheap (a bar and two hafts), and quick at the anvil.</summary>
+    public const string MilitiaWeapon = "ForgeIronSpear";
+
+    /// <summary>A weapon of its own making to hang on the muster rack, or one to make. False if it can't do either.</summary>
+    private bool ArmTheTown(Simulation sim, Entity me, PerceptionView view, long now)
+    {
+        if (RackSpare(sim, me, now) is { } racking)
+            return racking;
         if (sim.Defs.AllRecipes.FirstOrDefault(r => r.Name == MilitiaWeapon) is not { } recipe || !RecipeBooks.Knows(sim, me, recipe))
             return false;
         var bar = recipe.Ingredients[0];

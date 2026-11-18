@@ -15,6 +15,8 @@ namespace HeroesNotIncluded.Sim.Carpentry;
 /// Then it's strung (<see cref="Stringing"/>): F held bends the bow against the floor, and Space slips
 /// the string's loop into the nock, which only catches once it's bent far enough (<see cref="CatchLow"/>);
 /// bent past <see cref="Strained"/> on the way, the limbs are strained, and that stays in the bow.
+/// A worn bow brought to be mended (<see cref="Mending"/>) goes through the same: its limbs have
+/// mostly kept their arc, but two or three sections have set stiff with use, and it wants a new string.
 /// </summary>
 public sealed class BowSession : WorkSession
 {
@@ -44,6 +46,9 @@ public sealed class BowSession : WorkSession
 
     /// <summary>The bench.</summary>
     public Entity Station { get; set; } = Entity.Null;
+
+    /// <summary>A worn bow being mended (re-tillered where it's set stiff, and restrung); Entity.Null for a new one.</summary>
+    public Entity Mending { get; set; } = Entity.Null;
 
     /// <summary>How stiff each section is (1 is even; more is stiff, less a hinge).</summary>
     public float[] Stiffness { get; private set; } = new float[Sections];
@@ -75,19 +80,33 @@ public sealed class BowSession : WorkSession
 
     public override Skill Skill => Skill.Crafting;
     public override float Xp => 60f;
-    public override string Title => Stringing ? "Stringing the bow" : "Tillering a bow";
+    public override string Title => Stringing ? (Mending.IsNull ? "Stringing the bow" : "Restringing the bow")
+        : Mending.IsNull ? "Tillering a bow" : "Re-tillering a worn bow";
 
     public override int3? Focus(Simulation sim) => sim.World.IsAlive(Station) ? sim.World.Get<Thing>(Station).Cell : null;
 
     public override bool StillValid(Simulation sim)
     {
         var w = sim.World;
-        return Carpenters.IsBench(sim, Station) && AvatarSystem.InReach(sim, w.Get<Position>(Worker).Cell, Station)
-            && w.Get<Workbench>(Station) is { Active: { } r, Stocked: true } bench && bench.By == Worker && Carpenters.MakesBow(r);
+        if (!Carpenters.IsBench(sim, Station) || !AvatarSystem.InReach(sim, w.Get<Position>(Worker).Cell, Station))
+            return false;
+        if (!Mending.IsNull)
+            return w.IsAlive(Mending) && Inventory.OnPerson(sim, Worker, Mending);
+        return w.Get<Workbench>(Station) is { Active: { } r, Stocked: true } bench && bench.By == Worker && Carpenters.MakesBow(r);
     }
 
     protected internal override void Begin()
     {
+        if (!Mending.IsNull)
+        {
+            // Near its arc still, but set stiff in two or three places.
+            for (var i = 0; i < Sections; i++)
+                Stiffness[i] = Even + (Rand.NextFloat() * 2f - 1f) * 0.02f;
+            var stiff = 2 + Rand.NextInt(2);
+            for (var n = 0; n < stiff; n++)
+                Stiffness[Rand.NextInt(Sections)] = 1.1f + Rand.NextFloat() * 0.25f;
+            return;
+        }
         for (var i = 0; i < Sections; i++)
             Stiffness[i] = 1.12f + Rand.NextFloat() * 0.45f;
     }
@@ -205,6 +224,13 @@ public sealed class BowSession : WorkSession
     {
         var at = sim.LocationOf(Worker);
         var quality = Quality;
+        if (!Mending.IsNull)
+        {
+            if (Combat.WeaponWear.MendAtBench(sim, Worker, Station, Mending, quality))
+                sim.Messages.Tell(Worker, MessageKind.Info, quality >= 0.85f ? "You restring the bow. It draws sweet again."
+                    : quality < 0.6f ? "You restring the bow, but it still draws uneven." : "You restring the bow. It'll serve.", at);
+            return;
+        }
         foreach (var item in Crafting.Finish(sim, Station, Worker, Crafting.QualityFrom(quality)))
             Inventory.Stow(sim, Worker, item);
         var hinge = Stiffness.Any(s => s < Even - Wrong * 0.5f);
@@ -227,6 +253,7 @@ public sealed class BowSession : WorkSession
         w.Float(MostBend);
         w.Int(Missed);
         w.Bool(Scraping);
+        w.Entity(Mending);
     }
 
     protected override void ReadState(SaveReader r)
@@ -245,5 +272,6 @@ public sealed class BowSession : WorkSession
         MostBend = Math.Clamp(r.Float(), 0f, 1f);
         Missed = Math.Max(0, r.Int());
         Scraping = r.Bool();
+        Mending = r.Version >= 55 ? r.Entity() : Entity.Null; // mending came with format 55
     }
 }

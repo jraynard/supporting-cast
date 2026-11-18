@@ -130,6 +130,26 @@ public class MilitiaTests
     }
 
     [Fact]
+    public void ACarpentersBowOnTheRackIsPaidForAndArmsAVillagerProperly()
+    {
+        var sim = Round(director: false);
+        var me = Me(sim);
+        var rack = Rack(sim);
+        sim.Militia.Call(sim, "tonight");
+        var silver = Coin.Count(sim, me);
+        sim.World.Get<Position>(me).Cell = sim.SpiralFrom(sim.World.Get<Thing>(rack).Cell, 2)
+            .First(c => sim.Map.Passable(c) && AvatarSystem.InReach(c, sim.World.Get<Thing>(rack).Cell));
+        var bow = sim.CreateItem(sim.Defs.Thing("Bow"), 1);
+        sim.World.Add(bow, new Crafted { Quality = Quality.Plain, Maker = me });
+        Inventory.Stow(sim, me, bow);
+        sim.ApplyNow(new StoreFromPackCommand(me, rack, bow));
+        Assert.Equal(rack, sim.World.Get<Stored>(bow).In);
+        Assert.Equal(silver + sim.Defs.Season.ArmsPrice, Coin.Count(sim, me));
+        // A bow is a real weapon at the muster, not a trade's makeshift one.
+        Assert.False(sim.Defs.Thing("Bow").Weapon!.Makeshift);
+    }
+
+    [Fact]
     public void TheRacksArmsAreLeftAloneTillTheRaidComesThenTheUnarmedTakeThem()
     {
         var sim = Round(director: false);

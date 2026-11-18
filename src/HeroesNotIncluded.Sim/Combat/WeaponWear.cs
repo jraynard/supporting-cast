@@ -103,6 +103,70 @@ public static class WeaponWear
         return (Forged(sim, def) && HpFraction(sim, item) < WantsMendHp) || (Edged(def) && Dullness(sim, item) > WantsMendDullness);
     }
 
+    /// <summary>
+    /// Who mends a worn piece, as the service its owner asks for: the smith for chips in forged gear
+    /// or a dull edge (<see cref="SmithCanMend"/>); otherwise whoever makes it, by the trade whose
+    /// station it's made at: a bow, a club or a staff the carpenter (<see cref="ServiceKind.WoodRepair"/>),
+    /// a crossbow the tinker (<see cref="ServiceKind.CrossbowRepair"/>). Null if it isn't worn enough
+    /// to ask, or nobody in town makes it.
+    /// </summary>
+    public static ServiceKind? MendKind(Simulation sim, Entity item)
+    {
+        if (!NeedsMending(sim, item))
+            return null;
+        if (SmithCanMend(sim, item))
+            return ServiceKind.Repair;
+        if (HpFraction(sim, item) >= WantsMendHp)
+            return null;
+        return MakersMend(sim, sim.World.Get<Thing>(item).Def);
+    }
+
+    /// <summary>The mending service at the workplace of a trade that makes this (not the smith's: see <see cref="MendKind"/>).</summary>
+    public static ServiceKind? MakersMend(Simulation sim, ThingDef def)
+    {
+        foreach (var r in sim.Defs.AllRecipes)
+        {
+            if (r.Station.Length == 0 || !r.Products.Exists(p => p.ThingDef == def))
+                continue;
+            foreach (var trade in sim.Defs.AllTrades)
+            {
+                if (!trade.HasWorkplace || !trade.Stations.Contains(r.Station))
+                    continue;
+                foreach (var kind in (ReadOnlySpan<ServiceKind>)[ServiceKind.WoodRepair, ServiceKind.CrossbowRepair])
+                    if (sim.Defs.AllServices.Exists(s => s.Kind == kind && s.AtRole == trade.Role))
+                        return kind;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>A hand mend at a bench brings a piece back to this share of its HP at worst, and to full at best.</summary>
+    public const float BenchMendFloor = 0.75f;
+
+    /// <summary>
+    /// A piece mended by hand at its maker's bench (a bow re-tillered, a crossbow's lock re-seated):
+    /// the material is paid from what's to hand (<see cref="Systems.Crafting.RepairCost"/>), and the
+    /// piece comes back as sound as the work was good, never worse than it went in. A poor job may
+    /// leave it short of what its owner will take back as mended. False (nothing done) if short of
+    /// the material.
+    /// </summary>
+    public static bool MendAtBench(Simulation sim, Entity worker, Entity station, Entity item, float quality)
+    {
+        var w = sim.World;
+        if (!w.IsAlive(item) || !w.IsAlive(station))
+            return false;
+        var at = w.Get<Thing>(station).Cell;
+        if (Systems.Crafting.RepairCost(sim, w.Get<Thing>(station).Def, item) is { } cost
+            && !Systems.Crafting.PayForRepair(sim, worker, cost.Material, cost.Count))
+        {
+            sim.Messages.Tell(worker, MessageKind.Info, $"Mending the {sim.LabelOf(item)} takes {cost.Count} {cost.Material.ThingDef.Label}.", at);
+            return false;
+        }
+        ref var t = ref w.Get<Thing>(item);
+        t.Hp = Math.Max(t.Hp, t.MaxHp * (BenchMendFloor + (1f - BenchMendFloor) * Math.Clamp(quality, 0f, 1f)));
+        return true;
+    }
+
     /// <summary>Worn enough that its owner wants it seen to.</summary>
     public static bool NeedsMending(Simulation sim, Entity item)
     {

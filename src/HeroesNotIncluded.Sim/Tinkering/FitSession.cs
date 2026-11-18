@@ -56,6 +56,9 @@ public sealed class FitSession : WorkSession
     /// <summary>The wagon an axle's being fitted to; Entity.Null at the bench.</summary>
     public Entity Wagon { get; set; } = Entity.Null;
 
+    /// <summary>A worn crossbow whose lock is being re-seated (its nut and trigger fitted again, its spring wound); Entity.Null otherwise.</summary>
+    public Entity Mending { get; set; } = Entity.Null;
+
     public int Parts { get; set; } = 3;
     public bool Winds { get; set; }
 
@@ -129,6 +132,13 @@ public sealed class FitSession : WorkSession
         WorkSystem.Start(sim, worker, new FitSession { Station = station, Parts = Math.Clamp(fit.Parts, 2, 5), Winds = fit.Winds, What = what });
     }
 
+    /// <summary>Re-seat a worn crossbow's lock at the bench: the nut and the trigger, then the spring wound and latched.</summary>
+    public static void StartMending(Simulation sim, Entity worker, Entity station, Entity crossbow) =>
+        WorkSystem.Start(sim, worker, new FitSession
+        {
+            Station = station, Mending = crossbow, Parts = 2, Winds = true, What = sim.World.Get<Thing>(crossbow).Label + "'s lock",
+        });
+
     /// <summary>Fit a new axle to a wagon in reach (<see cref="Wagons"/>).</summary>
     public static void StartAxle(Simulation sim, Entity worker, Entity wagon) =>
         WorkSystem.Start(sim, worker, new FitSession { Wagon = wagon, Parts = 2, Winds = false, What = "axle" });
@@ -138,6 +148,9 @@ public sealed class FitSession : WorkSession
         var w = sim.World;
         if (!Wagon.IsNull)
             return Wagons.AxleProblem(sim, Worker, Wagon) == null;
+        if (!Mending.IsNull)
+            return Tinkers.IsBench(sim, Station) && AvatarSystem.InReach(sim, w.Get<Position>(Worker).Cell, Station)
+                && w.IsAlive(Mending) && Inventory.OnPerson(sim, Worker, Mending);
         return Tinkers.IsBench(sim, Station) && AvatarSystem.InReach(sim, w.Get<Position>(Worker).Cell, Station)
             && w.Get<Workbench>(Station) is { Active: { } r, Stocked: true } bench && bench.By == Worker && Tinkers.FitOf(r) != null;
     }
@@ -300,6 +313,14 @@ public sealed class FitSession : WorkSession
             Wagons.AxleFitted(sim, Worker, Wagon, Quality);
             return;
         }
+        if (!Mending.IsNull)
+        {
+            if (Snapped)
+                sim.Messages.Tell(Worker, MessageKind.Warning, $"The {What} slips as you wind it: you'll have to seat it again.", at);
+            else if (Combat.WeaponWear.MendAtBench(sim, Worker, Station, Mending, Quality))
+                sim.Messages.Tell(Worker, MessageKind.Info, Quality >= 0.6f ? $"The {What} holds again." : $"The {What} holds, just. It still creeps.", at);
+            return;
+        }
         if (Snapped)
         {
             // The parts come apart, and the materials stay staged on the bench to begin again.
@@ -343,6 +364,7 @@ public sealed class FitSession : WorkSession
         w.Int(_latch);
         w.Float(_trueSum);
         w.Int(_trueSteps);
+        w.Entity(Mending);
     }
 
     protected override void ReadState(SaveReader r)
@@ -374,5 +396,6 @@ public sealed class FitSession : WorkSession
         _latch = Math.Clamp(r.Int(), 0, 1);
         _trueSum = r.Float();
         _trueSteps = r.Int();
+        Mending = r.Version >= 55 ? r.Entity() : Entity.Null; // mending came with format 55
     }
 }

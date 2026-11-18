@@ -1,3 +1,4 @@
+using HeroesNotIncluded.Sim.Ai;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Defs;
@@ -174,6 +175,28 @@ public class ProvisionsTests
         Assert.Equal("Pack a hamper for the inn", AvatarSystem.ActionAt(sim, me, w.Get<Thing>(table).Cell).Label);
         sim.ApplyNow(new PrepCommand(me, table, PrepStep.Hamper));
         Assert.True(w.TryGet<WorkSession>(me, out var s) && s is PackSession { ForHamper: true }, "the hamper's packed with the rations game");
+    }
+
+    [Fact]
+    public void AHamperTakenInLineIsKeptInHandAndUnpackedNotSetDown()
+    {
+        // Off the hatch while the keeper's still in line: the line's job ending (ReleasePawn) mustn't
+        // set it down where they stand, or nobody ever unpacks it.
+        var sim = Round(VillageRound.DefaultMap);
+        var w = sim.World;
+        var keeper = Holder(sim, "Innkeeper");
+        Assert.False(w.Has<Avatar>(keeper));
+        w.Get<Carrying>(keeper).Item = Entity.Null;
+        Inventory.Stow(sim, keeper, sim.CreateItem(sim.Defs.Thing(Rations.Def), 1));
+        var hamper = Provisions.MakeHamper(sim, keeper, loose: false);
+        Assert.Equal(hamper, w.Get<Carrying>(keeper).Item);
+        AiSystem.ReleasePawn(sim, keeper);
+        Assert.Equal(hamper, w.Get<Carrying>(keeper).Item);
+
+        for (var t = 0; t < 12 && w.IsAlive(hamper); t++)
+            sim.TickMany(SimClock.TicksPerHour / 12);
+        Assert.False(w.IsAlive(hamper), w.IsAlive(hamper) ? $"still {(w.Get<Thing>(hamper).Spawned ? "set down" : "in hand")}; keeper: {w.Get<Mind>(keeper).Job?.Report}" : "");
+        Assert.Equal(1, Provisions.RationsShelved(sim));
     }
 
     [Fact]

@@ -637,7 +637,7 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
                 ? e.Subject : Entity.Null;
             var ready = !item.IsNull && e.Kind.Kind switch
             {
-                ServiceKind.Repair => Combat.WeaponWear.Mended(sim, item), // as it looks in your hands
+                ServiceKind.Repair or ServiceKind.WoodRepair or ServiceKind.CrossbowRepair => Combat.WeaponWear.Mended(sim, item), // as it looks in your hands
                 ServiceKind.Unlock => Strongbox(item) is { Locked: false },
                 ServiceKind.Appraise => Curio(item) is { Low: not null },
                 _ => true,

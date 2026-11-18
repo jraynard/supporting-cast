@@ -200,6 +200,10 @@ public sealed record RepairCommand(Entity Avatar, Entity Station, Entity Item) :
             return;
         if (Work.Smithing.AppliesToRepair(sim, Avatar, Station))
             Work.Smithing.BeginMending(sim, Avatar, Station, Item);
+        else if (Carpentry.Carpenters.AppliesToRepair(sim, Avatar, Station, Item))
+            Carpentry.Carpenters.BeginMending(sim, Avatar, Station, Item);
+        else if (Tinkering.Tinkers.AppliesToRepair(sim, Avatar, Station, Item))
+            Tinkering.Tinkers.BeginMending(sim, Avatar, Station, Item);
         else
             AiSystem.Order(sim, Avatar, new RepairJob(Station, Item));
     }

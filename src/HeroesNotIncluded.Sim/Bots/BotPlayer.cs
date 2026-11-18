@@ -235,6 +235,9 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
         return order.Kind switch
         {
             ServiceKind.Repair => Repair(sim, me, view, poster, now),
+            ServiceKind.WoodRepair => BenchMend(sim, me, view, poster, now, Carpentry.Carpenters.BenchDef),
+            ServiceKind.CrossbowRepair => BenchMend(sim, me, view, poster, now, Tinkering.Tinkers.BenchDef),
+            ServiceKind.Arrows => QuiverFor(sim, me, view, poster, now),
             ServiceKind.Drink => Pour(sim, me, view, poster, now),
             ServiceKind.MixedDrink => view.WantedDrink(_task) is { Mix: not null } named ? MixFor(sim, me, view, poster, named, now) : Pour(sim, me, view, poster, now),
             ServiceKind.Meal when sim.Shops.Find(_task) is { } board && Hospitality.Provisions.IsBoard(sim, board) => Board(sim, me, view, poster, now),

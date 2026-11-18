@@ -401,9 +401,11 @@ public sealed class AiSystem : ISimSystem
         }
 
         // The avatar keeps what it holds until the player puts it down; a customer, the
-        // drink or the meal they're sat with (Hospitality.Table).
+        // drink or the meal they're sat with (Hospitality.Table); the innkeeper (or the one running it
+        // over), a hamper just taken off the hatch in line, to be unpacked (Hospitality.UnpackHamperJob).
         ref var carrying = ref w.Get<Carrying>(e);
-        if (carrying.HasItem && !w.Has<Avatar>(e) && !(w.TryGet<Hospitality.Savouring>(e, out var savouring) && savouring.Item == carrying.Item))
+        if (carrying.HasItem && !w.Has<Avatar>(e) && !(w.TryGet<Hospitality.Savouring>(e, out var savouring) && savouring.Item == carrying.Item)
+            && !(Hospitality.Provisions.IsHamper(sim, carrying.Item) && (Hospitality.Provisions.KeepsInn(sim, e) || Hospitality.Provisions.Running(sim, e) != null)))
         {
             var item = carrying.Item;
             carrying.Item = Entity.Null;

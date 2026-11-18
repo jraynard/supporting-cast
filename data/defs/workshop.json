@@ -743,6 +743,20 @@
       "unlock": { "skill": "Crafting", "level": 4 },
       "ingredients": [ { "def": "Planks", "count": 4 } ],
       "products": [ { "def": "Bow", "count": 1 } ]
+    },
+    {
+      // At the bench, the woodshop's: a cudgel and a staff, plain work, and what makes the
+      // carpenter the one who mends them (Combat/WeaponWear.MendKind).
+      "name": "MakeCudgel", "label": "spiked club", "station": "CarpenterBench", "skill": "Crafting", "work": 700,
+      "description": "A cudgel shaped from a plank and studded: something to hand a villager when the bandits come.",
+      "ingredients": [ { "def": "Planks", "count": 2 } ],
+      "products": [ { "def": "Club", "count": 1 } ]
+    },
+    {
+      "name": "MakeStaff", "label": "walking staff", "station": "CarpenterBench", "skill": "Crafting", "work": 600,
+      "description": "A straight staff, shaved and shod.",
+      "ingredients": [ { "def": "Planks", "count": 2 } ],
+      "products": [ { "def": "Staff", "count": 1 } ]
     }
   ]
 }

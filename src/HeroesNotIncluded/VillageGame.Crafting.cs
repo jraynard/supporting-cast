@@ -606,6 +606,10 @@ public sealed partial class VillageGame
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
                 Tip(Sim.Work.Smithing.AppliesToRepair(_sim, _avatar, _openStation)
                     ? "Take it in your tongs: heat it, then hammer out the chips on the anvil. It comes off dull: grind it after."
+                    : Sim.Carpentry.Carpenters.AppliesToRepair(_sim, _avatar, _openStation, item)
+                    ? "Put it on the tillering stick: scrape back the limbs where they've set stiff, then string it again."
+                    : Sim.Tinkering.Tinkers.AppliesToRepair(_sim, _avatar, _openStation, item)
+                    ? "Take the lock apart: seat the nut and the trigger again, then wind the spring and latch it."
                     : Controls.Keys("Hold ~F~ at the station to work; the material is used once it's done."));
             ImGui.SameLine(0, 8);
             var t = w.Get<Thing>(item);

@@ -9,7 +9,9 @@ namespace HeroesNotIncluded.Sim.Shops;
 
 /// <summary>
 /// An AI smith sees to a repair order from start to finish: takes it on, collects the piece,
-/// hammers out its chips at the forge, puts the edge back, and hands it over for the pay. A
+/// hammers out its chips at the forge, puts the edge back, and hands it over for the pay. The
+/// carpenter (a bow, a club) and the tinker (a crossbow) see to theirs the same way at their benches
+/// (<see cref="ShopSystem.Mends"/>), working the wood or the lock where the smith hammers. A
 /// basic hand at it, with no forge heat to manage: players do it better by hand
 /// (<see cref="Work.HammerSession"/>, <see cref="Work.SharpenSession"/>). Picks the job up again
 /// where it left off if interrupted, since the piece stays with the smith.
@@ -28,7 +30,7 @@ public sealed class MendJob(int order) : Job
         var from = w.Get<Position>(pawn).Cell;
         foreach (var e in sim.Shops.FrontFirst(sim))
         {
-            if (!e.IsOpen || e.Kind.Kind != ServiceKind.Repair || e.Kind.AtRole != trade.Def.Role || !e.KnownBy.Contains(pawn)
+            if (!e.IsOpen || !ShopSystem.IsMend(e.Kind.Kind) || e.Kind.AtRole != trade.Def.Role || !e.KnownBy.Contains(pawn)
                 || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Subject) || !w.IsAlive(e.Poster))
                 continue;
             var chipped = WeaponWear.HpFraction(sim, e.Subject) < WeaponWear.MendedHp;
@@ -116,7 +118,12 @@ public sealed class MendJob(int order) : Job
                 if (Sim.IsAvailable(stock, Pawn))
                     Get<Carrying>(Pawn).Item = Inventory.PickUp(Sim, Pawn, stock, Get<Carrying>(Pawn).Item);
             }
-            Report = $"Hammering out the {label}";
+            Report = e.Kind.Kind switch
+            {
+                ServiceKind.WoodRepair => $"Working the {label}",
+                ServiceKind.CrossbowRepair => $"Re-seating the {label}'s lock",
+                _ => $"Hammering out the {label}",
+            };
             foreach (var s in GoTo(Get<Thing>(station).Cell, PathEnd.Touch)) yield return s;
             if (HasFailed) yield break;
             for (var i = 0; i < HammerTicks; i++)

@@ -1,5 +1,7 @@
 using HeroesNotIncluded.Sim.Carpentry;
 using HeroesNotIncluded.Sim.Components;
+using HeroesNotIncluded.Sim.Core;
+using HeroesNotIncluded.Sim.Shops;
 using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Systems;
 using HeroesNotIncluded.Sim.Work;
@@ -18,6 +20,9 @@ public sealed partial class BotPlayer
         var w = sim.World;
         if (!w.TryGet<Trade>(me, out var trade) || !trade.Def.Stations.Contains(Carpenters.BenchDef) || MyShop(sim, me) is not { IsNull: false })
             return false;
+        // In a call to arms, a bow of its own goes to the muster rack before it goes on the shelf.
+        if (sim.Militia.Paying && RackSpare(sim, me, now) == true)
+            return true;
         if (ShowGoods(sim, me, view, now))
             return true;
         var bench = Nearest(sim, me, Carpenters.BenchDef);
@@ -26,6 +31,8 @@ public sealed partial class BotPlayer
         foreach (var station in new[] { bench, horse })
             if (!station.IsNull && w.TryGet<Workbench>(station, out var b) && b.Active is { } begun && b.By == me && !b.Untouched)
                 return Make(sim, me, view, station, begun, now);
+        if (sim.Militia.Paying && !bench.IsNull && BowsForTheMuster(sim, me, view, bench, now))
+            return true;
         if (Stock(sim, me) >= StockWanted || bench.IsNull)
             return false;
         var fletch = Recipe(sim, bench, Carpenters.Fletches);
@@ -39,6 +46,85 @@ public sealed partial class BotPlayer
         if (saw == null || planks == null || Obtainable(sim, me, planks) || !saw.Ingredients.TrueForAll(x => Obtainable(sim, me, x)))
             return false;
         return Make(sim, me, view, horse, saw, now);
+    }
+
+    /// <summary>
+    /// A piece mended at its maker's bench (a bow at the carpenter's, a crossbow at the tinker's):
+    /// fetched from its owner, the wood or iron it takes brought from the shop's chest, worked at the
+    /// bench until it looks sound, and handed back.
+    /// </summary>
+    private bool BenchMend(Simulation sim, Entity me, PerceptionView view, Entity owner, long now, string benchDef)
+    {
+        var w = sim.World;
+        var piece = Entrusted(sim, me, owner);
+        if (piece.IsNull)
+        {
+            Reach(sim, me, owner, now); // they hand it over once we're close
+            return true;
+        }
+        if (view.Awaiting().Any(a => a.Order == _task && a.Ready))
+        {
+            Doing = "handing back a mended piece";
+            if (Reach(sim, me, owner, now, returning: true))
+                Send(new GiveCommand(me, owner, piece, 1));
+            return true;
+        }
+        var bench = Nearest(sim, me, benchDef);
+        if (bench.IsNull)
+            return false;
+        if (Crafting.RepairCost(sim, w.Get<Thing>(bench).Def, piece) is { } cost && OnMe(sim, me, cost.Material.Def) < cost.Count)
+            return Fetch(sim, me, view, now, cost.Material, cost.Material.ThingDef.Label);
+        Doing = $"mending: {view.Condition(piece) ?? sim.LabelOf(piece)}";
+        return AtStation(sim, me, bench, now, s => Send(new RepairCommand(me, s, piece)));
+    }
+
+    /// <summary>
+    /// An archer's ask for arrows: a quiver it has on it (not one on the shelf) handed over; else one
+    /// fletched at the bench (planks sawn first if there are none). False if it can do neither.
+    /// </summary>
+    private bool QuiverFor(Simulation sim, Entity me, PerceptionView view, Entity archer, long now)
+    {
+        var w = sim.World;
+        var mine = Fletching.Carried(sim, me).FirstOrDefault(q => !w.Has<ForSale>(q), Entity.Null);
+        if (!mine.IsNull)
+        {
+            Doing = "bringing a quiver";
+            if (Reach(sim, me, archer, now, returning: true))
+                Send(new GiveCommand(me, archer, mine, 1));
+            return true;
+        }
+        var bench = Nearest(sim, me, Carpenters.BenchDef);
+        if (bench.IsNull)
+            return false;
+        if (w.TryGet<Workbench>(bench, out var b) && b.Active is { } begun && b.By == me && !b.Untouched)
+            return Make(sim, me, view, bench, begun, now);
+        var fletch = Recipe(sim, bench, Carpenters.Fletches);
+        if (fletch == null || !Crafting.CanMake(sim, me, fletch))
+            return false;
+        if (fletch.Ingredients.TrueForAll(x => Obtainable(sim, me, x)))
+            return Make(sim, me, view, bench, fletch, now);
+        var horse = Nearest(sim, me, Carpenters.SawhorseDef);
+        var saw = horse.IsNull ? null : Recipe(sim, horse, Carpenters.Saws);
+        return saw != null && saw.Ingredients.TrueForAll(x => Obtainable(sim, me, x)) && Make(sim, me, view, horse, saw, now);
+    }
+
+    /// <summary>
+    /// The call to arms, answered from the woodshop: a bow of its own tillering hung on the muster
+    /// rack (the town shoots as well as stabs), or a cudgel when there aren't the planks for a bow.
+    /// False if it can do neither.
+    /// </summary>
+    private bool BowsForTheMuster(Simulation sim, Entity me, PerceptionView view, Entity bench, long now)
+    {
+        if (RackSpare(sim, me, now) is { } racking)
+            return racking;
+        foreach (var which in new Func<RecipeDef, bool>[] { Carpenters.MakesBow, r => r.Name == Carpenters.CudgelRecipe })
+            if (Recipe(sim, bench, which) is { } recipe && RecipeBooks.Knows(sim, me, recipe) && Crafting.CanMake(sim, me, recipe)
+                && recipe.Ingredients.TrueForAll(x => Obtainable(sim, me, x)))
+            {
+                Doing = $"making a {recipe.Label} for the muster";
+                return Make(sim, me, view, bench, recipe, now);
+            }
+        return false;
     }
 
     private static RecipeDef? Recipe(Simulation sim, Entity station, Func<RecipeDef, bool> which) =>

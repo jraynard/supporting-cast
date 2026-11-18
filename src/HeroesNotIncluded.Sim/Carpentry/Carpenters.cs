@@ -22,6 +22,9 @@ public static class Carpenters
     public const string FeathersDef = "Feathers";
     public const string WoodDef = "Wood";
 
+    /// <summary>The bench's plain cudgel: what a carpenter hangs on the muster rack when there aren't the planks for a bow.</summary>
+    public const string CudgelRecipe = "MakeCudgel";
+
     /// <summary>Logs a batch of planks takes, and the planks it gives at best (as the <c>SawPlanks</c> recipe).</summary>
     public const int LogsPerBatch = 6, PlanksPerBatch = 10;
 
@@ -63,6 +66,20 @@ public static class Carpenters
             WorkSystem.Start(sim, worker, new FletchSession { Station = station });
         else if (MakesBow(recipe))
             WorkSystem.Start(sim, worker, new BowSession { Station = station });
+    }
+
+    /// <summary>A bow, mended by hand at the carpenter's bench (re-tillered and restrung, <see cref="BowSession.Mending"/>).</summary>
+    public static bool IsBow(ThingDef def) => def.Weapon is { Ranged: true } && def.Name == "Bow";
+
+    /// <summary>Should a player's mend of this piece at this station be a hand game? In a round, a bow at the carpenter's bench.</summary>
+    public static bool AppliesToRepair(Simulation sim, Entity worker, Entity station, Entity item) =>
+        sim.Round.Live && sim.World.Has<Avatar>(worker) && IsBench(sim, station) && IsBow(sim.World.Get<Thing>(item).Def);
+
+    /// <summary>A player takes a worn bow to the bench: re-tiller it where it's set stiff, and string it again.</summary>
+    public static void BeginMending(Simulation sim, Entity worker, Entity station, Entity bow)
+    {
+        if (!sim.World.Has<WorkSession>(worker))
+            WorkSystem.Start(sim, worker, new BowSession { Station = station, Mending = bow });
     }
 
     /// <summary>How well an AI carpenter's work comes out, by skill, before its roll.</summary>
@@ -149,6 +166,34 @@ public static class Carpenters
     }
 
     /// <summary>
+    /// An archer asking for arrows at the woodshop (<see cref="ServiceKind.Arrows"/>), known to this AI
+    /// carpenter and nobody else's: it fletches a quiver at the bench (or takes one it has on it) and
+    /// hands it over. Before the shelf's stock: an archer asking is a sale for certain.
+    /// </summary>
+    public static Job? Arrows(Simulation sim, Entity pawn)
+    {
+        var w = sim.World;
+        var shop = WoodshopOf(sim, pawn);
+        var chest = ChestOf(sim, shop);
+        var bench = StationOf(sim, shop, BenchDef);
+        if (bench.IsNull || chest.IsNull)
+            return null;
+        var role = w.Get<Trade>(pawn).Def.Role;
+        var stocked = CountIn(sim, chest, PlanksDef) >= 1 && CountIn(sim, chest, FeathersDef) >= 1;
+        var from = w.Get<Position>(pawn).Cell;
+        foreach (var e in sim.Shops.FrontFirst(sim))
+        {
+            if (!e.IsOpen || e.Kind.Kind != ServiceKind.Arrows || e.Kind.AtRole != role || !e.KnownBy.Contains(pawn)
+                || (!e.Assignee.IsNull && e.Assignee != pawn) || !w.IsAlive(e.Poster))
+                continue;
+            if ((stocked || Fletching.Carried(sim, pawn).Count > 0) && !sim.Reservations.IsReservedByOther(bench, pawn)
+                && Navigation.CanReach(sim, pawn, from, w.Get<Position>(e.Poster).Cell, PathEnd.Touch))
+                return new ArrowsJob(e.Id, bench, chest);
+        }
+        return null;
+    }
+
+    /// <summary>
     /// A waking hour with fewer than <see cref="QuiversOnShow"/> quivers out and a plank and feathers
     /// in the chest: an AI carpenter fletches one and puts it on show.
     /// </summary>
@@ -189,6 +234,51 @@ public sealed class SawJob(Entity horse, Entity chest) : Job
         var rest = Sim.Store(chest, planks);
         if (!rest.IsNull)
             Sim.PlaceItemNear(rest, Get<Thing>(chest).Cell);
+    }
+}
+
+/// <summary>An AI carpenter sees an archer's ask for arrows through: a quiver fletched at the bench (or one it has on it), carried over and handed to them.</summary>
+public sealed class ArrowsJob(int order, Entity bench, Entity chest) : Job
+{
+    public override Entity Focus => bench;
+
+    protected override IEnumerable<JobStatus> Run()
+    {
+        var orders = Sim.Shops;
+        if (orders.Find(order) is not { IsOpen: true } e || (e.Assignee != Pawn && !orders.Accept(Sim, Pawn, order)))
+        {
+            Fail("someone else has it");
+            yield break;
+        }
+        var quiver = Fletching.Carried(Sim, Pawn).FirstOrDefault(Entity.Null);
+        if (quiver.IsNull)
+        {
+            Report = $"Fletching arrows for {e.PosterName}";
+            if (!Reserve(bench)) yield break;
+            foreach (var s in GoTo(Get<Thing>(bench).Cell, PathEnd.Touch)) yield return s;
+            if (HasFailed) yield break;
+            foreach (var s in Wait(FletchJob.Ticks)) yield return s;
+            if (!Alive(bench) || !Alive(chest) || !e.IsOpen || Carpenters.CountIn(Sim, chest, Carpenters.PlanksDef) < 1
+                || !Carpenters.TakeFrom(Sim, chest, Carpenters.FeathersDef, 1))
+            {
+                Fail("no plank or feathers");
+                yield break;
+            }
+            Carpenters.TakeFrom(Sim, chest, Carpenters.PlanksDef, 1);
+            SkillRules.Learn(Sim, Pawn, Skill.Crafting, SkillRules.XpPerWorkTick * FletchJob.Ticks);
+            quiver = Sim.CreateItem(Sim.Defs.Thing(Fletching.Def), 1);
+            Carpenters.Made(Sim, [quiver], Pawn);
+            Inventory.Stow(Sim, Pawn, quiver);
+        }
+        Report = $"Bringing {e.PosterName} a quiver";
+        foreach (var s in GoToEntity(e.Poster, PathEnd.Touch, 1500)) yield return s;
+        if (HasFailed) yield break;
+        if (!e.IsOpen || !Alive(quiver) || !Shops.Handing.InReach(Sim, Pawn, e.Poster) || !Inventory.OnPerson(Sim, Pawn, quiver))
+        {
+            Fail("couldn't hand it over");
+            yield break;
+        }
+        orders.Received(Sim, Pawn, e.Poster, Inventory.TakeFromPerson(Sim, Pawn, quiver, 1));
     }
 }
 

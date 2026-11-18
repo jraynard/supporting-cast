@@ -46,6 +46,21 @@ public enum ServiceKind
     /// innkeeper where the inn and the kitchen stand apart, never by an adventurer (<c>Hospitality.Provisions</c>).
     /// </summary>
     Provisions,
+
+    /// <summary>
+    /// A worn bow, club or staff mended (the Carpenter's): wooden gear the smith can't hammer out,
+    /// re-tillered or spliced at the carpenter's bench. Which pieces go where is <c>Combat.WeaponWear.MendKind</c>.
+    /// </summary>
+    WoodRepair,
+
+    /// <summary>A worn crossbow mended (the Tinker's, who makes them): its lock re-seated and its spring wound again.</summary>
+    CrossbowRepair,
+
+    /// <summary>
+    /// A quiver of arrows for the road (the Carpenter's), asked aloud by an archer who has none and
+    /// sees none on the woodshop's shelf: served by handing them one (<c>Carpentry.Fletching</c>).
+    /// </summary>
+    Arrows,
 }
 
 /// <summary>
