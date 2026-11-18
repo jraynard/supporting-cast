@@ -38,6 +38,19 @@ public static class MapGenerator
         "Jorunn", "Vincent", "Ilana", "Justin", "Tasha", "James", "Matt"
     ];
 
+    /// <summary>
+    /// The villager names nobody in the world has yet, nor <paramref name="also"/> (case aside), in the
+    /// list's order: for naming the bots seated in a solo round without doubling anyone.
+    /// </summary>
+    public static List<string> UnusedNames(Simulation sim, string? also = null)
+    {
+        var w = sim.World;
+        var taken = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { also?.Trim() ?? "" };
+        foreach (var e in w.Query<Creature>())
+            taken.Add(w.Get<Creature>(e).Name);
+        return VillagerNames.Where(n => !taken.Contains(n)).ToList();
+    }
+
     public static int3 Generate(Simulation sim, Options? options = null)
     {
         options ??= new Options();
@@ -323,7 +336,8 @@ public static class MapGenerator
         var people = new List<Entity>();
         for (var i = 0; i < villagers; i++)
         {
-            var name = VillagerNames[(i + (int)(sim.Seed % 7)) % VillagerNames.Length];
+            // A run of names from anywhere in the list, by the seed: every name can be dealt.
+            var name = VillagerNames[(int)(((ulong)i + sim.Seed % (ulong)VillagerNames.Length) % (ulong)VillagerNames.Length)];
             var villager = sim.SpawnCreature(human, name, center + new int3(i - villagers / 2, 2, 0), ageDays: 25 * 365);
             sim.GiveStartingPack(villager);
             people.Add(villager);

@@ -56,10 +56,11 @@ public sealed partial class VillageGame
             round.SetPreferences(Guid.Empty, [heroTrade], []);
         // Bots ask for the trades that have a game to play, the hero's aside, so a solo round has its cast.
         var wanted = Sim.Scenarios.SeasonSweep.Trades.Where(t => t != heroTrade?.Name).ToList();
+        var names = BotNames(HeroName);
         for (var i = 0; i < Bots; i++)
         {
             var id = new Guid(i + 1, 0, 0, new byte[8]);
-            round.Sit(id, $"Bot {i + 1}", null, null);
+            round.Sit(id, i < names.Count ? names[i] : $"Bot {i + 1}", null, null);
             if (wanted.Count > 0)
                 round.SetPreferences(id, wanted.Skip(i % wanted.Count).Concat(wanted.Take(i % wanted.Count)).Select(_sim.Defs.Trade).ToList(), []);
             _bots.Add(new Sim.Bots.BotPlayer(() => _sim, id, Issue, seed + (ulong)i) { Skill = BotSkill });
@@ -69,6 +70,23 @@ public sealed partial class VillageGame
             if (!_sim.World.Has<PlayerCharacter>(e))
                 return _sim.World.Get<Position>(e).Cell;
         return center;
+    }
+
+    /// <summary>
+    /// Names for a solo round's bots: the villagers' names (testers among them) that nobody in town
+    /// has yet, nor the hero, in an order the seed decides, so a seed always gives the same cast. A
+    /// bot's character takes its seat's name at the deal; "Bot 1" in a speech bubble read badly.
+    /// </summary>
+    private List<string> BotNames(string? hero)
+    {
+        var free = Sim.Maps.MapGenerator.UnusedNames(_sim, hero);
+        var rand = new Narsil.Sim.Core.SimRandom(seed ^ 0xB075EA7UL);
+        for (var i = free.Count - 1; i > 0; i--)
+        {
+            var j = rand.Range(0, i + 1);
+            (free[i], free[j]) = (free[j], free[i]);
+        }
+        return free;
     }
 
     /// <summary>The host made their character before the lobby existed: seat them now.</summary>
