@@ -917,8 +917,26 @@ internal static class ComponentCodecs
         }, r => new Hospitality.Hamper { Maker = r.Entity(), Loose = r.Bool() }),
     ];
 
-    private static readonly Dictionary<string, ComponentCodec> ByName = All.ToDictionary(c => c.Name);
-    private static readonly Dictionary<Type, ComponentCodec> ByType = All.ToDictionary(c => c.Type);
+    private sealed record Table(int Version, ComponentCodec[] Codecs, Dictionary<string, ComponentCodec> ByName, Dictionary<Type, ComponentCodec> ByType);
+
+    private static Table? _table;
+
+    /// <summary>The game's codecs, then each mod's (named <c>modId:Name</c>, registered through <see cref="Modding.SimRegistry"/>).</summary>
+    private static Table Current
+    {
+        get
+        {
+            if (_table is { } t && t.Version == Modding.SimContent.Version)
+                return t;
+            ComponentCodec[] codecs = [.. All, .. Modding.SimContent.ModCodecs];
+            foreach (var dup in codecs.GroupBy(c => c.Type).Where(g => g.Count() > 1))
+                throw new InvalidOperationException($"Two save codecs for {dup.Key.Name}: {string.Join(", ", dup.Select(c => c.Name))}");
+            return _table = new Table(Modding.SimContent.Version, codecs, codecs.ToDictionary(c => c.Name), codecs.ToDictionary(c => c.Type));
+        }
+    }
+
+    private static Dictionary<string, ComponentCodec> ByName => Current.ByName;
+    private static Dictionary<Type, ComponentCodec> ByType => Current.ByType;
 
     public static bool Has(Type type) => ByType.ContainsKey(type);
 
@@ -954,7 +972,7 @@ internal static class ComponentCodecs
         foreach (var store in world.Stores)
             if (store.Count > 0 && !ByType.ContainsKey(store.ComponentType))
                 throw new SaveException($"No save codec for component {store.ComponentType.Name} (add one in ComponentCodecs)");
-        var present = All.Where(c => c.Count(world) > 0).ToList();
+        var present = Current.Codecs.Where(c => c.Count(world) > 0).ToList();
         w.Int(present.Count);
         foreach (var codec in present)
         {

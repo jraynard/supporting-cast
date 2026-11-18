@@ -8,20 +8,38 @@ namespace HeroesNotIncluded.Sim.Core;
 /// Turns <see cref="ISimCommand"/>s into bytes and back, for lockstep multiplayer (and later
 /// replays). Commands are positional records, so this writes each constructor parameter in order
 /// by type: no per-command code to forget. The tag is the command's index among all command types
-/// sorted by name, which is stable for one build; peers only talk to identical builds.
+/// sorted by name, which is stable for one build and mod set; peers only talk to identical builds.
 /// </summary>
 public static class CommandCodec
 {
     /// <param name="Required">Reference parameters declared non-nullable: a null there is refused on decode.</param>
     private sealed record Shape(Type Type, ConstructorInfo Ctor, ParameterInfo[] Params, PropertyInfo[] Props, bool[] Required);
 
-    private static readonly Shape[] Shapes = typeof(ISimCommand).Assembly.GetTypes()
-        .Where(t => typeof(ISimCommand).IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false })
-        .OrderBy(t => t.FullName, StringComparer.Ordinal)
-        .Select(ShapeOf)
-        .ToArray();
+    private sealed record Table(int Version, Shape[] Shapes, Dictionary<Type, int> Tags);
 
-    private static readonly Dictionary<Type, int> Tags = Shapes.Select((s, i) => (s.Type, i)).ToDictionary(x => x.Type, x => x.i);
+    private static Table? _table;
+
+    /// <summary>
+    /// Every command in the content (the game's sim, then each mod's: <see cref="Modding.SimContent"/>),
+    /// sorted by full name across all of them. With mods the tags differ from the game's alone, which
+    /// is fine: peers and replays already insist on the same build tag, and that covers the mods.
+    /// </summary>
+    private static Table Current
+    {
+        get
+        {
+            if (_table is { } t && t.Version == Modding.SimContent.Version)
+                return t;
+            var shapes = Modding.SimContent.TypesOf<ISimCommand>()
+                .OrderBy(t => t.FullName, StringComparer.Ordinal)
+                .Select(ShapeOf)
+                .ToArray();
+            return _table = new Table(Modding.SimContent.Version, shapes, shapes.Select((s, i) => (s.Type, i)).ToDictionary(x => x.Type, x => x.i));
+        }
+    }
+
+    private static Shape[] Shapes => Current.Shapes;
+    private static Dictionary<Type, int> Tags => Current.Tags;
 
     private static readonly MethodInfo ReadDef = typeof(SaveReader).GetMethod(nameof(SaveReader.DefOrNull))!;
 

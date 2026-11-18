@@ -372,7 +372,7 @@ public abstract class WorkSession
     /// <summary>As a save of <paramref name="format"/> laid it out (tests of reading old saves write them this way).</summary>
     internal static void Write(SaveWriter w, WorkSession s, int format)
     {
-        w.String(s.GetType().Name);
+        w.String(Modding.SimContent.NameOf(s.GetType()));
         w.Entity(s.Worker);
         w.Long(s.StartTick);
         w.Int(s.StepsDone);
@@ -406,64 +406,46 @@ public abstract class WorkSession
         s.WriteState(w);
     }
 
+    private static (int Version, Dictionary<string, Func<WorkSession>> Map)? _sessions;
+
+    /// <summary>
+    /// Every session by the name it's saved under (<see cref="Modding.SimContent.NameOf"/>): found by
+    /// scanning the content (the game's sim and each mod's) for sessions with a parameterless
+    /// constructor, so a new one, the game's or a mod's, needs no list. Retired names map on to what
+    /// replaced them.
+    /// </summary>
+    internal static IReadOnlyDictionary<string, Func<WorkSession>> Sessions
+    {
+        get
+        {
+            if (_sessions is { } cached && cached.Version == Modding.SimContent.Version)
+                return cached.Map;
+            var map = new Dictionary<string, Func<WorkSession>>(StringComparer.Ordinal)
+            {
+                ["DrawSession"] = () => new Healing.RetiredSession("DrawSession"),
+                ["FeelSession"] = () => new Healing.RetiredSession("FeelSession"),
+            };
+            foreach (var type in Modding.SimContent.TypesOf<WorkSession>())
+            {
+                if (type.GetConstructor(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic, Type.EmptyTypes) == null)
+                    continue;
+                var name = Modding.SimContent.NameOf(type);
+                if (!map.TryAdd(name, () => (WorkSession)Activator.CreateInstance(type, nonPublic: true)!))
+                    throw new InvalidOperationException($"Two work sessions are saved as {name}: rename one");
+            }
+            foreach (var (name, make) in Modding.SimContent.ModSessionAliases)
+                map.TryAdd(name, make);
+            _sessions = (Modding.SimContent.Version, map);
+            return map;
+        }
+    }
+
     internal static WorkSession Read(SaveReader r)
     {
         var name = r.String();
-        WorkSession s = name switch
-        {
-            nameof(HammerSession) => new HammerSession(),
-            nameof(HeatSession) => new HeatSession(),
-            nameof(BloomSession) => new BloomSession(),
-            nameof(QuenchSession) => new QuenchSession(),
-            nameof(SharpenSession) => new SharpenSession(),
-            nameof(PourSession) => new PourSession(),
-            nameof(StewSession) => new StewSession(),
-            nameof(SeasonSession) => new SeasonSession(),
-            nameof(SniffSession) => new SniffSession(),
-            nameof(PackSession) => new PackSession(),
-            nameof(ChopSession) => new ChopSession(),
-            nameof(RoastSession) => new RoastSession(),
-            nameof(KneadSession) => new KneadSession(),
-            nameof(BakeSession) => new BakeSession(),
-            nameof(CrimpSession) => new CrimpSession(),
-            nameof(ButcherSession) => new ButcherSession(),
-            nameof(PluckSession) => new PluckSession(),
-            nameof(WashSession) => new WashSession(),
-            nameof(TapSession) => new TapSession(),
-            nameof(MixSession) => new MixSession(),
-            nameof(Hospitality.ScrubSession) => new Hospitality.ScrubSession(),
-            nameof(Hospitality.MakeBedSession) => new Hospitality.MakeBedSession(),
-            nameof(Hospitality.SignInSession) => new Hospitality.SignInSession(),
-            nameof(Hospitality.SlopSession) => new Hospitality.SlopSession(),
-            nameof(Healing.HandsOnSession) => new Healing.HandsOnSession(),
-            "DrawSession" or "FeelSession" => new Healing.RetiredSession(name),
-            nameof(Healing.BandageSession) => new Healing.BandageSession(),
-            nameof(Healing.CastSession) => new Healing.CastSession(),
-            nameof(Healing.MeditateSession) => new Healing.MeditateSession(),
-            nameof(Tinkering.ProbeSession) => new Tinkering.ProbeSession(),
-            nameof(Tinkering.PickSession) => new Tinkering.PickSession(),
-            nameof(Tinkering.PinSession) => new Tinkering.PinSession(),
-            nameof(Tinkering.FitSession) => new Tinkering.FitSession(),
-            nameof(Tinkering.TrueSession) => new Tinkering.TrueSession(),
-            nameof(Tinkering.SpanSession) => new Tinkering.SpanSession(),
-            nameof(Tinkering.LoupeSession) => new Tinkering.LoupeSession(),
-            nameof(Carpentry.SawSession) => new Carpentry.SawSession(),
-            nameof(Carpentry.FletchSession) => new Carpentry.FletchSession(),
-            nameof(Carpentry.BowSession) => new Carpentry.BowSession(),
-            nameof(Carpentry.JoinSession) => new Carpentry.JoinSession(),
-            nameof(StrikerSession) => new StrikerSession(),
-            nameof(SledgeSession) => new SledgeSession(),
-            nameof(Afterlife.HoldSession) => new Afterlife.HoldSession(),
-            nameof(Carpentry.PitSession) => new Carpentry.PitSession(),
-            nameof(Carpentry.LiftSession) => new Carpentry.LiftSession(),
-            nameof(Carpentry.FellSession) => new Carpentry.FellSession(),
-            nameof(Carpentry.BuckSession) => new Carpentry.BuckSession(),
-            nameof(Carpentry.CrosscutSession) => new Carpentry.CrosscutSession(),
-            nameof(Carpentry.SplitSession) => new Carpentry.SplitSession(),
-            nameof(Carpentry.NailSession) => new Carpentry.NailSession(),
-            nameof(Environment.ThrowSession) => new Environment.ThrowSession(),
-            _ => throw new SaveException($"Corrupt save: unknown work session {name}"),
-        };
+        if (!Sessions.TryGetValue(name, out var make))
+            throw new SaveException($"Corrupt save: unknown work session {name}");
+        var s = make();
         s.Worker = r.Entity();
         s.StartTick = r.Long();
         s.StepsDone = r.Int();
