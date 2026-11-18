@@ -123,6 +123,7 @@ public static class ArtAudit
                 continue;
             }
             CheckLayer(HumanLook.SkinSheet(look), $"body {body}", required: true);
+            CheckLayer(HumanLook.CoinSheet(look), $"body {body}", required: true);
             foreach (var folk in Enum.GetValues<Folk>())
                 if (folk != build && HumanLook.FolkOf(folk).Build == HumanLook.FolkOf(build).Build)
                 {

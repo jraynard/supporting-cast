@@ -8,6 +8,7 @@ layers the game mixes and matches (Rendering/HumanLook, docs/ART.md "People"):
 
   creatures/person_<body>                  linen underclothes: the base every layer matches by frame
   creatures/person_<body>_skin             head, arms, legs (tinted with the skin colour)
+  creatures/person_<body>_coin             the coin stance's coin, over everything (front views only)
   creatures/person_<body>_eyes_<style>     irises (tinted); _face_<style>: whites, lids, lashes, mouth, blush
   creatures/person_hair_<style>[_back]     hair and brows (tinted), the back half drawn behind the body
   creatures/person_beard_<style>           beards (tinted with the hair colour)
@@ -19,7 +20,7 @@ the crossed, hip and coin stances. 147 frames: idle, walk, work and the three st
 views (facing the viewer, turned toward screen right, turned away, from behind; the game mirrors
 the turned ones), then sleep and downed, then riding astride and sitting in the four views. Garments draw what lies over their cloth into the plain
 sheet and cut it from the dyed one (the game draws the plain sheet first); whatever a crossed
-arm or a coin covers is cut from the torso; back panels and the back half of the hair are cut
+arm or a coin covers is cut from the torso (the coin's own sheet goes over it all); back panels and the back half of the hair are cut
 under the base, since the game draws them after it.
 """
 import os
@@ -222,13 +223,17 @@ def base_layer(F):
     return img
 
 
-def coin_layer(F, img):
-    if F.coin is None:
-        return
+def coin_layer(F):
+    """The flipped coin, its own sheet the game draws over everything (beard, hair, a helm): it's tossed
+    up in front of the face. From behind, the head hides it."""
+    img = blank()
+    if F.coin is None or not F.front:
+        return img
     x, y = F.coin
     edge_on = F.pose.k % 2 == 1
     c = ellipse([x - (0.4 if edge_on else 1.1), y - 1.1, x + (0.4 if edge_on else 1.1), y + 1.1])
     part(img, c, GOLD, INK, radius=0.4, bias=0.2, width=1)
+    return img
 
 
 def elf_ear(ex, hy, s):
@@ -280,7 +285,6 @@ def skin_layer(F, folk="human"):
         part(img, arm, SKIN, SKIN_LINE, radius=1.0)
         part(img, fist, SKIN, SKIN_LINE, radius=0.8)
         arms_drawn.append(arm)
-    coin_layer(F, img)
     return img
 
 
@@ -2673,6 +2677,8 @@ def job_frames(job):
         elif kind == "ears":
             body, folk = args
             img = ears_layer(Fig(body, pose), folk)
+        elif kind == "coin":
+            img = coin_layer(Fig(args, pose))
         elif kind == "eyes":
             body, style, which = args
             img = eyes_layers(Fig(body, pose), style)[0 if which == "eyes" else 1]
@@ -2713,6 +2719,7 @@ def jobs():
     for body in BODIES:
         out.append((f"creatures/person_{body}", ("base", body)))
         out.append((f"creatures/person_{body}_skin", ("skin", (body, "human"))))
+        out.append((f"creatures/person_{body}_coin", ("coin", body)))
         for folk in FOLK[1:]:
             out.append((f"creatures/person_{body}_skin_{folk}", ("skin", (body, folk))))
             out.append((f"creatures/person_{body}_ears_{folk}", ("ears", (body, folk))))
@@ -2809,6 +2816,7 @@ def figure(body, pose, hair="long", eyes="round", beard=None, wear=(), dyes=None
     for item in HEAD_ITEMS:
         if item in wear:
             order.append(worn[item][""])
+    order.append(coin_layer(F))
     for layer in order:
         img.alpha_composite(layer)
     return lie(img, pose)

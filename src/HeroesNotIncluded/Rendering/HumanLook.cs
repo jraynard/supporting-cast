@@ -282,8 +282,8 @@ public static class HumanLook
     /// <summary>The body's sheets: its sex, in its folk's build.</summary>
     private static int BodyIndex(in Appearance a) => (a.Body == BodyType.Female ? 1 : 0) + 2 * FolkOf(a.Folk).Build;
 
-    private static readonly (string Base, string Skin, string ElfSkin, string ElfEars)[] BodySheets =
-        BodyNames.Select(b => ($"creatures/person_{b}", $"creatures/person_{b}_skin", $"creatures/person_{b}_skin_elf", $"creatures/person_{b}_ears_elf")).ToArray();
+    private static readonly (string Base, string Skin, string ElfSkin, string ElfEars, string Coin)[] BodySheets =
+        BodyNames.Select(b => ($"creatures/person_{b}", $"creatures/person_{b}_skin", $"creatures/person_{b}_skin_elf", $"creatures/person_{b}_ears_elf", $"creatures/person_{b}_coin")).ToArray();
 
     // Hair and beards fit every body of a build (the heads are the same); a build's are moved down with its head.
     private static readonly (string Front, string Back)[][] HairSheets = Builds.Select(b =>
@@ -306,6 +306,9 @@ public static class HumanLook
     /// <summary>The skin layer: an elf's has their ears (falling back to the human one if it's missing).</summary>
     public static string SkinSheet(in Appearance a) => a.Folk == Folk.Elf ? BodySheets[BodyIndex(a)].ElfSkin : BodySheets[BodyIndex(a)].Skin;
     public static string HumanSkinSheet(in Appearance a) => BodySheets[BodyIndex(a)].Skin;
+
+    /// <summary>The coin stance's coin: tossed up before the face, so drawn over everything (empty from behind).</summary>
+    public static string CoinSheet(in Appearance a) => BodySheets[BodyIndex(a)].Coin;
 
     /// <summary>An elf's ears again, drawn over the hair they stand out through; null for humans.</summary>
     public static string? EarsSheet(in Appearance a) => a.Folk == Folk.Elf ? BodySheets[BodyIndex(a)].ElfEars : null;
@@ -516,6 +519,9 @@ public static class HumanLook
             foreach (var w in worn)
                 if (w.Props.Slot is ApparelSlot.Head)
                     AddWorn(atlas, list, w, a, color, model);
+        // The flipped coin, last: in front of the face, it's over a beard, the hair and a helm alike.
+        if (model == null && a.Stance == Stance.Coin && atlas.TryGetSheet(CoinSheet(a), out var coin))
+            list.Add((coin, color));
         return list;
     }
 

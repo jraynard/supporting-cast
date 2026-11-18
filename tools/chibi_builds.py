@@ -7,7 +7,7 @@ squashed into what's left above the feet (which stay on the pivot), and a dwarf'
 (``widen``, eased in below the neck so an arm or a tool crossing it doesn't tear). Applied the same
 to every layer, they stay aligned:
 
-  creatures/person_<body>[_skin|_eyes_*|_face_*]  ->  creatures/person_<body>_<build>[...]
+  creatures/person_<body>[_skin|_coin|_eyes_*|_face_*]  ->  creatures/person_<body>_<build>[...]
   apparel/<worn>_<body>                           ->  apparel/<worn>_<body>_<build>
   creatures/person_hair_<style>[_back], person_beard_<style>  ->  ..._<build>  (moved down by the drop only)
 
@@ -102,7 +102,7 @@ def jobs():
         if built.search(name):
             continue                                                 # a build's own sheet
         for build in BUILDS:
-            if m := re.fullmatch(r"creatures/person_(male|female)((?:_(?:skin|eyes_\w+|face_\w+))?)", name):
+            if m := re.fullmatch(r"creatures/person_(male|female)((?:_(?:skin|coin|eyes_\w+|face_\w+))?)", name):
                 out.append((name, f"creatures/person_{m.group(1)}_{build}{m.group(2)}", build, False))
             elif re.fullmatch(r"creatures/person_(hair|beard)_\w+", name):
                 out.append((name, f"{name}_{build}", build, True))
