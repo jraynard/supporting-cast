@@ -25,6 +25,7 @@ public sealed class SimRegistry
 
     internal readonly List<ComponentCodec> Codecs = [];
     internal readonly Dictionary<string, Func<WorkSession>> SessionAliases = new(StringComparer.Ordinal);
+    internal readonly List<PlacedSystem> Systems = [];
 
     private string Qualify(string name) => $"{ModId}:{name}";
 
@@ -38,9 +39,20 @@ public sealed class SimRegistry
     /// <summary>A marker component with no data.</summary>
     public void Tag<T>(string name) where T : struct => Component<T>(name, (_, _) => { }, _ => default);
 
+    /// <summary>
+    /// A system the mod adds to every simulation, made fresh for each one: run each tick after the
+    /// system named <paramref name="after"/> (or before <paramref name="before"/>; at the end if
+    /// neither), by <see cref="ISimSystem.Name"/>. Order decides what a tick sees, so name the
+    /// neighbour that matters. A system with state to keep implements <see cref="ISaveState"/>.
+    /// </summary>
+    public void System(Func<ISimSystem> make, string? after = null, string? before = null) =>
+        Systems.Add(new PlacedSystem(make, after, before, ModId));
+
     /// <summary>A session renamed or retired: saves that name it read back as this.</summary>
     public void SessionAlias(string oldName, Func<WorkSession> make) => SessionAliases[Qualify(oldName)] = make;
 }
+
+internal sealed record PlacedSystem(Func<ISimSystem> Make, string? After, string? Before, string ModId);
 
 /// <summary>
 /// The assemblies the sim is made of this run: its own, then each mod's sim half in load order
@@ -105,6 +117,8 @@ public static class SimContent
     /// <summary>Every concrete type in the content assignable to <typeparamref name="T"/>, assembly by assembly.</summary>
     public static IEnumerable<Type> TypesOf<T>() =>
         Assemblies.SelectMany(a => (a == Core ? a.GetTypes() : ExportedTypes(a)).Where(t => typeof(T).IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false }));
+
+    internal static IEnumerable<PlacedSystem> ModSystems => _mods.SelectMany(m => m.Registry.Systems);
 
     internal static IEnumerable<ComponentCodec> ModCodecs => _mods.SelectMany(m => m.Registry.Codecs);
 

@@ -235,172 +235,81 @@ public sealed partial class VillageGame
         return x.X * y.Y - x.Y * y.X > 0 ? axis : -axis;
     }
 
+    /// <summary>
+    /// How each of the game's work sessions is drawn, by session type. A mod's view
+    /// (<see cref="Mods.GameMods"/>) is looked up first, so it can add a session's look or restyle one.
+    /// </summary>
+    private static readonly Dictionary<Type, Action<VillageGame, WorkSession>> WorkViews = new()
+    {
+        [typeof(SharpenSession)] = (g, s) => g.DrawSharpen((SharpenSession)s),
+        [typeof(PourSession)] = (g, s) => g.DrawPour((PourSession)s),
+        [typeof(Sim.Healing.HandsOnSession)] = (g, s) => g.DrawHandsOn((Sim.Healing.HandsOnSession)s),
+        [typeof(Sim.Healing.BandageSession)] = (g, s) => g.DrawBandage((Sim.Healing.BandageSession)s),
+        [typeof(Sim.Healing.CastSession)] = (g, s) => g.DrawCast((Sim.Healing.CastSession)s),
+        [typeof(Sim.Healing.MeditateSession)] = (g, s) => g.DrawMeditate((Sim.Healing.MeditateSession)s),
+        [typeof(Sim.Tinkering.ProbeSession)] = (g, s) => g.DrawProbe((Sim.Tinkering.ProbeSession)s),
+        [typeof(Sim.Tinkering.PickSession)] = (g, s) => g.DrawPick((Sim.Tinkering.PickSession)s),
+        [typeof(Sim.Tinkering.PinSession)] = (g, s) => g.DrawPin((Sim.Tinkering.PinSession)s),
+        [typeof(Sim.Tinkering.FitSession)] = (g, s) => g.DrawFit((Sim.Tinkering.FitSession)s),
+        [typeof(Sim.Tinkering.TrueSession)] = (g, s) => g.DrawTrue((Sim.Tinkering.TrueSession)s),
+        [typeof(Sim.Tinkering.SpanSession)] = (g, s) => g.DrawSpan((Sim.Tinkering.SpanSession)s),
+        [typeof(Sim.Tinkering.LoupeSession)] = (g, s) => g.DrawLoupe((Sim.Tinkering.LoupeSession)s),
+        [typeof(SawSession)] = (g, s) => g.DrawSaw((SawSession)s),
+        [typeof(FletchSession)] = (g, s) => g.DrawFletch((FletchSession)s),
+        [typeof(BowSession)] = (g, s) => g.DrawBow((BowSession)s),
+        [typeof(Sim.Carpentry.JoinSession)] = (g, s) => g.DrawJoin((Sim.Carpentry.JoinSession)s),
+        [typeof(StrikerSession)] = (g, s) => g.DrawStriker((StrikerSession)s),
+        [typeof(SledgeSession)] = (g, s) => g.DrawSledge((SledgeSession)s),
+        [typeof(Sim.Afterlife.HoldSession)] = (g, s) => g.DrawHold((Sim.Afterlife.HoldSession)s),
+        [typeof(Sim.Carpentry.PitSession)] = (g, s) => g.DrawPit((Sim.Carpentry.PitSession)s),
+        [typeof(Sim.Carpentry.LiftSession)] = (g, s) => g.DrawLift((Sim.Carpentry.LiftSession)s),
+        [typeof(FellSession)] = (g, s) => g.DrawFell((FellSession)s),
+        [typeof(BuckSession)] = (g, s) => g.DrawBuck((BuckSession)s),
+        [typeof(CrosscutSession)] = (g, s) => g.DrawCrosscut((CrosscutSession)s),
+        [typeof(SplitSession)] = (g, s) => g.DrawSplit((SplitSession)s),
+        [typeof(NailSession)] = (g, s) => g.DrawNail((NailSession)s),
+        [typeof(Sim.Environment.ThrowSession)] = (g, s) => g.DrawThrow((Sim.Environment.ThrowSession)s),
+        [typeof(HammerSession)] = (g, s) => g.DrawHammer((HammerSession)s),
+        [typeof(HeatSession)] = (g, s) => g.DrawHeat((HeatSession)s),
+        [typeof(BloomSession)] = (g, s) => g.DrawBloom((BloomSession)s),
+        [typeof(QuenchSession)] = (g, s) => g.DrawQuench((QuenchSession)s),
+        [typeof(StewSession)] = (g, s) => g.DrawStew((StewSession)s),
+        [typeof(SeasonSession)] = (g, s) => g.DrawSeason((SeasonSession)s),
+        [typeof(SniffSession)] = (g, s) => g.DrawSniff((SniffSession)s),
+        [typeof(PackSession)] = (g, s) => g.DrawPack((PackSession)s),
+        [typeof(ChopSession)] = (g, s) => g.DrawChop((ChopSession)s),
+        [typeof(RoastSession)] = (g, s) => g.DrawRoast((RoastSession)s),
+        [typeof(KneadSession)] = (g, s) => g.DrawKnead((KneadSession)s),
+        [typeof(BakeSession)] = (g, s) => g.DrawBake((BakeSession)s),
+        [typeof(CrimpSession)] = (g, s) => g.DrawCrimp((CrimpSession)s),
+        [typeof(ButcherSession)] = (g, s) => g.DrawButcher((ButcherSession)s),
+        [typeof(PluckSession)] = (g, s) => g.DrawPluck((PluckSession)s),
+        [typeof(WashSession)] = (g, s) => g.DrawWash((WashSession)s),
+        [typeof(TapSession)] = (g, s) => g.DrawTap((TapSession)s),
+        [typeof(MixSession)] = (g, s) => g.DrawMix((MixSession)s),
+        [typeof(Sim.Hospitality.ScrubSession)] = (g, s) => g.DrawScrub((Sim.Hospitality.ScrubSession)s),
+        [typeof(Sim.Hospitality.MakeBedSession)] = (g, s) => g.DrawMakeBed((Sim.Hospitality.MakeBedSession)s),
+        [typeof(Sim.Hospitality.SignInSession)] = (g, s) => g.DrawSignIn((Sim.Hospitality.SignInSession)s),
+        [typeof(Sim.Hospitality.SlopSession)] = (g, s) => g.DrawSlop((Sim.Hospitality.SlopSession)s),
+    };
+
     private void DrawWork()
     {
-        if (_work.Session is SharpenSession sharpen)
+        var session = _work.Session;
+        if (session == null)
         {
-            DrawSharpen(sharpen);
+            DrawTongs();
+            DrawStationCard();
             return;
         }
-        if (_work.Session is PourSession pour)
-        {
-            DrawPour(pour);
+        if (Mods.GameMods.TryDraw(ModWorkView, session))
             return;
-        }
-        switch (_work.Session)
-        {
-            case Sim.Healing.HandsOnSession hands:
-                DrawHandsOn(hands);
+        for (var t = session.GetType(); t != null && t != typeof(WorkSession); t = t.BaseType)
+            if (WorkViews.TryGetValue(t, out var draw))
+            {
+                draw(this, session);
                 return;
-            case Sim.Healing.BandageSession bandage:
-                DrawBandage(bandage);
-                return;
-            case Sim.Healing.CastSession cast:
-                DrawCast(cast);
-                return;
-            case Sim.Healing.MeditateSession meditate:
-                DrawMeditate(meditate);
-                return;
-            case Sim.Tinkering.ProbeSession probe:
-                DrawProbe(probe);
-                return;
-            case Sim.Tinkering.PickSession pick:
-                DrawPick(pick);
-                return;
-            case Sim.Tinkering.PinSession pin:
-                DrawPin(pin);
-                return;
-            case Sim.Tinkering.FitSession fit:
-                DrawFit(fit);
-                return;
-            case Sim.Tinkering.TrueSession truing:
-                DrawTrue(truing);
-                return;
-            case Sim.Tinkering.SpanSession span:
-                DrawSpan(span);
-                return;
-            case Sim.Tinkering.LoupeSession loupe:
-                DrawLoupe(loupe);
-                return;
-            case SawSession saw:
-                DrawSaw(saw);
-                return;
-            case FletchSession fletch:
-                DrawFletch(fletch);
-                return;
-            case BowSession bow:
-                DrawBow(bow);
-                return;
-            case Sim.Carpentry.JoinSession join:
-                DrawJoin(join);
-                return;
-            case StrikerSession striker:
-                DrawStriker(striker);
-                return;
-            case SledgeSession sledge:
-                DrawSledge(sledge);
-                return;
-            case Sim.Afterlife.HoldSession hold:
-                DrawHold(hold);
-                return;
-            case Sim.Carpentry.PitSession pit:
-                DrawPit(pit);
-                return;
-            case Sim.Carpentry.LiftSession lift:
-                DrawLift(lift);
-                return;
-            case FellSession fell:
-                DrawFell(fell);
-                return;
-            case BuckSession buck:
-                DrawBuck(buck);
-                return;
-            case CrosscutSession crosscut:
-                DrawCrosscut(crosscut);
-                return;
-            case SplitSession split:
-                DrawSplit(split);
-                return;
-            case NailSession nail:
-                DrawNail(nail);
-                return;
-            case Sim.Environment.ThrowSession throwing:
-                DrawThrow(throwing);
-                return;
-        }
-        switch (_work.Session)
-        {
-            case HammerSession hammer:
-                DrawHammer(hammer);
-                return;
-            case HeatSession heat:
-                DrawHeat(heat);
-                return;
-            case BloomSession bloom:
-                DrawBloom(bloom);
-                return;
-            case QuenchSession quench:
-                DrawQuench(quench);
-                return;
-            case StewSession stew:
-                DrawStew(stew);
-                return;
-            case SeasonSession season:
-                DrawSeason(season);
-                return;
-            case SniffSession sniff:
-                DrawSniff(sniff);
-                return;
-            case PackSession pack:
-                DrawPack(pack);
-                return;
-            case ChopSession chop:
-                DrawChop(chop);
-                return;
-            case RoastSession roast:
-                DrawRoast(roast);
-                return;
-            case KneadSession knead:
-                DrawKnead(knead);
-                return;
-            case BakeSession bake:
-                DrawBake(bake);
-                return;
-            case CrimpSession crimp:
-                DrawCrimp(crimp);
-                return;
-            case ButcherSession butcher:
-                DrawButcher(butcher);
-                return;
-            case PluckSession pluck:
-                DrawPluck(pluck);
-                return;
-            case WashSession wash:
-                DrawWash(wash);
-                return;
-            case TapSession tap:
-                DrawTap(tap);
-                return;
-            case MixSession mix:
-                DrawMix(mix);
-                return;
-            case Sim.Hospitality.ScrubSession scrub:
-                DrawScrub(scrub);
-                return;
-            case Sim.Hospitality.MakeBedSession bed:
-                DrawMakeBed(bed);
-                return;
-            case Sim.Hospitality.SignInSession sign:
-                DrawSignIn(sign);
-                return;
-            case Sim.Hospitality.SlopSession slop:
-                DrawSlop(slop);
-                return;
-            case null:
-                DrawTongs();
-                DrawStationCard();
-                return;
-        }
+            }
     }
 
     /// <summary>What your character has heard, and the box for saying something. Replaces chat once a round starts.</summary>

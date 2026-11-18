@@ -21,6 +21,7 @@ public sealed class WorkSounds(AudioEngine audio)
     private int _a, _b, _c;
     private float _q, _warm;
     private bool _flag;
+    private Mods.WorkSoundContext? _mod;
 
     /// <summary>Once a frame with the session being worked, or null.</summary>
     public void Update(WorkSession? session)
@@ -37,6 +38,14 @@ public sealed class WorkSounds(AudioEngine audio)
             (_a, _b, _c, _q, _warm, _flag) = (0, 0, -1, 0f, 0f, false);
             audio.Play(Sounds.UiOpen, gain: 0.5f);
         }
+
+        // A mod's session (or a mod's sound for one of the game's) first.
+        _mod ??= new Mods.WorkSoundContext(audio);
+        if (fresh)
+            _mod.Reset();
+        _mod.Fresh = fresh;
+        if (Mods.GameMods.TrySound(_mod, session))
+            return;
 
         switch (session)
         {

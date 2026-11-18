@@ -213,7 +213,9 @@ new one is built the moddable way.
 - [x] **Data mods:** `mods/<id>/` folders with `mod.json`, several def, texture and sound roots,
   `$patch` merges, the mod set in co-op's build tag, saves and replays; a Mods panel; `--check-mod`.
 - [ ] **A third town as a data mod**, played in co-op, a mismatched joiner refused.
-- [ ] **Registries and assemblies:** sessions, work views, codecs, commands, systems, work givers,
+- [x] **Mod assemblies** loaded, sim and game halves; sessions, commands, codecs, systems, work views
+  and sounds registered.
+- [ ] **The rest of the registries:** sessions, work views, codecs, commands, systems, work givers,
   roles, crises, lessons and bot hooks registered, not switched on; mod DLLs loaded. Hashes unchanged.
 - [ ] **The carpenter moves out** to `mods/carpenter`: the proof the API is enough.
 - [ ] **Game modes:** the season, the practice yard and the arena as `IGameMode`s.

@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using HeroesNotIncluded.Audio;
 using HeroesNotIncluded.Sim.Defs;
+using HeroesNotIncluded.Sim.Modding;
 using Narsil;
 using Narsil.Mods;
 
@@ -47,20 +48,36 @@ public sealed class GameContent
     /// <summary>The core with the mods named turned on (missing or broken ones left out, and logged).</summary>
     public static GameContent Use(IEnumerable<string> enabled)
     {
-        var order = Catalog.Resolve(enabled);
-        foreach (var p in order.Problems)
+        var wanted = enabled.ToList();
+        var order = Catalog.Resolve(wanted);
+        // A mod whose code won't load is left out (and anything needing it), and the rest go on.
+        var problems = new List<string>(order.Problems);
+        var failed = new HashSet<string>(StringComparer.Ordinal);
+        var code = ModCode.Load(order, problems, failed);
+        if (failed.Count > 0)
+        {
+            order = Catalog.Resolve(wanted.Where(id => !failed.Contains(id)));
+            code = ModCode.Load(order, problems, failed);
+        }
+        foreach (var p in problems.Distinct())
             Log.Engine.Warning($"Mod left out: {p}");
+        SimContent.Use(code.Sim);
+        GameMods.Use(code.Game);
         if (order.Mods.Count > 0)
-            Log.Engine.Info($"Mods: {string.Join(", ", order.Mods.Select(m => $"{m.Id} {m.Version}"))}");
-        return Current = new GameContent(order);
+            Log.Engine.Info($"Mods: {string.Join(", ", order.Mods.Select(m => $"{m.Id} {m.Version}"))}{(code.Sim.Count + code.Game.Count > 0 ? $"; code from {string.Join(", ", code.Sim.Concat(code.Game).Select(c => c.ModId).Distinct())}" : "")}");
+        return Current = new GameContent(order, problems);
     }
 
-    public GameContent(ModOrder mods)
+    public GameContent(ModOrder mods, IReadOnlyList<string>? problems = null)
     {
         Mods = mods;
+        Problems = problems ?? mods.Problems;
     }
 
     public ModOrder Mods { get; }
+
+    /// <summary>Why any mod asked for was left out (missing, a dependency missing, code that didn't load).</summary>
+    public IReadOnlyList<string> Problems { get; }
 
     public bool HasMods => Mods.Mods.Count > 0;
 

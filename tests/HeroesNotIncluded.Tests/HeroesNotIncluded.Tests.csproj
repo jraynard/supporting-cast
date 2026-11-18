@@ -14,6 +14,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\HeroesNotIncluded\HeroesNotIncluded.csproj" />
+    <!-- Built, not referenced: ModCodeTests loads it from a mod folder, as the game loads a mod. -->
+    <ProjectReference Include="..\ExampleMod.Sim\ExampleMod.Sim.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>

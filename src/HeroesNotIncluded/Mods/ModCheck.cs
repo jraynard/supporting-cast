@@ -68,8 +68,6 @@ public static class ModCheck
 
         if (mod.Folder("defs") == null && mod.Folder("textures") == null && mod.Folder("sounds") == null && !mod.RunsCode)
             warnings.Add("the mod has no defs, textures, sounds or assemblies: it changes nothing");
-        if (mod.RunsCode)
-            warnings.Add("the mod has assemblies; loading mod code isn't built yet (docs/MODDING.md), so only its data is checked");
 
         var content = new GameContent(order);
         DefDatabase core, defs;
@@ -84,6 +82,39 @@ public static class ModCheck
             return new Report(errors, warnings, notes);
         }
         notes.AddRange(Changes(core, defs));
+
+        if (order.Mods.Any(m => m.RunsCode))
+        {
+            var failed = new HashSet<string>(StringComparer.Ordinal);
+            var codeProblems = new List<string>();
+            var code = ModCode.Load(order, codeProblems, failed);
+            errors.AddRange(codeProblems);
+            foreach (var (id, asm) in code.Sim.Where(c => c.ModId == mod.Id))
+                notes.Add($"Sim code: {asm.GetName().Name}");
+            foreach (var (id, asm) in code.Game.Where(c => c.ModId == mod.Id))
+                notes.Add($"Game code: {asm.GetName().Name}");
+            if (failed.Count == 0)
+            {
+                try
+                {
+                    Sim.Modding.SimContent.Use(code.Sim);
+                    GameMods.Use(code.Game);
+                    // A simulation made with it: its systems take their places, its sessions and codecs are known.
+                    var sim = Sim.Simulation.CreateStandard(defs, 16, 16, 1);
+                    var added = sim.Systems.Where(sys => Sim.Modding.SimContent.ModOf(sys.GetType().Assembly) == mod.Id).Select(sys => sys.Name).ToList();
+                    if (added.Count > 0)
+                        notes.Add($"Systems: {string.Join(", ", added)}");
+                    var sessions = Sim.Work.WorkSession.KnownSessions.Where(k => k.StartsWith(mod.Id + ":", StringComparison.Ordinal)).ToList();
+                    if (sessions.Count > 0)
+                        notes.Add($"Work sessions: {string.Join(", ", sessions)}");
+                    sim.TickMany(60);
+                }
+                catch (Exception ex) when (ex is not OutOfMemoryException)
+                {
+                    errors.Add($"code: {ex.Message}");
+                }
+            }
+        }
 
         try
         {

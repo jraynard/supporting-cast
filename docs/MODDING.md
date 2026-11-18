@@ -56,7 +56,14 @@ is loaded):
 
 ## Code mods: the extension points
 
-A mod's assembly has an entry type the loader finds:
+A mod ships its code as DLLs at the top of its folder: a **sim half** that references only
+`HeroesNotIncluded.Sim` (sessions, commands, components, systems), and optionally a **game half**
+that references the game (how its mini-games look and sound). `Mods/ModCode` loads each mod in its
+own load context, the game's assemblies shared, and refuses an assembly with sim types that
+references the engine, a window or the game. A mod's types are saved and sent as `modId:Name`.
+`tests/ExampleMod.Sim` is the smallest working sim half (a session and a system).
+
+Each half has an entry type the loader finds:
 
 ```csharp
 public sealed class BardMod : ISimMod  { public void Register(SimRegistry r) { ... } }
@@ -67,17 +74,17 @@ The core registers its own trades the same way. What can be registered, and what
 
 | Point | Replaces |
 |---|---|
-| Sim systems, placed `after:`/`before:` a named one | `Simulation.CreateStandard`'s fixed chain |
-| Work sessions (mini-games), found by type | `WorkSession.Read`'s switch |
-| Component codecs, named `modid:Name` | `ComponentCodecs.All` |
-| Commands, found in every content assembly | `CommandCodec`'s scan of one assembly |
+| Sim systems, `SimRegistry.System(make, after:, before:)` (built) | `Simulation.CreateStandard`'s fixed chain |
+| Work sessions (mini-games), found by type (built) | `WorkSession.Read`'s switch |
+| Component codecs, `SimRegistry.Component<T>` (built) | `ComponentCodecs.All` |
+| Commands, found in every content assembly (built) | `CommandCodec`'s scan of one assembly |
 | Work givers per work type (`WorkTypeDef`) | `WorkGivers`' arms and the `WorkType` enum |
 | Town roles as defs (`RoleDef`, with what a workplace is stocked with) | the `TownRole` enum, `VillageRound.Stock*` |
 | Station actions (what F does at a station with what's in hand) | the dispatch in `AvatarSystem` |
 | Lessons per trade | `Lessons.All` |
 | Crises by name, for `season.json` beats | the `CrisisKind` enum |
 | Game modes (`IGameMode`, `IModeView`) | `VillageGame`'s mode flags, `RoundPhase` |
-| Work views per session type (game side) | `VillageGame.DrawWork`'s switches |
+| Work views and sounds per session type, `GameRegistry.WorkView<T>`/`WorkSound<T>` (built) | `VillageGame.DrawWork`'s switches (now a table), `WorkSounds`' switch |
 | Bot hooks per trade (game side) | `BotPlayer`'s per-workplace partials |
 | Practice-yard customers per trade | `Practice`'s switch on trade names |
 
@@ -140,7 +147,13 @@ The game's own rules (CLAUDE.md) bind its mods:
   example `mods/long-season`.
 - [ ] A third town as a data mod (a map and a building), played in co-op: the proof data mods are
   enough for a town.
-- [ ] Registries and mod assemblies (a pure refactor: `--bench` hashes unchanged).
+- [x] Mod assemblies: loaded per mod (`Mods/ModCode`), sorted into the sim half and the game half;
+  sim types beside the engine refused; `--check-mod` loads the code, builds a sim and runs it a minute.
+- [x] Registries, first part: work sessions and commands found by scanning the content, mods' codecs,
+  mods' systems placed by name, work views and work sounds (game side). Hashes unchanged.
+- [ ] Registries, the rest, as the carpenter moves out and shows what a trade needs: work givers and
+  `WorkType`, town roles, station actions, lessons, crises, bot hooks, practice customers; the game's
+  own work sounds and scenes moved onto the registry trade by trade.
 - [ ] The carpenter moved out to `mods/carpenter`.
 - [ ] Game modes.
 - [ ] The bard as a mod; the ModKit and the skills.

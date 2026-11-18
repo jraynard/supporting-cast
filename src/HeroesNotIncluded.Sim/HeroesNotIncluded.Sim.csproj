@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="HeroesNotIncluded.Sim.Tests" />
+    <InternalsVisibleTo Include="HeroesNotIncluded.Tests" />
   </ItemGroup>
 
   <!-- Determinism as a compile error: the APIs a lockstep sim must never touch (docs/MODDING.md;

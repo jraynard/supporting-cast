@@ -321,7 +321,24 @@ public sealed partial class Simulation
             .AddSystem(new SettlerSystem())
             .AddSystem(sim.Ai)
             .AddSystem(sim.Movement);
+        foreach (var placed in Modding.SimContent.ModSystems)
+            sim.InsertSystem(placed.Make(), placed.After, placed.Before, placed.ModId);
         return sim;
+    }
+
+    /// <summary>
+    /// A mod's system, placed after the system named <paramref name="after"/> or before
+    /// <paramref name="before"/> (by <see cref="ISimSystem.Name"/>), else at the end.
+    /// </summary>
+    internal void InsertSystem(ISimSystem system, string? after, string? before, string modId)
+    {
+        int At(string name)
+        {
+            var i = _systems.FindIndex(s => s.Name == name);
+            return i >= 0 ? i : throw new InvalidOperationException($"Mod {modId}: {system.Name} is placed by {name}, and there's no system of that name ({string.Join(", ", _systems.Select(s => s.Name))})");
+        }
+        var index = after != null ? At(after) + 1 : before != null ? At(before) : _systems.Count;
+        _systems.Insert(index, system);
     }
 
     public Simulation AddSystem(ISimSystem system)

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- A mod's sim half, as a modder would build one: it references only the game's sim (docs/MODDING.md).
+       Loaded by ModCodeTests from a mod folder, never referenced directly, so it loads as a mod does. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\HeroesNotIncluded.Sim\HeroesNotIncluded.Sim.csproj" Private="false" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <WarningsAsErrors>$(WarningsAsErrors);RS0030</WarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="4.14.0" PrivateAssets="all" />
+    <AdditionalFiles Include="..\..\src\HeroesNotIncluded.Sim\BannedSymbols.txt" />
+  </ItemGroup>
+
+</Project>

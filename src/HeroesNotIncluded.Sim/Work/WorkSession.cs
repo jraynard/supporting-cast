@@ -414,6 +414,9 @@ public abstract class WorkSession
     /// constructor, so a new one, the game's or a mod's, needs no list. Retired names map on to what
     /// replaced them.
     /// </summary>
+    /// <summary>The name of every session a save may hold, the game's and the mods' (<see cref="Modding.SimContent.NameOf"/>).</summary>
+    public static IEnumerable<string> KnownSessions => Sessions.Keys;
+
     internal static IReadOnlyDictionary<string, Func<WorkSession>> Sessions
     {
         get
