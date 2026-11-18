@@ -613,18 +613,79 @@ public class TinkerTradeTests
         Assert.True(Wagons.Damaged(sim, wagon), "a buckled wheel isn't true after one spin");
     }
 
-    [Fact]
-    public void ANewAxleIsFittedFromWood()
+    /// <summary>Joinery played well: each mortise chopped just short of the mark, each tenon driven with blows well under what it'll take.</summary>
+    internal static (bool, bool, int, bool) JoinTrue(WorkSession w)
     {
-        var (sim, me, _, wagon) = WithAWagon("Tinker", WagonDamage.Axle);
+        var s = (Carpentry.JoinSession)w;
+        if (s.Settling > 0)
+            return (false, false, 0, false);
+        if (s.Cutting)
+        {
+            if (s.Depth >= 1f - s.SnugWidth * 0.7f)
+                return (false, false, 0, s.Raised <= 0f);
+            var want = Math.Clamp((1f - s.SnugWidth * 0.4f - s.Depth) / Carpentry.JoinSession.DeepestCut, 0.1f, 1f);
+            return (false, s.Raised < want, 0, false);
+        }
+        return (false, s.Raised < Carpentry.JoinSession.SafeAt(s.Seat) * 0.7f, 0, false);
+    }
+
+    [Fact]
+    public void TheCarpenterHewsANewAxleAndPegsTheSprungBoard()
+    {
+        var (sim, me, _, wagon) = WithAWagon("Carpenter", WagonDamage.Axle | WagonDamage.Board);
         Beside(sim, me, wagon);
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Wood"), 2));
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Planks"), 1));
         var wood = Wagons.WoodOn(sim, me);
-        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Wood"), 3));
+        var planks = Wagons.PlanksOn(sim, me);
+
         sim.ApplyNow(new FitAxleCommand(me, wagon));
-        Assert.IsType<FitSession>(sim.World.Get<WorkSession>(me));
-        Play(sim, me, FitTrue);
+        Assert.Equal(Carpentry.JoinWork.Axle, Assert.IsType<Carpentry.JoinSession>(sim.World.Get<WorkSession>(me)).Work);
+        Play(sim, me, JoinTrue);
+        Assert.Equal(WagonDamage.Board, sim.World.Get<Wagon>(wagon).Damage);
+        Assert.Equal(wood - Wagons.AxleWood, Wagons.WoodOn(sim, me));
+
+        sim.ApplyNow(new PegBoardCommand(me, wagon));
+        Assert.Equal(Carpentry.JoinWork.Board, Assert.IsType<Carpentry.JoinSession>(sim.World.Get<WorkSession>(me)).Work);
+        Play(sim, me, JoinTrue);
         Assert.False(Wagons.Damaged(sim, wagon));
-        Assert.Equal(wood + 3 - Wagons.AxleWood, Wagons.WoodOn(sim, me));
+        Assert.Equal(planks - Wagons.BoardPlanks, Wagons.PlanksOn(sim, me));
+        Assert.Equal(me, sim.World.Get<Wagon>(wagon).JoinedBy);
+    }
+
+    [Fact]
+    public void DrivenTooHardAJointSplits()
+    {
+        var (sim, me, _, wagon) = WithAWagon("Carpenter", WagonDamage.Board);
+        Beside(sim, me, wagon);
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Planks"), 1));
+        sim.ApplyNow(new PegBoardCommand(me, wagon));
+        var session = (Carpentry.JoinSession)sim.World.Get<WorkSession>(me);
+        // Every blow raised all the way: the first goes in, the next splits it as it tightens.
+        Play(sim, me, w => w is Carpentry.JoinSession { Settling: 0 } s ? (false, s.Raised < 1f, 0, false) : (false, false, 0, false));
+        Assert.False(Wagons.Damaged(sim, wagon)); // forced home, cracked: it holds, but poorly
+        Assert.True(session.Splits > 0);
+        Assert.True(session.Quality < 0.5f);
+    }
+
+    [Fact]
+    public void TheWheelIsAskedOfTheTinkerAndTheWoodworkOfTheCarpenter()
+    {
+        var (sim, _, _, wagon) = WithAWagon("Healer", WagonDamage.Wheel | WagonDamage.Axle | WagonDamage.Board);
+        var tinker = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Tinker");
+        var carpenter = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Carpenter");
+        for (var h = 0; h < 24 && Wagons.Damaged(sim, wagon); h++)
+            sim.TickMany(SimClock.TicksPerHour);
+        Assert.False(Wagons.Damaged(sim, wagon), $"{sim.World.Get<Wagon>(wagon).Damage}: tinker {sim.World.Get<Mind>(tinker).Job?.Report}, carpenter {sim.World.Get<Mind>(carpenter).Job?.Report}");
+        sim.TickMany(SimClock.TicksPerHour / 4);
+        var wheel = sim.Shops.All.Single(e => e.Kind.Kind == ServiceKind.WagonRepair && e.Subject == wagon);
+        var wood = sim.Shops.All.Single(e => e.Kind.Kind == ServiceKind.WagonJoinery && e.Subject == wagon);
+        Assert.Equal(TownRole.TinkerShop, wheel.Kind.AtRole);
+        Assert.Equal(TownRole.Woodshop, wood.Kind.AtRole);
+        Assert.Equal((OrderStatus.Done, tinker), (wheel.Status, wheel.Assignee));
+        Assert.Equal((OrderStatus.Done, carpenter), (wood.Status, wood.Assignee));
+        Assert.Contains("axle", wood.Text);
+        Assert.DoesNotContain("wheel", wood.Text);
     }
 
     [Fact]

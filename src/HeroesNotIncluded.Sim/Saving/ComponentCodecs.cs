@@ -532,6 +532,12 @@ internal static class ComponentCodecs
             w.Bool(c.Binding);
             w.Entity(c.Maker);
         }, r => new Tinkering.Contraption { Binding = r.Bool(), Maker = r.Entity() }),
+        Codec("Furnishing", (w, f) =>
+        {
+            w.Def(f.Def);
+            w.Float(f.Quality);
+            w.Entity(f.Maker);
+        }, r => new Carpentry.Furnishing { Def = r.Def<Defs.ThingDef>(), Quality = Math.Clamp(r.Float(), 0f, 1f), Maker = r.Entity() }),
         Codec("PartyWagon", (w, g) =>
         {
             w.Int(g.Party);
@@ -539,9 +545,11 @@ internal static class ComponentCodecs
             w.Byte((byte)g.Damage);
             w.UInt(g.WheelSeed);
             w.Entity(g.MendedBy);
+            w.Entity(g.JoinedBy);
         }, r => new Tinkering.Wagon
         {
-            Party = r.Int(), Owner = r.Entity(), Damage = (Tinkering.WagonDamage)(r.Byte() & 3), WheelSeed = r.UInt(), MendedBy = r.Entity(),
+            Party = r.Int(), Owner = r.Entity(), Damage = (Tinkering.WagonDamage)(r.Byte() & 7), WheelSeed = r.UInt(), MendedBy = r.Entity(),
+            JoinedBy = r.Version >= 56 ? r.Entity() : Entity.Null, // the carpenter's share came with format 56
         }),
         Codec("Curio", (w, c) =>
         {

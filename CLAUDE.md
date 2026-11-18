@@ -148,7 +148,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     (`BowSession`), a quiver's pattern arrow sighted, shaved, headed and fletched (`FletchSession`) with a hidden warp (`Fletched.Warped`, never shown), sold as goods to archers
     and shot away on a quest (`Fletching`, like rations), or asked for aloud (`ServiceKind.Arrows`). Whoever makes a piece mends it
     (`WeaponWear.MendKind`): bows, cudgels and staves at the woodshop (`WoodRepair`, a bow re-tillered: `BowSession.Mending`),
-    crossbows at the tinker's (`CrossbowRepair`, `FitSession.Mending`); the AI's through `MendJob`. AI: `SawJob`, `FletchJob`, `ArrowsJob`.
+    crossbows at the tinker's (`CrossbowRepair`, `FitSession.Mending`); the AI's through `MendJob`. Joinery (`JoinSession`): a wagon's
+    woodwork (`WagonJoinery`; the wheel stays the tinker's `WagonRepair`), and furniture the fire took (`Refurnishing`, defs with `joinery`),
+    joined at the bench and set back where it stood. AI: `SawJob`, `FletchJob`, `ArrowsJob`, `FurnishJob`.
   - `Tinkering/`: the Tinker. Lockwork on strongboxes from quests: a box's trap is hidden item
     state, shown only through `PerceptionView.Strongbox`, which never says an armed one is there.
     Locks pinned at the bench (`PinSession`) and fitted to doors (`LockCut`), keys (`Key`);

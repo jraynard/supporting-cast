@@ -6,7 +6,7 @@
     {
       // The poorest bed: a heap of straw and a rolled blanket. Quick to make, and still better than
       // the bare ground (the Escape cage has one).
-      "name": "StrawPallet", "label": "straw pallet", "category": "Building", "sprite": "buildings/straw_pallet", "size": [1, 2],
+      "name": "StrawPallet", "label": "straw pallet", "category": "Building", "joinery": { "planks": 1, "joints": 2 }, "sprite": "buildings/straw_pallet", "size": [1, 2],
       "description": "A heap of straw and a rolled blanket. At the shrine, the hurt lie here to wait for the healer (F to ask), and a patient lying down is calmer to draw from.",
       "model": [
         { "min": [0.1, 0.06, 0], "max": [0.9, 1.94, 0.12], "top": "props/straw", "side": "props/straw" },
@@ -16,7 +16,7 @@
       "building": { "isBed": true, "work": 40, "cost": [ { "def": "Wood", "count": 2 } ] }
     },
     {
-      "name": "Table", "category": "Building", "solid": true, "climbable": true, "sprite": "buildings/table",
+      "name": "Table", "category": "Building", "joinery": { "planks": 2, "joints": 4 }, "solid": true, "climbable": true, "sprite": "buildings/table",
       "description": "A sturdy plank table for one. Pick a longer or a square one from the table's shapes.",
       "maxHp": 100, "flammability": 1.0, 
       "building": { "work": 120, "surfaceHeight": 0.66, "cost": [ { "def": "Wood", "count": 8 } ] },
@@ -32,7 +32,7 @@
       ]
     },
     {
-      "name": "LongTable", "label": "long table", "shapeOf": "Table", "size": [1, 2], "category": "Building", "solid": true, "climbable": true, "sprite": "buildings/table",
+      "name": "LongTable", "label": "long table", "shapeOf": "Table", "size": [1, 2], "category": "Building", "joinery": { "planks": 3, "joints": 4 }, "solid": true, "climbable": true, "sprite": "buildings/table",
       "description": "A plank table two cells long: room for a meal and the bread.",
       "maxHp": 140, "flammability": 1.0, 
       "building": { "work": 180, "surfaceHeight": 0.66, "cost": [ { "def": "Wood", "count": 12 } ] },
@@ -69,7 +69,7 @@
       ]
     },
     {
-      "name": "SquareTable", "label": "square table", "shapeOf": "Table", "size": [2, 2], "category": "Building", "solid": true, "climbable": true, "sprite": "buildings/table",
+      "name": "SquareTable", "label": "square table", "shapeOf": "Table", "size": [2, 2], "category": "Building", "joinery": { "planks": 3, "joints": 4 }, "solid": true, "climbable": true, "sprite": "buildings/table",
       "description": "A broad table two cells square, for the whole household.",
       "maxHp": 180, "flammability": 1.0, 
       "building": { "work": 240, "surfaceHeight": 0.66, "cost": [ { "def": "Wood", "count": 16 } ] },
@@ -128,7 +128,7 @@
       ]
     },
     {
-      "name": "Stool", "category": "Building", "sprite": "buildings/stool",
+      "name": "Stool", "category": "Building", "joinery": { "planks": 1, "joints": 3 }, "sprite": "buildings/stool",
       "description": "Somewhere to sit by the fire.",
       "maxHp": 60, "flammability": 1.0,
       "building": { "work": 60, "surfaceHeight": 0.42, "seat": true, "cost": [ { "def": "Wood", "count": 3 } ] },
@@ -149,7 +149,7 @@
       ]
     },
     {
-      "name": "Chest", "category": "Building", "solid": true, "sprite": "buildings/chest",
+      "name": "Chest", "category": "Building", "joinery": { "planks": 2, "joints": 4 }, "solid": true, "sprite": "buildings/chest",
       "description": "Holds 8 stacks. F at it to store what you carry or to open it.",
       "maxHp": 120, "flammability": 1.0,
       // Chill work cools it to keep food from rotting: °C an hour, down to minTemp.
@@ -447,7 +447,7 @@
     {
       // In each trade's shop: what's put on it is for sale, priced by its keeper (Shops/Goods). The
       // parties look it over and line up to buy. What's on it stands on show (rendered like the show table).
-      "name": "WaresShelf", "label": "wares shelf", "category": "Building", "solid": true, "sprite": "buildings/shelf",
+      "name": "WaresShelf", "label": "wares shelf", "category": "Building", "joinery": { "planks": 2, "joints": 3 }, "solid": true, "sprite": "buildings/shelf",
       "description": "Plank shelves out front where the customers can see them. Holds 4 pieces: put your wares on it and price them, and the parties buy from it.",
       "maxHp": 80, "flammability": 1.0,
       "building": { "work": 80, "storageStacks": 4, "kept": true, "show": true, "display": true, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
@@ -463,7 +463,7 @@
     {
       // Behind the inn's bar: the innkeeper's goods for the road (the rations the cook sends over), for sale.
       // The innkeeper's alone, though the kitchen shares the roof at Millbrook ("displayFor").
-      "name": "MerchandiseShelf", "label": "merchandise shelf", "category": "Building", "solid": true, "sprite": "buildings/shelf",
+      "name": "MerchandiseShelf", "label": "merchandise shelf", "category": "Building", "joinery": { "planks": 2, "joints": 3 }, "solid": true, "sprite": "buildings/shelf",
       "description": "Plank shelves behind the bar. Holds 6 stacks: what the innkeeper sells for the road, rations from the cook's hampers first. Priced by the innkeeper.",
       "maxHp": 80, "flammability": 1.0,
       "building": { "work": 80, "storageStacks": 6, "kept": true, "show": true, "display": true, "displayFor": "Tavern", "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
@@ -478,7 +478,7 @@
     },
     {
       // Behind the bar and in the kitchen: where the clean tankards and bowls are kept.
-      "name": "Shelf", "label": "shelf", "category": "Building", "solid": true, "sprite": "buildings/shelf",
+      "name": "Shelf", "label": "shelf", "category": "Building", "joinery": { "planks": 2, "joints": 3 }, "solid": true, "sprite": "buildings/shelf",
       "description": "Plank shelves on brackets. Holds 6 stacks: the clean crockery lives here, and behind the bar what goes into a mix.",
       "maxHp": 80, "flammability": 1.0,
       "building": { "work": 80, "storageStacks": 6, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },
@@ -493,7 +493,7 @@
     },
     {
       // Behind the bar: the tankards, and what goes into a mix. Kept: the bar's stock, not food for whoever's hungry.
-      "name": "BarShelf", "label": "bar shelf", "category": "Building", "solid": true, "sprite": "buildings/shelf",
+      "name": "BarShelf", "label": "bar shelf", "category": "Building", "joinery": { "planks": 2, "joints": 3 }, "solid": true, "sprite": "buildings/shelf",
       "description": "Plank shelves behind the bar. Holds 6 stacks: the clean tankards, and the spirits, honey, herbs and berries that go into a mix. The bar's stock: nobody else helps themselves.",
       "maxHp": 80, "flammability": 1.0,
       "building": { "work": 80, "storageStacks": 6, "kept": true, "surfaceHeight": 0.9, "cost": [ { "def": "Wood", "count": 6 } ] },

@@ -226,6 +226,13 @@
     // carpenter's bench, sold like gear to the parties' archers and shot away on a quest. How true the
     // shafts were sighted doesn't show: a warped one flies wide.
     {
+      // A piece of furniture joined at the carpenter's bench to set back where one burned (Carpentry/Refurnishing):
+      // carried in the arms, and set down where the old one stood, it's furniture again.
+      "name": "Furnishing", "label": "new furniture", "category": "Item", "mass": 6, "sprite": "buildings/stool", "stackLimit": 1,
+      "flammability": 1.0, "maxHp": 60,
+      "description": "Fresh from the bench: carry it to where the old one burned, and set it down there."
+    },
+    {
       "name": "Quiver", "label": "quiver of arrows", "category": "Item", "mass": 0.6, "sprite": "items/quiver", "stackLimit": 1,
       "quiver": true, "flammability": 0.8, "maxHp": 20,
       "description": "A score of arrows in a leather quiver, fletched with goose feathers. For an archer on the road.",

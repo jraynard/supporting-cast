@@ -9,6 +9,123 @@ namespace HeroesNotIncluded;
 // shows a shaft's warp as the carpenter's eye reads it (FletchSession.SeenWarp), never the truth.
 public sealed partial class VillageGame
 {
+    // The joinery's blows seen so far, and when the last landed: shavings fly for a moment after each.
+    private int _joinBlows;
+    private float _joinBlowAt = -10f;
+
+    /// <summary>
+    /// Joinery (<see cref="JoinSession"/>): the piece in section, the mortise cut down into it toward
+    /// the chalk mark (the snug band just short of it), a dashed line where the raised chisel's blow
+    /// would take it; then the tenon (or the peg, the hub) sinking in as it's driven. Beside it the
+    /// mallet's gauge: how hard the blow raised now would be, against the mark of what the joint will
+    /// take as tight as it is now.
+    /// </summary>
+    private void DrawJoin(JoinSession s)
+    {
+        if (s.Cutting)
+            BeginWork(s.Title, ("F|Click", "hold to raise the mallet, let go to strike"), ("Space", "deep enough: drive it home"), ("Esc", "stop"));
+        else
+            BeginWork(s.Title, ("F|Click", "hold to raise the mallet, let go to strike"), ("Esc", "stop"));
+        var (tone, say) = s.Settling > 0 && s.JustSplit ? (Theme.Bad, "It splits! Forced home, cracked.")
+            : s.Settling > 0 ? (Theme.Good, "Home, and tight.")
+            : s.Cutting && s.Depth > 1f ? (Theme.Bad, "Past the mark: this joint will be loose.")
+            : s.Cutting && s.Depth >= 1f - s.SnugWidth ? (Theme.Good, Controls.Keys("At the mark. Deep enough (~Space~)."))
+            : s.Cutting ? (Theme.Text, "Chop the mortise down to the chalk mark. Past it, the joint's loose.")
+            : s.Raised > JoinSession.SafeAt(s.Seat) ? (Theme.Warn, "Too hard for how tight it is: it'll split.")
+            : (Theme.Text, "Drive it home. Lighter blows as it tightens.");
+        TextC(tone, say);
+        var dl = ImGui.GetWindowDrawList();
+        var min = ImGui.GetCursorScreenPos();
+        var size = Gui.S(360, 230);
+        ImGui.Dummy(in size);
+        // The piece in section: a block, the mortise down into it from the top.
+        var x0 = min.X + Gui.S(40);
+        var x1 = min.X + Gui.S(240);
+        var top = min.Y + Gui.S(80);
+        var bottom = min.Y + Gui.S(220);
+        var unit = Gui.S(100); // a depth of 1 (the mark)
+        var b0 = new float2(x0, top);
+        var b1 = new float2(x1, bottom);
+        dl.AddRectFilled(in b0, in b1, Theme.U8(Theme.Barrel), Gui.S(3));
+        dl.AddRect(in b0, in b1, Theme.U8(Theme.Oak), Gui.S(3), ImDrawFlags.None, Gui.S(2));
+        var mx = (x0 + x1) * 0.5f;
+        var half = Gui.S(22);
+        // The snug band, and the chalk mark.
+        var snug0 = new float2(mx - half - Gui.S(14), top + (1f - s.SnugWidth) * unit);
+        var snug1 = new float2(mx + half + Gui.S(14), top + unit);
+        if (s.Cuts)
+            dl.AddRectFilled(in snug0, in snug1, Theme.U8(new float4(Theme.Good.XYZ, 0.25f)));
+        var m0 = new float2(mx - half - Gui.S(18), top + unit);
+        var m1 = new float2(mx + half + Gui.S(18), top + unit);
+        if (s.Cuts)
+            dl.AddLine(in m0, in m1, Theme.U8(Theme.Parchment), Gui.S(2));
+        // The mortise as deep as it's cut (a peg's hole is bored already, to the mark).
+        var depth = s.Cuts ? Math.Min(s.Depth, 1.35f) : 1f;
+        var h0 = new float2(mx - half, top);
+        var h1 = new float2(mx + half, top + depth * unit);
+        dl.AddRectFilled(in h0, in h1, Theme.U8(Theme.Cellar));
+        if (s.Cutting)
+        {
+            // Where the blow raised now would cut to.
+            var to = top + Math.Min(s.Depth + JoinSession.CutDepth(s.Raised), 1.35f) * unit;
+            var past = s.Depth + JoinSession.CutDepth(s.Raised) > 1f;
+            for (var x = mx - half; x < mx + half; x += Gui.S(8))
+            {
+                var d0 = new float2(x, to);
+                var d1 = new float2(x + Gui.S(4), to);
+                dl.AddLine(in d0, in d1, Theme.U8(past ? Theme.Bad : Theme.Accent), Gui.S(2));
+            }
+            // The chisel upright in the mortise, the mallet over it raised as it's held.
+            var c0 = new float2(mx - Gui.S(5), top + s.Depth * unit - Gui.S(60));
+            var c1 = new float2(mx + Gui.S(5), top + s.Depth * unit);
+            dl.AddRectFilled(in c0, in c1, Theme.U8(Theme.Iron));
+            var lift = s.Raised * Gui.S(55);
+            var k0 = new float2(mx - Gui.S(24), c0.Y - Gui.S(18) - lift);
+            var k1 = new float2(mx + Gui.S(24), c0.Y - lift);
+            dl.AddRectFilled(in k0, in k1, Theme.U8(Theme.OakLight), Gui.S(3));
+        }
+        else
+        {
+            // The tenon above the mortise, driven down into it as far as it's gone home.
+            var into = s.Seat * depth * unit;
+            var t0 = new float2(mx - half + Gui.S(3), top - Gui.S(50) + into);
+            var t1 = new float2(mx + half - Gui.S(3), top + into);
+            dl.AddRectFilled(in t0, in t1, Theme.U8(s.Settling > 0 && s.JustSplit ? Theme.Bad : Theme.OakLight));
+            var shoulder0 = new float2(mx - half - Gui.S(30), t0.Y - Gui.S(14));
+            var shoulder1 = new float2(mx + half + Gui.S(30), t0.Y);
+            dl.AddRectFilled(in shoulder0, in shoulder1, Theme.U8(Theme.Oak), Gui.S(2));
+            var lift = s.Raised * Gui.S(40);
+            var k0 = new float2(mx - Gui.S(26), shoulder0.Y - Gui.S(20) - lift);
+            var k1 = new float2(mx + Gui.S(26), shoulder0.Y - Gui.S(2) - lift);
+            dl.AddRectFilled(in k0, in k1, Theme.U8(Theme.OakLight), Gui.S(3));
+            // The mallet's gauge: the blow as raised, against what the joint will take now.
+            var g0 = new float2(min.X + Gui.S(290), min.Y + Gui.S(40));
+            var g1 = new float2(min.X + Gui.S(310), min.Y + Gui.S(220));
+            var gh = g1.Y - g0.Y;
+            dl.AddRectFilled(in g0, in g1, Theme.U8(Theme.Inset), Gui.S(2));
+            var fill = new float2(g0.X, g1.Y - s.Raised * gh);
+            dl.AddRectFilled(in fill, in g1, Theme.U8(s.Raised > JoinSession.SafeAt(s.Seat) ? Theme.Bad : Theme.Good), Gui.S(2));
+            var safe0 = new float2(g0.X - Gui.S(6), g1.Y - JoinSession.SafeAt(s.Seat) * gh);
+            var safe1 = new float2(g1.X + Gui.S(6), safe0.Y);
+            dl.AddLine(in safe0, in safe1, Theme.U8(Theme.Warn), Gui.S(2));
+        }
+        // Shavings off the last blow.
+        if (s.Blows != _joinBlows)
+            (_joinBlows, _joinBlowAt) = (s.Blows, _time);
+        var since = _time - _joinBlowAt;
+        if (since < 0.4f)
+            for (var k = 0; k < 6; k++)
+            {
+                var f = since / 0.4f;
+                var p = new float2(mx + MathF.Cos(k * 1.9f) * f * Gui.S(60), top - f * Gui.S(25) + f * f * Gui.S(50));
+                dl.AddCircleFilled(in p, Gui.S(2.5f), Theme.U8(new float4(Theme.OakLight.XYZ, 1f - f)), 6);
+            }
+        var label = new float2(min.X + Gui.S(4), min.Y + Gui.S(4));
+        dl.AddText(in label, Theme.U8(Theme.Dim), $"{(s.Work == JoinWork.Board ? "Peg" : s.Work == JoinWork.Axle ? "End" : "Joint")} {Math.Min(s.Joint + 1, s.Joints)} of {s.Joints}"
+            + (s.Splits > 0 ? $", {s.Splits} split" : ""));
+        EndWork();
+    }
+
     /// <summary>Planks from a log: hewn square first, then pit-sawn.</summary>
     private void DrawSaw(SawSession s)
     {

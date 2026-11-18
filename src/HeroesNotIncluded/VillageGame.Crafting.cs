@@ -213,7 +213,9 @@ public sealed partial class VillageGame
         var open = true;
         Sheet.Begin($"{Cap(thing.Label)}###station", ref open, 380);
         PadWindow("###station", () => _openStation = Entity.Null);
-        var tab = StationTabs((thing.Def.Recipes.Count > 0, MakeTab, false), (repairs.Count > 0, MendTab, CustomerPiece(repairs)));
+        var losses = Sim.Carpentry.Carpenters.IsBench(_sim, _openStation) ? View.Losses().ToList() : [];
+        var tab = StationTabs((thing.Def.Recipes.Count > 0, MakeTab, false), (repairs.Count > 0, MendTab, CustomerPiece(repairs)),
+            (losses.Count > 0, RebuildTab, false));
         if (bench.Active != null)
         {
             DrawCraftUnderWay(_openStation, bench);
@@ -224,11 +226,15 @@ public sealed partial class VillageGame
         var busy = !bench.Untouched && (bench.By != _avatar || bench.Active == null);
         if (tab == MendTab)
             DrawRepairs(repairs);
+        else if (tab == RebuildTab)
+            DrawRebuild(losses);
         else
             DrawRecipePicker(thing.Def.Recipes, bench, has);
         Sheet.Footer();
         if (tab == MendTab)
             TextC(Dim, Controls.Keys("Mending's worked like making: hold ~F~ at it."));
+        else if (tab == RebuildTab)
+            TextC(Dim, Controls.Keys("Carry it over in your arms, and ~F~ where the old one stood to set it down. The town pays for it."));
         else
             DrawRecipePick(thing.Def.Recipes, bench, busy, thing.Def, has);
         Sheet.End();
@@ -236,7 +242,27 @@ public sealed partial class VillageGame
             _openStation = Entity.Null;
     }
 
-    private const string MakeTab = "Make", SmeltTab = "Smelt", MendTab = "Mend";
+    private const string MakeTab = "Make", SmeltTab = "Smelt", MendTab = "Mend", RebuildTab = "Rebuild";
+
+    /// <summary>The Rebuild tab (the carpenter's bench): each piece the fire took, and a button to join a new one.</summary>
+    private void DrawRebuild(List<Sim.Carpentry.KnownLoss> losses)
+    {
+        TextC(Dim, "Burned in the fire, for the town to have back:");
+        foreach (var l in losses)
+        {
+            ImGui.PushID(l.Id);
+            var why = Sim.Carpentry.Refurnishing.MakeProblem(_sim, _avatar, l.Piece);
+            ImGui.BeginDisabled(why != null || Working);
+            if (ImGui.Button("Make"u8, in _autoSize))
+                Issue(new Sim.Carpentry.MakeFurnitureCommand(_avatar, _openStation, l.Piece));
+            ImGui.EndDisabled();
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                Tip(why != null ? Cap(why) + "." : Controls.Keys("For each joint: hold ~F~ to raise the mallet, let go to strike. Chop the mortise to the mark (~Space~ when it's deep enough), then drive the tenon home: lighter blows as it tightens, or it splits."));
+            ImGui.SameLine(0, Gui.S(8));
+            Wrapped($"A {l.Label}{(l.Where.Length > 0 ? $" in the {l.Where}" : "")} ({l.Planks} plank{(l.Planks == 1 ? "" : "s")})");
+            ImGui.PopID();
+        }
+    }
 
     /// <summary>The tab shown in the station window, and the station it was chosen at (a new one chooses again).</summary>
     private string _stationTab = MakeTab;

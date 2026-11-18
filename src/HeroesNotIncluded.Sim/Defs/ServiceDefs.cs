@@ -35,7 +35,7 @@ public enum ServiceKind
     /// <summary>A named mixed drink, mixed at the bar (the Innkeeper's): dearer than an ale, and they want the one they asked for.</summary>
     MixedDrink,
 
-    /// <summary>Their wagon, come off the road the worse for it, mended where it stands (the Tinker's).</summary>
+    /// <summary>Their wagon's wheel, knocked out of true on the road, trued where it stands (the Tinker's; its woodwork is <see cref="WagonJoinery"/>).</summary>
     WagonRepair,
 
     /// <summary>A curio brought back from a quest looked over, and its worth told them (the Tinker's).</summary>
@@ -61,6 +61,12 @@ public enum ServiceKind
     /// sees none on the woodshop's shelf: served by handing them one (<c>Carpentry.Fletching</c>).
     /// </summary>
     Arrows,
+
+    /// <summary>
+    /// The woodwork of a party's wagon (the Carpenter's): a new axle hewn, a sprung board pegged.
+    /// The wheel's the tinker's (<see cref="WagonRepair"/>): each shop its own order, for its own part.
+    /// </summary>
+    WagonJoinery,
 }
 
 /// <summary>

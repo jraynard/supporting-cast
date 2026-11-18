@@ -432,6 +432,7 @@ public abstract class WorkSession
             nameof(Carpentry.SawSession) => new Carpentry.SawSession(),
             nameof(Carpentry.FletchSession) => new Carpentry.FletchSession(),
             nameof(Carpentry.BowSession) => new Carpentry.BowSession(),
+            nameof(Carpentry.JoinSession) => new Carpentry.JoinSession(),
             nameof(StrikerSession) => new StrikerSession(),
             nameof(SledgeSession) => new SledgeSession(),
             nameof(Environment.ThrowSession) => new Environment.ThrowSession(),

@@ -468,12 +468,14 @@ Millbrook, south of the square, with a bench, a stock chest and the collector's 
   adventurers carry two, not two alike, and judge them only by what shows.
 - *Crossbows* (`ServiceKind.CrossbowRepair`): the tinker makes them, so the tinker mends them: the
   lock taken apart, the nut and the trigger seated again and the spring wound (`FitSession.Mending`).
-- *Wagons.* Some parties ride in with a wagon, often the worse for the road: a buckled wheel or a
-  cracked axle. It's parked outside near their haunt, and its owner asks for it mended. Truing a
+- *Wagons.* Some parties ride in with a wagon, often the worse for the road: a buckled wheel, a
+  cracked axle, a sprung board. It's parked outside near their haunt, and its owner asks for each part
+  mended where it's done: the wheel of the tinker (`WagonRepair`), the woodwork of the carpenter
+  (`WagonJoinery`, see **Carpenter**), each its own order and paid once that part's sound. Truing a
   wheel: it stands on its stand; A/D turn it to a spoke, W tightens that spoke (pulling a bulge
   in), S slackens it (letting a dip out), and F spins it past a gauge, which chalks how far the rim
-  runs out or in at every spoke. It's true when a spin runs within the band. A new axle is fitted like a contraption's parts, from two wood. A
-  party that sets out with its wagon still broken brings nothing home: no strongbox, no curios.
+  runs out or in at every spoke. It's true when a spin runs within the band. A party that sets out
+  with its wagon still broken in any part brings nothing home: no strongbox, no curios.
 - *Curios and the collector.* A cleared quest sometimes sends a curio home (an idol, a clockwork
   bird, an old seal), on a sound wagon. What it's really worth is hidden, and some are fakes. The
   party asks what it's worth. Under the loupe, A/D move the glass along it and the eye catches
@@ -533,6 +535,18 @@ carpenter's bench and a chest the carter leaves feathers in (`Carpentry/`).
   (`Crafting.RepairCost`), and a poor job leaves it short of what its owner will take back.
 - *Arms for the muster:* a bow (or a cudgel) of the carpenter's own, hung on the muster rack in a
   call to arms, is paid for like the smith's spears, and the town shoots with it.
+- *Joinery* (`JoinSession`): chisel and mallet, a joint at a time. F held raises the mallet, let go
+  it strikes as hard as it was raised. **Cut** the mortise down to its chalk mark (Space when it's
+  deep enough: short of it the tenon won't seat, past it the joint's loose); then **drive** the tenon
+  home, lighter as it tightens: a blow past what the joint will take (the gauge's mark) splits it.
+- *Wagons' woodwork* (`ServiceKind.WagonJoinery`): a cracked axle hewn new from a log, each end's arm
+  trimmed and its hub driven on; a sprung board with a plank pegged across it. Joinery, where the
+  wagon stands. The wheel stays the tinker's.
+- *Furniture after the fire* (`Refurnishing`): a joined piece (a stool, a table, a shelf, a chest: a
+  def with `joinery`) that burns in a town building is remembered where it stood. The carpenter
+  joins a new one at the bench (the Rebuild tab, planks from what's to hand), carries it over in
+  their arms, and sets it there (F); the town pays by the plank. The AI carpenter (and the bot) waits
+  till the fire's out and no crisis is on.
 - *The town's work:* braces the bridge when a raid breaks it (with the tinker), and puts up the
   festival with the labourers.
 - AI carpenter: saws when the chest's short of planks and keeps two quivers on show
@@ -541,8 +555,9 @@ carpenter's bench and a chest the carter leaves feathers in (`Carpentry/`).
 - The woodshop: a plank floor, a rack of bows on the back wall, logs and planks stacked along the
   front, a barrel of arrows by the chest, shavings by the saw, torches on the walls. Logs are
   fetched from the chest by hand, as the smith fetches ore.
-- Next (slice 2): bar fights and raids that break furniture, mended by the carpenter; the build and
-  zone tools as the carpenter's own; feathers from the cook's plucking.
+- Next: bar fights and raids that break furniture (only fire does, so far); a hand game for a
+  cudgel or a staff (a split haft spliced and bound); the build and zone tools as the carpenter's
+  own; feathers from the cook's plucking.
 - Betrayal later (M4): a quiver warped on purpose, sold to the party a traitor wants to fail.
 
 ## Pressure and traitors

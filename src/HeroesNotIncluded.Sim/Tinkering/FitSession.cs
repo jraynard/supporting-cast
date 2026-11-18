@@ -53,7 +53,7 @@ public sealed class FitSession : WorkSession
 
     public Entity Station { get; set; } = Entity.Null;
 
-    /// <summary>The wagon an axle's being fitted to; Entity.Null at the bench.</summary>
+    /// <summary>The wagon an axle's being fitted to; Entity.Null at the bench. Only in a session saved before the axle was the carpenter's (<see cref="Carpentry.JoinSession"/>).</summary>
     public Entity Wagon { get; set; } = Entity.Null;
 
     /// <summary>A worn crossbow whose lock is being re-seated (its nut and trigger fitted again, its spring wound); Entity.Null otherwise.</summary>
@@ -139,9 +139,6 @@ public sealed class FitSession : WorkSession
             Station = station, Mending = crossbow, Parts = 2, Winds = true, What = sim.World.Get<Thing>(crossbow).Label + "'s lock",
         });
 
-    /// <summary>Fit a new axle to a wagon in reach (<see cref="Wagons"/>).</summary>
-    public static void StartAxle(Simulation sim, Entity worker, Entity wagon) =>
-        WorkSystem.Start(sim, worker, new FitSession { Wagon = wagon, Parts = 2, Winds = false, What = "axle" });
 
     public override bool StillValid(Simulation sim)
     {

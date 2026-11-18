@@ -178,6 +178,13 @@ public sealed class WorkSounds(AudioEngine audio)
                 audio.Hold("work:seat", Sounds.Grind, s.Stage == Sim.Carpentry.ArrowStage.Head && s.Held ? 0.35f : 0f, pitch: 0.7f, fade: Quick);
                 Count(s.Set, Sounds.Cloth);
                 break;
+            case Sim.Carpentry.JoinSession s:
+                // The mallet on the chisel or the tenon; a crack when a joint splits.
+                Count(s.Blows, Sounds.Knock);
+                if (s.Splits > _b)
+                    audio.Play(Sounds.Snap);
+                _b = s.Splits;
+                break;
             case Sim.Carpentry.BowSession s:
                 audio.Hold("work:scrape", Sounds.Scrub, s.Scraping ? 0.45f : 0f, pitch: 0.8f, fade: Quick);
                 Count(s.Missed, Sounds.Snap); // the loop slipping past the nock

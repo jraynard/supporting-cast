@@ -47,9 +47,11 @@ so far. Nobody new has tried them yet.
   trades, deeper"). The carpenter is Millbrook's sixth trade (HISTORY.md, "The carpenter"), so the
   labourer is now what a seventh player gets, and the lobby says so.
 - [ ] **The carpenter, played by someone:** `--practice Carpenter`. Do the saw and the fletching
-  read? Is the woodshop worth a seat in a six-player round, or is it quiet between parties with
-  archers? In the bots' sweep the carpenter's seasons ended further apart (more wins, more lost to
-  Dread) than the labourer bot's; watch Dread in a six-player round with friends.
+  read? A first playtest found it quiet (no orders at all), so it now has them: worn bows, cudgels
+  and staves mended, archers asking for arrows, a wagon's woodwork (the tinker keeps the wheel), and
+  furniture the fire took set back. Is it busy enough now, without being the smith twice? In the bots'
+  sweep it takes about 3 orders a season to the smith's 4. Try the joinery (`JoinSession`): does the
+  split read before it happens? No lessons for the new work yet (below).
 
 ### 2. From testers
 Visual issues and requests from playtests, so they don't get lost between HISTORY.md and the Backlog.
@@ -320,10 +322,17 @@ items into "Now" when a playtest says they matter.
   beyond the walls) rather than given a pass; the Carpenter has come out of it already.
 - **Tinker:** no lockboxes or locked chests (locks go on doors only); AI tinkers don't buy curios;
   a wagon lesson (practice customers' wagons aren't damaged yet).
-- **Carpenter** (slice 2): bar fights and raids breaking furniture (`Hospitality/Brawls` doesn't
-  yet), mended by the carpenter; the build and zone tools brought back as the carpenter's own (they
-  are off for everyone, `VillageGame.Journal.BuildTools`, since playtesters found them useless); feathers
-  from the cook's plucking; AI carpenters don't build bows for sale.
+- **Carpenter:** bar fights and raids breaking furniture (`Hospitality/Brawls` doesn't yet; only fire
+  does, `Refurnishing`); a hand game for mending a cudgel or a staff (a split haft spliced and bound:
+  it's hold-F for now); lessons for mending a bow, a wagon's woodwork and setting back a piece (the
+  practice yard has no worn bows, damaged wagons or burned furniture yet); the build and zone tools
+  brought back as the carpenter's own (they are off for everyone, `VillageGame.Journal.BuildTools`,
+  since playtesters found them useless); feathers from the cook's plucking; AI carpenters don't build
+  bows for sale. Ideas for later: coffins for the round's dead; walking staves for travellers;
+  barricades before a raid.
+- **Tinker:** crossbows are mended at the tinker's (`CrossbowRepair`), but no adventurer kind carries
+  one, so it only comes up when a bowman's bought one off the tinker's shelf. An arbalester in a party
+  or two would give it work.
 - **Gathering:** digging, mining, chopping and foraging are the labourer's until the Miner and
   Forager come.
 

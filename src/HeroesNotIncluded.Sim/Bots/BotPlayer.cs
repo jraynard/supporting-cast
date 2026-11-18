@@ -248,6 +248,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
             ServiceKind.Quest => Broker(sim, me, view, poster, now),
             ServiceKind.Unlock => OpenBox(sim, me, view, poster, now),
             ServiceKind.WagonRepair => MendWagon(sim, me, view, poster, now),
+            ServiceKind.WagonJoinery => JoinWagon(sim, me, view, poster, now),
             ServiceKind.Appraise => Appraise(sim, me, view, poster, now),
             ServiceKind.Goods => Sell(sim, me, view, poster, now),
             _ => false,

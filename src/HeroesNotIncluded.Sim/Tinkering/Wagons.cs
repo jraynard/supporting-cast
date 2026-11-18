@@ -17,8 +17,11 @@ public enum WagonDamage : byte
     /// <summary>A wheel knocked out of true: trued spoke by spoke (<see cref="TrueSession"/>).</summary>
     Wheel = 1,
 
-    /// <summary>The axle cracked: a new one fitted (<see cref="FitSession"/>), from wood.</summary>
+    /// <summary>The axle cracked: a new one hewn and its hubs driven on (the carpenter's, <see cref="Carpentry.JoinSession"/>), from a log.</summary>
     Axle = 2,
+
+    /// <summary>A side board sprung or the shaft split: a plank pegged across it (the carpenter's, <see cref="Carpentry.JoinSession"/>).</summary>
+    Board = 4,
 }
 
 /// <summary>A party's wagon, parked in town while they're here (<see cref="Wagons"/>).</summary>
@@ -34,16 +37,20 @@ public struct Wagon
     /// <summary>How its wheel's buckled (<see cref="TrueSession"/>): the same each time it's looked at, until it's trued.</summary>
     public uint WheelSeed;
 
-    /// <summary>Who last mended something on it, to be paid for the order.</summary>
+    /// <summary>Who trued its wheel, to be paid for the tinker's order (<see cref="ServiceKind.WagonRepair"/>).</summary>
     public Entity MendedBy;
+
+    /// <summary>Who did its woodwork (the axle, a board), to be paid for the carpenter's order (<see cref="ServiceKind.WagonJoinery"/>).</summary>
+    public Entity JoinedBy;
 }
 
 /// <summary>
-/// Party wagons (docs/DESIGN.md, "Tinker"). Some parties ride in with a wagon, and the road has
-/// often had its way with it: a wheel out of true, an axle cracked. It's parked near their haunt,
-/// and the owner asks for it mended. A wagon still broken when they set out on a quest carries
-/// nothing home: no strongbox, no curios, and a party in a worse temper. Mended where it stands,
-/// by whoever takes the order on; it's paid for once nothing's wrong with it.
+/// Party wagons (docs/DESIGN.md, "Tinker" and "Carpenter"). Some parties ride in with a wagon, and
+/// the road has often had its way with it: a wheel out of true, an axle cracked, a board sprung.
+/// It's parked near their haunt, and the owner asks for it mended: the wheel of the tinker
+/// (<see cref="ServiceKind.WagonRepair"/>), the woodwork of the carpenter (<see cref="ServiceKind.WagonJoinery"/>),
+/// each its own order, paid once that part's sound. A wagon still broken in any part when they set
+/// out on a quest carries nothing home: no strongbox, no curios, and a party in a worse temper.
 /// </summary>
 public static class Wagons
 {
@@ -52,8 +59,17 @@ public static class Wagons
     /// <summary>The share of wagons that come in the worse for the road.</summary>
     public const float DamagedChance = 0.8f;
 
-    /// <summary>Wood a new axle takes.</summary>
-    public const int AxleWood = 2;
+    /// <summary>Logs a new axle is hewn from.</summary>
+    public const int AxleWood = 1;
+
+    /// <summary>Planks pegged across a split board.</summary>
+    public const int BoardPlanks = 1;
+
+    /// <summary>Pegs a board takes, and the joints of an axle (an arm and a hub at each end).</summary>
+    public const int BoardPegs = 3, AxleEnds = 2;
+
+    /// <summary>The share of damaged wagons with a sprung board as well.</summary>
+    public const float BoardChance = 0.45f;
 
     /// <summary>Satisfaction lost by each of a party setting out with their wagon still broken.</summary>
     public const float BrokenMood = 1f;
@@ -61,6 +77,18 @@ public static class Wagons
     public static bool IsWagon(Simulation sim, Entity e) => sim.World.IsAlive(e) && sim.World.Has<Wagon>(e);
 
     public static bool Damaged(Simulation sim, Entity wagon) => IsWagon(sim, wagon) && sim.World.Get<Wagon>(wagon).Damage != WagonDamage.None;
+
+    /// <summary>The parts each shop's order is for: the wheel the tinker's, the woodwork the carpenter's.</summary>
+    public static WagonDamage PartsFor(ServiceKind kind) => kind switch
+    {
+        ServiceKind.WagonRepair => WagonDamage.Wheel,
+        ServiceKind.WagonJoinery => WagonDamage.Axle | WagonDamage.Board,
+        _ => WagonDamage.None,
+    };
+
+    /// <summary>Is the part of it this order's for still broken?</summary>
+    public static bool DamagedFor(Simulation sim, Entity wagon, ServiceKind kind) =>
+        IsWagon(sim, wagon) && (sim.World.Get<Wagon>(wagon).Damage & PartsFor(kind)) != 0;
 
     /// <summary>A party's wagon in town; Entity.Null if they have none.</summary>
     public static Entity Of(Simulation sim, int party)
@@ -71,13 +99,22 @@ public static class Wagons
         return Entity.Null;
     }
 
-    public static string DamageLabel(WagonDamage d) => d switch
+    public static string DamageLabel(WagonDamage d)
     {
-        WagonDamage.Wheel => "a buckled wheel",
-        WagonDamage.Axle => "a cracked axle",
-        WagonDamage.Wheel | WagonDamage.Axle => "a buckled wheel and a cracked axle",
-        _ => "nothing wrong with it",
-    };
+        var parts = new List<string>();
+        if ((d & WagonDamage.Wheel) != 0)
+            parts.Add("a buckled wheel");
+        if ((d & WagonDamage.Axle) != 0)
+            parts.Add("a cracked axle");
+        if ((d & WagonDamage.Board) != 0)
+            parts.Add("a sprung board");
+        return parts.Count switch
+        {
+            0 => "nothing wrong with it",
+            1 => parts[0],
+            _ => string.Join(", ", parts.Take(parts.Count - 1)) + " and " + parts[^1],
+        };
+    }
 
     /// <summary>
     /// A party arriving may bring a wagon, parked outside near where they're headed. Rolls from a
@@ -95,8 +132,12 @@ public static class Wagons
             var roll = rand.NextFloat();
             damage = roll < 0.55f ? WagonDamage.Wheel : roll < 0.85f ? WagonDamage.Axle : WagonDamage.Wheel | WagonDamage.Axle;
         }
+        // A sprung board, now and then, besides (its own stream, so the rest roll as before).
+        var boards = new SimRandom(seed ^ ((ulong)(uint)party * 0x85EB_CA6Bu) ^ 0xB0A2_D5u);
+        if (damage != WagonDamage.None && boards.Chance(BoardChance))
+            damage |= WagonDamage.Board;
         var wagon = sim.SpawnStructure(sim.Defs.Thing(Def), spot);
-        sim.World.Add(wagon, new Wagon { Party = party, Owner = owner, Damage = damage, WheelSeed = rand.NextUInt() | 1u, MendedBy = Entity.Null });
+        sim.World.Add(wagon, new Wagon { Party = party, Owner = owner, Damage = damage, WheelSeed = rand.NextUInt() | 1u, MendedBy = Entity.Null, JoinedBy = Entity.Null });
         return wagon;
     }
 
@@ -156,8 +197,24 @@ public static class Wagons
             return "its axle is sound";
         if (!InReach(sim, worker, wagon))
             return "you need to be at the wagon";
-        return WoodOn(sim, worker) < AxleWood ? $"a new axle takes {AxleWood} wood" : null;
+        return WoodOn(sim, worker) < AxleWood ? $"a new axle is hewn from {AxleWood} log" : null;
     }
+
+    /// <summary>Why this person can't peg a plank across this wagon's sprung board now; null if they can.</summary>
+    public static string? BoardProblem(Simulation sim, Entity worker, Entity wagon)
+    {
+        if (!IsWagon(sim, wagon) || (sim.World.Get<Wagon>(wagon).Damage & WagonDamage.Board) == 0)
+            return "its boards are sound";
+        if (!InReach(sim, worker, wagon))
+            return "you need to be at the wagon";
+        return PlanksOn(sim, worker) < BoardPlanks ? $"it takes {BoardPlanks} plank" : null;
+    }
+
+    private static bool IsPlank(Simulation sim, Entity e) => sim.World.IsAlive(e) && sim.World.TryGet<Thing>(e, out var t) && t.Def.Name == Carpentry.Carpenters.PlanksDef;
+
+    /// <summary>Planks someone has on them (hands and pack).</summary>
+    public static int PlanksOn(Simulation sim, Entity who) =>
+        Core.CraftCommandRules.Sources(sim, who).Where(e => IsPlank(sim, e) && Inventory.OnPerson(sim, who, e)).Sum(e => sim.World.Get<Stack>(e).Count);
 
     private static bool InReach(Simulation sim, Entity worker, Entity wagon) =>
         AvatarSystem.InReach(sim, sim.World.Get<Position>(worker).Cell, wagon);
@@ -215,7 +272,17 @@ public static class Wagons
             sim.Messages.Tell(worker, MessageKind.Info, $"Can't fit an axle: {why}.", sim.LocationOf(worker));
             return;
         }
-        FitSession.StartAxle(sim, worker, wagon);
+        WorkSystem.Start(sim, worker, new Carpentry.JoinSession { Wagon = wagon, Work = Carpentry.JoinWork.Axle, Joints = AxleEnds });
+    }
+
+    public static void StartBoard(Simulation sim, Entity worker, Entity wagon)
+    {
+        if (BoardProblem(sim, worker, wagon) is { } why)
+        {
+            sim.Messages.Tell(worker, MessageKind.Info, $"Can't mend the board: {why}.", sim.LocationOf(worker));
+            return;
+        }
+        WorkSystem.Start(sim, worker, new Carpentry.JoinSession { Wagon = wagon, Work = Carpentry.JoinWork.Board, Joints = BoardPegs });
     }
 
     /// <summary>The wheel's trued: it runs straight again.</summary>
@@ -235,9 +302,23 @@ public static class Wagons
         UseWood(sim, worker, AxleWood);
         ref var wg = ref sim.World.Get<Wagon>(wagon);
         wg.Damage &= ~WagonDamage.Axle;
-        wg.MendedBy = worker;
+        wg.JoinedBy = worker;
         var how = quality >= 0.75f ? "It runs sweetly." : quality >= 0.4f ? "It'll hold." : "It knocks a bit, but it'll roll.";
         sim.Messages.Add(MessageKind.Good, $"{sim.World.Get<Creature>(worker).Name} fits the wagon a new axle. {how}", sim.LocationOf(worker));
+    }
+
+    /// <summary>A plank's pegged across the sprung board, as well as it was pegged.</summary>
+    public static void BoardPegged(Simulation sim, Entity worker, Entity wagon, float quality)
+    {
+        if (!IsWagon(sim, wagon) || PlanksOn(sim, worker) < BoardPlanks)
+            return;
+        var plank = Core.CraftCommandRules.Sources(sim, worker).First(e => IsPlank(sim, e) && Inventory.OnPerson(sim, worker, e));
+        sim.DestroyThing(Inventory.TakeFromPerson(sim, worker, plank, BoardPlanks));
+        ref var wg = ref sim.World.Get<Wagon>(wagon);
+        wg.Damage &= ~WagonDamage.Board;
+        wg.JoinedBy = worker;
+        var how = quality >= 0.75f ? "Tight as the day it was built." : quality >= 0.4f ? "It'll hold." : "It creaks, but it'll hold.";
+        sim.Messages.Add(MessageKind.Good, $"{sim.World.Get<Creature>(worker).Name} pegs a plank across the wagon's sprung board. {how}", sim.LocationOf(worker));
     }
 }
 
@@ -253,7 +334,19 @@ public sealed record TrueWheelCommand(Entity Avatar, Entity Wagon) : ISimCommand
     }
 }
 
-/// <summary>Fit a new axle to a party wagon, from wood you carry (<see cref="FitSession"/>).</summary>
+/// <summary>Peg a plank across a party wagon's sprung board, from a plank you carry (<see cref="Carpentry.JoinSession"/>).</summary>
+public sealed record PegBoardCommand(Entity Avatar, Entity Wagon) : ISimCommand, Core.IActorCommand
+{
+    public Entity Actor => Avatar;
+
+    public void Apply(Simulation sim)
+    {
+        if (Core.InventoryCommand.Ready(sim, Avatar) && Wagons.IsWagon(sim, Wagon) && !sim.World.Has<Work.WorkSession>(Avatar))
+            Wagons.StartBoard(sim, Avatar, Wagon);
+    }
+}
+
+/// <summary>Fit a new axle to a party wagon, hewn from a log you carry (<see cref="Carpentry.JoinSession"/>).</summary>
 public sealed record FitAxleCommand(Entity Avatar, Entity Wagon) : ISimCommand, Core.IActorCommand
 {
     public Entity Actor => Avatar;
@@ -266,8 +359,9 @@ public sealed record FitAxleCommand(Entity Avatar, Entity Wagon) : ISimCommand, 
 }
 
 /// <summary>
-/// An AI tinker mends a party's wagon: takes the order on, walks out to it, and works it over,
-/// rolled rather than played. Players do it by hand (<see cref="TrueSession"/>, <see cref="FitSession"/>).
+/// An AI tinker trues a party wagon's wheel, or an AI carpenter does its woodwork (the order's
+/// part, <see cref="Wagons.PartsFor"/>): takes the order on, walks out to it, and works it over,
+/// rolled rather than played. Players do it by hand (<see cref="TrueSession"/>, <see cref="Carpentry.JoinSession"/>).
 /// </summary>
 public sealed class WagonJob(int order) : Job
 {
@@ -282,8 +376,8 @@ public sealed class WagonJob(int order) : Job
         var from = w.Get<Position>(pawn).Cell;
         foreach (var e in sim.Shops.FrontFirst(sim))
         {
-            if (!e.IsOpen || e.Kind.Kind != ServiceKind.WagonRepair || e.Kind.AtRole != trade.Def.Role || !trade.Def.Serving(e.Kind.Kind)
-                || !e.KnownBy.Contains(pawn) || (!e.Assignee.IsNull && e.Assignee != pawn) || !Wagons.Damaged(sim, e.Subject)
+            if (!e.IsOpen || e.Kind.Kind is not (ServiceKind.WagonRepair or ServiceKind.WagonJoinery) || e.Kind.AtRole != trade.Def.Role || !trade.Def.Serving(e.Kind.Kind)
+                || !e.KnownBy.Contains(pawn) || (!e.Assignee.IsNull && e.Assignee != pawn) || !Wagons.DamagedFor(sim, e.Subject, e.Kind.Kind)
                 || sim.Reservations.IsReservedByOther(e.Subject, pawn))
                 continue;
             if (Navigation.CanReach(sim, pawn, from, w.Get<Thing>(e.Subject).Cell, PathEnd.Touch))
@@ -301,17 +395,23 @@ public sealed class WagonJob(int order) : Job
             yield break;
         }
         var wagon = e.Subject;
+        var kind = e.Kind.Kind;
         Report = $"Going to {e.PosterName}'s wagon";
         foreach (var s in GoToEntity(wagon, PathEnd.Touch, 1500)) yield return s;
         if (HasFailed) yield break;
-        while (Alive(wagon) && Wagons.Damaged(Sim, wagon))
+        while (Alive(wagon) && Wagons.DamagedFor(Sim, wagon, kind))
         {
-            var damage = Get<Wagon>(wagon).Damage;
-            var part = (damage & WagonDamage.Wheel) != 0 ? WagonDamage.Wheel : WagonDamage.Axle;
-            Report = part == WagonDamage.Wheel ? "Truing a wagon wheel" : "Fitting a wagon a new axle";
+            var damage = Get<Wagon>(wagon).Damage & Wagons.PartsFor(kind);
+            var part = (damage & WagonDamage.Wheel) != 0 ? WagonDamage.Wheel : (damage & WagonDamage.Axle) != 0 ? WagonDamage.Axle : WagonDamage.Board;
+            Report = part switch
+            {
+                WagonDamage.Wheel => "Truing a wagon wheel",
+                WagonDamage.Axle => "Hewing a wagon a new axle",
+                _ => "Pegging a wagon's sprung board",
+            };
             for (var i = 0; i < TicksEach; i++)
             {
-                if (!Alive(wagon) || !Wagons.Damaged(Sim, wagon) || !e.IsOpen)
+                if (!Alive(wagon) || !Wagons.DamagedFor(Sim, wagon, kind) || !e.IsOpen)
                 {
                     Fail("the wagon's gone");
                     yield break;
@@ -321,7 +421,10 @@ public sealed class WagonJob(int order) : Job
             }
             ref var wg = ref Get<Wagon>(wagon);
             wg.Damage &= ~part;
-            wg.MendedBy = Pawn;
+            if (part == WagonDamage.Wheel)
+                wg.MendedBy = Pawn;
+            else
+                wg.JoinedBy = Pawn;
         }
         // The order is paid for by the shop system once nothing's wrong with the wagon.
     }

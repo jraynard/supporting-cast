@@ -116,7 +116,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 Close(sim, e, OrderStatus.Cancelled); // sold to someone else, or taken off sale
             else if (e.Kind.Kind == ServiceKind.Healing && (e.Mend ? !Healing.LayOnHands.Hurt(sim, e.Poster) : !Untended(sim, e.Poster)))
                 Healed(sim, e);
-            else if (e.Kind.Kind == ServiceKind.WagonRepair && !Tinkering.Wagons.Damaged(sim, e.Subject))
+            else if (e.Kind.Kind is ServiceKind.WagonRepair or ServiceKind.WagonJoinery && !Tinkering.Wagons.DamagedFor(sim, e.Subject, e.Kind.Kind))
                 WagonMended(sim, e);
             else if (e.Kind.Kind == ServiceKind.Arrows && Carpentry.Fletching.Carried(sim, e.Poster).Count >= Carpentry.Fletching.MostCarried)
                 Close(sim, e, OrderStatus.Cancelled); // bought one off the shelf after all
@@ -127,7 +127,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             else if (Hatch.TryCollect(sim, e))
                 continue; // took a dish off the hatch
             else if (e.Assignee.IsNull && TimeToAsk(sim, e))
-                Announce(sim, e, Asking(e.Kind, e.Price, SubjectLabel(sim, e.Subject)));
+                Announce(sim, e, Asking(e.Kind, e.Price, SubjectLabel(sim, e.Subject, e.Kind.Kind)));
             else
             {
                 TryHandOver(sim, e);
@@ -230,9 +230,11 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 Want(sim, who, ServiceKind.Healing, Entity.Null, h.Injuries.Where(i => !i.Tended).Sum(i => i.Damage) >= 8f ? 1.75f : 1f);
             if (Tinkering.Lockwork.LockedBoxOf(sim, who) is { IsNull: false } box)
                 Want(sim, who, ServiceKind.Unlock, box);
-            if (Tinkering.Wagons.Of(sim, a.Party) is { IsNull: false } wagon && Tinkering.Wagons.Damaged(sim, wagon)
-                && w.Get<Tinkering.Wagon>(wagon).Owner == who && !_orders.Exists(e => e.IsOpen && e.Subject == wagon))
-                Want(sim, who, ServiceKind.WagonRepair, wagon);
+            // The wheel at the tinker's, the woodwork at the carpenter's: an order for each part that's broken.
+            if (Tinkering.Wagons.Of(sim, a.Party) is { IsNull: false } wagon && w.Get<Tinkering.Wagon>(wagon).Owner == who)
+                foreach (var part in (ReadOnlySpan<ServiceKind>)[ServiceKind.WagonRepair, ServiceKind.WagonJoinery])
+                    if (Tinkering.Wagons.DamagedFor(sim, wagon, part) && !_orders.Exists(e => e.IsOpen && e.Subject == wagon && e.Kind.Kind == part))
+                        Want(sim, who, part, wagon);
             if (Tinkering.Curios.UnvaluedOf(sim, who) is { IsNull: false } curio)
                 Want(sim, who, ServiceKind.Appraise, curio);
             if (w.TryGet<Hospitality.OwedRoom>(who, out var owed))
@@ -509,10 +511,10 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         {
             _wentWithout[(who, kind)] = sim.Clock.Tick;
             if (cheapest >= 0)
-                TooDear(sim, who, def, cheapest, worth, spare, SubjectLabel(sim, subject) ?? WoundLabel(sim, who));
+                TooDear(sim, who, def, cheapest, worth, spare, SubjectLabel(sim, subject, kind) ?? WoundLabel(sim, who));
             return false;
         }
-        var text = Asking(def, price, SubjectLabel(sim, subject) ?? WoundLabel(sim, who));
+        var text = Asking(def, price, SubjectLabel(sim, subject, kind) ?? WoundLabel(sim, who));
         // A meal: they may ask for a dish on the menu by name (at its price), or the house dish, or
         // say what they fancy, in the same breath (Shops.Menu, Hospitality.Tastes).
         Work.FlavourKind? craving = null;
@@ -1446,14 +1448,15 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     private void WagonMended(Simulation sim, Order e)
     {
         var w = sim.World;
-        var by = Tinkering.Wagons.IsWagon(sim, e.Subject) && w.Get<Tinkering.Wagon>(e.Subject).MendedBy is var m && w.IsAlive(m) ? m
+        var by = Tinkering.Wagons.IsWagon(sim, e.Subject)
+            && (e.Kind.Kind == ServiceKind.WagonJoinery ? w.Get<Tinkering.Wagon>(e.Subject).JoinedBy : w.Get<Tinkering.Wagon>(e.Subject).MendedBy) is var m && w.IsAlive(m) ? m
             : !e.Assignee.IsNull && w.IsAlive(e.Assignee) ? e.Assignee : Entity.Null;
         if (by.IsNull)
         {
             Close(sim, e, OrderStatus.Cancelled);
             return;
         }
-        sim.Speech.Say(sim, e.Poster, "The wagon runs like new. Good work.", Volume.Say);
+        sim.Speech.Say(sim, e.Poster, Tinkering.Wagons.Damaged(sim, e.Subject) ? "That's that part seen to. Good work." : "The wagon runs like new. Good work.", Volume.Say);
         Complete(sim, e, by);
     }
 
@@ -1484,8 +1487,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     private string Asking(ServiceDef def, int price, string? subject) =>
         def.Lines.Count == 0 ? $"Wanted: {def.Label}. {price} silver." : string.Format(def.Lines[_rand.NextInt(def.Lines.Count)], price, subject ?? "gear");
 
-    private static string? SubjectLabel(Simulation sim, Entity subject) =>
-        sim.World.TryGet<Tinkering.Wagon>(subject, out var wagon) ? Tinkering.Wagons.DamageLabel(wagon.Damage)
+    private static string? SubjectLabel(Simulation sim, Entity subject, ServiceKind? kind = null) =>
+        sim.World.TryGet<Tinkering.Wagon>(subject, out var wagon)
+            ? Tinkering.Wagons.DamageLabel(kind is { } k && Tinkering.Wagons.PartsFor(k) is var parts and not Tinkering.WagonDamage.None ? wagon.Damage & parts : wagon.Damage)
         : sim.World.IsAlive(subject) && sim.World.TryGet<Thing>(subject, out var t) ? t.Label : null;
 
     private static string? WoundLabel(Simulation sim, Entity who)

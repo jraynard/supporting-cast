@@ -709,11 +709,21 @@ public sealed partial class VillageGame
         {
             var why = Wagons.AxleProblem(_sim, _avatar, _tinkerAt);
             ImGui.BeginDisabled(why != null || Working);
-            if (ImGui.Button($"Fit a new axle ({Wagons.AxleWood} wood)"))
+            if (ImGui.Button($"Hew a new axle ({Wagons.AxleWood} log)"))
                 Issue(new FitAxleCommand(_avatar, _tinkerAt));
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                Tip(why != null ? Cap(why) + "." : Controls.Keys("Hold ~F~ to file each part while it binds; ~D~ seats it at the fit."));
+                Tip(why != null ? Cap(why) + "." : Controls.Keys("Carpenter's work. At each end: hold ~F~ to raise the mallet and let go to strike, trimming the arm to the mark (~Space~ when it's there); then drive the hub on, lighter as it tightens."));
+        }
+        if ((wagon.Damage & WagonDamage.Board) != 0)
+        {
+            var why = Wagons.BoardProblem(_sim, _avatar, _tinkerAt);
+            ImGui.BeginDisabled(why != null || Working);
+            if (ImGui.Button($"Peg a plank across the sprung board ({Wagons.BoardPlanks} plank)"))
+                Issue(new PegBoardCommand(_avatar, _tinkerAt));
+            ImGui.EndDisabled();
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                Tip(why != null ? Cap(why) + "." : Controls.Keys("Carpenter's work. Drive each peg home: hold ~F~ to raise the mallet, let go to strike, lighter as it tightens or it splits."));
         }
         if (wagon.Damage == WagonDamage.None)
             TextC(Theme.Good, "It's sound.");

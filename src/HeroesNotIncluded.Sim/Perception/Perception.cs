@@ -533,6 +533,19 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
         return new KnownCurio(t.Label, mine ? a.Low : null, mine ? a.High : null, mine && a.Doubts, mine && a.Quoted >= 0 ? a.Quoted : null, told, mine);
     }
 
+    /// <summary>
+    /// Furniture the fire took from the town's buildings, for the carpenter to set back: public
+    /// knowledge (anyone can see the stool's gone). Empty for the blind.
+    /// </summary>
+    public IEnumerable<Carpentry.KnownLoss> Losses()
+    {
+        if (blind)
+            yield break;
+        foreach (var l in sim.Refurnishing.Losses.OrderBy(l => l.Id))
+            yield return new Carpentry.KnownLoss(l.Id, l.Label, l.Def.Name, l.Cell, sim.World.IsAlive(l.Building) ? Systems.Buildings.Called(sim, l.Building) : "",
+                l.Def.Joinery?.Planks ?? 0);
+    }
+
     /// <summary>A party's wagon in sight (<see cref="KnownWagon"/>). Null if it isn't one, or can't be seen.</summary>
     public KnownWagon? Wagon(Entity wagon)
     {

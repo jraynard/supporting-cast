@@ -206,10 +206,11 @@ public sealed class FireSystem : ISimSystem, Saving.ISaveState
             thing.Hp -= damage * thing.Flammability;
             if (thing.Hp <= 0)
             {
-                var (def, cell) = (thing.Def, thing.Cell);
+                var (def, cell, facing) = (thing.Def, thing.Cell, thing.Facing);
                 if (def.Category == Defs.ThingCategory.Building)
                     sim.Messages.Add(MessageKind.Warning, $"A {def.Label} burned down.", cell);
                 sim.DestroyThing(e);
+                Carpentry.Refurnishing.Burned(sim, def, cell, facing); // a joined piece in a town building: the carpenter's to set back
                 // Designations stay: a tree marked for chopping is still worth chopping as a dead one.
                 if (def.BurnsIntoDef is { } remains && map.Structure[i].IsNull)
                 {

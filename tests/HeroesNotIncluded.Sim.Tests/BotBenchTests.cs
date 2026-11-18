@@ -183,4 +183,49 @@ public class BotBenchTests
         Assert.Equal(me, valued.ToldBy);
         Assert.True(valued.Worth < 40, $"talked down, paid {valued.Worth}");
     }
+    // ---------------- The carpenter ----------------
+
+    /// <summary>A party in town with a wagon parked by them, broken as given, and the silver to have it mended.</summary>
+    private static Entity WagonFor(Simulation sim, List<Entity> party, WagonDamage damage)
+    {
+        var at = sim.World.Get<Position>(party[0]).Cell;
+        var def = sim.Defs.Thing(Wagons.Def);
+        var cell = sim.SpiralFrom(at, 12).First(c => Maps.Map.Distance(c, at) >= 4 && sim.CanPlaceStructure(c, def, 0)
+            && sim.FootprintCells(def, c, 0).All(f => sim.Map.Passable(f) && sim.Map.Item[sim.Map.Idx(f)].IsNull && Buildings.At(sim, f).IsNull));
+        var wagon = sim.SpawnStructure(def, cell);
+        sim.World.Add(wagon, new Wagon { Party = sim.World.Get<Adventurer>(party[0]).Party, Owner = party[0], Damage = damage, WheelSeed = 77, MendedBy = Entity.Null, JoinedBy = Entity.Null });
+        Inventory.Stow(sim, party[0], sim.CreateItem(sim.Defs.Thing(Coin.Silver), 30));
+        sim.RebuildDerivedIfNeeded();
+        return wagon;
+    }
+
+    [Fact]
+    public void TheCarpenterBotHewsAnAxleAndPegsABoardForTheirOrder()
+    {
+        var (sim, me, bot) = Round("Carpenter");
+        var party = PartyInTown(sim, "GildedSpurs");
+        var wagon = WagonFor(sim, party, WagonDamage.Axle | WagonDamage.Board);
+        Assert.True(Run(sim, bot, () => !Wagons.Damaged(sim, wagon), SimClock.TicksPerHour * 8),
+            Why(sim, bot) + "\n" + string.Join(", ", sim.Shops.All.Where(o => o.Subject == wagon).Select(o => $"{o.Kind.Kind} {o.Status} {o.AssigneeName}")));
+        Assert.True(bot.Stats.Sessions.ContainsKey(nameof(Carpentry.JoinSession)));
+        Run(sim, bot, () => false, SimClock.TicksPerHour / 4);
+        Assert.Contains(sim.Shops.All, o => o.Subject == wagon && o.Kind.Kind == ServiceKind.WagonJoinery && o.Status == OrderStatus.Done && o.Assignee == me);
+    }
+
+    [Fact]
+    public void TheCarpenterBotSetsBackAStoolTheFireTook()
+    {
+        var (sim, me, bot) = Round("Carpenter");
+        var inn = ShopSystem.BuildingFor(sim, TownRole.Tavern);
+        var stool = Buildings.Parts(sim, inn).First(e => sim.World.Get<Thing>(e).Def.Name == "Stool");
+        var cell = sim.World.Get<Thing>(stool).Cell;
+        sim.World.Get<Thing>(stool).Hp = 0.01f;
+        sim.Fire.Ignite(sim, cell, 1f);
+        for (var t = 0; t < 600 && sim.World.IsAlive(stool); t++)
+            sim.Tick();
+        sim.Fire.ExtinguishAll(sim);
+        Assert.Single(sim.Refurnishing.Losses);
+        Assert.True(Run(sim, bot, () => sim.Refurnishing.Losses.Count == 0, SimClock.TicksPerHour * 8), Why(sim, bot));
+        Assert.Equal("Stool", sim.World.Get<Thing>(sim.Map.Structure[sim.Map.Idx(cell)]).Def.Name);
+    }
 }

@@ -33,6 +33,8 @@ public sealed partial class BotPlayer
                 return Make(sim, me, view, station, begun, now);
         if (sim.Militia.Paying && !bench.IsNull && BowsForTheMuster(sim, me, view, bench, now))
             return true;
+        if (!bench.IsNull && Refurnish(sim, me, view, bench, now))
+            return true;
         if (Stock(sim, me) >= StockWanted || bench.IsNull)
             return false;
         var fletch = Recipe(sim, bench, Carpenters.Fletches);
@@ -136,8 +138,111 @@ public sealed partial class BotPlayer
         SawSession saw => Saw(saw),
         FletchSession fletch => Fletch(fletch),
         BowSession bow => Tiller(bow),
+        JoinSession join => Join(join),
         _ => null,
     };
+
+    /// <summary>
+    /// Joinery: chisel blows raised just enough to take the mortise to the mark, and called deep
+    /// enough just short of it; then the tenon driven with blows well under what the joint will take.
+    /// </summary>
+    private (bool, bool, int) Join(JoinSession s)
+    {
+        if (s.Settling > 0)
+            return (false, false, 0);
+        if (s.Cutting)
+        {
+            if (s.Depth >= 1f - s.SnugWidth * 0.7f)
+            {
+                if (s.Raised <= 0f)
+                    _act = true;
+                return (false, false, 0);
+            }
+            var want = Math.Clamp((1f - s.SnugWidth * 0.4f - s.Depth) / JoinSession.DeepestCut, 0.1f, 1f);
+            return (false, s.Raised < want, 0);
+        }
+        return (false, s.Raised < JoinSession.SafeAt(s.Seat) * 0.7f, 0);
+    }
+
+    /// <summary>A planks count as a fetchable want.</summary>
+    private static ThingCount Planks(Simulation sim, int count)
+    {
+        var want = new ThingCount { Def = Carpenters.PlanksDef, Count = count };
+        want.ThingDef = sim.Defs.Thing(Carpenters.PlanksDef);
+        return want;
+    }
+
+    /// <summary>
+    /// Furniture burned in town: a new piece in its arms carried over and set where the old one
+    /// stood; else one made at the bench (planks fetched from the chest first). False if neither.
+    /// </summary>
+    private bool Refurnish(Simulation sim, Entity me, PerceptionView view, Entity bench, long now)
+    {
+        var w = sim.World;
+        if (!Refurnishing.Settled(sim))
+            return false; // the town's still burning, or a crisis is on: rebuild after
+        var held = Refurnishing.Held(sim, me);
+        if (!held.IsNull)
+        {
+            var piece = w.Get<Furnishing>(held).Def.Name; // its own make, in its own arms
+            if (view.Losses().Where(l => l.Piece == piece).Select(l => (KnownLoss?)l).FirstOrDefault() is not { } loss)
+                return false;
+            Doing = $"setting a new {loss.Label} in the {loss.Where}";
+            if (!AvatarSystem.InReach(w.Get<Position>(me).Cell, loss.Cell))
+            {
+                Walk(sim, me, loss.Cell, now);
+                return true;
+            }
+            Send(new AvatarWorkCommand(me, true, loss.Cell));
+            Send(new AvatarWorkCommand(me, false));
+            return true;
+        }
+        if (view.Losses().Select(l => (KnownLoss?)l).FirstOrDefault() is not { } lost)
+            return false;
+        if (OnMe(sim, me, Carpenters.PlanksDef) < lost.Planks)
+            return Fetch(sim, me, view, now, Planks(sim, lost.Planks), "planks");
+        Doing = $"making a {lost.Label} to replace the one that burned";
+        return AtStation(sim, me, bench, now, b => Send(new MakeFurnitureCommand(me, b, lost.Piece)));
+    }
+
+    /// <summary>
+    /// A wagon's woodwork (the carpenter's order): out to it with a log for an axle or a plank for a
+    /// board (fetched from the woodshop's chest first), and hewn or pegged there. False once it's sound.
+    /// </summary>
+    private bool JoinWagon(Simulation sim, Entity me, PerceptionView view, Entity owner, long now)
+    {
+        var w = sim.World;
+        var wagon = Entity.Null;
+        foreach (var e in w.Each<Tinkering.Wagon>())
+            if (w.Get<Tinkering.Wagon>(e).Owner == owner)
+                wagon = e;
+        if (wagon.IsNull)
+            return false;
+        var seen = view.Wagon(wagon);
+        var damage = seen?.Damage ?? (Tinkering.WagonDamage.Axle | Tinkering.WagonDamage.Board);
+        if (seen is { } known && (known.Damage & (Tinkering.WagonDamage.Axle | Tinkering.WagonDamage.Board)) == 0)
+            return false;
+        var axle = (damage & Tinkering.WagonDamage.Axle) != 0;
+        var board = (damage & Tinkering.WagonDamage.Board) != 0;
+        // What it takes, from the shop on the way.
+        if (axle && Tinkering.Wagons.WoodOn(sim, me) < Tinkering.Wagons.AxleWood)
+        {
+            var logs = new ThingCount { Def = Carpenters.WoodDef, Count = Tinkering.Wagons.AxleWood };
+            logs.ThingDef = sim.Defs.Thing(Carpenters.WoodDef);
+            return Fetch(sim, me, view, now, logs, "a log");
+        }
+        if (board && !axle && Tinkering.Wagons.PlanksOn(sim, me) < Tinkering.Wagons.BoardPlanks)
+            return Fetch(sim, me, view, now, Planks(sim, Tinkering.Wagons.BoardPlanks), "a plank");
+        if (!AvatarSystem.InReach(sim, w.Get<Position>(me).Cell, wagon))
+        {
+            Doing = "going out to a wagon";
+            Walk(sim, me, w.Get<Thing>(wagon).Cell, now);
+            return true;
+        }
+        Doing = axle ? "hewing a wagon a new axle" : "pegging a wagon's sprung board";
+        Send(axle ? new Tinkering.FitAxleCommand(me, wagon) : new Tinkering.PegBoardCommand(me, wagon));
+        return true;
+    }
 
     // Which way the saw's going (+1 pushing, −1 pulling).
     private int _sawWay = 1;

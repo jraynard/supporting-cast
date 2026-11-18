@@ -83,6 +83,9 @@ public enum AvatarActionKind
     /// <summary>Brace a span a crisis broke (<see cref="Tinkering.SpanSession"/>), begun at once: the tinker's.</summary>
     Mend,
 
+    /// <summary>Set a new piece of furniture in your arms where the old one burned (<see cref="Carpentry.Refurnishing.Set"/>).</summary>
+    SetFurniture,
+
     /// <summary>Order a meal at a serving hatch (<see cref="Shops.ShopSystem.PlayerOrder"/>), or see where you are in its line.</summary>
     OrderMeal,
 
@@ -166,7 +169,7 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
         or AvatarActionKind.Store or AvatarActionKind.OpenStorage or AvatarActionKind.Tinker
         or AvatarActionKind.Refuel or AvatarActionKind.Equip or AvatarActionKind.OpenStation
         or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean
-        or AvatarActionKind.Mend or AvatarActionKind.OrderMeal or AvatarActionKind.OrderProvisions or AvatarActionKind.OrderHealing or AvatarActionKind.FillBucket or AvatarActionKind.ThrowWater or AvatarActionKind.FestivalGame or AvatarActionKind.Dance
+        or AvatarActionKind.Mend or AvatarActionKind.SetFurniture or AvatarActionKind.OrderMeal or AvatarActionKind.OrderProvisions or AvatarActionKind.OrderHealing or AvatarActionKind.FillBucket or AvatarActionKind.ThrowWater or AvatarActionKind.FestivalGame or AvatarActionKind.Dance
         or AvatarActionKind.ShowPiece or AvatarActionKind.Sit or AvatarActionKind.CallBack or AvatarActionKind.TakeOrder
         or AvatarActionKind.HandOver or AvatarActionKind.Barter;
 
@@ -369,6 +372,9 @@ public sealed class AvatarSystem : ISimSystem
         // A customer waiting at your shop, nobody yet seeing to them: say you will (handing reach, so across a counter too).
         if (tool == AvatarTool.Use && Shops.ShopSystem.TakeableAt(sim, avatar, cell) is { } takeable)
             return new(AvatarActionKind.TakeOrder, $"Take {takeable.PosterName}'s order: {takeable.Kind.Label} ({takeable.Price} silver)", cell, takeable.Poster);
+        // Where a piece of furniture burned, with a new one in your arms: set it there.
+        if (tool == AvatarTool.Use && sim.Refurnishing.At(cell) is { } loss && InReach(here, cell) && !Carpentry.Refurnishing.Held(sim, avatar).IsNull)
+            return new(AvatarActionKind.SetFurniture, $"Set the new {loss.Label} here", cell, Entity.Null);
         // A gap a crisis tore (the bridge): the tinker braces it.
         if (tool == AvatarTool.Use && sim.Repairs.At(cell) is { } breach && InReach(here, cell)
             && w.TryGet<Trade>(avatar, out var mender) && mender.Def.MendsTown)
@@ -986,6 +992,9 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.Mend:
                 Tinkering.Repairs.StartMend(sim, avatar, sim.Repairs.At(action.Cell));
+                break;
+            case AvatarActionKind.SetFurniture:
+                Carpentry.Refurnishing.Set(sim, avatar, sim.Refurnishing.At(action.Cell));
                 break;
             case AvatarActionKind.Clean:
                 if (Hospitality.ScrubSession.For(sim, avatar, action.Cell) is { } scrub)

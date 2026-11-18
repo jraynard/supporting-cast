@@ -244,6 +244,13 @@ public sealed class MaterialDef : Def
 }
 
 /// <summary>A butcher spot's edge over cutting up a kill where it fell.</summary>
+/// <summary>How a piece of furniture is joined (<see cref="ThingDef.Joinery"/>): the planks it takes and the joints cut and driven to make it.</summary>
+public sealed class JoineryProps
+{
+    public int Planks { get; set; } = 2;
+    public int Joints { get; set; } = 3;
+}
+
 public sealed class ButcherSpotProps
 {
     /// <summary>Butchering work goes this many times as fast.</summary>
@@ -1033,6 +1040,12 @@ public sealed class ThingDef : Def
 
     /// <summary>A quiver of arrows, fletched by the carpenter (<c>Carpentry.Fletching</c>): carried by an archer on a quest, shot away on it.</summary>
     public bool Quiver { get; set; }
+
+    /// <summary>
+    /// Furniture the carpenter joins (<c>Carpentry.Refurnishing</c>): burned in a town building, it's
+    /// remembered, and made again at the bench from planks, joint by joint. Null for anything else.
+    /// </summary>
+    public JoineryProps? Joinery { get; set; }
 
     public BuildingProps? Building { get; set; }
 

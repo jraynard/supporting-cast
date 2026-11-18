@@ -291,6 +291,9 @@ public sealed partial class VillageGame
             case BowSession bow:
                 DrawBow(bow);
                 return;
+            case Sim.Carpentry.JoinSession join:
+                DrawJoin(join);
+                return;
             case StrikerSession striker:
                 DrawStriker(striker);
                 return;

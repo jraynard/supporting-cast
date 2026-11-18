@@ -36,9 +36,8 @@ public sealed partial class BotPlayer
     }
 
     /// <summary>
-    /// Out to the customer's wagon (whose is whose is plain to see), and mend what's wrong with it:
-    /// true the wheel, then a new axle (wood from the shop's chest if it hasn't the wood on it).
-    /// Paid once nothing's wrong with it.
+    /// Out to the customer's wagon (whose is whose is plain to see), and true its wheel: the tinker's
+    /// part (the woodwork is the carpenter's own order). Paid once the wheel runs true.
     /// </summary>
     private bool MendWagon(Simulation sim, Entity me, PerceptionView view, Entity owner, long now)
     {
@@ -53,22 +52,17 @@ public sealed partial class BotPlayer
         var seen = view.Wagon(wagon);
         if (!AvatarSystem.InReach(sim, w.Get<Position>(me).Cell, wagon) || seen is not { } known)
         {
-            // An axle wants wood: from the shop on the way, if it's none on it.
-            if (seen is { } s && (s.Damage & WagonDamage.Axle) != 0 && Wagons.WoodOn(sim, me) < Wagons.AxleWood && FetchWood(sim, me, view, now))
-                return true;
             Doing = "going out to a wagon";
             Walk(sim, me, cell, now);
             return true;
         }
         if (known.Damage == WagonDamage.None)
             return false;
-        Doing = "mending a wagon";
-        if ((known.Damage & WagonDamage.Wheel) != 0)
-            Send(new TrueWheelCommand(me, wagon));
-        else if (Wagons.WoodOn(sim, me) >= Wagons.AxleWood)
-            Send(new FitAxleCommand(me, wagon));
-        else
-            return FetchWood(sim, me, view, now);
+        // The wheel's the tinker's; the woodwork goes to the carpenter on its own order.
+        if ((known.Damage & WagonDamage.Wheel) == 0)
+            return false;
+        Doing = "truing a wagon wheel";
+        Send(new TrueWheelCommand(me, wagon));
         return true;
     }
 
