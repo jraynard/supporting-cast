@@ -193,10 +193,13 @@ A `Performance` component on the bard while playing. `PerformanceSystem` updates
 - **Off beat:** it's just a look.
 - **Ghosts:** they can dance too, unseen. It's a nice touch and costs nothing.
 
+- **Visuals** sprites for the instruments, some new bardly clothes
+
 **Art** (`tools/chibi_people.py` and the builds):
 - **Dance frames:** step left, step right, hop, spin and clap. These replace the sine-hop fake, and the hop stays as a fallback.
 - **Cheer and emote frames,** which are missing today.
 - **Playing poses** for each of lute, fiddle, pipe and drum, and the instruments themselves as held shapes and item icons (`tools/norse_items.py`).
+- **new clothes** add a new bard performance outfit that looks like a typical dnd minstrel or bard
 - **The renderer:** `CreatureAnimator` keys dance frames off `PerceptionView.Music` beat phase, so everyone moves in time.
 
 **Mood** (`mood.json`): `HeardMusic`, `Danced`, `MovedBySong` and `SourMusic` thoughts through `MoodSystem.Remember`.

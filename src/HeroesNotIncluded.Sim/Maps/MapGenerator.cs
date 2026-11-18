@@ -34,7 +34,8 @@ public static class MapGenerator
 
     public static readonly string[] VillagerNames =
     [
-        "Aldric", "Brenna", "Corin", "Dagny", "Eamon", "Freya", "Gareth", "Hilde", "Ivo", "Jorunn",
+        "Aldric", "Brenna", "Corin", "Dagny", "Eamon", "Freya", "Gareth", "Hilde", "Ivo",
+        "Jorunn", "Vincent", "Ilana", "Justin", "Tasha", "James", "Matt"
     ];
 
     public static int3 Generate(Simulation sim, Options? options = null)
