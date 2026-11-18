@@ -61,9 +61,9 @@ public static class ModCode
         var game = new List<(string, Assembly)>();
         foreach (var mod in order.Mods)
         {
-            // A copy of one of the game's own assemblies (a build's habit of copying references) is the game's, not the mod's.
+            // A copy of one of the engine's assemblies (a build's habit of copying references) is the game's, not the mod's.
             var dlls = Directory.Exists(mod.Directory)
-                ? Directory.GetFiles(mod.Directory, "*.dll").Order(StringComparer.Ordinal).Where(f => !IsGames(Path.GetFileNameWithoutExtension(f))).ToList()
+                ? Directory.GetFiles(mod.Directory, "*.dll").Order(StringComparer.Ordinal).Where(f => !IsEngine(Path.GetFileNameWithoutExtension(f))).ToList()
                 : [];
             if (dlls.Count == 0)
                 continue;
@@ -72,7 +72,10 @@ public static class ModCode
                 var context = new ModLoadContext(mod.Directory, mod.Id);
                 foreach (var dll in dlls)
                 {
-                    var asm = LoadOnce(context, dll);
+                    // A mod the game ships and references itself (its own trades, until their views move out too)
+                    // is already the game's: the same assembly, not a second copy.
+                    var name = Path.GetFileNameWithoutExtension(dll);
+                    var asm = IsGames(name) ? AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName(name)) : LoadOnce(context, dll);
                     var unsafeRefs = asm.GetReferencedAssemblies().Select(r => r.Name!).Where(n => !IsRuntime(n) && !SimSafe.Contains(n)).ToList();
                     var simTypes = asm.GetExportedTypes().Where(t => t is { IsAbstract: false, IsInterface: false } && (typeof(ISimMod).IsAssignableFrom(t) || typeof(WorkSession).IsAssignableFrom(t) || typeof(ISimCommand).IsAssignableFrom(t))).ToList();
                     if (unsafeRefs.Count == 0)
@@ -93,6 +96,11 @@ public static class ModCode
         }
         return new Halves(sim, game);
     }
+
+    /// <summary>The engine's and the game's own assemblies, and the runtime's: never a mod's, wherever a copy turns up.</summary>
+    private static bool IsEngine(string name) =>
+        IsRuntime(name) || SimSafe.Contains(name) || name is "HeroesNotIncluded" || name.StartsWith("Narsil", StringComparison.Ordinal)
+        || name.StartsWith("Brutal", StringComparison.Ordinal) || name.StartsWith("Whisper", StringComparison.Ordinal) || name.StartsWith("NVorbis", StringComparison.Ordinal);
 
     private static bool IsGames(string name) =>
         AssemblyLoadContext.Default.Assemblies.Any(a => a.GetName().Name == name) || File.Exists(Path.Combine(AppContext.BaseDirectory, name + ".dll"));

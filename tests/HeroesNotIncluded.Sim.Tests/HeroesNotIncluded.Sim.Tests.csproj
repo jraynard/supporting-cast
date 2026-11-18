@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\HeroesNotIncluded.Sim\HeroesNotIncluded.Sim.csproj" />
+    <ProjectReference Include="..\..\mods\carpenter\src\Carpenter.Sim\Carpenter.Sim.csproj" />
   </ItemGroup>
 
   <ItemGroup>

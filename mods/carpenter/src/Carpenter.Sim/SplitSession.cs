@@ -80,7 +80,7 @@ public sealed class SplitSession : WorkSession
             && w.Get<Workbench>(Station) is { Active: { } r, Stocked: true } bench && bench.By == Worker && Carpenters.Splits(r);
     }
 
-    protected internal override void Begin() => Check = NextCheck();
+    protected override void Begin() => Check = NextCheck();
 
     private float NextCheck() => Rand.Range(-0.7f, 0.7f);
 

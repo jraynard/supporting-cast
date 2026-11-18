@@ -121,6 +121,9 @@ public sealed class Settings
     /// <summary>The mods turned on, by id (docs/MODDING.md); their load order is decided from their dependencies.</summary>
     public List<string> Mods { get; set; } = [];
 
+    /// <summary>Mods that are on by default (the game's own trades) that the player turned off.</summary>
+    public List<string> ModsOff { get; set; } = [];
+
     public const float MinUiScale = 0.75f, MaxUiScale = 2f;
     public const float MinPanSpeed = 0.25f, MaxPanSpeed = 3f;
 
@@ -156,6 +159,7 @@ public sealed class Settings
         var copy = (Settings)MemberwiseClone();
         copy.Bindings = Bindings?.ToDictionary(kv => kv.Key, kv => kv.Value.ToArray());
         copy.Mods = [.. Mods ?? []]; // a hand-edited file's null
+        copy.ModsOff = [.. ModsOff ?? []];
         return copy;
     }
 

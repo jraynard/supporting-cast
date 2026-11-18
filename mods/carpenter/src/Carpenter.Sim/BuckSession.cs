@@ -130,7 +130,7 @@ public sealed class BuckSession : WorkSession
             && Crafting.ToolSpeed(sim, Worker, SawKind) > 0f;
     }
 
-    protected internal override void Begin()
+    protected override void Begin()
     {
         if (CutsNeeded == 0)
             Done = true; // a short length: nothing to cut, it's a log as it lies

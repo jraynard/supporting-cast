@@ -154,7 +154,8 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     evening. Players trade face to face (`Shops/Barter`, read through `PerceptionView.Barter`): F at another player hands over
     what you hold, or with empty hands asks to trade; both fill a table, and it changes hands at once when both agree. `Favours/`: pinned to the notice board in the square and known by reading it, for
     silver; errands (bring so many of a thing) are done by bringing, and the labourer takes them.
-  - `Carpentry/`: the Carpenter, at the woodshop. Planks sawn (`SawSession`), bows tillered
+  - `Carpentry/` (now the carpenter mod, `mods/carpenter/src/Carpenter.Sim`, on by default; it reaches the core only through
+    `Modding/TradeModule`, `SimRegistry` and `Bots/IBotTrade`, and `ModBoundaryTests` keeps the core from naming it): the Carpenter, at the woodshop. Planks sawn (`SawSession`), bows tillered
     (`BowSession`), a quiver's pattern arrow sighted, shaved, headed and fletched (`FletchSession`) with a hidden warp (`Fletched.Warped`, never shown), sold as goods to archers
     and shot away on a quest (`Fletching`, like rations), or asked for aloud (`ServiceKind.Arrows`). Whoever makes a piece mends it
     (`WeaponWear.MendKind`): bows, cudgels and staves at the woodshop (`WoodRepair`, a bow re-tillered: `BowSession.Mending`),

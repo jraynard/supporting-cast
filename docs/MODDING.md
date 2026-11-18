@@ -154,7 +154,12 @@ The game's own rules (CLAUDE.md) bind its mods:
 - [ ] Registries, the rest, as the carpenter moves out and shows what a trade needs: work givers and
   `WorkType`, town roles, station actions, lessons, crises, bot hooks, practice customers; the game's
   own work sounds and scenes moved onto the registry trade by trade.
-- [ ] The carpenter moved out to `mods/carpenter`.
+- [x] The carpenter's sim half moved out to `mods/carpenter` (`Carpenter.Sim`, on by default): it reaches the core
+  only through `ITradeModule` (station work, mending, the AI's jobs, a player's F, stocking, the fire),
+  `SimRegistry` (systems, codecs, lessons, bots) and `IBotTrade`; old saves load through `formerly` names.
+  Bench hashes and bot-played seasons unchanged.
+- [ ] The carpenter's game half (its work views, the woods, sounds) moved into its own `Carpenter.dll`.
+- [ ] The carpenter's defs, art and sounds moved into the mod, so turning it off leaves no carpenter.
 - [ ] Game modes.
 - [ ] The bard as a mod; the ModKit and the skills.
 - [ ] Steam Workshop (ROADMAP.md, Later).

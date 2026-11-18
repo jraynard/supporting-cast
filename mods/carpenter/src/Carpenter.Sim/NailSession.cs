@@ -118,7 +118,7 @@ public sealed class NailSession : WorkSession
 
     public override bool StillValid(Simulation sim) => WagonJoinery.BoardProblem(sim, Worker, Wagon) == null;
 
-    protected internal override void Begin() => Drift = Rand.Chance(0.5f) ? 1 : -1;
+    protected override void Begin() => Drift = Rand.Chance(0.5f) ? 1 : -1;
 
     protected override void Axis(int value) => _steer = value;
 

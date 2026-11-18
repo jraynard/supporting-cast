@@ -95,7 +95,7 @@ public sealed class BowSession : WorkSession
         return w.Get<Workbench>(Station) is { Active: { } r, Stocked: true } bench && bench.By == Worker && Carpenters.MakesBow(r);
     }
 
-    protected internal override void Begin()
+    protected override void Begin()
     {
         if (!Mending.IsNull)
         {

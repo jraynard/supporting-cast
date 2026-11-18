@@ -1,0 +1,9 @@
+{
+  "id": "carpenter",
+  "name": "The Carpenter",
+  "version": "1.0.0",
+  "authors": ["Heroes Not Included"],
+  "description": "The woodshop and the woods: planks sawn, bows tillered, quivers fletched, trees felled, furniture joined. Millbrook's sixth trade, and the worked example of a trade built as a mod (docs/MODDING.md).",
+  "gameVersion": "0.1",
+  "defaultOn": true
+}

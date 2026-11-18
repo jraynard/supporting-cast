@@ -16,6 +16,8 @@
     <ProjectReference Include="..\..\external\narsil\src\Narsil.Audio\Narsil.Audio.csproj" />
     <ProjectReference Include="..\..\external\narsil\src\Narsil.Speech\Narsil.Speech.csproj" />
     <ProjectReference Include="..\HeroesNotIncluded.Sim\HeroesNotIncluded.Sim.csproj" />
+    <!-- The game's own trade mods: loaded as mods, and referenced until their views move into their own game halves (docs/MODDING.md). -->
+    <ProjectReference Include="..\..\mods\carpenter\src\Carpenter.Sim\Carpenter.Sim.csproj" />
   </ItemGroup>
 
   <ItemGroup>

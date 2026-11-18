@@ -155,7 +155,7 @@ public sealed class ThingCount
     /// <summary>Optional material the items come in (an oak's wood is oak).</summary>
     public string Material { get; set; } = "";
 
-    [JsonIgnore] public ThingDef ThingDef { get; internal set; } = null!;
+    [JsonIgnore] public ThingDef ThingDef { get; set; } = null!;
     [JsonIgnore] public MaterialDef? MaterialDef { get; internal set; }
 
     internal void Resolve(DefDatabase db)

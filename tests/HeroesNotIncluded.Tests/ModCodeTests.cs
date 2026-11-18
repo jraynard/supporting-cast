@@ -72,7 +72,7 @@ public class ModCodeTests
         }
         finally
         {
-            SimContent.Use([]);
+            SimContent.Use(TestContent.Standard);
             Directory.Delete(root, true);
         }
     }

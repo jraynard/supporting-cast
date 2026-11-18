@@ -90,7 +90,7 @@ public sealed record ReorderPackCommand(Entity Avatar, Entity Item, int Index) :
     }
 }
 
-internal static class InventoryCommand
+public static class InventoryCommand
 {
     /// <summary>A living, conscious player character outside a fight (gear doesn't change mid-battle); <paramref name="downed"/> lets one lying downed through.</summary>
     public static bool Ready(Simulation sim, Entity avatar, bool downed = false)

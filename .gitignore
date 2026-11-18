@@ -20,3 +20,9 @@ art/reference/
 
 # Placeholder music, fetched by tools/fetch_music.py (docs/AUDIO.md)
 data/sounds/music/free/
+
+# Mods' builds land in their folders (docs/MODDING.md); only sources and data are kept.
+/mods/*/*.dll
+/mods/*/*.pdb
+/mods/*/src/*/bin/
+/mods/*/src/*/obj/

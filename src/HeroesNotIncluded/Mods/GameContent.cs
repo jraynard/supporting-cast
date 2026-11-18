@@ -42,6 +42,23 @@ public sealed class GameContent
         return catalog;
     }
 
+    /// <summary>
+    /// The mods to turn on: those on by default (<see cref="ModManifest.DefaultOn"/>) unless turned off,
+    /// and those turned on.
+    /// </summary>
+    public static IReadOnlyList<string> Enabled(IEnumerable<string> on, IEnumerable<string> off)
+    {
+        var offs = off.ToHashSet(StringComparer.Ordinal);
+        return [.. Catalog.All.Where(m => m.DefaultOn).Select(m => m.Id).Concat(on).Distinct().Where(id => !offs.Contains(id))];
+    }
+
+    /// <summary>The mods a <c>--mods</c> list names: <c>bard,-carpenter</c> turns the bard on and the carpenter off.</summary>
+    public static IReadOnlyList<string> FromArgument(string? list)
+    {
+        var items = (list ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return Enabled(items.Where(i => !i.StartsWith('-')), items.Where(i => i.StartsWith('-')).Select(i => i[1..]));
+    }
+
     /// <summary>This run's content: the core alone until <see cref="Use"/> says otherwise.</summary>
     public static GameContent Current { get; private set; } = new(ModOrder.None);
 

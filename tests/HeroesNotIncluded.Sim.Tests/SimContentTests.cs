@@ -49,8 +49,13 @@ public class SimContentTests
     {
         Assert.Equal("HammerSession", SimContent.NameOf(typeof(HammerSession)));
         // Every session the old hand-written list named still reads.
-        foreach (var name in (string[])["HammerSession", "StewSession", "PackSession", "Healing.CastSession", "Tinkering.PinSession", "Carpentry.FellSession", "Environment.ThrowSession", "DrawSession", "FeelSession", "SledgeSession", "Afterlife.HoldSession"])
+        foreach (var name in (string[])["HammerSession", "StewSession", "PackSession", "Healing.CastSession", "Tinkering.PinSession", "Environment.ThrowSession", "DrawSession", "FeelSession", "SledgeSession", "Afterlife.HoldSession"])
             Assert.True(WorkSession.Sessions.ContainsKey(name.Split('.')[^1]), name);
+        // The carpenter's are its mod's now, and the names saves knew them by still read.
+        Assert.Equal("carpenter:FellSession", SimContent.NameOf(typeof(Carpentry.FellSession)));
+        Assert.True(WorkSession.Sessions.ContainsKey("carpenter:FellSession"));
+        Assert.True(WorkSession.Sessions.ContainsKey("FellSession"));
+        Assert.Equal("carpenter:Falling", SimContent.CodecName("Falling"));
     }
 
     [Fact]
@@ -60,7 +65,7 @@ public class SimContentTests
         var coreCommands = CommandCodec.CommandTypes.Count();
         try
         {
-            SimContent.Use([("lutes", typeof(LuteSession).Assembly)]);
+            SimContent.Use([.. TestContent.Standard, ("lutes", typeof(LuteSession).Assembly)]);
             Assert.Equal("lutes:LuteSession", SimContent.NameOf(typeof(LuteSession)));
             Assert.True(WorkSession.Sessions.ContainsKey("lutes:LuteSession"));
 
@@ -79,7 +84,7 @@ public class SimContentTests
         }
         finally
         {
-            SimContent.Use([]);
+            SimContent.Use(TestContent.Standard);
         }
         Assert.Equal(coreCommands, CommandCodec.CommandTypes.Count());
         Assert.False(WorkSession.Sessions.ContainsKey("lutes:LuteSession"));

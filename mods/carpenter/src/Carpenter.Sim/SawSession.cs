@@ -220,7 +220,7 @@ public sealed class SawSession : WorkSession
             && w.Get<Workbench>(Station) is { Active: { } r, Stocked: true } bench && bench.By == Worker && Carpenters.Saws(r);
     }
 
-    protected internal override void Begin()
+    protected override void Begin()
     {
         Array.Fill(Proud, 1f);
         Drift = Rand.Chance(0.5f) ? 1 : -1;

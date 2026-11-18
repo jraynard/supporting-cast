@@ -215,7 +215,7 @@ public sealed class JoinSession : WorkSession
         };
     }
 
-    protected internal override void Begin()
+    protected override void Begin()
     {
         Cutting = Cuts;
         Depth = 0f;

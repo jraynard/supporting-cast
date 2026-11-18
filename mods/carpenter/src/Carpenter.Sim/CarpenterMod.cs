@@ -20,6 +20,10 @@ public sealed class CarpenterMod : ISimMod
         registry.Trade(new CarpenterModule());
         registry.Lesson([.. CarpenterLessons.All]);
         registry.Bot(bot => new CarpenterBot(bot));
+        // The carpenter was part of the game until it moved out: saves from then name its sessions and
+        // components without the mod's prefix, and still load.
+        foreach (var type in typeof(CarpenterMod).Assembly.GetTypes().Where(t => typeof(Work.WorkSession).IsAssignableFrom(t) && !t.IsAbstract && t.GetConstructor(Type.EmptyTypes) != null))
+            registry.SessionFormerly(type.Name, () => (Work.WorkSession)Activator.CreateInstance(type)!);
         registry.System(() => new Refurnishing(), after: "Repairs");
         registry.System(() => new Felling(), after: "Baking");
         // Felling by hand (format 62): a tree coming down, and the trunk it leaves.
@@ -29,20 +33,20 @@ public sealed class CarpenterMod : ISimMod
             w.Long(f.At);
             w.Entity(f.By);
             w.Bool(f.Through);
-        }, r => new Falling { Dir = FellSession.Wrap360(r.Float()), At = r.Long(), By = r.Entity(), Through = r.Bool() });
+        }, r => new Falling { Dir = FellSession.Wrap360(r.Float()), At = r.Long(), By = r.Entity(), Through = r.Bool() }, formerly: "Falling");
         registry.Component<Trunk>("Trunk", (w, t) =>
         {
             w.Float(t.Dir);
             w.Int(t.Lengths);
             w.Bool(t.GreatButt);
             w.Def(t.Material);
-        }, r => new Trunk { Dir = FellSession.Wrap360(r.Float()), Lengths = Math.Clamp(r.Int(), 0, 16), GreatButt = r.Bool(), Material = r.DefOrNull<MaterialDef>() });
+        }, r => new Trunk { Dir = FellSession.Wrap360(r.Float()), Lengths = Math.Clamp(r.Int(), 0, 16), GreatButt = r.Bool(), Material = r.DefOrNull<MaterialDef>() }, formerly: "Trunk");
         registry.Component<Furnishing>("Furnishing", (w, f) =>
         {
             w.Def(f.Def);
             w.Float(f.Quality);
             w.Entity(f.Maker);
-        }, r => new Furnishing { Def = r.Def<ThingDef>(), Quality = Math.Clamp(r.Float(), 0f, 1f), Maker = r.Entity() });
+        }, r => new Furnishing { Def = r.Def<ThingDef>(), Quality = Math.Clamp(r.Float(), 0f, 1f), Maker = r.Entity() }, formerly: "Furnishing");
     }
 }
 

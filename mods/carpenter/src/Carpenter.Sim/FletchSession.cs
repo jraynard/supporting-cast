@@ -195,7 +195,7 @@ public sealed class FletchSession : WorkSession
             && w.Get<Workbench>(Station) is { Active: { } r, Stocked: true } bench && bench.By == Worker && Carpenters.Fletches(r);
     }
 
-    protected internal override void Begin()
+    protected override void Begin()
     {
         // A warp one way or the other, never nearly straight to begin with.
         var size = 0.35f + Rand.NextFloat() * 0.45f;

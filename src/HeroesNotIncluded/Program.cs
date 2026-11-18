@@ -19,10 +19,11 @@ string? buildTag = null;
 Log.CrashContext = () => BuildInfo.Describe(buildTag);
 
 // Mods for this run (docs/MODDING.md): --mods a,b, else the player's own list once the settings are read.
-// Headless runs (bench, sweeps, checks) see only --mods, so their results don't depend on a player's setup.
-if (ParseString(args, "--mods") is { } modsArg)
-    GameContent.Use(modsArg.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+// Headless runs (bench, sweeps, checks) see only the defaults and --mods, so their results don't depend on a player's setup.
+// --mods bard,-carpenter: the bard on, the carpenter (on by default) off.
 var modsGiven = args.Contains("--mods");
+if (modsGiven || headless)
+    GameContent.Use(GameContent.FromArgument(ParseString(args, "--mods")));
 
 if (args.Contains("--version"))
 {
@@ -129,7 +130,7 @@ if (ParseString(args, "--check-save") is { } checkPath)
 var stress = args.Contains("--stress");
 var settings = Settings.Load(Settings.DefaultPath);
 if (!modsGiven)
-    GameContent.Use(settings.Mods);
+    GameContent.Use(GameContent.Enabled(settings.Mods, settings.ModsOff));
 try
 {
     buildTag = BuildInfo.Tag(GameContent.Current.LoadDefs());

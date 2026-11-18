@@ -75,6 +75,12 @@ public sealed class SimRegistry
     public void System(Func<ISimSystem> make, string? after = null, string? before = null) =>
         Systems.Add(new PlacedSystem(make, after, before, ModId));
 
+    /// <summary>
+    /// A session saves knew by a name outside this mod's (a session the game had before the mod took
+    /// it over, saved unprefixed): read back as this.
+    /// </summary>
+    public void SessionFormerly(string oldName, Func<WorkSession> make) => SessionAliases[oldName] = make;
+
     /// <summary>A session renamed or retired: saves that name it read back as this.</summary>
     public void SessionAlias(string oldName, Func<WorkSession> make) => SessionAliases[Qualify(oldName)] = make;
 }

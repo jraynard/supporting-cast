@@ -137,7 +137,7 @@ public sealed record CraftCommand(Entity Avatar, Entity Station, RecipeDef Recip
     }
 }
 
-internal static class CraftCommandRules
+public static class CraftCommandRules
 {
     public static Bill? BillAt(Simulation sim, Entity station, int index, RecipeDef recipe)
     {
