@@ -147,6 +147,11 @@ public static class Practice
             // Silver to spare for what they came for: a meal and a round on the way mustn't leave the
             // lesson's customer unable to pay for it (a tinker's curio went unasked for, its bearer broke).
             Inventory.Stow(sim, e, sim.CreateItem(sim.Defs.Thing(Shops.Coin.Silver), CustomerPurse));
+            if (Modding.Trades.Of(trade) is { } module)
+            {
+                module.PracticeCustomer(sim, player, e, k); // the trade's own customers
+                continue;
+            }
             switch (trade)
             {
                 case "Empath":
@@ -188,19 +193,6 @@ public static class Practice
                         Inventory.Stow(sim, e, Tinkering.Lockwork.Make(sim, sim.Rand, 2f, 20, "the practice yard"));
                     else if (k == 1 && Tinkering.Curios.Make(sim, sim.Rand, 2f) is { IsNull: false } curio)
                         Inventory.Stow(sim, e, curio);
-                    break;
-                case "Carpenter":
-                    // Archers, every one: the woodshop's customers are those who'll want arrows.
-                    if (!Carpentry.Fletching.Shoots(sim, e))
-                    {
-                        if (w.TryGet<Equipment>(e, out var held) && w.IsAlive(held.Weapon))
-                        {
-                            var old = held.Weapon;
-                            w.Remove<Equipment>(e);
-                            Inventory.Stow(sim, e, old);
-                        }
-                        sim.EquipItem(e, sim.CreateItem(sim.Defs.Thing("Bow"), 1));
-                    }
                     break;
                 default:
                     if (wear == CustomerKind.Thirsty)

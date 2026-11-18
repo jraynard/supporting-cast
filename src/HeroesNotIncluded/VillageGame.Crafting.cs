@@ -213,7 +213,7 @@ public sealed partial class VillageGame
         var open = true;
         Sheet.Begin($"{Cap(thing.Label)}###station", ref open, 380);
         PadWindow("###station", () => _openStation = Entity.Null);
-        var losses = Sim.Carpentry.Carpenters.IsBench(_sim, _openStation) ? View.Losses().ToList() : [];
+        var losses = Sim.Carpentry.Carpenters.IsBench(_sim, _openStation) ? Sim.Carpentry.RefurnishingPerception.Losses(View).ToList() : [];
         var tab = StationTabs((thing.Def.Recipes.Count > 0, MakeTab, false), (repairs.Count > 0, MendTab, CustomerPiece(repairs)),
             (losses.Count > 0, RebuildTab, false));
         if (bench.Active != null)

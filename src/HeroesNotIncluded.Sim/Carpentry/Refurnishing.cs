@@ -45,6 +45,9 @@ public readonly record struct KnownLoss(int Id, string Label, string Piece, int3
 /// </summary>
 public sealed class Refurnishing : ISimSystem, ISaveState
 {
+    /// <summary>The simulation's (a mod system is found by type, not a field of the simulation's).</summary>
+    public static Refurnishing Of(Simulation sim) => sim.System<Refurnishing>();
+
     public string Name => "Refurnishing";
     public int Interval => SimClock.TicksPerHour;
 
@@ -84,7 +87,7 @@ public sealed class Refurnishing : ISimSystem, ISaveState
     {
         if (def.Joinery == null || !sim.Round.Live || Buildings.At(sim, cell) is not { IsNull: false } building)
             return;
-        var self = sim.Refurnishing;
+        var self = Of(sim);
         self._losses.Add(new FurnitureLoss { Id = self._nextId++, Def = def, Cell = cell, Facing = facing, Building = building, LostTick = sim.Clock.Tick });
     }
 
@@ -101,7 +104,7 @@ public sealed class Refurnishing : ISimSystem, ISaveState
     {
         if (!sim.Defs.TryThing(piece, out var def) || def.Joinery is not { } joinery)
             return "that isn't joinery";
-        if (sim.Refurnishing.Of(def) == null)
+        if (Of(sim).Of(def) == null)
             return $"no {def.Label} wants replacing";
         return PlanksTo(sim, worker) < joinery.Planks ? $"a {def.Label} takes {joinery.Planks} plank{(joinery.Planks == 1 ? "" : "s")}" : null;
     }
@@ -147,7 +150,7 @@ public sealed class Refurnishing : ISimSystem, ISaveState
         var def = sim.Defs.Thing(piece);
         WorkSystem.Start(sim, worker, new JoinSession
         {
-            Station = bench, Work = JoinWork.Furniture, Piece = piece, Loss = sim.Refurnishing.Of(def)!.Id, Joints = Math.Clamp(def.Joinery!.Joints, 1, 8),
+            Station = bench, Work = JoinWork.Furniture, Piece = piece, Loss = Of(sim).Of(def)!.Id, Joints = Math.Clamp(def.Joinery!.Joints, 1, 8),
         });
     }
 
@@ -161,7 +164,7 @@ public sealed class Refurnishing : ISimSystem, ISaveState
         sim.World.Add(item, new Crafted { Quality = Crafting.QualityFrom(quality), Maker = worker });
         Hospitality.Provisions.TakeInArms(sim, worker, item);
         var how = quality >= 0.85f ? "Every joint tight." : quality < 0.45f ? "It wobbles a little." : "It'll do.";
-        var where = sim.Refurnishing.Find(loss) is { } l ? $" Carry it to the {Buildings.Called(sim, l.Building)} and set it where the old one stood." : "";
+        var where = Of(sim).Find(loss) is { } l ? $" Carry it to the {Buildings.Called(sim, l.Building)} and set it where the old one stood." : "";
         sim.Messages.Tell(worker, MessageKind.Info, $"You join a new {def.Label}. {how}{where}", sim.LocationOf(worker));
         return item;
     }
@@ -202,7 +205,7 @@ public sealed class Refurnishing : ISimSystem, ISaveState
         sim.DestroyThing(held);
         var piece = sim.SpawnStructure(loss!.Def, loss.Cell, loss.Facing);
         w.Add(piece, new Crafted { Quality = Crafting.QualityFrom(made.Quality), Maker = made.Maker });
-        sim.Refurnishing._losses.Remove(loss);
+        Of(sim)._losses.Remove(loss);
         var fee = FeePerPlank * loss.Def.Joinery!.Planks;
         Inventory.Stow(sim, who, sim.CreateItem(sim.Defs.Thing(Shops.Coin.Silver), fee));
         sim.Messages.Add(MessageKind.Good, $"{w.Get<Creature>(who).Name} sets a new {loss.Label} in the {Buildings.Called(sim, loss.Building)}. The town pays {fee} silver for it.", loss.Cell);
@@ -215,7 +218,7 @@ public sealed class Refurnishing : ISimSystem, ISaveState
     public static Job? Furnish(Simulation sim, Entity pawn)
     {
         var w = sim.World;
-        if (sim.Refurnishing._losses.Count == 0 || ShopSystemSmallHours(sim) || !Settled(sim))
+        if (Of(sim)._losses.Count == 0 || ShopSystemSmallHours(sim) || !Settled(sim))
             return null;
         var shop = Carpenters.WoodshopOf(sim, pawn);
         var chest = Carpenters.ChestOf(sim, shop);
@@ -223,7 +226,7 @@ public sealed class Refurnishing : ISimSystem, ISaveState
         if (chest.IsNull || bench.IsNull || sim.Reservations.IsReservedByOther(bench, pawn))
             return null;
         var from = w.Get<Position>(pawn).Cell;
-        foreach (var loss in sim.Refurnishing._losses.OrderBy(l => l.Id))
+        foreach (var loss in Of(sim)._losses.OrderBy(l => l.Id))
             if (Carpenters.CountIn(sim, chest, Carpenters.PlanksDef) >= loss.Def.Joinery!.Planks
                 && Navigation.CanReach(sim, pawn, from, loss.Cell, PathEnd.Touch))
                 return new FurnishJob(loss.Id, bench, chest);
@@ -269,7 +272,7 @@ public sealed class FurnishJob(int loss, Entity bench, Entity chest) : Job
 
     protected override IEnumerable<JobStatus> Run()
     {
-        if (Sim.Refurnishing.Find(loss) is not { } lost)
+        if (Refurnishing.Of(Sim).Find(loss) is not { } lost)
         {
             Fail("it's been replaced");
             yield break;
@@ -280,7 +283,7 @@ public sealed class FurnishJob(int loss, Entity bench, Entity chest) : Job
         foreach (var s in GoTo(Get<Thing>(bench).Cell, PathEnd.Touch)) yield return s;
         if (HasFailed) yield break;
         foreach (var s in Wait(Refurnishing.TicksPerJoint * joinery.Joints)) yield return s;
-        if (!Alive(bench) || !Alive(chest) || Sim.Refurnishing.Find(loss) == null
+        if (!Alive(bench) || !Alive(chest) || Refurnishing.Of(Sim).Find(loss) == null
             || !Carpenters.TakeFrom(Sim, chest, Carpenters.PlanksDef, joinery.Planks))
         {
             Fail("no planks, or it's been replaced");
@@ -294,7 +297,7 @@ public sealed class FurnishJob(int loss, Entity bench, Entity chest) : Job
         Report = $"Carrying a new {lost.Label} over";
         foreach (var s in GoTo(lost.Cell, PathEnd.Touch)) yield return s;
         if (HasFailed) yield break;
-        if (!Refurnishing.Set(Sim, Pawn, Sim.Refurnishing.Find(loss)))
+        if (!Refurnishing.Set(Sim, Pawn, Refurnishing.Of(Sim).Find(loss)))
             Fail("couldn't set it down there");
     }
 }
@@ -309,5 +312,23 @@ public sealed record MakeFurnitureCommand(Entity Avatar, Entity Bench, string Pi
         if (Core.InventoryCommand.Ready(sim, Avatar) && Carpenters.IsBench(sim, Bench) && Piece is { Length: > 0 and < 100 }
             && AvatarSystem.InReach(sim, sim.World.Get<Position>(Avatar).Cell, Bench) && !sim.World.Has<WorkSession>(Avatar))
             Refurnishing.StartMaking(sim, Avatar, Bench, Piece);
+    }
+}
+
+/// <summary>What the carpenter's player knows of the fire's losses (<see cref="Refurnishing"/>).</summary>
+public static class RefurnishingPerception
+{
+    /// <summary>
+    /// Furniture the fire took from the town's buildings, for the carpenter to set back: public
+    /// knowledge (anyone can see the stool's gone). Empty for the blind.
+    /// </summary>
+    public static IEnumerable<KnownLoss> Losses(this PerceptionView view)
+    {
+        if (view.Blind)
+            yield break;
+        var sim = view.Seen;
+        foreach (var l in Refurnishing.Of(sim).Losses.OrderBy(l => l.Id))
+            yield return new KnownLoss(l.Id, l.Label, l.Def.Name, l.Cell, sim.World.IsAlive(l.Building) ? Buildings.Called(sim, l.Building) : "",
+                l.Def.Joinery?.Planks ?? 0);
     }
 }

@@ -87,21 +87,6 @@ internal static class ComponentCodecs
             w.Def(f.Loaded);
         }, r => new Fueled { Fuel = r.Float(), Loaded = r.DefOrNull<ThingDef>()}), // the loaded fuel came with format 9
         Codec("PlantState", (w, p) => w.Float(p.RegrowTicksLeft), r => new PlantState { RegrowTicksLeft = r.Float() }),
-        // Felling by hand (format 62): a tree coming down, and the trunk it leaves.
-        Codec("Falling", (w, f) =>
-        {
-            w.Float(f.Dir);
-            w.Long(f.At);
-            w.Entity(f.By);
-            w.Bool(f.Through);
-        }, r => new Carpentry.Falling { Dir = Carpentry.FellSession.Wrap360(r.Float()), At = r.Long(), By = r.Entity(), Through = r.Bool() }),
-        Codec("Trunk", (w, t) =>
-        {
-            w.Float(t.Dir);
-            w.Int(t.Lengths);
-            w.Bool(t.GreatButt);
-            w.Def(t.Material);
-        }, r => new Carpentry.Trunk { Dir = Carpentry.FellSession.Wrap360(r.Float()), Lengths = Math.Clamp(r.Int(), 0, 16), GreatButt = r.Bool(), Material = r.DefOrNull<MaterialDef>() }),
         Codec("Construction", WriteConstruction, ReadConstruction),
         // Preset buildings (format 18).
         Codec("PresetBuilding", (w, b) =>
@@ -568,12 +553,6 @@ internal static class ComponentCodecs
             w.Bool(t.Jammed);
             w.Long(t.RangAt);
         }, r => new Tinkering.TripSet { By = r.Entity(), Sprung = r.Bool(), Jammed = r.Bool(), RangAt = r.Long() }),
-        Codec("Furnishing", (w, f) =>
-        {
-            w.Def(f.Def);
-            w.Float(f.Quality);
-            w.Entity(f.Maker);
-        }, r => new Carpentry.Furnishing { Def = r.Def<Defs.ThingDef>(), Quality = Math.Clamp(r.Float(), 0f, 1f), Maker = r.Entity() }),
         Codec("PartyWagon", (w, g) =>
         {
             w.Int(g.Party);
@@ -752,7 +731,7 @@ internal static class ComponentCodecs
             w.Float(x.Quality);
             w.Entity(x.Maker);
             w.Bool(x.Warped);
-        }, r => new Carpentry.Fletched { Quality = Math.Clamp(r.Float(), 0f, 1f), Maker = r.Entity(), Warped = r.Bool() }),
+        }, r => new Combat.Fletched { Quality = Math.Clamp(r.Float(), 0f, 1f), Maker = r.Entity(), Warped = r.Bool() }),
         Codec("Dough", (w, d) =>
         {
             w.Float(d.Knead);
@@ -992,7 +971,7 @@ internal static class ComponentCodecs
                 SkipTraits(r); // traits, a DragonWorld leftover, were taken out with format 53
                 continue;
             }
-            if (!ByName.TryGetValue(name, out var codec))
+            if (!ByName.TryGetValue(Modding.SimContent.CodecName(name), out var codec))
                 throw new SaveException($"The save has '{name}' components, which this version of the game doesn't know.");
             codec.Read(r, world);
         }

@@ -144,7 +144,7 @@ public class TripBellTests
         var at = sim.World.Get<Thing>(bell).Cell;
         Assert.Equal("there's a trip-bell set close by", TripBells.SetProblem(sim, at + new int3(1, 0, 0)));
         var shop = Shops.ShopSystem.WorkplaceOf(sim, sim.Defs.Trade("Tinker"));
-        var bench = Carpentry.Carpenters.StationOf(sim, shop, Tinkers.BenchDef);
+        var bench = Systems.Stock.StationOf(sim, shop, Tinkers.BenchDef);
         var indoors = sim.SpiralFrom(sim.World.Get<Thing>(bench).Cell, 3).First(c => sim.Map.Passable(c) && sim.Map.Standable(sim.Map.Idx(c)));
         Assert.NotNull(TripBells.SetProblem(sim, indoors));
     }

@@ -133,7 +133,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 Healed(sim, e);
             else if (e.Kind.Kind is ServiceKind.WagonRepair or ServiceKind.WagonJoinery && !Tinkering.Wagons.DamagedFor(sim, e.Subject, e.Kind.Kind))
                 WagonMended(sim, e);
-            else if (e.Kind.Kind == ServiceKind.Arrows && Carpentry.Fletching.Carried(sim, e.Poster).Count >= Carpentry.Fletching.MostCarried)
+            else if (e.Kind.Kind == ServiceKind.Arrows && Combat.Fletching.Carried(sim, e.Poster).Count >= Combat.Fletching.MostCarried)
                 Close(sim, e, OrderStatus.Cancelled); // bought one off the shelf after all
             else if (now >= e.Deadline && sim.Round.Practice)
                 e.Deadline = now + SimClock.HoursToTicks(PracticePatienceHours); // the yard's customers are there to be learned on
@@ -272,13 +272,13 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// </summary>
     private bool WantsArrows(Simulation sim, Entity who, Adventurer a)
     {
-        if (a.PartyDef.Traveller || !Carpentry.Fletching.Shoots(sim, who) || Carpentry.Fletching.Carried(sim, who).Count >= Carpentry.Fletching.MostCarried)
+        if (a.PartyDef.Traveller || !Combat.Fletching.Shoots(sim, who) || Combat.Fletching.Carried(sim, who).Count >= Combat.Fletching.MostCarried)
             return false;
         var w = sim.World;
         foreach (var (item, _, _) in Goods.OnShow(sim))
-            if (Carpentry.Fletching.IsQuiver(sim, item))
+            if (Combat.Fletching.IsQuiver(sim, item))
                 return false;
-        return !_orders.Exists(e => e.IsOpen && e.Poster == who && e.Kind.Kind == ServiceKind.Goods && w.IsAlive(e.Subject) && Carpentry.Fletching.IsQuiver(sim, e.Subject));
+        return !_orders.Exists(e => e.IsOpen && e.Poster == who && e.Kind.Kind == ServiceKind.Goods && w.IsAlive(e.Subject) && Combat.Fletching.IsQuiver(sim, e.Subject));
     }
 
     /// <summary>
@@ -1475,7 +1475,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             return;
         }
         // A quiver for an archer who asked for arrows: theirs, and paid for.
-        var arrows = Carpentry.Fletching.IsQuiver(sim, item) ? _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Arrows) : null;
+        var arrows = Combat.Fletching.IsQuiver(sim, item) ? _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Arrows) : null;
         if (arrows != null)
         {
             Goods.TakeUp(sim, to, item);

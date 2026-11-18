@@ -226,8 +226,8 @@ public class BotBenchTests
         for (var t = 0; t < 600 && sim.World.IsAlive(stool); t++)
             sim.Tick();
         sim.Fire.ExtinguishAll(sim);
-        Assert.Single(sim.Refurnishing.Losses);
-        Assert.True(Run(sim, bot, () => sim.Refurnishing.Losses.Count == 0, SimClock.TicksPerHour * 8), Why(sim, bot));
+        Assert.Single(Carpentry.Refurnishing.Of(sim).Losses);
+        Assert.True(Run(sim, bot, () => Carpentry.Refurnishing.Of(sim).Losses.Count == 0, SimClock.TicksPerHour * 8), Why(sim, bot));
         Assert.Equal("Stool", sim.World.Get<Thing>(sim.Map.Structure[sim.Map.Idx(cell)]).Def.Name);
     }
 }

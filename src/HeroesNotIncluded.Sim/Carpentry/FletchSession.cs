@@ -1,3 +1,4 @@
+using HeroesNotIncluded.Sim.Combat;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Saving;

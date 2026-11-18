@@ -1,3 +1,4 @@
+using HeroesNotIncluded.Sim.Combat;
 using HeroesNotIncluded.Sim.Bots;
 using HeroesNotIncluded.Sim.Carpentry;
 using HeroesNotIncluded.Sim.Components;
@@ -668,7 +669,7 @@ public class CarpenterTests
         sim.ApplyNow(new StartRoundCommand());
         var chest = Carpenters.ChestOf(sim, ShopSystem.BuildingFor(sim, TownRole.Woodshop));
         sim.TickMany(SimClock.TicksPerHour);
-        Assert.Equal(VillageRound.WoodshopLogs, Carpenters.CountIn(sim, chest, Carpenters.LogDef));
+        Assert.Equal(CarpenterModule.WoodshopLogs, Carpenters.CountIn(sim, chest, Carpenters.LogDef));
     }
 
     [Fact]

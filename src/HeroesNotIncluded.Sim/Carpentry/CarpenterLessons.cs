@@ -1,7 +1,9 @@
 using HeroesNotIncluded.Sim.Carpentry;
 using static HeroesNotIncluded.Sim.Scenarios.Lessons.Lessons;
 
-namespace HeroesNotIncluded.Sim.Scenarios.Lessons;
+using HeroesNotIncluded.Sim.Scenarios.Lessons;
+
+namespace HeroesNotIncluded.Sim.Carpentry;
 
 /// <summary>
 /// The carpenter's lessons: planks sawn at the sawhorse, a quiver made at the bench and put

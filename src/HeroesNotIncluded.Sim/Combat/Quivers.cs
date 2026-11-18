@@ -1,10 +1,10 @@
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Systems;
 
-namespace HeroesNotIncluded.Sim.Carpentry;
+namespace HeroesNotIncluded.Sim.Combat;
 
 /// <summary>
-/// A quiver as the carpenter fletched it (<see cref="FletchSession"/>). Its quality shows (as
+/// A quiver as the carpenter fletched it (<c>Carpentry.FletchSession</c>). Its quality shows (as
 /// <see cref="Crafted"/>); <see cref="Warped"/> doesn't: a shaft sighted near enough but not true
 /// looks like the rest in the quiver, and only flies wide on the road. Read through
 /// <c>PerceptionView.Quiver</c>, never directly.

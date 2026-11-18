@@ -1,3 +1,4 @@
+using HeroesNotIncluded.Sim.Combat;
 using HeroesNotIncluded.Sim.Carpentry;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Core;
@@ -363,7 +364,7 @@ public sealed partial class BotPlayer
             logs.ThingDef = sim.Defs.Thing(Carpenters.WoodDef);
             return Fetch(sim, me, view, now, logs, "a log");
         }
-        if (board && !axle && Tinkering.Wagons.PlanksOn(sim, me) < Tinkering.Wagons.BoardPlanks)
+        if (board && !axle && Carpentry.WagonJoinery.PlanksOn(sim, me) < Tinkering.Wagons.BoardPlanks)
             return Fetch(sim, me, view, now, Planks(sim, Tinkering.Wagons.BoardPlanks), "a plank");
         if (!AvatarSystem.InReach(sim, w.Get<Position>(me).Cell, wagon))
         {
@@ -372,7 +373,7 @@ public sealed partial class BotPlayer
             return true;
         }
         Doing = axle ? "hewing a wagon a new axle" : "pegging a wagon's sprung board";
-        Send(axle ? new Tinkering.FitAxleCommand(me, wagon) : new Tinkering.PegBoardCommand(me, wagon));
+        Send(axle ? new Carpentry.FitAxleCommand(me, wagon) : new Carpentry.PegBoardCommand(me, wagon));
         return true;
     }
 

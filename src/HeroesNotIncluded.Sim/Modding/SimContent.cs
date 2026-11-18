@@ -26,15 +26,38 @@ public sealed class SimRegistry
     internal readonly List<ComponentCodec> Codecs = [];
     internal readonly Dictionary<string, Func<WorkSession>> SessionAliases = new(StringComparer.Ordinal);
     internal readonly List<PlacedSystem> Systems = [];
+    internal readonly List<ITradeModule> TradeModules = [];
+    internal readonly List<Scenarios.Lessons.Lesson> Lessons = [];
+    internal readonly Dictionary<string, string> Formerly = new(StringComparer.Ordinal);
 
-    private string Qualify(string name) => $"{ModId}:{name}";
+    /// <summary>The game's own registrations (its bundled trades) keep their names unprefixed.</summary>
+    internal bool IsCore => ModId.Length == 0;
+
+    private string Qualify(string name) => IsCore ? name : $"{ModId}:{name}";
+
+    /// <summary>
+    /// A trade's sim half (<see cref="ITradeModule"/>): the hooks the core calls at a station, for the
+    /// AI's work, at a player's F, and as the town is set up.
+    /// </summary>
+    public void Trade(ITradeModule module) => TradeModules.Add(module);
+
+    /// <summary>
+    /// A trade's tutorial chapters: each lesson's logic, read from what the player knows every time
+    /// it's asked (its words are the trade's <c>lessons</c> in trades.json).
+    /// </summary>
+    public void Lesson(params Scenarios.Lessons.Lesson[] lessons) => Lessons.AddRange(lessons);
 
     /// <summary>
     /// A component the mod adds, and how it's saved: every component needs a codec (an unsaved one
     /// would vanish on load). Written by hand, like the game's own, so the format is explicit.
     /// </summary>
-    public void Component<T>(string name, Action<SaveWriter, T> write, Func<SaveReader, T> read) =>
+    /// <param name="formerly">The name saves used before (a component the game had before the mod took it): read as this one.</param>
+    public void Component<T>(string name, Action<SaveWriter, T> write, Func<SaveReader, T> read, string? formerly = null)
+    {
         Codecs.Add(new ComponentCodec<T>(Qualify(name), write, read));
+        if (formerly != null)
+            Formerly[formerly] = Qualify(name);
+    }
 
     /// <summary>A marker component with no data.</summary>
     public void Tag<T>(string name) where T : struct => Component<T>(name, (_, _) => { }, _ => default);
@@ -67,6 +90,20 @@ public static class SimContent
     private sealed record Loaded(string ModId, Assembly Assembly, SimRegistry Registry);
 
     private static List<Loaded> _mods = [];
+
+    /// <summary>
+    /// The game's own trades registered the way a mod's are (<see cref="ISimMod"/>s in the sim
+    /// assembly itself), before any mod: the core is the first mod.
+    /// </summary>
+    private static readonly Lazy<SimRegistry> CoreRegistry = new(() =>
+    {
+        var registry = new SimRegistry("");
+        foreach (var type in Core.GetTypes().Where(t => typeof(ISimMod).IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false }).OrderBy(t => t.FullName, StringComparer.Ordinal))
+            ((ISimMod)Activator.CreateInstance(type, nonPublic: true)!).Register(registry);
+        return registry;
+    });
+
+    private static IEnumerable<SimRegistry> Registries => [CoreRegistry.Value, .. _mods.Select(m => m.Registry)];
 
     /// <summary>Bumped by every <see cref="Use"/>, so caches built from the content know to rebuild.</summary>
     public static int Version { get; private set; }
@@ -118,11 +155,30 @@ public static class SimContent
     public static IEnumerable<Type> TypesOf<T>() =>
         Assemblies.SelectMany(a => (a == Core ? a.GetTypes() : ExportedTypes(a)).Where(t => typeof(T).IsAssignableFrom(t) && t is { IsAbstract: false, IsInterface: false }));
 
-    internal static IEnumerable<PlacedSystem> ModSystems => _mods.SelectMany(m => m.Registry.Systems);
+    internal static IEnumerable<PlacedSystem> ModSystems => Registries.SelectMany(r => r.Systems);
 
-    internal static IEnumerable<ComponentCodec> ModCodecs => _mods.SelectMany(m => m.Registry.Codecs);
+    internal static IEnumerable<ComponentCodec> ModCodecs => Registries.SelectMany(r => r.Codecs);
 
-    internal static IEnumerable<KeyValuePair<string, Func<WorkSession>>> ModSessionAliases => _mods.SelectMany(m => m.Registry.SessionAliases);
+    internal static IEnumerable<KeyValuePair<string, Func<WorkSession>>> ModSessionAliases => Registries.SelectMany(r => r.SessionAliases);
+
+    /// <summary>A component's old save name to its name now, for every one a mod took over from the game.</summary>
+    internal static string CodecName(string saved) => Registries.Select(r => r.Formerly.GetValueOrDefault(saved)).FirstOrDefault(n => n != null) ?? saved;
+
+    internal static IEnumerable<Scenarios.Lessons.Lesson> Lessons => Registries.SelectMany(r => r.Lessons);
+
+    private static (int Version, List<ITradeModule> Modules)? _trades;
+
+    internal static IReadOnlyList<ITradeModule> TradeModules
+    {
+        get
+        {
+            if (_trades is { } t && t.Version == Version)
+                return t.Modules;
+            var modules = Registries.SelectMany(r => r.TradeModules).ToList();
+            _trades = (Version, modules);
+            return modules;
+        }
+    }
 
     /// <summary>A mod's public types (its internals are its own business).</summary>
     private static Type[] ExportedTypes(Assembly assembly)

@@ -1,3 +1,4 @@
+using HeroesNotIncluded.Sim.Combat;
 using HeroesNotIncluded.Sim.Carpentry;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Core;

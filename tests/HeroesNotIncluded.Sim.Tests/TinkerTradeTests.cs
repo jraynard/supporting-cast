@@ -651,19 +651,19 @@ public class TinkerTradeTests
         Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Planks"), 1));
         Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("ClawHammer"), 1));
         var wood = Wagons.WoodOn(sim, me);
-        var planks = Wagons.PlanksOn(sim, me);
+        var planks = Carpentry.WagonJoinery.PlanksOn(sim, me);
 
-        sim.ApplyNow(new FitAxleCommand(me, wagon));
+        sim.ApplyNow(new Carpentry.FitAxleCommand(me, wagon));
         Assert.Equal(Carpentry.JoinWork.Axle, Assert.IsType<Carpentry.JoinSession>(sim.World.Get<WorkSession>(me)).Work);
         Play(sim, me, JoinTrue);
         Assert.Equal(WagonDamage.Board, sim.World.Get<Wagon>(wagon).Damage);
         Assert.Equal(wood - Wagons.AxleWood, Wagons.WoodOn(sim, me));
 
-        sim.ApplyNow(new PegBoardCommand(me, wagon));
+        sim.ApplyNow(new Carpentry.PegBoardCommand(me, wagon));
         Assert.IsType<Carpentry.NailSession>(sim.World.Get<WorkSession>(me));
         Play(sim, me, NailTrue);
         Assert.False(Wagons.Damaged(sim, wagon));
-        Assert.Equal(planks - Wagons.BoardPlanks, Wagons.PlanksOn(sim, me));
+        Assert.Equal(planks - Wagons.BoardPlanks, Carpentry.WagonJoinery.PlanksOn(sim, me));
         Assert.Equal(me, sim.World.Get<Wagon>(wagon).JoinedBy);
     }
 
@@ -675,7 +675,7 @@ public class TinkerTradeTests
     private static Carpentry.JoinSession FitWithALifter(Simulation sim, Entity me, Entity wagon, Entity? lifter, bool level = true, int maxTicks = 60 * 180)
     {
         var w = sim.World;
-        sim.ApplyNow(new FitAxleCommand(me, wagon));
+        sim.ApplyNow(new Carpentry.FitAxleCommand(me, wagon));
         var session = (Carpentry.JoinSession)w.Get<WorkSession>(me);
         var lead = new WorkPredictor();
         var lift = new WorkPredictor();
@@ -759,7 +759,7 @@ public class TinkerTradeTests
         Beside(sim, me, wagon);
         Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Planks"), 1));
         Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("ClawHammer"), 1));
-        sim.ApplyNow(new PegBoardCommand(me, wagon));
+        sim.ApplyNow(new Carpentry.PegBoardCommand(me, wagon));
         var session = Assert.IsType<Carpentry.NailSession>(sim.World.Get<WorkSession>(me));
         // Every blow raised all the way, the claw for a bent one: the nail never sets.
         var predictor = new WorkPredictor();

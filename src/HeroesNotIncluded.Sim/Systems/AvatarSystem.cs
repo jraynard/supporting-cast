@@ -173,6 +173,9 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
 
     public Entity Item { get; init; } = Entity.Null;
 
+    /// <summary>The trade module that offered this action and does it (<see cref="Modding.ITradeModule.Perform"/>); null for the game's own.</summary>
+    public Modding.ITradeModule? By { get; init; }
+
     /// <summary>Done at once on the key press, rather than worked at while it's held.</summary>
     public bool Instant => Kind is AvatarActionKind.PutDown or AvatarActionKind.Deliver or AvatarActionKind.PickUp
         or AvatarActionKind.Store or AvatarActionKind.OpenStorage or AvatarActionKind.Tinker
@@ -382,9 +385,9 @@ public sealed class AvatarSystem : ISimSystem
         // A customer waiting at your shop, nobody yet seeing to them: say you will (handing reach, so across a counter too).
         if (tool == AvatarTool.Use && Shops.ShopSystem.TakeableAt(sim, avatar, cell) is { } takeable)
             return new(AvatarActionKind.TakeOrder, $"Take {takeable.PosterName}'s order: {takeable.Kind.Label} ({takeable.Price} silver)", cell, takeable.Poster);
-        // Where a piece of furniture burned, with a new one in your arms: set it there.
-        if (tool == AvatarTool.Use && sim.Refurnishing.At(cell) is { } loss && InReach(here, cell) && !Carpentry.Refurnishing.Held(sim, avatar).IsNull)
-            return new(AvatarActionKind.SetFurniture, $"Set the new {loss.Label} here", cell, Entity.Null);
+        // A trade's own (where furniture burned, with a new piece in your arms: set it there).
+        if (tool == AvatarTool.Use && Modding.Trades.EarlyActionAt(sim, avatar, cell, here) is { } early)
+            return early;
         // A gap a crisis tore (the bridge): the tinker braces it.
         if (tool == AvatarTool.Use && sim.Repairs.At(cell) is { } breach && InReach(here, cell)
             && w.TryGet<Trade>(avatar, out var mender) && mender.Def.MendsTown)
@@ -630,16 +633,12 @@ public sealed class AvatarSystem : ISimSystem
                 if ((c.MaterialsComplete || (Buildings.IsPhaseSite(sim, site) && Buildings.HasWork(c))) && sim.CanBuildNow(site))
                     return new(AvatarActionKind.Build, $"Build {c.Target.Label}", cell, site);
             }
-            else if (Carpentry.Felling.IsTrunk(sim, site) && Round.RoundSystem.MayFell(sim, avatar))
+            else if (Modding.Trades.SiteActionAt(sim, avatar, site, cell) is { } trades) // a tree to fell, a trunk to buck
             {
-                return new(AvatarActionKind.Buck, $"Buck the {thing.Label} into logs", cell, site);
-            }
-            else if (thing.Def.Felling != null && !w.Has<Carpentry.Falling>(site) && Carpentry.Felling.ByHand(sim, avatar, site))
-            {
-                return new(AvatarActionKind.Fell, $"Fell {thing.Label}", cell, site);
+                return trades;
             }
             else if (thing.Def.Harvest is { } harvest && (!w.TryGet<PlantState>(site, out var plant) || plant.Ready)
-                && Round.RoundSystem.MayGather(sim, avatar) && !w.Has<Carpentry.Falling>(site))
+                && Round.RoundSystem.MayGather(sim, avatar) && !Modding.Trades.Busy(sim, site))
             {
                 var verb = harvest.WorkType switch
                 {
@@ -911,6 +910,12 @@ public sealed class AvatarSystem : ISimSystem
     /// <summary>Carry out an action from <see cref="ActionAt"/>: instant ones now, the rest as a job.</summary>
     public static void Perform(Simulation sim, Entity avatar, AvatarAction action)
     {
+        // A trade's own action (a mod's, or the carpenter's): it does it.
+        if (action.By is { } by)
+        {
+            by.Perform(sim, avatar, action);
+            return;
+        }
         var w = sim.World;
         w.Get<Avatar>(avatar).Chain = ChainOf(action.Kind);
         ref var carrying = ref w.Get<Carrying>(avatar);
@@ -1058,9 +1063,6 @@ public sealed class AvatarSystem : ISimSystem
             case AvatarActionKind.Mend:
                 Tinkering.Repairs.StartMend(sim, avatar, sim.Repairs.At(action.Cell));
                 break;
-            case AvatarActionKind.SetFurniture:
-                Carpentry.Refurnishing.Set(sim, avatar, sim.Refurnishing.At(action.Cell));
-                break;
             case AvatarActionKind.Clean:
                 if (Hospitality.ScrubSession.For(sim, avatar, action.Cell) is { } scrub)
                     Work.WorkSystem.Start(sim, avatar, scrub);
@@ -1071,12 +1073,6 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.Harvest:
                 AiSystem.Order(sim, avatar, new HarvestJob(action.Target));
-                break;
-            case AvatarActionKind.Fell:
-                Carpentry.Felling.StartFelling(sim, avatar, action.Target);
-                break;
-            case AvatarActionKind.Buck:
-                Carpentry.Felling.StartBucking(sim, avatar, action.Target);
                 break;
             case AvatarActionKind.Dismantle:
                 sim.Map.Designate(sim.Map.Idx(w.Get<Thing>(action.Target).Cell), Designation.Deconstruct);

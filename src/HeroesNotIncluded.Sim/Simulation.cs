@@ -104,7 +104,6 @@ public sealed partial class Simulation
     public Tinkering.Repairs Repairs { get; } = new();
 
     /// <summary>Furniture the fire took from the town's buildings, for the carpenter to set back.</summary>
-    public Carpentry.Refurnishing Refurnishing { get; } = new();
 
     /// <summary>The crises a round's season sends. Off until the game enables it for a round.</summary>
     public Director.Director Director { get; }
@@ -299,7 +298,6 @@ public sealed partial class Simulation
             .AddSystem(sim.Militia)
             .AddSystem(new Tinkering.TripBellSystem())
             .AddSystem(sim.Repairs)
-            .AddSystem(sim.Refurnishing)
             .AddSystem(new MoodSystem())
             .AddSystem(new PrisonBreakSystem())
             .AddSystem(sim.Social)
@@ -313,7 +311,6 @@ public sealed partial class Simulation
             .AddSystem(new Work.CookingSystem())
             .AddSystem(new Work.RoastSystem())
             .AddSystem(new Work.OvenSystem())
-            .AddSystem(new Carpentry.Felling())
             .AddSystem(new AvatarSystem())
             .AddSystem(sim.FreeMove)
             .AddSystem(new Combat.TrailSystem())
@@ -340,6 +337,21 @@ public sealed partial class Simulation
         var index = after != null ? At(after) + 1 : before != null ? At(before) : _systems.Count;
         _systems.Insert(index, system);
     }
+
+    private readonly Dictionary<Type, ISimSystem> _systemOf = [];
+
+    /// <summary>The system of this type (a mod's systems are found this way: they're no field of the simulation's).</summary>
+    public T System<T>() where T : class, ISimSystem
+    {
+        if (_systemOf.TryGetValue(typeof(T), out var found))
+            return (T)found;
+        var system = _systems.OfType<T>().FirstOrDefault() ?? throw new InvalidOperationException($"No {typeof(T).Name} in this simulation (is its mod turned on?)");
+        _systemOf[typeof(T)] = system;
+        return system;
+    }
+
+    /// <summary>The system of this type, or null if there's none (its mod is off).</summary>
+    public T? SystemOrNull<T>() where T : class, ISimSystem => _systems.OfType<T>().FirstOrDefault();
 
     public Simulation AddSystem(ISimSystem system)
     {

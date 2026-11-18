@@ -76,7 +76,7 @@ public sealed class OreCarterSystem : ISimSystem, ISaveState
     public static void DeliverToWoodshop(Simulation sim)
     {
         var load = sim.Defs.Season.WoodshopDelivery;
-        var chest = Carpentry.Carpenters.ChestOf(sim, ShopSystem.BuildingFor(sim, Defs.TownRole.Woodshop));
+        var chest = Systems.Stock.ChestOf(sim, ShopSystem.BuildingFor(sim, Defs.TownRole.Woodshop));
         if (load.Count == 0 || chest.IsNull)
             return;
         var cell = sim.World.Get<Thing>(chest).Cell;

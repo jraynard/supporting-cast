@@ -1,3 +1,4 @@
+using HeroesNotIncluded.Sim.Combat;
 using HeroesNotIncluded.Sim.Ai;
 using HeroesNotIncluded.Sim.Components;
 using HeroesNotIncluded.Sim.Defs;
@@ -24,7 +25,7 @@ public static class Carpenters
     public const string WoodDef = "Wood";
 
     /// <summary>Split billets: what the town's fires burn (Defs: every wood-burning <c>fuel</c>).</summary>
-    public const string FirewoodDef = "Firewood";
+    public const string FirewoodDef = Stock.FirewoodDef;
 
     /// <summary>The bench's plain cudgel: what a carpenter hangs on the muster rack when there aren't the planks for a bow.</summary>
     public const string CudgelRecipe = "MakeCudgel";
@@ -124,41 +125,13 @@ public static class Carpenters
 
     // ---------------- The woodshop's stock ----------------
 
-    /// <summary>The chest at a woodshop, Entity.Null if none.</summary>
-    public static Entity ChestOf(Simulation sim, Entity woodshop)
-    {
-        if (woodshop.IsNull || !sim.World.IsAlive(woodshop))
-            return Entity.Null;
-        return Buildings.Parts(sim, woodshop).Where(e => Is(sim, e, "Chest")).OrderBy(e => e.Index).FirstOrDefault(Entity.Null);
-    }
+    public static Entity ChestOf(Simulation sim, Entity woodshop) => Stock.ChestOf(sim, woodshop);
 
-    /// <summary>The station of <paramref name="def"/> at a woodshop, Entity.Null if none.</summary>
-    public static Entity StationOf(Simulation sim, Entity woodshop, string def)
-    {
-        if (woodshop.IsNull || !sim.World.IsAlive(woodshop))
-            return Entity.Null;
-        return Buildings.Parts(sim, woodshop).Where(e => Is(sim, e, def)).OrderBy(e => e.Index).FirstOrDefault(Entity.Null);
-    }
+    public static Entity StationOf(Simulation sim, Entity woodshop, string def) => Stock.StationOf(sim, woodshop, def);
 
-    /// <summary>How many of <paramref name="def"/> are in a chest.</summary>
-    public static int CountIn(Simulation sim, Entity chest, string def) =>
-        chest.IsNull ? 0 : sim.StoredIn(chest).Where(e => sim.World.Get<Thing>(e).Def.Name == def).Sum(e => sim.World.Get<Stack>(e).Count);
+    public static int CountIn(Simulation sim, Entity chest, string def) => Stock.CountIn(sim, chest, def);
 
-    /// <summary>Use up <paramref name="count"/> of <paramref name="def"/> from a chest. False (nothing used) if it's short.</summary>
-    public static bool TakeFrom(Simulation sim, Entity chest, string def, int count)
-    {
-        if (CountIn(sim, chest, def) < count)
-            return false;
-        foreach (var e in sim.StoredIn(chest).Where(e => sim.World.Get<Thing>(e).Def.Name == def).OrderBy(e => e.Index).ToList())
-        {
-            if (count <= 0)
-                break;
-            var n = Math.Min(count, sim.World.Get<Stack>(e).Count);
-            sim.DestroyThing(sim.TakeFromStack(e, n));
-            count -= n;
-        }
-        return true;
-    }
+    public static bool TakeFrom(Simulation sim, Entity chest, string def, int count) => Stock.TakeFrom(sim, chest, def, count);
 
     /// <summary>The woodshop an AI carpenter keeps, or Entity.Null (not a carpenter, a player, outside a round).</summary>
     public static Entity WoodshopOf(Simulation sim, Entity pawn)

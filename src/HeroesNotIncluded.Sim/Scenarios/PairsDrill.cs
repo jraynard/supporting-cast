@@ -32,19 +32,9 @@ public static class PairsDrill
             staged.Add("a greatsword's iron by the forge (the smith makes it; someone takes the sledge)");
         }
 
-        // The pitman: a great log by the sawhorse.
-        if (Station(sim, TownRole.Woodshop, Carpentry.Carpenters.SawhorseDef) is { IsNull: false } horse)
-        {
-            Lay(sim, horse, Carpentry.Felling.GreatLogDef, 1);
-            staged.Add("a great log by the sawhorse (the carpenter saws it; someone gets in the pit)");
-        }
-
-        // The lifter: a party's wagon with a cracked axle by the woodshop, and a log for the axle.
-        if (Shops.ShopSystem.BuildingFor(sim, TownRole.Woodshop) is { IsNull: false } woodshop && Wagon(sim, woodshop) is { IsNull: false } wagon)
-        {
-            Lay(sim, wagon, "Wood", Wagons.AxleWood + 1);
-            staged.Add("a wagon with a cracked axle by the woodshop (the carpenter fits it; someone lifts)");
-        }
+        // Each trade's own work for two (the carpenter's great log and wagon axle).
+        foreach (var module in Modding.Trades.All)
+            staged.AddRange(module.PairsDrill(sim));
 
         // The keeper: a villager dead on a shrine pallet, and every empath's mana full.
         if (Station(sim, TownRole.Shrine, "StrawPallet") is { IsNull: false } pallet && Victim(sim) is { IsNull: false } victim)
@@ -65,15 +55,15 @@ public static class PairsDrill
     private static Entity Station(Simulation sim, TownRole role, string def)
     {
         var building = Shops.ShopSystem.BuildingFor(sim, role);
-        return building.IsNull ? Entity.Null : Carpentry.Carpenters.StationOf(sim, building, def);
+        return building.IsNull ? Entity.Null : Systems.Stock.StationOf(sim, building, def);
     }
 
     /// <summary>Some of a thing set down beside a station.</summary>
-    private static void Lay(Simulation sim, Entity station, string def, int count) =>
+    public static void Lay(Simulation sim, Entity station, string def, int count) =>
         sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing(def), count), sim.World.Get<Thing>(station).Cell);
 
     /// <summary>A party's wagon, its axle cracked, on open ground near the building; Entity.Null if there's nowhere.</summary>
-    private static Entity Wagon(Simulation sim, Entity near)
+    public static Entity Wagon(Simulation sim, Entity near)
     {
         var def = sim.Defs.Thing(Wagons.Def);
         var at = sim.World.TryGet<PresetBuilding>(near, out var building) ? building.Anchor : sim.LocationOf(near);

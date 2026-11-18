@@ -203,24 +203,6 @@ public static class Wagons
         return WoodOn(sim, worker) < AxleWood ? $"a new axle is hewn from {AxleWood} log" : null;
     }
 
-    /// <summary>Why this person can't peg a plank across this wagon's sprung board now; null if they can.</summary>
-    public static string? BoardProblem(Simulation sim, Entity worker, Entity wagon)
-    {
-        if (!IsWagon(sim, wagon) || (sim.World.Get<Wagon>(wagon).Damage & WagonDamage.Board) == 0)
-            return "its boards are sound";
-        if (!InReach(sim, worker, wagon))
-            return "you need to be at the wagon";
-        if (!Carpentry.NailSession.HasHammer(sim, worker))
-            return "you need a hammer to nail it";
-        return PlanksOn(sim, worker) < BoardPlanks ? $"it takes {BoardPlanks} plank" : null;
-    }
-
-    private static bool IsPlank(Simulation sim, Entity e) => sim.World.IsAlive(e) && sim.World.TryGet<Thing>(e, out var t) && t.Def.Name == Carpentry.Carpenters.PlanksDef;
-
-    /// <summary>Planks someone has on them (hands and pack).</summary>
-    public static int PlanksOn(Simulation sim, Entity who) =>
-        Core.CraftCommandRules.Sources(sim, who).Where(e => IsPlank(sim, e) && Inventory.OnPerson(sim, who, e)).Sum(e => sim.World.Get<Stack>(e).Count);
-
     private static bool InReach(Simulation sim, Entity worker, Entity wagon) =>
         AvatarSystem.InReach(sim, sim.World.Get<Position>(worker).Cell, wagon);
 
@@ -270,25 +252,6 @@ public static class Wagons
         WorkSystem.Start(sim, worker, new TrueSession { Wagon = wagon, Seed = sim.World.Get<Wagon>(wagon).WheelSeed });
     }
 
-    public static void StartAxle(Simulation sim, Entity worker, Entity wagon)
-    {
-        if (AxleProblem(sim, worker, wagon) is { } why)
-        {
-            sim.Messages.Tell(worker, MessageKind.Info, $"Can't fit an axle: {why}.", sim.LocationOf(worker));
-            return;
-        }
-        WorkSystem.Start(sim, worker, new Carpentry.JoinSession { Wagon = wagon, Work = Carpentry.JoinWork.Axle, Joints = AxleEnds });
-    }
-
-    public static void StartBoard(Simulation sim, Entity worker, Entity wagon)
-    {
-        if (BoardProblem(sim, worker, wagon) is { } why)
-        {
-            sim.Messages.Tell(worker, MessageKind.Info, $"Can't mend the board: {why}.", sim.LocationOf(worker));
-            return;
-        }
-        WorkSystem.Start(sim, worker, new Carpentry.NailSession { Wagon = wagon, Nails = BoardPegs });
-    }
 
     /// <summary>The wheel's trued: it runs straight again.</summary>
     public static void WheelTrued(Simulation sim, Entity worker, Entity wagon)
@@ -314,20 +277,6 @@ public static class Wagons
         var how = quality >= 0.75f ? "It runs sweetly." : quality >= 0.4f ? "It'll hold." : "It knocks a bit, but it'll roll.";
         sim.Messages.Add(MessageKind.Good, $"{sim.World.Get<Creature>(worker).Name} fits the wagon a new axle{(lifted != null ? $", {lifted} taking its weight" : "")}. {how}", sim.LocationOf(worker));
     }
-
-    /// <summary>A plank's pegged across the sprung board, as well as it was pegged.</summary>
-    public static void BoardPegged(Simulation sim, Entity worker, Entity wagon, float quality)
-    {
-        if (!IsWagon(sim, wagon) || PlanksOn(sim, worker) < BoardPlanks)
-            return;
-        var plank = Core.CraftCommandRules.Sources(sim, worker).First(e => IsPlank(sim, e) && Inventory.OnPerson(sim, worker, e));
-        sim.DestroyThing(Inventory.TakeFromPerson(sim, worker, plank, BoardPlanks));
-        ref var wg = ref sim.World.Get<Wagon>(wagon);
-        wg.Damage &= ~WagonDamage.Board;
-        wg.JoinedBy = worker;
-        var how = quality >= 0.75f ? "Tight as the day it was built." : quality >= 0.4f ? "It'll hold." : "It creaks, but it'll hold.";
-        sim.Messages.Add(MessageKind.Good, $"{sim.World.Get<Creature>(worker).Name} nails a plank across the wagon's sprung board. {how}", sim.LocationOf(worker));
-    }
 }
 
 /// <summary>True a party wagon's wheel (<see cref="TrueSession"/>).</summary>
@@ -339,30 +288,6 @@ public sealed record TrueWheelCommand(Entity Avatar, Entity Wagon) : ISimCommand
     {
         if (Core.InventoryCommand.Ready(sim, Avatar) && Wagons.IsWagon(sim, Wagon) && !sim.World.Has<Work.WorkSession>(Avatar))
             Wagons.StartWheel(sim, Avatar, Wagon);
-    }
-}
-
-/// <summary>Peg a plank across a party wagon's sprung board, from a plank you carry (<see cref="Carpentry.JoinSession"/>).</summary>
-public sealed record PegBoardCommand(Entity Avatar, Entity Wagon) : ISimCommand, Core.IActorCommand
-{
-    public Entity Actor => Avatar;
-
-    public void Apply(Simulation sim)
-    {
-        if (Core.InventoryCommand.Ready(sim, Avatar) && Wagons.IsWagon(sim, Wagon) && !sim.World.Has<Work.WorkSession>(Avatar))
-            Wagons.StartBoard(sim, Avatar, Wagon);
-    }
-}
-
-/// <summary>Fit a new axle to a party wagon, hewn from a log you carry (<see cref="Carpentry.JoinSession"/>).</summary>
-public sealed record FitAxleCommand(Entity Avatar, Entity Wagon) : ISimCommand, Core.IActorCommand
-{
-    public Entity Actor => Avatar;
-
-    public void Apply(Simulation sim)
-    {
-        if (Core.InventoryCommand.Ready(sim, Avatar) && Wagons.IsWagon(sim, Wagon) && !sim.World.Has<Work.WorkSession>(Avatar))
-            Wagons.StartAxle(sim, Avatar, Wagon);
     }
 }
 

@@ -72,13 +72,13 @@ public class RefurnishingTests
     {
         var sim = Round("Empath");
         var (cell, facing) = BurnAStool(sim);
-        var loss = Assert.Single(sim.Refurnishing.Losses);
+        var loss = Assert.Single(Carpentry.Refurnishing.Of(sim).Losses);
         Assert.Equal(("Stool", cell, facing), (loss.Def.Name, loss.Cell, loss.Facing));
         // Public knowledge: anyone can see it's gone.
         Assert.Contains(Perception.For(sim, Players.CharacterOf(sim, Ana)).Losses(), l => l.Cell == cell && l.Piece == "Stool");
 
         var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
-        Assert.Equal(cell, Assert.Single(loaded.Refurnishing.Losses).Cell);
+        Assert.Equal(cell, Assert.Single(Carpentry.Refurnishing.Of(loaded).Losses).Cell);
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public class RefurnishingTests
         var stool = sim.Map.Structure[sim.Map.Idx(cell)];
         Assert.False(stool.IsNull);
         Assert.Equal(("Stool", facing), (sim.World.Get<Thing>(stool).Def.Name, sim.World.Get<Thing>(stool).Facing));
-        Assert.Empty(sim.Refurnishing.Losses);
+        Assert.Empty(Carpentry.Refurnishing.Of(sim).Losses);
         Assert.Equal(silver + Refurnishing.FeePerPlank, Coin.Count(sim, me));
         Assert.True(Refurnishing.Held(sim, me).IsNull);
     }
@@ -137,9 +137,9 @@ public class RefurnishingTests
         var carpenter = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Carpenter");
         var chest = Carpenters.ChestOf(sim, ShopSystem.WorkplaceOf(sim, sim.Defs.Trade("Carpenter")));
         sim.Store(chest, sim.CreateItem(sim.Defs.Thing(Carpenters.PlanksDef), 4));
-        for (var h = 0; h < 12 && sim.Refurnishing.Losses.Count > 0; h++)
+        for (var h = 0; h < 12 && Carpentry.Refurnishing.Of(sim).Losses.Count > 0; h++)
             sim.TickMany(SimClock.TicksPerHour);
-        Assert.True(sim.Refurnishing.Losses.Count == 0, $"carpenter: {sim.Ai.LastFailure.GetValueOrDefault(carpenter)} / {sim.World.Get<Mind>(carpenter).Job?.Report}");
+        Assert.True(Carpentry.Refurnishing.Of(sim).Losses.Count == 0, $"carpenter: {sim.Ai.LastFailure.GetValueOrDefault(carpenter)} / {sim.World.Get<Mind>(carpenter).Job?.Report}");
         var stool = sim.Map.Structure[sim.Map.Idx(cell)];
         Assert.Equal("Stool", sim.World.Get<Thing>(stool).Def.Name);
         Assert.Equal(carpenter, sim.World.Get<Crafted>(stool).Maker);

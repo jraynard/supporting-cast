@@ -48,11 +48,11 @@ public static class VillageRound
         LockStoreroom(sim, Role(TownRole.Tavern));
         Hospitality.InnRooms.FitLocks(sim, Role(TownRole.Tavern));
         StockTinkerShop(sim, Role(TownRole.TinkerShop));
-        StockWoodshop(sim, Role(TownRole.Woodshop));
+        Modding.Trades.StockTown(sim); // each trade's own workplace (the woodshop's logs)
         if (sim.Defs.Season.BarnWood > 0)
             sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing("Wood"), sim.Defs.Season.BarnWood, sim.Defs.Material("Pine")), StockpileMiddle(sim));
         if (sim.Defs.Season.BarnFirewood > 0)
-            sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing(Carpentry.Carpenters.FirewoodDef), sim.Defs.Season.BarnFirewood, sim.Defs.Material("Pine")), StockpileMiddle(sim));
+            sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing(Systems.Stock.FirewoodDef), sim.Defs.Season.BarnFirewood, sim.Defs.Material("Pine")), StockpileMiddle(sim));
         Environment.Buckets.HangAtWells(sim); // for fighting fire
         // Beds for everyone, or the first night sends them all out to sleep in the cold.
         foreach (var (spec, home) in built.Buildings)
@@ -92,8 +92,7 @@ public static class VillageRound
             StockShrine(sim, building);
         if (b.Def.Has(TownRole.TinkerShop))
             StockTinkerShop(sim, building);
-        if (b.Def.Has(TownRole.Woodshop))
-            StockWoodshop(sim, building);
+        Modding.Trades.Stock(sim, building); // each trade's own (the woodshop)
     }
 
     /// <summary>Clean linen in the inn's storeroom: a change for every room, and a few over.</summary>
@@ -140,31 +139,6 @@ public static class VillageRound
                 sim.Store(e, sim.CreateItem(sim.Defs.Thing("Charcoal"), 6));
                 return;
             }
-    }
-
-    /// <summary>
-    /// Logs, timber, planks and feathers in the woodshop's chest at the start: three logs to saw (four
-    /// planks each), a little timber for mending a bridge or an axle, and a day's quivers. More logs come from felling.
-    /// </summary>
-    public const int WoodshopLogs = 3, WoodshopTimber = 4, WoodshopPlanks = 6, WoodshopFeathers = 6;
-
-    /// <summary>Stock in the carpenter's chest: logs to saw, planks to fletch from, and feathers for the fletching.</summary>
-    private static void StockWoodshop(Simulation sim, Entity shop)
-    {
-        var chest = Carpentry.Carpenters.ChestOf(sim, shop);
-        if (chest.IsNull)
-            return;
-        for (var i = 0; i < WoodshopLogs; i++) // a log's a stack of one
-            Stock(Carpentry.Carpenters.LogDef, 1, sim.Defs.Material("Pine"));
-        foreach (var (def, count) in new[] { ("Wood", WoodshopTimber), ("Planks", WoodshopPlanks), ("Feathers", WoodshopFeathers) })
-            Stock(def, count, null);
-
-        void Stock(string def, int count, Defs.MaterialDef? material)
-        {
-            var rest = sim.Store(chest, sim.CreateItem(sim.Defs.Thing(def), count, material));
-            if (!rest.IsNull)
-                sim.PlaceItemNear(rest, sim.World.Get<Thing>(chest).Cell);
-        }
     }
 
     /// <summary>Iron ore and wood in the smithy's chest at the start: a few blooms' worth, and hafts for spears. The carter brings more (<see cref="Shops.OreCarterSystem"/>).</summary>

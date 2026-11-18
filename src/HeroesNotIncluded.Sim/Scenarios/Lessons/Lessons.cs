@@ -114,11 +114,14 @@ public sealed record Lesson(string Trade, string Id, string[] Steps, Func<Simula
 /// <summary>Every trade's lessons, by trade and id (the words are in trades.json's <c>lessons</c>).</summary>
 public static class Lessons
 {
-    public static readonly Lesson[] All = [BasicsLesson.Lesson, .. SmithLessons.All, .. TinkerLessons.All, .. CarpenterLessons.All, .. InnLessons.All, .. KitchenLessons.All, .. EmpathLessons.All];
+    private static readonly Lesson[] Core = [BasicsLesson.Lesson, .. SmithLessons.All, .. TinkerLessons.All, .. InnLessons.All, .. KitchenLessons.All, .. EmpathLessons.All];
+
+    /// <summary>The game's lessons, then every registered trade's (<see cref="Modding.SimRegistry.Lesson"/>).</summary>
+    public static IReadOnlyList<Lesson> All => [.. Core, .. Modding.SimContent.Lessons];
 
     /// <summary>The trade's lesson by id, or one every trade shares (<see cref="BasicsLesson"/>, trade "*").</summary>
     public static Lesson? For(string trade, string id) =>
-        Array.Find(All, l => l.Trade == trade && l.Id == id) ?? Array.Find(All, l => l.Trade == BasicsLesson.AnyTrade && l.Id == id);
+        All.FirstOrDefault(l => l.Trade == trade && l.Id == id) ?? All.FirstOrDefault(l => l.Trade == BasicsLesson.AnyTrade && l.Id == id);
 
     /// <summary>Where the run has got to; a lesson with no logic (not written yet) never finishes.</summary>
     public static LessonStage Stage(Simulation sim, Entity me, LessonRun run)

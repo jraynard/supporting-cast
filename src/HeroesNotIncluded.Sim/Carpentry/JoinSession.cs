@@ -207,7 +207,7 @@ public sealed class JoinSession : WorkSession
         return Work switch
         {
             JoinWork.Axle => Wagons.AxleProblem(sim, Worker, Wagon) == null,
-            JoinWork.Board => Wagons.BoardProblem(sim, Worker, Wagon) == null,
+            JoinWork.Board => WagonJoinery.BoardProblem(sim, Worker, Wagon) == null,
             JoinWork.Haft => Carpenters.IsBench(sim, Station) && AvatarSystem.InReach(sim, w.Get<Position>(Worker).Cell, Station)
                 && w.IsAlive(Mending) && Inventory.OnPerson(sim, Worker, Mending),
             _ => Carpenters.IsBench(sim, Station) && AvatarSystem.InReach(sim, w.Get<Position>(Worker).Cell, Station)
@@ -324,7 +324,7 @@ public sealed class JoinSession : WorkSession
                 Wagons.AxleFitted(sim, Worker, Wagon, Quality, Partner);
                 break;
             case JoinWork.Board:
-                Wagons.BoardPegged(sim, Worker, Wagon, Quality);
+                WagonJoinery.BoardPegged(sim, Worker, Wagon, Quality);
                 break;
             case JoinWork.Haft:
                 if (Combat.WeaponWear.MendAtBench(sim, Worker, Station, Mending, Quality))

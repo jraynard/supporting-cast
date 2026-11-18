@@ -193,7 +193,7 @@ public static class Goods
             return Work.Rations.Carried(sim, who).Count < Work.Rations.MostCarried;
         if (def.Quiver)
             // Arrows for the road: one quiver, and only for someone who shoots.
-            return Carpentry.Fletching.Shoots(sim, who) && Carpentry.Fletching.Carried(sim, who).Count < Carpentry.Fletching.MostCarried;
+            return Combat.Fletching.Shoots(sim, who) && Combat.Fletching.Carried(sim, who).Count < Combat.Fletching.MostCarried;
         if (def.Contraption is { } contraption)
         {
             // Kit for the road: a couple, and not two that do the same.
@@ -289,7 +289,7 @@ public static class Goods
     /// <summary><see cref="WorthFactor(Simulation, Entity)"/> for a plain one of a kind not yet made (a charm with no extra strength).</summary>
     public static float WorthFactor(ThingDef def) =>
         def.Charm ? Healing.Charms.Worth : def.Contraption != null ? Tinkering.Contraptions.Worth : def.Rations ? Work.Rations.Worth
-            : def.Quiver ? Carpentry.Fletching.Worth : 1f;
+            : def.Quiver ? Combat.Fletching.Worth : 1f;
 
     public static float WorthFactor(Simulation sim, Entity item)
     {
@@ -298,7 +298,7 @@ public static class Goods
         var quality = QualityWorth(sim.World.TryGet<Crafted>(item, out var made) ? made.Quality : Quality.Plain);
         var def = sim.World.Get<Thing>(item).Def;
         return def.Contraption != null ? Tinkering.Contraptions.Worth * quality : def.Rations ? Work.Rations.Worth * quality
-            : def.Quiver ? Carpentry.Fletching.Worth * quality : quality;
+            : def.Quiver ? Combat.Fletching.Worth * quality : quality;
     }
 
     /// <summary>How much better made pieces are worth, by quality.</summary>

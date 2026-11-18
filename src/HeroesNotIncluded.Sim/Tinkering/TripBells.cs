@@ -256,8 +256,8 @@ public sealed class TripBellJob(Entity bench, Entity chest, int3 spot) : Job
             || sim.Director.WarnedSide is not { } side || TripBells.SpotFor(sim, side) is not { } spot || TripBells.Guarded(sim, spot))
             return null;
         var shop = Shops.ShopSystem.WorkplaceOf(sim, trade.Def);
-        var bench = Carpentry.Carpenters.StationOf(sim, shop, Tinkers.BenchDef);
-        var chest = Carpentry.Carpenters.ChestOf(sim, shop);
+        var bench = Systems.Stock.StationOf(sim, shop, Tinkers.BenchDef);
+        var chest = Systems.Stock.ChestOf(sim, shop);
         if (TripBells.Carried(sim, pawn).IsNull && (bench.IsNull || !HasMakings(sim, pawn, chest) || sim.Reservations.IsReservedByOther(bench, pawn)))
             return null;
         var from = w.Get<Position>(pawn).Cell;
@@ -267,7 +267,7 @@ public sealed class TripBellJob(Entity bench, Entity chest, int3 spot) : Job
     }
 
     private static int Count(Simulation sim, Entity pawn, Entity chest, string def) =>
-        Inventory.CarriedOf(sim, pawn, sim.Defs.Thing(def)).Sum(e => sim.World.Get<Stack>(e).Count) + Carpentry.Carpenters.CountIn(sim, chest, def);
+        Inventory.CarriedOf(sim, pawn, sim.Defs.Thing(def)).Sum(e => sim.World.Get<Stack>(e).Count) + Systems.Stock.CountIn(sim, chest, def);
 
     private static bool HasMakings(Simulation sim, Entity pawn, Entity chest) =>
         Count(sim, pawn, chest, Tinkers.BarDef) >= 1 && Count(sim, pawn, chest, "Wood") >= 1;
@@ -280,7 +280,7 @@ public sealed class TripBellJob(Entity bench, Entity chest, int3 spot) : Job
             sim.DestroyThing(Inventory.TakeFromPerson(sim, pawn, stack, 1));
             return true;
         }
-        return Carpentry.Carpenters.TakeFrom(sim, chest, def, 1);
+        return Systems.Stock.TakeFrom(sim, chest, def, 1);
     }
 
     protected override IEnumerable<JobStatus> Run()

@@ -116,7 +116,7 @@ public sealed class NailSession : WorkSession
     public static bool HasHammer(Simulation sim, Entity who) =>
         Crafting.ToolSpeed(sim, who, ClawKind) > 0f || Crafting.ToolSpeed(sim, who, HammerKind) > 0f;
 
-    public override bool StillValid(Simulation sim) => Wagons.BoardProblem(sim, Worker, Wagon) == null;
+    public override bool StillValid(Simulation sim) => WagonJoinery.BoardProblem(sim, Worker, Wagon) == null;
 
     protected internal override void Begin() => Drift = Rand.Chance(0.5f) ? 1 : -1;
 
@@ -219,7 +219,7 @@ public sealed class NailSession : WorkSession
         (Depth, Set, Offset, _nailScore, LastBlow) = (0f, false, 0f, 1f, NailBlow.None);
     }
 
-    public override void Finish(Simulation sim) => Wagons.BoardPegged(sim, Worker, Wagon, Quality);
+    public override void Finish(Simulation sim) => WagonJoinery.BoardPegged(sim, Worker, Wagon, Quality);
 
     protected override void WriteState(SaveWriter w)
     {

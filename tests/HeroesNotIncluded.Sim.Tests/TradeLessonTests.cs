@@ -232,7 +232,7 @@ public class TradeLessonTests
         var y = Begin("Carpenter", "saw");
         var horse = y.Station(Carpentry.Carpenters.SawhorseDef);
         Assert.False(horse.IsNull);
-        var chest = Carpentry.Carpenters.ChestOf(y.Sim, y.Run.Workplace);
+        var chest = Systems.Stock.ChestOf(y.Sim, y.Run.Workplace);
         Assert.Equal("logs", y.Stage.Step);
         Assert.Equal(chest, y.Stage.Point);
         y.TakeFrom(chest, Carpentry.Carpenters.LogDef, 1);

@@ -198,7 +198,7 @@ public sealed record RepairCommand(Entity Avatar, Entity Station, Entity Item) :
     public static bool NoHandGame(Simulation sim, Entity avatar, Entity station, Entity item) =>
         sim.Round.Live && Players.Steered(sim, avatar)
         && !Work.Smithing.AppliesToRepair(sim, avatar, station)
-        && !Carpentry.Carpenters.AppliesToRepair(sim, avatar, station, item)
+        && Modding.Trades.MendingAt(sim, avatar, station, item) == null
         && !Tinkering.Tinkers.AppliesToRepair(sim, avatar, station, item);
 
     public void Apply(Simulation sim)
@@ -210,8 +210,8 @@ public sealed record RepairCommand(Entity Avatar, Entity Station, Entity Item) :
             return;
         if (Work.Smithing.AppliesToRepair(sim, Avatar, Station))
             Work.Smithing.BeginMending(sim, Avatar, Station, Item);
-        else if (Carpentry.Carpenters.AppliesToRepair(sim, Avatar, Station, Item))
-            Carpentry.Carpenters.BeginMending(sim, Avatar, Station, Item);
+        else if (Modding.Trades.MendingAt(sim, Avatar, Station, Item) is { } trade)
+            trade.BeginMending(sim, Avatar, Station, Item);
         else if (Tinkering.Tinkers.AppliesToRepair(sim, Avatar, Station, Item))
             Tinkering.Tinkers.BeginMending(sim, Avatar, Station, Item);
         else if (NoHandGame(sim, Avatar, Station, Item))
