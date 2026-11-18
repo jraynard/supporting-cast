@@ -11,7 +11,7 @@ namespace HeroesNotIncluded.Tests;
 /// <summary>Preset buildings drawn with their art kits (<see cref="BuildingKit"/>): wall pieces and the pitched roof.</summary>
 public class BuildingKitTests
 {
-    private static readonly Lazy<DefDatabase> Defs = new(() => DefDatabase.LoadDirectory(DevPaths.Defs!));
+    private static readonly Lazy<DefDatabase> Defs = new(() => TestContent.Defs());
     private static readonly Sprite Art = new(new float4(0.5f, 0.25f, 0.75f, 0.5f), new int2(32, 32));
 
     private static (Simulation Sim, PresetBuilding Building) Finished(string name, int facing)

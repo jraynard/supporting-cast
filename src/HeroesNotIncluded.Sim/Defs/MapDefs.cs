@@ -41,6 +41,9 @@ public sealed class MapDef : Def
 
     public List<MapBuilding> Buildings { get; set; } = [];
 
+    /// <summary>Workplaces the map has a plot for whose building isn't loaded (a trade's mod turned off).</summary>
+    [JsonIgnore] public List<string> Absent { get; private set; } = [];
+
     /// <summary>Where the villagers land and the village's middle (the hero walks in near here): x, y.</summary>
     public int[] Center { get; set; } = [];
 
@@ -123,6 +126,10 @@ public sealed class MapDef : Def
             throw new Exception($"Map '{Name}': center must be [x, y] on the map");
         if (Stockpile.Length is not (0 or 4))
             throw new Exception($"Map '{Name}': stockpile must be [x, y, width, height]");
+        // A trade's workplace whose def isn't loaded (its mod is off) leaves its plot empty; any other
+        // building that isn't there is a mistake in the map.
+        Absent = [.. Buildings.Where(b => b.Role != "" && !db.HasBuilding(b.Def)).Select(b => b.Def)];
+        Buildings.RemoveAll(b => b.Role != "" && !db.HasBuilding(b.Def));
         foreach (var bld in Buildings)
             bld.Resolve(db, this);
         foreach (var l in Livestock)

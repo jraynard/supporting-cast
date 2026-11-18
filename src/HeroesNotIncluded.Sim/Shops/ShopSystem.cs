@@ -512,9 +512,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// </summary>
     private bool Want(Simulation sim, Entity who, ServiceKind kind, Entity subject, float urgency = 1f)
     {
-        if (!MayAsk(sim, who, kind))
+        // A service whose def isn't loaded (its trade's mod is off) isn't to be had in this town.
+        if (!MayAsk(sim, who, kind) || sim.Defs.ServiceOrNull(kind) is not { } def)
             return false;
-        var def = sim.Defs.Service(kind);
         var worth = Worth(sim, who, def, urgency);
         // A lake town's inn with nothing on its warming shelf: a room with no board to it.
         if (kind == ServiceKind.Lodging && Hospitality.Provisions.ShelfBare(sim))

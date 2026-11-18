@@ -17,7 +17,7 @@ namespace HeroesNotIncluded.Tests;
 /// </summary>
 public class CoopSessionTests
 {
-    internal static readonly Lazy<DefDatabase> Defs = new(() => DefDatabase.LoadDirectory(DevPaths.Defs!));
+    internal static readonly Lazy<DefDatabase> Defs = new(() => TestContent.Defs());
 
     /// <summary>Millbrook, the map rounds are played on, with <paramref name="villagers"/> AI villagers and no round open.</summary>
     internal static (Simulation Sim, int3 Center) Millbrook(ulong seed, int villagers)

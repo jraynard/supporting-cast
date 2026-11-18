@@ -438,48 +438,9 @@
       ]
     },
 
-    // ---- Stations ----
-    {
-      "name": "Sawhorse", "category": "Building", "solid": true, "sprite": "buildings/sawhorse", "size": [2, 1],
-      // Workbenches are two cells wide (the sawyer works from the front, +Y).
-      "description": "Saws logs into planks. Two cells wide. Add bills in its window; F at it to saw some yourself.",
-      "maxHp": 80, "flammability": 1.0, 
-      "building": { "work": 90, "surfaceHeight": 0.54, "workbench": { "bills": 6 }, "cost": [ { "def": "Wood", "count": 6 } ] },
-      "model": [
-        { "min": [0.10, 0.40, 0.42], "max": [1.90, 0.60, 0.54], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" },
-        { "min": [0.22, 0.30, 0.00], "max": [0.30, 0.38, 0.46], "top": "furniture/oak_planks", "side": "furniture/oak_planks" },
-        { "min": [0.22, 0.62, 0.00], "max": [0.30, 0.70, 0.46], "top": "furniture/oak_planks", "side": "furniture/oak_planks" },
-        { "min": [1.70, 0.30, 0.00], "max": [1.78, 0.38, 0.46], "top": "furniture/oak_planks", "side": "furniture/oak_planks" },
-        { "min": [1.70, 0.62, 0.00], "max": [1.78, 0.70, 0.46], "top": "furniture/oak_planks", "side": "furniture/oak_planks" },
-        { "min": [0.96, 0.36, 0.00], "max": [1.04, 0.64, 0.40], "top": "furniture/oak_planks", "side": "furniture/oak_planks" }
-      ]
-    },
-    {
-      // Carpentry.SplitSession: a stump to split logs on, the axe kept in it.
-      "name": "ChoppingBlock", "label": "chopping block", "category": "Building", "solid": true, "sprite": "buildings/sawhorse",
-      "description": "A broad round of elm to split logs on. Add bills in its window; F at it with a log to split it yourself.",
-      "maxHp": 120, "flammability": 0.8,
-      "building": { "work": 60, "surfaceHeight": 0.42, "workbench": { "bills": 4 }, "cost": [ { "def": "Wood", "count": 2 } ] },
-      "model": [
-        { "min": [0.22, 0.22, 0.00], "max": [0.78, 0.78, 0.42], "top": "props/log_end", "side": "props/log_side" }
-      ]
-    },
-    {
-      "name": "CarpenterBench", "label": "carpenter's bench", "category": "Building", "solid": true, "sprite": "buildings/carpenter_bench", "size": [2, 1],
-      "description": "A planked workbench with a vise, two cells wide, for bows, clubs and finer woodwork.",
-      "maxHp": 120, "flammability": 1.0, 
-      "building": { "work": 200, "surfaceHeight": 0.68, "workbench": { "bills": 8 }, "cost": [ { "def": "Planks", "count": 14 }, { "def": "Wood", "count": 2 } ] },
-      "model": [
-        { "min": [0.02, 0.14, 0.56], "max": [1.98, 0.86, 0.68], "top": "furniture/oak_planks", "side": "furniture/oak_planks" },
-        { "min": [0.06, 0.18, 0.00], "max": [0.16, 0.28, 0.56], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
-        { "min": [1.84, 0.18, 0.00], "max": [1.94, 0.28, 0.56], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
-        { "min": [0.06, 0.72, 0.00], "max": [0.16, 0.82, 0.56], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
-        { "min": [1.84, 0.72, 0.00], "max": [1.94, 0.82, 0.56], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
-        { "min": [0.08, 0.20, 0.16], "max": [1.92, 0.80, 0.22], "top": "furniture/oak_planks", "side": "furniture/oak_planks" },
-        { "min": [1.66, 0.76, 0.50], "max": [1.84, 0.90, 0.76], "top": "props/stone_block", "side": "props/stone_block" },
-        { "min": [0.30, 0.30, 0.68], "max": [0.90, 0.46, 0.73], "top": "furniture/oak_planks", "side": "furniture/oak_planks" }
-      ]
-    },
+
+
+
 
     {
       // Hunters carry carcasses here (Systems/ButcherSpots): butchering goes 1.5x as fast, yields a
@@ -597,40 +558,11 @@
   ],
 
   "recipes": [
-    {
-      "name": "SawLog", "label": "planks from a log", "station": "Sawhorse", "skill": "Crafting", "work": 600, "helpedBy": [ "Saw" ],
-      "description": "Saw a log into 4 planks.",
-      "ingredients": [ { "def": "Log", "count": 1 } ],
-      "products": [ { "def": "Planks", "count": 4 } ]
-    },
-    {
-      // Timber (Wood) from the barn, for want of a log: the town's builders' way, and the carpenter's last resort.
-      "name": "SawPlanks", "label": "planks from timber", "station": "Sawhorse", "skill": "Crafting", "work": 600, "helpedBy": [ "Saw" ],
-      "description": "Saw 6 timber into 10 planks.",
-      "ingredients": [ { "def": "Wood", "count": 6 } ],
-      "products": [ { "def": "Planks", "count": 10 } ]
-    },
-    {
-      // Pitman's work (Work.Pairs): too long for one saw. Hewn as any, sawn by a top sawyer and a pitman below.
-      "name": "SawGreatLog", "label": "planks from a great log", "station": "Sawhorse", "skill": "Crafting", "work": 1200, "helpedBy": [ "Saw" ],
-      "twoHanded": true,
-      "description": "A great log, too long for one saw: a top sawyer and a pitman below make 10 long planks of it.",
-      "ingredients": [ { "def": "GreatLog", "count": 1 } ],
-      "products": [ { "def": "Planks", "count": 10 } ]
-    },
-    {
-      // Carpentry.SplitSession: a log stood on the block and split along its checks.
-      "name": "SplitLog", "label": "firewood", "station": "ChoppingBlock", "skill": "Crafting", "work": 300, "helpedBy": [ "Axe" ],
-      "description": "Split a log into 4 firewood.",
-      "ingredients": [ { "def": "Log", "count": 1 } ],
-      "products": [ { "def": "Firewood", "count": 4 } ]
-    },
-    {
-      "name": "SplitGreatLog", "label": "firewood from a great log", "station": "ChoppingBlock", "skill": "Crafting", "work": 600, "helpedBy": [ "Axe" ],
-      "description": "Split a great log into 8 firewood.",
-      "ingredients": [ { "def": "GreatLog", "count": 1 } ],
-      "products": [ { "def": "Firewood", "count": 8 } ]
-    },
+
+
+
+
+
     {
       "name": "TanHides", "label": "leather", "station": "TanningRack", "skill": "Crafting", "work": 900,
       "description": "Scrape, stretch and tan 3 hides into 4 leather.",
@@ -796,33 +728,7 @@
       "ingredients": [ { "def": "Leather", "count": 4 } ],
       "products": [ { "def": "Satchel", "count": 1 } ]
     },
-    {
-      // Fletched by hand at the bench (Carpentry/FletchSession): shafts split from a plank, sighted
-      // true, and three feathers set on each. An AI carpenter makes them the plain way.
-      "name": "Fletch", "label": "quiver of arrows", "station": "CarpenterBench", "skill": "Crafting", "work": 900,
-      "description": "Split a plank into shafts, sight them true and fletch them: a quiver of arrows.",
-      "ingredients": [ { "def": "Planks", "count": 1 }, { "def": "Feathers", "count": 1 } ],
-      "products": [ { "def": "Quiver", "count": 1 } ]
-    },
-    {
-      "name": "MakeBow", "label": "hunting bow", "station": "CarpenterBench", "skill": "Crafting", "minSkill": 4, "work": 1800,
-      "unlock": { "skill": "Crafting", "level": 4 },
-      "ingredients": [ { "def": "Planks", "count": 4 } ],
-      "products": [ { "def": "Bow", "count": 1 } ]
-    },
-    {
-      // At the bench, the woodshop's: a cudgel and a staff, plain work, and what makes the
-      // carpenter the one who mends them (Combat/WeaponWear.MendKind).
-      "name": "MakeCudgel", "label": "spiked club", "station": "CarpenterBench", "skill": "Crafting", "work": 700,
-      "description": "A cudgel shaped from a plank and studded: something to hand a villager when the bandits come.",
-      "ingredients": [ { "def": "Planks", "count": 2 } ],
-      "products": [ { "def": "Club", "count": 1 } ]
-    },
-    {
-      "name": "MakeStaff", "label": "walking staff", "station": "CarpenterBench", "skill": "Crafting", "work": 600,
-      "description": "A straight staff, shaved and shod.",
-      "ingredients": [ { "def": "Planks", "count": 2 } ],
-      "products": [ { "def": "Staff", "count": 1 } ]
-    }
+
+
   ]
 }

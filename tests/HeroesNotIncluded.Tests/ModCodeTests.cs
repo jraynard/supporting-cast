@@ -66,7 +66,7 @@ public class ModCodeTests
             Assert.Equal("example:StrumSession", SimContent.NameOf(session));
             Assert.True(WorkSession.Sessions.ContainsKey("example:StrumSession"));
 
-            var sim = Simulation.CreateStandard(Sim.Defs.DefDatabase.LoadDirectory(DevPaths.Defs!), 8, 8, 1);
+            var sim = Simulation.CreateStandard(TestContent.Defs(), 8, 8, 1);
             var names = sim.Systems.Select(s => s.Name).ToList();
             Assert.Equal(names.IndexOf("AI") - 1, names.IndexOf("Metronome"));
         }

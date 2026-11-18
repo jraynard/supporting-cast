@@ -24,8 +24,8 @@ public static class Bench
             Sim.Scenarios.VillageRound.Setup(sim, map);
             sim.Director.Enable(sim.Defs.Difficulty("Normal"));
             sim.Round.OpenLobby();
-            var trades = Sim.Scenarios.SeasonSweep.Trades;
-            for (var i = 0; i < trades.Length; i++)
+            var trades = Sim.Scenarios.SeasonSweep.TradesIn(sim.Defs);
+            for (var i = 0; i < trades.Count; i++)
             {
                 var id = new Guid(i + 1, 0, 0, new byte[8]);
                 sim.ApplyNow(new Sim.Round.JoinLobbyCommand(id, $"Bot {i + 1}", default));

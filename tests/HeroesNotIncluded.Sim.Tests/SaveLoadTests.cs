@@ -192,7 +192,7 @@ public class SaveLoadTests
     public void UnknownDefsAreNamed()
     {
         // Saved with defs where the campfire is called something this game doesn't have.
-        var defs = DefDatabase.LoadDirectory(TestWorld.FindDefsDirectory()); // a private copy we can rename in
+        var defs = TestWorld.LoadFreshDefs(); // a private copy we can rename in
         var (sim, center) = TestWorld.Millbrook(3, defs: defs);
         sim.SpawnStructure(defs.Thing("Campfire"), sim.SpiralFrom(center + new int3(3, 3, 0), 6).First(c => sim.CanPlaceStructure(c, defs.Thing("Campfire"))));
         defs.Thing("Campfire").Name = "Brazier";
@@ -214,7 +214,7 @@ public class SaveLoadTests
                 var text = File.ReadAllText(file);
                 File.WriteAllText(Path.Combine(dir, Path.GetFileName(file)), everyFile || Path.GetFileName(file) == "core.json" ? edit(text) : text);
             }
-            return DefDatabase.LoadDirectory(dir);
+            return DefDatabase.LoadDirectories([dir, .. TestWorld.DefDirectories().Skip(1)]);
         }
         finally
         {

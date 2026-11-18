@@ -8,7 +8,7 @@ namespace HeroesNotIncluded.Tests;
 /// </summary>
 public class TutorialWordsTests
 {
-    private static readonly Lazy<DefDatabase> Defs = new(() => DefDatabase.LoadDirectory(DevPaths.Defs!));
+    private static readonly Lazy<DefDatabase> Defs = new(() => TestContent.Defs());
 
     private static IEnumerable<(string Where, LessonDef Lesson)> Chapters()
     {

@@ -7,7 +7,7 @@ namespace HeroesNotIncluded.Tests;
 
 public sealed class SaveSlotsTests : IDisposable
 {
-    private static readonly Lazy<DefDatabase> Defs = new(() => DefDatabase.LoadDirectory(FindDefs()));
+    private static readonly Lazy<DefDatabase> Defs = new(TestContent.Defs);
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "dw-saves-" + Guid.NewGuid().ToString("N"));
     private static readonly Dictionary<string, string> NoMeta = [];
 

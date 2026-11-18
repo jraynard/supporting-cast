@@ -21,7 +21,7 @@ public class DirectorPacingTests
     /// <summary>A round in Millbrook on its own copy of the defs, with these beats for its season (the real ones if null).</summary>
     private static Simulation Round(List<CrisisBeat>? beats = null)
     {
-        var defs = DefDatabase.LoadDirectory(TestWorld.FindDefsDirectory()); // a private copy: the season's beats are changed
+        var defs = TestWorld.LoadFreshDefs(); // a private copy: the season's beats are changed
         if (beats != null)
             defs.Season.Beats = beats;
         var sim = VillageRound.NewSimulation(defs, 1234);

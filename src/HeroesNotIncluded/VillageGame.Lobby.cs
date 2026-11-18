@@ -55,7 +55,7 @@ public sealed partial class VillageGame
         if (heroTrade != null)
             round.SetPreferences(Guid.Empty, [heroTrade], []);
         // Bots ask for the trades that have a game to play, the hero's aside, so a solo round has its cast.
-        var wanted = Sim.Scenarios.SeasonSweep.Trades.Where(t => t != heroTrade?.Name).ToList();
+        var wanted = Sim.Scenarios.SeasonSweep.TradesIn(_sim.Defs).Where(t => t != heroTrade?.Name).ToList();
         var names = BotNames(HeroName);
         for (var i = 0; i < Bots; i++)
         {

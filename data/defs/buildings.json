@@ -345,45 +345,7 @@
         { "name": "Piled", "label": "on piles", "kit": "timber_plaster", "parts": { "foundation": "", "wall": "TimberWall", "roof": "ThatchRoofPart" } }
       ]
     },
-    {
-      "name": "Woodshop", "roles": [ "Woodshop" ], "label": "woodshop", "icon": "buildings/sawhorse",
-      // Its chest is the carpenter's stock: no villager's job takes from it (the logs aren't for the town's fires).
-      "keepsStock": true,
-      "description": "An open-fronted shed for woodworking on a plank floor: a sawhorse for planks, a carpenter's bench for bows and arrows, a chest of stock, logs and planks stacked to season, and bows on the wall.",
-      "layout": [
-        "WWWWWWW",
-        "W.....W",
-        "W.....W",
-        "W.....W",
-        "P.....P"
-      ],
-      "parts": { "foundation": "Sill", "wall": "LogWall", "post": "CornerPost", "roof": "TurfRoofPart" },
-      // Torches on the side walls, as the smithy has.
-      "lamps": [ { "at": [1, 2], "facing": 3, "def": "WallTorch" }, { "at": [5, 2], "facing": 1, "def": "WallTorch" } ],
-      // The sawhorse and bench at the back, worked from the row in front of them (kept clear); bows on
-      // the wall between; the chopping block by the saw and planks beside it, arrows by the chest along the front,
-      // the middle left open from the street.
-      "furnish": [
-        { "def": "Sawhorse", "at": [1, 1] },
-        { "def": "BowRack", "at": [3, 1] },
-        { "def": "CarpenterBench", "at": [4, 1] },
-        { "def": "ChoppingBlock", "at": [1, 3] }, // split logs for firewood (Carpentry.SplitSession)
-        { "def": "PlankStack", "at": [2, 3] },
-        { "def": "ArrowBarrel", "at": [4, 3] },
-        { "def": "Chest", "at": [5, 3], "facing": 2 },
-        { "def": "Shavings", "at": [2, 2] },
-        { "def": "WaresShelf", "at": [1, 4], "facing": 2 } // quivers for sale, at the open front
-      ],
-      // Customers line up at the open front, out into the street.
-      "line": [ [3, 4], [3, 5], [3, 6], [3, 7], [3, 8], [3, 9] ],
-      "sign": [0, 4], // on the front post, by the open front
-      "signFace": "props/sign_saw",
-      "variants": [
-        { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster", "parts": { "wall": "TimberWall", "roof": "ThatchRoofPart" } },
-        { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
-        { "name": "Thatch", "label": "thatched", "kit": "stave_thatch", "parts": { "wall": "StaveWall", "roof": "ThatchRoofPart" } }
-      ]
-    },
+
     {
       // An inn with no kitchen of its own, for a town whose cook keeps a cookhouse: the Inn's common
       // room, bar, storeroom and rooms upstairs, and a scullery behind where the kitchen would be.

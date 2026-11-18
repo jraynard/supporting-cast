@@ -84,7 +84,7 @@ public class PropModelTests
     {
         // Three cells long, a bar's footprint is centred on its anchor: drawn from the anchor's
         // corner, it reached a cell past its end and through the inn's wall.
-        var defs = DefDatabase.LoadDirectory(DevPaths.Defs!);
+        var defs = TestContent.Defs();
         var def = defs.Thing(name);
         var anchor = new int3(10, 20, 3);
         var map = new HeroesNotIncluded.Sim.Maps.Map(40, 40, 6, defs.AllBlocks[0]);
@@ -168,7 +168,7 @@ public class PropModelTests
     [Fact]
     public void ATableHasASurfaceButNothingIsPutOnIt()
     {
-        var defs = DefDatabase.LoadDirectory(DevPaths.Defs!);
+        var defs = TestContent.Defs();
         var sim = HeroesNotIncluded.Sim.Simulation.CreateStandard(defs, 20, 20, 1);
         var at = new int3(5, 5, 1);
         Assert.Equal(0f, WorldRenderer.SurfaceUnder(sim.Map, sim.World, at));

@@ -9,7 +9,7 @@ namespace HeroesNotIncluded.Tests;
 /// <summary>The saved characters players play in every village, solo or co-op (<see cref="CharacterRoster"/>).</summary>
 public class CharacterRosterTests : IDisposable
 {
-    private static readonly Lazy<DefDatabase> Defs = new(() => DefDatabase.LoadDirectory(DevPaths.Defs!));
+    private static readonly Lazy<DefDatabase> Defs = new(() => TestContent.Defs());
 
     private readonly string _dir = Path.Combine(Path.GetTempPath(), $"dw-roster-{Guid.NewGuid():N}");
     private string File => Path.Combine(_dir, "characters.json");

@@ -11,7 +11,7 @@ public class InterpolationTests
 {
     private static Simulation Field()
     {
-        var sim = Simulation.CreateStandard(DefDatabase.LoadDirectory(DevPaths.Defs!), 20, 20, 3);
+        var sim = Simulation.CreateStandard(TestContent.Defs(), 20, 20, 3);
         sim.RebuildDerivedIfNeeded();
         return sim;
     }

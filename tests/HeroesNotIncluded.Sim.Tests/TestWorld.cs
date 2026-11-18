@@ -8,7 +8,23 @@ namespace HeroesNotIncluded.Sim.Tests;
 /// <summary>Helpers for building small headless simulations from the real game defs.</summary>
 public static class TestWorld
 {
-    private static readonly Lazy<DefDatabase> Defs = new(() => DefDatabase.LoadDirectory(FindDefsDirectory()));
+    private static readonly Lazy<DefDatabase> Defs = new(LoadFreshDefs);
+
+    /// <summary>The defs the game starts with: its own and the mods on by default (the carpenter's), as a copy of its own.</summary>
+    public static DefDatabase LoadFreshDefs() => DefDatabase.LoadDirectories(DefDirectories());
+
+    /// <summary>The game's defs directory, then each default mod's (<c>mods/*/defs</c> with <c>"defaultOn": true</c>).</summary>
+    public static IReadOnlyList<string> DefDirectories()
+    {
+        var core = FindDefsDirectory();
+        var mods = Path.GetFullPath(Path.Combine(core, "..", "..", "mods"));
+        var defaults = Directory.Exists(mods)
+            ? Directory.GetDirectories(mods).Order(StringComparer.Ordinal)
+                .Where(d => File.Exists(Path.Combine(d, "mod.json")) && File.ReadAllText(Path.Combine(d, "mod.json")).Contains("\"defaultOn\": true") && Directory.Exists(Path.Combine(d, "defs")))
+                .Select(d => Path.Combine(d, "defs"))
+            : [];
+        return [core, .. defaults];
+    }
 
     public static DefDatabase LoadDefs() => Defs.Value;
 

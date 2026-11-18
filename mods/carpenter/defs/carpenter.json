@@ -1,0 +1,239 @@
+{
+  "trades": [
+    // The carpenter works the woodshop: planks at the sawhorse, arrows at the bench for the parties'
+    // archers, the bridge braced when a raid brings it down, and the festival put up (Carpentry/).
+    { "name": "Carpenter", "label": "carpenter", "pace": "Steady", "description": "Wood and arrows: saws planks, fletches quivers for the parties' archers, mends their bows and cudgels, braces the bridge when it's down and puts up the festival.",
+      "workplace": "Woodshop", "workPriorities": { "Craft": 1, "Construct": 2 }, "skills": { "Crafting": 5, "Construction": 6, "Shooting": 4 }, "mendsTown": true, "builds": true,
+      "wants": [ { "thing": "Wood", "below": 6, "count": 12, "price": 6 } ],
+      "fells": true,
+      "knows": [ "Sawhorse", "CarpenterBench", "ChoppingBlock" ],
+      "stations": [ "Sawhorse", "CarpenterBench", "ChoppingBlock" ],
+      "tutorialIntro": "You're the carpenter. Logs come in, planks and arrows go out. Archers in the parties need arrows for the road, and a well-fletched quiver brings them home. A worn bow or a split cudgel is yours to mend, not the smith's. When the bridge comes down, or the festival needs putting up, the town looks to you.",
+      "lessons": [
+        { "id": "saw", "title": "Saw some planks", "core": true,
+          "blurb": "Hew a log square with the axe, then saw the beam into planks along its chalk lines.",
+          "steps": [
+            { "id": "logs", "text": "Take a log from the woodshop's chest (~F~). It's heavy: you'll carry it in both arms." },
+            { "id": "start", "text": "Carry it to the sawhorse, hold ~F~ there and choose planks." },
+            { "id": "hew", "text": "First hew the log square. Hold ~F~ to raise the axe and let go to strike: the higher it's raised, the deeper the blow. Bring the right side flat down to the chalk line, then press ~Space~ (or right-click) to turn the log to the next.",
+              "more": "The dashed line shows where the blow will cut to. Past the chalk line is waste, wood left on is rough: finish a side with a light blow." },
+            { "id": "saw", "text": "Then saw the beam, as the top sawyer: ~S~ pulls the saw down (that's what cuts), ~W~ draws it back up. When the blade wanders off the line, the arrow shows the way back: ~A~ or ~D~.",
+              "more": "Long, steady strokes: a rushed one wanders. The squarer the log and the straighter the cuts, the more planks you get." } ],
+          "notes": [ "A log makes up to four planks: a crooked cut wastes some.",
+                     "When the chest's out of logs, fell a tree for more. The barn's timber saws into planks too, at a pinch, and a great log makes ten long ones with a pitman." ] },
+        { "id": "quiver", "title": "Make a quiver of arrows", "core": true,
+          "blurb": "Make one fine arrow at the bench, cut the rest to match, and put the quiver out for the parties' archers.",
+          "steps": [
+            { "id": "start", "text": "Hold ~F~ at the carpenter's bench and choose a quiver of arrows. It takes a plank and a bundle of feathers." },
+            { "id": "sight", "text": "First sight the shaft: hold ~F~ to bend it against its warp, and press ~Space~ when the needle reads straight. Bend too far and it warps the other way.",
+              "more": "Your eye isn't perfect: the needle is what you see, and a shaft can look truer than it is. Steady hands see better." },
+            { "id": "shave", "text": "Shave it smooth: move the knife with the mouse (or ~WASD~) and hold the button (or ~F~) to shave. Take the lumps down to the shaft's line, then press ~Space~.",
+              "more": "Below the line the knife bites into the shaft, and a gouge costs more than a little wood left on." },
+            { "id": "head", "text": "Fit the head: hold ~F~ to push it onto the shaft. It tips as it goes on: ~A~/~D~ (or the mouse) keep it on the line." },
+            { "id": "fletch", "text": "Then fletch it: point round the shaft with the mouse (or ~A~/~D~) and click (or ~F~) to set a feather. Three, evenly round it." },
+            { "id": "show", "text": "Put the quiver on the wares shelf at the woodshop's front (~F~ at it with the quiver in hand, or from your pack). It goes up for sale at once: open the shelf to change its price. Archers take one down and pay you before they set out: you needn't be there.", "ui": "inventory" } ],
+          "notes": [ "Only archers buy quivers: a party with a bow or two in it will come looking. An archer with none who finds your shelf bare asks you for one aloud: hand it to them and they pay.",
+                     "A true quiver brings an archer home in better shape. A warped one flies wide, and nobody can tell until it does.",
+                     "When raiders bring the bridge down, it's yours to mend: take 2 wood to the gap and press ~F~." ] },
+        { "id": "bow", "title": "Tiller a bow", "supply": [ { "def": "Planks", "count": 4 } ],
+          "blurb": "Scrape a bow stave until both limbs bend in an even arc. A good bow sells to a party's archer.",
+          "steps": [
+            { "id": "start", "text": "Hold ~F~ at the carpenter's bench and choose a hunting bow. It takes four planks." },
+            { "id": "tiller", "text": "The stave's on the tillering stick. Each bar under it is wood still to come off a section. ~A~/~D~ (or the mouse) picks one; hold ~F~ to scrape it down to its mark. When every bar's at its mark, press ~Space~.",
+              "more": "Short strokes: the scraper bites harder the longer you hold it, and wood scraped off can't go back. A bar below its mark is a hinge, worse than one left stiff." },
+            { "id": "string", "text": "String it: hold ~F~ to bend the bow against the floor, and press ~Space~ to slip the loop into the nock once the gauge is in the green.",
+              "more": "Too soon and the loop slips past: bend it again. Bend it into the red and the limbs strain." } ],
+          "notes": [ "Put a bow down in the woodshop (~G~) and price it: an archer with a worse one will buy it.",
+                     "When the town calls for arms before a raid, a bow hung on the muster rack is paid for like the smith's spears.",
+                     "An archer's worn bow comes to you to mend: take it, choose Mend at the bench, and re-tiller it where it's set stiff." ] },
+        { "id": "woods", "title": "Fell a tree",
+          "blurb": "Drop a tree where you mean it to fall, saw the trunk into logs where it lies, and carry one home.",
+          "steps": [
+            { "id": "tree", "text": "Go to a tree, an axe on you, and press ~F~ at it to fell it. Pick one with room round it." },
+            { "id": "aim", "text": "Aim the fall: ~A~/~D~ turn the arrow. Keep it off roofs and people. The tree leans a little somewhere; mind the lean arrow.",
+              "more": "The line on the ground shows where it will come down, as long as the tree is tall." },
+            { "id": "notch", "text": "Cut the notch on the side it's to fall: hold ~F~ to raise the axe and let go to strike, down to the chalk mark. Then press ~Space~ to go round for the back cut.",
+              "more": "Too shallow and the notch won't steer it: it goes the way it leans. Too deep weakens the hinge." },
+            { "id": "back", "text": "Back cut from the other side. Each blow thins the hinge left between the cuts; when it's thin, the tree goes. Shout, and stand clear.",
+              "more": "Cut through the hinge and nothing steers it: it falls with its lean, whatever you aimed. It hurts anyone it lands on." },
+            { "id": "buck", "text": "Saw the trunk into logs where it lies: ~F~ at it, then ~S~ pulls the saw (that cuts) and ~W~ pushes it back. Past halfway, press ~Space~ to drive a wedge in before the cut closes on the saw.",
+              "more": "An oak's butt is thick: someone on the other end of the saw (Help! from the quick-say wheel) makes it go far faster. With only its butt left, ~Space~ keeps it whole as a great log for the pit saw." },
+            { "id": "carry", "text": "Carry a log home to the sawhorse. It's heavy: you'll walk slowly with it, and a great log slower still." } ],
+          "notes": [ "A log saws into four planks, a great log into ten long ones with a pitman.",
+                     "Logs split into firewood at the chopping block, for when the town's fires run short." ] },
+        { "id": "firewood", "title": "Split firewood", "supply": [ { "def": "Log", "count": 1 } ],
+          "blurb": "Split a log into firewood at the chopping block. The town's hearths, ovens and kilns burn it.",
+          "steps": [
+            { "id": "start", "text": "Carry a log to the chopping block, hold ~F~ there and choose firewood." },
+            { "id": "split", "text": "Put the axe's edge over the crack in the log's end (~A~/~D~), hold ~F~ to raise it past the mark and let go. A clean split shows the next crack.",
+              "more": "A hard blow off the crack sticks the axe: press ~Space~ a few times to rock it free. A soft one just bounces." } ],
+          "notes": [ "The carter brings most of the town's firewood. In a shortage none comes, and it's down to you.",
+                     "A log gives four firewood, a great log eight." ] } ],
+      "kit": [ { "def": "Axe" }, { "def": "Saw" }, { "def": "ClawHammer" }, { "def": "Planks", "count": 4 }, { "def": "Feathers", "count": 4 } ] }
+  ],
+  "things": [
+    // ---- Stations ----
+    {
+      "name": "Sawhorse", "category": "Building", "solid": true, "sprite": "buildings/sawhorse", "size": [2, 1],
+      // Workbenches are two cells wide (the sawyer works from the front, +Y).
+      "description": "Saws logs into planks. Two cells wide. Add bills in its window; F at it to saw some yourself.",
+      "maxHp": 80, "flammability": 1.0, 
+      "building": { "work": 90, "surfaceHeight": 0.54, "workbench": { "bills": 6 }, "cost": [ { "def": "Wood", "count": 6 } ] },
+      "model": [
+        { "min": [0.10, 0.40, 0.42], "max": [1.90, 0.60, 0.54], "top": "props/log_side", "side": "props/log_side", "front": "props/log_end" },
+        { "min": [0.22, 0.30, 0.00], "max": [0.30, 0.38, 0.46], "top": "furniture/oak_planks", "side": "furniture/oak_planks" },
+        { "min": [0.22, 0.62, 0.00], "max": [0.30, 0.70, 0.46], "top": "furniture/oak_planks", "side": "furniture/oak_planks" },
+        { "min": [1.70, 0.30, 0.00], "max": [1.78, 0.38, 0.46], "top": "furniture/oak_planks", "side": "furniture/oak_planks" },
+        { "min": [1.70, 0.62, 0.00], "max": [1.78, 0.70, 0.46], "top": "furniture/oak_planks", "side": "furniture/oak_planks" },
+        { "min": [0.96, 0.36, 0.00], "max": [1.04, 0.64, 0.40], "top": "furniture/oak_planks", "side": "furniture/oak_planks" }
+      ]
+    },
+    {
+      // Carpentry.SplitSession: a stump to split logs on, the axe kept in it.
+      "name": "ChoppingBlock", "label": "chopping block", "category": "Building", "solid": true, "sprite": "buildings/sawhorse",
+      "description": "A broad round of elm to split logs on. Add bills in its window; F at it with a log to split it yourself.",
+      "maxHp": 120, "flammability": 0.8,
+      "building": { "work": 60, "surfaceHeight": 0.42, "workbench": { "bills": 4 }, "cost": [ { "def": "Wood", "count": 2 } ] },
+      "model": [
+        { "min": [0.22, 0.22, 0.00], "max": [0.78, 0.78, 0.42], "top": "props/log_end", "side": "props/log_side" }
+      ]
+    },
+    {
+      "name": "CarpenterBench", "label": "carpenter's bench", "category": "Building", "solid": true, "sprite": "buildings/carpenter_bench", "size": [2, 1],
+      "description": "A planked workbench with a vise, two cells wide, for bows, clubs and finer woodwork.",
+      "maxHp": 120, "flammability": 1.0, 
+      "building": { "work": 200, "surfaceHeight": 0.68, "workbench": { "bills": 8 }, "cost": [ { "def": "Planks", "count": 14 }, { "def": "Wood", "count": 2 } ] },
+      "model": [
+        { "min": [0.02, 0.14, 0.56], "max": [1.98, 0.86, 0.68], "top": "furniture/oak_planks", "side": "furniture/oak_planks" },
+        { "min": [0.06, 0.18, 0.00], "max": [0.16, 0.28, 0.56], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [1.84, 0.18, 0.00], "max": [1.94, 0.28, 0.56], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.06, 0.72, 0.00], "max": [0.16, 0.82, 0.56], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [1.84, 0.72, 0.00], "max": [1.94, 0.82, 0.56], "top": "furniture/oak_planks", "side": "furniture/oak_leg" },
+        { "min": [0.08, 0.20, 0.16], "max": [1.92, 0.80, 0.22], "top": "furniture/oak_planks", "side": "furniture/oak_planks" },
+        { "min": [1.66, 0.76, 0.50], "max": [1.84, 0.90, 0.76], "top": "props/stone_block", "side": "props/stone_block" },
+        { "min": [0.30, 0.30, 0.68], "max": [0.90, 0.46, 0.73], "top": "furniture/oak_planks", "side": "furniture/oak_planks" }
+      ]
+    }
+  ],
+  "recipes": [
+    {
+      "name": "SawLog", "label": "planks from a log", "station": "Sawhorse", "skill": "Crafting", "work": 600, "helpedBy": [ "Saw" ],
+      "description": "Saw a log into 4 planks.",
+      "ingredients": [ { "def": "Log", "count": 1 } ],
+      "products": [ { "def": "Planks", "count": 4 } ]
+    },
+    {
+      // Timber (Wood) from the barn, for want of a log: the town's builders' way, and the carpenter's last resort.
+      "name": "SawPlanks", "label": "planks from timber", "station": "Sawhorse", "skill": "Crafting", "work": 600, "helpedBy": [ "Saw" ],
+      "description": "Saw 6 timber into 10 planks.",
+      "ingredients": [ { "def": "Wood", "count": 6 } ],
+      "products": [ { "def": "Planks", "count": 10 } ]
+    },
+    {
+      // Pitman's work (Work.Pairs): too long for one saw. Hewn as any, sawn by a top sawyer and a pitman below.
+      "name": "SawGreatLog", "label": "planks from a great log", "station": "Sawhorse", "skill": "Crafting", "work": 1200, "helpedBy": [ "Saw" ],
+      "twoHanded": true,
+      "description": "A great log, too long for one saw: a top sawyer and a pitman below make 10 long planks of it.",
+      "ingredients": [ { "def": "GreatLog", "count": 1 } ],
+      "products": [ { "def": "Planks", "count": 10 } ]
+    },
+    {
+      // Carpentry.SplitSession: a log stood on the block and split along its checks.
+      "name": "SplitLog", "label": "firewood", "station": "ChoppingBlock", "skill": "Crafting", "work": 300, "helpedBy": [ "Axe" ],
+      "description": "Split a log into 4 firewood.",
+      "ingredients": [ { "def": "Log", "count": 1 } ],
+      "products": [ { "def": "Firewood", "count": 4 } ]
+    },
+    {
+      "name": "SplitGreatLog", "label": "firewood from a great log", "station": "ChoppingBlock", "skill": "Crafting", "work": 600, "helpedBy": [ "Axe" ],
+      "description": "Split a great log into 8 firewood.",
+      "ingredients": [ { "def": "GreatLog", "count": 1 } ],
+      "products": [ { "def": "Firewood", "count": 8 } ]
+    },
+    {
+      // Fletched by hand at the bench (Carpentry/FletchSession): shafts split from a plank, sighted
+      // true, and three feathers set on each. An AI carpenter makes them the plain way.
+      "name": "Fletch", "label": "quiver of arrows", "station": "CarpenterBench", "skill": "Crafting", "work": 900,
+      "description": "Split a plank into shafts, sight them true and fletch them: a quiver of arrows.",
+      "ingredients": [ { "def": "Planks", "count": 1 }, { "def": "Feathers", "count": 1 } ],
+      "products": [ { "def": "Quiver", "count": 1 } ]
+    },
+    {
+      "name": "MakeBow", "label": "hunting bow", "station": "CarpenterBench", "skill": "Crafting", "minSkill": 4, "work": 1800,
+      "unlock": { "skill": "Crafting", "level": 4 },
+      "ingredients": [ { "def": "Planks", "count": 4 } ],
+      "products": [ { "def": "Bow", "count": 1 } ]
+    },
+    {
+      // At the bench, the woodshop's: a cudgel and a staff, plain work, and what makes the
+      // carpenter the one who mends them (Combat/WeaponWear.MendKind).
+      "name": "MakeCudgel", "label": "spiked club", "station": "CarpenterBench", "skill": "Crafting", "work": 700,
+      "description": "A cudgel shaped from a plank and studded: something to hand a villager when the bandits come.",
+      "ingredients": [ { "def": "Planks", "count": 2 } ],
+      "products": [ { "def": "Club", "count": 1 } ]
+    },
+    {
+      "name": "MakeStaff", "label": "walking staff", "station": "CarpenterBench", "skill": "Crafting", "work": 600,
+      "description": "A straight staff, shaved and shod.",
+      "ingredients": [ { "def": "Planks", "count": 2 } ],
+      "products": [ { "def": "Staff", "count": 1 } ]
+    }
+  ],
+  "buildings": [
+    {
+      "name": "Woodshop", "roles": [ "Woodshop" ], "label": "woodshop", "icon": "buildings/sawhorse",
+      // Its chest is the carpenter's stock: no villager's job takes from it (the logs aren't for the town's fires).
+      "keepsStock": true,
+      "description": "An open-fronted shed for woodworking on a plank floor: a sawhorse for planks, a carpenter's bench for bows and arrows, a chest of stock, logs and planks stacked to season, and bows on the wall.",
+      "layout": [
+        "WWWWWWW",
+        "W.....W",
+        "W.....W",
+        "W.....W",
+        "P.....P"
+      ],
+      "parts": { "foundation": "Sill", "wall": "LogWall", "post": "CornerPost", "roof": "TurfRoofPart" },
+      // Torches on the side walls, as the smithy has.
+      "lamps": [ { "at": [1, 2], "facing": 3, "def": "WallTorch" }, { "at": [5, 2], "facing": 1, "def": "WallTorch" } ],
+      // The sawhorse and bench at the back, worked from the row in front of them (kept clear); bows on
+      // the wall between; the chopping block by the saw and planks beside it, arrows by the chest along the front,
+      // the middle left open from the street.
+      "furnish": [
+        { "def": "Sawhorse", "at": [1, 1] },
+        { "def": "BowRack", "at": [3, 1] },
+        { "def": "CarpenterBench", "at": [4, 1] },
+        { "def": "ChoppingBlock", "at": [1, 3] }, // split logs for firewood (Carpentry.SplitSession)
+        { "def": "PlankStack", "at": [2, 3] },
+        { "def": "ArrowBarrel", "at": [4, 3] },
+        { "def": "Chest", "at": [5, 3], "facing": 2 },
+        { "def": "Shavings", "at": [2, 2] },
+        { "def": "WaresShelf", "at": [1, 4], "facing": 2 } // quivers for sale, at the open front
+      ],
+      // Customers line up at the open front, out into the street.
+      "line": [ [3, 4], [3, 5], [3, 6], [3, 7], [3, 8], [3, 9] ],
+      "sign": [0, 4], // on the front post, by the open front
+      "signFace": "props/sign_saw",
+      "variants": [
+        { "name": "Timber", "label": "timber-framed", "kit": "timber_plaster", "parts": { "wall": "TimberWall", "roof": "ThatchRoofPart" } },
+        { "name": "Turf", "label": "turf-roofed", "kit": "log_turf" },
+        { "name": "Thatch", "label": "thatched", "kit": "stave_thatch", "parts": { "wall": "StaveWall", "roof": "ThatchRoofPart" } }
+      ]
+    }
+  ],
+  "services": [
+    // Wooden gear (a bow, a club, a staff) mended at the woodshop, and a crossbow at the tinker's
+    // (Combat/WeaponWear.MendKind: whoever makes a piece mends it): {1} the piece.
+    { "name": "WoodRepair", "icon": "items/bow", "label": "a bow or haft mended", "at": "Woodshop", "defaultPrice": 6, "worthMin": 7, "worthMax": 14,
+      "tooDearLines": [ "{0} silver to see to my {1}? I'll wrap it with twine and hope.", "{0}? I could cut a new {1} from a hedge for that." ], "patienceHours": 5,
+      "lines": [ "My {1}'s gone tired in the wood. {0} silver to whoever can put it right.", "Carpenter! This {1} needs seeing to. {0} silver." ] },
+    // A quiver asked for by an archer with none, when there's none on the woodshop's shelf (Carpentry/Fletching):
+    // served by handing them one. Shot away on each quest, so they ask again when they're back.
+    { "name": "Arrows", "icon": "items/quiver", "label": "a quiver of arrows", "at": "Woodshop", "defaultPrice": 4, "worthMin": 5, "worthMax": 9,
+      "tooDearLines": [ "{0} silver for arrows? I'll cut my own from the hedge.", "{0} a quiver? I'll pick up what I shot." ], "patienceHours": 5,
+      "lines": [ "I've not an arrow left to my name. {0} silver for a quiver, whoever can fletch one.",
+                 "Carpenter! A quiver of arrows before we ride out. {0} silver.", "Arrows, anyone? {0} silver for a quiver that flies true." ] },
+    { "name": "WagonJoinery", "icon": "ui/icon_build", "label": "a wagon's woodwork mended", "at": "Woodshop", "defaultPrice": 8, "worthMin": 10, "worthMax": 18,
+      "tooDearLines": [ "{0} silver for a bit of wood? We'll nail it ourselves.", "{0}? We'll limp on as we are." ], "patienceHours": 6,
+      "lines": [ "Our wagon's come in with {1}. {0} silver to whoever can mend the woodwork.", "Carpenter! The wagon's got {1}. {0} silver." ] }
+  ]
+}

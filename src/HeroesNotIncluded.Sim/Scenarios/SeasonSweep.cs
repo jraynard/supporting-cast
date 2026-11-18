@@ -14,15 +14,23 @@ namespace HeroesNotIncluded.Sim.Scenarios;
 /// </summary>
 public static class SeasonSweep
 {
-    /// <summary>Every trade with a game of its own: the bots' table (an AI labourer runs the errands).</summary>
+    /// <summary>The game's trades with a game of their own, in the order the bots sit (an AI labourer runs the errands).</summary>
     public static readonly string[] Trades = ["Innkeeper", "Cook", "Blacksmith", "Empath", "Tinker", "Carpenter"];
+
+    /// <summary>
+    /// The bots' table with these defs: the game's trades that are loaded (a mod's turned off leaves its
+    /// seat empty), then any other trade with a workplace (a mod's), in def order.
+    /// </summary>
+    public static IReadOnlyList<string> TradesIn(DefDatabase defs) =>
+        [.. Trades.Where(t => defs.AllTrades.Any(d => d.Name == t)),
+         .. defs.AllTrades.Where(d => d.HasWorkplace && !Trades.Contains(d.Name)).Select(d => d.Name)];
 
     /// <param name="botSeed">The first bot's seed (the rest follow it); by default derived from <paramref name="seed"/>.</param>
     /// <param name="map">The town it's played in (data/defs/maps/): Millbrook unless told otherwise.</param>
     public static SeasonResult Play(DefDatabase defs, ulong seed, string difficulty = "Normal", IReadOnlyList<string>? trades = null, ulong? botSeed = null,
         string map = VillageRound.DefaultMap)
     {
-        trades ??= Trades;
+        trades ??= TradesIn(defs);
         var sim = VillageRound.NewSimulation(defs, seed, map);
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim, map);

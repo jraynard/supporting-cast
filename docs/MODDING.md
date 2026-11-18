@@ -159,7 +159,12 @@ The game's own rules (CLAUDE.md) bind its mods:
   `SimRegistry` (systems, codecs, lessons, bots) and `IBotTrade`; old saves load through `formerly` names.
   Bench hashes and bot-played seasons unchanged.
 - [ ] The carpenter's game half (its work views, the woods, sounds) moved into its own `Carpenter.dll`.
-- [ ] The carpenter's defs, art and sounds moved into the mod, so turning it off leaves no carpenter.
+- [x] The carpenter's defs (its trade, stations, recipes, the woodshop and its services) moved into
+  `mods/carpenter/defs` (`tools/move_defs.py` lifts defs out with their comments). Turned off
+  (`--mods -carpenter`, or the Mods panel), a round deals no carpenter, the woodshop's plot stands
+  empty (`MapDef.Absent`), and its services aren't asked for; `WithoutTheCarpenterTests` plays a
+  season to the end that way. Turned on, bench hashes and bot-played seasons are unchanged.
+- [ ] The carpenter's art and sounds moved into the mod (`textures/`, `sounds/`).
 - [ ] Game modes.
 - [ ] The bard as a mod; the ModKit and the skills.
 - [ ] Steam Workshop (ROADMAP.md, Later).

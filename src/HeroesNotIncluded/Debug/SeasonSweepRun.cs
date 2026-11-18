@@ -20,7 +20,7 @@ public static class SeasonSweepRun
         var difficulty = Value(args, "--difficulty") ?? "Normal";
         var map = Value(args, "--map") ?? VillageRound.DefaultMap;
         // The bots' table: --trades Innkeeper,Cook,... (one bot each), or the usual six.
-        var trades = Value(args, "--trades") is { } t ? t.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : SeasonSweep.Trades;
+        var trades = Value(args, "--trades") is { } t ? t.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : [.. SeasonSweep.TradesIn(defs)];
         var seeds = Enumerable.Range(0, n).Select(i => first + (ulong)i).ToArray();
 
         Console.WriteLine($"== Seasons in {map}, {difficulty}, bots as {string.Join(", ", trades)}; seeds {first}..{first + (ulong)n - 1} ==");
@@ -58,7 +58,7 @@ public static class SeasonSweepRun
         // What each trade's bot played: a game no bot starts shows here as missing, not just as a lost round.
         Console.WriteLine();
         Console.WriteLine("BOTS (means a season)");
-        foreach (var trade in SeasonSweep.Trades)
+        foreach (var trade in SeasonSweep.TradesIn(defs))
         {
             var stats = results.Select(r => r.Bots.GetValueOrDefault(trade)).OfType<Sim.Bots.BotStats>().ToList();
             if (stats.Count == 0)

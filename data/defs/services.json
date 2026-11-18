@@ -34,28 +34,17 @@
       "tooDearLines": [ "{0} silver to open a box? We'll take a hammer to it ourselves.", "{0}? There's not that much in it." ], "patienceHours": 6,
       "lines": [ "We dragged this {1} all the way back. {0} silver to whoever opens it, and keeps their fingers.",
                  "Tinker! This {1} won't open and we don't trust it. {0} silver." ] },
-    // Wooden gear (a bow, a club, a staff) mended at the woodshop, and a crossbow at the tinker's
-    // (Combat/WeaponWear.MendKind: whoever makes a piece mends it): {1} the piece.
-    { "name": "WoodRepair", "icon": "items/bow", "label": "a bow or haft mended", "at": "Woodshop", "defaultPrice": 6, "worthMin": 7, "worthMax": 14,
-      "tooDearLines": [ "{0} silver to see to my {1}? I'll wrap it with twine and hope.", "{0}? I could cut a new {1} from a hedge for that." ], "patienceHours": 5,
-      "lines": [ "My {1}'s gone tired in the wood. {0} silver to whoever can put it right.", "Carpenter! This {1} needs seeing to. {0} silver." ] },
+
     { "name": "CrossbowRepair", "icon": "items/crossbow", "label": "a crossbow mended", "at": "TinkerShop", "defaultPrice": 7, "worthMin": 8, "worthMax": 15,
       "tooDearLines": [ "{0} silver for that? The {1} still shoots, mostly.", "{0}? I'll crank it gently." ], "patienceHours": 5,
       "lines": [ "The lock on this {1} keeps slipping. {0} silver to whoever can mend it.", "Tinker! My {1}'s nut won't hold. {0} silver." ] },
-    // A quiver asked for by an archer with none, when there's none on the woodshop's shelf (Carpentry/Fletching):
-    // served by handing them one. Shot away on each quest, so they ask again when they're back.
-    { "name": "Arrows", "icon": "items/quiver", "label": "a quiver of arrows", "at": "Woodshop", "defaultPrice": 4, "worthMin": 5, "worthMax": 9,
-      "tooDearLines": [ "{0} silver for arrows? I'll cut my own from the hedge.", "{0} a quiver? I'll pick up what I shot." ], "patienceHours": 5,
-      "lines": [ "I've not an arrow left to my name. {0} silver for a quiver, whoever can fletch one.",
-                 "Carpenter! A quiver of arrows before we ride out. {0} silver.", "Arrows, anyone? {0} silver for a quiver that flies true." ] },
+
     // Their wagon, mended where it's parked (Tinkering/Wagons): the wheel at the tinker's, the woodwork (an axle,
     // a sprung board) at the carpenter's, each its own order. {1} what's wrong with that part.
     { "name": "WagonRepair", "icon": "ui/icon_build", "label": "a wagon wheel trued", "at": "TinkerShop", "defaultPrice": 8, "worthMin": 10, "worthMax": 18,
       "tooDearLines": [ "{0} silver for a wheel? We'll lash it up ourselves.", "{0}? The wagon's not worth that." ], "patienceHours": 6,
       "lines": [ "Our wagon's come in with {1}. {0} silver to whoever can true it.", "Tinker! The wagon's got {1}. {0} silver." ] },
-    { "name": "WagonJoinery", "icon": "ui/icon_build", "label": "a wagon's woodwork mended", "at": "Woodshop", "defaultPrice": 8, "worthMin": 10, "worthMax": 18,
-      "tooDearLines": [ "{0} silver for a bit of wood? We'll nail it ourselves.", "{0}? We'll limp on as we are." ], "patienceHours": 6,
-      "lines": [ "Our wagon's come in with {1}. {0} silver to whoever can mend the woodwork.", "Carpenter! The wagon's got {1}. {0} silver." ] },
+
     // A curio from a quest looked over (Tinkering/Curios): {1} the thing.
     { "name": "Appraise", "icon": "items/clockwork_bird", "label": "a curio appraised", "at": "TinkerShop", "defaultPrice": 6, "worthMin": 7, "worthMax": 14,
       "tooDearLines": [ "{0} silver to be told what it's worth? I'll find out when I sell it.", "{0}? It'd better be worth a lot." ], "patienceHours": 5,

@@ -10,7 +10,7 @@ public class StairsTests
     /// <summary>A landing a level up (walls under a floor) east of a stair at (5, 5, 1) that climbs +X.</summary>
     private static HeroesNotIncluded.Sim.Simulation Flight(bool clearFoot = true)
     {
-        var defs = DefDatabase.LoadDirectory(DevPaths.Defs!);
+        var defs = TestContent.Defs();
         var sim = HeroesNotIncluded.Sim.Simulation.CreateStandard(defs, 20, 20, 1, depth: 4);
         for (var y = 4; y <= 6; y++)
         for (var x = 6; x <= 7; x++)

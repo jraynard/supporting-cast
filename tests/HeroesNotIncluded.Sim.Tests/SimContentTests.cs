@@ -90,3 +90,32 @@ public class SimContentTests
         Assert.False(WorkSession.Sessions.ContainsKey("lutes:LuteSession"));
     }
 }
+
+/// <summary>A trade is a mod: turned off, the game goes on without it.</summary>
+[Collection(nameof(SimContentTests))]
+public class WithoutTheCarpenterTests(Xunit.Abstractions.ITestOutputHelper output)
+{
+    [Fact]
+    public void ASeasonPlaysToTheEndWithTheCarpenterOff()
+    {
+        try
+        {
+            SimContent.Use([]);
+            var defs = Defs.DefDatabase.LoadDirectory(TestWorld.FindDefsDirectory()); // the game's own defs, no mod's
+            Assert.DoesNotContain(defs.AllTrades, t => t.Name == "Carpenter");
+            var map = defs.Map(Scenarios.VillageRound.DefaultMap);
+            Assert.Contains("Woodshop", map.Absent);
+
+            var played = Scenarios.SeasonSweep.Play(defs, 1234, botSeed: 100);
+            var summary = played.Sim.Round.Summary;
+            Assert.True(summary != null, $"the round should end; it's {played.Sim.Round.Phase}");
+            output.WriteLine($"{summary.Headline} Renown {summary.Renown:0}, Dread {summary.Dread:0}");
+            Assert.DoesNotContain(summary.People, p => p.Trade == "Carpenter");
+            Assert.DoesNotContain(played.Sim.Systems, s => s.Name is "Felling" or "Refurnishing");
+        }
+        finally
+        {
+            SimContent.Use(TestContent.Standard);
+        }
+    }
+}

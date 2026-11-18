@@ -104,9 +104,9 @@ public class AnimationTests
     [Fact]
     public void ShippedArtPassesAudit()
     {
-        var data = Path.Combine(AppContext.BaseDirectory, "data");
-        var packed = AtlasPacker.Pack(Path.Combine(data, "textures"));
-        var report = ArtAudit.Run(DefDatabase.LoadDirectory(Path.Combine(data, "defs")), packed.Sprites, packed.Sheets);
+        var content = TestContent.Content;
+        var packed = AtlasPacker.Pack(content.TextureRoots());
+        var report = ArtAudit.Run(content.LoadDefs(), packed.Sprites, packed.Sheets);
         Assert.Empty(report.Errors);
         Assert.Empty(report.Warnings);
         // Sheets resolve by name to their first frame, so static-sprite code still works.

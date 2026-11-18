@@ -18,7 +18,7 @@ public class PlaytestRecorderTests
         var root = Path.Combine(Path.GetTempPath(), "hni-playtest-" + Guid.NewGuid().ToString("N"));
         try
         {
-            var sim = VillageRound.NewSimulation(DefDatabase.LoadDirectory(DevPaths.Defs!), 1234);
+            var sim = VillageRound.NewSimulation(TestContent.Defs(), 1234);
             sim.Presets.PresetMode = true;
             VillageRound.Setup(sim);
             sim.Round.OpenLobby();

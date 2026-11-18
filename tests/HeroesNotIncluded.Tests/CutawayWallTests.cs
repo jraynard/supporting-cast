@@ -9,7 +9,7 @@ public class CutawayWallTests
     /// <summary>A room 3x3 inside (walls on x and y 5..9), a door on its south side, and a lone wall out in the open.</summary>
     private static HeroesNotIncluded.Sim.Simulation Room()
     {
-        var defs = DefDatabase.LoadDirectory(DevPaths.Defs!);
+        var defs = TestContent.Defs();
         var sim = HeroesNotIncluded.Sim.Simulation.CreateStandard(defs, 20, 20, 1);
         for (var y = 5; y <= 9; y++)
         for (var x = 5; x <= 9; x++)
@@ -45,7 +45,7 @@ public class CutawayWallTests
     public void AnOpenFrontedBuildingsWallsComeDownToo()
     {
         // The smithy is open at the front, so its floor is never an indoor room; its plan says it's inside.
-        var defs = DefDatabase.LoadDirectory(DevPaths.Defs!);
+        var defs = TestContent.Defs();
         var sim = HeroesNotIncluded.Sim.Simulation.CreateStandard(defs, 30, 30, 1, depth: 5);
         var smithy = defs.Building("Smithy");
         var anchor = new int3(12, 12, 1);
@@ -82,7 +82,7 @@ public class UpperFloorBoardTests
     [InlineData(1)]
     public void EveryUpperWallCellOfTheInnHasBoardsUnderIt(int facing)
     {
-        var defs = DefDatabase.LoadDirectory(DevPaths.Defs!);
+        var defs = TestContent.Defs();
         var sim = HeroesNotIncluded.Sim.Simulation.CreateStandard(defs, 30, 30, 1, depth: 5);
         var inn = defs.Building("Inn");
         var b = HeroesNotIncluded.Sim.Systems.Buildings.SpawnFinished(sim, inn, new int3(15, 15, 1), facing);
@@ -114,7 +114,7 @@ public class UpperFloorBoardTests
     [Fact]
     public void JettiedTheBoardsReachOutUnderTheWallsMiddle()
     {
-        var defs = DefDatabase.LoadDirectory(DevPaths.Defs!);
+        var defs = TestContent.Defs();
         var sim = HeroesNotIncluded.Sim.Simulation.CreateStandard(defs, 30, 30, 1, depth: 5);
         var inn = defs.Building("Inn");
         var b = HeroesNotIncluded.Sim.Systems.Buildings.SpawnFinished(sim, inn, new int3(15, 15, 1), 0, inn.Variants.FindIndex(v => v.Name == "Jettied"));

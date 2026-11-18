@@ -619,6 +619,9 @@ public sealed class DefDatabase
     public MapDef Map(string name) => Lookup(_maps, name);
 
     /// <summary>The def for a kind of service; every kind needs one.</summary>
+    /// <summary>The service's def, or null when none is loaded (a trade's mod turned off).</summary>
+    public ServiceDef? ServiceOrNull(ServiceKind kind) => _byServiceKind[(int)kind];
+
     public ServiceDef Service(ServiceKind kind) =>
         _byServiceKind[(int)kind] ?? throw new KeyNotFoundException($"No service def for {kind}");
     public ThoughtDef Thought(string name) => Lookup(_thoughts, name);
@@ -626,6 +629,8 @@ public sealed class DefDatabase
     public RecipeDef Recipe(string name) => Lookup(_recipes, name);
     public OutfitDef Outfit(string name) => Lookup(_outfits, name);
     public BuildingDef Building(string name) => Lookup(_buildings, name);
+
+    public bool HasBuilding(string name) => _buildings.ContainsKey(name);
     public BuildingKitDef Kit(string name) => Lookup(_kits, name);
     public TradeDef Trade(string name) =>
         TryTrade(name, out var def) ? def : throw new Exception($"Unknown TradeDef '{name}'");
