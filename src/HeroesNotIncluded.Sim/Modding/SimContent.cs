@@ -28,6 +28,7 @@ public sealed class SimRegistry
     internal readonly List<PlacedSystem> Systems = [];
     internal readonly List<ITradeModule> TradeModules = [];
     internal readonly List<Scenarios.Lessons.Lesson> Lessons = [];
+    internal readonly List<Func<Bots.BotPlayer, Bots.IBotTrade>> Bots = [];
     internal readonly Dictionary<string, string> Formerly = new(StringComparer.Ordinal);
 
     /// <summary>The game's own registrations (its bundled trades) keep their names unprefixed.</summary>
@@ -46,6 +47,9 @@ public sealed class SimRegistry
     /// it's asked (its words are the trade's <c>lessons</c> in trades.json).
     /// </summary>
     public void Lesson(params Scenarios.Lessons.Lesson[] lessons) => Lessons.AddRange(lessons);
+
+    /// <summary>How a bot plays the trade (<see cref="Bots.IBotTrade"/>): made fresh for each bot, so it may keep state.</summary>
+    public void Bot(Func<Bots.BotPlayer, Bots.IBotTrade> make) => Bots.Add(make);
 
     /// <summary>
     /// A component the mod adds, and how it's saved: every component needs a codec (an unsaved one
@@ -165,6 +169,8 @@ public static class SimContent
     internal static string CodecName(string saved) => Registries.Select(r => r.Formerly.GetValueOrDefault(saved)).FirstOrDefault(n => n != null) ?? saved;
 
     internal static IEnumerable<Scenarios.Lessons.Lesson> Lessons => Registries.SelectMany(r => r.Lessons);
+
+    internal static IEnumerable<Func<Bots.BotPlayer, Bots.IBotTrade>> BotFactories => Registries.SelectMany(r => r.Bots);
 
     private static (int Version, List<ITradeModule> Modules)? _trades;
 

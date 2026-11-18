@@ -187,7 +187,7 @@ public sealed partial class BotPlayer
     /// true while at it, false if there's a rack but it can't get there, null if there's nothing to
     /// hang (or no rack): then it makes one.
     /// </summary>
-    private bool? RackSpare(Simulation sim, Entity me, long now)
+    public bool? RackSpare(Simulation sim, Entity me, long now)
     {
         var w = sim.World;
         var rack = Nearest(sim, me, Militia.MilitiaSystem.RackDef);
@@ -239,7 +239,7 @@ public sealed partial class BotPlayer
     }
 
     /// <summary>Take what the forge wants from the containers at its workplace (the chest, the fuel bin). False, and gives up a while, if there's none.</summary>
-    private bool Fetch(Simulation sim, Entity me, PerceptionView view, long now, ThingCount want, string what)
+    public bool Fetch(Simulation sim, Entity me, PerceptionView view, long now, ThingCount want, string what)
     {
         var w = sim.World;
         if (MyShop(sim, me) is not { IsNull: false } shop)
@@ -345,7 +345,7 @@ public sealed partial class BotPlayer
     }
 
     /// <summary>Of a recipe's ingredients: enough on it, or in its workplace's chests (common knowledge to it).</summary>
-    private static bool Obtainable(Simulation sim, Entity me, ThingCount x)
+    public static bool Obtainable(Simulation sim, Entity me, ThingCount x)
     {
         if (OnMe(sim, me, x.Def) >= x.Count)
             return true;

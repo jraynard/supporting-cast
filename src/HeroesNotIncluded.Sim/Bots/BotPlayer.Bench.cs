@@ -329,7 +329,7 @@ public sealed partial class BotPlayer
     }
 
     /// <summary>Fetch what a recipe wants from the shop's chest, then make it at the bench (its hand game starts there).</summary>
-    private bool Make(Simulation sim, Entity me, PerceptionView view, Entity bench, RecipeDef recipe, long now)
+    public bool Make(Simulation sim, Entity me, PerceptionView view, Entity bench, RecipeDef recipe, long now)
     {
         var w = sim.World;
         var staged = w.Get<Workbench>(bench) is { } b && b.Active == recipe ? b.Staged : [];
@@ -376,5 +376,35 @@ public sealed partial class BotPlayer
             return (false, true, 0); // a long stroke
         _working = (_working + 1) % 3;
         return (false, _working == 0, 0); // a dab, then a look
+    }
+
+    /// <summary>
+    /// A piece mended at its maker's bench (a bow at the carpenter's, a crossbow at the tinker's):
+    /// fetched from its owner, the wood or iron it takes brought from the shop's chest, worked at the
+    /// bench until it looks sound, and handed back.
+    /// </summary>
+    public bool BenchMend(Simulation sim, Entity me, PerceptionView view, Entity owner, long now, string benchDef)
+    {
+        var w = sim.World;
+        var piece = Entrusted(sim, me, owner);
+        if (piece.IsNull)
+        {
+            Reach(sim, me, owner, now); // they hand it over once we're close
+            return true;
+        }
+        if (view.Awaiting().Any(a => a.Order == _task && a.Ready))
+        {
+            Doing = "handing back a mended piece";
+            if (Reach(sim, me, owner, now, returning: true))
+                Send(new GiveCommand(me, owner, piece, 1));
+            return true;
+        }
+        var bench = Nearest(sim, me, benchDef);
+        if (bench.IsNull)
+            return false;
+        if (Crafting.RepairCost(sim, w.Get<Thing>(bench).Def, piece) is { } cost && OnMe(sim, me, cost.Material.Def) < cost.Count)
+            return Fetch(sim, me, view, now, cost.Material, cost.Material.ThingDef.Label);
+        Doing = $"mending: {view.Condition(piece) ?? sim.LabelOf(piece)}";
+        return AtStation(sim, me, bench, now, s => Send(new RepairCommand(me, s, piece)));
     }
 }

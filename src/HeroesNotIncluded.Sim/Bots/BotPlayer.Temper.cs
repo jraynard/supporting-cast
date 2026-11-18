@@ -44,7 +44,7 @@ public sealed partial class BotPlayer
     }
 
     /// <summary>The slip's been made: counted once.</summary>
-    private void Slipped()
+    public void Slipped()
     {
         if (_slipCounted)
             return;

@@ -25,7 +25,7 @@ public sealed partial class BotPlayer
     /// <summary>What a markdown keeps of the price, and the least it'll come down to (a share of its first asking).</summary>
     public const float MarkDown = 0.85f, PriceFloor = 0.45f;
 
-    private int StockWanted => StockOnShow + (Temper.Greed >= 0.7f ? 1 : 0);
+    public int StockWanted => StockOnShow + (Temper.Greed >= 0.7f ? 1 : 0);
 
     // Each piece it's put out: what it first asked, and when it last priced it.
     private readonly Dictionary<Entity, (int First, long Since)> _asked = [];
@@ -127,7 +127,7 @@ public sealed partial class BotPlayer
     }
 
     /// <summary>Pieces in its stock: on show, set down off sale for now, and made and waiting on it to go out.</summary>
-    private int Stock(Simulation sim, Entity me)
+    public int Stock(Simulation sim, Entity me)
     {
         var w = sim.World;
         return Goods.OnShow(sim).Count(g => w.Get<ForSale>(g.Item).Seller == me) + Loose(sim, me).Count(i => ForTheShelf(sim, me, i))
@@ -143,7 +143,7 @@ public sealed partial class BotPlayer
     /// while there's room on show; one that's sat unsold, or that it heard called too dear, comes
     /// down a little. True while at it.
     /// </summary>
-    private bool ShowGoods(Simulation sim, Entity me, PerceptionView view, long now)
+    public bool ShowGoods(Simulation sim, Entity me, PerceptionView view, long now)
     {
         var w = sim.World;
         if (MyShop(sim, me) is not { IsNull: false } shop)

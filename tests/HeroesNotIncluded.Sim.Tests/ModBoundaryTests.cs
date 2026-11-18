@@ -10,9 +10,6 @@ public class ModBoundaryTests
 {
     private static string SimSource => Path.GetFullPath(Path.Combine(TestWorld.FindDefsDirectory(), "..", "..", "src", "HeroesNotIncluded.Sim"));
 
-    /// <summary>Files still waiting for their registry (ROADMAP, Now 8): the bot's per-trade play.</summary>
-    private static readonly string[] NotYet = ["Bots/BotPlayer.cs", "Bots/BotPlayer.Play.cs", "Bots/BotPlayer.Woodshop.cs"];
-
     [Fact]
     public void TheCoreNeverNamesTheCarpenter()
     {
@@ -20,7 +17,7 @@ public class ModBoundaryTests
         foreach (var file in Directory.EnumerateFiles(SimSource, "*.cs", SearchOption.AllDirectories))
         {
             var rel = Path.GetRelativePath(SimSource, file).Replace('\\', '/');
-            if (rel.StartsWith("Carpentry/", StringComparison.Ordinal) || rel.StartsWith("bin/", StringComparison.Ordinal) || rel.StartsWith("obj/", StringComparison.Ordinal) || NotYet.Contains(rel))
+            if (rel.StartsWith("Carpentry/", StringComparison.Ordinal) || rel.StartsWith("bin/", StringComparison.Ordinal) || rel.StartsWith("obj/", StringComparison.Ordinal))
                 continue;
             var n = 0;
             foreach (var line in File.ReadLines(file))

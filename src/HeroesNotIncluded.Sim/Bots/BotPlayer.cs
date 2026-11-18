@@ -58,7 +58,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
     public Guid Player => player;
 
     /// <summary>What it last decided, for tests and debugging.</summary>
-    public string Doing { get; private set; } = "";
+    public string Doing { get; set; } = "";
 
     /// <summary>What it's done this round, for the season sweep.</summary>
     public BotStats Stats { get; } = new();
@@ -68,7 +68,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
     private readonly HashSet<int> _counted = [];
 
     /// <summary>Every command goes out through here, so what it says is counted.</summary>
-    private void Send(ISimCommand command)
+    public void Send(ISimCommand command)
     {
         if (command is SayCommand)
             Stats.Said++;
@@ -177,7 +177,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
         // Each trade's work between orders, in its own file.
         if (_task == 0 && SendForHamper(sim, me, now))
             return;
-        if (_task == 0 && (Kitchen(sim, me, view, now) || Bench(sim, me, view, now) || Woodshop(sim, me, view, now) || Shrine(sim, me, view, now) || Labour(sim, me, view, now)))
+        if (_task == 0 && (Kitchen(sim, me, view, now) || Bench(sim, me, view, now) || TradesBetween(sim, me, view, now) || Shrine(sim, me, view, now) || Labour(sim, me, view, now)))
             return;
         // The hasty let the chores go half the time (an hour on, an hour off).
         if (_task == 0 && (Temper.Haste < 0.65f || now / SimClock.TicksPerHour % 2 == 0) && Upkeep(sim, me, view, now))
@@ -235,12 +235,13 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
         var poster = order.Poster;
         if (!view.CanSee(poster) && !sim.World.IsAlive(poster))
             return false;
+        foreach (var trade in TradeBots) // a trade's own orders (the woodshop's arrows and mends)
+            if (trade.Order(sim, me, view, order.Kind, poster, now) is { } handled)
+                return handled;
         return order.Kind switch
         {
             ServiceKind.Repair => Repair(sim, me, view, poster, now),
-            ServiceKind.WoodRepair => BenchMend(sim, me, view, poster, now, Carpentry.Carpenters.BenchDef),
             ServiceKind.CrossbowRepair => BenchMend(sim, me, view, poster, now, Tinkering.Tinkers.BenchDef),
-            ServiceKind.Arrows => QuiverFor(sim, me, view, poster, now),
             ServiceKind.Drink => Pour(sim, me, view, poster, now),
             ServiceKind.MixedDrink => view.WantedDrink(_task) is { Mix: not null } named ? MixFor(sim, me, view, poster, named, now) : Pour(sim, me, view, poster, now),
             ServiceKind.Meal when sim.Shops.Find(_task) is { } board && Hospitality.Provisions.IsBoard(sim, board) => Board(sim, me, view, poster, now),
@@ -251,7 +252,6 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
             ServiceKind.Quest => Broker(sim, me, view, poster, now),
             ServiceKind.Unlock => OpenBox(sim, me, view, poster, now),
             ServiceKind.WagonRepair => MendWagon(sim, me, view, poster, now),
-            ServiceKind.WagonJoinery => JoinWagon(sim, me, view, poster, now),
             ServiceKind.Appraise => Appraise(sim, me, view, poster, now),
             ServiceKind.Goods => Sell(sim, me, view, poster, now),
             _ => false,
@@ -259,7 +259,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
     }
 
     /// <summary>The shop this character keeps, if their trade works from one.</summary>
-    private static Entity? MyShop(Simulation sim, Entity me) =>
+    public static Entity? MyShop(Simulation sim, Entity me) =>
         sim.World.TryGet<Trade>(me, out var trade) && trade.Def.HasWorkplace ? ShopSystem.WorkplaceOf(sim, trade.Def) : null;
 
     /// <summary>How far someone stands from the front of this character's line (for serving the front first); large if it can't say.</summary>
@@ -281,7 +281,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
     /// errands), so with <paramref name="returning"/> it takes the finished piece to them wherever
     /// they are. True if they're already in reach.
     /// </summary>
-    private bool Reach(Simulation sim, Entity me, Entity who, long now, bool returning = false)
+    public bool Reach(Simulation sim, Entity me, Entity who, long now, bool returning = false)
     {
         if (Handing.InReach(sim, me, who))
             return true;
@@ -317,7 +317,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
     private static Entity Carried(Simulation sim, Entity me, string vessel) => AvatarSystem.Supply(sim, me, d => d.Name == vessel);
 
     /// <summary>Walk to a station, then use it. False if there's none.</summary>
-    private bool AtStation(Simulation sim, Entity me, Entity station, long now, Action<Entity> use)
+    public bool AtStation(Simulation sim, Entity me, Entity station, long now, Action<Entity> use)
     {
         if (station.IsNull)
             return false;
@@ -344,7 +344,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
     }
 
     /// <summary>Units of an item in its hands and pack.</summary>
-    private static int OnMe(Simulation sim, Entity me, string def)
+    public static int OnMe(Simulation sim, Entity me, string def)
     {
         var w = sim.World;
         var n = 0;
@@ -358,7 +358,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
     }
 
     /// <summary>The piece someone handed this character to mend.</summary>
-    private static Entity Entrusted(Simulation sim, Entity me, Entity owner)
+    public static Entity Entrusted(Simulation sim, Entity me, Entity owner)
     {
         var w = sim.World;
         var held = w.Get<Carrying>(me).Item;
@@ -374,7 +374,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
 
     private static readonly int3 Entity3None = new(int.MinValue, int.MinValue, int.MinValue);
 
-    private void Walk(Simulation sim, Entity me, int3 cell, long now)
+    public void Walk(Simulation sim, Entity me, int3 cell, long now)
     {
         if (now - _lastWalk < ThinkTicks * 2)
             return;
@@ -387,7 +387,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
     }
 
     /// <summary>The nearest standing thing of a kind (the town's furniture is common knowledge).</summary>
-    private static Entity Nearest(Simulation sim, Entity me, string def)
+    public static Entity Nearest(Simulation sim, Entity me, string def)
     {
         var from = sim.World.Get<Position>(me).Cell;
         var best = Entity.Null;

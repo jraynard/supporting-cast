@@ -24,6 +24,12 @@ public sealed partial class BotPlayer
     private float? _rose, _middle;
     private float _skipTo;
     private int _pin, _slips, _working, _dir = 1;
+
+    /// <summary>A count the session's play keeps (strokes, dabs), zero when a session starts: for a trade's bot (<see cref="IBotTrade.Play"/>).</summary>
+    public int Working { get => _working; set => _working = value; }
+
+    /// <summary>Whether the bot's temper fumbles this session (<see cref="Slipped"/> when it does): for a trade's bot.</summary>
+    public bool Slip => _slip;
     private float _progress;
 
     // The tinker's games: the spoke last worked on the wheel, the tells read.
@@ -44,8 +50,14 @@ public sealed partial class BotPlayer
     private List<int> _weave = [];
     private int _rune = -1;
 
-    /// <summary>The session's other action (Space) this frame: set by <see cref="Play"/>.</summary>
+    /// <summary>The session's other action (Space) this frame: set by <see cref="Play"/> (and a trade's bot, <see cref="IBotTrade.Play"/>).</summary>
     private bool _act;
+
+    /// <summary>The session's other action this frame, for a trade's bot to set (<see cref="IBotTrade"/>).</summary>
+    public bool Act { get => _act; set => _act = value; }
+
+    /// <summary>The session's second axis this frame, for a trade's bot to set.</summary>
+    public int Axis2 { get => _axis2; set => _axis2 = value; }
 
     /// <summary>Done with the pot's seasoning: step away, which keeps it.</summary>
     private bool _seasoned;
@@ -248,24 +260,6 @@ public sealed partial class BotPlayer
             case Afterlife.HoldSession hold:
                 // Brace just before each pull peaks, and ease off between.
                 return (false, hold.PullAge >= Afterlife.HoldSession.PeakAt - hold.Half - 2, 0);
-            case Carpentry.PitSession pit:
-                // Pull with each stroke the top sawyer starts, and let go between.
-                return (false, pit.CallOpen || pit.Down > 0f && pit.Down < 1f, 0);
-            case Carpentry.CrosscutSession crosscut:
-                // Pull back with each stroke the lead starts, and let go between.
-                return (false, crosscut.CallOpen || crosscut.Drawn > 0f && crosscut.Drawn < 1f, 0);
-            case Carpentry.BuckSession { GreatButt: true } great when great.Partner.IsNull && !great.Done && great.StepsDone % (SimClock.TicksPerSecond * 4) == 1:
-                Send(new AskForHandCommand(great.Worker));
-                return (false, false, 0);
-            case Carpentry.LiftSession lift:
-                // Keep it up, and lean against the way it's tipping; set it down to rest once the arms are nearly spent.
-                return (false, lift.Strain < 0.9f || lift.Up && lift.Strain < 0.97f, lift.Tilt + lift.Sway * 8f > 0.05f ? -1 : lift.Tilt + lift.Sway * 8f < -0.05f ? 1 : 0);
-            case Carpentry.JoinSession { Work: Carpentry.JoinWork.Axle, Cutting: false } axle when axle.Partner.IsNull && axle.StepsDone % (SimClock.TicksPerSecond * 4) == 1:
-                Send(new AskForHandCommand(axle.Worker));
-                return (false, false, 0);
-            case Carpentry.SawSession { Great: true, Hewing: false } great when great.Partner.IsNull && great.StepsDone % (SimClock.TicksPerSecond * 4) == 1:
-                Send(new AskForHandCommand(great.Worker));
-                return (false, false, 0);
             case SledgeSession sledge:
                 // Heave it up and hold it; let it fall on the smith's call.
                 return (false, !(sledge.CallOpen && sledge.Raise >= SledgeSession.FullHeave), 0);
@@ -307,7 +301,7 @@ public sealed partial class BotPlayer
                 return Loupe(lp);
         }
         // Each trade's further games, in its own file.
-        return PlayKitchen(s) ?? PlayBench(s) ?? PlayWoodshop(s) ?? PlayForge(s) ?? PlayShrine(s) ?? PlayInn(s) ?? (false, false, 0);
+        return PlayKitchen(s) ?? PlayBench(s) ?? PlayTrades(s) ?? PlayForge(s) ?? PlayShrine(s) ?? PlayInn(s) ?? (false, false, 0);
     }
 
     /// <summary>

@@ -127,7 +127,7 @@ public sealed partial class BotPlayer
     }
 
     /// <summary>Some of a stack picked up from the ground, or taken out of the store it's kept in.</summary>
-    private bool Fetch(Simulation sim, Entity me, PerceptionView view, Entity stack, int need, long now)
+    public bool Fetch(Simulation sim, Entity me, PerceptionView view, Entity stack, int need, long now)
     {
         var w = sim.World;
         if (w.TryGet<Stored>(stack, out var stored))
@@ -151,7 +151,7 @@ public sealed partial class BotPlayer
     /// The nearest stack of a thing it knows of and may take: lying in sight, or kept in the town's
     /// stores (where anyone may help themselves). Entity.Null if none.
     /// </summary>
-    private static Entity Known(Simulation sim, Entity me, PerceptionView view, ThingDef def)
+    public static Entity Known(Simulation sim, Entity me, PerceptionView view, ThingDef def)
     {
         var w = sim.World;
         var here = w.Get<Position>(me).Cell;

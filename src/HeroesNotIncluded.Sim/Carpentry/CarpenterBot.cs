@@ -7,11 +7,49 @@ using HeroesNotIncluded.Sim.Defs;
 using HeroesNotIncluded.Sim.Systems;
 using HeroesNotIncluded.Sim.Work;
 
-namespace HeroesNotIncluded.Sim.Bots;
+using HeroesNotIncluded.Sim.Bots;
+
+namespace HeroesNotIncluded.Sim.Carpentry;
 
 /// <summary>The carpenter: quivers fletched for the shelf, and planks sawn when there are none to fletch from.</summary>
-public sealed partial class BotPlayer
+public sealed class CarpenterBot(BotPlayer bot) : IBotTrade
 {
+    public bool Between(Simulation sim, Entity me, PerceptionView view, long now) => Woodshop(sim, me, view, now);
+
+    public bool? Order(Simulation sim, Entity me, PerceptionView view, ServiceKind kind, Entity poster, long now) => kind switch
+    {
+        ServiceKind.WoodRepair => bot.BenchMend(sim, me, view, poster, now, Carpenters.BenchDef),
+        ServiceKind.Arrows => QuiverFor(sim, me, view, poster, now),
+        ServiceKind.WagonJoinery => JoinWagon(sim, me, view, poster, now),
+        _ => null,
+    };
+
+    public (bool Press, bool Held, int Axis)? Play(WorkSession s)
+    {
+        switch (s)
+        {
+            case PitSession pit:
+                // Pull with each stroke the top sawyer starts, and let go between.
+                return (false, pit.CallOpen || pit.Down > 0f && pit.Down < 1f, 0);
+            case CrosscutSession crosscut:
+                // Pull back with each stroke the lead starts, and let go between.
+                return (false, crosscut.CallOpen || crosscut.Drawn > 0f && crosscut.Drawn < 1f, 0);
+            case BuckSession { GreatButt: true } great when great.Partner.IsNull && !great.Done && great.StepsDone % (SimClock.TicksPerSecond * 4) == 1:
+                bot.Send(new AskForHandCommand(great.Worker));
+                return (false, false, 0);
+            case LiftSession lift:
+                // Keep it up, and lean against the way it's tipping; set it down to rest once the arms are nearly spent.
+                return (false, lift.Strain < 0.9f || lift.Up && lift.Strain < 0.97f, lift.Tilt + lift.Sway * 8f > 0.05f ? -1 : lift.Tilt + lift.Sway * 8f < -0.05f ? 1 : 0);
+            case JoinSession { Work: JoinWork.Axle, Cutting: false } axle when axle.Partner.IsNull && axle.StepsDone % (SimClock.TicksPerSecond * 4) == 1:
+                bot.Send(new AskForHandCommand(axle.Worker));
+                return (false, false, 0);
+            case SawSession { Great: true, Hewing: false } great when great.Partner.IsNull && great.StepsDone % (SimClock.TicksPerSecond * 4) == 1:
+                bot.Send(new AskForHandCommand(great.Worker));
+                return (false, false, 0);
+        }
+        return PlayWoodshop(s);
+    }
+
     /// <summary>
     /// The carpenter between orders: its quivers on show; a quiver fletched while the stock's short;
     /// planks sawn first if there are none to split shafts from. True while at it.
@@ -19,69 +57,39 @@ public sealed partial class BotPlayer
     private bool Woodshop(Simulation sim, Entity me, PerceptionView view, long now)
     {
         var w = sim.World;
-        if (!w.TryGet<Trade>(me, out var trade) || !trade.Def.Stations.Contains(Carpenters.BenchDef) || MyShop(sim, me) is not { IsNull: false })
+        if (!w.TryGet<Trade>(me, out var trade) || !trade.Def.Stations.Contains(Carpenters.BenchDef) || BotPlayer.MyShop(sim, me) is not { IsNull: false })
             return false;
         // In a call to arms, a bow of its own goes to the muster rack before it goes on the shelf.
-        if (sim.Militia.Paying && RackSpare(sim, me, now) == true)
+        if (sim.Militia.Paying && bot.RackSpare(sim, me, now) == true)
             return true;
-        if (ShowGoods(sim, me, view, now))
+        if (bot.ShowGoods(sim, me, view, now))
             return true;
-        var bench = Nearest(sim, me, Carpenters.BenchDef);
-        var horse = Nearest(sim, me, Carpenters.SawhorseDef);
+        var bench = BotPlayer.Nearest(sim, me, Carpenters.BenchDef);
+        var horse = BotPlayer.Nearest(sim, me, Carpenters.SawhorseDef);
         // Something already begun at a station is seen through first.
         foreach (var station in new[] { bench, horse })
             if (!station.IsNull && w.TryGet<Workbench>(station, out var b) && b.Active is { } begun && b.By == me && !b.Untouched)
-                return Make(sim, me, view, station, begun, now);
+                return bot.Make(sim, me, view, station, begun, now);
         if (sim.Militia.Paying && !bench.IsNull && BowsForTheMuster(sim, me, view, bench, now))
             return true;
         if (!bench.IsNull && Refurnish(sim, me, view, bench, now))
             return true;
         if (Firewood(sim, me, view, now))
             return true;
-        if (Stock(sim, me) >= StockWanted || bench.IsNull)
+        if (bot.Stock(sim, me) >= bot.StockWanted || bench.IsNull)
             return false;
         var fletch = Recipe(sim, bench, Carpenters.Fletches);
         if (fletch == null || !Crafting.CanMake(sim, me, fletch))
             return false;
-        if (fletch.Ingredients.TrueForAll(x => Obtainable(sim, me, x)))
-            return Make(sim, me, view, bench, fletch, now);
+        if (fletch.Ingredients.TrueForAll(x => BotPlayer.Obtainable(sim, me, x)))
+            return bot.Make(sim, me, view, bench, fletch, now);
         // Short of planks: saw a log (the chest's, or one it fetches, bucks or fells), or timber at a pinch.
         var planks = fletch.Ingredients.Find(x => x.Def == Carpenters.PlanksDef);
-        if (horse.IsNull || planks == null || Obtainable(sim, me, planks))
+        if (horse.IsNull || planks == null || BotPlayer.Obtainable(sim, me, planks))
             return false;
         if (SawRecipe(sim, me, horse) is { } saw)
-            return Make(sim, me, view, horse, saw, now);
+            return bot.Make(sim, me, view, horse, saw, now);
         return GetALog(sim, me, view, now, "for planks", great: false);
-    }
-
-    /// <summary>
-    /// A piece mended at its maker's bench (a bow at the carpenter's, a crossbow at the tinker's):
-    /// fetched from its owner, the wood or iron it takes brought from the shop's chest, worked at the
-    /// bench until it looks sound, and handed back.
-    /// </summary>
-    private bool BenchMend(Simulation sim, Entity me, PerceptionView view, Entity owner, long now, string benchDef)
-    {
-        var w = sim.World;
-        var piece = Entrusted(sim, me, owner);
-        if (piece.IsNull)
-        {
-            Reach(sim, me, owner, now); // they hand it over once we're close
-            return true;
-        }
-        if (view.Awaiting().Any(a => a.Order == _task && a.Ready))
-        {
-            Doing = "handing back a mended piece";
-            if (Reach(sim, me, owner, now, returning: true))
-                Send(new GiveCommand(me, owner, piece, 1));
-            return true;
-        }
-        var bench = Nearest(sim, me, benchDef);
-        if (bench.IsNull)
-            return false;
-        if (Crafting.RepairCost(sim, w.Get<Thing>(bench).Def, piece) is { } cost && OnMe(sim, me, cost.Material.Def) < cost.Count)
-            return Fetch(sim, me, view, now, cost.Material, cost.Material.ThingDef.Label);
-        Doing = $"mending: {view.Condition(piece) ?? sim.LabelOf(piece)}";
-        return AtStation(sim, me, bench, now, s => Send(new RepairCommand(me, s, piece)));
     }
 
     /// <summary>
@@ -94,25 +102,25 @@ public sealed partial class BotPlayer
         var mine = Fletching.Carried(sim, me).FirstOrDefault(q => !w.Has<ForSale>(q), Entity.Null);
         if (!mine.IsNull)
         {
-            Doing = "bringing a quiver";
-            if (Reach(sim, me, archer, now, returning: true))
-                Send(new GiveCommand(me, archer, mine, 1));
+            bot.Doing = "bringing a quiver";
+            if (bot.Reach(sim, me, archer, now, returning: true))
+                bot.Send(new GiveCommand(me, archer, mine, 1));
             return true;
         }
-        var bench = Nearest(sim, me, Carpenters.BenchDef);
+        var bench = BotPlayer.Nearest(sim, me, Carpenters.BenchDef);
         if (bench.IsNull)
             return false;
         if (w.TryGet<Workbench>(bench, out var b) && b.Active is { } begun && b.By == me && !b.Untouched)
-            return Make(sim, me, view, bench, begun, now);
+            return bot.Make(sim, me, view, bench, begun, now);
         var fletch = Recipe(sim, bench, Carpenters.Fletches);
         if (fletch == null || !Crafting.CanMake(sim, me, fletch))
             return false;
-        if (fletch.Ingredients.TrueForAll(x => Obtainable(sim, me, x)))
-            return Make(sim, me, view, bench, fletch, now);
-        var horse = Nearest(sim, me, Carpenters.SawhorseDef);
+        if (fletch.Ingredients.TrueForAll(x => BotPlayer.Obtainable(sim, me, x)))
+            return bot.Make(sim, me, view, bench, fletch, now);
+        var horse = BotPlayer.Nearest(sim, me, Carpenters.SawhorseDef);
         if (horse.IsNull)
             return false;
-        return SawRecipe(sim, me, horse) is { } saw ? Make(sim, me, view, horse, saw, now) : GetALog(sim, me, view, now, "for planks", great: false);
+        return SawRecipe(sim, me, horse) is { } saw ? bot.Make(sim, me, view, horse, saw, now) : GetALog(sim, me, view, now, "for planks", great: false);
     }
 
     /// <summary>
@@ -122,14 +130,14 @@ public sealed partial class BotPlayer
     /// </summary>
     private bool BowsForTheMuster(Simulation sim, Entity me, PerceptionView view, Entity bench, long now)
     {
-        if (RackSpare(sim, me, now) is { } racking)
+        if (bot.RackSpare(sim, me, now) is { } racking)
             return racking;
         foreach (var which in new Func<RecipeDef, bool>[] { Carpenters.MakesBow, r => r.Name == Carpenters.CudgelRecipe })
             if (Recipe(sim, bench, which) is { } recipe && RecipeBooks.Knows(sim, me, recipe) && Crafting.CanMake(sim, me, recipe)
-                && recipe.Ingredients.TrueForAll(x => Obtainable(sim, me, x)))
+                && recipe.Ingredients.TrueForAll(x => BotPlayer.Obtainable(sim, me, x)))
             {
-                Doing = $"making a {recipe.Label} for the muster";
-                return Make(sim, me, view, bench, recipe, now);
+                bot.Doing = $"making a {recipe.Label} for the muster";
+                return bot.Make(sim, me, view, bench, recipe, now);
             }
         return false;
     }
@@ -142,16 +150,16 @@ public sealed partial class BotPlayer
     private bool Firewood(Simulation sim, Entity me, PerceptionView view, long now)
     {
         var w = sim.World;
-        var block = Nearest(sim, me, Carpenters.BlockDef);
+        var block = BotPlayer.Nearest(sim, me, Carpenters.BlockDef);
         if (block.IsNull || Carpenters.TownFirewood(sim) >= Carpenters.FirewoodLow)
             return false;
         if (w.TryGet<Workbench>(block, out var b) && b.Active is { } begun && b.By == me && !b.Untouched)
-            return Make(sim, me, view, block, begun, now);
+            return bot.Make(sim, me, view, block, begun, now);
         foreach (var split in w.Get<Thing>(block).Def.Recipes.Where(Carpenters.Splits))
-            if (split.Ingredients.TrueForAll(x => Obtainable(sim, me, x)))
+            if (split.Ingredients.TrueForAll(x => BotPlayer.Obtainable(sim, me, x)))
             {
-                Doing = "splitting firewood";
-                return Make(sim, me, view, block, split, now);
+                bot.Doing = "splitting firewood";
+                return bot.Make(sim, me, view, block, split, now);
             }
         return GetALog(sim, me, view, now, "for firewood", great: true);
     }
@@ -164,10 +172,10 @@ public sealed partial class BotPlayer
     {
         var w = sim.World;
         foreach (var def in great ? new[] { Felling.LogDef, Felling.GreatLogDef } : [Felling.LogDef])
-            if (Known(sim, me, view, sim.Defs.Thing(def)) is { IsNull: false } lying)
+            if (BotPlayer.Known(sim, me, view, sim.Defs.Thing(def)) is { IsNull: false } lying)
             {
-                Doing = $"fetching a log {what}";
-                return Fetch(sim, me, view, lying, 1, now);
+                bot.Doing = $"fetching a log {what}";
+                return bot.Fetch(sim, me, view, lying, 1, now);
             }
         if (Crafting.ToolSpeed(sim, me, Felling.AxeKind) <= 0f)
             return false;
@@ -180,14 +188,14 @@ public sealed partial class BotPlayer
         var trunk = Near(e => Felling.IsTrunk(sim, e));
         if (!trunk.IsNull)
         {
-            Doing = "bucking a trunk into logs";
-            return AtStation(sim, me, trunk, now, t => Send(new AvatarWorkCommand(me, true, w.Get<Thing>(t).Cell)));
+            bot.Doing = "bucking a trunk into logs";
+            return bot.AtStation(sim, me, trunk, now, t => bot.Send(new AvatarWorkCommand(me, true, w.Get<Thing>(t).Cell)));
         }
         var tree = Near(e => w.Get<Thing>(e).Def.Felling != null && !w.Has<Falling>(e));
         if (tree.IsNull)
             return false;
-        Doing = $"felling a tree {what}";
-        return AtStation(sim, me, tree, now, t => Send(new AvatarWorkCommand(me, true, w.Get<Thing>(t).Cell)));
+        bot.Doing = $"felling a tree {what}";
+        return bot.AtStation(sim, me, tree, now, t => bot.Send(new AvatarWorkCommand(me, true, w.Get<Thing>(t).Cell)));
     }
 
     /// <summary>Felling: the aim left as it starts (away from the bot), the notch to the mark, round the back, the hinge thinned and not cut through.</summary>
@@ -198,7 +206,7 @@ public sealed partial class BotPlayer
         {
             if (s.Notch >= FellSession.NotchMark - 0.02f && s.Raised <= 0f)
             {
-                _act = true;
+                bot.Act = true;
                 return (false, false, 0);
             }
             return (false, s.Raised * per < Math.Min(per, Math.Max(0.02f, FellSession.NotchMark - s.Notch)), 0);
@@ -213,14 +221,14 @@ public sealed partial class BotPlayer
             return (false, false, 0);
         if (!s.Wedged && (s.Progress >= BuckSession.PinchFrom - 0.05f || s.Bound))
         {
-            _act = true;
+            bot.Act = true;
             return (false, false, 0);
         }
         if (s.Stroke >= 0.97f)
             _sawWay = -1;
         else if (s.Stroke <= 0.03f)
             _sawWay = 1;
-        _axis2 = _sawWay;
+        bot.Axis2 = _sawWay;
         return (false, false, 0);
     }
 
@@ -229,7 +237,7 @@ public sealed partial class BotPlayer
     {
         if (s.Bent)
         {
-            _act = true;
+            bot.Act = true;
             return (false, false, 0);
         }
         if (s.Settling > 0)
@@ -246,7 +254,7 @@ public sealed partial class BotPlayer
     {
         if (s.Stuck > 0)
         {
-            _act = true;
+            bot.Act = true;
             return (false, false, 0);
         }
         if (s.Raised <= 0f && MathF.Abs(s.Aim - s.Check) > s.CheckWidthNow * 0.4f)
@@ -256,7 +264,7 @@ public sealed partial class BotPlayer
 
     /// <summary>The plank recipe at the sawhorse it has the makings of (a log first, then timber), or null. Not a great log's: that wants a pitman.</summary>
     private static RecipeDef? SawRecipe(Simulation sim, Entity me, Entity horse) =>
-        sim.World.Get<Thing>(horse).Def.Recipes.FirstOrDefault(r => Carpenters.Saws(r) && !r.TwoHanded && r.Ingredients.TrueForAll(x => Obtainable(sim, me, x)));
+        sim.World.Get<Thing>(horse).Def.Recipes.FirstOrDefault(r => Carpenters.Saws(r) && !r.TwoHanded && r.Ingredients.TrueForAll(x => BotPlayer.Obtainable(sim, me, x)));
 
     private static RecipeDef? Recipe(Simulation sim, Entity station, Func<RecipeDef, bool> which) =>
         sim.World.Get<Thing>(station).Def.Recipes.FirstOrDefault(which);
@@ -288,7 +296,7 @@ public sealed partial class BotPlayer
             if (s.Depth >= 1f - s.SnugWidth * 0.7f)
             {
                 if (s.Raised <= 0f)
-                    _act = true;
+                    bot.Act = true;
                 return (false, false, 0);
             }
             var want = Math.Clamp((1f - s.SnugWidth * 0.4f - s.Depth) / JoinSession.DeepestCut, 0.1f, 1f);
@@ -320,22 +328,22 @@ public sealed partial class BotPlayer
             var piece = w.Get<Furnishing>(held).Def.Name; // its own make, in its own arms
             if (view.Losses().Where(l => l.Piece == piece).Select(l => (KnownLoss?)l).FirstOrDefault() is not { } loss)
                 return false;
-            Doing = $"setting a new {loss.Label} in the {loss.Where}";
+            bot.Doing = $"setting a new {loss.Label} in the {loss.Where}";
             if (!AvatarSystem.InReach(w.Get<Position>(me).Cell, loss.Cell))
             {
-                Walk(sim, me, loss.Cell, now);
+                bot.Walk(sim, me, loss.Cell, now);
                 return true;
             }
-            Send(new AvatarWorkCommand(me, true, loss.Cell));
-            Send(new AvatarWorkCommand(me, false));
+            bot.Send(new AvatarWorkCommand(me, true, loss.Cell));
+            bot.Send(new AvatarWorkCommand(me, false));
             return true;
         }
         if (view.Losses().Select(l => (KnownLoss?)l).FirstOrDefault() is not { } lost)
             return false;
-        if (OnMe(sim, me, Carpenters.PlanksDef) < lost.Planks)
-            return Fetch(sim, me, view, now, Planks(sim, lost.Planks), "planks");
-        Doing = $"making a {lost.Label} to replace the one that burned";
-        return AtStation(sim, me, bench, now, b => Send(new MakeFurnitureCommand(me, b, lost.Piece)));
+        if (BotPlayer.OnMe(sim, me, Carpenters.PlanksDef) < lost.Planks)
+            return bot.Fetch(sim, me, view, now, Planks(sim, lost.Planks), "planks");
+        bot.Doing = $"making a {lost.Label} to replace the one that burned";
+        return bot.AtStation(sim, me, bench, now, b => bot.Send(new MakeFurnitureCommand(me, b, lost.Piece)));
     }
 
     /// <summary>
@@ -362,18 +370,18 @@ public sealed partial class BotPlayer
         {
             var logs = new ThingCount { Def = Carpenters.WoodDef, Count = Tinkering.Wagons.AxleWood };
             logs.ThingDef = sim.Defs.Thing(Carpenters.WoodDef);
-            return Fetch(sim, me, view, now, logs, "a log");
+            return bot.Fetch(sim, me, view, now, logs, "a log");
         }
         if (board && !axle && Carpentry.WagonJoinery.PlanksOn(sim, me) < Tinkering.Wagons.BoardPlanks)
-            return Fetch(sim, me, view, now, Planks(sim, Tinkering.Wagons.BoardPlanks), "a plank");
+            return bot.Fetch(sim, me, view, now, Planks(sim, Tinkering.Wagons.BoardPlanks), "a plank");
         if (!AvatarSystem.InReach(sim, w.Get<Position>(me).Cell, wagon))
         {
-            Doing = "going out to a wagon";
-            Walk(sim, me, w.Get<Thing>(wagon).Cell, now);
+            bot.Doing = "going out to a wagon";
+            bot.Walk(sim, me, w.Get<Thing>(wagon).Cell, now);
             return true;
         }
-        Doing = axle ? "hewing a wagon a new axle" : "pegging a wagon's sprung board";
-        Send(axle ? new Carpentry.FitAxleCommand(me, wagon) : new Carpentry.PegBoardCommand(me, wagon));
+        bot.Doing = axle ? "hewing a wagon a new axle" : "pegging a wagon's sprung board";
+        bot.Send(axle ? new Carpentry.FitAxleCommand(me, wagon) : new Carpentry.PegBoardCommand(me, wagon));
         return true;
     }
 
@@ -391,10 +399,10 @@ public sealed partial class BotPlayer
         {
             if (s.Turning > 0f)
                 return (false, false, 0);
-            // Flat enough (or bitten past the line, nothing more to gain): turn the log.
+            // BotPlayer.Flat enough (or bitten past the line, nothing more to gain): turn the log.
             if (s.Proud[s.Side] <= s.FlatWidth && s.Raised <= 0f)
             {
-                _act = true;
+                bot.Act = true;
                 return (false, false, 0);
             }
             var want = Math.Min(SawSession.DeepestBlow, s.Proud[s.Side] - s.FlatWidth * 0.4f);
@@ -404,7 +412,7 @@ public sealed partial class BotPlayer
             _sawWay = -1;
         else if (s.Stroke <= 0.03f)
             _sawWay = 1;
-        _axis2 = _sawWay;
+        bot.Axis2 = _sawWay;
         return (false, false, MathF.Abs(s.Offset) > s.OnLineWidth * 0.5f ? -Math.Sign(s.Offset) : 0);
     }
 
@@ -434,28 +442,28 @@ public sealed partial class BotPlayer
                 var seen = s.SeenWarp * s.BendDirection; // positive: still warped the way it came
                 if (seen <= s.TrueWidth * 0.5f)
                 {
-                    if (_slip)
-                        Slipped();
-                    _act = true;
+                    if (bot.Slip)
+                        bot.Slipped();
+                    bot.Act = true;
                     _sighted = true;
                     return (false, false, 0);
                 }
                 if (seen > 0.15f)
                     return (false, true, 0);
-                _working = (_working + 1) % 3;
-                return (false, _working == 0, 0);
+                bot.Working = (bot.Working + 1) % 3;
+                return (false, bot.Working == 0, 0);
             }
             case ArrowStage.Shave:
             {
                 if (_passes >= 4)
                 {
-                    _act = true;
+                    bot.Act = true;
                     return (false, false, 0);
                 }
                 // The edge a hair over the line, then along the shaft and back.
                 var wantY = FletchSession.LineV - 0.03f * FletchSession.HeightV;
-                _axis2 = MathF.Abs(s.KnifeY - wantY) <= FletchSession.KnifeSpeed ? 0 : Math.Sign(wantY - s.KnifeY);
-                if (_axis2 != 0)
+                bot.Axis2 = MathF.Abs(s.KnifeY - wantY) <= FletchSession.KnifeSpeed ? 0 : Math.Sign(wantY - s.KnifeY);
+                if (bot.Axis2 != 0)
                     return (false, true, 0);
                 if (s.KnifeX >= 0.99f && _knifeWay > 0 || s.KnifeX <= 0.01f && _knifeWay < 0)
                 {
@@ -498,7 +506,7 @@ public sealed partial class BotPlayer
             // Bend it a little past the catch, slip the loop on, and never into the strain.
             if (s.Flex >= s.CatchLow + 0.05f)
             {
-                _act = true;
+                bot.Act = true;
                 return (false, false, 0);
             }
             return (false, true, 0);
@@ -509,12 +517,12 @@ public sealed partial class BotPlayer
                 stiffest = i;
         if (s.Stiffness[stiffest] <= BowSession.Even + s.RightWidth * 0.7f)
         {
-            _act = true;
+            bot.Act = true;
             return (false, false, 0);
         }
         if (s.Selected != stiffest)
-            return (false, false, _working++ % 2 == 0 ? Math.Sign(BowSession.ColumnOf(stiffest) - BowSession.ColumnOf(s.Selected)) : 0); // a press a section
-        _working = (_working + 1) % 20;
-        return (false, _working < 12, 0);
+            return (false, false, bot.Working++ % 2 == 0 ? Math.Sign(BowSession.ColumnOf(stiffest) - BowSession.ColumnOf(s.Selected)) : 0); // a press a section
+        bot.Working = (bot.Working + 1) % 20;
+        return (false, bot.Working < 12, 0);
     }
 }

@@ -95,7 +95,7 @@ public sealed partial class BotPlayer
         }
     }
 
-    private static float Flat(float3 a, float3 b) => MathF.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
+    public static float Flat(float3 a, float3 b) => MathF.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y));
 
     /// <summary>The nearest raider (or predator) on its feet in sight; never the dragon, which signs don't shake.</summary>
     private static Entity Raider(Simulation sim, PerceptionView view, Entity ghost)

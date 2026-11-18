@@ -19,6 +19,7 @@ public sealed class CarpenterMod : ISimMod
     {
         registry.Trade(new CarpenterModule());
         registry.Lesson([.. CarpenterLessons.All]);
+        registry.Bot(bot => new CarpenterBot(bot));
         registry.System(() => new Refurnishing(), after: "Repairs");
         registry.System(() => new Felling(), after: "Baking");
         // Felling by hand (format 62): a tree coming down, and the trunk it leaves.
