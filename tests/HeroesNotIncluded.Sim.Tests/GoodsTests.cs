@@ -78,7 +78,7 @@ public class GoodsTests
         Assert.Equal(0, sim.ContainerRoom(shelf, sim.Defs.Thing("Wood"), null));
 
         // Someone else can't reach it down.
-        var other = sim.Creatures().First(e => e != me && w.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
+        var other = sim.Creatures().First(e => e != me && w.TryGet<Trade>(e, out var t) && t.Def.Name == "Empath");
         w.Add(other, new Avatar());
         Beside(sim, other, shelf);
         Assert.False(Goods.CanSellAt(sim, other, shelf));
@@ -109,7 +109,7 @@ public class GoodsTests
         var (sim, me, smithy, party) = Town("Blacksmith");
         var mace = InTheSmithy(sim, smithy, "BronzeMace");
         var wood = sim.PlaceItemNear(sim.CreateItem(sim.Defs.Thing("Wood"), 3), sim.World.Get<Thing>(mace).Cell);
-        var smith = sim.Creatures().First(e => e != me && sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
+        var smith = sim.Creatures().First(e => e != me && sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Empath");
         sim.World.Add(smith, new Avatar());
 
         sim.ApplyNow(new SetItemPriceCommand(smith, mace, 10, true)); // not their shop
@@ -185,7 +185,7 @@ public class GoodsTests
     [Fact]
     public void AnAIKeeperSellsWhatsOnShow()
     {
-        var (sim, _, smithy, party) = Town("Healer");
+        var (sim, _, smithy, party) = Town("Empath");
         var smith = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Blacksmith");
         Assert.False(sim.World.Has<Avatar>(smith));
         var buyer = ClubBearer(sim, party);

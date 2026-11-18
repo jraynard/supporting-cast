@@ -103,7 +103,7 @@ public class ArrowsOrderTests
     [Fact]
     public void AnAICarpenterFletchesForAnArchersAsk()
     {
-        var (sim, bowman) = TownWithABowman("Healer");
+        var (sim, bowman) = TownWithABowman("Empath");
         var carpenter = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Carpenter");
         var shop = ShopSystem.WorkplaceOf(sim, sim.Defs.Trade("Carpenter"));
         var chest = Carpenters.ChestOf(sim, shop);

@@ -136,9 +136,9 @@ public class CharacterRosterTests : IDisposable
         var progress = new CharacterProgress()
             .With("Blacksmith", earned: 40, survived: true)
             .With("Blacksmith", earned: -5, survived: false)
-            .With("Healer", earned: 12, survived: true);
+            .With("Empath", earned: 12, survived: true);
         Assert.Equal(new TradeRecord(2, 1, 35), progress.Trades["Blacksmith"]);
-        Assert.Equal(new TradeRecord(1, 1, 12), progress.Trades["Healer"]);
+        Assert.Equal(new TradeRecord(1, 1, 12), progress.Trades["Empath"]);
         Assert.Equal(3, progress.Rounds);
 
         var roster = CharacterRoster.Load(File, Defs.Value);
@@ -163,6 +163,21 @@ public class CharacterRosterTests : IDisposable
         var roster = CharacterRoster.Load(File, Defs.Value);
         var c = roster.Put(new SavedCharacter { Name = "Bram", Progress = progress with { Lessons = [.. progress.Lessons, " "] } })!;
         Assert.Equal(["Blacksmith/sharpen", "Blacksmith/mend"], CharacterRoster.Load(File, Defs.Value).Get(c.Id)!.Progress.Lessons);
+    }
+
+    /// <summary>The empath was the "Healer": a character's rounds and lessons from then carry over under the new name.</summary>
+    [Fact]
+    public void ATradeSinceRenamedKeepsItsRecordAndLessons()
+    {
+        var roster = CharacterRoster.Load(File, Defs.Value);
+        var c = roster.Put(new SavedCharacter
+        {
+            Progress = new CharacterProgress().With("Healer", 10, true).With("Empath", 5, false).Learned("Healer/wound").Learned("Empath/wound"),
+        })!;
+        var loaded = CharacterRoster.Load(File, Defs.Value).Get(c.Id)!;
+        Assert.Equal(new TradeRecord(2, 1, 15), Assert.Single(loaded.Progress.Trades, t => t.Key == "Empath").Value);
+        Assert.False(loaded.Progress.Trades.ContainsKey("Healer"));
+        Assert.Equal(["Empath/wound"], loaded.Progress.Lessons);
     }
 
     [Fact]

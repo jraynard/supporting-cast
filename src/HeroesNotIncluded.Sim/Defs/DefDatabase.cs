@@ -485,7 +485,17 @@ public sealed class DefDatabase
     public OutfitDef Outfit(string name) => Lookup(_outfits, name);
     public BuildingDef Building(string name) => Lookup(_buildings, name);
     public BuildingKitDef Kit(string name) => Lookup(_kits, name);
-    public TradeDef Trade(string name) => Lookup(_trades, name);
+    public TradeDef Trade(string name) =>
+        TryTrade(name, out var def) ? def : throw new Exception($"Unknown TradeDef '{name}'");
+
+    /// <summary>A trade by its name, or by one it was once called (<see cref="TradeDef.Formerly"/>), so old saves, replays and rosters still find it.</summary>
+    public bool TryTrade(string name, out TradeDef def)
+    {
+        if (_trades.TryGetValue(name, out def!))
+            return true;
+        def = AllTrades.FirstOrDefault(t => t.Formerly.Contains(name, StringComparer.OrdinalIgnoreCase))!;
+        return def != null;
+    }
     public bool TryMaterial(string name, out MaterialDef def) => _materials.TryGetValue(name, out def!);
 
     public bool TryThing(string name, out ThingDef def) => _things.TryGetValue(name, out def!);

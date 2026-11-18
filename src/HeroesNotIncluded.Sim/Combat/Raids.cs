@@ -102,7 +102,7 @@ public static class Raids
     /// A raid of up to <paramref name="points"/> comes from a map edge, heading for whoever is nearest
     /// the middle of the village. Returns the raiders, none if there was nowhere to come from.
     /// </summary>
-    public static List<Entity> Send(Simulation sim, SimRandom rand, float points, int maxRaiders)
+    public static List<Entity> Send(Simulation sim, SimRandom rand, float points, int maxRaiders, bool announce = true)
     {
         if (VillageTarget(sim) is not { } target)
             return [];
@@ -114,7 +114,7 @@ public static class Raids
             return [];
 
         var raiders = Spawn(sim, Choose(sim, rand, points, maxRaiders), at, target, rand);
-        if (raiders.Count == 0)
+        if (raiders.Count == 0 || !announce)
             return raiders;
         var who = raiders.Count == 1 ? "A bandit is" : $"{raiders.Count} bandits are";
         sim.Messages.Add(MessageKind.Danger, $"{who} coming from the {Direction(sim.Map, at)}!", at, "Raid!");
@@ -123,9 +123,10 @@ public static class Raids
 
     /// <summary>
     /// A raid warned of: these raiders, by the road on <paramref name="side"/> (or the next side
-    /// round if that's no way in now), for whoever is nearest the middle of the village.
+    /// round if that's no way in now), for whoever is nearest the middle of the village. Unannounced
+    /// (a crisis's), nobody's told till they're seen (<c>Director.RaidCrisis.Watch</c>).
     /// </summary>
-    public static List<Entity> SendPlanned(Simulation sim, SimRandom rand, IReadOnlyList<RaiderKindDef> kinds, int side, bool byRoad = false)
+    public static List<Entity> SendPlanned(Simulation sim, SimRandom rand, IReadOnlyList<RaiderKindDef> kinds, int side, bool byRoad = false, bool announce = true)
     {
         if (kinds.Count == 0 || VillageTarget(sim) is not { } target)
             return [];
@@ -135,12 +136,15 @@ public static class Raids
         if (entry is not { } at)
             return [];
         var raiders = Spawn(sim, kinds, at, target, rand);
-        if (raiders.Count == 0)
+        if (raiders.Count == 0 || !announce)
             return raiders;
         var who = raiders.Count == 1 ? "A bandit is" : $"{raiders.Count} bandits are";
         sim.Messages.Add(MessageKind.Danger, $"{who} coming from the {Direction(sim.Map, at)}!", at);
         return raiders;
     }
+
+    /// <summary>Where a raid heads for: the village human nearest the middle of them all; null if there's none.</summary>
+    public static int3? Toward(Simulation sim) => VillageTarget(sim);
 
     /// <summary>The village human nearest the middle of them all; null if there's none.</summary>
     private static int3? VillageTarget(Simulation sim)

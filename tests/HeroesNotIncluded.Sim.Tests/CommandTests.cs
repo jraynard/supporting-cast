@@ -31,7 +31,7 @@ public class CommandTests
         if (t == typeof(MaterialDef)) return defs.Material("Oak");
         if (t == typeof(RaiderKindDef)) return defs.AllRaiderKinds[0];
         if (t == typeof(BuildingDef)) return defs.Building("Dwelling");
-        if (t == typeof(TradeDef)) return defs.Trade("Healer");
+        if (t == typeof(TradeDef)) return defs.Trade("Empath");
         if (t == typeof(MendingDef)) return defs.Mending("Knit");
         if (t == typeof(Work.WorkInput)) return new Work.WorkInput(1, Work.WorkInputKind.Press, 1);
         if (t.IsArray)

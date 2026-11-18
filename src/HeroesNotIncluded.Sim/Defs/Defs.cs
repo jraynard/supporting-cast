@@ -1216,6 +1216,12 @@ public enum ContraptionUse
 
     /// <summary>A signal rocket: on a quest gone wrong, some who'd have died are found and brought home. Spent when fired.</summary>
     Rescue,
+
+    /// <summary>
+    /// A trip-bell (<c>Tinkering.TripBells</c>): not for the road but for the town, set across a way
+    /// in, and it rings the alarm when raiders cross it. Never sold to parties.
+    /// </summary>
+    Alarm,
 }
 
 /// <summary>A tinker's contraption: what it does, and how many parts are fitted to make it.</summary>
@@ -1225,6 +1231,9 @@ public sealed class ContraptionProps
 
     /// <summary>Parts filed and seated when it's made by hand (<c>Tinkering.FitSession</c>), 2 to 5.</summary>
     public int Parts { get; set; } = 3;
+
+    /// <summary>Kit a party carries on a quest and buys off a shelf; the town's own contraptions (<see cref="ContraptionUse.Alarm"/>) aren't.</summary>
+    public bool ForTheRoad => Use != ContraptionUse.Alarm;
 }
 
 /// <summary>Something odd brought back from a quest, and what it might fetch (<c>Tinkering.Curios</c>).</summary>

@@ -40,7 +40,7 @@ public sealed partial class VillageGame
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
             Tip("Your wounds gone, fed, rested" + (_sim.World.Has<Mana>(_avatar) ? ", and your mana full." : "."));
 
-        if (def.Name == "Healer")
+        if (def.Name == "Empath")
         {
             TextC(Theme.Dim, "Bring in a patient:");
             var first = true;
@@ -77,7 +77,7 @@ public sealed partial class VillageGame
     /// <summary>What "Send customers" brings, for the trade in hand.</summary>
     private static string CustomersFor(string trade) => trade switch
     {
-        "Healer" => "A party rides in, hurt: they'll queue at the shrine.",
+        "Empath" => "A party rides in, hurt: they'll queue at the shrine.",
         "Blacksmith" => "A party rides in with their blades worn: they'll want them mended.",
         "Tinker" => "A party rides in with a locked strongbox and a curio.",
         "Carpenter" => "Archers ride in: they'll want arrows for the road.",

@@ -21,7 +21,7 @@ public class ProvisionsTests
 {
     private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
 
-    private static Simulation Round(string map, string playerTrade = "Healer")
+    private static Simulation Round(string map, string playerTrade = "Empath")
     {
         var sim = VillageRound.NewSimulation(LoadDefs(), 1234, map);
         sim.Presets.PresetMode = true;

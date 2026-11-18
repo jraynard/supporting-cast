@@ -105,9 +105,9 @@ public class BotBenchTests
     }
 
     [Fact]
-    public void TheHealerBotWeavesACharmAndPutsItOnShowAtTheShrine()
+    public void TheEmpathBotWeavesACharmAndPutsItOnShowAtTheShrine()
     {
-        var (sim, me, bot) = Round("Healer");
+        var (sim, me, bot) = Round("Empath");
         var shrine = ShopSystem.BuildingOf(sim, sim.Defs.Building("Shrine"));
         Assert.True(Run(sim, bot, () => Healing.Charms.Carried(sim, me).Any(c => sim.World.Get<Charm>(c).Maker == me), SimClock.TicksPerHour * 4), Why(sim, bot));
         PartyInTown(sim, "IronLantern");
@@ -121,9 +121,9 @@ public class BotBenchTests
     }
 
     [Fact]
-    public void TheHealerBotTearsACharmItKnowsCameOutLoose()
+    public void TheEmpathBotTearsACharmItKnowsCameOutLoose()
     {
-        var (sim, me, bot) = Round("Healer");
+        var (sim, me, bot) = Round("Empath");
         var loose = sim.CreateItem(sim.Defs.Thing(Healing.Charms.Def), 1);
         sim.World.Add(loose, new Charm { Mending = sim.Defs.AllMendings.First(m => m.Heals.Count > 0), Quality = 0.1f, Maker = me });
         Inventory.Stow(sim, me, loose);

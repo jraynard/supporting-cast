@@ -79,7 +79,7 @@ public class InnRoomsTests
     [Fact]
     public void AGuestStayingOnPaysForAnotherNightAndKeepsTheirRoom()
     {
-        var (sim, party) = Tavern("Healer");
+        var (sim, party) = Tavern("Empath");
         // Whole, so nobody bleeds out untreated (the player here is the healer, and idle) before the
         // second night; and no quest on offer to take them off the map.
         var inn = Inn(sim);
@@ -233,7 +233,7 @@ public class InnRoomsTests
     [Fact]
     public void AnAIInnkeeperMopsUpAndMakesTheBeds()
     {
-        var (sim, _) = Tavern("Healer");
+        var (sim, _) = Tavern("Empath");
         var room = CommonRoom(sim);
         sim.Mess.Spill(sim, MessKind.Mud, room);
         sim.Mess.Spill(sim, MessKind.SpilledAle, Plan(sim, 7, 9));

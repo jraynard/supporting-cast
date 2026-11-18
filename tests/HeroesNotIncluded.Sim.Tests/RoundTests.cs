@@ -37,12 +37,12 @@ public class RoundTests
     public void PlayersGetTheTradesTheyAskedFor()
     {
         var sim = Town();
-        Sit(sim, Ana, "Ana", "Healer");
+        Sit(sim, Ana, "Ana", "Empath");
         Sit(sim, Bea, "Bea", "Blacksmith");
         sim.ApplyNow(new StartRoundCommand());
 
         Assert.Equal(RoundPhase.Playing, sim.Round.Phase);
-        Assert.Equal("Healer", TradeOf(sim, Ana));
+        Assert.Equal("Empath", TradeOf(sim, Ana));
         Assert.Equal("Blacksmith", TradeOf(sim, Bea));
     }
 
@@ -50,12 +50,12 @@ public class RoundTests
     public void AContestedTradeGoesToOneAndTheOtherGetsTheirSecondChoice()
     {
         var sim = Town();
-        Sit(sim, Ana, "Ana", "Healer", "Innkeeper");
-        Sit(sim, Bea, "Bea", "Healer", "Blacksmith");
+        Sit(sim, Ana, "Ana", "Empath", "Innkeeper");
+        Sit(sim, Bea, "Bea", "Empath", "Blacksmith");
         sim.ApplyNow(new StartRoundCommand());
 
         var trades = new[] { TradeOf(sim, Ana), TradeOf(sim, Bea) };
-        Assert.Single(trades, "Healer");
+        Assert.Single(trades, "Empath");
         Assert.True(trades.Contains("Innkeeper") || trades.Contains("Blacksmith"));
     }
 
@@ -80,7 +80,7 @@ public class RoundTests
         {
             var sim = Town();
             foreach (var (id, name) in new[] { (Ana, "Ana"), (Bea, "Bea"), (Cal, "Cal") })
-                Sit(sim, id, name, "Healer", "Innkeeper");
+                Sit(sim, id, name, "Empath", "Innkeeper");
             sim.ApplyNow(new StartRoundCommand());
             return string.Join(",", new[] { Ana, Bea, Cal }.Select(p => TradeOf(sim, p)));
         }
@@ -122,13 +122,13 @@ public class RoundTests
     public void TradesNobodyDrewGoToTheAiWithTheirPriorities()
     {
         var sim = Town(villagers: 4);
-        Sit(sim, Ana, "Ana", "Healer");
+        Sit(sim, Ana, "Ana", "Empath");
         sim.ApplyNow(new StartRoundCommand());
 
         var w = sim.World;
         var ai = Humans(sim).Where(e => !w.Has<PlayerCharacter>(e)).ToList();
         Assert.All(ai, e => Assert.True(w.Has<Trade>(e)));
-        Assert.DoesNotContain(ai, e => w.Get<Trade>(e).Def.Name == "Healer");
+        Assert.DoesNotContain(ai, e => w.Get<Trade>(e).Def.Name == "Empath");
         var smith = Assert.Single(ai, e => w.Get<Trade>(e).Def.Name == "Blacksmith");
         Assert.Equal(1, w.Get<Mind>(smith).WorkPriority[(int)WorkType.Craft]);
     }
@@ -137,7 +137,7 @@ public class RoundTests
     public void ALateJoinerTakesTheTradeTheyWantFromTheAiAndKeepsItsFace()
     {
         var sim = Town(villagers: 4);
-        Sit(sim, Ana, "Ana", "Healer");
+        Sit(sim, Ana, "Ana", "Empath");
         sim.ApplyNow(new StartRoundCommand());
         var w = sim.World;
         var before = Humans(sim);
@@ -220,7 +220,7 @@ public class RoundTests
         sim.ApplyNow(new SetRoundOptionsCommand(true, true));
         Assert.True(sim.Round.Options.FriendlyFire);
         Assert.False(sim.Round.Options.Traitors); // not until Whispers
-        Sit(sim, Ana, "Ana", "Healer");
+        Sit(sim, Ana, "Ana", "Empath");
         sim.ApplyNow(new StartRoundCommand());
         sim.ApplyNow(new SetRoundOptionsCommand(false, false));
         Assert.True(sim.Round.Options.FriendlyFire, "the options are settled once the round's dealt");
@@ -232,7 +232,7 @@ public class RoundTests
     {
         var sim = Town();
         sim.ApplyNow(new SetRoundOptionsCommand(true, false));
-        Sit(sim, Ana, "Ana", "Healer");
+        Sit(sim, Ana, "Ana", "Empath");
         sim.ApplyNow(new StartRoundCommand());
 
         var (loaded, _) = SaveGame.Read(SaveGame.Snapshot(sim), sim.Defs);
@@ -246,7 +246,7 @@ public class RoundTests
     public void ALobbyAndItsPreferencesSurviveASave()
     {
         var sim = Town();
-        Sit(sim, Ana, "Ana", "Healer");
+        Sit(sim, Ana, "Ana", "Empath");
         sim.ApplyNow(new SetReadyCommand(Ana, true));
 
         var (loaded, _) = SaveGame.Read(SaveGame.Snapshot(sim), sim.Defs);
@@ -255,7 +255,7 @@ public class RoundTests
         var seat = Assert.Single(loaded.Round.Seats);
         Assert.Equal(Ana, seat.Player);
         Assert.True(seat.Ready);
-        Assert.Equal("Healer", Assert.Single(seat.Wanted).Name);
+        Assert.Equal("Empath", Assert.Single(seat.Wanted).Name);
         Assert.Equal(sim.FullHash(), loaded.FullHash());
     }
 
@@ -263,20 +263,20 @@ public class RoundTests
     public void ARoundInPlaySurvivesASave()
     {
         var sim = Town();
-        Sit(sim, Ana, "Ana", "Healer");
+        Sit(sim, Ana, "Ana", "Empath");
         sim.ApplyNow(new StartRoundCommand());
 
         var (loaded, _) = SaveGame.Read(SaveGame.Snapshot(sim), sim.Defs);
 
         Assert.Equal(RoundPhase.Playing, loaded.Round.Phase);
-        Assert.Equal("Healer", TradeOf(loaded, Ana));
+        Assert.Equal("Empath", TradeOf(loaded, Ana));
     }
 
     [Fact]
     public void BadPreferencesAreCleanedUp()
     {
         var sim = Town();
-        var healer = sim.Defs.Trade("Healer");
+        var healer = sim.Defs.Trade("Empath");
         var labourer = sim.Defs.Trade("Labourer");
         sim.ApplyNow(new JoinLobbyCommand(Ana, "", default));
 
@@ -320,7 +320,7 @@ public class RoundTests
         sim.Presets.PresetMode = true;
         VillageRound.Setup(sim);
         sim.Round.OpenLobby();
-        Sit(sim, Ana, "Ana", "Healer");
+        Sit(sim, Ana, "Ana", "Empath");
         Sit(sim, Bea, "Bea", "Blacksmith");
         sim.ApplyNow(new StartRoundCommand());
 
@@ -386,7 +386,7 @@ public class RoundTests
     public void InARoundOnlyTheLabourerDigsChopsAndForages()
     {
         var sim = Town();
-        Sit(sim, Ana, "Ana", "Healer");
+        Sit(sim, Ana, "Ana", "Empath");
         Sit(sim, Bea, "Bea", "Labourer");
         sim.ApplyNow(new StartRoundCommand());
         var ana = Players.CharacterOf(sim, Ana);

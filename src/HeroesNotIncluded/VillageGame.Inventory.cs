@@ -234,7 +234,7 @@ public sealed partial class VillageGame
                     Later(new BandageCommand(_avatar, patient));
                 ImGui.EndDisabled();
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                    Tip(why ?? (Bandaging.FirstAidOnly(_sim, _avatar) ? "First aid: it stops the bleeding for a couple of hours. The healer has to dress it properly.\n" : "")
+                    Tip(why ?? (Bandaging.FirstAidOnly(_sim, _avatar) ? "First aid: it stops the bleeding for a couple of hours. The empath has to dress it properly.\n" : "")
                         + Controls.Keys("For each turn of cloth, hold ~F~ to pull it tight and let go in the band."));
             }
         }

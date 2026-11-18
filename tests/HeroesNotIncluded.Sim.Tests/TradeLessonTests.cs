@@ -353,7 +353,7 @@ public class TradeLessonTests
     [Fact]
     public void ManyHurtsAreDrawnInOneSitting()
     {
-        var y = Begin("Healer", "many");
+        var y = Begin("Empath", "many");
         y.Sim.Tick();
         Assert.Equal("feel", y.Stage.Step);
         var patient = y.Stage.Point;
@@ -377,7 +377,7 @@ public class TradeLessonTests
     [Fact]
     public void FesteringUnderADressingIsFoundByALongerPress()
     {
-        var y = Begin("Healer", "festering");
+        var y = Begin("Empath", "festering");
         y.Sim.Tick();
         var patient = y.Stage.Point;
         var cut = y.W.Get<Health>(patient).Injuries.Single();
@@ -397,7 +397,7 @@ public class TradeLessonTests
     [Fact]
     public void TheShrineWashesAndPoulticesAWoundAndACharmIsPutOutForSale()
     {
-        var y = Begin("Healer", "shrine");
+        var y = Begin("Empath", "shrine");
         y.Sim.Tick();
         // First the mana, spent at the start, won back at the meditation stone.
         Assert.Equal(0f, y.W.Get<Mana>(y.Me).Current);
@@ -449,7 +449,7 @@ public class TradeLessonTests
     [Fact]
     public void WeavingAtTheRuneAltarTheCarriedPainStirsTheHeartLess()
     {
-        var y = Begin("Healer", "wound");
+        var y = Begin("Empath", "wound");
         HealthSystem.Damage(y.Sim, y.Me, 10f, DamageType.Cut, y.W.Get<Health>(y.Me).Body.Parts.FindIndex(p => !p.Vital));
         y.StandBy(y.Station("Hearth"));
         Assert.Equal(0f, CastSession.AltarHelp(y.Sim, y.Me));
@@ -463,7 +463,7 @@ public class TradeLessonTests
     [Fact]
     public void AWoundIsFeltDrawnAndMended()
     {
-        var y = Begin("Healer", "wound");
+        var y = Begin("Empath", "wound");
         y.Sim.Tick();
         Assert.Equal("feel", y.Stage.Step);
         var patient = y.Stage.Point;

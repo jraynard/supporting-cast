@@ -488,7 +488,7 @@ public class ShopTests
     [Fact]
     public void EachSeesToTheirOwnWork()
     {
-        var (sim, _) = Round("Healer", Ana);
+        var (sim, _) = Round("Empath", Ana);
         Entity Holder(string trade) => sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == trade);
         var keeper = Holder("Innkeeper");
         var cook = Holder("Cook");

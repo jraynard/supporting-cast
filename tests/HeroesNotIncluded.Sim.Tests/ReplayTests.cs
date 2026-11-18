@@ -13,7 +13,7 @@ namespace HeroesNotIncluded.Sim.Tests;
 /// </summary>
 public class ReplayTests
 {
-    private static readonly string[] Trades = ["Innkeeper", "Cook", "Blacksmith", "Healer", "Tinker"];
+    private static readonly string[] Trades = ["Innkeeper", "Cook", "Blacksmith", "Empath", "Tinker"];
 
     /// <summary>A bot round on <paramref name="map"/>, recorded from before its first tick, for <paramref name="hours"/> game hours.</summary>
     private static (Simulation Sim, ReplayRecorder Recorder) Record(string map, float hours, Action<Simulation, long>? between = null)

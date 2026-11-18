@@ -532,6 +532,13 @@ internal static class ComponentCodecs
             w.Bool(c.Binding);
             w.Entity(c.Maker);
         }, r => new Tinkering.Contraption { Binding = r.Bool(), Maker = r.Entity() }),
+        Codec("TripSet", (w, t) =>
+        {
+            w.Entity(t.By);
+            w.Bool(t.Sprung);
+            w.Bool(t.Jammed);
+            w.Long(t.RangAt);
+        }, r => new Tinkering.TripSet { By = r.Entity(), Sprung = r.Bool(), Jammed = r.Bool(), RangAt = r.Long() }),
         Codec("Furnishing", (w, f) =>
         {
             w.Def(f.Def);

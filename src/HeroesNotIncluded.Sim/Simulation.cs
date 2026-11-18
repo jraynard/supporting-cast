@@ -289,6 +289,7 @@ public sealed partial class Simulation
             .AddSystem(sim.Reckoning)
             .AddSystem(sim.Director)
             .AddSystem(sim.Militia)
+            .AddSystem(new Tinkering.TripBellSystem())
             .AddSystem(sim.Repairs)
             .AddSystem(sim.Refurnishing)
             .AddSystem(new MoodSystem())

@@ -52,7 +52,7 @@ public class ExpeditionTests
         var known = Perception.For(sim, me).Quests().ToList();
         Assert.Equal(ExpeditionSystem.QuestsPerRound, known.Count);
         Assert.All(known, q => Assert.InRange(q.Confidence, 0.1f, 0.5f));
-        var villager = sim.Creatures().First(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
+        var villager = sim.Creatures().First(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Empath");
         // Anything anyone else knows, they heard: no free guess like the broker's.
         Assert.All(sim.Expeditions.Quests, q => Assert.True(sim.Expeditions.IntelOf(villager, q.Id) is null or { Confidence: >= 0.35f }));
     }
@@ -171,7 +171,7 @@ public class ExpeditionTests
     [Fact]
     public void AnAIBrokerSendsAPartyOut()
     {
-        var (sim, _, party) = Round("Healer");
+        var (sim, _, party) = Round("Empath");
         // A party that rides in hurt waits on the shrine (the player's, here, who sees to nobody) a while before it gives up and goes.
         for (var h = 0; h < 24 && sim.Expeditions.Out.Count == 0; h++)
             sim.TickMany(SimClock.TicksPerHour / 2);
@@ -181,7 +181,7 @@ public class ExpeditionTests
     [Fact]
     public void WellKeptGearAndTendedWoundsMakeAStrongerAdventurer()
     {
-        var (sim, _, party) = Round("Healer");
+        var (sim, _, party) = Round("Empath");
         var fresh = ExpeditionSystem.Record(sim, party[0]);
         var neglected = ExpeditionSystem.Record(sim, party[0]);
         neglected.Weapon = neglected.Weapon! with { Hp = 0.3f, Dullness = 0.9f, Quality = Quality.Crude };
@@ -198,7 +198,7 @@ public class ExpeditionTests
     [Fact]
     public void AFeverWeakensThemOnTheRoadLessOnceItsSeenTo()
     {
-        var (sim, _, party) = Round("Healer");
+        var (sim, _, party) = Round("Empath");
         var fresh = ExpeditionSystem.Record(sim, party[0]);
         var fevered = ExpeditionSystem.Record(sim, party[0]);
         fevered.Wounds.Add(new WoundRecord(0, DamageType.Fever, Healing.FeverSystem.Caught, false, 0f, false));

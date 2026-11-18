@@ -44,9 +44,9 @@ public class PracticeTests
     }
 
     [Fact]
-    public void CustomersComeForAHealerHurt()
+    public void CustomersComeForAEmpathHurt()
     {
-        var (sim, me) = Yard("Healer");
+        var (sim, me) = Yard("Empath");
         sim.ApplyNow(new PracticeCommand(me, PracticeAction.SendCustomers));
         var party = Adventurers(sim);
         Assert.NotEmpty(party);
@@ -119,7 +119,7 @@ public class PracticeTests
     [Fact]
     public void APatientIsBroughtToAShrinePalletWithTheWoundAskedFor()
     {
-        var (sim, me) = Yard("Healer");
+        var (sim, me) = Yard("Empath");
         foreach (var kind in new[] { DamageType.Burn, DamageType.Fever })
         {
             var before = sim.Creatures().ToHashSet();
@@ -134,7 +134,7 @@ public class PracticeTests
     [Fact]
     public void RestockAndFreshenUp()
     {
-        var (sim, me) = Yard("Healer");
+        var (sim, me) = Yard("Empath");
         int Bandages() => sim.World.Query<Thing>().Where(e => sim.World.Get<Thing>(e).Def.Name == Bandaging.BandageDef)
             .Sum(e => sim.World.Get<Stack>(e).Count);
         var had = Bandages();
@@ -151,7 +151,7 @@ public class PracticeTests
     [Fact]
     public void NothingIsSetUpOutsideTheYard()
     {
-        var (sim, me) = Yard("Healer", practice: false);
+        var (sim, me) = Yard("Empath", practice: false);
         var count = sim.Creatures().Count();
         sim.ApplyNow(new PracticeCommand(me, PracticeAction.SendCustomers));
         sim.ApplyNow(new PracticeCommand(me, PracticeAction.Patient, (int)DamageType.Cut));

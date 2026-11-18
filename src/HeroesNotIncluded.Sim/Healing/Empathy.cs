@@ -8,7 +8,7 @@ namespace HeroesNotIncluded.Sim.Healing;
 public readonly record struct FeltWound(int Key, string Part, string Feels, string Severity, bool Festering, bool Absorbed);
 
 /// <summary>
-/// The empath's gift (docs/DESIGN.md, "Healer"): drawing a patient's wound into their own body,
+/// The empath's gift (docs/DESIGN.md, "Empath"): drawing a patient's wound into their own body,
 /// and mending what they carry with the right <see cref="MendingDef"/>. Whoever has
 /// <see cref="Mana"/> has the gift. A wound is named by its part and kind (<see cref="KeyOf"/>),
 /// since wounds of one kind on one part merge.

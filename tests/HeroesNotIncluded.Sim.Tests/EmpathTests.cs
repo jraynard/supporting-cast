@@ -13,7 +13,7 @@ using static HeroesNotIncluded.Sim.Tests.TestWorld;
 namespace HeroesNotIncluded.Sim.Tests;
 
 /// <summary>The empathic healer: drawing wounds, mending them with the right spell, meditating (Stage 5 of M2).</summary>
-public class HealerTests
+public class EmpathTests
 {
     private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
 
@@ -125,7 +125,7 @@ public class HealerTests
     }
 
     [Fact]
-    public void DrawingAWoundMovesItToTheSamePartOfTheHealerAtTheirBurden()
+    public void DrawingAWoundMovesItToTheSamePartOfTheEmpathAtTheirBurden()
     {
         var (sim, me, patient, arm) = AtTheBedside();
         var burden = Empathy.Burden(sim, me);
@@ -474,10 +474,10 @@ public class HealerTests
     }
 
     [Fact]
-    public void TheDealGivesAHealerTheirBook()
+    public void TheDealGivesAEmpathTheirBook()
     {
         var (sim, me, _, _) = AtTheBedside();
-        RoundSystem.Assign(sim, me, sim.Defs.Trade("Healer"));
+        RoundSystem.Assign(sim, me, sim.Defs.Trade("Empath"));
         Assert.True(Weaving.Knows(sim, me, sim.Defs.Mending("Knit")));
         Assert.False(Weaving.Knows(sim, me, sim.Defs.Mending("Sear")));
     }
@@ -700,7 +700,7 @@ public class HealerTests
         var basket = parts.Single(e => sim.World.Get<Thing>(e).Def.Name == "LinenBasket");
         Assert.Equal(VillageRound.ShrineBandages, sim.StoredIn(basket).Where(i => sim.World.Get<Thing>(i).Def.Name == "Bandage").Sum(i => sim.World.Get<Stack>(i).Count));
         Assert.Single(parts, e => sim.World.Get<Thing>(e).Def.Name == "Chest"); // and a chest for the rest
-        Assert.Equal("Shrine", sim.Defs.Trade("Healer").Workplace);
+        Assert.Equal("Shrine", sim.Defs.Trade("Empath").Workplace);
     }
 
     [Fact]
@@ -790,9 +790,9 @@ public class HealerTests
     }
 
     [Fact]
-    public void AHealerWhoDrawsAnAdventurersWoundIsPaid()
+    public void AEmpathWhoDrawsAnAdventurersWoundIsPaid()
     {
-        var (sim, hurt) = ShrineWithAHurtAdventurer("Healer");
+        var (sim, hurt) = ShrineWithAHurtAdventurer("Empath");
         var me = Players.CharacterOf(sim, Ana);
         Assert.True(Empathy.Gifted(sim, me), "the healer's trade brings the gift");
         var order = sim.Shops.All.Single(e => e.IsOpen && e.Poster == hurt && e.Kind.Kind == ServiceKind.Healing);
@@ -817,10 +817,10 @@ public class HealerTests
     }
 
     [Fact]
-    public void AnAIHealerDrawsAnAdventurersWoundMendsItAndIsPaid()
+    public void AnAIEmpathDrawsAnAdventurersWoundMendsItAndIsPaid()
     {
         var (sim, hurt) = ShrineWithAHurtAdventurer("Blacksmith");
-        var healer = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
+        var healer = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Empath");
         for (var i = 0; i < 16 && sim.Shops.All.Any(e => e.IsOpen && e.Kind.Kind == ServiceKind.Healing); i++)
             sim.TickMany(SimClock.TicksPerHour / 4);
 
@@ -844,7 +844,7 @@ public class HealerTests
         sim.World.Get<Health>(adventurer).Injuries.Clear(); // it's the player's turn
         sim.World.Get<Health>(adventurer).Changed();
         var me = Players.CharacterOf(sim, Ana);
-        var healer = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
+        var healer = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Empath");
         var h = sim.World.Get<Health>(me);
         var leg = h.Body.Parts.FindIndex(p => p.Label.Contains("leg") && !p.Vital);
         HealthSystem.Damage(sim, me, 14f, DamageType.Cut, leg);
@@ -919,13 +919,13 @@ public class HealerTests
     }
 
     [Fact]
-    public void AnAIHealerSeesToABadlyHurtVillagerUnaskedAndMendsWhatItCarries()
+    public void AnAIEmpathSeesToABadlyHurtVillagerUnaskedAndMendsWhatItCarries()
     {
         var (sim, adventurer) = ShrineWithAHurtAdventurer("Blacksmith");
         sim.World.Get<Health>(adventurer).Injuries.Clear();
         sim.World.Get<Health>(adventurer).Changed();
         var me = Players.CharacterOf(sim, Ana);
-        var healer = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
+        var healer = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Empath");
         var villager = sim.Creatures().First(e => e != me && e != healer && sim.World.Get<Creature>(e).Faction == Faction.Village
             && sim.World.Has<Trade>(e) && !sim.World.Has<Adventurer>(e));
         var h = sim.World.Get<Health>(villager);
@@ -946,9 +946,9 @@ public class HealerTests
     }
 
     [Fact]
-    public void ABotHealerDrawsAnAdventurersWoundAndWeavesItAway()
+    public void ABotEmpathDrawsAnAdventurersWoundAndWeavesItAway()
     {
-        var (sim, hurt) = ShrineWithAHurtAdventurer("Healer");
+        var (sim, hurt) = ShrineWithAHurtAdventurer("Empath");
         var me = Players.CharacterOf(sim, Ana);
         var bot = new Bots.BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 11);
         var order = sim.Shops.All.Single(e => e.IsOpen && e.Poster == hurt && e.Kind.Kind == ServiceKind.Healing);
@@ -973,7 +973,7 @@ public class HealerTests
     {
         var (sim, hurt) = ShrineWithAHurtAdventurer("Blacksmith");
         sim.World.Get<Health>(hurt).Injuries.Clear(); // nobody waiting on them
-        var healer = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
+        var healer = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Empath");
         ref var mana = ref sim.World.Get<Mana>(healer);
         mana.Current = 0f;
         var sat = false;
@@ -991,7 +991,7 @@ public class HealerTests
     [Fact]
     public void TheWoundedLieOnTheShrinesPalletsAndAreDrawnFromAtTheBedside()
     {
-        var (sim, hurt) = ShrineWithAHurtAdventurer("Healer");
+        var (sim, hurt) = ShrineWithAHurtAdventurer("Empath");
         var order = sim.Shops.All.Single(e => e.IsOpen && e.Poster == hurt && e.Kind.Kind == ServiceKind.Healing);
         Assert.Equal(3, ShopSystem.BedsOf(sim, order.Where).Count);
         var cells = ShopSystem.LineCells(sim, order.Where);

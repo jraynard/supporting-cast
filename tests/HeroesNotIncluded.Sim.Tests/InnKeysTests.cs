@@ -112,7 +112,7 @@ public class InnKeysTests
     [Fact]
     public void AnAiKeeperFetchesTheKeyToMakeUpALockedRoomAndHangsItBack()
     {
-        var (sim, _, _) = Tavern("Healer");
+        var (sim, _, _) = Tavern("Empath");
         var bed = Rooms(sim).First(b => InnRooms.Number(sim, b) == 2);
         sim.World.Add(bed, new Unmade());
         Assert.True(InnRooms.LockedIn(sim, bed));
@@ -282,7 +282,7 @@ public class InnKeysTests
     [Fact]
     public void AnAiKeeperLetsARoomByItsKey()
     {
-        var (sim, party, _) = Tavern("Healer");
+        var (sim, party, _) = Tavern("Empath");
         var guest = party[0];
         var keeper = sim.World.Query<Trade>().First(e => sim.World.Get<Trade>(e).Def.Name == "Innkeeper");
         foreach (var a in party)
@@ -304,7 +304,7 @@ public class InnKeysTests
         var outcomes = new HashSet<string>();
         for (uint seed = 1; seed <= 40 && outcomes.Count < 3; seed++)
         {
-            var (sim, party, _) = Tavern("Healer");
+            var (sim, party, _) = Tavern("Empath");
             sim.Rand.State = new SimRandom(seed * 7919u).State;
             var guest = party[0];
             var bed = Rooms(sim).First(b => InnRooms.Number(sim, b) == 5);
@@ -326,7 +326,7 @@ public class InnKeysTests
     [Fact]
     public void AKeyHandedInOnTheCounterGoesBackOnTheBoard()
     {
-        var (sim, party, _) = Tavern("Healer");
+        var (sim, party, _) = Tavern("Empath");
         var guest = party[0];
         var bed = Rooms(sim).First(b => InnRooms.Number(sim, b) == 3);
         var seed = InnRooms.SeedOf(sim, bed);

@@ -8,7 +8,7 @@ using HeroesNotIncluded.Sim.Work;
 namespace HeroesNotIncluded.Sim.Healing;
 
 /// <summary>
-/// Laying on hands, from the first touch to the last wound drawn (docs/DESIGN.md, "Healer"), in
+/// Laying on hands, from the first touch to the last wound drawn (docs/DESIGN.md, "Empath"), in
 /// one window so a patient with many hurts is one sitting, not a session each:
 /// <list type="bullet">
 /// <item><b>Skim to find.</b> A/D run the hands head to feet. Near a wound there's a warmth: it's

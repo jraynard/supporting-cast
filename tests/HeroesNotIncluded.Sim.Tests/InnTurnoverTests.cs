@@ -151,7 +151,7 @@ public class InnTurnoverTests
     [Fact]
     public void AnAiKeeperTurnsTheRoomRoundAndTheSheetsGoToTheWash()
     {
-        var (sim, party, _) = Tavern("Healer");
+        var (sim, party, _) = Tavern("Empath");
         var guest = party[0];
         var bed = Room(sim, 5);
         Lodging.Let(sim, guest, bed);

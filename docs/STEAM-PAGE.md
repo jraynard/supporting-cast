@@ -17,7 +17,7 @@ Heroes Not Included
 Steam shows this beside the capsule. 300 characters at most.
 
 > Every legend needs someone to pour the drinks. Run the inn, the forge, the kitchen or the
-> healer's shrine in a fantasy village with your friends. Keep the heroes fed, mended and paying
+> empath's shrine in a fantasy village with your friends. Keep the heroes fed, mended and paying
 > long enough to reach the festival. Some of you may have other plans.
 
 (253 characters.)
@@ -27,7 +27,7 @@ Steam shows this beside the capsule. 300 characters at most.
 > **Somebody has to keep the lights on.**
 >
 > Every adventure starts in a tavern. Ours starts behind the bar. You and your friends are the
-> village the heroes walk past on the way to glory: the innkeeper, the smith, the cook, the healer
+> village the heroes walk past on the way to glory: the innkeeper, the smith, the cook, the empath
 > and the tinker. They get the glory. You get the tab.
 >
 > **Your trade is your game.** Pour ales and mix drinks while the line grows. Heat, hammer and
@@ -35,7 +35,7 @@ Steam shows this beside the capsule. 300 characters at most.
 > notices the cabbage. Draw a stranger's wounds into yourself and weave the right mending before
 > they do you in. Pick the lock on the strongbox a party dragged home, carefully.
 >
-> **Nobody can do it alone.** The cook feeds the inn, the smith arms the party, the healer patches
+> **Nobody can do it alone.** The cook feeds the inn, the smith arms the party, the empath patches
 > up whatever comes back. Set your own prices, pin favours to the notice board, and talk to each
 > other, because the heroes certainly won't talk to you.
 >
@@ -49,13 +49,13 @@ Steam shows this beside the capsule. 300 characters at most.
 > come back from. Gather evidence, call a meeting, and find out who it was at the reveal.
 >
 > **Death is a career change.** Die and you come back as a ghost: frost on a window, a dream, a
-> beast that won't behave. The healer can call you home, if they notice.
+> beast that won't behave. The empath can call you home, if they notice.
 
 ### Features
 
 > - Co-op for 1 to 12 players, online or on your local network. Villagers fill any trade nobody
 >   takes, so a round works with two of you or a full town.
-> - Five trades, each its own game: innkeeper, cook, blacksmith, healer and tinker.
+> - Five trades, each its own game: innkeeper, cook, blacksmith, empath and tinker.
 > - Two towns: Millbrook by the river and Reedmere, on stilts over the long lake.
 > - Seasons of 30 to 40 minutes: parties to serve, crises to weather, and a festival at the end.
 > - Optional traitors, and rounds without them for groups who'd rather not.

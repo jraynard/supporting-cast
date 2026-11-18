@@ -51,10 +51,11 @@ public sealed partial class VillageGame
         var (look, clothes) = HeroAppearance();
         var round = _sim.Round;
         round.Sit(Guid.Empty, string.IsNullOrWhiteSpace(HeroName) ? "Arin" : HeroName.Trim(), look, clothes);
-        if (HeroTrade != null)
-            round.SetPreferences(Guid.Empty, [_sim.Defs.Trade(HeroTrade)], []);
+        var heroTrade = HeroTrade == null ? null : _sim.Defs.Trade(HeroTrade); // by an old name too ("Healer")
+        if (heroTrade != null)
+            round.SetPreferences(Guid.Empty, [heroTrade], []);
         // Bots ask for the trades that have a game to play, the hero's aside, so a solo round has its cast.
-        var wanted = Sim.Scenarios.SeasonSweep.Trades.Where(t => t != HeroTrade).ToList();
+        var wanted = Sim.Scenarios.SeasonSweep.Trades.Where(t => t != heroTrade?.Name).ToList();
         for (var i = 0; i < Bots; i++)
         {
             var id = new Guid(i + 1, 0, 0, new byte[8]);

@@ -73,6 +73,9 @@ public class MilitiaTests
         var raid = Assert.IsType<RaidCrisis>(Assert.Single(sim.Director.Active));
         Assert.True(sim.Clock.Tick - warned >= SimClock.HoursToTicks(hours) - SimClock.TicksPerHour / 3, "the warning came hours ahead");
         Assert.Equal(plan.Kinds.Count, raid.Raiders.Count);
+        // The bell goes once someone sees them coming (RaidCrisis.Watch).
+        for (var t = 0; t < RaidCrisis.KnownAfter + 60 && !raid.Alarmed; t += 10)
+            sim.TickMany(10);
         Assert.True(sim.Militia.Mustering, "the bandits are here: the town takes up arms");
         Assert.Contains(sim.Messages.Messages, m => m.Text.StartsWith("The bell rings out") && m.Location == null);
 

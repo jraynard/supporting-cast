@@ -227,7 +227,7 @@ public class TinkerTradeTests
     [Fact]
     public void TheTinkersStockIsLeftForTheTinker()
     {
-        var (sim, me, _) = ExpeditionTests.Round("Healer");
+        var (sim, me, _) = ExpeditionTests.Round("Empath");
         var w = sim.World;
         var shop = sim.World.Query<PresetBuilding>().Single(e => w.Get<PresetBuilding>(e).Def.Name == "TinkerShop");
         var chest = w.Query<PartOf>().Single(e => w.Get<PartOf>(e).Building == shop && w.Get<Thing>(e).Def.Name == "Chest");
@@ -269,7 +269,7 @@ public class TinkerTradeTests
     [Fact]
     public void TheStoreroomStartsLockedAndTheInnkeeperHoldsTheKey()
     {
-        var (sim, me, _) = ExpeditionTests.Round("Healer");
+        var (sim, me, _) = ExpeditionTests.Round("Empath");
         var door = SettledStoreroomDoor(sim);
         Assert.True(sim.IsLocked(door));
         Assert.Equal("Inn", sim.World.Get<PresetBuilding>(Buildings.Of(sim, door)).Def.Name);
@@ -288,7 +288,7 @@ public class TinkerTradeTests
     [Fact]
     public void AnAIInnkeeperLetsThemselvesIntoTheStoreroomForAKegAndLocksUpBehind()
     {
-        var (sim, _, _) = ExpeditionTests.Round("Healer");
+        var (sim, _, _) = ExpeditionTests.Round("Empath");
         NoQuests(sim);
         var w = sim.World;
         var door = StoreroomDoor(sim);
@@ -314,7 +314,7 @@ public class TinkerTradeTests
     [Fact]
     public void NobodyWithoutTheKeyGetsAtTheKegs()
     {
-        var (sim, me, _) = ExpeditionTests.Round("Healer");
+        var (sim, me, _) = ExpeditionTests.Round("Empath");
         var w = sim.World;
         var door = SettledStoreroomDoor(sim);
         var keeper = sim.Creatures().Single(e => w.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
@@ -671,7 +671,7 @@ public class TinkerTradeTests
     [Fact]
     public void TheWheelIsAskedOfTheTinkerAndTheWoodworkOfTheCarpenter()
     {
-        var (sim, _, _, wagon) = WithAWagon("Healer", WagonDamage.Wheel | WagonDamage.Axle | WagonDamage.Board);
+        var (sim, _, _, wagon) = WithAWagon("Empath", WagonDamage.Wheel | WagonDamage.Axle | WagonDamage.Board);
         var tinker = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Tinker");
         var carpenter = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Carpenter");
         for (var h = 0; h < 24 && Wagons.Damaged(sim, wagon); h++)
@@ -691,7 +691,7 @@ public class TinkerTradeTests
     [Fact]
     public void AnAITinkerMendsAWagonAndIsPaid()
     {
-        var (sim, _, _, wagon) = WithAWagon("Healer", WagonDamage.Wheel | WagonDamage.Axle);
+        var (sim, _, _, wagon) = WithAWagon("Empath", WagonDamage.Wheel | WagonDamage.Axle);
         var tinker = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Tinker");
         for (var h = 0; h < 24 && Wagons.Damaged(sim, wagon); h++)
             sim.TickMany(SimClock.TicksPerHour);
@@ -855,7 +855,7 @@ public class TinkerTradeTests
     [Fact]
     public void AnAITinkerAppraisesACurioAndIsPaid()
     {
-        var (sim, _, party) = ExpeditionTests.Round("Healer");
+        var (sim, _, party) = ExpeditionTests.Round("Empath");
         NoQuests(sim);
         foreach (var e in party)
             Hospitality.DirectionsSystem.KnowsTheTown(sim, e);

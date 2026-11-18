@@ -244,7 +244,7 @@ public class RevivalTests
         sim.ApplyNow(new SetTradePreferencesCommand(Ana, [sim.Defs.Trade("Blacksmith")], []));
         sim.ApplyNow(new StartRoundCommand());
         var w = sim.World;
-        var healer = sim.Creatures().Single(e => w.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
+        var healer = sim.Creatures().Single(e => w.TryGet<Trade>(e, out var t) && t.Def.Name == "Empath");
         Assert.False(w.Has<PlayerCharacter>(healer));
         w.Get<Mana>(healer).Current = w.Get<Mana>(healer).Max;
         var body = Players.CharacterOf(sim, Ana);

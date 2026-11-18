@@ -33,8 +33,8 @@
       { "text": "If you hear a rumour, I heard it first.", "when": [ "innkeeper" ] },
       { "text": "Stew's on. Don't ask what's in it.", "when": [ "cook" ] },
       { "text": "Somebody's been at the larder again.", "when": [ "cook" ] },
-      { "text": "Shrine's open, if it hurts.", "when": [ "healer" ] },
-      { "text": "You'd be amazed what people walk around with.", "when": [ "healer" ] },
+      { "text": "Shrine's open, if it hurts.", "when": [ "empath" ] },
+      { "text": "You'd be amazed what people walk around with.", "when": [ "empath" ] },
       { "text": "Locks opened, wagons mended, no questions.", "when": [ "tinker" ] },
       { "text": "That box they brought back is ticking. Probably fine.", "when": [ "tinker" ] },
       { "text": "Anyone need anything hauled?", "when": [ "labourer" ] },
@@ -63,15 +63,15 @@
       { "text": "Raiders! I'm not here!", "when": [ "nervy" ] }
     ] },
     { "name": "alarm_downed", "lines": [
-      { "text": "{who}'s down! Healer!" },
+      { "text": "{who}'s down! Empath!" },
       { "text": "Somebody help {who}!" },
-      { "text": "{who}'s hurt bad! Get the healer!" },
+      { "text": "{who}'s hurt bad! Get the empath!" },
       { "text": "Hold on, {who}, I'm coming.", "when": [ "brave" ] }
     ] },
     { "name": "alarm_body", "lines": [
       { "text": "Gods. {who}'s dead." },
       { "text": "{who}... no." },
-      { "text": "Get the healer. {who} can still be called back.", "when": [ "healer" ] },
+      { "text": "Get the empath. {who} can still be called back.", "when": [ "empath" ] },
       { "text": "Somebody fetch the empath, quick. {who}'s gone.", "when": [ "careful" ] }
     ] },
     { "name": "carry", "lines": [

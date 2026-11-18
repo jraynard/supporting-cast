@@ -43,9 +43,10 @@ public struct Haunting
 }
 
 /// <summary>
-/// A raider or a predator shaken by a sign of the dead near them (<see cref="Hauntings.Unnerve"/>):
-/// until <see cref="Until"/> its blows come slower and it breaks sooner. The dead help defend the
-/// town without striking a blow.
+/// A raider or a predator shaken by a sign of the dead near them (<see cref="Hauntings.Unnerve"/>),
+/// or by a tinker's trip-bell going off under its feet (<c>Tinkering.TripBells</c>): until
+/// <see cref="Until"/> its blows come slower and it breaks sooner. The dead help defend the town
+/// without striking a blow.
 /// </summary>
 public struct Unnerved
 {

@@ -48,7 +48,7 @@ public class NightTests
     [Fact]
     public void TheNightPassesOnlyWhenEveryPlayerSleeps()
     {
-        var sim = Round((Ana, "Healer"), (Bea, "Blacksmith"));
+        var sim = Round((Ana, "Empath"), (Bea, "Blacksmith"));
         var ana = Players.CharacterOf(sim, Ana);
         var bea = Players.CharacterOf(sim, Bea);
         Assert.False(Players.AllAsleep(sim));
@@ -80,7 +80,7 @@ public class NightTests
     [Fact]
     public void AShoutNearbyWakesASleepingPlayer()
     {
-        var sim = Round((Ana, "Healer"), (Bea, "Blacksmith"));
+        var sim = Round((Ana, "Empath"), (Bea, "Blacksmith"));
         var ana = Sleeping(sim, Ana);
         var bea = Players.CharacterOf(sim, Bea);
         sim.World.Get<Position>(bea) = Position.At(sim.World.Get<Position>(ana).Cell);
@@ -94,7 +94,7 @@ public class NightTests
     [Fact]
     public void TheCallToArmsWakesEverySleepingPlayer()
     {
-        var sim = Round((Ana, "Healer"));
+        var sim = Round((Ana, "Empath"));
         var ana = Sleeping(sim, Ana);
         sim.Militia.Call(sim, "tonight");
         Assert.False(sim.World.Get<Mind>(ana).Asleep);
@@ -103,7 +103,7 @@ public class NightTests
     [Fact]
     public void FireNearbyWakesASleepingPlayer()
     {
-        var sim = Round((Ana, "Healer"));
+        var sim = Round((Ana, "Empath"));
         var ana = Sleeping(sim, Ana);
         var at = sim.World.Get<Position>(ana).Cell;
         Assert.True(sim.Fire.Ignite(sim, at, 0.6f) || sim.Fire.Ignite(sim, at + new int3(1, 0, 0), 0.6f) || sim.Fire.Ignite(sim, at + new int3(0, 1, 0), 0.6f));
@@ -114,7 +114,7 @@ public class NightTests
     [Fact]
     public void APlayerGetsUpAtDawnOnceRestedEnough()
     {
-        var sim = Round((Ana, "Healer"));
+        var sim = Round((Ana, "Empath"));
         var ana = Players.CharacterOf(sim, Ana);
         PlayUntilHour(sim, 23f);
         SetRest(sim, ana, 0.05f);
@@ -131,7 +131,7 @@ public class NightTests
     [Fact]
     public void ARestedPlayerWhoGoesToBedAtNightSleepsTillDawn()
     {
-        var sim = Round((Ana, "Healer"));
+        var sim = Round((Ana, "Empath"));
         var ana = Players.CharacterOf(sim, Ana);
         PlayUntilHour(sim, 22f);
         SetRest(sim, ana, 1f);
@@ -146,7 +146,7 @@ public class NightTests
     [Fact]
     public void ARestedNapInTheDayEndsAtOnce()
     {
-        var sim = Round((Ana, "Healer"));
+        var sim = Round((Ana, "Empath"));
         var ana = Players.CharacterOf(sim, Ana);
         PlayUntilHour(sim, 13f);
         SetRest(sim, ana, 1f);
@@ -158,7 +158,7 @@ public class NightTests
     [Fact]
     public void ABotGoesToBedAtNightSoTheNightCanPass()
     {
-        var sim = Round((Ana, "Healer"));
+        var sim = Round((Ana, "Empath"));
         var bot = new BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 5);
         var ana = Players.CharacterOf(sim, Ana);
         PlayUntilHour(sim, 22.5f);
@@ -175,7 +175,7 @@ public class NightTests
     [Fact]
     public void VillagersBuyTheirSupperAtTheInn()
     {
-        var sim = Round((Ana, "Healer"));
+        var sim = Round((Ana, "Empath"));
         sim.Parties.HoldArrivals(); // the town's own supper: no party at the hatch ahead of them
         // Someone the AI runs who doesn't cook: the town's labourer, or the tinker.
         var w = sim.World;
@@ -199,7 +199,7 @@ public class NightTests
     [Fact]
     public void EveryoneIsDealtAHomeOfTheirOwnNearTheirWork()
     {
-        var sim = Round((Ana, "Healer"));
+        var sim = Round((Ana, "Empath"));
         var w = sim.World;
         var town = sim.Creatures().Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human }).ToList();
         var homes = town.Select(e => Homes.HomeOf(sim, e)).ToList();
@@ -216,7 +216,7 @@ public class NightTests
     [Fact]
     public void InnStaffWithNoCottageLeftGetARoomThatsNeverLet()
     {
-        var sim = Round((Ana, "Healer"));
+        var sim = Round((Ana, "Empath"));
         var w = sim.World;
         var cook = sim.Creatures().Single(e => w.TryGet<Trade>(e, out var t) && t.Def.Name == "Cook");
         // Every cottage bed spoken for by somebody else.

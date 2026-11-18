@@ -49,7 +49,7 @@ public class TradeWeaponTests
         var sim = Round();
         var w = sim.World;
         Assert.Equal("KitchenKnife", Wielded(sim, Holder(sim, "Cook")));
-        Assert.Equal("Staff", Wielded(sim, Holder(sim, "Healer")));
+        Assert.Equal("Staff", Wielded(sim, Holder(sim, "Empath")));
         Assert.Equal("Dagger", Wielded(sim, Holder(sim, "Tinker")));
         var smith = Holder(sim, "Blacksmith");
         Assert.Equal("Hammer", Wielded(sim, smith));
@@ -225,7 +225,7 @@ public class TradeWeaponTests
         var sim = Round();
         var w = sim.World;
         bool HasStoneTools(Entity e) => Toolbelt.Of(sim, e).Any(t => Toolbelt.StartingTools.Contains(w.Get<Thing>(t).Def.Name));
-        foreach (var trade in new[] { "Innkeeper", "Cook", "Blacksmith", "Healer", "Tinker" })
+        foreach (var trade in new[] { "Innkeeper", "Cook", "Blacksmith", "Empath", "Tinker" })
             Assert.False(HasStoneTools(Holder(sim, trade)), $"the {trade.ToLowerInvariant()} still has the stone tools");
         var me = w.Query<Avatar>().Single();
         Assert.Equal("Labourer", w.Get<Trade>(me).Def.Name);

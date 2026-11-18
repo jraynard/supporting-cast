@@ -53,6 +53,18 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
 
     public IReadOnlyList<ICrisis> Active => _active;
 
+    /// <summary>The road (a map side, as <see cref="Combat.Raids.SideName"/>) of the next raid the town's been warned of that hasn't come yet; null if none.</summary>
+    public int? WarnedSide
+    {
+        get
+        {
+            for (var i = 0; i < _planned.Count && i < _fired.Count; i++)
+                if (!_fired[i] && _planned[i] is { } plan)
+                    return plan.Side;
+            return null;
+        }
+    }
+
     /// <summary>The raid the town's been warned of and is waiting on, if any (as it was told).</summary>
     public PlannedRaid? Coming
     {
@@ -225,7 +237,7 @@ public sealed class Director(ulong seed) : ISimSystem, ISaveState
             return;
         if (_kind[i] == CrisisKind.Raid && _planned[i] is { } plan)
         {
-            var raid = RaidCrisis.Begin(sim, _rand, plan);
+            var raid = RaidCrisis.Begin(sim, _rand, plan, byRoad: true); // by the road the town was told of
             if (raid != null)
                 _active.Add(raid);
             else

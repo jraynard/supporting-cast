@@ -9,7 +9,7 @@ here.
 - **M0 to M2:** forked from DragonWorld; being someone (perception, speech, trades as games of
   their own); the first party (adventurers, shops and the line, quests with hidden truth).
 - **Millbrook**, the hand-made village; UX and control passes; the blacksmith, innkeeper, cook,
-  healer and tinker each played through, with lessons in the practice yard.
+  empath and tinker each played through, with lessons in the practice yard.
 - **M3, a whole season:** the reckoning (Renown and Dread), nights and suppers, the Director's
   crises (raid, the bridge, fire, shortage, fever, the dragon), the festival and the notice board.
   Bots play a round from the deal to the reveal (`SeasonScenarioTests`).
@@ -78,7 +78,7 @@ Each round leaves its numbers and the testers' notes (F11) under the logs folder
 **Next round with friends.** Fixed after the last rounds and not played since:
 - [ ] **Feasts:** does the cook see the call and lay one on in its 6 hours?
 - [x] **The downed:** do players and the AI keep them alive now? AI first aid, bandaging and rescue
-  now reach downed adventurers, and blows go over the downed. A downed healer weaves on themselves.
+  now reach downed adventurers, and blows go over the downed. A downed empath weaves on themselves.
 - [x] **Wood:** the barn should hold out and the fires stay lit. In round two the inn's fireplaces,
   the oven and the forge kept burning out.
 - [ ] **Truing a wheel** (new controls), **tinker games finishing in co-op**, and **a second party
@@ -114,7 +114,7 @@ with friends, not before.
 - [ ] **Heroes die often:** about one raid in two with a party in town costs one. Watch what that
   does to Renown, now that deaths in town cost some, before making raids gentler.
 - [ ] **Night speed and the need rates.**
-- [ ] **The healer in a round:** the AI empath's meditation (`MeditateJob.Gathers`) and the charms
+- [ ] **The empath in a round:** the AI empath's meditation (`MeditateJob.Gathers`) and the charms
   it puts out (`LayOnHands.CharmsOnShow`, price).
 - [ ] **The festival** (`festival.json`, `season.json`): how long the tale and the revels run, the
   activity weights, what the show table and the games are worth to a guest, and whether the toasts
@@ -152,6 +152,26 @@ The striker is built; the rest follow its pattern (`HelperSession`, beats throug
 - [ ] Bots don't answer a call for a hand or take up the sledge; AI smiths never make a great piece
   (`Crafting.NextForVillager` skips `twoHanded`). The greatsword borrows the longsword's sprite, and
   the sledge has no sounds of its own yet.
+
+### 6. The trades, next
+Testers' favourites so far are the tinker and the empath: both read a hidden truth by feel (a trap's
+catch, a curio's tells, a wound known only as a sensation). Lean on that. The gap across the trades is
+the crises: each falls to one or two trades (raid: the smith and the fighters; fire and dragon: anyone
+with a bucket; shortage: the cook; fever: the empath; the bridge: the tinker and carpenter), and the
+tinker and innkeeper have nothing to do before one comes. In order:
+- [ ] **Playtest the trip-bell** (HISTORY.md, "The empath, and the trip-bell"): does a tinker think to
+  set one when the shepherd comes, and is a shaken band worth it? On Millbrook the town's near the
+  map's edges, so the warning it buys by day is seconds; the night raid and the shaking are its worth.
+  Watch the alarm now waiting till someone sees them (`RaidCrisis.Watch`): a sleeping town is
+  slower to wake.
+- [ ] **The carpenter played by someone** (1, above), then its slice 2: furniture broken in brawls
+  and raids, mended (Backlog, "The trades, deeper").
+- [ ] **The Calling back for two** (5, above): the empath's rite with a keeper.
+- [ ] **More town contraptions** (DESIGN.md, "Tinker"): a smoke bell for a fire, rat traps for the
+  cook in a shortage, then something for the dragon. Each a `ContraptionUse` that's not `ForTheRoad`,
+  set like the trip-bell.
+- [ ] **New trades:** the Constable comes with M4 (traitors need catching); the Bard
+  ([BARD-PLAN.md](BARD-PLAN.md)) as the seventh player's seat in place of the labourer.
 
 ## Then: M4, Whispers
 
@@ -307,7 +327,7 @@ items into "Now" when a playtest says they matter.
   tables, and a rag; no brewing (casks refill only from the carter's kegs); keys for the guest
   rooms; villagers at supper sit but don't swap rumours.
 - **Cook:** AI cooks never chop, roast, bake, make pies, salt, smoke or name a house dish (an AI
-  cook never offers the roast, bread or pies); the cook bot does all but salting and smoking. Rations are sold at the bar's line; the hatch would suit them better. The healer sending
+  cook never offers the roast, bread or pies); the cook bot does all but salting and smoking. Rations are sold at the bar's line; the hatch would suit them better. The empath sending
   the hurt to eat a broth; teas from shared herbs; pickling. To tune: the fold cue and the cord's
   band (`PackSession`), cravings and moods (`Tastes`), the fed and sick factors (`Rations`),
   seasoner weight and cap (`Cooking`), the house dish (`HouseDish`), tips (`ShopSystem.FineTip`),
@@ -315,13 +335,14 @@ items into "Now" when a playtest says they matter.
   hunger (`PartySystem.Send`), baking (`Baking`), the cleaver and the pluck (`Butchery`), the crimp
   (`Pies`), flares (`Cooking.FlarePerStep`), rats (`RatSystem`), feasts (`FeastSystem`), broths
   (`Broths`), word of the food (`ShopSystem.Fare`).
-- **Healer:** adventurers never tear a charm in town.
+- **Empath:** adventurers never tear a charm in town.
 - **Labourer:** hidden from players (the solo picker and the lobby) till it has a game of its own;
   still the overflow for a seventh player and `--trade Labourer`. Its work is the AI's: errands off
   the notice board, hauling, chopping. Likely split into Miner and Forager (once there's wild ground
   beyond the walls) rather than given a pass; the Carpenter has come out of it already.
 - **Tinker:** no lockboxes or locked chests (locks go on doors only); AI tinkers don't buy curios;
-  a wagon lesson (practice customers' wagons aren't damaged yet).
+  a wagon lesson (practice customers' wagons aren't damaged yet); a trip-bell lesson in the practice
+  yard, and the trip-bell's own sprite (it borrows the tapping rod's).
 - **Carpenter:** bar fights and raids breaking furniture (`Hospitality/Brawls` doesn't yet; only fire
   does, `Refurnishing`); a hand game for mending a cudgel or a staff (a split haft spliced and bound:
   it's hold-F for now); lessons for mending a bow, a wagon's woodwork and setting back a piece (the

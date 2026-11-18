@@ -154,12 +154,12 @@ public static class Goods
     /// <summary>The share of a piece's worth a shelf asks by default (<see cref="DefaultPrice"/>).</summary>
     public const float DefaultShare = 0.3f;
 
-    /// <summary>What adventurers buy: weapons, armor (apparel that turns a blade or a blow), the empath's charms, the tinker's contraptions, the cook's rations and the carpenter's quivers.</summary>
+    /// <summary>What adventurers buy: weapons, armor (apparel that turns a blade or a blow), the empath's charms, the tinker's contraptions for the road, the cook's rations and the carpenter's quivers.</summary>
     public static bool IsGear(ThingDef def) =>
-        def.Weapon != null || def.Apparel is { } a && (a.Sharp > 0 || a.Blunt > 0) || def.Charm || def.Contraption != null || def.Rations || def.Quiver;
+        def.Weapon != null || def.Apparel is { } a && (a.Sharp > 0 || a.Blunt > 0) || def.Charm || def.Contraption is { ForTheRoad: true } || def.Rations || def.Quiver;
 
     /// <summary>Gear carried for the road rather than worn or wielded: stowed in the pack when bought.</summary>
-    private static bool ForTheRoad(ThingDef def) => def.Charm || def.Contraption != null || def.Rations || def.Quiver;
+    private static bool ForTheRoad(ThingDef def) => def.Charm || def.Contraption is { ForTheRoad: true } || def.Rations || def.Quiver;
 
     /// <summary>
     /// Would they be better off with this? A weapon of the kind they fight with (in hand or at

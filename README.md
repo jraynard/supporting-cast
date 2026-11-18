@@ -3,7 +3,7 @@
 *Somebody has to keep the lights on.*
 
 A multiplayer fantasy village where the players are the people a tabletop party usually walks
-past: the innkeeper, the cook, the blacksmith, the healer, the tinker. Parties of adventurers
+past: the innkeeper, the cook, the blacksmith, the empath, the tinker. Parties of adventurers
 come through town with silver, demands and wounds, and treat everyone like scenery. The village
 has to keep them alive and paying long enough to see out the season, and, before long, someone
 in it will be working against everyone else.

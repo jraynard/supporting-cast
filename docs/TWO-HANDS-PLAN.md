@@ -59,7 +59,7 @@ The empath's rite to bring the dead back becomes a rite for two.
   - A slipped hold lowers the weave's quality.
   - An AI keeper answers the empath's call.
   - Existing revival tests (`AfterlifeTests` and friends) bring a keeper.
-- **The practice yard:** the healer's lesson that teaches the Calling gets a keeper (an AI one).
+- **The practice yard:** the empath's lesson that teaches the Calling gets a keeper (an AI one).
 
 ## 2. The pitman under the carpenter's saw
 

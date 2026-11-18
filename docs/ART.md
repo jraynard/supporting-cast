@@ -597,7 +597,7 @@ The interface is drawn by Narsil's UI kit (external/narsil/docs/UI.md) from spri
   game's gauges, moved and tinted from the session in hand. `--work-scenes` opens every scene in
   one panel, played by stand-in values, to look the art over without playing each game.
 
-- **The healer's shrine** (`tools/shrine_art.py`): its own kit's walls (`buildings/wall_shrine`, a
+- **The empath's shrine** (`tools/shrine_art.py`): its own kit's walls (`buildings/wall_shrine`, a
   level tall so its band of runes shows once; `wall_shrine_plain` for the gables, `gable_shrine`,
   `lintel_rune`), the rune altar, herb rack, linen basket, wash basin, wall candles and straw pallet
   (model faces and icons), and the cottages' bread crock. Laying on hands' wound marks are drawn

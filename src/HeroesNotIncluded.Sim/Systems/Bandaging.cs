@@ -109,7 +109,7 @@ public static class Bandaging
         if (!w.Get<Creature>(binder).Able)
             return "can't do it now";
         if (WoundsToBind(sim, patient, binder) == 0)
-            return WoundsToBind(sim, patient) > 0 ? "the bleeding's stopped; the rest is the healer's" : "no wounds to bandage";
+            return WoundsToBind(sim, patient) > 0 ? "the bleeding's stopped; the rest is the empath's" : "no wounds to bandage";
         if (BandagesOn(sim, binder) == 0)
             return "no bandages";
         if (binder != patient && !Pathfinder.Touches(w.Get<Position>(binder).Cell, w.Get<Position>(patient).Cell))
@@ -154,7 +154,7 @@ public static class Bandaging
         {
             var who = binder == patient ? "their own" : $"{w.Get<Creature>(patient).Name}'s";
             sim.Messages.Add(MessageKind.Good, firstAid
-                ? $"{w.Get<Creature>(binder).Name} stopped the bleeding on {who} wounds ({bound}) for now. The healer should see to them."
+                ? $"{w.Get<Creature>(binder).Name} stopped the bleeding on {who} wounds ({bound}) for now. The empath should see to them."
                 : $"{w.Get<Creature>(binder).Name} bandaged {who} wounds ({bound}).", w.Get<Position>(patient).Cell);
         }
         return bound;

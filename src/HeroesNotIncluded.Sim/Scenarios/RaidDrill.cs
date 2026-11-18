@@ -35,6 +35,8 @@ public static class RaidDrill
             if (!sim.Store(rack, spear).IsNull)
                 throw new InvalidOperationException("The muster rack has no room for the drill's spears.");
         }
-        return sim.Director.SendRaid(sim, North);
+        var raid = sim.Director.SendRaid(sim, North);
+        raid?.RaiseNow(sim); // the drill's for the fight: the bell goes as they come
+        return raid;
     }
 }

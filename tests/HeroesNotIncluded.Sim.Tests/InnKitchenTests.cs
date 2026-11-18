@@ -299,7 +299,7 @@ public class InnKitchenTests
     [Fact]
     public void TheInnHasAKitchenWithAStockedLarderAndAPotByItsFire()
     {
-        var (sim, _) = Tavern("Healer");
+        var (sim, _) = Tavern("Empath");
         var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
         var pot = Cooking.PotIn(sim, inn);
         Assert.False(pot.IsNull);
@@ -311,7 +311,7 @@ public class InnKitchenTests
     [Fact]
     public void AnAICookCooksAPotAndServesItByTheBowl()
     {
-        var (sim, party) = Tavern("Healer");
+        var (sim, party) = Tavern("Empath");
         var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Cook");
         var pot = Cooking.PotIn(sim, ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn")));
         foreach (var e in party)
@@ -435,7 +435,7 @@ public class InnKitchenTests
     [Fact]
     public void APlayerOrdersAMealAtTheHatchAndIsServed()
     {
-        var (sim, party) = Tavern("Healer");
+        var (sim, party) = Tavern("Empath");
         foreach (var e in party)
             sim.World.Get<Needs>(e).Values[sim.Defs.Need("Food").Index] = 1f; // nobody else hungry: the bowl is ours
         var me = Players.CharacterOf(sim, Ana);

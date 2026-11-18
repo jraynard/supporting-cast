@@ -6,7 +6,7 @@ using HeroesNotIncluded.Sim.Work;
 namespace HeroesNotIncluded.Sim.Healing;
 
 /// <summary>
-/// Weaving a mending (docs/DESIGN.md, "Healer"): runes keyed one at a time (1 to 6) on the beat of
+/// Weaving a mending (docs/DESIGN.md, "Empath"): runes keyed one at a time (1 to 6) on the beat of
 /// the empath's own heart, then F to let it go. Which mending it makes is the mix of runes woven
 /// (<see cref="Weaving"/>), known only once it's let go; the empath's book says which mix makes
 /// what, and a new mix that works is written in. A rune keyed on the beat is a strong strand, off

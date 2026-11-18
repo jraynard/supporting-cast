@@ -249,7 +249,7 @@ public class InnUpkeepTests
     [Fact]
     public void TheInnOpensWithCleanCrockeryAndKegsInTheStoreroom()
     {
-        var (sim, _) = Tavern("Healer");
+        var (sim, _) = Tavern("Empath");
         var parts = Buildings.Parts(sim, Inn(sim));
         int Held(string def) => parts.SelectMany(p => sim.StoredIn(p)).Where(e => sim.World.Get<Thing>(e).Def.Name == def).Sum(e => sim.World.Get<Stack>(e).Count);
         Assert.Equal(VillageRound.Tankards, Held("Tankard"));
@@ -270,7 +270,7 @@ public class InnUpkeepTests
     [Fact]
     public void AnAIInnkeeperWashesUpAndChangesTheKeg()
     {
-        var (sim, _) = Tavern("Healer");
+        var (sim, _) = Tavern("Empath");
         var inn = Inn(sim);
         var cask = Buildings.Parts(sim, inn).Single(p => sim.World.Get<Thing>(p).Def.Building?.Cask != null);
         sim.World.Add(cask, new CaskDrawn { Drawn = Full(sim, cask) });
@@ -284,7 +284,7 @@ public class InnUpkeepTests
     [Fact]
     public void TheCarterCallsEachMorning()
     {
-        var (sim, _) = Tavern("Healer");
+        var (sim, _) = Tavern("Empath");
         var parts = Buildings.Parts(sim, Inn(sim));
         int Kegs() => parts.SelectMany(p => sim.StoredIn(p)).Where(e => sim.World.Get<Thing>(e).Def.Name == "Keg").Sum(e => sim.World.Get<Stack>(e).Count);
         var before = Kegs();

@@ -459,7 +459,7 @@ public class InnkeeperTests
     [Fact]
     public void AnAIInnkeeperPoursForOrders()
     {
-        var (sim, party) = Tavern("Healer");
+        var (sim, party) = Tavern("Empath");
         var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
         foreach (var e in party)
             Thirsty(sim, e);
@@ -473,7 +473,7 @@ public class InnkeeperTests
     [Fact]
     public void AnAICookServesAMealFromTheStores()
     {
-        var (sim, party) = Tavern("Healer");
+        var (sim, party) = Tavern("Empath");
         var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Cook");
         var tavern = PartyHaunt(sim);
         sim.PlaceItemNear(sim.CreateItem(sim.Thing("Stew"), 10), tavern);
@@ -500,7 +500,7 @@ public class InnkeeperTests
     [Fact]
     public void AnAIInnkeeperLetsARoomUpstairsForTheNight()
     {
-        var (sim, party) = Tavern("Healer");
+        var (sim, party) = Tavern("Empath");
         var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
         // Nothing else on the books to keep the keeper busy: whole, and not thirsty.
         foreach (var a in party)
@@ -533,7 +533,7 @@ public class InnkeeperTests
     [Fact]
     public void NobodySleepsInALetBedUnlessItsTheirs()
     {
-        var (sim, _) = Tavern("Healer");
+        var (sim, _) = Tavern("Empath");
         var keeper = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Innkeeper");
         var bed = Ai.AiQueries.FindFreeBed(sim, keeper);
         Assert.False(!bed.IsNull && ShopSystem.IsLet(sim, bed), "the innkeeper took a guest's bed");

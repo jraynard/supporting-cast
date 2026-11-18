@@ -187,7 +187,7 @@ public class BlacksmithTests
     [Fact]
     public void AnAISmithSeesARepairThroughAndIsPaid()
     {
-        var (sim, owner, sword) = TownWithAWornSword("Healer");
+        var (sim, owner, sword) = TownWithAWornSword("Empath");
         var smith = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Blacksmith");
         Assert.False(sim.World.Has<Avatar>(smith));
         var purse = Coin.Count(sim, smith);

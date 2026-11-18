@@ -18,7 +18,7 @@ public class FoodWithoutACookTests
 {
     private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
 
-    private static (Simulation Sim, List<Entity> Party) Round(string playerTrade = "Healer")
+    private static (Simulation Sim, List<Entity> Party) Round(string playerTrade = "Empath")
     {
         var sim = VillageRound.NewSimulation(LoadDefs(), 1234);
         sim.Presets.PresetMode = true;

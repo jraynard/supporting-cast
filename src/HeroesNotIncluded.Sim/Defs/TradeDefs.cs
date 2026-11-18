@@ -15,6 +15,12 @@ public sealed class TradeDef : Def
     /// </summary>
     public string Workplace { get; set; } = "";
 
+    /// <summary>
+    /// Names the trade went by before (the empath was the "Empath"): looked up by them, it's still
+    /// found, so saves, replays, saved characters' progress and the command line from then still work.
+    /// </summary>
+    public List<string> Formerly { get; set; } = [];
+
     /// <summary>Any number may hold it, so there's always something left to deal.</summary>
     public bool Unlimited { get; set; }
 

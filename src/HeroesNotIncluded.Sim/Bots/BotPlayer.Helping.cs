@@ -101,7 +101,7 @@ public sealed partial class BotPlayer
         var target = DouseTarget(sim, me, view);
         if (target is not { } at)
             return PutBucketBack(sim, me, now, held);
-        if (w.TryGet<Health>(me, out var h) && h.Injuries.Sum(i => i.Damage) >= SeeTheHealerFrom)
+        if (w.TryGet<Health>(me, out var h) && h.Injuries.Sum(i => i.Damage) >= SeeTheEmpathFrom)
             return false; // hurt: let the others
         // The nervy keep their heads down when it's the dragon; only the bravest go at a blaze close up.
         var dragon = view.Creatures().Any(e => w.Get<Creature>(e) is { Dead: false, Def.Race: Race.Dragon });

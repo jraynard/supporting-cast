@@ -7,7 +7,7 @@
       // The poorest bed: a heap of straw and a rolled blanket. Quick to make, and still better than
       // the bare ground (the Escape cage has one).
       "name": "StrawPallet", "label": "straw pallet", "category": "Building", "joinery": { "planks": 1, "joints": 2 }, "sprite": "buildings/straw_pallet", "size": [1, 2],
-      "description": "A heap of straw and a rolled blanket. At the shrine, the hurt lie here to wait for the healer (F to ask), and a patient lying down is calmer to draw from.",
+      "description": "A heap of straw and a rolled blanket. At the shrine, the hurt lie here to wait for the empath (F to ask), and a patient lying down is calmer to draw from.",
       "model": [
         { "min": [0.1, 0.06, 0], "max": [0.9, 1.94, 0.12], "top": "props/straw", "side": "props/straw" },
         { "min": [0.2, 0.08, 0.12], "max": [0.8, 0.3, 0.2], "top": "props/linen", "side": "props/linen" }
@@ -92,7 +92,7 @@
       ]
     },
     {
-      // The healer's shrine stone: meditating within reach of it is calmer and gathers more mana
+      // The empath's shrine stone: meditating within reach of it is calmer and gathers more mana
       // (Healing/MeditateSession).
       "name": "MeditationStone", "label": "meditation stone", "category": "Building", "sprite": "buildings/meditation_stone",
       "description": "A smooth, sun-warmed stone. Meditate within reach of it (the gift, Y): pain unsettles you less, and you gather more mana.",

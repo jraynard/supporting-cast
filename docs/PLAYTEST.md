@@ -22,9 +22,9 @@ numbers that have had a pass.
 
 Each one is a command away. Press the note key (F11) whenever something's worth remembering.
 
-- [x] **Laying on hands:** `--practice Healer --lesson wound`. Does reading by the pulse teach the
+- [x] **Laying on hands:** `--practice Empath --lesson wound`. Does reading by the pulse teach the
   kinds? Is the flinch fair?
-- [x] **The other healer games:** `--practice Healer --lesson many`, `festering`, `shrine`. The bandage
+- [x] **The other empath games:** `--practice Empath --lesson many`, `festering`, `shrine`. The bandage
   band, the weave's beat window, the labyrinth's size.
 - [x] **A Veteran:** `--arena Veteran` (`--weapon IronSpear` to change arms). Fair to a player? (About
   6% for a skill-6 villager with a sword.)
@@ -54,7 +54,7 @@ Sit on a step for 45 seconds: the fuller hint and "Set it up again" should come 
   - [ ] `mend`
   - [ ] `forge`
   - [ ] `smelt`
-- **Healer**
+- **Empath**
   - [ ] `wound`
   - [ ] `many`
   - [ ] `festering`
@@ -72,7 +72,7 @@ A whole round, from the deal to the reveal, everyone from their own home.
 - [ ] **The link.** On a client, watch the Players window (turns queued, jitter, ran dry). Mid-round:
   - [ ] someone leaves and joins again;
   - [ ] the host pulls their network for a few seconds (the session should carry on, not split).
-- [ ] **The healer:** if nobody plays the empath, watch what the AI one does (meditating, charms on show
+- [ ] **The empath:** if nobody plays the empath, watch what the AI one does (meditating, charms on show
   and their price).
 - [ ] **Heroes dying:** about one in two raids with a party in town costs a hero. Watch what that does to
   Renown.

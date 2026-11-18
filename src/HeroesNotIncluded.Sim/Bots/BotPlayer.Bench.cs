@@ -203,7 +203,42 @@ public sealed partial class BotPlayer
         // Something already begun at the bench is seen through first.
         if (made.Active is { } begun && made.By == me && !made.Untouched)
             return Make(sim, me, view, bench, begun, now);
-        return Locksmith(sim, me, view, shop, bench, now) || Contraption(sim, me, view, bench, now);
+        return TripBell(sim, me, view, bench, now) || Locksmith(sim, me, view, shop, bench, now) || Contraption(sim, me, view, bench, now);
+    }
+
+    /// <summary>
+    /// A raid's been called (the shepherd's word is the town's) and its road has no bell: fit one at
+    /// the bench, carry it out, and set it across the road a way in from the edge. True while at it.
+    /// </summary>
+    private bool TripBell(Simulation sim, Entity me, PerceptionView view, Entity bench, long now)
+    {
+        var w = sim.World;
+        if (!sim.Militia.Open || sim.Militia.Mustering || sim.Director.WarnedSide is not { } side
+            || TripBells.SpotFor(sim, side) is not { } spot || TripBells.Guarded(sim, spot))
+            return false;
+        var bell = TripBells.Carried(sim, me);
+        if (bell.IsNull)
+        {
+            var recipe = w.Get<Thing>(bench).Def.Recipes.FirstOrDefault(r => Tinkers.MakesContraption(r) is { Use: ContraptionUse.Alarm });
+            if (recipe == null || !Crafting.CanMake(sim, me, recipe) || !recipe.Ingredients.TrueForAll(x => Obtainable(sim, me, x)))
+                return false;
+            return Make(sim, me, view, bench, recipe, now);
+        }
+        Doing = "setting a trip-bell on the road";
+        if (w.Get<Carrying>(me).Item != bell)
+        {
+            Send(new HoldCommand(me, bell));
+            return true;
+        }
+        var here = w.Get<Position>(me).Cell;
+        if (AvatarSystem.InReach(here, spot))
+        {
+            Send(new AvatarWorkCommand(me, true, spot));
+            Send(new AvatarWorkCommand(me, false));
+        }
+        else
+            Walk(sim, me, spot, now);
+        return true;
     }
 
     /// <summary>The shop's door it'd put a lock on: its first without one. Null if they all have one.</summary>
@@ -286,7 +321,7 @@ public sealed partial class BotPlayer
         var uses = OnSale(sim, me).Concat(Loose(sim, me).Where(i => ForTheShelf(sim, me, i)))
             .Select(i => w.Get<Thing>(i).Def.Contraption?.Use).OfType<ContraptionUse>().ToHashSet();
         var pick = w.Get<Thing>(bench).Def.Recipes
-            .Where(r => Tinkers.MakesContraption(r) is { } c && !uses.Contains(c.Use) && Crafting.CanMake(sim, me, r)
+            .Where(r => Tinkers.MakesContraption(r) is { ForTheRoad: true } c && !uses.Contains(c.Use) && Crafting.CanMake(sim, me, r)
                 && Crafting.MissingTool(sim, me, bench, r) == null && r.Ingredients.TrueForAll(x => Obtainable(sim, me, x)))
             .OrderBy(r => r.Ingredients.Where(x => x.Def == Tinkers.BarDef).Sum(x => x.Count))
             .FirstOrDefault();

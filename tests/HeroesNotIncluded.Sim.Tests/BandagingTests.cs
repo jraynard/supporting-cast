@@ -107,12 +107,12 @@ public class BandagingTests
     }
 
     [Fact]
-    public void TheHealersDressingReplacesFirstAid()
+    public void TheEmpathsDressingReplacesFirstAid()
     {
         var (sim, me) = Wounded(bandages: 5, cuts: 1);
         var inj = sim.World.Get<Health>(me).Injuries.Single();
         Bandaging.Stanch(sim, inj);
-        sim.World.Add(me, new Trade { Def = sim.Defs.Trade("Healer") });
+        sim.World.Add(me, new Trade { Def = sim.Defs.Trade("Empath") });
         Assert.False(Bandaging.FirstAidOnly(sim, me));
         Assert.Equal(1, Bandaging.Bind(sim, me, me));
         Assert.True(inj.Tended && !inj.Stanched && inj.Quality > 0);

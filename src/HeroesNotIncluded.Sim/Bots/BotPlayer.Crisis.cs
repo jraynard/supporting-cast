@@ -128,7 +128,7 @@ public sealed partial class BotPlayer
     }
 
     /// <summary>Wounds adding up to this, a bot goes to the healer rather than carry them about.</summary>
-    public const float SeeTheHealerFrom = 6f;
+    public const float SeeTheEmpathFrom = 6f;
 
     private long _healerRefusedAt = long.MinValue / 2;
 
@@ -137,15 +137,15 @@ public sealed partial class BotPlayer
     /// ask, as a player would, then wait in its place in line till it's seen to. Only with the
     /// silver for it; turned away, it leaves it an hour.
     /// </summary>
-    private bool SeeTheHealer(Simulation sim, Entity me, long now)
+    private bool SeeTheEmpath(Simulation sim, Entity me, long now)
     {
         var w = sim.World;
         if (_task != 0 || !sim.Round.Live || Healing.Empathy.Gifted(sim, me) || !w.TryGet<Health>(me, out var h)
-            || h.Injuries.Sum(i => i.Damage) < SeeTheHealerFrom || !Healing.LayOnHands.Hurt(sim, me))
+            || h.Injuries.Sum(i => i.Damage) < SeeTheEmpathFrom || !Healing.LayOnHands.Hurt(sim, me))
             return false;
         if (sim.Shops.OpenOrderOf(me, ServiceKind.Healing) != null)
         {
-            Doing = "waiting on the healer";
+            Doing = "waiting on the empath";
             if (sim.Shops.PlaceOf(sim, me) is { Cell: { } spot } && w.Get<Position>(me).Cell != spot)
                 Walk(sim, me, spot, now);
             return true;
@@ -170,7 +170,7 @@ public sealed partial class BotPlayer
             _healerRefusedAt = now;
             return false;
         }
-        Doing = "going to the healer";
+        Doing = "going to the empath";
         return AtStation(sim, me, pallet, now, p =>
         {
             Send(new AvatarWorkCommand(me, true, w.Get<Thing>(p).Cell));

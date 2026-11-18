@@ -23,7 +23,7 @@ dotnet run --project src/HeroesNotIncluded -- --dragon-test --name Arin        #
 dotnet run --project src/HeroesNotIncluded -- --bridge-test --name Arin        # the bridge down, you the tinker at the gap with wood
 dotnet run --project src/HeroesNotIncluded -- --new-game --die-at 5            # your character drops dead: try being a ghost
 dotnet run --project src/HeroesNotIncluded -- --new-game --festival-at 5       # the season's festival, now, you by the well
-dotnet run --project src/HeroesNotIncluded -- --practice Healer          # the tutorial in the practice yard: no season, customers on request (--lesson ID: straight into a chapter, `basics` too)
+dotnet run --project src/HeroesNotIncluded -- --practice Empath          # the tutorial in the practice yard: no season, customers on request (--lesson ID: straight into a chapter, `basics` too)
 dotnet run --project src/HeroesNotIncluded -- --arena Swordsman --weapon IronSpear  # the practice ring: one foe a bout (any raider kind, or Dragon; Enter for the next)
 dotnet run --project src/HeroesNotIncluded -- --furniture-demo --zoom 80    # also --building-demo
 dotnet run --project src/HeroesNotIncluded -- --new-game --screenshot shot.png --screenshot-at 5 --quit  # also --screenshot-no-ui, --look-at X,Y, --yaw/--pitch DEG, --camera-mode; any mode
@@ -157,8 +157,11 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     contraptions fitted together (`FitSession`) whose hidden `Binding` may jam them on a quest;
     party wagons (`Wagons`, `TrueSession`); curios whose true worth is hidden (`Curio`), read only
     through `PerceptionView.Curio` (your own `Appraisal`, never the truth), and the collector.
-    Hand games start from the bench through `Crafting.WorkAt` (`Tinkers.Applies`).
-  - `Healing/`: the empath. Wounds drawn in are `Injury.Absorbed` and known only by feel
+    Hand games start from the bench through `Crafting.WorkAt` (`Tinkers.Applies`). Contraptions for the
+    town, not the road (`ContraptionProps.ForTheRoad` false), are set on the ground: the trip-bell
+    (`TripBells`) rings a raid's alarm as they cross it; without one, a raid's known only once seen
+    (`Director/RaidCrisis.Watch`).
+  - `Healing/`: the empath (the trade was the Healer; `TradeDef.Formerly` keeps old names resolving). Wounds drawn in are `Injury.Absorbed` and known only by feel
     (`PerceptionView.FeltWounds`); never show their kind by name. A patient's wounds are known
     only once felt over (`Injury.FeltBy`). Mendings are woven from runes, the mix deciding which
     (`Weaving`); the book (`Spellbook`) is what the empath knows of them. An AI empath works the gift without the games (`LayOnHands`): it

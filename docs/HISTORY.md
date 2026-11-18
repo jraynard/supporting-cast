@@ -2456,3 +2456,21 @@ sends the player to the chest for six logs first (the chest is out of reach of t
   tinker's curio went unasked for, its bearer broke on meals and drinks.
 - `ABandAtYourElbowTakesItInTurns` averages three towns: on one seed it swung from 6.8 s to 5.0 s with
   the new furniture, and seeds 5, 9 and 11 were under 6 s before it.
+
+### The empath, and the trip-bell (2026-11-17)
+- **Healer is now Empath**, in the trade's name, its words and the docs, for what sets it apart: it
+  feels what it takes on. Old names still resolve (`TradeDef.Formerly`, `DefDatabase.TryTrade`), so
+  saves, replays, `--trade Healer` and `--practice Healer` still work, and a saved character's rounds
+  and lessons as a healer carry over (`CharacterRoster`). Bench hashes unchanged.
+- **The trip-bell** (`Tinkering/TripBells`, DESIGN.md "Tinker"): the first contraption for the town
+  rather than the road (`ContraptionUse.Alarm`, `ForTheRoad` false: never on a shelf). Fitted at the
+  bench, set on open ground out of doors with F (`AvatarActionKind.TripBell`), rewound or taken up the
+  same way; the haulers leave a set one be. A raider crossing it rings the alarm and is shaken
+  (`Unnerved`); a binding one may jam silent (`TripSet.Jammed`, hidden). The bell's heard where it
+  is (`SoundDirector`).
+- **A raid's alarm waits till it's seen** (`RaidCrisis.Watch`): a waking villager within 14 cells, a
+  sleeper within 5 (woken by them), or half an hour in any case; then the shout, the town's bell and
+  the muster, as before. The raid drill still rings at once (`RaiseNow`). A warned raid now comes by
+  the road the shepherd named (`byRoad`), and the Director says which (`WarnedSide`).
+- The AI tinker fits and sets a bell on the warned road (`TripBellJob`); so does the bot.
+- Saves to format 57. `TripBellTests`.

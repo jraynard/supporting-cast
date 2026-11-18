@@ -47,6 +47,7 @@ public sealed class SoundDirector(AudioEngine audio)
     /// <summary>Where the festival's band plays (the well), while there's a festival; null otherwise.</summary>
     private float3? _bandAt;
     private long _bellHeard = -1;
+    private long _tripHeard = -1;
 
     /// <summary>How far from the well (cells) the festival's music carries.</summary>
     public const int FestivalReach = 24;
@@ -96,6 +97,24 @@ public sealed class SoundDirector(AudioEngine audio)
         Ambience();
         PickMood(sim);
         FestivalBell(sim, view, me);
+        TripBellsRung(sim, view, me);
+    }
+
+    /// <summary>A trip-bell going off where it's set (<see cref="Sim.Tinkering.TripBells"/>), as far as it carries. Rung or not is plain; why one didn't, never.</summary>
+    private void TripBellsRung(Simulation sim, PerceptionView view, int3? me)
+    {
+        var newest = _tripHeard;
+        foreach (var bell in Sim.Tinkering.TripBells.All(sim))
+        {
+            var rang = sim.World.Get<Sim.Tinkering.TripSet>(bell).RangAt;
+            if (rang <= _tripHeard)
+                continue;
+            newest = Math.Max(newest, rang);
+            var at = sim.World.Get<Sim.Components.Thing>(bell).Cell;
+            if (sim.Clock.Tick - rang <= FreshTicks && Reach(sim, view, me, at) is { } muffle)
+                audio.Play(Sounds.UiBell, ToAudio(at), muffle: muffle);
+        }
+        _tripHeard = newest;
     }
 
     /// <summary>The festival's bell (its opening, the ceremony's call), from the square, as far as it carries.</summary>
@@ -124,6 +143,7 @@ public sealed class SoundDirector(AudioEngine audio)
         _recentFight.Clear();
         _dangerUntil = -1000f;
         _bellHeard = sim.Festival.BellTick;
+        _tripHeard = sim.Clock.Tick;
     }
 
     /// <summary>

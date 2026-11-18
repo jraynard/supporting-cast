@@ -40,7 +40,7 @@ forge, the kitchen. Heroes not included. 🍺 Discord: https://discord.gg/GxkCEQ
 > Every legend needs someone to pour the drinks.
 >
 > Heroes Not Included is a co-op fantasy village game in development. You and your friends are the
-> people the heroes walk past on the way to glory: the innkeeper, the smith, the cook, the healer
+> people the heroes walk past on the way to glory: the innkeeper, the smith, the cook, the empath
 > and the tinker. Keep the adventurers fed, mended and paying, weather the raids, fires and worse,
 > and reach the festival with the town still standing. Nobody will say thank you.
 >

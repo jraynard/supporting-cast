@@ -510,8 +510,8 @@ public class CookPassTests
         Assert.Equal("Miller's Pot", Perception.For(sim, me).HouseDish(inn)!.Value.Name);
         Assert.Equal("Miller's Pot", Perception.For(sim, me).Pot(pot)!.Value.House);
         // Someone who doesn't keep the kitchen can't.
-        var stranger = sim.Creatures().First(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Healer");
-        Assert.NotNull(HouseDish.Christen(sim, stranger, pot, "Healer's Broth"));
+        var stranger = sim.Creatures().First(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Empath");
+        Assert.NotNull(HouseDish.Christen(sim, stranger, pot, "Empath's Broth"));
     }
 
     [Fact]

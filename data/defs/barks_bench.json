@@ -6,8 +6,8 @@
       { "text": "A {thing}, on show. For anyone with the silver." },
       { "text": "There. The {thing}'s out." },
       { "text": "Fresh off the anvil: one {thing}. Don't all rush.", "when": [ "blacksmith" ] },
-      { "text": "A {thing} for the road. Mind you don't need it.", "when": [ "healer" ] },
-      { "text": "Woven today. Carry it close.", "when": [ "healer" ] },
+      { "text": "A {thing} for the road. Mind you don't need it.", "when": [ "empath" ] },
+      { "text": "Woven today. Carry it close.", "when": [ "empath" ] },
       { "text": "One {thing}, wound and latched. It works. Mostly.", "when": [ "tinker" ] },
       { "text": "Going cheap, one {thing}. Well. Going.", "when": [ "greedy" ] },
       { "text": "Something to sell, if anyone's buying.", "when": [ "quiet" ] }

@@ -136,7 +136,6 @@ public sealed class CharacterRoster
 
     private static SavedCharacter Clean(SavedCharacter c, DefDatabase defs)
     {
-        var trades = defs.AllTrades.Select(t => t.Name).ToHashSet();
         var look = c.Look;
         look.HairColor &= 0xFFFFFF;
         look.EyeColor &= 0xFFFFFF;
@@ -163,15 +162,34 @@ public sealed class CharacterRoster
             Created = c.Created == default ? c.LastUsed : c.Created,
             Progress = progress with
             {
-                // A trade since removed keeps no record: there's nothing left to master.
-                Trades = (progress.Trades ?? []).Where(t => trades.Contains(t.Key) && t.Value.Rounds > 0).ToDictionary(),
+                // A trade since renamed keeps its record under the new name (TradeDef.Formerly); one
+                // since removed keeps none: there's nothing left to master.
+                Trades = TradesNow(progress.Trades, defs),
                 Titles = titles,
                 Title = progress.Title != null && titles.Contains(progress.Title) ? progress.Title : null,
                 Unlocked = (progress.Unlocked ?? []).Where(u => !string.IsNullOrWhiteSpace(u)).Distinct().ToList(),
-                Lessons = (progress.Lessons ?? []).Where(l => !string.IsNullOrWhiteSpace(l)).Distinct().ToList(),
+                Lessons = (progress.Lessons ?? []).Where(l => !string.IsNullOrWhiteSpace(l)).Select(l => LessonNow(l, defs)).Distinct().ToList(),
             },
         };
     }
+
+    private static Dictionary<string, TradeRecord> TradesNow(Dictionary<string, TradeRecord>? saved, DefDatabase defs)
+    {
+        var trades = new Dictionary<string, TradeRecord>();
+        foreach (var (name, record) in saved ?? [])
+        {
+            if (record.Rounds <= 0 || !defs.TryTrade(name, out var def))
+                continue;
+            trades[def.Name] = trades.TryGetValue(def.Name, out var had)
+                ? new TradeRecord(had.Rounds + record.Rounds, had.Survived + record.Survived, had.Earned + record.Earned)
+                : record;
+        }
+        return trades;
+    }
+
+    /// <summary>A lesson's key ("Healer/wound") under its trade's name now ("Empath/wound").</summary>
+    private static string LessonNow(string key, DefDatabase defs) =>
+        key.IndexOf('/') is > 0 and var slash && defs.TryTrade(key[..slash], out var def) ? def.Name + key[slash..] : key;
 
     public void Save()
     {

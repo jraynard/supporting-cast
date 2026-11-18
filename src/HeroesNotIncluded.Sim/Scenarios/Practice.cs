@@ -143,7 +143,7 @@ public static class Practice
             Inventory.Stow(sim, e, sim.CreateItem(sim.Defs.Thing(Shops.Coin.Silver), CustomerPurse));
             switch (trade)
             {
-                case "Healer":
+                case "Empath":
                     if (w.TryGet<Health>(e, out var h))
                     {
                         var kind = PatientWounds[k % (PatientWounds.Length - 1)]; // fever's its own button

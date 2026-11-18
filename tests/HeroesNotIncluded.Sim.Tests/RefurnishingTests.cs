@@ -70,7 +70,7 @@ public class RefurnishingTests
     [Fact]
     public void AStoolBurnedInTheInnIsRememberedAndKeepsThroughASave()
     {
-        var sim = Round("Healer");
+        var sim = Round("Empath");
         var (cell, facing) = BurnAStool(sim);
         var loss = Assert.Single(sim.Refurnishing.Losses);
         Assert.Equal(("Stool", cell, facing), (loss.Def.Name, loss.Cell, loss.Facing));
@@ -132,7 +132,7 @@ public class RefurnishingTests
     [Fact]
     public void AnAICarpenterSetsBackWhatTheFireTook()
     {
-        var sim = Round("Healer");
+        var sim = Round("Empath");
         var (cell, _) = BurnAStool(sim);
         var carpenter = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Carpenter");
         var chest = Carpenters.ChestOf(sim, ShopSystem.WorkplaceOf(sim, sim.Defs.Trade("Carpenter")));

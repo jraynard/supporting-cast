@@ -83,6 +83,12 @@
       "contraption": { "use": "Rescue", "parts": 2 },
       "description": "Packed powder in a paper case on a spring trigger: a bright star over the hills, and help comes if anyone sees it. Once." },
 
+    // The town's own contraptions (Tinkering.TripBells): set on the ground, never sold.
+    // The sprite is the tapping rod's (a bell on a stick) until it has its own.
+    { "name": "TripBell", "label": "trip-bell", "category": "Item", "mass": 1.0, "sprite": "items/tapping_rod", "stackLimit": 1, "maxHp": 60, "tier": 3,
+      "contraption": { "use": "Alarm", "parts": 3 },
+      "description": "A cord pegged low across the ground, a spring and a brass bell. Set across a road: whoever trips it rings the alarm, and the bell's clangor shakes them." },
+
     // Curios brought home from quests (Tinkering.Curios): what one looks like it would fetch from
     // a collector, if it's genuine. Some aren't.
     { "name": "CarvedIdol", "label": "carved idol", "category": "Item", "mass": 1.5, "sprite": "items/carved_idol", "stackLimit": 1, "maxHp": 60,
@@ -130,6 +136,12 @@
       "name": "MakeSpringSnare", "label": "spring snare", "station": "TinkerBench", "skill": "Crafting", "work": 1200,
       "ingredients": [ { "def": "IronBar", "count": 1 }, { "def": "Wood", "count": 2 } ],
       "products": [ { "def": "SpringSnare", "count": 1 } ]
+    },
+    {
+      "name": "MakeTripBell", "label": "trip-bell", "station": "TinkerBench", "skill": "Crafting", "work": 900,
+      "description": "A trip-bell for a way into town: when a raid's called, set it across their road.",
+      "ingredients": [ { "def": "IronBar", "count": 1 }, { "def": "Wood", "count": 1 } ],
+      "products": [ { "def": "TripBell", "count": 1 } ]
     },
     {
       "name": "MakeSignalRocket", "label": "signal rocket", "station": "TinkerBench", "skill": "Crafting", "work": 900,

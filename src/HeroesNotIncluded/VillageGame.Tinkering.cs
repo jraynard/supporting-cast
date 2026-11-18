@@ -861,6 +861,7 @@ public sealed partial class VillageGame
                 Sim.Defs.ContraptionUse.Falls => "On a quest: catches a fall that would kill, once.",
                 Sim.Defs.ContraptionUse.Dark => "On a quest: lights dark places (barrows, mines, caves).",
                 Sim.Defs.ContraptionUse.Beasts => "On a quest: takes the fight out of beasts.",
+                Sim.Defs.ContraptionUse.Alarm => Controls.Keys("For the town: hold it and press ~F~ on the ground across a way in. Raiders who cross it ring the bell, and are shaken."),
                 _ => "On a quest: brings help when it's gone wrong, once.",
             });
     }

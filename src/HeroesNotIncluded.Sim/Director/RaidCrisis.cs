@@ -9,7 +9,9 @@ namespace HeroesNotIncluded.Sim.Director;
 /// <summary>
 /// Bandits up the road. The town meets it if every raider is dead, down or fled before the
 /// crisis runs out of time, and nobody of the village died meanwhile. Raiders still about when
-/// it does take what they came for and go.
+/// it does take what they came for and go. The bell rings, and the town musters, once someone
+/// sees them coming (<see cref="Watch"/>) or they cross a trip-bell (<see cref="Tinkering.TripBells"/>),
+/// which is far sooner: until then the town goes about its day.
 /// </summary>
 public sealed class RaidCrisis : ICrisis
 {
@@ -21,12 +23,27 @@ public sealed class RaidCrisis : ICrisis
     private readonly List<Entity> _raiders = [];
     public IReadOnlyList<Entity> Raiders => _raiders;
 
+    /// <summary>The bell's rung for them: the town knows, and musters.</summary>
+    public bool Alarmed { get; private set; }
+
+    /// <summary>The trip-bell that rang the alarm, Entity.Null if someone saw them (or it hasn't rung).</summary>
+    public Entity RungBy { get; private set; } = Entity.Null;
+
+    /// <summary>Where they came in: the edge of the map, for the road's name.</summary>
+    private int3 _from;
+
+    /// <summary>A waking village human this near a raider sees them coming and raises the alarm, cells; a sleeper wakes to them this near.</summary>
+    public const int LookoutReach = 14, WakesAt = 5;
+
+    /// <summary>However it goes, the town knows within this long of the raiders coming (the dogs, the noise).</summary>
+    public const long KnownAfter = SimClock.TicksPerHour / 2;
+
     internal static RaidCrisis? Begin(Simulation sim, SimRandom rand, DifficultyDef? difficulty, float strength) =>
-        Start(sim, rand, Raids.Send(sim, rand, PointsFor(sim, difficulty, strength), difficulty?.MaxRaiders ?? 5), strength);
+        Start(sim, rand, Raids.Send(sim, rand, PointsFor(sim, difficulty, strength), difficulty?.MaxRaiders ?? 5, announce: false), strength);
 
     /// <summary>A raid warned of (<see cref="Plan"/>): the band and the road as the town was told.</summary>
     internal static RaidCrisis? Begin(Simulation sim, SimRandom rand, PlannedRaid plan, bool byRoad = false) =>
-        Start(sim, rand, Raids.SendPlanned(sim, rand, plan.Kinds, plan.Side, byRoad), plan.Strength);
+        Start(sim, rand, Raids.SendPlanned(sim, rand, plan.Kinds, plan.Side, byRoad, announce: false), plan.Strength);
 
     /// <summary>Size a raid and pick its road now, to be sent later as it was told.</summary>
     internal static PlannedRaid Plan(Simulation sim, SimRandom rand, DifficultyDef? difficulty, float strength)
@@ -49,8 +66,8 @@ public sealed class RaidCrisis : ICrisis
             _deadBefore = VillageDead(sim),
         };
         crisis._raiders.AddRange(raiders);
-        RaiseTheAlarm(sim, sim.World.Get<Position>(raiders[0]).Cell);
-        sim.Militia.Muster(sim); // not before: until they're here, the town goes about its day
+        crisis._from = sim.World.Get<Position>(raiders[0]).Cell;
+        crisis.Watch(sim); // someone may be out on that road already
         // A proper raid cuts the town off behind it: the bridge comes down (Tinkering.Repairs).
         if (strength >= 1f && rand.Chance(sim.Defs.Season.RaidBreaksBridge))
             sim.Repairs.BreakBridge(sim, rand);
@@ -58,19 +75,79 @@ public sealed class RaidCrisis : ICrisis
     }
 
     /// <summary>
-    /// Whoever of the village is nearest the road they came by shouts it, so the town hears it from
+    /// Not yet known: does someone of the village see them (a waking villager within
+    /// <see cref="LookoutReach"/> of one), or has it been long enough that the town can't not know?
+    /// Then the alarm goes up. Called often (<see cref="Tinkering.TripBellSystem"/>).
+    /// </summary>
+    public void Watch(Simulation sim)
+    {
+        if (Alarmed)
+            return;
+        var w = sim.World;
+        var about = StillAbout(sim);
+        if (about.Count == 0)
+            return;
+        if (sim.Clock.Tick - Started >= KnownAfter)
+        {
+            Sound(sim, w.Get<Position>(about[0]).Cell, Entity.Null);
+            return;
+        }
+        var town = sim.Creatures()
+            .Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Dead: false, Downed: false } && w.Has<Position>(e))
+            .Select(e => (Cell: w.Get<Position>(e).Cell, Reach: SpeechSystem.CanAct(sim, e) ? LookoutReach : WakesAt)).ToList();
+        foreach (var raider in about)
+        {
+            var at = w.Get<Position>(raider).Cell;
+            if (town.Exists(v => Math.Abs(v.Cell.Z - at.Z) <= 2 && Math.Max(Math.Abs(v.Cell.X - at.X), Math.Abs(v.Cell.Y - at.Y)) <= v.Reach))
+            {
+                Sound(sim, at, Entity.Null);
+                return;
+            }
+        }
+    }
+
+    /// <summary>The bell now, whoever's seen them: a drill's raid, staged for the player to meet.</summary>
+    public void RaiseNow(Simulation sim)
+    {
+        if (StillAbout(sim) is [var first, ..])
+            Sound(sim, sim.World.Get<Position>(first).Cell, Entity.Null);
+    }
+
+    /// <summary>
+    /// The alarm goes up: from a trip-bell (<paramref name="bell"/>), or whoever of the village is
+    /// nearest shouts it. Either way the town's bell follows, heard everywhere, and the town musters.
+    /// </summary>
+    internal void Sound(Simulation sim, int3 seen, Entity bell)
+    {
+        if (Alarmed)
+            return;
+        Alarmed = true;
+        RungBy = bell;
+        var road = Raids.Direction(sim.Map, _from);
+        if (!bell.IsNull)
+            sim.Messages.Add(MessageKind.Danger, $"A trip-bell rings out on the {road} road, and the town's bell answers: raiders!", seen, "Raid!");
+        else
+            RaiseTheAlarm(sim, seen, road);
+        sim.Militia.Muster(sim);
+    }
+
+    /// <summary>
+    /// Whoever of the village is nearest where they were seen shouts it, so the town hears it from
     /// someone, and the bell goes: that's heard everywhere, so it's a message without a place.
     /// </summary>
-    private static void RaiseTheAlarm(Simulation sim, int3 from)
+    private static void RaiseTheAlarm(Simulation sim, int3 seen, string road)
     {
         var w = sim.World;
-        sim.Messages.Add(MessageKind.Danger, $"The bell rings out: raiders on the {Raids.Direction(sim.Map, from)} road!", null, "Raid!");
+        sim.Messages.Add(MessageKind.Danger, $"The bell rings out: raiders on the {road} road!", null, "Raid!");
+        // The nearest of the town shouts it, woken by them if they were asleep.
         var lookout = sim.Creatures()
-            .Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Dead: false } && SpeechSystem.CanAct(sim, e))
-            .OrderBy(e => Maps.Map.Distance(w.Get<Position>(e).Cell, from))
+            .Where(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Dead: false, Downed: false } && w.Has<Position>(e))
+            .OrderBy(e => Maps.Map.Distance(w.Get<Position>(e).Cell, seen))
             .FirstOrDefault(Entity.Null);
         if (!lookout.IsNull)
-            sim.Speech.Say(sim, lookout, $"Raiders! On the {Raids.Direction(sim.Map, from)} road!", Volume.Shout);
+            Systems.Players.Wake(sim, lookout);
+        if (!lookout.IsNull && SpeechSystem.CanAct(sim, lookout))
+            sim.Speech.Say(sim, lookout, $"Raiders! On the {road} road!", Volume.Shout);
     }
 
     private static int VillageDead(Simulation sim)
@@ -113,6 +190,11 @@ public sealed class RaidCrisis : ICrisis
         w.Int(_raiders.Count);
         foreach (var e in _raiders)
             w.Entity(e);
+        w.Bool(Alarmed);
+        w.Entity(RungBy);
+        w.Int(_from.X);
+        w.Int(_from.Y);
+        w.Int(_from.Z);
     }
 
     internal static RaidCrisis Read(SaveReader r)
@@ -120,6 +202,15 @@ public sealed class RaidCrisis : ICrisis
         var crisis = new RaidCrisis { Started = r.Long(), _deadline = r.Long(), _deadBefore = r.Int() };
         for (var n = r.Count(1000); n > 0; n--)
             crisis._raiders.Add(r.Entity());
+        // From format 57 the alarm waits till they're seen or trip a bell; before, it rang as they came.
+        if (r.Version >= 57)
+        {
+            crisis.Alarmed = r.Bool();
+            crisis.RungBy = r.Entity();
+            crisis._from = new int3(r.Int(), r.Int(), r.Int());
+        }
+        else
+            crisis.Alarmed = true;
         return crisis;
     }
 }

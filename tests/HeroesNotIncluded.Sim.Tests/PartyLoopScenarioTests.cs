@@ -18,7 +18,7 @@ namespace HeroesNotIncluded.Sim.Tests;
 /// </summary>
 public class PartyLoopScenarioTests(ITestOutputHelper output)
 {
-    private static readonly string[] Trades = ["Blacksmith", "Innkeeper", "Healer", "Tinker"];
+    private static readonly string[] Trades = ["Blacksmith", "Innkeeper", "Empath", "Tinker"];
 
     // What every loop must have seen a bot serve: it plays on till it has.
     private static readonly ServiceKind[] Wanted = [ServiceKind.Drink, ServiceKind.Repair, ServiceKind.Quest];

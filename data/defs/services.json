@@ -21,7 +21,7 @@
       "lines": [ "My {1} has seen better days. {0} silver to whoever can mend it.", "Smith! My {1} needs work. {0} silver." ] },
     { "name": "Healing", "icon": "items/bandage", "label": "healing", "at": "Shrine", "defaultPrice": 10, "worthMin": 12, "worthMax": 24,
       "tooDearLines": [ "{0} silver to see to a scrape? I'll bind it myself.", "{0} silver? It'll heal on its own." ], "patienceHours": 4,
-      "lines": [ "I need a healer. Now. {0} silver.", "This {1} won't stop aching. {0} silver to anyone who can fix it." ] },
+      "lines": [ "I need an empath. Now. {0} silver.", "This {1} won't stop aching. {0} silver to anyone who can fix it." ] },
     // A named drink: they ask for it by name (Hospitality/Drinking) and it's mixed at the bar (Work/MixSession).
     { "name": "MixedDrink", "icon": "items/gilded_chalice", "label": "a mixed drink", "at": "Tavern", "defaultPrice": 4, "worthMin": 6, "worthMax": 10,
       "tooDearLines": [ "{0} silver for a fancy drink? An ale will do.", "{0} a cup? I'll have it plain." ], "patienceHours": 1.5,

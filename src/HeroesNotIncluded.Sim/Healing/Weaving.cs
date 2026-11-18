@@ -7,7 +7,7 @@ namespace HeroesNotIncluded.Sim.Healing;
 public readonly record struct Woven(MendingDef Mending, int Extra);
 
 /// <summary>
-/// What a mix of runes makes (docs/DESIGN.md, "Healer"). Order doesn't matter, only the mix: a
+/// What a mix of runes makes (docs/DESIGN.md, "Empath"). Order doesn't matter, only the mix: a
 /// mending's base runes, plus any number of extra copies of its lead rune. Anything else makes
 /// nothing, and fizzles.
 /// </summary>

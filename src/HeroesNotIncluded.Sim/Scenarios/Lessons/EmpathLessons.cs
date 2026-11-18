@@ -12,9 +12,9 @@ namespace HeroesNotIncluded.Sim.Scenarios.Lessons;
 /// feels them (never named by kind once drawn) and their own mana. (There were six; a playtest
 /// found the wound, fever and many-hurts lessons too alike, and meditating too small on its own.)
 /// </summary>
-public static class HealerLessons
+public static class EmpathLessons
 {
-    public const string Trade = "Healer";
+    public const string Trade = "Empath";
 
     private static readonly string[] Mending = ["feel", "read", "draw", "meditate", "weave"];
 

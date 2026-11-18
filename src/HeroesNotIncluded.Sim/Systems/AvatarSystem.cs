@@ -143,6 +143,9 @@ public enum AvatarActionKind
 
     /// <summary>Ask another player in reach to trade, or say yes to theirs (<see cref="Shops.BarterSystem"/>).</summary>
     Barter,
+
+    /// <summary>A trip-bell (<see cref="Tinkering.TripBells"/>): set the one in hand here, wind a tripped one again, or take one up. At once.</summary>
+    TripBell,
 }
 
 /// <summary>Which of the avatar's keys: use (F: everything but digging and dropping), dig (Z) or drop (X: put down what you hold).</summary>
@@ -171,7 +174,7 @@ public readonly record struct AvatarAction(AvatarActionKind Kind, string Label, 
         or AvatarActionKind.Carry or AvatarActionKind.Pour or AvatarActionKind.Cook or AvatarActionKind.BarWork or AvatarActionKind.Clean
         or AvatarActionKind.Mend or AvatarActionKind.SetFurniture or AvatarActionKind.OrderMeal or AvatarActionKind.OrderProvisions or AvatarActionKind.OrderHealing or AvatarActionKind.FillBucket or AvatarActionKind.ThrowWater or AvatarActionKind.FestivalGame or AvatarActionKind.Dance
         or AvatarActionKind.ShowPiece or AvatarActionKind.Sit or AvatarActionKind.CallBack or AvatarActionKind.TakeOrder
-        or AvatarActionKind.HandOver or AvatarActionKind.Barter;
+        or AvatarActionKind.HandOver or AvatarActionKind.Barter or AvatarActionKind.TripBell;
 
     /// <summary>Handled by the game rather than the sim: it opens a window (or the dialogue, or the "set out?" question).</summary>
     public bool OpensWindow => Kind is AvatarActionKind.OpenStorage or AvatarActionKind.OpenStation or AvatarActionKind.ReadSign or AvatarActionKind.Tinker
@@ -434,6 +437,13 @@ public sealed class AvatarSystem : ISimSystem
         // An empty bucket at the well: fill it.
         if (tool == AvatarTool.Use && Environment.Buckets.FillAt(sim, avatar, site, cell) is { } fill)
             return fill;
+
+        // A trip-bell set here: wind it again, or take it up. One in hand: set it here, out of doors.
+        if (tool == AvatarTool.Use && Tinkering.TripBells.At(sim, cell) is { IsNull: false } bell)
+            return new(AvatarActionKind.TripBell, Tinkering.TripBells.Prompt(sim, bell), cell, bell);
+        if (tool == AvatarTool.Use && Tinkering.TripBells.Held(sim, avatar) is { IsNull: false } toSet
+            && Tinkering.TripBells.SetProblem(sim, cell) == null)
+            return new(AvatarActionKind.TripBell, "Set the trip-bell here", cell, Entity.Null) { Item = toSet };
 
         // A fire comes before anything else there: you can't chop a burning tree or pick up a burning stack.
         if (map.Fire[i] > 0 && !sim.Reservations.IsTileReservedByOther(cell, avatar))
@@ -926,6 +936,13 @@ public sealed class AvatarSystem : ISimSystem
                 break;
             case AvatarActionKind.Barter:
                 sim.Barter.Ask(sim, avatar, action.Target);
+                break;
+            case AvatarActionKind.TripBell when !action.Target.IsNull:
+                if (!Tinkering.TripBells.Rewind(sim, avatar, action.Target))
+                    Tinkering.TripBells.TakeUp(sim, avatar, action.Target);
+                break;
+            case AvatarActionKind.TripBell:
+                Tinkering.TripBells.Set(sim, avatar, action.Item, action.Cell);
                 break;
             case AvatarActionKind.Cook:
                 if (Work.Rations.IsPrepTable(sim, action.Target))

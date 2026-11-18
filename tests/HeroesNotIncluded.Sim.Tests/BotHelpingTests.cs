@@ -157,9 +157,9 @@ public class BotHelpingTests
     }
 
     [Fact]
-    public void AHealerBotCallsADeadBotBackAndItAnswers()
+    public void AEmpathBotCallsADeadBotBackAndItAnswers()
     {
-        var (sim, bots) = Round((Ana, "Healer"), (Bea, "Blacksmith"));
+        var (sim, bots) = Round((Ana, "Empath"), (Bea, "Blacksmith"));
         var empath = Players.CharacterOf(sim, Ana);
         var bea = Players.CharacterOf(sim, Bea);
         sim.World.Get<Mana>(empath) = new Mana { Current = 100, Max = 100 };
@@ -189,7 +189,7 @@ public class BotHelpingTests
     [Fact]
     public void ADeadBotWhispersToASleepingEmpathToCallItBack()
     {
-        var (sim, bots) = Round((Ana, "Blacksmith"), (Bea, "Healer"));
+        var (sim, bots) = Round((Ana, "Blacksmith"), (Bea, "Empath"));
         var me = Players.CharacterOf(sim, Ana);
         var bea = Players.CharacterOf(sim, Bea);
         bots.RemoveAt(1);

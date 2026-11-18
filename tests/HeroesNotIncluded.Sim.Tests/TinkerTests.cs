@@ -490,7 +490,7 @@ public class TinkerTests
     [Fact]
     public void AnAITinkerOpensAStrongboxAndIsPaid()
     {
-        var (sim, owner, box) = TownWithABox("Healer", trapped: false);
+        var (sim, owner, box) = TownWithABox("Empath", trapped: false);
         var tinker = sim.Creatures().Single(e => sim.World.TryGet<Trade>(e, out var t) && t.Def.Name == "Tinker");
         Assert.False(sim.World.Has<Avatar>(tinker));
         var purse = Coin.Count(sim, tinker);

@@ -79,7 +79,7 @@ public class WoodRepairTests
     [Fact]
     public void AWornBowIsAskedOfTheWoodshopNotTheForge()
     {
-        var (sim, bowman, bow) = TownWithAWornBow("Healer");
+        var (sim, bowman, bow) = TownWithAWornBow("Empath");
         for (var t = 0; t < 12 && MendOf(sim, bowman) == null; t++)
             sim.TickMany(SimClock.TicksPerHour / 6);
         var order = MendOf(sim, bowman);
@@ -93,7 +93,7 @@ public class WoodRepairTests
     [Fact]
     public void AnAICarpenterMendsABowAndIsPaid()
     {
-        var (sim, bowman, bow) = TownWithAWornBow("Healer");
+        var (sim, bowman, bow) = TownWithAWornBow("Empath");
         var carpenter = Keeper(sim, "Carpenter");
         Assert.False(sim.World.Has<Avatar>(carpenter));
         var purse = Coin.Count(sim, carpenter);
@@ -168,7 +168,7 @@ public class WoodRepairTests
     [Fact]
     public void AWornCrossbowGoesToTheTinkersAndTheAITinkerMendsIt()
     {
-        var (sim, bowman, bow) = TownWithAWornBow("Healer");
+        var (sim, bowman, bow) = TownWithAWornBow("Empath");
         // The bowman's traded up: a crossbow, worn.
         sim.World.Get<Thing>(bow).Hp = sim.World.Get<Thing>(bow).MaxHp;
         var crossbow = sim.CreateItem(sim.Defs.Thing("Crossbow"), 1);

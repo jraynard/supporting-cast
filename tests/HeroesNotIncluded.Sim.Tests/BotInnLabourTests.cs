@@ -141,7 +141,7 @@ public class BotInnLabourTests
     [Fact]
     public void ABotLabourerReadsTheBoardAndFetchesAnErrand()
     {
-        var (sim, bot) = Round("Labourer", "Healer");
+        var (sim, bot) = Round("Labourer", "Empath");
         NoAiLabourers(sim);
         var w = sim.World;
         var bea = Players.CharacterOf(sim, Bea);
@@ -163,7 +163,7 @@ public class BotInnLabourTests
     [Fact]
     public void ABotLabourerGathersWhatAnErrandWantsWhenNoneIsLyingAbout()
     {
-        var (sim, bot) = Round("Labourer", "Healer");
+        var (sim, bot) = Round("Labourer", "Empath");
         NoAiLabourers(sim);
         var w = sim.World;
         var bea = Players.CharacterOf(sim, Bea);
@@ -186,7 +186,7 @@ public class BotInnLabourTests
         var slipped = false;
         for (var seed = 0; seed < 6 && !slipped; seed++)
         {
-            var (sim, _) = Round("Labourer", "Healer");
+            var (sim, _) = Round("Labourer", "Empath");
             var bot = new BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), (ulong)seed) { Temper = careless, Skill = 0.1f };
             NoAiLabourers(sim);
             var w = sim.World;

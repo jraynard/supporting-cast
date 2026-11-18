@@ -74,7 +74,12 @@ public class DirectorTests
             sim.Tick();
         var raid = Assert.IsType<RaidCrisis>(Assert.Single(sim.Director.Active));
         Assert.NotEmpty(raid.Raiders);
-        Assert.Contains(sim.Speech.Kept, u => u.Text.StartsWith("Raiders!"));
+        // Shouted once someone sees them, or rung by the trip-bell the AI tinker set on their road.
+        for (var t = 0; t < SimClock.HoursToTicks(1) + 60 && !raid.Alarmed; t += 10)
+            sim.TickMany(10);
+        Assert.True(raid.Alarmed);
+        Assert.True(raid.RungBy.IsNull ? sim.Speech.Kept.Any(u => u.Text.StartsWith("Raiders!"))
+            : sim.Messages.Messages.Any(m => m.Text.StartsWith("A trip-bell rings out")));
     }
 
     [Fact]

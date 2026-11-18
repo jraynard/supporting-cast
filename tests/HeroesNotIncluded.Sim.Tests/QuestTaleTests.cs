@@ -18,7 +18,7 @@ public class QuestTaleTests
     {
         var (sim, me, party) = ExpeditionTests.Round("Innkeeper");
         var smith = Villager(sim, "Blacksmith");
-        var healer = Villager(sim, "Healer");
+        var healer = Villager(sim, "Empath");
         var cook = Villager(sim, "Cook");
         // The smith's blade in the first one's hand, the cook's rations in their pack, the healer's work on the second.
         var blade = sim.World.Get<Equipment>(party[0]).Weapon;

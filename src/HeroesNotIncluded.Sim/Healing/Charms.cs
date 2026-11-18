@@ -8,7 +8,7 @@ namespace HeroesNotIncluded.Sim.Healing;
 public sealed record CharmRecord(MendingDef Mending, int Extra, float Quality, Entity Maker);
 
 /// <summary>
-/// Weaving ahead (docs/DESIGN.md, "Healer"): an empath weaves a mending into a strip of linen
+/// Weaving ahead (docs/DESIGN.md, "Empath"): an empath weaves a mending into a strip of linen
 /// instead of onto a wound (<see cref="CastSession.IntoCharm"/>), and it keeps. Torn, it lands on
 /// whoever tears it as if they'd cast it, the gift or no. Carried on a quest it's a ward: it
 /// spends itself on the first wound it fits, and may turn a death into a bad wound. Charms go on

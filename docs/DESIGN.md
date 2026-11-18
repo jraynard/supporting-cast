@@ -6,7 +6,7 @@ What's built and what's next is in [ROADMAP.md](ROADMAP.md).
 ## Pitch
 
 A multiplayer fantasy village where the players are the people a tabletop adventuring party usually
-walks past. One player runs the inn, another the forge, another the healer's shrine. Heroes arrive wanting
+walks past. One player runs the inn, another the forge, another the empath's shrine. Heroes arrive wanting
 food, repairs, healing and work, and treat everyone like scenery. The village has to keep them
 alive and paying long enough to survive the season, and someone in it may be working against
 everyone else.
@@ -19,7 +19,7 @@ Tone: warm, comic and a little put-upon, until someone finds the blacksmith in t
 ## Pillars
 
 1. **Your trade is your game.** Each one has its own interface, knowledge and way to be good at it.
-   A bartender and a healer shouldn't feel like the same game with different labels.
+   A bartender and an empath shouldn't feel like the same game with different labels.
 2. **Nobody can do it alone.** Trades depend on each other's output, so people have to talk.
 3. **Properties, not scripts.** Poison is a substance on a thing, a lock works for whoever holds
    the key, and fire burns what burns. A plan nobody anticipated should simply work.
@@ -29,7 +29,7 @@ Tone: warm, comic and a little put-upon, until someone finds the blacksmith in t
 play to it directly.
 - **Behind every hero** (`Expeditions/QuestTales`). The heroes take the glory, but the town keeps
   its own count. Each quest a party goes on records whose work went with them: the smith's blade
-  (and who struck for it), the cook's rations, the empath's charms, the tinker's grapnel, the healer
+  (and who struck for it), the cook's rations, the empath's charms, the tinker's grapnel, the empath
   who patched them up, and the broker who sent them. The reveal tells it all, the hidden truths
   too (a warped quiver, a contraption that bound). Before the reveal only what everyone could know
   is told: at the festival a party back in triumph toasts someone whose work saw them through, and
@@ -71,7 +71,7 @@ informed them decides how the expedition goes.
   overflows or the town falls.
 
 **Shops and the line.** Players set the prices for their own goods and services on a sign at
-their shop, which anyone can read. An adventurer who wants something (a drink, a mend, a healer, a
+their shop, which anyone can read. An adventurer who wants something (a drink, a mend, an empath, a
 room, a quest lead) weighs the price against what it's worth to them and what's in their purse. If
 it fits, they go to the shop and line up at its counter: the bar for a drink, the smithy's counter
 for a mend. If it doesn't, they say so aloud and go without. Each want is an `Order` in code. Price
@@ -89,13 +89,13 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 | Innkeeper | Order juggling at the bar, drink mixing, letting rooms, keeping the common room, hearing gossip; matching parties to quests on partial intel | Social, `Expeditions/` | Spiked drinks, selling secrets, sending a party to its death |
 | Cook | The inn's kitchen: the stew pot by taste and flavour, sniffing the larder, the bowls, rations for the road | Larder, cooking, `Expeditions/` | A turned ingredient left in the pot, rations that turn on the road, or something worse |
 | Blacksmith | Heat, hammer and quench timing | Forge, bellows, tiers, `Crafted` quality | A hidden flaw in a blade |
-| Healer | Take a patient's wounds into yourself with focus, cast the right mending on yourself, meditate back your mana | Health, `Work/`, new mana | Taking only part of a wound, or handing one back |
+| Empath | Take a patient's wounds into yourself with focus, cast the right mending on yourself, meditate back your mana | Health, `Work/`, new mana | Taking only part of a wound, or handing one back |
 | Constable | Patrol, evidence, arrests, jail | `Prisoners`, locks | Framing, abuse of authority |
 | Apothecary | Discover reagent reactions, reshuffled each round | New `Reagents` | Poisons, explosives |
 | Merchant | Haggling, spotting cursed loot | Inventory, `HoardValue` | Fencing, forged goods |
 | Undertaker | Autopsy, burial before the dead rise | Health, `Scars`, carcasses, the pyre | Destroying evidence |
 | Forager, Miner | Risky trips beyond the walls | Harvest, Mining, Hunting, Fishing | Alone out there, in both directions |
-| Tinker | Pick the locks and disarm the traps on chests adventurers bring back; pin locks and cut keys; fit contraptions together for the road; mend wagons; appraise curios and buy them for a collector | `Tinkering/`, doors, `Work/`, expeditions, loot | A spare key, a chest opened early, a trap left armed, a contraption that jams, a curio talked down |
+| Tinker | Pick the locks and disarm the traps on chests adventurers bring back; pin locks and cut keys; fit contraptions together for the road; mend wagons; appraise curios and buy them for a collector; set trip-bells across the roads before a raid | `Tinkering/`, doors, `Work/`, expeditions, loot | A spare key, a chest opened early, a trap left armed, a contraption that jams, a curio talked down, a trip-bell that never rings |
 | Carpenter | Sawing planks, fletching quivers for the parties' archers, bracing the bridge, putting up the festival; later mending furniture and building | Construction, `Carpentry/`, the woodshop | A warped shaft in a quiver that looks true |
 | Bard | Rhythm performance, morale, rumours. | Mood, Social | Spreading lies |
 | Mayor | Treasury, laws, chairs town meetings | New | Corruption |
@@ -279,7 +279,7 @@ the rest follows in the order it's planned (docs/ROADMAP.md, "The cook pass").
   the order hears the craving. A bowl that tastes of it pleases them; one that doesn't, a little
   less. So what goes in the pot is a guess at the room.
 - *Built: sniffing* (`Work/SniffSession`). The cook's way into hidden rot, as feeling a wound over
-  is the healer's: smell a stack (in the larder, in hand) and it's fresh, fine, on the turn or off,
+  is the empath's: smell a stack (in the larder, in hand) and it's fresh, fine, on the turn or off,
   roughly, rougher the less practised the nose. A pot only ever smells good or "not quite right":
   what turned in it can't be picked out, so the time to smell is before it goes in.
 - *Built: rations for the road* (`Work/Rations`, `Work/PackSession`). The cook's work that leaves
@@ -308,7 +308,7 @@ the rest follows in the order it's planned (docs/ROADMAP.md, "The cook pass").
   the knife's beat (F as it comes down), done ahead in a quiet hour. Chopped food is its own item:
   it goes a little further, turns a little sooner, and a pot of it cooks up to half again as fast.
   A cut off the beat does nothing; one wildly off may slip, and a slip is a real cut on the cook's
-  arm, work for the healer.
+  arm, work for the empath.
 - *Built: the spit* (`Work/Roasting`). Beside the kitchen fire. Raw meat goes on (up to four), F
   turns the next side to the fire, Space lifts it off. Each side's crust shows as colour (pale,
   colouring, golden, dark, charred); how far it's cooked through doesn't. Fat drips and the fire
@@ -376,29 +376,29 @@ the rest follows in the order it's planned (docs/ROADMAP.md, "The cook pass").
   - **Word of the food** (`ShopSystem.Fare`): fine meals and the house dish get the table talked
     of, and the sign says how much. Parties come up to a third sooner for it; the talk fades with
     each new party, so it has to be kept up.
-- *Later:* teas from the herbs the healer uses, and the healer sending the hurt to eat; pickling.
+- *Later:* teas from the herbs the empath uses, and the empath sending the hurt to eat; pickling.
 - Betrayal later (M4/M5):
   - one bowl poisoned for one diner (the hatch is first come, so a target has to be handed it);
   - a party's rations drugged, or left to turn (the rot already rides out with them);
   - a turned ingredient left in the pot, knowing.
 
-**Healer (empathic).** Magical in flavour rather than clinical, but grounded in the health
+**Empath.** Called the healer once; renamed for what sets it apart, that it feels what it takes on. Magical in flavour rather than clinical, but grounded in the health
 model: wounds sit on body parts, have a kind, and bleed, hurt and fester.
 - *Laying on hands.* One sitting, from the first touch to the last wound drawn. Touch is the
-  diagnosis: the healer runs their hands from head to feet, and near a wound there's a warmth.
+  diagnosis: the empath runs their hands from head to feet, and near a wound there's a warmth.
   Stopping on it and pressing reads it: its kind comes through the hand the way it'll pull when
   drawn, and how bad it is. A dressed wound takes a longer press to find festering under it.
   Pressing while the hands move is rough, and the patient flinches. Keep pressing on a wound read
-  and it's drawn across, the healer holding their composure against its pain; lose it and the link
+  and it's drawn across, the empath holding their composure against its pain; lose it and the link
   snaps, with a backlash. Each kind pulls on the composure its own way: a cut jolts, a bite tears
   twice, a bruise swells and ebbs, a burn pulls steadily one way, frost numbs the hands so they
   answer late, venom grows worse the more comes across. Composure and strain carry from one wound
   to the next. A patient lying on a pallet is calmer to draw from. The wound lands on the same part
-  of the healer, lighter the more skilled they are. An infection comes with a fully drawn wound.
-- *Carrying it.* What the healer takes on is real. It bleeds and hurts, and a healer who takes
+  of the empath, lighter the more skilled they are. An infection comes with a fully drawn wound.
+- *Carrying it.* What the empath takes on is real. It bleeds and hurts, and an empath who takes
   too much collapses.
 - *Weaving.* Mendings are woven from six runes (Thread, Flesh, Ember, Rime, Salt, Still), keyed
-  1 to 6 on the beat of the healer's own heart, then let go. The mix decides the mending, in any
+  1 to 6 on the beat of the empath's own heart, then let go. The mix decides the mending, in any
   order: Thread and Flesh knit a cut; Still and Flesh ease a bruise. Extra copies of a mending's
   lead rune make it stronger, for more mana. A mix that makes nothing fizzles for a little mana.
   Absorbed wounds read as sensations, not labels (a clean bright line of pain, a deep swelling
@@ -407,7 +407,7 @@ model: wounds sit on body parts, have a kind, and bleed, hurt and fester.
 - *The book.* Every empath starts with the common mendings written in their book: each one's
   runes, what it does, and the feelings it answers. Others are found by trying new mixes, and
   written in when they work: searing a wound shut, steadying your own hands, grounding lightning.
-- *Charms.* Before anyone's hurt, the healer weaves ahead: a mending woven into a strip of linen
+- *Charms.* Before anyone's hurt, the empath weaves ahead: a mending woven into a strip of linen
   keeps. Torn, it lands on whoever tears it, gift or no. Put on the shrine's wares shelf, priced,
   charms sell to parties as wards for the road, a couple each and no two alike. On a quest a charm
   spends itself on the first wound it fits, and a healing one may turn a death into a bad wound.
@@ -418,12 +418,12 @@ model: wounds sit on body parts, have a kind, and bleed, hurt and fester.
   what's been seen stays dimly remembered, and holding still lets them see further. Each new place
   reached gathers a little mana, and the centre a great deal, the sooner the more. Pain they still
   carry narrows the sight, makes the steps heavy and scatters the thoughts, throwing them back
-  along their path, so a healer who couldn't mend themselves fully struggles to recover.
-- *Binding.* Anyone can bandage, the healer best: each turn of cloth is pulled tight by hand
+  along their path, so an empath who couldn't mend themselves fully struggles to recover.
+- *Binding.* Anyone can bandage, the empath best: each turn of cloth is pulled tight by hand
   and let go in the band. Too slack slips; too tight bites. It stops bleeding without mana, so a
-  healer can bind what they've drawn while their mana comes back. Bandages are woven from fiber
+  empath can bind what they've drawn while their mana comes back. Bandages are woven from fiber
   or torn from cloth.
-- *The shrine.* The healer works from a shrine: pallets where the wounded come to lie (the
+- *The shrine.* The empath works from a shrine: pallets where the wounded come to lie (the
   front of its line), a meditation stone that steadies the breath against pain and gathers more
   mana, and a chest of bandages and other supplies for when the mana runs dry. Later, magical
   supplies can live there too.
@@ -450,7 +450,7 @@ Millbrook, south of the square, with a bench, a stock chest and the collector's 
     them too or suffer an unfortunate injury while lockpicking.
   - *Picking the lock.* Lift each pin until it gives most and set it there. A slip drops a pin,
     wears the picks and can jar an armed trap; enough slips snap the pick. Opening a box with its
-    trap still armed sets it off. A sprung trap wounds the hand, which is work for the healer.
+    trap still armed sets it off. A sprung trap wounds the hand, which is work for the empath.
 - *Locks and keys.* A lock is pinned at the bench from an iron bar: each pin is filed down to its
   mark (hold F; the longer the stroke, the harder the file bites) and set with D. Pins set
   crisply make a tight lock, hard to pick (a pick has less room to set a pin), and a key that
@@ -484,8 +484,22 @@ Millbrook, south of the square, with a bench, a stock chest and the collector's 
   hands it back; the owner believes them. Or offers to buy it: the owner takes a price near what
   they believe. Curios in the collector's crate go off with the morning carrier, and the silver
   comes back the morning after: what it was really worth, less a cut, nearly nothing for a fake.
-- Later: bridges, gates and the town's structures damaged in the M3 crises (the Director), mended
-  by the Tinker; town devices (alarms, a bell trip) when there are thieves to catch (M4).
+- *Built: the trip-bell* (`Tinkering/TripBells`), the first of the town's own contraptions: the
+  tinker's part in the crises before they come. Fitted at the bench like a road contraption (and
+  binding the same hidden way), then carried out and set on open ground with F: a cord pegged low
+  across a way in, a spring and a bell. A raid isn't known till someone sees it coming
+  (`RaidCrisis.Watch`: a waking villager near them, a sleeper only close by, or soon in any case);
+  a raider crossing a set bell rings the alarm there and then, and its clangor shakes them
+  (`Unnerved`, as a ghost's sign does). The shepherd names the road a raid will take, so the tinker
+  has the warning's hours to string one across it. A binding bell may jam and stay silent; it's
+  tripped either way, so anyone can see it went off or didn't, never why. Rewound or taken up with
+  F. Never sold. The AI tinker and the bot set one on the warned road (`TripBellJob`).
+- Next town contraptions, one for each crisis the tinker sits out: a **smoke bell** in a building
+  (a fire there rings at once), **rat traps** set in the larder for the cook in a shortage (the
+  spring snare's cousin), and something for the dragon (a horn that draws it off a roof; the great
+  bow on Reedmere).
+- Later: gates and the town's other structures damaged in the crises, mended by the Tinker; bells on
+  doors when there are thieves to catch (M4).
 - Betrayal later (M4): a spare key, a box opened early and some silver missing, a trap left armed,
   a contraption that jams, a curio talked down to nothing and sold on.
 

@@ -161,7 +161,7 @@ public class RepairTests
     [Fact]
     public void OnlyTheTinkerMendsTheTown()
     {
-        var (sim, me) = Round("Healer");
+        var (sim, me) = Round("Empath");
         var breach = sim.Repairs.BreakBridge(sim, new SimRandom(3))!;
         Assert.Equal("mending the town is the tinker's work", Repairs.MendProblem(sim, me, breach));
     }
@@ -169,7 +169,7 @@ public class RepairTests
     [Fact]
     public void AnAITinkerMendsTheBridge()
     {
-        var (sim, _) = Round("Healer");
+        var (sim, _) = Round("Empath");
         sim.Repairs.BreakBridge(sim, new SimRandom(3));
         for (var i = 0; i < 24 && sim.Repairs.RoadCut; i++)
             sim.TickMany(SimClock.TicksPerHour / 4);

@@ -269,7 +269,7 @@
       ]
     },
     {
-      "name": "Shrine", "roles": [ "Shrine" ], "label": "healer's shrine", "icon": "buildings/shrine",
+      "name": "Shrine", "roles": [ "Shrine" ], "label": "empath's shrine", "icon": "buildings/shrine",
       "description": "The empath's house, built apart in pale stone under a steep turf roof, its gables horned and a band of runes cut round its walls: pallets for the wounded, a fire to keep them warm, the rune altar and a stone to meditate at, herbs drying and linen for binding.",
       "layout": [
         "WWWWWWWWWWW",
@@ -290,7 +290,7 @@
         { "def": "StrawPallet", "at": [3, 5], "facing": 1 },
         { "def": "StrawPallet", "at": [5, 5], "facing": 1 },
         { "def": "StrawPallet", "at": [7, 5], "facing": 1 },
-        // The healer's corner, by the head of the end pallet: standing there, the patient, the
+        // The empath's corner, by the head of the end pallet: standing there, the patient, the
         // wash basin, a rack of herbs and the meditation stone are all in reach.
         { "def": "WashBasin", "at": [9, 5] },
         { "def": "HerbRack", "at": [9, 4], "facing": 3 },
@@ -801,7 +801,7 @@
       }
     },
     {
-      // The healer's shrine, built apart: pale limestone on a dark footing, a band of runes cut
+      // The empath's shrine, built apart: pale limestone on a dark footing, a band of runes cut
       // round it and painted violet, dark oak at the corners and door, under a steep turf roof
       // whose gables end in tall carved horns. Nothing else in Millbrook looks like it.
       "name": "shrine_stone",

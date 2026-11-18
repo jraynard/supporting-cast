@@ -33,7 +33,7 @@ public class CoopRoundTests
         t.Run(1f);
         Seat(t.Host, "Innkeeper");
         Seat(clients[0], "Blacksmith");
-        Seat(clients[1], "Healer");
+        Seat(clients[1], "Empath");
         Seat(clients[2], "Tinker");
         t.Run(0.5f);
         t.Host.Send(new StartRoundCommand());
@@ -49,7 +49,7 @@ public class CoopRoundTests
         t.Run(3f);
         t.AssertInStep();
 
-        var expected = new[] { "Innkeeper", "Blacksmith", "Healer", "Tinker" };
+        var expected = new[] { "Innkeeper", "Blacksmith", "Empath", "Tinker" };
         for (var i = 0; i < players.Length; i++)
         {
             var sim = players[i].Sim!;
@@ -113,7 +113,7 @@ public class CoopRoundTests
         t.Run(0.2f);
         var client = t.Join(Person("Bea"));
         t.Run(1f);
-        Seat(client, "Healer");
+        Seat(client, "Empath");
         t.Run(0.5f);
 
         client.Send(new StartRoundCommand());
@@ -129,7 +129,7 @@ public class CoopRoundTests
         t.Run(0.2f);
         var client = t.Join(Person("Bea"));
         t.Run(1f);
-        Seat(client, "Healer");
+        Seat(client, "Empath");
         t.Run(0.5f);
         Assert.Single(t.Host.Sim!.Round.Seats);
 

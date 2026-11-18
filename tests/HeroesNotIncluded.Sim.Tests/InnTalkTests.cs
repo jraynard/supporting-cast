@@ -345,7 +345,7 @@ public class InnTalkTests
     [Fact]
     public void LeftUnansweredAVillagerTellsThemInTheEnd()
     {
-        var (sim, lost, _) = LostAtTheInn("Healer"); // an AI innkeeper hears them
+        var (sim, lost, _) = LostAtTheInn("Empath"); // an AI innkeeper hears them
         // Whole, so it's the smithy they're asking after and nothing takes them off to the shrine.
         foreach (var e in sim.Creatures().Where(c => sim.World.Has<Adventurer>(c)))
             sim.World.Get<Health>(e).Injuries.Clear();
