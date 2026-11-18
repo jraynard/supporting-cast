@@ -1,4 +1,5 @@
 using System.Reflection;
+using HeroesNotIncluded.Audio;
 using HeroesNotIncluded.Sim;
 using HeroesNotIncluded.Sim.Core;
 using HeroesNotIncluded.Sim.Ecs;
@@ -128,6 +129,9 @@ public sealed class WorldSoundContext
 
     /// <summary>How muffled a sound at a cell comes to the player (0 clear), or null if it's out of earshot.</summary>
     public float? Reach(int3 cell) => ReachOf(cell);
+
+    /// <summary>Hold the background music this frame (live music in earshot): it pauses, and goes on after.</summary>
+    public void HoldMusic() => GameAudio.HoldMusic();
 
     /// <summary>A cell's place for the audio engine.</summary>
     public static float3 At(int3 cell) => HeroesNotIncluded.Audio.SoundDirector.ToAudio(cell);

@@ -138,14 +138,24 @@ public sealed class BardGame : IGameMod
     {
         private readonly Dictionary<Sim.Ecs.Entity, (long Start, int Played)> _heard = [];
 
+        /// <summary>Session steps after the last note before the background music comes back.</summary>
+        private const int QuietAfter = 4 * 60;
+
         public void Update(WorldSoundContext ctx)
         {
             var w = ctx.Sim.World;
             _defs = ctx.Sim.Defs;
             foreach (var e in w.Query<WorkSession>())
             {
-                if (e == ctx.View.Viewer || w.Get<WorkSession>(e) is not PlaySession s || !w.TryGet<Position>(e, out var at))
+                if (w.Get<WorkSession>(e) is not PlaySession s || !w.TryGet<Position>(e, out var at))
                     continue;
+                // Live music in earshot (yours too): the background music waits for it, and comes back
+                // a little after the last note (a pipe merely held is no music).
+                var playing = s.Carrying != null || s.Notes.Count > 0 && s.StepsDone - s.Notes[^1].Step < QuietAfter;
+                if (playing && (e == ctx.View.Viewer || ctx.Reach(at.Cell) != null))
+                    ctx.HoldMusic();
+                if (e == ctx.View.Viewer)
+                    continue; // your own notes are heard as you play them (Sound)
                 var was = _heard.TryGetValue(e, out var h) && h.Start == s.StartTick ? h.Played : s.Played; // a session first heard: from now
                 _heard[e] = (s.StartTick, s.Played);
                 if (s.Played == was || ctx.Reach(at.Cell) is not { } muffle)

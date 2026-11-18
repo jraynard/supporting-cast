@@ -51,6 +51,14 @@ public static class GameAudio
         _reloader = new SoundReloader(Engine, paths.Select(p => Path.GetDirectoryName(p)!), DevPaths.Watch());
     }
 
+    private static bool _holdMusic;
+
+    /// <summary>
+    /// Hold the background music this frame (a bard playing in earshot): it fades down and pauses, and
+    /// goes on from where it was once nothing asks. Asked every frame it should hold.
+    /// </summary>
+    public static void HoldMusic() => _holdMusic = true;
+
     /// <summary>The game's share of the master volume while the talk key is held: low enough not to be heard back.</summary>
     public const float DuckedTo = 0.3f;
 
@@ -78,6 +86,8 @@ public static class GameAudio
         _duck += (duck - _duck) * Math.Min(1f, dt * (duck < _duck ? 20f : 4f));
         Engine.MasterVolume = _master * _duck;
         _reloader?.Update(dt, force: host.Input.WasKeyPressed(Brutal.GlfwApi.GlfwKey.F5));
+        Engine.MusicHeld = _holdMusic;
+        _holdMusic = false;
         Engine.Update(dt);
         if (LogPlays)
         {
