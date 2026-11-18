@@ -71,15 +71,22 @@ public static class Carpenters
     /// <summary>A bow, mended by hand at the carpenter's bench (re-tillered and restrung, <see cref="BowSession.Mending"/>).</summary>
     public static bool IsBow(ThingDef def) => def.Weapon is { Ranged: true } && def.Name == "Bow";
 
-    /// <summary>Should a player's mend of this piece at this station be a hand game? In a round, a bow at the carpenter's bench.</summary>
+    /// <summary>
+    /// Should a player's mend of this piece at this station be a hand game? Anything mended at the
+    /// carpenter's bench is: a bow re-tillered, a club or staff re-pegged (<see cref="JoinWork.Haft"/>).
+    /// </summary>
     public static bool AppliesToRepair(Simulation sim, Entity worker, Entity station, Entity item) =>
-        sim.Round.Live && sim.World.Has<Avatar>(worker) && IsBench(sim, station) && IsBow(sim.World.Get<Thing>(item).Def);
+        sim.Round.Live && sim.World.Has<Avatar>(worker) && IsBench(sim, station);
 
-    /// <summary>A player takes a worn bow to the bench: re-tiller it where it's set stiff, and string it again.</summary>
-    public static void BeginMending(Simulation sim, Entity worker, Entity station, Entity bow)
+    /// <summary>A player takes a worn piece to the bench: a bow re-tillered where it's set stiff and strung again, a haft re-pegged.</summary>
+    public static void BeginMending(Simulation sim, Entity worker, Entity station, Entity item)
     {
-        if (!sim.World.Has<WorkSession>(worker))
-            WorkSystem.Start(sim, worker, new BowSession { Station = station, Mending = bow });
+        if (sim.World.Has<WorkSession>(worker))
+            return;
+        if (IsBow(sim.World.Get<Thing>(item).Def))
+            WorkSystem.Start(sim, worker, new BowSession { Station = station, Mending = item });
+        else
+            WorkSystem.Start(sim, worker, new JoinSession { Station = station, Work = JoinWork.Haft, Joints = 1, Mending = item });
     }
 
     /// <summary>How well an AI carpenter's work comes out, by skill, before its roll.</summary>

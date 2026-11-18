@@ -360,15 +360,47 @@ public sealed partial class VillageGame
     /// </summary>
     private void UpdateDrunkLook()
     {
+        // At work, the world eases out of focus round the edges (DrawWorkFocus darkens it too).
+        var dt = Math.Min(ImGui.GetIO().DeltaTime, 0.1f);
+        _workFocus = Working ? Math.Min(1f, _workFocus + dt / WorkFocusSeconds) : Math.Max(0f, _workFocus - dt / WorkFocusSeconds);
         var k = MathF.Round(DrunkAmount * 50f) / 50f;
-        if (k == _drunkApplied)
+        var f = MathF.Round(_workFocus * 20f) / 20f;
+        if (k + f * 100f == _drunkApplied)
             return;
-        _drunkApplied = k;
+        _drunkApplied = k + f * 100f;
         var s = Settings.Current;
         var post = VisualStyle.For(s);
-        if (k > 0 && s.Hd2d)
-            post = post with { Vignette = Math.Min(1f, post.Vignette + 0.5f * k), TiltShift = post.TiltShift + 0.8f * k };
+        if ((k > 0 || f > 0) && s.Hd2d)
+            post = post with { Vignette = Math.Min(1f, post.Vignette + 0.5f * k + 0.35f * f), TiltShift = post.TiltShift + 0.8f * k + 0.6f * f };
         Host.Post.Settings = post;
+    }
+
+    /// <summary>How far into focus on the work in hand the world's gone, 0..1 (<see cref="DrawWorkFocus"/>).</summary>
+    private float _workFocus;
+
+    /// <summary>Seconds the world takes to ease out of (or back into) view as work starts (or stops).</summary>
+    private const float WorkFocusSeconds = 0.35f;
+
+    /// <summary>
+    /// Concentration: while the work's in hand the world behind it dims, darker toward the edges,
+    /// under every window. Nothing stops: a fight still reads through it.
+    /// </summary>
+    private void DrawWorkFocus()
+    {
+        if (_workFocus <= 0.01f)
+            return;
+        var dl = ImGui.GetBackgroundDrawList(ImGui.GetMainViewport());
+        var min = float2.Zero;
+        var max = Screen;
+        dl.AddRectFilled(in min, in max, new ImColor8(0, 0, 0, (byte)(60 * _workFocus)), 0f, ImDrawFlags.None);
+        var edge = new ImColor8(0, 0, 0, (byte)(110 * _workFocus));
+        var clear = new ImColor8(0, 0, 0, 0);
+        var band = new float2(Screen.X * 0.18f, Screen.Y * 0.22f);
+        // Top, bottom, left and right, each fading in from the screen's edge.
+        dl.AddRectFilledMultiColor(min, new float2(max.X, band.Y), edge, edge, clear, clear);
+        dl.AddRectFilledMultiColor(new float2(0, max.Y - band.Y), max, clear, clear, edge, edge);
+        dl.AddRectFilledMultiColor(min, new float2(band.X, max.Y), edge, clear, clear, edge);
+        dl.AddRectFilledMultiColor(new float2(max.X - band.X, 0), max, clear, edge, edge, clear);
     }
 
     /// <summary>The nearest raider or predator on its feet that you can see, within <see cref="FightHintRange"/>.</summary>

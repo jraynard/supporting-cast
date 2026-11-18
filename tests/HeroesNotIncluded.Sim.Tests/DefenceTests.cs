@@ -43,6 +43,23 @@ public class DefenceTests
         Assert.True(hit, $"Corin: {sim.World.Get<Mind>(corin).Job?.Report ?? "idle"}");
     }
 
+    /// <summary>A raider hurt badly enough to run is leaving: the town stops counting it a threat as it limps off.</summary>
+    [Fact]
+    public void AHurtRaiderWhoRunsIsLeavingAndNoLongerAThreat()
+    {
+        var sim = Create();
+        var mira = Person(sim, "Mira", C(5, 5), weapon: null);
+        var raider = Raids.SpawnRaider(sim, sim.Defs.AllRaiderKinds[0], "Skarn", C(10, 5), sim.Rand);
+        var body = sim.World.Get<Health>(raider).Body;
+        foreach (var leg in new[] { "LeftLeg", "RightLeg" })
+            HealthSystem.Damage(sim, raider, 22, Defs.DamageType.Blunt, body.PartIndex(leg));
+        Assert.False(sim.World.Get<Creature>(raider).Downed);
+        Assert.True(RaiderBrain.WantsToFlee(sim, raider));
+        sim.TickMany(SimClock.TicksPerSecond * 3);
+        Assert.True(sim.World.Has<Leaving>(raider));
+        Assert.Null(Defence.Threat(sim, mira, Defence.VillagerRange));
+    }
+
     [Fact]
     public void ARaiderTurnsOnWhoeverHurtsThem()
     {

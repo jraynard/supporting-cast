@@ -30,6 +30,7 @@ public sealed partial class VillageGame
             : s.Settling > 0 ? (Theme.Good, "Home, and tight.")
             : s.Cutting && s.Depth > 1f ? (Theme.Bad, "Past the mark: this joint will be loose.")
             : s.Cutting && s.Depth >= 1f - s.SnugWidth ? (Theme.Good, Controls.Keys("At the mark. Deep enough (~Space~)."))
+            : s.Cutting && s.Work == JoinWork.Haft ? (Theme.Text, "Cut the split back to sound wood, down to the chalk mark. Past it, the peg sits loose.")
             : s.Cutting ? (Theme.Text, "Chop the mortise down to the chalk mark. Past it, the joint's loose.")
             : s.Raised > JoinSession.SafeAt(s.Seat) ? (Theme.Warn, "Too hard for how tight it is: it'll split.")
             : (Theme.Text, "Drive it home. Lighter blows as it tightens.");
@@ -121,7 +122,7 @@ public sealed partial class VillageGame
                 dl.AddCircleFilled(in p, Gui.S(2.5f), Theme.U8(new float4(Theme.OakLight.XYZ, 1f - f)), 6);
             }
         var label = new float2(min.X + Gui.S(4), min.Y + Gui.S(4));
-        dl.AddText(in label, Theme.U8(Theme.Dim), $"{(s.Work == JoinWork.Board ? "Peg" : s.Work == JoinWork.Axle ? "End" : "Joint")} {Math.Min(s.Joint + 1, s.Joints)} of {s.Joints}"
+        dl.AddText(in label, Theme.U8(Theme.Dim), $"{(s.Work is JoinWork.Board or JoinWork.Haft ? "Peg" : s.Work == JoinWork.Axle ? "End" : "Joint")} {Math.Min(s.Joint + 1, s.Joints)} of {s.Joints}"
             + (s.Splits > 0 ? $", {s.Splits} split" : ""));
         DrawLifterLine(s);
         EndWork();

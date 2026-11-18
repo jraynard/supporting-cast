@@ -105,6 +105,12 @@ public sealed class ServiceDef : Def
     /// <summary>Game hours they wait before giving up.</summary>
     public float PatienceHours { get; set; } = 3;
 
+    /// <summary>
+    /// For goods: what an adventurer says asking a shop to make a piece, by name, when nothing on
+    /// show suits them. "{0}" is what they'd pay, "{1}" the piece ("iron sword").
+    /// </summary>
+    public List<string> AskLines { get; set; } = [];
+
     /// <summary>What adventurers say asking for it, one picked at random. "{0}" is the price, "{1}" the thing in question.</summary>
     public List<string> Lines { get; set; } = [];
 

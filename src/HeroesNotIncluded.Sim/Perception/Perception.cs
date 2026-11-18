@@ -628,8 +628,31 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
             yield break;
         foreach (var e in sim.Shops.All)
             if (Omniscient || e.KnownBy.Contains(viewer))
-                yield return new Shops.KnownOrder(e.Id, e.Kind.Kind, e.Kind.Label, e.PosterName, e.Text, e.Price,
-                    e.PostedTick, e.Deadline, e.AssigneeName, e.Status, e.Poster == viewer, e.Assignee == viewer, e.Poster);
+            {
+                var (label, icon) = WhatFor(e);
+                yield return new Shops.KnownOrder(e.Id, e.Kind.Kind, label, e.PosterName, e.Text, e.Price,
+                    e.PostedTick, e.Deadline, e.AssigneeName, e.Status, e.Poster == viewer, e.Assignee == viewer, e.Poster, icon);
+            }
+    }
+
+    /// <summary>
+    /// What an order's for, in a few words, and its picture: the piece itself when it's about one
+    /// they said aloud (their spiked club mended, the charm on the shelf, an iron sword made), else
+    /// the service's own words. The icon is "" for the service's own.
+    /// </summary>
+    private (string Label, string Icon) WhatFor(Shops.Order e)
+    {
+        var w = sim.World;
+        if (e.Kind.Kind == ServiceKind.Goods && e.Wants != null)
+            return (Shops.Goods.WithArticle(Shops.Goods.WishLabel(e.Wants, e.WantsMending)), e.Wants.Sprite);
+        if (w.IsAlive(e.Subject) && w.TryGet<Thing>(e.Subject, out var t) && !w.Has<Tinkering.Wagon>(e.Subject))
+        {
+            if (Shops.ShopSystem.IsMend(e.Kind.Kind))
+                return ($"their {sim.LabelOf(e.Subject)} mended", t.Def.Sprite);
+            if (e.Kind.Kind == ServiceKind.Goods)
+                return ($"the {sim.LabelOf(e.Subject)}", t.Def.Sprite);
+        }
+        return (e.Kind.Label, "");
     }
 
     /// <summary>

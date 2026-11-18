@@ -73,6 +73,8 @@
     // the piece (an iron sword, tier 4, is worth 4x), times how well it's made.
     { "name": "Goods", "icon": "ui/icon_coin", "label": "gear", "defaultPrice": 0, "worthMin": 6, "worthMax": 10,
       "tooDearLines": [ "{0} silver for that {1}? I'll keep what I've got.", "{0} for a {1}? I've seen better for less." ], "patienceHours": 3,
-      "lines": [ "I'll take that {1}. {0} silver, you said.", "That {1} on show. {0} silver? Done." ] }
+      "lines": [ "I'll take that {1}. {0} silver, you said.", "That {1} on show. {0} silver? Done." ],
+      "askLines": [ "Could you make me a {1}? I'd give {0} silver for one.", "I'm after a {1}. {0} silver, if you can make one.",
+        "Nothing on your shelf for me. A {1}, though: {0} silver?" ] }
   ]
 }

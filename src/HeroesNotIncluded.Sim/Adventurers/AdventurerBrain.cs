@@ -64,6 +64,9 @@ public sealed class AdventurerBrain : IBrain
         // In line for something, take their place in it; waiting on a piece they've handed over (or
         // past the line's end), wait about the shop; else lounge about the haunt, else stay put.
         // Served a drink or a meal, they sit with it, unless they're at the front of a line being served.
+        // Something on a shelf they've a mind to buy: over to it, to take it down and pay.
+        if (sim.Shops.BrowsingFor(pawn) is { } buying && !w.Has<Hospitality.Savouring>(pawn))
+            return new Shops.ShelfBuyJob(buying.Item, buying.Price, buying.Worth);
         var inLine = sim.Shops.PlaceOf(sim, pawn);
         if (w.Has<Hospitality.Savouring>(pawn) && inLine is not { Place: 0 })
             return new Hospitality.SavourJob(Hospitality.Table.FreeSeat(sim, pawn));
@@ -88,11 +91,11 @@ public sealed class AdventurerBrain : IBrain
             : null;
     }
 
-    /// <summary>The anchor of the building their oldest open order is to be done at, if any.</summary>
+    /// <summary>The anchor of the building their oldest open order is to be done at, if any (not a piece asked to be made: that's a wait of hours).</summary>
     private static int3? WaitingAt(Simulation sim, Entity pawn)
     {
         foreach (var e in sim.Shops.All)
-            if (e.IsOpen && e.Poster == pawn && sim.World.IsAlive(e.Where) && sim.World.TryGet<PresetBuilding>(e.Where, out var b))
+            if (e.IsOpen && e.Poster == pawn && e.Wants == null && sim.World.IsAlive(e.Where) && sim.World.TryGet<PresetBuilding>(e.Where, out var b))
                 return b.Anchor;
         return null;
     }

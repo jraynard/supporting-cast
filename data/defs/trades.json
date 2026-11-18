@@ -119,7 +119,7 @@
           "steps": [
             { "id": "wait", "text": "Customers are on their way. One of them will want a blade sharpened.",
               "more": "They walk in from the road, which takes a minute. A hammer over someone's head means a repair." },
-            { "id": "take", "text": "Take the order: walk up to the customer and press ~F~ (or press \"I'll do it\" in your shop, ~J~)." },
+            { "id": "take", "text": "Take the order: walk up to the customer and press ~F~ (or press the green check in your shop, ~J~)." },
             { "id": "handover", "text": "Go to the customer (follow the arrow, or press \"Go and collect it\" on the order). They hand you the blade when you're close.", "ui": "shop" },
             { "id": "mend", "text": "This blade is chipped too. Open the forge (~F~) and press Mend.", "aside": true },
             { "id": "fuel", "text": "The forge is out. Take charcoal from the fuel bin, then press ~F~ at the forge.", "aside": true },
@@ -132,7 +132,7 @@
           "blurb": "Hammer the chips out at the forge and anvil, then sharpen it. You have two spare iron bars.",
           "steps": [
             { "id": "wait", "text": "Customers are on their way. Their blades are chipped." },
-            { "id": "take", "text": "Take the order: walk up to the customer and press ~F~ (or press \"I'll do it\" in your shop, ~J~)." },
+            { "id": "take", "text": "Take the order: walk up to the customer and press ~F~ (or press the green check in your shop, ~J~)." },
             { "id": "handover", "text": "Go to the customer (follow the arrow, or press \"Go and collect it\" on the order). They hand you the blade when you're close.", "ui": "shop" },
             { "id": "mend", "text": "Open the forge (~F~) and press Mend. It uses one iron bar." },
             { "id": "fuel", "text": "The forge is out. Take charcoal from the fuel bin, then press ~F~ at the forge.", "aside": true },
@@ -206,7 +206,7 @@
             { "id": "corner", "text": "Stand at the foot of the patient's pallet, next to the wash basin and the herb rack. (Point at anything to see what it does.)" },
             { "id": "bind", "text": "Click the patient and press \"Bind their wounds\". Washed at the basin, the wound won't fester; the herbs make a better dressing." },
             { "id": "altar", "text": "Go to the rune altar, where pain disturbs your weaving less. Open the gift (~Y~) and press \"Weave a charm\".", "ui": "gift" },
-            { "id": "show", "text": "Put the charm on the wares shelf beside the altar (~F~ at it with the charm in hand, or from your pack). It goes up for sale at once: open the shelf to change its price. Parties buy charms to take on quests." } ] } ],
+            { "id": "show", "text": "Put the charm on the wares shelf beside the altar (~F~ at it with the charm in hand, or from your pack). It goes up for sale at once: open the shelf to change its price. Parties buy charms to take on quests: they take one down and pay you themselves, even while you're out. Finding nothing for them, one may ask you to weave a charm by name: hand it to them, or put it on the shelf and they'll buy it." } ] } ],
       "kit": [ { "def": "Staff" }, { "def": "Bandage", "count": 4 } ] },
     // The carpenter works the woodshop: planks at the sawhorse, arrows at the bench for the parties'
     // archers, the bridge braced when a raid brings it down, and the festival put up (Carpentry/).
@@ -238,7 +238,7 @@
               "more": "Below the line the knife bites into the shaft, and a gouge costs more than a little wood left on." },
             { "id": "head", "text": "Fit the head: hold ~F~ to push it onto the shaft. It tips as it goes on: ~A~/~D~ (or the mouse) keep it on the line." },
             { "id": "fletch", "text": "Then fletch it: point round the shaft with the mouse (or ~A~/~D~) and click (or ~F~) to set a feather. Three, evenly round it." },
-            { "id": "show", "text": "Put the quiver on the wares shelf at the woodshop's front (~F~ at it with the quiver in hand, or from your pack). It goes up for sale at once: open the shelf to change its price. Archers buy them before they set out.", "ui": "inventory" } ],
+            { "id": "show", "text": "Put the quiver on the wares shelf at the woodshop's front (~F~ at it with the quiver in hand, or from your pack). It goes up for sale at once: open the shelf to change its price. Archers take one down and pay you before they set out: you needn't be there.", "ui": "inventory" } ],
           "notes": [ "Only archers buy quivers: a party with a bow or two in it will come looking. An archer with none who finds your shelf bare asks you for one aloud: hand it to them and they pay.",
                      "A true quiver brings an archer home in better shape. A warped one flies wide, and nobody can tell until it does.",
                      "When raiders bring the bridge down, it's yours to mend: take 2 wood to the gap and press ~F~." ] },
@@ -266,7 +266,7 @@
           "steps": [
             { "id": "wait", "text": "Customers are on their way. One of them has a locked strongbox.",
               "more": "They walk in from the road, which takes a minute." },
-            { "id": "take", "text": "Take the order: walk up to the customer and press ~F~ (or press \"I'll do it\" in your shop, ~J~)." },
+            { "id": "take", "text": "Take the order: walk up to the customer and press ~F~ (or press the green check in your shop, ~J~)." },
             { "id": "handover", "text": "Go to the customer (follow the arrow, or press \"Go and collect it\" on the order). They hand you the box when you're close.", "ui": "shop" },
             { "id": "probe", "text": "Check for traps first: open your pack (~Tab~), right-click the box, and choose \"Feel for traps\". Run the probe along the seam with ~AD~, ~F~ let go. Where it catches, hold still for a good read, then hold ~F~ to press in and press ~Space~ while the needle's in the green.", "ui": "inventory",
               "more": "Fingers don't grow back. Feel it over before you pick it." },
@@ -279,7 +279,7 @@
           "blurb": "Examine a curio and tell its owner what you think it's worth.",
           "steps": [
             { "id": "wait", "text": "Customers are on their way. One of them has a curio." },
-            { "id": "take", "text": "Take the order: walk up to the customer and press ~F~ (or press \"I'll do it\" in your shop, ~J~)." },
+            { "id": "take", "text": "Take the order: walk up to the customer and press ~F~ (or press the green check in your shop, ~J~)." },
             { "id": "handover", "text": "Go to the customer (follow the arrow, or press \"Go and collect it\" on the order). They hand you the curio when you're close.", "ui": "shop" },
             { "id": "appraise", "text": "Open your pack (~Tab~), right-click the curio, and choose \"Look it over under the loupe\". ~AD~ moves the loupe; where something catches your eye, hold ~F~ still. Your appraisal can be wrong.", "ui": "inventory" },
             { "id": "giveback", "text": "Press \"Take it back\" on the order (~J~) and tell them what you think it's worth.", "ui": "shop" } ],

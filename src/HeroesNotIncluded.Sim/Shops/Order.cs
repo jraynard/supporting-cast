@@ -68,6 +68,16 @@ public sealed class Order
     /// <summary>For a meal: the dish they asked for by name, at its price (<c>Shops.Menu</c>); null for whatever's up.</summary>
     public ThingDef? Dish { get; set; }
 
+    /// <summary>
+    /// For goods: the kind of piece they asked a shop to make, by name, when nothing on show suited
+    /// them (<see cref="Goods.Wishes"/>); null for one bought off the shelf. Handing one over fills it,
+    /// and so does putting one on the shop's shelf (they come and buy it).
+    /// </summary>
+    public ThingDef? Wants { get; set; }
+
+    /// <summary>For goods asked for by name: a charm's mending (<see cref="Wants"/>); null for anything else.</summary>
+    public MendingDef? WantsMending { get; set; }
+
     /// <summary>For a meal: they asked for the house dish by name (<c>Work.HouseDish</c>).</summary>
     public bool WantsHouse { get; set; }
 
@@ -98,8 +108,10 @@ public readonly record struct KnownErrand(int Order, ServiceKind Kind, Entity Wh
 
 /// <summary>
 /// An order as someone who knows of it sees it (<c>PerceptionView.Shops</c>). <see cref="Poster"/>
-/// is who asked: they heard the voice, so they know whom to go to.
+/// is who asked: they heard the voice, so they know whom to go to. <see cref="KindLabel"/> is what
+/// it's for, the piece named where there is one ("their spiked club mended", "a charm of burns");
+/// <see cref="Icon"/> that piece's sprite, or "" for the service's own icon.
 /// </summary>
 public readonly record struct KnownOrder(
     int Id, ServiceKind Kind, string KindLabel, string PosterName, string Text, int Price,
-    long PostedTick, long Deadline, string AssigneeName, OrderStatus Status, bool Mine, bool MineToDo, Entity Poster);
+    long PostedTick, long Deadline, string AssigneeName, OrderStatus Status, bool Mine, bool MineToDo, Entity Poster, string Icon = "");

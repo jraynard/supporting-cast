@@ -252,8 +252,10 @@ public sealed class AiSystem : ISimSystem
                 : creature.Def.Race == Race.Animal ? _animal
                 : _human;
 
-            // Emergencies (standing in fire, dangerous temperature) override any job but firefighting.
-            if (mind.Job != null && mind.Job is not FightFireJob && (now + e.Index) % 60 == 0 && InDanger(sim, e))
+            // Emergencies (standing in fire, dangerous temperature) override any job but firefighting;
+            // so does someone of ours collapsed nearby, for the nearest few, asleep or not (WorkGivers.Emergency).
+            if (mind.Job != null && mind.Job is not FightFireJob && (now + e.Index) % 60 == 0
+                && (InDanger(sim, e) || WorkGivers.CalledToHelp(sim, e, mind.Job)))
             {
                 EndJob(sim, e, mind, false);
                 mind.NextThinkTick = now;

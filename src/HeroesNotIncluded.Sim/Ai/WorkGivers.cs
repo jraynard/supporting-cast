@@ -227,6 +227,100 @@ public sealed class WorkGivers
         return MathF.Round(h.Blood / h.BleedPerHour * 2f) / 2f;
     }
 
+    /// <summary>Within this many cells of someone collapsed, a villager drops what they're doing (or wakes) to help (<see cref="Emergency"/>).</summary>
+    public const int CallRange = 24;
+
+    /// <summary>How many of the nearest villagers a collapse wakes or pulls off their work (<see cref="CalledToHelp"/>); others nearby help as they come free.</summary>
+    public const int Responders = 2;
+
+    /// <summary>
+    /// Someone of ours down nearby (within <see cref="CallRange"/>), or on their feet but bleeding out
+    /// with no foe about: an emergency, before hunger, sleep or the day's work, whatever the hour and
+    /// whatever their trade. Bleeding is bound first where they lie (first aid, or a doctor's
+    /// dressing); then they're carried to a bed, a shrine's pallet first. Players' characters
+    /// included: a player who collapsed after a raid used to lie in the road all night.
+    /// </summary>
+    public static Job? Emergency(Simulation sim, Entity pawn)
+    {
+        var w = sim.World;
+        var creature = w.Get<Creature>(pawn);
+        if (creature.Faction != Faction.Village || creature.Def.Race != Race.Human || !creature.Able
+            || !creature.Def.CanDo(WorkType.Doctor, creature.Stage(sim.Clock.Tick)) || Players.Steered(sim, pawn))
+            return null;
+        var from = w.Get<Position>(pawn).Cell;
+        var now = sim.Clock.Tick;
+        var firstAid = Systems.Bandaging.FirstAidOnly(sim, pawn);
+        bool Near(Entity e) => Dist(from, sim.LocationOf(e)) <= CallRange;
+        bool Bleeding(Entity e) => w.TryGet<Health>(e, out var h)
+            && h.Injuries.Exists(i => firstAid ? Systems.Bandaging.Stanchable(h, i) : i.NeedsTending(now) && h.BleedPerHour > 0f);
+        var down = NearestPatient(sim, pawn, (e, c) => c.Downed && !w.Has<Carried>(e) && Near(e) && Bleeding(e), triage: true);
+        if (!down.IsNull)
+            return new TendJob(down, firstAid);
+        var standing = NearestPatient(sim, pawn, (e, c) => !c.Downed && c.Able && c.Faction == Faction.Village && Near(e) && Bleeding(e)
+            && HoursToBleedOut(w, e) <= CriticalHours && Defence.Threat(sim, e, Defence.VillagerRange) == null, triage: true);
+        if (!standing.IsNull)
+            return new TendJob(standing, firstAid);
+        var abed = NearestPatient(sim, pawn, (e, c) => c.Downed && Near(e) && Rescues.CanCarry(sim, pawn, e) && !w.Has<Carried>(e)
+            && !Systems.HealthSystem.InBed(sim, e));
+        if (abed.IsNull)
+            return null;
+        var bed = Rescues.BedFor(sim, pawn, abed);
+        return bed.IsNull || sim.Reservations.IsReservedByOther(bed, pawn) ? null : new RescueJob(abed, bed);
+    }
+
+    /// <summary>
+    /// Should this villager drop what they're doing, sleep included, for an <see cref="Emergency"/>?
+    /// Only the <see cref="Responders"/> nearest to someone who needs it (asleep or awake), so a
+    /// collapse doesn't wake the whole town; and not if they're already helping, fighting or at a fire.
+    /// </summary>
+    public static bool CalledToHelp(Simulation sim, Entity pawn, Job? job)
+    {
+        var w = sim.World;
+        if (job is RescueJob or TendJob or FightFireJob or Environment.BucketJob || Defence.Responding(job))
+            return false;
+        var me = w.Get<Creature>(pawn);
+        if (me.Faction != Faction.Village || me.Def.Race != Race.Human || !me.Able || Players.Steered(sim, pawn))
+            return false;
+        var from = w.Get<Position>(pawn).Cell;
+        var any = false;
+        foreach (var e in sim.Creatures())
+        {
+            var c = w.Get<Creature>(e);
+            if (e == pawn || c.Dead || !(c.Downed || c.Faction == Faction.Village) || sim.Reservations.IsReservedByOther(e, pawn)
+                || w.Has<Carried>(e))
+                continue;
+            var at = sim.LocationOf(e);
+            if (Dist(from, at) > CallRange || !(c.Faction is Faction.Village or Faction.Prisoner || c.Faction == Faction.Adventurer && c.Downed))
+                continue;
+            var needs = c.Downed ? !Systems.HealthSystem.InBed(sim, e) || HoursToBleedOut(w, e) < float.MaxValue / 2
+                : HoursToBleedOut(w, e) <= CriticalHours;
+            if (!needs || Nearer(sim, e, at, pawn, Dist(from, at)) >= Responders)
+                continue;
+            any = true;
+            break;
+        }
+        return any && Emergency(sim, pawn) != null;
+    }
+
+    /// <summary>How many villagers who could help are nearer <paramref name="at"/> than <paramref name="pawn"/> (ties by entity index).</summary>
+    private static int Nearer(Simulation sim, Entity patient, int3 at, Entity pawn, int dist)
+    {
+        var w = sim.World;
+        var n = 0;
+        foreach (var e in sim.Creatures())
+        {
+            if (e == pawn || e == patient)
+                continue;
+            var c = w.Get<Creature>(e);
+            if (c.Faction != Faction.Village || c.Def.Race != Race.Human || !c.Able || Players.Steered(sim, e))
+                continue;
+            var d = Dist(w.Get<Position>(e).Cell, at);
+            if (d < dist || (d == dist && e.Index < pawn.Index))
+                n++;
+        }
+        return n;
+    }
+
     /// <summary>A downed villager lying outside a bed goes to the nearest free one. (Dragons are too heavy.)</summary>
     private static Job? Rescue(Simulation sim, Entity pawn)
     {

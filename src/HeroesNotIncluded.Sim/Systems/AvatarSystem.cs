@@ -398,6 +398,10 @@ public sealed class AvatarSystem : ISimSystem
         if (tool == AvatarTool.Use && held.IsNull && InReach(here, cell) && Rescues.DownedAt(sim, cell, avatar) is { IsNull: false } hurt
             && Rescues.CanCarry(sim, avatar, hurt))
             return new(AvatarActionKind.Carry, $"Pick up {w.Get<Creature>(hurt).Name}", cell, hurt);
+        // A customer who asked for a piece by name, and you're holding one: hand it to them, for what they said they'd pay.
+        if (tool == AvatarTool.Use && !held.IsNull && InReach(here, cell) && CustomerAt(sim, cell, avatar) is { IsNull: false } customer
+            && Shops.Handing.InReach(sim, avatar, customer) && Shops.ShopSystem.AskedFor(sim, customer, held) is { } wanted)
+            return new AvatarAction(AvatarActionKind.HandOver, $"Hand {ItemLabel(sim, avatar, held)} to {wanted.PosterName} ({wanted.Price} silver)", cell, customer) { Item = held };
         // Another player in front of you: hand them what you hold, or (hands empty) trade.
         if (tool == AvatarTool.Use && PlayerAt(sim, cell, avatar) is { IsNull: false } other && Shops.Handing.InReach(sim, avatar, other))
         {
@@ -825,7 +829,18 @@ public sealed class AvatarSystem : ISimSystem
         return Entity.Null;
     }
 
-    /// <summary>Hand what you hold, the whole of it, to another player; they hear what it was.</summary>
+    /// <summary>An adventurer standing at the cell (awake and about), Entity.Null if none: who a player can hand a piece they asked for.</summary>
+    public static Entity CustomerAt(Simulation sim, int3 cell, Entity except)
+    {
+        var w = sim.World;
+        foreach (var e in w.Each<Adventurer>())
+            if (e != except && w.TryGet<Position>(e, out var p) && p.Cell == cell && w.TryGet<Creature>(e, out var c) && c.Able
+                && !w.Has<Carried>(e))
+                return e;
+        return Entity.Null;
+    }
+
+    /// <summary>Hand what you hold, the whole of it, to another player (or to a customer what they asked for); they hear what it was.</summary>
     private static void HandOver(Simulation sim, Entity avatar, Entity to, Entity item)
     {
         var w = sim.World;

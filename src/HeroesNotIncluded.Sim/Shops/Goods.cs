@@ -170,12 +170,23 @@ public static class Goods
     {
         var w = sim.World;
         var def = w.Get<Thing>(item).Def;
+        MendingDef? mending = w.TryGet<Charm>(item, out var c) ? c.Mending : null;
+        return (!def.Charm || mending != null) && WouldUpgrade(sim, who, def, mending);
+    }
+
+    /// <summary>
+    /// <see cref="IsUpgrade"/> for a piece not yet made: one of this kind (a charm woven with this
+    /// mending) would leave them better off. What an adventurer asks a shop to make (<see cref="Wishes"/>).
+    /// </summary>
+    public static bool WouldUpgrade(Simulation sim, Entity who, ThingDef def, MendingDef? mending)
+    {
+        var w = sim.World;
         if (def.Charm)
         {
             // A ward for the road: a couple, and not two of the same mending.
             var mine = Healing.Charms.Carried(sim, who);
-            return w.TryGet<Charm>(item, out var c) && mine.Count < Healing.Charms.MostCarried
-                && !mine.Exists(e => w.Get<Charm>(e).Mending == c.Mending);
+            return mending != null && mine.Count < Healing.Charms.MostCarried
+                && !mine.Exists(e => w.Get<Charm>(e).Mending == mending);
         }
         if (def.Rations)
             // Food for the road: one bundle, judged by how it's made (it can't be smelt through the cloth).
@@ -202,10 +213,84 @@ public static class Goods
         return !w.IsAlive(worn) || def.GearTier > w.Get<Thing>(worn).Def.GearTier;
     }
 
+    /// <summary>A piece an adventurer could ask a shop to make: its kind, the mending in it (a charm), and the shop that makes it.</summary>
+    public readonly record struct Wish(ThingDef Def, MendingDef? Mending, Entity Shop);
+
+    /// <summary>
+    /// What this adventurer could ask the town to make for them, when nothing on show suits them:
+    /// gear a shop kept by a player makes (a recipe at one of its stations, or a charm at the shrine)
+    /// that would leave them better off. Rations and arrows have their own asking (the inn, the
+    /// carpenter's order for arrows). Only a player keeps a wares shelf stocked, so only they're asked.
+    /// In a fixed order: by shop, then recipe, then mending.
+    /// </summary>
+    public static List<Wish> Wishes(Simulation sim, Entity who)
+    {
+        var w = sim.World;
+        var wishes = new List<Wish>();
+        foreach (var shop in w.Query<PresetBuilding>().OrderBy(e => e.Index))
+        {
+            var b = w.Get<PresetBuilding>(shop);
+            if (b.Demolishing || !KeptByAPlayer(sim, b.Def))
+                continue;
+            var stations = new HashSet<ThingDef>();
+            foreach (var part in Buildings.Parts(sim, shop))
+                if (w.TryGet<Thing>(part, out var t) && t.Def.Building?.Workbench != null && !w.Has<Construction>(part))
+                    stations.Add(t.Def);
+            var seen = new HashSet<ThingDef>();
+            foreach (var recipe in sim.Defs.AllRecipes)
+            {
+                if (recipe.StationDef is not { } station || !stations.Contains(station))
+                    continue;
+                foreach (var product in recipe.Products)
+                {
+                    var def = product.ThingDef;
+                    if (IsGear(def) && !def.Charm && !def.Rations && !def.Quiver && seen.Add(def) && WouldUpgrade(sim, who, def, null))
+                        wishes.Add(new Wish(def, null, shop));
+                }
+            }
+            if (b.Def.Has(TownRole.Shrine) && sim.Defs.TryThing(Healing.Charms.Def, out var charm))
+                foreach (var m in sim.Defs.AllMendings)
+                    if (m.Heals.Count > 0 && !m.CallsBack && WouldUpgrade(sim, who, charm, m))
+                        wishes.Add(new Wish(charm, m, shop));
+        }
+        return wishes;
+    }
+
+    /// <summary>Does a player (connected) keep a shop of this kind?</summary>
+    private static bool KeptByAPlayer(Simulation sim, BuildingDef shop)
+    {
+        foreach (var e in sim.World.Query<Avatar>().OrderBy(e => e.Index))
+            if (sim.World.TryGet<Trade>(e, out var trade) && trade.Def.HasWorkplace && trade.Def.WorksAt(shop))
+                return true;
+        return false;
+    }
+
+    /// <summary>What a piece asked for by name is called: "iron sword", "charm of burns".</summary>
+    public static string WishLabel(ThingDef def, MendingDef? mending) =>
+        mending != null ? $"{def.Label} of {mending.Label.ToLowerInvariant()}" : def.Label;
+
+    /// <summary>"a" or "an" before a piece's name: "an iron sword", "a charm of burns".</summary>
+    public static string WithArticle(string label) =>
+        label.Length > 0 && "aeiouAEIOU".Contains(label[0]) ? $"an {label}" : $"a {label}";
+
+    /// <summary>Is this item what an order asking for a piece by name wants (<see cref="Order.Wants"/>)?</summary>
+    public static bool Fills(Simulation sim, Order e, Entity item)
+    {
+        var w = sim.World;
+        if (e.Wants == null || !w.IsAlive(item) || !w.TryGet<Thing>(item, out var t) || t.Def != e.Wants)
+            return false;
+        return e.WantsMending == null || w.TryGet<Charm>(item, out var c) && c.Mending == e.WantsMending;
+    }
+
     /// <summary>
     /// What a piece is worth against a plain one of its tier, by what a buyer can see: how well
     /// it's made, or for a charm the mending in it and how strongly it's woven (not how well).
     /// </summary>
+    /// <summary><see cref="WorthFactor(Simulation, Entity)"/> for a plain one of a kind not yet made (a charm with no extra strength).</summary>
+    public static float WorthFactor(ThingDef def) =>
+        def.Charm ? Healing.Charms.Worth : def.Contraption != null ? Tinkering.Contraptions.Worth : def.Rations ? Work.Rations.Worth
+            : def.Quiver ? Carpentry.Fletching.Worth : 1f;
+
     public static float WorthFactor(Simulation sim, Entity item)
     {
         if (sim.World.TryGet<Charm>(item, out var charm))

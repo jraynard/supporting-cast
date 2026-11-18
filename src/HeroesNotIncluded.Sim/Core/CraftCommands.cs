@@ -185,11 +185,21 @@ internal static class CraftCommandRules
 
 /// <summary>
 /// The player mends worn gear they have on them (worn, wielded, in hand or pack) at a station in
-/// reach that makes that kind of thing; the work goes on while the key is held (<see cref="RepairJob"/>).
+/// reach that makes that kind of thing, by its hand game (the forge's hammer, the bench's tiller or
+/// joinery, the tinker's fitting). In a round, a mend with no hand game isn't offered: it was a held
+/// key that did nothing anyone could see (<see cref="NoHandGame"/>). Outside rounds it's worked as
+/// a job while the key is held (<see cref="RepairJob"/>).
 /// </summary>
 public sealed record RepairCommand(Entity Avatar, Entity Station, Entity Item) : ISimCommand, IActorCommand
 {
     public Entity Actor => Avatar;
+
+    /// <summary>Would a player's mend of this piece at this station have nothing to play: in a round, and no hand game takes it?</summary>
+    public static bool NoHandGame(Simulation sim, Entity avatar, Entity station, Entity item) =>
+        sim.Round.Live && Players.Steered(sim, avatar)
+        && !Work.Smithing.AppliesToRepair(sim, avatar, station)
+        && !Carpentry.Carpenters.AppliesToRepair(sim, avatar, station, item)
+        && !Tinkering.Tinkers.AppliesToRepair(sim, avatar, station, item);
 
     public void Apply(Simulation sim)
     {
@@ -204,6 +214,8 @@ public sealed record RepairCommand(Entity Avatar, Entity Station, Entity Item) :
             Carpentry.Carpenters.BeginMending(sim, Avatar, Station, Item);
         else if (Tinkering.Tinkers.AppliesToRepair(sim, Avatar, Station, Item))
             Tinkering.Tinkers.BeginMending(sim, Avatar, Station, Item);
+        else if (NoHandGame(sim, Avatar, Station, Item))
+            sim.Messages.Tell(Avatar, MessageKind.Info, $"There's no mending the {sim.LabelOf(Item)} by hand here yet.", w.Get<Thing>(Station).Cell);
         else
             AiSystem.Order(sim, Avatar, new RepairJob(Station, Item));
     }

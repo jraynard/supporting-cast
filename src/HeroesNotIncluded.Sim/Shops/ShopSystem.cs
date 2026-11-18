@@ -83,6 +83,19 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// <summary>When someone last went without something (too dear, or nobody offering it): they don't look again until the cooldown's passed.</summary>
     private readonly Dictionary<(Entity Who, ServiceKind Kind), long> _wentWithout = [];
 
+    /// <summary>
+    /// Adventurers on their way to buy a piece off a wares shelf (<see cref="ShelfBuyJob"/>): the
+    /// piece, the price they agreed to and what it was worth to them. They take it down and pay for
+    /// it themselves; nobody needs to serve them.
+    /// </summary>
+    private readonly Dictionary<Entity, (Entity Item, int Price, int Worth)> _browsing = [];
+
+    /// <summary>The piece this adventurer's on their way to buy off a shelf, if they are (<see cref="ShelfBuyJob"/>).</summary>
+    public (Entity Item, int Price, int Worth)? BrowsingFor(Entity who) => _browsing.TryGetValue(who, out var b) ? b : null;
+
+    /// <summary>They've gone for it (or given it up): no longer on their way to it.</summary>
+    public void DoneBrowsing(Entity who) => _browsing.Remove(who);
+
     /// <summary>Who last saw to each patient's wounds (drawn or bandaged), to be paid for a Healing order.</summary>
     private readonly Dictionary<Entity, Entity> _treatedBy = [];
     private int _nextId = 1;
@@ -112,8 +125,10 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 var questing = sim.World.IsAlive(e.Poster) && sim.World.TryGet<Adventurer>(e.Poster, out var a) && a.Quest != 0;
                 LostTheirGear(sim, e, questing);
             }
-            else if (e.Kind.Kind == ServiceKind.Goods && (!sim.World.IsAlive(e.Subject) || !sim.World.Has<ForSale>(e.Subject)))
+            else if (e.Kind.Kind == ServiceKind.Goods && e.Wants == null && (!sim.World.IsAlive(e.Subject) || !sim.World.Has<ForSale>(e.Subject)))
                 Close(sim, e, OrderStatus.Cancelled); // sold to someone else, or taken off sale
+            else if (e.Wants != null && !Goods.WouldUpgrade(sim, e.Poster, e.Wants, e.WantsMending))
+                Close(sim, e, OrderStatus.Cancelled); // bought something as good or better meanwhile
             else if (e.Kind.Kind == ServiceKind.Healing && (e.Mend ? !Healing.LayOnHands.Hurt(sim, e.Poster) : !Untended(sim, e.Poster)))
                 Healed(sim, e);
             else if (e.Kind.Kind is ServiceKind.WagonRepair or ServiceKind.WagonJoinery && !Tinkering.Wagons.DamagedFor(sim, e.Subject, e.Kind.Kind))
@@ -127,7 +142,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             else if (Hatch.TryCollect(sim, e))
                 continue; // took a dish off the hatch
             else if (e.Assignee.IsNull && TimeToAsk(sim, e))
-                Announce(sim, e, Asking(e.Kind, e.Price, SubjectLabel(sim, e.Subject, e.Kind.Kind)));
+                Announce(sim, e, e.Wants != null ? e.Text : Asking(e.Kind, e.Price, SubjectLabel(sim, e.Subject, e.Kind.Kind)));
             else
             {
                 TryHandOver(sim, e);
@@ -140,6 +155,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         var stale = SimClock.HoursToTicks(CooldownHours);
         foreach (var key in _wentWithout.Where(kv => !sim.World.IsAlive(kv.Key.Who) || now - kv.Value > stale).Select(kv => kv.Key).ToList())
             _wentWithout.Remove(key);
+        foreach (var who in _browsing.Where(kv => !sim.World.IsAlive(kv.Key) || Goods.ShownIn(sim, kv.Value.Item).IsNull).Select(kv => kv.Key).ToList())
+            _browsing.Remove(who);
         ShopForWhatTheyWant(sim);
         ShopForSupper(sim);
     }
@@ -603,22 +620,42 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// <summary>
     /// An adventurer looks over the gear on show in the town's shops (<see cref="Goods.OnShow"/>)
     /// for a piece they'd be better off with. Of those within what it's worth to them (per tier,
-    /// times how well it's made) and what they can spare, they order the best, then the cheapest.
-    /// If the only pieces they'd want are too dear, they say so and stop looking for a while.
+    /// times how well it's made) and what they can spare, they go for the best, then the cheapest,
+    /// and buy it off the shelf themselves (<see cref="ShelfBuyJob"/>, <see cref="BoughtOffShelf"/>).
+    /// If the only pieces they'd want are too dear, they say so and stop looking for a while. If
+    /// nothing on show would do, they may ask a shop to make one, by name (<see cref="AskToMake"/>);
+    /// asked already, they buy the first one put on show.
     /// </summary>
     private void ShopForGear(Simulation sim, Entity who)
     {
-        if (!MayAsk(sim, who, ServiceKind.Goods))
+        if (_browsing.ContainsKey(who))
             return;
         var w = sim.World;
         var def = sim.Defs.Service(ServiceKind.Goods);
         var spend = w.Get<Adventurer>(who).Kind?.Spend ?? 1f;
+        // What they've offered for a piece they asked to be made isn't spent yet: something else on show may do instead.
+        var asked = _orders.Find(e => e.IsOpen && e.Poster == who && e.Kind.Kind == ServiceKind.Goods && e.Wants != null);
         var spare = Math.Max(0, Coin.Count(sim, who) - Promised(who) - KeptFromGear(sim, who));
+        // Asked a shop to make one: the first that's put up on show they come and buy, at its price if they can.
+        // Waiting on it, they'll still buy something else that's on show.
+        if (asked != null)
+        {
+            foreach (var (item, _, price) in Goods.OnShow(sim))
+                if (Goods.Fills(sim, asked, item) && !Spoken(item) && price <= Math.Min(Math.Max(asked.Worth, asked.Price), spare))
+                {
+                    _browsing[who] = (item, price, asked.Worth);
+                    return;
+                }
+            if (_wentWithout.TryGetValue((who, ServiceKind.Goods), out var at) && at > sim.Clock.Tick - SimClock.HoursToTicks(CooldownHours))
+                return;
+        }
+        else if (!MayAsk(sim, who, ServiceKind.Goods))
+            return;
         int? roll = null;
         (Entity Item, Entity Shop, int Price, int Worth, int Tier)? best = null, dear = null;
         foreach (var (item, shop, price) in Goods.OnShow(sim))
         {
-            if (_orders.Exists(o => o.IsOpen && o.Subject == item) || !Goods.IsUpgrade(sim, who, item))
+            if (Spoken(item) || !Goods.IsUpgrade(sim, who, item))
                 continue;
             roll ??= _rand.Range(def.WorthMin, def.WorthMax + 1);
             var t = w.Get<Thing>(item);
@@ -633,16 +670,93 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 dear = (item, shop, price, worth, tier);
         }
         if (best is { } buy)
-        {
-            var label = w.Get<Thing>(buy.Item).Label;
-            Post(sim, who, def, Asking(def, buy.Price, label), buy.Price, sim.Clock.Tick + PatienceTicks(sim, who, def),
-                buy.Item, buy.Shop, buy.Worth);
-        }
+            _browsing[who] = (buy.Item, buy.Price, buy.Worth);
         else if (dear is { } no)
         {
             _wentWithout[(who, ServiceKind.Goods)] = sim.Clock.Tick;
             TooDear(sim, who, def, no.Price, no.Worth, spare, w.Get<Thing>(no.Item).Label);
         }
+        else if (asked == null)
+            AskToMake(sim, who, def, spend, spare);
+
+        // Someone else is on their way to it, or waiting to be handed it.
+        bool Spoken(Entity item) =>
+            _browsing.Values.Any(b => b.Item == item) || _orders.Exists(o => o.IsOpen && o.Subject == item);
+    }
+
+    /// <summary>The chance, each hour an adventurer finds nothing on show for them, that they ask for a piece to be made.</summary>
+    public const float AskToMakeChance = 0.6f;
+
+    /// <summary>They've been in town this long before they'd ask a shop to make them something: time to look round first.</summary>
+    public const float AskToMakeAfterHours = 0.5f;
+
+    /// <summary>Game hours they'll wait for a piece asked for by name: it has to be made.</summary>
+    public const float AskToMakeHours = 10f;
+
+    /// <summary>
+    /// Nothing on show would do: they may ask a shop a player keeps to make them a piece, naming it
+    /// ("Could you make me an iron sword?"), at what it's worth to them. One ask at a time in a party,
+    /// and not every time they look. A shop that has it hands it over (or puts it on show, and they
+    /// buy it, <see cref="ShopForGear"/>). Lapsed, they cool off for a while before asking again.
+    /// </summary>
+    private void AskToMake(Simulation sim, Entity who, ServiceDef def, float spend, int spare)
+    {
+        var w = sim.World;
+        var now = sim.Clock.Tick;
+        var a = w.Get<Adventurer>(who);
+        // Looked round first, then now and then (AskToMakeChance an hour, checked each pass): one ask at a time in a party.
+        if (now - a.Arrived < SimClock.HoursToTicks(AskToMakeAfterHours)
+            || _orders.Exists(e => e.IsOpen && e.Kind.Kind == ServiceKind.Goods && e.Wants != null
+                && w.TryGet<Adventurer>(e.Poster, out var other) && other.Party == a.Party)
+            || _rand.NextFloat() >= AskToMakeChance * Interval / SimClock.TicksPerHour)
+            return;
+        var wishes = Goods.Wishes(sim, who);
+        if (wishes.Count == 0)
+            return;
+        var wish = wishes[_rand.NextInt(wishes.Count)];
+        var worth = (int)MathF.Round(_rand.Range(def.WorthMin, def.WorthMax + 1) * Math.Max(1, wish.Def.GearTier) * Goods.WorthFactor(wish.Def) * spend);
+        var price = Math.Min(worth, spare);
+        if (price < 1 || price * 2 < worth)
+            return; // they couldn't pay what it's worth
+        var label = Goods.WishLabel(wish.Def, wish.Mending);
+        var text = def.AskLines.Count == 0 ? $"Could you make me a {label}? {price} silver."
+            : string.Format(def.AskLines[_rand.NextInt(def.AskLines.Count)], price, label);
+        Post(sim, who, def, text, price, now + SimClock.HoursToTicks(AskToMakeHours), where: wish.Shop, worth: worth,
+            wants: wish.Def, wantsMending: wish.Mending);
+    }
+
+    /// <summary>
+    /// An adventurer took a piece down off a wares shelf and pays its seller for it, wherever they
+    /// are (the shelf is honest dealing): the piece is theirs, and it goes on the books as an order
+    /// done by the seller, a bargain counted as one. If it fills a piece they'd asked for by name,
+    /// that's the order done.
+    /// </summary>
+    public void BoughtOffShelf(Simulation sim, Entity buyer, Entity item, int price, int worth)
+    {
+        var w = sim.World;
+        if (!w.TryGet<ForSale>(item, out var sale) || !w.IsAlive(sale.Seller))
+            return;
+        var seller = sale.Seller;
+        var shop = w.TryGet<Stored>(item, out var stored) ? Goods.SellsAt(sim, seller, stored.In) : Entity.Null;
+        var label = sim.LabelOf(item);
+        var down = sim.TakeFromStack(item, 1);
+        Goods.TakeUp(sim, buyer, down);
+        var asked = _orders.Find(e => e.IsOpen && e.Poster == buyer && e.Kind.Kind == ServiceKind.Goods && Goods.Fills(sim, e, down));
+        if (asked == null)
+        {
+            asked = new Order
+            {
+                Id = _nextId++, Kind = sim.Defs.Service(ServiceKind.Goods), Poster = buyer, PosterName = w.Get<Creature>(buyer).Name,
+                Text = $"Bought the {label} off the shelf.", Where = shop, Subject = down, Price = price, Worth = worth,
+                PostedTick = sim.Clock.Tick, Deadline = sim.Clock.Tick, LastAsked = sim.Clock.Tick,
+            };
+            _orders.Add(asked);
+            Learn(asked, buyer);
+        }
+        asked.Price = price;
+        Learn(asked, seller);
+        Complete(sim, asked, seller);
+        sim.Messages.Tell(seller, MessageKind.Info, $"{w.Get<Creature>(buyer).Name} bought the {label} off your shelf: {price} silver.", sim.LocationOf(buyer));
     }
 
     /// <summary>
@@ -660,12 +774,12 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     private static long PatienceTicks(Simulation sim, Entity who, ServiceDef def) =>
         SimClock.HoursToTicks(def.PatienceHours * (sim.World.Has<Adventurer>(who) ? Adventurers.Tempers.Patience(Adventurers.Tempers.Of(sim, who)) : 1f));
 
-    /// <summary>Silver this person has promised to orders still open.</summary>
+    /// <summary>Silver this person has promised to orders still open (not a piece asked to be made: that's only an offer till it's there).</summary>
     private int Promised(Entity who)
     {
         var sum = 0;
         foreach (var e in _orders)
-            if (e.IsOpen && e.Poster == who)
+            if (e.IsOpen && e.Poster == who && e.Wants == null)
                 sum += e.Price;
         return sum;
     }
@@ -763,18 +877,19 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         if (_wentWithout.TryGetValue((who, kind), out var at) && at > since)
             return false;
         foreach (var e in _orders)
-            if (e.Poster == who && e.Kind.Kind == kind && (e.IsOpen || e.ClosedTick > since))
+            if (e.Poster == who && e.Kind.Kind == kind && (e.IsOpen || e.ClosedTick > since)
+                && !(kind == ServiceKind.Goods && e.Status == OrderStatus.Done)) // bought one: they may look for the next at once
                 return false;
         return true;
     }
 
     /// <summary>Put an order on the books and say it aloud. Those who hear it clearly know of it.</summary>
     public Order Post(Simulation sim, Entity poster, ServiceDef kind, string text, int price, long deadline, Entity? subject = null,
-        Entity? where = null, int worth = 0, Work.FlavourKind? craving = null)
+        Entity? where = null, int worth = 0, Work.FlavourKind? craving = null, ThingDef? wants = null, MendingDef? wantsMending = null)
     {
         var order = new Order
         {
-            Craving = craving,
+            Craving = craving, Wants = wants, WantsMending = wantsMending,
             Id = _nextId++, Kind = kind, Poster = poster, PosterName = sim.World.Get<Creature>(poster).Name, Text = text,
             Where = where ?? BuildingFor(sim, kind.AtRole), Subject = subject ?? Entity.Null, Price = price,
             Worth = worth, PostedTick = sim.Clock.Tick, Deadline = deadline,
@@ -787,7 +902,8 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             if (sim.World.TryGet<Trade>(e, out var trade) && (workplace != null ? trade.Def.WorksAt(workplace) : trade.Def.HasWorkplace && trade.Def.Role == kind.AtRole))
                 Learn(order, e);
         // At a shop with a line they say it at the counter (or the hatch), when their turn comes (TimeToAsk).
-        if (LineCells(sim, order.Where, Hatch.Takes(sim, order)).Count == 0)
+        // A piece asked for by name isn't waited for in line (it has to be made): said at once.
+        if (!WaitsInLine(sim, order) || LineCells(sim, order.Where, Hatch.Takes(sim, order)).Count == 0)
             Announce(sim, order, text);
         if (kind.Kind == ServiceKind.MixedDrink && sim.World.Has<Adventurer>(poster))
             sim.Drinking.Ordered(sim, order);
@@ -926,7 +1042,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
     /// (<see cref="Hospitality.Provisions.Waits"/>).
     /// </summary>
     public static bool WaitsInLine(Simulation sim, Order e) =>
-        e.IsOpen && (e.Kind.Kind == ServiceKind.Provisions
+        e.IsOpen && e.Wants == null && (e.Kind.Kind == ServiceKind.Provisions
             ? Hospitality.Provisions.Waits(sim, e)
             : !(HandsOver(e.Kind.Kind) && !e.Assignee.IsNull && sim.World.IsAlive(e.Subject) && Inventory.OnPerson(sim, e.Assignee, e.Subject)));
 
@@ -1039,6 +1155,18 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             if (e.IsOpen && HandsOver(e.Kind.Kind) && e.Assignee.IsNull && e.Poster != who && e.KnownBy.Contains(who)
                 && w.IsAlive(e.Poster) && w.TryGet<Position>(e.Poster, out var at) && at.Cell == cell
                 && ShopPrices.Keeps(sim, who, e.Where) && Handing.InReach(sim, who, e.Poster))
+                return e;
+        return null;
+    }
+
+    /// <summary>
+    /// The open order of <paramref name="poster"/>'s that this item fills: a piece they asked a shop
+    /// to make, by name (<see cref="Order.Wants"/>). Null if it isn't what they asked for.
+    /// </summary>
+    public static Order? AskedFor(Simulation sim, Entity poster, Entity item)
+    {
+        foreach (var e in sim.Shops.All)
+            if (e.IsOpen && e.Poster == poster && e.Kind.Kind == ServiceKind.Goods && Goods.Fills(sim, e, item))
                 return e;
         return null;
     }
@@ -1251,6 +1379,9 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             sim.Speech.Say(sim, who, paid == 1 ? "And one for yourself. That was quick." : $"Have {paid} for yourself. Quick, and good.", Volume.Say);
     }
 
+    /// <summary>What a piece asked for by name and never made costs in their opinion of the town.</summary>
+    public const float AskLapsedMood = 0.25f;
+
     private static void GiveUp(Simulation sim, Order e)
     {
         Close(sim, e, OrderStatus.Expired);
@@ -1261,6 +1392,13 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
         {
             sim.World.Get<Adventurer>(e.Poster).Satisfaction -= PeckishGiveUpMood;
             Speech.Barks.Say(sim, e.Poster, "adv_give_up_peckish", Volume.Say, "Never mind the food. I'll eat later.");
+            return;
+        }
+        // A piece asked for by name: they knew it had to be made. A shrug, not a grudge.
+        if (e.Wants != null && sim.World.Has<Adventurer>(e.Poster))
+        {
+            sim.World.Get<Adventurer>(e.Poster).Satisfaction -= AskLapsedMood;
+            Speech.Barks.Say(sim, e.Poster, "adv_ask_lapsed", Volume.Say, "No {thing} yet, then. I'll make do.", thing: Goods.WishLabel(e.Wants, e.WantsMending));
             return;
         }
         if (sim.World.Has<Adventurer>(e.Poster))
@@ -1312,7 +1450,7 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             Complete(sim, arrows, giver);
             return;
         }
-        var bought = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Goods && e.Subject == item);
+        var bought = _orders.Find(e => e.IsOpen && e.Poster == to && e.Kind.Kind == ServiceKind.Goods && (e.Subject == item || Goods.Fills(sim, e, item)));
         if (bought != null)
         {
             Goods.TakeUp(sim, to, item);
@@ -1586,11 +1724,22 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
             w.Bool(e.WantsHouse);
             w.String(e.Dish?.Name ?? "");
             w.Bool(e.Mend);
+            w.String(e.Wants?.Name ?? "");
+            w.String(e.WantsMending?.Name ?? "");
             w.Int(e.KnownBy.Count);
             foreach (var k in e.KnownBy)
                 w.Entity(k);
         }
         w.Float(Fare);
+        var browsing = _browsing.OrderBy(kv => kv.Key.Index).ToList();
+        w.Int(browsing.Count);
+        foreach (var (who, (item, price, worth)) in browsing)
+        {
+            w.Entity(who);
+            w.Entity(item);
+            w.Int(price);
+            w.Int(worth);
+        }
     }
 
     private readonly int[] _served = new int[Enum.GetValues<ServiceKind>().Length];
@@ -1646,10 +1795,21 @@ public sealed class ShopSystem(ulong seed) : ISimSystem, Saving.ISaveState
                 e.Dish = dishDef;
             if (r.Version >= 26)
                 e.Mend = r.Bool();
+            if (r.Version >= 61) // goods asked for by name (format 61)
+            {
+                if (r.String() is { Length: > 0 } wants && sim.Defs.TryThing(wants, out var wantsDef) && Goods.IsGear(wantsDef))
+                    e.Wants = wantsDef;
+                if (r.String() is { Length: > 0 } mending && sim.Defs.AllMendings.Find(m => m.Name == mending) is { } m)
+                    e.WantsMending = m;
+            }
             for (var k = r.Count(1 << 16); k > 0; k--)
                 e.KnownBy.Add(r.Entity());
             _orders.Add(e);
         }
         Fare = r.Version >= 30 ? Math.Clamp(r.Float(), 0f, FareMost) : 0f; // word of the food came with format 30
+        _browsing.Clear();
+        if (r.Version >= 61) // adventurers buying off the shelf themselves (format 61)
+            for (var n = r.Count(1 << 16); n > 0; n--)
+                _browsing[r.Entity()] = (r.Entity(), Math.Max(0, r.Int()), Math.Max(0, r.Int()));
     }
 }

@@ -763,13 +763,55 @@ public sealed partial class VillageGame
     /// </summary>
     private void BeginWork(string title, bool mouse, params (string Keys, string Does)[] hints)
     {
+        // A session just begun comes to the front, over the window it was started from.
+        var session = _sim.World.TryGet<WorkSession>(_avatar, out var started) ? started.StartTick : -1;
+        if (session != _workFocusedFor)
+        {
+            _workFocusedFor = session;
+            ImGui.SetNextWindowFocus();
+        }
+        _workRoom = _hud.Room(Anchor.Bottom);
         _hud.Next(Anchor.Bottom);
         Panel.Begin($"{title}###work", Hud.Flags | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoNav);
         _hud.Took();
+        // Too tall for the screen last frame (a Steam Deck's 800 lines): drawn smaller till it fits.
+        Gui.PushScale(_workFit);
         WorkWindowDrawn(mouse);
         var pointer = mouse && UsingPointer;
-        Gui.Hints([.. hints.Select(h => (pointer ? MouseKeys(h.Keys) : WorkKeys(h.Keys), h.Does))]);
+        Gui.Hints(Gui.S(WorkHintsWidth), [.. hints.Select(h => (pointer ? MouseKeys(h.Keys) : WorkKeys(h.Keys), h.Does))]);
         ImGui.Spacing();
+    }
+
+    /// <summary>How wide a work window's row of hints runs before it wraps: about as wide as its picture.</summary>
+    private const float WorkHintsWidth = 440f;
+
+    /// <summary>The smallest a work window is shrunk to fit (<see cref="_workFit"/>).</summary>
+    private const float WorkFitLeast = 0.55f;
+
+    /// <summary>The scale the work window's picture is drawn at, shrunk when it ran past the room it has (<see cref="EndWork"/>).</summary>
+    private float _workFit = 1f;
+
+    /// <summary>The height the work window may take, this frame.</summary>
+    private float _workRoom = float.MaxValue;
+
+    /// <summary>The session the work window was last brought to the front for.</summary>
+    private long _workFocusedFor = -1;
+
+    /// <summary>
+    /// The work window's end: if what it held ran taller than the room it had, it's drawn that much
+    /// smaller from the next frame; with room to spare again, it grows back.
+    /// </summary>
+    private void EndWork()
+    {
+        var tall = ImGui.GetCursorPosY() + ImGui.GetStyle().WindowPadding.Y;
+        Gui.PopScale();
+        Panel.End();
+        if (tall <= 1f || _workRoom >= float.MaxValue)
+            return;
+        if (tall > _workRoom)
+            _workFit = Math.Max(WorkFitLeast, _workFit * _workRoom * 0.97f / tall);
+        else if (_workFit < 1f && tall < _workRoom * 0.85f)
+            _workFit = Math.Min(1f, _workFit * _workRoom * 0.92f / tall);
     }
 
     /// <summary>
@@ -828,7 +870,7 @@ public sealed partial class VillageGame
         _ => WorkKeys(keys),
     };
 
-    private static void EndWork() => Panel.End();
+
 
     private void RunBots()
     {

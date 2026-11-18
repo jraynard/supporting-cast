@@ -33,6 +33,7 @@ public sealed partial class VillageGame
     public override void DrawUi()
     {
         DrawDayTint();
+        DrawWorkFocus();
         if (_uiHidden)
             return; // camera mode's H: the world alone, names over heads included
         _renderer.DrawLabels(_camera, _sim, _time);
@@ -68,8 +69,12 @@ public sealed partial class VillageGame
         DrawMinimap();
         // Bottom centre, stacking upward: the build tools, the hotbar, the panel buttons, and the work in hand.
         DrawToolbar();
-        DrawHotbar();
-        DrawJournalBar();
+        // At work, the hotbar and the panel buttons step aside: the work window has the room (a Deck's 800 lines).
+        if (!Working)
+        {
+            DrawHotbar();
+            DrawJournalBar();
+        }
         if (HasAvatar && _sim.World.Has<ButtsTurn>(_avatar))
             DrawButtsHint();
         else

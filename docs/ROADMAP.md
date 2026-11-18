@@ -56,6 +56,13 @@ so far. Nobody new has tried them yet.
 ### 2. From testers
 Visual issues and requests from playtests, so they don't get lost between HISTORY.md and the Backlog.
 - [ ] **Flicker** at wall corners and on furniture, and the upper floors when walking past the inn.
+- [ ] **Asked-for pieces, by bots and the AI** (Deck playtest, Nov 2026): adventurers now buy off the shelf
+  themselves and, finding nothing, ask a shop a player keeps to make one by name (`Order.Wants`,
+  `ShopSystem.AskToMake`). Bot players don't answer those asks yet (they lapse, gently), and AI keepers never
+  stock a shelf, so nobody asks them. Teach `BotPlayer.Goods` to make to order, then let the AI keepers do it.
+- [ ] **The bot smith stalls on the smithy's heat** (`BotPlayer.Forge.TooHotToForge`): on a warm afternoon it
+  waits hours "letting the smithy cool" with a customer's blade in hand (and on `main` too, by luck less often).
+  `PartyLoopScenarioTests` seed 99 and the Reedmere `SeasonScenario` (Dread ends it before the dragon) tip on it.
 
 ### 3. The tuning playtest
 Rounds with friends over the internet, to prove the round and tune its numbers, then a pass on

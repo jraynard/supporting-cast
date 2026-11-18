@@ -49,7 +49,7 @@ public class HealthTests
         // From nearly white to on their feet in well under a day.
         sim.TickMany(SimClock.HoursToTicks(12));
         Assert.False(sim.World.Get<Creature>(abed).Downed, $"blood {sim.World.Get<Health>(abed).Blood:0.00}");
-        Assert.True(sim.World.Get<Creature>(floor).Downed);
+        // (Back up, they'd see to the one on the floor: WorkGivers.Emergency.)
     }
 
     [Fact]
@@ -122,6 +122,62 @@ public class HealthTests
         Assert.False(c.Downed, $"should be back up after a day (blood {h.Blood:F2}, pain {h.Pain:F2})");
         Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("bandaged"));
         Assert.True(sim.World.IsAlive(bed));
+    }
+
+    /// <summary>
+    /// Someone collapses in the night: the nearest villager wakes (whatever their work, none here),
+    /// binds the bleeding and carries them to a bed. A player who collapsed after a raid used to lie
+    /// in the road till morning.
+    /// </summary>
+    [Fact]
+    public void ASleeperWakesToBindAndCarryTheCollapsed()
+    {
+        var sim = Warm();
+        var bed = sim.SpawnStructure(sim.Thing("Bed"), C(20, 20));
+        var own = sim.SpawnStructure(sim.Thing("Bed"), C(8, 8));
+        sim.RebuildDerivedIfNeeded();
+        var sleeper = Person(sim, C(8, 8), "Sleeper");
+        sim.World.Get<Needs>(sleeper).Values[sim.Defs.Need("Rest").Index] = 0.2f;
+        AiSystem.Order(sim, sleeper, new SleepJob(own));
+        sim.TickMany(30);
+        Assert.True(sim.World.Get<Mind>(sleeper).Asleep);
+
+        var patient = Person(sim, C(5, 5));
+        HealthSystem.Damage(sim, patient, 18, DamageType.Cut, Part(sim, patient, "LeftLeg"));
+        var h = sim.World.Get<Health>(patient);
+        h.Blood = 0.4f;
+        sim.TickMany(60);
+        Assert.True(sim.World.Get<Creature>(patient).Downed);
+
+        var wasInBed = false;
+        for (var t = 0; t < SimClock.HoursToTicks(2) && !wasInBed; t += 30)
+        {
+            sim.TickMany(30);
+            wasInBed |= HealthSystem.InBed(sim, patient);
+        }
+        Assert.True(wasInBed, $"carried to a bed (sleeper: {sim.World.Get<Mind>(sleeper).Job?.Report ?? "idle"}, {sim.Ai.LastFailure.GetValueOrDefault(sleeper)})");
+        Assert.Equal(0, h.BleedPerHour);
+    }
+
+    /// <summary>On their feet but bleeding out, with no foe about: someone nearby binds it.</summary>
+    [Fact]
+    public void SomeoneBindsAVillagerBleedingOutOnTheirFeet()
+    {
+        var sim = Warm();
+        var patient = Person(sim, C(5, 5));
+        var helper = Person(sim, C(12, 5), "Helper");
+        HealthSystem.Damage(sim, patient, 14, DamageType.Cut, Part(sim, patient, "LeftLeg"));
+        HealthSystem.Damage(sim, patient, 14, DamageType.Cut, Part(sim, patient, "RightLeg"));
+        var h = sim.World.Get<Health>(patient);
+        h.Blood = 0.55f;
+        sim.TickMany(1);
+        Assert.False(sim.World.Get<Creature>(patient).Downed);
+        Assert.True(h.BleedPerHour > 0 && h.Blood / h.BleedPerHour <= WorkGivers.CriticalHours, $"bleeding {h.BleedPerHour:0.00}/h of {h.Blood:0.00}");
+
+        for (var t = 0; t < SimClock.HoursToTicks(1) && h.BleedPerHour > 0; t += 30)
+            sim.TickMany(30);
+        Assert.Equal(0, h.BleedPerHour);
+        Assert.False(sim.World.Get<Creature>(helper).Downed);
     }
 
     /// <summary>The bed burns down while the doctor walks to the patient: the rescue fails cleanly instead of throwing.</summary>

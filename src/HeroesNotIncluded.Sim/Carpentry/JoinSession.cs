@@ -18,6 +18,12 @@ public enum JoinWork : byte
 
     /// <summary>A split board on a party's wagon: a plank across it, pegged (driven only).</summary>
     Board,
+
+    /// <summary>
+    /// A worn club or staff brought to the bench (<see cref="JoinSession.Mending"/>): the split in its
+    /// haft cut clean and a peg driven through it, one joint.
+    /// </summary>
+    Haft,
 }
 
 /// <summary>
@@ -62,6 +68,9 @@ public sealed class JoinSession : WorkSession
 
     /// <summary>The wagon (an axle, a board); Entity.Null at the bench.</summary>
     public Entity Wagon { get; set; } = Entity.Null;
+
+    /// <summary>The worn club or staff being re-pegged (<see cref="JoinWork.Haft"/>); Entity.Null otherwise.</summary>
+    public Entity Mending { get; set; } = Entity.Null;
 
     public JoinWork Work { get; set; }
 
@@ -172,6 +181,7 @@ public sealed class JoinSession : WorkSession
     {
         JoinWork.Board => $"Pegging the board (peg {Math.Min(Joint + 1, Joints)} of {Joints})",
         JoinWork.Axle => Cutting ? $"Trimming the axle's arm (end {Math.Min(Joint + 1, Joints)} of {Joints})" : "Driving the hub on",
+        JoinWork.Haft => Cutting ? "Cutting the split haft clean" : "Re-pegging the haft",
         _ => Cutting ? $"Chopping a mortise (joint {Math.Min(Joint + 1, Joints)} of {Joints})" : "Driving the tenon home",
     };
 
@@ -198,6 +208,8 @@ public sealed class JoinSession : WorkSession
         {
             JoinWork.Axle => Wagons.AxleProblem(sim, Worker, Wagon) == null,
             JoinWork.Board => Wagons.BoardProblem(sim, Worker, Wagon) == null,
+            JoinWork.Haft => Carpenters.IsBench(sim, Station) && AvatarSystem.InReach(sim, w.Get<Position>(Worker).Cell, Station)
+                && w.IsAlive(Mending) && Inventory.OnPerson(sim, Worker, Mending),
             _ => Carpenters.IsBench(sim, Station) && AvatarSystem.InReach(sim, w.Get<Position>(Worker).Cell, Station)
                 && Refurnishing.MakeProblem(sim, Worker, Piece) == null,
         };
@@ -314,6 +326,12 @@ public sealed class JoinSession : WorkSession
             case JoinWork.Board:
                 Wagons.BoardPegged(sim, Worker, Wagon, Quality);
                 break;
+            case JoinWork.Haft:
+                if (Combat.WeaponWear.MendAtBench(sim, Worker, Station, Mending, Quality))
+                    sim.Messages.Tell(Worker, MessageKind.Info, Splits > 0 ? $"The peg's in, but the haft split again driving it. The {sim.LabelOf(Mending)} will hold, for now."
+                        : Quality >= 0.85f ? $"The {sim.LabelOf(Mending)}'s haft is pegged tight. Sound as new."
+                        : $"The {sim.LabelOf(Mending)}'s haft is pegged. It'll serve.", sim.LocationOf(Worker));
+                break;
             default:
                 Refurnishing.Made(sim, Worker, Piece, Loss, Quality);
                 break;
@@ -345,13 +363,14 @@ public sealed class JoinSession : WorkSession
         w.Int(Jolts);
         w.Float(LastLift);
         w.Int(LastLiftStep);
+        w.Entity(Mending);
     }
 
     protected override void ReadState(SaveReader r)
     {
         Station = r.Entity();
         Wagon = r.Entity();
-        Work = (JoinWork)Math.Min(r.Byte(), (byte)JoinWork.Board);
+        Work = (JoinWork)Math.Min(r.Byte(), (byte)JoinWork.Haft);
         Piece = r.String();
         Loss = r.Int();
         Joints = r.Int();
@@ -377,5 +396,7 @@ public sealed class JoinSession : WorkSession
             LastLift = r.Float();
             LastLiftStep = r.Int();
         }
+        if (r.Version >= 61) // a club's haft re-pegged (format 61)
+            Mending = r.Entity();
     }
 }

@@ -89,8 +89,10 @@ public class BotBenchTests
         Assert.True(Run(sim, bot, () => MadeAndWaiting(sim, me).Count >= 1, SimClock.TicksPerHour * 6), Why(sim, bot));
 
         // A party in town: once they've had time to see the innkeeper about work, it goes out, and the
-        // one with the club wants it; the smith hands it over for the price.
-        PartyInTown(sim, "GildedSpurs");
+        // one with the club wants it, and takes it off the shelf for the price.
+        // The one with the club keeps a fuller purse: they buy their food and drink off the shelves at once now.
+        var club = PartyInTown(sim, "GildedSpurs").Single(e => sim.World.TryGet<Equipment>(e, out var eq) && sim.World.Get<Thing>(eq.Weapon).Def.Name == "Club");
+        Inventory.Stow(sim, club, sim.CreateItem(sim.Defs.Thing("SilverCoin"), 30));
         var purse = Coin.Count(sim, me);
         var seen = new HashSet<Entity>();
         Order? Sold() => sim.Shops.All.FirstOrDefault(o => o.Kind.Kind == ServiceKind.Goods && o.Status == OrderStatus.Done && o.Assignee == me);

@@ -192,7 +192,8 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawStationWindow()
     {
-        if (_openStation.IsNull)
+        // Set aside while the work it started is in hand (it comes back after): nothing over the work window.
+        if (_openStation.IsNull || Working)
             return;
         var w = _sim.World;
         if (!HasAvatar || !Crafting.IsStation(_sim, _openStation)
@@ -626,14 +627,20 @@ public sealed partial class VillageGame
         foreach (var (item, cost) in repairs)
         {
             ImGui.PushID(item.Index);
-            if (ImGui.Button("Mend"u8, in _autoSize))
+            var none = RepairCommand.NoHandGame(_sim, _avatar, _openStation, item);
+            ImGui.BeginDisabled(none);
+            if (ImGui.Button("Mend"u8, in _autoSize) && !none)
                 Issue(new RepairCommand(_avatar, _openStation, item));
+            ImGui.EndDisabled();
             GuideGlow(TutorialStep == "mend");
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip(Sim.Work.Smithing.AppliesToRepair(_sim, _avatar, _openStation)
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                Tip(none ? "No hand-work for this yet: it can't be mended here."
+                    : Sim.Work.Smithing.AppliesToRepair(_sim, _avatar, _openStation)
                     ? "Take it in your tongs: heat it, then hammer out the chips on the anvil. It comes off dull: grind it after."
                     : Sim.Carpentry.Carpenters.AppliesToRepair(_sim, _avatar, _openStation, item)
-                    ? "Put it on the tillering stick: scrape back the limbs where they've set stiff, then string it again."
+                    ? Sim.Carpentry.Carpenters.IsBow(_sim.World.Get<Thing>(item).Def)
+                        ? "Put it on the tillering stick: scrape back the limbs where they've set stiff, then string it again."
+                        : "Cut the split in the haft clean with the chisel, then drive a peg through it."
                     : Sim.Tinkering.Tinkers.AppliesToRepair(_sim, _avatar, _openStation, item)
                     ? "Take the lock apart: seat the nut and the trigger again, then wind the spring and latch it."
                     : Controls.Keys("Hold ~F~ at the station to work; the material is used once it's done."));

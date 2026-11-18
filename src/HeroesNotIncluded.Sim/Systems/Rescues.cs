@@ -19,14 +19,52 @@ public static class Rescues
         return them.Def.Race == Race.Human && by.Def.Race == Race.Human && by.Able;
     }
 
-    /// <summary>The bed <paramref name="carrier"/> can take <paramref name="patient"/> to, or Entity.Null.</summary>
+    /// <summary>
+    /// The bed <paramref name="carrier"/> can take <paramref name="patient"/> to, or Entity.Null: a
+    /// shrine's pallet if one's free (where the empath sees to the hurt, and nobody sleeps the night
+    /// on it), else the nearest free bed.
+    /// </summary>
     public static Entity BedFor(Simulation sim, Entity carrier, Entity patient)
     {
         var w = sim.World;
         var c = w.Get<Creature>(patient);
-        var bed = AiQueries.FindFreeBed(sim, patient, prisoner: c.Faction == Faction.Prisoner);
+        var bed = c.Faction == Faction.Prisoner ? Entity.Null : FreePallet(sim, carrier);
+        if (bed.IsNull)
+            bed = AiQueries.FindFreeBed(sim, patient, prisoner: c.Faction == Faction.Prisoner);
         // The patient's own reach may count the sky (a flyer's); the one carrying has to get there.
         return !bed.IsNull && Navigation.CanReach(sim, carrier, w.Get<Position>(carrier).Cell, w.Get<Thing>(bed).Cell, PathEnd.OnTile) ? bed : Entity.Null;
+    }
+
+    /// <summary>The nearest free shrine pallet (<see cref="Shops.ShopSystem.IsForPatients"/>) the carrier can get to, or Entity.Null.</summary>
+    private static Entity FreePallet(Simulation sim, Entity carrier)
+    {
+        var w = sim.World;
+        var from = w.Get<Position>(carrier).Cell;
+        var best = Entity.Null;
+        var bestDist = int.MaxValue;
+        foreach (var e in w.Query<Thing>())
+        {
+            var t = w.Get<Thing>(e);
+            if (t.Def.Building is not { IsBed: true } || w.Has<Construction>(e) || !Shops.ShopSystem.IsForPatients(sim, e)
+                || sim.Reservations.IsReservedByOther(e, carrier) || LainOn(sim, t.Cell))
+                continue;
+            var d = Maps.Map.Distance(from, t.Cell);
+            if (d < bestDist && Navigation.CanReach(sim, carrier, from, t.Cell, PathEnd.OnTile))
+            {
+                best = e;
+                bestDist = d;
+            }
+        }
+        return best;
+    }
+
+    /// <summary>Someone's lying in this cell already (a patient on the pallet, a customer waiting to be seen to).</summary>
+    private static bool LainOn(Simulation sim, int3 cell)
+    {
+        foreach (var e in sim.Creatures())
+            if (sim.World.Get<Position>(e).Cell == cell && !sim.World.Has<Carried>(e))
+                return true;
+        return false;
     }
 
     /// <summary>Who or what <paramref name="carrier"/> has in their arms (a <see cref="Carried"/> creature), or Entity.Null.</summary>

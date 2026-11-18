@@ -128,36 +128,29 @@ public class GoodsTests
     }
 
     [Fact]
-    public void AnAdventurerBuysAnUpgradeOnShowAndKeepsWhatItReplaces()
+    public void AnAdventurerBuysAnUpgradeOffTheShelfThemselvesAndKeepsWhatItReplaces()
     {
         var (sim, me, smithy, party) = Town("Blacksmith");
         var buyer = ClubBearer(sim, party);
         var club = sim.World.Get<Equipment>(buyer).Weapon;
         var mace = InTheSmithy(sim, smithy, "BronzeMace");
         sim.ApplyNow(new SetItemPriceCommand(me, mace, 10, true));
+        var purse = Coin.Count(sim, me);
 
-        TickUntil(sim, () => OrderFor(sim, mace) != null, 2);
+        // Nobody serves them: they walk over, take it down and pay Ana for it.
+        TickUntil(sim, () => OrderFor(sim, mace) is { IsOpen: false }, 6);
         var order = OrderFor(sim, mace);
-        Assert.NotNull(order);
-        Assert.Equal(buyer, order.Poster);
+        Assert.True(order is { Status: OrderStatus.Done }, $"{order?.Status}");
+        Assert.Equal(buyer, order!.Poster);
         Assert.Equal(smithy, order.Where);
         Assert.Equal(10, order.Price);
-        Assert.Contains(order.Id, Perception.For(sim, me).Orders().Select(o => o.Id)); // word reaches the smith
-
-        // Ana takes it down and hands it over.
-        sim.World.Get<Carrying>(me).Item = Inventory.PickUp(sim, me, mace, sim.World.Get<Carrying>(me).Item);
-        var at = sim.World.Get<Position>(buyer).Cell;
-        var cell = sim.SpiralFrom(at, 3).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z);
-        sim.World.Get<Position>(me).Cell = cell;
-        sim.World.Get<Position>(me).Pos = Position.CenterOf(cell);
-        var purse = Coin.Count(sim, me);
-        sim.ApplyNow(new GiveCommand(me, buyer, mace, 1));
-
-        Assert.Equal(OrderStatus.Done, order.Status);
         Assert.Equal(mace, sim.World.Get<Equipment>(buyer).Weapon);
         Assert.True(Inventory.OnPerson(sim, buyer, club), "they keep their old club");
         Assert.False(sim.World.Has<ForSale>(mace));
         Assert.Equal(purse + 10, Coin.Count(sim, me));
+        // Ana hears of the sale, and sees it in the shop as theirs, by name.
+        var known = Perception.For(sim, me).Orders().Single(o => o.Id == order.Id);
+        Assert.Contains("bronze mace", known.KindLabel);
     }
 
     [Fact]
@@ -201,29 +194,95 @@ public class GoodsTests
     }
 
     [Fact]
-    public void TakingAPieceOffSaleCallsOffItsOrder()
+    public void TakingAPieceOffSaleBeforeTheyReachItKeepsIt()
     {
-        var (sim, me, smithy, _) = Town("Blacksmith");
+        var (sim, me, smithy, party) = Town("Blacksmith");
+        var buyer = ClubBearer(sim, party);
         var mace = InTheSmithy(sim, smithy, "BronzeMace");
         sim.ApplyNow(new SetItemPriceCommand(me, mace, 10, true));
-        TickUntil(sim, () => OrderFor(sim, mace) != null, 2);
-        var order = OrderFor(sim, mace)!;
+        TickUntil(sim, () => sim.Shops.BrowsingFor(buyer) != null, 2);
+        Assert.Equal(mace, sim.Shops.BrowsingFor(buyer)?.Item);
         sim.ApplyNow(new SetItemPriceCommand(me, mace, 0, false));
-        sim.TickMany(SimClock.TicksPerHour / 6);
-        Assert.Equal(OrderStatus.Cancelled, order.Status);
+        sim.TickMany(SimClock.TicksPerHour);
+        Assert.Null(sim.Shops.BrowsingFor(buyer));
+        Assert.NotEqual(mace, sim.World.Get<Equipment>(buyer).Weapon);
+        Assert.Equal(smithy, Buildings.Of(sim, sim.World.Get<Stored>(mace).In));
     }
 
     [Fact]
     public void GearForSaleSurvivesASave()
     {
-        var (sim, me, smithy, _) = Town("Blacksmith");
+        var (sim, me, smithy, party) = Town("Blacksmith");
+        var buyer = ClubBearer(sim, party);
         var mace = InTheSmithy(sim, smithy, "BronzeMace");
         sim.ApplyNow(new SetItemPriceCommand(me, mace, 10, true));
-        TickUntil(sim, () => OrderFor(sim, mace) != null, 2);
+        TickUntil(sim, () => sim.Shops.BrowsingFor(buyer) != null, 2);
 
         var loaded = SaveLoadTests.RoundTrip(sim);
         Assert.Equal(sim.World.Get<ForSale>(mace), loaded.World.Get<ForSale>(mace));
         Assert.Equal(smithy, Goods.ShownIn(loaded, mace));
+        Assert.Equal(sim.Shops.BrowsingFor(buyer), loaded.Shops.BrowsingFor(buyer));
+        SaveLoadTests.AssertSameFuture(sim, loaded, 2);
+    }
+
+    /// <summary>The first open ask for a piece by name, by anyone.</summary>
+    private static Order? Asked(Simulation sim) => sim.Shops.All.FirstOrDefault(o => o.IsOpen && o.Kind.Kind == ServiceKind.Goods && o.Wants != null);
+
+    [Fact]
+    public void WithNothingOnShowTheyAskForAPieceByName()
+    {
+        var (sim, me, _, _) = Town("Blacksmith");
+        TickUntil(sim, () => Asked(sim) != null, 12);
+        var order = Asked(sim);
+        Assert.NotNull(order);
+        var label = Goods.WishLabel(order!.Wants!, order.WantsMending);
+        Assert.Contains(label, order.Text);
+        Assert.Equal(ShopSystem.BuildingOf(sim, sim.Defs.Building("Smithy")), order.Where); // Ana's is the only shop a player keeps
+        Assert.False(ShopSystem.WaitsInLine(sim, order), "it has to be made: they don't stand in line for it");
+        // Ana knows of it, by name, not as "gear".
+        var known = Perception.For(sim, me).Orders().Single(o => o.Id == order.Id);
+        Assert.Equal(Goods.WithArticle(label), known.KindLabel);
+        Assert.Equal(order.Wants!.Sprite, known.Icon);
+
+        // Made and handed over, it's done and paid for.
+        var piece = sim.CreateItem(order.Wants!, 1);
+        sim.World.Get<Carrying>(me).Item = Inventory.PickUp(sim, me, piece, sim.World.Get<Carrying>(me).Item);
+        var at = sim.World.Get<Position>(order.Poster).Cell;
+        var cell = sim.SpiralFrom(at, 3).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z);
+        sim.World.Get<Position>(me).Cell = cell;
+        sim.World.Get<Position>(me).Pos = Position.CenterOf(cell);
+        Assert.Same(order, ShopSystem.AskedFor(sim, order.Poster, piece));
+        var purse = Coin.Count(sim, me);
+        sim.ApplyNow(new GiveCommand(me, order.Poster, piece, 1));
+        Assert.Equal(OrderStatus.Done, order.Status);
+        Assert.Equal(purse + order.Price, Coin.Count(sim, me));
+    }
+
+    [Fact]
+    public void APieceAskedForAndPutOnShowIsBoughtByWhoAskedForIt()
+    {
+        var (sim, me, smithy, _) = Town("Blacksmith");
+        TickUntil(sim, () => Asked(sim) != null, 12);
+        var order = Asked(sim)!;
+        Assert.NotNull(order);
+        var piece = InTheSmithy(sim, smithy, order.Wants!.Name);
+        sim.ApplyNow(new SetItemPriceCommand(me, piece, Math.Min(order.Price, 1), true));
+        TickUntil(sim, () => !order.IsOpen, 6);
+        Assert.Equal(OrderStatus.Done, order.Status);
+        Assert.True(Inventory.OnPerson(sim, order.Poster, piece) || sim.World.Get<Equipment>(order.Poster).Weapon == piece
+            || sim.Worn(order.Poster).Contains(piece));
+    }
+
+    [Fact]
+    public void AnAskForAPieceSurvivesASave()
+    {
+        var (sim, _, _, _) = Town("Blacksmith");
+        TickUntil(sim, () => Asked(sim) != null, 12);
+        var order = Asked(sim)!;
+        var loaded = SaveLoadTests.RoundTrip(sim);
+        var again = loaded.Shops.Find(order.Id)!;
+        Assert.Equal(order.Wants, again.Wants);
+        Assert.Equal(order.WantsMending, again.WantsMending);
         SaveLoadTests.AssertSameFuture(sim, loaded, 2);
     }
 }

@@ -630,7 +630,7 @@ public sealed partial class VillageGame
     /// </summary>
     private void DrawTinkerWindow()
     {
-        if (_tinkerAt.IsNull)
+        if (_tinkerAt.IsNull || Working)
             return;
         var w = _sim.World;
         if (!HasAvatar || !w.IsAlive(_tinkerAt) || !AvatarSystem.InReach(_sim, w.Get<Position>(_avatar).Cell, _tinkerAt)

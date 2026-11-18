@@ -281,6 +281,10 @@ public sealed class HumanBrain : IBrain
         if (creature.Faction == Faction.Village && (Militia.Stashes.ArmFrom(sim, pawn) ?? Militia.Muster.ArmFromRack(sim, pawn)) is { } arm)
             return arm;
 
+        // 1c. Someone of ours down, or bleeding out: before food or sleep, at any hour.
+        if (WorkGivers.Emergency(sim, pawn) is { } help)
+            return help;
+
         // 2. Urgent needs. 
         if (needs.Get(food) < food.UrgentBelow && EatSomething(sim, pawn, def) is { } eat)
             return eat;
@@ -493,6 +497,10 @@ public sealed class RaiderBrain : IBrain
                 return new EquipJob(weapon);
         }
         var creature = w.Get<Creature>(pawn);
+        // Hurt badly enough to run, a raider's done with the town: it's leaving, and the town stops
+        // counting it a threat (it used to keep villagers hiding, and the raid unfinished, as it limped off).
+        if (creature.Faction == Faction.Raider && WantsToFlee(sim, pawn) && !w.Has<Combat.Leaving>(pawn))
+            w.Add(pawn, new Combat.Leaving());
         if (WantsToFlee(sim, pawn) || w.Has<Combat.Leaving>(pawn) || w.Has<Escaping>(pawn))
             return sim.NearestEdge(tile) is { } edge ? new LeaveMapJob(edge) : null;
 

@@ -81,8 +81,11 @@ public sealed partial class VillageGame
     private void DrawOrderCard(KnownOrder e, bool open, long now)
     {
         var who = e.Mine ? "You" : e.PosterName;
-        var title = $"{who} want{(e.Mine ? "" : "s")} {e.KindLabel}";
+        var title = e.Kind == Sim.Defs.ServiceKind.Goods && e.Status == OrderStatus.Done && e.KindLabel.StartsWith("the ")
+            ? $"{who} bought {e.KindLabel}" : $"{who} want{(e.Mine ? "" : "s")} {e.KindLabel}";
         var tip = $"\u201C{e.Text}\u201D";
+        if (open && e.Kind == Sim.Defs.ServiceKind.Goods && !e.Mine)
+            tip += Controls.Keys("\nMake one, then hand it to them (~F~ beside them, holding it), or put it on your wares shelf: they'll come and buy it.");
         if (open && e.Kind == Sim.Defs.ServiceKind.MixedDrink && View.WantedDrink(e.Id) is { } named)
         {
             title += $": {named.Label}";
@@ -98,7 +101,7 @@ public sealed partial class VillageGame
                 OrderStatus.Refused => "Turned away: you were out.",
                 _ => "Called off.",
             };
-        CardHead(ServiceIcon(e.Kind), open, open ? (e.Mine ? Theme.Good : Theme.Text) : Theme.Dim, title, e.Price, tip);
+        CardHead(OrderIcon(e), open, open ? (e.Mine ? Theme.Good : Theme.Text) : Theme.Dim, title, e.Price, tip);
         if (open)
         {
             var (share, color, words) = TimeLeft(e.PostedTick, e.Deadline, now);
@@ -151,23 +154,11 @@ public sealed partial class VillageGame
             Tip(tip);
     }
 
-    private const string TakeLabel = "I'll do it";
-
-    /// <summary>
-    /// The button that takes on an order or a favour, in words: as a bare green check, playtesters
-    /// didn't know it was there to press.
-    /// </summary>
-    private void TakeButton(string id, string why, Action press)
-    {
-        ImGui.SameLine(0, Gui.S(8));
-        if (ImGui.SmallButton(TakeLabel + id))
-            press();
-        if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-            Tip(why);
-    }
+    /// <summary>The green check that takes on an order or a favour ("I'll do it", in its tip).</summary>
+    private void TakeButton(string id, string why, Action press) => CardIcon(id, "ui/icon_good", true, $"I'll do it.\n{why}", press);
 
     /// <summary>Room the take button needs at the end of a card's time bar.</summary>
-    private static float TakeButtonWidth => SmallButtonWidth(TakeLabel);
+    private static float TakeButtonWidth => CardIconSize + Gui.S(8);
 
     /// <summary>
     /// Under the orders (and the favours), how many are over with, and a link to show or hide them:
@@ -457,13 +448,16 @@ public sealed partial class VillageGame
             var forYou = o.MineToDo || (o.AssigneeName.Length == 0 && Serves(trade, o.Kind));
             var left = TimeLeft(o.PostedTick, o.Deadline, now).Share;
             // The newest want wins if one customer has two.
-            bubbles[o.Poster] = new WorldRenderer.OrderBubble(ServiceIcon(o.Kind), left, forYou);
+            bubbles[o.Poster] = new WorldRenderer.OrderBubble(OrderIcon(o), left, forYou);
         }
     }
 
     /// <summary>Is this the trade's work: served at its workplace, and one of the services it sees to there?</summary>
     private bool Serves(Sim.Defs.TradeDef? trade, Sim.Defs.ServiceKind kind) =>
         trade is { HasWorkplace: true } && _sim.Defs.Service(kind).AtRole == trade.Role && trade.Serving(kind);
+
+    /// <summary>An order's picture: the piece it's about, if it names one, else the service's own icon.</summary>
+    private string OrderIcon(KnownOrder o) => o.Icon.Length > 0 && Gui.TrySprite(o.Icon, out _) ? o.Icon : ServiceIcon(o.Kind);
 
     /// <summary>The service's own icon (services.json), or a speech mark for one without.</summary>
     private string ServiceIcon(Sim.Defs.ServiceKind kind) =>
@@ -508,8 +502,20 @@ public sealed partial class VillageGame
                     : View.Condition(item) is { } c ? $"It's {c}. They'll look it over: mended, they pay; if not, they'll say what's wrong." : "They'll look it over before they pay.");
             ImGui.PopID();
         }
+        // A piece they asked for by name, anywhere on you: hand it over for what they said they'd pay.
+        foreach (var item in OnMe())
+        {
+            if (ShopSystem.AskedFor(_sim, other, item) is not { } asked || w.Has<Entrusted>(item))
+                continue;
+            ImGui.PushID(item.Index + 200000);
+            if (ImGui.Button($"Hand over the {_sim.LabelOf(item)} ({asked.Price} silver)", in _autoSize))
+                Issue(new GiveCommand(_avatar, other, item, 1));
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip("It's what they asked for: they'll pay what they said.");
+            ImGui.PopID();
+        }
         var held = w.Get<Carrying>(_avatar).Item;
-        if (!held.IsNull && w.Has<Stack>(held) && !w.Has<Entrusted>(held))
+        if (!held.IsNull && w.Has<Stack>(held) && !w.Has<Entrusted>(held) && ShopSystem.AskedFor(_sim, other, held) == null)
         {
             var count = w.Get<Stack>(held).Count;
             if (ImGui.Button($"Hand over the {w.Get<Thing>(held).Label} ({count})", in _autoSize))
