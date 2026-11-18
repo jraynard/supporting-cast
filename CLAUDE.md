@@ -181,6 +181,9 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     `yield break`, and check `Alive(target)` after every wait. `ReleasePawn` is everything ending a
     job does to the world. "Job" here is an AI task; a player's role is a **`Trade`**.
   - Brains (`Ai/Brains.cs`): emergencies, urgent needs, gear, work by priority, comfort, idle.
+  - Eating and sleeping are bonuses, never chores (`Systems/WellBeing`): `WellRested` after two hours'
+    sleep, `WellFed` by the dish and the cook's grade, each quickening work and walking a little.
+    `Needs` is only the AI's appetite and drowsiness: never show it to a player or make it a penalty.
   - Health: injuries on body parts; hurt bodies only through `HealthSystem.Damage`.
   - Buckets (`Environment/Buckets`) are filled at the well and thrown (`ThrowSession`); water soaks
     cells (`FireSystem.Soak`), which then have no fuel till they dry. The AI's firefighting uses them.

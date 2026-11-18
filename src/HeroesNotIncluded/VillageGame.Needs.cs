@@ -9,7 +9,7 @@ namespace HeroesNotIncluded;
 
 /// <summary>
 /// Adventure mode's character card, top left: who you are (portrait, name, trade, purse) and your
-/// needs, mood, warmth and wounds at a glance, so you needn't select yourself. Click the portrait
+/// rest and meals, mood, warmth and wounds at a glance, so you needn't select yourself. Click the portrait
 /// or name for the full inspector.
 /// </summary>
 public sealed partial class VillageGame
@@ -37,6 +37,13 @@ public sealed partial class VillageGame
         }
         else if (felt < tol.SafeMax - 5)
             _heatWarned = false;
+    }
+
+    /// <summary>"5h left" or "under an hour": a buff's time, in rounded words.</summary>
+    private string HoursLeft(long until)
+    {
+        var h = WellBeing.HoursLeft(_sim, until);
+        return h < 1f ? "under an hour" : $"{MathF.Round(h):F0}h left";
     }
 
     private void DrawNeedsPanel()
@@ -107,26 +114,27 @@ public sealed partial class VillageGame
             ruled = false;
         }
 
-        // Needs.
-        var needs = w.Get<Needs>(_avatar);
-        foreach (var rate in c.Def.Needs)
+        // Well rested, well fed: bonuses, never chores (WellBeing). Shown only while they last; going without costs nothing.
+        if (w.TryGet<WellRested>(_avatar, out var rested) && rested.Until > _sim.Clock.Tick)
         {
-            var def = rate.NeedDef;
-            var v = needs.Get(def);
-            if (!all && v >= def.SeekBelow)
-                continue;
             Below();
-            var color = v < def.UrgentBelow ? Bad : v < def.SeekBelow ? Warn : Good;
-            HudBar(Capitalized(def.Label), v, color, $"{v * 100:F0}%");
+            TextC(Good, $"Well rested · {HoursLeft(rested.Until)}");
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip(def.Name switch
-                {
-                    "Food" => v < def.UrgentBelow ? Controls.Keys("Starving: eat now (pick Eat on some food, ~F~ at the bread crock at home, or ~F~ at the inn's serving hatch for a meal), or you'll start to waste away.")
-                        : v < def.SeekBelow ? Controls.Keys("Hungry: time to eat something. There's bread in the crock at home (~F~ there), and the inn serves hot meals at its hatch (~F~ there to order). The tag points the way.") : "Fed.",
-                    "Rest" => v < def.UrgentBelow ? Controls.Keys("Exhausted: sleep (a bed with ~F~, or ~N~ on the ground).")
-                        : v < def.SeekBelow ? "Tired: find a bed soon." : "Rested.",
-                    _ => $"{Capitalized(def.Label)}: {v * 100:F0}%",
-                });
+                Tip($"You slept {WellBeing.SleepHours:F0} hours or more: a little quicker on your feet and at your work, and in better spirits, for {WellBeing.RestedHours:F0} hours after waking.");
+        }
+        if (w.TryGet<WellFed>(_avatar, out var fed) && fed.Until > _sim.Clock.Tick)
+        {
+            Below();
+            TextC(Good, $"{Capitalized(WellBeing.Tier(fed.Strength))} · {HoursLeft(fed.Until)}");
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip($"A meal still sitting well: quicker on your feet and at your work, the more the better it was. A finer dish from the cook does more than bread, and nothing lesser will top it up till it wears off.");
+        }
+        else if (all)
+        {
+            Below();
+            TextC(Ui.Theme.Dim, "Not fed");
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
+                Tip(Controls.Keys("You don't need to eat, but a meal does you good for a few hours: bread from the crock at home (~F~ there), or a hot dish at the inn's serving hatch (~F~ there to order). The better the cooking, the more good it does."));
         }
 
         // Wind, in a fight or while it's coming back: what's left to swing, guard and dodge with.

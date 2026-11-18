@@ -120,6 +120,7 @@ public sealed class MovementSystem : ISimSystem
             speed *= 0.85f;
         if (w.Has<Components.FoodPoisoned>(e))
             speed *= FoodPoisoning.MoveFactor(sim, e);
+        speed *= WellBeing.MoveFactor(sim, e);
         foreach (var load in w.Each<Carried>())
             if (w.Get<Carried>(load).By == e)
             {
@@ -438,7 +439,8 @@ public sealed class AiSystem : ISimSystem
 }
 
 /// <summary>
-/// Needs decay, sleep recovery, starvation, exposure damage, natural healing and death.
+/// Needs decay (the AI's appetite and drowsiness, never a penalty: <see cref="WellBeing"/>), sleep
+/// recovery, exposure damage, natural healing and death.
 /// </summary>
 public sealed class NeedsSystem : ISimSystem
 {
@@ -451,7 +453,6 @@ public sealed class NeedsSystem : ISimSystem
     {
         var w = sim.World;
         var rest = sim.Defs.Need("Rest");
-        var food = sim.Defs.Need("Food");
         var fires = Warmth.Sources(sim);
         foreach (var e in sim.Creatures())
         {
@@ -487,7 +488,7 @@ public sealed class NeedsSystem : ISimSystem
                     w.Get<Position>(e).Cell
                 );
             }
-            else if (needs.Get(food) > 0.1f)
+            else
             {
                 c.Hp = Math.Min(c.Def.MaxHp, c.Hp + 12f * c.Def.MaxHp / 100f / UpdatesPerDay);
             }

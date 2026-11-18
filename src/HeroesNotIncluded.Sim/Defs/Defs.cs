@@ -967,6 +967,12 @@ public sealed class ThingDef : Def
     /// <summary>Food value per unit, as a fraction of a full food need.</summary>
     public float Nutrition { get; set; }
 
+    /// <summary>
+    /// How well fed a plain one leaves you (0..1, <see cref="Systems.WellBeing"/>), before the cook's grade
+    /// and the house dish: a raw snack little, bread more, a stew or a pie the most.
+    /// </summary>
+    public float WellFed { get; set; }
+
     public bool IsMeat { get; set; }
 
     /// <summary>A cooked meal: people reach for it first, and it's a pleasure rather than raw meat.</summary>

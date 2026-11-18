@@ -485,6 +485,12 @@ internal static class ComponentCodecs
         Codec("LookedAs", (w, l) => w.Int(l.Id), r => new LookedAs { Id = r.Int() }),
         Codec("FeastDue", (w, f) => w.Int(f.Party), r => new Hospitality.FeastDue { Party = r.Int() }),
         Codec("Nourished", (w, n) => w.Long(n.Until), r => new Work.Nourished { Until = r.Long() }),
+        Codec("WellRested", (w, n) => w.Long(n.Until), r => new Systems.WellRested { Until = r.Long() }),
+        Codec("WellFed", (w, n) =>
+        {
+            w.Long(n.Until);
+            w.Float(n.Strength);
+        }, r => new Systems.WellFed { Until = r.Long(), Strength = Math.Clamp(r.Float(), 0f, 1f) }),
         Codec("Smoking", (w, s) => w.Float(s.Hours), r => new Work.Smoking { Hours = Math.Clamp(r.Float(), 0f, 1000f) }),
         Codec("ReportPending", (w, p) =>
         {

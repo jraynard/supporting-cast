@@ -148,7 +148,7 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
     {
         Shout(sim, me, view, now);
         if (Douse(sim, me, view, now) || Safety(sim, me, view, now) || BindOwn(sim, me) || PitchIn(sim, me, view, now)
-            || SeeTheEmpath(sim, me, now) || Bedtime(sim, me, now) || Supper(sim, me, now))
+            || SeeTheEmpath(sim, me, now) || Bedtime(sim, me, now))
             return;
         var festival = sim.Round.Phase == Round.RoundPhase.Festival;
         if (!festival)
@@ -162,6 +162,9 @@ public sealed partial class BotPlayer(Func<Simulation> world, Guid player, Actio
             return;
         if (_task == 0)
             TakeOn(sim, me, view, now);
+        // A meal's a bonus (WellBeing): only with nothing better to do.
+        if (_task == 0 && Supper(sim, me, now))
+            return;
         if (_task == 0 && festival)
         {
             Festival(sim, me, now);

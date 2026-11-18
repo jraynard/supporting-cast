@@ -68,6 +68,10 @@ public sealed class MemberRecord
     public float Blood = 1f;
     public float Pain;
     public float Food = 1f;
+
+    /// <summary>How well fed and whether rested they left town (<see cref="Systems.WellBeing"/>): a good breakfast helps on the road.</summary>
+    public float FedAtLeave;
+    public bool RestedAtLeave;
     public GearRecord? Weapon;
     public List<GearRecord> Apparel = [];
     public List<WoundRecord> Wounds = [];
@@ -378,6 +382,9 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
     /// How strong one person is for this quest, with the contraptions they carry that work there
     /// (none of the <paramref name="jammed"/> ones).
     /// </summary>
+    /// <summary>A party member who left town well fed fights this much better at full strength of meal; rested, this much.</summary>
+    public const float FedBonus = 0.06f, RestedBonus = 0.04f;
+
     public static float Strength(MemberRecord m, QuestDef? quest, ISet<Tinkering.ContraptionRecord>? jammed) => Strength(m, quest, jammed, 1f);
 
     /// <summary>As <see cref="Strength(MemberRecord, QuestDef?, ISet{Tinkering.ContraptionRecord}?)"/>, with how their rations and arrows served them on the road (<see cref="Work.Rations.StrengthFactor"/>, <see cref="Carpentry.Fletching.StrengthFactor"/>).</summary>
@@ -392,7 +399,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
                 armor += (props.Sharp + props.Blunt) * 0.25f * Crafting.QualityFactor(a.Quality ?? Quality.Plain) * a.Hp;
         var health = Math.Clamp(1f - 0.8f * m.Pain - (1f - m.Blood), 0.2f, 1f);
         var morale = 1f + 0.08f * Math.Clamp(m.Satisfaction, -4f, 4f);
-        var fed = m.Food < 0.3f ? 0.85f : 1f;
+        var fed = (1f + FedBonus * m.FedAtLeave) * (m.RestedAtLeave ? 1f + RestedBonus : 1f);
         var fever = Fevered(m);
         var kit = quest == null ? 1f : Tinkering.Contraptions.StrengthFactor(Working(m, jammed), quest);
         return skill * weapon * armor * health * morale * fed * fever * Healing.Charms.StrengthFactor(m.Charms) * kit * rations;
@@ -564,6 +571,7 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             AgeDays = w.Get<Creature>(e).AgeDays(sim.Clock.Tick), Melee = skills[Skill.Melee], Shooting = skills[Skill.Shooting],
             Coin = Shops.Coin.Count(sim, e), Satisfaction = a.Satisfaction,
             Food = w.TryGet<Needs>(e, out var needs) ? needs.Get(sim.Defs.Need("Food")) : 1f,
+            FedAtLeave = WellBeing.Fed(sim, e), RestedAtLeave = WellBeing.Rested(sim, e),
         };
         if (w.TryGet<Equipment>(e, out var eq) && w.IsAlive(eq.Weapon))
             m.Weapon = Gear(sim, eq.Weapon);
@@ -1101,6 +1109,8 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
             w.Bool(q.Warped);
             w.Entity(q.Maker);
         }
+        w.Float(m.FedAtLeave);
+        w.Bool(m.RestedAtLeave);
         w.Int(m.Healers.Count);
         foreach (var h in m.Healers)
             w.Entity(h);
@@ -1146,6 +1156,11 @@ public sealed class ExpeditionSystem(ulong seed) : ISimSystem, ISaveState
         if (r.Version >= 52)
             for (var n = r.Count(64); n > 0; n--)
                 m.Quivers.Add(new Carpentry.QuiverRecord(Math.Clamp(r.Float(), 0f, 1f), r.Bool(), r.Entity()));
+        if (r.Version >= 59)
+        {
+            m.FedAtLeave = Math.Clamp(r.Float(), 0f, 1f);
+            m.RestedAtLeave = r.Bool();
+        }
         if (r.Version >= 54)
             for (var n = r.Count(TendedBy.Most); n > 0; n--)
                 m.Healers.Add(r.Entity());

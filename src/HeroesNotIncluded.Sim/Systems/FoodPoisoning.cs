@@ -92,6 +92,7 @@ public static class FoodPoisoning
         severity = Math.Clamp(severity, 0f, 1f);
         var until = sim.Clock.Tick + (long)(MaxHours * 0.5f * severity * SimClock.TicksPerHour);
         w.Add(who, new Components.FoodPoisoned { Until = until, Severity = severity });
+        WellBeing.Sickened(sim, who);
     }
 
     /// <summary>How ill a creature is now, 0..1 (0 when well).</summary>

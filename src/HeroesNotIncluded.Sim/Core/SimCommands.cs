@@ -93,8 +93,15 @@ public sealed record EatCommand(Entity Avatar, Entity Food) : ISimCommand, IActo
 
     public void Apply(Simulation sim)
     {
-        if (InventoryCommand.Ready(sim, Avatar) && AvatarSystem.CanEat(sim, Avatar, Food))
-            AiSystem.Order(sim, Avatar, new EatHeldJob(Food));
+        if (!InventoryCommand.Ready(sim, Avatar) || !AvatarSystem.CanEat(sim, Avatar, Food))
+            return;
+        // Eating's only ever a bonus: no point in a meal that wouldn't beat the one you've had.
+        if (AvatarSystem.WhyNotEat(sim, Avatar, Food) is { } why)
+        {
+            sim.Messages.Tell(Avatar, MessageKind.Info, why);
+            return;
+        }
+        AiSystem.Order(sim, Avatar, new EatHeldJob(Food));
     }
 }
 

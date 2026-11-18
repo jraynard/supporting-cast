@@ -93,6 +93,17 @@ Players ask each other for things as **favours**, for silver they name, pinned t
 in the square: only those who read it know what's wanted. An errand (bring me so many of a thing)
 is done by bringing it, and the town's labourer takes those on.
 
+**Well rested, well fed** (`Systems/WellBeing`). Eating and sleeping are bonuses, never chores:
+there's no meter to keep filled and going without costs nothing. Two hours' sleep leaves you
+*well rested* for eight hours after you wake. A meal leaves you *fed* for four, more the better the
+dish: bread or berries are a little, a stew more, a roast or pie more again, scaled by the cook's
+grade, and the house dish more still (fed, well fed, hearty, splendid). Only a better meal tops a
+fed character up, so nobody eats for nothing. Both make you a little quicker on your feet and at
+your work, and lift your mood, and a party that leaves town fed and rested fights a little better
+on the quest. That's how the cook's craft shows in everyone's day. Food poisoning takes the good
+of a meal with it. Underneath, `Needs` still runs as the AI's appetite and drowsiness, which sends
+villagers to supper and adventurers to the hatch, but nobody sees it and it never harms anyone.
+
 ## Trades
 
 Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
@@ -304,7 +315,7 @@ the rest follows in the order it's planned (docs/ROADMAP.md, "The cook pass").
     road. That never shows.
   - **Selling:** set down in the inn and put up for sale like any gear. An adventurer carries one.
   - **On the road:** eaten halfway out. Sound, the traveller is a little stronger for the quest and
-    comes home less hungry; turned (it left half gone, or tied slack on a long road), they're
+    comes home less hungry (the AI's appetite); turned (it left half gone, or tied slack on a long road), they're
     weaker for it and come home sick. The party's tale says which: the cook's only word of it.
 - *Built: a name for the kitchen.*
   - **The house dish** (`Work/HouseDish`): a cooked pot good enough to put a name to (Fine or

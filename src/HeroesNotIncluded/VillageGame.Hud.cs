@@ -117,16 +117,13 @@ public sealed partial class VillageGame
             var b2 = new float2(b0.X + (b1.X - b0.X) * Math.Clamp(health, 0, 1), b1.Y);
             dl.AddRectFilled(in b0, in b2, Theme.U8(health < 0.4f ? Theme.Bad : health < 0.75f ? Theme.Warn : Theme.Good), 2f, ImDrawFlags.None);
 
-            // Status badges: top-right what they're in (asleep, down, drafted), top-left a need alarm.
+            // Status badge, top right: what they're in (asleep, down, drafted).
             var badge = c.Downed ? "ui/icon_doctor" : mind.Asleep ? "ui/icon_sleep" : mind.Drafted ? "ui/icon_fight" : null;
             if (badge != null)
                 DrawSprite(dl, Host.Atlas.Get(badge), new float2(max.X - 20, min.Y + 2), new float2(18, 18));
-            var urgent = UrgentNeed(e);
-            if (urgent != null)
-                DrawSprite(dl, Host.Atlas.Get("ui/icon_alert"), new float2(min.X + 2, min.Y + 2), new float2(18, 18));
 
             if (hovered)
-                Tip($"{c.Name}: {mind.Status}" + (urgent != null ? $"\nNeeds {urgent.Label.ToLowerInvariant()}!" : "") + "\nClick to select, double-click to find");
+                Tip($"{c.Name}: {mind.Status}\nClick to select, double-click to find");
             if (clicked)
             {
                 _selected = e;
@@ -135,25 +132,6 @@ public sealed partial class VillageGame
             }
         }
         ImGui.End();
-    }
-
-    /// <summary>The most pressing need below its urgent threshold, if any.</summary>
-    private NeedDef? UrgentNeed(Entity e)
-    {
-        var c = _sim.World.Get<Creature>(e);
-        var needs = _sim.World.Get<Needs>(e);
-        NeedDef? worst = null;
-        var worstValue = float.MaxValue;
-        foreach (var rate in c.Def.Needs)
-        {
-            var v = needs.Get(rate.NeedDef);
-            if (v < rate.NeedDef.UrgentBelow && v < worstValue)
-            {
-                worst = rate.NeedDef;
-                worstValue = v;
-            }
-        }
-        return worst;
     }
 
     private static readonly string[] SpeedLabels = ["||", ">", ">>", ">>>"];

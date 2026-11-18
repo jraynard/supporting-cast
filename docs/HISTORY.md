@@ -2497,3 +2497,22 @@ can be played in co-op.
 - **The pairs drill** (`--pairs-test`, `Scenarios/PairsDrill`, `DevPairsDrillCommand`): every job for
   two staged at once once the round's dealt, for a co-op host and everyone joining.
 - Saves to format 58.
+
+### Well rested, well fed (2026-11-17)
+Eating and sleeping turned from chores into bonuses (`Systems/WellBeing`).
+- **No meters, no penalties:** nobody starves (Food's `damagePerDayAtZero` is gone), healing no longer
+  waits on food, the hungry and tired thoughts are gone, and a hungry party no longer fights worse.
+  `Needs` stays as the AI's appetite and drowsiness, never shown to players.
+- **Well rested** (`WellRested`): two hours asleep gives eight hours from waking. A player's nap lasts
+  at least two hours.
+- **Well fed** (`WellFed`): four hours from a meal. Its strength comes from the dish (`ThingDef.WellFed`
+  in the defs) × the cook's grade, + the house dish, less its rot (`WellBeing.FedStrength`). Only a
+  better meal replaces it; a player is told "still full" rather than wasting food. Food poisoning
+  clears it.
+- **What they do:** work (`Job.Work`, hand crafting) up to +10% rested and +15% fed, walking +5% each,
+  mood thoughts (`WellRested`, `WellFed`, `HeartyMeal`, `SplendidMeal`). A party's strength on a
+  quest gets +6% fed and +4% rested (`MemberRecord.FedAtLeave`, `RestedAtLeave`).
+- **Players:** the HUD card shows the buffs and their hours left in place of the bars; the Eat tooltip
+  says what a meal would do, judged without its hidden rot. The food pointer shows only at
+  mealtimes. Bots eat at supper when they've nothing better to do.
+- Saves to format 59. `WellBeingTests`.

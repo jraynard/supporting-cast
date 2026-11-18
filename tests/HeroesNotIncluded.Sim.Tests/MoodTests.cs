@@ -106,21 +106,28 @@ public class MoodTests
     {
         var sim = Mild();
         var e = Person(sim);
-        var food = sim.Defs.Need("Food");
         UpdateMood(sim);
         Assert.Empty(MoodOf(sim, e).Situational);
 
-        sim.World.Get<Needs>(e).Values[food.Index] = 0.2f;
+        // Going without food or sleep is no thought at all: they're bonuses.
+        var needs = sim.World.Get<Needs>(e);
+        Array.Fill(needs.Values, 0f);
         sim.Climate.BaseTemperature = -10;
         Array.Fill(sim.Map.Temperature, -10f);
         UpdateMood(sim);
-        Assert.Equal(["Hungry", "Cold"], MoodOf(sim, e).Situational.Select(t => t.Name).Order().Reverse());
+        Assert.Equal(["Cold"], MoodOf(sim, e).Situational.Select(t => t.Name));
 
-        // Ravenous replaces hungry rather than adding to it.
-        sim.World.Get<Needs>(e).Values[food.Index] = 0.05f;
+        WellBeing.Ate(sim, e, 0.4f);
+        WellBeing.Slept(sim, e);
         UpdateMood(sim);
-        Assert.Contains(sim.Defs.Thought("Ravenous"), MoodOf(sim, e).Situational);
-        Assert.DoesNotContain(sim.Defs.Thought("Hungry"), MoodOf(sim, e).Situational);
+        Assert.Equal(["WellRested", "WellFed", "Cold"], MoodOf(sim, e).Situational.Select(t => t.Name).Order().Reverse());
+
+        // A feast replaces a plain meal rather than adding to it.
+        WellBeing.Ate(sim, e, 0.9f);
+        UpdateMood(sim);
+        Assert.Contains(sim.Defs.Thought("SplendidMeal"), MoodOf(sim, e).Situational);
+        Assert.DoesNotContain(sim.Defs.Thought("WellFed"), MoodOf(sim, e).Situational);
+        Assert.DoesNotContain(sim.Defs.Thought("HeartyMeal"), MoodOf(sim, e).Situational);
     }
 
     [Fact]

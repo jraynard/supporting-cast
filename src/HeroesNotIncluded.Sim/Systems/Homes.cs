@@ -74,9 +74,6 @@ public static class Homes
     /// <summary>What the carter leaves in each crock, topped up to (not added to) each morning.</summary>
     public static readonly (string Def, int Count)[] CrockFood = [("Bread", 3), ("Berries", 8)];
 
-    /// <summary>Hungrier than this (the food need), and F at the crock eats.</summary>
-    public const float CrockBelow = 0.8f;
-
     public static bool IsCrock(Simulation sim, Entity e) =>
         !e.IsNull && sim.World.IsAlive(e) && sim.World.TryGet<Thing>(e, out var t) && t.Def.Name == Crock && !sim.World.Has<Construction>(e);
 
@@ -84,12 +81,13 @@ public static class Homes
     public static Entity FromCrock(Simulation sim, Entity who, Entity crock)
     {
         var w = sim.World;
-        if (!IsCrock(sim, crock) || HomeOf(sim, who) != Buildings.Of(sim, crock)
-            || !w.TryGet<Needs>(who, out var needs) || needs.Get(sim.Defs.Need("Food")) >= CrockBelow)
+        if (!IsCrock(sim, crock) || HomeOf(sim, who) != Buildings.Of(sim, crock))
             return Entity.Null;
         var eater = w.Get<Creature>(who).Def;
+        // Only what would do them good: a loaf after a hearty supper wouldn't (WellBeing).
         return sim.StoredIn(crock)
-            .Where(e => w.Get<Thing>(e).Def is { IsFood: true } d && d.EdibleBy(eater) && !sim.Reservations.IsReservedByOther(e, who))
+            .Where(e => w.Get<Thing>(e).Def is { IsFood: true } d && d.EdibleBy(eater) && !sim.Reservations.IsReservedByOther(e, who)
+                && WellBeing.WouldFeed(sim, who, WellBeing.FedStrength(d, Meal.Of(sim, e), knowRot: false)))
             .OrderByDescending(e => w.Get<Thing>(e).Def.Cooked).FirstOrDefault(Entity.Null);
     }
 

@@ -77,7 +77,8 @@ public class MilitiaTests
         for (var t = 0; t < RaidCrisis.KnownAfter + 60 && !raid.Alarmed; t += 10)
             sim.TickMany(10);
         Assert.True(sim.Militia.Mustering, "the bandits are here: the town takes up arms");
-        Assert.Contains(sim.Messages.Messages, m => m.Text.StartsWith("The bell rings out") && m.Location == null);
+        // Either seen and the bell rung, or crossing a trip-bell the town's tinker set out (TripBells).
+        Assert.Contains(sim.Messages.Messages, m => (m.Text.StartsWith("The bell rings out") && m.Location == null) || m.Text.StartsWith("A trip-bell rings out"));
 
         // Over, and the muster stands down.
         foreach (var e in raid.Raiders)

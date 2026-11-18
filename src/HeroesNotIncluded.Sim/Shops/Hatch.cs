@@ -79,14 +79,13 @@ public static class Hatch
         sim.Round.Live && !ShopSystem.SmallHours(sim) && !Of(sim, shop).IsNull && APlayerHungry(sim, shop)
         && DishesOn(sim, Of(sim, shop), ServiceKind.Meal).Sum(d => sim.World.Get<Stack>(d).Count) < Waiting(sim, shop, ServiceKind.Meal) + Spare;
 
-    /// <summary>A player's character who doesn't cook here is hungry enough to want feeding.</summary>
+    /// <summary>A player's character who doesn't cook here and isn't fed (<see cref="WellBeing"/>): a bowl would do them good.</summary>
     private static bool APlayerHungry(Simulation sim, Entity shop)
     {
         var w = sim.World;
-        var food = sim.Defs.Need("Food");
         var here = w.Get<PresetBuilding>(shop).Def;
         foreach (var e in w.Query<PlayerCharacter>())
-            if (w.TryGet<Needs>(e, out var n) && n.Get(food) < food.SeekBelow && w.Get<Creature>(e) is { Dead: false }
+            if (WellBeing.Fed(sim, e) <= 0f && w.Get<Creature>(e) is { Dead: false }
                 && !(w.TryGet<Trade>(e, out var t) && t.Def.WorksAt(here) && t.Def.Serving(ServiceKind.Meal)))
                 return true;
         return false;

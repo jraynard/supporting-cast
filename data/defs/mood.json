@@ -8,12 +8,12 @@
 {
   "thoughts": [
     // ---- situational ----
-    // NeedBelow thoughts on the same need are bands: only the lowest that holds counts.
-    // Hungry starts where people drop work to eat; ravenous is where healing stops (0.1).
-    { "name": "Hungry", "label": "hungry", "mood": -4, "when": "NeedBelow", "need": "Food", "below": 0.25 },
-    { "name": "Ravenous", "label": "ravenous", "mood": -14, "when": "NeedBelow", "need": "Food", "below": 0.1 },
-    { "name": "Tired", "label": "tired", "mood": -3, "when": "NeedBelow", "need": "Rest", "below": 0.3 },
-    { "name": "Exhausted", "label": "exhausted", "mood": -10, "when": "NeedBelow", "need": "Rest", "below": 0.15 },
+    // Eating and sleeping are bonuses, never chores (Systems/WellBeing): no thought for going without.
+    // WellFed thoughts are bands on how good the meal was: only the highest that holds counts.
+    { "name": "WellRested", "label": "well rested", "description": "Slept a good while.", "mood": 3, "when": "WellRested", "races": [ "Human" ] },
+    { "name": "WellFed", "label": "fed", "description": "A meal still sitting well.", "mood": 2, "when": "WellFed", "atLeast": 0, "races": [ "Human" ] },
+    { "name": "HeartyMeal", "label": "had a hearty meal", "description": "A good meal still sitting well.", "mood": 4, "when": "WellFed", "atLeast": 0.6, "races": [ "Human" ] },
+    { "name": "SplendidMeal", "label": "had a splendid meal", "description": "A splendid meal still sitting well.", "mood": 6, "when": "WellFed", "atLeast": 0.85, "races": [ "Human" ] },
     { "name": "Cold", "label": "cold", "description": "Colder than is comfortable.", "mood": -4, "when": "Cold" },
     { "name": "Hot", "label": "too hot", "description": "Hotter than is comfortable.", "mood": -4, "when": "Hot" },
     { "name": "InPain", "label": "in pain", "mood": -6, "when": "InPain" },

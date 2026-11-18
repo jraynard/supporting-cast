@@ -190,7 +190,7 @@ public sealed partial class VillageGame
             if (ImGui.MenuItem($"Eat {def.Label}"))
                 Later(new EatCommand(_avatar, item));
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-                Tip(EatTip(def));
+                Tip(EatTip(item));
         }
         if (def.Drink && (held || packed) && Sim.Systems.DrinkHeldJob.CanDrink(_sim, _avatar, item))
         {
@@ -348,12 +348,17 @@ public sealed partial class VillageGame
         return list;
     }
 
-    /// <summary>How hungry you are and how much of this a meal takes, for the Eat options.</summary>
-    private string EatTip(ThingDef def)
+    /// <summary>
+    /// What a meal of this would do you (<see cref="WellBeing"/>), for the Eat options: judged from what
+    /// you can see of it (the cook's grade, the house dish), never its hidden rot.
+    /// </summary>
+    private string EatTip(Entity item)
     {
-        var food = _sim.World.Get<Needs>(_avatar).Get(_sim.Defs.Need("Food"));
-        return $"Food {food * 100:F0}%. {def.Nutrition * 100:F0}% a meal per unit; you eat until you're full."
-            + (food >= 0.95f ? "\nYou're not hungry." : "");
+        var def = _sim.World.Get<Thing>(item).Def;
+        var strength = WellBeing.FedStrength(def, Meal.Of(_sim, item), knowRot: false);
+        if (AvatarSystem.WhyNotEat(_sim, _avatar, item) is { } why)
+            return why;
+        return $"A meal of it: {WellBeing.Tier(strength)} for {WellBeing.FedHours:F0} hours (a little quicker on your feet and at your work).";
     }
 
     /// <summary>Food (or anything that turns) a nose can tell something from.</summary>
@@ -382,7 +387,7 @@ public sealed partial class VillageGame
         if (ImGui.SmallButton("Eat"u8))
             Issue(new EatCommand(_avatar, item));
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.None))
-            Tip(EatTip(def));
+            Tip(EatTip(item));
     }
 
     /// <summary>What drinking it will do, as far as you can tell: it's drink, and it goes to your head.</summary>

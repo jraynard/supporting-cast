@@ -2055,10 +2055,6 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             return "ui/icon_doctor";
         if (mind.Asleep)
             return null; // the Zzz say it
-        var needs = w.Get<Needs>(e);
-        foreach (var rate in c.Def.Needs)
-            if (needs.Get(rate.NeedDef) < rate.NeedDef.UrgentBelow)
-                return "ui/icon_alert";
         if (mind.Drafted)
             return "ui/icon_fight";
         return mind.Job switch

@@ -144,15 +144,20 @@ public class NightTests
     }
 
     [Fact]
-    public void ARestedNapInTheDayEndsAtOnce()
+    public void ANapInTheDayLastsTwoHoursAndLeavesYouRested()
     {
         var sim = Round((Ana, "Empath"));
         var ana = Players.CharacterOf(sim, Ana);
         PlayUntilHour(sim, 13f);
         SetRest(sim, ana, 1f);
         sim.ApplyNow(new SleepCommand(ana));
-        sim.TickMany(60);
-        Assert.False(sim.World.Get<Mind>(ana).Asleep);
+        sim.TickMany(SimClock.HoursToTicks(1.5f));
+        Assert.True(sim.World.Get<Mind>(ana).Asleep, "still asleep before two hours are up");
+        Assert.False(WellBeing.Rested(sim, ana));
+        sim.TickMany(SimClock.HoursToTicks(0.6f));
+        Assert.False(sim.World.Get<Mind>(ana).Asleep, "up after two hours, rested already");
+        Assert.True(WellBeing.Rested(sim, ana));
+        Assert.InRange(WellBeing.HoursLeft(sim, sim.World.Get<WellRested>(ana).Until), 7.5f, 8f);
     }
 
     [Fact]

@@ -48,8 +48,8 @@ public sealed class MoodSystem : ISimSystem
             foreach (var def in sim.Defs.AllThoughts)
                 if (def.Situational && def.AppliesTo(c.Def.Race) && Holds(sim, e, c, def))
                     mood.Situational.Add(def);
-            // Ravenous replaces hungry: of the bands that hold on one need, only the lowest counts.
-            mood.Situational.RemoveAll(t => t.NeedDef != null && mood.Situational.Exists(o => o.NeedDef == t.NeedDef && o.Below < t.Below));
+            // A feast replaces a plain meal: of the well-fed bands that hold, only the highest counts.
+            mood.Situational.RemoveAll(t => t.When == ThoughtCondition.WellFed && mood.Situational.Exists(o => o.When == ThoughtCondition.WellFed && o.AtLeast > t.AtLeast));
 
             mood.Target = Math.Clamp(0.5f + Offset(mood) / 100f, 0f, 1f);
             var step = EasePerHour / UpdatesPerHour;
@@ -149,11 +149,6 @@ public sealed class MoodSystem : ISimSystem
         var when = def.When;
         switch (when)
         {
-            case ThoughtCondition.NeedBelow:
-            {
-                var needs = w.Get<Needs>(e);
-                return needs.Has[def.NeedDef!.Index] && needs.Get(def.NeedDef) < def.Below;
-            }
             case ThoughtCondition.Cold:
                 return Warmth.Felt(sim, e) < c.Tolerance(sim.Clock.Tick).ComfortMin;
             case ThoughtCondition.Hot:
@@ -174,6 +169,10 @@ public sealed class MoodSystem : ISimSystem
             }
             case ThoughtCondition.FoodPoisoned:
                 return FoodPoisoning.Severity(sim, e) > 0;
+            case ThoughtCondition.WellRested:
+                return WellBeing.Rested(sim, e);
+            case ThoughtCondition.WellFed:
+                return WellBeing.Fed(sim, e) is var fed && fed > 0f && fed >= def.AtLeast;
             case ThoughtCondition.Imprisoned:
                 return w.Has<Prisoner>(e);
             case ThoughtCondition.WearingFinery:

@@ -104,11 +104,15 @@ public sealed class EatJob(Entity food) : Job
 
         var count = Math.Min(Wanted(Sim, Pawn, def), Get<Stack>(food).Count);
         HeroesNotIncluded.Sim.Work.Broths.Eaten(Sim, Pawn, food);
+        var meal = Meal.Of(Sim, food);
         var eaten = Sim.TakeFromStack(food, count);
         var rot = FoodPoisoning.RotOf(Sim, eaten);
         Sim.World.Destroy(eaten);
-        Nourish(Sim, Pawn, def, count, rot);
+        Nourish(Sim, Pawn, def, count, rot, meal);
     }
+
+    /// <summary>A player's helping: enough of a food to make a meal (a bowl, a loaf, a handful of berries).</summary>
+    internal static int Serving(ThingDef food) => Math.Max(1, (int)MathF.Ceiling(0.35f / food.Nutrition - 0.001f));
 
     /// <summary>Units of a food it takes to fill a creature up (at least one).</summary>
     internal static int Wanted(Simulation sim, Entity eater, ThingDef food)
@@ -124,10 +128,11 @@ public sealed class EatJob(Entity food) : Job
     /// still sleeps through the night), and they eat <see cref="LifeStage.HungerFactor"/> times as much.
     /// Food past <see cref="FoodPoisoning.SpoiledAt"/> <paramref name="rot"/> may make it ill.
     /// </summary>
-    internal static void Nourish(Simulation sim, Entity eater, ThingDef food, int count, float rot = 0f)
+    internal static void Nourish(Simulation sim, Entity eater, ThingDef food, int count, float rot = 0f, Meal? meal = null)
     {
         var hungerFactor = sim.World.Get<Creature>(eater).Stage(sim.Clock.Tick).HungerFactor;
         sim.World.Get<Needs>(eater).Add(sim.Defs.Need("Food"), count * food.Nutrition / hungerFactor);
+        WellBeing.Ate(sim, eater, WellBeing.FedStrength(food, meal ?? Meal.Plain, rot));
         if (food.IsMeat)
             MoodSystem.Remember(sim, eater, sim.Defs.Thoughts.AteRawMeat);
         else if (food.Cooked)
@@ -176,15 +181,26 @@ public sealed class SleepJob(Entity bed, int3? spot = null) : Job
         // A player who lies down at night sleeps till dawn, rested or not: waking them at a full
         // night's rest would stop the night passing for everyone (Players.AllAsleep).
         var tillDawn = player && IsBedtime(Sim.Clock);
+        // Two hours' sleep is what leaves you rested, so a player's nap lasts that long at least.
+        var restedAfter = SimClock.HoursToTicks(WellBeing.SleepHours);
         bool SleepOn()
         {
             var rested = needs.Get(rest);
             if (tillDawn && Sim.Clock.Tick < dawn)
                 return true;
+            if (player && slept < restedAfter)
+                return true;
             return slept < maxTicks && rested < 0.99f && !(Sim.Clock.Tick >= dawn && rested >= DawnRest);
         }
         for (; SleepOn(); slept++)
+        {
+            // Rested from two hours on, the hours counting from waking (kept fresh while asleep).
+            if (slept >= restedAfter && (slept - restedAfter) % 60 == 0)
+                WellBeing.Slept(Sim, Pawn);
             yield return JobStatus.Running;
+        }
+        if (slept >= restedAfter)
+            WellBeing.Slept(Sim, Pawn);
         if (slept >= SimClock.HoursToTicks(2))
             RememberNight();
     }
@@ -1150,7 +1166,7 @@ public sealed class FeedPrisonerJob(Entity prisoner, Entity food, bool byWarden 
             Fail("prisoner is gone");
             yield break;
         }
-        EatJob.Nourish(Sim, prisoner, def, Get<Stack>(carried).Count, FoodPoisoning.RotOf(Sim, carried));
+        EatJob.Nourish(Sim, prisoner, def, Get<Stack>(carried).Count, FoodPoisoning.RotOf(Sim, carried), Meal.Of(Sim, carried));
         MoodSystem.Remember(Sim, prisoner, byWarden ? Sim.Defs.Thoughts.FedByWarden : Sim.Defs.Thoughts.TendedMe, Pawn);
         Get<Carrying>(Pawn).Item = Entity.Null;
         Sim.World.Destroy(carried);

@@ -145,7 +145,7 @@ public abstract class Job
         if (Sim.World.TryGet<Avatar>(Pawn, out var avatar) && !avatar.WorkHeld)
             return 0f;
         SkillRules.Learn(Sim, Pawn, skill, SkillRules.XpPerWorkTick);
-        var factor = SkillRules.WorkFactor(Sim, Pawn, skill) * FoodPoisoning.WorkFactor(Sim, Pawn);
+        var factor = SkillRules.WorkFactor(Sim, Pawn, skill) * FoodPoisoning.WorkFactor(Sim, Pawn) * WellBeing.WorkFactor(Sim, Pawn);
         // Mood paces companions; the player's own character always works at full pace.
         return Sim.World.Has<Avatar>(Pawn) ? factor : factor * MoodRules.WorkFactor(MoodRules.MoodOf(Sim, Pawn));
     }

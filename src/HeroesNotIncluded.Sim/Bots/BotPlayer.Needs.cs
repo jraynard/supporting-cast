@@ -40,14 +40,17 @@ public sealed partial class BotPlayer
         return true;
     }
 
-    /// <summary>Food below which a bot goes and eats.</summary>
-    private const float HungryBelow = 0.35f;
-
-    /// <summary>Hungry, with nothing in hand: something to eat from the nearest store or pile, eaten where it's kept.</summary>
+    /// <summary>
+    /// At supper and not fed (<see cref="WellBeing"/>), with nothing in hand: something to eat from the
+    /// nearest store or pile, eaten where it's kept. Eating's a bonus, so a bot only stops for it of an
+    /// evening, its day's work done, never at breakfast with the round just begun.
+    /// </summary>
     private bool Supper(Simulation sim, Entity me, long now)
     {
         var w = sim.World;
-        if (_task != 0 || w.Get<Needs>(me).Get(sim.Defs.Need("Food")) >= HungryBelow)
+        var hour = sim.Clock.HourOfDay;
+        var supper = hour >= Shops.ShopSystem.SupperFromHour && hour < Shops.ShopSystem.SupperUntilHour;
+        if (_task != 0 || WellBeing.Fed(sim, me) > 0f || (!supper && w.Get<Mind>(me).Job is not EatHeldJob))
             return false;
         if (w.Get<Mind>(me).Job is EatHeldJob)
         {
@@ -73,7 +76,8 @@ public sealed partial class BotPlayer
             foreach (var e in sim.AvailableItems())
             {
                 var d = w.Get<Thing>(e).Def;
-                if (!d.IsFood || !d.EdibleBy(eater) || (d.IsMeat && !d.Cooked) || _noFood.Contains(e) || sim.Reservations.IsReservedByOther(e, me))
+                if (!d.IsFood || !d.EdibleBy(eater) || (d.IsMeat && !d.Cooked) || _noFood.Contains(e) || sim.Reservations.IsReservedByOther(e, me)
+                    || !WellBeing.WouldFeed(sim, me, WellBeing.FedStrength(d, Meal.Of(sim, e), knowRot: false)))
                     continue;
                 var at = sim.LocationOf(e);
                 var dist = Maps.Map.Distance(at, here);

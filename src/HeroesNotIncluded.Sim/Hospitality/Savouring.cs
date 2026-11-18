@@ -93,7 +93,7 @@ public static class Table
         var def = w.Get<Thing>(s.Item).Def;
         if (s.Meal)
         {
-            EatJob.Nourish(sim, who, def, s.Count, s.Rot);
+            EatJob.Nourish(sim, who, def, s.Count, s.Rot, Meal.Of(sim, s.Item));
             Broths.Eaten(sim, who, s.Item);
             if (rand.NextFloat() < 0.5f)
                 sim.Mess.Spill(sim, MessKind.Crumbs, w.Get<Position>(who).Cell, 0.4f);

@@ -216,7 +216,7 @@ public sealed class HandCraftJob(RecipeDef recipe) : Job
     {
         Report = $"Making {recipe.Label}";
         var skill = recipe.Skill;
-        for (var work = 0f; work < recipe.Work; work += SkillRules.WorkFactor(Sim, Pawn, skill))
+        for (var work = 0f; work < recipe.Work; work += SkillRules.WorkFactor(Sim, Pawn, skill) * WellBeing.WorkFactor(Sim, Pawn))
         {
             SkillRules.Learn(Sim, Pawn, skill, SkillRules.XpPerWorkTick);
             yield return JobStatus.Running;

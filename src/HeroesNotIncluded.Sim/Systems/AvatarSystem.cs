@@ -852,6 +852,21 @@ public sealed class AvatarSystem : ISimSystem
         return CanEatFrom(sim, avatar, food) && !sim.Reservations.IsReservedByOther(food, avatar);
     }
 
+    /// <summary>
+    /// Why a meal of <paramref name="food"/> would do <paramref name="avatar"/> no good now, or null if it would.
+    /// Judged without its rot, which is hidden: a meal's never refused for what you can't know of it.
+    /// </summary>
+    public static string? WhyNotEat(Simulation sim, Entity avatar, Entity food)
+    {
+        if (FoodPoisoning.Severity(sim, avatar) > 0f)
+            return "You couldn't keep it down.";
+        var def = sim.World.Get<Thing>(food).Def;
+        var strength = WellBeing.FedStrength(def, Meal.Of(sim, food), knowRot: false);
+        if (strength <= 0f)
+            return $"Not {def.Label}: it'd do you no good.";
+        return strength <= WellBeing.Fed(sim, avatar) ? "You're still full from your last meal." : null;
+    }
+
     internal static bool CanEatFrom(Simulation sim, Entity avatar, Entity food)
     {
         var w = sim.World;
@@ -1124,14 +1139,15 @@ public sealed class EatHeldJob(Entity food) : Job
             yield break;
         }
         var inHand = Get<Carrying>(Pawn).Item == food;
-        var count = Math.Min(EatJob.Wanted(Sim, Pawn, def), Get<Stack>(food).Count);
+        var count = Math.Min(EatJob.Serving(def), Get<Stack>(food).Count);
         HeroesNotIncluded.Sim.Work.Broths.Eaten(Sim, Pawn, food);
+        var meal = Meal.Of(Sim, food);
         var eaten = Sim.TakeFromStack(food, count);
         if (inHand && eaten == food)
             Get<Carrying>(Pawn).Item = Entity.Null;
         var rot = FoodPoisoning.RotOf(Sim, eaten);
         Sim.World.Destroy(eaten);
-        EatJob.Nourish(Sim, Pawn, def, count, rot);
+        EatJob.Nourish(Sim, Pawn, def, count, rot, meal);
     }
 }
 

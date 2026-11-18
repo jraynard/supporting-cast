@@ -369,20 +369,21 @@ public sealed partial class VillageGame
                 MoodBar(e, c, overviewMood);
             if (c.Downed)
                 TextC(Bad, w.Has<Carried>(e) ? "Down, being carried" : "Down: can't move or act");
-            if (UrgentNeed(e) is { } urgent)
-                TextC(Bad, $"Urgently needs {urgent.Label.ToLowerInvariant()}");
             InspectCreatureRoles(e, c, mind);
             ImGui.EndTabItem();
         }
 
-        if (ImGui.BeginTabItem("Needs"u8, ImGuiTabItemFlags.None))
+        if (ImGui.BeginTabItem("Comfort"u8, ImGuiTabItemFlags.None))
         {
-            var needs = w.Get<Needs>(e);
-            foreach (var rate in c.Def.Needs)
-            {
-                var v = needs.Get(rate.NeedDef);
-                Bar(rate.NeedDef.Label, v, v < rate.NeedDef.UrgentBelow ? Bad : v < rate.NeedDef.SeekBelow ? Warn : Good);
-            }
+            // Rest and meals are bonuses (WellBeing): what's up and for how long, never a meter to fill.
+            if (w.TryGet<WellRested>(e, out var rested) && rested.Until > _sim.Clock.Tick)
+                TextC(Good, $"Well rested · {HoursLeft(rested.Until)}");
+            else
+                TextC(Dim, "Not rested");
+            if (w.TryGet<WellFed>(e, out var fed) && fed.Until > _sim.Clock.Tick)
+                TextC(Good, $"{Capitalized(WellBeing.Tier(fed.Strength))} · {HoursLeft(fed.Until)}");
+            else
+                TextC(Dim, "Not fed");
             var temp = _sim.TemperatureAt(w.Get<Position>(e).Cell);
             var comfy = temp >= c.Def.ComfortTempMin && temp <= c.Def.ComfortTempMax;
             TextC(comfy ? Good : Warn, $"Feels {temp:F0}°C (comfortable {c.Def.ComfortTempMin:F0}–{c.Def.ComfortTempMax:F0}°C)");

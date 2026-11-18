@@ -7,18 +7,17 @@ using HeroesNotIncluded.Sim.Systems;
 
 namespace HeroesNotIncluded;
 
-// Hungry, a pointer to the nearest food you know of: your own cottage's bread crock (if there's
+// At a mealtime and not fed (eating's a bonus, WellBeing), a pointer to the nearest food you know of: your own cottage's bread crock (if there's
 // anything in it), or the inn's serving hatch. A round with nobody playing the cook is no reason to
 // go without. Nothing hidden: your home and the town's inn are things every villager knows.
 public sealed partial class VillageGame
 {
-    /// <summary>A tag over the nearest food when you're hungry and have none on you; after the errands' tags, which clear the list.</summary>
+    /// <summary>A tag over the nearest food at mealtimes when you're not fed and have none on you; after the errands' tags, which clear the list.</summary>
     private void UpdateFoodPointer()
     {
-        if (!HasAvatar || !_sim.Round.Live || Working || !_sim.World.TryGet<Needs>(_avatar, out var needs))
+        if (!HasAvatar || !_sim.Round.Live || Working || !ShopSystem.Mealtime(_sim))
             return;
-        var food = _sim.Defs.Need("Food");
-        if (needs.Get(food) >= food.SeekBelow || _sim.World.Get<Mind>(_avatar).Job is EatHeldJob || HasFoodOnYou())
+        if (WellBeing.Fed(_sim, _avatar) > 0f || _sim.World.Get<Mind>(_avatar).Job is EatHeldJob || HasFoodOnYou())
             return;
         var w = _sim.World;
         var me = w.Get<Position>(_avatar).Cell;

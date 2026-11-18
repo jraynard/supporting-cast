@@ -7,8 +7,6 @@ namespace HeroesNotIncluded.Sim.Defs;
 public enum ThoughtCondition
 {
     None,
-    /// <summary>The thought's <see cref="ThoughtDef.Need"/> is below <see cref="ThoughtDef.Below"/>; of several on one need, only the lowest band counts.</summary>
-    NeedBelow,
     Cold,
     Hot,
     InPain,
@@ -21,6 +19,10 @@ public enum ThoughtCondition
     WearingFinery,
     /// <summary>Ill from spoiled food (<c>Systems.FoodPoisoning</c>).</summary>
     FoodPoisoned,
+    /// <summary>Slept well enough to be rested (<c>Systems.WellBeing</c>).</summary>
+    WellRested,
+    /// <summary>A meal at least <see cref="ThoughtDef.AtLeast"/> good still sitting well; of several, only the highest band counts.</summary>
+    WellFed,
 }
 
 /// <summary>
@@ -50,21 +52,12 @@ public sealed class ThoughtDef : Def
 
     public ThoughtCondition When { get; set; }
 
-    /// <summary>For <see cref="ThoughtCondition.NeedBelow"/>: which need, and the level it holds under.</summary>
-    public string? Need { get; set; }
-    public float Below { get; set; }
-
-    [JsonIgnore] public NeedDef? NeedDef { get; private set; }
+    /// <summary>For <see cref="ThoughtCondition.WellFed"/>: how good a meal it takes (<c>Systems.WellBeing.Fed</c>).</summary>
+    public float AtLeast { get; set; }
 
     [JsonIgnore] public bool Situational => When != ThoughtCondition.None;
 
     public bool AppliesTo(Race race) => Races.Count == 0 || Races.Contains(race);
-
-    internal override void Resolve(DefDatabase db)
-    {
-        if (When == ThoughtCondition.NeedBelow)
-            NeedDef = db.Need(Need ?? throw new Exception($"Thought {Name} is a NeedBelow thought without a need"));
-    }
 }
 
 /// <summary>

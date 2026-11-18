@@ -1154,7 +1154,11 @@ public struct Carried
     public Entity By;
 }
 
-/// <summary>Need values (0..1) indexed by NeedDef.Index. Only needs the creature has are tracked.</summary>
+/// <summary>
+/// Need values (0..1) indexed by NeedDef.Index. Only needs the creature has are tracked. For the town's
+/// folk these are only the AI's appetite and drowsiness, what sends them to supper and to bed: never
+/// shown to a player and never a penalty. Eating and sleeping well are bonuses (<see cref="Systems.WellBeing"/>).
+/// </summary>
 public sealed class Needs
 {
     public float[] Values = [];

@@ -439,8 +439,6 @@ public class AvatarTests
     {
         var sim = Warm();
         var me = Avatar(sim, C(5, 5));
-        var food = sim.Defs.Need("Food");
-        sim.World.Get<Needs>(me).Values[food.Index] = 0.3f;
         sim.SpawnItem(sim.Thing("Berries"), 10, C(5, 6));
         sim.Enqueue(new AvatarWorkCommand(me, true, C(5, 6)));
         sim.Tick();
@@ -449,7 +447,14 @@ public class AvatarTests
         Assert.NotEqual(AvatarActionKind.Eat, AvatarSystem.ActionAt(sim, me, C(5, 5)).Kind);
         sim.Enqueue(new EatCommand(me, berries));
         sim.TickMany(120);
-        Assert.True(sim.World.Get<Needs>(me).Get(food) > 0.8f);
+        Assert.True(WellBeing.Fed(sim, me) > 0f, "a handful of berries does you a little good");
+        Assert.Equal(10 - EatJob.Serving(sim.Thing("Berries")), sim.World.Get<Stack>(berries).Count);
+
+        // Fed, the same again does no more good: it isn't eaten.
+        sim.Enqueue(new EatCommand(me, berries));
+        sim.TickMany(120);
+        Assert.Equal(10 - EatJob.Serving(sim.Thing("Berries")), sim.World.Get<Stack>(berries).Count);
+        Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("still full"));
     }
 
     [Fact]
@@ -457,21 +462,19 @@ public class AvatarTests
     {
         var sim = Warm();
         var me = Avatar(sim, C(5, 5));
-        var food = sim.Defs.Need("Food");
-        sim.World.Get<Needs>(me).Values[food.Index] = 0.3f;
         sim.SpawnItem(sim.Thing("Berries"), 10, C(9, 5));
         var far = sim.Map.Item[sim.Map.Idx(C(9, 5))];
         Assert.False(AvatarSystem.CanEat(sim, me, far));
         sim.Enqueue(new EatCommand(me, far));
         sim.TickMany(120);
-        Assert.Equal(0.3f, sim.World.Get<Needs>(me).Get(food), 2);
+        Assert.Equal(0f, WellBeing.Fed(sim, me));
 
         sim.SpawnItem(sim.Thing("Berries"), 10, C(6, 5));
         var near = sim.Map.Item[sim.Map.Idx(C(6, 5))];
         Assert.True(AvatarSystem.CanEat(sim, me, near));
         sim.Enqueue(new EatCommand(me, near));
         sim.TickMany(120);
-        Assert.True(sim.World.Get<Needs>(me).Get(food) > 0.8f);
+        Assert.True(WellBeing.Fed(sim, me) > 0f);
         Assert.True(!sim.World.IsAlive(near) || sim.World.Get<Stack>(near).Count < 10);
     }
 

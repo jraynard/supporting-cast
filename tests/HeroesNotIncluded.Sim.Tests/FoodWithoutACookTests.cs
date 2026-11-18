@@ -93,9 +93,10 @@ public class FoodWithoutACookTests
         var inn = Inn(sim);
         var hatch = Hatch.Of(sim, inn);
         var me = Players.CharacterOf(sim, Ana);
+        WellBeing.Ate(sim, me, 1f);
         sim.TickMany(SimClock.TicksPerHour * 2);
-        Assert.Empty(Hatch.DishesOn(sim, hatch, ServiceKind.Meal)); // nobody's hungry: none kept up to go cold
-        sim.World.Get<Needs>(me).Values[sim.Defs.Need("Food").Index] = 0.3f;
+        Assert.Empty(Hatch.DishesOn(sim, hatch, ServiceKind.Meal)); // nobody wants feeding: none kept up to go cold
+        sim.World.Remove<WellFed>(me);
         for (var i = 0; i < 24 && Hatch.DishesOn(sim, hatch, ServiceKind.Meal).Count == 0; i++)
             sim.TickMany(SimClock.TicksPerHour / 2);
         var up = Hatch.DishesOn(sim, hatch, ServiceKind.Meal).Sum(d => sim.World.Get<Stack>(d).Count);
@@ -112,20 +113,19 @@ public class FoodWithoutACookTests
         int Bread() => sim.StoredIn(crock).Where(e => sim.World.Get<Thing>(e).Def.Name == "Bread").Sum(e => sim.World.Get<Stack>(e).Count);
         Assert.Equal(Homes.CrockFood.Single(f => f.Def == "Bread").Count, Bread());
 
-        // Hungry by it: F eats from it.
+        // Not fed, by it: F eats from it.
         sim.World.Get<Position>(me) = Position.At(sim.SpiralFrom(sim.World.Get<Thing>(crock).Cell, 1)
             .First(c => c != sim.World.Get<Thing>(crock).Cell && sim.Map.Passable(c) && Buildings.At(sim, c) == home));
-        sim.World.Get<Needs>(me).Values[sim.Defs.Need("Food").Index] = 0.3f;
         var action = AvatarSystem.ActionAt(sim, me, sim.World.Get<Thing>(crock).Cell);
         Assert.Equal(AvatarActionKind.EatFromCrock, action.Kind);
         AvatarSystem.Perform(sim, me, action);
-        for (var i = 0; i < 60 && sim.World.Get<Needs>(me).Get(sim.Defs.Need("Food")) < 0.4f; i++)
+        for (var i = 0; i < 60 && WellBeing.Fed(sim, me) <= 0f; i++)
             sim.TickMany(60);
-        Assert.True(sim.World.Get<Needs>(me).Get(sim.Defs.Need("Food")) > 0.4f, "fed from the crock");
+        Assert.True(WellBeing.Fed(sim, me) > 0f, "fed from the crock");
         Assert.True(Bread() < Homes.CrockFood.Single(f => f.Def == "Bread").Count);
 
-        // Fed, F there just opens it.
-        sim.World.Get<Needs>(me).Values[sim.Defs.Need("Food").Index] = 1f;
+        // Fed better than bread could, F there just opens it.
+        WellBeing.Ate(sim, me, 1f);
         Assert.NotEqual(AvatarActionKind.EatFromCrock, AvatarSystem.ActionAt(sim, me, sim.World.Get<Thing>(crock).Cell).Kind);
 
         // The carter's round tops it back up.
