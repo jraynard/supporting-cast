@@ -93,13 +93,57 @@ public sealed class BardGame : IGameMod
         {
             ImGui.Separator();
             ImGuiText.Colored(Theme.Parchment, "The tunes you know, by how they start (from any note):");
+            ImGuiText.Colored(Theme.Dim, $"The longer the key, the longer the note. A bar over it: hold {WorkView.Glyph(_octave)}.");
             foreach (var t in s.Book)
             {
-                var opening = string.Join(" ", Enumerable.Range(0, Math.Min(PlaySession.Opening, t.Notes.Count)).Select(i => KeyFor(t.StepAt(i))));
-                ImGuiText.Colored(t == s.Carrying ? Theme.Good : Theme.Text, $"{t.Label}, {t.Kind.ToLowerInvariant()}: {opening}");
+                ImGuiText.Colored(t == s.Carrying ? Theme.Good : Theme.Text, $"{t.Label}, {t.Kind.ToLowerInvariant()}");
+                DrawOpening(t, t == s.Carrying);
             }
         }
         view.End();
+    }
+
+    /// <summary>
+    /// A tune's opening as its rhythm goes: a key cap per note, as wide as the note is long, ticks under
+    /// it on the beats. Only a guide: the lead-in matches the notes, not the time between them.
+    /// </summary>
+    private static void DrawOpening(SongDef tune, bool carried)
+    {
+        var dl = ImGui.GetWindowDrawList();
+        var min = ImGui.GetCursorScreenPos() + new float2(Gui.S(12), Gui.S(5));
+        var beat = Gui.S(30);
+        var h = Gui.S(24);
+        var x = min.X;
+        var n = Math.Min(PlaySession.Opening, tune.Notes.Count);
+        for (var i = 0; i < n; i++)
+        {
+            var w = tune.BeatsAt(i) * beat;
+            var a = new float2(x, min.Y);
+            var b = new float2(x + w - Gui.S(3), min.Y + h);
+            dl.AddRectFilled(in a, in b, Theme.U8(carried ? Theme.AccentSoft : Theme.Inset), Gui.S(3), ImDrawFlags.None);
+            dl.AddRect(in a, in b, Theme.U8(Theme.OakLight), Gui.S(3), ImDrawFlags.None, Gui.S(1));
+            // The key that plays it; in the octave above, a bar over the cap (hold the octave key).
+            var step = tune.StepAt(i);
+            var label = WorkView.Glyph(_notes[step <= 7 ? step : step - 7]);
+            var at = new float2(a.X + Gui.S(6), a.Y + (h - ImGui.GetTextLineHeight()) * 0.5f);
+            dl.AddText(in at, Theme.U8(Theme.Parchment), label);
+            if (step > 7)
+            {
+                var o0 = new float2(a.X + Gui.S(3), a.Y - Gui.S(4));
+                var o1 = new float2(b.X - Gui.S(3), a.Y - Gui.S(2));
+                dl.AddRectFilled(in o0, in o1, Theme.U8(Theme.Accent), 0f, ImDrawFlags.None);
+            }
+            // A tick on each beat the note holds over.
+            for (var k = 0; k < (int)MathF.Ceiling(tune.BeatsAt(i)); k++)
+            {
+                var t0 = new float2(x + k * beat + Gui.S(2), min.Y + h + Gui.S(3));
+                var t1 = t0 + new float2(Gui.S(4), Gui.S(3));
+                dl.AddRectFilled(in t0, in t1, Theme.U8(k == 0 ? Theme.Parchment : Theme.Dim), 0f, ImDrawFlags.None);
+            }
+            x += w;
+        }
+        var size = new float2(x - min.X + Gui.S(12), h + Gui.S(15));
+        ImGui.Dummy(in size);
     }
 
     /// <summary>A note's sound: the octave's root sample pitched up to the scale's step.</summary>
@@ -139,7 +183,7 @@ public sealed class BardGame : IGameMod
         private readonly Dictionary<Sim.Ecs.Entity, (long Start, int Played)> _heard = [];
 
         /// <summary>Session steps after the last note before the background music comes back.</summary>
-        private const int QuietAfter = 4 * 60;
+        private const int QuietAfter = 7 * 60;
 
         public void Update(WorldSoundContext ctx)
         {

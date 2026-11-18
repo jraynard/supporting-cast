@@ -117,6 +117,12 @@ public sealed class PlaySession : WorkSession
 
     public const float LeastPace = 0.75f, MostPace = 1.35f, PaceStep = 0.05f;
 
+    /// <summary>
+    /// Steps of quiet between the opening's last note and the first the hands carry, on top of that note's
+    /// length: a breath, so the last key pressed and the tune going on never run into each other.
+    /// </summary>
+    public const int LeadInBreath = 24;
+
     public override Skill Skill => Skill.Social;
     public override float Xp => 0f;
     public override string Title => $"Playing the {InstrumentName.ToLowerInvariant()}";
@@ -210,7 +216,7 @@ public sealed class PlaySession : WorkSession
             Shift = shift;
             Next = Opening;
             Pace = 1f;
-            Due = played[^1].Step + tune.BeatsAt(Opening - 1) * StepsPerBeat;
+            Due = played[^1].Step + tune.BeatsAt(Opening - 1) * StepsPerBeat + LeadInBreath;
             return;
         }
     }

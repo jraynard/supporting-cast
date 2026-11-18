@@ -132,6 +132,9 @@ public class BardModTests
         Assert.Null(s.Carrying);
         Assert.Equal(1, s.Finished);
         Assert.Equal(before + wheel.Notes.Count - PlaySession.Opening, s.Played);
+        // The hands wait for the opening's last note to finish, and a breath more, before going on.
+        var beat = SimClock.TicksPerSecond * 60f / wheel.Tempo;
+        Assert.True(s.Notes[PlaySession.Opening].Step >= 80 + wheel.BeatsAt(PlaySession.Opening - 1) * beat + PlaySession.LeadInBreath);
         // Every carried note is the book's, two steps up.
         var carried = s.Notes.Skip(PlaySession.Opening).Select(n => n.Index).ToList();
         Assert.Equal(wheel.Notes.Skip(PlaySession.Opening).Select(n => (int)n[0] + 2).ToList(), carried);
