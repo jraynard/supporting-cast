@@ -434,7 +434,7 @@ public class CookPassTests
     /// <summary>The cook (the player) at the inn, beside its pot, with a meal order from an adventurer.</summary>
     private static (Simulation Sim, Entity Me, Entity Pot, Entity Diner, Order Meal) Inn(bool house = false)
     {
-        var (sim, me, party) = ExpeditionTests.Round("Cook");
+        var (sim, me, party) = ExpeditionTests.Round("Cook", tillTheyAsk: false);
         var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
         var pot = Cooking.PotIn(sim, inn);
         var at = sim.World.Get<Thing>(pot).Cell;

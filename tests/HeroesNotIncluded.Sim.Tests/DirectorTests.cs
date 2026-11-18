@@ -48,8 +48,11 @@ public class DirectorTests
     public void OffUnlessTheGameTurnsItOn()
     {
         var sim = Round(director: false);
-        sim.Clock.Tick = sim.Round.TickAt(sim, 2, 9);
-        sim.TickMany(SimClock.TicksPerHour * 9);
+        var beat = sim.Defs.Season.Beats[0];
+        sim.TickMany(SimClock.TicksPerHour); // when the beats would be planned
+        // Across the first beat's window, when an enabled Director sends it.
+        sim.Clock.Tick = Math.Max(sim.Clock.Tick, sim.Round.TickAt(sim, beat.Day, beat.FromHour) - 1);
+        sim.TickMany(SimClock.HoursToTicks(beat.ToHour - beat.FromHour + 1));
         Assert.Empty(Raiders(sim));
         Assert.Empty(sim.Director.Active);
     }

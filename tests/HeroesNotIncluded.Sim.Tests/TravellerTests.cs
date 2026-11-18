@@ -167,8 +167,8 @@ public class TravellerTests
     public void ATravellerInTownAndTheNextOneDueSurviveASave()
     {
         var sim = Round();
-        while (sim.Clock.HourOfDay < 15)
-            sim.TickMany(SimClock.TicksPerHour / 4);
+        sim.Clock.Tick = sim.Round.TickAt(sim, 1, 15) - 1;
+        sim.Tick();
         var drover = sim.Parties.Send(sim, Kind(sim, "Drover")).Single();
         sim.TickMany(SimClock.TicksPerHour / 2);
         var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);
@@ -176,8 +176,12 @@ public class TravellerTests
         Assert.True(loaded.World.Get<Adventurer>(drover).PartyDef.Traveller);
         Assert.Equal(sim.World.Get<Adventurer>(drover).LeaveTick, loaded.World.Get<Adventurer>(drover).LeaveTick);
         // And they go on the same: the next traveller comes alike in both.
-        sim.TickMany(SimClock.TicksPerDay);
-        loaded.TickMany(SimClock.TicksPerDay);
+        var due = sim.Parties.NextTravellerTick;
+        var ticks = 0;
+        for (; ticks < SimClock.TicksPerDay && sim.Parties.NextTravellerTick == due; ticks += SimClock.TicksPerHour / 4)
+            sim.TickMany(SimClock.TicksPerHour / 4);
+        loaded.TickMany(ticks);
+        Assert.NotEqual(due, sim.Parties.NextTravellerTick);
         Assert.Equal(sim.Parties.NextTravellerTick, loaded.Parties.NextTravellerTick);
     }
 }

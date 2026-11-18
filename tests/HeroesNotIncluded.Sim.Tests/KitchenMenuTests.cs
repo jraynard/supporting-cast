@@ -45,15 +45,14 @@ public class KitchenMenuTests
     [Fact]
     public void PorridgeIsAskedForOnlyOfAMorning()
     {
-        var (sim, me, _) = ExpeditionTests.Round("Cook");
+        var (sim, me, _) = ExpeditionTests.Round("Cook", tillTheyAsk: false);
         var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
         Assert.True(Menu.Set(sim, me, inn, sim.Thing("Porridge"), 2, true));
         Assert.True(Menu.Set(sim, me, inn, sim.Thing("Bread"), 2, true));
-        while (sim.Clock.HourOfDay is < 7f or >= 8f)
-            sim.TickMany(SimClock.TicksPerHour / 4);
+        // What's asked for goes by the hour alone.
+        sim.Clock.Tick = sim.Round.TickAt(sim, 2, 7.5f);
         Assert.Equal(["Porridge"], Menu.Asked(sim, inn).Select(d => d.Dish.Name));
-        while (sim.Clock.HourOfDay is < 13f or >= 14f)
-            sim.TickMany(SimClock.TicksPerHour / 4);
+        sim.Clock.Tick = sim.Round.TickAt(sim, 2, 13.5f);
         Assert.Equal(["Bread"], Menu.Asked(sim, inn).Select(d => d.Dish.Name));
     }
 

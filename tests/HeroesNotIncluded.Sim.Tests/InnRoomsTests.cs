@@ -56,6 +56,13 @@ public class InnRoomsTests
             sim.TickMany(SimClock.TicksPerHour / 4);
     }
 
+    /// <summary>As <see cref="TickTill"/>, but jumps to an hour before rather than playing the hours between.</summary>
+    private static void JumpTill(Simulation sim, int day, float hour)
+    {
+        sim.Clock.Tick = Math.Max(sim.Clock.Tick, sim.Round.TickAt(sim, day, hour - 1));
+        TickTill(sim, day, hour);
+    }
+
     [Fact]
     public void AnUnpaidNightEndsTheStayAndLeavesTheBedUnmade()
     {
@@ -64,13 +71,13 @@ public class InnRoomsTests
         foreach (var a in party)
             sim.World.Get<Adventurer>(a).LeaveTick = sim.Clock.Tick + SimClock.TicksPerDay * 4;
         var bed = Beds(sim)[0];
-        TickTill(sim, 1, 20);
+        JumpTill(sim, 1, 20);
         Lodging.Let(sim, guest, bed);
         Assert.True(Lodging.Lodged(sim, guest));
 
-        TickTill(sim, 2, 20);
+        JumpTill(sim, 2, 20);
         Assert.Equal(bed, Lodging.Kept(sim, guest)); // the room's still theirs while they're in town
-        TickTill(sim, 3, Lodging.LapsedHour + 0.5f);
+        JumpTill(sim, 3, Lodging.LapsedHour + 0.5f);
         Assert.False(sim.World.Has<LodgeStay>(guest));
         Assert.False(sim.World.TryGet<BedOwner>(guest, out var own) && own.Bed == bed);
         Assert.True(Lodging.IsUnmade(sim, bed));
@@ -94,7 +101,7 @@ public class InnRoomsTests
         var guest = party[0];
         Inventory.Stow(sim, guest, sim.CreateItem(sim.Thing(Coin.Silver), 60)); // enough for the stay, whatever else they buy
         bool Paid(int night) => sim.World.TryGet<LodgeStay>(guest, out var s) && s.Night >= night;
-        TickTill(sim, 1, ShopSystem.LodgingFromHour);
+        JumpTill(sim, 1, ShopSystem.LodgingFromHour);
         for (var i = 0; i < 24 && !Paid(1); i++)
             sim.TickMany(SimClock.TicksPerHour / 4);
         Assert.True(Paid(1), "a room the first night");

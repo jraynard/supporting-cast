@@ -42,6 +42,13 @@ public class NightTests
         }
     }
 
+    /// <summary>On to an hour of the round's first day, without playing the hours between (the town's day isn't what's tested).</summary>
+    private static void JumpToHour(Simulation sim, float hour)
+    {
+        sim.Clock.Tick = sim.Round.TickAt(sim, 1, hour) - 1;
+        sim.Tick();
+    }
+
     private static void SetRest(Simulation sim, Entity e, float rest) =>
         sim.World.Get<Needs>(e).Values[sim.Defs.Need("Rest").Index] = rest;
 
@@ -116,7 +123,7 @@ public class NightTests
     {
         var sim = Round((Ana, "Empath"));
         var ana = Players.CharacterOf(sim, Ana);
-        PlayUntilHour(sim, 23f);
+        JumpToHour(sim, 23f);
         SetRest(sim, ana, 0.05f);
         sim.ApplyNow(new SleepCommand(ana));
         PlayUntilHour(sim, SleepJob.DawnHour - 0.25f);
@@ -133,7 +140,7 @@ public class NightTests
     {
         var sim = Round((Ana, "Empath"));
         var ana = Players.CharacterOf(sim, Ana);
-        PlayUntilHour(sim, 22f);
+        JumpToHour(sim, 22f);
         SetRest(sim, ana, 1f);
         sim.ApplyNow(new SleepCommand(ana));
         sim.TickMany(SimClock.TicksPerHour);
@@ -148,7 +155,7 @@ public class NightTests
     {
         var sim = Round((Ana, "Empath"));
         var ana = Players.CharacterOf(sim, Ana);
-        PlayUntilHour(sim, 13f);
+        JumpToHour(sim, 13f);
         SetRest(sim, ana, 1f);
         sim.ApplyNow(new SleepCommand(ana));
         sim.TickMany(SimClock.HoursToTicks(1.5f));
@@ -166,7 +173,7 @@ public class NightTests
         var sim = Round((Ana, "Empath"));
         var bot = new BotPlayer(() => sim, Ana, c => sim.ApplyNow(c), 5);
         var ana = Players.CharacterOf(sim, Ana);
-        PlayUntilHour(sim, 22.5f);
+        JumpToHour(sim, 22.5f);
         SetRest(sim, ana, 0.4f);
         for (var t = 0; t < SimClock.TicksPerHour && !sim.World.Get<Mind>(ana).Asleep; t++)
         {

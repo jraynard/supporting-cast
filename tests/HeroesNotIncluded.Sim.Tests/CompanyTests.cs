@@ -61,11 +61,16 @@ public class CompanyTests
             w.Get<Adventurer>(e).LeaveTick = 0;
         sim.Parties.SetRare(Company(sim, Dwarves), 2);
         bool Here() => sim.Creatures().Any(e => w.TryGet<Adventurer>(e, out var a) && a.PartyDef.Name == Dwarves);
-        while (sim.Round.SeasonDay(sim).Day < 2)
+        // Past when the first party would come (a company due would come then, before them)...
+        for (var i = 0; i < 4 * (int)(HeroesNotIncluded.Sim.Adventurers.PartySystem.FirstArrivalHours + 1); i++)
         {
             sim.TickMany(SimClock.TicksPerHour / 4);
             Assert.False(Here(), "not before its day");
         }
+        // ...and whether it's due is the day alone: on to the end of the first.
+        sim.Clock.Tick = sim.Round.TickAt(sim, 2, 0) - 2;
+        sim.Tick();
+        Assert.False(Here(), "not before its day");
         for (var t = 0; t < 4 * 16 && !Here(); t++)
             sim.TickMany(SimClock.TicksPerHour / 4);
         Assert.True(Here(), "the company comes on its day");

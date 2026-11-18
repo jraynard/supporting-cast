@@ -122,7 +122,7 @@ public class KitchenPressureTests
     [Fact]
     public void TheInnsKitchenHasTwoPotsBothOverAFireAndALogBasketStocked()
     {
-        var (sim, me, _) = ExpeditionTests.Round("Cook");
+        var (sim, me, _) = ExpeditionTests.Round("Cook", tillTheyAsk: false);
         var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
         var parts = Buildings.Parts(sim, inn).ToList();
         var pots = parts.Where(e => Cooking.IsPot(sim, e)).ToList();
@@ -145,7 +145,7 @@ public class KitchenPressureTests
 
     private static (Simulation Sim, Entity Me, Entity Larder, List<Entity> Rats) Ratty(string trade = "Cook")
     {
-        var (sim, me, _) = ExpeditionTests.Round(trade);
+        var (sim, me, _) = ExpeditionTests.Round(trade, tillTheyAsk: false);
         var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
         var larder = Buildings.Parts(sim, inn).Single(e => sim.World.Get<Thing>(e).Def.Name == "Larder");
         sim.Director.Enable(sim.Defs.Difficulty("Normal"));

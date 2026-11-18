@@ -72,15 +72,21 @@ public class CommandTests
     /// applies it, so one that throws would stop the whole session. Developer commands are left out:
     /// only the host may send them.
     /// </summary>
-    [Fact]
-    public void HostileCommandsDoNoHarm()
+    /// <remarks>
+    /// Split into <see cref="HostileShards"/> (<see cref="HostileCommandsDoNoHarm0"/> and the rest),
+    /// each its own class so xunit runs them side by side: one pass over every command type was the
+    /// suite's longest test but one.
+    /// </remarks>
+    internal const int HostileShards = 4;
+
+    internal static void HostileCommandsDoNoHarm(int shard)
     {
         var defs = TestWorld.LoadDefs();
         var (sim, center) = TestWorld.Millbrook(7, villagers: 2);
         var avatar = VillageRound.SpawnHero(sim, new Hero("Arin", null), center);
         sim.TickMany(SimClock.TicksPerHour);
 
-        var rand = new Random(1234);
+        var rand = new Random(1234 + shard);
         var real = sim.World.Query<Thing>().Concat(sim.World.Query<Creature>()).Distinct().ToList();
         object? Hostile(Type t)
         {
@@ -128,7 +134,7 @@ public class CommandTests
             return Sample(t, defs);
         }
 
-        foreach (var type in CommandCodec.CommandTypes.Where(t => !typeof(IDevCommand).IsAssignableFrom(t)))
+        foreach (var type in CommandCodec.CommandTypes.Where(t => !typeof(IDevCommand).IsAssignableFrom(t)).Where((_, i) => i % HostileShards == shard))
         {
             var ctor = type.GetConstructors().OrderByDescending(c => c.GetParameters().Length).First();
             for (var k = 0; k < 150; k++)
@@ -234,3 +240,8 @@ public class CommandTests
         Assert.Equal(C(9, 5), sim.World.Get<Position>(e).Cell);
     }
 }
+
+public class HostileCommandsDoNoHarm0 { [Fact] public void HostileCommandsDoNoHarm() => CommandTests.HostileCommandsDoNoHarm(0); }
+public class HostileCommandsDoNoHarm1 { [Fact] public void HostileCommandsDoNoHarm() => CommandTests.HostileCommandsDoNoHarm(1); }
+public class HostileCommandsDoNoHarm2 { [Fact] public void HostileCommandsDoNoHarm() => CommandTests.HostileCommandsDoNoHarm(2); }
+public class HostileCommandsDoNoHarm3 { [Fact] public void HostileCommandsDoNoHarm() => CommandTests.HostileCommandsDoNoHarm(3); }

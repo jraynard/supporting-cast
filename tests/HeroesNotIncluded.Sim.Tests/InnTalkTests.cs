@@ -168,7 +168,7 @@ public class InnTalkTests
         var level = DrinkingSystem.LevelOf(sim, a);
         Assert.True(level >= DrinkingSystem.MerryAt, $"{level}");
         Assert.Equal("merry", Perception.For(sim, Players.CharacterOf(sim, Ana)).Drunkenness(a) ?? Perception.For(sim, Entity.Null).Drunkenness(a));
-        sim.TickMany(SimClock.HoursToTicks(6));
+        sim.TickMany(SimClock.HoursToTicks(1));
         Assert.True(DrinkingSystem.LevelOf(sim, a) < level);
     }
 

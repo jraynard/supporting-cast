@@ -204,7 +204,7 @@ public class BotKitchenTests
     public void ACarelessHandSlipsAtTheKitchensGames()
     {
         var (sim, bot, me, inn) = Cook(BotTemperament.Steady with { Care = 0f }, skill: 0.1f);
-        Run(sim, bot, () => Have(sim, me, inn, Pies.Pie) > 0, SimClock.TicksPerHour * 10);
+        Run(sim, bot, () => bot.Stats.Mistakes >= 3 || Have(sim, me, inn, Pies.Pie) > 0, SimClock.TicksPerHour * 10);
         Assert.True(bot.Stats.Mistakes >= 3, $"{bot.Stats.Mistakes} slips; " + Log(sim, bot));
     }
 

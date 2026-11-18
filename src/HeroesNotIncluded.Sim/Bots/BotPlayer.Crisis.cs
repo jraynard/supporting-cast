@@ -41,7 +41,7 @@ public sealed partial class BotPlayer
         {
             _foe = Entity.Null;
             var best = float.MaxValue;
-            foreach (var e in view.Creatures())
+            foreach (var e in view.CreaturesWithin(here, FightRange))
                 if (w.Get<Creature>(e) is { Dead: false, Downed: false } c && Factions.Attacker(c.Faction) && !w.Has<Combat.Leaving>(e)
                     && c.Def.Race != Race.Dragon && w.Get<Position>(e).Cell.Z == w.Get<Position>(me).Cell.Z)
                 {

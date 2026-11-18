@@ -106,6 +106,11 @@ public class ExpeditionTests
         for (var t = 0; t < 48 && party.Any(e => sim.World.IsAlive(e) && !sim.World.Has<Combat.Leaving>(e)); t++)
             sim.TickMany(SimClock.TicksPerHour / 4);
         Assert.All(party, e => Assert.True(!sim.World.IsAlive(e) || sim.World.Has<Combat.Leaving>(e)));
+        // Off the map, the party is records worked out on its return: on to its return tick.
+        for (var t = 0; t < 8 && party.Any(sim.World.IsAlive); t++)
+            sim.TickMany(SimClock.TicksPerHour / 4);
+        if (sim.Expeditions.Out.FirstOrDefault(x => x.Quest == q.Id) is { ReturnTick: var back } && back != long.MaxValue && back > sim.Clock.Tick && !party.Any(sim.World.IsAlive))
+            sim.Clock.Tick = back - 1;
 
         for (var h = 0; h < 30 && sim.Expeditions.Succeeded + sim.Expeditions.Failed == 0 && !sim.Messages.Messages.Any(m => m.Text.StartsWith("No one")); h++)
             sim.TickMany(SimClock.TicksPerHour);

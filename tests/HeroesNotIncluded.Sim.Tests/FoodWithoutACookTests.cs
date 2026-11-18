@@ -129,9 +129,8 @@ public class FoodWithoutACookTests
         Assert.NotEqual(AvatarActionKind.EatFromCrock, AvatarSystem.ActionAt(sim, me, sim.World.Get<Thing>(crock).Cell).Kind);
 
         // The carter's round tops it back up.
-        var day = sim.Clock.Day;
-        while (sim.Clock.Day == day || sim.Clock.HourOfDay < InnSupplySystem.DeliveryHour + 0.5f)
-            sim.TickMany(SimClock.TicksPerHour / 4);
+        sim.Clock.Tick = sim.Round.TickAt(sim, 2, InnSupplySystem.DeliveryHour) - 1;
+        sim.TickMany(SimClock.TicksPerHour / 2);
         Assert.Equal(Homes.CrockFood.Single(f => f.Def == "Bread").Count, Bread());
     }
 }

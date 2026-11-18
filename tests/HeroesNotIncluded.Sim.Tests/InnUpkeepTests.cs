@@ -288,8 +288,8 @@ public class InnUpkeepTests
         var parts = Buildings.Parts(sim, Inn(sim));
         int Kegs() => parts.SelectMany(p => sim.StoredIn(p)).Where(e => sim.World.Get<Thing>(e).Def.Name == "Keg").Sum(e => sim.World.Get<Stack>(e).Count);
         var before = Kegs();
-        while (sim.Clock.Day < 2 || sim.Clock.HourOfDay < InnSupplySystem.DeliveryHour + 0.5f)
-            sim.TickMany(SimClock.TicksPerHour / 4);
+        sim.Clock.Tick = sim.Round.TickAt(sim, 2, InnSupplySystem.DeliveryHour) - 1;
+        sim.TickMany(SimClock.TicksPerHour / 2);
         Assert.True(Kegs() >= before + InnSupplySystem.Kegs[0].Count - 1, $"{before} -> {Kegs()}"); // less any the keeper's knocked in since
         Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("carter"));
     }

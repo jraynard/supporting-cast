@@ -30,7 +30,7 @@ public class MessageLogTests
     {
         var sim = TestWorld.Create();
         sim.Messages.AddThrottled("cold:1", SimClock.TicksPerHour, MessageKind.Warning, "cold hands");
-        sim.TickMany((int)MessageLog.CooldownKeptTicks + 1);
+        sim.Clock.Tick += MessageLog.CooldownKeptTicks + 1;
         for (var i = 0; i < MessageLog.MaxKept + MessageLog.TrimBatch; i++)
             sim.Messages.Add(MessageKind.Info, "filler");
         Assert.False(sim.Messages.Cooldowns.ContainsKey("cold:1"));

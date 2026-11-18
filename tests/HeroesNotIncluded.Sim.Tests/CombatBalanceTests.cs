@@ -10,21 +10,18 @@ namespace HeroesNotIncluded.Sim.Tests;
 public class CombatBalanceTests(ITestOutputHelper output)
 {
     [Fact]
-    public void ARaidTrialIsTheSameEachTimeForItsSeed()
+    public void ARaidIsFoughtOnBothSidesAndTheSameEachTimeForItsSeed()
     {
         var defs = TestWorld.LoadDefs();
-        var a = CombatSweep.RaidTrial(defs, 3, party: true);
-        var b = CombatSweep.RaidTrial(defs, 3, party: true);
+        var a = CombatSweep.RaidTrial(defs, 1, party: true);
+        var b = CombatSweep.RaidTrial(defs, 1, party: true);
         Assert.Equal(a with { RaiderBlows = null!, TownBlows = null!, Log = null! }, b with { RaiderBlows = null!, TownBlows = null!, Log = null! });
         Assert.Equal(a.Log, b.Log);
         Assert.Equal(a.RaiderBlows.ByOutcome, b.RaiderBlows.ByOutcome);
         Assert.Equal(a.TownBlows.ByOutcome, b.TownBlows.ByOutcome);
-    }
 
-    [Fact]
-    public void ARaidOnTheTownIsFoughtOnBothSides()
-    {
-        var r = CombatSweep.RaidTrial(TestWorld.LoadDefs(), 1, party: true);
+        // And it's a fight on both sides, ended within its hours.
+        var r = a;
         output.WriteLine($"{r.Met} {r.Raiders} raiders [{r.Band}]: town {r.TownDead} dead; raiders {r.RaiderBlows}; town {r.TownBlows}");
         Assert.True(r.Raiders > 0);
         Assert.True(r.Met != null || r.RoundLost, "the raid ended within its hours");

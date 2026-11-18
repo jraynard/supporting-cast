@@ -313,8 +313,11 @@ public class ShopTests
     {
         var (sim, _, _, party) = Inn();
         foreach (var e in party)
+        {
             sim.World.Get<Adventurer>(e).LeaveTick = long.MaxValue; // staying the night
-        sim.TickMany(SimClock.HoursToTicks(ShopSystem.QuestAfterHours) + SimClock.TicksPerHour / 6);
+            sim.World.Get<Adventurer>(e).Arrived -= SimClock.HoursToTicks(ShopSystem.QuestAfterHours); // settled in, and wanting work
+        }
+        sim.TickMany(SimClock.TicksPerHour / 6);
         var asked = sim.Shops.All.Single(o => o.Kind.Kind == ServiceKind.Quest && o.IsOpen && party.Contains(o.Poster));
 
         // Nobody answers it (the innkeeper's at the stew all night): it lapses, and they ask again.

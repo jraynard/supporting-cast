@@ -488,11 +488,12 @@ public class InnkeeperTests
         Assert.Equal(keeper, meal.Assignee);
     }
 
-    /// <summary>Tick until evening, the party staying on past tomorrow.</summary>
+    /// <summary>On to evening (the last hour of it played), the party staying on past tomorrow.</summary>
     private static void StayTillEvening(Simulation sim, List<Entity> party)
     {
         foreach (var a in party)
             sim.World.Get<Adventurer>(a).LeaveTick = sim.Clock.Tick + SimClock.TicksPerDay * 2;
+        sim.Clock.Tick = Math.Max(sim.Clock.Tick, sim.Round.TickAt(sim, 1, ShopSystem.LodgingFromHour - 1));
         while (sim.Clock.HourOfDay < ShopSystem.LodgingFromHour)
             sim.TickMany(SimClock.TicksPerHour / 4);
     }

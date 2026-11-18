@@ -16,8 +16,7 @@ public class VillageDayScenarioTests
     [Theory]
     [InlineData(1234UL, VillageRound.DefaultMap)]
     [InlineData(99UL, VillageRound.DefaultMap)]
-    [InlineData(1234UL, ReedmereMapTests.Map)]
-    [InlineData(99UL, ReedmereMapTests.Map)]
+    [InlineData(1234UL, ReedmereMapTests.Map)] // (SeasonScenarioTests plays Reedmere through a round too)
     public void TheVillageSurvivesARoundUnattended(ulong seed, string map)
     {
         var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), seed, map);

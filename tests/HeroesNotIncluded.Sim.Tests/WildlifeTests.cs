@@ -100,7 +100,7 @@ public class WildlifeTests
     {
         var sim = WithVillager(out _);
         var plain = Create();
-        plain.TickMany(SimClock.HoursToTicks(30));
+        plain.TickMany(SimClock.HoursToTicks(12)); // past when the first herd would come (wildlife.json's firstArrivalHours)
         Assert.Empty(plain.World.Query<Herd>());
         Assert.False(plain.Wildlife.Enabled);
         Assert.True(sim.Wildlife.Enabled);

@@ -243,6 +243,27 @@ public sealed class PerceptionView(Simulation sim, Entity viewer, bool blind = f
     }
 
     /// <summary>
+    /// <see cref="Creatures"/> no further than <paramref name="range"/> across the ground from
+    /// <paramref name="at"/>, in the same order: those further off are passed over before the
+    /// (costly) look, so a bot scanning for a foe every tick doesn't trace a line to everyone in town.
+    /// </summary>
+    public IEnumerable<Entity> CreaturesWithin(float3 at, float range)
+    {
+        var w = sim.World;
+        foreach (var e in w.Query<Creature>())
+        {
+            if (e != viewer && w.TryGet<Position>(e, out var p))
+            {
+                var (dx, dy) = (p.Pos.X - at.X, p.Pos.Y - at.Y);
+                if (dx * dx + dy * dy > range * range)
+                    continue;
+            }
+            if (CanSee(e))
+                yield return e;
+        }
+    }
+
+    /// <summary>
     /// The trade the viewer's in, if any. The other side's table is what they've put out to be
     /// seen: labels anyone could read off the things, never their hidden state.
     /// </summary>

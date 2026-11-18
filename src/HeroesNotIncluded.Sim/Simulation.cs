@@ -39,6 +39,14 @@ public sealed partial class Simulation
     public bool StrictJobs { get; set; } = true;
     public Regions Regions { get; }
     public Pathfinder Pathfinder { get; }
+
+    /// <summary>
+    /// A dragon down on the town that found no way on foot to its quarry (<see cref="Combat.FreeFight.Steer"/>):
+    /// from where, to where, and the map's <see cref="Maps.Map.StructureVersion"/> then. Until one of
+    /// those changes the search would only fail again, so it isn't run (a whole-map search every tick).
+    /// A cache of a pure result: not saved, and nothing differs for its being empty.
+    /// </summary>
+    internal readonly Dictionary<Entity, (int3 From, int3 To, int Version)> NoWayOnFoot = [];
     public Reservations Reservations { get; } = new();
     public Rooms Rooms { get; }
     public Climate Climate { get; }

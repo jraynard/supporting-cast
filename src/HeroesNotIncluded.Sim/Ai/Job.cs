@@ -167,7 +167,8 @@ public abstract class Job
     /// <paramref name="keepOn"/> says so, the target's down or gone, it gets too far away, or a while
     /// passes without a turn (the brain may find someone better); broken, it first backs off facing them.
     /// </summary>
-    protected IEnumerable<JobStatus> FightFree(Entity target, AttackDef attack, Func<bool> keepOn, float heavyShare, float giveUp = 14f)
+    /// <param name="endsOnGiveUp">The job ends when this does, so a path to a target it's about to give up on is never walked.</param>
+    protected IEnumerable<JobStatus> FightFree(Entity target, AttackDef attack, Func<bool> keepOn, float heavyShare, float giveUp = 14f, bool endsOnGiveUp = false)
     {
         Combat.FreeFight.Join(Sim, Pawn);
         var w = Sim.World;
@@ -192,7 +193,7 @@ public abstract class Job
                 waitedSince = now;
             else if (now - waitedSince > Combat.Engagement.WaitTicks)
                 yield break;
-            var dist = Combat.FreeFight.Steer(Sim, Pawn, target, attack, pressing, backOffUntil);
+            var dist = Combat.FreeFight.Steer(Sim, Pawn, target, attack, pressing, backOffUntil, endsOnGiveUp ? giveUp : float.PositiveInfinity);
             if (dist > giveUp)
                 yield break;
             // A blow just landed: now and then a step back before the next.

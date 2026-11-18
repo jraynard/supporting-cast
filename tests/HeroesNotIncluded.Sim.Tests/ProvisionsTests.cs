@@ -319,8 +319,8 @@ public class ProvisionsTests
             w.Add(bundle, new Ration { Quality = 0.5f });
             sim.Store(Provisions.Merchandise(sim), bundle);
         }
-        while (sim.Clock.HourOfDay < ShopSystem.SupperFromHour)
-            sim.TickMany(SimClock.TicksPerHour / 4);
+        sim.Clock.Tick = sim.Round.TickAt(sim, 1, ShopSystem.SupperFromHour) - 1;
+        sim.Tick();
         var party = sim.Parties.Send(sim, sim.Defs.Party("GildedSpurs")); // just in, for the night
         var lodger = party[0];
         // A room tonight, at the inn out at the landing, and there in time for supper.
@@ -386,16 +386,12 @@ public class ProvisionsTests
     public void ACutCausewayStopsTheCarterAtTheWater()
     {
         var sim = Round(ReedmereMapTests.Map);
-        var w = sim.World;
+        sim.TickMany(SimClock.TicksPerHour / 2); // the ore carter's first day is the deal's
+        // Down overnight, the next morning (the tinker would mend it before then).
+        sim.Clock.Tick = sim.Round.TickAt(sim, 2, InnSupplySystem.DeliveryHour) - 1;
         Assert.NotNull(sim.Repairs.BreakBridge(sim, sim.Rand));
-        var day = sim.Clock.Day;
         var seen = sim.Messages.Total;
-        while (sim.Clock.Day == day || sim.Clock.HourOfDay < InnSupplySystem.DeliveryHour + 0.5f)
-        {
-            sim.TickMany(SimClock.TicksPerHour / 40);
-            if (!sim.Repairs.RoadCut) // the tinker's mended it overnight: down again for the morning
-                sim.Repairs.BreakBridge(sim, sim.Rand);
-        }
+        sim.TickMany(SimClock.TicksPerHour / 4 + 1);
         var said = sim.Messages.Messages.Skip(sim.Messages.IndexAfter(seen)).Select(m => m.Text).Where(t => t.Contains("carter")).ToList();
         // Reedmere's inn and cookhouse both stand out on the water: neither is reached, nor the forge's ore.
         Assert.True(said.Any(t => t.Contains("couldn't get through") && t.Contains("the inn and the cookhouse")), string.Join("\n", said));

@@ -121,9 +121,10 @@ public class BloomTests
         var (sim, _, _) = ExpeditionTests.Round("Blacksmith");
         int Ore() => sim.World.Query<Thing>().Where(e => sim.World.Get<Thing>(e).Def.Name == "IronOre").Sum(e => sim.World.Get<Stack>(e).Count);
         Assert.Equal(VillageRound.SmithyOre, Ore());
-        var day = sim.Clock.Day;
-        while (sim.Clock.Day == day || sim.Clock.HourOfDay < OreCarterSystem.DeliveryHour + 1)
-            sim.TickMany(SimClock.TicksPerHour);
+        // The carter keeps only the day and the hour: on to the next morning's call.
+        sim.TickMany(SimClock.TicksPerHour);
+        sim.Clock.Tick = sim.Round.TickAt(sim, 2, OreCarterSystem.DeliveryHour) - 1;
+        sim.TickMany(SimClock.TicksPerHour);
         var delivered = sim.Defs.Season.OreDelivery.Single(t => t.Def == "IronOre").Count;
         Assert.Equal(VillageRound.SmithyOre + delivered, Ore());
         Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("carter"));

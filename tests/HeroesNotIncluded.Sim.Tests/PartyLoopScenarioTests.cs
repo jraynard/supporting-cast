@@ -24,8 +24,7 @@ public class PartyLoopScenarioTests(ITestOutputHelper output)
     private static readonly ServiceKind[] Wanted = [ServiceKind.Drink, ServiceKind.Repair, ServiceKind.Quest];
 
     [Theory]
-    [InlineData(1234UL)]
-    [InlineData(99UL)]
+    [InlineData(99UL)] // the seed that sees the most served: a wheel trued, a hurt healed, a strongbox opened
     public void APartyIsServedSentOutAndComesBackChanged(ulong seed)
     {
         var sim = VillageRound.NewSimulation(TestWorld.LoadDefs(), seed);

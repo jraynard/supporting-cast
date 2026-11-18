@@ -216,9 +216,9 @@ public class BotInnLabourTests
         foreach (var e in sim.Creatures())
             if (!sim.World.Has<Avatar>(e) && sim.World.TryGet<Trade>(e, out var t) && t.Def.Gathers)
                 sim.World.Get<Mind>(e).WorkPriority[(int)WorkType.Construct] = 0; // it's the bot's to put up
-        // To the last afternoon, when the sites go up.
-        for (var i = 0; i < 400 && !sim.Festival.SettingUp; i++)
-            sim.TickMany(SimClock.TicksPerHour / 4);
+        // To the last afternoon, when the sites go up (the bot has nothing to do till then).
+        sim.Clock.Tick = sim.Round.SetupTick(sim) - 1;
+        sim.TickMany(2);
         Assert.True(sim.Festival.SettingUp, "the setting up began");
         var sites = sim.Festival.Sites.Where(e => !e.IsNull && sim.World.Has<Construction>(e)).ToList();
         Assert.NotEmpty(sites);

@@ -824,7 +824,7 @@ public sealed class AssaultJob(Entity target) : Job
             var by = RaiderBrain.HurtBy(Sim, Pawn);
             return !by.IsNull && by != target && Sim.Regions.CanReach(PawnCell, Sim.LocationOf(by), PathEnd.Touch);
         }
-        foreach (var s in FightFree(target, attack, () => !RaiderBrain.WantsToFlee(Sim, Pawn) && !Sim.World.Has<Combat.Leaving>(Pawn) && !TurnsOn(), HeavyShare, giveUp: 40f))
+        foreach (var s in FightFree(target, attack, () => !RaiderBrain.WantsToFlee(Sim, Pawn) && !Sim.World.Has<Combat.Leaving>(Pawn) && !TurnsOn(), HeavyShare, giveUp: 40f, endsOnGiveUp: true))
             yield return s;
     }
 

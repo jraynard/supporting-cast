@@ -85,9 +85,12 @@ public static class FreeFight
     /// <summary>
     /// One tick of an AI's footwork against <paramref name="target"/>: where it wants to go and
     /// which way it faces. <paramref name="pressing"/>: it's its turn (else it holds off and
-    /// circles). Returns the distance between them.
+    /// circles). Returns the distance between them. <paramref name="quitsBeyond"/>: further than this
+    /// the caller gives up and its job ends this tick (<see cref="Ai.AssaultJob"/>), which drops any
+    /// path planned here (<see cref="Leave"/>), so none is searched for.
     /// </summary>
-    public static float Steer(Simulation sim, Entity e, Entity target, AttackDef attack, bool pressing, long backOffUntil)
+    public static float Steer(Simulation sim, Entity e, Entity target, AttackDef attack, bool pressing, long backOffUntil,
+        float quitsBeyond = float.PositiveInfinity)
     {
         var w = sim.World;
         ref var m = ref w.Get<FreeMover>(e);
@@ -119,11 +122,34 @@ public static class FreeFight
             // A fresh path when there's none, or they've moved off the end of the last.
             if (!mover.Moving || Maps.Map.Distance(mover.Path![^1], them.Cell) > 1)
             {
+                // About to give up on them: a raider too far off ran a whole-town search every tick to
+                // throw it away. What's left of a dropped path is where it stepped from, set when a walker
+                // finds a way, which it does exactly when the regions say there is one (FindPath's own test).
+                if (dist > quitsBeyond && !w.Has<Ai.Rampage>(e) && Ai.Navigation.FlyingStage(sim, e) == null)
+                {
+                    if (sim.Regions.CanReach(me.Cell, them.Cell, PathEnd.Touch))
+                        mover.StepFrom = me.Cell;
+                    return dist;
+                }
                 // A dragon down on the town (Ai.Rampage) chases on foot through the streets, never
                 // through a door or a house: no such way, and it doesn't come.
-                var path = w.Has<Ai.Rampage>(e)
-                    ? sim.Pathfinder.FindPath(me.Cell, them.Cell, PathEnd.Touch) is { } walked && !Ai.DragonBrain.Squeezes(sim, walked) ? walked : null
-                    : Ai.Navigation.PlanRoute(sim, e, me.Cell, them.Cell, PathEnd.Touch);
+                List<int3>? path;
+                if (w.Has<Ai.Rampage>(e))
+                {
+                    var asked = (me.Cell, them.Cell, sim.Map.StructureVersion);
+                    if (sim.NoWayOnFoot.TryGetValue(e, out var failed) && failed == asked)
+                        path = null; // the same search as last time, on the same map: no way still
+                    else
+                    {
+                        path = sim.Pathfinder.FindPath(me.Cell, them.Cell, PathEnd.Touch) is { } walked && !Ai.DragonBrain.Squeezes(sim, walked) ? walked : null;
+                        if (path == null)
+                            sim.NoWayOnFoot[e] = asked;
+                        else
+                            sim.NoWayOnFoot.Remove(e);
+                    }
+                }
+                else
+                    path = Ai.Navigation.PlanRoute(sim, e, me.Cell, them.Cell, PathEnd.Touch);
                 if (path != null)
                 {
                     mover.Path = path;

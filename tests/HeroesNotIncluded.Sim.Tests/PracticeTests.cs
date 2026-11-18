@@ -34,9 +34,15 @@ public class PracticeTests
     public void TheYardHasNoSeasonAndNobodyComesUnasked()
     {
         var (sim, _) = Yard("Innkeeper");
-        sim.TickMany(SimClock.TicksPerDay * (sim.Defs.Season.Days + 1));
+        // Past when the first party would have come, then on past the season's festival and end:
+        // everything that would bring them compares against the clock, so a jump stands for the days.
+        sim.TickMany(SimClock.HoursToTicks(HeroesNotIncluded.Sim.Adventurers.PartySystem.FirstArrivalHours + 1));
+        Assert.Empty(Adventurers(sim));
+        sim.Clock.Tick = sim.Round.EndTick(sim) + SimClock.TicksPerHour;
+        sim.TickMany(SimClock.HoursToTicks(2));
         Assert.Equal(RoundPhase.Playing, sim.Round.Phase); // no festival, no end
         Assert.Empty(Adventurers(sim));
+        Assert.Equal(0, sim.Parties.PartiesSent);
         Assert.Equal(0f, sim.Reckoning.Dread);
 
         var (loaded, _) = SaveGame.Read(SaveGame.Write(sim), sim.Defs);

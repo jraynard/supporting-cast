@@ -76,8 +76,11 @@ public class DeathReckoningTests
         sim.TickMany(SimClock.TicksPerHour); // the same day: it stands empty
         Assert.False(Held());
 
-        var toDawn = (long)((24 - sim.Clock.HourOfDay + Vacancies.DawnHour + 0.1f) * SimClock.TicksPerHour);
-        sim.TickMany((int)toDawn);
+        // Not before the next dawn, and taken up at it.
+        sim.Clock.Tick = sim.Round.TickAt(sim, 2, Vacancies.DawnHour) - SimClock.TicksPerHour / 4;
+        sim.TickMany(SimClock.TicksPerHour / 4 - 60);
+        Assert.False(Held());
+        sim.TickMany(SimClock.HoursToTicks(0.2f));
 
         Assert.True(Held());
     }

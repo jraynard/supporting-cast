@@ -36,7 +36,7 @@ public class PartyTests
     public void NoPartyComesWithoutARound()
     {
         var (sim, _) = Town(round: false);
-        sim.TickMany(SimClock.TicksPerDay);
+        sim.TickMany(SimClock.HoursToTicks(PartySystem.FirstArrivalHours + 1)); // past when a round's first would come
         Assert.Empty(Adventurers(sim));
         Assert.Equal(0, sim.Parties.PartiesSent);
     }

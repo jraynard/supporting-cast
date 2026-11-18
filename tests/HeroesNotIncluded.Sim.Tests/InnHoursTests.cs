@@ -18,6 +18,13 @@ public class InnHoursTests
             sim.TickMany(SimClock.TicksPerHour / 60);
     }
 
+    /// <summary>Jump the clock to an hour before <paramref name="hour"/> on <paramref name="day"/>, then tick the last hour.</summary>
+    private static void JumpTill(Simulation sim, int day, float hour)
+    {
+        sim.Clock.Tick = sim.Round.TickAt(sim, day, hour - 1);
+        TickTill(sim, hour);
+    }
+
     /// <summary>A round with a party that stays in town: no quests on the sign, and days to stay.</summary>
     private static (Simulation Sim, List<Entity> Party) Staying()
     {
@@ -55,7 +62,7 @@ public class InnHoursTests
     public void NothingIsAskedInTheSmallHoursButARoomOrABadHurt()
     {
         var (sim, party) = Staying();
-        TickTill(sim, ShopSystem.SmallHoursFrom + 0.1f);
+        JumpTill(sim, 1, ShopSystem.SmallHoursFrom + 0.1f);
         var before = sim.Shops.All.Select(o => o.Id).ToHashSet();
         foreach (var e in party)
         {
@@ -71,7 +78,7 @@ public class InnHoursTests
     public void PatienceWaitsForTheMorning()
     {
         var (sim, party) = Staying();
-        TickTill(sim, ShopSystem.SmallHoursFrom - 0.5f);
+        JumpTill(sim, 1, ShopSystem.SmallHoursFrom - 0.5f);
         var inn = ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn"));
         var order = sim.Shops.Post(sim, party[0], sim.Defs.Service(ServiceKind.Meal), "Food!", 3, sim.Clock.Tick + SimClock.HoursToTicks(2), where: inn);
         TickTill(sim, ShopSystem.SmallHoursUntil - 0.5f);
@@ -83,7 +90,7 @@ public class InnHoursTests
     {
         var (sim, party) = Staying();
         // Fed in the small hours, before anyone's up to ask: not hungry, but ready for it by breakfast.
-        TickTill(sim, ShopSystem.SmallHoursUntil - 0.5f);
+        JumpTill(sim, 2, ShopSystem.SmallHoursUntil - 0.5f);
         foreach (var e in party)
             sim.World.Get<Needs>(e).Values[sim.Defs.Need("Food").Index] = 0.8f;
         TickTill(sim, ShopSystem.BreakfastFromHour - 0.25f);
