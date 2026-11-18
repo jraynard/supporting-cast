@@ -79,6 +79,68 @@ public sealed class SawSession : WorkSession
     /// <summary>The sawhorse.</summary>
     public Entity Station { get; set; } = Entity.Null;
 
+    // ---------------- A great log: the pitman's work too (Work.Pairs) ----------------
+
+    /// <summary>
+    /// A great log (a <c>twoHanded</c> recipe): too long for one. Hewn as any, but sawn with a
+    /// pitman below (<see cref="PitSession"/>): each downstroke the top sawyer starts is the call, and
+    /// it's the pitman's pull that cuts. Alone, the top sawyer's own stroke barely moves it.
+    /// </summary>
+    public bool Great { get; set; }
+
+    /// <summary>On a great log, the share of a cut the top sawyer's own downstroke makes.</summary>
+    public const float GuideShare = 0.12f;
+
+    /// <summary>How far one of the pitman's pulls takes the cut along, at its best (about seven to a cut).</summary>
+    public const float PullCut = 0.15f;
+
+    /// <summary>A pull against the top sawyer (no call): it binds the saw, knocking the blade off its line and the cut back.</summary>
+    public const float BindJolt = 0.2f, BindLoss = 0.03f;
+
+    /// <summary>The pitman's pulls on the call, off it, and calls let go by; and how the last went (-1 off the beat) and when.</summary>
+    public int Pulls { get; private set; }
+    public int Binds { get; private set; }
+    public int MissedPulls { get; private set; }
+    public float LastPull { get; private set; }
+    public int LastPullStep { get; private set; } = -1;
+
+    private bool _wasDown;
+
+    public override bool TakesHelper => Great && !Hewing;
+
+    public override string AskForHand => "A pitman, someone! This log's too long for one saw.";
+
+    public override string HelpLine => "Coming! I'll get in the pit.";
+
+    public override HelperSession? HelperFor(Simulation sim, Entity helper) => TakesHelper ? new PitSession { Station = Station } : null;
+
+    /// <summary>The pitman's pull, sent in by the sim between steps: on the call it cuts; against the saw it binds.</summary>
+    protected override void Received(Beat beat)
+    {
+        if (Hewing || Cut >= Cuts)
+            return;
+        switch (beat.Kind)
+        {
+            case BeatKind.Strike:
+            {
+                var v = Math.Clamp(beat.Value, 0f, 1f);
+                Pulls++;
+                (LastPull, LastPullStep) = (v, StepsDone);
+                Advance(PullCut * (0.3f + 0.7f * v));
+                break;
+            }
+            case BeatKind.Offbeat:
+                Binds++;
+                (LastPull, LastPullStep) = (-1f, StepsDone);
+                Offset = Math.Clamp(Offset + Drift * BindJolt * Math.Max(0.3f, beat.Value), -1f, 1f);
+                Progress = Math.Max(0f, Progress - BindLoss);
+                break;
+            case BeatKind.Missed:
+                MissedPulls++;
+                break;
+        }
+    }
+
     /// <summary>Still squaring the log (true), or sawing the beam.</summary>
     public bool Hewing { get; private set; } = true;
 
@@ -279,17 +341,31 @@ public sealed class SawSession : WorkSession
         Offset = Math.Clamp(Offset + steer * SteerPerStep, -1f, 1f);
         // Only the downstroke cuts; the upstroke just draws it back.
         if (move <= 0f)
+        {
+            _wasDown = false;
             return;
+        }
         Cutting = true;
+        if (Great && !_wasDown)
+            Send(BeatKind.Call, Accuracy(Offset)); // the pitman's cue: pull now
+        _wasDown = true;
         if (Rand.Chance(0.006f))
             Drift = -Drift;
         var rush = Pace / KeyPace;
         _wobble = _wobble * 0.92f + (Rand.NextFloat() * 2f - 1f) * Hands.Tremor * 0.4f * 0.08f;
         Offset = Math.Clamp(Offset + (Drift * DriftPerStroke * rush + _wobble * DriftPerStroke) * Pace, -1f, 1f);
-        _sum += Accuracy(Offset) * Pace;
-        _weight += Pace;
+        Advance(Pace * CutPerStroke * (Great ? GuideShare : 1f));
+    }
+
+    /// <summary>The cut goes along by <paramref name="by"/> with the blade where it is: the kerf drawn, and the cut finished at the end.</summary>
+    private void Advance(float by)
+    {
+        if (by <= 0f || Cut >= Cuts)
+            return;
+        _sum += Accuracy(Offset) * by;
+        _weight += by;
         var before = Progress;
-        Progress = Math.Min(1f, Progress + Pace * CutPerStroke);
+        Progress = Math.Min(1f, Progress + by);
         for (var i = (int)(before * Marks); i < Math.Min(Marks, (int)(Progress * Marks) + 1); i++)
             Path[i] = Offset;
         if (Progress < 1f)
@@ -361,6 +437,13 @@ public sealed class SawSession : WorkSession
         w.Float(_sum);
         w.Float(_weight);
         w.Float(_wobble);
+        w.Bool(Great);
+        w.Int(Pulls);
+        w.Int(Binds);
+        w.Int(MissedPulls);
+        w.Float(LastPull);
+        w.Int(LastPullStep);
+        w.Bool(_wasDown);
     }
 
     protected override void ReadState(SaveReader r)
@@ -395,5 +478,15 @@ public sealed class SawSession : WorkSession
         _sum = Math.Max(0f, r.Float());
         _weight = Math.Max(0f, r.Float());
         _wobble = Math.Clamp(r.Float(), -1f, 1f);
+        if (r.Version >= 58) // a great log, sawn with a pitman (format 58)
+        {
+            Great = r.Bool();
+            Pulls = r.Int();
+            Binds = r.Int();
+            MissedPulls = r.Int();
+            LastPull = r.Float();
+            LastPullStep = r.Int();
+            _wasDown = r.Bool();
+        }
     }
 }

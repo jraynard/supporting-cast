@@ -240,6 +240,29 @@ public sealed partial class BotPlayer
                 if (_slip && b.Tension > b.High)
                     Slipped();
                 return (false, b.Tension < (_slip ? b.High + 0.08f : (b.Low + b.High) / 2f), 0);
+            case CastSession { WantsKeeper: true } waiting:
+                // A Calling with nobody holding the body: call for a hand now and then, and wait.
+                if (waiting.StepsDone % (SimClock.TicksPerSecond * 4) == 1)
+                    Send(new AskForHandCommand(waiting.Worker));
+                return (false, false, 0);
+            case Afterlife.HoldSession hold:
+                // Brace just before each pull peaks, and ease off between.
+                return (false, hold.PullAge >= Afterlife.HoldSession.PeakAt - hold.Half - 2, 0);
+            case Carpentry.PitSession pit:
+                // Pull with each stroke the top sawyer starts, and let go between.
+                return (false, pit.CallOpen || pit.Down > 0f && pit.Down < 1f, 0);
+            case Carpentry.LiftSession lift:
+                // Keep it up, and lean against the way it's tipping; set it down to rest once the arms are nearly spent.
+                return (false, lift.Strain < 0.9f || lift.Up && lift.Strain < 0.97f, lift.Tilt + lift.Sway * 8f > 0.05f ? -1 : lift.Tilt + lift.Sway * 8f < -0.05f ? 1 : 0);
+            case Carpentry.JoinSession { Work: Carpentry.JoinWork.Axle, Cutting: false } axle when axle.Partner.IsNull && axle.StepsDone % (SimClock.TicksPerSecond * 4) == 1:
+                Send(new AskForHandCommand(axle.Worker));
+                return (false, false, 0);
+            case Carpentry.SawSession { Great: true, Hewing: false } great when great.Partner.IsNull && great.StepsDone % (SimClock.TicksPerSecond * 4) == 1:
+                Send(new AskForHandCommand(great.Worker));
+                return (false, false, 0);
+            case SledgeSession sledge:
+                // Heave it up and hold it; let it fall on the smith's call.
+                return (false, !(sledge.CallOpen && sledge.Raise >= SledgeSession.FullHeave), 0);
             case CastSession c:
             {
                 // The book's runes for the mending it means, each on a beat; then let it go.

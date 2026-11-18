@@ -300,6 +300,15 @@ public sealed partial class VillageGame
             case SledgeSession sledge:
                 DrawSledge(sledge);
                 return;
+            case Sim.Afterlife.HoldSession hold:
+                DrawHold(hold);
+                return;
+            case Sim.Carpentry.PitSession pit:
+                DrawPit(pit);
+                return;
+            case Sim.Carpentry.LiftSession lift:
+                DrawLift(lift);
+                return;
             case Sim.Environment.ThrowSession throwing:
                 DrawThrow(throwing);
                 return;

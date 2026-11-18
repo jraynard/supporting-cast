@@ -21,6 +21,7 @@ dotnet run --project src/HeroesNotIncluded -- --raid-test --name Arin          #
 dotnet run --project src/HeroesNotIncluded -- --fire-test --name Arin          # the inn alight, you at the well with a full bucket
 dotnet run --project src/HeroesNotIncluded -- --dragon-test --name Arin        # the dragon coming, you at the well with a full bucket
 dotnet run --project src/HeroesNotIncluded -- --bridge-test --name Arin        # the bridge down, you the tinker at the gap with wood
+dotnet run --project src/HeroesNotIncluded -- --host --name Arin --pairs-test  # every job for two ready: a greatsword's iron, a great log, a wagon's axle, a body on a shrine pallet (solo: --new-game, and Help! brings a villager)
 dotnet run --project src/HeroesNotIncluded -- --new-game --die-at 5            # your character drops dead: try being a ghost
 dotnet run --project src/HeroesNotIncluded -- --new-game --festival-at 5       # the season's festival, now, you by the well
 dotnet run --project src/HeroesNotIncluded -- --practice Empath          # the tutorial in the practice yard: no season, customers on request (--lesson ID: straight into a chapter, `basics` too)
@@ -100,8 +101,10 @@ themselves in Debug (F8 forces it), F7 recompiles shaders, F5 reloads art. ` (R3
     sim; anything reading the world goes in `StillValid` or `Finish`. Inputs arrive in batches.
     New sessions go in the `WorkSession.Read` switch. `Interrupted` keeps what lasts when one is
     stopped early. Work for two (`Work/Pairs`): a lead's session and a `HelperSession` (the striker's
-    `SledgeSession`) are each driven by their own player and pass `Beat`s through the sim; a session's
-    `Revision` tells the predictor to take it again. Forging (`Smithing`) keeps the piece in the tongs as a `WorkPiece` between its
+    `SledgeSession`; the keeper's `HoldSession` at a Calling, the pitman's `PitSession` under a great log,
+    the lifter's `LiftSession` at a wagon's axle) are each driven by their own player and pass `Beat`s through
+    the sim; a session's `Revision` tells the predictor to take it again. A lead session says how an AI helper
+    answers it (`AiAnswer`). Forging (`Smithing`) keeps the piece in the tongs as a `WorkPiece` between its
     sessions (fire, anvil, quench); its heat is shown only as colour. Cooking (`Cooking`) keeps
     its state on the `StewPot`, carried on by `CookingSystem` between sessions; a pot's rot and
     the seasoning it wants are hidden (read pots through `PerceptionView.Pot`). A pot tastes of what went in

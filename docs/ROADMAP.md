@@ -138,20 +138,27 @@ Moved up from "once Whispers plays" (Toward Steam, "When").
 *Exit: newcomers get through their first ten minutes, friends play a whole round from their own
 homes, and the numbers have had a pass.*
 
-### 5. Two pairs of hands, the rest (DESIGN.md, "The theme under them")
-The striker is built; the rest follow its pattern (`HelperSession`, beats through the sim).
-- [ ] **The keeper at the Calling back:** the rite needs two (`Revival.CallProblem` refuses it
-  alone). The keeper braces against the grave's pull on each rune the empath keys (`CastSession`
-  with `callingFor`), and a slipped hold breaks a rune, so the weave comes out worse (`Revival.Call`'s quality). An AI empath's
-  `CallBackJob` waits for a keeper; existing revival tests bring one.
-- [ ] **The pitman** under the carpenter's pit saw (`SawSession`, the great beam), and **the
-  lifter** holding a wagon level for the tinker (`TrueSession`, axles).
-- [ ] **Playtest the striker** over the internet: is the call's window (`SledgeSession.CallSteps`)
-  wide enough at a real round trip? Does the smith wait for the striker's heave?
-- [ ] A "Lend a hand" lesson in the practice yard (`trades.json` `basics`), with an AI smith.
-- [ ] Bots don't answer a call for a hand or take up the sledge; AI smiths never make a great piece
-  (`Crafting.NextForVillager` skips `twoHanded`). The greatsword borrows the longsword's sprite, and
-  the sledge has no sounds of its own yet.
+### 5. Two pairs of hands: playtest them in co-op
+The striker, the keeper, the pitman and the lifter are built (HISTORY.md, "Two pairs of hands, the
+rest"). Each wants two players over the internet, one as the lead and one as the helper.
+`--host --pairs-test` stages them all at once (`Scenarios/PairsDrill`): a greatsword's iron by the
+forge, a great log by the sawhorse, a wagon with a cracked axle by the woodshop, and a villager
+dead on a shrine pallet with the empath's mana full. Take the four trades between you and swap.
+- [ ] **The striker:** a greatsword at the anvil. Is the call's window (`SledgeSession.CallSteps`)
+  wide enough at a real round trip? Does the smith wait for the striker's heave? Tune `TapShare`,
+  `StrikeShaping`, `OffbeatCrack`.
+- [ ] **The keeper:** `--die-at 5` with an empath and a third player. Does the empath see the
+  weave's locked till someone holds them? Is the pull's peak (`HoldSession.PeakAt`, `PeakHalf`)
+  readable, and the grip's tiring fair? Is `Revival.FailsBelow` too harsh?
+- [ ] **The pitman:** `SawGreatLog` at the woodshop. Does the pitman see the stroke start in time
+  (`PitSession.CallSteps`)? Is `SawSession.GuideShare` low enough that it feels like two people's work?
+- [ ] **The lifter:** a party wagon with a cracked axle. Is the sway (`LiftSession.SwayPerStep`) a
+  game, and the arms' tiring a reason to set it down between blows?
+- [ ] A "Lend a hand" lesson in the practice yard (`trades.json` `basics`), with an AI lead.
+- [ ] AI smiths never make a great piece (`Crafting.NextForVillager` skips `twoHanded`), nor AI
+  carpenters a great log. The greatsword borrows the longsword's sprite; the sledge, the pit saw's
+  pull, the keeper's hold and the lifter have no sounds of their own.
+- [ ] Working beside someone could be a good memory of them (`mood.json` opinion).
 
 ### 6. The trades, next
 Testers' favourites so far are the tinker and the empath: both read a hidden truth by feel (a trap's
@@ -166,7 +173,6 @@ tinker and innkeeper have nothing to do before one comes. In order:
   slower to wake.
 - [ ] **The carpenter played by someone** (1, above), then its slice 2: furniture broken in brawls
   and raids, mended (Backlog, "The trades, deeper").
-- [ ] **The Calling back for two** (5, above): the empath's rite with a keeper.
 - [ ] **More town contraptions** (DESIGN.md, "Tinker"): a smoke bell for a fire, rat traps for the
   cook in a shortage, then something for the dragon. Each a `ContraptionUse` that's not `ForTheRoad`,
   set like the trip-bell.

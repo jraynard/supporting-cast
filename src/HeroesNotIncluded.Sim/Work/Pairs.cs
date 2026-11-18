@@ -97,15 +97,19 @@ public static class Pairs
         sim.World.IsAlive(lead) && sim.World.TryGet<WorkSession>(lead, out var s) && s.TakesHelper && !Linked(sim, s);
 
     /// <summary>Whose work at this station someone could lend a hand to, or Entity.Null.</summary>
-    public static Entity WantsHandAt(Simulation sim, Entity helper, Entity station)
+    public static Entity WantsHandAt(Simulation sim, Entity helper, Entity station) =>
+        sim.World.IsAlive(station) && sim.World.TryGet<Thing>(station, out var t) ? WantsHandAt(sim, helper, t.Cell) : Entity.Null;
+
+    /// <summary>Whose work centred on this cell (a station, a body, a wagon) someone could lend a hand to, or Entity.Null.</summary>
+    public static Entity WantsHandAt(Simulation sim, Entity helper, int3 cell)
     {
         var w = sim.World;
-        if (!w.IsAlive(station) || !w.TryGet<Thing>(station, out var t) || w.Has<WorkSession>(helper) && w.Get<WorkSession>(helper) is HelperSession)
+        if (w.Has<WorkSession>(helper))
             return Entity.Null;
         foreach (var e in w.Query<WorkSession>())
         {
             var s = w.Get<WorkSession>(e);
-            if (e != helper && s.TakesHelper && !Linked(sim, s) && s.Focus(sim) == t.Cell)
+            if (e != helper && s.TakesHelper && !Linked(sim, s) && s.Focus(sim) == cell)
                 return e;
         }
         return Entity.Null;
@@ -122,6 +126,7 @@ public static class Pairs
         WorkSystem.Start(sim, helper, h);
         h.Partner = lead;
         s.Partner = helper;
+        s.Revise(); // the lead's copy running ahead learns it has a partner now
         return true;
     }
 
@@ -138,12 +143,14 @@ public static class Pairs
             if (e != worker && w.Get<WorkSession>(e) is HelperSession h && h.Partner == worker && h.Follows(session))
             {
                 session.Partner = e;
+                session.Revise();
                 return;
             }
         foreach (var e in w.Query<Helping>())
             if (w.Get<Helping>(e).Lead == worker)
             {
                 session.Partner = e;
+                session.Revise();
                 return;
             }
     }
@@ -188,7 +195,7 @@ public static class Pairs
             help.AnswerAt = -1;
             if (!w.TryGet<WorkSession>(help.Lead, out var lead) || lead.Partner != e)
                 continue;
-            lead.Receive(AiBlow(sim, e));
+            lead.Receive(lead.AiAnswer(sim, e));
             help.Blows++;
         }
     }
@@ -197,9 +204,9 @@ public static class Pairs
     /// An AI helper's answer: steady, never brilliant, better for a practised hand; now and then it
     /// comes down off the beat.
     /// </summary>
-    private static Beat AiBlow(Simulation sim, Entity helper)
+    public static Beat AiBlow(Simulation sim, Entity helper, Skill skill = Skill.Crafting)
     {
-        var level = SkillRules.LevelOf(sim, helper, Skill.Crafting);
+        var level = SkillRules.LevelOf(sim, helper, skill);
         if (sim.Rand.NextFloat() < Math.Max(0.02f, 0.08f - 0.006f * level))
             return new Beat(BeatKind.Offbeat, 0.6f);
         return new Beat(BeatKind.Strike, Math.Clamp(0.4f + 0.035f * level + sim.Rand.Range(-0.12f, 0.12f), 0.2f, 0.8f));
@@ -259,7 +266,7 @@ public sealed record AskForHandCommand(Entity Actor) : ISimCommand, IActorComman
             return;
         }
         AiSystem.Order(sim, best, new HelpJob(Actor));
-        sim.Speech.Say(sim, best, "Coming! I'll take the sledge.", Volume.Say);
+        sim.Speech.Say(sim, best, s.HelpLine, Volume.Say);
     }
 }
 
@@ -286,8 +293,11 @@ public sealed class HelpJob(Entity lead) : Job
         }
         Sim.World.Add(Pawn, new Helping { Lead = lead });
         if (Sim.World.TryGet<WorkSession>(lead, out var now) && now.TakesHelper && !Pairs.Linked(Sim, now))
+        {
             now.Partner = Pawn;
-        Report = $"At the sledge for {Get<Creature>(lead).Name}";
+            now.Revise();
+        }
+        Report = $"Lending {Get<Creature>(lead).Name} a hand";
         for (var t = 0; t < Pairs.HelpTicks && Alive(lead) && Pairs.AtWork(Sim, lead); t++)
             yield return JobStatus.Running;
     }

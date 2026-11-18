@@ -227,8 +227,16 @@ internal static class ComponentCodecs
             w.Entity(c.Caster);
             w.Long(c.Until);
             w.Float(c.Quality);
-        }, r => new Afterlife.Calling { Caster = r.Entity(), Until = r.Long(), Quality = r.Float() }),
-        Codec("Revived", (w, v) => w.Int(v.Count), r => new Afterlife.Revived { Count = r.Int() }),
+            w.Entity(c.Keeper);
+        }, r => new Afterlife.Calling { Caster = r.Entity(), Until = r.Long(), Quality = r.Float(), Keeper = r.Version >= 58 ? r.Entity() : Entity.Null }),
+        Codec("Revived", (w, v) =>
+        {
+            w.Int(v.Count);
+            w.Entity(v.CalledBy);
+            w.Entity(v.HeldBy);
+        }, r => r.Version >= 58
+            ? new Afterlife.Revived { Count = r.Int(), CalledBy = r.Entity(), HeldBy = r.Entity() }
+            : new Afterlife.Revived { Count = r.Int() }),
         Codec<Work.WorkSession>("WorkSession", Work.WorkSession.Write, Work.WorkSession.Read),
         Codec<Combat.Trail>("Trail", Combat.Trails.Write, Combat.Trails.Read),
         Codec("WorkInput", (w, i) =>
@@ -553,10 +561,12 @@ internal static class ComponentCodecs
             w.UInt(g.WheelSeed);
             w.Entity(g.MendedBy);
             w.Entity(g.JoinedBy);
+            w.Entity(g.LiftedBy);
         }, r => new Tinkering.Wagon
         {
             Party = r.Int(), Owner = r.Entity(), Damage = (Tinkering.WagonDamage)(r.Byte() & 7), WheelSeed = r.UInt(), MendedBy = r.Entity(),
             JoinedBy = r.Version >= 56 ? r.Entity() : Entity.Null, // the carpenter's share came with format 56
+            LiftedBy = r.Version >= 58 ? r.Entity() : Entity.Null, // the lifter's with format 58
         }),
         Codec("Curio", (w, c) =>
         {

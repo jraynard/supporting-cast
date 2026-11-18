@@ -44,9 +44,22 @@ play to it directly.
     and a striker. The smith's hammer only taps where the sledge must fall; the striker heaves it
     up, holds it, and brings it down on the tap. Late, the call's gone; with no call, the sledge
     comes down off the beat and may crack the piece. Alone, a great piece barely moves.
-  - *Next:* the Calling back made a rite for two (a keeper holds the body against the grave's pull
-    while the empath weaves), the pitman under the carpenter's saw (the great beam), and the lifter
-    holding a party's wagon level for the tinker.
+  - *Built: the keeper* (`Afterlife/HoldSession`). The Calling back is a rite for two: the empath
+    begins it at the body, but no rune takes till someone kneels and holds them. Each rune keyed is a
+    pull of the grave that swells and peaks; the keeper braces (holds F) through the peak. The grip
+    tires while it's held, so bracing early leaves nothing for the peak; a slipped hold costs that
+    rune its share of the weave, and a calling held badly enough fails, the mana spent. An AI empath
+    asks the nearest willing villager to hold the body (`KeepVigilJob`). The reveal says who called
+    them back and who held them.
+  - *Built: the pitman* (`Carpentry/PitSession`). A great log (`SawGreatLog`, ten logs to twenty
+    planks) is hewn as any, then sawn with a pitman below: each downstroke the top sawyer starts is
+    the call, and it's the pitman's pull (hold F) that cuts. Pull with no stroke, or hold on after
+    it, and you're fighting the saw: it binds, knocking the blade off its line and the cut back.
+  - *Built: the lifter* (`Carpentry/LiftSession`). A party wagon's new axle (the carpenter's
+    joinery): the hub's driven on with the wagon lifted. The lifter holds it up (F) and leans
+    against its sway (A/D); each blow on the hub is the call, answered at once with how level it's
+    held. Level, the blow goes home; dropped or tipped, the hub's jolted back. The arms tire, and
+    give if it's held too long. Alone, with its weight on the ground, a blow barely moves the hub.
 
 ## A round
 

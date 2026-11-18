@@ -229,7 +229,39 @@ public sealed partial class BotPlayer
     {
         if (!sim.Round.Live || sim.World.Get<Creature>(me).Downed)
             return false;
-        return CarryOn(sim, me, now) || CallBack(sim, me, view, now) || CarryDowned(sim, me, view, now) || BindOther(sim, me, view, now);
+        return CarryOn(sim, me, now) || CallBack(sim, me, view, now) || CarryDowned(sim, me, view, now) || BindOther(sim, me, view, now)
+            || LendAHand(sim, me, now);
+    }
+
+    /// <summary>How near someone at work for two has to be for a bot to see they want a hand, cells.</summary>
+    public const int LendAHandReach = 12;
+
+    /// <summary>
+    /// Someone near at work for two with nobody helping (a great piece at the anvil, a great log, an
+    /// axle, a Calling): go over and take it up, as a player would on seeing it. True while at it.
+    /// </summary>
+    private bool LendAHand(Simulation sim, Entity me, long now)
+    {
+        var w = sim.World;
+        if (w.Has<HeroesNotIncluded.Sim.Work.WorkSession>(me) || !w.Get<Carrying>(me).Item.IsNull)
+            return false;
+        var here = w.Get<Position>(me).Cell;
+        foreach (var e in w.Query<HeroesNotIncluded.Sim.Work.WorkSession>())
+        {
+            if (e == me || !HeroesNotIncluded.Sim.Work.Pairs.WantsHand(sim, e) || w.Get<HeroesNotIncluded.Sim.Work.WorkSession>(e).Focus(sim) is not { } at
+                || Maps.Map.Distance(at, here) > LendAHandReach)
+                continue;
+            Doing = $"lending {w.Get<Creature>(e).Name} a hand";
+            foreach (var c in sim.SpiralFrom(at, 2))
+                if (sim.Map.InBounds(c) && AvatarSystem.InReach(here, c) && AvatarSystem.ActionAt(sim, me, c).Kind == AvatarActionKind.LendAHand)
+                {
+                    Use(me, c);
+                    return true;
+                }
+            Walk(sim, me, at, now);
+            return true;
+        }
+        return false;
     }
 
     /// <summary>Someone in its arms: to a bed (the dead, a shrine pallet), and laid there.</summary>

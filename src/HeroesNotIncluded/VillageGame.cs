@@ -251,6 +251,14 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
     /// <summary>Debug (<c>--bridge-test</c>): the bridge drill (<see cref="BridgeDrill"/>), the bridge down and you at the gap with wood.</summary>
     public bool BridgeTest { get; init; }
 
+    /// <summary>
+    /// Debug (<c>--pairs-test</c>): every job for two pairs of hands staged at once (<see cref="PairsDrill"/>),
+    /// through a dev command once the round's dealt, so a host's co-op round stages it for everyone.
+    /// </summary>
+    public bool PairsTest { get; init; }
+
+    private bool _pairsStaged;
+
     /// <summary>Debug (<c>--die-at SECONDS</c>): your character drops dead this long in, to try being a ghost. Negative: never.</summary>
     public float DieAt { get; init; } = -1f;
 

@@ -206,6 +206,7 @@ else if (args.Contains("--host"))
             Adventure = true, Character = saved, HeroName = saved == null ? ParseString(args, "--name") : null,
             Difficulty = ParseString(args, "--difficulty"), HostCoop = hosting, AutoPause = false, FriendlyFire = args.Contains("--friendly-fire"),
             MapName = ParseString(args, "--map") ?? HeroesNotIncluded.Sim.Scenarios.VillageRound.DefaultMap,
+            PairsTest = args.Contains("--pairs-test"), // staged for everyone once the round's dealt
         });
     }
 }
@@ -291,6 +292,9 @@ else
         DragonTest = args.Contains("--dragon-test"),
         // --bridge-test: the bridge drill (BridgeDrill): the bridge down, you at the gap with wood to mend it.
         BridgeTest = args.Contains("--bridge-test"),
+        // --pairs-test: every job for two pairs of hands ready at once (PairsDrill): a greatsword's iron, a great
+        // log, a wagon's axle and a body on a shrine pallet. With --host, for co-op; alone, Help! brings a villager.
+        PairsTest = args.Contains("--pairs-test"),
         // --practice TRADE: the practice yard (Practice): your trade's games, no season, customers when sent for.
         Practice = args.Contains("--practice"),
         // --lesson ID (with --practice): straight into one of the trade's lessons (trades.json "lessons").
@@ -336,7 +340,7 @@ SavedCharacter? PickedCharacter()
 
 static bool LaunchesDirectly(string[] args) =>
     args.Any(a => a is "--new-game" or "--seed" or "--skip-hours" or "--furniture-demo" or "--building-demo" or "--freeform" or "--show-roofs" or "--hide-roofs"
-        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--fire-spread" or "--dragon-test" or "--bridge-test" or "--arena" or "--practice" or "--yaw" or "--pitch" or "--camera-mode" or "--keep-replay-at" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
+        or "--ignite-forest" or "--raid-test" or "--fire-test" or "--fire-spread" or "--dragon-test" or "--bridge-test" or "--pairs-test" or "--arena" or "--practice" or "--yaw" or "--pitch" or "--camera-mode" or "--keep-replay-at" or "--cutaway" or "--difficulty" or "--map" or "--work-scenes");
 
 // --load and --check-save take a path, or the name of a slot in the saves directory ("quicksave").
 static string ResolveSave(string pathOrSlot)

@@ -14,12 +14,18 @@ public struct Calling
     public Entity Caster;
     public long Until;
     public float Quality;
+
+    /// <summary>Who held the body while the empath called (the rite's for two); Entity.Null for a calling from before.</summary>
+    public Entity Keeper;
 }
 
 /// <summary>Someone already brought back this round: the way back opens only once.</summary>
 public struct Revived
 {
     public int Count;
+
+    /// <summary>Who called them back and who held them, for the reveal.</summary>
+    public Entity CalledBy, HeldBy;
 }
 
 /// <summary>
@@ -46,6 +52,9 @@ public static class Revival
 
     /// <summary>The grave's chill the caster takes on: frost, less the better the weave.</summary>
     public const float ChillDamage = 10f;
+
+    /// <summary>A calling held by a keeper this weak (its quality, slips and all) fails: the grave keeps them.</summary>
+    public const float FailsBelow = 0.2f;
 
     /// <summary>Blood the returned come back with, at a poor and a perfect weave.</summary>
     public const float BloodPoor = 0.45f, BloodPerfect = 0.6f;
@@ -169,7 +178,7 @@ public static class Revival
             sim.Messages.Tell(caster, MessageKind.Info, $"You can't: {why}.", sim.LocationOf(caster));
             return;
         }
-        Healing.CastSession.TryStart(sim, caster, 0, callingFor: sim.World.Get<Creature>(body).Name);
+        Healing.CastSession.TryStart(sim, caster, 0, callingFor: sim.World.Get<Creature>(body).Name, body: body);
     }
 
     /// <summary>
@@ -240,8 +249,9 @@ public static class Revival
     /// The woven Calling back is let go (<see cref="Healing.CastSession"/>): it reaches for the body
     /// the caster kneels at. True if it took hold. The mana's spent either way.
     /// </summary>
-    public static bool Call(Simulation sim, Entity caster, float quality)
+    public static bool Call(Simulation sim, Entity caster, float quality, Entity? keptBy = null)
     {
+        var keeper = keptBy ?? Entity.Null;
         var w = sim.World;
         var at = sim.LocationOf(caster);
         var body = BodyBeside(sim, caster);
@@ -261,9 +271,18 @@ public static class Revival
             sim.Messages.Add(MessageKind.Warning, $"{name} is too long gone. The calling finds nothing to hold.", at);
             return false;
         }
+        if (!keeper.IsNull && quality < FailsBelow)
+        {
+            // Too many holds slipped: the grave keeps them, and the cold comes back all the same.
+            var cold = HealthSystem.Damage(sim, caster, ChillDamage, DamageType.Frost, bias: PartHeight.High);
+            if (cold != null)
+                cold.Absorbed = true;
+            sim.Messages.Tell(caster, MessageKind.Warning, $"The grave pulls {name} out of your keeper's hands, and the calling fails. The mana's spent.", at);
+            return false;
+        }
         if (w.Has<Calling>(body))
             w.Remove<Calling>(body);
-        w.Add(body, new Calling { Caster = caster, Until = sim.Clock.Tick + AnswerTicks, Quality = Math.Clamp(quality, 0f, 1f) });
+        w.Add(body, new Calling { Caster = caster, Until = sim.Clock.Tick + AnswerTicks, Quality = Math.Clamp(quality, 0f, 1f), Keeper = keeper });
 
         // The grave's cold comes back with the caster: a wound of their own, known by its feel.
         var chill = HealthSystem.Damage(sim, caster, ChillDamage * (1.5f - Math.Clamp(quality, 0f, 1f)), DamageType.Frost, bias: PartHeight.High);
@@ -309,6 +328,7 @@ public static class Revival
         if (!c.Dead)
             return;
         var quality = w.TryGet<Calling>(body, out var calling) ? calling.Quality : 0.5f;
+        var (calledBy, heldBy) = w.Has<Calling>(body) ? (calling.Caster, calling.Keeper) : (Entity.Null, Entity.Null);
         if (w.TryGet<Health>(body, out var h))
         {
             h.Blood = Math.Max(h.Blood, BloodPoor + (BloodPerfect - BloodPoor) * quality);
@@ -337,7 +357,7 @@ public static class Revival
         c.Downed = true; // up when the body says so (HealthSystem)
         w.Remove<Death>(body);
         w.Remove<Calling>(body);
-        w.Add(body, new Revived { Count = 1 });
+        w.Add(body, new Revived { Count = 1, CalledBy = calledBy, HeldBy = heldBy });
         if (c.Faction == Faction.Village)
             sim.Reckoning.Add(sim, 0f, sim.Defs.Season.DreadPerRevival);
         w.Get<Mover>(body).Stop();

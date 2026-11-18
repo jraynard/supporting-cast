@@ -386,6 +386,9 @@ public sealed class AvatarSystem : ISimSystem
         // in); anyone else (or an empath short of it) can carry it to a shrine pallet, where it keeps.
         if (tool == AvatarTool.Use && InReach(here, cell) && Afterlife.Revival.BodyAt(sim, cell) is { IsNull: false } dead)
         {
+            // An empath calling them back with nobody holding them: kneel and hold them.
+            if (Work.Pairs.WantsHandAt(sim, avatar, sim.LocationOf(dead)) is { IsNull: false } caller)
+                return new(AvatarActionKind.LendAHand, $"Hold {w.Get<Creature>(dead).Name} for {w.Get<Creature>(caller).Name}", cell, caller);
             if (w.Has<Mana>(avatar) && Afterlife.Revival.Fresh(sim, dead) && Afterlife.Revival.CallProblem(sim, avatar, dead) == null)
                 return new(AvatarActionKind.CallBack, $"Call {w.Get<Creature>(dead).Name} back", cell, dead);
             if (held.IsNull && Rescues.CanCarry(sim, avatar, dead) && !Afterlife.Revival.OnShrinePallet(sim, dead))

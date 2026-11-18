@@ -573,6 +573,14 @@
       "products": [ { "def": "Planks", "count": 10 } ]
     },
     {
+      // Pitman's work (Work.Pairs): too long for one saw. Hewn as any, sawn by a top sawyer and a pitman below.
+      "name": "SawGreatLog", "label": "planks from a great log", "station": "Sawhorse", "skill": "Crafting", "work": 1200, "helpedBy": [ "Saw" ],
+      "twoHanded": true,
+      "description": "A great log, too long for one saw: a top sawyer and a pitman below make 20 planks of 10 logs.",
+      "ingredients": [ { "def": "Wood", "count": 10 } ],
+      "products": [ { "def": "Planks", "count": 20 } ]
+    },
+    {
       "name": "TanHides", "label": "leather", "station": "TanningRack", "skill": "Crafting", "work": 900,
       "description": "Scrape, stretch and tan 3 hides into 4 leather.",
       "unlock": { "discover": "handle:Hide" },

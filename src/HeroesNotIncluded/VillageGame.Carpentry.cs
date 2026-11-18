@@ -123,7 +123,27 @@ public sealed partial class VillageGame
         var label = new float2(min.X + Gui.S(4), min.Y + Gui.S(4));
         dl.AddText(in label, Theme.U8(Theme.Dim), $"{(s.Work == JoinWork.Board ? "Peg" : s.Work == JoinWork.Axle ? "End" : "Joint")} {Math.Min(s.Joint + 1, s.Joints)} of {s.Joints}"
             + (s.Splits > 0 ? $", {s.Splits} split" : ""));
+        DrawLifterLine(s);
         EndWork();
+    }
+
+    /// <summary>Under a new axle: who's taking the wagon's weight, and how level, or that nobody is.</summary>
+    private void DrawLifterLine(JoinSession s)
+    {
+        if (!s.TakesHelper)
+            return;
+        if (!_sim.World.IsAlive(s.Partner) || !_sim.World.TryGet<Sim.Components.Creature>(s.Partner, out var lifter))
+        {
+            TextC(Theme.Warn, "With its weight on the ground, the hub barely goes on. Call Help! from the quick-say wheel for someone to lift the wagon.");
+            return;
+        }
+        var recent = s.LastLiftStep >= 0 && s.StepsDone - s.LastLiftStep < Sim.Carpentry.LiftSession.WordSteps;
+        if (recent && s.LastLift < 0f)
+            TextC(Theme.Bad, $"{lifter.Name} let it tip: the hub's jolted back!");
+        else if (recent)
+            TextC(Theme.Good, $"{lifter.Name} held it level: the blow went home.");
+        else
+            TextC(Theme.Dim, $"{lifter.Name} has the wagon's weight: strike when it's level.");
     }
 
     /// <summary>Planks from a log: hewn square first, then pit-sawn.</summary>
@@ -375,7 +395,27 @@ public sealed partial class VillageGame
         }
         var label2 = new float2(v0.X, v1.Y + Gui.S(6));
         dl.AddText(in label2, Theme.U8(Theme.Dim), "from above"u8);
+        DrawPitmanLine(s);
         EndWork();
+    }
+
+    /// <summary>Under a great log's saw: how the pitman's pulling, or that there's none.</summary>
+    private void DrawPitmanLine(SawSession s)
+    {
+        if (!s.Great)
+            return;
+        if (!_sim.World.IsAlive(s.Partner) || !_sim.World.TryGet<Sim.Components.Creature>(s.Partner, out var pitman))
+        {
+            TextC(Theme.Warn, "A great log: your stroke barely moves the saw alone. Call Help! from the quick-say wheel for a pitman below.");
+            return;
+        }
+        var recent = s.LastPullStep >= 0 && s.StepsDone - s.LastPullStep < Sim.Carpentry.PitSession.WordSteps;
+        if (recent && s.LastPull < 0f)
+            TextC(Theme.Bad, $"{pitman.Name} pulled against you: the saw binds!");
+        else if (recent)
+            TextC(s.LastPull >= 0.6f ? Theme.Good : Theme.Text, $"{pitman.Name} pulled with your stroke{(s.LastPull < 0.4f ? ", short" : "")}.");
+        else
+            TextC(Theme.Dim, $"{pitman.Name} is in the pit: each downstroke you start, they pull.");
     }
 
     /// <summary>The arrow at the stage it's at: sighting, shaving, the head, fletching.</summary>

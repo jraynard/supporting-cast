@@ -99,6 +99,92 @@ public class CarpenterTests
         };
     }
 
+    /// <summary>A second pair of hands at the sawhorse, an avatar standing by it to lend them.</summary>
+    private static Entity Pitman(Simulation sim, Entity horse)
+    {
+        var at = sim.World.Get<Thing>(horse).Cell;
+        var cell = sim.SpiralFrom(at, 2).First(c => c != at && sim.Map.Passable(c) && AvatarSystem.InReach(sim, c, horse)
+            && c != sim.World.Get<Position>(sim.Creatures().First()).Cell);
+        var pitman = sim.SpawnCreature(sim.Defs.Creature("Human"), "Pitman", cell, ageDays: 25 * 365);
+        sim.World.Add(pitman, new Avatar());
+        return pitman;
+    }
+
+    /// <summary>
+    /// A great log sawn: the top sawyer's keys each tick through the predictor, and the pitman's
+    /// alongside (if any): take up the pit with F at the sawhorse, then pull with each stroke (or,
+    /// careless, pull whenever). Returns the sawyer's session as it ended, for its counts.
+    /// </summary>
+    private static SawSession SawGreat(Simulation sim, Entity me, Entity horse, Entity? pitman, bool withTheStroke = true, int maxTicks = 60 * 240)
+    {
+        var w = sim.World;
+        var lead = new WorkPredictor();
+        var pit = new WorkPredictor();
+        var keys = SawStraight();
+        var session = (SawSession)w.Get<WorkSession>(me);
+        for (var t = 0; t < maxTicks && w.Has<WorkSession>(me); t++)
+        {
+            sim.Tick();
+            var (press, held, axis, axis2, act) = lead.Session is { } s ? keys(s) : (false, false, 0, 0, false);
+            lead.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c), axis2, act: act);
+            if (pitman is not { } p)
+                continue;
+            if (!w.Has<WorkSession>(p))
+            {
+                var cell = w.Get<Thing>(horse).Cell;
+                if (AvatarSystem.ActionAt(sim, p, cell, AvatarTool.Use).Kind == AvatarActionKind.LendAHand)
+                    sim.ApplyNow(new AvatarWorkCommand(p, true, cell));
+                continue;
+            }
+            if (pit.Session?.StartTick != w.Get<WorkSession>(p).StartTick)
+            {
+                pit.Update(sim, p, 1, false, false, 0, c => sim.ApplyNow(c));
+                continue;
+            }
+            var pull = pit.Session is PitSession ps && (withTheStroke ? ps.CallOpen || ps.Down is > 0f and < 1f : true);
+            pit.Update(sim, p, 1, false, pull, 0, c => sim.ApplyNow(c));
+        }
+        sim.Tick();
+        return session;
+    }
+
+    [Fact]
+    public void ATopSawyerAndAPitmanSawAGreatLogTogether()
+    {
+        var (sim, me, horse, _) = AtTheWoodshop();
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Wood"), 4)); // ten logs with the six
+        var pitman = Pitman(sim, horse);
+        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawGreatLog")));
+        Assert.True(Assert.IsType<SawSession>(sim.World.Get<WorkSession>(me)).Great);
+        var session = SawGreat(sim, me, horse, pitman);
+        Assert.False(sim.World.Has<WorkSession>(me), "the great log should be sawn");
+        Assert.True(session.Pulls > 0);
+        Assert.True(PlanksOn(sim, me) >= StartPlanks + 15, $"{PlanksOn(sim, me)} planks");
+        Assert.False(sim.World.Has<WorkSession>(pitman)); // out of the pit once it's done
+    }
+
+    [Fact]
+    public void AloneAGreatLogsSawBarelyMoves()
+    {
+        var (sim, me, horse, _) = AtTheWoodshop();
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Wood"), 4));
+        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawGreatLog")));
+        var session = SawGreat(sim, me, horse, null, maxTicks: 60 * 60);
+        Assert.True(sim.World.Has<WorkSession>(me), "a minute's sawing alone shouldn't see a great log through");
+        Assert.True(session.Cut == 0, $"cut {session.Cut}, {session.Progress:F2} along");
+    }
+
+    [Fact]
+    public void APitmanPullingAgainstTheSawBindsIt()
+    {
+        var (sim, me, horse, _) = AtTheWoodshop();
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Wood"), 4));
+        var pitman = Pitman(sim, horse);
+        sim.ApplyNow(new CraftCommand(me, horse, Recipe(sim, "SawGreatLog")));
+        var session = SawGreat(sim, me, horse, pitman, withTheStroke: false, maxTicks: 60 * 200);
+        Assert.True(session.Binds > 0, "pulled whenever, it binds");
+    }
+
     [Fact]
     public void HewingSquareThenSawingTrueGivesEveryPlank()
     {

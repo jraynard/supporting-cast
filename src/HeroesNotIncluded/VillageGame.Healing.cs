@@ -424,7 +424,32 @@ public sealed partial class VillageGame
         }
         if (_sim.World.TryGet<Mana>(_avatar, out var mana))
             Bar("Mana", mana.Current / Math.Max(1f, mana.Max), Theme.Arcane, $"{mana.Current:F0} / {mana.Max:F0}");
+        DrawKeeperLine(s);
         EndWork();
+    }
+
+    /// <summary>Under a Calling: whether anyone's holding the body, and how their holds are going.</summary>
+    private void DrawKeeperLine(CastSession s)
+    {
+        if (!s.TakesHelper)
+            return;
+        var w = _sim.World;
+        if (s.WantsKeeper || !w.TryGet<Creature>(s.Partner, out var keeper))
+        {
+            TextC(Theme.Warn, $"The runes won't take till someone holds {s.CallingFor}. Call Help! from the quick-say wheel, or ask whoever's near to kneel at the body.");
+            return;
+        }
+        var recent = s.LastHoldStep >= 0 && s.StepsDone - s.LastHoldStep < Sim.Afterlife.HoldSession.WordSteps;
+        if (recent && s.LastSlipped)
+            TextC(Theme.Bad, $"{keeper.Name}'s hold slipped: that rune's lost its worth.");
+        else if (recent)
+            TextC(Theme.Good, $"{keeper.Name} held them through the pull.");
+        else if (s.StillPulling && s.Woven.Count > 0)
+            TextC(Theme.Dim, $"The grave pulls; {keeper.Name} is holding them.");
+        else
+            TextC(Theme.Dim, $"{keeper.Name} is holding {s.CallingFor}: each rune you key, the grave pulls back.");
+        if (s.Slips > 0)
+            TextC(Theme.Warn, $"Holds slipped: {s.Slips} of {s.Woven.Count}.");
     }
 
     /// <summary>

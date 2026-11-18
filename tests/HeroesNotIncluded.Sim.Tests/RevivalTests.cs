@@ -14,6 +14,7 @@ public class RevivalTests
 {
     private static readonly Guid Ana = new("00000000-0000-0000-0000-00000000000a");
     private static readonly Guid Bea = new("00000000-0000-0000-0000-00000000000b");
+    private static readonly Guid Cara = new("00000000-0000-0000-0000-00000000000c");
 
     private static readonly string[] CallingRunes = ["Thread", "Ember", "Still", "Flesh"];
 
@@ -24,18 +25,24 @@ public class RevivalTests
         sim.Round.OpenLobby();
         sim.ApplyNow(new JoinLobbyCommand(Ana, "Ana", default));
         sim.ApplyNow(new JoinLobbyCommand(Bea, "Bea", default));
+        sim.ApplyNow(new JoinLobbyCommand(Cara, "Cara", default));
         sim.ApplyNow(new StartRoundCommand());
         var w = sim.World;
         var body = Players.CharacterOf(sim, Ana);
         var empath = Players.CharacterOf(sim, Bea);
+        var keeper = Players.CharacterOf(sim, Cara);
         if (!w.Has<Mana>(empath))
             w.Add(empath, new Mana { Current = 100, Max = 100 });
         else
             w.Get<Mana>(empath) = new Mana { Current = 100, Max = 100 };
         Kill(sim, body);
         Beside(sim, empath, body);
+        Beside(sim, keeper, body, avoid: empath);
         return (sim, body, Ghosts.Of(sim, Ana), empath);
     }
+
+    /// <summary>Cara, kneeling at the body on the empath's other side: the keeper.</summary>
+    private static Entity KeeperOf(Simulation sim) => Players.CharacterOf(sim, Cara);
 
     private static void Kill(Simulation sim, Entity e)
     {
@@ -44,13 +51,13 @@ public class RevivalTests
     }
 
     /// <summary>Put <paramref name="who"/> on an open cell touching <paramref name="target"/>.</summary>
-    private static void Beside(Simulation sim, Entity who, Entity target)
+    private static void Beside(Simulation sim, Entity who, Entity target, Entity? avoid = null)
     {
         var at = sim.World.Get<Position>(target).Cell;
         foreach (var d in Maps.Map.Neighbors4)
         {
             var c = Maps.Map.Offset(at, d);
-            if (sim.Map.InBounds(c) && sim.Map.Passable(c))
+            if (sim.Map.InBounds(c) && sim.Map.Passable(c) && (avoid is not { } other || sim.World.Get<Position>(other).Cell != c))
             {
                 sim.World.Get<Position>(who) = Position.At(c);
                 return;
@@ -60,15 +67,17 @@ public class RevivalTests
     }
 
     /// <summary>Weave these runes, each on the beat, and let it go (as the healer tests do).</summary>
-    private static void Weave(Simulation sim, Entity me, string[] runes, int maxTicks = 60 * 60, bool start = true)
+    private static void Weave(Simulation sim, Entity me, string[] runes, int maxTicks = 60 * 60, bool start = true, Entity? keeper = null, bool braces = true)
     {
         if (start)
             sim.ApplyNow(new WeaveCommand(me, 0));
         var keys = runes.Select(n => sim.Defs.Rune(n).Index).ToList();
         var predictor = new WorkPredictor();
+        var holding = keeper is { } k ? Hold(sim, k, new WorkPredictor(), braces) : null;
         for (var t = 0; t < maxTicks && sim.World.Has<WorkSession>(me); t++)
         {
             sim.Tick();
+            holding?.Invoke();
             var rune = -1;
             var press = false;
             if (predictor.Session is CastSession c)
@@ -81,6 +90,133 @@ public class RevivalTests
             predictor.Update(sim, me, 1, press, false, 0, x => sim.ApplyNow(x), 0, rune);
         }
         sim.Tick();
+    }
+
+    /// <summary>
+    /// The keeper's hands, each tick: kneel and hold the body when there's a calling to hold it for
+    /// (F at the body), then brace through each pull's peak (or, careless, never).
+    /// </summary>
+    private static Action Hold(Simulation sim, Entity keeper, WorkPredictor predictor, bool braces) => () =>
+    {
+        var w = sim.World;
+        if (!w.Has<WorkSession>(keeper))
+        {
+            foreach (var e in w.Query<Death>())
+            {
+                var at = w.Get<Position>(e).Cell;
+                if (AvatarSystem.ActionAt(sim, keeper, at, AvatarTool.Use).Kind == AvatarActionKind.LendAHand)
+                    sim.ApplyNow(new AvatarWorkCommand(keeper, true, at));
+            }
+            return;
+        }
+        if (predictor.Session?.StartTick != w.Get<WorkSession>(keeper).StartTick)
+        {
+            predictor.Update(sim, keeper, 1, false, false, 0, c => sim.ApplyNow(c));
+            return;
+        }
+        var held = braces && predictor.Session is HoldSession h && h.PullAge >= HoldSession.PeakAt - h.Half - 2;
+        predictor.Update(sim, keeper, 1, false, held, 0, c => sim.ApplyNow(c));
+    };
+
+    /// <summary>Begin the Calling at the body (F), as a player does.</summary>
+    private static void BeginCalling(Simulation sim, Entity empath, Entity body)
+    {
+        var action = AvatarSystem.ActionAt(sim, empath, sim.World.Get<Position>(body).Cell);
+        Assert.Equal(AvatarActionKind.CallBack, action.Kind);
+        AvatarSystem.Perform(sim, empath, action);
+    }
+
+    [Fact]
+    public void TheCallingIsRefusedAloneAndWorksWithAKeeper()
+    {
+        var (sim, body, _, empath) = Deathbed();
+        var w = sim.World;
+        BeginCalling(sim, empath, body);
+        var cast = Assert.IsType<CastSession>(w.Get<WorkSession>(empath));
+        Assert.True(cast.WantsKeeper);
+        // Alone, no rune takes, however long it's held.
+        Weave(sim, empath, CallingRunes, maxTicks: 60 * 20, start: false);
+        Assert.Empty(Assert.IsType<CastSession>(w.Get<WorkSession>(empath)).Woven);
+        Assert.False(w.Has<Calling>(body));
+
+        // Cara kneels and holds her: now it takes.
+        var keeper = KeeperOf(sim);
+        Assert.Equal(AvatarActionKind.LendAHand, AvatarSystem.ActionAt(sim, keeper, w.Get<Position>(body).Cell).Kind);
+        Weave(sim, empath, CallingRunes, start: false, keeper: keeper);
+        Assert.True(w.Has<Calling>(body), string.Join("; ", sim.Messages.Messages.TakeLast(6).Select(m => m.Text)));
+        Assert.Equal(keeper, w.Get<Calling>(body).Keeper);
+        Assert.False(w.Has<WorkSession>(keeper)); // down tools once the calling's done
+    }
+
+    [Fact]
+    public void AVillagerAnswersACallToHoldTheBody()
+    {
+        var (sim, body, _, empath) = Deathbed();
+        var w = sim.World;
+        // A villager near enough to hear (awake, going about their day).
+        var near = sim.Creatures().First(e => w.Get<Creature>(e) is { Faction: Faction.Village, Def.Race: Race.Human, Dead: false }
+            && !Players.Steered(sim, e) && !w.Has<PlayerCharacter>(e) && w.TryGet<Mind>(e, out var m) && !m.Asleep);
+        w.Get<Position>(near) = Position.At(sim.SpiralFrom(w.Get<Position>(empath).Cell, 4).First(c => sim.Map.Passable(c) && Maps.Map.Distance(c, w.Get<Position>(empath).Cell) >= 3));
+        BeginCalling(sim, empath, body);
+        sim.ApplyNow(new AskForHandCommand(empath));
+        var coming = sim.Creatures().FirstOrDefault(e => w.TryGet<Mind>(e, out var m) && m.Job is HelpJob, Entity.Null);
+        Assert.False(coming.IsNull, "somebody heard and came: " + string.Join("; ", sim.Messages.Messages.TakeLast(4).Select(m => m.Text)));
+        // They walk over and kneel; then each rune's pull is answered.
+        for (var t = 0; t < 60 * 60 && Assert.IsType<CastSession>(w.Get<WorkSession>(empath)).WantsKeeper; t++)
+            sim.Tick();
+        Assert.Equal(coming, w.Get<WorkSession>(empath).Partner);
+        Weave(sim, empath, CallingRunes, start: false);
+        Assert.True(w.Has<Calling>(body), string.Join("; ", sim.Messages.Messages.TakeLast(6).Select(m => m.Text)));
+        Assert.Equal(coming, w.Get<Calling>(body).Keeper);
+    }
+
+    [Fact]
+    public void ABotSeesTheCallingWantsAKeeperAndHoldsTheBody()
+    {
+        var (sim, body, _, empath) = Deathbed();
+        var w = sim.World;
+        var cara = KeeperOf(sim);
+        var bot = new Bots.BotPlayer(() => sim, Cara, c => sim.ApplyNow(c), 7) { Temper = Bots.BotTemperament.Steady };
+        BeginCalling(sim, empath, body);
+        var keys = CallingRunes.Select(n => sim.Defs.Rune(n).Index).ToList();
+        var predictor = new WorkPredictor();
+        for (var t = 0; t < 60 * 120 && w.Has<WorkSession>(empath); t++)
+        {
+            sim.Tick();
+            bot.Tick();
+            var rune = -1;
+            var press = false;
+            if (predictor.Session is CastSession c)
+            {
+                if (c.Woven.Count >= keys.Count)
+                    press = true;
+                else if (c.StepsDone == c.NextBeat)
+                    rune = keys[c.Woven.Count];
+            }
+            predictor.Update(sim, empath, 1, press, false, 0, x => sim.ApplyNow(x), 0, rune);
+        }
+        Assert.True(w.Has<Calling>(body), $"the bot was {bot.Doing}; " + string.Join("; ", sim.Messages.Messages.TakeLast(5).Select(m => m.Text)));
+        Assert.Equal(cara, w.Get<Calling>(body).Keeper);
+    }
+
+    [Fact]
+    public void AKeeperWhoNeverBracesLetsTheGraveKeepThem()
+    {
+        var (sim, body, _, empath) = Deathbed();
+        BeginCalling(sim, empath, body);
+        Weave(sim, empath, CallingRunes, start: false, keeper: KeeperOf(sim), braces: false);
+        Assert.False(sim.World.Has<Calling>(body));
+        Assert.True(sim.World.Get<Creature>(body).Dead);
+        Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("out of your keeper's hands"));
+    }
+
+    [Fact]
+    public void AWeaveOfTheCallingFromTheGiftAloneCallsNobodyBack()
+    {
+        var (sim, body, _, empath) = Deathbed();
+        Weave(sim, empath, CallingRunes);
+        Assert.False(sim.World.Has<Calling>(body));
+        Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("needs someone holding them"));
     }
 
     [Fact]
@@ -99,7 +235,8 @@ public class RevivalTests
         var (sim, body, ghost, empath) = Deathbed();
         var w = sim.World;
 
-        Weave(sim, empath, CallingRunes);
+        BeginCalling(sim, empath, body);
+        Weave(sim, empath, CallingRunes, start: false, keeper: KeeperOf(sim));
 
         Assert.True(w.Has<Calling>(body), string.Join("; ", sim.Messages.Messages.Select(m => m.Text)));
         Assert.True(w.Get<Mana>(empath).Current <= 100f - sim.Defs.Mending("CallBack").ManaCost + 1f);
@@ -290,7 +427,7 @@ public class RevivalTests
         var cast = Assert.IsType<CastSession>(w.Get<WorkSession>(empath));
         Assert.Equal("Ana", cast.CallingFor);
 
-        Weave(sim, empath, CallingRunes, start: false);
+        Weave(sim, empath, CallingRunes, start: false, keeper: KeeperOf(sim));
         Assert.True(w.Has<Calling>(body));
         sim.World.Get<Position>(ghost) = w.Get<Position>(body);
         sim.ApplyNow(new AnswerCommand(ghost));

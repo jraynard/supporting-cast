@@ -103,6 +103,63 @@ public sealed class JoinSession : WorkSession
     private int _accept;
     private float _cutScore = 1f;
 
+    // ---------------- An axle: the lifter's work too (Work.Pairs) ----------------
+
+    /// <summary>On an axle, the share of a blow's drive that goes home with the wagon's weight on the ground.</summary>
+    public const float GroundShare = 0.2f;
+
+    /// <summary>What a blow struck with the wagon dropped or tilted does: knocks the hub back off its seat.</summary>
+    public const float JoltBack = 0.15f;
+
+    /// <summary>The rest of the last blow's drive, waiting on the lifter's answer.</summary>
+    private float _pending;
+
+    /// <summary>Blows the lifter held level for, and blows that jolted; how the last went (-1 a jolt) and when.</summary>
+    public int Level { get; private set; }
+    public int Jolts { get; private set; }
+    public float LastLift { get; private set; }
+    public int LastLiftStep { get; private set; } = -1;
+
+    /// <summary>
+    /// A new axle wants the wagon lifted while the hub's driven on: someone takes the weight and
+    /// holds it level (<see cref="LiftSession"/>). Alone, with it on the ground, a blow barely moves the hub.
+    /// </summary>
+    public override bool TakesHelper => Work == JoinWork.Axle;
+
+    public override string AskForHand => "Someone lift the wagon! I can't drive the hub on with its weight on the ground.";
+
+    public override string HelpLine => "Coming! I'll take the weight.";
+
+    public override HelperSession? HelperFor(Simulation sim, Entity helper) => TakesHelper ? new LiftSession { Wagon = Wagon } : null;
+
+    /// <summary>The lifter's answer to a blow on the hub: held level, the rest of it goes home; dropped or tilted, it jolts back.</summary>
+    protected override void Received(Beat beat)
+    {
+        if (Work != JoinWork.Axle || Cutting || Settling > 0)
+            return;
+        switch (beat.Kind)
+        {
+            case BeatKind.Strike:
+            {
+                var v = Math.Clamp(beat.Value, 0f, 1f);
+                Level++;
+                (LastLift, LastLiftStep) = (v, StepsDone);
+                Seat = Math.Min(1f, Seat + _pending * (0.5f + 0.5f * v));
+                _pending = 0f;
+                if (Seat >= 1f)
+                    Seated();
+                break;
+            }
+            case BeatKind.Offbeat:
+                Jolts++;
+                (LastLift, LastLiftStep) = (-1f, StepsDone);
+                Seat = Math.Max(0f, Seat - JoltBack);
+                _pending = 0f;
+                _cutScore = Math.Max(0f, _cutScore - 0.1f); // the arm's knocked about in the hub
+                break;
+        }
+    }
+
     public float SnugWidth => Snug * Hands.Tolerance;
 
     /// <summary>Does this work cut a mortise first, or only drive?</summary>
@@ -209,13 +266,28 @@ public sealed class JoinSession : WorkSession
         }
         // A loose mortise takes the tenon easier; it tightens as it goes home.
         var loose = Depth > 1f ? 1f + (Depth - 1f) : 1f;
-        Seat = Math.Min(1f, Seat + power * DeepestDrive * (1f - 0.5f * Seat) * loose);
-        if (Seat >= 1f)
+        var drive = power * DeepestDrive * (1f - 0.5f * Seat) * loose;
+        if (TakesHelper)
         {
-            JustSplit = false;
-            Sample(_cutScore);
-            Settling = SettleSteps;
+            // The hub on an axle: only a little goes home with the wagon on the ground; the rest waits
+            // on whoever's lifting it (and their answer to this blow is how level they held it).
+            Seat = Math.Min(1f, Seat + drive * GroundShare);
+            _pending = drive * (1f - GroundShare);
+            Send(BeatKind.Call, power);
         }
+        else
+            Seat = Math.Min(1f, Seat + drive);
+        if (Seat >= 1f)
+            Seated();
+    }
+
+    /// <summary>The joint's home: scored as its mortise was cut, and the next comes up after a moment.</summary>
+    private void Seated()
+    {
+        JustSplit = false;
+        _pending = 0f;
+        Sample(_cutScore);
+        Settling = SettleSteps;
     }
 
     private void NextJoint()
@@ -237,7 +309,7 @@ public sealed class JoinSession : WorkSession
         switch (Work)
         {
             case JoinWork.Axle:
-                Wagons.AxleFitted(sim, Worker, Wagon, Quality);
+                Wagons.AxleFitted(sim, Worker, Wagon, Quality, Partner);
                 break;
             case JoinWork.Board:
                 Wagons.BoardPegged(sim, Worker, Wagon, Quality);
@@ -268,6 +340,11 @@ public sealed class JoinSession : WorkSession
         w.Bool(_raising);
         w.Int(_accept);
         w.Float(_cutScore);
+        w.Float(_pending);
+        w.Int(Level);
+        w.Int(Jolts);
+        w.Float(LastLift);
+        w.Int(LastLiftStep);
     }
 
     protected override void ReadState(SaveReader r)
@@ -292,5 +369,13 @@ public sealed class JoinSession : WorkSession
         _raising = r.Bool();
         _accept = Math.Clamp(r.Int(), 0, 1);
         _cutScore = Math.Clamp(r.Float(), 0f, 1f);
+        if (r.Version >= 58) // an axle's lifter (format 58)
+        {
+            _pending = Math.Clamp(r.Float(), 0f, 1f);
+            Level = r.Int();
+            Jolts = r.Int();
+            LastLift = r.Float();
+            LastLiftStep = r.Int();
+        }
     }
 }

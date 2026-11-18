@@ -38,6 +38,70 @@ public sealed class CastSession : WorkSession
     /// <summary>Begun at a body to call it back (F at the body, <see cref="Afterlife.Revival.BeginCalling"/>): whose. The scene shows the runes it wants.</summary>
     public string CallingFor { get; set; } = "";
 
+    /// <summary>
+    /// The body a Calling back is for (<see cref="CallingFor"/>). The rite is for two: no rune takes
+    /// till someone kneels and holds them (<see cref="Afterlife.HoldSession"/>), and each rune keyed
+    /// is a pull of the grave the keeper has to brace against.
+    /// </summary>
+    public Entity Body { get; set; } = Entity.Null;
+
+    /// <summary>A Calling with nobody holding the body yet: the runes won't take.</summary>
+    public bool WantsKeeper => TakesHelper && Partner.IsNull;
+
+    /// <summary>Holds the keeper kept, and slipped (each slip costs the rune it came on).</summary>
+    public int Holds { get; private set; }
+    public int Slips { get; private set; }
+
+    /// <summary>The step the keeper last held or slipped, and which (for the scene); -1 before any.</summary>
+    public int LastHoldStep { get; private set; } = -1;
+    public bool LastSlipped { get; private set; }
+
+    public override bool TakesHelper => CallingFor.Length > 0 && !Body.IsNull;
+
+    /// <summary>The weave's quality as the keeper held it: each rune whose pull slipped loses its share.</summary>
+    public float KeptQuality => TakesHelper ? Quality * Math.Max(0f, 1f - Slips / (float)Math.Max(1, Woven.Count)) : Quality;
+
+    public override string AskForHand => $"Hold {CallingFor} for me, someone! I can't call them back alone.";
+
+    public override string HelpLine => "I've got them. Call them back.";
+
+    public override HelperSession? HelperFor(Simulation sim, Entity helper) =>
+        TakesHelper ? new Afterlife.HoldSession { Body = Body, BodyName = CallingFor } : null;
+
+    public override int3? Focus(Simulation sim) =>
+        TakesHelper && sim.World.IsAlive(Body) && sim.World.Has<Position>(Body) ? sim.LocationOf(Body) : base.Focus(sim);
+
+    /// <summary>An AI keeper holds steady, now and then slipping (less as they're steadier on their feet).</summary>
+    protected internal override Beat AiAnswer(Simulation sim, Entity helper)
+    {
+        var level = Systems.SkillRules.LevelOf(sim, helper, Skill.Medicine);
+        return sim.Rand.NextFloat() < Math.Max(0.04f, 0.14f - 0.01f * level)
+            ? new Beat(BeatKind.Slip, 0f)
+            : new Beat(BeatKind.Held, Math.Clamp(0.55f + 0.03f * level + sim.Rand.Range(-0.1f, 0.1f), 0.3f, 0.9f));
+    }
+
+    /// <summary>The keeper's answer to a rune's pull, sent in by the sim: a slip takes that rune's worth.</summary>
+    protected override void Received(Beat beat)
+    {
+        switch (beat.Kind)
+        {
+            case BeatKind.Held:
+                Holds++;
+                (LastHoldStep, LastSlipped) = (StepsDone, false);
+                break;
+            case BeatKind.Slip:
+                Slips++;
+                for (var i = Strong.Count - 1; i >= 0; i--)
+                    if (Strong[i])
+                    {
+                        Strong[i] = false;
+                        break;
+                    }
+                (LastHoldStep, LastSlipped) = (StepsDone, true);
+                break;
+        }
+    }
+
     /// <summary>Begun lying downed: the beat's window narrows to <see cref="DownedWindow"/> of itself.</summary>
     public bool Downed { get; set; }
 
@@ -61,7 +125,7 @@ public sealed class CastSession : WorkSession
     /// <summary>Let go with F (rather than slipping away or stopped).</summary>
     public bool Released { get; private set; }
 
-    /// <summary>The step the last rune was keyed on, for the scene's flash (not saved: it changes nothing).</summary>
+    /// <summary>The step the last rune was keyed on: the scene's flash, and a Calling's last pull (<see cref="StillPulling"/>).</summary>
     public int LastWovenAt { get; private set; } = int.MinValue / 2;
 
     private int _usedBeat = int.MinValue;
@@ -101,7 +165,7 @@ public sealed class CastSession : WorkSession
         return best;
     }
 
-    public static void TryStart(Simulation sim, Entity caster, int wound, bool intoCharm = false, string callingFor = "")
+    public static void TryStart(Simulation sim, Entity caster, int wound, bool intoCharm = false, string callingFor = "", Entity? body = null)
     {
         if (intoCharm)
             wound = 0;
@@ -115,7 +179,7 @@ public sealed class CastSession : WorkSession
         // At the rune altar the heart steadies: the pain carried stirs the beat less.
         pain *= 1f - AltarHelp(sim, caster);
         var downed = sim.World.TryGet<Creature>(caster, out var c) && c.Downed;
-        WorkSystem.Start(sim, caster, new CastSession { Wound = wound, Feels = feels, Pain = pain, Palette = sim.Defs.AllRunes, IntoCharm = intoCharm, Downed = downed, CallingFor = callingFor });
+        WorkSystem.Start(sim, caster, new CastSession { Wound = wound, Feels = feels, Pain = pain, Palette = sim.Defs.AllRunes, IntoCharm = intoCharm, Downed = downed, CallingFor = callingFor, Body = callingFor.Length > 0 ? body ?? Entity.Null : Entity.Null });
     }
 
     public override bool StillValid(Simulation sim) => sim.World.Has<Mana>(Worker);
@@ -134,7 +198,7 @@ public sealed class CastSession : WorkSession
 
     protected override void Rune(int index)
     {
-        if (index < 0 || index >= Palette.Count || Woven.Count >= MendingDef.MaxRunes)
+        if (index < 0 || index >= Palette.Count || Woven.Count >= MendingDef.MaxRunes || WantsKeeper)
             return;
         // On the nearer beat, and only one rune to a beat.
         var nearer = StepsDone - PrevBeat <= NextBeat - StepsDone ? PrevBeat : NextBeat;
@@ -145,6 +209,8 @@ public sealed class CastSession : WorkSession
         Strong.Add(strong);
         LastWovenAt = StepsDone;
         Sample(strong ? 1f : 0.3f);
+        if (TakesHelper)
+            Send(BeatKind.Call, strong ? 1f : 0.5f); // the grave pulls back as the rune goes in
     }
 
     /// <summary>A click lets the weave go only in the circle (the picture's round middle): a stray one by a rune doesn't.</summary>
@@ -154,9 +220,15 @@ public sealed class CastSession : WorkSession
             Press();
     }
 
+    /// <summary>A Calling's last rune still pulling at the keeper: it can't be let go till the pull's through.</summary>
+    public bool StillPulling => TakesHelper && StepsDone - LastWovenAt <= Afterlife.HoldSession.PeakAt + 2 * Afterlife.HoldSession.PeakHalf + PullGrace;
+
+    /// <summary>Steps past the last pull's peak a Calling waits for the keeper's answer to reach it.</summary>
+    public const int PullGrace = 45;
+
     protected override void Press()
     {
-        if (Woven.Count == 0)
+        if (Woven.Count == 0 || StillPulling)
             return;
         Released = true;
         Done = true;
@@ -168,6 +240,8 @@ public sealed class CastSession : WorkSession
             return;
         PrevBeat = NextBeat;
         NextBeat += BeatLength();
+        if (WantsKeeper)
+            return; // waiting for someone to hold them: the weave isn't begun, so it can't slip
         if (++Beats < MaxBeats)
             return;
         if (Woven.Count == 0)
@@ -213,9 +287,14 @@ public sealed class CastSession : WorkSession
                     + (Shops.Goods.MyDisplay(sim, Worker) is { IsNull: false } shelf ? $" Put it on the {sim.World.Get<Thing>(shelf).Label} to sell it." : ""), at);
             return;
         }
+        if (m.CallsBack && !TakesHelper)
+        {
+            sim.Messages.Tell(Worker, MessageKind.Warning, "The calling needs someone holding them while you weave it: kneel at the body and begin it there. The mana's spent.", at);
+            return;
+        }
         if (m.CallsBack)
         {
-            Afterlife.Revival.Call(sim, Worker, Quality); // it says how it went
+            Afterlife.Revival.Call(sim, Worker, KeptQuality, TakesHelper ? Partner : Entity.Null); // it says how it went
             return;
         }
         // Woven for no wound in particular (the gift's own Weave), a mending that heals takes hold of
@@ -262,6 +341,12 @@ public sealed class CastSession : WorkSession
         w.Bool(IntoCharm);
         w.Bool(Downed);
         w.String(CallingFor);
+        w.Entity(Body);
+        w.Int(Holds);
+        w.Int(Slips);
+        w.Int(LastHoldStep);
+        w.Bool(LastSlipped);
+        w.Int(LastWovenAt);
     }
 
     protected override void ReadState(SaveReader r)
@@ -306,5 +391,14 @@ public sealed class CastSession : WorkSession
             Downed = r.Bool();
         if (r.Version >= 40)
             CallingFor = r.String(); // came with format 40
+        if (r.Version >= 58) // the keeper (format 58)
+        {
+            Body = r.Entity();
+            Holds = r.Int();
+            Slips = r.Int();
+            LastHoldStep = r.Int();
+            LastSlipped = r.Bool();
+            LastWovenAt = r.Int();
+        }
     }
 }

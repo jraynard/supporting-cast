@@ -74,6 +74,12 @@ public enum BeatKind : byte
 
     /// <summary>A call that went unanswered.</summary>
     Missed,
+
+    /// <summary>The keeper held the body against the grave's pull (<see cref="Afterlife.HoldSession"/>). Value: how firmly, 0..1.</summary>
+    Held,
+
+    /// <summary>The keeper's hold slipped on a pull: the rune the empath just keyed loses its worth.</summary>
+    Slip,
 }
 
 /// <summary>One thing that passed between partners (<see cref="WorkSession.Partner"/>): what, and how much.</summary>
@@ -134,6 +140,9 @@ public abstract class WorkSession
         Revision++;
     }
 
+    /// <summary>The sim's changed something outside the inputs (a partner joined): copies running ahead take it again.</summary>
+    internal void Revise() => Revision++;
+
     /// <summary>What a beat from the partner does: may read and change only the session's own state (and <see cref="Rand"/>).</summary>
     protected virtual void Received(Beat beat) { }
 
@@ -145,6 +154,15 @@ public abstract class WorkSession
 
     /// <summary>The helper's own session for someone joining this work, or null if it takes none.</summary>
     public virtual HelperSession? HelperFor(Simulation sim, Entity helper) => null;
+
+    /// <summary>What an AI villager says as it comes to lend a hand (<see cref="AskForHandCommand"/>).</summary>
+    public virtual string HelpLine => "Coming! I'll lend a hand.";
+
+    /// <summary>
+    /// How an AI villager helping (<see cref="Helping"/>) answers this work's call, a moment after it
+    /// (<see cref="Pairs.AnswerMin"/>): steady, never brilliant. Sim-only.
+    /// </summary>
+    protected internal virtual Beat AiAnswer(Simulation sim, Entity helper) => Pairs.AiBlow(sim, helper, Skill);
 
     protected internal SimRandom Rand { get; internal set; } = new(1);
 
@@ -435,6 +453,9 @@ public abstract class WorkSession
             nameof(Carpentry.JoinSession) => new Carpentry.JoinSession(),
             nameof(StrikerSession) => new StrikerSession(),
             nameof(SledgeSession) => new SledgeSession(),
+            nameof(Afterlife.HoldSession) => new Afterlife.HoldSession(),
+            nameof(Carpentry.PitSession) => new Carpentry.PitSession(),
+            nameof(Carpentry.LiftSession) => new Carpentry.LiftSession(),
             nameof(Environment.ThrowSession) => new Environment.ThrowSession(),
             _ => throw new SaveException($"Corrupt save: unknown work session {name}"),
         };

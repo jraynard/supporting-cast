@@ -653,6 +653,91 @@ public class TinkerTradeTests
         Assert.Equal(me, sim.World.Get<Wagon>(wagon).JoinedBy);
     }
 
+    /// <summary>
+    /// A new axle fitted with someone lifting: the carpenter's keys through the predictor, and the
+    /// lifter's alongside: take the weight with F at the wagon, then hold it up and lean against the
+    /// sway (or, careless, let it hang and tip). Returns the carpenter's session as it ended.
+    /// </summary>
+    private static Carpentry.JoinSession FitWithALifter(Simulation sim, Entity me, Entity wagon, Entity? lifter, bool level = true, int maxTicks = 60 * 180)
+    {
+        var w = sim.World;
+        sim.ApplyNow(new FitAxleCommand(me, wagon));
+        var session = (Carpentry.JoinSession)w.Get<WorkSession>(me);
+        var lead = new WorkPredictor();
+        var lift = new WorkPredictor();
+        for (var t = 0; t < maxTicks && w.Has<WorkSession>(me); t++)
+        {
+            sim.Tick();
+            var (press, held, axis, act) = lead.Session is { } s ? JoinTrue(s) : (false, false, 0, false);
+            // Strike only with it lifted level, as a carpenter watching their partner would.
+            if (level && lifter is { } l && w.TryGet<WorkSession>(l, out var ls) && ls is Carpentry.LiftSession { Level: false } && lead.Session is Carpentry.JoinSession { Cutting: false })
+                held = held || (lead.Session as Carpentry.JoinSession)!.Raised > 0f;
+            lead.Update(sim, me, 1, press, held, axis, c => sim.ApplyNow(c), act: act);
+            if (lifter is not { } p)
+                continue;
+            if (!w.Has<WorkSession>(p))
+            {
+                // The part of the wagon in reach (it's wider than a cell).
+                var here = w.Get<Position>(p).Cell;
+                var cell = sim.SpiralFrom(w.Get<Thing>(wagon).Cell, 3).FirstOrDefault(c => sim.Map.InBounds(c) && sim.Map.Structure[sim.Map.Idx(c)] == wagon && AvatarSystem.InReach(here, c));
+                if (AvatarSystem.ActionAt(sim, p, cell, AvatarTool.Use).Kind == AvatarActionKind.LendAHand)
+                    sim.ApplyNow(new AvatarWorkCommand(p, true, cell));
+                continue;
+            }
+            if (lift.Session?.StartTick != w.Get<WorkSession>(p).StartTick)
+            {
+                lift.Update(sim, p, 1, false, false, 0, c => sim.ApplyNow(c));
+                continue;
+            }
+            var ws = lift.Session as Carpentry.LiftSession;
+            var lean = !level || ws == null ? 0 : ws.Tilt + ws.Sway * 8f > 0.03f ? -1 : ws.Tilt + ws.Sway * 8f < -0.03f ? 1 : 0;
+            lift.Update(sim, p, 1, false, level && ws is { Strain: < 0.95f }, lean, c => sim.ApplyNow(c));
+        }
+        sim.Tick();
+        return session;
+    }
+
+    private static Entity Lifter(Simulation sim, Entity wagon, Entity me)
+    {
+        var lifter = sim.SpawnCreature(sim.Defs.Creature("Human"), "Lifter", sim.World.Get<Position>(me).Cell, ageDays: 25 * 365);
+        sim.World.Add(lifter, new Avatar());
+        var at = sim.World.Get<Thing>(wagon).Cell;
+        var mine = sim.World.Get<Position>(me).Cell;
+        sim.World.Get<Position>(lifter).Cell = sim.SpiralFrom(at, 3).First(c => c != at && c != mine && sim.Map.Passable(c) && c.Z == at.Z && AvatarSystem.InReach(sim, c, wagon));
+        return lifter;
+    }
+
+    [Fact]
+    public void ACarpenterAndALifterFitAnAxleQuickerThanOneAlone()
+    {
+        var (sim, me, _, wagon) = WithAWagon("Carpenter", WagonDamage.Axle);
+        Beside(sim, me, wagon);
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Wood"), 2));
+        var lifter = Lifter(sim, wagon, me);
+        var together = FitWithALifter(sim, me, wagon, lifter);
+        Assert.False(sim.World.Has<WorkSession>(me), "the axle should be fitted");
+        Assert.Equal(WagonDamage.None, sim.World.Get<Wagon>(wagon).Damage);
+        Assert.Equal(lifter, sim.World.Get<Wagon>(wagon).LiftedBy);
+        Assert.True(together.Level > 0);
+        Assert.Contains(sim.Messages.Messages, m => m.Text.Contains("Lifter taking its weight"));
+
+        var (alone, solo, _, wagon2) = WithAWagon("Carpenter", WagonDamage.Axle);
+        Beside(alone, solo, wagon2);
+        Inventory.Stow(alone, solo, alone.CreateItem(alone.Thing("Wood"), 2));
+        var by = FitWithALifter(alone, solo, wagon2, null);
+        Assert.True(by.Blows > together.Blows * 2, $"alone {by.Blows} blows, with a lifter {together.Blows}");
+    }
+
+    [Fact]
+    public void ALifterWhoLetsItTipJoltsTheHub()
+    {
+        var (sim, me, _, wagon) = WithAWagon("Carpenter", WagonDamage.Axle);
+        Beside(sim, me, wagon);
+        Inventory.Stow(sim, me, sim.CreateItem(sim.Thing("Wood"), 2));
+        var session = FitWithALifter(sim, me, wagon, Lifter(sim, wagon, me), level: false, maxTicks: 60 * 60);
+        Assert.True(session.Jolts > 0);
+    }
+
     [Fact]
     public void DrivenTooHardAJointSplits()
     {

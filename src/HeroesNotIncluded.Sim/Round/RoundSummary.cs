@@ -28,7 +28,9 @@ public sealed record HonourRow(string Name, string Title);
 /// <param name="DiedOnDay">The day of the round they died (1 is the first), if they lie dead.</param>
 /// <param name="CameBack">Called back from the grave this round.</param>
 /// <param name="Errands">Unfinished business they saw to as a ghost.</param>
-public sealed record RevealRow(string Name, string Trade, bool Player, int Earned, bool Alive, int? DiedOnDay = null, bool CameBack = false, int Errands = 0);
+/// <param name="CalledBy">Who called them back, and <paramref name="HeldBy"/> who held them while they did ("" if nobody).</param>
+public sealed record RevealRow(string Name, string Trade, bool Player, int Earned, bool Alive, int? DiedOnDay = null, bool CameBack = false, int Errands = 0,
+    string CalledBy = "", string HeldBy = "");
 
 /// <summary>
 /// The end-of-round reveal, built once when the round ends and saved with it, so every peer and a
@@ -99,6 +101,8 @@ public sealed class RoundSummary
             w.Int(p.DiedOnDay ?? 0);
             w.Bool(p.CameBack);
             w.Int(p.Errands);
+            w.String(p.CalledBy);
+            w.String(p.HeldBy);
         }
         w.Int(Honours.Count);
         foreach (var h in Honours)
@@ -124,6 +128,8 @@ public sealed class RoundSummary
             var row = new RevealRow(r.String(), r.String(), r.Bool(), r.Int(), r.Bool());
             if (r.Version >= 18) // the dead's day, the returned and their errands came with format 18
                 row = row with { DiedOnDay = r.Int() is > 0 and var day ? day : null, CameBack = r.Bool(), Errands = r.Int() };
+            if (r.Version >= 58) // who called them back, and who held them (format 58)
+                row = row with { CalledBy = r.String(), HeldBy = r.String() };
             s.People.Add(row);
         }
         if (r.Version >= 20) // the festival's honours came with format 20
@@ -171,8 +177,11 @@ public sealed class RoundSummary
             var player = w.Has<PlayerCharacter>(e) || w.Has<Avatar>(e);
             int? died = c.Dead && w.TryGet<Afterlife.Death>(e, out var d) ? DayOfRound(sim, d.Tick) : null;
             var errands = w.TryGet<Afterlife.Unfinished>(e, out var u) ? u.Done : 0;
-            rows.Add((new RevealRow(c.Name, trade, player, Shops.Coin.Count(sim, e) - start, !c.Dead, died, w.Has<Afterlife.Revived>(e), errands), player ? 0 : 1));
+            var (calledBy, heldBy) = w.TryGet<Afterlife.Revived>(e, out var back) ? (NameOf(back.CalledBy), NameOf(back.HeldBy)) : ("", "");
+            rows.Add((new RevealRow(c.Name, trade, player, Shops.Coin.Count(sim, e) - start, !c.Dead, died, w.Has<Afterlife.Revived>(e), errands, calledBy, heldBy), player ? 0 : 1));
         }
         return rows.OrderBy(r => r.Order).Select(r => r.Row).ToList();
+
+        string NameOf(Entity who) => w.IsAlive(who) && w.TryGet<Creature>(who, out var named) ? named.Name : "";
     }
 }

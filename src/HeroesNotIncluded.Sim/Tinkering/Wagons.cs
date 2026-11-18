@@ -42,6 +42,9 @@ public struct Wagon
 
     /// <summary>Who did its woodwork (the axle, a board), to be paid for the carpenter's order (<see cref="ServiceKind.WagonJoinery"/>).</summary>
     public Entity JoinedBy;
+
+    /// <summary>Who took its weight while the carpenter drove a new axle's hubs on (<see cref="Carpentry.LiftSession"/>).</summary>
+    public Entity LiftedBy;
 }
 
 /// <summary>
@@ -295,7 +298,7 @@ public static class Wagons
     }
 
     /// <summary>A new axle's in, as well as it was fitted: a poor fit still rolls, but the work shows.</summary>
-    public static void AxleFitted(Simulation sim, Entity worker, Entity wagon, float quality)
+    public static void AxleFitted(Simulation sim, Entity worker, Entity wagon, float quality, Entity? lifter = null)
     {
         if (!IsWagon(sim, wagon) || WoodOn(sim, worker) < AxleWood)
             return;
@@ -303,8 +306,11 @@ public static class Wagons
         ref var wg = ref sim.World.Get<Wagon>(wagon);
         wg.Damage &= ~WagonDamage.Axle;
         wg.JoinedBy = worker;
+        var lifted = lifter is { } l && sim.World.IsAlive(l) && sim.World.TryGet<Creature>(l, out var lc) ? lc.Name : null;
+        if (lifted != null)
+            wg.LiftedBy = lifter!.Value;
         var how = quality >= 0.75f ? "It runs sweetly." : quality >= 0.4f ? "It'll hold." : "It knocks a bit, but it'll roll.";
-        sim.Messages.Add(MessageKind.Good, $"{sim.World.Get<Creature>(worker).Name} fits the wagon a new axle. {how}", sim.LocationOf(worker));
+        sim.Messages.Add(MessageKind.Good, $"{sim.World.Get<Creature>(worker).Name} fits the wagon a new axle{(lifted != null ? $", {lifted} taking its weight" : "")}. {how}", sim.LocationOf(worker));
     }
 
     /// <summary>A plank's pegged across the sprung board, as well as it was pegged.</summary>

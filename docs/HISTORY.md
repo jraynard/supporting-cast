@@ -2474,3 +2474,26 @@ sends the player to the chest for six logs first (the chest is out of reach of t
   the road the shepherd named (`byRoad`), and the Director says which (`WarnedSide`).
 - The AI tinker fits and sets a bell on the warned road (`TripBellJob`); so does the bot.
 - Saves to format 57. `TripBellTests`.
+
+### Two pairs of hands, the rest (2026-11-17)
+Three more helpers on the striker's pattern (`HelperSession`, beats through the sim), so each pair
+can be played in co-op.
+- **The keeper at the Calling back** (`Afterlife/HoldSession`): begun at the body, the weave stays
+  locked till someone holds them (`CastSession.WantsKeeper`); F at the body offers "Hold them". Each
+  rune is a pull to brace through (`BeatKind.Held`, `Slip`, appended); slips cost the weave
+  (`KeptQuality`), and below `Revival.FailsBelow` the calling fails. The empath can't let go till
+  the last pull's through (`StillPulling`). Weaving the Calling's runes from the Gift alone no
+  longer calls anyone back. The AI empath asks a villager to hold the body (`KeepVigilJob`) or gives
+  up; the reveal names who called them back and who held them (`Revived.CalledBy`, `HeldBy`).
+- **The pitman** (`Carpentry/PitSession`): `SawGreatLog` is `twoHanded`; the top sawyer's downstroke
+  calls, the pitman's pull cuts (`SawSession.Great`, `GuideShare` alone).
+- **The lifter** (`Carpentry/LiftSession`): a new axle's hubs go on with the wagon lifted level
+  (`JoinSession.TakesHelper` for an axle, `GroundShare` alone); `Wagon.LiftedBy`.
+- **The plumbing:** a lead session says how an AI helper answers it (`AiAnswer`) and what they say
+  coming (`HelpLine`); joining bumps the lead's `Revision` so the other player's copy learns of its
+  partner; `Pairs.WantsHandAt` by cell (a body, a wagon).
+- **Bots** play every helper's game, call for a hand when they lead, and walk over to lend one when
+  they see someone at work for two (`BotPlayer.LendAHand`).
+- **The pairs drill** (`--pairs-test`, `Scenarios/PairsDrill`, `DevPairsDrillCommand`): every job for
+  two staged at once once the round's dealt, for a co-op host and everyone joining.
+- Saves to format 58.

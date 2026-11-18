@@ -61,7 +61,7 @@ public static class Carpenters
         if (sim.World.Has<WorkSession>(worker))
             return;
         if (Saws(recipe))
-            WorkSystem.Start(sim, worker, new SawSession { Station = station });
+            WorkSystem.Start(sim, worker, new SawSession { Station = station, Great = recipe.TwoHanded });
         else if (Fletches(recipe))
             WorkSystem.Start(sim, worker, new FletchSession { Station = station });
         else if (MakesBow(recipe))

@@ -1,6 +1,6 @@
 # Two pairs of hands: the rest
 
-_Saved 2026-11-17 for later. The framework and the striker are built (HISTORY.md, "The theme: behind every hero, and two pairs of hands"); this is what's left._
+_Built 2026-11-17 (HISTORY.md, "Two pairs of hands, the rest"): the keeper, the pitman (a great log at the sawhorse) and the lifter (a wagon's new axle, now the carpenter's joinery, not the tinker's truing). What's left of section 4 (the lesson, AI leads making great pieces, sounds, mood) and the co-op playtest are in ROADMAP.md, Now 5. Kept for the reasoning._
 
 ## Context
 

@@ -206,6 +206,8 @@ public sealed class HammerSession : WorkSession
 
     public override HelperSession? HelperFor(Simulation sim, Entity helper) => Heavy ? SledgeSession.For(sim, this) : null;
 
+    public override string HelpLine => "Coming! I'll take the sledge.";
+
     /// <summary>
     /// The striker's sledge, sent in by the sim between steps (<see cref="Pairs"/>). On the call it
     /// moves the metal as well as it was struck and as true as the smith's tap placed it; off the
