@@ -109,4 +109,65 @@ public class BardModTests
         Assert.Equal(8, pipe.Scale.Count);
         return 0;
     });
+
+    /// <summary>A playing session with the book, worked by notes played at these steps (degree, octave above).</summary>
+    private static PlaySession Played(DefDatabase defs, params (int Step, int Degree, bool Up)[] notes)
+    {
+        var session = new PlaySession { InstrumentName = "Pipe", Book = [.. defs.ModDefs<SongDef>(SongDef.Kind_)] };
+        session.Advance([.. notes.Select(n => new WorkInput(n.Step, WorkInputKind.Custom, PlaySession.Pack(n.Degree, n.Up, true)))], notes.Max(n => n.Step) + 1);
+        return session;
+    }
+
+    [Fact]
+    public void ATunesOpeningFromAnyNoteStrikesItUpAndTheHandsCarryTheRest() => WithBard(() =>
+    {
+        var defs = BardDefs();
+        var wheel = defs.ModDef<SongDef>(SongDef.Kind_, "MillersWheel")!;
+        // Its opening (0 2 4 4 5) two steps up: 2 4 6 6 7.
+        var s = Played(defs, (0, 2, false), (20, 4, false), (40, 6, false), (60, 6, false), (80, 7, false));
+        Assert.Same(wheel, s.Carrying);
+        Assert.Equal(2, s.Shift);
+        var before = s.Played;
+        s.Advance([], 80 + 60 * 60); // a minute on: the rest of the tune plays itself
+        Assert.Null(s.Carrying);
+        Assert.Equal(1, s.Finished);
+        Assert.Equal(before + wheel.Notes.Count - PlaySession.Opening, s.Played);
+        // Every carried note is the book's, two steps up.
+        var carried = s.Notes.Skip(PlaySession.Opening).Select(n => n.Index).ToList();
+        Assert.Equal(wheel.Notes.Skip(PlaySession.Opening).Select(n => (int)n[0] + 2).ToList(), carried);
+        return 0;
+    });
+
+    [Fact]
+    public void ANearMissOrALongPauseStrikesNothingUp() => WithBard(() =>
+    {
+        var defs = BardDefs();
+        Assert.Null(Played(defs, (0, 0, false), (20, 2, false), (40, 4, false), (60, 4, false), (80, 6, false)).Carrying); // its fifth note wrong
+        Assert.Null(Played(defs, (0, 0, false), (20, 2, false), (40, 4, false), (300, 4, false), (320, 5, false)).Carrying); // a long breath in it
+        return 0;
+    });
+
+    [Fact]
+    public void ANoteOfYourOwnTakesTheTuneBack() => WithBard(() =>
+    {
+        var defs = BardDefs();
+        var s = Played(defs, (0, 0, false), (20, 2, false), (40, 4, false), (60, 4, false), (80, 5, false));
+        Assert.NotNull(s.Carrying);
+        s.Advance([new WorkInput(100, WorkInputKind.Custom, PlaySession.Pack(3, false, true))], 101);
+        Assert.Null(s.Carrying);
+        Assert.Equal(0, s.Finished);
+        return 0;
+    });
+
+    [Fact]
+    public void ThePredictorsCopyPlaysOnItsOwnNotes() => WithBard(() =>
+    {
+        var defs = BardDefs();
+        var sim = Played(defs, (0, 1, false));
+        var ahead = (PlaySession)sim.Clone();
+        ahead.Advance([new WorkInput(5, WorkInputKind.Custom, PlaySession.Pack(3, false, true))], 6);
+        Assert.Single(sim.Notes);
+        Assert.Equal(2, ahead.Notes.Count);
+        return 0;
+    });
 }

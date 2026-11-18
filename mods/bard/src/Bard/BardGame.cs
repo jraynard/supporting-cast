@@ -44,13 +44,32 @@ public sealed class BardGame : IGameMod
     /// <summary>How long a key stays lit after its note, in session steps.</summary>
     private const int LitSteps = 15;
 
+    /// <summary>A step of the scale as the keys that play it: "3", or "Shift+3" in the octave above.</summary>
+    private static string KeyFor(int index) =>
+        index <= 7 ? WorkView.Glyph(_notes[index]) : $"{WorkView.Glyph(_octave)}+{WorkView.Glyph(_notes[index - 7])}";
+
     private static void Draw(WorkView view, PlaySession s)
     {
-        view.Begin(s.Title,
-            ($"{WorkView.Glyph(_notes[0])}-{WorkView.Glyph(_notes[^1])}", "a note of the scale"),
-            (WorkView.Glyph(_octave), "hold for the octave above"),
-            ("Esc", "put it away"));
-        ImGuiText.Colored(Theme.Dim, "Play anything: a tune you know, or one you don't yet.");
+        if (s.Carrying != null)
+            view.Begin(s.Title,
+                ("A/D", "slower, faster"),
+                ("Space", "let it go"),
+                ($"{WorkView.Glyph(_notes[0])}-{WorkView.Glyph(_notes[^1])}", "a note of your own takes it back"),
+                ("Esc", "put it away"));
+        else
+            view.Begin(s.Title,
+                ($"{WorkView.Glyph(_notes[0])}-{WorkView.Glyph(_notes[^1])}", "a note of the scale"),
+                (WorkView.Glyph(_octave), "hold for the octave above"),
+                ("Esc", "put it away"));
+        if (s.Carrying is { } tune)
+        {
+            ImGuiText.Colored(Theme.Good, $"Your hands take over: {tune.Label}.");
+            var done = Math.Clamp((s.Next - PlaySession.Opening) / (float)Math.Max(1, tune.Notes.Count - PlaySession.Opening), 0f, 1f);
+            ImGui.ProgressBar(done, new float2(Gui.S(300), Gui.S(8)), ""u8);
+            ImGuiText.Colored(Theme.Dim, s.Pace < 0.98f ? $"Easing it: {s.Pace:P0} of its pace." : s.Pace > 1.02f ? $"Driving it on: {s.Pace:P0} of its pace." : "At its own pace.");
+        }
+        else
+            ImGuiText.Colored(Theme.Dim, "Play anything; play a tune's opening and your hands carry the rest.");
         var dl = ImGui.GetWindowDrawList();
         var min = ImGui.GetCursorScreenPos();
         var key = Gui.S(46);
@@ -69,7 +88,17 @@ public sealed class BardGame : IGameMod
             dl.AddText(in at, Theme.U8(lit ? Theme.Cellar : Theme.Parchment), label);
         }
         ImGui.Dummy(in size);
-        ImGuiText.Colored(Theme.Dim, s.Played == 0 ? "Not a note yet." : $"{s.Played} note{(s.Played == 1 ? "" : "s")} played.");
+        ImGuiText.Colored(Theme.Dim, s.Played == 0 ? "Not a note yet." : $"{s.Played} note{(s.Played == 1 ? "" : "s")} played{(s.Finished > 0 ? $", {s.Finished} tune{(s.Finished == 1 ? "" : "s")} through" : "")}.");
+        if (s.Book.Count > 0)
+        {
+            ImGui.Separator();
+            ImGuiText.Colored(Theme.Parchment, "The tunes you know, by how they start (from any note):");
+            foreach (var t in s.Book)
+            {
+                var opening = string.Join(" ", Enumerable.Range(0, Math.Min(PlaySession.Opening, t.Notes.Count)).Select(i => KeyFor(t.StepAt(i))));
+                ImGuiText.Colored(t == s.Carrying ? Theme.Good : Theme.Text, $"{t.Label}, {t.Kind.ToLowerInvariant()}: {opening}");
+            }
+        }
         view.End();
     }
 

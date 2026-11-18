@@ -16,5 +16,19 @@
       "octaves": [ "bard.pipe.d5", "bard.pipe.d6" ],
       // The major scale from the root, in semitones: the eight note keys.
       "scale": [ 0, 2, 4, 5, 7, 9, 11, 12 ] }
+  ],
+  // The tune book (the bard mod's own kind, DefDatabase.ModDefs): original tunes only. A note is
+  // [step, beats]: steps of the scale from the instrument's root, 0..14 across its two octaves (7 is
+  // the octave key, 8 the second octave's second). Play a tune's first five notes, starting on any
+  // step, and the bard's hands carry the rest (PlaySession's lead-in): the openings must differ in shape.
+  "songs": [
+    { "name": "MillersWheel", "label": "The Miller's Wheel", "kind": "Jig", "mood": "Lively", "tempo": 116,
+      "notes": [ [0,1], [2,1], [4,1], [4,1], [5,1], [4,2], [2,1], [3,1], [1,1], [2,2], [0,2],
+                 [4,1], [5,1], [7,1], [5,1], [4,1], [2,2], [3,1], [1,1], [0,3] ] },
+    { "name": "LanternHome", "label": "Lantern Home", "kind": "Air", "mood": "Tender", "tempo": 76,
+      "notes": [ [4,2], [3,1], [2,1], [1,2], [2,1], [4,1], [5,3], [4,1], [2,2], [1,1], [0,1], [1,2], [2,4] ] },
+    { "name": "HayInTheLoft", "label": "Hay in the Loft", "kind": "Reel", "mood": "Lively", "tempo": 132,
+      "notes": [ [7,1], [7,1], [4,1], [7,1], [9,1], [7,1], [6,1], [4,1], [5,1], [6,1], [7,2],
+                 [4,1], [2,1], [4,1], [5,1], [4,1], [2,1], [1,1], [0,2] ] }
   ]
 }
