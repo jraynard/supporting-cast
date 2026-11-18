@@ -60,7 +60,7 @@ and a long list of fixes from the Steam Deck playtest.
   pointing at; "Start from" is now "Starting look" (it's only your look, your trade comes later).
 - More, then Characters, then Back returns to More.
 - Each trade is marked easygoing, steady or busy where you choose it.
-- The coin flip shows in front of a beard, and no longer appears on the back of your head.
+- The coin flip, hand and all, shows in front of a beard, and no longer appears on the back of your head.
 
 **Also**
 - Only a shop's own trade can take its orders: an empath can't take the inn's drink orders any more.
