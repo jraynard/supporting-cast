@@ -125,7 +125,13 @@ public sealed class RaidCrisis : ICrisis
         RungBy = bell;
         var road = Raids.Direction(sim.Map, _from);
         if (!bell.IsNull)
-            sim.Messages.Add(MessageKind.Danger, $"A trip-bell rings out on the {road} road, and the town's bell answers: raiders!", seen, "Raid!");
+        {
+            // The town's bell is heard everywhere: its message has no place, so every player gets the banner. The trip-bell
+            // that set it off is noted where it is, to look at (a placed message only reaches who can see the place, and a
+            // playtest's raid came with no banner at all).
+            sim.Messages.Add(MessageKind.Danger, $"A trip-bell rings out on the {road} road, and the town's bell answers: raiders!", null, "Raid!");
+            sim.Messages.Add(MessageKind.Warning, $"The trip-bell on the {road} road is ringing.", seen);
+        }
         else
             RaiseTheAlarm(sim, seen, road);
         sim.Militia.Muster(sim);

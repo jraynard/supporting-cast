@@ -51,11 +51,12 @@ submitted by 1 Feb. Everything else can slip a little.
 - [ ] **The Steamworks account:** the $100 app fee, the tax interview, bank details and the
       identity check. Each can take days, so start them first. *Applied, and identity check under
       way, 19 Nov.*
-- [ ] Check the name: Steam, itch, USPTO and EUIPO for "Heroes Not Included" and near matches.
-      Do this before the page goes public, since the page fixes the name.
+- [x] Check the name: Steam, itch, USPTO and EUIPO for "Heroes Not Included" and near matches.
+      *Clear, 19 Nov.*
 - [ ] Set up the game's app, and a **demo app** beside it (demos are an app of their own, with
       their own page and depots).
-- [ ] Spike Steamworks.NET in the game (below): init, the overlay, a lobby.
+- [ ] Steamworks steps 1 to 3 under the test app (below, "Steamworks: the plan").
+- [ ] Capsule art, part 1 (below).
 - [ ] A `Demo` build property, and the `mods/demo` content gate (below).
 
 ### Week of 30 Nov: the page's pieces
@@ -68,7 +69,7 @@ submitted by 1 Feb. Everything else can slip a little.
 ### Week of 7 Dec: the page in for review
 - [ ] **Submit the store page for review by Fri 11 Dec.** Review takes 3 to 5 business days, and
       Valve slows over the holidays.
-- [ ] A Steam lobby and invite carry the relay's room code (below).
+- [ ] Steamworks step 4, packaging and upload, once the app IDs exist.
 - [ ] **Newcomers play the tutorial,** one trade at a time (ROADMAP, Now 1).
 
 ### Week of 14 Dec: the page goes up
@@ -152,8 +153,9 @@ doors as every other mod (CLAUDE.md, Moddability):
 - [ ] The smith marked on the picker as a good first trade.
 
 **Co-op.**
-- A Steam lobby, with the relay's room in its data. An invite from the overlay joins over our own
-  relay (`CoopRelay.Default`). Steam Datagram Relay waits for Early Access.
+- Steam's Join game and Invite carry the relay's join code, so friends join over our own relay
+  (`CoopRelay.Default`) with no lobby (below, "Steamworks: the plan"). Lobbies and Steam Datagram
+  Relay wait for Early Access.
 - [ ] A joiner on another network, a join mid-round, and the host's network pulled for a few
       seconds (ROADMAP, Now 3).
 - [ ] The relay box under a fest's load: many small sessions at once. Check its limits before 8 Feb.
@@ -165,30 +167,125 @@ doors as every other mod (CLAUDE.md, Moddability):
 - [ ] Windows smoke tests on a machine that isn't ours; the Deck through `tools/deck.sh`; the Mac
       build, if it ships.
 
-**Music.** Placeholder tracks are fetched, not kept in git (`tools/fetch_music.py`), so the Steam
-packaging must fetch them, or the demo plays silent. The CC-BY tracks are fine with their credits.
-The trailer wants a short theme of our own anyway (ROADMAP, Backlog "Sound"): it keeps Content ID
-claims off our videos and streamers'.
+**Music.** The placeholder tracks aren't in git, but `tools/package.sh` already fetches them
+(`tools/fetch_music.py`), so a Steam job built on it ships with music. The CC-BY tracks are fine
+with their credits. The trailer wants a short theme of our own anyway (ROADMAP, Backlog "Sound"):
+it keeps Content ID claims off our videos and streamers'.
 
-## Steamworks
+## Steamworks: the plan
 
-Game side only, never in Narsil's sim (ROADMAP, "Toward Steam").
-- **Steamworks.NET** (MIT, a thin wrapper). Facepunch.Steamworks is the fallback.
-- An `IPlatform` in `src/HeroesNotIncluded/Platform/`, with a Steam version and one without, so
-  itch builds and runs from a checkout carry on as now. `steam_appid.txt` only in Steam packages.
-- For the demo, it covers:
-  - init and shutdown, and the overlay;
-  - rich presence (trade, town, day of the season);
-  - the store overlay for wishlisting;
-  - creating a lobby, inviting to it and joining it.
-- Uploads: a Steam job beside itch's in `playtest-release.yml`, SteamPipe through `steamcmd`, with
-  a depot per platform for the game and for the demo.
-- Later, for Early Access: Steam Datagram Relay, Steam Cloud for `characters.json`, Workshop.
+Game side only, never in Narsil's sim or engine (ROADMAP, "Toward Steam"). Steps 1 to 3 run under
+Valve's public test app (480, "Spacewar") with the Steam client open, so they can start before our
+own app ID exists. Steps 4 and 5 wait for it.
+
+**Joining without lobbies.** Online co-op already goes through our relay with a six-letter code:
+`CoopSession.JoinCode` while hosting, and `RelayClient.JoinAsync` behind Co-op → Join a Game
+(`Ui/CoopMenu.Begin`). Steam can carry that code with no lobby at all:
+- The host sets rich presence `connect` to `--join-code KX7QPM`. Friends then see **Join game** on
+  the host in their Steam friends list.
+- **Invite** opens Steam's own invite dialog with the same string
+  (`ActivateGameOverlayInviteDialogConnectString`).
+- A friend who isn't running the game gets it as a command-line argument when Steam launches the
+  game. A friend who is gets a callback (`GameRichPresenceJoinRequested_t`). Either way, the game
+  goes straight into the join it would make from a typed code.
+
+Steam lobbies wait until Early Access (for a lobby browser or matchmaking), along with Steam
+Datagram Relay. The relay stays our transport, so itch and Steam players join the same way.
+
+**1. The spike** (a day; nothing kept that doesn't work)
+- [ ] Steamworks.NET's standalone build (MIT), pinned, and the Steamworks SDK's native libraries
+      (`steam_api64.dll`, `libsteam_api.so`, `libsteam_api.dylib`) beside the executable.
+      The SDK is downloaded from the partner site, so we have to choose where the native libraries
+      live. Recommended: `.cache/`, fetched in CI from a secret URL, the way MoltenVK is. If the
+      repo stays private, `external/steamworks/` is also fine.
+- [ ] `SteamAPI.Init` with `steam_appid.txt` = 480, and `RunCallbacks` every frame.
+- [ ] **The overlay over Vulkan:** does Shift+Tab draw over BRUTAL's swapchain, on Linux and on
+      Windows? This is the riskiest unknown, so it comes first. If it fails, invites still work from
+      the Steam client, but in-game invites and the store button don't.
+
+**2. The platform door**
+- [ ] `src/HeroesNotIncluded/Platform/IPlatform.cs` and `Platform.Current`. `NoPlatform` is what
+      itch builds, checkouts, tests and headless runs get. `SteamPlatform` is used when the build has
+      an app ID and `SteamAPI.Init` succeeds. A failed init falls back to `NoPlatform` and writes a
+      line to the log, never a crash.
+- [ ] The app IDs come from MSBuild properties (`SteamAppId`, `SteamStoreAppId`) and are read as
+      `BuildInfo.SteamAppId` and `BuildInfo.SteamStoreAppId`. The demo build has the demo's ID and
+      the full game's store ID; an ordinary build has neither.
+- [ ] `RestartAppIfNecessary` only in Steam builds, so an itch or checkout run never bounces
+      through Steam.
+- [ ] Init in `Program.cs` before `host.Run`; callbacks pumped once a frame from the host loop
+      (Narsil's `GameHost`; add a per-frame hook there only if there isn't one, kept game-agnostic);
+      shutdown on exit.
+
+**3. What it does**
+- [ ] **Rich presence:** "Behind the bar in Millbrook, day 2", built from the player's trade, town
+      and day. Steam needs a localization file uploaded for `steam_display` tokens: write it in
+      `packaging/steam/rich_presence.vdf`.
+- [ ] **Join and invite:** `connect` set while hosting online (from `CoopSession.JoinCode`, and
+      cleared when it goes away); an **Invite friends** button beside the code in the Players
+      window (`VillageGame.Coop.cs`) and in the lobby; `--join-code CODE` parsed in `Program.cs`
+      to start the join; the join-requested callback handled from the title screen and from a round
+      (asking first if you're mid-round).
+- [ ] **Wishlist:** `ActivateGameOverlayToStore(SteamStoreAppId)`. Without Steam, it opens the store
+      page's URL in the browser.
+- [ ] **The player's name:** the Steam persona name as the default for a new character's name
+      only. `CoopIdentity` stays as it is.
+- [ ] Tests: `NoPlatform` everywhere tests run, and a test that the connect string round-trips through
+      the `--join-code` parsing.
+
+**4. Packaging and upload** (once our app IDs exist)
+- [ ] `tools/package.sh --steam APPID`: the same build with the native Steam libraries and the app
+      ID properties, and no `steam_appid.txt` (Steam supplies the ID when it launches the game).
+      Co-op's build tag hashes the game's assemblies, so Steam builds join Steam builds; itch
+      builds stay as they are.
+- [ ] `packaging/steam/` holds `app_build_*.vdf` and `depot_build_*.vdf` for the game and the demo,
+      one depot per platform.
+- [ ] A `steam` job in `playtest-release.yml` uploads through `steamcmd` to a private `testing`
+      branch. Going live stays a click in Steamworks, by hand. Needs a builder account with
+      upload-only rights (its Steam Guard as a CI secret).
+
+**5. On the hardware**
+- [ ] Two Steam accounts on two machines: Join game from the friends list, Invite from the overlay,
+      launch from an invite with the game closed, and the wishlist button.
+- [ ] The Deck: the overlay, invites and the on-screen keyboard (already asked for in text fields,
+      HISTORY.md "Steam Deck pass").
+
+Later, for Early Access: lobbies, Steam Datagram Relay, Steam Cloud for `characters.json`,
+achievements, the Workshop.
+
+## Capsule art, part 1: the key art and the first three sizes
+
+The page's review needs every capsule. Part 1 gets the three that matter most (header, small and
+main) far enough along to judge at real size. Part 2 does the rest (vertical, library, the demo's
+set) from the same key art. Made in-house for the fest (MARKETING.md, Phase 2), and replaced by an
+artist's version before Early Access.
+
+**The brief** (MARKETING.md and STEAM-PAGE.md): the brand's colours, a busy common room or square
+at dusk, the logo, no heroes in front, one ember thing. Above all, it has to read at the small
+capsule's size.
+
+- [ ] **Three candidate key-art shots**, captured clean and large. The screenshot flags
+      (`--screenshot-no-ui`, `--size 3840x2160`, `--skip-hours`, `--camera-mode`, `--look-at`,
+      `--yaw`, `--pitch`) set up a still scene. Shift+F12 in camera mode during a real round catches
+      a lived-in one. Candidates:
+  1. The inn's common room at dusk: a full bar, the fire lit, a line at the counter.
+  2. Millbrook's square at dusk from above: the inn's windows lit, smoke from the smithy, the
+     notice board.
+  3. The smithy mid-strike at night, the forge the ember thing, the inn lit behind it.
+- [ ] **`tools/capsules.py`:** composites a key-art image and the brand's logo
+      (`art/brand/logo-horizontal.svg`, `logo-stacked.svg`, rasterized the way `tools/brand_logo.py`
+      does) into each Steam size, with a crop and a logo position per size, and a "Demo" mark in
+      the brand's ember for the demo's set. It writes to `art/steam/` and builds a contact sheet:
+      every size at 100%, plus the small capsule at the half size a store list shows it.
+- [ ] **Judge the three together** on the contact sheet, at small size first. Pick one, then tweak
+      the framing and do part 2.
+- [ ] Add the musician video from 18 Nov (`~/2026-11-18 19-02-22.mp4`) and the weekend's recordings
+      to the trailer's footage. Keep the stories that go with them in MARKETING.md.
 
 ## If we're late
 
 Cut in this order:
-1. Steam invites. Join by code over the relay, as now.
+1. Steam invites and Join game. Join by typed code over the relay, as now.
 2. A cut trailer. A 30-second montage from kept rounds (`--replay`) does.
 3. The carpenter. The demo goes out with the five.
 

@@ -73,7 +73,7 @@ public class TripBellTests
         Assert.True(raid.Alarmed, "the town knew of the raid within the hour");
         Assert.True(raid.RungBy.IsNull);
         Assert.True(sim.Militia.Mustering);
-        Assert.Contains(sim.Messages.Messages, m => m.Text.StartsWith("The bell rings out: raiders"));
+        Assert.Contains(sim.Messages.Messages, m => m.Text.StartsWith("The bell rings out: raiders") && m.Headline == "Raid!" && m.Location == null);
     }
 
     [Fact]
@@ -85,6 +85,11 @@ public class TripBellTests
         UntilAlarmed(sim, raid);
         Assert.True(raid.Alarmed);
         Assert.Equal(bell, raid.RungBy);
+        // The town's bell answers it, heard by all: its "Raid!" has no place, so no player's banner waits on seeing the
+        // trip-bell (a playtest's raid came with none). Which bell rang is noted where it is.
+        var alarm = Assert.Single(sim.Messages.Messages, m => m.Headline == "Raid!");
+        Assert.Null(alarm.Location);
+        Assert.Contains(sim.Messages.Messages, m => m.Text.StartsWith("The trip-bell on the") && m.Location != null);
         var set = sim.World.Get<TripSet>(bell);
         Assert.True(set.Sprung);
         Assert.False(set.Jammed);

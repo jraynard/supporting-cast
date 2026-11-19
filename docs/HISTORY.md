@@ -2734,3 +2734,7 @@ From the user's playing on a Deck:
   the forge" stand them where the forge and the chest are both in reach; the empath bot's calling-back test sets the
   empath down in the smithy with the body (`Near(inSight)`: a bot acts on what it sees). Bench: seed 1234 state
   `94839B9CB447ECBB`, full `AEE7BD3D7563D150`; seed 99 state `F0A4C7903E7B0120`, full `20F3C8D80398D4BB`.
+- **Fixed: no "Raid!" banner when a trip-bell rang** (from play): the alarm went out as the bell's message, placed at the
+  bell, and a placed message reaches only who can see the place. In bot seasons the AI tinker's bell rang in every
+  raid, so nobody away from the road got a banner. The town's bell is now unplaced ("Raid!", heard by all), and the
+  trip-bell that set it off is noted where it is.
