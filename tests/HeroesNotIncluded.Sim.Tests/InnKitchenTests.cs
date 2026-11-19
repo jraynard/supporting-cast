@@ -393,7 +393,9 @@ public class InnKitchenTests
         {
             sim.World.Get<Health>(e).Injuries.Clear();
             sim.World.Get<Adventurer>(e).NextDrink = sim.Clock.Tick + SimClock.TicksPerDay;
+            sim.World.Get<Needs>(e).Values[sim.Defs.Need("Food").Index] = 1f; // fed on the road: hungry only once they're here
         }
+        WalkUpTo(sim, party, inn);
         var diner = party[0];
         sim.World.Get<Needs>(diner).Values[sim.Defs.Need("Food").Index] = 0.5f;
         sim.TickMany(SimClock.TicksPerHour / 6);

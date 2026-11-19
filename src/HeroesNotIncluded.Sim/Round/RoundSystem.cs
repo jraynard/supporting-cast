@@ -568,6 +568,10 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
     public static bool MayFell(Simulation sim, Entity who) =>
         MayGather(sim, who) || (sim.World.TryGet<Trade>(who, out var t) && t.Def.Fells);
 
+    /// <summary>Whether someone may dig and mine (rock, boulders): whoever may gather, and in a round a trade that mines (<see cref="TradeDef.Mines"/>).</summary>
+    public static bool MayMine(Simulation sim, Entity who) =>
+        MayGather(sim, who) || (sim.World.TryGet<Trade>(who, out var t) && t.Def.Mines);
+
     /// <summary>The work only a gathering trade does in a round.</summary>
     public static readonly WorkType[] GatheringWork = [WorkType.Chop, WorkType.Mine, WorkType.Harvest];
 
@@ -586,7 +590,8 @@ public sealed class RoundSystem(ulong seed) : ISimSystem, ISaveState
         if (!trade.Gathers)
         {
             foreach (var work in GatheringWork)
-                mind.WorkPriority[(int)work] = 0;
+                if (work != WorkType.Mine || !trade.Mines) // a miner keeps the priority it was dealt for its rock
+                    mind.WorkPriority[(int)work] = 0;
             Toolbelt.TakeStartingTools(sim, e); // the stone axe and pick are the labourer's
         }
 

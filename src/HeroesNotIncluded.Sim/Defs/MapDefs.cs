@@ -59,6 +59,24 @@ public sealed class MapDef : Def
     /// </summary>
     public List<MapProp> Festival { get; set; } = [];
 
+    /// <summary>
+    /// The veins (<see cref="VeinDef"/> names) the seed may scatter underground here; empty, all of them.
+    /// A town in a round leaves out what would upset its trade (silver struck and minted into coin).
+    /// </summary>
+    public List<string> Veins { get; set; } = [];
+
+    /// <summary>The <see cref="Veins"/> resolved, in the defs' order; every vein when the map names none.</summary>
+    [JsonIgnore] public IReadOnlyList<VeinDef> VeinDefs { get; private set; } = [];
+
+    /// <summary>
+    /// Ore bodies the map is sure to have (a mine's iron and coal), on top of the veins the seed scatters,
+    /// which keep clear of the village and may miss a hill altogether. Stamped after the veins.
+    /// </summary>
+    public List<MapSeam> Seams { get; set; } = [];
+
+    /// <summary>Passages carved through the rock (a mine's adit into its hill), dug out before anything is placed.</summary>
+    public List<MapTunnel> Tunnels { get; set; } = [];
+
     /// <summary>Top block per column (y * Width + x).</summary>
     [JsonIgnore] public BlockDef[] Ground { get; private set; } = [];
 
@@ -136,6 +154,14 @@ public sealed class MapDef : Def
             l.Resolve(db, this);
         foreach (var p in Festival)
             p.Resolve(db, this);
+        foreach (var v in Veins)
+            if (!db.AllVeins.Any(d => d.Name == v))
+                throw new Exception($"Map '{Name}': there's no vein '{v}'");
+        VeinDefs = Veins.Count == 0 ? db.AllVeins : [.. db.AllVeins.Where(d => Veins.Contains(d.Name))];
+        foreach (var seam in Seams)
+            seam.Resolve(db, this);
+        foreach (var t in Tunnels)
+            t.Resolve(this);
     }
 
     internal bool Inside(int x, int y) => x >= 0 && y >= 0 && x < Width && y < Height;
@@ -258,5 +284,68 @@ public sealed class MapProp
             throw new Exception($"Map '{map.Name}': '{Def}' isn't a structure that can be put up");
         if (At.Length != 2 || !map.Inside(At[0], At[1]))
             throw new Exception($"Map '{map.Name}': '{Def}' needs at: [x, y] on the map");
+    }
+}
+
+/// <summary>
+/// An ore body a map is sure of: <see cref="Block"/> in the rock within about <see cref="Radius"/> of a
+/// column, through a range of levels. Its edge is wobbled by the seed's noise (<c>Maps.MapBuilder</c>), so
+/// a mine always has its iron but not always in the same cells. Like any ore it passes for the rock round
+/// it until a face of it is opened (<c>Systems.Mining.ShownBlock</c>).
+/// </summary>
+public sealed class MapSeam
+{
+    public string Block { get; set; } = "";
+
+    /// <summary>The middle column (x, y).</summary>
+    public int[] At { get; set; } = [];
+    public float Radius { get; set; } = 3;
+
+    /// <summary>The lowest and highest level (from the map's base) it runs through.</summary>
+    public int[] Levels { get; set; } = [];
+
+    [JsonIgnore] public BlockDef BlockDef { get; private set; } = null!;
+
+    internal void Resolve(DefDatabase db, MapDef map)
+    {
+        BlockDef = db.Block(Block);
+        if (!BlockDef.Solid || BlockDef.IsWater)
+            throw new Exception($"Map '{map.Name}': seam '{Block}' isn't solid rock");
+        if (At.Length != 2 || !map.Inside(At[0], At[1]))
+            throw new Exception($"Map '{map.Name}': seam '{Block}' needs at: [x, y] on the map");
+        if (Radius <= 0)
+            throw new Exception($"Map '{map.Name}': seam '{Block}' needs a radius above 0");
+        if (Levels.Length != 2 || Levels[0] > Levels[1] || map.BaseZ + Levels[0] < 1 || map.BaseZ + Levels[1] >= map.Depth)
+            throw new Exception($"Map '{map.Name}': seam '{Block}' needs levels: [lowest, highest] inside the map's depth");
+    }
+}
+
+/// <summary>
+/// A passage a map carves through the rock at one level: each cell's air, with the ground standing at
+/// least two levels higher, so rock is left above it for a roof (a tunnel under open sky is a mistake in the map, not a cutting).
+/// </summary>
+public sealed class MapTunnel
+{
+    public string Label { get; set; } = "";
+
+    /// <summary>The level (from the map's base) people walk in it.</summary>
+    public int Level { get; set; }
+
+    /// <summary>Its columns, [x, y] each.</summary>
+    public List<int[]> Cells { get; set; } = [];
+
+    internal void Resolve(MapDef map)
+    {
+        var name = Label == "" ? "a tunnel" : $"tunnel '{Label}'";
+        if (map.BaseZ + Level < 1)
+            throw new Exception($"Map '{map.Name}': {name} is below the bottom of the map");
+        foreach (var c in Cells)
+        {
+            if (c.Length != 2 || !map.Inside(c[0], c[1]))
+                throw new Exception($"Map '{map.Name}': {name} has a cell off the map");
+            // Ground one level up is only the block the tunnel's cut from: a roof needs one more.
+            if (map.Levels[c[1] * map.Width + c[0]] < Level + 2)
+                throw new Exception($"Map '{map.Name}': {name} at {c[0]},{c[1]} has no rock above it");
+        }
     }
 }

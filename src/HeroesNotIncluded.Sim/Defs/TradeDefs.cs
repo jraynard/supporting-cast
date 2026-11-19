@@ -93,13 +93,26 @@ public sealed class TradeDef : Def
     public bool HoldsKeys { get; set; }
 
     /// <summary>
-    /// The holder may dig, mine, chop and forage in a round (the labourer, for now). Nobody else
-    /// does: that's the Miner's and Forager's work, when they come.
+    /// The holder may dig, mine, chop and forage in a round (the labourer). A trade may have only a share
+    /// of it: <see cref="Fells"/> (the carpenter's trees), <see cref="Mines"/> (the miner's rock).
     /// </summary>
     public bool Gathers { get; set; }
 
     /// <summary>The holder may fell trees in a round, by hand (the carpenter: Carpentry.FellSession), though it gathers nothing else.</summary>
     public bool Fells { get; set; }
+
+    /// <summary>
+    /// The holder may dig and mine in a round (the miner, at the hill), though it gathers nothing else:
+    /// no crops, no timber. <see cref="Gathers"/> includes this.
+    /// </summary>
+    public bool Mines { get; set; }
+
+    /// <summary>
+    /// Things (def names) the holder brings the town by their own work, which the carter would otherwise bring
+    /// (the miner's iron ore): while a player holds the trade, the carter brings only the season's
+    /// <see cref="SeasonDef.SuppliedShare"/> of each, so the round leans on them, and a round without them still has it.
+    /// </summary>
+    public List<string> Supplies { get; set; } = [];
 
     /// <summary>The holder mends what crises break in town (<c>Tinkering.Repairs</c>): the tinker, the bridge.</summary>
     public bool MendsTown { get; set; }
@@ -152,6 +165,8 @@ public sealed class TradeDef : Def
         StationDefs.Clear();
         foreach (var station in Stations)
             StationDefs.Add(db.Thing(station));
+        foreach (var thing in Supplies)
+            db.Thing(thing); // a name that isn't a thing is a mistake in the def
         foreach (var item in Kit)
             item.ThingDef = db.Thing(item.Def);
         foreach (var item in Stash)

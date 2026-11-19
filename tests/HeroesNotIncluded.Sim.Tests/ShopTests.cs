@@ -320,10 +320,16 @@ public class ShopTests
         sim.TickMany(SimClock.TicksPerHour / 6);
         var asked = sim.Shops.All.Single(o => o.Kind.Kind == ServiceKind.Quest && o.IsOpen && party.Contains(o.Poster));
 
-        // Nobody answers it (the innkeeper's at the stew all night): it lapses, and they ask again.
-        sim.TickMany(SimClock.HoursToTicks(sim.Defs.Service(ServiceKind.Quest).PatienceHours + ShopSystem.CooldownHours) + SimClock.TicksPerHour / 2);
+        // Nobody answers it (the innkeeper's at the stew all night): it lapses (when, by the asker's temper),
+        // and once the cooldown's past they ask again.
+        for (var t = 0; t < SimClock.HoursToTicks(sim.Defs.Service(ServiceKind.Quest).PatienceHours * 3) && asked.IsOpen; t += 60)
+            sim.TickMany(60);
         Assert.False(asked.IsOpen);
-        Assert.Contains(sim.Shops.All, o => o.Kind.Kind == ServiceKind.Quest && o.IsOpen && o.Id != asked.Id && party.Contains(o.Poster));
+        sim.TickMany(SimClock.HoursToTicks(ShopSystem.CooldownHours));
+        bool AskedAgain() => sim.Shops.All.Any(o => o.Kind.Kind == ServiceKind.Quest && o.IsOpen && o.Id != asked.Id && party.Contains(o.Poster));
+        for (var t = 0; t < SimClock.TicksPerHour && !AskedAgain(); t += 60)
+            sim.TickMany(60);
+        Assert.True(AskedAgain(), "nobody asked for work again");
     }
 
     [Fact]

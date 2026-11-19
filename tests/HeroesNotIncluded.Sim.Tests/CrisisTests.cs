@@ -113,8 +113,9 @@ public class CrisisTests
         var near = sim.Creatures().First(e => w.Get<Creature>(e) is { Faction: Faction.Village, Dead: false } && !w.Has<Avatar>(e));
         w.Get<Mind>(near).Drafted = true;
         w.Get<Mind>(sick).Drafted = true;
-        // Stopped where they stand: a walk under way would carry them back off.
+        // Both stopped where they stand: a walk under way would carry either off.
         AiSystem.EndJob(sim, near, w.Get<Mind>(near), false);
+        AiSystem.EndJob(sim, sick, w.Get<Mind>(sick), false);
         var at = w.Get<Position>(sick).Cell;
         var beside = sim.SpiralFrom(at, 2).First(c => c != at && sim.Map.Passable(c) && c.Z == at.Z);
         w.Get<Position>(near).Cell = beside;

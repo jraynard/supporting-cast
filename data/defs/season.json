@@ -55,6 +55,9 @@
       "armsWanted": 6,
       // What the carter leaves at the smithy each morning from the second day (Shops/Deliveries.cs).
       "oreDelivery": [ { "def": "IronOre", "count": 12 }, { "def": "Charcoal", "count": 10 }, { "def": "Wood", "count": 4 } ],
+      // Of anything a player's trade brings the town itself (a trade's "supplies": the miner's ore), the
+      // carter brings only this share while they're in the round.
+      "suppliedShare": 0.25,
       // Timber for building and mending: barnWood in the barn's stockpile at the deal, woodDelivery
       // left there each morning from the second day. The carpenter's logs come from felling.
       "barnWood": 100,

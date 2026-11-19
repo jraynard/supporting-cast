@@ -89,4 +89,75 @@ public class MillbrookMapTests
         Assert.Equal(a.Map.Block.Select(d => d.Name), b.Map.Block.Select(d => d.Name));
         Assert.Equal(a.World.Count<Thing>(), b.World.Count<Thing>());
     }
+
+    /// <summary>The mine's tunnel cells as built: air at the town's level, and the map's def for them.</summary>
+    private static (MapTunnel Tunnel, List<int3> Cells) Mine(Simulation sim)
+    {
+        var def = sim.Defs.Map("Millbrook");
+        var tunnel = Assert.Single(def.Tunnels);
+        return (tunnel, [.. tunnel.Cells.Select(c => new int3(c[0], c[1], def.BaseZ + tunnel.Level))]);
+    }
+
+    [Fact]
+    public void TheMineIsDugIntoTheHillWithRockOverIt()
+    {
+        var (sim, town) = Round();
+        var (_, cells) = Mine(sim);
+        Assert.All(cells, c =>
+        {
+            var i = sim.Map.Idx(c);
+            Assert.True(sim.Map.Block[i + sim.Map.LayerSize].Solid, $"the mine at {c} is open to the sky");
+            if (!sim.Map.Structure[i].IsNull)
+                return; // the lantern in its niche
+            Assert.True(sim.Map.Passable(c), $"the mine at {c} isn't walkable");
+            Assert.True(sim.Regions.CanReach(town.Center, c, PathEnd.OnTile), $"the mine at {c} can't be reached from the square");
+        });
+    }
+
+    [Theory]
+    [InlineData(1234UL)]
+    [InlineData(99UL)]
+    [InlineData(7UL)]
+    public void TheMineHasIronAndCoalWhateverTheSeed(ulong seed)
+    {
+        var (sim, _) = Round(seed);
+        var (_, cells) = Mine(sim);
+        var map = sim.Map;
+        // Within a few cells' digging of the tunnel's walls, at its level or the one above.
+        var near = new HashSet<string>();
+        var shown = new HashSet<string>();
+        foreach (var c in cells)
+        for (var dy = -4; dy <= 4; dy++)
+        for (var dx = -4; dx <= 4; dx++)
+        for (var dz = 0; dz <= 1; dz++)
+        {
+            var n = c + new int3(dx, dy, dz);
+            if (!map.InBounds(n) || !map.Block[map.Idx(n)].Ore)
+                continue;
+            near.Add(map.Block[map.Idx(n)].Name);
+            // On the tunnel's own walls (a cliff outside may show a vein, as any hillside can).
+            if (Math.Abs(dx) + Math.Abs(dy) + dz == 1)
+                shown.Add(map.Block[map.Idx(n)].Name);
+        }
+        Assert.Contains("IronOre", near);
+        Assert.Contains("CoalSeam", near);
+        // Struck by digging, not lying open on the tunnel's walls from the start (MapBuilder works them out).
+        Assert.Empty(shown);
+        // Nothing struck here would be minted into coin.
+        Assert.DoesNotContain("SilverOre", near);
+        Assert.DoesNotContain("GoldOre", near);
+    }
+
+    [Fact]
+    public void ATunnelWithNoRockOverItIsAMistakeInTheMap()
+    {
+        var def = new MapDef
+        {
+            Name = "Cutting", Width = 3, Height = 1, Depth = 8, GroundLegend = new() { ["k"] = "Stone" },
+            GroundRows = ["kkk"], HeightRows = ["231"], FeatureRows = ["..."], Center = [0, 0],
+            Tunnels = [new MapTunnel { Level = 1, Cells = [[0, 0], [1, 0]] }],
+        };
+        var e = Assert.ThrowsAny<Exception>(() => def.Resolve(TestWorld.LoadDefs()));
+        Assert.Contains("no rock above it", e.Message);
+    }
 }

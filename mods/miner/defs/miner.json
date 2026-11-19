@@ -1,0 +1,35 @@
+// The miner (docs/MODDING.md, "A new trade"): the trade, and its shed at the mine's mouth. The mine itself
+// (the hill, its adit and its seams) is the map's (tools/village_map.py), there with or without the mod.
+{
+  "trades": [
+    // playerOnly: only a player who asks for it is dealt it. "mines": it digs and mines in a round, though it
+    // gathers nothing else (no crops, no timber: those are the labourer's).
+    { "name": "Miner", "label": "miner", "pace": "Steady", "playerOnly": true, "mines": true,
+      "description": "Works the mine in the hill east of town: iron and coal hewn from the rock, for the smith.",
+      "workplace": "MineShed", "workPriorities": { "Mine": 1 }, "skills": { "Mining": 6 },
+      "tutorialIntro": "You work the mine in the hill east of town. Face the rock in the tunnels and press F to hew it: strike along the crack, hard. The ore's hidden in the rock till you open a face of it, and the smith will pay for what you bring.",
+      // The ore the carter brings the smithy: with a player the miner, the carter brings only a share of it (season.json's suppliedShare).
+      "supplies": [ "IronOre" ],
+      "kit": [ { "def": "Pick" } ] }
+  ],
+  "buildings": [
+    {
+      "name": "MineShed", "roles": [ "MineShed" ], "label": "mine shed", "icon": "items/pick",
+      // Its chest is the miner's: no villager's job takes the ore from it.
+      "keepsStock": true,
+      "description": "A rough shed of logs by the mine's mouth, open at the front: a chest for the ore, barrels, and a torch.",
+      "layout": [
+        "WWWWW",
+        "W...W",
+        "W...W",
+        "P...P"
+      ],
+      "parts": { "foundation": "Sill", "wall": "LogWall", "post": "CornerPost", "roof": "TurfRoofPart" },
+      "lamps": [ { "at": [1, 2], "facing": 3, "def": "WallTorch" } ],
+      "furnish": [
+        { "def": "Chest", "at": [1, 1], "facing": 2 },
+        { "def": "Barrel", "at": [3, 1] }
+      ]
+    }
+  ]
+}

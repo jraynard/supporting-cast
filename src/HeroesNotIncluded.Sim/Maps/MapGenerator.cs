@@ -276,12 +276,14 @@ public static class MapGenerator
 
     /// <summary>
     /// Ore and clay from the <see cref="Defs.VeinDef"/>s, each in blobs of its own hashed noise
-    /// inside its host rock, at its depth below the surface. Kept clear of the landing.
+    /// inside its host rock, at its depth below the surface. Kept clear of the landing. A hand-made map
+    /// may name the only veins it has (<paramref name="only"/>, <see cref="Defs.MapDef.Veins"/>).
     /// </summary>
-    internal static void PlaceVeins(Simulation sim, int[] standZ, float[] moistures, int3 center, uint seed)
+    internal static void PlaceVeins(Simulation sim, int[] standZ, float[] moistures, int3 center, uint seed, IReadOnlyList<Defs.VeinDef>? only = null)
     {
         var map = sim.Map;
-        if (sim.Defs.AllVeins.Count == 0)
+        var veins = only ?? sim.Defs.AllVeins;
+        if (veins.Count == 0)
             return;
         for (var y = 0; y < map.Height; y++)
         for (var x = 0; x < map.Width; x++)
@@ -291,7 +293,7 @@ public static class MapGenerator
                 continue;
             var col = y * map.Width + x;
             var h = standZ[col];
-            foreach (var vein in sim.Defs.AllVeins)
+            foreach (var vein in veins)
             {
                 if (moistures[col] < vein.MoistureMin)
                     continue;

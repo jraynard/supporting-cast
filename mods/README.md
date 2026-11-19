@@ -7,6 +7,8 @@ turns one off). Check one with `dotnet run --project src/HeroesNotIncluded -- --
 
 - `carpenter` (on by default): the carpenter, moved out of the core: a workplace, AI jobs, systems, a bot.
 - `musician`: the first trade built as a mod from nothing: a player's trade, an instrument, a tune book.
+- `miner`: a player's trade at the mine in Millbrook's hill: rock faces hewn by their cracks, iron and coal
+  for the smith (the carter brings less while a player's the miner). A first pass, to be played and changed.
 - `candlemaker`: a trade a fresh coding agent built from the skills alone, in one pass (the skills' test):
   candles dipped layer by layer, lumpy if dipped before the wax has set. A first pass, to be fleshed out.
 - `siege`: Siege Night, a game mode: dusk, three waves of raiders, held till dawn.

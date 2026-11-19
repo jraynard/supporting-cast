@@ -38,6 +38,25 @@ public sealed class OreCarterSystem : ISimSystem, ISaveState
         Deliver(sim);
     }
 
+    /// <summary>
+    /// What the players' trades bring the town themselves (<see cref="Defs.TradeDef.Supplies"/>): a player who's
+    /// the miner digs the ore the carter would bring. Their characters count connected or not (one who's left
+    /// is an AI villager in the same trade, still at it).
+    /// </summary>
+    public static HashSet<string> SuppliedByPlayers(Simulation sim)
+    {
+        var w = sim.World;
+        var supplied = new HashSet<string>();
+        foreach (var e in w.Query<PlayerCharacter>())
+            if (w.TryGet<Trade>(e, out var t))
+                supplied.UnionWith(t.Def.Supplies);
+        return supplied;
+    }
+
+    /// <summary>How much of a delivery's thing comes: all of it, or the season's share of what a player supplies.</summary>
+    public static int Delivered(Simulation sim, Defs.ThingCount load, HashSet<string> supplied) =>
+        supplied.Contains(load.ThingDef.Name) ? (int)MathF.Round(load.Count * sim.Defs.Season.SuppliedShare) : load.Count;
+
     /// <summary>Leave the morning's load at each smithy (there's one in Millbrook).</summary>
     public static void Deliver(Simulation sim)
     {
@@ -45,6 +64,7 @@ public sealed class OreCarterSystem : ISimSystem, ISaveState
         if (load.Count == 0)
             return;
         var w = sim.World;
+        var supplied = SuppliedByPlayers(sim);
         foreach (var smithy in w.Query<PresetBuilding>().Where(e => w.Get<PresetBuilding>(e).Def.Name == SmithyDef).OrderBy(e => e.Index))
         {
             var chest = Buildings.Parts(sim, smithy).Where(e => w.Get<Thing>(e).Def.Name == "Chest")
@@ -61,7 +81,10 @@ public sealed class OreCarterSystem : ISimSystem, ISaveState
             }
             foreach (var t in load)
             {
-                var item = sim.CreateItem(t.ThingDef, t.Count, t.MaterialDef);
+                var count = Delivered(sim, t, supplied);
+                if (count <= 0)
+                    continue;
+                var item = sim.CreateItem(t.ThingDef, count, t.MaterialDef);
                 var rest = sim.Store(chest, item);
                 if (!rest.IsNull)
                     sim.PlaceItemNear(rest, cell);

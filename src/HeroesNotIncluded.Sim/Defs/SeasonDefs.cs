@@ -102,6 +102,12 @@ public sealed class SeasonDef : Def
     public List<ThingCount> OreDelivery { get; set; } = [];
 
     /// <summary>
+    /// The share of a delivery's thing the carter still brings while a player's trade supplies it
+    /// (<see cref="TradeDef.Supplies"/>: the miner's ore): enough to get by on, not to keep the forge busy.
+    /// </summary>
+    public float SuppliedShare { get; set; } = 0.25f;
+
+    /// <summary>
     /// Wood laid in the barn's stockpile at the deal, on top of the settlers' pile: the town's fires
     /// burn about ten score logs a day, and players fetching fuel by hand need some left to fetch.
     /// </summary>

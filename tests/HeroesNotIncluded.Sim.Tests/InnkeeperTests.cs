@@ -149,8 +149,11 @@ public class InnkeeperTests
         {
             sim.World.Get<Health>(e).Injuries.Clear(); // nothing to take them off to the shrine
             sim.World.Get<Needs>(e).Values[sim.Defs.Need("Food").Index] = 1f; // nor to the hatch: they've eaten on the road
-            Thirsty(sim, e);
+            sim.World.Get<Adventurer>(e).NextDrink = sim.Clock.Tick + SimClock.TicksPerDay; // and thirsty only once they're here
         }
+        WalkUpTo(sim, party, ShopSystem.BuildingOf(sim, sim.Defs.Building("Inn")));
+        foreach (var e in party)
+            Thirsty(sim, e);
         sim.TickMany(SimClock.TicksPerHour / 6);
         var served = new List<Entity>();
         foreach (var e in party)

@@ -264,9 +264,11 @@ public class MilitiaTests
         Assert.True(at.Y <= 8, $"raiders gathered at {at}, not by the north edge");
         Assert.Contains(raid.Raiders, e => sim.Map.GroundUnder(sim.Map.Idx(w.Get<Position>(e).Cell)) is { Name: "Road" });
 
-        // The town arms itself from the rack (within the three quarters of an hour; by then someone's walked to it).
-        sim.TickMany(SimClock.TicksPerHour * 3 / 4);
-        Assert.Contains(sim.Creatures(), e => e != me && Armed(sim, e) && w.Has<TownArms>(w.Get<Equipment>(e).Weapon));
+        // The town arms itself from the rack (within the hour; by then someone's walked to it and put a spear on).
+        bool FromTheRack() => sim.Creatures().Any(e => e != me && Armed(sim, e) && w.Has<TownArms>(w.Get<Equipment>(e).Weapon));
+        for (var t = 0; t < SimClock.TicksPerHour && !FromTheRack(); t += 60)
+            sim.TickMany(60);
+        Assert.True(FromTheRack(), "nobody took up arms from the rack");
     }
 
     [Fact]

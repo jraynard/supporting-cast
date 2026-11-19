@@ -3,8 +3,9 @@
 art/reference/village-map2.webp.
 
 The reference is a 36x36-square battlemap; one square is two cells, and the village sits in the
-middle of a 96x96 map with a 12-cell band of woods, fields and water round it (so a reference
-square (sx, sy) is the cell (12 + 2*sx, 12 + 2*sy)). Everything below is in cells.
+west of a 128x96 map with a 12-cell band of woods, fields and water round it (so a reference
+square (sx, sy) is the cell (12 + 2*sx, 12 + 2*sy)). East of the old 96-cell square is the wild
+ground: the lake's stream, woods, and the hill with the mine in it. Everything below is in cells.
 
 The output is the plain text-grid MapDef (see src/HeroesNotIncluded.Sim/Defs/MapDefs.cs): edit this
 script and re-run it, or hand-edit the JSON for a small fix.
@@ -13,6 +14,7 @@ script and re-run it, or hand-edit the JSON for a small fix.
   python3 tools/village_map.py --preview OUT   # also draw the map beside the reference, to compare
 """
 import argparse
+import math
 import os
 import random
 
@@ -23,7 +25,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "data", "defs", "maps", "millbrook.json")
 REFERENCE = os.path.join(HERE, "..", "art", "reference", "village-map2.webp")
 
-N = 96          # map size
+N = 96          # the village's square (the old map), every cell of it where it always was
+W, H = 128, 96  # the map: the wild ground to the east of the square
 CORE = 12       # where the reference's square (0, 0) lands
 TOWN = 2        # the village's level; a river bank is one down, its bed two
 rnd = random.Random(1234)
@@ -34,10 +37,11 @@ FEATURE_LEGEND = {
     "f": "Fence", "G": "Gate!", "g": "Gate", "c": "CabbagePlant", "W": "Well", "N": "NoticeBoard", "=": "StoneBridge@2",
     "u": "Barrel", "X": "Crate", "C": "Wagon", "/": "Slope", "R": "WeaponRack", "M": "Midden",
     "h": "OutdoorBench", "T": "OutdoorTable", "_": "DoorStep", "L": "LanternPost", "F": "FlowerTub",
+    "l": f"LanternPost@{TOWN}",
 }
 
 # The canvas this script paints (tools/mapkit.py), its grids and helpers bound here by their old names.
-M = mapkit.Canvas(N, TOWN)
+M = mapkit.Canvas(W, TOWN, h=H)
 ground, level, feature, reserved, buildings = M.ground, M.level, M.feature, M.reserved, M.buildings
 inside, cells_rect, cells_disc, cells_path, paint, plot = M.inside, M.cells_rect, M.cells_disc, M.cells_path, M.paint, M.plot
 building, fence_ring, garden, water, tree_clump = M.building, M.fence_ring, M.garden, M.water, M.tree_clump
@@ -56,13 +60,14 @@ def sq(sx, sy):
 river = [(-2, 61), sq(2, 23.5), (20, 63.5), (22.5, 68), (33.5, 68), (35, 73), sq(11, 34), (36, 96 + 2)]
 water(cells_path(river, 5))
 water(list(cells_disc(*sq(35.5, 4), 9, 18, wobble=0.18, seed=3)) + list(cells_path([sq(33, -6), sq(34, 0), sq(36.5, 6), (98, 34)], 8)))
+water(cells_path([(97, 34), (106, 31), (114, 25), (122, 21), (W + 2, 19)], 4))   # the lake's stream, off east through the woods
 
 # The square and the lanes (packed earth).
 paint(cells_disc(*sq(16, 17), 15, 17, wobble=0.12, seed=5), g="r")           # the square round the well
 paint(cells_disc(*sq(12, 9), 9, 6, wobble=0.15, seed=7), g="r")               # up to the barns
 paint(cells_path([sq(23.7, 12), sq(23.7, 4), sq(23.2, 0), (58, -2)], 4), g="r")    # the north road
 paint(cells_path([sq(7, 6.5), sq(12, 6), sq(16, 6.5)], 3), g="r")             # past the pig pen
-paint(cells_path([sq(22, 21), sq(27, 21), sq(31, 20.5), (97, 52)], 4), g="r")     # the east road
+paint(cells_path([sq(22, 21), sq(27, 21), sq(31, 20.5), (97, 52), (W + 2, 50)], 4), g="r")     # the east road, on past the hill
 SOUTH_WEST_ROAD = [sq(12, 24), (31, 61), (27.5, 62.5), (27.5, 74), (22, 76), sq(3.5, 31.5), sq(1.5, 35), (12, 97)]   # straight over the bridge
 paint(cells_path(SOUTH_WEST_ROAD, 4), g="r")                                  # south-west, over the bridge
 paint(cells_path([sq(5, 9), sq(1, 9.5), (-2, 30)], 3), g="r")                # out west past the barn
@@ -184,6 +189,121 @@ for x, y in [(15, 60), (24, 62), (34, 80), (78, 38), (75, 30)]:
         feature[y][x] = "/"
 
 
+# ---------------- The wild ground east of the village: the hill and its mine ----------------
+
+# A rocky hill south of the east road, stepping up a level every cell or two to a flat top six up.
+# Bare stone all over (MapBuilder fills a stone-topped column solid), so it's rock to dig into.
+HILL = (113, 76, 13, 15)          # middle x, y and radii
+HILL_RISE = 6
+_hill_phase = [random.Random(41).uniform(0, math.tau) for _ in range(3)]
+
+
+def hill_rise(x, y):
+    """How many levels above the town the hill stands at a column (0: off it)."""
+    cx, cy, rx, ry = HILL
+    a = math.atan2(y - cy, x - cx)
+    k = 1 + 0.15 * sum(math.sin(a * (i + 2) + p) for i, p in enumerate(_hill_phase)) / 3
+    t = math.hypot((x - cx) / rx, (y - cy) / ry) / k
+    return 0 if t > 1 else min(HILL_RISE, 1 + int((1 - t) * 10))
+
+
+for y in range(H):
+    for x in range(N, W):
+        if (rise := hill_rise(x, y)) > 0 and ground[y][x] != "r" and level[y][x] == TOWN:
+            ground[y][x], level[y][x], feature[y][x] = "k", TOWN + rise, "."
+            reserved[y][x] = True
+
+# The mine: an adit two wide straight into the hill's west face at the town's level, then a gallery
+# across, north to south. The rock beyond is the miner's to open; the seams (sure, whatever the seed)
+# lie a cell or three past the gallery's walls, hidden like any ore till a face of them is struck.
+ADIT_Y = (75, 76)
+ADIT_X0 = next(x for x in range(N, W) if all(level[y][x] >= TOWN + 2 for y in ADIT_Y))
+ADIT_LEN = 8
+GALLERY_X = ADIT_X0 + ADIT_LEN
+GALLERY_Y = (70, 81)
+adit = [(x, y) for x in range(ADIT_X0, GALLERY_X) for y in ADIT_Y]
+gallery = [(GALLERY_X, y) for y in range(GALLERY_Y[0], GALLERY_Y[1] + 1)]
+niche = [(ADIT_X0 + 4, ADIT_Y[0] - 1)]           # a lantern's niche off the adit, out of the way
+# The cut in the hill's foot up to the mouth: down to the town's level, packed earth.
+for y in ADIT_Y:
+    for x in range(ADIT_X0 - 4, ADIT_X0):
+        if level[y][x] > TOWN:
+            ground[y][x], level[y][x] = "d", TOWN
+M.tunnel(adit + gallery + niche, TOWN, label="the mine")
+MINE_MOUTH = (ADIT_X0 - 1, ADIT_Y[0])
+for x, y in [(ADIT_X0 - 1, ADIT_Y[0] - 1), (ADIT_X0 - 1, ADIT_Y[1] + 1)]:   # lanterns either side of the mouth
+    if level[y][x] == TOWN:
+        feature[y][x] = "L"
+feature[niche[0][1]][niche[0][0]] = "l"                                    # and one inside
+M.seam("IronOre", GALLERY_X + 5, 72, 2.5, TOWN, TOWN + 1)        # iron north-east of the gallery
+M.seam("IronOre", GALLERY_X - 3, 81, 2.0, TOWN, TOWN + 1)        # and a smaller lode south, back towards the mouth
+M.seam("CoalSeam", GALLERY_X + 5, 79, 3.0, TOWN, TOWN + 1)       # coal to the south-east
+M.seam("CoalSeam", ADIT_X0 + 3, 70, 2.0, TOWN, TOWN + 1)         # and a thin seam north of the adit
+
+# The cart track from the east road down to the mine's mouth.
+TRACK = [(101, 52), (99, 60), (97, 68), (ADIT_X0 - 4, ADIT_Y[0] + 0.5), (ADIT_X0, ADIT_Y[0] + 0.5)]
+for x, y in cells_path(TRACK, 3):
+    if level[y][x] == TOWN and ground[y][x] not in "wk~":
+        ground[y][x] = "r"
+        reserved[y][x] = True
+
+# The miner's shed (mods/miner: its plot stays empty with the mod off), as near the mouth as there's room,
+# east of the old square (so nothing there moves for it), clear of the track and the hill's foot.
+def shed_fits(ax, ay, facing):
+    cells = plot("MineShed", ax, ay, facing)
+    ring = {(x + dx, y + dy) for x, y in cells for dx in (-1, 0, 1) for dy in (-1, 0, 1)}
+    return (all(inside(x, y) and x >= N and ground[y][x] not in "wkr~" for x, y in cells)
+            and all(inside(x, y) and level[y][x] == TOWN and not reserved[y][x] for x, y in ring))
+
+
+def shed_front(ax, ay, facing):
+    """The cell out from the middle of the shed's open front."""
+    fx, fy = front(facing)
+    depth = mapkit.PLANS["MineShed"][1]
+    return ax + fx * (depth // 2 + 1), ay + fy * (depth // 2 + 1)
+
+
+# Scored by how far its open front is from the mouth, so it faces the way the ore comes out.
+SHED = min(((math.hypot(shed_front(ax, ay, f)[0] - MINE_MOUTH[0], shed_front(ax, ay, f)[1] - MINE_MOUTH[1]), ax, ay, f)
+            for ay in range(50, H) for ax in range(N, W) for f in range(4) if shed_fits(ax, ay, f)), default=None)
+if SHED is None:
+    raise SystemExit("no room for the mine shed by the mouth")
+building("MineShed", SHED[1], SHED[2], SHED[3], role="MineShed", doorstep="d")
+for x, y in plot("MineShed", SHED[1], SHED[2], SHED[3]):
+    feature[y][x] = "."
+# A lane from its front to the track's end at the mouth.
+SHED_PLOT = set(plot("MineShed", SHED[1], SHED[2], SHED[3]))
+for x, y in cells_path([shed_front(SHED[1], SHED[2], SHED[3]), (ADIT_X0 - 3, ADIT_Y[1])], 2):
+    if level[y][x] == TOWN and ground[y][x] not in "wk~" and (x, y) not in SHED_PLOT:
+        ground[y][x], feature[y][x] = "r", "."
+        reserved[y][x] = True
+
+# A way up onto the hill: a stair of slopes straight up its north face, one at the top of each step.
+sx = HILL[0]
+for y in range(HILL[1] - HILL[3] - 1, HILL[1]):
+    if level[y + 1][sx] == level[y][sx] + 1:
+        feature[y][sx] = "/"
+        reserved[y][sx] = True
+    elif level[y + 1][sx] > level[y][sx] + 1:
+        raise SystemExit(f"the hill's stair at {sx},{y} steps up more than a level")
+
+# The wild woods east of the village: thick, pines north of the road and oaks and birches south,
+# thinning round the hill's foot and the track; bushes and flax in the clearings.
+r_wild = random.Random(91)
+for y in range(H):
+    for x in range(N, W):
+        if ground[y][x] != "g" or level[y][x] != TOWN or reserved[y][x] or feature[y][x] != ".":
+            continue
+        foot = min((math.hypot(x - tx, y - ty) for tx, ty in [(HILL[0], HILL[1])]), default=99) - max(HILL[2], HILL[3])
+        roll = r_wild.random()
+        if roll < (0.45 if foot > 4 else 0.2):
+            pick = r_wild.random()
+            feature[y][x] = ("P" if pick < 0.6 else "B" if pick < 0.8 else "O") if y < 50 else ("O" if pick < 0.5 else "B" if pick < 0.8 else "P")
+        elif roll > 0.98:
+            feature[y][x] = "b"
+        elif roll > 0.97:
+            feature[y][x] = "x"
+
 # The reference's oak clumps, then the woods round the village.
 for i, (cx, cy, rx, ry) in enumerate([(18, 15, 8, 5), (30, 15, 9, 4), (73, 15, 6, 4), (15, 50, 4, 5), (41, 73, 4, 4),
                                       (68, 81, 6, 3), (81, 63, 3, 4), (79, 84, 5, 3), (60, 36, 2, 2), (12, 28, 3, 6)]):
@@ -209,8 +329,8 @@ for y in range(N):
             feature[y][x] = "x"
 
 # Keep the lanes clear right to the edges, and the bank cells bare.
-for y in range(N):
-    for x in range(N):
+for y in range(H):
+    for x in range(W):
         if ground[y][x] == "r" and feature[y][x] in "OPBbxo":
             feature[y][x] = "."
 
@@ -222,6 +342,9 @@ for x, y in [(34, 47), (35, 49), (33, 50)]:
     if feature[y][x] == "." and not reserved[y][x]:
         feature[y][x] = "x"
 
+# The veins the seed scatters here (mining.json): iron, coal, copper and tin, clay in the banks, and the
+# ember crystal deep in the basalt. No silver or gold: struck in a round they'd be minted into coin.
+VEINS = ["IronVein", "CoalSeam", "CopperVein", "TinPocket", "ClayBank", "EmberGeode"]
 CENTER = [40, 48]
 STOCKPILE = [50, 18, 5, 3]   # inside the barn
 LIVESTOCK = [{"creature": "Pig", "count": 3, "at": [31, 25]}]
@@ -246,10 +369,10 @@ def check():
                 problems.append(f"fence at {x},{y} is on a lane")
             if any((x + dx, y + dy) in plots for dx in (-1, 0, 1) for dy in (-1, 0, 1)):
                 problems.append(f"fence at {x},{y} is hard up against a building")
-    for y in range(N):
-        for x in range(N):
+    for y in range(H):
+        for x in range(W):
             f = feature[y][x]
-            if f not in ".=/" and (level[y][x] != TOWN or ground[y][x] in "wk~"):
+            if f not in ".=/l" and (level[y][x] != TOWN or ground[y][x] in "wk~"):
                 problems.append(f"'{f}' at {x},{y} is in the water or on a bank")
             if f == "=" and level[y][x] == TOWN:
                 problems.append(f"bridge at {x},{y} isn't over the river")
@@ -260,7 +383,7 @@ def check():
 def build_def():
     return M.map_def("Millbrook", "Millbrook",
                      "A river village round a well: a square, an inn, a dozen thatched houses, gardens, a pig pen and a stone bridge.",
-                     GROUND_LEGEND, FEATURE_LEGEND, CENTER, STOCKPILE, LIVESTOCK, festival)
+                     GROUND_LEGEND, FEATURE_LEGEND, CENTER, STOCKPILE, LIVESTOCK, festival, veins=VEINS)
 
 
 def write():

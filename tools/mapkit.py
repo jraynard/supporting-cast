@@ -11,7 +11,8 @@ import random
 
 # Plan sizes (width across, depth front to back) of the preset buildings, as buildings.json.
 PLANS = {"Inn": (13, 13), "Dwelling": (6, 5), "Cottage": (9, 6), "Smithy": (7, 5), "Shrine": (11, 7), "Woodshop": (7, 5),
-         "TinkerShop": (7, 6), "Barn": (10, 6), "Cookhouse": (11, 10), "LandingInn": (13, 13), "MootHall": (13, 9)}
+         "TinkerShop": (7, 6), "Barn": (10, 6), "Cookhouse": (11, 10), "LandingInn": (13, 13), "MootHall": (13, 9),
+         "MineShed": (5, 4)}
 
 COLORS = {"g": (96, 150, 70), "d": (130, 100, 70), "r": (186, 160, 116), "t": (100, 70, 46), "k": (120, 116, 110),
           "s": (210, 196, 140), "~": (90, 160, 190), "w": (50, 120, 170)}
@@ -31,23 +32,27 @@ def seg_dist(px, py, ax, ay, bx, by):
 
 
 class Canvas:
-    """An n x n map being painted: ground, level and feature grids, reserved plots, and the buildings."""
+    """A w x h map being painted (square unless h is given): ground, level and feature grids, reserved
+    plots, the buildings, and what's under the ground (seams of ore, tunnels)."""
 
-    def __init__(self, n, town, fill="g"):
-        self.n = n
+    def __init__(self, w, town, fill="g", h=None):
+        self.w, self.h = w, h or w
+        self.n = w           # the old name, from when maps were square
         self.town = town     # the village's level
-        self.ground = [[fill] * n for _ in range(n)]
-        self.level = [[town] * n for _ in range(n)]
-        self.feature = [["."] * n for _ in range(n)]
-        self.reserved = [[False] * n for _ in range(n)]   # building plots and their doorsteps: nothing grows there
+        self.ground = [[fill] * self.w for _ in range(self.h)]
+        self.level = [[town] * self.w for _ in range(self.h)]
+        self.feature = [["."] * self.w for _ in range(self.h)]
+        self.reserved = [[False] * self.w for _ in range(self.h)]   # building plots and their doorsteps: nothing grows there
         self.buildings = []
+        self.seams = []      # ore bodies placed for sure (MapSeam), the seed wobbling their edges
+        self.tunnels = []    # passages carved through the rock at a level (MapTunnel)
 
     def inside(self, x, y):
-        return 0 <= x < self.n and 0 <= y < self.n
+        return 0 <= x < self.w and 0 <= y < self.h
 
     def cells_rect(self, x0, y0, x1, y1):
-        for y in range(max(0, y0), min(self.n - 1, y1) + 1):
-            for x in range(max(0, x0), min(self.n - 1, x1) + 1):
+        for y in range(max(0, y0), min(self.h - 1, y1) + 1):
+            for x in range(max(0, x0), min(self.w - 1, x1) + 1):
                 yield x, y
 
     def cells_disc(self, cx, cy, rx, ry, wobble=0.0, seed=0):
@@ -65,8 +70,8 @@ class Canvas:
     def cells_path(self, points, width):
         xs = [p[0] for p in points]
         ys = [p[1] for p in points]
-        for y in range(max(0, int(min(ys) - width - 1)), min(self.n, int(max(ys) + width + 2))):
-            for x in range(max(0, int(min(xs) - width - 1)), min(self.n, int(max(xs) + width + 2))):
+        for y in range(max(0, int(min(ys) - width - 1)), min(self.h, int(max(ys) + width + 2))):
+            for x in range(max(0, int(min(xs) - width - 1)), min(self.w, int(max(xs) + width + 2))):
                 d = min(seg_dist(x, y, *points[i], *points[i + 1]) for i in range(len(points) - 1))
                 if d <= width / 2:
                     yield x, y
@@ -178,12 +183,31 @@ class Canvas:
                 pick = r.random()
                 self.feature[y][x] = species if pick < 0.75 else ("B" if pick < 0.9 else ("P" if species == "O" else "O"))
 
-    def map_def(self, name, label, description, ground_legend, feature_legend, center, stockpile, livestock, festival, depth=12, base_z=2):
+    def seam(self, block, x, y, radius, level_min, level_max):
+        """An ore body sure to be there: block (a def's name) in the rock within about radius of
+        column (x, y), from level_min to level_max. The seed wobbles its edge (MapBuilder)."""
+        self.seams.append({"block": block, "at": [x, y], "radius": radius, "levels": [level_min, level_max]})
+
+    def tunnel(self, cells, level, label=""):
+        """A passage carved out of the rock at a level: every cell of cells must be under ground
+        that stands at least two levels higher (a hill), so there's rock left above it for a roof."""
+        cells = sorted(set(cells), key=lambda c: (c[1], c[0]))
+        for x, y in cells:
+            if not self.inside(x, y) or self.level[y][x] < level + 2:
+                raise SystemExit(f"tunnel {label} at {x},{y}: no rock above it (the ground's at level {self.level[y][x]})")
+        entry = {"level": level, "cells": [[x, y] for x, y in cells]}
+        if label:
+            entry["label"] = label
+        self.tunnels.append(entry)
+
+    def map_def(self, name, label, description, ground_legend, feature_legend, center, stockpile, livestock, festival, depth=12, base_z=2, veins=None):
+        """veins: the vein defs (mining.json) the seed may scatter here; None, all of them."""
+        extra = {"veins": veins} if veins is not None else {}
         return {
             "maps": [{
                 "name": name, "label": label,
                 "description": description,
-                "width": self.n, "height": self.n, "depth": depth, "baseZ": base_z,
+                "width": self.w, "height": self.h, "depth": depth, "baseZ": base_z, **extra,
                 "groundLegend": ground_legend,
                 "featureLegend": feature_legend,
                 "center": center,
@@ -191,6 +215,8 @@ class Canvas:
                 "livestock": livestock,
                 "festival": festival,
                 "buildings": self.buildings,
+                "seams": self.seams,
+                "tunnels": self.tunnels,
                 "ground": ["".join(row) for row in self.ground],
                 "levels": ["".join(str(v) for v in row) for row in self.level],
                 "features": ["".join(row) for row in self.feature],
@@ -203,14 +229,14 @@ def write(out, data, header):
     comment lines at the top (where it came from, how it's made)."""
     os.makedirs(os.path.dirname(out), exist_ok=True)
     m = data["maps"][0]
-    head = json.dumps({k: v for k, v in m.items() if k not in ("ground", "levels", "features", "buildings", "festival")}, indent=2)[:-2]
+    lists = ("buildings", "festival", "seams", "tunnels")
+    head = json.dumps({k: v for k, v in m.items() if k not in ("ground", "levels", "features") + lists}, indent=2)[:-2]
     rows = lambda key: ",\n".join(f'      "{r}"' for r in m[key])
-    blds = ",\n".join("      " + json.dumps(b) for b in m["buildings"])
-    fest = ",\n".join("      " + json.dumps(b) for b in m["festival"])
+    # One entry per line; a map without seams or tunnels leaves the key out, so its file reads as it did.
+    listed = "".join(f'      "{key}": [\n' + ",\n".join("      " + json.dumps(b) for b in m[key]) + "\n      ],\n"
+                     for key in lists if m.get(key) or key in ("buildings", "festival"))
     text = (header +
-            '{\n  "maps": [\n    ' + head.replace("\n", "\n    ") + ',\n'
-            f'      "buildings": [\n{blds}\n      ],\n'
-            f'      "festival": [\n{fest}\n      ],\n'
+            '{\n  "maps": [\n    ' + head.replace("\n", "\n    ") + ',\n' + listed +
             f'      "ground": [\n{rows("ground")}\n      ],\n'
             f'      "levels": [\n{rows("levels")}\n      ],\n'
             f'      "features": [\n{rows("features")}\n      ]\n    }}\n  ]\n}}\n')
@@ -222,13 +248,16 @@ def write(out, data, header):
 def preview(c, path, reference=None, core=0, feature_colors=None, roof=None):
     """Draw the map (and the reference it was traced from, if any, beside it) to a PNG."""
     from PIL import Image, ImageDraw
-    n, k = c.n, 8
+    w, h, k = c.w, c.h, 8
     colors = feature_colors or FEATURE_COLORS
-    img = Image.new("RGB", (n * k, n * k))
+    img = Image.new("RGB", (w * k, h * k))
     d = ImageDraw.Draw(img)
-    for y in range(n):
-        for x in range(n):
-            d.rectangle([x * k, y * k, x * k + k - 1, y * k + k - 1], fill=COLORS[c.ground[y][x]])
+    for y in range(h):
+        for x in range(w):
+            # Ground above the town's level is drawn lighter the higher it stands (a hill reads as one).
+            rise = max(0, c.level[y][x] - c.town)
+            col = tuple(min(255, int(v + (255 - v) * 0.09 * rise)) for v in COLORS[c.ground[y][x]])
+            d.rectangle([x * k, y * k, x * k + k - 1, y * k + k - 1], fill=col)
             f = c.feature[y][x]
             if f != ".":
                 d.ellipse([x * k + 1, y * k + 1, x * k + k - 2, y * k + k - 2], fill=colors.get(f, (255, 0, 255)))
@@ -241,12 +270,18 @@ def preview(c, path, reference=None, core=0, feature_colors=None, roof=None):
         cx, cy = b["at"][0] * k + k // 2, b["at"][1] * k + k // 2
         d.line([cx, cy, cx + fx * 3 * k, cy + fy * 3 * k], fill=(40, 30, 20), width=2)
         d.text((min(xs) * k + 2, min(ys) * k + 2), b.get("role") or b["def"], fill=(0, 0, 0))
+    for t in c.tunnels:                     # tunnels: dark under the hill
+        for x, y in t["cells"]:
+            d.rectangle([x * k + 1, y * k + 1, x * k + k - 2, y * k + k - 2], outline=(30, 20, 10), fill=(70, 60, 50))
+    for s in c.seams:                       # seams: a ring where each lies (iron rust-red, the rest dark)
+        x, y, r = s["at"][0], s["at"][1], s["radius"]
+        d.ellipse([(x - r) * k, (y - r) * k, (x + r + 1) * k, (y + r + 1) * k], outline=(170, 80, 50) if "Iron" in s["block"] else (20, 20, 20), width=2)
     if reference and os.path.exists(reference):
-        out = Image.new("RGB", (n * k * 2 + 8, n * k), (30, 30, 30))
+        out = Image.new("RGB", (w * k + h * k + 8, h * k), (30, 30, 30))
         out.paste(img, (0, 0))
-        side = (n - 2 * core) * k
+        side = (h - 2 * core) * k
         ref = Image.open(reference).convert("RGB").resize((side, side))
-        out.paste(ref, (n * k + 8 + core * k, core * k))
+        out.paste(ref, (w * k + 8 + core * k, core * k))
         img = out
     img.save(path)
     print(f"preview: {path}")

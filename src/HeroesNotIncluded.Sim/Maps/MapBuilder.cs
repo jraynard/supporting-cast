@@ -49,7 +49,9 @@ public static class MapBuilder
         }
         var center = new int3(def.Center[0], def.Center[1], def.SurfaceZ(def.Center[0], def.Center[1]));
         MapGenerator.PlaceStrata(sim, standZ, center.Z, center, seed);
-        MapGenerator.PlaceVeins(sim, standZ, moistures, center, seed);
+        MapGenerator.PlaceVeins(sim, standZ, moistures, center, seed, def.VeinDefs);
+        PlaceSeams(sim, def, seed);
+        CarveTunnels(sim, def);
         map.MarkStructureChanged();
 
         // Floors first (a bridge holds up whatever stands on it), then everything on the ground.
@@ -113,6 +115,65 @@ public static class MapBuilder
         sim.Festival.Plan(def);
         return new Built(center, buildings);
     }
+
+    /// <summary>
+    /// The map's sure ore bodies (<see cref="MapDef.Seams"/>): rock within about the seam's radius of
+    /// its column, through its levels, turns to its ore. The edge is the seed's hashed noise (no
+    /// sim.Rand, so it's the same on every peer). Only rock a pick breaks is turned, never soil or ore
+    /// already there.
+    /// </summary>
+    private static void PlaceSeams(Simulation sim, MapDef def, uint seed)
+    {
+        var map = sim.Map;
+        for (var n = 0; n < def.Seams.Count; n++)
+        {
+            var seam = def.Seams[n];
+            var salt = seed + 15485863u + (uint)n * 7919u;
+            var reach = (int)MathF.Ceiling(seam.Radius * 1.3f);
+            int cx = seam.At[0], cy = seam.At[1];
+            for (var y = cy - reach; y <= cy + reach; y++)
+            for (var x = cx - reach; x <= cx + reach; x++)
+            {
+                if (!def.Inside(x, y))
+                    continue;
+                var d = MathF.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                for (var z = def.BaseZ + seam.Levels[0]; z <= def.BaseZ + seam.Levels[1]; z++)
+                {
+                    var i = map.Idx(x, y, z);
+                    if (map.Block[i] is not { Solid: true, IsWater: false, Ore: false, DigTool: "Pick" })
+                        continue;
+                    if (d <= seam.Radius * (0.7f + 0.6f * MapGenerator.Fbm(x + z * 37, y - z * 53, salt, 3f, 2)))
+                        map.Block[i] = seam.BlockDef;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// The map's tunnels (<see cref="MapDef.Tunnels"/>) dug out: air where people walk, the rock left
+    /// above. Their walls are worked out: ore that a tunnel would lay open is its host rock instead, so a
+    /// mine's ore is struck by digging, never found lying open at the start.
+    /// </summary>
+    private static void CarveTunnels(Simulation sim, MapDef def)
+    {
+        var map = sim.Map;
+        var air = sim.Defs.Block("Air");
+        var rock = sim.Defs.Block("Stone");
+        foreach (var t in def.Tunnels)
+        foreach (var c in t.Cells)
+            map.Block[map.Idx(c[0], c[1], def.BaseZ + t.Level)] = air;
+        foreach (var t in def.Tunnels)
+        foreach (var c in t.Cells)
+        {
+            var at = new int3(c[0], c[1], def.BaseZ + t.Level);
+            foreach (var d in Walls)
+                if (map.InBounds(at + d) && map.Block[map.Idx(at + d)] is { Ore: true } ore)
+                    map.Block[map.Idx(at + d)] = ore.HostRockDef ?? rock;
+        }
+    }
+
+    private static readonly int3[] Walls =
+        [new(1, 0, 0), new(-1, 0, 0), new(0, 1, 0), new(0, -1, 0), new(0, 0, -1), new(0, 0, 1)];
 
     /// <summary>
     /// Which way a feature faces: along its run of like features (a bridge across its river, a

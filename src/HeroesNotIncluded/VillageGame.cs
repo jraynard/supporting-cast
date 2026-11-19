@@ -909,6 +909,11 @@ public sealed partial class VillageGame(ulong seed, int skipHours = 0) : Game
         if (!Eye.IsNull && _sim.World.TryGet<Position>(Eye, out var pos) && _renderer.OpenBuilding.Building.IsNull)
         {
             var c = pos.Cell;
+            // Under rock (a tunnel, the mine): cut at your level, or the hill's drawn over you. Your own
+            // column only, so walking along a cliff's foot doesn't cut the hill away beside you.
+            for (var z = c.Z + 1; z < map.Depth && cut == map.Depth - 1; z++)
+                if (map.InBounds(c.X, c.Y, z) && map.Block[map.Idx(c.X, c.Y, z)].Solid && !map.Block[map.Idx(c.X, c.Y, z)].IsWater)
+                    cut = c.Z;
             for (var z = c.Z + 1; z < map.Depth && cut == map.Depth - 1; z++)
                 for (var dy = -1; dy <= 1; dy++)
                     for (var dx = -1; dx <= 1; dx++)

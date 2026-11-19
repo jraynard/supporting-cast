@@ -135,6 +135,21 @@ public static class TestWorld
     /// Takes mixed drinks off the inn's sign, so a thirsty customer orders a plain ale: for tests
     /// about drink orders and their price, not about which drink.
     /// </summary>
+    /// <summary>
+    /// A party sent in from a map edge, walked as far as a building (within a few cells of its anchor), so a
+    /// test of what they do there doesn't time their walk in through the woods as well. Up to <paramref name="hours"/>.
+    /// </summary>
+    public static void WalkUpTo(Simulation sim, IReadOnlyList<Entity> party, Entity building, float hours = 2f)
+    {
+        var at = sim.World.Get<Components.PresetBuilding>(building).Anchor;
+        for (var t = 0; t < SimClock.HoursToTicks(hours); t += 60)
+        {
+            if (party.All(e => !sim.World.IsAlive(e) || Maps.Map.Distance(sim.World.Get<Components.Position>(e).Cell, at) <= 12))
+                return;
+            sim.TickMany(60);
+        }
+    }
+
     /// <summary>Someone served a drink or a meal sits with it a while (Hospitality.Table): tick till they've finished.</summary>
     public static void TillFinished(Simulation sim, Entity who)
     {

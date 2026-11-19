@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The miner's game half (docs/MODDING.md): its mini-games' views and sounds. It references the
+       game; it builds into the mod's folder, where the game loads it from. -->
+  <PropertyGroup>
+    <RootNamespace>HeroesNotIncluded.Miner</RootNamespace>
+    <OutDir>$(MSBuildThisFileDirectory)../../</OutDir>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\src\HeroesNotIncluded\HeroesNotIncluded.csproj" Private="false" />
+    <ProjectReference Include="..\..\..\..\src\HeroesNotIncluded.Sim\HeroesNotIncluded.Sim.csproj" Private="false" />
+    <ProjectReference Include="..\..\..\..\external\narsil\src\Narsil\Narsil.csproj" Private="false" />
+    <ProjectReference Include="..\..\..\..\external\narsil\src\Narsil.Sim\Narsil.Sim.csproj" Private="false" />
+    <ProjectReference Include="..\..\..\..\external\narsil\src\Narsil.Audio\Narsil.Audio.csproj" Private="false" />
+    <ProjectReference Include="..\Miner.Sim\Miner.Sim.csproj" Private="false" />
+    <PackageReference Include="Ahwoo.BRUTAL.Numerics" Version="2026.10.1" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Brutal.Numerics" />
+    <Using Include="HeroesNotIncluded.Sim.Core" />
+    <Using Include="Narsil.Sim.Core" />
+    <Using Include="Narsil.Sim.Grid" />
+  </ItemGroup>
+
+</Project>

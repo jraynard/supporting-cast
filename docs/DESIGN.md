@@ -118,7 +118,8 @@ Called `Trade` in code, because `Ai/Job` is already the AI coroutine.
 | Apothecary | Discover reagent reactions, reshuffled each round | New `Reagents` | Poisons, explosives |
 | Merchant | Haggling, spotting cursed loot | Inventory, `HoardValue` | Fencing, forged goods |
 | Undertaker | Autopsy, burial before the dead rise | Health, `Scars`, carcasses, the pyre | Destroying evidence |
-| Forager, Miner | Risky trips beyond the walls | Harvest, Mining, Hunting, Fishing | Alone out there, in both directions |
+| Miner | Hewing the rock face in the hill's mine by its cracks; the ore hidden till a face of it opens; selling it to the smith (`mods/miner`, a first pass) | Mining, `MapDef.Tunnels`/`Seams`, `Work/` | Ore held back from the smith, a seam kept secret |
+| Forager | Risky trips beyond the walls | Harvest, Hunting, Fishing | Alone out there, in both directions |
 | Tinker | Pick the locks and disarm the traps on chests adventurers bring back; pin locks and cut keys; fit contraptions together for the road; mend wagons; appraise curios and buy them for a collector; set trip-bells across the roads before a raid | `Tinkering/`, doors, `Work/`, expeditions, loot | A spare key, a chest opened early, a trap left armed, a contraption that jams, a curio talked down, a trip-bell that never rings |
 | Carpenter | Felling and bucking trees, sawing planks, splitting firewood, fletching quivers for the parties' archers, bracing the bridge, putting up the festival; later mending furniture and building | Construction, `Carpentry/`, the woodshop | A warped shaft in a quiver that looks true |
 | Musician | Rhythm performance, morale, rumours. | Mood, Social | Spreading lies |

@@ -317,6 +317,21 @@ variety to carry them.
 - **A town for twelve:** Millbrook suits five or six players. Before the twelve-player goal, grow
   it or make a bigger one. The rare companies already come bigger with more players
   (`PartyDef.SizeFor`); the ordinary parties and the crises may want the same.
+- **Bigger maps: one map a round, grown as needed.** Far places stay off the map, as quests are
+  (`MemberRecord`); a different town is a different round. Millbrook is 128x96 now (the hill and the
+  woods east of the old square); up to about twice a side the size is only data. Before going much past
+  that (192 or more), in order of what breaks first:
+  1. Every structure change rebuilds path costs, regions, rooms and heat conductance over the whole grid
+     (`Simulation.RebuildDerivedIfNeeded`, one global `StructureVersion`): make it dirty-rect or per chunk.
+  2. A* gives up past 60,000 expanded nodes (`GridPathfinder.MaxExpandedNodes`), with no hierarchy:
+     portals between chunks, or region-level paths over `GridRegions`.
+  3. `WorldMesher.Draw` draws every chunk every frame: cull to the camera, and budget the first build.
+  4. The join snapshot is about 20 bytes a cell, mostly floats (`SaveGame.WriteMap`), against the
+     relay's 32 MB frame: leave out or quantise temperature and light, run-length the blocks.
+  5. Every system's side arrays come to about 100 bytes a cell, and depth multiplies them all.
+- **The walk in counts against patience:** an adventurer's order is posted when they decide (often at the
+  map's edge), so on a bigger map the walk in eats into it and the quick-service tip (`ShopSystem.TipFor`).
+  Start an order's patience once they're in town or in the line.
 
 ### Reedmere, in progress
 An untuned map still being built; the town picker says so. Playtests stay on Millbrook until the
@@ -410,8 +425,15 @@ items into "Now" when a playtest says they matter.
 - **Empath:** adventurers never tear a charm in town.
 - **Labourer:** hidden from players (the solo picker and the lobby) till it has a game of its own;
   still the overflow for a seventh player and `--trade Labourer`. Its work is the AI's: errands off
-  the notice board, hauling, chopping. Likely split into Miner and Forager (once there's wild ground
-  beyond the walls) rather than given a pass; the Carpenter has come out of it already.
+  the notice board, hauling, chopping. Being split up rather than given a pass: the Carpenter has come
+  out of it, and the Miner (`mods/miner`, a first pass); the Forager is left, for the new woods east of Millbrook.
+- **Miner** (a first pass, to be played and changed): hewing is one game so far (`HewSession`); the rest
+  is still to find. Sounding the rock for a seam behind it (read through `PerceptionView`, never the block);
+  the smith sending for ore as the innkeeper sends for a hamper (ore isn't gear, so it can't go on a wares
+  shelf: for now it changes hands face to face, `Barter`); its own sounds (it borrows the game's);
+  lessons and a practice face in the yard; a bot that walks to the mine between orders (`IBotTrade.Between`);
+  an AI miner choosing faces itself (it digs only what's marked now); later, timbering and cave-ins, bad air,
+  and raiders in the tunnels.
 - **Tinker:** no lockboxes or locked chests (locks go on doors only); AI tinkers don't buy curios;
   a wagon lesson (practice customers' wagons aren't damaged yet); a trip-bell lesson in the practice
   yard, and the trip-bell's own sprite (it borrows the tapping rod's).
@@ -426,8 +448,8 @@ items into "Now" when a playtest says they matter.
 - **Tinker:** crossbows are mended at the tinker's (`CrossbowRepair`), but no adventurer kind carries
   one, so it only comes up when a bowman's bought one off the tinker's shelf. An arbalester in a party
   or two would give it work.
-- **Gathering:** digging, mining, chopping and foraging are the labourer's until the Miner and
-  Forager come.
+- **Gathering:** chopping and foraging are the labourer's until the Forager comes; digging and
+  mining are the labourer's and the Miner's (`TradeDef.Mines`).
 
 **Bots** (solo playtests and the scenario tests)
 - The cook bot never offers porridge, matches a craving or an ask for the house dish by name, or

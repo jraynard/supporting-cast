@@ -46,6 +46,10 @@ Most content is already defs (`data/defs`, merged in name order; references reso
 is loaded):
 - **New things:** buildings, furniture, items, recipes, quests, parties, adventurer kinds, incidents,
   barks, runes and mendings, outfits, and maps (a town is a `MapDef` with a building in the Tavern role).
+  A map may be any width and height, and says what's under its ground: `veins`, the seeded veins it has
+  (none named: all of them); `seams`, ore bodies it's sure of (`{ block, at, radius, levels }`, their edge the
+  seed's); `tunnels`, passages carved at a level (`{ level, cells }`, with rock two levels above them).
+  Millbrook's mine is the worked example (`tools/village_map.py`, `tools/mapkit.py`'s `seam` and `tunnel`).
 - **Overriding:** a def with the same name replaces the earlier one.
 - **Patching:** `"$patch": "merge"` merges only the fields given into the existing def (objects merge
   field by field; arrays and values are replaced whole), and `"$patch": "remove"` drops it, so a mod
@@ -142,6 +146,10 @@ one didn't. Each is now part of the API:
 - **A service** is a `services` def with a name the game's `ServiceKind` hasn't: numbered after the
   game's in load order, priced on signs and saved by name. A mod's code gets its kind with
   `defs.ServiceKindOf("Song")`.
+- **A share of the gathering** is a flag on the trade: `fells` (trees, the carpenter's) and `mines` (rock and
+  boulders, the miner's) let it do that much in a round without `gathers`' crops and timber.
+- **What a trade supplies** (`supplies`: thing names) the carter brings less of while a player holds it
+  (season.json's `suppliedShare`): the miner's iron ore.
 - **Work types stay the game's** (Craft, Cook, Haul, Doctor...): they're each villager's priorities, so a
   new one would be a new column for every villager and the work tab. A trade's AI jobs come under one
   of them (`ITradeModule.JobFor(sim, pawn, WorkType.Craft)`), as the carpenter's do.
