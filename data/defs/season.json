@@ -17,7 +17,7 @@
       // From festivalSetupHour that day the labourers put the festival up in the square.
       "festivalSetupHour": 11,
       "festivalHour": 15,
-      "festivalHours": 7.5,
+      "festivalHours": 6.5,
       "renownTarget": 60,
       "dreadLimit": 100,
       "renownPerSatisfaction": 1,

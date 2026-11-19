@@ -27,6 +27,9 @@ public sealed class FestivalDef : Def
     /// <summary>Real seconds (at 1x) of quiet between one line and the next, on top of each line's reading time.</summary>
     public float BeatSeconds { get; set; } = 1.5f;
 
+    /// <summary>The crier's tale is told at this share of a line's usual time (a playtest found it slow to sit through).</summary>
+    public float TalePace { get; set; } = 1f;
+
     /// <summary>Real seconds (at 1x) kept for the verdict at the very end, to be read and sink in before the reveal.</summary>
     public float VerdictSeconds { get; set; } = 22;
 

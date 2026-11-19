@@ -2750,3 +2750,6 @@ From the user's playing on a Deck:
 - **A bot keeper counts who's waiting by the orders it knows** (on what its sign sells), not bodies on the line's cells:
   a long line spills off them, and seven waiting read as two.
 - Bench: seed 1234 state `D07ABAFA413F0DA9`, full `E5C4F7BF87167692`; seed 99 state `76B9A4BDB726594C`, full `A3CAC15B8861C2E5`.
+- **The festival, from play:** a little shorter (`festivalHours` 7.5 to 6.5, the revels the shorter; the crowd gathers in
+  15 minutes, was 25), the crier's tale told briskly (`talePace` 0.75 of a line's time), and each honour may be
+  cheered once, as each toast is (with one party in town there was one toast to cheer, and the rest were honours).

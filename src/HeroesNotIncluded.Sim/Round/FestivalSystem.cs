@@ -275,7 +275,7 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
 
     // ---------------- Cheering the toasts ----------------
 
-    /// <summary>Toasts said so far tonight: each opens a moment to cheer it.</summary>
+    /// <summary>Toasts and honours said so far tonight: each opens a moment to cheer it.</summary>
     private int _toastsSaid;
 
     /// <summary>Who cheered which toast (its number), and when: once a toast each, and the hop it gives them.</summary>
@@ -287,9 +287,9 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
     /// <summary>What a cheer shouts, picked by who and which toast.</summary>
     public static readonly IReadOnlyList<string> CheerLines = ["Hear, hear!", "Huzzah!", "To the guests!", "Cheers to that!", "Well said!", "Raise them up!"];
 
-    /// <summary>A toast's just been said and <paramref name="who"/> hasn't cheered it yet: they may.</summary>
+    /// <summary>A toast's or an honour's just been said and <paramref name="who"/> hasn't cheered it yet: they may.</summary>
     public bool CanCheer(Simulation sim, Entity who) =>
-        Part == FestivalPart.Ceremony && Step == CeremonyStep.Toasts && _toastsSaid > 0
+        Part == FestivalPart.Ceremony && Step is CeremonyStep.Toasts or CeremonyStep.Honours && _toastsSaid > 0
         && !(_cheers.TryGetValue(who, out var c) && c.Toast == _toastsSaid) && SpeechSystem.CanAct(sim, who);
 
     /// <summary>
@@ -505,7 +505,7 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
         {
             var line = _tale[_taleIndex++];
             Say(sim, CrierNow(sim), line);
-            _nextLineAt = now + LineTicks(sim, line);
+            _nextLineAt = now + (long)(LineTicks(sim, line) * Math.Clamp(sim.Defs.Festival.TalePace, 0.3f, 1f));
             return;
         }
         BeginRevels(sim);
@@ -1026,7 +1026,10 @@ public sealed class FestivalSystem(ulong seed) : ISimSystem, ISaveState
     {
         _stepUntil = sim.Clock.Tick;
         if (_stepIndex < _honours.Count)
+        {
             Announce(sim, $"And for {_honours[_stepIndex].Title}: {_honours[_stepIndex].Name}!");
+            _toastsSaid++; // a moment to cheer it, as for a toast (a playtest could cheer only the one toast, the rest were honours)
+        }
     }
 
     /// <summary>

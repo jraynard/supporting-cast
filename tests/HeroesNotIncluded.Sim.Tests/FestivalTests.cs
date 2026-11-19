@@ -463,6 +463,36 @@ public class FestivalTests
     }
 
     [Fact]
+    public void EachHonourMayBeCheeredOnceToo()
+    {
+        // A playtest: one party, so one toast cheered; then the honours, and nothing more to cheer.
+        var sim = Round();
+        SendParty(sim, 5f);
+        ToRevels(sim);
+        var me = Me(sim);
+        sim.Festival.Played(sim, me, sim.Defs.Festival.Games.Single(g => g.Name == "Striker"), 80); // a winner, to be honoured
+        BringToTheWell(sim, me);
+        sim.Clock.Tick = sim.Festival.CeremonyTick(sim) - 1;
+        var (toastCheers, honourCheers) = (0, 0);
+        while (sim.Round.Phase == RoundPhase.Festival && sim.Festival.Step <= CeremonyStep.Honours)
+        {
+            sim.TickMany(10);
+            if (!sim.Festival.CanCheer(sim, me))
+                continue;
+            if (sim.Festival.Step == CeremonyStep.Honours)
+                honourCheers++;
+            else
+                toastCheers++;
+            sim.ApplyNow(new CheerCommand(me));
+            Assert.False(sim.Festival.CanCheer(sim, me), "once each");
+        }
+        var honours = sim.Speech.Kept.Count(u => u.Text.StartsWith("And for "));
+        Assert.Equal(1, toastCheers);
+        Assert.True(honours > 0, "someone was honoured");
+        Assert.Equal(honours, honourCheers);
+    }
+
+    [Fact]
     public void FAtTheButtWalksYouToTheMarkAndTheTurnStartsThere()
     {
         var sim = Round();
@@ -578,8 +608,9 @@ public class FestivalTests
         Assert.Equal(FestivalPart.Revels, sim.Festival.Part);
         var said = tale.Where(heardAt.ContainsKey).ToList();
         Assert.Equal(tale, said);
+        // The tale's brisker than the ceremony (talePace), but still a fair share of each line's reading time.
         for (var k = 1; k < tale.Count; k++)
-            Assert.True(heardAt[tale[k]] - heardAt[tale[k - 1]] >= Speech.SpeechSystem.ReadingTicks(tale[k - 1]),
+            Assert.True(heardAt[tale[k]] - heardAt[tale[k - 1]] >= Speech.SpeechSystem.ReadingTicks(tale[k - 1]) * sim.Defs.Festival.TalePace,
                 $"\"{tale[k - 1]}\" was given time to be read");
         Assert.Contains(sim.Messages.Messages, m => m.Text.StartsWith("The revels are open") && m.Location == null);
     }

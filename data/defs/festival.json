@@ -11,10 +11,12 @@
   "festivals": [
     {
       "name": "Festival",
-      "gatherMinutes": 25,
+      "gatherMinutes": 15,
       "taleWaitMinutes": 30,
       "ceremonyHours": 2.5,
       "beatSeconds": 1.5,
+      // The crier's tale goes at this share of a line's time: brisker than the ceremony's lines.
+      "talePace": 0.75,
       "verdictSeconds": 22,
       "verdictPauseSeconds": 4,
       "callMinutes": 25,
