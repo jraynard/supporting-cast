@@ -38,6 +38,11 @@
       <BundledModSim Include="..\..\mods\*\src\*.Sim\*.csproj" />
       <BundledModGame Include="..\..\mods\*\src\*\*.csproj" Exclude="@(BundledModSim)" />
     </ItemGroup>
+    <!-- A publish for a RID (tools/deck.sh, tools/package.sh) passes it on, so they build for it and reference the
+         game's RID output; the game's restore doesn't reach them, so they're restored for it here first (in an
+         evaluation of their own, as NuGet asks). -->
+    <MSBuild Condition="'$(RuntimeIdentifier)' != ''" Projects="@(BundledModSim);@(BundledModGame)" Targets="Restore" BuildInParallel="false"
+             Properties="Configuration=$(Configuration);BuildingBundledMods=true;MSBuildRestoreSessionId=$([System.Guid]::NewGuid())" />
     <MSBuild Projects="@(BundledModSim);@(BundledModGame)" Targets="Build" BuildInParallel="false"
              Properties="Configuration=$(Configuration);BuildProjectReferences=false;BuildingBundledMods=true" />
     <!-- Built after the output's copy of mods/ was made: their code goes in now. -->
