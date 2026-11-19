@@ -2714,3 +2714,6 @@ From the user's playing on a Deck:
 - **The musician comes wandering in from the road** (`TradeDef.ArrivesByRoad`, a line of its own; `Players.ArriveByRoad`):
   set 30 cells down the way a party would come in and walking into the square, at the deal and for a late joiner. And
   it's an easygoing trade on the pickers.
+- **Tuning, quicker to land** (from play): the peg turns faster the further the string's out (`TuneSession.RateAt`:
+  about four times as fast at 40 cents, the old slow turn near the note), and let go within 5 cents a string seats
+  on its note (`SeatCents`).

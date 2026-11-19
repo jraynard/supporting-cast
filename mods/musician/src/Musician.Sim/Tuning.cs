@@ -119,8 +119,18 @@ public sealed class TuneSession : WorkSession
     public int Snapped;
     public int SnappedAt = -1000;
 
-    /// <summary>Cents the peg turns in a step held: a slow turn, as a peg's is, so the beating can be heard to slow.</summary>
-    public const float TurnRate = 0.25f;
+    /// <summary>
+    /// Cents the peg turns in a step held near the note: a slow turn, as a peg's is, so the beating can be heard to
+    /// slow. Further out it turns quicker, <see cref="TurnPerCent"/> more a step for each cent off (a playtest found it
+    /// slow and fiddly), so a string well out comes in fast and slows as it nears.
+    /// </summary>
+    public const float TurnRate = 0.25f, TurnPerCent = 0.02f;
+
+    /// <summary>Let go this near its note, a string settles onto it (seated as the peg's let go): near is enough.</summary>
+    public const float SeatCents = 5f;
+
+    /// <summary>How far the peg turns a step with the string this far off.</summary>
+    public static float RateAt(float cents) => TurnRate + MathF.Abs(cents) * TurnPerCent;
 
     /// <summary>Past this sharp a string's under strain, and may snap: likelier the further, a step at a time.</summary>
     public const float StrainAt = 35f, SnapPerStep = 0.0015f;
@@ -138,7 +148,13 @@ public sealed class TuneSession : WorkSession
     /// <summary>The string in hand sounding (F held, and not snapped).</summary>
     public bool Sounding => Held && !StringBroken;
 
-    protected override void Axis(int value) => Turning = Math.Sign(value);
+    protected override void Axis(int value)
+    {
+        Turning = Math.Sign(value);
+        // Let go near its note: it seats there.
+        if (Turning == 0 && Cents.Length > 0 && !StringBroken && MathF.Abs(Cents[String]) <= SeatCents)
+            Cents[String] = 0f;
+    }
 
     /// <summary>Space: the next string.</summary>
     protected override void Act()
@@ -162,7 +178,7 @@ public sealed class TuneSession : WorkSession
         if (Turning == 0 || Cents.Length == 0 || StringBroken)
             return;
         ref var c = ref Cents[String];
-        c = Math.Clamp(c + Turning * TurnRate, -Furthest, Furthest);
+        c = Math.Clamp(c + Turning * RateAt(c), -Furthest, Furthest);
         // Wound up past its note: it may go.
         if (Turning > 0 && c > StrainAt && Rand.NextFloat() < SnapPerStep * (c - StrainAt) / 10f)
         {

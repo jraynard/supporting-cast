@@ -1323,14 +1323,23 @@ public class MusicianModTests
         play.Settle(sim);
         var t = Assert.IsType<TuneSession>(sim.World.Get<WorkSession>(me));
         Assert.Equal(4, t.Spares);
-        // The D string, 20 cents flat: D held tightens it, 0.25 a step, 80 steps to true.
-        t.Advance([new WorkInput(0, WorkInputKind.Act), new(1, WorkInputKind.Axis, 1), new(81, WorkInputKind.Axis, 0)], 90);
+        // The D string, 20 cents flat: D held tightens it, quicker while it's well out, and let go near its note it seats there.
+        t.Advance([new WorkInput(0, WorkInputKind.Act), new(1, WorkInputKind.Axis, 1)], 2);
         Assert.Equal(1, t.String);
+        var steps = 0;
+        while (t.Cents[1] < -TuneSession.SeatCents + 1f)
+        {
+            t.Advance([], t.StepsDone + 1);
+            steps++;
+        }
+        Assert.InRange(steps, 20, 60); // quicker than the slow turn's 80 steps, still a turn you can hear slow
+        t.Advance([new WorkInput(t.StepsDone, WorkInputKind.Axis, 0)], t.StepsDone + 1);
         Assert.Equal(0f, t.Cents[1], 2);
+        t.Advance([], 90);
         t.Settle(sim);
         Assert.Equal(0f, sim.World.Get<Tuning>(fiddle).Cents[1], 2); // written back to the fiddle
         // Wound on and on: past its note it strains, and goes.
-        t.Advance([new WorkInput(90, WorkInputKind.Axis, 1)], 90 + 4 * (int)(TuneSession.Furthest / TuneSession.TurnRate));
+        t.Advance([new WorkInput(t.StepsDone, WorkInputKind.Axis, 1)], t.StepsDone + 4 * (int)(TuneSession.Furthest / TuneSession.TurnRate));
         Assert.Equal(1, t.Snapped);
         Assert.True(t.StringBroken);
         // F fits a spare: on, but slack, and one fewer in the pack once it settles.
