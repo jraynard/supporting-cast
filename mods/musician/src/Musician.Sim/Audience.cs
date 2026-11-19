@@ -26,8 +26,14 @@ public readonly record struct Performance(bool Playing, float Energy, float Stea
     /// <summary>Steadiness under this is sour: no one comes to it, and whoever's there drifts off after a while.</summary>
     public const float SourBelow = 0.35f;
 
-    /// <summary>Music too ragged to stand.</summary>
-    public bool Sour => Playing && Steadiness < SourBelow;
+    /// <summary>How far out of tune it is, in cents (its strings', on average): <see cref="SourCents"/> and past is sour, however it's played.</summary>
+    public float Detune { get; init; }
+
+    /// <summary>Strings this far out on average (cents) and the music's sour to anyone listening.</summary>
+    public const float SourCents = 30f;
+
+    /// <summary>Music too ragged, or too far out of tune, to stand.</summary>
+    public bool Sour => Playing && (Steadiness < SourBelow || Detune >= SourCents);
 
     /// <summary>
     /// The beat as a dancer steps to it, in the musician's session steps: one falls on <c>Origin</c>, and every
@@ -57,7 +63,9 @@ public readonly record struct Performance(bool Playing, float Energy, float Stea
         return (beats - MathF.Round(beats)) * clock.Period;
     }
 
-    public static Performance Of(PlaySession s)
+    public static Performance Of(PlaySession s) => Heard(s) with { Detune = s.Sourness };
+
+    private static Performance Heard(PlaySession s)
     {
         if (s.Carrying is { } tune)
             return new(true, Math.Clamp(tune.Tempo / 140f, 0.3f, 1f), s.Concentration, tune.Mood, tune.Kind, tune.Tempo * s.Pace);

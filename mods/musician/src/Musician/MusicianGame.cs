@@ -41,6 +41,8 @@ public sealed class MusicianGame : IGameMod
         r.WorkSound<PlaySession>(Sound);
         r.WorldSounds(() => new OthersPlaying());
         r.WorkView<DanceSession>(DrawDance);
+        r.WorkView<TuneSession>(DrawTuning);
+        r.WorkSound<TuneSession>(TuningSound);
         r.WorkSound<DanceSession>(DanceSound);
     }
 
@@ -126,6 +128,8 @@ public sealed class MusicianGame : IGameMod
                 }
                 if (s.Def.Bend > 0f)
                     hints.Add((Controls.Pair(Act.WalkLeft, Act.WalkRight), "hold: bend the note down, up"));
+                if (s.Def.Strings.Count > 0)
+                    hints.Add((WorkView.Glyph(Act.Rune9), "tune it"));
             }
             if (s.Def.Book)
                 hints.Add((WorkView.Glyph(Act.WorkAct), "play from the book"));
@@ -137,6 +141,10 @@ public sealed class MusicianGame : IGameMod
                 : s.Def.Chords ? $"Each note rings and dies away. Hold {WorkView.Glyph(_chord)} and a key for its chord."
                 : !s.Def.Sustains ? "Each note rings on and dies away; play them over each other for chords."
                 : "Your own tune: nothing you play here turns into one from the book.");
+            if (s.Broken != 0)
+                ImGuiText.Colored(Theme.Warn, $"A string's snapped: its notes won't sound. {WorkView.Glyph(Act.Rune9)} to tune, and fit a spare.");
+            else if (s.Sourness >= Performance.SourCents)
+                ImGuiText.Colored(Theme.Warn, "Your listeners wince: it's gone out of tune.");
             DrawKeys(s, view);
             var instrument = InstrumentNamed(s.InstrumentName);
             if (s.Played == 0 || instrument == null)
@@ -169,6 +177,128 @@ public sealed class MusicianGame : IGameMod
         Meter("Rhythm", p.Steadiness, colour);
         ImGuiText.Colored(Theme.Dim, (p.Steadiness >= 0.75f ? "Steady as a heartbeat" : p.Steadiness >= 0.5f ? "Holding together" : "Ragged")
             + $", about {p.Tempo:0} beats a minute{(p.Danceable ? ": one to dance to." : p.Steadiness >= 0.5f ? ": livelier, and they'd dance." : ".")}");
+    }
+
+    /// <summary>A string's pitch (Hz): its open note, as far off as it's turned.</summary>
+    private static float StringHz(TuneSession s, int i, bool trueNote = false) =>
+        RootHz(s.Def) * MathF.Pow(2f, (s.Def.Strings[i].Semis + (trueNote ? 0f : s.Cents[i] / 100f)) / 12f);
+
+    /// <summary>The instrument's root in Hz, from its name and octave (A4 = 440).</summary>
+    private static float RootHz(InstrumentDef def)
+    {
+        string[] names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        var semis = Math.Max(0, Array.IndexOf(names, def.Root)) + 12 * (def.RootOctave + 1) - 69;
+        return 440f * MathF.Pow(2f, semis / 12f);
+    }
+
+    /// <summary>
+    /// Tuning by ear, as a player does: while F's held, the string sounds together with the same note true on the instrument
+    /// itself (as it's checked against a stopped note on the string beside it), and the two beat as far as they're apart.
+    /// A lute plucks them together, again every second and a half; a fiddle bows them. A snap as one goes.
+    /// </summary>
+    private static void TuningSound(WorkSoundContext ctx, TuneSession s)
+    {
+        if (ctx.Fresh)
+            (ctx.A, ctx.B, ctx.Value) = (s.Snapped, -1, 0f);
+        if (s.Snapped > ctx.A)
+            ctx.Audio.Play("musician.snap");
+        ctx.A = s.Snapped;
+        if (s.Cents.Length == 0 || !s.Sounding)
+        {
+            ctx.B = -1;
+            return;
+        }
+        var root = RootHz(s.Def);
+        var (now, truth) = (StringHz(s, s.String) / root, StringHz(s, s.String, trueNote: true) / root);
+        if (s.Def.Sustains && s.Def.Held.Count > 0)
+        {
+            // Bowed: the bottom key's loop (D4), once as the string stands and once true, a little softer.
+            var key = $"musician:tune:{s.StartTick}";
+            ctx.Audio.Hold(key + ":string", s.Def.Held[0], pitch: now, fade: s.Def.Fade);
+            ctx.Audio.Hold(key + ":true", s.Def.Held[0], gain: 0.7f, pitch: truth, fade: s.Def.Fade);
+        }
+        else if (s.Def.Octaves.Count > 0)
+        {
+            ctx.Value -= 1f / 60f;
+            if (ctx.B != s.String || ctx.Value <= 0f)
+            {
+                ctx.Audio.Play(s.Def.Octaves[0], pitch: now);
+                ctx.Audio.Play(s.Def.Octaves[0], gain: 0.8f, pitch: truth, delay: 0.015f);
+                (ctx.B, ctx.Value) = (s.String, 1.5f);
+            }
+        }
+    }
+
+    /// <summary>The beating's wave as drawn: its phase carried on frame to frame (so a change in the beat changes its speed, never jumps it), and when it was last drawn.</summary>
+    private static float _beatPhase, _beatDrawn = -1f;
+
+    /// <summary>
+    /// The pegs: each string by name, the one in hand lit; while it sounds, the beating against its true note drawn as a
+    /// wave whose loudness wobbles as fast as they beat (fast and rough when far out, slower as they come together, still
+    /// when true). No number, ever: the ear's to judge.
+    /// </summary>
+    private static void DrawTuning(WorkView view, TuneSession s)
+    {
+        view.Begin(s.Title,
+            (WorkView.Glyph(Act.Use), s.StringBroken ? "fit a spare string" : "hold: sound the string against its true note"),
+            (Controls.Pair(Act.WalkLeft, Act.WalkRight), "turn the peg: looser, tighter"),
+            (WorkView.Glyph(Act.WorkAct), "the next string"),
+            (WorkView.Glyph(Act.Back), "done"));
+        ImGuiText.Colored(Theme.Dim, "Listen for the beating between the two: turn till it slows, and stops.");
+        // The strings.
+        for (var i = 0; i < s.Def.Strings.Count && i < s.Cents.Length; i++)
+        {
+            if (i > 0)
+                ImGui.SameLine();
+            var snapped = (s.Broken & (1 << i)) != 0;
+            var label = $"{s.Def.Strings[i].Name}{(snapped ? " (snapped)" : "")}";
+            ImGuiText.Colored(i == s.String ? Theme.Accent : snapped ? Theme.Bad : Theme.Parchment, i == s.String ? $"[{label}]" : $" {label} ");
+        }
+        var dl = ImGui.GetWindowDrawList();
+        var min = ImGui.GetCursorScreenPos() + new float2(0, Gui.S(4));
+        var size = new float2(Gui.S(LaneWidth), Gui.S(90));
+        var max = min + size;
+        dl.AddRectFilled(in min, in max, Theme.U8(Theme.Inset), Gui.S(6), ImDrawFlags.None);
+        var mid = min.Y + size.Y * 0.5f;
+        if (s.StringBroken)
+        {
+            var at = new float2(min.X + Gui.S(14), mid - Gui.S(8));
+            dl.AddText(in at, Theme.U8(Theme.Bad), s.Fitted < s.Spares
+                ? $"Snapped. {WorkView.Glyph(Act.Use)}: fit a spare ({s.Spares - s.Fitted} left). It'll come on slack."
+                : "Snapped, and no spare string to fit.");
+        }
+        else if (s.Sounding)
+        {
+            // The beating: the true note and the string, their sum's loudness wobbling at the difference between them.
+            var beat = MathF.Abs(StringHz(s, s.String) - StringHz(s, s.String, trueNote: true));
+            // The phase moves on by the beat since the last frame: turning the peg speeds or slows it, never jumps it.
+            var dt = _beatDrawn < 0f ? 0f : Math.Clamp(view.Time - _beatDrawn, 0f, 0.1f);
+            _beatDrawn = view.Time;
+            _beatPhase = (_beatPhase + MathF.PI * beat * dt) % MathF.PI;
+            var steps = 120;
+            var prev = new float2(min.X + Gui.S(8), mid);
+            for (var k = 0; k <= steps; k++)
+            {
+                var u = k / (float)steps;
+                var swell = MathF.Abs(MathF.Cos(_beatPhase + MathF.PI * beat * u * 1.5f)); // a second and a half across
+                var y = mid + MathF.Sin(u * 90f) * swell * size.Y * 0.4f;
+                var p = new float2(min.X + Gui.S(8) + u * (size.X - Gui.S(16)), y);
+                dl.AddLine(in prev, in p, Theme.U8(Theme.Water), Gui.S(2));
+                prev = p;
+            }
+        }
+        else
+        {
+            var at = new float2(min.X + Gui.S(14), mid - Gui.S(8));
+            dl.AddText(in at, Theme.U8(Theme.Dim), $"Hold {WorkView.Glyph(Act.Use)} to sound the {s.Def.Strings[s.String].Name} string.");
+        }
+        ImGui.Dummy(new float2(size.X, size.Y + Gui.S(8)));
+        // Wound past its note, the peg's stiff and the string creaks: felt, not read.
+        if (!s.StringBroken && s.Cents[s.String] > TuneSession.StrainAt && s.Turning > 0)
+            ImGuiText.Colored(Theme.Warn, "The peg's stiff and the string creaks...");
+        else if (s.StepsDone - s.SnappedAt < 90)
+            ImGuiText.Colored(Theme.Bad, "Snap! Too tight.");
+        view.End();
     }
 
     /// <summary>Your claps, heard as you clap: a dry slap (the drum's rim stroke stands in).</summary>
@@ -765,6 +895,9 @@ public sealed class MusicianGame : IGameMod
     /// <summary>How far the session's bending its notes, in semitones.</summary>
     private static float BendOf(PlaySession s) => s.Bend * s.Def.Bend;
 
+    /// <summary>How far a note sounds off, in semitones: the bend, and its string out of tune (heard, never shown).</summary>
+    private static float OffOf(PlaySession s, NoteEvent n) => BendOf(s) + s.CentsOf(n) / 100f;
+
     /// <summary>Your own playing, heard as you press (the predicted session): every note since the last frame.</summary>
     private static void Sound(WorkSoundContext ctx, PlaySession s)
     {
@@ -773,7 +906,7 @@ public sealed class MusicianGame : IGameMod
         var fresh = Math.Min(s.Played - ctx.A, s.Notes.Count);
         var instrument = InstrumentNamed(s.InstrumentName);
         for (var i = s.Notes.Count - fresh; i < s.Notes.Count; i++)
-            Speak(ctx.Audio, instrument, s.Notes[i], null, 0f, BendOf(s), Strummed(s, i));
+            Speak(ctx.Audio, instrument, s.Notes[i], null, 0f, OffOf(s, s.Notes[i]), Strummed(s, i));
         ctx.A = s.Played;
         Ring(ctx.Audio, instrument, s, "musician:mine", null, 0f);
     }
@@ -822,7 +955,7 @@ public sealed class MusicianGame : IGameMod
     /// </summary>
     private static void Ring(AudioEngine audio, InstrumentDef? instrument, PlaySession s, string key, float3? at, float muffle)
     {
-        if (s.RingingNote is { } note && Voice(instrument, note, held: true, bend: BendOf(s)) is { } v)
+        if (s.RingingNote is { } note && Voice(instrument, note, held: true, bend: OffOf(s, note)) is { } v)
             audio.Hold($"{key}:{s.StartTick}:{s.Ringing}", v.Id, at: at, muffle: muffle, pitch: v.Pitch, fade: instrument?.Fade ?? HeldFade);
     }
 
@@ -876,7 +1009,7 @@ public sealed class MusicianGame : IGameMod
                 var instrument = ctx.Sim.Defs.ModDef<InstrumentDef>(InstrumentDef.Kind, s.InstrumentName);
                 var place = WorldSoundContext.At(at.Cell);
                 for (var i = s.Notes.Count - Math.Min(s.Played - was, s.Notes.Count); i < s.Notes.Count; i++)
-                    Speak(ctx.Audio, instrument, s.Notes[i], place, muffle, BendOf(s), Strummed(s, i));
+                    Speak(ctx.Audio, instrument, s.Notes[i], place, muffle, OffOf(s, s.Notes[i]), Strummed(s, i));
                 Ring(ctx.Audio, instrument, s, $"musician:{e.Index}", place, muffle);
             }
         }

@@ -926,4 +926,122 @@ public class MusicianModTests
         Assert.Contains(sim.World.Get<Mood>(listener).Memories, m => m.Def.Name == "HeardTheirTune");
         return 0;
     });
+
+    [Fact]
+    public void MusicMakesVisitorsThirstyAndPleasedAndSendsAPartyOffHeartened() => WithMusician(() =>
+    {
+        var defs = MusicianDefs();
+        var (sim, me, session, visitor) = Recital(defs);
+        var now = sim.Clock.Tick;
+        // A visitor by the musician (only the draw is run: a whole party isn't needed).
+        sim.World.Add(visitor, new Adventurer { Kind = sim.Defs.AllAdventurerKinds[0], PartyDef = sim.Defs.AllParties[0], NextDrink = now + SimClock.TicksPerHour });
+        var draw = new MusicDraw();
+        draw.Update(sim);
+        Assert.Equal(now + SimClock.TicksPerHour, sim.World.Get<Adventurer>(visitor).NextDrink); // no music: nothing
+        session.Carry(session.Book.First(t => t.Name == "DrunkenSailor"), 0, 0);
+        for (var i = 0; i < 200; i++)
+            draw.Update(sim);
+        ref var a = ref sim.World.Get<Adventurer>(visitor);
+        Assert.Equal(now + SimClock.TicksPerHour - (long)(200 * draw.Interval * MusicDraw.Thirst), a.NextDrink); // thirsty sooner
+        Assert.Equal(MusicDraw.Cap, a.Satisfaction, 3); // pleased, no more than a stay's worth
+        // Setting out on a quest to a lively tune: heartened, once.
+        a.Quest = 1;
+        sim.World.Add(visitor, new Sim.Combat.Leaving());
+        draw.Update(sim);
+        draw.Update(sim);
+        Assert.Equal(MusicDraw.Cap + MusicDraw.SendOff, sim.World.Get<Adventurer>(visitor).Satisfaction, 3);
+        Assert.Contains(sim.World.Get<Mood>(visitor).Memories, m => m.Def.Name == "SentOffWithASong");
+        // Sour music sends no one off: a fresh visitor's left as they were.
+        var other = sim.SpawnCreature(sim.Defs.Creature("Human"), "Wil", sim.World.Get<Position>(visitor).Cell, ageDays: 25 * 365);
+        sim.World.Add(other, new Adventurer { Kind = sim.Defs.AllAdventurerKinds[0], PartyDef = sim.Defs.AllParties[0], Quest = 1 });
+        sim.World.Add(other, new Sim.Combat.Leaving());
+        session.Concentration = 0.2f;
+        draw.Update(sim);
+        Assert.Equal(0f, sim.World.Get<Adventurer>(other).Satisfaction);
+        return 0;
+    });
+
+    /// <summary>A round with the musician holding <paramref name="instrument"/>, its strings set as given (cents off each).</summary>
+    private static (Simulation Sim, Entity Musician, Entity Instrument) Strung(DefDatabase defs, string instrument, params float[] cents)
+    {
+        var sim = Round(defs, (Arin, "Musician"));
+        var me = Players.CharacterOf(sim, Arin);
+        if (!sim.World.Has<Avatar>(me))
+            sim.World.Add(me, new Avatar());
+        var held = Inventory.CarriedOf(sim, me, sim.Defs.AllThings.First(t => t.Name == instrument))[0];
+        var tuning = Tunings.Of(sim, held, sim.Defs.ModDef<InstrumentDef>(InstrumentDef.Kind, instrument)!)!;
+        tuning.Cents = [.. cents];
+        return (sim, me, held);
+    }
+
+    [Fact]
+    public void StringsDriftFlatAsTheyArePlayedAndTheNotesSoundAsFarOff() => WithMusician(() =>
+    {
+        var defs = MusicianDefs();
+        var (sim, me, fiddle) = Strung(defs, "Fiddle", 0, 0, 0, 0);
+        WorkSystem.Start(sim, me, PlaySession.For(sim, fiddle));
+        var s = (PlaySession)sim.World.Get<WorkSession>(me);
+        var notes = Enumerable.Range(0, 400).Select(i => new WorkInput(i, WorkInputKind.Custom, PlaySession.Pack(i % 8, false, true))).ToList();
+        s.Advance(notes, 400);
+        new InstrumentSystem().Update(sim);
+        var tuning = sim.World.Get<Tuning>(fiddle);
+        Assert.True(tuning.Cents.Average() < -2f, string.Join(",", tuning.Cents)); // mostly flat
+        Assert.Equal(tuning.Cents, s.Cents); // the playing hears it at once
+        // A note on the A string sounds as far off as the A string.
+        Assert.Equal(tuning.Cents[2], s.CentsOf(new NoteEvent(0, 4, 0))); // A4: the A string's open note
+        Assert.Equal(tuning.Cents[1], s.CentsOf(new NoteEvent(0, 1, 0))); // E4: on the D string
+        // Far enough out, it's sour to anyone listening, however steadily it's played.
+        s.Cents = [40f, 40f, 40f, 40f];
+        s.Carry(s.Book.First(t => t.Name == "DrunkenSailor"), 0, s.StepsDone);
+        Assert.True(Performance.Of(s).Sour);
+        return 0;
+    });
+
+    [Fact]
+    public void ASnappedStringsNotesDontSound() => WithMusician(() =>
+    {
+        var defs = MusicianDefs();
+        var (sim, me, lute) = Strung(defs, "Lute", 0, 0, 0, 0, 0);
+        sim.World.Get<Tuning>(lute).Broken = 1 << 1; // the G course
+        var s = PlaySession.For(sim, lute);
+        s.Advance([
+            new WorkInput(0, WorkInputKind.Custom, PlaySession.Pack(3, false, true)), // G4: on the snapped G course
+            new(1, WorkInputKind.Custom, PlaySession.Pack(0, false, true)), // D4: the D course
+            new(2, WorkInputKind.Custom, PlaySession.Pack(0, false, true, chord: true))], 3); // D major: D, F#, A, D
+        // G4 doesn't sound; D4 does; the strum of D major loses its A (on the G course too): D, F#, D.
+        Assert.Equal([0, 0, 2, 7], s.Notes.Select(n => n.Index));
+        return 0;
+    });
+
+    [Fact]
+    public void AStringIsTunedByEarAndSnapsWoundTooFarAndASpareIsFitted() => WithMusician(() =>
+    {
+        var defs = MusicianDefs();
+        var (sim, me, fiddle) = Strung(defs, "Fiddle", 0, -20, 0, 0);
+        // 9 in free play: the playing put down for the tuning.
+        WorkSystem.Start(sim, me, PlaySession.For(sim, fiddle));
+        var play = (PlaySession)sim.World.Get<WorkSession>(me);
+        play.Advance([new WorkInput(0, WorkInputKind.Rune, 8)], 1);
+        play.Settle(sim);
+        var t = Assert.IsType<TuneSession>(sim.World.Get<WorkSession>(me));
+        Assert.Equal(4, t.Spares);
+        // The D string, 20 cents flat: D held tightens it, 0.25 a step, 80 steps to true.
+        t.Advance([new WorkInput(0, WorkInputKind.Act), new(1, WorkInputKind.Axis, 1), new(81, WorkInputKind.Axis, 0)], 90);
+        Assert.Equal(1, t.String);
+        Assert.Equal(0f, t.Cents[1], 2);
+        t.Settle(sim);
+        Assert.Equal(0f, sim.World.Get<Tuning>(fiddle).Cents[1], 2); // written back to the fiddle
+        // Wound on and on: past its note it strains, and goes.
+        t.Advance([new WorkInput(90, WorkInputKind.Axis, 1)], 90 + 4 * (int)(TuneSession.Furthest / TuneSession.TurnRate));
+        Assert.Equal(1, t.Snapped);
+        Assert.True(t.StringBroken);
+        // F fits a spare: on, but slack, and one fewer in the pack once it settles.
+        t.Advance([new WorkInput(t.StepsDone, WorkInputKind.Press)], t.StepsDone + 1);
+        Assert.False(t.StringBroken);
+        Assert.Equal(TuneSession.NewString, t.Cents[1]);
+        t.Settle(sim);
+        Assert.Equal(3, Inventory.CarriedOf(sim, me, sim.Defs.AllThings.First(d => d.Name == "Strings")).Sum(e => sim.World.Get<Stack>(e).Count));
+        Assert.Equal(0, sim.World.Get<Tuning>(fiddle).Broken);
+        return 0;
+    });
 }

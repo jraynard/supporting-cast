@@ -4,7 +4,7 @@
   "trades": [
     { "name": "Musician", "label": "musician", "pace": "Steady", "playerOnly": true, "formerly": [ "Bard" ],
       "description": "Music for the town: the pipe, the lute, the fiddle and the drum, for whoever will listen. Comes only if someone plays it.",
-      "kit": [ { "def": "Pipe" }, { "def": "Lute" }, { "def": "Fiddle" }, { "def": "HandDrum" }, { "def": "Hat" } ] }
+      "kit": [ { "def": "Pipe" }, { "def": "Lute" }, { "def": "Fiddle" }, { "def": "HandDrum" }, { "def": "Hat" }, { "def": "Strings", "count": 4 } ] }
   ],
   "things": [
     // A tin whistle in D. Its music is the musician mod's own kind of def, below.
@@ -12,6 +12,9 @@
     { "name": "Lute", "label": "lute", "category": "Item", "mass": 1.6, "sprite": "items/lute", "flammability": 0.8, "maxHp": 30 },
     { "name": "Fiddle", "label": "fiddle", "category": "Item", "mass": 0.6, "sprite": "items/fiddle", "flammability": 0.8, "maxHp": 30 },
     { "name": "HandDrum", "label": "hand drum", "category": "Item", "mass": 1.2, "sprite": "items/hand_drum", "flammability": 0.6, "maxHp": 40 },
+    // A spare string (gut), for the lute or the fiddle: fitted where one's snapped (TuneSession), slack till it's tuned.
+    { "name": "Strings", "label": "spare string", "category": "Item", "mass": 0.01, "sprite": "items/strings", "stackLimit": 20,
+      "flammability": 0.8, "maxHp": 5, "description": "A coil of gut string, for a lute or a fiddle." },
     // Set down at the musician's feet as they play (Takings): listeners toss silver down by it, and it's all taken up
     // when they stop. Not a container: a pack can't carry one, and it's the silver lying there that's real.
     { "name": "Hat", "label": "musician's hat", "category": "Item", "mass": 0.2, "sprite": "items/hat", "stackLimit": 1,
@@ -23,6 +26,7 @@
     { "name": "HeardMusic", "label": "heard some music", "description": "Stood a while and listened to a musician play.", "mood": 3, "durationHours": 6, "races": [ "Human" ] },
     { "name": "Danced", "label": "danced", "description": "Danced to a musician's tune.", "mood": 5, "durationHours": 8, "races": [ "Human" ] },
     { "name": "HeardTheirTune", "label": "heard the tune they asked for", "description": "Called for a tune, and the musician played it.", "mood": 6, "durationHours": 8, "races": [ "Human" ] },
+    { "name": "SentOffWithASong", "label": "sent off with a song", "description": "Set out on the road to a musician's tune.", "mood": 5, "durationHours": 12, "races": [ "Human" ] },
     { "name": "SourMusic", "label": "suffered sour music", "description": "Stood through a tune gone to pieces, and gave up on it.", "mood": -2, "durationHours": 3, "races": [ "Human" ] }
   ],
   // A listener calling for a tune (Takings.Ask): {thing} is the tune.
@@ -50,11 +54,15 @@
       "root": "D", "rootOctave": 5 },
     // Plucked: each note rings and dies away of itself, as many at once as are played. Its tunes are kept by the beat alone.
     // Q with a note key holds the chord on it (the scale's triad), F strums it, down and up.
+    // "strings": each its open note in semitones from the root; a note is played on the highest string at or under it
+    // (Tuning): out of tune, its notes are; snapped, they don't sound.
     { "name": "Lute", "label": "lute", "voice": "Plucked", "chords": true,
+      "strings": [ { "name": "D", "semis": 0 }, { "name": "G", "semis": 5 }, { "name": "B", "semis": 9 }, { "name": "E", "semis": 14 }, { "name": "A", "semis": 19 } ],
       "octaves": [ "musician.lute.d4", "musician.lute.d5" ],
       "scale": [ 0, 2, 4, 5, 7, 9, 11, 12 ], "root": "D", "rootOctave": 4 },
     // Bowed: a note sounds while it's held, slides with A/D; the bow runs out as the breath does, turned at the marks.
     { "name": "Fiddle", "label": "fiddle", "voice": "Bowed", "air": "Bow", "sustains": true, "bend": 2,
+      "strings": [ { "name": "G", "semis": -7 }, { "name": "D", "semis": 0 }, { "name": "A", "semis": 7 }, { "name": "E", "semis": 14 } ],
       "octaves": [ "musician.fiddle.d4", "musician.fiddle.d5" ],
       // Held notes: a loop for every key, each made at its own pitch (the body's resonances stay put), the bow swelling in.
       "held": [ "musician.fiddle.k00", "musician.fiddle.k01", "musician.fiddle.k02", "musician.fiddle.k03", "musician.fiddle.k04", "musician.fiddle.k05", "musician.fiddle.k06", "musician.fiddle.k07", "musician.fiddle.k08", "musician.fiddle.k09", "musician.fiddle.k10", "musician.fiddle.k11", "musician.fiddle.k12", "musician.fiddle.k13", "musician.fiddle.k14", "musician.fiddle.k15" ],

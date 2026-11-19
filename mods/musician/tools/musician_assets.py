@@ -180,6 +180,17 @@ def drum_stroke(kind, seed=10):
     return out / np.max(np.abs(out)) * 0.85
 
 
+def string_snap(seconds=0.35, seed=14):
+    """A string giving way: a sharp crack and a twang falling away."""
+    rng = np.random.default_rng(seed)
+    t = np.arange(int(seconds * RATE)) / RATE
+    crack = np.convolve(rng.normal(0, 1, t.size), [1, -1], mode="same") * np.exp(-t / 0.006)
+    f = 900 * np.exp(-t / 0.08) + 180
+    twang = np.sin(2 * math.pi * np.cumsum(f) / RATE) * np.exp(-t / 0.09)
+    out = crack * 0.8 + twang * 0.6
+    return out / np.max(np.abs(out)) * 0.8
+
+
 def write_wav(path, samples):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     data = (np.clip(samples, -1, 1) * 32767).astype(np.int16)
@@ -263,6 +274,19 @@ def hat_icon(path):
     img.save(path)
 
 
+def strings_icon(path):
+    """A coil of gut string, pale and tied off."""
+    img = Image.new("RGBA", (32, 32), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    for k, r in enumerate((11, 9, 7)):
+        d.ellipse([16 - r, 17 - r * 0.75, 16 + r, 17 + r * 0.75], outline=(60, 44, 30, 255), width=3)
+        d.ellipse([16 - r, 17 - r * 0.75, 16 + r, 17 + r * 0.75], outline=(222, 206, 160, 255), width=1)
+    d.line([(24, 11), (29, 5)], fill=(222, 206, 160, 255), width=1)  # its loose end
+    d.rectangle([14, 6, 18, 9], fill=(150, 46, 40, 255))            # the tie
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    img.save(path)
+
+
 if __name__ == "__main__":
     # D5 and D6: the whistle's two octaves (the game pitches each up to the scale's notes).
     write_wav(os.path.join(MOD, "sounds", "pipe_d5.wav"), pipe_note(587.33, seed=1))
@@ -283,10 +307,12 @@ if __name__ == "__main__":
             freq = 293.66 * 2 ** ((semis + 12 * octave) / 12)
             write_wav(snd(f"fiddle_k{octave * 8 + degree:02d}_loop.wav"), fiddle_loop(freq, seed=20 + octave * 8 + degree))
     write_wav(snd("fiddle_bow.wav"), fiddle_bow())
+    write_wav(snd("string_snap.wav"), string_snap())
     for kind in ("doum", "tek", "ka"):
         write_wav(snd(f"drum_{kind}.wav"), drum_stroke(kind))
     lute_icon(os.path.join(MOD, "textures", "items", "lute.png"))
     fiddle_icon(os.path.join(MOD, "textures", "items", "fiddle.png"))
     drum_icon(os.path.join(MOD, "textures", "items", "hand_drum.png"))
     hat_icon(os.path.join(MOD, "textures", "items", "hat.png"))
+    strings_icon(os.path.join(MOD, "textures", "items", "strings.png"))
     print("musician assets written")

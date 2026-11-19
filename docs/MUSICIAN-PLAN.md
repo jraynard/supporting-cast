@@ -327,10 +327,22 @@ Watchers' satisfaction comes through `Played`. Without a musician, the festival 
    listeners toss by it (real coin, lying in the open) taken up with it when they stop; a tip once a listener's heard a
    good while (more for dancing, more from an adventurer, once a day); a tune called for aloud from the audience (an
    adventurer likelier), shown in the musician's window only if they heard it, and tipped well if it's played while
-   they're there (`HeardTheirTune`). A request is the audience's, not the shop line's: a musician has no counter. Left:
-   the inn's draw, the send-off (`Heartened`), the innkeeper's music night. The rhythm meter forgives flourishes now
+   they're there (`HeardTheirTune`). A request is the audience's, not the shop line's: a musician has no counter. The
+   window shows the hat filling and who tipped, and 0 bows (through the session: an emote's refused mid-work). Then the
+   inn's draw and the send-off (`MusicDraw`, no door needed): an adventurer hearing good music gets thirsty sooner (more
+   drink sold) and is pleased a little, capped a stay; one setting out on a quest to a lively, steady tune goes with more
+   satisfaction, which the quest's reckoning already counts as morale (`SentOffWithASong`). Left: the innkeeper's music
+   night (it wants a door onto the inn's sign). The rhythm meter forgives flourishes now
    (grace notes merged, notes between the pulse's set aside as ornaments).
-6. Instrument care and tuning.
+6. (first pass) Instrument care and tuning: the lute's five courses and the fiddle's four strings (`strings` in the def;
+   a note's played on the highest at or under it) each keep their cents off (`Tuning` on the instrument), which drift
+   flat as they're played (`InstrumentSystem`: an evening's playing goes sour) and go straight into the notes' pitch.
+   9 in free play puts it in your lap (`TuneSession`): F held sounds each string with its true note on the instrument
+   (plucked together, or bowed), A/D turn the peg till the beating slows and stops (shown only as a wobbling wave, never a number), Space the next.
+   Wound well past its note a string may snap; a snapped string's notes don't sound, and F fits a spare from the kit
+   (`Strings`), slack till it's brought up. Far enough out (`Performance.SourCents`) the music's sour to listeners.
+   `--drill tune`. Left: the drum's head (slack in damp, tightened by a fire), the pipe cracking by a fire, wear
+   breaking strings, and the cosmetics (wood, stain, inlay).
 7. The festival centrepiece.
 8. Lore songs, composing, inspiration.
 9. Lessons, the bot, docs.

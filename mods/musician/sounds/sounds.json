@@ -26,6 +26,7 @@
     "musician.fiddle.k14": { "files": ["fiddle_k14_loop.wav"], "gain": 0.4, "max": 6, "range": 18, "near": 3 },
     "musician.fiddle.k15": { "files": ["fiddle_k15_loop.wav"], "gain": 0.4, "max": 6, "range": 18, "near": 3 },
     "musician.fiddle.bow": { "files": ["fiddle_bow.wav"], "gain": 0.3, "max": 6, "range": 14, "near": 3 },
+    "musician.snap": { "files": ["string_snap.wav"], "gain": 0.6, "max": 2, "range": 12, "near": 3 },
     "musician.drum.doum": { "files": ["drum_doum.wav"], "gain": 0.7, "max": 8, "range": 20, "near": 3 },
     "musician.drum.tek": { "files": ["drum_tek.wav"], "gain": 0.55, "max": 8, "range": 18, "near": 3 },
     "musician.drum.ka": { "files": ["drum_ka.wav"], "gain": 0.45, "max": 8, "range": 16, "near": 3 }

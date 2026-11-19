@@ -35,6 +35,14 @@ public sealed class MusicianMod : ISimMod
         registry.Trade(new MusicianModule());
         registry.Pastime(new Listening()); // the audience: whoever's free goes to hear the music, or dance to it
         registry.Component<Tipped>("Tipped", (w, t) => w.Int(t.Day), r => new Tipped { Day = r.Int() });
+        registry.Component<Entertained>("Entertained", (w, e) =>
+        {
+            w.Float(e.Given);
+            w.Bool(e.SentOff);
+        }, r => new Entertained { Given = r.Float(), SentOff = r.Bool() });
+        registry.System(() => new MusicDraw(), after: "Work"); // the inn's draw and the send-off: thirsty, pleased, heartened
+        registry.System(() => new InstrumentSystem(), after: "MusicDraw"); // strings drifting as they're played
+        registry.Component<Tuning>("Tuning", Tunings.Write, Tunings.Read);
         registry.Component<TuneRequest>("TuneRequest", (w, q) =>
         {
             w.Entity(q.Musician);
@@ -50,6 +58,21 @@ public sealed class MusicianMod : ISimMod
                 return Entity.Null;
             });
         // --drill sailor: the same, the hands already carrying Drunken Sailor, for keeping time at once.
+        // --drill tune: the fiddle in your lap to tune, its strings well out and the E snapped (a spare to fit).
+        registry.Drill("tune", (sim, me) =>
+        {
+            if (sim.Defs.AllThings.FirstOrDefault(t => t.Name == "Fiddle") is not { } def || sim.World.Has<WorkSession>(me))
+                return Entity.Null;
+            var fiddle = Inventory.CarriedOf(sim, me, def).FirstOrDefault(Entity.Null);
+            if (fiddle.IsNull)
+                Inventory.Stow(sim, me, fiddle = sim.CreateItem(def, 1));
+            if (sim.Defs.AllThings.FirstOrDefault(t => t.Name == TuneSession.SpareDef) is { } spare && Inventory.CarriedOf(sim, me, spare).Count == 0)
+                Inventory.Stow(sim, me, sim.CreateItem(spare, 2));
+            if (Tunings.Of(sim, fiddle, sim.Defs.ModDef<InstrumentDef>(InstrumentDef.Kind, "Fiddle")!) is { } tuning)
+                (tuning.Cents, tuning.Broken) = ([-35f, 22f, -48f, 0f], 1 << 3);
+            WorkSystem.Start(sim, me, TuneSession.For(sim, me, fiddle));
+            return Entity.Null;
+        });
         registry.Drill("sailor", (sim, me) =>
         {
             if (Play(sim, me, "Pipe") is { } s && s.Book.Find(t => t.Name == "DrunkenSailor") is { } tune)
@@ -57,6 +80,13 @@ public sealed class MusicianMod : ISimMod
             return Entity.Null;
         });
     }
+}
+
+/// <summary>A string of an instrument: its name (its open note) and its pitch in semitones from the instrument's root.</summary>
+public sealed class StringDef
+{
+    public string Name { get; set; } = "";
+    public int Semis { get; set; }
 }
 
 /// <summary>An instrument (the musician mod's own kind of def, <c>instruments</c>): how it sounds and what its keys play.</summary>
@@ -82,6 +112,29 @@ public sealed class InstrumentDef : Def
     /// with no scale, octave or semitone. Empty for an instrument of notes.
     /// </summary>
     public List<string> Strokes { get; set; } = [];
+
+    /// <summary>
+    /// Its strings (a lute's courses, a fiddle's four), low to high, each its open note in semitones from the root: a note
+    /// is played on the highest one at or under it. Their tuning drifts and is set by ear (<see cref="Tuning"/>). None:
+    /// nothing to tune or snap (a pipe, a drum).
+    /// </summary>
+    public List<StringDef> Strings { get; set; } = [];
+
+    /// <summary>A note's semitones from the root: its key's step of the scale, the octave above, a semitone up.</summary>
+    public int SemisOf(NoteEvent n) => Scale[Math.Clamp(n.Degree, 0, Scale.Count - 1)] + 12 * n.Octave + n.Accidental;
+
+    /// <summary>The string a note is played on (the highest at or under it; the lowest if it's under them all), or -1 with no strings.</summary>
+    public int StringOf(NoteEvent n)
+    {
+        if (Strings.Count == 0 || IsDrum)
+            return -1;
+        var semis = SemisOf(n);
+        var at = 0;
+        for (var i = 1; i < Strings.Count; i++)
+            if (Strings[i].Semis <= semis)
+                at = i;
+        return at;
+    }
 
     /// <summary>Plays tunes from the book (the drum, of strokes rather than notes, doesn't yet).</summary>
     public bool Book { get; set; } = true;
@@ -337,6 +390,39 @@ public sealed class PlaySession : WorkSession
     /// <summary>A <see cref="WorkInputKind.Custom"/> value's flag: a bow of thanks, not a note.</summary>
     public const int BowBit = 1 << 9;
 
+    /// <summary>
+    /// The strings as they stand (cents off each, and which are snapped, a bit each), copied from the instrument as the
+    /// playing starts and kept up as they drift (<see cref="Tuning"/>): its notes sound as far off as their string, and a
+    /// snapped string's don't sound at all. Empty for an instrument without strings.
+    /// </summary>
+    public float[] Cents = [];
+    public int Broken;
+
+    /// <summary>Notes played when the strings last drifted (<see cref="InstrumentSystem"/>).</summary>
+    public int DriftedAt;
+
+    /// <summary>Asked to tune the instrument (9 in free play): the sim swaps the playing for the tuning as it settles.</summary>
+    public bool TuneAsked;
+
+    /// <summary>How far out of tune it sounds: the strings' cents off, on average (snapped ones aside).</summary>
+    public float Sourness
+    {
+        get
+        {
+            var (sum, n) = (0f, 0);
+            for (var i = 0; i < Cents.Length; i++)
+                if ((Broken & (1 << i)) == 0)
+                    (sum, n) = (sum + MathF.Abs(Cents[i]), n + 1);
+            return n == 0 ? 0f : sum / n;
+        }
+    }
+
+    /// <summary>A note on a snapped string: it doesn't sound.</summary>
+    public bool Silent(NoteEvent n) => Def.StringOf(n) is var at and >= 0 && (Broken & (1 << at)) != 0;
+
+    /// <summary>How far off a note sounds, in cents: its string's.</summary>
+    public float CentsOf(NoteEvent n) => Def.StringOf(n) is var at and >= 0 && at < Cents.Length ? Cents[at] : 0f;
+
     /// <summary>The instrument's def, given when the session starts (it reads no defs while it plays): what its keys and its air are.</summary>
     public InstrumentDef Def = InstrumentDef.PipeLike();
 
@@ -501,6 +587,12 @@ public sealed class PlaySession : WorkSession
     /// </summary>
     public override void Settle(Simulation sim)
     {
+        if (TuneAsked && sim.World.IsAlive(Instrument))
+        {
+            TuneAsked = false;
+            WorkSystem.Start(sim, Worker, TuneSession.For(sim, Worker, Instrument)); // the playing put down (the hat taken up with it)
+            return;
+        }
         if (!BowAsked)
             return;
         BowAsked = false;
@@ -519,6 +611,7 @@ public sealed class PlaySession : WorkSession
     {
         Notes = [.. Notes];
         Tips = [.. Tips];
+        Cents = [.. Cents];
         Book = [.. Book];
     }
 
@@ -606,6 +699,8 @@ public sealed class PlaySession : WorkSession
             sounded = false; // no air for it
             Judge(false, WindedLoss, "out of breath");
         }
+        else if (Silent(NoteEvent.At(StepsDone, index, note.Accidental)))
+            sounded = false; // its string's snapped: the hands go on, the note doesn't come
         else
         {
             // A wandering mind falters: the less concentration, the more notes go missing.
@@ -741,7 +836,10 @@ public sealed class PlaySession : WorkSession
         }
         if (Carrying != null)
             return; // the hands have the notes: yours are the beat, the breath and the long notes
-        Sound(Def.IsDrum ? new NoteEvent(StepsDone, degree, 0) : new NoteEvent(StepsDone, degree, (value >> 4) & 1, (value & (1 << 6)) != 0 ? 1 : 0));
+        var played = Def.IsDrum ? new NoteEvent(StepsDone, degree, 0) : new NoteEvent(StepsDone, degree, (value >> 4) & 1, (value & (1 << 6)) != 0 ? 1 : 0);
+        if (Silent(played))
+            return; // its string's snapped
+        Sound(played);
         if (Mode == PlayMode.Book)
             StrikeUp();
     }
@@ -758,14 +856,22 @@ public sealed class PlaySession : WorkSession
             if ((step > 14 ? step - 7 : step) is var index && !strings.Contains(index)) // off the top: the octave below, if it isn't there already
                 strings.Add(index);
         strings.Sort();
+        strings.RemoveAll(index => Silent(NoteEvent.At(StepsDone, index))); // a snapped string strums nothing
         if (StrumUp)
-            for (var i = strings.Count - 1; i >= strings.Count - 2; i--)
+            for (var i = strings.Count - 1; i >= Math.Max(0, strings.Count - 2); i--)
                 Sound(NoteEvent.At(StepsDone, strings[i]));
         else
             foreach (var index in strings)
                 Sound(NoteEvent.At(StepsDone, index));
         StrumUp = !StrumUp;
         Strums++;
+    }
+
+    /// <summary>The ninth rune key (9) in free play: tune the instrument (if it has strings).</summary>
+    protected override void Rune(int index)
+    {
+        if (index == 8 && Carrying == null && Def.Strings.Count > 0)
+            TuneAsked = true;
     }
 
     /// <summary>A/D: a carried tune's pace nudged; otherwise the note sounding bent down or up while they're held.</summary>
@@ -914,6 +1020,12 @@ public sealed class PlaySession : WorkSession
         w.Int(Strums);
         w.Entity(Hat);
         w.Bool(BowAsked);
+        w.Int(Cents.Length);
+        foreach (var c in Cents)
+            w.Float(c);
+        w.Int(Broken);
+        w.Int(DriftedAt);
+        w.Bool(TuneAsked);
         w.Int(Tips.Count);
         foreach (var t in Tips)
         {
@@ -987,6 +1099,12 @@ public sealed class PlaySession : WorkSession
         Strums = r.Int();
         Hat = r.Entity();
         BowAsked = r.Bool();
+        Cents = new float[r.Count(16)];
+        for (var i = 0; i < Cents.Length; i++)
+            Cents[i] = r.Float();
+        Broken = r.Int();
+        DriftedAt = r.Int();
+        TuneAsked = r.Bool();
         Tips.Clear();
         for (var n = r.Count(TipsKept); n > 0; n--)
             Tips.Add(new Tip(r.Long(), r.Entity(), r.Int()));
@@ -997,13 +1115,20 @@ public sealed class PlaySession : WorkSession
     }
 
     /// <summary>A playing session with the tunes the defs have (every tune is known, for now: a book of one's own is to come).</summary>
-    public static PlaySession For(Simulation sim, Entity instrument) => new()
+    public static PlaySession For(Simulation sim, Entity instrument)
     {
-        Instrument = instrument,
-        InstrumentName = sim.World.Get<Thing>(instrument).Def.Name,
-        Def = sim.Defs.ModDef<InstrumentDef>(InstrumentDef.Kind, sim.World.Get<Thing>(instrument).Def.Name) ?? InstrumentDef.PipeLike(),
-        Book = [.. sim.Defs.ModDefs<SongDef>(SongDef.Kind_)],
-    };
+        var def = sim.Defs.ModDef<InstrumentDef>(InstrumentDef.Kind, sim.World.Get<Thing>(instrument).Def.Name) ?? InstrumentDef.PipeLike();
+        var tuning = Tunings.Of(sim, instrument, def);
+        return new()
+        {
+            Instrument = instrument,
+            InstrumentName = sim.World.Get<Thing>(instrument).Def.Name,
+            Def = def,
+            Book = [.. sim.Defs.ModDefs<SongDef>(SongDef.Kind_)],
+            Cents = tuning == null ? [] : [.. tuning.Cents],
+            Broken = tuning?.Broken ?? 0,
+        };
+    }
 }
 
 /// <summary>The musician's hooks: F with an instrument carried plays it, where you stand.</summary>
