@@ -359,11 +359,13 @@ public class RoundTests
         Assert.False(Crafting.HotEnough(sim, forge, spear));
         Assert.True(Crafting.CanFireFor(sim, forge, spear), "a cold forge with fuel in it is ready to start: starting is what lights it");
 
-        var beside = sim.SpiralFrom(w.Get<Thing>(forge).Cell, 2).First(c => sim.Map.Passable(c) && Ai.Pathfinder.Touches(c, w.Get<Thing>(forge).Cell));
+        // In reach of the forge and the smithy's chest (the spear's third bar is in it), not through a wall.
+        var chest = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "Chest" && Buildings.At(sim, w.Get<Thing>(e).Cell) == Buildings.At(sim, w.Get<Thing>(forge).Cell));
+        var beside = sim.SpiralFrom(w.Get<Thing>(forge).Cell, 4).First(c => sim.Map.Passable(c) && AvatarSystem.InReach(sim, c, forge) && AvatarSystem.InReach(sim, c, chest));
         w.Get<Position>(me).Cell = beside;
         w.Get<Position>(me).Pos = Position.CenterOf(beside);
         sim.ApplyNow(new CraftCommand(me, forge, spear)); // brings the kit's bars: the billet's in the tongs, and the forge lights
-        Assert.NotNull(Work.Smithing.PieceOf(sim, me));
+        Assert.True(Work.Smithing.PieceOf(sim, me) != null, string.Join(" | ", sim.Messages.Messages.TakeLast(4).Select(m => m.Text)));
         Assert.Contains("billet", sim.Messages.Messages[^1].Text);
         sim.ApplyNow(new Work.SmithCommand(me, forge));
 

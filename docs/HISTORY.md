@@ -2729,3 +2729,8 @@ From the user's playing on a Deck:
   `SetDownBy` its owner, and no job takes it (`Simulation.IsAvailable`, `AvailableItems`); the silver tossed by it too.
 - **F plays only an instrument in hand**, and never on furniture: on the shrine's pallet, F lay the musician down
   only after it opened the music. The bot takes its pipe in hand (`HoldCommand`) and steps off any furniture first.
+- **The smithy off the west road** (from play: it stood across it): north of the road, its open front to the south
+  onto it (`tools/village_map.py`), the kiln by its west wall. Tests that stood the smith at "the first cell beside
+  the forge" stand them where the forge and the chest are both in reach; the empath bot's calling-back test sets the
+  empath down in the smithy with the body (`Near(inSight)`: a bot acts on what it sees). Bench: seed 1234 state
+  `94839B9CB447ECBB`, full `AEE7BD3D7563D150`; seed 99 state `F0A4C7903E7B0120`, full `20F3C8D80398D4BB`.

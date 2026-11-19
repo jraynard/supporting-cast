@@ -143,7 +143,12 @@ public class BloomTests
         var w = sim.World;
         var forge = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "Forge");
         var at = w.Get<Thing>(forge).Cell;
-        var stand = sim.SpiralFrom(at, 2).First(c => c != at && c.Z == at.Z && sim.Map.Passable(c) && AvatarSystem.InReach(sim, c, forge));
+        // Where the forge, the chest and the fuel bin are all in reach (the smithy's laid out so there's such a spot).
+        var chestAt = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "Chest" && Buildings.At(sim, w.Get<Thing>(e).Cell) == Buildings.At(sim, at));
+        var binAt = w.Query<Thing>().First(e => w.Get<Thing>(e).Def.Name == "FuelBin" && Buildings.At(sim, w.Get<Thing>(e).Cell) == Buildings.At(sim, at));
+        var stand = sim.SpiralFrom(at, 4).FirstOrDefault(c => c != at && c.Z == at.Z && sim.Map.Passable(c) && AvatarSystem.InReach(sim, c, forge)
+            && AvatarSystem.InReach(sim, c, chestAt) && AvatarSystem.InReach(sim, c, binAt), at);
+        Assert.NotEqual(at, stand);
         w.Get<Position>(me).Cell = stand;
         w.Get<Position>(me).Pos = Position.CenterOf(stand);
         var chests = CraftCommandRules.ContainersInReach(sim, me);

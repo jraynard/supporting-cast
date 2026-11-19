@@ -85,7 +85,7 @@ building("Cottage", 40, 31, 3, role="Home")                     # B: the house b
 building("Cottage", 50, 28, 0, role="Home")                     # C: top middle
 building("Woodshop", 70, 28, 1, role="Woodshop")                 # D: by the lake, the cart outside
 building("TinkerShop", 63, 64, 2, role="TinkerShop", variant="Timber")  # N: south of the square, its door to the north (cottage K stood by here; removed for room)
-building("Smithy", 20, 30, 3, role="Forge", variant="Stone")     # E: the west barn with the stone chimney
+building("Smithy", 18, 26, 0, role="Forge", variant="Stone")     # E: the west barn with the stone chimney, north of the west road, open to it
 building("Cottage", 28, 41, 0, role="Home")                     # F: west house with the yard
 building("Inn", 61, 45, 1, role="Tavern", variant="Jettied")      # G: on the square, facing the well (its kitchen out the back)
 building("Cottage", 74, 44, 1, role="Home", variant="Shingle")  # H: east, the big brown roof (moved over for the inn's kitchen)
@@ -111,8 +111,8 @@ for box, gate in GARDENS:
 # ---------------- Things on the ground ----------------
 
 feature[45][43] = "W"                                            # the well
-# The smith's kiln, out in the open by the smithy's south wall (its fire would roast the smithy): charcoal from firewood.
-M.place_first("K", [(20, 35), (19, 35), (21, 35), (20, 25)], "the smithy's kiln")
+# The smith's kiln, out in the open by the smithy's west wall (its fire would roast the smithy): charcoal from firewood.
+M.place_first("K", [(13, 26), (13, 25), (13, 27), (23, 26)], "the smithy's kiln")
 for x, y in [(46, 43), (46, 44), (47, 43), (40, 43)]:             # the notice board, by the well
     if not reserved[y][x] and level[y][x] == TOWN and feature[y][x] == "." and ground[y][x] not in "wk~":
         feature[y][x] = "N"

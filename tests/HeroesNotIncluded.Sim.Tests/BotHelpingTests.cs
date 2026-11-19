@@ -57,11 +57,13 @@ public class BotHelpingTests
     }
 
     /// <summary>Put <paramref name="who"/> a few steps from <paramref name="target"/>, in the open.</summary>
-    private static void Near(Simulation sim, Entity who, Entity target, int steps)
+    /// <summary>Set someone down this many steps from another; <paramref name="inSight"/>, in the same building (a bot acts on what it sees: not through a wall).</summary>
+    private static void Near(Simulation sim, Entity who, Entity target, int steps, bool inSight = false)
     {
         var at = sim.World.Get<Position>(target).Cell;
+        var building = Buildings.At(sim, at);
         var spot = sim.SpiralFrom(at, steps + 2).First(c => Maps.Map.Distance(c, at) >= steps && c.Z == at.Z && sim.Map.Passable(c)
-            && sim.Regions.CanReach(c, at, PathEnd.Touch));
+            && sim.Regions.CanReach(c, at, PathEnd.Touch) && (!inSight || Buildings.At(sim, c) == building));
         FireDrill.MoveTo(sim, who, spot);
     }
 
@@ -165,7 +167,7 @@ public class BotHelpingTests
         sim.World.Get<Mana>(empath) = new Mana { Current = 100, Max = 100 };
         Kill(sim, bea);
         Assert.False(Ghosts.Of(sim, Bea).IsNull);
-        Near(sim, empath, bea, 5);
+        Near(sim, empath, bea, 2, inSight: true); // in the smithy with her, where she fell
         Assert.True(Run(sim, bots, () => !sim.World.Get<Creature>(bea).Dead, SimClock.TicksPerHour),
             $"Bea's still dead: {bots[0].Doing} / {bots[1].Doing}");
         Assert.Equal(bea, Players.CharacterOf(sim, Bea));
