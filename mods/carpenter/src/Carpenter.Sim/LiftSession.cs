@@ -16,13 +16,13 @@ namespace HeroesNotIncluded.Sim.Carpentry;
 public sealed class LiftSession : HelperSession
 {
     /// <summary>Within this of level (before skill widens it) a blow goes home.</summary>
-    public const float Band = 0.25f;
+    public const float Band = 0.32f;
 
     /// <summary>How fast the sway gathers a step, how hard a lean pushes it back, and how it's damped.</summary>
-    public const float SwayPerStep = 0.0035f, LeanPerStep = 0.0045f, Damping = 0.97f;
+    public const float SwayPerStep = 0.002f, LeanPerStep = 0.0045f, Damping = 0.94f; // a playtest: it swung too fast to follow
 
     /// <summary>How fast the arms tire a step holding it up, rest a step with it down, and the rest they need to lift again once they've given.</summary>
-    public const float TirePerStep = 0.0018f, RestPerStep = 0.006f, LiftAgainBelow = 0.5f;
+    public const float TirePerStep = 0.0012f, RestPerStep = 0.006f, LiftAgainBelow = 0.5f;
 
     /// <summary>Steps a word on the last blow stays up (the panel reads it).</summary>
     public const int WordSteps = 60;
@@ -31,6 +31,9 @@ public sealed class LiftSession : HelperSession
 
     /// <summary>Up off the ground now.</summary>
     public bool Up { get; private set; }
+
+    /// <summary>Holding the wagon up: the strain's in the arms.</summary>
+    public override bool HandsMoving => Up;
 
     /// <summary>How far it leans off level, −1..1, and how fast it's going.</summary>
     public float Tilt { get; private set; }

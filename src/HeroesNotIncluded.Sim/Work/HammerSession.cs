@@ -154,6 +154,9 @@ public sealed class HammerSession : WorkSession
     /// <summary>Let go: it's coming down, and can't be raised again till it lands.</summary>
     public bool Swinging => _falling;
 
+    /// <summary>Raising the hammer or bringing it down.</summary>
+    public override bool HandsMoving => Raise > 0f || _falling || _recovery > 0;
+
     public float CentreWidth => CentreHalfWidth * Hands.Tolerance;
 
     /// <summary>Where across the piece to strike this blow (-1 to 1); it moves after every blow.</summary>

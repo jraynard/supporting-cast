@@ -89,6 +89,9 @@ public sealed class SledgeSession : HelperSession
     public bool Swinging => _falling;
     public bool Ready => _recovery <= 0;
 
+    /// <summary>Heaving it up, or coming down from a blow: not while it's held still up top or resting on the ground.</summary>
+    public override bool HandsMoving => (Raise > 0f && Raise < FullHeave) || _recovery > 0 || LastStep >= 0 && StepsDone - LastStep < 6;
+
     /// <summary>Held up so long the arms have begun to tire.</summary>
     public bool Tiring => _atTop > TireAfter;
 

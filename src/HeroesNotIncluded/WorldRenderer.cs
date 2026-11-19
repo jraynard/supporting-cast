@@ -1040,6 +1040,9 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
             && Sim.Systems.Crafting.ToolInHand(sim, e, session is Sim.Work.HammerSession ? "Hammer" : "Mop") is { IsNull: false } tool2
             && HumanLook.HeldOf(w.Get<Thing>(tool2).Def) is { } h)
             return h;
+        // The striker: a sledge in hand (the smith's hammer, for now: there's no sledge to carry).
+        if (session is Sim.Work.SledgeSession && sim.Defs.AllThings.FirstOrDefault(t => t.Name == "Hammer") is { } hammerDef && HumanLook.HeldOf(hammerDef) is { } sledge)
+            return sledge;
         if (TongsOf(sim, e, session) is { } tongs)
             return tongs;
         // A player's weapon's only in hand drawn, in combat mode (Combat.FreeMover).

@@ -49,6 +49,9 @@ public sealed class PitSession : HelperSession
     /// <summary>How far the saw's pulled down this stroke, 0..1.</summary>
     public float Down { get; private set; }
 
+    /// <summary>Pulling with a stroke.</summary>
+    public override bool HandsMoving => Held || Down > 0f && Down < 1f;
+
     /// <summary>A stroke's begun above: pull now. Steps since it began.</summary>
     public bool CallOpen { get; private set; }
     public int CallAge { get; private set; }

@@ -210,6 +210,12 @@ public abstract class WorkSession
     public virtual int3? Focus(Simulation sim) => null;
 
     /// <summary>
+    /// The hands at it right now, for how the worker's drawn (the work swing plays while they are; a striker
+    /// holding the sledge still, or a lifter with the wagon down, stands). Read for drawing only, never for the sim.
+    /// </summary>
+    public virtual bool HandsMoving => true;
+
+    /// <summary>
     /// Goes on while the worker lies downed: the few things a body on the ground can still do (an
     /// empath mending themselves). Everything else stops when they collapse.
     /// </summary>

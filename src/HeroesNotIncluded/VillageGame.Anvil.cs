@@ -105,6 +105,9 @@ public sealed partial class VillageGame
                 if (s.Ready)
                     dl.AddLine(new float2(fallX, bMin.Y - Gui.S(30)), new float2(fallX, bMin.Y + b.Y), Theme.U8(s.Centred ? Theme.Good : Theme.Text, s.Centred ? 0.7f : 0.35f), Gui.S(1.5f));
                 DrawHammerSwing(dl, s.Raise, new float2(fallX, strikePoint.Y), px, Gui.White);
+                // Great work: the striker's sledge across the anvil, as they're holding it (heaved, coming down, resting).
+                if (s.Heavy && _sim.World.TryGet<WorkSession>(s.Partner, out var helper) && helper is SledgeSession sledge && helper.Partner == _avatar)
+                    DrawSledgeSwing(dl, sledge.Raise, new float2(spotX, strikePoint.Y), px, sledge.Raise >= SledgeSession.FullHeave ? Gui.White : Gui.U8(new float4(1f, 1f, 1f, 0.75f)));
                 DrawSparks(dl);
                 if (since < GradeSeconds)
                     DrawGrade(dl, strikePoint, since);
@@ -185,7 +188,7 @@ public sealed partial class VillageGame
     /// face (<paramref name="faceAlong"/> of the way along) on <paramref name="strike"/> when flat.
     /// The smith's hammer at the anvil, the axe at the log.
     /// </summary>
-    private void DrawToolSwing(ImDrawListPtr dl, string spriteName, float faceAlong, float raise, float2 strike, float px, ImColor8 tint)
+    private void DrawToolSwing(ImDrawListPtr dl, string spriteName, float faceAlong, float raise, float2 strike, float px, ImColor8 tint, bool fromLeft = false)
     {
         if (!Gui.TrySprite(spriteName, out var hammer))
             return;
@@ -200,8 +203,14 @@ public sealed partial class VillageGame
         var h = up * (len.Y * 0.5f);
         // The sprite runs handle (u=0) to iron head (u=1): the handle sits at the hand and the head
         // at the far end, on the bar. `h` points up off the shaft, where the sprite's top row goes.
-        Gui.ImageQuad(dl, hammer, back + h, head + h, head - h, back - h, tint);
+        // From the left (the striker across the anvil from the smith): the same swing, mirrored about the strike point.
+        float2 M(float2 p) => fromLeft ? new float2(2f * strike.X - p.X, p.Y) : p;
+        Gui.ImageQuad(dl, hammer, M(back + h), M(head + h), M(head - h), M(back - h), tint);
     }
+
+    /// <summary>The striker's sledge, across the anvil from the smith: a bigger swing from the left.</summary>
+    private void DrawSledgeSwing(ImDrawListPtr dl, float raise, float2 strike, float px, ImColor8 tint) =>
+        DrawToolSwing(dl, "ui/work/hammer", 26f / 32f, raise, strike, px * 1.45f, tint, fromLeft: true);
 
     private void ThrowSparks(float2 at, float grade, int seed)
     {

@@ -270,7 +270,7 @@ public sealed class CreatureAnimator
             landing,
             job is SoarJob && GlidingNow(e),
             (job is BuildJob or DeconstructJob or HarvestJob or DigJob or Sim.Shops.CleanJob or Sim.Shops.MakeBedJob or Sim.Shops.WashJob
-                || station != null) && !mover.Moving || swinging,
+                || station != null && session!.HandsMoving) && !mover.Moving || swinging,
             mover.Moving || freeMoving,
             job is Sim.Hospitality.SavourJob { Seated: true } or FestivalJob { Seated: true } or Sim.Systems.SitJob { Seated: true }
         );
