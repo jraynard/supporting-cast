@@ -121,34 +121,60 @@ Because notes are relative to the chosen key, a real musician can play any diato
 
 ## 2. The tune book and the lead-in
 
-- **`data/defs/songs.json`:** original tunes only (no traditional or copyrighted melodies we didn't write). Each tune gives:
-  - its notes as scale degree, octave and beats
-  - its tempo and mode
-  - its kind: jig, reel, air, march or ballad, which sets the dance it calls for
-  - its mood: lively, tender, stirring or sombre
-  - optional verse slots for lore (§7)
-- **The musician's book.** It starts with a few tunes, and more come through the tutorial, from adventurers' requests and by composing. It's kept per character in `CharacterProgress`, and the sim gets the list sent from the character at the deal, like traits.
-- **Three ways to play, in the same session:**
-  1. **Free play.** Anything at all.
-  2. **Guided.** The tune scrolls as a lane or staff over the notes (`VillageGame.Music.cs`). Accuracy and expression are judged as you go.
-  3. **Lead-in.** A `TuneMatcher` (pure, inside `Advance`) watches what you play for a tune's opening phrase, the first 4–8 notes:
-     - It matches the interval contour, so any key works.
-     - It's tolerant of rhythm.
-     - The required accuracy is scaled by `Hands`.
+_Built (2026-11-18): the two modes, full songs and keeping time, in `mods/musician` (`PlaySession`, `SongDef`). Held
+notes on the pipe too: a note sounds while its key's held (`PlaySession.Ringing`, ended by the note-off), a carried one for
+92% of its length (half before a breath mark). Each is a seamless loop (`held` in the instrument def) with a breath's
+chiff as it speaks (`attack`), on a voice of its own so a repeated note speaks again. Free play names the notes (`root`)._
 
-     On a match, "your hands take over". The session plays the rest from the song def deterministically, so no extra inputs are sent. You keep shaping it live:
-     - tempo nudge (A/D)
-     - dynamics (W/S)
-     - ornaments on prompts
-     - stop (Space)
-     - break back into free play by playing any note
-- **Known tunes are recognised.** Listeners recognise a known tune whichever way it's played ("they know this one!"), a small bonus.
-- **Quality** comes from three things:
-  - lead-in accuracy, or guided accuracy
+- **Where tunes come from:** our own, or public-domain tunes (traditional, pre-1900) written out in our own
+  notation, never copied from a modern arrangement. No game or film music (Ocarina of Time, the LOTR and Hobbit
+  films' scores), however it's renamed. The first is "Drunken Sailor"; originals of our own are to come.
+- **A tune** (`songs` in `mods/musician/defs/musician.json`) gives:
+  - its parts by name ("Verse", "Chorus"), each a list of notes `[step, beats, accidental]`. Step −1 is a rest,
+    and accidental is −1/+1 for a semitone. A one-part tune may give `notes` instead.
+  - its `form`, the parts in the order they're played (verse, chorus, verse...), so the hands carry the whole song
+  - its `opening`, how many notes strike it up (5 unless it says)
+  - its tempo, its kind (jig, reel, air, march or ballad: the dance it calls for) and its mood
+  - optional verse slots for lore (§7), to come
+- **The musician's book.** It starts with a few tunes, and more come through the tutorial, from adventurers'
+  requests and by composing. It's kept per character in `CharacterProgress`, and the sim gets the list sent from the
+  character at the deal, like traits. _For now every tune in the defs is known._
+- **A tune's call.** Each tune is called up by its best-known phrase, not necessarily its first: Drunken Sailor by its
+  chorus ("Way hay and up she rises", `"call": "Chorus"`, 7 notes). Called by another part, the hands then play the
+  tune from the top; called by its first part, they go on from the call.
+- **Two modes, switched with the other action (Space)**, so a melody of your own never turns into a tune by accident:
+  1. **Free play.** Anything at all. No opening is listened for.
+  2. **The book.** W/S picks out a tune, and its opening is drawn as a guide. Play any tune's opening, from any
+     note, starting after a pause, and "your hands take over". It's matched by the shape of the steps, sharps
+     included; notes played before the book was opened don't count.
+- **Minding the tune while the hands carry it.** This is the rhythm game. The hands find every note (the note keys
+  do nothing then). The player minds what a real musician must, on a lane where the tune's notes slide toward a line,
+  each set as high as it sounds:
+  - **The beat:** a tapping foot, its toe rising between beats and coming down on each, a ring closing on where it
+    lands: F as it lands. Green on a beat kept, red on one missed; dots count the bar. The first bar is a warm-up (misses
+    cost nothing). The window is wider for practised hands (`Hands.Tolerance`).
+  - **The breath gauge** beside the foot says what the air's wanted for: "Breathe in!" as a gap opens, a count to the
+    next, "swell it" on a long note (swelling spends breath faster).
+  - **The breath:** air drains as you play; a full breath lasts about 12 beats. Hold Shift to breathe in the gaps the
+    tune marks (`[-2]` after a note in the def, a comma over the lane) and at rests. A breath snatched mid-phrase
+    costs the note due, and with no air the notes go missing.
+  - **The long notes** (2 beats or more, drawn thicker with a swell under them): tap F on the note's beat as
+    usual and keep it held down while the note rings to shape it. Its inner beats are kept by the hold, not by taps.
+    One before a breath rings only its first half: let go, then breathe. Each shaped note is a flourish. (It was W at
+    first; three keys at once was too many.)
+  - **Concentration** holds it all together. It firms with beats kept, breaths taken at the marks and notes shaped.
+    It slips with beats missed, stray taps, breaths in the wrong place and running out of air; with no air, keeping
+    the beat earns nothing. Below half, notes go missing (from the session's own random stream, so every peer hears
+    the same). At nothing, the tune slips away.
+  - A/D nudges the pace. Space lets the tune go, back to free play.
+- **Known tunes are recognised.** Listeners recognise a known tune whichever way it's played ("they know this one!"),
+  a small bonus. _To come._
+- **Quality** (§3), from:
+  - beats kept and missed, breaths, and the flourishes (`BeatsKept`, `BeatsMissed`, `Breaths`, `Flourishes`, kept on the session)
   - the instrument's state
   - how much expression is kept up
 
-  An auto-played tune with no shaping is pleasant but flat. A shaped one moves people more.
+  A tune barely held is pleasant but flat. One kept steady, with its long notes shaped, moves people more.
 
 ## 3. How a performance reads: `Performance` (sim)
 
@@ -276,15 +302,34 @@ Watchers' satisfaction comes through `Played`. Without a musician, the festival 
 
 ## Order of work (each step playable and tested)
 
-1. The player-only trade (§0), the `Instrument` item, `PerformSession` free play on the **pipe**, synthesized samples, local and remote hearing.
-2. The lute, fiddle and drum; expression; Narsil's `SetPitch` if needed.
-3. The tune book: guided play and the lead-in (`TuneMatcher`).
-4. `Performance`, the audience, `DanceJob`, the dance emote, dance and playing art.
+1. ✓ The player-only trade (§0), free play on the **pipe** (`PlaySession`), synthesized samples, local and remote hearing.
+2. ✓ The tune book: the two modes, the lead-in, full songs in parts, and minding the beat, the breath and the long notes (§2). Next: playtest, then originals.
+3. ✓ (first pass) The lute, fiddle and drum; bends. Each instrument says in its def what a carried tune asks of it
+   (`air`: the pipe's breath, the fiddle's bow, turned at the marks; `sustains`: long notes swelled; `strokes`: a drum's).
+   The kit brings all four; F plays the one in hand. No `SetPitch` needed: `Hold` retunes a held voice live. Then:
+   a rhythm meter in free play (`Performance.Rhythm`: the pulse found under the notes, so a drum's doum-tek-tek is as
+   steady as a march; what the audience dances to); the lute's chords (`chords`: Q with a key holds its triad, F strums it
+   down and up, the strings spread a little apart); the fiddle a sample for every key, made at its own pitch through a
+   body whose resonances stay put, with a wider vibrato and the bow swelling in (`fade`). The drum needs little more
+   (the user: fun as it is). Left for later, if wanted: dynamics, the fiddle's double stops.
+4. ✓ (first pass) `Performance`, the audience. A performance is read from the session as it stands (`Audience.cs`:
+   lively or tender, steady or ragged, its tempo; free play by how it's played, never by right notes). Whoever's free
+   (`IPastime`, a core door) and hears it clearly comes to it: to dance in place, hopping to its beat, if it's lively and
+   steady, or to stand and listen; off when it stops. `HeardMusic` and `Danced` are remembered. The musician's window counts
+   the crowd. Then: a reel or a march danced round the musician in a ring (the festival's ring, where there's floor);
+   sour music (steadiness under `SourBelow`) draws no one and drives the audience off after a few seconds (`SourMusic`);
+   a player in earshot dances with F where they stand (the musician mod's own action, no new emote: `DanceSession`, a
+   step on the beat with A/D, a turn, a clap), judged against the musician's beat in `Settle` and shown at once in the
+   window; the renderer hops anyone whose job or session says it's dancing (`Dancing` on both). The lute's strum: a
+   down-stroke sweeps four strings from the bass, an up-stroke flicks the top two, quicker and lighter. Left: the dance
+   and playing art (frames in `tools/chibi_people.py`), pair dances; the festival's dance waits for step 7.
 5. Paying: the hat, requests, the inn's draw, send-offs, mood.
 6. Instrument care and tuning.
 7. The festival centrepiece.
 8. Lore songs, composing, inspiration.
 9. Lessons, the bot, docs.
+10. A band (the user's idea, 2026-11-18): several musicians in co-op playing one tune together, joining on a tune
+    struck up and keeping its beat (the drum's way into the book, too). On the roadmap.
 
 ## Verification
 

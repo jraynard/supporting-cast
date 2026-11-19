@@ -27,6 +27,7 @@ public sealed class SimRegistry
     internal readonly Dictionary<string, Func<WorkSession>> SessionAliases = new(StringComparer.Ordinal);
     internal readonly List<PlacedSystem> Systems = [];
     internal readonly List<ITradeModule> TradeModules = [];
+    internal readonly List<IPastime> Pastimes = [];
     internal readonly List<Scenarios.Lessons.Lesson> Lessons = [];
     internal readonly List<Func<Bots.BotPlayer, Bots.IBotTrade>> Bots = [];
     internal readonly List<IGameMode> Modes = [];
@@ -43,6 +44,9 @@ public sealed class SimRegistry
     /// AI's work, at a player's F, and as the town is set up.
     /// </summary>
     public void Trade(ITradeModule module) => TradeModules.Add(module);
+
+    /// <summary>Something for the town to do with its free time (<see cref="IPastime"/>): asked by the brains when there's no work.</summary>
+    public void Pastime(IPastime pastime) => Pastimes.Add(pastime);
 
     /// <summary>
     /// A trade's tutorial chapters: each lesson's logic, read from what the player knows every time
@@ -209,6 +213,20 @@ public static class SimContent
             var modules = Registries.SelectMany(r => r.TradeModules).ToList();
             _trades = (Version, modules);
             return modules;
+        }
+    }
+
+    private static (int Version, List<IPastime> Pastimes)? _pastimes;
+
+    internal static IReadOnlyList<IPastime> Pastimes
+    {
+        get
+        {
+            if (_pastimes is { } p && p.Version == Version)
+                return p.Pastimes;
+            var pastimes = Registries.SelectMany(r => r.Pastimes).ToList();
+            _pastimes = (Version, pastimes);
+            return pastimes;
         }
     }
 

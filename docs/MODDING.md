@@ -126,6 +126,11 @@ one didn't. Each is now part of the API:
   so they don't clash with the game's.
 - **An action of a mod's own** (`AvatarActionKind.Custom`, done by the module that offered it).
 - **Drills** (`SimRegistry.Drill`, `--drill NAME`): a moment staged at once for trying a game out.
+- **A pastime** (`SimRegistry.Pastime`, an `IPastime`): something the town does with its free time, asked by
+  villagers' brains once their work's done and adventurers' before they lounge about: the musician's audience
+  (`Listening`, an `AudienceJob`). A job says it's danced (`Job.Dancing`, `DanceTempo`) for the renderer's step.
+- **Thoughts of a mod's own** (`"thoughts"` in its defs, mood.json's format), remembered through
+  `DefDatabase.ThoughtOrNull`, so a thought gone with its mod is nothing rather than an error.
 - **A simulation keeps the modules it was made with** (`Simulation.TradeModules`), and `--check-mod`
   puts the content back after looking: a check once left the carpenter's hooks reaching into a
   simulation made without its systems.

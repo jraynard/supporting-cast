@@ -322,6 +322,10 @@ public sealed class HumanBrain : IBrain
             if (SeekComfort(sim, pawn, tol, temp) is { } comfort)
                 return comfort;
 
+        // 4b. A pastime a mod brings (the musician's audience), in place of idling.
+        if (Modding.Pastimes.JobFor(sim, pawn) is { } pastime)
+            return pastime;
+
         // 5. Idle.
         return AiQueries.RandomReachableNear(sim, pawn, tile, 6) is { } wander
             ? new WanderJob(wander, sim.Rand.Range(60, 240))

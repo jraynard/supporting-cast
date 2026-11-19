@@ -210,7 +210,9 @@ public sealed class FestivalJob(FestivalActivity activity, Entity focus, List<in
     public bool Seated { get; private set; }
 
     /// <summary>Going round the bonfire in the dance (for the renderer's step).</summary>
-    public bool Dancing { get; private set; }
+    public override bool Dancing => _dancing;
+
+    private bool _dancing;
 
     protected override IEnumerable<JobStatus> Run()
     {
@@ -221,7 +223,7 @@ public sealed class FestivalJob(FestivalActivity activity, Entity focus, List<in
         if (activity == FestivalActivity.Dance)
         {
             Report = "Dancing";
-            Dancing = true;
+            _dancing = true;
             foreach (var cell in route)
             {
                 foreach (var s in GoTo(cell, PathEnd.OnTile)) yield return s;

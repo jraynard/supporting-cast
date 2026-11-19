@@ -56,6 +56,14 @@ public abstract class Job
     /// renderer, which lays them down as it does a sleeper. The sim doesn't use it.
     /// </summary>
     public virtual bool LiesDown => false;
+
+    /// <summary>
+    /// Dancing right now (round the festival's bonfire, to a musician): for the renderer's step. The sim doesn't use it.
+    /// </summary>
+    public virtual bool Dancing => false;
+
+    /// <summary>The beats a minute danced to (the music's), or 0 for the renderer's own: a hint, as <see cref="Dancing"/> is.</summary>
+    public virtual float DanceTempo => 0f;
     public bool HasFailed => FailReason != null;
 
     /// <summary>

@@ -848,10 +848,14 @@ public sealed partial class WorldRenderer(TextureAtlas atlas)
         }
         if (pose.Tag == "glide")
             feet.Z += MathF.Sin(_anim.Clock * 2f + e.Index) * 0.05f;
-        // Dancing round the festival's bonfire: a hop to every step, and a sway (no frames of its own yet).
-        if (mind.Job is Sim.Ai.FestivalJob { Dancing: true })
+        // Dancing (round the festival's bonfire, to a musician): a hop to every beat, and a sway (no frames of its own yet).
+        var danceTempo = mind.Job is { Dancing: true } dance ? dance.DanceTempo
+            : w.TryGet<Sim.Work.WorkSession>(e, out var dancing) && dancing.Dancing ? dancing.DanceTempo : -1f;
+        if (danceTempo >= 0f)
         {
-            var beat = _anim.Clock * 7f + e.Index * 0.7f;
+            // A hop a beat: |sin| comes round twice a turn. The music's tempo when it has one, its own otherwise.
+            var rate = danceTempo > 0f ? MathF.PI * danceTempo / 60f : 7f;
+            var beat = _anim.Clock * rate + e.Index * 0.7f;
             feet.Z += MathF.Abs(MathF.Sin(beat)) * 0.12f;
             feet += _cam.Right * (MathF.Sin(beat * 0.5f) * 0.05f);
         }

@@ -83,7 +83,11 @@ public sealed class AdventurerBrain : IBrain
         }
         if (Festival.Gathering(sim, pawn) is { } party)
             return party;
-        var center = WaitingAt(sim, pawn)
+        // A pastime a mod brings (music to listen or dance to), unless they're waiting on an order.
+        var waiting = WaitingAt(sim, pawn);
+        if (waiting == null && Modding.Pastimes.JobFor(sim, pawn) is { } pastime)
+            return pastime;
+        var center = waiting
             ?? (w.TryGet<Adventurer>(pawn, out var a) && PartySystem.HauntOf(sim, a.PartyDef) is { } haunt ? haunt.Anchor : tile);
         // Never into the kitchen: customers keep to the public rooms.
         return AiQueries.RandomReachableNear(sim, pawn, center, 4, publicOnly: true) is { } spot

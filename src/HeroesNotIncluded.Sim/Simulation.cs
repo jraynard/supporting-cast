@@ -231,6 +231,9 @@ public sealed partial class Simulation
     /// <summary>The trade modules this simulation was made with (<see cref="Modding.Trades.All"/>).</summary>
     public IReadOnlyList<Modding.ITradeModule> TradeModules { get; } = Modding.SimContent.TradeModules;
 
+    /// <summary>What mods give the town to do with its free time (<see cref="Modding.IPastime"/>).</summary>
+    public IReadOnlyList<Modding.IPastime> Pastimes { get; } = Modding.SimContent.Pastimes;
+
     public Simulation(DefDatabase defs, int width, int height, ulong seed, int depth = DefaultDepth)
     {
         Defs = defs;

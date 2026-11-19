@@ -223,8 +223,14 @@ new one is built the moddable way.
 - [x] **Workplaces and services of a mod's own**, named in its defs.
 - [x] **Game modes:** `IGameMode`, the season and the practice yard the game's own, Siege Night (`mods/siege`) the example.
 - [ ] **The musician, built as a mod** from [MUSICIAN-PLAN.md](MUSICIAN-PLAN.md): first pass in (a player-only trade,
-  the tin pipe played free, `mods/musician`); playtest how it feels, then the other instruments, the tune book
-  and the lead-in, the audience and dancing.
+  the tin pipe played free, `mods/musician`), then the tune book's two modes, full songs ("Drunken Sailor", public
+  domain), and minding the beat, the breath and the long notes while the hands carry a tune (`--drill sailor`); then the
+  lute, fiddle and hand drum (`--drill lute`, `fiddle`, `drum`) with bends; then an audience (whoever's free and hears
+  it comes to listen, or to dance to a lively steady tune: `IPastime`); playtest, then originals of our own, the drum's
+  own tunes, the ring dance, the player's dance and the art.
+  - [ ] **A band:** more than one musician in co-op (the deal lets several seats take the trade), playing together:
+    one strikes up a tune and the others join on it, the drum keeping its beat, each minding their own part; a band
+    draws a bigger crowd than any one of them.
 - [x] **The ModKit's templates and the coding-agent skills** (`modkit/`, `.claude/skills/new-trade` and friends).
 
 ## Then: M4, Whispers

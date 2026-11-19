@@ -1,6 +1,33 @@
 {
   "sounds": {
     "musician.pipe.d5": { "files": ["pipe_d5.wav"], "gain": 0.55, "max": 6, "range": 18, "near": 3 },
-    "musician.pipe.d6": { "files": ["pipe_d6.wav"], "gain": 0.45, "max": 6, "range": 18, "near": 3 }
+    "musician.pipe.d6": { "files": ["pipe_d6.wav"], "gain": 0.45, "max": 6, "range": 18, "near": 3 },
+    "musician.pipe.d5.loop": { "files": ["pipe_d5_loop.wav"], "gain": 0.5, "max": 6, "range": 18, "near": 3 },
+    "musician.pipe.d6.loop": { "files": ["pipe_d6_loop.wav"], "gain": 0.4, "max": 6, "range": 18, "near": 3 },
+    "musician.pipe.chiff": { "files": ["pipe_chiff.wav"], "gain": 0.35, "max": 6, "range": 14, "near": 3 },
+    "musician.lute.d4": { "files": ["lute_d4.wav"], "gain": 0.6, "max": 10, "range": 18, "near": 3 },
+    "musician.lute.d5": { "files": ["lute_d5.wav"], "gain": 0.5, "max": 10, "range": 18, "near": 3 },
+    "musician.fiddle.d4": { "files": ["fiddle_d4.wav"], "gain": 0.5, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.d5": { "files": ["fiddle_d5.wav"], "gain": 0.45, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.k00": { "files": ["fiddle_k00_loop.wav"], "gain": 0.45, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.k01": { "files": ["fiddle_k01_loop.wav"], "gain": 0.45, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.k02": { "files": ["fiddle_k02_loop.wav"], "gain": 0.45, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.k03": { "files": ["fiddle_k03_loop.wav"], "gain": 0.45, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.k04": { "files": ["fiddle_k04_loop.wav"], "gain": 0.45, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.k05": { "files": ["fiddle_k05_loop.wav"], "gain": 0.45, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.k06": { "files": ["fiddle_k06_loop.wav"], "gain": 0.45, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.k07": { "files": ["fiddle_k07_loop.wav"], "gain": 0.45, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.k08": { "files": ["fiddle_k08_loop.wav"], "gain": 0.4, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.k09": { "files": ["fiddle_k09_loop.wav"], "gain": 0.4, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.k10": { "files": ["fiddle_k10_loop.wav"], "gain": 0.4, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.k11": { "files": ["fiddle_k11_loop.wav"], "gain": 0.4, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.k12": { "files": ["fiddle_k12_loop.wav"], "gain": 0.4, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.k13": { "files": ["fiddle_k13_loop.wav"], "gain": 0.4, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.k14": { "files": ["fiddle_k14_loop.wav"], "gain": 0.4, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.k15": { "files": ["fiddle_k15_loop.wav"], "gain": 0.4, "max": 6, "range": 18, "near": 3 },
+    "musician.fiddle.bow": { "files": ["fiddle_bow.wav"], "gain": 0.3, "max": 6, "range": 14, "near": 3 },
+    "musician.drum.doum": { "files": ["drum_doum.wav"], "gain": 0.7, "max": 8, "range": 20, "near": 3 },
+    "musician.drum.tek": { "files": ["drum_tek.wav"], "gain": 0.55, "max": 8, "range": 18, "near": 3 },
+    "musician.drum.ka": { "files": ["drum_ka.wav"], "gain": 0.45, "max": 8, "range": 16, "near": 3 }
   }
 }

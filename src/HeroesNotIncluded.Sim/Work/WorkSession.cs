@@ -215,6 +215,12 @@ public abstract class WorkSession
     /// </summary>
     public virtual bool WhileDowned => false;
 
+    /// <summary>Dancing right now (a player's dance to a musician): for the renderer's step, as <see cref="Ai.Job.Dancing"/> is. Sim state, never read by it.</summary>
+    public virtual bool Dancing => false;
+
+    /// <summary>The beats a minute danced to, or 0 for the renderer's own.</summary>
+    public virtual float DanceTempo => 0f;
+
     /// <summary>The target is still there and in reach. Sim-only; checked before every tick.</summary>
     public abstract bool StillValid(Simulation sim);
 

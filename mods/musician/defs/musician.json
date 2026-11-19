@@ -3,33 +3,84 @@
 {
   "trades": [
     { "name": "Musician", "label": "musician", "pace": "Steady", "playerOnly": true, "formerly": [ "Bard" ],
-      "description": "Music for the town: plays the pipe for whoever will listen. Comes only if someone plays it.",
-      "kit": [ { "def": "Pipe" } ] }
+      "description": "Music for the town: the pipe, the lute, the fiddle and the drum, for whoever will listen. Comes only if someone plays it.",
+      "kit": [ { "def": "Pipe" }, { "def": "Lute" }, { "def": "Fiddle" }, { "def": "HandDrum" } ] }
   ],
   "things": [
     // A tin whistle in D. Its music is the musician mod's own kind of def, below.
-    { "name": "Pipe", "label": "tin pipe", "category": "Item", "mass": 0.2, "sprite": "items/pipe", "flammability": 0.1, "maxHp": 40 }
+    { "name": "Pipe", "label": "tin pipe", "category": "Item", "mass": 0.2, "sprite": "items/pipe", "flammability": 0.1, "maxHp": 40 },
+    { "name": "Lute", "label": "lute", "category": "Item", "mass": 1.6, "sprite": "items/lute", "flammability": 0.8, "maxHp": 30 },
+    { "name": "Fiddle", "label": "fiddle", "category": "Item", "mass": 0.6, "sprite": "items/fiddle", "flammability": 0.8, "maxHp": 30 },
+    { "name": "HandDrum", "label": "hand drum", "category": "Item", "mass": 1.2, "sprite": "items/hand_drum", "flammability": 0.6, "maxHp": 40 }
+  ],
+  // What the audience remembers of an evening's music (Audience.cs: AudienceJob), as memories (mood.json's format).
+  "thoughts": [
+    { "name": "HeardMusic", "label": "heard some music", "description": "Stood a while and listened to a musician play.", "mood": 3, "durationHours": 6, "races": [ "Human" ] },
+    { "name": "Danced", "label": "danced", "description": "Danced to a musician's tune.", "mood": 5, "durationHours": 8, "races": [ "Human" ] },
+    { "name": "SourMusic", "label": "suffered sour music", "description": "Stood through a tune gone to pieces, and gave up on it.", "mood": -2, "durationHours": 3, "races": [ "Human" ] }
   ],
   // The musician mod's own kind (DefDatabase.ModDefs): how an instrument sounds and what it plays.
   "instruments": [
-    { "name": "Pipe", "label": "tin pipe", "voice": "Breath",
+    // Whatever's in hand is played (F), or the first in the pack. "air": what a carried tune spends and is given back at
+    // its marks (Breath, Bow; none for plucked and struck); "sustains": a note lasts while held, and long notes swell;
+    // "bend": semitones A/D bend a note (a drum: W pressing its head).
+    { "name": "Pipe", "label": "tin pipe", "voice": "Breath", "air": "Breath", "sustains": true, "bend": 1,
       // One root sample per octave (sounds/sounds.json), each pitched up to the scale's notes.
       "octaves": [ "musician.pipe.d5", "musician.pipe.d6" ],
+      // A held note: a loop per octave (sounds while the key's held), and the breath's burst as it speaks.
+      "held": [ "musician.pipe.d5.loop", "musician.pipe.d6.loop" ], "attack": "musician.pipe.chiff",
       // The major scale from the root, in semitones: the eight note keys.
-      "scale": [ 0, 2, 4, 5, 7, 9, 11, 12 ] }
+      "scale": [ 0, 2, 4, 5, 7, 9, 11, 12 ],
+      // Its root, D5, for naming the notes (the keys play D E F# G A B C# D).
+      "root": "D", "rootOctave": 5 },
+    // Plucked: each note rings and dies away of itself, as many at once as are played. Its tunes are kept by the beat alone.
+    // Q with a note key holds the chord on it (the scale's triad), F strums it, down and up.
+    { "name": "Lute", "label": "lute", "voice": "Plucked", "chords": true,
+      "octaves": [ "musician.lute.d4", "musician.lute.d5" ],
+      "scale": [ 0, 2, 4, 5, 7, 9, 11, 12 ], "root": "D", "rootOctave": 4 },
+    // Bowed: a note sounds while it's held, slides with A/D; the bow runs out as the breath does, turned at the marks.
+    { "name": "Fiddle", "label": "fiddle", "voice": "Bowed", "air": "Bow", "sustains": true, "bend": 2,
+      "octaves": [ "musician.fiddle.d4", "musician.fiddle.d5" ],
+      // Held notes: a loop for every key, each made at its own pitch (the body's resonances stay put), the bow swelling in.
+      "held": [ "musician.fiddle.k00", "musician.fiddle.k01", "musician.fiddle.k02", "musician.fiddle.k03", "musician.fiddle.k04", "musician.fiddle.k05", "musician.fiddle.k06", "musician.fiddle.k07", "musician.fiddle.k08", "musician.fiddle.k09", "musician.fiddle.k10", "musician.fiddle.k11", "musician.fiddle.k12", "musician.fiddle.k13", "musician.fiddle.k14", "musician.fiddle.k15" ],
+      "attack": "musician.fiddle.bow", "fade": 0.09,
+      "scale": [ 0, 2, 4, 5, 7, 9, 11, 12 ], "root": "D", "rootOctave": 4 },
+    // Struck: strokes, not notes: the low open stroke, the high one at the edge, and the rim's click. W presses the head.
+    { "name": "HandDrum", "label": "hand drum", "voice": "Struck", "bend": 3, "book": false,
+      "strokes": [ "doum", "tek", "ka" ],
+      "octaves": [ "musician.drum.doum", "musician.drum.tek", "musician.drum.ka" ] }
   ],
-  // The tune book (the musician mod's own kind, DefDatabase.ModDefs): original tunes only. A note is
-  // [step, beats]: steps of the scale from the instrument's root, 0..14 across its two octaves (7 is
-  // the octave key, 8 the second octave's second). Play a tune's first five notes, starting on any
-  // step, and the musician's hands carry the rest (PlaySession's lead-in): the openings must differ in shape.
+  // The tune book (the musician mod's own kind, DefDatabase.ModDefs): our own tunes, or public-domain ones
+  // written out in our own notation, never a game's or a film's. A note is [step, beats, accidental]: steps of
+  // the scale from the instrument's root, 0..14 across its two octaves (7 is the octave key, 8 the second
+  // octave's second; -1 a rest; [-2] a breath mark after the note before), how long, and -1/+1 for a semitone off
+  // (optional). Notes of 2 beats or more are long ones, to be shaped. A tune of one part gives
+  // "notes"; a longer one gives "parts" and the "form" they're played in. In the book, play a tune's call (the
+  // first "opening" notes, 5 unless it says, of the part named "call", the first unless it says), from any step after a
+  // pause, and the musician's hands play the tune: from the top, or from the call on if it's the first part
+  // while you keep the beat, the breath and the long notes (PlaySession): the openings must differ in shape.
   "songs": [
+    // The traditional sea shanty (19th century, public domain), on the pipe in E dorian: every note a natural
+    // key. Verse "What shall we do with a drunken sailor", chorus "Way hay and up she rises", three times round.
+    // Called by its chorus ("Way hay and up she rises": four Bs, the drop to E, up through G to B), then played from the top.
+    { "name": "DrunkenSailor", "label": "Drunken Sailor", "kind": "March", "mood": "Lively", "tempo": 112, "call": "Chorus", "opening": 7,
+      "parts": {
+        "Verse": [ [5,1], [5,0.5], [5,0.5], [5,1], [5,0.5], [5,0.5], [5,1], [1,1], [3,1], [5,1], [-2],
+                   [4,1], [4,0.5], [4,0.5], [4,1], [4,0.5], [4,0.5], [4,1], [0,1], [2,1], [4,1], [-2],
+                   [5,1], [5,0.5], [5,0.5], [5,1], [5,0.5], [5,0.5], [5,1], [6,1], [7,1], [8,1], [-2],
+                   [7,1], [5,1], [4,1], [2,1], [1,2], [1,2], [-2] ],
+        "Chorus": [ [5,2], [5,1], [5,1], [5,1], [1,1], [3,1], [5,1], [-2],
+                    [4,2], [4,1], [4,1], [4,1], [0,1], [2,1], [4,1], [-2],
+                    [5,2], [5,1], [5,1], [5,1], [6,1], [7,1], [8,1], [-2],
+                    [7,1], [5,1], [4,1], [2,1], [1,2], [1,2], [-2] ] },
+      "form": [ "Verse", "Chorus", "Verse", "Chorus", "Verse", "Chorus" ] },
     { "name": "MillersWheel", "label": "The Miller's Wheel", "kind": "Jig", "mood": "Lively", "tempo": 116,
-      "notes": [ [0,1], [2,1], [4,1], [4,1], [5,1], [4,2], [2,1], [3,1], [1,1], [2,2], [0,2],
+      "notes": [ [0,1], [2,1], [4,1], [4,1], [5,1], [4,2], [2,1], [3,1], [1,1], [2,2], [0,2], [-2],
                  [4,1], [5,1], [7,1], [5,1], [4,1], [2,2], [3,1], [1,1], [0,3] ] },
     { "name": "LanternHome", "label": "Lantern Home", "kind": "Air", "mood": "Tender", "tempo": 76,
-      "notes": [ [4,2], [3,1], [2,1], [1,2], [2,1], [4,1], [5,3], [4,1], [2,2], [1,1], [0,1], [1,2], [2,4] ] },
+      "notes": [ [4,2], [3,1], [2,1], [1,2], [2,1], [4,1], [5,3], [-2], [4,1], [2,2], [1,1], [0,1], [1,2], [2,4] ] },
     { "name": "HayInTheLoft", "label": "Hay in the Loft", "kind": "Reel", "mood": "Lively", "tempo": 132,
-      "notes": [ [7,1], [7,1], [4,1], [7,1], [9,1], [7,1], [6,1], [4,1], [5,1], [6,1], [7,2],
+      "notes": [ [7,1], [7,1], [4,1], [7,1], [9,1], [7,1], [6,1], [4,1], [5,1], [6,1], [7,2], [-2],
                  [4,1], [2,1], [4,1], [5,1], [4,1], [2,1], [1,1], [0,2] ] }
   ]
 }

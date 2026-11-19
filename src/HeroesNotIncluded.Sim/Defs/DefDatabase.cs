@@ -683,6 +683,9 @@ public sealed class DefDatabase
     public ServiceDef Service(ServiceKind kind) =>
         ServiceOrNull(kind) ?? throw new KeyNotFoundException($"No service def for {ServiceName(kind)}");
     public ThoughtDef Thought(string name) => Lookup(_thoughts, name);
+
+    /// <summary>The thought, or null when none is loaded (a mod's, with the mod turned off): <see cref="Systems.MoodSystem.Remember"/> takes null as nothing.</summary>
+    public ThoughtDef? ThoughtOrNull(string name) => _thoughts.GetValueOrDefault(name);
     public InteractionDef Interaction(string name) => Lookup(_interactions, name);
     public RecipeDef Recipe(string name) => Lookup(_recipes, name);
     public OutfitDef Outfit(string name) => Lookup(_outfits, name);
